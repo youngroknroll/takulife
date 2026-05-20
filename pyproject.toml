@@ -1,0 +1,22 @@
+[project]
+name = "oshilog"
+version = "0.1.0"
+description = "RESTful API backend for OshiLog."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.12,<5.0",
+    "django>=5.2,<6.0",
+    "djangorestframework>=3.15,<4.0",
+    "httpx>=0.27,<1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0,<9.0",
+    "pytest-django>=4.8,<5.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
