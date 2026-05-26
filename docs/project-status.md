@@ -1,6 +1,6 @@
 # OshiLog Project Status
 
-Last updated: 2026-05-20
+Last updated: 2026-05-26
 
 ## End-Of-Day Summary
 
@@ -13,6 +13,9 @@ Completed today:
 - Created OshiLog MVP planning document.
 - Switched implementation direction to RESTful API backend first.
 - Created API backend implementation plan.
+- Added screen-driven DB ERD document.
+- Added REST API design plan based on the ERD.
+- Added authentication design plan for Google login and custom User.
 - Created uv project configuration and lockfile.
 - Scaffolded Django project package: `config`.
 - Scaffolded DRF core app: `core`.
@@ -89,12 +92,18 @@ Result:
 - `AGENTS.md`
 - `docs/plans/2026-05-20-oshilog-mvp-planning.md`
 - `docs/plans/2026-05-20-oshilog-api-backend-implementation-plan.md`
+- `docs/plans/2026-05-26-oshilog-rest-api-design-plan.md`
+- `docs/plans/2026-05-26-oshilog-auth-design-plan.md`
+- `docs/erd/2026-05-26-oshilog-screen-design-erd.html`
+- `.lazyweb/design-research/oshilog-screen-design-2026-05-26/report.html`
 - `docs/refactoring/2026-05-20-api-foundation-work-log.md`
 
 ## Deferred Work
 
 - Event model and public event API.
 - EventDraft model and draft API.
+- User status, visit record, and photo upload APIs.
+- Custom User model and Google login flow.
 - Admin approval workflow.
 - URL fetch, extraction, duplicate URL checks, and SSRF protection.
 - Authentication and authorization policy.
