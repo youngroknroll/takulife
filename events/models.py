@@ -7,6 +7,15 @@ class Event(models.Model):
         PUBLISHED = "published", "Published"
 
     title = models.CharField(max_length=255)
+    category = models.CharField(max_length=100, blank=True)
+    work_title = models.CharField(max_length=255, blank=True)
+    location_name = models.CharField(max_length=255, blank=True)
+    region = models.CharField(max_length=100, blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    official_url = models.URLField(unique=True, null=True, blank=True)
+    source_name = models.CharField(max_length=100, blank=True)
+    summary = models.TextField(blank=True)
     publish_status = models.CharField(
         max_length=20,
         choices=PublishStatus.choices,

@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,7 +19,24 @@ class PublicEventListView(ListAPIView):
     pagination_class = EventPagination
 
     def get_queryset(self):
-        return Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED).order_by("id")
+        queryset = Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED)
+        query = self.request.query_params.get("q")
+        if query:
+            queryset = queryset.filter(title__icontains=query)
+        region = self.request.query_params.get("region")
+        if region:
+            queryset = queryset.filter(region=region)
+        category = self.request.query_params.get("category")
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset.order_by("id")
+
+
+class PublicEventDetailView(RetrieveAPIView):
+    serializer_class = EventSerializer
+
+    def get_queryset(self):
+        return Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED)
 
 
 class UserEventStatusUpsertView(APIView):

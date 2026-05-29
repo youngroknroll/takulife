@@ -6,7 +6,19 @@ from .models import Event, UserEventStatus, VisitRecord, VisitRecordPhoto
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
-        fields = ["id", "title", "publish_status"]
+        fields = [
+            "id",
+            "title",
+            "category",
+            "work_title",
+            "location_name",
+            "region",
+            "start_date",
+            "end_date",
+            "official_url",
+            "source_name",
+            "summary",
+        ]
 
 
 class UserEventStatusSerializer(serializers.ModelSerializer):
