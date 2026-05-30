@@ -1,6 +1,63 @@
 # OshiLog Project Status
 
-Last updated: 2026-05-29
+Last updated: 2026-05-30
+
+## 2026-05-30 Takulife Main Page Creation
+
+Completed:
+
+- Added root web route `/` for a public main page.
+- Added `core.views.home` and connected it from `config.urls`.
+- Added `templates/core/home.html` with project name `takulife`.
+- Reworked the main page UI using existing design references:
+  - home/list-oriented layout
+  - filter controls for keyword/region/category/period
+  - event card-style listing preview
+  - admin review workflow summary
+- Reflected MVP purpose and admin-curated publication principles on the page.
+- Kept existing API routes and backend behavior unchanged.
+
+Verification evidence:
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run pytest -q
+```
+
+Result:
+
+```text
+44 passed in 5.44s
+```
+
+```bash
+uv run python manage.py shell -c "from django.test import Client; r=Client().get('/', HTTP_HOST='localhost'); print(r.status_code); print('takulife' in r.content.decode())"
+```
+
+Result:
+
+```text
+200
+True
+```
+
+Not run:
+
+- Frontend 신규 테스트 코드는 사용자 요청에 따라 작성하지 않음.
+
+Active documents added:
+
+- `docs/plans/2026-05-30-takulife-mainpage-implementation-plan.md`
+- `docs/refactoring/2026-05-30-takulife-mainpage-work-log.md`
 
 ## 2026-05-28 Agent Definition Update
 
