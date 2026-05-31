@@ -34,6 +34,16 @@ def event_detail(request, event_id):
     )
 
 
+def archive(request):
+    return render(
+        request,
+        "core/archive.html",
+        {
+            "project_name": "takulife",
+        },
+    )
+
+
 @api_view(["GET"])
 def api_root(request):
     return Response({"name": "OshiLog API"})

@@ -2,6 +2,55 @@
 
 Last updated: 2026-06-01
 
+## 2026-06-01 Takulife Archive Static UI
+
+Completed:
+
+- Added design and implementation plan documents for static archive page.
+- Added new public web route `/archive/` with `core.views.archive`.
+- Added `templates/core/archive.html` static UI:
+  - 기록 요약 카드(누적 방문/이번 달/예정/놓침)
+  - 월별 타임라인 기록 카드 섹션
+  - 우측 패널(빠른 이동/체크리스트/기록 추가 CTA)
+  - desktop two-column and mobile stacked layout
+- Kept backend/domain/API behavior unchanged.
+
+Verification evidence:
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run python manage.py shell -c "from django.test import Client; c=Client(); r=c.get('/archive/', HTTP_HOST='localhost'); s=r.content.decode(); print(r.status_code); print('내 기록장' in s); print('월별 타임라인' in s); print('기록 추가' in s)"
+```
+
+Result:
+
+```text
+200
+True
+True
+True
+```
+
+Not run:
+
+- Frontend test code addition/execution (user-approved exception).
+- Full regression suite (`uv run pytest -q`) for this task.
+
+Active documents added:
+
+- `docs/plans/2026-06-01-takulife-archive-static-ui-design.md`
+- `docs/plans/2026-06-01-takulife-archive-static-ui-implementation-plan.md`
+- `docs/refactoring/2026-06-01-takulife-archive-static-ui-work-log.md`
+
 ## 2026-06-01 Event List `closing_soon` Status API
 
 Completed:
