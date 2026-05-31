@@ -6,6 +6,7 @@ from core import views as core_views
 
 urlpatterns = [
     path("", core_views.home, name="home"),
+    path("events/", core_views.event_list, name="event-list-page"),
     path("admin/", admin.site.urls),
     path("api/", include("core.urls")),
     path("api/events/", include("events.urls")),

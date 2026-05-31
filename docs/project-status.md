@@ -2,6 +2,118 @@
 
 Last updated: 2026-05-31
 
+## 2026-05-31 Event List Query Alias/Ordering API
+
+Completed:
+
+- Extended public event list API `GET /api/events/` query compatibility:
+  - `event_type` alias (maps to `category`)
+  - `work_title` filter
+  - `starts_after` alias (maps to `start_date_from`)
+  - `starts_before` alias (maps to `start_date_to`)
+- Added default list ordering policy:
+  1. ongoing first (ending sooner first)
+  2. upcoming next (starting sooner first)
+  3. ended last (recently ended first)
+- Preserved existing path/permission boundaries and existing filters.
+
+Verification evidence:
+
+```bash
+uv run pytest -q tests/test_events_api.py
+```
+
+Result:
+
+```text
+15 passed in 0.17s
+```
+
+```bash
+uv run pytest -q
+```
+
+Result:
+
+```text
+61 passed in 6.39s
+```
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run python manage.py makemigrations --check --dry-run
+```
+
+Result:
+
+```text
+No changes detected
+```
+
+Active documents added:
+
+- `docs/plans/2026-05-31-event-list-query-alias-ordering-design.md`
+- `docs/plans/2026-05-31-event-list-query-alias-ordering-implementation-plan.md`
+- `docs/refactoring/2026-05-31-event-list-query-alias-ordering-work-log.md`
+
+## 2026-05-31 Takulife Event List Static UI
+
+Completed:
+
+- Added design and implementation plan documents for static event-list page.
+- Added new public web route `/events/` with `core.views.event_list`.
+- Added `templates/core/event_list.html` static UI:
+  - top search/action row
+  - quick filter chips
+  - left filter panel (region/period/category)
+  - right list cards with D-day, location, period, and status actions
+- Kept backend/domain/API behavior unchanged.
+
+Verification evidence:
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run python manage.py shell -c "from django.test import Client; c=Client(); r=c.get('/events/', HTTP_HOST='localhost'); s=r.content.decode(); print(r.status_code); print('행사 목록' in s); print('검색 결과 42개' in s); print('필터 적용' in s)"
+```
+
+Result:
+
+```text
+200
+True
+True
+True
+```
+
+Not run:
+
+- Frontend test code addition/execution (user-approved exception).
+- Full regression suite (`uv run pytest -q`) for this task.
+
+Active documents added:
+
+- `docs/plans/2026-05-31-takulife-event-list-static-ui-design.md`
+- `docs/plans/2026-05-31-takulife-event-list-static-ui-implementation-plan.md`
+- `docs/refactoring/2026-05-31-takulife-event-list-static-ui-work-log.md`
+
 ## 2026-05-31 Event List Date/Status Filter API
 
 Completed:
