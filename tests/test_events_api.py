@@ -212,6 +212,49 @@ def test_public_event_list_filters_by_status_upcoming_ongoing_ended(client):
 
 
 @pytest.mark.django_db
+def test_public_event_list_filters_by_status_closing_soon(client):
+    today = timezone.localdate()
+    closing_today = Event.objects.create(
+        title="Closing today",
+        start_date=today - timedelta(days=2),
+        end_date=today,
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    closing_in_five_day_window = Event.objects.create(
+        title="Closing in 4 days",
+        start_date=today - timedelta(days=1),
+        end_date=today + timedelta(days=4),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    Event.objects.create(
+        title="Closing in 5 days",
+        start_date=today - timedelta(days=1),
+        end_date=today + timedelta(days=5),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    Event.objects.create(
+        title="Upcoming only",
+        start_date=today + timedelta(days=1),
+        end_date=today + timedelta(days=2),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    Event.objects.create(
+        title="Already ended",
+        start_date=today - timedelta(days=10),
+        end_date=today - timedelta(days=1),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    response = client.get("/api/events/", {"status": "closing_soon"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [
+        closing_today.id,
+        closing_in_five_day_window.id,
+    ]
+
+
+@pytest.mark.django_db
 def test_public_event_list_ignores_unknown_status_filter(client):
     first = Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
     second = Event.objects.create(title="Second", publish_status=Event.PublishStatus.PUBLISHED)

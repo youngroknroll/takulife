@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.db.models import Case, DateField, F, IntegerField, Value, When
 from django.shortcuts import get_object_or_404
@@ -71,6 +71,12 @@ class PublicEventListView(ListAPIView):
             return queryset.filter(start_date__gt=today)
         if status_param == "ongoing":
             return queryset.filter(start_date__lte=today).filter(end_date__gte=today)
+        if status_param == "closing_soon":
+            return queryset.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+                end_date__lte=today + timedelta(days=4),
+            )
         if status_param == "ended":
             return queryset.filter(end_date__lt=today)
         return queryset

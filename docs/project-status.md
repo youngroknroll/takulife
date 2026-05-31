@@ -1,6 +1,115 @@
 # OshiLog Project Status
 
-Last updated: 2026-05-31
+Last updated: 2026-06-01
+
+## 2026-06-01 Event List `closing_soon` Status API
+
+Completed:
+
+- Extended public event list API `GET /api/events/` with a new status filter:
+  - `status=closing_soon`
+- Added behavior rule:
+  - ongoing events only (`start_date <= today <= end_date`)
+  - and ending within 5 days including today (`end_date <= today + 4 days`)
+- Preserved existing status behaviors:
+  - `upcoming`, `ongoing`, `ended`
+  - unknown status values are still ignored.
+
+Verification evidence:
+
+```bash
+uv run pytest -q tests/test_events_api.py
+```
+
+Result:
+
+```text
+16 passed in 0.20s
+```
+
+```bash
+uv run pytest -q
+```
+
+Result:
+
+```text
+62 passed in 6.41s
+```
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run python manage.py makemigrations --check --dry-run
+```
+
+Result:
+
+```text
+No changes detected
+```
+
+Active documents added:
+
+- `docs/plans/2026-06-01-event-list-closing-soon-status-design.md`
+- `docs/plans/2026-06-01-event-list-closing-soon-status-implementation-plan.md`
+- `docs/refactoring/2026-06-01-event-list-closing-soon-status-work-log.md`
+
+## 2026-05-31 Takulife Event Detail Static UI
+
+Completed:
+
+- Added design and implementation plan documents for static event-detail page.
+- Added new public web route `/events/<int:event_id>/` with `core.views.event_detail`.
+- Added `templates/core/event_detail.html` static UI:
+  - two-column detail layout (desktop) and stacked mobile layout
+  - 행사 기본 정보, 설명, 지도 영역, 유의사항
+  - 우측 요약 패널(상태/액션 링크/주최·문의/비슷한 행사)
+- Kept backend/domain/API behavior unchanged.
+
+Verification evidence:
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run python manage.py shell -c "from django.test import Client; c=Client(); r=c.get('/events/1/', HTTP_HOST='localhost'); s=r.content.decode(); print(r.status_code); print('행사 상세' in s); print('지도' in s); print('비슷한 행사' in s)"
+```
+
+Result:
+
+```text
+200
+True
+True
+True
+```
+
+Not run:
+
+- Frontend test code addition/execution (user-approved exception).
+- Full regression suite (`uv run pytest -q`) for this task.
+
+Active documents added:
+
+- `docs/plans/2026-05-31-takulife-event-detail-static-ui-design.md`
+- `docs/plans/2026-05-31-takulife-event-detail-static-ui-implementation-plan.md`
+- `docs/refactoring/2026-05-31-takulife-event-detail-static-ui-work-log.md`
 
 ## 2026-05-31 Event List Query Alias/Ordering API
 

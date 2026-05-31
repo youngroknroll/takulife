@@ -23,6 +23,17 @@ def event_list(request):
     )
 
 
+def event_detail(request, event_id):
+    return render(
+        request,
+        "core/event_detail.html",
+        {
+            "project_name": "takulife",
+            "event_id": event_id,
+        },
+    )
+
+
 @api_view(["GET"])
 def api_root(request):
     return Response({"name": "OshiLog API"})
