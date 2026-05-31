@@ -5,10 +5,50 @@ from events.models import Event
 
 
 @pytest.mark.django_db
-def test_admin_can_create_event_draft_from_url(admin_client):
+def test_admin_can_create_event_draft_from_url(admin_client, monkeypatch):
+    def fake_fetch(url):
+        return "<html><title>Sample Event</title><meta name='description' content='Short summary'></html>"
+
+    def fake_extract(html):
+        return {
+            "raw_title": "Sample Event",
+            "raw_text": "Short summary",
+            "extracted_title": "Sample Event",
+            "extracted_summary": "Short summary",
+            "extracted_category": "popup_store",
+            "extracted_region": "seoul",
+        }
+
+    monkeypatch.setattr("drafts.services.fetch_html", fake_fetch)
+    monkeypatch.setattr("drafts.services.extract_event_fields", fake_extract)
     response = admin_client.post("/api/admin/event-drafts/", {"source_url": "https://example.com/event"})
 
     assert response.status_code == 201
+    created = EventDraft.objects.get(source_url="https://example.com/event")
+    assert created.extracted_title == "Sample Event"
+    assert created.extracted_category == "popup_store"
+    assert created.review_status == EventDraft.ReviewStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_admin_create_event_draft_rejects_unsafe_url(admin_client):
+    response = admin_client.post("/api/admin/event-drafts/", {"source_url": "http://127.0.0.1/event"})
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Unsafe URL is not allowed."}
+    assert not EventDraft.objects.filter(source_url="http://127.0.0.1/event").exists()
+
+
+@pytest.mark.django_db
+def test_admin_create_event_draft_maps_fetch_error_to_503(admin_client, monkeypatch):
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: (_ for _ in ()).throw(RuntimeError("timeout")))
+    admin_client.raise_request_exception = False
+
+    response = admin_client.post("/api/admin/event-drafts/", {"source_url": "https://example.com/event"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Failed to fetch source URL."}
+    assert not EventDraft.objects.filter(source_url="https://example.com/event").exists()
 
 
 @pytest.mark.django_db
@@ -219,6 +259,21 @@ def test_approve_rejects_duplicate_official_url(admin_client):
     draft.refresh_from_db()
     assert draft.review_status == EventDraft.ReviewStatus.PENDING
     assert Event.objects.filter(official_url="https://example.com/event").count() == 1
+
+
+@pytest.mark.django_db
+def test_approve_rejects_missing_official_url(admin_client):
+    draft = EventDraft.objects.create(
+        source_url="",
+        extracted_title="No URL event",
+    )
+
+    response = admin_client.post(f"/api/admin/event-drafts/{draft.id}/approve/")
+
+    assert response.status_code == 400
+    assert response.json() == {"official_url": ["Official URL is required for publication."]}
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
 
 
 @pytest.mark.django_db

@@ -2,6 +2,68 @@
 
 Last updated: 2026-05-31
 
+## 2026-05-31 Event List Date/Status Filter API
+
+Completed:
+
+- Extended public event list API `GET /api/events/` with date filters:
+  - `start_date_from`
+  - `start_date_to`
+- Added public status filter for event progress:
+  - `status=upcoming`
+  - `status=ongoing`
+  - `status=ended`
+- Kept existing `q`, `region`, and `category` filters unchanged.
+- Added regression tests for date filters, status filters, and unknown status
+  behavior.
+
+Verification evidence:
+
+```bash
+uv run pytest -q tests/test_events_api.py
+```
+
+Result:
+
+```text
+13 passed in 0.16s
+```
+
+```bash
+uv run pytest -q
+```
+
+Result:
+
+```text
+59 passed in 6.16s
+```
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run python manage.py makemigrations --check --dry-run
+```
+
+Result:
+
+```text
+No changes detected
+```
+
+Active documents added:
+
+- `docs/plans/2026-05-31-event-list-date-status-filter-implementation-plan.md`
+- `docs/refactoring/2026-05-31-event-list-date-status-filter-work-log.md`
+
 ## 2026-05-31 Takulife Mainpage Reference Alignment
 
 Completed:

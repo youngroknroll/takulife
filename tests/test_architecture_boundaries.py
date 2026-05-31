@@ -52,3 +52,9 @@ def test_core_errors_do_not_import_domain_modules(module_path):
         for module in imported_modules
         if module in {"drafts", "events"} or module.startswith(("drafts.", "events."))
     }
+
+
+def test_root_urlconf_does_not_mount_deferred_member_routes():
+    content = (PROJECT_ROOT / "config" / "urls.py").read_text()
+
+    assert 'include("events.status_urls")' not in content

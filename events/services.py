@@ -11,6 +11,10 @@ class DuplicateOfficialUrlError(Exception):
     pass
 
 
+class MissingOfficialUrlError(Exception):
+    pass
+
+
 class PublishEventError(Exception):
     pass
 
@@ -28,7 +32,11 @@ def create_published_event(
     source_name="",
     summary="",
 ):
-    if Event.objects.filter(official_url=official_url).exists():
+    normalized_official_url = (official_url or "").strip()
+    if not normalized_official_url:
+        raise MissingOfficialUrlError
+
+    if Event.objects.filter(official_url=normalized_official_url).exists():
         raise DuplicateOfficialUrlError
 
     try:
@@ -41,7 +49,7 @@ def create_published_event(
                 region=region,
                 start_date=start_date,
                 end_date=end_date,
-                official_url=official_url,
+                official_url=normalized_official_url,
                 source_name=source_name,
                 summary=summary,
                 publish_status=Event.PublishStatus.PUBLISHED,

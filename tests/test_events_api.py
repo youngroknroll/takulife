@@ -1,4 +1,6 @@
 import pytest
+from datetime import timedelta
+from django.utils import timezone
 
 from events.models import Event
 
@@ -135,3 +137,86 @@ def test_public_event_response_uses_category_and_hides_publish_status(client):
     body = response.json()
     assert body["category"] == "popup_store"
     assert "publish_status" not in body
+
+
+@pytest.mark.django_db
+def test_public_event_list_filters_by_start_date_from(client):
+    matching = Event.objects.create(
+        title="June event",
+        start_date="2026-06-01",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    Event.objects.create(
+        title="May event",
+        start_date="2026-05-31",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    response = client.get("/api/events/", {"start_date_from": "2026-06-01"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [matching.id]
+
+
+@pytest.mark.django_db
+def test_public_event_list_filters_by_start_date_to(client):
+    matching = Event.objects.create(
+        title="May event",
+        start_date="2026-05-31",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    Event.objects.create(
+        title="June event",
+        start_date="2026-06-01",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    response = client.get("/api/events/", {"start_date_to": "2026-05-31"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [matching.id]
+
+
+@pytest.mark.django_db
+def test_public_event_list_filters_by_status_upcoming_ongoing_ended(client):
+    today = timezone.localdate()
+    upcoming = Event.objects.create(
+        title="Upcoming event",
+        start_date=today + timedelta(days=1),
+        end_date=today + timedelta(days=2),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    ongoing = Event.objects.create(
+        title="Ongoing event",
+        start_date=today - timedelta(days=1),
+        end_date=today + timedelta(days=1),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    ended = Event.objects.create(
+        title="Ended event",
+        start_date=today - timedelta(days=10),
+        end_date=today - timedelta(days=1),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    upcoming_response = client.get("/api/events/", {"status": "upcoming"})
+    ongoing_response = client.get("/api/events/", {"status": "ongoing"})
+    ended_response = client.get("/api/events/", {"status": "ended"})
+
+    assert upcoming_response.status_code == 200
+    assert [item["id"] for item in upcoming_response.json()["results"]] == [upcoming.id]
+    assert ongoing_response.status_code == 200
+    assert [item["id"] for item in ongoing_response.json()["results"]] == [ongoing.id]
+    assert ended_response.status_code == 200
+    assert [item["id"] for item in ended_response.json()["results"]] == [ended.id]
+
+
+@pytest.mark.django_db
+def test_public_event_list_ignores_unknown_status_filter(client):
+    first = Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+    second = Event.objects.create(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
+
+    response = client.get("/api/events/", {"status": "invalid"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [first.id, second.id]

@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
@@ -29,7 +31,37 @@ class PublicEventListView(ListAPIView):
         category = self.request.query_params.get("category")
         if category:
             queryset = queryset.filter(category=category)
+        start_date_from = self.request.query_params.get("start_date_from")
+        if start_date_from:
+            parsed_from = self._parse_date(start_date_from)
+            if parsed_from:
+                queryset = queryset.filter(start_date__gte=parsed_from)
+        start_date_to = self.request.query_params.get("start_date_to")
+        if start_date_to:
+            parsed_to = self._parse_date(start_date_to)
+            if parsed_to:
+                queryset = queryset.filter(start_date__lte=parsed_to)
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            queryset = self._filter_by_status(queryset, status_param)
         return queryset.order_by("id")
+
+    @staticmethod
+    def _parse_date(value):
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
+
+    def _filter_by_status(self, queryset, status_param):
+        today = date.today()
+        if status_param == "upcoming":
+            return queryset.filter(start_date__gt=today)
+        if status_param == "ongoing":
+            return queryset.filter(start_date__lte=today).filter(end_date__gte=today)
+        if status_param == "ended":
+            return queryset.filter(end_date__lt=today)
+        return queryset
 
 
 class PublicEventDetailView(RetrieveAPIView):

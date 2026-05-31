@@ -4,7 +4,7 @@ from events.models import Event
 
 
 @pytest.mark.django_db
-def test_logged_in_user_can_upsert_event_status(client, django_user_model):
+def test_event_status_route_is_not_exposed_in_mvp_scope(client, django_user_model):
     user = django_user_model.objects.create_user(username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -15,4 +15,4 @@ def test_logged_in_user_can_upsert_event_status(client, django_user_model):
         content_type="application/json",
     )
 
-    assert response.status_code in (200, 201)
+    assert response.status_code == 404
