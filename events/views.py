@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.db.models import Case, DateField, F, IntegerField, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
@@ -29,14 +30,19 @@ class PublicEventListView(ListAPIView):
         if region:
             queryset = queryset.filter(region=region)
         category = self.request.query_params.get("category")
+        if not category:
+            category = self.request.query_params.get("event_type")
         if category:
             queryset = queryset.filter(category=category)
-        start_date_from = self.request.query_params.get("start_date_from")
+        work_title = self.request.query_params.get("work_title")
+        if work_title:
+            queryset = queryset.filter(work_title__icontains=work_title)
+        start_date_from = self._get_query_value("start_date_from", "starts_after")
         if start_date_from:
             parsed_from = self._parse_date(start_date_from)
             if parsed_from:
                 queryset = queryset.filter(start_date__gte=parsed_from)
-        start_date_to = self.request.query_params.get("start_date_to")
+        start_date_to = self._get_query_value("start_date_to", "starts_before")
         if start_date_to:
             parsed_to = self._parse_date(start_date_to)
             if parsed_to:
@@ -44,7 +50,13 @@ class PublicEventListView(ListAPIView):
         status_param = self.request.query_params.get("status")
         if status_param:
             queryset = self._filter_by_status(queryset, status_param)
-        return queryset.order_by("id")
+        return self._order_default(queryset)
+
+    def _get_query_value(self, primary_name, alias_name):
+        value = self.request.query_params.get(primary_name)
+        if value:
+            return value
+        return self.request.query_params.get(alias_name)
 
     @staticmethod
     def _parse_date(value):
@@ -62,6 +74,30 @@ class PublicEventListView(ListAPIView):
         if status_param == "ended":
             return queryset.filter(end_date__lt=today)
         return queryset
+
+    def _order_default(self, queryset):
+        today = date.today()
+        return queryset.annotate(
+            _state_rank=Case(
+                When(start_date__lte=today, end_date__gte=today, then=Value(0)),
+                When(start_date__gt=today, then=Value(1)),
+                When(end_date__lt=today, then=Value(2)),
+                default=Value(3),
+                output_field=IntegerField(),
+            ),
+            _ongoing_sort=Case(
+                When(start_date__lte=today, end_date__gte=today, then=F("end_date")),
+                output_field=DateField(),
+            ),
+            _upcoming_sort=Case(
+                When(start_date__gt=today, then=F("start_date")),
+                output_field=DateField(),
+            ),
+            _ended_sort=Case(
+                When(end_date__lt=today, then=F("end_date")),
+                output_field=DateField(),
+            ),
+        ).order_by("_state_rank", "_ongoing_sort", "_upcoming_sort", F("_ended_sort").desc(), "id")
 
 
 class PublicEventDetailView(RetrieveAPIView):

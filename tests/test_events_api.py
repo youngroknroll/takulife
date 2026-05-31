@@ -220,3 +220,101 @@ def test_public_event_list_ignores_unknown_status_filter(client):
 
     assert response.status_code == 200
     assert [item["id"] for item in response.json()["results"]] == [first.id, second.id]
+
+
+@pytest.mark.django_db
+def test_public_event_list_supports_event_type_work_title_and_starts_alias_filters(client):
+    matching = Event.objects.create(
+        title="June popup",
+        category="popup_store",
+        work_title="Gundam",
+        start_date="2026-06-10",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    Event.objects.create(
+        title="June cafe",
+        category="collaboration_cafe",
+        work_title="Gundam",
+        start_date="2026-06-10",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    Event.objects.create(
+        title="July popup",
+        category="popup_store",
+        work_title="Gundam",
+        start_date="2026-07-01",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    Event.objects.create(
+        title="June popup no-work-match",
+        category="popup_store",
+        work_title="One Piece",
+        start_date="2026-06-10",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    response = client.get(
+        "/api/events/",
+        {
+            "event_type": "popup_store",
+            "work_title": "gundam",
+            "starts_after": "2026-06-01",
+            "starts_before": "2026-06-30",
+        },
+    )
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [matching.id]
+
+
+@pytest.mark.django_db
+def test_public_event_list_default_order_prioritizes_ongoing_then_upcoming_then_ended(client):
+    today = timezone.localdate()
+    ended_old = Event.objects.create(
+        title="Ended long ago",
+        start_date=today - timedelta(days=20),
+        end_date=today - timedelta(days=10),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    upcoming_later = Event.objects.create(
+        title="Upcoming later start",
+        start_date=today + timedelta(days=4),
+        end_date=today + timedelta(days=5),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    ongoing_later = Event.objects.create(
+        title="Ongoing later end",
+        start_date=today - timedelta(days=3),
+        end_date=today + timedelta(days=3),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    ended_recent = Event.objects.create(
+        title="Ended recently",
+        start_date=today - timedelta(days=5),
+        end_date=today - timedelta(days=1),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    upcoming_soon = Event.objects.create(
+        title="Upcoming soon start",
+        start_date=today + timedelta(days=1),
+        end_date=today + timedelta(days=2),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    ongoing_soon = Event.objects.create(
+        title="Ongoing soon end",
+        start_date=today - timedelta(days=2),
+        end_date=today + timedelta(days=1),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    response = client.get("/api/events/")
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [
+        ongoing_soon.id,
+        ongoing_later.id,
+        upcoming_soon.id,
+        upcoming_later.id,
+        ended_recent.id,
+        ended_old.id,
+    ]
