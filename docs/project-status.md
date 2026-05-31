@@ -1,6 +1,124 @@
 # OshiLog Project Status
 
-Last updated: 2026-05-30
+Last updated: 2026-05-31
+
+## 2026-05-31 Takulife Mainpage Reference Alignment
+
+Completed:
+
+- Added reference-alignment design and implementation plan documents for the
+  homepage rework.
+- Reworked `templates/core/home.html` to align with approved design references
+  while preserving the existing scope boundary.
+- Updated homepage information architecture to discovery-first layout:
+  - top search/action row
+  - quick filter chips
+  - sectioned event blocks: 이번 주 갈 만한 행사 / 곧 종료돼요 / 새로 등록
+  - operations principle block for admin draft review publication flow
+- Kept existing backend/API behavior unchanged.
+
+Verification evidence:
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run python manage.py shell -c "from django.test import Client; c=Client(); r=c.get('/', HTTP_HOST='localhost'); s=r.content.decode(); print(r.status_code); print('takulife' in s); print('이번 주 갈 만한 행사' in s); print('곧 종료돼요' in s); print('새로 등록' in s)"
+```
+
+Result:
+
+```text
+200
+True
+True
+True
+True
+```
+
+Not run:
+
+- Frontend test code addition/execution (user-approved exception).
+- Full regression suite (`uv run pytest -q`) for this task.
+
+Active documents added:
+
+- `docs/plans/2026-05-31-takulife-mainpage-reference-alignment-design.md`
+- `docs/plans/2026-05-31-takulife-mainpage-reference-alignment-implementation-plan.md`
+- `docs/refactoring/2026-05-31-takulife-mainpage-reference-alignment-work-log.md`
+
+## 2026-05-31 Business Logic Correction
+
+Completed:
+
+- Added business-logic correction design and implementation plan documents.
+- Enforced official URL requirement in published-event creation logic.
+- Added draft URL ingestion pipeline for admin draft creation:
+  - URL safety validation
+  - bounded HTML fetching
+  - rule-based field extraction
+- Moved draft update pending-state rule into `drafts.services`.
+- Added controlled API error mapping for unsafe URL, fetch failure, oversized
+  response, unsupported content, and empty extraction.
+- Unmounted deferred member/archive routes from root URL config by removing
+  `api/me/` inclusion.
+- Expanded tests for events service invariants, draft services, draft API
+  creation behavior, deferred route behavior, and architecture boundaries.
+
+Verification evidence:
+
+```bash
+uv run pytest -q tests/test_events_services.py tests/test_drafts_services.py tests/test_drafts_api.py tests/test_user_event_status_api.py tests/test_visit_records_api.py tests/test_architecture_boundaries.py
+```
+
+Result:
+
+```text
+40 passed in 6.37s
+```
+
+```bash
+uv run pytest -q
+```
+
+Result:
+
+```text
+55 passed in 6.47s
+```
+
+```bash
+uv run python manage.py check
+```
+
+Result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+```bash
+uv run python manage.py makemigrations --check --dry-run
+```
+
+Result:
+
+```text
+No changes detected
+```
+
+Active documents added:
+
+- `docs/plans/2026-05-31-business-logic-correction-design.md`
+- `docs/plans/2026-05-31-business-logic-correction-implementation-plan.md`
+- `docs/refactoring/2026-05-31-business-logic-correction-work-log.md`
 
 ## 2026-05-30 Takulife Main Page Creation
 

@@ -6,150 +6,366 @@
   <title>{{ project_name }}</title>
   <style>
     :root {
-      --bg: #f3f4f6;
+      --bg: #f4f7fb;
       --surface: #ffffff;
-      --line: #e5e7eb;
-      --text: #111827;
-      --muted: #4b5563;
-      --brand: #2563eb;
+      --line: #d8e2ef;
+      --text: #142034;
+      --muted: #617286;
+      --brand: #1d4ed8;
+      --brand-soft: #e7efff;
+      --pink-soft: #fce7f3;
+      --pink-ink: #be185d;
+      --mint-soft: #dcfce7;
+      --mint-ink: #166534;
+      --amber-soft: #fff7d6;
+      --amber-ink: #92400e;
+      --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
+    }
+    * {
+      box-sizing: border-box;
     }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      line-height: 1.6;
       color: var(--text);
-      background: var(--bg);
+      background:
+        radial-gradient(160% 90% at 100% -10%, #e7f0ff 0%, transparent 45%),
+        radial-gradient(120% 70% at -10% -20%, #eef5ff 0%, transparent 40%),
+        var(--bg);
     }
     .page {
-      max-width: 1100px;
+      max-width: 1120px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 26px 20px 80px;
     }
     .topbar {
-      display: flex;
-      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
       align-items: center;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
     .brand {
-      font-size: 1.45rem;
+      font-size: 1.35rem;
       font-weight: 700;
-      letter-spacing: 0;
+    }
+    .search {
+      display: flex;
+      gap: 8px;
+      min-width: 0;
+    }
+    .search input {
+      min-width: 0;
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: #fff;
+    }
+    .search button {
+      border: 1px solid #b9ccf8;
+      background: var(--brand-soft);
+      color: var(--brand);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .search input:focus,
+    .search button:focus,
+    .admin-link:focus,
+    .quick-chip:focus,
+    .status:focus {
+      outline: 2px solid #92b4ff;
+      outline-offset: 2px;
     }
     .admin-link {
       color: var(--brand);
       text-decoration: none;
       font-weight: 600;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #c7d7f8;
+      background: #f8fbff;
     }
-    .hero {
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .hero,
+    .principle-card {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 22px;
-      margin-bottom: 14px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 18px;
     }
     .hero h1 {
       margin: 0 0 8px;
-      font-size: 1.8rem;
-      letter-spacing: 0;
+      font-size: 1.55rem;
+      line-height: 1.3;
     }
     .hero p {
-      margin: 0;
+      margin: 0 0 12px;
       color: var(--muted);
     }
-    .filters {
+    .quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .quick-chip {
+      border: 1px solid #c7d7f8;
+      background: #f8fbff;
+      color: #24456f;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.84rem;
+      cursor: pointer;
+    }
+    .quick-chip.active {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+    .principle-card h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+    .principle-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .section {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
       padding: 14px;
       margin-bottom: 14px;
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
-    .field {
+    .section-head {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
     }
-    .field label {
-      font-size: 0.82rem;
+    .section h2 {
+      margin: 0;
+      font-size: 1.06rem;
+    }
+    .section-note {
+      margin: 0;
       color: var(--muted);
-    }
-    .field input,
-    .field select {
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 8px 10px;
-      font-size: 0.95rem;
-      background: #fff;
+      font-size: 0.85rem;
     }
     .cards {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      gap: 10px;
     }
     .card {
-      background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .thumb {
-      aspect-ratio: 16 / 9;
-      background: #dbeafe;
-      border-bottom: 1px solid var(--line);
-    }
-    .card-body {
+      border-radius: 10px;
       padding: 12px;
+      background: #fbfcff;
+    }
+    .card-top {
+      display: grid;
+      grid-template-columns: auto auto;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--brand-soft);
+      color: var(--brand);
+    }
+    .dday {
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--amber-soft);
+      color: var(--amber-ink);
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      line-height: 1.35;
     }
     .meta {
-      margin: 0 0 5px;
+      margin: 0 0 7px;
       color: var(--muted);
-      font-size: 0.82rem;
-    }
-    .title {
-      margin: 0 0 8px;
-      font-size: 1rem;
-      letter-spacing: 0;
+      font-size: 0.85rem;
     }
     .period {
-      margin: 0;
-      color: #374151;
+      margin: 0 0 10px;
+      color: #324a66;
       font-size: 0.9rem;
     }
-    .workflow {
-      background: var(--surface);
+    .status-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .status {
+      border: 1px solid #d9e4f4;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      color: #2f4360;
+      background: #fff;
+      cursor: pointer;
+    }
+    .status.wish {
+      background: var(--pink-soft);
+      border-color: #f8bfd8;
+      color: var(--pink-ink);
+    }
+    .status.plan {
+      background: var(--brand-soft);
+      border-color: #c2d7ff;
+      color: var(--brand);
+    }
+    .status.done {
+      background: var(--mint-soft);
+      border-color: #b4ebc8;
+      color: var(--mint-ink);
+    }
+    .status.miss {
+      background: #f4f5f7;
+      border-color: #d9dde4;
+      color: #5d6673;
+    }
+    .deadline-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+    .deadline-item {
       border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      background: #fcfdff;
+    }
+    .deadline-tag {
       border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      background: var(--amber-soft);
+      color: var(--amber-ink);
+    }
+    .deadline-title {
+      margin: 0;
+      font-size: 0.93rem;
+    }
+    .deadline-meta {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.79rem;
+    }
+    .recent-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .recent-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fcfdff;
+    }
+    .recent-label {
+      margin: 0 0 5px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .recent-card h3 {
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+    }
+    .ops {
+      background: #f9fbff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
       padding: 14px;
-      margin-top: 14px;
     }
-    .workflow h2 {
-      margin: 0 0 8px;
+    .ops h2 {
+      margin: 0 0 10px;
       font-size: 1rem;
-      letter-spacing: 0;
     }
-    .workflow ul {
+    .ops ol {
       margin: 0;
       padding-left: 18px;
       color: var(--muted);
     }
     @media (max-width: 900px) {
-      .filters {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .topbar {
+        grid-template-columns: 1fr;
       }
-      .cards {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+      .cards,
+      .recent-grid {
         grid-template-columns: 1fr 1fr;
       }
     }
-    @media (max-width: 640px) {
+    @media (max-width: 700px) {
       .page {
-        padding: 16px;
+        padding: 16px 12px 48px;
       }
-      .filters,
-      .cards {
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .cards,
+      .recent-grid,
+      .deadline-item {
         grid-template-columns: 1fr;
+      }
+      .deadline-item {
+        gap: 6px;
       }
     }
   </style>
@@ -158,82 +374,138 @@
   <main class="page">
     <header class="topbar">
       <div class="brand">{{ project_name }}</div>
+      <form class="search" action="#" method="get">
+        <label class="sr-only" for="q">행사 검색</label>
+        <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
+        <button type="button">검색</button>
+      </form>
       <a class="admin-link" href="/admin/">관리자</a>
     </header>
 
-    <section class="hero">
-      <h1>공식 오프라인 이벤트를 빠르게 찾는 홈</h1>
-      <p>목록 탐색, 필터 검색, 검수 기반 게시 흐름으로 이벤트 정보를 안정적으로 제공합니다.</p>
+    <section class="hero-grid" aria-label="메인 요약과 필터">
+      <article class="hero">
+        <h1>지금 갈 수 있는 공식 오프라인 이벤트를 빠르게 찾기</h1>
+        <p>검색과 필터를 먼저 배치해 이번 주 행사, 종료 임박 행사, 신규 등록 행사를 바로 스캔할 수 있게 구성했습니다.</p>
+        <div class="quick-filters" aria-label="빠른 필터">
+          <button class="quick-chip active" type="button">서울/수도권</button>
+          <button class="quick-chip" type="button">이번 주</button>
+          <button class="quick-chip" type="button">곧 종료</button>
+          <button class="quick-chip" type="button">팝업스토어</button>
+          <button class="quick-chip" type="button">콜라보 카페</button>
+          <button class="quick-chip" type="button">굿즈 예약</button>
+        </div>
+      </article>
+      <aside class="principle-card" aria-label="운영 원칙 요약">
+        <h2>운영 원칙 요약</h2>
+        <ul>
+          <li>공식 URL 기준으로만 초안을 생성합니다.</li>
+          <li>검수 전 초안은 공개하지 않습니다.</li>
+          <li>승인된 이벤트만 목록/상세에 게시됩니다.</li>
+        </ul>
+      </aside>
     </section>
 
-    <section class="filters" aria-label="이벤트 필터">
-      <div class="field">
-        <label for="q">키워드</label>
-        <input id="q" type="text" placeholder="작품명, 장소명">
+    <section class="section" aria-label="이번 주 행사">
+      <div class="section-head">
+        <h2>이번 주 갈 만한 행사</h2>
+        <p class="section-note">검색 결과 42개 중, 기간이 임박한 순으로 노출</p>
       </div>
-      <div class="field">
-        <label for="region">지역</label>
-        <select id="region">
-          <option>전체</option>
-          <option>서울</option>
-          <option>경기</option>
-          <option>인천</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="category">카테고리</label>
-        <select id="category">
-          <option>전체</option>
-          <option>팝업스토어</option>
-          <option>콜라보 카페</option>
-          <option>극장 특전</option>
-          <option>굿즈 예약</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="period">기간</label>
-        <select id="period">
-          <option>진행/예정</option>
-          <option>이번 주</option>
-          <option>이번 달</option>
-        </select>
-      </div>
-    </section>
-
-    <section class="cards" aria-label="이벤트 카드 목록">
-      <article class="card">
-        <div class="thumb" aria-hidden="true"></div>
-        <div class="card-body">
-          <p class="meta">팝업스토어 · 서울 홍대</p>
-          <h2 class="title">프로젝트 A 공식 팝업스토어</h2>
+      <div class="cards">
+        <article class="card">
+          <div class="card-top">
+            <span class="badge">팝업스토어</span>
+            <span class="dday">D-3</span>
+          </div>
+          <h3>프로젝트 A 공식 팝업스토어</h3>
+          <p class="meta">서울 홍대 · AK플라자</p>
           <p class="period">2026.06.01 - 2026.06.14</p>
-        </div>
-      </article>
-      <article class="card">
-        <div class="thumb" aria-hidden="true"></div>
-        <div class="card-body">
-          <p class="meta">콜라보 카페 · 서울 강남</p>
-          <h2 class="title">작품 B 콜라보 카페 시즌 2</h2>
+          <div class="status-row">
+            <button class="status wish" type="button">관심 있음</button>
+            <button class="status plan" type="button">방문 예정</button>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-top">
+            <span class="badge">콜라보 카페</span>
+            <span class="dday">D-4</span>
+          </div>
+          <h3>작품 B 콜라보 카페 시즌 2</h3>
+          <p class="meta">서울 강남 · 스페이스 카페</p>
           <p class="period">2026.06.05 - 2026.06.30</p>
-        </div>
-      </article>
-      <article class="card">
-        <div class="thumb" aria-hidden="true"></div>
-        <div class="card-body">
-          <p class="meta">극장 특전 · 경기 수원</p>
-          <h2 class="title">극장판 C 개봉 1주차 특전</h2>
+          <div class="status-row">
+            <button class="status wish" type="button">관심 있음</button>
+            <button class="status plan" type="button">방문 예정</button>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-top">
+            <span class="badge">극장 특전</span>
+            <span class="dday">D-1</span>
+          </div>
+          <h3>극장판 C 개봉 1주차 특전</h3>
+          <p class="meta">경기 수원 · 시네마몰</p>
           <p class="period">2026.06.07 - 2026.06.13</p>
-        </div>
-      </article>
+          <div class="status-row">
+            <button class="status done" type="button">다녀옴</button>
+            <button class="status miss" type="button">놓침</button>
+          </div>
+        </article>
+      </div>
     </section>
 
-    <section class="workflow">
-      <h2>운영 원칙</h2>
-      <ul>
-        <li>공식 URL 기반으로만 초안을 생성합니다.</li>
-        <li>초안(EventDraft)은 관리자 승인 전에는 공개되지 않습니다.</li>
-        <li>승인된 항목만 Event로 게시되어 목록/상세에 노출됩니다.</li>
+    <section class="section" aria-label="곧 종료되는 행사">
+      <div class="section-head">
+        <h2>곧 종료돼요</h2>
+        <p class="section-note">오늘 기준 종료 임박 이벤트</p>
+      </div>
+      <ul class="deadline-list">
+        <li class="deadline-item">
+          <span class="deadline-tag">D-1</span>
+          <div>
+            <p class="deadline-title">굿즈 예약 D 사전 판매</p>
+            <p class="deadline-meta">서울 용산 · 2026.06.10 마감</p>
+          </div>
+          <button class="status plan" type="button">방문 예정</button>
+        </li>
+        <li class="deadline-item">
+          <span class="deadline-tag">D-2</span>
+          <div>
+            <p class="deadline-title">작품 E 극장 특전 2주차</p>
+            <p class="deadline-meta">인천 부평 · 2026.06.11 마감</p>
+          </div>
+          <button class="status wish" type="button">관심 있음</button>
+        </li>
       </ul>
+    </section>
+
+    <section class="section" aria-label="새로 등록된 행사">
+      <div class="section-head">
+        <h2>새로 등록</h2>
+        <p class="section-note">관리자 검수 후 게시된 최신 항목</p>
+      </div>
+      <div class="recent-grid">
+        <article class="recent-card">
+          <p class="recent-label">NEW</p>
+          <h3>프로젝트 F 공식 굿즈 예약</h3>
+          <p class="meta">서울 잠실 · 굿즈 예약</p>
+          <p class="period">2026.06.12 - 2026.06.25</p>
+        </article>
+        <article class="recent-card">
+          <p class="recent-label">NEW</p>
+          <h3>작품 G 콜라보 카페 1차</h3>
+          <p class="meta">경기 성남 · 콜라보 카페</p>
+          <p class="period">2026.06.14 - 2026.06.29</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="ops" aria-label="운영 원칙 상세">
+      <h2>검수 기반 게시 흐름</h2>
+      <ol>
+        <li>관리자는 공식 URL을 입력해 EventDraft 초안을 생성합니다.</li>
+        <li>추출된 제목, 날짜, 장소 후보를 원문 근거와 함께 검수합니다.</li>
+        <li>승인된 초안만 Event로 게시되어 목록과 상세에 노출됩니다.</li>
+      </ol>
     </section>
   </main>
 </body>
