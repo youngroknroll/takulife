@@ -2,6 +2,7 @@ import ast
 from pathlib import Path
 
 import pytest
+from django.urls import Resolver404, resolve
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -54,7 +55,21 @@ def test_core_errors_do_not_import_domain_modules(module_path):
     }
 
 
-def test_root_urlconf_does_not_mount_deferred_member_routes():
-    content = (PROJECT_ROOT / "config" / "urls.py").read_text()
-
-    assert 'include("events.status_urls")' not in content
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/me/event-statuses/1/",
+        "/api/me/visit-records/",
+        "/api/me/visit-records/1/photos/",
+        "/api/me/visit-records/1/photos/1/",
+        "/api/user-event-statuses/",
+        "/api/user-event-statuses/1/",
+        "/api/visit-records/",
+        "/api/visit-records/1/",
+        "/api/visit-record-photos/",
+        "/api/visit-record-photos/1/",
+    ],
+)
+def test_active_urlconf_does_not_resolve_deferred_archive_routes(path):
+    with pytest.raises(Resolver404):
+        resolve(path)

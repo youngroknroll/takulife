@@ -33,7 +33,7 @@ class EventDraftSerializer(serializers.ModelSerializer):
 
 
 class EventDraftUpdateSerializer(EventDraftSerializer):
-    immutable_fields = ("source_url", "raw_title", "raw_text")
+    immutable_fields = ("source_url", "raw_title", "raw_text", "review_status")
 
     class Meta(EventDraftSerializer.Meta):
         read_only_fields = [

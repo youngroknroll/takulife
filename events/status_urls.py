@@ -1,3 +1,5 @@
+"""Deferred legacy archive URL wiring kept unmounted from the active API."""
+
 from django.urls import path
 
 from .views import UserEventStatusUpsertView, VisitRecordListCreateView, VisitRecordPhotoDeleteView, VisitRecordPhotoListCreateView

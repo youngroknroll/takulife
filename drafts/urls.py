@@ -9,16 +9,16 @@ from .views import (
 
 
 urlpatterns = [
-    path("event-drafts/", AdminEventDraftListCreateView.as_view(), name="admin-event-drafts"),
-    path("event-drafts/<int:pk>/", AdminEventDraftDetailView.as_view(), name="admin-event-draft-detail"),
+    path("", AdminEventDraftListCreateView.as_view(), name="event-drafts"),
+    path("<int:pk>/", AdminEventDraftDetailView.as_view(), name="event-draft-detail"),
     path(
-        "event-drafts/<int:pk>/approve/",
+        "<int:pk>/approve/",
         AdminEventDraftApproveView.as_view(),
-        name="admin-event-draft-approve",
+        name="event-draft-approve",
     ),
     path(
-        "event-drafts/<int:pk>/reject/",
+        "<int:pk>/reject/",
         AdminEventDraftRejectView.as_view(),
-        name="admin-event-draft-reject",
+        name="event-draft-reject",
     ),
 ]

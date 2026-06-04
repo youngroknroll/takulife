@@ -10,7 +10,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Event, UserEventStatus, VisitRecord, VisitRecordPhoto
-from .serializers import EventSerializer, UserEventStatusSerializer, VisitRecordPhotoSerializer, VisitRecordSerializer
+from .serializers import (
+    EventQuerySerializer,
+    EventSerializer,
+    UserEventStatusSerializer,
+    VisitRecordPhotoSerializer,
+    VisitRecordSerializer,
+)
 
 
 class EventPagination(PageNumberPagination):
@@ -20,50 +26,44 @@ class EventPagination(PageNumberPagination):
 class PublicEventListView(ListAPIView):
     serializer_class = EventSerializer
     pagination_class = EventPagination
+    query_serializer_class = EventQuerySerializer
+
+    def _validated_query_params(self):
+        allowed_fields = self.query_serializer_class().fields
+        data = {
+            key: value
+            for key, value in self.request.query_params.items()
+            if key in allowed_fields
+        }
+        serializer = self.query_serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
 
     def get_queryset(self):
+        params = self._validated_query_params()
         queryset = Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED)
-        query = self.request.query_params.get("q")
+        query = params.get("q")
         if query:
             queryset = queryset.filter(title__icontains=query)
-        region = self.request.query_params.get("region")
+        region = params.get("region")
         if region:
             queryset = queryset.filter(region=region)
-        category = self.request.query_params.get("category")
-        if not category:
-            category = self.request.query_params.get("event_type")
+        category = params.get("category")
         if category:
             queryset = queryset.filter(category=category)
-        work_title = self.request.query_params.get("work_title")
+        work_title = params.get("work_title")
         if work_title:
             queryset = queryset.filter(work_title__icontains=work_title)
-        start_date_from = self._get_query_value("start_date_from", "starts_after")
+        start_date_from = params.get("start_date_from")
         if start_date_from:
-            parsed_from = self._parse_date(start_date_from)
-            if parsed_from:
-                queryset = queryset.filter(start_date__gte=parsed_from)
-        start_date_to = self._get_query_value("start_date_to", "starts_before")
+            queryset = queryset.filter(start_date__gte=start_date_from)
+        start_date_to = params.get("start_date_to")
         if start_date_to:
-            parsed_to = self._parse_date(start_date_to)
-            if parsed_to:
-                queryset = queryset.filter(start_date__lte=parsed_to)
-        status_param = self.request.query_params.get("status")
+            queryset = queryset.filter(start_date__lte=start_date_to)
+        status_param = params.get("status")
         if status_param:
             queryset = self._filter_by_status(queryset, status_param)
         return self._order_default(queryset)
-
-    def _get_query_value(self, primary_name, alias_name):
-        value = self.request.query_params.get(primary_name)
-        if value:
-            return value
-        return self.request.query_params.get(alias_name)
-
-    @staticmethod
-    def _parse_date(value):
-        try:
-            return date.fromisoformat(value)
-        except ValueError:
-            return None
 
     def _filter_by_status(self, queryset, status_param):
         today = date.today()
@@ -79,7 +79,6 @@ class PublicEventListView(ListAPIView):
             )
         if status_param == "ended":
             return queryset.filter(end_date__lt=today)
-        return queryset
 
     def _order_default(self, queryset):
         today = date.today()

@@ -255,18 +255,18 @@ def test_public_event_list_filters_by_status_closing_soon(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_ignores_unknown_status_filter(client):
+def test_public_event_list_rejects_invalid_status_filter(client):
     first = Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
     second = Event.objects.create(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"status": "invalid"})
 
-    assert response.status_code == 200
-    assert [item["id"] for item in response.json()["results"]] == [first.id, second.id]
+    assert response.status_code == 400
+    assert "status" in response.json()
 
 
 @pytest.mark.django_db
-def test_public_event_list_supports_event_type_work_title_and_starts_alias_filters(client):
+def test_public_event_list_filters_by_category_work_title_and_start_date_range(client):
     matching = Event.objects.create(
         title="June popup",
         category="popup_store",
@@ -299,15 +299,47 @@ def test_public_event_list_supports_event_type_work_title_and_starts_alias_filte
     response = client.get(
         "/api/events/",
         {
-            "event_type": "popup_store",
+            "category": "popup_store",
             "work_title": "gundam",
-            "starts_after": "2026-06-01",
-            "starts_before": "2026-06-30",
+            "start_date_from": "2026-06-01",
+            "start_date_to": "2026-06-30",
         },
     )
 
     assert response.status_code == 200
     assert [item["id"] for item in response.json()["results"]] == [matching.id]
+
+
+@pytest.mark.django_db
+def test_public_event_list_rejects_invalid_start_date_from(client):
+    Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+
+    response = client.get("/api/events/", {"start_date_from": "2026/06/01"})
+
+    assert response.status_code == 400
+    assert "start_date_from" in response.json()
+
+
+@pytest.mark.django_db
+def test_public_event_list_rejects_invalid_start_date_to(client):
+    Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+
+    response = client.get("/api/events/", {"start_date_to": "2026/06/30"})
+
+    assert response.status_code == 400
+    assert "start_date_to" in response.json()
+
+
+@pytest.mark.parametrize("query_param", ["q", "region", "category", "work_title"])
+@pytest.mark.django_db
+def test_public_event_list_ignores_blank_documented_string_filters(client, query_param):
+    first = Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+    second = Event.objects.create(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
+
+    response = client.get("/api/events/", {query_param: ""})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [first.id, second.id]
 
 
 @pytest.mark.django_db
