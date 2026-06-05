@@ -20,6 +20,42 @@ def test_draft_views_do_not_import_events_modules():
     assert not {module for module in imported_modules if module == "events" or module.startswith("events.")}
 
 
+@pytest.mark.parametrize("module_path", ["events/views.py", "events/serializers.py", "drafts/views.py", "drafts/services.py"])
+def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
+    tree = ast.parse((PROJECT_ROOT / module_path).read_text())
+
+    imported_modules = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module is not None:
+            imported_modules.add(node.module)
+        if isinstance(node, ast.Import):
+            imported_modules.update(alias.name for alias in node.names)
+
+    assert not {
+        module
+        for module in imported_modules
+        if module == "archive" or module.startswith("archive.")
+    }
+
+
+@pytest.mark.parametrize("module_path", ["archive/models.py", "archive/serializers.py", "archive/services.py", "archive/views.py"])
+def test_archive_modules_do_not_import_drafts_modules(module_path):
+    tree = ast.parse((PROJECT_ROOT / module_path).read_text())
+
+    imported_modules = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module is not None:
+            imported_modules.add(node.module)
+        if isinstance(node, ast.Import):
+            imported_modules.update(alias.name for alias in node.names)
+
+    assert not {
+        module
+        for module in imported_modules
+        if module == "drafts" or module.startswith("drafts.")
+    }
+
+
 def test_core_error_response_returns_detail_payload():
     from core.errors import error_response
 
@@ -62,8 +98,6 @@ def test_core_errors_do_not_import_domain_modules(module_path):
         "/api/me/visit-records/",
         "/api/me/visit-records/1/photos/",
         "/api/me/visit-records/1/photos/1/",
-        "/api/user-event-statuses/",
-        "/api/user-event-statuses/1/",
         "/api/visit-records/",
         "/api/visit-records/1/",
         "/api/visit-record-photos/",
@@ -73,3 +107,10 @@ def test_core_errors_do_not_import_domain_modules(module_path):
 def test_active_urlconf_does_not_resolve_deferred_archive_routes(path):
     with pytest.raises(Resolver404):
         resolve(path)
+
+
+@pytest.mark.parametrize("path", ["/api/user-event-statuses/", "/api/user-event-statuses/1/"])
+def test_active_urlconf_resolves_user_event_status_routes(path):
+    match = resolve(path)
+
+    assert match.url_name in {"user-event-status-list-create", "user-event-status-detail"}

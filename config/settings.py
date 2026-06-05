@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "accounts",
     "events",
     "drafts",
+    "archive",
     "core",
 ]
 
