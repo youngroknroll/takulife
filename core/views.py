@@ -44,6 +44,16 @@ def archive(request):
     )
 
 
+def archive_statuses(request):
+    return render(
+        request,
+        "core/archive_statuses.html",
+        {
+            "project_name": "takulife",
+        },
+    )
+
+
 @api_view(["GET"])
 def api_root(request):
     return Response({"name": "OshiLog API"})
