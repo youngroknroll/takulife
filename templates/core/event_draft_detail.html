@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ project_name }} | 드래프트 검토</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --line: #d8e2ef;
+      --text: #15243a;
+      --muted: #607389;
+      --brand: #1d4ed8;
+      --brand-soft: #e8f0ff;
+      --mint-soft: #dcfce7;
+      --mint-ink: #166534;
+      --amber-soft: #fff7d6;
+      --amber-ink: #92400e;
+      --rose-soft: #ffe4e6;
+      --rose-ink: #be123c;
+      --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background:
+        radial-gradient(160% 90% at 100% -10%, #e7f0ff 0%, transparent 45%),
+        radial-gradient(120% 70% at -10% -20%, #eef5ff 0%, transparent 40%),
+        var(--bg);
+    }
+    .page {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 26px 20px 80px;
+    }
+    .topbar,
+    .hero,
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    .topbar {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .brand {
+      color: var(--text);
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .nav-links a,
+    .top-action,
+    .action-button,
+    input,
+    textarea,
+    select {
+      min-height: 44px;
+    }
+    .nav-links a,
+    .top-action {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      border: 1px solid #c7d7f8;
+      background: #f8fbff;
+      color: #24456f;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+    .nav-links a.active,
+    .top-action {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+    a:focus,
+    button:focus,
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 2px solid #92b4ff;
+      outline-offset: 2px;
+    }
+    .hero {
+      padding: 18px;
+      margin-bottom: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      line-height: 1.3;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 760px;
+    }
+    .status-chip {
+      border-radius: 999px;
+      background: var(--amber-soft);
+      color: var(--amber-ink);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+      gap: 12px;
+    }
+    .panel {
+      padding: 14px;
+    }
+    .panel h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .panel-note {
+      margin: 2px 0 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .field {
+      display: grid;
+      gap: 5px;
+    }
+    label {
+      color: #2e4765;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 0.9rem;
+    }
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+    .full {
+      grid-column: 1 / -1;
+    }
+    .raw-box {
+      border: 1px solid #d9e4f4;
+      border-radius: 10px;
+      background: #fbfcff;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .raw-box h3 {
+      margin: 0 0 6px;
+      font-size: 0.92rem;
+    }
+    .raw-box p {
+      margin: 0;
+      color: #2c4563;
+      font-size: 0.88rem;
+      overflow-wrap: anywhere;
+    }
+    .action-stack {
+      display: grid;
+      gap: 10px;
+    }
+    .action-button {
+      border: 1px solid var(--brand);
+      border-radius: 8px;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      padding: 10px 12px;
+      width: 100%;
+    }
+    .action-button.secondary {
+      background: #fff;
+      color: #24456f;
+      border-color: #c7d7f8;
+    }
+    .action-button.danger {
+      background: var(--rose-soft);
+      color: var(--rose-ink);
+      border-color: #fecdd3;
+    }
+    .rule-list {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+    .rule-list li {
+      border: 1px solid #d9e4f4;
+      border-radius: 9px;
+      background: #fbfcff;
+      padding: 9px 10px;
+      color: #2c4563;
+      font-size: 0.86rem;
+    }
+    .notice {
+      border: 1px dashed #b6c8df;
+      border-radius: 10px;
+      background: #f8fbff;
+      color: #46617f;
+      margin-top: 12px;
+      padding: 12px;
+      font-size: 0.88rem;
+    }
+    @media (max-width: 920px) {
+      .layout,
+      .hero,
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 720px) {
+      .page {
+        padding: 18px 14px 64px;
+      }
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+      .nav-links {
+        justify-content: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="brand" href="/">takulife</a>
+      <nav class="nav-links" aria-label="관리 메뉴">
+        <a href="/event-drafts/">드래프트 관리</a>
+        <a href="/events/">행사 목록</a>
+        <a href="/archive/">내 기록장</a>
+      </nav>
+      <a class="top-action" href="/event-drafts/">목록으로</a>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h1>드래프트 검토</h1>
+        <p>
+          드래프트 #{{ draft_id }}의 원문과 추출 후보를 비교하는 관리자 목업입니다.
+          실제 연결 시 pending 드래프트만 수정, 승인, 반려할 수 있습니다.
+        </p>
+      </div>
+      <span class="status-chip">review_status: pending</span>
+    </section>
+
+    <section class="layout">
+      <article class="panel">
+        <h2>추출 후보 편집</h2>
+        <p class="panel-note">목업 폼입니다. 실제 PATCH에서는 `source_url`, `raw_title`, `raw_text`, `review_status`를 수정하지 않습니다.</p>
+
+        <div class="field-grid">
+          <div class="field full">
+            <label for="title">extracted_title</label>
+            <input id="title" value="블루 아카이브 3주년 팝업">
+          </div>
+          <div class="field">
+            <label for="category">extracted_category</label>
+            <select id="category">
+              <option selected>popup_store</option>
+              <option>collaboration_cafe</option>
+              <option>theater_bonus</option>
+              <option>goods_reservation</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="work">extracted_work_title</label>
+            <input id="work" value="블루 아카이브">
+          </div>
+          <div class="field">
+            <label for="location">extracted_location_name</label>
+            <input id="location" value="홍대 AK&">
+          </div>
+          <div class="field">
+            <label for="region">extracted_region</label>
+            <input id="region" value="seoul">
+          </div>
+          <div class="field">
+            <label for="start">extracted_start_date</label>
+            <input id="start" value="2026-06-12">
+          </div>
+          <div class="field">
+            <label for="end">extracted_end_date</label>
+            <input id="end" value="2026-06-23">
+          </div>
+          <div class="field full">
+            <label for="summary">extracted_summary</label>
+            <textarea id="summary">3주년 기념 공식 팝업스토어. 굿즈 판매와 현장 특전이 예정되어 있습니다.</textarea>
+          </div>
+        </div>
+      </article>
+
+      <aside class="action-stack">
+        <section class="panel">
+          <h2>원문 정보</h2>
+          <p class="panel-note">raw 필드는 검토 중에도 원본 보존 대상입니다.</p>
+          <div class="raw-box">
+            <h3>source_url</h3>
+            <p>https://official.example/events/blue-archive-popup</p>
+          </div>
+          <div class="raw-box">
+            <h3>raw_title</h3>
+            <p>블루 아카이브 3주년 팝업스토어 공식 안내</p>
+          </div>
+          <div class="raw-box">
+            <h3>raw_text</h3>
+            <p>행사 기간, 장소, 특전, 예약 관련 안내가 포함된 공식 공지 본문 목업입니다.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>검토 액션</h2>
+          <p class="panel-note">실제 연결 시 CSRF와 admin 권한 처리가 필요합니다.</p>
+          <button class="action-button" type="button">수정 저장</button>
+          <button class="action-button secondary" type="button">승인하고 게시</button>
+          <button class="action-button danger" type="button">반려</button>
+          <p class="notice">승인 결과는 draft object와 `event_id`를 함께 받는 API 응답으로 연결합니다.</p>
+        </section>
+
+        <section class="panel">
+          <h2>필드 규칙</h2>
+          <ul class="rule-list">
+            <li>pending 상태에서만 extracted_* 필드 수정</li>
+            <li>source_url, raw_title, raw_text는 불변</li>
+            <li>승인 후 공개 Event 생성</li>
+            <li>반려한 드래프트는 공개 페이지에 노출하지 않음</li>
+          </ul>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const eventDraft = {
+      id: Number("{{ draft_id }}"),
+      source_url: "https://official.example/events/blue-archive-popup",
+      source_name: "공식 사이트",
+      raw_title: "블루 아카이브 3주년 팝업스토어 공식 안내",
+      raw_text: "행사 기간, 장소, 특전, 예약 관련 안내가 포함된 공식 공지 본문 목업입니다.",
+      extracted_title: "블루 아카이브 3주년 팝업",
+      extracted_category: "popup_store",
+      extracted_work_title: "블루 아카이브",
+      extracted_location_name: "홍대 AK&",
+      extracted_region: "seoul",
+      extracted_start_date: "2026-06-12",
+      extracted_end_date: "2026-06-23",
+      extracted_summary: "3주년 기념 공식 팝업스토어",
+      review_status: "pending",
+      created_at: "2026-06-09T09:00:00+09:00",
+      updated_at: "2026-06-09T09:00:00+09:00"
+    };
+
+    void eventDraft;
+  </script>
+</body>
+</html>

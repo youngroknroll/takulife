@@ -54,6 +54,37 @@ def archive_statuses(request):
     )
 
 
+def archive_visits(request):
+    return render(
+        request,
+        "core/archive_visits.html",
+        {
+            "project_name": "takulife",
+        },
+    )
+
+
+def event_drafts(request):
+    return render(
+        request,
+        "core/event_drafts.html",
+        {
+            "project_name": "takulife",
+        },
+    )
+
+
+def event_draft_detail(request, draft_id):
+    return render(
+        request,
+        "core/event_draft_detail.html",
+        {
+            "project_name": "takulife",
+            "draft_id": draft_id,
+        },
+    )
+
+
 @api_view(["GET"])
 def api_root(request):
     return Response({"name": "OshiLog API"})

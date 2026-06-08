@@ -14,6 +14,13 @@ urlpatterns = [
         core_views.archive_statuses,
         name="archive-statuses-page",
     ),
+    path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
+    path("event-drafts/", core_views.event_drafts, name="event-drafts-page"),
+    path(
+        "event-drafts/<int:draft_id>/",
+        core_views.event_draft_detail,
+        name="event-draft-detail-page",
+    ),
     path("admin/", admin.site.urls),
     path("api/", include("core.urls")),
     path("api/events/", include("events.urls")),
