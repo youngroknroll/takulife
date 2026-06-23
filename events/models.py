@@ -1,5 +1,7 @@
 from django.db import models
 
+from .querysets import EventQuerySet
+
 
 class Event(models.Model):
     class PublishStatus(models.TextChoices):
@@ -22,6 +24,7 @@ class Event(models.Model):
         default=PublishStatus.DRAFT,
         db_index=True,
     )
+    objects = EventQuerySet.as_manager()
 
     def __str__(self):
         return self.title
