@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 행사 상세{% endblock %}
+{% block title %}{{ project_name }} | {{ event.title }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -115,14 +115,6 @@
     font-size: 0.86rem;
     font-weight: 600;
   }
-  .notice-list {
-    margin: 0;
-    padding-left: 18px;
-    color: #2d4460;
-    font-size: 0.9rem;
-    display: grid;
-    gap: 4px;
-  }
   .side-block {
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -155,15 +147,25 @@
     background: var(--brand);
     color: #fff;
   }
-  .action-link.warn {
-    border-color: #f2cf8f;
-    background: var(--amber-soft);
-    color: var(--amber-ink);
-  }
   .action-link.ghost {
     border-color: var(--line);
     background: #fff;
     color: var(--muted);
+  }
+  .source-block {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    padding: 8px 10px;
+    font-size: 0.84rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .source-block a {
+    text-decoration: none;
+    color: #24456f;
+    font-weight: 600;
   }
   .host-item {
     display: grid;
@@ -177,40 +179,6 @@
     color: var(--muted);
     font-weight: 600;
   }
-  .related-list {
-    display: grid;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .related-card {
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 9px;
-    background: #fff;
-  }
-  .related-title {
-    margin: 0 0 3px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #1f3652;
-  }
-  .related-meta {
-    margin: 0;
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-  .low-stock {
-    display: inline-block;
-    margin-top: 5px;
-    border-radius: 999px;
-    padding: 3px 7px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--rose-ink);
-    background: var(--rose-soft);
-  }
   .dday-chip {
     display: inline-block;
     border-radius: 999px;
@@ -219,63 +187,6 @@
     font-weight: 700;
     color: var(--amber-ink);
     background: var(--amber-soft);
-  }
-  .verify {
-    margin-top: 10px;
-    border: 1px solid #bfe3cb;
-    background: var(--mint-soft);
-    border-radius: 10px;
-    padding: 10px 12px;
-    display: grid;
-    gap: 4px;
-  }
-  .verify-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.86rem;
-    font-weight: 700;
-    color: var(--mint-ink);
-  }
-  .verify-source {
-    text-decoration: none;
-    color: var(--brand);
-    font-weight: 600;
-  }
-  .verify-meta {
-    color: #3f6b4f;
-    font-size: 0.78rem;
-    font-weight: 500;
-  }
-  .source-list {
-    display: grid;
-    gap: 6px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .source-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fff;
-    padding: 8px 10px;
-    font-size: 0.84rem;
-  }
-  .source-row a {
-    text-decoration: none;
-    color: #24456f;
-    font-weight: 600;
-  }
-  .source-check {
-    color: var(--muted);
-    font-size: 0.74rem;
-    font-weight: 500;
-    white-space: nowrap;
   }
   .mobile-cta {
     display: none;
@@ -327,147 +238,131 @@
 {% block content %}
   <main class="page">
     <header class="topbar panel">
-      <a class="brand" href="/">takulife</a>
-      <span class="crumb">행사 상세 / #{{ event_id }}</span>
+      <a class="brand" href="/">{{ project_name }}</a>
+      <span class="crumb">행사 상세 / #{{ event.id }}</span>
       <div></div>
       {% include "core/_topbar.html" %}
     </header>
 
     <section class="shell">
       <article class="content panel">
-        <span class="chip">전시</span>
-        <span class="status-chip">진행 중</span>
-        <span class="dday-chip">D-92</span>
-        <h1>아트 포레스트 미디어 파사드 2026</h1>
-        <p class="lead">
-          도시의 밤 풍경과 자연 데이터를 결합한 몰입형 미디어 전시.
-          실시간 사운드 인터랙션과 조명 연동 구간이 포함됩니다.
-        </p>
-
-        <div class="verify" aria-label="공식 출처 확인">
-          <div class="verify-row">
-            <span>✓ 공식 확인됨</span>
-            <span>출처:</span>
-            <a class="verify-source" href="#" rel="noopener" target="_blank">공식 X (@artforest_official) ↗</a>
-          </div>
-          <span class="verify-meta">관리자 검수 2026-06-20 · 자동 추출 후 사람이 검수</span>
-        </div>
+        {% if category_label %}<span class="chip">{{ category_label }}</span>{% endif %}
+        {% if status_label %}<span class="status-chip">{{ status_label }}</span>{% endif %}
+        {% if status_slug == 'ended' %}
+          <span class="dday-chip">종료</span>
+        {% elif dday is not None %}
+          <span class="dday-chip">D-{{ dday }}</span>
+        {% endif %}
+        <h1>{{ event.title }}</h1>
+        {% if event.summary %}
+          <p class="lead">{{ event.summary }}</p>
+        {% endif %}
 
         <div class="meta-grid" aria-label="행사 메타 정보">
           <div class="meta-item">
             <span class="meta-label">기간</span>
-            <strong>2026-05-10 ~ 2026-08-31</strong>
+            <strong>
+              {% if event.start_date and event.end_date %}
+                {{ event.start_date }} ~ {{ event.end_date }}
+              {% elif event.start_date %}
+                {{ event.start_date }} ~
+              {% else %}
+                —
+              {% endif %}
+            </strong>
           </div>
           <div class="meta-item">
             <span class="meta-label">장소</span>
-            <strong>서울 성동구 문화창고 A동</strong>
+            <strong>{% if event.location_name %}{{ event.location_name }}{% else %}—{% endif %}</strong>
           </div>
           <div class="meta-item">
-            <span class="meta-label">운영 시간</span>
-            <strong>10:30 ~ 20:30 (입장 마감 19:40)</strong>
+            <span class="meta-label">카테고리</span>
+            <strong>{% if category_label %}{{ category_label }}{% else %}—{% endif %}</strong>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">가격</span>
-            <strong>성인 18,000원 / 청소년 12,000원</strong>
-          </div>
+          {% if event.work_title %}
+            <div class="meta-item">
+              <span class="meta-label">원작명</span>
+              <strong>{{ event.work_title }}</strong>
+            </div>
+          {% endif %}
         </div>
 
-        <section class="section" aria-label="상세 설명">
-          <h2>행사 소개</h2>
-          <p>
-            이번 전시는 도시의 공공 데이터와 관람객의 움직임을 시각 언어로 변환해
-            공간 전체를 하나의 캔버스로 확장합니다. 전시 구간은 1관(빛의 숲),
-            2관(데이터 웨이브), 3관(사운드 룸)으로 구성되며 구간별 체류 시간이
-            달라 동선을 여유 있게 잡는 것을 권장합니다.
-          </p>
+        <section class="section" aria-label="추가 정보">
+          <h2>추가 정보 (준비 중)</h2>
+          <div class="meta-grid" style="margin-top: 0;">
+            <div class="meta-item">
+              <span class="meta-label">운영 시간</span>
+              <strong>—</strong>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">가격</span>
+              <strong>—</strong>
+            </div>
+          </div>
         </section>
 
         <section class="section" aria-label="지도 정보">
           <h2>지도</h2>
-          <div class="map">지도 연동 예정 영역 (정적 UI)</div>
+          <div class="map">지도 연동 예정</div>
         </section>
 
         <section class="section" aria-label="유의사항">
           <h2>유의사항</h2>
-          <ul class="notice-list">
-            <li>현장 대기 인원이 많을 경우 입장 시간이 지연될 수 있습니다.</li>
-            <li>삼각대와 대형 촬영 장비는 전시장 내 반입이 제한됩니다.</li>
-            <li>소리 반응형 설치물 구간은 빛에 민감한 관람객 주의가 필요합니다.</li>
-            <li>당일 티켓 취소/환불 규정은 예매처 기준을 따릅니다.</li>
-          </ul>
+          <p class="notice">유의사항은 공식 페이지에서 확인해 주세요.</p>
         </section>
       </article>
 
       <aside class="aside panel">
         <section class="side-block" aria-label="상태 및 액션">
           <h2>참여 상태</h2>
-          <p style="margin: 0 0 8px; color: #2d4460; font-size: 0.85rem;">
-            이번 주말 혼잡 예상
-          </p>
           <div class="action-list">
-            <a class="action-link primary" href="#" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
-            <a class="action-link" href="#" aria-label="예매 링크">예매 페이지</a>
-            <a class="action-link ghost" href="#" aria-label="관심 행사 추가">♡ 관심</a>
+            {% if event.official_url %}
+              <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
+            {% endif %}
+            <button class="action-link ghost" type="button" disabled title="로그인 후 이용 가능">♡ 관심</button>
           </div>
         </section>
 
         <section class="side-block" aria-label="공식 출처">
           <h2>공식 출처</h2>
-          <ul class="source-list">
-            <li class="source-row">
-              <a href="#" rel="noopener" target="_blank">공식 홈페이지 ↗</a>
-              <span class="source-check">검수 06-20</span>
-            </li>
-            <li class="source-row">
-              <a href="#" rel="noopener" target="_blank">공식 X (@artforest_official) ↗</a>
-              <span class="source-check">검수 06-20</span>
-            </li>
-            <li class="source-row">
-              <a href="#" rel="noopener" target="_blank">콜라보 카페 공지 ↗</a>
-              <span class="source-check">검수 06-18</span>
-            </li>
-          </ul>
+          {% if event.source_name or event.official_url %}
+            <div class="source-block">
+              {% if event.official_url %}
+                <a href="{{ event.official_url }}" rel="noopener" target="_blank">
+                  {% if event.source_name %}{{ event.source_name }}{% else %}공식 페이지{% endif %} ↗
+                </a>
+              {% else %}
+                <span>{{ event.source_name }}</span>
+              {% endif %}
+            </div>
+          {% else %}
+            <p class="notice" style="margin: 0;">출처 정보가 없습니다.</p>
+          {% endif %}
         </section>
 
         <section class="side-block" aria-label="주최 및 문의">
           <h2>주최 / 문의</h2>
           <div class="host-item">
             <strong>주최</strong>
-            <span>서울문화콘텐츠랩</span>
-          </div>
-          <div class="host-item">
-            <strong>문의 전화</strong>
-            <span>02-1234-5678</span>
+            <span>준비 중</span>
           </div>
           <div class="host-item" style="margin-bottom: 0;">
-            <strong>문의 메일</strong>
-            <span>hello@culturelab.kr</span>
+            <strong>문의</strong>
+            <span>준비 중</span>
           </div>
         </section>
 
         <section class="side-block" aria-label="비슷한 행사">
           <h2>비슷한 행사</h2>
-          <ul class="related-list">
-            <li class="related-card">
-              <p class="related-title">네온 리버 라이트 쇼</p>
-              <p class="related-meta">서울 마포구 · 2026-06-02 ~ 2026-07-12</p>
-            </li>
-            <li class="related-card">
-              <p class="related-title">사운드워크 인 더 시티</p>
-              <p class="related-meta">서울 중구 · 2026-06-10 ~ 2026-08-10</p>
-              <span class="low-stock">마감 임박</span>
-            </li>
-            <li class="related-card">
-              <p class="related-title">모션 캔버스 실감전</p>
-              <p class="related-meta">경기 성남시 · 2026-05-30 ~ 2026-09-01</p>
-            </li>
-          </ul>
+          <p class="notice" style="margin: 0;">비슷한 행사 준비 중</p>
         </section>
       </aside>
     </section>
 
-    <div class="mobile-cta" aria-hidden="false">
-      <a class="action-link primary" href="#" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
-    </div>
+    {% if event.official_url %}
+      <div class="mobile-cta" aria-hidden="false">
+        <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
+      </div>
+    {% endif %}
   </main>
 {% endblock %}

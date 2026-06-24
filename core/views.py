@@ -1,37 +1,130 @@
-from django.shortcuts import render
+from django.core.paginator import Paginator
+from django.shortcuts import get_object_or_404, render
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+
+from core.vocab import (
+    CATEGORY,
+    CATEGORY_LABELS,
+    EVENT_STATUS,
+    EVENT_STATUS_LABELS,
+    REGION,
+)
+from events.models import Event
+from events.presenters import derive_event_display
+from events.queries import (
+    PUBLIC_LISTING_PAGE_SIZE,
+    list_published_events,
+    parse_public_listing_params,
+)
+
+
+def _attach_display(events, *, today=None):
+    """Attach derived display (status_slug, status_label, dday) to each event.
+
+    Returns a list of plain dicts so templates can use dot notation cleanly.
+    """
+    result = []
+    for event in events:
+        display = derive_event_display(event, today=today)
+        status_slug = display["status"]
+        result.append(
+            {
+                "event": event,
+                "status_slug": status_slug,
+                "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
+                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "dday": display["dday"],
+            }
+        )
+    return result
 
 
 def home(request):
-    return render(
-        request,
-        "core/home.html",
-        {
-            "project_name": "takulife",
-        },
-    )
+    ongoing_qs = list_published_events({"status": "ongoing"})
+    closing_qs = list_published_events({"status": "closing_soon"})
+    recent_qs = Event.objects.published().order_by("-id")[:6]
+
+    context = {
+        "project_name": "takulife",
+        "ongoing_events": _attach_display(ongoing_qs[:6]),
+        "closing_events": _attach_display(closing_qs[:5]),
+        "recent_events": _attach_display(recent_qs),
+    }
+    return render(request, "core/home.html", context)
 
 
 def event_list(request):
-    return render(
-        request,
-        "core/event_list.html",
-        {
-            "project_name": "takulife",
-        },
+    validation_error = None
+    page_obj = None
+    total_count = 0
+    event_rows = []
+
+    try:
+        params = parse_public_listing_params(request.GET)
+    except ValidationError:
+        validation_error = True
+        params = {}
+
+    if not validation_error:
+        qs = list_published_events(params)
+        total_count = qs.count()
+        paginator = Paginator(qs, PUBLIC_LISTING_PAGE_SIZE)
+        page_obj = paginator.get_page(request.GET.get("page"))
+        event_rows = _attach_display(page_obj.object_list)
+
+    selected_region = request.GET.getlist("region")
+    selected_category = request.GET.getlist("category")
+    selected_status = request.GET.get("status", "")
+    selected_q = request.GET.get("q", "")
+    selected_sort = request.GET.get("sort", "")
+
+    # region/category may be sent as single value (GET param) or multiple
+    # Normalise: if not a list context, wrap the scalar param
+    if not selected_region and request.GET.get("region"):
+        selected_region = [request.GET.get("region")]
+    if not selected_category and request.GET.get("category"):
+        selected_category = [request.GET.get("category")]
+
+    active_filters = bool(
+        selected_q or selected_region or selected_category or selected_status
     )
+
+    context = {
+        "project_name": "takulife",
+        "page_obj": page_obj,
+        "total_count": total_count,
+        "event_rows": event_rows,
+        "validation_error": validation_error,
+        "active_filters": active_filters,
+        # vocab tuples for filter UI
+        "CATEGORY": CATEGORY,
+        "REGION": REGION,
+        "EVENT_STATUS": EVENT_STATUS,
+        # current selections
+        "selected_q": selected_q,
+        "selected_region": selected_region,
+        "selected_category": selected_category,
+        "selected_status": selected_status,
+        "selected_sort": selected_sort,
+    }
+    return render(request, "core/event_list.html", context)
 
 
 def event_detail(request, event_id):
-    return render(
-        request,
-        "core/event_detail.html",
-        {
-            "project_name": "takulife",
-            "event_id": event_id,
-        },
-    )
+    event = get_object_or_404(Event.objects.published(), pk=event_id)
+    display = derive_event_display(event)
+    status_slug = display["status"]
+    context = {
+        "project_name": "takulife",
+        "event": event,
+        "status_slug": status_slug,
+        "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
+        "category_label": CATEGORY_LABELS.get(event.category, event.category),
+        "dday": display["dday"],
+    }
+    return render(request, "core/event_detail.html", context)
 
 
 def archive(request):

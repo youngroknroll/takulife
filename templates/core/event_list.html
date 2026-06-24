@@ -220,17 +220,20 @@
     display: flex;
     justify-content: center;
     gap: 8px;
+    flex-wrap: wrap;
   }
-  .pager button {
+  .pager a,
+  .pager span {
     border: 1px solid var(--line);
     border-radius: 8px;
     background: #fff;
     color: #324a66;
     padding: 8px 10px;
-    cursor: pointer;
     font-size: 0.82rem;
+    text-decoration: none;
+    display: inline-block;
   }
-  .pager button.current {
+  .pager .current {
     background: var(--brand);
     border-color: var(--brand);
     color: #fff;
@@ -291,21 +294,22 @@
   <main class="page">
     <header class="topbar">
       <a class="brand" href="/">{{ project_name }}</a>
-      <form class="search" action="#" method="get">
+      <form class="search" action="/events/" method="get">
         <label class="sr-only" for="q">행사 검색</label>
-        <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
-        <button type="button">검색</button>
+        <input id="q" name="q" type="text" value="{{ selected_q }}" placeholder="작품명, 행사명, 장소를 검색">
+        <button type="submit">검색</button>
       </form>
       <a class="text-link" href="/">홈</a>
       {% include "core/_topbar.html" %}
     </header>
 
     <div class="quick-row" aria-label="빠른 필터">
-      <button class="chip active" type="button">서울/수도권</button>
-      <button class="chip" type="button">이번 주</button>
-      <button class="chip" type="button">종료 임박</button>
-      <button class="chip" type="button">팝업스토어</button>
-      <button class="chip" type="button">콜라보 카페</button>
+      <a class="chip{% if selected_region == 'seoul' %} active{% endif %}" href="/events/?region=seoul">서울</a>
+      <a class="chip{% if selected_region == 'gyeonggi' %} active{% endif %}" href="/events/?region=gyeonggi">경기</a>
+      <a class="chip{% if selected_region == 'incheon' %} active{% endif %}" href="/events/?region=incheon">인천</a>
+      <a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/?status=closing_soon">종료 임박</a>
+      <a class="chip{% if selected_category == 'popup_store' %} active{% endif %}" href="/events/?category=popup_store">팝업스토어</a>
+      <a class="chip{% if selected_category == 'collaboration_cafe' %} active{% endif %}" href="/events/?category=collaboration_cafe">콜라보 카페</a>
     </div>
 
     <section class="layout" aria-label="행사 목록 레이아웃">
@@ -314,119 +318,145 @@
         <button class="filter-toggle" type="button" aria-expanded="false" aria-controls="filter-body">필터 열기 ▾</button>
 
         <div id="filter-body">
-        <p class="caption">필터와 정렬을 먼저 두어 스캔 속도를 높인 정적 목업입니다.</p>
+        <form method="get" action="/events/">
+          {% if selected_q %}<input type="hidden" name="q" value="{{ selected_q }}">{% endif %}
 
-        <div class="filter-group">
-          <h2>지역</h2>
-          <ul class="filter-list">
-            <li><label class="filter-check"><input type="checkbox" checked> 서울</label></li>
-            <li><label class="filter-check"><input type="checkbox"> 경기</label></li>
-            <li><label class="filter-check"><input type="checkbox"> 인천</label></li>
-            <li><label class="filter-check"><input type="checkbox"> 부산</label></li>
-          </ul>
-        </div>
+          <div class="filter-group">
+            <h2>지역</h2>
+            <ul class="filter-list">
+              {% for slug, label in REGION %}
+                <li>
+                  <label class="filter-check">
+                    <input type="checkbox" name="region" value="{{ slug }}"{% if slug in selected_region %} checked{% endif %}>
+                    {{ label }}
+                  </label>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
 
-        <div class="filter-group">
-          <h2>기간</h2>
-          <ul class="filter-list">
-            <li><label class="filter-check"><input type="radio" name="period" checked> 오늘~7일</label></li>
-            <li><label class="filter-check"><input type="radio" name="period"> 이번 달</label></li>
-            <li><label class="filter-check"><input type="radio" name="period"> 직접 선택</label></li>
-          </ul>
-        </div>
+          <div class="filter-group">
+            <h2>카테고리</h2>
+            <ul class="filter-list">
+              {% for slug, label in CATEGORY %}
+                <li>
+                  <label class="filter-check">
+                    <input type="checkbox" name="category" value="{{ slug }}"{% if slug in selected_category %} checked{% endif %}>
+                    {{ label }}
+                  </label>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
 
-        <div class="filter-group">
-          <h2>카테고리</h2>
-          <ul class="filter-list">
-            <li><label class="filter-check"><input type="checkbox" checked> 팝업스토어</label></li>
-            <li><label class="filter-check"><input type="checkbox"> 콜라보 카페</label></li>
-            <li><label class="filter-check"><input type="checkbox"> 극장 특전</label></li>
-            <li><label class="filter-check"><input type="checkbox"> 굿즈 예약</label></li>
-          </ul>
-        </div>
+          <div class="filter-group">
+            <h2>행사 상태</h2>
+            <ul class="filter-list">
+              <li>
+                <label class="filter-check">
+                  <input type="radio" name="status" value=""{% if not selected_status %} checked{% endif %}>
+                  전체
+                </label>
+              </li>
+              {% for slug, label in EVENT_STATUS %}
+                <li>
+                  <label class="filter-check">
+                    <input type="radio" name="status" value="{{ slug }}"{% if selected_status == slug %} checked{% endif %}>
+                    {{ label }}
+                  </label>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
 
-        <div class="filter-actions">
-          <button class="btn primary" type="button">필터 적용</button>
-          <button class="btn" type="button">초기화</button>
-        </div>
+          <div class="filter-group">
+            <h2>정렬</h2>
+            <select name="sort">
+              <option value="" {% if not selected_sort %}selected{% endif %}>기본순</option>
+              <option value="closing_soon" {% if selected_sort == "closing_soon" %}selected{% endif %}>종료 임박순</option>
+              <option value="start_asc" {% if selected_sort == "start_asc" %}selected{% endif %}>시작일 빠른순</option>
+              <option value="newest" {% if selected_sort == "newest" %}selected{% endif %}>최신 등록순</option>
+            </select>
+          </div>
+
+          <div class="filter-actions">
+            <button class="btn primary" type="submit">필터 적용</button>
+            <a class="btn" href="/events/">초기화</a>
+          </div>
+        </form>
         </div>
       </aside>
 
       <article class="panel results" aria-label="행사 검색 결과">
-        <header class="results-head">
-          <div>
-            <h2 class="results-title">검색 결과 42개</h2>
-            <p class="results-note">D-day와 종료 임박 순으로 빠르게 스캔할 수 있는 카드 리스트</p>
+        {% if validation_error %}
+          <p class="notice">잘못된 필터 값이 포함되어 있습니다. 필터를 초기화하고 다시 시도해 주세요. <a href="/events/">필터 초기화</a></p>
+        {% elif page_obj %}
+          <header class="results-head">
+            <div>
+              <h2 class="results-title">검색 결과 {{ total_count }}개</h2>
+              <p class="results-note">D-day와 종료 임박 순으로 빠르게 스캔할 수 있는 카드 리스트</p>
+            </div>
+            <div class="sort">
+              <span>정렬: 기본순</span>
+            </div>
+          </header>
+
+          <div class="event-list">
+            {% for row in event_rows %}
+              <article class="event-card">
+                <div>
+                  <span class="event-type">{{ row.category_label }}</span>
+                </div>
+                <div>
+                  <h2><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
+                  <p class="meta">{{ row.event.location_name }}</p>
+                  {% if row.event.start_date and row.event.end_date %}
+                    <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
+                  {% endif %}
+                  <div class="status-row">
+                    <button class="status-btn interested" type="button" disabled title="로그인 후 이용 가능">관심</button>
+                    <button class="status-btn planned" type="button" disabled title="로그인 후 이용 가능">방문 예정</button>
+                  </div>
+                </div>
+                <div>
+                  {% if row.status_slug == 'ended' %}
+                    <span class="dday">종료</span>
+                  {% elif row.dday is not None %}
+                    <span class="dday">D-{{ row.dday }}</span>
+                  {% endif %}
+                  {% if row.status_label %}
+                    <div style="margin-top: 4px; font-size: 0.74rem; color: var(--muted); text-align: right;">{{ row.status_label }}</div>
+                  {% endif %}
+                </div>
+              </article>
+            {% endfor %}
           </div>
-          <div class="sort">
-            <label for="sort-by">정렬</label>
-            <select id="sort-by" name="sort_by">
-              <option>종료 임박순</option>
-              <option>시작일 빠른순</option>
-              <option>최신 등록순</option>
-            </select>
-          </div>
-        </header>
 
-        <div class="event-list">
-          <article class="event-card">
-            <div>
-              <span class="event-type">팝업스토어</span>
-              <span class="verified">✓ 공식 확인</span>
-            </div>
-            <div>
-              <h2><a href="/events/1/">프로젝트 A 공식 팝업스토어</a></h2>
-              <p class="meta">서울 홍대 · AK플라자</p>
-              <p class="period">2026.06.01 - 2026.06.14</p>
-              <div class="status-row">
-                <button class="status-btn interested" type="button">관심</button>
-                <button class="status-btn planned" type="button">방문 예정</button>
-              </div>
-            </div>
-            <span class="dday">D-3</span>
-          </article>
+          {% if page_obj.has_other_pages %}
+            <nav class="pager" aria-label="페이지네이션">
+              {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}">이전</a>
+              {% endif %}
+              {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                  <span class="current">{{ num }}</span>
+                {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
+                  <a href="?page={{ num }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ num }}</a>
+                {% endif %}
+              {% endfor %}
+              {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}">다음</a>
+              {% endif %}
+            </nav>
+          {% endif %}
 
-          <article class="event-card">
-            <div>
-              <span class="event-type">콜라보 카페</span>
-              <span class="verified">✓ 공식 확인</span>
-            </div>
-            <div>
-              <h2><a href="/events/2/">작품 B 콜라보 카페 시즌 2</a></h2>
-              <p class="meta">서울 강남 · 스페이스 카페</p>
-              <p class="period">2026.06.05 - 2026.06.30</p>
-              <div class="status-row">
-                <button class="status-btn interested" type="button">관심</button>
-                <button class="status-btn planned" type="button">방문 예정</button>
-              </div>
-            </div>
-            <span class="dday">D-4</span>
-          </article>
-
-          <article class="event-card">
-            <div>
-              <span class="event-type">극장 특전</span>
-              <span class="verified">✓ 공식 확인</span>
-            </div>
-            <div>
-              <h2><a href="/events/3/">극장판 C 개봉 1주차 특전</a></h2>
-              <p class="meta">경기 수원 · 시네마몰</p>
-              <p class="period">2026.06.07 - 2026.06.13</p>
-              <div class="status-row">
-                <button class="status-btn visited" type="button">방문 완료</button>
-                <button class="status-btn missed" type="button">놓침</button>
-              </div>
-            </div>
-            <span class="dday">D-1</span>
-          </article>
-        </div>
-
-        <div class="pager" aria-label="페이지네이션">
-          <button class="current" type="button">1</button>
-          <button type="button">2</button>
-          <button type="button">3</button>
-          <button type="button">다음</button>
-        </div>
+        {% else %}
+          {% if active_filters %}
+            <p class="notice">조건에 맞는 행사가 없습니다. <a href="/events/">필터 초기화</a></p>
+          {% else %}
+            <p class="notice">현재 등록된 행사가 없습니다.</p>
+          {% endif %}
+        {% endif %}
       </article>
     </section>
   </main>

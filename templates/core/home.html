@@ -31,15 +31,6 @@
     font-weight: 700;
     cursor: pointer;
   }
-  .admin-link {
-    color: var(--brand);
-    text-decoration: none;
-    font-weight: 600;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid #c7d7f8;
-    background: #f8fbff;
-  }
   .hero-grid {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
@@ -67,20 +58,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-  }
-  .quick-chip {
-    border: 1px solid #c7d7f8;
-    background: #f8fbff;
-    color: #24456f;
-    border-radius: 999px;
-    padding: 7px 12px;
-    font-size: 0.84rem;
-    cursor: pointer;
-  }
-  .quick-chip.active {
-    background: var(--brand);
-    color: #fff;
-    border-color: var(--brand);
   }
   .principle-card h2 {
     margin: 0 0 10px;
@@ -280,10 +257,10 @@
   <main class="page">
     <header class="topbar">
       <div class="brand">{{ project_name }}</div>
-      <form class="search" action="#" method="get">
+      <form class="search" action="/events/" method="get">
         <label class="sr-only" for="q">행사 검색</label>
         <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
-        <button type="button">검색</button>
+        <button type="submit">검색</button>
       </form>
       {% include "core/_topbar.html" %}
     </header>
@@ -293,12 +270,13 @@
         <h1>지금 갈 수 있는 공식 오프라인 이벤트를 빠르게 찾기</h1>
         <p>검색과 필터를 먼저 배치해 이번 주 행사, 종료 임박 행사, 신규 등록 행사를 바로 스캔할 수 있게 구성했습니다.</p>
         <div class="quick-filters" aria-label="빠른 필터">
-          <button class="quick-chip active" type="button">서울/수도권</button>
-          <button class="quick-chip" type="button">이번 주</button>
-          <button class="quick-chip" type="button">곧 종료</button>
-          <button class="quick-chip" type="button">팝업스토어</button>
-          <button class="quick-chip" type="button">콜라보 카페</button>
-          <button class="quick-chip" type="button">굿즈 예약</button>
+          <a class="chip" href="/events/?region=seoul">서울</a>
+          <a class="chip" href="/events/?region=gyeonggi">경기</a>
+          <a class="chip" href="/events/?region=incheon">인천</a>
+          <a class="chip" href="/events/?status=closing_soon">종료 임박</a>
+          <a class="chip" href="/events/?category=popup_store">팝업스토어</a>
+          <a class="chip" href="/events/?category=collaboration_cafe">콜라보 카페</a>
+          <a class="chip" href="/events/?category=goods_reservation">굿즈 예약</a>
         </div>
       </article>
       <aside class="principle-card" aria-label="운영 원칙 요약">
@@ -311,55 +289,36 @@
       </aside>
     </section>
 
-    <section class="section" aria-label="이번 주 행사">
+    <section class="section" aria-label="진행 중인 행사">
       <div class="section-head">
         <h2>이번 주 갈 만한 행사</h2>
-        <p class="section-note">검색 결과 42개 중, 기간이 임박한 순으로 노출</p>
+        <p class="section-note">현재 진행 중인 행사</p>
       </div>
-      <div class="cards">
-        <article class="card">
-          <div class="card-top">
-            <span class="badge">팝업스토어</span>
-            <span class="verified">✓ 공식 확인</span>
-            <span class="dday">D-3</span>
-          </div>
-          <h3><a href="/events/1/">프로젝트 A 공식 팝업스토어</a></h3>
-          <p class="meta">서울 홍대 · AK플라자</p>
-          <p class="period">2026.06.01 - 2026.06.14</p>
-          <div class="status-row">
-            <button class="status interested" type="button">관심</button>
-            <button class="status planned" type="button">방문 예정</button>
-          </div>
-        </article>
-        <article class="card">
-          <div class="card-top">
-            <span class="badge">콜라보 카페</span>
-            <span class="verified">✓ 공식 확인</span>
-            <span class="dday">D-4</span>
-          </div>
-          <h3><a href="/events/2/">작품 B 콜라보 카페 시즌 2</a></h3>
-          <p class="meta">서울 강남 · 스페이스 카페</p>
-          <p class="period">2026.06.05 - 2026.06.30</p>
-          <div class="status-row">
-            <button class="status interested" type="button">관심</button>
-            <button class="status planned" type="button">방문 예정</button>
-          </div>
-        </article>
-        <article class="card">
-          <div class="card-top">
-            <span class="badge">극장 특전</span>
-            <span class="verified">✓ 공식 확인</span>
-            <span class="dday">D-1</span>
-          </div>
-          <h3><a href="/events/3/">극장판 C 개봉 1주차 특전</a></h3>
-          <p class="meta">경기 수원 · 시네마몰</p>
-          <p class="period">2026.06.07 - 2026.06.13</p>
-          <div class="status-row">
-            <button class="status visited" type="button">방문 완료</button>
-            <button class="status missed" type="button">놓침</button>
-          </div>
-        </article>
-      </div>
+      {% if ongoing_events %}
+        <div class="cards">
+          {% for row in ongoing_events %}
+            <article class="card">
+              <div class="card-top">
+                <span class="badge">{{ row.category_label }}</span>
+                {% if row.dday is not None %}
+                  <span class="dday">D-{{ row.dday }}</span>
+                {% endif %}
+              </div>
+              <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
+              <p class="meta">{{ row.event.location_name }}</p>
+              {% if row.event.start_date and row.event.end_date %}
+                <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
+              {% endif %}
+              <div class="status-row">
+                <button class="status interested" type="button" disabled title="로그인 후 이용 가능">관심</button>
+                <button class="status planned" type="button" disabled title="로그인 후 이용 가능">방문 예정</button>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="notice">현재 진행 중인 행사가 없습니다.</p>
+      {% endif %}
     </section>
 
     <section class="section" aria-label="곧 종료되는 행사">
@@ -367,24 +326,26 @@
         <h2>곧 종료돼요</h2>
         <p class="section-note">오늘 기준 종료 임박 이벤트</p>
       </div>
-      <ul class="deadline-list">
-        <li class="deadline-item">
-          <span class="deadline-tag">D-1</span>
-          <div>
-            <p class="deadline-title">굿즈 예약 D 사전 판매</p>
-            <p class="deadline-meta">서울 용산 · 2026.06.10 마감</p>
-          </div>
-          <button class="status planned" type="button">방문 예정</button>
-        </li>
-        <li class="deadline-item">
-          <span class="deadline-tag">D-2</span>
-          <div>
-            <p class="deadline-title">작품 E 극장 특전 2주차</p>
-            <p class="deadline-meta">인천 부평 · 2026.06.11 마감</p>
-          </div>
-          <button class="status interested" type="button">관심</button>
-        </li>
-      </ul>
+      {% if closing_events %}
+        <ul class="deadline-list">
+          {% for row in closing_events %}
+            <li class="deadline-item">
+              {% if row.dday is not None %}
+                <span class="deadline-tag">D-{{ row.dday }}</span>
+              {% else %}
+                <span class="deadline-tag">종료</span>
+              {% endif %}
+              <div>
+                <p class="deadline-title">{{ row.event.title }}</p>
+                <p class="deadline-meta">{{ row.event.location_name }}{% if row.event.end_date %} · {{ row.event.end_date }} 마감{% endif %}</p>
+              </div>
+              <button class="status interested" type="button" disabled title="로그인 후 이용 가능">관심</button>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="notice">종료 임박 행사가 없습니다.</p>
+      {% endif %}
     </section>
 
     <section class="section" aria-label="새로 등록된 행사">
@@ -392,20 +353,22 @@
         <h2>새로 등록</h2>
         <p class="section-note">관리자 검수 후 게시된 최신 항목</p>
       </div>
-      <div class="recent-grid">
-        <article class="recent-card">
-          <p class="recent-label">NEW</p>
-          <h3><a href="/events/4/">프로젝트 F 공식 굿즈 예약</a></h3>
-          <p class="meta">서울 잠실 · 굿즈 예약</p>
-          <p class="period">2026.06.12 - 2026.06.25</p>
-        </article>
-        <article class="recent-card">
-          <p class="recent-label">NEW</p>
-          <h3><a href="/events/5/">작품 G 콜라보 카페 1차</a></h3>
-          <p class="meta">경기 성남 · 콜라보 카페</p>
-          <p class="period">2026.06.14 - 2026.06.29</p>
-        </article>
-      </div>
+      {% if recent_events %}
+        <div class="recent-grid">
+          {% for row in recent_events %}
+            <article class="recent-card">
+              <p class="recent-label">NEW</p>
+              <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
+              <p class="meta">{{ row.event.location_name }} · {{ row.category_label }}</p>
+              {% if row.event.start_date and row.event.end_date %}
+                <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="notice">등록된 행사가 없습니다.</p>
+      {% endif %}
     </section>
 
     <section class="ops" aria-label="운영 원칙 상세">
