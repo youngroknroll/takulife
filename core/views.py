@@ -1,10 +1,15 @@
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from archive.models import UserEventStatus
 from core.vocab import (
+    ARCHIVE_STATUS,
+    ARCHIVE_STATUS_LABELS,
     CATEGORY,
     CATEGORY_LABELS,
     EVENT_STATUS,
@@ -127,26 +132,89 @@ def event_detail(request, event_id):
     return render(request, "core/event_detail.html", context)
 
 
+def _build_archive_status_rows(user_statuses):
+    """Build display rows for archive status entries.
+
+    Returns a list of dicts with event, status_slug, status_label, category_label,
+    and status_id for template rendering and JS data attributes.
+    """
+    rows = []
+    for us in user_statuses:
+        event = us.event
+        rows.append(
+            {
+                "status_id": us.pk,
+                "status_slug": us.status,
+                "status_label": ARCHIVE_STATUS_LABELS.get(us.status, us.status),
+                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "event": event,
+            }
+        )
+    return rows
+
+
+@login_required
+@ensure_csrf_cookie
 def archive(request):
+    user_statuses = (
+        UserEventStatus.objects.filter(user=request.user)
+        .select_related("event")
+        .order_by("-updated_at")
+    )
+    status_rows = _build_archive_status_rows(user_statuses)
     return render(
         request,
         "core/archive.html",
         {
             "project_name": "takulife",
+            "status_rows": status_rows,
+            "has_statuses": len(status_rows) > 0,
         },
     )
 
 
+_VALID_ARCHIVE_STATUS_SLUGS = {"interested", "planned", "visited", "missed"}
+
+
+@login_required
+@ensure_csrf_cookie
 def archive_statuses(request):
+    selected_status = request.GET.get("status", "")
+    if selected_status not in _VALID_ARCHIVE_STATUS_SLUGS:
+        selected_status = ""
+
+    qs = (
+        UserEventStatus.objects.filter(user=request.user)
+        .select_related("event")
+        .order_by("-updated_at")
+    )
+    if selected_status:
+        qs = qs.filter(status=selected_status)
+
+    all_qs = UserEventStatus.objects.filter(user=request.user)
+    status_counts = {
+        "interested": all_qs.filter(status="interested").count(),
+        "planned": all_qs.filter(status="planned").count(),
+        "visited": all_qs.filter(status="visited").count(),
+        "missed": all_qs.filter(status="missed").count(),
+    }
+
+    status_rows = _build_archive_status_rows(qs)
     return render(
         request,
         "core/archive_statuses.html",
         {
             "project_name": "takulife",
+            "status_rows": status_rows,
+            "has_statuses": len(status_rows) > 0,
+            "selected_status": selected_status,
+            "status_counts": status_counts,
+            "ARCHIVE_STATUS": ARCHIVE_STATUS,
         },
     )
 
 
+@login_required
 def archive_visits(request):
     return render(
         request,

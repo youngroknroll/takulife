@@ -413,9 +413,17 @@
                   {% if row.event.start_date and row.event.end_date %}
                     <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
                   {% endif %}
-                  <div class="status-row">
-                    <button class="status-btn interested" type="button" disabled title="로그인 후 이용 가능">관심</button>
-                    <button class="status-btn planned" type="button" disabled title="로그인 후 이용 가능">방문 예정</button>
+                  <div class="status-row" data-status-error-container>
+                    <button class="status-btn interested" type="button"
+                      data-status-action
+                      data-event-id="{{ row.event.id }}"
+                      data-status="interested"
+                      aria-pressed="false">관심</button>
+                    <button class="status-btn planned" type="button"
+                      data-status-action
+                      data-event-id="{{ row.event.id }}"
+                      data-status="planned"
+                      aria-pressed="false">방문 예정</button>
                   </div>
                 </div>
                 <div>
