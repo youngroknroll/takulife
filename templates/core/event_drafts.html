@@ -56,6 +56,10 @@
     font-weight: 700;
     padding: 9px 12px;
   }
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
   .draft-list {
     display: grid;
     gap: 10px;
@@ -76,26 +80,26 @@
     gap: 7px;
     margin-bottom: 7px;
   }
-  .chip {
+  .draft-chip {
     border-radius: 999px;
     padding: 4px 9px;
     font-size: 0.74rem;
     font-weight: 700;
     white-space: nowrap;
   }
-  .chip.pending {
+  .draft-chip.pending {
     background: var(--amber-soft);
     color: var(--amber-ink);
   }
-  .chip.approved {
+  .draft-chip.approved {
     background: var(--mint-soft);
     color: var(--mint-ink);
   }
-  .chip.rejected {
+  .draft-chip.rejected {
     background: var(--rose-soft);
     color: var(--rose-ink);
   }
-  .chip.category {
+  .draft-chip.category {
     background: var(--brand-soft);
     color: var(--brand);
   }
@@ -130,16 +134,14 @@
     position: sticky;
     top: 12px;
   }
-  .rule-list,
-  .mini-list {
+  .rule-list {
     margin: 12px 0 0;
     padding: 0;
     list-style: none;
     display: grid;
     gap: 8px;
   }
-  .rule-list li,
-  .mini-list li {
+  .rule-list li {
     border: 1px solid #d9e4f4;
     border-radius: 9px;
     background: #fbfcff;
@@ -202,32 +204,25 @@
         <a href="/archive/">내 기록장</a>
         <a class="active" href="/event-drafts/">드래프트 관리</a>
       </nav>
-      <a class="top-action" href="/admin/">Django Admin</a>
+      {% include "core/_topbar.html" %}
     </header>
 
     <section class="hero">
       <h1>드래프트 관리</h1>
-      <p>
-        공식 URL에서 만든 행사 후보를 검토하는 관리자 목업 화면입니다.
-        현재는 `/api/event-drafts/` 계약과 같은 필드명을 쓰는 정적 데이터로 구성했습니다.
-      </p>
+      <p>공식 URL에서 가져온 행사 후보를 검토합니다. 승인 전까지 공개 목록에 노출되지 않습니다.</p>
 
       <div class="summary-grid" aria-label="드래프트 요약">
         <article class="summary-card">
           <p class="summary-label">검토 대기</p>
-          <p class="summary-value">8</p>
+          <p class="summary-value">{{ stats.pending }}</p>
         </article>
         <article class="summary-card">
-          <p class="summary-label">오늘 승인</p>
-          <p class="summary-value">3</p>
+          <p class="summary-label">승인됨</p>
+          <p class="summary-value">{{ stats.approved }}</p>
         </article>
         <article class="summary-card">
-          <p class="summary-label">반려</p>
-          <p class="summary-value">2</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">가져오기 실패</p>
-          <p class="summary-value">1</p>
+          <p class="summary-label">반려됨</p>
+          <p class="summary-value">{{ stats.rejected }}</p>
         </article>
       </div>
     </section>
@@ -235,56 +230,68 @@
     <section class="layout">
       <article class="panel">
         <h2>URL 드래프트 생성</h2>
-        <p class="panel-note">목업 폼입니다. 실제 연결 시 `source_url`, `source_name`만 전송합니다.</p>
+        <p class="panel-note">공식 URL과 출처명을 입력하면 본문을 가져와 행사 후보를 자동 추출합니다.</p>
 
         <div class="create-box">
-          <div class="create-form" aria-label="드래프트 생성 목업 폼">
-            <input type="url" value="https://official.example/events/popup-2026" aria-label="source_url">
-            <input type="text" value="공식 사이트" aria-label="source_name">
-            <button type="button">드래프트 생성</button>
+          <form id="draft-create-form" novalidate>
+            <div class="create-form" aria-label="드래프트 생성 폼">
+              <input
+                id="draft-url"
+                type="url"
+                placeholder="https://official.example/events/..."
+                aria-label="source_url"
+                autocomplete="off"
+              >
+              <input
+                id="draft-source-name"
+                type="text"
+                placeholder="출처명 (선택)"
+                aria-label="source_name"
+              >
+              <button type="submit">드래프트 생성</button>
+            </div>
+          </form>
+          <p
+            id="draft-create-error"
+            class="notice"
+            role="alert"
+            hidden
+          ></p>
+        </div>
+
+        {% if draft_rows %}
+          <div class="draft-list" aria-label="드래프트 목록">
+            {% for row in draft_rows %}
+              <article class="draft-card">
+                <div>
+                  <div class="draft-top">
+                    <span class="draft-chip {{ row.draft.review_status }}">{{ row.draft.review_status }}</span>
+                    {% if row.category_label %}
+                      <span class="draft-chip category">{{ row.category_label }}</span>
+                    {% endif %}
+                  </div>
+                  <h3>{{ row.draft.extracted_title|default:row.draft.raw_title|default:"(제목 없음)" }}</h3>
+                  <p class="meta">
+                    {% if row.draft.extracted_work_title %}{{ row.draft.extracted_work_title }}{% endif %}
+                    {% if row.draft.extracted_work_title and row.region_label %} · {% endif %}
+                    {% if row.region_label %}{{ row.region_label }}{% endif %}
+                    {% if row.draft.extracted_start_date %} · {{ row.draft.extracted_start_date }}{% endif %}
+                  </p>
+                  <p class="source">
+                    <a href="{{ row.draft.source_url }}" target="_blank" rel="noopener">
+                      {{ row.draft.source_url }} ↗
+                    </a>
+                  </p>
+                </div>
+                <a class="queue-link" href="/event-drafts/{{ row.draft.id }}/">
+                  {% if row.draft.review_status == "pending" %}검토하기{% else %}상세 보기{% endif %}
+                </a>
+              </article>
+            {% endfor %}
           </div>
-        </div>
-
-        <div class="draft-list" aria-label="드래프트 목록">
-          <article class="draft-card">
-            <div>
-              <div class="draft-top">
-                <span class="chip pending">pending</span>
-                <span class="chip category">popup_store</span>
-              </div>
-              <h3>블루 아카이브 3주년 팝업 후보</h3>
-              <p class="meta">extracted_work_title: 블루 아카이브 · extracted_region: seoul · extracted_start_date: 2026-06-12</p>
-              <p class="source">source_url: <a href="https://official.example/events/blue-archive-popup" target="_blank" rel="noopener">https://official.example/events/blue-archive-popup ↗</a></p>
-            </div>
-            <a class="queue-link" href="/event-drafts/1/">검토하기</a>
-          </article>
-
-          <article class="draft-card">
-            <div>
-              <div class="draft-top">
-                <span class="chip pending">pending</span>
-                <span class="chip category">collaboration_cafe</span>
-              </div>
-              <h3>프로젝트 세카이 시즌 카페 후보</h3>
-              <p class="meta">extracted_work_title: 프로젝트 세카이 · extracted_region: seoul · extracted_start_date: 2026-06-18</p>
-              <p class="source">source_url: <a href="https://official.example/cafe/project-sekai" target="_blank" rel="noopener">https://official.example/cafe/project-sekai ↗</a></p>
-            </div>
-            <a class="queue-link" href="/event-drafts/2/">검토하기</a>
-          </article>
-
-          <article class="draft-card">
-            <div>
-              <div class="draft-top">
-                <span class="chip approved">approved</span>
-                <span class="chip category">theater_bonus</span>
-              </div>
-              <h3>극장판 특전 2주차 배포</h3>
-              <p class="meta">extracted_work_title: 우마무스메 · extracted_region: seoul · extracted_start_date: 2026-05-30</p>
-              <p class="source">source_url: <a href="https://official.example/movie/bonus-week2" target="_blank" rel="noopener">https://official.example/movie/bonus-week2 ↗</a></p>
-            </div>
-            <a class="queue-link" href="/event-drafts/3/">상세 보기</a>
-          </article>
-        </div>
+        {% else %}
+          <p class="notice">등록된 드래프트가 없습니다. URL을 입력해 첫 드래프트를 생성해 보세요.</p>
+        {% endif %}
       </article>
 
       <aside class="side-stack" aria-label="드래프트 관리 보조 정보">
@@ -298,43 +305,11 @@
             <li>승인 시 published Event 생성</li>
           </ul>
         </section>
-
-        <section class="panel">
-          <h2>API 연결 메모</h2>
-          <ul class="mini-list">
-            <li>GET /api/event-drafts/</li>
-            <li>POST /api/event-drafts/</li>
-            <li>PATCH /api/event-drafts/{id}/</li>
-            <li>POST approve/reject actions</li>
-          </ul>
-          <p class="notice">이 페이지는 목업입니다. 권한, CSRF, 오류 처리는 API 연결 단계에서 다룹니다.</p>
-        </section>
       </aside>
     </section>
   </main>
+{% endblock %}
 
-  <script>
-    const eventDrafts = [
-      {
-        id: 1,
-        source_url: "https://official.example/events/blue-archive-popup",
-        source_name: "공식 사이트",
-        raw_title: "블루 아카이브 3주년 팝업 안내",
-        raw_text: "공식 공지 본문 목업",
-        extracted_title: "블루 아카이브 3주년 팝업 후보",
-        extracted_category: "popup_store",
-        extracted_work_title: "블루 아카이브",
-        extracted_location_name: "홍대 AK&",
-        extracted_region: "seoul",
-        extracted_start_date: "2026-06-12",
-        extracted_end_date: "2026-06-23",
-        extracted_summary: "3주년 기념 팝업스토어",
-        review_status: "pending",
-        created_at: "2026-06-09T09:00:00+09:00",
-        updated_at: "2026-06-09T09:00:00+09:00"
-      }
-    ];
-
-    void eventDrafts;
-  </script>
+{% block extra_js %}
+  <script defer src="{% static 'js/draft.js' %}"></script>
 {% endblock %}
