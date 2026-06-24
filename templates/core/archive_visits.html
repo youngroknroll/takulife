@@ -31,35 +31,25 @@
     border-radius: 10px;
     background: #fbfcff;
     padding: 12px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 110px;
-    gap: 12px;
-    align-items: start;
   }
-  .visit-top {
+  .visit-card-top {
     display: flex;
     flex-wrap: wrap;
     gap: 7px;
     margin-bottom: 7px;
   }
-  .chip {
+  .visit-chip {
     border-radius: 999px;
     padding: 4px 9px;
     font-size: 0.74rem;
     font-weight: 700;
     white-space: nowrap;
-  }
-  .chip.visited {
     background: var(--mint-soft);
     color: var(--mint-ink);
   }
-  .chip.note {
+  .visit-chip.category {
     background: var(--brand-soft);
     color: var(--brand);
-  }
-  .chip.photo {
-    background: var(--amber-soft);
-    color: var(--amber-ink);
   }
   .visit-card h3 {
     margin: 0 0 5px;
@@ -73,21 +63,150 @@
     font-size: 0.84rem;
   }
   .review {
-    margin-top: 6px;
+    margin-top: 5px;
     color: #2c4563;
   }
-  .photo-placeholder {
-    border: 1px dashed #9eb6db;
-    border-radius: 10px;
-    min-height: 86px;
-    display: grid;
-    place-items: center;
-    color: #46617f;
+  /* Photo thumbnails row */
+  .photo-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .photo-thumb-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .photo-thumb {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #d9e4f4;
+    display: block;
+  }
+  .photo-delete-btn {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .photo-delete-btn:hover {
+    background: rgba(180,0,0,0.75);
+  }
+  /* Photo upload row */
+  .photo-upload-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .photo-upload-label {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .photo-upload-input {
+    font-size: 0.82rem;
+  }
+  .photo-upload-btn {
+    border: 1px solid #c7d7f8;
+    border-radius: 8px;
     background: #f8fbff;
-    font-size: 0.8rem;
+    color: #24456f;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    cursor: pointer;
+    min-height: 36px;
+  }
+  .photo-upload-btn:hover {
+    background: var(--brand-soft);
+  }
+  .photo-error {
+    font-size: 0.82rem;
+    color: #c0392b;
+    margin-top: 4px;
+    min-height: 1.2em;
+  }
+  /* Record delete */
+  .visit-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+  .record-delete-btn {
+    border: 1px solid #d9e4f4;
+    border-radius: 8px;
+    background: #fff;
+    color: #8a3232;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    cursor: pointer;
+    min-height: 36px;
+  }
+  .record-delete-btn:hover {
+    background: #fff0f0;
+    border-color: #e8bbbb;
+  }
+  /* Create form */
+  .create-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .form-group {
+    display: grid;
+    gap: 4px;
+  }
+  .form-group label {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .form-group select,
+  .form-group input[type="date"],
+  .form-group input[type="text"] {
+    border: 1px solid #c7d7f8;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: #fff;
+    width: 100%;
+  }
+  .form-submit-btn {
+    border: 1px solid var(--brand);
+    border-radius: 8px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 0.9rem;
     font-weight: 700;
-    text-align: center;
-    padding: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+    min-height: 44px;
+    width: 100%;
+  }
+  .form-submit-btn:hover {
+    opacity: 0.9;
+  }
+  .form-error {
+    font-size: 0.82rem;
+    color: #c0392b;
+    min-height: 1.2em;
   }
   .side-stack {
     display: grid;
@@ -126,8 +245,7 @@
     .page {
       padding: 18px 14px 64px;
     }
-    .topbar,
-    .visit-card {
+    .topbar {
       grid-template-columns: 1fr;
     }
     .nav-links {
@@ -143,99 +261,147 @@
 {% block content %}
   <main class="page">
     <header class="topbar">
-      <a class="brand" href="/">takulife</a>
+      <a class="brand" href="/">{{ project_name }}</a>
       <nav class="nav-links" aria-label="아카이브 메뉴">
         <a href="/archive/">내 기록장</a>
         <a href="/archive/statuses/">상태 기록</a>
-        <a class="active" href="/archive/visits/">방문 기록</a>
+        <a class="active" href="/archive/visits/" aria-current="page">방문 기록</a>
       </nav>
-      <a class="top-action" href="/events/">행사 찾기</a>
+      {% include "core/_topbar.html" %}
     </header>
 
     <section class="hero">
       <h1>방문 기록</h1>
       <p>
-        방문한 행사와 한줄 메모, 사진을 월별로 모아 보는 기록 화면입니다.
+        방문한 행사와 한줄 메모, 사진을 모아 보는 기록 화면입니다.
         방문 직후 짧게 남긴 메모로 다음 일정 판단 기준을 만듭니다.
       </p>
 
       <div class="summary-grid" aria-label="방문 기록 요약">
         <article class="summary-card">
           <p class="summary-label">누적 방문</p>
-          <p class="summary-value">12</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">이번 달</p>
-          <p class="summary-value">3</p>
+          <p class="summary-value">{{ visit_rows|length }}</p>
         </article>
         <article class="summary-card">
           <p class="summary-label">메모 있음</p>
-          <p class="summary-value">9</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">사진 자리</p>
-          <p class="summary-value">18</p>
+          <p class="summary-value">{% with memo_count=0 %}{% for row in visit_rows %}{% if row.short_review %}{% with memo_count=memo_count|add:1 %}{% endwith %}{% endif %}{% endfor %}{{ visit_rows|length }}{% endwith %}</p>
         </article>
       </div>
     </section>
 
+    <div id="visit-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
+
     <section class="layout">
       <article class="panel">
-        <h2>월별 방문 타임라인</h2>
-        <p class="panel-note">방문한 행사를 월별로 정리한 타임라인입니다.</p>
+        <h2>방문 타임라인</h2>
+        <p class="panel-note">방문한 행사를 최신순으로 정리한 타임라인입니다.</p>
 
-        <div class="timeline">
-          <article class="visit-card">
-            <div>
-              <div class="visit-top">
-                <span class="chip visited">방문 완료</span>
-                <span class="chip note">메모</span>
-                <span class="chip photo">사진</span>
-              </div>
-              <h3>극장판 특전 2주차 배포</h3>
-              <p class="meta">2026-06-02 방문 · CGV 용산</p>
-              <p class="review">2주차 특전 수량이 빨리 줄어서 오전 방문이 안정적이었다.</p>
-            </div>
-            <div class="photo-placeholder">사진 자리<br>2장</div>
-          </article>
+        {% if has_visits %}
+          <div class="timeline" id="visit-timeline">
+            {% for row in visit_rows %}
+              <article
+                class="visit-card"
+                data-record-id="{{ row.record_id }}"
+              >
+                <div class="visit-card-top">
+                  {% if row.category_label %}
+                    <span class="visit-chip category">{{ row.category_label }}</span>
+                  {% endif %}
+                  <span class="visit-chip">방문 완료</span>
+                </div>
 
-          <article class="visit-card">
-            <div>
-              <div class="visit-top">
-                <span class="chip visited">방문 완료</span>
-                <span class="chip note">메모</span>
-              </div>
-              <h3>블루 아카이브 3주년 팝업</h3>
-              <p class="meta">2026-06-14 방문 · 홍대 AK&</p>
-              <p class="review">대기 동선은 길었지만 굿즈 진열과 계산 흐름은 깔끔했다.</p>
-            </div>
-            <div class="photo-placeholder">사진 자리<br>4장</div>
-          </article>
+                <h3>{{ row.event.title }}</h3>
+                <p class="meta">
+                  {{ row.visited_on }}
+                  {% if row.event.location_name %} · {{ row.event.location_name }}{% endif %}
+                </p>
+                {% if row.short_review %}
+                  <p class="review">{{ row.short_review }}</p>
+                {% endif %}
 
-          <article class="visit-card">
-            <div>
-              <div class="visit-top">
-                <span class="chip visited">방문 완료</span>
-                <span class="chip photo">사진</span>
-              </div>
-              <h3>프로젝트 세카이 시즌 카페</h3>
-              <p class="meta">2026-06-20 방문 · 합정 카페거리</p>
-              <p class="review">메뉴 품절 전 방문. 다음에는 예약 시간보다 조금 일찍 도착할 것.</p>
-            </div>
-            <div class="photo-placeholder">사진 자리<br>3장</div>
-          </article>
-        </div>
+                {% if row.photos %}
+                  <div class="photo-list" aria-label="첨부 사진">
+                    {% for photo in row.photos %}
+                      <div class="photo-thumb-wrap">
+                        <img
+                          class="photo-thumb"
+                          src="{{ photo.image.url }}"
+                          alt="방문 사진 {{ forloop.counter }}"
+                          loading="lazy"
+                        >
+                        <button
+                          class="photo-delete-btn"
+                          type="button"
+                          data-photo-id="{{ photo.id }}"
+                          data-record-id="{{ row.record_id }}"
+                          aria-label="사진 삭제"
+                        >x</button>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
+                <div class="photo-upload-row">
+                  <span class="photo-upload-label">사진 추가</span>
+                  <input
+                    class="photo-upload-input"
+                    type="file"
+                    accept="image/*"
+                    data-record-id="{{ row.record_id }}"
+                    aria-label="{{ row.event.title }} 사진 업로드"
+                  >
+                  <button
+                    class="photo-upload-btn"
+                    type="button"
+                    data-upload-record-id="{{ row.record_id }}"
+                  >업로드</button>
+                </div>
+                <p class="photo-error" data-photo-error="{{ row.record_id }}" aria-live="polite"></p>
+
+                <div class="visit-card-actions">
+                  <button
+                    class="record-delete-btn"
+                    type="button"
+                    data-delete-record-id="{{ row.record_id }}"
+                    aria-label="{{ row.event.title }} 방문 기록 삭제"
+                  >기록 삭제</button>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="notice">
+            아직 방문 기록이 없습니다. 오른쪽 폼에서 첫 기록을 남겨보세요.
+          </p>
+        {% endif %}
       </article>
 
       <aside class="side-stack" aria-label="방문 기록 보조 정보">
         <section class="panel">
-          <h2>방문 기록 팁</h2>
-          <p class="panel-note">방문 직후 짧게 남길수록 다음 일정 판단에 도움이 됩니다.</p>
-          <ul class="rule-list">
-            <li>대기 시간과 방문 시간대를 함께 기록</li>
-            <li>굿즈 재고와 재방문 의사 메모</li>
-            <li>다음 시즌 알림 필요 여부 표시</li>
-          </ul>
+          <h2>방문 기록 추가</h2>
+          <p class="panel-note">방문한 행사와 날짜, 한줄 메모를 남겨보세요.</p>
+
+          <form id="visit-create-form" class="create-form" novalidate>
+            <div class="form-group">
+              <label for="visit-event">행사</label>
+              <select id="visit-event" name="event" required>
+                <option value="">행사를 선택하세요</option>
+                {% for event in selectable_events %}
+                  <option value="{{ event.id }}">{{ event.title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="visit-date">방문 날짜</label>
+              <input id="visit-date" type="date" name="visited_on" required>
+            </div>
+            <div class="form-group">
+              <label for="visit-review">한줄 메모 (선택)</label>
+              <input id="visit-review" type="text" name="short_review" maxlength="255" placeholder="짧은 메모를 남겨보세요">
+            </div>
+            <p class="form-error" id="visit-create-error" aria-live="polite"></p>
+            <button class="form-submit-btn" type="submit">기록 추가</button>
+          </form>
         </section>
 
         <section class="panel">
@@ -244,20 +410,15 @@
             <li>방문 기록은 본인만 보고 관리할 수 있습니다</li>
             <li>공개된 행사에 대해서만 기록을 남길 수 있습니다</li>
             <li>사진은 JPEG, PNG, WebP 형식을 지원합니다</li>
-            <li>다른 사용자의 기록은 볼 수 없습니다</li>
+            <li>사진은 기록당 최대 10장까지 첨부할 수 있습니다</li>
+            <li>사진 파일 크기는 5MB 이하여야 합니다</li>
           </ul>
         </section>
       </aside>
     </section>
   </main>
+{% endblock %}
 
-  <script>
-    const visitRecords = [
-      { id: 1, event: 103, visited_on: "2026-06-02", short_review: "2주차 특전 수량이 빨리 줄었다." },
-      { id: 2, event: 101, visited_on: "2026-06-14", short_review: "대기 동선은 길었지만 계산 흐름은 깔끔했다." },
-      { id: 3, event: 102, visited_on: "2026-06-20", short_review: "메뉴 품절 전 방문." }
-    ];
-
-    void visitRecords;
-  </script>
+{% block extra_js %}
+  <script defer src="{% static 'js/visit.js' %}"></script>
 {% endblock %}
