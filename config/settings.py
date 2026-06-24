@@ -91,3 +91,14 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
+
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/archive/"
+LOGOUT_REDIRECT_URL = "/"
+
+# Secure cookies: disabled in development (http), enabled when SECURE_COOKIES env is set.
+_secure_cookies = os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
+SESSION_COOKIE_SECURE = _secure_cookies
+CSRF_COOKIE_SECURE = _secure_cookies
+# Keep CSRF_COOKIE_HTTPONLY False so the JS layer can read the csrftoken cookie.
+CSRF_COOKIE_HTTPONLY = False

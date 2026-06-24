@@ -288,16 +288,13 @@
 {% block content %}
   <div class="page">
     <header class="topbar">
-      <div class="brand">{{ project_name }}</div>
-      <nav class="nav-links" aria-label="주요 이동">
-        <a href="/">홈</a>
-        <a href="/events/">행사 목록</a>
-        <a href="/events/1/">행사 상세 예시</a>
+      <a class="brand" href="/">{{ project_name }}</a>
+      <nav class="nav-links" aria-label="아카이브 메뉴">
         <a href="/archive/" class="active" aria-current="page">내 기록장</a>
+        <a href="/archive/statuses/">상태 기록</a>
+        <a href="/events/">행사 찾기</a>
       </nav>
-      <div class="top-action">
-        <a href="/events/">새 행사 찾기</a>
-      </div>
+      {% include "core/_topbar.html" %}
     </header>
 
     <section class="hero" aria-label="기록장 소개">
@@ -327,48 +324,42 @@
     </section>
 
     <div class="layout">
-      <main class="panel" aria-label="월별 타임라인">
-        <h2>월별 타임라인</h2>
+      <main class="panel" aria-label="저장한 행사 기록">
+        <h2>저장한 행사</h2>
 
-        <section class="month-block" aria-label="2026년 6월">
-          <p class="month-title">2026년 6월</p>
-          <article class="record-card">
-            <div class="record-top">
-              <h3 class="record-title">스튜디오 루미너스 팝업 in 홍대</h3>
-              <span class="status visited">방문 완료</span>
-            </div>
-            <p class="record-meta">방문일 2026-06-01 · 서울 마포구</p>
-            <p class="record-note">오픈 직후 입장, 굿즈 재고 여유, 대기 20분 기록.</p>
-          </article>
-          <article class="record-card">
-            <div class="record-top">
-              <h3 class="record-title">메카닉 시어터 특전 상영회</h3>
-              <span class="status planned">방문 예정</span>
-            </div>
-            <p class="record-meta">예정일 2026-06-05 · 서울 용산구</p>
-            <p class="record-note">특전 소진 가능성 높음, 첫 회차 우선 체크 필요.</p>
-          </article>
-        </section>
-
-        <section class="month-block" aria-label="2026년 5월">
-          <p class="month-title">2026년 5월</p>
-          <article class="record-card">
-            <div class="record-top">
-              <h3 class="record-title">아케인 콜라보 카페 시즌2</h3>
-              <span class="status visited">방문 완료</span>
-            </div>
-            <p class="record-meta">방문일 2026-05-24 · 경기 성남시</p>
-            <p class="record-note">메뉴 회전 빠름, 예약 시간보다 10분 일찍 도착 권장.</p>
-          </article>
-          <article class="record-card">
-            <div class="record-top">
-              <h3 class="record-title">에코즈 굿즈 예약 팝업</h3>
-              <span class="status missed">놓침</span>
-            </div>
-            <p class="record-meta">종료일 2026-05-12 · 서울 강남구</p>
-            <p class="record-note">재고 소진으로 방문 보류, 다음 시즌 알림 필요.</p>
-          </article>
-        </section>
+        {% if has_statuses %}
+          <div class="status-list">
+            {% for row in status_rows %}
+              <article class="record-card">
+                <div class="record-top">
+                  <h3 class="record-title">
+                    <a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a>
+                  </h3>
+                  <span class="status {{ row.status_slug }}">{{ row.status_label }}</span>
+                </div>
+                {% if row.event.location_name %}
+                  <p class="record-meta">{{ row.event.location_name }}</p>
+                {% endif %}
+                {% if row.event.start_date and row.event.end_date %}
+                  <p class="record-meta">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
+                {% endif %}
+                <div class="status-row" data-status-error-container>
+                  <button
+                    class="status-btn {{ row.status_slug }}"
+                    type="button"
+                    data-status-action="change"
+                    data-event-id="{{ row.event.id }}"
+                    data-status="{{ row.status_slug }}"
+                    data-status-id="{{ row.status_id }}"
+                    aria-pressed="true"
+                  >{{ row.status_label }}</button>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="notice">아직 저장한 행사가 없습니다. <a href="/events/">행사 목록에서 찾아보세요</a></p>
+        {% endif %}
       </main>
 
       <aside class="panel" aria-label="빠른 기록 액션">
