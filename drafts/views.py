@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from core.errors import error_response, field_error_response
 
 from .models import EventDraft
+from .queries import draft_review_stats
 from .serializers import EventDraftSerializer, EventDraftUpdateSerializer
 from .services import (
     DraftCreationEmptyExtractionError,
@@ -25,6 +26,13 @@ from .services import (
     reject_draft,
     update_draft,
 )
+
+
+class AdminEventDraftStatsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        return Response(draft_review_stats())
 
 
 class AdminEventDraftListCreateView(ListCreateAPIView):

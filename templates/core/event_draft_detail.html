@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 드래프트 검토{% endblock %}
+{% block title %}{{ project_name }} | 드래프트 검토 #{{ draft.id }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -35,12 +35,22 @@
   }
   .status-chip {
     border-radius: 999px;
-    background: var(--amber-soft);
-    color: var(--amber-ink);
     font-size: 0.78rem;
     font-weight: 700;
     padding: 6px 10px;
     white-space: nowrap;
+  }
+  .status-chip.pending {
+    background: var(--amber-soft);
+    color: var(--amber-ink);
+  }
+  .status-chip.approved {
+    background: var(--mint-soft);
+    color: var(--mint-ink);
+  }
+  .status-chip.rejected {
+    background: var(--rose-soft);
+    color: var(--rose-ink);
   }
   .layout {
     display: grid;
@@ -80,6 +90,19 @@
     padding: 10px 12px;
     font: inherit;
     font-size: 0.9rem;
+  }
+  input:read-only,
+  textarea:read-only {
+    background: #f4f6fa;
+    color: var(--muted);
+    cursor: default;
+  }
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    background: #f4f6fa;
+    color: var(--muted);
+    cursor: not-allowed;
   }
   textarea {
     min-height: 96px;
@@ -139,6 +162,10 @@
     color: var(--rose-ink);
     border-color: #fecdd3;
   }
+  .action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   .rule-list {
     margin: 12px 0 0;
     padding: 0;
@@ -153,6 +180,15 @@
     padding: 9px 10px;
     color: #2c4563;
     font-size: 0.86rem;
+  }
+  .approve-success {
+    color: var(--mint-ink);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .approve-success a {
+    color: var(--brand);
+    font-weight: 700;
   }
   @media (max-width: 920px) {
     .layout,
@@ -187,88 +223,206 @@
       <a class="top-action" href="/event-drafts/">목록으로</a>
     </header>
 
+    {% if draft_not_found %}
+      <p class="notice" role="alert">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="/event-drafts/">목록으로 돌아가기</a></p>
+    {% else %}
+
     <section class="hero">
       <div>
-        <h1>드래프트 검토</h1>
+        <h1>드래프트 검토 #{{ draft.id }}</h1>
         <p>
-          드래프트 #{{ draft_id }}의 원문과 추출 후보를 비교하는 관리자 목업입니다.
-          실제 연결 시 pending 드래프트만 수정, 승인, 반려할 수 있습니다.
+          {% if draft.source_name %}{{ draft.source_name }}에서 가져온 {% endif %}
+          행사 후보입니다. 추출 필드를 확인하고 수정한 뒤 승인 또는 반려하세요.
         </p>
       </div>
-      <span class="status-chip">review_status: pending</span>
+      <span class="status-chip {{ draft.review_status }}">{{ draft.review_status }}</span>
     </section>
+
+    {% if not is_pending %}
+      <p class="notice" role="status">
+        이 드래프트는 <strong>{{ draft.review_status }}</strong> 상태입니다. 수정, 승인, 반려는 pending 상태에서만 가능합니다.
+      </p>
+    {% endif %}
 
     <section class="layout">
       <article class="panel">
         <h2>추출 후보 편집</h2>
-        <p class="panel-note">목업 폼입니다. 실제 PATCH에서는 `source_url`, `raw_title`, `raw_text`, `review_status`를 수정하지 않습니다.</p>
+        <p class="panel-note">source_url, raw_title, raw_text는 수정할 수 없습니다. pending 상태에서만 추출 필드를 수정할 수 있습니다.</p>
 
-        <div class="field-grid">
-          <div class="field full">
-            <label for="title">extracted_title</label>
-            <input id="title" value="블루 아카이브 3주년 팝업">
+        <form
+          id="draft-edit-form"
+          data-draft-id="{{ draft.id }}"
+          novalidate
+        >
+          <div class="field-grid">
+            <div class="field">
+              <label for="edit-source-name">source_name</label>
+              <input
+                id="edit-source-name"
+                name="source_name"
+                type="text"
+                value="{{ draft.source_name }}"
+                {% if not is_pending %}disabled{% endif %}
+              >
+            </div>
+            <div class="field full">
+              <label for="edit-title">extracted_title</label>
+              <input
+                id="edit-title"
+                name="extracted_title"
+                type="text"
+                value="{{ draft.extracted_title }}"
+                {% if not is_pending %}disabled{% endif %}
+              >
+            </div>
+            <div class="field">
+              <label for="edit-category">extracted_category</label>
+              <select
+                id="edit-category"
+                name="extracted_category"
+                {% if not is_pending %}disabled{% endif %}
+              >
+                <option value="">— 선택 —</option>
+                {% for slug, label in CATEGORY %}
+                  <option value="{{ slug }}"{% if draft.extracted_category == slug %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="edit-work">extracted_work_title</label>
+              <input
+                id="edit-work"
+                name="extracted_work_title"
+                type="text"
+                value="{{ draft.extracted_work_title }}"
+                {% if not is_pending %}disabled{% endif %}
+              >
+            </div>
+            <div class="field">
+              <label for="edit-location">extracted_location_name</label>
+              <input
+                id="edit-location"
+                name="extracted_location_name"
+                type="text"
+                value="{{ draft.extracted_location_name }}"
+                {% if not is_pending %}disabled{% endif %}
+              >
+            </div>
+            <div class="field">
+              <label for="edit-region">extracted_region</label>
+              <select
+                id="edit-region"
+                name="extracted_region"
+                {% if not is_pending %}disabled{% endif %}
+              >
+                <option value="">— 선택 —</option>
+                {% for slug, label in REGION %}
+                  <option value="{{ slug }}"{% if draft.extracted_region == slug %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="edit-start">extracted_start_date</label>
+              <input
+                id="edit-start"
+                name="extracted_start_date"
+                type="date"
+                value="{{ draft.extracted_start_date|default:'' }}"
+                {% if not is_pending %}disabled{% endif %}
+              >
+            </div>
+            <div class="field">
+              <label for="edit-end">extracted_end_date</label>
+              <input
+                id="edit-end"
+                name="extracted_end_date"
+                type="date"
+                value="{{ draft.extracted_end_date|default:'' }}"
+                {% if not is_pending %}disabled{% endif %}
+              >
+            </div>
+            <div class="field full">
+              <label for="edit-summary">extracted_summary</label>
+              <textarea
+                id="edit-summary"
+                name="extracted_summary"
+                {% if not is_pending %}disabled{% endif %}
+              >{{ draft.extracted_summary }}</textarea>
+            </div>
           </div>
-          <div class="field">
-            <label for="category">extracted_category</label>
-            <select id="category">
-              <option selected>popup_store</option>
-              <option>collaboration_cafe</option>
-              <option>theater_bonus</option>
-              <option>goods_reservation</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="work">extracted_work_title</label>
-            <input id="work" value="블루 아카이브">
-          </div>
-          <div class="field">
-            <label for="location">extracted_location_name</label>
-            <input id="location" value="홍대 AK&">
-          </div>
-          <div class="field">
-            <label for="region">extracted_region</label>
-            <input id="region" value="seoul">
-          </div>
-          <div class="field">
-            <label for="start">extracted_start_date</label>
-            <input id="start" value="2026-06-12">
-          </div>
-          <div class="field">
-            <label for="end">extracted_end_date</label>
-            <input id="end" value="2026-06-23">
-          </div>
-          <div class="field full">
-            <label for="summary">extracted_summary</label>
-            <textarea id="summary">3주년 기념 공식 팝업스토어. 굿즈 판매와 현장 특전이 예정되어 있습니다.</textarea>
-          </div>
-        </div>
+
+          {% if is_pending %}
+            <div style="margin-top:12px;">
+              <button class="action-button secondary" type="submit">수정 저장</button>
+            </div>
+          {% endif %}
+        </form>
+
+        <p
+          id="draft-edit-error"
+          class="notice"
+          role="alert"
+          hidden
+          style="margin-top:10px;"
+        ></p>
       </article>
 
       <aside class="action-stack">
         <section class="panel">
           <h2>원문 정보</h2>
-          <p class="panel-note">raw 필드는 검토 중에도 원본 보존 대상입니다.</p>
+          <p class="panel-note">raw 필드는 원본 보존 대상입니다.</p>
           <div class="raw-box">
             <h3>source_url</h3>
-            <p><a href="https://official.example/events/blue-archive-popup" target="_blank" rel="noopener">https://official.example/events/blue-archive-popup ↗</a></p>
+            <p>
+              <a href="{{ draft.source_url }}" target="_blank" rel="noopener">
+                {{ draft.source_url }} ↗
+              </a>
+            </p>
           </div>
           <div class="raw-box">
             <h3>raw_title</h3>
-            <p>블루 아카이브 3주년 팝업스토어 공식 안내</p>
+            <p>{{ draft.raw_title|default:"(없음)" }}</p>
           </div>
           <div class="raw-box">
             <h3>raw_text</h3>
-            <p>행사 기간, 장소, 특전, 예약 관련 안내가 포함된 공식 공지 본문 목업입니다.</p>
+            <p>{{ draft.raw_text|truncatechars:300|default:"(없음)" }}</p>
           </div>
         </section>
 
         <section class="panel">
           <h2>검토 액션</h2>
-          <p class="panel-note">실제 연결 시 CSRF와 admin 권한 처리가 필요합니다.</p>
-          <button class="action-button" type="button" data-confirm="승인하고 게시하면 공개 행사 목록에 노출됩니다. 진행할까요?">승인하고 게시</button>
-          <button class="action-button secondary" type="button">수정 저장</button>
-          <button class="action-button danger" type="button" data-confirm="이 드래프트를 반려할까요? 공개 목록에는 노출되지 않습니다.">반려</button>
-          <p class="notice">승인 결과는 draft object와 `event_id`를 함께 받는 API 응답으로 연결합니다.</p>
+          {% if is_pending %}
+            <p class="panel-note">승인하면 공개 행사 목록에 즉시 노출됩니다.</p>
+            <div class="action-stack">
+              <button
+                id="draft-approve-btn"
+                class="action-button"
+                type="button"
+                data-draft-id="{{ draft.id }}"
+              >승인하고 게시</button>
+              <button
+                id="draft-reject-btn"
+                class="action-button danger"
+                type="button"
+                data-draft-id="{{ draft.id }}"
+              >반려</button>
+            </div>
+            <p
+              id="draft-approve-success"
+              class="approve-success"
+              hidden
+              style="margin-top:8px;"
+            ></p>
+            <p
+              id="draft-action-error"
+              class="notice"
+              role="alert"
+              hidden
+              style="margin-top:8px;"
+            ></p>
+          {% else %}
+            <p class="notice">{{ draft.review_status }} 상태입니다. 승인/반려는 pending 상태에서만 가능합니다.</p>
+          {% endif %}
         </section>
 
         <section class="panel">
@@ -282,38 +436,10 @@
         </section>
       </aside>
     </section>
+    {% endif %}
   </main>
+{% endblock %}
 
-  <script>
-    const eventDraft = {
-      id: Number("{{ draft_id }}"),
-      source_url: "https://official.example/events/blue-archive-popup",
-      source_name: "공식 사이트",
-      raw_title: "블루 아카이브 3주년 팝업스토어 공식 안내",
-      raw_text: "행사 기간, 장소, 특전, 예약 관련 안내가 포함된 공식 공지 본문 목업입니다.",
-      extracted_title: "블루 아카이브 3주년 팝업",
-      extracted_category: "popup_store",
-      extracted_work_title: "블루 아카이브",
-      extracted_location_name: "홍대 AK&",
-      extracted_region: "seoul",
-      extracted_start_date: "2026-06-12",
-      extracted_end_date: "2026-06-23",
-      extracted_summary: "3주년 기념 공식 팝업스토어",
-      review_status: "pending",
-      created_at: "2026-06-09T09:00:00+09:00",
-      updated_at: "2026-06-09T09:00:00+09:00"
-    };
-
-    void eventDraft;
-  </script>
-
-  <script>
-    document.querySelectorAll(".action-button[data-confirm]").forEach((btn) => {
-      btn.addEventListener("click", (event) => {
-        if (!window.confirm(btn.dataset.confirm)) {
-          event.preventDefault();
-        }
-      });
-    });
-  </script>
+{% block extra_js %}
+  <script defer src="{% static 'js/draft.js' %}"></script>
 {% endblock %}

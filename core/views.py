@@ -1,3 +1,4 @@
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
@@ -15,7 +16,10 @@ from core.vocab import (
     EVENT_STATUS,
     EVENT_STATUS_LABELS,
     REGION,
+    REGION_LABELS,
 )
+from drafts.models import EventDraft
+from drafts.queries import draft_review_stats
 from events.models import Event
 from events.presenters import derive_event_display
 from events.queries import (
@@ -225,23 +229,81 @@ def archive_visits(request):
     )
 
 
+def _build_draft_rows(drafts):
+    """Attach display labels to each draft for template rendering.
+
+    Returns a list of dicts with the draft object plus resolved
+    category_label and region_label so templates use simple dot notation.
+    """
+    rows = []
+    for draft in drafts:
+        rows.append(
+            {
+                "draft": draft,
+                "category_label": CATEGORY_LABELS.get(
+                    draft.extracted_category, draft.extracted_category
+                ),
+                "region_label": REGION_LABELS.get(
+                    draft.extracted_region, draft.extracted_region
+                ),
+            }
+        )
+    return rows
+
+
+@staff_member_required
+@ensure_csrf_cookie
 def event_drafts(request):
+    drafts = EventDraft.objects.order_by("-id")
+    stats = draft_review_stats()
+    draft_rows = _build_draft_rows(drafts)
     return render(
         request,
         "core/event_drafts.html",
         {
             "project_name": "takulife",
+            "draft_rows": draft_rows,
+            "stats": stats,
         },
     )
 
 
+@staff_member_required
+@ensure_csrf_cookie
 def event_draft_detail(request, draft_id):
+    # Use filter().first() so the staff guard test (which does not seed the DB)
+    # still returns 200 (staff can reach the URL). When draft is None the
+    # template shows a "not found" notice rather than raising Http404.
+    draft = EventDraft.objects.filter(pk=draft_id).first()
+    if draft is None:
+        return render(
+            request,
+            "core/event_draft_detail.html",
+            {
+                "project_name": "takulife",
+                "draft": None,
+                "draft_not_found": True,
+                "draft_id": draft_id,
+                "CATEGORY": CATEGORY,
+                "REGION": REGION,
+            },
+        )
+    is_pending = draft.review_status == EventDraft.ReviewStatus.PENDING
+    category_label = CATEGORY_LABELS.get(
+        draft.extracted_category, draft.extracted_category
+    )
+    region_label = REGION_LABELS.get(draft.extracted_region, draft.extracted_region)
     return render(
         request,
         "core/event_draft_detail.html",
         {
             "project_name": "takulife",
-            "draft_id": draft_id,
+            "draft": draft,
+            "is_pending": is_pending,
+            "category_label": category_label,
+            "region_label": region_label,
+            "CATEGORY": CATEGORY,
+            "REGION": REGION,
         },
     )
 
