@@ -319,7 +319,13 @@
             {% if event.official_url %}
               <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
             {% endif %}
-            <button class="action-link ghost" type="button" disabled title="로그인 후 이용 가능">♡ 관심</button>
+            <div data-status-error-container>
+              <button class="action-link ghost status-btn interested" type="button"
+                data-status-action
+                data-event-id="{{ event.id }}"
+                data-status="interested"
+                aria-pressed="false">♡ 관심</button>
+            </div>
           </div>
         </section>
 

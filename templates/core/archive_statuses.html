@@ -216,13 +216,13 @@
 {% block content %}
   <main class="page">
     <header class="topbar">
-      <a class="brand" href="/">takulife</a>
+      <a class="brand" href="/">{{ project_name }}</a>
       <nav class="nav-links" aria-label="아카이브 메뉴">
         <a href="/archive/">내 기록장</a>
-        <a class="active" href="/archive/statuses/">상태 기록</a>
+        <a class="active" href="/archive/statuses/" aria-current="page">상태 기록</a>
         <a href="/events/">행사 찾기</a>
       </nav>
-      <a class="top-action" href="/events/">새 행사 저장</a>
+      {% include "core/_topbar.html" %}
     </header>
 
     <section class="hero">
@@ -235,19 +235,19 @@
       <div class="summary-grid" aria-label="상태 요약">
         <article class="summary-card">
           <p class="summary-label">관심</p>
-          <p class="summary-value">6</p>
+          <p class="summary-value">{{ status_counts.interested }}</p>
         </article>
         <article class="summary-card">
           <p class="summary-label">방문 예정</p>
-          <p class="summary-value">3</p>
+          <p class="summary-value">{{ status_counts.planned }}</p>
         </article>
         <article class="summary-card">
           <p class="summary-label">방문 완료</p>
-          <p class="summary-value">12</p>
+          <p class="summary-value">{{ status_counts.visited }}</p>
         </article>
         <article class="summary-card">
           <p class="summary-label">놓침</p>
-          <p class="summary-value">2</p>
+          <p class="summary-value">{{ status_counts.missed }}</p>
         </article>
       </div>
     </section>
@@ -261,128 +261,78 @@
           </div>
         </div>
 
-        <div class="chips" aria-label="상태 필터">
-          <button class="chip active" type="button">전체</button>
-          <button class="chip" type="button">관심</button>
-          <button class="chip" type="button">방문 예정</button>
-          <button class="chip" type="button">방문 완료</button>
-          <button class="chip" type="button">놓침</button>
+        <div class="chips" role="group" aria-label="상태 필터">
+          <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/statuses/" aria-label="전체 보기">전체</a>
+          {% for slug, label in ARCHIVE_STATUS %}
+            <a
+              class="chip{% if selected_status == slug %} active{% endif %}"
+              href="/archive/statuses/?status={{ slug }}"
+              aria-label="{{ label }} 필터"
+              {% if selected_status == slug %}aria-current="true"{% endif %}
+            >{{ label }}</a>
+          {% endfor %}
         </div>
 
-        <div class="status-list">
-          <article class="status-card">
-            <div>
-              <div class="status-top">
-                <span class="event-category">팝업스토어</span>
-                <span class="user-status planned">방문 예정</span>
-              </div>
-              <h3>블루 아카이브 3주년 팝업</h3>
-              <p class="meta">블루 아카이브 · 홍대 AK& · 서울</p>
-              <p class="period">2026-06-12 ~ 06-23</p>
-            </div>
-            <a class="action-link" href="/events/101/">상세 보기</a>
-          </article>
-
-          <article class="status-card">
-            <div>
-              <div class="status-top">
-                <span class="event-category">콜라보 카페</span>
-                <span class="user-status interested">관심</span>
-              </div>
-              <h3>프로젝트 세카이 시즌 카페</h3>
-              <p class="meta">프로젝트 세카이 · 합정 카페거리 · 서울</p>
-              <p class="period">2026-06-18 ~ 07-02</p>
-            </div>
-            <a class="action-link" href="/events/102/">상세 보기</a>
-          </article>
-
-          <article class="status-card">
-            <div>
-              <div class="status-top">
-                <span class="event-category">극장 특전</span>
-                <span class="user-status visited">방문 완료</span>
-              </div>
-              <h3>극장판 특전 2주차 배포</h3>
-              <p class="meta">우마무스메 · CGV 용산 · 서울</p>
-              <p class="period">2026-05-30 ~ 06-06</p>
-            </div>
-            <a class="action-link" href="/events/103/">상세 보기</a>
-          </article>
-
-          <article class="status-card">
-            <div>
-              <div class="status-top">
-                <span class="event-category">굿즈 예약</span>
-                <span class="user-status missed">놓침</span>
-              </div>
-              <h3>한정 아크릴 스탠드 예약</h3>
-              <p class="meta">니지산지 · 공식 온라인몰 · 온라인</p>
-              <p class="period">2026-05-20 ~ 05-27</p>
-            </div>
-            <a class="action-link" href="/events/104/">상세 보기</a>
-          </article>
-        </div>
+        {% if has_statuses %}
+          <div class="status-list">
+            {% for row in status_rows %}
+              <article class="status-card">
+                <div>
+                  <div class="status-top">
+                    <span class="event-category">{{ row.category_label }}</span>
+                    <span class="user-status {{ row.status_slug }}">{{ row.status_label }}</span>
+                  </div>
+                  <h3>{{ row.event.title }}</h3>
+                  {% if row.event.location_name %}
+                    <p class="meta">{{ row.event.location_name }}</p>
+                  {% endif %}
+                  {% if row.event.start_date and row.event.end_date %}
+                    <p class="period">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
+                  {% endif %}
+                  <div class="status-row" data-status-error-container>
+                    <button
+                      class="status-btn {{ row.status_slug }}"
+                      type="button"
+                      data-status-action="change"
+                      data-event-id="{{ row.event.id }}"
+                      data-status="{{ row.status_slug }}"
+                      data-status-id="{{ row.status_id }}"
+                      aria-pressed="true"
+                    >{{ row.status_label }}</button>
+                  </div>
+                </div>
+                <a class="action-link" href="/events/{{ row.event.id }}/">상세 보기</a>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="notice">
+            {% if selected_status %}
+              이 상태로 저장한 행사가 없습니다. <a href="/archive/statuses/">전체 보기</a>
+            {% else %}
+              아직 저장한 행사가 없습니다. <a href="/events/">행사 목록에서 찾아보세요</a>
+            {% endif %}
+          </p>
+        {% endif %}
       </article>
 
       <aside class="side-stack" aria-label="상태 기록 보조 정보">
         <section class="panel">
-          <h2>다가오는 저장 행사</h2>
-          <p class="panel-note">방문 예정과 관심 상태 중 시작일이 가까운 순서입니다.</p>
+          <h2>빠른 이동</h2>
           <ul class="side-list">
-            <li>
-              <span class="side-title">블루 아카이브 3주년 팝업</span>
-              <span class="side-meta">방문 예정 · 2026-06-12 시작</span>
-            </li>
-            <li>
-              <span class="side-title">프로젝트 세카이 시즌 카페</span>
-              <span class="side-meta">관심 · 2026-06-18 시작</span>
-            </li>
+            <li><a href="/archive/">내 기록장</a></li>
+            <li><a href="/events/">행사 찾기</a></li>
           </ul>
         </section>
 
         <section class="panel">
-          <h2>최근 변경</h2>
-          <p class="panel-note">나중에 `/api/user-event-statuses/` 응답으로 교체할 영역입니다.</p>
-          <ul class="side-list">
-            <li>
-              <span class="side-title">극장판 특전 2주차 배포</span>
-              <span class="side-meta">방문 완료로 변경</span>
-            </li>
-            <li>
-              <span class="side-title">한정 아크릴 스탠드 예약</span>
-              <span class="side-meta">놓침으로 정리</span>
-            </li>
-          </ul>
+          <h2>방문 기록</h2>
+          <p class="panel-note">방문 기록과 사진 업로드는 준비 중입니다.</p>
           <p class="empty-note">
-            방문 기록과 사진 업로드는 아직 활성 API가 없으므로 이 페이지에서는 다루지 않습니다.
+            방문 기록 기능은 향후 업데이트에서 제공될 예정입니다.
           </p>
         </section>
       </aside>
     </section>
   </main>
-
-  <script>
-    const userEventStatuses = [
-      { id: 1, event: 101, status: "planned" },
-      { id: 2, event: 102, status: "interested" },
-      { id: 3, event: 103, status: "visited" },
-      { id: 4, event: 104, status: "missed" }
-    ];
-
-    const eventsById = {
-      101: {
-        id: 101,
-        title: "블루 아카이브 3주년 팝업",
-        category: "popup_store",
-        work_title: "블루 아카이브",
-        location_name: "홍대 AK&",
-        region: "seoul",
-        start_date: "2026-06-12",
-        end_date: "2026-06-23"
-      }
-    };
-
-    void userEventStatuses;
-    void eventsById;
-  </script>
 {% endblock %}
