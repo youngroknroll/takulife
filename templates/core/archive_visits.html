@@ -285,8 +285,8 @@
     <section class="hero">
       <h1>방문 기록</h1>
       <p>
-        방문한 행사, 한줄 메모, 사진 자리까지 미리 확인하는 목업 화면입니다.
-        `/api/visit-records/*`와 `/api/visit-record-photos/*`는 아직 비활성입니다.
+        방문한 행사와 한줄 메모, 사진을 월별로 모아 보는 기록 화면입니다.
+        방문 직후 짧게 남긴 메모로 다음 일정 판단 기준을 만듭니다.
       </p>
 
       <div class="summary-grid" aria-label="방문 기록 요약">
@@ -312,19 +312,19 @@
     <section class="layout">
       <article class="panel">
         <h2>월별 방문 타임라인</h2>
-        <p class="panel-note">미래 visit record API 형식의 목업 데이터입니다.</p>
+        <p class="panel-note">방문한 행사를 월별로 정리한 타임라인입니다.</p>
 
         <div class="timeline">
           <article class="visit-card">
             <div>
               <div class="visit-top">
-                <span class="chip done">visited</span>
-                <span class="chip note">short_review</span>
-                <span class="chip photo">photo placeholder</span>
+                <span class="chip done">방문 완료</span>
+                <span class="chip note">메모</span>
+                <span class="chip photo">사진</span>
               </div>
               <h3>극장판 특전 2주차 배포</h3>
-              <p class="meta">event: 103 · visited_on: 2026-06-02 · location_name: CGV 용산</p>
-              <p class="review">short_review: 2주차 특전 수량이 빨리 줄어서 오전 방문이 안정적이었다.</p>
+              <p class="meta">2026-06-02 방문 · CGV 용산</p>
+              <p class="review">2주차 특전 수량이 빨리 줄어서 오전 방문이 안정적이었다.</p>
             </div>
             <div class="photo-placeholder">사진 자리<br>2장</div>
           </article>
@@ -332,12 +332,12 @@
           <article class="visit-card">
             <div>
               <div class="visit-top">
-                <span class="chip done">visited</span>
-                <span class="chip note">short_review</span>
+                <span class="chip done">방문 완료</span>
+                <span class="chip note">메모</span>
               </div>
               <h3>블루 아카이브 3주년 팝업</h3>
-              <p class="meta">event: 101 · visited_on: 2026-06-14 · location_name: 홍대 AK&</p>
-              <p class="review">short_review: 대기 동선은 길었지만 굿즈 진열과 계산 흐름은 깔끔했다.</p>
+              <p class="meta">2026-06-14 방문 · 홍대 AK&</p>
+              <p class="review">대기 동선은 길었지만 굿즈 진열과 계산 흐름은 깔끔했다.</p>
             </div>
             <div class="photo-placeholder">사진 자리<br>4장</div>
           </article>
@@ -345,12 +345,12 @@
           <article class="visit-card">
             <div>
               <div class="visit-top">
-                <span class="chip done">visited</span>
-                <span class="chip photo">photo placeholder</span>
+                <span class="chip done">방문 완료</span>
+                <span class="chip photo">사진</span>
               </div>
               <h3>프로젝트 세카이 시즌 카페</h3>
-              <p class="meta">event: 102 · visited_on: 2026-06-20 · location_name: 합정 카페거리</p>
-              <p class="review">short_review: 메뉴 품절 전 방문. 다음에는 예약 시간보다 조금 일찍 도착할 것.</p>
+              <p class="meta">2026-06-20 방문 · 합정 카페거리</p>
+              <p class="review">메뉴 품절 전 방문. 다음에는 예약 시간보다 조금 일찍 도착할 것.</p>
             </div>
             <div class="photo-placeholder">사진 자리<br>3장</div>
           </article>
@@ -359,21 +359,22 @@
 
       <aside class="side-stack" aria-label="방문 기록 보조 정보">
         <section class="panel">
-          <h2>비활성 API 안내</h2>
-          <p class="panel-note">이 페이지는 연결 준비용 목업입니다.</p>
-          <p class="notice">
-            `/api/visit-records/`와 `/api/visit-record-photos/`는 현재 404가 정상입니다.
-            실제 연결 전에 archive 도메인에서 visit record와 photo API를 먼저 활성화해야 합니다.
-          </p>
+          <h2>방문 기록 팁</h2>
+          <p class="panel-note">방문 직후 짧게 남길수록 다음 일정 판단에 도움이 됩니다.</p>
+          <ul class="rule-list">
+            <li>대기 시간과 방문 시간대를 함께 기록</li>
+            <li>굿즈 재고와 재방문 의사 메모</li>
+            <li>다음 시즌 알림 필요 여부 표시</li>
+          </ul>
         </section>
 
         <section class="panel">
-          <h2>미래 기록 규칙</h2>
+          <h2>기록 안내</h2>
           <ul class="rule-list">
-            <li>방문 기록은 로그인 사용자 소유 데이터</li>
-            <li>공개된 행사에 대해서만 기록 생성</li>
-            <li>사진은 JPEG, PNG, WebP만 허용 예정</li>
-            <li>다른 사용자의 기록은 404로 숨김</li>
+            <li>방문 기록은 본인만 보고 관리할 수 있습니다</li>
+            <li>공개된 행사에 대해서만 기록을 남길 수 있습니다</li>
+            <li>사진은 JPEG, PNG, WebP 형식을 지원합니다</li>
+            <li>다른 사용자의 기록은 볼 수 없습니다</li>
           </ul>
         </section>
       </aside>

@@ -256,10 +256,36 @@
       background: var(--brand-soft);
       margin-bottom: 6px;
     }
+    .verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      background: var(--mint-soft);
+      color: var(--mint-ink);
+    }
     .event-card h2 {
       margin: 0 0 6px;
       font-size: 1rem;
       line-height: 1.35;
+    }
+    .event-card h2 a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .event-card h2 a:hover {
+      text-decoration: underline;
+    }
+    .event-card h2 a:focus {
+      outline: 2px solid #92b4ff;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .filter-toggle {
+      display: none;
     }
     .meta {
       margin: 0;
@@ -347,6 +373,28 @@
       .dday {
         justify-self: start;
       }
+      .filter-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        margin-top: 8px;
+        border: 1px solid #c7d7f8;
+        background: #f8fbff;
+        color: #24456f;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 0.86rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #filter-body {
+        display: none;
+      }
+      .filters.open #filter-body {
+        display: block;
+      }
     }
     @media (max-width: 700px) {
       .page {
@@ -383,6 +431,9 @@
     <section class="layout" aria-label="행사 목록 레이아웃">
       <aside class="panel filters" aria-label="행사 필터">
         <h1>행사 목록</h1>
+        <button class="filter-toggle" type="button" aria-expanded="false" aria-controls="filter-body">필터 열기 ▾</button>
+
+        <div id="filter-body">
         <p class="caption">필터와 정렬을 먼저 두어 스캔 속도를 높인 정적 목업입니다.</p>
 
         <div class="filter-group">
@@ -418,6 +469,7 @@
           <button class="btn primary" type="button">필터 적용</button>
           <button class="btn" type="button">초기화</button>
         </div>
+        </div>
       </aside>
 
       <article class="panel results" aria-label="행사 검색 결과">
@@ -440,9 +492,10 @@
           <article class="event-card">
             <div>
               <span class="event-type">팝업스토어</span>
+              <span class="verified">✓ 공식 확인</span>
             </div>
             <div>
-              <h2>프로젝트 A 공식 팝업스토어</h2>
+              <h2><a href="/events/1/">프로젝트 A 공식 팝업스토어</a></h2>
               <p class="meta">서울 홍대 · AK플라자</p>
               <p class="period">2026.06.01 - 2026.06.14</p>
               <div class="status-row">
@@ -456,9 +509,10 @@
           <article class="event-card">
             <div>
               <span class="event-type">콜라보 카페</span>
+              <span class="verified">✓ 공식 확인</span>
             </div>
             <div>
-              <h2>작품 B 콜라보 카페 시즌 2</h2>
+              <h2><a href="/events/2/">작품 B 콜라보 카페 시즌 2</a></h2>
               <p class="meta">서울 강남 · 스페이스 카페</p>
               <p class="period">2026.06.05 - 2026.06.30</p>
               <div class="status-row">
@@ -472,9 +526,10 @@
           <article class="event-card">
             <div>
               <span class="event-type">극장 특전</span>
+              <span class="verified">✓ 공식 확인</span>
             </div>
             <div>
-              <h2>극장판 C 개봉 1주차 특전</h2>
+              <h2><a href="/events/3/">극장판 C 개봉 1주차 특전</a></h2>
               <p class="meta">경기 수원 · 시네마몰</p>
               <p class="period">2026.06.07 - 2026.06.13</p>
               <div class="status-row">
@@ -495,5 +550,17 @@
       </article>
     </section>
   </main>
+
+  <script>
+    const filterToggle = document.querySelector(".filter-toggle");
+    const filterPanel = document.querySelector(".filters");
+    if (filterToggle && filterPanel) {
+      filterToggle.addEventListener("click", () => {
+        const open = filterPanel.classList.toggle("open");
+        filterToggle.setAttribute("aria-expanded", String(open));
+        filterToggle.textContent = open ? "필터 닫기 ▴" : "필터 열기 ▾";
+      });
+    }
+  </script>
 </body>
 </html>

@@ -258,6 +258,80 @@
       color: var(--rose-ink);
       background: var(--rose-soft);
     }
+    .dday-chip {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--amber-ink);
+      background: var(--amber-soft);
+    }
+    .verify {
+      margin-top: 10px;
+      border: 1px solid #bfe3cb;
+      background: var(--mint-soft);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: grid;
+      gap: 4px;
+    }
+    .verify-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--mint-ink);
+    }
+    .verify-source {
+      text-decoration: none;
+      color: var(--brand);
+      font-weight: 600;
+    }
+    .verify-meta {
+      color: #3f6b4f;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+    .source-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .source-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px 10px;
+      font-size: 0.84rem;
+    }
+    .source-row a {
+      text-decoration: none;
+      color: #24456f;
+      font-weight: 600;
+    }
+    .source-check {
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .action-link.ghost {
+      border-color: var(--line);
+      background: #fff;
+      color: var(--muted);
+    }
+    .mobile-cta {
+      display: none;
+    }
     a:focus {
       outline: 2px solid #92b4ff;
       outline-offset: 2px;
@@ -272,10 +346,28 @@
       .meta-grid {
         grid-template-columns: 1fr;
       }
+      .page {
+        padding-bottom: 96px;
+      }
+      .mobile-cta {
+        display: block;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -8px 24px rgba(17, 31, 55, 0.10);
+        z-index: 20;
+      }
+      .mobile-cta .action-link.primary {
+        width: 100%;
+      }
     }
     @media (max-width: 720px) {
       .page {
-        padding: 18px 14px 64px;
+        padding: 18px 14px 96px;
       }
       .topbar {
         grid-template-columns: 1fr;
@@ -300,11 +392,21 @@
       <article class="content panel">
         <span class="chip">전시</span>
         <span class="status-chip">진행 중</span>
+        <span class="dday-chip">D-92</span>
         <h1>아트 포레스트 미디어 파사드 2026</h1>
         <p class="lead">
           도시의 밤 풍경과 자연 데이터를 결합한 몰입형 미디어 전시.
           실시간 사운드 인터랙션과 조명 연동 구간이 포함됩니다.
         </p>
+
+        <div class="verify" aria-label="공식 출처 확인">
+          <div class="verify-row">
+            <span>✓ 공식 확인됨</span>
+            <span>출처:</span>
+            <a class="verify-source" href="#" rel="noopener" target="_blank">공식 X (@artforest_official) ↗</a>
+          </div>
+          <span class="verify-meta">관리자 검수 2026-06-20 · 자동 추출 후 사람이 검수</span>
+        </div>
 
         <div class="meta-grid" aria-label="행사 메타 정보">
           <div class="meta-item">
@@ -355,13 +457,31 @@
         <section class="side-block" aria-label="상태 및 액션">
           <h2>참여 상태</h2>
           <p style="margin: 0 0 8px; color: #2d4460; font-size: 0.85rem;">
-            D-92 · 이번 주말 혼잡 예상
+            이번 주말 혼잡 예상
           </p>
           <div class="action-list">
-            <a class="action-link primary" href="#" aria-label="예매 링크">예매 페이지</a>
-            <a class="action-link" href="#" aria-label="공식 링크">공식 홈페이지</a>
-            <a class="action-link warn" href="#" aria-label="관심 행사 추가">관심 행사 담기</a>
+            <a class="action-link primary" href="#" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
+            <a class="action-link" href="#" aria-label="예매 링크">예매 페이지</a>
+            <a class="action-link ghost" href="#" aria-label="관심 행사 추가">♡ 관심</a>
           </div>
+        </section>
+
+        <section class="side-block" aria-label="공식 출처">
+          <h2>공식 출처</h2>
+          <ul class="source-list">
+            <li class="source-row">
+              <a href="#" rel="noopener" target="_blank">공식 홈페이지 ↗</a>
+              <span class="source-check">검수 06-20</span>
+            </li>
+            <li class="source-row">
+              <a href="#" rel="noopener" target="_blank">공식 X (@artforest_official) ↗</a>
+              <span class="source-check">검수 06-20</span>
+            </li>
+            <li class="source-row">
+              <a href="#" rel="noopener" target="_blank">콜라보 카페 공지 ↗</a>
+              <span class="source-check">검수 06-18</span>
+            </li>
+          </ul>
         </section>
 
         <section class="side-block" aria-label="주최 및 문의">
@@ -400,6 +520,10 @@
         </section>
       </aside>
     </section>
+
+    <div class="mobile-cta" aria-hidden="false">
+      <a class="action-link primary" href="#" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
+    </div>
   </main>
 </body>
 </html>
