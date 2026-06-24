@@ -3,6 +3,7 @@
  *
  * Binds create / edit / approve / reject controls via data attributes.
  * All API writes go through window.TakuAPI (api.js) — no CSRF duplication.
+ * Error formatting uses TakuAPI.formatError (no local formatError copy).
  *
  * Data attributes expected by each control:
  *
@@ -56,29 +57,6 @@
     container.hidden = true;
   }
 
-  /**
-   * Render a DRF error envelope (detail string or field-keyed dict) into a
-   * human-readable string. Only textContent assignment is used by callers.
-   */
-  function formatError(data) {
-    if (!data) {
-      return "알 수 없는 오류가 발생했습니다.";
-    }
-    if (typeof data.detail === "string") {
-      return data.detail;
-    }
-    // Field error dict: { field: ["msg", ...], ... } or { field: "msg", ... }
-    var parts = [];
-    Object.keys(data).forEach(function (field) {
-      var messages = Array.isArray(data[field]) ? data[field] : [data[field]];
-      parts.push(field + ": " + messages.join(" "));
-    });
-    if (parts.length) {
-      return parts.join(" | ");
-    }
-    return JSON.stringify(data);
-  }
-
   /* ── 403 message (lost session / CSRF) ──────────────────────────────── */
 
   var CSRF_OR_SESSION_MSG =
@@ -128,7 +106,7 @@
           showError(errorEl, CSRF_OR_SESSION_MSG);
           return;
         }
-        showError(errorEl, formatError(result.data));
+        showError(errorEl, window.TakuAPI.formatError(result));
       });
     });
   }
@@ -212,7 +190,7 @@
             showError(errorEl, CSRF_OR_SESSION_MSG);
             return;
           }
-          showError(errorEl, formatError(result.data));
+          showError(errorEl, window.TakuAPI.formatError(result));
         }
       );
     });
@@ -263,7 +241,7 @@
           showError(errorEl, CSRF_OR_SESSION_MSG);
           return;
         }
-        showError(errorEl, formatError(result.data));
+        showError(errorEl, window.TakuAPI.formatError(result));
       });
     });
   }
@@ -301,7 +279,7 @@
           showError(errorEl, CSRF_OR_SESSION_MSG);
           return;
         }
-        showError(errorEl, formatError(result.data));
+        showError(errorEl, window.TakuAPI.formatError(result));
       });
     });
   }

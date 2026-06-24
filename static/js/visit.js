@@ -7,60 +7,19 @@
  *   - Delete visit record via [data-delete-record-id]
  *   - Delete photo via [data-photo-id][data-record-id] on photo-delete-btn
  *
- * Relies on window.TakuAPI (api.js) for JSON POST/DELETE with CSRF.
- * Photo upload uses a local multipart fetch (FormData) because api.js sends
- * Content-Type: application/json — multipart must NOT set Content-Type manually.
+ * Relies on window.TakuAPI (api.js) for all requests:
+ *   - JSON actions: TakuAPI.post / TakuAPI.del
+ *   - Multipart photo upload: TakuAPI.upload (does NOT set Content-Type)
+ *   - 403 disambiguation: TakuAPI.classify → 'auth' → TakuAPI.redirectToLogin()
+ *   - Error messages: TakuAPI.formatError
  *
  * All DOM writes use textContent only (no innerHTML with API data).
- * 403 disambiguation: "Authentication credentials" in detail → login redirect;
- * any other 403 → inline CSRF message, no redirect loop.
  */
 
 (function () {
   "use strict";
 
-  var LOGIN_URL = "/accounts/login/";
-
-  // ── helpers ─────────────────────────────────────────────────────────────
-
-  function currentPath() {
-    return window.location.pathname + window.location.search;
-  }
-
-  function redirectToLogin() {
-    window.location.assign(LOGIN_URL + "?next=" + encodeURIComponent(currentPath()));
-  }
-
-  function csrfToken() {
-    // Reuse TakuAPI's getCookie when available; fall back to inline read.
-    if (window.TakuAPI && typeof window.TakuAPI.getCookie === "function") {
-      return window.TakuAPI.getCookie("csrftoken");
-    }
-    var prefix = "csrftoken=";
-    for (var part of document.cookie.split(";")) {
-      var trimmed = part.trim();
-      if (trimmed.startsWith(prefix)) {
-        return decodeURIComponent(trimmed.slice(prefix.length));
-      }
-    }
-    return "";
-  }
-
-  function isAuthError(data) {
-    return (
-      data &&
-      typeof data.detail === "string" &&
-      data.detail.indexOf("Authentication credentials") !== -1
-    );
-  }
-
-  function handle403(data, errorEl) {
-    if (isAuthError(data)) {
-      redirectToLogin();
-    } else {
-      setError(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
-    }
-  }
+  // ── DOM helpers ──────────────────────────────────────────────────────────
 
   function setError(el, message) {
     if (!el) { return; }
@@ -72,68 +31,49 @@
     el.textContent = "";
   }
 
-  function formatFieldErrors(data) {
-    if (!data || typeof data !== "object") { return "알 수 없는 오류가 발생했습니다."; }
-    var parts = [];
-    for (var key in data) {
-      if (!Object.prototype.hasOwnProperty.call(data, key)) { continue; }
-      var val = data[key];
-      var msg = Array.isArray(val) ? val.join(" ") : String(val);
-      if (key === "detail") {
-        parts.unshift(msg);
-      } else {
-        parts.push(key + ": " + msg);
-      }
+  // ── 403 handler ──────────────────────────────────────────────────────────
+
+  function handle403(result, errorEl) {
+    var kind = window.TakuAPI.classify(result);
+    if (kind === "auth") {
+      window.TakuAPI.redirectToLogin();
+    } else {
+      setError(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
     }
-    return parts.length > 0 ? parts.join(" | ") : "요청을 처리할 수 없습니다.";
   }
 
-  // ── multipart photo upload (cannot use api.js — must not set Content-Type) ──
+  // ── multipart photo upload ───────────────────────────────────────────────
 
   async function uploadPhoto(recordId, file, errorEl) {
     var formData = new FormData();
     formData.append("image", file);
-    var response;
-    try {
-      response = await fetch("/api/visit-records/" + recordId + "/photos/", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "X-CSRFToken": csrfToken(),
-        },
-        body: formData,
-      });
-    } catch (_networkErr) {
-      setError(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
-      return;
-    }
 
-    if (response.status === 201) {
+    var result = await window.TakuAPI.upload(
+      "/api/visit-records/" + recordId + "/photos/",
+      formData
+    );
+
+    if (result.status === 201) {
       window.location.reload();
       return;
     }
 
-    var data = null;
-    var contentType = response.headers.get("content-type") || "";
-    if (contentType.indexOf("application/json") !== -1) {
-      data = await response.json();
-    }
-
-    if (response.status === 403) {
-      handle403(data, errorEl);
+    if (result.status === 403) {
+      handle403(result, errorEl);
       return;
     }
 
-    if (response.status === 400) {
-      if (data && data.code === "photo_limit_exceeded") {
-        setError(errorEl, "사진은 기록당 최대 10장까지 첨부할 수 있습니다.");
-      } else {
-        setError(errorEl, formatFieldErrors(data));
-      }
+    if (result.status === 0) {
+      setError(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
       return;
     }
 
-    if (response.status === 404) {
+    if (result.status === 400) {
+      setError(errorEl, window.TakuAPI.formatError(result));
+      return;
+    }
+
+    if (result.status === 404) {
       setError(errorEl, "해당 방문 기록을 찾을 수 없습니다.");
       return;
     }
@@ -173,7 +113,7 @@
       }
 
       if (result.status === 403) {
-        handle403(result.data, errorEl);
+        handle403(result, errorEl);
         return;
       }
 
@@ -182,7 +122,7 @@
         return;
       }
 
-      setError(errorEl, formatFieldErrors(result.data));
+      setError(errorEl, window.TakuAPI.formatError(result));
     });
   }
 
@@ -237,7 +177,7 @@
           }
 
           if (result.status === 403) {
-            handle403(result.data, errorEl);
+            handle403(result, errorEl);
             return;
           }
 
@@ -279,7 +219,7 @@
           }
 
           if (result.status === 403) {
-            handle403(result.data, globalErrorEl);
+            handle403(result, globalErrorEl);
             return;
           }
 

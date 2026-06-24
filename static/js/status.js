@@ -11,11 +11,9 @@
  *   - data-status-id present, data-status-action="change" → PATCH /<id>/ {status}
  *   - data-status-id present, data-status-action="unset"  → DELETE /<id>/
  *
- * 403 handling (per security contract):
- *   - detail contains "Authentication credentials were not provided"
- *     → redirect to /accounts/login/?next=<current path>  (treat as logged-out)
- *   - any other 403 (CSRF failure etc.)
- *     → show non-destructive inline message; do NOT retry or redirect
+ * 403 handling (via TakuAPI.classify):
+ *   - kind 'auth' → TakuAPI.redirectToLogin()
+ *   - kind 'csrf' → show non-destructive inline CSRF message; do NOT redirect
  *
  * 409 handling:
  *   - code === "duplicate_user_event_status"
@@ -36,13 +34,6 @@
     visited: "방문 완료",
     missed: "놓침",
   };
-
-  var AUTH_DETAIL_MARKER = "Authentication credentials were not provided";
-
-  function redirectToLogin() {
-    var next = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = "/accounts/login/?next=" + next;
-  }
 
   function showCsrfError(button) {
     var container = button.closest("[data-status-error-container]") || button.parentElement;
@@ -89,15 +80,6 @@
     }
   }
 
-  function handle403(result, button) {
-    var detail = (result.data && result.data.detail) ? result.data.detail : "";
-    if (detail.indexOf(AUTH_DETAIL_MARKER) !== -1) {
-      redirectToLogin();
-    } else {
-      showCsrfError(button);
-    }
-  }
-
   async function handleClick(event) {
     var button = event.currentTarget;
     var eventId = button.dataset.eventId;
@@ -129,12 +111,19 @@
 
     setButtonLoading(button, false);
 
-    if (result.status === 403) {
-      handle403(result, button);
+    var kind = window.TakuAPI.classify(result);
+
+    if (kind === "auth") {
+      window.TakuAPI.redirectToLogin();
       return;
     }
 
-    if (result.status === 409) {
+    if (kind === "csrf" || kind === "network") {
+      showCsrfError(button);
+      return;
+    }
+
+    if (kind === "conflict") {
       var code = result.data && result.data.code;
       if (code === "duplicate_user_event_status") {
         setButtonAlreadyAdded(button);
@@ -157,10 +146,6 @@
       }
       setButtonActive(button, statusSlug);
       return;
-    }
-
-    if (result.status === 0) {
-      showCsrfError(button);
     }
   }
 
