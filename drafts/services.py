@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from events.services import (
     DuplicateOfficialUrlError,
@@ -16,6 +16,10 @@ from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetc
 
 
 class DraftStateError(Exception):
+    pass
+
+
+class DraftImmutableFieldError(Exception):
     pass
 
 
@@ -55,6 +59,10 @@ class DraftCreationEmptyExtractionError(Exception):
     pass
 
 
+class DraftCreationDuplicateError(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class DraftApprovalResult:
     draft: EventDraft
@@ -71,6 +79,8 @@ def create_draft_from_url(source_url, source_name=""):
 
     try:
         html = fetch_html(source_url)
+    except UnsafeFetchUrlError as exc:
+        raise DraftCreationUnsafeUrlError from exc
     except UnsupportedContentTypeError as exc:
         raise DraftCreationUnsupportedContentError from exc
     except ResponseTooLargeError as exc:
@@ -88,21 +98,24 @@ def create_draft_from_url(source_url, source_name=""):
     if not extracted.get("raw_title") and not extracted.get("raw_text"):
         raise DraftCreationEmptyExtractionError
 
-    return EventDraft.objects.create(
-        source_url=source_url,
-        source_name=source_name,
-        raw_title=extracted.get("raw_title", ""),
-        raw_text=extracted.get("raw_text", ""),
-        extracted_title=extracted.get("extracted_title", ""),
-        extracted_category=extracted.get("extracted_category", ""),
-        extracted_work_title=extracted.get("extracted_work_title", ""),
-        extracted_location_name=extracted.get("extracted_location_name", ""),
-        extracted_region=extracted.get("extracted_region", ""),
-        extracted_start_date=extracted.get("extracted_start_date"),
-        extracted_end_date=extracted.get("extracted_end_date"),
-        extracted_summary=extracted.get("extracted_summary", ""),
-        review_status=EventDraft.ReviewStatus.PENDING,
-    )
+    try:
+        return EventDraft.objects.create(
+            source_url=source_url,
+            source_name=source_name,
+            raw_title=extracted.get("raw_title", ""),
+            raw_text=extracted.get("raw_text", ""),
+            extracted_title=extracted.get("extracted_title", ""),
+            extracted_category=extracted.get("extracted_category", ""),
+            extracted_work_title=extracted.get("extracted_work_title", ""),
+            extracted_location_name=extracted.get("extracted_location_name", ""),
+            extracted_region=extracted.get("extracted_region", ""),
+            extracted_start_date=extracted.get("extracted_start_date"),
+            extracted_end_date=extracted.get("extracted_end_date"),
+            extracted_summary=extracted.get("extracted_summary", ""),
+            review_status=EventDraft.ReviewStatus.PENDING,
+        )
+    except IntegrityError as exc:
+        raise DraftCreationDuplicateError from exc
 
 
 def _get_pending_draft_for_update(draft_id):
@@ -123,6 +136,20 @@ def _set_review_status(draft, review_status):
 
 
 def update_draft(draft_id, updates):
+    mutable_fields = {
+        "source_name",
+        "extracted_title",
+        "extracted_category",
+        "extracted_work_title",
+        "extracted_location_name",
+        "extracted_region",
+        "extracted_start_date",
+        "extracted_end_date",
+        "extracted_summary",
+    }
+    if not set(updates).issubset(mutable_fields):
+        raise DraftImmutableFieldError
+
     with transaction.atomic():
         draft = _get_pending_draft_for_update(draft_id)
 

@@ -1,4 +1,5 @@
 from ipaddress import ip_address
+import socket
 from urllib.parse import urlparse
 
 
@@ -21,7 +22,7 @@ def _is_unsafe_ip(value):
     )
 
 
-def validate_fetch_url(url):
+def validate_fetch_url(url, *, resolver=None):
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"}:
         raise InvalidFetchUrlError
@@ -36,6 +37,14 @@ def validate_fetch_url(url):
     try:
         parsed_ip = ip_address(hostname)
     except ValueError:
+        if resolver is None:
+            return
+
+        addresses = resolver(hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+        for address_info in addresses:
+            resolved_ip = ip_address(address_info[4][0])
+            if _is_unsafe_ip(resolved_ip):
+                raise UnsafeFetchUrlError
         return
 
     if _is_unsafe_ip(parsed_ip):

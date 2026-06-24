@@ -10,6 +10,7 @@ from .models import EventDraft
 from .serializers import EventDraftSerializer, EventDraftUpdateSerializer
 from .services import (
     DraftCreationEmptyExtractionError,
+    DraftCreationDuplicateError,
     DraftCreationFetchError,
     DraftCreationResponseTooLargeError,
     DraftCreationUnsupportedContentError,
@@ -39,6 +40,11 @@ class AdminEventDraftListCreateView(ListCreateAPIView):
 
         try:
             draft = create_draft_from_url(source_url=source_url, source_name=source_name)
+        except DraftCreationDuplicateError:
+            return field_error_response(
+                "source_url",
+                "Event draft with this source URL already exists.",
+            )
         except DraftCreationUnsafeUrlError:
             return error_response("Unsafe URL is not allowed.", 400)
         except DraftCreationUnsupportedContentError:

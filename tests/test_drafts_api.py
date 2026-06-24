@@ -1,4 +1,5 @@
 import pytest
+from django.db import IntegrityError
 from django.urls import reverse
 
 from drafts.models import EventDraft
@@ -293,6 +294,25 @@ def test_duplicate_source_url_is_rejected_on_create(admin_client):
 
     assert response.status_code == 400
     assert "source_url" in response.json()
+
+
+@pytest.mark.django_db
+def test_duplicate_source_url_race_uses_existing_field_error_contract(admin_client, monkeypatch):
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<title>Event</title>")
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields",
+        lambda html: {"raw_title": "Event", "raw_text": "Summary"},
+    )
+
+    def raise_integrity_error(**kwargs):
+        raise IntegrityError("duplicate")
+
+    monkeypatch.setattr("drafts.services.EventDraft.objects.create", raise_integrity_error)
+
+    response = admin_client.post(event_drafts_url(), {"source_url": "https://example.com/event"})
+
+    assert response.status_code == 400
+    assert response.json() == {"source_url": ["Event draft with this source URL already exists."]}
 
 
 @pytest.mark.django_db

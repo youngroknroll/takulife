@@ -20,7 +20,17 @@ def test_draft_views_do_not_import_events_modules():
     assert not {module for module in imported_modules if module == "events" or module.startswith("events.")}
 
 
-@pytest.mark.parametrize("module_path", ["events/views.py", "events/serializers.py", "drafts/views.py", "drafts/services.py"])
+@pytest.mark.parametrize(
+    "module_path",
+    [
+        "events/views.py",
+        "events/serializers.py",
+        "events/querysets.py",
+        "events/services.py",
+        "drafts/views.py",
+        "drafts/services.py",
+    ],
+)
 def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
     tree = ast.parse((PROJECT_ROOT / module_path).read_text())
 

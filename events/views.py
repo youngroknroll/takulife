@@ -59,7 +59,7 @@ class UserEventStatusUpsertView(APIView):
 
     def put(self, request, event_id):
         event = get_object_or_404(
-            Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED),
+            Event.objects.published(),
             pk=event_id,
         )
         status_value = request.data.get("status")
@@ -77,7 +77,7 @@ class VisitRecordListCreateView(APIView):
 
     def post(self, request):
         event = get_object_or_404(
-            Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED),
+            Event.objects.published(),
             pk=request.data.get("event"),
         )
         record = VisitRecord.objects.create(
