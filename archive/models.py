@@ -28,3 +28,27 @@ class UserEventStatus(models.Model):
                 name="unique_archive_user_event_status",
             ),
         ]
+
+
+class VisitRecord(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="archive_visit_records",
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="archive_visit_records",
+    )
+    visited_on = models.DateField()
+    short_review = models.CharField(max_length=255, blank=True)
+
+
+class VisitRecordPhoto(models.Model):
+    visit_record = models.ForeignKey(
+        VisitRecord,
+        on_delete=models.CASCADE,
+        related_name="photos",
+    )
+    image = models.ImageField(upload_to="visit-record-photos/")

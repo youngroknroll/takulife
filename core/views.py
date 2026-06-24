@@ -219,12 +219,41 @@ def archive_statuses(request):
 
 
 @login_required
+@ensure_csrf_cookie
 def archive_visits(request):
+    from archive.models import VisitRecord
+
+    visit_records = (
+        VisitRecord.objects.filter(user=request.user)
+        .select_related("event")
+        .prefetch_related("photos")
+        .order_by("-visited_on", "-id")
+    )
+
+    visit_rows = []
+    for record in visit_records:
+        event = record.event
+        visit_rows.append(
+            {
+                "record_id": record.pk,
+                "visited_on": record.visited_on,
+                "short_review": record.short_review,
+                "event": event,
+                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "photos": list(record.photos.all()),
+            }
+        )
+
+    selectable_events = Event.objects.published().order_by("title")
+
     return render(
         request,
         "core/archive_visits.html",
         {
             "project_name": "takulife",
+            "visit_rows": visit_rows,
+            "has_visits": len(visit_rows) > 0,
+            "selectable_events": selectable_events,
         },
     )
 

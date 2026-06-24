@@ -108,8 +108,6 @@ def test_core_errors_do_not_import_domain_modules(module_path):
         "/api/me/visit-records/",
         "/api/me/visit-records/1/photos/",
         "/api/me/visit-records/1/photos/1/",
-        "/api/visit-records/",
-        "/api/visit-records/1/",
         "/api/visit-record-photos/",
         "/api/visit-record-photos/1/",
     ],
@@ -117,6 +115,25 @@ def test_core_errors_do_not_import_domain_modules(module_path):
 def test_active_urlconf_does_not_resolve_deferred_archive_routes(path):
     with pytest.raises(Resolver404):
         resolve(path)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/visit-records/",
+        "/api/visit-records/1/",
+        "/api/visit-records/1/photos/",
+        "/api/visit-records/1/photos/1/",
+    ],
+)
+def test_active_urlconf_resolves_visit_record_routes(path):
+    match = resolve(path)
+    assert match.url_name in {
+        "visit-record-list-create",
+        "visit-record-detail",
+        "visit-record-photo-create",
+        "visit-record-photo-delete",
+    }
 
 
 @pytest.mark.parametrize("path", ["/api/user-event-statuses/", "/api/user-event-statuses/1/"])

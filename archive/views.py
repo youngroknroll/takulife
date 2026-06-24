@@ -1,16 +1,26 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveDestroyAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .models import UserEventStatus, VisitRecord, VisitRecordPhoto
 from .serializers import (
     UserEventStatusQuerySerializer,
     UserEventStatusSerializer,
     UserEventStatusUpdateSerializer,
+    VisitRecordPhotoUploadSerializer,
+    VisitRecordSerializer,
 )
-from .services import DuplicateUserEventStatusError, create_user_event_status
-from .models import UserEventStatus
+from .services import (
+    DuplicateUserEventStatusError,
+    PhotoLimitExceededError,
+    create_user_event_status,
+    create_visit_record,
+    create_visit_record_photo,
+)
 
 
 class UserEventStatusPagination(PageNumberPagination):
@@ -68,3 +78,76 @@ class UserEventStatusDetailView(RetrieveUpdateDestroyAPIView):
         if self.request.method == "PATCH":
             return UserEventStatusUpdateSerializer
         return UserEventStatusSerializer
+
+
+class VisitRecordPagination(PageNumberPagination):
+    page_size = 20
+
+
+class VisitRecordListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = VisitRecordSerializer
+    pagination_class = VisitRecordPagination
+
+    def get_queryset(self):
+        return (
+            VisitRecord.objects.filter(user=self.request.user)
+            .order_by("-visited_on", "-id")
+        )
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        record = create_visit_record(
+            user=request.user,
+            event=serializer.validated_data["event"],
+            visited_on=serializer.validated_data["visited_on"],
+            short_review=serializer.validated_data.get("short_review", ""),
+        )
+        response_serializer = self.get_serializer(record)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class VisitRecordDetailView(RetrieveDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = VisitRecordSerializer
+
+    def get_queryset(self):
+        return VisitRecord.objects.filter(user=self.request.user)
+
+
+class VisitRecordPhotoCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, record_id):
+        record = get_object_or_404(VisitRecord, pk=record_id, user=request.user)
+        serializer = VisitRecordPhotoUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            photo = create_visit_record_photo(
+                visit_record=record,
+                image=serializer.validated_data["image"],
+            )
+        except PhotoLimitExceededError:
+            return Response(
+                {
+                    "code": "photo_limit_exceeded",
+                    "detail": "A visit record can have at most 10 photos.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({"id": photo.id, "visit_record": record.id}, status=status.HTTP_201_CREATED)
+
+
+class VisitRecordPhotoDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, record_id, photo_id):
+        photo = get_object_or_404(
+            VisitRecordPhoto.objects.select_related("visit_record"),
+            pk=photo_id,
+            visit_record_id=record_id,
+            visit_record__user=request.user,
+        )
+        photo.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
