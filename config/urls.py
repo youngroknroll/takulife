@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
@@ -27,4 +29,8 @@ urlpatterns = [
     path("api/events/", include("events.urls")),
     path("api/event-drafts/", include("drafts.urls")),
     path("api/user-event-statuses/", include("archive.urls")),
+    path("api/visit-records/", include("archive.visit_urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
