@@ -1,5 +1,4 @@
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView, RetrieveAPIView
@@ -8,8 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Event, UserEventStatus, VisitRecord, VisitRecordPhoto
+from .queries import PUBLIC_LISTING_PAGE_SIZE, list_published_events, parse_public_listing_params
 from .serializers import (
-    EventQuerySerializer,
     EventSerializer,
     UserEventStatusSerializer,
     VisitRecordPhotoSerializer,
@@ -18,33 +17,16 @@ from .serializers import (
 
 
 class EventPagination(PageNumberPagination):
-    page_size = 20
+    page_size = PUBLIC_LISTING_PAGE_SIZE
 
 
 class PublicEventListView(ListAPIView):
     serializer_class = EventSerializer
     pagination_class = EventPagination
-    query_serializer_class = EventQuerySerializer
-
-    def _validated_query_params(self):
-        allowed_fields = self.query_serializer_class().fields
-        data = {
-            key: value
-            for key, value in self.request.query_params.items()
-            if key in allowed_fields
-        }
-        serializer = self.query_serializer_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        return serializer.validated_data
 
     def get_queryset(self):
-        params = self._validated_query_params()
-        today = timezone.localdate()
-        return (
-            Event.objects.published()
-            .filter_for_public_listing(params, today=today)
-            .order_for_public_listing(today=today)
-        )
+        params = parse_public_listing_params(self.request.query_params)
+        return list_published_events(params)
 
 
 class PublicEventDetailView(RetrieveAPIView):

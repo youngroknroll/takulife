@@ -3,6 +3,8 @@ from datetime import timedelta
 from django.db import models
 from django.db.models import Case, DateField, F, IntegerField, Value, When
 
+CLOSING_SOON_DAYS = 4
+
 
 class EventQuerySet(models.QuerySet):
     def published(self):
