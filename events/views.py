@@ -1,7 +1,5 @@
-from datetime import date, timedelta
-
-from django.db.models import Case, DateField, F, IntegerField, Value, When
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView, RetrieveAPIView
@@ -41,75 +39,19 @@ class PublicEventListView(ListAPIView):
 
     def get_queryset(self):
         params = self._validated_query_params()
-        queryset = Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED)
-        query = params.get("q")
-        if query:
-            queryset = queryset.filter(title__icontains=query)
-        region = params.get("region")
-        if region:
-            queryset = queryset.filter(region=region)
-        category = params.get("category")
-        if category:
-            queryset = queryset.filter(category=category)
-        work_title = params.get("work_title")
-        if work_title:
-            queryset = queryset.filter(work_title__icontains=work_title)
-        start_date_from = params.get("start_date_from")
-        if start_date_from:
-            queryset = queryset.filter(start_date__gte=start_date_from)
-        start_date_to = params.get("start_date_to")
-        if start_date_to:
-            queryset = queryset.filter(start_date__lte=start_date_to)
-        status_param = params.get("status")
-        if status_param:
-            queryset = self._filter_by_status(queryset, status_param)
-        return self._order_default(queryset)
-
-    def _filter_by_status(self, queryset, status_param):
-        today = date.today()
-        if status_param == "upcoming":
-            return queryset.filter(start_date__gt=today)
-        if status_param == "ongoing":
-            return queryset.filter(start_date__lte=today).filter(end_date__gte=today)
-        if status_param == "closing_soon":
-            return queryset.filter(
-                start_date__lte=today,
-                end_date__gte=today,
-                end_date__lte=today + timedelta(days=4),
-            )
-        if status_param == "ended":
-            return queryset.filter(end_date__lt=today)
-
-    def _order_default(self, queryset):
-        today = date.today()
-        return queryset.annotate(
-            _state_rank=Case(
-                When(start_date__lte=today, end_date__gte=today, then=Value(0)),
-                When(start_date__gt=today, then=Value(1)),
-                When(end_date__lt=today, then=Value(2)),
-                default=Value(3),
-                output_field=IntegerField(),
-            ),
-            _ongoing_sort=Case(
-                When(start_date__lte=today, end_date__gte=today, then=F("end_date")),
-                output_field=DateField(),
-            ),
-            _upcoming_sort=Case(
-                When(start_date__gt=today, then=F("start_date")),
-                output_field=DateField(),
-            ),
-            _ended_sort=Case(
-                When(end_date__lt=today, then=F("end_date")),
-                output_field=DateField(),
-            ),
-        ).order_by("_state_rank", "_ongoing_sort", "_upcoming_sort", F("_ended_sort").desc(), "id")
+        today = timezone.localdate()
+        return (
+            Event.objects.published()
+            .filter_for_public_listing(params, today=today)
+            .order_for_public_listing(today=today)
+        )
 
 
 class PublicEventDetailView(RetrieveAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        return Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED)
+        return Event.objects.published()
 
 
 class UserEventStatusUpsertView(APIView):
@@ -117,7 +59,7 @@ class UserEventStatusUpsertView(APIView):
 
     def put(self, request, event_id):
         event = get_object_or_404(
-            Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED),
+            Event.objects.published(),
             pk=event_id,
         )
         status_value = request.data.get("status")
@@ -135,7 +77,7 @@ class VisitRecordListCreateView(APIView):
 
     def post(self, request):
         event = get_object_or_404(
-            Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED),
+            Event.objects.published(),
             pk=request.data.get("event"),
         )
         record = VisitRecord.objects.create(

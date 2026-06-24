@@ -311,6 +311,23 @@ def test_public_event_list_filters_by_category_work_title_and_start_date_range(c
 
 
 @pytest.mark.django_db
+def test_public_event_list_reversed_start_date_range_returns_empty_results(client):
+    Event.objects.create(
+        title="June event",
+        start_date="2026-06-10",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    response = client.get(
+        "/api/events/",
+        {"start_date_from": "2026-06-30", "start_date_to": "2026-06-01"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"] == []
+
+
+@pytest.mark.django_db
 def test_public_event_list_rejects_invalid_start_date_from(client):
     Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -392,4 +409,41 @@ def test_public_event_list_default_order_prioritizes_ongoing_then_upcoming_then_
         upcoming_later.id,
         ended_recent.id,
         ended_old.id,
+    ]
+
+
+@pytest.mark.django_db
+def test_public_event_list_places_null_date_events_after_ranked_events(client):
+    today = timezone.localdate()
+    null_date = Event.objects.create(
+        title="Undated event",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    ended = Event.objects.create(
+        title="Ended event",
+        start_date=today - timedelta(days=2),
+        end_date=today - timedelta(days=1),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    upcoming = Event.objects.create(
+        title="Upcoming event",
+        start_date=today + timedelta(days=1),
+        end_date=today + timedelta(days=2),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+    ongoing = Event.objects.create(
+        title="Ongoing event",
+        start_date=today - timedelta(days=1),
+        end_date=today + timedelta(days=1),
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    response = client.get("/api/events/")
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [
+        ongoing.id,
+        upcoming.id,
+        ended.id,
+        null_date.id,
     ]

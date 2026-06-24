@@ -7,7 +7,7 @@ from .models import UserEventStatus
 
 class UserEventStatusSerializer(serializers.ModelSerializer):
     event = serializers.PrimaryKeyRelatedField(
-        queryset=Event.objects.filter(publish_status=Event.PublishStatus.PUBLISHED),
+        queryset=Event.objects.published(),
     )
 
     class Meta:

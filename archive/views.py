@@ -40,7 +40,11 @@ class UserEventStatusListCreateView(ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            status_object = create_user_event_status(user=request.user, serializer=serializer)
+            status_object = create_user_event_status(
+                user=request.user,
+                event=serializer.validated_data["event"],
+                status=serializer.validated_data["status"],
+            )
         except DuplicateUserEventStatusError:
             return Response(
                 {

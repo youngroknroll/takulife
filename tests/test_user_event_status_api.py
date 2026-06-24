@@ -6,6 +6,21 @@ from events.models import Event
 
 
 @pytest.mark.django_db
+def test_create_user_event_status_accepts_explicit_domain_inputs(django_user_model):
+    user = django_user_model.objects.create_user(username="service-user", password="secret")
+    event = Event.objects.create(
+        title="Published event",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    created = create_user_event_status(user=user, event=event, status="interested")
+
+    assert created.user_id == user.id
+    assert created.event_id == event.id
+    assert created.status == "interested"
+
+
+@pytest.mark.django_db
 def test_authenticated_user_can_create_event_status_for_published_event(client, django_user_model):
     user = django_user_model.objects.create_user(username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
@@ -20,6 +35,28 @@ def test_authenticated_user_can_create_event_status_for_published_event(client, 
     assert response.status_code == 201
     assert response.json()["event"] == event.id
     assert response.json()["status"] == "interested"
+
+
+@pytest.mark.django_db
+def test_user_event_status_create_accepts_published_event_via_events_queryset(
+    client,
+    django_user_model,
+):
+    user = django_user_model.objects.create_user(username="published-user", password="secret")
+    event = Event.objects.create(
+        title="Published event",
+        publish_status=Event.PublishStatus.PUBLISHED,
+    )
+
+    client.force_login(user)
+    response = client.post(
+        "/api/user-event-statuses/",
+        {"event": event.id, "status": "planned"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 201
+    assert response.json()["event"] == event.id
 
 
 @pytest.mark.django_db
@@ -264,15 +301,14 @@ def test_authenticated_user_can_delete_event_status(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_create_user_event_status_maps_integrity_error_to_duplicate(monkeypatch, client, django_user_model):
+def test_create_user_event_status_maps_integrity_error_to_duplicate(monkeypatch, django_user_model):
     user = django_user_model.objects.create_user(username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
-    class RaceSerializer:
-        validated_data = {"event": event}
+    def raise_integrity_error(**kwargs):
+        raise IntegrityError("duplicate")
 
-        def save(self, user):
-            raise IntegrityError("duplicate")
+    monkeypatch.setattr("archive.services.UserEventStatus.objects.create", raise_integrity_error)
 
     with pytest.raises(DuplicateUserEventStatusError):
-        create_user_event_status(user=user, serializer=RaceSerializer())
+        create_user_event_status(user=user, event=event, status="interested")
