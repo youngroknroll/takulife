@@ -1,413 +1,293 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ project_name }} | 행사 목록</title>
-  <style>
-    :root {
-      --bg: #f3f6fb;
-      --surface: #ffffff;
-      --line: #d8e2ef;
-      --text: #142034;
-      --muted: #617286;
-      --brand: #1d4ed8;
-      --brand-soft: #e7efff;
-      --mint-soft: #dcfce7;
-      --mint-ink: #166534;
-      --pink-soft: #fce7f3;
-      --pink-ink: #be185d;
-      --amber-soft: #fff7d6;
-      --amber-ink: #92400e;
-      --shadow: 0 16px 36px rgba(17, 31, 55, 0.08);
-    }
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
-      line-height: 1.6;
-      color: var(--text);
-      background:
-        radial-gradient(160% 90% at 100% -10%, #e7f0ff 0%, transparent 45%),
-        radial-gradient(120% 70% at -10% -20%, #eef5ff 0%, transparent 40%),
-        var(--bg);
-    }
-    .page {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 24px 20px 72px;
-    }
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 행사 목록{% endblock %}
+
+{% block extra_css %}
+<style>
+  .topbar {
+    grid-template-columns: auto 1fr auto auto;
+    gap: 10px;
+  }
+  .search {
+    display: flex;
+    min-width: 0;
+    gap: 8px;
+  }
+  .search input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.94rem;
+  }
+  .search button {
+    border: 1px solid #c2d7ff;
+    border-radius: 8px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-weight: 700;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+  .text-link {
+    text-decoration: none;
+    color: var(--brand);
+    font-weight: 600;
+    border: 1px solid #c7d7f8;
+    background: #f8fbff;
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .quick-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 12px;
+  }
+  .filters {
+    padding: 14px;
+    align-self: start;
+    position: sticky;
+    top: 12px;
+  }
+  .filters h1 {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+  }
+  .filters .caption {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 0.84rem;
+  }
+  .filter-group {
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px;
+    background: #fbfcff;
+  }
+  .filter-group h2 {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+  }
+  .filter-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+  }
+  .filter-check {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: #304a67;
+    font-size: 0.86rem;
+  }
+  .filter-check input:focus {
+    outline: 2px solid #92b4ff;
+    outline-offset: 2px;
+  }
+  .filter-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    color: #334862;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .btn.primary {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+    font-weight: 600;
+  }
+  .results {
+    padding: 12px;
+  }
+  .results-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .results-title {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .results-note {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .sort {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .sort select {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 8px;
+    color: var(--text);
+    background: #fff;
+  }
+  .event-list {
+    display: grid;
+    gap: 10px;
+  }
+  .event-card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    background: #fbfdff;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: start;
+  }
+  .event-type {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--brand);
+    background: var(--brand-soft);
+    margin-bottom: 6px;
+  }
+  .event-card h2 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  .event-card h2 a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .event-card h2 a:hover {
+    text-decoration: underline;
+  }
+  .event-card h2 a:focus {
+    outline: 2px solid #92b4ff;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .filter-toggle {
+    display: none;
+  }
+  .meta {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.84rem;
+  }
+  .period {
+    margin: 4px 0 0;
+    color: #314b69;
+    font-size: 0.88rem;
+  }
+  .dday {
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    background: var(--amber-soft);
+    color: var(--amber-ink);
+    justify-self: end;
+  }
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 9px;
+  }
+  .pager {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+  .pager button {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: #324a66;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 0.82rem;
+  }
+  .pager button.current {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+    font-weight: 600;
+  }
+  @media (max-width: 900px) {
     .topbar {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      padding: 14px;
-      display: grid;
-      grid-template-columns: auto 1fr auto auto;
-      gap: 10px;
+      grid-template-columns: 1fr;
+    }
+    .layout {
+      grid-template-columns: 1fr;
+    }
+    .filters {
+      position: static;
+    }
+    .event-card {
+      grid-template-columns: 1fr;
+    }
+    .dday {
+      justify-self: start;
+    }
+    .filter-toggle {
+      display: inline-flex;
       align-items: center;
-      margin-bottom: 14px;
-    }
-    .brand {
-      font-size: 1.35rem;
-      font-weight: 700;
-      text-decoration: none;
-      color: var(--text);
-    }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-    .search {
-      display: flex;
-      min-width: 0;
-      gap: 8px;
-    }
-    .search input {
-      flex: 1;
-      min-width: 0;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 0.94rem;
-    }
-    .search button {
-      border: 1px solid #c2d7ff;
-      border-radius: 8px;
-      background: var(--brand-soft);
-      color: var(--brand);
-      font-weight: 700;
-      padding: 10px 14px;
-      cursor: pointer;
-    }
-    .text-link {
-      text-decoration: none;
-      color: var(--brand);
-      font-weight: 600;
-      border: 1px solid #c7d7f8;
-      background: #f8fbff;
-      border-radius: 8px;
-      padding: 8px 10px;
-    }
-    .text-link:focus,
-    .search input:focus,
-    .search button:focus,
-    .chip:focus,
-    .status-btn:focus,
-    .filter-check input:focus {
-      outline: 2px solid #92b4ff;
-      outline-offset: 2px;
-    }
-    .quick-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-    .chip {
-      border-radius: 999px;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      margin-top: 8px;
       border: 1px solid #c7d7f8;
       background: #f8fbff;
       color: #24456f;
-      font-size: 0.82rem;
-      padding: 7px 12px;
-      cursor: pointer;
-    }
-    .chip.active {
-      background: var(--brand);
-      border-color: var(--brand);
-      color: #fff;
-      font-weight: 600;
-    }
-    .layout {
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 12px;
-    }
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-    }
-    .filters {
-      padding: 14px;
-      align-self: start;
-      position: sticky;
-      top: 12px;
-    }
-    .filters h1 {
-      margin: 0 0 4px;
-      font-size: 1.1rem;
-    }
-    .filters .caption {
-      margin: 0 0 12px;
-      color: var(--muted);
-      font-size: 0.84rem;
-    }
-    .filter-group {
-      margin-bottom: 12px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px;
-      background: #fbfcff;
-    }
-    .filter-group h2 {
-      margin: 0 0 8px;
-      font-size: 0.9rem;
-    }
-    .filter-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 6px;
-    }
-    .filter-check {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      color: #304a67;
+      border-radius: 8px;
+      padding: 10px 12px;
       font-size: 0.86rem;
-    }
-    .filter-actions {
-      display: flex;
-      gap: 8px;
-    }
-    .btn {
-      border: 1px solid var(--line);
-      background: #fff;
-      color: #334862;
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 0.82rem;
+      font-weight: 600;
       cursor: pointer;
     }
-    .btn.primary {
-      background: var(--brand);
-      border-color: var(--brand);
-      color: #fff;
-      font-weight: 600;
-    }
-    .results {
-      padding: 12px;
-    }
-    .results-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .results-title {
-      margin: 0;
-      font-size: 1rem;
-    }
-    .results-note {
-      margin: 2px 0 0;
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
-    .sort {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
-    .sort select {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 7px 8px;
-      color: var(--text);
-      background: #fff;
-    }
-    .event-list {
-      display: grid;
-      gap: 10px;
-    }
-    .event-card {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      background: #fbfdff;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 10px;
-      align-items: start;
-    }
-    .event-type {
-      display: inline-block;
-      border-radius: 999px;
-      padding: 4px 9px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--brand);
-      background: var(--brand-soft);
-      margin-bottom: 6px;
-    }
-    .verified {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      border-radius: 999px;
-      padding: 4px 9px;
-      font-size: 0.73rem;
-      font-weight: 700;
-      background: var(--mint-soft);
-      color: var(--mint-ink);
-    }
-    .event-card h2 {
-      margin: 0 0 6px;
-      font-size: 1rem;
-      line-height: 1.35;
-    }
-    .event-card h2 a {
-      color: inherit;
-      text-decoration: none;
-    }
-    .event-card h2 a:hover {
-      text-decoration: underline;
-    }
-    .event-card h2 a:focus {
-      outline: 2px solid #92b4ff;
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
-    .filter-toggle {
+    #filter-body {
       display: none;
     }
-    .meta {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.84rem;
+    .filters.open #filter-body {
+      display: block;
     }
-    .period {
-      margin: 4px 0 0;
-      color: #314b69;
-      font-size: 0.88rem;
+  }
+  @media (max-width: 700px) {
+    .page {
+      padding: 16px 12px 48px;
     }
-    .dday {
-      border-radius: 999px;
-      padding: 5px 10px;
-      font-size: 0.76rem;
-      font-weight: 700;
-      background: var(--amber-soft);
-      color: var(--amber-ink);
-      justify-self: end;
+    .results-head {
+      flex-direction: column;
+      align-items: flex-start;
     }
-    .status-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-top: 9px;
-    }
-    .status-btn {
-      border: 1px solid #d9e4f4;
-      border-radius: 999px;
-      padding: 5px 10px;
-      font-size: 0.78rem;
-      color: #2f4360;
-      background: #fff;
-      cursor: pointer;
-    }
-    .status-btn.wish {
-      background: var(--pink-soft);
-      border-color: #f8bfd8;
-      color: var(--pink-ink);
-    }
-    .status-btn.plan {
-      background: var(--brand-soft);
-      border-color: #c2d7ff;
-      color: var(--brand);
-    }
-    .status-btn.done {
-      background: var(--mint-soft);
-      border-color: #b4ebc8;
-      color: var(--mint-ink);
-    }
-    .pager {
-      margin-top: 12px;
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-    }
-    .pager button {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      color: #324a66;
-      padding: 8px 10px;
-      cursor: pointer;
-      font-size: 0.82rem;
-    }
-    .pager button.current {
-      background: var(--brand);
-      border-color: var(--brand);
-      color: #fff;
-      font-weight: 600;
-    }
-    @media (max-width: 900px) {
-      .topbar {
-        grid-template-columns: 1fr;
-      }
-      .layout {
-        grid-template-columns: 1fr;
-      }
-      .filters {
-        position: static;
-      }
-      .event-card {
-        grid-template-columns: 1fr;
-      }
-      .dday {
-        justify-self: start;
-      }
-      .filter-toggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        width: 100%;
-        margin-top: 8px;
-        border: 1px solid #c7d7f8;
-        background: #f8fbff;
-        color: #24456f;
-        border-radius: 8px;
-        padding: 10px 12px;
-        font-size: 0.86rem;
-        font-weight: 600;
-        cursor: pointer;
-      }
-      #filter-body {
-        display: none;
-      }
-      .filters.open #filter-body {
-        display: block;
-      }
-    }
-    @media (max-width: 700px) {
-      .page {
-        padding: 16px 12px 48px;
-      }
-      .results-head {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
-  </style>
-</head>
-<body>
+  }
+</style>
+{% endblock %}
+
+{% block content %}
   <main class="page">
     <header class="topbar">
       <a class="brand" href="/">{{ project_name }}</a>
@@ -417,7 +297,7 @@
         <button type="button">검색</button>
       </form>
       <a class="text-link" href="/">홈</a>
-      <a class="text-link" href="/admin/">관리자</a>
+      {% include "core/_topbar.html" %}
     </header>
 
     <div class="quick-row" aria-label="빠른 필터">
@@ -499,8 +379,8 @@
               <p class="meta">서울 홍대 · AK플라자</p>
               <p class="period">2026.06.01 - 2026.06.14</p>
               <div class="status-row">
-                <button class="status-btn wish" type="button">관심 있음</button>
-                <button class="status-btn plan" type="button">방문 예정</button>
+                <button class="status-btn interested" type="button">관심</button>
+                <button class="status-btn planned" type="button">방문 예정</button>
               </div>
             </div>
             <span class="dday">D-3</span>
@@ -516,8 +396,8 @@
               <p class="meta">서울 강남 · 스페이스 카페</p>
               <p class="period">2026.06.05 - 2026.06.30</p>
               <div class="status-row">
-                <button class="status-btn wish" type="button">관심 있음</button>
-                <button class="status-btn plan" type="button">방문 예정</button>
+                <button class="status-btn interested" type="button">관심</button>
+                <button class="status-btn planned" type="button">방문 예정</button>
               </div>
             </div>
             <span class="dday">D-4</span>
@@ -533,8 +413,8 @@
               <p class="meta">경기 수원 · 시네마몰</p>
               <p class="period">2026.06.07 - 2026.06.13</p>
               <div class="status-row">
-                <button class="status-btn done" type="button">다녀옴</button>
-                <button class="status-btn" type="button">놓침</button>
+                <button class="status-btn visited" type="button">방문 완료</button>
+                <button class="status-btn missed" type="button">놓침</button>
               </div>
             </div>
             <span class="dday">D-1</span>
@@ -562,5 +442,4 @@
       });
     }
   </script>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,302 @@
+/*
+ * base.css — shared structural and component rules
+ *
+ * Only contains rules that appear verbatim (or near-verbatim) across
+ * the majority of the 8 page templates. Page-specific rules remain in
+ * each page's {% block extra_css %}.
+ */
+
+/* ── reset ─────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+/* ── body ───────────────────────────────────────────────────── */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  line-height: 1.6;
+  color: var(--text);
+  background:
+    radial-gradient(160% 90% at 100% -10%, #e7f0ff 0%, transparent 45%),
+    radial-gradient(120% 70% at -10% -20%, #eef5ff 0%, transparent 40%),
+    var(--bg);
+}
+
+/* ── page wrapper ───────────────────────────────────────────── */
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 26px 20px 80px;
+}
+
+/* ── topbar ─────────────────────────────────────────────────── */
+/*
+ * topbar grid-template-columns varies per page.
+ * Only the shared structural styles are placed here.
+ */
+.topbar {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+/* ── accessibility ──────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── brand ──────────────────────────────────────────────────── */
+.brand {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* ── focus outline (global) ─────────────────────────────────── */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid #92b4ff;
+  outline-offset: 2px;
+}
+
+/* ── panel ──────────────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+/* ── badge / verified / dday chips ─────────────────────────── */
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+
+.dday {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+}
+
+/* ── archive user-status classes (canonical slug keys) ──────── */
+/*
+ * Canonical classes: interested / planned / visited / missed
+ * These replace the old wish/plan/done/miss classes from home and
+ * event_list templates (G10 vocab unification).
+ */
+.status-btn,
+.status {
+  border: 1px solid #d9e4f4;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  color: #2f4360;
+  background: #fff;
+  cursor: pointer;
+}
+
+.status-btn.interested,
+.status.interested {
+  background: var(--pink-soft);
+  border-color: #f8bfd8;
+  color: var(--pink-ink);
+}
+
+.status-btn.planned,
+.status.planned {
+  background: var(--brand-soft);
+  border-color: #c2d7ff;
+  color: var(--brand);
+}
+
+.status-btn.visited,
+.status.visited {
+  background: var(--mint-soft);
+  border-color: #b4ebc8;
+  color: var(--mint-ink);
+}
+
+.status-btn.missed,
+.status.missed {
+  background: #f4f5f7;
+  border-color: #d9dde4;
+  color: #5d6673;
+}
+
+/* ── chip (filter / quick-chip) ─────────────────────────────── */
+.chip {
+  border-radius: 999px;
+  border: 1px solid #c7d7f8;
+  background: #f8fbff;
+  color: #24456f;
+  font-size: 0.82rem;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.chip.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── summary cards (shared across archive + drafts pages) ───── */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.summary-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbfcff;
+  padding: 12px;
+}
+
+.summary-label {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.summary-value {
+  margin: 0;
+  font-size: 1.28rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ── hero block ─────────────────────────────────────────────── */
+.hero {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+
+.hero h1 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ── nav-links (archive + draft topbars) ────────────────────── */
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.nav-links a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  border: 1px solid #c7d7f8;
+  background: #f8fbff;
+  color: #24456f;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  min-height: 44px;
+}
+
+.nav-links a.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+/* ── top-action button (archive + draft topbars) ────────────── */
+.top-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border: 1px solid #b9ccf8;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 8px;
+  min-height: 44px;
+}
+
+/* ── layout (two-column grid shared by list/archive pages) ──── */
+.layout {
+  display: grid;
+  gap: 12px;
+}
+
+/* ── notice / empty-note ─────────────────────────────────────── */
+.notice {
+  border: 1px dashed #b6c8df;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #46617f;
+  padding: 12px;
+  font-size: 0.88rem;
+}
+
+/* ── panel heading shared styles ─────────────────────────────── */
+.panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.panel-note {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
