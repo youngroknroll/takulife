@@ -1,389 +1,291 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ project_name }} | 내 기록장</title>
-  <style>
-    :root {
-      --bg: #f4f7fb;
-      --surface: #ffffff;
-      --line: #d8e2ef;
-      --text: #15243a;
-      --muted: #607389;
-      --brand: #1d4ed8;
-      --brand-soft: #e8f0ff;
-      --mint-soft: #dcfce7;
-      --mint-ink: #166534;
-      --amber-soft: #fff7d6;
-      --amber-ink: #92400e;
-      --rose-soft: #ffe4e6;
-      --rose-ink: #be123c;
-      --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 내 기록장{% endblock %}
+
+{% block extra_css %}
+<style>
+  .page {
+    padding: 26px 20px 80px;
+  }
+  .topbar {
+    grid-template-columns: auto 1fr auto;
+  }
+  .top-action a {
+    display: inline-block;
+    text-decoration: none;
+    border: 1px solid #b9ccf8;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+  .hero {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    margin: 0 0 8px;
+    font-size: 1.55rem;
+    line-height: 1.3;
+  }
+  .hero p {
+    margin: 0;
+    color: var(--muted);
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(260px, 1fr);
+    gap: 12px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 14px;
+  }
+  .month-block {
+    margin-top: 12px;
+    border-top: 1px solid #e6edf7;
+    padding-top: 12px;
+  }
+  .month-title {
+    margin: 0 0 8px;
+    font-size: 0.93rem;
+    color: #2f4664;
+    font-weight: 700;
+  }
+  .record-card {
+    border: 1px solid #d9e4f4;
+    border-radius: 10px;
+    padding: 11px;
+    background: #fbfcff;
+    margin-bottom: 9px;
+  }
+  .record-top {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .record-title {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.35;
+  }
+  /* Archive timeline status badges (display only, not interactive buttons) */
+  .status {
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .status.visited {
+    background: var(--mint-soft);
+    color: var(--mint-ink);
+  }
+  .status.planned {
+    background: var(--amber-soft);
+    color: var(--amber-ink);
+  }
+  .status.missed {
+    background: var(--rose-soft);
+    color: var(--rose-ink);
+  }
+  .record-meta {
+    margin: 0 0 5px;
+    color: var(--muted);
+    font-size: 0.84rem;
+  }
+  .record-note {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #2b405c;
+  }
+  .right-section {
+    margin-top: 12px;
+    border-top: 1px solid #e6edf7;
+    padding-top: 12px;
+  }
+  .right-section h3 {
+    margin: 0 0 8px;
+    font-size: 0.92rem;
+  }
+  .flat-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 7px;
+  }
+  .flat-list li {
+    border: 1px solid #d9e4f4;
+    border-radius: 8px;
+    padding: 8px 9px;
+    background: #fbfcff;
+    font-size: 0.86rem;
+  }
+  .flat-list a {
+    color: #25508a;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .calendar {
+    border: 1px solid #d9e4f4;
+    border-radius: 10px;
+    background: #fbfcff;
+    padding: 10px;
+  }
+  .calendar-head {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 7px;
+  }
+  .calendar-head span {
+    font-size: 0.74rem;
+    color: #546c89;
+    text-align: center;
+    font-weight: 700;
+  }
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .day {
+    min-height: 38px;
+    border: 1px solid #d9e4f4;
+    border-radius: 8px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.76rem;
+    color: #2d4361;
+    font-weight: 600;
+  }
+  .day.off {
+    color: #9aacbf;
+    background: #f3f7fc;
+  }
+  .day.visited {
+    background: var(--mint-soft);
+    color: var(--mint-ink);
+    border-color: #b9efce;
+  }
+  .day.planned {
+    background: var(--amber-soft);
+    color: var(--amber-ink);
+    border-color: #fde39f;
+  }
+  .day.missed {
+    background: var(--rose-soft);
+    color: var(--rose-ink);
+    border-color: #f8b7c3;
+  }
+  .calendar-legend {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .calendar-legend li {
+    font-size: 0.75rem;
+    color: #486280;
+    padding: 4px 7px;
+    border-radius: 999px;
+    border: 1px solid #d9e4f4;
+    background: #fff;
+  }
+  .cta {
+    border: 1px solid #c7d7f8;
+    border-radius: 10px;
+    background: #f8fbff;
+    padding: 11px;
+  }
+  .cta p {
+    margin: 0 0 9px;
+    color: #355577;
+    font-size: 0.88rem;
+  }
+  .cta a {
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid #9dbcf9;
+    background: var(--brand);
+    color: #fff;
+    padding: 8px 11px;
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+  .mobile-cta {
+    display: none;
+  }
+  @media (max-width: 1024px) {
+    .summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
-      line-height: 1.6;
-      color: var(--text);
-      background:
-        radial-gradient(160% 90% at 100% -10%, #e7f0ff 0%, transparent 45%),
-        radial-gradient(120% 70% at -10% -20%, #eef5ff 0%, transparent 40%),
-        var(--bg);
-    }
-    .page {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 26px 20px 80px;
-    }
+  }
+  @media (max-width: 860px) {
     .topbar {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      padding: 14px;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-    .brand {
-      font-size: 1.3rem;
-      font-weight: 700;
+      grid-template-columns: 1fr;
     }
     .nav-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-    }
-    .nav-links a {
-      text-decoration: none;
-      border: 1px solid #c7d7f8;
-      background: #f8fbff;
-      color: #24456f;
-      padding: 7px 11px;
-      border-radius: 999px;
-      font-size: 0.84rem;
-      font-weight: 600;
-    }
-    .nav-links a.active {
-      background: var(--brand);
-      color: #fff;
-      border-color: var(--brand);
+      justify-content: flex-start;
     }
     .top-action {
-      text-align: right;
-    }
-    .top-action a {
-      display: inline-block;
-      text-decoration: none;
-      border: 1px solid #b9ccf8;
-      background: var(--brand-soft);
-      color: var(--brand);
-      font-weight: 700;
-      padding: 8px 12px;
-      border-radius: 8px;
-    }
-    a:focus {
-      outline: 2px solid #92b4ff;
-      outline-offset: 2px;
-    }
-    .hero {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      padding: 18px;
-      margin-bottom: 14px;
-    }
-    .hero h1 {
-      margin: 0 0 8px;
-      font-size: 1.55rem;
-      line-height: 1.3;
-    }
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-    }
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 14px;
-    }
-    .summary-card {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #fbfcff;
-      padding: 12px;
-    }
-    .summary-label {
-      margin: 0 0 6px;
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
-    .summary-value {
-      margin: 0;
-      font-size: 1.3rem;
-      font-weight: 700;
-      line-height: 1.2;
+      text-align: left;
     }
     .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.75fr) minmax(260px, 1fr);
-      gap: 12px;
+      grid-template-columns: 1fr;
     }
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      padding: 14px;
-    }
-    .panel h2 {
-      margin: 0;
-      font-size: 1rem;
-    }
-    .month-block {
-      margin-top: 12px;
-      border-top: 1px solid #e6edf7;
-      padding-top: 12px;
-    }
-    .month-title {
-      margin: 0 0 8px;
-      font-size: 0.93rem;
-      color: #2f4664;
-      font-weight: 700;
-    }
-    .record-card {
-      border: 1px solid #d9e4f4;
-      border-radius: 10px;
-      padding: 11px;
-      background: #fbfcff;
-      margin-bottom: 9px;
-    }
-    .record-top {
-      display: grid;
-      grid-template-columns: auto auto;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-    .record-title {
-      margin: 0;
-      font-size: 0.98rem;
-      line-height: 1.35;
-    }
-    .status {
-      border-radius: 999px;
-      padding: 4px 9px;
-      font-size: 0.74rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .status.done {
-      background: var(--mint-soft);
-      color: var(--mint-ink);
-    }
-    .status.plan {
-      background: var(--amber-soft);
-      color: var(--amber-ink);
-    }
-    .status.missed {
-      background: var(--rose-soft);
-      color: var(--rose-ink);
-    }
-    .record-meta {
-      margin: 0 0 5px;
-      color: var(--muted);
-      font-size: 0.84rem;
-    }
-    .record-note {
-      margin: 0;
-      font-size: 0.9rem;
-      color: #2b405c;
-    }
-    .right-section {
-      margin-top: 12px;
-      border-top: 1px solid #e6edf7;
-      padding-top: 12px;
-    }
-    .right-section h3 {
-      margin: 0 0 8px;
-      font-size: 0.92rem;
-    }
-    .flat-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      gap: 7px;
-    }
-    .flat-list li {
-      border: 1px solid #d9e4f4;
-      border-radius: 8px;
-      padding: 8px 9px;
-      background: #fbfcff;
-      font-size: 0.86rem;
-    }
-    .flat-list a {
-      color: #25508a;
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .calendar {
-      border: 1px solid #d9e4f4;
-      border-radius: 10px;
-      background: #fbfcff;
-      padding: 10px;
-    }
-    .calendar-head {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 6px;
-      margin-bottom: 7px;
-    }
-    .calendar-head span {
-      font-size: 0.74rem;
-      color: #546c89;
-      text-align: center;
-      font-weight: 700;
-    }
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 6px;
-    }
-    .day {
-      min-height: 38px;
-      border: 1px solid #d9e4f4;
-      border-radius: 8px;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.76rem;
-      color: #2d4361;
-      font-weight: 600;
-    }
-    .day.off {
-      color: #9aacbf;
-      background: #f3f7fc;
-    }
-    .day.done {
-      background: var(--mint-soft);
-      color: var(--mint-ink);
-      border-color: #b9efce;
-    }
-    .day.plan {
-      background: var(--amber-soft);
-      color: var(--amber-ink);
-      border-color: #fde39f;
-    }
-    .day.missed {
-      background: var(--rose-soft);
-      color: var(--rose-ink);
-      border-color: #f8b7c3;
-    }
-    .calendar-legend {
-      margin: 8px 0 0;
-      padding: 0;
-      list-style: none;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .calendar-legend li {
-      font-size: 0.75rem;
-      color: #486280;
-      padding: 4px 7px;
-      border-radius: 999px;
-      border: 1px solid #d9e4f4;
-      background: #fff;
-    }
-    .cta {
-      border: 1px solid #c7d7f8;
-      border-radius: 10px;
-      background: #f8fbff;
-      padding: 11px;
-    }
-    .cta p {
-      margin: 0 0 9px;
-      color: #355577;
-      font-size: 0.88rem;
-    }
-    .cta a {
-      display: inline-block;
-      text-decoration: none;
-      border-radius: 8px;
-      border: 1px solid #9dbcf9;
-      background: var(--brand);
-      color: #fff;
-      padding: 8px 11px;
-      font-size: 0.84rem;
-      font-weight: 700;
+    .page {
+      padding-bottom: 96px;
     }
     .mobile-cta {
-      display: none;
+      display: block;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(255, 255, 255, 0.96);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -8px 24px rgba(17, 31, 55, 0.10);
+      z-index: 20;
     }
-    @media (max-width: 1024px) {
-      .summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    .mobile-cta a {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 8px;
+      background: var(--brand);
+      color: #fff;
+      font-weight: 700;
+      padding: 11px;
     }
-    @media (max-width: 860px) {
-      .topbar {
-        grid-template-columns: 1fr;
-      }
-      .nav-links {
-        justify-content: flex-start;
-      }
-      .top-action {
-        text-align: left;
-      }
-      .layout {
-        grid-template-columns: 1fr;
-      }
-      .page {
-        padding-bottom: 96px;
-      }
-      .mobile-cta {
-        display: block;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-        background: rgba(255, 255, 255, 0.96);
-        border-top: 1px solid var(--line);
-        box-shadow: 0 -8px 24px rgba(17, 31, 55, 0.10);
-        z-index: 20;
-      }
-      .mobile-cta a {
-        display: block;
-        text-align: center;
-        text-decoration: none;
-        border-radius: 8px;
-        background: var(--brand);
-        color: #fff;
-        font-weight: 700;
-        padding: 11px;
-      }
+  }
+  @media (max-width: 620px) {
+    .summary-grid {
+      grid-template-columns: 1fr;
     }
-    @media (max-width: 620px) {
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-</head>
-<body>
+  }
+</style>
+{% endblock %}
+
+{% block content %}
   <div class="page">
     <header class="topbar">
       <div class="brand">{{ project_name }}</div>
@@ -433,7 +335,7 @@
           <article class="record-card">
             <div class="record-top">
               <h3 class="record-title">스튜디오 루미너스 팝업 in 홍대</h3>
-              <span class="status done">방문 완료</span>
+              <span class="status visited">방문 완료</span>
             </div>
             <p class="record-meta">방문일 2026-06-01 · 서울 마포구</p>
             <p class="record-note">오픈 직후 입장, 굿즈 재고 여유, 대기 20분 기록.</p>
@@ -441,7 +343,7 @@
           <article class="record-card">
             <div class="record-top">
               <h3 class="record-title">메카닉 시어터 특전 상영회</h3>
-              <span class="status plan">방문 예정</span>
+              <span class="status planned">방문 예정</span>
             </div>
             <p class="record-meta">예정일 2026-06-05 · 서울 용산구</p>
             <p class="record-note">특전 소진 가능성 높음, 첫 회차 우선 체크 필요.</p>
@@ -453,7 +355,7 @@
           <article class="record-card">
             <div class="record-top">
               <h3 class="record-title">아케인 콜라보 카페 시즌2</h3>
-              <span class="status done">방문 완료</span>
+              <span class="status visited">방문 완료</span>
             </div>
             <p class="record-meta">방문일 2026-05-24 · 경기 성남시</p>
             <p class="record-note">메뉴 회전 빠름, 예약 시간보다 10분 일찍 도착 권장.</p>
@@ -479,8 +381,8 @@
               <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
             </div>
             <div class="calendar-grid">
-              <div class="day off">26</div><div class="day off">27</div><div class="day off">28</div><div class="day off">29</div><div class="day off">30</div><div class="day off">31</div><div class="day done">1</div>
-              <div class="day">2</div><div class="day">3</div><div class="day">4</div><div class="day plan">5</div><div class="day">6</div><div class="day">7</div><div class="day">8</div>
+              <div class="day off">26</div><div class="day off">27</div><div class="day off">28</div><div class="day off">29</div><div class="day off">30</div><div class="day off">31</div><div class="day visited">1</div>
+              <div class="day">2</div><div class="day">3</div><div class="day">4</div><div class="day planned">5</div><div class="day">6</div><div class="day">7</div><div class="day">8</div>
               <div class="day">9</div><div class="day">10</div><div class="day">11</div><div class="day">12</div><div class="day">13</div><div class="day">14</div><div class="day">15</div>
               <div class="day">16</div><div class="day">17</div><div class="day">18</div><div class="day">19</div><div class="day">20</div><div class="day">21</div><div class="day">22</div>
               <div class="day">23</div><div class="day missed">24</div><div class="day">25</div><div class="day">26</div><div class="day">27</div><div class="day">28</div><div class="day">29</div>
@@ -526,5 +428,4 @@
       <a href="#" role="button">기록 추가</a>
     </div>
   </div>
-</body>
-</html>
+{% endblock %}
