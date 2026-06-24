@@ -329,6 +329,9 @@
       font-size: 0.84rem;
       font-weight: 700;
     }
+    .mobile-cta {
+      display: none;
+    }
     @media (max-width: 1024px) {
       .summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -346,6 +349,31 @@
       }
       .layout {
         grid-template-columns: 1fr;
+      }
+      .page {
+        padding-bottom: 96px;
+      }
+      .mobile-cta {
+        display: block;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -8px 24px rgba(17, 31, 55, 0.10);
+        z-index: 20;
+      }
+      .mobile-cta a {
+        display: block;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 8px;
+        background: var(--brand);
+        color: #fff;
+        font-weight: 700;
+        padding: 11px;
       }
     }
     @media (max-width: 620px) {
@@ -492,6 +520,10 @@
           </div>
         </div>
       </aside>
+    </div>
+
+    <div class="mobile-cta">
+      <a href="#" role="button">기록 추가</a>
     </div>
   </div>
 </body>

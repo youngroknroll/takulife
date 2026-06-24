@@ -194,11 +194,14 @@
       background: #fbfcff;
     }
     .card-top {
-      display: grid;
-      grid-template-columns: auto auto;
-      justify-content: space-between;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
       margin-bottom: 8px;
+    }
+    .card-top .dday {
+      margin-left: auto;
     }
     .badge {
       display: inline-block;
@@ -208,6 +211,32 @@
       font-weight: 700;
       background: var(--brand-soft);
       color: var(--brand);
+    }
+    .verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      background: var(--mint-soft);
+      color: var(--mint-ink);
+    }
+    .card h3 a,
+    .recent-card h3 a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .card h3 a:hover,
+    .recent-card h3 a:hover {
+      text-decoration: underline;
+    }
+    .card h3 a:focus,
+    .recent-card h3 a:focus {
+      outline: 2px solid #92b4ff;
+      outline-offset: 2px;
+      border-radius: 4px;
     }
     .dday {
       border-radius: 999px;
@@ -414,9 +443,10 @@
         <article class="card">
           <div class="card-top">
             <span class="badge">팝업스토어</span>
+            <span class="verified">✓ 공식 확인</span>
             <span class="dday">D-3</span>
           </div>
-          <h3>프로젝트 A 공식 팝업스토어</h3>
+          <h3><a href="/events/1/">프로젝트 A 공식 팝업스토어</a></h3>
           <p class="meta">서울 홍대 · AK플라자</p>
           <p class="period">2026.06.01 - 2026.06.14</p>
           <div class="status-row">
@@ -427,9 +457,10 @@
         <article class="card">
           <div class="card-top">
             <span class="badge">콜라보 카페</span>
+            <span class="verified">✓ 공식 확인</span>
             <span class="dday">D-4</span>
           </div>
-          <h3>작품 B 콜라보 카페 시즌 2</h3>
+          <h3><a href="/events/2/">작품 B 콜라보 카페 시즌 2</a></h3>
           <p class="meta">서울 강남 · 스페이스 카페</p>
           <p class="period">2026.06.05 - 2026.06.30</p>
           <div class="status-row">
@@ -440,9 +471,10 @@
         <article class="card">
           <div class="card-top">
             <span class="badge">극장 특전</span>
+            <span class="verified">✓ 공식 확인</span>
             <span class="dday">D-1</span>
           </div>
-          <h3>극장판 C 개봉 1주차 특전</h3>
+          <h3><a href="/events/3/">극장판 C 개봉 1주차 특전</a></h3>
           <p class="meta">경기 수원 · 시네마몰</p>
           <p class="period">2026.06.07 - 2026.06.13</p>
           <div class="status-row">
@@ -486,13 +518,13 @@
       <div class="recent-grid">
         <article class="recent-card">
           <p class="recent-label">NEW</p>
-          <h3>프로젝트 F 공식 굿즈 예약</h3>
+          <h3><a href="/events/4/">프로젝트 F 공식 굿즈 예약</a></h3>
           <p class="meta">서울 잠실 · 굿즈 예약</p>
           <p class="period">2026.06.12 - 2026.06.25</p>
         </article>
         <article class="recent-card">
           <p class="recent-label">NEW</p>
-          <h3>작품 G 콜라보 카페 1차</h3>
+          <h3><a href="/events/5/">작품 G 콜라보 카페 1차</a></h3>
           <p class="meta">경기 성남 · 콜라보 카페</p>
           <p class="period">2026.06.14 - 2026.06.29</p>
         </article>

@@ -196,6 +196,15 @@
       font-size: 0.88rem;
       overflow-wrap: anywhere;
     }
+    .raw-box p a {
+      color: var(--brand);
+      font-weight: 600;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+    .raw-box p a:hover {
+      text-decoration: underline;
+    }
     .action-stack {
       display: grid;
       gap: 10px;
@@ -339,7 +348,7 @@
           <p class="panel-note">raw 필드는 검토 중에도 원본 보존 대상입니다.</p>
           <div class="raw-box">
             <h3>source_url</h3>
-            <p>https://official.example/events/blue-archive-popup</p>
+            <p><a href="https://official.example/events/blue-archive-popup" target="_blank" rel="noopener">https://official.example/events/blue-archive-popup ↗</a></p>
           </div>
           <div class="raw-box">
             <h3>raw_title</h3>
@@ -354,9 +363,9 @@
         <section class="panel">
           <h2>검토 액션</h2>
           <p class="panel-note">실제 연결 시 CSRF와 admin 권한 처리가 필요합니다.</p>
-          <button class="action-button" type="button">수정 저장</button>
-          <button class="action-button secondary" type="button">승인하고 게시</button>
-          <button class="action-button danger" type="button">반려</button>
+          <button class="action-button" type="button" data-confirm="승인하고 게시하면 공개 행사 목록에 노출됩니다. 진행할까요?">승인하고 게시</button>
+          <button class="action-button secondary" type="button">수정 저장</button>
+          <button class="action-button danger" type="button" data-confirm="이 드래프트를 반려할까요? 공개 목록에는 노출되지 않습니다.">반려</button>
           <p class="notice">승인 결과는 draft object와 `event_id`를 함께 받는 API 응답으로 연결합니다.</p>
         </section>
 
@@ -394,6 +403,16 @@
     };
 
     void eventDraft;
+  </script>
+
+  <script>
+    document.querySelectorAll(".action-button[data-confirm]").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        if (!window.confirm(btn.dataset.confirm)) {
+          event.preventDefault();
+        }
+      });
+    });
   </script>
 </body>
 </html>
