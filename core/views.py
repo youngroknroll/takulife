@@ -104,12 +104,15 @@ def home(request):
         for slug, label in CATEGORY
     ]
 
+    popular_qs = Event.objects.published().most_viewed(5)
+
     context = {
         "project_name": "takulife",
         "ongoing_events": _attach_display(ongoing_qs[:6], user=request.user),
         "closing_events": _attach_display(closing_qs[:5], user=request.user),
         "recent_events": _attach_display(recent_qs, user=request.user),
         "category_tiles": category_tiles,
+        "popular_events": _attach_display(popular_qs, user=request.user),
     }
     return render(request, "core/home.html", context)
 
@@ -186,6 +189,7 @@ def event_list(request):
 
 def event_detail(request, event_id):
     event = get_object_or_404(Event.objects.published(), pk=event_id)
+    Event.objects.increment_view_count(event.pk)
     display = derive_event_display(event)
     status_slug = display["status"]
 

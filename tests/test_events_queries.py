@@ -348,3 +348,51 @@ class TestPublicListingPageSize:
         from events.queries import PUBLIC_LISTING_PAGE_SIZE
 
         assert PUBLIC_LISTING_PAGE_SIZE == 20
+
+
+# ---------------------------------------------------------------------------
+# most_viewed queryset method
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestMostViewed:
+    def test_returns_events_ordered_by_view_count_descending(self):
+        low = make_event(title="Low")
+        high = make_event(title="High")
+        mid = make_event(title="Mid")
+
+        Event.objects.filter(pk=low.pk).update(view_count=10)
+        Event.objects.filter(pk=mid.pk).update(view_count=30)
+        Event.objects.filter(pk=high.pk).update(view_count=50)
+
+        result = list(Event.objects.published().most_viewed(5))
+        ids = [e.id for e in result]
+        assert ids.index(high.id) < ids.index(mid.id)
+        assert ids.index(mid.id) < ids.index(low.id)
+
+    def test_returns_at_most_limit_events(self):
+        for i in range(7):
+            make_event(title=f"Event {i}")
+
+        result = list(Event.objects.published().most_viewed(5))
+        assert len(result) <= 5
+
+    def test_excludes_draft_events(self):
+        published = make_event(title="Published")
+        draft = make_event(title="Draft", publish_status=Event.PublishStatus.DRAFT)
+        Event.objects.filter(pk=draft.pk).update(view_count=999)
+
+        result = list(Event.objects.published().most_viewed(5))
+        ids = [e.id for e in result]
+        assert draft.id not in ids
+        assert published.id in ids
+
+    def test_equal_view_count_tiebreaks_by_id_descending(self):
+        first = make_event(title="First")
+        second = make_event(title="Second")
+
+        # Both have same view_count (0 by default)
+        result = list(Event.objects.published().most_viewed(5))
+        ids = [e.id for e in result]
+        # Higher id comes first when view_count is equal
+        assert ids.index(second.id) < ids.index(first.id)

@@ -551,12 +551,12 @@
           </div>
         </div>
 
-        {% if ongoing_events %}
+        {% if popular_events %}
           <div
             class="poster-deck-wrap"
             role="region"
             aria-roledescription="carousel"
-            aria-label="오늘 갈 수 있는 이벤트"
+            aria-label="많이 본 행사"
             data-carousel
           >
             <div class="poster-deck" aria-live="off" data-carousel-track>
@@ -564,7 +564,7 @@
               {# Sizer: invisible clone that provides intrinsic height so deck doesn't collapse #}
               <div class="deck-sizer" aria-hidden="true"></div>
 
-              {% for row in ongoing_events %}
+              {% for row in popular_events %}
                 <div
                   class="deck-card"
                   data-slide="{{ forloop.counter0 }}"
@@ -615,7 +615,7 @@
             </div>
 
             <div class="deck-controls" data-carousel-controls aria-hidden="true">
-              {% for row in ongoing_events %}
+              {% for row in popular_events %}
                 <button
                   class="carousel-dot"
                   type="button"
@@ -624,7 +624,7 @@
                   {% if forloop.first %}aria-current="true"{% endif %}
                 ></button>
               {% endfor %}
-              {% if ongoing_events|length > 1 %}
+              {% if popular_events|length > 1 %}
                 <button
                   class="carousel-pause"
                   type="button"
@@ -636,7 +636,7 @@
           </div>
         {% else %}
           <div class="carousel-empty" aria-hidden="true">
-            <p>현재 진행 중인 행사가 없습니다</p>
+            <p>표시할 인기 행사가 없습니다</p>
           </div>
         {% endif %}
       </div>
