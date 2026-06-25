@@ -7,6 +7,33 @@ from .models import Event
 logger = logging.getLogger(__name__)
 
 
+def set_event_poster(*, event, image):
+    """Assign a new poster image to an event.
+
+    Saves the new image, then best-effort deletes the old file from storage.
+    Cleanup failure is logged but never propagated — the upload always wins.
+    The file path is determined by the field/storage, never by user input.
+
+    Captures the old file name as a plain string before overwriting so that
+    FieldFile.delete() side-effects on the model instance do not clobber the
+    newly saved value on the event object.
+    """
+    old_name = event.poster_image.name if event.poster_image else None
+    old_storage = event.poster_image.storage if event.poster_image else None
+    event.poster_image = image
+    event.save(update_fields=["poster_image"])
+    if old_name and old_storage:
+        try:
+            old_storage.delete(old_name)
+        except Exception:
+            logger.exception("Failed to delete old poster image for event pk=%s", event.pk)
+
+
+def clear_event_poster(*, event):
+    """Remove the poster image from an event and delete the file from storage."""
+    event.poster_image.delete(save=True)
+
+
 class DuplicateOfficialUrlError(Exception):
     pass
 

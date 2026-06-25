@@ -315,6 +315,63 @@
           {% endif %}
         </section>
 
+        {% if request.user.is_staff %}
+        <section class="side-block" aria-label="포스터 이미지 (스태프)">
+          <h2>포스터 이미지</h2>
+
+          {% if event.poster_image %}
+            <img
+              src="{{ event.poster_image.url }}"
+              alt="{{ event.title }} 포스터 미리보기"
+              style="max-height:160px; width:100%; object-fit:contain; display:block; border-radius:6px; border:1px solid var(--line); margin-bottom:10px;"
+            >
+          {% endif %}
+
+          <img
+            id="poster-preview"
+            alt="선택한 포스터 미리보기"
+            style="display:none; max-height:160px; width:100%; object-fit:contain; border-radius:6px; border:1px solid var(--line); margin-bottom:10px;"
+          >
+
+          <div class="action-list">
+            <label for="poster-file-input" class="sr-only">포스터 이미지 선택</label>
+            <input
+              id="poster-file-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              data-event-id="{{ event.id }}"
+              style="font-size:0.85rem; margin-bottom:8px; display:block;"
+            >
+
+            <button
+              id="poster-upload-btn"
+              class="action-link{% if event.poster_image %} ghost{% else %} primary{% endif %}"
+              type="button"
+              data-event-id="{{ event.id }}"
+            >{% if event.poster_image %}교체{% else %}업로드{% endif %}</button>
+
+            {% if event.poster_image %}
+              <p class="panel-note" style="margin:4px 0 6px;">기존 포스터를 교체합니다</p>
+              <button
+                id="poster-delete-btn"
+                class="action-link ghost"
+                type="button"
+                data-event-id="{{ event.id }}"
+              >삭제</button>
+            {% endif %}
+          </div>
+
+          <p class="panel-note" style="margin-top:8px;">허용 형식: JPEG, PNG, WebP · 최대 5MB</p>
+
+          <p
+            id="poster-error"
+            class="panel-note"
+            data-status-error-container
+            style="color:var(--rose-ink); margin-top:6px;"
+          ></p>
+        </section>
+        {% endif %}
+
       </aside>
     </section>
 
@@ -324,4 +381,10 @@
       </div>
     {% endif %}
   </main>
+{% endblock %}
+
+{% block extra_js %}
+{% if request.user.is_staff %}
+<script defer src="{% static 'js/event-poster.js' %}"></script>
+{% endif %}
 {% endblock %}
