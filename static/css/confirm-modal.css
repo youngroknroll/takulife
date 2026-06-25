@@ -1,0 +1,92 @@
+/**
+ * confirm-modal.css — Custom 예/아니오 confirmation dialog for TakuLog
+ *
+ * Coordinate with confirm-modal.js: overlay is hidden via [hidden] attribute,
+ * shown by removing [hidden] and adding .is-open for transition.
+ */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 31, 55, 0.45);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.confirm-overlay[hidden] {
+  display: none;
+}
+
+.confirm-overlay.is-open {
+  opacity: 1;
+}
+
+.confirm-dialog {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  max-width: 360px;
+  width: calc(100% - 32px);
+  transform: translateY(6px);
+  transition: transform 0.15s ease;
+}
+
+.confirm-overlay.is-open .confirm-dialog {
+  transform: translateY(0);
+}
+
+.confirm-message {
+  font-size: 0.95rem;
+  color: var(--text);
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.confirm-no,
+.confirm-yes {
+  border-radius: 8px;
+  padding: 8px 16px;
+  min-height: 44px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.confirm-no {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.confirm-yes {
+  background: var(--brand);
+  color: #fff;
+  border: 1px solid var(--brand);
+}
+
+.confirm-no:hover {
+  background: var(--surface-alt, #f5f5f5);
+}
+
+.confirm-yes:hover {
+  filter: brightness(0.93);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-overlay,
+  .confirm-dialog {
+    transition: none;
+  }
+}

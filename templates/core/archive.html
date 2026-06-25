@@ -384,12 +384,13 @@
                 {% endif %}
                 <div class="status-row" data-status-error-container>
                   <button
-                    class="status-btn {{ row.status_slug }}"
+                    class="status-btn {{ row.status_slug }} active"
                     type="button"
-                    data-status-action="change"
+                    data-status-action
                     data-event-id="{{ row.event.id }}"
                     data-status="{{ row.status_slug }}"
                     data-status-id="{{ row.status_id }}"
+                    data-remove-on-cancel
                     aria-pressed="true"
                   >{{ row.status_label }}</button>
                 </div>
