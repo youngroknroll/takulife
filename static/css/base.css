@@ -11,6 +11,11 @@
   box-sizing: border-box;
 }
 
+/* Links are never underlined — colour and context carry the affordance. */
+a {
+  text-decoration: none;
+}
+
 /* ── body ───────────────────────────────────────────────────── */
 body {
   margin: 0;
