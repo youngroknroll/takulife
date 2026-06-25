@@ -256,7 +256,7 @@
         {% if draft_rows %}
           <div class="draft-list" aria-label="드래프트 목록">
             {% for row in draft_rows %}
-              <article class="draft-card">
+              <article class="draft-card hover-lift">
                 <div>
                   <div class="draft-top">
                     <span class="draft-chip {{ row.draft.review_status }}">{{ row.draft.review_status }}</span>
