@@ -1,6 +1,7 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view
@@ -82,11 +83,23 @@ def home(request):
     closing_qs = list_published_events({"status": "closing_soon"})
     recent_qs = Event.objects.published().order_by("-id")[:6]
 
+    # "카테고리로 둘러보기" tiles: one per vocab category (in vocab order),
+    # each carrying the count of published events so users can browse by type.
+    category_counts = {
+        row["category"]: row["count"]
+        for row in Event.objects.published().values("category").annotate(count=Count("id"))
+    }
+    category_tiles = [
+        {"slug": slug, "label": label, "count": category_counts.get(slug, 0)}
+        for slug, label in CATEGORY
+    ]
+
     context = {
         "project_name": "takulife",
         "ongoing_events": _attach_display(ongoing_qs[:6], user=request.user),
         "closing_events": _attach_display(closing_qs[:5], user=request.user),
         "recent_events": _attach_display(recent_qs, user=request.user),
+        "category_tiles": category_tiles,
     }
     return render(request, "core/home.html", context)
 
