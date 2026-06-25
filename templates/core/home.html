@@ -70,10 +70,12 @@
 
   /* Outer wrapper: positions deck + controls in flow */
   .poster-deck-wrap {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    /* room for the dots overlaid on the bottom of the deepest card */
+    padding-bottom: 56px;
   }
 
   /* Deck: relative container that sizes itself to a hidden sizer card */
@@ -284,12 +286,21 @@
     color: var(--text);
   }
 
-  /* ── Deck controls (dots + pause) ────────────────────────────── */
+  /* ── Deck controls (dots) — overlaid on the bottom of the stack ── */
   .deck-controls {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 2px 8px rgba(17, 31, 55, 0.12);
   }
 
   .carousel-dot {
@@ -297,7 +308,7 @@
     height: 8px;
     border-radius: 50%;
     border: none;
-    background: rgba(0,0,0,0.18);
+    background: rgba(17, 31, 55, 0.40);
     cursor: pointer;
     padding: 0;
     transition: background 0.2s ease;
@@ -305,7 +316,7 @@
 
   .carousel-dot[aria-current="true"] {
     background: var(--brand);
-    box-shadow: 0 0 0 1.5px var(--brand-soft);
+    box-shadow: 0 0 0 1.5px var(--surface);
   }
 
 
