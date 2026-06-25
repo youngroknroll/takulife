@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
   {% include "core/_site_header.html" %}
   {% block content %}{% endblock %}
   {% include "core/_site_footer.html" %}

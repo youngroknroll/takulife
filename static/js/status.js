@@ -90,6 +90,13 @@
       return;
     }
 
+    // Visitors who aren't logged in can't save a status — prompt them to log in
+    // or sign up instead of firing a request that just 403s.
+    if (!window.TakuAPI.isAuthenticated()) {
+      window.TakuAPI.promptLogin();
+      return;
+    }
+
     var isActive = button.classList.contains("active");
 
     // On a discovery card 관심/방문 예정 sit in the same row but an event holds
@@ -148,7 +155,8 @@
     var kind = window.TakuAPI.classify(result);
 
     if (kind === "auth") {
-      window.TakuAPI.redirectToLogin();
+      // session expired mid-page — prompt re-login rather than silently redirect
+      window.TakuAPI.promptLogin();
       return;
     }
 
