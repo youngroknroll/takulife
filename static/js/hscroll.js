@@ -8,10 +8,13 @@
  *   - prefers-reduced-motion: uses 'instant' behavior instead of 'smooth'
  *   - ResizeObserver: re-evaluates overflow when viewport resizes
  *   - Multiple independent scrollers per page
- *   - No drag, no autoplay, no keyboard paging (native scroll + Tab work natively)
+ *   - Optional autoplay (data-hscroll-auto): advances every 3500ms, loops to
+ *     start at end, pauses on hover/focus/manual arrow click, respects
+ *     prefers-reduced-motion, only runs when overflowing
  *
  * DOM contract (set by home.html template):
  *   [data-hscroll]        — section wrap (position: relative; overflow: hidden)
+ *   [data-hscroll-auto]   — opt-in attribute on wrap to enable autoplay
  *   [data-hscroll-track]  — the scrollable flex row
  *   [data-hscroll-prev]   — prev arrow button
  *   [data-hscroll-next]   — next arrow button
@@ -22,6 +25,8 @@
 
 (function () {
   "use strict";
+
+  var AUTOPLAY_INTERVAL = 3500;
 
   var mqlReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -98,10 +103,12 @@
 
     prevBtn.addEventListener("click", function () {
       scrollBy(-1);
+      if (autoTimer !== null) { startAutoplay(); } // reset timer on manual click
     });
 
     nextBtn.addEventListener("click", function () {
       scrollBy(1);
+      if (autoTimer !== null) { startAutoplay(); } // reset timer on manual click
     });
 
     // ── scroll listener ────────────────────────────────────────────────────
@@ -115,6 +122,76 @@
         update();
       });
       ro.observe(track);
+    }
+
+    // ── autoplay (opt-in via data-hscroll-auto) ────────────────────────────
+
+    var autoTimer = null;
+    var hovered = false;
+    var focused = false;
+    var wantsAutoplay = wrap.hasAttribute("data-hscroll-auto");
+
+    function isOverflowing() {
+      return track.scrollWidth > track.clientWidth + 1;
+    }
+
+    function shouldAutoplay() {
+      return wantsAutoplay && !prefersReducedMotion() && !hovered && !focused && isOverflowing();
+    }
+
+    function stopAutoplay() {
+      if (autoTimer !== null) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+    }
+
+    function startAutoplay() {
+      stopAutoplay();
+      if (!shouldAutoplay()) { return; }
+      autoTimer = setInterval(function () {
+        if (!shouldAutoplay()) { return; }
+        var atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+        if (atEnd) {
+          // Loop back to start
+          track.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          track.scrollBy({ left: track.clientWidth * 0.9, behavior: "smooth" });
+        }
+      }, AUTOPLAY_INTERVAL);
+    }
+
+    if (wantsAutoplay) {
+      // Pause on pointer or keyboard entering the wrap
+      wrap.addEventListener("mouseenter", function () {
+        hovered = true;
+        stopAutoplay();
+      });
+      wrap.addEventListener("mouseleave", function () {
+        hovered = false;
+        startAutoplay();
+      });
+      wrap.addEventListener("focusin", function () {
+        focused = true;
+        stopAutoplay();
+      });
+      wrap.addEventListener("focusout", function (evt) {
+        if (!wrap.contains(evt.relatedTarget)) {
+          focused = false;
+          startAutoplay();
+        }
+      });
+
+      // Respect reduced-motion changes at runtime
+      mqlReducedMotion.addEventListener("change", function () {
+        if (prefersReducedMotion()) {
+          stopAutoplay();
+        } else {
+          startAutoplay();
+        }
+      });
+
+      startAutoplay();
     }
 
     // ── init ───────────────────────────────────────────────────────────────

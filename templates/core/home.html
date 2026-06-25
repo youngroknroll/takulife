@@ -75,6 +75,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
     /* room for the dots overlaid on the bottom of the deepest card */
     padding-bottom: 56px;
   }
@@ -689,7 +690,7 @@
         <p class="section-note">관심 있는 유형부터 바로 탐색</p>
       </div>
       {% if category_tiles|length > 5 %}
-        <div class="hscroll-wrap" data-hscroll>
+        <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
           <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-cat">&#8249;</button>
           <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" role="region" aria-label="카테고리로 둘러보기" tabindex="0">
             {% for tile in category_tiles %}
@@ -724,7 +725,7 @@
       </div>
       {% if ongoing_events %}
         {% if ongoing_events|length > 6 %}
-          <div class="hscroll-wrap" data-hscroll>
+          <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-ongoing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-ongoing" role="region" aria-label="이번 주 갈 만한 행사" tabindex="0">
               {% for row in ongoing_events %}
@@ -822,7 +823,7 @@
       </div>
       {% if closing_events %}
         {% if closing_events|length > 3 %}
-          <div class="hscroll-wrap" data-hscroll>
+          <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-closing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-closing" role="region" aria-label="곧 종료되는 행사" tabindex="0">
               {% for row in closing_events %}
