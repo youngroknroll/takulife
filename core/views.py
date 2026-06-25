@@ -8,6 +8,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from archive.models import UserEventStatus
+from archive.queries import (
+    ARCHIVE_STATUS_SLUGS,
+    list_user_statuses,
+    list_user_visit_records,
+    user_status_counts,
+)
 from core.vocab import (
     ARCHIVE_STATUS,
     ARCHIVE_STATUS_LABELS,
@@ -177,31 +183,15 @@ def archive(request):
     )
 
 
-_VALID_ARCHIVE_STATUS_SLUGS = {"interested", "planned", "visited", "missed"}
-
-
 @login_required
 @ensure_csrf_cookie
 def archive_statuses(request):
     selected_status = request.GET.get("status", "")
-    if selected_status not in _VALID_ARCHIVE_STATUS_SLUGS:
+    if selected_status not in ARCHIVE_STATUS_SLUGS:
         selected_status = ""
 
-    qs = (
-        UserEventStatus.objects.filter(user=request.user)
-        .select_related("event")
-        .order_by("-updated_at")
-    )
-    if selected_status:
-        qs = qs.filter(status=selected_status)
-
-    all_qs = UserEventStatus.objects.filter(user=request.user)
-    status_counts = {
-        "interested": all_qs.filter(status="interested").count(),
-        "planned": all_qs.filter(status="planned").count(),
-        "visited": all_qs.filter(status="visited").count(),
-        "missed": all_qs.filter(status="missed").count(),
-    }
+    qs = list_user_statuses(request.user, selected_status)
+    status_counts = user_status_counts(request.user)
 
     status_rows = _build_archive_status_rows(qs)
     return render(
@@ -221,14 +211,7 @@ def archive_statuses(request):
 @login_required
 @ensure_csrf_cookie
 def archive_visits(request):
-    from archive.models import VisitRecord
-
-    visit_records = (
-        VisitRecord.objects.filter(user=request.user)
-        .select_related("event")
-        .prefetch_related("photos")
-        .order_by("-visited_on", "-id")
-    )
+    visit_records = list_user_visit_records(request.user)
 
     visit_rows = []
     for record in visit_records:
@@ -246,12 +229,15 @@ def archive_visits(request):
 
     selectable_events = Event.objects.published().order_by("title")
 
+    memo_count = sum(1 for row in visit_rows if row["short_review"])
+
     return render(
         request,
         "core/archive_visits.html",
         {
             "project_name": "takulife",
             "visit_rows": visit_rows,
+            "memo_count": memo_count,
             "has_visits": len(visit_rows) > 0,
             "selectable_events": selectable_events,
         },

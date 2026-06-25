@@ -1,4 +1,5 @@
 import PIL.Image
+from PIL import UnidentifiedImageError
 from rest_framework import serializers
 
 from events.models import Event
@@ -10,8 +11,17 @@ MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
 MAX_PHOTOS_PER_RECORD = 10
 # Maximum pixel dimension per axis (decompression-bomb guard)
 MAX_IMAGE_DIMENSION_PX = 10_000
+# Maximum total decoded pixel area (decompression-bomb guard; the byte and
+# per-axis caps do not bound the decoded memory footprint on their own).
+MAX_IMAGE_PIXELS_LIMIT = 40_000_000
 # Allowed file extensions (lower-cased, without dot)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+# Allowed real Pillow-decoded formats. The extension is attacker-controlled, so
+# the decoded format is the authoritative allowlist.
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
+# Concrete Pillow decode failures — anything else propagates as a real error
+# instead of being masked as "invalid image".
+_PIL_DECODE_ERRORS = (OSError, UnidentifiedImageError, PIL.Image.DecompressionBombError)
 
 
 class UserEventStatusSerializer(serializers.ModelSerializer):
@@ -67,25 +77,40 @@ class VisitRecordPhotoUploadSerializer(serializers.Serializer):
             )
 
         # 3. Real content inspection via Pillow (ImageField already calls PIL.Image.open;
-        #    we additionally run verify() and check decompression-bomb dimensions).
+        #    we additionally run verify() and check the decoded format/dimensions).
         value.seek(0)
         try:
             img = PIL.Image.open(value)
             img.verify()
-        except Exception:
+        except _PIL_DECODE_ERRORS:
             raise serializers.ValidationError("File does not appear to be a valid image.")
 
-        # 4. Decompression-bomb guard: cap pixel dimensions
+        # verify() leaves the image object unusable, so re-open to read the
+        # authoritative decoded format and dimensions.
         value.seek(0)
         try:
             img2 = PIL.Image.open(value)
+            image_format = img2.format
             width, height = img2.size
-        except Exception:
+        except _PIL_DECODE_ERRORS:
             raise serializers.ValidationError("Could not read image dimensions.")
 
+        # 4. Format allowlist on the real decoded format (defends against an image
+        #    in a disallowed format spoofed with an allowed extension).
+        if image_format not in ALLOWED_IMAGE_FORMATS:
+            raise serializers.ValidationError(
+                "Unsupported image format. Allowed: JPEG, PNG, WEBP."
+            )
+
+        # 5. Decompression-bomb guard: cap both per-axis dimensions and total area.
         if width > MAX_IMAGE_DIMENSION_PX or height > MAX_IMAGE_DIMENSION_PX:
             raise serializers.ValidationError(
                 f"Image dimensions exceed maximum allowed size of {MAX_IMAGE_DIMENSION_PX}px per axis."
+            )
+
+        if width * height > MAX_IMAGE_PIXELS_LIMIT:
+            raise serializers.ValidationError(
+                f"Image is too large to process. Maximum total area is {MAX_IMAGE_PIXELS_LIMIT} pixels."
             )
 
         value.seek(0)

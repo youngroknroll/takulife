@@ -110,8 +110,7 @@ class AdminEventDraftApproveView(APIView):
         except DraftPublicationError:
             return error_response("Event publication failed.", 503)
 
-        data = EventDraftSerializer(result.draft).data
-        data["event_id"] = result.event_id
+        data = {**EventDraftSerializer(result.draft).data, "event_id": result.event_id}
         return Response(data, status=status.HTTP_200_OK)
 
 

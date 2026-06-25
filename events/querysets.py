@@ -39,7 +39,7 @@ class EventQuerySet(models.QuerySet):
             return self.filter(
                 start_date__lte=today,
                 end_date__gte=today,
-                end_date__lte=today + timedelta(days=4),
+                end_date__lte=today + timedelta(days=CLOSING_SOON_DAYS),
             )
         if status == "ended":
             return self.filter(end_date__lt=today)
