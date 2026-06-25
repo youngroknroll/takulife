@@ -48,6 +48,13 @@ class EventQuerySet(models.QuerySet):
     def increment_view_count(self, pk):
         return self.filter(pk=pk).update(view_count=F("view_count") + 1)
 
+    def ending_within_days(self, days, *, today):
+        return self.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+            end_date__lte=today + timedelta(days=days),
+        ).order_by("end_date", "id")
+
     def most_viewed(self, limit=5):
         return self.order_by("-view_count", "-id")[:limit]
 
