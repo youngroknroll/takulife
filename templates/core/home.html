@@ -29,43 +29,35 @@
     font-weight: 700;
     cursor: pointer;
   }
-  .hero-grid {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr;
-    gap: 12px;
+  .hero {
+    background:
+      radial-gradient(120% 140% at 100% 0%, #dbe7ff 0%, transparent 55%),
+      var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 32px 28px;
     margin-bottom: 14px;
   }
-  .hero,
-  .principle-card {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 18px;
-  }
   .hero h1 {
-    margin: 0 0 8px;
-    font-size: 1.55rem;
-    line-height: 1.3;
+    margin: 0 0 10px;
+    font-size: 2rem;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
   }
   .hero p {
-    margin: 0 0 12px;
+    margin: 0 0 18px;
     color: var(--muted);
+    font-size: 1rem;
+    max-width: 60ch;
+  }
+  .hero .search {
+    max-width: 540px;
   }
   .quick-filters {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-  }
-  .principle-card h2 {
-    margin: 0 0 10px;
-    font-size: 1rem;
-  }
-  .principle-card ul {
-    margin: 0;
-    padding-left: 18px;
-    color: var(--muted);
-    font-size: 0.92rem;
   }
   .section {
     background: var(--surface);
@@ -197,25 +189,7 @@
     margin: 0 0 4px;
     font-size: 0.9rem;
   }
-  .ops {
-    background: #f9fbff;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 14px;
-  }
-  .ops h2 {
-    margin: 0 0 10px;
-    font-size: 1rem;
-  }
-  .ops ol {
-    margin: 0;
-    padding-left: 18px;
-    color: var(--muted);
-  }
   @media (max-width: 900px) {
-    .hero-grid {
-      grid-template-columns: 1fr;
-    }
     .cards,
     .recent-grid {
       grid-template-columns: 1fr 1fr;
@@ -224,6 +198,12 @@
   @media (max-width: 700px) {
     .page {
       padding: 16px 12px 48px;
+    }
+    .hero {
+      padding: 22px 18px;
+    }
+    .hero h1 {
+      font-size: 1.5rem;
     }
     .section-head {
       align-items: flex-start;
@@ -244,33 +224,23 @@
 
 {% block content %}
   <main class="page">
-    <section class="hero-grid" aria-label="메인 요약과 필터">
-      <article class="hero">
-        <h1>지금 갈 수 있는 공식 오프라인 이벤트를 빠르게 찾기</h1>
-        <p>검색과 필터를 먼저 배치해 이번 주 행사, 종료 임박 행사, 신규 등록 행사를 바로 스캔할 수 있게 구성했습니다.</p>
-        <form class="search" action="/events/" method="get">
-          <label class="sr-only" for="q">행사 검색</label>
-          <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
-          <button type="submit">검색</button>
-        </form>
-        <div class="quick-filters" aria-label="빠른 필터">
-          <a class="chip" href="/events/?region=seoul">서울</a>
-          <a class="chip" href="/events/?region=gyeonggi">경기</a>
-          <a class="chip" href="/events/?region=incheon">인천</a>
-          <a class="chip" href="/events/?status=closing_soon">종료 임박</a>
-          <a class="chip" href="/events/?category=popup_store">팝업스토어</a>
-          <a class="chip" href="/events/?category=collaboration_cafe">콜라보 카페</a>
-          <a class="chip" href="/events/?category=goods_reservation">굿즈 예약</a>
-        </div>
-      </article>
-      <aside class="principle-card" aria-label="운영 원칙 요약">
-        <h2>운영 원칙 요약</h2>
-        <ul>
-          <li>공식 URL 기준으로만 초안을 생성합니다.</li>
-          <li>검수 전 초안은 공개하지 않습니다.</li>
-          <li>승인된 이벤트만 목록/상세에 게시됩니다.</li>
-        </ul>
-      </aside>
+    <section class="hero" aria-label="메인 검색">
+      <h1>지금 갈 수 있는 공식 오프라인 이벤트를 한눈에</h1>
+      <p>팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.</p>
+      <form class="search" action="/events/" method="get">
+        <label class="sr-only" for="q">행사 검색</label>
+        <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
+        <button type="submit">검색</button>
+      </form>
+      <div class="quick-filters" aria-label="빠른 필터">
+        <a class="chip" href="/events/?region=seoul">서울</a>
+        <a class="chip" href="/events/?region=gyeonggi">경기</a>
+        <a class="chip" href="/events/?region=incheon">인천</a>
+        <a class="chip" href="/events/?status=closing_soon">종료 임박</a>
+        <a class="chip" href="/events/?category=popup_store">팝업스토어</a>
+        <a class="chip" href="/events/?category=collaboration_cafe">콜라보 카페</a>
+        <a class="chip" href="/events/?category=goods_reservation">굿즈 예약</a>
+      </div>
     </section>
 
     <section class="section" aria-label="진행 중인 행사">
@@ -373,15 +343,6 @@
       {% else %}
         <p class="notice">등록된 행사가 없습니다.</p>
       {% endif %}
-    </section>
-
-    <section class="ops" aria-label="운영 원칙 상세">
-      <h2>검수 기반 게시 흐름</h2>
-      <ol>
-        <li>관리자는 공식 URL을 입력해 EventDraft 초안을 생성합니다.</li>
-        <li>추출된 제목, 날짜, 장소 후보를 원문 근거와 함께 검수합니다.</li>
-        <li>승인된 초안만 Event로 게시되어 목록과 상세에 노출됩니다.</li>
-      </ol>
     </section>
   </main>
 {% endblock %}
