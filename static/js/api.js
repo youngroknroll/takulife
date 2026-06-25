@@ -33,7 +33,12 @@
 (function () {
   "use strict";
 
-  var AUTH_DETAIL_MARKER = "Authentication credentials were not provided";
+  // DRF's "not authenticated" 403 detail, in every locale this app serves
+  // (Django LANGUAGE_CODE is ko, so the Korean string is what actually ships).
+  var AUTH_DETAIL_MARKERS = [
+    "Authentication credentials were not provided",
+    "자격 인증 데이터가 제공되지 않았습니다",
+  ];
 
   // ── cookie reader ──────────────────────────────────────────────────────────
 
@@ -112,8 +117,10 @@
       var detail = (result.data && typeof result.data.detail === "string")
         ? result.data.detail
         : "";
-      if (detail.indexOf(AUTH_DETAIL_MARKER) !== -1) {
-        return "auth";
+      for (var m = 0; m < AUTH_DETAIL_MARKERS.length; m++) {
+        if (detail.indexOf(AUTH_DETAIL_MARKERS[m]) !== -1) {
+          return "auth";
+        }
       }
       return "csrf";
     }
@@ -178,6 +185,91 @@
     window.location.href = "/accounts/login/?next=" + next;
   }
 
+  /**
+   * isAuthenticated() — read the login state the server stamped on <body>.
+   * Lets callers skip a doomed request and prompt for login up front.
+   */
+  function isAuthenticated() {
+    return document.body.dataset.authenticated === "true";
+  }
+
+  /**
+   * promptLogin() — show a modal asking the visitor to log in or sign up,
+   * instead of a hard redirect or a misleading error. Login/register links
+   * carry ?next so the visitor returns to the current page. Idempotent
+   * (one modal at a time). All text via textContent — no markup injection.
+   */
+  function promptLogin() {
+    if (document.querySelector(".auth-modal-overlay")) {
+      return;
+    }
+    var next = encodeURIComponent(
+      window.location.pathname + window.location.search
+    );
+
+    var overlay = document.createElement("div");
+    overlay.className = "auth-modal-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "auth-modal-title");
+
+    var modal = document.createElement("div");
+    modal.className = "auth-modal";
+
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "auth-modal-close";
+    close.setAttribute("aria-label", "닫기");
+    close.textContent = "×";
+
+    var title = document.createElement("h2");
+    title.id = "auth-modal-title";
+    title.textContent = "로그인이 필요합니다";
+
+    var desc = document.createElement("p");
+    desc.textContent = "관심·방문 예정을 저장하려면 로그인해 주세요.";
+
+    var actions = document.createElement("div");
+    actions.className = "auth-modal-actions";
+
+    var loginLink = document.createElement("a");
+    loginLink.className = "auth-modal-primary";
+    loginLink.href = "/accounts/login/?next=" + next;
+    loginLink.textContent = "로그인";
+
+    var registerLink = document.createElement("a");
+    registerLink.className = "auth-modal-secondary";
+    registerLink.href = "/accounts/register/?next=" + next;
+    registerLink.textContent = "회원가입";
+
+    actions.appendChild(loginLink);
+    actions.appendChild(registerLink);
+    modal.appendChild(close);
+    modal.appendChild(title);
+    modal.appendChild(desc);
+    modal.appendChild(actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    function dismiss() {
+      overlay.remove();
+      document.removeEventListener("keydown", onKey);
+    }
+    function onKey(evt) {
+      if (evt.key === "Escape") {
+        dismiss();
+      }
+    }
+    close.addEventListener("click", dismiss);
+    overlay.addEventListener("click", function (evt) {
+      if (evt.target === overlay) {
+        dismiss();
+      }
+    });
+    document.addEventListener("keydown", onKey);
+    loginLink.focus();
+  }
+
   // ── public API ─────────────────────────────────────────────────────────────
 
   window.TakuAPI = {
@@ -221,6 +313,8 @@
     classify: classify,
     formatError: formatError,
     redirectToLogin: redirectToLogin,
+    isAuthenticated: isAuthenticated,
+    promptLogin: promptLogin,
 
     /**
      * setLoading(button, isLoading) — toggle a button's in-flight state.
