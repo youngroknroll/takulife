@@ -66,47 +66,96 @@
     gap: 8px;
   }
 
-  /* ── Poster carousel ─────────────────────────────────────────── */
-  .poster-carousel {
-    position: relative;
-    min-height: 240px;
-    max-height: 320px;
-    border-radius: 12px;
-    overflow: hidden;
+  /* ── Stacked card deck ───────────────────────────────────────── */
+
+  /* Outer wrapper: positions deck + controls in flow */
+  .poster-deck-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
   }
 
-  /* Horizontal scroll-snap track — used on mobile, hidden scrollbar */
-  .carousel-track {
-    display: flex;
+  /* Deck: relative container that sizes itself to a hidden sizer card */
+  .poster-deck {
+    position: relative;
+    width: 100%;
+    /* sizer card (aria-hidden clone) provides intrinsic height */
+  }
+
+  /* Sizer: invisible structural clone that reserves layout height */
+  .deck-sizer {
+    visibility: hidden;
+    pointer-events: none;
+    width: 100%;
+    min-height: 240px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+  }
+
+  /* Every card is absolutely positioned over the sizer */
+  .deck-card {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    will-change: transform, opacity;
+    /* Default transition for back cards */
+    transition:
+      transform 0.42s cubic-bezier(0.18, 0.98, 0.45, 1),
+      opacity   0.42s cubic-bezier(0.18, 0.98, 0.45, 1),
+      z-index   0s;
+  }
+
+  /* Front card gets a slightly snappier transition */
+  .deck-card[data-slide="0"] {
+    transition:
+      transform 0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
+      opacity   0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
+      z-index   0s;
+  }
+
+  /* Stack depth positions — JS sets data-slide attribute */
+  .deck-card[data-slide="0"] { transform: translateY(0)   scale(1);     opacity: 1;   z-index: 6; }
+  .deck-card[data-slide="1"] { transform: translateY(12px) scale(0.975); opacity: 0.9; z-index: 5; }
+  .deck-card[data-slide="2"] { transform: translateY(24px) scale(0.950); opacity: 0.8; z-index: 4; }
+  .deck-card[data-slide="3"] { transform: translateY(36px) scale(0.925); opacity: 0.7; z-index: 3; }
+  .deck-card[data-slide="4"] { transform: translateY(48px) scale(0.900); opacity: 0.6; z-index: 2; }
+  .deck-card[data-slide="5"] { transform: translateY(60px) scale(0.875); opacity: 0.5; z-index: 1; }
+  /* depth 6+ capped at the same resting position as depth 5 */
+  .deck-card[data-slide="6"],
+  .deck-card[data-slide="7"],
+  .deck-card[data-slide="8"],
+  .deck-card[data-slide="9"] { transform: translateY(60px) scale(0.875); opacity: 0;   z-index: 0; }
+
+  /* Back cards are not interactive until they become the front */
+  .deck-card[data-slide]:not([data-slide="0"]) {
+    cursor: pointer;
+  }
+
+  /* Slide anchor — fills the card entirely */
+  .deck-slide {
+    position: relative;
+    display: block;
+    width: 100%;
     height: 100%;
     min-height: 240px;
-    max-height: 320px;
-  }
-
-  .carousel-slide {
-    position: relative;
-    flex: 0 0 100%;
-    min-height: 240px;
-    max-height: 320px;
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    display: block;
     color: inherit;
     text-decoration: none;
-    transition: opacity 0.3s ease;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
   }
 
   /* Poster image slides */
-  .carousel-slide img.slide-img {
+  .deck-slide img.slide-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center top;
     display: block;
     min-height: 240px;
-    max-height: 320px;
   }
 
   /* Bottom gradient scrim behind title */
@@ -152,7 +201,7 @@
   }
 
   /* Style card (no poster) */
-  .carousel-slide.style-card {
+  .deck-slide.style-card {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -209,33 +258,22 @@
   }
 
   /* Style card also has a bottom title zone for cohesion */
-  .style-card .slide-title-zone {
+  .deck-slide.style-card .slide-title-zone {
     background: rgba(255,255,255,0.9);
     border-top: 1px solid var(--line);
     padding: 8px 12px 10px;
   }
 
-  .style-card .slide-title {
+  .deck-slide.style-card .slide-title {
     color: var(--text);
   }
 
-  /* Carousel controls */
-  .carousel-controls {
-    position: absolute;
-    bottom: 8px;
-    left: 0;
-    right: 0;
+  /* ── Deck controls (dots + pause) ────────────────────────────── */
+  .deck-controls {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    z-index: 10;
-  }
-
-  /* Push controls below style-card title zone */
-  .style-card ~ .carousel-controls,
-  .carousel-controls {
-    bottom: 8px;
   }
 
   .carousel-dot {
@@ -243,23 +281,13 @@
     height: 8px;
     border-radius: 50%;
     border: none;
-    background: rgba(255,255,255,0.55);
+    background: rgba(0,0,0,0.18);
     cursor: pointer;
     padding: 0;
     transition: background 0.2s ease;
   }
 
   .carousel-dot[aria-current="true"] {
-    background: #fff;
-    box-shadow: 0 0 0 1.5px rgba(0,0,0,0.25);
-  }
-
-  /* Style card dots are dark */
-  .carousel-dot.on-light {
-    background: rgba(0,0,0,0.18);
-  }
-
-  .carousel-dot.on-light[aria-current="true"] {
     background: var(--brand);
     box-shadow: 0 0 0 1.5px var(--brand-soft);
   }
@@ -268,9 +296,9 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.6);
-    background: rgba(0,0,0,0.30);
-    color: #fff;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text);
     font-size: 0.68rem;
     cursor: pointer;
     display: flex;
@@ -286,7 +314,6 @@
     align-items: center;
     justify-content: center;
     min-height: 240px;
-    max-height: 320px;
     border-radius: 12px;
     border: 1px dashed var(--line);
     background: var(--brand-soft);
@@ -301,30 +328,9 @@
     .hero-inner {
       grid-template-columns: 1fr;
     }
-    /* Mobile: horizontal scroll-snap strip */
-    .poster-carousel {
-      max-height: none;
-    }
-    .carousel-track {
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      max-height: 240px;
-    }
-    .carousel-track::-webkit-scrollbar {
-      display: none;
-    }
-    .carousel-slide {
-      flex: 0 0 72%;
-      scroll-snap-align: start;
-      max-height: 240px;
-    }
-    .carousel-slide img.slide-img {
-      max-height: 240px;
-    }
-    .carousel-controls {
-      display: none;
+    .poster-deck-wrap {
+      max-width: 480px;
+      margin: 0 auto;
     }
   }
   .cat-browse {
@@ -547,59 +553,68 @@
 
         {% if ongoing_events %}
           <div
-            class="poster-carousel"
+            class="poster-deck-wrap"
             role="region"
             aria-roledescription="carousel"
             aria-label="오늘 갈 수 있는 이벤트"
-            tabindex="0"
             data-carousel
           >
-            <div class="carousel-track" aria-live="off" data-carousel-track>
+            <div class="poster-deck" aria-live="off" data-carousel-track>
+
+              {# Sizer: invisible clone that provides intrinsic height so deck doesn't collapse #}
+              <div class="deck-sizer" aria-hidden="true"></div>
+
               {% for row in ongoing_events %}
-                <a
-                  class="carousel-slide{% if not row.event.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}"
-                  href="/events/{{ row.event.id }}/"
-                  aria-label="{{ row.event.title }} 상세 보기"
-                  data-slide-index="{{ forloop.counter0 }}"
-                  style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, #fff 100%);{% endif %}"
+                <div
+                  class="deck-card"
+                  data-slide="{{ forloop.counter0 }}"
+                  data-card-index="{{ forloop.counter0 }}"
                 >
-                  {% if row.event.poster_image %}
-                    <img
-                      class="slide-img"
-                      src="{{ row.event.poster_image.url }}"
-                      alt="{{ row.event.title }} 포스터"
-                      loading="lazy"
-                    >
-                    <div class="slide-scrim" aria-hidden="true"></div>
-                    {% if row.dday is not None %}
-                      <span class="slide-dday" aria-hidden="true">D-{{ row.dday }}</span>
-                    {% endif %}
-                    <div class="slide-title-zone" aria-hidden="true">
-                      <p class="slide-title">{{ row.event.title }}</p>
-                    </div>
-                  {% else %}
-                    <div class="style-card-body" aria-hidden="true">
-                      <span class="cat-tile cat-{{ row.category_slug }} style-card-emoji"></span>
-                      {% if row.event.work_title %}
-                        <p class="style-card-work">{{ row.event.work_title }}</p>
-                      {% endif %}
-                      <p class="style-card-title">{{ row.event.title }}</p>
-                      {% if row.event.region %}
-                        <span class="style-card-region">{{ row.event.region }}</span>
-                      {% endif %}
+                  <a
+                    class="deck-slide{% if not row.event.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}"
+                    href="/events/{{ row.event.id }}/"
+                    aria-label="{{ row.event.title }} 상세 보기"
+                    tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+                    style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, #fff 100%);{% endif %}"
+                  >
+                    {% if row.event.poster_image %}
+                      <img
+                        class="slide-img"
+                        src="{{ row.event.poster_image.url }}"
+                        alt="{{ row.event.title }} 포스터"
+                        loading="lazy"
+                      >
+                      <div class="slide-scrim" aria-hidden="true"></div>
                       {% if row.dday is not None %}
-                        <span class="slide-dday" style="position:static; margin-top:2px;">D-{{ row.dday }}</span>
+                        <span class="slide-dday" aria-hidden="true">D-{{ row.dday }}</span>
                       {% endif %}
-                    </div>
-                    <div class="slide-title-zone" aria-hidden="true">
-                      <p class="slide-title">{{ row.event.title }}</p>
-                    </div>
-                  {% endif %}
-                </a>
+                      <div class="slide-title-zone" aria-hidden="true">
+                        <p class="slide-title">{{ row.event.title }}</p>
+                      </div>
+                    {% else %}
+                      <div class="style-card-body" aria-hidden="true">
+                        <span class="cat-tile cat-{{ row.category_slug }} style-card-emoji"></span>
+                        {% if row.event.work_title %}
+                          <p class="style-card-work">{{ row.event.work_title }}</p>
+                        {% endif %}
+                        <p class="style-card-title">{{ row.event.title }}</p>
+                        {% if row.event.region %}
+                          <span class="style-card-region">{{ row.event.region }}</span>
+                        {% endif %}
+                        {% if row.dday is not None %}
+                          <span class="slide-dday" style="position:static; margin-top:2px;">D-{{ row.dday }}</span>
+                        {% endif %}
+                      </div>
+                      <div class="slide-title-zone" aria-hidden="true">
+                        <p class="slide-title">{{ row.event.title }}</p>
+                      </div>
+                    {% endif %}
+                  </a>
+                </div>
               {% endfor %}
             </div>
 
-            <div class="carousel-controls" data-carousel-controls aria-hidden="true">
+            <div class="deck-controls" data-carousel-controls aria-hidden="true">
               {% for row in ongoing_events %}
                 <button
                   class="carousel-dot"
@@ -609,12 +624,14 @@
                   {% if forloop.first %}aria-current="true"{% endif %}
                 ></button>
               {% endfor %}
-              <button
-                class="carousel-pause"
-                type="button"
-                data-carousel-pause
-                aria-label="슬라이드 일시 정지"
-              >⏸</button>
+              {% if ongoing_events|length > 1 %}
+                <button
+                  class="carousel-pause"
+                  type="button"
+                  data-carousel-pause
+                  aria-label="슬라이드 일시 정지"
+                >⏸</button>
+              {% endif %}
             </div>
           </div>
         {% else %}

@@ -1,21 +1,25 @@
 /**
- * carousel.js — Home hero poster carousel for TakuLog
+ * carousel.js — Home hero stacked card deck for TakuLog
  *
  * Handles:
- *   - Desktop auto-advance (4500ms), paused on hover/focus/reduced-motion/mobile
- *   - Pause/play toggle button (WCAG 2.2.2 compliance)
- *   - ArrowLeft/ArrowRight keyboard navigation when carousel is focused
- *   - Dot button navigation
- *   - aria-live switched off during autoplay, polite on manual interaction
- *   - Mobile (≤860px): CSS-only scroll-snap, no autoplay
+ *   - Index-array rotation: front card cycles to back (unshift + pop pattern)
+ *   - 3500ms auto-advance (disabled under prefers-reduced-motion)
+ *   - Click front card  → navigate (allow <a> default)
+ *   - Click back card   → advance deck (preventDefault, rotate)
+ *   - Dot navigation: clicking a dot rotates deck so that card becomes front
+ *   - Pause/play toggle (WCAG 2.2.2) — textContent ⏸/▶
+ *   - Pause on mouseenter/focusin, resume on mouseleave/focusout
+ *   - aria-live off during autoplay, polite on manual interaction
+ *   - n <= 1 events: single card, no auto-advance, no dots needed
  *
  * DOM contract (set by home.html template):
- *   [data-carousel]           — carousel container (role=region, tabindex=0)
- *   [data-carousel-track]     — flex track containing slides
+ *   [data-carousel]           — deck wrapper (role=region)
+ *   [data-carousel-track]     — .poster-deck containing .deck-card elements
  *   [data-carousel-controls]  — controls wrapper (dots + pause/play)
  *   [data-dot-index]          — dot buttons
  *   [data-carousel-pause]     — pause/play toggle
- *   [data-slide-index]        — slide anchor elements
+ *   [data-card-index]         — deck-card elements (original order index)
+ *   [data-slide]              — current visual stack depth (0 = front)
  *
  * All DOM text writes use textContent only (no innerHTML with data).
  */
@@ -23,90 +27,120 @@
 (function () {
   "use strict";
 
-  var AUTOPLAY_INTERVAL = 4500;
-  var MOBILE_BREAKPOINT = 860;
+  var AUTOPLAY_INTERVAL = 3500;
+  var MAX_VISIBLE_DEPTH = 5; /* data-slide 0..5 have distinct positions; 6+ capped */
 
-  // ── media queries ──────────────────────────────────────────────────────────
-
-  var mqlMobile = window.matchMedia("(max-width: " + MOBILE_BREAKPOINT + "px)");
   var mqlReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-  function isMobile() {
-    return mqlMobile.matches;
-  }
 
   function prefersReducedMotion() {
     return mqlReducedMotion.matches;
   }
 
-  // ── carousel state ─────────────────────────────────────────────────────────
+  // ── deck factory ───────────────────────────────────────────────────────────
 
-  function createCarousel(container) {
+  function createDeck(container) {
     var track = container.querySelector("[data-carousel-track]");
     var controlsEl = container.querySelector("[data-carousel-controls]");
     var pauseBtn = container.querySelector("[data-carousel-pause]");
-    var slides = container.querySelectorAll("[data-slide-index]");
     var dots = container.querySelectorAll("[data-dot-index]");
+    var cards = track ? track.querySelectorAll("[data-card-index]") : [];
 
-    if (!track || slides.length === 0) {
+    if (!track || cards.length === 0) {
       return;
     }
 
-    var totalSlides = slides.length;
-    var currentIndex = 0;
+    var totalCards = cards.length;
+
+    // Single card: render static, no interaction needed
+    if (totalCards <= 1) {
+      if (controlsEl) { controlsEl.setAttribute("aria-hidden", "true"); }
+      return;
+    }
+
+    // indexOrder[0] = original card index currently at front (data-slide=0)
+    // e.g. [0, 1, 2, 3] initially
+    var indexOrder = [];
+    for (var k = 0; k < totalCards; k++) {
+      indexOrder.push(k);
+    }
+
     var timer = null;
     var userPaused = false;
     var hovered = false;
     var focused = false;
 
-    // ── slide navigation ───────────────────────────────────────────────────
+    // ── visual update ──────────────────────────────────────────────────────
 
-    function goTo(index, isManual) {
-      currentIndex = (index + totalSlides) % totalSlides;
+    function applySlidePositions() {
+      for (var i = 0; i < indexOrder.length; i++) {
+        var cardOriginalIndex = indexOrder[i];
+        var card = cards[cardOriginalIndex];
+        var depth = i; // 0 = front
+        var depthAttr = depth > MAX_VISIBLE_DEPTH ? String(MAX_VISIBLE_DEPTH + 1) : String(depth);
+        card.setAttribute("data-slide", depthAttr);
 
-      // Scroll the track to show the correct slide
-      var slide = slides[currentIndex];
-      if (slide) {
-        slide.scrollIntoView
-          ? track.scrollTo({ left: slide.offsetLeft, behavior: "smooth" })
-          : (track.scrollLeft = slide.offsetLeft);
+        // Front card anchor is focusable/navigable; back cards get tabindex=-1
+        var anchor = card.querySelector("a");
+        if (anchor) {
+          anchor.setAttribute("tabindex", depth === 0 ? "0" : "-1");
+        }
       }
+    }
 
-      // Update dots
+    function updateDots() {
+      var frontOriginalIndex = indexOrder[0];
       for (var i = 0; i < dots.length; i++) {
-        dots[i].setAttribute("aria-current", i === currentIndex ? "true" : "false");
-      }
-
-      // Switch aria-live: off during autoplay, polite on manual interaction
-      if (isManual) {
-        track.setAttribute("aria-live", "polite");
-      } else {
-        track.setAttribute("aria-live", "off");
+        var dotIdx = parseInt(dots[i].getAttribute("data-dot-index"), 10);
+        dots[i].setAttribute("aria-current", dotIdx === frontOriginalIndex ? "true" : "false");
       }
     }
 
-    function next(isManual) {
-      goTo(currentIndex + 1, isManual);
+    // ── rotation ───────────────────────────────────────────────────────────
+
+    // Move front card to back: indexOrder[0] pops to the end
+    function rotateForward(isManual) {
+      var front = indexOrder.shift();
+      indexOrder.push(front);
+
+      applySlidePositions();
+      updateDots();
+
+      track.setAttribute("aria-live", isManual ? "polite" : "off");
     }
 
-    function prev() {
-      goTo(currentIndex - 1, true);
+    // Rotate deck so that the card with original index `targetIndex` is front
+    function rotateTo(targetIndex, isManual) {
+      // Find position of targetIndex in indexOrder
+      var pos = indexOrder.indexOf(targetIndex);
+      if (pos <= 0) {
+        // Already front or not found
+        applySlidePositions();
+        updateDots();
+        return;
+      }
+      // Rotate pos times to bring target to front
+      for (var r = 0; r < pos; r++) {
+        var front = indexOrder.shift();
+        indexOrder.push(front);
+      }
+      applySlidePositions();
+      updateDots();
+
+      track.setAttribute("aria-live", isManual ? "polite" : "off");
     }
 
-    // ── autoplay ──────────────────────────────────────────────────────────
+    // ── autoplay ───────────────────────────────────────────────────────────
 
     function shouldAutoplay() {
-      return !isMobile() && !prefersReducedMotion() && !userPaused && !hovered && !focused;
+      return !prefersReducedMotion() && !userPaused && !hovered && !focused;
     }
 
     function startAutoplay() {
       stopAutoplay();
-      if (!shouldAutoplay()) {
-        return;
-      }
+      if (!shouldAutoplay()) { return; }
       timer = setInterval(function () {
         if (shouldAutoplay()) {
-          next(false);
+          rotateForward(false);
         }
       }, AUTOPLAY_INTERVAL);
     }
@@ -130,15 +164,15 @@
       startAutoplay();
     }
 
-    // ── pause/play toggle button ───────────────────────────────────────────
+    // ── pause button ───────────────────────────────────────────────────────
 
     function syncPauseBtn() {
       if (!pauseBtn) { return; }
-      if (userPaused || isMobile() || prefersReducedMotion()) {
-        pauseBtn.textContent = "▶";
+      if (userPaused || prefersReducedMotion()) {
+        pauseBtn.textContent = "▶"; /* ▶ */
         pauseBtn.setAttribute("aria-label", "슬라이드 재생");
       } else {
-        pauseBtn.textContent = "⏸";
+        pauseBtn.textContent = "⏸"; /* ⏸ */
         pauseBtn.setAttribute("aria-label", "슬라이드 일시 정지");
       }
     }
@@ -156,60 +190,60 @@
       });
     }
 
-    // ── dot buttons ────────────────────────────────────────────────────────
+    // ── dot clicks ─────────────────────────────────────────────────────────
 
     function bindDots() {
       for (var i = 0; i < dots.length; i++) {
-        (function (dot, idx) {
+        (function (dot) {
           dot.addEventListener("click", function () {
-            goTo(idx, true);
+            var target = parseInt(dot.getAttribute("data-dot-index"), 10);
+            rotateTo(target, true);
             stopAutoplay();
             userPaused = true;
             syncPauseBtn();
           });
-        })(dots[i], i);
+        })(dots[i]);
       }
     }
 
-    // ── keyboard navigation ────────────────────────────────────────────────
+    // ── card clicks ────────────────────────────────────────────────────────
+    // Front card (data-slide=0): let <a> navigate (don't preventDefault)
+    // Back card (data-slide!=0): advance deck, preventDefault
 
-    function bindKeyboard() {
-      container.addEventListener("keydown", function (evt) {
-        if (evt.key === "ArrowRight") {
-          evt.preventDefault();
-          next(true);
-          stopAutoplay();
-          userPaused = true;
-          syncPauseBtn();
-        } else if (evt.key === "ArrowLeft") {
-          evt.preventDefault();
-          prev();
-          stopAutoplay();
-          userPaused = true;
-          syncPauseBtn();
-        }
-      });
+    function bindCardClicks() {
+      for (var i = 0; i < cards.length; i++) {
+        (function (card) {
+          card.addEventListener("click", function (evt) {
+            var depth = card.getAttribute("data-slide");
+            if (depth !== "0") {
+              evt.preventDefault();
+              evt.stopPropagation();
+              // Bring this card to front
+              var origIdx = parseInt(card.getAttribute("data-card-index"), 10);
+              rotateTo(origIdx, true);
+              stopAutoplay();
+              userPaused = true;
+              syncPauseBtn();
+            }
+            // depth === "0": allow default navigation
+          });
+        })(cards[i]);
+      }
     }
 
-    // ── hover pause ────────────────────────────────────────────────────────
+    // ── hover and focus pause ──────────────────────────────────────────────
 
-    function bindHover() {
+    function bindHoverFocus() {
       container.addEventListener("mouseenter", function () {
         pauseAutoplay("hover");
       });
       container.addEventListener("mouseleave", function () {
         resumeAutoplay("hover");
       });
-    }
-
-    // ── focus pause (WCAG 2.2.2: pause on focus within) ────────────────────
-
-    function bindFocus() {
       container.addEventListener("focusin", function () {
         pauseAutoplay("focus");
       });
       container.addEventListener("focusout", function (evt) {
-        // Only resume if focus left the carousel entirely
         if (!container.contains(evt.relatedTarget)) {
           resumeAutoplay("focus");
         }
@@ -223,20 +257,7 @@
         syncPauseBtn();
         if (prefersReducedMotion()) {
           stopAutoplay();
-        } else {
-          startAutoplay();
-        }
-      });
-    }
-
-    // ── mobile breakpoint listener ─────────────────────────────────────────
-
-    function bindMobileBreakpoint() {
-      mqlMobile.addEventListener("change", function () {
-        syncPauseBtn();
-        if (isMobile()) {
-          stopAutoplay();
-        } else {
+        } else if (!userPaused) {
           startAutoplay();
         }
       });
@@ -244,31 +265,30 @@
 
     // ── init ───────────────────────────────────────────────────────────────
 
+    applySlidePositions();
+    updateDots();
     syncPauseBtn();
+
     bindPauseBtn();
     bindDots();
-    bindKeyboard();
-    bindHover();
-    bindFocus();
+    bindCardClicks();
+    bindHoverFocus();
     bindReducedMotion();
-    bindMobileBreakpoint();
 
-    // Make controls visible (they're aria-hidden="true" by default for
-    // CSS-only no-JS fallback; JS reveals and manages them)
+    // Reveal controls (aria-hidden="true" is the no-JS/CSS-fallback state)
     if (controlsEl) {
       controlsEl.removeAttribute("aria-hidden");
     }
 
-    // Start autoplay only on desktop, without reduced-motion
     startAutoplay();
   }
 
-  // ── init ──────────────────────────────────────────────────────────────────
+  // ── bootstrap ─────────────────────────────────────────────────────────────
 
   function init() {
-    var carousels = document.querySelectorAll("[data-carousel]");
-    for (var i = 0; i < carousels.length; i++) {
-      createCarousel(carousels[i]);
+    var containers = document.querySelectorAll("[data-carousel]");
+    for (var i = 0; i < containers.length; i++) {
+      createDeck(containers[i]);
     }
   }
 
