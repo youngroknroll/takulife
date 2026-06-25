@@ -92,23 +92,51 @@
 
     var isActive = button.classList.contains("active");
 
+    // On a discovery card 관심/방문 예정 sit in the same row but an event holds
+    // only one status. Find the sibling button that currently owns the
+    // registration so this click can switch the status over instead of
+    // conflicting. (Archive "change" controls never switch siblings.)
+    var activeSibling = null;
+    if (action !== "change") {
+      var container = button.closest("[data-status-error-container]");
+      if (container) {
+        var siblings = container.querySelectorAll("button[data-status-action]");
+        for (var i = 0; i < siblings.length; i++) {
+          if (siblings[i] !== button && siblings[i].dataset.statusId) {
+            activeSibling = siblings[i];
+            break;
+          }
+        }
+      }
+    }
+
     setButtonLoading(button, true);
 
-    // Discovery buttons (empty action) toggle: an active button cancels its own
-    // registration (DELETE), an inactive one registers (POST). Archive controls
-    // (action="change") switch the existing status in place via PATCH.
+    // Discovery semantics (empty action):
+    //   active button         → DELETE  (cancel its own registration)
+    //   inactive, sibling set → PATCH   (switch the event to this status)
+    //   inactive, none set    → POST    (register)
+    // Archive controls (action="change") switch the status in place via PATCH.
     var result;
-    var isCancel = false;
+    var mode;
 
     if (action === "change" && statusId) {
+      mode = "change";
       result = await window.TakuAPI.patch(
         "/api/user-event-statuses/" + statusId + "/",
         { status: statusSlug }
       );
     } else if (statusId && (isActive || action === "unset")) {
-      isCancel = true;
+      mode = "cancel";
       result = await window.TakuAPI.del("/api/user-event-statuses/" + statusId + "/");
+    } else if (activeSibling) {
+      mode = "switch";
+      result = await window.TakuAPI.patch(
+        "/api/user-event-statuses/" + activeSibling.dataset.statusId + "/",
+        { status: statusSlug }
+      );
     } else {
+      mode = "register";
       result = await window.TakuAPI.post("/api/user-event-statuses/", {
         event: parseInt(eventId, 10),
         status: statusSlug,
@@ -137,19 +165,26 @@
       return;
     }
 
-    if (result.status === 204 || (isCancel && result.ok)) {
+    if (mode === "cancel" && (result.status === 204 || result.ok)) {
       delete button.dataset.statusId;
-      button.dataset.statusAction = "";
       setButtonDefault(button);
       return;
     }
 
     if (result.ok) {
       var responseData = result.data || {};
-      if (responseData.id) {
-        // Keep the empty action so the next click on this (now active) button
-        // toggles the registration off instead of re-PATCHing the same status.
-        button.dataset.statusId = String(responseData.id);
+      // A switch moves the single registration from the sibling to this button.
+      var fallbackId;
+      if (mode === "switch" && activeSibling) {
+        fallbackId = activeSibling.dataset.statusId;
+        delete activeSibling.dataset.statusId;
+        setButtonDefault(activeSibling);
+      }
+      // Keep the empty action so the next click on this (now active) button
+      // toggles the registration off instead of re-PATCHing the same status.
+      var newId = responseData.id ? String(responseData.id) : fallbackId;
+      if (newId) {
+        button.dataset.statusId = newId;
       }
       setButtonActive(button, statusSlug);
       return;
