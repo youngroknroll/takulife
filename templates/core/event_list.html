@@ -156,19 +156,9 @@
     padding: 12px;
     background: #fbfdff;
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 10px;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
     align-items: start;
-  }
-  .event-type {
-    display: inline-block;
-    border-radius: 999px;
-    padding: 4px 9px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--brand);
-    background: var(--brand-soft);
-    margin-bottom: 6px;
   }
   .event-card h2 {
     margin: 0 0 6px;
@@ -207,7 +197,6 @@
     font-weight: 700;
     background: var(--amber-soft);
     color: var(--amber-ink);
-    justify-self: end;
   }
   .status-row {
     display: flex;
@@ -248,12 +237,6 @@
     }
     .filters {
       position: static;
-    }
-    .event-card {
-      grid-template-columns: 1fr;
-    }
-    .dday {
-      justify-self: start;
     }
     .filter-toggle {
       display: inline-flex;
@@ -413,10 +396,21 @@
           <div class="event-list">
             {% for row in event_rows %}
               <article class="event-card">
-                <div>
-                  <span class="event-type">{{ row.category_label }}</span>
-                </div>
-                <div>
+                <span class="cat-tile cat-{{ row.category_slug }}" aria-hidden="true"></span>
+                <div class="card-body">
+                  <div class="card-lead">
+                    {% if row.status_slug == 'ended' %}
+                      <span class="dday">종료</span>
+                    {% elif row.dday is not None %}
+                      <span class="dday">D-{{ row.dday }}</span>
+                    {% endif %}
+                    {% if row.status_label %}
+                      <span class="lead-status">{{ row.status_label }}</span>
+                    {% endif %}
+                    {% if row.category_label %}
+                      <span class="cat-chip cat-{{ row.category_slug }}">{{ row.category_label }}</span>
+                    {% endif %}
+                  </div>
                   <h2><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
                   <p class="meta">{{ row.event.location_name }}</p>
                   {% if row.event.start_date and row.event.end_date %}
@@ -437,16 +431,6 @@
                       <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
                     {% endif %}
                   </div>
-                </div>
-                <div>
-                  {% if row.status_slug == 'ended' %}
-                    <span class="dday">종료</span>
-                  {% elif row.dday is not None %}
-                    <span class="dday">D-{{ row.dday }}</span>
-                  {% endif %}
-                  {% if row.status_label %}
-                    <div style="margin-top: 4px; font-size: 0.74rem; color: var(--muted); text-align: right;">{{ row.status_label }}</div>
-                  {% endif %}
                 </div>
               </article>
             {% endfor %}
