@@ -110,9 +110,25 @@
   /* Front card gets a slightly snappier transition */
   .deck-card[data-slide="0"] {
     transition:
-      transform 0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
-      opacity   0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
-      z-index   0s;
+      transform   0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
+      opacity     0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
+      box-shadow  0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
+      z-index     0s;
+  }
+
+  /* Hover/focus lift on the front (interactive) card */
+  .deck-card[data-slide="0"]:hover,
+  .deck-card[data-slide="0"]:focus-within {
+    transform: translateY(-8px) scale(1);
+    box-shadow: 0 14px 30px rgba(17, 31, 55, 0.18);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* No movement; keep a subtle shadow as the hover affordance */
+    .deck-card[data-slide="0"]:hover,
+    .deck-card[data-slide="0"]:focus-within {
+      transform: translateY(0) scale(1);
+    }
   }
 
   /* Stack depth positions — JS sets data-slide attribute */
