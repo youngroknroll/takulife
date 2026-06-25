@@ -171,6 +171,9 @@
     padding: 12px;
     font-size: 0.88rem;
   }
+  .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   @media (max-width: 900px) {
     .summary-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -214,21 +217,18 @@
         <a href="/archive/">내 기록장</a>
         <a class="active" href="/archive/statuses/" aria-current="page">상태 기록</a>
         <a href="/archive/visits/">방문 기록</a>
+        <a href="/archive/interests/">찜 목록</a>
       </nav>
     </div>
 
     <section class="hero">
       <h1>상태 기록</h1>
       <p>
-        관심, 방문 예정, 방문 완료, 놓침 상태를 한 화면에서 확인하는 보관함입니다.
+        방문 예정, 방문 완료, 놓침 상태를 한 화면에서 확인하는 보관함입니다.
         저장한 행사를 상태별로 빠르게 훑고 바로 상세로 이동할 수 있습니다.
       </p>
 
       <div class="summary-grid" aria-label="상태 요약">
-        <article class="summary-card">
-          <p class="summary-label">관심</p>
-          <p class="summary-value">{{ status_counts.interested }}</p>
-        </article>
         <article class="summary-card">
           <p class="summary-label">방문 예정</p>
           <p class="summary-value">{{ status_counts.planned }}</p>
@@ -249,7 +249,7 @@
         <div class="panel-head">
           <div>
             <h2>저장한 행사 상태</h2>
-            <p class="panel-note">관심 · 방문 예정 · 방문 완료 · 놓침으로 분류한 보관함입니다.</p>
+            <p class="panel-note">방문 예정 · 방문 완료 · 놓침으로 분류한 보관함입니다.</p>
           </div>
         </div>
 

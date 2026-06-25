@@ -151,6 +151,9 @@
     if (data.code === "duplicate_user_event_status") {
       return "이미 추가됨";
     }
+    if (data.code === "duplicate_event_interest") {
+      return "이미 찜한 행사입니다.";
+    }
     if (data.code === "photo_limit_exceeded") {
       return "사진은 기록당 최대 10장까지 첨부할 수 있습니다.";
     }

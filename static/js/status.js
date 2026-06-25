@@ -199,6 +199,96 @@
     }
   }
 
+  // ── interest toggle (♡/♥) — fully independent from the funnel ──
+
+  function setInterestActive(button, interestId) {
+    button.dataset.interestId = String(interestId);
+    button.classList.add("active");
+    button.setAttribute("aria-pressed", "true");
+    var glyph = button.querySelector("[data-interest-glyph]");
+    if (glyph) {
+      glyph.textContent = "♥";
+    }
+  }
+
+  function setInterestDefault(button) {
+    delete button.dataset.interestId;
+    button.classList.remove("active");
+    button.setAttribute("aria-pressed", "false");
+    var glyph = button.querySelector("[data-interest-glyph]");
+    if (glyph) {
+      glyph.textContent = "♡";
+    }
+  }
+
+  async function handleInterestClick(event) {
+    var button = event.currentTarget;
+    var eventId = button.dataset.eventId;
+    var interestId = button.dataset.interestId;
+
+    if (!eventId) {
+      return;
+    }
+
+    if (!window.TakuAPI.isAuthenticated()) {
+      window.TakuAPI.promptLogin();
+      return;
+    }
+
+    window.TakuAPI.setLoading(button, true);
+
+    var result;
+    if (interestId) {
+      result = await window.TakuAPI.del("/api/event-interests/" + interestId + "/");
+    } else {
+      result = await window.TakuAPI.post("/api/event-interests/", {
+        event: parseInt(eventId, 10),
+      });
+    }
+
+    window.TakuAPI.setLoading(button, false);
+
+    var kind = window.TakuAPI.classify(result);
+
+    if (kind === "auth") {
+      window.TakuAPI.promptLogin();
+      return;
+    }
+
+    if (kind === "csrf" || kind === "network") {
+      showCsrfError(button);
+      return;
+    }
+
+    if (kind === "conflict") {
+      var code = result.data && result.data.code;
+      if (code === "duplicate_event_interest") {
+        // Already interested — reconcile to active state using the id if present
+        var existingId = result.data && result.data.id;
+        if (existingId) {
+          setInterestActive(button, existingId);
+        } else {
+          button.classList.add("active");
+          button.setAttribute("aria-pressed", "true");
+        }
+      }
+      return;
+    }
+
+    if (interestId && (result.status === 204 || result.ok)) {
+      setInterestDefault(button);
+      return;
+    }
+
+    if (result.ok) {
+      var responseData = result.data || {};
+      if (responseData.id) {
+        setInterestActive(button, responseData.id);
+      }
+      return;
+    }
+  }
+
   function initStatusButtons() {
     var buttons = document.querySelectorAll("button[data-status-action]");
     buttons.forEach(function (button) {
@@ -209,6 +299,11 @@
         button.setAttribute("aria-pressed", "false");
       }
       button.addEventListener("click", handleClick);
+    });
+
+    var interestButtons = document.querySelectorAll("button[data-interest-toggle]");
+    interestButtons.forEach(function (button) {
+      button.addEventListener("click", handleInterestClick);
     });
   }
 

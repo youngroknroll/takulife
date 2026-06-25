@@ -2,11 +2,14 @@
 
 import pytest
 
-from archive.models import UserEventStatus, VisitRecord
+from archive.models import EventInterest, UserEventStatus, VisitRecord
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
+    list_user_interests,
     list_user_statuses,
     list_user_visit_records,
+    user_interest_count,
+    user_interest_event_ids,
     user_status_counts,
 )
 from events.models import Event
@@ -39,15 +42,14 @@ def test_user_status_counts_counts_per_status(django_user_model):
     e1 = _make_published_event("E1")
     e2 = _make_published_event("E2")
 
-    UserEventStatus.objects.create(user=user, event=e1, status="interested")
+    UserEventStatus.objects.create(user=user, event=e1, status="planned")
     UserEventStatus.objects.create(user=user, event=e2, status="visited")
-    UserEventStatus.objects.create(user=other, event=e1, status="interested")
+    UserEventStatus.objects.create(user=other, event=e1, status="planned")
 
     counts = user_status_counts(user)
 
-    assert counts["interested"] == 1
+    assert counts["planned"] == 1
     assert counts["visited"] == 1
-    assert counts["planned"] == 0
     assert counts["missed"] == 0
 
 
@@ -58,14 +60,14 @@ def test_list_user_statuses_filters_by_user_and_status(django_user_model):
     e1 = _make_published_event("E1")
     e2 = _make_published_event("E2")
 
-    UserEventStatus.objects.create(user=user, event=e1, status="interested")
+    UserEventStatus.objects.create(user=user, event=e1, status="planned")
     UserEventStatus.objects.create(user=user, event=e2, status="visited")
-    UserEventStatus.objects.create(user=other, event=e1, status="interested")
+    UserEventStatus.objects.create(user=other, event=e1, status="planned")
 
     assert list_user_statuses(user).count() == 2
-    interested_only = list_user_statuses(user, "interested")
-    assert interested_only.count() == 1
-    assert interested_only.first().event_id == e1.id
+    planned_only = list_user_statuses(user, "planned")
+    assert planned_only.count() == 1
+    assert planned_only.first().event_id == e1.id
 
 
 @pytest.mark.django_db
@@ -82,3 +84,110 @@ def test_list_user_visit_records_scoped_and_ordered(django_user_model):
     rows = list(list_user_visit_records(user))
 
     assert [r.id for r in rows] == [newer.id, older.id]
+
+
+# ---------------------------------------------------------------------------
+# ARCHIVE_STATUS_SLUGS no longer contains "interested"
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_archive_status_slugs_excludes_interested(django_user_model):
+    assert "interested" not in ARCHIVE_STATUS_SLUGS
+    assert "planned" in ARCHIVE_STATUS_SLUGS
+    assert "visited" in ARCHIVE_STATUS_SLUGS
+    assert "missed" in ARCHIVE_STATUS_SLUGS
+
+
+# ---------------------------------------------------------------------------
+# user_status_counts — interested not counted even if row exists at DB level
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_status_counts_excludes_interested_key(django_user_model):
+    """user_status_counts must not include 'interested' as a key."""
+    user = _make_user(django_user_model, "counts-no-interested")
+    counts = user_status_counts(user)
+    assert "interested" not in counts
+
+
+# ---------------------------------------------------------------------------
+# list_user_interests — scoped to user, select_related event, newest-first
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_list_user_interests_scoped_and_ordered(django_user_model):
+    user = _make_user(django_user_model, "interest-query-user")
+    other = _make_user(django_user_model, "interest-query-other")
+    e1 = _make_published_event("Interest E1")
+    e2 = _make_published_event("Interest E2")
+    e3 = _make_published_event("Interest E3")
+
+    first = EventInterest.objects.create(user=user, event=e1)
+    second = EventInterest.objects.create(user=user, event=e2)
+    EventInterest.objects.create(user=other, event=e3)
+
+    rows = list(list_user_interests(user))
+
+    assert len(rows) == 2
+    assert rows[0].pk == second.pk
+    assert rows[1].pk == first.pk
+    assert rows[0].event.id == e2.id
+
+
+# ---------------------------------------------------------------------------
+# user_interest_event_ids — returns {event_id: interest_id} bounded by ids
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_interest_event_ids_bounded(django_user_model):
+    user = _make_user(django_user_model, "interest-ids-user")
+    other = _make_user(django_user_model, "interest-ids-other")
+    e1 = _make_published_event("Interest IDs E1")
+    e2 = _make_published_event("Interest IDs E2")
+    e3 = _make_published_event("Interest IDs E3")
+
+    i1 = EventInterest.objects.create(user=user, event=e1)
+    EventInterest.objects.create(user=user, event=e2)
+    EventInterest.objects.create(user=other, event=e3)
+
+    result = user_interest_event_ids(user, event_ids=[e1.id, e3.id])
+
+    assert result == {e1.id: i1.pk}
+
+
+@pytest.mark.django_db
+def test_user_interest_event_ids_unbounded(django_user_model):
+    user = _make_user(django_user_model, "interest-ids-unbound-user")
+    e1 = _make_published_event("Interest Unbound E1")
+    e2 = _make_published_event("Interest Unbound E2")
+
+    i1 = EventInterest.objects.create(user=user, event=e1)
+    i2 = EventInterest.objects.create(user=user, event=e2)
+
+    result = user_interest_event_ids(user)
+
+    assert result == {e1.id: i1.pk, e2.id: i2.pk}
+
+
+# ---------------------------------------------------------------------------
+# user_interest_count
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_interest_count(django_user_model):
+    user = _make_user(django_user_model, "interest-count-user")
+    other = _make_user(django_user_model, "interest-count-other")
+    e1 = _make_published_event("Interest Count E1")
+    e2 = _make_published_event("Interest Count E2")
+    e3 = _make_published_event("Interest Count E3")
+
+    EventInterest.objects.create(user=user, event=e1)
+    EventInterest.objects.create(user=user, event=e2)
+    EventInterest.objects.create(user=other, event=e3)
+
+    assert user_interest_count(user) == 2

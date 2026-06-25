@@ -33,7 +33,7 @@ def _make_published_event(title="Test Event"):
     return Event.objects.create(title=title, publish_status=Event.PublishStatus.PUBLISHED)
 
 
-def _create_status(client, event, status_value="interested"):
+def _create_status(client, event, status_value="planned"):
     """Create a UserEventStatus for the currently logged-in client and return its id."""
     response = client.post(
         "/api/user-event-statuses/",
@@ -92,7 +92,7 @@ def test_user_b_list_excludes_user_a_statuses(client, django_user_model):
     event = _make_published_event()
 
     client.force_login(user_a)
-    _create_status(client, event, "interested")
+    _create_status(client, event, "planned")
 
     client.force_login(user_b)
     response = client.get("/api/user-event-statuses/")
@@ -111,7 +111,7 @@ def test_post_cannot_set_user_field_owner_is_requester(client, django_user_model
     client.force_login(user_a)
     response = client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested", "user": user_b.id},
+        {"event": event.id, "status": "planned", "user": user_b.id},
         content_type="application/json",
     )
 
@@ -168,7 +168,7 @@ def test_anonymous_api_post_returns_403():
     client = Client()
     response = client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
     assert response.status_code == 403
@@ -191,7 +191,7 @@ def test_authenticated_post_without_csrf_returns_403(django_user_model):
 
     response = api_client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         format="json",
     )
     assert response.status_code == 403
@@ -212,7 +212,7 @@ def test_authenticated_post_with_csrf_succeeds(client, django_user_model):
     client.force_login(user)
     response = client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
     assert response.status_code == 201

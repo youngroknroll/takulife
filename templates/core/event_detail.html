@@ -284,12 +284,14 @@
               <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
             {% endif %}
             <div data-status-error-container>
-              <button class="action-link ghost status-btn interested{% if user_status == 'interested' %} active{% endif %}" type="button"
-                data-status-action
+              <button class="interest-btn{% if user_interested %} active{% endif %}" type="button"
+                data-interest-toggle
                 data-event-id="{{ event.id }}"
-                data-status="interested"
-                {% if user_status == 'interested' %}data-status-id="{{ user_status_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}><span aria-hidden="true">♡</span> 관심</button>
-              {% if user_status and user_status != 'interested' %}
+                {% if user_interested %}data-interest-id="{{ user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
+                <span aria-hidden="true" data-interest-glyph>{% if user_interested %}♥{% else %}♡{% endif %}</span>
+                관심
+              </button>
+              {% if user_status %}
                 <p class="panel-note" style="margin: 6px 0 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
               {% endif %}
             </div>

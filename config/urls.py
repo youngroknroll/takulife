@@ -17,6 +17,7 @@ urlpatterns = [
         name="archive-statuses-page",
     ),
     path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
+    path("archive/interests/", core_views.archive_interests, name="archive-interests"),
     path("event-drafts/", core_views.event_drafts, name="event-drafts-page"),
     path(
         "event-drafts/<int:draft_id>/",
@@ -30,6 +31,7 @@ urlpatterns = [
     path("api/event-drafts/", include("drafts.urls")),
     path("api/user-event-statuses/", include("archive.urls")),
     path("api/visit-records/", include("archive.visit_urls")),
+    path("api/event-interests/", include("archive.interest_urls")),
 ]
 
 if settings.DEBUG:

@@ -1,6 +1,6 @@
 from django.db import IntegrityError, transaction
 
-from .models import UserEventStatus, VisitRecord, VisitRecordPhoto
+from .models import EventInterest, UserEventStatus, VisitRecord, VisitRecordPhoto
 
 
 MAX_PHOTOS_PER_RECORD = 10
@@ -8,6 +8,18 @@ MAX_PHOTOS_PER_RECORD = 10
 
 class DuplicateUserEventStatusError(Exception):
     pass
+
+
+class DuplicateEventInterestError(Exception):
+    pass
+
+
+def create_event_interest(*, user, event):
+    with transaction.atomic():
+        try:
+            return EventInterest.objects.create(user=user, event=event)
+        except IntegrityError as exc:
+            raise DuplicateEventInterestError from exc
 
 
 def create_user_event_status(*, user, event, status):

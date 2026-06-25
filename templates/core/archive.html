@@ -271,6 +271,9 @@
   .mobile-cta {
     display: none;
   }
+  .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   @media (max-width: 1024px) {
     .summary-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -333,6 +336,7 @@
         <a href="/archive/" class="active" aria-current="page">내 기록장</a>
         <a href="/archive/statuses/">상태 기록</a>
         <a href="/archive/visits/">방문 기록</a>
+        <a href="/archive/interests/">찜 목록</a>
       </nav>
     </div>
 
@@ -343,10 +347,6 @@
         기록은 짧게 남기고 다음 탐색으로 빠르게 이동하는 흐름을 유지합니다.
       </p>
       <div class="summary-grid" aria-label="상태 기록 요약">
-        <article class="summary-card" aria-label="관심 {{ status_counts.interested }}건">
-          <p class="summary-label">관심</p>
-          <p class="summary-value">{{ status_counts.interested }}건</p>
-        </article>
         <article class="summary-card" aria-label="방문 예정 {{ status_counts.planned }}건">
           <p class="summary-label">방문 예정</p>
           <p class="summary-value">{{ status_counts.planned }}건</p>
@@ -400,7 +400,7 @@
           <div class="empty-state" role="status">
             <p class="empty-icon" aria-hidden="true">🗂️</p>
             <p class="empty-title">아직 저장한 행사가 없어요</p>
-            <p class="empty-note">관심 가는 행사에 상태를 표시하면 여기에 모여요.</p>
+            <p class="empty-note">방문 예정·방문 완료·놓침 상태를 표시하면 여기에 모여요.</p>
             <a class="empty-action" href="/events/">행사 찾아보기</a>
           </div>
         {% endif %}
