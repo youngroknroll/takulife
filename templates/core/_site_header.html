@@ -1,0 +1,23 @@
+{% comment %}
+_site_header.html — global site header rendered once from base.html on every page.
+
+Provides the persistent site frame the per-page topbars never did:
+  - brand (home link)
+  - primary navigation (홈 / 행사 둘러보기 / 내 아카이브), current section highlighted
+  - auth nav (login state) via _topbar.html
+
+Active section is derived from request.path (request context processor is
+already enabled — _topbar.html relies on request.user). The three sections
+never overlap: "/" is home only, "/events/" and "/archive/" are exclusive prefixes.
+{% endcomment %}
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href="/"{% if request.path == '/' %} aria-current="page"{% endif %}>takulife</a>
+    <nav class="site-nav" aria-label="주요 메뉴">
+      <a href="/"{% if request.path == '/' %} class="active" aria-current="page"{% endif %}>홈</a>
+      <a href="/events/"{% if '/events/' in request.path %} class="active" aria-current="page"{% endif %}>행사 둘러보기</a>
+      <a href="/archive/"{% if '/archive/' in request.path %} class="active" aria-current="page"{% endif %}>내 아카이브</a>
+    </nav>
+    {% include "core/_topbar.html" %}
+  </div>
+</header>

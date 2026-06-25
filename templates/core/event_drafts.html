@@ -8,9 +8,6 @@
     max-width: 1160px;
     padding: 26px 20px 80px;
   }
-  .topbar {
-    grid-template-columns: auto 1fr auto;
-  }
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1.72fr) minmax(290px, 0.88fr);
@@ -178,7 +175,6 @@
     .page {
       padding: 18px 14px 64px;
     }
-    .topbar,
     .draft-card {
       grid-template-columns: 1fr;
     }
@@ -197,15 +193,13 @@
 
 {% block content %}
   <main class="page">
-    <header class="topbar">
-      <a class="brand" href="/">{{ project_name }}</a>
+    <div class="sub-nav">
       <nav class="nav-links" aria-label="관리 메뉴">
         <a href="/events/">행사 목록</a>
         <a href="/archive/">내 기록장</a>
         <a class="active" href="/event-drafts/">드래프트 관리</a>
       </nav>
-      {% include "core/_topbar.html" %}
-    </header>
+    </div>
 
     <section class="hero">
       <h1>드래프트 관리</h1>

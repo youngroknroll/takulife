@@ -8,9 +8,6 @@
     max-width: 1160px;
     padding: 26px 20px 80px;
   }
-  .topbar {
-    grid-template-columns: auto 1fr auto;
-  }
   .hero {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -201,9 +198,6 @@
     .page {
       padding: 18px 14px 64px;
     }
-    .topbar {
-      grid-template-columns: 1fr;
-    }
     .nav-links {
       justify-content: start;
     }
@@ -213,15 +207,14 @@
 
 {% block content %}
   <main class="page">
-    <header class="topbar">
-      <a class="brand" href="/">{{ project_name }}</a>
+    <div class="sub-nav">
       <nav class="nav-links" aria-label="관리 메뉴">
         <a href="/event-drafts/">드래프트 관리</a>
         <a href="/events/">행사 목록</a>
         <a href="/archive/">내 기록장</a>
       </nav>
       <a class="top-action" href="/event-drafts/">목록으로</a>
-    </header>
+    </div>
 
     {% if draft_not_found %}
       <p class="notice" role="alert">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="/event-drafts/">목록으로 돌아가기</a></p>

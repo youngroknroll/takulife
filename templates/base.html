@@ -9,7 +9,9 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
+  {% include "core/_site_header.html" %}
   {% block content %}{% endblock %}
+  {% include "core/_site_footer.html" %}
   <script defer src="{% static 'js/api.js' %}"></script>
   <script defer src="{% static 'js/status.js' %}"></script>
   {% block extra_js %}{% endblock %}

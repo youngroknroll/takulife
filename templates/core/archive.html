@@ -7,9 +7,6 @@
   .page {
     padding: 26px 20px 80px;
   }
-  .topbar {
-    grid-template-columns: auto 1fr auto;
-  }
   .top-action a {
     display: inline-block;
     text-decoration: none;
@@ -280,9 +277,6 @@
     }
   }
   @media (max-width: 860px) {
-    .topbar {
-      grid-template-columns: 1fr;
-    }
     .nav-links {
       justify-content: flex-start;
     }
@@ -334,15 +328,13 @@
 
 {% block content %}
   <div class="page">
-    <header class="topbar">
-      <a class="brand" href="/">{{ project_name }}</a>
+    <div class="sub-nav">
       <nav class="nav-links" aria-label="아카이브 메뉴">
         <a href="/archive/" class="active" aria-current="page">내 기록장</a>
         <a href="/archive/statuses/">상태 기록</a>
-        <a href="/events/">행사 찾기</a>
+        <a href="/archive/visits/">방문 기록</a>
       </nav>
-      {% include "core/_topbar.html" %}
-    </header>
+    </div>
 
     <section class="hero" aria-label="기록장 소개">
       <h1>내 기록장</h1>

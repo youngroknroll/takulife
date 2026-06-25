@@ -4,13 +4,11 @@
 
 {% block extra_css %}
 <style>
-  .topbar {
-    grid-template-columns: auto 1fr auto;
-  }
   .search {
     display: flex;
     gap: 8px;
     min-width: 0;
+    margin: 0 0 12px;
   }
   .search input {
     min-width: 0;
@@ -215,9 +213,6 @@
     color: var(--muted);
   }
   @media (max-width: 900px) {
-    .topbar {
-      grid-template-columns: 1fr;
-    }
     .hero-grid {
       grid-template-columns: 1fr;
     }
@@ -249,20 +244,15 @@
 
 {% block content %}
   <main class="page">
-    <header class="topbar">
-      <a class="brand" href="/" aria-current="page">{{ project_name }}</a>
-      <form class="search" action="/events/" method="get">
-        <label class="sr-only" for="q">행사 검색</label>
-        <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
-        <button type="submit">검색</button>
-      </form>
-      {% include "core/_topbar.html" %}
-    </header>
-
     <section class="hero-grid" aria-label="메인 요약과 필터">
       <article class="hero">
         <h1>지금 갈 수 있는 공식 오프라인 이벤트를 빠르게 찾기</h1>
         <p>검색과 필터를 먼저 배치해 이번 주 행사, 종료 임박 행사, 신규 등록 행사를 바로 스캔할 수 있게 구성했습니다.</p>
+        <form class="search" action="/events/" method="get">
+          <label class="sr-only" for="q">행사 검색</label>
+          <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
+          <button type="submit">검색</button>
+        </form>
         <div class="quick-filters" aria-label="빠른 필터">
           <a class="chip" href="/events/?region=seoul">서울</a>
           <a class="chip" href="/events/?region=gyeonggi">경기</a>
