@@ -6,10 +6,12 @@
  *   data-status     — status slug: interested | planned | visited | missed
  *   data-status-id  — UserEventStatus PK (present when status already exists)
  *
- * Behaviour:
- *   - data-status-id absent → POST /api/user-event-statuses/ {event, status}
- *   - data-status-id present, data-status-action="change" → PATCH /<id>/ {status}
- *   - data-status-id present, data-status-action="unset"  → DELETE /<id>/
+ * Behaviour (discovery buttons, empty data-status-action — toggle):
+ *   - inactive button (no registration) → POST /api/user-event-statuses/ {event, status}
+ *   - active button (its own status set) → DELETE /<id>/  (re-click cancels)
+ * Behaviour (archive controls, data-status-action="change"):
+ *   - PATCH /<id>/ {status} to switch the existing status in place
+ *   - data-status-action="unset" (legacy) → DELETE /<id>/
  *
  * 403 handling (via TakuAPI.classify):
  *   - kind 'auth' → TakuAPI.redirectToLogin()
@@ -88,17 +90,24 @@
       return;
     }
 
+    var isActive = button.classList.contains("active");
+
     setButtonLoading(button, true);
 
+    // Discovery buttons (empty action) toggle: an active button cancels its own
+    // registration (DELETE), an inactive one registers (POST). Archive controls
+    // (action="change") switch the existing status in place via PATCH.
     var result;
+    var isCancel = false;
 
-    if (statusId && action === "unset") {
-      result = await window.TakuAPI.del("/api/user-event-statuses/" + statusId + "/");
-    } else if (statusId && action === "change") {
+    if (action === "change" && statusId) {
       result = await window.TakuAPI.patch(
         "/api/user-event-statuses/" + statusId + "/",
         { status: statusSlug }
       );
+    } else if (statusId && (isActive || action === "unset")) {
+      isCancel = true;
+      result = await window.TakuAPI.del("/api/user-event-statuses/" + statusId + "/");
     } else {
       result = await window.TakuAPI.post("/api/user-event-statuses/", {
         event: parseInt(eventId, 10),
@@ -128,7 +137,7 @@
       return;
     }
 
-    if (result.status === 204 || (result.ok && action === "unset")) {
+    if (result.status === 204 || (isCancel && result.ok)) {
       delete button.dataset.statusId;
       button.dataset.statusAction = "";
       setButtonDefault(button);
@@ -138,8 +147,9 @@
     if (result.ok) {
       var responseData = result.data || {};
       if (responseData.id) {
+        // Keep the empty action so the next click on this (now active) button
+        // toggles the registration off instead of re-PATCHing the same status.
         button.dataset.statusId = String(responseData.id);
-        button.dataset.statusAction = "change";
       }
       setButtonActive(button, statusSlug);
       return;
