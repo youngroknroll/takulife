@@ -102,16 +102,10 @@
     border-radius: 10px;
     padding: 12px;
     background: #fbfcff;
-  }
-  .card-top {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .card-top .dday {
-    margin-left: auto;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: start;
   }
   .card h3 a,
   .recent-card h3 a {
@@ -298,18 +292,22 @@
         <div class="cards">
           {% for row in ongoing_events %}
             <article class="card">
-              <div class="card-top">
-                <span class="badge">{{ row.category_label }}</span>
-                {% if row.dday is not None %}
-                  <span class="dday">D-{{ row.dday }}</span>
+              <span class="cat-tile cat-{{ row.category_slug }}" aria-hidden="true"></span>
+              <div class="card-body">
+                <div class="card-lead">
+                  {% if row.dday is not None %}
+                    <span class="dday">D-{{ row.dday }}</span>
+                  {% endif %}
+                  {% if row.category_label %}
+                    <span class="cat-chip cat-{{ row.category_slug }}">{{ row.category_label }}</span>
+                  {% endif %}
+                </div>
+                <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
+                <p class="meta">{{ row.event.location_name }}</p>
+                {% if row.event.start_date and row.event.end_date %}
+                  <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
                 {% endif %}
-              </div>
-              <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
-              <p class="meta">{{ row.event.location_name }}</p>
-              {% if row.event.start_date and row.event.end_date %}
-                <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
-              {% endif %}
-              <div class="status-row" data-status-error-container>
+                <div class="status-row" data-status-error-container>
                 <button class="status-btn interested{% if row.user_status == 'interested' %} active{% endif %}" type="button"
                   data-status-action
                   data-event-id="{{ row.event.id }}"
@@ -323,6 +321,7 @@
                 {% if row.user_status == 'visited' or row.user_status == 'missed' %}
                   <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
                 {% endif %}
+                </div>
               </div>
             </article>
           {% endfor %}

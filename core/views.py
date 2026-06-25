@@ -67,6 +67,7 @@ def _attach_display(events, *, today=None, user=None):
                 "status_slug": status_slug,
                 "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
                 "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "category_slug": event.category,
                 "dday": display["dday"],
                 "user_status": user_status,
                 "user_status_id": user_status_id,
