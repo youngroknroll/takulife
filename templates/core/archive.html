@@ -350,22 +350,22 @@
         방문 이력, 예정 일정, 놓친 이벤트를 월별 타임라인으로 정리합니다.
         기록은 짧게 남기고 다음 탐색으로 빠르게 이동하는 흐름을 유지합니다.
       </p>
-      <div class="summary-grid" aria-label="기록 요약">
-        <article class="summary-card">
-          <p class="summary-label">누적 방문</p>
-          <p class="summary-value">27건</p>
+      <div class="summary-grid" aria-label="상태 기록 요약">
+        <article class="summary-card" aria-label="관심 {{ status_counts.interested }}건">
+          <p class="summary-label">관심</p>
+          <p class="summary-value">{{ status_counts.interested }}건</p>
         </article>
-        <article class="summary-card">
-          <p class="summary-label">이번 달 방문</p>
-          <p class="summary-value">5건</p>
+        <article class="summary-card" aria-label="방문 예정 {{ status_counts.planned }}건">
+          <p class="summary-label">방문 예정</p>
+          <p class="summary-value">{{ status_counts.planned }}건</p>
         </article>
-        <article class="summary-card">
-          <p class="summary-label">예정 일정</p>
-          <p class="summary-value">3건</p>
+        <article class="summary-card" aria-label="방문 완료 {{ status_counts.visited }}건">
+          <p class="summary-label">방문 완료</p>
+          <p class="summary-value">{{ status_counts.visited }}건</p>
         </article>
-        <article class="summary-card">
-          <p class="summary-label">놓친 행사</p>
-          <p class="summary-value">2건</p>
+        <article class="summary-card" aria-label="놓침 {{ status_counts.missed }}건">
+          <p class="summary-label">놓침</p>
+          <p class="summary-value">{{ status_counts.missed }}건</p>
         </article>
       </div>
     </section>
@@ -405,7 +405,12 @@
             {% endfor %}
           </div>
         {% else %}
-          <p class="notice">아직 저장한 행사가 없습니다. <a href="/events/">행사 목록에서 찾아보세요</a></p>
+          <div class="empty-state" role="status">
+            <p class="empty-icon" aria-hidden="true">🗂️</p>
+            <p class="empty-title">아직 저장한 행사가 없어요</p>
+            <p class="empty-note">관심 가는 행사에 상태를 표시하면 여기에 모여요.</p>
+            <a class="empty-action" href="/events/">행사 찾아보기</a>
+          </div>
         {% endif %}
       </main>
 

@@ -397,9 +397,18 @@
               <p class="results-note">D-day와 종료 임박 순으로 빠르게 스캔할 수 있는 카드 리스트</p>
             </div>
             <div class="sort">
-              <span>정렬: 기본순</span>
+              <span>정렬: {{ selected_sort_label }}</span>
             </div>
           </header>
+
+          {% if active_filter_chips %}
+            <div class="applied-filters" aria-label="적용된 필터">
+              {% for chip in active_filter_chips %}
+                <span class="applied-chip">{{ chip }}</span>
+              {% endfor %}
+              <a class="applied-clear" href="/events/">전체 해제</a>
+            </div>
+          {% endif %}
 
           <div class="event-list">
             {% for row in event_rows %}
@@ -414,16 +423,19 @@
                     <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
                   {% endif %}
                   <div class="status-row" data-status-error-container>
-                    <button class="status-btn interested" type="button"
+                    <button class="status-btn interested{% if row.user_status == 'interested' %} active{% endif %}" type="button"
                       data-status-action
                       data-event-id="{{ row.event.id }}"
                       data-status="interested"
-                      aria-pressed="false">관심</button>
-                    <button class="status-btn planned" type="button"
+                      {% if row.user_status == 'interested' %}data-status-id="{{ row.user_status_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>관심</button>
+                    <button class="status-btn planned{% if row.user_status == 'planned' %} active{% endif %}" type="button"
                       data-status-action
                       data-event-id="{{ row.event.id }}"
                       data-status="planned"
-                      aria-pressed="false">방문 예정</button>
+                      {% if row.user_status == 'planned' %}data-status-id="{{ row.user_status_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>방문 예정</button>
+                    {% if row.user_status == 'visited' or row.user_status == 'missed' %}
+                      <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
+                    {% endif %}
                   </div>
                 </div>
                 <div>
@@ -459,11 +471,25 @@
           {% endif %}
 
         {% else %}
-          {% if active_filters %}
-            <p class="notice">조건에 맞는 행사가 없습니다. <a href="/events/">필터 초기화</a></p>
-          {% else %}
-            <p class="notice">현재 등록된 행사가 없습니다.</p>
+          {% if active_filter_chips %}
+            <div class="applied-filters" aria-label="적용된 필터">
+              {% for chip in active_filter_chips %}
+                <span class="applied-chip">{{ chip }}</span>
+              {% endfor %}
+              <a class="applied-clear" href="/events/">전체 해제</a>
+            </div>
           {% endif %}
+          <div class="empty-state" role="status">
+            <p class="empty-icon" aria-hidden="true">🔍</p>
+            {% if active_filters %}
+              <p class="empty-title">조건에 맞는 행사가 없어요</p>
+              <p class="empty-note">필터를 줄이거나 다른 키워드로 다시 찾아보세요.</p>
+              <a class="empty-action" href="/events/">필터 전체 해제</a>
+            {% else %}
+              <p class="empty-title">아직 등록된 행사가 없어요</p>
+              <p class="empty-note">관리자 검수를 거친 행사가 게시되면 여기에 표시돼요.</p>
+            {% endif %}
+          </div>
         {% endif %}
       </article>
     </section>

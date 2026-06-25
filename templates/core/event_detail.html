@@ -287,29 +287,12 @@
           {% endif %}
         </div>
 
-        <section class="section" aria-label="추가 정보">
-          <h2>추가 정보 (준비 중)</h2>
-          <div class="meta-grid" style="margin-top: 0;">
-            <div class="meta-item">
-              <span class="meta-label">운영 시간</span>
-              <strong>—</strong>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">가격</span>
-              <strong>—</strong>
-            </div>
-          </div>
-        </section>
-
-        <section class="section" aria-label="지도 정보">
-          <h2>지도</h2>
-          <div class="map">지도 연동 예정</div>
-        </section>
-
-        <section class="section" aria-label="유의사항">
-          <h2>유의사항</h2>
-          <p class="notice">유의사항은 공식 페이지에서 확인해 주세요.</p>
-        </section>
+        {% if event.official_url %}
+          <section class="section" aria-label="유의사항">
+            <h2>유의사항</h2>
+            <p class="notice">운영 시간·가격·예매 등 자세한 내용은 공식 페이지에서 확인해 주세요.</p>
+          </section>
+        {% endif %}
       </article>
 
       <aside class="aside panel">
@@ -320,11 +303,14 @@
               <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
             {% endif %}
             <div data-status-error-container>
-              <button class="action-link ghost status-btn interested" type="button"
+              <button class="action-link ghost status-btn interested{% if user_status == 'interested' %} active{% endif %}" type="button"
                 data-status-action
                 data-event-id="{{ event.id }}"
                 data-status="interested"
-                aria-pressed="false">♡ 관심</button>
+                {% if user_status == 'interested' %}data-status-id="{{ user_status_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}><span aria-hidden="true">♡</span> 관심</button>
+              {% if user_status and user_status != 'interested' %}
+                <p class="panel-note" style="margin: 6px 0 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
+              {% endif %}
             </div>
           </div>
         </section>
@@ -346,22 +332,6 @@
           {% endif %}
         </section>
 
-        <section class="side-block" aria-label="주최 및 문의">
-          <h2>주최 / 문의</h2>
-          <div class="host-item">
-            <strong>주최</strong>
-            <span>준비 중</span>
-          </div>
-          <div class="host-item" style="margin-bottom: 0;">
-            <strong>문의</strong>
-            <span>준비 중</span>
-          </div>
-        </section>
-
-        <section class="side-block" aria-label="비슷한 행사">
-          <h2>비슷한 행사</h2>
-          <p class="notice" style="margin: 0;">비슷한 행사 준비 중</p>
-        </section>
       </aside>
     </section>
 

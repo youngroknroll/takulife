@@ -72,3 +72,16 @@ EVENT_STATUS: tuple[tuple[str, str], ...] = (
 )
 
 EVENT_STATUS_LABELS: dict[str, str] = dict(EVENT_STATUS)
+
+# ---------------------------------------------------------------------------
+# Public listing sort vocabulary (event_list ordering).
+# Empty slug "" is the default ordering. slug → display label
+# ---------------------------------------------------------------------------
+EVENT_SORT: tuple[tuple[str, str], ...] = (
+    ("", "기본순"),
+    ("closing_soon", "종료 임박순"),
+    ("start_asc", "시작일 빠른순"),
+    ("newest", "최신 등록순"),
+)
+
+EVENT_SORT_LABELS: dict[str, str] = dict(EVENT_SORT)
