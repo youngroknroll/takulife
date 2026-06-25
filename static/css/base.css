@@ -647,6 +647,28 @@ select:focus {
   border-color: var(--brand);
 }
 
+.nav-links:has(a.nav-interest) {
+  flex: 1;                        /* stretch to fill .sub-nav so auto margin has free space */
+}
+
+.nav-links a.nav-interest {
+  margin-left: auto;              /* right-align only this item */
+  border-color: #f8bfd8;
+  background: #fff;
+  color: var(--pink-ink);
+}
+
+.nav-links a.nav-interest:hover {
+  background: var(--pink-soft);
+  border-color: var(--pink-ink);
+}
+
+.nav-links a.nav-interest.active {
+  background: var(--pink-soft);
+  border-color: #f8bfd8;
+  color: var(--pink-ink);
+}
+
 /* ── top-action button (archive + draft topbars) ────────────── */
 .top-action {
   display: inline-flex;

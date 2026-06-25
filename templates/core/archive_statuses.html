@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 상태 기록{% endblock %}
+{% block title %}{{ project_name }} | 예정 목록{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -214,15 +214,15 @@
   <main class="page">
     <div class="sub-nav">
       <nav class="nav-links" aria-label="아카이브 메뉴">
-        <a href="/archive/">내 기록장</a>
-        <a class="active" href="/archive/statuses/" aria-current="page">상태 기록</a>
+        <a href="/archive/">기록장</a>
+        <a class="active" href="/archive/statuses/" aria-current="page">예정 목록</a>
         <a href="/archive/visits/">방문 기록</a>
-        <a href="/archive/interests/">찜 목록</a>
+        <a href="/archive/interests/" class="nav-interest">찜 목록</a>
       </nav>
     </div>
 
     <section class="hero">
-      <h1>상태 기록</h1>
+      <h1>예정 목록</h1>
       <p>
         방문 예정, 방문 완료, 놓침 상태를 한 화면에서 확인하는 보관함입니다.
         저장한 행사를 상태별로 빠르게 훑고 바로 상세로 이동할 수 있습니다.
@@ -308,11 +308,11 @@
         {% endif %}
       </article>
 
-      <aside class="side-stack" aria-label="상태 기록 보조 정보">
+      <aside class="side-stack" aria-label="예정 목록 보조 정보">
         <section class="panel">
           <h2>빠른 이동</h2>
           <ul class="side-list">
-            <li><a href="/archive/">내 기록장</a></li>
+            <li><a href="/archive/">기록장</a></li>
             <li><a href="/events/">행사 찾기</a></li>
           </ul>
         </section>
