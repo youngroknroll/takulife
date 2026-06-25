@@ -1,0 +1,36 @@
+{% comment %}
+_site_footer.html — global site footer rendered once from base.html on every page.
+
+Gives every page a grounded close (the site had no footer before) and is the new
+home for the operating-principle/curation notes that previously sat on the
+consumer homepage. Modelled on standard discovery-service footers
+(brand + tagline + section links + notice + copyright).
+{% endcomment %}
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div class="footer-brand">
+      <span class="footer-logo">takulife</span>
+      <p class="footer-tagline">오시의 오프라인 이벤트를 발견하고, 방문을 기록하세요.</p>
+    </div>
+    <nav class="footer-cols" aria-label="푸터 메뉴">
+      <div class="footer-col">
+        <h2>둘러보기</h2>
+        <a href="/events/">행사 목록</a>
+        <a href="/events/?status=closing_soon">종료 임박</a>
+      </div>
+      <div class="footer-col">
+        <h2>내 아카이브</h2>
+        <a href="/archive/">내 기록장</a>
+        <a href="/archive/visits/">방문 기록</a>
+      </div>
+      <div class="footer-col">
+        <h2>안내</h2>
+        <p>공식 URL 기준으로만 큐레이션합니다.</p>
+        <p>관리자 검수를 거친 행사만 게시됩니다.</p>
+      </div>
+    </nav>
+  </div>
+  <div class="site-footer-base">
+    <p>© 2026 takulife · 오시 활동 기록 서비스</p>
+  </div>
+</footer>

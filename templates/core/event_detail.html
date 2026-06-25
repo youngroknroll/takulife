@@ -7,14 +7,6 @@
   .page {
     padding: 24px 20px 72px;
   }
-  .topbar {
-    grid-template-columns: auto auto 1fr auto;
-    gap: 10px;
-  }
-  .crumb {
-    color: var(--muted);
-    font-size: 0.84rem;
-  }
   .header-link {
     text-decoration: none;
     color: var(--brand);
@@ -224,10 +216,6 @@
     .page {
       padding: 18px 14px 96px;
     }
-    .topbar {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
     h1 {
       font-size: 1.2rem;
     }
@@ -237,13 +225,6 @@
 
 {% block content %}
   <main class="page">
-    <header class="topbar panel">
-      <a class="brand" href="/">{{ project_name }}</a>
-      <span class="crumb">행사 상세 / #{{ event.id }}</span>
-      <div></div>
-      {% include "core/_topbar.html" %}
-    </header>
-
     <section class="shell">
       <article class="content panel">
         {% if category_label %}<span class="chip">{{ category_label }}</span>{% endif %}
