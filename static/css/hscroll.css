@@ -1,0 +1,130 @@
+/*
+ * hscroll.css — horizontal scroller component
+ *
+ * Generic, page-agnostic styles for the [data-hscroll] component.
+ * Depends only on --surface, --line, --text tokens (from tokens.css).
+ * Pair with static/js/hscroll.js and [data-hscroll] markup.
+ */
+
+/* ── wrap ───────────────────────────────────────────────────── */
+
+.hscroll-wrap {
+  position: relative;
+  overflow: hidden;
+  /* Edge-fade mask: both sides faded by default; .at-start and .at-end
+     remove the corresponding fade so only the non-edge side shows it */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0px, #000 40px, #000 calc(100% - 40px), transparent 100%);
+  mask-image:
+    linear-gradient(to right, transparent 0px, #000 40px, #000 calc(100% - 40px), transparent 100%);
+}
+
+.hscroll-wrap.at-start {
+  -webkit-mask-image:
+    linear-gradient(to right, #000 0px, #000 calc(100% - 40px), transparent 100%);
+  mask-image:
+    linear-gradient(to right, #000 0px, #000 calc(100% - 40px), transparent 100%);
+}
+
+.hscroll-wrap.at-end {
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0px, #000 40px, #000 100%);
+  mask-image:
+    linear-gradient(to right, transparent 0px, #000 40px, #000 100%);
+}
+
+.hscroll-wrap.at-start.at-end {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ── track ──────────────────────────────────────────────────── */
+
+.hscroll-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: auto; /* JS controls smooth/instant via scrollBy */
+  gap: 10px;
+  /* Hide scrollbar but keep scrollable */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.hscroll-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── arrow buttons — float over card edges ──────────────────── */
+
+.hscroll-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(17, 31, 55, 0.18);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text);
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  /* Start hidden; JS sets visibility after measuring overflow */
+  visibility: hidden;
+}
+
+.hscroll-btn:hover,
+.hscroll-btn:focus-visible {
+  border-color: #c2d7ff;
+  transform: translateY(calc(-50% - 2px)) scale(1.05);
+  box-shadow: 0 8px 22px rgba(17, 31, 55, 0.26);
+}
+
+.hscroll-prev {
+  left: 8px;
+}
+
+.hscroll-next {
+  right: 8px;
+}
+
+/* ── reduced-motion ─────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .hscroll-btn {
+    transition: none;
+  }
+  .hscroll-btn:hover,
+  .hscroll-btn:focus-visible {
+    transform: translateY(-50%);
+  }
+}
+
+/* ── mobile: native swipe, arrows hidden ────────────────────── */
+
+@media (max-width: 700px) {
+  .hscroll-btn {
+    display: none;
+  }
+
+  .hscroll-track {
+    padding-inline: 0;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hscroll-wrap {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}

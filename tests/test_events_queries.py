@@ -344,10 +344,10 @@ class TestDeriveEventDisplay:
 # ---------------------------------------------------------------------------
 
 class TestPublicListingPageSize:
-    def test_page_size_constant_is_20(self):
+    def test_page_size_constant_is_10(self):
         from events.queries import PUBLIC_LISTING_PAGE_SIZE
 
-        assert PUBLIC_LISTING_PAGE_SIZE == 20
+        assert PUBLIC_LISTING_PAGE_SIZE == 10
 
 
 # ---------------------------------------------------------------------------
@@ -396,3 +396,95 @@ class TestMostViewed:
         ids = [e.id for e in result]
         # Higher id comes first when view_count is equal
         assert ids.index(second.id) < ids.index(first.id)
+
+
+# ---------------------------------------------------------------------------
+# EventQuerySet.ending_within_days
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestEndingWithinDays:
+    """Behavior tests for EventQuerySet.ending_within_days(days, today=today).
+
+    Selection rule: published ongoing events whose end_date is between today
+    (inclusive) and today+days (inclusive), ordered soonest-first.
+    """
+
+    def test_end_date_today_plus_5_is_included(self):
+        today = date(2026, 6, 26)
+        event = make_event(
+            title="D+5",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+        qs = Event.objects.published().ending_within_days(5, today=today)
+        assert event.id in list(qs.values_list("id", flat=True))
+
+    def test_end_date_today_plus_6_is_excluded(self):
+        today = date(2026, 6, 26)
+        event = make_event(
+            title="D+6",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=6),
+        )
+        qs = Event.objects.published().ending_within_days(5, today=today)
+        assert event.id not in list(qs.values_list("id", flat=True))
+
+    def test_end_date_today_is_included(self):
+        today = date(2026, 6, 26)
+        event = make_event(
+            title="D+0",
+            start_date=today - timedelta(days=3),
+            end_date=today,
+        )
+        qs = Event.objects.published().ending_within_days(5, today=today)
+        assert event.id in list(qs.values_list("id", flat=True))
+
+    def test_end_date_yesterday_is_excluded(self):
+        today = date(2026, 6, 26)
+        event = make_event(
+            title="Ended yesterday",
+            start_date=today - timedelta(days=5),
+            end_date=today - timedelta(days=1),
+        )
+        qs = Event.objects.published().ending_within_days(5, today=today)
+        assert event.id not in list(qs.values_list("id", flat=True))
+
+    def test_upcoming_event_within_window_is_excluded(self):
+        """start_date > today means the event has not started yet; must be excluded."""
+        today = date(2026, 6, 26)
+        event = make_event(
+            title="Not started yet",
+            start_date=today + timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+        qs = Event.objects.published().ending_within_days(5, today=today)
+        assert event.id not in list(qs.values_list("id", flat=True))
+
+    def test_draft_within_window_is_excluded(self):
+        """Draft events must not appear even if end_date is within the window."""
+        today = date(2026, 6, 26)
+        event = make_event(
+            title="Draft event",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=3),
+            publish_status=Event.PublishStatus.DRAFT,
+        )
+        qs = Event.objects.published().ending_within_days(5, today=today)
+        assert event.id not in list(qs.values_list("id", flat=True))
+
+    def test_ordering_is_by_end_date_ascending(self):
+        today = date(2026, 6, 26)
+        later = make_event(
+            title="Later",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=4),
+        )
+        sooner = make_event(
+            title="Sooner",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=2),
+        )
+        qs = list(Event.objects.published().ending_within_days(5, today=today))
+        ids = [e.id for e in qs]
+        assert ids.index(sooner.id) < ids.index(later.id)

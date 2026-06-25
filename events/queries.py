@@ -9,7 +9,7 @@ from django.utils import timezone
 from .models import Event
 from .serializers import EventQuerySerializer
 
-PUBLIC_LISTING_PAGE_SIZE = 20
+PUBLIC_LISTING_PAGE_SIZE = 10
 
 
 def parse_public_listing_params(raw_params):

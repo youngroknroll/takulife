@@ -408,6 +408,10 @@ select:focus {
   background: var(--cat-exhibition-soft);
   color: var(--cat-exhibition-ink);
 }
+.cat-fan_meeting {
+  background: var(--cat-fan-soft);
+  color: var(--cat-fan-ink);
+}
 
 /* per-category icons — tile only (chip stays text) */
 .cat-tile.cat-popup_store::before {
@@ -424,6 +428,9 @@ select:focus {
 }
 .cat-tile.cat-exhibition::before {
   content: "🖼️";
+}
+.cat-tile.cat-fan_meeting::before {
+  content: "🎤";
 }
 
 /* ── discovery card lead line ──────────────────────────────── */

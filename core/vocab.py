@@ -25,6 +25,7 @@ CATEGORY: tuple[tuple[str, str], ...] = (
     ("theater_bonus", "극장 특전"),
     ("goods_reservation", "굿즈 예약"),
     ("exhibition", "전시"),
+    ("fan_meeting", "팬미팅"),
 )
 
 # Convenience dict for O(1) label lookup.

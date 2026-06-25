@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -89,9 +91,10 @@ def _attach_display(events, *, today=None, user=None):
 
 
 def home(request):
-    ongoing_qs = list_published_events({"status": "ongoing"})
-    closing_qs = list_published_events({"status": "closing_soon"})
-    recent_qs = Event.objects.published().order_by("-id")[:6]
+    today = date.today()
+    ongoing_qs = list_published_events({"status": "ongoing"}, today=today)
+    closing_qs = Event.objects.published().ending_within_days(5, today=today)
+    recent_qs = Event.objects.published().order_by("-id")[:15]
 
     # "카테고리로 둘러보기" tiles: one per vocab category (in vocab order),
     # each carrying the count of published events so users can browse by type.
@@ -108,11 +111,11 @@ def home(request):
 
     context = {
         "project_name": "takulife",
-        "ongoing_events": _attach_display(ongoing_qs[:6], user=request.user),
-        "closing_events": _attach_display(closing_qs[:5], user=request.user),
-        "recent_events": _attach_display(recent_qs, user=request.user),
+        "ongoing_events": _attach_display(ongoing_qs[:15], today=today, user=request.user),
+        "closing_events": _attach_display(closing_qs[:15], today=today, user=request.user),
+        "recent_events": _attach_display(recent_qs, today=today, user=request.user),
         "category_tiles": category_tiles,
-        "popular_events": _attach_display(popular_qs, user=request.user),
+        "popular_events": _attach_display(popular_qs, today=today, user=request.user),
     }
     return render(request, "core/home.html", context)
 
