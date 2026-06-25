@@ -13,11 +13,11 @@ def test_create_user_event_status_accepts_explicit_domain_inputs(django_user_mod
         publish_status=Event.PublishStatus.PUBLISHED,
     )
 
-    created = create_user_event_status(user=user, event=event, status="interested")
+    created = create_user_event_status(user=user, event=event, status="planned")
 
     assert created.user_id == user.id
     assert created.event_id == event.id
-    assert created.status == "interested"
+    assert created.status == "planned"
 
 
 @pytest.mark.django_db
@@ -28,13 +28,13 @@ def test_authenticated_user_can_create_event_status_for_published_event(client, 
     client.force_login(user)
     response = client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
 
     assert response.status_code == 201
     assert response.json()["event"] == event.id
-    assert response.json()["status"] == "interested"
+    assert response.json()["status"] == "planned"
 
 
 @pytest.mark.django_db
@@ -67,7 +67,7 @@ def test_legacy_me_event_status_route_remains_inactive(client, django_user_model
     client.force_login(user)
     response = client.put(
         f"/api/me/event-statuses/{event.id}/",
-        {"status": "interested"},
+        {"status": "planned"},
         content_type="application/json",
     )
 
@@ -84,7 +84,7 @@ def test_user_event_status_list_returns_only_current_users_statuses(client, djan
     client.force_login(user)
     client.post(
         "/api/user-event-statuses/",
-        {"event": owned_event.id, "status": "interested"},
+        {"event": owned_event.id, "status": "planned"},
         content_type="application/json",
     )
     client.force_login(other_user)
@@ -113,7 +113,7 @@ def test_user_event_status_list_filters_by_event_and_status(client, django_user_
     client.force_login(user)
     client.post(
         "/api/user-event-statuses/",
-        {"event": event_one.id, "status": "interested"},
+        {"event": event_one.id, "status": "planned"},
         content_type="application/json",
     )
     client.post(
@@ -138,7 +138,7 @@ def test_user_event_status_list_rejects_invalid_status_filter(client, django_use
     client.force_login(user)
     client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
 
@@ -181,7 +181,7 @@ def test_user_event_status_rejects_unpublished_event(client, django_user_model):
     client.force_login(user)
     response = client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
 
@@ -213,7 +213,7 @@ def test_user_event_status_duplicate_returns_409(client, django_user_model):
     client.force_login(user)
     client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
     response = client.post(
@@ -237,7 +237,7 @@ def test_authenticated_user_can_patch_event_status(client, django_user_model):
     client.force_login(user)
     create_response = client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
     status_id = create_response.json()["id"]
@@ -262,7 +262,7 @@ def test_user_event_status_put_is_not_allowed(client, django_user_model):
     client.force_login(user)
     create_response = client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
     status_id = create_response.json()["id"]
@@ -277,7 +277,7 @@ def test_user_event_status_put_is_not_allowed(client, django_user_model):
     assert client.get(f"/api/user-event-statuses/{status_id}/").json() == {
         "id": status_id,
         "event": event.id,
-        "status": "interested",
+        "status": "planned",
     }
 
 
@@ -289,7 +289,7 @@ def test_authenticated_user_can_delete_event_status(client, django_user_model):
     client.force_login(user)
     create_response = client.post(
         "/api/user-event-statuses/",
-        {"event": event.id, "status": "interested"},
+        {"event": event.id, "status": "planned"},
         content_type="application/json",
     )
     status_id = create_response.json()["id"]
@@ -311,4 +311,21 @@ def test_create_user_event_status_maps_integrity_error_to_duplicate(monkeypatch,
     monkeypatch.setattr("archive.services.UserEventStatus.objects.create", raise_integrity_error)
 
     with pytest.raises(DuplicateUserEventStatusError):
-        create_user_event_status(user=user, event=event, status="interested")
+        create_user_event_status(user=user, event=event, status="planned")
+
+
+@pytest.mark.django_db
+def test_user_event_status_rejects_interested_as_status(client, django_user_model):
+    """After removing 'interested' from UserEventStatus choices, the API must reject it."""
+    user = django_user_model.objects.create_user(username="status-interested-reject", password="secret")
+    event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
+
+    client.force_login(user)
+    response = client.post(
+        "/api/user-event-statuses/",
+        {"event": event.id, "status": "interested"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "status" in response.json()

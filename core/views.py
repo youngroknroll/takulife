@@ -11,8 +11,11 @@ from rest_framework.response import Response
 from archive.models import UserEventStatus
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
+    list_user_interests,
     list_user_statuses,
     list_user_visit_records,
+    user_interest_count,
+    user_interest_event_ids,
     user_status_counts,
 )
 from core.vocab import (
@@ -23,6 +26,7 @@ from core.vocab import (
     EVENT_SORT_LABELS,
     EVENT_STATUS,
     EVENT_STATUS_LABELS,
+    INTEREST_LABEL,
     REGION,
     REGION_LABELS,
 )
@@ -47,21 +51,25 @@ def _attach_display(events, *, today=None, user=None):
     Returns a list of plain dicts so templates can use dot notation cleanly.
     """
     events = list(events)
+    event_ids = [event.id for event in events]
 
     user_status_map = {}
+    user_interest_map = {}
     if user is not None and user.is_authenticated and events:
         user_status_map = {
-            event_id: (status, status_id)
-            for event_id, status, status_id in UserEventStatus.objects.filter(
-                user=user, event_id__in=[event.id for event in events]
+            event_id: (status_val, status_id)
+            for event_id, status_val, status_id in UserEventStatus.objects.filter(
+                user=user, event_id__in=event_ids
             ).values_list("event_id", "status", "id")
         }
+        user_interest_map = user_interest_event_ids(user, event_ids=event_ids)
 
     result = []
     for event in events:
         display = derive_event_display(event, today=today)
         status_slug = display["status"]
         user_status, user_status_id = user_status_map.get(event.id, ("", None))
+        interest_id = user_interest_map.get(event.id)
         result.append(
             {
                 "event": event,
@@ -73,6 +81,8 @@ def _attach_display(events, *, today=None, user=None):
                 "user_status": user_status,
                 "user_status_id": user_status_id,
                 "user_status_label": ARCHIVE_STATUS_LABELS.get(user_status, ""),
+                "user_interested": interest_id is not None,
+                "user_interest_id": interest_id,
             }
         )
     return result
@@ -181,6 +191,8 @@ def event_detail(request, event_id):
 
     user_status = ""
     user_status_id = None
+    user_interested = False
+    user_interest_id = None
     if request.user.is_authenticated:
         row = (
             UserEventStatus.objects.filter(user=request.user, event=event)
@@ -189,6 +201,9 @@ def event_detail(request, event_id):
         )
         if row:
             user_status, user_status_id = row
+        interest_map = user_interest_event_ids(request.user, event_ids=[event.id])
+        user_interest_id = interest_map.get(event.id)
+        user_interested = user_interest_id is not None
 
     context = {
         "project_name": "takulife",
@@ -200,6 +215,8 @@ def event_detail(request, event_id):
         "user_status": user_status,
         "user_status_id": user_status_id,
         "user_status_label": ARCHIVE_STATUS_LABELS.get(user_status, ""),
+        "user_interested": user_interested,
+        "user_interest_id": user_interest_id,
     }
     return render(request, "core/event_detail.html", context)
 
@@ -304,6 +321,36 @@ def archive_visits(request):
             "memo_count": memo_count,
             "has_visits": len(visit_rows) > 0,
             "selectable_events": selectable_events,
+        },
+    )
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_interests(request):
+    interests = list_user_interests(request.user)
+    interest_count = user_interest_count(request.user)
+
+    interest_rows = []
+    for interest in interests:
+        event = interest.event
+        interest_rows.append(
+            {
+                "interest_id": interest.pk,
+                "event": event,
+                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+            }
+        )
+
+    return render(
+        request,
+        "core/archive_interests.html",
+        {
+            "project_name": "takulife",
+            "interest_rows": interest_rows,
+            "interest_count": interest_count,
+            "has_interests": len(interest_rows) > 0,
+            "INTEREST_LABEL": INTEREST_LABEL,
         },
     )
 

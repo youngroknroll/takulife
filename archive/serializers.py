@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from events.models import Event
 
-from .models import UserEventStatus, VisitRecord, VisitRecordPhoto
+from .models import EventInterest, UserEventStatus, VisitRecord, VisitRecordPhoto
 
 
 MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
@@ -22,6 +22,17 @@ ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 # Concrete Pillow decode failures — anything else propagates as a real error
 # instead of being masked as "invalid image".
 _PIL_DECODE_ERRORS = (OSError, UnidentifiedImageError, PIL.Image.DecompressionBombError)
+
+
+class EventInterestSerializer(serializers.ModelSerializer):
+    event = serializers.PrimaryKeyRelatedField(
+        queryset=Event.objects.published(),
+    )
+
+    class Meta:
+        model = EventInterest
+        fields = ["id", "event"]
+        read_only_fields = ["id"]
 
 
 class UserEventStatusSerializer(serializers.ModelSerializer):

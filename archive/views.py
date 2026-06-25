@@ -6,8 +6,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import UserEventStatus, VisitRecord, VisitRecordPhoto
+from .models import EventInterest, UserEventStatus, VisitRecord, VisitRecordPhoto
 from .serializers import (
+    EventInterestSerializer,
     UserEventStatusQuerySerializer,
     UserEventStatusSerializer,
     UserEventStatusUpdateSerializer,
@@ -15,12 +16,54 @@ from .serializers import (
     VisitRecordSerializer,
 )
 from .services import (
+    DuplicateEventInterestError,
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
+    create_event_interest,
     create_user_event_status,
     create_visit_record,
     create_visit_record_photo,
 )
+
+
+class EventInterestPagination(PageNumberPagination):
+    page_size = 20
+
+
+class EventInterestListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EventInterestSerializer
+    pagination_class = EventInterestPagination
+
+    def get_queryset(self):
+        return EventInterest.objects.filter(user=self.request.user).order_by("-id")
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            interest = create_event_interest(
+                user=request.user,
+                event=serializer.validated_data["event"],
+            )
+        except DuplicateEventInterestError:
+            return Response(
+                {
+                    "code": "duplicate_event_interest",
+                    "detail": "Event interest already exists for this event.",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        response_serializer = self.get_serializer(interest)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class EventInterestDetailView(RetrieveDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = EventInterestSerializer
+
+    def get_queryset(self):
+        return EventInterest.objects.filter(user=self.request.user)
 
 
 class UserEventStatusPagination(PageNumberPagination):

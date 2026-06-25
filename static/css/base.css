@@ -507,6 +507,44 @@ select:focus {
   content: "✓ ";
 }
 
+/* ── interest button (찜 toggle — independent from .status-btn) ─ */
+/*
+ * Intentionally NOT inheriting .status-btn so that .status-btn.active::before
+ * {content:"✓ "} never applies here. The glyph (♡/♥) is the state signal.
+ */
+.interest-btn {
+  border: 1px solid #f8bfd8;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  color: var(--pink-ink);
+  background: #fff;
+  cursor: pointer;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.interest-btn:hover {
+  border-color: var(--pink-ink);
+  background: var(--pink-soft);
+}
+
+.interest-btn.active {
+  background: var(--pink-soft);
+  border-color: #f8bfd8;
+  color: var(--pink-ink);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interest-btn {
+    transition: none;
+  }
+}
+
 /* ── chip (filter / quick-chip) ─────────────────────────────── */
 .chip {
   border-radius: 999px;

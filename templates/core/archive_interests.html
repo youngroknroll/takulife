@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 찜 목록{% endblock %}
+
+{% block extra_css %}
+<style>
+  .page {
+    padding: 26px 20px 80px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.85fr);
+    gap: 12px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 14px;
+  }
+  .status-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .status-card {
+    border: 1px solid #d9e4f4;
+    border-radius: 10px;
+    background: #fbfcff;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .status-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 7px;
+  }
+  .event-category {
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    white-space: nowrap;
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+  .status-card h3 {
+    margin: 0 0 5px;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  .action-link {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #c7d7f8;
+    border-radius: 8px;
+    background: #fff;
+    color: #25508a;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 8px 10px;
+    text-decoration: none;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .side-stack {
+    display: grid;
+    gap: 12px;
+    align-self: start;
+    position: sticky;
+    top: 12px;
+  }
+  .side-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .side-list li {
+    border: 1px solid #d9e4f4;
+    border-radius: 9px;
+    background: #fbfcff;
+    padding: 9px 10px;
+  }
+  .side-list a {
+    color: #25508a;
+    text-decoration: none;
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+  @media (max-width: 900px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+    .side-stack {
+      position: static;
+    }
+  }
+  @media (max-width: 720px) {
+    .page {
+      padding: 18px 14px 64px;
+    }
+    .nav-links {
+      justify-content: start;
+    }
+    .status-card {
+      grid-template-columns: 1fr;
+      display: block;
+    }
+    .action-link {
+      margin-top: 10px;
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <main class="page">
+    <div class="sub-nav">
+      <nav class="nav-links" aria-label="아카이브 메뉴">
+        <a href="/archive/">내 기록장</a>
+        <a href="/archive/statuses/">상태 기록</a>
+        <a href="/archive/visits/">방문 기록</a>
+        <a class="active" href="/archive/interests/" aria-current="page">찜 목록</a>
+      </nav>
+    </div>
+
+    <section class="hero">
+      <h1>찜 목록</h1>
+      <p>
+        찜한 행사 {{ interest_count }}건을 한 화면에서 확인합니다.
+        관심 행사를 빠르게 둘러보고 방문 예정이나 방문 완료로 이어갈 수 있습니다.
+      </p>
+    </section>
+
+    <section class="layout">
+      <article class="panel">
+        <h2>찜한 행사 {{ interest_count }}건</h2>
+        <p class="panel-note">{{ INTEREST_LABEL }} 표시한 행사 목록입니다. 버튼을 눌러 찜을 해제할 수 있습니다.</p>
+
+        {% if has_interests %}
+          <div class="status-list">
+            {% for row in interest_rows %}
+              <article class="status-card hover-lift">
+                <div>
+                  <div class="status-top">
+                    <span class="event-category">{{ row.category_label }}</span>
+                  </div>
+                  <h3>{{ row.event.title }}</h3>
+                  {% if row.event.location_name %}
+                    <p class="meta" style="margin:0;color:var(--muted);font-size:0.84rem;">{{ row.event.location_name }}</p>
+                  {% endif %}
+                  {% if row.event.start_date and row.event.end_date %}
+                    <p class="period" style="margin:4px 0 0;color:#2b405c;font-size:0.88rem;">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
+                  {% endif %}
+                  <div class="status-row" style="margin-top:8px;" data-status-error-container>
+                    <button class="interest-btn active" type="button"
+                      data-interest-toggle
+                      data-event-id="{{ row.event.id }}"
+                      data-interest-id="{{ row.interest_id }}"
+                      aria-pressed="true">
+                      <span aria-hidden="true" data-interest-glyph>♥</span>
+                      찜 해제
+                    </button>
+                  </div>
+                </div>
+                <a class="action-link" href="/events/{{ row.event.id }}/">상세 보기</a>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state" role="status">
+            <p class="empty-icon" aria-hidden="true">♡</p>
+            <p class="empty-title">아직 찜한 행사가 없어요</p>
+            <p class="empty-note">행사 카드의 ♡ 관심 버튼을 눌러 찜 목록에 추가해 보세요.</p>
+            <a class="empty-action" href="/events/">행사 찾아보기</a>
+          </div>
+        {% endif %}
+      </article>
+
+      <aside class="side-stack" aria-label="찜 목록 보조 정보">
+        <section class="panel">
+          <h2>빠른 이동</h2>
+          <ul class="side-list">
+            <li><a href="/archive/">내 기록장</a></li>
+            <li><a href="/archive/statuses/">상태 기록</a></li>
+            <li><a href="/events/">행사 찾기</a></li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>찜 안내</h2>
+          <p class="panel-note">찜은 방문 예정과 독립적으로 동시에 등록할 수 있습니다.</p>
+        </section>
+      </aside>
+    </section>
+  </main>
+{% endblock %}
