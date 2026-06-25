@@ -44,9 +44,11 @@
 
   // ── multipart photo upload ───────────────────────────────────────────────
 
-  async function uploadPhoto(recordId, file, errorEl) {
+  async function uploadPhoto(recordId, file, errorEl, btn) {
     var formData = new FormData();
     formData.append("image", file);
+
+    window.TakuAPI.setLoading(btn, true);
 
     var result = await window.TakuAPI.upload(
       "/api/visit-records/" + recordId + "/photos/",
@@ -57,6 +59,8 @@
       window.location.reload();
       return;
     }
+
+    window.TakuAPI.setLoading(btn, false);
 
     if (result.status === 403) {
       handle403(result, errorEl);
@@ -87,6 +91,7 @@
     var form = document.getElementById("visit-create-form");
     if (!form) { return; }
     var errorEl = document.getElementById("visit-create-error");
+    var submitBtn = form.querySelector('[type="submit"]');
 
     form.addEventListener("submit", async function (evt) {
       evt.preventDefault();
@@ -101,6 +106,8 @@
         return;
       }
 
+      window.TakuAPI.setLoading(submitBtn, true);
+
       var result = await window.TakuAPI.post("/api/visit-records/", {
         event: eventId,
         visited_on: visitedOn,
@@ -111,6 +118,8 @@
         window.location.reload();
         return;
       }
+
+      window.TakuAPI.setLoading(submitBtn, false);
 
       if (result.status === 403) {
         handle403(result, errorEl);
@@ -147,7 +156,7 @@
             return;
           }
 
-          uploadPhoto(recordId, fileInput.files[0], errorEl);
+          uploadPhoto(recordId, fileInput.files[0], errorEl, btn);
         });
       })(uploadBtns[i]);
     }
@@ -166,6 +175,7 @@
             "[data-photo-error='" + recordId + "']"
           );
           clearError(errorEl);
+          window.TakuAPI.setLoading(btn, true);
 
           var result = await window.TakuAPI.del(
             "/api/visit-records/" + recordId + "/photos/" + photoId + "/"
@@ -175,6 +185,8 @@
             window.location.reload();
             return;
           }
+
+          window.TakuAPI.setLoading(btn, false);
 
           if (result.status === 403) {
             handle403(result, errorEl);
@@ -208,6 +220,7 @@
         btn.addEventListener("click", async function () {
           var recordId = btn.getAttribute("data-delete-record-id");
           clearError(globalErrorEl);
+          window.TakuAPI.setLoading(btn, true);
 
           var result = await window.TakuAPI.del(
             "/api/visit-records/" + recordId + "/"
@@ -217,6 +230,8 @@
             window.location.reload();
             return;
           }
+
+          window.TakuAPI.setLoading(btn, false);
 
           if (result.status === 403) {
             handle403(result, globalErrorEl);

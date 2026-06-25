@@ -87,17 +87,13 @@
         return;
       }
 
-      if (submitBtn) {
-        submitBtn.disabled = true;
-      }
+      window.TakuAPI.setLoading(submitBtn, true);
 
       window.TakuAPI.post("/api/event-drafts/", {
         source_url: sourceUrl,
         source_name: sourceName,
       }).then(function (result) {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-        }
+        window.TakuAPI.setLoading(submitBtn, false);
         if (result.ok) {
           window.location.reload();
           return;
@@ -173,9 +169,7 @@
         payload.extracted_summary = summaryEl.value;
       }
 
-      if (submitBtn) {
-        submitBtn.disabled = true;
-      }
+      window.TakuAPI.setLoading(submitBtn, true);
 
       window.TakuAPI.patch("/api/event-drafts/" + draftId + "/", payload).then(
         function (result) {
@@ -215,13 +209,13 @@
         return;
       }
       hideError(errorEl);
-      btn.disabled = true;
+      window.TakuAPI.setLoading(btn, true);
 
       window.TakuAPI.post(
         "/api/event-drafts/" + draftId + "/approve/",
         {}
       ).then(function (result) {
-        btn.disabled = false;
+        window.TakuAPI.setLoading(btn, false);
         if (result.ok) {
           var eventId = result.data && result.data.event_id;
           if (successEl && eventId) {
@@ -264,13 +258,13 @@
         return;
       }
       hideError(errorEl);
-      btn.disabled = true;
+      window.TakuAPI.setLoading(btn, true);
 
       window.TakuAPI.post(
         "/api/event-drafts/" + draftId + "/reject/",
         {}
       ).then(function (result) {
-        btn.disabled = false;
+        window.TakuAPI.setLoading(btn, false);
         if (result.ok) {
           window.location.reload();
           return;

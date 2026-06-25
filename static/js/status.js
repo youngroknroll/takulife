@@ -72,12 +72,9 @@
   }
 
   function setButtonLoading(button, loading) {
-    button.disabled = loading;
-    if (loading) {
-      button.setAttribute("aria-busy", "true");
-    } else {
-      button.removeAttribute("aria-busy");
-    }
+    // Delegate to the shared helper so the button also shows the .is-loading
+    // spinner (disabled + aria-busy) while the request is in flight.
+    window.TakuAPI.setLoading(button, loading);
   }
 
   async function handleClick(event) {

@@ -303,7 +303,7 @@
       {% if ongoing_events %}
         <div class="cards">
           {% for row in ongoing_events %}
-            <article class="card">
+            <article class="card hover-lift">
               <span class="cat-tile cat-{{ row.category_slug }}" aria-hidden="true"></span>
               <div class="card-body">
                 <div class="card-lead">
@@ -351,7 +351,7 @@
       {% if closing_events %}
         <ul class="deadline-list">
           {% for row in closing_events %}
-            <li class="deadline-item">
+            <li class="deadline-item hover-lift">
               {% if row.dday is not None %}
                 <span class="deadline-tag">D-{{ row.dday }}</span>
               {% else %}
@@ -382,7 +382,7 @@
       {% if recent_events %}
         <div class="recent-grid">
           {% for row in recent_events %}
-            <article class="recent-card">
+            <article class="recent-card hover-lift">
               <p class="recent-label">NEW</p>
               <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
               <p class="meta">{% if row.event.location_name %}{{ row.event.location_name }} · {% endif %}{{ row.category_label }}</p>
