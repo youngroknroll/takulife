@@ -370,9 +370,11 @@
             {% endfor %}
           </div>
         {% else %}
-          <p class="notice">
-            아직 방문 기록이 없습니다. 오른쪽 폼에서 첫 기록을 남겨보세요.
-          </p>
+          <div class="empty-state" role="status">
+            <p class="empty-icon" aria-hidden="true">📸</p>
+            <p class="empty-title">아직 방문 기록이 없어요</p>
+            <p class="empty-note">기록 추가 폼에서 방문한 행사와 한줄 메모를 남겨보세요.</p>
+          </div>
         {% endif %}
       </article>
 

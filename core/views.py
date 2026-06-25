@@ -19,6 +19,7 @@ from core.vocab import (
     ARCHIVE_STATUS_LABELS,
     CATEGORY,
     CATEGORY_LABELS,
+    EVENT_SORT_LABELS,
     EVENT_STATUS,
     EVENT_STATUS_LABELS,
     REGION,
@@ -35,15 +36,31 @@ from events.queries import (
 )
 
 
-def _attach_display(events, *, today=None):
+def _attach_display(events, *, today=None, user=None):
     """Attach derived display (status_slug, status_label, dday) to each event.
+
+    When ``user`` is an authenticated user, also attaches ``user_status`` — the
+    user's own archive status slug for that event ("" if none) — so discovery
+    cards can reflect real state instead of a fixed default.
 
     Returns a list of plain dicts so templates can use dot notation cleanly.
     """
+    events = list(events)
+
+    user_status_map = {}
+    if user is not None and user.is_authenticated and events:
+        user_status_map = {
+            event_id: (status, status_id)
+            for event_id, status, status_id in UserEventStatus.objects.filter(
+                user=user, event_id__in=[event.id for event in events]
+            ).values_list("event_id", "status", "id")
+        }
+
     result = []
     for event in events:
         display = derive_event_display(event, today=today)
         status_slug = display["status"]
+        user_status, user_status_id = user_status_map.get(event.id, ("", None))
         result.append(
             {
                 "event": event,
@@ -51,6 +68,9 @@ def _attach_display(events, *, today=None):
                 "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
                 "category_label": CATEGORY_LABELS.get(event.category, event.category),
                 "dday": display["dday"],
+                "user_status": user_status,
+                "user_status_id": user_status_id,
+                "user_status_label": ARCHIVE_STATUS_LABELS.get(user_status, ""),
             }
         )
     return result
@@ -63,9 +83,9 @@ def home(request):
 
     context = {
         "project_name": "takulife",
-        "ongoing_events": _attach_display(ongoing_qs[:6]),
-        "closing_events": _attach_display(closing_qs[:5]),
-        "recent_events": _attach_display(recent_qs),
+        "ongoing_events": _attach_display(ongoing_qs[:6], user=request.user),
+        "closing_events": _attach_display(closing_qs[:5], user=request.user),
+        "recent_events": _attach_display(recent_qs, user=request.user),
     }
     return render(request, "core/home.html", context)
 
@@ -87,7 +107,7 @@ def event_list(request):
         total_count = qs.count()
         paginator = Paginator(qs, PUBLIC_LISTING_PAGE_SIZE)
         page_obj = paginator.get_page(request.GET.get("page"))
-        event_rows = _attach_display(page_obj.object_list)
+        event_rows = _attach_display(page_obj.object_list, user=request.user)
 
     selected_region = request.GET.getlist("region")
     selected_category = request.GET.getlist("category")
@@ -106,6 +126,17 @@ def event_list(request):
         selected_q or selected_region or selected_category or selected_status
     )
 
+    # Human-readable chips summarising the active filters (Eventbrite-style).
+    active_filter_chips = []
+    if selected_q:
+        active_filter_chips.append(f"검색: {selected_q}")
+    for region in selected_region:
+        active_filter_chips.append(REGION_LABELS.get(region, region))
+    for category in selected_category:
+        active_filter_chips.append(CATEGORY_LABELS.get(category, category))
+    if selected_status:
+        active_filter_chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
+
     context = {
         "project_name": "takulife",
         "page_obj": page_obj,
@@ -113,6 +144,7 @@ def event_list(request):
         "event_rows": event_rows,
         "validation_error": validation_error,
         "active_filters": active_filters,
+        "active_filter_chips": active_filter_chips,
         # vocab tuples for filter UI
         "CATEGORY": CATEGORY,
         "REGION": REGION,
@@ -123,6 +155,7 @@ def event_list(request):
         "selected_category": selected_category,
         "selected_status": selected_status,
         "selected_sort": selected_sort,
+        "selected_sort_label": EVENT_SORT_LABELS.get(selected_sort, EVENT_SORT_LABELS[""]),
     }
     return render(request, "core/event_list.html", context)
 
@@ -131,6 +164,18 @@ def event_detail(request, event_id):
     event = get_object_or_404(Event.objects.published(), pk=event_id)
     display = derive_event_display(event)
     status_slug = display["status"]
+
+    user_status = ""
+    user_status_id = None
+    if request.user.is_authenticated:
+        row = (
+            UserEventStatus.objects.filter(user=request.user, event=event)
+            .values_list("status", "id")
+            .first()
+        )
+        if row:
+            user_status, user_status_id = row
+
     context = {
         "project_name": "takulife",
         "event": event,
@@ -138,6 +183,9 @@ def event_detail(request, event_id):
         "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
         "category_label": CATEGORY_LABELS.get(event.category, event.category),
         "dday": display["dday"],
+        "user_status": user_status,
+        "user_status_id": user_status_id,
+        "user_status_label": ARCHIVE_STATUS_LABELS.get(user_status, ""),
     }
     return render(request, "core/event_detail.html", context)
 
@@ -172,6 +220,7 @@ def archive(request):
         .order_by("-updated_at")
     )
     status_rows = _build_archive_status_rows(user_statuses)
+    status_counts = user_status_counts(request.user)
     return render(
         request,
         "core/archive.html",
@@ -179,6 +228,7 @@ def archive(request):
             "project_name": "takulife",
             "status_rows": status_rows,
             "has_statuses": len(status_rows) > 0,
+            "status_counts": status_counts,
         },
     )
 

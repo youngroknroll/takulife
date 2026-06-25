@@ -327,7 +327,7 @@
                 id="edit-start"
                 name="extracted_start_date"
                 type="date"
-                value="{{ draft.extracted_start_date|default:'' }}"
+                value="{{ draft.extracted_start_date|date:'Y-m-d' }}"
                 {% if not is_pending %}disabled{% endif %}
               >
             </div>
@@ -337,7 +337,7 @@
                 id="edit-end"
                 name="extracted_end_date"
                 type="date"
-                value="{{ draft.extracted_end_date|default:'' }}"
+                value="{{ draft.extracted_end_date|date:'Y-m-d' }}"
                 {% if not is_pending %}disabled{% endif %}
               >
             </div>
