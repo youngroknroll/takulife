@@ -256,7 +256,7 @@
 {% block content %}
   <main class="page">
     <header class="topbar">
-      <div class="brand">{{ project_name }}</div>
+      <a class="brand" href="/" aria-current="page">{{ project_name }}</a>
       <form class="search" action="/events/" method="get">
         <label class="sr-only" for="q">행사 검색</label>
         <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">

@@ -366,6 +366,62 @@ def test_upload_disallowed_extension_svg_rejected_400(client, django_user_model,
 
 
 @pytest.mark.django_db
+def test_upload_format_spoofing_bmp_as_png_rejected_400(client, django_user_model, settings, tmp_path):
+    """A valid BMP renamed with a .png extension must be rejected.
+
+    The extension allowlist alone is attacker-controlled; the real decoded
+    Pillow format must be authoritative (S1).
+    """
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = _make_user(django_user_model)
+    event = _make_published_event()
+    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+
+    buf = io.BytesIO()
+    PIL.Image.new("RGB", (10, 10), color=(0, 255, 0)).save(buf, format="BMP")
+    spoofed = SimpleUploadedFile("photo.png", buf.getvalue(), content_type="image/png")
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {"image": spoofed},
+    )
+
+    assert response.status_code == 400
+    assert "image" in response.json()
+    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == 0
+
+
+@pytest.mark.django_db
+def test_upload_pixel_area_bomb_rejected_400(client, django_user_model, settings, tmp_path, monkeypatch):
+    """An image within the per-axis cap but over the total pixel-area cap must be rejected.
+
+    Proves the area guard is independent of both the 5 MB byte cap and the
+    per-axis dimension cap (S2). The limit is monkeypatched small to avoid
+    allocating a real decompression bomb in CI.
+    """
+    settings.MEDIA_ROOT = str(tmp_path)
+    monkeypatch.setattr("archive.serializers.MAX_IMAGE_PIXELS_LIMIT", 50)
+    user = _make_user(django_user_model)
+    event = _make_published_event()
+    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+
+    # 10x10 = 100 px > 50 limit, but each axis (10) is well under MAX_IMAGE_DIMENSION_PX
+    # and the byte size is a few hundred bytes.
+    png_bytes = _make_png_bytes(10, 10)
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {"image": SimpleUploadedFile("photo.png", png_bytes, content_type="image/png")},
+    )
+
+    assert response.status_code == 400
+    assert "image" in response.json()
+    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == 0
+
+
+@pytest.mark.django_db
 def test_eleventh_photo_upload_rejected_400(client, django_user_model, settings, tmp_path):
     """The 11th photo for a single record must be rejected."""
     settings.MEDIA_ROOT = str(tmp_path)

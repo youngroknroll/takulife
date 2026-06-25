@@ -284,7 +284,7 @@
         </article>
         <article class="summary-card">
           <p class="summary-label">메모 있음</p>
-          <p class="summary-value">{% with memo_count=0 %}{% for row in visit_rows %}{% if row.short_review %}{% with memo_count=memo_count|add:1 %}{% endwith %}{% endif %}{% endfor %}{{ visit_rows|length }}{% endwith %}</p>
+          <p class="summary-value">{{ memo_count }}</p>
         </article>
       </div>
     </section>
