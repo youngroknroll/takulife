@@ -401,7 +401,7 @@ def test_upload_pixel_area_bomb_rejected_400(client, django_user_model, settings
     allocating a real decompression bomb in CI.
     """
     settings.MEDIA_ROOT = str(tmp_path)
-    monkeypatch.setattr("archive.serializers.MAX_IMAGE_PIXELS_LIMIT", 50)
+    monkeypatch.setattr("events.image_validation.MAX_IMAGE_PIXELS_LIMIT", 50)
     user = _make_user(django_user_model)
     event = _make_published_event()
     record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")

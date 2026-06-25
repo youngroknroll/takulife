@@ -24,6 +24,8 @@ class Event(models.Model):
         default=PublishStatus.DRAFT,
         db_index=True,
     )
+    poster_image = models.ImageField(upload_to="event-posters/", blank=True, null=True)
+    view_count = models.PositiveIntegerField(default=0, db_index=True)
     objects = EventQuerySet.as_manager()
 
     def __str__(self):

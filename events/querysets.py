@@ -45,6 +45,12 @@ class EventQuerySet(models.QuerySet):
             return self.filter(end_date__lt=today)
         return self
 
+    def increment_view_count(self, pk):
+        return self.filter(pk=pk).update(view_count=F("view_count") + 1)
+
+    def most_viewed(self, limit=5):
+        return self.order_by("-view_count", "-id")[:limit]
+
     def order_for_public_listing(self, *, today):
         return self.annotate(
             _state_rank=Case(

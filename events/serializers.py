@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from .image_validation import validate_uploaded_image
 from .models import Event
 
 
@@ -31,3 +32,10 @@ class EventQuerySerializer(serializers.Serializer):
     start_date_from = serializers.DateField(required=False)
     start_date_to = serializers.DateField(required=False)
     status = serializers.ChoiceField(required=False, choices=STATUS_CHOICES)
+
+
+class EventPosterUploadSerializer(serializers.Serializer):
+    image = serializers.ImageField(required=True)
+
+    def validate_image(self, value):
+        return validate_uploaded_image(value)
