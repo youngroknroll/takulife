@@ -308,21 +308,6 @@
     box-shadow: 0 0 0 1.5px var(--brand-soft);
   }
 
-  .carousel-pause {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 0.68rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    flex-shrink: 0;
-  }
 
   /* Empty state when no ongoing events */
   .carousel-empty {
@@ -640,14 +625,6 @@
                   {% if forloop.first %}aria-current="true"{% endif %}
                 ></button>
               {% endfor %}
-              {% if popular_events|length > 1 %}
-                <button
-                  class="carousel-pause"
-                  type="button"
-                  data-carousel-pause
-                  aria-label="슬라이드 일시 정지"
-                >⏸</button>
-              {% endif %}
             </div>
           </div>
         {% else %}

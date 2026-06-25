@@ -7,7 +7,7 @@
  *   - Click front card  → navigate (allow <a> default)
  *   - Click back card   → advance deck (preventDefault, rotate)
  *   - Dot navigation: clicking a dot rotates deck so that card becomes front
- *   - Pause/play toggle (WCAG 2.2.2) — textContent ⏸/▶
+ *   - Manual click/dot advances and resets the autoplay timer (autoplay keeps running)
  *   - Pause on mouseenter/focusin, resume on mouseleave/focusout
  *   - aria-live off during autoplay, polite on manual interaction
  *   - n <= 1 events: single card, no auto-advance, no dots needed
@@ -15,9 +15,8 @@
  * DOM contract (set by home.html template):
  *   [data-carousel]           — deck wrapper (role=region)
  *   [data-carousel-track]     — .poster-deck containing .deck-card elements
- *   [data-carousel-controls]  — controls wrapper (dots + pause/play)
+ *   [data-carousel-controls]  — controls wrapper (dots)
  *   [data-dot-index]          — dot buttons
- *   [data-carousel-pause]     — pause/play toggle
  *   [data-card-index]         — deck-card elements (original order index)
  *   [data-slide]              — current visual stack depth (0 = front)
  *
@@ -41,7 +40,6 @@
   function createDeck(container) {
     var track = container.querySelector("[data-carousel-track]");
     var controlsEl = container.querySelector("[data-carousel-controls]");
-    var pauseBtn = container.querySelector("[data-carousel-pause]");
     var dots = container.querySelectorAll("[data-dot-index]");
     var cards = track ? track.querySelectorAll("[data-card-index]") : [];
 
@@ -65,7 +63,6 @@
     }
 
     var timer = null;
-    var userPaused = false;
     var hovered = false;
     var focused = false;
 
@@ -132,7 +129,7 @@
     // ── autoplay ───────────────────────────────────────────────────────────
 
     function shouldAutoplay() {
-      return !prefersReducedMotion() && !userPaused && !hovered && !focused;
+      return !prefersReducedMotion() && !hovered && !focused;
     }
 
     function startAutoplay() {
@@ -164,33 +161,8 @@
       startAutoplay();
     }
 
-    // ── pause button ───────────────────────────────────────────────────────
-
-    function syncPauseBtn() {
-      if (!pauseBtn) { return; }
-      if (userPaused || prefersReducedMotion()) {
-        pauseBtn.textContent = "▶"; /* ▶ */
-        pauseBtn.setAttribute("aria-label", "슬라이드 재생");
-      } else {
-        pauseBtn.textContent = "⏸"; /* ⏸ */
-        pauseBtn.setAttribute("aria-label", "슬라이드 일시 정지");
-      }
-    }
-
-    function bindPauseBtn() {
-      if (!pauseBtn) { return; }
-      pauseBtn.addEventListener("click", function () {
-        userPaused = !userPaused;
-        syncPauseBtn();
-        if (userPaused) {
-          stopAutoplay();
-        } else {
-          startAutoplay();
-        }
-      });
-    }
-
     // ── dot clicks ─────────────────────────────────────────────────────────
+    // Advance to the chosen card and reset the autoplay timer (keeps playing).
 
     function bindDots() {
       for (var i = 0; i < dots.length; i++) {
@@ -198,9 +170,7 @@
           dot.addEventListener("click", function () {
             var target = parseInt(dot.getAttribute("data-dot-index"), 10);
             rotateTo(target, true);
-            stopAutoplay();
-            userPaused = true;
-            syncPauseBtn();
+            startAutoplay();
           });
         })(dots[i]);
       }
@@ -221,9 +191,7 @@
               // Bring this card to front
               var origIdx = parseInt(card.getAttribute("data-card-index"), 10);
               rotateTo(origIdx, true);
-              stopAutoplay();
-              userPaused = true;
-              syncPauseBtn();
+              startAutoplay();
             }
             // depth === "0": allow default navigation
           });
@@ -254,10 +222,9 @@
 
     function bindReducedMotion() {
       mqlReducedMotion.addEventListener("change", function () {
-        syncPauseBtn();
         if (prefersReducedMotion()) {
           stopAutoplay();
-        } else if (!userPaused) {
+        } else {
           startAutoplay();
         }
       });
@@ -267,9 +234,7 @@
 
     applySlidePositions();
     updateDots();
-    syncPauseBtn();
 
-    bindPauseBtn();
     bindDots();
     bindCardClicks();
     bindHoverFocus();
