@@ -176,114 +176,94 @@
     min-height: 240px;
   }
 
-  /* Bottom gradient scrim behind title */
+  /* Bottom gradient scrim — applies to both poster and style-card branches */
   .slide-scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.18) 55%, transparent 100%);
+    background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.30) 45%, transparent 78%);
     pointer-events: none;
   }
 
-  /* Title zone at bottom of slide */
-  .slide-title-zone {
+  /* Bottom caption overlay — shared by both card types */
+  .slide-caption {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     padding: 10px 12px 12px;
+    color: #fff;
   }
 
-  .slide-title {
+  .slide-caption .slide-work {
+    margin: 0 0 3px;
+    font-size: 0.74rem;
+    color: rgba(255,255,255,0.82);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Title + D-day on one row: title left, D-day right */
+  .slide-caption-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .slide-caption .slide-title {
     margin: 0;
     font-size: 0.9rem;
     font-weight: 700;
     color: #fff;
     line-height: 1.35;
+    flex: 1;
+    min-width: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
-  /* D-day chip top-right */
+  .slide-caption .slide-period {
+    margin: 3px 0 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.92);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* D-day pill — inline in caption row, right-aligned via space-between */
   .slide-dday {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: var(--amber-soft);
-    color: var(--amber-ink);
+    background: rgba(0,0,0,0.45);
+    color: #fff;
     border-radius: 999px;
     padding: 3px 9px;
     font-size: 0.72rem;
     font-weight: 700;
+    white-space: nowrap;
+    flex: none;
   }
 
-  /* Style card (no poster) */
+  /* Style card (no poster): allow fill emoji to be absolutely placed */
   .deck-slide.style-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
     padding: 0;
   }
 
-  .style-card-body {
-    flex: 1;
+  /* Large centered emoji fill for no-poster cards */
+  .deck-fill-emoji {
+    position: absolute;
+    inset: 0;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 20px 16px 8px;
-    text-align: center;
-  }
-
-  .style-card-emoji {
-    font-size: 2.2rem;
-    line-height: 1;
-  }
-
-  .style-card-work {
-    margin: 0;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--muted);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .style-card-title {
-    margin: 0;
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: var(--text);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .style-card-region {
-    display: inline-block;
-    border-radius: 999px;
-    padding: 2px 8px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    background: var(--brand-soft);
-    color: var(--brand);
-    border: 1px solid #c2d7ff;
-  }
-
-  /* Style card also has a bottom title zone for cohesion */
-  .deck-slide.style-card .slide-title-zone {
-    background: rgba(255,255,255,0.9);
-    border-top: 1px solid var(--line);
-    padding: 8px 12px 10px;
-  }
-
-  .deck-slide.style-card .slide-title {
-    color: var(--text);
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    font-size: 2.6rem;
   }
 
   /* ── Deck controls (dots) — overlaid on the bottom of the stack ── */
@@ -592,31 +572,18 @@
                         alt="{{ row.event.title }} 포스터"
                         loading="lazy"
                       >
-                      <div class="slide-scrim" aria-hidden="true"></div>
-                      {% if row.dday is not None %}
-                        <span class="slide-dday" aria-hidden="true">D-{{ row.dday }}</span>
-                      {% endif %}
-                      <div class="slide-title-zone" aria-hidden="true">
-                        <p class="slide-title">{{ row.event.title }}</p>
-                      </div>
                     {% else %}
-                      <div class="style-card-body" aria-hidden="true">
-                        <span class="cat-tile cat-{{ row.category_slug }} style-card-emoji"></span>
-                        {% if row.event.work_title %}
-                          <p class="style-card-work">{{ row.event.work_title }}</p>
-                        {% endif %}
-                        <p class="style-card-title">{{ row.event.title }}</p>
-                        {% if row.event.region %}
-                          <span class="style-card-region">{{ row.event.region }}</span>
-                        {% endif %}
-                        {% if row.dday is not None %}
-                          <span class="slide-dday" style="position:static; margin-top:2px;">D-{{ row.dday }}</span>
-                        {% endif %}
-                      </div>
-                      <div class="slide-title-zone" aria-hidden="true">
-                        <p class="slide-title">{{ row.event.title }}</p>
-                      </div>
+                      <span class="cat-tile cat-{{ row.category_slug }} deck-fill-emoji" aria-hidden="true"></span>
                     {% endif %}
+                    <div class="slide-scrim" aria-hidden="true"></div>
+                    <div class="slide-caption" aria-hidden="true">
+                      {% if row.event.work_title %}<p class="slide-work">{{ row.event.work_title }}</p>{% endif %}
+                      <div class="slide-caption-row">
+                        <p class="slide-title">{{ row.event.title }}</p>
+                        {% if row.dday is not None %}<span class="slide-dday">D-{{ row.dday }}</span>{% endif %}
+                      </div>
+                      {% if row.event.start_date and row.event.end_date %}<p class="slide-period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>{% endif %}
+                    </div>
                   </a>
                 </div>
               {% endfor %}
