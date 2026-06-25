@@ -6,6 +6,7 @@
   <title>{% block title %}takulife{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/confirm-modal.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
@@ -13,6 +14,7 @@
   {% block content %}{% endblock %}
   {% include "core/_site_footer.html" %}
   <script defer src="{% static 'js/api.js' %}"></script>
+  <script defer src="{% static 'js/confirm-modal.js' %}"></script>
   <script defer src="{% static 'js/status.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>

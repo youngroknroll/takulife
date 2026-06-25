@@ -30,6 +30,28 @@
 (function () {
   "use strict";
 
+  function removeRowIfOptedIn(button) {
+    if (!button.hasAttribute("data-remove-on-cancel")) { return; }
+    var row = button.closest("article");
+    if (!row) { return; }
+    var mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mql.matches) {
+      row.remove();
+      return;
+    }
+    row.style.transition = "opacity .15s";
+    row.style.opacity = "0";
+    row.addEventListener("transitionend", function () { row.remove(); }, { once: true });
+  }
+
+  // Graceful fallback to native confirm if confirm-modal.js didn't load
+  function askCancel() {
+    if (typeof window.TakuConfirm === "function") {
+      return window.TakuConfirm("취소하시겠습니까?");
+    }
+    return Promise.resolve(window.confirm("취소하시겠습니까?"));
+  }
+
   var STATUS_LABELS = {
     interested: "관심",
     planned: "방문 예정",
@@ -117,6 +139,11 @@
       }
     }
 
+    var willCancel = action !== "change" && statusId && (isActive || action === "unset");
+    if (willCancel && !(await askCancel())) {
+      return;
+    }
+
     setButtonLoading(button, true);
 
     // Discovery semantics (empty action):
@@ -176,6 +203,7 @@
     if (mode === "cancel" && (result.status === 204 || result.ok)) {
       delete button.dataset.statusId;
       setButtonDefault(button);
+      removeRowIfOptedIn(button);
       return;
     }
 
@@ -235,6 +263,10 @@
       return;
     }
 
+    if (interestId && !(await askCancel())) {
+      return;
+    }
+
     window.TakuAPI.setLoading(button, true);
 
     var result;
@@ -277,6 +309,7 @@
 
     if (interestId && (result.status === 204 || result.ok)) {
       setInterestDefault(button);
+      removeRowIfOptedIn(button);
       return;
     }
 
