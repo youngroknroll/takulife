@@ -77,7 +77,7 @@
 }
 
 .confirm-no:hover {
-  background: var(--surface-alt, #f5f5f5);
+  background: var(--surface-alt);
 }
 
 .confirm-yes:hover {
