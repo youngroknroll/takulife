@@ -53,7 +53,7 @@
   }
 
   var STATUS_LABELS = {
-    interested: "관심",
+    interested: "찜",
     planned: "방문 예정",
     visited: "방문 완료",
     missed: "놓침",

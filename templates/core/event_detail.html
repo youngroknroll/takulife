@@ -72,8 +72,15 @@
                 data-event-id="{{ event.id }}"
                 {% if user_interested %}data-interest-id="{{ user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
                 <span aria-hidden="true" data-interest-glyph>{% if user_interested %}♥{% else %}♡{% endif %}</span>
-                관심
+                찜
               </button>
+              <button class="status-btn planned{% if user_status == 'planned' %} active{% endif %}" type="button"
+                data-status-action
+                data-event-id="{{ event.id }}"
+                data-status="planned"
+                {% if user_status == 'planned' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
+                {% if status_slug == 'ended' %}disabled aria-disabled="true" title="종료된 행사는 방문 예정을 설정할 수 없습니다"{% endif %}
+                aria-pressed="{% if user_status == 'planned' %}true{% else %}false{% endif %}">방문 예정</button>
               {% if user_status %}
                 <p class="panel-note" style="margin: 6px 0 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
               {% endif %}

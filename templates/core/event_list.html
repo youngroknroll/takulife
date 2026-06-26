@@ -150,13 +150,8 @@
                       data-event-id="{{ row.event.id }}"
                       {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
                       <span aria-hidden="true" data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
-                      관심
+                      찜
                     </button>
-                    <button class="status-btn planned{% if row.user_status == 'planned' %} active{% endif %}" type="button"
-                      data-status-action
-                      data-event-id="{{ row.event.id }}"
-                      data-status="planned"
-                      {% if row.user_status == 'planned' %}data-status-id="{{ row.user_status_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>방문 예정</button>
                     {% if row.user_status == 'visited' or row.user_status == 'missed' %}
                       <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
                     {% endif %}
