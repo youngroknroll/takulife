@@ -111,6 +111,9 @@
     gap: 7px;
     margin-top: 9px;
   }
+  .status-row .cancel {
+    margin-left: auto;
+  }
   @media (max-width: 900px) {
     .layout {
       grid-template-columns: 1fr;
