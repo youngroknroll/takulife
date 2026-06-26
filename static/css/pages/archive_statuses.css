@@ -3,19 +3,6 @@
     grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.85fr);
     gap: 12px;
   }
-  .panel-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
   .chip {
     border: 1px solid #c7d7f8;
     border-radius: 999px;
@@ -117,10 +104,22 @@
   .summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 9px;
+    grid-column: 1 / -1;
+  }
+  .status-row .cancel {
+    margin-left: auto;
+  }
+  .status-card > .action-link {
+    grid-column: 2;
+    grid-row: 1;
+  }
   @media (max-width: 900px) {
-    .summary-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
     .layout {
       grid-template-columns: 1fr;
     }
@@ -135,9 +134,6 @@
     .nav-links {
       justify-content: start;
     }
-    .summary-grid {
-      grid-template-columns: 1fr;
-    }
     .panel-head,
     .status-card {
       grid-template-columns: 1fr;
@@ -148,5 +144,10 @@
     .action-link {
       margin-top: 10px;
       width: 100%;
+    }
+    .chip {
+      min-height: 34px;
+      padding: 6px 11px;
+      font-size: 0.8rem;
     }
   }

@@ -620,6 +620,19 @@ select:focus {
   color: var(--muted);
 }
 
+/* ── responsive typography: scale large text down on phones ──── */
+@media (max-width: 620px) {
+  .hero h1 {
+    font-size: 1.3rem;
+  }
+  .hero > p {
+    font-size: 0.92rem;
+  }
+  .summary-value {
+    font-size: 1.1rem;
+  }
+}
+
 /* ── nav-links (archive + draft topbars) ────────────────────── */
 .nav-links {
   display: flex;
@@ -986,4 +999,28 @@ select:focus {
   margin: 0 0 5px;
   font-size: 1rem;
   line-height: 1.35;
+}
+
+/* Heading + inline action/filter row; and the chip group container */
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* Unified 빠른 이동 quick-nav: links laid in one row, button-like */
+.side-list--row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.side-list--row a {
+  display: block;
+  text-align: center;
 }

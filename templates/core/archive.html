@@ -26,22 +26,30 @@
       <div class="summary-grid" aria-label="예정 목록 요약">
         <article class="summary-card" aria-label="방문 예정 {{ status_counts.planned }}건">
           <p class="summary-label">방문 예정</p>
-          <p class="summary-value">{{ status_counts.planned }}건</p>
+          <p class="summary-value">{{ status_counts.planned }}</p>
         </article>
         <article class="summary-card" aria-label="방문 완료 {{ status_counts.visited }}건">
           <p class="summary-label">방문 완료</p>
-          <p class="summary-value">{{ status_counts.visited }}건</p>
+          <p class="summary-value">{{ status_counts.visited }}</p>
         </article>
         <article class="summary-card" aria-label="놓침 {{ status_counts.missed }}건">
           <p class="summary-label">놓침</p>
-          <p class="summary-value">{{ status_counts.missed }}건</p>
+          <p class="summary-value">{{ status_counts.missed }}</p>
         </article>
       </div>
     </section>
 
     <div class="layout">
       <main class="panel" aria-label="저장한 행사 기록">
-        <h2>저장한 행사</h2>
+        <div class="panel-head">
+          <h2>저장한 행사</h2>
+          <div class="chips" role="group" aria-label="상태 필터">
+            <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체</a>
+            {% for slug, label in ARCHIVE_STATUS %}
+              <a class="chip{% if selected_status == slug %} active{% endif %}" href="/archive/?status={{ slug }}" aria-label="{{ label }} 필터"{% if selected_status == slug %} aria-current="true"{% endif %}>{{ label }}</a>
+            {% endfor %}
+          </div>
+        </div>
 
         {% if has_statuses %}
           <div class="status-list">
@@ -111,9 +119,10 @@
 
         <div class="right-section">
           <h3>빠른 이동</h3>
-          <ul class="flat-list">
-            <li><a href="/events/">행사 목록에서 새 일정 찾기</a></li>
-            <li><a href="/">홈으로 돌아가기</a></li>
+          <ul class="side-list side-list--row">
+            <li><a href="/archive/statuses/">예정 목록</a></li>
+            <li><a href="/archive/visits/">방문 기록</a></li>
+            <li><a href="/events/">행사 찾기</a></li>
           </ul>
         </div>
 

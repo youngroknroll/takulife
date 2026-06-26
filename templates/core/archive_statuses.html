@@ -77,7 +77,8 @@
                   {% if row.event.start_date and row.event.end_date %}
                     <p class="period">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
                   {% endif %}
-                  <div class="status-row" data-status-error-container>
+                </div>
+                <div class="status-row" data-status-error-container>
                     {% if row.status_slug == 'planned' %}
                       <button class="status-btn visited" type="button" data-status-action="change"
                         data-event-id="{{ row.event.id }}" data-status="visited"
@@ -103,9 +104,9 @@
                       data-status="{{ row.status_slug }}"
                       data-status-id="{{ row.status_id }}"
                       data-remove-on-cancel
-                    >취소</button>
+                      data-confirm-message="삭제하시겠습니까?"
+                    >삭제</button>
                   </div>
-                </div>
                 <a class="action-link" href="/events/{{ row.event.id }}/">상세 보기</a>
               </article>
             {% endfor %}
@@ -124,8 +125,9 @@
       <aside class="side-stack" aria-label="예정 목록 보조 정보">
         <section class="panel">
           <h2>빠른 이동</h2>
-          <ul class="side-list">
+          <ul class="side-list side-list--row">
             <li><a href="/archive/">기록장</a></li>
+            <li><a href="/archive/visits/">방문 기록</a></li>
             <li><a href="/events/">행사 찾기</a></li>
           </ul>
         </section>
