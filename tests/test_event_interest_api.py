@@ -10,19 +10,6 @@ Endpoint coverage:
 import pytest
 
 from archive.models import EventInterest
-from events.models import Event
-
-
-def _make_user(django_user_model, username):
-    return django_user_model.objects.create_user(username=username, password="pw-12345678")
-
-
-def _make_published_event(title="Published Event"):
-    return Event.objects.create(title=title, publish_status=Event.PublishStatus.PUBLISHED)
-
-
-def _make_draft_event(title="Draft Event"):
-    return Event.objects.create(title=title, publish_status=Event.PublishStatus.DRAFT)
 
 
 # ---------------------------------------------------------------------------
@@ -31,9 +18,9 @@ def _make_draft_event(title="Draft Event"):
 
 
 @pytest.mark.django_db
-def test_create_event_interest_returns_201(client, django_user_model):
-    user = _make_user(django_user_model, "interest-create-user")
-    event = _make_published_event("Popup Store A")
+def test_create_event_interest_returns_201(client, make_user, make_event):
+    user = make_user(username="interest-create-user")
+    event = make_event(title="Popup Store A")
 
     client.force_login(user)
     response = client.post(
@@ -55,9 +42,9 @@ def test_create_event_interest_returns_201(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_create_event_interest_duplicate_returns_409(client, django_user_model):
-    user = _make_user(django_user_model, "interest-dup-user")
-    event = _make_published_event("Popup Store B")
+def test_create_event_interest_duplicate_returns_409(client, make_user, make_event):
+    user = make_user(username="interest-dup-user")
+    event = make_event(title="Popup Store B")
 
     client.force_login(user)
     client.post(
@@ -84,9 +71,9 @@ def test_create_event_interest_duplicate_returns_409(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_create_event_interest_rejects_unpublished_event(client, django_user_model):
-    user = _make_user(django_user_model, "interest-draft-user")
-    event = _make_draft_event("Draft Popup")
+def test_create_event_interest_rejects_unpublished_event(client, make_user, make_draft_event):
+    user = make_user(username="interest-draft-user")
+    event = make_draft_event(title="Draft Popup")
 
     client.force_login(user)
     response = client.post(
@@ -105,11 +92,11 @@ def test_create_event_interest_rejects_unpublished_event(client, django_user_mod
 
 
 @pytest.mark.django_db
-def test_event_interest_list_is_user_scoped(client, django_user_model):
-    user = _make_user(django_user_model, "interest-list-user")
-    other = _make_user(django_user_model, "interest-list-other")
-    event_a = _make_published_event("Event A")
-    event_b = _make_published_event("Event B")
+def test_event_interest_list_is_user_scoped(client, make_user, make_event):
+    user = make_user(username="interest-list-user")
+    other = make_user(username="interest-list-other")
+    event_a = make_event(title="Event A")
+    event_b = make_event(title="Event B")
 
     EventInterest.objects.create(user=user, event=event_a)
     EventInterest.objects.create(user=other, event=event_b)
@@ -130,10 +117,10 @@ def test_event_interest_list_is_user_scoped(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_event_interest_list_ordered_newest_first(client, django_user_model):
-    user = _make_user(django_user_model, "interest-order-user")
-    event_a = _make_published_event("Event Order A")
-    event_b = _make_published_event("Event Order B")
+def test_event_interest_list_ordered_newest_first(client, make_user, make_event):
+    user = make_user(username="interest-order-user")
+    event_a = make_event(title="Event Order A")
+    event_b = make_event(title="Event Order B")
 
     first_interest = EventInterest.objects.create(user=user, event=event_a)
     second_interest = EventInterest.objects.create(user=user, event=event_b)
@@ -153,9 +140,9 @@ def test_event_interest_list_ordered_newest_first(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_delete_event_interest_returns_204_then_404(client, django_user_model):
-    user = _make_user(django_user_model, "interest-delete-user")
-    event = _make_published_event("Popup Delete")
+def test_delete_event_interest_returns_204_then_404(client, make_user, make_event):
+    user = make_user(username="interest-delete-user")
+    event = make_event(title="Popup Delete")
 
     client.force_login(user)
     create_response = client.post(
@@ -179,10 +166,10 @@ def test_delete_event_interest_returns_204_then_404(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_cross_user_delete_returns_404_and_row_survives(client, django_user_model):
-    owner = _make_user(django_user_model, "interest-owner")
-    attacker = _make_user(django_user_model, "interest-attacker")
-    event = _make_published_event("Popup IDOR")
+def test_cross_user_delete_returns_404_and_row_survives(client, make_user, make_event):
+    owner = make_user(username="interest-owner")
+    attacker = make_user(username="interest-attacker")
+    event = make_event(title="Popup IDOR")
 
     interest = EventInterest.objects.create(user=owner, event=event)
 
@@ -199,13 +186,13 @@ def test_cross_user_delete_returns_404_and_row_survives(client, django_user_mode
 
 
 @pytest.mark.django_db
-def test_interest_and_planned_status_coexist_on_same_event(client, django_user_model):
+def test_interest_and_planned_status_coexist_on_same_event(client, make_user, make_event):
     """A user can hold both an EventInterest and a planned UserEventStatus
     for the same event simultaneously. Both must be independently retrievable."""
     from archive.models import UserEventStatus
 
-    user = _make_user(django_user_model, "interest-coexist-user")
-    event = _make_published_event("Popup Coexist")
+    user = make_user(username="interest-coexist-user")
+    event = make_event(title="Popup Coexist")
 
     client.force_login(user)
 
@@ -241,8 +228,8 @@ def test_interest_and_planned_status_coexist_on_same_event(client, django_user_m
 
 
 @pytest.mark.django_db
-def test_unauthenticated_cannot_create_event_interest(client):
-    event = _make_published_event("Popup Unauth")
+def test_unauthenticated_cannot_create_event_interest(client, make_event):
+    event = make_event(title="Popup Unauth")
 
     response = client.post(
         "/api/event-interests/",
@@ -265,9 +252,9 @@ def test_unauthenticated_cannot_list_event_interests(client):
 
 
 @pytest.mark.django_db
-def test_archive_interests_page_renders_200(client, django_user_model):
-    user = _make_user(django_user_model, "interests-page-user")
-    event = _make_published_event("Page Event")
+def test_archive_interests_page_renders_200(client, make_user, make_event):
+    user = make_user(username="interests-page-user")
+    event = make_event(title="Page Event")
     EventInterest.objects.create(user=user, event=event)
 
     client.force_login(user)

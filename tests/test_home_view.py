@@ -16,12 +16,6 @@ from django.test import Client
 from events.models import Event
 
 
-def make_event(**kwargs):
-    defaults = {"title": "T", "publish_status": Event.PublishStatus.PUBLISHED}
-    defaults.update(kwargs)
-    return Event.objects.create(**defaults)
-
-
 @pytest.mark.django_db
 class TestHomeCategoryTiles:
     def test_tiles_cover_every_category_in_vocab_order(self):
@@ -38,7 +32,7 @@ class TestHomeCategoryTiles:
             "fan_meeting",
         ]
 
-    def test_tile_counts_only_published_events_per_category(self):
+    def test_tile_counts_only_published_events_per_category(self, make_event):
         make_event(category="popup_store")
         make_event(category="popup_store")
         make_event(category="exhibition")
@@ -65,7 +59,7 @@ class TestHomeCategoryTiles:
 class TestHomeContextCaps:
     """Home view limits each section to 15 items even when more exist."""
 
-    def _make_ongoing(self, today, n):
+    def _make_ongoing(self, make_event, today, n):
         for i in range(n):
             make_event(
                 title=f"Ongoing {i}",
@@ -73,11 +67,11 @@ class TestHomeContextCaps:
                 end_date=today + timedelta(days=30),
             )
 
-    def _make_recent(self, n):
+    def _make_recent(self, make_event, n):
         for i in range(n):
             make_event(title=f"Recent {i}")
 
-    def _make_closing(self, today, n):
+    def _make_closing(self, make_event, today, n):
         for i in range(n):
             make_event(
                 title=f"Closing {i}",
@@ -85,30 +79,24 @@ class TestHomeContextCaps:
                 end_date=today + timedelta(days=i % 5 + 1),  # D+1 to D+5
             )
 
-    def test_ongoing_capped_at_15(self):
+    def test_ongoing_capped_at_15(self, make_event):
         today = date(2026, 6, 26)
-        self._make_ongoing(today, 16)
-        with patch("core.views.date") as mock_date:
-            mock_date.today.return_value = today
-            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        self._make_ongoing(make_event, today, 16)
+        with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["ongoing_events"]) == 15
 
-    def test_recent_capped_at_15(self):
+    def test_recent_capped_at_15(self, make_event):
         today = date(2026, 6, 26)
-        self._make_recent(16)
-        with patch("core.views.date") as mock_date:
-            mock_date.today.return_value = today
-            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        self._make_recent(make_event, 16)
+        with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["recent_events"]) == 15
 
-    def test_closing_capped_at_15(self):
+    def test_closing_capped_at_15(self, make_event):
         today = date(2026, 6, 26)
-        self._make_closing(today, 16)
-        with patch("core.views.date") as mock_date:
-            mock_date.today.return_value = today
-            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        self._make_closing(make_event, today, 16)
+        with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["closing_events"]) == 15
 
@@ -125,30 +113,26 @@ class TestHomeContextCaps:
 class TestHomeClosingWindow:
     """Home view uses a D-5 closing window (not the global D-4 window)."""
 
-    def test_event_ending_today_plus_5_appears_in_closing_events(self):
+    def test_event_ending_today_plus_5_appears_in_closing_events(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+5 closing",
             start_date=today - timedelta(days=1),
             end_date=today + timedelta(days=5),
         )
-        with patch("core.views.date") as mock_date:
-            mock_date.today.return_value = today
-            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         closing_ids = [row["event"].id for row in resp.context["closing_events"]]
         assert event.id in closing_ids
 
-    def test_event_ending_today_plus_6_does_not_appear_in_closing_events(self):
+    def test_event_ending_today_plus_6_does_not_appear_in_closing_events(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+6 not closing",
             start_date=today - timedelta(days=1),
             end_date=today + timedelta(days=6),
         )
-        with patch("core.views.date") as mock_date:
-            mock_date.today.return_value = today
-            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         closing_ids = [row["event"].id for row in resp.context["closing_events"]]
         assert event.id not in closing_ids
@@ -158,7 +142,7 @@ class TestHomeClosingWindow:
 class TestHomeSlidersDropEndedEvents:
     """Sliders hide events whose period has passed (end_date < today)."""
 
-    def test_ended_event_excluded_from_recent_events(self):
+    def test_ended_event_excluded_from_recent_events(self, make_event):
         today = date(2026, 6, 26)
         ended = make_event(
             title="Ended",
@@ -170,20 +154,16 @@ class TestHomeSlidersDropEndedEvents:
             start_date=today - timedelta(days=1),
             end_date=today + timedelta(days=3),
         )
-        with patch("core.views.date") as mock_date:
-            mock_date.today.return_value = today
-            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         recent_ids = [row["event"].id for row in resp.context["recent_events"]]
         assert ended.id not in recent_ids
         assert live.id in recent_ids
 
-    def test_event_without_end_date_kept_in_recent_events(self):
+    def test_event_without_end_date_kept_in_recent_events(self, make_event):
         today = date(2026, 6, 26)
         no_dates = make_event(title="No dates")
-        with patch("core.views.date") as mock_date:
-            mock_date.today.return_value = today
-            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         recent_ids = [row["event"].id for row in resp.context["recent_events"]]
         assert no_dates.id in recent_ids
@@ -202,16 +182,14 @@ class TestHomeClosingStatusDivergence:
     accidental coupling.
     """
 
-    def test_d5_event_in_closing_events_has_status_slug_ongoing(self):
+    def test_d5_event_in_closing_events_has_status_slug_ongoing(self, make_event):
         today = date(2026, 6, 26)
         make_event(
             title="D+5 boundary",
             start_date=today - timedelta(days=1),
             end_date=today + timedelta(days=5),
         )
-        with patch("core.views.date") as mock_date:
-            mock_date.today.return_value = today
-            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         closing_events = resp.context["closing_events"]
         d5_rows = [r for r in closing_events if r["event"].title == "D+5 boundary"]

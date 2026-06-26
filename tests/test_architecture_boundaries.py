@@ -8,14 +8,20 @@ from django.urls import Resolver404, resolve
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_draft_views_do_not_import_events_modules():
-    tree = ast.parse((PROJECT_ROOT / "drafts" / "views.py").read_text())
+def _imported_modules(module_path):
+    """Return all module names a source file imports (Import + ImportFrom)."""
+    tree = ast.parse((PROJECT_ROOT / module_path).read_text())
+    modules = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module is not None:
+            modules.add(node.module)
+        if isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+    return modules
 
-    imported_modules = {
-        node.module
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom) and node.module is not None
-    }
+
+def test_draft_views_do_not_import_events_modules():
+    imported_modules = _imported_modules("drafts/views.py")
 
     assert not {module for module in imported_modules if module == "events" or module.startswith("events.")}
 
@@ -32,14 +38,7 @@ def test_draft_views_do_not_import_events_modules():
     ],
 )
 def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
-    tree = ast.parse((PROJECT_ROOT / module_path).read_text())
-
-    imported_modules = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module is not None:
-            imported_modules.add(node.module)
-        if isinstance(node, ast.Import):
-            imported_modules.update(alias.name for alias in node.names)
+    imported_modules = _imported_modules(module_path)
 
     assert not {
         module
@@ -50,14 +49,7 @@ def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
 
 @pytest.mark.parametrize("module_path", ["archive/models.py", "archive/serializers.py", "archive/services.py", "archive/views.py"])
 def test_archive_modules_do_not_import_drafts_modules(module_path):
-    tree = ast.parse((PROJECT_ROOT / module_path).read_text())
-
-    imported_modules = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module is not None:
-            imported_modules.add(node.module)
-        if isinstance(node, ast.Import):
-            imported_modules.update(alias.name for alias in node.names)
+    imported_modules = _imported_modules(module_path)
 
     assert not {
         module
@@ -86,13 +78,7 @@ def test_core_field_error_response_returns_field_payload():
 
 @pytest.mark.parametrize("module_path", ["core/errors.py"])
 def test_core_errors_do_not_import_domain_modules(module_path):
-    tree = ast.parse((PROJECT_ROOT / module_path).read_text())
-
-    imported_modules = {
-        node.module
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom) and node.module is not None
-    }
+    imported_modules = _imported_modules(module_path)
 
     assert not {
         module
