@@ -208,6 +208,13 @@
     }
 
     if (result.ok) {
+      // Archive change controls (방문 완료 / 놓침 / 되돌리기) opt into a reload so
+      // the row's badge, available actions, and the summary counts all re-derive
+      // server-side instead of being patched piecemeal in the DOM.
+      if (mode === "change" && button.hasAttribute("data-reload-on-success")) {
+        window.location.reload();
+        return;
+      }
       var responseData = result.data || {};
       // A switch moves the single registration from the sibling to this button.
       var fallbackId;
@@ -325,11 +332,15 @@
   function initStatusButtons() {
     var buttons = document.querySelectorAll("button[data-status-action]");
     buttons.forEach(function (button) {
-      var statusSlug = button.dataset.status;
-      if (button.dataset.statusId) {
-        setButtonActive(button, statusSlug);
-      } else {
-        button.setAttribute("aria-pressed", "false");
+      // Only discovery toggle buttons (empty action) reflect their own
+      // registration as an active label. Archive controls with an explicit
+      // action (change / unset) keep their authored label and state.
+      if (!button.dataset.statusAction) {
+        if (button.dataset.statusId) {
+          setButtonActive(button, button.dataset.status);
+        } else {
+          button.setAttribute("aria-pressed", "false");
+        }
       }
       button.addEventListener("click", handleClick);
     });
