@@ -119,13 +119,6 @@
     grid-column: 2;
     grid-row: 1;
   }
-  .side-list--row {
-    grid-template-columns: 1fr 1fr;
-  }
-  .side-list--row a {
-    display: block;
-    text-align: center;
-  }
   @media (max-width: 900px) {
     .layout {
       grid-template-columns: 1fr;

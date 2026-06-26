@@ -1002,3 +1002,12 @@ select:focus {
   gap: 8px;
   margin-bottom: 12px;
 }
+
+/* Unified 빠른 이동 quick-nav: links laid in one row, button-like */
+.side-list--row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.side-list--row a {
+  display: block;
+  text-align: center;
+}
