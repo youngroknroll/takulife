@@ -69,8 +69,8 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
-    /* room below the stack for the hover fan-out to spread into */
-    padding-bottom: 56px;
+    /* fan lifts upward, so only a little breathing room is needed below */
+    padding-bottom: 12px;
   }
 
   /* Deck: relative container that sizes itself to a hidden sizer card */
@@ -85,7 +85,7 @@
     visibility: hidden;
     pointer-events: none;
     width: 100%;
-    min-height: 240px;
+    min-height: 200px;
     border-radius: 12px;
     border: 1px solid transparent;
   }
