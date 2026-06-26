@@ -110,11 +110,26 @@
   }
 }
 
-/* ── mobile: native swipe, arrows hidden ────────────────────── */
+/* ── mobile: native swipe + compact translucent overlay arrows ─ */
 
 @media (max-width: 700px) {
+  /* Keep arrows (JS toggles visibility by scroll position), but shrink
+     them and fade slightly so they overlay card edges without crowding
+     the swipe surface. */
   .hscroll-btn {
-    display: none;
+    width: 30px;
+    height: 30px;
+    font-size: 0.95rem;
+    opacity: 0.8;
+    box-shadow: 0 2px 8px rgba(17, 31, 55, 0.16);
+  }
+
+  .hscroll-prev {
+    left: 4px;
+  }
+
+  .hscroll-next {
+    right: 4px;
   }
 
   .hscroll-track {
