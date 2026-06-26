@@ -69,7 +69,7 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
-    /* room for the dots overlaid on the bottom of the deepest card */
+    /* room below the stack for the hover fan-out to spread into */
     padding-bottom: 56px;
   }
 
@@ -140,6 +140,36 @@
   .deck-card[data-slide="7"],
   .deck-card[data-slide="8"],
   .deck-card[data-slide="9"] { transform: translateY(60px) scale(0.875); opacity: 0;   z-index: 0; }
+
+  /* Hover: split the stack open. Back cards (depth >= 1) fan further down
+     and grow slightly so they peek out from behind the front card, which
+     lifts via its own :hover. First card is untouched here. Motion-gated so
+     reduced-motion users keep the resting stack. */
+  @media (prefers-reduced-motion: no-preference) {
+    /* Bottom anchor: scaling a hovered card grows it upward (its base stays
+       put) so the pointer never loses the strip it is on, and deeper cards
+       are not covered. */
+    .poster-deck:hover .deck-card { transform-origin: bottom center; }
+
+    /* Wide gaps so every back card exposes a comfortably hittable strip
+       (each ~24px tall) instead of a 9px sliver — lets the pointer reach the
+       3rd card and deeper. */
+    .poster-deck:hover .deck-card[data-slide="1"] { transform: translateY(30px)  scale(0.99);  opacity: 1;    }
+    .poster-deck:hover .deck-card[data-slide="2"] { transform: translateY(64px)  scale(0.975); opacity: 0.96; }
+    .poster-deck:hover .deck-card[data-slide="3"] { transform: translateY(98px)  scale(0.96);  opacity: 0.92; }
+    .poster-deck:hover .deck-card[data-slide="4"] { transform: translateY(132px) scale(0.945); opacity: 0.86; }
+    .poster-deck:hover .deck-card[data-slide="5"] { transform: translateY(166px) scale(0.93);  opacity: 0.80; }
+
+    /* Pointer-targeted card: lift it up and forward like picking a card from
+       a poker hand. translateY stays at the split position (base anchored via
+       transform-origin: bottom) so scaling up grows the card upward and on top
+       without nudging the row or sliding over the cards below it. */
+    .poster-deck:hover .deck-card[data-slide="1"]:hover { transform: translateY(30px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
+    .poster-deck:hover .deck-card[data-slide="2"]:hover { transform: translateY(64px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
+    .poster-deck:hover .deck-card[data-slide="3"]:hover { transform: translateY(98px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
+    .poster-deck:hover .deck-card[data-slide="4"]:hover { transform: translateY(132px) scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
+    .poster-deck:hover .deck-card[data-slide="5"]:hover { transform: translateY(166px) scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
+  }
 
   /* Back cards are not interactive until they become the front */
   .deck-card[data-slide]:not([data-slide="0"]) {
@@ -260,36 +290,6 @@
     border-radius: 0;
     font-size: 2.6rem;
   }
-
-  /* ── Deck controls (dots) — overlaid on the bottom of the stack ── */
-  .deck-controls {
-    position: absolute;
-    left: 50%;
-    bottom: 18px;
-    transform: translateX(-50%);
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-  }
-
-  .carousel-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(17, 31, 55, 0.40);
-    cursor: pointer;
-    padding: 0;
-    transition: background 0.2s ease;
-  }
-
-  .carousel-dot[aria-current="true"] {
-    background: var(--brand);
-    box-shadow: 0 0 0 1.5px var(--surface);
-  }
-
 
   /* Empty state when no ongoing events */
   .carousel-empty {

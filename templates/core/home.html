@@ -79,18 +79,6 @@
                 </div>
               {% endfor %}
             </div>
-
-            <div class="deck-controls" data-carousel-controls aria-hidden="true">
-              {% for row in popular_events %}
-                <button
-                  class="carousel-dot"
-                  type="button"
-                  data-dot-index="{{ forloop.counter0 }}"
-                  aria-label="슬라이드 {{ forloop.counter }}으로 이동"
-                  {% if forloop.first %}aria-current="true"{% endif %}
-                ></button>
-              {% endfor %}
-            </div>
           </div>
         {% else %}
           <div class="carousel-empty" aria-hidden="true">

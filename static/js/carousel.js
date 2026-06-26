@@ -6,17 +6,14 @@
  *   - 3500ms auto-advance (disabled under prefers-reduced-motion)
  *   - Click front card  → navigate (allow <a> default)
  *   - Click back card   → advance deck (preventDefault, rotate)
- *   - Dot navigation: clicking a dot rotates deck so that card becomes front
- *   - Manual click/dot advances and resets the autoplay timer (autoplay keeps running)
+ *   - Manual click advances and resets the autoplay timer (autoplay keeps running)
  *   - Pause on mouseenter/focusin, resume on mouseleave/focusout
  *   - aria-live off during autoplay, polite on manual interaction
- *   - n <= 1 events: single card, no auto-advance, no dots needed
+ *   - n <= 1 events: single card, no auto-advance
  *
  * DOM contract (set by home.html template):
  *   [data-carousel]           — deck wrapper (role=region)
  *   [data-carousel-track]     — .poster-deck containing .deck-card elements
- *   [data-carousel-controls]  — controls wrapper (dots)
- *   [data-dot-index]          — dot buttons
  *   [data-card-index]         — deck-card elements (original order index)
  *   [data-slide]              — current visual stack depth (0 = front)
  *
@@ -39,8 +36,6 @@
 
   function createDeck(container) {
     var track = container.querySelector("[data-carousel-track]");
-    var controlsEl = container.querySelector("[data-carousel-controls]");
-    var dots = container.querySelectorAll("[data-dot-index]");
     var cards = track ? track.querySelectorAll("[data-card-index]") : [];
 
     if (!track || cards.length === 0) {
@@ -51,7 +46,6 @@
 
     // Single card: render static, no interaction needed
     if (totalCards <= 1) {
-      if (controlsEl) { controlsEl.setAttribute("aria-hidden", "true"); }
       return;
     }
 
@@ -84,14 +78,6 @@
       }
     }
 
-    function updateDots() {
-      var frontOriginalIndex = indexOrder[0];
-      for (var i = 0; i < dots.length; i++) {
-        var dotIdx = parseInt(dots[i].getAttribute("data-dot-index"), 10);
-        dots[i].setAttribute("aria-current", dotIdx === frontOriginalIndex ? "true" : "false");
-      }
-    }
-
     // ── rotation ───────────────────────────────────────────────────────────
 
     // Move front card to back: indexOrder[0] pops to the end
@@ -100,7 +86,6 @@
       indexOrder.push(front);
 
       applySlidePositions();
-      updateDots();
 
       track.setAttribute("aria-live", isManual ? "polite" : "off");
     }
@@ -112,7 +97,6 @@
       if (pos <= 0) {
         // Already front or not found
         applySlidePositions();
-        updateDots();
         return;
       }
       // Rotate pos times to bring target to front
@@ -121,7 +105,6 @@
         indexOrder.push(front);
       }
       applySlidePositions();
-      updateDots();
 
       track.setAttribute("aria-live", isManual ? "polite" : "off");
     }
@@ -159,21 +142,6 @@
       if (reason === "hover") { hovered = false; }
       if (reason === "focus") { focused = false; }
       startAutoplay();
-    }
-
-    // ── dot clicks ─────────────────────────────────────────────────────────
-    // Advance to the chosen card and reset the autoplay timer (keeps playing).
-
-    function bindDots() {
-      for (var i = 0; i < dots.length; i++) {
-        (function (dot) {
-          dot.addEventListener("click", function () {
-            var target = parseInt(dot.getAttribute("data-dot-index"), 10);
-            rotateTo(target, true);
-            startAutoplay();
-          });
-        })(dots[i]);
-      }
     }
 
     // ── card clicks ────────────────────────────────────────────────────────
@@ -233,17 +201,10 @@
     // ── init ───────────────────────────────────────────────────────────────
 
     applySlidePositions();
-    updateDots();
 
-    bindDots();
     bindCardClicks();
     bindHoverFocus();
     bindReducedMotion();
-
-    // Reveal controls (aria-hidden="true" is the no-JS/CSS-fallback state)
-    if (controlsEl) {
-      controlsEl.removeAttribute("aria-hidden");
-    }
 
     startAutoplay();
   }
