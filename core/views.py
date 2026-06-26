@@ -257,9 +257,14 @@ def _build_archive_status_rows(user_statuses):
 @login_required
 @ensure_csrf_cookie
 def archive(request):
+    selected_status = request.GET.get("status", "")
+    if selected_status not in ARCHIVE_STATUS_SLUGS:
+        selected_status = ""
+
     # Use the shared read helper so the dashboard derives 'missed' identically
-    # to the statuses page (instead of reading raw stored status).
-    user_statuses = list_user_statuses(request.user)
+    # to the statuses page (instead of reading raw stored status). The summary
+    # counts stay unfiltered (aggregate across all statuses).
+    user_statuses = list_user_statuses(request.user, selected_status)
     status_rows = _build_archive_status_rows(user_statuses)
     status_counts = user_status_counts(request.user)
     return render(
@@ -270,6 +275,8 @@ def archive(request):
             "status_rows": status_rows,
             "has_statuses": len(status_rows) > 0,
             "status_counts": status_counts,
+            "selected_status": selected_status,
+            "ARCHIVE_STATUS": ARCHIVE_STATUS,
         },
     )
 

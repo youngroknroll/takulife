@@ -41,7 +41,15 @@
 
     <div class="layout">
       <main class="panel" aria-label="저장한 행사 기록">
-        <h2>저장한 행사</h2>
+        <div class="panel-head">
+          <h2>저장한 행사</h2>
+          <div class="chips" role="group" aria-label="상태 필터">
+            <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체</a>
+            {% for slug, label in ARCHIVE_STATUS %}
+              <a class="chip{% if selected_status == slug %} active{% endif %}" href="/archive/?status={{ slug }}" aria-label="{{ label }} 필터"{% if selected_status == slug %} aria-current="true"{% endif %}>{{ label }}</a>
+            {% endfor %}
+          </div>
+        </div>
 
         {% if has_statuses %}
           <div class="status-list">

@@ -3,19 +3,6 @@
     grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.85fr);
     gap: 12px;
   }
-  .panel-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
   .chip {
     border: 1px solid #c7d7f8;
     border-radius: 999px;
