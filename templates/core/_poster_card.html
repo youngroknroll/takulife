@@ -1,0 +1,62 @@
+{% comment %}
+_poster_card.html — poster-overlay discovery card
+
+Renders one event as a portrait poster tile with the title/meta overlaid on a
+bottom gradient scrim (same visual language as the hero deck's .deck-slide).
+Falls back to a category-colored tile + emoji when the event has no poster.
+
+The title is the ONLY link, stretched over the whole card via CSS (::after), so
+the entire poster is clickable. The 찜 (interest) button on closing cards sits
+above that stretched link with its own z-index, staying an independent control.
+
+Params:
+  row      — display dict from _attach_display (core/views.py): event, dday,
+             category_slug, category_label, user_interested, user_interest_id
+  variant  — "ongoing" | "closing" | "recent" (selects badge + meta + 찜 button)
+
+Context consumed: request.user (via the calling page) is not needed here.
+{% endcomment %}
+{% with ev=row.event %}
+<article class="poster-card hover-lift{% if not ev.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}">
+  {% if ev.poster_image %}
+    <img class="poster-card-img" src="{{ ev.poster_image.url }}" alt="{{ ev.title }} 포스터" loading="lazy">
+  {% else %}
+    <span class="cat-tile cat-{{ row.category_slug }} poster-card-emoji" aria-hidden="true"></span>
+  {% endif %}
+  <div class="poster-card-scrim" aria-hidden="true"></div>
+
+  {% comment %} Ongoing(이번 주 갈 만한 행사): no countdown badge — already visitable.
+     Recent(새 이벤트): "오픈까지 N일"(upcoming) and/or "NEW"(등록 10일 이내) — both may show.
+     Closing: descriptive "종료까지 N일" instead of D-day notation. {% endcomment %}
+  {% if variant == "recent" %}
+    {% if row.status_slug == "upcoming" or row.is_new %}
+      <div class="poster-badges">
+        {% if row.status_slug == "upcoming" %}<span class="poster-badge poster-badge-open">{% if row.dday == 0 %}오늘 오픈{% else %}오픈까지 {{ row.dday }}일{% endif %}</span>{% endif %}
+        {% if row.is_new %}<span class="poster-badge poster-badge-new">NEW</span>{% endif %}
+      </div>
+    {% endif %}
+  {% elif variant == "closing" %}
+    <span class="poster-badge poster-badge-closing">{% if row.dday is None %}종료{% elif row.status_slug == "upcoming" %}{% if row.dday == 0 %}오늘 오픈{% else %}오픈까지 {{ row.dday }}일{% endif %}{% else %}{% if row.dday == 0 %}오늘 종료{% else %}종료까지 {{ row.dday }}일{% endif %}{% endif %}</span>
+  {% endif %}
+
+  {% if variant == "closing" %}
+    <button class="interest-btn poster-interest{% if row.user_interested %} active{% endif %}" type="button"
+      data-interest-toggle
+      data-event-id="{{ ev.id }}"
+      {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
+      <span aria-hidden="true" data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
+      <span class="sr-only">찜{% if row.user_interested %} (등록됨){% endif %}</span>
+    </button>
+  {% endif %}
+
+  <div class="poster-card-caption">
+    <h3 class="poster-card-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
+    {% if ev.location_name %}<p class="poster-card-meta">{{ ev.location_name }}</p>{% endif %}
+    {% if ev.start_date and ev.end_date %}
+      <p class="poster-card-period">{{ ev.start_date|date:"Y/m/d" }} - {% if ev.start_date|date:"Y" == ev.end_date|date:"Y" %}{{ ev.end_date|date:"m/d" }}{% else %}{{ ev.end_date|date:"Y/m/d" }}{% endif %}</p>
+    {% elif ev.start_date %}
+      <p class="poster-card-period">{{ ev.start_date|date:"Y/m/d" }} -</p>
+    {% endif %}
+  </div>
+</article>
+{% endwith %}

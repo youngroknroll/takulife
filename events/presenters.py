@@ -24,6 +24,24 @@ from django.utils import timezone
 
 from .querysets import CLOSING_SOON_DAYS
 
+# An event is flagged "NEW" while fewer than this many days have passed since
+# it was registered (created_at). Day 0..9 = NEW; day 10 = no longer new.
+NEW_WINDOW_DAYS = 10
+
+
+def is_recently_added(event, *, today=None, window_days=NEW_WINDOW_DAYS):
+    """Whether ``event`` was registered within the last ``window_days`` days.
+
+    Returns False when the event has no ``created_at`` (cannot be judged new).
+    Uses date subtraction — never manual date arithmetic.
+    """
+    if today is None:
+        today = timezone.localdate()
+    created = getattr(event, "created_at", None)
+    if created is None:
+        return False
+    return (today - created.date()).days < window_days
+
 
 def derive_event_display(event, *, today=None):
     """Return a dict with 'status' and 'dday' for a single Event instance.
