@@ -110,9 +110,14 @@
     align-items: center;
     gap: 7px;
     margin-top: 9px;
+    grid-column: 1 / -1;
   }
   .status-row .cancel {
     margin-left: auto;
+  }
+  .status-card > .action-link {
+    grid-column: 2;
+    grid-row: 1;
   }
   @media (max-width: 900px) {
     .layout {

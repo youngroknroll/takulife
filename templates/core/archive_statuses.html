@@ -77,7 +77,8 @@
                   {% if row.event.start_date and row.event.end_date %}
                     <p class="period">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
                   {% endif %}
-                  <div class="status-row" data-status-error-container>
+                </div>
+                <div class="status-row" data-status-error-container>
                     {% if row.status_slug == 'planned' %}
                       <button class="status-btn visited" type="button" data-status-action="change"
                         data-event-id="{{ row.event.id }}" data-status="visited"
@@ -106,7 +107,6 @@
                       data-confirm-message="삭제하시겠습니까?"
                     >삭제</button>
                   </div>
-                </div>
                 <a class="action-link" href="/events/{{ row.event.id }}/">상세 보기</a>
               </article>
             {% endfor %}
