@@ -3,13 +3,6 @@
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
     gap: 12px;
   }
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 14px;
-  }
   .timeline {
     display: grid;
     gap: 10px;

@@ -318,6 +318,7 @@ select:focus {
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: var(--shadow);
+  padding: 14px;
 }
 
 /* ── badge / verified / dday chips ─────────────────────────── */
