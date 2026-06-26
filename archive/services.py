@@ -32,6 +32,32 @@ def create_user_event_status(*, user, event, status):
             raise DuplicateUserEventStatusError from exc
 
 
+def mark_visited(*, user_event_status):
+    """Set a status row to visited (e.g. 'I actually went')."""
+    user_event_status.status = UserEventStatus.Status.VISITED
+    user_event_status.save(update_fields=["status", "updated_at"])
+    return user_event_status
+
+
+def mark_missed(*, user_event_status):
+    """Explicitly set a status row to missed. Works before or after the date."""
+    user_event_status.status = UserEventStatus.Status.MISSED
+    user_event_status.save(update_fields=["status", "updated_at"])
+    return user_event_status
+
+
+def revert_to_planned(*, user_event_status):
+    """Pin a row back to planned and opt it out of auto-miss.
+
+    Setting ``missed_overridden`` is what makes the choice stick: otherwise the
+    read-time derivation would re-show an ended planned row as missed.
+    """
+    user_event_status.status = UserEventStatus.Status.PLANNED
+    user_event_status.missed_overridden = True
+    user_event_status.save(update_fields=["status", "missed_overridden", "updated_at"])
+    return user_event_status
+
+
 def create_visit_record(*, user, event, visited_on, short_review=""):
     return VisitRecord.objects.create(
         user=user,

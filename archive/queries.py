@@ -5,6 +5,7 @@ Query/aggregate logic lives here, not in the view layer — mirrors
 drafts/queries.py.
 """
 from django.db.models import Count
+from django.utils import timezone
 
 from .models import EventInterest, UserEventStatus, VisitRecord
 
@@ -13,33 +14,42 @@ from .models import EventInterest, UserEventStatus, VisitRecord
 ARCHIVE_STATUS_SLUGS: tuple[str, ...] = tuple(UserEventStatus.Status.values)
 
 
-def user_status_counts(user) -> dict:
+def user_status_counts(user, *, today=None) -> dict:
     """Return per-status counts for a user's archive statuses.
 
-    Uses a single aggregate query. Every canonical status slug is always
-    present, even when a given status has zero records.
+    Counts use the *derived* status (auto-miss overlay), so a planned event
+    whose run has ended counts under 'missed', not 'planned'. Single aggregate
+    query. Every canonical status slug is always present, even at zero.
     """
+    if today is None:
+        today = timezone.localdate()
     rows = (
         UserEventStatus.objects.filter(user=user)
-        .values("status")
+        .with_derived_status(today=today)
+        .values("derived_status")
         .annotate(count=Count("id"))
     )
-    counts = {row["status"]: row["count"] for row in rows}
+    counts = {row["derived_status"]: row["count"] for row in rows}
     return {slug: counts.get(slug, 0) for slug in ARCHIVE_STATUS_SLUGS}
 
 
-def list_user_statuses(user, status: str = ""):
+def list_user_statuses(user, status: str = "", *, today=None):
     """Return a user's archive statuses, newest first, optionally filtered.
 
+    Filtering and the rows' effective status use the *derived* status overlay,
+    so the 놓침 filter includes auto-missed rows and 방문 예정 excludes them.
     The event is selected together to avoid per-row queries during rendering.
     """
+    if today is None:
+        today = timezone.localdate()
     queryset = (
         UserEventStatus.objects.filter(user=user)
+        .with_derived_status(today=today)
         .select_related("event")
         .order_by("-updated_at")
     )
     if status:
-        queryset = queryset.filter(status=status)
+        queryset = queryset.filter(derived_status=status)
     return queryset
 
 

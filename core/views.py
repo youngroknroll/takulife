@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
@@ -58,11 +59,14 @@ def _attach_display(events, *, today=None, user=None):
     user_status_map = {}
     user_interest_map = {}
     if user is not None and user.is_authenticated and events:
+        status_today = today if today is not None else timezone.localdate()
         user_status_map = {
             event_id: (status_val, status_id)
-            for event_id, status_val, status_id in UserEventStatus.objects.filter(
-                user=user, event_id__in=event_ids
-            ).values_list("event_id", "status", "id")
+            for event_id, status_val, status_id in (
+                UserEventStatus.objects.filter(user=user, event_id__in=event_ids)
+                .with_derived_status(today=status_today)
+                .values_list("event_id", "derived_status", "id")
+            )
         }
         user_interest_map = user_interest_event_ids(user, event_ids=event_ids)
 
@@ -203,7 +207,8 @@ def event_detail(request, event_id):
     if request.user.is_authenticated:
         row = (
             UserEventStatus.objects.filter(user=request.user, event=event)
-            .values_list("status", "id")
+            .with_derived_status(today=timezone.localdate())
+            .values_list("derived_status", "id")
             .first()
         )
         if row:
@@ -240,8 +245,8 @@ def _build_archive_status_rows(user_statuses):
         rows.append(
             {
                 "status_id": us.pk,
-                "status_slug": us.status,
-                "status_label": ARCHIVE_STATUS_LABELS.get(us.status, us.status),
+                "status_slug": us.derived_status,
+                "status_label": ARCHIVE_STATUS_LABELS.get(us.derived_status, us.derived_status),
                 "category_label": CATEGORY_LABELS.get(event.category, event.category),
                 "event": event,
             }
@@ -252,11 +257,9 @@ def _build_archive_status_rows(user_statuses):
 @login_required
 @ensure_csrf_cookie
 def archive(request):
-    user_statuses = (
-        UserEventStatus.objects.filter(user=request.user)
-        .select_related("event")
-        .order_by("-updated_at")
-    )
+    # Use the shared read helper so the dashboard derives 'missed' identically
+    # to the statuses page (instead of reading raw stored status).
+    user_statuses = list_user_statuses(request.user)
     status_rows = _build_archive_status_rows(user_statuses)
     status_counts = user_status_counts(request.user)
     return render(
