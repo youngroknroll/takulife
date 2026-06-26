@@ -234,11 +234,6 @@
   .summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  @media (max-width: 1024px) {
-    .summary-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
   @media (max-width: 860px) {
     .nav-links {
       justify-content: flex-start;
@@ -276,10 +271,5 @@
       font-size: 0.9rem;
       padding: 11px;
       cursor: pointer;
-    }
-  }
-  @media (max-width: 620px) {
-    .summary-grid {
-      grid-template-columns: 1fr;
     }
   }
