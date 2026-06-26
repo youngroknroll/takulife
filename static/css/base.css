@@ -318,6 +318,7 @@ select:focus {
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: var(--shadow);
+  padding: 14px;
 }
 
 /* ── badge / verified / dday chips ─────────────────────────── */
@@ -903,21 +904,7 @@ select:focus {
   color: var(--muted);
 }
 
-/* ── auth pages (login / register) ─────────────────────────── */
-.auth-container {
-  max-width: 420px;
-  margin: 48px auto;
-  padding: 28px 24px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-
-.auth-container h1 {
-  margin: 0 0 18px;
-  font-size: 1.4rem;
-}
+/* ── form fields (shared) ─────────────────────────────────── */
 
 .form-group {
   display: flex;
@@ -939,40 +926,6 @@ select:focus {
   font-size: 0.95rem;
   background: var(--surface);
   color: var(--text);
-}
-
-.btn-primary {
-  width: 100%;
-  margin-top: 4px;
-  padding: 11px 12px;
-  border: none;
-  border-radius: 8px;
-  background: var(--brand);
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  filter: brightness(1.05);
-}
-
-.auth-error {
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--rose-soft);
-  color: var(--rose-ink);
-  font-size: 0.85rem;
-}
-
-ul.auth-error {
-  list-style: none;
-}
-
-ul.auth-error li {
-  margin: 2px 0;
 }
 
 /* Shared archive/draft side panels (extracted from per-page sheets) */
@@ -1010,4 +963,27 @@ ul.auth-error li {
   border-radius: 9px;
   background: #fbfcff;
   padding: 9px 10px;
+}
+
+/* Shared archive status/interest cards (extracted from per-page sheets) */
+.status-card {
+  border: 1px solid #d9e4f4;
+  border-radius: 10px;
+  background: #fbfcff;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+.status-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+.status-card h3 {
+  margin: 0 0 5px;
+  font-size: 1rem;
+  line-height: 1.35;
 }

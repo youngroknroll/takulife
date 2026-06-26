@@ -3,13 +3,6 @@
     grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.85fr);
     gap: 12px;
   }
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 14px;
-  }
   .panel-head {
     display: flex;
     justify-content: space-between;
@@ -45,22 +38,6 @@
     display: grid;
     gap: 10px;
   }
-  .status-card {
-    border: 1px solid #d9e4f4;
-    border-radius: 10px;
-    background: #fbfcff;
-    padding: 12px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: start;
-  }
-  .status-top {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-bottom: 7px;
-  }
   .event-category,
   .user-status {
     border-radius: 999px;
@@ -89,11 +66,6 @@
   .user-status.missed {
     background: var(--rose-soft);
     color: var(--rose-ink);
-  }
-  .status-card h3 {
-    margin: 0 0 5px;
-    font-size: 1rem;
-    line-height: 1.35;
   }
   .meta {
     margin: 0;

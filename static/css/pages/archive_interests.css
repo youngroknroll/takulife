@@ -3,33 +3,23 @@
     grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.85fr);
     gap: 12px;
   }
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 14px;
-  }
   .status-list {
     display: grid;
     gap: 10px;
     margin-top: 12px;
   }
-  .status-card {
-    border: 1px solid #d9e4f4;
-    border-radius: 10px;
-    background: #fbfcff;
-    padding: 12px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: start;
+  .meta {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.84rem;
   }
-  .status-top {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-bottom: 7px;
+  .period {
+    margin: 4px 0 0;
+    color: #2b405c;
+    font-size: 0.88rem;
+  }
+  .status-row {
+    margin-top: 8px;
   }
   .event-category {
     border-radius: 999px;
@@ -39,11 +29,6 @@
     white-space: nowrap;
     background: var(--brand-soft);
     color: var(--brand);
-  }
-  .status-card h3 {
-    margin: 0 0 5px;
-    font-size: 1rem;
-    line-height: 1.35;
   }
   .action-link {
     display: inline-flex;
