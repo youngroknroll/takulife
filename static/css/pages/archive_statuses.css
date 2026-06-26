@@ -111,8 +111,10 @@
     gap: 7px;
     margin-top: 9px;
   }
-  .status-row .cancel {
-    margin-left: auto;
+  .card-side {
+    display: grid;
+    gap: 8px;
+    align-content: start;
   }
   @media (max-width: 900px) {
     .summary-grid {

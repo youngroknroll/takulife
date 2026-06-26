@@ -97,17 +97,19 @@
                         data-event-id="{{ row.event.id }}" data-status="planned"
                         data-status-id="{{ row.status_id }}" data-reload-on-success>방문 예정으로</button>
                     {% endif %}
-                    <button class="status-btn cancel" type="button"
-                      data-status-action="unset"
-                      data-event-id="{{ row.event.id }}"
-                      data-status="{{ row.status_slug }}"
-                      data-status-id="{{ row.status_id }}"
-                      data-remove-on-cancel
-                      data-confirm-message="삭제하시겠습니까?"
-                    >삭제</button>
                   </div>
                 </div>
-                <a class="action-link" href="/events/{{ row.event.id }}/">상세 보기</a>
+                <div class="card-side" data-status-error-container>
+                  <a class="action-link" href="/events/{{ row.event.id }}/">상세 보기</a>
+                  <button class="status-btn cancel" type="button"
+                    data-status-action="unset"
+                    data-event-id="{{ row.event.id }}"
+                    data-status="{{ row.status_slug }}"
+                    data-status-id="{{ row.status_id }}"
+                    data-remove-on-cancel
+                    data-confirm-message="삭제하시겠습니까?"
+                  >삭제</button>
+                </div>
               </article>
             {% endfor %}
           </div>
