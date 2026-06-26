@@ -10,12 +10,16 @@ Usage:
 Context consumed:
   request.user.is_authenticated — provided by Django's auth context processor
   request.user.username         — authenticated user's display name
-  request.user.is_staff         — whether to show the admin link
+  request.user.is_staff         — whether to show the draft management link
+  request.user.is_superuser     — whether to show the Django admin link
 {% endcomment %}
 <nav class="topbar-auth" aria-label="계정 메뉴">
   {% if request.user.is_authenticated %}
     <span class="topbar-username">{{ request.user.username }}</span>
     {% if request.user.is_staff %}
+      <a class="topbar-link" href="/event-drafts/" aria-label="드래프트 관리 페이지">드래프트 관리</a>
+    {% endif %}
+    {% if request.user.is_superuser %}
       <a class="topbar-link" href="/admin/" aria-label="관리자 페이지">관리자</a>
     {% endif %}
     <form class="topbar-logout-form" method="post" action="/accounts/logout/">
