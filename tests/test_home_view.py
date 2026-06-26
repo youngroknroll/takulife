@@ -155,6 +155,41 @@ class TestHomeClosingWindow:
 
 
 @pytest.mark.django_db
+class TestHomeSlidersDropEndedEvents:
+    """Sliders hide events whose period has passed (end_date < today)."""
+
+    def test_ended_event_excluded_from_recent_events(self):
+        today = date(2026, 6, 26)
+        ended = make_event(
+            title="Ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=1),
+        )
+        live = make_event(
+            title="Still running",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=3),
+        )
+        with patch("core.views.date") as mock_date:
+            mock_date.today.return_value = today
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            resp = Client().get("/")
+        recent_ids = [row["event"].id for row in resp.context["recent_events"]]
+        assert ended.id not in recent_ids
+        assert live.id in recent_ids
+
+    def test_event_without_end_date_kept_in_recent_events(self):
+        today = date(2026, 6, 26)
+        no_dates = make_event(title="No dates")
+        with patch("core.views.date") as mock_date:
+            mock_date.today.return_value = today
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            resp = Client().get("/")
+        recent_ids = [row["event"].id for row in resp.context["recent_events"]]
+        assert no_dates.id in recent_ids
+
+
+@pytest.mark.django_db
 class TestHomeClosingStatusDivergence:
     """Guard: a D+5 event selected into closing_events is still status_slug=="ongoing".
 

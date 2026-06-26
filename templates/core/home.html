@@ -133,51 +133,15 @@
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-ongoing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-ongoing" role="region" aria-label="이번 주 갈 만한 행사" tabindex="0">
               {% for row in ongoing_events %}
-                <li>
-                  <article class="card hover-lift">
-                    <span class="cat-tile cat-{{ row.category_slug }}" aria-hidden="true"></span>
-                    <div class="card-body">
-                      <div class="card-lead">
-                        {% if row.dday is not None %}
-                          <span class="dday">D-{{ row.dday }}</span>
-                        {% endif %}
-                        {% if row.category_label %}
-                          <span class="cat-chip cat-{{ row.category_slug }}">{{ row.category_label }}</span>
-                        {% endif %}
-                      </div>
-                      <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
-                      <p class="meta">{{ row.event.location_name }}</p>
-                      {% if row.event.start_date and row.event.end_date %}
-                        <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
-                      {% endif %}
-                    </div>
-                  </article>
-                </li>
+                <li>{% include "core/_poster_card.html" with row=row variant="ongoing" %}</li>
               {% endfor %}
             </ul>
             <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-ongoing">&#8250;</button>
           </div>
         {% else %}
-          <div class="cards">
+          <div class="poster-card-grid">
             {% for row in ongoing_events %}
-              <article class="card hover-lift">
-                <span class="cat-tile cat-{{ row.category_slug }}" aria-hidden="true"></span>
-                <div class="card-body">
-                  <div class="card-lead">
-                    {% if row.dday is not None %}
-                      <span class="dday">D-{{ row.dday }}</span>
-                    {% endif %}
-                    {% if row.category_label %}
-                      <span class="cat-chip cat-{{ row.category_slug }}">{{ row.category_label }}</span>
-                    {% endif %}
-                  </div>
-                  <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
-                  <p class="meta">{{ row.event.location_name }}</p>
-                  {% if row.event.start_date and row.event.end_date %}
-                    <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
-                  {% endif %}
-                </div>
-              </article>
+              {% include "core/_poster_card.html" with row=row variant="ongoing" %}
             {% endfor %}
           </div>
         {% endif %}
@@ -197,53 +161,17 @@
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-closing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-closing" role="region" aria-label="곧 종료되는 행사" tabindex="0">
               {% for row in closing_events %}
-                <li class="deadline-card hover-lift">
-                  <div class="deadline-card-top">
-                    {% if row.dday is not None %}
-                      <span class="deadline-tag">D-{{ row.dday }}</span>
-                    {% else %}
-                      <span class="deadline-tag">종료</span>
-                    {% endif %}
-                    <button class="interest-btn{% if row.user_interested %} active{% endif %}" type="button"
-                      data-interest-toggle
-                      data-event-id="{{ row.event.id }}"
-                      {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
-                      <span aria-hidden="true" data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
-                      <span class="sr-only">찜{% if row.user_interested %} (등록됨){% endif %}</span>
-                      찜
-                    </button>
-                  </div>
-                  <p class="deadline-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></p>
-                  <p class="deadline-meta">{% if row.event.location_name %}{{ row.event.location_name }}{% if row.event.end_date %} · {% endif %}{% endif %}{% if row.event.end_date %}{{ row.event.end_date }} 마감{% endif %}</p>
-                </li>
+                <li>{% include "core/_poster_card.html" with row=row variant="closing" %}</li>
               {% endfor %}
             </ul>
             <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-closing">&#8250;</button>
           </div>
         {% else %}
-          <ul class="deadline-list">
+          <div class="poster-card-grid">
             {% for row in closing_events %}
-              <li class="deadline-item hover-lift">
-                {% if row.dday is not None %}
-                  <span class="deadline-tag">D-{{ row.dday }}</span>
-                {% else %}
-                  <span class="deadline-tag">종료</span>
-                {% endif %}
-                <div>
-                  <p class="deadline-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></p>
-                  <p class="deadline-meta">{% if row.event.location_name %}{{ row.event.location_name }}{% if row.event.end_date %} · {% endif %}{% endif %}{% if row.event.end_date %}{{ row.event.end_date }} 마감{% endif %}</p>
-                </div>
-                <button class="interest-btn{% if row.user_interested %} active{% endif %}" type="button"
-                  data-interest-toggle
-                  data-event-id="{{ row.event.id }}"
-                  {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
-                  <span aria-hidden="true" data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
-                  <span class="sr-only">찜{% if row.user_interested %} (등록됨){% endif %}</span>
-                  찜
-                </button>
-              </li>
+              {% include "core/_poster_card.html" with row=row variant="closing" %}
             {% endfor %}
-          </ul>
+          </div>
         {% endif %}
       {% else %}
         <p class="notice">종료 임박 행사가 없습니다.</p>
@@ -252,7 +180,7 @@
 
     <section class="section" aria-label="새로 등록된 행사">
       <div class="section-head">
-        <h2>새로 등록</h2>
+        <h2>새 이벤트</h2>
         <p class="section-note">관리자 검수 후 게시된 최신 항목</p>
       </div>
       {% if recent_events %}
@@ -261,31 +189,15 @@
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-recent">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-recent" role="region" aria-label="새로 등록된 행사" tabindex="0">
               {% for row in recent_events %}
-                <li>
-                  <article class="recent-card hover-lift">
-                    <p class="recent-label">NEW</p>
-                    <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
-                    <p class="meta">{% if row.event.location_name %}{{ row.event.location_name }} · {% endif %}{{ row.category_label }}</p>
-                    {% if row.event.start_date and row.event.end_date %}
-                      <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
-                    {% endif %}
-                  </article>
-                </li>
+                <li>{% include "core/_poster_card.html" with row=row variant="recent" %}</li>
               {% endfor %}
             </ul>
             <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-recent">&#8250;</button>
           </div>
         {% else %}
-          <div class="recent-grid">
+          <div class="poster-card-grid">
             {% for row in recent_events %}
-              <article class="recent-card hover-lift">
-                <p class="recent-label">NEW</p>
-                <h3><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
-                <p class="meta">{% if row.event.location_name %}{{ row.event.location_name }} · {% endif %}{{ row.category_label }}</p>
-                {% if row.event.start_date and row.event.end_date %}
-                  <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
-                {% endif %}
-              </article>
+              {% include "core/_poster_card.html" with row=row variant="recent" %}
             {% endfor %}
           </div>
         {% endif %}

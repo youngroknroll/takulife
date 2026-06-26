@@ -371,11 +371,6 @@
     color: var(--muted);
     font-size: 0.85rem;
   }
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
   .card {
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -386,13 +381,11 @@
     gap: 10px;
     align-items: start;
   }
-  .card h3 a,
-  .recent-card h3 a {
+  .card h3 a {
     color: inherit;
     text-decoration: none;
   }
-  .card h3 a:focus,
-  .recent-card h3 a:focus {
+  .card h3 a:focus {
     outline: 2px solid #92b4ff;
     outline-offset: 2px;
     border-radius: 4px;
@@ -417,68 +410,171 @@
     gap: 8px;
     flex-wrap: wrap;
   }
-  .deadline-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 8px;
-  }
-  .deadline-item {
+  /* ── Poster-overlay discovery card (shared by ongoing/closing/recent) ──
+     Portrait poster fills the card; title + meta overlay a bottom gradient
+     scrim. Same visual language as the hero deck's .deck-slide/.slide-scrim/
+     .slide-caption. Markup: templates/core/_poster_card.html */
+  .poster-card {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    border-radius: 12px;
+    overflow: hidden;
     border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 10px;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 10px;
-    background: #fcfdff;
+    background: var(--surface);
+    box-shadow: var(--shadow);
   }
-  .deadline-tag {
-    border-radius: 8px;
-    padding: 5px 8px;
-    font-size: 0.73rem;
+  .poster-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+  }
+  /* No-poster fallback: category-soft tile fills the card, large centered emoji */
+  .poster-card.style-card {
+    display: block;
+  }
+  .poster-card-emoji {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    font-size: 2.6rem;
+  }
+  /* Bottom gradient scrim for caption legibility (matches .slide-scrim) */
+  .poster-card-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.30) 45%, transparent 78%);
+    pointer-events: none;
+  }
+  .poster-card-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 12px 12px;
+    color: #fff;
+  }
+  .poster-card-title {
+    margin: 0;
+    font-size: 0.92rem;
     font-weight: 700;
+    line-height: 1.35;
+  }
+  .poster-card-title a {
+    color: #fff;
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* Stretched link: the title anchor covers the whole card so the entire
+     poster is clickable. The 찜 button sits above it via a higher z-index. */
+  .poster-card-title a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .poster-card-title a:focus-visible {
+    outline: 2px solid #92b4ff;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .poster-card-meta {
+    margin: 4px 0 0;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.92);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .poster-card-period {
+    margin: 2px 0 0;
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.82);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Top-left badge pill */
+  .poster-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  /* Wrapper when a card can show more than one badge (recent: 오픈까지 + NEW) */
+  .poster-badges {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .poster-badges .poster-badge {
+    position: static;
+  }
+  .poster-badge-new {
+    background: var(--brand);
+    color: #fff;
+  }
+  .poster-badge-open {
+    background: var(--mint-soft);
+    color: var(--mint-ink);
+  }
+  .poster-badge-closing {
     background: var(--amber-soft);
     color: var(--amber-ink);
   }
-  .deadline-title {
-    margin: 0;
-    font-size: 0.93rem;
+  /* Top-right 찜 button (closing cards): translucent dark circle over poster.
+     Overrides .interest-btn base (min-height/padding/hover/active bg) so the
+     button is a perfect circle, not the base 44px-tall pill. */
+  .poster-interest {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    min-height: 0;
+    padding: 0;
+    gap: 0;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .deadline-meta {
-    margin: 2px 0 0;
-    color: var(--muted);
-    font-size: 0.79rem;
+  .poster-interest:hover,
+  .poster-interest.active:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
   }
-  .recent-grid {
+  .poster-interest.active {
+    background: rgba(0, 0, 0, 0.45);
+    color: #ff6b81;
+  }
+  /* Small-count fallback grid (non-scroller) */
+  .poster-card-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .recent-card {
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 10px;
-    background: #fcfdff;
-  }
-  .recent-label {
-    margin: 0 0 5px;
-    font-size: 0.74rem;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-  .recent-card h3 {
-    margin: 0 0 4px;
-    font-size: 0.9rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
   }
   @media (max-width: 900px) {
-    .cards,
-    .recent-grid {
-      grid-template-columns: 1fr 1fr;
-    }
     .cat-browse {
       grid-template-columns: repeat(3, 1fr);
     }
@@ -498,16 +594,8 @@
       flex-direction: column;
       gap: 4px;
     }
-    .cards,
-    .recent-grid,
-    .deadline-item {
-      grid-template-columns: 1fr;
-    }
     .cat-browse {
       grid-template-columns: repeat(2, 1fr);
-    }
-    .deadline-item {
-      gap: 6px;
     }
   }
 
@@ -521,63 +609,16 @@
     min-width: 180px;
   }
 
-  /* Ongoing event cards */
-  .hscroll-track .card {
-    min-width: 220px;
+  /* Event poster cards (ongoing/closing/recent) — each wrapped in a plain <li> */
+  .hscroll-track li {
     flex: none;
+    width: 168px;
   }
 
-  /* Recent event cards */
-  .hscroll-track .recent-card {
-    min-width: 180px;
-    flex: none;
-  }
-
-  /* Closing soon deadline cards */
-  .deadline-card {
-    min-width: 200px;
-    max-width: 240px;
-    flex: none;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 10px;
-    background: #fcfdff;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .deadline-card-top {
-    display: flex;
-    align-items: flex-start;
-  }
-
-  .deadline-card-top .interest-btn {
-    margin-left: auto;
-    flex-shrink: 0;
-  }
-
-  .deadline-card .deadline-title {
-    margin: 0;
-    font-size: 0.93rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .deadline-card .deadline-meta {
-    margin: 2px 0 0;
-    color: var(--muted);
-    font-size: 0.79rem;
-  }
-
-  /* Responsive: snap-align for home's card classes inside scroller track */
+  /* Responsive: snap-align for home's scroller items */
   @media (max-width: 700px) {
     .hscroll-track .cat-browse-item,
-    .hscroll-track .card,
-    .hscroll-track .recent-card,
-    .deadline-card {
+    .hscroll-track li {
       scroll-snap-align: start;
     }
   }

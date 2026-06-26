@@ -36,7 +36,7 @@ from core.vocab import (
 from drafts.models import EventDraft
 from drafts.queries import draft_review_stats
 from events.models import Event
-from events.presenters import derive_event_display
+from events.presenters import derive_event_display, is_recently_added
 from events.queries import (
     PUBLIC_LISTING_PAGE_SIZE,
     list_published_events,
@@ -84,6 +84,7 @@ def _attach_display(events, *, today=None, user=None):
                 "category_label": CATEGORY_LABELS.get(event.category, event.category),
                 "category_slug": event.category,
                 "dday": display["dday"],
+                "is_new": is_recently_added(event, today=today),
                 "user_status": user_status,
                 "user_status_id": user_status_id,
                 "user_status_label": ARCHIVE_STATUS_LABELS.get(user_status, ""),
@@ -98,7 +99,11 @@ def home(request):
     today = date.today()
     ongoing_qs = list_published_events({"status": "ongoing"}, today=today)
     closing_qs = Event.objects.published().ending_within_days(5, today=today)
-    recent_qs = Event.objects.published().order_by("-id")[:15]
+    # Sliders drop events whose period has already ended (end_date < today);
+    # events without an end_date are kept (cannot be "ended").
+    recent_qs = (
+        Event.objects.published().exclude(end_date__lt=today).order_by("-id")[:15]
+    )
 
     # "카테고리로 둘러보기" tiles: one per vocab category (in vocab order),
     # each carrying the count of published events so users can browse by type.
@@ -111,7 +116,7 @@ def home(request):
         for slug, label in CATEGORY
     ]
 
-    popular_qs = Event.objects.published().most_viewed(5)
+    popular_qs = Event.objects.published().exclude(end_date__lt=today).most_viewed(5)
 
     context = {
         "project_name": "takulife",
