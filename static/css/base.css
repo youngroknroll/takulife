@@ -620,6 +620,19 @@ select:focus {
   color: var(--muted);
 }
 
+/* ── responsive typography: scale large text down on phones ──── */
+@media (max-width: 620px) {
+  .hero h1 {
+    font-size: 1.3rem;
+  }
+  .hero > p {
+    font-size: 0.92rem;
+  }
+  .summary-value {
+    font-size: 1.1rem;
+  }
+}
+
 /* ── nav-links (archive + draft topbars) ────────────────────── */
 .nav-links {
   display: flex;
