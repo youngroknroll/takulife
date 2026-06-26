@@ -100,6 +100,9 @@ body {
     order: 3;
     width: 100%;
   }
+  .site-header .topbar-auth {
+    flex-wrap: wrap;
+  }
 }
 
 /* ── secondary in-page nav (archive / drafts sub-sections) ──── */
