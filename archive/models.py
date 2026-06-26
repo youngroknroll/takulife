@@ -3,6 +3,8 @@ from django.db import models
 
 from events.models import Event
 
+from .querysets import UserEventStatusQuerySet
+
 
 class EventInterest(models.Model):
     user = models.ForeignKey(
@@ -35,8 +37,14 @@ class UserEventStatus(models.Model):
     )
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="archive_user_statuses")
     status = models.CharField(max_length=20, choices=Status.choices)
+    # When True, the user opted this planned row out of auto-miss (revert from
+    # an auto-derived 'missed' back to planned). Only consulted on the planned
+    # branch of the derivation; visited/missed already short-circuit.
+    missed_overridden = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = UserEventStatusQuerySet.as_manager()
 
     class Meta:
         constraints = [

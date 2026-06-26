@@ -78,16 +78,32 @@
                     <p class="period">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
                   {% endif %}
                   <div class="status-row" data-status-error-container>
-                    <button
-                      class="status-btn {{ row.status_slug }} active"
-                      type="button"
-                      data-status-action
+                    {% if row.status_slug == 'planned' %}
+                      <button class="status-btn visited" type="button" data-status-action="change"
+                        data-event-id="{{ row.event.id }}" data-status="visited"
+                        data-status-id="{{ row.status_id }}" data-reload-on-success>방문 완료</button>
+                      <button class="status-btn missed" type="button" data-status-action="change"
+                        data-event-id="{{ row.event.id }}" data-status="missed"
+                        data-status-id="{{ row.status_id }}" data-reload-on-success>놓침</button>
+                    {% elif row.status_slug == 'missed' %}
+                      <button class="status-btn visited" type="button" data-status-action="change"
+                        data-event-id="{{ row.event.id }}" data-status="visited"
+                        data-status-id="{{ row.status_id }}" data-reload-on-success>방문 완료</button>
+                      <button class="status-btn planned" type="button" data-status-action="change"
+                        data-event-id="{{ row.event.id }}" data-status="planned"
+                        data-status-id="{{ row.status_id }}" data-reload-on-success>방문 예정으로</button>
+                    {% elif row.status_slug == 'visited' %}
+                      <button class="status-btn planned" type="button" data-status-action="change"
+                        data-event-id="{{ row.event.id }}" data-status="planned"
+                        data-status-id="{{ row.status_id }}" data-reload-on-success>방문 예정으로</button>
+                    {% endif %}
+                    <button class="status-btn cancel" type="button"
+                      data-status-action="unset"
                       data-event-id="{{ row.event.id }}"
                       data-status="{{ row.status_slug }}"
                       data-status-id="{{ row.status_id }}"
                       data-remove-on-cancel
-                      aria-pressed="true"
-                    >{{ row.status_label }}</button>
+                    >취소</button>
                   </div>
                 </div>
                 <a class="action-link" href="/events/{{ row.event.id }}/">상세 보기</a>

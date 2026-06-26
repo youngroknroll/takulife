@@ -23,6 +23,9 @@ from .services import (
     create_user_event_status,
     create_visit_record,
     create_visit_record_photo,
+    mark_missed,
+    mark_visited,
+    revert_to_planned,
 )
 
 
@@ -114,6 +117,15 @@ class UserEventStatusDetailView(RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete", "head", "options"]
     permission_classes = [IsAuthenticated]
 
+    # Each target status owns a distinct transition (visited/missed leave the
+    # opt-out flag; planned pins it). Routing here keeps the state-transition
+    # rule in the service layer instead of a blind serializer.save().
+    _TRANSITIONS = {
+        UserEventStatus.Status.VISITED: mark_visited,
+        UserEventStatus.Status.MISSED: mark_missed,
+        UserEventStatus.Status.PLANNED: revert_to_planned,
+    }
+
     def get_queryset(self):
         return UserEventStatus.objects.filter(user=self.request.user)
 
@@ -121,6 +133,14 @@ class UserEventStatusDetailView(RetrieveUpdateDestroyAPIView):
         if self.request.method == "PATCH":
             return UserEventStatusUpdateSerializer
         return UserEventStatusSerializer
+
+    def perform_update(self, serializer):
+        target = serializer.validated_data.get("status")
+        transition = self._TRANSITIONS.get(target)
+        if transition is None:
+            serializer.save()
+            return
+        transition(user_event_status=serializer.instance)
 
 
 class VisitRecordPagination(PageNumberPagination):

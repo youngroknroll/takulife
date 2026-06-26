@@ -254,6 +254,53 @@ def test_authenticated_user_can_patch_event_status(client, django_user_model):
 
 
 @pytest.mark.django_db
+def test_patch_to_planned_pins_override_so_it_stays_planned(client, django_user_model):
+    """Reverting an auto-missed (past planned) row to planned must stick.
+
+    Without the override flag the read-time derivation would immediately show
+    'missed' again. The PATCH must persist missed_overridden so the user's
+    'keep planned' choice wins.
+    """
+    from datetime import date
+
+    from archive.models import UserEventStatus
+
+    user = django_user_model.objects.create_user(username="revert-user", password="secret")
+    event = Event.objects.create(
+        title="Long-past event",
+        publish_status=Event.PublishStatus.PUBLISHED,
+        start_date=date(2020, 1, 1),
+        end_date=date(2020, 1, 2),  # firmly in the past relative to any real today
+    )
+    client.force_login(user)
+    create_response = client.post(
+        "/api/user-event-statuses/",
+        {"event": event.id, "status": "planned"},
+        content_type="application/json",
+    )
+    status_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/api/user-event-statuses/{status_id}/",
+        {"status": "planned"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    row = UserEventStatus.objects.get(pk=status_id)
+    assert row.status == "planned"
+    assert row.missed_overridden is True
+    # The derived view keeps it planned, not missed.
+    assert (
+        UserEventStatus.objects.filter(pk=status_id)
+        .with_derived_status(today=date.today())
+        .first()
+        .derived_status
+        == "planned"
+    )
+
+
+@pytest.mark.django_db
 def test_user_event_status_put_is_not_allowed(client, django_user_model):
     user = django_user_model.objects.create_user(username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
