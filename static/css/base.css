@@ -1012,3 +1012,26 @@ ul.auth-error li {
   background: #fbfcff;
   padding: 9px 10px;
 }
+
+/* Shared archive status/interest cards (extracted from per-page sheets) */
+.status-card {
+  border: 1px solid #d9e4f4;
+  border-radius: 10px;
+  background: #fbfcff;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+.status-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+.status-card h3 {
+  margin: 0 0 5px;
+  font-size: 1rem;
+  line-height: 1.35;
+}
