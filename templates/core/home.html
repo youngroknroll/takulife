@@ -73,7 +73,7 @@
                         <p class="slide-title">{{ row.event.title }}</p>
                         {% if row.dday is not None %}<span class="slide-dday">D-{{ row.dday }}</span>{% endif %}
                       </div>
-                      {% if row.event.start_date and row.event.end_date %}<p class="slide-period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>{% endif %}
+                      {% if row.event.start_date and row.event.end_date %}<p class="slide-period">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</p>{% elif row.event.start_date %}<p class="slide-period">{{ row.event.start_date|date:"Y/m/d" }} -</p>{% endif %}
                     </div>
                   </a>
                 </div>

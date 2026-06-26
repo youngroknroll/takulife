@@ -1,220 +1,161 @@
 /**
- * carousel.js — Home hero stacked card deck for TakuLog
+ * carousel.js — Home hero card fan (tarot-style hand) for TakuLog  [PROTOTYPE]
  *
- * Handles:
- *   - Index-array rotation: front card cycles to back (unshift + pop pattern)
- *   - 3500ms auto-advance (disabled under prefers-reduced-motion)
- *   - Click front card  → navigate (allow <a> default)
- *   - Click back card   → advance deck (preventDefault, rotate)
- *   - Manual click advances and resets the autoplay timer (autoplay keeps running)
- *   - Pause on mouseenter/focusin, resume on mouseleave/focusout
- *   - aria-live off during autoplay, polite on manual interaction
- *   - n <= 1 events: single card, no auto-advance
+ * Cards are laid out as a horizontal, slightly-rotated fan (like a tarot spread
+ * / hand of cards). As the pointer moves across the deck, the card nearest the
+ * cursor lifts and straightens, and the cards to its left/right part away from
+ * it — so the selection follows the cursor naturally. Click navigates.
  *
  * DOM contract (set by home.html template):
  *   [data-carousel]           — deck wrapper (role=region)
  *   [data-carousel-track]     — .poster-deck containing .deck-card elements
  *   [data-card-index]         — deck-card elements (original order index)
- *   [data-slide]              — current visual stack depth (0 = front)
  *
- * All DOM text writes use textContent only (no innerHTML with data).
+ * Reduced-motion: renders a static fan (no cursor tracking), still clickable.
  */
 
 (function () {
   "use strict";
 
-  var AUTOPLAY_INTERVAL = 3500;
-  var MAX_VISIBLE_DEPTH = 5; /* data-slide 0..5 have distinct positions; 6+ capped */
-
   var mqlReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function prefersReducedMotion() { return mqlReducedMotion.matches; }
 
-  function prefersReducedMotion() {
-    return mqlReducedMotion.matches;
-  }
+  // Fan geometry (px / deg)
+  var REST_X = 58;      // horizontal gap between adjacent card slots
+  var REST_ANGLE = 6;   // fan rotation per step from center
+  var REST_ARC = 7;     // downward arc per step from center
+  var LIFT = 28;        // how far the focused card rises
+  var PART = 38;        // extra spread applied to cards beside the focused one
+  var FOCUS_SCALE = 1.16;
+  var AUTO_INTERVAL = 1300; // auto-shuffle: focus sweeps one card per tick
 
-  // ── deck factory ───────────────────────────────────────────────────────────
-
-  function createDeck(container) {
+  function createFan(container) {
     var track = container.querySelector("[data-carousel-track]");
-    var cards = track ? track.querySelectorAll("[data-card-index]") : [];
+    var cards = track
+      ? Array.prototype.slice.call(track.querySelectorAll("[data-card-index]"))
+      : [];
 
-    if (!track || cards.length === 0) {
-      return;
-    }
+    if (!track || cards.length === 0) { return; }
 
-    var totalCards = cards.length;
+    track.classList.add("fan");
 
-    // Single card: render static, no interaction needed
-    if (totalCards <= 1) {
-      return;
-    }
+    var n = cards.length;
+    var center = (n - 1) / 2;
+    var focused = null;
 
-    // indexOrder[0] = original card index currently at front (data-slide=0)
-    // e.g. [0, 1, 2, 3] initially
-    var indexOrder = [];
-    for (var k = 0; k < totalCards; k++) {
-      indexOrder.push(k);
-    }
+    // ── layout ────────────────────────────────────────────────────────────
+    // f === null → resting fan. Otherwise card f is lifted and neighbours part.
+    function applyLayout(f) {
+      for (var i = 0; i < n; i++) {
+        var card = cards[i];
+        var tx = (i - center) * REST_X;
+        var ty = Math.abs(i - center) * REST_ARC;
+        var rot = (i - center) * REST_ANGLE;
+        var scale = 1;
+        var z = 50 - Math.round(Math.abs(i - center));
 
-    var timer = null;
-    var hovered = false;
-    var focused = false;
-
-    // ── visual update ──────────────────────────────────────────────────────
-
-    function applySlidePositions() {
-      for (var i = 0; i < indexOrder.length; i++) {
-        var cardOriginalIndex = indexOrder[i];
-        var card = cards[cardOriginalIndex];
-        var depth = i; // 0 = front
-        var depthAttr = depth > MAX_VISIBLE_DEPTH ? String(MAX_VISIBLE_DEPTH + 1) : String(depth);
-        card.setAttribute("data-slide", depthAttr);
-
-        // Front card anchor is focusable/navigable; back cards get tabindex=-1
-        var anchor = card.querySelector("a");
-        if (anchor) {
-          anchor.setAttribute("tabindex", depth === 0 ? "0" : "-1");
+        if (f !== null) {
+          if (i === f) {
+            ty = -LIFT;
+            rot = 0;
+            scale = FOCUS_SCALE;
+            z = 100;
+          } else {
+            tx += i < f ? -PART : PART; // part away from the focused card
+            z = 60 - Math.abs(i - f);
+          }
         }
+
+        card.style.transform =
+          "translateX(" + tx + "px) translateY(" + ty + "px) " +
+          "rotate(" + rot + "deg) scale(" + scale + ")";
+        card.style.zIndex = String(z);
       }
     }
 
-    // ── rotation ───────────────────────────────────────────────────────────
-
-    // Move front card to back: indexOrder[0] pops to the end
-    function rotateForward(isManual) {
-      var front = indexOrder.shift();
-      indexOrder.push(front);
-
-      applySlidePositions();
-
-      track.setAttribute("aria-live", isManual ? "polite" : "off");
+    // Map a pointer X to the nearest resting slot index (stable: based on the
+    // resting slot centers, not the current parted positions).
+    function focusFromX(clientX) {
+      var rect = track.getBoundingClientRect();
+      var rel = clientX - rect.left - rect.width / 2;
+      var idx = Math.round(rel / REST_X + center);
+      if (idx < 0) { idx = 0; }
+      if (idx > n - 1) { idx = n - 1; }
+      return idx;
     }
 
-    // Rotate deck so that the card with original index `targetIndex` is front
-    function rotateTo(targetIndex, isManual) {
-      // Find position of targetIndex in indexOrder
-      var pos = indexOrder.indexOf(targetIndex);
-      if (pos <= 0) {
-        // Already front or not found
-        applySlidePositions();
-        return;
+    // ── auto-shuffle ──────────────────────────────────────────────────────
+    // Idle animation: the focus sweeps back and forth across the fan, so the
+    // deck looks alive. Pointing at the deck stops it; leaving resumes it.
+    var autoTimer = null;
+    var autoIdx = Math.round(center);
+    var autoDir = 1;
+
+    function autoTick() {
+      autoIdx += autoDir;
+      if (autoIdx >= n - 1) { autoIdx = n - 1; autoDir = -1; }
+      else if (autoIdx <= 0) { autoIdx = 0; autoDir = 1; }
+      focused = autoIdx;
+      applyLayout(autoIdx);
+    }
+
+    function startAuto() {
+      if (prefersReducedMotion()) { return; }
+      stopAuto();
+      autoTimer = window.setInterval(autoTick, AUTO_INTERVAL);
+    }
+
+    function stopAuto() {
+      if (autoTimer !== null) {
+        window.clearInterval(autoTimer);
+        autoTimer = null;
       }
-      // Rotate pos times to bring target to front
-      for (var r = 0; r < pos; r++) {
-        var front = indexOrder.shift();
-        indexOrder.push(front);
-      }
-      applySlidePositions();
-
-      track.setAttribute("aria-live", isManual ? "polite" : "off");
     }
 
-    // ── autoplay ───────────────────────────────────────────────────────────
-
-    function shouldAutoplay() {
-      return !prefersReducedMotion() && !hovered && !focused;
-    }
-
-    function startAutoplay() {
-      stopAutoplay();
-      if (!shouldAutoplay()) { return; }
-      timer = setInterval(function () {
-        if (shouldAutoplay()) {
-          rotateForward(false);
+    // ── interaction ─────────────────────────────────────────────────────────
+    if (!prefersReducedMotion()) {
+      // Pointer over the deck takes control and halts the shuffle.
+      track.addEventListener("mouseenter", stopAuto);
+      track.addEventListener("mousemove", function (e) {
+        stopAuto();
+        var f = focusFromX(e.clientX);
+        if (f !== focused) {
+          focused = f;
+          applyLayout(f);
         }
-      }, AUTOPLAY_INTERVAL);
-    }
-
-    function stopAutoplay() {
-      if (timer !== null) {
-        clearInterval(timer);
-        timer = null;
-      }
-    }
-
-    function pauseAutoplay(reason) {
-      if (reason === "hover") { hovered = true; }
-      if (reason === "focus") { focused = true; }
-      stopAutoplay();
-    }
-
-    function resumeAutoplay(reason) {
-      if (reason === "hover") { hovered = false; }
-      if (reason === "focus") { focused = false; }
-      startAutoplay();
-    }
-
-    // ── card clicks ────────────────────────────────────────────────────────
-    // Front card (data-slide=0): let <a> navigate (don't preventDefault)
-    // Back card (data-slide!=0): advance deck, preventDefault
-
-    function bindCardClicks() {
-      for (var i = 0; i < cards.length; i++) {
-        (function (card) {
-          card.addEventListener("click", function (evt) {
-            var depth = card.getAttribute("data-slide");
-            if (depth !== "0") {
-              evt.preventDefault();
-              evt.stopPropagation();
-              // Bring this card to front
-              var origIdx = parseInt(card.getAttribute("data-card-index"), 10);
-              rotateTo(origIdx, true);
-              startAutoplay();
-            }
-            // depth === "0": allow default navigation
-          });
-        })(cards[i]);
-      }
-    }
-
-    // ── hover and focus pause ──────────────────────────────────────────────
-
-    function bindHoverFocus() {
-      container.addEventListener("mouseenter", function () {
-        pauseAutoplay("hover");
       });
-      container.addEventListener("mouseleave", function () {
-        resumeAutoplay("hover");
+      track.addEventListener("mouseleave", function () {
+        startAuto(); // resume sweeping
       });
-      container.addEventListener("focusin", function () {
-        pauseAutoplay("focus");
+
+      // Keyboard: focusing a card halts the shuffle and lifts it.
+      cards.forEach(function (card, i) {
+        card.addEventListener("focusin", function () {
+          stopAuto();
+          focused = i;
+          applyLayout(i);
+        });
       });
       container.addEventListener("focusout", function (evt) {
         if (!container.contains(evt.relatedTarget)) {
-          resumeAutoplay("focus");
+          startAuto();
         }
       });
     }
 
-    // ── reduced-motion listener ────────────────────────────────────────────
-
-    function bindReducedMotion() {
-      mqlReducedMotion.addEventListener("change", function () {
-        if (prefersReducedMotion()) {
-          stopAutoplay();
-        } else {
-          startAutoplay();
-        }
-      });
+    // Initial state: static fan under reduced-motion, else start the shuffle.
+    if (prefersReducedMotion()) {
+      applyLayout(null);
+    } else {
+      applyLayout(autoIdx);
+      startAuto();
     }
-
-    // ── init ───────────────────────────────────────────────────────────────
-
-    applySlidePositions();
-
-    bindCardClicks();
-    bindHoverFocus();
-    bindReducedMotion();
-
-    startAutoplay();
   }
-
-  // ── bootstrap ─────────────────────────────────────────────────────────────
 
   function init() {
     var containers = document.querySelectorAll("[data-carousel]");
     for (var i = 0; i < containers.length; i++) {
-      createDeck(containers[i]);
+      createFan(containers[i]);
     }
   }
 
