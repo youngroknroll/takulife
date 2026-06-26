@@ -324,38 +324,6 @@ select:focus {
   padding: 14px;
 }
 
-/* ── badge / verified / dday chips ─────────────────────────── */
-.badge {
-  display: inline-block;
-  border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: var(--brand-soft);
-  color: var(--brand);
-}
-
-.verified {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  background: var(--mint-soft);
-  color: var(--mint-ink);
-}
-
-.dday {
-  border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: var(--amber-soft);
-  color: var(--amber-ink);
-}
-
 /* ── category color system (tiles + chips) ─────────────────── */
 /*
  * Shared category visual language: a left color tile (.cat-tile) acts as a

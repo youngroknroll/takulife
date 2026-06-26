@@ -1,5 +1,5 @@
 /**
- * carousel.js — Home hero card fan (tarot-style hand) for TakuLog  [PROTOTYPE]
+ * carousel.js — Home hero card fan (tarot-style hand) for TakuLog
  *
  * Cards are laid out as a horizontal, slightly-rotated fan (like a tarot spread
  * / hand of cards). As the pointer moves across the deck, the card nearest the
