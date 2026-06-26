@@ -44,12 +44,15 @@
     row.addEventListener("transitionend", function () { row.remove(); }, { once: true });
   }
 
-  // Graceful fallback to native confirm if confirm-modal.js didn't load
-  function askCancel() {
+  // Graceful fallback to native confirm if confirm-modal.js didn't load.
+  // The message is overridable per button via data-confirm-message (e.g. a
+  // "삭제" button confirms with "삭제하시겠습니까?" instead of the cancel default).
+  function askCancel(message) {
+    var msg = message || "취소하시겠습니까?";
     if (typeof window.TakuConfirm === "function") {
-      return window.TakuConfirm("취소하시겠습니까?");
+      return window.TakuConfirm(msg);
     }
-    return Promise.resolve(window.confirm("취소하시겠습니까?"));
+    return Promise.resolve(window.confirm(msg));
   }
 
   var STATUS_LABELS = {
@@ -140,7 +143,7 @@
     }
 
     var willCancel = action !== "change" && statusId && (isActive || action === "unset");
-    if (willCancel && !(await askCancel())) {
+    if (willCancel && !(await askCancel(button.dataset.confirmMessage))) {
       return;
     }
 
@@ -270,7 +273,7 @@
       return;
     }
 
-    if (interestId && !(await askCancel())) {
+    if (interestId && !(await askCancel(button.dataset.confirmMessage))) {
       return;
     }
 

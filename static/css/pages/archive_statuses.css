@@ -104,6 +104,16 @@
   .summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 9px;
+  }
+  .status-row .cancel {
+    margin-left: auto;
+  }
   @media (max-width: 900px) {
     .summary-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));

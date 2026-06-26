@@ -103,7 +103,8 @@
                       data-status="{{ row.status_slug }}"
                       data-status-id="{{ row.status_id }}"
                       data-remove-on-cancel
-                    >취소</button>
+                      data-confirm-message="삭제하시겠습니까?"
+                    >삭제</button>
                   </div>
                 </div>
                 <a class="action-link" href="/events/{{ row.event.id }}/">상세 보기</a>
