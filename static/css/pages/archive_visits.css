@@ -10,7 +10,7 @@
   .visit-card {
     border: 1px solid #d9e4f4;
     border-radius: 10px;
-    background: #fbfcff;
+    background: var(--bg-card);
     padding: 12px;
   }
   .visit-card-top {
@@ -103,9 +103,9 @@
     font-size: 0.82rem;
   }
   .photo-upload-btn {
-    border: 1px solid #c7d7f8;
+    border: 1px solid var(--border-soft);
     border-radius: 8px;
-    background: #f8fbff;
+    background: var(--bg-soft);
     color: #24456f;
     font-size: 0.82rem;
     font-weight: 600;
@@ -161,7 +161,7 @@
   .form-group select,
   .form-group input[type="date"],
   .form-group input[type="text"] {
-    border: 1px solid #c7d7f8;
+    border: 1px solid var(--border-soft);
     border-radius: 8px;
     padding: 8px 10px;
     font-size: 0.9rem;
@@ -203,9 +203,6 @@
   @media (max-width: 720px) {
     .page {
       padding: 18px 14px 64px;
-    }
-    .nav-links {
-      justify-content: start;
     }
     .summary-grid {
       grid-template-columns: 1fr;

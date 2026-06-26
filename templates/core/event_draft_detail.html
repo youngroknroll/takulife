@@ -29,7 +29,7 @@
           행사 후보입니다. 추출 필드를 확인하고 수정한 뒤 승인 또는 반려하세요.
         </p>
       </div>
-      <span class="status-chip {{ draft.review_status }}">{{ draft.review_status }}</span>
+      <span class="status-chip {{ draft.review_status }} review-status-{{ draft.review_status }}">{{ draft.review_status }}</span>
     </section>
 
     {% if not is_pending %}

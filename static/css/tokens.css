@@ -30,6 +30,11 @@
   --rose-ink: #be123c;
   --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
 
+  /* Repeated neutral literals tokenized (value-identical substitutions). */
+  --border-soft: #c7d7f8;
+  --bg-soft: #f8fbff;
+  --bg-card: #fbfcff;
+
   /* Category palette — low-saturation tones, kept distinct from the four
      status hues (pink/brand/mint/grey) so category and status never clash.
      Used by .cat-tile color tiles and .event-type category chips. */
