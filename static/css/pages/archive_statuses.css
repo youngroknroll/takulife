@@ -143,4 +143,9 @@
       margin-top: 10px;
       width: 100%;
     }
+    .chip {
+      min-height: 34px;
+      padding: 6px 11px;
+      font-size: 0.8rem;
+    }
   }
