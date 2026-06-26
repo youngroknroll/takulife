@@ -40,12 +40,12 @@
                   </div>
                   <h3>{{ row.event.title }}</h3>
                   {% if row.event.location_name %}
-                    <p class="meta" style="margin:0;color:var(--muted);font-size:0.84rem;">{{ row.event.location_name }}</p>
+                    <p class="meta">{{ row.event.location_name }}</p>
                   {% endif %}
                   {% if row.event.start_date and row.event.end_date %}
-                    <p class="period" style="margin:4px 0 0;color:#2b405c;font-size:0.88rem;">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
+                    <p class="period">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
                   {% endif %}
-                  <div class="status-row" style="margin-top:8px;" data-status-error-container>
+                  <div class="status-row" data-status-error-container>
                     <button class="interest-btn active" type="button"
                       data-interest-toggle
                       data-event-id="{{ row.event.id }}"
