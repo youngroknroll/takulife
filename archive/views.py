@@ -83,7 +83,8 @@ class EventInterestListCreateView(ListCreateAPIView):
         try:
             interest = create_event_interest(
                 user=request.user,
-                event=serializer.validated_data["event"],
+                event=serializer.validated_data.get("event"),
+                personal_entry=serializer.validated_data.get("personal_entry"),
             )
         except DuplicateEventInterestError:
             return Response(
@@ -134,7 +135,8 @@ class UserEventStatusListCreateView(ListCreateAPIView):
         try:
             status_object = create_user_event_status(
                 user=request.user,
-                event=serializer.validated_data["event"],
+                event=serializer.validated_data.get("event"),
+                personal_entry=serializer.validated_data.get("personal_entry"),
                 status=serializer.validated_data["status"],
             )
         except DuplicateUserEventStatusError:

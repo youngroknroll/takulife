@@ -324,6 +324,7 @@ def test_user_event_status_put_is_not_allowed(client, django_user_model):
     assert client.get(f"/api/user-event-statuses/{status_id}/").json() == {
         "id": status_id,
         "event": event.id,
+        "personal_entry": None,
         "status": "planned",
     }
 

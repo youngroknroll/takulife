@@ -12,14 +12,41 @@ class EventInterest(models.Model):
         on_delete=models.CASCADE,
         related_name="archive_event_interests",
     )
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="archive_user_interests")
+    # subject = exactly one of event (official) or personal_entry (unofficial).
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="archive_user_interests",
+        null=True,
+        blank=True,
+    )
+    personal_entry = models.ForeignKey(
+        "PersonalEntry",
+        on_delete=models.CASCADE,
+        related_name="archive_user_interests",
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
+            models.CheckConstraint(
+                name="eventinterest_exactly_one_subject",
+                condition=(
+                    models.Q(event__isnull=False, personal_entry__isnull=True)
+                    | models.Q(event__isnull=True, personal_entry__isnull=False)
+                ),
+            ),
             models.UniqueConstraint(
                 fields=["user", "event"],
+                condition=models.Q(event__isnull=False),
                 name="unique_archive_user_event_interest",
+            ),
+            models.UniqueConstraint(
+                fields=["user", "personal_entry"],
+                condition=models.Q(personal_entry__isnull=False),
+                name="unique_archive_user_personal_interest",
             ),
         ]
 
@@ -35,7 +62,21 @@ class UserEventStatus(models.Model):
         on_delete=models.CASCADE,
         related_name="archive_event_statuses",
     )
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="archive_user_statuses")
+    # subject = exactly one of event (official) or personal_entry (unofficial).
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="archive_user_statuses",
+        null=True,
+        blank=True,
+    )
+    personal_entry = models.ForeignKey(
+        "PersonalEntry",
+        on_delete=models.CASCADE,
+        related_name="archive_user_statuses",
+        null=True,
+        blank=True,
+    )
     status = models.CharField(max_length=20, choices=Status.choices)
     # When True, the user opted this planned row out of auto-miss (revert from
     # an auto-derived 'missed' back to planned). Only consulted on the planned
@@ -48,9 +89,22 @@ class UserEventStatus(models.Model):
 
     class Meta:
         constraints = [
+            models.CheckConstraint(
+                name="usereventstatus_exactly_one_subject",
+                condition=(
+                    models.Q(event__isnull=False, personal_entry__isnull=True)
+                    | models.Q(event__isnull=True, personal_entry__isnull=False)
+                ),
+            ),
             models.UniqueConstraint(
                 fields=["user", "event"],
+                condition=models.Q(event__isnull=False),
                 name="unique_archive_user_event_status",
+            ),
+            models.UniqueConstraint(
+                fields=["user", "personal_entry"],
+                condition=models.Q(personal_entry__isnull=False),
+                name="unique_archive_user_personal_status",
             ),
         ]
 

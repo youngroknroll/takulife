@@ -32,33 +32,68 @@ class PersonalEntrySerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
 
-class EventInterestSerializer(serializers.ModelSerializer):
+class _SubjectScopedPersonalEntryMixin:
+    """Scopes the ``personal_entry`` field to the requester and enforces that
+    exactly one subject (event or personal_entry) is supplied.
+
+    Shared by the interest/status serializers so an archive action can point at
+    an official Event OR the user's own unofficial PersonalEntry — never both,
+    never neither, and never another user's private item.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        if request is not None and request.user.is_authenticated:
+            self.fields["personal_entry"].queryset = PersonalEntry.objects.filter(
+                user=request.user
+            )
+
+    def validate(self, attrs):
+        event = attrs.get("event")
+        personal_entry = attrs.get("personal_entry")
+        if bool(event) == bool(personal_entry):
+            raise serializers.ValidationError(
+                "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
+            )
+        return attrs
+
+
+class EventInterestSerializer(_SubjectScopedPersonalEntryMixin, serializers.ModelSerializer):
+    # subject = exactly one of event (published) or personal_entry (own).
     event = serializers.PrimaryKeyRelatedField(
-        queryset=Event.objects.published(),
+        queryset=Event.objects.published(), required=False, allow_null=True
+    )
+    personal_entry = serializers.PrimaryKeyRelatedField(
+        queryset=PersonalEntry.objects.none(), required=False, allow_null=True
     )
 
     class Meta:
         model = EventInterest
-        fields = ["id", "event"]
+        fields = ["id", "event", "personal_entry"]
         read_only_fields = ["id"]
 
 
-class UserEventStatusSerializer(serializers.ModelSerializer):
+class UserEventStatusSerializer(_SubjectScopedPersonalEntryMixin, serializers.ModelSerializer):
+    # subject = exactly one of event (published) or personal_entry (own).
     event = serializers.PrimaryKeyRelatedField(
-        queryset=Event.objects.published(),
+        queryset=Event.objects.published(), required=False, allow_null=True
+    )
+    personal_entry = serializers.PrimaryKeyRelatedField(
+        queryset=PersonalEntry.objects.none(), required=False, allow_null=True
     )
 
     class Meta:
         model = UserEventStatus
-        fields = ["id", "event", "status"]
+        fields = ["id", "event", "personal_entry", "status"]
         read_only_fields = ["id"]
 
 
 class UserEventStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserEventStatus
-        fields = ["id", "event", "status"]
-        read_only_fields = ["id", "event"]
+        fields = ["id", "event", "personal_entry", "status"]
+        read_only_fields = ["id", "event", "personal_entry"]
 
 
 class UserEventStatusQuerySerializer(serializers.Serializer):
