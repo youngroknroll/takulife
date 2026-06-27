@@ -13,6 +13,7 @@
         <a href="/archive/" class="active" aria-current="page">기록장</a>
         <a href="/archive/statuses/">예정 목록</a>
         <a href="/archive/visits/">방문 기록</a>
+        <a href="/archive/items/">비공식</a>
         <a href="/archive/interests/" class="nav-interest">찜 목록</a>
       </nav>
     </div>
@@ -57,24 +58,31 @@
               <article class="record-card hover-lift">
                 <div class="record-top">
                   <h3 class="record-title">
-                    <a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a>
+                    {% if row.subject.detail_url %}
+                      <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
+                    {% else %}
+                      {{ row.subject.title }}
+                    {% endif %}
                   </h3>
                   <span class="status {{ row.status_slug }}">{{ row.status_label }}</span>
                 </div>
-                {% if row.event.location_name %}
-                  <p class="record-meta">{{ row.event.location_name }}</p>
+                {% if not row.subject.is_official %}
+                  <p class="record-meta"><span class="event-category unofficial">비공식</span></p>
                 {% endif %}
-                {% if row.event.start_date and row.event.end_date %}
-                  <p class="record-meta">{{ row.event.start_date }} ~ {{ row.event.end_date }}</p>
+                {% if row.subject.location %}
+                  <p class="record-meta">{{ row.subject.location }}</p>
+                {% endif %}
+                {% if row.subject.start_date and row.subject.end_date %}
+                  <p class="record-meta">{{ row.subject.start_date }} ~ {{ row.subject.end_date }}</p>
                 {% endif %}
                 <div class="status-row" data-status-error-container>
                   <button
                     class="status-btn {{ row.status_slug }} active"
                     type="button"
                     data-status-action
-                    data-event-id="{{ row.event.id }}"
                     data-status="{{ row.status_slug }}"
                     data-status-id="{{ row.status_id }}"
+                    data-label-active="{{ row.status_label }}"
                     data-remove-on-cancel
                     aria-pressed="true"
                   >{{ row.status_label }}</button>

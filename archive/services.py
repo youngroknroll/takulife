@@ -1,9 +1,20 @@
 from django.db import IntegrityError, transaction
 
-from .models import EventInterest, UserEventStatus, VisitRecord, VisitRecordPhoto
+from .models import (
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+    VisitRecordPhoto,
+)
 
 
 MAX_PHOTOS_PER_RECORD = 10
+
+
+def create_personal_entry(*, user, kind, title, **fields):
+    """Create a private, user-owned unofficial archive item (place or goods)."""
+    return PersonalEntry.objects.create(user=user, kind=kind, title=title, **fields)
 
 
 class DuplicateUserEventStatusError(Exception):
@@ -14,20 +25,31 @@ class DuplicateEventInterestError(Exception):
     pass
 
 
-def create_event_interest(*, user, event):
+def create_event_interest(*, user, event=None, personal_entry=None):
     with transaction.atomic():
         try:
-            return EventInterest.objects.create(user=user, event=event)
+            return EventInterest.objects.create(
+                user=user, event=event, personal_entry=personal_entry
+            )
         except IntegrityError as exc:
             raise DuplicateEventInterestError from exc
 
 
-def create_user_event_status(*, user, event, status):
+def create_user_event_status(*, user, event=None, personal_entry=None, status):
     with transaction.atomic():
-        if UserEventStatus.objects.filter(user=user, event=event).exists():
+        # Duplicate guard scoped to whichever subject was supplied (the model's
+        # conditional unique constraints back this up at the DB level).
+        existing = UserEventStatus.objects.filter(user=user)
+        if event is not None:
+            existing = existing.filter(event=event)
+        else:
+            existing = existing.filter(personal_entry=personal_entry)
+        if existing.exists():
             raise DuplicateUserEventStatusError
         try:
-            return UserEventStatus.objects.create(user=user, event=event, status=status)
+            return UserEventStatus.objects.create(
+                user=user, event=event, personal_entry=personal_entry, status=status
+            )
         except IntegrityError as exc:
             raise DuplicateUserEventStatusError from exc
 
@@ -58,10 +80,11 @@ def revert_to_planned(*, user_event_status):
     return user_event_status
 
 
-def create_visit_record(*, user, event, visited_on, short_review=""):
+def create_visit_record(*, user, event=None, personal_entry=None, visited_on, short_review=""):
     return VisitRecord.objects.create(
         user=user,
         event=event,
+        personal_entry=personal_entry,
         visited_on=visited_on,
         short_review=short_review,
     )

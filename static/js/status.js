@@ -77,7 +77,9 @@
   }
 
   function setButtonActive(button, statusSlug) {
-    var label = STATUS_LABELS[statusSlug] || statusSlug;
+    // A button may supply its own kind-aware label (e.g. goods → 구매 예정);
+    // fall back to the generic status vocabulary otherwise.
+    var label = button.dataset.labelActive || STATUS_LABELS[statusSlug] || statusSlug;
     button.textContent = label;
     button.classList.add("active");
     button.setAttribute("aria-pressed", "true");
@@ -85,7 +87,7 @@
 
   function setButtonDefault(button) {
     var slug = button.dataset.status;
-    var label = STATUS_LABELS[slug] || slug;
+    var label = button.dataset.label || STATUS_LABELS[slug] || slug;
     button.textContent = label;
     button.classList.remove("active");
     button.setAttribute("aria-pressed", "false");
@@ -106,12 +108,16 @@
 
   async function handleClick(event) {
     var button = event.currentTarget;
+    // Subject = an official event (data-event-id) OR an unofficial personal
+    // entry (data-personal-entry-id). Only needed when registering a new status;
+    // change/cancel operate on the existing UserEventStatus by data-status-id.
     var eventId = button.dataset.eventId;
+    var personalEntryId = button.dataset.personalEntryId;
     var statusSlug = button.dataset.status;
     var statusId = button.dataset.statusId;
     var action = button.dataset.statusAction;
 
-    if (!eventId || !statusSlug) {
+    if (!statusSlug) {
       return;
     }
 
@@ -174,10 +180,17 @@
       );
     } else {
       mode = "register";
-      result = await window.TakuAPI.post("/api/user-event-statuses/", {
-        event: parseInt(eventId, 10),
-        status: statusSlug,
-      });
+      var payload = { status: statusSlug };
+      if (personalEntryId) {
+        payload.personal_entry = parseInt(personalEntryId, 10);
+      } else if (eventId) {
+        payload.event = parseInt(eventId, 10);
+      } else {
+        // No subject to register against — nothing to do.
+        setButtonLoading(button, false);
+        return;
+      }
+      result = await window.TakuAPI.post("/api/user-event-statuses/", payload);
     }
 
     setButtonLoading(button, false);
@@ -203,6 +216,14 @@
       return;
     }
 
+    // Controls that opt into a reload (archive change buttons, the 비공식-page
+    // 예정 toggle) let the server re-derive the row badge, available actions,
+    // kind-aware labels and summary counts instead of patching the DOM piecemeal.
+    if ((result.ok || result.status === 204) && button.hasAttribute("data-reload-on-success")) {
+      window.location.reload();
+      return;
+    }
+
     if (mode === "cancel" && (result.status === 204 || result.ok)) {
       delete button.dataset.statusId;
       setButtonDefault(button);
@@ -211,13 +232,6 @@
     }
 
     if (result.ok) {
-      // Archive change controls (방문 완료 / 놓침 / 되돌리기) opt into a reload so
-      // the row's badge, available actions, and the summary counts all re-derive
-      // server-side instead of being patched piecemeal in the DOM.
-      if (mode === "change" && button.hasAttribute("data-reload-on-success")) {
-        window.location.reload();
-        return;
-      }
       var responseData = result.data || {};
       // A switch moves the single registration from the sibling to this button.
       var fallbackId;
@@ -261,10 +275,13 @@
 
   async function handleInterestClick(event) {
     var button = event.currentTarget;
+    // Subject = official event OR unofficial personal entry. Needed only to
+    // register a new interest; un-favouriting uses the existing data-interest-id.
     var eventId = button.dataset.eventId;
+    var personalEntryId = button.dataset.personalEntryId;
     var interestId = button.dataset.interestId;
 
-    if (!eventId) {
+    if (!eventId && !personalEntryId && !interestId) {
       return;
     }
 
@@ -283,9 +300,13 @@
     if (interestId) {
       result = await window.TakuAPI.del("/api/event-interests/" + interestId + "/");
     } else {
-      result = await window.TakuAPI.post("/api/event-interests/", {
-        event: parseInt(eventId, 10),
-      });
+      var payload = {};
+      if (personalEntryId) {
+        payload.personal_entry = parseInt(personalEntryId, 10);
+      } else {
+        payload.event = parseInt(eventId, 10);
+      }
+      result = await window.TakuAPI.post("/api/event-interests/", payload);
     }
 
     window.TakuAPI.setLoading(button, false);

@@ -6,6 +6,7 @@ from archive.models import EventInterest, UserEventStatus, VisitRecord
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_interests,
+    list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
     user_interest_count,
@@ -182,3 +183,35 @@ def test_user_interest_count(make_user, make_event):
     EventInterest.objects.create(user=other, event=e3)
 
     assert user_interest_count(user) == 2
+
+
+# ---------------------------------------------------------------------------
+# list_user_planned_events (selectable set when adding a visit record)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_list_user_planned_events_returns_only_user_planned_published(
+    make_user, make_event, make_draft_event
+):
+    user = make_user(username="planner")
+    other = make_user(username="planner-other")
+    planned = make_event(title="Planned")
+    visited = make_event(title="Visited")
+    missed = make_event(title="Missed")
+    others_planned = make_event(title="Others planned")
+    draft_planned = make_draft_event(title="Draft planned")
+
+    UserEventStatus.objects.create(user=user, event=planned, status="planned")
+    UserEventStatus.objects.create(user=user, event=visited, status="visited")
+    UserEventStatus.objects.create(user=user, event=missed, status="missed")
+    UserEventStatus.objects.create(user=user, event=draft_planned, status="planned")
+    UserEventStatus.objects.create(user=other, event=others_planned, status="planned")
+
+    events = list(list_user_planned_events(user))
+
+    assert planned in events
+    assert visited not in events  # different status
+    assert missed not in events  # different status
+    assert others_planned not in events  # different user
+    assert draft_planned not in events  # not published

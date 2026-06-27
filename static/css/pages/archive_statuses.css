@@ -133,3 +133,15 @@
       font-size: 0.8rem;
     }
   }
+  /* Unofficial (private PersonalEntry) marker chip */
+  .event-category.unofficial {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    white-space: nowrap;
+    background: #eef0f3;
+    color: #5b6472;
+  }

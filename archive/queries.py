@@ -7,7 +7,9 @@ drafts/queries.py.
 from django.db.models import Count
 from django.utils import timezone
 
-from .models import EventInterest, UserEventStatus, VisitRecord
+from events.models import Event
+
+from .models import EventInterest, PersonalEntry, UserEventStatus, VisitRecord
 
 # Canonical archive status slugs, sourced from the model's own choices so the
 # set has a single source of truth. Excludes "interested" (now EventInterest).
@@ -45,7 +47,7 @@ def list_user_statuses(user, status: str = "", *, today=None):
     queryset = (
         UserEventStatus.objects.filter(user=user)
         .with_derived_status(today=today)
-        .select_related("event")
+        .select_related("event", "personal_entry")
         .order_by("-updated_at")
     )
     if status:
@@ -60,7 +62,7 @@ def list_user_interests(user):
     """
     return (
         EventInterest.objects.filter(user=user)
-        .select_related("event")
+        .select_related("event", "personal_entry")
         .order_by("-id")
     )
 
@@ -82,6 +84,60 @@ def user_interest_count(user) -> int:
     return EventInterest.objects.filter(user=user).count()
 
 
+def list_user_planned_events(user):
+    """Return published events the user registered as 방문 예정 (raw planned).
+
+    This is the selectable set when adding a visit record — you record a visit
+    for something you planned to go to. Uses the raw 'planned' status (not the
+    auto-miss derived overlay) so an event whose run has ended is still
+    selectable for a late visit record. Ordered by title.
+    """
+    return (
+        Event.objects.published()
+        .filter(
+            archive_user_statuses__user=user,
+            archive_user_statuses__status=UserEventStatus.Status.PLANNED,
+        )
+        .order_by("title")
+    )
+
+
+def list_user_personal_entries(user, kind=None):
+    """Return a user's private unofficial items, newest first, optional kind filter."""
+    queryset = PersonalEntry.objects.filter(user=user).order_by("-created_at", "-id")
+    if kind:
+        queryset = queryset.filter(kind=kind)
+    return queryset
+
+
+def user_personal_interest_ids(user) -> dict:
+    """Return {personal_entry_id: interest_id} for the user's unofficial 찜.
+
+    Drives the 찜 toggle state on the 비공식 page so each card knows whether it is
+    already favourited (and the interest id to delete on un-favourite).
+    """
+    return {
+        row["personal_entry_id"]: row["id"]
+        for row in EventInterest.objects.filter(
+            user=user, personal_entry__isnull=False
+        ).values("personal_entry_id", "id")
+    }
+
+
+def user_personal_statuses(user) -> dict:
+    """Return {personal_entry_id: (status_slug, status_id)} for unofficial 상태.
+
+    Uses the raw stored status — personal entries have no run period, so the
+    auto-miss overlay never applies to them.
+    """
+    return {
+        row["personal_entry_id"]: (row["status"], row["id"])
+        for row in UserEventStatus.objects.filter(
+            user=user, personal_entry__isnull=False
+        ).values("personal_entry_id", "status", "id")
+    }
+
+
 def list_user_visit_records(user):
     """Return a user's visit records, newest first, with related data prefetched.
 
@@ -90,7 +146,7 @@ def list_user_visit_records(user):
     """
     return (
         VisitRecord.objects.filter(user=user)
-        .select_related("event")
+        .select_related("event", "personal_entry")
         .prefetch_related("photos")
         .order_by("-visited_on", "-id")
     )

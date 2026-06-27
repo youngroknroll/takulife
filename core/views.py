@@ -9,19 +9,24 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from archive.models import UserEventStatus
+from archive.models import PersonalEntry, UserEventStatus
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_interests,
+    list_user_personal_entries,
+    list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
     user_interest_count,
     user_interest_event_ids,
+    user_personal_interest_ids,
+    user_personal_statuses,
     user_status_counts,
 )
 from core.vocab import (
     ARCHIVE_STATUS,
     ARCHIVE_STATUS_LABELS,
+    archive_status_label,
     CATEGORY,
     CATEGORY_LABELS,
     EVENT_SORT_LABELS,
@@ -232,21 +237,25 @@ def event_detail(request, event_id):
 
 
 def _build_archive_status_rows(user_statuses):
-    """Build display rows for archive status entries.
+    """Build display rows for archive status entries (official or unofficial).
 
-    Returns a list of dicts with event, status_slug, status_label, category_label,
-    and status_id for template rendering and JS data attributes.
+    Returns dicts carrying status_id/slug/label plus a uniform, null-safe
+    ``subject`` view so the template renders an Event and a PersonalEntry the
+    same way (with a 비공식 marker for the latter).
     """
     rows = []
     for us in user_statuses:
-        event = us.event
+        subject = _subject_view(us)
+        kind = subject["kind"]
         rows.append(
             {
                 "status_id": us.pk,
                 "status_slug": us.derived_status,
-                "status_label": ARCHIVE_STATUS_LABELS.get(us.derived_status, us.derived_status),
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
-                "event": event,
+                # Kind-aware: a goods item reads 구매…, a place/event reads 방문….
+                "status_label": archive_status_label(us.derived_status, kind),
+                "label_visited": archive_status_label("visited", kind),
+                "label_planned": archive_status_label("planned", kind),
+                "subject": subject,
             }
         )
     return rows
@@ -286,26 +295,60 @@ def archive_statuses(request):
     return render(request, "core/archive_statuses.html", context)
 
 
+def _subject_view(obj):
+    """Uniform, null-safe view of an archive row's subject — an official Event
+    or an unofficial PersonalEntry.
+
+    Any archive row that carries the subject pattern (VisitRecord, EventInterest,
+    UserEventStatus) exposes ``event``/``event_id`` and ``personal_entry``; this
+    collapses both into one dict so templates and JS never branch on which FK is
+    set. ``subject_type``/``subject_id`` drive the API payload; ``detail_url`` is
+    empty for private items (no public page); period dates are None for goods.
+    """
+    if obj.event_id is not None:
+        event = obj.event
+        return {
+            "title": event.title,
+            "category_label": CATEGORY_LABELS.get(event.category, event.category),
+            "location": event.location_name,
+            "start_date": event.start_date,
+            "end_date": event.end_date,
+            "is_official": True,
+            "kind": "",
+            "subject_type": "event",
+            "subject_id": event.id,
+            "detail_url": f"/events/{event.id}/",
+        }
+    entry = obj.personal_entry
+    return {
+        "title": entry.title,
+        "category_label": entry.category,
+        "location": entry.location_name,
+        "start_date": None,
+        "end_date": None,
+        "is_official": False,
+        "kind": entry.kind,
+        "subject_type": "personal",
+        "subject_id": entry.id,
+        "detail_url": "",
+    }
+
+
 @login_required
 @ensure_csrf_cookie
 def archive_visits(request):
     visit_records = list_user_visit_records(request.user)
 
-    visit_rows = []
-    for record in visit_records:
-        event = record.event
-        visit_rows.append(
-            {
-                "record_id": record.pk,
-                "visited_on": record.visited_on,
-                "short_review": record.short_review,
-                "event": event,
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
-                "photos": list(record.photos.all()),
-            }
-        )
-
-    selectable_events = Event.objects.published().order_by("title")
+    visit_rows = [
+        {
+            "record_id": record.pk,
+            "visited_on": record.visited_on,
+            "short_review": record.short_review,
+            "subject": _subject_view(record),
+            "photos": list(record.photos.all()),
+        }
+        for record in visit_records
+    ]
 
     memo_count = sum(1 for row in visit_rows if row["short_review"])
 
@@ -313,10 +356,48 @@ def archive_visits(request):
         request,
         "core/archive_visits.html",
         {
-                "visit_rows": visit_rows,
+            "visit_rows": visit_rows,
             "memo_count": memo_count,
             "has_visits": len(visit_rows) > 0,
-            "selectable_events": selectable_events,
+            "selectable_events": list_user_planned_events(request.user),
+            "selectable_personal_entries": list_user_personal_entries(request.user),
+        },
+    )
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_personal_entries(request):
+    entries = list(list_user_personal_entries(request.user))
+    interest_map = user_personal_interest_ids(request.user)
+    status_map = user_personal_statuses(request.user)
+
+    entry_rows = []
+    for entry in entries:
+        status_slug, status_id = status_map.get(entry.id, ("", None))
+        entry_rows.append(
+            {
+                "entry": entry,
+                "kind_label": "장소" if entry.kind == PersonalEntry.Kind.PLACE else "굿즈",
+                "interest_id": interest_map.get(entry.id),
+                "status_slug": status_slug,
+                "status_id": status_id,
+                "status_label": archive_status_label(status_slug, entry.kind) if status_slug else "",
+                "planned_label": archive_status_label("planned", entry.kind),
+                "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
+            }
+        )
+    place_count = sum(1 for entry in entries if entry.kind == PersonalEntry.Kind.PLACE)
+
+    return render(
+        request,
+        "core/archive_personal_entries.html",
+        {
+            "entry_rows": entry_rows,
+            "total_count": len(entries),
+            "place_count": place_count,
+            "goods_count": len(entries) - place_count,
+            "has_entries": len(entries) > 0,
         },
     )
 
@@ -329,12 +410,10 @@ def archive_interests(request):
 
     interest_rows = []
     for interest in interests:
-        event = interest.event
         interest_rows.append(
             {
                 "interest_id": interest.pk,
-                "event": event,
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "subject": _subject_view(interest),
             }
         )
 

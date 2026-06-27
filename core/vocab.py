@@ -63,6 +63,21 @@ ARCHIVE_STATUS: tuple[tuple[str, str], ...] = (
 
 ARCHIVE_STATUS_LABELS: dict[str, str] = dict(ARCHIVE_STATUS)
 
+# Goods (굿즈) speak "구매" rather than "방문". Same status slugs, kind-aware
+# display labels; used for unofficial PersonalEntry items of kind "goods".
+GOODS_STATUS_LABELS: dict[str, str] = {
+    "planned": "구매 예정",
+    "visited": "구매 완료",
+    "missed": "놓침",
+}
+
+
+def archive_status_label(slug: str, kind: str = "") -> str:
+    """Kind-aware archive-status label (goods → 구매…, otherwise → 방문…)."""
+    if kind == "goods":
+        return GOODS_STATUS_LABELS.get(slug, slug)
+    return ARCHIVE_STATUS_LABELS.get(slug, slug)
+
 # ---------------------------------------------------------------------------
 # Event status vocabulary (independent axis from archive status)
 # Describes the publication/temporal state of an Event object.
