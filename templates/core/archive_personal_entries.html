@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 내 항목{% endblock %}
+{% block title %}{{ project_name }} | 비공식 아카이브{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
@@ -13,19 +13,19 @@
         <a href="/archive/">기록장</a>
         <a href="/archive/statuses/">예정 목록</a>
         <a href="/archive/visits/">방문 기록</a>
-        <a class="active" href="/archive/items/" aria-current="page">내 항목</a>
+        <a class="active" href="/archive/items/" aria-current="page">비공식</a>
         <a href="/archive/interests/" class="nav-interest">찜 목록</a>
       </nav>
     </div>
 
     <section class="hero">
-      <h1>내 항목</h1>
+      <h1>비공식 아카이브</h1>
       <p>
         공식 카탈로그에 없는 내가 찾은 장소(비공식 굿즈 카페 등)나 내가 산 굿즈를
         직접 등록해 두는 곳입니다. 본인만 볼 수 있고, 공개 목록에는 노출되지 않습니다.
       </p>
 
-      <div class="summary-grid" aria-label="내 항목 요약">
+      <div class="summary-grid" aria-label="비공식 아카이브 요약">
         <article class="summary-card">
           <p class="summary-label">전체</p>
           <p class="summary-value">{{ total_count }}</p>
@@ -45,7 +45,7 @@
 
     <section class="layout">
       <article class="panel">
-        <h2>내 항목 목록</h2>
+        <h2>비공식 아카이브 목록</h2>
         <p class="panel-note">직접 등록한 항목을 최신순으로 정리한 목록입니다.</p>
 
         {% if has_entries %}
@@ -95,7 +95,7 @@
         {% endif %}
       </article>
 
-      <aside class="side-stack" aria-label="내 항목 보조 정보">
+      <aside class="side-stack" aria-label="비공식 아카이브 보조 정보">
         <section class="panel">
           <h2>빠른 이동</h2>
           <ul class="side-list side-list--row">
@@ -149,7 +149,7 @@
         <section class="panel">
           <h2>안내</h2>
           <ul class="rule-list">
-            <li>내 항목은 본인만 보고 관리할 수 있습니다</li>
+            <li>비공식 아카이브는 본인만 보고 관리할 수 있습니다</li>
             <li>공개 행사 목록·검색에는 노출되지 않습니다</li>
             <li>비공식 장소·굿즈를 자유롭게 기록할 수 있습니다</li>
           </ul>
