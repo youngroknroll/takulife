@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from events.models import Event
 
-from .models import EventInterest, UserEventStatus, VisitRecord
+from .models import EventInterest, PersonalEntry, UserEventStatus, VisitRecord
 
 # Canonical archive status slugs, sourced from the model's own choices so the
 # set has a single source of truth. Excludes "interested" (now EventInterest).
@@ -100,6 +100,14 @@ def list_user_planned_events(user):
         )
         .order_by("title")
     )
+
+
+def list_user_personal_entries(user, kind=None):
+    """Return a user's private unofficial items, newest first, optional kind filter."""
+    queryset = PersonalEntry.objects.filter(user=user).order_by("-created_at", "-id")
+    if kind:
+        queryset = queryset.filter(kind=kind)
+    return queryset
 
 
 def list_user_visit_records(user):

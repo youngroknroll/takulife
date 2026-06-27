@@ -1,9 +1,20 @@
 from django.db import IntegrityError, transaction
 
-from .models import EventInterest, UserEventStatus, VisitRecord, VisitRecordPhoto
+from .models import (
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+    VisitRecordPhoto,
+)
 
 
 MAX_PHOTOS_PER_RECORD = 10
+
+
+def create_personal_entry(*, user, kind, title, **fields):
+    """Create a private, user-owned unofficial archive item (place or goods)."""
+    return PersonalEntry.objects.create(user=user, kind=kind, title=title, **fields)
 
 
 class DuplicateUserEventStatusError(Exception):

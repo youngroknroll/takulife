@@ -6,9 +6,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import EventInterest, UserEventStatus, VisitRecord, VisitRecordPhoto
+from .models import (
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+    VisitRecordPhoto,
+)
+from .queries import list_user_personal_entries
 from .serializers import (
     EventInterestSerializer,
+    PersonalEntrySerializer,
     UserEventStatusQuerySerializer,
     UserEventStatusSerializer,
     UserEventStatusUpdateSerializer,
@@ -20,6 +28,7 @@ from .services import (
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
     create_event_interest,
+    create_personal_entry,
     create_user_event_status,
     create_visit_record,
     create_visit_record_photo,
@@ -27,6 +36,33 @@ from .services import (
     mark_visited,
     revert_to_planned,
 )
+
+
+class PersonalEntryPagination(PageNumberPagination):
+    page_size = 20
+
+
+class PersonalEntryListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PersonalEntrySerializer
+    pagination_class = PersonalEntryPagination
+
+    def get_queryset(self):
+        return list_user_personal_entries(self.request.user)
+
+    def perform_create(self, serializer):
+        # owner is the requester, never the payload
+        serializer.instance = create_personal_entry(
+            user=self.request.user, **serializer.validated_data
+        )
+
+
+class PersonalEntryDetailView(RetrieveDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PersonalEntrySerializer
+
+    def get_queryset(self):
+        return PersonalEntry.objects.filter(user=self.request.user)
 
 
 class EventInterestPagination(PageNumberPagination):

@@ -32,6 +32,7 @@ urlpatterns = [
     path("api/user-event-statuses/", include("archive.urls")),
     path("api/visit-records/", include("archive.visit_urls")),
     path("api/event-interests/", include("archive.interest_urls")),
+    path("api/personal-entries/", include("archive.personal_urls")),
 ]
 
 if settings.DEBUG:

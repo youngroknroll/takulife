@@ -3,7 +3,33 @@ from rest_framework import serializers
 from events.image_validation import validate_uploaded_image
 from events.models import Event
 
-from .models import EventInterest, UserEventStatus, VisitRecord, VisitRecordPhoto
+from .models import (
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+    VisitRecordPhoto,
+)
+
+
+class PersonalEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PersonalEntry
+        fields = [
+            "id",
+            "kind",
+            "title",
+            "category",
+            "work_title",
+            "location_name",
+            "region",
+            "url",
+            "memo",
+            "image",
+            "created_at",
+        ]
+        # owner is taken from the request, never the payload
+        read_only_fields = ["id", "created_at"]
 
 
 class EventInterestSerializer(serializers.ModelSerializer):
