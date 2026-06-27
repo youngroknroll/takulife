@@ -106,12 +106,16 @@
 
   async function handleClick(event) {
     var button = event.currentTarget;
+    // Subject = an official event (data-event-id) OR an unofficial personal
+    // entry (data-personal-entry-id). Only needed when registering a new status;
+    // change/cancel operate on the existing UserEventStatus by data-status-id.
     var eventId = button.dataset.eventId;
+    var personalEntryId = button.dataset.personalEntryId;
     var statusSlug = button.dataset.status;
     var statusId = button.dataset.statusId;
     var action = button.dataset.statusAction;
 
-    if (!eventId || !statusSlug) {
+    if (!statusSlug) {
       return;
     }
 
@@ -174,10 +178,17 @@
       );
     } else {
       mode = "register";
-      result = await window.TakuAPI.post("/api/user-event-statuses/", {
-        event: parseInt(eventId, 10),
-        status: statusSlug,
-      });
+      var payload = { status: statusSlug };
+      if (personalEntryId) {
+        payload.personal_entry = parseInt(personalEntryId, 10);
+      } else if (eventId) {
+        payload.event = parseInt(eventId, 10);
+      } else {
+        // No subject to register against — nothing to do.
+        setButtonLoading(button, false);
+        return;
+      }
+      result = await window.TakuAPI.post("/api/user-event-statuses/", payload);
     }
 
     setButtonLoading(button, false);
@@ -261,10 +272,13 @@
 
   async function handleInterestClick(event) {
     var button = event.currentTarget;
+    // Subject = official event OR unofficial personal entry. Needed only to
+    // register a new interest; un-favouriting uses the existing data-interest-id.
     var eventId = button.dataset.eventId;
+    var personalEntryId = button.dataset.personalEntryId;
     var interestId = button.dataset.interestId;
 
-    if (!eventId) {
+    if (!eventId && !personalEntryId && !interestId) {
       return;
     }
 
@@ -283,9 +297,13 @@
     if (interestId) {
       result = await window.TakuAPI.del("/api/event-interests/" + interestId + "/");
     } else {
-      result = await window.TakuAPI.post("/api/event-interests/", {
-        event: parseInt(eventId, 10),
-      });
+      var payload = {};
+      if (personalEntryId) {
+        payload.personal_entry = parseInt(personalEntryId, 10);
+      } else {
+        payload.event = parseInt(eventId, 10);
+      }
+      result = await window.TakuAPI.post("/api/event-interests/", payload);
     }
 
     window.TakuAPI.setLoading(button, false);

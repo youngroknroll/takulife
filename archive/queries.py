@@ -47,7 +47,7 @@ def list_user_statuses(user, status: str = "", *, today=None):
     queryset = (
         UserEventStatus.objects.filter(user=user)
         .with_derived_status(today=today)
-        .select_related("event")
+        .select_related("event", "personal_entry")
         .order_by("-updated_at")
     )
     if status:
@@ -62,7 +62,7 @@ def list_user_interests(user):
     """
     return (
         EventInterest.objects.filter(user=user)
-        .select_related("event")
+        .select_related("event", "personal_entry")
         .order_by("-id")
     )
 

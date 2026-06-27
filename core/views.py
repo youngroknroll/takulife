@@ -234,21 +234,20 @@ def event_detail(request, event_id):
 
 
 def _build_archive_status_rows(user_statuses):
-    """Build display rows for archive status entries.
+    """Build display rows for archive status entries (official or unofficial).
 
-    Returns a list of dicts with event, status_slug, status_label, category_label,
-    and status_id for template rendering and JS data attributes.
+    Returns dicts carrying status_id/slug/label plus a uniform, null-safe
+    ``subject`` view so the template renders an Event and a PersonalEntry the
+    same way (with a 비공식 marker for the latter).
     """
     rows = []
     for us in user_statuses:
-        event = us.event
         rows.append(
             {
                 "status_id": us.pk,
                 "status_slug": us.derived_status,
                 "status_label": ARCHIVE_STATUS_LABELS.get(us.derived_status, us.derived_status),
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
-                "event": event,
+                "subject": _subject_view(us),
             }
         )
     return rows
@@ -288,26 +287,41 @@ def archive_statuses(request):
     return render(request, "core/archive_statuses.html", context)
 
 
-def _visit_subject_view(record):
-    """Uniform, null-safe view of a visit record's subject (official Event or
-    unofficial PersonalEntry), so templates never branch on which FK is set."""
-    if record.event_id is not None:
-        event = record.event
+def _subject_view(obj):
+    """Uniform, null-safe view of an archive row's subject — an official Event
+    or an unofficial PersonalEntry.
+
+    Any archive row that carries the subject pattern (VisitRecord, EventInterest,
+    UserEventStatus) exposes ``event``/``event_id`` and ``personal_entry``; this
+    collapses both into one dict so templates and JS never branch on which FK is
+    set. ``subject_type``/``subject_id`` drive the API payload; ``detail_url`` is
+    empty for private items (no public page); period dates are None for goods.
+    """
+    if obj.event_id is not None:
+        event = obj.event
         return {
             "title": event.title,
             "category_label": CATEGORY_LABELS.get(event.category, event.category),
             "location": event.location_name,
+            "start_date": event.start_date,
+            "end_date": event.end_date,
             "is_official": True,
             "kind": "",
+            "subject_type": "event",
+            "subject_id": event.id,
             "detail_url": f"/events/{event.id}/",
         }
-    entry = record.personal_entry
+    entry = obj.personal_entry
     return {
         "title": entry.title,
         "category_label": entry.category,
         "location": entry.location_name,
+        "start_date": None,
+        "end_date": None,
         "is_official": False,
         "kind": entry.kind,
+        "subject_type": "personal",
+        "subject_id": entry.id,
         "detail_url": "",
     }
 
@@ -322,7 +336,7 @@ def archive_visits(request):
             "record_id": record.pk,
             "visited_on": record.visited_on,
             "short_review": record.short_review,
-            "subject": _visit_subject_view(record),
+            "subject": _subject_view(record),
             "photos": list(record.photos.all()),
         }
         for record in visit_records
@@ -377,12 +391,10 @@ def archive_interests(request):
 
     interest_rows = []
     for interest in interests:
-        event = interest.event
         interest_rows.append(
             {
                 "interest_id": interest.pk,
-                "event": event,
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "subject": _subject_view(interest),
             }
         )
 
