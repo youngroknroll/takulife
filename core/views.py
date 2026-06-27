@@ -288,26 +288,45 @@ def archive_statuses(request):
     return render(request, "core/archive_statuses.html", context)
 
 
+def _visit_subject_view(record):
+    """Uniform, null-safe view of a visit record's subject (official Event or
+    unofficial PersonalEntry), so templates never branch on which FK is set."""
+    if record.event_id is not None:
+        event = record.event
+        return {
+            "title": event.title,
+            "category_label": CATEGORY_LABELS.get(event.category, event.category),
+            "location": event.location_name,
+            "is_official": True,
+            "kind": "",
+            "detail_url": f"/events/{event.id}/",
+        }
+    entry = record.personal_entry
+    return {
+        "title": entry.title,
+        "category_label": entry.category,
+        "location": entry.location_name,
+        "is_official": False,
+        "kind": entry.kind,
+        "detail_url": "",
+    }
+
+
 @login_required
 @ensure_csrf_cookie
 def archive_visits(request):
     visit_records = list_user_visit_records(request.user)
 
-    visit_rows = []
-    for record in visit_records:
-        event = record.event
-        visit_rows.append(
-            {
-                "record_id": record.pk,
-                "visited_on": record.visited_on,
-                "short_review": record.short_review,
-                "event": event,
-                "category_label": CATEGORY_LABELS.get(event.category, event.category),
-                "photos": list(record.photos.all()),
-            }
-        )
-
-    selectable_events = list_user_planned_events(request.user)
+    visit_rows = [
+        {
+            "record_id": record.pk,
+            "visited_on": record.visited_on,
+            "short_review": record.short_review,
+            "subject": _visit_subject_view(record),
+            "photos": list(record.photos.all()),
+        }
+        for record in visit_records
+    ]
 
     memo_count = sum(1 for row in visit_rows if row["short_review"])
 
@@ -315,10 +334,11 @@ def archive_visits(request):
         request,
         "core/archive_visits.html",
         {
-                "visit_rows": visit_rows,
+            "visit_rows": visit_rows,
             "memo_count": memo_count,
             "has_visits": len(visit_rows) > 0,
-            "selectable_events": selectable_events,
+            "selectable_events": list_user_planned_events(request.user),
+            "selectable_personal_entries": list_user_personal_entries(request.user),
         },
     )
 

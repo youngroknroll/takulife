@@ -52,16 +52,19 @@
                 data-record-id="{{ row.record_id }}"
               >
                 <div class="visit-card-top">
-                  {% if row.category_label %}
-                    <span class="visit-chip category">{{ row.category_label }}</span>
+                  {% if not row.subject.is_official %}
+                    <span class="visit-chip">비공식</span>
                   {% endif %}
-                  <span class="visit-chip">방문 완료</span>
+                  {% if row.subject.category_label %}
+                    <span class="visit-chip category">{{ row.subject.category_label }}</span>
+                  {% endif %}
+                  <span class="visit-chip">{% if row.subject.kind == 'goods' %}획득 완료{% else %}방문 완료{% endif %}</span>
                 </div>
 
-                <h3>{{ row.event.title }}</h3>
+                <h3>{{ row.subject.title }}</h3>
                 <p class="meta">
                   {{ row.visited_on }}
-                  {% if row.event.location_name %} · {{ row.event.location_name }}{% endif %}
+                  {% if row.subject.location %} · {{ row.subject.location }}{% endif %}
                 </p>
                 {% if row.short_review %}
                   <p class="review">{{ row.short_review }}</p>
@@ -96,7 +99,7 @@
                     type="file"
                     accept="image/*"
                     data-record-id="{{ row.record_id }}"
-                    aria-label="{{ row.event.title }} 사진 업로드"
+                    aria-label="{{ row.subject.title }} 사진 업로드"
                   >
                   <button
                     class="photo-upload-btn"
@@ -111,7 +114,7 @@
                     class="record-delete-btn"
                     type="button"
                     data-delete-record-id="{{ row.record_id }}"
-                    aria-label="{{ row.event.title }} 방문 기록 삭제"
+                    aria-label="{{ row.subject.title }} 방문 기록 삭제"
                   >기록 삭제</button>
                 </div>
               </article>
@@ -142,12 +145,23 @@
 
           <form id="visit-create-form" class="create-form" novalidate>
             <div class="form-group">
-              <label for="visit-event">행사</label>
-              <select id="visit-event" name="event" required>
-                <option value="">행사를 선택하세요</option>
-                {% for event in selectable_events %}
-                  <option value="{{ event.id }}">{{ event.title }}</option>
-                {% endfor %}
+              <label for="visit-subject">대상</label>
+              <select id="visit-subject" name="subject" required>
+                <option value="">대상을 선택하세요</option>
+                {% if selectable_events %}
+                  <optgroup label="공식 예정 행사">
+                    {% for event in selectable_events %}
+                      <option value="event:{{ event.id }}">{{ event.title }}</option>
+                    {% endfor %}
+                  </optgroup>
+                {% endif %}
+                {% if selectable_personal_entries %}
+                  <optgroup label="비공식 아카이브">
+                    {% for entry in selectable_personal_entries %}
+                      <option value="personal:{{ entry.id }}">{{ entry.title }}</option>
+                    {% endfor %}
+                  </optgroup>
+                {% endif %}
               </select>
             </div>
             <div class="form-group">
@@ -167,7 +181,7 @@
           <h2>기록 안내</h2>
           <ul class="rule-list">
             <li>방문 기록은 본인만 보고 관리할 수 있습니다</li>
-            <li>공개된 행사에 대해서만 기록을 남길 수 있습니다</li>
+            <li>공식 예정 행사 또는 내 비공식 항목에 기록을 남길 수 있습니다</li>
             <li>사진은 JPEG, PNG, WebP 형식을 지원합니다</li>
             <li>사진은 기록당 최대 10장까지 첨부할 수 있습니다</li>
             <li>사진 파일 크기는 5MB 이하여야 합니다</li>

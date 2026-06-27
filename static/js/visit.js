@@ -97,22 +97,30 @@
       evt.preventDefault();
       clearError(errorEl);
 
-      var eventId = parseInt(form.elements["event"].value, 10);
+      // subject value is "event:<id>" (official) or "personal:<id>" (unofficial)
+      var subjectValue = form.elements["subject"].value;
       var visitedOn = form.elements["visited_on"].value;
       var shortReview = form.elements["short_review"].value;
 
-      if (!eventId || !visitedOn) {
-        setError(errorEl, "행사와 방문 날짜를 모두 입력해 주세요.");
+      if (!subjectValue || !visitedOn) {
+        setError(errorEl, "대상과 방문 날짜를 모두 입력해 주세요.");
         return;
+      }
+
+      var sep = subjectValue.indexOf(":");
+      var subjectType = subjectValue.slice(0, sep);
+      var subjectId = parseInt(subjectValue.slice(sep + 1), 10);
+
+      var payload = { visited_on: visitedOn, short_review: shortReview };
+      if (subjectType === "personal") {
+        payload.personal_entry = subjectId;
+      } else {
+        payload.event = subjectId;
       }
 
       window.TakuAPI.setLoading(submitBtn, true);
 
-      var result = await window.TakuAPI.post("/api/visit-records/", {
-        event: eventId,
-        visited_on: visitedOn,
-        short_review: shortReview,
-      });
+      var result = await window.TakuAPI.post("/api/visit-records/", payload);
 
       if (result.status === 201) {
         window.location.reload();
