@@ -12,16 +12,6 @@ from events.models import Event
 
 
 # ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def make_event(**kwargs):
-    defaults = {"title": "Test Event", "publish_status": Event.PublishStatus.PUBLISHED}
-    defaults.update(kwargs)
-    return Event.objects.create(**defaults)
-
-
-# ---------------------------------------------------------------------------
 # parse_public_listing_params
 # ---------------------------------------------------------------------------
 
@@ -135,7 +125,7 @@ class TestParsePublicListingParams:
 
 @pytest.mark.django_db
 class TestListPublishedEvents:
-    def test_returns_only_published_events(self):
+    def test_returns_only_published_events(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -147,7 +137,7 @@ class TestListPublishedEvents:
         assert published.id in ids
         assert len(ids) == 1
 
-    def test_filters_by_status_upcoming(self):
+    def test_filters_by_status_upcoming(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -166,7 +156,7 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert [upcoming.id] == ids
 
-    def test_filters_by_status_ongoing(self):
+    def test_filters_by_status_ongoing(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -186,7 +176,7 @@ class TestListPublishedEvents:
         assert ongoing.id in ids
         assert len(ids) == 1
 
-    def test_default_order_ongoing_then_upcoming_then_ended(self):
+    def test_default_order_ongoing_then_upcoming_then_ended(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -211,7 +201,7 @@ class TestListPublishedEvents:
         assert ids.index(ongoing.id) < ids.index(upcoming.id)
         assert ids.index(upcoming.id) < ids.index(ended.id)
 
-    def test_uses_today_default_via_localdate_when_not_provided(self):
+    def test_uses_today_default_via_localdate_when_not_provided(self, make_event):
         """When today is omitted, the function still returns a queryset."""
         from events.queries import list_published_events
 
@@ -356,7 +346,7 @@ class TestPublicListingPageSize:
 
 @pytest.mark.django_db
 class TestMostViewed:
-    def test_returns_events_ordered_by_view_count_descending(self):
+    def test_returns_events_ordered_by_view_count_descending(self, make_event):
         low = make_event(title="Low")
         high = make_event(title="High")
         mid = make_event(title="Mid")
@@ -370,14 +360,14 @@ class TestMostViewed:
         assert ids.index(high.id) < ids.index(mid.id)
         assert ids.index(mid.id) < ids.index(low.id)
 
-    def test_returns_at_most_limit_events(self):
+    def test_returns_at_most_limit_events(self, make_event):
         for i in range(7):
             make_event(title=f"Event {i}")
 
         result = list(Event.objects.published().most_viewed(5))
         assert len(result) <= 5
 
-    def test_excludes_draft_events(self):
+    def test_excludes_draft_events(self, make_event):
         published = make_event(title="Published")
         draft = make_event(title="Draft", publish_status=Event.PublishStatus.DRAFT)
         Event.objects.filter(pk=draft.pk).update(view_count=999)
@@ -387,7 +377,7 @@ class TestMostViewed:
         assert draft.id not in ids
         assert published.id in ids
 
-    def test_equal_view_count_tiebreaks_by_id_descending(self):
+    def test_equal_view_count_tiebreaks_by_id_descending(self, make_event):
         first = make_event(title="First")
         second = make_event(title="Second")
 
@@ -410,7 +400,7 @@ class TestEndingWithinDays:
     (inclusive) and today+days (inclusive), ordered soonest-first.
     """
 
-    def test_end_date_today_plus_5_is_included(self):
+    def test_end_date_today_plus_5_is_included(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+5",
@@ -420,7 +410,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id in list(qs.values_list("id", flat=True))
 
-    def test_end_date_today_plus_6_is_excluded(self):
+    def test_end_date_today_plus_6_is_excluded(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+6",
@@ -430,7 +420,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id not in list(qs.values_list("id", flat=True))
 
-    def test_end_date_today_is_included(self):
+    def test_end_date_today_is_included(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+0",
@@ -440,7 +430,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id in list(qs.values_list("id", flat=True))
 
-    def test_end_date_yesterday_is_excluded(self):
+    def test_end_date_yesterday_is_excluded(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="Ended yesterday",
@@ -450,7 +440,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id not in list(qs.values_list("id", flat=True))
 
-    def test_upcoming_event_within_window_is_excluded(self):
+    def test_upcoming_event_within_window_is_excluded(self, make_event):
         """start_date > today means the event has not started yet; must be excluded."""
         today = date(2026, 6, 26)
         event = make_event(
@@ -461,7 +451,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id not in list(qs.values_list("id", flat=True))
 
-    def test_draft_within_window_is_excluded(self):
+    def test_draft_within_window_is_excluded(self, make_event):
         """Draft events must not appear even if end_date is within the window."""
         today = date(2026, 6, 26)
         event = make_event(
@@ -473,7 +463,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id not in list(qs.values_list("id", flat=True))
 
-    def test_ordering_is_by_end_date_ascending(self):
+    def test_ordering_is_by_end_date_ascending(self, make_event):
         today = date(2026, 6, 26)
         later = make_event(
             title="Later",

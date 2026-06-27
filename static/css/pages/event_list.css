@@ -1,26 +1,3 @@
-  .search {
-    display: flex;
-    min-width: 0;
-    gap: 8px;
-    margin: 0 0 12px;
-  }
-  .search input {
-    flex: 1;
-    min-width: 0;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 0.94rem;
-  }
-  .search button {
-    border: 1px solid #c2d7ff;
-    border-radius: 8px;
-    background: var(--brand-soft);
-    color: var(--brand);
-    font-weight: 700;
-    padding: 10px 14px;
-    cursor: pointer;
-  }
   .quick-row {
     display: flex;
     flex-wrap: wrap;
@@ -52,7 +29,7 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 10px;
-    background: #fbfcff;
+    background: var(--bg-card);
   }
   .filter-group h2 {
     margin: 0 0 8px;
@@ -221,8 +198,8 @@
       gap: 6px;
       width: 100%;
       margin-top: 8px;
-      border: 1px solid #c7d7f8;
-      background: #f8fbff;
+      border: 1px solid var(--border-soft);
+      background: var(--bg-soft);
       color: #24456f;
       border-radius: 8px;
       padding: 10px 12px;

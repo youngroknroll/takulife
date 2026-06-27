@@ -10,7 +10,7 @@ from events.services import (
 )
 
 from .extraction import EmptyExtractionError, extract_event_fields
-from .fetching import FetchError, ResponseTooLargeError, UnsupportedContentTypeError, fetch_html
+from .fetching import ResponseTooLargeError, UnsupportedContentTypeError, fetch_html
 from .models import EventDraft
 from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
@@ -85,8 +85,6 @@ def create_draft_from_url(source_url, source_name=""):
         raise DraftCreationUnsupportedContentError from exc
     except ResponseTooLargeError as exc:
         raise DraftCreationResponseTooLargeError from exc
-    except FetchError as exc:
-        raise DraftCreationFetchError from exc
     except Exception as exc:
         raise DraftCreationFetchError from exc
 

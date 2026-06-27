@@ -1,28 +1,3 @@
-  .search {
-    display: flex;
-    gap: 8px;
-    min-width: 0;
-    margin: 0 0 12px;
-  }
-  .search input {
-    min-width: 0;
-    flex: 1;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 0.95rem;
-    color: var(--text);
-    background: #fff;
-  }
-  .search button {
-    border: 1px solid #b9ccf8;
-    background: var(--brand-soft);
-    color: var(--brand);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-weight: 700;
-    cursor: pointer;
-  }
   .hero {
     background:
       radial-gradient(120% 140% at 100% 0%, #dbe7ff 0%, transparent 55%),
@@ -176,7 +151,7 @@
     cursor: pointer;
   }
 
-  /* ── PROTOTYPE: tarot-style horizontal card fan ──────────────────
+  /* ── Tarot-style horizontal card fan ─────────────────────────────
      carousel.js adds .fan and drives per-card transform/z-index inline.
      Cards become portrait, centered on the deck, and overlap as a hand. */
   .poster-deck.fan {
@@ -371,7 +346,7 @@
     padding: 16px 10px;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #fbfcff;
+    background: var(--bg-card);
     color: var(--text);
   }
   .cat-browse a:hover,
@@ -409,45 +384,6 @@
     margin: 0;
     color: var(--muted);
     font-size: 0.85rem;
-  }
-  .card {
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 12px;
-    background: #fbfcff;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 10px;
-    align-items: start;
-  }
-  .card h3 a {
-    color: inherit;
-    text-decoration: none;
-  }
-  .card h3 a:focus {
-    outline: 2px solid #92b4ff;
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  .card h3 {
-    margin: 0 0 8px;
-    font-size: 1rem;
-    line-height: 1.35;
-  }
-  .meta {
-    margin: 0 0 7px;
-    color: var(--muted);
-    font-size: 0.85rem;
-  }
-  .period {
-    margin: 0 0 10px;
-    color: #324a66;
-    font-size: 0.9rem;
-  }
-  .status-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
   }
   /* ── Poster-overlay discovery card (shared by ongoing/closing/recent) ──
      Portrait poster fills the card; title + meta overlay a bottom gradient

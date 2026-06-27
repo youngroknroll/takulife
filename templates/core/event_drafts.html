@@ -74,7 +74,7 @@
               <article class="draft-card hover-lift">
                 <div>
                   <div class="draft-top">
-                    <span class="draft-chip {{ row.draft.review_status }}">{{ row.draft.review_status }}</span>
+                    <span class="draft-chip {{ row.draft.review_status }} review-status-{{ row.draft.review_status }}">{{ row.draft.review_status }}</span>
                     {% if row.category_label %}
                       <span class="draft-chip category">{{ row.category_label }}</span>
                     {% endif %}

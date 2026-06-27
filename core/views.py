@@ -1,5 +1,3 @@
-from datetime import date
-
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -96,7 +94,7 @@ def _attach_display(events, *, today=None, user=None):
 
 
 def home(request):
-    today = date.today()
+    today = timezone.localdate()
     ongoing_qs = list_published_events({"status": "ongoing"}, today=today)
     closing_qs = Event.objects.published().ending_within_days(5, today=today)
     # Sliders drop events whose period has already ended (end_date < today);
@@ -119,7 +117,6 @@ def home(request):
     popular_qs = Event.objects.published().exclude(end_date__lt=today).most_viewed(5)
 
     context = {
-        "project_name": "takulife",
         "ongoing_events": _attach_display(ongoing_qs[:15], today=today, user=request.user),
         "closing_events": _attach_display(closing_qs[:15], today=today, user=request.user),
         "recent_events": _attach_display(recent_qs, today=today, user=request.user),
@@ -177,7 +174,6 @@ def event_list(request):
         active_filter_chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
 
     context = {
-        "project_name": "takulife",
         "page_obj": page_obj,
         "total_count": total_count,
         "event_rows": event_rows,
@@ -223,7 +219,6 @@ def event_detail(request, event_id):
         user_interested = user_interest_id is not None
 
     context = {
-        "project_name": "takulife",
         "event": event,
         "status_slug": status_slug,
         "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
@@ -259,56 +254,38 @@ def _build_archive_status_rows(user_statuses):
     return rows
 
 
-@login_required
-@ensure_csrf_cookie
-def archive(request):
-    selected_status = request.GET.get("status", "")
+def _archive_status_context(user, selected_status):
+    """Build the shared context for the archive dashboard and statuses pages.
+
+    Both pages derive 'missed' identically via the shared read helper (instead
+    of reading raw stored status); the summary counts stay unfiltered (aggregate
+    across all statuses). Invalid status filters fall back to "" (all).
+    """
     if selected_status not in ARCHIVE_STATUS_SLUGS:
         selected_status = ""
 
-    # Use the shared read helper so the dashboard derives 'missed' identically
-    # to the statuses page (instead of reading raw stored status). The summary
-    # counts stay unfiltered (aggregate across all statuses).
-    user_statuses = list_user_statuses(request.user, selected_status)
-    status_rows = _build_archive_status_rows(user_statuses)
-    status_counts = user_status_counts(request.user)
-    return render(
-        request,
-        "core/archive.html",
-        {
-            "project_name": "takulife",
-            "status_rows": status_rows,
-            "has_statuses": len(status_rows) > 0,
-            "status_counts": status_counts,
-            "selected_status": selected_status,
-            "ARCHIVE_STATUS": ARCHIVE_STATUS,
-        },
-    )
+    status_rows = _build_archive_status_rows(list_user_statuses(user, selected_status))
+    return {
+        "status_rows": status_rows,
+        "has_statuses": len(status_rows) > 0,
+        "status_counts": user_status_counts(user),
+        "selected_status": selected_status,
+        "ARCHIVE_STATUS": ARCHIVE_STATUS,
+    }
+
+
+@login_required
+@ensure_csrf_cookie
+def archive(request):
+    context = _archive_status_context(request.user, request.GET.get("status", ""))
+    return render(request, "core/archive.html", context)
 
 
 @login_required
 @ensure_csrf_cookie
 def archive_statuses(request):
-    selected_status = request.GET.get("status", "")
-    if selected_status not in ARCHIVE_STATUS_SLUGS:
-        selected_status = ""
-
-    qs = list_user_statuses(request.user, selected_status)
-    status_counts = user_status_counts(request.user)
-
-    status_rows = _build_archive_status_rows(qs)
-    return render(
-        request,
-        "core/archive_statuses.html",
-        {
-            "project_name": "takulife",
-            "status_rows": status_rows,
-            "has_statuses": len(status_rows) > 0,
-            "selected_status": selected_status,
-            "status_counts": status_counts,
-            "ARCHIVE_STATUS": ARCHIVE_STATUS,
-        },
-    )
+    context = _archive_status_context(request.user, request.GET.get("status", ""))
+    return render(request, "core/archive_statuses.html", context)
 
 
 @login_required
@@ -338,8 +315,7 @@ def archive_visits(request):
         request,
         "core/archive_visits.html",
         {
-            "project_name": "takulife",
-            "visit_rows": visit_rows,
+                "visit_rows": visit_rows,
             "memo_count": memo_count,
             "has_visits": len(visit_rows) > 0,
             "selectable_events": selectable_events,
@@ -368,8 +344,7 @@ def archive_interests(request):
         request,
         "core/archive_interests.html",
         {
-            "project_name": "takulife",
-            "interest_rows": interest_rows,
+                "interest_rows": interest_rows,
             "interest_count": interest_count,
             "has_interests": len(interest_rows) > 0,
             "INTEREST_LABEL": INTEREST_LABEL,
@@ -409,8 +384,7 @@ def event_drafts(request):
         request,
         "core/event_drafts.html",
         {
-            "project_name": "takulife",
-            "draft_rows": draft_rows,
+                "draft_rows": draft_rows,
             "stats": stats,
         },
     )
@@ -428,8 +402,7 @@ def event_draft_detail(request, draft_id):
             request,
             "core/event_draft_detail.html",
             {
-                "project_name": "takulife",
-                "draft": None,
+                        "draft": None,
                 "draft_not_found": True,
                 "draft_id": draft_id,
                 "CATEGORY": CATEGORY,
@@ -445,8 +418,7 @@ def event_draft_detail(request, draft_id):
         request,
         "core/event_draft_detail.html",
         {
-            "project_name": "takulife",
-            "draft": draft,
+                "draft": draft,
             "is_pending": is_pending,
             "category_label": category_label,
             "region_label": region_label,

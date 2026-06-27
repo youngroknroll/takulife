@@ -19,18 +19,6 @@
     padding: 6px 10px;
     white-space: nowrap;
   }
-  .status-chip.pending {
-    background: var(--amber-soft);
-    color: var(--amber-ink);
-  }
-  .status-chip.approved {
-    background: var(--mint-soft);
-    color: var(--mint-ink);
-  }
-  .status-chip.rejected {
-    background: var(--rose-soft);
-    color: var(--rose-ink);
-  }
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
@@ -86,7 +74,7 @@
   .raw-box {
     border: 1px solid #d9e4f4;
     border-radius: 10px;
-    background: #fbfcff;
+    background: var(--bg-card);
     padding: 12px;
     margin-bottom: 10px;
   }
@@ -124,7 +112,7 @@
   .action-button.secondary {
     background: #fff;
     color: #24456f;
-    border-color: #c7d7f8;
+    border-color: var(--border-soft);
   }
   .action-button.danger {
     background: var(--rose-soft);
@@ -154,8 +142,5 @@
   @media (max-width: 720px) {
     .page {
       padding: 18px 14px 64px;
-    }
-    .nav-links {
-      justify-content: start;
     }
   }

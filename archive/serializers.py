@@ -6,9 +6,6 @@ from events.models import Event
 from .models import EventInterest, UserEventStatus, VisitRecord, VisitRecordPhoto
 
 
-MAX_PHOTOS_PER_RECORD = 10
-
-
 class EventInterestSerializer(serializers.ModelSerializer):
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(),

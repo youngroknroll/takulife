@@ -324,38 +324,6 @@ select:focus {
   padding: 14px;
 }
 
-/* ── badge / verified / dday chips ─────────────────────────── */
-.badge {
-  display: inline-block;
-  border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: var(--brand-soft);
-  color: var(--brand);
-}
-
-.verified {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  background: var(--mint-soft);
-  color: var(--mint-ink);
-}
-
-.dday {
-  border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: var(--amber-soft);
-  color: var(--amber-ink);
-}
-
 /* ── category color system (tiles + chips) ─────────────────── */
 /*
  * Shared category visual language: a left color tile (.cat-tile) acts as a
@@ -559,8 +527,8 @@ select:focus {
 /* ── chip (filter / quick-chip) ─────────────────────────────── */
 .chip {
   border-radius: 999px;
-  border: 1px solid #c7d7f8;
-  background: #f8fbff;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-soft);
   color: #24456f;
   font-size: 0.82rem;
   padding: 7px 12px;
@@ -585,7 +553,7 @@ select:focus {
 .summary-card {
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fbfcff;
+  background: var(--bg-card);
   padding: 12px;
 }
 
@@ -648,8 +616,8 @@ select:focus {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  border: 1px solid #c7d7f8;
-  background: #f8fbff;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-soft);
   color: #24456f;
   padding: 7px 12px;
   border-radius: 999px;
@@ -686,6 +654,17 @@ select:focus {
   color: var(--pink-ink);
 }
 
+/* Shared phone breakpoint: left-align the archive/draft topbar nav.
+   (The matching `.page { padding: 18px 14px 64px }` was intentionally NOT
+   hoisted here — a global 720px .page rule would alter home.css at the
+   701–720px band and archive.css at ≤720px, both of which lack a matching
+   720px .page override. Those files keep their own padding; see report.) */
+@media (max-width: 720px) {
+  .nav-links {
+    justify-content: start;
+  }
+}
+
 /* ── top-action button (archive + draft topbars) ────────────── */
 .top-action {
   display: inline-flex;
@@ -707,11 +686,44 @@ select:focus {
   gap: 12px;
 }
 
+/* ── search bar (shared: home + event_list) ─────────────────── */
+/*
+ * Reconciled from home.css + event_list.css. Trivial per-page diffs were
+ * unified to the most common value (tokens.css precedent): input font-size
+ * 0.95rem (home), input color/background (home), button border #b9ccf8 (home).
+ * home keeps its own `.hero .search { max-width: 540px }` override.
+ */
+.search {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 12px;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: #fff;
+}
+.search button {
+  border: 1px solid #b9ccf8;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* ── notice / empty-note ─────────────────────────────────────── */
 .notice {
   border: 1px dashed #b6c8df;
   border-radius: 10px;
-  background: #f8fbff;
+  background: var(--bg-soft);
   color: #46617f;
   padding: 12px;
   font-size: 0.88rem;
@@ -814,8 +826,8 @@ select:focus {
   font-weight: 600;
   color: var(--brand);
   text-decoration: none;
-  border: 1px solid #c7d7f8;
-  background: #f8fbff;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-soft);
   border-radius: 8px;
   padding: 7px 10px;
   white-space: nowrap;
@@ -962,7 +974,7 @@ select:focus {
 .rule-list li {
   border: 1px solid #d9e4f4;
   border-radius: 9px;
-  background: #fbfcff;
+  background: var(--bg-card);
   padding: 9px 10px;
   color: #2c4563;
   font-size: 0.86rem;
@@ -977,7 +989,7 @@ select:focus {
 .side-list li {
   border: 1px solid #d9e4f4;
   border-radius: 9px;
-  background: #fbfcff;
+  background: var(--bg-card);
   padding: 9px 10px;
 }
 
@@ -985,7 +997,7 @@ select:focus {
 .status-card {
   border: 1px solid #d9e4f4;
   border-radius: 10px;
-  background: #fbfcff;
+  background: var(--bg-card);
   padding: 12px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1002,6 +1014,38 @@ select:focus {
   margin: 0 0 5px;
   font-size: 1rem;
   line-height: 1.35;
+}
+
+/* Shared archive side action link (extracted from archive_statuses + archive_interests) */
+.side-action-link {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #fff;
+  color: #25508a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 8px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+/* Shared review-status chip colors (extracted from .draft-chip + .status-chip).
+   Color only — the page sheets keep .draft-chip / .status-chip for shape. */
+.review-status-pending {
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+}
+.review-status-approved {
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+.review-status-rejected {
+  background: var(--rose-soft);
+  color: var(--rose-ink);
 }
 
 /* Heading + inline action/filter row; and the chip group container */

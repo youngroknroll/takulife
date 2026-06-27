@@ -30,21 +30,6 @@
     background: var(--brand-soft);
     color: var(--brand);
   }
-  .action-link {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    border: 1px solid #c7d7f8;
-    border-radius: 8px;
-    background: #fff;
-    color: #25508a;
-    font-size: 0.82rem;
-    font-weight: 700;
-    padding: 8px 10px;
-    text-decoration: none;
-    white-space: nowrap;
-    min-height: 44px;
-  }
   .side-list a {
     color: #25508a;
     text-decoration: none;
@@ -63,14 +48,11 @@
     .page {
       padding: 18px 14px 64px;
     }
-    .nav-links {
-      justify-content: start;
-    }
     .status-card {
       grid-template-columns: 1fr;
       display: block;
     }
-    .action-link {
+    .side-action-link {
       margin-top: 10px;
       width: 100%;
     }

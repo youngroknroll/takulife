@@ -11,8 +11,6 @@ import pytest
 from django.test import Client
 from rest_framework.test import APIClient
 
-from events.models import Event
-
 
 # A strong throwaway password generated at runtime for tests. Not a real
 # credential and never stored — kept out of source so secret scanners do not
@@ -24,14 +22,6 @@ VALID_PASSWORD = "Aa1!" + secrets.token_urlsafe(16)
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _make_user(django_user_model, username="user-a", password=VALID_PASSWORD):
-    return django_user_model.objects.create_user(username=username, password=password)
-
-
-def _make_published_event(title="Test Event"):
-    return Event.objects.create(title=title, publish_status=Event.PublishStatus.PUBLISHED)
-
 
 def _create_status(client, event, status_value="planned"):
     """Create a UserEventStatus for the currently logged-in client and return its id."""
@@ -49,11 +39,11 @@ def _create_status(client, event, status_value="planned"):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_user_b_patch_on_user_a_status_returns_404(client, django_user_model):
+def test_user_b_patch_on_user_a_status_returns_404(client, make_user, make_event):
     """User B cannot PATCH user A's UserEventStatus — 404, not leaked."""
-    user_a = _make_user(django_user_model, username="idor-user-a")
-    user_b = _make_user(django_user_model, username="idor-user-b")
-    event = _make_published_event()
+    user_a = make_user(username="idor-user-a")
+    user_b = make_user(username="idor-user-b")
+    event = make_event()
 
     client.force_login(user_a)
     status_id = _create_status(client, event)
@@ -69,11 +59,11 @@ def test_user_b_patch_on_user_a_status_returns_404(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_user_b_delete_on_user_a_status_returns_404(client, django_user_model):
+def test_user_b_delete_on_user_a_status_returns_404(client, make_user, make_event):
     """User B cannot DELETE user A's UserEventStatus — 404, not leaked."""
-    user_a = _make_user(django_user_model, username="idor-del-a")
-    user_b = _make_user(django_user_model, username="idor-del-b")
-    event = _make_published_event()
+    user_a = make_user(username="idor-del-a")
+    user_b = make_user(username="idor-del-b")
+    event = make_event()
 
     client.force_login(user_a)
     status_id = _create_status(client, event)
@@ -85,11 +75,11 @@ def test_user_b_delete_on_user_a_status_returns_404(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_user_b_list_excludes_user_a_statuses(client, django_user_model):
+def test_user_b_list_excludes_user_a_statuses(client, make_user, make_event):
     """GET list for user B does not include user A's statuses."""
-    user_a = _make_user(django_user_model, username="list-user-a")
-    user_b = _make_user(django_user_model, username="list-user-b")
-    event = _make_published_event()
+    user_a = make_user(username="list-user-a")
+    user_b = make_user(username="list-user-b")
+    event = make_event()
 
     client.force_login(user_a)
     _create_status(client, event, "planned")
@@ -102,11 +92,11 @@ def test_user_b_list_excludes_user_a_statuses(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_post_cannot_set_user_field_owner_is_requester(client, django_user_model):
+def test_post_cannot_set_user_field_owner_is_requester(client, make_user, make_event):
     """POST body cannot override user; owner is always the authenticated requester."""
-    user_a = _make_user(django_user_model, username="post-user-a")
-    user_b = _make_user(django_user_model, username="post-user-b")
-    event = _make_published_event()
+    user_a = make_user(username="post-user-a")
+    user_b = make_user(username="post-user-b")
+    event = make_event()
 
     client.force_login(user_a)
     response = client.post(
@@ -128,11 +118,11 @@ def test_post_cannot_set_user_field_owner_is_requester(client, django_user_model
 
 
 @pytest.mark.django_db
-def test_patch_cannot_change_event_field(client, django_user_model):
+def test_patch_cannot_change_event_field(client, make_user, make_event):
     """PATCH with different event id is silently ignored (event is read-only on update)."""
-    user = _make_user(django_user_model, username="patch-event-user")
-    event = _make_published_event("Original Event")
-    other_event = _make_published_event("Other Event")
+    user = make_user(username="patch-event-user")
+    event = make_event(title="Original Event")
+    other_event = make_event(title="Other Event")
 
     client.force_login(user)
     status_id = _create_status(client, event)
@@ -162,9 +152,9 @@ def test_anonymous_api_get_returns_403():
 
 
 @pytest.mark.django_db
-def test_anonymous_api_post_returns_403():
+def test_anonymous_api_post_returns_403(make_event):
     """Anonymous POST to archive API returns 403 (DRF SessionAuthentication default)."""
-    event = _make_published_event()
+    event = make_event()
     client = Client()
     response = client.post(
         "/api/user-event-statuses/",
@@ -175,7 +165,7 @@ def test_anonymous_api_post_returns_403():
 
 
 @pytest.mark.django_db
-def test_authenticated_post_without_csrf_returns_403(django_user_model):
+def test_authenticated_post_without_csrf_returns_403(make_user, make_event):
     """
     Authenticated POST without CSRF header returns 403 because
     SessionAuthentication enforces CSRF for unsafe methods.
@@ -183,8 +173,8 @@ def test_authenticated_post_without_csrf_returns_403(django_user_model):
     We use APIClient (which bypasses CSRF by default) and then
     explicitly enforce CSRF checking via enforce_csrf_checks=True.
     """
-    user = _make_user(django_user_model, username="csrf-test-user")
-    event = _make_published_event()
+    user = make_user(username="csrf-test-user")
+    event = make_event()
 
     api_client = APIClient(enforce_csrf_checks=True)
     api_client.force_login(user)
@@ -198,7 +188,7 @@ def test_authenticated_post_without_csrf_returns_403(django_user_model):
 
 
 @pytest.mark.django_db
-def test_authenticated_post_with_csrf_succeeds(client, django_user_model):
+def test_authenticated_post_with_csrf_succeeds(client, make_user, make_event):
     """
     Authenticated POST with proper session + CSRF succeeds.
 
@@ -206,8 +196,8 @@ def test_authenticated_post_with_csrf_succeeds(client, django_user_model):
     and the test client middleware is active (enforce_csrf_checks defaults
     to False for the test Client, which mirrors JS behaviour with cookie).
     """
-    user = _make_user(django_user_model, username="csrf-pass-user")
-    event = _make_published_event()
+    user = make_user(username="csrf-pass-user")
+    event = make_event()
 
     client.force_login(user)
     response = client.post(
@@ -314,9 +304,9 @@ def test_anonymous_archive_visits_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_access_archive(client, django_user_model):
+def test_authenticated_user_can_access_archive(client, make_user):
     """Authenticated user GET /archive/ → 200."""
-    user = _make_user(django_user_model, username="archive-viewer")
+    user = make_user(username="archive-viewer")
     client.force_login(user)
     response = client.get("/archive/")
     assert response.status_code == 200

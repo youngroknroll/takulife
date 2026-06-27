@@ -9,7 +9,7 @@
   .create-box {
     border: 1px solid #d9e4f4;
     border-radius: 10px;
-    background: #fbfcff;
+    background: var(--bg-card);
     padding: 12px;
     margin: 12px 0;
   }
@@ -50,7 +50,7 @@
   .draft-card {
     border: 1px solid #d9e4f4;
     border-radius: 10px;
-    background: #fbfcff;
+    background: var(--bg-card);
     padding: 12px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -69,18 +69,6 @@
     font-size: 0.74rem;
     font-weight: 700;
     white-space: nowrap;
-  }
-  .draft-chip.pending {
-    background: var(--amber-soft);
-    color: var(--amber-ink);
-  }
-  .draft-chip.approved {
-    background: var(--mint-soft);
-    color: var(--mint-ink);
-  }
-  .draft-chip.rejected {
-    background: var(--rose-soft);
-    color: var(--rose-ink);
   }
   .draft-chip.category {
     background: var(--brand-soft);
@@ -138,9 +126,6 @@
     }
     .draft-card {
       grid-template-columns: 1fr;
-    }
-    .nav-links {
-      justify-content: start;
     }
     .summary-grid {
       grid-template-columns: 1fr;
