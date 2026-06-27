@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 내 항목{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page">
+    <div class="sub-nav">
+      <nav class="nav-links" aria-label="아카이브 메뉴">
+        <a href="/archive/">기록장</a>
+        <a href="/archive/statuses/">예정 목록</a>
+        <a href="/archive/visits/">방문 기록</a>
+        <a class="active" href="/archive/items/" aria-current="page">내 항목</a>
+        <a href="/archive/interests/" class="nav-interest">찜 목록</a>
+      </nav>
+    </div>
+
+    <section class="hero">
+      <h1>내 항목</h1>
+      <p>
+        공식 카탈로그에 없는 내가 찾은 장소(비공식 굿즈 카페 등)나 내가 산 굿즈를
+        직접 등록해 두는 곳입니다. 본인만 볼 수 있고, 공개 목록에는 노출되지 않습니다.
+      </p>
+
+      <div class="summary-grid" aria-label="내 항목 요약">
+        <article class="summary-card">
+          <p class="summary-label">전체</p>
+          <p class="summary-value">{{ total_count }}</p>
+        </article>
+        <article class="summary-card">
+          <p class="summary-label">장소</p>
+          <p class="summary-value">{{ place_count }}</p>
+        </article>
+        <article class="summary-card">
+          <p class="summary-label">굿즈</p>
+          <p class="summary-value">{{ goods_count }}</p>
+        </article>
+      </div>
+    </section>
+
+    <div id="entry-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
+
+    <section class="layout">
+      <article class="panel">
+        <h2>내 항목 목록</h2>
+        <p class="panel-note">직접 등록한 항목을 최신순으로 정리한 목록입니다.</p>
+
+        {% if has_entries %}
+          <div class="timeline" id="entry-list">
+            {% for row in entry_rows %}
+              <article class="visit-card hover-lift" data-entry-id="{{ row.entry.id }}">
+                <div class="visit-card-top">
+                  <span class="visit-chip">{{ row.kind_label }}</span>
+                  {% if row.entry.category %}
+                    <span class="visit-chip category">{{ row.entry.category }}</span>
+                  {% endif %}
+                </div>
+
+                <h3>{{ row.entry.title }}</h3>
+                {% if row.entry.location_name %}
+                  <p class="meta">{{ row.entry.location_name }}</p>
+                {% endif %}
+                {% if row.entry.work_title %}
+                  <p class="meta">{{ row.entry.work_title }}</p>
+                {% endif %}
+                {% if row.entry.memo %}
+                  <p class="review">{{ row.entry.memo }}</p>
+                {% endif %}
+                {% if row.entry.url %}
+                  <p class="meta">
+                    <a href="{{ row.entry.url }}" rel="noopener" target="_blank">참고 링크 ↗</a>
+                  </p>
+                {% endif %}
+
+                <div class="visit-card-actions">
+                  <button
+                    class="record-delete-btn"
+                    type="button"
+                    data-delete-entry-id="{{ row.entry.id }}"
+                    aria-label="{{ row.entry.title }} 삭제"
+                  >삭제</button>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state" role="status">
+            <p class="empty-icon" aria-hidden="true">🗂️</p>
+            <p class="empty-title">아직 등록한 항목이 없어요</p>
+            <p class="empty-note">오른쪽 폼에서 비공식 장소나 굿즈를 추가해 보세요.</p>
+          </div>
+        {% endif %}
+      </article>
+
+      <aside class="side-stack" aria-label="내 항목 보조 정보">
+        <section class="panel">
+          <h2>빠른 이동</h2>
+          <ul class="side-list side-list--row">
+            <li><a href="/archive/">기록장</a></li>
+            <li><a href="/archive/visits/">방문 기록</a></li>
+            <li><a href="/events/">행사 찾기</a></li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>항목 추가</h2>
+          <p class="panel-note">비공식 장소나 굿즈를 직접 등록하세요.</p>
+
+          <form id="entry-create-form" class="create-form" novalidate>
+            <div class="form-group">
+              <label for="entry-kind">종류</label>
+              <select id="entry-kind" name="kind" required>
+                <option value="place">장소 (카페·팝업 등)</option>
+                <option value="goods">굿즈 (상품)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="entry-title">이름</label>
+              <input id="entry-title" type="text" name="title" maxlength="255" required placeholder="예: 숨은 콜라보 카페 / 아크릴 스탠드">
+            </div>
+            <div class="form-group">
+              <label for="entry-category">분류 (선택)</label>
+              <input id="entry-category" type="text" name="category" maxlength="100" placeholder="예: 콜라보 카페, 굿즈">
+            </div>
+            <div class="form-group">
+              <label for="entry-work">작품명 (선택)</label>
+              <input id="entry-work" type="text" name="work_title" maxlength="255" placeholder="관련 작품">
+            </div>
+            <div class="form-group">
+              <label for="entry-location">장소 (선택)</label>
+              <input id="entry-location" type="text" name="location_name" maxlength="255" placeholder="예: 서울 성수">
+            </div>
+            <div class="form-group">
+              <label for="entry-url">참고 링크 (선택)</label>
+              <input id="entry-url" type="url" name="url" placeholder="https://">
+            </div>
+            <div class="form-group">
+              <label for="entry-memo">메모 (선택)</label>
+              <input id="entry-memo" type="text" name="memo" placeholder="짧은 메모">
+            </div>
+            <p class="form-error" id="entry-create-error" aria-live="polite"></p>
+            <button class="form-submit-btn" type="submit">항목 추가</button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h2>안내</h2>
+          <ul class="rule-list">
+            <li>내 항목은 본인만 보고 관리할 수 있습니다</li>
+            <li>공개 행사 목록·검색에는 노출되지 않습니다</li>
+            <li>비공식 장소·굿즈를 자유롭게 기록할 수 있습니다</li>
+          </ul>
+        </section>
+      </aside>
+    </section>
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/personal_entries.js' %}"></script>
+{% endblock %}

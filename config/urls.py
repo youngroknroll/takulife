@@ -17,6 +17,11 @@ urlpatterns = [
         name="archive-statuses-page",
     ),
     path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
+    path(
+        "archive/items/",
+        core_views.archive_personal_entries,
+        name="archive-personal-entries-page",
+    ),
     path("archive/interests/", core_views.archive_interests, name="archive-interests"),
     path("event-drafts/", core_views.event_drafts, name="event-drafts-page"),
     path(

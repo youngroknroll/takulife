@@ -9,10 +9,11 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from archive.models import UserEventStatus
+from archive.models import PersonalEntry, UserEventStatus
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_interests,
+    list_user_personal_entries,
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
@@ -318,6 +319,32 @@ def archive_visits(request):
             "memo_count": memo_count,
             "has_visits": len(visit_rows) > 0,
             "selectable_events": selectable_events,
+        },
+    )
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_personal_entries(request):
+    entries = list(list_user_personal_entries(request.user))
+    entry_rows = [
+        {
+            "entry": entry,
+            "kind_label": "장소" if entry.kind == PersonalEntry.Kind.PLACE else "굿즈",
+        }
+        for entry in entries
+    ]
+    place_count = sum(1 for entry in entries if entry.kind == PersonalEntry.Kind.PLACE)
+
+    return render(
+        request,
+        "core/archive_personal_entries.html",
+        {
+            "entry_rows": entry_rows,
+            "total_count": len(entries),
+            "place_count": place_count,
+            "goods_count": len(entries) - place_count,
+            "has_entries": len(entries) > 0,
         },
     )
 

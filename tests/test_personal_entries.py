@@ -124,6 +124,24 @@ def test_personal_entry_requires_authentication(client):
 
 
 @pytest.mark.django_db
+def test_personal_entry_never_appears_in_public_catalog(client, make_user):
+    """A private item must not leak into the public Event catalog (API or SSR)."""
+    user = make_user(username="pe-leak")
+    PersonalEntry.objects.create(
+        user=user, kind="place", title="PRIVATE_LEAK_CANARY"
+    )
+
+    client.force_login(user)
+    api = client.get("/api/events/")
+    browse = client.get("/events/")
+
+    assert api.status_code == 200
+    assert "PRIVATE_LEAK_CANARY" not in api.content.decode()
+    assert browse.status_code == 200
+    assert "PRIVATE_LEAK_CANARY" not in browse.content.decode()
+
+
+@pytest.mark.django_db
 def test_cannot_delete_another_users_personal_entry(client, make_user):
     user = make_user(username="pe-del")
     other = make_user(username="pe-del-other")
