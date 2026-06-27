@@ -97,13 +97,34 @@ class VisitRecord(models.Model):
         on_delete=models.CASCADE,
         related_name="archive_visit_records",
     )
+    # subject = exactly one of event (official) or personal_entry (unofficial).
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,
         related_name="archive_visit_records",
+        null=True,
+        blank=True,
+    )
+    personal_entry = models.ForeignKey(
+        PersonalEntry,
+        on_delete=models.CASCADE,
+        related_name="visit_records",
+        null=True,
+        blank=True,
     )
     visited_on = models.DateField()
     short_review = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                name="visitrecord_exactly_one_subject",
+                condition=(
+                    models.Q(event__isnull=False, personal_entry__isnull=True)
+                    | models.Q(event__isnull=True, personal_entry__isnull=False)
+                ),
+            ),
+        ]
 
 
 class VisitRecordPhoto(models.Model):

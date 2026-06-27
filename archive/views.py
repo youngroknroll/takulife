@@ -199,7 +199,8 @@ class VisitRecordListCreateView(ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         record = create_visit_record(
             user=request.user,
-            event=serializer.validated_data["event"],
+            event=serializer.validated_data.get("event"),
+            personal_entry=serializer.validated_data.get("personal_entry"),
             visited_on=serializer.validated_data["visited_on"],
             short_review=serializer.validated_data.get("short_review", ""),
         )

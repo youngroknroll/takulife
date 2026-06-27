@@ -118,7 +118,7 @@ def list_user_visit_records(user):
     """
     return (
         VisitRecord.objects.filter(user=user)
-        .select_related("event")
+        .select_related("event", "personal_entry")
         .prefetch_related("photos")
         .order_by("-visited_on", "-id")
     )

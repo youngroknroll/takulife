@@ -69,10 +69,11 @@ def revert_to_planned(*, user_event_status):
     return user_event_status
 
 
-def create_visit_record(*, user, event, visited_on, short_review=""):
+def create_visit_record(*, user, event=None, personal_entry=None, visited_on, short_review=""):
     return VisitRecord.objects.create(
         user=user,
         event=event,
+        personal_entry=personal_entry,
         visited_on=visited_on,
         short_review=short_review,
     )

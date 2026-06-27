@@ -67,14 +67,37 @@ class UserEventStatusQuerySerializer(serializers.Serializer):
 
 
 class VisitRecordSerializer(serializers.ModelSerializer):
+    # subject = exactly one of event (published) or personal_entry (own).
     event = serializers.PrimaryKeyRelatedField(
-        queryset=Event.objects.published(),
+        queryset=Event.objects.published(), required=False, allow_null=True
+    )
+    personal_entry = serializers.PrimaryKeyRelatedField(
+        queryset=PersonalEntry.objects.none(), required=False, allow_null=True
     )
 
     class Meta:
         model = VisitRecord
-        fields = ["id", "event", "visited_on", "short_review"]
+        fields = ["id", "event", "personal_entry", "visited_on", "short_review"]
         read_only_fields = ["id"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Scope personal_entry to the requester so you can't attach to someone
+        # else's private item.
+        request = self.context.get("request")
+        if request is not None and request.user.is_authenticated:
+            self.fields["personal_entry"].queryset = PersonalEntry.objects.filter(
+                user=request.user
+            )
+
+    def validate(self, attrs):
+        event = attrs.get("event")
+        personal_entry = attrs.get("personal_entry")
+        if bool(event) == bool(personal_entry):
+            raise serializers.ValidationError(
+                "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
+            )
+        return attrs
 
 
 class VisitRecordPhotoUploadSerializer(serializers.Serializer):
