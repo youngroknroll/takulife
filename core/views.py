@@ -127,23 +127,22 @@ def home(request):
 
 
 def event_list(request):
-    validation_error = None
     page_obj = None
     total_count = 0
     event_rows = []
 
+    # Invalid / unrecognised filter values are treated as "no match" so the
+    # browse page degrades to the empty state ("행사 없음") instead of an error
+    # screen. The JSON API still rejects the same input with 400.
     try:
         params = parse_public_listing_params(request.GET)
-    except ValidationError:
-        validation_error = True
-        params = {}
-
-    if not validation_error:
         qs = list_published_events(params)
         total_count = qs.count()
         paginator = Paginator(qs, PUBLIC_LISTING_PAGE_SIZE)
         page_obj = paginator.get_page(request.GET.get("page"))
         event_rows = _attach_display(page_obj.object_list, user=request.user)
+    except ValidationError:
+        pass
 
     selected_region = request.GET.getlist("region")
     selected_category = request.GET.getlist("category")
@@ -177,7 +176,6 @@ def event_list(request):
         "page_obj": page_obj,
         "total_count": total_count,
         "event_rows": event_rows,
-        "validation_error": validation_error,
         "active_filters": active_filters,
         "active_filter_chips": active_filter_chips,
         # vocab tuples for filter UI

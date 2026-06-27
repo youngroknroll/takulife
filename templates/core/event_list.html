@@ -99,9 +99,7 @@
       </aside>
 
       <article class="panel results" aria-label="행사 검색 결과">
-        {% if validation_error %}
-          <p class="notice">잘못된 필터 값이 포함되어 있습니다. 필터를 초기화하고 다시 시도해 주세요. <a href="/events/">필터 초기화</a></p>
-        {% elif page_obj %}
+        {% if page_obj %}
           <header class="results-head">
             <div>
               <h2 class="results-title">검색 결과 {{ total_count }}개</h2>
