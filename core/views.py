@@ -13,6 +13,7 @@ from archive.models import UserEventStatus
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_interests,
+    list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
     user_interest_count,
@@ -305,7 +306,7 @@ def archive_visits(request):
             }
         )
 
-    selectable_events = Event.objects.published().order_by("title")
+    selectable_events = list_user_planned_events(request.user)
 
     memo_count = sum(1 for row in visit_rows if row["short_review"])
 

@@ -7,6 +7,8 @@ drafts/queries.py.
 from django.db.models import Count
 from django.utils import timezone
 
+from events.models import Event
+
 from .models import EventInterest, UserEventStatus, VisitRecord
 
 # Canonical archive status slugs, sourced from the model's own choices so the
@@ -80,6 +82,24 @@ def user_interest_event_ids(user, event_ids=None) -> dict:
 def user_interest_count(user) -> int:
     """Return the total number of event interests for the given user."""
     return EventInterest.objects.filter(user=user).count()
+
+
+def list_user_planned_events(user):
+    """Return published events the user registered as 방문 예정 (raw planned).
+
+    This is the selectable set when adding a visit record — you record a visit
+    for something you planned to go to. Uses the raw 'planned' status (not the
+    auto-miss derived overlay) so an event whose run has ended is still
+    selectable for a late visit record. Ordered by title.
+    """
+    return (
+        Event.objects.published()
+        .filter(
+            archive_user_statuses__user=user,
+            archive_user_statuses__status=UserEventStatus.Status.PLANNED,
+        )
+        .order_by("title")
+    )
 
 
 def list_user_visit_records(user):
