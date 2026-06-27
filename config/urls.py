@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from core import views as core_views
+from core.promotion_views import PromotePersonalEntryView
 
 
 urlpatterns = [
@@ -37,6 +38,11 @@ urlpatterns = [
     path("api/user-event-statuses/", include("archive.urls")),
     path("api/visit-records/", include("archive.visit_urls")),
     path("api/event-interests/", include("archive.interest_urls")),
+    path(
+        "api/personal-entries/<int:pk>/promote/",
+        PromotePersonalEntryView.as_view(),
+        name="personal-entry-promote",
+    ),
     path("api/personal-entries/", include("archive.personal_urls")),
 ]
 

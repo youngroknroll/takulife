@@ -116,6 +116,41 @@ def create_draft_from_url(source_url, source_name=""):
         raise DraftCreationDuplicateError from exc
 
 
+def create_draft_from_fields(
+    *,
+    source_url,
+    source_name="",
+    title="",
+    category="",
+    work_title="",
+    location_name="",
+    region="",
+    summary="",
+):
+    """Create a PENDING draft directly from caller-supplied fields (no fetch).
+
+    Used to seed the admin review pipeline from data the caller already has (e.g.
+    a user's unofficial item being 공식 제보'd). ``source_url`` is the official URL
+    — unique here, and on approval it becomes the published event's official_url.
+    The fields land in the same ``extracted_*`` slots the admin reviews/edits, so
+    free-text category/region can be corrected before publication.
+    """
+    try:
+        return EventDraft.objects.create(
+            source_url=source_url,
+            source_name=source_name,
+            extracted_title=title,
+            extracted_category=category,
+            extracted_work_title=work_title,
+            extracted_location_name=location_name,
+            extracted_region=region,
+            extracted_summary=summary,
+            review_status=EventDraft.ReviewStatus.PENDING,
+        )
+    except IntegrityError as exc:
+        raise DraftCreationDuplicateError from exc
+
+
 def _get_pending_draft_for_update(draft_id):
     try:
         draft = EventDraft.objects.select_for_update().get(pk=draft_id)

@@ -123,6 +123,13 @@ class PersonalEntry(models.Model):
         PLACE = "place", "Place"
         GOODS = "goods", "Goods"
 
+    class PromotionStatus(models.TextChoices):
+        # "" = never submitted for official review; "submitted" = a review draft
+        # has been created. Set by the neutral core.promotion orchestrator (no FK
+        # to drafts — archive must not depend on drafts).
+        NONE = "", "None"
+        SUBMITTED = "submitted", "Submitted"
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -138,6 +145,12 @@ class PersonalEntry(models.Model):
     url = models.URLField(blank=True)
     memo = models.TextField(blank=True)
     image = models.ImageField(upload_to="personal-entries/", blank=True, null=True)
+    promotion_status = models.CharField(
+        max_length=20,
+        choices=PromotionStatus.choices,
+        default=PromotionStatus.NONE,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
