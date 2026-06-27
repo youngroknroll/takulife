@@ -34,16 +34,29 @@
 
           <div class="filter-group">
             <h2>지역</h2>
-            <ul class="filter-list">
-              {% for slug, label in REGION %}
-                <li>
-                  <label class="filter-check">
-                    <input type="checkbox" name="region" value="{{ slug }}"{% if slug in selected_region %} checked{% endif %}>
-                    {{ label }}
-                  </label>
-                </li>
-              {% endfor %}
-            </ul>
+            <div class="region-select" data-region-select>
+              <button type="button" class="region-select-toggle" data-region-toggle
+                      aria-expanded="false" aria-controls="region-options">
+                <span data-region-summary>지역 전체</span>
+                <span class="region-caret" aria-hidden="true">▾</span>
+              </button>
+              <ul class="region-select-menu filter-list" id="region-options" data-region-menu hidden>
+                {% for slug, label in REGION %}
+                  {% if slug != 'online' %}
+                    <li>
+                      <label class="filter-check">
+                        <input type="checkbox" name="region" value="{{ slug }}"{% if slug in selected_region %} checked{% endif %}>
+                        {{ label }}
+                      </label>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+            <label class="filter-check region-online">
+              <input type="checkbox" name="region" value="online"{% if 'online' in selected_region %} checked{% endif %}>
+              온라인
+            </label>
           </div>
 
           <div class="filter-group">
@@ -99,9 +112,7 @@
       </aside>
 
       <article class="panel results" aria-label="행사 검색 결과">
-        {% if validation_error %}
-          <p class="notice">잘못된 필터 값이 포함되어 있습니다. 필터를 초기화하고 다시 시도해 주세요. <a href="/events/">필터 초기화</a></p>
-        {% elif page_obj %}
+        {% if page_obj %}
           <header class="results-head">
             <div>
               <h2 class="results-title">검색 결과 {{ total_count }}개</h2>
