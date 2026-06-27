@@ -20,10 +20,13 @@ def parse_public_listing_params(raw_params):
     Returns validated_data dict on success, raises ValidationError on failure.
     """
     allowed_fields = EventQuerySerializer().fields
+    # Drop blank values so an empty filter (e.g. the "전체" status radio / default
+    # sort the browse form always submits) means "no filter" rather than failing
+    # ChoiceField/DateField validation.
     data = {
         key: value
         for key, value in raw_params.items()
-        if key in allowed_fields
+        if key in allowed_fields and value != ""
     }
     serializer = EventQuerySerializer(data=data)
     serializer.is_valid(raise_exception=True)

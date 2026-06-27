@@ -34,16 +34,29 @@
 
           <div class="filter-group">
             <h2>지역</h2>
-            <ul class="filter-list">
-              {% for slug, label in REGION %}
-                <li>
-                  <label class="filter-check">
-                    <input type="checkbox" name="region" value="{{ slug }}"{% if slug in selected_region %} checked{% endif %}>
-                    {{ label }}
-                  </label>
-                </li>
-              {% endfor %}
-            </ul>
+            <div class="region-select" data-region-select>
+              <button type="button" class="region-select-toggle" data-region-toggle
+                      aria-expanded="false" aria-controls="region-options">
+                <span data-region-summary>지역 전체</span>
+                <span class="region-caret" aria-hidden="true">▾</span>
+              </button>
+              <ul class="region-select-menu filter-list" id="region-options" data-region-menu hidden>
+                {% for slug, label in REGION %}
+                  {% if slug != 'online' %}
+                    <li>
+                      <label class="filter-check">
+                        <input type="checkbox" name="region" value="{{ slug }}"{% if slug in selected_region %} checked{% endif %}>
+                        {{ label }}
+                      </label>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+            <label class="filter-check region-online">
+              <input type="checkbox" name="region" value="online"{% if 'online' in selected_region %} checked{% endif %}>
+              온라인
+            </label>
           </div>
 
           <div class="filter-group">

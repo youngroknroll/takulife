@@ -38,3 +38,17 @@ class TestEventListInvalidFilters:
         body = resp.content.decode()
         assert "검색 결과" in body
         assert "Popup match" in body
+
+    def test_sidebar_form_payload_with_blank_status_lists_matches(self, make_event):
+        """The sidebar form always submits status="" (전체) and sort="";
+        a blank status must mean "no status filter", not an error."""
+        make_event(title="Seoul match", region="seoul")
+
+        resp = Client().get(
+            "/events/", {"region": "seoul", "status": "", "sort": ""}
+        )
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "검색 결과" in body
+        assert "Seoul match" in body

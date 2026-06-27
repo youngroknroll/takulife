@@ -266,6 +266,16 @@ def test_public_event_list_rejects_invalid_status_filter(client):
 
 
 @pytest.mark.django_db
+def test_public_event_list_accepts_blank_status_filter(client):
+    matching = Event.objects.create(title="Listed", publish_status=Event.PublishStatus.PUBLISHED)
+
+    response = client.get("/api/events/", {"status": ""})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["results"]] == [matching.id]
+
+
+@pytest.mark.django_db
 def test_public_event_list_filters_by_category_work_title_and_start_date_range(client):
     matching = Event.objects.create(
         title="June popup",
