@@ -116,6 +116,16 @@
     background: #fff;
     color: var(--muted);
   }
+  /* Match the 방문 예정 (.status-btn) button to the 찜 (.interest-btn) height and
+     shape so the two participation actions read as a uniform pair. Scoped to the
+     detail panel — the global .status-btn pill is kept for the archive pages. */
+  .side-block .status-btn {
+    min-height: 44px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
   .source-block {
     border: 1px solid var(--line);
     border-radius: 8px;
