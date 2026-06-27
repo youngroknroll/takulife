@@ -93,6 +93,8 @@
                     data-status-action
                     data-personal-entry-id="{{ row.entry.id }}"
                     data-status="planned"
+                    data-label="{{ row.planned_label }}"
+                    data-label-active="{{ row.planned_label }}"
                     data-reload-on-success
                     {% if row.status_id %}data-status-id="{{ row.status_id }}"{% endif %}
                     aria-pressed="{% if row.status_id %}true{% else %}false{% endif %}"
@@ -100,6 +102,16 @@
                 </div>
 
                 <div class="visit-card-actions">
+                  {% if row.is_submitted %}
+                    <span class="promote-badge" title="관리자 검수 후 공개 목록에 게시됩니다">공식 제보됨 · 검수 중</span>
+                  {% else %}
+                    <button
+                      class="promote-btn"
+                      type="button"
+                      data-promote-toggle="{{ row.entry.id }}"
+                      aria-expanded="false"
+                    >공식 제보</button>
+                  {% endif %}
                   <button
                     class="record-delete-btn"
                     type="button"
@@ -107,6 +119,18 @@
                     aria-label="{{ row.entry.title }} 삭제"
                   >삭제</button>
                 </div>
+
+                {% if not row.is_submitted %}
+                  <form class="promote-form" data-promote-form="{{ row.entry.id }}" hidden novalidate>
+                    <p class="promote-note">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다.</p>
+                    <div class="form-group">
+                      <label for="promote-url-{{ row.entry.id }}">공식 URL</label>
+                      <input id="promote-url-{{ row.entry.id }}" type="url" name="official_url" placeholder="https://" required>
+                    </div>
+                    <p class="form-error" data-promote-error="{{ row.entry.id }}" aria-live="polite"></p>
+                    <button class="form-submit-btn" type="submit">제보하기</button>
+                  </form>
+                {% endif %}
               </article>
             {% endfor %}
           </div>

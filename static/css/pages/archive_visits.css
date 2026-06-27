@@ -216,3 +216,45 @@
     gap: 7px;
     margin-top: 10px;
   }
+  /* 공식 제보 (promote to review) */
+  .visit-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .promote-btn {
+    border: 1px solid var(--brand);
+    border-radius: 8px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 7px 12px;
+    min-height: 36px;
+    cursor: pointer;
+  }
+  .promote-btn:hover { background: var(--brand); color: #fff; }
+  .promote-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: var(--amber-soft);
+    color: var(--amber-ink);
+  }
+  .promote-form {
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    background: var(--bg-soft);
+  }
+  .promote-note {
+    margin: 0 0 8px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.45;
+  }

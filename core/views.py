@@ -384,6 +384,7 @@ def archive_personal_entries(request):
                 "status_id": status_id,
                 "status_label": archive_status_label(status_slug, entry.kind) if status_slug else "",
                 "planned_label": archive_status_label("planned", entry.kind),
+                "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
             }
         )
     place_count = sum(1 for entry in entries if entry.kind == PersonalEntry.Kind.PLACE)

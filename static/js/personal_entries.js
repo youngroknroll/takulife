@@ -124,9 +124,84 @@
     }
   }
 
+  // ── 공식 제보 (promote a private item into the review pipeline) ──
+
+  function bindPromote() {
+    // Reveal the per-card official-URL form on demand.
+    var toggles = document.querySelectorAll("[data-promote-toggle]");
+    for (var t = 0; t < toggles.length; t++) {
+      (function (btn) {
+        btn.addEventListener("click", function () {
+          var id = btn.getAttribute("data-promote-toggle");
+          var form = document.querySelector('[data-promote-form="' + id + '"]');
+          if (!form) { return; }
+          var nowHidden = !form.hidden;
+          form.hidden = nowHidden;
+          btn.setAttribute("aria-expanded", String(!nowHidden));
+          if (!nowHidden) {
+            var input = form.querySelector('input[name="official_url"]');
+            if (input) { input.focus(); }
+          }
+        });
+      })(toggles[t]);
+    }
+
+    var forms = document.querySelectorAll("[data-promote-form]");
+    for (var f = 0; f < forms.length; f++) {
+      (function (form) {
+        var id = form.getAttribute("data-promote-form");
+        var errorEl = document.querySelector('[data-promote-error="' + id + '"]');
+        var submitBtn = form.querySelector('[type="submit"]');
+
+        form.addEventListener("submit", async function (evt) {
+          evt.preventDefault();
+          clearError(errorEl);
+
+          var officialUrl = form.elements["official_url"].value.trim();
+          if (!officialUrl) {
+            setError(errorEl, "공식 URL을 입력해 주세요.");
+            return;
+          }
+
+          window.TakuAPI.setLoading(submitBtn, true);
+
+          var result = await window.TakuAPI.post(
+            "/api/personal-entries/" + id + "/promote/",
+            { official_url: officialUrl }
+          );
+
+          if (result.status === 201) {
+            window.location.reload();
+            return;
+          }
+
+          window.TakuAPI.setLoading(submitBtn, false);
+
+          if (result.status === 403) {
+            handle403(result, errorEl);
+            return;
+          }
+
+          if (result.status === 409) {
+            setError(errorEl, "이미 공식 제보된 항목입니다.");
+            return;
+          }
+
+          if (result.status === 0) {
+            setError(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+            return;
+          }
+
+          setError(errorEl, window.TakuAPI.formatError(result));
+        });
+      })(forms[f]);
+    }
+  }
+
   function init() {
     bindCreateForm();
     bindEntryDeletes();
+    bindPromote();
   }
 
   if (document.readyState === "loading") {

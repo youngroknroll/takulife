@@ -77,7 +77,9 @@
   }
 
   function setButtonActive(button, statusSlug) {
-    var label = STATUS_LABELS[statusSlug] || statusSlug;
+    // A button may supply its own kind-aware label (e.g. goods → 구매 예정);
+    // fall back to the generic status vocabulary otherwise.
+    var label = button.dataset.labelActive || STATUS_LABELS[statusSlug] || statusSlug;
     button.textContent = label;
     button.classList.add("active");
     button.setAttribute("aria-pressed", "true");
@@ -85,7 +87,7 @@
 
   function setButtonDefault(button) {
     var slug = button.dataset.status;
-    var label = STATUS_LABELS[slug] || slug;
+    var label = button.dataset.label || STATUS_LABELS[slug] || slug;
     button.textContent = label;
     button.classList.remove("active");
     button.setAttribute("aria-pressed", "false");

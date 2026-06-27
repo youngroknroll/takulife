@@ -60,3 +60,32 @@ def test_place_entry_uses_visit_wording(client, make_user):
     body = client.get("/archive/items/").content.decode()
 
     assert "방문 예정" in body
+
+
+@pytest.mark.django_db
+def test_items_page_shows_promote_button_when_not_submitted(client, make_user):
+    user = make_user(username="promote-ui-new")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+    client.force_login(user)
+
+    body = client.get("/archive/items/").content.decode()
+
+    assert f'data-promote-toggle="{entry.id}"' in body
+    assert "검수 중" not in body
+
+
+@pytest.mark.django_db
+def test_items_page_shows_review_badge_when_submitted(client, make_user):
+    user = make_user(username="promote-ui-done")
+    entry = PersonalEntry.objects.create(
+        user=user,
+        kind="place",
+        title="비공식",
+        promotion_status=PersonalEntry.PromotionStatus.SUBMITTED,
+    )
+    client.force_login(user)
+
+    body = client.get("/archive/items/").content.decode()
+
+    assert "검수 중" in body
+    assert f'data-promote-toggle="{entry.id}"' not in body
