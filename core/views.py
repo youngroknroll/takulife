@@ -19,11 +19,14 @@ from archive.queries import (
     list_user_visit_records,
     user_interest_count,
     user_interest_event_ids,
+    user_personal_interest_ids,
+    user_personal_statuses,
     user_status_counts,
 )
 from core.vocab import (
     ARCHIVE_STATUS,
     ARCHIVE_STATUS_LABELS,
+    archive_status_label,
     CATEGORY,
     CATEGORY_LABELS,
     EVENT_SORT_LABELS,
@@ -361,13 +364,23 @@ def archive_visits(request):
 @ensure_csrf_cookie
 def archive_personal_entries(request):
     entries = list(list_user_personal_entries(request.user))
-    entry_rows = [
-        {
-            "entry": entry,
-            "kind_label": "장소" if entry.kind == PersonalEntry.Kind.PLACE else "굿즈",
-        }
-        for entry in entries
-    ]
+    interest_map = user_personal_interest_ids(request.user)
+    status_map = user_personal_statuses(request.user)
+
+    entry_rows = []
+    for entry in entries:
+        status_slug, status_id = status_map.get(entry.id, ("", None))
+        entry_rows.append(
+            {
+                "entry": entry,
+                "kind_label": "장소" if entry.kind == PersonalEntry.Kind.PLACE else "굿즈",
+                "interest_id": interest_map.get(entry.id),
+                "status_slug": status_slug,
+                "status_id": status_id,
+                "status_label": archive_status_label(status_slug, entry.kind) if status_slug else "",
+                "planned_label": archive_status_label("planned", entry.kind),
+            }
+        )
     place_count = sum(1 for entry in entries if entry.kind == PersonalEntry.Kind.PLACE)
 
     return render(

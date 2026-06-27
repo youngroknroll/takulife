@@ -110,6 +110,34 @@ def list_user_personal_entries(user, kind=None):
     return queryset
 
 
+def user_personal_interest_ids(user) -> dict:
+    """Return {personal_entry_id: interest_id} for the user's unofficial 찜.
+
+    Drives the 찜 toggle state on the 비공식 page so each card knows whether it is
+    already favourited (and the interest id to delete on un-favourite).
+    """
+    return {
+        row["personal_entry_id"]: row["id"]
+        for row in EventInterest.objects.filter(
+            user=user, personal_entry__isnull=False
+        ).values("personal_entry_id", "id")
+    }
+
+
+def user_personal_statuses(user) -> dict:
+    """Return {personal_entry_id: (status_slug, status_id)} for unofficial 상태.
+
+    Uses the raw stored status — personal entries have no run period, so the
+    auto-miss overlay never applies to them.
+    """
+    return {
+        row["personal_entry_id"]: (row["status"], row["id"])
+        for row in UserEventStatus.objects.filter(
+            user=user, personal_entry__isnull=False
+        ).values("personal_entry_id", "status", "id")
+    }
+
+
 def list_user_visit_records(user):
     """Return a user's visit records, newest first, with related data prefetched.
 

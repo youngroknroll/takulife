@@ -214,6 +214,14 @@
       return;
     }
 
+    // Controls that opt into a reload (archive change buttons, the 비공식-page
+    // 예정 toggle) let the server re-derive the row badge, available actions,
+    // kind-aware labels and summary counts instead of patching the DOM piecemeal.
+    if ((result.ok || result.status === 204) && button.hasAttribute("data-reload-on-success")) {
+      window.location.reload();
+      return;
+    }
+
     if (mode === "cancel" && (result.status === 204 || result.ok)) {
       delete button.dataset.statusId;
       setButtonDefault(button);
@@ -222,13 +230,6 @@
     }
 
     if (result.ok) {
-      // Archive change controls (방문 완료 / 놓침 / 되돌리기) opt into a reload so
-      // the row's badge, available actions, and the summary counts all re-derive
-      // server-side instead of being patched piecemeal in the DOM.
-      if (mode === "change" && button.hasAttribute("data-reload-on-success")) {
-        window.location.reload();
-        return;
-      }
       var responseData = result.data || {};
       // A switch moves the single registration from the sibling to this button.
       var fallbackId;

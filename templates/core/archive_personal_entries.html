@@ -75,6 +75,30 @@
                   </p>
                 {% endif %}
 
+                <div class="status-row" data-status-error-container>
+                  <button
+                    class="interest-btn{% if row.interest_id %} active{% endif %}"
+                    type="button"
+                    data-interest-toggle
+                    data-personal-entry-id="{{ row.entry.id }}"
+                    {% if row.interest_id %}data-interest-id="{{ row.interest_id }}"{% endif %}
+                    aria-pressed="{% if row.interest_id %}true{% else %}false{% endif %}"
+                  >
+                    <span aria-hidden="true" data-interest-glyph>{% if row.interest_id %}♥{% else %}♡{% endif %}</span>
+                    찜
+                  </button>
+                  <button
+                    class="status-btn {% if row.status_slug %}{{ row.status_slug }}{% else %}planned{% endif %}{% if row.status_id %} active{% endif %}"
+                    type="button"
+                    data-status-action
+                    data-personal-entry-id="{{ row.entry.id }}"
+                    data-status="planned"
+                    data-reload-on-success
+                    {% if row.status_id %}data-status-id="{{ row.status_id }}"{% endif %}
+                    aria-pressed="{% if row.status_id %}true{% else %}false{% endif %}"
+                  >{% if row.status_label %}{{ row.status_label }}{% else %}{{ row.planned_label }}{% endif %}</button>
+                </div>
+
                 <div class="visit-card-actions">
                   <button
                     class="record-delete-btn"

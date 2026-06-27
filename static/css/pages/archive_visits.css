@@ -208,3 +208,11 @@
       grid-template-columns: 1fr;
     }
   }
+  /* 비공식 카드의 찜/예정 토글 줄 (status-btn/interest-btn 자체는 base.css) */
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+  }
