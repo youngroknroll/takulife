@@ -276,6 +276,25 @@ def test_public_event_list_accepts_blank_status_filter(client):
 
 
 @pytest.mark.django_db
+def test_public_event_list_filters_by_multiple_regions(client):
+    seoul = Event.objects.create(
+        title="Seoul", region="seoul", publish_status=Event.PublishStatus.PUBLISHED
+    )
+    gyeonggi = Event.objects.create(
+        title="Gyeonggi", region="gyeonggi", publish_status=Event.PublishStatus.PUBLISHED
+    )
+    Event.objects.create(
+        title="Busan", region="busan", publish_status=Event.PublishStatus.PUBLISHED
+    )
+
+    response = client.get("/api/events/?region=seoul&region=gyeonggi")
+
+    assert response.status_code == 200
+    ids = {item["id"] for item in response.json()["results"]}
+    assert ids == {seoul.id, gyeonggi.id}
+
+
+@pytest.mark.django_db
 def test_public_event_list_filters_by_category_work_title_and_start_date_range(client):
     matching = Event.objects.create(
         title="June popup",

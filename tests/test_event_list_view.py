@@ -39,6 +39,19 @@ class TestEventListInvalidFilters:
         assert "검색 결과" in body
         assert "Popup match" in body
 
+    def test_multiple_region_values_filter_as_or(self, make_event):
+        seoul = make_event(title="Seoul one", region="seoul")
+        gyeonggi = make_event(title="Gyeonggi one", region="gyeonggi")
+        make_event(title="Busan one", region="busan")
+
+        resp = Client().get("/events/?region=seoul&region=gyeonggi")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "Seoul one" in body
+        assert "Gyeonggi one" in body
+        assert "Busan one" not in body
+
     def test_sidebar_form_payload_with_blank_status_lists_matches(self, make_event):
         """The sidebar form always submits status="" (전체) and sort="";
         a blank status must mean "no status filter", not an error."""

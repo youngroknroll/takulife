@@ -30,12 +30,24 @@ class TestParsePublicListingParams:
         }
         result = parse_public_listing_params(raw)
         assert result["q"] == "popup"
-        assert result["region"] == "seoul"
-        assert result["category"] == "popup_store"
+        # region/category are multi-value: a single value normalises to a 1-list
+        assert result["region"] == ["seoul"]
+        assert result["category"] == ["popup_store"]
         assert result["work_title"] == "Gundam"
         assert result["start_date_from"] == date(2026, 6, 1)
         assert result["start_date_to"] == date(2026, 6, 30)
         assert result["status"] == "upcoming"
+
+    def test_collects_multiple_region_and_category_values(self):
+        from django.http import QueryDict
+        from events.queries import parse_public_listing_params
+
+        raw = QueryDict(
+            "region=seoul&region=gyeonggi&category=popup_store&category=exhibition"
+        )
+        result = parse_public_listing_params(raw)
+        assert result["region"] == ["seoul", "gyeonggi"]
+        assert result["category"] == ["popup_store", "exhibition"]
 
     def test_drops_unknown_keys(self):
         from events.queries import parse_public_listing_params

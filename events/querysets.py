@@ -15,10 +15,10 @@ class EventQuerySet(models.QuerySet):
 
         if query := params.get("q"):
             queryset = queryset.filter(title__icontains=query)
-        if region := params.get("region"):
-            queryset = queryset.filter(region=region)
-        if category := params.get("category"):
-            queryset = queryset.filter(category=category)
+        if regions := params.get("region"):
+            queryset = queryset.filter(region__in=regions)
+        if categories := params.get("category"):
+            queryset = queryset.filter(category__in=categories)
         if work_title := params.get("work_title"):
             queryset = queryset.filter(work_title__icontains=work_title)
         if start_date_from := params.get("start_date_from"):
