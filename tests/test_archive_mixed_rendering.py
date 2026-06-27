@@ -53,6 +53,18 @@ def test_interest_page_renders_official_and_unofficial(client, mixed_user):
 
 
 @pytest.mark.django_db
+def test_goods_status_uses_kind_aware_label_in_list(client, make_user):
+    user = make_user(username="goods-label")
+    entry = PersonalEntry.objects.create(user=user, kind="goods", title="아크릴")
+    UserEventStatus.objects.create(user=user, personal_entry=entry, status="planned")
+    client.force_login(user)
+
+    body = client.get("/archive/statuses/").content.decode()
+
+    assert "구매 예정" in body
+
+
+@pytest.mark.django_db
 def test_unofficial_status_has_no_public_detail_link(client, make_user):
     """A private personal entry must not be linked to a public /events/ page."""
     user = make_user(username="no-leak-link")

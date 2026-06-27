@@ -245,12 +245,17 @@ def _build_archive_status_rows(user_statuses):
     """
     rows = []
     for us in user_statuses:
+        subject = _subject_view(us)
+        kind = subject["kind"]
         rows.append(
             {
                 "status_id": us.pk,
                 "status_slug": us.derived_status,
-                "status_label": ARCHIVE_STATUS_LABELS.get(us.derived_status, us.derived_status),
-                "subject": _subject_view(us),
+                # Kind-aware: a goods item reads 구매…, a place/event reads 방문….
+                "status_label": archive_status_label(us.derived_status, kind),
+                "label_visited": archive_status_label("visited", kind),
+                "label_planned": archive_status_label("planned", kind),
+                "subject": subject,
             }
         )
     return rows
