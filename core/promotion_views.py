@@ -6,6 +6,7 @@ which the domain boundary forbids inside the archive app itself.
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from core.errors import error_response, field_error_response
@@ -23,6 +24,10 @@ class _PromoteSerializer(serializers.Serializer):
 
 class PromotePersonalEntryView(APIView):
     permission_classes = [IsAuthenticated]
+    # Per-user daily cap so the admin review queue can't be flooded with
+    # promoted drafts. Rate lives in settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"].
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "promotion"
 
     def post(self, request, pk):
         serializer = _PromoteSerializer(data=request.data)

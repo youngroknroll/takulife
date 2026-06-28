@@ -242,3 +242,36 @@ def test_promoted_entry_stays_private_until_approved(client, make_user):
     # Admin approves the seeded draft → it becomes a published Event.
     approve_draft(result.draft_id)
     assert Event.objects.published().filter(official_url="https://priv.example.com/c").exists()
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting — the review queue can't be flooded
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_api_promote_is_rate_limited_per_user(client, make_user):
+    """After the daily promotion cap, further promotes are throttled (429)."""
+    user = make_user(username="api-promo-flood")
+    client.force_login(user)
+
+    # 20/day budget: 20 distinct promotes succeed, the 21st is throttled.
+    for i in range(20):
+        entry = PersonalEntry.objects.create(user=user, kind="place", title=f"비공식 {i}")
+        response = client.post(
+            f"/api/personal-entries/{entry.id}/promote/",
+            {"official_url": f"https://flood.example.com/{i}"},
+            content_type="application/json",
+        )
+        assert response.status_code == 201, f"promote {i} should succeed"
+
+    extra = PersonalEntry.objects.create(user=user, kind="place", title="비공식 초과")
+    throttled = client.post(
+        f"/api/personal-entries/{extra.id}/promote/",
+        {"official_url": "https://flood.example.com/extra"},
+        content_type="application/json",
+    )
+
+    assert throttled.status_code == 429
+    extra.refresh_from_db()
+    assert extra.promotion_status == PersonalEntry.PromotionStatus.NONE

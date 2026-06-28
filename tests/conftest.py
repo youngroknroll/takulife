@@ -9,8 +9,22 @@ import secrets
 
 import PIL.Image
 import pytest
+from django.core.cache import cache
 
 from events.models import Event
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    """Isolate DRF throttle state between tests.
+
+    Scoped rate throttling stores request history in the default (LocMem) cache,
+    which is not rolled back with the DB. Clear it around every test so one
+    test's promotion requests never count against another's throttle budget.
+    """
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture
