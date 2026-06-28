@@ -31,6 +31,15 @@ class PersonalEntrySerializer(serializers.ModelSerializer):
         # owner is taken from the request, never the payload
         read_only_fields = ["id", "created_at"]
 
+    def validate_image(self, value):
+        # Route the optional image through the shared guard (size, extension,
+        # real format, per-axis dimension, and total pixel-area decompression
+        # -bomb caps) — the same protection visit photos already get. DRF's
+        # default ImageField only confirms it decodes, not that it is safe.
+        if value in (None, ""):
+            return value
+        return validate_uploaded_image(value)
+
 
 class _SubjectScopedPersonalEntryMixin:
     """Scopes the ``personal_entry`` field to the requester and enforces that
