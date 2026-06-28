@@ -76,6 +76,12 @@
     background: var(--brand-soft);
     color: var(--brand);
   }
+  /* 비공식 mark — unified gray, matching .event-category.unofficial on the
+     기록장 / 예정 목록 / 찜 목록 pages (#eef0f3 / #5b6472). */
+  .visit-chip.unofficial {
+    background: #eef0f3;
+    color: #5b6472;
+  }
   .visit-card h3 {
     margin: 0 0 5px;
     font-size: 1rem;
