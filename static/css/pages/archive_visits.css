@@ -35,12 +35,16 @@
     border-color: var(--brand);
     color: #fff;
   }
-  /* card: text body (left) + photo carousel (right) */
   .visit-card {
     border: 1px solid #d9e4f4;
     border-radius: 10px;
     background: var(--bg-card);
     padding: 12px;
+  }
+  /* 방문 기록 카드만 2단(텍스트 좌 + 사진 캐러셀 우). 비공식 페이지도 .visit-card를
+     공유하지만 .visit-card-body 래퍼가 없으므로 :has()로 이 페이지 카드에만 한정 —
+     공유 카드의 기본 블록 정렬은 그대로 둔다. */
+  .visit-card:has(.visit-card-body) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 14px;
@@ -257,7 +261,7 @@
       padding: 18px 14px 64px;
     }
     /* stack photo carousel below the text body on narrow screens */
-    .visit-card {
+    .visit-card:has(.visit-card-body) {
       grid-template-columns: 1fr;
     }
     .photo-carousel {
