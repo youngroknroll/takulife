@@ -518,6 +518,14 @@ select:focus {
   font-weight: 700;
 }
 
+/* 비공식 카드: 찜 버튼이 옆 상태 버튼(구매/방문 예정)과 한 줄에 있을 때,
+   같은 높이·알약 모양으로 통일한다. 찜 목록 페이지의 단독 찜 버튼
+   (.status-row에 .status-btn 없음)은 기존 44px 탭 타깃을 유지한다. */
+.status-row:has(.status-btn) .interest-btn {
+  min-height: 0;
+  border-radius: 999px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .interest-btn {
     transition: none;
