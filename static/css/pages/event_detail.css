@@ -93,6 +93,11 @@
     display: grid;
     gap: 8px;
   }
+  /* 찜·예정 줄은 base.css .status-row(flex)를 그대로 쓴다. 부모 .action-list가
+     grid gap으로 간격을 주므로 status-row 자체 margin-top은 제거. */
+  .action-list .status-row {
+    margin-top: 0;
+  }
   .action-link {
     display: inline-flex;
     justify-content: center;
@@ -115,16 +120,6 @@
     border-color: var(--line);
     background: #fff;
     color: var(--muted);
-  }
-  /* Match the 방문 예정 (.status-btn) button to the 찜 (.interest-btn) height and
-     shape so the two participation actions read as a uniform pair. Scoped to the
-     detail panel — the global .status-btn pill is kept for the archive pages. */
-  .side-block .status-btn {
-    min-height: 44px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
   }
   .source-block {
     border: 1px solid var(--line);
