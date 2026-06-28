@@ -67,6 +67,7 @@
                   </p>
                 {% endif %}
 
+                <div class="entry-actions-bar">
                 <div class="status-row" data-status-error-container>
                   <button
                     class="interest-btn{% if row.interest_id %} active{% endif %}"
@@ -110,6 +111,7 @@
                     data-delete-entry-id="{{ row.entry.id }}"
                     aria-label="{{ row.entry.title }} 삭제"
                   >삭제</button>
+                </div>
                 </div>
 
                 {% if not row.is_submitted %}
