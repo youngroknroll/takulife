@@ -17,6 +17,11 @@ urlpatterns = [
         core_views.archive_statuses,
         name="archive-statuses-page",
     ),
+    path(
+        "archive/visits/new/",
+        core_views.archive_visit_create,
+        name="archive-visit-create-page",
+    ),
     path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
     path(
         "archive/items/",

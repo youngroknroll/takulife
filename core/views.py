@@ -367,6 +367,24 @@ def archive_visits(request):
 
 @login_required
 @ensure_csrf_cookie
+def archive_visit_create(request):
+    """Dedicated write page for creating a visit record.
+
+    Read-only render: the form posts to the existing JSON/photo APIs from
+    visit_create.js. Subject choices mirror the inline form they replace.
+    """
+    return render(
+        request,
+        "core/archive_visit_create.html",
+        {
+            "selectable_events": list_user_planned_events(request.user),
+            "selectable_personal_entries": list_user_personal_entries(request.user),
+        },
+    )
+
+
+@login_required
+@ensure_csrf_cookie
 def archive_personal_entries(request):
     entries = list(list_user_personal_entries(request.user))
     interest_map = user_personal_interest_ids(request.user)
