@@ -99,35 +99,6 @@
   .photo-delete-btn:hover {
     background: rgba(180,0,0,0.75);
   }
-  /* Photo upload row */
-  .photo-upload-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-  }
-  .photo-upload-label {
-    font-size: 0.82rem;
-    color: var(--muted);
-  }
-  .photo-upload-input {
-    font-size: 0.82rem;
-  }
-  .photo-upload-btn {
-    border: 1px solid var(--border-soft);
-    border-radius: 8px;
-    background: var(--bg-soft);
-    color: #24456f;
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 6px 10px;
-    cursor: pointer;
-    min-height: 36px;
-  }
-  .photo-upload-btn:hover {
-    background: var(--brand-soft);
-  }
   .photo-error {
     font-size: 0.82rem;
     color: #c0392b;

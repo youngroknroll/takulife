@@ -92,21 +92,6 @@
                   </div>
                 {% endif %}
 
-                <div class="photo-upload-row">
-                  <span class="photo-upload-label">사진 추가</span>
-                  <input
-                    class="photo-upload-input"
-                    type="file"
-                    accept="image/*"
-                    data-record-id="{{ row.record_id }}"
-                    aria-label="{{ row.subject.title }} 사진 업로드"
-                  >
-                  <button
-                    class="photo-upload-btn"
-                    type="button"
-                    data-upload-record-id="{{ row.record_id }}"
-                  >업로드</button>
-                </div>
                 <p class="photo-error" data-photo-error="{{ row.record_id }}" aria-live="polite"></p>
 
                 <div class="visit-card-actions">
