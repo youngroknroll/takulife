@@ -202,12 +202,7 @@
     background: var(--amber-soft);
     color: var(--amber-ink);
   }
-  .status-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-top: 9px;
-  }
+  /* .status-row는 base.css로 통합됨 (중복 제거) */
   .pager {
     margin-top: 12px;
     display: flex;

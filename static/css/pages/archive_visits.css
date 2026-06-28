@@ -407,14 +407,7 @@
   .record-cta:hover {
     opacity: 0.9;
   }
-  /* 비공식 카드의 찜/예정 토글 줄 (status-btn/interest-btn 자체는 base.css) */
-  .status-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 7px;
-    margin-top: 10px;
-  }
+  /* .status-row는 base.css로 통합됨 (중복 제거) */
   /* 비공식 카드 하단 액션 바: 찜·예정(좌) / 공식 제보·마크·삭제(우) */
   #entry-list .entry-actions-bar {
     display: flex;
