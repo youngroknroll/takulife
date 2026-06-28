@@ -42,6 +42,15 @@
     }
   }
 
+  // Confirm before a destructive, unrecoverable action. Uses the shared modal
+  // (confirm-modal.js, loaded in base.html) with a native confirm() fallback.
+  function askConfirm(message) {
+    if (typeof window.TakuConfirm === "function") {
+      return window.TakuConfirm(message);
+    }
+    return Promise.resolve(window.confirm(message));
+  }
+
   // ── multipart photo upload ───────────────────────────────────────────────
 
   async function uploadPhoto(recordId, file, errorEl, btn) {
@@ -182,6 +191,9 @@
           var errorEl = document.querySelector(
             "[data-photo-error='" + recordId + "']"
           );
+          if (!(await askConfirm("이 사진을 삭제하시겠습니까? 되돌릴 수 없습니다."))) {
+            return;
+          }
           clearError(errorEl);
           window.TakuAPI.setLoading(btn, true);
 
@@ -227,6 +239,13 @@
       (function (btn) {
         btn.addEventListener("click", async function () {
           var recordId = btn.getAttribute("data-delete-record-id");
+          if (
+            !(await askConfirm(
+              "이 방문 기록을 삭제하시겠습니까? 메모와 사진도 함께 삭제되며 되돌릴 수 없습니다."
+            ))
+          ) {
+            return;
+          }
           clearError(globalErrorEl);
           window.TakuAPI.setLoading(btn, true);
 

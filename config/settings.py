@@ -106,3 +106,12 @@ SESSION_COOKIE_SECURE = _secure_cookies
 CSRF_COOKIE_SECURE = _secure_cookies
 # Keep CSRF_COOKIE_HTTPONLY False so the JS layer can read the csrftoken cookie.
 CSRF_COOKIE_HTTPONLY = False
+
+# DRF: rate-limit 공식 제보 (promotion) so an authenticated user cannot flood the
+# admin review queue with promoted PersonalEntry drafts. Scoped throttle only —
+# applied per-view (PromotePersonalEntryView), so other endpoints are unaffected.
+REST_FRAMEWORK = {
+    "DEFAULT_THROTTLE_RATES": {
+        "promotion": "20/day",
+    },
+}

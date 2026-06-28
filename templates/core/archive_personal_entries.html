@@ -25,7 +25,7 @@
         직접 등록해 두는 곳입니다. 본인만 볼 수 있고, 공개 목록에는 노출되지 않습니다.
       </p>
 
-      <div class="summary-grid" aria-label="비공식 아카이브 요약">
+      <div class="summary-grid summary-grid-3up" aria-label="비공식 아카이브 요약">
         <article class="summary-card">
           <p class="summary-label">전체</p>
           <p class="summary-value">{{ total_count }}</p>
@@ -94,7 +94,7 @@
                     data-personal-entry-id="{{ row.entry.id }}"
                     data-status="planned"
                     data-label="{{ row.planned_label }}"
-                    data-label-active="{{ row.planned_label }}"
+                    data-label-active="{{ row.status_label|default:row.planned_label }}"
                     data-reload-on-success
                     {% if row.status_id %}data-status-id="{{ row.status_id }}"{% endif %}
                     aria-pressed="{% if row.status_id %}true{% else %}false{% endif %}"

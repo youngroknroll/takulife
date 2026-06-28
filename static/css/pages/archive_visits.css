@@ -84,6 +84,18 @@
     justify-content: center;
     padding: 0;
   }
+  /* Keep the visible badge at 22px but extend the tap target to the 44x44
+     WCAG 2.5.5 minimum via a transparent overlay — clicks on it still hit the
+     button, so the delete control stays reliably tappable on touch screens. */
+  .photo-delete-btn::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
   .photo-delete-btn:hover {
     background: rgba(180,0,0,0.75);
   }
@@ -207,6 +219,11 @@
     .summary-grid {
       grid-template-columns: 1fr;
     }
+  }
+  /* 비공식 아카이브 요약(전체/장소/굿즈)은 좁은 화면에서도 3열 1행 유지.
+     compound 선택자(0,2,0)가 위 미디어쿼리의 .summary-grid(0,1,0)를 이깁니다. */
+  .summary-grid.summary-grid-3up {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   /* 비공식 카드의 찜/예정 토글 줄 (status-btn/interest-btn 자체는 base.css) */
   .status-row {
