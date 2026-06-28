@@ -67,18 +67,6 @@
                 {% if row.subject.start_date and row.subject.end_date %}
                   <p class="record-meta">{{ row.subject.start_date }} ~ {{ row.subject.end_date }}</p>
                 {% endif %}
-                <div class="status-row" data-status-error-container>
-                  <button
-                    class="status-btn {{ row.status_slug }} active"
-                    type="button"
-                    data-status-action
-                    data-status="{{ row.status_slug }}"
-                    data-status-id="{{ row.status_id }}"
-                    data-label-active="{{ row.status_label }}"
-                    data-remove-on-cancel
-                    aria-pressed="true"
-                  >{{ row.status_label }}</button>
-                </div>
               </article>
             {% endfor %}
           </div>
