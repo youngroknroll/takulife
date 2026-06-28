@@ -30,6 +30,15 @@
     }
   }
 
+  // Confirm before a destructive, unrecoverable action. Uses the shared modal
+  // (confirm-modal.js, loaded in base.html) with a native confirm() fallback.
+  function askConfirm(message) {
+    if (typeof window.TakuConfirm === "function") {
+      return window.TakuConfirm(message);
+    }
+    return Promise.resolve(window.confirm(message));
+  }
+
   function bindCreateForm() {
     var form = document.getElementById("entry-create-form");
     if (!form) { return; }
@@ -89,6 +98,13 @@
       (function (btn) {
         btn.addEventListener("click", async function () {
           var entryId = btn.getAttribute("data-delete-entry-id");
+          if (
+            !(await askConfirm(
+              "이 항목을 삭제하시겠습니까? 연결된 찜·상태·방문 기록도 함께 삭제됩니다."
+            ))
+          ) {
+            return;
+          }
           clearError(globalErrorEl);
           window.TakuAPI.setLoading(btn, true);
 
