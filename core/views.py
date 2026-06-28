@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from archive.models import PersonalEntry, UserEventStatus
+from archive.models import PersonalEntry, UserEventStatus, VisitRecord
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_interests,
@@ -379,6 +379,28 @@ def archive_visit_create(request):
         {
             "selectable_events": list_user_planned_events(request.user),
             "selectable_personal_entries": list_user_personal_entries(request.user),
+        },
+    )
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_visit_edit(request, record_id):
+    """Edit page for one visit record (owner-scoped).
+
+    Pre-fills date/memo and lists existing photos; edits happen via the PATCH /
+    photo APIs from visit_edit.js. Subject is shown read-only.
+    """
+    record = get_object_or_404(VisitRecord, pk=record_id, user=request.user)
+    return render(
+        request,
+        "core/archive_visit_edit.html",
+        {
+            "record_id": record.pk,
+            "subject": _subject_view(record),
+            "visited_on": record.visited_on,
+            "short_review": record.short_review,
+            "photos": list(record.photos.all().order_by("id")),
         },
     )
 

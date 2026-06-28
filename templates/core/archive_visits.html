@@ -95,6 +95,11 @@
                 <p class="photo-error" data-photo-error="{{ row.record_id }}" aria-live="polite"></p>
 
                 <div class="visit-card-actions">
+                  <a
+                    class="record-edit-link"
+                    href="/archive/visits/{{ row.record_id }}/edit/"
+                    aria-label="{{ row.subject.title }} 방문 기록 수정"
+                  >수정</a>
                   <button
                     class="record-delete-btn"
                     type="button"

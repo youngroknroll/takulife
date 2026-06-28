@@ -90,6 +90,14 @@ def create_visit_record(*, user, event=None, personal_entry=None, visited_on, sh
     )
 
 
+def update_visit_record(*, record, visited_on, short_review):
+    """Update an existing record's editable fields. Subject stays pinned."""
+    record.visited_on = visited_on
+    record.short_review = short_review
+    record.save(update_fields=["visited_on", "short_review"])
+    return record
+
+
 class PhotoLimitExceededError(Exception):
     pass
 

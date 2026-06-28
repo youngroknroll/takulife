@@ -126,6 +126,22 @@
     background: #fff0f0;
     border-color: #e8bbbb;
   }
+  .record-edit-link {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #d9e4f4;
+    border-radius: 8px;
+    background: #fff;
+    color: #24456f;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    min-height: 36px;
+    text-decoration: none;
+  }
+  .record-edit-link:hover {
+    background: var(--brand-soft);
+  }
   /* Create form */
   .create-form {
     display: grid;
@@ -281,6 +297,28 @@
   }
   .photo-preview-remove:hover {
     background: rgba(180, 0, 0, 0.75);
+  }
+
+  /* 수정 페이지 — 읽기전용 대상 + 액션 줄 */
+  .subject-readonly {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .subject-title {
+    font-weight: 700;
+    color: var(--text);
+  }
+  .edit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .edit-actions .form-submit-btn {
+    width: auto;
+    flex: 1 1 auto;
   }
 
   /* 방문 페이지 빠른 이동 밑 "기록하기" CTA */
