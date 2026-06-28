@@ -453,11 +453,13 @@ select:focus {
   color: var(--pink-ink);
 }
 
+/* planned(예정)는 배지·버튼 모두 앰버로 통일 — 예정 목록의 .user-status.planned
+   (앰버 배지)와 색을 맞춘다. (visited=민트, missed=로즈와 함께 상태별 색 일관) */
 .status-btn.planned,
 .status.planned {
-  background: var(--brand-soft);
-  border-color: #c2d7ff;
-  color: var(--brand);
+  background: var(--amber-soft);
+  border-color: #f1d699;
+  color: var(--amber-ink);
 }
 
 .status-btn.visited,
