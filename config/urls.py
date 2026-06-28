@@ -22,6 +22,11 @@ urlpatterns = [
         core_views.archive_visit_create,
         name="archive-visit-create-page",
     ),
+    path(
+        "archive/visits/<int:record_id>/edit/",
+        core_views.archive_visit_edit,
+        name="archive-visit-edit-page",
+    ),
     path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
     path(
         "archive/items/",
