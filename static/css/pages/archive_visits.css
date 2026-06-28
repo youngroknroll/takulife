@@ -99,35 +99,6 @@
   .photo-delete-btn:hover {
     background: rgba(180,0,0,0.75);
   }
-  /* Photo upload row */
-  .photo-upload-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-  }
-  .photo-upload-label {
-    font-size: 0.82rem;
-    color: var(--muted);
-  }
-  .photo-upload-input {
-    font-size: 0.82rem;
-  }
-  .photo-upload-btn {
-    border: 1px solid var(--border-soft);
-    border-radius: 8px;
-    background: var(--bg-soft);
-    color: #24456f;
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 6px 10px;
-    cursor: pointer;
-    min-height: 36px;
-  }
-  .photo-upload-btn:hover {
-    background: var(--brand-soft);
-  }
   .photo-error {
     font-size: 0.82rem;
     color: #c0392b;
@@ -213,6 +184,122 @@
     .page {
       padding: 18px 14px 64px;
     }
+  }
+
+  /* ── 전용 쓰기 페이지 (archive_visit_create) ─────────────────────────────── */
+  .layout--single {
+    display: block;
+  }
+  .layout--single .panel {
+    max-width: 620px;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 6px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--brand);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    text-decoration: underline;
+  }
+  .field-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted, #6b7a90);
+    margin: 0;
+  }
+  .photo-multi-input {
+    font-size: 0.85rem;
+  }
+  .form-status {
+    font-size: 0.82rem;
+    color: var(--brand);
+    min-height: 1.2em;
+  }
+  .photo-preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .photo-preview-tile {
+    position: relative;
+    width: 80px;
+    height: 80px;
+  }
+  .photo-preview-tile img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #d9e4f4;
+    display: block;
+  }
+  .photo-preview-tile.is-cover img {
+    border-color: var(--brand);
+    border-width: 2px;
+  }
+  .photo-preview-cover-badge {
+    position: absolute;
+    bottom: 3px;
+    left: 3px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 2px 5px;
+    border-radius: 4px;
+  }
+  .photo-preview-remove {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .photo-preview-remove::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+  .photo-preview-remove:hover {
+    background: rgba(180, 0, 0, 0.75);
+  }
+
+  /* 방문 페이지 빠른 이동 밑 "기록하기" CTA */
+  .record-cta {
+    display: block;
+    margin-top: 10px;
+    text-align: center;
+    border: 1px solid var(--brand);
+    border-radius: 8px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 10px 14px;
+    min-height: 44px;
+    text-decoration: none;
+  }
+  .record-cta:hover {
+    opacity: 0.9;
   }
   /* 비공식 카드의 찜/예정 토글 줄 (status-btn/interest-btn 자체는 base.css) */
   .status-row {

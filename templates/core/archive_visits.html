@@ -85,28 +85,13 @@
                           type="button"
                           data-photo-id="{{ photo.id }}"
                           data-record-id="{{ row.record_id }}"
-                          aria-label="사진 삭제"
+                          aria-label="사진 {{ forloop.counter }} 삭제"
                         >x</button>
                       </div>
                     {% endfor %}
                   </div>
                 {% endif %}
 
-                <div class="photo-upload-row">
-                  <span class="photo-upload-label">사진 추가</span>
-                  <input
-                    class="photo-upload-input"
-                    type="file"
-                    accept="image/*"
-                    data-record-id="{{ row.record_id }}"
-                    aria-label="{{ row.subject.title }} 사진 업로드"
-                  >
-                  <button
-                    class="photo-upload-btn"
-                    type="button"
-                    data-upload-record-id="{{ row.record_id }}"
-                  >업로드</button>
-                </div>
                 <p class="photo-error" data-photo-error="{{ row.record_id }}" aria-live="polite"></p>
 
                 <div class="visit-card-actions">
@@ -137,44 +122,7 @@
             <li><a href="/archive/statuses/">예정 목록</a></li>
             <li><a href="/events/">행사 찾기</a></li>
           </ul>
-        </section>
-
-        <section class="panel">
-          <h2>방문 기록 추가</h2>
-          <p class="panel-note">방문한 행사와 날짜, 한줄 메모를 남겨보세요.</p>
-
-          <form id="visit-create-form" class="create-form" novalidate>
-            <div class="form-group">
-              <label for="visit-subject">대상</label>
-              <select id="visit-subject" name="subject" required>
-                <option value="">대상을 선택하세요</option>
-                {% if selectable_events %}
-                  <optgroup label="공식 예정 행사">
-                    {% for event in selectable_events %}
-                      <option value="event:{{ event.id }}">{{ event.title }}</option>
-                    {% endfor %}
-                  </optgroup>
-                {% endif %}
-                {% if selectable_personal_entries %}
-                  <optgroup label="비공식 아카이브">
-                    {% for entry in selectable_personal_entries %}
-                      <option value="personal:{{ entry.id }}">{{ entry.title }}</option>
-                    {% endfor %}
-                  </optgroup>
-                {% endif %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="visit-date">방문 날짜</label>
-              <input id="visit-date" type="date" name="visited_on" required>
-            </div>
-            <div class="form-group">
-              <label for="visit-review">한줄 메모 (선택)</label>
-              <input id="visit-review" type="text" name="short_review" maxlength="255" placeholder="짧은 메모를 남겨보세요">
-            </div>
-            <p class="form-error" id="visit-create-error" aria-live="polite"></p>
-            <button class="form-submit-btn" type="submit">기록 추가</button>
-          </form>
+          <a class="record-cta" href="/archive/visits/new/">＋ 기록하기</a>
         </section>
 
         <section class="panel">

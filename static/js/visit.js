@@ -51,49 +51,6 @@
     return Promise.resolve(window.confirm(message));
   }
 
-  // ── multipart photo upload ───────────────────────────────────────────────
-
-  async function uploadPhoto(recordId, file, errorEl, btn) {
-    var formData = new FormData();
-    formData.append("image", file);
-
-    window.TakuAPI.setLoading(btn, true);
-
-    var result = await window.TakuAPI.upload(
-      "/api/visit-records/" + recordId + "/photos/",
-      formData
-    );
-
-    if (result.status === 201) {
-      window.location.reload();
-      return;
-    }
-
-    window.TakuAPI.setLoading(btn, false);
-
-    if (result.status === 403) {
-      handle403(result, errorEl);
-      return;
-    }
-
-    if (result.status === 0) {
-      setError(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
-      return;
-    }
-
-    if (result.status === 400) {
-      setError(errorEl, window.TakuAPI.formatError(result));
-      return;
-    }
-
-    if (result.status === 404) {
-      setError(errorEl, "해당 방문 기록을 찾을 수 없습니다.");
-      return;
-    }
-
-    setError(errorEl, "업로드 중 오류가 발생했습니다. 다시 시도해 주세요.");
-  }
-
   // ── create visit record ──────────────────────────────────────────────────
 
   function bindCreateForm() {
@@ -150,33 +107,6 @@
 
       setError(errorEl, window.TakuAPI.formatError(result));
     });
-  }
-
-  // ── photo upload buttons ─────────────────────────────────────────────────
-
-  function bindPhotoUploads() {
-    var uploadBtns = document.querySelectorAll("[data-upload-record-id]");
-    for (var i = 0; i < uploadBtns.length; i++) {
-      (function (btn) {
-        btn.addEventListener("click", function () {
-          var recordId = btn.getAttribute("data-upload-record-id");
-          var fileInput = document.querySelector(
-            "input[type='file'][data-record-id='" + recordId + "']"
-          );
-          var errorEl = document.querySelector(
-            "[data-photo-error='" + recordId + "']"
-          );
-          clearError(errorEl);
-
-          if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-            setError(errorEl, "업로드할 파일을 선택해 주세요.");
-            return;
-          }
-
-          uploadPhoto(recordId, fileInput.files[0], errorEl, btn);
-        });
-      })(uploadBtns[i]);
-    }
   }
 
   // ── photo delete buttons ─────────────────────────────────────────────────
@@ -285,7 +215,6 @@
 
   function init() {
     bindCreateForm();
-    bindPhotoUploads();
     bindPhotoDeletes();
     bindRecordDeletes();
   }
