@@ -662,6 +662,7 @@ select:focus {
   font-size: 0.84rem;
   font-weight: 700;
   min-height: 44px;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .archive-nav-summary::-webkit-details-marker {
@@ -670,6 +671,8 @@ select:focus {
 
 .archive-nav-summary:hover {
   border-color: var(--brand);
+  background: var(--brand-soft);
+  box-shadow: 0 2px 8px rgba(43, 92, 197, 0.14);
 }
 
 .archive-nav-caret {
@@ -712,27 +715,54 @@ select:focus {
 .archive-nav-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 2px 18px;
 }
 
+/* text-style links (not pill buttons) with an animated underline on hover */
 .archive-nav-row a {
+  position: relative;
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-soft);
+  background: none;
+  border: none;
   color: #24456f;
-  padding: 7px 12px;
-  border-radius: 999px;
-  font-size: 0.84rem;
+  padding: 8px 2px;
+  font-size: 0.9rem;
   font-weight: 600;
-  min-height: 44px;
+  min-height: 44px;               /* keep WCAG tap target */
+  transition: color 0.15s ease;
+}
+
+.archive-nav-row a::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.18s ease;
+}
+
+.archive-nav-row a:hover {
+  color: var(--brand);
+}
+
+.archive-nav-row a:hover::after {
+  transform: scaleX(1);
 }
 
 .archive-nav-row a.active {
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.archive-nav-row a.active::after {
+  transform: scaleX(1);           /* persistent underline marks the current page */
 }
 
 /* 찜 목록 — standalone pink pill (현행 유지), right-aligned */
@@ -749,11 +779,14 @@ select:focus {
   font-size: 0.84rem;
   font-weight: 600;
   min-height: 44px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .archive-nav-wrap .nav-interest:hover {
   background: var(--pink-soft);
   border-color: var(--pink-ink);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(214, 81, 138, 0.18);
 }
 
 .archive-nav-wrap .nav-interest.active {
