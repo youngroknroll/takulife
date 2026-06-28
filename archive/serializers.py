@@ -144,6 +144,16 @@ class VisitRecordSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class VisitRecordUpdateSerializer(serializers.ModelSerializer):
+    """PATCH serializer: only visited_on / short_review are editable; the
+    subject (event / personal_entry) stays pinned to the original record."""
+
+    class Meta:
+        model = VisitRecord
+        fields = ["id", "event", "personal_entry", "visited_on", "short_review"]
+        read_only_fields = ["id", "event", "personal_entry"]
+
+
 class VisitRecordPhotoUploadSerializer(serializers.Serializer):
     image = serializers.ImageField(required=True)
 

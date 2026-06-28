@@ -22,6 +22,7 @@ from .serializers import (
     UserEventStatusUpdateSerializer,
     VisitRecordPhotoUploadSerializer,
     VisitRecordSerializer,
+    VisitRecordUpdateSerializer,
 )
 from .services import (
     DuplicateEventInterestError,
@@ -35,6 +36,7 @@ from .services import (
     mark_missed,
     mark_visited,
     revert_to_planned,
+    update_visit_record,
 )
 
 
@@ -210,12 +212,27 @@ class VisitRecordListCreateView(ListCreateAPIView):
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
-class VisitRecordDetailView(RetrieveDestroyAPIView):
+class VisitRecordDetailView(RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "patch", "delete", "head", "options"]
     permission_classes = [IsAuthenticated]
-    serializer_class = VisitRecordSerializer
 
     def get_queryset(self):
         return VisitRecord.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method == "PATCH":
+            return VisitRecordUpdateSerializer
+        return VisitRecordSerializer
+
+    def perform_update(self, serializer):
+        record = serializer.instance
+        update_visit_record(
+            record=record,
+            visited_on=serializer.validated_data.get("visited_on", record.visited_on),
+            short_review=serializer.validated_data.get(
+                "short_review", record.short_review
+            ),
+        )
 
 
 class VisitRecordPhotoCreateView(APIView):

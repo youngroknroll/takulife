@@ -222,6 +222,93 @@ def test_non_owner_deleting_visit_record_returns_404(client, make_user, make_eve
 
 
 # ---------------------------------------------------------------------------
+# VisitRecord update (PATCH /api/visit-records/<pk>/)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_owner_can_update_visit_record(client, make_user, make_event):
+    user = make_user()
+    event = make_event()
+    record = VisitRecord.objects.create(
+        user=user, event=event, visited_on="2026-05-26", short_review="old"
+    )
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/visit-records/{record.id}/",
+        {"visited_on": "2026-06-01", "short_review": "updated"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    record.refresh_from_db()
+    assert str(record.visited_on) == "2026-06-01"
+    assert record.short_review == "updated"
+
+
+@pytest.mark.django_db
+def test_update_visit_record_subject_is_read_only(client, make_user, make_event):
+    user = make_user()
+    event = make_event()
+    other_event = make_event()
+    record = VisitRecord.objects.create(
+        user=user, event=event, visited_on="2026-05-26"
+    )
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/visit-records/{record.id}/",
+        {"event": other_event.id, "short_review": "memo"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    record.refresh_from_db()
+    # subject stays pinned to the original event; only short_review changed.
+    assert record.event_id == event.id
+    assert record.short_review == "memo"
+
+
+@pytest.mark.django_db
+def test_non_owner_updating_visit_record_returns_404(client, make_user, make_event):
+    owner = make_user()
+    attacker = make_user()
+    event = make_event()
+    record = VisitRecord.objects.create(
+        user=owner, event=event, visited_on="2026-05-26", short_review="old"
+    )
+
+    client.force_login(attacker)
+    response = client.patch(
+        f"/api/visit-records/{record.id}/",
+        {"short_review": "hacked"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 404
+    record.refresh_from_db()
+    assert record.short_review == "old"
+
+
+@pytest.mark.django_db
+def test_update_visit_record_requires_authentication(client, make_user, make_event):
+    user = make_user()
+    event = make_event()
+    record = VisitRecord.objects.create(
+        user=user, event=event, visited_on="2026-05-26"
+    )
+
+    response = client.patch(
+        f"/api/visit-records/{record.id}/",
+        {"short_review": "x"},
+        content_type="application/json",
+    )
+
+    assert response.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
 # Photo upload (POST /api/visit-records/<record_id>/photos/)
 # ---------------------------------------------------------------------------
 
