@@ -9,7 +9,7 @@ from .models import (
 )
 
 
-MAX_PHOTOS_PER_RECORD = 10
+MAX_PHOTOS_PER_RECORD = 5
 
 
 def create_personal_entry(*, user, kind, title, **fields):

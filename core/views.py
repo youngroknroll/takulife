@@ -352,6 +352,16 @@ def archive_visits(request):
 
     memo_count = sum(1 for row in visit_rows if row["short_review"])
 
+    # Distinct non-empty category labels (in first-seen order) drive the filter
+    # chips; has_unofficial gates the separate 비공식 chip (an official/unofficial
+    # axis, not a category). Filtering itself is client-side (no reload).
+    categories = []
+    for row in visit_rows:
+        label = row["subject"]["category_label"]
+        if label and label not in categories:
+            categories.append(label)
+    has_unofficial = any(not row["subject"]["is_official"] for row in visit_rows)
+
     return render(
         request,
         "core/archive_visits.html",
@@ -359,6 +369,8 @@ def archive_visits(request):
             "visit_rows": visit_rows,
             "memo_count": memo_count,
             "has_visits": len(visit_rows) > 0,
+            "categories": categories,
+            "has_unofficial": has_unofficial,
             "selectable_events": list_user_planned_events(request.user),
             "selectable_personal_entries": list_user_personal_entries(request.user),
         },

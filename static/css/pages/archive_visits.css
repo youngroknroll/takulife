@@ -7,11 +7,53 @@
     display: grid;
     gap: 10px;
   }
+  /* category filter chips */
+  .visit-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .visit-filter-chip {
+    border: 1px solid #d9e4f4;
+    background: #fff;
+    color: #24456f;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 36px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .visit-filter-chip:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+  }
+  .visit-filter-chip.is-active {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
+  /* card: text body (left) + photo carousel (right) */
   .visit-card {
     border: 1px solid #d9e4f4;
     border-radius: 10px;
     background: var(--bg-card);
     padding: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+  }
+  .visit-card[hidden] {
+    display: none;
+  }
+  .visit-card-body {
+    min-width: 0;
+  }
+  .visit-card-media {
+    align-self: stretch;
   }
   .visit-card-top {
     display: flex;
@@ -47,63 +89,68 @@
     margin-top: 5px;
     color: #2c4563;
   }
-  /* Photo thumbnails row */
-  .photo-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-  }
-  .photo-thumb-wrap {
+  /* Photo carousel (view-only; add/delete happens on the edit page) */
+  .photo-carousel {
     position: relative;
-    display: inline-block;
-  }
-  .photo-thumb {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 8px;
+    width: 200px;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 10px;
     border: 1px solid #d9e4f4;
+    background: #eef3fb;
+  }
+  .photo-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.3s ease;
+  }
+  .photo-slide {
+    flex: 0 0 100%;
+    height: 100%;
+  }
+  .photo-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: block;
   }
-  .photo-delete-btn {
+  .carousel-btn {
     position: absolute;
-    top: 3px;
-    right: 3px;
-    width: 22px;
-    height: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     border: none;
-    background: rgba(0,0,0,0.55);
+    background: #1f2937;          /* opaque, not see-through */
     color: #fff;
-    font-size: 0.7rem;
+    font-size: 1.2rem;
     line-height: 1;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: background 0.15s ease, transform 0.15s ease;
   }
-  /* Keep the visible badge at 22px but extend the tap target to the 44x44
-     WCAG 2.5.5 minimum via a transparent overlay — clicks on it still hit the
-     button, so the delete control stays reliably tappable on touch screens. */
-  .photo-delete-btn::after {
-    content: "";
+  .carousel-btn:hover {
+    background: #111827;
+    transform: translateY(-50%) scale(1.12);
+  }
+  .carousel-prev { left: 6px; }
+  .carousel-next { right: 6px; }
+  .carousel-counter {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-  }
-  .photo-delete-btn:hover {
-    background: rgba(180,0,0,0.75);
-  }
-  .photo-error {
-    font-size: 0.82rem;
-    color: #c0392b;
-    margin-top: 4px;
-    min-height: 1.2em;
+    bottom: 6px;
+    right: 6px;
+    margin: 0;
+    background: #1f2937;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
   }
   /* Record delete */
   .visit-card-actions {
@@ -199,6 +246,14 @@
   @media (max-width: 720px) {
     .page {
       padding: 18px 14px 64px;
+    }
+    /* stack photo carousel below the text body on narrow screens */
+    .visit-card {
+      grid-template-columns: 1fr;
+    }
+    .photo-carousel {
+      width: 100%;
+      height: 220px;
     }
   }
 

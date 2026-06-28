@@ -7,7 +7,7 @@ event.
 import pytest
 from django.test import Client
 
-from archive.models import UserEventStatus
+from archive.models import PersonalEntry, UserEventStatus, VisitRecord
 
 
 @pytest.mark.django_db
@@ -45,3 +45,38 @@ class TestArchiveVisitsSelectableEvents:
 
         titles = [e.title for e in resp.context["selectable_events"]]
         assert titles == ["Planned"]
+
+
+@pytest.mark.django_db
+class TestArchiveVisitsCategoryFilter:
+    def test_categories_and_has_unofficial_context(self, make_user, make_event):
+        user = make_user()
+        popup = make_event(title="Popup", category="popup_store")
+        cafe = make_event(title="Cafe", category="collaboration_cafe")
+        VisitRecord.objects.create(user=user, event=popup, visited_on="2026-05-20")
+        VisitRecord.objects.create(user=user, event=cafe, visited_on="2026-05-22")
+        entry = PersonalEntry.objects.create(
+            user=user, kind=PersonalEntry.Kind.PLACE, title="개인 카페", category="콜라보 카페"
+        )
+        VisitRecord.objects.create(user=user, personal_entry=entry, visited_on="2026-05-25")
+
+        client = Client()
+        client.force_login(user)
+        resp = client.get("/archive/visits/")
+
+        assert resp.status_code == 200
+        # first-seen order, deduped (콜라보 카페 appears via both cafe event and entry)
+        assert resp.context["categories"] == ["콜라보 카페", "팝업스토어"]
+        assert resp.context["has_unofficial"] is True
+
+    def test_has_unofficial_false_without_personal_entries(self, make_user, make_event):
+        user = make_user()
+        event = make_event(title="Popup", category="popup_store")
+        VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-20")
+
+        client = Client()
+        client.force_login(user)
+        resp = client.get("/archive/visits/")
+
+        assert resp.context["categories"] == ["팝업스토어"]
+        assert resp.context["has_unofficial"] is False
