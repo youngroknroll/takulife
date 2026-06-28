@@ -15,7 +15,7 @@
 (function () {
   "use strict";
 
-  var MAX_PHOTOS = 10;
+  var MAX_PHOTOS = 5;
   var MAX_BYTES = 5 * 1024 * 1024;
   var ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
   var VISITS_URL = "/archive/visits/";

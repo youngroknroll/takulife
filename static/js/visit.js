@@ -2,10 +2,11 @@
  * visit.js — Visit record actions for TakuLog
  *
  * Handles:
- *   - Create visit record via form#visit-create-form
- *   - Upload photo via per-card file input + upload button
  *   - Delete visit record via [data-delete-record-id]
- *   - Delete photo via [data-photo-id][data-record-id] on photo-delete-btn
+ *   - Filter the timeline by category via #visit-filter chips
+ *   - Navigate per-card photo carousels ([data-carousel], loop)
+ *
+ * Photo add/delete lives on the edit page (visit_edit.js); cards are view-only.
  *
  * Relies on window.TakuAPI (api.js) for all requests:
  *   - JSON actions: TakuAPI.post / TakuAPI.del
@@ -109,53 +110,77 @@
     });
   }
 
-  // ── photo delete buttons ─────────────────────────────────────────────────
+  // ── category filter chips ────────────────────────────────────────────────
 
-  function bindPhotoDeletes() {
-    var deleteBtns = document.querySelectorAll(".photo-delete-btn");
-    for (var i = 0; i < deleteBtns.length; i++) {
-      (function (btn) {
-        btn.addEventListener("click", async function () {
-          var photoId = btn.getAttribute("data-photo-id");
-          var recordId = btn.getAttribute("data-record-id");
-          var errorEl = document.querySelector(
-            "[data-photo-error='" + recordId + "']"
-          );
-          if (!(await askConfirm("이 사진을 삭제하시겠습니까? 되돌릴 수 없습니다."))) {
-            return;
-          }
-          clearError(errorEl);
-          window.TakuAPI.setLoading(btn, true);
+  function bindCategoryFilter() {
+    var filter = document.getElementById("visit-filter");
+    if (!filter) { return; }
+    var chips = filter.querySelectorAll(".visit-filter-chip");
+    var cards = document.querySelectorAll("#visit-timeline .visit-card");
 
-          var result = await window.TakuAPI.del(
-            "/api/visit-records/" + recordId + "/photos/" + photoId + "/"
-          );
+    function applyFilter(predicate) {
+      for (var i = 0; i < cards.length; i++) {
+        cards[i].hidden = !predicate(cards[i]);
+      }
+    }
 
-          if (result.status === 204) {
-            window.location.reload();
-            return;
-          }
+    filter.addEventListener("click", function (evt) {
+      var chip = evt.target.closest(".visit-filter-chip");
+      if (!chip) { return; }
 
-          window.TakuAPI.setLoading(btn, false);
+      for (var i = 0; i < chips.length; i++) {
+        chips[i].classList.remove("is-active");
+        chips[i].setAttribute("aria-pressed", "false");
+      }
+      chip.classList.add("is-active");
+      chip.setAttribute("aria-pressed", "true");
 
-          if (result.status === 403) {
-            handle403(result, errorEl);
-            return;
-          }
-
-          if (result.status === 404) {
-            setError(errorEl, "사진을 찾을 수 없습니다.");
-            return;
-          }
-
-          if (result.status === 0) {
-            setError(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
-            return;
-          }
-
-          setError(errorEl, "사진 삭제 중 오류가 발생했습니다.");
+      if (chip.hasAttribute("data-filter-all")) {
+        applyFilter(function () { return true; });
+      } else if (chip.hasAttribute("data-filter-official")) {
+        var wantedOfficial = chip.getAttribute("data-filter-official");
+        applyFilter(function (card) {
+          return card.getAttribute("data-official") === wantedOfficial;
         });
-      })(deleteBtns[i]);
+      } else {
+        var cat = chip.getAttribute("data-filter-category");
+        applyFilter(function (card) {
+          return card.getAttribute("data-category") === cat;
+        });
+      }
+    });
+  }
+
+  // ── per-card photo carousel (view-only, loops) ───────────────────────────
+
+  function bindPhotoCarousels() {
+    var carousels = document.querySelectorAll("[data-carousel]");
+    for (var i = 0; i < carousels.length; i++) {
+      (function (carousel) {
+        var track = carousel.querySelector(".photo-track");
+        var slides = carousel.querySelectorAll(".photo-slide");
+        var prev = carousel.querySelector(".carousel-prev");
+        var next = carousel.querySelector(".carousel-next");
+        var indexEl = carousel.querySelector(".carousel-index");
+        if (!track || slides.length < 2 || !prev || !next) { return; }
+
+        var count = slides.length;
+        var index = 0;
+
+        function render() {
+          track.style.transform = "translateX(-" + (index * 100) + "%)";
+          if (indexEl) { indexEl.textContent = String(index + 1); }
+        }
+
+        prev.addEventListener("click", function () {
+          index = (index - 1 + count) % count;
+          render();
+        });
+        next.addEventListener("click", function () {
+          index = (index + 1) % count;
+          render();
+        });
+      })(carousels[i]);
     }
   }
 
@@ -215,7 +240,8 @@
 
   function init() {
     bindCreateForm();
-    bindPhotoDeletes();
+    bindCategoryFilter();
+    bindPhotoCarousels();
     bindRecordDeletes();
   }
 

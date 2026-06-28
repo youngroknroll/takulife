@@ -480,15 +480,15 @@ def test_upload_pixel_area_bomb_rejected_400(client, make_user, make_event, png_
 
 
 @pytest.mark.django_db
-def test_eleventh_photo_upload_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path):
-    """The 11th photo for a single record must be rejected."""
+def test_sixth_photo_upload_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path):
+    """The 6th photo for a single record must be rejected (cap is 5)."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
     record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
 
     png_data = png_bytes()
-    for i in range(10):
+    for i in range(5):
         VisitRecordPhoto.objects.create(
             visit_record=record,
             image=SimpleUploadedFile(f"photo-{i}.png", png_data, content_type="image/png"),
@@ -501,7 +501,7 @@ def test_eleventh_photo_upload_rejected_400(client, make_user, make_event, png_b
     )
 
     assert response.status_code == 400
-    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == 10
+    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == 5
 
 
 # ---------------------------------------------------------------------------

@@ -155,7 +155,7 @@
       return "이미 찜한 행사입니다.";
     }
     if (data.code === "photo_limit_exceeded") {
-      return "사진은 기록당 최대 10장까지 첨부할 수 있습니다.";
+      return "사진은 기록당 최대 5장까지 첨부할 수 있습니다.";
     }
     // detail string (DRF default for non-field errors)
     if (typeof data.detail === "string") {
