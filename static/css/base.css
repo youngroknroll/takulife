@@ -636,26 +636,162 @@ select:focus {
   border-color: var(--brand);
 }
 
-.nav-links:has(a.nav-interest) {
-  flex: 1;                        /* stretch to fill .sub-nav so auto margin has free space */
+/* ── archive accordion sub-nav (collapsing header → grouped panel) ── */
+.archive-nav-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
 }
 
-.nav-links a.nav-interest {
-  margin-left: auto;              /* right-align only this item */
-  border-color: #f8bfd8;
+.archive-nav {
+  position: relative;             /* anchor for the dropdown panel */
+}
+
+.archive-nav-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-soft);
+  color: #24456f;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  min-height: 44px;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.archive-nav-summary::-webkit-details-marker {
+  display: none;                  /* hide native disclosure triangle */
+}
+
+.archive-nav-summary:hover {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  box-shadow: 0 2px 8px rgba(43, 92, 197, 0.14);
+}
+
+.archive-nav-caret {
+  font-size: 0.7rem;
+  transition: transform 0.15s ease;
+}
+
+.archive-nav[open] .archive-nav-caret {
+  transform: rotate(180deg);
+}
+
+.archive-nav-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.archive-nav-group-label {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #7c8aa3;
+}
+
+.archive-nav-group + .archive-nav-group {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.archive-nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 18px;
+}
+
+/* text-style links (not pill buttons) with an animated underline on hover */
+.archive-nav-row a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  background: none;
+  border: none;
+  color: #24456f;
+  padding: 8px 2px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 44px;               /* keep WCAG tap target */
+  transition: color 0.15s ease;
+}
+
+.archive-nav-row a::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.18s ease;
+}
+
+.archive-nav-row a:hover {
+  color: var(--brand);
+}
+
+.archive-nav-row a:hover::after {
+  transform: scaleX(1);
+}
+
+.archive-nav-row a.active {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.archive-nav-row a.active::after {
+  transform: scaleX(1);           /* persistent underline marks the current page */
+}
+
+/* 찜 목록 — standalone pink pill (현행 유지), right-aligned */
+.archive-nav-wrap .nav-interest {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  border: 1px solid #f8bfd8;
   background: #fff;
   color: var(--pink-ink);
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  min-height: 44px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.nav-links a.nav-interest:hover {
+.archive-nav-wrap .nav-interest:hover {
   background: var(--pink-soft);
   border-color: var(--pink-ink);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(214, 81, 138, 0.18);
 }
 
-.nav-links a.nav-interest.active {
+.archive-nav-wrap .nav-interest.active {
   background: var(--pink-soft);
   border-color: #f8bfd8;
-  color: var(--pink-ink);
 }
 
 /* Shared phone breakpoint: left-align the archive/draft topbar nav.

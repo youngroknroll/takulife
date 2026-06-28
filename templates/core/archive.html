@@ -8,15 +8,7 @@
 
 {% block content %}
   <div class="page">
-    <div class="sub-nav">
-      <nav class="nav-links" aria-label="아카이브 메뉴">
-        <a href="/archive/" class="active" aria-current="page">기록장</a>
-        <a href="/archive/statuses/">예정 목록</a>
-        <a href="/archive/visits/">방문 기록</a>
-        <a href="/archive/items/">비공식</a>
-        <a href="/archive/interests/" class="nav-interest">찜 목록</a>
-      </nav>
-    </div>
+    {% include "core/_archive_nav.html" with active="record" active_label="기록장" %}
 
     <section class="hero" aria-label="기록장 소개">
       <h1>기록장</h1>
