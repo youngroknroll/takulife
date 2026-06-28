@@ -94,7 +94,7 @@
                     data-personal-entry-id="{{ row.entry.id }}"
                     data-status="planned"
                     data-label="{{ row.planned_label }}"
-                    data-label-active="{{ row.planned_label }}"
+                    data-label-active="{{ row.status_label|default:row.planned_label }}"
                     data-reload-on-success
                     {% if row.status_id %}data-status-id="{{ row.status_id }}"{% endif %}
                     aria-pressed="{% if row.status_id %}true{% else %}false{% endif %}"
