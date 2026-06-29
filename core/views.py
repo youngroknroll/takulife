@@ -11,7 +11,10 @@ from rest_framework.response import Response
 
 from archive.models import PersonalEntry, UserEventStatus, VisitRecord
 from archive.queries import (
+    ARCHIVE_RECORD_PAGE_SIZE,
+    ARCHIVE_STATUS_PAGE_SIZE,
     ARCHIVE_STATUS_SLUGS,
+    ARCHIVE_VISIT_PAGE_SIZE,
     list_user_interests,
     list_user_personal_entries,
     list_user_planned_events,
@@ -261,20 +264,31 @@ def _build_archive_status_rows(user_statuses):
     return rows
 
 
-def _archive_status_context(user, selected_status):
+def _archive_status_context(user, selected_status, *, page_size, page_number):
     """Build the shared context for the archive dashboard and statuses pages.
 
     Both pages derive 'missed' identically via the shared read helper (instead
     of reading raw stored status); the summary counts stay unfiltered (aggregate
     across all statuses). Invalid status filters fall back to "" (all).
+
+    The status list is paginated (``page_size`` rows per page) so only the
+    current page's rows are built into the heavier display dicts. The two pages
+    pass different sizes (기록장 10 vs 예정 목록 5). ``has_statuses`` reflects the
+    total match count, not the current page, so the empty state shows only when
+    the user genuinely has none. ``pager_query`` preserves the status filter
+    across page links.
     """
     if selected_status not in ARCHIVE_STATUS_SLUGS:
         selected_status = ""
 
-    status_rows = _build_archive_status_rows(list_user_statuses(user, selected_status))
+    paginator = Paginator(list_user_statuses(user, selected_status), page_size)
+    page_obj = paginator.get_page(page_number)
+    status_rows = _build_archive_status_rows(page_obj.object_list)
     return {
         "status_rows": status_rows,
-        "has_statuses": len(status_rows) > 0,
+        "page_obj": page_obj,
+        "pager_query": f"&status={selected_status}" if selected_status else "",
+        "has_statuses": paginator.count > 0,
         "status_counts": user_status_counts(user),
         "selected_status": selected_status,
         "ARCHIVE_STATUS": ARCHIVE_STATUS,
@@ -284,14 +298,24 @@ def _archive_status_context(user, selected_status):
 @login_required
 @ensure_csrf_cookie
 def archive(request):
-    context = _archive_status_context(request.user, request.GET.get("status", ""))
+    context = _archive_status_context(
+        request.user,
+        request.GET.get("status", ""),
+        page_size=ARCHIVE_RECORD_PAGE_SIZE,
+        page_number=request.GET.get("page"),
+    )
     return render(request, "core/archive/index.html", context)
 
 
 @login_required
 @ensure_csrf_cookie
 def archive_statuses(request):
-    context = _archive_status_context(request.user, request.GET.get("status", ""))
+    context = _archive_status_context(
+        request.user,
+        request.GET.get("status", ""),
+        page_size=ARCHIVE_STATUS_PAGE_SIZE,
+        page_number=request.GET.get("page"),
+    )
     return render(request, "core/archive/statuses.html", context)
 
 
@@ -337,7 +361,16 @@ def _subject_view(obj):
 @login_required
 @ensure_csrf_cookie
 def archive_visits(request):
-    visit_records = list_user_visit_records(request.user)
+    base_qs = list_user_visit_records(request.user)
+
+    # Summary cards report totals across all records, so they are counted on the
+    # full queryset (COUNT queries — no rows or photos loaded), not the page.
+    # total_count reuses the paginator's own (memoized) count to avoid a second
+    # COUNT for the same queryset.
+    paginator = Paginator(base_qs, ARCHIVE_VISIT_PAGE_SIZE)
+    total_count = paginator.count
+    memo_count = base_qs.exclude(short_review="").count()
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     visit_rows = [
         {
@@ -347,14 +380,14 @@ def archive_visits(request):
             "subject": _subject_view(record),
             "photos": list(record.photos.all()),
         }
-        for record in visit_records
+        for record in page_obj.object_list
     ]
-
-    memo_count = sum(1 for row in visit_rows if row["short_review"])
 
     # Distinct non-empty category labels (in first-seen order) drive the filter
     # chips; has_unofficial gates the separate 비공식 chip (an official/unofficial
-    # axis, not a category). Filtering itself is client-side (no reload).
+    # axis, not a category). Chips reflect the current page's cards so a chip
+    # never hides every visible card — cross-page navigation is the pager's job,
+    # not the client-side filter's.
     categories = []
     for row in visit_rows:
         label = row["subject"]["category_label"]
@@ -367,8 +400,10 @@ def archive_visits(request):
         "core/archive/visits.html",
         {
             "visit_rows": visit_rows,
+            "page_obj": page_obj,
+            "total_count": total_count,
             "memo_count": memo_count,
-            "has_visits": len(visit_rows) > 0,
+            "has_visits": total_count > 0,
             "categories": categories,
             "has_unofficial": has_unofficial,
             "selectable_events": list_user_planned_events(request.user),

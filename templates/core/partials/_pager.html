@@ -1,0 +1,26 @@
+{% comment %}
+Shared pagination nav. Renders a windowed page list (±3 around the current page)
+with 이전/다음. Markup mirrors the public browse page's pager; styling lives in
+static/css/components/pager.css (loaded globally from base.html). Include with:
+  {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
+  page_obj     a Django Page (from Paginator.get_page)
+  extra_query  optional querystring tail to preserve filters, e.g. "&status=planned".
+               Must begin with & (page is always the first param). Omit if none.
+{% endcomment %}
+{% if page_obj.has_other_pages %}
+  <nav class="pager" aria-label="페이지네이션">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{{ extra_query }}">이전</a>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}
+        <span class="current">{{ num }}</span>
+      {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
+        <a href="?page={{ num }}{{ extra_query }}">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{{ extra_query }}">다음</a>
+    {% endif %}
+  </nav>
+{% endif %}

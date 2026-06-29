@@ -78,6 +78,8 @@
             <a class="empty-action" href="/events/">행사 찾아보기</a>
           </div>
         {% endif %}
+
+        {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
       </main>
 
       <aside class="panel" aria-label="빠른 기록 액션">
