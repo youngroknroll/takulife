@@ -9,7 +9,7 @@
   .month-block {
     margin-top: 12px;
     border-top: 1px solid #e6edf7;
-    padding-top: 12px;
+    padding-top: 0.75rem;
   }
   .month-title {
     margin: 0 0 8px;
@@ -20,7 +20,7 @@
   .record-card {
     border: 1px solid var(--line);
     border-radius: 10px;
-    padding: 11px;
+    padding: 0.6875rem;
     background: var(--bg-card);
     margin-bottom: 9px;
   }
@@ -40,7 +40,7 @@
   /* Archive timeline status badges (display only, not interactive buttons) */
   .status {
     border-radius: 999px;
-    padding: 4px 9px;
+    padding: 0.25rem 0.5625rem;
     font-size: 0.74rem;
     font-weight: 700;
     white-space: nowrap;
@@ -70,7 +70,7 @@
   .right-section {
     margin-top: 12px;
     border-top: 1px solid #e6edf7;
-    padding-top: 12px;
+    padding-top: 0.75rem;
   }
   .right-section h3 {
     margin: 0 0 8px;
@@ -86,7 +86,7 @@
   .flat-list li {
     border: 1px solid var(--line);
     border-radius: 8px;
-    padding: 8px 9px;
+    padding: 0.5rem 0.5625rem;
     background: var(--bg-card);
     font-size: 0.86rem;
   }
@@ -99,7 +99,7 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     background: var(--bg-card);
-    padding: 10px;
+    padding: 0.625rem;
   }
   .calendar-head {
     display: grid;
@@ -163,7 +163,7 @@
     gap: 0.3125rem;
     font-size: 0.75rem;
     color: #486280;
-    padding: 4px 7px;
+    padding: 0.25rem 0.4375rem;
     border-radius: 999px;
     border: 1px solid var(--line);
     background: #fff;
@@ -195,14 +195,14 @@
     background: #eef3fa;
     border: 1px solid var(--line);
     border-radius: 999px;
-    padding: 2px 7px;
+    padding: 0.125rem 0.4375rem;
     vertical-align: middle;
   }
   .cta {
     border: 1px solid var(--border-soft);
     border-radius: 10px;
     background: var(--bg-soft);
-    padding: 11px;
+    padding: 0.6875rem;
   }
   .cta p {
     margin: 0 0 9px;
@@ -217,7 +217,7 @@
     border: 1px solid #9dbcf9;
     background: var(--brand);
     color: #fff;
-    padding: 8px 11px;
+    padding: 0.5rem 0.6875rem;
     font-size: 0.84rem;
     font-weight: 700;
     font-family: inherit;
@@ -247,7 +247,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      padding: 0.625rem 0.875rem calc(10px + env(safe-area-inset-bottom));
       background: rgba(255, 255, 255, 0.96);
       border-top: 1px solid var(--line);
       box-shadow: 0 -8px 24px rgba(17, 31, 55, 0.10);
@@ -266,7 +266,7 @@
       font-weight: 700;
       font-family: inherit;
       font-size: 0.9rem;
-      padding: 11px;
+      padding: 0.6875rem;
       cursor: pointer;
     }
   }
@@ -275,7 +275,7 @@
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
-    padding: 4px 9px;
+    padding: 0.25rem 0.5625rem;
     font-size: 0.74rem;
     font-weight: 700;
     white-space: nowrap;

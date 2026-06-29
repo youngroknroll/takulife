@@ -2,7 +2,7 @@
 .auth-container {
   max-width: 420px;
   margin: 48px auto;
-  padding: 28px 24px;
+  padding: 1.75rem 1.5rem;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -17,7 +17,7 @@
 .btn-primary {
   width: 100%;
   margin-top: 4px;
-  padding: 11px 12px;
+  padding: 0.6875rem 0.75rem;
   border: none;
   border-radius: 8px;
   background: var(--brand);
@@ -33,7 +33,7 @@
 
 .auth-error {
   margin: 0 0 14px;
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   border-radius: 8px;
   background: var(--rose-soft);
   color: var(--rose-ink);

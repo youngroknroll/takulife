@@ -30,7 +30,7 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow: var(--shadow);
-  padding: 20px;
+  padding: 1.25rem;
   max-width: 360px;
   width: calc(100% - 32px);
   transform: translateY(6px);
@@ -57,7 +57,7 @@
 .confirm-no,
 .confirm-yes {
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   min-height: 44px;
   font-weight: 600;
   cursor: pointer;

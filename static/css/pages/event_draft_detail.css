@@ -16,7 +16,7 @@
     border-radius: 999px;
     font-size: 0.78rem;
     font-weight: 700;
-    padding: 6px 10px;
+    padding: 0.375rem 0.625rem;
     white-space: nowrap;
   }
   .layout {
@@ -47,7 +47,7 @@
     border-radius: 8px;
     background: #fff;
     color: var(--text);
-    padding: 10px 12px;
+    padding: 0.625rem 0.75rem;
     font: inherit;
     font-size: 0.9rem;
   }
@@ -75,7 +75,7 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     background: var(--bg-card);
-    padding: 12px;
+    padding: 0.75rem;
     margin-bottom: 10px;
   }
   .raw-box h3 {
@@ -105,7 +105,7 @@
     color: #fff;
     cursor: pointer;
     font-weight: 700;
-    padding: 10px 12px;
+    padding: 0.625rem 0.75rem;
     width: 100%;
     min-height: 44px;
   }

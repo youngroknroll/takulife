@@ -58,7 +58,7 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--bg-card);
-  padding: 9px 10px;
+  padding: 0.5625rem 0.625rem;
   color: #2c4563;
   font-size: 0.86rem;
 }
@@ -73,7 +73,7 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--bg-card);
-  padding: 9px 10px;
+  padding: 0.5625rem 0.625rem;
 }
 
 /* Heading + inline action/filter row; and the chip group container */
