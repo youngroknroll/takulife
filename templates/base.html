@@ -6,13 +6,21 @@
   <title>{% block title %}takulife{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
-  <link rel="stylesheet" href="{% static 'css/confirm-modal.css' %}">
+  <link rel="stylesheet" href="{% static 'css/objects/interaction.css' %}">
+  <link rel="stylesheet" href="{% static 'css/objects/layout.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/site-chrome.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/category.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/controls.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/cards.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/nav.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/modal.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/confirm-modal.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
-  {% include "core/_site_header.html" %}
+  {% include "core/partials/_site_header.html" %}
   {% block content %}{% endblock %}
-  {% include "core/_site_footer.html" %}
+  {% include "core/partials/_site_footer.html" %}
   <script defer src="{% static 'js/api.js' %}"></script>
   <script defer src="{% static 'js/confirm-modal.js' %}"></script>
   <script defer src="{% static 'js/status.js' %}"></script>

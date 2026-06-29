@@ -25,7 +25,7 @@ class TestArchiveVisitEditView:
         resp = client.get(f"/archive/visits/{record.id}/edit/")
 
         assert resp.status_code == 200
-        assert "core/archive_visit_edit.html" in [t.name for t in resp.templates]
+        assert "core/archive/visit_edit.html" in [t.name for t in resp.templates]
         assert resp.context["record_id"] == record.id
         assert resp.context["subject"]["title"] == "My event"
         assert str(resp.context["visited_on"]) == "2026-05-26"

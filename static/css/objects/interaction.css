@@ -1,0 +1,84 @@
+/* ── interaction feedback: hover lift + loading spinner ──────── */
+/*
+ * Cursor/touch legibility. .hover-lift raises a clickable card block on hover
+ * (and presses it back on :active for touch), so the pointer position is always
+ * visible. .is-loading turns any button into a disabled spinner while its
+ * request is in flight — toggled from JS via TakuAPI.setLoading. The spinner
+ * borrows the button's own text colour (currentColor) so it reads on both light
+ * and brand-filled buttons. Transform-based motion respects reduced-motion.
+ */
+.hover-lift {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: #c2d7ff;
+}
+
+.hover-lift:active {
+  transform: translateY(0);
+}
+
+.chip,
+.status-btn,
+.status,
+.nav-links a,
+.top-action {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.chip:not(.active):hover {
+  background: var(--brand-soft);
+  border-color: #b9ccf8;
+}
+
+.status-btn:hover {
+  border-color: #b9ccf8;
+}
+
+.nav-links a:not(.active):hover {
+  background: var(--brand-soft);
+  border-color: #b9ccf8;
+}
+
+.top-action:hover {
+  filter: brightness(0.98);
+  border-color: #9bb8f6;
+}
+
+.is-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.is-loading::after {
+  content: "";
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 6px;
+  vertical-align: -0.15em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-lift {
+    transition: none;
+  }
+  .hover-lift:hover,
+  .hover-lift:active {
+    transform: none;
+  }
+}

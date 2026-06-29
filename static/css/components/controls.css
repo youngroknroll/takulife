@@ -1,0 +1,172 @@
+/* ── archive user-status classes (canonical slug keys) ──────── */
+/*
+ * Canonical classes: interested / planned / visited / missed
+ * These replace the old wish/plan/done/miss classes from home and
+ * event_list templates (G10 vocab unification).
+ */
+.status-btn,
+.status {
+  border: 1px solid #d9e4f4;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  color: #2f4360;
+  background: #fff;
+  cursor: pointer;
+}
+
+.status-btn.interested,
+.status.interested {
+  background: var(--pink-soft);
+  border-color: #f8bfd8;
+  color: var(--pink-ink);
+}
+
+/* planned(예정)는 배지·버튼 모두 앰버로 통일 — 예정 목록의 .user-status.planned
+   (앰버 배지)와 색을 맞춘다. (visited=민트, missed=로즈와 함께 상태별 색 일관) */
+.status-btn.planned,
+.status.planned {
+  background: var(--amber-soft);
+  border-color: #f1d699;
+  color: var(--amber-ink);
+}
+
+.status-btn.visited,
+.status.visited {
+  background: var(--mint-soft);
+  border-color: #b4ebc8;
+  color: var(--mint-ink);
+}
+
+.status-btn.missed,
+.status.missed {
+  background: #f4f5f7;
+  border-color: #d9dde4;
+  color: #5d6673;
+}
+
+/* Active (user's current status) — status-coloured inset ring + check mark.
+   Keeps the per-status hue while making the selected state unmistakable.
+   `.active` is the class the status JS toggles, so server and client agree. */
+.status-btn.active {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+.status-btn.active::before {
+  content: "✓ ";
+}
+
+/* ── interest button (찜 toggle — independent from .status-btn) ─ */
+/*
+ * Intentionally NOT inheriting .status-btn so that .status-btn.active::before
+ * {content:"✓ "} never applies here. The glyph (♡/♥) is the state signal.
+ */
+/* 찜 버튼은 앱 전역에서 옆 상태 버튼(.status-btn — 예정/방문 등)과 같은
+   알약 모양·높이로 통일한다. (예전 44px·8px 사각형 → 27px·999px) */
+.interest-btn {
+  border: 1px solid #f8bfd8;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  color: var(--pink-ink);
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.interest-btn:hover {
+  border-color: var(--pink-ink);
+  background: var(--pink-soft);
+}
+
+.interest-btn.active {
+  background: var(--pink-soft);
+  border-color: #f8bfd8;
+  color: var(--pink-ink);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interest-btn {
+    transition: none;
+  }
+}
+
+/* ── chip (filter / quick-chip) ─────────────────────────────── */
+.chip {
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-soft);
+  color: #24456f;
+  font-size: 0.82rem;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.chip.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── search bar (shared: home + event_list) ─────────────────── */
+/*
+ * Reconciled from home.css + event_list.css. Trivial per-page diffs were
+ * unified to the most common value (tokens.css precedent): input font-size
+ * 0.95rem (home), input color/background (home), button border #b9ccf8 (home).
+ * home keeps its own `.hero .search { max-width: 540px }` override.
+ */
+.search {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 12px;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: #fff;
+}
+.search button {
+  border: 1px solid #b9ccf8;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── form fields (shared) ─────────────────────────────────── */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.form-group input {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: var(--surface);
+  color: var(--text);
+}

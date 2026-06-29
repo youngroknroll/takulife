@@ -195,7 +195,7 @@ def event_list(request):
         "selected_sort": selected_sort,
         "selected_sort_label": EVENT_SORT_LABELS.get(selected_sort, EVENT_SORT_LABELS[""]),
     }
-    return render(request, "core/event_list.html", context)
+    return render(request, "core/events/list.html", context)
 
 
 def event_detail(request, event_id):
@@ -233,7 +233,7 @@ def event_detail(request, event_id):
         "user_interested": user_interested,
         "user_interest_id": user_interest_id,
     }
-    return render(request, "core/event_detail.html", context)
+    return render(request, "core/events/detail.html", context)
 
 
 def _build_archive_status_rows(user_statuses):
@@ -285,14 +285,14 @@ def _archive_status_context(user, selected_status):
 @ensure_csrf_cookie
 def archive(request):
     context = _archive_status_context(request.user, request.GET.get("status", ""))
-    return render(request, "core/archive.html", context)
+    return render(request, "core/archive/index.html", context)
 
 
 @login_required
 @ensure_csrf_cookie
 def archive_statuses(request):
     context = _archive_status_context(request.user, request.GET.get("status", ""))
-    return render(request, "core/archive_statuses.html", context)
+    return render(request, "core/archive/statuses.html", context)
 
 
 def _subject_view(obj):
@@ -364,7 +364,7 @@ def archive_visits(request):
 
     return render(
         request,
-        "core/archive_visits.html",
+        "core/archive/visits.html",
         {
             "visit_rows": visit_rows,
             "memo_count": memo_count,
@@ -387,7 +387,7 @@ def archive_visit_create(request):
     """
     return render(
         request,
-        "core/archive_visit_create.html",
+        "core/archive/visit_create.html",
         {
             "selectable_events": list_user_planned_events(request.user),
             "selectable_personal_entries": list_user_personal_entries(request.user),
@@ -406,7 +406,7 @@ def archive_visit_edit(request, record_id):
     record = get_object_or_404(VisitRecord, pk=record_id, user=request.user)
     return render(
         request,
-        "core/archive_visit_edit.html",
+        "core/archive/visit_edit.html",
         {
             "record_id": record.pk,
             "subject": _subject_view(record),
@@ -443,7 +443,7 @@ def archive_personal_entries(request):
 
     return render(
         request,
-        "core/archive_personal_entries.html",
+        "core/archive/personal_entries.html",
         {
             "entry_rows": entry_rows,
             "total_count": len(entries),
@@ -471,7 +471,7 @@ def archive_interests(request):
 
     return render(
         request,
-        "core/archive_interests.html",
+        "core/archive/interests.html",
         {
                 "interest_rows": interest_rows,
             "interest_count": interest_count,
@@ -511,7 +511,7 @@ def event_drafts(request):
     draft_rows = _build_draft_rows(drafts)
     return render(
         request,
-        "core/event_drafts.html",
+        "core/drafts/list.html",
         {
                 "draft_rows": draft_rows,
             "stats": stats,
@@ -529,7 +529,7 @@ def event_draft_detail(request, draft_id):
     if draft is None:
         return render(
             request,
-            "core/event_draft_detail.html",
+            "core/drafts/detail.html",
             {
                         "draft": None,
                 "draft_not_found": True,
@@ -545,7 +545,7 @@ def event_draft_detail(request, draft_id):
     region_label = REGION_LABELS.get(draft.extracted_region, draft.extracted_region)
     return render(
         request,
-        "core/event_draft_detail.html",
+        "core/drafts/detail.html",
         {
                 "draft": draft,
             "is_pending": is_pending,

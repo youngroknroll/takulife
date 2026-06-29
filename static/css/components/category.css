@@ -1,0 +1,80 @@
+/* ── category color system (tiles + chips) ─────────────────── */
+/*
+ * Shared category visual language: a left color tile (.cat-tile) acts as a
+ * scan anchor on wide discovery rows, and a color chip (.cat-chip) labels the
+ * category. Both take a .cat-<slug> modifier whose slug IS the vocab category
+ * key, so templates inject the class directly from category_slug.
+ * Category hues are desaturated to stay distinct from the four status colors.
+ */
+.cat-tile {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 1.45rem;
+  line-height: 1;
+  flex-shrink: 0;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.cat-tile::before {
+  content: "🎫";
+}
+
+.cat-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+/* per-category colors — shared by tile and chip */
+.cat-popup_store {
+  background: var(--cat-popup-soft);
+  color: var(--cat-popup-ink);
+}
+.cat-collaboration_cafe {
+  background: var(--cat-cafe-soft);
+  color: var(--cat-cafe-ink);
+}
+.cat-theater_bonus {
+  background: var(--cat-theater-soft);
+  color: var(--cat-theater-ink);
+}
+.cat-goods_reservation {
+  background: var(--cat-goods-soft);
+  color: var(--cat-goods-ink);
+}
+.cat-exhibition {
+  background: var(--cat-exhibition-soft);
+  color: var(--cat-exhibition-ink);
+}
+.cat-fan_meeting {
+  background: var(--cat-fan-soft);
+  color: var(--cat-fan-ink);
+}
+
+/* per-category icons — tile only (chip stays text) */
+.cat-tile.cat-popup_store::before {
+  content: "🛍️";
+}
+.cat-tile.cat-collaboration_cafe::before {
+  content: "☕";
+}
+.cat-tile.cat-theater_bonus::before {
+  content: "🎬";
+}
+.cat-tile.cat-goods_reservation::before {
+  content: "📦";
+}
+.cat-tile.cat-exhibition::before {
+  content: "🖼️";
+}
+.cat-tile.cat-fan_meeting::before {
+  content: "🎤";
+}

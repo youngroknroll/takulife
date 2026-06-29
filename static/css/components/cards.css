@@ -1,0 +1,214 @@
+/* ── panel ──────────────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+/* ── summary cards (shared across archive + drafts pages) ───── */
+/* Single source of truth for the summary bar. A page declares how many tiles it
+   has via `--summary-cols` (= min(card count, 5)); the row fills left to right
+   up to 5 columns, then wraps. Fewer cards → that many equal columns, no empty
+   cells. No per-page redefinition — keeps every archive page's summary identical. */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--summary-cols, 4), minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.summary-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-card);
+  padding: 12px;
+}
+
+.summary-label {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.summary-value {
+  margin: 0;
+  font-size: 1.28rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ── hero block ─────────────────────────────────────────────── */
+.hero {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+
+.hero h1 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ── responsive typography: scale large text down on phones ──── */
+@media (max-width: 620px) {
+  .hero h1 {
+    font-size: 1.3rem;
+  }
+  .hero > p {
+    font-size: 0.92rem;
+  }
+  .summary-value {
+    font-size: 1.1rem;
+  }
+}
+
+/* ── notice / empty-note ─────────────────────────────────────── */
+.notice {
+  border: 1px dashed #b6c8df;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  color: #46617f;
+  padding: 12px;
+  font-size: 0.88rem;
+}
+
+/* ── applied filter chips (event_list) ───────────────────────── */
+.applied-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.applied-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: 1px solid #c2d7ff;
+}
+
+.applied-clear {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+/* ── empty state (shared) ────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 36px 16px;
+  border: 1px dashed #c9d6e8;
+  border-radius: 12px;
+  background: #fafcff;
+}
+
+.empty-icon {
+  font-size: 1.8rem;
+  margin: 0 0 8px;
+}
+
+.empty-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.empty-note {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.empty-action {
+  display: inline-block;
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* ── panel heading shared styles ─────────────────────────────── */
+.panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.panel-note {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+/* Shared archive status/interest cards (extracted from per-page sheets) */
+.status-card {
+  border: 1px solid #d9e4f4;
+  border-radius: 10px;
+  background: var(--bg-card);
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+.status-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+.status-card h3 {
+  margin: 0 0 5px;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+/* Shared archive side action link (extracted from archive_statuses + archive_interests) */
+.side-action-link {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #fff;
+  color: #25508a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 8px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+/* Shared review-status chip colors (extracted from .draft-chip + .status-chip).
+   Color only — the page sheets keep .draft-chip / .status-chip for shape. */
+.review-status-pending {
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+}
+.review-status-approved {
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+.review-status-rejected {
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+}
