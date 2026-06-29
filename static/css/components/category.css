@@ -78,3 +78,25 @@
 .cat-tile.cat-fan_meeting::before {
   content: "🎤";
 }
+
+/* ── archive list chip (.event-category) ──────────────────────
+ * Archive list/status/interests pages render <span class="event-category">
+ * for the category label and <span class="event-category unofficial"> for the
+ * private-entry marker. Geometry + default (category) skin here; .unofficial
+ * overrides display + colour. Extracted from the per-page sheets, where this
+ * was duplicated across three archive pages. Distinct from .cat-chip above. */
+.event-category {
+  border-radius: 999px;
+  padding: 0.25rem 0.5625rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.event-category.unofficial {
+  display: inline-flex;
+  align-items: center;
+  background: #eef0f3;
+  color: #5b6472;
+}

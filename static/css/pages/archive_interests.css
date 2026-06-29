@@ -9,15 +9,7 @@
     margin-top: 0.75rem;
   }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
-  .event-category {
-    border-radius: 999px;
-    padding: 0.25rem 0.5625rem;
-    font-size: 0.74rem;
-    font-weight: 700;
-    white-space: nowrap;
-    background: var(--brand-soft);
-    color: var(--brand);
-  }
+  /* .event-category 칩은 components/category.css로 통합됨 */
   .side-list a {
     color: #25508a;
     text-decoration: none;
@@ -44,16 +36,4 @@
       margin-top: 0.625rem;
       width: 100%;
     }
-  }
-  /* Unofficial (private PersonalEntry) marker chip */
-  .event-category.unofficial {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 0.25rem 0.5625rem;
-    font-size: 0.74rem;
-    font-weight: 700;
-    white-space: nowrap;
-    background: #eef0f3;
-    color: #5b6472;
   }
