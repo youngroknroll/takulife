@@ -21,4 +21,4 @@ def register(request):
             return redirect("archive-page")
     else:
         form = RegistrationForm()
-    return render(request, "accounts/register.html", {"form": form})
+    return render(request, "registration/register.html", {"form": form})

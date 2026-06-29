@@ -1,0 +1,127 @@
+/* ── topbar auth nav (shared _topbar.html partial) ──────────── */
+.topbar-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.topbar-username {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-soft);
+  border-radius: 8px;
+  padding: 7px 10px;
+  white-space: nowrap;
+  min-height: 36px;
+}
+
+.topbar-link:hover {
+  background: var(--brand-soft);
+}
+
+/* Logout form: reset all form chrome so the button looks like a link */
+.topbar-logout-form {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+}
+
+.topbar-logout-btn {
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+
+/* ── login prompt modal (shown when a guest tries to save) ──── */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(17, 31, 55, 0.45);
+}
+
+.auth-modal {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.auth-modal h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.auth-modal p {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.auth-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-modal-primary {
+  display: block;
+  padding: 11px 12px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-modal-primary:hover {
+  filter: brightness(1.05);
+}
+
+.auth-modal-secondary {
+  display: block;
+  padding: 11px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-modal-secondary:hover {
+  background: var(--brand-soft);
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--muted);
+}

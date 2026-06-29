@@ -19,7 +19,7 @@ class TestArchiveVisitCreateView:
         resp = client.get("/archive/visits/new/")
 
         assert resp.status_code == 200
-        assert "core/archive_visit_create.html" in [t.name for t in resp.templates]
+        assert "core/archive/visit_create.html" in [t.name for t in resp.templates]
 
     def test_anonymous_user_redirected_to_login(self):
         resp = Client().get("/archive/visits/new/")

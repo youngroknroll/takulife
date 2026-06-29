@@ -3,7 +3,7 @@
 {% block title %}{{ project_name }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/hscroll.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/hscroll.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
 {% endblock %}
 
@@ -133,7 +133,7 @@
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-ongoing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-ongoing" role="region" aria-label="이번 주 갈 만한 행사" tabindex="0">
               {% for row in ongoing_events %}
-                <li>{% include "core/_poster_card.html" with row=row variant="ongoing" %}</li>
+                <li>{% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}</li>
               {% endfor %}
             </ul>
             <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-ongoing">&#8250;</button>
@@ -141,7 +141,7 @@
         {% else %}
           <div class="poster-card-grid">
             {% for row in ongoing_events %}
-              {% include "core/_poster_card.html" with row=row variant="ongoing" %}
+              {% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}
             {% endfor %}
           </div>
         {% endif %}
@@ -161,7 +161,7 @@
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-closing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-closing" role="region" aria-label="곧 종료되는 행사" tabindex="0">
               {% for row in closing_events %}
-                <li>{% include "core/_poster_card.html" with row=row variant="closing" %}</li>
+                <li>{% include "core/partials/_poster_card.html" with row=row variant="closing" %}</li>
               {% endfor %}
             </ul>
             <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-closing">&#8250;</button>
@@ -169,7 +169,7 @@
         {% else %}
           <div class="poster-card-grid">
             {% for row in closing_events %}
-              {% include "core/_poster_card.html" with row=row variant="closing" %}
+              {% include "core/partials/_poster_card.html" with row=row variant="closing" %}
             {% endfor %}
           </div>
         {% endif %}
@@ -189,7 +189,7 @@
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-recent">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-recent" role="region" aria-label="새로 등록된 행사" tabindex="0">
               {% for row in recent_events %}
-                <li>{% include "core/_poster_card.html" with row=row variant="recent" %}</li>
+                <li>{% include "core/partials/_poster_card.html" with row=row variant="recent" %}</li>
               {% endfor %}
             </ul>
             <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-recent">&#8250;</button>
@@ -197,7 +197,7 @@
         {% else %}
           <div class="poster-card-grid">
             {% for row in recent_events %}
-              {% include "core/_poster_card.html" with row=row variant="recent" %}
+              {% include "core/partials/_poster_card.html" with row=row variant="recent" %}
             {% endfor %}
           </div>
         {% endif %}

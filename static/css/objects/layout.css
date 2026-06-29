@@ -1,0 +1,101 @@
+/* ── discovery card lead line ──────────────────────────────── */
+/*
+ * Date-led meta row shared by home and event_list cards: D-day leads, the
+ * category chip is pushed to the right. Keeps "when / how long left" as the
+ * first thing scanned (design-improve idea 2).
+ */
+.card-lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.card-lead .cat-chip {
+  margin-left: auto;
+}
+
+.lead-status {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--amber-ink);
+}
+
+/* ── status-row (찜/예정 등 카드 액션 버튼 줄) ───────────────────
+   여러 페이지(비공식·찜목록·예정목록·행사목록·행사상세)가 공유하는
+   단일 정의. 예전엔 4개 페이지 CSS에 중복돼 있던 것을 여기로 통합했다. */
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+/* ── layout (two-column grid shared by list/archive pages) ──── */
+.layout {
+  display: grid;
+  gap: 12px;
+}
+
+/* Shared archive/draft side panels (extracted from per-page sheets) */
+.side-stack {
+  display: grid;
+  gap: 12px;
+  align-self: start;
+  position: sticky;
+  top: 12px;
+}
+.rule-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.rule-list li {
+  border: 1px solid #d9e4f4;
+  border-radius: 9px;
+  background: var(--bg-card);
+  padding: 9px 10px;
+  color: #2c4563;
+  font-size: 0.86rem;
+}
+.side-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.side-list li {
+  border: 1px solid #d9e4f4;
+  border-radius: 9px;
+  background: var(--bg-card);
+  padding: 9px 10px;
+}
+
+/* Heading + inline action/filter row; and the chip group container */
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* Unified 빠른 이동 quick-nav: links laid in one row, button-like */
+.side-list--row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.side-list--row a {
+  display: block;
+  text-align: center;
+}
