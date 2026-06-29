@@ -1,0 +1,28 @@
+  /* Pagination control — shared across the public browse page and the archive
+     list pages (기록장 / 예정 목록 / 방문 기록). Hoisted verbatim out of
+     pages/event_list.css so every paginated page styles its pager identically.
+     Markup: templates/core/partials/_pager.html */
+  .pager {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .pager a,
+  .pager span {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: #324a66;
+    padding: 0.5rem 0.625rem;
+    font-size: 0.82rem;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .pager .current {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+    font-weight: 600;
+  }

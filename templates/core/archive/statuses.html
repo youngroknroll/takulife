@@ -119,6 +119,8 @@
             {% endif %}
           </p>
         {% endif %}
+
+        {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
       </article>
 
       <aside class="side-stack" aria-label="예정 목록 보조 정보">

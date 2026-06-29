@@ -193,30 +193,7 @@
     color: var(--amber-ink);
   }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
-  .pager {
-    margin-top: 0.75rem;
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-  .pager a,
-  .pager span {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fff;
-    color: #324a66;
-    padding: 0.5rem 0.625rem;
-    font-size: 0.82rem;
-    text-decoration: none;
-    display: inline-block;
-  }
-  .pager .current {
-    background: var(--brand);
-    border-color: var(--brand);
-    color: #fff;
-    font-weight: 600;
-  }
+  /* .pager는 components/pager.css로 hoist됨 (아카이브 페이지와 공유) */
   @media (max-width: 56.25rem) {
     .layout {
       grid-template-columns: 1fr;

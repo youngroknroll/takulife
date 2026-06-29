@@ -1,3 +1,9 @@
+  /* Home has no mobile-cta, so the global 5rem .page bottom padding is dead
+     space above the footer (which already adds its own 40px margin-top). Trim
+     it; the mobile @media below keeps its own 3rem bottom. */
+  .page {
+    padding-bottom: 1.5rem;
+  }
   .hero {
     background:
       radial-gradient(120% 140% at 100% 0%, #dbe7ff 0%, transparent 55%),

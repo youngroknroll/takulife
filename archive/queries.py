@@ -15,6 +15,12 @@ from .models import EventInterest, PersonalEntry, UserEventStatus, VisitRecord
 # set has a single source of truth. Excludes "interested" (now EventInterest).
 ARCHIVE_STATUS_SLUGS: tuple[str, ...] = tuple(UserEventStatus.Status.values)
 
+# Page sizes for the archive SSR list pages (rendered by core.views). Kept here
+# beside the list queries they bound, mirroring events.queries.PUBLIC_LISTING_PAGE_SIZE.
+ARCHIVE_RECORD_PAGE_SIZE = 10  # 기록장 (/archive/) — 저장한 행사
+ARCHIVE_STATUS_PAGE_SIZE = 5  # 예정 목록 (/archive/statuses/)
+ARCHIVE_VISIT_PAGE_SIZE = 5  # 방문 기록 (/archive/visits/)
+
 
 def user_status_counts(user, *, today=None) -> dict:
     """Return per-status counts for a user's archive statuses.
