@@ -41,7 +41,7 @@
         <p class="panel-note">직접 등록한 항목을 최신순으로 정리한 목록입니다.</p>
 
         {% if has_entries %}
-          <div class="timeline" id="entry-list">
+          <div class="timeline entry-list">
             {% for row in entry_rows %}
               <article class="visit-card hover-lift" data-entry-id="{{ row.entry.id }}">
                 <div class="visit-card-top">

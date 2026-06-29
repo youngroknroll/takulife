@@ -28,7 +28,7 @@
         <h1>행사 목록</h1>
         <button class="filter-toggle" type="button" aria-expanded="false" aria-controls="filter-body">필터 열기 ▾</button>
 
-        <div id="filter-body">
+        <div id="filter-body" class="filter-body">
         <form method="get" action="/events/">
           {% if selected_q %}<input type="hidden" name="q" value="{{ selected_q }}">{% endif %}
 
