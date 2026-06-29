@@ -36,7 +36,7 @@
     background: var(--mint-soft);
   }
   h1 {
-    margin: 8px 0 6px;
+    margin: 0.5rem 0 0.375rem;
     font-size: 1.38rem;
     line-height: 1.4;
   }
@@ -46,7 +46,7 @@
     font-size: 0.95rem;
   }
   .meta-grid {
-    margin-top: 12px;
+    margin-top: 0.75rem;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
@@ -61,17 +61,17 @@
     display: block;
     color: var(--muted);
     font-size: 0.76rem;
-    margin-bottom: 3px;
+    margin-bottom: 0.1875rem;
   }
   .section {
-    margin-top: 12px;
+    margin-top: 0.75rem;
     border: 1px solid var(--line);
     border-radius: 10px;
     background: var(--bg-card);
     padding: 0.75rem;
   }
   .section h2 {
-    margin: 0 0 8px;
+    margin: 0 0 0.5rem;
     font-size: 0.95rem;
   }
   .section p {
@@ -86,7 +86,7 @@
     padding: 0.75rem;
   }
   .side-block h2 {
-    margin: 0 0 8px;
+    margin: 0 0 0.5rem;
     font-size: 0.9rem;
   }
   .action-list {

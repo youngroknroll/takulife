@@ -11,13 +11,13 @@
     border-radius: 10px;
     background: var(--bg-card);
     padding: 0.75rem;
-    margin: 12px 0;
+    margin: 0.75rem 0;
   }
   .create-form {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(150px, 0.35fr) auto;
     gap: 0.5rem;
-    margin-top: 8px;
+    margin-top: 0.5rem;
   }
   input {
     width: 100%;
@@ -61,7 +61,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.4375rem;
-    margin-bottom: 7px;
+    margin-bottom: 0.4375rem;
   }
   .draft-chip {
     border-radius: 999px;
@@ -75,12 +75,12 @@
     color: var(--brand);
   }
   .draft-card h3 {
-    margin: 0 0 5px;
+    margin: 0 0 0.3125rem;
     font-size: 1rem;
     line-height: 1.35;
   }
   .source {
-    margin: 4px 0 0;
+    margin: 0.25rem 0 0;
     color: var(--muted);
     font-size: 0.84rem;
     overflow-wrap: anywhere;

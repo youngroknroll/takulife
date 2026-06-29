@@ -70,12 +70,12 @@
 }
 
 .auth-modal h2 {
-  margin: 0 0 8px;
+  margin: 0 0 0.5rem;
   font-size: 1.2rem;
 }
 
 .auth-modal p {
-  margin: 0 0 20px;
+  margin: 0 0 1.25rem;
   color: var(--muted);
   font-size: 0.92rem;
 }

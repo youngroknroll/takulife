@@ -2,7 +2,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 12px;
+    margin-bottom: 0.75rem;
   }
   .layout {
     display: grid;
@@ -16,23 +16,23 @@
     top: 0.75rem;
   }
   .filters h1 {
-    margin: 0 0 4px;
+    margin: 0 0 0.25rem;
     font-size: 1.1rem;
   }
   .filters .caption {
-    margin: 0 0 12px;
+    margin: 0 0 0.75rem;
     color: var(--muted);
     font-size: 0.84rem;
   }
   .filter-group {
-    margin-bottom: 12px;
+    margin-bottom: 0.75rem;
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 0.625rem;
     background: var(--bg-card);
   }
   .filter-group h2 {
-    margin: 0 0 8px;
+    margin: 0 0 0.5rem;
     font-size: 0.9rem;
   }
   .filter-list {
@@ -95,7 +95,7 @@
     display: none;
   }
   .region-online {
-    margin-top: 8px;
+    margin-top: 0.5rem;
   }
   .filter-check input:focus {
     outline: 2px solid #92b4ff;
@@ -128,14 +128,14 @@
     justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
   }
   .results-title {
     margin: 0;
     font-size: 1rem;
   }
   .results-note {
-    margin: 2px 0 0;
+    margin: 0.125rem 0 0;
     color: var(--muted);
     font-size: 0.82rem;
   }
@@ -168,7 +168,7 @@
     align-items: start;
   }
   .event-card h2 {
-    margin: 0 0 6px;
+    margin: 0 0 0.375rem;
     font-size: 1rem;
     line-height: 1.35;
   }
@@ -194,7 +194,7 @@
   }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
   .pager {
-    margin-top: 12px;
+    margin-top: 0.75rem;
     display: flex;
     justify-content: center;
     gap: 0.5rem;
@@ -230,7 +230,7 @@
       justify-content: center;
       gap: 0.375rem;
       width: 100%;
-      margin-top: 8px;
+      margin-top: 0.5rem;
       border: 1px solid var(--border-soft);
       background: var(--bg-soft);
       color: #24456f;
