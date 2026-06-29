@@ -23,7 +23,7 @@
   border: 1px solid var(--border-soft);
   background: var(--bg-soft);
   border-radius: 8px;
-  padding: 7px 10px;
+  padding: 0.4375rem 0.625rem;
   white-space: nowrap;
   min-height: 36px;
 }
@@ -53,7 +53,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 1.25rem;
   background: rgba(17, 31, 55, 0.45);
 }
 
@@ -65,7 +65,7 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow: var(--shadow);
-  padding: 28px 24px 24px;
+  padding: 1.75rem 1.5rem 1.5rem;
   text-align: center;
 }
 
@@ -88,7 +88,7 @@
 
 .auth-modal-primary {
   display: block;
-  padding: 11px 12px;
+  padding: 0.6875rem 0.75rem;
   border-radius: 8px;
   background: var(--brand);
   color: #fff;
@@ -102,7 +102,7 @@
 
 .auth-modal-secondary {
   display: block;
-  padding: 11px 12px;
+  padding: 0.6875rem 0.75rem;
   border-radius: 8px;
   border: 1px solid var(--line);
   color: var(--brand);

@@ -8,7 +8,7 @@
 .status {
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 0.3125rem 0.625rem;
   font-size: 0.78rem;
   color: #2f4360;
   background: #fff;
@@ -67,7 +67,7 @@
 .interest-btn {
   border: 1px solid #f8bfd8;
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 0.3125rem 0.625rem;
   font-size: 0.78rem;
   color: var(--pink-ink);
   background: #fff;
@@ -103,7 +103,7 @@
   background: var(--bg-soft);
   color: #24456f;
   font-size: 0.82rem;
-  padding: 7px 12px;
+  padding: 0.4375rem 0.75rem;
   cursor: pointer;
 }
 
@@ -132,7 +132,7 @@
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   font-size: 0.95rem;
   color: var(--text);
   background: #fff;
@@ -142,7 +142,7 @@
   background: var(--brand-soft);
   color: var(--brand);
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 0.625rem 0.875rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -163,7 +163,7 @@
 }
 
 .form-group input {
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 0.95rem;

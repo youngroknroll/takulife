@@ -4,7 +4,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: var(--shadow);
-  padding: 14px;
+  padding: 0.875rem;
 }
 
 /* ── summary cards (shared across archive + drafts pages) ───── */
@@ -23,7 +23,7 @@
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--bg-card);
-  padding: 12px;
+  padding: 0.75rem;
 }
 
 .summary-label {
@@ -45,7 +45,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: var(--shadow);
-  padding: 18px;
+  padding: 1.125rem;
   margin-bottom: 14px;
 }
 
@@ -79,7 +79,7 @@
   border-radius: 10px;
   background: var(--bg-soft);
   color: #46617f;
-  padding: 12px;
+  padding: 0.75rem;
   font-size: 0.88rem;
 }
 
@@ -95,7 +95,7 @@
 .applied-chip {
   display: inline-block;
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 0.25rem 0.625rem;
   font-size: 0.78rem;
   font-weight: 600;
   background: var(--brand-soft);
@@ -112,7 +112,7 @@
 /* ── empty state (shared) ────────────────────────────────────── */
 .empty-state {
   text-align: center;
-  padding: 36px 16px;
+  padding: 2.25rem 1rem;
   border: 1px dashed #c9d6e8;
   border-radius: 12px;
   background: #fafcff;
@@ -138,7 +138,7 @@
 .empty-action {
   display: inline-block;
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 0.5rem 0.875rem;
   background: var(--brand);
   color: #fff;
   font-size: 0.85rem;
@@ -163,7 +163,7 @@
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--bg-card);
-  padding: 12px;
+  padding: 0.75rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
@@ -192,7 +192,7 @@
   color: #25508a;
   font-size: 0.82rem;
   font-weight: 700;
-  padding: 8px 10px;
+  padding: 0.5rem 0.625rem;
   text-decoration: none;
   white-space: nowrap;
   min-height: 44px;
