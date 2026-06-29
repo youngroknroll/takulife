@@ -10,7 +10,7 @@
   .hero p {
     margin: 0;
     color: var(--muted);
-    max-width: 760px;
+    max-width: 47.5rem;
   }
   .status-chip {
     border-radius: 999px;
@@ -132,14 +132,14 @@
     color: var(--brand);
     font-weight: 700;
   }
-  @media (max-width: 920px) {
+  @media (max-width: 57.5rem) {
     .layout,
     .hero,
     .field-grid {
       grid-template-columns: 1fr;
     }
   }
-  @media (max-width: 720px) {
+  @media (max-width: 45rem) {
     .page {
       padding: 18px 14px 64px;
     }

@@ -243,7 +243,7 @@
     color: #c0392b;
     min-height: 1.2em;
   }
-  @media (max-width: 900px) {
+  @media (max-width: 56.25rem) {
     .layout {
       grid-template-columns: 1fr;
     }
@@ -251,7 +251,7 @@
       position: static;
     }
   }
-  @media (max-width: 720px) {
+  @media (max-width: 45rem) {
     .page {
       padding: 18px 14px 64px;
     }
@@ -270,7 +270,7 @@
     display: block;
   }
   .layout--single .panel {
-    max-width: 620px;
+    max-width: 38.75rem;
   }
   .back-link {
     display: inline-block;

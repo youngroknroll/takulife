@@ -24,7 +24,7 @@
     font-size: 0.86rem;
     font-weight: 600;
   }
-  @media (max-width: 900px) {
+  @media (max-width: 56.25rem) {
     .layout {
       grid-template-columns: 1fr;
     }
@@ -32,7 +32,7 @@
       position: static;
     }
   }
-  @media (max-width: 720px) {
+  @media (max-width: 45rem) {
     .page {
       padding: 18px 14px 64px;
     }

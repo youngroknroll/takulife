@@ -112,7 +112,7 @@
 
 /* ── mobile: native swipe + compact translucent overlay arrows ─ */
 
-@media (max-width: 700px) {
+@media (max-width: 43.75rem) {
   /* Keep arrows (JS toggles visibility by scroll position), but shrink
      them and fade slightly so they overlay card edges without crowding
      the swipe surface. */

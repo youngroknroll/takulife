@@ -61,7 +61,7 @@
 }
 
 /* ── responsive typography: scale large text down on phones ──── */
-@media (max-width: 620px) {
+@media (max-width: 38.75rem) {
   .hero h1 {
     font-size: 1.3rem;
   }
