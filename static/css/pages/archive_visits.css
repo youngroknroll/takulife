@@ -404,7 +404,7 @@
   }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
   /* 비공식 카드 하단 액션 바: 찜·예정(좌) / 공식 제보·마크·삭제(우) */
-  #entry-list .entry-actions-bar {
+  .entry-list .entry-actions-bar {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -412,10 +412,10 @@
     gap: 0.625rem 1rem;
     margin-top: 0.625rem;
   }
-  #entry-list .entry-actions-bar .status-row {
+  .entry-list .entry-actions-bar .status-row {
     margin-top: 0;
   }
-  #entry-list .entry-actions-bar .visit-card-actions {
+  .entry-list .entry-actions-bar .visit-card-actions {
     margin-top: 0;
     padding-top: 0;
     justify-content: flex-end;

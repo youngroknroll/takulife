@@ -240,10 +240,10 @@
       font-weight: 600;
       cursor: pointer;
     }
-    #filter-body {
+    .filter-body {
       display: none;
     }
-    .filters.open #filter-body {
+    .filters.open .filter-body {
       display: block;
     }
   }
