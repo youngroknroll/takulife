@@ -54,16 +54,6 @@
     background: var(--rose-soft);
     color: var(--rose-ink);
   }
-  .meta {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.84rem;
-  }
-  .period {
-    margin: 4px 0 0;
-    color: #2b405c;
-    font-size: 0.88rem;
-  }
   .side-title {
     display: block;
     color: #243b58;

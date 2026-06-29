@@ -161,7 +161,7 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 12px;
-    background: #fbfdff;
+    background: var(--bg-card);
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 12px;
@@ -183,16 +183,6 @@
   }
   .filter-toggle {
     display: none;
-  }
-  .meta {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.84rem;
-  }
-  .period {
-    margin: 4px 0 0;
-    color: #314b69;
-    font-size: 0.88rem;
   }
   .dday {
     border-radius: 999px;

@@ -55,7 +55,7 @@
   gap: 8px;
 }
 .rule-list li {
-  border: 1px solid #d9e4f4;
+  border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--bg-card);
   padding: 9px 10px;
@@ -70,7 +70,7 @@
   gap: 8px;
 }
 .side-list li {
-  border: 1px solid #d9e4f4;
+  border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--bg-card);
   padding: 9px 10px;

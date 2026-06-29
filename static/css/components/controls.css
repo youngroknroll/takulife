@@ -6,7 +6,7 @@
  */
 .status-btn,
 .status {
-  border: 1px solid #d9e4f4;
+  border: 1px solid var(--line);
   border-radius: 999px;
   padding: 5px 10px;
   font-size: 0.78rem;
