@@ -11,3 +11,6 @@ AGENTS.md
 .claude/
 .docs/
 media/
+
+# screenshot diff scratch (local visual verification)
+.shots/

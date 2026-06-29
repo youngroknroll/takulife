@@ -72,7 +72,7 @@
     grid-column: 1 / -1;
   }
   .raw-box {
-    border: 1px solid #d9e4f4;
+    border: 1px solid var(--line);
     border-radius: 10px;
     background: var(--bg-card);
     padding: 12px;
