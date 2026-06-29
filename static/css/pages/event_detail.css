@@ -1,10 +1,10 @@
   .page {
-    padding: 24px 20px 72px;
+    padding: 1.5rem 1.25rem 4.5rem;
   }
   .shell {
     display: grid;
     grid-template-columns: 1.45fr 0.9fr;
-    gap: 12px;
+    gap: 0.75rem;
   }
   .content {
     padding: 16px;
@@ -13,9 +13,9 @@
     padding: 14px;
     align-self: start;
     position: sticky;
-    top: 12px;
+    top: 0.75rem;
     display: grid;
-    gap: 10px;
+    gap: 0.625rem;
   }
   .chip {
     display: inline-block;
@@ -49,7 +49,7 @@
     margin-top: 12px;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 0.5rem;
   }
   .meta-item {
     border: 1px solid var(--line);
@@ -91,7 +91,7 @@
   }
   .action-list {
     display: grid;
-    gap: 8px;
+    gap: 0.5rem;
   }
   /* 찜·예정 줄은 base.css .status-row(flex)를 그대로 쓴다. 부모 .action-list가
      grid gap으로 간격을 주므로 status-row 자체 margin-top은 제거. */
@@ -129,7 +129,7 @@
     font-size: 0.84rem;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
   }
   .source-block a {
     text-decoration: none;
@@ -159,7 +159,7 @@
       grid-template-columns: 1fr;
     }
     .page {
-      padding-bottom: 96px;
+      padding-bottom: 6rem;
     }
     .mobile-cta {
       display: block;
@@ -179,7 +179,7 @@
   }
   @media (max-width: 45rem) {
     .page {
-      padding: 18px 14px 96px;
+      padding: 1.125rem 0.875rem 6rem;
     }
     h1 {
       font-size: 1.2rem;

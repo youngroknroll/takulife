@@ -4,7 +4,7 @@
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1.72fr) minmax(290px, 0.88fr);
-    gap: 12px;
+    gap: 0.75rem;
   }
   .create-box {
     border: 1px solid var(--line);
@@ -16,7 +16,7 @@
   .create-form {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(150px, 0.35fr) auto;
-    gap: 8px;
+    gap: 0.5rem;
     margin-top: 8px;
   }
   input {
@@ -45,7 +45,7 @@
   }
   .draft-list {
     display: grid;
-    gap: 10px;
+    gap: 0.625rem;
   }
   .draft-card {
     border: 1px solid var(--line);
@@ -54,13 +54,13 @@
     padding: 12px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
+    gap: 0.75rem;
     align-items: start;
   }
   .draft-top {
     display: flex;
     flex-wrap: wrap;
-    gap: 7px;
+    gap: 0.4375rem;
     margin-bottom: 7px;
   }
   .draft-chip {
@@ -118,7 +118,7 @@
   }
   @media (max-width: 45rem) {
     .page {
-      padding: 18px 14px 64px;
+      padding: 1.125rem 0.875rem 4rem;
     }
     .draft-card {
       grid-template-columns: 1fr;

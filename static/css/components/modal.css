@@ -2,7 +2,7 @@
 .topbar-auth {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   flex-wrap: nowrap;
 }
 
@@ -83,7 +83,7 @@
 .auth-modal-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .auth-modal-primary {

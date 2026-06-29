@@ -1,7 +1,7 @@
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.85fr);
-    gap: 12px;
+    gap: 0.75rem;
   }
   .chip {
     border: 1px solid var(--border-soft);
@@ -23,7 +23,7 @@
   }
   .status-list {
     display: grid;
-    gap: 10px;
+    gap: 0.625rem;
   }
   .event-category,
   .user-status {
@@ -98,7 +98,7 @@
   }
   @media (max-width: 45rem) {
     .page {
-      padding: 18px 14px 64px;
+      padding: 1.125rem 0.875rem 4rem;
     }
     .panel-head,
     .status-card {

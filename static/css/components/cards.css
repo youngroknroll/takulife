@@ -15,7 +15,7 @@
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(var(--summary-cols, 4), minmax(0, 1fr));
-  gap: 10px;
+  gap: 0.625rem;
   margin-top: 14px;
 }
 
@@ -88,7 +88,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   margin: 0 0 12px;
 }
 
@@ -166,13 +166,13 @@
   padding: 12px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 0.75rem;
   align-items: start;
 }
 .status-top {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 0.4375rem;
   margin-bottom: 7px;
 }
 .status-card h3 {
