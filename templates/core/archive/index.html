@@ -67,6 +67,11 @@
                 {% if row.subject.start_date and row.subject.end_date %}
                   <p class="record-meta">{{ row.subject.start_date }} ~ {{ row.subject.end_date }}</p>
                 {% endif %}
+                {% if row.status_slug == 'visited' %}
+                  <p class="record-actions">
+                    <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">기록</a>
+                  </p>
+                {% endif %}
               </article>
             {% endfor %}
           </div>
@@ -117,26 +122,17 @@
         </div>
 
         <div class="right-section">
-          <h3>정리 체크리스트</h3>
-          <ul class="flat-list">
-            <li>방문 시간대와 대기 시간 기록</li>
-            <li>굿즈 구매 여부와 재방문 의사 기록</li>
-            <li>다음 시즌 알림 필요 여부 기록</li>
-          </ul>
-        </div>
-
-        <div class="right-section">
           <h3>새 기록</h3>
           <div class="cta">
             <p>방문 후 메모를 남겨 다음 일정 판단 기준으로 활용합니다.</p>
-            <button type="button" disabled>기록 추가 (준비 중)</button>
+            <a href="/archive/visits/new/">기록 추가</a>
           </div>
         </div>
       </aside>
     </div>
 
     <div class="mobile-cta">
-      <button type="button" disabled>기록 추가 (준비 중)</button>
+      <a href="/archive/visits/new/">기록 추가</a>
     </div>
   </div>
 {% endblock %}
