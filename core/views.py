@@ -412,13 +412,46 @@ def archive_visits(request):
     )
 
 
+def _parse_visit_preselect(request):
+    """Resolve an optional ?subject=event:<id> / personal:<id> into a locked
+    subject for the visit-create form.
+
+    Returns ``{"value": "event:5", "label": "행사명"}`` when the param points at a
+    published event or one of the requester's own personal entries; ``None``
+    otherwise (the form then falls back to the selectable dropdown). This lets a
+    '기록' button on an already-visited event — which is not in the planned-only
+    dropdown — still write a record, since the visit API accepts any published
+    event. The id is validated here, so the template can render it as a trusted
+    locked field.
+    """
+    kind, _, ident = request.GET.get("subject", "").partition(":")
+    # Guard against non-ASCII "digits" (int() rejects them) and oversized ids
+    # (a pk past the DB integer range raises on the ORM lookup) — both would
+    # otherwise turn a crafted ?subject= into a 500.
+    if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
+        return None
+    pk = int(ident)
+    if kind == "event":
+        event = Event.objects.published().filter(pk=pk).first()
+        if event is not None:
+            return {"value": f"event:{event.pk}", "label": event.title}
+    elif kind == "personal":
+        entry = PersonalEntry.objects.filter(pk=pk, user=request.user).first()
+        if entry is not None:
+            return {"value": f"personal:{entry.pk}", "label": entry.title}
+    return None
+
+
 @login_required
 @ensure_csrf_cookie
 def archive_visit_create(request):
     """Dedicated write page for creating a visit record.
 
     Read-only render: the form posts to the existing JSON/photo APIs from
-    visit_create.js. Subject choices mirror the inline form they replace.
+    visit_create.js. Subject choices mirror the inline form they replace, except
+    when ``?subject=`` preselects a specific subject (e.g. from a 방문 완료 행사's
+    '기록' button) — then the form shows that subject locked instead of the
+    dropdown.
     """
     return render(
         request,
@@ -426,6 +459,7 @@ def archive_visit_create(request):
         {
             "selectable_events": list_user_planned_events(request.user),
             "selectable_personal_entries": list_user_personal_entries(request.user),
+            "preselect": _parse_visit_preselect(request),
         },
     )
 

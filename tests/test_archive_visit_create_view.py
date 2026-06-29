@@ -53,3 +53,84 @@ class TestArchiveVisitCreateView:
 
         entries = list(resp.context["selectable_personal_entries"])
         assert entries == [mine]
+
+
+@pytest.mark.django_db
+class TestArchiveVisitCreatePreselect:
+    """?subject=event:<id> / personal:<id> locks the write form to one subject.
+
+    Lets a 방문 완료 행사's 기록 button open the page ready to save, even though a
+    visited event is absent from the planned-only dropdown.
+    """
+
+    def _login(self, make_user, **kwargs):
+        user = make_user(**kwargs)
+        client = Client()
+        client.force_login(user)
+        return user, client
+
+    def test_preselect_published_event_locks_subject(self, make_user, make_event):
+        _, client = self._login(make_user)
+        event = make_event(title="방문 완료한 행사")
+
+        resp = client.get(f"/archive/visits/new/?subject=event:{event.id}")
+
+        assert resp.context["preselect"] == {
+            "value": f"event:{event.id}",
+            "label": "방문 완료한 행사",
+        }
+        assert b'name="subject"' in resp.content
+        assert f"event:{event.id}".encode() in resp.content
+
+    def test_preselect_own_personal_entry(self, make_user):
+        user, client = self._login(make_user)
+        entry = PersonalEntry.objects.create(user=user, kind="place", title="숨은 카페")
+
+        resp = client.get(f"/archive/visits/new/?subject=personal:{entry.id}")
+
+        assert resp.context["preselect"] == {
+            "value": f"personal:{entry.id}",
+            "label": "숨은 카페",
+        }
+
+    def test_preselect_unpublished_event_ignored(self, make_user, make_draft_event):
+        _, client = self._login(make_user)
+        draft = make_draft_event(title="비공개 행사")
+
+        resp = client.get(f"/archive/visits/new/?subject=event:{draft.id}")
+
+        assert resp.context["preselect"] is None
+
+    def test_preselect_other_users_personal_entry_ignored(self, make_user):
+        _, client = self._login(make_user)
+        other = make_user(username="stranger")
+        entry = PersonalEntry.objects.create(user=other, kind="goods", title="남의 굿즈")
+
+        resp = client.get(f"/archive/visits/new/?subject=personal:{entry.id}")
+
+        assert resp.context["preselect"] is None
+
+    def test_preselect_malformed_param_ignored(self, make_user):
+        _, client = self._login(make_user)
+
+        # Includes crafted vectors that pass a naive isdigit() guard but would
+        # crash int()/the ORM: a non-ASCII "digit" and an oversized id.
+        for raw in (
+            "garbage",
+            "event:",
+            "event:abc",
+            "weird:1",
+            "event:²",  # superscript two — isdigit() True, int() raises
+            "event:" + "9" * 30,  # past the DB integer range
+        ):
+            resp = client.get(f"/archive/visits/new/?subject={raw}")
+            assert resp.status_code == 200
+            assert resp.context["preselect"] is None
+
+    def test_no_subject_param_keeps_dropdown(self, make_user):
+        _, client = self._login(make_user)
+
+        resp = client.get("/archive/visits/new/")
+
+        assert resp.context["preselect"] is None
+        assert "selectable_events" in resp.context
