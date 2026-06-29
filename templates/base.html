@@ -22,9 +22,9 @@
   {% include "core/partials/_site_header.html" %}
   {% block content %}{% endblock %}
   {% include "core/partials/_site_footer.html" %}
-  <script defer src="{% static 'js/api.js' %}"></script>
-  <script defer src="{% static 'js/confirm-modal.js' %}"></script>
-  <script defer src="{% static 'js/status.js' %}"></script>
+  <script defer src="{% static 'js/shared/api.js' %}"></script>
+  <script defer src="{% static 'js/components/confirm-modal.js' %}"></script>
+  <script defer src="{% static 'js/shared/status.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
