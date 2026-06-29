@@ -189,7 +189,7 @@
    hoisted here — a global 720px .page rule would alter home.css at the
    701–720px band and archive.css at ≤720px, both of which lack a matching
    720px .page override. Those files keep their own padding; see report.) */
-@media (max-width: 720px) {
+@media (max-width: 45rem) {
   .nav-links {
     justify-content: start;
   }

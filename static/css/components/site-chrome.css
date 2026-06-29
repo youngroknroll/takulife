@@ -53,7 +53,7 @@
   margin-left: auto;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 43.75rem) {
   .site-header-inner {
     flex-wrap: wrap;
     gap: 10px;
@@ -152,7 +152,7 @@
   color: var(--muted);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 47.5rem) {
   .site-footer-inner {
     grid-template-columns: 1fr;
     gap: 20px;

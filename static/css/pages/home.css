@@ -321,7 +321,7 @@
   }
 
   /* ── Responsive: collapse to 1-column at 860px ────────────── */
-  @media (max-width: 860px) {
+  @media (max-width: 53.75rem) {
     .hero-inner {
       grid-template-columns: 1fr;
     }
@@ -549,12 +549,12 @@
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 10px;
   }
-  @media (max-width: 900px) {
+  @media (max-width: 56.25rem) {
     .cat-browse {
       grid-template-columns: repeat(3, 1fr);
     }
   }
-  @media (max-width: 700px) {
+  @media (max-width: 43.75rem) {
     .page {
       padding: 16px 12px 48px;
     }
@@ -591,7 +591,7 @@
   }
 
   /* Responsive: snap-align for home's scroller items */
-  @media (max-width: 700px) {
+  @media (max-width: 43.75rem) {
     .hscroll-track .cat-browse-item,
     .hscroll-track li {
       scroll-snap-align: start;

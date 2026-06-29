@@ -217,7 +217,7 @@
     color: #fff;
     font-weight: 600;
   }
-  @media (max-width: 900px) {
+  @media (max-width: 56.25rem) {
     .layout {
       grid-template-columns: 1fr;
     }
@@ -247,7 +247,7 @@
       display: block;
     }
   }
-  @media (max-width: 700px) {
+  @media (max-width: 43.75rem) {
     .page {
       padding: 16px 12px 48px;
     }
