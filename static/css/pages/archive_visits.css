@@ -12,7 +12,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
-    margin-bottom: 12px;
+    margin-bottom: 0.75rem;
   }
   .visit-filter-chip {
     border: 1px solid var(--line);
@@ -65,7 +65,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.4375rem;
-    margin-bottom: 7px;
+    margin-bottom: 0.4375rem;
   }
   .visit-chip {
     border-radius: 999px;
@@ -87,12 +87,12 @@
     color: #5b6472;
   }
   .visit-card h3 {
-    margin: 0 0 5px;
+    margin: 0 0 0.3125rem;
     font-size: 1rem;
     line-height: 1.35;
   }
   .review {
-    margin: 5px 0 0;
+    margin: 0.3125rem 0 0;
     color: #2c4563;
     font-size: 0.84rem;
   }
@@ -201,7 +201,7 @@
   .create-form {
     display: grid;
     gap: 0.625rem;
-    margin-top: 12px;
+    margin-top: 0.75rem;
   }
   .form-group {
     display: grid;
@@ -274,7 +274,7 @@
   }
   .back-link {
     display: inline-block;
-    margin-bottom: 6px;
+    margin-bottom: 0.375rem;
     font-size: 0.84rem;
     font-weight: 600;
     color: var(--brand);
@@ -300,7 +300,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-top: 4px;
+    margin-top: 0.25rem;
   }
   .photo-preview-tile {
     position: relative;
@@ -387,7 +387,7 @@
   /* 방문 페이지 빠른 이동 밑 "기록하기" CTA */
   .record-cta {
     display: block;
-    margin-top: 10px;
+    margin-top: 0.625rem;
     text-align: center;
     border: 1px solid var(--brand);
     border-radius: 8px;
@@ -410,7 +410,7 @@
     align-items: flex-end;
     flex-wrap: wrap;
     gap: 0.625rem 1rem;
-    margin-top: 10px;
+    margin-top: 0.625rem;
   }
   #entry-list .entry-actions-bar .status-row {
     margin-top: 0;
@@ -450,14 +450,14 @@
     color: var(--amber-ink);
   }
   .promote-form {
-    margin-top: 10px;
+    margin-top: 0.625rem;
     padding: 0.75rem;
     border: 1px solid var(--border-soft);
     border-radius: 10px;
     background: var(--bg-soft);
   }
   .promote-note {
-    margin: 0 0 8px;
+    margin: 0 0 0.5rem;
     font-size: 0.82rem;
     color: var(--muted);
     line-height: 1.45;

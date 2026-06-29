@@ -6,7 +6,7 @@
   .status-list {
     display: grid;
     gap: 0.625rem;
-    margin-top: 12px;
+    margin-top: 0.75rem;
   }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
   .event-category {
@@ -41,7 +41,7 @@
       display: block;
     }
     .side-action-link {
-      margin-top: 10px;
+      margin-top: 0.625rem;
       width: 100%;
     }
   }

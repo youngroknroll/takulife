@@ -6,7 +6,7 @@
     border-radius: 16px;
     box-shadow: var(--shadow);
     padding: 2rem 1.75rem;
-    margin-bottom: 14px;
+    margin-bottom: 0.875rem;
   }
   .hero-inner {
     display: grid;
@@ -15,13 +15,13 @@
     align-items: start;
   }
   .hero h1 {
-    margin: 0 0 10px;
+    margin: 0 0 0.625rem;
     font-size: 2rem;
     line-height: 1.25;
     letter-spacing: -0.02em;
   }
   .hero p {
-    margin: 0 0 18px;
+    margin: 0 0 1.125rem;
     color: var(--muted);
     font-size: 1rem;
     max-width: 60ch;
@@ -234,7 +234,7 @@
   }
 
   .slide-caption .slide-work {
-    margin: 0 0 3px;
+    margin: 0 0 0.1875rem;
     font-size: 0.74rem;
     color: rgba(255,255,255,0.82);
     display: -webkit-box;
@@ -266,7 +266,7 @@
   }
 
   .slide-caption .slide-period {
-    margin: 3px 0 0;
+    margin: 0.1875rem 0 0;
     font-size: 0.78rem;
     font-weight: 600;
     color: rgba(255,255,255,0.92);
@@ -368,13 +368,13 @@
     border-radius: 12px;
     box-shadow: var(--shadow);
     padding: 0.875rem;
-    margin-bottom: 14px;
+    margin-bottom: 0.875rem;
   }
   .section-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
   }
   .section h2 {
     margin: 0;
@@ -458,7 +458,7 @@
     border-radius: 4px;
   }
   .poster-card-meta {
-    margin: 4px 0 0;
+    margin: 0.25rem 0 0;
     font-size: 0.78rem;
     color: rgba(255, 255, 255, 0.92);
     white-space: nowrap;
@@ -466,7 +466,7 @@
     text-overflow: ellipsis;
   }
   .poster-card-period {
-    margin: 2px 0 0;
+    margin: 0.125rem 0 0;
     font-size: 0.76rem;
     color: rgba(255, 255, 255, 0.82);
     white-space: nowrap;

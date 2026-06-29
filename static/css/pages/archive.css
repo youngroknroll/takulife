@@ -7,12 +7,12 @@
     gap: 0.75rem;
   }
   .month-block {
-    margin-top: 12px;
+    margin-top: 0.75rem;
     border-top: 1px solid #e6edf7;
     padding-top: 0.75rem;
   }
   .month-title {
-    margin: 0 0 8px;
+    margin: 0 0 0.5rem;
     font-size: 0.93rem;
     color: #2f4664;
     font-weight: 700;
@@ -22,7 +22,7 @@
     border-radius: 10px;
     padding: 0.6875rem;
     background: var(--bg-card);
-    margin-bottom: 9px;
+    margin-bottom: 0.5625rem;
   }
   .record-top {
     display: grid;
@@ -30,7 +30,7 @@
     justify-content: space-between;
     gap: 0.625rem;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 0.375rem;
   }
   .record-title {
     margin: 0;
@@ -58,7 +58,7 @@
     color: var(--rose-ink);
   }
   .record-meta {
-    margin: 0 0 5px;
+    margin: 0 0 0.3125rem;
     color: var(--muted);
     font-size: 0.84rem;
   }
@@ -68,12 +68,12 @@
     color: #2b405c;
   }
   .right-section {
-    margin-top: 12px;
+    margin-top: 0.75rem;
     border-top: 1px solid #e6edf7;
     padding-top: 0.75rem;
   }
   .right-section h3 {
-    margin: 0 0 8px;
+    margin: 0 0 0.5rem;
     font-size: 0.92rem;
   }
   .flat-list {
@@ -105,7 +105,7 @@
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 0.375rem;
-    margin-bottom: 7px;
+    margin-bottom: 0.4375rem;
   }
   .calendar-head span {
     font-size: 0.74rem;
@@ -150,7 +150,7 @@
     border-color: #f8b7c3;
   }
   .calendar-legend {
-    margin: 8px 0 0;
+    margin: 0.5rem 0 0;
     padding: 0;
     list-style: none;
     display: flex;
@@ -188,7 +188,7 @@
   }
   .sample-tag {
     display: inline-block;
-    margin-left: 4px;
+    margin-left: 0.25rem;
     font-size: 0.66rem;
     font-weight: 600;
     color: var(--muted);
@@ -205,7 +205,7 @@
     padding: 0.6875rem;
   }
   .cta p {
-    margin: 0 0 9px;
+    margin: 0 0 0.5625rem;
     color: #355577;
     font-size: 0.88rem;
   }

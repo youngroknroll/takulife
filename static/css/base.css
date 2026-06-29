@@ -2,14 +2,22 @@
  * base.css — global base layer: reset, document defaults, page wrapper,
  * focus outline, and the .sr-only a11y helper. Objects/components split out.
  *
- * ── Unit convention ───────────────────────────────────────────
- *   rem  = baseline unit: font-size, layout spacing, @media breakpoints.
- *   em   = component-internal padding meant to scale with its own font.
+ * ── Unit convention (fully applied) ───────────────────────────
+ *   rem  = ALL spacing: font-size, padding, margin, gap, sticky top,
+ *          @media breakpoints. Every font-size is rem (root-relative),
+ *          so rem spacing scales with the user's font setting — which is
+ *          exactly the responsive/a11y goal em would serve. em is NOT
+ *          used: with no local px/em font-size, rem already tracks the
+ *          font, with cleaner values and pixel-identity at default zoom.
  *   px   = fixed values only: border-width, box-shadow, border-radius,
- *          min-height tap targets (44px), pill radius (999px).
+ *          min-height tap targets (44px), pill radius (999px),
+ *          absolute-position corner offsets (badges/carousel insets),
+ *          calc() safe-area offsets, the .sr-only -1px clip, and the
+ *          fan deck-card centering margin (tied to fixed px card dims).
  *
  *   Root is the browser default (16px) — no html{font-size} override — so
- *   rem tracks the user's font setting. px↔rem mapping (16px base):
+ *   rem tracks the user's font setting. Conversion was faithful /16
+ *   (pixel-identical at default zoom). px↔rem mapping (16px base):
  *     4px .25rem · 8px .5rem · 12px .75rem · 16px 1rem · 20px 1.25rem · 24px 1.5rem
  *   @media breakpoints in rem (CSS vars can't be used in @media):
  *     38.75rem(620) 43.75rem(700) 45rem(720) 47.5rem(760)
