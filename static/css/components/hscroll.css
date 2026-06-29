@@ -44,7 +44,7 @@
   display: flex;
   overflow-x: auto;
   scroll-behavior: auto; /* JS controls smooth/instant via scrollBy */
-  gap: 10px;
+  gap: 0.625rem;
   /* Hide scrollbar but keep scrollable */
   scrollbar-width: none;
   -ms-overflow-style: none;

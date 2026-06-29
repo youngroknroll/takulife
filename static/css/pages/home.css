@@ -11,7 +11,7 @@
   .hero-inner {
     display: grid;
     grid-template-columns: 3fr 2fr;
-    gap: 24px;
+    gap: 1.5rem;
     align-items: start;
   }
   .hero h1 {
@@ -32,7 +32,7 @@
   .quick-filters {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 0.5rem;
   }
 
   /* ── Stacked card deck ───────────────────────────────────────── */
@@ -188,7 +188,7 @@
   .poster-deck.fan .slide-caption .slide-work { font-size: 0.62rem; }
   .poster-deck.fan .slide-caption .slide-period { font-size: 0.64rem; }
   .poster-deck.fan .slide-dday { font-size: 0.6rem; padding: 2px 6px; }
-  .poster-deck.fan .slide-caption-row { gap: 5px; }
+  .poster-deck.fan .slide-caption-row { gap: 0.3125rem; }
 
   /* Slide anchor — fills the card entirely */
   .deck-slide {
@@ -248,7 +248,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 8px;
+    gap: 0.5rem;
   }
 
   .slide-caption .slide-title {
@@ -333,14 +333,14 @@
   .cat-browse {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
+    gap: 0.625rem;
   }
   .cat-browse a,
   .cat-browse-link {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     text-align: center;
     text-decoration: none;
     padding: 16px 10px;
@@ -493,7 +493,7 @@
     z-index: 2;
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 0.25rem;
   }
   .poster-badges .poster-badge {
     position: static;
@@ -547,7 +547,7 @@
   .poster-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
+    gap: 0.625rem;
   }
   @media (max-width: 56.25rem) {
     .cat-browse {
@@ -556,7 +556,7 @@
   }
   @media (max-width: 43.75rem) {
     .page {
-      padding: 16px 12px 48px;
+      padding: 1rem 0.75rem 3rem;
     }
     .hero {
       padding: 22px 18px;
@@ -567,7 +567,7 @@
     .section-head {
       align-items: flex-start;
       flex-direction: column;
-      gap: 4px;
+      gap: 0.25rem;
     }
     .cat-browse {
       grid-template-columns: repeat(2, 1fr);

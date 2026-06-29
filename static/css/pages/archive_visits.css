@@ -1,17 +1,17 @@
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
-    gap: 12px;
+    gap: 0.75rem;
   }
   .timeline {
     display: grid;
-    gap: 10px;
+    gap: 0.625rem;
   }
   /* category filter chips */
   .visit-filter {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 0.375rem;
     margin-bottom: 12px;
   }
   .visit-filter-chip {
@@ -47,7 +47,7 @@
   .visit-card:has(.visit-card-body) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 14px;
+    gap: 0.875rem;
     align-items: stretch;          /* body matches the photo column height */
   }
   .visit-card[hidden] {
@@ -64,7 +64,7 @@
   .visit-card-top {
     display: flex;
     flex-wrap: wrap;
-    gap: 7px;
+    gap: 0.4375rem;
     margin-bottom: 7px;
   }
   .visit-chip {
@@ -200,12 +200,12 @@
   /* Create form */
   .create-form {
     display: grid;
-    gap: 10px;
+    gap: 0.625rem;
     margin-top: 12px;
   }
   .form-group {
     display: grid;
-    gap: 4px;
+    gap: 0.25rem;
   }
   .form-group label {
     font-size: 0.84rem;
@@ -253,7 +253,7 @@
   }
   @media (max-width: 45rem) {
     .page {
-      padding: 18px 14px 64px;
+      padding: 1.125rem 0.875rem 4rem;
     }
     /* stack photo carousel below the text body on narrow screens */
     .visit-card:has(.visit-card-body) {
@@ -299,7 +299,7 @@
   .photo-preview-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 0.5rem;
     margin-top: 4px;
   }
   .photo-preview-tile {
@@ -367,7 +367,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
+    gap: 0.375rem;
   }
   .subject-title {
     font-weight: 700;
@@ -376,7 +376,7 @@
   .edit-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 0.5rem;
     align-items: center;
   }
   .edit-actions .form-submit-btn {
@@ -409,7 +409,7 @@
     justify-content: space-between;
     align-items: flex-end;
     flex-wrap: wrap;
-    gap: 10px 16px;
+    gap: 0.625rem 1rem;
     margin-top: 10px;
   }
   #entry-list .entry-actions-bar .status-row {
@@ -425,7 +425,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
   }
   .promote-btn {
     border: 1px solid var(--brand);

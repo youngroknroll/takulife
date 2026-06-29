@@ -8,7 +8,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   margin-bottom: 6px;
 }
 
@@ -29,30 +29,30 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
+  gap: 0.4375rem;
   margin-top: 9px;
 }
 
 /* ── layout (two-column grid shared by list/archive pages) ──── */
 .layout {
   display: grid;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 /* Shared archive/draft side panels (extracted from per-page sheets) */
 .side-stack {
   display: grid;
-  gap: 12px;
+  gap: 0.75rem;
   align-self: start;
   position: sticky;
-  top: 12px;
+  top: 0.75rem;
 }
 .rule-list {
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 0.5rem;
 }
 .rule-list li {
   border: 1px solid var(--line);
@@ -67,7 +67,7 @@
   margin: 12px 0 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  gap: 0.5rem;
 }
 .side-list li {
   border: 1px solid var(--line);
@@ -81,13 +81,13 @@
   display: flex;
   justify-content: space-between;
   align-items: start;
-  gap: 10px;
+  gap: 0.625rem;
   margin-bottom: 12px;
 }
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 0.5rem;
   margin-bottom: 12px;
 }
 

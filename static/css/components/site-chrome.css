@@ -18,12 +18,12 @@
   padding: 12px 20px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 1.125rem;
 }
 
 .site-nav {
   display: flex;
-  gap: 4px;
+  gap: 0.25rem;
   flex-wrap: wrap;
 }
 
@@ -56,7 +56,7 @@
 @media (max-width: 43.75rem) {
   .site-header-inner {
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 0.625rem;
     padding: 10px 12px;
   }
   .site-nav {
@@ -79,7 +79,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 0.625rem;
   flex-wrap: wrap;
 }
 
@@ -96,7 +96,7 @@
   padding: 32px 20px 24px;
   display: grid;
   grid-template-columns: 1.3fr 2fr;
-  gap: 28px;
+  gap: 1.75rem;
 }
 
 .footer-logo {
@@ -115,7 +115,7 @@
 .footer-cols {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 1.25rem;
 }
 
 .footer-col h2 {
@@ -155,7 +155,7 @@
 @media (max-width: 47.5rem) {
   .site-footer-inner {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 1.25rem;
   }
   .footer-cols {
     grid-template-columns: 1fr 1fr;

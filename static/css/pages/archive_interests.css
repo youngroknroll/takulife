@@ -1,11 +1,11 @@
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.85fr);
-    gap: 12px;
+    gap: 0.75rem;
   }
   .status-list {
     display: grid;
-    gap: 10px;
+    gap: 0.625rem;
     margin-top: 12px;
   }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
@@ -34,7 +34,7 @@
   }
   @media (max-width: 45rem) {
     .page {
-      padding: 18px 14px 64px;
+      padding: 1.125rem 0.875rem 4rem;
     }
     .status-card {
       grid-template-columns: 1fr;

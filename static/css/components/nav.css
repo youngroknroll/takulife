@@ -2,7 +2,7 @@
 .nav-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 0.5rem;
   justify-content: center;
 }
 
@@ -30,7 +30,7 @@
 .archive-nav-wrap {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 0.625rem;
   width: 100%;
 }
 
@@ -41,7 +41,7 @@
 .archive-nav-summary {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   cursor: pointer;
   list-style: none;
   border: 1px solid var(--border-soft);
@@ -82,7 +82,7 @@
   min-width: 260px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
   padding: 12px;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -105,7 +105,7 @@
 .archive-nav-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 18px;
+  gap: 0.125rem 1.125rem;
 }
 
 /* text-style links (not pill buttons) with an animated underline on hover */
