@@ -3,8 +3,10 @@
  *
  * Handles:
  *   - Delete visit record via [data-delete-record-id]
- *   - Filter the timeline by category via #visit-filter chips
  *   - Navigate per-card photo carousels ([data-carousel], loop)
+ *
+ * Category filter chips are now server-side anchor links (GET ?filter=...).
+ * Client-side chip filtering has been removed.
  *
  * Photo add/delete lives on the edit page (visit_edit.js); cards are view-only.
  *
@@ -110,47 +112,6 @@
     });
   }
 
-  // ── category filter chips ────────────────────────────────────────────────
-
-  function bindCategoryFilter() {
-    var filter = document.getElementById("visit-filter");
-    if (!filter) { return; }
-    var chips = filter.querySelectorAll(".visit-filter-chip");
-    var cards = document.querySelectorAll("#visit-timeline .visit-card");
-
-    function applyFilter(predicate) {
-      for (var i = 0; i < cards.length; i++) {
-        cards[i].hidden = !predicate(cards[i]);
-      }
-    }
-
-    filter.addEventListener("click", function (evt) {
-      var chip = evt.target.closest(".visit-filter-chip");
-      if (!chip) { return; }
-
-      for (var i = 0; i < chips.length; i++) {
-        chips[i].classList.remove("is-active");
-        chips[i].setAttribute("aria-pressed", "false");
-      }
-      chip.classList.add("is-active");
-      chip.setAttribute("aria-pressed", "true");
-
-      if (chip.hasAttribute("data-filter-all")) {
-        applyFilter(function () { return true; });
-      } else if (chip.hasAttribute("data-filter-official")) {
-        var wantedOfficial = chip.getAttribute("data-filter-official");
-        applyFilter(function (card) {
-          return card.getAttribute("data-official") === wantedOfficial;
-        });
-      } else {
-        var cat = chip.getAttribute("data-filter-category");
-        applyFilter(function (card) {
-          return card.getAttribute("data-category") === cat;
-        });
-      }
-    });
-  }
-
   // ── per-card photo carousel (view-only, loops) ───────────────────────────
 
   function bindPhotoCarousels() {
@@ -240,7 +201,6 @@
 
   function init() {
     bindCreateForm();
-    bindCategoryFilter();
     bindPhotoCarousels();
     bindRecordDeletes();
   }

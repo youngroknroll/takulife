@@ -37,25 +37,39 @@
         <p class="panel-note">방문한 행사를 최신순으로 정리한 타임라인입니다.</p>
 
         {% if has_visits and categories or has_visits and has_unofficial %}
-          <div class="visit-filter" id="visit-filter" role="group" aria-label="카테고리 필터">
-            <button class="visit-filter-chip is-active" type="button" data-filter-all aria-pressed="true">전체</button>
-            {% for cat in categories %}
-              <button class="visit-filter-chip" type="button" data-filter-category="{{ cat }}" aria-pressed="false">{{ cat }}</button>
+          <div class="visit-filter" role="group" aria-label="카테고리 필터">
+            <a
+              class="visit-filter-chip{% if not selected_filter %} is-active{% endif %}"
+              href="?{% if has_query %}q={{ q|urlencode }}{% endif %}"
+              {% if not selected_filter %}aria-current="true"{% endif %}
+            >전체</a>
+            {% for label in categories %}
+              {% with cat_token="cat:"|add:label %}
+              <a
+                class="visit-filter-chip{% if selected_filter == cat_token %} is-active{% endif %}"
+                href="?filter=cat:{{ label|urlencode }}{{ search_suffix }}"
+                {% if selected_filter == cat_token %}aria-current="true"{% endif %}
+              >{{ label }}</a>
+              {% endwith %}
             {% endfor %}
             {% if has_unofficial %}
-              <button class="visit-filter-chip" type="button" data-filter-official="false" aria-pressed="false">비공식</button>
+              <a
+                class="visit-filter-chip{% if selected_filter == "unofficial" %} is-active{% endif %}"
+                href="?filter=unofficial{{ search_suffix }}"
+                {% if selected_filter == "unofficial" %}aria-current="true"{% endif %}
+              >비공식</a>
             {% endif %}
           </div>
         {% endif %}
 
-        {% if has_visits %}
-          <div class="timeline" id="visit-timeline">
+        {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="filter" hidden_value=selected_filter %}
+
+        {% if visit_rows %}
+          <div class="timeline">
             {% for row in visit_rows %}
               <article
                 class="visit-card hover-lift"
                 data-record-id="{{ row.record_id }}"
-                data-category="{{ row.subject.category_label }}"
-                data-official="{% if row.subject.is_official %}true{% else %}false{% endif %}"
               >
                 <div class="visit-card-body">
                   <div class="visit-card-top">
@@ -117,6 +131,18 @@
               </article>
             {% endfor %}
           </div>
+        {% elif has_visits %}
+          {% if has_query %}
+            <div class="empty-state" role="status">
+              <p class="empty-title">검색 결과가 없습니다</p>
+              <p class="empty-note">"{{ q }}"에 해당하는 방문 기록이 없어요. <a href="{{ request.path }}">지우기</a></p>
+            </div>
+          {% else %}
+            <div class="empty-state" role="status">
+              <p class="empty-title">이 필터에 해당하는 방문 기록이 없습니다</p>
+              <p class="empty-note"><a href="/archive/visits/">전체 보기</a>로 돌아가세요.</p>
+            </div>
+          {% endif %}
         {% else %}
           <div class="empty-state" role="status">
             <p class="empty-icon" aria-hidden="true">📸</p>
@@ -125,7 +151,7 @@
           </div>
         {% endif %}
 
-        {% include "core/partials/_pager.html" with page_obj=page_obj extra_query="" %}
+        {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
       </article>
 
       <aside class="side-stack" aria-label="방문 기록 보조 정보">
