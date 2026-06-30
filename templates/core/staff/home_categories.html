@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 홈 카테고리 설정{% endblock %}
+
+{% block content %}
+  <main class="page">
+    <div class="sub-nav">
+      <nav class="nav-links" aria-label="관리 메뉴">
+        <a href="/events/">행사 목록</a>
+        <a href="/event-drafts/">드래프트 관리</a>
+        <a class="active" href="/staff/home-categories/">홈 카테고리 설정</a>
+      </nav>
+    </div>
+
+    <section class="hero">
+      <h1>홈 카테고리 설정</h1>
+      <p>홈 화면 '카테고리로 둘러보기'에 노출할 카테고리를 선택하고 표시 순서를 지정하세요.<br>
+         선택하지 않으면 모든 카테고리가 기본 순서로 노출됩니다.</p>
+    </section>
+
+    {% if messages %}
+      <div class="messages" role="status" aria-live="polite">
+        {% for message in messages %}
+          <p class="message message--{{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <section class="layout">
+      <article class="panel">
+        <h2>노출 카테고리</h2>
+        <p class="panel-note">체크된 카테고리만 홈에 표시됩니다. 순서 번호가 낮을수록 먼저 표시됩니다.</p>
+
+        <form method="post" action="/staff/home-categories/">
+          {% csrf_token %}
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">노출</th>
+                <th scope="col">카테고리</th>
+                <th scope="col">표시 순서</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in category_rows %}
+                <tr>
+                  <td>
+                    <input
+                      type="checkbox"
+                      id="feature_{{ row.slug }}"
+                      name="feature_{{ row.slug }}"
+                      value="on"
+                      {% if row.checked %}checked{% endif %}
+                    >
+                  </td>
+                  <td>
+                    <label for="feature_{{ row.slug }}">{{ row.label }}</label>
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      name="order_{{ row.slug }}"
+                      value="{{ row.order }}"
+                      min="1"
+                      max="99"
+                      style="width: 4rem;"
+                      aria-label="{{ row.label }} 표시 순서"
+                    >
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <div class="form-actions" style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">저장</button>
+            <a href="/" class="btn btn-secondary" style="margin-left: 0.5rem;">홈 미리보기</a>
+          </div>
+        </form>
+      </article>
+    </section>
+  </main>
+{% endblock %}

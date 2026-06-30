@@ -35,6 +35,7 @@ urlpatterns = [
     ),
     path("archive/interests/", core_views.archive_interests, name="archive-interests"),
     path("event-drafts/", core_views.event_drafts, name="event-drafts-page"),
+    path("staff/home-categories/", core_views.staff_home_categories, name="staff-home-categories"),
     path(
         "event-drafts/<int:draft_id>/",
         core_views.event_draft_detail,
