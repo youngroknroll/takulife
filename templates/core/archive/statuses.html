@@ -56,78 +56,9 @@
 
         {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
 
-        {% if has_statuses %}
-          <div class="status-list">
-            {% for row in status_rows %}
-              <article class="status-card">
-                <div>
-                  <div class="status-top">
-                    {% if not row.subject.is_official %}
-                      <span class="event-category unofficial">비공식</span>
-                    {% endif %}
-                    {% if row.subject.category_label %}
-                      <span class="event-category">{{ row.subject.category_label }}</span>
-                    {% endif %}
-                    <span class="user-status {{ row.status_slug }}">{{ row.status_label }}</span>
-                  </div>
-                  <h3>{{ row.subject.title }}</h3>
-                  {% if row.subject.location %}
-                    <p class="meta">{{ row.subject.location }}</p>
-                  {% endif %}
-                  {% if row.subject.start_date and row.subject.end_date %}
-                    <p class="period">{{ row.subject.start_date }} ~ {{ row.subject.end_date }}</p>
-                  {% endif %}
-                </div>
-                <div class="status-row" data-status-error-container>
-                    {% if row.status_slug == 'planned' %}
-                      <button class="status-btn visited" type="button" data-status-action="change"
-                        data-status="visited"
-                        data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_visited }}</button>
-                      <button class="status-btn missed" type="button" data-status-action="change"
-                        data-status="missed"
-                        data-status-id="{{ row.status_id }}" data-reload-on-success>놓침</button>
-                    {% elif row.status_slug == 'missed' %}
-                      <button class="status-btn visited" type="button" data-status-action="change"
-                        data-status="visited"
-                        data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_visited }}</button>
-                      <button class="status-btn planned" type="button" data-status-action="change"
-                        data-status="planned"
-                        data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
-                    {% elif row.status_slug == 'visited' %}
-                      <button class="status-btn planned" type="button" data-status-action="change"
-                        data-status="planned"
-                        data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
-                    {% endif %}
-                    <button class="status-btn cancel" type="button"
-                      data-status-action="unset"
-                      data-status="{{ row.status_slug }}"
-                      data-status-id="{{ row.status_id }}"
-                      data-remove-on-cancel
-                      data-confirm-message="삭제하시겠습니까?"
-                    >삭제</button>
-                  </div>
-                {% if row.subject.detail_url %}
-                  <a class="side-action-link" href="{{ row.subject.detail_url }}">상세 보기</a>
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        {% elif has_any and has_query %}
-          <div class="empty-state" role="status">
-            <p class="empty-title">검색 결과가 없습니다</p>
-            <p class="empty-note">"{{ q }}"에 해당하는 기록이 없어요. <a href="{{ request.path }}">지우기</a></p>
-          </div>
-        {% else %}
-          <p class="notice">
-            {% if selected_status %}
-              이 상태로 저장한 행사가 없습니다. <a href="/archive/statuses/">전체 보기</a>
-            {% else %}
-              아직 저장한 행사가 없습니다. <a href="/events/">행사 목록에서 찾아보세요</a>
-            {% endif %}
-          </p>
-        {% endif %}
-
-        {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
+        <div id="archive-results" data-archive-results>
+          {% include "core/partials/_archive_results_statuses.html" %}
+        </div>
       </article>
 
       <aside class="side-stack" aria-label="예정 목록 보조 정보">
@@ -150,4 +81,8 @@
       </aside>
     </section>
   </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
 {% endblock %}

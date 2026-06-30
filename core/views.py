@@ -334,6 +334,20 @@ def _archive_status_context(user, selected_status, *, page_size, page_number, q:
     }
 
 
+def _render_archive_list(request, *, full_template, fragment_template, context):
+    """Render an archive list page, or just its results fragment for live search.
+
+    When the request carries ``?partial=1`` the live-search JS only wants the
+    swappable results region (list + empty states + pager), so the fragment
+    template is rendered alone instead of the full page. The calling view's
+    auth/CSRF decorators still apply — this is an internal branch, not a
+    separate unauthenticated endpoint. Any other value (or none) renders the
+    full page, so the no-JS GET form keeps working unchanged.
+    """
+    template = fragment_template if request.GET.get("partial") == "1" else full_template
+    return render(request, template, context)
+
+
 @login_required
 @ensure_csrf_cookie
 def archive(request):
@@ -344,7 +358,12 @@ def archive(request):
         page_number=request.GET.get("page"),
         q=_archive_query(request),
     )
-    return render(request, "core/archive/index.html", context)
+    return _render_archive_list(
+        request,
+        full_template="core/archive/index.html",
+        fragment_template="core/partials/_archive_results_record.html",
+        context=context,
+    )
 
 
 @login_required
@@ -357,7 +376,12 @@ def archive_statuses(request):
         page_number=request.GET.get("page"),
         q=_archive_query(request),
     )
-    return render(request, "core/archive/statuses.html", context)
+    return _render_archive_list(
+        request,
+        full_template="core/archive/statuses.html",
+        fragment_template="core/partials/_archive_results_statuses.html",
+        context=context,
+    )
 
 
 def _subject_view(obj):
@@ -488,10 +512,11 @@ def archive_visits(request):
     # Tail filter chips append to keep the active search when switching filters.
     search_suffix = "&" + urlencode([("q", q)]) if q else ""
 
-    return render(
+    return _render_archive_list(
         request,
-        "core/archive/visits.html",
-        {
+        full_template="core/archive/visits.html",
+        fragment_template="core/partials/_archive_results_visits.html",
+        context={
             "visit_rows": visit_rows,
             "page_obj": page_obj,
             "total_count": total_count,
@@ -625,10 +650,11 @@ def archive_personal_entries(request):
 
     pager_query = "&" + urlencode([("q", q)]) if q else ""
 
-    return render(
+    return _render_archive_list(
         request,
-        "core/archive/personal_entries.html",
-        {
+        full_template="core/archive/personal_entries.html",
+        fragment_template="core/partials/_archive_results_personal.html",
+        context={
             "entry_rows": entry_rows,
             "total_count": total_count,
             "place_count": place_count,

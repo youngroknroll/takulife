@@ -56,3 +56,16 @@
   color: var(--text);
   text-decoration: underline;
 }
+
+/* ── live-search swap target ───────────────────────────────────────
+   Wraps the results region (list + empty states + pager) so live search
+   can replace its innerHTML. Kept as a plain block with no border/padding/
+   margin: the preceding .archive-search form owns the gap (margin-bottom)
+   and the list has no top margin, so block flow and spacing stay identical
+   to the pre-wrap markup — no visual regression. */
+#archive-results.is-loading {
+  /* Dim the results while a live-search request is in flight. The class is
+     toggled by archive_search.js; absent without JS, so no effect there. */
+  opacity: 0.55;
+  transition: opacity 0.12s ease;
+}

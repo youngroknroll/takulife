@@ -96,6 +96,8 @@
 
     for (var i = 0; i < deleteBtns.length; i++) {
       (function (btn) {
+        if (btn.dataset.deleteBound) { return; }
+        btn.dataset.deleteBound = "1";
         btn.addEventListener("click", async function () {
           var entryId = btn.getAttribute("data-delete-entry-id");
           if (
@@ -147,6 +149,8 @@
     var toggles = document.querySelectorAll("[data-promote-toggle]");
     for (var t = 0; t < toggles.length; t++) {
       (function (btn) {
+        if (btn.dataset.promoteBound) { return; }
+        btn.dataset.promoteBound = "1";
         btn.addEventListener("click", function () {
           var id = btn.getAttribute("data-promote-toggle");
           var form = document.querySelector('[data-promote-form="' + id + '"]');
@@ -165,6 +169,8 @@
     var forms = document.querySelectorAll("[data-promote-form]");
     for (var f = 0; f < forms.length; f++) {
       (function (form) {
+        if (form.dataset.promoteFormBound) { return; }
+        form.dataset.promoteFormBound = "1";
         var id = form.getAttribute("data-promote-form");
         var errorEl = document.querySelector('[data-promote-error="' + id + '"]');
         var submitBtn = form.querySelector('[type="submit"]');
@@ -225,4 +231,13 @@
   } else {
     init();
   }
+
+  // Live search swaps the results fragment: re-wire the new cards' delete and
+  // promote controls. The create form lives outside the swap region, so it is
+  // left alone; the per-element guards keep this idempotent. (Status/interest
+  // buttons in the swapped cards are re-wired by status.js's own listener.)
+  document.addEventListener("archive:listswapped", function () {
+    bindEntryDeletes();
+    bindPromote();
+  });
 })();

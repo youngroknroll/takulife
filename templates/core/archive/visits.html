@@ -64,94 +64,9 @@
 
         {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="filter" hidden_value=selected_filter %}
 
-        {% if visit_rows %}
-          <div class="timeline">
-            {% for row in visit_rows %}
-              <article
-                class="visit-card hover-lift"
-                data-record-id="{{ row.record_id }}"
-              >
-                <div class="visit-card-body">
-                  <div class="visit-card-top">
-                    {% if not row.subject.is_official %}
-                      <span class="visit-chip unofficial">비공식</span>
-                    {% endif %}
-                    {% if row.subject.category_label %}
-                      <span class="visit-chip category">{{ row.subject.category_label }}</span>
-                    {% endif %}
-                    <span class="visit-chip">{% if row.subject.kind == 'goods' %}획득 완료{% else %}방문 완료{% endif %}</span>
-                  </div>
-
-                  <h3>{{ row.subject.title }}</h3>
-                  <p class="meta">
-                    {{ row.visited_on }}
-                    {% if row.subject.location %} · {{ row.subject.location }}{% endif %}
-                  </p>
-                  {% if row.short_review %}
-                    <p class="review">{{ row.short_review }}</p>
-                  {% endif %}
-
-                  <div class="visit-card-actions">
-                    <a
-                      class="record-edit-link"
-                      href="/archive/visits/{{ row.record_id }}/edit/"
-                      aria-label="{{ row.subject.title }} 방문 기록 수정"
-                    >수정</a>
-                    <button
-                      class="record-delete-btn"
-                      type="button"
-                      data-delete-record-id="{{ row.record_id }}"
-                      aria-label="{{ row.subject.title }} 방문 기록 삭제"
-                    >기록 삭제</button>
-                  </div>
-                </div>
-
-                {% if row.photos %}
-                  <div class="visit-card-media">
-                    <div class="photo-carousel" data-carousel aria-label="첨부 사진">
-                      <div class="photo-track">
-                        {% for photo in row.photos %}
-                          <div class="photo-slide">
-                            <img
-                              src="{{ photo.image.url }}"
-                              alt="방문 사진 {{ forloop.counter }}"
-                              loading="lazy"
-                            >
-                          </div>
-                        {% endfor %}
-                      </div>
-                      {% if row.photos|length > 1 %}
-                        <button class="carousel-btn carousel-prev" type="button" aria-label="이전 사진">‹</button>
-                        <button class="carousel-btn carousel-next" type="button" aria-label="다음 사진">›</button>
-                        <p class="carousel-counter" aria-hidden="true"><span class="carousel-index">1</span>/{{ row.photos|length }}</p>
-                      {% endif %}
-                    </div>
-                  </div>
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        {% elif has_visits %}
-          {% if has_query %}
-            <div class="empty-state" role="status">
-              <p class="empty-title">검색 결과가 없습니다</p>
-              <p class="empty-note">"{{ q }}"에 해당하는 방문 기록이 없어요. <a href="{{ request.path }}">지우기</a></p>
-            </div>
-          {% else %}
-            <div class="empty-state" role="status">
-              <p class="empty-title">이 필터에 해당하는 방문 기록이 없습니다</p>
-              <p class="empty-note"><a href="/archive/visits/">전체 보기</a>로 돌아가세요.</p>
-            </div>
-          {% endif %}
-        {% else %}
-          <div class="empty-state" role="status">
-            <p class="empty-icon" aria-hidden="true">📸</p>
-            <p class="empty-title">아직 방문 기록이 없어요</p>
-            <p class="empty-note">기록 추가 폼에서 방문한 행사와 한줄 메모를 남겨보세요.</p>
-          </div>
-        {% endif %}
-
-        {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
+        <div id="archive-results" data-archive-results>
+          {% include "core/partials/_archive_results_visits.html" %}
+        </div>
       </article>
 
       <aside class="side-stack" aria-label="방문 기록 보조 정보">
@@ -171,4 +86,5 @@
 
 {% block extra_js %}
   <script defer src="{% static 'js/pages/visit.js' %}"></script>
+  <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
 {% endblock %}

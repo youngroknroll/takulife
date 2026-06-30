@@ -118,6 +118,8 @@
     var carousels = document.querySelectorAll("[data-carousel]");
     for (var i = 0; i < carousels.length; i++) {
       (function (carousel) {
+        if (carousel.dataset.carouselBound) { return; }
+        carousel.dataset.carouselBound = "1";
         var track = carousel.querySelector(".photo-track");
         var slides = carousel.querySelectorAll(".photo-slide");
         var prev = carousel.querySelector(".carousel-prev");
@@ -153,6 +155,8 @@
 
     for (var i = 0; i < deleteBtns.length; i++) {
       (function (btn) {
+        if (btn.dataset.deleteBound) { return; }
+        btn.dataset.deleteBound = "1";
         btn.addEventListener("click", async function () {
           var recordId = btn.getAttribute("data-delete-record-id");
           if (
@@ -210,4 +214,12 @@
   } else {
     init();
   }
+
+  // Live search swaps the results fragment: re-wire the new cards' photo
+  // carousels and delete buttons. The create form lives outside the swap
+  // region, so it is left alone; the per-element guards keep this idempotent.
+  document.addEventListener("archive:listswapped", function () {
+    bindPhotoCarousels();
+    bindRecordDeletes();
+  });
 })();
