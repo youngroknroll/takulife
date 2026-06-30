@@ -40,7 +40,9 @@
         <h2>비공식 아카이브 목록</h2>
         <p class="panel-note">직접 등록한 항목을 최신순으로 정리한 목록입니다.</p>
 
-        {% if has_entries %}
+        {% include "core/partials/_archive_search.html" with q=q has_query=has_query %}
+
+        {% if entry_rows %}
           <div class="timeline entry-list">
             {% for row in entry_rows %}
               <article class="visit-card hover-lift" data-entry-id="{{ row.entry.id }}">
@@ -128,6 +130,11 @@
               </article>
             {% endfor %}
           </div>
+        {% elif has_entries and has_query %}
+          <div class="empty-state" role="status">
+            <p class="empty-title">검색 결과가 없습니다</p>
+            <p class="empty-note">"{{ q }}"에 해당하는 항목이 없어요. <a href="{{ request.path }}">지우기</a></p>
+          </div>
         {% else %}
           <div class="empty-state" role="status">
             <p class="empty-icon" aria-hidden="true">🗂️</p>
@@ -135,6 +142,8 @@
             <p class="empty-note">오른쪽 폼에서 비공식 장소나 굿즈를 추가해 보세요.</p>
           </div>
         {% endif %}
+
+        {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
       </article>
 
       <aside class="side-stack" aria-label="비공식 아카이브 보조 정보">

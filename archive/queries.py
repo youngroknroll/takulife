@@ -4,7 +4,7 @@ Reusable query logic for user event statuses, event interests, and visit records
 Query/aggregate logic lives here, not in the view layer — mirrors
 drafts/queries.py.
 """
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from events.models import Event
@@ -20,6 +20,7 @@ ARCHIVE_STATUS_SLUGS: tuple[str, ...] = tuple(UserEventStatus.Status.values)
 ARCHIVE_RECORD_PAGE_SIZE = 10  # 기록장 (/archive/) — 저장한 행사
 ARCHIVE_STATUS_PAGE_SIZE = 5  # 예정 목록 (/archive/statuses/)
 ARCHIVE_VISIT_PAGE_SIZE = 5  # 방문 기록 (/archive/visits/)
+ARCHIVE_PERSONAL_PAGE_SIZE = 5  # 비공식 목록 (/archive/items/)
 
 
 def user_status_counts(user, *, today=None) -> dict:
@@ -41,12 +42,16 @@ def user_status_counts(user, *, today=None) -> dict:
     return {slug: counts.get(slug, 0) for slug in ARCHIVE_STATUS_SLUGS}
 
 
-def list_user_statuses(user, status: str = "", *, today=None):
+def list_user_statuses(user, status: str = "", *, q: str = "", today=None):
     """Return a user's archive statuses, newest first, optionally filtered.
 
     Filtering and the rows' effective status use the *derived* status overlay,
     so the 놓침 filter includes auto-missed rows and 방문 예정 excludes them.
     The event is selected together to avoid per-row queries during rendering.
+
+    ``q`` narrows results to rows whose event or personal_entry title/location
+    matches the search term (case-insensitive contains). The user filter is
+    always applied first so no cross-user leakage is possible.
     """
     if today is None:
         today = timezone.localdate()
@@ -58,6 +63,13 @@ def list_user_statuses(user, status: str = "", *, today=None):
     )
     if status:
         queryset = queryset.filter(derived_status=status)
+    if q:
+        queryset = queryset.filter(
+            Q(event__title__icontains=q)
+            | Q(event__location_name__icontains=q)
+            | Q(personal_entry__title__icontains=q)
+            | Q(personal_entry__location_name__icontains=q)
+        )
     return queryset
 
 
@@ -108,11 +120,23 @@ def list_user_planned_events(user):
     )
 
 
-def list_user_personal_entries(user, kind=None):
-    """Return a user's private unofficial items, newest first, optional kind filter."""
+def list_user_personal_entries(user, kind=None, *, q: str = ""):
+    """Return a user's private unofficial items, newest first, optional kind filter.
+
+    ``q`` narrows results to rows whose title, category, location_name,
+    work_title, or memo matches the search term (case-insensitive contains).
+    """
     queryset = PersonalEntry.objects.filter(user=user).order_by("-created_at", "-id")
     if kind:
         queryset = queryset.filter(kind=kind)
+    if q:
+        queryset = queryset.filter(
+            Q(title__icontains=q)
+            | Q(category__icontains=q)
+            | Q(location_name__icontains=q)
+            | Q(work_title__icontains=q)
+            | Q(memo__icontains=q)
+        )
     return queryset
 
 
@@ -144,15 +168,66 @@ def user_personal_statuses(user) -> dict:
     }
 
 
-def list_user_visit_records(user):
+def list_user_visit_records(
+    user,
+    *,
+    official=None,
+    category_codes=(),
+    category_label: str = "",
+    q: str = "",
+):
     """Return a user's visit records, newest first, with related data prefetched.
 
     Shares the canonical ordering and prefetching so the SSR page and the API
     stay consistent (avoids N+1 on event and photos).
+
+    ``official`` — True: only event-linked records; False: only personal-entry
+    records; None: no restriction.
+
+    ``category_codes`` / ``category_label`` — when ``category_label`` is truthy
+    the queryset is narrowed to rows whose event.category is in category_codes
+    OR whose personal_entry.category equals category_label (OR logic). The label
+    is checked raw (no lookup) so unofficial entries stored with a free-text
+    label match directly.
+
+    ``q`` — case-insensitive contains search across title, location_name (both
+    FK sides) and short_review.
     """
-    return (
+    queryset = (
         VisitRecord.objects.filter(user=user)
         .select_related("event", "personal_entry")
         .prefetch_related("photos")
         .order_by("-visited_on", "-id")
+    )
+    if official is True:
+        queryset = queryset.filter(event__isnull=False)
+    elif official is False:
+        queryset = queryset.filter(event__isnull=True)
+    if category_label:
+        queryset = queryset.filter(
+            Q(event__category__in=category_codes)
+            | Q(personal_entry__category=category_label)
+        )
+    if q:
+        queryset = queryset.filter(
+            Q(event__title__icontains=q)
+            | Q(event__location_name__icontains=q)
+            | Q(personal_entry__title__icontains=q)
+            | Q(personal_entry__location_name__icontains=q)
+            | Q(short_review__icontains=q)
+        )
+    return queryset
+
+
+def user_visit_category_values(user):
+    """Return (event__category, personal_entry__category) pairs for a user's visits.
+
+    Ordered newest-first to match the visit timeline. The view uses these pairs
+    to derive the full set of category chips without loading full model instances
+    or limiting to the current page.
+    """
+    return (
+        VisitRecord.objects.filter(user=user)
+        .order_by("-visited_on", "-id")
+        .values_list("event__category", "personal_entry__category")
     )

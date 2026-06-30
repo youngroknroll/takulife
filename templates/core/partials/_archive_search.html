@@ -1,0 +1,32 @@
+{% comment %}
+Archive search form partial — used on all four archive list pages.
+
+Include with:
+  {% include "core/partials/_archive_search.html" with q=q has_query=has_query %}
+  {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+  {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="filter" hidden_value=selected_filter %}
+
+Args:
+  q            — current search term (raw string, never |safe)
+  has_query    — True when q is non-empty
+  hidden_name  — optional: name attr of a hidden input to preserve the active filter
+  hidden_value — optional: value attr; hidden input is skipped when this is empty
+{% endcomment %}
+<form method="get" role="search" class="archive-search">
+  {% if hidden_name and hidden_value %}
+    <input type="hidden" name="{{ hidden_name }}" value="{{ hidden_value }}">
+  {% endif %}
+  <div class="archive-search-row">
+    <input
+      type="search"
+      name="q"
+      value="{{ q }}"
+      placeholder="제목·장소 검색"
+      aria-label="아카이브 검색"
+    >
+    <button type="submit">검색</button>
+  </div>
+  {% if has_query %}
+    <a class="archive-search-clear" href="{{ request.path }}">지우기</a>
+  {% endif %}
+</form>
