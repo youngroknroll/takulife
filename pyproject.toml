@@ -15,6 +15,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.0,<9.0",
+    "pytest-cov>=7.1.0",
     "pytest-django>=4.8,<5.0",
     "pytest-playwright>=0.8.0",
 ]
@@ -22,3 +23,13 @@ dev = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[tool.coverage.run]
+# Migrations are framework-generated and run once against the DB; their
+# data-backfill (RunPython) bodies don't execute on an empty test DB and are
+# not meaningful test targets. Measure application code only.
+omit = ["*/migrations/*"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = ["pragma: no cover"]

@@ -65,3 +65,39 @@ class TestEventListInvalidFilters:
         body = resp.content.decode()
         assert "검색 결과" in body
         assert "Seoul match" in body
+
+
+@pytest.mark.django_db
+class TestEventListAuthenticatedRows:
+    """A logged-in viewer's own status/interest is attached to browse cards
+    (core.views._attach_display authenticated branch)."""
+
+    def test_authenticated_rows_reflect_user_status_and_interest(
+        self, make_event, make_user
+    ):
+        from archive.models import EventInterest, UserEventStatus
+
+        event = make_event(title="내 행사")
+        user = make_user()
+        UserEventStatus.objects.create(user=user, event=event, status="planned")
+        EventInterest.objects.create(user=user, event=event)
+
+        client = Client()
+        client.force_login(user)
+        resp = client.get("/events/")
+
+        assert resp.status_code == 200
+        row = next(r for r in resp.context["event_rows"] if r["event"].id == event.id)
+        assert row["user_status"] == "planned"
+        assert row["user_interested"] is True
+
+
+@pytest.mark.django_db
+class TestEventListActiveFilterChips:
+    def test_query_renders_search_chip(self, make_event):
+        make_event(title="공연 행사")
+
+        resp = Client().get("/events/", {"q": "공연"})
+
+        assert resp.status_code == 200
+        assert "검색: 공연" in resp.context["active_filter_chips"]

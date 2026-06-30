@@ -173,11 +173,13 @@ def event_list(request):
     selected_q = request.GET.get("q", "")
     selected_sort = request.GET.get("sort", "")
 
-    # region/category may be sent as single value (GET param) or multiple
-    # Normalise: if not a list context, wrap the scalar param
-    if not selected_region and request.GET.get("region"):
+    # Defensive scalar-wrap left over from an earlier non-QueryDict code path.
+    # Unreachable today: getlist(k) is empty iff get(k) is None for the same
+    # key, so `not getlist and get` can never hold. Kept (not deleted) but
+    # excluded from coverage; safe to remove in a dedicated cleanup.
+    if not selected_region and request.GET.get("region"):  # pragma: no cover
         selected_region = [request.GET.get("region")]
-    if not selected_category and request.GET.get("category"):
+    if not selected_category and request.GET.get("category"):  # pragma: no cover
         selected_category = [request.GET.get("category")]
 
     active_filters = bool(
