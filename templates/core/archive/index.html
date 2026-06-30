@@ -46,54 +46,9 @@
 
         {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
 
-        {% if has_statuses %}
-          <div class="status-list">
-            {% for row in status_rows %}
-              <article class="record-card hover-lift">
-                <div class="record-top">
-                  <h3 class="record-title">
-                    {% if row.subject.detail_url %}
-                      <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
-                    {% else %}
-                      {{ row.subject.title }}
-                    {% endif %}
-                  </h3>
-                  <span class="status {{ row.status_slug }}">{{ row.status_label }}</span>
-                </div>
-                {% if not row.subject.is_official %}
-                  <p class="record-meta"><span class="event-category unofficial">비공식</span></p>
-                {% endif %}
-                {% if row.subject.location %}
-                  <p class="record-meta">{{ row.subject.location }}</p>
-                {% endif %}
-                {% if row.subject.start_date and row.subject.end_date %}
-                  <p class="record-meta">{{ row.subject.start_date }} ~ {{ row.subject.end_date }}</p>
-                {% endif %}
-                {% if row.status_slug == 'visited' %}
-                  <p class="record-actions">
-                    <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">기록</a>
-                  </p>
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        {% elif has_any and has_query %}
-          <div class="empty-state" role="status">
-            <p class="empty-title">검색 결과가 없습니다</p>
-            <p class="empty-note">"{{ q }}"에 해당하는 기록이 없어요. <a href="{{ request.path }}">지우기</a></p>
-          </div>
-        {% elif has_any %}
-          <p class="notice">이 상태로 저장한 행사가 없습니다. <a href="/archive/">전체 보기</a></p>
-        {% else %}
-          <div class="empty-state" role="status">
-            <p class="empty-icon" aria-hidden="true">🗂️</p>
-            <p class="empty-title">아직 저장한 행사가 없어요</p>
-            <p class="empty-note">방문 예정·방문 완료·놓침 상태를 표시하면 여기에 모여요.</p>
-            <a class="empty-action" href="/events/">행사 찾아보기</a>
-          </div>
-        {% endif %}
-
-        {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
+        <div id="archive-results" data-archive-results>
+          {% include "core/partials/_archive_results_record.html" %}
+        </div>
       </main>
 
       <aside class="panel" aria-label="빠른 기록 액션">
@@ -144,4 +99,8 @@
       <a href="/archive/visits/new/">기록 추가</a>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
 {% endblock %}

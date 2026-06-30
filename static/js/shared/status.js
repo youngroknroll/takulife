@@ -353,9 +353,14 @@
     }
   }
 
+  // Idempotent: a button is wired at most once (data-status-bound guard), so
+  // re-running after a live-search swap binds only the freshly inserted buttons
+  // and never double-binds the ones already present.
   function initStatusButtons() {
     var buttons = document.querySelectorAll("button[data-status-action]");
     buttons.forEach(function (button) {
+      if (button.dataset.statusBound) return;
+      button.dataset.statusBound = "1";
       // Only discovery toggle buttons (empty action) reflect their own
       // registration as an active label. Archive controls with an explicit
       // action (change / unset) keep their authored label and state.
@@ -371,6 +376,8 @@
 
     var interestButtons = document.querySelectorAll("button[data-interest-toggle]");
     interestButtons.forEach(function (button) {
+      if (button.dataset.interestBound) return;
+      button.dataset.interestBound = "1";
       button.addEventListener("click", handleInterestClick);
     });
   }
@@ -380,4 +387,9 @@
   } else {
     initStatusButtons();
   }
+
+  // Re-scan after archive live search replaces the results fragment: the new
+  // status/interest buttons need wiring (direct binding, not delegation). The
+  // guard above keeps this safe to call repeatedly.
+  document.addEventListener("archive:listswapped", initStatusButtons);
 })();

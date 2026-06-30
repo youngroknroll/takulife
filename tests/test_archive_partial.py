@@ -1,0 +1,191 @@
+"""Tests for the ?partial=1 fragment branch on the four archive list pages.
+
+Behavior under test:
+- ?partial=1 returns only the results fragment (list + empty states + pager),
+  not the full HTML document — the live-search JS swaps this into #archive-results.
+- The fragment template is rendered (base.html is NOT in the template chain).
+- A normal request (no partial) still renders the full page unchanged.
+- The partial branch keeps the view's @login_required gate — an anonymous
+  ?partial=1 request redirects to login, never leaks a fragment.
+- The partial branch applies the same q filter as the full page.
+- partial values other than "1" fall back to the full page (no fragment leak).
+"""
+import pytest
+from django.test import Client
+
+from archive.models import PersonalEntry, UserEventStatus, VisitRecord
+
+# (url, full_template, fragment_template) for each search-enabled archive page.
+ARCHIVE_PAGES = [
+    ("/archive/", "core/archive/index.html", "core/partials/_archive_results_record.html"),
+    ("/archive/statuses/", "core/archive/statuses.html", "core/partials/_archive_results_statuses.html"),
+    ("/archive/visits/", "core/archive/visits.html", "core/partials/_archive_results_visits.html"),
+    ("/archive/items/", "core/archive/personal_entries.html", "core/partials/_archive_results_personal.html"),
+]
+
+
+def _login(make_user, **kw):
+    user = make_user(**kw)
+    client = Client()
+    client.force_login(user)
+    return user, client
+
+
+def _template_names(resp):
+    return {t.name for t in resp.templates if t.name}
+
+
+@pytest.mark.django_db
+class TestArchivePartialBranch:
+    @pytest.mark.parametrize("url,full_template,fragment_template", ARCHIVE_PAGES)
+    def test_partial_renders_fragment_only(
+        self, make_user, url, full_template, fragment_template
+    ):
+        _user, client = _login(make_user)
+
+        resp = client.get(url + "?partial=1")
+
+        assert resp.status_code == 200
+        names = _template_names(resp)
+        assert fragment_template in names
+        # The fragment must NOT drag in the full page chrome.
+        assert full_template not in names
+        assert "base.html" not in names
+        # No document shell, and no swap wrapper (that lives in the full page).
+        assert b"<html" not in resp.content.lower()
+        assert b'id="archive-results"' not in resp.content
+
+    @pytest.mark.parametrize("url,full_template,fragment_template", ARCHIVE_PAGES)
+    def test_full_page_unchanged(self, make_user, url, full_template, fragment_template):
+        _user, client = _login(make_user)
+
+        resp = client.get(url)
+
+        assert resp.status_code == 200
+        names = _template_names(resp)
+        assert full_template in names
+        assert "base.html" in names
+        # Full page wraps the fragment in the swap target and includes it.
+        assert fragment_template in names
+        assert b'id="archive-results"' in resp.content
+        assert b"<html" in resp.content.lower()
+
+    @pytest.mark.parametrize("url,full_template,fragment_template", ARCHIVE_PAGES)
+    def test_partial_requires_login(self, url, full_template, fragment_template):
+        client = Client()  # anonymous
+
+        resp = client.get(url + "?partial=1")
+
+        # @login_required still applies to the partial branch.
+        assert resp.status_code == 302
+        assert "/accounts/login/" in resp["Location"]
+
+    @pytest.mark.parametrize("url,full_template,fragment_template", ARCHIVE_PAGES)
+    @pytest.mark.parametrize("bad_partial", ["", "0", "2", "true", "yes", "01"])
+    def test_non_one_partial_falls_back_to_full_page(
+        self, make_user, url, full_template, fragment_template, bad_partial
+    ):
+        _user, client = _login(make_user)
+
+        resp = client.get(f"{url}?partial={bad_partial}")
+
+        assert resp.status_code == 200
+        names = _template_names(resp)
+        assert full_template in names
+        assert "base.html" in names
+
+    def test_partial_applies_q_filter_on_archive_dashboard(self, make_user, make_event):
+        # The /archive/ dashboard shares _archive_status_context with statuses but
+        # renders the record fragment at a different page size — cover it directly.
+        user, client = _login(make_user)
+        match = make_event(title="매칭 이벤트", location_name="서울")
+        other = make_event(title="다른 이벤트", location_name="부산")
+        UserEventStatus.objects.create(user=user, event=match, status="planned")
+        UserEventStatus.objects.create(user=user, event=other, status="planned")
+
+        resp = client.get("/archive/?q=매칭&partial=1")
+
+        assert resp.status_code == 200
+        titles = [row["subject"]["title"] for row in resp.context["status_rows"]]
+        assert "매칭 이벤트" in titles
+        assert "다른 이벤트" not in titles
+        assert "매칭 이벤트".encode() in resp.content
+        assert "다른 이벤트".encode() not in resp.content
+
+    def test_partial_status_filter_with_no_q_match_shows_empty_on_dashboard(
+        self, make_user, make_event
+    ):
+        # has_any=True, active status filter matches zero rows, no query → the
+        # record fragment's `elif has_any` notice branch (not the search-empty one).
+        user, client = _login(make_user)
+        planned = make_event(title="예정 행사")
+        UserEventStatus.objects.create(user=user, event=planned, status="planned")
+
+        resp = client.get("/archive/?status=missed&partial=1")
+
+        assert resp.status_code == 200
+        assert resp.context["has_any"] is True
+        assert resp.context["has_statuses"] is False
+        assert "예정 행사".encode() not in resp.content
+        assert "이 상태로 저장한 행사가 없습니다".encode() in resp.content
+
+    def test_partial_renders_pager(self, make_user, make_event):
+        # More records than one page → the pager must render inside the fragment,
+        # and its links must never carry partial= (else a click would navigate to
+        # a chrome-less fragment). /archive/statuses/ paginates at 5 per page.
+        user, client = _login(make_user)
+        for i in range(7):  # > ARCHIVE_STATUS_PAGE_SIZE (5) → 2 pages
+            ev = make_event(title=f"행사 {i}")
+            UserEventStatus.objects.create(user=user, event=ev, status="planned")
+
+        resp = client.get("/archive/statuses/?partial=1")
+
+        assert resp.status_code == 200
+        assert resp.context["page_obj"].has_next()
+        assert b'class="pager"' in resp.content
+        assert b"partial=" not in resp.content
+
+    def test_partial_applies_q_filter_on_statuses(self, make_user, make_event):
+        user, client = _login(make_user)
+        match = make_event(title="매칭 이벤트", location_name="서울")
+        other = make_event(title="다른 이벤트", location_name="부산")
+        UserEventStatus.objects.create(user=user, event=match, status="planned")
+        UserEventStatus.objects.create(user=user, event=other, status="planned")
+
+        resp = client.get("/archive/statuses/?q=매칭&partial=1")
+
+        assert resp.status_code == 200
+        titles = [row["subject"]["title"] for row in resp.context["status_rows"]]
+        assert "매칭 이벤트" in titles
+        assert "다른 이벤트" not in titles
+        # And the rendered fragment reflects the filter.
+        assert "매칭 이벤트".encode() in resp.content
+        assert "다른 이벤트".encode() not in resp.content
+
+    def test_partial_applies_q_filter_on_visits(self, make_user, make_event):
+        user, client = _login(make_user)
+        match = make_event(title="방문 매칭")
+        other = make_event(title="방문 제외")
+        VisitRecord.objects.create(user=user, event=match, visited_on="2026-01-01")
+        VisitRecord.objects.create(user=user, event=other, visited_on="2026-01-02")
+
+        resp = client.get("/archive/visits/?q=매칭&partial=1")
+
+        assert resp.status_code == 200
+        assert "방문 매칭".encode() in resp.content
+        assert "방문 제외".encode() not in resp.content
+
+    def test_partial_applies_q_filter_on_items(self, make_user):
+        user, client = _login(make_user)
+        PersonalEntry.objects.create(
+            user=user, kind=PersonalEntry.Kind.PLACE, title="매칭 카페"
+        )
+        PersonalEntry.objects.create(
+            user=user, kind=PersonalEntry.Kind.PLACE, title="제외 장소"
+        )
+
+        resp = client.get("/archive/items/?q=매칭&partial=1")
+
+        assert resp.status_code == 200
+        assert "매칭 카페".encode() in resp.content
+        assert "제외 장소".encode() not in resp.content

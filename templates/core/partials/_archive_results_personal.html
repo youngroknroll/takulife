@@ -1,0 +1,107 @@
+{% comment %}
+비공식 아카이브(archive_personal_entries) 결과 영역 — 라이브 검색 swap 대상.
+풀 페이지(personal_entries.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
+컨텍스트: entry_rows, has_entries, has_query, q, page_obj, pager_query, request
+{% endcomment %}
+{% if entry_rows %}
+  <div class="timeline entry-list">
+    {% for row in entry_rows %}
+      <article class="visit-card hover-lift" data-entry-id="{{ row.entry.id }}">
+        <div class="visit-card-top">
+          <span class="visit-chip">{{ row.kind_label }}</span>
+          {% if row.entry.category %}
+            <span class="visit-chip category">{{ row.entry.category }}</span>
+          {% endif %}
+        </div>
+
+        <h3>{{ row.entry.title }}</h3>
+        {% if row.entry.location_name %}
+          <p class="meta">{{ row.entry.location_name }}</p>
+        {% endif %}
+        {% if row.entry.work_title %}
+          <p class="meta">{{ row.entry.work_title }}</p>
+        {% endif %}
+        {% if row.entry.memo %}
+          <p class="review">{{ row.entry.memo }}</p>
+        {% endif %}
+        {% if row.entry.url %}
+          <p class="meta">
+            <a href="{{ row.entry.url }}" rel="noopener" target="_blank">참고 링크 ↗</a>
+          </p>
+        {% endif %}
+
+        <div class="entry-actions-bar">
+        <div class="status-row" data-status-error-container>
+          <button
+            class="interest-btn{% if row.interest_id %} active{% endif %}"
+            type="button"
+            data-interest-toggle
+            data-personal-entry-id="{{ row.entry.id }}"
+            {% if row.interest_id %}data-interest-id="{{ row.interest_id }}"{% endif %}
+            aria-pressed="{% if row.interest_id %}true{% else %}false{% endif %}"
+          >
+            <span aria-hidden="true" data-interest-glyph>{% if row.interest_id %}♥{% else %}♡{% endif %}</span>
+            찜
+          </button>
+          <button
+            class="status-btn {% if row.status_slug %}{{ row.status_slug }}{% else %}planned{% endif %}{% if row.status_id %} active{% endif %}"
+            type="button"
+            data-status-action
+            data-personal-entry-id="{{ row.entry.id }}"
+            data-status="planned"
+            data-label="{{ row.planned_label }}"
+            data-label-active="{{ row.status_label|default:row.planned_label }}"
+            data-reload-on-success
+            {% if row.status_id %}data-status-id="{{ row.status_id }}"{% endif %}
+            aria-pressed="{% if row.status_id %}true{% else %}false{% endif %}"
+          >{% if row.status_label %}{{ row.status_label }}{% else %}{{ row.planned_label }}{% endif %}</button>
+        </div>
+
+        <div class="visit-card-actions">
+          {% if row.is_submitted %}
+            <span class="promote-badge" title="관리자 검수 후 공개 목록에 게시됩니다">공식 제보됨 · 검수 중</span>
+          {% else %}
+            <button
+              class="promote-btn"
+              type="button"
+              data-promote-toggle="{{ row.entry.id }}"
+              aria-expanded="false"
+            >공식 제보</button>
+          {% endif %}
+          <button
+            class="record-delete-btn"
+            type="button"
+            data-delete-entry-id="{{ row.entry.id }}"
+            aria-label="{{ row.entry.title }} 삭제"
+          >삭제</button>
+        </div>
+        </div>
+
+        {% if not row.is_submitted %}
+          <form class="promote-form" data-promote-form="{{ row.entry.id }}" hidden novalidate>
+            <p class="promote-note">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다.</p>
+            <div class="form-group">
+              <label for="promote-url-{{ row.entry.id }}">공식 URL</label>
+              <input id="promote-url-{{ row.entry.id }}" type="url" name="official_url" placeholder="https://" required>
+            </div>
+            <p class="form-error" data-promote-error="{{ row.entry.id }}" aria-live="polite"></p>
+            <button class="form-submit-btn" type="submit">제보하기</button>
+          </form>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
+{% elif has_entries and has_query %}
+  <div class="empty-state" role="status">
+    <p class="empty-title">검색 결과가 없습니다</p>
+    <p class="empty-note">"{{ q }}"에 해당하는 항목이 없어요. <a href="{{ request.path }}">지우기</a></p>
+  </div>
+{% else %}
+  <div class="empty-state" role="status">
+    <p class="empty-icon" aria-hidden="true">🗂️</p>
+    <p class="empty-title">아직 등록한 항목이 없어요</p>
+    <p class="empty-note">오른쪽 폼에서 비공식 장소나 굿즈를 추가해 보세요.</p>
+  </div>
+{% endif %}
+
+{% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
