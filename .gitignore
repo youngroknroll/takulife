@@ -14,3 +14,7 @@ media/
 
 # screenshot diff scratch (local visual verification)
 .shots/
+
+# Coverage artifacts
+.coverage
+htmlcov/
