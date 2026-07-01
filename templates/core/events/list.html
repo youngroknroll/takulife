@@ -15,12 +15,12 @@
     </form>
 
     <div class="quick-row" aria-label="빠른 필터">
-      <a class="chip{% if selected_region == 'seoul' %} active{% endif %}" href="/events/?region=seoul">서울</a>
-      <a class="chip{% if selected_region == 'gyeonggi' %} active{% endif %}" href="/events/?region=gyeonggi">경기</a>
-      <a class="chip{% if selected_region == 'incheon' %} active{% endif %}" href="/events/?region=incheon">인천</a>
+      <a class="chip{% if 'seoul' in selected_region %} active{% endif %}" href="/events/?region=seoul">서울</a>
+      <a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/?region=gyeonggi">경기</a>
+      <a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/?region=incheon">인천</a>
       <a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/?status=closing_soon">종료 임박</a>
-      <a class="chip{% if selected_category == 'popup_store' %} active{% endif %}" href="/events/?category=popup_store">팝업스토어</a>
-      <a class="chip{% if selected_category == 'collaboration_cafe' %} active{% endif %}" href="/events/?category=collaboration_cafe">콜라보 카페</a>
+      <a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" href="/events/?category=popup_store">팝업스토어</a>
+      <a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/?category=collaboration_cafe">콜라보 카페</a>
     </div>
 
     <section class="layout" aria-label="행사 목록 레이아웃">
@@ -175,17 +175,17 @@
           {% if page_obj.has_other_pages %}
             <nav class="pager" aria-label="페이지네이션">
               {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}">이전</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">이전</a>
               {% endif %}
               {% for num in page_obj.paginator.page_range %}
                 {% if num == page_obj.number %}
                   <span class="current">{{ num }}</span>
                 {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
-                  <a href="?page={{ num }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ num }}</a>
+                  <a href="?page={{ num }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">{{ num }}</a>
                 {% endif %}
               {% endfor %}
               {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}">다음</a>
+                <a href="?page={{ page_obj.next_page_number }}{% if selected_q %}&q={{ selected_q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">다음</a>
               {% endif %}
             </nav>
           {% endif %}

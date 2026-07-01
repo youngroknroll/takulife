@@ -9,13 +9,13 @@ Usage:
 
 Context consumed:
   request.user.is_authenticated — provided by Django's auth context processor
-  request.user.username         — authenticated user's display name
+  request.user.email            — authenticated user's display name (login identifier)
   request.user.is_staff         — whether to show the draft management link
   request.user.is_superuser     — whether to show the Django admin link
 {% endcomment %}
 <nav class="topbar-auth" aria-label="계정 메뉴">
   {% if request.user.is_authenticated %}
-    <span class="topbar-username">{{ request.user.username }}</span>
+    <span class="topbar-username">{{ request.user.email }}</span>
     {% if request.user.is_staff %}
       <a class="topbar-link" href="/event-drafts/" aria-label="드래프트 관리 페이지">드래프트 관리</a>
     {% endif %}
@@ -28,6 +28,6 @@ Context consumed:
     </form>
   {% else %}
     <a class="topbar-link" href="/accounts/login/" aria-label="로그인">로그인</a>
-    <a class="topbar-link" href="/accounts/register/" aria-label="회원가입">회원가입</a>
+    <a class="topbar-link" href="/accounts/signup/" aria-label="회원가입">회원가입</a>
   {% endif %}
 </nav>

@@ -7,7 +7,7 @@ from events.models import Event
 
 @pytest.mark.django_db
 def test_create_user_event_status_accepts_explicit_domain_inputs(django_user_model):
-    user = django_user_model.objects.create_user(username="service-user", password="secret")
+    user = django_user_model.objects.create_user(email="service-user@example.com", username="service-user", password="secret")
     event = Event.objects.create(
         title="Published event",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -22,7 +22,7 @@ def test_create_user_event_status_accepts_explicit_domain_inputs(django_user_mod
 
 @pytest.mark.django_db
 def test_authenticated_user_can_create_event_status_for_published_event(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(user)
@@ -42,7 +42,7 @@ def test_user_event_status_create_accepts_published_event_via_events_queryset(
     client,
     django_user_model,
 ):
-    user = django_user_model.objects.create_user(username="published-user", password="secret")
+    user = django_user_model.objects.create_user(email="published-user@example.com", username="published-user", password="secret")
     event = Event.objects.create(
         title="Published event",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -61,7 +61,7 @@ def test_user_event_status_create_accepts_published_event_via_events_queryset(
 
 @pytest.mark.django_db
 def test_legacy_me_event_status_route_remains_inactive(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(user)
@@ -76,8 +76,8 @@ def test_legacy_me_event_status_route_remains_inactive(client, django_user_model
 
 @pytest.mark.django_db
 def test_user_event_status_list_returns_only_current_users_statuses(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-owner", password="secret")
-    other_user = django_user_model.objects.create_user(username="status-other", password="secret")
+    user = django_user_model.objects.create_user(email="status-owner@example.com", username="status-owner", password="secret")
+    other_user = django_user_model.objects.create_user(email="status-other@example.com", username="status-other", password="secret")
     owned_event = Event.objects.create(title="Owned event", publish_status=Event.PublishStatus.PUBLISHED)
     other_event = Event.objects.create(title="Other event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -106,7 +106,7 @@ def test_user_event_status_list_returns_only_current_users_statuses(client, djan
 
 @pytest.mark.django_db
 def test_user_event_status_list_filters_by_event_and_status(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-owner", password="secret")
+    user = django_user_model.objects.create_user(email="status-owner@example.com", username="status-owner", password="secret")
     event_one = Event.objects.create(title="Event one", publish_status=Event.PublishStatus.PUBLISHED)
     event_two = Event.objects.create(title="Event two", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -132,7 +132,7 @@ def test_user_event_status_list_filters_by_event_and_status(client, django_user_
 
 @pytest.mark.django_db
 def test_user_event_status_list_rejects_invalid_status_filter(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-owner", password="secret")
+    user = django_user_model.objects.create_user(email="status-owner@example.com", username="status-owner", password="secret")
     event = Event.objects.create(title="Event one", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(user)
@@ -150,8 +150,8 @@ def test_user_event_status_list_rejects_invalid_status_filter(client, django_use
 
 @pytest.mark.django_db
 def test_user_event_status_detail_for_another_user_returns_404(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-owner", password="secret")
-    other_user = django_user_model.objects.create_user(username="status-other", password="secret")
+    user = django_user_model.objects.create_user(email="status-owner@example.com", username="status-owner", password="secret")
+    other_user = django_user_model.objects.create_user(email="status-other@example.com", username="status-other", password="secret")
     event = Event.objects.create(title="Other event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(other_user)
@@ -175,7 +175,7 @@ def test_user_event_status_detail_for_another_user_returns_404(client, django_us
 
 @pytest.mark.django_db
 def test_user_event_status_rejects_unpublished_event(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Draft event", publish_status=Event.PublishStatus.DRAFT)
 
     client.force_login(user)
@@ -191,7 +191,7 @@ def test_user_event_status_rejects_unpublished_event(client, django_user_model):
 
 @pytest.mark.django_db
 def test_user_event_status_rejects_invalid_status(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(user)
@@ -207,7 +207,7 @@ def test_user_event_status_rejects_invalid_status(client, django_user_model):
 
 @pytest.mark.django_db
 def test_user_event_status_duplicate_returns_409(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(user)
@@ -231,7 +231,7 @@ def test_user_event_status_duplicate_returns_409(client, django_user_model):
 
 @pytest.mark.django_db
 def test_authenticated_user_can_patch_event_status(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(user)
@@ -265,7 +265,7 @@ def test_patch_to_planned_pins_override_so_it_stays_planned(client, django_user_
 
     from archive.models import UserEventStatus
 
-    user = django_user_model.objects.create_user(username="revert-user", password="secret")
+    user = django_user_model.objects.create_user(email="revert-user@example.com", username="revert-user", password="secret")
     event = Event.objects.create(
         title="Long-past event",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -302,7 +302,7 @@ def test_patch_to_planned_pins_override_so_it_stays_planned(client, django_user_
 
 @pytest.mark.django_db
 def test_user_event_status_put_is_not_allowed(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
     other_event = Event.objects.create(title="Other event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -331,7 +331,7 @@ def test_user_event_status_put_is_not_allowed(client, django_user_model):
 
 @pytest.mark.django_db
 def test_authenticated_user_can_delete_event_status(client, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(user)
@@ -350,7 +350,7 @@ def test_authenticated_user_can_delete_event_status(client, django_user_model):
 
 @pytest.mark.django_db
 def test_create_user_event_status_maps_integrity_error_to_duplicate(monkeypatch, django_user_model):
-    user = django_user_model.objects.create_user(username="status-user", password="secret")
+    user = django_user_model.objects.create_user(email="status-user@example.com", username="status-user", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     def raise_integrity_error(**kwargs):
@@ -365,7 +365,7 @@ def test_create_user_event_status_maps_integrity_error_to_duplicate(monkeypatch,
 @pytest.mark.django_db
 def test_user_event_status_rejects_interested_as_status(client, django_user_model):
     """After removing 'interested' from UserEventStatus choices, the API must reject it."""
-    user = django_user_model.objects.create_user(username="status-interested-reject", password="secret")
+    user = django_user_model.objects.create_user(email="status-interested-reject@example.com", username="status-interested-reject", password="secret")
     event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.force_login(user)

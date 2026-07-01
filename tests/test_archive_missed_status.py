@@ -19,7 +19,9 @@ TODAY = date(2026, 6, 26)
 
 
 def _user(django_user_model, username):
-    return django_user_model.objects.create_user(username=username, password="pw-12345678")
+    return django_user_model.objects.create_user(
+        email=f"{username}@example.com", username=username, password="pw-12345678"
+    )
 
 
 def _event(end_date, *, title="E", start_date=date(2026, 6, 1)):

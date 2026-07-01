@@ -46,13 +46,13 @@ def make_draft_event(make_event):
 
 @pytest.fixture
 def make_user(db, django_user_model):
-    def _make(username=None, password=None, **kwargs):
-        username = username or f"user_{secrets.token_hex(4)}"
+    def _make(email=None, password=None, **kwargs):
+        email = email or f"user_{secrets.token_hex(4)}@example.com"
         # Strong by default so registration-validator paths pass; callers that
         # care about the exact password pass their own.
         password = password or "Aa1!" + secrets.token_urlsafe(16)
         return django_user_model.objects.create_user(
-            username=username, password=password, **kwargs
+            email=email, password=password, **kwargs
         )
 
     return _make

@@ -263,7 +263,9 @@ def test_admin_can_reject_event_draft(admin_client):
 
 @pytest.mark.django_db
 def test_non_admin_cannot_access_event_draft_review(client, django_user_model):
-    user = django_user_model.objects.create_user(username="normal-user", password="secret")
+    user = django_user_model.objects.create_user(
+        email="normal-user@example.com", username="normal-user", password="secret"
+    )
     draft = EventDraft.objects.create(source_url="https://example.com/event")
     client.force_login(user)
 

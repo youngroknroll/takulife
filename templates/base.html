@@ -22,6 +22,13 @@
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
   {% include "core/partials/_site_header.html" %}
+  {% if messages %}
+    <ul class="site-messages" role="status">
+      {% for message in messages %}
+        <li class="site-message site-message-{% if message.tags == 'error' or message.tags == 'warning' %}error{% else %}info{% endif %}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
   {% block content %}{% endblock %}
   {% include "core/partials/_site_footer.html" %}
   <script defer src="{% static 'js/shared/api.js' %}"></script>

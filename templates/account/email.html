@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}이메일 관리 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+  <h1>이메일 관리</h1>
+  {% if emailaddresses %}
+    <p>계정에 등록된 이메일 주소입니다.</p>
+    <form method="post" action="{% url 'account_email' %}">
+      {% csrf_token %}
+      {% for radio in emailaddress_radios %}
+        {% with emailaddress=radio.emailaddress %}
+          <div class="form-group">
+            <label>
+              <input type="radio" name="email" value="{{ emailaddress.email }}" id="{{ radio.id }}" {% if radio.checked %}checked{% endif %}>
+              {{ emailaddress.email }}
+              {% if emailaddress.verified %}<span>(인증됨)</span>{% else %}<span>(미인증)</span>{% endif %}
+              {% if emailaddress.primary %}<span>· 기본</span>{% endif %}
+            </label>
+          </div>
+        {% endwith %}
+      {% endfor %}
+      <button type="submit" class="btn-primary" name="action_primary">기본으로 설정</button>
+      <button type="submit" class="btn-primary" name="action_send">인증 메일 재발송</button>
+      <button type="submit" class="btn-primary" name="action_remove">삭제</button>
+    </form>
+  {% else %}
+    <p>등록된 이메일 주소가 없습니다.</p>
+  {% endif %}
+
+  {% if can_add_email %}
+    <h2>이메일 추가</h2>
+    <form method="post" action="{% url 'account_email' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_email">이메일</label>
+        {{ form.email }}
+      </div>
+      <button type="submit" class="btn-primary" name="action_add">이메일 추가</button>
+    </form>
+  {% endif %}
+</main>
+{% endblock %}

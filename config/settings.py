@@ -5,19 +5,23 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-def load_secret_key():
-    env_secret_key = os.environ.get("SECRET_KEY")
-    if env_secret_key:
-        return env_secret_key
+def _get_env(name, default=""):
+    env_value = os.environ.get(name)
+    if env_value is not None:
+        return env_value
 
     env_path = BASE_DIR / ".env"
     if env_path.exists():
         for line in env_path.read_text(encoding="utf-8").splitlines():
             key, separator, value = line.partition("=")
-            if separator and key.strip() == "SECRET_KEY":
+            if separator and key.strip() == name:
                 return value.strip().strip("'\"")
 
-    return "django-insecure-local-dev-key-change-me"
+    return default
+
+
+def load_secret_key():
+    return _get_env("SECRET_KEY") or "django-insecure-local-dev-key-change-me"
 
 
 SECRET_KEY = load_secret_key()
@@ -30,8 +34,12 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.sites",
     "django.contrib.staticfiles",
     "rest_framework",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
     "accounts",
     "events",
     "drafts",
@@ -45,6 +53,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -95,10 +104,27 @@ MEDIA_ROOT = BASE_DIR / "media"
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
 
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/archive/"
 LOGOUT_REDIRECT_URL = "/"
+
+# django-allauth: email-only identifier, mandatory verification before login.
+# ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION replaces the old auto-login-on-register
+# policy — the session is only granted once the confirmation link is clicked.
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 
 # Secure cookies: disabled in development (http), enabled when SECURE_COOKIES env is set.
 _secure_cookies = os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
@@ -106,6 +132,20 @@ SESSION_COOKIE_SECURE = _secure_cookies
 CSRF_COOKIE_SECURE = _secure_cookies
 # Keep CSRF_COOKIE_HTTPONLY False so the JS layer can read the csrftoken cookie.
 CSRF_COOKIE_HTTPONLY = False
+
+# Email (django-allauth verification / password reset). Blank EMAIL_HOST falls
+# back to the console backend so local dev never needs real SMTP credentials.
+EMAIL_HOST = _get_env("EMAIL_HOST")
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST
+    else "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_PORT = int(_get_env("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = _get_env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = _get_env("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = _get_env("EMAIL_USE_TLS", "true").lower() in ("1", "true", "yes")
+DEFAULT_FROM_EMAIL = _get_env("DEFAULT_FROM_EMAIL", "no-reply@takulife.example")
 
 # DRF: rate-limit 공식 제보 (promotion) so an authenticated user cannot flood the
 # admin review queue with promoted PersonalEntry drafts. Scoped throttle only —

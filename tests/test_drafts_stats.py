@@ -122,7 +122,9 @@ def test_admin_gets_stats_with_all_zero_when_no_drafts(admin_client):
 
 @pytest.mark.django_db
 def test_non_staff_user_cannot_get_draft_stats(client, django_user_model):
-    user = django_user_model.objects.create_user(username="regular", password=TEST_PASSWORD)
+    user = django_user_model.objects.create_user(
+        email="regular@example.com", username="regular", password=TEST_PASSWORD
+    )
     client.force_login(user)
 
     response = client.get(stats_url())
@@ -171,7 +173,9 @@ def test_anonymous_access_to_event_draft_detail_html_redirects(client):
 
 @pytest.mark.django_db
 def test_non_staff_access_to_event_drafts_html_redirects(client, django_user_model):
-    user = django_user_model.objects.create_user(username="regular", password=TEST_PASSWORD)
+    user = django_user_model.objects.create_user(
+        email="regular@example.com", username="regular", password=TEST_PASSWORD
+    )
     client.force_login(user)
 
     response = client.get("/event-drafts/")
@@ -181,7 +185,9 @@ def test_non_staff_access_to_event_drafts_html_redirects(client, django_user_mod
 
 @pytest.mark.django_db
 def test_non_staff_access_to_event_draft_detail_html_redirects(client, django_user_model):
-    user = django_user_model.objects.create_user(username="regular", password=TEST_PASSWORD)
+    user = django_user_model.objects.create_user(
+        email="regular@example.com", username="regular", password=TEST_PASSWORD
+    )
     client.force_login(user)
 
     response = client.get("/event-drafts/1/")
@@ -192,7 +198,7 @@ def test_non_staff_access_to_event_draft_detail_html_redirects(client, django_us
 @pytest.mark.django_db
 def test_staff_user_can_access_event_drafts_html(client, django_user_model):
     staff = django_user_model.objects.create_user(
-        username="staffuser", password=TEST_PASSWORD, is_staff=True
+        email="staffuser@example.com", username="staffuser", password=TEST_PASSWORD, is_staff=True
     )
     client.force_login(staff)
 
@@ -204,7 +210,7 @@ def test_staff_user_can_access_event_drafts_html(client, django_user_model):
 @pytest.mark.django_db
 def test_staff_user_can_access_event_draft_detail_html(client, django_user_model):
     staff = django_user_model.objects.create_user(
-        username="staffuser", password=TEST_PASSWORD, is_staff=True
+        email="staffuser@example.com", username="staffuser", password=TEST_PASSWORD, is_staff=True
     )
     client.force_login(staff)
 
