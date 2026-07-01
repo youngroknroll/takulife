@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "django.contrib.staticfiles",
     "rest_framework",
+    "axes",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -56,6 +57,9 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # AxesMiddleware must come last so it can render the lockout response after
+    # authentication has run.
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -107,6 +111,9 @@ AUTH_USER_MODEL = "accounts.User"
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
+    # AxesStandaloneBackend must be first: it short-circuits authentication with
+    # PermissionDenied once an IP is locked out, without itself validating creds.
+    "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
@@ -125,6 +132,43 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+
+# Rate limits on the auth endpoints (brute-force / signup-flood defense).
+# allauth ships sane defaults that are already active; this dict is MERGED over
+# those defaults (allauth: `ret.update(rls)`), so unlisted actions keep their
+# allauth default. We pin the security-relevant actions here for auditability
+# and tighten `signup` for public deployment. Format: "<count>/<duration>/<scope>",
+# scope is ip|key|user, comma-combines multiple windows (all must pass).
+#   - signup: burst 5/min + sustained 30/hour per IP (default is a looser 20/m/ip)
+#   - login_failed: 10/min per IP + 5 per 5min per account; once the per-account
+#     window is spent the login form refuses further auth (even the correct
+#     password) until it cools off. Durable IP lockout is a follow-up (B1b: axes).
+#   - reset_password: throttles password-reset email requests (allauth default).
+# Rate-limit hits render templates/429.html.
+ACCOUNT_RATE_LIMITS = {
+    "signup": "5/m/ip,30/h/ip",
+    "login_failed": "10/m/ip,5/300s/key",
+    "reset_password": "20/m/ip,5/m/key",
+}
+
+# django-axes: durable brute-force lockout on top of allauth's per-window
+# throttle. allauth refuses further auth within a rolling window; axes adds a
+# hard lockout with a cool-off so repeated attackers are shut out and visible
+# in the admin (AccessAttempt/AccessLog). Lock by IP only — locking by username
+# would let an attacker lock a victim out (DoS); the per-account dimension is
+# already covered by allauth's login_failed `key` limit.
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # hours
+AXES_LOCKOUT_PARAMETERS = ["ip_address"]
+AXES_RESET_ON_SUCCESS = True
+AXES_HTTP_RESPONSE_CODE = 429
+AXES_LOCKOUT_TEMPLATE = "account/lockout.html"
+# allauth posts the identifier under the form field named "login"; axes must
+# read the same field to record attempts against the right credential.
+AXES_USERNAME_FORM_FIELD = "login"
+# NOTE (deployment): behind a reverse proxy, configure AXES_IPWARE_* so the real
+# client IP is used — otherwise every request looks like the proxy IP and one
+# attacker can lock out everyone. Do not enable in prod until the proxy is set.
 
 # Secure cookies: disabled in development (http), enabled when SECURE_COOKIES env is set.
 _secure_cookies = os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}로그인 일시 차단 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+  <h1>로그인 시도가 너무 많습니다</h1>
+  <p class="auth-error">
+    로그인 실패가 반복되어 접근이 일시적으로 차단되었습니다.
+    잠시 후 다시 시도해 주세요.
+  </p>
+  <p><a href="{% url 'account_reset_password' %}">비밀번호를 잊으셨나요?</a></p>
+</main>
+{% endblock %}
