@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "accounts",
     "events",
     "drafts",
@@ -173,6 +174,31 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+
+# django-allauth socialaccount: Google sign-in. Credentials come from env
+# (never committed); register the OAuth client in Google Cloud Console with the
+# redirect URI /accounts/google/login/callback/ (localhost for dev, the real
+# host for prod). Blank env leaves the button present but non-functional until
+# credentials are set.
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APPS": [
+            {
+                "client_id": _get_env("GOOGLE_CLIENT_ID"),
+                "secret": _get_env("GOOGLE_CLIENT_SECRET"),
+                "key": "",
+            }
+        ],
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    }
+}
+# Google verifies email ownership, so trust it: a Google login whose verified
+# email matches an existing local account logs into that account and connects
+# the Google account to it. SAFE ONLY because Google is a fully-trusted
+# provider — revisit this if another (less-trusted) provider is ever added.
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
 # Rate limits on the auth endpoints (brute-force / signup-flood defense).
 # allauth ships sane defaults that are already active; this dict is MERGED over

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}회원가입 마무리 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+  <h1>회원가입 마무리</h1>
+  <p>{{ account.get_provider.name }} 계정으로 로그인합니다. 아래 정보를 확인해 가입을 완료해 주세요.</p>
+  {% if form.non_field_errors %}
+    <ul class="auth-error">
+      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <form method="post" action="{% url 'socialaccount_signup' %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    {{ redirect_field }}
+    <button type="submit" class="btn-primary">가입 완료</button>
+  </form>
+</main>
+{% endblock %}
