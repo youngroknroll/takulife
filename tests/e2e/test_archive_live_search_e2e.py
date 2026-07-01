@@ -17,7 +17,7 @@ CARDS = "#archive-results .status-card"
 
 class TestArchiveLiveSearch:
     def test_typing_filters_list_and_syncs_url(self, live_server, page, seed, login):
-        login(page, live_server.url, "e2e_user", seed.password)
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
         # All four planned statuses are present initially.
@@ -33,7 +33,7 @@ class TestArchiveLiveSearch:
         assert "partial" not in page.url
 
     def test_clearing_query_restores_full_list(self, live_server, page, seed, login):
-        login(page, live_server.url, "e2e_user", seed.password)
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
         page.fill(SEARCH, "여름")
@@ -45,7 +45,7 @@ class TestArchiveLiveSearch:
         expect(page).to_have_url(re.compile(r"/archive/statuses/$"))
 
     def test_back_button_restores_previous_results(self, live_server, page, seed, login):
-        login(page, live_server.url, "e2e_user", seed.password)
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
         page.fill(SEARCH, "여름")
@@ -58,7 +58,7 @@ class TestArchiveLiveSearch:
         expect(page.locator(SEARCH)).to_have_value("")
 
     def test_no_result_shows_empty_state(self, live_server, page, seed, login):
-        login(page, live_server.url, "e2e_user", seed.password)
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
         page.fill(SEARCH, "존재하지않는검색어zzz")
@@ -73,7 +73,7 @@ class TestArchiveLiveSearch:
     ):
         """The strongest rebinding proof: act on a card that only exists after a
         live-search swap, and confirm the write reaches the server."""
-        login(page, live_server.url, "e2e_user", seed.password)
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
         # Isolate the planned "가을 극장 특전" card via live search.

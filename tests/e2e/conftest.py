@@ -22,10 +22,23 @@ os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "1")
 
 import pytest
 
+from allauth.account.models import EmailAddress
 from archive.models import PersonalEntry, UserEventStatus, VisitRecord
 from events.models import Event
 
 E2E_PASSWORD = "e2e-Pass-12345!"
+
+
+def _verified_user(django_user_model, email, **kwargs):
+    """Create a user with a pre-verified primary email.
+
+    ACCOUNT_EMAIL_VERIFICATION=mandatory blocks login for unverified
+    accounts, so E2E-seeded users need a verified EmailAddress row up
+    front — there's no confirmation email to click in a live_server test.
+    """
+    user = django_user_model.objects.create_user(email=email, password=E2E_PASSWORD, **kwargs)
+    EmailAddress.objects.create(user=user, email=email, verified=True, primary=True)
+    return user
 
 
 def _make_event(title, **kwargs):
@@ -43,12 +56,8 @@ def seed(transactional_db, django_user_model):
     Returns a namespace: ``.user`` / ``.staff`` (User rows), ``.password``,
     and ``.events`` (the planned events, distinct titles for search).
     """
-    user = django_user_model.objects.create_user(
-        username="e2e_user", password=E2E_PASSWORD
-    )
-    staff = django_user_model.objects.create_user(
-        username="e2e_staff", password=E2E_PASSWORD, is_staff=True
-    )
+    user = _verified_user(django_user_model, "e2e_user@example.com")
+    staff = _verified_user(django_user_model, "e2e_staff@example.com", is_staff=True)
 
     # Planned statuses with distinct, searchable titles for the live-search tests.
     titles = ["여름 팝업스토어", "겨울 콜라보 카페", "봄 굿즈 전시", "가을 극장 특전"]
@@ -70,10 +79,10 @@ def seed(transactional_db, django_user_model):
     )
 
 
-def _perform_login(page, base_url, username, password):
+def _perform_login(page, base_url, email, password):
     """Log in through the real login form and wait for the redirect away."""
     page.goto(f"{base_url}/accounts/login/?next=/archive/statuses/")
-    page.fill('input[name="username"]', username)
+    page.fill('input[name="login"]', email)
     page.fill('input[name="password"]', password)
     page.click('button[type="submit"]')
     page.wait_for_url(f"{base_url}/archive/statuses/")
