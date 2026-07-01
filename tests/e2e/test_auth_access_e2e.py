@@ -18,7 +18,9 @@ class TestAuth:
 
         # Stays on the login page (no redirect to next) and re-renders the form.
         expect(page).to_have_url(re.compile(r"/accounts/login/"))
-        expect(page.locator(".auth-error")).to_be_visible()
+        expect(page.locator(".auth-error")).to_contain_text(
+            "이메일 또는 비밀번호가 올바르지 않습니다"
+        )
 
     def test_login_success_redirects_to_next(self, live_server, page, seed, login):
         page.goto(f"{live_server.url}/accounts/login/?next=/archive/")

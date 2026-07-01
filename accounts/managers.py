@@ -5,7 +5,11 @@ class UserManager(BaseUserManager):
     use_in_migrations = True
 
     def _create_user(self, email, password, **extra_fields):
-        email = self.normalize_email(email)
+        # normalize_email() only lowercases the domain — lowercase the whole
+        # address so email stays a reliable unique identifier regardless of
+        # entry point (e.g. manage.py createsuperuser bypasses allauth's own
+        # lowercasing done on the public signup path).
+        email = self.normalize_email(email.lower())
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

@@ -66,6 +66,32 @@ body {
   border: 0;
 }
 
+/* ── site-wide messages (django.contrib.messages) ──────────── */
+.site-messages {
+  max-width: 1120px;
+  margin: 0.75rem auto 0;
+  padding: 0 1.25rem;
+  list-style: none;
+}
+
+.site-message {
+  margin: 0 0 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.site-message-error {
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+}
+
+.site-message-info {
+  border: 1px dashed #b6c8df;
+  background: var(--bg-soft);
+  color: #46617f;
+}
+
 /* ── focus outline (global) ─────────────────────────────────── */
 a:focus,
 button:focus,
