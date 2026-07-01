@@ -18,7 +18,7 @@ def test_auth_model_setting_is_custom_user(settings):
 @pytest.mark.django_db
 def test_auth_me_returns_authenticated_user_without_reloading_from_database():
     request = APIRequestFactory().get("/api/auth/me/")
-    user = User(username="tester", email="tester@example.com", is_staff=True)
+    user = User(email="tester@example.com", is_staff=True)
 
     force_authenticate(request, user=user)
     response = me(request)
@@ -26,7 +26,6 @@ def test_auth_me_returns_authenticated_user_without_reloading_from_database():
     assert response.status_code == 200
     assert response.data == {
         "id": None,
-        "username": "tester",
         "email": "tester@example.com",
         "is_staff": True,
     }

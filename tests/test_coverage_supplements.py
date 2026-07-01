@@ -5,6 +5,7 @@ queryset status arm, a query filter arm, serializer/​service guard branches,
 and a few API error/redirect paths.
 """
 import datetime
+import re
 
 import pytest
 from django.test import Client
@@ -138,14 +139,26 @@ class TestPromotionDuplicate:
 
 @pytest.mark.django_db
 class TestRegisterRedirect:
-    def test_register_redirects_to_safe_next(self):
-        resp = Client().post(
-            "/accounts/register/?next=/archive/visits/",
+    def test_register_redirects_to_safe_next_after_email_confirmation(self, mailoutbox):
+        client = Client()
+        resp = client.post(
+            "/accounts/signup/?next=/archive/visits/",
             data={
-                "username": "newcomer",
+                "email": "newcomer@example.com",
                 "password1": "Str0ng-Pass-99",
                 "password2": "Str0ng-Pass-99",
             },
         )
+        # Signup itself only lands on the "check your email" page — the
+        # session isn't granted until the confirmation link is clicked
+        # (ACCOUNT_EMAIL_VERIFICATION=mandatory).
         assert resp.status_code == 302
-        assert resp["Location"] == "/archive/visits/"
+        assert resp["Location"] == "/accounts/confirm-email/"
+
+        assert len(mailoutbox) == 1
+        match = re.search(r"http://\S+(/accounts/confirm-email/\S+/)", mailoutbox[0].body)
+        assert match, mailoutbox[0].body
+
+        confirm_resp = client.post(match.group(1))
+        assert confirm_resp.status_code == 302
+        assert confirm_resp["Location"] == "/archive/visits/"

@@ -2,9 +2,11 @@
 Tests for Phase 2 auth backend:
 - Authorization / IDOR on archive API
 - Auth boundary (anonymous, CSRF)
-- Registration (valid, weak password, duplicate username)
+- Registration (valid, weak password, duplicate email, mandatory email
+  verification via django-allauth)
 - @login_required redirect on HTML archive views
 """
+import re
 import secrets
 
 import pytest
@@ -209,70 +211,98 @@ def test_authenticated_post_with_csrf_succeeds(client, make_user, make_event):
 
 
 # ---------------------------------------------------------------------------
-# Registration
+# Registration (django-allauth: email identifier, mandatory verification)
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_registration_get_renders_form(client):
-    """GET /accounts/register/ returns 200."""
-    response = client.get("/accounts/register/")
+    """GET /accounts/signup/ returns 200."""
+    response = client.get("/accounts/signup/")
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
-def test_valid_registration_creates_user_and_logs_in(client, django_user_model):
-    """Valid registration creates a user and authenticates the session."""
+def test_valid_registration_does_not_log_in_before_verification(client, django_user_model):
+    """Signup creates an unverified user and does NOT grant a session yet."""
     response = client.post(
-        "/accounts/register/",
+        "/accounts/signup/",
         {
-            "username": "newuser",
+            "email": "newuser@example.com",
             "password1": VALID_PASSWORD,
             "password2": VALID_PASSWORD,
         },
     )
-    # Should redirect after successful registration
+    # Redirects to the "check your email" page, not straight into the app.
     assert response.status_code == 302
+    assert django_user_model.objects.filter(email="newuser@example.com").exists()
 
-    # User should exist in DB
-    assert django_user_model.objects.filter(username="newuser").exists()
+    # Not authenticated yet — protected pages still bounce to login.
+    archive_response = client.get("/archive/")
+    assert archive_response.status_code == 302
+    assert "/accounts/login/" in archive_response["Location"]
 
-    # Session should be authenticated (follow redirect and check context)
-    follow_response = client.get("/archive/")
-    # archive/ is protected so if logged in we get 200, else 302 to login
-    assert follow_response.status_code == 200
+
+@pytest.mark.django_db
+def test_confirming_email_logs_the_user_in(client, django_user_model, mailoutbox):
+    """Clicking the emailed confirmation link authenticates the session."""
+    client.post(
+        "/accounts/signup/",
+        {
+            "email": "confirmme@example.com",
+            "password1": VALID_PASSWORD,
+            "password2": VALID_PASSWORD,
+        },
+    )
+    assert len(mailoutbox) == 1
+    match = re.search(r"http://\S+(/accounts/confirm-email/\S+/)", mailoutbox[0].body)
+    assert match, mailoutbox[0].body
+
+    response = client.post(match.group(1), follow=True)
+    assert response.status_code == 200
+
+    archive_response = client.get("/archive/")
+    assert archive_response.status_code == 200
 
 
 @pytest.mark.django_db
 def test_weak_password_rejected_by_validators(client, django_user_model):
     """Weak password (all digits, too common) is rejected by AUTH_PASSWORD_VALIDATORS."""
     response = client.post(
-        "/accounts/register/",
+        "/accounts/signup/",
         {
-            "username": "weakpwduser",
+            "email": "weakpwduser@example.com",
             "password1": "12345678",
             "password2": "12345678",
         },
     )
     # Should re-render form with error, not redirect
     assert response.status_code == 200
-    assert not django_user_model.objects.filter(username="weakpwduser").exists()
+    assert not django_user_model.objects.filter(email="weakpwduser@example.com").exists()
 
 
 @pytest.mark.django_db
-def test_duplicate_username_rejected(client, django_user_model):
-    """Duplicate username returns form error and does not create another user."""
-    django_user_model.objects.create_user(username="existinguser", password=VALID_PASSWORD)
+def test_duplicate_email_rejected(client, django_user_model, mailoutbox):
+    """Signing up with an existing email does not create a second account.
+
+    django-allauth's default ACCOUNT_PREVENT_ENUMERATION=True responds with
+    the same redirect as a fresh signup (so the response can't be used to
+    probe which emails are registered) but notifies the existing account
+    by mail instead of creating a duplicate user.
+    """
+    django_user_model.objects.create_user(email="existinguser@example.com", password=VALID_PASSWORD)
 
     response = client.post(
-        "/accounts/register/",
+        "/accounts/signup/",
         {
-            "username": "existinguser",
+            "email": "existinguser@example.com",
             "password1": VALID_PASSWORD,
             "password2": VALID_PASSWORD,
         },
     )
-    assert response.status_code == 200
-    assert django_user_model.objects.filter(username="existinguser").count() == 1
+    assert response.status_code == 302
+    assert django_user_model.objects.filter(email="existinguser@example.com").count() == 1
+    assert len(mailoutbox) == 1
+    assert mailoutbox[0].to == ["existinguser@example.com"]
 
 
 # ---------------------------------------------------------------------------
@@ -313,28 +343,28 @@ def test_authenticated_user_can_access_archive(client, make_user):
 
 
 # ---------------------------------------------------------------------------
-# next preservation across login <-> register links
+# next preservation across login <-> signup links
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_login_page_register_link_preserves_next(client):
-    """GET /accounts/login/?next=X renders a register link carrying next=X."""
+def test_login_page_signup_link_preserves_next(client):
+    """GET /accounts/login/?next=X renders a signup link carrying next=X."""
     response = client.get("/accounts/login/?next=/archive/")
     assert response.status_code == 200
-    assert b'href="/accounts/register/?next=/archive/"' in response.content
+    assert b'href="/accounts/signup/?next=%2Farchive%2F"' in response.content
 
 
 @pytest.mark.django_db
-def test_register_page_login_link_preserves_next(client):
-    """GET /accounts/register/?next=X renders a login link carrying next=X."""
-    response = client.get("/accounts/register/?next=/archive/")
+def test_signup_page_login_link_preserves_next(client):
+    """GET /accounts/signup/?next=X renders a login link carrying next=X."""
+    response = client.get("/accounts/signup/?next=/archive/")
     assert response.status_code == 200
-    assert b'href="/accounts/login/?next=/archive/"' in response.content
+    assert b'href="/accounts/login/?next=%2Farchive%2F"' in response.content
 
 
 @pytest.mark.django_db
-def test_login_page_register_link_omits_next_when_absent(client):
-    """GET /accounts/login/ without next renders a bare register link."""
+def test_login_page_signup_link_omits_next_when_absent(client):
+    """GET /accounts/login/ without next renders a bare signup link."""
     response = client.get("/accounts/login/")
     assert response.status_code == 200
-    assert b'href="/accounts/register/"' in response.content
+    assert b'href="/accounts/signup/"' in response.content
