@@ -1,0 +1,52 @@
+/* staff_console.css — dashboard-only rules (templates/staff/dashboard.html) */
+
+@media (min-width: 57.5rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+  }
+}
+
+@media (max-width: 57.5rem) {
+  .side-stack {
+    position: static;
+  }
+}
+
+.summary-card--pending .summary-value {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.queue-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #b9ccf8;
+  border-radius: 8px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+  text-decoration: none;
+  min-height: 44px;
+  margin-top: 0.625rem;
+}
+
+.panel-divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0.875rem 0;
+}
+
+.badge-soon {
+  display: inline-block;
+  margin-left: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
