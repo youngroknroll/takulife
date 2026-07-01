@@ -10,7 +10,6 @@ def me(request):
     return Response(
         {
             "id": user.id,
-            "username": user.username,
             "email": user.email,
             "is_staff": user.is_staff,
         }

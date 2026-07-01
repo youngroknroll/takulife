@@ -242,7 +242,7 @@
 
     var registerLink = document.createElement("a");
     registerLink.className = "auth-modal-secondary";
-    registerLink.href = "/accounts/register/?next=" + next;
+    registerLink.href = "/accounts/signup/?next=" + next;
     registerLink.textContent = "회원가입";
 
     actions.appendChild(loginLink);

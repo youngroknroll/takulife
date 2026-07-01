@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static account %}
+
+{% block title %}이메일 인증 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+  <h1>이메일 주소 확인</h1>
+  {% if confirmation %}
+    {% user_display confirmation.email_address.user as user_display %}
+    {% if can_confirm %}
+      <p>{{ confirmation.email_address.email }}이(가) {{ user_display }}님의 이메일 주소가 맞는지 확인해주세요.</p>
+      <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+        {% csrf_token %}
+        {{ redirect_field }}
+        <button type="submit" class="btn-primary">확인</button>
+      </form>
+    {% else %}
+      <p class="auth-error">이 이메일은 이미 다른 계정에서 확인되었습니다.</p>
+    {% endif %}
+  {% else %}
+    <p class="auth-error">인증 링크가 만료되었거나 올바르지 않습니다.</p>
+    <p><a href="{% url 'account_email' %}">인증 메일을 다시 요청하기</a></p>
+  {% endif %}
+</main>
+{% endblock %}
