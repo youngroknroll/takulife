@@ -41,7 +41,7 @@ urlpatterns = [
         core_views.event_draft_detail,
         name="event-draft-detail-page",
     ),
-    path("accounts/", include("accounts.urls")),
+    path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("api/", include("core.urls")),
     path("api/events/", include("events.urls")),
