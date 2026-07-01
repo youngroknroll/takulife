@@ -310,3 +310,31 @@ def test_authenticated_user_can_access_archive(client, make_user):
     client.force_login(user)
     response = client.get("/archive/")
     assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# next preservation across login <-> register links
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_login_page_register_link_preserves_next(client):
+    """GET /accounts/login/?next=X renders a register link carrying next=X."""
+    response = client.get("/accounts/login/?next=/archive/")
+    assert response.status_code == 200
+    assert b'href="/accounts/register/?next=/archive/"' in response.content
+
+
+@pytest.mark.django_db
+def test_register_page_login_link_preserves_next(client):
+    """GET /accounts/register/?next=X renders a login link carrying next=X."""
+    response = client.get("/accounts/register/?next=/archive/")
+    assert response.status_code == 200
+    assert b'href="/accounts/login/?next=/archive/"' in response.content
+
+
+@pytest.mark.django_db
+def test_login_page_register_link_omits_next_when_absent(client):
+    """GET /accounts/login/ without next renders a bare register link."""
+    response = client.get("/accounts/login/")
+    assert response.status_code == 200
+    assert b'href="/accounts/register/"' in response.content

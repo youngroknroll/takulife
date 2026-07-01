@@ -26,6 +26,6 @@
     </div>
     <button type="submit" class="btn-primary">로그인</button>
   </form>
-  <p><a href="{% url 'accounts:register' %}">계정이 없으신가요? 회원가입</a></p>
+  <p><a href="{% url 'accounts:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">계정이 없으신가요? 회원가입</a></p>
 </main>
 {% endblock %}
