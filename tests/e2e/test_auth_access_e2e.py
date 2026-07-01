@@ -37,24 +37,25 @@ class TestStaffAccessControl:
     def test_regular_user_blocked_from_drafts(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
 
-        page.goto(f"{live_server.url}/event-drafts/")
+        # staff_console_required raises PermissionDenied (403) for an
+        # authenticated non-staff user — it must not bounce back to login.
+        resp = page.goto(f"{live_server.url}/staff/drafts/")
 
-        # staff_member_required bounces a non-staff user to the admin login.
-        expect(page).to_have_url(re.compile(r"/admin/login/.*next=/event-drafts/"))
+        assert resp.status == 403
 
     def test_regular_user_blocked_from_home_categories(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
 
-        page.goto(f"{live_server.url}/staff/home-categories/")
+        resp = page.goto(f"{live_server.url}/staff/home-categories/")
 
-        expect(page).to_have_url(re.compile(r"/admin/login/"))
+        assert resp.status == 403
 
     def test_staff_user_can_open_drafts(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_staff@example.com", seed.password)
 
-        page.goto(f"{live_server.url}/event-drafts/")
+        page.goto(f"{live_server.url}/staff/drafts/")
 
-        expect(page).to_have_url(f"{live_server.url}/event-drafts/")
+        expect(page).to_have_url(f"{live_server.url}/staff/drafts/")
         expect(page.locator("h1")).to_contain_text("드래프트 관리")
 
     def test_staff_user_can_open_home_categories(self, live_server, page, seed, login):

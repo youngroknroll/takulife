@@ -195,6 +195,13 @@ DEFAULT_FROM_EMAIL = _get_env("DEFAULT_FROM_EMAIL", "no-reply@takulife.example")
 # admin review queue with promoted PersonalEntry drafts. Scoped throttle only —
 # applied per-view (PromotePersonalEntryView), so other endpoints are unaffected.
 REST_FRAMEWORK = {
+    # Session auth only — the app is browser/session based. Dropping the DRF
+    # default BasicAuthentication closes a CSRF-bypass hole: Basic-authenticated
+    # requests skip CSRF, which would let a staff credential mutate via forged
+    # cross-site requests. SessionAuthentication enforces CSRF on unsafe methods.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
     "DEFAULT_THROTTLE_RATES": {
         "promotion": "20/day",
     },

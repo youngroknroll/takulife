@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ project_name }} | 스태프 콘솔{% endblock %}
+
+{% block content %}
+  <main class="page">
+    <div class="sub-nav">
+      <nav class="nav-links" aria-label="관리 메뉴">
+        <a class="active" href="/staff/dashboard/">스태프 콘솔</a>
+        <a href="/staff/drafts/">드래프트 관리</a>
+        <a href="/staff/home-categories/">홈 카테고리 설정</a>
+      </nav>
+    </div>
+
+    <section class="hero">
+      <h1>스태프 콘솔</h1>
+      <p>검토 대기 드래프트: {{ pending_count }}건</p>
+    </section>
+  </main>
+{% endblock %}

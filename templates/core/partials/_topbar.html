@@ -17,7 +17,7 @@ Context consumed:
   {% if request.user.is_authenticated %}
     <span class="topbar-username">{{ request.user.email }}</span>
     {% if request.user.is_staff %}
-      <a class="topbar-link" href="/event-drafts/" aria-label="드래프트 관리 페이지">드래프트 관리</a>
+      <a class="topbar-link" href="/staff/drafts/" aria-label="드래프트 관리 페이지">드래프트 관리</a>
     {% endif %}
     {% if request.user.is_superuser %}
       <a class="topbar-link" href="/admin/" aria-label="관리자 페이지">관리자</a>

@@ -12,7 +12,7 @@
       <nav class="nav-links" aria-label="관리 메뉴">
         <a href="/events/">행사 목록</a>
         <a href="/archive/">기록장</a>
-        <a class="active" href="/event-drafts/">드래프트 관리</a>
+        <a class="active" href="/staff/drafts/">드래프트 관리</a>
       </nav>
     </div>
 
@@ -92,7 +92,7 @@
                     </a>
                   </p>
                 </div>
-                <a class="queue-link" href="/event-drafts/{{ row.draft.id }}/">
+                <a class="queue-link" href="/staff/drafts/{{ row.draft.id }}/">
                   {% if row.draft.review_status == "pending" %}검토하기{% else %}상세 보기{% endif %}
                 </a>
               </article>

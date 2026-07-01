@@ -4,7 +4,7 @@ Covers:
 - draft_review_stats() unit test: correct counts, all keys present when some statuses absent
 - GET /api/event-drafts/stats/ endpoint: admin 200 with correct counts, non-staff 403, anon 403
 - Route ordering: stats/ resolves to stats view, not detail view; numeric pk resolves to detail
-- Staff guard: anonymous GET /event-drafts/ and /event-drafts/<id>/ -> 302; staff GET -> 200
+- Staff guard: anonymous GET /staff/drafts/ and /staff/drafts/<id>/ -> 302; staff GET -> 200
 """
 import secrets
 
@@ -159,16 +159,18 @@ class TestRouteOrdering:
 
 @pytest.mark.django_db
 def test_anonymous_access_to_event_drafts_html_redirects(client):
-    response = client.get("/event-drafts/")
+    response = client.get("/staff/drafts/")
 
     assert response.status_code == 302
+    assert response.url.startswith("/accounts/login/")
 
 
 @pytest.mark.django_db
 def test_anonymous_access_to_event_draft_detail_html_redirects(client):
-    response = client.get("/event-drafts/1/")
+    response = client.get("/staff/drafts/1/")
 
     assert response.status_code == 302
+    assert response.url.startswith("/accounts/login/")
 
 
 @pytest.mark.django_db
@@ -178,9 +180,9 @@ def test_non_staff_access_to_event_drafts_html_redirects(client, django_user_mod
     )
     client.force_login(user)
 
-    response = client.get("/event-drafts/")
+    response = client.get("/staff/drafts/")
 
-    assert response.status_code == 302
+    assert response.status_code == 403
 
 
 @pytest.mark.django_db
@@ -190,9 +192,9 @@ def test_non_staff_access_to_event_draft_detail_html_redirects(client, django_us
     )
     client.force_login(user)
 
-    response = client.get("/event-drafts/1/")
+    response = client.get("/staff/drafts/1/")
 
-    assert response.status_code == 302
+    assert response.status_code == 403
 
 
 @pytest.mark.django_db
@@ -202,7 +204,7 @@ def test_staff_user_can_access_event_drafts_html(client, django_user_model):
     )
     client.force_login(staff)
 
-    response = client.get("/event-drafts/")
+    response = client.get("/staff/drafts/")
 
     assert response.status_code == 200
 
@@ -214,6 +216,6 @@ def test_staff_user_can_access_event_draft_detail_html(client, django_user_model
     )
     client.force_login(staff)
 
-    response = client.get("/event-drafts/1/")
+    response = client.get("/staff/drafts/1/")
 
     assert response.status_code == 200
