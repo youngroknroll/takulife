@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}요청이 너무 많습니다 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+  <h1>요청이 너무 많습니다</h1>
+  <p class="auth-error">
+    짧은 시간에 너무 많은 요청이 접수되었습니다. 잠시 후 다시 시도해 주세요.
+  </p>
+  <p><a href="{% url 'account_login' %}">로그인으로 돌아가기</a></p>
+</main>
+{% endblock %}
