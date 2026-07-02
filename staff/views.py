@@ -247,6 +247,10 @@ class StaffDraftRejectView(APIView):
 
         try:
             with transaction.atomic():
+                # Intentional v1 scope: no rejection_reason passed here — the
+                # client (draft.js) posts an empty body and has no reason
+                # input wired up yet. The service supports rejection_reason=
+                # for a future step.
                 draft = reject_draft(draft_id, actor=metadata["actor"])
                 StaffActionLog.objects.create(
                     actor=metadata["actor"],
