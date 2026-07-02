@@ -1,3 +1,19 @@
+/* ── sub-nav (shared staff console chrome) ───────────────────── */
+.sub-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.back-to-site-link {
+  color: var(--muted);
+  font-size: 0.84rem;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 /* ── nav-links (archive + draft topbars) ────────────────────── */
 .nav-links {
   display: flex;

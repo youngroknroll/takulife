@@ -124,6 +124,7 @@ Trade-off
 - 승인된 draft를 published event로 전환
 - 중복 URL 방지
 - 안전하지 않은 URL 차단
+- 운영자용 브루트포스 잠금 대응·배포 체크리스트: [docs/operations-runbook.md](docs/operations-runbook.md)
 
 ### Personal Archive
 

@@ -28,7 +28,7 @@ class TestEventDraftsListView:
             source_url="https://example.com/b", extracted_title="드래프트 B"
         )
 
-        resp = _staff_client(make_user).get("/event-drafts/")
+        resp = _staff_client(make_user).get("/staff/drafts/")
 
         assert resp.status_code == 200
         body = resp.content.decode()
@@ -46,7 +46,7 @@ class TestEventDraftDetailView:
             extracted_region="seoul",
         )
 
-        resp = _staff_client(make_user).get(f"/event-drafts/{draft.id}/")
+        resp = _staff_client(make_user).get(f"/staff/drafts/{draft.id}/")
 
         assert resp.status_code == 200
         assert resp.context["draft"] == draft
@@ -56,7 +56,7 @@ class TestEventDraftDetailView:
         assert resp.context["region_label"] == "서울"
 
     def test_missing_draft_shows_not_found_notice(self, make_user):
-        resp = _staff_client(make_user).get("/event-drafts/999999/")
+        resp = _staff_client(make_user).get("/staff/drafts/999999/")
 
         assert resp.status_code == 200
         assert resp.context["draft_not_found"] is True

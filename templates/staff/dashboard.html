@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 스태프 콘솔{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/staff_console.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page">
+    <div class="sub-nav">
+      <nav class="nav-links" aria-label="관리 메뉴">
+        <a href="/staff/dashboard/"{% if request.resolver_match.url_name == 'dashboard' %} class="active" aria-current="page"{% endif %}>스태프 콘솔</a>
+        <a href="/staff/drafts/"{% if request.resolver_match.url_name == 'draft-list' %} class="active" aria-current="page"{% endif %}>드래프트 관리</a>
+        <a href="/staff/home-categories/"{% if request.resolver_match.url_name == 'home-categories' %} class="active" aria-current="page"{% endif %}>홈 카테고리 설정</a>
+      </nav>
+      <a class="back-to-site-link" href="/">← 사이트로 돌아가기</a>
+    </div>
+
+    <section class="hero">
+      <h1>스태프 콘솔</h1>
+      <p>운영에 필요한 대기 작업과 최근 활동을 한눈에 확인하세요.</p>
+    </section>
+
+    <div class="summary-grid" style="--summary-cols: 3;" aria-label="스태프 콘솔 요약">
+      <article class="summary-card">
+        <p class="summary-label">검토 대기 드래프트</p>
+        <p class="summary-value">{{ pending_count }}건</p>
+      </article>
+      <article class="summary-card">
+        <p class="summary-label">품질 경고</p>
+        <p class="summary-value">{{ quality_warnings.total }}건</p>
+      </article>
+      <article class="summary-card summary-card--pending">
+        <p class="summary-label">최근 처리</p>
+        <p class="summary-value">준비 중</p>
+      </article>
+    </div>
+
+    <section class="layout">
+      <article class="panel">
+        <h2>검토 큐</h2>
+        {% if pending_count > 0 %}
+          <p class="panel-note">검토 대기 중인 드래프트가 {{ pending_count }}건 있습니다.</p>
+        {% else %}
+          <p class="panel-note">검토 대기 중인 드래프트가 없습니다.</p>
+        {% endif %}
+        <a class="queue-link" href="/staff/drafts/">검토 큐로 이동 →</a>
+
+        <hr class="panel-divider">
+
+        <h3>품질 경고</h3>
+        <p class="panel-note">게시(공개) 중인 행사를 대상으로 자동 점검한 결과입니다.</p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">점검 항목</th>
+              <th scope="col">건수</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>공식 URL 없음</td>
+              <td>{{ quality_warnings.missing_official_url }}건</td>
+            </tr>
+            <tr>
+              <td>종료됐지만 게시 중</td>
+              <td>{{ quality_warnings.ended_still_published }}건</td>
+            </tr>
+            <tr>
+              <td>포스터 없음</td>
+              <td>{{ quality_warnings.missing_poster }}건</td>
+            </tr>
+            <tr>
+              <td>날짜 정보 누락</td>
+              <td>{{ quality_warnings.missing_dates }}건</td>
+            </tr>
+            <tr>
+              <td>지역 정보 없음</td>
+              <td>{{ quality_warnings.missing_region }}건</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>최근 처리 내역 <span class="badge-soon">PR-2 예정</span></h3>
+        <p class="notice">최근 처리 내역 기능은 아직 준비 중입니다. 승인·반려 이력이 추가되면 여기에 표시됩니다.</p>
+      </article>
+
+      <aside class="side-stack" aria-label="스태프 콘솔 바로가기">
+        <section class="panel">
+          <h2>바로가기</h2>
+          <ul class="side-list">
+            <li><a href="/staff/home-categories/">홈 카테고리 설정</a></li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>안내</h2>
+          <p class="panel-note">이 콘솔은 단계적으로 확장됩니다. 품질 경고와 최근 처리 내역은 다음 단계에서 추가될 예정입니다.</p>
+        </section>
+      </aside>
+    </section>
+  </main>
+{% endblock %}

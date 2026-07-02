@@ -1,0 +1,56 @@
+/* ── .btn — canonical generic button component ──────────────────
+ * Base = skeleton only (layout, sizing, radius, transition). No color.
+ * Skins (.btn-primary / .btn-secondary) own all color/border.
+ * Size/width modifiers (.btn-sm / .btn-block) override padding/font only.
+ * Focus outline is inherited from the global a:focus/button:focus rule
+ * in base.css — do not redeclare it here.
+ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.6875rem 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, filter 0.15s ease;
+}
+
+.btn-primary {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn-secondary {
+  border-color: var(--line);
+  background: var(--surface);
+  color: #334862;
+  font-weight: 400;
+}
+
+.btn-secondary:hover {
+  background: var(--brand-soft);
+  border-color: #b9ccf8;
+}
+
+.btn-sm {
+  padding: 0.5rem 0.625rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.btn-block {
+  width: 100%;
+}

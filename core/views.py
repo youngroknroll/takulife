@@ -1,7 +1,6 @@
 from urllib.parse import urlencode
 
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count
@@ -54,6 +53,7 @@ from events.queries import (
     list_published_events,
     parse_public_listing_params,
 )
+from staff.permissions import staff_console_required
 
 
 def _archive_query(request) -> str:
@@ -719,7 +719,7 @@ def _build_draft_rows(drafts):
     return rows
 
 
-@staff_member_required
+@staff_console_required
 @ensure_csrf_cookie
 def event_drafts(request):
     drafts = EventDraft.objects.order_by("-id")
@@ -735,7 +735,7 @@ def event_drafts(request):
     )
 
 
-@staff_member_required
+@staff_console_required
 @ensure_csrf_cookie
 def event_draft_detail(request, draft_id):
     # Use filter().first() so the staff guard test (which does not seed the DB)
@@ -773,7 +773,7 @@ def event_draft_detail(request, draft_id):
     )
 
 
-@staff_member_required
+@staff_console_required
 @ensure_csrf_cookie
 def staff_home_categories(request):
     """Staff page: select and order the home page category tiles.
@@ -798,7 +798,7 @@ def staff_home_categories(request):
         config.save()
 
         messages.success(request, "카테고리 설정이 저장되었습니다.")
-        return redirect("staff-home-categories")
+        return redirect("staff:home-categories")
 
     # GET: build form rows — one per vocab category, with current state
     featured_set = set(config.featured_categories)

@@ -14,23 +14,6 @@
   font-size: 1.4rem;
 }
 
-.btn-primary {
-  width: 100%;
-  margin-top: 0.25rem;
-  padding: 0.6875rem 0.75rem;
-  border: none;
-  border-radius: 8px;
-  background: var(--brand);
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  filter: brightness(1.05);
-}
-
 .auth-error {
   margin: 0 0 0.875rem;
   padding: 0.625rem 0.75rem;

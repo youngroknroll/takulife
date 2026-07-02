@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from core import views as core_views
 from core.promotion_views import PromotePersonalEntryView
@@ -34,13 +35,22 @@ urlpatterns = [
         name="archive-personal-entries-page",
     ),
     path("archive/interests/", core_views.archive_interests, name="archive-interests"),
-    path("event-drafts/", core_views.event_drafts, name="event-drafts-page"),
-    path("staff/home-categories/", core_views.staff_home_categories, name="staff-home-categories"),
+    # Old draft-review URLs, relocated under the Staff Console (/staff/drafts/…).
+    # Non-permanent 302s (browsers/bookmarks may still hold the old links) that
+    # preserve any ?next= query string.
+    path(
+        "event-drafts/",
+        RedirectView.as_view(url="/staff/drafts/", query_string=True, permanent=False),
+        name="event-drafts-page",
+    ),
     path(
         "event-drafts/<int:draft_id>/",
-        core_views.event_draft_detail,
+        RedirectView.as_view(
+            url="/staff/drafts/%(draft_id)s/", query_string=True, permanent=False
+        ),
         name="event-draft-detail-page",
     ),
+    path("staff/", include("staff.urls")),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("api/", include("core.urls")),

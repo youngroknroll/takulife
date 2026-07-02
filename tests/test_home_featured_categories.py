@@ -140,7 +140,7 @@ class TestStaffHomeCategoriesAuth:
 
         resp = client.get("/staff/home-categories/")
 
-        assert resp.status_code == 302
+        assert resp.status_code == 403
 
     def test_staff_user_gets_200(self, make_user):
         staff = make_user(is_staff=True)

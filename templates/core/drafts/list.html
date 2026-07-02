@@ -10,10 +10,11 @@
   <main class="page">
     <div class="sub-nav">
       <nav class="nav-links" aria-label="관리 메뉴">
-        <a href="/events/">행사 목록</a>
-        <a href="/archive/">기록장</a>
-        <a class="active" href="/event-drafts/">드래프트 관리</a>
+        <a href="/staff/dashboard/"{% if request.resolver_match.url_name == 'dashboard' %} class="active" aria-current="page"{% endif %}>스태프 콘솔</a>
+        <a href="/staff/drafts/"{% if request.resolver_match.url_name == 'draft-list' %} class="active" aria-current="page"{% endif %}>드래프트 관리</a>
+        <a href="/staff/home-categories/"{% if request.resolver_match.url_name == 'home-categories' %} class="active" aria-current="page"{% endif %}>홈 카테고리 설정</a>
       </nav>
+      <a class="back-to-site-link" href="/">← 사이트로 돌아가기</a>
     </div>
 
     <section class="hero">
@@ -92,7 +93,7 @@
                     </a>
                   </p>
                 </div>
-                <a class="queue-link" href="/event-drafts/{{ row.draft.id }}/">
+                <a class="queue-link" href="/staff/drafts/{{ row.draft.id }}/">
                   {% if row.draft.review_status == "pending" %}검토하기{% else %}상세 보기{% endif %}
                 </a>
               </article>

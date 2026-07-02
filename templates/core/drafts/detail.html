@@ -10,15 +10,15 @@
   <main class="page">
     <div class="sub-nav">
       <nav class="nav-links" aria-label="관리 메뉴">
-        <a href="/event-drafts/">드래프트 관리</a>
+        <a href="/staff/drafts/">드래프트 관리</a>
         <a href="/events/">행사 목록</a>
         <a href="/archive/">기록장</a>
       </nav>
-      <a class="top-action" href="/event-drafts/">목록으로</a>
+      <a class="top-action" href="/staff/drafts/">목록으로</a>
     </div>
 
     {% if draft_not_found %}
-      <p class="notice" role="alert">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="/event-drafts/">목록으로 돌아가기</a></p>
+      <p class="notice" role="alert">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="/staff/drafts/">목록으로 돌아가기</a></p>
     {% else %}
 
     <section class="hero">
