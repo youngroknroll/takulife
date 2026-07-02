@@ -24,7 +24,15 @@ def load_secret_key():
     return _get_env("SECRET_KEY") or "django-insecure-local-dev-key-change-me"
 
 
+def load_anthropic_api_key():
+    return _get_env("ANTHROPIC_API_KEY")
+
+
 SECRET_KEY = load_secret_key()
+ANTHROPIC_API_KEY = load_anthropic_api_key()
+LLM_MODEL = "claude-haiku-4-5-20251001"
+LLM_TIMEOUT_SECONDS = 10
+LLM_MAX_TOKENS = 1024
 DEBUG = True
 ALLOWED_HOSTS = []
 

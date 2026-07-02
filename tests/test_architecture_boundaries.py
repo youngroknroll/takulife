@@ -107,14 +107,26 @@ def test_core_field_error_response_returns_field_payload():
     assert response.data == {"official_url": ["Duplicate"]}
 
 
-@pytest.mark.parametrize("module_path", ["core/errors.py"])
+@pytest.mark.parametrize(
+    "module_path",
+    [
+        "core/errors.py",
+        "core/llm/config.py",
+        "core/llm/client.py",
+        "core/llm/exceptions.py",
+        "core/llm/__init__.py",
+    ],
+)
 def test_core_errors_do_not_import_domain_modules(module_path):
     imported_modules = _imported_modules(module_path)
+
+    forbidden_prefixes = ("drafts.", "events.", "archive.", "staff.", "accounts.")
+    forbidden_names = {"drafts", "events", "archive", "staff", "accounts"}
 
     assert not {
         module
         for module in imported_modules
-        if module in {"drafts", "events"} or module.startswith(("drafts.", "events."))
+        if module in forbidden_names or module.startswith(forbidden_prefixes)
     }
 
 
