@@ -85,6 +85,7 @@ def event_drafts(request):
         selected_status = ""
 
     stats = draft_review_stats()
+    stats_total = stats["pending"] + stats["approved"] + stats["rejected"]
     drafts = list_drafts(selected_status)
     paginator = Paginator(drafts, DRAFT_LISTING_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -98,6 +99,7 @@ def event_drafts(request):
         {
             "draft_rows": draft_rows,
             "stats": stats,
+            "stats_total": stats_total,
             "page_obj": page_obj,
             "selected_status": selected_status,
             "pager_query": pager_query,

@@ -70,7 +70,7 @@
         </div>
 
         <div class="chips" role="group" aria-label="상태 필터">
-          <a class="chip{% if not selected_status %} active{% endif %}" href="/staff/drafts/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체 {{ stats.pending|add:stats.approved|add:stats.rejected }}</a>
+          <a class="chip{% if not selected_status %} active{% endif %}" href="/staff/drafts/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체 {{ stats_total }}</a>
           <a class="chip{% if selected_status == "pending" %} active{% endif %}" href="/staff/drafts/?status=pending" aria-label="검토 대기 필터"{% if selected_status == "pending" %} aria-current="true"{% endif %}>검토 대기 {{ stats.pending }}</a>
           <a class="chip{% if selected_status == "approved" %} active{% endif %}" href="/staff/drafts/?status=approved" aria-label="승인됨 필터"{% if selected_status == "approved" %} aria-current="true"{% endif %}>승인됨 {{ stats.approved }}</a>
           <a class="chip{% if selected_status == "rejected" %} active{% endif %}" href="/staff/drafts/?status=rejected" aria-label="반려됨 필터"{% if selected_status == "rejected" %} aria-current="true"{% endif %}>반려됨 {{ stats.rejected }}</a>
@@ -107,7 +107,7 @@
             {% endfor %}
           </div>
           {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
-        {% elif selected_status and stats.pending|add:stats.approved|add:stats.rejected %}
+        {% elif selected_status and stats_total %}
           <p class="notice">해당 상태의 드래프트가 없습니다. <a href="/staff/drafts/">전체 보기</a></p>
         {% else %}
           <p class="notice">등록된 드래프트가 없습니다. URL을 입력해 첫 드래프트를 생성해 보세요.</p>
