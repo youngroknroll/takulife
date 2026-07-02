@@ -36,6 +36,15 @@
       <p class="notice" role="status">
         이 드래프트는 <strong>{{ draft.review_status }}</strong> 상태입니다. 수정, 승인, 반려는 pending 상태에서만 가능합니다.
       </p>
+      <p class="meta">
+        검토자: {{ draft.reviewed_by.email|default:"-" }}
+        {% if draft.review_status == "approved" %}
+          · 승인 시각: {{ draft.approved_at|date:"Y.m.d H:i" }}
+        {% elif draft.review_status == "rejected" %}
+          · 반려 시각: {{ draft.rejected_at|date:"Y.m.d H:i" }}
+          · 반려 사유: {{ draft.rejection_reason|default:"(사유 없음)" }}
+        {% endif %}
+      </p>
     {% endif %}
 
     <section class="layout">
