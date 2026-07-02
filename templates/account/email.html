@@ -26,9 +26,9 @@
           </div>
         {% endwith %}
       {% endfor %}
-      <button type="submit" class="btn-primary" name="action_primary">기본으로 설정</button>
-      <button type="submit" class="btn-primary" name="action_send">인증 메일 재발송</button>
-      <button type="submit" class="btn-primary" name="action_remove">삭제</button>
+      <button type="submit" class="btn btn-primary btn-block" name="action_primary">기본으로 설정</button>
+      <button type="submit" class="btn btn-primary btn-block" name="action_send">인증 메일 재발송</button>
+      <button type="submit" class="btn btn-primary btn-block" name="action_remove">삭제</button>
     </form>
   {% else %}
     <p>등록된 이메일 주소가 없습니다.</p>
@@ -42,7 +42,7 @@
         <label for="id_email">이메일</label>
         {{ form.email }}
       </div>
-      <button type="submit" class="btn-primary" name="action_add">이메일 추가</button>
+      <button type="submit" class="btn btn-primary btn-block" name="action_add">이메일 추가</button>
     </form>
   {% endif %}
 </main>

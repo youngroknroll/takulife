@@ -105,21 +105,6 @@
     display: flex;
     gap: 0.5rem;
   }
-  .btn {
-    border: 1px solid var(--line);
-    background: #fff;
-    color: #334862;
-    border-radius: 8px;
-    padding: 0.5rem 0.625rem;
-    font-size: 0.82rem;
-    cursor: pointer;
-  }
-  .btn.primary {
-    background: var(--brand);
-    border-color: var(--brand);
-    color: #fff;
-    font-weight: 600;
-  }
   .results {
     padding: 0.75rem;
   }

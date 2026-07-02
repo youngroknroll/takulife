@@ -17,7 +17,7 @@
       <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
         {% csrf_token %}
         {{ redirect_field }}
-        <button type="submit" class="btn-primary">확인</button>
+        <button type="submit" class="btn btn-primary btn-block">확인</button>
       </form>
     {% else %}
       <p class="auth-error">이 이메일은 이미 다른 계정에서 확인되었습니다.</p>
