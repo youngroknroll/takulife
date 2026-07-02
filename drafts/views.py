@@ -16,14 +16,8 @@ from .services import (
     DraftCreationResponseTooLargeError,
     DraftCreationUnsupportedContentError,
     DraftCreationUnsafeUrlError,
-    DraftNotFoundError,
-    DraftPublicationDuplicateError,
-    DraftPublicationMissingOfficialUrlError,
-    DraftPublicationError,
     DraftStateError,
-    approve_draft,
     create_draft_from_url,
-    reject_draft,
     update_draft,
 )
 
@@ -91,38 +85,3 @@ class AdminEventDraftDetailView(RetrieveUpdateAPIView):
             return error_response("Only pending drafts can be updated.", 400)
 
         return Response(EventDraftSerializer(updated_draft).data, status=status.HTTP_200_OK)
-
-
-class AdminEventDraftApproveView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def post(self, request, pk):
-        try:
-            result = approve_draft(pk, actor=request.user)
-        except DraftNotFoundError:
-            return error_response("Not found.", 404)
-        except DraftStateError:
-            return error_response("Only pending drafts can be approved.", 400)
-        except DraftPublicationDuplicateError:
-            return field_error_response("official_url", "Event with this official URL already exists.")
-        except DraftPublicationMissingOfficialUrlError:
-            return field_error_response("official_url", "Official URL is required for publication.")
-        except DraftPublicationError:
-            return error_response("Event publication failed.", 503)
-
-        data = {**EventDraftSerializer(result.draft).data, "event_id": result.event_id}
-        return Response(data, status=status.HTTP_200_OK)
-
-
-class AdminEventDraftRejectView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def post(self, request, pk):
-        try:
-            draft = reject_draft(pk, actor=request.user)
-        except DraftNotFoundError:
-            return error_response("Not found.", 404)
-        except DraftStateError:
-            return error_response("Only pending drafts can be rejected.", 400)
-
-        return Response(EventDraftSerializer(draft).data, status=status.HTTP_200_OK)

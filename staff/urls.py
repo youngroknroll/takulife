@@ -7,8 +7,6 @@ in config/urls.py — every `/staff/...` route must live here, or it will
 from django.urls import path
 from django.views.generic import RedirectView
 
-from core import views as core_views
-
 from . import views as staff_views
 
 app_name = "staff"
@@ -16,7 +14,17 @@ app_name = "staff"
 urlpatterns = [
     path("", RedirectView.as_view(pattern_name="staff:dashboard"), name="root"),
     path("dashboard/", staff_views.dashboard, name="dashboard"),
-    path("drafts/", core_views.event_drafts, name="draft-list"),
-    path("drafts/<int:draft_id>/", core_views.event_draft_detail, name="draft-detail"),
-    path("home-categories/", core_views.staff_home_categories, name="home-categories"),
+    path("drafts/", staff_views.event_drafts, name="draft-list"),
+    path("drafts/<int:draft_id>/", staff_views.event_draft_detail, name="draft-detail"),
+    path(
+        "drafts/<int:draft_id>/approve/",
+        staff_views.StaffDraftApproveView.as_view(),
+        name="draft-approve",
+    ),
+    path(
+        "drafts/<int:draft_id>/reject/",
+        staff_views.StaffDraftRejectView.as_view(),
+        name="draft-reject",
+    ),
+    path("home-categories/", staff_views.staff_home_categories, name="home-categories"),
 ]

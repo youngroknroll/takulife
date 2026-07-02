@@ -158,3 +158,29 @@ def test_active_urlconf_resolves_user_event_status_routes(path):
     match = resolve(path)
 
     assert match.url_name in {"user-event-status-list-create", "user-event-status-detail"}
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/event-drafts/1/approve/",
+        "/api/event-drafts/1/reject/",
+    ],
+)
+def test_old_draft_action_routes_do_not_resolve(path):
+    """PR-2 sub-step D moved approve/reject to /staff/drafts/<id>/… with no
+    redirect — the old drafts API paths must not resolve at all."""
+    with pytest.raises(Resolver404):
+        resolve(path)
+
+
+def test_core_views_no_longer_imports_staff_permissions():
+    """PR-2 sub-step D moved the 3 draft/home-category SSR views into
+    staff.views — core.views must no longer depend on staff at all."""
+    imported_modules = _imported_modules("core/views.py")
+
+    assert not {
+        module
+        for module in imported_modules
+        if module == "staff" or module.startswith("staff.")
+    }

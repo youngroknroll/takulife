@@ -1,10 +1,9 @@
 from urllib.parse import urlencode
 
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view
@@ -44,8 +43,6 @@ from core.vocab import (
     REGION,
     REGION_LABELS,
 )
-from drafts.models import EventDraft
-from drafts.queries import draft_review_stats
 from events.models import Event
 from events.presenters import derive_event_display, is_recently_added
 from events.queries import (
@@ -53,7 +50,6 @@ from events.queries import (
     list_published_events,
     parse_public_listing_params,
 )
-from staff.permissions import staff_console_required
 
 
 def _archive_query(request) -> str:
@@ -693,133 +689,6 @@ def archive_interests(request):
             "interest_count": interest_count,
             "has_interests": len(interest_rows) > 0,
             "INTEREST_LABEL": INTEREST_LABEL,
-        },
-    )
-
-
-def _build_draft_rows(drafts):
-    """Attach display labels to each draft for template rendering.
-
-    Returns a list of dicts with the draft object plus resolved
-    category_label and region_label so templates use simple dot notation.
-    """
-    rows = []
-    for draft in drafts:
-        rows.append(
-            {
-                "draft": draft,
-                "category_label": CATEGORY_LABELS.get(
-                    draft.extracted_category, draft.extracted_category
-                ),
-                "region_label": REGION_LABELS.get(
-                    draft.extracted_region, draft.extracted_region
-                ),
-            }
-        )
-    return rows
-
-
-@staff_console_required
-@ensure_csrf_cookie
-def event_drafts(request):
-    drafts = EventDraft.objects.order_by("-id")
-    stats = draft_review_stats()
-    draft_rows = _build_draft_rows(drafts)
-    return render(
-        request,
-        "core/drafts/list.html",
-        {
-                "draft_rows": draft_rows,
-            "stats": stats,
-        },
-    )
-
-
-@staff_console_required
-@ensure_csrf_cookie
-def event_draft_detail(request, draft_id):
-    # Use filter().first() so the staff guard test (which does not seed the DB)
-    # still returns 200 (staff can reach the URL). When draft is None the
-    # template shows a "not found" notice rather than raising Http404.
-    draft = EventDraft.objects.filter(pk=draft_id).first()
-    if draft is None:
-        return render(
-            request,
-            "core/drafts/detail.html",
-            {
-                        "draft": None,
-                "draft_not_found": True,
-                "draft_id": draft_id,
-                "CATEGORY": CATEGORY,
-                "REGION": REGION,
-            },
-        )
-    is_pending = draft.review_status == EventDraft.ReviewStatus.PENDING
-    category_label = CATEGORY_LABELS.get(
-        draft.extracted_category, draft.extracted_category
-    )
-    region_label = REGION_LABELS.get(draft.extracted_region, draft.extracted_region)
-    return render(
-        request,
-        "core/drafts/detail.html",
-        {
-                "draft": draft,
-            "is_pending": is_pending,
-            "category_label": category_label,
-            "region_label": region_label,
-            "CATEGORY": CATEGORY,
-            "REGION": REGION,
-        },
-    )
-
-
-@staff_console_required
-@ensure_csrf_cookie
-def staff_home_categories(request):
-    """Staff page: select and order the home page category tiles.
-
-    GET  — render a form with current HomeConfig state.
-    POST — parse checked/order fields, validate against vocab, save, redirect (PRG).
-    """
-    config = HomeConfig.get_solo()
-
-    if request.method == "POST":
-        checked = []
-        for slug, _ in CATEGORY:
-            if request.POST.get(f"feature_{slug}") == "on":
-                try:
-                    order = int(request.POST.get(f"order_{slug}", "0"))
-                except (ValueError, TypeError):
-                    order = 9999  # Safe fallback: append to end
-                checked.append((slug, order))
-
-        checked.sort(key=lambda pair: pair[1])
-        config.featured_categories = [slug for slug, _ in checked]
-        config.save()
-
-        messages.success(request, "카테고리 설정이 저장되었습니다.")
-        return redirect("staff:home-categories")
-
-    # GET: build form rows — one per vocab category, with current state
-    featured_set = set(config.featured_categories)
-    featured_order = {slug: idx + 1 for idx, slug in enumerate(config.featured_categories)}
-
-    category_rows = [
-        {
-            "slug": slug,
-            "label": label,
-            "checked": slug in featured_set,
-            "order": featured_order.get(slug, vocab_idx + 1),
-        }
-        for vocab_idx, (slug, label) in enumerate(CATEGORY)
-    ]
-
-    return render(
-        request,
-        "core/staff/home_categories.html",
-        {
-            "category_rows": category_rows,
-            "config": config,
         },
     )
 
