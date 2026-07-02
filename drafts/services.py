@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from events.services import (
     DuplicateOfficialUrlError,
@@ -163,11 +164,6 @@ def _get_pending_draft_for_update(draft_id):
     return draft
 
 
-def _set_review_status(draft, review_status):
-    draft.review_status = review_status
-    draft.save(update_fields=["review_status", "updated_at"])
-
-
 def update_draft(draft_id, updates):
     mutable_fields = {
         "source_name",
@@ -194,7 +190,7 @@ def update_draft(draft_id, updates):
         return draft
 
 
-def approve_draft(draft_id):
+def approve_draft(draft_id, *, actor):
     with transaction.atomic():
         draft = _get_pending_draft_for_update(draft_id)
 
@@ -218,12 +214,27 @@ def approve_draft(draft_id):
         except PublishEventError as exc:
             raise DraftPublicationError from exc
 
-        _set_review_status(draft, EventDraft.ReviewStatus.APPROVED)
+        draft.review_status = EventDraft.ReviewStatus.APPROVED
+        draft.reviewed_by = actor
+        draft.approved_at = timezone.now()
+        draft.save(update_fields=["review_status", "reviewed_by", "approved_at", "updated_at"])
         return DraftApprovalResult(draft=draft, event_id=event.id)
 
 
-def reject_draft(draft_id):
+def reject_draft(draft_id, *, actor, rejection_reason=""):
     with transaction.atomic():
         draft = _get_pending_draft_for_update(draft_id)
-        _set_review_status(draft, EventDraft.ReviewStatus.REJECTED)
+        draft.review_status = EventDraft.ReviewStatus.REJECTED
+        draft.reviewed_by = actor
+        draft.rejected_at = timezone.now()
+        draft.rejection_reason = rejection_reason
+        draft.save(
+            update_fields=[
+                "review_status",
+                "reviewed_by",
+                "rejected_at",
+                "rejection_reason",
+                "updated_at",
+            ]
+        )
         return draft

@@ -23,8 +23,20 @@ class EventDraftSerializer(serializers.ModelSerializer):
             "review_status",
             "created_at",
             "updated_at",
+            "reviewed_by",
+            "approved_at",
+            "rejected_at",
+            "rejection_reason",
         ]
-        read_only_fields = ["review_status", "created_at", "updated_at"]
+        read_only_fields = [
+            "review_status",
+            "created_at",
+            "updated_at",
+            "reviewed_by",
+            "approved_at",
+            "rejected_at",
+            "rejection_reason",
+        ]
 
     def validate_source_url(self, value):
         if not value.startswith(("http://", "https://")):
@@ -44,6 +56,10 @@ class EventDraftUpdateSerializer(EventDraftSerializer):
             "review_status",
             "created_at",
             "updated_at",
+            "reviewed_by",
+            "approved_at",
+            "rejected_at",
+            "rejection_reason",
         ]
 
     def validate(self, attrs):

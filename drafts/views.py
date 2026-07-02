@@ -98,7 +98,7 @@ class AdminEventDraftApproveView(APIView):
 
     def post(self, request, pk):
         try:
-            result = approve_draft(pk)
+            result = approve_draft(pk, actor=request.user)
         except DraftNotFoundError:
             return error_response("Not found.", 404)
         except DraftStateError:
@@ -119,7 +119,7 @@ class AdminEventDraftRejectView(APIView):
 
     def post(self, request, pk):
         try:
-            draft = reject_draft(pk)
+            draft = reject_draft(pk, actor=request.user)
         except DraftNotFoundError:
             return error_response("Not found.", 404)
         except DraftStateError:

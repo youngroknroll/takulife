@@ -1,6 +1,7 @@
 import pytest
 import httpx
 from django.db import IntegrityError
+from django.utils import timezone
 
 from drafts.fetching import MAX_RESPONSE_BYTES, ResponseTooLargeError, fetch_html
 from drafts.models import EventDraft
@@ -20,7 +21,8 @@ from events.models import Event
 
 
 @pytest.mark.django_db
-def test_approve_draft_creates_published_event_and_marks_draft_approved():
+def test_approve_draft_creates_published_event_and_marks_draft_approved(make_user):
+    actor = make_user()
     draft = EventDraft.objects.create(
         source_url="https://example.com/event",
         source_name="Official",
@@ -29,7 +31,8 @@ def test_approve_draft_creates_published_event_and_marks_draft_approved():
         extracted_region="seoul",
     )
 
-    result = approve_draft(draft.id)
+    before = timezone.now()
+    result = approve_draft(draft.id, actor=actor)
 
     draft.refresh_from_db()
     event = Event.objects.get(id=result.event_id)
@@ -39,21 +42,57 @@ def test_approve_draft_creates_published_event_and_marks_draft_approved():
     assert event.official_url == "https://example.com/event"
     assert event.title == "Popup event"
     assert event.category == "popup_store"
+    assert draft.reviewed_by_id == actor.id
+    assert draft.approved_at is not None
+    assert draft.approved_at >= before
 
 
 @pytest.mark.django_db
-def test_reject_draft_marks_draft_rejected_without_creating_event():
+def test_reject_draft_marks_draft_rejected_without_creating_event(make_user):
+    actor = make_user()
     draft = EventDraft.objects.create(
         source_url="https://example.com/rejected-event",
         extracted_title="Rejected event",
     )
 
-    result = reject_draft(draft.id)
+    before = timezone.now()
+    result = reject_draft(draft.id, actor=actor)
 
     draft.refresh_from_db()
     assert result.id == draft.id
     assert draft.review_status == EventDraft.ReviewStatus.REJECTED
     assert not Event.objects.filter(official_url="https://example.com/rejected-event").exists()
+    assert draft.reviewed_by_id == actor.id
+    assert draft.rejected_at is not None
+    assert draft.rejected_at >= before
+    assert draft.rejection_reason == ""
+
+
+@pytest.mark.django_db
+def test_reject_draft_records_rejection_reason(make_user):
+    actor = make_user()
+    draft = EventDraft.objects.create(source_url="https://example.com/rejected-with-reason")
+
+    reject_draft(draft.id, actor=actor, rejection_reason="duplicate listing")
+
+    draft.refresh_from_db()
+    assert draft.rejection_reason == "duplicate listing"
+
+
+@pytest.mark.django_db
+def test_approve_draft_attribution_survives_approve_then_publish(make_user):
+    actor = make_user()
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/attributed-event",
+        extracted_title="Attributed event",
+    )
+
+    result = approve_draft(draft.id, actor=actor)
+
+    draft.refresh_from_db()
+    assert Event.objects.filter(id=result.event_id, publish_status=Event.PublishStatus.PUBLISHED).exists()
+    assert draft.reviewed_by_id == actor.id
+    assert draft.approved_at is not None
 
 
 @pytest.mark.django_db
