@@ -106,6 +106,41 @@ def test_call_tool_uses_configured_model():
     assert calls[0]["model"] == settings.LLM_MODEL
 
 
+def test_call_tool_uses_explicit_model_override_when_given():
+    from core.llm.client import call_tool
+
+    fake_client, calls = _fake_client(_tool_use_response({"is_event": True}))
+
+    call_tool(
+        system_prompt="system",
+        user_content="user",
+        tool_name="extract",
+        tool_schema=TOOL_SCHEMA,
+        model="claude-sonnet-x",
+        client=fake_client,
+    )
+
+    assert calls[0]["model"] == "claude-sonnet-x"
+
+
+@override_settings(LLM_MODEL="claude-haiku-4-5-20251001")
+def test_call_tool_falls_back_to_settings_model_when_model_not_given():
+    from core.llm.client import call_tool
+    from django.conf import settings
+
+    fake_client, calls = _fake_client(_tool_use_response({"is_event": True}))
+
+    call_tool(
+        system_prompt="system",
+        user_content="user",
+        tool_name="extract",
+        tool_schema=TOOL_SCHEMA,
+        client=fake_client,
+    )
+
+    assert calls[0]["model"] == settings.LLM_MODEL
+
+
 def test_call_tool_uses_configured_max_tokens():
     from core.llm.client import call_tool
     from django.conf import settings

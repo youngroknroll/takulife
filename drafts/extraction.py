@@ -46,6 +46,25 @@ def _detect_region(text):
     return ""
 
 
+def extract_event_fields_heuristic(raw_title, raw_text):
+    candidates = _parse_date_candidates(raw_text)
+    extracted_start_date = candidates[0] if candidates else None
+    extracted_end_date = candidates[1] if len(candidates) > 1 else None
+
+    return {
+        "raw_title": raw_title,
+        "raw_text": raw_text,
+        "extracted_title": raw_title,
+        "extracted_summary": raw_text[:500],
+        "extracted_category": _detect_category(f"{raw_title} {raw_text}"),
+        "extracted_region": _detect_region(f"{raw_title} {raw_text}"),
+        "extracted_start_date": extracted_start_date,
+        "extracted_end_date": extracted_end_date,
+        "extracted_work_title": "",
+        "extracted_location_name": "",
+    }
+
+
 def extract_event_fields(html):
     soup = BeautifulSoup(html, "html.parser")
 
@@ -65,19 +84,4 @@ def extract_event_fields(html):
     if not raw_title and not raw_text:
         raise EmptyExtractionError
 
-    candidates = _parse_date_candidates(raw_text)
-    extracted_start_date = candidates[0] if candidates else None
-    extracted_end_date = candidates[1] if len(candidates) > 1 else None
-
-    return {
-        "raw_title": raw_title,
-        "raw_text": raw_text,
-        "extracted_title": raw_title,
-        "extracted_summary": raw_text[:500],
-        "extracted_category": _detect_category(f"{raw_title} {raw_text}"),
-        "extracted_region": _detect_region(f"{raw_title} {raw_text}"),
-        "extracted_start_date": extracted_start_date,
-        "extracted_end_date": extracted_end_date,
-        "extracted_work_title": "",
-        "extracted_location_name": "",
-    }
+    return extract_event_fields_heuristic(raw_title, raw_text)

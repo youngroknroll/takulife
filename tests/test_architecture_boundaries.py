@@ -35,6 +35,7 @@ def test_draft_views_do_not_import_events_modules():
         "events/services.py",
         "drafts/views.py",
         "drafts/services.py",
+        "drafts/llm_extraction.py",
     ],
 )
 def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
@@ -70,6 +71,7 @@ def test_archive_modules_do_not_import_drafts_modules(module_path):
         "drafts/views.py",
         "drafts/services.py",
         "drafts/serializers.py",
+        "drafts/llm_extraction.py",
         "archive/models.py",
         "archive/serializers.py",
         "archive/services.py",

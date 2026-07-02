@@ -33,6 +33,11 @@ ANTHROPIC_API_KEY = load_anthropic_api_key()
 LLM_MODEL = "claude-haiku-4-5-20251001"
 LLM_TIMEOUT_SECONDS = 10
 LLM_MAX_TOKENS = 1024
+# Escalation tier when heuristic/LLM field confidence is low (drafts/llm_extraction.py).
+LLM_ESCALATION_MODEL = "claude-sonnet-5"
+LLM_ESCALATION_CONFIDENCE_THRESHOLD = 0.6
+# Wiring flag (PR-C connects create_draft_from_url to extract_event_fields_llm).
+DRAFT_LLM_EXTRACTION_ENABLED = False
 DEBUG = True
 ALLOWED_HOSTS = []
 

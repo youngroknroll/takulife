@@ -72,6 +72,21 @@ def test_admin_can_retrieve_event_draft(admin_client):
 
 
 @pytest.mark.django_db
+def test_admin_retrieve_event_draft_includes_extraction_method_and_confidence(admin_client):
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/event",
+        extraction_method=EventDraft.ExtractionMethod.LLM,
+        confidence=0.87,
+    )
+
+    response = admin_client.get(event_draft_detail_url(draft.id))
+
+    response_data = response.json()
+    assert response_data["extraction_method"] == "llm"
+    assert response_data["confidence"] == pytest.approx(0.87)
+
+
+@pytest.mark.django_db
 def test_admin_can_patch_pending_event_draft(admin_client):
     draft = EventDraft.objects.create(source_url="https://example.com/event")
 
@@ -176,6 +191,26 @@ def test_admin_cannot_patch_review_status(admin_client):
     assert draft.review_status == EventDraft.ReviewStatus.PENDING
     assert draft.extracted_title == "Original title"
     assert not Event.objects.filter(official_url="https://example.com/event").exists()
+
+
+@pytest.mark.django_db
+def test_admin_cannot_patch_extraction_method_or_confidence(admin_client):
+    draft = EventDraft.objects.create(source_url="https://example.com/event")
+
+    response = admin_client.patch(
+        event_draft_detail_url(draft.id),
+        {"extraction_method": "llm", "confidence": 0.9},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "extraction_method": ["This field cannot be updated."],
+        "confidence": ["This field cannot be updated."],
+    }
+    draft.refresh_from_db()
+    assert draft.extraction_method == EventDraft.ExtractionMethod.HEURISTIC
+    assert draft.confidence is None
 
 
 @pytest.mark.django_db
