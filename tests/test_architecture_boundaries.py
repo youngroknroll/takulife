@@ -107,7 +107,10 @@ def test_core_field_error_response_returns_field_payload():
     assert response.data == {"official_url": ["Duplicate"]}
 
 
-@pytest.mark.parametrize("module_path", ["core/errors.py"])
+@pytest.mark.parametrize(
+    "module_path",
+    ["core/errors.py", "core/llm/config.py", "core/llm/client.py", "core/llm/exceptions.py"],
+)
 def test_core_errors_do_not_import_domain_modules(module_path):
     imported_modules = _imported_modules(module_path)
 
