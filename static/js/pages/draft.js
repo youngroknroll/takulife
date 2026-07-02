@@ -212,7 +212,7 @@
       window.TakuAPI.setLoading(btn, true);
 
       window.TakuAPI.post(
-        "/api/event-drafts/" + draftId + "/approve/",
+        "/staff/drafts/" + draftId + "/approve/",
         {}
       ).then(function (result) {
         window.TakuAPI.setLoading(btn, false);
@@ -261,7 +261,7 @@
       window.TakuAPI.setLoading(btn, true);
 
       window.TakuAPI.post(
-        "/api/event-drafts/" + draftId + "/reject/",
+        "/staff/drafts/" + draftId + "/reject/",
         {}
       ).then(function (result) {
         window.TakuAPI.setLoading(btn, false);

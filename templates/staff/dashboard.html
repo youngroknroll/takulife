@@ -31,9 +31,9 @@
         <p class="summary-label">품질 경고</p>
         <p class="summary-value">{{ quality_warnings.total }}건</p>
       </article>
-      <article class="summary-card summary-card--pending">
+      <article class="summary-card">
         <p class="summary-label">최근 처리</p>
-        <p class="summary-value">준비 중</p>
+        <p class="summary-value">{{ recent_actions|length }}건</p>
       </article>
     </div>
 
@@ -82,8 +82,37 @@
           </tbody>
         </table>
 
-        <h3>최근 처리 내역 <span class="badge-soon">PR-2 예정</span></h3>
-        <p class="notice">최근 처리 내역 기능은 아직 준비 중입니다. 승인·반려 이력이 추가되면 여기에 표시됩니다.</p>
+        <h3>최근 처리 내역 (최근 10건)</h3>
+        {% if recent_actions %}
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">시각</th>
+                <th scope="col">작업</th>
+                <th scope="col">대상</th>
+                <th scope="col">담당</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in recent_actions %}
+                <tr>
+                  <td>{{ a.created_at|date:"y.m.d H:i" }}</td>
+                  <td>{% if a.action == "approve" %}승인{% else %}반려{% endif %}</td>
+                  <td>
+                    {% if a.target_draft %}
+                      <a href="/staff/drafts/{{ a.target_draft.id }}/">{{ a.target_draft.extracted_title|default:a.target_draft.raw_title|default:"(제목 없음)" }}</a>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>{{ a.actor.email|default:"-" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="notice">아직 처리 내역이 없습니다.</p>
+        {% endif %}
       </article>
 
       <aside class="side-stack" aria-label="스태프 콘솔 바로가기">
@@ -96,7 +125,7 @@
 
         <section class="panel">
           <h2>안내</h2>
-          <p class="panel-note">이 콘솔은 단계적으로 확장됩니다. 품질 경고와 최근 처리 내역은 다음 단계에서 추가될 예정입니다.</p>
+          <p class="panel-note">이 콘솔은 단계적으로 확장됩니다. 권한 세분화(RBAC)와 감사 스냅샷 등은 다음 단계에서 추가될 예정입니다.</p>
         </section>
       </aside>
     </section>

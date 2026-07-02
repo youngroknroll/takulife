@@ -1,11 +1,13 @@
 """Staff Console (/staff/) — PR-1a: auth pin, console gate, dashboard, redirects."""
 import base64
+import re
 import secrets
 import string
 
 import pytest
 
 from drafts.models import EventDraft
+from staff.models import StaffActionLog
 
 
 def _password():
@@ -121,6 +123,47 @@ def test_staff_dashboard_returns_200_with_pending_count(client, make_user):
     }
     for value in quality_warnings.values():
         assert isinstance(value, int)
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_context_includes_recent_actions_newest_first(client, make_user):
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/recent-action",
+        extracted_title="드래프트 최근",
+    )
+    first = StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.APPROVE, target_draft=draft
+    )
+    second = StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.REJECT, target_draft=draft
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    recent_actions = resp.context["recent_actions"]
+    assert recent_actions is not None
+    assert list(recent_actions) == [second, first]
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_renders_recent_action_with_null_actor_and_target(
+    client, make_user
+):
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    StaffActionLog.objects.create(
+        actor=None, action=StaffActionLog.Action.APPROVE, target_draft=None
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "<td>-</td>" in content  # actor.email default fallback
+    assert re.search(r"<td>\s*-\s*</td>", content)  # target_draft else branch
 
 
 @pytest.mark.django_db

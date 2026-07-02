@@ -240,7 +240,7 @@ def test_promoted_entry_stays_private_until_approved(client, make_user):
     assert not Event.objects.published().filter(title="숨은 카페").exists()
 
     # Admin approves the seeded draft → it becomes a published Event.
-    approve_draft(result.draft_id)
+    approve_draft(result.draft_id, actor=user)
     assert Event.objects.published().filter(official_url="https://priv.example.com/c").exists()
 
 
