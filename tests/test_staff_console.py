@@ -109,6 +109,18 @@ def test_staff_dashboard_returns_200_with_pending_count(client, make_user):
 
     assert resp.status_code == 200
     assert resp.context["pending_count"] == 1
+    quality_warnings = resp.context["quality_warnings"]
+    assert isinstance(quality_warnings, dict)
+    assert set(quality_warnings.keys()) == {
+        "missing_official_url",
+        "ended_still_published",
+        "missing_poster",
+        "missing_dates",
+        "missing_region",
+        "total",
+    }
+    for value in quality_warnings.values():
+        assert isinstance(value, int)
 
 
 @pytest.mark.django_db

@@ -27,9 +27,9 @@
         <p class="summary-label">검토 대기 드래프트</p>
         <p class="summary-value">{{ pending_count }}건</p>
       </article>
-      <article class="summary-card summary-card--pending">
+      <article class="summary-card">
         <p class="summary-label">품질 경고</p>
-        <p class="summary-value">준비 중</p>
+        <p class="summary-value">{{ quality_warnings.total }}건</p>
       </article>
       <article class="summary-card summary-card--pending">
         <p class="summary-label">최근 처리</p>
@@ -49,8 +49,38 @@
 
         <hr class="panel-divider">
 
-        <h3>품질 경고 <span class="badge-soon">PR-1b 예정</span></h3>
-        <p class="notice">품질 경고 기능은 아직 준비 중입니다. 자동 검증 규칙이 추가되면 여기에 표시됩니다.</p>
+        <h3>품질 경고</h3>
+        <p class="panel-note">게시(공개) 중인 행사를 대상으로 자동 점검한 결과입니다.</p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">점검 항목</th>
+              <th scope="col">건수</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>공식 URL 없음</td>
+              <td>{{ quality_warnings.missing_official_url }}건</td>
+            </tr>
+            <tr>
+              <td>종료됐지만 게시 중</td>
+              <td>{{ quality_warnings.ended_still_published }}건</td>
+            </tr>
+            <tr>
+              <td>포스터 없음</td>
+              <td>{{ quality_warnings.missing_poster }}건</td>
+            </tr>
+            <tr>
+              <td>날짜 정보 누락</td>
+              <td>{{ quality_warnings.missing_dates }}건</td>
+            </tr>
+            <tr>
+              <td>지역 정보 없음</td>
+              <td>{{ quality_warnings.missing_region }}건</td>
+            </tr>
+          </tbody>
+        </table>
 
         <h3>최근 처리 내역 <span class="badge-soon">PR-2 예정</span></h3>
         <p class="notice">최근 처리 내역 기능은 아직 준비 중입니다. 승인·반려 이력이 추가되면 여기에 표시됩니다.</p>

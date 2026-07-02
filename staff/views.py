@@ -7,6 +7,7 @@ staff/urls.py.
 from django.shortcuts import render
 
 from drafts.queries import draft_review_stats
+from events.queries import published_quality_warnings
 
 from .permissions import staff_console_required
 
@@ -15,8 +16,8 @@ from .permissions import staff_console_required
 def dashboard(request):
     """Staff console landing page.
 
-    `quality_warnings` and `recent_actions` are placeholders for PR-1b/PR-2 —
-    not implemented yet, so they are always None here.
+    `recent_actions` is a placeholder for PR-2 — not implemented yet, so it
+    is always None here.
     """
     stats = draft_review_stats()
     return render(
@@ -24,7 +25,7 @@ def dashboard(request):
         "staff/dashboard.html",
         {
             "pending_count": stats["pending"],
-            "quality_warnings": None,
+            "quality_warnings": published_quality_warnings(),
             "recent_actions": None,
         },
     )
