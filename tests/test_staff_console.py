@@ -167,6 +167,22 @@ def test_staff_dashboard_renders_recent_action_with_null_actor_and_target(
 
 
 @pytest.mark.django_db
+def test_staff_dashboard_renders_home_categories_action_label(client, make_user):
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.HOME_CATEGORIES, target_draft=None
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "홈 카테고리 변경" in content
+    assert "반려" not in content
+
+
+@pytest.mark.django_db
 def test_staff_root_redirects_to_dashboard(client, make_user):
     staff = make_user(is_staff=True)
     client.force_login(staff)

@@ -150,7 +150,16 @@ def staff_home_categories(request):
 
         checked.sort(key=lambda pair: pair[1])
         config.featured_categories = [slug for slug, _ in checked]
-        config.save()
+
+        with transaction.atomic():
+            config.save()
+            StaffActionLog.objects.create(
+                actor=request.user,
+                action=StaffActionLog.Action.HOME_CATEGORIES,
+                target_draft=None,
+                ip_address=request.META.get("REMOTE_ADDR"),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            )
 
         messages.success(request, "카테고리 설정이 저장되었습니다.")
         return redirect("staff:home-categories")
