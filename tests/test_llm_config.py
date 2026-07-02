@@ -46,6 +46,16 @@ def test_get_api_key_raises_when_whitespace_only():
         get_api_key()
 
 
+@override_settings(ANTHROPIC_API_KEY="sk-test\n")
+def test_get_api_key_strips_trailing_whitespace():
+    """A trailing newline in the configured key (e.g. copy/paste into an env
+    var) must not be sent to the API — SDK requests with an unstripped key
+    fail with a connection error on every call."""
+    from core.llm.config import get_api_key
+
+    assert get_api_key() == "sk-test"
+
+
 @pytest.mark.parametrize(
     "exception_class",
     [LLMConfigurationError, LLMTimeoutError, LLMRequestError, LLMResponseError],

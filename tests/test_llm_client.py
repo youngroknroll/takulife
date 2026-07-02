@@ -31,9 +31,9 @@ def _fake_client(response):
     return SimpleNamespace(messages=SimpleNamespace(create=create)), calls
 
 
-def _tool_use_response(tool_input, name="extract"):
+def _tool_use_response(tool_input, name="extract", stop_reason="tool_use"):
     block = SimpleNamespace(type="tool_use", name=name, input=tool_input)
-    return SimpleNamespace(content=[block])
+    return SimpleNamespace(content=[block], stop_reason=stop_reason)
 
 
 @override_settings(ANTHROPIC_API_KEY="")
@@ -201,6 +201,26 @@ def test_get_client_constructs_anthropic_client_with_configured_timeout(monkeypa
 
     assert captured["timeout"] == settings.LLM_TIMEOUT_SECONDS
     assert captured["api_key"] == "configured-key"
+    assert captured["max_retries"] == 0
+
+
+def test_call_tool_raises_response_error_when_truncated_by_max_tokens():
+    """SDK does not treat hitting max_tokens as an error — tool_use.input can
+    be a partial/incomplete dict in that case. A truncated response must not
+    be returned to the caller as if it were complete."""
+    from core.llm.client import call_tool
+
+    truncated_response = _tool_use_response({"is_event": True}, stop_reason="max_tokens")
+    fake_client, _ = _fake_client(truncated_response)
+
+    with pytest.raises(LLMResponseError):
+        call_tool(
+            system_prompt="system",
+            user_content="user",
+            tool_name="extract",
+            tool_schema=TOOL_SCHEMA,
+            client=fake_client,
+        )
 
 
 def test_call_tool_raises_response_error_when_no_tool_use_block():
@@ -266,7 +286,16 @@ def _make_internal_server_error():
     return anthropic.InternalServerError("server error", response=response, body=None)
 
 
-@pytest.mark.parametrize("build_error", [_make_connection_error, _make_internal_server_error])
+def _make_response_validation_error():
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    response = httpx.Response(200, request=request)
+    return anthropic.APIResponseValidationError(response=response, body=None)
+
+
+@pytest.mark.parametrize(
+    "build_error",
+    [_make_connection_error, _make_internal_server_error, _make_response_validation_error],
+)
 def test_call_tool_normalizes_connection_and_server_errors_to_request_error(build_error):
     from core.llm.client import call_tool
 

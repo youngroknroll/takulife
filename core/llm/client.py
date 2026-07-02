@@ -10,7 +10,11 @@ from core.llm.exceptions import LLMRequestError, LLMResponseError, LLMTimeoutErr
 
 
 def get_client():
-    return anthropic.Anthropic(api_key=get_api_key(), timeout=settings.LLM_TIMEOUT_SECONDS)
+    # max_retries=0: the SDK default (2) would multiply LLM_TIMEOUT_SECONDS per
+    # attempt, silently breaking the documented 10s call-site upper bound.
+    return anthropic.Anthropic(
+        api_key=get_api_key(), timeout=settings.LLM_TIMEOUT_SECONDS, max_retries=0
+    )
 
 
 def call_tool(*, system_prompt, user_content, tool_name, tool_schema, client=None):
@@ -28,8 +32,14 @@ def call_tool(*, system_prompt, user_content, tool_name, tool_schema, client=Non
         )
     except anthropic.APITimeoutError as error:
         raise LLMTimeoutError("LLM request timed out.") from error
-    except (anthropic.APIConnectionError, anthropic.APIStatusError) as error:
+    except anthropic.APIError as error:
         raise LLMRequestError("LLM request failed.") from error
+
+    # The SDK does not treat hitting the max_tokens cap as an error — a
+    # truncated tool_use.input can still look like valid JSON. Reject it
+    # explicitly so callers never receive silently incomplete data.
+    if getattr(response, "stop_reason", None) == "max_tokens":
+        raise LLMResponseError("LLM output truncated (max_tokens); tool input may be incomplete.")
 
     for block in response.content:
         if getattr(block, "type", None) == "tool_use" and getattr(block, "name", None) == tool_name:
