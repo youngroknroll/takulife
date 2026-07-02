@@ -3,10 +3,11 @@ from django.db import models
 
 
 class StaffActionLog(models.Model):
-    """Append-only audit trail for staff review actions.
+    """Append-only audit trail for staff actions.
 
-    Minimal v1 scope: no before/after snapshot, no polymorphic target — only
-    draft approve/reject actions are recorded. Read access is restricted to
+    Minimal v1 scope: no before/after snapshot, no polymorphic target —
+    records draft approve/reject actions as well as home-category config
+    changes (which have no target draft). Read access is restricted to
     superusers (see `staff/admin.py`); operators (is_staff) can only see the
     dashboard's `recent_actions` summary (actor/action/target/time, no ip/ua).
     """
@@ -14,6 +15,7 @@ class StaffActionLog(models.Model):
     class Action(models.TextChoices):
         APPROVE = "approve", "Approve"
         REJECT = "reject", "Reject"
+        HOME_CATEGORIES = "home_categories", "Home categories"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -34,4 +36,6 @@ class StaffActionLog(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
+        if self.target_draft_id is None:
+            return f"{self.action} by {self.actor_id}"
         return f"{self.action} #{self.target_draft_id} by {self.actor_id}"

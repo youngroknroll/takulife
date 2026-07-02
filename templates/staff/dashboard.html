@@ -97,7 +97,7 @@
               {% for a in recent_actions %}
                 <tr>
                   <td>{{ a.created_at|date:"y.m.d H:i" }}</td>
-                  <td>{% if a.action == "approve" %}승인{% else %}반려{% endif %}</td>
+                  <td>{% if a.action == "approve" %}승인{% elif a.action == "reject" %}반려{% else %}홈 카테고리 변경{% endif %}</td>
                   <td>
                     {% if a.target_draft %}
                       <a href="/staff/drafts/{{ a.target_draft.id }}/">{{ a.target_draft.extracted_title|default:a.target_draft.raw_title|default:"(제목 없음)" }}</a>

@@ -7,10 +7,12 @@ Covers:
 - staff/home-categories: auth guard, GET 200, POST save, vocab validation
 """
 import pytest
+from django.db import IntegrityError
 from django.test import Client
 
 from core.models import HomeConfig
 from core.vocab import CATEGORY, CATEGORY_LABELS
+from staff.models import StaffActionLog
 
 
 # ---------------------------------------------------------------------------
@@ -233,3 +235,69 @@ class TestStaffHomeCategoriesPost:
         assert resp.status_code == 302
         config = HomeConfig.get_solo()
         assert "exhibition" in config.featured_categories
+
+
+# ---------------------------------------------------------------------------
+# F. staff/home-categories — audit log (PR-3)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestStaffHomeCategoriesAuditLog:
+    def _staff_client(self, make_user):
+        staff = make_user(is_staff=True)
+        client = Client()
+        client.force_login(staff)
+        return staff, client
+
+    def test_post_writes_single_home_categories_log_entry(self, make_user):
+        staff, client = self._staff_client(make_user)
+
+        resp = client.post(
+            "/staff/home-categories/",
+            data={
+                "feature_exhibition": "on",
+                "order_exhibition": "1",
+            },
+            REMOTE_ADDR="203.0.113.9",
+            HTTP_USER_AGENT="pytest/1.0",
+        )
+
+        assert resp.status_code == 302
+        assert StaffActionLog.objects.count() == 1
+        entry = StaffActionLog.objects.get()
+        assert entry.action == StaffActionLog.Action.HOME_CATEGORIES
+        assert entry.actor_id == staff.id
+        assert entry.target_draft is None
+        assert entry.ip_address == "203.0.113.9"
+        assert entry.user_agent == "pytest/1.0"
+
+    def test_get_writes_no_log(self, make_user):
+        _, client = self._staff_client(make_user)
+
+        resp = client.get("/staff/home-categories/")
+
+        assert resp.status_code == 200
+        assert StaffActionLog.objects.count() == 0
+
+    def test_post_rolls_back_config_when_audit_log_write_fails(self, make_user, monkeypatch):
+        staff, client = self._staff_client(make_user)
+        original_categories = list(HomeConfig.get_solo().featured_categories)
+
+        def fail_log_create(*args, **kwargs):
+            raise IntegrityError("simulated log write failure")
+
+        monkeypatch.setattr("staff.views.StaffActionLog.objects.create", fail_log_create)
+        client.raise_request_exception = False
+
+        resp = client.post(
+            "/staff/home-categories/",
+            data={
+                "feature_popup_store": "on",
+                "order_popup_store": "1",
+            },
+        )
+
+        assert resp.status_code == 500
+        config = HomeConfig.get_solo()
+        assert config.featured_categories == original_categories
+        assert StaffActionLog.objects.count() == 0

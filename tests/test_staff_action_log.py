@@ -69,6 +69,19 @@ def test_staff_action_log_orders_newest_first(make_user):
 
 
 @pytest.mark.django_db
+def test_staff_action_log_str_without_target_draft_omits_hash_none(make_user):
+    actor = make_user(is_staff=True)
+    entry = StaffActionLog.objects.create(
+        actor=actor, action=StaffActionLog.Action.HOME_CATEGORIES, target_draft=None
+    )
+
+    text = str(entry)
+
+    assert "#None" not in text
+    assert text == f"home_categories by {actor.id}"
+
+
+@pytest.mark.django_db
 def test_staff_action_log_admin_view_permission_denied_for_plain_staff(make_user):
     staff_user = make_user(is_staff=True)
     request = RequestFactory().get("/admin/staff/staffactionlog/")
