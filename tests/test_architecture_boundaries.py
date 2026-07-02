@@ -58,6 +58,37 @@ def test_archive_modules_do_not_import_drafts_modules(module_path):
     }
 
 
+@pytest.mark.parametrize(
+    "module_path",
+    [
+        "events/models.py",
+        "events/views.py",
+        "events/serializers.py",
+        "events/querysets.py",
+        "events/services.py",
+        "drafts/models.py",
+        "drafts/views.py",
+        "drafts/services.py",
+        "drafts/serializers.py",
+        "archive/models.py",
+        "archive/serializers.py",
+        "archive/services.py",
+        "archive/views.py",
+    ],
+)
+def test_domain_modules_do_not_import_staff_modules(module_path):
+    """staff (presentation + audit infra) may depend on domain apps, never
+    the reverse: events/drafts/archive must stay free of a `staff` import so
+    domain business logic never leaks staff-only orchestration concerns."""
+    imported_modules = _imported_modules(module_path)
+
+    assert not {
+        module
+        for module in imported_modules
+        if module == "staff" or module.startswith("staff.")
+    }
+
+
 def test_core_error_response_returns_detail_payload():
     from core.errors import error_response
 

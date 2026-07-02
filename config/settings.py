@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "drafts",
     "archive",
     "core",
+    "staff",
 ]
 
 MIDDLEWARE = [
