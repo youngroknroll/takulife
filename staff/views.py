@@ -34,15 +34,12 @@ from events.queries import published_quality_warnings
 
 from .models import StaffActionLog
 from .permissions import staff_console_required
+from .queries import recent_staff_actions
 
 
 @staff_console_required
 def dashboard(request):
-    """Staff console landing page.
-
-    `recent_actions` is a placeholder for PR-2 — not implemented yet, so it
-    is always None here.
-    """
+    """Staff console landing page."""
     stats = draft_review_stats()
     return render(
         request,
@@ -50,7 +47,7 @@ def dashboard(request):
         {
             "pending_count": stats["pending"],
             "quality_warnings": published_quality_warnings(),
-            "recent_actions": None,
+            "recent_actions": recent_staff_actions(),
         },
     )
 

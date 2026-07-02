@@ -6,6 +6,7 @@ import string
 import pytest
 
 from drafts.models import EventDraft
+from staff.models import StaffActionLog
 
 
 def _password():
@@ -121,6 +122,29 @@ def test_staff_dashboard_returns_200_with_pending_count(client, make_user):
     }
     for value in quality_warnings.values():
         assert isinstance(value, int)
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_context_includes_recent_actions_newest_first(client, make_user):
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/recent-action",
+        extracted_title="드래프트 최근",
+    )
+    first = StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.APPROVE, target_draft=draft
+    )
+    second = StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.REJECT, target_draft=draft
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    recent_actions = resp.context["recent_actions"]
+    assert recent_actions is not None
+    assert list(recent_actions) == [second, first]
 
 
 @pytest.mark.django_db
