@@ -6,7 +6,10 @@ alongside the draft approve/reject action endpoints. staff -> core is an
 allowed presentation-only import (label maps/vocab); core must never import
 staff back (see tests/test_architecture_boundaries.py).
 """
+from urllib.parse import urlencode
+
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -19,7 +22,7 @@ from core.errors import error_response, field_error_response
 from core.models import HomeConfig
 from core.vocab import CATEGORY, CATEGORY_LABELS, REGION, REGION_LABELS
 from drafts.models import EventDraft
-from drafts.queries import draft_review_stats
+from drafts.queries import DRAFT_LISTING_PAGE_SIZE, draft_review_stats, list_drafts
 from drafts.serializers import EventDraftSerializer
 from drafts.services import (
     DraftNotFoundError,
@@ -77,15 +80,27 @@ def _build_draft_rows(drafts):
 @staff_console_required
 @ensure_csrf_cookie
 def event_drafts(request):
-    drafts = EventDraft.objects.order_by("-id")
+    selected_status = request.GET.get("status", "")
+    if selected_status not in EventDraft.ReviewStatus.values:
+        selected_status = ""
+
     stats = draft_review_stats()
-    draft_rows = _build_draft_rows(drafts)
+    drafts = list_drafts(selected_status)
+    paginator = Paginator(drafts, DRAFT_LISTING_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    draft_rows = _build_draft_rows(page_obj.object_list)
+
+    pager_query = "&" + urlencode([("status", selected_status)]) if selected_status else ""
+
     return render(
         request,
         "core/drafts/list.html",
         {
             "draft_rows": draft_rows,
             "stats": stats,
+            "page_obj": page_obj,
+            "selected_status": selected_status,
+            "pager_query": pager_query,
         },
     )
 
