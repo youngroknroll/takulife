@@ -112,7 +112,59 @@
       }
     }
 
-    // ── interaction ─────────────────────────────────────────────────────────
+    // ── keyboard (roving tabindex) ───────────────────────────────────────
+    // Only the resting first card is a tab stop (see home.html). Arrow keys
+    // move focus — and the tabindex="0" — between cards; Home/End jump to
+    // the ends. Tab/Shift+Tab leave the widget as usual. Keyboard nav and
+    // the resulting lift (applyLayout) always run, even under reduced
+    // motion — only the idle auto-shuffle and pointer-tracking below are
+    // motion-gated (the lift *transition* itself is disabled via CSS).
+    function cardLink(i) {
+      return cards[i].querySelector(".deck-slide");
+    }
+
+    function setFocused(i) {
+      focused = i;
+      for (var j = 0; j < n; j++) {
+        var link = cardLink(j);
+        if (link) { link.tabIndex = j === i ? 0 : -1; }
+      }
+      applyLayout(i);
+    }
+
+    container.addEventListener("keydown", function (e) {
+      var key = e.key;
+      if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "Home" && key !== "End") {
+        return;
+      }
+      e.preventDefault();
+      stopAuto();
+      var current = focused !== null ? focused : 0;
+      var next = current;
+      if (key === "ArrowLeft") { next = Math.max(0, current - 1); }
+      else if (key === "ArrowRight") { next = Math.min(n - 1, current + 1); }
+      else if (key === "Home") { next = 0; }
+      else { next = n - 1; } // End
+      setFocused(next);
+      var link = cardLink(next);
+      if (link) { link.focus(); }
+    });
+
+    // Focusing a card (e.g. Tab into the deck) halts the shuffle, lifts it,
+    // and keeps the roving tabindex in sync with the arrow-key path above.
+    cards.forEach(function (card, i) {
+      card.addEventListener("focusin", function () {
+        stopAuto();
+        setFocused(i);
+      });
+    });
+    container.addEventListener("focusout", function (evt) {
+      if (!container.contains(evt.relatedTarget)) {
+        startAuto();
+      }
+    });
+
+    // ── pointer interaction (motion-gated) ───────────────────────────────
     if (!prefersReducedMotion()) {
       // Pointer over the deck takes control and halts the shuffle.
       track.addEventListener("mouseenter", stopAuto);
@@ -126,20 +178,6 @@
       });
       track.addEventListener("mouseleave", function () {
         startAuto(); // resume sweeping
-      });
-
-      // Keyboard: focusing a card halts the shuffle and lifts it.
-      cards.forEach(function (card, i) {
-        card.addEventListener("focusin", function () {
-          stopAuto();
-          focused = i;
-          applyLayout(i);
-        });
-      });
-      container.addEventListener("focusout", function (evt) {
-        if (!container.contains(evt.relatedTarget)) {
-          startAuto();
-        }
       });
     }
 

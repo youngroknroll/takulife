@@ -180,6 +180,13 @@
   .poster-deck.fan .deck-card:hover {
     box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28);
   }
+  @media (prefers-reduced-motion: reduce) {
+    /* Keyboard nav still moves the lifted card (carousel.js), but the
+       lift/part/scale transition itself should not animate. */
+    .poster-deck.fan .deck-card {
+      transition: none;
+    }
+  }
   /* The fan's resting cards lean; keep the poster filling the smaller tile */
   .poster-deck.fan .deck-slide {
     min-height: 0;
