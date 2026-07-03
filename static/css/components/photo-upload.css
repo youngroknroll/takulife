@@ -1,0 +1,46 @@
+/*
+ * photo-upload.css — shared "+ 박스" photo/poster upload trigger.
+ *
+ * Used on 3 pages: archive visit create/edit (multi-photo) and the staff
+ * event-detail poster upload (single file). The native <input type="file">
+ * stays in the DOM (functionality + JS contracts unchanged) but is visually
+ * hidden with .sr-only; this button is the visible, keyboard-accessible
+ * trigger that calls input.click().
+ */
+.photo-upload-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.photo-add-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 6rem;
+  height: 6rem;
+  flex: 0 0 auto;
+  border: 2px dashed var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.photo-add-tile:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+.photo-add-tile:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.photo-add-tile[hidden] {
+  display: none;
+}

@@ -3,6 +3,7 @@
 {% block title %}{{ project_name }} | {{ event.title }}{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/photo-upload.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/event_detail.css' %}">
 {% endblock %}
 
@@ -125,14 +126,17 @@
           >
 
           <div class="action-list">
-            <label for="poster-file-input" class="sr-only">포스터 이미지 선택</label>
             <input
               id="poster-file-input"
+              class="sr-only"
               type="file"
               accept="image/jpeg,image/png,image/webp"
               data-event-id="{{ event.id }}"
-              style="font-size:0.85rem; margin-bottom:8px; display:block;"
+              tabindex="-1"
             >
+            <button type="button" id="poster-file-trigger" class="photo-add-tile" aria-label="포스터 이미지 선택">
+              <span aria-hidden="true">+</span>
+            </button>
 
             <button
               id="poster-upload-btn"
