@@ -83,7 +83,7 @@
       var sourceName = nameInput ? nameInput.value.trim() : "";
 
       if (!sourceUrl) {
-        showError(errorEl, "source_url: URL을 입력해 주세요.");
+        showError(errorEl, "URL을 입력해 주세요.");
         return;
       }
 
