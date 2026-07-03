@@ -300,9 +300,6 @@
     color: var(--text-muted, #6b7a90);
     margin: 0;
   }
-  .photo-multi-input {
-    font-size: 0.85rem;
-  }
   .form-status {
     font-size: 0.82rem;
     color: var(--brand);

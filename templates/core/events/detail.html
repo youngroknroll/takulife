@@ -133,8 +133,9 @@
               accept="image/jpeg,image/png,image/webp"
               data-event-id="{{ event.id }}"
               tabindex="-1"
+              aria-hidden="true"
             >
-            <button type="button" id="poster-file-trigger" class="photo-add-tile" aria-label="포스터 이미지 선택">
+            <button type="button" id="poster-file-trigger" class="photo-add-tile" aria-label="포스터 이미지 선택" aria-describedby="poster-file-hint">
               <span aria-hidden="true">+</span>
             </button>
 
@@ -156,7 +157,7 @@
             {% endif %}
           </div>
 
-          <p class="panel-note" style="margin-top:8px;">허용 형식: JPEG, PNG, WebP · 최대 5MB</p>
+          <p id="poster-file-hint" class="panel-note" style="margin-top:8px;">허용 형식: JPEG, PNG, WebP · 최대 5MB</p>
 
           <p
             id="poster-error"
