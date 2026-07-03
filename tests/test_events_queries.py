@@ -235,19 +235,15 @@ class TestListPublishedEvents:
         qs = list_published_events({})
         assert qs.count() == 1
 
-    def test_sort_closing_soon_orders_by_end_date_ascending_nulls_last(self, make_event):
-        """Closing-soon sort must order purely by end_date, ignoring the default
-        ongoing/upcoming/ended state ranking (ended has the earliest end_date
-        here but ranks last under the default order_for_public_listing)."""
+    def test_sort_closing_soon_orders_not_ended_events_first_ascending_nulls_last(self, make_event):
+        """Closing-soon sort ranks not-yet-ended events (end_date null or >= today)
+        first, soonest-ending first (nulls last). Already-ended events are pushed
+        to the back — see test_sort_closing_soon_never_surfaces_ended_event_at_top
+        for the regression this guards against."""
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
         no_end = make_event(title="No end", start_date=today, end_date=None)
-        ended = make_event(
-            title="Ended",
-            start_date=today - timedelta(days=10),
-            end_date=today - timedelta(days=2),
-        )
         ongoing = make_event(
             title="Ongoing",
             start_date=today - timedelta(days=1),
@@ -258,10 +254,57 @@ class TestListPublishedEvents:
             start_date=today + timedelta(days=1),
             end_date=today + timedelta(days=20),
         )
+        ended = make_event(
+            title="Ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=2),
+        )
 
         qs = list_published_events({"sort": "closing_soon"}, today=today)
         ids = list(qs.values_list("id", flat=True))
-        assert ids == [ended.id, ongoing.id, upcoming.id, no_end.id]
+        assert ids == [ongoing.id, upcoming.id, no_end.id, ended.id]
+
+    def test_sort_closing_soon_never_surfaces_ended_event_at_top(self, make_event):
+        """Regression guard: an event that ended long ago (smallest end_date)
+        must never rank above a currently-ongoing event under closing_soon sort."""
+        from events.queries import list_published_events
+
+        today = date(2026, 6, 24)
+        long_ended = make_event(
+            title="Long ended",
+            start_date=today - timedelta(days=100),
+            end_date=today - timedelta(days=90),
+        )
+        ongoing = make_event(
+            title="Ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=3),
+        )
+
+        qs = list_published_events({"sort": "closing_soon"}, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ids[0] == ongoing.id
+        assert ids.index(ongoing.id) < ids.index(long_ended.id)
+
+    def test_sort_closing_soon_ended_group_orders_most_recently_ended_first(self, make_event):
+        """Within the already-ended group, most-recently-ended sorts first."""
+        from events.queries import list_published_events
+
+        today = date(2026, 6, 24)
+        ended_long_ago = make_event(
+            title="Ended long ago",
+            start_date=today - timedelta(days=100),
+            end_date=today - timedelta(days=90),
+        )
+        ended_recently = make_event(
+            title="Ended recently",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=1),
+        )
+
+        qs = list_published_events({"sort": "closing_soon"}, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ids == [ended_recently.id, ended_long_ago.id]
 
     def test_sort_closing_soon_tiebreaks_by_id(self, make_event):
         from events.queries import list_published_events
