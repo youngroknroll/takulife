@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, RetrieveDestroyAPIView, RetrieveUpdateDestroyAPIView
@@ -256,6 +257,12 @@ class VisitRecordPhotoCreateView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        except VisitRecord.DoesNotExist:
+            # The record existed at the ownership check above but was deleted
+            # (e.g. by a concurrent request) before the service's
+            # select_for_update().get(...) ran. Surface it as a normal 404
+            # instead of a 500.
+            raise Http404
         return Response({"id": photo.id, "visit_record": record.id}, status=status.HTTP_201_CREATED)
 
 
