@@ -54,6 +54,12 @@ def load_database_config():
     return config
 
 
+def load_debug():
+    # Local dev default is True (matches historical behavior); explicit
+    # DEBUG=false is required to disable it (e.g. deployment envs).
+    return _get_env("DEBUG", "true").lower() in ("1", "true", "yes")
+
+
 SECRET_KEY = load_secret_key()
 ANTHROPIC_API_KEY = load_anthropic_api_key()
 LLM_MODEL = "claude-haiku-4-5-20251001"
@@ -64,7 +70,7 @@ LLM_ESCALATION_MODEL = "claude-sonnet-5"
 LLM_ESCALATION_CONFIDENCE_THRESHOLD = 0.6
 # Wiring flag (PR-C connects create_draft_from_url to extract_event_fields_llm).
 DRAFT_LLM_EXTRACTION_ENABLED = False
-DEBUG = True
+DEBUG = load_debug()
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
