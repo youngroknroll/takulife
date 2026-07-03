@@ -25,6 +25,7 @@ from .serializers import (
     VisitRecordUpdateSerializer,
 )
 from .services import (
+    MAX_PHOTOS_PER_RECORD,
     DuplicateEventInterestError,
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
@@ -251,7 +252,7 @@ class VisitRecordPhotoCreateView(APIView):
             return Response(
                 {
                     "code": "photo_limit_exceeded",
-                    "detail": "A visit record can have at most 10 photos.",
+                    "detail": f"A visit record can have at most {MAX_PHOTOS_PER_RECORD} photos.",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

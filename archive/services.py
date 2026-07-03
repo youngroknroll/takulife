@@ -103,6 +103,8 @@ class PhotoLimitExceededError(Exception):
 
 
 def create_visit_record_photo(*, visit_record, image):
-    if visit_record.photos.count() >= MAX_PHOTOS_PER_RECORD:
-        raise PhotoLimitExceededError
-    return VisitRecordPhoto.objects.create(visit_record=visit_record, image=image)
+    with transaction.atomic():
+        locked_record = VisitRecord.objects.select_for_update().get(pk=visit_record.pk)
+        if locked_record.photos.count() >= MAX_PHOTOS_PER_RECORD:
+            raise PhotoLimitExceededError
+        return VisitRecordPhoto.objects.create(visit_record=locked_record, image=image)

@@ -15,6 +15,7 @@ from django.db import transaction
 
 from archive.models import PersonalEntry
 from drafts.services import DraftCreationDuplicateError, create_draft_from_fields
+from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
 
 class PromotionNotFoundError(Exception):
@@ -27,6 +28,11 @@ class PromotionAlreadySubmittedError(Exception):
 
 class PromotionDuplicateError(Exception):
     """A draft already exists for the supplied official URL."""
+
+
+class PromotionUnsafeUrlError(Exception):
+    """The supplied official URL fails the fetch-safety policy (scheme,
+    localhost, or private/literal IP host)."""
 
 
 @dataclass(frozen=True)
@@ -46,6 +52,15 @@ def promote_personal_entry(*, user, personal_entry_id, official_url):
 
         if entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED:
             raise PromotionAlreadySubmittedError
+
+        # Reuse drafts' fetch-safety policy (scheme allowlist + localhost/private
+        # IP literal rejection). No resolver is passed, so this is a pure
+        # scheme/host check — no DNS lookup, no network call — appropriate here
+        # since promotion never fetches the URL, only stores it as official_url.
+        try:
+            validate_fetch_url(official_url)
+        except (InvalidFetchUrlError, UnsafeFetchUrlError) as exc:
+            raise PromotionUnsafeUrlError from exc
 
         try:
             draft = create_draft_from_fields(
