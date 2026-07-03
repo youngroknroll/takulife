@@ -556,6 +556,41 @@ def test_create_visit_record_photo_raises_when_at_cap(make_user, make_event, png
         )
 
 
+@pytest.mark.django_db
+def test_upload_photo_race_with_concurrent_delete_returns_404(
+    client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch
+):
+    """If the VisitRecord is deleted between the existence check and the
+    service call (TOCTOU race), the view must return 404, not 500."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user()
+    event = make_event()
+    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+
+    from archive import views as archive_views
+
+    original_create_visit_record_photo = archive_views.create_visit_record_photo
+
+    def racing_create_visit_record_photo(*, visit_record, image):
+        # Simulate a concurrent delete landing between the view's existence
+        # check and the service's select_for_update().get(...).
+        VisitRecord.objects.filter(pk=visit_record.pk).delete()
+        return original_create_visit_record_photo(visit_record=visit_record, image=image)
+
+    monkeypatch.setattr(
+        archive_views, "create_visit_record_photo", racing_create_visit_record_photo
+    )
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {"image": SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png")},
+    )
+
+    assert response.status_code == 404
+    assert VisitRecordPhoto.objects.count() == 0
+
+
 # ---------------------------------------------------------------------------
 # Photo delete (DELETE /api/visit-records/<record_id>/photos/<photo_id>/)
 # ---------------------------------------------------------------------------
