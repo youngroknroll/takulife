@@ -52,6 +52,10 @@
   color: var(--muted);
 }
 
+.archive-search-clear[hidden] {
+  display: none;
+}
+
 .archive-search-clear:hover {
   color: var(--text);
   text-decoration: underline;

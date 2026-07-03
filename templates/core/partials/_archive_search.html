@@ -26,7 +26,5 @@ Args:
     >
     <button type="submit">검색</button>
   </div>
-  {% if has_query %}
-    <a class="archive-search-clear" href="{{ request.path }}">지우기</a>
-  {% endif %}
+  <a class="archive-search-clear" href="{{ request.path }}"{% if not has_query %} hidden{% endif %}>지우기</a>
 </form>

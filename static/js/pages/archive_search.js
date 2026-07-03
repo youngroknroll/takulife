@@ -30,6 +30,7 @@
 
   var input = form.querySelector('input[name="q"]');
   if (!input) { return; }
+  var clearLink = form.querySelector(".archive-search-clear");
 
   var path = window.location.pathname;
   var controller = null;
@@ -52,6 +53,15 @@
   function userUrl(params) {
     var qs = params.toString();
     return qs ? path + "?" + qs : path;
+  }
+
+  // Keep the "지우기" link in sync with the live search term — the server
+  // only renders it from has_query on full page load, but live search swaps
+  // just the results fragment, so the form's own clear link must be toggled
+  // here instead.
+  function syncClearLink(term) {
+    if (!clearLink) { return; }
+    clearLink.hidden = !term;
   }
 
   function setLoading(on) {
@@ -114,6 +124,7 @@
   input.addEventListener("input", function () {
     if (timer) { window.clearTimeout(timer); }
     var term = input.value.trim();
+    syncClearLink(term);
     timer = window.setTimeout(function () {
       runSearch(term, true);
     }, DEBOUNCE_MS);
@@ -123,7 +134,9 @@
   form.addEventListener("submit", function (evt) {
     evt.preventDefault();
     if (timer) { window.clearTimeout(timer); }
-    runSearch(input.value.trim(), true);
+    var term = input.value.trim();
+    syncClearLink(term);
+    runSearch(term, true);
   });
 
   // Back/forward: re-sync the input from the URL and replay the search without
@@ -131,6 +144,7 @@
   window.addEventListener("popstate", function () {
     var term = new URLSearchParams(window.location.search).get("q") || "";
     input.value = term;
+    syncClearLink(term);
     runSearch(term, false);
   });
 })();

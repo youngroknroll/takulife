@@ -201,6 +201,11 @@
    * instead of a hard redirect or a misleading error. Login/register links
    * carry ?next so the visitor returns to the current page. Idempotent
    * (one modal at a time). All text via textContent — no markup injection.
+   *
+   * Accessibility: focus moves to the close button on open, Tab/Shift+Tab
+   * cycle only through the modal's focusable controls (close, login,
+   * register), and focus returns to the element that had it before the
+   * modal opened once the modal is dismissed.
    */
   function promptLogin() {
     if (document.querySelector(".auth-modal-overlay")) {
@@ -254,13 +259,38 @@
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
+    var previouslyFocused = document.activeElement;
+    var focusables = [close, loginLink, registerLink];
+
     function dismiss() {
       overlay.remove();
       document.removeEventListener("keydown", onKey);
+      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus();
+      }
     }
     function onKey(evt) {
       if (evt.key === "Escape") {
         dismiss();
+        return;
+      }
+      if (evt.key === "Tab") {
+        trapTab(evt);
+      }
+    }
+    function trapTab(evt) {
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      if (evt.shiftKey) {
+        if (document.activeElement === first || !overlay.contains(document.activeElement)) {
+          evt.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last || !overlay.contains(document.activeElement)) {
+          evt.preventDefault();
+          first.focus();
+        }
       }
     }
     close.addEventListener("click", dismiss);
@@ -270,7 +300,7 @@
       }
     });
     document.addEventListener("keydown", onKey);
-    loginLink.focus();
+    close.focus();
   }
 
   // ── public API ─────────────────────────────────────────────────────────────
