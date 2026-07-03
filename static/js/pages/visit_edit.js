@@ -48,6 +48,13 @@
     ).length;
   }
 
+  function updateTrigger() {
+    var trigger = document.getElementById("visit-photos-trigger");
+    if (trigger) {
+      trigger.hidden = existingCount() + pendingItems.length >= MAX_PHOTOS;
+    }
+  }
+
   // ── cover badge across both grids ──────────────────────────────────────────
 
   function clearCovers() {
@@ -85,6 +92,7 @@
 
   function renderNewGrid(grid) {
     grid.textContent = "";
+    updateTrigger();
     if (pendingItems.length === 0) {
       grid.hidden = true;
       refreshCover();
@@ -197,6 +205,7 @@
           if (emptyHint) { emptyHint.hidden = false; }
         }
         refreshCover();
+        updateTrigger();
         return;
       }
 
@@ -243,16 +252,24 @@
     var statusEl = document.getElementById("visit-edit-status");
     var grid = document.getElementById("photo-preview-grid");
     var fileInput = document.getElementById("visit-photos");
+    var triggerBtn = document.getElementById("visit-photos-trigger");
     var submitBtn = form.querySelector('[type="submit"]');
     var deleteBtn = form.querySelector("[data-delete-record-id]");
 
     refreshCover();
+    updateTrigger();
     bindExistingDeletes(recordId, errorEl);
 
     if (fileInput && grid) {
       fileInput.addEventListener("change", function () {
         addFiles(fileInput.files, grid, errorEl);
         fileInput.value = "";
+      });
+    }
+
+    if (triggerBtn && fileInput) {
+      triggerBtn.addEventListener("click", function () {
+        fileInput.click();
       });
     }
 

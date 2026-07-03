@@ -3,6 +3,7 @@
 {% block title %}{{ project_name }} | 방문 기록 작성{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/photo-upload.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
 {% endblock %}
 
@@ -70,14 +71,21 @@
             <p class="field-hint" id="visit-photos-hint">JPEG · PNG · WebP · 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지</p>
             <input
               id="visit-photos"
-              class="photo-multi-input"
+              class="photo-multi-input sr-only"
               type="file"
               name="photos"
               accept="image/jpeg,image/png,image/webp"
               multiple
+              tabindex="-1"
               aria-describedby="visit-photos-hint"
+              aria-hidden="true"
             >
-            <div class="photo-preview-grid" id="photo-preview-grid" aria-label="첨부 사진 미리보기" hidden></div>
+            <div class="photo-upload-row">
+              <button type="button" id="visit-photos-trigger" class="photo-add-tile" aria-label="사진 추가">
+                <span aria-hidden="true">+</span>
+              </button>
+              <div class="photo-preview-grid" id="photo-preview-grid" aria-label="첨부 사진 미리보기" hidden></div>
+            </div>
           </div>
 
           <p class="form-error" id="visit-create-error" aria-live="polite"></p>

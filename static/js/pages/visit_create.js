@@ -42,9 +42,15 @@
 
   // ── preview grid ───────────────────────────────────────────────────────────
 
+  function updateTrigger() {
+    var trigger = document.getElementById("visit-photos-trigger");
+    if (trigger) { trigger.hidden = pendingItems.length >= MAX_PHOTOS; }
+  }
+
   function renderGrid(grid) {
     // Clear existing tiles and revoke nothing here (urls persist in pendingItems).
     grid.textContent = "";
+    updateTrigger();
 
     if (pendingItems.length === 0) {
       grid.hidden = true;
@@ -174,6 +180,7 @@
     var statusEl = document.getElementById("visit-create-status");
     var grid = document.getElementById("photo-preview-grid");
     var fileInput = document.getElementById("visit-photos");
+    var triggerBtn = document.getElementById("visit-photos-trigger");
     var submitBtn = form.querySelector('[type="submit"]');
 
     if (fileInput && grid) {
@@ -181,6 +188,12 @@
         addFiles(fileInput.files, grid, errorEl);
         // Reset so re-selecting the same file (or adding more) fires change again.
         fileInput.value = "";
+      });
+    }
+
+    if (triggerBtn && fileInput) {
+      triggerBtn.addEventListener("click", function () {
+        fileInput.click();
       });
     }
 

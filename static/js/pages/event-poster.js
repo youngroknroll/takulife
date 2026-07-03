@@ -28,6 +28,16 @@
     el.textContent = "";
   }
 
+  // ── file-select trigger (visually-hidden input + "+" tile button) ─────────
+
+  function bindTrigger(triggerBtn, fileInput) {
+    if (!triggerBtn || !fileInput) { return; }
+
+    triggerBtn.addEventListener("click", function () {
+      fileInput.click();
+    });
+  }
+
   // ── preview ──────────────────────────────────────────────────────────────
 
   function bindFilePreview(fileInput, previewImg) {
@@ -158,6 +168,7 @@
 
   function init() {
     var fileInput = document.getElementById("poster-file-input");
+    var triggerBtn = document.getElementById("poster-file-trigger");
     var previewImg = document.getElementById("poster-preview");
     var uploadBtn = document.getElementById("poster-upload-btn");
     var deleteBtn = document.getElementById("poster-delete-btn");
@@ -168,6 +179,7 @@
       return;
     }
 
+    bindTrigger(triggerBtn, fileInput);
     bindFilePreview(fileInput, previewImg);
     bindUpload(uploadBtn, fileInput, errorEl);
     bindDelete(deleteBtn, errorEl);
