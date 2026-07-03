@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import date
 
 from bs4 import BeautifulSoup
@@ -9,6 +10,16 @@ class EmptyExtractionError(Exception):
 
 
 DATE_PATTERN = re.compile(r"(20\d{2})[./-](\d{1,2})[./-](\d{1,2})")
+
+
+def normalize_whitespace(text):
+    """NFKC-normalize, collapse whitespace, and lowercase ``text``.
+
+    Shared by drafts.llm_extraction (grounding checks) and drafts.eval (golden-
+    set comparison) so both compare text the same way.
+    """
+    normalized = unicodedata.normalize("NFKC", text or "")
+    return re.sub(r"\s+", " ", normalized).strip().lower()
 
 
 def _parse_date_candidates(text):
@@ -65,7 +76,7 @@ def extract_event_fields_heuristic(raw_title, raw_text):
     }
 
 
-def extract_event_fields(html):
+def parse_raw_fields(html):
     soup = BeautifulSoup(html, "html.parser")
 
     og_title = soup.find("meta", attrs={"property": "og:title"})
@@ -84,4 +95,9 @@ def extract_event_fields(html):
     if not raw_title and not raw_text:
         raise EmptyExtractionError
 
-    return extract_event_fields_heuristic(raw_title, raw_text)
+    return {"raw_title": raw_title, "raw_text": raw_text}
+
+
+def extract_event_fields(html):
+    raw_fields = parse_raw_fields(html)
+    return extract_event_fields_heuristic(raw_fields["raw_title"], raw_fields["raw_text"])

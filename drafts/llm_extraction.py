@@ -10,8 +10,6 @@ response falls back to the heuristic extractor, unified onto the same
 keyset the happy path returns (extraction_method distinguishes the source).
 """
 import logging
-import re
-import unicodedata
 from datetime import date
 
 from django.conf import settings
@@ -20,7 +18,7 @@ from core.llm.client import call_tool
 from core.llm.exceptions import LLMError
 from core.vocab import CATEGORY, REGION
 
-from .extraction import DATE_PATTERN, extract_event_fields_heuristic
+from .extraction import DATE_PATTERN, extract_event_fields_heuristic, normalize_whitespace
 
 logger = logging.getLogger(__name__)
 
@@ -153,11 +151,6 @@ def _min_confidence(field_confidence):
     return min(values) if values else 0.0
 
 
-def _normalize_whitespace(text):
-    normalized = unicodedata.normalize("NFKC", text or "")
-    return re.sub(r"\s+", " ", normalized).strip().lower()
-
-
 def _revalidate_vocab(value, valid_slugs):
     return value if value in valid_slugs else ""
 
@@ -190,10 +183,10 @@ def _ground_date(parsed_date, scoped_text):
 
 
 def _ground_substring(value, scoped_text):
-    normalized_value = _normalize_whitespace(value)
+    normalized_value = normalize_whitespace(value)
     if len(normalized_value) < GROUNDED_SUBSTRING_MIN_LENGTH:
         return ""
-    if normalized_value in _normalize_whitespace(scoped_text):
+    if normalized_value in normalize_whitespace(scoped_text):
         return value
     return ""
 
