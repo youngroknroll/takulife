@@ -228,6 +228,29 @@ class TestGrounding:
         assert result["extracted_location_name"] == ""
 
 
+class TestGroundingIncludesTitle:
+    def test_work_title_present_only_in_raw_title_is_kept(self, monkeypatch):
+        raw_title = "아이유 팝업 스토어 안내"
+        raw_text = "2026-07-01 부터 2026-07-20 까지 서울 홍대에서 진행됩니다"
+        fake, _ = _fake_call_tool([_response(work_title="아이유")])
+        monkeypatch.setattr("drafts.llm_extraction.call_tool", fake)
+
+        result = extract_event_fields_llm(raw_title, raw_text)
+
+        assert result["extracted_work_title"] == "아이유"
+
+    def test_date_present_only_in_raw_title_is_kept(self, monkeypatch):
+        raw_title = "행사 안내 2026-07-01"
+        raw_text = "서울 홍대에서 진행됩니다"
+        fake, _ = _fake_call_tool([_response(start_date="2026-07-01", end_date="2026-07-01")])
+        monkeypatch.setattr("drafts.llm_extraction.call_tool", fake)
+
+        result = extract_event_fields_llm(raw_title, raw_text)
+
+        assert result["extracted_start_date"] == date(2026, 7, 1)
+        assert result["extracted_end_date"] == date(2026, 7, 1)
+
+
 class TestConfidenceEscalation:
     def test_low_min_field_confidence_triggers_second_call_with_escalation_model(self, monkeypatch):
         low_confidence = dict(HIGH_CONFIDENCE, category=0.1)
@@ -299,6 +322,10 @@ class TestLLMErrorFallback:
 
 class TestGroundingScope:
     def test_grounding_ignores_content_beyond_8000_char_truncation(self, monkeypatch):
+        # Uses a title that shares no substring with the truncated-out values
+        # below, so this only exercises the raw_text truncation boundary
+        # (grounding also scopes raw_title — see TestGroundingIncludesTitle).
+        untitled_raw_title = "행사 안내 페이지"
         padding = "가" * 8000
         raw_text = padding + " 2026-07-01 IVE 팝업"
         fake, _ = _fake_call_tool(
@@ -306,7 +333,7 @@ class TestGroundingScope:
         )
         monkeypatch.setattr("drafts.llm_extraction.call_tool", fake)
 
-        result = extract_event_fields_llm(RAW_TITLE, raw_text)
+        result = extract_event_fields_llm(untitled_raw_title, raw_text)
 
         assert result["extracted_start_date"] is None
         assert result["extracted_work_title"] == ""

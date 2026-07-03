@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 import httpx
 from django.db import IntegrityError
@@ -10,6 +12,7 @@ from drafts.services import (
     DraftCreationDuplicateError,
     DraftCreationUnsafeUrlError,
     DraftImmutableFieldError,
+    DraftPublicationError,
     DraftStateError,
     approve_draft,
     create_draft_from_url,
@@ -93,6 +96,24 @@ def test_approve_draft_attribution_survives_approve_then_publish(make_user):
     assert Event.objects.filter(id=result.event_id, publish_status=Event.PublishStatus.PUBLISHED).exists()
     assert draft.reviewed_by_id == actor.id
     assert draft.approved_at is not None
+
+
+@pytest.mark.django_db
+def test_approve_draft_with_inverted_period_raises_and_stays_pending(make_user):
+    actor = make_user()
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/inverted-period",
+        extracted_title="Inverted period event",
+        extracted_start_date=datetime.date(2026, 8, 10),
+        extracted_end_date=datetime.date(2026, 8, 1),
+    )
+
+    with pytest.raises(DraftPublicationError):
+        approve_draft(draft.id, actor=actor)
+
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert not Event.objects.filter(official_url="https://example.com/inverted-period").exists()
 
 
 @pytest.mark.django_db

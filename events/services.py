@@ -46,6 +46,10 @@ class PublishEventError(Exception):
     pass
 
 
+class InvalidEventPeriodError(PublishEventError):
+    pass
+
+
 def create_published_event(
     *,
     title,
@@ -65,6 +69,9 @@ def create_published_event(
 
     if Event.objects.filter(official_url=normalized_official_url).exists():
         raise DuplicateOfficialUrlError
+
+    if start_date is not None and end_date is not None and start_date > end_date:
+        raise InvalidEventPeriodError
 
     try:
         with transaction.atomic():

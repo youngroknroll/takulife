@@ -19,6 +19,7 @@ from core.promotion import (
     PromotionAlreadySubmittedError,
     PromotionDuplicateError,
     PromotionNotFoundError,
+    PromotionUnsafeUrlError,
     promote_personal_entry,
 )
 from events.models import Event
@@ -102,6 +103,39 @@ def test_promote_already_submitted_raises(make_user):
 
 
 @pytest.mark.django_db
+def test_promote_rejects_unsafe_official_url_scheme(make_user):
+    user = make_user(username="promo-unsafe-scheme")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="F")
+
+    with pytest.raises(PromotionUnsafeUrlError):
+        promote_personal_entry(
+            user=user, personal_entry_id=entry.id, official_url="ftp://official.example.com/x"
+        )
+
+
+@pytest.mark.django_db
+def test_promote_rejects_localhost_official_url(make_user):
+    user = make_user(username="promo-unsafe-localhost")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="G")
+
+    with pytest.raises(PromotionUnsafeUrlError):
+        promote_personal_entry(
+            user=user, personal_entry_id=entry.id, official_url="http://localhost/x"
+        )
+
+
+@pytest.mark.django_db
+def test_promote_rejects_private_ip_literal_official_url(make_user):
+    user = make_user(username="promo-unsafe-private-ip")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="H")
+
+    with pytest.raises(PromotionUnsafeUrlError):
+        promote_personal_entry(
+            user=user, personal_entry_id=entry.id, official_url="http://192.168.0.1/x"
+        )
+
+
+@pytest.mark.django_db
 def test_promote_duplicate_official_url_raises(make_user):
     user = make_user(username="promo-dup")
     existing = PersonalEntry.objects.create(user=user, kind="place", title="D1")
@@ -171,6 +205,57 @@ def test_api_promote_requires_official_url(client, make_user):
     )
 
     assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_api_promote_rejects_ftp_official_url_400(client, make_user):
+    user = make_user(username="api-promo-ftp")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/personal-entries/{entry.id}/promote/",
+        {"official_url": "ftp://official.example.com/p"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    entry.refresh_from_db()
+    assert entry.promotion_status == PersonalEntry.PromotionStatus.NONE
+
+
+@pytest.mark.django_db
+def test_api_promote_rejects_localhost_official_url_400(client, make_user):
+    user = make_user(username="api-promo-localhost")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/personal-entries/{entry.id}/promote/",
+        {"official_url": "http://localhost/p"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    entry.refresh_from_db()
+    assert entry.promotion_status == PersonalEntry.PromotionStatus.NONE
+
+
+@pytest.mark.django_db
+def test_api_promote_rejects_private_ip_official_url_400(client, make_user):
+    user = make_user(username="api-promo-private-ip")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/personal-entries/{entry.id}/promote/",
+        {"official_url": "http://192.168.0.1/p"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    entry.refresh_from_db()
+    assert entry.promotion_status == PersonalEntry.PromotionStatus.NONE
 
 
 @pytest.mark.django_db

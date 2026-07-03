@@ -201,8 +201,16 @@ def _call_llm(raw_title, raw_text, model=None):
     )
 
 
+def _grounding_scope(raw_title, raw_text):
+    """The exact blocks the model was shown (title + text), concatenated —
+    grounding must check both, since title/OG-only fields (dates, work_title,
+    location_name) are otherwise wrongly demoted even when the model read them
+    correctly from the title block."""
+    return f"{_scoped_title(raw_title)}\n{_scoped_text(raw_text)}"
+
+
 def _map_response(response, raw_title, raw_text):
-    scoped_text = _scoped_text(raw_text)
+    scoped_text = _grounding_scope(raw_title, raw_text)
     start_date = _ground_date(_parse_date(_coerce_str(response.get("start_date"))), scoped_text)
     end_date = _ground_date(_parse_date(_coerce_str(response.get("end_date"))), scoped_text)
 

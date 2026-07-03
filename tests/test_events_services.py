@@ -1,8 +1,11 @@
+import datetime
+
 import pytest
 
 from events.models import Event
 from events.services import (
     DuplicateOfficialUrlError,
+    InvalidEventPeriodError,
     MissingOfficialUrlError,
     PublishEventError,
     create_published_event,
@@ -50,3 +53,42 @@ def test_create_published_event_maps_unexpected_error_to_publish_event_error(mon
 
     with pytest.raises(PublishEventError):
         create_published_event(title="Event", official_url="https://example.com/event")
+
+
+@pytest.mark.django_db
+def test_create_published_event_rejects_inverted_period():
+    with pytest.raises(InvalidEventPeriodError):
+        create_published_event(
+            title="Event",
+            official_url="https://example.com/inverted",
+            start_date=datetime.date(2026, 8, 10),
+            end_date=datetime.date(2026, 8, 1),
+        )
+
+
+def test_invalid_event_period_error_is_a_publish_event_error():
+    assert issubclass(InvalidEventPeriodError, PublishEventError)
+
+
+@pytest.mark.django_db
+def test_create_published_event_allows_equal_start_and_end_date():
+    event = create_published_event(
+        title="Event",
+        official_url="https://example.com/same-day",
+        start_date=datetime.date(2026, 8, 1),
+        end_date=datetime.date(2026, 8, 1),
+    )
+
+    assert event.start_date == event.end_date == datetime.date(2026, 8, 1)
+
+
+@pytest.mark.django_db
+def test_create_published_event_allows_start_date_without_end_date():
+    event = create_published_event(
+        title="Event",
+        official_url="https://example.com/open-ended",
+        start_date=datetime.date(2026, 8, 1),
+    )
+
+    assert event.start_date == datetime.date(2026, 8, 1)
+    assert event.end_date is None
