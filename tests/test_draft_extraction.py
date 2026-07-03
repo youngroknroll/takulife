@@ -12,6 +12,7 @@ from drafts.extraction import (
     EmptyExtractionError,
     extract_event_fields,
     extract_event_fields_heuristic,
+    parse_raw_fields,
 )
 
 
@@ -124,6 +125,27 @@ class TestHeuristicExtraction:
 
         assert result["extracted_category"] == "popup_store"
         assert result["extracted_region"] == "seoul"
+
+
+class TestParseRawFields:
+    def test_returns_same_raw_title_and_raw_text_as_extract_event_fields(self):
+        html = """
+        <html><head>
+          <meta property="og:title" content="OG 제목">
+          <meta name="description" content="메타 설명">
+        </head><body>본문</body></html>
+        """
+
+        parsed = parse_raw_fields(html)
+        extracted = extract_event_fields(html)
+
+        assert parsed == {"raw_title": "OG 제목", "raw_text": "메타 설명"}
+        assert parsed["raw_title"] == extracted["raw_title"]
+        assert parsed["raw_text"] == extracted["raw_text"]
+
+    def test_empty_title_and_text_raises(self):
+        with pytest.raises(EmptyExtractionError):
+            parse_raw_fields("<html><head></head><body></body></html>")
 
 
 class TestRegionDetection:

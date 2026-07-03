@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -10,8 +11,9 @@ from events.services import (
     create_published_event,
 )
 
-from .extraction import EmptyExtractionError, extract_event_fields
+from .extraction import EmptyExtractionError, extract_event_fields, parse_raw_fields
 from .fetching import ResponseTooLargeError, UnsupportedContentTypeError, fetch_html
+from .llm_extraction import extract_event_fields_llm
 from .models import EventDraft
 from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
@@ -89,10 +91,17 @@ def create_draft_from_url(source_url, source_name=""):
     except Exception as exc:
         raise DraftCreationFetchError from exc
 
-    try:
-        extracted = extract_event_fields(html)
-    except EmptyExtractionError as exc:
-        raise DraftCreationEmptyExtractionError from exc
+    if settings.DRAFT_LLM_EXTRACTION_ENABLED:
+        try:
+            raw_fields = parse_raw_fields(html)
+        except EmptyExtractionError as exc:
+            raise DraftCreationEmptyExtractionError from exc
+        extracted = extract_event_fields_llm(raw_fields["raw_title"], raw_fields["raw_text"])
+    else:
+        try:
+            extracted = extract_event_fields(html)
+        except EmptyExtractionError as exc:
+            raise DraftCreationEmptyExtractionError from exc
 
     if not extracted.get("raw_title") and not extracted.get("raw_text"):
         raise DraftCreationEmptyExtractionError
@@ -111,6 +120,8 @@ def create_draft_from_url(source_url, source_name=""):
             extracted_start_date=extracted.get("extracted_start_date"),
             extracted_end_date=extracted.get("extracted_end_date"),
             extracted_summary=extracted.get("extracted_summary", ""),
+            confidence=extracted.get("confidence"),
+            extraction_method=extracted.get("extraction_method", EventDraft.ExtractionMethod.HEURISTIC),
             review_status=EventDraft.ReviewStatus.PENDING,
         )
     except IntegrityError as exc:
