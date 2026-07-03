@@ -51,7 +51,7 @@
     <section class="layout">
       <article class="panel">
         <h2>추출 후보 편집</h2>
-        <p class="panel-note">source_url, raw_title, raw_text는 수정할 수 없습니다. pending 상태에서만 추출 필드를 수정할 수 있습니다.</p>
+        <p class="panel-note">공식 URL, 원본 제목, 원본 본문은 수정할 수 없습니다. pending 상태에서만 추출 필드를 수정할 수 있습니다.</p>
 
         <form
           id="draft-edit-form"
@@ -60,7 +60,7 @@
         >
           <div class="field-grid">
             <div class="field">
-              <label for="edit-source-name">source_name</label>
+              <label for="edit-source-name">출처명</label>
               <input
                 id="edit-source-name"
                 name="source_name"
@@ -70,7 +70,7 @@
               >
             </div>
             <div class="field full">
-              <label for="edit-title">extracted_title</label>
+              <label for="edit-title">추출 제목</label>
               <input
                 id="edit-title"
                 name="extracted_title"
@@ -80,7 +80,7 @@
               >
             </div>
             <div class="field">
-              <label for="edit-category">extracted_category</label>
+              <label for="edit-category">추출 카테고리</label>
               <select
                 id="edit-category"
                 name="extracted_category"
@@ -93,7 +93,7 @@
               </select>
             </div>
             <div class="field">
-              <label for="edit-work">extracted_work_title</label>
+              <label for="edit-work">추출 작품명</label>
               <input
                 id="edit-work"
                 name="extracted_work_title"
@@ -103,7 +103,7 @@
               >
             </div>
             <div class="field">
-              <label for="edit-location">extracted_location_name</label>
+              <label for="edit-location">추출 장소명</label>
               <input
                 id="edit-location"
                 name="extracted_location_name"
@@ -113,7 +113,7 @@
               >
             </div>
             <div class="field">
-              <label for="edit-region">extracted_region</label>
+              <label for="edit-region">추출 지역</label>
               <select
                 id="edit-region"
                 name="extracted_region"
@@ -126,7 +126,7 @@
               </select>
             </div>
             <div class="field">
-              <label for="edit-start">extracted_start_date</label>
+              <label for="edit-start">추출 시작일</label>
               <input
                 id="edit-start"
                 name="extracted_start_date"
@@ -136,7 +136,7 @@
               >
             </div>
             <div class="field">
-              <label for="edit-end">extracted_end_date</label>
+              <label for="edit-end">추출 종료일</label>
               <input
                 id="edit-end"
                 name="extracted_end_date"
@@ -146,7 +146,7 @@
               >
             </div>
             <div class="field full">
-              <label for="edit-summary">extracted_summary</label>
+              <label for="edit-summary">추출 요약</label>
               <textarea
                 id="edit-summary"
                 name="extracted_summary"
@@ -174,9 +174,9 @@
       <aside class="action-stack">
         <section class="panel">
           <h2>원문 정보</h2>
-          <p class="panel-note">raw 필드는 원본 보존 대상입니다.</p>
+          <p class="panel-note">원본 필드는 원본 보존 대상입니다.</p>
           <div class="raw-box">
-            <h3>source_url</h3>
+            <h3>공식 URL</h3>
             <p>
               <a href="{{ draft.source_url }}" target="_blank" rel="noopener">
                 {{ draft.source_url }} ↗
@@ -184,11 +184,11 @@
             </p>
           </div>
           <div class="raw-box">
-            <h3>raw_title</h3>
+            <h3>원본 제목</h3>
             <p>{{ draft.raw_title|default:"(없음)" }}</p>
           </div>
           <div class="raw-box">
-            <h3>raw_text</h3>
+            <h3>원본 본문</h3>
             <p>{{ draft.raw_text|truncatechars:300|default:"(없음)" }}</p>
           </div>
         </section>
@@ -232,8 +232,8 @@
         <section class="panel">
           <h2>필드 규칙</h2>
           <ul class="rule-list">
-            <li>pending 상태에서만 extracted_* 필드 수정</li>
-            <li>source_url, raw_title, raw_text는 불변</li>
+            <li>pending 상태에서만 추출 필드 수정</li>
+            <li>공식 URL, 원본 제목, 원본 본문은 불변</li>
             <li>승인 후 공개 Event 생성</li>
             <li>반려한 드래프트는 공개 페이지에 노출하지 않음</li>
           </ul>
