@@ -20,6 +20,18 @@ def test_llm_timeout_seconds_is_ten():
     assert settings.LLM_TIMEOUT_SECONDS == 10
 
 
+def test_llm_escalation_model_setting_is_a_sonnet_model():
+    assert "sonnet" in settings.LLM_ESCALATION_MODEL.lower()
+
+
+def test_llm_escalation_confidence_threshold_is_configured():
+    assert settings.LLM_ESCALATION_CONFIDENCE_THRESHOLD == 0.6
+
+
+def test_draft_llm_extraction_enabled_defaults_to_false():
+    assert settings.DRAFT_LLM_EXTRACTION_ENABLED is False
+
+
 @override_settings(ANTHROPIC_API_KEY="")
 def test_get_api_key_raises_when_blank():
     from core.llm.config import get_api_key

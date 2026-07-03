@@ -8,7 +8,11 @@ from datetime import date
 
 import pytest
 
-from drafts.extraction import EmptyExtractionError, extract_event_fields
+from drafts.extraction import (
+    EmptyExtractionError,
+    extract_event_fields,
+    extract_event_fields_heuristic,
+)
 
 
 class TestTitleExtraction:
@@ -96,6 +100,30 @@ class TestCategoryDetection:
     def test_category(self, text, expected):
         html = f'<html><head><title>{text}</title></head><body></body></html>'
         assert extract_event_fields(html)["extracted_category"] == expected
+
+
+class TestHeuristicExtraction:
+    def test_extract_event_fields_heuristic_returns_same_keys_without_html(self):
+        result = extract_event_fields_heuristic("제목", "서울 2026-07-01 팝업")
+
+        assert set(result.keys()) == {
+            "raw_title",
+            "raw_text",
+            "extracted_title",
+            "extracted_summary",
+            "extracted_category",
+            "extracted_region",
+            "extracted_start_date",
+            "extracted_end_date",
+            "extracted_work_title",
+            "extracted_location_name",
+        }
+
+    def test_extract_event_fields_heuristic_detects_category_and_region_from_text(self):
+        result = extract_event_fields_heuristic("Limited POPUP store", "서울 홍대에서 진행")
+
+        assert result["extracted_category"] == "popup_store"
+        assert result["extracted_region"] == "seoul"
 
 
 class TestRegionDetection:

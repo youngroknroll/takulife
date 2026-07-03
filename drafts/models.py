@@ -8,6 +8,10 @@ class EventDraft(models.Model):
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
 
+    class ExtractionMethod(models.TextChoices):
+        HEURISTIC = "heuristic", "Heuristic"
+        LLM = "llm", "LLM"
+
     source_url = models.URLField(unique=True)
     source_name = models.CharField(max_length=100, blank=True)
     raw_title = models.CharField(max_length=255, blank=True)
@@ -20,6 +24,12 @@ class EventDraft(models.Model):
     extracted_start_date = models.DateField(null=True, blank=True)
     extracted_end_date = models.DateField(null=True, blank=True)
     extracted_summary = models.TextField(blank=True)
+    extraction_method = models.CharField(
+        max_length=20,
+        choices=ExtractionMethod.choices,
+        default=ExtractionMethod.HEURISTIC,
+    )
+    confidence = models.FloatField(null=True, blank=True)
     review_status = models.CharField(
         max_length=20,
         choices=ReviewStatus.choices,

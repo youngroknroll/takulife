@@ -17,13 +17,13 @@ def get_client():
     )
 
 
-def call_tool(*, system_prompt, user_content, tool_name, tool_schema, client=None):
+def call_tool(*, system_prompt, user_content, tool_name, tool_schema, model=None, client=None):
     if client is None:
         client = get_client()
 
     try:
         response = client.messages.create(
-            model=settings.LLM_MODEL,
+            model=model or settings.LLM_MODEL,
             max_tokens=settings.LLM_MAX_TOKENS,
             system=system_prompt,
             messages=[{"role": "user", "content": user_content}],

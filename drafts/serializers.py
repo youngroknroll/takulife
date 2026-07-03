@@ -20,6 +20,8 @@ class EventDraftSerializer(serializers.ModelSerializer):
             "extracted_start_date",
             "extracted_end_date",
             "extracted_summary",
+            "extraction_method",
+            "confidence",
             "review_status",
             "created_at",
             "updated_at",
@@ -29,6 +31,8 @@ class EventDraftSerializer(serializers.ModelSerializer):
             "rejection_reason",
         ]
         read_only_fields = [
+            "extraction_method",
+            "confidence",
             "review_status",
             "created_at",
             "updated_at",
@@ -45,7 +49,14 @@ class EventDraftSerializer(serializers.ModelSerializer):
 
 
 class EventDraftUpdateSerializer(EventDraftSerializer):
-    immutable_fields = ("source_url", "raw_title", "raw_text", "review_status")
+    immutable_fields = (
+        "source_url",
+        "raw_title",
+        "raw_text",
+        "review_status",
+        "extraction_method",
+        "confidence",
+    )
 
     class Meta(EventDraftSerializer.Meta):
         read_only_fields = [
@@ -54,6 +65,8 @@ class EventDraftUpdateSerializer(EventDraftSerializer):
             "raw_title",
             "raw_text",
             "review_status",
+            "extraction_method",
+            "confidence",
             "created_at",
             "updated_at",
             "reviewed_by",
