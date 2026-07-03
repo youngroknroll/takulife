@@ -24,6 +24,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 class EventQuerySerializer(serializers.Serializer):
     STATUS_CHOICES = ("upcoming", "ongoing", "closing_soon", "ended")
+    SORT_CHOICES = ("closing_soon", "start_asc", "newest")
 
     q = serializers.CharField(required=False, allow_blank=True)
     # region/category are multi-value: ?region=seoul&region=gyeonggi → OR filter.
@@ -34,6 +35,7 @@ class EventQuerySerializer(serializers.Serializer):
     start_date_from = serializers.DateField(required=False)
     start_date_to = serializers.DateField(required=False)
     status = serializers.ChoiceField(required=False, choices=STATUS_CHOICES)
+    sort = serializers.ChoiceField(required=False, choices=SORT_CHOICES)
 
 
 class EventPosterUploadSerializer(serializers.Serializer):

@@ -58,7 +58,49 @@ class EventQuerySet(models.QuerySet):
     def most_viewed(self, limit=5):
         return self.order_by("-view_count", "-id")[:limit]
 
-    def order_for_public_listing(self, *, today):
+    def order_for_public_listing(self, *, today, sort=None):
+        """Order published events for the public listing.
+
+        sort (optional): explicit user-selected ordering from the browse UI's
+        "sort" select. When omitted/falsy, falls back to the original
+        ongoing/upcoming/ended state ranking below (unchanged behaviour).
+        """
+        if sort == "closing_soon":
+            # "종료 임박순" ranks not-yet-ended events (end_date null or >= today)
+            # first, soonest-ending first (nulls last); already-ended events are
+            # pushed to the back, most-recently-ended first, so a plain end_date
+            # ascending sort never surfaces long-ended events at the top.
+            return self.annotate(
+                _closing_rank=Case(
+                    When(
+                        models.Q(end_date__isnull=True) | models.Q(end_date__gte=today),
+                        then=Value(0),
+                    ),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                ),
+                _closing_active_sort=Case(
+                    When(
+                        models.Q(end_date__isnull=True) | models.Q(end_date__gte=today),
+                        then=F("end_date"),
+                    ),
+                    output_field=DateField(),
+                ),
+                _closing_ended_sort=Case(
+                    When(end_date__lt=today, then=F("end_date")),
+                    output_field=DateField(),
+                ),
+            ).order_by(
+                "_closing_rank",
+                F("_closing_active_sort").asc(nulls_last=True),
+                F("_closing_ended_sort").desc(),
+                "id",
+            )
+        if sort == "start_asc":
+            return self.order_by("start_date", "id")
+        if sort == "newest":
+            return self.order_by("-id")
+
         return self.annotate(
             _state_rank=Case(
                 When(start_date__lte=today, end_date__gte=today, then=Value(0)),
