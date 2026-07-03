@@ -115,9 +115,10 @@
     // ── keyboard (roving tabindex) ───────────────────────────────────────
     // Only the resting first card is a tab stop (see home.html). Arrow keys
     // move focus — and the tabindex="0" — between cards; Home/End jump to
-    // the ends. Tab/Shift+Tab leave the widget as usual. This must work
-    // under reduced motion too: only the sweep/lift *animation* is
-    // motion-gated, navigation itself is not.
+    // the ends. Tab/Shift+Tab leave the widget as usual. Keyboard nav and
+    // the resulting lift (applyLayout) always run, even under reduced
+    // motion — only the idle auto-shuffle and pointer-tracking below are
+    // motion-gated (the lift *transition* itself is disabled via CSS).
     function cardLink(i) {
       return cards[i].querySelector(".deck-slide");
     }
