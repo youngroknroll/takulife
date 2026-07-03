@@ -58,7 +58,20 @@ class EventQuerySet(models.QuerySet):
     def most_viewed(self, limit=5):
         return self.order_by("-view_count", "-id")[:limit]
 
-    def order_for_public_listing(self, *, today):
+    def order_for_public_listing(self, *, today, sort=None):
+        """Order published events for the public listing.
+
+        sort (optional): explicit user-selected ordering from the browse UI's
+        "sort" select. When omitted/falsy, falls back to the original
+        ongoing/upcoming/ended state ranking below (unchanged behaviour).
+        """
+        if sort == "closing_soon":
+            return self.order_by(F("end_date").asc(nulls_last=True), "id")
+        if sort == "start_asc":
+            return self.order_by("start_date", "id")
+        if sort == "newest":
+            return self.order_by("-id")
+
         return self.annotate(
             _state_rank=Case(
                 When(start_date__lte=today, end_date__gte=today, then=Value(0)),

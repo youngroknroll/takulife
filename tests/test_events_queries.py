@@ -130,6 +130,20 @@ class TestParsePublicListingParams:
         result = parse_public_listing_params(raw)
         assert result["q"] == "test"
 
+    def test_accepts_sort_choice(self):
+        from events.queries import parse_public_listing_params
+
+        result = parse_public_listing_params({"sort": "closing_soon"})
+        assert result["sort"] == "closing_soon"
+
+    def test_rejects_invalid_sort_choice(self):
+        from events.queries import parse_public_listing_params
+        from rest_framework.exceptions import ValidationError
+
+        with pytest.raises(ValidationError) as exc_info:
+            parse_public_listing_params({"sort": "not_a_real_sort"})
+        assert "sort" in str(exc_info.value.detail)
+
 
 # ---------------------------------------------------------------------------
 # list_published_events
@@ -220,6 +234,126 @@ class TestListPublishedEvents:
         make_event(title="Any event")
         qs = list_published_events({})
         assert qs.count() == 1
+
+    def test_sort_closing_soon_orders_by_end_date_ascending_nulls_last(self, make_event):
+        """Closing-soon sort must order purely by end_date, ignoring the default
+        ongoing/upcoming/ended state ranking (ended has the earliest end_date
+        here but ranks last under the default order_for_public_listing)."""
+        from events.queries import list_published_events
+
+        today = date(2026, 6, 24)
+        no_end = make_event(title="No end", start_date=today, end_date=None)
+        ended = make_event(
+            title="Ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=2),
+        )
+        ongoing = make_event(
+            title="Ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+        upcoming = make_event(
+            title="Upcoming",
+            start_date=today + timedelta(days=1),
+            end_date=today + timedelta(days=20),
+        )
+
+        qs = list_published_events({"sort": "closing_soon"}, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ids == [ended.id, ongoing.id, upcoming.id, no_end.id]
+
+    def test_sort_closing_soon_tiebreaks_by_id(self, make_event):
+        from events.queries import list_published_events
+
+        today = date(2026, 6, 24)
+        end_date = today + timedelta(days=5)
+        first = make_event(title="First", start_date=today, end_date=end_date)
+        second = make_event(title="Second", start_date=today, end_date=end_date)
+
+        qs = list_published_events({"sort": "closing_soon"}, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ids.index(first.id) < ids.index(second.id)
+
+    def test_sort_start_asc_orders_by_start_date_ascending(self, make_event):
+        """start_asc sort must order purely by start_date, ignoring the default
+        ongoing/upcoming/ended state ranking (ended has the earliest start_date
+        here but ranks last under the default order_for_public_listing)."""
+        from events.queries import list_published_events
+
+        today = date(2026, 6, 24)
+        ended = make_event(
+            title="Ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=5),
+        )
+        ongoing = make_event(
+            title="Ongoing",
+            start_date=today - timedelta(days=3),
+            end_date=today + timedelta(days=3),
+        )
+        upcoming = make_event(
+            title="Upcoming",
+            start_date=today + timedelta(days=5),
+            end_date=today + timedelta(days=10),
+        )
+
+        qs = list_published_events({"sort": "start_asc"}, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ids == [ended.id, ongoing.id, upcoming.id]
+
+    def test_sort_start_asc_tiebreaks_by_id(self, make_event):
+        from events.queries import list_published_events
+
+        today = date(2026, 6, 24)
+        start_date = today + timedelta(days=1)
+        first = make_event(title="First", start_date=start_date, end_date=today + timedelta(days=10))
+        second = make_event(title="Second", start_date=start_date, end_date=today + timedelta(days=10))
+
+        qs = list_published_events({"sort": "start_asc"}, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ids.index(first.id) < ids.index(second.id)
+
+    def test_sort_newest_orders_by_id_descending(self, make_event):
+        from events.queries import list_published_events
+
+        today = date(2026, 6, 24)
+        first = make_event(title="First", start_date=today, end_date=today + timedelta(days=5))
+        second = make_event(title="Second", start_date=today, end_date=today + timedelta(days=5))
+
+        qs = list_published_events({"sort": "newest"}, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ids == [second.id, first.id]
+
+    def test_no_sort_param_keeps_default_ordering(self, make_event):
+        """Regression guard: omitting sort must not change the existing default order."""
+        from events.queries import list_published_events
+
+        today = date(2026, 6, 24)
+        ended = make_event(
+            title="Ended",
+            start_date=today - timedelta(days=5),
+            end_date=today - timedelta(days=1),
+        )
+        upcoming = make_event(
+            title="Upcoming",
+            start_date=today + timedelta(days=2),
+            end_date=today + timedelta(days=4),
+        )
+        ongoing = make_event(
+            title="Ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=2),
+        )
+
+        qs_no_sort = list_published_events({}, today=today)
+        qs_explicit_default = list_published_events({}, today=today)
+        assert list(qs_no_sort.values_list("id", flat=True)) == list(
+            qs_explicit_default.values_list("id", flat=True)
+        )
+        ids = list(qs_no_sort.values_list("id", flat=True))
+        assert ids.index(ongoing.id) < ids.index(upcoming.id)
+        assert ids.index(upcoming.id) < ids.index(ended.id)
 
 
 # ---------------------------------------------------------------------------

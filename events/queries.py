@@ -66,7 +66,7 @@ def list_published_events(params, *, today=None):
     return (
         Event.objects.published()
         .filter_for_public_listing(params, today=today)
-        .order_for_public_listing(today=today)
+        .order_for_public_listing(today=today, sort=params.get("sort"))
     )
 
 
