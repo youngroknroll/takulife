@@ -1,5 +1,8 @@
 from pathlib import Path
+from urllib.parse import urlsplit
 import os
+
+import dj_database_url
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,6 +29,29 @@ def load_secret_key():
 
 def load_anthropic_api_key():
     return _get_env("ANTHROPIC_API_KEY")
+
+
+def load_database_config():
+    """Build the Django DATABASES["default"] entry from DATABASE_URL.
+
+    Falls back to the existing sqlite file when DATABASE_URL is unset or
+    empty, so local/CI runs that never set it are unaffected. Parsing is
+    delegated to dj-database-url so query-string options (e.g. sslmode)
+    land in OPTIONS automatically.
+    """
+    database_url = _get_env("DATABASE_URL")
+    if not database_url:
+        return {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+
+    config = dj_database_url.parse(database_url)
+    if config["ENGINE"] != "django.db.backends.postgresql":
+        scheme = urlsplit(database_url).scheme
+        raise ValueError(f"Unsupported DATABASE_URL scheme: {scheme!r}")
+
+    return config
 
 
 SECRET_KEY = load_secret_key()
@@ -96,12 +122,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+DATABASES = {"default": load_database_config()}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
