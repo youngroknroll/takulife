@@ -1,6 +1,8 @@
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import urlsplit
 import os
+
+import dj_database_url
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,14 +31,13 @@ def load_anthropic_api_key():
     return _get_env("ANTHROPIC_API_KEY")
 
 
-_POSTGRES_SCHEMES = ("postgres", "postgresql")
-
-
 def load_database_config():
     """Build the Django DATABASES["default"] entry from DATABASE_URL.
 
     Falls back to the existing sqlite file when DATABASE_URL is unset or
-    empty, so local/CI runs that never set it are unaffected.
+    empty, so local/CI runs that never set it are unaffected. Parsing is
+    delegated to dj-database-url so query-string options (e.g. sslmode)
+    land in OPTIONS automatically.
     """
     database_url = _get_env("DATABASE_URL")
     if not database_url:
@@ -45,18 +46,12 @@ def load_database_config():
             "NAME": BASE_DIR / "db.sqlite3",
         }
 
-    parsed = urlsplit(database_url)
-    if parsed.scheme not in _POSTGRES_SCHEMES:
-        raise ValueError(f"Unsupported DATABASE_URL scheme: {parsed.scheme!r}")
+    config = dj_database_url.parse(database_url)
+    if config["ENGINE"] != "django.db.backends.postgresql":
+        scheme = urlsplit(database_url).scheme
+        raise ValueError(f"Unsupported DATABASE_URL scheme: {scheme!r}")
 
-    return {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": unquote(parsed.path.lstrip("/")),
-        "USER": unquote(parsed.username) if parsed.username else "",
-        "PASSWORD": unquote(parsed.password) if parsed.password else "",
-        "HOST": parsed.hostname or "localhost",
-        "PORT": str(parsed.port) if parsed.port else "5432",
-    }
+    return config
 
 
 SECRET_KEY = load_secret_key()

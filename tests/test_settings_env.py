@@ -49,14 +49,12 @@ def test_load_database_config_parses_postgres_url(monkeypatch):
 
     config = settings_module.load_database_config()
 
-    assert config == {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "taku",
-        "USER": "taku",
-        "PASSWORD": "taku",
-        "HOST": "localhost",
-        "PORT": "5432",
-    }
+    assert config["ENGINE"] == "django.db.backends.postgresql"
+    assert config["NAME"] == "taku"
+    assert config["USER"] == "taku"
+    assert config["PASSWORD"] == "taku"
+    assert config["HOST"] == "localhost"
+    assert config["PORT"] == 5432
 
 
 def test_load_database_config_defaults_port_when_omitted(monkeypatch):
@@ -66,7 +64,9 @@ def test_load_database_config_defaults_port_when_omitted(monkeypatch):
 
     config = settings_module.load_database_config()
 
-    assert config["PORT"] == "5432"
+    # dj-database-url leaves PORT empty when the URL omits it; Django/psycopg
+    # then fall back to Postgres's own default port (5432).
+    assert config["PORT"] == ""
 
 
 def test_load_database_config_unquotes_special_characters_in_password(monkeypatch):
@@ -88,3 +88,16 @@ def test_load_database_config_raises_for_unknown_scheme(monkeypatch):
 
     with pytest.raises(ValueError):
         settings_module.load_database_config()
+
+
+def test_load_database_config_reflects_sslmode_query_param_in_options(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://taku:taku@localhost:5432/taku?sslmode=require",
+    )
+
+    settings_module = importlib.import_module("config.settings")
+
+    config = settings_module.load_database_config()
+
+    assert config["OPTIONS"] == {"sslmode": "require"}
