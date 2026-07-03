@@ -101,3 +101,19 @@ def test_load_database_config_reflects_sslmode_query_param_in_options(monkeypatc
     config = settings_module.load_database_config()
 
     assert config["OPTIONS"] == {"sslmode": "require"}
+
+
+def test_settings_debug_defaults_to_true_when_env_unset(monkeypatch):
+    monkeypatch.delenv("DEBUG", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_debug() is True
+
+
+def test_settings_debug_false_when_env_set_to_false(monkeypatch):
+    monkeypatch.setenv("DEBUG", "false")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_debug() is False

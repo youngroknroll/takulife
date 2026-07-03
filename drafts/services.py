@@ -107,23 +107,26 @@ def create_draft_from_url(source_url, source_name=""):
         raise DraftCreationEmptyExtractionError
 
     try:
-        return EventDraft.objects.create(
-            source_url=source_url,
-            source_name=source_name,
-            raw_title=extracted.get("raw_title", ""),
-            raw_text=extracted.get("raw_text", ""),
-            extracted_title=extracted.get("extracted_title", ""),
-            extracted_category=extracted.get("extracted_category", ""),
-            extracted_work_title=extracted.get("extracted_work_title", ""),
-            extracted_location_name=extracted.get("extracted_location_name", ""),
-            extracted_region=extracted.get("extracted_region", ""),
-            extracted_start_date=extracted.get("extracted_start_date"),
-            extracted_end_date=extracted.get("extracted_end_date"),
-            extracted_summary=extracted.get("extracted_summary", ""),
-            confidence=extracted.get("confidence"),
-            extraction_method=extracted.get("extraction_method", EventDraft.ExtractionMethod.HEURISTIC),
-            review_status=EventDraft.ReviewStatus.PENDING,
-        )
+        with transaction.atomic():
+            return EventDraft.objects.create(
+                source_url=source_url,
+                source_name=source_name,
+                raw_title=extracted.get("raw_title", ""),
+                raw_text=extracted.get("raw_text", ""),
+                extracted_title=extracted.get("extracted_title", ""),
+                extracted_category=extracted.get("extracted_category", ""),
+                extracted_work_title=extracted.get("extracted_work_title", ""),
+                extracted_location_name=extracted.get("extracted_location_name", ""),
+                extracted_region=extracted.get("extracted_region", ""),
+                extracted_start_date=extracted.get("extracted_start_date"),
+                extracted_end_date=extracted.get("extracted_end_date"),
+                extracted_summary=extracted.get("extracted_summary", ""),
+                confidence=extracted.get("confidence"),
+                extraction_method=extracted.get(
+                    "extraction_method", EventDraft.ExtractionMethod.HEURISTIC
+                ),
+                review_status=EventDraft.ReviewStatus.PENDING,
+            )
     except IntegrityError as exc:
         raise DraftCreationDuplicateError from exc
 
@@ -148,17 +151,18 @@ def create_draft_from_fields(
     free-text category/region can be corrected before publication.
     """
     try:
-        return EventDraft.objects.create(
-            source_url=source_url,
-            source_name=source_name,
-            extracted_title=title,
-            extracted_category=category,
-            extracted_work_title=work_title,
-            extracted_location_name=location_name,
-            extracted_region=region,
-            extracted_summary=summary,
-            review_status=EventDraft.ReviewStatus.PENDING,
-        )
+        with transaction.atomic():
+            return EventDraft.objects.create(
+                source_url=source_url,
+                source_name=source_name,
+                extracted_title=title,
+                extracted_category=category,
+                extracted_work_title=work_title,
+                extracted_location_name=location_name,
+                extracted_region=region,
+                extracted_summary=summary,
+                review_status=EventDraft.ReviewStatus.PENDING,
+            )
     except IntegrityError as exc:
         raise DraftCreationDuplicateError from exc
 

@@ -2,7 +2,8 @@ import datetime
 
 import pytest
 import httpx
-from django.db import IntegrityError
+from django.db import IntegrityError, connection, transaction
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from drafts.fetching import MAX_RESPONSE_BYTES, ResponseTooLargeError, fetch_html
@@ -15,6 +16,7 @@ from drafts.services import (
     DraftPublicationError,
     DraftStateError,
     approve_draft,
+    create_draft_from_fields,
     create_draft_from_url,
     reject_draft,
     update_draft,
@@ -244,6 +246,52 @@ def test_create_draft_from_url_maps_duplicate_create_race(monkeypatch):
 
     with pytest.raises(DraftCreationDuplicateError):
         create_draft_from_url("https://example.com/event")
+
+
+@pytest.mark.django_db
+def test_create_draft_from_url_wraps_duplicate_create_in_savepoint(monkeypatch):
+    """The EventDraft.objects.create() call must run inside its own nested
+    atomic block (a savepoint), so that when it is invoked from within an
+    outer transaction.atomic() (e.g. core.promotion.promote_personal_entry),
+    an IntegrityError caught here does not leave the surrounding transaction
+    unusable for the caller's subsequent queries (Postgres aborts the whole
+    transaction on a statement error unless it ran under a savepoint)."""
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<title>Event</title>")
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields",
+        lambda html: {"raw_title": "Event", "raw_text": "Summary"},
+    )
+
+    def raise_integrity_error(**kwargs):
+        raise IntegrityError("duplicate")
+
+    monkeypatch.setattr("drafts.services.EventDraft.objects.create", raise_integrity_error)
+
+    with transaction.atomic():
+        with CaptureQueriesContext(connection) as ctx:
+            with pytest.raises(DraftCreationDuplicateError):
+                create_draft_from_url("https://example.com/event")
+
+    assert any("SAVEPOINT" in query["sql"].upper() for query in ctx.captured_queries)
+
+
+@pytest.mark.django_db
+def test_create_draft_from_fields_wraps_duplicate_create_in_savepoint(monkeypatch):
+    """Same savepoint guarantee as create_draft_from_url, for the direct
+    (no-fetch) creation path used by core.promotion.promote_personal_entry,
+    which calls this function from inside its own outer transaction.atomic()."""
+
+    def raise_integrity_error(**kwargs):
+        raise IntegrityError("duplicate")
+
+    monkeypatch.setattr("drafts.services.EventDraft.objects.create", raise_integrity_error)
+
+    with transaction.atomic():
+        with CaptureQueriesContext(connection) as ctx:
+            with pytest.raises(DraftCreationDuplicateError):
+                create_draft_from_fields(source_url="https://example.com/manual", title="A")
+
+    assert any("SAVEPOINT" in query["sql"].upper() for query in ctx.captured_queries)
 
 
 @pytest.mark.django_db
