@@ -50,6 +50,10 @@ class InvalidEventPeriodError(PublishEventError):
     pass
 
 
+class PublishEventTitleError(PublishEventError):
+    pass
+
+
 def create_published_event(
     *,
     title,
@@ -66,6 +70,13 @@ def create_published_event(
     normalized_official_url = (official_url or "").strip()
     if not normalized_official_url:
         raise MissingOfficialUrlError
+
+    normalized_title = (title or "").strip()
+    if not normalized_title:
+        raise PublishEventTitleError
+
+    if normalized_title.rstrip("/") == normalized_official_url.rstrip("/"):
+        raise PublishEventTitleError
 
     if Event.objects.filter(official_url=normalized_official_url).exists():
         raise DuplicateOfficialUrlError

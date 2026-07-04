@@ -8,6 +8,7 @@ from events.services import (
     InvalidEventPeriodError,
     MissingOfficialUrlError,
     PublishEventError,
+    PublishEventTitleError,
     create_published_event,
 )
 
@@ -70,6 +71,10 @@ def test_invalid_event_period_error_is_a_publish_event_error():
     assert issubclass(InvalidEventPeriodError, PublishEventError)
 
 
+def test_publish_event_title_error_is_a_publish_event_error():
+    assert issubclass(PublishEventTitleError, PublishEventError)
+
+
 @pytest.mark.django_db
 def test_create_published_event_allows_equal_start_and_end_date():
     event = create_published_event(
@@ -92,3 +97,58 @@ def test_create_published_event_allows_start_date_without_end_date():
 
     assert event.start_date == datetime.date(2026, 8, 1)
     assert event.end_date is None
+
+
+@pytest.mark.django_db
+def test_create_published_event_rejects_blank_title():
+    with pytest.raises(PublishEventTitleError):
+        create_published_event(title="", official_url="https://example.com/blank-title")
+
+    assert not Event.objects.filter(official_url="https://example.com/blank-title").exists()
+
+
+@pytest.mark.django_db
+def test_create_published_event_rejects_whitespace_only_title():
+    with pytest.raises(PublishEventTitleError):
+        create_published_event(title="   ", official_url="https://example.com/whitespace-title")
+
+    assert not Event.objects.filter(official_url="https://example.com/whitespace-title").exists()
+
+
+@pytest.mark.django_db
+def test_create_published_event_rejects_title_equal_to_official_url():
+    with pytest.raises(PublishEventTitleError):
+        create_published_event(
+            title="https://example.com/matching-title",
+            official_url="https://example.com/matching-title",
+        )
+
+    assert not Event.objects.filter(official_url="https://example.com/matching-title").exists()
+
+
+@pytest.mark.django_db
+def test_create_published_event_rejects_title_matching_official_url_with_trailing_slash_difference():
+    with pytest.raises(PublishEventTitleError):
+        create_published_event(
+            title="https://example.com/slash-title/",
+            official_url="https://example.com/slash-title",
+        )
+    assert not Event.objects.filter(official_url="https://example.com/slash-title").exists()
+
+    with pytest.raises(PublishEventTitleError):
+        create_published_event(
+            title="https://example.com/slash-title-2",
+            official_url="https://example.com/slash-title-2/",
+        )
+    assert not Event.objects.filter(official_url="https://example.com/slash-title-2/").exists()
+
+
+@pytest.mark.django_db
+def test_create_published_event_allows_title_differing_only_by_case_from_official_url():
+    event = create_published_event(
+        title="HTTPS://EXAMPLE.COM/case-title",
+        official_url="https://example.com/case-title",
+    )
+
+    assert event.title == "HTTPS://EXAMPLE.COM/case-title"
+    assert event.official_url == "https://example.com/case-title"

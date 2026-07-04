@@ -29,6 +29,7 @@ from drafts.services import (
     DraftPublicationDuplicateError,
     DraftPublicationError,
     DraftPublicationMissingOfficialUrlError,
+    DraftPublicationTitleError,
     DraftStateError,
     approve_draft,
     reject_draft,
@@ -251,6 +252,8 @@ class StaffDraftApproveView(APIView):
             return field_error_response(
                 "official_url", "Official URL is required for publication."
             )
+        except DraftPublicationTitleError:
+            return field_error_response("title", "제목을 입력해야 게시할 수 있습니다.")
         except DraftPublicationError:
             return error_response("Event publication failed.", 503)
 
