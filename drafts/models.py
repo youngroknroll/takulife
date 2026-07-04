@@ -51,3 +51,21 @@ class EventDraft(models.Model):
 
     def __str__(self):
         return self.source_url
+
+
+class DraftSource(models.Model):
+    class SourceType(models.TextChoices):
+        RSS = "rss", "RSS"
+        SITEMAP = "sitemap", "Sitemap"
+        HTML = "html", "HTML"
+
+    name = models.CharField(max_length=100)
+    url = models.URLField(unique=True)
+    source_type = models.CharField(max_length=20, choices=SourceType.choices)
+    enabled = models.BooleanField(default=False)
+    link_selector = models.CharField(max_length=255, blank=True)
+    last_checked_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
