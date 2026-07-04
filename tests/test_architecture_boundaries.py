@@ -36,6 +36,7 @@ def test_draft_views_do_not_import_events_modules():
         "drafts/views.py",
         "drafts/services.py",
         "drafts/llm_extraction.py",
+        "drafts/discovery.py",
     ],
 )
 def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
@@ -72,6 +73,7 @@ def test_archive_modules_do_not_import_drafts_modules(module_path):
         "drafts/services.py",
         "drafts/serializers.py",
         "drafts/llm_extraction.py",
+        "drafts/discovery.py",
         "archive/models.py",
         "archive/serializers.py",
         "archive/services.py",
@@ -88,6 +90,33 @@ def test_domain_modules_do_not_import_staff_modules(module_path):
         module
         for module in imported_modules
         if module == "staff" or module.startswith("staff.")
+    }
+
+
+def test_draft_discovery_does_not_import_events_modules():
+    """discovery.py is a pure link-extraction module (prompt_plan.md §2-1) —
+    unlike drafts/services.py, which legitimately imports events.services to
+    orchestrate draft-to-event promotion, discovery.py has no reason to touch
+    the events domain at all."""
+    imported_modules = _imported_modules("drafts/discovery.py")
+
+    assert not {
+        module
+        for module in imported_modules
+        if module == "events" or module.startswith("events.")
+    }
+
+
+def test_draft_discovery_does_not_import_core_llm_modules():
+    """LLM extraction is a separate, flag-gated concern (drafts/llm_extraction.py)
+    — discovery.py's deterministic filters (prompt_plan.md §1-4) must not
+    pull in core.llm."""
+    imported_modules = _imported_modules("drafts/discovery.py")
+
+    assert not {
+        module
+        for module in imported_modules
+        if module == "core.llm" or module.startswith("core.llm.")
     }
 
 
