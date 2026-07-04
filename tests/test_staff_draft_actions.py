@@ -32,7 +32,10 @@ def draft_reject_url(draft_id):
 def test_staff_can_approve_pending_draft(client, make_user):
     staff = make_user(is_staff=True)
     client.force_login(staff)
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/event",
+        extracted_title="Sample pending event",
+    )
 
     response = client.post(draft_approve_url(draft.id))
 
@@ -306,6 +309,47 @@ def test_missing_draft_cannot_be_rejected_and_logs_nothing(client, make_user):
     response = client.post(draft_reject_url(999999))
 
     assert response.status_code == 404
+    assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_approve_rejects_blank_title_and_logs_nothing(client, make_user):
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/blank-title-draft",
+    )
+
+    response = client.post(draft_approve_url(draft.id))
+
+    assert response.status_code == 400
+    assert response.json() == {"title": ["제목을 입력해야 게시할 수 있습니다."]}
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert draft.reviewed_by_id is None
+    assert draft.approved_at is None
+    assert not Event.objects.filter(official_url="https://example.com/blank-title-draft").exists()
+    assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_approve_rejects_title_equal_to_official_url_and_logs_nothing(client, make_user):
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/self-titled-draft",
+        extracted_title="https://example.com/self-titled-draft",
+    )
+
+    response = client.post(draft_approve_url(draft.id))
+
+    assert response.status_code == 400
+    assert response.json() == {"title": ["제목을 입력해야 게시할 수 있습니다."]}
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert draft.reviewed_by_id is None
+    assert draft.approved_at is None
+    assert not Event.objects.filter(official_url="https://example.com/self-titled-draft").exists()
     assert StaffActionLog.objects.count() == 0
 
 

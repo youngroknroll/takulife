@@ -14,6 +14,7 @@ from drafts.services import (
     DraftCreationUnsafeUrlError,
     DraftImmutableFieldError,
     DraftPublicationError,
+    DraftPublicationTitleError,
     DraftStateError,
     approve_draft,
     create_draft_from_fields,
@@ -116,6 +117,41 @@ def test_approve_draft_with_inverted_period_raises_and_stays_pending(make_user):
     draft.refresh_from_db()
     assert draft.review_status == EventDraft.ReviewStatus.PENDING
     assert not Event.objects.filter(official_url="https://example.com/inverted-period").exists()
+
+
+@pytest.mark.django_db
+def test_approve_draft_rejects_blank_title_and_stays_pending(make_user):
+    actor = make_user()
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/blank-title-draft",
+    )
+
+    with pytest.raises(DraftPublicationTitleError):
+        approve_draft(draft.id, actor=actor)
+
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert draft.reviewed_by_id is None
+    assert draft.approved_at is None
+    assert not Event.objects.filter(official_url="https://example.com/blank-title-draft").exists()
+
+
+@pytest.mark.django_db
+def test_approve_draft_rejects_title_equal_to_official_url_and_stays_pending(make_user):
+    actor = make_user()
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/self-titled-draft",
+        extracted_title="https://example.com/self-titled-draft",
+    )
+
+    with pytest.raises(DraftPublicationTitleError):
+        approve_draft(draft.id, actor=actor)
+
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert draft.reviewed_by_id is None
+    assert draft.approved_at is None
+    assert not Event.objects.filter(official_url="https://example.com/self-titled-draft").exists()
 
 
 @pytest.mark.django_db

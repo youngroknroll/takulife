@@ -8,6 +8,7 @@ from events.services import (
     DuplicateOfficialUrlError,
     MissingOfficialUrlError,
     PublishEventError,
+    PublishEventTitleError,
     create_published_event,
 )
 
@@ -39,6 +40,10 @@ class DraftPublicationMissingOfficialUrlError(Exception):
 
 
 class DraftPublicationError(Exception):
+    pass
+
+
+class DraftPublicationTitleError(Exception):
     pass
 
 
@@ -211,7 +216,7 @@ def approve_draft(draft_id, *, actor):
 
         try:
             event = create_published_event(
-                title=draft.extracted_title or draft.raw_title or draft.source_url,
+                title=draft.extracted_title or draft.raw_title,
                 category=draft.extracted_category,
                 work_title=draft.extracted_work_title,
                 location_name=draft.extracted_location_name,
@@ -226,6 +231,8 @@ def approve_draft(draft_id, *, actor):
             raise DraftPublicationDuplicateError from exc
         except MissingOfficialUrlError as exc:
             raise DraftPublicationMissingOfficialUrlError from exc
+        except PublishEventTitleError as exc:
+            raise DraftPublicationTitleError from exc
         except PublishEventError as exc:
             raise DraftPublicationError from exc
 
