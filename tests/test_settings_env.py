@@ -27,16 +27,17 @@ def test_settings_load_anthropic_api_key_from_env_file(monkeypatch, tmp_path):
     assert settings_module.load_anthropic_api_key() == "loaded-anthropic-key"
 
 
-def test_load_database_config_falls_back_to_sqlite_when_unset(monkeypatch):
+def test_load_database_config_falls_back_to_sqlite_when_unset(monkeypatch, tmp_path):
     monkeypatch.delenv("DATABASE_URL", raising=False)
 
     settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
 
     config = settings_module.load_database_config()
 
     assert config == {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": settings_module.BASE_DIR / "db.sqlite3",
+        "NAME": tmp_path / "db.sqlite3",
     }
 
 
