@@ -70,6 +70,9 @@ LLM_ESCALATION_MODEL = "claude-sonnet-5"
 LLM_ESCALATION_CONFIDENCE_THRESHOLD = 0.6
 # Wiring flag (PR-C connects create_draft_from_url to extract_event_fields_llm).
 DRAFT_LLM_EXTRACTION_ENABLED = False
+# Contact URL appended to the crawl User-Agent (drafts/fetching.py) so a site
+# operator can reach us about the bot; blank keeps the current bare UA.
+DRAFT_FETCH_CONTACT = ""
 DEBUG = load_debug()
 ALLOWED_HOSTS = []
 
