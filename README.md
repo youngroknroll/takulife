@@ -145,6 +145,12 @@ Trade-off
 - 관리자 승인 시에만 published event로 전환 (공개 신뢰 흐름을 그대로 유지)
 - 제보 상태를 항목에 표시하고 중복 제보 차단
 
+### Accounts / 인증
+
+- 이메일 기반 계정 (django-allauth) — 회원가입 시 **이메일 인증 필수**, 비밀번호 재설정 지원, 이메일이 로그인 식별자
+- Google 소셜 로그인 — 검증된 이메일이면 기존 계정과 **자동 연결** (Google 전용, 완전 신뢰 provider / OAuth 자격증명 설정 시 활성)
+- 무차별 대입 방어 — 로그인 실패 rate limit + **django-axes IP 락아웃**(쿨오프), 가입·비밀번호 재설정 폭주 제한, 초과 시 한국어 안내 페이지
+
 ## What I Intentionally Did Not Build
 
 - AI 기반 자동 추출
@@ -167,11 +173,13 @@ Reason
 
 - Django
 - Django REST Framework
+- django-allauth 기반 인증 (이메일 인증, 비밀번호 재설정, Google 소셜 로그인)
+- django-axes 로그인 brute-force 락아웃
 - SQLite 기반 로컬 개발 환경
 - PostgreSQL 전환 고려 설계
 - URL fetch + extraction workflow
 - 서비스 레이어 분리
-- pytest 기반 테스트 구성
+- pytest 기반 테스트 구성 (+ Playwright E2E)
 
 ## Key Takeaway
 
