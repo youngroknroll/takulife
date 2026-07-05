@@ -8,10 +8,13 @@ Covers:
 - Counts are asserted with N>=2 per status to avoid false-confidence
   regressions (filter vs exists)
 - DRAFT_LISTING_PAGE_SIZE constant equals 20
+- list_draft_sources() (PR-5b staff dashboard freshness): ordered by
+  -enabled, name — the staff/views.py dashboard() view must call this
+  helper rather than querying DraftSource itself (prompt_plan.md §3-1-5).
 """
 import pytest
 
-from drafts.models import EventDraft
+from drafts.models import DraftSource, EventDraft
 
 
 @pytest.mark.django_db
@@ -96,3 +99,53 @@ def test_draft_listing_page_size_constant_is_20():
     from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
     assert DRAFT_LISTING_PAGE_SIZE == 20
+
+
+@pytest.mark.django_db
+class TestListDraftSources:
+    def test_orders_enabled_sources_before_disabled(self):
+        from drafts.queries import list_draft_sources
+
+        disabled = DraftSource.objects.create(
+            name="disabled-source",
+            url="https://example.com/disabled-feed/",
+            source_type=DraftSource.SourceType.RSS,
+            enabled=False,
+        )
+        enabled = DraftSource.objects.create(
+            name="enabled-source",
+            url="https://example.com/enabled-feed/",
+            source_type=DraftSource.SourceType.RSS,
+            enabled=True,
+        )
+
+        result = list(list_draft_sources())
+
+        assert result == [enabled, disabled]
+
+    def test_orders_by_name_within_same_enabled_state(self):
+        from drafts.queries import list_draft_sources
+
+        zeta = DraftSource.objects.create(
+            name="zeta",
+            url="https://example.com/zeta/",
+            source_type=DraftSource.SourceType.SITEMAP,
+            enabled=True,
+        )
+        alpha = DraftSource.objects.create(
+            name="alpha",
+            url="https://example.com/alpha/",
+            source_type=DraftSource.SourceType.SITEMAP,
+            enabled=True,
+        )
+
+        result = list(list_draft_sources())
+
+        assert result == [alpha, zeta]
+
+    def test_returns_empty_when_no_sources_exist(self):
+        from drafts.queries import list_draft_sources
+
+        result = list(list_draft_sources())
+
+        assert result == []

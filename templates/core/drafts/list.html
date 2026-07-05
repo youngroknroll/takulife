@@ -24,11 +24,11 @@
       <div class="summary-grid" aria-label="드래프트 요약">
         <article class="summary-card">
           <p class="summary-label">검토 대기</p>
-          <p class="summary-value">{{ stats.pending }}</p>
+          <p class="summary-value" id="stat-pending">{{ stats.pending }}</p>
         </article>
         <article class="summary-card">
           <p class="summary-label">승인됨</p>
-          <p class="summary-value">{{ stats.approved }}</p>
+          <p class="summary-value" id="stat-approved">{{ stats.approved }}</p>
         </article>
         <article class="summary-card">
           <p class="summary-label">반려됨</p>
@@ -71,23 +71,48 @@
 
         <div class="chips" role="group" aria-label="상태 필터">
           <a class="chip{% if not selected_status %} active{% endif %}" href="/staff/drafts/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체 {{ stats_total }}</a>
-          <a class="chip{% if selected_status == "pending" %} active{% endif %}" href="/staff/drafts/?status=pending" aria-label="검토 대기 필터"{% if selected_status == "pending" %} aria-current="true"{% endif %}>검토 대기 {{ stats.pending }}</a>
-          <a class="chip{% if selected_status == "approved" %} active{% endif %}" href="/staff/drafts/?status=approved" aria-label="승인됨 필터"{% if selected_status == "approved" %} aria-current="true"{% endif %}>승인됨 {{ stats.approved }}</a>
+          <a class="chip{% if selected_status == "pending" %} active{% endif %}" href="/staff/drafts/?status=pending" aria-label="검토 대기 필터"{% if selected_status == "pending" %} aria-current="true"{% endif %}>검토 대기 <span id="chip-count-pending">{{ stats.pending }}</span></a>
+          <a class="chip{% if selected_status == "approved" %} active{% endif %}" href="/staff/drafts/?status=approved" aria-label="승인됨 필터"{% if selected_status == "approved" %} aria-current="true"{% endif %}>승인됨 <span id="chip-count-approved">{{ stats.approved }}</span></a>
           <a class="chip{% if selected_status == "rejected" %} active{% endif %}" href="/staff/drafts/?status=rejected" aria-label="반려됨 필터"{% if selected_status == "rejected" %} aria-current="true"{% endif %}>반려됨 {{ stats.rejected }}</a>
         </div>
 
         {% if draft_rows %}
-          <div class="draft-list" aria-label="드래프트 목록">
+          <div class="bulk-toolbar" id="bulk-toolbar" hidden>
+            <label class="draft-select" for="draft-select-all">
+              <input type="checkbox" id="draft-select-all">
+              <span class="sr-only">이 페이지의 검토 대기 드래프트 전체 선택</span>
+            </label>
+            <span id="bulk-selected-count">0건 선택됨</span>
+            <button type="button" id="bulk-approve-btn" class="action-button" disabled>선택 일괄 승인</button>
+            <p id="bulk-approve-result" role="status" aria-live="polite"></p>
+            <p id="bulk-approve-error" class="notice" role="alert" hidden></p>
+          </div>
+
+          <div class="draft-list" aria-label="드래프트 목록" data-selected-status="{{ selected_status }}">
             {% for row in draft_rows %}
+              {% with title=row.draft.extracted_title|default:row.draft.raw_title %}
               <article class="draft-card hover-lift">
+                {% if row.draft.review_status == "pending" %}
+                  <label class="draft-select" for="draft-select-{{ row.draft.id }}">
+                    <input type="checkbox" id="draft-select-{{ row.draft.id }}" class="draft-select-checkbox"
+                           data-draft-select data-draft-id="{{ row.draft.id }}"
+                           {% if not title %}data-missing-title="true"{% endif %}>
+                    <span class="sr-only">{{ title|default:"제목 없음" }} 선택</span>
+                  </label>
+                {% else %}
+                  <span class="draft-select-spacer" aria-hidden="true"></span>
+                {% endif %}
                 <div>
                   <div class="draft-top">
-                    <span class="draft-chip {{ row.draft.review_status }} review-status-{{ row.draft.review_status }}">{{ row.draft.review_status }}</span>
+                    <span class="draft-chip {{ row.draft.review_status }} review-status-{{ row.draft.review_status }}" data-draft-status-chip>{{ row.draft.review_status }}</span>
                     {% if row.category_label %}
                       <span class="draft-chip category">{{ row.category_label }}</span>
                     {% endif %}
+                    {% if row.draft.review_status == "pending" and not title %}
+                      <span class="draft-chip warning">⚠ 제목 없음</span>
+                    {% endif %}
                   </div>
-                  <h3>{{ row.draft.extracted_title|default:row.draft.raw_title|default:"(제목 없음)" }}</h3>
+                  <h3>{{ title|default:"(제목 없음)" }}</h3>
                   <p class="meta">
                     {% if row.draft.extracted_work_title %}{{ row.draft.extracted_work_title }}{% endif %}
                     {% if row.draft.extracted_work_title and row.region_label %} · {% endif %}
@@ -99,11 +124,13 @@
                       {{ row.draft.source_url }} ↗
                     </a>
                   </p>
+                  <p class="bulk-fail-reason" data-bulk-fail-reason hidden></p>
                 </div>
                 <a class="queue-link" href="/staff/drafts/{{ row.draft.id }}/">
                   {% if row.draft.review_status == "pending" %}검토하기{% else %}상세 보기{% endif %}
                 </a>
               </article>
+              {% endwith %}
             {% endfor %}
           </div>
           {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
@@ -132,4 +159,5 @@
 
 {% block extra_js %}
   <script defer src="{% static 'js/pages/draft.js' %}"></script>
+  <script defer src="{% static 'js/pages/draft_bulk.js' %}"></script>
 {% endblock %}
