@@ -6,6 +6,7 @@ alongside the draft approve/reject action endpoints. staff -> core is an
 allowed presentation-only import (label maps/vocab); core must never import
 staff back (see tests/test_architecture_boundaries.py).
 """
+import logging
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -39,6 +40,8 @@ from events.queries import published_quality_warnings
 from .models import StaffActionLog
 from .permissions import staff_console_required
 from .queries import recent_staff_actions
+
+logger = logging.getLogger(__name__)
 
 
 @staff_console_required
@@ -259,6 +262,108 @@ class StaffDraftApproveView(APIView):
 
         data = {**EventDraftSerializer(result.draft).data, "event_id": result.event_id}
         return Response(data, status=status.HTTP_200_OK)
+
+
+MAX_BULK_APPROVE_DRAFT_IDS = 20
+
+
+def _validate_bulk_draft_ids(draft_ids):
+    """Return an error message if draft_ids fails structural validation, else None.
+
+    Structural-only: whether each id actually exists/is pending is decided
+    per-item inside the view's loop, not here.
+    """
+    if not isinstance(draft_ids, list) or not draft_ids:
+        return "draft_ids must be a non-empty list."
+    # Cap check runs before the per-item scan so an oversized payload is
+    # rejected without a full O(n) integer-type scan first.
+    if len(draft_ids) > MAX_BULK_APPROVE_DRAFT_IDS:
+        return f"draft_ids must contain at most {MAX_BULK_APPROVE_DRAFT_IDS} ids."
+    if not all(
+        isinstance(draft_id, int) and not isinstance(draft_id, bool)
+        for draft_id in draft_ids
+    ):
+        return "draft_ids must contain only integers."
+    return None
+
+
+class StaffDraftBulkApproveView(APIView):
+    """Approve up to MAX_BULK_APPROVE_DRAFT_IDS pending drafts in one request.
+
+    Each id is processed independently, in its own outer-atomic block — the
+    same approve_draft() + StaffActionLog.objects.create() pairing as
+    StaffDraftApproveView, repeated per item. One item's failure never rolls
+    back another's success. The response is always 200 (partial success is
+    the normal case, not an error); 400 is reserved for requests that are
+    structurally invalid before any item is touched (see
+    _validate_bulk_draft_ids).
+    """
+
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        body = request.data if isinstance(request.data, dict) else {}
+        draft_ids = body.get("draft_ids")
+        validation_error = _validate_bulk_draft_ids(draft_ids)
+        if validation_error is not None:
+            return field_error_response("draft_ids", validation_error)
+
+        metadata = _staff_action_metadata(request)
+        succeeded = []
+        failed = []
+
+        for draft_id in draft_ids:
+            reason = self._approve_one(draft_id, metadata)
+            if reason is None:
+                succeeded.append(draft_id)
+            else:
+                failed.append({"id": draft_id, "reason": reason})
+
+        return Response({"succeeded": succeeded, "failed": failed}, status=status.HTTP_200_OK)
+
+    @staticmethod
+    def _approve_one(draft_id, metadata):
+        """Approve a single draft. Return None on success, else a failure reason.
+
+        Mirrors StaffDraftApproveView's per-item outer-atomic pattern: the
+        StaffActionLog write is inside the same transaction.atomic() block as
+        the approve_draft() call, so a log-write failure rolls back that
+        item's approval too, without touching any other item.
+        """
+        try:
+            with transaction.atomic():
+                result = approve_draft(draft_id, actor=metadata["actor"])
+                StaffActionLog.objects.create(
+                    actor=metadata["actor"],
+                    action=StaffActionLog.Action.APPROVE,
+                    target_draft=result.draft,
+                    ip_address=metadata["ip_address"],
+                    user_agent=metadata["user_agent"],
+                )
+        except DraftNotFoundError:
+            return "Not found."
+        except DraftStateError:
+            return "Only pending drafts can be approved."
+        except DraftPublicationDuplicateError:
+            return "Event with this official URL already exists."
+        except DraftPublicationMissingOfficialUrlError:
+            return "Official URL is required for publication."
+        except DraftPublicationTitleError:
+            return "제목을 입력해야 게시할 수 있습니다."
+        except DraftPublicationError:
+            return "Event publication failed."
+        except Exception:
+            # Catch-all so one item's unclassified failure (e.g. a log-write
+            # IntegrityError) never aborts the rest of the batch — the
+            # transaction.atomic() block above has already rolled back this
+            # item's own changes by the time control reaches here. Log the
+            # real exception (see events/services.py convention) while still
+            # returning the same static client-facing reason.
+            logger.exception(
+                "bulk approve: unexpected error for draft_id=%s", draft_id
+            )
+            return "Unexpected error."
+        return None
 
 
 class StaffDraftRejectView(APIView):
