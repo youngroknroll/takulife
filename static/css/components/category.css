@@ -88,7 +88,7 @@
 .event-category {
   border-radius: var(--radius-chip);
   padding: 0.25rem 0.5625rem;
-  font-size: 0.74rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   white-space: nowrap;
   background: var(--brand-soft);
@@ -97,6 +97,6 @@
 .event-category.unofficial {
   display: inline-flex;
   align-items: center;
-  background: #eef0f3;
-  color: #5b6472;
+  background: var(--muted-soft);
+  color: var(--muted);
 }

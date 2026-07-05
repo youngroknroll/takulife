@@ -134,6 +134,17 @@
   font-size: 0.88rem;
   color: var(--muted);
 }
+/* In-copy prose link (e.g. "지우기" / "방문 기록 작성하러 가기") — same
+ * pattern as .auth-container p a: brand-ink + underline, since this is a
+ * link inside a sentence, not a standalone nav item or button. Defined
+ * here (shared component), not per page, because .empty-note is reused
+ * across archive (index/statuses/interests/visits/personal_entries
+ * results partials) and events/list.html, each loading a different
+ * page-specific stylesheet — no single page file was the right home. */
+.empty-note a {
+  color: var(--brand-ink);
+  text-decoration: underline;
+}
 
 .empty-action {
   display: inline-block;

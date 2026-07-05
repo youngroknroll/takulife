@@ -23,6 +23,14 @@
   --muted: #5b6472;
   --brand: #d8432a;
   --brand-soft: #fbe7e2;
+  /* --brand as TEXT directly on white/--surface measures 4.42:1 — just
+     under the 4.5:1 AA threshold for normal-size text (verified via
+     PR-R3's contrast spot-check). --brand itself is left untouched (it is
+     overwhelmingly used as a solid background under white text, or as a
+     border/soft-bg pairing, both of which pass) — this darker ink (the
+     same #C13A22 plan §0 already names as --brand's hover shade, 5.39:1
+     on white) is for the few small-text-on-white spots specifically. */
+  --brand-ink: #c13a22;
   --hl: #d8ff3d;
   --focus: #8a94a6;
 
@@ -39,6 +47,32 @@
   --rose-ink: #be123c;
   --up-soft: #e4eafb;
   --up-ink: #33488f;
+  /* end = 종료 (event lifecycle's 4th state). Also reused for the archive
+     "missed" status button (PR-R3), which was a stray grey literal
+     (#f4f5f7/#d9dde4/#5d6673) before this token existed.
+     Ink is a minor AA fix off plan §0's literal #6B6F76: that value is
+     4.28:1 on --end-soft (fails the 4.5:1 text threshold — verified via
+     PR-R3's contrast spot-check), so it's darkened slightly to #64686e
+     (4.75:1), same hue/weight, imperceptibly darker. */
+  --end-soft: #ececef;
+  --end-ink: #64686e;
+  /* muted-soft = neutral/"비공식" marker background, paired with --muted as
+     its ink (PR-R3: was a literal #eef0f3 duplicated in category.css and
+     archive_visits.css). */
+  --muted-soft: #eef0f3;
+
+  /* Narrow accent borders for archive calendar day/legend swatches
+     (PR-R3: were literal hex values, unnamed, duplicated across .day.* and
+     .legend-dot.*). Values preserved as-is — a touch darker than their
+     matching -soft background so the swatch border reads against --bg-card. */
+  --mint-border: #b9efce;
+  --amber-border: #fde39f;
+  --rose-border: #f8b7c3;
+  /* Wraps the literal #f8bfd8 used by .interest-btn / .nav-interest
+     (PR-R3) — a pastel pink border lighter than --pink-ink, kept as its
+     own token rather than aliased to an existing one since no exact match
+     exists in the palette. */
+  --pink-border: #f8bfd8;
 
   --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
   /* New alias for the hero/large-surface shadow language (PR-R3 will apply
@@ -55,14 +89,18 @@
      controls not covered by this signature. */
   --radius-chip: 4px 999px 999px 4px;
 
-  /* Type scale (§0 6-step scale). Not yet applied to page CSS — PR-R3 does
-     the page-wide font-size migration; this PR only adds the variables. */
+  /* Type scale (§0 6-step scale). Applied across pages/*.css by PR-R3
+     (this PR) for the 0.74–0.95rem band; --fs-xl is reserved for the single
+     most hero-like heading per page (currently only the home hero h1) so
+     the scale doesn't flatten the existing heading hierarchy. */
   --fs-xs: 0.75rem;
   --fs-sm: 0.8rem;
   --fs-md: 0.875rem;
   --fs-base: 0.95rem;
   --fs-lg: 1.125rem;
   --fs-xl: 1.75rem;
+  /* Mobile companion for --fs-xl (§0: "1.75(모바일 1.375)rem"). */
+  --fs-xl-mobile: 1.375rem;
 
   /* Soft neutral surfaces (PR-R1 follow-up: re-toned off the old blue tint
      to sit with the new palette — border-soft a touch lighter than --line,

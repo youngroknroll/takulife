@@ -7,8 +7,19 @@
 }
 .period {
   margin: 0.25rem 0 0;
-  color: #2b405c;
-  font-size: 0.88rem;
+  color: var(--text);
+  font-size: var(--fs-md);
+}
+
+/* ── monospace numerals (plan §0: "숫자·날짜·D-day는 시스템 모노") ──
+ * System monospace stack + tabular-nums for date ranges / counters, so
+ * digits align instead of wobbling in the variable-width UI font. Applied
+ * first to the poster card caption's date range (PR-R3); other date/D-day
+ * spots keep their current font pending a dedicated pass (see changelog). */
+.mono-num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
 
 /* ── highlighter (ticket-stub signature #4 in plan §0's numbering, "형광펜") ──
