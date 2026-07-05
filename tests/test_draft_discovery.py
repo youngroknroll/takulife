@@ -30,17 +30,36 @@ ENTITY_EXPANSION_XML = """<?xml version="1.0"?>
 """
 
 
-def _rss(*, link=None, description_anchors=None):
+def _rss(*, link=None, description_anchors=None, content_encoded_anchors=None):
     """Build a minimal single-item WordPress-style RSS feed. `link` is the
     item's own <link> text; `description_anchors` is a list of raw href
     strings embedded as <a href="..."> markup inside the <description>
-    CDATA block, matching how atzip's roundup posts link out."""
+    CDATA block, matching how atzip's roundup posts link out.
+    `content_encoded_anchors`, when given, additionally embeds a
+    <content:encoded> CDATA block (WordPress's full-post-HTML field) and
+    declares the feed's real xmlns:content namespace on <rss> — matching
+    atzip.kr/feed/'s actual structure, where <description> holds only an
+    excerpt + a self-domain "read more" anchor and the real body HTML (with
+    outbound official links) lives in <content:encoded>."""
     link_xml = f"<link>{link}</link>" if link else ""
     anchors_html = "".join(f'<a href="{href}">link</a>' for href in (description_anchors or []))
     description_xml = f"<description><![CDATA[{anchors_html}]]></description>" if anchors_html else ""
+    encoded_anchors_html = "".join(
+        f'<a href="{href}">link</a>' for href in (content_encoded_anchors or [])
+    )
+    encoded_xml = (
+        f"<content:encoded><![CDATA[{encoded_anchors_html}]]></content:encoded>"
+        if encoded_anchors_html
+        else ""
+    )
+    content_namespace = (
+        ' xmlns:content="http://purl.org/rss/1.0/modules/content/"'
+        if content_encoded_anchors
+        else ""
+    )
     return f"""<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0"><channel><title>atzip</title>
-<item>{link_xml}{description_xml}</item>
+<rss version="2.0"{content_namespace}><channel><title>atzip</title>
+<item>{link_xml}{description_xml}{encoded_xml}</item>
 </channel></rss>"""
 
 
@@ -223,6 +242,27 @@ class TestExtractLinksRss:
         )
 
         result = extract_links_rss(content, "https://atzip.kr:8443/feed/")
+
+        assert result == ["https://official-site.com/event"]
+
+    def test_extracts_content_encoded_anchors_and_ignores_self_domain_description(self):
+        """Real-source gap (atzip.kr/feed/ smoke): the <description> field
+        holds only an excerpt + a self-domain "read more" anchor; the actual
+        body HTML with outbound official links lives in <content:encoded>
+        (CDATA, xmlns:content namespace). Both fields must be scanned for
+        anchors, and the existing filter chain (self-domain, SNS) must still
+        apply to whatever content:encoded contains."""
+        content = _rss(
+            link="https://atzip.kr/2026/07/04/goods-reservation/",
+            description_anchors=["https://atzip.kr/2026/07/04/goods-reservation/"],
+            content_encoded_anchors=[
+                "https://official-site.com/event",
+                "https://x.com/example",
+                "https://www.instagram.com/example",
+            ],
+        )
+
+        result = extract_links_rss(content, self.BASE_URL)
 
         assert result == ["https://official-site.com/event"]
 

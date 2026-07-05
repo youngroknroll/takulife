@@ -135,10 +135,18 @@ def _filter_and_dedupe(raw_urls, base_url, *, remove_self_domain):
 def extract_links_rss(content, base_url):
     """Extract candidate event-page URLs from a WordPress-style RSS feed
     (atzip's roundup posts): each <item>'s own <link> plus every <a href>
-    found inside its <description> CDATA block. Self-domain links are
-    removed — an RSS roundup links *out* to official sources, so the feed's
-    own permalink is never itself a candidate event page (unlike sitemap/html
-    sources, which point directly at an official site's own pages)."""
+    found inside its <description> and <content:encoded> CDATA blocks.
+    Real WordPress feeds (atzip.kr/feed/) put only an excerpt + a
+    self-domain "read more" anchor in <description>; the actual post body
+    HTML — where the outbound official links live — is in
+    <content:encoded> (the http://purl.org/rss/1.0/modules/content/
+    namespace), so both fields must be scanned or the feed yields zero
+    candidates. Matched by local tag name (`_local_tag`, shared with the
+    sitemap extractor) so the xmlns:content prefix binding doesn't need
+    explicit handling. Self-domain links are removed — an RSS roundup links
+    *out* to official sources, so the feed's own permalink is never itself a
+    candidate event page (unlike sitemap/html sources, which point directly
+    at an official site's own pages)."""
     root = _parse_xml(content)
     candidates = []
     channel = root.find("channel")
@@ -147,10 +155,11 @@ def extract_links_rss(content, base_url):
         link = item.find("link")
         if link is not None and link.text:
             candidates.append(link.text.strip())
-        description = item.find("description")
-        if description is not None and description.text:
-            soup = BeautifulSoup(description.text, "html.parser")
-            candidates.extend(a["href"] for a in soup.find_all("a", href=True))
+        for tag_name in ("description", "encoded"):
+            html_element = _first_local_child(item, tag_name)
+            if html_element is not None and html_element.text:
+                soup = BeautifulSoup(html_element.text, "html.parser")
+                candidates.extend(a["href"] for a in soup.find_all("a", href=True))
     return _filter_and_dedupe(candidates, base_url, remove_self_domain=True)
 
 

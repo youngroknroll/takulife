@@ -250,3 +250,45 @@ class TestPerInstanceCache:
         checker.is_allowed("https://example.com/a")
         checker.is_allowed("https://example.com/b")
         assert len(calls) == 1
+
+
+class TestCrawlDelay:
+    """crawl_delay() lets the caller (discover_drafts) pace per-host requests
+    beyond the flat INTER_REQUEST_DELAY_SECONDS floor when a site publishes
+    its own Crawl-delay directive — a pure cache read, never its own fetch."""
+
+    def test_crawl_delay_returns_configured_value_from_cached_robots_txt(self, monkeypatch):
+        monkeypatch.setattr(
+            robots, "fetch_html",
+            lambda url, **kwargs: "User-agent: *\nCrawl-delay: 5\nAllow: /\n",
+        )
+
+        checker = RobotsChecker()
+        checker.check("https://example.com/page")
+        assert checker.crawl_delay("https://example.com/page") == 5
+
+    def test_crawl_delay_is_none_when_robots_txt_has_no_crawl_delay(self, monkeypatch):
+        monkeypatch.setattr(
+            robots, "fetch_html", lambda url, **kwargs: "User-agent: *\nAllow: /\n"
+        )
+
+        checker = RobotsChecker()
+        checker.check("https://example.com/page")
+        assert checker.crawl_delay("https://example.com/page") is None
+
+    def test_crawl_delay_is_none_when_host_has_not_been_checked_yet(self):
+        # No fetch_html patch at all: a real network attempt would blow up
+        # this test, so the only way it can pass is a pure cache read that
+        # never fetches on a cache miss.
+        checker = RobotsChecker()
+        assert checker.crawl_delay("https://example.com/page") is None
+
+    def test_crawl_delay_is_none_when_cached_robots_fetch_failed(self, monkeypatch):
+        def _raise(url, **kwargs):
+            raise FetchError()
+
+        monkeypatch.setattr(robots, "fetch_html", _raise)
+
+        checker = RobotsChecker()
+        checker.check("https://example.com/page")
+        assert checker.crawl_delay("https://example.com/page") is None

@@ -73,6 +73,16 @@ DRAFT_LLM_EXTRACTION_ENABLED = False
 # Contact URL appended to the crawl User-Agent (drafts/fetching.py) so a site
 # operator can reach us about the bot; blank keeps the current bare UA.
 DRAFT_FETCH_CONTACT = ""
+# Gate for the discover_drafts management command (prompt_plan.md §2-5) — off
+# by default so no crawling happens until an operator opts in.
+DRAFT_DISCOVERY_ENABLED = False
+# Caps a single discover_drafts run: total new drafts created across every
+# source, independent of the per-source fetch cap below.
+DRAFT_DISCOVERY_MAX_PER_RUN = 10
+# Caps per-source fetch *attempts* (robots checks + create_draft_from_url
+# calls) so a source yielding mostly empty/duplicate candidates cannot be
+# re-hit indefinitely while chasing the creation cap above.
+DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 20
 DEBUG = load_debug()
 ALLOWED_HOSTS = []
 

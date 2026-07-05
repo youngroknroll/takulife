@@ -88,6 +88,21 @@ class RobotsChecker:
     def is_allowed(self, url):
         return self.check(url).allowed
 
+    def crawl_delay(self, url):
+        """Crawl-delay (seconds) declared for `url`'s host, from the cached
+        parser only — a pure cache read, never a fetch of its own. Returns
+        None when the host has not been checked yet (nothing cached), when
+        its robots.txt fetch failed (cached as None, see `check()`), or when
+        the fetched robots.txt simply did not declare a Crawl-delay for
+        USER_AGENT. Callers that want a real value must call `check()` (or
+        `is_allowed()`) for the same URL first so the parser is cached."""
+        parsed = urlsplit(url)
+        host_key = (parsed.scheme, parsed.netloc)
+        parser = self._cache.get(host_key)
+        if parser is None:
+            return None
+        return parser.crawl_delay(USER_AGENT)
+
     def _fetch_parser(self, parsed):
         robots_url = urlunsplit((parsed.scheme, parsed.netloc, "/robots.txt", "", ""))
         try:
