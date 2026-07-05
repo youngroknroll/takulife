@@ -37,6 +37,7 @@ def test_draft_views_do_not_import_events_modules():
         "drafts/services.py",
         "drafts/llm_extraction.py",
         "drafts/discovery.py",
+        "drafts/management/commands/discover_drafts.py",
     ],
 )
 def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
@@ -74,6 +75,7 @@ def test_archive_modules_do_not_import_drafts_modules(module_path):
         "drafts/serializers.py",
         "drafts/llm_extraction.py",
         "drafts/discovery.py",
+        "drafts/management/commands/discover_drafts.py",
         "archive/models.py",
         "archive/serializers.py",
         "archive/services.py",
@@ -99,6 +101,19 @@ def test_draft_discovery_does_not_import_events_modules():
     orchestrate draft-to-event promotion, discovery.py has no reason to touch
     the events domain at all."""
     imported_modules = _imported_modules("drafts/discovery.py")
+
+    assert not {
+        module
+        for module in imported_modules
+        if module == "events" or module.startswith("events.")
+    }
+
+
+def test_discover_drafts_command_does_not_import_events_modules():
+    """discover_drafts orchestrates DraftSource -> EventDraft only, via
+    create_draft_from_url (which itself owns the events.services boundary
+    crossing) — the command has no reason to import events directly."""
+    imported_modules = _imported_modules("drafts/management/commands/discover_drafts.py")
 
     assert not {
         module
