@@ -2,7 +2,7 @@
  * hscroll.css — horizontal scroller component
  *
  * Generic, page-agnostic styles for the [data-hscroll] component.
- * Depends only on --surface, --line, --text tokens (from tokens.css).
+ * Depends only on --surface, --line, --text, --border-soft tokens (from tokens.css).
  * Pair with static/js/hscroll.js and [data-hscroll] markup.
  */
 
@@ -85,7 +85,7 @@
 
 .hscroll-btn:hover,
 .hscroll-btn:focus-visible {
-  border-color: #c2d7ff;
+  border-color: var(--border-soft);
   transform: translateY(calc(-50% - 2px)) scale(1.05);
   box-shadow: 0 8px 22px rgba(17, 31, 55, 0.26);
 }

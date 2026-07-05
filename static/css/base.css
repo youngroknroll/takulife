@@ -24,6 +24,20 @@
  *     53.75rem(860) 56.25rem(900) 57.5rem(920) 60rem(960)
  */
 
+/* ── web font: Pretendard (self-hosted) ──────────────────────
+ * Pretendard Variable — SIL Open Font License 1.1, © 2021 orioncactus.
+ * Source: https://github.com/orioncactus/pretendard (v1.3.9, woff2 variable).
+ * Self-hosted at static/fonts/PretendardVariable.woff2 — no external CDN
+ * request, no additional licensing cost (OFL permits redistribution).
+ */
+@font-face {
+  font-family: "Pretendard";
+  src: url("../fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── reset ─────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
@@ -37,12 +51,12 @@ a {
 /* ── body ───────────────────────────────────────────────────── */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   line-height: 1.6;
   color: var(--text);
   background:
-    radial-gradient(160% 90% at 100% -10%, #e7f0ff 0%, transparent 45%),
-    radial-gradient(120% 70% at -10% -20%, #eef5ff 0%, transparent 40%),
+    radial-gradient(160% 90% at 100% -10%, var(--surface) 0%, transparent 45%),
+    radial-gradient(120% 70% at -10% -20%, var(--surface) 0%, transparent 40%),
     var(--bg);
 }
 
@@ -87,7 +101,7 @@ body {
 }
 
 .site-message-info {
-  border: 1px dashed #b6c8df;
+  border: 1px dashed var(--line);
   background: var(--bg-soft);
   color: #46617f;
 }
@@ -98,6 +112,6 @@ button:focus,
 input:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid #92b4ff;
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }

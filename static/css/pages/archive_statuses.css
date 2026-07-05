@@ -7,7 +7,7 @@
     border: 1px solid var(--border-soft);
     border-radius: 999px;
     background: var(--bg-soft);
-    color: #24456f;
+    color: var(--text);
     cursor: pointer;
     font-size: 0.82rem;
     font-weight: 600;
@@ -64,7 +64,7 @@
     font-size: 0.78rem;
   }
   .empty-note {
-    border: 1px dashed #b6c8df;
+    border: 1px dashed var(--line);
     border-radius: 10px;
     background: var(--bg-soft);
     color: #46617f;

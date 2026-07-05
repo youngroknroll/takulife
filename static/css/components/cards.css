@@ -75,7 +75,7 @@
 
 /* ── notice / empty-note ─────────────────────────────────────── */
 .notice {
-  border: 1px dashed #b6c8df;
+  border: 1px dashed var(--line);
   border-radius: 10px;
   background: var(--bg-soft);
   color: #46617f;
@@ -100,7 +100,7 @@
   font-weight: 600;
   background: var(--brand-soft);
   color: var(--brand);
-  border: 1px solid #c2d7ff;
+  border: 1px solid var(--brand);
 }
 
 .applied-clear {
@@ -113,7 +113,7 @@
 .empty-state {
   text-align: center;
   padding: 2.25rem 1rem;
-  border: 1px dashed #c9d6e8;
+  border: 1px dashed var(--line);
   border-radius: 12px;
   background: #fafcff;
 }
