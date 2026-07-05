@@ -5,7 +5,7 @@ Business logic lives here, not in the view layer.
 """
 from django.db.models import Count
 
-from .models import EventDraft
+from .models import DraftSource, EventDraft
 
 _ALL_STATUSES = (
     EventDraft.ReviewStatus.PENDING,
@@ -41,3 +41,14 @@ def list_drafts(status: str = ""):
     if status:
         qs = qs.filter(review_status=status)
     return qs
+
+
+def list_draft_sources():
+    """Return all DraftSource rows ordered by -enabled, then name.
+
+    Enabled sources surface first (they are the ones actually collecting),
+    then alphabetical within each enabled state. Used by the staff dashboard
+    freshness panel (prompt_plan.md §3-1-5) — the view calls this helper
+    rather than querying DraftSource directly.
+    """
+    return DraftSource.objects.order_by("-enabled", "name")

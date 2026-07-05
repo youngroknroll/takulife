@@ -49,6 +49,33 @@
 
         <hr class="panel-divider">
 
+        <h3>수집 소스 상태</h3>
+        {% if draft_sources %}
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">소스</th>
+                <th scope="col">상태</th>
+                <th scope="col">마지막 수집</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for source in draft_sources %}
+                <tr>
+                  <td>{{ source.name }}</td>
+                  <td>{% if source.enabled %}활성{% else %}<span class="badge-soon">비활성</span>{% endif %}</td>
+                  <td>{% if source.last_checked_at %}{{ source.last_checked_at|timesince }} 전{% else %}아직 수집되지 않음{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="notice">등록된 수집 소스가 없습니다.</p>
+        {% endif %}
+        <p class="panel-note">이 정보는 수집 커맨드가 실행된 시점 기준입니다.</p>
+
+        <hr class="panel-divider">
+
         <h3>품질 경고</h3>
         <p class="panel-note">게시(공개) 중인 행사를 대상으로 자동 점검한 결과입니다.</p>
         <table class="data-table">

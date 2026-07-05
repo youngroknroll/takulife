@@ -188,8 +188,14 @@
             <p>{{ draft.raw_title|default:"(없음)" }}</p>
           </div>
           <div class="raw-box">
+            <p class="panel-note">추출 방식: {% if draft.extraction_method == "heuristic" %}휴리스틱{% else %}LLM{% endif %}{% if draft.confidence is not None %} · 신뢰도 {{ draft.confidence|floatformat:0 }}%{% endif %}</p>
             <h3>원본 본문</h3>
-            <p>{{ draft.raw_text|truncatechars:300|default:"(없음)" }}</p>
+            <p id="raw-text-truncated">{{ draft.raw_text|truncatechars:300|default:"(없음)" }}</p>
+            {% if draft.raw_text|length > 300 %}
+              <p id="raw-text-full" hidden>{{ draft.raw_text }}</p>
+              <button type="button" id="raw-text-toggle" class="link-button"
+                      aria-expanded="false" aria-controls="raw-text-full">전체 보기</button>
+            {% endif %}
           </div>
         </section>
 

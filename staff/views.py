@@ -23,7 +23,12 @@ from core.errors import error_response, field_error_response
 from core.models import HomeConfig
 from core.vocab import CATEGORY, CATEGORY_LABELS, REGION, REGION_LABELS
 from drafts.models import EventDraft
-from drafts.queries import DRAFT_LISTING_PAGE_SIZE, draft_review_stats, list_drafts
+from drafts.queries import (
+    DRAFT_LISTING_PAGE_SIZE,
+    draft_review_stats,
+    list_draft_sources,
+    list_drafts,
+)
 from drafts.serializers import EventDraftSerializer
 from drafts.services import (
     DraftNotFoundError,
@@ -55,6 +60,7 @@ def dashboard(request):
             "pending_count": stats["pending"],
             "quality_warnings": published_quality_warnings(),
             "recent_actions": recent_staff_actions(),
+            "draft_sources": list_draft_sources(),
         },
     )
 

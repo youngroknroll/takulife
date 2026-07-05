@@ -6,7 +6,7 @@ import string
 
 import pytest
 
-from drafts.models import EventDraft
+from drafts.models import DraftSource, EventDraft
 from staff.models import StaffActionLog
 
 
@@ -180,6 +180,43 @@ def test_staff_dashboard_renders_home_categories_action_label(client, make_user)
     content = resp.content.decode()
     assert "홈 카테고리 변경" in content
     assert "반려" not in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_context_includes_draft_sources_ordered(client, make_user):
+    """PR-5b: dashboard() must pass draft_sources via drafts.queries.list_draft_sources()
+    (-enabled, name ordering), not a raw DraftSource query in the view."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    disabled = DraftSource.objects.create(
+        name="disabled-source",
+        url="https://example.com/disabled-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=False,
+    )
+    enabled = DraftSource.objects.create(
+        name="enabled-source",
+        url="https://example.com/enabled-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    draft_sources = resp.context["draft_sources"]
+    assert list(draft_sources) == [enabled, disabled]
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_context_draft_sources_empty_when_none_exist(client, make_user):
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert list(resp.context["draft_sources"]) == []
 
 
 @pytest.mark.django_db
