@@ -75,6 +75,23 @@
   background: var(--bg-card);
   padding: 0.5625rem 0.625rem;
 }
+/* Navigational link convention (same as .back-link): brand-ink, no
+ * underline at rest, underline on hover. Defined here (not per-page) since
+ * .side-list is shared by every archive page (기록장/방문 기록/예정 목록/
+ * 비공식/찜 목록) plus the staff dashboard shortcuts list — none of the
+ * per-page sheets styled the <a> itself, so it fell back to the browser's
+ * default link blue everywhere except /archive/interests/ (which had its
+ * own, now-redundant override — removed, see archive_interests.css).
+ */
+.side-list a {
+  color: var(--brand-ink);
+  text-decoration: none;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+.side-list a:hover {
+  text-decoration: underline;
+}
 
 /* Heading + inline action/filter row; and the chip group container */
 .panel-head {

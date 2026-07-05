@@ -27,7 +27,11 @@
     text-align: center;
     border: 2px solid var(--brand);
     border-radius: 50%;
-    color: var(--brand);
+    /* --brand-ink not --brand: this text is small (0.62rem) on white
+       (.panel), and --brand-on-white measures 4.42:1 (fails 4.5:1 AA) —
+       see tokens.css. The border above only needs the 3:1 non-text
+       threshold, which --brand already clears. */
+    color: var(--brand-ink);
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -48,7 +52,7 @@
     display: inline-block;
     border-radius: var(--radius-chip);
     padding: 0.25rem 0.625rem;
-    font-size: 0.75rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     color: var(--brand);
     background: var(--brand-soft);
@@ -57,7 +61,7 @@
     display: inline-block;
     border-radius: var(--radius-chip);
     padding: 0.25rem 0.625rem;
-    font-size: 0.75rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     color: var(--mint-ink);
     background: var(--mint-soft);
@@ -70,7 +74,7 @@
   .lead {
     margin: 0;
     color: var(--muted);
-    font-size: 0.95rem;
+    font-size: var(--fs-base);
   }
   .meta-grid {
     margin-top: 0.75rem;
@@ -87,7 +91,7 @@
   .meta-label {
     display: block;
     color: var(--muted);
-    font-size: 0.76rem;
+    font-size: var(--fs-xs);
     margin-bottom: 0.1875rem;
   }
   .section {
@@ -99,12 +103,12 @@
   }
   .section h2 {
     margin: 0 0 0.5rem;
-    font-size: 0.95rem;
+    font-size: var(--fs-base);
   }
   .section p {
     margin: 0;
-    color: #2d4460;
-    font-size: 0.9rem;
+    color: var(--text);
+    font-size: var(--fs-md);
   }
   .side-block {
     border: 1px solid var(--line);
@@ -114,7 +118,7 @@
   }
   .side-block h2 {
     margin: 0 0 0.5rem;
-    font-size: 0.9rem;
+    font-size: var(--fs-md);
   }
   .action-list {
     display: grid;
@@ -132,7 +136,7 @@
     padding: 0.5625rem 0.625rem;
     border-radius: 8px;
     text-decoration: none;
-    font-size: 0.86rem;
+    font-size: var(--fs-md);
     font-weight: 600;
     border: 1px solid var(--border-soft);
     color: var(--text);
@@ -153,7 +157,7 @@
     border-radius: 8px;
     background: #fff;
     padding: 0.5rem 0.625rem;
-    font-size: 0.84rem;
+    font-size: var(--fs-md);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -167,7 +171,7 @@
     display: inline-block;
     border-radius: var(--radius-chip);
     padding: 0.25rem 0.625rem;
-    font-size: 0.75rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     color: var(--amber-ink);
     background: var(--amber-soft);
@@ -209,6 +213,6 @@
       padding: 1.125rem 0.875rem 6rem;
     }
     h1 {
-      font-size: 1.2rem;
+      font-size: var(--fs-lg);
     }
   }

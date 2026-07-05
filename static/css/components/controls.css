@@ -9,8 +9,8 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-chip);
   padding: 0.3125rem 0.625rem;
-  font-size: 0.78rem;
-  color: #2f4360;
+  font-size: var(--fs-sm);
+  color: var(--text);
   background: #fff;
   cursor: pointer;
 }
@@ -40,9 +40,9 @@
 
 .status-btn.missed,
 .status.missed {
-  background: #f4f5f7;
-  border-color: #d9dde4;
-  color: #5d6673;
+  background: var(--end-soft);
+  border-color: currentColor;
+  color: var(--end-ink);
 }
 
 /* Active (user's current status) — status-coloured inset ring + check mark.
@@ -65,10 +65,10 @@
 /* 찜 버튼은 앱 전역에서 옆 상태 버튼(.status-btn — 예정/방문 등)과 같은
    알약 모양·높이로 통일한다. (예전 44px·8px 사각형 → 27px·999px) */
 .interest-btn {
-  border: 1px solid #f8bfd8;
+  border: 1px solid var(--pink-border);
   border-radius: var(--radius-chip);
   padding: 0.3125rem 0.625rem;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   color: var(--pink-ink);
   background: #fff;
   cursor: pointer;
@@ -85,7 +85,7 @@
 
 .interest-btn.active {
   background: var(--pink-soft);
-  border-color: #f8bfd8;
+  border-color: var(--pink-border);
   color: var(--pink-ink);
   font-weight: 700;
 }

@@ -10,12 +10,9 @@
   }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
   /* .event-category 칩은 components/category.css로 통합됨 */
-  .side-list a {
-    color: #25508a;
-    text-decoration: none;
-    font-size: 0.86rem;
-    font-weight: 600;
-  }
+  /* .side-list a는 objects/layout.css로 통합됨 (모든 아카이브 페이지 +
+     staff 대시보드 공유 — 이 페이지 전용 오버라이드였던 var(--text) 대신
+     brand-ink 내비 링크 관례로 일원화) */
   @media (max-width: 56.25rem) {
     .layout {
       grid-template-columns: 1fr;

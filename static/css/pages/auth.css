@@ -20,7 +20,7 @@
   border-radius: 8px;
   background: var(--rose-soft);
   color: var(--rose-ink);
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .auth-divider {
@@ -29,7 +29,7 @@
   gap: 0.75rem;
   margin: 1rem 0;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
 }
 
 .auth-divider::before,
@@ -47,7 +47,7 @@
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
   font-weight: 600;
   text-align: center;
   text-decoration: none;
@@ -63,4 +63,22 @@ ul.auth-error {
 
 ul.auth-error li {
   margin: 0.125rem 0;
+}
+
+/* In-copy nav links ("비밀번호를 잊으셨나요?", "회원가입", "로그인 페이지로
+   돌아가기" etc.) — every account/*.html template renders these as a bare
+   `<a>` inside a `<p>` directly under .auth-container, with no class
+   (pre-refresh leftover from #83's social-login UI), so they fell back to
+   the browser's default blue link colour once R1 removed the old blue
+   palette. `.auth-container p a` scopes every one of them (login/signup/
+   password-reset/lockout/email-confirm/verification-sent) without a
+   template change. Colour follows the existing `.back-link` convention
+   (--brand-ink, not --brand: small text on white needs the AA-adjusted
+   ink — see tokens.css). Underline stays on (unlike .back-link's
+   hover-only underline) to read as in-copy prose links, not a button.
+   Focus outline is intentionally NOT redeclared here — the global
+   a:focus rule in base.css already covers plain <a> tags. */
+.auth-container p a {
+  color: var(--brand-ink);
+  text-decoration: underline;
 }

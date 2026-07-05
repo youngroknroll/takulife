@@ -177,7 +177,7 @@
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  border: 1px solid #f8bfd8;
+  border: 1px solid var(--pink-border);
   background: #fff;
   color: var(--pink-ink);
   padding: 0.4375rem 0.75rem;
@@ -197,7 +197,7 @@
 
 .archive-nav-wrap .nav-interest.active {
   background: var(--pink-soft);
-  border-color: #f8bfd8;
+  border-color: var(--pink-border);
 }
 
 /* Shared phone breakpoint: left-align the archive/draft topbar nav.
