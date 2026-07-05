@@ -94,7 +94,7 @@
 
 .applied-chip {
   display: inline-block;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   padding: 0.25rem 0.625rem;
   font-size: 0.78rem;
   font-weight: 600;

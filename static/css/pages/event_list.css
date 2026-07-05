@@ -146,11 +146,73 @@
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 0.75rem;
-    background: var(--bg-card);
+    /* Ticket-stub signature #1 (perforation): a dashed vertical rule between
+       the .cat-tile column and the card body, drawn as a background layer
+       (not a border) so it spans the full card height regardless of the
+       tile's own fixed 52px box. Positioned at padding-left + tile width
+       (0.75rem + 52px), matching the punch-notch circles below. */
+    background:
+      repeating-linear-gradient(to bottom, var(--line) 0 4px, transparent 0 8px)
+        calc(0.75rem + 52px) 0 / 1px 100% no-repeat,
+      var(--bg-card);
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 0.75rem;
     align-items: start;
+    position: relative;
+  }
+  /* Ticket-stub signature #1 (punch notch): paper-coloured, line-bordered
+     circles straddle the card's top/bottom edge at the perforation line —
+     plain circle pseudo-elements, no mask (prompt_plan.md §0). */
+  .event-card::before,
+  .event-card::after {
+    content: "";
+    position: absolute;
+    left: calc(0.75rem + 52px);
+    transform: translateX(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+  .event-card::before {
+    top: -5px;
+  }
+  .event-card::after {
+    bottom: -5px;
+  }
+  /* Ticket-stub signature #2 (glint): a ✦ sparkle revealed on hover/
+     focus-within. Implemented template-free on the category tile's free
+     ::after slot (::before already renders the category emoji glyph in
+     components/category.css) rather than adding a <span class="glint">, so
+     list.html markup stays unchanged. Mirrors the shared .glint utility
+     language in objects/interaction.css (kept generic there for future
+     explicit-markup use, e.g. poster cards in PR-R3). */
+  .event-card .cat-tile {
+    position: relative;
+  }
+  .event-card .cat-tile::after {
+    content: "✦";
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    opacity: 0;
+    transform: scale(0.7);
+    color: #fff;
+    text-shadow: 0 0 7px rgba(28, 34, 46, 0.55);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none;
+  }
+  .event-card:hover .cat-tile::after,
+  .event-card:focus-within .cat-tile::after {
+    opacity: 1;
+    transform: scale(1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .event-card .cat-tile::after {
+      transition: none;
+    }
   }
   .event-card h2 {
     margin: 0 0 0.375rem;
@@ -170,7 +232,7 @@
     display: none;
   }
   .dday {
-    border-radius: 999px;
+    border-radius: var(--radius-chip);
     padding: 0.3125rem 0.625rem;
     font-size: 0.76rem;
     font-weight: 700;

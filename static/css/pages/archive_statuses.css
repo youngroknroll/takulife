@@ -5,7 +5,7 @@
   }
   .chip {
     border: 1px solid var(--border-soft);
-    border-radius: 999px;
+    border-radius: var(--radius-chip);
     background: var(--bg-soft);
     color: var(--text);
     cursor: pointer;
@@ -27,7 +27,7 @@
   }
   /* .event-category 칩은 components/category.css로 통합됨 (.user-status는 geometry 유지) */
   .user-status {
-    border-radius: 999px;
+    border-radius: var(--radius-chip);
     padding: 0.25rem 0.5625rem;
     font-size: 0.74rem;
     font-weight: 700;

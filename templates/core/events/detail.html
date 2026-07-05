@@ -11,6 +11,9 @@
   <main class="page">
     <section class="shell">
       <article class="content panel">
+        {% if event.official_url %}
+          <span class="official-stamp" aria-hidden="true">공식<br>확인</span>
+        {% endif %}
         {% if category_label %}<span class="chip">{{ category_label }}</span>{% endif %}
         {% if status_label %}<span class="status-chip">{{ status_label }}</span>{% endif %}
         {% if status_slug == 'ended' %}

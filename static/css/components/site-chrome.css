@@ -37,6 +37,7 @@
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--muted);
+  position: relative;
 }
 
 .site-nav a:hover {
@@ -44,7 +45,28 @@
   color: var(--brand);
 }
 
+/* Ticket-stub signature #4 (nav accent): the current page reads as a red
+   underline rather than a filled pill (plan §0 / §1 PR-R2), so nav no
+   longer competes visually with the ticket-tab chips/badges elsewhere on
+   the page. Hover keeps the existing soft background for feedback. */
 .site-nav a.active {
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.site-nav a.active::after {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.25rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+
+.site-nav a.active:hover {
   background: var(--brand-soft);
   color: var(--brand);
 }

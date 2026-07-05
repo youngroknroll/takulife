@@ -49,6 +49,11 @@
   /* Shape tokens (PR-R2 consumes these for component signatures). */
   --radius-card: 10px;
   --radius-control: 8px;
+  /* "Ticket tab" — chips, badges, and pill-shaped status/action controls
+     (plan §0). One rounded end + one clipped end, evoking a torn ticket
+     stub. Pure circular pills (999px) are reserved for nav-tab/legend
+     controls not covered by this signature. */
+  --radius-chip: 4px 999px 999px 4px;
 
   /* Type scale (§0 6-step scale). Not yet applied to page CSS — PR-R3 does
      the page-wide font-size migration; this PR only adds the variables. */
