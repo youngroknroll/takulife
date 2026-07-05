@@ -141,7 +141,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #b9ccf8;
+    border: 1px solid var(--brand);
     border-radius: 8px;
     background: var(--brand-soft);
     color: var(--brand);

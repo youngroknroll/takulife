@@ -18,7 +18,7 @@
 .status-btn.interested,
 .status.interested {
   background: var(--pink-soft);
-  border-color: #f8bfd8;
+  border-color: currentColor;
   color: var(--pink-ink);
 }
 
@@ -27,14 +27,14 @@
 .status-btn.planned,
 .status.planned {
   background: var(--amber-soft);
-  border-color: #f1d699;
+  border-color: currentColor;
   color: var(--amber-ink);
 }
 
 .status-btn.visited,
 .status.visited {
   background: var(--mint-soft);
-  border-color: #b4ebc8;
+  border-color: currentColor;
   color: var(--mint-ink);
 }
 
@@ -101,7 +101,7 @@
   border-radius: 999px;
   border: 1px solid var(--border-soft);
   background: var(--bg-soft);
-  color: #24456f;
+  color: var(--text);
   font-size: 0.82rem;
   padding: 0.4375rem 0.75rem;
   cursor: pointer;
@@ -118,7 +118,7 @@
 /*
  * Reconciled from home.css + event_list.css. Trivial per-page diffs were
  * unified to the most common value (tokens.css precedent): input font-size
- * 0.95rem (home), input color/background (home), button border #b9ccf8 (home).
+ * 0.95rem (home), input color/background (home), button border var(--brand) (home).
  * home keeps its own `.hero .search { max-width: 540px }` override.
  */
 .search {
@@ -138,7 +138,7 @@
   background: #fff;
 }
 .search button {
-  border: 1px solid #b9ccf8;
+  border: 1px solid var(--brand);
   background: var(--brand-soft);
   color: var(--brand);
   border-radius: 8px;

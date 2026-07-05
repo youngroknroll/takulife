@@ -28,7 +28,7 @@
   text-decoration: none;
   border: 1px solid var(--border-soft);
   background: var(--bg-soft);
-  color: #24456f;
+  color: var(--text);
   padding: 0.4375rem 0.75rem;
   border-radius: 999px;
   font-size: 0.84rem;
@@ -62,7 +62,7 @@
   list-style: none;
   border: 1px solid var(--border-soft);
   background: var(--bg-soft);
-  color: #24456f;
+  color: var(--text);
   padding: 0.4375rem 0.875rem;
   border-radius: 999px;
   font-size: 0.84rem;
@@ -132,7 +132,7 @@
   text-decoration: none;
   background: none;
   border: none;
-  color: #24456f;
+  color: var(--text);
   padding: 0.5rem 0.125rem;
   font-size: 0.9rem;
   font-weight: 600;
@@ -217,7 +217,7 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  border: 1px solid #b9ccf8;
+  border: 1px solid var(--brand);
   background: var(--brand-soft);
   color: var(--brand);
   font-weight: 700;

@@ -14,7 +14,7 @@
 .hover-lift:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow);
-  border-color: #c2d7ff;
+  border-color: var(--border-soft);
 }
 
 .hover-lift:active {
@@ -31,21 +31,21 @@
 
 .chip:not(.active):hover {
   background: var(--brand-soft);
-  border-color: #b9ccf8;
+  border-color: var(--brand);
 }
 
 .status-btn:hover {
-  border-color: #b9ccf8;
+  border-color: var(--border-soft);
 }
 
 .nav-links a:not(.active):hover {
   background: var(--brand-soft);
-  border-color: #b9ccf8;
+  border-color: var(--brand);
 }
 
 .top-action:hover {
   filter: brightness(0.98);
-  border-color: #9bb8f6;
+  border-color: var(--brand);
 }
 
 .is-loading {
