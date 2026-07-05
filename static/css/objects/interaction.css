@@ -48,6 +48,32 @@
   border-color: var(--brand);
 }
 
+/* ── glint (ticket-stub signature #2: ✦ sparkle on card hover/focus) ────
+ * prompt_plan.md §0. Generic utility for explicit markup use, e.g.
+ * `<span class="glint" aria-hidden="true">✦</span>` placed inside a
+ * position:relative element that also carries .hover-lift. Hidden by
+ * default; revealed only while the nearest .hover-lift ancestor is
+ * hovered or has focus-within. No current template uses this class yet —
+ * pages/event_list.css applies the same visual language to .event-card's
+ * .cat-tile::after instead, to avoid a markup change (see that file for
+ * the template-free variant).
+ */
+.glint {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.7);
+  color: #fff;
+  text-shadow: 0 0 7px rgba(28, 34, 46, 0.55);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+
+.hover-lift:hover .glint,
+.hover-lift:focus-within .glint {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .is-loading {
   position: relative;
   pointer-events: none;
@@ -80,5 +106,8 @@
   .hover-lift:hover,
   .hover-lift:active {
     transform: none;
+  }
+  .glint {
+    transition: none;
   }
 }

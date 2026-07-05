@@ -25,7 +25,7 @@
 
 .cat-chip {
   display: inline-block;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   padding: 0.25rem 0.5625rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -86,7 +86,7 @@
  * overrides display + colour. Extracted from the per-page sheets, where this
  * was duplicated across three archive pages. Distinct from .cat-chip above. */
 .event-category {
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   padding: 0.25rem 0.5625rem;
   font-size: 0.74rem;
   font-weight: 700;

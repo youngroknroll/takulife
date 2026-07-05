@@ -39,7 +39,7 @@
   }
   /* Archive timeline status badges (display only, not interactive buttons) */
   .status {
-    border-radius: 999px;
+    border-radius: var(--radius-chip);
     padding: 0.25rem 0.5625rem;
     font-size: 0.74rem;
     font-weight: 700;
@@ -209,7 +209,7 @@
     color: var(--muted);
     background: #eef3fa;
     border: 1px solid var(--line);
-    border-radius: 999px;
+    border-radius: var(--radius-chip);
     padding: 0.125rem 0.4375rem;
     vertical-align: middle;
   }

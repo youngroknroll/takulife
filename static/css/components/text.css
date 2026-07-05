@@ -10,3 +10,16 @@
   color: #2b405c;
   font-size: 0.88rem;
 }
+
+/* ── highlighter (ticket-stub signature #4 in plan §0's numbering, "형광펜") ──
+ * Reserved for the home hero's "한눈에" only (plan §0/§3: lime background is
+ * a text-highlight-only utility — one or two uses per page, never expanded
+ * to cards/buttons/backgrounds). box-decoration-break lets the highlight
+ * wrap cleanly if the phrase breaks across a line. */
+.hl {
+  background: var(--hl);
+  color: var(--text);
+  padding: 0 0.22em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

@@ -7,7 +7,7 @@
 .status-btn,
 .status {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   padding: 0.3125rem 0.625rem;
   font-size: 0.78rem;
   color: #2f4360;
@@ -66,7 +66,7 @@
    알약 모양·높이로 통일한다. (예전 44px·8px 사각형 → 27px·999px) */
 .interest-btn {
   border: 1px solid #f8bfd8;
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   padding: 0.3125rem 0.625rem;
   font-size: 0.78rem;
   color: var(--pink-ink);
@@ -98,7 +98,7 @@
 
 /* ── chip (filter / quick-chip) ─────────────────────────────── */
 .chip {
-  border-radius: 999px;
+  border-radius: var(--radius-chip);
   border: 1px solid var(--border-soft);
   background: var(--bg-soft);
   color: var(--text);
@@ -137,14 +137,21 @@
   color: var(--text);
   background: #fff;
 }
+/* Ink, not brand-red: plan §0/§1 reserves red for the primary CTA
+   (.btn-primary) and status/brand accents, so the search action itself
+   reads as a neutral "ink" command rather than competing with real CTAs. */
 .search button {
-  border: 1px solid var(--brand);
-  background: var(--brand-soft);
-  color: var(--brand);
+  border: 1px solid var(--text);
+  background: var(--text);
+  color: #fff;
   border-radius: 8px;
   padding: 0.625rem 0.875rem;
   font-weight: 700;
   cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.search button:hover {
+  filter: brightness(1.2);
 }
 
 /* ── form fields (shared) ─────────────────────────────────── */
