@@ -32,4 +32,5 @@ urlpatterns = [
         name="draft-reject",
     ),
     path("home-categories/", staff_views.staff_home_categories, name="home-categories"),
+    path("events/", staff_views.staff_events, name="event-list"),
 ]
