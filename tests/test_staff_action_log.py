@@ -154,3 +154,23 @@ def test_staff_action_log_admin_disallows_add_change_delete(make_user):
     assert log_admin.has_add_permission(request) is False
     assert log_admin.has_change_permission(request) is False
     assert log_admin.has_delete_permission(request) is False
+
+
+@pytest.mark.django_db
+def test_staff_action_log_supports_event_crud_actions(make_event):
+    """PR-E3: create/unpublish/republish/delete actions all fit the existing
+    max_length=16 Action field — a value that overflowed it would raise a
+    DataError (Postgres) rather than silently truncating.
+    """
+    event = make_event(official_url="https://example.com/crud-actions")
+
+    for action in (
+        StaffActionLog.Action.EVENT_CREATE,
+        StaffActionLog.Action.EVENT_UNPUBLISH,
+        StaffActionLog.Action.EVENT_REPUBLISH,
+        StaffActionLog.Action.EVENT_DELETE,
+    ):
+        assert len(action) <= 16
+        entry = StaffActionLog.objects.create(action=action, target_event=event)
+        entry.refresh_from_db()
+        assert entry.action == action

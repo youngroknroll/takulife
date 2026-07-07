@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_POST
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -58,13 +59,21 @@ from events.services import (
     PublishEventError,
     PublishEventTitleError,
     clear_event_poster,
+    create_published_event,
+    republish_event,
     set_event_poster,
+    unpublish_event,
     update_published_event,
 )
 
 from .models import StaffActionLog
 from .permissions import staff_console_required
 from .queries import recent_staff_actions
+from .services import (
+    EventHasArchiveReferencesError,
+    delete_event,
+    event_archive_reference_counts,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -220,6 +229,12 @@ EVENT_EDIT_TEXT_FIELDS = (
     "summary",
 )
 
+EVENT_CREATE_BLANK_FORM_VALUES = {
+    **{field: "" for field in EVENT_EDIT_TEXT_FIELDS},
+    "start_date": "",
+    "end_date": "",
+}
+
 
 def _parse_optional_date(raw):
     """Parse an ISO date string from a <input type="date">, or None if blank.
@@ -260,6 +275,81 @@ def _event_edit_form_values_from_post(post_data):
 
 
 @staff_console_required
+def staff_event_create(request):
+    """Staff console: create a new published event (GET blank form / POST-PRG).
+
+    Reuses create_published_event — the shared publish choke-point already
+    used by drafts.services.approve_draft — so a staff-created event has the
+    exact same title/official_url/period invariants and unique constraint as
+    an approved draft. No poster field here: a poster can only be attached
+    to a saved event, so the operator is redirected straight to the edit
+    page (which already owns poster upload) on success.
+    """
+    if request.method == "POST":
+        form_values = _event_edit_form_values_from_post(request.POST)
+        field_errors = {}
+
+        try:
+            with transaction.atomic():
+                event = create_published_event(
+                    title=form_values["title"],
+                    category=form_values["category"],
+                    work_title=form_values["work_title"],
+                    location_name=form_values["location_name"],
+                    region=form_values["region"],
+                    start_date=_parse_optional_date(form_values["start_date"]),
+                    end_date=_parse_optional_date(form_values["end_date"]),
+                    official_url=form_values["official_url"],
+                    source_name=form_values["source_name"],
+                    summary=form_values["summary"],
+                )
+                StaffActionLog.objects.create(
+                    actor=request.user,
+                    action=StaffActionLog.Action.EVENT_CREATE,
+                    target_event=event,
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                    user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                )
+        except MissingOfficialUrlError:
+            field_errors["official_url"] = "공식 URL을 입력해야 합니다."
+        except PublishEventTitleError:
+            field_errors["title"] = "제목을 입력해야 합니다. (공식 URL과 동일할 수 없습니다.)"
+        except DuplicateOfficialUrlError:
+            field_errors["official_url"] = "이미 다른 이벤트가 사용 중인 공식 URL입니다."
+        except InvalidEventPeriodError:
+            field_errors["end_date"] = "종료일은 시작일 이후여야 합니다."
+        except PublishEventError:
+            field_errors["non_field"] = "생성 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
+
+        if field_errors:
+            return render(
+                request,
+                "staff/events/create.html",
+                {
+                    "form_values": form_values,
+                    "field_errors": field_errors,
+                    "CATEGORY": CATEGORY,
+                    "REGION": REGION,
+                },
+                status=400,
+            )
+
+        messages.success(request, "생성되었습니다.")
+        return redirect(reverse("staff:event-edit", args=[event.pk]))
+
+    return render(
+        request,
+        "staff/events/create.html",
+        {
+            "form_values": EVENT_CREATE_BLANK_FORM_VALUES,
+            "field_errors": {},
+            "CATEGORY": CATEGORY,
+            "REGION": REGION,
+        },
+    )
+
+
+@staff_console_required
 def staff_event_edit(request, pk):
     """Staff console: edit a single event's fields (GET form / POST-PRG save).
 
@@ -269,10 +359,15 @@ def staff_event_edit(request, pk):
     values (not the stale DB values) so a rejected save never looks like
     silent data loss. Poster upload/removal reuses the existing
     set_event_poster/clear_event_poster services and their shared image
-    validation. publish_status is out of scope here (see PR-E3).
+    validation. The publish-status toggle and hard delete are separate POST
+    forms/views (staff_event_toggle_publish / staff_event_delete) — this view
+    only computes the archive reference counts so the template can show the
+    delete button (0 references) or a static "N건 연결되어 삭제할 수 없습니다"
+    notice (1+) in their place.
     """
     event = get_object_or_404(Event, pk=pk)
     list_query = urlencode(_event_filter_query_pairs(request.GET))
+    archive_reference_counts = event_archive_reference_counts(event)
 
     if request.method == "POST":
         form_values = _event_edit_form_values_from_post(request.POST)
@@ -333,6 +428,7 @@ def staff_event_edit(request, pk):
                     "CATEGORY": CATEGORY,
                     "REGION": REGION,
                     "list_query": list_query,
+                    "archive_reference_counts": archive_reference_counts,
                 },
                 status=400,
             )
@@ -359,8 +455,136 @@ def staff_event_edit(request, pk):
             "CATEGORY": CATEGORY,
             "REGION": REGION,
             "list_query": list_query,
+            "archive_reference_counts": archive_reference_counts,
         },
     )
+
+
+def _reference_block_message(counts):
+    return (
+        f"찜 {counts['interest']}·상태 {counts['status']}·"
+        f"방문기록 {counts['visit']}건이 연결되어 삭제할 수 없습니다."
+    )
+
+
+@staff_console_required
+@require_POST
+def staff_event_toggle_publish(request, pk):
+    """Staff console: flip a published event to draft ("게시 내리기") or a
+    draft event back to published ("다시 게시"). Reversible either way — no
+    confirmation step, unlike the delete view below.
+
+    Republishing re-validates the title/official_url invariants (see
+    events.services.republish_event) so an event that was left in a broken
+    state while unpublished cannot silently re-enter the published set.
+    """
+    event = get_object_or_404(Event, pk=pk)
+    list_query = urlencode(_event_filter_query_pairs(request.GET))
+    redirect_url = reverse("staff:event-edit", args=[event.pk])
+    if list_query:
+        redirect_url = f"{redirect_url}?{list_query}"
+
+    try:
+        with transaction.atomic():
+            if event.publish_status == Event.PublishStatus.PUBLISHED:
+                unpublish_event(event=event)
+                action = StaffActionLog.Action.EVENT_UNPUBLISH
+                success_message = "게시가 내려갔습니다."
+            else:
+                republish_event(event=event)
+                action = StaffActionLog.Action.EVENT_REPUBLISH
+                success_message = "다시 게시되었습니다."
+            StaffActionLog.objects.create(
+                actor=request.user,
+                action=action,
+                target_event=event,
+                ip_address=request.META.get("REMOTE_ADDR"),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            )
+    except MissingOfficialUrlError:
+        messages.error(request, "공식 URL이 없어 다시 게시할 수 없습니다.")
+    except PublishEventTitleError:
+        messages.error(request, "제목이 없어 다시 게시할 수 없습니다.")
+    except DuplicateOfficialUrlError:
+        messages.error(request, "다른 이벤트가 이미 이 공식 URL을 사용 중입니다.")
+    except InvalidEventPeriodError:
+        messages.error(request, "종료일이 시작일보다 빨라 다시 게시할 수 없습니다.")
+    except PublishEventError:
+        messages.error(request, "게시 상태를 변경하는 중 오류가 발생했습니다.")
+    else:
+        messages.success(request, success_message)
+
+    return redirect(redirect_url)
+
+
+@staff_console_required
+@require_POST
+def staff_event_delete(request, pk):
+    """Staff console: hard-delete an event, guarded by archive references.
+
+    A 2-step server-rendered confirmation (no new JS file — see
+    prompt_plan.md's "하지 말 것"): the edit page's delete form POSTs here
+    without `confirmed`, this view re-renders a dedicated confirmation page,
+    and that page's own form POSTs back here with `confirmed=yes` to finish
+    the delete. Archive references are checked before the confirmation page
+    is even shown, so an operator is never invited to confirm a delete that
+    is going to be rejected anyway.
+
+    The audit log is written with target_event=event *before* delete_event()
+    runs, inside the same transaction — Event's on_delete=SET_NULL then nulls
+    this same row out as part of the delete collector's own work, leaving an
+    action+actor-only record (no title snapshot field exists on
+    StaffActionLog, and this PR does not add one).
+    """
+    event = get_object_or_404(Event, pk=pk)
+    list_query = urlencode(_event_filter_query_pairs(request.GET))
+    edit_redirect = reverse("staff:event-edit", args=[event.pk])
+    if list_query:
+        edit_redirect = f"{edit_redirect}?{list_query}"
+
+    reference_counts = event_archive_reference_counts(event)
+    if sum(reference_counts.values()) > 0:
+        messages.error(request, _reference_block_message(reference_counts))
+        return redirect(edit_redirect)
+
+    if request.POST.get("confirmed") != "yes":
+        return render(
+            request,
+            "staff/events/delete_confirm.html",
+            {
+                "event": event,
+                "list_query": list_query,
+            },
+        )
+
+    try:
+        with transaction.atomic():
+            StaffActionLog.objects.create(
+                actor=request.user,
+                action=StaffActionLog.Action.EVENT_DELETE,
+                target_event=event,
+                ip_address=request.META.get("REMOTE_ADDR"),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            )
+            delete_event(event=event)
+    except EventHasArchiveReferencesError as exc:
+        messages.error(
+            request,
+            _reference_block_message(
+                {
+                    "interest": exc.interest_count,
+                    "status": exc.status_count,
+                    "visit": exc.visit_count,
+                }
+            ),
+        )
+        return redirect(edit_redirect)
+
+    messages.success(request, "삭제되었습니다.")
+    list_redirect = reverse("staff:event-list")
+    if list_query:
+        list_redirect = f"{list_redirect}?{list_query}"
+    return redirect(list_redirect)
 
 
 def _build_draft_rows(drafts):

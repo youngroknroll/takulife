@@ -119,6 +119,17 @@
     padding: 0.625rem 0.75rem;
     min-height: 44px;
   }
+  /* ── PR-E3 publish-toggle/delete sections (edit.html) ── */
+  .action-button.secondary {
+    border-color: var(--line);
+    background: var(--bg-card);
+    color: var(--text);
+  }
+  .action-button.danger {
+    border-color: var(--rose-ink);
+    background: var(--rose-soft);
+    color: var(--rose-ink);
+  }
   @media (max-width: 57.5rem) {
     .field-grid {
       grid-template-columns: 1fr;

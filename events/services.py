@@ -192,3 +192,50 @@ def update_published_event(
         raise PublishEventError from exc
 
     return event
+
+
+def unpublish_event(*, event):
+    """Move a published (or draft) event to draft ("take down" a listing).
+
+    No invariant checks needed — draft is always a valid state to be in,
+    unlike republish_event below, which re-enters the published set and so
+    must re-validate the title/official_url invariants.
+    """
+    event.publish_status = Event.PublishStatus.DRAFT
+    event.save(update_fields=["publish_status"])
+    return event
+
+
+def republish_event(*, event):
+    """Move a draft event back to published.
+
+    Re-runs the same title/official_url/period invariants create_published_event
+    and update_published_event share, scoped to exclude `event` itself from the
+    official_url uniqueness check — this closes the gap where an event could be
+    unpublished, edited into an invalid state some other way, then republished
+    without ever passing through update_published_event's checks.
+    """
+    _validate_publish_fields(
+        title=event.title,
+        official_url=event.official_url,
+        start_date=event.start_date,
+        end_date=event.end_date,
+        existing_queryset=Event.objects.exclude(pk=event.pk),
+    )
+    event.publish_status = Event.PublishStatus.PUBLISHED
+    event.save(update_fields=["publish_status"])
+    return event
+
+
+def hard_delete_event(*, event):
+    """Permanently delete an event, cleaning up its poster file first.
+
+    This is a pure primitive with no knowledge of archive models — events must
+    never import archive (architecture boundary, see
+    tests/test_architecture_boundaries.py). Callers are responsible for
+    confirming it is safe to hard-delete (e.g. staff/services.py's
+    delete_event, which checks archive references before calling this).
+    """
+    if event.poster_image:
+        clear_event_poster(event=event)
+    event.delete()

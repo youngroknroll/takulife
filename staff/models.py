@@ -17,6 +17,10 @@ class StaffActionLog(models.Model):
         REJECT = "reject", "Reject"
         HOME_CATEGORIES = "home_categories", "Home categories"
         EVENT_UPDATE = "event_update", "Event update"
+        EVENT_CREATE = "event_create", "Event create"
+        EVENT_UNPUBLISH = "event_unpublish", "Event unpublish"
+        EVENT_REPUBLISH = "event_republish", "Event republish"
+        EVENT_DELETE = "event_delete", "Event delete"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
