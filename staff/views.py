@@ -6,16 +6,18 @@ alongside the draft approve/reject action endpoints. staff -> core is an
 allowed presentation-only import (label maps/vocab); core must never import
 staff back (see tests/test_architecture_boundaries.py).
 """
+import datetime
 import logging
 from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -41,12 +43,23 @@ from drafts.services import (
     approve_draft,
     reject_draft,
 )
+from events.image_validation import validate_uploaded_image
 from events.models import Event
 from events.queries import (
     QUALITY_WARNING_KEYS,
     STAFF_EVENT_LISTING_PAGE_SIZE,
     list_staff_events,
     published_quality_warnings,
+)
+from events.services import (
+    DuplicateOfficialUrlError,
+    InvalidEventPeriodError,
+    MissingOfficialUrlError,
+    PublishEventError,
+    PublishEventTitleError,
+    clear_event_poster,
+    set_event_poster,
+    update_published_event,
 )
 
 from .models import StaffActionLog
@@ -126,6 +139,35 @@ def _build_event_rows(events):
     return rows
 
 
+def _selected_event_filters(get_params):
+    """Validate ?warning=/?publish_status= against their whitelists.
+
+    Shared by staff_events (list) and staff_event_edit (filter-preserving
+    "back to list" link) so both normalise unknown/blank values the same way
+    — unknown values fall back to "no filter" (mirrors event_drafts'
+    selected_status normalisation).
+    """
+    selected_warning = get_params.get("warning", "")
+    if selected_warning not in QUALITY_WARNING_KEYS:
+        selected_warning = ""
+
+    selected_publish_status = get_params.get("publish_status", "")
+    if selected_publish_status not in Event.PublishStatus.values:
+        selected_publish_status = ""
+
+    return selected_warning, selected_publish_status
+
+
+def _event_filter_query_pairs(get_params):
+    selected_warning, selected_publish_status = _selected_event_filters(get_params)
+    pairs = []
+    if selected_warning:
+        pairs.append(("warning", selected_warning))
+    if selected_publish_status:
+        pairs.append(("publish_status", selected_publish_status))
+    return pairs
+
+
 @staff_console_required
 def staff_events(request):
     """Staff console: published+draft event listing with quality-warning drilldown.
@@ -136,13 +178,7 @@ def staff_events(request):
     ?publish_status= is validated against Event.PublishStatus.values the same
     way. Pagination mirrors event_drafts' Paginator usage.
     """
-    selected_warning = request.GET.get("warning", "")
-    if selected_warning not in QUALITY_WARNING_KEYS:
-        selected_warning = ""
-
-    selected_publish_status = request.GET.get("publish_status", "")
-    if selected_publish_status not in Event.PublishStatus.values:
-        selected_publish_status = ""
+    selected_warning, selected_publish_status = _selected_event_filters(request.GET)
 
     events = list_staff_events(
         warning=selected_warning or None,
@@ -152,11 +188,7 @@ def staff_events(request):
     page_obj = paginator.get_page(request.GET.get("page"))
     event_rows = _build_event_rows(page_obj.object_list)
 
-    query_pairs = []
-    if selected_warning:
-        query_pairs.append(("warning", selected_warning))
-    if selected_publish_status:
-        query_pairs.append(("publish_status", selected_publish_status))
+    query_pairs = _event_filter_query_pairs(request.GET)
     pager_query = "&" + urlencode(query_pairs) if query_pairs else ""
 
     warning_chips = [
@@ -173,6 +205,160 @@ def staff_events(request):
             "selected_publish_status": selected_publish_status,
             "pager_query": pager_query,
             "warning_chips": warning_chips,
+        },
+    )
+
+
+EVENT_EDIT_TEXT_FIELDS = (
+    "title",
+    "category",
+    "work_title",
+    "location_name",
+    "region",
+    "official_url",
+    "source_name",
+    "summary",
+)
+
+
+def _parse_optional_date(raw):
+    """Parse an ISO date string from a <input type="date">, or None if blank.
+
+    Malformed input (a tampered request, not a normal browser submission)
+    is treated as blank rather than raising — the service-level period check
+    that follows only ever sees None or a real date.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:
+        return datetime.date.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def _event_edit_form_values_from_event(event):
+    return {
+        "title": event.title,
+        "category": event.category,
+        "work_title": event.work_title,
+        "location_name": event.location_name,
+        "region": event.region,
+        "start_date": event.start_date.isoformat() if event.start_date else "",
+        "end_date": event.end_date.isoformat() if event.end_date else "",
+        "official_url": event.official_url or "",
+        "source_name": event.source_name,
+        "summary": event.summary,
+    }
+
+
+def _event_edit_form_values_from_post(post_data):
+    values = {field: post_data.get(field, "") for field in EVENT_EDIT_TEXT_FIELDS}
+    values["start_date"] = post_data.get("start_date", "")
+    values["end_date"] = post_data.get("end_date", "")
+    return values
+
+
+@staff_console_required
+def staff_event_edit(request, pk):
+    """Staff console: edit a single event's fields (GET form / POST-PRG save).
+
+    Delegates the title/official_url/period invariants to
+    events.services.update_published_event and maps its domain errors to
+    field-level messages, re-rendering the page with the operator's POSTed
+    values (not the stale DB values) so a rejected save never looks like
+    silent data loss. Poster upload/removal reuses the existing
+    set_event_poster/clear_event_poster services and their shared image
+    validation. publish_status is out of scope here (see PR-E3).
+    """
+    event = get_object_or_404(Event, pk=pk)
+    list_query = urlencode(_event_filter_query_pairs(request.GET))
+
+    if request.method == "POST":
+        form_values = _event_edit_form_values_from_post(request.POST)
+        field_errors = {}
+
+        poster_file = request.FILES.get("poster")
+        clear_poster = request.POST.get("clear_poster") == "on"
+        validated_poster = None
+        if poster_file is not None:
+            try:
+                validated_poster = validate_uploaded_image(poster_file)
+            except serializers.ValidationError as exc:
+                detail = exc.detail
+                field_errors["poster"] = str(detail[0] if isinstance(detail, list) else detail)
+
+        if not field_errors:
+            try:
+                with transaction.atomic():
+                    update_published_event(
+                        event=event,
+                        title=form_values["title"],
+                        category=form_values["category"],
+                        work_title=form_values["work_title"],
+                        location_name=form_values["location_name"],
+                        region=form_values["region"],
+                        start_date=_parse_optional_date(form_values["start_date"]),
+                        end_date=_parse_optional_date(form_values["end_date"]),
+                        official_url=form_values["official_url"],
+                        source_name=form_values["source_name"],
+                        summary=form_values["summary"],
+                    )
+                    StaffActionLog.objects.create(
+                        actor=request.user,
+                        action=StaffActionLog.Action.EVENT_UPDATE,
+                        target_event=event,
+                        ip_address=request.META.get("REMOTE_ADDR"),
+                        user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                    )
+            except MissingOfficialUrlError:
+                field_errors["official_url"] = "공식 URL을 입력해야 합니다."
+            except PublishEventTitleError:
+                field_errors["title"] = "제목을 입력해야 합니다. (공식 URL과 동일할 수 없습니다.)"
+            except DuplicateOfficialUrlError:
+                field_errors["official_url"] = "이미 다른 이벤트가 사용 중인 공식 URL입니다."
+            except InvalidEventPeriodError:
+                field_errors["end_date"] = "종료일은 시작일 이후여야 합니다."
+            except PublishEventError:
+                field_errors["non_field"] = "저장 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
+
+        if field_errors:
+            return render(
+                request,
+                "staff/events/edit.html",
+                {
+                    "event": event,
+                    "form_values": form_values,
+                    "field_errors": field_errors,
+                    "CATEGORY": CATEGORY,
+                    "REGION": REGION,
+                    "list_query": list_query,
+                },
+                status=400,
+            )
+
+        if clear_poster:
+            clear_event_poster(event=event)
+        elif validated_poster is not None:
+            set_event_poster(event=event, image=validated_poster)
+
+        messages.success(request, "저장되었습니다.")
+        redirect_url = reverse("staff:event-edit", args=[event.pk])
+        if list_query:
+            redirect_url = f"{redirect_url}?{list_query}"
+        return redirect(redirect_url)
+
+    form_values = _event_edit_form_values_from_event(event)
+    return render(
+        request,
+        "staff/events/edit.html",
+        {
+            "event": event,
+            "form_values": form_values,
+            "field_errors": {},
+            "CATEGORY": CATEGORY,
+            "REGION": REGION,
+            "list_query": list_query,
         },
     )
 

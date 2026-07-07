@@ -57,6 +57,73 @@
     background: var(--amber-soft);
     color: var(--amber-ink);
   }
+  /* ── PR-E2 edit form (staff/events/edit.html shares this file with
+     list.html per plan — no new CSS file for the edit page). ── */
+  .detail-topline {
+    margin: 0 0 0.75rem;
+  }
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+  .field {
+    display: grid;
+    gap: 0.3125rem;
+  }
+  .field.full {
+    grid-column: 1 / -1;
+  }
+  .field label {
+    color: #2e4765;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .field input,
+  .field textarea,
+  .field select {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    padding: 0.625rem 0.75rem;
+    font: inherit;
+    font-size: 0.9rem;
+  }
+  .field textarea {
+    min-height: 96px;
+    resize: vertical;
+  }
+  .field-error {
+    color: var(--rose-ink);
+    font-size: var(--fs-xs);
+    margin: 0;
+  }
+  .field-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .action-button {
+    border: 1px solid var(--brand);
+    border-radius: 8px;
+    background: var(--brand);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0.625rem 0.75rem;
+    min-height: 44px;
+  }
+  @media (max-width: 57.5rem) {
+    .field-grid {
+      grid-template-columns: 1fr;
+    }
+  }
   @media (max-width: 45rem) {
     .page {
       padding: 1.125rem 0.875rem 4rem;

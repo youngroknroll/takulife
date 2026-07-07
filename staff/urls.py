@@ -33,4 +33,5 @@ urlpatterns = [
     ),
     path("home-categories/", staff_views.staff_home_categories, name="home-categories"),
     path("events/", staff_views.staff_events, name="event-list"),
+    path("events/<int:pk>/edit/", staff_views.staff_event_edit, name="event-edit"),
 ]
