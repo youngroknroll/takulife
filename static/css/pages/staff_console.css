@@ -1,5 +1,43 @@
 /* staff_console.css — dashboard-only rules (templates/staff/dashboard.html) */
 
+/* ── console density pass (PR-C2): mouse-first desktop console reads
+   tighter than the public site — shave one step off panel padding and
+   move body copy off --fs-base onto --fs-md/--fs-sm. Tokens only, no new
+   colors. Button/link min-height untouched (44px tap target kept). */
+.panel {
+  padding: 0.75rem;
+}
+
+.hero {
+  padding: 0.875rem;
+}
+
+.panel-note,
+.rule-list li,
+.side-list li {
+  font-size: var(--fs-sm);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 0.75rem;
+  font-size: var(--fs-xs);
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.4375rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table th {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+
 @media (min-width: 57.5rem) {
   .layout {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
@@ -46,7 +84,7 @@
   border-radius: 999px;
   background: var(--bg-soft);
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   vertical-align: middle;
 }
