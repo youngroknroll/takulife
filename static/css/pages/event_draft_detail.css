@@ -1,6 +1,10 @@
   .page {
     max-width: 1160px;
   }
+  /* "목록으로" back-link row (shell no longer carries it — page-owned) */
+  .detail-topline {
+    margin: 0 0 0.75rem;
+  }
   .hero {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
