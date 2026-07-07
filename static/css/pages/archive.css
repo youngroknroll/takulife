@@ -1,5 +1,5 @@
   .hero h1 {
-    font-size: 1.55rem;
+    font-size: var(--fs-xl);
   }
   .layout {
     display: grid;
@@ -271,6 +271,9 @@
     text-decoration: none;
   }
   @media (max-width: 53.75rem) {
+    .hero h1 {
+      font-size: var(--fs-xl-mobile);
+    }
     .nav-links {
       justify-content: flex-start;
     }
