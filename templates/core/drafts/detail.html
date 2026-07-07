@@ -9,7 +9,11 @@
 {% block content %}
   <main class="page" id="staff-main">
     <div class="detail-topline">
-      <a class="top-action" href="/staff/drafts/">목록으로</a>
+      {% if request.GET.status == "pending" or request.GET.status == "approved" or request.GET.status == "rejected" %}
+        <a class="top-action" href="/staff/drafts/?status={{ request.GET.status }}">목록으로</a>
+      {% else %}
+        <a class="top-action" href="/staff/drafts/">목록으로</a>
+      {% endif %}
     </div>
 
     {% if draft_not_found %}
