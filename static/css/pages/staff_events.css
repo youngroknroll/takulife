@@ -1,0 +1,64 @@
+  .page {
+    max-width: 1160px;
+  }
+  .panel {
+    padding: 0.75rem;
+  }
+  .hero {
+    padding: 0.875rem;
+  }
+  .event-list {
+    display: grid;
+    gap: 0.625rem;
+    margin-top: 0.75rem;
+  }
+  .event-row-card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-card);
+    padding: 0.75rem;
+  }
+  .event-row-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4375rem;
+    margin-bottom: 0.4375rem;
+  }
+  .event-row-card h3 {
+    margin: 0 0 0.3125rem;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  .event-row-card .meta {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+  .draft-chip {
+    border-radius: 999px;
+    padding: 0.25rem 0.5625rem;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .draft-chip.published {
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+  .draft-chip.draft {
+    background: var(--amber-soft);
+    color: var(--amber-ink);
+  }
+  .draft-chip.category {
+    background: var(--muted-soft);
+    color: var(--muted);
+  }
+  .draft-chip.warning {
+    background: var(--amber-soft);
+    color: var(--amber-ink);
+  }
+  @media (max-width: 45rem) {
+    .page {
+      padding: 1.125rem 0.875rem 4rem;
+    }
+  }

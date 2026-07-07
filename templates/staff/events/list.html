@@ -1,0 +1,54 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 이벤트 관리{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <section class="hero">
+      <h1>이벤트 관리</h1>
+      <p>게시·비공개 행사를 한 화면에서 확인하고, 품질 경고별로 대상을 좁혀 볼 수 있습니다.</p>
+    </section>
+
+    <section class="layout">
+      <article class="panel">
+        <h2>품질 경고 필터</h2>
+        <div class="chips" role="group" aria-label="품질 경고 필터">
+          <a class="chip{% if not selected_warning %} active{% endif %}" href="/staff/events/" aria-label="전체 보기"{% if not selected_warning %} aria-current="true"{% endif %}>전체</a>
+          {% for chip in warning_chips %}
+            <a class="chip{% if selected_warning == chip.key %} active{% endif %}" href="/staff/events/?warning={{ chip.key }}" aria-label="{{ chip.label }} 필터"{% if selected_warning == chip.key %} aria-current="true"{% endif %}>{{ chip.label }}</a>
+          {% endfor %}
+        </div>
+
+        {% if event_rows %}
+          <div class="event-list" aria-label="이벤트 목록">
+            {% for row in event_rows %}
+              <article class="event-row-card hover-lift">
+                <div class="event-row-top">
+                  <span class="draft-chip {{ row.event.publish_status }}">{% if row.event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
+                  {% if row.category_label %}
+                    <span class="draft-chip category">{{ row.category_label }}</span>
+                  {% endif %}
+                  {% for badge in row.quality_badges %}
+                    <span class="draft-chip warning">⚠ {{ badge }}</span>
+                  {% endfor %}
+                </div>
+                <h3>{{ row.event.title|default:"(제목 없음)" }}</h3>
+                <p class="meta">
+                  {% if row.region_label %}{{ row.region_label }}{% endif %}
+                  {% if row.event.start_date or row.event.end_date %} · {{ row.event.start_date|default:"?" }} ~ {{ row.event.end_date|default:"?" }}{% endif %}
+                </p>
+              </article>
+            {% endfor %}
+          </div>
+          {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
+        {% else %}
+          <p class="notice">해당 조건의 이벤트가 없습니다.</p>
+        {% endif %}
+      </article>
+    </section>
+  </main>
+{% endblock %}
