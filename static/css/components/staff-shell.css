@@ -1,0 +1,83 @@
+/* ── staff console shell (independent chrome, PR-C1) ─────────── */
+/*
+ * Replaces the public _site_header.html for /staff/* pages. Two-tier
+ * topbar: brand + "back to site" link, then console tabs. Reuses the
+ * existing `.nav-links` pill styling (nav.css) for the tabs — this file
+ * only adds the shell-specific chrome around it. No new color tokens;
+ * layout-only constants live here as local custom properties.
+ */
+:root {
+  --staff-shell-topbar-h: 3.25rem;
+}
+
+.staff-shell-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.staff-shell-topbar {
+  max-width: 1120px;
+  margin: 0 auto;
+  min-height: var(--staff-shell-topbar-h);
+  padding: 0.625rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.staff-shell-brand {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.staff-shell-exit {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.staff-shell-exit:hover {
+  color: var(--text);
+}
+
+.staff-shell-tabs {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.625rem 1.25rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  justify-content: flex-start;
+}
+
+@media (max-width: 43.75rem) {
+  .staff-shell-topbar {
+    padding: 0.625rem 1rem;
+  }
+
+  .staff-shell-tabs {
+    padding: 0.625rem 1rem;
+  }
+}
+
+/* Skip link: visually hidden until focused, then pinned top-left. */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.5rem 0.875rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 0.75rem;
+  top: 0.75rem;
+}

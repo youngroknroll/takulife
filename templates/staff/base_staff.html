@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% comment %}
+staff/base_staff.html — independent staff console shell.
+
+Extends the shared base.html but swaps the public site chrome for the
+console shell (topbar + tabs) and drops the public footer entirely (see
+prompt_plan.md "스태프 독립 콘솔 셸" PR-C1). Views/URLs/permissions unchanged —
+this only replaces layout blocks.
+{% endcomment %}
+{% load static %}
+
+{% block shell_css %}
+<link rel="stylesheet" href="{% static 'css/components/staff-shell.css' %}">
+{% endblock %}
+
+{% block site_header %}
+{% include "staff/_console_shell.html" %}
+{% endblock %}
+
+{% block site_footer %}{% endblock %}
