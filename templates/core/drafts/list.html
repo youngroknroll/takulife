@@ -117,7 +117,7 @@
                   </p>
                   <p class="bulk-fail-reason" data-bulk-fail-reason hidden></p>
                 </div>
-                <a class="queue-link" href="/staff/drafts/{{ row.draft.id }}/">
+                <a class="queue-link" href="/staff/drafts/{{ row.draft.id }}/{% if selected_status %}?status={{ selected_status }}{% endif %}">
                   {% if row.draft.review_status == "pending" %}검토하기{% else %}상세 보기{% endif %}
                 </a>
               </article>
