@@ -68,7 +68,7 @@
   }
   h1 {
     margin: 0.5rem 0 0.375rem;
-    font-size: 1.38rem;
+    font-size: var(--fs-xl);
     line-height: 1.4;
   }
   .lead {
@@ -213,6 +213,6 @@
       padding: 1.125rem 0.875rem 6rem;
     }
     h1 {
-      font-size: var(--fs-lg);
+      font-size: var(--fs-xl-mobile);
     }
   }

@@ -11,7 +11,7 @@
 
 .auth-container h1 {
   margin: 0 0 1.125rem;
-  font-size: 1.4rem;
+  font-size: var(--fs-xl);
 }
 
 .auth-error {
@@ -81,4 +81,12 @@ ul.auth-error li {
 .auth-container p a {
   color: var(--brand-ink);
   text-decoration: underline;
+}
+
+/* Mobile companion for the page title (matches home's --fs-xl → --fs-xl-mobile
+   pairing at the shared 43.75rem phone breakpoint). */
+@media (max-width: 43.75rem) {
+  .auth-container h1 {
+    font-size: var(--fs-xl-mobile);
+  }
 }
