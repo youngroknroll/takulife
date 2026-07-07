@@ -10,6 +10,9 @@ from events.services import (
     PublishEventError,
     PublishEventTitleError,
     create_published_event,
+    hard_delete_event,
+    republish_event,
+    unpublish_event,
     update_published_event,
 )
 
@@ -271,3 +274,91 @@ def test_update_published_event_maps_unexpected_error_to_publish_event_error(mon
 
     with pytest.raises(PublishEventError):
         update_published_event(event=event, title="Event renamed", official_url="https://example.com/unexpected")
+
+
+# ---------------------------------------------------------------------------
+# unpublish_event / republish_event — PR-E3 (publish-status toggle)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_unpublish_event_moves_published_event_to_draft():
+    event = create_published_event(title="Event", official_url="https://example.com/unpublish-me")
+
+    unpublish_event(event=event)
+
+    event.refresh_from_db()
+    assert event.publish_status == Event.PublishStatus.DRAFT
+
+
+@pytest.mark.django_db
+def test_republish_event_moves_draft_event_back_to_published():
+    event = create_published_event(title="Event", official_url="https://example.com/republish-me")
+    unpublish_event(event=event)
+    event.refresh_from_db()
+
+    republish_event(event=event)
+
+    event.refresh_from_db()
+    assert event.publish_status == Event.PublishStatus.PUBLISHED
+
+
+@pytest.mark.django_db
+def test_republish_event_rejects_event_with_blank_title():
+    event = create_published_event(title="Event", official_url="https://example.com/broken-republish")
+    unpublish_event(event=event)
+    event.title = "   "
+    event.save(update_fields=["title"])
+
+    with pytest.raises(PublishEventTitleError):
+        republish_event(event=event)
+
+    event.refresh_from_db()
+    assert event.publish_status == Event.PublishStatus.DRAFT
+
+
+@pytest.mark.django_db
+def test_republish_event_rejects_event_with_missing_official_url():
+    event = create_published_event(title="Event", official_url="https://example.com/broken-republish-url")
+    unpublish_event(event=event)
+    event.official_url = ""
+    event.save(update_fields=["official_url"])
+
+    with pytest.raises(MissingOfficialUrlError):
+        republish_event(event=event)
+
+    event.refresh_from_db()
+    assert event.publish_status == Event.PublishStatus.DRAFT
+
+
+# ---------------------------------------------------------------------------
+# hard_delete_event — PR-E3 (pure deletion primitive, no archive knowledge —
+# callers must confirm zero archive references first, see staff/services.py)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_hard_delete_event_deletes_the_event_row():
+    event = create_published_event(title="Event", official_url="https://example.com/delete-me")
+    pk = event.pk
+
+    hard_delete_event(event=event)
+
+    assert not Event.objects.filter(pk=pk).exists()
+
+
+@pytest.mark.django_db
+def test_hard_delete_event_cleans_up_poster_file(tmp_path, settings):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    settings.MEDIA_ROOT = tmp_path
+    event = create_published_event(title="Event", official_url="https://example.com/delete-with-poster")
+    event.poster_image = SimpleUploadedFile("poster.png", b"fake-image-bytes", content_type="image/png")
+    event.save(update_fields=["poster_image"])
+    poster_storage = event.poster_image.storage
+    poster_name = event.poster_image.name
+    assert poster_storage.exists(poster_name)
+
+    hard_delete_event(event=event)
+
+    assert not poster_storage.exists(poster_name)
