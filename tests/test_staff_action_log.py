@@ -9,6 +9,7 @@ from django.contrib import admin
 from django.test import RequestFactory
 
 from drafts.models import EventDraft
+from events.models import Event
 from staff.admin import StaffActionLogAdmin
 from staff.models import StaffActionLog
 
@@ -79,6 +80,46 @@ def test_staff_action_log_str_without_target_draft_omits_hash_none(make_user):
 
     assert "#None" not in text
     assert text == f"home_categories by {actor.id}"
+
+
+@pytest.mark.django_db
+def test_staff_action_log_records_target_event(make_user):
+    actor = make_user(is_staff=True)
+    event = Event.objects.create(title="Logged event", publish_status=Event.PublishStatus.PUBLISHED)
+
+    entry = StaffActionLog.objects.create(
+        actor=actor,
+        action=StaffActionLog.Action.EVENT_UPDATE,
+        target_event=event,
+    )
+
+    entry.refresh_from_db()
+    assert entry.action == "event_update"
+    assert entry.target_event_id == event.id
+
+
+@pytest.mark.django_db
+def test_staff_action_log_survives_target_event_deletion():
+    event = Event.objects.create(title="Deleted event", publish_status=Event.PublishStatus.PUBLISHED)
+    entry = StaffActionLog.objects.create(action=StaffActionLog.Action.EVENT_UPDATE, target_event=event)
+
+    event.delete()
+    entry.refresh_from_db()
+
+    assert entry.target_event_id is None
+
+
+@pytest.mark.django_db
+def test_staff_action_log_str_includes_target_event_id(make_user):
+    actor = make_user(is_staff=True)
+    event = Event.objects.create(title="Logged event", publish_status=Event.PublishStatus.PUBLISHED)
+    entry = StaffActionLog.objects.create(
+        actor=actor, action=StaffActionLog.Action.EVENT_UPDATE, target_event=event
+    )
+
+    text = str(entry)
+
+    assert text == f"event_update #{event.id} by {actor.id}"
 
 
 @pytest.mark.django_db
