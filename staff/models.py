@@ -16,6 +16,7 @@ class StaffActionLog(models.Model):
         APPROVE = "approve", "Approve"
         REJECT = "reject", "Reject"
         HOME_CATEGORIES = "home_categories", "Home categories"
+        EVENT_UPDATE = "event_update", "Event update"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -28,6 +29,11 @@ class StaffActionLog(models.Model):
         null=True,
         on_delete=models.SET_NULL,
     )
+    target_event = models.ForeignKey(
+        "events.Event",
+        null=True,
+        on_delete=models.SET_NULL,
+    )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -36,6 +42,7 @@ class StaffActionLog(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        if self.target_draft_id is None:
+        target_id = self.target_draft_id if self.target_draft_id is not None else self.target_event_id
+        if target_id is None:
             return f"{self.action} by {self.actor_id}"
-        return f"{self.action} #{self.target_draft_id} by {self.actor_id}"
+        return f"{self.action} #{target_id} by {self.actor_id}"

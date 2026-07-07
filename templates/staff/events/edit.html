@@ -1,0 +1,113 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 이벤트 수정 #{{ event.id }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <div class="detail-topline">
+      <a class="top-action" href="/staff/events/{% if list_query %}?{{ list_query }}{% endif %}">목록으로</a>
+    </div>
+
+    <section class="hero">
+      <div>
+        <h1>이벤트 수정 #{{ event.id }}</h1>
+        <p>게시 여부·삭제는 이 화면의 범위 밖입니다. 필드를 수정하고 저장하세요.</p>
+      </div>
+      <span class="draft-chip {{ event.publish_status }}">{% if event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
+    </section>
+
+    {% if field_errors.non_field %}
+      <p class="notice" role="alert">{{ field_errors.non_field }}</p>
+    {% endif %}
+
+    <section class="layout">
+      <article class="panel">
+        <h2>필드 편집</h2>
+
+        {# action은 화이트리스트 기반 list_query를 보존 — POST 후 PRG 리다이렉트가
+           목록 필터(?warning=/?publish_status=)를 유지하려면 POST URL 자체에 실려야 함 #}
+        <form method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <div class="field-grid">
+            <div class="field full">
+              <label for="edit-title">제목</label>
+              <input id="edit-title" name="title" type="text" value="{{ form_values.title }}">
+              {% if field_errors.title %}<p class="field-error" role="alert">{{ field_errors.title }}</p>{% endif %}
+            </div>
+            <div class="field">
+              <label for="edit-category">카테고리</label>
+              <select id="edit-category" name="category">
+                <option value="">— 선택 —</option>
+                {% for slug, label in CATEGORY %}
+                  <option value="{{ slug }}"{% if form_values.category == slug %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="edit-work-title">작품명</label>
+              <input id="edit-work-title" name="work_title" type="text" value="{{ form_values.work_title }}">
+            </div>
+            <div class="field">
+              <label for="edit-location-name">장소명</label>
+              <input id="edit-location-name" name="location_name" type="text" value="{{ form_values.location_name }}">
+            </div>
+            <div class="field">
+              <label for="edit-region">지역</label>
+              <select id="edit-region" name="region">
+                <option value="">— 선택 —</option>
+                {% for slug, label in REGION %}
+                  <option value="{{ slug }}"{% if form_values.region == slug %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="edit-start-date">시작일</label>
+              <input id="edit-start-date" name="start_date" type="date" value="{{ form_values.start_date }}">
+              {% if field_errors.start_date %}<p class="field-error" role="alert">{{ field_errors.start_date }}</p>{% endif %}
+            </div>
+            <div class="field">
+              <label for="edit-end-date">종료일</label>
+              <input id="edit-end-date" name="end_date" type="date" value="{{ form_values.end_date }}">
+              {% if field_errors.end_date %}<p class="field-error" role="alert">{{ field_errors.end_date }}</p>{% endif %}
+            </div>
+            <div class="field full">
+              <label for="edit-official-url">공식 URL</label>
+              <input id="edit-official-url" name="official_url" type="text" value="{{ form_values.official_url }}">
+              {% if field_errors.official_url %}<p class="field-error" role="alert">{{ field_errors.official_url }}</p>{% endif %}
+            </div>
+            <div class="field">
+              <label for="edit-source-name">출처명</label>
+              <input id="edit-source-name" name="source_name" type="text" value="{{ form_values.source_name }}">
+            </div>
+            <div class="field full">
+              <label for="edit-summary">요약</label>
+              <textarea id="edit-summary" name="summary">{{ form_values.summary }}</textarea>
+            </div>
+            <div class="field full">
+              <label for="edit-poster">포스터 이미지</label>
+              {% if event.poster_image %}
+                <p class="panel-note">현재 포스터: <a href="{{ event.poster_image.url }}" target="_blank" rel="noopener">보기 ↗</a></p>
+              {% endif %}
+              <input id="edit-poster" name="poster" type="file" accept="image/png,image/jpeg,image/webp">
+              {% if field_errors.poster %}<p class="field-error" role="alert">{{ field_errors.poster }}</p>{% endif %}
+              {% if event.poster_image %}
+                <label class="field-checkbox">
+                  <input type="checkbox" name="clear_poster">
+                  포스터 제거
+                </label>
+              {% endif %}
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <button class="action-button" type="submit">저장</button>
+          </div>
+        </form>
+      </article>
+    </section>
+  </main>
+{% endblock %}

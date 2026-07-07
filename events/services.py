@@ -54,6 +54,36 @@ class PublishEventTitleError(PublishEventError):
     pass
 
 
+def _validate_publish_fields(*, title, official_url, start_date, end_date, existing_queryset):
+    """Shared invariant checks for create_published_event and update_published_event.
+
+    `existing_queryset` scopes the official_url uniqueness check: the full
+    Event queryset for create, or Event.objects.exclude(pk=event.pk) for
+    update (so keeping the same URL on save is not a self-conflict).
+
+    Returns (normalized_title, normalized_official_url); raises the domain
+    errors documented on the two public functions above.
+    """
+    normalized_official_url = (official_url or "").strip()
+    if not normalized_official_url:
+        raise MissingOfficialUrlError
+
+    normalized_title = (title or "").strip()
+    if not normalized_title:
+        raise PublishEventTitleError
+
+    if normalized_title.rstrip("/") == normalized_official_url.rstrip("/"):
+        raise PublishEventTitleError
+
+    if existing_queryset.filter(official_url=normalized_official_url).exists():
+        raise DuplicateOfficialUrlError
+
+    if start_date is not None and end_date is not None and start_date > end_date:
+        raise InvalidEventPeriodError
+
+    return normalized_title, normalized_official_url
+
+
 def create_published_event(
     *,
     title,
@@ -67,22 +97,13 @@ def create_published_event(
     source_name="",
     summary="",
 ):
-    normalized_official_url = (official_url or "").strip()
-    if not normalized_official_url:
-        raise MissingOfficialUrlError
-
-    normalized_title = (title or "").strip()
-    if not normalized_title:
-        raise PublishEventTitleError
-
-    if normalized_title.rstrip("/") == normalized_official_url.rstrip("/"):
-        raise PublishEventTitleError
-
-    if Event.objects.filter(official_url=normalized_official_url).exists():
-        raise DuplicateOfficialUrlError
-
-    if start_date is not None and end_date is not None and start_date > end_date:
-        raise InvalidEventPeriodError
+    _normalized_title, normalized_official_url = _validate_publish_fields(
+        title=title,
+        official_url=official_url,
+        start_date=start_date,
+        end_date=end_date,
+        existing_queryset=Event.objects.all(),
+    )
 
     try:
         with transaction.atomic():
@@ -104,3 +125,70 @@ def create_published_event(
     except Exception as exc:
         logger.exception("Failed to publish event for official_url=%s", official_url)
         raise PublishEventError from exc
+
+
+def update_published_event(
+    *,
+    event,
+    title,
+    category="",
+    work_title="",
+    location_name="",
+    region="",
+    start_date=None,
+    end_date=None,
+    official_url,
+    source_name="",
+    summary="",
+):
+    """Update an existing event's editable fields in place.
+
+    Reuses create_published_event's invariants via _validate_publish_fields,
+    scoping the official_url uniqueness check to exclude `event` itself so
+    re-saving with the same URL is not treated as a conflict. Does not touch
+    publish_status or poster_image — those are out of this service's scope
+    (see events/services.py's set_event_poster/clear_event_poster and the
+    PR-E3 publish-status toggle).
+    """
+    _normalized_title, normalized_official_url = _validate_publish_fields(
+        title=title,
+        official_url=official_url,
+        start_date=start_date,
+        end_date=end_date,
+        existing_queryset=Event.objects.exclude(pk=event.pk),
+    )
+
+    event.title = title
+    event.category = category
+    event.work_title = work_title
+    event.location_name = location_name
+    event.region = region
+    event.start_date = start_date
+    event.end_date = end_date
+    event.official_url = normalized_official_url
+    event.source_name = source_name
+    event.summary = summary
+
+    try:
+        with transaction.atomic():
+            event.save(
+                update_fields=[
+                    "title",
+                    "category",
+                    "work_title",
+                    "location_name",
+                    "region",
+                    "start_date",
+                    "end_date",
+                    "official_url",
+                    "source_name",
+                    "summary",
+                ]
+            )
+    except IntegrityError as exc:
+        raise DuplicateOfficialUrlError from exc
+    except Exception as exc:
+        logger.exception("Failed to update published event pk=%s", event.pk)
+        raise PublishEventError from exc
+
+    return event
