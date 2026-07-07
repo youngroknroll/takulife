@@ -71,17 +71,46 @@ def list_published_events(params, *, today=None):
 
 
 # ---------------------------------------------------------------------------
-# Staff dashboard quality-warning counters (PR-1b)
+# Staff dashboard quality-warning counters (PR-1b) + drilldown (PR-E1)
 #
-# Each function is a thin, independent count over Event.objects.published().
-# These are one-off counts for a single consumer (the staff dashboard), so the
-# predicate filters live here rather than as reusable queryset methods.
+# Each _*_qs() helper is the single source of truth for one warning's
+# predicate over Event.objects.published(). count_published_* wraps it in
+# .count() (dashboard summary); list_staff_events() (below) reuses the same
+# queryset for the drilldown list, so the two are guaranteed to agree on
+# population by construction — no duplicated predicate logic.
 # ---------------------------------------------------------------------------
+
+
+def _missing_official_url_qs():
+    return Event.objects.published().filter(models.Q(official_url__isnull=True) | models.Q(official_url=""))
+
+
+def _ended_still_published_qs(*, today=None):
+    if today is None:
+        today = timezone.localdate()
+    return Event.objects.published().filter(end_date__lt=today)
+
+
+def _missing_poster_qs():
+    return Event.objects.published().filter(models.Q(poster_image__isnull=True) | models.Q(poster_image=""))
+
+
+def _missing_dates_qs():
+    return Event.objects.published().filter(models.Q(start_date__isnull=True) | models.Q(end_date__isnull=True))
+
+
+def _missing_region_qs():
+    """Published events with region == "" exactly.
+
+    Conscious v1 decision: no strip/normalization, so a whitespace-only
+    region (e.g. " ") is NOT counted here.
+    """
+    return Event.objects.published().filter(region="")
 
 
 def count_published_missing_official_url() -> int:
     """Count published events with no official_url (NULL or blank)."""
-    return Event.objects.published().filter(models.Q(official_url__isnull=True) | models.Q(official_url="")).count()
+    return _missing_official_url_qs().count()
 
 
 def count_published_ended_still_published(*, today=None) -> int:
@@ -91,14 +120,12 @@ def count_published_ended_still_published(*, today=None) -> int:
     Events with a null end_date never match (open-ended events are not
     considered "ended").
     """
-    if today is None:
-        today = timezone.localdate()
-    return Event.objects.published().filter(end_date__lt=today).count()
+    return _ended_still_published_qs(today=today).count()
 
 
 def count_published_missing_poster() -> int:
     """Count published events with no poster_image (blank and/or null)."""
-    return Event.objects.published().filter(models.Q(poster_image__isnull=True) | models.Q(poster_image="")).count()
+    return _missing_poster_qs().count()
 
 
 def count_published_missing_dates() -> int:
@@ -106,11 +133,7 @@ def count_published_missing_dates() -> int:
 
     Counted once even when both are null (OR, not a sum of two conditions).
     """
-    return (
-        Event.objects.published()
-        .filter(models.Q(start_date__isnull=True) | models.Q(end_date__isnull=True))
-        .count()
-    )
+    return _missing_dates_qs().count()
 
 
 def count_published_missing_region() -> int:
@@ -119,7 +142,7 @@ def count_published_missing_region() -> int:
     Conscious v1 decision: no strip/normalization, so a whitespace-only
     region (e.g. " ") is NOT counted here.
     """
-    return Event.objects.published().filter(region="").count()
+    return _missing_region_qs().count()
 
 
 def published_quality_warnings(*, today=None) -> dict:
@@ -154,3 +177,56 @@ def published_quality_warnings(*, today=None) -> dict:
             + missing_region
         ),
     }
+
+
+# ---------------------------------------------------------------------------
+# Staff events console listing (PR-E1)
+# ---------------------------------------------------------------------------
+
+QUALITY_WARNING_KEYS = (
+    "missing_official_url",
+    "ended_still_published",
+    "missing_poster",
+    "missing_dates",
+    "missing_region",
+)
+
+STAFF_EVENT_LISTING_PAGE_SIZE = 20
+
+_NON_DATED_WARNING_QUERYSETS = {
+    "missing_official_url": _missing_official_url_qs,
+    "missing_poster": _missing_poster_qs,
+    "missing_dates": _missing_dates_qs,
+    "missing_region": _missing_region_qs,
+}
+
+
+def list_staff_events(*, warning=None, publish_status=None, today=None):
+    """Return Events for the staff events console, newest (created_at) first.
+
+    warning: one of QUALITY_WARNING_KEYS scopes the result to the exact same
+      published-only queryset the matching count_published_* function counts
+      (drilldown parity — see the block comment above those helpers). Any
+      other value (None, "", or an unrecognised key) is silently ignored —
+      no warning filter is applied — mirroring the existing
+      selected_status/selected_warning normalisation pattern used by staff
+      views rather than raising for a bad querystring value.
+    publish_status: an Event.PublishStatus value restricts the result to
+      that status. Any other value (None, "", unrecognised) is ignored (all
+      statuses included). Note a warning filter is already published-only by
+      construction, so pairing it with publish_status=draft yields an empty
+      queryset rather than an error.
+    today: date override forwarded only to the ended_still_published
+      warning (see _ended_still_published_qs); ignored otherwise.
+    """
+    if warning == "ended_still_published":
+        queryset = _ended_still_published_qs(today=today)
+    elif warning in _NON_DATED_WARNING_QUERYSETS:
+        queryset = _NON_DATED_WARNING_QUERYSETS[warning]()
+    else:
+        queryset = Event.objects.all()
+
+    if publish_status in Event.PublishStatus.values:
+        queryset = queryset.filter(publish_status=publish_status)
+
+    return queryset.order_by("-created_at")

@@ -667,3 +667,170 @@ class TestEndingWithinDays:
         qs = list(Event.objects.published().ending_within_days(5, today=today))
         ids = [e.id for e in qs]
         assert ids.index(sooner.id) < ids.index(later.id)
+
+
+# ---------------------------------------------------------------------------
+# list_staff_events (PR-E1 — staff quality-warning drilldown)
+#
+# warning drilldowns must return exactly the same population the matching
+# count_published_* function counts (dashboard drilldown parity). Unknown/
+# blank warning values are ignored (fallback to no warning filter), mirroring
+# the existing selected_status normalisation pattern in staff views.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestListStaffEvents:
+    def test_no_filters_returns_all_events_regardless_of_publish_status(
+        self, make_event, make_draft_event
+    ):
+        from events.queries import list_staff_events
+
+        published = make_event(official_url="https://example.com/a")
+        draft = make_draft_event(official_url="https://example.com/b")
+
+        result = list_staff_events()
+
+        ids = {e.id for e in result}
+        assert ids == {published.id, draft.id}
+
+    def test_ordered_by_created_at_descending(self, make_event):
+        from events.queries import list_staff_events
+
+        older = make_event(title="older")
+        newer = make_event(title="newer")
+
+        result = list(list_staff_events())
+
+        assert [e.id for e in result] == [newer.id, older.id]
+
+    def test_publish_status_filter_restricts_to_that_status(
+        self, make_event, make_draft_event
+    ):
+        from events.queries import list_staff_events
+        from events.models import Event
+
+        published = make_event(official_url="https://example.com/a")
+        make_draft_event(official_url="https://example.com/b")
+
+        result = list_staff_events(publish_status=Event.PublishStatus.PUBLISHED)
+
+        assert [e.id for e in result] == [published.id]
+
+    def test_unknown_publish_status_is_ignored(self, make_event):
+        from events.queries import list_staff_events
+
+        event = make_event(official_url="https://example.com/a")
+
+        result = list_staff_events(publish_status="not-a-real-status")
+
+        assert [e.id for e in result] == [event.id]
+
+    @pytest.mark.parametrize(
+        "warning,setup_kwargs",
+        [
+            ("missing_official_url", {"official_url": None}),
+            (
+                "missing_dates",
+                {
+                    "official_url": "https://example.com/dates",
+                    "start_date": None,
+                    "end_date": None,
+                },
+            ),
+            ("missing_region", {"official_url": "https://example.com/region", "region": ""}),
+        ],
+    )
+    def test_warning_filter_matches_matching_event_and_excludes_clean_event(
+        self, make_event, warning, setup_kwargs
+    ):
+        from events.queries import list_staff_events
+
+        matching = make_event(**setup_kwargs)
+        clean = make_event(
+            official_url=f"https://example.com/clean-{warning}",
+            region="서울",
+            start_date=date(2020, 1, 1),
+            end_date=date(2020, 12, 31),
+        )
+
+        result = list_staff_events(warning=warning)
+
+        ids = {e.id for e in result}
+        assert matching.id in ids
+        assert clean.id not in ids
+
+    def test_missing_poster_warning_matches_matching_event_and_excludes_clean_event(
+        self, make_event, png_bytes, settings, tmp_path
+    ):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from events.queries import list_staff_events
+
+        settings.MEDIA_ROOT = str(tmp_path)
+        matching = make_event(official_url="https://example.com/poster-missing")
+        clean = make_event(official_url="https://example.com/poster-present")
+        clean.poster_image = SimpleUploadedFile(
+            "poster.png", png_bytes(), content_type="image/png"
+        )
+        clean.save()
+
+        result = list_staff_events(warning="missing_poster")
+
+        ids = {e.id for e in result}
+        assert matching.id in ids
+        assert clean.id not in ids
+
+    def test_ended_still_published_warning_uses_today_override(self, make_event):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        ended = make_event(
+            official_url="https://example.com/ended",
+            end_date=today - timedelta(days=1),
+        )
+        not_ended = make_event(
+            official_url="https://example.com/not-ended",
+            end_date=today + timedelta(days=1),
+        )
+
+        result = list_staff_events(warning="ended_still_published", today=today)
+
+        ids = {e.id for e in result}
+        assert ended.id in ids
+        assert not_ended.id not in ids
+
+    def test_warning_filter_excludes_draft_events_even_if_matching(
+        self, make_draft_event
+    ):
+        """Warning drilldowns are published-scoped, matching count_published_*."""
+        from events.queries import list_staff_events
+
+        make_draft_event(official_url=None)
+
+        result = list_staff_events(warning="missing_official_url")
+
+        assert list(result) == []
+
+    def test_unknown_warning_is_ignored(self, make_event, make_draft_event):
+        from events.queries import list_staff_events
+
+        published = make_event(official_url="https://example.com/a")
+        draft = make_draft_event(official_url="https://example.com/b")
+
+        result = list_staff_events(warning="not-a-real-warning")
+
+        ids = {e.id for e in result}
+        assert ids == {published.id, draft.id}
+
+    def test_warning_count_matches_count_published_function(self, make_event, make_draft_event):
+        """Drilldown row count must equal the dashboard's count_published_* value."""
+        from events.queries import count_published_missing_region, list_staff_events
+
+        make_event(official_url="https://example.com/a", region="")
+        make_event(official_url="https://example.com/b", region="")
+        make_draft_event(official_url="https://example.com/c", region="")
+
+        result = list_staff_events(warning="missing_region")
+
+        assert result.count() == count_published_missing_region()

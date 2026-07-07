@@ -19,5 +19,6 @@ No sidebar, no collapse toggle, no icons, no badges — see plan "하지 말 것
     <a href="/staff/dashboard/"{% if request.resolver_match.url_name == 'dashboard' %} class="active" aria-current="page"{% endif %}>스태프 콘솔</a>
     <a href="/staff/drafts/"{% if request.resolver_match.url_name == 'draft-list' or request.resolver_match.url_name == 'draft-detail' %} class="active" aria-current="page"{% endif %}>드래프트 관리</a>
     <a href="/staff/home-categories/"{% if request.resolver_match.url_name == 'home-categories' %} class="active" aria-current="page"{% endif %}>홈 카테고리</a>
+    <a href="/staff/events/"{% if request.resolver_match.url_name == 'event-list' %} class="active" aria-current="page"{% endif %}>이벤트 관리</a>
   </nav>
 </header>

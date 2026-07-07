@@ -13,6 +13,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
@@ -40,7 +41,13 @@ from drafts.services import (
     approve_draft,
     reject_draft,
 )
-from events.queries import published_quality_warnings
+from events.models import Event
+from events.queries import (
+    QUALITY_WARNING_KEYS,
+    STAFF_EVENT_LISTING_PAGE_SIZE,
+    list_staff_events,
+    published_quality_warnings,
+)
 
 from .models import StaffActionLog
 from .permissions import staff_console_required
@@ -61,6 +68,111 @@ def dashboard(request):
             "quality_warnings": published_quality_warnings(),
             "recent_actions": recent_staff_actions(),
             "draft_sources": list_draft_sources(),
+        },
+    )
+
+
+# Korean labels for the 5 QUALITY_WARNING_KEYS, shared by the filter chips
+# and the per-row quality badges below. Mirrors the strings already used in
+# staff/dashboard.html's warning table (kept in sync manually — both are
+# small, static, single-consumer label sets).
+QUALITY_WARNING_LABELS = {
+    "missing_official_url": "공식 URL 없음",
+    "ended_still_published": "종료됐지만 게시 중",
+    "missing_poster": "포스터 없음",
+    "missing_dates": "날짜 정보 누락",
+    "missing_region": "지역 정보 없음",
+}
+
+
+def _event_quality_badges(event, *, today):
+    """Return the Korean warning labels this event trips, or [] if none.
+
+    Mirrors the 5 predicates in events.queries exactly. Only called for
+    published events in _build_event_rows — the predicates (and the
+    dashboard counts they mirror) are published-scoped, so a draft event
+    always gets an empty badge list rather than a misleading one.
+    """
+    badges = []
+    if not event.official_url:
+        badges.append(QUALITY_WARNING_LABELS["missing_official_url"])
+    if event.end_date and event.end_date < today:
+        badges.append(QUALITY_WARNING_LABELS["ended_still_published"])
+    if not event.poster_image:
+        badges.append(QUALITY_WARNING_LABELS["missing_poster"])
+    if event.start_date is None or event.end_date is None:
+        badges.append(QUALITY_WARNING_LABELS["missing_dates"])
+    if event.region == "":
+        badges.append(QUALITY_WARNING_LABELS["missing_region"])
+    return badges
+
+
+def _build_event_rows(events):
+    """Attach display labels + quality badges to each event for the template."""
+    today = timezone.localdate()
+    rows = []
+    for event in events:
+        is_published = event.publish_status == Event.PublishStatus.PUBLISHED
+        rows.append(
+            {
+                "event": event,
+                "category_label": CATEGORY_LABELS.get(event.category, event.category),
+                "region_label": REGION_LABELS.get(event.region, event.region),
+                "quality_badges": _event_quality_badges(event, today=today)
+                if is_published
+                else [],
+            }
+        )
+    return rows
+
+
+@staff_console_required
+def staff_events(request):
+    """Staff console: published+draft event listing with quality-warning drilldown.
+
+    ?warning= is validated against QUALITY_WARNING_KEYS (unknown/blank values
+    fall back to "no filter", mirroring event_drafts' selected_status
+    normalisation) and links directly from the dashboard's 5 warning rows.
+    ?publish_status= is validated against Event.PublishStatus.values the same
+    way. Pagination mirrors event_drafts' Paginator usage.
+    """
+    selected_warning = request.GET.get("warning", "")
+    if selected_warning not in QUALITY_WARNING_KEYS:
+        selected_warning = ""
+
+    selected_publish_status = request.GET.get("publish_status", "")
+    if selected_publish_status not in Event.PublishStatus.values:
+        selected_publish_status = ""
+
+    events = list_staff_events(
+        warning=selected_warning or None,
+        publish_status=selected_publish_status or None,
+    )
+    paginator = Paginator(events, STAFF_EVENT_LISTING_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    event_rows = _build_event_rows(page_obj.object_list)
+
+    query_pairs = []
+    if selected_warning:
+        query_pairs.append(("warning", selected_warning))
+    if selected_publish_status:
+        query_pairs.append(("publish_status", selected_publish_status))
+    pager_query = "&" + urlencode(query_pairs) if query_pairs else ""
+
+    warning_chips = [
+        {"key": key, "label": QUALITY_WARNING_LABELS[key]} for key in QUALITY_WARNING_KEYS
+    ]
+
+    return render(
+        request,
+        "staff/events/list.html",
+        {
+            "event_rows": event_rows,
+            "page_obj": page_obj,
+            "selected_warning": selected_warning,
+            "selected_publish_status": selected_publish_status,
+            "pager_query": pager_query,
+            "warning_chips": warning_chips,
         },
     )
 
