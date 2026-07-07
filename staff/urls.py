@@ -33,5 +33,12 @@ urlpatterns = [
     ),
     path("home-categories/", staff_views.staff_home_categories, name="home-categories"),
     path("events/", staff_views.staff_events, name="event-list"),
+    path("events/new/", staff_views.staff_event_create, name="event-create"),
     path("events/<int:pk>/edit/", staff_views.staff_event_edit, name="event-edit"),
+    path(
+        "events/<int:pk>/toggle-publish/",
+        staff_views.staff_event_toggle_publish,
+        name="event-toggle-publish",
+    ),
+    path("events/<int:pk>/delete/", staff_views.staff_event_delete, name="event-delete"),
 ]

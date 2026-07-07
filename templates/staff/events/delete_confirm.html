@@ -1,0 +1,30 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 이벤트 삭제 확인{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <div class="detail-topline">
+      <a class="top-action" href="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}">취소</a>
+    </div>
+
+    <section class="hero">
+      <h1>정말 삭제하시겠습니까?</h1>
+      <p>"{{ event.title|default:"(제목 없음)" }}"이(가) 영구 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+    </section>
+
+    <section class="layout">
+      <article class="panel">
+        <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}">
+          {% csrf_token %}
+          <input type="hidden" name="confirmed" value="yes">
+          <button class="action-button danger" type="submit">삭제 확정</button>
+        </form>
+      </article>
+    </section>
+  </main>
+{% endblock %}

@@ -15,7 +15,7 @@
     <section class="hero">
       <div>
         <h1>이벤트 수정 #{{ event.id }}</h1>
-        <p>게시 여부·삭제는 이 화면의 범위 밖입니다. 필드를 수정하고 저장하세요.</p>
+        <p>필드를 수정하고 저장하세요. 게시 상태 전환·삭제는 아래 별도 섹션에서.</p>
       </div>
       <span class="draft-chip {{ event.publish_status }}">{% if event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
     </section>
@@ -107,6 +107,42 @@
             <button class="action-button" type="submit">저장</button>
           </div>
         </form>
+      </article>
+
+      <article class="panel">
+        <h2>게시 상태</h2>
+        <p class="panel-note">
+          {% if event.publish_status == "published" %}
+            현재 게시 중입니다. 내리면 공개 사이트에서 즉시 숨겨집니다(재게시 가능).
+          {% else %}
+            현재 비공개(초안)입니다. 다시 게시하면 공개 사이트에 노출됩니다.
+          {% endif %}
+        </p>
+        <form method="post" action="/staff/events/{{ event.id }}/toggle-publish/{% if list_query %}?{{ list_query }}{% endif %}">
+          {% csrf_token %}
+          {% if event.publish_status == "published" %}
+            <button class="action-button secondary" type="submit">게시 내리기</button>
+          {% else %}
+            <button class="action-button" type="submit">다시 게시</button>
+          {% endif %}
+        </form>
+      </article>
+
+      <article class="panel">
+        <h2>삭제</h2>
+        {% with total=archive_reference_counts.interest|add:archive_reference_counts.status|add:archive_reference_counts.visit %}
+          {% if total > 0 %}
+            <p class="notice">
+              찜 {{ archive_reference_counts.interest }}·상태 {{ archive_reference_counts.status }}·방문기록 {{ archive_reference_counts.visit }}건이 연결되어 삭제할 수 없습니다.
+            </p>
+          {% else %}
+            <p class="panel-note">아카이브 참조가 없어 하드 삭제가 가능합니다. 삭제는 되돌릴 수 없습니다.</p>
+            <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}">
+              {% csrf_token %}
+              <button class="action-button danger" type="submit">삭제</button>
+            </form>
+          {% endif %}
+        {% endwith %}
       </article>
     </section>
   </main>

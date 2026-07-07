@@ -1,0 +1,94 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 이벤트 생성{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <div class="detail-topline">
+      <a class="top-action" href="/staff/events/">목록으로</a>
+    </div>
+
+    <section class="hero">
+      <h1>이벤트 생성</h1>
+      <p>새 이벤트는 저장 즉시 게시됩니다. 포스터는 저장 후 수정 화면에서 추가하세요.</p>
+    </section>
+
+    {% if field_errors.non_field %}
+      <p class="notice" role="alert">{{ field_errors.non_field }}</p>
+    {% endif %}
+
+    <section class="layout">
+      <article class="panel">
+        <h2>필드 입력</h2>
+
+        <form method="post" action="/staff/events/new/" novalidate>
+          {% csrf_token %}
+          <div class="field-grid">
+            <div class="field full">
+              <label for="create-title">제목</label>
+              <input id="create-title" name="title" type="text" value="{{ form_values.title }}">
+              {% if field_errors.title %}<p class="field-error" role="alert">{{ field_errors.title }}</p>{% endif %}
+            </div>
+            <div class="field">
+              <label for="create-category">카테고리</label>
+              <select id="create-category" name="category">
+                <option value="">— 선택 —</option>
+                {% for slug, label in CATEGORY %}
+                  <option value="{{ slug }}"{% if form_values.category == slug %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="create-work-title">작품명</label>
+              <input id="create-work-title" name="work_title" type="text" value="{{ form_values.work_title }}">
+            </div>
+            <div class="field">
+              <label for="create-location-name">장소명</label>
+              <input id="create-location-name" name="location_name" type="text" value="{{ form_values.location_name }}">
+            </div>
+            <div class="field">
+              <label for="create-region">지역</label>
+              <select id="create-region" name="region">
+                <option value="">— 선택 —</option>
+                {% for slug, label in REGION %}
+                  <option value="{{ slug }}"{% if form_values.region == slug %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="create-start-date">시작일</label>
+              <input id="create-start-date" name="start_date" type="date" value="{{ form_values.start_date }}">
+              {% if field_errors.start_date %}<p class="field-error" role="alert">{{ field_errors.start_date }}</p>{% endif %}
+            </div>
+            <div class="field">
+              <label for="create-end-date">종료일</label>
+              <input id="create-end-date" name="end_date" type="date" value="{{ form_values.end_date }}">
+              {% if field_errors.end_date %}<p class="field-error" role="alert">{{ field_errors.end_date }}</p>{% endif %}
+            </div>
+            <div class="field full">
+              <label for="create-official-url">공식 URL</label>
+              <input id="create-official-url" name="official_url" type="text" value="{{ form_values.official_url }}">
+              {% if field_errors.official_url %}<p class="field-error" role="alert">{{ field_errors.official_url }}</p>{% endif %}
+            </div>
+            <div class="field">
+              <label for="create-source-name">출처명</label>
+              <input id="create-source-name" name="source_name" type="text" value="{{ form_values.source_name }}">
+            </div>
+            <div class="field full">
+              <label for="create-summary">요약</label>
+              <textarea id="create-summary" name="summary">{{ form_values.summary }}</textarea>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <button class="action-button" type="submit">생성</button>
+          </div>
+        </form>
+      </article>
+    </section>
+  </main>
+{% endblock %}
