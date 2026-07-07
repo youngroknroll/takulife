@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "staff/base_staff.html" %}
 {% load static %}
 {% block title %}{{ project_name }} | 스태프 콘솔{% endblock %}
 
@@ -7,16 +7,7 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page">
-    <div class="sub-nav">
-      <nav class="nav-links" aria-label="관리 메뉴">
-        <a href="/staff/dashboard/"{% if request.resolver_match.url_name == 'dashboard' %} class="active" aria-current="page"{% endif %}>스태프 콘솔</a>
-        <a href="/staff/drafts/"{% if request.resolver_match.url_name == 'draft-list' %} class="active" aria-current="page"{% endif %}>드래프트 관리</a>
-        <a href="/staff/home-categories/"{% if request.resolver_match.url_name == 'home-categories' %} class="active" aria-current="page"{% endif %}>홈 카테고리 설정</a>
-      </nav>
-      <a class="back-to-site-link" href="/">← 사이트로 돌아가기</a>
-    </div>
-
+  <main class="page" id="staff-main">
     <section class="hero">
       <h1>스태프 콘솔</h1>
       <p>운영에 필요한 대기 작업과 최근 활동을 한눈에 확인하세요.</p>

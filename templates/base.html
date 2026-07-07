@@ -19,10 +19,10 @@
   <link rel="stylesheet" href="{% static 'css/components/nav.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/modal.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/confirm-modal.css' %}">
-  {% block extra_css %}{% endblock %}
+  {% block shell_css %}{% endblock %}{% block extra_css %}{% endblock %}
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
-  {% include "core/partials/_site_header.html" %}
+  {% block site_header %}{% include "core/partials/_site_header.html" %}{% endblock %}
   {% if messages %}
     <ul class="site-messages" role="status">
       {% for message in messages %}
@@ -31,7 +31,7 @@
     </ul>
   {% endif %}
   {% block content %}{% endblock %}
-  {% include "core/partials/_site_footer.html" %}
+  {% block site_footer %}{% include "core/partials/_site_footer.html" %}{% endblock %}
   <script defer src="{% static 'js/shared/api.js' %}"></script>
   <script defer src="{% static 'js/components/confirm-modal.js' %}"></script>
   <script defer src="{% static 'js/shared/status.js' %}"></script>
