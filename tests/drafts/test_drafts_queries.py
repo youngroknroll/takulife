@@ -17,6 +17,60 @@ import pytest
 from drafts.models import DraftSource, EventDraft
 
 
+# ---------------------------------------------------------------------------
+# draft_review_stats() unit tests (moved from tests/drafts/test_drafts_stats.py)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestDraftReviewStats:
+    def test_all_three_keys_present_when_no_drafts(self):
+        from drafts.queries import draft_review_stats
+
+        result = draft_review_stats()
+
+        assert set(result.keys()) == {"pending", "approved", "rejected"}
+        assert result["pending"] == 0
+        assert result["approved"] == 0
+        assert result["rejected"] == 0
+
+    def test_counts_match_review_status_distribution(self, make_draft):
+        from drafts.queries import draft_review_stats
+
+        make_draft("https://example.com/a")
+        make_draft("https://example.com/b")
+        make_draft("https://example.com/c", review_status=EventDraft.ReviewStatus.APPROVED)
+        make_draft("https://example.com/d", review_status=EventDraft.ReviewStatus.REJECTED)
+
+        result = draft_review_stats()
+
+        assert result["pending"] == 2
+        assert result["approved"] == 1
+        assert result["rejected"] == 1
+
+    def test_all_three_keys_present_when_only_pending_exist(self, make_draft):
+        from drafts.queries import draft_review_stats
+
+        make_draft("https://example.com/only-pending")
+
+        result = draft_review_stats()
+
+        assert result["pending"] == 1
+        assert result["approved"] == 0
+        assert result["rejected"] == 0
+
+    def test_all_keys_present_when_only_approved_exist(self, make_draft):
+        from drafts.queries import draft_review_stats
+
+        make_draft("https://example.com/only-approved", review_status=EventDraft.ReviewStatus.APPROVED)
+
+        result = draft_review_stats()
+
+        assert result["pending"] == 0
+        assert result["approved"] == 1
+        assert result["rejected"] == 0
+
+
 @pytest.mark.django_db
 class TestListDrafts:
     def test_no_status_filter_returns_all_drafts_ordered_by_id_desc(self, make_draft):

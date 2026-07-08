@@ -409,3 +409,37 @@ class TestPublicListingPageSize:
         from events.queries import PUBLIC_LISTING_PAGE_SIZE
 
         assert PUBLIC_LISTING_PAGE_SIZE == 10
+
+
+# ---------------------------------------------------------------------------
+# with_public_status queryset arms (moved from tests/core/test_coverage_supplements.py)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestWithPublicStatus:
+    def test_with_public_status_ended(self, make_event):
+        today = date(2026, 7, 1)
+        ended = make_event(
+            title="끝난 행사",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=1),
+        )
+        ongoing = make_event(
+            title="진행 행사",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+
+        result = Event.objects.published().with_public_status("ended", today=today)
+
+        assert ended in result
+        assert ongoing not in result
+
+    def test_with_public_status_unknown_returns_unfiltered(self, make_event):
+        today = date(2026, 7, 1)
+        make_event(title="아무 행사")
+        qs = Event.objects.published()
+
+        # Unrecognised status falls through every arm to `return self`.
+        assert list(qs.with_public_status("nonsense", today=today)) == list(qs)

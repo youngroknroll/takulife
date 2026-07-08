@@ -2,6 +2,7 @@
 
 import pytest
 
+from archive.models import PersonalEntry, VisitRecord
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_interests,
@@ -76,6 +77,24 @@ def test_list_user_visit_records_scoped_and_ordered(make_user, make_event, make_
     rows = list(list_user_visit_records(user))
 
     assert [r.id for r in rows] == [newer.id, older.id]
+
+
+@pytest.mark.django_db
+def test_list_user_visit_records_official_only(make_event, make_user):
+    """official=True excludes visits attached to a private PersonalEntry
+    (moved from tests/core/test_coverage_supplements.py)."""
+    user = make_user()
+    event = make_event(title="공식 방문")
+    entry = PersonalEntry.objects.create(
+        user=user, kind=PersonalEntry.Kind.PLACE, title="비공식 방문"
+    )
+    VisitRecord.objects.create(user=user, event=event, visited_on="2026-01-01")
+    VisitRecord.objects.create(user=user, personal_entry=entry, visited_on="2026-01-02")
+
+    official = list(list_user_visit_records(user, official=True))
+
+    assert all(r.event_id is not None for r in official)
+    assert len(official) == 1
 
 
 # ---------------------------------------------------------------------------

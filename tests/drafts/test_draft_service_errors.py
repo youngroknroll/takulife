@@ -1,14 +1,13 @@
-"""Tests for the draft-creation error mapping in services and the admin view.
+"""Tests for the draft-creation error mapping in services.
 
 create_draft_from_url translates fetch/extract failures into typed
-DraftCreation* errors; the admin create endpoint maps those onto HTTP
-responses. Both layers' branches are exercised here with fetch_html / the
-service stubbed so no network is touched.
+DraftCreation* errors, exercised here with fetch_html stubbed so no network
+is touched. The admin create endpoint's HTTP-response mapping for these same
+errors lives in tests/drafts/test_drafts_api.py (that endpoint's home).
 """
 import pytest
 
 import drafts.services as services
-import drafts.views as draft_views
 from drafts.fetching import ResponseTooLargeError, UnsupportedContentTypeError
 from drafts.services import (
     DraftCreationEmptyExtractionError,
@@ -50,39 +49,7 @@ class TestCreateDraftErrorMapping:
         with pytest.raises(DraftCreationEmptyExtractionError):
             create_draft_from_url(source_url="https://ok.example.com/")
 
-
-@pytest.mark.django_db
-class TestAdminCreateEndpointErrorResponses:
-    def _post(self, client):
-        return client.post(
-            "/api/event-drafts/",
-            data={"source_url": "https://ok.example.com/"},
-            content_type="application/json",
-        )
-
-    def test_unsupported_content_returns_400(self, staff_client, monkeypatch):
-        monkeypatch.setattr(
-            draft_views, "create_draft_from_url",
-            _raise(DraftCreationUnsupportedContentError()),
-        )
-        _, client = staff_client(is_superuser=True)
-        resp = self._post(client)
-        assert resp.status_code == 400
-
-    def test_response_too_large_returns_400(self, staff_client, monkeypatch):
-        monkeypatch.setattr(
-            draft_views, "create_draft_from_url",
-            _raise(DraftCreationResponseTooLargeError()),
-        )
-        _, client = staff_client(is_superuser=True)
-        resp = self._post(client)
-        assert resp.status_code == 400
-
-    def test_empty_extraction_returns_400(self, staff_client, monkeypatch):
-        monkeypatch.setattr(
-            draft_views, "create_draft_from_url",
-            _raise(DraftCreationEmptyExtractionError()),
-        )
-        _, client = staff_client(is_superuser=True)
-        resp = self._post(client)
-        assert resp.status_code == 400
+    def test_create_draft_from_invalid_url_raises_value_error(self):
+        """(moved from tests/core/test_coverage_supplements.py)"""
+        with pytest.raises(ValueError):
+            create_draft_from_url(source_url="ftp://not-allowed/")

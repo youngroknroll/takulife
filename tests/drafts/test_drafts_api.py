@@ -1,9 +1,22 @@
 import pytest
 from django.db import IntegrityError
-from django.urls import reverse
+from django.urls import resolve, reverse
 
+import drafts.views as draft_views
 from drafts.models import EventDraft
+from drafts.services import (
+    DraftCreationEmptyExtractionError,
+    DraftCreationResponseTooLargeError,
+    DraftCreationUnsupportedContentError,
+)
 from events.models import Event
+
+
+def _raise(exc):
+    def _fn(*args, **kwargs):
+        raise exc
+
+    return _fn
 
 
 def event_drafts_url():
@@ -282,3 +295,113 @@ def test_admin_cannot_delete_event_draft(admin_client, make_draft):
 
     assert response.status_code == 405
     assert EventDraft.objects.filter(id=draft.id).exists()
+
+
+# ---------------------------------------------------------------------------
+# GET /api/event-drafts/stats/ (moved from tests/drafts/test_drafts_stats.py)
+# ---------------------------------------------------------------------------
+
+
+def stats_url():
+    return reverse("event-draft-stats")
+
+
+@pytest.mark.django_db
+def test_admin_can_get_draft_stats_with_correct_counts(admin_client, make_draft):
+    make_draft("https://example.com/p1")
+    make_draft("https://example.com/p2")
+    make_draft("https://example.com/a1", review_status=EventDraft.ReviewStatus.APPROVED)
+    make_draft("https://example.com/r1", review_status=EventDraft.ReviewStatus.REJECTED)
+
+    response = admin_client.get(stats_url())
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["pending"] == 2
+    assert data["approved"] == 1
+    assert data["rejected"] == 1
+
+
+@pytest.mark.django_db
+def test_admin_gets_stats_with_all_zero_when_no_drafts(admin_client):
+    response = admin_client.get(stats_url())
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data == {"pending": 0, "approved": 0, "rejected": 0}
+
+
+@pytest.mark.django_db
+def test_non_staff_user_cannot_get_draft_stats(client, make_user):
+    user = make_user()
+    client.force_login(user)
+
+    response = client.get(stats_url())
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_anonymous_user_cannot_get_draft_stats(client):
+    response = client.get(stats_url())
+
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Route ordering: stats/ vs <int:pk>/ (moved from tests/drafts/test_drafts_stats.py)
+# ---------------------------------------------------------------------------
+
+
+class TestRouteOrdering:
+    def test_stats_path_resolves_to_stats_view(self):
+        match = resolve("/api/event-drafts/stats/")
+        assert match.url_name == "event-draft-stats"
+
+    def test_numeric_pk_path_resolves_to_detail_view(self):
+        match = resolve("/api/event-drafts/1/")
+        assert match.url_name == "event-draft-detail"
+
+
+# ---------------------------------------------------------------------------
+# POST /api/event-drafts/ error-mapping HTTP responses
+# (moved from tests/drafts/test_draft_service_errors.py — same endpoint's home;
+# the service-layer mapping tests stay there as TestCreateDraftErrorMapping.)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestAdminCreateEndpointErrorResponses:
+    def _post(self, client):
+        return client.post(
+            "/api/event-drafts/",
+            data={"source_url": "https://ok.example.com/"},
+            content_type="application/json",
+        )
+
+    def test_unsupported_content_returns_400(self, staff_client, monkeypatch):
+        monkeypatch.setattr(
+            draft_views, "create_draft_from_url",
+            _raise(DraftCreationUnsupportedContentError()),
+        )
+        _, client = staff_client(is_superuser=True)
+        resp = self._post(client)
+        assert resp.status_code == 400
+
+    def test_response_too_large_returns_400(self, staff_client, monkeypatch):
+        monkeypatch.setattr(
+            draft_views, "create_draft_from_url",
+            _raise(DraftCreationResponseTooLargeError()),
+        )
+        _, client = staff_client(is_superuser=True)
+        resp = self._post(client)
+        assert resp.status_code == 400
+
+    def test_empty_extraction_returns_400(self, staff_client, monkeypatch):
+        monkeypatch.setattr(
+            draft_views, "create_draft_from_url",
+            _raise(DraftCreationEmptyExtractionError()),
+        )
+        _, client = staff_client(is_superuser=True)
+        resp = self._post(client)
+        assert resp.status_code == 400

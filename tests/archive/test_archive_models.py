@@ -15,3 +15,14 @@ def test_personal_entry_supports_place_and_goods(make_user, make_entry):
     # optional fields default to blank, not required
     assert place.category == ""
     assert place.memo == ""
+
+
+# ---------------------------------------------------------------------------
+# __str__ (moved from tests/core/test_coverage_supplements.py)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_personal_entry_str():
+    entry = PersonalEntry(title="비공식 카페")
+    assert str(entry) == "비공식 카페"
