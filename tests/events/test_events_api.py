@@ -13,9 +13,9 @@ def test_public_event_list_is_available(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_returns_only_published_events(client):
-    published = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
-    Event.objects.create(title="Draft event", publish_status=Event.PublishStatus.DRAFT)
+def test_public_event_list_returns_only_published_events(client, make_event):
+    published = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
+    make_event(title="Draft event", publish_status=Event.PublishStatus.DRAFT)
 
     response = client.get("/api/events/")
 
@@ -25,8 +25,8 @@ def test_public_event_list_returns_only_published_events(client):
 
 
 @pytest.mark.django_db
-def test_public_event_detail_returns_published_event(client):
-    event = Event.objects.create(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
+def test_public_event_detail_returns_published_event(client, make_event):
+    event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get(f"/api/events/{event.id}/")
 
@@ -36,8 +36,8 @@ def test_public_event_detail_returns_published_event(client):
 
 
 @pytest.mark.django_db
-def test_public_event_detail_hides_unpublished_event(client):
-    event = Event.objects.create(title="Draft event", publish_status=Event.PublishStatus.DRAFT)
+def test_public_event_detail_hides_unpublished_event(client, make_event):
+    event = make_event(title="Draft event", publish_status=Event.PublishStatus.DRAFT)
 
     response = client.get(f"/api/events/{event.id}/")
 
@@ -45,9 +45,9 @@ def test_public_event_detail_hides_unpublished_event(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_q(client):
-    matching = Event.objects.create(title="Seoul popup event", publish_status=Event.PublishStatus.PUBLISHED)
-    Event.objects.create(title="Busan cafe event", publish_status=Event.PublishStatus.PUBLISHED)
+def test_public_event_list_filters_by_q(client, make_event):
+    matching = make_event(title="Seoul popup event", publish_status=Event.PublishStatus.PUBLISHED)
+    make_event(title="Busan cafe event", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"q": "popup"})
 
@@ -56,13 +56,13 @@ def test_public_event_list_filters_by_q(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_region(client):
-    matching = Event.objects.create(
+def test_public_event_list_filters_by_region(client, make_event):
+    matching = make_event(
         title="Seoul event",
         region="seoul",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="Busan event",
         region="busan",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -75,13 +75,13 @@ def test_public_event_list_filters_by_region(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_category(client):
-    matching = Event.objects.create(
+def test_public_event_list_filters_by_category(client, make_event):
+    matching = make_event(
         title="Popup event",
         category="popup_store",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="Cafe event",
         category="collaboration_cafe",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -94,20 +94,20 @@ def test_public_event_list_filters_by_category(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_combines_q_region_and_category_filters(client):
-    matching = Event.objects.create(
+def test_public_event_list_combines_q_region_and_category_filters(client, make_event):
+    matching = make_event(
         title="Seoul popup event",
         category="popup_store",
         region="seoul",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="Seoul cafe event",
         category="collaboration_cafe",
         region="seoul",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="Busan popup event",
         category="popup_store",
         region="busan",
@@ -124,8 +124,8 @@ def test_public_event_list_combines_q_region_and_category_filters(client):
 
 
 @pytest.mark.django_db
-def test_public_event_response_uses_category_and_hides_publish_status(client):
-    event = Event.objects.create(
+def test_public_event_response_uses_category_and_hides_publish_status(client, make_event):
+    event = make_event(
         title="Popup event",
         category="popup_store",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -140,13 +140,13 @@ def test_public_event_response_uses_category_and_hides_publish_status(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_start_date_from(client):
-    matching = Event.objects.create(
+def test_public_event_list_filters_by_start_date_from(client, make_event):
+    matching = make_event(
         title="June event",
         start_date="2026-06-01",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="May event",
         start_date="2026-05-31",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -159,13 +159,13 @@ def test_public_event_list_filters_by_start_date_from(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_start_date_to(client):
-    matching = Event.objects.create(
+def test_public_event_list_filters_by_start_date_to(client, make_event):
+    matching = make_event(
         title="May event",
         start_date="2026-05-31",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="June event",
         start_date="2026-06-01",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -178,21 +178,21 @@ def test_public_event_list_filters_by_start_date_to(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_status_upcoming_ongoing_ended(client):
+def test_public_event_list_filters_by_status_upcoming_ongoing_ended(client, make_event):
     today = timezone.localdate()
-    upcoming = Event.objects.create(
+    upcoming = make_event(
         title="Upcoming event",
         start_date=today + timedelta(days=1),
         end_date=today + timedelta(days=2),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    ongoing = Event.objects.create(
+    ongoing = make_event(
         title="Ongoing event",
         start_date=today - timedelta(days=1),
         end_date=today + timedelta(days=1),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    ended = Event.objects.create(
+    ended = make_event(
         title="Ended event",
         start_date=today - timedelta(days=10),
         end_date=today - timedelta(days=1),
@@ -212,33 +212,33 @@ def test_public_event_list_filters_by_status_upcoming_ongoing_ended(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_status_closing_soon(client):
+def test_public_event_list_filters_by_status_closing_soon(client, make_event):
     today = timezone.localdate()
-    closing_today = Event.objects.create(
+    closing_today = make_event(
         title="Closing today",
         start_date=today - timedelta(days=2),
         end_date=today,
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    closing_in_five_day_window = Event.objects.create(
+    closing_in_five_day_window = make_event(
         title="Closing in 4 days",
         start_date=today - timedelta(days=1),
         end_date=today + timedelta(days=4),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="Closing in 5 days",
         start_date=today - timedelta(days=1),
         end_date=today + timedelta(days=5),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="Upcoming only",
         start_date=today + timedelta(days=1),
         end_date=today + timedelta(days=2),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="Already ended",
         start_date=today - timedelta(days=10),
         end_date=today - timedelta(days=1),
@@ -255,9 +255,9 @@ def test_public_event_list_filters_by_status_closing_soon(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_rejects_invalid_status_filter(client):
-    first = Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
-    second = Event.objects.create(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
+def test_public_event_list_rejects_invalid_status_filter(client, make_event):
+    first = make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+    second = make_event(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"status": "invalid"})
 
@@ -266,8 +266,8 @@ def test_public_event_list_rejects_invalid_status_filter(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_accepts_blank_status_filter(client):
-    matching = Event.objects.create(title="Listed", publish_status=Event.PublishStatus.PUBLISHED)
+def test_public_event_list_accepts_blank_status_filter(client, make_event):
+    matching = make_event(title="Listed", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"status": ""})
 
@@ -276,14 +276,14 @@ def test_public_event_list_accepts_blank_status_filter(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_multiple_regions(client):
-    seoul = Event.objects.create(
+def test_public_event_list_filters_by_multiple_regions(client, make_event):
+    seoul = make_event(
         title="Seoul", region="seoul", publish_status=Event.PublishStatus.PUBLISHED
     )
-    gyeonggi = Event.objects.create(
+    gyeonggi = make_event(
         title="Gyeonggi", region="gyeonggi", publish_status=Event.PublishStatus.PUBLISHED
     )
-    Event.objects.create(
+    make_event(
         title="Busan", region="busan", publish_status=Event.PublishStatus.PUBLISHED
     )
 
@@ -295,29 +295,29 @@ def test_public_event_list_filters_by_multiple_regions(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_category_work_title_and_start_date_range(client):
-    matching = Event.objects.create(
+def test_public_event_list_filters_by_category_work_title_and_start_date_range(client, make_event):
+    matching = make_event(
         title="June popup",
         category="popup_store",
         work_title="Gundam",
         start_date="2026-06-10",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="June cafe",
         category="collaboration_cafe",
         work_title="Gundam",
         start_date="2026-06-10",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="July popup",
         category="popup_store",
         work_title="Gundam",
         start_date="2026-07-01",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    Event.objects.create(
+    make_event(
         title="June popup no-work-match",
         category="popup_store",
         work_title="One Piece",
@@ -340,8 +340,8 @@ def test_public_event_list_filters_by_category_work_title_and_start_date_range(c
 
 
 @pytest.mark.django_db
-def test_public_event_list_reversed_start_date_range_returns_empty_results(client):
-    Event.objects.create(
+def test_public_event_list_reversed_start_date_range_returns_empty_results(client, make_event):
+    make_event(
         title="June event",
         start_date="2026-06-10",
         publish_status=Event.PublishStatus.PUBLISHED,
@@ -357,8 +357,8 @@ def test_public_event_list_reversed_start_date_range_returns_empty_results(clien
 
 
 @pytest.mark.django_db
-def test_public_event_list_rejects_invalid_start_date_from(client):
-    Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+def test_public_event_list_rejects_invalid_start_date_from(client, make_event):
+    make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"start_date_from": "2026/06/01"})
 
@@ -367,8 +367,8 @@ def test_public_event_list_rejects_invalid_start_date_from(client):
 
 
 @pytest.mark.django_db
-def test_public_event_list_rejects_invalid_start_date_to(client):
-    Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+def test_public_event_list_rejects_invalid_start_date_to(client, make_event):
+    make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"start_date_to": "2026/06/30"})
 
@@ -378,9 +378,9 @@ def test_public_event_list_rejects_invalid_start_date_to(client):
 
 @pytest.mark.parametrize("query_param", ["q", "region", "category", "work_title"])
 @pytest.mark.django_db
-def test_public_event_list_ignores_blank_documented_string_filters(client, query_param):
-    first = Event.objects.create(title="First", publish_status=Event.PublishStatus.PUBLISHED)
-    second = Event.objects.create(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
+def test_public_event_list_ignores_blank_documented_string_filters(client, query_param, make_event):
+    first = make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+    second = make_event(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {query_param: ""})
 
@@ -389,39 +389,39 @@ def test_public_event_list_ignores_blank_documented_string_filters(client, query
 
 
 @pytest.mark.django_db
-def test_public_event_list_default_order_prioritizes_ongoing_then_upcoming_then_ended(client):
+def test_public_event_list_default_order_prioritizes_ongoing_then_upcoming_then_ended(client, make_event):
     today = timezone.localdate()
-    ended_old = Event.objects.create(
+    ended_old = make_event(
         title="Ended long ago",
         start_date=today - timedelta(days=20),
         end_date=today - timedelta(days=10),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    upcoming_later = Event.objects.create(
+    upcoming_later = make_event(
         title="Upcoming later start",
         start_date=today + timedelta(days=4),
         end_date=today + timedelta(days=5),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    ongoing_later = Event.objects.create(
+    ongoing_later = make_event(
         title="Ongoing later end",
         start_date=today - timedelta(days=3),
         end_date=today + timedelta(days=3),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    ended_recent = Event.objects.create(
+    ended_recent = make_event(
         title="Ended recently",
         start_date=today - timedelta(days=5),
         end_date=today - timedelta(days=1),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    upcoming_soon = Event.objects.create(
+    upcoming_soon = make_event(
         title="Upcoming soon start",
         start_date=today + timedelta(days=1),
         end_date=today + timedelta(days=2),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    ongoing_soon = Event.objects.create(
+    ongoing_soon = make_event(
         title="Ongoing soon end",
         start_date=today - timedelta(days=2),
         end_date=today + timedelta(days=1),
@@ -442,25 +442,25 @@ def test_public_event_list_default_order_prioritizes_ongoing_then_upcoming_then_
 
 
 @pytest.mark.django_db
-def test_public_event_list_places_null_date_events_after_ranked_events(client):
+def test_public_event_list_places_null_date_events_after_ranked_events(client, make_event):
     today = timezone.localdate()
-    null_date = Event.objects.create(
+    null_date = make_event(
         title="Undated event",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    ended = Event.objects.create(
+    ended = make_event(
         title="Ended event",
         start_date=today - timedelta(days=2),
         end_date=today - timedelta(days=1),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    upcoming = Event.objects.create(
+    upcoming = make_event(
         title="Upcoming event",
         start_date=today + timedelta(days=1),
         end_date=today + timedelta(days=2),
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    ongoing = Event.objects.create(
+    ongoing = make_event(
         title="Ongoing event",
         start_date=today - timedelta(days=1),
         end_date=today + timedelta(days=1),
