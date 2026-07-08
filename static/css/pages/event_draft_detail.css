@@ -104,6 +104,14 @@
     text-decoration: none;
     overflow-wrap: anywhere;
   }
+  /* Full raw body (expanded via #raw-text-toggle) can run very long —
+     capped and scrollable so it doesn't push the review panel out of
+     view. Scoped to this id only: .raw-box p also covers the truncated
+     preview and the official-URL box, neither of which should scroll. */
+  #raw-text-full {
+    max-height: 320px;
+    overflow-y: auto;
+  }
   .link-button {
     border: none;
     background: none;
