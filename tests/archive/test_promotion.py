@@ -59,11 +59,9 @@ def test_create_draft_from_fields_duplicate_url_raises():
 
 
 @pytest.mark.django_db
-def test_promote_creates_draft_and_marks_entry_submitted(make_user):
+def test_promote_creates_draft_and_marks_entry_submitted(make_user, make_entry):
     user = make_user(username="promo")
-    entry = PersonalEntry.objects.create(
-        user=user, kind="place", title="비공식 카페", location_name="연남동", memo="좋음"
-    )
+    entry = make_entry(user, kind="place", title="비공식 카페", location_name="연남동", memo="좋음")
 
     result = promote_personal_entry(
         user=user, personal_entry_id=entry.id, official_url="https://off.example.com/cafe"
@@ -77,10 +75,10 @@ def test_promote_creates_draft_and_marks_entry_submitted(make_user):
 
 
 @pytest.mark.django_db
-def test_promote_other_users_entry_not_found(make_user):
+def test_promote_other_users_entry_not_found(make_user, make_entry):
     owner = make_user(username="promo-owner")
     other = make_user(username="promo-other")
-    entry = PersonalEntry.objects.create(user=owner, kind="goods", title="X")
+    entry = make_entry(owner, kind="goods", title="X")
 
     with pytest.raises(PromotionNotFoundError):
         promote_personal_entry(
@@ -89,9 +87,9 @@ def test_promote_other_users_entry_not_found(make_user):
 
 
 @pytest.mark.django_db
-def test_promote_already_submitted_raises(make_user):
+def test_promote_already_submitted_raises(make_user, make_entry):
     user = make_user(username="promo-twice")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="C")
+    entry = make_entry(user, kind="place", title="C")
     promote_personal_entry(
         user=user, personal_entry_id=entry.id, official_url="https://c.example.com/c1"
     )
@@ -103,9 +101,9 @@ def test_promote_already_submitted_raises(make_user):
 
 
 @pytest.mark.django_db
-def test_promote_rejects_unsafe_official_url_scheme(make_user):
+def test_promote_rejects_unsafe_official_url_scheme(make_user, make_entry):
     user = make_user(username="promo-unsafe-scheme")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="F")
+    entry = make_entry(user, kind="place", title="F")
 
     with pytest.raises(PromotionUnsafeUrlError):
         promote_personal_entry(
@@ -114,9 +112,9 @@ def test_promote_rejects_unsafe_official_url_scheme(make_user):
 
 
 @pytest.mark.django_db
-def test_promote_rejects_localhost_official_url(make_user):
+def test_promote_rejects_localhost_official_url(make_user, make_entry):
     user = make_user(username="promo-unsafe-localhost")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="G")
+    entry = make_entry(user, kind="place", title="G")
 
     with pytest.raises(PromotionUnsafeUrlError):
         promote_personal_entry(
@@ -125,9 +123,9 @@ def test_promote_rejects_localhost_official_url(make_user):
 
 
 @pytest.mark.django_db
-def test_promote_rejects_private_ip_literal_official_url(make_user):
+def test_promote_rejects_private_ip_literal_official_url(make_user, make_entry):
     user = make_user(username="promo-unsafe-private-ip")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="H")
+    entry = make_entry(user, kind="place", title="H")
 
     with pytest.raises(PromotionUnsafeUrlError):
         promote_personal_entry(
@@ -136,13 +134,13 @@ def test_promote_rejects_private_ip_literal_official_url(make_user):
 
 
 @pytest.mark.django_db
-def test_promote_duplicate_official_url_raises(make_user):
+def test_promote_duplicate_official_url_raises(make_user, make_entry):
     user = make_user(username="promo-dup")
-    existing = PersonalEntry.objects.create(user=user, kind="place", title="D1")
+    existing = make_entry(user, kind="place", title="D1")
     promote_personal_entry(
         user=user, personal_entry_id=existing.id, official_url="https://d.example.com/d"
     )
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="D2")
+    entry = make_entry(user, kind="place", title="D2")
 
     with pytest.raises(PromotionDuplicateError):
         promote_personal_entry(
@@ -151,14 +149,14 @@ def test_promote_duplicate_official_url_raises(make_user):
 
 
 @pytest.mark.django_db
-def test_failed_promotion_does_not_mark_submitted(make_user):
+def test_failed_promotion_does_not_mark_submitted(make_user, make_entry):
     """A duplicate-url failure must roll back; the entry stays promotable."""
     user = make_user(username="promo-rollback")
-    first = PersonalEntry.objects.create(user=user, kind="place", title="E1")
+    first = make_entry(user, kind="place", title="E1")
     promote_personal_entry(
         user=user, personal_entry_id=first.id, official_url="https://e.example.com/e"
     )
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="E2")
+    entry = make_entry(user, kind="place", title="E2")
 
     with pytest.raises(PromotionDuplicateError):
         promote_personal_entry(
@@ -175,9 +173,9 @@ def test_failed_promotion_does_not_mark_submitted(make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_returns_201_and_marks_submitted(client, make_user):
+def test_api_promote_returns_201_and_marks_submitted(client, make_user, make_entry):
     user = make_user(username="api-promo")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+    entry = make_entry(user, kind="place", title="비공식")
 
     client.force_login(user)
     response = client.post(
@@ -193,9 +191,9 @@ def test_api_promote_returns_201_and_marks_submitted(client, make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_requires_official_url(client, make_user):
+def test_api_promote_requires_official_url(client, make_user, make_entry):
     user = make_user(username="api-promo-nourl")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+    entry = make_entry(user, kind="place", title="비공식")
 
     client.force_login(user)
     response = client.post(
@@ -208,9 +206,9 @@ def test_api_promote_requires_official_url(client, make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_rejects_ftp_official_url_400(client, make_user):
+def test_api_promote_rejects_ftp_official_url_400(client, make_user, make_entry):
     user = make_user(username="api-promo-ftp")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+    entry = make_entry(user, kind="place", title="비공식")
 
     client.force_login(user)
     response = client.post(
@@ -225,9 +223,9 @@ def test_api_promote_rejects_ftp_official_url_400(client, make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_rejects_localhost_official_url_400(client, make_user):
+def test_api_promote_rejects_localhost_official_url_400(client, make_user, make_entry):
     user = make_user(username="api-promo-localhost")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+    entry = make_entry(user, kind="place", title="비공식")
 
     client.force_login(user)
     response = client.post(
@@ -242,9 +240,9 @@ def test_api_promote_rejects_localhost_official_url_400(client, make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_rejects_private_ip_official_url_400(client, make_user):
+def test_api_promote_rejects_private_ip_official_url_400(client, make_user, make_entry):
     user = make_user(username="api-promo-private-ip")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+    entry = make_entry(user, kind="place", title="비공식")
 
     client.force_login(user)
     response = client.post(
@@ -259,10 +257,10 @@ def test_api_promote_rejects_private_ip_official_url_400(client, make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_other_users_entry_404(client, make_user):
+def test_api_promote_other_users_entry_404(client, make_user, make_entry):
     owner = make_user(username="api-promo-owner")
     other = make_user(username="api-promo-other")
-    entry = PersonalEntry.objects.create(user=owner, kind="place", title="비공식")
+    entry = make_entry(owner, kind="place", title="비공식")
 
     client.force_login(other)
     response = client.post(
@@ -276,9 +274,9 @@ def test_api_promote_other_users_entry_404(client, make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_already_submitted_409(client, make_user):
+def test_api_promote_already_submitted_409(client, make_user, make_entry):
     user = make_user(username="api-promo-twice")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+    entry = make_entry(user, kind="place", title="비공식")
     client.force_login(user)
     client.post(
         f"/api/personal-entries/{entry.id}/promote/",
@@ -295,9 +293,9 @@ def test_api_promote_already_submitted_409(client, make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_requires_authentication(client, make_user):
+def test_api_promote_requires_authentication(client, make_user, make_entry):
     user = make_user(username="api-promo-anon")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식")
+    entry = make_entry(user, kind="place", title="비공식")
 
     response = client.post(
         f"/api/personal-entries/{entry.id}/promote/",
@@ -314,9 +312,9 @@ def test_api_promote_requires_authentication(client, make_user):
 
 
 @pytest.mark.django_db
-def test_promoted_entry_stays_private_until_approved(client, make_user):
+def test_promoted_entry_stays_private_until_approved(client, make_user, make_entry):
     user = make_user(username="promo-private")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="숨은 카페")
+    entry = make_entry(user, kind="place", title="숨은 카페")
     result = promote_personal_entry(
         user=user, personal_entry_id=entry.id, official_url="https://priv.example.com/c"
     )
@@ -335,14 +333,14 @@ def test_promoted_entry_stays_private_until_approved(client, make_user):
 
 
 @pytest.mark.django_db
-def test_api_promote_is_rate_limited_per_user(client, make_user):
+def test_api_promote_is_rate_limited_per_user(client, make_user, make_entry):
     """After the daily promotion cap, further promotes are throttled (429)."""
     user = make_user(username="api-promo-flood")
     client.force_login(user)
 
     # 20/day budget: 20 distinct promotes succeed, the 21st is throttled.
     for i in range(20):
-        entry = PersonalEntry.objects.create(user=user, kind="place", title=f"비공식 {i}")
+        entry = make_entry(user, kind="place", title=f"비공식 {i}")
         response = client.post(
             f"/api/personal-entries/{entry.id}/promote/",
             {"official_url": f"https://flood.example.com/{i}"},
@@ -350,7 +348,7 @@ def test_api_promote_is_rate_limited_per_user(client, make_user):
         )
         assert response.status_code == 201, f"promote {i} should succeed"
 
-    extra = PersonalEntry.objects.create(user=user, kind="place", title="비공식 초과")
+    extra = make_entry(user, kind="place", title="비공식 초과")
     throttled = client.post(
         f"/api/personal-entries/{extra.id}/promote/",
         {"official_url": "https://flood.example.com/extra"},

@@ -121,12 +121,12 @@ def test_same_user_can_create_multiple_visit_records_for_same_event(client, make
 
 
 @pytest.mark.django_db
-def test_visit_record_list_scoped_to_current_user(client, make_user, make_event):
+def test_visit_record_list_scoped_to_current_user(client, make_user, make_event, make_visit):
     user = make_user()
     other_user = make_user()
     event = make_event()
-    owned = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
-    VisitRecord.objects.create(user=other_user, event=event, visited_on="2026-05-27")
+    owned = make_visit(user, event=event, visited_on="2026-05-26")
+    make_visit(other_user, event=event, visited_on="2026-05-27")
 
     client.force_login(user)
     response = client.get("/api/visit-records/")
@@ -139,15 +139,11 @@ def test_visit_record_list_scoped_to_current_user(client, make_user, make_event)
 
 
 @pytest.mark.django_db
-def test_visit_record_list_paginated(client, make_user, make_event):
+def test_visit_record_list_paginated(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
     for i in range(21):
-        VisitRecord.objects.create(
-            user=user,
-            event=event,
-            visited_on=f"2026-05-{str(i + 1).zfill(2)}",
-        )
+        make_visit(user, event=event, visited_on=f"2026-05-{str(i + 1).zfill(2)}")
 
     client.force_login(user)
     response = client.get("/api/visit-records/")
@@ -165,10 +161,10 @@ def test_visit_record_list_paginated(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_owner_can_retrieve_visit_record(client, make_user, make_event):
+def test_owner_can_retrieve_visit_record(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     client.force_login(user)
     response = client.get(f"/api/visit-records/{record.id}/")
@@ -178,11 +174,11 @@ def test_owner_can_retrieve_visit_record(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_non_owner_retrieving_visit_record_returns_404(client, make_user, make_event):
+def test_non_owner_retrieving_visit_record_returns_404(client, make_user, make_event, make_visit):
     owner = make_user()
     attacker = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=owner, event=event, visited_on="2026-05-26")
+    record = make_visit(owner, event=event, visited_on="2026-05-26")
 
     client.force_login(attacker)
     response = client.get(f"/api/visit-records/{record.id}/")
@@ -196,10 +192,10 @@ def test_non_owner_retrieving_visit_record_returns_404(client, make_user, make_e
 
 
 @pytest.mark.django_db
-def test_owner_can_delete_visit_record(client, make_user, make_event):
+def test_owner_can_delete_visit_record(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     client.force_login(user)
     response = client.delete(f"/api/visit-records/{record.id}/")
@@ -209,11 +205,11 @@ def test_owner_can_delete_visit_record(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_non_owner_deleting_visit_record_returns_404(client, make_user, make_event):
+def test_non_owner_deleting_visit_record_returns_404(client, make_user, make_event, make_visit):
     owner = make_user()
     attacker = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=owner, event=event, visited_on="2026-05-26")
+    record = make_visit(owner, event=event, visited_on="2026-05-26")
 
     client.force_login(attacker)
     response = client.delete(f"/api/visit-records/{record.id}/")
@@ -228,12 +224,10 @@ def test_non_owner_deleting_visit_record_returns_404(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_owner_can_update_visit_record(client, make_user, make_event):
+def test_owner_can_update_visit_record(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(
-        user=user, event=event, visited_on="2026-05-26", short_review="old"
-    )
+    record = make_visit(user, event=event, visited_on="2026-05-26", short_review="old")
 
     client.force_login(user)
     response = client.patch(
@@ -249,13 +243,11 @@ def test_owner_can_update_visit_record(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_update_visit_record_subject_is_read_only(client, make_user, make_event):
+def test_update_visit_record_subject_is_read_only(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
     other_event = make_event()
-    record = VisitRecord.objects.create(
-        user=user, event=event, visited_on="2026-05-26"
-    )
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     client.force_login(user)
     response = client.patch(
@@ -272,13 +264,11 @@ def test_update_visit_record_subject_is_read_only(client, make_user, make_event)
 
 
 @pytest.mark.django_db
-def test_non_owner_updating_visit_record_returns_404(client, make_user, make_event):
+def test_non_owner_updating_visit_record_returns_404(client, make_user, make_event, make_visit):
     owner = make_user()
     attacker = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(
-        user=owner, event=event, visited_on="2026-05-26", short_review="old"
-    )
+    record = make_visit(owner, event=event, visited_on="2026-05-26", short_review="old")
 
     client.force_login(attacker)
     response = client.patch(
@@ -293,12 +283,10 @@ def test_non_owner_updating_visit_record_returns_404(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_update_visit_record_requires_authentication(client, make_user, make_event):
+def test_update_visit_record_requires_authentication(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(
-        user=user, event=event, visited_on="2026-05-26"
-    )
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     response = client.patch(
         f"/api/visit-records/{record.id}/",
@@ -315,11 +303,11 @@ def test_update_visit_record_requires_authentication(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_owner_can_upload_photo(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_owner_can_upload_photo(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     client.force_login(user)
     response = client.post(
@@ -332,12 +320,12 @@ def test_owner_can_upload_photo(client, make_user, make_event, png_bytes, settin
 
 
 @pytest.mark.django_db
-def test_upload_photo_to_other_users_record_returns_404(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_upload_photo_to_other_users_record_returns_404(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
     settings.MEDIA_ROOT = str(tmp_path)
     owner = make_user()
     attacker = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=owner, event=event, visited_on="2026-05-26")
+    record = make_visit(owner, event=event, visited_on="2026-05-26")
 
     client.force_login(attacker)
     response = client.post(
@@ -350,11 +338,11 @@ def test_upload_photo_to_other_users_record_returns_404(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_upload_missing_image_returns_400(client, make_user, make_event, settings, tmp_path):
+def test_upload_missing_image_returns_400(client, make_user, make_event, settings, tmp_path, make_visit):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     client.force_login(user)
     response = client.post(
@@ -367,12 +355,12 @@ def test_upload_missing_image_returns_400(client, make_user, make_event, setting
 
 
 @pytest.mark.django_db
-def test_upload_non_image_bytes_rejected_400(client, make_user, make_event, settings, tmp_path):
+def test_upload_non_image_bytes_rejected_400(client, make_user, make_event, settings, tmp_path, make_visit):
     """Fake bytes labeled as .jpg must be rejected by Pillow content inspection."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     client.force_login(user)
     response = client.post(
@@ -385,12 +373,12 @@ def test_upload_non_image_bytes_rejected_400(client, make_user, make_event, sett
 
 
 @pytest.mark.django_db
-def test_upload_oversized_file_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_upload_oversized_file_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
     """Files larger than 5 MB must be rejected with 400."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     big_png = png_bytes()
     big_content = big_png + b"\x00" * (5 * 1024 * 1024 + 1 - len(big_png))
@@ -406,12 +394,12 @@ def test_upload_oversized_file_rejected_400(client, make_user, make_event, png_b
 
 
 @pytest.mark.django_db
-def test_upload_disallowed_extension_svg_rejected_400(client, make_user, make_event, settings, tmp_path):
+def test_upload_disallowed_extension_svg_rejected_400(client, make_user, make_event, settings, tmp_path, make_visit):
     """SVG files must be rejected even if Pillow might accept them."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
     svg_content = b"<svg xmlns='http://www.w3.org/2000/svg'><circle r='5'/></svg>"
 
     client.force_login(user)
@@ -425,7 +413,7 @@ def test_upload_disallowed_extension_svg_rejected_400(client, make_user, make_ev
 
 
 @pytest.mark.django_db
-def test_upload_format_spoofing_bmp_as_png_rejected_400(client, make_user, make_event, settings, tmp_path):
+def test_upload_format_spoofing_bmp_as_png_rejected_400(client, make_user, make_event, settings, tmp_path, make_visit):
     """A valid BMP renamed with a .png extension must be rejected.
 
     The extension allowlist alone is attacker-controlled; the real decoded
@@ -434,7 +422,7 @@ def test_upload_format_spoofing_bmp_as_png_rejected_400(client, make_user, make_
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     buf = io.BytesIO()
     PIL.Image.new("RGB", (10, 10), color=(0, 255, 0)).save(buf, format="BMP")
@@ -452,7 +440,7 @@ def test_upload_format_spoofing_bmp_as_png_rejected_400(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_upload_pixel_area_bomb_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch):
+def test_upload_pixel_area_bomb_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
     """An image within the per-axis cap but over the total pixel-area cap must be rejected.
 
     Proves the area guard is independent of both the 5 MB byte cap and the
@@ -463,7 +451,7 @@ def test_upload_pixel_area_bomb_rejected_400(client, make_user, make_event, png_
     monkeypatch.setattr("events.image_validation.MAX_IMAGE_PIXELS_LIMIT", 50)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     # 10x10 = 100 px > 50 limit, but each axis (10) is well under MAX_IMAGE_DIMENSION_PX
     # and the byte size is a few hundred bytes.
@@ -481,19 +469,16 @@ def test_upload_pixel_area_bomb_rejected_400(client, make_user, make_event, png_
 
 
 @pytest.mark.django_db
-def test_sixth_photo_upload_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_sixth_photo_upload_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo):
     """The 6th photo for a single record must be rejected (cap is 5)."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     png_data = png_bytes()
     for i in range(5):
-        VisitRecordPhoto.objects.create(
-            visit_record=record,
-            image=SimpleUploadedFile(f"photo-{i}.png", png_data, content_type="image/png"),
-        )
+        make_visit_photo(record, filename=f"photo-{i}.png")
 
     client.force_login(user)
     response = client.post(
@@ -507,16 +492,14 @@ def test_sixth_photo_upload_rejected_400(client, make_user, make_event, png_byte
 
 
 @pytest.mark.django_db
-def test_create_visit_record_photo_locks_the_visit_record_row(
-    make_user, make_event, png_bytes, settings, tmp_path, monkeypatch
-):
+def test_create_visit_record_photo_locks_the_visit_record_row(make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
     """The count-then-create must be atomic and lock the parent VisitRecord row
     (select_for_update) so two concurrent uploads can't both pass the count
     check and push the record past MAX_PHOTOS_PER_RECORD."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     calls = []
     original_select_for_update = VisitRecord.objects.select_for_update
@@ -537,17 +520,14 @@ def test_create_visit_record_photo_locks_the_visit_record_row(
 
 
 @pytest.mark.django_db
-def test_create_visit_record_photo_raises_when_at_cap(make_user, make_event, png_bytes, settings, tmp_path):
+def test_create_visit_record_photo_raises_when_at_cap(make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
     png_data = png_bytes()
     for i in range(5):
-        VisitRecordPhoto.objects.create(
-            visit_record=record,
-            image=SimpleUploadedFile(f"photo-{i}.png", png_data, content_type="image/png"),
-        )
+        make_visit_photo(record, filename=f"photo-{i}.png")
 
     with pytest.raises(PhotoLimitExceededError):
         create_visit_record_photo(
@@ -557,15 +537,13 @@ def test_create_visit_record_photo_raises_when_at_cap(make_user, make_event, png
 
 
 @pytest.mark.django_db
-def test_upload_photo_race_with_concurrent_delete_returns_404(
-    client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch
-):
+def test_upload_photo_race_with_concurrent_delete_returns_404(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
     """If the VisitRecord is deleted between the existence check and the
     service call (TOCTOU race), the view must return 404, not 500."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
+    record = make_visit(user, event=event, visited_on="2026-05-26")
 
     from archive import views as archive_views
 
@@ -597,15 +575,12 @@ def test_upload_photo_race_with_concurrent_delete_returns_404(
 
 
 @pytest.mark.django_db
-def test_owner_can_delete_photo(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_owner_can_delete_photo(client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
-    photo = VisitRecordPhoto.objects.create(
-        visit_record=record,
-        image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
-    )
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    photo = make_visit_photo(record)
 
     client.force_login(user)
     response = client.delete(f"/api/visit-records/{record.id}/photos/{photo.id}/")
@@ -615,16 +590,13 @@ def test_owner_can_delete_photo(client, make_user, make_event, png_bytes, settin
 
 
 @pytest.mark.django_db
-def test_non_owner_deleting_photo_returns_404(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_non_owner_deleting_photo_returns_404(client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     owner = make_user()
     attacker = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=owner, event=event, visited_on="2026-05-26")
-    photo = VisitRecordPhoto.objects.create(
-        visit_record=record,
-        image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
-    )
+    record = make_visit(owner, event=event, visited_on="2026-05-26")
+    photo = make_visit_photo(record)
 
     client.force_login(attacker)
     response = client.delete(f"/api/visit-records/{record.id}/photos/{photo.id}/")

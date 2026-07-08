@@ -7,7 +7,7 @@ personal entries), gated by login.
 import pytest
 from django.test import Client
 
-from archive.models import PersonalEntry, UserEventStatus
+from archive.models import UserEventStatus
 
 
 @pytest.mark.django_db
@@ -27,13 +27,11 @@ class TestArchiveVisitCreateView:
         assert resp.status_code == 302
         assert "/accounts/login" in resp.url
 
-    def test_selectable_events_only_own_planned(self, make_user, make_event):
+    def test_selectable_events_only_own_planned(self, make_user, make_event, make_status):
         user = make_user()
         planned = make_event(title="Planned")
         make_event(title="Other published")  # published, not planned
-        UserEventStatus.objects.create(
-            user=user, event=planned, status=UserEventStatus.Status.PLANNED
-        )
+        make_status(user, event=planned, status=UserEventStatus.Status.PLANNED)
 
         client = Client()
         client.force_login(user)
@@ -41,11 +39,11 @@ class TestArchiveVisitCreateView:
 
         assert list(resp.context["selectable_events"]) == [planned]
 
-    def test_selectable_personal_entries_scoped_to_user(self, make_user):
+    def test_selectable_personal_entries_scoped_to_user(self, make_user, make_entry):
         user = make_user()
         other = make_user(username="other")
-        mine = PersonalEntry.objects.create(user=user, kind="goods", title="내 굿즈")
-        PersonalEntry.objects.create(user=other, kind="place", title="남의 카페")
+        mine = make_entry(user, kind="goods", title="내 굿즈")
+        make_entry(other, kind="place", title="남의 카페")
 
         client = Client()
         client.force_login(user)
@@ -76,9 +74,9 @@ class TestArchiveVisitCreatePreselect:
         assert b'name="subject"' in resp.content
         assert f"event:{event.id}".encode() in resp.content
 
-    def test_preselect_own_personal_entry(self, user_client):
+    def test_preselect_own_personal_entry(self, user_client, make_entry):
         user, client = user_client()
-        entry = PersonalEntry.objects.create(user=user, kind="place", title="숨은 카페")
+        entry = make_entry(user, kind="place", title="숨은 카페")
 
         resp = client.get(f"/archive/visits/new/?subject=personal:{entry.id}")
 
@@ -95,10 +93,10 @@ class TestArchiveVisitCreatePreselect:
 
         assert resp.context["preselect"] is None
 
-    def test_preselect_other_users_personal_entry_ignored(self, user_client, make_user):
+    def test_preselect_other_users_personal_entry_ignored(self, user_client, make_user, make_entry):
         _, client = user_client()
         other = make_user(username="stranger")
-        entry = PersonalEntry.objects.create(user=other, kind="goods", title="남의 굿즈")
+        entry = make_entry(other, kind="goods", title="남의 굿즈")
 
         resp = client.get(f"/archive/visits/new/?subject=personal:{entry.id}")
 

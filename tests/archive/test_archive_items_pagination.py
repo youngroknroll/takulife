@@ -14,13 +14,6 @@ import pytest
 from archive.models import PersonalEntry
 
 
-def _make_entries(user, count, *, kind=PersonalEntry.Kind.PLACE, title_prefix="항목"):
-    for i in range(count):
-        PersonalEntry.objects.create(
-            user=user, kind=kind, title=f"{title_prefix} {i:02d}",
-        )
-
-
 # ---------------------------------------------------------------------------
 # Basic pagination
 # ---------------------------------------------------------------------------
@@ -30,9 +23,9 @@ def _make_entries(user, count, *, kind=PersonalEntry.Kind.PLACE, title_prefix="�
 class TestArchiveItemsPagination:
     """7 items paginate at 5/page; page_obj is in the template context."""
 
-    def test_first_page_holds_five(self, user_client):
+    def test_first_page_holds_five(self, user_client, make_entries):
         user, client = user_client()
-        _make_entries(user, 7)
+        make_entries(user, 7)
 
         resp = client.get("/archive/items/")
 
@@ -42,9 +35,9 @@ class TestArchiveItemsPagination:
         assert page_obj.paginator.num_pages == 2
         assert len(page_obj.object_list) == 5
 
-    def test_second_page_holds_two(self, user_client):
+    def test_second_page_holds_two(self, user_client, make_entries):
         user, client = user_client()
-        _make_entries(user, 7)
+        make_entries(user, 7)
 
         resp = client.get("/archive/items/?page=2")
 
@@ -53,9 +46,9 @@ class TestArchiveItemsPagination:
         assert page_obj.number == 2
         assert len(page_obj.object_list) == 2
 
-    def test_single_page_when_five_or_fewer(self, user_client):
+    def test_single_page_when_five_or_fewer(self, user_client, make_entries):
         user, client = user_client()
-        _make_entries(user, 4)
+        make_entries(user, 4)
 
         resp = client.get("/archive/items/")
 
@@ -71,10 +64,10 @@ class TestArchiveItemsPagination:
 class TestArchiveItemsSummaryCounts:
     """Summary card counts are always unfiltered totals."""
 
-    def test_counts_across_place_and_goods(self, user_client):
+    def test_counts_across_place_and_goods(self, user_client, make_entries):
         user, client = user_client()
-        _make_entries(user, 4, kind=PersonalEntry.Kind.PLACE)
-        _make_entries(user, 3, kind=PersonalEntry.Kind.GOODS, title_prefix="굿즈")
+        make_entries(user, 4, kind=PersonalEntry.Kind.PLACE)
+        make_entries(user, 3, kind=PersonalEntry.Kind.GOODS, title_prefix="굿즈")
 
         resp = client.get("/archive/items/")
 
@@ -82,11 +75,11 @@ class TestArchiveItemsSummaryCounts:
         assert resp.context["place_count"] == 4
         assert resp.context["goods_count"] == 3
 
-    def test_summary_unchanged_by_q_filter(self, user_client):
+    def test_summary_unchanged_by_q_filter(self, user_client, make_entries):
         """total/place/goods counts do not shrink when q narrows entry_rows."""
         user, client = user_client()
-        _make_entries(user, 4, kind=PersonalEntry.Kind.PLACE)
-        _make_entries(user, 3, kind=PersonalEntry.Kind.GOODS, title_prefix="굿즈")
+        make_entries(user, 4, kind=PersonalEntry.Kind.PLACE)
+        make_entries(user, 3, kind=PersonalEntry.Kind.GOODS, title_prefix="굿즈")
 
         # q="굿즈" would match only 3 goods entries
         resp = client.get("/archive/items/?q=굿즈")
@@ -96,11 +89,9 @@ class TestArchiveItemsSummaryCounts:
         assert resp.context["place_count"] == 4
         assert resp.context["goods_count"] == 3
 
-    def test_has_entries_true_even_when_q_yields_zero(self, user_client):
+    def test_has_entries_true_even_when_q_yields_zero(self, user_client, make_entry):
         user, client = user_client()
-        PersonalEntry.objects.create(
-            user=user, kind=PersonalEntry.Kind.PLACE, title="내 항목"
-        )
+        make_entry(user, kind=PersonalEntry.Kind.PLACE, title="내 항목")
 
         resp = client.get("/archive/items/?q=없는검색어XYZ")
 
@@ -117,14 +108,10 @@ class TestArchiveItemsSummaryCounts:
 class TestArchiveItemsSearch:
     """?q= filters entry_rows on /archive/items/."""
 
-    def test_q_filters_displayed_entry_rows(self, user_client):
+    def test_q_filters_displayed_entry_rows(self, user_client, make_entry):
         user, client = user_client()
-        PersonalEntry.objects.create(
-            user=user, kind=PersonalEntry.Kind.PLACE, title="매칭 항목"
-        )
-        PersonalEntry.objects.create(
-            user=user, kind=PersonalEntry.Kind.PLACE, title="다른 항목"
-        )
+        make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 항목")
+        make_entry(user, kind=PersonalEntry.Kind.PLACE, title="다른 항목")
 
         resp = client.get("/archive/items/?q=매칭")
 
@@ -132,25 +119,21 @@ class TestArchiveItemsSearch:
         assert "매칭 항목" in titles
         assert "다른 항목" not in titles
 
-    def test_q_filters_paginator_count(self, user_client):
+    def test_q_filters_paginator_count(self, user_client, make_entry):
         """page_obj.paginator.count reflects the filtered (q-narrowed) count."""
         user, client = user_client()
         for i in range(3):
-            PersonalEntry.objects.create(
-                user=user, kind=PersonalEntry.Kind.PLACE, title=f"매칭{i}"
-            )
+            make_entry(user, kind=PersonalEntry.Kind.PLACE, title=f"매칭{i}")
         for i in range(4):
-            PersonalEntry.objects.create(
-                user=user, kind=PersonalEntry.Kind.PLACE, title=f"기타{i}"
-            )
+            make_entry(user, kind=PersonalEntry.Kind.PLACE, title=f"기타{i}")
 
         resp = client.get("/archive/items/?q=매칭")
 
         assert resp.context["page_obj"].paginator.count == 3
 
-    def test_empty_q_shows_all_entries(self, user_client):
+    def test_empty_q_shows_all_entries(self, user_client, make_entries):
         user, client = user_client()
-        _make_entries(user, 3)
+        make_entries(user, 3)
 
         resp = client.get("/archive/items/?q=")
 
@@ -183,26 +166,26 @@ class TestArchiveItemsContextKeys:
         assert resp.context["q"] == ""
         assert resp.context["has_query"] is False
 
-    def test_pager_query_carries_q(self, user_client):
+    def test_pager_query_carries_q(self, user_client, make_entries):
         user, client = user_client()
-        _make_entries(user, 7)  # 2 pages
+        make_entries(user, 7)  # 2 pages
 
         resp = client.get("/archive/items/?q=항목")
 
         pager_query = resp.context["pager_query"]
         assert "q=" in pager_query
 
-    def test_pager_query_empty_without_q(self, user_client):
+    def test_pager_query_empty_without_q(self, user_client, make_entries):
         user, client = user_client()
-        _make_entries(user, 7)
+        make_entries(user, 7)
 
         resp = client.get("/archive/items/")
 
         assert resp.context["pager_query"] == ""
 
-    def test_whitespace_q_normalised_to_empty(self, user_client):
+    def test_whitespace_q_normalised_to_empty(self, user_client, make_entries):
         user, client = user_client()
-        _make_entries(user, 3)
+        make_entries(user, 3)
 
         resp = client.get("/archive/items/?q=   ")
 

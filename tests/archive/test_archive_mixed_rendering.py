@@ -5,21 +5,17 @@ naive ``row.event.*`` access would raise on a personal row.
 """
 import pytest
 
-from archive.models import EventInterest, PersonalEntry, UserEventStatus
-
 
 @pytest.fixture
-def mixed_user(make_user, make_event):
+def mixed_user(make_user, make_event, make_entry, make_status, make_interest):
     """A user holding both an official and an unofficial status + interest."""
     user = make_user(username="mixed")
     event = make_event(title="공식 팝업", location_name="서울 성수")
-    entry = PersonalEntry.objects.create(
-        user=user, kind="goods", title="비공식 아크릴", category="굿즈"
-    )
-    UserEventStatus.objects.create(user=user, event=event, status="planned")
-    UserEventStatus.objects.create(user=user, personal_entry=entry, status="planned")
-    EventInterest.objects.create(user=user, event=event)
-    EventInterest.objects.create(user=user, personal_entry=entry)
+    entry = make_entry(user, kind="goods", title="비공식 아크릴", category="굿즈")
+    make_status(user, event=event, status="planned")
+    make_status(user, personal_entry=entry, status="planned")
+    make_interest(user, event=event)
+    make_interest(user, personal_entry=entry)
     return user, event, entry
 
 
@@ -53,10 +49,10 @@ def test_interest_page_renders_official_and_unofficial(client, mixed_user):
 
 
 @pytest.mark.django_db
-def test_goods_status_uses_kind_aware_label_in_list(client, make_user):
+def test_goods_status_uses_kind_aware_label_in_list(client, make_user, make_entry, make_status):
     user = make_user(username="goods-label")
-    entry = PersonalEntry.objects.create(user=user, kind="goods", title="아크릴")
-    UserEventStatus.objects.create(user=user, personal_entry=entry, status="planned")
+    entry = make_entry(user, kind="goods", title="아크릴")
+    make_status(user, personal_entry=entry, status="planned")
     client.force_login(user)
 
     body = client.get("/archive/statuses/").content.decode()
@@ -65,13 +61,11 @@ def test_goods_status_uses_kind_aware_label_in_list(client, make_user):
 
 
 @pytest.mark.django_db
-def test_unofficial_status_has_no_public_detail_link(client, make_user):
+def test_unofficial_status_has_no_public_detail_link(client, make_user, make_entry, make_status):
     """A private personal entry must not be linked to a public /events/ page."""
     user = make_user(username="no-leak-link")
-    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 카페")
-    status = UserEventStatus.objects.create(
-        user=user, personal_entry=entry, status="planned"
-    )
+    entry = make_entry(user, kind="place", title="비공식 카페")
+    status = make_status(user, personal_entry=entry, status="planned")
     client.force_login(user)
 
     response = client.get("/archive/statuses/")

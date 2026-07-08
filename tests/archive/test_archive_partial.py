@@ -13,7 +13,7 @@ Behavior under test:
 import pytest
 from django.test import Client
 
-from archive.models import PersonalEntry, UserEventStatus, VisitRecord
+from archive.models import PersonalEntry
 
 # (url, full_template, fragment_template) for each search-enabled archive page.
 ARCHIVE_PAGES = [
@@ -87,14 +87,14 @@ class TestArchivePartialBranch:
         assert full_template in names
         assert "base.html" in names
 
-    def test_partial_applies_q_filter_on_archive_dashboard(self, user_client, make_event):
+    def test_partial_applies_q_filter_on_archive_dashboard(self, user_client, make_event, make_status):
         # The /archive/ dashboard shares _archive_status_context with statuses but
         # renders the record fragment at a different page size — cover it directly.
         user, client = user_client()
         match = make_event(title="매칭 이벤트", location_name="서울")
         other = make_event(title="다른 이벤트", location_name="부산")
-        UserEventStatus.objects.create(user=user, event=match, status="planned")
-        UserEventStatus.objects.create(user=user, event=other, status="planned")
+        make_status(user, event=match, status="planned")
+        make_status(user, event=other, status="planned")
 
         resp = client.get("/archive/?q=매칭&partial=1")
 
@@ -105,14 +105,12 @@ class TestArchivePartialBranch:
         assert "매칭 이벤트".encode() in resp.content
         assert "다른 이벤트".encode() not in resp.content
 
-    def test_partial_status_filter_with_no_q_match_shows_empty_on_dashboard(
-        self, user_client, make_event
-    ):
+    def test_partial_status_filter_with_no_q_match_shows_empty_on_dashboard(self, user_client, make_event, make_status):
         # has_any=True, active status filter matches zero rows, no query → the
         # record fragment's `elif has_any` notice branch (not the search-empty one).
         user, client = user_client()
         planned = make_event(title="예정 행사")
-        UserEventStatus.objects.create(user=user, event=planned, status="planned")
+        make_status(user, event=planned, status="planned")
 
         resp = client.get("/archive/?status=missed&partial=1")
 
@@ -122,14 +120,14 @@ class TestArchivePartialBranch:
         assert "예정 행사".encode() not in resp.content
         assert "이 상태로 저장한 행사가 없습니다".encode() in resp.content
 
-    def test_partial_renders_pager(self, user_client, make_event):
+    def test_partial_renders_pager(self, user_client, make_event, make_status):
         # More records than one page → the pager must render inside the fragment,
         # and its links must never carry partial= (else a click would navigate to
         # a chrome-less fragment). /archive/statuses/ paginates at 5 per page.
         user, client = user_client()
         for i in range(7):  # > ARCHIVE_STATUS_PAGE_SIZE (5) → 2 pages
             ev = make_event(title=f"행사 {i}")
-            UserEventStatus.objects.create(user=user, event=ev, status="planned")
+            make_status(user, event=ev, status="planned")
 
         resp = client.get("/archive/statuses/?partial=1")
 
@@ -138,12 +136,12 @@ class TestArchivePartialBranch:
         assert b'class="pager"' in resp.content
         assert b"partial=" not in resp.content
 
-    def test_partial_applies_q_filter_on_statuses(self, user_client, make_event):
+    def test_partial_applies_q_filter_on_statuses(self, user_client, make_event, make_status):
         user, client = user_client()
         match = make_event(title="매칭 이벤트", location_name="서울")
         other = make_event(title="다른 이벤트", location_name="부산")
-        UserEventStatus.objects.create(user=user, event=match, status="planned")
-        UserEventStatus.objects.create(user=user, event=other, status="planned")
+        make_status(user, event=match, status="planned")
+        make_status(user, event=other, status="planned")
 
         resp = client.get("/archive/statuses/?q=매칭&partial=1")
 
@@ -155,12 +153,12 @@ class TestArchivePartialBranch:
         assert "매칭 이벤트".encode() in resp.content
         assert "다른 이벤트".encode() not in resp.content
 
-    def test_partial_applies_q_filter_on_visits(self, user_client, make_event):
+    def test_partial_applies_q_filter_on_visits(self, user_client, make_event, make_visit):
         user, client = user_client()
         match = make_event(title="방문 매칭")
         other = make_event(title="방문 제외")
-        VisitRecord.objects.create(user=user, event=match, visited_on="2026-01-01")
-        VisitRecord.objects.create(user=user, event=other, visited_on="2026-01-02")
+        make_visit(user, event=match, visited_on="2026-01-01")
+        make_visit(user, event=other, visited_on="2026-01-02")
 
         resp = client.get("/archive/visits/?q=매칭&partial=1")
 
@@ -168,14 +166,10 @@ class TestArchivePartialBranch:
         assert "방문 매칭".encode() in resp.content
         assert "방문 제외".encode() not in resp.content
 
-    def test_partial_applies_q_filter_on_items(self, user_client):
+    def test_partial_applies_q_filter_on_items(self, user_client, make_entry):
         user, client = user_client()
-        PersonalEntry.objects.create(
-            user=user, kind=PersonalEntry.Kind.PLACE, title="매칭 카페"
-        )
-        PersonalEntry.objects.create(
-            user=user, kind=PersonalEntry.Kind.PLACE, title="제외 장소"
-        )
+        make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 카페")
+        make_entry(user, kind=PersonalEntry.Kind.PLACE, title="제외 장소")
 
         resp = client.get("/archive/items/?q=매칭&partial=1")
 
