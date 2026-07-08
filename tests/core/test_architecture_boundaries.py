@@ -5,7 +5,7 @@ import pytest
 from django.urls import Resolver404, resolve
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _imported_modules(module_path):
