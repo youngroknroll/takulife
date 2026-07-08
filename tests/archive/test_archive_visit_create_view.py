@@ -63,14 +63,8 @@ class TestArchiveVisitCreatePreselect:
     visited event is absent from the planned-only dropdown.
     """
 
-    def _login(self, make_user, **kwargs):
-        user = make_user(**kwargs)
-        client = Client()
-        client.force_login(user)
-        return user, client
-
-    def test_preselect_published_event_locks_subject(self, make_user, make_event):
-        _, client = self._login(make_user)
+    def test_preselect_published_event_locks_subject(self, user_client, make_event):
+        _, client = user_client()
         event = make_event(title="방문 완료한 행사")
 
         resp = client.get(f"/archive/visits/new/?subject=event:{event.id}")
@@ -82,8 +76,8 @@ class TestArchiveVisitCreatePreselect:
         assert b'name="subject"' in resp.content
         assert f"event:{event.id}".encode() in resp.content
 
-    def test_preselect_own_personal_entry(self, make_user):
-        user, client = self._login(make_user)
+    def test_preselect_own_personal_entry(self, user_client):
+        user, client = user_client()
         entry = PersonalEntry.objects.create(user=user, kind="place", title="숨은 카페")
 
         resp = client.get(f"/archive/visits/new/?subject=personal:{entry.id}")
@@ -93,16 +87,16 @@ class TestArchiveVisitCreatePreselect:
             "label": "숨은 카페",
         }
 
-    def test_preselect_unpublished_event_ignored(self, make_user, make_draft_event):
-        _, client = self._login(make_user)
+    def test_preselect_unpublished_event_ignored(self, user_client, make_draft_event):
+        _, client = user_client()
         draft = make_draft_event(title="비공개 행사")
 
         resp = client.get(f"/archive/visits/new/?subject=event:{draft.id}")
 
         assert resp.context["preselect"] is None
 
-    def test_preselect_other_users_personal_entry_ignored(self, make_user):
-        _, client = self._login(make_user)
+    def test_preselect_other_users_personal_entry_ignored(self, user_client, make_user):
+        _, client = user_client()
         other = make_user(username="stranger")
         entry = PersonalEntry.objects.create(user=other, kind="goods", title="남의 굿즈")
 
@@ -110,8 +104,8 @@ class TestArchiveVisitCreatePreselect:
 
         assert resp.context["preselect"] is None
 
-    def test_preselect_malformed_param_ignored(self, make_user):
-        _, client = self._login(make_user)
+    def test_preselect_malformed_param_ignored(self, user_client):
+        _, client = user_client()
 
         # Includes crafted vectors that pass a naive isdigit() guard but would
         # crash int()/the ORM: a non-ASCII "digit" and an oversized id.
@@ -127,8 +121,8 @@ class TestArchiveVisitCreatePreselect:
             assert resp.status_code == 200
             assert resp.context["preselect"] is None
 
-    def test_no_subject_param_keeps_dropdown(self, make_user):
-        _, client = self._login(make_user)
+    def test_no_subject_param_keeps_dropdown(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/visits/new/")
 

@@ -7,29 +7,21 @@ Behavior under test:
   now lives on the write page (/archive/visits/new/).
 """
 import pytest
-from django.test import Client
 
 from archive.models import UserEventStatus
 
 
-def _login(make_user):
-    user = make_user()
-    client = Client()
-    client.force_login(user)
-    return user, client
-
-
 @pytest.mark.django_db
 class TestArchiveRecordPageActions:
-    def test_checklist_removed(self, make_user):
-        _, client = _login(make_user)
+    def test_checklist_removed(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/")
 
         assert "정리 체크리스트" not in resp.content.decode()
 
-    def test_add_record_link_present(self, make_user):
-        _, client = _login(make_user)
+    def test_add_record_link_present(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/")
 
@@ -38,8 +30,8 @@ class TestArchiveRecordPageActions:
         assert "준비 중" not in body
         assert 'href="/archive/visits/new/"' in body
 
-    def test_visited_row_has_record_shortcut(self, make_user, make_event):
-        user, client = _login(make_user)
+    def test_visited_row_has_record_shortcut(self, user_client, make_event):
+        user, client = user_client()
         event = make_event(title="다녀온 행사")
         UserEventStatus.objects.create(
             user=user, event=event, status=UserEventStatus.Status.VISITED
@@ -49,8 +41,8 @@ class TestArchiveRecordPageActions:
 
         assert f"/archive/visits/new/?subject=event:{event.id}".encode() in resp.content
 
-    def test_planned_row_has_no_record_shortcut(self, make_user, make_event):
-        user, client = _login(make_user)
+    def test_planned_row_has_no_record_shortcut(self, user_client, make_event):
+        user, client = user_client()
         event = make_event(title="갈 예정 행사")
         UserEventStatus.objects.create(
             user=user, event=event, status=UserEventStatus.Status.PLANNED
@@ -64,15 +56,15 @@ class TestArchiveRecordPageActions:
 
 @pytest.mark.django_db
 class TestVisitGuidanceMoved:
-    def test_visits_page_drops_guidance_panel(self, make_user):
-        _, client = _login(make_user)
+    def test_visits_page_drops_guidance_panel(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/visits/")
 
         assert "기록 안내" not in resp.content.decode()
 
-    def test_write_page_shows_guidance_panel(self, make_user):
-        _, client = _login(make_user)
+    def test_write_page_shows_guidance_panel(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/visits/new/")
 
