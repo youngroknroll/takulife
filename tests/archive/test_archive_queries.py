@@ -5,6 +5,7 @@ import pytest
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_interests,
+    list_user_personal_entries,
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
@@ -212,3 +213,25 @@ def test_list_user_planned_events_returns_only_user_planned_published(make_user,
     assert missed not in events  # different status
     assert others_planned not in events  # different user
     assert draft_planned not in events  # not published
+
+
+# ---------------------------------------------------------------------------
+# list_user_personal_entries
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_list_user_personal_entries_scopes_to_user_and_filters_kind(make_user, make_entry):
+    user = make_user(username="pe-list")
+    other = make_user(username="pe-other")
+    place = make_entry(user, kind="place", title="P")
+    goods = make_entry(user, kind="goods", title="G")
+    make_entry(other, kind="place", title="Other P")
+
+    all_entries = list(list_user_personal_entries(user))
+    assert place in all_entries
+    assert goods in all_entries
+    assert len(all_entries) == 2  # other user's entry excluded
+
+    only_goods = list(list_user_personal_entries(user, kind="goods"))
+    assert only_goods == [goods]

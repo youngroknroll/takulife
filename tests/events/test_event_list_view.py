@@ -101,3 +101,25 @@ class TestEventListActiveFilterChips:
 
         assert resp.status_code == 200
         assert "검색: 공연" in resp.context["active_filter_chips"]
+
+
+@pytest.mark.django_db
+def test_personal_entry_never_appears_in_public_browse_page(client, make_user):
+    """A private PersonalEntry item must not leak into the public browse page
+    HTML (split from archive's test_personal_entry_never_appears_in_public_catalog
+    — the API half stays in tests/archive/test_personal_entries_api.py).
+
+    Uses PersonalEntry.objects.create directly rather than archive's make_entry
+    fixture: that fixture lives in tests/archive/conftest.py, which pytest's
+    per-directory conftest scoping does not expose here in tests/events/.
+    """
+    from archive.models import PersonalEntry
+
+    user = make_user(username="pe-leak")
+    PersonalEntry.objects.create(user=user, kind="place", title="PRIVATE_LEAK_CANARY")
+
+    client.force_login(user)
+    browse = client.get("/events/")
+
+    assert browse.status_code == 200
+    assert "PRIVATE_LEAK_CANARY" not in browse.content.decode()

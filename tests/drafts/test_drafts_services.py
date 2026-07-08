@@ -311,3 +311,33 @@ def test_update_draft_rejects_immutable_fields_even_without_serializer(make_draf
 
     with pytest.raises(DraftImmutableFieldError):
         update_draft(draft.id, {"review_status": EventDraft.ReviewStatus.APPROVED})
+
+
+# ---------------------------------------------------------------------------
+# create_draft_from_fields — direct (no fetch) draft creation
+# (moved from tests/archive/test_promotion.py — this path is also used by
+# core.promotion.promote_personal_entry, but the function itself belongs here)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_draft_from_fields_makes_pending_draft():
+    draft = create_draft_from_fields(
+        source_url="https://official.example.com/popup",
+        title="공식 팝업",
+        category="popup_store",
+        location_name="서울 성수",
+        summary="메모",
+    )
+
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert draft.source_url == "https://official.example.com/popup"
+    assert draft.extracted_title == "공식 팝업"
+    assert draft.extracted_location_name == "서울 성수"
+
+
+@pytest.mark.django_db
+def test_create_draft_from_fields_duplicate_url_raises():
+    create_draft_from_fields(source_url="https://dup.example.com/a", title="A")
+    with pytest.raises(DraftCreationDuplicateError):
+        create_draft_from_fields(source_url="https://dup.example.com/a", title="B")

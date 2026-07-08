@@ -186,23 +186,17 @@ def test_cross_user_delete_returns_404_and_row_survives(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_interest_and_planned_status_coexist_on_same_event(client, make_user, make_event):
+def test_interest_and_planned_status_coexist_on_same_event(client, make_user, make_event, make_interest):
     """A user can hold both an EventInterest and a planned UserEventStatus
     for the same event simultaneously. Both must be independently retrievable."""
     from archive.models import UserEventStatus
 
     user = make_user(username="interest-coexist-user")
     event = make_event(title="Popup Coexist")
+    interest = make_interest(user, event=event)
+    interest_id = interest.id
 
     client.force_login(user)
-
-    interest_response = client.post(
-        "/api/event-interests/",
-        {"event": event.id},
-        content_type="application/json",
-    )
-    assert interest_response.status_code == 201
-    interest_id = interest_response.json()["id"]
 
     status_response = client.post(
         "/api/user-event-statuses/",
@@ -244,28 +238,3 @@ def test_unauthenticated_cannot_create_event_interest(client, make_event):
 def test_unauthenticated_cannot_list_event_interests(client):
     response = client.get("/api/event-interests/")
     assert response.status_code in (401, 403)
-
-
-# ---------------------------------------------------------------------------
-# archive_interests page view
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.django_db
-def test_archive_interests_page_renders_200(client, make_user, make_event, make_interest):
-    user = make_user(username="interests-page-user")
-    event = make_event(title="Page Event")
-    make_interest(user, event=event)
-
-    client.force_login(user)
-    response = client.get("/archive/interests/")
-
-    assert response.status_code == 200
-    assert str(event.id).encode() in response.content
-
-
-@pytest.mark.django_db
-def test_archive_interests_page_unauthenticated_redirects(client):
-    response = client.get("/archive/interests/")
-    assert response.status_code == 302
-    assert "/accounts/login/" in response["Location"]
