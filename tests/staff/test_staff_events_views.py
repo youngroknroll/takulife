@@ -30,9 +30,8 @@ def test_non_staff_returns_403(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_events_list(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_can_access_events_list(staff_client, make_event):
+    staff, client = staff_client()
     make_event(title="공개 행사")
 
     resp = client.get("/staff/events/")
@@ -42,9 +41,8 @@ def test_staff_can_access_events_list(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_events_list_includes_draft_events_by_default(client, make_user, make_draft_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_events_list_includes_draft_events_by_default(staff_client, make_draft_event):
+    staff, client = staff_client()
     make_draft_event(title="비공개 초안", official_url=None)
 
     resp = client.get("/staff/events/")
@@ -54,9 +52,8 @@ def test_events_list_includes_draft_events_by_default(client, make_user, make_dr
 
 
 @pytest.mark.django_db
-def test_warning_filter_scopes_rows_to_matching_events(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_warning_filter_scopes_rows_to_matching_events(staff_client, make_event):
+    staff, client = staff_client()
     make_event(title="URL 없는 행사", official_url=None)
     make_event(
         title="깨끗한 행사",
@@ -76,9 +73,8 @@ def test_warning_filter_scopes_rows_to_matching_events(client, make_user, make_e
 
 
 @pytest.mark.django_db
-def test_unknown_warning_falls_back_to_no_filter(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_unknown_warning_falls_back_to_no_filter(staff_client, make_event):
+    staff, client = staff_client()
     make_event(title="아무 행사")
 
     resp = client.get("/staff/events/?warning=not-a-real-warning")
@@ -89,9 +85,8 @@ def test_unknown_warning_falls_back_to_no_filter(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_publish_status_filter_restricts_rows(client, make_user, make_event, make_draft_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_publish_status_filter_restricts_rows(staff_client, make_event, make_draft_event):
+    staff, client = staff_client()
     make_event(title="게시된 행사")
     make_draft_event(title="초안 행사", official_url=None)
 
@@ -105,11 +100,10 @@ def test_publish_status_filter_restricts_rows(client, make_user, make_event, mak
 
 
 @pytest.mark.django_db
-def test_pagination_second_page(client, make_user, make_event):
+def test_pagination_second_page(staff_client, make_event):
     from events.queries import STAFF_EVENT_LISTING_PAGE_SIZE
 
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     for i in range(STAFF_EVENT_LISTING_PAGE_SIZE + 1):
         make_event(title=f"행사 {i}")
 
@@ -121,9 +115,8 @@ def test_pagination_second_page(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_ended_still_published_warning_uses_server_today(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_ended_still_published_warning_uses_server_today(staff_client, make_event):
+    staff, client = staff_client()
     make_event(
         title="종료된 행사",
         official_url="https://example.com/ended",

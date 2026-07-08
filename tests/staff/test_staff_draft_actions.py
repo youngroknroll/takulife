@@ -31,9 +31,8 @@ def draft_reject_url(draft_id):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_staff_can_approve_pending_draft(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_can_approve_pending_draft(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/event",
         extracted_title="Sample pending event",
@@ -69,9 +68,8 @@ def test_non_staff_cannot_approve_draft(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_approve_publishes_event_and_writes_one_audit_log(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approve_publishes_event_and_writes_one_audit_log(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/event",
         source_name="Official",
@@ -132,9 +130,8 @@ def test_approve_publishes_event_and_writes_one_audit_log(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_reject_marks_draft_rejected_and_writes_one_audit_log(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_reject_marks_draft_rejected_and_writes_one_audit_log(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/rejected-event",
         extracted_title="Rejected event",
@@ -170,11 +167,10 @@ def test_reject_marks_draft_rejected_and_writes_one_audit_log(client, make_user)
 
 
 @pytest.mark.django_db
-def test_reject_stores_populated_rejection_reason(client, make_user):
+def test_reject_stores_populated_rejection_reason(staff_client):
     """PR-D2 item 11: a non-empty rejection_reason in the request body is
     passed through to reject_draft and stored on the draft."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/rejected-with-reason",
         extracted_title="Rejected with reason",
@@ -198,9 +194,8 @@ def test_reject_stores_populated_rejection_reason(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_approve_rejects_duplicate_official_url_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approve_rejects_duplicate_official_url_and_logs_nothing(staff_client):
+    staff, client = staff_client()
     Event.objects.create(
         title="Already published",
         official_url="https://example.com/event",
@@ -223,9 +218,8 @@ def test_approve_rejects_duplicate_official_url_and_logs_nothing(client, make_us
 
 
 @pytest.mark.django_db
-def test_approve_rejects_missing_official_url_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approve_rejects_missing_official_url_and_logs_nothing(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="",
         extracted_title="No URL event",
@@ -242,9 +236,8 @@ def test_approve_rejects_missing_official_url_and_logs_nothing(client, make_user
 
 
 @pytest.mark.django_db
-def test_approved_draft_cannot_be_rejected_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approved_draft_cannot_be_rejected_and_logs_nothing(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/event",
         review_status=EventDraft.ReviewStatus.APPROVED,
@@ -261,9 +254,8 @@ def test_approved_draft_cannot_be_rejected_and_logs_nothing(client, make_user):
 
 
 @pytest.mark.django_db
-def test_rejected_draft_cannot_be_approved_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_rejected_draft_cannot_be_approved_and_logs_nothing(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/event",
         review_status=EventDraft.ReviewStatus.REJECTED,
@@ -280,9 +272,8 @@ def test_rejected_draft_cannot_be_approved_and_logs_nothing(client, make_user):
 
 
 @pytest.mark.django_db
-def test_approved_draft_cannot_be_approved_again_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approved_draft_cannot_be_approved_again_and_logs_nothing(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/event",
         review_status=EventDraft.ReviewStatus.APPROVED,
@@ -298,9 +289,8 @@ def test_approved_draft_cannot_be_approved_again_and_logs_nothing(client, make_u
 
 
 @pytest.mark.django_db
-def test_rejected_draft_cannot_be_rejected_again_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_rejected_draft_cannot_be_rejected_again_and_logs_nothing(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/event",
         review_status=EventDraft.ReviewStatus.REJECTED,
@@ -316,9 +306,8 @@ def test_rejected_draft_cannot_be_rejected_again_and_logs_nothing(client, make_u
 
 
 @pytest.mark.django_db
-def test_missing_draft_cannot_be_approved_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_missing_draft_cannot_be_approved_and_logs_nothing(staff_client):
+    staff, client = staff_client()
 
     response = client.post(draft_approve_url(999999))
 
@@ -327,9 +316,8 @@ def test_missing_draft_cannot_be_approved_and_logs_nothing(client, make_user):
 
 
 @pytest.mark.django_db
-def test_missing_draft_cannot_be_rejected_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_missing_draft_cannot_be_rejected_and_logs_nothing(staff_client):
+    staff, client = staff_client()
 
     response = client.post(draft_reject_url(999999))
 
@@ -338,9 +326,8 @@ def test_missing_draft_cannot_be_rejected_and_logs_nothing(client, make_user):
 
 
 @pytest.mark.django_db
-def test_approve_rejects_blank_title_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approve_rejects_blank_title_and_logs_nothing(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/blank-title-draft",
     )
@@ -358,9 +345,8 @@ def test_approve_rejects_blank_title_and_logs_nothing(client, make_user):
 
 
 @pytest.mark.django_db
-def test_approve_rejects_title_equal_to_official_url_and_logs_nothing(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approve_rejects_title_equal_to_official_url_and_logs_nothing(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/self-titled-draft",
         extracted_title="https://example.com/self-titled-draft",
@@ -379,11 +365,8 @@ def test_approve_rejects_title_equal_to_official_url_and_logs_nothing(client, ma
 
 
 @pytest.mark.django_db
-def test_approve_returns_controlled_error_when_event_creation_fails_and_logs_nothing(
-    client, make_user, monkeypatch
-):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approve_returns_controlled_error_when_event_creation_fails_and_logs_nothing(staff_client, monkeypatch):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/event",
         extracted_title="Broken event",
@@ -411,9 +394,8 @@ def test_approve_returns_controlled_error_when_event_creation_fails_and_logs_not
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_approve_rolls_back_entirely_when_audit_log_write_fails(client, make_user, monkeypatch):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_approve_rolls_back_entirely_when_audit_log_write_fails(staff_client, monkeypatch):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/rollback-event",
         extracted_title="Rollback event",
@@ -441,9 +423,8 @@ def test_approve_rolls_back_entirely_when_audit_log_write_fails(client, make_use
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_old_draft_approve_reject_routes_are_not_supported(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_old_draft_approve_reject_routes_are_not_supported(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(source_url="https://example.com/legacy-route")
 
     approve_response = client.post(f"/api/event-drafts/{draft.id}/approve/")

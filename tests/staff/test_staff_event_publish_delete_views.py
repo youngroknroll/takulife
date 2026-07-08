@@ -49,9 +49,8 @@ def test_toggle_publish_non_staff_returns_403(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_toggle_publish_get_not_allowed(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_toggle_publish_get_not_allowed(staff_client, make_event):
+    staff, client = staff_client()
     event = make_event(official_url="https://example.com/toggle-get")
 
     resp = client.get(_toggle_url(event))
@@ -62,9 +61,8 @@ def test_toggle_publish_get_not_allowed(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_toggle_publish_unpublishes_a_published_event(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_toggle_publish_unpublishes_a_published_event(staff_client, make_event):
+    staff, client = staff_client()
     event = make_event(official_url="https://example.com/toggle-unpublish")
 
     resp = client.post(_toggle_url(event))
@@ -78,9 +76,8 @@ def test_toggle_publish_unpublishes_a_published_event(client, make_user, make_ev
 
 
 @pytest.mark.django_db
-def test_toggle_publish_republishes_a_draft_event(client, make_user, make_draft_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_toggle_publish_republishes_a_draft_event(staff_client, make_draft_event):
+    staff, client = staff_client()
     event = make_draft_event(
         title="초안", official_url="https://example.com/toggle-republish"
     )
@@ -95,11 +92,8 @@ def test_toggle_publish_republishes_a_draft_event(client, make_user, make_draft_
 
 
 @pytest.mark.django_db
-def test_toggle_publish_rejects_republish_of_event_missing_title(
-    client, make_user, make_draft_event
-):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_toggle_publish_rejects_republish_of_event_missing_title(staff_client, make_draft_event):
+    staff, client = staff_client()
     event = make_draft_event(title="", official_url="https://example.com/toggle-broken")
 
     resp = client.post(_toggle_url(event))
@@ -137,9 +131,8 @@ def test_delete_non_staff_returns_403(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_delete_get_not_allowed(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_delete_get_not_allowed(staff_client, make_event):
+    staff, client = staff_client()
     event = make_event(official_url="https://example.com/delete-get")
 
     resp = client.get(_delete_url(event))
@@ -149,9 +142,8 @@ def test_delete_get_not_allowed(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_delete_first_post_shows_confirmation_without_deleting(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_delete_first_post_shows_confirmation_without_deleting(staff_client, make_event):
+    staff, client = staff_client()
     event = make_event(title="삭제 대상", official_url="https://example.com/delete-confirm-step")
 
     resp = client.post(_delete_url(event))
@@ -162,11 +154,8 @@ def test_delete_first_post_shows_confirmation_without_deleting(client, make_user
 
 
 @pytest.mark.django_db
-def test_delete_confirmed_post_deletes_event_and_writes_audit_log_prg_to_list(
-    client, make_user, make_event
-):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_delete_confirmed_post_deletes_event_and_writes_audit_log_prg_to_list(staff_client, make_event):
+    staff, client = staff_client()
     event = make_event(title="삭제 대상", official_url="https://example.com/delete-confirmed")
 
     resp = client.post(_delete_url(event), {"confirmed": "yes"})
@@ -180,9 +169,8 @@ def test_delete_confirmed_post_deletes_event_and_writes_audit_log_prg_to_list(
 
 
 @pytest.mark.django_db
-def test_delete_preserves_list_filter_query_on_prg(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_delete_preserves_list_filter_query_on_prg(staff_client, make_event):
+    staff, client = staff_client()
     event = make_event(title="삭제 대상", official_url="https://example.com/delete-filter-prg")
 
     resp = client.post(
@@ -194,9 +182,8 @@ def test_delete_preserves_list_filter_query_on_prg(client, make_user, make_event
 
 
 @pytest.mark.django_db
-def test_delete_blocked_when_archive_references_exist(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_delete_blocked_when_archive_references_exist(staff_client, make_user, make_event):
+    staff, client = staff_client()
     event = make_event(title="찜된 행사", official_url="https://example.com/delete-blocked")
     interested_user = make_user()
     EventInterest.objects.create(user=interested_user, event=event)
@@ -209,11 +196,8 @@ def test_delete_blocked_when_archive_references_exist(client, make_user, make_ev
 
 
 @pytest.mark.django_db
-def test_edit_page_shows_reference_counts_instead_of_delete_button(
-    client, make_user, make_event
-):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_edit_page_shows_reference_counts_instead_of_delete_button(staff_client, make_user, make_event):
+    staff, client = staff_client()
     event = make_event(title="찜된 행사", official_url="https://example.com/edit-blocked-delete")
     interested_user = make_user()
     EventInterest.objects.create(user=interested_user, event=event)
@@ -227,9 +211,8 @@ def test_edit_page_shows_reference_counts_instead_of_delete_button(
 
 
 @pytest.mark.django_db
-def test_edit_page_shows_delete_button_when_unreferenced(client, make_user, make_event):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_edit_page_shows_delete_button_when_unreferenced(staff_client, make_event):
+    staff, client = staff_client()
     event = make_event(title="깨끗한 행사", official_url="https://example.com/edit-allowed-delete")
 
     resp = client.get(f"/staff/events/{event.pk}/edit/")
