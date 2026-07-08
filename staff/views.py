@@ -1068,11 +1068,15 @@ class StaffDraftRejectView(APIView):
 
         try:
             with transaction.atomic():
-                # Intentional v1 scope: no rejection_reason passed here — the
-                # client (draft.js) posts an empty body and has no reason
-                # input wired up yet. The service supports rejection_reason=
-                # for a future step.
-                draft = reject_draft(draft_id, actor=metadata["actor"])
+                # draft.js posts an optional rejection_reason (PR-D2 item 11);
+                # default "" preserves the pre-existing empty-body contract
+                # (tests/test_staff_draft_actions.py's happy-reject case).
+                rejection_reason = request.data.get("rejection_reason", "")
+                draft = reject_draft(
+                    draft_id,
+                    actor=metadata["actor"],
+                    rejection_reason=rejection_reason,
+                )
                 StaffActionLog.objects.create(
                     actor=metadata["actor"],
                     action=StaffActionLog.Action.REJECT,

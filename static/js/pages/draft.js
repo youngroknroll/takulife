@@ -15,9 +15,15 @@
  *
  *   Approve button (#draft-approve-btn)
  *     - data-draft-id  — numeric draft PK
+ *     - reads data-list-url off its closest [data-list-url] ancestor (the
+ *       action-stack container, server-rendered with the ?status= the
+ *       operator arrived with) for the post-success "목록으로 돌아가기" link
  *
  *   Reject button (#draft-reject-btn)
  *     - data-draft-id  — numeric draft PK
+ *     - reads #draft-reject-reason's value (optional) as rejection_reason
+ *     - reads data-list-url the same way as the approve button, to navigate
+ *       back to the list on success (see [data-list-url] above)
  *
  *   Raw text toggle (#raw-text-toggle)
  *     - server double-renders #raw-text-truncated (visible) and
@@ -34,8 +40,10 @@
  * Success:
  *   Create  → window.location.reload()
  *   Edit    → window.location.reload()
- *   Approve → show event_id link in #draft-approve-success, then reload after 1.5 s
- *   Reject  → window.location.reload()
+ *   Approve → show event_id link + "목록으로 돌아가기" link in
+ *             #draft-approve-success (stays visible, no reload); both
+ *             review buttons are disabled to block resubmission
+ *   Reject  → navigate to data-list-url (see above) — no reload
  *
  * 403 contract:
  *   Any 403 on these staff-only pages indicates a lost session or CSRF failure.
@@ -207,6 +215,9 @@
     var errorEl = document.getElementById("draft-action-error");
     var successEl = document.getElementById("draft-approve-success");
     var draftId = btn.dataset.draftId;
+    var rejectBtn = document.getElementById("draft-reject-btn");
+    var listUrlEl = btn.closest("[data-list-url]");
+    var listUrl = listUrlEl ? listUrlEl.dataset.listUrl : "/staff/drafts/";
 
     btn.addEventListener("click", function () {
       var confirmed = window.confirm(
@@ -224,18 +235,28 @@
       ).then(function (result) {
         window.TakuAPI.setLoading(btn, false);
         if (result.ok) {
-          var eventId = result.data && result.data.event_id;
-          if (successEl && eventId) {
-            var link = document.createElement("a");
-            link.href = "/events/" + eventId + "/";
-            link.textContent = "행사 #" + eventId + " 보기";
+          if (successEl) {
+            var eventId = result.data && result.data.event_id;
             successEl.textContent = "승인 완료. ";
-            successEl.appendChild(link);
+            if (eventId) {
+              var eventLink = document.createElement("a");
+              eventLink.href = "/events/" + eventId + "/";
+              eventLink.textContent = "행사 #" + eventId + " 보기";
+              successEl.appendChild(eventLink);
+              successEl.appendChild(document.createTextNode(" · "));
+            }
+            var listLink = document.createElement("a");
+            listLink.href = listUrl;
+            listLink.textContent = "목록으로 돌아가기";
+            successEl.appendChild(listLink);
             successEl.hidden = false;
           }
-          setTimeout(function () {
-            window.location.reload();
-          }, 1500);
+          // No reload on success (see success panel above) — disable both
+          // review buttons so an already-approved draft can't be resubmitted.
+          btn.disabled = true;
+          if (rejectBtn) {
+            rejectBtn.disabled = true;
+          }
           return;
         }
         if (result.status === 403) {
@@ -256,6 +277,9 @@
     }
     var errorEl = document.getElementById("draft-action-error");
     var draftId = btn.dataset.draftId;
+    var reasonEl = document.getElementById("draft-reject-reason");
+    var listUrlEl = btn.closest("[data-list-url]");
+    var listUrl = listUrlEl ? listUrlEl.dataset.listUrl : "/staff/drafts/";
 
     btn.addEventListener("click", function () {
       var confirmed = window.confirm(
@@ -267,13 +291,15 @@
       hideError(errorEl);
       window.TakuAPI.setLoading(btn, true);
 
+      var rejectionReason = reasonEl ? reasonEl.value.trim() : "";
+
       window.TakuAPI.post(
         "/staff/drafts/" + draftId + "/reject/",
-        {}
+        { rejection_reason: rejectionReason }
       ).then(function (result) {
         window.TakuAPI.setLoading(btn, false);
         if (result.ok) {
-          window.location.reload();
+          window.location.assign(listUrl);
           return;
         }
         if (result.status === 403) {

@@ -3,9 +3,11 @@
 PR-2 sub-step D: same request/response contract as the removed
 `drafts.views.AdminEventDraftApproveView`/`RejectView`, but the view boundary
 now writes a `StaffActionLog` audit row inside an OUTER `transaction.atomic()`
-that wraps the service call's own (inner) atomic block. Reject reason input
-is out of scope here — draft.js posts no reason, so only the stored empty
-string is asserted; a populated-reason case is intentionally not covered.
+that wraps the service call's own (inner) atomic block.
+
+PR-D2 item 11: draft.js now posts an optional `rejection_reason` field
+alongside a reject request. The empty-body case (Case 5 below) still asserts
+the stored value defaults to "" — that contract must not change.
 """
 import pytest
 from django.db import IntegrityError
@@ -165,6 +167,29 @@ def test_reject_marks_draft_rejected_and_writes_one_audit_log(client, make_user)
     assert entry.target_draft_id == draft.id
     assert entry.ip_address == "198.51.100.9"
     assert entry.user_agent == "pytest-agent/2.0"
+
+
+@pytest.mark.django_db
+def test_reject_stores_populated_rejection_reason(client, make_user):
+    """PR-D2 item 11: a non-empty rejection_reason in the request body is
+    passed through to reject_draft and stored on the draft."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    draft = EventDraft.objects.create(
+        source_url="https://example.com/rejected-with-reason",
+        extracted_title="Rejected with reason",
+    )
+
+    response = client.post(
+        draft_reject_url(draft.id),
+        {"rejection_reason": "공식 URL이 만료됨"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.REJECTED
+    assert draft.rejection_reason == "공식 URL이 만료됨"
 
 
 # ---------------------------------------------------------------------------
