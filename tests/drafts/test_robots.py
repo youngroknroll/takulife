@@ -41,16 +41,6 @@ from drafts.robots import (
 from drafts.url_safety import InvalidFetchUrlError
 
 
-def _install_transport(monkeypatch, handler):
-    real_client = httpx.Client
-
-    def factory(**kwargs):
-        kwargs.pop("transport", None)
-        return real_client(transport=httpx.MockTransport(handler), **kwargs)
-
-    monkeypatch.setattr(fetching.httpx, "Client", factory)
-
-
 class TestDecisionLogic:
     def test_is_allowed_true_when_no_disallow_rule_matches(self, monkeypatch):
         monkeypatch.setattr(robots, "fetch_html", lambda url, **kwargs: "User-agent: *\nAllow: /\n")
@@ -154,23 +144,23 @@ class TestGuardInheritance:
         result = checker.check("ftp://example.com/x")
         assert result == RobotsCheckResult(False, ROBOTS_FETCH_FAILED)
 
-    def test_is_allowed_false_when_robots_txt_response_exceeds_size_cap(self, monkeypatch):
+    def test_is_allowed_false_when_robots_txt_response_exceeds_size_cap(self, monkeypatch, install_mock_transport):
         def handler(request):
             body = b"x" * (MAX_RESPONSE_BYTES + 1)
             return httpx.Response(200, headers={"content-type": "text/plain"}, content=body)
 
-        _install_transport(monkeypatch, handler)
+        install_mock_transport(monkeypatch, handler)
         monkeypatch.setattr(fetching, "validate_fetch_url", lambda *a, **k: None)
 
         checker = RobotsChecker()
         result = checker.check("https://example.com/page")
         assert result == RobotsCheckResult(False, ROBOTS_FETCH_FAILED)
 
-    def test_is_allowed_false_when_robots_txt_fetch_times_out(self, monkeypatch):
+    def test_is_allowed_false_when_robots_txt_fetch_times_out(self, monkeypatch, install_mock_transport):
         def handler(request):
             raise httpx.ReadTimeout("timed out", request=request)
 
-        _install_transport(monkeypatch, handler)
+        install_mock_transport(monkeypatch, handler)
         monkeypatch.setattr(fetching, "validate_fetch_url", lambda *a, **k: None)
 
         checker = RobotsChecker()
