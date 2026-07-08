@@ -201,7 +201,14 @@
           <h2>검토 액션</h2>
           {% if is_pending %}
             <p class="panel-note">승인하면 공개 행사 목록에 즉시 노출됩니다.</p>
-            <div class="action-stack">
+            <div class="field full">
+              <label for="draft-reject-reason">반려 사유 (선택)</label>
+              <textarea id="draft-reject-reason" placeholder="반려 사유를 입력하세요 (선택)"></textarea>
+            </div>
+            <div
+              class="action-stack"
+              data-list-url="{% if request.GET.status == 'pending' or request.GET.status == 'approved' or request.GET.status == 'rejected' %}/staff/drafts/?status={{ request.GET.status }}{% else %}/staff/drafts/{% endif %}"
+            >
               <button
                 id="draft-approve-btn"
                 class="action-button"
