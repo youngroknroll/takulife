@@ -2,6 +2,7 @@
 import pytest
 
 from drafts.models import EventDraft
+from events.models import Event
 from staff.models import StaffActionLog
 from staff.queries import recent_staff_actions
 
@@ -50,3 +51,22 @@ def test_recent_staff_actions_exposes_actor_and_target_draft_without_error(make_
 
     assert result[0].actor.email == actor.email
     assert result[0].target_draft.extracted_title == "드래프트 최근"
+
+
+@pytest.mark.django_db
+def test_recent_staff_actions_selects_related_target_event(
+    make_user, django_assert_num_queries
+):
+    """PR-D1 item 1: select_related must cover target_event too, so reading
+    target_event off each row costs no extra query (N+1 guard)."""
+    actor = make_user(is_staff=True)
+    event = Event.objects.create(
+        title="최근 이벤트", publish_status=Event.PublishStatus.PUBLISHED
+    )
+    StaffActionLog.objects.create(
+        actor=actor, action=StaffActionLog.Action.EVENT_UPDATE, target_event=event
+    )
+
+    with django_assert_num_queries(1):
+        result = recent_staff_actions()
+        assert result[0].target_event.title == "최근 이벤트"

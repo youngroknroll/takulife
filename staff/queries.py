@@ -9,15 +9,18 @@ from .models import StaffActionLog
 def recent_staff_actions(limit=10):
     """Return the most recent StaffActionLog rows, newest first, limited.
 
-    select_related("actor", "target_draft") avoids N+1 queries when the
-    dashboard template reads actor email / draft title for each row.
+    select_related("actor", "target_draft", "target_event") avoids N+1
+    queries when the dashboard template reads actor email / draft title /
+    event title for each row.
 
     Returns full StaffActionLog objects (not a dict projection): this is a
     staff-internal read, so exposing the full model here is safe. The
     dashboard template itself only renders actor/action/target_draft/
-    created_at and must not render ip_address/user_agent (those stay
-    superuser-only, surfaced only via staff/admin.py).
+    target_event/created_at and must not render ip_address/user_agent
+    (those stay superuser-only, surfaced only via staff/admin.py).
     """
     return list(
-        StaffActionLog.objects.select_related("actor", "target_draft").all()[:limit]
+        StaffActionLog.objects.select_related(
+            "actor", "target_draft", "target_event"
+        ).all()[:limit]
     )

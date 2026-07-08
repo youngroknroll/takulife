@@ -149,3 +149,35 @@ class TestListDraftSources:
         result = list(list_draft_sources())
 
         assert result == []
+
+
+@pytest.mark.django_db
+class TestEnabledDraftSourcesExist:
+    def test_returns_false_when_no_sources_exist(self):
+        from drafts.queries import enabled_draft_sources_exist
+
+        assert enabled_draft_sources_exist() is False
+
+    def test_returns_false_when_only_disabled_sources_exist(self):
+        from drafts.queries import enabled_draft_sources_exist
+
+        DraftSource.objects.create(
+            name="disabled-source",
+            url="https://example.com/disabled-feed/",
+            source_type=DraftSource.SourceType.RSS,
+            enabled=False,
+        )
+
+        assert enabled_draft_sources_exist() is False
+
+    def test_returns_true_when_an_enabled_source_exists(self):
+        from drafts.queries import enabled_draft_sources_exist
+
+        DraftSource.objects.create(
+            name="enabled-source",
+            url="https://example.com/enabled-feed/",
+            source_type=DraftSource.SourceType.RSS,
+            enabled=True,
+        )
+
+        assert enabled_draft_sources_exist() is True

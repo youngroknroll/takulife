@@ -1,12 +1,15 @@
 """Staff Console (/staff/) — PR-1a: auth pin, console gate, dashboard, redirects."""
 import base64
+import datetime
 import re
 import secrets
 import string
 
 import pytest
+from django.utils import timezone
 
 from drafts.models import DraftSource, EventDraft
+from events.models import Event
 from staff.models import StaffActionLog
 
 
@@ -183,6 +186,47 @@ def test_staff_dashboard_renders_home_categories_action_label(client, make_user)
 
 
 @pytest.mark.django_db
+def test_staff_dashboard_renders_draft_discover_action_label(client, make_user):
+    """PR-D1 item 1: draft_discover must render its own Korean label, not
+    fall through to the "홈 카테고리 변경" catch-all."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "드래프트 수집 실행" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_renders_event_update_action_label_and_target_event_link(
+    client, make_user
+):
+    """PR-D1 item 1: event_* actions get their own Korean label and the
+    target column links to the event's staff edit page (not "-")."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    event = Event.objects.create(
+        title="이벤트 A", publish_status=Event.PublishStatus.PUBLISHED
+    )
+    StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.EVENT_UPDATE, target_event=event
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "이벤트 수정" in content
+    assert f"/staff/events/{event.pk}/edit/" in content
+    assert "이벤트 A" in content
+
+
+@pytest.mark.django_db
 def test_staff_dashboard_context_includes_draft_sources_ordered(client, make_user):
     """PR-5b: dashboard() must pass draft_sources via drafts.queries.list_draft_sources()
     (-enabled, name ordering), not a raw DraftSource query in the view."""
@@ -206,6 +250,168 @@ def test_staff_dashboard_context_includes_draft_sources_ordered(client, make_use
     assert resp.status_code == 200
     draft_sources = resp.context["draft_sources"]
     assert list(draft_sources) == [enabled, disabled]
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_error_badge_and_summary_for_source_with_last_error(
+    client, make_user
+):
+    """PR-D1 item 3: a source with a non-empty last_error gets an error
+    badge plus a (truncated) summary of the error text."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    DraftSource.objects.create(
+        name="에러 소스",
+        url="https://example.com/error-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_error="Connection timed out while fetching feed",
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "badge-error" in content
+    assert "Connection timed out" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_stale_badge_for_enabled_source_never_checked(
+    client, make_user
+):
+    """PR-D1 item 3: an enabled source that has never been checked
+    (last_checked_at is None) is stale."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    DraftSource.objects.create(
+        name="미수집 소스",
+        url="https://example.com/never-checked-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=None,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert "badge-stale" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_stale_badge_for_enabled_source_past_threshold(
+    client, make_user, settings
+):
+    """PR-D1 item 3: an enabled source checked longer ago than
+    DRAFT_SOURCE_STALE_HOURS is stale."""
+    settings.DRAFT_SOURCE_STALE_HOURS = 48
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    DraftSource.objects.create(
+        name="지연 소스",
+        url="https://example.com/stale-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=timezone.now() - datetime.timedelta(hours=49),
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert "badge-stale" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_enabled_source_within_threshold_not_stale(
+    client, make_user, settings
+):
+    settings.DRAFT_SOURCE_STALE_HOURS = 48
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    DraftSource.objects.create(
+        name="정상 소스",
+        url="https://example.com/fresh-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=timezone.now() - datetime.timedelta(hours=1),
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert "badge-stale" not in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_disabled_source_never_checked_not_stale(client, make_user):
+    """PR-D1 item 3: a disabled source is excluded from the stale check
+    regardless of last_checked_at (it is not expected to be collecting)."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    DraftSource.objects.create(
+        name="비활성 소스",
+        url="https://example.com/disabled-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=False,
+        last_checked_at=None,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert "badge-stale" not in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_no_discovery_run_history_when_none_logged(
+    client, make_user
+):
+    """PR-D1 item 4: with no DRAFT_DISCOVER log at all, the dashboard shows
+    "실행 이력 없음" rather than a blank/misleading timestamp."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert resp.context["last_discovery_run_at"] is None
+    assert "실행 이력 없음" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_no_discovery_run_history_when_only_other_actions_logged(
+    client, make_user
+):
+    """PR-D1 item 4: a non-DRAFT_DISCOVER log entry must not be mistaken for
+    a discovery run."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert resp.context["last_discovery_run_at"] is None
+    assert "실행 이력 없음" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_last_discovery_run_time(client, make_user):
+    """PR-D1 item 4: the most recent DRAFT_DISCOVER log's created_at is
+    surfaced as last_discovery_run_at and rendered near the run button."""
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    log = StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert resp.context["last_discovery_run_at"] == log.created_at
+    content = resp.content.decode()
+    assert "마지막 실행" in content
+    assert "실행 이력 없음" not in content
 
 
 @pytest.mark.django_db

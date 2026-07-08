@@ -17,10 +17,23 @@ tests/test_discover_drafts_command.py and is out of scope here.
 import pytest
 from django.core.management import CommandError
 
+from drafts.models import DraftSource
 from staff.models import StaffActionLog
 
 
 RUN_URL = "/staff/draft-discovery/run/"
+
+
+def _create_enabled_source():
+    """A minimal enabled DraftSource — the actual-run tests below need at
+    least one so they exercise the command-execution path rather than the
+    "활성 소스 0건" precheck short-circuit (PR-D1 item 6)."""
+    return DraftSource.objects.create(
+        name="enabled-source",
+        url="https://example.com/enabled-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+    )
 
 
 @pytest.mark.django_db
@@ -42,13 +55,17 @@ def test_run_non_staff_returns_403(client, make_user):
 
 
 @pytest.mark.django_db
-def test_run_get_not_allowed(client, make_user):
+def test_run_get_redirects_to_dashboard_instead_of_405(client, make_user):
+    """PR-D1 item 2: a GET (e.g. a session-expired POST bounced through
+    login's `next=` redirect) must not dead-end on a 405 — it redirects back
+    to the dashboard instead, same as the flag-off short-circuit."""
     staff = make_user(is_staff=True)
     client.force_login(staff)
 
     resp = client.get(RUN_URL)
 
-    assert resp.status_code == 405
+    assert resp.status_code == 302
+    assert resp.url == "/staff/dashboard/"
 
 
 @pytest.mark.django_db
@@ -73,12 +90,43 @@ def test_run_flag_off_shows_info_message_and_does_not_execute_command(
 
 
 @pytest.mark.django_db
+def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(
+    client, make_user, settings, monkeypatch
+):
+    """PR-D1 item 6: flag on, but zero enabled DraftSource rows — the same
+    "no-op is an intended state" treatment as the flag-off case: an info
+    message, no command execution, no audit log entry."""
+    settings.DRAFT_DISCOVERY_ENABLED = True
+    staff = make_user(is_staff=True)
+    client.force_login(staff)
+    DraftSource.objects.create(
+        name="disabled-source",
+        url="https://example.com/disabled-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=False,
+    )
+
+    def _fail_if_called(*args, **kwargs):
+        raise AssertionError("discover_drafts must not run with 0 enabled sources")
+
+    monkeypatch.setattr("staff.views.call_command", _fail_if_called)
+
+    resp = client.post(RUN_URL, follow=True)
+
+    assert resp.status_code == 200
+    messages = [str(m) for m in resp.context["messages"]]
+    assert any("활성 수집 소스가 없습니다" in m for m in messages)
+    assert not StaffActionLog.objects.filter(action=StaffActionLog.Action.DRAFT_DISCOVER).exists()
+
+
+@pytest.mark.django_db
 def test_run_success_shows_summary_message_and_writes_audit_log(
     client, make_user, settings, monkeypatch
 ):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff = make_user(is_staff=True)
     client.force_login(staff)
+    _create_enabled_source()
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):
         assert name == "discover_drafts"
@@ -104,6 +152,7 @@ def test_run_partial_failure_shows_error_message_and_writes_audit_log(
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff = make_user(is_staff=True)
     client.force_login(staff)
+    _create_enabled_source()
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):
         stdout.write("발견 1건 (상한 도달로 0건 보류) / 생성 0건\n")
@@ -127,6 +176,7 @@ def test_run_unclassified_exception_shows_error_message_and_does_not_propagate(
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff = make_user(is_staff=True)
     client.force_login(staff)
+    _create_enabled_source()
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):
         raise RuntimeError("boom")
