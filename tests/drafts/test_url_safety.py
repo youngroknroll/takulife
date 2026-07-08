@@ -3,8 +3,6 @@
 Covers the scheme/hostname rejections, literal-IP private-range blocking, and
 the DNS-resolver path (a public hostname that resolves to a private address).
 """
-import socket
-
 import pytest
 
 from drafts.url_safety import (
@@ -12,14 +10,6 @@ from drafts.url_safety import (
     UnsafeFetchUrlError,
     validate_fetch_url,
 )
-
-
-def _resolver_returning(ip, port=443):
-    """Build a fake getaddrinfo-style resolver yielding a single address."""
-    def _resolve(host, prt, *, type=None):
-        return [(socket.AF_INET, socket.SOCK_STREAM, 0, "", (ip, port))]
-
-    return _resolve
 
 
 class TestSchemeAndHost:
@@ -59,18 +49,18 @@ class TestLiteralIp:
 
 
 class TestResolverPath:
-    def test_hostname_resolving_to_private_ip_rejected(self):
+    def test_hostname_resolving_to_private_ip_rejected(self, fake_resolver):
         with pytest.raises(UnsafeFetchUrlError):
             validate_fetch_url(
                 "http://evil.example.com/",
-                resolver=_resolver_returning("10.1.2.3"),
+                resolver=fake_resolver("10.1.2.3"),
             )
 
-    def test_hostname_resolving_to_public_ip_allowed(self):
+    def test_hostname_resolving_to_public_ip_allowed(self, fake_resolver):
         assert (
             validate_fetch_url(
                 "https://good.example.com/",
-                resolver=_resolver_returning("93.184.216.34"),
+                resolver=fake_resolver("93.184.216.34"),
             )
             is None
         )

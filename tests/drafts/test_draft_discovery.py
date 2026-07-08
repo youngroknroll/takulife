@@ -30,44 +30,11 @@ ENTITY_EXPANSION_XML = """<?xml version="1.0"?>
 """
 
 
-def _rss(*, link=None, description_anchors=None, content_encoded_anchors=None):
-    """Build a minimal single-item WordPress-style RSS feed. `link` is the
-    item's own <link> text; `description_anchors` is a list of raw href
-    strings embedded as <a href="..."> markup inside the <description>
-    CDATA block, matching how atzip's roundup posts link out.
-    `content_encoded_anchors`, when given, additionally embeds a
-    <content:encoded> CDATA block (WordPress's full-post-HTML field) and
-    declares the feed's real xmlns:content namespace on <rss> — matching
-    atzip.kr/feed/'s actual structure, where <description> holds only an
-    excerpt + a self-domain "read more" anchor and the real body HTML (with
-    outbound official links) lives in <content:encoded>."""
-    link_xml = f"<link>{link}</link>" if link else ""
-    anchors_html = "".join(f'<a href="{href}">link</a>' for href in (description_anchors or []))
-    description_xml = f"<description><![CDATA[{anchors_html}]]></description>" if anchors_html else ""
-    encoded_anchors_html = "".join(
-        f'<a href="{href}">link</a>' for href in (content_encoded_anchors or [])
-    )
-    encoded_xml = (
-        f"<content:encoded><![CDATA[{encoded_anchors_html}]]></content:encoded>"
-        if encoded_anchors_html
-        else ""
-    )
-    content_namespace = (
-        ' xmlns:content="http://purl.org/rss/1.0/modules/content/"'
-        if content_encoded_anchors
-        else ""
-    )
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0"{content_namespace}><channel><title>atzip</title>
-<item>{link_xml}{description_xml}{encoded_xml}</item>
-</channel></rss>"""
-
-
 class TestExtractLinksRss:
     BASE_URL = "https://atzip.kr/feed/"
 
-    def test_extracts_link_element_and_description_anchors(self):
-        content = _rss(
+    def test_extracts_link_element_and_description_anchors(self, rss_xml):
+        content = rss_xml(
             link="https://atzip.kr/2026/07/04/goods-reservation/",
             description_anchors=[
                 "https://official-site.com/event?utm_source=atzip&utm_medium=feed",
@@ -81,8 +48,8 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_removes_self_domain_links(self):
-        content = _rss(
+    def test_removes_self_domain_links(self, rss_xml):
+        content = rss_xml(
             link="https://atzip.kr/2026/07/04/self/",
             description_anchors=["https://official-site.com/event"],
         )
@@ -91,8 +58,8 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_self_domain_match_is_exact_hostname_not_subdomain(self):
-        content = _rss(
+    def test_self_domain_match_is_exact_hostname_not_subdomain(self, rss_xml):
+        content = rss_xml(
             link="https://shop.atzip.kr/goods/1",
             description_anchors=["https://official-site.com/event"],
         )
@@ -101,8 +68,8 @@ class TestExtractLinksRss:
 
         assert "https://shop.atzip.kr/goods/1" in result
 
-    def test_self_domain_match_is_case_insensitive(self):
-        content = _rss(
+    def test_self_domain_match_is_case_insensitive(self, rss_xml):
+        content = rss_xml(
             link="https://ATZIP.KR/2026/07/04/self/",
             description_anchors=["https://official-site.com/event"],
         )
@@ -119,8 +86,8 @@ class TestExtractLinksRss:
             "https://www.instagram.com/example",
         ],
     )
-    def test_removes_sns_domain_links(self, sns_url):
-        content = _rss(description_anchors=["https://official-site.com/event", sns_url])
+    def test_removes_sns_domain_links(self, sns_url, rss_xml):
+        content = rss_xml(description_anchors=["https://official-site.com/event", sns_url])
 
         result = extract_links_rss(content, self.BASE_URL)
 
@@ -134,30 +101,30 @@ class TestExtractLinksRss:
             "https://official-site.com/banner.png?v=2",
         ],
     )
-    def test_removes_image_extension_links(self, image_url):
-        content = _rss(description_anchors=["https://official-site.com/event", image_url])
+    def test_removes_image_extension_links(self, image_url, rss_xml):
+        content = rss_xml(description_anchors=["https://official-site.com/event", image_url])
 
         result = extract_links_rss(content, self.BASE_URL)
 
         assert result == ["https://official-site.com/event"]
 
-    def test_strips_tracking_query_params_but_keeps_url(self):
-        content = _rss(description_anchors=["https://official-site.com/event?utm_source=x&id=1"])
+    def test_strips_tracking_query_params_but_keeps_url(self, rss_xml):
+        content = rss_xml(description_anchors=["https://official-site.com/event?utm_source=x&id=1"])
 
         result = extract_links_rss(content, self.BASE_URL)
 
         assert result == ["https://official-site.com/event?id=1"]
 
     @pytest.mark.parametrize("non_http_url", ["mailto:contact@example.com", "javascript:void(0)"])
-    def test_removes_non_http_scheme_links(self, non_http_url):
-        content = _rss(description_anchors=["https://official-site.com/event", non_http_url])
+    def test_removes_non_http_scheme_links(self, non_http_url, rss_xml):
+        content = rss_xml(description_anchors=["https://official-site.com/event", non_http_url])
 
         result = extract_links_rss(content, self.BASE_URL)
 
         assert result == ["https://official-site.com/event"]
 
-    def test_removes_duplicate_links_preserving_order(self):
-        content = _rss(
+    def test_removes_duplicate_links_preserving_order(self, rss_xml):
+        content = rss_xml(
             description_anchors=[
                 "https://official-site.com/event-a?utm_source=x",
                 "https://official-site.com/event-b",
@@ -180,10 +147,10 @@ class TestExtractLinksRss:
 
         assert result == []
 
-    def test_accepts_str_with_xml_encoding_declaration(self):
+    def test_accepts_str_with_xml_encoding_declaration(self, rss_xml):
         """§2-4: fetch_html returns a decoded str; a str containing an
         <?xml ... encoding="..."?> declaration must not raise ValueError."""
-        content = _rss(description_anchors=["https://official-site.com/event"])
+        content = rss_xml(description_anchors=["https://official-site.com/event"])
         assert content.startswith('<?xml version="1.0" encoding="UTF-8"?>')
 
         result = extract_links_rss(content, self.BASE_URL)
@@ -217,24 +184,24 @@ class TestExtractLinksRss:
 
         assert result == ['https://official-site.com/event?token=encoding%3D%22x%22']
 
-    def test_accepts_content_with_leading_bom(self):
+    def test_accepts_content_with_leading_bom(self, rss_xml):
         """Characterization test: aniplus's items.xml RSS feed ships with a
         leading U+FEFF BOM character ahead of the <?xml ... ?> declaration.
         _parse_xml already handles this — the BOM survives the UTF-8
         re-encode as the standard 3-byte UTF-8 BOM sequence, which expat
         (defusedxml's backend) skips transparently."""
-        content = "﻿" + _rss(description_anchors=["https://official-site.com/event"])
+        content = "﻿" + rss_xml(description_anchors=["https://official-site.com/event"])
 
         result = extract_links_rss(content, self.BASE_URL)
 
         assert result == ["https://official-site.com/event"]
 
-    def test_self_domain_match_ignores_port(self):
+    def test_self_domain_match_ignores_port(self, rss_xml):
         """Characterization test: self-domain matching compares hostname
         only (urlsplit(url).hostname never includes the port), so a
         same-host link on a different port than base_url's is still treated
         as self-domain and removed."""
-        content = _rss(
+        content = rss_xml(
             description_anchors=[
                 "https://atzip.kr:9443/x",
                 "https://official-site.com/event",
@@ -245,14 +212,14 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_extracts_content_encoded_anchors_and_ignores_self_domain_description(self):
+    def test_extracts_content_encoded_anchors_and_ignores_self_domain_description(self, rss_xml):
         """Real-source gap (atzip.kr/feed/ smoke): the <description> field
         holds only an excerpt + a self-domain "read more" anchor; the actual
         body HTML with outbound official links lives in <content:encoded>
         (CDATA, xmlns:content namespace). Both fields must be scanned for
         anchors, and the existing filter chain (self-domain, SNS) must still
         apply to whatever content:encoded contains."""
-        content = _rss(
+        content = rss_xml(
             link="https://atzip.kr/2026/07/04/goods-reservation/",
             description_anchors=["https://atzip.kr/2026/07/04/goods-reservation/"],
             content_encoded_anchors=[
@@ -266,12 +233,12 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_protocol_relative_urls_are_resolved_and_self_domain_still_removed(self):
+    def test_protocol_relative_urls_are_resolved_and_self_domain_still_removed(self, rss_xml):
         """Characterization test: a protocol-relative href ("//host/path")
         resolves against base_url's scheme via urljoin — an official-site
         link survives, but a protocol-relative link back to atzip's own
         domain is still removed by the RSS self-domain rule."""
-        content = _rss(
+        content = rss_xml(
             description_anchors=["//official-site.com/event", "//atzip.kr/x"]
         )
 
@@ -280,30 +247,11 @@ class TestExtractLinksRss:
         assert result == ["https://official-site.com/event"]
 
 
-def _sitemap(*locs):
-    """Build a minimal sitemap.xml, including the sitemaps.org xmlns
-    declaration real sitemaps (aniplustv) ship with."""
-    loc_xml = "".join(f"<url><loc>{loc}</loc></url>" for loc in locs)
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{loc_xml}</urlset>"""
-
-
-def _sitemap_entries(*entries):
-    """Build a sitemap.xml from (loc, lastmod-or-None) pairs — real sitemaps
-    do not guarantee every <url> carries a <lastmod> sibling."""
-    url_xml = "".join(
-        f"<url><loc>{loc}</loc>{f'<lastmod>{lastmod}</lastmod>' if lastmod else ''}</url>"
-        for loc, lastmod in entries
-    )
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{url_xml}</urlset>"""
-
-
 class TestExtractLinksSitemap:
     BASE_URL = "https://aniplustv.com/sitemap.xml"
 
-    def test_extracts_loc_elements(self):
-        content = _sitemap(
+    def test_extracts_loc_elements(self, sitemap_xml):
+        content = sitemap_xml(
             "https://aniplustv.com/events/1", "https://aniplustv.com/events/2"
         )
 
@@ -314,10 +262,10 @@ class TestExtractLinksSitemap:
             "https://aniplustv.com/events/2",
         ]
 
-    def test_keeps_same_domain_links(self):
+    def test_keeps_same_domain_links(self, sitemap_xml):
         """Sitemap sources point directly at an official site's own pages —
         the opposite of RSS, which links out from a roundup post."""
-        content = _sitemap("https://aniplustv.com/events/1")
+        content = sitemap_xml("https://aniplustv.com/events/1")
 
         result = extract_links_sitemap(content, self.BASE_URL)
 
@@ -327,15 +275,15 @@ class TestExtractLinksSitemap:
         "image_url",
         ["https://aniplustv.com/banner.jpg", "https://aniplustv.com/banner.png"],
     )
-    def test_removes_image_extension_links(self, image_url):
-        content = _sitemap("https://aniplustv.com/events/1", image_url)
+    def test_removes_image_extension_links(self, image_url, sitemap_xml):
+        content = sitemap_xml("https://aniplustv.com/events/1", image_url)
 
         result = extract_links_sitemap(content, self.BASE_URL)
 
         assert result == ["https://aniplustv.com/events/1"]
 
-    def test_strips_tracking_query_params_and_dedups(self):
-        content = _sitemap(
+    def test_strips_tracking_query_params_and_dedups(self, sitemap_xml):
+        content = sitemap_xml(
             "https://aniplustv.com/events/1",
             "https://aniplustv.com/events/1?utm_source=x",
         )
@@ -352,10 +300,10 @@ class TestExtractLinksSitemap:
 
         assert result == []
 
-    def test_accepts_str_with_xml_encoding_declaration(self):
+    def test_accepts_str_with_xml_encoding_declaration(self, sitemap_xml):
         """§2-4: the main smoke-test source (aniplustv sitemap) breaks
         exactly on this path — a str containing an encoding declaration."""
-        content = _sitemap("https://aniplustv.com/events/1")
+        content = sitemap_xml("https://aniplustv.com/events/1")
         assert content.startswith('<?xml version="1.0" encoding="UTF-8"?>')
 
         result = extract_links_sitemap(content, self.BASE_URL)
@@ -372,18 +320,18 @@ class TestExtractLinksSitemap:
         with pytest.raises(DiscoveryParseError):
             extract_links_sitemap(malformed, self.BASE_URL)
 
-    def test_accepts_content_with_leading_bom(self):
+    def test_accepts_content_with_leading_bom(self, sitemap_xml):
         """Characterization test mirroring aniplustv's real items.xml, which
         ships with a leading U+FEFF BOM character (see TestExtractLinksRss's
         equivalent test for why _parse_xml already tolerates this)."""
-        content = "﻿" + _sitemap("https://aniplustv.com/events/1")
+        content = "﻿" + sitemap_xml("https://aniplustv.com/events/1")
 
         result = extract_links_sitemap(content, self.BASE_URL)
 
         assert result == ["https://aniplustv.com/events/1"]
 
-    def test_sorts_by_lastmod_descending(self):
-        content = _sitemap_entries(
+    def test_sorts_by_lastmod_descending(self, sitemap_xml):
+        content = sitemap_xml(
             ("https://aniplustv.com/events/1", "2026-01-01"),
             ("https://aniplustv.com/events/2", "2026-07-01"),
             ("https://aniplustv.com/events/3", "2026-03-15"),
@@ -397,8 +345,8 @@ class TestExtractLinksSitemap:
             "https://aniplustv.com/events/1",
         ]
 
-    def test_entries_without_lastmod_are_kept_last_in_document_order(self):
-        content = _sitemap_entries(
+    def test_entries_without_lastmod_are_kept_last_in_document_order(self, sitemap_xml):
+        content = sitemap_xml(
             ("https://aniplustv.com/events/no-date-a", None),
             ("https://aniplustv.com/events/dated", "2026-07-01"),
             ("https://aniplustv.com/events/no-date-b", None),
@@ -586,15 +534,15 @@ class TestExtractLinksHtml:
 
 
 class TestExtractCandidateUrls:
-    def test_dispatches_rss_source_type(self):
-        content = _rss(description_anchors=["https://official-site.com/event"])
+    def test_dispatches_rss_source_type(self, rss_xml):
+        content = rss_xml(description_anchors=["https://official-site.com/event"])
 
         result = extract_candidate_urls("rss", content, "https://atzip.kr/feed/")
 
         assert result == ["https://official-site.com/event"]
 
-    def test_dispatches_sitemap_source_type(self):
-        content = _sitemap("https://aniplustv.com/events/1")
+    def test_dispatches_sitemap_source_type(self, sitemap_xml):
+        content = sitemap_xml("https://aniplustv.com/events/1")
 
         result = extract_candidate_urls("sitemap", content, "https://aniplustv.com/sitemap.xml")
 
