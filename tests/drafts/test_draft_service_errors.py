@@ -6,7 +6,6 @@ responses. Both layers' branches are exercised here with fetch_html / the
 service stubbed so no network is touched.
 """
 import pytest
-from django.test import Client
 
 import drafts.services as services
 import drafts.views as draft_views
@@ -54,11 +53,6 @@ class TestCreateDraftErrorMapping:
 
 @pytest.mark.django_db
 class TestAdminCreateEndpointErrorResponses:
-    def _admin_client(self, make_user):
-        client = Client()
-        client.force_login(make_user(is_staff=True, is_superuser=True))
-        return client
-
     def _post(self, client):
         return client.post(
             "/api/event-drafts/",
@@ -66,26 +60,29 @@ class TestAdminCreateEndpointErrorResponses:
             content_type="application/json",
         )
 
-    def test_unsupported_content_returns_400(self, make_user, monkeypatch):
+    def test_unsupported_content_returns_400(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
             _raise(DraftCreationUnsupportedContentError()),
         )
-        resp = self._post(self._admin_client(make_user))
+        _, client = staff_client(is_superuser=True)
+        resp = self._post(client)
         assert resp.status_code == 400
 
-    def test_response_too_large_returns_400(self, make_user, monkeypatch):
+    def test_response_too_large_returns_400(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
             _raise(DraftCreationResponseTooLargeError()),
         )
-        resp = self._post(self._admin_client(make_user))
+        _, client = staff_client(is_superuser=True)
+        resp = self._post(client)
         assert resp.status_code == 400
 
-    def test_empty_extraction_returns_400(self, make_user, monkeypatch):
+    def test_empty_extraction_returns_400(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
             _raise(DraftCreationEmptyExtractionError()),
         )
-        resp = self._post(self._admin_client(make_user))
+        _, client = staff_client(is_superuser=True)
+        resp = self._post(client)
         assert resp.status_code == 400

@@ -14,23 +14,6 @@ from staff.models import StaffActionLog
 CREATE_URL = "/staff/events/new/"
 
 
-def _valid_payload(**overrides):
-    payload = {
-        "title": "새 이벤트",
-        "category": "popup_store",
-        "work_title": "작품명",
-        "location_name": "장소명",
-        "region": "seoul",
-        "start_date": "2026-09-01",
-        "end_date": "2026-09-10",
-        "official_url": "https://example.com/new-event",
-        "source_name": "공식 출처",
-        "summary": "요약",
-    }
-    payload.update(overrides)
-    return payload
-
-
 @pytest.mark.django_db
 def test_anonymous_redirects_to_login(client):
     resp = client.get(CREATE_URL)
@@ -50,9 +33,8 @@ def test_non_staff_returns_403(client, make_user):
 
 
 @pytest.mark.django_db
-def test_get_renders_blank_form(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_get_renders_blank_form(staff_client):
+    staff, client = staff_client()
 
     resp = client.get(CREATE_URL)
 
@@ -61,11 +43,10 @@ def test_get_renders_blank_form(client, make_user):
 
 
 @pytest.mark.django_db
-def test_post_creates_published_event_and_writes_audit_log(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_post_creates_published_event_and_writes_audit_log(staff_client, staff_event_payload):
+    staff, client = staff_client()
 
-    resp = client.post(CREATE_URL, _valid_payload())
+    resp = client.post(CREATE_URL, staff_event_payload())
 
     assert resp.status_code == 302
     event = Event.objects.get(official_url="https://example.com/new-event")
@@ -79,15 +60,12 @@ def test_post_creates_published_event_and_writes_audit_log(client, make_user):
 
 
 @pytest.mark.django_db
-def test_post_blank_title_returns_400_with_field_error_and_does_not_create(
-    client, make_user
-):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_post_blank_title_returns_400_with_field_error_and_does_not_create(staff_client, staff_event_payload):
+    staff, client = staff_client()
 
     resp = client.post(
         CREATE_URL,
-        _valid_payload(title="   ", official_url="https://example.com/blank-title-create"),
+        staff_event_payload(title="   ", official_url="https://example.com/blank-title-create"),
     )
 
     assert resp.status_code == 400
@@ -97,15 +75,14 @@ def test_post_blank_title_returns_400_with_field_error_and_does_not_create(
 
 @pytest.mark.django_db
 def test_post_duplicate_official_url_returns_400_with_field_error(
-    client, make_user, make_event
+    staff_client, make_event, staff_event_payload
 ):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     make_event(title="기존 행사", official_url="https://example.com/taken-create")
 
     resp = client.post(
         CREATE_URL,
-        _valid_payload(official_url="https://example.com/taken-create"),
+        staff_event_payload(official_url="https://example.com/taken-create"),
     )
 
     assert resp.status_code == 400
@@ -114,9 +91,8 @@ def test_post_duplicate_official_url_returns_400_with_field_error(
 
 
 @pytest.mark.django_db
-def test_list_page_links_to_create_page(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_list_page_links_to_create_page(staff_client):
+    staff, client = staff_client()
 
     resp = client.get("/staff/events/")
 

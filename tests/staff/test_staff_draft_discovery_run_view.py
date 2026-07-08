@@ -55,12 +55,11 @@ def test_run_non_staff_returns_403(client, make_user):
 
 
 @pytest.mark.django_db
-def test_run_get_redirects_to_dashboard_instead_of_405(client, make_user):
+def test_run_get_redirects_to_dashboard_instead_of_405(staff_client):
     """PR-D1 item 2: a GET (e.g. a session-expired POST bounced through
     login's `next=` redirect) must not dead-end on a 405 — it redirects back
     to the dashboard instead, same as the flag-off short-circuit."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
 
     resp = client.get(RUN_URL)
 
@@ -69,12 +68,9 @@ def test_run_get_redirects_to_dashboard_instead_of_405(client, make_user):
 
 
 @pytest.mark.django_db
-def test_run_flag_off_shows_info_message_and_does_not_execute_command(
-    client, make_user, settings, monkeypatch
-):
+def test_run_flag_off_shows_info_message_and_does_not_execute_command(staff_client, settings, monkeypatch):
     settings.DRAFT_DISCOVERY_ENABLED = False
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
 
     def _fail_if_called(*args, **kwargs):
         raise AssertionError("discover_drafts must not run while the flag is off")
@@ -90,15 +86,12 @@ def test_run_flag_off_shows_info_message_and_does_not_execute_command(
 
 
 @pytest.mark.django_db
-def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(
-    client, make_user, settings, monkeypatch
-):
+def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(staff_client, settings, monkeypatch):
     """PR-D1 item 6: flag on, but zero enabled DraftSource rows — the same
     "no-op is an intended state" treatment as the flag-off case: an info
     message, no command execution, no audit log entry."""
     settings.DRAFT_DISCOVERY_ENABLED = True
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     DraftSource.objects.create(
         name="disabled-source",
         url="https://example.com/disabled-feed/",
@@ -120,12 +113,9 @@ def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(
 
 
 @pytest.mark.django_db
-def test_run_success_shows_summary_message_and_writes_audit_log(
-    client, make_user, settings, monkeypatch
-):
+def test_run_success_shows_summary_message_and_writes_audit_log(staff_client, settings, monkeypatch):
     settings.DRAFT_DISCOVERY_ENABLED = True
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     _create_enabled_source()
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):
@@ -146,12 +136,9 @@ def test_run_success_shows_summary_message_and_writes_audit_log(
 
 
 @pytest.mark.django_db
-def test_run_partial_failure_shows_error_message_and_writes_audit_log(
-    client, make_user, settings, monkeypatch
-):
+def test_run_partial_failure_shows_error_message_and_writes_audit_log(staff_client, settings, monkeypatch):
     settings.DRAFT_DISCOVERY_ENABLED = True
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     _create_enabled_source()
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):
@@ -170,12 +157,9 @@ def test_run_partial_failure_shows_error_message_and_writes_audit_log(
 
 
 @pytest.mark.django_db
-def test_run_unclassified_exception_shows_error_message_and_does_not_propagate(
-    client, make_user, settings, monkeypatch
-):
+def test_run_unclassified_exception_shows_error_message_and_does_not_propagate(staff_client, settings, monkeypatch):
     settings.DRAFT_DISCOVERY_ENABLED = True
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     _create_enabled_source()
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):

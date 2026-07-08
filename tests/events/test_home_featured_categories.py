@@ -144,10 +144,8 @@ class TestStaffHomeCategoriesAuth:
 
         assert resp.status_code == 403
 
-    def test_staff_user_gets_200(self, make_user):
-        staff = make_user(is_staff=True)
-        client = Client()
-        client.force_login(staff)
+    def test_staff_user_gets_200(self, staff_client):
+        _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
 
@@ -160,14 +158,8 @@ class TestStaffHomeCategoriesAuth:
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesPost:
-    def _staff_client(self, make_user):
-        staff = make_user(is_staff=True)
-        client = Client()
-        client.force_login(staff)
-        return client
-
-    def test_post_saves_featured_categories_in_order(self, make_user):
-        client = self._staff_client(make_user)
+    def test_post_saves_featured_categories_in_order(self, staff_client):
+        _, client = staff_client()
 
         resp = client.post(
             "/staff/home-categories/",
@@ -183,9 +175,9 @@ class TestStaffHomeCategoriesPost:
         config = HomeConfig.get_solo()
         assert config.featured_categories == ["exhibition", "popup_store"]
 
-    def test_post_respects_order_field(self, make_user):
+    def test_post_respects_order_field(self, staff_client):
         """order_<slug> fields determine the sort; popup_store first here."""
-        client = self._staff_client(make_user)
+        _, client = staff_client()
 
         resp = client.post(
             "/staff/home-categories/",
@@ -201,9 +193,9 @@ class TestStaffHomeCategoriesPost:
         config = HomeConfig.get_solo()
         assert config.featured_categories == ["popup_store", "exhibition"]
 
-    def test_post_bogus_slug_in_form_data_ignored(self, make_user):
+    def test_post_bogus_slug_in_form_data_ignored(self, staff_client):
         """Crafted feature_<bogus> POST fields must not reach saved config."""
-        client = self._staff_client(make_user)
+        _, client = staff_client()
 
         resp = client.post(
             "/staff/home-categories/",
@@ -220,9 +212,9 @@ class TestStaffHomeCategoriesPost:
         assert "bogus_slug" not in config.featured_categories
         assert config.featured_categories == ["exhibition"]
 
-    def test_post_invalid_order_falls_back_safely(self, make_user):
+    def test_post_invalid_order_falls_back_safely(self, staff_client):
         """Non-integer order_<slug> must not raise 500."""
-        client = self._staff_client(make_user)
+        _, client = staff_client()
 
         resp = client.post(
             "/staff/home-categories/",
@@ -243,14 +235,8 @@ class TestStaffHomeCategoriesPost:
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesAuditLog:
-    def _staff_client(self, make_user):
-        staff = make_user(is_staff=True)
-        client = Client()
-        client.force_login(staff)
-        return staff, client
-
-    def test_post_writes_single_home_categories_log_entry(self, make_user):
-        staff, client = self._staff_client(make_user)
+    def test_post_writes_single_home_categories_log_entry(self, staff_client):
+        staff, client = staff_client()
 
         resp = client.post(
             "/staff/home-categories/",
@@ -271,16 +257,16 @@ class TestStaffHomeCategoriesAuditLog:
         assert entry.ip_address == "203.0.113.9"
         assert entry.user_agent == "pytest/1.0"
 
-    def test_get_writes_no_log(self, make_user):
-        _, client = self._staff_client(make_user)
+    def test_get_writes_no_log(self, staff_client):
+        _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
 
         assert resp.status_code == 200
         assert StaffActionLog.objects.count() == 0
 
-    def test_post_rolls_back_config_when_audit_log_write_fails(self, make_user, monkeypatch):
-        staff, client = self._staff_client(make_user)
+    def test_post_rolls_back_config_when_audit_log_write_fails(self, staff_client, monkeypatch):
+        staff, client = staff_client()
         original_categories = list(HomeConfig.get_solo().featured_categories)
 
         def fail_log_create(*args, **kwargs):

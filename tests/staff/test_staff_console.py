@@ -96,9 +96,8 @@ def test_anonymous_still_redirects_to_login_not_403(client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_returns_200_with_pending_count(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_dashboard_returns_200_with_pending_count(staff_client):
+    staff, client = staff_client()
     EventDraft.objects.create(
         source_url="https://example.com/a",
         extracted_title="드래프트 A",
@@ -129,9 +128,8 @@ def test_staff_dashboard_returns_200_with_pending_count(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_context_includes_recent_actions_newest_first(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_dashboard_context_includes_recent_actions_newest_first(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/recent-action",
         extracted_title="드래프트 최근",
@@ -152,11 +150,8 @@ def test_staff_dashboard_context_includes_recent_actions_newest_first(client, ma
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_renders_recent_action_with_null_actor_and_target(
-    client, make_user
-):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_dashboard_renders_recent_action_with_null_actor_and_target(staff_client):
+    staff, client = staff_client()
     StaffActionLog.objects.create(
         actor=None, action=StaffActionLog.Action.APPROVE, target_draft=None
     )
@@ -170,9 +165,8 @@ def test_staff_dashboard_renders_recent_action_with_null_actor_and_target(
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_renders_home_categories_action_label(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_dashboard_renders_home_categories_action_label(staff_client):
+    staff, client = staff_client()
     StaffActionLog.objects.create(
         actor=staff, action=StaffActionLog.Action.HOME_CATEGORIES, target_draft=None
     )
@@ -186,11 +180,10 @@ def test_staff_dashboard_renders_home_categories_action_label(client, make_user)
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_renders_draft_discover_action_label(client, make_user):
+def test_staff_dashboard_renders_draft_discover_action_label(staff_client):
     """PR-D1 item 1: draft_discover must render its own Korean label, not
     fall through to the "홈 카테고리 변경" catch-all."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     StaffActionLog.objects.create(
         actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER
     )
@@ -203,13 +196,10 @@ def test_staff_dashboard_renders_draft_discover_action_label(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_renders_event_update_action_label_and_target_event_link(
-    client, make_user
-):
+def test_staff_dashboard_renders_event_update_action_label_and_target_event_link(staff_client):
     """PR-D1 item 1: event_* actions get their own Korean label and the
     target column links to the event's staff edit page (not "-")."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     event = Event.objects.create(
         title="이벤트 A", publish_status=Event.PublishStatus.PUBLISHED
     )
@@ -227,11 +217,10 @@ def test_staff_dashboard_renders_event_update_action_label_and_target_event_link
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_context_includes_draft_sources_ordered(client, make_user):
+def test_staff_dashboard_context_includes_draft_sources_ordered(staff_client):
     """PR-5b: dashboard() must pass draft_sources via drafts.queries.list_draft_sources()
     (-enabled, name ordering), not a raw DraftSource query in the view."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     disabled = DraftSource.objects.create(
         name="disabled-source",
         url="https://example.com/disabled-feed/",
@@ -253,13 +242,10 @@ def test_staff_dashboard_context_includes_draft_sources_ordered(client, make_use
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_error_badge_and_summary_for_source_with_last_error(
-    client, make_user
-):
+def test_staff_dashboard_shows_error_badge_and_summary_for_source_with_last_error(staff_client):
     """PR-D1 item 3: a source with a non-empty last_error gets an error
     badge plus a (truncated) summary of the error text."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     DraftSource.objects.create(
         name="에러 소스",
         url="https://example.com/error-feed/",
@@ -277,13 +263,10 @@ def test_staff_dashboard_shows_error_badge_and_summary_for_source_with_last_erro
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_stale_badge_for_enabled_source_never_checked(
-    client, make_user
-):
+def test_staff_dashboard_shows_stale_badge_for_enabled_source_never_checked(staff_client):
     """PR-D1 item 3: an enabled source that has never been checked
     (last_checked_at is None) is stale."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     DraftSource.objects.create(
         name="미수집 소스",
         url="https://example.com/never-checked-feed/",
@@ -299,14 +282,11 @@ def test_staff_dashboard_shows_stale_badge_for_enabled_source_never_checked(
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_stale_badge_for_enabled_source_past_threshold(
-    client, make_user, settings
-):
+def test_staff_dashboard_shows_stale_badge_for_enabled_source_past_threshold(staff_client, settings):
     """PR-D1 item 3: an enabled source checked longer ago than
     DRAFT_SOURCE_STALE_HOURS is stale."""
     settings.DRAFT_SOURCE_STALE_HOURS = 48
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     DraftSource.objects.create(
         name="지연 소스",
         url="https://example.com/stale-feed/",
@@ -322,12 +302,9 @@ def test_staff_dashboard_shows_stale_badge_for_enabled_source_past_threshold(
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_enabled_source_within_threshold_not_stale(
-    client, make_user, settings
-):
+def test_staff_dashboard_enabled_source_within_threshold_not_stale(staff_client, settings):
     settings.DRAFT_SOURCE_STALE_HOURS = 48
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     DraftSource.objects.create(
         name="정상 소스",
         url="https://example.com/fresh-feed/",
@@ -343,11 +320,10 @@ def test_staff_dashboard_enabled_source_within_threshold_not_stale(
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_disabled_source_never_checked_not_stale(client, make_user):
+def test_staff_dashboard_disabled_source_never_checked_not_stale(staff_client):
     """PR-D1 item 3: a disabled source is excluded from the stale check
     regardless of last_checked_at (it is not expected to be collecting)."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     DraftSource.objects.create(
         name="비활성 소스",
         url="https://example.com/disabled-feed/",
@@ -363,13 +339,10 @@ def test_staff_dashboard_disabled_source_never_checked_not_stale(client, make_us
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_no_discovery_run_history_when_none_logged(
-    client, make_user
-):
+def test_staff_dashboard_shows_no_discovery_run_history_when_none_logged(staff_client):
     """PR-D1 item 4: with no DRAFT_DISCOVER log at all, the dashboard shows
     "실행 이력 없음" rather than a blank/misleading timestamp."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
 
     resp = client.get("/staff/dashboard/")
 
@@ -379,13 +352,10 @@ def test_staff_dashboard_shows_no_discovery_run_history_when_none_logged(
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_no_discovery_run_history_when_only_other_actions_logged(
-    client, make_user
-):
+def test_staff_dashboard_shows_no_discovery_run_history_when_only_other_actions_logged(staff_client):
     """PR-D1 item 4: a non-DRAFT_DISCOVER log entry must not be mistaken for
     a discovery run."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
 
     resp = client.get("/staff/dashboard/")
@@ -396,11 +366,10 @@ def test_staff_dashboard_shows_no_discovery_run_history_when_only_other_actions_
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_last_discovery_run_time(client, make_user):
+def test_staff_dashboard_shows_last_discovery_run_time(staff_client):
     """PR-D1 item 4: the most recent DRAFT_DISCOVER log's created_at is
     surfaced as last_discovery_run_at and rendered near the run button."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     log = StaffActionLog.objects.create(
         actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER
     )
@@ -415,9 +384,8 @@ def test_staff_dashboard_shows_last_discovery_run_time(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_context_draft_sources_empty_when_none_exist(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_dashboard_context_draft_sources_empty_when_none_exist(staff_client):
+    staff, client = staff_client()
 
     resp = client.get("/staff/dashboard/")
 
@@ -426,9 +394,8 @@ def test_staff_dashboard_context_draft_sources_empty_when_none_exist(client, mak
 
 
 @pytest.mark.django_db
-def test_staff_root_redirects_to_dashboard(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_root_redirects_to_dashboard(staff_client):
+    staff, client = staff_client()
 
     resp = client.get("/staff/")
 
@@ -465,9 +432,8 @@ def test_old_drafts_detail_url_redirects_to_new_path(client):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_new_drafts_list_url(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_can_access_new_drafts_list_url(staff_client):
+    staff, client = staff_client()
 
     resp = client.get("/staff/drafts/")
 
@@ -475,9 +441,8 @@ def test_staff_can_access_new_drafts_list_url(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_new_draft_detail_url(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_can_access_new_draft_detail_url(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/c", extracted_title="드래프트 C"
     )
@@ -488,9 +453,8 @@ def test_staff_can_access_new_draft_detail_url(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_home_categories_url(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_staff_can_access_home_categories_url(staff_client):
+    staff, client = staff_client()
 
     resp = client.get("/staff/home-categories/")
 

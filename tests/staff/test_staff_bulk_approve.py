@@ -52,9 +52,8 @@ def test_non_staff_cannot_bulk_approve_drafts(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_empty_draft_ids(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_rejects_empty_draft_ids(staff_client):
+    staff, client = staff_client()
 
     response = client.post(
         bulk_approve_url(), data={"draft_ids": []}, content_type="application/json"
@@ -66,9 +65,8 @@ def test_bulk_approve_rejects_empty_draft_ids(client, make_user):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_non_dict_body(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_rejects_non_dict_body(staff_client):
+    staff, client = staff_client()
 
     response = client.post(bulk_approve_url(), [1, 2, 3], content_type="application/json")
 
@@ -78,9 +76,8 @@ def test_bulk_approve_rejects_non_dict_body(client, make_user):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_non_integer_draft_id(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_rejects_non_integer_draft_id(staff_client):
+    staff, client = staff_client()
 
     response = client.post(
         bulk_approve_url(),
@@ -94,9 +91,8 @@ def test_bulk_approve_rejects_non_integer_draft_id(client, make_user):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_when_exceeding_max_draft_ids(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_rejects_when_exceeding_max_draft_ids(staff_client):
+    staff, client = staff_client()
     drafts = [
         EventDraft.objects.create(
             source_url=f"https://example.com/over-cap-{i}",
@@ -124,11 +120,10 @@ def test_bulk_approve_rejects_when_exceeding_max_draft_ids(client, make_user):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_boolean_as_draft_id(client, make_user):
+def test_bulk_approve_rejects_boolean_as_draft_id(staff_client):
     """Regression guard: bool is an int subclass in Python — must not sneak past
     the integer check (True/False are not valid draft ids)."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
 
     response = client.post(
         bulk_approve_url(),
@@ -142,11 +137,10 @@ def test_bulk_approve_rejects_boolean_as_draft_id(client, make_user):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_non_list_draft_ids(client, make_user):
+def test_bulk_approve_rejects_non_list_draft_ids(staff_client):
     """Regression guard: a non-list draft_ids value (e.g. a bare string) must be
     rejected structurally rather than iterated."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
 
     response = client.post(
         bulk_approve_url(),
@@ -164,9 +158,8 @@ def test_bulk_approve_rejects_non_list_draft_ids(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_approves_all_pending_drafts_and_logs_each_success(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_approves_all_pending_drafts_and_logs_each_success(staff_client):
+    staff, client = staff_client()
     draft_a = EventDraft.objects.create(
         source_url="https://example.com/bulk-a",
         extracted_title="Bulk A",
@@ -204,11 +197,10 @@ def test_bulk_approve_approves_all_pending_drafts_and_logs_each_success(client, 
 
 
 @pytest.mark.django_db
-def test_bulk_approve_approves_exactly_max_draft_ids(client, make_user):
+def test_bulk_approve_approves_exactly_max_draft_ids(staff_client):
     """Boundary lock-in: exactly MAX_BULK_APPROVE_DRAFT_IDS pending drafts must
     pass the cap check and all succeed (over-cap is tested separately)."""
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+    staff, client = staff_client()
     drafts = [
         EventDraft.objects.create(
             source_url=f"https://example.com/at-cap-{i}",
@@ -239,9 +231,8 @@ def test_bulk_approve_approves_exactly_max_draft_ids(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_reports_not_found_for_unknown_draft_id(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_reports_not_found_for_unknown_draft_id(staff_client):
+    staff, client = staff_client()
 
     response = client.post(
         bulk_approve_url(),
@@ -263,9 +254,8 @@ def test_bulk_approve_reports_not_found_for_unknown_draft_id(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_treats_repeated_id_as_success_then_already_processed(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_treats_repeated_id_as_success_then_already_processed(staff_client):
+    staff, client = staff_client()
     draft = EventDraft.objects.create(
         source_url="https://example.com/bulk-repeat",
         extracted_title="Bulk repeat",
@@ -292,9 +282,8 @@ def test_bulk_approve_treats_repeated_id_as_success_then_already_processed(clien
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_mixed_results_partial_success_with_reasons(client, make_user):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_mixed_results_partial_success_with_reasons(staff_client):
+    staff, client = staff_client()
 
     already_approved = EventDraft.objects.create(
         source_url="https://example.com/bulk-already-approved",
@@ -369,11 +358,8 @@ def test_bulk_approve_mixed_results_partial_success_with_reasons(client, make_us
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_continues_processing_after_unexpected_error_in_one_item(
-    client, make_user, monkeypatch, caplog
-):
-    staff = make_user(is_staff=True)
-    client.force_login(staff)
+def test_bulk_approve_continues_processing_after_unexpected_error_in_one_item(staff_client, monkeypatch, caplog):
+    staff, client = staff_client()
     draft_1 = EventDraft.objects.create(
         source_url="https://example.com/bulk-continue-1",
         extracted_title="Bulk continue 1",
