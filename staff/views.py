@@ -8,9 +8,12 @@ staff back (see tests/test_architecture_boundaries.py).
 """
 import datetime
 import logging
+from io import StringIO
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.contrib import messages
+from django.core.management import CommandError, call_command
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
@@ -90,8 +93,66 @@ def dashboard(request):
             "quality_warnings": published_quality_warnings(),
             "recent_actions": recent_staff_actions(),
             "draft_sources": list_draft_sources(),
+            "draft_discovery_enabled": settings.DRAFT_DISCOVERY_ENABLED,
         },
     )
+
+
+@staff_console_required
+@require_POST
+def staff_draft_discovery_run(request):
+    """Staff console: run `discover_drafts` synchronously from the dashboard's
+    "수집 소스 상태" panel ("지금 수집" button — prompt_plan.md's 콘솔 수집
+    실행 버튼).
+
+    `DRAFT_DISCOVERY_ENABLED=False` is short-circuited here, before the
+    command even runs (the command itself already no-ops in that case — see
+    discover_drafts.py's own module docstring — but the view pre-empts it so
+    the intent is explicit) and does *not* write an audit log entry, since
+    nothing actually executed. Every path that *does* invoke the command
+    (success, a partial-failure CommandError, or an unclassified exception)
+    is audit-logged, because from an operator's point of view a run was
+    attempted regardless of its outcome. Runs synchronously and can take
+    tens of seconds depending on source/candidate count (see "하지 말 것":
+    no celery/threads/subprocess/lock/progress UI for this button).
+    """
+    if not settings.DRAFT_DISCOVERY_ENABLED:
+        messages.info(
+            request,
+            "수집 기능이 비활성화되어 있습니다(DRAFT_DISCOVERY_ENABLED=False).",
+        )
+        return redirect("staff:dashboard")
+
+    out = StringIO()
+    action = StaffActionLog.Action.DRAFT_DISCOVER
+    try:
+        call_command("discover_drafts", stdout=out)
+    except CommandError as exc:
+        summary = _summarize_command_output(out)
+        messages.error(request, f"수집이 부분적으로 실패했습니다: {exc}" + (f" ({summary})" if summary else ""))
+    except Exception:
+        logger.exception("discover_drafts 실행 중 예상치 못한 오류 발생")
+        messages.error(request, "수집 실행 중 오류가 발생했습니다.")
+    else:
+        summary = _summarize_command_output(out)
+        messages.success(request, f"수집 완료: {summary}" if summary else "수집이 완료되었습니다.")
+    finally:
+        StaffActionLog.objects.create(
+            actor=request.user,
+            action=action,
+            ip_address=request.META.get("REMOTE_ADDR"),
+            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+        )
+
+    return redirect("staff:dashboard")
+
+
+def _summarize_command_output(out):
+    """Collapse discover_drafts' multi-line stdout into one message-friendly
+    line (django.contrib.messages renders as plain text — no <br>, so
+    newlines would otherwise just run together)."""
+    lines = [line for line in out.getvalue().splitlines() if line.strip()]
+    return " · ".join(lines)
 
 
 # Korean labels for the 5 QUALITY_WARNING_KEYS, shared by the filter chips

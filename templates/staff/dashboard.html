@@ -41,6 +41,16 @@
         <hr class="panel-divider">
 
         <h3>수집 소스 상태</h3>
+        <form method="post" action="{% url 'staff:draft-discovery-run' %}">
+          {% csrf_token %}
+          {% if draft_discovery_enabled %}
+            <button class="action-button" type="submit">지금 수집</button>
+            <p class="panel-note">소스 수에 따라 응답까지 수십 초가 걸릴 수 있습니다.</p>
+          {% else %}
+            <button class="action-button" type="submit" disabled>지금 수집</button>
+            <p class="panel-note">설정에서 DRAFT_DISCOVERY_ENABLED 활성화 필요.</p>
+          {% endif %}
+        </form>
         {% if draft_sources %}
           <table class="data-table">
             <thead>

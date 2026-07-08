@@ -21,6 +21,7 @@ class StaffActionLog(models.Model):
         EVENT_UNPUBLISH = "event_unpublish", "Event unpublish"
         EVENT_REPUBLISH = "event_republish", "Event republish"
         EVENT_DELETE = "event_delete", "Event delete"
+        DRAFT_DISCOVER = "draft_discover", "Draft discover"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
