@@ -38,8 +38,8 @@ def test_create_published_event_creates_published_event_with_official_url():
 
 
 @pytest.mark.django_db
-def test_create_published_event_maps_duplicate_url_to_domain_error():
-    Event.objects.create(
+def test_create_published_event_maps_duplicate_url_to_domain_error(make_event):
+    make_event(
         title="Existing event",
         official_url="https://example.com/event",
         publish_status=Event.PublishStatus.PUBLISHED,

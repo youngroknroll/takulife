@@ -31,12 +31,11 @@ def _poster_url(pk):
 
 
 @pytest.mark.django_db
-def test_staff_upload_poster_returns_200_with_poster_url(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_staff_upload_poster_returns_200_with_poster_url(staff_client, make_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
-    staff = make_user(is_staff=True)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 
-    client.force_login(staff)
+    _, client = staff_client()
     response = client.post(
         _poster_url(event.pk),
         {"image": SimpleUploadedFile("poster.png", png_bytes(color=(100, 150, 200)), content_type="image/png")},
@@ -95,11 +94,10 @@ def test_anonymous_upload_poster_returns_403(client, make_event, png_bytes, sett
 
 
 @pytest.mark.django_db
-def test_upload_poster_nonexistent_event_returns_404(client, make_user, png_bytes, settings, tmp_path):
+def test_upload_poster_nonexistent_event_returns_404(staff_client, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
-    staff = make_user(is_staff=True)
 
-    client.force_login(staff)
+    _, client = staff_client()
     response = client.post(
         _poster_url(99999),
         {"image": SimpleUploadedFile("poster.png", png_bytes(color=(100, 150, 200)), content_type="image/png")},
@@ -114,12 +112,11 @@ def test_upload_poster_nonexistent_event_returns_404(client, make_user, png_byte
 
 
 @pytest.mark.django_db
-def test_upload_poster_to_draft_event_returns_404(client, make_user, make_draft_event, png_bytes, settings, tmp_path):
+def test_upload_poster_to_draft_event_returns_404(staff_client, make_draft_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
-    staff = make_user(is_staff=True)
     event = make_draft_event(title="Draft Event", official_url=f"https://example.com/draft-{secrets.token_hex(4)}")
 
-    client.force_login(staff)
+    _, client = staff_client()
     response = client.post(
         _poster_url(event.pk),
         {"image": SimpleUploadedFile("poster.png", png_bytes(color=(100, 150, 200)), content_type="image/png")},
@@ -134,12 +131,11 @@ def test_upload_poster_to_draft_event_returns_404(client, make_user, make_draft_
 
 
 @pytest.mark.django_db
-def test_upload_non_image_bytes_returns_400(client, make_user, make_event, settings, tmp_path):
+def test_upload_non_image_bytes_returns_400(staff_client, make_event, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
-    staff = make_user(is_staff=True)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 
-    client.force_login(staff)
+    _, client = staff_client()
     response = client.post(
         _poster_url(event.pk),
         {"image": SimpleUploadedFile("not_an_image.jpg", b"notanimage", content_type="image/jpeg")},
@@ -155,12 +151,11 @@ def test_upload_non_image_bytes_returns_400(client, make_user, make_event, setti
 
 
 @pytest.mark.django_db
-def test_staff_delete_poster_returns_204_and_clears_image(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_staff_delete_poster_returns_204_and_clears_image(staff_client, make_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
-    staff = make_user(is_staff=True)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 
-    client.force_login(staff)
+    _, client = staff_client()
     # First upload
     client.post(
         _poster_url(event.pk),
@@ -181,12 +176,11 @@ def test_staff_delete_poster_returns_204_and_clears_image(client, make_user, mak
 
 
 @pytest.mark.django_db
-def test_second_upload_replaces_first_poster(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_second_upload_replaces_first_poster(staff_client, make_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
-    staff = make_user(is_staff=True)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 
-    client.force_login(staff)
+    _, client = staff_client()
 
     # First upload
     client.post(
