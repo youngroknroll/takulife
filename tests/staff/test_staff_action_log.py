@@ -8,16 +8,15 @@ import pytest
 from django.contrib import admin
 from django.test import RequestFactory
 
-from drafts.models import EventDraft
 from events.models import Event
 from staff.admin import StaffActionLogAdmin
 from staff.models import StaffActionLog
 
 
 @pytest.mark.django_db
-def test_staff_action_log_records_actor_action_target_and_metadata(make_user):
+def test_staff_action_log_records_actor_action_target_and_metadata(make_user, make_draft):
     actor = make_user(is_staff=True)
-    draft = EventDraft.objects.create(source_url="https://example.com/logged-event")
+    draft = make_draft("https://example.com/logged-event")
 
     entry = StaffActionLog.objects.create(
         actor=actor,
@@ -48,8 +47,8 @@ def test_staff_action_log_survives_actor_deletion(make_user):
 
 
 @pytest.mark.django_db
-def test_staff_action_log_survives_target_draft_deletion():
-    draft = EventDraft.objects.create(source_url="https://example.com/deleted-draft-log")
+def test_staff_action_log_survives_target_draft_deletion(make_draft):
+    draft = make_draft("https://example.com/deleted-draft-log")
     entry = StaffActionLog.objects.create(action="approve", target_draft=draft)
 
     draft.delete()

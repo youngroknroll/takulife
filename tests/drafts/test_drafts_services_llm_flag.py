@@ -16,10 +16,6 @@ RAW_TITLE = "IVE Popup Store"
 RAW_TEXT = "서울 홍대 2026-07-01 부터 2026-07-20 까지 IVE 팝업 스토어 진행"
 
 
-def _fail_if_called(*args, **kwargs):
-    raise AssertionError("extract_event_fields_llm must not be called")
-
-
 @pytest.mark.django_db
 @override_settings(DRAFT_LLM_EXTRACTION_ENABLED=True)
 def test_flag_enabled_uses_llm_extractor_with_parsed_raw_fields(monkeypatch):
@@ -61,7 +57,7 @@ def test_flag_enabled_uses_llm_extractor_with_parsed_raw_fields(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_flag_disabled_never_calls_llm_extractor(monkeypatch):
+def test_flag_disabled_never_calls_llm_extractor(monkeypatch, fail_if_called):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Sample</title></html>")
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
@@ -71,7 +67,7 @@ def test_flag_disabled_never_calls_llm_extractor(monkeypatch):
             "extracted_title": RAW_TITLE,
         },
     )
-    monkeypatch.setattr("drafts.services.extract_event_fields_llm", _fail_if_called)
+    monkeypatch.setattr("drafts.services.extract_event_fields_llm", fail_if_called)
 
     draft = create_draft_from_url("https://example.com/event")
 
@@ -80,14 +76,14 @@ def test_flag_disabled_never_calls_llm_extractor(monkeypatch):
 
 @pytest.mark.django_db
 @override_settings(DRAFT_LLM_EXTRACTION_ENABLED=True)
-def test_flag_enabled_empty_extraction_raises_without_calling_llm(monkeypatch):
+def test_flag_enabled_empty_extraction_raises_without_calling_llm(monkeypatch, fail_if_called):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html></html>")
 
     def raise_empty(html):
         raise EmptyExtractionError
 
     monkeypatch.setattr("drafts.services.parse_raw_fields", raise_empty)
-    monkeypatch.setattr("drafts.services.extract_event_fields_llm", _fail_if_called)
+    monkeypatch.setattr("drafts.services.extract_event_fields_llm", fail_if_called)
 
     with pytest.raises(DraftCreationEmptyExtractionError):
         create_draft_from_url("https://example.com/event")
@@ -175,10 +171,10 @@ def test_flag_disabled_defaults_extraction_method_heuristic_and_confidence_none(
 
 @pytest.mark.django_db
 @override_settings(DRAFT_LLM_EXTRACTION_ENABLED=True)
-def test_create_draft_from_fields_never_calls_llm_even_when_flag_enabled(monkeypatch):
+def test_create_draft_from_fields_never_calls_llm_even_when_flag_enabled(monkeypatch, fail_if_called):
     from drafts.services import create_draft_from_fields
 
-    monkeypatch.setattr("drafts.services.extract_event_fields_llm", _fail_if_called)
+    monkeypatch.setattr("drafts.services.extract_event_fields_llm", fail_if_called)
 
     draft = create_draft_from_fields(source_url="https://example.com/manual-report", title="Manual")
 

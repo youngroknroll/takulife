@@ -62,8 +62,8 @@ def test_admin_create_event_draft_maps_fetch_error_to_503(admin_client, monkeypa
 
 
 @pytest.mark.django_db
-def test_admin_can_retrieve_event_draft(admin_client):
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+def test_admin_can_retrieve_event_draft(admin_client, make_draft):
+    draft = make_draft("https://example.com/event")
 
     response = admin_client.get(event_draft_detail_url(draft.id))
 
@@ -72,12 +72,8 @@ def test_admin_can_retrieve_event_draft(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_retrieve_event_draft_includes_extraction_method_and_confidence(admin_client):
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/event",
-        extraction_method=EventDraft.ExtractionMethod.LLM,
-        confidence=0.87,
-    )
+def test_admin_retrieve_event_draft_includes_extraction_method_and_confidence(admin_client, make_draft):
+    draft = make_draft("https://example.com/event", extraction_method=EventDraft.ExtractionMethod.LLM, confidence=0.87)
 
     response = admin_client.get(event_draft_detail_url(draft.id))
 
@@ -87,8 +83,8 @@ def test_admin_retrieve_event_draft_includes_extraction_method_and_confidence(ad
 
 
 @pytest.mark.django_db
-def test_admin_can_patch_pending_event_draft(admin_client):
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+def test_admin_can_patch_pending_event_draft(admin_client, make_draft):
+    draft = make_draft("https://example.com/event")
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -103,12 +99,8 @@ def test_admin_can_patch_pending_event_draft(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_approved_event_draft(admin_client):
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/event",
-        extracted_title="Original title",
-        review_status=EventDraft.ReviewStatus.APPROVED,
-    )
+def test_admin_cannot_patch_approved_event_draft(admin_client, make_draft):
+    draft = make_draft("https://example.com/event", extracted_title="Original title", review_status=EventDraft.ReviewStatus.APPROVED)
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -122,12 +114,8 @@ def test_admin_cannot_patch_approved_event_draft(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_rejected_event_draft(admin_client):
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/event",
-        extracted_title="Original title",
-        review_status=EventDraft.ReviewStatus.REJECTED,
-    )
+def test_admin_cannot_patch_rejected_event_draft(admin_client, make_draft):
+    draft = make_draft("https://example.com/event", extracted_title="Original title", review_status=EventDraft.ReviewStatus.REJECTED)
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -141,12 +129,8 @@ def test_admin_cannot_patch_rejected_event_draft(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_source_url_or_raw_fields(admin_client):
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/event",
-        raw_title="Original raw title",
-        raw_text="Original raw text",
-    )
+def test_admin_cannot_patch_source_url_or_raw_fields(admin_client, make_draft):
+    draft = make_draft("https://example.com/event", raw_title="Original raw title", raw_text="Original raw text")
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -170,11 +154,8 @@ def test_admin_cannot_patch_source_url_or_raw_fields(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_review_status(admin_client):
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/event",
-        extracted_title="Original title",
-    )
+def test_admin_cannot_patch_review_status(admin_client, make_draft):
+    draft = make_draft("https://example.com/event", extracted_title="Original title")
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -194,8 +175,8 @@ def test_admin_cannot_patch_review_status(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_extraction_method_or_confidence(admin_client):
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+def test_admin_cannot_patch_extraction_method_or_confidence(admin_client, make_draft):
+    draft = make_draft("https://example.com/event")
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
@@ -214,8 +195,8 @@ def test_admin_cannot_patch_extraction_method_or_confidence(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_put_event_draft(admin_client):
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+def test_admin_cannot_put_event_draft(admin_client, make_draft):
+    draft = make_draft("https://example.com/event")
 
     response = admin_client.put(
         event_draft_detail_url(draft.id),
@@ -227,11 +208,11 @@ def test_admin_cannot_put_event_draft(admin_client):
 
 
 @pytest.mark.django_db
-def test_non_admin_cannot_access_event_draft_review(client, django_user_model):
+def test_non_admin_cannot_access_event_draft_review(client, django_user_model, make_draft):
     user = django_user_model.objects.create_user(
         email="normal-user@example.com", username="normal-user", password="secret"
     )
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+    draft = make_draft("https://example.com/event")
     client.force_login(user)
 
     list_response = client.get(event_drafts_url())
@@ -250,8 +231,8 @@ def test_non_admin_cannot_access_event_draft_review(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_duplicate_source_url_is_rejected_on_create(admin_client):
-    EventDraft.objects.create(source_url="https://example.com/event")
+def test_duplicate_source_url_is_rejected_on_create(admin_client, make_draft):
+    make_draft("https://example.com/event")
 
     response = admin_client.post(event_drafts_url(), {"source_url": "https://example.com/event"})
 
@@ -294,8 +275,8 @@ def test_admin_event_draft_legacy_route_is_not_supported(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_delete_event_draft(admin_client):
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+def test_admin_cannot_delete_event_draft(admin_client, make_draft):
+    draft = make_draft("https://example.com/event")
 
     response = admin_client.delete(event_draft_detail_url(draft.id))
 

@@ -12,6 +12,7 @@ import pytest
 from django.core.cache import cache
 from django.test import Client
 
+from drafts.models import DraftSource, EventDraft
 from events.models import Event
 
 
@@ -88,3 +89,39 @@ def png_bytes():
         return buf.getvalue()
 
     return _make
+
+
+@pytest.fixture
+def make_draft(db):
+    def _make(source_url=None, **kwargs):
+        # source_url is unique — synthesize one so bare calls never collide.
+        # `is None` (not truthy-check) so an intentional "" is preserved.
+        if source_url is None:
+            source_url = f"https://example.com/{secrets.token_hex(4)}"
+        return EventDraft.objects.create(source_url=source_url, **kwargs)
+
+    return _make
+
+
+@pytest.fixture
+def make_source(db):
+    def _make(**overrides):
+        defaults = {
+            "name": "Test Source",
+            "url": "https://example.com/feed.xml",
+            "source_type": DraftSource.SourceType.RSS,
+            "enabled": True,
+        }
+        return DraftSource.objects.create(**{**defaults, **overrides})
+
+    return _make
+
+
+@pytest.fixture
+def fail_if_called():
+    """A collaborator stand-in that fails the test if it's ever invoked —
+    for asserting a code path is skipped entirely (monkeypatch target)."""
+    def _fn(*args, **kwargs):
+        raise AssertionError("this collaborator must not be called")
+
+    return _fn

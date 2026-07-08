@@ -91,13 +91,10 @@ def test_bulk_approve_rejects_non_integer_draft_id(staff_client):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_when_exceeding_max_draft_ids(staff_client):
+def test_bulk_approve_rejects_when_exceeding_max_draft_ids(staff_client, make_draft):
     staff, client = staff_client()
     drafts = [
-        EventDraft.objects.create(
-            source_url=f"https://example.com/over-cap-{i}",
-            extracted_title=f"Over cap {i}",
-        )
+        make_draft(f"https://example.com/over-cap-{i}", extracted_title=f"Over cap {i}")
         for i in range(MAX_BULK_APPROVE_DRAFT_IDS + 1)
     ]
 
@@ -158,16 +155,10 @@ def test_bulk_approve_rejects_non_list_draft_ids(staff_client):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_approves_all_pending_drafts_and_logs_each_success(staff_client):
+def test_bulk_approve_approves_all_pending_drafts_and_logs_each_success(staff_client, make_draft):
     staff, client = staff_client()
-    draft_a = EventDraft.objects.create(
-        source_url="https://example.com/bulk-a",
-        extracted_title="Bulk A",
-    )
-    draft_b = EventDraft.objects.create(
-        source_url="https://example.com/bulk-b",
-        extracted_title="Bulk B",
-    )
+    draft_a = make_draft("https://example.com/bulk-a", extracted_title="Bulk A")
+    draft_b = make_draft("https://example.com/bulk-b", extracted_title="Bulk B")
 
     response = client.post(
         bulk_approve_url(),
@@ -197,15 +188,12 @@ def test_bulk_approve_approves_all_pending_drafts_and_logs_each_success(staff_cl
 
 
 @pytest.mark.django_db
-def test_bulk_approve_approves_exactly_max_draft_ids(staff_client):
+def test_bulk_approve_approves_exactly_max_draft_ids(staff_client, make_draft):
     """Boundary lock-in: exactly MAX_BULK_APPROVE_DRAFT_IDS pending drafts must
     pass the cap check and all succeed (over-cap is tested separately)."""
     staff, client = staff_client()
     drafts = [
-        EventDraft.objects.create(
-            source_url=f"https://example.com/at-cap-{i}",
-            extracted_title=f"At cap {i}",
-        )
+        make_draft(f"https://example.com/at-cap-{i}", extracted_title=f"At cap {i}")
         for i in range(MAX_BULK_APPROVE_DRAFT_IDS)
     ]
 
@@ -254,12 +242,9 @@ def test_bulk_approve_reports_not_found_for_unknown_draft_id(staff_client):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_treats_repeated_id_as_success_then_already_processed(staff_client):
+def test_bulk_approve_treats_repeated_id_as_success_then_already_processed(staff_client, make_draft):
     staff, client = staff_client()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/bulk-repeat",
-        extracted_title="Bulk repeat",
-    )
+    draft = make_draft("https://example.com/bulk-repeat", extracted_title="Bulk repeat")
 
     response = client.post(
         bulk_approve_url(),
@@ -282,34 +267,19 @@ def test_bulk_approve_treats_repeated_id_as_success_then_already_processed(staff
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_mixed_results_partial_success_with_reasons(staff_client):
+def test_bulk_approve_mixed_results_partial_success_with_reasons(staff_client, make_draft):
     staff, client = staff_client()
 
-    already_approved = EventDraft.objects.create(
-        source_url="https://example.com/bulk-already-approved",
-        extracted_title="Already approved",
-        review_status=EventDraft.ReviewStatus.APPROVED,
-    )
-    ok_1 = EventDraft.objects.create(
-        source_url="https://example.com/bulk-ok-1",
-        extracted_title="Bulk ok 1",
-    )
+    already_approved = make_draft("https://example.com/bulk-already-approved", extracted_title="Already approved", review_status=EventDraft.ReviewStatus.APPROVED)
+    ok_1 = make_draft("https://example.com/bulk-ok-1", extracted_title="Bulk ok 1")
     Event.objects.create(
         title="Already published",
         official_url="https://example.com/bulk-duplicate",
         publish_status=Event.PublishStatus.PUBLISHED,
     )
-    duplicate_url = EventDraft.objects.create(
-        source_url="https://example.com/bulk-duplicate",
-        extracted_title="Duplicate url draft",
-    )
-    blank_title = EventDraft.objects.create(
-        source_url="https://example.com/bulk-blank-title",
-    )
-    ok_2 = EventDraft.objects.create(
-        source_url="https://example.com/bulk-ok-2",
-        extracted_title="Bulk ok 2",
-    )
+    duplicate_url = make_draft("https://example.com/bulk-duplicate", extracted_title="Duplicate url draft")
+    blank_title = make_draft("https://example.com/bulk-blank-title")
+    ok_2 = make_draft("https://example.com/bulk-ok-2", extracted_title="Bulk ok 2")
 
     response = client.post(
         bulk_approve_url(),
@@ -358,20 +328,11 @@ def test_bulk_approve_mixed_results_partial_success_with_reasons(staff_client):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_continues_processing_after_unexpected_error_in_one_item(staff_client, monkeypatch, caplog):
+def test_bulk_approve_continues_processing_after_unexpected_error_in_one_item(staff_client, monkeypatch, caplog, make_draft):
     staff, client = staff_client()
-    draft_1 = EventDraft.objects.create(
-        source_url="https://example.com/bulk-continue-1",
-        extracted_title="Bulk continue 1",
-    )
-    draft_2 = EventDraft.objects.create(
-        source_url="https://example.com/bulk-continue-2",
-        extracted_title="Bulk continue 2",
-    )
-    draft_3 = EventDraft.objects.create(
-        source_url="https://example.com/bulk-continue-3",
-        extracted_title="Bulk continue 3",
-    )
+    draft_1 = make_draft("https://example.com/bulk-continue-1", extracted_title="Bulk continue 1")
+    draft_2 = make_draft("https://example.com/bulk-continue-2", extracted_title="Bulk continue 2")
+    draft_3 = make_draft("https://example.com/bulk-continue-3", extracted_title="Bulk continue 3")
 
     original_create = StaffActionLog.objects.create
 

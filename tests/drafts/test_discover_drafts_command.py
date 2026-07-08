@@ -39,21 +39,6 @@ def _no_inter_request_delay(monkeypatch):
     monkeypatch.setattr("drafts.management.commands.discover_drafts.time.sleep", lambda seconds: None)
 
 
-def _make_source(**overrides):
-    defaults = {
-        "name": "Test Source",
-        "url": "https://example.com/feed.xml",
-        "source_type": DraftSource.SourceType.RSS,
-        "enabled": True,
-    }
-    defaults.update(overrides)
-    return DraftSource.objects.create(**defaults)
-
-
-def _fail_if_called(*args, **kwargs):
-    raise AssertionError("this collaborator must not be called")
-
-
 class _FakeRobotsChecker:
     """Stand-in for drafts.robots.RobotsChecker, patched at the command's
     import location (`RobotsChecker`, the class itself, replaced by a
@@ -84,18 +69,18 @@ def _patch_robots_checker(monkeypatch, checker):
 
 
 class TestFlagGating:
-    def test_flag_disabled_refuses_to_run(self, settings, monkeypatch, capsys):
+    def test_flag_disabled_refuses_to_run(self, settings, monkeypatch, capsys, fail_if_called):
         settings.DRAFT_DISCOVERY_ENABLED = False
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", _fail_if_called
+            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
-            _fail_if_called,
+            fail_if_called,
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            _fail_if_called,
+            fail_if_called,
         )
 
         call_command("discover_drafts")
@@ -105,17 +90,17 @@ class TestFlagGating:
         output = capsys.readouterr().out
         assert "DRAFT_DISCOVERY_ENABLED" in output
 
-    def test_no_enabled_sources_reports_and_exits_cleanly(self, monkeypatch, capsys):
+    def test_no_enabled_sources_reports_and_exits_cleanly(self, monkeypatch, capsys, fail_if_called):
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", _fail_if_called
+            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
-            _fail_if_called,
+            fail_if_called,
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            _fail_if_called,
+            fail_if_called,
         )
 
         call_command("discover_drafts")
@@ -125,18 +110,18 @@ class TestFlagGating:
         output = capsys.readouterr().out
         assert "활성 소스가 없습니다" in output
 
-    def test_disabled_source_is_not_processed(self, monkeypatch):
-        _make_source(enabled=False)
+    def test_disabled_source_is_not_processed(self, monkeypatch, make_source, fail_if_called):
+        make_source(enabled=False)
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", _fail_if_called
+            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
-            _fail_if_called,
+            fail_if_called,
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            _fail_if_called,
+            fail_if_called,
         )
 
         call_command("discover_drafts")
@@ -144,20 +129,20 @@ class TestFlagGating:
 
 class TestListingLevel:
     @pytest.mark.parametrize("reason", [ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED])
-    def test_listing_robots_outcome_skips_source_and_records_reason(self, monkeypatch, reason):
-        source = _make_source()
+    def test_listing_robots_outcome_skips_source_and_records_reason(self, monkeypatch, reason, make_source, fail_if_called):
+        source = make_source()
         checker = _FakeRobotsChecker(outcomes={source.url: RobotsCheckResult(False, reason)})
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.fetch_html", _fail_if_called
+            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.extract_candidate_urls",
-            _fail_if_called,
+            fail_if_called,
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            _fail_if_called,
+            fail_if_called,
         )
 
         call_command("discover_drafts")
@@ -166,10 +151,8 @@ class TestListingLevel:
         assert reason in source.last_error
         assert source.last_checked_at is not None
 
-    def test_source_with_no_candidates_clears_last_error_and_reports_zero_found(
-        self, monkeypatch, capsys
-    ):
-        source = _make_source(last_error="이전 실행에서 남은 에러")
+    def test_source_with_no_candidates_clears_last_error_and_reports_zero_found(self, monkeypatch, capsys, make_source, fail_if_called):
+        source = make_source(last_error="이전 실행에서 남은 에러")
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html",
@@ -180,7 +163,7 @@ class TestListingLevel:
             lambda *args, **kwargs: [],
         )
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_draft_from_url", _fail_if_called
+            "drafts.management.commands.discover_drafts.create_draft_from_url", fail_if_called
         )
 
         call_command("discover_drafts")
@@ -191,11 +174,9 @@ class TestListingLevel:
         assert "0" in output
 
     @pytest.mark.parametrize("failure_mode", ["fetch", "parse"])
-    def test_source_level_failure_is_isolated_and_causes_nonzero_exit(
-        self, monkeypatch, failure_mode
-    ):
-        source_a = _make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = _make_source(name="B", url="https://b.example.com/feed.xml")
+    def test_source_level_failure_is_isolated_and_causes_nonzero_exit(self, monkeypatch, failure_mode, make_draft, make_source):
+        source_a = make_source(name="A", url="https://a.example.com/feed.xml")
+        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
         def fake_fetch(url, **kwargs):
@@ -218,9 +199,7 @@ class TestListingLevel:
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": EventDraft.objects.create(
-                source_url=url, source_name=source_name
-            ),
+            lambda url, source_name="": make_draft(url, source_name=source_name),
         )
 
         with pytest.raises(CommandError):
@@ -230,16 +209,16 @@ class TestListingLevel:
         assert source_a.last_error != ""
         assert EventDraft.objects.filter(source_url="https://b.example.com/event-1").exists()
 
-    def test_corrupted_source_type_is_isolated_to_its_own_source(self, monkeypatch):
+    def test_corrupted_source_type_is_isolated_to_its_own_source(self, monkeypatch, make_draft, make_source):
         """A source_type outside DraftSource.SourceType.choices can still
         reach the DB — Model.objects.create() does not validate choices, so
         a stale/typo'd source_type is a real (if rare) production state, not
         just a test artifact. It must fail only that source, not crash the
         whole run before source B is ever processed."""
-        source_a = _make_source(
+        source_a = make_source(
             name="A", url="https://a.example.com/feed.xml", source_type="atom"
         )
-        source_b = _make_source(name="B", url="https://b.example.com/feed.xml")
+        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html",
@@ -252,9 +231,7 @@ class TestListingLevel:
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": EventDraft.objects.create(
-                source_url=url, source_name=source_name
-            ),
+            lambda url, source_name="": make_draft(url, source_name=source_name),
         )
 
         with pytest.raises(CommandError):
@@ -276,8 +253,8 @@ def _install_listing(monkeypatch, candidate_urls):
 
 
 class TestCandidateLevel:
-    def test_single_new_candidate_is_created_with_source_name(self, monkeypatch):
-        source = _make_source()
+    def test_single_new_candidate_is_created_with_source_name(self, monkeypatch, make_source):
+        source = make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -294,17 +271,15 @@ class TestCandidateLevel:
 
         assert calls == [("https://target.example.com/event-1", source.name)]
 
-    def test_preexisting_source_url_is_deduped_before_candidate_robots_check(self, monkeypatch):
-        source = _make_source()
+    def test_preexisting_source_url_is_deduped_before_candidate_robots_check(self, monkeypatch, make_draft, make_source, fail_if_called):
+        source = make_source()
         candidate_url = "https://target.example.com/event-1"
-        EventDraft.objects.create(
-            source_url=candidate_url, review_status=EventDraft.ReviewStatus.REJECTED
-        )
+        make_draft(candidate_url, review_status=EventDraft.ReviewStatus.REJECTED)
         _install_listing(monkeypatch, [candidate_url])
         checker = _FakeRobotsChecker()
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_draft_from_url", _fail_if_called
+            "drafts.management.commands.discover_drafts.create_draft_from_url", fail_if_called
         )
 
         call_command("discover_drafts")
@@ -321,16 +296,14 @@ class TestCandidateLevel:
             (ROBOTS_FETCH_FAILED, "robots 페치 실패 1건"),
         ],
     )
-    def test_candidate_robots_outcome_skips_without_failing_run(
-        self, monkeypatch, reason, report_substring, capsys
-    ):
-        source = _make_source()
+    def test_candidate_robots_outcome_skips_without_failing_run(self, monkeypatch, reason, report_substring, capsys, make_source, fail_if_called):
+        source = make_source()
         candidate_url = "https://target.example.com/event-1"
         _install_listing(monkeypatch, [candidate_url])
         checker = _FakeRobotsChecker(outcomes={candidate_url: RobotsCheckResult(False, reason)})
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
-            "drafts.management.commands.discover_drafts.create_draft_from_url", _fail_if_called
+            "drafts.management.commands.discover_drafts.create_draft_from_url", fail_if_called
         )
 
         call_command("discover_drafts")
@@ -340,8 +313,8 @@ class TestCandidateLevel:
         output = capsys.readouterr().out
         assert report_substring in output
 
-    def test_duplicate_creation_error_is_a_normal_skip(self, monkeypatch):
-        source = _make_source()
+    def test_duplicate_creation_error_is_a_normal_skip(self, monkeypatch, make_source):
+        source = make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -354,8 +327,8 @@ class TestCandidateLevel:
 
         call_command("discover_drafts")
 
-    def test_empty_extraction_error_is_a_normal_skip(self, monkeypatch):
-        source = _make_source()
+    def test_empty_extraction_error_is_a_normal_skip(self, monkeypatch, make_source):
+        source = make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -368,10 +341,8 @@ class TestCandidateLevel:
 
         call_command("discover_drafts")
 
-    def test_genuine_creation_failure_is_isolated_but_causes_nonzero_exit(
-        self, monkeypatch, capsys
-    ):
-        source = _make_source()
+    def test_genuine_creation_failure_is_isolated_but_causes_nonzero_exit(self, monkeypatch, capsys, make_draft, make_source):
+        source = make_source()
         failing_url = "https://target.example.com/event-1"
         succeeding_url = "https://target.example.com/event-2"
         _install_listing(monkeypatch, [failing_url, succeeding_url])
@@ -380,7 +351,7 @@ class TestCandidateLevel:
         def flaky_create(url, source_name=""):
             if url == failing_url:
                 raise DraftCreationFetchError()
-            return EventDraft.objects.create(source_url=url, source_name=source_name)
+            return make_draft(url, source_name=source_name)
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url", flaky_create
@@ -401,7 +372,7 @@ class TestCandidateLevel:
         assert failing_url in stderr_output
         assert "DraftCreationFetchError" in stderr_output
 
-    def test_cross_source_url_collision_in_same_run_is_a_normal_skip(self, monkeypatch):
+    def test_cross_source_url_collision_in_same_run_is_a_normal_skip(self, monkeypatch, make_source):
         """Sociable exception (pr3-test-design.md 12b): real
         create_draft_from_url, only drafts.services.fetch_html stubbed — this
         is the one test that exercises the actual IntegrityError ->
@@ -409,8 +380,8 @@ class TestCandidateLevel:
         a same-source dedup-only test could never reach (see module
         docstring's phase-2 rationale)."""
         shared_url = "https://target.example.com/event-1"
-        source_a = _make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = _make_source(name="B", url="https://b.example.com/feed.xml")
+        source_a = make_source(name="A", url="https://a.example.com/feed.xml")
+        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html", lambda url, **kwargs: "<xml></xml>"
@@ -431,11 +402,9 @@ class TestCandidateLevel:
 
 
 class TestCaps:
-    def test_creation_cap_stops_further_creation_and_reports_held_back(
-        self, monkeypatch, settings, capsys
-    ):
+    def test_creation_cap_stops_further_creation_and_reports_held_back(self, monkeypatch, settings, capsys, make_draft, make_source):
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
-        _make_source()
+        make_source()
         url1 = "https://target.example.com/event-1"
         url2 = "https://target.example.com/event-2"
         _install_listing(monkeypatch, [url1, url2])
@@ -443,9 +412,7 @@ class TestCaps:
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": EventDraft.objects.create(
-                source_url=url, source_name=source_name
-            ),
+            lambda url, source_name="": make_draft(url, source_name=source_name),
         )
 
         call_command("discover_drafts")
@@ -460,23 +427,19 @@ class TestCaps:
         output = capsys.readouterr().out
         assert "1건 보류" in output
 
-    def test_per_source_fetch_cap_does_not_count_deduped_candidates(self, monkeypatch, settings):
+    def test_per_source_fetch_cap_does_not_count_deduped_candidates(self, monkeypatch, settings, make_draft, make_source):
         settings.DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 1
-        _make_source()
+        make_source()
         dup_url = "https://target.example.com/existing"
         new_url1 = "https://target.example.com/event-1"
         new_url2 = "https://target.example.com/event-2"
-        EventDraft.objects.create(
-            source_url=dup_url, review_status=EventDraft.ReviewStatus.REJECTED
-        )
+        make_draft(dup_url, review_status=EventDraft.ReviewStatus.REJECTED)
         _install_listing(monkeypatch, [dup_url, new_url1, new_url2])
         checker = _FakeRobotsChecker()
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": EventDraft.objects.create(
-                source_url=url, source_name=source_name
-            ),
+            lambda url, source_name="": make_draft(url, source_name=source_name),
         )
 
         call_command("discover_drafts")
@@ -489,16 +452,14 @@ class TestCaps:
         assert not EventDraft.objects.filter(source_url=new_url2).exists()
         assert new_url2 not in checker.calls
 
-    def test_creation_cap_is_shared_across_sources_not_applied_per_source(
-        self, monkeypatch, settings
-    ):
+    def test_creation_cap_is_shared_across_sources_not_applied_per_source(self, monkeypatch, settings, make_draft, make_source):
         """If DRAFT_DISCOVERY_MAX_PER_RUN were (incorrectly) applied
         per-source instead of once for the whole run, both sources' single
         candidate would be created here — this pins the total-across-the-run
         semantics (prompt_plan.md §2-5)."""
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
-        source_a = _make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = _make_source(name="B", url="https://b.example.com/feed.xml")
+        source_a = make_source(name="A", url="https://a.example.com/feed.xml")
+        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
         url_a = "https://target.example.com/event-a"
         url_b = "https://target.example.com/event-b"
 
@@ -515,9 +476,7 @@ class TestCaps:
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": EventDraft.objects.create(
-                source_url=url, source_name=source_name
-            ),
+            lambda url, source_name="": make_draft(url, source_name=source_name),
         )
 
         call_command("discover_drafts")
@@ -525,14 +484,14 @@ class TestCaps:
         assert EventDraft.objects.filter(source_url=url_a).exists()
         assert not EventDraft.objects.filter(source_url=url_b).exists()
 
-    def test_per_source_fetch_cap_does_not_starve_other_sources(self, monkeypatch, settings):
+    def test_per_source_fetch_cap_does_not_starve_other_sources(self, monkeypatch, settings, make_draft, make_source):
         """If the per-source fetch budget were (incorrectly) shared globally
         instead of tracked per source, source B's candidate would also be
         held back once source A exhausts the shared budget — this pins the
         per-source independence (prompt_plan.md §2-5)."""
         settings.DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 1
-        source_a = _make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = _make_source(name="B", url="https://b.example.com/feed.xml")
+        source_a = make_source(name="A", url="https://a.example.com/feed.xml")
+        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
         url_a1 = "https://a-target.example.com/event-1"
         url_a2 = "https://a-target.example.com/event-2"
         url_b1 = "https://b-target.example.com/event-1"
@@ -555,7 +514,7 @@ class TestCaps:
                 # via an empty-extraction skip, exhausting it before A's
                 # second candidate can be attempted.
                 raise DraftCreationEmptyExtractionError()
-            return EventDraft.objects.create(source_url=url, source_name=source_name)
+            return make_draft(url, source_name=source_name)
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url", fake_create
@@ -568,13 +527,13 @@ class TestCaps:
 
 
 class TestCandidatePacing:
-    def test_sleep_is_invoked_once_per_fetch_consuming_candidate(self, monkeypatch):
+    def test_sleep_is_invoked_once_per_fetch_consuming_candidate(self, monkeypatch, make_draft, make_source):
         """Etiquette pacing after every candidate that actually consumed
         network fetch budget (a robots check, at minimum) — behavior only;
         exact seconds are out of scope (pr3-test-design.md), so this checks
         that the pause happens the right number of times and consults the
         checker's Crawl-delay, not any particular duration."""
-        _make_source()
+        make_source()
         url1 = "https://target.example.com/event-1"
         url2 = "https://target.example.com/event-2"
         _install_listing(monkeypatch, [url1, url2])
@@ -582,9 +541,7 @@ class TestCandidatePacing:
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": EventDraft.objects.create(
-                source_url=url, source_name=source_name
-            ),
+            lambda url, source_name="": make_draft(url, source_name=source_name),
         )
         sleep_calls = []
         monkeypatch.setattr(
@@ -597,9 +554,9 @@ class TestCandidatePacing:
         assert len(sleep_calls) == 2
         assert checker.crawl_delay_calls == [url1, url2]
 
-    def test_held_back_and_deduped_candidates_do_not_trigger_a_pause(self, monkeypatch, settings):
+    def test_held_back_and_deduped_candidates_do_not_trigger_a_pause(self, monkeypatch, settings, make_draft, make_source):
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
-        _make_source()
+        make_source()
         url1 = "https://target.example.com/event-1"
         url2 = "https://target.example.com/event-2"
         _install_listing(monkeypatch, [url1, url2])
@@ -607,9 +564,7 @@ class TestCandidatePacing:
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": EventDraft.objects.create(
-                source_url=url, source_name=source_name
-            ),
+            lambda url, source_name="": make_draft(url, source_name=source_name),
         )
         sleep_calls = []
         monkeypatch.setattr(
@@ -626,7 +581,7 @@ class TestCandidatePacing:
 
 
 class TestRobotsCache:
-    def test_robots_txt_is_fetched_at_most_once_per_host_across_the_whole_run(self, monkeypatch):
+    def test_robots_txt_is_fetched_at_most_once_per_host_across_the_whole_run(self, monkeypatch, make_draft, make_source):
         """Exception to the module's general mocking rule: uses the real
         RobotsChecker (not patched at the command import location), with
         only drafts.robots.fetch_html patched to count calls — this is what
@@ -634,8 +589,8 @@ class TestRobotsCache:
         sources and candidates on the same host, not merely that a fake
         object recorded calls (instance-count assertions are out of scope,
         pr3-test-design.md — this checks behavior, not implementation)."""
-        source_a = _make_source(name="A", url="https://shared.example.com/feedA.xml")
-        _make_source(name="B", url="https://shared.example.com/feedB.xml")
+        source_a = make_source(name="A", url="https://shared.example.com/feedA.xml")
+        make_source(name="B", url="https://shared.example.com/feedB.xml")
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html",
@@ -652,9 +607,7 @@ class TestRobotsCache:
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": EventDraft.objects.create(
-                source_url=url, source_name=source_name
-            ),
+            lambda url, source_name="": make_draft(url, source_name=source_name),
         )
 
         robots_fetch_calls = []
@@ -674,10 +627,8 @@ class TestListingContentType:
     @pytest.mark.parametrize(
         "source_type", [DraftSource.SourceType.RSS, DraftSource.SourceType.SITEMAP]
     )
-    def test_listing_fetch_opts_into_xml_content_types_for_rss_and_sitemap(
-        self, monkeypatch, source_type
-    ):
-        _make_source(source_type=source_type)
+    def test_listing_fetch_opts_into_xml_content_types_for_rss_and_sitemap(self, monkeypatch, source_type, make_source):
+        make_source(source_type=source_type)
         captured = {}
 
         def capture_fetch(url, **kwargs):

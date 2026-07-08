@@ -19,76 +19,57 @@ from drafts.models import DraftSource, EventDraft
 
 @pytest.mark.django_db
 class TestListDrafts:
-    def test_no_status_filter_returns_all_drafts_ordered_by_id_desc(self):
+    def test_no_status_filter_returns_all_drafts_ordered_by_id_desc(self, make_draft):
         from drafts.queries import list_drafts
 
-        first = EventDraft.objects.create(source_url="https://example.com/1")
-        second = EventDraft.objects.create(source_url="https://example.com/2")
-        third = EventDraft.objects.create(source_url="https://example.com/3")
+        first = make_draft("https://example.com/1")
+        second = make_draft("https://example.com/2")
+        third = make_draft("https://example.com/3")
 
         result = list(list_drafts())
 
         assert result == [third, second, first]
 
-    def test_pending_filter_excludes_approved_and_rejected(self):
+    def test_pending_filter_excludes_approved_and_rejected(self, make_draft):
         from drafts.queries import list_drafts
 
-        pending = EventDraft.objects.create(source_url="https://example.com/pending")
-        EventDraft.objects.create(
-            source_url="https://example.com/approved",
-            review_status=EventDraft.ReviewStatus.APPROVED,
-        )
-        EventDraft.objects.create(
-            source_url="https://example.com/rejected",
-            review_status=EventDraft.ReviewStatus.REJECTED,
-        )
+        pending = make_draft("https://example.com/pending")
+        make_draft("https://example.com/approved", review_status=EventDraft.ReviewStatus.APPROVED)
+        make_draft("https://example.com/rejected", review_status=EventDraft.ReviewStatus.REJECTED)
 
         result = list(list_drafts(status=EventDraft.ReviewStatus.PENDING))
 
         assert result == [pending]
 
-    def test_filter_result_still_ordered_by_id_desc(self):
+    def test_filter_result_still_ordered_by_id_desc(self, make_draft):
         from drafts.queries import list_drafts
 
-        older = EventDraft.objects.create(
-            source_url="https://example.com/older-pending",
-        )
-        EventDraft.objects.create(
-            source_url="https://example.com/approved-between",
-            review_status=EventDraft.ReviewStatus.APPROVED,
-        )
-        newer = EventDraft.objects.create(
-            source_url="https://example.com/newer-pending",
-        )
+        older = make_draft("https://example.com/older-pending")
+        make_draft("https://example.com/approved-between", review_status=EventDraft.ReviewStatus.APPROVED)
+        newer = make_draft("https://example.com/newer-pending")
 
         result = list(list_drafts(status=EventDraft.ReviewStatus.PENDING))
 
         assert result == [newer, older]
 
-    def test_unknown_status_returns_empty_queryset(self):
+    def test_unknown_status_returns_empty_queryset(self, make_draft):
         from drafts.queries import list_drafts
 
-        EventDraft.objects.create(source_url="https://example.com/only-pending")
+        make_draft("https://example.com/only-pending")
 
         result = list(list_drafts(status="garbage"))
 
         assert result == []
 
-    def test_status_filter_counts_are_reliable_with_multiple_records(self):
+    def test_status_filter_counts_are_reliable_with_multiple_records(self, make_draft):
         from drafts.queries import list_drafts
 
         for i in range(2):
-            EventDraft.objects.create(source_url=f"https://example.com/pending-{i}")
+            make_draft(f"https://example.com/pending-{i}")
         for i in range(3):
-            EventDraft.objects.create(
-                source_url=f"https://example.com/approved-{i}",
-                review_status=EventDraft.ReviewStatus.APPROVED,
-            )
+            make_draft(f"https://example.com/approved-{i}", review_status=EventDraft.ReviewStatus.APPROVED)
         for i in range(2):
-            EventDraft.objects.create(
-                source_url=f"https://example.com/rejected-{i}",
-                review_status=EventDraft.ReviewStatus.REJECTED,
-            )
+            make_draft(f"https://example.com/rejected-{i}", review_status=EventDraft.ReviewStatus.REJECTED)
 
         assert list_drafts(status=EventDraft.ReviewStatus.PENDING).count() == 2
         assert list_drafts(status=EventDraft.ReviewStatus.APPROVED).count() == 3
