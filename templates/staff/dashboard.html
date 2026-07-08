@@ -50,6 +50,7 @@
             <button class="action-button" type="submit" disabled>지금 수집</button>
             <p class="panel-note">설정에서 DRAFT_DISCOVERY_ENABLED 활성화 필요.</p>
           {% endif %}
+          <p class="panel-note">마지막 실행: {% if last_discovery_run_at %}{{ last_discovery_run_at|timesince }} 전{% else %}실행 이력 없음{% endif %}</p>
         </form>
         {% if draft_sources %}
           <table class="data-table">
@@ -61,11 +62,18 @@
               </tr>
             </thead>
             <tbody>
-              {% for source in draft_sources %}
+              {% for row in draft_source_rows %}
                 <tr>
-                  <td>{{ source.name }}</td>
-                  <td>{% if source.enabled %}활성{% else %}<span class="badge-soon">비활성</span>{% endif %}</td>
-                  <td>{% if source.last_checked_at %}{{ source.last_checked_at|timesince }} 전{% else %}아직 수집되지 않음{% endif %}</td>
+                  <td>{{ row.source.name }}</td>
+                  <td>
+                    {% if row.source.enabled %}활성{% else %}<span class="badge-soon">비활성</span>{% endif %}
+                    {% if row.is_stale %}<span class="badge-stale">지연</span>{% endif %}
+                    {% if row.has_error %}<span class="badge-error">오류</span>{% endif %}
+                  </td>
+                  <td>
+                    {% if row.source.last_checked_at %}{{ row.source.last_checked_at|timesince }} 전{% else %}아직 수집되지 않음{% endif %}
+                    {% if row.has_error %}<br><span class="panel-note">{{ row.source.last_error|truncatechars:80 }}</span>{% endif %}
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -122,18 +130,20 @@
               </tr>
             </thead>
             <tbody>
-              {% for a in recent_actions %}
+              {% for a in recent_action_rows %}
                 <tr>
-                  <td>{{ a.created_at|date:"y.m.d H:i" }}</td>
-                  <td>{% if a.action == "approve" %}승인{% elif a.action == "reject" %}반려{% else %}홈 카테고리 변경{% endif %}</td>
+                  <td>{{ a.log.created_at|date:"y.m.d H:i" }}</td>
+                  <td>{{ a.action_label }}</td>
                   <td>
-                    {% if a.target_draft %}
-                      <a href="/staff/drafts/{{ a.target_draft.id }}/">{{ a.target_draft.extracted_title|default:a.target_draft.raw_title|default:"(제목 없음)" }}</a>
+                    {% if a.log.target_draft %}
+                      <a href="/staff/drafts/{{ a.log.target_draft.id }}/">{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:"(제목 없음)" }}</a>
+                    {% elif a.log.target_event %}
+                      <a href="/staff/events/{{ a.log.target_event.id }}/edit/">{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}</a>
                     {% else %}
                       -
                     {% endif %}
                   </td>
-                  <td>{{ a.actor.email|default:"-" }}</td>
+                  <td>{{ a.log.actor.email|default:"-" }}</td>
                 </tr>
               {% endfor %}
             </tbody>

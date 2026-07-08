@@ -26,7 +26,7 @@
   {% if messages %}
     <ul class="site-messages" role="status">
       {% for message in messages %}
-        <li class="site-message site-message-{% if message.tags == 'error' or message.tags == 'warning' %}error{% else %}info{% endif %}">{{ message }}</li>
+        <li class="site-message site-message-{% if message.tags == 'error' or message.tags == 'warning' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}">{{ message }}</li>
       {% endfor %}
     </ul>
   {% endif %}

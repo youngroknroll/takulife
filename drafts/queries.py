@@ -52,3 +52,14 @@ def list_draft_sources():
     rather than querying DraftSource directly.
     """
     return DraftSource.objects.order_by("-enabled", "name")
+
+
+def enabled_draft_sources_exist() -> bool:
+    """Return whether at least one DraftSource has enabled=True.
+
+    Used by staff_draft_discovery_run's precheck (prompt_plan.md PR-D1 §6)
+    to short-circuit before invoking discover_drafts when there is nothing
+    for it to collect from — the same "no-op is an intended state" treatment
+    already given to the DRAFT_DISCOVERY_ENABLED flag-off case.
+    """
+    return DraftSource.objects.filter(enabled=True).exists()

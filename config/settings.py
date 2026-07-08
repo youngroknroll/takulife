@@ -83,6 +83,10 @@ DRAFT_DISCOVERY_MAX_PER_RUN = 10
 # calls) so a source yielding mostly empty/duplicate candidates cannot be
 # re-hit indefinitely while chasing the creation cap above.
 DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 20
+# Staff dashboard freshness threshold: an enabled DraftSource whose
+# last_checked_at is older than this (or still None) is flagged "stale" —
+# 48h covers a couple of missed daily runs before it reads as a problem.
+DRAFT_SOURCE_STALE_HOURS = 48
 DEBUG = load_debug()
 ALLOWED_HOSTS = []
 

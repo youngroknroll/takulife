@@ -1,4 +1,36 @@
-# 콘솔 수집 실행 버튼 (plan of record, 소형 1PR)
+# 드래프트 운영 개선 — 콘솔 가시성·버그 + 검수 루프 UX + 소스 발굴 (plan of record)
+
+> 작성일: 2026-07-08 · 절차: PO·UX·QA 3종 병렬 검토 → tech-lead 적대 검증(파일:행 실측) → 사용자 승인. 사용자 결정: 소스는 **"기준 있는 발굴 → 불합격 시 동결"**, 승인 후 흐름은 **권고안 (A)**.
+> 전제: 1인 관리자 일상 운영. 범위 밖: celery/스레드/락/진행률 UI(확정 배제) · 소스 관리 UI(소스 0~1개 동안) · LLM 전 경로 · 반려 취소·연속 0건 카운터(소스 가동 후 백로그).
+
+## PR-D1 — 콘솔 운영 가시성 + 버그 수정 (브랜치 feat/staff-console-visibility)
+1. **감사로그 라벨 9종 수정**(실배포 버그 — event_* 5종+draft_discover가 "홈 카테고리 변경"으로 오표기): staff/views.py에 한글 `ACTION_LABELS` dict(QUALITY_WARNING_LABELS와 동형) + 로우빌더로 action_label 부착. `get_action_display()` 금지(영문 라벨 + test_staff_console.py:169-182가 한글 단언). 대상 컬럼 target_event 표시 + **staff/queries.py select_related에 "target_event" 필수(N+1)**. event_delete는 SET_NULL이라 "-" 수용.
+2. **405 데드엔드 해소**: staff_draft_discovery_run의 @require_POST 제거 → 뷰 본문 GET이면 dashboard redirect(flag-off 분기와 동일 패턴). test_run_get_not_allowed 405→302 갱신. 타 @require_POST 뷰는 스코프 밖.
+3. **last_error·stale 노출**: 대시보드 소스 표에 오류 배지+사유, stale 경고. 파생 상태는 뷰 로우빌더, 임계는 settings 상수 `DRAFT_SOURCE_STALE_HOURS` 1개만.
+4. **"마지막 실행" 요약**: 버튼 근처 표시. 데이터는 StaffActionLog 최신 DRAFT_DISCOVER의 created_at(소스별 last_checked_at max 아님 — 소스 0건이어도 정확).
+5. **success 메시지 스타일 분리**: base.html 3분기(success 추가) + base.css `.site-message-success`(--mint-soft/--mint-ink). **공개+스태프+계정 전체 파급되는 공유 크롬 변경** — PR 설명에 명시.
+6. **활성 소스 0건 프리체크**: drafts/queries.py에 `enabled_draft_sources_exist()` 헬퍼(staff→drafts는 허용 방향, 경계 테스트 확인됨) → 뷰가 실행 전 단락: flag-off와 동일하게 info 메시지+커맨드 미실행+감사로그 미기록. stdout 파싱 기각.
+
+## PR-D2 — 검수 루프 UX
+7. 대시보드 "검토 큐로 이동" → `/staff/drafts/?status=pending`.
+8. **승인/반려 후 흐름 (A)**: draft.js 승인 성공 시 1.5초 setTimeout+reload 제거 → 성공 패널 지속(기존 "행사 #N 보기" 링크는 이미 구현돼 있으나 auto-reload가 지워버리는 상태) + 쿼리 보존 "목록으로" 링크. 반려는 즉시 목록 복귀(data-list-url, ?status 보존 — detail.html 상단 링크가 이미 보존).
+9. raw_text 높이: `#raw-text-full`에만 max-height+overflow-y:auto(공용 .raw-box p 금지).
+10. 생성폼 `<details><summary>` 기본 접힘(닫혀도 JS 바인딩 정상·e2e 무영향 실측). JS 토글 금지.
+11. **반려 사유 입력(optional)**: detail.html textarea(pending만) + draft.js JSON body `rejection_reason` + 뷰 `request.data.get("rejection_reason","")` → 서비스 전달. **default "" 필수**(test_staff_draft_actions.py:158 계약). populated 케이스 신규 TDD.
+
+## Phase 3 — 소스 발굴 (운영 절차, 코드 0 — PR-D1 후 권장: last_error 노출이 관찰 도구)
+합격 기준 4종: ① robots 허용 ② 이벤트 전용 목록/피드(전체 사이트맵 배제) ③ 신규순 정렬 ④ 시험 표본 오탐 ≤1건. 후보 2~4곳 타임박스 실측(로컬 플래그 on + admin 등록 → "지금 수집" → 품질 판정 → 합격만 enabled). 전부 불합격 시 동결 명시 결정 + 재개 트리거(신규 소스 발견·배포 착수) 문서화.
+
+## 테스트 영향(실측 완료)
+갱신 1건: test_run_get_not_allowed(405→302). 유지 계약 3건: home_categories 한글 라벨 / null actor·target "-" / rejection_reason=="". e2e 중 승인/반려/생성폼/수집 흐름 타는 것 없음.
+
+## 검증(각 PR)
+백엔드 red-green TDD → 전체 pytest(베이스라인 1123)+e2e 무회귀 → 브라우저 클릭스루(데스크톱/모바일) → .docs/frontend-integration-changelog.md 기록.
+
+---
+---
+
+# 콘솔 수집 실행 버튼 : **완료** (2026-07-08, PR #100 머지, main 1f5f033)
 
 > 작성일: 2026-07-07 · 사용자 확정: **동기 실행 버튼**. discover_drafts를 터미널 수동 실행 대신 콘솔 대시보드에서 POST로 실행.
 > 범위: `POST /staff/draft-discovery/run/`(POST only, @staff_console_required) → `call_command('discover_drafts')` 동기 호출(stdout 캡처) → 요약을 messages로 표시(성공/부분 실패 CommandError 구분). 대시보드 수집 소스 패널에 "지금 수집" 버튼 — `DRAFT_DISCOVERY_ENABLED=False`면 비활성+안내(플래그·소스 활성화는 별도 운영 판단). 감사로그 `draft_discover`(14자) 추가. celery/스레드/락 금지(동시 실행은 v2 문서화된 허용 리스크), 신규 JS 0.
