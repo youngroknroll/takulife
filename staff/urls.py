@@ -14,6 +14,11 @@ app_name = "staff"
 urlpatterns = [
     path("", RedirectView.as_view(pattern_name="staff:dashboard"), name="root"),
     path("dashboard/", staff_views.dashboard, name="dashboard"),
+    path(
+        "draft-discovery/run/",
+        staff_views.staff_draft_discovery_run,
+        name="draft-discovery-run",
+    ),
     path("drafts/", staff_views.event_drafts, name="draft-list"),
     path(
         "drafts/bulk-approve/",
