@@ -2,6 +2,26 @@
 
 > 작성일: 2026-07-08 · 절차: PO·UX·QA 3종 병렬 검토 → tech-lead 적대 검증(파일:행 실측) → 사용자 승인. 사용자 결정: 소스는 **"기준 있는 발굴 → 불합격 시 동결"**, 승인 후 흐름은 **권고안 (A)**.
 > 전제: 1인 관리자 일상 운영. 범위 밖: celery/스레드/락/진행률 UI(확정 배제) · 소스 관리 UI(소스 0~1개 동안) · LLM 전 경로 · 반려 취소·연속 0건 카운터(소스 가동 후 백로그).
+>
+> **진행 상태**: PR-D1 **#101 머지**(e79d0d0) · PR-D2 **#102 머지**(249c943 — 검수 UX 5항목 + 후속 카드 통일 3건: 드래프트 카드 이벤트 카드와 폭 일치(707→1094px)·요약 카드 3열 "N건"·대시보드 요약 hero 내부·모바일 3열 1행) · **Phase 3 실측 완료 → 동결 결정(아래)**.
+
+## Phase 3 실측 결과: **후보 전원 불합격 → 수집 동결 유지** (2026-07-08)
+
+리서치(웹) + curl 실측(robots/목록/상세 각 1회, 저볼륨) 5곳 전원 탈락:
+
+| 후보 | 목록 URL | 탈락 사유(실측) |
+|---|---|---|
+| 애니메이트 이벤트 보드 | animate-onlineshop.co.kr/board/list.php?bdId=event | robots `/board/` Allow·이벤트 전용·최고 밀도(진행 9건)였으나 **상세 링크가 `javascript:gd_btn_view()` — 정적 href 없음**. 파이프라인은 URL 합성 불가 → 구조적 탈락 |
+| 대원미디어 news-event | daewonmedia.com/board/news-event | robots 전체 허용·정적·최신순이었으나 **표본 10건 중 이벤트 3~4건**(IR·사업뉴스 6~7건 — 기준 ④ 오탐 ≤1 대폭 미달) + **상세 og:title 사이트명 고정**("대원미디어" — 전 드래프트 제목 오염) |
+| 유희왕 이벤트 보드 | yugioh.co.kr/board/board_list.php?b_category=event | 이벤트 전용·정적·최신순이었으나 **상세 og:title/title 사이트명 고정** + 본문이 내비/CSS 노이즈(콘텐츠 이미지 추정) + 저밀도·협소 |
+| 미디어캐슬 cinema/notice | mediacastle.co.kr/cinema/notice | robots Allow·정적·제목 양호했으나 **2023-11 이후 게시 중단(죽은 보드)** + og:title 고정 |
+| 아니플러스 storeCollaboCafe | aniplustv.com/storeCollaboCafe | **React SPA 셸(정적 앵커 0)** — CSR 확정, 기존 판정과 일관 |
+
+**구조적 발견 2건**(모든 후보에 공통 — 향후 확장 판단 재료):
+1. 한국 커머스/게시판 상세의 og:title이 **사이트명 고정**인 경우가 지배적 → 상세 기반 제목 추출이 구조적으로 약함. 해소하려면 "목록 앵커 텍스트를 제목 후보로 병행 추출" 확장 필요(현재는 상세만 추출).
+2. 고도몰류 게시판은 상세 링크가 javascript 함수 → "URL 템플릿 합성" 확장 없이는 최고 품질 소스(애니메이트)도 사용 불가.
+
+**결정: 수집 파이프라인 동결 유지**(`DRAFT_DISCOVERY_ENABLED=False`, 소스 0). 주 운영 경로 = 콘솔 "URL로 드래프트 생성"(수동) + PR-D2 검수 루프. **재개 트리거**: ① 합격 기준 4종을 충족하는 신규 정적 소스 발견 ② 배포 착수(§4-6 정기 실행 수단 결정과 동시 재평가) ③ 사용자가 파이프라인 확장(목록 앵커 제목 추출 + URL 템플릿 합성 — 애니메이트 unlock 조합)을 승인하는 경우 — 이 확장은 스코프 확대라 별도 계획·승인 필수.
 
 ## PR-D1 — 콘솔 운영 가시성 + 버그 수정 (브랜치 feat/staff-console-visibility)
 1. **감사로그 라벨 9종 수정**(실배포 버그 — event_* 5종+draft_discover가 "홈 카테고리 변경"으로 오표기): staff/views.py에 한글 `ACTION_LABELS` dict(QUALITY_WARNING_LABELS와 동형) + 로우빌더로 action_label 부착. `get_action_display()` 금지(영문 라벨 + test_staff_console.py:169-182가 한글 단언). 대상 컬럼 target_event 표시 + **staff/queries.py select_related에 "target_event" 필수(N+1)**. event_delete는 SET_NULL이라 "-" 수용.
