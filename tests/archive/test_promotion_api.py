@@ -9,9 +9,6 @@ import pytest
 
 from archive.models import PersonalEntry
 from drafts.models import EventDraft
-from drafts.services import approve_draft
-from core.promotion import promote_personal_entry
-from events.models import Event
 
 
 @pytest.mark.django_db
@@ -135,6 +132,25 @@ def test_api_promote_already_submitted_409(client, make_user, make_entry):
 
 
 @pytest.mark.django_db
+def test_promote_with_existing_draft_url_returns_field_error(client, make_user, make_entry, make_draft):
+    """(moved from tests/core/test_coverage_supplements.py)"""
+    user = make_user()
+    entry = make_entry(user, kind="place", title="제보 대상")
+    # A draft already owns this official URL → promotion is a duplicate.
+    make_draft(source_url="https://dup.example.com/")
+
+    client.force_login(user)
+    resp = client.post(
+        f"/api/personal-entries/{entry.id}/promote/",
+        data={"official_url": "https://dup.example.com/"},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 400
+    assert "official_url" in resp.json()
+
+
+@pytest.mark.django_db
 def test_api_promote_requires_authentication(client, make_user, make_entry):
     user = make_user(username="api-promo-anon")
     entry = make_entry(user, kind="place", title="비공식")
@@ -146,27 +162,6 @@ def test_api_promote_requires_authentication(client, make_user, make_entry):
     )
 
     assert response.status_code in (401, 403)
-
-
-# ---------------------------------------------------------------------------
-# End-to-end: promote → admin approve → published Event (privacy preserved)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.django_db
-def test_promoted_entry_stays_private_until_approved(client, make_user, make_entry):
-    user = make_user(username="promo-private")
-    entry = make_entry(user, kind="place", title="숨은 카페")
-    result = promote_personal_entry(
-        user=user, personal_entry_id=entry.id, official_url="https://priv.example.com/c"
-    )
-
-    # Not published yet — absent from the public catalog.
-    assert not Event.objects.published().filter(title="숨은 카페").exists()
-
-    # Admin approves the seeded draft → it becomes a published Event.
-    approve_draft(result.draft_id, actor=user)
-    assert Event.objects.published().filter(official_url="https://priv.example.com/c").exists()
 
 
 # ---------------------------------------------------------------------------

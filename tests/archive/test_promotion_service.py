@@ -9,6 +9,7 @@ import pytest
 
 from archive.models import PersonalEntry
 from drafts.models import EventDraft
+from drafts.services import approve_draft
 from core.promotion import (
     PromotionAlreadySubmittedError,
     PromotionDuplicateError,
@@ -16,6 +17,7 @@ from core.promotion import (
     PromotionUnsafeUrlError,
     promote_personal_entry,
 )
+from events.models import Event
 
 
 @pytest.mark.django_db
@@ -125,3 +127,27 @@ def test_failed_promotion_does_not_mark_submitted(make_user, make_entry):
 
     entry.refresh_from_db()
     assert entry.promotion_status == PersonalEntry.PromotionStatus.NONE
+
+
+# ---------------------------------------------------------------------------
+# End-to-end: promote → admin approve → published Event (privacy preserved)
+# (moved from tests/archive/test_promotion_api.py — PR-9 carried this test into
+# the API file, but it never calls the HTTP endpoint; both promote_personal_entry
+# and approve_draft are called directly, so it belongs here.)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_promoted_entry_stays_private_until_approved(make_user, make_entry):
+    user = make_user(username="promo-private")
+    entry = make_entry(user, kind="place", title="숨은 카페")
+    result = promote_personal_entry(
+        user=user, personal_entry_id=entry.id, official_url="https://priv.example.com/c"
+    )
+
+    # Not published yet — absent from the public catalog.
+    assert not Event.objects.published().filter(title="숨은 카페").exists()
+
+    # Admin approves the seeded draft → it becomes a published Event.
+    approve_draft(result.draft_id, actor=user)
+    assert Event.objects.published().filter(official_url="https://priv.example.com/c").exists()

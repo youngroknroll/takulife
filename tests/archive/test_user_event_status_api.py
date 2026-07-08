@@ -257,6 +257,29 @@ def test_authenticated_user_can_delete_event_status(client, make_user, make_even
 
 
 @pytest.mark.django_db
+def test_patch_without_status_saves_without_transition(client, make_event, make_user):
+    """(moved from tests/core/test_coverage_supplements.py)"""
+    user = make_user()
+    event = make_event(title="상태 전환")
+    status_obj = UserEventStatus.objects.create(
+        user=user, event=event, status="planned"
+    )
+
+    client.force_login(user)
+    # No status in the payload → validated status is None → the plain save()
+    # arm (no transition) runs.
+    resp = client.patch(
+        f"/api/user-event-statuses/{status_obj.id}/",
+        data={},
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 200
+    status_obj.refresh_from_db()
+    assert status_obj.status == "planned"
+
+
+@pytest.mark.django_db
 def test_user_event_status_rejects_interested_as_status(client, make_user, make_event):
     """After removing 'interested' from UserEventStatus choices, the API must reject it."""
     user = make_user(email="status-interested-reject@example.com", username="status-interested-reject")

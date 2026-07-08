@@ -43,3 +43,14 @@ class TestConfidenceField:
         draft.refresh_from_db()
 
         assert draft.confidence == pytest.approx(0.87)
+
+
+# ---------------------------------------------------------------------------
+# __str__ (moved from tests/core/test_coverage_supplements.py)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_event_draft_str():
+    draft = EventDraft(source_url="https://example.com/x")
+    assert str(draft) == "https://example.com/x"

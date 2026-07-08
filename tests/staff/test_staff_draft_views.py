@@ -192,3 +192,28 @@ class TestEventDraftDetailView:
 
         assert resp.status_code == 200
         assert resp.context["draft_not_found"] is True
+
+
+# ---------------------------------------------------------------------------
+# Anonymous access — redirects to login (moved from tests/drafts/test_drafts_stats.py;
+# the non-staff-403 and staff-200 guard cases already existed as
+# test_non_staff_blocked_from_new_staff_paths and test_staff_can_access_new_drafts_list_url
+# / test_staff_can_access_new_draft_detail_url in tests/staff/test_staff_console.py,
+# so those duplicates were merged away rather than moved here.)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_anonymous_access_to_event_drafts_html_redirects(client):
+    response = client.get("/staff/drafts/")
+
+    assert response.status_code == 302
+    assert response.url.startswith("/accounts/login/")
+
+
+@pytest.mark.django_db
+def test_anonymous_access_to_event_draft_detail_html_redirects(client):
+    response = client.get("/staff/drafts/1/")
+
+    assert response.status_code == 302
+    assert response.url.startswith("/accounts/login/")
