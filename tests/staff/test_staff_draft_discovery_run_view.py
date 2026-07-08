@@ -17,23 +17,10 @@ tests/test_discover_drafts_command.py and is out of scope here.
 import pytest
 from django.core.management import CommandError
 
-from drafts.models import DraftSource
 from staff.models import StaffActionLog
 
 
 RUN_URL = "/staff/draft-discovery/run/"
-
-
-def _create_enabled_source():
-    """A minimal enabled DraftSource — the actual-run tests below need at
-    least one so they exercise the command-execution path rather than the
-    "활성 소스 0건" precheck short-circuit (PR-D1 item 6)."""
-    return DraftSource.objects.create(
-        name="enabled-source",
-        url="https://example.com/enabled-feed/",
-        source_type=DraftSource.SourceType.RSS,
-        enabled=True,
-    )
 
 
 @pytest.mark.django_db
@@ -68,14 +55,11 @@ def test_run_get_redirects_to_dashboard_instead_of_405(staff_client):
 
 
 @pytest.mark.django_db
-def test_run_flag_off_shows_info_message_and_does_not_execute_command(staff_client, settings, monkeypatch):
+def test_run_flag_off_shows_info_message_and_does_not_execute_command(staff_client, settings, monkeypatch, fail_if_called):
     settings.DRAFT_DISCOVERY_ENABLED = False
     staff, client = staff_client()
 
-    def _fail_if_called(*args, **kwargs):
-        raise AssertionError("discover_drafts must not run while the flag is off")
-
-    monkeypatch.setattr("staff.views.call_command", _fail_if_called)
+    monkeypatch.setattr("staff.views.call_command", fail_if_called)
 
     resp = client.post(RUN_URL, follow=True)
 
@@ -86,23 +70,15 @@ def test_run_flag_off_shows_info_message_and_does_not_execute_command(staff_clie
 
 
 @pytest.mark.django_db
-def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(staff_client, settings, monkeypatch):
+def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(staff_client, settings, monkeypatch, make_source, fail_if_called):
     """PR-D1 item 6: flag on, but zero enabled DraftSource rows — the same
     "no-op is an intended state" treatment as the flag-off case: an info
     message, no command execution, no audit log entry."""
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
-    DraftSource.objects.create(
-        name="disabled-source",
-        url="https://example.com/disabled-feed/",
-        source_type=DraftSource.SourceType.RSS,
-        enabled=False,
-    )
+    make_source(name="disabled-source", url="https://example.com/disabled-feed/", enabled=False)
 
-    def _fail_if_called(*args, **kwargs):
-        raise AssertionError("discover_drafts must not run with 0 enabled sources")
-
-    monkeypatch.setattr("staff.views.call_command", _fail_if_called)
+    monkeypatch.setattr("staff.views.call_command", fail_if_called)
 
     resp = client.post(RUN_URL, follow=True)
 
@@ -113,10 +89,10 @@ def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(
 
 
 @pytest.mark.django_db
-def test_run_success_shows_summary_message_and_writes_audit_log(staff_client, settings, monkeypatch):
+def test_run_success_shows_summary_message_and_writes_audit_log(staff_client, settings, monkeypatch, make_source):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
-    _create_enabled_source()
+    make_source(name="enabled-source", url="https://example.com/enabled-feed/")
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):
         assert name == "discover_drafts"
@@ -136,10 +112,10 @@ def test_run_success_shows_summary_message_and_writes_audit_log(staff_client, se
 
 
 @pytest.mark.django_db
-def test_run_partial_failure_shows_error_message_and_writes_audit_log(staff_client, settings, monkeypatch):
+def test_run_partial_failure_shows_error_message_and_writes_audit_log(staff_client, settings, monkeypatch, make_source):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
-    _create_enabled_source()
+    make_source(name="enabled-source", url="https://example.com/enabled-feed/")
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):
         stdout.write("발견 1건 (상한 도달로 0건 보류) / 생성 0건\n")
@@ -157,10 +133,10 @@ def test_run_partial_failure_shows_error_message_and_writes_audit_log(staff_clie
 
 
 @pytest.mark.django_db
-def test_run_unclassified_exception_shows_error_message_and_does_not_propagate(staff_client, settings, monkeypatch):
+def test_run_unclassified_exception_shows_error_message_and_does_not_propagate(staff_client, settings, monkeypatch, make_source):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
-    _create_enabled_source()
+    make_source(name="enabled-source", url="https://example.com/enabled-feed/")
 
     def _fake_call_command(name, *args, stdout=None, **kwargs):
         raise RuntimeError("boom")

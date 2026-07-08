@@ -35,19 +35,13 @@ class TestDraftReviewStats:
         assert result["approved"] == 0
         assert result["rejected"] == 0
 
-    def test_counts_match_review_status_distribution(self):
+    def test_counts_match_review_status_distribution(self, make_draft):
         from drafts.queries import draft_review_stats
 
-        EventDraft.objects.create(source_url="https://example.com/a")
-        EventDraft.objects.create(source_url="https://example.com/b")
-        EventDraft.objects.create(
-            source_url="https://example.com/c",
-            review_status=EventDraft.ReviewStatus.APPROVED,
-        )
-        EventDraft.objects.create(
-            source_url="https://example.com/d",
-            review_status=EventDraft.ReviewStatus.REJECTED,
-        )
+        make_draft("https://example.com/a")
+        make_draft("https://example.com/b")
+        make_draft("https://example.com/c", review_status=EventDraft.ReviewStatus.APPROVED)
+        make_draft("https://example.com/d", review_status=EventDraft.ReviewStatus.REJECTED)
 
         result = draft_review_stats()
 
@@ -55,10 +49,10 @@ class TestDraftReviewStats:
         assert result["approved"] == 1
         assert result["rejected"] == 1
 
-    def test_all_three_keys_present_when_only_pending_exist(self):
+    def test_all_three_keys_present_when_only_pending_exist(self, make_draft):
         from drafts.queries import draft_review_stats
 
-        EventDraft.objects.create(source_url="https://example.com/only-pending")
+        make_draft("https://example.com/only-pending")
 
         result = draft_review_stats()
 
@@ -66,13 +60,10 @@ class TestDraftReviewStats:
         assert result["approved"] == 0
         assert result["rejected"] == 0
 
-    def test_all_keys_present_when_only_approved_exist(self):
+    def test_all_keys_present_when_only_approved_exist(self, make_draft):
         from drafts.queries import draft_review_stats
 
-        EventDraft.objects.create(
-            source_url="https://example.com/only-approved",
-            review_status=EventDraft.ReviewStatus.APPROVED,
-        )
+        make_draft("https://example.com/only-approved", review_status=EventDraft.ReviewStatus.APPROVED)
 
         result = draft_review_stats()
 
@@ -90,17 +81,11 @@ def stats_url():
 
 
 @pytest.mark.django_db
-def test_admin_can_get_draft_stats_with_correct_counts(admin_client):
-    EventDraft.objects.create(source_url="https://example.com/p1")
-    EventDraft.objects.create(source_url="https://example.com/p2")
-    EventDraft.objects.create(
-        source_url="https://example.com/a1",
-        review_status=EventDraft.ReviewStatus.APPROVED,
-    )
-    EventDraft.objects.create(
-        source_url="https://example.com/r1",
-        review_status=EventDraft.ReviewStatus.REJECTED,
-    )
+def test_admin_can_get_draft_stats_with_correct_counts(admin_client, make_draft):
+    make_draft("https://example.com/p1")
+    make_draft("https://example.com/p2")
+    make_draft("https://example.com/a1", review_status=EventDraft.ReviewStatus.APPROVED)
+    make_draft("https://example.com/r1", review_status=EventDraft.ReviewStatus.REJECTED)
 
     response = admin_client.get(stats_url())
 

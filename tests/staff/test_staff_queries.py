@@ -1,7 +1,6 @@
 """staff/queries.py::recent_staff_actions — PR-2 sub-step F (backend)."""
 import pytest
 
-from drafts.models import EventDraft
 from events.models import Event
 from staff.models import StaffActionLog
 from staff.queries import recent_staff_actions
@@ -37,12 +36,9 @@ def test_recent_staff_actions_returns_empty_list_when_none():
 
 
 @pytest.mark.django_db
-def test_recent_staff_actions_exposes_actor_and_target_draft_without_error(make_user):
+def test_recent_staff_actions_exposes_actor_and_target_draft_without_error(make_user, make_draft):
     actor = make_user(is_staff=True)
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/recent-action-draft",
-        extracted_title="드래프트 최근",
-    )
+    draft = make_draft("https://example.com/recent-action-draft", extracted_title="드래프트 최근")
     StaffActionLog.objects.create(
         actor=actor, action="approve", target_draft=draft
     )

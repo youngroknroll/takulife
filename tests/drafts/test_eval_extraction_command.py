@@ -11,11 +11,7 @@ from django.core.management import call_command
 from drafts.models import EventDraft
 
 
-def _fail_if_called(*args, **kwargs):
-    raise AssertionError("this extractor must not be called")
-
-
-def _make_draft(**overrides):
+def _make_draft(make_draft, **overrides):
     defaults = {
         "source_url": "https://example.com/event",
         "raw_title": "IVE Popup Store",
@@ -25,7 +21,7 @@ def _make_draft(**overrides):
         "review_status": EventDraft.ReviewStatus.PENDING,
     }
     defaults.update(overrides)
-    return EventDraft.objects.create(**defaults)
+    return make_draft(**defaults)
 
 
 @pytest.mark.django_db
@@ -37,9 +33,9 @@ def test_no_approved_drafts_reports_empty_golden_set_without_error(capsys):
 
 
 @pytest.mark.django_db
-def test_only_pending_and_rejected_drafts_yield_empty_golden_set(capsys):
-    _make_draft(source_url="https://example.com/pending", review_status=EventDraft.ReviewStatus.PENDING)
-    _make_draft(source_url="https://example.com/rejected", review_status=EventDraft.ReviewStatus.REJECTED)
+def test_only_pending_and_rejected_drafts_yield_empty_golden_set(capsys, make_draft):
+    _make_draft(make_draft, source_url="https://example.com/pending", review_status=EventDraft.ReviewStatus.PENDING)
+    _make_draft(make_draft, source_url="https://example.com/rejected", review_status=EventDraft.ReviewStatus.REJECTED)
 
     call_command("eval_extraction")
 
@@ -48,14 +44,14 @@ def test_only_pending_and_rejected_drafts_yield_empty_golden_set(capsys):
 
 
 @pytest.mark.django_db
-def test_excludes_approved_drafts_without_raw_text(monkeypatch, capsys):
-    _make_draft(
+def test_excludes_approved_drafts_without_raw_text(monkeypatch, capsys, make_draft):
+    _make_draft(make_draft, 
         source_url="https://example.com/no-raw-text",
         raw_title="",
         raw_text="",
         review_status=EventDraft.ReviewStatus.APPROVED,
     )
-    included = _make_draft(
+    included = _make_draft(make_draft, 
         source_url="https://example.com/with-raw-text",
         review_status=EventDraft.ReviewStatus.APPROVED,
     )
@@ -74,10 +70,10 @@ def test_excludes_approved_drafts_without_raw_text(monkeypatch, capsys):
 
 
 @pytest.mark.django_db
-def test_default_run_uses_llm_extractor(monkeypatch, capsys):
-    _make_draft(review_status=EventDraft.ReviewStatus.APPROVED)
+def test_default_run_uses_llm_extractor(monkeypatch, capsys, make_draft, fail_if_called):
+    _make_draft(make_draft, review_status=EventDraft.ReviewStatus.APPROVED)
     monkeypatch.setattr(
-        "drafts.management.commands.eval_extraction.extract_event_fields_heuristic", _fail_if_called
+        "drafts.management.commands.eval_extraction.extract_event_fields_heuristic", fail_if_called
     )
     monkeypatch.setattr(
         "drafts.management.commands.eval_extraction.extract_event_fields_llm",
@@ -88,10 +84,10 @@ def test_default_run_uses_llm_extractor(monkeypatch, capsys):
 
 
 @pytest.mark.django_db
-def test_heuristic_flag_uses_heuristic_extractor_only(monkeypatch, capsys):
-    _make_draft(review_status=EventDraft.ReviewStatus.APPROVED)
+def test_heuristic_flag_uses_heuristic_extractor_only(monkeypatch, capsys, make_draft, fail_if_called):
+    _make_draft(make_draft, review_status=EventDraft.ReviewStatus.APPROVED)
     monkeypatch.setattr(
-        "drafts.management.commands.eval_extraction.extract_event_fields_llm", _fail_if_called
+        "drafts.management.commands.eval_extraction.extract_event_fields_llm", fail_if_called
     )
     monkeypatch.setattr(
         "drafts.management.commands.eval_extraction.extract_event_fields_heuristic",
@@ -102,8 +98,8 @@ def test_heuristic_flag_uses_heuristic_extractor_only(monkeypatch, capsys):
 
 
 @pytest.mark.django_db
-def test_perfect_match_report_includes_field_names_and_accuracy(monkeypatch, capsys):
-    _make_draft(review_status=EventDraft.ReviewStatus.APPROVED)
+def test_perfect_match_report_includes_field_names_and_accuracy(monkeypatch, capsys, make_draft):
+    _make_draft(make_draft, review_status=EventDraft.ReviewStatus.APPROVED)
     monkeypatch.setattr(
         "drafts.management.commands.eval_extraction.extract_event_fields_llm",
         lambda raw_title, raw_text: {"extracted_category": "popup_store", "extracted_region": "seoul"},
@@ -118,9 +114,9 @@ def test_perfect_match_report_includes_field_names_and_accuracy(monkeypatch, cap
 
 
 @pytest.mark.django_db
-def test_limit_option_caps_golden_set_size_and_extractor_call_count(monkeypatch, capsys):
+def test_limit_option_caps_golden_set_size_and_extractor_call_count(monkeypatch, capsys, make_draft):
     for i in range(3):
-        _make_draft(source_url=f"https://example.com/approved-{i}", review_status=EventDraft.ReviewStatus.APPROVED)
+        _make_draft(make_draft, source_url=f"https://example.com/approved-{i}", review_status=EventDraft.ReviewStatus.APPROVED)
 
     calls = []
 

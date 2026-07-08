@@ -10,15 +10,9 @@ from drafts.models import EventDraft
 
 @pytest.mark.django_db
 class TestEventDraftsListView:
-    def test_list_renders_draft_rows(self, staff_client):
-        EventDraft.objects.create(
-            source_url="https://example.com/a",
-            extracted_title="드래프트 A",
-            extracted_category="popup_store",
-        )
-        EventDraft.objects.create(
-            source_url="https://example.com/b", extracted_title="드래프트 B"
-        )
+    def test_list_renders_draft_rows(self, staff_client, make_draft):
+        make_draft("https://example.com/a", extracted_title="드래프트 A", extracted_category="popup_store")
+        make_draft("https://example.com/b", extracted_title="드래프트 B")
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
@@ -29,20 +23,17 @@ class TestEventDraftsListView:
         assert "드래프트 B" in body
 
 
-def _seed_drafts(count, status=EventDraft.ReviewStatus.PENDING, start=0):
+def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, start=0):
     for i in range(start, start + count):
-        EventDraft.objects.create(
-            source_url=f"https://example.com/{status}-{i}",
-            review_status=status,
-        )
+        make_draft(f"https://example.com/{status}-{i}", review_status=status)
 
 
 @pytest.mark.django_db
 class TestEventDraftsListFilterPagination:
     """/staff/drafts/ status filter + pagination (shared pager, list_drafts)."""
 
-    def test_first_page_caps_at_twenty_with_pager(self, staff_client):
-        _seed_drafts(21)
+    def test_first_page_caps_at_twenty_with_pager(self, staff_client, make_draft):
+        _seed_drafts(make_draft, 21)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
@@ -53,16 +44,16 @@ class TestEventDraftsListFilterPagination:
         assert len(page_obj.object_list) == 20
         assert page_obj.has_other_pages() is True
 
-    def test_no_pager_when_within_one_page(self, staff_client):
-        _seed_drafts(20)
+    def test_no_pager_when_within_one_page(self, staff_client, make_draft):
+        _seed_drafts(make_draft, 20)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
 
         assert resp.context["page_obj"].has_other_pages() is False
 
-    def test_second_page_holds_remainder_and_differs_from_first(self, staff_client):
-        _seed_drafts(21)
+    def test_second_page_holds_remainder_and_differs_from_first(self, staff_client, make_draft):
+        _seed_drafts(make_draft, 21)
 
         _, client = staff_client()
         first = client.get("/staff/drafts/")
@@ -77,27 +68,18 @@ class TestEventDraftsListFilterPagination:
         assert set(first_ids).isdisjoint(second_ids)
 
     @pytest.mark.parametrize("page_value", ["abc", "9999", "0"])
-    def test_invalid_page_values_return_200(self, staff_client, page_value):
-        _seed_drafts(21)
+    def test_invalid_page_values_return_200(self, staff_client, page_value, make_draft):
+        _seed_drafts(make_draft, 21)
 
         _, client = staff_client()
         resp = client.get(f"/staff/drafts/?page={page_value}")
 
         assert resp.status_code == 200
 
-    def test_status_filter_shows_only_matching_rows(self, staff_client):
-        pending = EventDraft.objects.create(
-            source_url="https://example.com/pending-1",
-            review_status=EventDraft.ReviewStatus.PENDING,
-        )
-        EventDraft.objects.create(
-            source_url="https://example.com/approved-1",
-            review_status=EventDraft.ReviewStatus.APPROVED,
-        )
-        EventDraft.objects.create(
-            source_url="https://example.com/rejected-1",
-            review_status=EventDraft.ReviewStatus.REJECTED,
-        )
+    def test_status_filter_shows_only_matching_rows(self, staff_client, make_draft):
+        pending = make_draft("https://example.com/pending-1", review_status=EventDraft.ReviewStatus.PENDING)
+        make_draft("https://example.com/approved-1", review_status=EventDraft.ReviewStatus.APPROVED)
+        make_draft("https://example.com/rejected-1", review_status=EventDraft.ReviewStatus.REJECTED)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=pending")
@@ -106,9 +88,9 @@ class TestEventDraftsListFilterPagination:
         rows = resp.context["draft_rows"]
         assert [row["draft"].id for row in rows] == [pending.id]
 
-    def test_no_status_returns_all_ordered_by_id_desc(self, staff_client):
-        first = EventDraft.objects.create(source_url="https://example.com/x-1")
-        second = EventDraft.objects.create(source_url="https://example.com/x-2")
+    def test_no_status_returns_all_ordered_by_id_desc(self, staff_client, make_draft):
+        first = make_draft("https://example.com/x-1")
+        second = make_draft("https://example.com/x-2")
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
@@ -116,8 +98,8 @@ class TestEventDraftsListFilterPagination:
         rows = resp.context["draft_rows"]
         assert [row["draft"].id for row in rows] == [second.id, first.id]
 
-    def test_unknown_status_falls_back_to_all(self, staff_client):
-        EventDraft.objects.create(source_url="https://example.com/y-1")
+    def test_unknown_status_falls_back_to_all(self, staff_client, make_draft):
+        make_draft("https://example.com/y-1")
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=garbage")
@@ -125,8 +107,8 @@ class TestEventDraftsListFilterPagination:
         assert resp.status_code == 200
         assert resp.context["selected_status"] == ""
 
-    def test_pager_query_preserves_status_filter(self, staff_client):
-        _seed_drafts(21, status=EventDraft.ReviewStatus.PENDING)
+    def test_pager_query_preserves_status_filter(self, staff_client, make_draft):
+        _seed_drafts(make_draft, 21, status=EventDraft.ReviewStatus.PENDING)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=pending")
@@ -135,10 +117,10 @@ class TestEventDraftsListFilterPagination:
         assert resp.context["pager_query"] == "&status=pending"
         assert b"?page=2&amp;status=pending" in resp.content
 
-    def test_stats_report_totals_not_filtered_subset(self, staff_client):
-        _seed_drafts(2, status=EventDraft.ReviewStatus.PENDING)
-        _seed_drafts(3, status=EventDraft.ReviewStatus.APPROVED)
-        _seed_drafts(1, status=EventDraft.ReviewStatus.REJECTED)
+    def test_stats_report_totals_not_filtered_subset(self, staff_client, make_draft):
+        _seed_drafts(make_draft, 2, status=EventDraft.ReviewStatus.PENDING)
+        _seed_drafts(make_draft, 3, status=EventDraft.ReviewStatus.APPROVED)
+        _seed_drafts(make_draft, 1, status=EventDraft.ReviewStatus.REJECTED)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=pending")
@@ -149,8 +131,8 @@ class TestEventDraftsListFilterPagination:
         assert stats["approved"] == 3
         assert stats["rejected"] == 1
 
-    def test_filtered_status_keeps_order_across_page_boundary(self, staff_client):
-        _seed_drafts(21, status=EventDraft.ReviewStatus.PENDING)
+    def test_filtered_status_keeps_order_across_page_boundary(self, staff_client, make_draft):
+        _seed_drafts(make_draft, 21, status=EventDraft.ReviewStatus.PENDING)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=pending&page=2")
@@ -167,11 +149,8 @@ class TestEventDraftsListFilterPagination:
         assert resp.status_code == 200
         assert "등록된 드래프트가 없습니다" in resp.content.decode()
 
-    def test_empty_state_for_selected_status_with_other_status_present(self, staff_client):
-        EventDraft.objects.create(
-            source_url="https://example.com/only-pending",
-            review_status=EventDraft.ReviewStatus.PENDING,
-        )
+    def test_empty_state_for_selected_status_with_other_status_present(self, staff_client, make_draft):
+        make_draft("https://example.com/only-pending", review_status=EventDraft.ReviewStatus.PENDING)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=rejected")
@@ -194,13 +173,8 @@ class TestEventDraftsListFilterPagination:
 
 @pytest.mark.django_db
 class TestEventDraftDetailView:
-    def test_existing_draft_renders_with_labels(self, staff_client):
-        draft = EventDraft.objects.create(
-            source_url="https://example.com/c",
-            extracted_title="상세 드래프트",
-            extracted_category="popup_store",
-            extracted_region="seoul",
-        )
+    def test_existing_draft_renders_with_labels(self, staff_client, make_draft):
+        draft = make_draft("https://example.com/c", extracted_title="상세 드래프트", extracted_category="popup_store", extracted_region="seoul")
 
         _, client = staff_client()
         resp = client.get(f"/staff/drafts/{draft.id}/")

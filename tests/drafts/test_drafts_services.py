@@ -27,15 +27,9 @@ from events.models import Event
 
 
 @pytest.mark.django_db
-def test_approve_draft_creates_published_event_and_marks_draft_approved(make_user):
+def test_approve_draft_creates_published_event_and_marks_draft_approved(make_user, make_draft):
     actor = make_user()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/event",
-        source_name="Official",
-        extracted_title="Popup event",
-        extracted_category="popup_store",
-        extracted_region="seoul",
-    )
+    draft = make_draft("https://example.com/event", source_name="Official", extracted_title="Popup event", extracted_category="popup_store", extracted_region="seoul")
 
     before = timezone.now()
     result = approve_draft(draft.id, actor=actor)
@@ -54,12 +48,9 @@ def test_approve_draft_creates_published_event_and_marks_draft_approved(make_use
 
 
 @pytest.mark.django_db
-def test_reject_draft_marks_draft_rejected_without_creating_event(make_user):
+def test_reject_draft_marks_draft_rejected_without_creating_event(make_user, make_draft):
     actor = make_user()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/rejected-event",
-        extracted_title="Rejected event",
-    )
+    draft = make_draft("https://example.com/rejected-event", extracted_title="Rejected event")
 
     before = timezone.now()
     result = reject_draft(draft.id, actor=actor)
@@ -75,9 +66,9 @@ def test_reject_draft_marks_draft_rejected_without_creating_event(make_user):
 
 
 @pytest.mark.django_db
-def test_reject_draft_records_rejection_reason(make_user):
+def test_reject_draft_records_rejection_reason(make_user, make_draft):
     actor = make_user()
-    draft = EventDraft.objects.create(source_url="https://example.com/rejected-with-reason")
+    draft = make_draft("https://example.com/rejected-with-reason")
 
     reject_draft(draft.id, actor=actor, rejection_reason="duplicate listing")
 
@@ -86,12 +77,9 @@ def test_reject_draft_records_rejection_reason(make_user):
 
 
 @pytest.mark.django_db
-def test_approve_draft_attribution_survives_approve_then_publish(make_user):
+def test_approve_draft_attribution_survives_approve_then_publish(make_user, make_draft):
     actor = make_user()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/attributed-event",
-        extracted_title="Attributed event",
-    )
+    draft = make_draft("https://example.com/attributed-event", extracted_title="Attributed event")
 
     result = approve_draft(draft.id, actor=actor)
 
@@ -102,14 +90,9 @@ def test_approve_draft_attribution_survives_approve_then_publish(make_user):
 
 
 @pytest.mark.django_db
-def test_approve_draft_with_inverted_period_raises_and_stays_pending(make_user):
+def test_approve_draft_with_inverted_period_raises_and_stays_pending(make_user, make_draft):
     actor = make_user()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/inverted-period",
-        extracted_title="Inverted period event",
-        extracted_start_date=datetime.date(2026, 8, 10),
-        extracted_end_date=datetime.date(2026, 8, 1),
-    )
+    draft = make_draft("https://example.com/inverted-period", extracted_title="Inverted period event", extracted_start_date=datetime.date(2026, 8, 10), extracted_end_date=datetime.date(2026, 8, 1))
 
     with pytest.raises(DraftPublicationError):
         approve_draft(draft.id, actor=actor)
@@ -120,11 +103,9 @@ def test_approve_draft_with_inverted_period_raises_and_stays_pending(make_user):
 
 
 @pytest.mark.django_db
-def test_approve_draft_rejects_blank_title_and_stays_pending(make_user):
+def test_approve_draft_rejects_blank_title_and_stays_pending(make_user, make_draft):
     actor = make_user()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/blank-title-draft",
-    )
+    draft = make_draft("https://example.com/blank-title-draft")
 
     with pytest.raises(DraftPublicationTitleError):
         approve_draft(draft.id, actor=actor)
@@ -137,12 +118,9 @@ def test_approve_draft_rejects_blank_title_and_stays_pending(make_user):
 
 
 @pytest.mark.django_db
-def test_approve_draft_rejects_title_equal_to_official_url_and_stays_pending(make_user):
+def test_approve_draft_rejects_title_equal_to_official_url_and_stays_pending(make_user, make_draft):
     actor = make_user()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/self-titled-draft",
-        extracted_title="https://example.com/self-titled-draft",
-    )
+    draft = make_draft("https://example.com/self-titled-draft", extracted_title="https://example.com/self-titled-draft")
 
     with pytest.raises(DraftPublicationTitleError):
         approve_draft(draft.id, actor=actor)
@@ -155,8 +133,8 @@ def test_approve_draft_rejects_title_equal_to_official_url_and_stays_pending(mak
 
 
 @pytest.mark.django_db
-def test_update_draft_updates_pending_draft_fields():
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+def test_update_draft_updates_pending_draft_fields(make_draft):
+    draft = make_draft("https://example.com/event")
 
     updated = update_draft(draft.id, {"extracted_title": "Updated title", "extracted_region": "seoul"})
 
@@ -167,11 +145,8 @@ def test_update_draft_updates_pending_draft_fields():
 
 
 @pytest.mark.django_db
-def test_update_draft_rejects_non_pending_state():
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/event",
-        review_status=EventDraft.ReviewStatus.APPROVED,
-    )
+def test_update_draft_rejects_non_pending_state(make_draft):
+    draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.APPROVED)
 
     with pytest.raises(DraftStateError):
         update_draft(draft.id, {"extracted_title": "Updated title"})
@@ -331,8 +306,8 @@ def test_create_draft_from_fields_wraps_duplicate_create_in_savepoint(monkeypatc
 
 
 @pytest.mark.django_db
-def test_update_draft_rejects_immutable_fields_even_without_serializer():
-    draft = EventDraft.objects.create(source_url="https://example.com/event")
+def test_update_draft_rejects_immutable_fields_even_without_serializer(make_draft):
+    draft = make_draft("https://example.com/event")
 
     with pytest.raises(DraftImmutableFieldError):
         update_draft(draft.id, {"review_status": EventDraft.ReviewStatus.APPROVED})

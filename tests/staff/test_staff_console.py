@@ -96,18 +96,10 @@ def test_anonymous_still_redirects_to_login_not_403(client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_returns_200_with_pending_count(staff_client):
+def test_staff_dashboard_returns_200_with_pending_count(staff_client, make_draft):
     staff, client = staff_client()
-    EventDraft.objects.create(
-        source_url="https://example.com/a",
-        extracted_title="드래프트 A",
-        review_status=EventDraft.ReviewStatus.PENDING,
-    )
-    EventDraft.objects.create(
-        source_url="https://example.com/b",
-        extracted_title="드래프트 B",
-        review_status=EventDraft.ReviewStatus.APPROVED,
-    )
+    make_draft("https://example.com/a", extracted_title="드래프트 A", review_status=EventDraft.ReviewStatus.PENDING)
+    make_draft("https://example.com/b", extracted_title="드래프트 B", review_status=EventDraft.ReviewStatus.APPROVED)
 
     resp = client.get("/staff/dashboard/")
 
@@ -128,12 +120,9 @@ def test_staff_dashboard_returns_200_with_pending_count(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_context_includes_recent_actions_newest_first(staff_client):
+def test_staff_dashboard_context_includes_recent_actions_newest_first(staff_client, make_draft):
     staff, client = staff_client()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/recent-action",
-        extracted_title="드래프트 최근",
-    )
+    draft = make_draft("https://example.com/recent-action", extracted_title="드래프트 최근")
     first = StaffActionLog.objects.create(
         actor=staff, action=StaffActionLog.Action.APPROVE, target_draft=draft
     )
@@ -441,11 +430,9 @@ def test_staff_can_access_new_drafts_list_url(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_new_draft_detail_url(staff_client):
+def test_staff_can_access_new_draft_detail_url(staff_client, make_draft):
     staff, client = staff_client()
-    draft = EventDraft.objects.create(
-        source_url="https://example.com/c", extracted_title="드래프트 C"
-    )
+    draft = make_draft("https://example.com/c", extracted_title="드래프트 C")
 
     resp = client.get(f"/staff/drafts/{draft.id}/")
 

@@ -10,16 +10,13 @@ from drafts.models import EventDraft
 
 @pytest.mark.django_db
 class TestExtractionMethodField:
-    def test_defaults_to_heuristic(self):
-        draft = EventDraft.objects.create(source_url="https://example.com/event")
+    def test_defaults_to_heuristic(self, make_draft):
+        draft = make_draft("https://example.com/event")
 
         assert draft.extraction_method == EventDraft.ExtractionMethod.HEURISTIC
 
-    def test_llm_value_round_trips(self):
-        draft = EventDraft.objects.create(
-            source_url="https://example.com/event",
-            extraction_method=EventDraft.ExtractionMethod.LLM,
-        )
+    def test_llm_value_round_trips(self, make_draft):
+        draft = make_draft("https://example.com/event", extraction_method=EventDraft.ExtractionMethod.LLM)
         draft.refresh_from_db()
 
         assert draft.extraction_method == EventDraft.ExtractionMethod.LLM
@@ -36,15 +33,13 @@ class TestExtractionMethodField:
 
 @pytest.mark.django_db
 class TestConfidenceField:
-    def test_defaults_to_none(self):
-        draft = EventDraft.objects.create(source_url="https://example.com/event")
+    def test_defaults_to_none(self, make_draft):
+        draft = make_draft("https://example.com/event")
 
         assert draft.confidence is None
 
-    def test_float_value_round_trips(self):
-        draft = EventDraft.objects.create(
-            source_url="https://example.com/event", confidence=0.87
-        )
+    def test_float_value_round_trips(self, make_draft):
+        draft = make_draft("https://example.com/event", confidence=0.87)
         draft.refresh_from_db()
 
         assert draft.confidence == pytest.approx(0.87)
