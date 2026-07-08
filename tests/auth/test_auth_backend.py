@@ -7,18 +7,10 @@ Tests for Phase 2 auth backend:
 - @login_required redirect on HTML archive views
 """
 import re
-import secrets
 
 import pytest
 from django.test import Client
 from rest_framework.test import APIClient
-
-
-# A strong throwaway password generated at runtime for tests. Not a real
-# credential and never stored — kept out of source so secret scanners do not
-# flag a hardcoded password literal. Complexity prefix guarantees it passes
-# AUTH_PASSWORD_VALIDATORS regardless of the random suffix.
-VALID_PASSWORD = "Aa1!" + secrets.token_urlsafe(16)
 
 
 # ---------------------------------------------------------------------------
@@ -222,14 +214,14 @@ def test_registration_get_renders_form(client):
 
 
 @pytest.mark.django_db
-def test_valid_registration_does_not_log_in_before_verification(client, django_user_model):
+def test_valid_registration_does_not_log_in_before_verification(client, django_user_model, valid_password):
     """Signup creates an unverified user and does NOT grant a session yet."""
     response = client.post(
         "/accounts/signup/",
         {
             "email": "newuser@example.com",
-            "password1": VALID_PASSWORD,
-            "password2": VALID_PASSWORD,
+            "password1": valid_password,
+            "password2": valid_password,
         },
     )
     # Redirects to the "check your email" page, not straight into the app.
@@ -243,14 +235,14 @@ def test_valid_registration_does_not_log_in_before_verification(client, django_u
 
 
 @pytest.mark.django_db
-def test_confirming_email_logs_the_user_in(client, django_user_model, mailoutbox):
+def test_confirming_email_logs_the_user_in(client, django_user_model, mailoutbox, valid_password):
     """Clicking the emailed confirmation link authenticates the session."""
     client.post(
         "/accounts/signup/",
         {
             "email": "confirmme@example.com",
-            "password1": VALID_PASSWORD,
-            "password2": VALID_PASSWORD,
+            "password1": valid_password,
+            "password2": valid_password,
         },
     )
     assert len(mailoutbox) == 1
@@ -281,7 +273,7 @@ def test_weak_password_rejected_by_validators(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_duplicate_email_rejected(client, django_user_model, mailoutbox):
+def test_duplicate_email_rejected(client, django_user_model, mailoutbox, valid_password):
     """Signing up with an existing email does not create a second account.
 
     django-allauth's default ACCOUNT_PREVENT_ENUMERATION=True responds with
@@ -289,14 +281,14 @@ def test_duplicate_email_rejected(client, django_user_model, mailoutbox):
     probe which emails are registered) but notifies the existing account
     by mail instead of creating a duplicate user.
     """
-    django_user_model.objects.create_user(email="existinguser@example.com", password=VALID_PASSWORD)
+    django_user_model.objects.create_user(email="existinguser@example.com", password=valid_password)
 
     response = client.post(
         "/accounts/signup/",
         {
             "email": "existinguser@example.com",
-            "password1": VALID_PASSWORD,
-            "password2": VALID_PASSWORD,
+            "password1": valid_password,
+            "password2": valid_password,
         },
     )
     assert response.status_code == 302
