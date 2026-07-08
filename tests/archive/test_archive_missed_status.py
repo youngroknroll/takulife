@@ -186,3 +186,32 @@ def test_mark_visited_removes_from_missed(django_user_model, make_status):
 
     assert s.status == "visited"
     assert _derived(s) == "visited"
+
+
+# ---------------------------------------------------------------------------
+# Derived status against the real "today" (mirrors the PATCH revert-to-planned
+# HTTP flow in test_user_event_status_api.py's
+# test_patch_to_planned_pins_override_so_it_stays_planned)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_planned_firmly_past_with_override_derives_planned_against_real_today(
+    django_user_model, make_status
+):
+    """A status dated firmly in the past (2020) with missed_overridden=True
+    derives as 'planned' against the actual current date, not the module's
+    simulated TODAY — the same scenario the PATCH revert-to-planned endpoint
+    persists, reconstructed here directly via ORM."""
+    user = _user(django_user_model, "s4")
+    e = _event(date(2020, 1, 2), title="Long-past event", start_date=date(2020, 1, 1))
+    s = make_status(user, event=e, status="planned", missed_overridden=True)
+
+    derived = (
+        UserEventStatus.objects.filter(pk=s.pk)
+        .with_derived_status(today=date.today())
+        .first()
+        .derived_status
+    )
+
+    assert derived == "planned"

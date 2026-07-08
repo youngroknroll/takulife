@@ -14,7 +14,6 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from archive.models import VisitRecord, VisitRecordPhoto
-from archive.services import PhotoLimitExceededError, create_visit_record_photo
 
 
 # ---------------------------------------------------------------------------
@@ -492,54 +491,14 @@ def test_sixth_photo_upload_rejected_400(client, make_user, make_event, png_byte
 
 
 @pytest.mark.django_db
-def test_create_visit_record_photo_locks_the_visit_record_row(make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
-    """The count-then-create must be atomic and lock the parent VisitRecord row
-    (select_for_update) so two concurrent uploads can't both pass the count
-    check and push the record past MAX_PHOTOS_PER_RECORD."""
-    settings.MEDIA_ROOT = str(tmp_path)
-    user = make_user()
-    event = make_event()
-    record = make_visit(user, event=event, visited_on="2026-05-26")
-
-    calls = []
-    original_select_for_update = VisitRecord.objects.select_for_update
-
-    def spy_select_for_update(*args, **kwargs):
-        calls.append((args, kwargs))
-        return original_select_for_update(*args, **kwargs)
-
-    monkeypatch.setattr(VisitRecord.objects, "select_for_update", spy_select_for_update)
-
-    photo = create_visit_record_photo(
-        visit_record=record,
-        image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
-    )
-
-    assert photo.visit_record_id == record.id
-    assert calls, "create_visit_record_photo must select_for_update the parent VisitRecord row"
-
-
-@pytest.mark.django_db
-def test_create_visit_record_photo_raises_when_at_cap(make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo):
-    settings.MEDIA_ROOT = str(tmp_path)
-    user = make_user()
-    event = make_event()
-    record = make_visit(user, event=event, visited_on="2026-05-26")
-    png_data = png_bytes()
-    for i in range(5):
-        make_visit_photo(record, filename=f"photo-{i}.png")
-
-    with pytest.raises(PhotoLimitExceededError):
-        create_visit_record_photo(
-            visit_record=record,
-            image=SimpleUploadedFile("extra.png", png_data, content_type="image/png"),
-        )
-
-
-@pytest.mark.django_db
 def test_upload_photo_race_with_concurrent_delete_returns_404(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
     """If the VisitRecord is deleted between the existence check and the
-    service call (TOCTOU race), the view must return 404, not 500."""
+    service call (TOCTOU race), the view must return 404, not 500.
+
+    Stays at the view layer (rather than a pure service test) because the
+    race is simulated by monkeypatching archive.views' own imported
+    create_visit_record_photo reference — that patch point only exists here.
+    """
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
