@@ -242,3 +242,94 @@ def test_core_views_no_longer_imports_staff_permissions():
         for module in imported_modules
         if module == "staff" or module.startswith("staff.")
     }
+
+
+# ---------------------------------------------------------------------------
+# Test-layer purity: "test file name = layer under test" contract
+#
+# The test-suite refactor (PR-9/PR-10) separated tests into dedicated files
+# per layer (HTTP API, SSR view, service, query) so a file's name tells the
+# reader exactly which boundary it exercises. This guard protects that
+# contract from eroding: an *_api.py / *_view(s).py test file that imports a
+# services/queries module is a sign a test reached past the HTTP/SSR
+# boundary to arrange state directly — that test belongs in the matching
+# *_services.py / *_queries.py file instead (see
+# tests/archive/test_archive_services.py, tests/archive/test_archive_queries.py).
+# ---------------------------------------------------------------------------
+
+API_OR_VIEW_TEST_GLOBS = ("test_*_api.py", "test_*_view.py", "test_*_views.py")
+_DOMAIN_APPS_WITH_SERVICE_QUERY_LAYERS = ("archive", "drafts", "events", "staff")
+
+# Measured 2026-07-09 against the full test tree (21 files matching the globs
+# above). Each entry below is a narrow, non-business-logic import — never a
+# direct call into the service/query function to arrange test state — so it
+# does not violate the boundary this guard protects.
+ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS = {
+    ("tests/drafts/test_drafts_api.py", "drafts.services"): (
+        "Imports only the DraftCreation*Error exception classes to "
+        "monkeypatch draft_views.create_draft_from_url so it raises them — "
+        "this exercises the API's error-to-status-code mapping contract, "
+        "never calling the service function to arrange data. (The actual "
+        "monkeypatch targets, e.g. 'drafts.services.fetch_html', are string "
+        "paths passed to monkeypatch.setattr, which this AST check cannot "
+        "see and which are not imports anyway.)"
+    ),
+    ("tests/staff/test_staff_events_views.py", "events.queries"): (
+        "Imports only the STAFF_EVENT_LISTING_PAGE_SIZE constant to compute "
+        "how many events to seed for a pagination test — no query function "
+        "is called."
+    ),
+}
+
+
+def _imported_service_or_query_modules(module_path, apps):
+    """Like _imported_modules, but also resolves `from <app> import services`
+    / `from <app> import queries` into the same "<app>.services" /
+    "<app>.queries" form as `from <app>.services import ...` and
+    `import <app>.services` — plain _imported_modules cannot distinguish a
+    from-import of the services/queries submodule itself (node.module is
+    just "<app>") from a from-import of an unrelated name in that package,
+    so it would silently miss that style of import."""
+    tree = ast.parse((PROJECT_ROOT / module_path).read_text())
+    found = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if any(
+                    alias.name == f"{app}.services" or alias.name == f"{app}.queries"
+                    for app in apps
+                ):
+                    found.add(alias.name)
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            for app in apps:
+                if node.module == f"{app}.services" or node.module == f"{app}.queries":
+                    found.add(node.module)
+                elif node.module == app:
+                    for alias in node.names:
+                        if alias.name in ("services", "queries"):
+                            found.add(f"{app}.{alias.name}")
+    return found
+
+
+def test_api_and_view_test_files_do_not_import_service_or_query_layers():
+    """API/view-layer test files must exercise only the HTTP/SSR boundary.
+    A test that needs to reach into a services/queries module directly
+    belongs in a dedicated *_services.py / *_queries.py file instead — that
+    is the "test file name = layer under test" contract this refactor
+    established. Legitimate narrow exceptions (an exception-class import for
+    monkeypatch, a page-size constant) are tracked in
+    ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS with a reason.
+    """
+    test_files = set()
+    for pattern in API_OR_VIEW_TEST_GLOBS:
+        test_files.update((PROJECT_ROOT / "tests").glob(f"**/{pattern}"))
+
+    violations = []
+    for path in sorted(test_files):
+        rel_path = path.relative_to(PROJECT_ROOT).as_posix()
+        for module in _imported_service_or_query_modules(rel_path, _DOMAIN_APPS_WITH_SERVICE_QUERY_LAYERS):
+            if (rel_path, module) in ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS:
+                continue
+            violations.append(f"{rel_path} imports {module}")
+
+    assert not violations, "\n".join(violations)
