@@ -13,16 +13,8 @@ Behavior under test:
 - q containing special chars (%, &) never causes a 500.
 """
 import pytest
-from django.test import Client
 
 from archive.models import PersonalEntry, UserEventStatus, VisitRecord
-
-
-def _login(make_user, **kw):
-    user = make_user(**kw)
-    client = Client()
-    client.force_login(user)
-    return user, client
 
 
 # ---------------------------------------------------------------------------
@@ -34,8 +26,8 @@ def _login(make_user, **kw):
 class TestStatusPagesQFilter:
     """q filters both /archive/ and /archive/statuses/ status_rows server-side."""
 
-    def test_q_matches_event_title_on_archive_page(self, make_user, make_event):
-        user, client = _login(make_user)
+    def test_q_matches_event_title_on_archive_page(self, user_client, make_event):
+        user, client = user_client()
         match_event = make_event(title="매칭 이벤트", location_name="서울")
         no_match = make_event(title="다른 이벤트", location_name="부산")
         UserEventStatus.objects.create(user=user, event=match_event, status="planned")
@@ -48,8 +40,8 @@ class TestStatusPagesQFilter:
         assert "매칭 이벤트" in titles
         assert "다른 이벤트" not in titles
 
-    def test_q_matches_event_location_on_statuses_page(self, make_user, make_event):
-        user, client = _login(make_user)
+    def test_q_matches_event_location_on_statuses_page(self, user_client, make_event):
+        user, client = user_client()
         match_event = make_event(title="이벤트A", location_name="홍대 카페")
         no_match = make_event(title="이벤트B", location_name="강남")
         UserEventStatus.objects.create(user=user, event=match_event, status="planned")
@@ -62,8 +54,8 @@ class TestStatusPagesQFilter:
         assert "이벤트A" in titles
         assert "이벤트B" not in titles
 
-    def test_q_matches_personal_entry_title_on_statuses_page(self, make_user):
-        user, client = _login(make_user)
+    def test_q_matches_personal_entry_title_on_statuses_page(self, user_client):
+        user, client = user_client()
         entry_match = PersonalEntry.objects.create(
             user=user, kind=PersonalEntry.Kind.PLACE, title="매칭 카페"
         )
@@ -80,8 +72,8 @@ class TestStatusPagesQFilter:
         assert "매칭 카페" in titles
         assert "다른 항목" not in titles
 
-    def test_q_matches_personal_entry_location_on_statuses_page(self, make_user):
-        user, client = _login(make_user)
+    def test_q_matches_personal_entry_location_on_statuses_page(self, user_client):
+        user, client = user_client()
         entry_match = PersonalEntry.objects.create(
             user=user, kind=PersonalEntry.Kind.PLACE, title="A항목",
             location_name="신촌 골목",
@@ -99,9 +91,9 @@ class TestStatusPagesQFilter:
         assert "A항목" in titles
         assert "B항목" not in titles
 
-    def test_q_and_status_narrow_as_intersection(self, make_user, make_event):
+    def test_q_and_status_narrow_as_intersection(self, user_client, make_event):
         """q + status=planned → only rows matching BOTH filters."""
-        user, client = _login(make_user)
+        user, client = user_client()
         # planned AND title matches q
         match_plan = make_event(title="매칭 계획")
         UserEventStatus.objects.create(user=user, event=match_plan, status="planned")
@@ -120,24 +112,24 @@ class TestStatusPagesQFilter:
         assert "다른 계획" not in titles
         assert "매칭 방문" not in titles
 
-    def test_q_context_key_on_statuses_page(self, make_user):
-        _, client = _login(make_user)
+    def test_q_context_key_on_statuses_page(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/statuses/?q=검색어")
 
         assert resp.context["q"] == "검색어"
         assert resp.context["has_query"] is True
 
-    def test_q_context_key_on_archive_page(self, make_user):
-        _, client = _login(make_user)
+    def test_q_context_key_on_archive_page(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/?q=test")
 
         assert resp.context["q"] == "test"
         assert resp.context["has_query"] is True
 
-    def test_pager_query_preserves_both_status_and_q(self, make_user, make_event):
-        user, client = _login(make_user)
+    def test_pager_query_preserves_both_status_and_q(self, user_client, make_event):
+        user, client = user_client()
         # Create enough rows so 2 pages exist
         for i in range(7):
             ev = make_event(title=f"매칭 {i:02d}")
@@ -160,8 +152,8 @@ class TestStatusPagesQFilter:
 class TestVisitsPageQFilter:
     """q filters visit_rows on /archive/visits/ including short_review."""
 
-    def test_q_matches_event_title(self, make_user, make_event):
-        user, client = _login(make_user)
+    def test_q_matches_event_title(self, user_client, make_event):
+        user, client = user_client()
         match_ev = make_event(title="매칭 팝업")
         no_match_ev = make_event(title="다른 팝업")
         VisitRecord.objects.create(user=user, event=match_ev, visited_on="2026-06-01")
@@ -174,8 +166,8 @@ class TestVisitsPageQFilter:
         assert "매칭 팝업" in titles
         assert "다른 팝업" not in titles
 
-    def test_q_matches_event_location(self, make_user, make_event):
-        user, client = _login(make_user)
+    def test_q_matches_event_location(self, user_client, make_event):
+        user, client = user_client()
         match_ev = make_event(title="팝업A", location_name="성수 거리")
         no_match_ev = make_event(title="팝업B", location_name="강남역")
         VisitRecord.objects.create(user=user, event=match_ev, visited_on="2026-06-01")
@@ -187,8 +179,8 @@ class TestVisitsPageQFilter:
         assert "팝업A" in titles
         assert "팝업B" not in titles
 
-    def test_q_matches_short_review(self, make_user, make_event):
-        user, client = _login(make_user)
+    def test_q_matches_short_review(self, user_client, make_event):
+        user, client = user_client()
         ev_with_review = make_event(title="행사A")
         ev_no_match = make_event(title="행사B")
         VisitRecord.objects.create(
@@ -206,8 +198,8 @@ class TestVisitsPageQFilter:
         assert "행사A" in titles
         assert "행사B" not in titles
 
-    def test_q_matches_personal_entry_title_on_visits(self, make_user):
-        user, client = _login(make_user)
+    def test_q_matches_personal_entry_title_on_visits(self, user_client):
+        user, client = user_client()
         entry_match = PersonalEntry.objects.create(
             user=user, kind=PersonalEntry.Kind.PLACE, title="비공식 매칭"
         )
@@ -223,9 +215,9 @@ class TestVisitsPageQFilter:
         assert "비공식 매칭" in titles
         assert "비공식 아님" not in titles
 
-    def test_q_and_filter_narrow_as_intersection(self, make_user, make_event):
+    def test_q_and_filter_narrow_as_intersection(self, user_client, make_event):
         """filter=unofficial AND q → only unofficial rows matching q."""
-        user, client = _login(make_user)
+        user, client = user_client()
         # unofficial matching
         entry_match = PersonalEntry.objects.create(
             user=user, kind=PersonalEntry.Kind.PLACE, title="비공식 매칭"
@@ -248,8 +240,8 @@ class TestVisitsPageQFilter:
         assert "공식 매칭" not in titles
         assert "비공식 아님" not in titles
 
-    def test_q_context_on_visits_page(self, make_user):
-        _, client = _login(make_user)
+    def test_q_context_on_visits_page(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/visits/?q=찾기")
 
@@ -266,8 +258,8 @@ class TestVisitsPageQFilter:
 class TestItemsPageQFilter:
     """q filters entry_rows on /archive/items/."""
 
-    def test_q_matches_title(self, make_user):
-        user, client = _login(make_user)
+    def test_q_matches_title(self, user_client):
+        user, client = user_client()
         PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="매칭 항목")
         PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="다른 항목")
 
@@ -278,8 +270,8 @@ class TestItemsPageQFilter:
         assert "매칭 항목" in titles
         assert "다른 항목" not in titles
 
-    def test_q_matches_memo(self, make_user):
-        user, client = _login(make_user)
+    def test_q_matches_memo(self, user_client):
+        user, client = user_client()
         PersonalEntry.objects.create(
             user=user, kind=PersonalEntry.Kind.PLACE, title="A", memo="특별한 내용"
         )
@@ -293,8 +285,8 @@ class TestItemsPageQFilter:
         assert "A" in titles
         assert "B" not in titles
 
-    def test_q_matches_location(self, make_user):
-        user, client = _login(make_user)
+    def test_q_matches_location(self, user_client):
+        user, client = user_client()
         PersonalEntry.objects.create(
             user=user, kind=PersonalEntry.Kind.PLACE, title="A", location_name="신촌"
         )
@@ -308,8 +300,8 @@ class TestItemsPageQFilter:
         assert "A" in titles
         assert "B" not in titles
 
-    def test_q_matches_work_title(self, make_user):
-        user, client = _login(make_user)
+    def test_q_matches_work_title(self, user_client):
+        user, client = user_client()
         PersonalEntry.objects.create(
             user=user, kind=PersonalEntry.Kind.GOODS, title="A", work_title="원피스 콜라보"
         )
@@ -323,8 +315,8 @@ class TestItemsPageQFilter:
         assert "A" in titles
         assert "B" not in titles
 
-    def test_q_matches_category(self, make_user):
-        user, client = _login(make_user)
+    def test_q_matches_category(self, user_client):
+        user, client = user_client()
         PersonalEntry.objects.create(
             user=user, kind=PersonalEntry.Kind.PLACE, title="A", category="팝업스토어"
         )
@@ -348,9 +340,9 @@ class TestItemsPageQFilter:
 class TestArchiveSearchIsolation:
     """Another user's records sharing the same Event must not appear in q results."""
 
-    def test_statuses_q_does_not_leak_other_user_rows(self, make_user, make_event):
-        user_a, client_a = _login(make_user, username="userA")
-        user_b, _ = _login(make_user, username="userB")
+    def test_statuses_q_does_not_leak_other_user_rows(self, user_client, make_event):
+        user_a, client_a = user_client(username="userA")
+        user_b, _ = user_client(username="userB")
 
         shared_event = make_event(title="공유 이벤트")
         UserEventStatus.objects.create(user=user_a, event=shared_event, status="planned")
@@ -362,9 +354,9 @@ class TestArchiveSearchIsolation:
         # Should see exactly 1 row — user A's own status, not user B's.
         assert resp.context["page_obj"].paginator.count == 1
 
-    def test_visits_q_does_not_leak_other_user_rows(self, make_user, make_event):
-        user_a, client_a = _login(make_user, username="visitorA")
-        user_b, _ = _login(make_user, username="visitorB")
+    def test_visits_q_does_not_leak_other_user_rows(self, user_client, make_event):
+        user_a, client_a = user_client(username="visitorA")
+        user_b, _ = user_client(username="visitorB")
 
         shared_event = make_event(title="공유 팝업")
         VisitRecord.objects.create(user=user_a, event=shared_event, visited_on="2026-06-01")
@@ -380,8 +372,8 @@ class TestArchiveSearchIsolation:
 class TestQNormalisation:
     """q is strip()[:100]-normalised before filtering."""
 
-    def test_whitespace_only_q_acts_as_no_filter(self, make_user):
-        user, client = _login(make_user)
+    def test_whitespace_only_q_acts_as_no_filter(self, user_client):
+        user, client = user_client()
         PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="항목 A")
         PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="항목 B")
 
@@ -393,22 +385,22 @@ class TestQNormalisation:
         # All entries still returned (no filter applied)
         assert resp.context["page_obj"].paginator.count == 2
 
-    def test_long_q_truncated_no_server_error(self, make_user):
-        _, client = _login(make_user)
+    def test_long_q_truncated_no_server_error(self, user_client):
+        _, client = user_client()
 
         resp = client.get("/archive/items/?q=" + "A" * 200)
 
         assert resp.status_code == 200
 
-    def test_q_special_chars_no_500_on_archive(self, make_user):
-        _, client = _login(make_user)
+    def test_q_special_chars_no_500_on_archive(self, user_client):
+        _, client = user_client()
 
         for special_q in ("a%b", "x&y=z", "<script>"):
             resp = client.get(f"/archive/?q={special_q}")
             assert resp.status_code == 200, f"500 on q={special_q!r}"
 
-    def test_q_special_chars_no_500_on_visits(self, make_user):
-        _, client = _login(make_user)
+    def test_q_special_chars_no_500_on_visits(self, user_client):
+        _, client = user_client()
 
         for special_q in ("a%b", "x&y=z", "<script>"):
             resp = client.get(f"/archive/visits/?q={special_q}")

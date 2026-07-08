@@ -10,6 +10,7 @@ import secrets
 import PIL.Image
 import pytest
 from django.core.cache import cache
+from django.test import Client
 
 from events.models import Event
 
@@ -54,6 +55,27 @@ def make_user(db, django_user_model):
         return django_user_model.objects.create_user(
             email=email, password=password, **kwargs
         )
+
+    return _make
+
+
+@pytest.fixture
+def user_client(make_user):
+    """(user, force_login된 Client) 팩토리 — 파일마다 복제되던 _login 헬퍼를 대체."""
+    def _make(user=None, **user_kwargs):
+        user = user or make_user(**user_kwargs)
+        client = Client()
+        client.force_login(user)
+        return user, client
+
+    return _make
+
+
+@pytest.fixture
+def staff_client(user_client):
+    """(staff_user, force_login된 Client) 팩토리. is_superuser 등은 kwargs로 통과."""
+    def _make(**user_kwargs):
+        return user_client(is_staff=True, **user_kwargs)
 
     return _make
 
