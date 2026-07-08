@@ -12,21 +12,16 @@ from django.db import transaction
 
 import pytest
 
-from archive.models import PersonalEntry, VisitRecord, VisitRecordPhoto
+from archive.models import PersonalEntry, VisitRecordPhoto
 
 
 @pytest.mark.django_db
-def test_deleting_photo_removes_file_from_storage(
-    client, make_user, make_event, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
-):
+def test_deleting_photo_removes_file_from_storage(client, make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
-    photo = VisitRecordPhoto.objects.create(
-        visit_record=record,
-        image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
-    )
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    photo = make_visit_photo(record)
     storage = photo.image.storage
     file_name = photo.image.name
     assert storage.exists(file_name)
@@ -40,17 +35,12 @@ def test_deleting_photo_removes_file_from_storage(
 
 
 @pytest.mark.django_db
-def test_deleting_visit_record_cascades_photo_file_deletion(
-    make_user, make_event, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
-):
+def test_deleting_visit_record_cascades_photo_file_deletion(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
-    photo = VisitRecordPhoto.objects.create(
-        visit_record=record,
-        image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
-    )
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    photo = make_visit_photo(record)
     storage = photo.image.storage
     file_name = photo.image.name
     assert storage.exists(file_name)
@@ -62,19 +52,14 @@ def test_deleting_visit_record_cascades_photo_file_deletion(
 
 
 @pytest.mark.django_db
-def test_rolled_back_photo_delete_preserves_file(
-    make_user, make_event, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
-):
+def test_rolled_back_photo_delete_preserves_file(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
     """If the deleting transaction rolls back, the on_commit hook must never
     fire, so the file must remain in storage."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
-    photo = VisitRecordPhoto.objects.create(
-        visit_record=record,
-        image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
-    )
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    photo = make_visit_photo(record)
     storage = photo.image.storage
     file_name = photo.image.name
     photo_pk = photo.pk
@@ -94,17 +79,10 @@ def test_rolled_back_photo_delete_preserves_file(
 
 
 @pytest.mark.django_db
-def test_deleting_personal_entry_removes_image_file(
-    make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
-):
+def test_deleting_personal_entry_removes_image_file(make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_entry):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
-    entry = PersonalEntry.objects.create(
-        user=user,
-        kind=PersonalEntry.Kind.PLACE,
-        title="unofficial cafe",
-        image=SimpleUploadedFile("cover.png", png_bytes(), content_type="image/png"),
-    )
+    entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="unofficial cafe", image=SimpleUploadedFile("cover.png", png_bytes(), content_type="image/png"))
     storage = entry.image.storage
     file_name = entry.image.name
     assert storage.exists(file_name)

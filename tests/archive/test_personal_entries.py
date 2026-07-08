@@ -20,14 +20,10 @@ from archive.models import PersonalEntry
 
 
 @pytest.mark.django_db
-def test_personal_entry_supports_place_and_goods(make_user):
+def test_personal_entry_supports_place_and_goods(make_user, make_entry):
     user = make_user(username="pe-model")
-    place = PersonalEntry.objects.create(
-        user=user, kind=PersonalEntry.Kind.PLACE, title="숨은 굿즈 카페"
-    )
-    goods = PersonalEntry.objects.create(
-        user=user, kind=PersonalEntry.Kind.GOODS, title="중고로 산 아크릴 스탠드"
-    )
+    place = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="숨은 굿즈 카페")
+    goods = make_entry(user, kind=PersonalEntry.Kind.GOODS, title="중고로 산 아크릴 스탠드")
 
     assert place.kind == "place"
     assert goods.kind == "goods"
@@ -42,14 +38,14 @@ def test_personal_entry_supports_place_and_goods(make_user):
 
 
 @pytest.mark.django_db
-def test_list_user_personal_entries_scopes_to_user_and_filters_kind(make_user):
+def test_list_user_personal_entries_scopes_to_user_and_filters_kind(make_user, make_entry):
     from archive.queries import list_user_personal_entries
 
     user = make_user(username="pe-list")
     other = make_user(username="pe-other")
-    place = PersonalEntry.objects.create(user=user, kind="place", title="P")
-    goods = PersonalEntry.objects.create(user=user, kind="goods", title="G")
-    PersonalEntry.objects.create(user=other, kind="place", title="Other P")
+    place = make_entry(user, kind="place", title="P")
+    goods = make_entry(user, kind="goods", title="G")
+    make_entry(other, kind="place", title="Other P")
 
     all_entries = list(list_user_personal_entries(user))
     assert place in all_entries
@@ -104,11 +100,11 @@ def test_create_personal_entry_returns_201_and_sets_owner(client, make_user):
 
 
 @pytest.mark.django_db
-def test_personal_entry_list_is_user_scoped(client, make_user):
+def test_personal_entry_list_is_user_scoped(client, make_user, make_entry):
     user = make_user(username="pe-scope")
     other = make_user(username="pe-scope-other")
-    PersonalEntry.objects.create(user=user, kind="place", title="Mine")
-    PersonalEntry.objects.create(user=other, kind="place", title="Theirs")
+    make_entry(user, kind="place", title="Mine")
+    make_entry(other, kind="place", title="Theirs")
 
     client.force_login(user)
     response = client.get("/api/personal-entries/")
@@ -125,12 +121,10 @@ def test_personal_entry_requires_authentication(client):
 
 
 @pytest.mark.django_db
-def test_personal_entry_never_appears_in_public_catalog(client, make_user):
+def test_personal_entry_never_appears_in_public_catalog(client, make_user, make_entry):
     """A private item must not leak into the public Event catalog (API or SSR)."""
     user = make_user(username="pe-leak")
-    PersonalEntry.objects.create(
-        user=user, kind="place", title="PRIVATE_LEAK_CANARY"
-    )
+    make_entry(user, kind="place", title="PRIVATE_LEAK_CANARY")
 
     client.force_login(user)
     api = client.get("/api/events/")
@@ -143,10 +137,10 @@ def test_personal_entry_never_appears_in_public_catalog(client, make_user):
 
 
 @pytest.mark.django_db
-def test_cannot_delete_another_users_personal_entry(client, make_user):
+def test_cannot_delete_another_users_personal_entry(client, make_user, make_entry):
     user = make_user(username="pe-del")
     other = make_user(username="pe-del-other")
-    theirs = PersonalEntry.objects.create(user=other, kind="place", title="Theirs")
+    theirs = make_entry(other, kind="place", title="Theirs")
 
     client.force_login(user)
     response = client.delete(f"/api/personal-entries/{theirs.id}/")
@@ -184,9 +178,7 @@ def test_create_personal_entry_rejects_non_image_bytes(client, make_user, settin
 
 
 @pytest.mark.django_db
-def test_create_personal_entry_rejects_oversized_image(
-    client, make_user, png_bytes, settings, tmp_path
-):
+def test_create_personal_entry_rejects_oversized_image(client, make_user, png_bytes, settings, tmp_path):
     """Images larger than 5 MB must be rejected with 400 (decompression-bomb guard)."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(username="pe-img-big")

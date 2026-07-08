@@ -2,7 +2,6 @@
 
 import pytest
 
-from archive.models import EventInterest, UserEventStatus, VisitRecord
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_interests,
@@ -27,16 +26,16 @@ def test_user_status_counts_zero_fills_all_slugs(make_user):
 
 
 @pytest.mark.django_db
-def test_user_status_counts_counts_per_status(make_user, make_event):
+def test_user_status_counts_counts_per_status(make_user, make_event, make_status):
     """Counts reflect the user's rows and ignore other users' rows."""
     user = make_user(username="counts-user")
     other = make_user(username="counts-other")
     e1 = make_event(title="E1")
     e2 = make_event(title="E2")
 
-    UserEventStatus.objects.create(user=user, event=e1, status="planned")
-    UserEventStatus.objects.create(user=user, event=e2, status="visited")
-    UserEventStatus.objects.create(user=other, event=e1, status="planned")
+    make_status(user, event=e1, status="planned")
+    make_status(user, event=e2, status="visited")
+    make_status(other, event=e1, status="planned")
 
     counts = user_status_counts(user)
 
@@ -46,15 +45,15 @@ def test_user_status_counts_counts_per_status(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_list_user_statuses_filters_by_user_and_status(make_user, make_event):
+def test_list_user_statuses_filters_by_user_and_status(make_user, make_event, make_status):
     user = make_user(username="list-status-user")
     other = make_user(username="list-status-other")
     e1 = make_event(title="E1")
     e2 = make_event(title="E2")
 
-    UserEventStatus.objects.create(user=user, event=e1, status="planned")
-    UserEventStatus.objects.create(user=user, event=e2, status="visited")
-    UserEventStatus.objects.create(user=other, event=e1, status="planned")
+    make_status(user, event=e1, status="planned")
+    make_status(user, event=e2, status="visited")
+    make_status(other, event=e1, status="planned")
 
     assert list_user_statuses(user).count() == 2
     planned_only = list_user_statuses(user, "planned")
@@ -63,15 +62,15 @@ def test_list_user_statuses_filters_by_user_and_status(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_list_user_visit_records_scoped_and_ordered(make_user, make_event):
+def test_list_user_visit_records_scoped_and_ordered(make_user, make_event, make_visit):
     user = make_user(username="list-visit-user")
     other = make_user(username="list-visit-other")
     e1 = make_event(title="E1")
     e2 = make_event(title="E2")
 
-    older = VisitRecord.objects.create(user=user, event=e1, visited_on="2026-05-01")
-    newer = VisitRecord.objects.create(user=user, event=e2, visited_on="2026-06-01")
-    VisitRecord.objects.create(user=other, event=e1, visited_on="2026-06-15")
+    older = make_visit(user, event=e1, visited_on="2026-05-01")
+    newer = make_visit(user, event=e2, visited_on="2026-06-01")
+    make_visit(other, event=e1, visited_on="2026-06-15")
 
     rows = list(list_user_visit_records(user))
 
@@ -110,16 +109,16 @@ def test_user_status_counts_excludes_interested_key(make_user):
 
 
 @pytest.mark.django_db
-def test_list_user_interests_scoped_and_ordered(make_user, make_event):
+def test_list_user_interests_scoped_and_ordered(make_user, make_event, make_interest):
     user = make_user(username="interest-query-user")
     other = make_user(username="interest-query-other")
     e1 = make_event(title="Interest E1")
     e2 = make_event(title="Interest E2")
     e3 = make_event(title="Interest E3")
 
-    first = EventInterest.objects.create(user=user, event=e1)
-    second = EventInterest.objects.create(user=user, event=e2)
-    EventInterest.objects.create(user=other, event=e3)
+    first = make_interest(user, event=e1)
+    second = make_interest(user, event=e2)
+    make_interest(other, event=e3)
 
     rows = list(list_user_interests(user))
 
@@ -135,16 +134,16 @@ def test_list_user_interests_scoped_and_ordered(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_user_interest_event_ids_bounded(make_user, make_event):
+def test_user_interest_event_ids_bounded(make_user, make_event, make_interest):
     user = make_user(username="interest-ids-user")
     other = make_user(username="interest-ids-other")
     e1 = make_event(title="Interest IDs E1")
     e2 = make_event(title="Interest IDs E2")
     e3 = make_event(title="Interest IDs E3")
 
-    i1 = EventInterest.objects.create(user=user, event=e1)
-    EventInterest.objects.create(user=user, event=e2)
-    EventInterest.objects.create(user=other, event=e3)
+    i1 = make_interest(user, event=e1)
+    make_interest(user, event=e2)
+    make_interest(other, event=e3)
 
     result = user_interest_event_ids(user, event_ids=[e1.id, e3.id])
 
@@ -152,13 +151,13 @@ def test_user_interest_event_ids_bounded(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_user_interest_event_ids_unbounded(make_user, make_event):
+def test_user_interest_event_ids_unbounded(make_user, make_event, make_interest):
     user = make_user(username="interest-ids-unbound-user")
     e1 = make_event(title="Interest Unbound E1")
     e2 = make_event(title="Interest Unbound E2")
 
-    i1 = EventInterest.objects.create(user=user, event=e1)
-    i2 = EventInterest.objects.create(user=user, event=e2)
+    i1 = make_interest(user, event=e1)
+    i2 = make_interest(user, event=e2)
 
     result = user_interest_event_ids(user)
 
@@ -171,16 +170,16 @@ def test_user_interest_event_ids_unbounded(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_user_interest_count(make_user, make_event):
+def test_user_interest_count(make_user, make_event, make_interest):
     user = make_user(username="interest-count-user")
     other = make_user(username="interest-count-other")
     e1 = make_event(title="Interest Count E1")
     e2 = make_event(title="Interest Count E2")
     e3 = make_event(title="Interest Count E3")
 
-    EventInterest.objects.create(user=user, event=e1)
-    EventInterest.objects.create(user=user, event=e2)
-    EventInterest.objects.create(user=other, event=e3)
+    make_interest(user, event=e1)
+    make_interest(user, event=e2)
+    make_interest(other, event=e3)
 
     assert user_interest_count(user) == 2
 
@@ -191,9 +190,7 @@ def test_user_interest_count(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_list_user_planned_events_returns_only_user_planned_published(
-    make_user, make_event, make_draft_event
-):
+def test_list_user_planned_events_returns_only_user_planned_published(make_user, make_event, make_draft_event, make_status):
     user = make_user(username="planner")
     other = make_user(username="planner-other")
     planned = make_event(title="Planned")
@@ -202,11 +199,11 @@ def test_list_user_planned_events_returns_only_user_planned_published(
     others_planned = make_event(title="Others planned")
     draft_planned = make_draft_event(title="Draft planned")
 
-    UserEventStatus.objects.create(user=user, event=planned, status="planned")
-    UserEventStatus.objects.create(user=user, event=visited, status="visited")
-    UserEventStatus.objects.create(user=user, event=missed, status="missed")
-    UserEventStatus.objects.create(user=user, event=draft_planned, status="planned")
-    UserEventStatus.objects.create(user=other, event=others_planned, status="planned")
+    make_status(user, event=planned, status="planned")
+    make_status(user, event=visited, status="visited")
+    make_status(user, event=missed, status="missed")
+    make_status(user, event=draft_planned, status="planned")
+    make_status(other, event=others_planned, status="planned")
 
     events = list(list_user_planned_events(user))
 

@@ -30,23 +30,19 @@ class TestArchiveRecordPageActions:
         assert "준비 중" not in body
         assert 'href="/archive/visits/new/"' in body
 
-    def test_visited_row_has_record_shortcut(self, user_client, make_event):
+    def test_visited_row_has_record_shortcut(self, user_client, make_event, make_status):
         user, client = user_client()
         event = make_event(title="다녀온 행사")
-        UserEventStatus.objects.create(
-            user=user, event=event, status=UserEventStatus.Status.VISITED
-        )
+        make_status(user, event=event, status=UserEventStatus.Status.VISITED)
 
         resp = client.get("/archive/")
 
         assert f"/archive/visits/new/?subject=event:{event.id}".encode() in resp.content
 
-    def test_planned_row_has_no_record_shortcut(self, user_client, make_event):
+    def test_planned_row_has_no_record_shortcut(self, user_client, make_event, make_status):
         user, client = user_client()
         event = make_event(title="갈 예정 행사")
-        UserEventStatus.objects.create(
-            user=user, event=event, status=UserEventStatus.Status.PLANNED
-        )
+        make_status(user, event=event, status=UserEventStatus.Status.PLANNED)
 
         resp = client.get("/archive/")
 

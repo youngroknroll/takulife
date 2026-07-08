@@ -92,14 +92,14 @@ def test_create_event_interest_rejects_unpublished_event(client, make_user, make
 
 
 @pytest.mark.django_db
-def test_event_interest_list_is_user_scoped(client, make_user, make_event):
+def test_event_interest_list_is_user_scoped(client, make_user, make_event, make_interest):
     user = make_user(username="interest-list-user")
     other = make_user(username="interest-list-other")
     event_a = make_event(title="Event A")
     event_b = make_event(title="Event B")
 
-    EventInterest.objects.create(user=user, event=event_a)
-    EventInterest.objects.create(user=other, event=event_b)
+    make_interest(user, event=event_a)
+    make_interest(other, event=event_b)
 
     client.force_login(user)
     response = client.get("/api/event-interests/")
@@ -117,13 +117,13 @@ def test_event_interest_list_is_user_scoped(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_event_interest_list_ordered_newest_first(client, make_user, make_event):
+def test_event_interest_list_ordered_newest_first(client, make_user, make_event, make_interest):
     user = make_user(username="interest-order-user")
     event_a = make_event(title="Event Order A")
     event_b = make_event(title="Event Order B")
 
-    first_interest = EventInterest.objects.create(user=user, event=event_a)
-    second_interest = EventInterest.objects.create(user=user, event=event_b)
+    first_interest = make_interest(user, event=event_a)
+    second_interest = make_interest(user, event=event_b)
 
     client.force_login(user)
     response = client.get("/api/event-interests/")
@@ -166,12 +166,12 @@ def test_delete_event_interest_returns_204_then_404(client, make_user, make_even
 
 
 @pytest.mark.django_db
-def test_cross_user_delete_returns_404_and_row_survives(client, make_user, make_event):
+def test_cross_user_delete_returns_404_and_row_survives(client, make_user, make_event, make_interest):
     owner = make_user(username="interest-owner")
     attacker = make_user(username="interest-attacker")
     event = make_event(title="Popup IDOR")
 
-    interest = EventInterest.objects.create(user=owner, event=event)
+    interest = make_interest(owner, event=event)
 
     client.force_login(attacker)
     response = client.delete(f"/api/event-interests/{interest.pk}/")
@@ -252,10 +252,10 @@ def test_unauthenticated_cannot_list_event_interests(client):
 
 
 @pytest.mark.django_db
-def test_archive_interests_page_renders_200(client, make_user, make_event):
+def test_archive_interests_page_renders_200(client, make_user, make_event, make_interest):
     user = make_user(username="interests-page-user")
     event = make_event(title="Page Event")
-    EventInterest.objects.create(user=user, event=event)
+    make_interest(user, event=event)
 
     client.force_login(user)
     response = client.get("/archive/interests/")
