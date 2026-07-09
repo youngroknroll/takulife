@@ -8,7 +8,7 @@
  * (see staff/views.py::StaffDraftBulkApproveView). A 400 only happens for a
  * structurally invalid request (empty/non-integer/over-cap draft_ids), which
  * cannot occur from this UI since selection always yields a non-empty list
- * of real numeric ids capped by the page size (20).
+ * of real numeric ids capped by the page size (10).
  *
  * Markup contract (server-rendered, see list.html):
  *   #bulk-toolbar            — hidden by default; this script un-hides it
