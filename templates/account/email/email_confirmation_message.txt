@@ -1,5 +1,5 @@
 {% load account %}
-{% autoescape off %}{% user_display user as user_display %}{{ user_display }}님, oshilife 회원가입을 위해 이메일 인증이 필요합니다.
+{% autoescape off %}{% user_display user as user_display %}{{ user_display }}님, takulife 회원가입을 위해 이메일 인증이 필요합니다.
 
 아래 링크를 클릭하면 이메일 인증이 완료되고 자동으로 로그인됩니다.
 

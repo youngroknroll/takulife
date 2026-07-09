@@ -10,7 +10,7 @@ from .url_safety import validate_fetch_url
 REQUEST_TIMEOUT_SECONDS = 5.0
 MAX_REDIRECTS = 3
 MAX_RESPONSE_BYTES = 1_000_000
-USER_AGENT = "OshiLifeBot/1.0"
+USER_AGENT = "TakuLifeBot/1.0"
 HTML_CONTENT_TYPES = ("text/html", "application/xhtml+xml")
 
 

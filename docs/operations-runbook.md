@@ -1,6 +1,6 @@
 # Operations Runbook
 
-oshilife 운영자를 위한 실전 대응 가이드. 코드 변경 없음 — `config/settings.py`에 실제로 설정된 값만 인용한다.
+takulife 운영자를 위한 실전 대응 가이드. 코드 변경 없음 — `config/settings.py`에 실제로 설정된 값만 인용한다.
 
 ## 1. Brute-force Lockout & Recovery (django-axes)
 

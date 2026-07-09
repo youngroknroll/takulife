@@ -32,9 +32,9 @@
   }
 
   function handle403(result, errorEl) {
-    var kind = window.OshiAPI.classify(result);
+    var kind = window.TakuAPI.classify(result);
     if (kind === "auth") {
-      window.OshiAPI.redirectToLogin();
+      window.TakuAPI.redirectToLogin();
     } else {
       setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
     }
@@ -148,7 +148,7 @@
   async function uploadOne(recordId, file) {
     var formData = new FormData();
     formData.append("image", file);
-    return window.OshiAPI.upload(
+    return window.TakuAPI.upload(
       "/api/visit-records/" + recordId + "/photos/",
       formData
     );
@@ -222,20 +222,20 @@
         payload.event = subjectId;
       }
 
-      window.OshiAPI.setLoading(submitBtn, true);
+      window.TakuAPI.setLoading(submitBtn, true);
       setText(statusEl, "기록 저장 중...");
 
-      var result = await window.OshiAPI.post("/api/visit-records/", payload);
+      var result = await window.TakuAPI.post("/api/visit-records/", payload);
 
       if (result.status !== 201) {
-        window.OshiAPI.setLoading(submitBtn, false);
+        window.TakuAPI.setLoading(submitBtn, false);
         setText(statusEl, "");
         if (result.status === 403) {
           handle403(result, errorEl);
         } else if (result.status === 0) {
           setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
         } else {
-          setText(errorEl, window.OshiAPI.formatError(result));
+          setText(errorEl, window.TakuAPI.formatError(result));
         }
         return;
       }

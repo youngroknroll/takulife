@@ -1,5 +1,5 @@
 /**
- * status.js — wire status buttons for oshilife
+ * status.js — wire status buttons for takulife
  *
  * Targets any <button data-status-action> with:
  *   data-event-id   — Event PK (always required)
@@ -13,8 +13,8 @@
  *   - PATCH /<id>/ {status} to switch the existing status in place
  *   - data-status-action="unset" (legacy) → DELETE /<id>/
  *
- * 403 handling (via OshiAPI.classify):
- *   - kind 'auth' → OshiAPI.redirectToLogin()
+ * 403 handling (via TakuAPI.classify):
+ *   - kind 'auth' → TakuAPI.redirectToLogin()
  *   - kind 'csrf' → show non-destructive inline CSRF message; do NOT redirect
  *
  * 409 handling:
@@ -24,7 +24,7 @@
  * XSS: all DOM text uses textContent / dataset / classList. Never innerHTML
  * with API strings.
  *
- * Depends on window.OshiAPI (api.js must load first).
+ * Depends on window.TakuAPI (api.js must load first).
  */
 
 (function () {
@@ -49,8 +49,8 @@
   // "삭제" button confirms with "삭제하시겠습니까?" instead of the cancel default).
   function askCancel(message) {
     var msg = message || "취소하시겠습니까?";
-    if (typeof window.OshiConfirm === "function") {
-      return window.OshiConfirm(msg);
+    if (typeof window.TakuConfirm === "function") {
+      return window.TakuConfirm(msg);
     }
     return Promise.resolve(window.confirm(msg));
   }
@@ -103,7 +103,7 @@
   function setButtonLoading(button, loading) {
     // Delegate to the shared helper so the button also shows the .is-loading
     // spinner (disabled + aria-busy) while the request is in flight.
-    window.OshiAPI.setLoading(button, loading);
+    window.TakuAPI.setLoading(button, loading);
   }
 
   async function handleClick(event) {
@@ -123,8 +123,8 @@
 
     // Visitors who aren't logged in can't save a status — prompt them to log in
     // or sign up instead of firing a request that just 403s.
-    if (!window.OshiAPI.isAuthenticated()) {
-      window.OshiAPI.promptLogin();
+    if (!window.TakuAPI.isAuthenticated()) {
+      window.TakuAPI.promptLogin();
       return;
     }
 
@@ -165,16 +165,16 @@
 
     if (action === "change" && statusId) {
       mode = "change";
-      result = await window.OshiAPI.patch(
+      result = await window.TakuAPI.patch(
         "/api/user-event-statuses/" + statusId + "/",
         { status: statusSlug }
       );
     } else if (statusId && (isActive || action === "unset")) {
       mode = "cancel";
-      result = await window.OshiAPI.del("/api/user-event-statuses/" + statusId + "/");
+      result = await window.TakuAPI.del("/api/user-event-statuses/" + statusId + "/");
     } else if (activeSibling) {
       mode = "switch";
-      result = await window.OshiAPI.patch(
+      result = await window.TakuAPI.patch(
         "/api/user-event-statuses/" + activeSibling.dataset.statusId + "/",
         { status: statusSlug }
       );
@@ -190,16 +190,16 @@
         setButtonLoading(button, false);
         return;
       }
-      result = await window.OshiAPI.post("/api/user-event-statuses/", payload);
+      result = await window.TakuAPI.post("/api/user-event-statuses/", payload);
     }
 
     setButtonLoading(button, false);
 
-    var kind = window.OshiAPI.classify(result);
+    var kind = window.TakuAPI.classify(result);
 
     if (kind === "auth") {
       // session expired mid-page — prompt re-login rather than silently redirect
-      window.OshiAPI.promptLogin();
+      window.TakuAPI.promptLogin();
       return;
     }
 
@@ -285,8 +285,8 @@
       return;
     }
 
-    if (!window.OshiAPI.isAuthenticated()) {
-      window.OshiAPI.promptLogin();
+    if (!window.TakuAPI.isAuthenticated()) {
+      window.TakuAPI.promptLogin();
       return;
     }
 
@@ -294,11 +294,11 @@
       return;
     }
 
-    window.OshiAPI.setLoading(button, true);
+    window.TakuAPI.setLoading(button, true);
 
     var result;
     if (interestId) {
-      result = await window.OshiAPI.del("/api/event-interests/" + interestId + "/");
+      result = await window.TakuAPI.del("/api/event-interests/" + interestId + "/");
     } else {
       var payload = {};
       if (personalEntryId) {
@@ -306,15 +306,15 @@
       } else {
         payload.event = parseInt(eventId, 10);
       }
-      result = await window.OshiAPI.post("/api/event-interests/", payload);
+      result = await window.TakuAPI.post("/api/event-interests/", payload);
     }
 
-    window.OshiAPI.setLoading(button, false);
+    window.TakuAPI.setLoading(button, false);
 
-    var kind = window.OshiAPI.classify(result);
+    var kind = window.TakuAPI.classify(result);
 
     if (kind === "auth") {
-      window.OshiAPI.promptLogin();
+      window.TakuAPI.promptLogin();
       return;
     }
 

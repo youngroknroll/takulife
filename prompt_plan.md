@@ -81,7 +81,7 @@
 
 ## PR-E3 — C + D: 생성 · 삭제
 - C: `/staff/events/new/` — 초크포인트 `create_published_event` 재사용(대체 구현 금지)
-- D: unpublish↔재게시 토글 + 조건부 하드 삭제(아카이브 참조 3종 합 0건일 때만) — OshiConfirm 재사용, 전 액션 감사로그
+- D: unpublish↔재게시 토글 + 조건부 하드 삭제(아카이브 참조 3종 합 0건일 때만) — TakuConfirm 재사용, 전 액션 감사로그
 
 ## 하지 말 것
 DRF 신규 API(SSR 폼 충분) · RBAC(백로그 유지) · 아카이브 CASCADE 변경 · 일괄 편집 · 이벤트용 별도 앱.
@@ -102,7 +102,7 @@ DRF 신규 API(SSR 폼 충분) · RBAC(백로그 유지) · 아카이브 CASCADE
 > 배경: 스태프 4화면(대시보드·드래프트 목록/상세·홈 카테고리)이 공개 사이트 셸(base.html → _site_header/_site_footer)을 그대로 상속 + sub-nav 4곳 복붙 = "페이지 안의 페이지" 이중 크롬. 접근제어(@staff_console_required)·JSON API는 레이아웃과 분리 — 템플릿·CSS 계층만 변경.
 
 ## 확정 레이아웃 (2안 — 상단바 2단 탭)
-- 1단 topbar: "oshilife 스태프 콘솔" + [사이트로 돌아가기 ↗]. 2단 탭: 대시보드/드래프트 관리/홈 카테고리(`aria-current` 유지). 모바일: 탭 줄 가로 스크롤.
+- 1단 topbar: "takulife 스태프 콘솔" + [사이트로 돌아가기 ↗]. 2단 탭: 대시보드/드래프트 관리/홈 카테고리(`aria-current` 유지). 모바일: 탭 줄 가로 스크롤.
 - 티켓 스텁 토큰 그대로 재사용(신규 색 토큰 0), 장식 시그니처(형광펜·스탬프·티켓 칩) 콘솔 미도입. 콘솔 보정은 밀도만.
 - 추후 항목 6개+ 시 사이드바(1안) 전환 — 셸 파셜만 교체 가능한 구조로.
 
@@ -203,7 +203,7 @@ frontend TDD-exempt — 단 전체 pytest(뷰 렌더 테스트 포함)·Playwrig
 - **`RobotFileParser.read()`/`set_url()` 사용 금지.** robots.txt는 **가드된 fetch 코어로 바이트를 직접 수신**(5s 타임아웃·크기 캡·SSRF 검증 상속)한 뒤 `RobotFileParser.parse(lines)`로 주입한다. `read()`는 타임아웃 없는 urllib 페치라 프로세스 무한 행(hang) + SSRF 가드 우회 — 두 결함을 동시에 만든다.
 - **실패 방향 확정: fail-closed.** robots.txt 404 = 전체 허용, 타임아웃/5xx = 해당 호스트 이번 실행 스킵. `last_error`에 "robots 페치 실패"와 "robots disallow"를 **구분 기록**(운영자가 일시 장애 vs 크롤 금지를 판별 가능해야 함).
 - **후보 URL 호스트별 can_fetch 필수**: robots 체크는 목록 URL 1회로 끝나지 않는다. `create_draft_from_url` 호출 **전** 각 후보 URL에 대해 캐시된 `can_fetch(candidate_url)` 통과 필수 — can_fetch는 경로별이고(목록 Allow ≠ 상세 Allow), atzip류 후보는 아예 다른 호스트다.
-- per-host 요청 간 상수 지연(sleep)·Crawl-delay 존중. User-Agent에 연락처 표기(`OshiLifeBot/1.0 (+운영 URL)` — 공개 연락 URL 확보는 운영 선결). 무인증 익명 요청만·차단 우회 금지·로그인 뒤 콘텐츠 금지(여기어때-야놀자·사람인-잡코리아 판례 수칙).
+- per-host 요청 간 상수 지연(sleep)·Crawl-delay 존중. User-Agent에 연락처 표기(`TakuLifeBot/1.0 (+운영 URL)` — 공개 연락 URL 확보는 운영 선결). 무인증 익명 요청만·차단 우회 금지·로그인 뒤 콘텐츠 금지(여기어때-야놀자·사람인-잡코리아 판례 수칙).
 
 ### 2-3. SSRF·DNS rebinding (우선순위 역전 — 2R 정합성·보안)
 - httpx는 공개 DNS 훅이 없어 "검증 IP 핀닝(커스텀 transport)"은 TLS SNI/인증서 검증과 충돌하는 고난도 작업 — 1R의 "핀닝 1차" 판정은 과대평가였다. **역전: 1차 완화 = (a) `fetch_html` 내부 per-hop resolver 검증을 회귀 테스트로 고정(제거 금지 — 이것이 권위 SSRF 게이트, 선검증은 resolver 없이 DNS를 건너뜀) + (b) 배포 게이트에 링크로컬/메타데이터(169.254.0.0/16) egress 차단을 릴리스 차단 항목으로 등재**(앱 레벨 `is_link_local` 차단은 이미 존재 — TOCTOU 창의 백스톱). IP 핀닝은 §4-7 best-effort로 연기.

@@ -174,7 +174,7 @@ def test_is_allowed_matches_disallow_rule_for_bare_product_token_even_when_conta
 ):
     monkeypatch.setattr(
         robots, "fetch_html",
-        lambda url, **kwargs: "User-agent: OshiLifeBot\nDisallow: /private/\n",
+        lambda url, **kwargs: "User-agent: TakuLifeBot\nDisallow: /private/\n",
     )
 
     checker = RobotsChecker()

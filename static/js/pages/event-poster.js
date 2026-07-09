@@ -1,15 +1,15 @@
 /**
- * event-poster.js — Staff poster upload/delete for oshilife event detail page
+ * event-poster.js — Staff poster upload/delete for takulife event detail page
  *
  * Handles:
  *   - File input change → immediate URL.createObjectURL preview (prevents
  *     wrong-file upload by showing what will be uploaded before confirming)
- *   - Upload button → OshiAPI.upload to POST /api/events/<id>/poster/ with
+ *   - Upload button → TakuAPI.upload to POST /api/events/<id>/poster/ with
  *     multipart FormData; 200 → reload; 400 → inline error; 403 → inline error
- *   - Delete button → confirm dialog → OshiAPI.del to DELETE
+ *   - Delete button → confirm dialog → TakuAPI.del to DELETE
  *     /api/events/<id>/poster/; 204 → reload
  *
- * Relies on window.OshiAPI (api.js) for all requests.
+ * Relies on window.TakuAPI (api.js) for all requests.
  * All DOM writes use textContent only (no innerHTML with API data).
  */
 
@@ -77,9 +77,9 @@
       var formData = new FormData();
       formData.append("image", fileInput.files[0]);
 
-      window.OshiAPI.setLoading(uploadBtn, true);
+      window.TakuAPI.setLoading(uploadBtn, true);
 
-      var result = await window.OshiAPI.upload(
+      var result = await window.TakuAPI.upload(
         "/api/events/" + eventId + "/poster/",
         formData
       );
@@ -89,10 +89,10 @@
         return;
       }
 
-      window.OshiAPI.setLoading(uploadBtn, false);
+      window.TakuAPI.setLoading(uploadBtn, false);
 
       if (result.status === 400) {
-        setError(errorEl, window.OshiAPI.formatError(result));
+        setError(errorEl, window.TakuAPI.formatError(result));
         return;
       }
 
@@ -132,9 +132,9 @@
         return;
       }
 
-      window.OshiAPI.setLoading(deleteBtn, true);
+      window.TakuAPI.setLoading(deleteBtn, true);
 
-      var result = await window.OshiAPI.del(
+      var result = await window.TakuAPI.del(
         "/api/events/" + eventId + "/poster/"
       );
 
@@ -143,7 +143,7 @@
         return;
       }
 
-      window.OshiAPI.setLoading(deleteBtn, false);
+      window.TakuAPI.setLoading(deleteBtn, false);
 
       if (result.status === 403) {
         setError(errorEl, "접근 권한이 없습니다. 스태프 계정으로 로그인해 주세요.");

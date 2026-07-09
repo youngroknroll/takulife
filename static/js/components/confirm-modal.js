@@ -1,7 +1,7 @@
 /**
- * confirm-modal.js — Custom 예/아니오 confirmation dialog for oshilife
+ * confirm-modal.js — Custom 예/아니오 confirmation dialog for takulife
  *
- * Exposes: window.OshiConfirm(message) → Promise<boolean>
+ * Exposes: window.TakuConfirm(message) → Promise<boolean>
  *   Resolves true  → 예 (proceed)
  *   Resolves false → 아니오 / ESC / backdrop click (abort)
  *
@@ -157,7 +157,7 @@
 
   // ── public API ────────────────────────────────────────────────────────────
 
-  function OshiConfirm(message) {
+  function TakuConfirm(message) {
     // If already open (shouldn't happen in serial use), resolve false and reopen
     if (currentResolve !== null) {
       var oldResolve = currentResolve;
@@ -171,5 +171,5 @@
     });
   }
 
-  window.OshiConfirm = OshiConfirm;
+  window.TakuConfirm = TakuConfirm;
 })();
