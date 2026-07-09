@@ -273,7 +273,7 @@ EMAIL_PORT = int(_get_env("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = _get_env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = _get_env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = _get_env("EMAIL_USE_TLS", "true").lower() in ("1", "true", "yes")
-DEFAULT_FROM_EMAIL = _get_env("DEFAULT_FROM_EMAIL", "no-reply@takulife.example")
+DEFAULT_FROM_EMAIL = _get_env("DEFAULT_FROM_EMAIL", "no-reply@oshilife.example")
 
 # DRF: rate-limit 공식 제보 (promotion) so an authenticated user cannot flood the
 # admin review queue with promoted PersonalEntry drafts. Scoped throttle only —

@@ -27,16 +27,16 @@
   }
 
   function askConfirm(message) {
-    if (typeof window.TakuConfirm === "function") {
-      return window.TakuConfirm(message);
+    if (typeof window.OshiConfirm === "function") {
+      return window.OshiConfirm(message);
     }
     return Promise.resolve(window.confirm(message));
   }
 
   function handle403(result, errorEl) {
-    var kind = window.TakuAPI.classify(result);
+    var kind = window.OshiAPI.classify(result);
     if (kind === "auth") {
-      window.TakuAPI.redirectToLogin();
+      window.OshiAPI.redirectToLogin();
     } else {
       setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
     }
@@ -191,9 +191,9 @@
         return;
       }
       setText(errorEl, "");
-      window.TakuAPI.setLoading(btn, true);
+      window.OshiAPI.setLoading(btn, true);
 
-      var result = await window.TakuAPI.del(
+      var result = await window.OshiAPI.del(
         "/api/visit-records/" + recordId + "/photos/" + photoId + "/"
       );
 
@@ -209,7 +209,7 @@
         return;
       }
 
-      window.TakuAPI.setLoading(btn, false);
+      window.OshiAPI.setLoading(btn, false);
       if (result.status === 403) {
         handle403(result, errorEl);
       } else if (result.status === 404) {
@@ -230,7 +230,7 @@
       setText(statusEl, "사진 업로드 중 (" + (i + 1) + "/" + total + ")...");
       var formData = new FormData();
       formData.append("image", pendingItems[i].file);
-      var result = await window.TakuAPI.upload(
+      var result = await window.OshiAPI.upload(
         "/api/visit-records/" + recordId + "/photos/",
         formData
       );
@@ -285,23 +285,23 @@
         return;
       }
 
-      window.TakuAPI.setLoading(submitBtn, true);
+      window.OshiAPI.setLoading(submitBtn, true);
       setText(statusEl, "저장 중...");
 
-      var result = await window.TakuAPI.patch("/api/visit-records/" + recordId + "/", {
+      var result = await window.OshiAPI.patch("/api/visit-records/" + recordId + "/", {
         visited_on: visitedOn,
         short_review: shortReview,
       });
 
       if (result.status !== 200) {
-        window.TakuAPI.setLoading(submitBtn, false);
+        window.OshiAPI.setLoading(submitBtn, false);
         setText(statusEl, "");
         if (result.status === 403) {
           handle403(result, errorEl);
         } else if (result.status === 0) {
           setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
         } else {
-          setText(errorEl, window.TakuAPI.formatError(result));
+          setText(errorEl, window.OshiAPI.formatError(result));
         }
         return;
       }
@@ -323,7 +323,7 @@
         "변경은 저장됐고 새 사진 " + outcome.succeeded + "/" + outcome.total +
           "장이 올라갔습니다. 나머지는 다시 시도해 주세요."
       );
-      window.TakuAPI.setLoading(submitBtn, false);
+      window.OshiAPI.setLoading(submitBtn, false);
     });
 
     if (deleteBtn) {
@@ -337,15 +337,15 @@
           return;
         }
         setText(globalErrorEl, "");
-        window.TakuAPI.setLoading(deleteBtn, true);
+        window.OshiAPI.setLoading(deleteBtn, true);
 
-        var result = await window.TakuAPI.del("/api/visit-records/" + recordId + "/");
+        var result = await window.OshiAPI.del("/api/visit-records/" + recordId + "/");
         if (result.status === 204) {
           window.location.assign(VISITS_URL);
           return;
         }
 
-        window.TakuAPI.setLoading(deleteBtn, false);
+        window.OshiAPI.setLoading(deleteBtn, false);
         if (result.status === 403) {
           handle403(result, globalErrorEl);
         } else if (result.status === 0) {

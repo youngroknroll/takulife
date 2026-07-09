@@ -1,5 +1,5 @@
 """
-core/vocab.py — Single source of domain vocabulary for TakuLog.
+core/vocab.py — Single source of domain vocabulary for oshilife.
 
 This module defines canonical slug→label mappings for categories, regions,
 archive statuses, and event statuses. All templates, context processors, and
