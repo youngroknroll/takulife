@@ -3,9 +3,10 @@ _console_shell.html — independent staff console chrome (replaces the public
 _site_header.html for /staff/* pages via staff/base_staff.html).
 
 Two-tier topbar (user-confirmed layout, see prompt_plan.md "스태프 독립 콘솔 셸"):
-  1) brand + "사이트로 돌아가기" link back to the public site
-  2) console tabs (dashboard / drafts / events / home categories), reusing
-     the existing `.nav-links` pill styling from nav.css.
+  1) brand only
+  2) console tabs (dashboard / drafts / events / home categories) plus the
+     "사이트로 돌아가기" link on the right (.staff-shell-tabrow), reusing the
+     existing `.nav-links` pill styling from nav.css for the tabs.
 
 No sidebar, no collapse toggle, no icons, no badges — see plan "하지 말 것".
 {% endcomment %}
@@ -13,12 +14,14 @@ No sidebar, no collapse toggle, no icons, no badges — see plan "하지 말 것
 <header class="staff-shell-header">
   <div class="staff-shell-topbar">
     <span class="staff-shell-brand">takulife 스태프 콘솔</span>
+  </div>
+  <div class="staff-shell-tabrow">
+    <nav class="staff-shell-tabs nav-links" aria-label="스태프 콘솔 메뉴">
+      <a href="/staff/dashboard/"{% if request.resolver_match.url_name == 'dashboard' %} class="active" aria-current="page"{% endif %}>스태프 콘솔</a>
+      <a href="/staff/drafts/"{% if request.resolver_match.url_name == 'draft-list' or request.resolver_match.url_name == 'draft-detail' %} class="active" aria-current="page"{% endif %}>드래프트 관리</a>
+      <a href="/staff/events/"{% if request.resolver_match.url_name == 'event-list' or request.resolver_match.url_name == 'event-edit' %} class="active" aria-current="page"{% endif %}>이벤트 관리</a>
+      <a href="/staff/home-categories/"{% if request.resolver_match.url_name == 'home-categories' %} class="active" aria-current="page"{% endif %}>홈 카테고리</a>
+    </nav>
     <a class="staff-shell-exit" href="/">사이트로 돌아가기 ↗</a>
   </div>
-  <nav class="staff-shell-tabs nav-links" aria-label="스태프 콘솔 메뉴">
-    <a href="/staff/dashboard/"{% if request.resolver_match.url_name == 'dashboard' %} class="active" aria-current="page"{% endif %}>스태프 콘솔</a>
-    <a href="/staff/drafts/"{% if request.resolver_match.url_name == 'draft-list' or request.resolver_match.url_name == 'draft-detail' %} class="active" aria-current="page"{% endif %}>드래프트 관리</a>
-    <a href="/staff/events/"{% if request.resolver_match.url_name == 'event-list' or request.resolver_match.url_name == 'event-edit' %} class="active" aria-current="page"{% endif %}>이벤트 관리</a>
-    <a href="/staff/home-categories/"{% if request.resolver_match.url_name == 'home-categories' %} class="active" aria-current="page"{% endif %}>홈 카테고리</a>
-  </nav>
 </header>

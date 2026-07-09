@@ -1,7 +1,8 @@
 /* ── staff console shell (independent chrome, PR-C1) ─────────── */
 /*
  * Replaces the public _site_header.html for /staff/* pages. Two-tier
- * topbar: brand + "back to site" link, then console tabs. Reuses the
+ * header: tier 1 is the brand only; tier 2 (.staff-shell-tabrow) is the
+ * console tabs plus the "back to site" link on the right. Reuses the
  * existing `.nav-links` pill styling (nav.css) for the tabs — this file
  * only adds the shell-specific chrome around it. No new color tokens;
  * layout-only constants live here as local custom properties.
@@ -45,16 +46,25 @@
   font-size: var(--fs-sm);
   text-decoration: underline;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .staff-shell-exit:hover {
   color: var(--text);
 }
 
-.staff-shell-tabs {
+.staff-shell-tabrow {
   max-width: 1120px;
   margin: 0 auto;
   padding: 0.625rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.staff-shell-tabs {
+  min-width: 0; /* let the pill row shrink and scroll */
   flex-wrap: nowrap;
   overflow-x: auto;
   justify-content: flex-start;
@@ -65,7 +75,7 @@
     padding: 0.625rem 1rem;
   }
 
-  .staff-shell-tabs {
+  .staff-shell-tabrow {
     padding: 0.625rem 1rem;
   }
 }
