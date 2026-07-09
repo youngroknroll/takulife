@@ -223,3 +223,32 @@
   background: var(--rose-soft);
   color: var(--rose-ink);
 }
+
+/* ── official badge (discovery cards: poster card + event list row) ───
+   Shown when event.official_url is set — same condition as pages/
+   event_detail.css's .official-stamp, whose token language (brand-ink
+   text, AA-safe on white) this mirrors. Lives here rather than in a page
+   sheet because the poster card (pages/home.css) and event list row
+   (pages/event_list.css) load different page stylesheets, and
+   components/cards.css is the one loaded on every page (base.html).
+   Uses the shared --radius-chip pill shape (matching the other inline
+   chips already on these cards), not the circular stamp shape, which
+   event_detail.css's comment reserves for the detail-page hero only. */
+.card-official-badge {
+  display: inline-block;
+  border-radius: var(--radius-chip);
+  padding: 0.1875rem 0.5rem;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--brand-ink);
+  background: var(--brand-soft);
+  white-space: nowrap;
+}
+
+/* Poster card only: badge sits on its own line between the title and the
+   location/period meta line. .poster-card-title's <a> is a line-clamp box
+   (display:-webkit-box), not flex, so a plain sibling already falls onto
+   its own line — this just adds a touch of top spacing. */
+.poster-card-badges {
+  margin: 0.1875rem 0 0;
+}

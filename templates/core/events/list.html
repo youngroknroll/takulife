@@ -150,7 +150,7 @@
                       <span class="cat-chip cat-{{ row.category_slug }}">{{ row.category_label }}</span>
                     {% endif %}
                   </div>
-                  <h2><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
+                  <h2><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a>{% if row.event.official_url %} <span class="card-official-badge">공식</span>{% endif %}</h2>
                   <p class="meta">{{ row.event.location_name }}</p>
                   {% if row.event.start_date and row.event.end_date %}
                     <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
