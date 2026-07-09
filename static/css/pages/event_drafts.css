@@ -90,14 +90,11 @@
     display: grid;
     gap: 0.625rem;
   }
-  /* Sticky so "선택 일괄 승인" stays reachable while scrolling a long
-     draft list (PR-C2). Console shell header is static (not sticky), so
-     top: 0.75rem matches the .filters/.side-stack sticky convention
-     elsewhere. Opaque --surface background + border/shadow so it reads as
-     floating above the list rather than blending into it.
-     width: fit-content + margin-left: auto (user request): a compact box
-     pinned to the panel's right edge instead of a full-width bar — sticky
-     positioning/z-index/background/border/shadow above are unchanged. */
+  /* Compact selection header, left-aligned above the checkbox column it
+     controls (Gmail-style select-all, user request) — rendered only on
+     the 검토대기 filter (template-gated: bulk approval only applies to
+     pending drafts), so width: fit-content keeps it from spanning the
+     full list width. */
   .bulk-toolbar {
     display: flex;
     align-items: center;
@@ -109,11 +106,6 @@
     padding: 0.375rem 0.5rem;
     margin-bottom: 0.625rem;
     width: fit-content;
-    margin-left: auto;
-    position: sticky;
-    top: 0.75rem;
-    z-index: 5;
-    box-shadow: var(--shadow);
   }
   /* Deliberately below the site's usual 44px tap-target minimum — explicit
      user request to shrink this button now that the toolbar itself is a
@@ -238,7 +230,6 @@
       flex-direction: column;
       align-items: stretch;
       width: 100%;
-      margin-left: 0;
     }
     .bulk-toolbar #bulk-approve-btn {
       width: 100%;

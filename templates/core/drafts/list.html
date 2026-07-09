@@ -70,22 +70,24 @@
         </div>
 
         {% if draft_rows %}
-          <div class="bulk-toolbar" id="bulk-toolbar" hidden>
-            <label class="draft-select" for="draft-select-all">
-              <input type="checkbox" id="draft-select-all">
-              <span class="sr-only">이 페이지의 검토 대기 드래프트 전체 선택</span>
-            </label>
-            <span id="bulk-selected-count">0건 선택됨</span>
-            <button type="button" id="bulk-approve-btn" class="action-button" disabled>선택 일괄 승인</button>
-            <p id="bulk-approve-result" role="status" aria-live="polite"></p>
-            <p id="bulk-approve-error" class="notice" role="alert" hidden></p>
-          </div>
+          {% if selected_status == "pending" %}
+            <div class="bulk-toolbar" id="bulk-toolbar" hidden>
+              <label class="draft-select" for="draft-select-all">
+                <input type="checkbox" id="draft-select-all">
+                <span class="sr-only">이 페이지의 검토 대기 드래프트 전체 선택</span>
+              </label>
+              <span id="bulk-selected-count">0건 선택됨</span>
+              <button type="button" id="bulk-approve-btn" class="action-button" disabled>선택 일괄 승인</button>
+              <p id="bulk-approve-result" role="status" aria-live="polite"></p>
+              <p id="bulk-approve-error" class="notice" role="alert" hidden></p>
+            </div>
+          {% endif %}
 
           <div class="draft-list" aria-label="드래프트 목록" data-selected-status="{{ selected_status }}">
             {% for row in draft_rows %}
               {% with title=row.draft.extracted_title|default:row.draft.raw_title %}
               <article class="draft-card hover-lift">
-                {% if row.draft.review_status == "pending" %}
+                {% if selected_status == "pending" and row.draft.review_status == "pending" %}
                   <label class="draft-select" for="draft-select-{{ row.draft.id }}">
                     <input type="checkbox" id="draft-select-{{ row.draft.id }}" class="draft-select-checkbox"
                            data-draft-select data-draft-id="{{ row.draft.id }}"
