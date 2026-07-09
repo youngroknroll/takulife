@@ -8,11 +8,19 @@
  */
 :root {
   --staff-shell-topbar-h: 3.25rem;
+  --staff-shell-tabs-h: 4rem; /* measured pinned tab-row height: 44px pill + 2×0.625rem padding */
 }
 
 .staff-shell-header {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
+  /* Sticky with a negative top offset equal to the topbar height: the
+   * header sticks one topbar-height above the viewport top, so on scroll
+   * the brand row slides out of view first and only the tab row below it
+   * stays pinned to the viewport top. */
+  position: sticky;
+  top: calc(-1 * var(--staff-shell-topbar-h));
+  z-index: 10;
 }
 
 .staff-shell-topbar {
@@ -60,6 +68,11 @@
   .staff-shell-tabs {
     padding: 0.625rem 1rem;
   }
+}
+
+/* Sticky side panels on staff pages must clear the pinned tab row. */
+.side-stack {
+  top: calc(var(--staff-shell-tabs-h) + 0.75rem);
 }
 
 /* Skip link: visually hidden until focused, then pinned top-left. */
