@@ -1,5 +1,5 @@
 /**
- * personal_entries.js — "내 항목" (PersonalEntry) actions for TakuLog
+ * personal_entries.js — "내 항목" (PersonalEntry) actions for oshilife
  *
  * Handles:
  *   - Create personal entry via form#entry-create-form

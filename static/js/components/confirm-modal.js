@@ -1,5 +1,5 @@
 /**
- * confirm-modal.js — Custom 예/아니오 confirmation dialog for TakuLog
+ * confirm-modal.js — Custom 예/아니오 confirmation dialog for oshilife
  *
  * Exposes: window.OshiConfirm(message) → Promise<boolean>
  *   Resolves true  → 예 (proceed)

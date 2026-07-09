@@ -1,5 +1,5 @@
 /**
- * status.js — wire status buttons for TakuLog
+ * status.js — wire status buttons for oshilife
  *
  * Targets any <button data-status-action> with:
  *   data-event-id   — Event PK (always required)

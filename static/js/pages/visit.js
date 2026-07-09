@@ -1,5 +1,5 @@
 /**
- * visit.js — Visit record actions for TakuLog
+ * visit.js — Visit record actions for oshilife
  *
  * Handles:
  *   - Delete visit record via [data-delete-record-id]

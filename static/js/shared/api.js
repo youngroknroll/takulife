@@ -1,5 +1,5 @@
 /**
- * api.js — CSRF-aware REST client for TakuLog
+ * api.js — CSRF-aware REST client for oshilife
  *
  * Exposes window.OshiAPI with the following methods:
  *   get(url)              — GET request, returns {ok, status, data}

@@ -1,5 +1,5 @@
 /**
- * event-poster.js — Staff poster upload/delete for TakuLog event detail page
+ * event-poster.js — Staff poster upload/delete for oshilife event detail page
  *
  * Handles:
  *   - File input change → immediate URL.createObjectURL preview (prevents

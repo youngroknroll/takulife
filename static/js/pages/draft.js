@@ -1,5 +1,5 @@
 /**
- * draft.js — Admin draft management actions for TakuLog
+ * draft.js — Admin draft management actions for oshilife
  *
  * Binds create / edit / approve / reject controls via data attributes.
  * All API writes go through window.OshiAPI (api.js) — no CSRF duplication.
