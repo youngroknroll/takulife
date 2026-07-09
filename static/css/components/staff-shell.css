@@ -1,18 +1,27 @@
 /* ── staff console shell (independent chrome, PR-C1) ─────────── */
 /*
  * Replaces the public _site_header.html for /staff/* pages. Two-tier
- * topbar: brand + "back to site" link, then console tabs. Reuses the
+ * header: tier 1 is the brand only; tier 2 (.staff-shell-tabrow) is the
+ * console tabs plus the "back to site" link on the right. Reuses the
  * existing `.nav-links` pill styling (nav.css) for the tabs — this file
  * only adds the shell-specific chrome around it. No new color tokens;
  * layout-only constants live here as local custom properties.
  */
 :root {
   --staff-shell-topbar-h: 3.25rem;
+  --staff-shell-tabs-h: 4rem; /* measured pinned tab-row height: 44px pill + 2×0.625rem padding */
 }
 
 .staff-shell-header {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
+  /* Sticky with a negative top offset equal to the topbar height: the
+   * header sticks one topbar-height above the viewport top, so on scroll
+   * the brand row slides out of view first and only the tab row below it
+   * stays pinned to the viewport top. */
+  position: sticky;
+  top: calc(-1 * var(--staff-shell-topbar-h));
+  z-index: 10;
 }
 
 .staff-shell-topbar {
@@ -37,16 +46,25 @@
   font-size: var(--fs-sm);
   text-decoration: underline;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .staff-shell-exit:hover {
   color: var(--text);
 }
 
-.staff-shell-tabs {
+.staff-shell-tabrow {
   max-width: 1120px;
   margin: 0 auto;
   padding: 0.625rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.staff-shell-tabs {
+  min-width: 0; /* let the pill row shrink and scroll */
   flex-wrap: nowrap;
   overflow-x: auto;
   justify-content: flex-start;
@@ -57,9 +75,14 @@
     padding: 0.625rem 1rem;
   }
 
-  .staff-shell-tabs {
+  .staff-shell-tabrow {
     padding: 0.625rem 1rem;
   }
+}
+
+/* Sticky side panels on staff pages must clear the pinned tab row. */
+.side-stack {
+  top: calc(var(--staff-shell-tabs-h) + 0.75rem);
 }
 
 /* Skip link: visually hidden until focused, then pinned top-left. */

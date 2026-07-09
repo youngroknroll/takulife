@@ -28,7 +28,7 @@ def draft_review_stats() -> dict:
     return {status: counts.get(status, 0) for status in _ALL_STATUSES}
 
 
-DRAFT_LISTING_PAGE_SIZE = 20
+DRAFT_LISTING_PAGE_SIZE = 10
 
 
 def list_drafts(status: str = ""):

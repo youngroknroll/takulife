@@ -32,20 +32,24 @@ def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, star
 class TestEventDraftsListFilterPagination:
     """/staff/drafts/ status filter + pagination (shared pager, list_drafts)."""
 
-    def test_first_page_caps_at_twenty_with_pager(self, staff_client, make_draft):
-        _seed_drafts(make_draft, 21)
+    def test_first_page_caps_at_page_size_with_pager(self, staff_client, make_draft):
+        from drafts.queries import DRAFT_LISTING_PAGE_SIZE
+
+        _seed_drafts(make_draft, DRAFT_LISTING_PAGE_SIZE + 1)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
 
         assert resp.status_code == 200
         page_obj = resp.context["page_obj"]
-        assert page_obj.paginator.count == 21
-        assert len(page_obj.object_list) == 20
+        assert page_obj.paginator.count == DRAFT_LISTING_PAGE_SIZE + 1
+        assert len(page_obj.object_list) == DRAFT_LISTING_PAGE_SIZE
         assert page_obj.has_other_pages() is True
 
     def test_no_pager_when_within_one_page(self, staff_client, make_draft):
-        _seed_drafts(make_draft, 20)
+        from drafts.queries import DRAFT_LISTING_PAGE_SIZE
+
+        _seed_drafts(make_draft, DRAFT_LISTING_PAGE_SIZE)
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
@@ -53,7 +57,9 @@ class TestEventDraftsListFilterPagination:
         assert resp.context["page_obj"].has_other_pages() is False
 
     def test_second_page_holds_remainder_and_differs_from_first(self, staff_client, make_draft):
-        _seed_drafts(make_draft, 21)
+        from drafts.queries import DRAFT_LISTING_PAGE_SIZE
+
+        _seed_drafts(make_draft, DRAFT_LISTING_PAGE_SIZE + 1)
 
         _, client = staff_client()
         first = client.get("/staff/drafts/")

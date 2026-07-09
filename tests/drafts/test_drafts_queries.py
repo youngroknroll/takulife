@@ -7,7 +7,7 @@ Covers:
 - Unknown status value returns an empty queryset (function-level contract)
 - Counts are asserted with N>=2 per status to avoid false-confidence
   regressions (filter vs exists)
-- DRAFT_LISTING_PAGE_SIZE constant equals 20
+- DRAFT_LISTING_PAGE_SIZE constant equals 10
 - list_draft_sources() (PR-5b staff dashboard freshness): ordered by
   -enabled, name — the staff/views.py dashboard() view must call this
   helper rather than querying DraftSource itself (prompt_plan.md §3-1-5).
@@ -130,10 +130,10 @@ class TestListDrafts:
         assert list_drafts(status=EventDraft.ReviewStatus.REJECTED).count() == 2
 
 
-def test_draft_listing_page_size_constant_is_20():
+def test_draft_listing_page_size_constant_is_10():
     from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
-    assert DRAFT_LISTING_PAGE_SIZE == 20
+    assert DRAFT_LISTING_PAGE_SIZE == 10
 
 
 @pytest.mark.django_db

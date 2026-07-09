@@ -191,7 +191,7 @@ QUALITY_WARNING_KEYS = (
     "missing_region",
 )
 
-STAFF_EVENT_LISTING_PAGE_SIZE = 20
+STAFF_EVENT_LISTING_PAGE_SIZE = 10
 
 _NON_DATED_WARNING_QUERYSETS = {
     "missing_official_url": _missing_official_url_qs,
