@@ -1,7 +1,7 @@
 [project]
-name = "oshilog"
+name = "oshilife"
 version = "0.1.0"
-description = "RESTful API backend for OshiLog."
+description = "RESTful API backend for oshilife."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

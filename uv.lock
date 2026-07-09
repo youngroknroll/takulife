@@ -575,7 +575,7 @@ wheels = [
 ]
 
 [[package]]
-name = "oshilog"
+name = "oshilife"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
