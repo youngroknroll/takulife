@@ -69,12 +69,12 @@ class TestStaffDraftsFilter:
     def test_pager_preserves_status_filter_across_pages(
         self, live_server, page, seed, login
     ):
-        _seed_drafts(21, EventDraft.ReviewStatus.PENDING)
+        _seed_drafts(11, EventDraft.ReviewStatus.PENDING)
 
         login(page, live_server.url, "e2e_staff@example.com", seed.password)
         page.goto(f"{live_server.url}/staff/drafts/?status=pending")
 
-        expect(page.locator(".draft-card")).to_have_count(20)
+        expect(page.locator(".draft-card")).to_have_count(10)
 
         page.click(".pager a:has-text('다음')")
 
