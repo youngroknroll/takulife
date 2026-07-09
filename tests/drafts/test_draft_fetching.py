@@ -137,7 +137,7 @@ def test_fetch_html_user_agent_appends_contact_when_settings_configured(monkeypa
 
     _install(monkeypatch, install_mock_transport, handler)
     fetch_html("https://example.com/")
-    assert captured["user_agent"] == "OshiLogBot/1.0 (+https://example.com/about)"
+    assert captured["user_agent"] == "OshiLifeBot/1.0 (+https://example.com/about)"
 
 
 @override_settings(DRAFT_FETCH_CONTACT="https://example.com/about\n")
@@ -152,4 +152,4 @@ def test_fetch_html_user_agent_strips_trailing_whitespace_from_contact(monkeypat
 
     _install(monkeypatch, install_mock_transport, handler)
     fetch_html("https://example.com/")
-    assert captured["user_agent"] == "OshiLogBot/1.0 (+https://example.com/about)"
+    assert captured["user_agent"] == "OshiLifeBot/1.0 (+https://example.com/about)"
