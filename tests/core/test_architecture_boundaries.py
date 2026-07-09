@@ -259,56 +259,80 @@ def test_core_views_no_longer_imports_staff_permissions():
 
 API_OR_VIEW_TEST_GLOBS = ("test_*_api.py", "test_*_view.py", "test_*_views.py")
 _DOMAIN_APPS_WITH_SERVICE_QUERY_LAYERS = ("archive", "drafts", "events", "staff")
+_CLIENT_FAMILY_FIXTURE_NAMES = ("client", "admin_client", "user_client", "staff_client")
 
-# Measured 2026-07-09 against the full test tree (21 files matching the globs
-# above). Each entry below is a narrow, non-business-logic import — never a
-# direct call into the service/query function to arrange test state — so it
-# does not violate the boundary this guard protects.
+# (file, module) -> the exact names this guard permits importing from that
+# module. Anything imported that is not in this set fails the guard — this
+# is a per-name allow-list, not a per-file exemption, so widening what a
+# file imports from services/queries (even within an already-allowed module)
+# requires touching this table.
 ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS = {
-    ("tests/drafts/test_drafts_api.py", "drafts.services"): (
-        "Imports only the DraftCreation*Error exception classes to "
-        "monkeypatch draft_views.create_draft_from_url so it raises them — "
-        "this exercises the API's error-to-status-code mapping contract, "
-        "never calling the service function to arrange data. (The actual "
-        "monkeypatch targets, e.g. 'drafts.services.fetch_html', are string "
-        "paths passed to monkeypatch.setattr, which this AST check cannot "
-        "see and which are not imports anyway.)"
+    # Imports only the DraftCreation*Error exception classes, to monkeypatch
+    # draft_views.create_draft_from_url so it raises them — this exercises
+    # the API's error-to-status-code mapping contract, never calling the
+    # service function to arrange data. (The actual monkeypatch targets,
+    # e.g. 'drafts.services.fetch_html', are string paths passed to
+    # monkeypatch.setattr, which this AST check cannot see and which are
+    # not imports anyway.)
+    ("tests/drafts/test_drafts_api.py", "drafts.services"): frozenset(
+        {
+            "DraftCreationEmptyExtractionError",
+            "DraftCreationResponseTooLargeError",
+            "DraftCreationUnsupportedContentError",
+        }
     ),
-    ("tests/staff/test_staff_events_views.py", "events.queries"): (
-        "Imports only the STAFF_EVENT_LISTING_PAGE_SIZE constant to compute "
-        "how many events to seed for a pagination test — no query function "
-        "is called."
+    # Imports only the STAFF_EVENT_LISTING_PAGE_SIZE constant, to compute how
+    # many events to seed for a pagination test — no query function is
+    # called.
+    ("tests/staff/test_staff_events_views.py", "events.queries"): frozenset(
+        {"STAFF_EVENT_LISTING_PAGE_SIZE"}
     ),
 }
 
+# Sentinel used when a test file imports the whole services/queries module
+# object (`import <app>.services`, or `from <app> import services`) rather
+# than specific names — there is nothing to whitelist by name in that case,
+# so any such import is always a violation unless "*" itself is allow-listed.
+_WHOLE_MODULE_IMPORT = "*"
 
-def _imported_service_or_query_modules(module_path, apps):
-    """Like _imported_modules, but also resolves `from <app> import services`
-    / `from <app> import queries` into the same "<app>.services" /
-    "<app>.queries" form as `from <app>.services import ...` and
-    `import <app>.services` — plain _imported_modules cannot distinguish a
-    from-import of the services/queries submodule itself (node.module is
-    just "<app>") from a from-import of an unrelated name in that package,
-    so it would silently miss that style of import."""
+
+def _imported_names_by_service_or_query_module(module_path, apps):
+    """Return {"<app>.services" or "<app>.queries": {imported names}} for a
+    test file, resolving all three import spellings (`import <app>.services`,
+    `from <app>.services import X`, `from <app> import services`) into the
+    same module key. A bare module import (no specific names) is recorded
+    under the sentinel name "*" (see _WHOLE_MODULE_IMPORT)."""
     tree = ast.parse((PROJECT_ROOT / module_path).read_text())
-    found = set()
+    found = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if any(
-                    alias.name == f"{app}.services" or alias.name == f"{app}.queries"
-                    for app in apps
-                ):
-                    found.add(alias.name)
+                for app in apps:
+                    if alias.name == f"{app}.services" or alias.name == f"{app}.queries":
+                        found.setdefault(alias.name, set()).add(_WHOLE_MODULE_IMPORT)
         elif isinstance(node, ast.ImportFrom) and node.module is not None:
             for app in apps:
                 if node.module == f"{app}.services" or node.module == f"{app}.queries":
-                    found.add(node.module)
+                    for alias in node.names:
+                        found.setdefault(node.module, set()).add(alias.name)
                 elif node.module == app:
                     for alias in node.names:
                         if alias.name in ("services", "queries"):
-                            found.add(f"{app}.{alias.name}")
+                            found.setdefault(f"{app}.{alias.name}", set()).add(_WHOLE_MODULE_IMPORT)
     return found
+
+
+def _has_client_family_fixture(path):
+    """True if any test function in the file declares a client/admin_client/
+    user_client/staff_client parameter — a structural AST fact (the argument
+    name in a `def test_...(...)` signature), not a variable-name guess at
+    call sites."""
+    tree = ast.parse(path.read_text())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
+            if any(arg.arg in _CLIENT_FAMILY_FIXTURE_NAMES for arg in node.args.args):
+                return True
+    return False
 
 
 def test_api_and_view_test_files_do_not_import_service_or_query_layers():
@@ -316,20 +340,50 @@ def test_api_and_view_test_files_do_not_import_service_or_query_layers():
     A test that needs to reach into a services/queries module directly
     belongs in a dedicated *_services.py / *_queries.py file instead — that
     is the "test file name = layer under test" contract this refactor
-    established. Legitimate narrow exceptions (an exception-class import for
-    monkeypatch, a page-size constant) are tracked in
-    ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS with a reason.
+    established.
+
+    In scope by two independent signals: the filename pattern
+    (*_api.py / *_view(s).py) and, more broadly, any test file that
+    declares a client-family fixture parameter (it exercises HTTP/SSR
+    regardless of what its filename says). Legitimate narrow exceptions are
+    tracked by exact imported name in
+    ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS, with the reason
+    as a comment above each entry.
     """
-    test_files = set()
+    tests_dir = PROJECT_ROOT / "tests"
+
+    files_by_glob = set()
     for pattern in API_OR_VIEW_TEST_GLOBS:
-        test_files.update((PROJECT_ROOT / "tests").glob(f"**/{pattern}"))
+        files_by_glob.update(tests_dir.glob(f"**/{pattern}"))
+
+    files_by_fixture = {
+        path for path in tests_dir.glob("**/test_*.py") if _has_client_family_fixture(path)
+    }
+
+    test_files = files_by_glob | files_by_fixture
+    assert test_files, "layer-purity guard matched 0 files — glob broken or tests moved"
 
     violations = []
     for path in sorted(test_files):
         rel_path = path.relative_to(PROJECT_ROOT).as_posix()
-        for module in _imported_service_or_query_modules(rel_path, _DOMAIN_APPS_WITH_SERVICE_QUERY_LAYERS):
-            if (rel_path, module) in ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS:
-                continue
-            violations.append(f"{rel_path} imports {module}")
+        matched_by = []
+        if path in files_by_glob:
+            matched_by.append("filename")
+        if path in files_by_fixture:
+            matched_by.append("client-fixture")
+
+        imported_names_by_module = _imported_names_by_service_or_query_module(
+            rel_path, _DOMAIN_APPS_WITH_SERVICE_QUERY_LAYERS
+        )
+        for module, names in imported_names_by_module.items():
+            allowed = ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS.get(
+                (rel_path, module), frozenset()
+            )
+            disallowed = names - allowed
+            if disallowed:
+                violations.append(
+                    f"{rel_path} (matched by {'+'.join(matched_by)}) imports "
+                    f"{', '.join(sorted(disallowed))} from {module}"
+                )
 
     assert not violations, "\n".join(violations)

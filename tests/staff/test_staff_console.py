@@ -449,6 +449,17 @@ def test_staff_can_access_home_categories_url(staff_client):
 
 
 @pytest.mark.django_db
+def test_anonymous_home_categories_redirects_to_accounts_login(client):
+    """staff_console_required's anonymous branch (redirect, not 403) — the
+    non-staff 403 case for this path is already covered by
+    test_non_staff_blocked_from_new_staff_paths below."""
+    resp = client.get("/staff/home-categories/")
+
+    assert resp.status_code == 302
+    assert resp.url == "/accounts/login/?next=/staff/home-categories/"
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "path",
     [
