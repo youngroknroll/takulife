@@ -62,17 +62,6 @@
           </div>
         </details>
 
-        <details>
-          <summary>검토 원칙</summary>
-          <p class="panel-note">승인 전까지 공개 행사 목록에는 노출하지 않습니다.</p>
-          <ul class="rule-list">
-            <li>공식 URL이 없는 행사는 게시하지 않음</li>
-            <li>추출값은 후보이며 관리자가 최종 확인</li>
-            <li>pending 상태에서만 추출 필드 수정 가능</li>
-            <li>승인 시 published Event 생성</li>
-          </ul>
-        </details>
-
         <div class="chips" role="group" aria-label="상태 필터">
           <a class="chip{% if not selected_status %} active{% endif %}" href="/staff/drafts/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체 {{ stats_total }}</a>
           <a class="chip{% if selected_status == "pending" %} active{% endif %}" href="/staff/drafts/?status=pending" aria-label="검토 대기 필터"{% if selected_status == "pending" %} aria-current="true"{% endif %}>검토 대기 <span id="chip-count-pending">{{ stats.pending }}</span></a>
@@ -146,6 +135,19 @@
           <p class="notice">등록된 드래프트가 없습니다. URL을 입력해 첫 드래프트를 생성해 보세요.</p>
         {% endif %}
       </article>
+
+      <aside class="side-stack" aria-label="검토 원칙">
+        <section class="panel">
+          <h2>검토 원칙</h2>
+          <p class="panel-note">승인 전까지 공개 행사 목록에는 노출하지 않습니다.</p>
+          <ul class="rule-list">
+            <li>공식 URL이 없는 행사는 게시하지 않음</li>
+            <li>추출값은 후보이며 관리자가 최종 확인</li>
+            <li>pending 상태에서만 추출 필드 수정 가능</li>
+            <li>승인 시 published Event 생성</li>
+          </ul>
+        </section>
+      </aside>
     </section>
   </main>
 {% endblock %}

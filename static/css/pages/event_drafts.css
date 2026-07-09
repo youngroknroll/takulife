@@ -166,6 +166,16 @@
     text-decoration: none;
     overflow-wrap: anywhere;
   }
+  @media (min-width: 57.5rem) {
+    .layout {
+      grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+    }
+  }
+  @media (max-width: 57.5rem) {
+    .side-stack {
+      position: static;
+    }
+  }
   @media (max-width: 57.5rem) {
     .create-form {
       grid-template-columns: 1fr;
