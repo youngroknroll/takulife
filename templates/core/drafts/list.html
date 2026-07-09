@@ -121,7 +121,7 @@
                   </p>
                   <p class="bulk-fail-reason" data-bulk-fail-reason hidden></p>
                   <p class="meta">
-                    <a href="/staff/drafts/{{ row.draft.id }}/{% if selected_status %}?status={{ selected_status }}{% endif %}">
+                    <a class="btn btn-secondary btn-sm" href="/staff/drafts/{{ row.draft.id }}/{% if selected_status %}?status={{ selected_status }}{% endif %}">
                       {% if row.draft.review_status == "pending" %}검토하기{% else %}상세 보기{% endif %}
                     </a>
                   </p>
