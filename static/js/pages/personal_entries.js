@@ -1,11 +1,11 @@
 /**
- * personal_entries.js — "내 항목" (PersonalEntry) actions for oshilife
+ * personal_entries.js — "내 항목" (PersonalEntry) actions for takulife
  *
  * Handles:
  *   - Create personal entry via form#entry-create-form
  *   - Delete personal entry via [data-delete-entry-id]
  *
- * Relies on window.OshiAPI (api.js) for requests, 403 disambiguation and error
+ * Relies on window.TakuAPI (api.js) for requests, 403 disambiguation and error
  * formatting. All DOM writes use textContent only.
  */
 
@@ -23,8 +23,8 @@
   }
 
   function handle403(result, errorEl) {
-    if (window.OshiAPI.classify(result) === "auth") {
-      window.OshiAPI.redirectToLogin();
+    if (window.TakuAPI.classify(result) === "auth") {
+      window.TakuAPI.redirectToLogin();
     } else {
       setError(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
     }
@@ -33,8 +33,8 @@
   // Confirm before a destructive, unrecoverable action. Uses the shared modal
   // (confirm-modal.js, loaded in base.html) with a native confirm() fallback.
   function askConfirm(message) {
-    if (typeof window.OshiConfirm === "function") {
-      return window.OshiConfirm(message);
+    if (typeof window.TakuConfirm === "function") {
+      return window.TakuConfirm(message);
     }
     return Promise.resolve(window.confirm(message));
   }
@@ -65,16 +65,16 @@
         memo: form.elements["memo"].value.trim(),
       };
 
-      window.OshiAPI.setLoading(submitBtn, true);
+      window.TakuAPI.setLoading(submitBtn, true);
 
-      var result = await window.OshiAPI.post("/api/personal-entries/", payload);
+      var result = await window.TakuAPI.post("/api/personal-entries/", payload);
 
       if (result.status === 201) {
         window.location.reload();
         return;
       }
 
-      window.OshiAPI.setLoading(submitBtn, false);
+      window.TakuAPI.setLoading(submitBtn, false);
 
       if (result.status === 403) {
         handle403(result, errorEl);
@@ -86,7 +86,7 @@
         return;
       }
 
-      setError(errorEl, window.OshiAPI.formatError(result));
+      setError(errorEl, window.TakuAPI.formatError(result));
     });
   }
 
@@ -108,9 +108,9 @@
             return;
           }
           clearError(globalErrorEl);
-          window.OshiAPI.setLoading(btn, true);
+          window.TakuAPI.setLoading(btn, true);
 
-          var result = await window.OshiAPI.del(
+          var result = await window.TakuAPI.del(
             "/api/personal-entries/" + entryId + "/"
           );
 
@@ -119,7 +119,7 @@
             return;
           }
 
-          window.OshiAPI.setLoading(btn, false);
+          window.TakuAPI.setLoading(btn, false);
 
           if (result.status === 403) {
             handle403(result, globalErrorEl);
@@ -185,9 +185,9 @@
             return;
           }
 
-          window.OshiAPI.setLoading(submitBtn, true);
+          window.TakuAPI.setLoading(submitBtn, true);
 
-          var result = await window.OshiAPI.post(
+          var result = await window.TakuAPI.post(
             "/api/personal-entries/" + id + "/promote/",
             { official_url: officialUrl }
           );
@@ -197,7 +197,7 @@
             return;
           }
 
-          window.OshiAPI.setLoading(submitBtn, false);
+          window.TakuAPI.setLoading(submitBtn, false);
 
           if (result.status === 403) {
             handle403(result, errorEl);
@@ -214,7 +214,7 @@
             return;
           }
 
-          setError(errorEl, window.OshiAPI.formatError(result));
+          setError(errorEl, window.TakuAPI.formatError(result));
         });
       })(forms[f]);
     }

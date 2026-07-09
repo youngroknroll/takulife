@@ -65,8 +65,8 @@
   // (confirm-modal.js, loaded in base.html) with a native confirm() fallback
   // — same pattern as visit.js / personal_entries.js.
   function askConfirm(message) {
-    if (typeof window.OshiConfirm === "function") {
-      return window.OshiConfirm(message);
+    if (typeof window.TakuConfirm === "function") {
+      return window.TakuConfirm(message);
     }
     return Promise.resolve(window.confirm(message));
   }
@@ -280,19 +280,19 @@
           errorEl.textContent = "";
           errorEl.hidden = true;
         }
-        window.OshiAPI.setLoading(btn, true);
+        window.TakuAPI.setLoading(btn, true);
 
-        window.OshiAPI.post("/staff/drafts/bulk-approve/", {
+        window.TakuAPI.post("/staff/drafts/bulk-approve/", {
           draft_ids: draftIds,
         }).then(function (result) {
-          window.OshiAPI.setLoading(btn, false);
+          window.TakuAPI.setLoading(btn, false);
 
           if (!result.ok) {
             if (errorEl) {
               errorEl.textContent =
                 result.status === 403
                   ? CSRF_OR_SESSION_MSG
-                  : window.OshiAPI.formatError(result);
+                  : window.TakuAPI.formatError(result);
               errorEl.hidden = false;
             }
             updateToolbarState();

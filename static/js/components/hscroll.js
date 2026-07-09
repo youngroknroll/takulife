@@ -1,5 +1,5 @@
 /**
- * hscroll.js — Horizontal scroller with prev/next arrow buttons for oshilife
+ * hscroll.js — Horizontal scroller with prev/next arrow buttons for takulife
  *
  * Handles:
  *   - Arrow visibility based on overflow + scroll position

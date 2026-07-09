@@ -1,5 +1,5 @@
 /**
- * confirm-modal.css — Custom 예/아니오 confirmation dialog for oshilife
+ * confirm-modal.css — Custom 예/아니오 confirmation dialog for takulife
  *
  * Coordinate with confirm-modal.js: overlay is hidden via [hidden] attribute,
  * shown by removing [hidden] and adding .is-open for transition.

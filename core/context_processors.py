@@ -3,4 +3,4 @@ def project_name(request):
 
     Keeps views from each hardcoding ``"project_name"`` in their render context.
     """
-    return {"project_name": "oshilife"}
+    return {"project_name": "takulife"}

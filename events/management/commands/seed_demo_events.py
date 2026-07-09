@@ -26,7 +26,7 @@ def _demo_events():
     return [
         # --- original 5 events ---
         {
-            "official_url": "https://demo.oshilife.example/popup-1",
+            "official_url": "https://demo.takulife.example/popup-1",
             "title": "[데모] 봄 팝업스토어",
             "category": "popup_store",
             "region": "seoul",
@@ -37,7 +37,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/collab-cafe-1",
+            "official_url": "https://demo.takulife.example/collab-cafe-1",
             "title": "[데모] 애니메이션 콜라보 카페",
             "category": "collaboration_cafe",
             "region": "osaka",
@@ -48,7 +48,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/theater-1",
+            "official_url": "https://demo.takulife.example/theater-1",
             "title": "[데모] 극장 상영 특전",
             "category": "theater_bonus",
             "region": "tokyo",
@@ -59,7 +59,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/goods-1",
+            "official_url": "https://demo.takulife.example/goods-1",
             "title": "[데모] 한정 굿즈 예약",
             "category": "goods_reservation",
             "region": "busan",
@@ -70,7 +70,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/exhibition-1",
+            "official_url": "https://demo.takulife.example/exhibition-1",
             "title": "[데모] 아트 전시회",
             "category": "exhibition",
             "region": "seoul",
@@ -82,7 +82,7 @@ def _demo_events():
         },
         # --- ongoing events (end_date > today+5, not in closing window) ---
         {
-            "official_url": "https://demo.oshilife.example/popup-2",
+            "official_url": "https://demo.takulife.example/popup-2",
             "title": "[데모] 여름 팝업스토어",
             "category": "popup_store",
             "region": "gyeonggi",
@@ -93,7 +93,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/collab-cafe-2",
+            "official_url": "https://demo.takulife.example/collab-cafe-2",
             "title": "[데모] 게임 콜라보 카페",
             "category": "collaboration_cafe",
             "region": "incheon",
@@ -104,7 +104,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/exhibition-2",
+            "official_url": "https://demo.takulife.example/exhibition-2",
             "title": "[데모] 일러스트 전시회",
             "category": "exhibition",
             "region": "busan",
@@ -115,7 +115,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/popup-3",
+            "official_url": "https://demo.takulife.example/popup-3",
             "title": "[데모] 한정판 팝업스토어",
             "category": "popup_store",
             "region": "seoul",
@@ -126,7 +126,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/goods-2",
+            "official_url": "https://demo.takulife.example/goods-2",
             "title": "[데모] 콜라보 굿즈 예약",
             "category": "goods_reservation",
             "region": "online",
@@ -137,7 +137,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/exhibition-3",
+            "official_url": "https://demo.takulife.example/exhibition-3",
             "title": "[데모] 피규어 전시회",
             "category": "exhibition",
             "region": "seoul",
@@ -148,7 +148,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/popup-4",
+            "official_url": "https://demo.takulife.example/popup-4",
             "title": "[데모] 시즌 팝업스토어",
             "category": "popup_store",
             "region": "gyeonggi",
@@ -160,7 +160,7 @@ def _demo_events():
         },
         # --- closing events (start_date <= today, end_date in [today+1, today+5]) ---
         {
-            "official_url": "https://demo.oshilife.example/closing-d1",
+            "official_url": "https://demo.takulife.example/closing-d1",
             "title": "[데모] 마감 임박 D+1 전시",
             "category": "exhibition",
             "region": "seoul",
@@ -171,7 +171,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/closing-d2",
+            "official_url": "https://demo.takulife.example/closing-d2",
             "title": "[데모] 마감 임박 D+2 팝업",
             "category": "popup_store",
             "region": "busan",
@@ -182,7 +182,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/closing-d3",
+            "official_url": "https://demo.takulife.example/closing-d3",
             "title": "[데모] 마감 임박 D+3 카페",
             "category": "collaboration_cafe",
             "region": "gyeonggi",
@@ -193,7 +193,7 @@ def _demo_events():
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
         {
-            "official_url": "https://demo.oshilife.example/closing-d5",
+            "official_url": "https://demo.takulife.example/closing-d5",
             "title": "[데모] 마감 임박 D+5 굿즈",
             "category": "goods_reservation",
             "region": "online",
@@ -205,7 +205,7 @@ def _demo_events():
         },
         # --- fan_meeting category (1 published, ongoing) ---
         {
-            "official_url": "https://demo.oshilife.example/fan-meeting-1",
+            "official_url": "https://demo.takulife.example/fan-meeting-1",
             "title": "[데모] 아이돌 팬미팅",
             "category": "fan_meeting",
             "region": "seoul",

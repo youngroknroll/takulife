@@ -695,7 +695,7 @@ def archive_interests(request):
 
 @api_view(["GET"])
 def api_root(request):
-    return Response({"name": "oshilife API"})
+    return Response({"name": "takulife API"})
 
 
 @api_view(["GET"])

@@ -3,7 +3,7 @@
  * Cursor/touch legibility. .hover-lift raises a clickable card block on hover
  * (and presses it back on :active for touch), so the pointer position is always
  * visible. .is-loading turns any button into a disabled spinner while its
- * request is in flight — toggled from JS via OshiAPI.setLoading. The spinner
+ * request is in flight — toggled from JS via TakuAPI.setLoading. The spinner
  * borrows the button's own text colour (currentColor) so it reads on both light
  * and brand-filled buttons. Transform-based motion respects reduced-motion.
  */
