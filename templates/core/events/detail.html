@@ -86,9 +86,26 @@
                 {% if user_status == 'planned' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
                 {% if status_slug == 'ended' %}disabled aria-disabled="true" title="종료된 행사는 방문 예정을 설정할 수 없습니다"{% endif %}
                 aria-pressed="{% if user_status == 'planned' %}true{% else %}false{% endif %}">방문 예정</button>
+              <button class="status-btn visited{% if user_status == 'visited' %} active{% endif %}" type="button"
+                data-status-action
+                data-event-id="{{ event.id }}"
+                data-status="visited"
+                data-reload-on-success
+                {% if user_status == 'visited' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
+                aria-pressed="{% if user_status == 'visited' %}true{% else %}false{% endif %}">방문 완료</button>
+              <button class="status-btn missed{% if user_status == 'missed' %} active{% endif %}" type="button"
+                data-status-action
+                data-event-id="{{ event.id }}"
+                data-status="missed"
+                data-reload-on-success
+                {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
+                aria-pressed="{% if user_status == 'missed' %}true{% else %}false{% endif %}">놓침</button>
             </div>
             {% if user_status %}
               <p class="panel-note" style="margin: 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
+            {% endif %}
+            {% if user_status == 'visited' %}
+              <a class="action-link" href="/archive/visits/new/?subject=event:{{ event.id }}">기록하기</a>
             {% endif %}
           </div>
         </section>
