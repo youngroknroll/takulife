@@ -60,6 +60,28 @@ def test_non_staff_cannot_approve_draft(client, make_user, make_draft):
     assert response.status_code == 403
 
 
+@pytest.mark.django_db
+def test_anonymous_cannot_reject_draft(client, make_draft):
+    """StaffDraftRejectView shares the approve view's IsAdminUser gate —
+    same 403 (not a redirect) for an unauthenticated request."""
+    draft = make_draft("https://example.com/event")
+
+    response = client.post(draft_reject_url(draft.id))
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_non_staff_cannot_reject_draft(client, make_user, make_draft):
+    user = make_user()
+    client.force_login(user)
+    draft = make_draft("https://example.com/event")
+
+    response = client.post(draft_reject_url(draft.id))
+
+    assert response.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # Case 4: happy approve — review fields, published Event, exactly one log row
 # ---------------------------------------------------------------------------
