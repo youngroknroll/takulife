@@ -10,11 +10,11 @@
  *
  * Photo add/delete lives on the edit page (visit_edit.js); cards are view-only.
  *
- * Relies on window.TakuAPI (api.js) for all requests:
- *   - JSON actions: TakuAPI.post / TakuAPI.del
- *   - Multipart photo upload: TakuAPI.upload (does NOT set Content-Type)
- *   - 403 disambiguation: TakuAPI.classify → 'auth' → TakuAPI.redirectToLogin()
- *   - Error messages: TakuAPI.formatError
+ * Relies on window.OshiAPI (api.js) for all requests:
+ *   - JSON actions: OshiAPI.post / OshiAPI.del
+ *   - Multipart photo upload: OshiAPI.upload (does NOT set Content-Type)
+ *   - 403 disambiguation: OshiAPI.classify → 'auth' → OshiAPI.redirectToLogin()
+ *   - Error messages: OshiAPI.formatError
  *
  * All DOM writes use textContent only (no innerHTML with API data).
  */
@@ -37,9 +37,9 @@
   // ── 403 handler ──────────────────────────────────────────────────────────
 
   function handle403(result, errorEl) {
-    var kind = window.TakuAPI.classify(result);
+    var kind = window.OshiAPI.classify(result);
     if (kind === "auth") {
-      window.TakuAPI.redirectToLogin();
+      window.OshiAPI.redirectToLogin();
     } else {
       setError(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
     }
@@ -48,8 +48,8 @@
   // Confirm before a destructive, unrecoverable action. Uses the shared modal
   // (confirm-modal.js, loaded in base.html) with a native confirm() fallback.
   function askConfirm(message) {
-    if (typeof window.TakuConfirm === "function") {
-      return window.TakuConfirm(message);
+    if (typeof window.OshiConfirm === "function") {
+      return window.OshiConfirm(message);
     }
     return Promise.resolve(window.confirm(message));
   }
@@ -87,16 +87,16 @@
         payload.event = subjectId;
       }
 
-      window.TakuAPI.setLoading(submitBtn, true);
+      window.OshiAPI.setLoading(submitBtn, true);
 
-      var result = await window.TakuAPI.post("/api/visit-records/", payload);
+      var result = await window.OshiAPI.post("/api/visit-records/", payload);
 
       if (result.status === 201) {
         window.location.reload();
         return;
       }
 
-      window.TakuAPI.setLoading(submitBtn, false);
+      window.OshiAPI.setLoading(submitBtn, false);
 
       if (result.status === 403) {
         handle403(result, errorEl);
@@ -108,7 +108,7 @@
         return;
       }
 
-      setError(errorEl, window.TakuAPI.formatError(result));
+      setError(errorEl, window.OshiAPI.formatError(result));
     });
   }
 
@@ -167,9 +167,9 @@
             return;
           }
           clearError(globalErrorEl);
-          window.TakuAPI.setLoading(btn, true);
+          window.OshiAPI.setLoading(btn, true);
 
-          var result = await window.TakuAPI.del(
+          var result = await window.OshiAPI.del(
             "/api/visit-records/" + recordId + "/"
           );
 
@@ -178,7 +178,7 @@
             return;
           }
 
-          window.TakuAPI.setLoading(btn, false);
+          window.OshiAPI.setLoading(btn, false);
 
           if (result.status === 403) {
             handle403(result, globalErrorEl);

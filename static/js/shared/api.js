@@ -1,7 +1,7 @@
 /**
  * api.js — CSRF-aware REST client for TakuLog
  *
- * Exposes window.TakuAPI with the following methods:
+ * Exposes window.OshiAPI with the following methods:
  *   get(url)              — GET request, returns {ok, status, data}
  *   post(url, body)       — POST with JSON body
  *   patch(url, body)      — PATCH with JSON body
@@ -305,7 +305,7 @@
 
   // ── public API ─────────────────────────────────────────────────────────────
 
-  window.TakuAPI = {
+  window.OshiAPI = {
     getCookie: getCookie,
 
     get: function (url) {

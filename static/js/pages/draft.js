@@ -2,8 +2,8 @@
  * draft.js — Admin draft management actions for TakuLog
  *
  * Binds create / edit / approve / reject controls via data attributes.
- * All API writes go through window.TakuAPI (api.js) — no CSRF duplication.
- * Error formatting uses TakuAPI.formatError (no local formatError copy).
+ * All API writes go through window.OshiAPI (api.js) — no CSRF duplication.
+ * Error formatting uses OshiAPI.formatError (no local formatError copy).
  *
  * Data attributes expected by each control:
  *
@@ -102,13 +102,13 @@
         return;
       }
 
-      window.TakuAPI.setLoading(submitBtn, true);
+      window.OshiAPI.setLoading(submitBtn, true);
 
-      window.TakuAPI.post("/api/event-drafts/", {
+      window.OshiAPI.post("/api/event-drafts/", {
         source_url: sourceUrl,
         source_name: sourceName,
       }).then(function (result) {
-        window.TakuAPI.setLoading(submitBtn, false);
+        window.OshiAPI.setLoading(submitBtn, false);
         if (result.ok) {
           window.location.reload();
           return;
@@ -117,7 +117,7 @@
           showError(errorEl, CSRF_OR_SESSION_MSG);
           return;
         }
-        showError(errorEl, window.TakuAPI.formatError(result));
+        showError(errorEl, window.OshiAPI.formatError(result));
       });
     });
   }
@@ -184,9 +184,9 @@
         payload.extracted_summary = summaryEl.value;
       }
 
-      window.TakuAPI.setLoading(submitBtn, true);
+      window.OshiAPI.setLoading(submitBtn, true);
 
-      window.TakuAPI.patch("/api/event-drafts/" + draftId + "/", payload).then(
+      window.OshiAPI.patch("/api/event-drafts/" + draftId + "/", payload).then(
         function (result) {
           if (submitBtn) {
             submitBtn.disabled = false;
@@ -199,7 +199,7 @@
             showError(errorEl, CSRF_OR_SESSION_MSG);
             return;
           }
-          showError(errorEl, window.TakuAPI.formatError(result));
+          showError(errorEl, window.OshiAPI.formatError(result));
         }
       );
     });
@@ -227,13 +227,13 @@
         return;
       }
       hideError(errorEl);
-      window.TakuAPI.setLoading(btn, true);
+      window.OshiAPI.setLoading(btn, true);
 
-      window.TakuAPI.post(
+      window.OshiAPI.post(
         "/staff/drafts/" + draftId + "/approve/",
         {}
       ).then(function (result) {
-        window.TakuAPI.setLoading(btn, false);
+        window.OshiAPI.setLoading(btn, false);
         if (result.ok) {
           if (successEl) {
             var eventId = result.data && result.data.event_id;
@@ -263,7 +263,7 @@
           showError(errorEl, CSRF_OR_SESSION_MSG);
           return;
         }
-        showError(errorEl, window.TakuAPI.formatError(result));
+        showError(errorEl, window.OshiAPI.formatError(result));
       });
     });
   }
@@ -289,15 +289,15 @@
         return;
       }
       hideError(errorEl);
-      window.TakuAPI.setLoading(btn, true);
+      window.OshiAPI.setLoading(btn, true);
 
       var rejectionReason = reasonEl ? reasonEl.value.trim() : "";
 
-      window.TakuAPI.post(
+      window.OshiAPI.post(
         "/staff/drafts/" + draftId + "/reject/",
         { rejection_reason: rejectionReason }
       ).then(function (result) {
-        window.TakuAPI.setLoading(btn, false);
+        window.OshiAPI.setLoading(btn, false);
         if (result.ok) {
           window.location.assign(listUrl);
           return;
@@ -306,7 +306,7 @@
           showError(errorEl, CSRF_OR_SESSION_MSG);
           return;
         }
-        showError(errorEl, window.TakuAPI.formatError(result));
+        showError(errorEl, window.OshiAPI.formatError(result));
       });
     });
   }

@@ -1,1 +1,1 @@
-{% autoescape off %}[takulife] 이메일 주소를 인증해주세요{% endautoescape %}
+{% autoescape off %}[oshilife] 이메일 주소를 인증해주세요{% endautoescape %}
