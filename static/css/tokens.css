@@ -112,16 +112,16 @@
   /* Category palette — low-saturation tones, kept distinct from the four
      status hues (pink/brand/mint/grey) so category and status never clash.
      Used by .cat-tile color tiles and .event-type category chips. */
-  --cat-popup-soft: #f3e8ff;
-  --cat-popup-ink: #7e22ce;
-  --cat-cafe-soft: #f5ecdf;
-  --cat-cafe-ink: #92633a;
-  --cat-theater-soft: #e0e7ff;
-  --cat-theater-ink: #3730a3;
-  --cat-goods-soft: #d8f3ee;
-  --cat-goods-ink: #0f766e;
+  --cat-popup_store-soft: #f3e8ff;
+  --cat-popup_store-ink: #7e22ce;
+  --cat-collaboration_cafe-soft: #f5ecdf;
+  --cat-collaboration_cafe-ink: #92633a;
+  --cat-theater_bonus-soft: #e0e7ff;
+  --cat-theater_bonus-ink: #3730a3;
+  --cat-goods_reservation-soft: #d8f3ee;
+  --cat-goods_reservation-ink: #0f766e;
   --cat-exhibition-soft: #e2e8f0;
   --cat-exhibition-ink: #475569;
-  --cat-fan-soft: #fce7f3;
-  --cat-fan-ink: #9d174d;
+  --cat-fan_meeting-soft: #fce7f3;
+  --cat-fan_meeting-ink: #9d174d;
 }
