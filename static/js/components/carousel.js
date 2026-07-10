@@ -59,8 +59,15 @@
       var rect = track.getBoundingClientRect();
       var centerX = rect.left + rect.width / 2;
       var nearEdge = Math.min(centerX, window.innerWidth - centerX);
+      // The outermost resting card is rotated (center*REST_ANGLE), so its
+      // horizontal footprint is wider than its unrotated half-width — use
+      // the rotated bounding half-extent instead, or a narrow card would
+      // still poke past the edge after clamping on tx alone.
       var cardWidth = cards[0].offsetWidth || 0;
-      var available = nearEdge - cardWidth / 2;
+      var cardHeight = cards[0].offsetHeight || 0;
+      var maxAngleRad = (center * REST_ANGLE) * Math.PI / 180;
+      var halfExtent = (cardWidth * Math.cos(maxAngleRad) + cardHeight * Math.sin(maxAngleRad)) / 2;
+      var available = nearEdge - halfExtent;
       scaleX = Math.min(1, Math.max(0, available / maxReach));
     }
 
