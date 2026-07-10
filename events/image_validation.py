@@ -6,8 +6,11 @@ app model. It may be imported by archive and events serializers without
 creating import cycles.
 """
 
+import io
+
 import PIL.Image
-from PIL import UnidentifiedImageError
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from PIL import ImageOps, UnidentifiedImageError
 from rest_framework import serializers
 
 
@@ -25,13 +28,45 @@ ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 # Concrete Pillow decode failures — anything else propagates as a real error
 # instead of being masked as "invalid image".
 _PIL_DECODE_ERRORS = (OSError, UnidentifiedImageError, PIL.Image.DecompressionBombError)
+# Re-encode quality for lossy formats (JPEG/WEBP re-save below) — high enough
+# that a second compression pass is not visually noticeable; PNG is lossless
+# so it takes no quality kwarg.
+_REENCODE_QUALITY = 95
+_FORMAT_CONTENT_TYPES = {
+    "JPEG": "image/jpeg",
+    "PNG": "image/png",
+    "WEBP": "image/webp",
+}
+
+
+def _strip_exif_metadata(image, image_format):
+    """Re-encode a decoded Pillow image without carrying its EXIF forward.
+
+    ImageOps.exif_transpose() bakes any EXIF orientation into the pixel data
+    first, so a photo shot in portrait doesn't end up sideways once the
+    orientation tag is dropped. Pillow's Image.save() only embeds an EXIF
+    payload when one is explicitly passed via ``exif=``, so a plain re-save
+    (no such kwarg) discards whatever metadata — including GPS — the source
+    file carried, without needing to touch tags one by one.
+    """
+    normalized = ImageOps.exif_transpose(image)
+    if image_format == "JPEG" and normalized.mode not in ("RGB", "L"):
+        # JPEG has no alpha channel; drop it before encoding.
+        normalized = normalized.convert("RGB")
+    save_kwargs = {"quality": _REENCODE_QUALITY} if image_format in ("JPEG", "WEBP") else {}
+    buffer = io.BytesIO()
+    normalized.save(buffer, format=image_format, **save_kwargs)
+    buffer.seek(0)
+    return buffer
 
 
 def validate_uploaded_image(value):
     """Validate an uploaded image file.
 
     Raises serializers.ValidationError if the file fails any check.
-    Returns the file (seeked back to 0) on success.
+    On success, returns a NEW file object — a metadata-stripped re-encode of
+    the input, not the original ``value`` — so callers must save the
+    returned file, not the argument.
 
     Checks performed (in order):
     1. File size cap (MAX_IMAGE_SIZE_BYTES)
@@ -40,6 +75,7 @@ def validate_uploaded_image(value):
     4. Decoded format allowlist (JPEG/PNG/WEBP)
     5. Per-axis dimension cap (MAX_IMAGE_DIMENSION_PX)
     6. Total pixel-area cap (MAX_IMAGE_PIXELS_LIMIT)
+    7. EXIF/GPS metadata strip (re-encode, see _strip_exif_metadata)
     """
     # 1. File size check (max 5 MB)
     if value.size > MAX_IMAGE_SIZE_BYTES:
@@ -92,5 +128,15 @@ def validate_uploaded_image(value):
             f"Image is too large to process. Maximum total area is {MAX_IMAGE_PIXELS_LIMIT} pixels."
         )
 
-    value.seek(0)
-    return value
+    # 6. Strip EXIF/GPS metadata: re-encode through Pillow so nothing the
+    #    original file carried (location, camera, orientation as a tag)
+    #    survives into storage.
+    buffer = _strip_exif_metadata(img2, image_format)
+    return InMemoryUploadedFile(
+        buffer,
+        field_name=getattr(value, "field_name", None),
+        name=name,
+        content_type=_FORMAT_CONTENT_TYPES[image_format],
+        size=buffer.getbuffer().nbytes,
+        charset=None,
+    )
