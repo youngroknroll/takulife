@@ -30,7 +30,7 @@
           </div>
         </div>
 
-        {% if popular_events %}
+        {% if popular_rows %}
           <div
             class="poster-deck-wrap"
             role="region"
@@ -43,7 +43,7 @@
               {# Sizer: invisible clone that provides intrinsic height so deck doesn't collapse #}
               <div class="deck-sizer" aria-hidden="true"></div>
 
-              {% for row in popular_events %}
+              {% for row in popular_rows %}
                 <div
                   class="deck-card"
                   data-slide="{{ forloop.counter0 }}"
@@ -127,12 +127,12 @@
         <h2>이번 주 갈 만한 행사</h2>
         <p class="section-note">현재 진행 중인 행사</p>
       </div>
-      {% if ongoing_events %}
-        {% if ongoing_events|length > 6 %}
+      {% if ongoing_rows %}
+        {% if ongoing_rows|length > 6 %}
           <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-ongoing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-ongoing" role="region" aria-label="이번 주 갈 만한 행사" tabindex="0">
-              {% for row in ongoing_events %}
+              {% for row in ongoing_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}</li>
               {% endfor %}
             </ul>
@@ -140,7 +140,7 @@
           </div>
         {% else %}
           <div class="poster-card-grid">
-            {% for row in ongoing_events %}
+            {% for row in ongoing_rows %}
               {% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}
             {% endfor %}
           </div>
@@ -155,12 +155,12 @@
         <h2>곧 종료돼요</h2>
         <p class="section-note">오늘 기준 종료 임박 이벤트</p>
       </div>
-      {% if closing_events %}
-        {% if closing_events|length > 3 %}
+      {% if closing_rows %}
+        {% if closing_rows|length > 3 %}
           <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-closing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-closing" role="region" aria-label="곧 종료되는 행사" tabindex="0">
-              {% for row in closing_events %}
+              {% for row in closing_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="closing" %}</li>
               {% endfor %}
             </ul>
@@ -168,7 +168,7 @@
           </div>
         {% else %}
           <div class="poster-card-grid">
-            {% for row in closing_events %}
+            {% for row in closing_rows %}
               {% include "core/partials/_poster_card.html" with row=row variant="closing" %}
             {% endfor %}
           </div>
@@ -183,12 +183,12 @@
         <h2>새 이벤트</h2>
         <p class="section-note">관리자 검수 후 게시된 최신 항목</p>
       </div>
-      {% if recent_events %}
-        {% if recent_events|length > 6 %}
+      {% if recent_rows %}
+        {% if recent_rows|length > 6 %}
           <div class="hscroll-wrap" data-hscroll>
             <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-recent">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-recent" role="region" aria-label="새로 등록된 행사" tabindex="0">
-              {% for row in recent_events %}
+              {% for row in recent_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="recent" %}</li>
               {% endfor %}
             </ul>
@@ -196,7 +196,7 @@
           </div>
         {% else %}
           <div class="poster-card-grid">
-            {% for row in recent_events %}
+            {% for row in recent_rows %}
               {% include "core/partials/_poster_card.html" with row=row variant="recent" %}
             {% endfor %}
           </div>

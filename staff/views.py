@@ -526,7 +526,7 @@ def staff_event_edit(request, pk):
     """
     event = get_object_or_404(Event, pk=pk)
     list_query = urlencode(_event_filter_query_pairs(request.GET))
-    archive_reference_counts = event_archive_reference_counts(event)
+    archive_reference_counts = event_archive_reference_counts(event=event)
 
     if request.method == "POST":
         form_values = _event_edit_form_values_from_post(request.POST)
@@ -701,7 +701,7 @@ def staff_event_delete(request, pk):
     if list_query:
         edit_redirect = f"{edit_redirect}?{list_query}"
 
-    reference_counts = event_archive_reference_counts(event)
+    reference_counts = event_archive_reference_counts(event=event)
     if sum(reference_counts.values()) > 0:
         messages.error(request, _reference_block_message(reference_counts))
         return redirect(edit_redirect)
@@ -922,7 +922,7 @@ class StaffDraftApproveView(APIView):
 
         try:
             with transaction.atomic():
-                result = approve_draft(draft_id, actor=metadata["actor"])
+                result = approve_draft(draft_id=draft_id, actor=metadata["actor"])
                 StaffActionLog.objects.create(
                     actor=metadata["actor"],
                     action=StaffActionLog.Action.APPROVE,
@@ -1019,7 +1019,7 @@ class StaffDraftBulkApproveView(APIView):
         """
         try:
             with transaction.atomic():
-                result = approve_draft(draft_id, actor=metadata["actor"])
+                result = approve_draft(draft_id=draft_id, actor=metadata["actor"])
                 StaffActionLog.objects.create(
                     actor=metadata["actor"],
                     action=StaffActionLog.Action.APPROVE,
@@ -1073,7 +1073,7 @@ class StaffDraftRejectView(APIView):
                 # (tests/test_staff_draft_actions.py's happy-reject case).
                 rejection_reason = request.data.get("rejection_reason", "")
                 draft = reject_draft(
-                    draft_id,
+                    draft_id=draft_id,
                     actor=metadata["actor"],
                     rejection_reason=rejection_reason,
                 )

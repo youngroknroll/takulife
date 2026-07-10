@@ -77,7 +77,7 @@ class DraftApprovalResult:
     event_id: int
 
 
-def create_draft_from_url(source_url, source_name=""):
+def create_draft_from_url(*, source_url, source_name=""):
     try:
         validate_fetch_url(source_url)
     except InvalidFetchUrlError as exc:
@@ -184,7 +184,7 @@ def _get_pending_draft_for_update(draft_id):
     return draft
 
 
-def update_draft(draft_id, updates):
+def update_draft(*, draft_id, updates):
     mutable_fields = {
         "source_name",
         "extracted_title",
@@ -210,7 +210,7 @@ def update_draft(draft_id, updates):
         return draft
 
 
-def approve_draft(draft_id, *, actor):
+def approve_draft(*, draft_id, actor):
     with transaction.atomic():
         draft = _get_pending_draft_for_update(draft_id)
 
@@ -243,7 +243,7 @@ def approve_draft(draft_id, *, actor):
         return DraftApprovalResult(draft=draft, event_id=event.id)
 
 
-def reject_draft(draft_id, *, actor, rejection_reason=""):
+def reject_draft(*, draft_id, actor, rejection_reason=""):
     with transaction.atomic():
         draft = _get_pending_draft_for_update(draft_id)
         draft.review_status = EventDraft.ReviewStatus.REJECTED

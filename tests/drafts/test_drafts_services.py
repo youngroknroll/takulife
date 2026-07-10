@@ -32,7 +32,7 @@ def test_approve_draft_creates_published_event_and_marks_draft_approved(make_use
     draft = make_draft("https://example.com/event", source_name="Official", extracted_title="Popup event", extracted_category="popup_store", extracted_region="seoul")
 
     before = timezone.now()
-    result = approve_draft(draft.id, actor=actor)
+    result = approve_draft(draft_id=draft.id, actor=actor)
 
     draft.refresh_from_db()
     event = Event.objects.get(id=result.event_id)
@@ -53,7 +53,7 @@ def test_reject_draft_marks_draft_rejected_without_creating_event(make_user, mak
     draft = make_draft("https://example.com/rejected-event", extracted_title="Rejected event")
 
     before = timezone.now()
-    result = reject_draft(draft.id, actor=actor)
+    result = reject_draft(draft_id=draft.id, actor=actor)
 
     draft.refresh_from_db()
     assert result.id == draft.id
@@ -70,7 +70,7 @@ def test_reject_draft_records_rejection_reason(make_user, make_draft):
     actor = make_user()
     draft = make_draft("https://example.com/rejected-with-reason")
 
-    reject_draft(draft.id, actor=actor, rejection_reason="duplicate listing")
+    reject_draft(draft_id=draft.id, actor=actor, rejection_reason="duplicate listing")
 
     draft.refresh_from_db()
     assert draft.rejection_reason == "duplicate listing"
@@ -81,7 +81,7 @@ def test_approve_draft_attribution_survives_approve_then_publish(make_user, make
     actor = make_user()
     draft = make_draft("https://example.com/attributed-event", extracted_title="Attributed event")
 
-    result = approve_draft(draft.id, actor=actor)
+    result = approve_draft(draft_id=draft.id, actor=actor)
 
     draft.refresh_from_db()
     assert Event.objects.filter(id=result.event_id, publish_status=Event.PublishStatus.PUBLISHED).exists()
@@ -95,7 +95,7 @@ def test_approve_draft_with_inverted_period_raises_and_stays_pending(make_user, 
     draft = make_draft("https://example.com/inverted-period", extracted_title="Inverted period event", extracted_start_date=datetime.date(2026, 8, 10), extracted_end_date=datetime.date(2026, 8, 1))
 
     with pytest.raises(DraftPublicationError):
-        approve_draft(draft.id, actor=actor)
+        approve_draft(draft_id=draft.id, actor=actor)
 
     draft.refresh_from_db()
     assert draft.review_status == EventDraft.ReviewStatus.PENDING
@@ -108,7 +108,7 @@ def test_approve_draft_rejects_blank_title_and_stays_pending(make_user, make_dra
     draft = make_draft("https://example.com/blank-title-draft")
 
     with pytest.raises(DraftPublicationTitleError):
-        approve_draft(draft.id, actor=actor)
+        approve_draft(draft_id=draft.id, actor=actor)
 
     draft.refresh_from_db()
     assert draft.review_status == EventDraft.ReviewStatus.PENDING
@@ -123,7 +123,7 @@ def test_approve_draft_rejects_title_equal_to_official_url_and_stays_pending(mak
     draft = make_draft("https://example.com/self-titled-draft", extracted_title="https://example.com/self-titled-draft")
 
     with pytest.raises(DraftPublicationTitleError):
-        approve_draft(draft.id, actor=actor)
+        approve_draft(draft_id=draft.id, actor=actor)
 
     draft.refresh_from_db()
     assert draft.review_status == EventDraft.ReviewStatus.PENDING
@@ -136,7 +136,7 @@ def test_approve_draft_rejects_title_equal_to_official_url_and_stays_pending(mak
 def test_update_draft_updates_pending_draft_fields(make_draft):
     draft = make_draft("https://example.com/event")
 
-    updated = update_draft(draft.id, {"extracted_title": "Updated title", "extracted_region": "seoul"})
+    updated = update_draft(draft_id=draft.id, updates={"extracted_title": "Updated title", "extracted_region": "seoul"})
 
     draft.refresh_from_db()
     assert updated.id == draft.id
@@ -149,7 +149,7 @@ def test_update_draft_rejects_non_pending_state(make_draft):
     draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.APPROVED)
 
     with pytest.raises(DraftStateError):
-        update_draft(draft.id, {"extracted_title": "Updated title"})
+        update_draft(draft_id=draft.id, updates={"extracted_title": "Updated title"})
 
 
 @pytest.mark.django_db
@@ -167,7 +167,7 @@ def test_create_draft_from_url_fetches_and_extracts(monkeypatch):
         },
     )
 
-    draft = create_draft_from_url("https://example.com/event")
+    draft = create_draft_from_url(source_url="https://example.com/event")
 
     assert draft.review_status == EventDraft.ReviewStatus.PENDING
     assert draft.raw_title == "Sample Event"
@@ -181,7 +181,7 @@ def test_create_draft_from_url_raises_when_extraction_empty(monkeypatch):
     monkeypatch.setattr("drafts.services.extract_event_fields", lambda html: {"raw_title": "", "raw_text": ""})
 
     with pytest.raises(DraftCreationEmptyExtractionError):
-        create_draft_from_url("https://example.com/event")
+        create_draft_from_url(source_url="https://example.com/event")
 
 
 @pytest.mark.django_db
@@ -201,7 +201,7 @@ def test_create_draft_from_url_rejects_unsafe_redirect_target(monkeypatch):
     )
 
     with pytest.raises(DraftCreationUnsafeUrlError):
-        create_draft_from_url("https://example.com/event")
+        create_draft_from_url(source_url="https://example.com/event")
 
 
 def test_validate_fetch_url_rejects_hostname_resolving_to_loopback():
@@ -256,7 +256,7 @@ def test_create_draft_from_url_maps_duplicate_create_race(monkeypatch):
     monkeypatch.setattr("drafts.services.EventDraft.objects.create", raise_integrity_error)
 
     with pytest.raises(DraftCreationDuplicateError):
-        create_draft_from_url("https://example.com/event")
+        create_draft_from_url(source_url="https://example.com/event")
 
 
 @pytest.mark.django_db
@@ -281,7 +281,7 @@ def test_create_draft_from_url_wraps_duplicate_create_in_savepoint(monkeypatch):
     with transaction.atomic():
         with CaptureQueriesContext(connection) as ctx:
             with pytest.raises(DraftCreationDuplicateError):
-                create_draft_from_url("https://example.com/event")
+                create_draft_from_url(source_url="https://example.com/event")
 
     assert any("SAVEPOINT" in query["sql"].upper() for query in ctx.captured_queries)
 
@@ -310,7 +310,7 @@ def test_update_draft_rejects_immutable_fields_even_without_serializer(make_draf
     draft = make_draft("https://example.com/event")
 
     with pytest.raises(DraftImmutableFieldError):
-        update_draft(draft.id, {"review_status": EventDraft.ReviewStatus.APPROVED})
+        update_draft(draft_id=draft.id, updates={"review_status": EventDraft.ReviewStatus.APPROVED})
 
 
 # ---------------------------------------------------------------------------

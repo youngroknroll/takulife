@@ -5,7 +5,7 @@ Covers:
   each carrying the count of *published* events in that category.
 - Context key caps (ongoing/closing/recent limited to 15).
 - D-5 closing window (home-only selection concern).
-- Guard: D+5 events in closing_events still have status_slug == "ongoing".
+- Guard: D+5 events in closing_rows still have status_slug == "ongoing".
 """
 import pytest
 from datetime import date, timedelta
@@ -84,36 +84,36 @@ class TestHomeContextCaps:
         self._make_ongoing(make_event, today, 16)
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
-        assert len(resp.context["ongoing_events"]) == 15
+        assert len(resp.context["ongoing_rows"]) == 15
 
     def test_recent_capped_at_15(self, make_event):
         today = date(2026, 6, 26)
         self._make_recent(make_event, 16)
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
-        assert len(resp.context["recent_events"]) == 15
+        assert len(resp.context["recent_rows"]) == 15
 
     def test_closing_capped_at_15(self, make_event):
         today = date(2026, 6, 26)
         self._make_closing(make_event, today, 16)
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
-        assert len(resp.context["closing_events"]) == 15
+        assert len(resp.context["closing_rows"]) == 15
 
     def test_all_empty_keys_present_as_empty_lists(self):
         resp = Client().get("/")
-        assert resp.context["ongoing_events"] == []
-        assert resp.context["closing_events"] == []
-        assert resp.context["recent_events"] == []
+        assert resp.context["ongoing_rows"] == []
+        assert resp.context["closing_rows"] == []
+        assert resp.context["recent_rows"] == []
         assert resp.context["category_tiles"] is not None
-        assert resp.context["popular_events"] == []
+        assert resp.context["popular_rows"] == []
 
 
 @pytest.mark.django_db
 class TestHomeClosingWindow:
     """Home view uses a D-5 closing window (not the global D-4 window)."""
 
-    def test_event_ending_today_plus_5_appears_in_closing_events(self, make_event):
+    def test_event_ending_today_plus_5_appears_in_closing_rows(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+5 closing",
@@ -122,10 +122,10 @@ class TestHomeClosingWindow:
         )
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
-        closing_ids = [row["event"].id for row in resp.context["closing_events"]]
+        closing_ids = [row["event"].id for row in resp.context["closing_rows"]]
         assert event.id in closing_ids
 
-    def test_event_ending_today_plus_6_does_not_appear_in_closing_events(self, make_event):
+    def test_event_ending_today_plus_6_does_not_appear_in_closing_rows(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+6 not closing",
@@ -134,7 +134,7 @@ class TestHomeClosingWindow:
         )
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
-        closing_ids = [row["event"].id for row in resp.context["closing_events"]]
+        closing_ids = [row["event"].id for row in resp.context["closing_rows"]]
         assert event.id not in closing_ids
 
 
@@ -142,7 +142,7 @@ class TestHomeClosingWindow:
 class TestHomeSlidersDropEndedEvents:
     """Sliders hide events whose period has passed (end_date < today)."""
 
-    def test_ended_event_excluded_from_recent_events(self, make_event):
+    def test_ended_event_excluded_from_recent_rows(self, make_event):
         today = date(2026, 6, 26)
         ended = make_event(
             title="Ended",
@@ -156,22 +156,22 @@ class TestHomeSlidersDropEndedEvents:
         )
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
-        recent_ids = [row["event"].id for row in resp.context["recent_events"]]
+        recent_ids = [row["event"].id for row in resp.context["recent_rows"]]
         assert ended.id not in recent_ids
         assert live.id in recent_ids
 
-    def test_event_without_end_date_kept_in_recent_events(self, make_event):
+    def test_event_without_end_date_kept_in_recent_rows(self, make_event):
         today = date(2026, 6, 26)
         no_dates = make_event(title="No dates")
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
-        recent_ids = [row["event"].id for row in resp.context["recent_events"]]
+        recent_ids = [row["event"].id for row in resp.context["recent_rows"]]
         assert no_dates.id in recent_ids
 
 
 @pytest.mark.django_db
 class TestHomeClosingStatusDivergence:
-    """Guard: a D+5 event selected into closing_events is still status_slug=="ongoing".
+    """Guard: a D+5 event selected into closing_rows is still status_slug=="ongoing".
 
     This documents the intentional divergence between:
     - Home selection: ending_within_days(5) — selects D+5 events.
@@ -182,7 +182,7 @@ class TestHomeClosingStatusDivergence:
     accidental coupling.
     """
 
-    def test_d5_event_in_closing_events_has_status_slug_ongoing(self, make_event):
+    def test_d5_event_in_closing_rows_has_status_slug_ongoing(self, make_event):
         today = date(2026, 6, 26)
         make_event(
             title="D+5 boundary",
@@ -191,7 +191,7 @@ class TestHomeClosingStatusDivergence:
         )
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
-        closing_events = resp.context["closing_events"]
-        d5_rows = [r for r in closing_events if r["event"].title == "D+5 boundary"]
+        closing_rows = resp.context["closing_rows"]
+        d5_rows = [r for r in closing_rows if r["event"].title == "D+5 boundary"]
         assert len(d5_rows) == 1
         assert d5_rows[0]["status_slug"] == "ongoing"

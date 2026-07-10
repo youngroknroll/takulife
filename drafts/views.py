@@ -80,7 +80,7 @@ class AdminEventDraftDetailView(RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            updated_draft = update_draft(draft.id, serializer.validated_data)
+            updated_draft = update_draft(draft_id=draft.id, updates=serializer.validated_data)
         except DraftStateError:
             return error_response("Only pending drafts can be updated.", 400)
 
