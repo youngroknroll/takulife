@@ -1,3 +1,33 @@
+# 법적 페이지·문의 채널 트랙 : **8커밋 구현·검증 완료** (2026-07-10, 브랜치 `feat/legal-pages`)
+
+> **8커밋 전부 로컬 브랜치 반영, PR 대기**: `1c9f8a8`(SUPPORT_EMAIL 설정+컨텍스트 프로세서) · `a6c8eee`(업로드 이미지 EXIF 메타데이터 제거) · `659f881`(회원 탈퇴, 비밀번호 재확인+데이터 동반 삭제) · `464992b`(가입 시 약관·방침 명시 동의 체크박스) · `5cad189`(개인정보처리방침·이용약관 페이지 신설) · `9900427`(푸터 법적 페이지 링크·문의 채널 연결) · `4d194a4`(QA 후속: 탈퇴 2단계 cascade 파일 삭제 가드) · `f4ab766`(QA 후속: 가입 동의 라벨 링크를 named URL로 교체). 최종 `uv run pytest -q` 전체 스위트 **1180 passed, 20 deselected** 무회귀 확인, `uv run pytest -m e2e -o addopts='' tests/e2e/ -q` **20 passed**. 상세 변경·검증 기록은 `.docs/frontend-integration-changelog.md` 참조.
+> 승인 근거: `.docs/plans/2026-07-10-legal-pages-plan.md` §3 사용자 결정 4건 — ①보호책임자 표기 "운영자"+이메일(실명 비공개) ②문의 이메일은 도메인 등록 전까지 `SUPPORT_EMAIL` env+placeholder로 구현하고 실주소 설정 전 공개 배포는 게이트로 막음 ③가입 동의는 명시 체크박스(SignupForm 필수 필드+동의 시각 기록)로 확정 ④실태 조사에서 발견한 HIGH 갭 2건(회원 탈퇴 부재·업로드 이미지 EXIF 미제거)을 이번 트랙에서 함께 해소. 백엔드는 TDD(senior-dev-codex), 프론트는 AGENTS.md Frontend Work Policy에 따라 TDD-exempt+스모크(web-frontend-developer).
+
+## 범위 (§4 구현 범위)
+1. 백엔드(TDD): `core/context_processors.py`에 `support_email`(`project_name`/`google_oauth_configured`와 동일 패턴) · `image_validation.py` 공유 검증 경로(방문 사진·직접 등록 이미지·이벤트 포스터)에 EXIF(GPS 포함) 스트립 단계(`ImageOps.exif_transpose`로 방향만 픽셀 반영 후 exif 없이 재저장) · `/accounts/delete/`(비밀번호 재확인 → 계정 삭제 → 세션 종료, 연관 데이터·미디어는 기존 FK CASCADE + `archive.signals` post_delete로 정리) · 커스텀 `SignupForm`(필수 `terms_agreed` 체크박스 + `User.terms_agreed_at` 증적).
+2. 프론트엔드(TDD-exempt+스모크): `/legal/privacy/`·`/legal/terms/` 페이지 신설(목차 없이 h2 섹션 흐름, 계획서 §2 실측 사실 그대로 반영) · 푸터 "안내" 열에 두 페이지 링크 + 문의 `mailto:{{ support_email }}` 연결.
+3. QA 후속(백엔드): 탈퇴 시 `User→VisitRecord→VisitRecordPhoto` 2단계 cascade 경로에서도 파일 삭제 시그널이 발화하는지 확인하는 회귀 가드 보강 · SignupForm 동의 라벨의 하드코딩 문자열 링크를 라우트 신설(커밋 5) 이후 `reverse_lazy` named URL로 교체.
+
+## 수용 기준 충족 현황 (§6)
+- 두 페이지 비로그인 200, 전 페이지 푸터에서 링크 접근 가능 — `tests/core/test_legal_pages.py` 스모크 2건 + 홈 렌더 응답에 링크 3종(개인정보처리방침·이용약관·mailto) 실존 확인.
+- 가입 화면 체크박스 미체크 시 가입 불가, 동의 시각 저장 — TDD로 확인(`464992b`).
+- 탈퇴 후 로그인 불가 + 개인 데이터·미디어 삭제, 확인 절차(비밀번호 재확인) 존재 — TDD로 확인(`659f881`), 2단계 cascade 경로까지 회귀 가드로 보강(`4d194a4`).
+- EXIF: GPS 태그 포함 이미지 업로드 시 저장본에 EXIF가 남지 않음 — TDD로 확인(`a6c8eee`).
+- 방침 정확성: 방침 서술과 코드 실태(계획서 §2)의 불일치 0건 — QA 게이트 PASS.
+
+## 판단 사항
+- SignupForm 라벨은 커밋 `464992b` 시점에 `/legal/` 라우트가 아직 없어 순환 의존 회피 목적으로 하드코딩 문자열을 사용했음(코드 주석에 명시). 프론트 커밋 `5cad189` 이후 `reverse('legal-terms-page')`/`reverse('legal-privacy-page')`로 직접 대조한 결과 문자열과 정확히 일치해 즉시 수정은 보류했으나, "라우트 경로가 바뀌어도 죽은 링크로 남지 않아야 한다"는 QA 관점의 후속 지적으로 named URL 교체(`f4ab766`)가 추가 반영됨.
+- 방침의 로그인 실패 기록(axes)·스태프 운영 기록 보존 기간은 아직 정책이 확정되지 않아 "추후 구체화 예정"으로 정직하게 서술(단정적 문구 금지) — 계획서 §6 MEDIUM 잔여 항목으로 남김.
+
+## 검증
+`uv run pytest -q` 전체 스위트 프레시 실행(단계별: 착수 전 베이스라인 1176 passed → 프론트 커밋 5 후 1178 passed → 커밋 6 후 1178 passed(무회귀) → QA 후속 2커밋 반영 후 최종 **1180 passed, 20 deselected**, 전 구간 무회귀) + `uv run pytest -m e2e -o addopts='' tests/e2e/ -q`(**20 passed**) + `reverse()` 직접 호출로 SignupForm 라벨-라우트 일치를 코드로 확인 + `.docs/frontend-integration-changelog.md` 기록. 최종 전체 재실행 1회에서 `test_archive_missed_status.py` 관련 일시 ERROR가 나타났으나 해당 파일 단독 재실행과 재차 전체 재실행이 모두 무오류로 통과해 이 트랙과 무관한 일시적 리소스 경합으로 판단(재현 없음). 브라우저 시각 검증(모바일 레이아웃·타이포·색 대비)은 오케스트레이터가 수행.
+
+## 하지 말 것 / 범위 밖 (§7 배포 전 갱신 의무)
+`SUPPORT_EMAIL` 실주소 설정(§3-2 배포 게이트 — 실주소 설정 전 공개 배포 불가) · 이메일 발송(SMTP)·호스팅 사업자 확정 시 처리위탁 섹션 갱신 · Google OAuth 활성화 시 수집 항목 개정 · 개정 이력의 시행일을 실제 공개일로 확정. axes·스태프 로그 보존 기간 정책(§6 MEDIUM)은 방침에 "추후 구체화 예정"으로 명시한 채 보류, 프로덕션 미디어 서빙·HTTPS 설정은 배포 체크리스트로 이관. flatpages·마크다운 파이프라인·버전 테이블·문의 폼(모델/레이트리밋)·JS 이메일 난독화는 §5 과잉설계 금지로 배제.
+
+---
+---
+
 # 모바일 디자인 3단계 — 기록과 운영 : **3단계 구현·검증 완료** (2026-07-10, 브랜치 `feat/mobile-design-phase3`)
 
 > **9커밋 전부 로컬 브랜치 반영, PR 대기**: `a4ae628`(vocab `INTEREST_LABEL` "찜" 통일) · `3d8d11e`(기록장→저장한 행사) · `9996d9e`(예정 목록→나의 일정) · `a978ade`(방문 기록→다녀온 기록, 페이지 라벨 한정) · `3189f58`(비공식→직접 등록 + 가드 테스트 재작성) · `583c968`(직접 등록 폼 3그룹 재배치) · `de71110`(이미지 첨부 노출) · `6532eda`(스태프 최근 처리 카드화, Gate D) · `9ce842e`(QA aria-label 오기 정정). 각 커밋 전 `uv run pytest -q` 전체 스위트 **1163 passed, 20 deselected** 무회귀 재확인, 최종 `uv run pytest -m e2e -o addopts='' tests/e2e/ -q` **20 passed**. 상세 변경·검증 기록은 `.docs/frontend-integration-changelog.md` 참조.
