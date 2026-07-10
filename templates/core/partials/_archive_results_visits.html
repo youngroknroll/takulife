@@ -13,7 +13,7 @@
         <div class="visit-card-body">
           <div class="visit-card-top">
             {% if not row.subject.is_official %}
-              <span class="visit-chip unofficial">비공식</span>
+              <span class="visit-chip unofficial">직접 등록</span>
             {% endif %}
             {% if row.subject.category_label %}
               <span class="visit-chip category">{{ row.subject.category_label }}</span>

@@ -112,3 +112,66 @@
   font-weight: 700;
   vertical-align: middle;
 }
+
+/* ── 최근 처리 내역: 모바일 카드형 (Gate D) ──────────────────────
+   데스크톱은 기존 4열 .data-table을 그대로 유지하고, 좁은 화면에서만
+   같은 데이터로 렌더된 카드 목록으로 전환한다. .data-table 자체는
+   대시보드의 다른 두 표와 home_categories 표가 공유하므로 여기서는
+   건드리지 않고, 이 표에만 붙는 .recent-actions-table 스코프 클래스로
+   숨김을 제어한다. */
+.recent-actions-cards {
+  display: none;
+}
+
+@media (max-width: 45rem) {
+  .recent-actions-table {
+    display: none;
+  }
+
+  .recent-actions-cards {
+    display: grid;
+    gap: 0.625rem;
+    list-style: none;
+    margin: 0.5rem 0 0.75rem;
+    padding: 0;
+  }
+
+  .recent-actions-card {
+    display: grid;
+    gap: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg-card);
+    padding: 0.625rem 0.75rem;
+  }
+
+  .recent-actions-card-top {
+    margin: 0;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* 대상 제목은 줄바꿈만 허용 — 말줄임 금지 */
+  .recent-actions-card-target {
+    margin: 0;
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .recent-actions-card-target a {
+    color: var(--brand);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  /* 담당 이메일만 한 줄 말줄임 허용 */
+  .recent-actions-card-actor {
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

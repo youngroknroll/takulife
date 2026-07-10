@@ -1,6 +1,6 @@
 {% comment %}
 Archive accordion sub-nav (collapsing header → grouped panel).
-Include with:  {% include "core/partials/_archive_nav.html" with active="visits" active_label="방문 기록" %}
+Include with:  {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
   active        one of: record | statuses | visits | items | interests
   active_label  display name for the collapsed header (omit on the 찜 목록 page)
 찜 목록 stays a standalone pink pill (현행 유지), always visible beside the header.
@@ -16,15 +16,15 @@ Include with:  {% include "core/partials/_archive_nav.html" with active="visits"
         <div class="archive-nav-group">
           <p class="archive-nav-group-label">내 기록</p>
           <div class="archive-nav-row">
-            <a href="/archive/"{% if active == "record" %} class="active" aria-current="page"{% endif %}>기록장</a>
-            <a href="/archive/statuses/"{% if active == "statuses" %} class="active" aria-current="page"{% endif %}>예정 목록</a>
-            <a href="/archive/visits/"{% if active == "visits" %} class="active" aria-current="page"{% endif %}>방문 기록</a>
+            <a href="/archive/"{% if active == "record" %} class="active" aria-current="page"{% endif %}>저장한 행사</a>
+            <a href="/archive/statuses/"{% if active == "statuses" %} class="active" aria-current="page"{% endif %}>나의 일정</a>
+            <a href="/archive/visits/"{% if active == "visits" %} class="active" aria-current="page"{% endif %}>다녀온 기록</a>
           </div>
         </div>
         <div class="archive-nav-group">
-          <p class="archive-nav-group-label">비공식</p>
+          <p class="archive-nav-group-label">직접 등록</p>
           <div class="archive-nav-row">
-            <a href="/archive/items/"{% if active == "items" %} class="active" aria-current="page"{% endif %}>비공식</a>
+            <a href="/archive/items/"{% if active == "items" %} class="active" aria-current="page"{% endif %}>직접 등록</a>
           </div>
         </div>
       </div>

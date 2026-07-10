@@ -224,6 +224,41 @@
     background: #fff;
     width: 100%;
   }
+  /* 직접 등록 폼의 상세 정보 접기 — _archive_nav.html의 details 관례(마커 숨김 +
+     회전 caret)를 재사용. */
+  .entry-detail-group {
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    background: var(--bg-soft);
+  }
+  .entry-detail-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    cursor: pointer;
+    list-style: none;
+    padding: 0.5rem 0.75rem;
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--text);
+    min-height: 44px;
+  }
+  .entry-detail-toggle::-webkit-details-marker {
+    display: none;
+  }
+  .entry-detail-caret {
+    font-size: 0.7rem;
+    transition: transform 0.15s ease;
+  }
+  .entry-detail-group[open] .entry-detail-caret {
+    transform: rotate(180deg);
+  }
+  .entry-detail-body {
+    display: grid;
+    gap: 0.625rem;
+    padding: 0 0.75rem 0.75rem;
+  }
   /* Locked subject shown when the write page is opened for a specific item
      (e.g. a 방문 완료 행사's 기록 button) instead of the selectable dropdown. */
   .locked-subject {

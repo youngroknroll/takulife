@@ -120,7 +120,7 @@
 
         <h3>최근 처리 내역 (최근 10건)</h3>
         {% if recent_actions %}
-          <table class="data-table">
+          <table class="data-table recent-actions-table">
             <thead>
               <tr>
                 <th scope="col">시각</th>
@@ -148,6 +148,24 @@
               {% endfor %}
             </tbody>
           </table>
+
+          <ul class="recent-actions-cards">
+            {% for a in recent_action_rows %}
+              <li class="recent-actions-card">
+                <p class="recent-actions-card-top">{{ a.action_label }} · {{ a.log.created_at|date:"y.m.d H:i" }}</p>
+                <p class="recent-actions-card-target">
+                  {% if a.log.target_draft %}
+                    <a href="/staff/drafts/{{ a.log.target_draft.id }}/">{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:"(제목 없음)" }}</a>
+                  {% elif a.log.target_event %}
+                    <a href="/staff/events/{{ a.log.target_event.id }}/edit/">{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}</a>
+                  {% else %}
+                    -
+                  {% endif %}
+                </p>
+                <p class="recent-actions-card-actor">담당 {{ a.log.actor.email|default:"-" }}</p>
+              </li>
+            {% endfor %}
+          </ul>
         {% else %}
           <p class="notice">아직 처리 내역이 없습니다.</p>
         {% endif %}

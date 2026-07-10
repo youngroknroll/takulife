@@ -53,7 +53,7 @@ REGION_LABELS: dict[str, str] = dict(REGION)
 # ---------------------------------------------------------------------------
 # "interested" is no longer an archive status — it lives in EventInterest.
 # The label is kept as a module constant for use in interest widgets and lists.
-INTEREST_LABEL = "관심"
+INTEREST_LABEL = "찜"
 
 ARCHIVE_STATUS: tuple[tuple[str, str], ...] = (
     ("planned", "방문 예정"),

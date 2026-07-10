@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 방문 기록 수정{% endblock %}
+{% block title %}{{ project_name }} | 다녀온 기록 수정{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/photo-upload.css' %}">
@@ -9,11 +9,11 @@
 
 {% block content %}
   <main class="page">
-    {% include "core/partials/_archive_nav.html" with active="visits" active_label="방문 기록" %}
+    {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
 
     <section class="hero">
-      <a class="back-link" href="/archive/visits/">← 방문 기록으로</a>
-      <h1>방문 기록 수정</h1>
+      <a class="back-link" href="/archive/visits/">← 다녀온 기록으로</a>
+      <h1>다녀온 기록 수정</h1>
       <p>방문 날짜와 한줄 메모를 고치고, 사진을 추가하거나 삭제할 수 있습니다.</p>
     </section>
 
@@ -27,7 +27,7 @@
           <div class="form-group">
             <label>대상</label>
             <div class="subject-readonly">
-              {% if not subject.is_official %}<span class="visit-chip">비공식</span>{% endif %}
+              {% if not subject.is_official %}<span class="visit-chip">직접 등록</span>{% endif %}
               {% if subject.category_label %}<span class="visit-chip category">{{ subject.category_label }}</span>{% endif %}
               <span class="subject-title">{{ subject.title }}</span>
             </div>

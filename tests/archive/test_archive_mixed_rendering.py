@@ -11,7 +11,7 @@ def mixed_user(make_user, make_event, make_entry, make_status, make_interest):
     """A user holding both an official and an unofficial status + interest."""
     user = make_user(username="mixed")
     event = make_event(title="공식 팝업", location_name="서울 성수")
-    entry = make_entry(user, kind="goods", title="비공식 아크릴", category="굿즈")
+    entry = make_entry(user, kind="goods", title="투명 아크릴", category="굿즈")
     make_status(user, event=event, status="planned")
     make_status(user, personal_entry=entry, status="planned")
     make_interest(user, event=event)
@@ -31,7 +31,7 @@ def test_status_pages_render_official_and_unofficial(client, mixed_user, url):
     body = response.content.decode()
     assert event.title in body
     assert entry.title in body
-    assert "비공식" in body
+    assert "직접 등록" in body
 
 
 @pytest.mark.django_db
@@ -45,7 +45,7 @@ def test_interest_page_renders_official_and_unofficial(client, mixed_user):
     body = response.content.decode()
     assert event.title in body
     assert entry.title in body
-    assert "비공식" in body
+    assert "직접 등록" in body
 
 
 @pytest.mark.django_db

@@ -235,7 +235,7 @@
     title.textContent = "로그인이 필요합니다";
 
     var desc = document.createElement("p");
-    desc.textContent = "관심·방문 예정을 저장하려면 로그인해 주세요.";
+    desc.textContent = "찜·방문 예정을 저장하려면 로그인해 주세요.";
 
     var actions = document.createElement("div");
     actions.className = "auth-modal-actions";

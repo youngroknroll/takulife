@@ -55,7 +55,7 @@
         return;
       }
 
-      var payload = {
+      var fields = {
         kind: form.elements["kind"].value,
         title: title,
         category: form.elements["category"].value.trim(),
@@ -65,9 +65,25 @@
         memo: form.elements["memo"].value.trim(),
       };
 
+      // Image attached → multipart request (matches visit_create.js's use of
+      // TakuAPI.upload for binary payloads). No image → keep the plain JSON
+      // path unchanged.
+      var imageInput = form.elements["image"];
+      var imageFile = imageInput && imageInput.files && imageInput.files[0];
+
       window.TakuAPI.setLoading(submitBtn, true);
 
-      var result = await window.TakuAPI.post("/api/personal-entries/", payload);
+      var result;
+      if (imageFile) {
+        var formData = new FormData();
+        Object.keys(fields).forEach(function (key) {
+          formData.append(key, fields[key]);
+        });
+        formData.append("image", imageFile);
+        result = await window.TakuAPI.upload("/api/personal-entries/", formData);
+      } else {
+        result = await window.TakuAPI.post("/api/personal-entries/", fields);
+      }
 
       if (result.status === 201) {
         window.location.reload();
@@ -87,6 +103,12 @@
       }
 
       setError(errorEl, window.TakuAPI.formatError(result));
+
+      // 상세 정보(접힘) 그룹 안의 url 필드가 원인이면 펼쳐서 보여준다.
+      if (result.data && result.data.url) {
+        var detailFields = document.getElementById("entry-detail-fields");
+        if (detailFields) { detailFields.open = true; }
+      }
     });
   }
 
