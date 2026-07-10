@@ -100,6 +100,7 @@ def _attach_display(events, *, today=None, user=None):
                 "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
                 "category_label": CATEGORY_LABELS.get(event.category, event.category),
                 "category_slug": event.category,
+                "region_label": REGION_LABELS.get(event.region, "") if event.region else "",
                 "dday": display["dday"],
                 "is_new": is_recently_added(event, today=today),
                 "user_status": user_status,
