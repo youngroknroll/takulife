@@ -1,15 +1,21 @@
 from allauth.account.forms import SignupForm as AllauthSignupForm
 from django.forms import BooleanField
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 
-# Plain string hrefs (not reverse()/{% url %}): the /legal/ routes are added
-# in a later frontend commit, so a named-URL lookup here would fail today.
-# See .docs/plans/2026-07-10-legal-pages-plan.md §4-4.
+# reverse_lazy: the /legal/ routes (legal-terms-page / legal-privacy-page,
+# core/views.py) now exist, so the label follows them by name instead of a
+# hardcoded path — a future route rename can't silently leave a dead link
+# here. Lazy (not reverse()) because this module can be imported before the
+# URLconf is guaranteed to be resolved (e.g. ACCOUNT_FORMS import_string).
 _TERMS_AGREEMENT_LABEL = mark_safe(
-    '<a href="/legal/terms/" target="_blank" rel="noopener">이용약관</a> 및 '
-    '<a href="/legal/privacy/" target="_blank" rel="noopener">개인정보처리방침</a>에 동의합니다.'
+    '<a href="{terms}" target="_blank" rel="noopener">이용약관</a> 및 '
+    '<a href="{privacy}" target="_blank" rel="noopener">개인정보처리방침</a>에 동의합니다.'.format(
+        terms=reverse_lazy("legal-terms-page"),
+        privacy=reverse_lazy("legal-privacy-page"),
+    )
 )
 
 

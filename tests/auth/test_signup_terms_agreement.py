@@ -1,5 +1,6 @@
 """Signup requires explicit terms/privacy-policy agreement
 (accounts.forms.SignupForm, ACCOUNT_FORMS)."""
+from django.urls import reverse
 from django.utils import timezone
 
 import pytest
@@ -53,3 +54,15 @@ def test_signup_page_renders_terms_agreement_checkbox(client):
     assert response.status_code == 200
     body = response.content.decode("utf-8", "ignore")
     assert 'name="terms_agreed"' in body
+
+
+@pytest.mark.django_db
+def test_terms_agreement_label_links_to_named_legal_urls(client):
+    """The label's hrefs are derived from reverse_lazy (accounts/forms.py),
+    not hardcoded strings — this guards against a future /legal/ route
+    rename silently leaving a dead link on the signup page."""
+    response = client.get(SIGNUP_URL)
+
+    body = response.content.decode("utf-8", "ignore")
+    assert f'href="{reverse("legal-terms-page")}"' in body
+    assert f'href="{reverse("legal-privacy-page")}"' in body
