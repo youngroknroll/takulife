@@ -13,21 +13,57 @@ import pytest
 
 GOOGLE_LOGIN_PATH = "/accounts/google/login/"
 
+_CONFIGURED_GOOGLE_PROVIDER = {
+    "google": {
+        "APPS": [{"client_id": "test-client-id", "secret": "test-secret", "key": ""}],
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    }
+}
+
+_UNCONFIGURED_GOOGLE_PROVIDER = {
+    "google": {
+        "APPS": [{"client_id": "", "secret": "", "key": ""}],
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    }
+}
+
 
 @pytest.mark.django_db
-def test_login_page_shows_google_button(client):
-    """The login page links to the Google login flow."""
+def test_login_page_shows_google_button_when_configured(client, settings):
+    """The login page links to the Google login flow once credentials exist."""
+    settings.SOCIALACCOUNT_PROVIDERS = _CONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/login/")
     assert response.status_code == 200
     assert GOOGLE_LOGIN_PATH in response.content.decode("utf-8", "ignore")
 
 
 @pytest.mark.django_db
-def test_signup_page_shows_google_button(client):
-    """The signup page also offers Google."""
+def test_signup_page_shows_google_button_when_configured(client, settings):
+    """The signup page also offers Google once credentials exist."""
+    settings.SOCIALACCOUNT_PROVIDERS = _CONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/signup/")
     assert response.status_code == 200
     assert GOOGLE_LOGIN_PATH in response.content.decode("utf-8", "ignore")
+
+
+@pytest.mark.django_db
+def test_login_page_hides_google_button_when_unconfigured(client, settings):
+    """A blank client_id hides the button instead of showing a dead link."""
+    settings.SOCIALACCOUNT_PROVIDERS = _UNCONFIGURED_GOOGLE_PROVIDER
+    response = client.get("/accounts/login/")
+    assert response.status_code == 200
+    assert GOOGLE_LOGIN_PATH not in response.content.decode("utf-8", "ignore")
+
+
+@pytest.mark.django_db
+def test_signup_page_hides_google_button_when_unconfigured(client, settings):
+    """A blank client_id hides the button instead of showing a dead link."""
+    settings.SOCIALACCOUNT_PROVIDERS = _UNCONFIGURED_GOOGLE_PROVIDER
+    response = client.get("/accounts/signup/")
+    assert response.status_code == 200
+    assert GOOGLE_LOGIN_PATH not in response.content.decode("utf-8", "ignore")
 
 
 def test_google_provider_requests_email_scope(settings):
