@@ -33,7 +33,7 @@
 
     {% if not is_pending %}
       <p class="notice" role="status">
-        이 드래프트는 <strong>{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %}</strong> 상태입니다. 수정, 승인, 반려는 pending 상태에서만 가능합니다.
+        이 드래프트는 <strong>{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %}</strong> 상태입니다. 수정, 승인, 반려는 검토 대기 상태에서만 가능합니다.
       </p>
       <p class="meta">
         검토자: {{ draft.reviewed_by.email|default:"-" }}
@@ -49,7 +49,7 @@
     <section class="layout">
       <article class="panel">
         <h2>추출 후보 편집</h2>
-        <p class="panel-note">공식 URL, 원본 제목, 원본 본문은 수정할 수 없습니다. pending 상태에서만 추출 필드를 수정할 수 있습니다.</p>
+        <p class="panel-note">공식 URL, 원본 제목, 원본 본문은 수정할 수 없습니다. 검토 대기 상태에서만 추출 필드를 수정할 수 있습니다.</p>
 
         <form
           id="draft-edit-form"
@@ -236,14 +236,14 @@
               style="margin-top:8px;"
             ></p>
           {% else %}
-            <p class="notice">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %} 상태입니다. 승인/반려는 pending 상태에서만 가능합니다.</p>
+            <p class="notice">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %} 상태입니다. 승인/반려는 검토 대기 상태에서만 가능합니다.</p>
           {% endif %}
         </section>
 
         <section class="panel">
           <h2>필드 규칙</h2>
           <ul class="rule-list">
-            <li>pending 상태에서만 추출 필드 수정</li>
+            <li>검토 대기 상태에서만 추출 필드 수정</li>
             <li>공식 URL, 원본 제목, 원본 본문은 불변</li>
             <li>승인 후 공개 Event 생성</li>
             <li>반려한 드래프트는 공개 페이지에 노출하지 않음</li>
