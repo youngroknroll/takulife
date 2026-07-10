@@ -193,6 +193,10 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+# Custom signup form adds the mandatory terms/privacy-policy agreement
+# checkbox (accounts/forms.py) on top of allauth's default email/password
+# fields.
+ACCOUNT_FORMS = {"signup": "accounts.forms.SignupForm"}
 
 # django-allauth socialaccount: Google sign-in. Credentials come from env
 # (never committed); register the OAuth client in Google Cloud Console with the

@@ -60,6 +60,7 @@ def test_signup_is_rate_limited(client, valid_password):
                 "email": f"newuser{i}@example.com",
                 "password1": valid_password,
                 "password2": valid_password,
+                "terms_agreed": "on",
             },
         )
         assert resp.status_code in (200, 302), resp.status_code
@@ -70,6 +71,7 @@ def test_signup_is_rate_limited(client, valid_password):
             "email": "newuser99@example.com",
             "password1": valid_password,
             "password2": valid_password,
+            "terms_agreed": "on",
         },
     )
     assert throttled.status_code == 429, throttled.status_code
@@ -98,11 +100,21 @@ def test_rate_limited_response_renders_localized_page(client, valid_password):
     not allauth's bare English fallback."""
     client.post(
         "/accounts/signup/",
-        {"email": "first@example.com", "password1": valid_password, "password2": valid_password},
+        {
+            "email": "first@example.com",
+            "password1": valid_password,
+            "password2": valid_password,
+            "terms_agreed": "on",
+        },
     )
     throttled = client.post(
         "/accounts/signup/",
-        {"email": "second@example.com", "password1": valid_password, "password2": valid_password},
+        {
+            "email": "second@example.com",
+            "password1": valid_password,
+            "password2": valid_password,
+            "terms_agreed": "on",
+        },
     )
     assert throttled.status_code == 429
     assert "429.html" in [t.name for t in throttled.templates if t.name]
