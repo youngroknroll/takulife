@@ -35,28 +35,28 @@
 
 /* per-category colors — shared by tile and chip */
 .cat-popup_store {
-  background: var(--cat-popup-soft);
-  color: var(--cat-popup-ink);
+  background: var(--cat-popup_store-soft);
+  color: var(--cat-popup_store-ink);
 }
 .cat-collaboration_cafe {
-  background: var(--cat-cafe-soft);
-  color: var(--cat-cafe-ink);
+  background: var(--cat-collaboration_cafe-soft);
+  color: var(--cat-collaboration_cafe-ink);
 }
 .cat-theater_bonus {
-  background: var(--cat-theater-soft);
-  color: var(--cat-theater-ink);
+  background: var(--cat-theater_bonus-soft);
+  color: var(--cat-theater_bonus-ink);
 }
 .cat-goods_reservation {
-  background: var(--cat-goods-soft);
-  color: var(--cat-goods-ink);
+  background: var(--cat-goods_reservation-soft);
+  color: var(--cat-goods_reservation-ink);
 }
 .cat-exhibition {
   background: var(--cat-exhibition-soft);
   color: var(--cat-exhibition-ink);
 }
 .cat-fan_meeting {
-  background: var(--cat-fan-soft);
-  color: var(--cat-fan-ink);
+  background: var(--cat-fan_meeting-soft);
+  color: var(--cat-fan_meeting-ink);
 }
 
 /* per-category icons — tile only (chip stays text) */
