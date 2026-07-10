@@ -45,19 +45,22 @@
 
     // ── overflow guard ───────────────────────────────────────────────────
     // The fan's widest reach (a parted neighbour at either end) is
-    // center*REST_X + PART either side of the track's own center. On a
-    // narrow viewport that reach can exceed the track's width and push the
-    // page wider than the screen. scaleX shrinks REST_X/PART just enough to
-    // keep the fan inside the track; on desktop widths (where the fan
-    // already fits) it resolves to exactly 1, so layout is pixel-identical.
+    // center*REST_X + PART either side of the track's own center. The design
+    // deliberately lets the fan spill past the (narrow, fixed-width) track —
+    // overflow: visible — so the real constraint is the viewport edge, not
+    // the track box. scaleX shrinks REST_X/PART just enough to keep the fan
+    // inside the nearer viewport edge; on desktop, where that edge is far
+    // away, it resolves to exactly 1, so layout is pixel-identical.
     var scaleX = 1;
 
     function computeScaleX() {
-      var trackWidth = track.clientWidth;
       var maxReach = center * REST_X + PART;
-      if (!trackWidth || maxReach <= 0) { scaleX = 1; return; }
+      if (maxReach <= 0) { scaleX = 1; return; }
+      var rect = track.getBoundingClientRect();
+      var centerX = rect.left + rect.width / 2;
+      var nearEdge = Math.min(centerX, window.innerWidth - centerX);
       var cardWidth = cards[0].offsetWidth || 0;
-      var available = trackWidth / 2 - cardWidth / 2;
+      var available = nearEdge - cardWidth / 2;
       scaleX = Math.min(1, Math.max(0, available / maxReach));
     }
 
