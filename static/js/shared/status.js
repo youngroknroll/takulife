@@ -62,6 +62,20 @@
     missed: "놓침",
   };
 
+  // §6.4 성공 피드백 문구 — 정적 테이블, missed는 의도적으로 없음(토스트 없음).
+  // 발화는 버튼의 data-toast opt-in이 있을 때만(아래 각 성공 분기 참고).
+  var STATUS_TOAST_MESSAGES = {
+    interested: "찜 목록에 저장했어요",
+    planned: "나의 일정에 추가했어요",
+    visited: "방문 완료로 변경했어요. 기록을 남길 수 있어요",
+  };
+
+  function showToast(message) {
+    if (message && window.TakuToast) {
+      window.TakuToast.show(message);
+    }
+  }
+
   function showCsrfError(button) {
     var container = button.closest("[data-status-error-container]") || button.parentElement;
     var existing = container.querySelector(".status-csrf-error");
@@ -220,6 +234,11 @@
     // 예정 toggle) let the server re-derive the row badge, available actions,
     // kind-aware labels and summary counts instead of patching the DOM piecemeal.
     if ((result.ok || result.status === 204) && button.hasAttribute("data-reload-on-success")) {
+      if (button.hasAttribute("data-toast") && STATUS_TOAST_MESSAGES[statusSlug]) {
+        // Reload wipes the current document, so the message travels through
+        // sessionStorage; toast.js reads and clears it after the reload.
+        window.sessionStorage.setItem("taku:toast", STATUS_TOAST_MESSAGES[statusSlug]);
+      }
       window.location.reload();
       return;
     }
@@ -348,6 +367,9 @@
       var responseData = result.data || {};
       if (responseData.id) {
         setInterestActive(button, responseData.id);
+        if (button.hasAttribute("data-toast")) {
+          showToast(STATUS_TOAST_MESSAGES.interested);
+        }
       }
       return;
     }
