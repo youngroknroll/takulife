@@ -88,40 +88,6 @@
       </div>
     </section>
 
-    <section class="section" aria-label="카테고리로 둘러보기">
-      <div class="section-head">
-        <h2>카테고리로 둘러보기</h2>
-        <p class="section-note">관심 있는 유형부터 바로 탐색</p>
-      </div>
-      {% if category_tiles|length > 5 %}
-        <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-cat">&#8249;</button>
-          <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" role="region" aria-label="카테고리로 둘러보기" tabindex="0">
-            {% for tile in category_tiles %}
-              <li class="cat-browse-item">
-                <a class="cat-browse-link" href="/events/?category={{ tile.slug }}">
-                  <span class="cat-tile cat-{{ tile.slug }}" aria-hidden="true"></span>
-                  <span class="cat-name">{{ tile.label }}</span>
-                  <span class="cat-count">{{ tile.count }}개</span>
-                </a>
-              </li>
-            {% endfor %}
-          </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-cat">&#8250;</button>
-        </div>
-      {% else %}
-        <div class="cat-browse">
-          {% for tile in category_tiles %}
-            <a href="/events/?category={{ tile.slug }}">
-              <span class="cat-tile cat-{{ tile.slug }}" aria-hidden="true"></span>
-              <span class="cat-name">{{ tile.label }}</span>
-              <span class="cat-count">{{ tile.count }}개</span>
-            </a>
-          {% endfor %}
-        </div>
-      {% endif %}
-    </section>
-
     <section class="section" aria-label="진행 중인 행사">
       <div class="section-head">
         <h2>이번 주 갈 만한 행사</h2>
@@ -175,6 +141,40 @@
         {% endif %}
       {% else %}
         <p class="notice">종료 임박 행사가 없습니다.</p>
+      {% endif %}
+    </section>
+
+    <section class="section" aria-label="카테고리로 둘러보기">
+      <div class="section-head">
+        <h2>카테고리로 둘러보기</h2>
+        <p class="section-note">관심 있는 유형부터 바로 탐색</p>
+      </div>
+      {% if category_tiles|length > 5 %}
+        <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-cat">&#8249;</button>
+          <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" role="region" aria-label="카테고리로 둘러보기" tabindex="0">
+            {% for tile in category_tiles %}
+              <li class="cat-browse-item">
+                <a class="cat-browse-link" href="/events/?category={{ tile.slug }}">
+                  <span class="cat-tile cat-{{ tile.slug }}" aria-hidden="true"></span>
+                  <span class="cat-name">{{ tile.label }}</span>
+                  <span class="cat-count">{{ tile.count }}개</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-cat">&#8250;</button>
+        </div>
+      {% else %}
+        <div class="cat-browse">
+          {% for tile in category_tiles %}
+            <a href="/events/?category={{ tile.slug }}">
+              <span class="cat-tile cat-{{ tile.slug }}" aria-hidden="true"></span>
+              <span class="cat-name">{{ tile.label }}</span>
+              <span class="cat-count">{{ tile.count }}개</span>
+            </a>
+          {% endfor %}
+        </div>
       {% endif %}
     </section>
 
