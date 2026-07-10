@@ -168,14 +168,14 @@ class VisitRecord(models.Model):
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,
-        related_name="archive_visit_records",
+        related_name="archive_user_visit_records",
         null=True,
         blank=True,
     )
     personal_entry = models.ForeignKey(
         PersonalEntry,
         on_delete=models.CASCADE,
-        related_name="visit_records",
+        related_name="archive_user_visit_records",
         null=True,
         blank=True,
     )

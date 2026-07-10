@@ -36,7 +36,7 @@ def event_archive_reference_counts(event):
     return {
         "interest": event.archive_user_interests.count(),
         "status": event.archive_user_statuses.count(),
-        "visit": event.archive_visit_records.count(),
+        "visit": event.archive_user_visit_records.count(),
     }
 
 
