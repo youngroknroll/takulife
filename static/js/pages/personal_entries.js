@@ -87,6 +87,12 @@
       }
 
       setError(errorEl, window.TakuAPI.formatError(result));
+
+      // 상세 정보(접힘) 그룹 안의 url 필드가 원인이면 펼쳐서 보여준다.
+      if (result.data && result.data.url) {
+        var detailFields = document.getElementById("entry-detail-fields");
+        if (detailFields) { detailFields.open = true; }
+      }
     });
   }
 
