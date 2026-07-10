@@ -68,7 +68,7 @@
           <h2>참여 상태</h2>
           <div class="action-list">
             {% if event.official_url %}
-              <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기" data-cta-watch>공식 페이지에서 보기 ↗</a>
+              <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기"{% if user_status != 'visited' %} data-cta-watch{% endif %}>공식 페이지에서 보기 ↗</a>
             {% endif %}
             <div class="status-row" data-status-error-container>
               <button class="interest-btn{% if user_interested %} active{% endif %}" type="button"
@@ -113,7 +113,7 @@
                 aria-pressed="{% if user_status == 'missed' %}true{% else %}false{% endif %}">놓침</button>
             </div>
             {% if user_status == 'visited' %}
-              <a class="action-link" href="/archive/visits/new/?subject=event:{{ event.id }}">기록하기</a>
+              <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}" data-cta-watch>기록 남기기</a>
             {% endif %}
           </div>
         </section>
@@ -199,7 +199,11 @@
       </aside>
     </section>
 
-    {% if event.official_url %}
+    {% if user_status == 'visited' %}
+      <div class="mobile-cta" data-cta-fixed hidden>
+        <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}">기록 남기기</a>
+      </div>
+    {% elif event.official_url %}
       <div class="mobile-cta" data-cta-fixed hidden>
         <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
       </div>
@@ -208,7 +212,7 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if event.official_url %}
+{% if event.official_url or user_status == 'visited' %}
 <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
 {% endif %}
 {% if request.user.is_staff %}
