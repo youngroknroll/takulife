@@ -45,6 +45,18 @@
   border-color: var(--brand);
 }
 
+/* Destructive actions (e.g. account deletion) — same rose pairing as the
+   staff console's .action-button.danger skin. */
+.btn-danger {
+  border-color: var(--rose-ink);
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+}
+
+.btn-danger:hover {
+  filter: brightness(0.97);
+}
+
 .btn-sm {
   padding: 0.5rem 0.625rem;
   font-size: 0.82rem;
