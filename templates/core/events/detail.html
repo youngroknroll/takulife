@@ -68,18 +68,31 @@
           <h2>참여 상태</h2>
           <div class="action-list">
             {% if event.official_url %}
-              <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기" data-cta-watch>공식 페이지에서 보기 ↗</a>
+              <a class="action-link{% if user_status != 'visited' %} primary{% endif %}" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기"{% if user_status != 'visited' %} data-cta-watch{% endif %}>공식 페이지에서 보기 ↗</a>
             {% endif %}
             <div class="status-row" data-status-error-container>
               <button class="interest-btn{% if user_interested %} active{% endif %}" type="button"
                 data-interest-toggle
+                data-toast
                 data-event-id="{{ event.id }}"
                 {% if user_interested %}data-interest-id="{{ user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
                 <span aria-hidden="true" data-interest-glyph>{% if user_interested %}♥{% else %}♡{% endif %}</span>
                 찜
               </button>
+            </div>
+            {% if user_status %}
+              <p class="panel-note" style="margin: 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
+              <div class="status-change-row">
+                <button class="action-link" type="button" data-status-toggle aria-expanded="false" aria-controls="status-choices">상태 변경</button>
+                {% if user_status == 'planned' %}
+                  <a class="action-link" href="/archive/statuses/?status=planned">일정에서 보기</a>
+                {% endif %}
+              </div>
+            {% endif %}
+            <div class="status-row" id="status-choices" data-status-error-container{% if user_status %} hidden{% endif %}>
               <button class="status-btn planned{% if user_status == 'planned' %} active{% endif %}" type="button"
                 data-status-action
+                data-toast
                 data-event-id="{{ event.id }}"
                 data-status="planned"
                 data-reload-on-success
@@ -88,6 +101,7 @@
                 aria-pressed="{% if user_status == 'planned' %}true{% else %}false{% endif %}">방문 예정</button>
               <button class="status-btn visited{% if user_status == 'visited' %} active{% endif %}" type="button"
                 data-status-action
+                data-toast
                 data-event-id="{{ event.id }}"
                 data-status="visited"
                 data-reload-on-success
@@ -95,17 +109,15 @@
                 aria-pressed="{% if user_status == 'visited' %}true{% else %}false{% endif %}">방문 완료</button>
               <button class="status-btn missed{% if user_status == 'missed' %} active{% endif %}" type="button"
                 data-status-action
+                data-toast
                 data-event-id="{{ event.id }}"
                 data-status="missed"
                 data-reload-on-success
                 {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
                 aria-pressed="{% if user_status == 'missed' %}true{% else %}false{% endif %}">놓침</button>
             </div>
-            {% if user_status %}
-              <p class="panel-note" style="margin: 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
-            {% endif %}
             {% if user_status == 'visited' %}
-              <a class="action-link" href="/archive/visits/new/?subject=event:{{ event.id }}">기록하기</a>
+              <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}" data-cta-watch>기록 남기기</a>
             {% endif %}
           </div>
         </section>
@@ -191,7 +203,11 @@
       </aside>
     </section>
 
-    {% if event.official_url %}
+    {% if user_status == 'visited' %}
+      <div class="mobile-cta" data-cta-fixed hidden>
+        <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}">기록 남기기</a>
+      </div>
+    {% elif event.official_url %}
       <div class="mobile-cta" data-cta-fixed hidden>
         <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
       </div>
@@ -200,7 +216,7 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if event.official_url %}
+{% if event.official_url or user_status == 'visited' %}
 <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
 {% endif %}
 {% if request.user.is_staff %}

@@ -129,10 +129,24 @@
   .action-list .status-row {
     margin-top: 0;
   }
+  /* §6.3 축약형: "상태 변경" 버튼과 "일정에서 보기" 링크를 한 줄에 나란히
+     배치(.action-list는 grid라 자식이 기본 1열 전체 폭을 차지하므로 분리). */
+  .status-change-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .status-change-row .action-link {
+    flex: 1;
+    min-width: 0;
+  }
+  /* §5.4 조작 영역 합격 기준(44px): .action-link는 이 페이지에서만 정의되는
+     클래스라 여기서 바로 확대해도 다른 화면에 영향이 없다. */
   .action-link {
     display: inline-flex;
     justify-content: center;
     align-items: center;
+    min-height: 44px;
     padding: 0.5625rem 0.625rem;
     border-radius: 8px;
     text-decoration: none;
@@ -141,6 +155,17 @@
     border: 1px solid var(--border-soft);
     color: var(--text);
     background: var(--bg-soft);
+  }
+  /* §5.4 조작 영역 합격 기준(44px): 전역 .interest-btn(controls.css)은 다른
+     화면의 알약 크기를 그대로 쓰므로, 상세 참여 상태 컨텍스트에서만 확대한다
+     (event_list.css:231의 동일 관례). */
+  .action-list .interest-btn {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+  }
+  /* §5.4 상태 버튼 기준(40px 이상): 예정/완료/놓침 3버튼 컨텍스트 확대. */
+  #status-choices .status-btn {
+    min-height: 40px;
   }
   .action-link.primary {
     border-color: var(--brand);

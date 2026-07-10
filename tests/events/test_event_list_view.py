@@ -93,6 +93,28 @@ class TestEventListAuthenticatedRows:
 
 
 @pytest.mark.django_db
+class TestEventListRegionLabel:
+    """Each row carries a Korean region_label for the card's place line
+    (§6.2: 지역 라벨 + location_name 합성 표기)."""
+
+    def test_row_with_region_carries_korean_label(self, make_event):
+        make_event(title="서울 행사", region="seoul")
+
+        resp = Client().get("/events/")
+
+        row = next(r for r in resp.context["event_rows"] if r["event"].title == "서울 행사")
+        assert row["region_label"] == "서울"
+
+    def test_row_without_region_has_empty_label(self, make_event):
+        make_event(title="지역 없음", region="")
+
+        resp = Client().get("/events/")
+
+        row = next(r for r in resp.context["event_rows"] if r["event"].title == "지역 없음")
+        assert row["region_label"] == ""
+
+
+@pytest.mark.django_db
 class TestEventListActiveFilterChips:
     def test_query_renders_search_chip(self, make_event):
         make_event(title="공연 행사")

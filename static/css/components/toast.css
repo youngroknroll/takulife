@@ -1,0 +1,43 @@
+/**
+ * toast.css — success toast (§6.4)
+ *
+ * position: fixed so it never joins document flow (must not widen
+ * body.scrollWidth — tests/e2e/test_mobile_overflow_e2e.py). z-index sits
+ * above the fixed CTA bar (event_detail.css .mobile-cta: 20) and below the
+ * confirm modal (confirm-modal.css .confirm-overlay: 1000).
+ */
+
+.taku-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  transform: translate(-50%, 8px);
+  z-index: 40;
+  max-width: calc(100% - 2rem);
+  padding: 0.625rem 1rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  text-align: center;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.taku-toast[hidden] {
+  display: none;
+}
+
+.taku-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taku-toast {
+    transition: none;
+  }
+}

@@ -566,8 +566,9 @@
     color: var(--end-ink);
   }
   /* Top-right 찜 button (closing cards): translucent dark circle over poster.
-     Overrides .interest-btn base (min-height/padding/hover/active bg) so the
-     button is a perfect circle, not the base 44px-tall pill. */
+     Kept at 34px — the poster overlay has no room for a 44px target without
+     covering more of the image. WCAG 2.5.8 exception (24px 이상 + 주변 간격
+     확보); §5.4 예외 기록, 사용자 승인은 2단계 PR 참조. */
   .poster-interest {
     position: absolute;
     top: 8px;

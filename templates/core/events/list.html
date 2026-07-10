@@ -151,13 +151,20 @@
                     {% endif %}
                   </div>
                   <h2><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a>{% if row.event.official_url %} <span class="card-official-badge">공식</span>{% endif %}</h2>
-                  <p class="meta">{{ row.event.location_name }}</p>
+                  {% if row.region_label and row.event.location_name %}
+                    <p class="meta">{{ row.region_label }} · {{ row.event.location_name }}</p>
+                  {% elif row.region_label %}
+                    <p class="meta">{{ row.region_label }}</p>
+                  {% elif row.event.location_name %}
+                    <p class="meta">{{ row.event.location_name }}</p>
+                  {% endif %}
                   {% if row.event.start_date and row.event.end_date %}
                     <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
                   {% endif %}
                   <div class="status-row" data-status-error-container>
                     <button class="interest-btn{% if row.user_interested %} active{% endif %}" type="button"
                       data-interest-toggle
+                      data-toast
                       data-event-id="{{ row.event.id }}"
                       {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
                       <span aria-hidden="true" data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>

@@ -228,6 +228,12 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+  /* §5.4 조작 영역 합격 기준(44px): 전역 .interest-btn(controls.css)은 다른
+     화면의 알약 크기를 그대로 쓰므로, 목록 카드 컨텍스트에서만 확대한다. */
+  .event-card .interest-btn {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+  }
   .filter-toggle {
     display: none;
   }
@@ -254,6 +260,7 @@
       justify-content: center;
       gap: 0.375rem;
       width: 100%;
+      min-height: 44px;
       margin-top: 0.5rem;
       border: 1px solid var(--border-soft);
       background: var(--bg-soft);

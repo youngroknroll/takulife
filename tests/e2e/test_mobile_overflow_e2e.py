@@ -29,6 +29,11 @@ class TestMobileOverflowSmoke:
 
         assert _no_horizontal_overflow(page)
 
+    def test_event_list_has_no_horizontal_overflow(self, live_server, page, seed):
+        page.goto(f"{live_server.url}/events/")
+
+        assert _no_horizontal_overflow(page)
+
     def test_event_detail_has_no_horizontal_overflow(self, live_server, page, seed):
         event = seed.events[0]
         page.goto(f"{live_server.url}/events/{event.id}/")
