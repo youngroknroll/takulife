@@ -1,3 +1,34 @@
+# 모바일 디자인 3단계 — 기록과 운영 : **3단계 구현·검증 완료** (2026-07-10, 브랜치 `feat/mobile-design-phase3`)
+
+> **9커밋 전부 로컬 브랜치 반영, PR 대기**: `a4ae628`(vocab `INTEREST_LABEL` "찜" 통일) · `3d8d11e`(기록장→저장한 행사) · `9996d9e`(예정 목록→나의 일정) · `a978ade`(방문 기록→다녀온 기록, 페이지 라벨 한정) · `3189f58`(비공식→직접 등록 + 가드 테스트 재작성) · `583c968`(직접 등록 폼 3그룹 재배치) · `de71110`(이미지 첨부 노출) · `6532eda`(스태프 최근 처리 카드화, Gate D) · `9ce842e`(QA aria-label 오기 정정). 각 커밋 전 `uv run pytest -q` 전체 스위트 **1163 passed, 20 deselected** 무회귀 재확인, 최종 `uv run pytest -m e2e -o addopts='' tests/e2e/ -q` **20 passed**. 상세 변경·검증 기록은 `.docs/frontend-integration-changelog.md` 참조.
+> 승인 근거: `.docs/plans/2026-07-10-mobile-first-commercial-design-improvement-plan.md` §15 3단계, §19-3(아카이브 명칭 승인, `INTEREST_LABEL`→"찜" 확정). frontend TDD-exempt — 단, `test_archive_mixed_rendering.py` 가드 테스트는 backend view 테스트라 TDD 대상(Red-Green 확인 완료), 템플릿/CSS/JS는 AGENTS.md Frontend Work Policy에 따라 자동 테스트 대신 수동 브라우저 검증.
+
+## 범위 (§15 3단계)
+1. vocab 통일: `core/vocab.py`의 `INTEREST_LABEL` "관심"→"찜"(§19-3), 안내 문구·로그인 모달 문구 동기화.
+2. 아카이브 명칭 4건: 기록장→저장한 행사, 예정 목록→나의 일정, 방문 기록→다녀온 기록(페이지 라벨 한정, 엔티티 서술 유지), 비공식→직접 등록.
+3. 직접 등록 폼 단계화: 기본(종류·이름)/상세(분류·작품명·장소·참고 링크, `<details>` 접기)/기록(메모) 3그룹 재배치, 이미지 첨부 노출(백엔드 기지원, `PersonalEntry.image` 무변경).
+4. 스태프 최근 처리 내역 모바일 카드화(Gate D) — 45rem 이하 표↔카드 상호 전환.
+5. (QA 후속) `index.html` summary-grid aria-label 오기 정정 + `_archive_nav.html` 사용 예시 주석 라벨 갱신.
+
+## 수용 기준 (§10 Gate D 3단계 항목)
+- **Gate D**: 스태프 콘솔 최근 처리 내역이 모바일(45rem 이하)에서 4열 표 대신 카드로 렌더(`6532eda`), 대상 제목은 줄바꿈만 허용(말줄임 금지), 담당 이메일만 말줄임 적용, 카드 텍스트 `--fs-sm`(0.8rem) 이상. 대시보드 다른 두 표·`home_categories` 표가 공유하는 `.data-table` 규칙은 무수정.
+- 아카이브 전 페이지(저장한 행사/나의 일정/다녀온 기록/직접 등록/찜 목록) 라벨·타이틀·nav 탭·푸터·"빠른 이동" 링크가 새 명칭으로 일관 렌더, URL 경로·CSS 클래스명(`.unofficial` 등 내부 코드)·폼 필드 `name`은 전부 불변.
+- 직접 등록 폼 제출 시 서버 필드 에러(`url`)가 있으면 접힌 상세 정보 `<details>`가 자동으로 펼쳐짐(§9 최소 구현).
+
+## 판단 사항
+- 1c(방문 기록→다녀온 기록)는 지시된 필드 목록이 title/h1/back-link/안내 li로 명시돼, `visits.html`의 summary-grid·aside aria-label과 `visit_create.html`의 부제 h2("새 방문 기록")는 엔티티 서술에 준해 라벨 변경 대상에서 제외 — 1a/1b는 aria-label이 명시적으로 포함돼 있었던 것과 달라, 실측 누락이 아닌 의도적 축소로 해석해 진행. 오케스트레이터 확인 결과 별도 후속 커밋 없이 그대로 승인.
+- 1d 가드 테스트(`test_archive_mixed_rendering.py`)의 픽스처 title이 "비공식 아크릴"이라 "비공식"이 포함된 라벨 단언이 항상 참이 되는 가짜 통과 상태였음을 발견 — 픽스처를 "투명 아크릴"로 교체하고 단언을 "직접 등록" 포함 여부로 재작성, 라벨 변경 전 실행해 3 failed(RED) 확인 후 라벨 변경을 적용해 5 passed(GREEN) 확정.
+- QA MEDIUM: `index.html`의 summary-grid aria-label이 "나의 일정 요약"으로 잘못 남아있던 것을 `9ce842e`로 "저장한 행사 요약"으로 정정. 같은 커밋에 LOW(구 라벨이 남은 사용 예시 주석)도 함께 해소.
+
+## 검증
+`uv run pytest -q` 전체 스위트 프레시 실행(1163 passed, 20 deselected 무회귀 확인, 각 커밋 시점마다 반복) + `uv run pytest -m e2e -o addopts='' tests/e2e/ -q`(20 passed) + 오케스트레이터 브라우저 실측(아카이브 전 페이지 라벨·구 라벨 잔존 0건, 직접 등록 폼 details 기본 닫힘+url 에러 자동 펼침, 이미지 실업로드 성공, 스태프 카드 375px/1440px 표-카드 전환) + `.docs/frontend-integration-changelog.md` 기록.
+
+## 하지 말 것 / 범위 밖(별도 승인 대기)
+Google OAuth 성공 경로(§19-4, 사용자 액션 선행 필요) · vocab 단일 출처화 확장(드래프트 상태 라벨 등, §17 Deferred) · 홈 포스터 찜 버튼(`.poster-interest`) 34px→44px 확대(WCAG 2.5.8 예외, 2단계에서 보류 유지 — 별도 사용자 승인 필요).
+
+---
+---
+
 # 모바일 디자인 2단계 — 핵심 여정 : **2단계 구현·검증 완료** (2026-07-10, 브랜치 `feat/mobile-design-phase2`)
 
 > **10커밋 전부 로컬 브랜치 반영, PR 대기**: `a9e2cb0`(홈 섹션 순서) · `ee390d2`(카드 region_label+44px) · `4509104`(상세 상태 축약형) · `5202514`(기록 남기기 1차 CTA 승격) · `3b4799e`(토스트 컴포넌트 신설) · `44cef98`(토스트 연동) · `6a003d0`(e2e 스모크) · `fee492c`(공식 링크 2차 강등, QA) · `8bb8010`(44px/40px 보완+포스터 예외 기록, QA) · `3a9c39f`(sessionStorage 방어, QA). 각 커밋 전후 `uv run pytest -q` 전체 스위트 **1162 passed, 20 deselected** 무회귀 재확인, 최종 `uv run pytest -m e2e -o addopts='' tests/e2e/ -q` **20 passed**. 상세 변경·검증 기록은 `.docs/frontend-integration-changelog.md` 참조.
