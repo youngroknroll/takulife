@@ -27,7 +27,7 @@
           <div class="form-group">
             <label>대상</label>
             <div class="subject-readonly">
-              {% if not subject.is_official %}<span class="visit-chip">비공식</span>{% endif %}
+              {% if not subject.is_official %}<span class="visit-chip">직접 등록</span>{% endif %}
               {% if subject.category_label %}<span class="visit-chip category">{{ subject.category_label }}</span>{% endif %}
               <span class="subject-title">{{ subject.title }}</span>
             </div>

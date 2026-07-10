@@ -18,7 +18,7 @@
           <span class="status {{ row.status_slug }}">{{ row.status_label }}</span>
         </div>
         {% if not row.subject.is_official %}
-          <p class="record-meta"><span class="event-category unofficial">비공식</span></p>
+          <p class="record-meta"><span class="event-category unofficial">직접 등록</span></p>
         {% endif %}
         {% if row.subject.location %}
           <p class="record-meta">{{ row.subject.location }}</p>

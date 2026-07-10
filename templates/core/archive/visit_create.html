@@ -46,7 +46,7 @@
                   </optgroup>
                 {% endif %}
                 {% if selectable_personal_entries %}
-                  <optgroup label="비공식 아카이브">
+                  <optgroup label="직접 등록 아카이브">
                     {% for entry in selectable_personal_entries %}
                       <option value="personal:{{ entry.id }}">{{ entry.title }}</option>
                     {% endfor %}

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 비공식 아카이브{% endblock %}
+{% block title %}{{ project_name }} | 직접 등록 아카이브{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
@@ -8,16 +8,16 @@
 
 {% block content %}
   <main class="page">
-    {% include "core/partials/_archive_nav.html" with active="items" active_label="비공식" %}
+    {% include "core/partials/_archive_nav.html" with active="items" active_label="직접 등록" %}
 
     <section class="hero">
-      <h1>비공식 아카이브</h1>
+      <h1>직접 등록 아카이브</h1>
       <p>
         공식 카탈로그에 없는 내가 찾은 장소(비공식 굿즈 카페 등)나 내가 산 굿즈를
         직접 등록해 두는 곳입니다. 본인만 볼 수 있고, 공개 목록에는 노출되지 않습니다.
       </p>
 
-      <div class="summary-grid" style="--summary-cols: 3" aria-label="비공식 아카이브 요약">
+      <div class="summary-grid" style="--summary-cols: 3" aria-label="직접 등록 아카이브 요약">
         <article class="summary-card">
           <p class="summary-label">전체</p>
           <p class="summary-value">{{ total_count }}</p>
@@ -37,7 +37,7 @@
 
     <section class="layout">
       <article class="panel">
-        <h2>비공식 아카이브 목록</h2>
+        <h2>직접 등록 아카이브 목록</h2>
         <p class="panel-note">직접 등록한 항목을 최신순으로 정리한 목록입니다.</p>
 
         {% include "core/partials/_archive_search.html" with q=q has_query=has_query %}
@@ -47,7 +47,7 @@
         </div>
       </article>
 
-      <aside class="side-stack" aria-label="비공식 아카이브 보조 정보">
+      <aside class="side-stack" aria-label="직접 등록 아카이브 보조 정보">
         <section class="panel">
           <h2>빠른 이동</h2>
           <ul class="side-list side-list--row">
@@ -59,7 +59,7 @@
 
         <section class="panel">
           <h2>항목 추가</h2>
-          <p class="panel-note">비공식 장소나 굿즈를 직접 등록하세요.</p>
+          <p class="panel-note">장소나 굿즈를 직접 등록하세요.</p>
 
           <form id="entry-create-form" class="create-form" novalidate>
             <div class="form-group">
@@ -101,7 +101,7 @@
         <section class="panel">
           <h2>안내</h2>
           <ul class="rule-list">
-            <li>비공식 아카이브는 본인만 보고 관리할 수 있습니다</li>
+            <li>직접 등록 아카이브는 본인만 보고 관리할 수 있습니다</li>
             <li>공개 행사 목록·검색에는 노출되지 않습니다</li>
             <li>비공식 장소·굿즈를 자유롭게 기록할 수 있습니다</li>
           </ul>
