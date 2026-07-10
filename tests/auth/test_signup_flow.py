@@ -13,6 +13,7 @@ def test_register_redirects_to_safe_next_after_email_confirmation(client, mailou
             "email": "newcomer@example.com",
             "password1": valid_password,
             "password2": valid_password,
+            "terms_agreed": "on",
         },
     )
     # Signup itself only lands on the "check your email" page — the

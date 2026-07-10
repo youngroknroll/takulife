@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}회원 탈퇴 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+  <h1>회원 탈퇴</h1>
+  <p class="auth-error">
+    탈퇴하면 계정과 저장한 행사, 다녀온 기록, 직접 등록한 항목 및 첨부 이미지가
+    모두 삭제되며 되돌릴 수 없습니다.
+  </p>
+  {% if field_errors.password %}
+    <p class="auth-error">{{ field_errors.password }}</p>
+  {% endif %}
+  <form method="post" action="{% url 'account-delete-page' %}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="id_password">현재 비밀번호로 확인</label>
+      <input type="password" name="password" id="id_password" required>
+    </div>
+    <button type="submit" class="btn btn-danger btn-block">계정 삭제 (되돌릴 수 없음)</button>
+  </form>
+  <p><a href="/archive/">취소하고 돌아가기</a></p>
+</main>
+{% endblock %}

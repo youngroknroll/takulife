@@ -16,3 +16,10 @@ def google_oauth_configured(request):
     apps = settings.SOCIALACCOUNT_PROVIDERS.get("google", {}).get("APPS", [])
     client_id = apps[0].get("client_id", "") if apps else ""
     return {"google_oauth_configured": bool(client_id)}
+
+
+def support_email(request):
+    """Inject the contact address (legal pages, footer) into every template
+    context, so views don't each hardcode ``"support_email"``.
+    """
+    return {"support_email": settings.SUPPORT_EMAIL}

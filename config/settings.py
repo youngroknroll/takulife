@@ -140,6 +140,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.project_name",
                 "core.context_processors.google_oauth_configured",
+                "core.context_processors.support_email",
             ],
         },
     },
@@ -192,6 +193,10 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+# Custom signup form adds the mandatory terms/privacy-policy agreement
+# checkbox (accounts/forms.py) on top of allauth's default email/password
+# fields.
+ACCOUNT_FORMS = {"signup": "accounts.forms.SignupForm"}
 
 # django-allauth socialaccount: Google sign-in. Credentials come from env
 # (never committed); register the OAuth client in Google Cloud Console with the
@@ -275,6 +280,11 @@ EMAIL_HOST_USER = _get_env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = _get_env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = _get_env("EMAIL_USE_TLS", "true").lower() in ("1", "true", "yes")
 DEFAULT_FROM_EMAIL = _get_env("DEFAULT_FROM_EMAIL", "no-reply@takulife.example")
+# Contact address shown on the legal pages / footer for user inquiries and
+# data-rights requests. Placeholder domain until the real support inbox is
+# provisioned (see .docs/plans/2026-07-10-legal-pages-plan.md §3-2) — swap
+# via env only, no code change needed once the real address exists.
+SUPPORT_EMAIL = _get_env("SUPPORT_EMAIL", "support@takulife.example")
 
 # DRF: rate-limit 공식 제보 (promotion) so an authenticated user cannot flood the
 # admin review queue with promoted PersonalEntry drafts. Scoped throttle only —

@@ -222,6 +222,7 @@ def test_valid_registration_does_not_log_in_before_verification(client, django_u
             "email": "newuser@example.com",
             "password1": valid_password,
             "password2": valid_password,
+            "terms_agreed": "on",
         },
     )
     # Redirects to the "check your email" page, not straight into the app.
@@ -243,6 +244,7 @@ def test_confirming_email_logs_the_user_in(client, django_user_model, mailoutbox
             "email": "confirmme@example.com",
             "password1": valid_password,
             "password2": valid_password,
+            "terms_agreed": "on",
         },
     )
     assert len(mailoutbox) == 1
@@ -265,6 +267,7 @@ def test_weak_password_rejected_by_validators(client, django_user_model):
             "email": "weakpwduser@example.com",
             "password1": "12345678",
             "password2": "12345678",
+            "terms_agreed": "on",
         },
     )
     # Should re-render form with error, not redirect
@@ -289,6 +292,7 @@ def test_duplicate_email_rejected(client, django_user_model, mailoutbox, valid_p
             "email": "existinguser@example.com",
             "password1": valid_password,
             "password2": valid_password,
+            "terms_agreed": "on",
         },
     )
     assert response.status_code == 302

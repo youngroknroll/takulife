@@ -694,6 +694,14 @@ def archive_interests(request):
     )
 
 
+def legal_privacy(request):
+    return render(request, "core/legal/privacy.html")
+
+
+def legal_terms(request):
+    return render(request, "core/legal/terms.html")
+
+
 @api_view(["GET"])
 def api_root(request):
     return Response({"name": "takulife API"})
