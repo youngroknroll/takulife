@@ -208,4 +208,7 @@
       padding: 0.6875rem;
       cursor: pointer;
     }
+    .mobile-cta[hidden] {
+      display: none;
+    }
   }

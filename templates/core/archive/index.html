@@ -67,18 +67,19 @@
           <h3>새 기록</h3>
           <div class="cta">
             <p>방문 후 메모를 남겨 다음 일정 판단 기준으로 활용합니다.</p>
-            <a href="/archive/visits/new/">기록 추가</a>
+            <a href="/archive/visits/new/" data-cta-watch>기록 추가</a>
           </div>
         </div>
       </aside>
     </div>
 
-    <div class="mobile-cta">
+    <div class="mobile-cta" data-cta-fixed hidden>
       <a href="/archive/visits/new/">기록 추가</a>
     </div>
   </div>
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
 {% endblock %}

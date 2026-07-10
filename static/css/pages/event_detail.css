@@ -207,6 +207,9 @@
     .mobile-cta .action-link.primary {
       width: 100%;
     }
+    .mobile-cta[hidden] {
+      display: none;
+    }
   }
   @media (max-width: 45rem) {
     .page {
