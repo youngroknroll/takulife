@@ -199,7 +199,7 @@ class TestListingLevel:
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": make_draft(url, source_name=source_name),
+            lambda source_url, source_name="": make_draft(source_url, source_name=source_name),
         )
 
         with pytest.raises(CommandError):
@@ -231,7 +231,7 @@ class TestListingLevel:
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": make_draft(url, source_name=source_name),
+            lambda source_url, source_name="": make_draft(source_url, source_name=source_name),
         )
 
         with pytest.raises(CommandError):
@@ -260,8 +260,8 @@ class TestCandidateLevel:
 
         calls = []
 
-        def spy(url, source_name=""):
-            calls.append((url, source_name))
+        def spy(source_url, source_name=""):
+            calls.append((source_url, source_name))
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url", spy
@@ -318,7 +318,7 @@ class TestCandidateLevel:
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
-        def raise_duplicate(url, source_name=""):
+        def raise_duplicate(source_url, source_name=""):
             raise DraftCreationDuplicateError()
 
         monkeypatch.setattr(
@@ -332,7 +332,7 @@ class TestCandidateLevel:
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
-        def raise_empty(url, source_name=""):
+        def raise_empty(source_url, source_name=""):
             raise DraftCreationEmptyExtractionError()
 
         monkeypatch.setattr(
@@ -348,10 +348,10 @@ class TestCandidateLevel:
         _install_listing(monkeypatch, [failing_url, succeeding_url])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
-        def flaky_create(url, source_name=""):
-            if url == failing_url:
+        def flaky_create(source_url, source_name=""):
+            if source_url == failing_url:
                 raise DraftCreationFetchError()
-            return make_draft(url, source_name=source_name)
+            return make_draft(source_url, source_name=source_name)
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url", flaky_create
@@ -412,7 +412,7 @@ class TestCaps:
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": make_draft(url, source_name=source_name),
+            lambda source_url, source_name="": make_draft(source_url, source_name=source_name),
         )
 
         call_command("discover_drafts")
@@ -439,7 +439,7 @@ class TestCaps:
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": make_draft(url, source_name=source_name),
+            lambda source_url, source_name="": make_draft(source_url, source_name=source_name),
         )
 
         call_command("discover_drafts")
@@ -476,7 +476,7 @@ class TestCaps:
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": make_draft(url, source_name=source_name),
+            lambda source_url, source_name="": make_draft(source_url, source_name=source_name),
         )
 
         call_command("discover_drafts")
@@ -508,13 +508,13 @@ class TestCaps:
         )
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
-        def fake_create(url, source_name=""):
-            if url in (url_a1, url_a2):
+        def fake_create(source_url, source_name=""):
+            if source_url in (url_a1, url_a2):
                 # Both of source A's candidates consume A's one fetch slot
                 # via an empty-extraction skip, exhausting it before A's
                 # second candidate can be attempted.
                 raise DraftCreationEmptyExtractionError()
-            return make_draft(url, source_name=source_name)
+            return make_draft(source_url, source_name=source_name)
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url", fake_create
@@ -541,7 +541,7 @@ class TestCandidatePacing:
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": make_draft(url, source_name=source_name),
+            lambda source_url, source_name="": make_draft(source_url, source_name=source_name),
         )
         sleep_calls = []
         monkeypatch.setattr(
@@ -564,7 +564,7 @@ class TestCandidatePacing:
         _patch_robots_checker(monkeypatch, checker)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": make_draft(url, source_name=source_name),
+            lambda source_url, source_name="": make_draft(source_url, source_name=source_name),
         )
         sleep_calls = []
         monkeypatch.setattr(
@@ -607,7 +607,7 @@ class TestRobotsCache:
         )
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.create_draft_from_url",
-            lambda url, source_name="": make_draft(url, source_name=source_name),
+            lambda source_url, source_name="": make_draft(source_url, source_name=source_name),
         )
 
         robots_fetch_calls = []

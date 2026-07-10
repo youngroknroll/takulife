@@ -22,7 +22,7 @@ from staff.services import (
 def test_event_archive_reference_counts_all_zero_for_unreferenced_event(make_event):
     event = make_event(official_url="https://example.com/no-refs")
 
-    counts = event_archive_reference_counts(event)
+    counts = event_archive_reference_counts(event=event)
 
     assert counts == {"interest": 0, "status": 0, "visit": 0}
 
@@ -35,7 +35,7 @@ def test_event_archive_reference_counts_reflects_each_kind(make_event, make_user
     UserEventStatus.objects.create(user=user, event=event, status=UserEventStatus.Status.PLANNED)
     VisitRecord.objects.create(user=user, event=event, visited_on=datetime.date(2026, 1, 1))
 
-    counts = event_archive_reference_counts(event)
+    counts = event_archive_reference_counts(event=event)
 
     assert counts == {"interest": 1, "status": 1, "visit": 1}
 

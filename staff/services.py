@@ -27,7 +27,7 @@ class EventHasArchiveReferencesError(Exception):
         )
 
 
-def event_archive_reference_counts(event):
+def event_archive_reference_counts(*, event):
     """Return {"interest": N, "status": N, "visit": N} for `event`.
 
     Reads the 3 CASCADE-on-delete reverse relations from archive/models.py
@@ -47,7 +47,7 @@ def delete_event(*, event):
     when any of the 3 archive models still reference this event — deleting
     it would CASCADE-wipe those users' interests/statuses/visit records.
     """
-    counts = event_archive_reference_counts(event)
+    counts = event_archive_reference_counts(event=event)
     if sum(counts.values()) > 0:
         raise EventHasArchiveReferencesError(
             interest_count=counts["interest"],

@@ -136,11 +136,11 @@ def home(request):
     popular_qs = Event.objects.published().exclude(end_date__lt=today).most_viewed(5)
 
     context = {
-        "ongoing_events": _attach_display(ongoing_qs[:15], today=today, user=request.user),
-        "closing_events": _attach_display(closing_qs[:15], today=today, user=request.user),
-        "recent_events": _attach_display(recent_qs, today=today, user=request.user),
+        "ongoing_rows": _attach_display(ongoing_qs[:15], today=today, user=request.user),
+        "closing_rows": _attach_display(closing_qs[:15], today=today, user=request.user),
+        "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
         "category_tiles": category_tiles,
-        "popular_events": _attach_display(popular_qs, today=today, user=request.user),
+        "popular_rows": _attach_display(popular_qs, today=today, user=request.user),
     }
     return render(request, "core/home.html", context)
 
@@ -166,7 +166,7 @@ def event_list(request):
     selected_region = request.GET.getlist("region")
     selected_category = request.GET.getlist("category")
     selected_status = request.GET.get("status", "")
-    selected_q = request.GET.get("q", "")
+    q = request.GET.get("q", "")
     selected_sort = request.GET.get("sort", "")
 
     # Defensive scalar-wrap left over from an earlier non-QueryDict code path.
@@ -179,13 +179,13 @@ def event_list(request):
         selected_category = [request.GET.get("category")]
 
     active_filters = bool(
-        selected_q or selected_region or selected_category or selected_status
+        q or selected_region or selected_category or selected_status
     )
 
     # Human-readable chips summarising the active filters (Eventbrite-style).
     active_filter_chips = []
-    if selected_q:
-        active_filter_chips.append(f"검색: {selected_q}")
+    if q:
+        active_filter_chips.append(f"검색: {q}")
     for region in selected_region:
         active_filter_chips.append(REGION_LABELS.get(region, region))
     for category in selected_category:
@@ -204,7 +204,7 @@ def event_list(request):
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
         # current selections
-        "selected_q": selected_q,
+        "q": q,
         "selected_region": selected_region,
         "selected_category": selected_category,
         "selected_status": selected_status,

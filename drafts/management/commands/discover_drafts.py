@@ -267,7 +267,7 @@ def _decide_and_create_candidate(
         return _CandidateOutcome(consumed_fetch_budget=True, skip_key=skip_key)
 
     try:
-        create_draft_from_url(url, source_name=source.name)
+        create_draft_from_url(source_url=url, source_name=source.name)
     except DraftCreationDuplicateError:
         return _CandidateOutcome(consumed_fetch_budget=True, skip_key="duplicate")
     except DraftCreationEmptyExtractionError:

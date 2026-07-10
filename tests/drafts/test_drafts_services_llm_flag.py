@@ -44,7 +44,7 @@ def test_flag_enabled_uses_llm_extractor_with_parsed_raw_fields(monkeypatch, sam
 
     monkeypatch.setattr("drafts.services.extract_event_fields_llm", spy)
 
-    draft = create_draft_from_url("https://example.com/event")
+    draft = create_draft_from_url(source_url="https://example.com/event")
 
     assert calls == [(sample_extraction["raw_title"], sample_extraction["raw_text"])]
     assert draft.confidence == 0.83
@@ -66,7 +66,7 @@ def test_flag_disabled_never_calls_llm_extractor(monkeypatch, fail_if_called, sa
     )
     monkeypatch.setattr("drafts.services.extract_event_fields_llm", fail_if_called)
 
-    draft = create_draft_from_url("https://example.com/event")
+    draft = create_draft_from_url(source_url="https://example.com/event")
 
     assert draft.extracted_title == sample_extraction["raw_title"]
 
@@ -83,7 +83,7 @@ def test_flag_enabled_empty_extraction_raises_without_calling_llm(monkeypatch, f
     monkeypatch.setattr("drafts.services.extract_event_fields_llm", fail_if_called)
 
     with pytest.raises(DraftCreationEmptyExtractionError):
-        create_draft_from_url("https://example.com/event")
+        create_draft_from_url(source_url="https://example.com/event")
 
 
 @pytest.mark.django_db
@@ -113,7 +113,7 @@ def test_flag_enabled_heuristic_fallback_result_is_recorded_as_is(monkeypatch, s
         },
     )
 
-    draft = create_draft_from_url("https://example.com/event")
+    draft = create_draft_from_url(source_url="https://example.com/event")
 
     assert draft.confidence is None
     assert draft.extraction_method == "heuristic"
@@ -146,7 +146,7 @@ def test_flag_enabled_ignores_is_event_key_in_llm_result(monkeypatch, sample_ext
         },
     )
 
-    draft = create_draft_from_url("https://example.com/event")
+    draft = create_draft_from_url(source_url="https://example.com/event")
 
     assert draft.id is not None
     assert not hasattr(EventDraft, "is_event")
@@ -160,7 +160,7 @@ def test_flag_disabled_defaults_extraction_method_heuristic_and_confidence_none(
         lambda html: {"raw_title": sample_extraction["raw_title"], "raw_text": sample_extraction["raw_text"]},
     )
 
-    draft = create_draft_from_url("https://example.com/event")
+    draft = create_draft_from_url(source_url="https://example.com/event")
 
     assert draft.extraction_method == EventDraft.ExtractionMethod.HEURISTIC
     assert draft.confidence is None
