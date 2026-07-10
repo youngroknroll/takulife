@@ -1,0 +1,67 @@
+/* ── legal pages (개인정보처리방침 / 이용약관) ────────────────────
+ * Long-form prose document. No table of contents — a single scrolling
+ * h2-section flow (plan §2026-07-10-legal-pages-plan §4-5). Reuses the
+ * global .page wrapper and .panel card (components/cards.css); this sheet
+ * only adds the prose-specific width cap, heading rhythm, and list style
+ * that the shared components don't already cover.
+ */
+.legal-doc {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.legal-doc h1 {
+  margin: 0 0 0.75rem;
+  font-size: var(--fs-xl);
+  line-height: 1.4;
+}
+
+.legal-doc .lead {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: var(--fs-base);
+  line-height: 1.7;
+}
+
+/* §8 간격 관례: 섹션 간 24~32px */
+.legal-doc section {
+  margin-top: 1.75rem;
+}
+
+.legal-doc h2 {
+  margin: 0 0 0.625rem;
+  font-size: var(--fs-lg);
+  line-height: 1.4;
+}
+
+.legal-doc p {
+  margin: 0 0 0.625rem;
+  color: var(--text);
+  font-size: var(--fs-base);
+  line-height: 1.7;
+}
+
+.legal-doc p:last-child {
+  margin-bottom: 0;
+}
+
+.legal-doc ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+  color: var(--text);
+  font-size: var(--fs-base);
+  line-height: 1.7;
+}
+
+.legal-revision-list {
+  color: var(--muted);
+  font-size: var(--fs-md);
+}
+
+@media (max-width: 45rem) {
+  .legal-doc h1 {
+    font-size: var(--fs-xl-mobile);
+  }
+}

@@ -36,6 +36,8 @@ urlpatterns = [
         name="archive-personal-entries-page",
     ),
     path("archive/interests/", core_views.archive_interests, name="archive-interests"),
+    path("legal/privacy/", core_views.legal_privacy, name="legal-privacy-page"),
+    path("legal/terms/", core_views.legal_terms, name="legal-terms-page"),
     # Old draft-review URLs, relocated under the Staff Console (/staff/drafts/…).
     # Non-permanent 302s (browsers/bookmarks may still hold the old links) that
     # preserve any ?next= query string.
