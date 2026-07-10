@@ -191,7 +191,8 @@
 
     var chip = card ? card.querySelector("[data-draft-status-chip]") : null;
     if (chip) {
-      chip.textContent = "approved";
+      var toolbar = document.getElementById("bulk-toolbar");
+      chip.textContent = (toolbar && toolbar.dataset.approvedLabel) || "approved";
       chip.className = "draft-chip approved review-status-approved";
       chip.setAttribute("data-draft-status-chip", "");
     }

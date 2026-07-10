@@ -71,7 +71,7 @@
 
         {% if draft_rows %}
           {% if selected_status == "pending" %}
-            <div class="bulk-toolbar" id="bulk-toolbar" hidden>
+            <div class="bulk-toolbar" id="bulk-toolbar" data-approved-label="승인됨" hidden>
               <label class="draft-select" for="draft-select-all">
                 <input type="checkbox" id="draft-select-all">
                 <span class="sr-only">이 페이지의 검토 대기 드래프트 전체 선택</span>
@@ -99,7 +99,7 @@
                 {% endif %}
                 <div>
                   <div class="draft-top">
-                    <span class="draft-chip {{ row.draft.review_status }} review-status-{{ row.draft.review_status }}" data-draft-status-chip>{{ row.draft.review_status }}</span>
+                    <span class="draft-chip {{ row.draft.review_status }} review-status-{{ row.draft.review_status }}" data-draft-status-chip>{% if row.draft.review_status == "pending" %}검토 대기{% elif row.draft.review_status == "approved" %}승인됨{% elif row.draft.review_status == "rejected" %}반려됨{% else %}{{ row.draft.review_status }}{% endif %}</span>
                     {% if row.category_label %}
                       <span class="draft-chip category">{{ row.category_label }}</span>
                     {% endif %}
