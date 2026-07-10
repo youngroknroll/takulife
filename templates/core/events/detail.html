@@ -68,7 +68,7 @@
           <h2>참여 상태</h2>
           <div class="action-list">
             {% if event.official_url %}
-              <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
+              <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기" data-cta-watch>공식 페이지에서 보기 ↗</a>
             {% endif %}
             <div class="status-row" data-status-error-container>
               <button class="interest-btn{% if user_interested %} active{% endif %}" type="button"
@@ -192,7 +192,7 @@
     </section>
 
     {% if event.official_url %}
-      <div class="mobile-cta">
+      <div class="mobile-cta" data-cta-fixed hidden>
         <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
       </div>
     {% endif %}
@@ -200,6 +200,9 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if event.official_url %}
+<script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
+{% endif %}
 {% if request.user.is_staff %}
 <script defer src="{% static 'js/pages/event-poster.js' %}"></script>
 {% endif %}

@@ -1,3 +1,34 @@
+# 모바일 우선 상용 디자인 1단계 — 출시 차단 문제 : **1단계 구현·검증 완료** (2026-07-10, 브랜치 `feat/mobile-design-phase1`)
+
+> **8커밋 전부 로컬 브랜치 반영, PR 대기**: `4457452`(인증 셸 갭) · 검증만(브랜드 잔재 0건) · `0d11c12`(홈 팬 넘침 1차) · `5fe5c0d`(고정 CTA 조건부 노출) · `b010d0a`(스태프 모바일 탭) · `b14e444`(드래프트 라벨 1차) · `a497554`(팬 클램프 뷰포트 기준 정정) · `f7234ed`(pending 리터럴 정정) · `7ed70cd`(팬 클램프 회전 보정). 각 커밋 전 `uv run pytest -q` 전체 스위트 **1158 passed, 15 deselected** 무회귀 재확인, 브라우저 실측(Chrome DevTools, 320/360/375/390/1440px) 완료. 상세 변경·검증 기록은 `.docs/frontend-integration-changelog.md` 참조.
+> 승인 근거: `.docs/plans/2026-07-10-mobile-first-commercial-design-improvement-plan.md` §15 1단계, §19 사용자 결정(v2.2 — 6건 중 5건 확정: 1단계 구현 단위 승인, 아카이브 명칭 승인, `INTEREST_LABEL`→"찜" 확정, Google OAuth 후순위 이동·1단계는 실패 경로만, 개인정보처리방침·이용약관·문의 채널 별도 트랙). frontend TDD-exempt — AGENTS.md Frontend Work Policy에 따라 자동 테스트 대신 수동 브라우저 검증.
+
+## 범위 (§15 1단계)
+1. 인증 셸: Google OAuth 미설정 시 버튼·구분선 숨김(`google_oauth_configured` context processor) + allauth 기본 `socialaccount/login.html`(무스타일 중간 확인 화면)을 기존 인증 셸(`auth.css`/`.auth-container`)로 오버라이드. 성공 경로(자격 등록·`.env`·redirect URI)는 §19-4로 후순위 이동, 이번 범위 제외.
+2. 브랜드 표기 잔재(과거 프로젝트명·임시 도메인) 전수 확인 — 검증만, 0건.
+3. 모바일 홈 히어로 카드 팬 가로 넘침 제거 — 고정 px 좌표(`carousel.js` REST_X/PART)에 뷰포트·카드 회전 폭 기준 scaleX(0~1 clamp) 적용.
+4. 상세·기록장 고정 CTA가 본문 CTA와 무조건 동시 노출되던 문제 — IntersectionObserver로 원본 CTA가 화면 밖일 때만 표시.
+5. 스태프 콘솔 모바일 탭 글자 깨짐 + "사이트로 돌아가기" 링크가 탭 스크롤 영역을 가리는 문제 — CSS 스코프 수정 + column 분리.
+6. 드래프트 상태 라벨(칩·안내 문구) raw enum(pending/approved/rejected) 노출 — 기존 하드코딩 한글 라벨로 최소 수정(vocab 단일 출처화는 §17 보류).
+
+## 수용 기준 (§10 Gate A/B/D 1단계 항목)
+- **Gate A**: Google 로그인 취소/실패가 브랜드 셸 안에서 끝나고 미설정 시 버튼 숨김(`4457452`) · 헤더/푸터/인증/이메일/OAuth 동의 화면 서비스명 `takulife` 일치(검증) · 사용자 화면에 내부 코드(slug/enum) 미노출, 드래프트 상태 칩 포함(`b14e444`+`f7234ed`).
+- **Gate B**: 320px 이상 페이지 수평 스크롤 없음, `document.body.scrollWidth <= window.innerWidth`로 판정(`0d11c12`+`a497554`+`7ed70cd`, 320/360/375/390px 실측) · 고정 CTA가 본문·폼·오류·토스트를 가리지 않음(`5fe5c0d`, 상세·기록장 양쪽) · 긴 텍스트가 레이아웃을 늘리지 않음(회귀 없음 확인).
+- **Gate D**: 스태프 모바일 탭이 단어 단위로 읽힘(`b010d0a`) · "사이트로 돌아가기" 링크가 탭 스크롤 영역을 가리지 않음(`b010d0a`, §7.6) · 대기/승인/반려 상태 한글 표시, 일괄 승인 직후 칩 텍스트 포함(`b14e444`+`f7234ed`).
+- Gate B의 44px 탭 타겟(2단계) · Gate C 전체(2단계) · Gate D 최근 처리 내역(3단계)는 이번 1단계 범위 밖.
+
+## 판단 사항 — 팬 클램프 2회 추가 정정
+최초 구현(`0d11c12`)은 계획서 §14 "구현 시 회귀 유의 지점"(고정 px 상수가 뷰포트를 모른다)을 해결했으나, 클램프 기준을 트랙 자체 폭으로 잡아 데스크톱에서도 항상 압축되는 새 회귀가 생겼다(`a497554`로 정정: 뷰포트 가장자리 기준으로 변경). 뷰포트 기준으로 바꾼 뒤에도 카드 회전(`center*REST_ANGLE`)으로 인한 실제 수평 extent를 반영하지 않아 375px에서 여전히 소폭 넘침이 남았다(`7ed70cd`로 정정: 회전 고려 half-extent 적용). 세 커밋 모두 브라우저 실측 기반 지시로 별도 커밋 처리, 히스토리 재작성 없음.
+
+## 검증
+frontend TDD-exempt — 각 커밋 전 `uv run pytest -q` 전체 스위트 프레시 실행(1158 passed, 15 deselected 무회귀 확인) + 브라우저 실측(오케스트레이터, Chrome DevTools 뷰포트 에뮬레이션) + `.docs/frontend-integration-changelog.md` 기록.
+
+## 하지 말 것 / 범위 밖(별도 승인 대기)
+2단계(홈 섹션 순서·카드 정보 위계·상세 상태 변경 피드백) · 3단계(아카이브 명칭·`INTEREST_LABEL`→"찜"·직접 등록 폼 단계화·스태프 모바일 테이블) · Google OAuth 성공 경로(§19-4, 사용자 액션 선행 필요) · vocab 단일 출처화(§17).
+
+---
+---
+
 # 드래프트 운영 개선 — 콘솔 가시성·버그 + 검수 루프 UX + 소스 발굴 (plan of record)
 
 > 작성일: 2026-07-08 · 절차: PO·UX·QA 3종 병렬 검토 → tech-lead 적대 검증(파일:행 실측) → 사용자 승인. 사용자 결정: 소스는 **"기준 있는 발굴 → 불합격 시 동결"**, 승인 후 흐름은 **권고안 (A)**.

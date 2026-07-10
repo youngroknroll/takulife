@@ -10,6 +10,7 @@ Two-tier topbar (user-confirmed layout, see prompt_plan.md "스태프 독립 콘
 
 No sidebar, no collapse toggle, no icons, no badges — see plan "하지 말 것".
 {% endcomment %}
+{% load static %}
 <a class="skip-link" href="#staff-main">본문으로 건너뛰기</a>
 <header class="staff-shell-header">
   <div class="staff-shell-topbar">
@@ -25,3 +26,4 @@ No sidebar, no collapse toggle, no icons, no badges — see plan "하지 말 것
     <a class="staff-shell-exit" href="/">사이트로 돌아가기 ↗</a>
   </div>
 </header>
+<script defer src="{% static 'js/components/staff-shell.js' %}"></script>

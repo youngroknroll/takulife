@@ -139,6 +139,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.project_name",
+                "core.context_processors.google_oauth_configured",
             ],
         },
     },
@@ -195,8 +196,8 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 # django-allauth socialaccount: Google sign-in. Credentials come from env
 # (never committed); register the OAuth client in Google Cloud Console with the
 # redirect URI /accounts/google/login/callback/ (localhost for dev, the real
-# host for prod). Blank env leaves the button present but non-functional until
-# credentials are set.
+# host for prod). Blank env hides the button (see
+# core.context_processors.google_oauth_configured) until credentials are set.
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APPS": [
