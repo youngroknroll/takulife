@@ -178,6 +178,23 @@ class TestEventDraftsListFilterPagination:
 
 
 @pytest.mark.django_db
+class TestEventDraftsListBulkToolbarLabelContract:
+    """draft_bulk.js reads #bulk-toolbar's data-approved-label to render the
+    post-approval chip text; without it the JS falls back to the raw enum
+    string "approved" (see static/js/pages/draft_bulk.js). Pin the rendered
+    attribute so that regression is caught in the fast suite, not manually."""
+
+    def test_pending_filter_renders_approved_label_data_attribute(self, staff_client, make_draft):
+        make_draft("https://example.com/pending-label", review_status=EventDraft.ReviewStatus.PENDING)
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?status=pending")
+
+        assert resp.status_code == 200
+        assert 'data-approved-label="승인됨"' in resp.content.decode()
+
+
+@pytest.mark.django_db
 class TestEventDraftDetailView:
     def test_existing_draft_renders_with_labels(self, staff_client, make_draft):
         draft = make_draft("https://example.com/c", extracted_title="상세 드래프트", extracted_category="popup_store", extracted_region="seoul")
