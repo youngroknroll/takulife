@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 기록장{% endblock %}
+{% block title %}{{ project_name }} | 저장한 행사{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
@@ -8,10 +8,10 @@
 
 {% block content %}
   <div class="page">
-    {% include "core/partials/_archive_nav.html" with active="record" active_label="기록장" %}
+    {% include "core/partials/_archive_nav.html" with active="record" active_label="저장한 행사" %}
 
-    <section class="hero" aria-label="기록장 소개">
-      <h1>기록장</h1>
+    <section class="hero" aria-label="저장한 행사 소개">
+      <h1>저장한 행사</h1>
       <p>
         방문 이력, 예정 일정, 놓친 이벤트를 월별 타임라인으로 정리합니다.
         기록은 짧게 남기고 다음 탐색으로 빠르게 이동하는 흐름을 유지합니다.
@@ -35,7 +35,7 @@
     <div class="layout">
       <main class="panel" aria-label="저장한 행사 기록">
         <div class="panel-head">
-          <h2>저장한 행사</h2>
+          <h2>저장한 행사 목록</h2>
           <div class="chips" role="group" aria-label="상태 필터">
             <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체</a>
             {% for slug, label in ARCHIVE_STATUS %}
