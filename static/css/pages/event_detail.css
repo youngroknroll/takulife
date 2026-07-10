@@ -129,6 +129,17 @@
   .action-list .status-row {
     margin-top: 0;
   }
+  /* §6.3 축약형: "상태 변경" 버튼과 "일정에서 보기" 링크를 한 줄에 나란히
+     배치(.action-list는 grid라 자식이 기본 1열 전체 폭을 차지하므로 분리). */
+  .status-change-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .status-change-row .action-link {
+    flex: 1;
+    min-width: 0;
+  }
   .action-link {
     display: inline-flex;
     justify-content: center;

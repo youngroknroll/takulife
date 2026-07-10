@@ -382,10 +382,34 @@
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initStatusButtons);
-  } else {
+  // Expands/collapses the status-choices container next to the current-status
+  // line (§6.3 축약형). Toggles `hidden` only — buttons stay in the DOM so
+  // handleClick's sibling scan (closest [data-status-error-container]) keeps
+  // working once the choices are revealed.
+  function initStatusToggle() {
+    var toggles = document.querySelectorAll("[data-status-toggle]");
+    toggles.forEach(function (button) {
+      if (button.dataset.statusToggleBound) return;
+      button.dataset.statusToggleBound = "1";
+      button.addEventListener("click", function () {
+        var target = document.getElementById(button.getAttribute("aria-controls"));
+        if (!target) return;
+        var willShow = target.hasAttribute("hidden");
+        target.toggleAttribute("hidden", !willShow);
+        button.setAttribute("aria-expanded", String(willShow));
+      });
+    });
+  }
+
+  function initPage() {
     initStatusButtons();
+    initStatusToggle();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPage);
+  } else {
+    initPage();
   }
 
   // Re-scan after archive live search replaces the results fragment: the new

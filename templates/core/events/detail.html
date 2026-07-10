@@ -78,6 +78,17 @@
                 <span aria-hidden="true" data-interest-glyph>{% if user_interested %}♥{% else %}♡{% endif %}</span>
                 찜
               </button>
+            </div>
+            {% if user_status %}
+              <p class="panel-note" style="margin: 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
+              <div class="status-change-row">
+                <button class="action-link" type="button" data-status-toggle aria-expanded="false" aria-controls="status-choices">상태 변경</button>
+                {% if user_status == 'planned' %}
+                  <a class="action-link" href="/archive/statuses/?status=planned">일정에서 보기</a>
+                {% endif %}
+              </div>
+            {% endif %}
+            <div class="status-row" id="status-choices" data-status-error-container{% if user_status %} hidden{% endif %}>
               <button class="status-btn planned{% if user_status == 'planned' %} active{% endif %}" type="button"
                 data-status-action
                 data-event-id="{{ event.id }}"
@@ -101,9 +112,6 @@
                 {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
                 aria-pressed="{% if user_status == 'missed' %}true{% else %}false{% endif %}">놓침</button>
             </div>
-            {% if user_status %}
-              <p class="panel-note" style="margin: 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
-            {% endif %}
             {% if user_status == 'visited' %}
               <a class="action-link" href="/archive/visits/new/?subject=event:{{ event.id }}">기록하기</a>
             {% endif %}
