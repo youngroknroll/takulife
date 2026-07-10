@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 방문 기록{% endblock %}
+{% block title %}{{ project_name }} | 다녀온 기록{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
@@ -8,10 +8,10 @@
 
 {% block content %}
   <main class="page">
-    {% include "core/partials/_archive_nav.html" with active="visits" active_label="방문 기록" %}
+    {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
 
     <section class="hero">
-      <h1>방문 기록</h1>
+      <h1>다녀온 기록</h1>
       <p>
         방문한 행사와 한줄 메모, 사진을 모아 보는 기록 화면입니다.
         방문 직후 짧게 남긴 메모로 다음 일정 판단 기준을 만듭니다.
