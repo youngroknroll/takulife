@@ -236,8 +236,14 @@
     if ((result.ok || result.status === 204) && button.hasAttribute("data-reload-on-success")) {
       if (button.hasAttribute("data-toast") && STATUS_TOAST_MESSAGES[statusSlug]) {
         // Reload wipes the current document, so the message travels through
-        // sessionStorage; toast.js reads and clears it after the reload.
-        window.sessionStorage.setItem("taku:toast", STATUS_TOAST_MESSAGES[statusSlug]);
+        // sessionStorage; toast.js reads and clears it after the reload. A
+        // blocked storage (private mode / disabled) must never skip the
+        // reload — the server-side state change already happened.
+        try {
+          window.sessionStorage.setItem("taku:toast", STATUS_TOAST_MESSAGES[statusSlug]);
+        } catch (e) {
+          // Storage blocked — proceed without the toast.
+        }
       }
       window.location.reload();
       return;

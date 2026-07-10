@@ -62,13 +62,19 @@
   window.TakuToast = { show: show };
 
   function initReloadBridge() {
-    var pending = window.sessionStorage.getItem(STORAGE_KEY);
-    if (!pending) {
+    var pending;
+    try {
+      pending = window.sessionStorage.getItem(STORAGE_KEY);
+      if (!pending) {
+        return;
+      }
+      // Clear before showing so a reload during the toast's own lifetime
+      // (or a later visit) never re-fires the same message.
+      window.sessionStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      // Storage blocked — nothing to bridge, skip the toast silently.
       return;
     }
-    // Clear before showing so a reload during the toast's own lifetime
-    // (or a later visit) never re-fires the same message.
-    window.sessionStorage.removeItem(STORAGE_KEY);
     show(pending);
   }
 
