@@ -80,6 +80,7 @@
     var container = button.closest("[data-status-error-container]") || button.parentElement;
     var existing = container.querySelector(".status-inline-error");
     if (existing) {
+      existing.textContent = message;
       return;
     }
     var msg = document.createElement("p");
@@ -88,6 +89,17 @@
     msg.textContent = message;
     msg.style.cssText = "color:#b91c1c;font-size:0.82rem;margin:4px 0 0;";
     container.appendChild(msg);
+  }
+
+  // Called at the start of every new attempt (mirrors archive_search.js's
+  // setSearchError("") reset) so a stale message from an earlier failed
+  // click never survives next to a control that goes on to succeed.
+  function clearInlineError(button) {
+    var container = button.closest("[data-status-error-container]") || button.parentElement;
+    var existing = container.querySelector(".status-inline-error");
+    if (existing) {
+      existing.remove();
+    }
   }
 
   function setButtonActive(button, statusSlug) {
@@ -168,6 +180,7 @@
     }
 
     setButtonLoading(button, true);
+    clearInlineError(button);
 
     // Lock sibling .status-btn controls in the same container so a second
     // click before this request resolves (e.g. 방문 예정 then immediately
@@ -359,6 +372,7 @@
     }
 
     window.TakuAPI.setLoading(button, true);
+    clearInlineError(button);
 
     var result;
     if (interestId) {
