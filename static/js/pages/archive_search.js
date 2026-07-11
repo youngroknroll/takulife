@@ -73,6 +73,19 @@
     }
   }
 
+  // #archive-results itself isn't a live region — it's a full-card-list
+  // innerHTML swap, and every card would read as "new" content, so making it
+  // live would flood a screen reader with the entire result list on every
+  // keystroke. Announce a short count instead via this separate region
+  // (_archive_search.html).
+  var resultsStatus = document.getElementById("archive-search-status");
+
+  function announceResultsStatus() {
+    if (!resultsStatus) { return; }
+    var count = results.querySelectorAll("article").length;
+    resultsStatus.textContent = count > 0 ? count + "건 표시됨" : "검색 결과가 없습니다";
+  }
+
   // Fetch the results fragment for `term` and swap it in. `push` controls
   // whether a new history entry is created (false when replaying popstate).
   function runSearch(term, push) {
@@ -107,6 +120,7 @@
         setLoading(false);
         if (html === null) { return; }
         results.innerHTML = html;
+        announceResultsStatus();
         if (push) {
           window.history.pushState({ q: term }, "", userUrl(params));
         }
