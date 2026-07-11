@@ -235,6 +235,17 @@
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleResize);
 
+    // Respect reduced-motion changes at runtime (same pattern as hscroll.js)
+    mqlReducedMotion.addEventListener("change", function () {
+      if (prefersReducedMotion()) {
+        stopAuto();
+        focused = null;
+        applyLayout(null);
+      } else if (!touched) {
+        startAuto();
+      }
+    });
+
     // Initial state: static fan under reduced-motion, else start the shuffle.
     computeScaleX();
     if (prefersReducedMotion()) {
