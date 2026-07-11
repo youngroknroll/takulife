@@ -4,7 +4,8 @@ _site_footer.html — global site footer rendered once from base.html on every p
 Gives every page a grounded close (the site had no footer before) and is the new
 home for the operating-principle/curation notes that previously sat on the
 consumer homepage. Modelled on standard discovery-service footers
-(brand + tagline + section links + notice + copyright).
+(brand + tagline + section links + notice, with legal/contact links and
+copyright grouped in the bottom bar).
 {% endcomment %}
 <footer class="site-footer">
   <div class="site-footer-inner">
@@ -23,17 +24,21 @@ consumer homepage. Modelled on standard discovery-service footers
         <a href="/archive/">저장한 행사</a>
         <a href="/archive/visits/">다녀온 기록</a>
       </div>
-      <div class="footer-col">
+      <div class="footer-col footer-col--notice">
         <h2>안내</h2>
         <p>공식 URL 기준으로만 큐레이션합니다.</p>
         <p>관리자 검수를 거친 행사만 게시됩니다.</p>
-        <a href="{% url 'legal-privacy-page' %}">개인정보처리방침</a>
-        <a href="{% url 'legal-terms-page' %}">이용약관</a>
-        <a href="mailto:{{ support_email }}">문의하기</a>
       </div>
     </nav>
   </div>
   <div class="site-footer-base">
-    <p>© 2026 logbetter</p>
+    <div class="site-footer-base-inner">
+      <nav class="footer-legal" aria-label="법적 고지 및 문의">
+        <a href="{% url 'legal-privacy-page' %}">개인정보처리방침</a>
+        <a href="{% url 'legal-terms-page' %}">이용약관</a>
+        <a href="mailto:{{ support_email }}">문의하기</a>
+      </nav>
+      <p>© 2026 logbetter</p>
+    </div>
   </div>
 </footer>
