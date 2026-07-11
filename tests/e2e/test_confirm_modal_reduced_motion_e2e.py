@@ -49,3 +49,60 @@ class TestConfirmModalDefaultMotion:
 
         expect(page.locator(OVERLAY)).to_be_hidden()
         assert page.locator(OVERLAY).get_attribute("hidden") is not None
+
+
+class TestConfirmModalTransitionDisabledByStylesheet:
+    """The matchMedia(reduced-motion) check only covers one of several ways a
+    transition can fail to run — a page stylesheet stripping `transition`
+    (e.g. a print sheet, some global motion toggle unrelated to the OS
+    setting) leaves close()'s old transitionend-only wait with nothing to
+    ever fire, so [hidden] never gets restored and the overlay stays up,
+    silently absorbing clicks on the page behind it."""
+
+    def test_closes_even_when_a_stylesheet_disables_the_transition(self, live_server, page, seed):
+        page.goto(live_server.url + "/")
+        page.add_style_tag(content=".confirm-overlay,.confirm-dialog{transition:none !important;}")
+
+        # Not awaited on purpose: TakuConfirm's promise only resolves once
+        # 아니오 is clicked below, and blocking here would deadlock the test.
+        page.evaluate("() => { window.TakuConfirm('테스트'); }")
+        expect(page.locator(OVERLAY)).to_have_class(re.compile(r"is-open"))
+        page.click(".confirm-no")
+
+        expect(page.locator(OVERLAY)).to_be_hidden()
+        assert page.locator(OVERLAY).get_attribute("hidden") is not None
+
+        # The overlay no longer absorbs clicks on the page behind it.
+        page.click('.site-nav a[href="/events/"]')
+        expect(page).to_have_url(re.compile(r"/events/$"))
+
+
+class TestConfirmModalReopenDuringClose:
+    """Reopening before the previous close() transition finishes must not
+    leave a stale transitionend listener / setTimeout armed against the
+    overlay's *next* open — otherwise the previous close's cleanup fires
+    mid-open and hides a modal that is supposed to be open."""
+
+    def test_reopen_before_close_transition_finishes_stays_open(self, live_server, page, seed):
+        page.goto(live_server.url + "/")
+
+        page.evaluate("() => { window.TakuConfirm('첫번째'); }")
+        expect(page.locator(OVERLAY)).to_have_class(re.compile(r"is-open"))
+        page.click(".confirm-no")
+
+        # A short delay lets the close transition actually start (removing
+        # is-open and re-adding it again within the same style flush would
+        # coalesce into a no-op transition that never fires transitionend at
+        # all, masking the bug) — but still well inside the .15s CSS
+        # transition, so the reopen genuinely interrupts it mid-flight.
+        page.wait_for_timeout(60)
+
+        page.evaluate("() => { window.TakuConfirm('둘째'); }")
+
+        # Outlast the original close transition/backstop before asserting —
+        # if a stale listener/timer survived the reopen, it would fire and
+        # hide the (now open) overlay somewhere in this window.
+        page.wait_for_timeout(500)
+
+        expect(page.locator(OVERLAY)).to_have_class(re.compile(r"is-open"))
+        assert page.locator(OVERLAY).get_attribute("hidden") is None

@@ -41,7 +41,9 @@
     }
     row.style.transition = "opacity .15s";
     row.style.opacity = "0";
-    row.addEventListener("transitionend", function () { row.remove(); }, { once: true });
+    var remove = function () { row.remove(); };
+    row.addEventListener("transitionend", remove, { once: true });
+    window.setTimeout(remove, 250);
   }
 
   // Graceful fallback to native confirm if confirm-modal.js didn't load.

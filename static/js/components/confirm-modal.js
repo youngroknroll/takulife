@@ -26,6 +26,26 @@
   var currentResolve = null;
   var previousFocus = null;
 
+  var closeTimer = null;
+  var closeListener = null;
+
+  function cancelPendingClose() {
+    if (closeTimer !== null) { window.clearTimeout(closeTimer); closeTimer = null; }
+    if (closeListener !== null) { overlay.removeEventListener("transitionend", closeListener); closeListener = null; }
+  }
+
+  function overlayTransitionMs() {
+    var raw = window.getComputedStyle(overlay).transitionDuration || "0s";
+    var max = 0;
+    raw.split(",").forEach(function (part) {
+      var value = parseFloat(part);
+      if (isNaN(value)) { return; }
+      var ms = part.indexOf("ms") !== -1 ? value : value * 1000;
+      if (ms > max) { max = ms; }
+    });
+    return max;
+  }
+
   // ── DOM builder (first use only) ──────────────────────────────────────────
 
   function buildDOM() {
@@ -120,6 +140,7 @@
 
     previousFocus = document.activeElement || document.body;
 
+    cancelPendingClose();
     overlay.removeAttribute("hidden");
 
     // rAF lets the browser paint the initial state before adding .is-open,
@@ -131,19 +152,28 @@
   }
 
   function close() {
+    cancelPendingClose();
     overlay.classList.remove("is-open");
 
-    // prefers-reduced-motion strips the CSS transition (confirm-modal.css),
-    // so transitionend never fires — restore hidden immediately instead of
-    // waiting for it.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    // getComputedStyle's transition-duration covers every reason the CSS
+    // transition might not fire — reduced-motion (confirm-modal.css strips
+    // it), a print stylesheet, a global motion toggle, or a backgrounded
+    // tab throttling rAF — not just the reduced-motion media query. A
+    // setTimeout backstop (transition duration + slack) still restores
+    // [hidden] even if transitionend never arrives for some other reason.
+    var duration = overlayTransitionMs();
+    if (duration === 0) {
       overlay.setAttribute("hidden", "");
     } else {
-      // Wait for the CSS transition to finish before hiding
-      overlay.addEventListener("transitionend", function handler() {
-        overlay.removeEventListener("transitionend", handler);
+      var finalize = function () {
+        cancelPendingClose();
         overlay.setAttribute("hidden", "");
-      });
+      };
+      closeListener = function (evt) {
+        if (evt.target === overlay) { finalize(); }
+      };
+      overlay.addEventListener("transitionend", closeListener);
+      closeTimer = window.setTimeout(finalize, duration + 100);
     }
 
     if (previousFocus && typeof previousFocus.focus === "function") {
