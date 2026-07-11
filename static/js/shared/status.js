@@ -279,6 +279,10 @@
       setButtonActive(button, statusSlug);
       return;
     }
+
+    // Nothing above matched (validation / notfound / server / unknown) —
+    // show the error instead of failing silently.
+    showInlineError(button, window.TakuAPI.formatError(result));
   }
 
   // ── interest toggle (♡/♥) — fully independent from the funnel ──
@@ -389,6 +393,10 @@
       }
       return;
     }
+
+    // Nothing above matched (validation / notfound / server / unknown) —
+    // show the error instead of failing silently.
+    showInlineError(button, window.TakuAPI.formatError(result));
   }
 
   // Idempotent: a button is wired at most once (data-status-bound guard), so
