@@ -24,8 +24,8 @@ from archive.queries import (
     list_user_visit_records,
     user_interest_count,
     user_interest_event_ids,
+    user_personal_entry_counts,
     user_personal_interest_ids,
-    user_personal_place_count,
     user_personal_statuses,
     user_status_counts,
     user_visit_category_values,
@@ -620,9 +620,9 @@ def archive_personal_entries(request):
 
     # Summary counts always come from the unfiltered set so the header cards
     # report the user's total collection, independent of any active search.
-    all_qs = list_user_personal_entries(user)
-    total_count = all_qs.count()
-    place_count = user_personal_place_count(user)
+    entry_counts = user_personal_entry_counts(user)
+    total_count = entry_counts["total_count"]
+    place_count = entry_counts["place_count"]
     goods_count = total_count - place_count
     has_entries = total_count > 0
 

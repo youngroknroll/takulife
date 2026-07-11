@@ -26,6 +26,7 @@ from events.queries import published_quality_warnings
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
 from ..queries import recent_staff_actions
+from ._helpers import _action_log_kwargs, _staff_action_metadata
 from .drafts import (
     MAX_BULK_APPROVE_DRAFT_IDS,
     StaffDraftApproveView,
@@ -224,10 +225,7 @@ def staff_draft_discovery_run(request):
         messages.success(request, f"수집 완료: {summary}" if summary else "수집이 완료되었습니다.")
     finally:
         StaffActionLog.objects.create(
-            actor=request.user,
-            action=action,
-            ip_address=request.META.get("REMOTE_ADDR"),
-            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            **_action_log_kwargs(_staff_action_metadata(request), action)
         )
 
     return redirect("staff:dashboard")

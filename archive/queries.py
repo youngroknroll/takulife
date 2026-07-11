@@ -140,13 +140,19 @@ def list_user_personal_entries(user, kind=None, *, q: str = ""):
     return queryset
 
 
-def user_personal_place_count(user) -> int:
-    """Return the number of a user's unofficial PLACE-kind entries.
+def user_personal_entry_counts(user) -> dict:
+    """Return summary counts for a user's unofficial (personal) entries.
 
-    Used by the archive/items/ page's summary cards alongside the caller's own
-    total count to derive goods_count (total - place) without an extra query.
+    Mirrors user_visit_record_counts' dict shape. Used by the archive/items/
+    page's summary cards: ``goods_count`` is a simple ``total_count -
+    place_count`` arithmetic derivation done by the caller (not a DB
+    aggregate), so it stays out of this dict.
     """
-    return PersonalEntry.objects.filter(user=user, kind=PersonalEntry.Kind.PLACE).count()
+    queryset = PersonalEntry.objects.filter(user=user)
+    return {
+        "total_count": queryset.count(),
+        "place_count": queryset.filter(kind=PersonalEntry.Kind.PLACE).count(),
+    }
 
 
 def user_personal_interest_ids(user) -> dict:

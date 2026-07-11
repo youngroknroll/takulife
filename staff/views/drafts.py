@@ -30,6 +30,7 @@ from drafts.services import (
 
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
+from ._helpers import _action_log_kwargs, _staff_action_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -124,15 +125,6 @@ def event_draft_detail(request, draft_id):
     )
 
 
-def _staff_action_metadata(request):
-    """Extract actor/ip/user-agent for a StaffActionLog entry from the request."""
-    return {
-        "actor": request.user,
-        "ip_address": request.META.get("REMOTE_ADDR"),
-        "user_agent": request.META.get("HTTP_USER_AGENT", ""),
-    }
-
-
 class StaffDraftApproveView(APIView):
     """Approve a pending draft and publish it as an Event.
 
@@ -152,11 +144,9 @@ class StaffDraftApproveView(APIView):
             with transaction.atomic():
                 result = approve_draft(draft_id=draft_id, actor=metadata["actor"])
                 StaffActionLog.objects.create(
-                    actor=metadata["actor"],
-                    action=StaffActionLog.Action.APPROVE,
-                    target_draft=result.draft,
-                    ip_address=metadata["ip_address"],
-                    user_agent=metadata["user_agent"],
+                    **_action_log_kwargs(
+                        metadata, StaffActionLog.Action.APPROVE, target_draft=result.draft
+                    )
                 )
         except DraftNotFoundError:
             return error_response("Not found.", 404)
@@ -249,11 +239,9 @@ class StaffDraftBulkApproveView(APIView):
             with transaction.atomic():
                 result = approve_draft(draft_id=draft_id, actor=metadata["actor"])
                 StaffActionLog.objects.create(
-                    actor=metadata["actor"],
-                    action=StaffActionLog.Action.APPROVE,
-                    target_draft=result.draft,
-                    ip_address=metadata["ip_address"],
-                    user_agent=metadata["user_agent"],
+                    **_action_log_kwargs(
+                        metadata, StaffActionLog.Action.APPROVE, target_draft=result.draft
+                    )
                 )
         except DraftNotFoundError:
             return "Not found."
@@ -306,11 +294,9 @@ class StaffDraftRejectView(APIView):
                     rejection_reason=rejection_reason,
                 )
                 StaffActionLog.objects.create(
-                    actor=metadata["actor"],
-                    action=StaffActionLog.Action.REJECT,
-                    target_draft=draft,
-                    ip_address=metadata["ip_address"],
-                    user_agent=metadata["user_agent"],
+                    **_action_log_kwargs(
+                        metadata, StaffActionLog.Action.REJECT, target_draft=draft
+                    )
                 )
         except DraftNotFoundError:
             return error_response("Not found.", 404)
