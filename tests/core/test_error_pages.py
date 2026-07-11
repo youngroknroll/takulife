@@ -38,3 +38,16 @@ def test_500_page_renders_without_request_context(client, monkeypatch):
     assert "500.html" in [t.name for t in resp.templates if t.name]
     body = resp.content.decode("utf-8", "ignore")
     assert "takulife" in body
+    assert 'href="mailto:"' not in body
+
+
+def test_home_page_footer_still_links_support_mailto(client, settings, db):
+    """Regression guard for the 500-page fix above: normal page renders
+    (where core.context_processors.support_email does run) must keep the
+    real mailto contact link in the footer."""
+
+    resp = client.get("/")
+
+    assert resp.status_code == 200
+    body = resp.content.decode("utf-8", "ignore")
+    assert f'href="mailto:{settings.SUPPORT_EMAIL}"' in body
