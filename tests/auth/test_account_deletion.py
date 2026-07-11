@@ -46,6 +46,80 @@ def test_wrong_password_does_not_delete_the_account(client, make_user, valid_pas
 
 
 @pytest.mark.django_db
+def test_five_wrong_passwords_lock_out_even_the_correct_password(
+    client, make_user, valid_password
+):
+    """A session-riding attacker cannot brute-force the password check
+    indefinitely: after 5 failures, the 6th POST is rejected without even
+    checking the (correct) password, and the account survives."""
+    user = make_user(password=valid_password)
+    client.force_login(user)
+
+    for _ in range(5):
+        response = client.post(DELETE_URL, {"password": "definitely-wrong"})
+        assert response.status_code == 200
+
+    locked_response = client.post(DELETE_URL, {"password": valid_password})
+
+    assert locked_response.status_code == 200
+    assert User.objects.filter(pk=user.pk).exists()
+
+
+@pytest.mark.django_db
+def test_lockout_shows_a_try_again_later_error(client, make_user, valid_password):
+    user = make_user(password=valid_password)
+    client.force_login(user)
+
+    for _ in range(5):
+        client.post(DELETE_URL, {"password": "definitely-wrong"})
+
+    locked_response = client.post(DELETE_URL, {"password": valid_password})
+
+    body = locked_response.content.decode("utf-8", "ignore")
+    assert "잠시 후 다시 시도" in body
+
+
+@pytest.mark.django_db
+def test_fewer_than_five_failures_then_correct_password_still_deletes(
+    client, make_user, valid_password
+):
+    """Below the lockout threshold, a subsequent correct password still
+    works — the failure counter must not accumulate across separate
+    deletion sessions once the password check succeeds."""
+    user = make_user(password=valid_password)
+    client.force_login(user)
+
+    for _ in range(3):
+        response = client.post(DELETE_URL, {"password": "definitely-wrong"})
+        assert response.status_code == 200
+
+    response = client.post(DELETE_URL, {"password": valid_password})
+
+    assert response.status_code == 302
+    assert not User.objects.filter(pk=user.pk).exists()
+
+
+@pytest.mark.django_db
+def test_lockout_counter_is_isolated_per_user(client, make_user, valid_password):
+    """One user's exhausted attempt budget must not lock out another user."""
+    attacker = make_user(password=valid_password)
+    victim = make_user(password=valid_password)
+
+    client.force_login(attacker)
+    for _ in range(5):
+        client.post(DELETE_URL, {"password": "definitely-wrong"})
+    locked_response = client.post(DELETE_URL, {"password": valid_password})
+    assert locked_response.status_code == 200
+    assert User.objects.filter(pk=attacker.pk).exists()
+
+    client.force_login(victim)
+    response = client.post(DELETE_URL, {"password": valid_password})
+
+    assert response.status_code == 302
+    assert not User.objects.filter(pk=victim.pk).exists()
+
+
+@pytest.mark.django_db
 def test_correct_password_deletes_user_owned_data_and_media(
     client, make_user, valid_password, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
 ):
