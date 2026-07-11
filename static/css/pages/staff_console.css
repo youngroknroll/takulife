@@ -160,7 +160,7 @@
   }
 
   .recent-actions-card-target a {
-    color: var(--brand);
+    color: var(--brand-ink);
     font-weight: 600;
     text-decoration: none;
   }

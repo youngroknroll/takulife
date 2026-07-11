@@ -148,7 +148,7 @@
 }
 
 .archive-nav-row a:hover {
-  color: var(--brand);
+  color: var(--brand-ink);
 }
 
 .archive-nav-row a:hover::after {
@@ -156,7 +156,7 @@
 }
 
 .archive-nav-row a.active {
-  color: var(--brand);
+  color: var(--brand-ink);
   font-weight: 700;
 }
 
