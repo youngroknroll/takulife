@@ -89,7 +89,10 @@
     }
     try {
       var response = await fetch(url, options);
-      return parseResponse(response);
+      // await is required: parseResponse's own await (response.json()) can
+      // reject, and an un-awaited return here would let that rejection
+      // escape this try/catch instead of hitting the network-error fallback.
+      return await parseResponse(response);
     } catch (_networkError) {
       return { ok: false, status: 0, data: null };
     }
@@ -337,7 +340,8 @@
           headers: buildUploadHeaders(),
           body: formData,
         });
-        return parseResponse(response);
+        // await required — see request()'s parseResponse call for why.
+        return await parseResponse(response);
       } catch (_networkError) {
         return { ok: false, status: 0, data: null };
       }
