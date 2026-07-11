@@ -51,3 +51,47 @@ class TestMobileOverflowSmoke:
         page.goto(f"{live_server.url}/staff/dashboard/")
 
         assert _no_horizontal_overflow(page)
+
+    def test_legal_privacy_has_no_horizontal_overflow(self, live_server, page, seed):
+        page.goto(f"{live_server.url}/legal/privacy/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_legal_terms_has_no_horizontal_overflow(self, live_server, page, seed):
+        page.goto(f"{live_server.url}/legal/terms/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_account_delete_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/accounts/delete/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_archive_visits_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/archive/visits/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_archive_personal_entries_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/archive/items/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_archive_interests_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/archive/interests/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_archive_visit_create_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/archive/visits/new/")
+
+        assert _no_horizontal_overflow(page)
