@@ -21,6 +21,12 @@
   var VISITS_URL = "/archive/visits/";
 
   var pendingItems = []; // [{ file, url }] — new photos queued for upload
+  // True while uploadNewPhotos() is sending a request. Read by renderNewGrid
+  // so remove buttons redrawn mid-upload (via discardPending) are born
+  // disabled too — otherwise a click during the await could splice out
+  // whatever item now sits at index 0, which is not necessarily the one
+  // actually in flight (QA: succeeded/pendingItems desync).
+  var uploadLocked = false;
 
   function setText(el, message) {
     if (el) { el.textContent = message; }
@@ -114,6 +120,7 @@
       remove.className = "photo-preview-remove";
       remove.textContent = "×";
       remove.setAttribute("aria-label", "제거: " + item.file.name);
+      remove.disabled = uploadLocked;
       remove.addEventListener("click", function () {
         removeNewAt(index, grid);
       });
@@ -122,6 +129,24 @@
       grid.appendChild(tile);
     });
     refreshCover();
+  }
+
+  // Locks/unlocks every control that can mutate pendingItems mid-upload:
+  // the trigger, the raw file input, and (via uploadLocked, read by
+  // renderNewGrid above) every remove button — including ones redrawn
+  // while locked.
+  function setUploadLock(locked, grid) {
+    uploadLocked = locked;
+    var trigger = document.getElementById("visit-photos-trigger");
+    var input = document.getElementById("visit-photos");
+    if (trigger) { trigger.disabled = locked; }
+    if (input) { input.disabled = locked; }
+    if (grid) {
+      var buttons = grid.querySelectorAll(".photo-preview-remove");
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = locked;
+      }
+    }
   }
 
   function discardPending(index, grid) {
@@ -231,6 +256,7 @@
   async function uploadNewPhotos(recordId, statusEl, grid) {
     var total = pendingItems.length;
     var succeeded = 0;
+    setUploadLock(true, grid);
     while (pendingItems.length > 0) {
       setText(statusEl, "사진 업로드 중 (" + (succeeded + 1) + "/" + total + ")...");
       var formData = new FormData();
@@ -240,6 +266,7 @@
         formData
       );
       if (result.status !== 201) {
+        setUploadLock(false, grid); // allow the grid to be edited again for a retry
         return { succeeded: succeeded, total: total };
       }
       // Drop the uploaded item so a retry (partial-failure resubmit) picks up
@@ -247,6 +274,7 @@
       discardPending(0, grid);
       succeeded++;
     }
+    setUploadLock(false, grid);
     return { succeeded: succeeded, total: total };
   }
 
