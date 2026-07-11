@@ -86,6 +86,16 @@
     resultsStatus.textContent = count > 0 ? count + "건 표시됨" : "검색 결과가 없습니다";
   }
 
+  // Inline failure notice (_archive_search.html). role="alert" already reaches
+  // screen readers, so this — not #archive-search-status — is the one place a
+  // failed search gets announced; a fresh attempt clears it up front so it
+  // never lingers over results a later, successful search replaces.
+  var searchError = document.getElementById("archive-search-error");
+
+  function setSearchError(message) {
+    if (searchError) { searchError.textContent = message; }
+  }
+
   // Fetch the results fragment for `term` and swap it in. `push` controls
   // whether a new history entry is created (false when replaying popstate).
   function runSearch(term, push) {
@@ -98,6 +108,7 @@
     fetchParams.set("partial", "1");
 
     setLoading(true);
+    setSearchError("");
 
     fetch(path + "?" + fetchParams.toString(), {
       credentials: "same-origin",
@@ -110,7 +121,10 @@
           window.location.href = response.url;
           return null;
         }
-        if (!response.ok) { return null; }
+        if (!response.ok) {
+          setSearchError("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+          return null;
+        }
         return response.text();
       })
       .then(function (html) {
@@ -132,6 +146,7 @@
         if (error && error.name === "AbortError") { return; }
         // Network failure: drop the loading state and leave current results.
         setLoading(false);
+        setSearchError("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       });
   }
 
