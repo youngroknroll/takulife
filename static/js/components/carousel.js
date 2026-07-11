@@ -197,29 +197,35 @@
       }
     });
 
-    // ── pointer interaction (motion-gated) ───────────────────────────────
-    if (!prefersReducedMotion()) {
-      // Pointer over the deck takes control and halts the shuffle.
-      track.addEventListener("mouseenter", stopAuto);
-      track.addEventListener("mousemove", function (e) {
-        stopAuto();
-        var f = focusFromX(e.clientX);
-        if (f !== focused) {
-          focused = f;
-          applyLayout(f);
-        }
-      });
-      track.addEventListener("mouseleave", function () {
-        if (!touched) { startAuto(); } // resume sweeping
-      });
-      // Touch has no hover — stop on first touch and never resume (see
-      // `touched` above). iOS also fires a synthetic mouseleave/focusout
-      // after a tap, which the touched guard on those handlers also covers.
-      track.addEventListener("touchstart", function () {
-        touched = true;
-        stopAuto();
-      }, { passive: true });
-    }
+    // ── pointer interaction (motion re-checked at call time) ────────────
+    // Handlers are always bound — like hscroll.js's shouldAutoplay(), motion
+    // is re-checked on every call instead of gating registration at init —
+    // so a runtime prefers-reduced-motion toggle takes effect in both
+    // directions: switching to reduce mid-session stops cursor tracking
+    // from lifting cards, and switching away from reduce (having loaded
+    // under reduce, where init-time gating used to skip binding entirely)
+    // makes hover tracking work without a page reload.
+    // Pointer over the deck takes control and halts the shuffle.
+    track.addEventListener("mouseenter", stopAuto);
+    track.addEventListener("mousemove", function (e) {
+      if (prefersReducedMotion()) { return; }
+      stopAuto();
+      var f = focusFromX(e.clientX);
+      if (f !== focused) {
+        focused = f;
+        applyLayout(f);
+      }
+    });
+    track.addEventListener("mouseleave", function () {
+      if (!touched) { startAuto(); } // resume sweeping (startAuto no-ops under reduced motion)
+    });
+    // Touch has no hover — stop on first touch and never resume (see
+    // `touched` above). iOS also fires a synthetic mouseleave/focusout
+    // after a tap, which the touched guard on those handlers also covers.
+    track.addEventListener("touchstart", function () {
+      touched = true;
+      stopAuto();
+    }, { passive: true });
 
     // Keep the fan inside the viewport as it's resized/rotated (debounced —
     // no need to recompute on every intermediate resize tick).
