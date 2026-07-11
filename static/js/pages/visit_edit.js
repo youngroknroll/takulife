@@ -124,10 +124,14 @@
     refreshCover();
   }
 
-  function removeNewAt(index, grid) {
+  function discardPending(index, grid) {
     var removed = pendingItems.splice(index, 1)[0];
     if (removed) { URL.revokeObjectURL(removed.url); }
     renderNewGrid(grid);
+  }
+
+  function removeNewAt(index, grid) {
+    discardPending(index, grid);
 
     var buttons = grid.querySelectorAll(".photo-preview-remove");
     if (buttons.length > 0) {
@@ -224,21 +228,26 @@
 
   // ── sequential upload of new photos ────────────────────────────────────────
 
-  async function uploadNewPhotos(recordId, statusEl) {
+  async function uploadNewPhotos(recordId, statusEl, grid) {
     var total = pendingItems.length;
-    for (var i = 0; i < pendingItems.length; i++) {
-      setText(statusEl, "사진 업로드 중 (" + (i + 1) + "/" + total + ")...");
+    var succeeded = 0;
+    while (pendingItems.length > 0) {
+      setText(statusEl, "사진 업로드 중 (" + (succeeded + 1) + "/" + total + ")...");
       var formData = new FormData();
-      formData.append("image", pendingItems[i].file);
+      formData.append("image", pendingItems[0].file);
       var result = await window.TakuAPI.upload(
         "/api/visit-records/" + recordId + "/photos/",
         formData
       );
       if (result.status !== 201) {
-        return { succeeded: i, total: total };
+        return { succeeded: succeeded, total: total };
       }
+      // Drop the uploaded item so a retry (partial-failure resubmit) picks up
+      // where this attempt left off instead of re-sending it.
+      discardPending(0, grid);
+      succeeded++;
     }
-    return { succeeded: total, total: total };
+    return { succeeded: succeeded, total: total };
   }
 
   // ── save (PATCH + new photos) and record delete ────────────────────────────
@@ -311,7 +320,7 @@
         return;
       }
 
-      var outcome = await uploadNewPhotos(recordId, statusEl);
+      var outcome = await uploadNewPhotos(recordId, statusEl, grid);
       if (outcome.succeeded === outcome.total) {
         setText(statusEl, "저장 완료. 이동 중...");
         window.location.assign(VISITS_URL);
