@@ -8,11 +8,11 @@
 {% endblock %}
 
 {% block content %}
-<main class="auth-container">
+<main class="auth-container" id="content">
   <h1>회원가입 마무리</h1>
   <p>{{ account.get_provider.name }} 계정으로 로그인합니다. 아래 정보를 확인해 가입을 완료해 주세요.</p>
   {% if form.non_field_errors %}
-    <ul class="auth-error">
+    <ul class="auth-error" role="alert">
       {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
     </ul>
   {% endif %}

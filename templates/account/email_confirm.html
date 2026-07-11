@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<main class="auth-container">
+<main class="auth-container" id="content">
   <h1>이메일 주소 확인</h1>
   {% if confirmation %}
     {% user_display confirmation.email_address.user as user_display %}
@@ -20,10 +20,10 @@
         <button type="submit" class="btn btn-primary btn-block">확인</button>
       </form>
     {% else %}
-      <p class="auth-error">이 이메일은 이미 다른 계정에서 확인되었습니다.</p>
+      <p class="auth-error" role="alert">이 이메일은 이미 다른 계정에서 확인되었습니다.</p>
     {% endif %}
   {% else %}
-    <p class="auth-error">인증 링크가 만료되었거나 올바르지 않습니다.</p>
+    <p class="auth-error" role="alert">인증 링크가 만료되었거나 올바르지 않습니다.</p>
     <p><a href="{% url 'account_email' %}">인증 메일을 다시 요청하기</a></p>
   {% endif %}
 </main>

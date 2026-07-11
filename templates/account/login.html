@@ -10,22 +10,20 @@
 {% endblock %}
 
 {% block content %}
-<main class="auth-container">
+<main class="auth-container" id="content">
   <h1>로그인</h1>
-  {% if form.errors %}
-    <p class="auth-error">이메일 또는 비밀번호가 올바르지 않습니다.</p>
+  {% if form.non_field_errors %}
+    {# Fixed generic copy on purpose — allauth's actual invalid_login text is
+       untranslated (no ko locale) and revealing which of login/password was
+       wrong is its own minor info leak. Field-level errors (blank input)
+       render next to their own field below instead. #}
+    <p class="auth-error" role="alert">이메일 또는 비밀번호가 올바르지 않습니다.</p>
   {% endif %}
   <form method="post" action="{% url 'account_login' %}">
     {% csrf_token %}
     {{ redirect_field }}
-    <div class="form-group">
-      <label for="id_login">이메일</label>
-      {{ form.login }}
-    </div>
-    <div class="form-group">
-      <label for="id_password">비밀번호</label>
-      {{ form.password }}
-    </div>
+    {% include "core/partials/_auth_field.html" with field=form.login label="이메일" %}
+    {% include "core/partials/_auth_field.html" with field=form.password label="비밀번호" %}
     <button type="submit" class="btn btn-primary btn-block">로그인</button>
   </form>
   {% if google_oauth_configured %}

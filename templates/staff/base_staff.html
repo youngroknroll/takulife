@@ -13,6 +13,13 @@ this only replaces layout blocks.
 <link rel="stylesheet" href="{% static 'css/components/staff-shell.css' %}">
 {% endblock %}
 
+{% comment %}
+The public skip link (base.html) targets #content, which staff pages don't
+have (they use #staff-main) — suppressed here since _console_shell.html
+already ships its own skip link pointed at the right target.
+{% endcomment %}
+{% block skip_link %}{% endblock %}
+
 {% block site_header %}
 {% include "staff/_console_shell.html" %}
 {% endblock %}

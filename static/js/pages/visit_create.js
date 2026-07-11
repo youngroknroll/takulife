@@ -24,6 +24,12 @@
 
   // pendingItems: [{ file, url }] — single source of truth for the queue.
   var pendingItems = [];
+  // True while uploadAll() is sending a request. Read by renderGrid so
+  // remove buttons redrawn mid-upload are born disabled too — otherwise
+  // removing an item ahead of the in-flight index shifts pendingItems under
+  // the loop's fixed index, silently skipping a later, still-pending item
+  // (no retry exists on this page, so it would be lost outright).
+  var uploadLocked = false;
 
   // ── DOM helpers ────────────────────────────────────────────────────────────
 
@@ -79,6 +85,7 @@
       remove.className = "photo-preview-remove";
       remove.textContent = "×";
       remove.setAttribute("aria-label", "제거: " + item.file.name);
+      remove.disabled = uploadLocked;
       remove.addEventListener("click", function () {
         removeAt(index, grid);
       });
@@ -86,6 +93,24 @@
 
       grid.appendChild(tile);
     });
+  }
+
+  // Locks/unlocks every control that can mutate pendingItems mid-upload:
+  // the trigger, the raw file input, and (via uploadLocked, read by
+  // renderGrid above) every remove button — including ones redrawn while
+  // locked.
+  function setUploadLock(locked, grid) {
+    uploadLocked = locked;
+    var trigger = document.getElementById("visit-photos-trigger");
+    var input = document.getElementById("visit-photos");
+    if (trigger) { trigger.disabled = locked; }
+    if (input) { input.disabled = locked; }
+    if (grid) {
+      var buttons = grid.querySelectorAll(".photo-preview-remove");
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = locked;
+      }
+    }
   }
 
   function removeAt(index, grid) {
@@ -154,19 +179,22 @@
     );
   }
 
-  async function uploadAll(recordId, statusEl) {
+  async function uploadAll(recordId, statusEl, grid) {
     var total = pendingItems.length;
     var succeeded = 0;
 
+    setUploadLock(true, grid);
     for (var i = 0; i < pendingItems.length; i++) {
       setText(statusEl, "사진 업로드 중 (" + (i + 1) + "/" + total + ")...");
       var result = await uploadOne(recordId, pendingItems[i].file);
       if (result.status === 201) {
         succeeded += 1;
       } else {
+        setUploadLock(false, grid);
         return { succeeded: succeeded, total: total, failedAt: i };
       }
     }
+    setUploadLock(false, grid);
     return { succeeded: succeeded, total: total, failedAt: -1 };
   }
 
@@ -248,7 +276,7 @@
         return;
       }
 
-      var outcome = await uploadAll(recordId, statusEl);
+      var outcome = await uploadAll(recordId, statusEl, grid);
 
       if (outcome.failedAt === -1) {
         setText(statusEl, "저장 완료. 이동 중...");

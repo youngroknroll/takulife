@@ -13,7 +13,7 @@
     padding: 0.875rem;
     align-self: start;
     position: sticky;
-    top: 0.75rem;
+    top: calc(var(--site-header-h) + 0.75rem);
   }
   .filters h1 {
     margin: 0 0 0.25rem;

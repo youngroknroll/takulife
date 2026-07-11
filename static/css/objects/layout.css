@@ -45,7 +45,7 @@
   gap: 0.75rem;
   align-self: start;
   position: sticky;
-  top: 0.75rem;
+  top: calc(var(--site-header-h) + 0.75rem);
 }
 .rule-list {
   margin: 0.75rem 0 0;

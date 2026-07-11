@@ -11,6 +11,26 @@
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
+  /* A long email otherwise forces .topbar-auth wide enough to push
+     .site-nav's 3 links into wrapping, growing the sticky .site-header to
+     2 lines (measured 905px viewport, staff account: 65px → 153px, and
+     .aside/.filters sticky top offset is exactly one line's worth short of
+     that — see site-chrome.css --site-header-h). 15rem is sized (Chromium,
+     905px viewport, staff links only — no admin) so brand + nav one line +
+     username + 스태프 콘솔/회원 탈퇴/로그아웃 all still fit: measured
+     865px content width - 73px brand - 240px one-line nav - 36px header
+     gaps - 219.7px (3 topbar-link widths) - 24px topbar-auth gaps =
+     272px max before nav is forced to wrap; 15rem/240px leaves ~32px
+     margin. Verified live: header stays 65px/nav 40px with this cap even
+     at a pathological 57-char email, and short emails (~150px) are
+     untouched (never reach the cap). Superuser adds a 4th link (관리자,
+     ~85px) which this budget doesn't cover — nav still wraps to 2 lines
+     there (measured 109px header, better than uncapped but not 1-line) —
+     accepted as a known residual gap, not fixed here. */
+  max-width: 15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
 }
 
 .topbar-link {

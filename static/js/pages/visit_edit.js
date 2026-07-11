@@ -21,6 +21,12 @@
   var VISITS_URL = "/archive/visits/";
 
   var pendingItems = []; // [{ file, url }] — new photos queued for upload
+  // True while uploadNewPhotos() is sending a request. Read by renderNewGrid
+  // so remove buttons redrawn mid-upload (via discardPending) are born
+  // disabled too — otherwise a click during the await could splice out
+  // whatever item now sits at index 0, which is not necessarily the one
+  // actually in flight (QA: succeeded/pendingItems desync).
+  var uploadLocked = false;
 
   function setText(el, message) {
     if (el) { el.textContent = message; }
@@ -114,6 +120,7 @@
       remove.className = "photo-preview-remove";
       remove.textContent = "×";
       remove.setAttribute("aria-label", "제거: " + item.file.name);
+      remove.disabled = uploadLocked;
       remove.addEventListener("click", function () {
         removeNewAt(index, grid);
       });
@@ -124,10 +131,32 @@
     refreshCover();
   }
 
-  function removeNewAt(index, grid) {
+  // Locks/unlocks every control that can mutate pendingItems mid-upload:
+  // the trigger, the raw file input, and (via uploadLocked, read by
+  // renderNewGrid above) every remove button — including ones redrawn
+  // while locked.
+  function setUploadLock(locked, grid) {
+    uploadLocked = locked;
+    var trigger = document.getElementById("visit-photos-trigger");
+    var input = document.getElementById("visit-photos");
+    if (trigger) { trigger.disabled = locked; }
+    if (input) { input.disabled = locked; }
+    if (grid) {
+      var buttons = grid.querySelectorAll(".photo-preview-remove");
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = locked;
+      }
+    }
+  }
+
+  function discardPending(index, grid) {
     var removed = pendingItems.splice(index, 1)[0];
     if (removed) { URL.revokeObjectURL(removed.url); }
     renderNewGrid(grid);
+  }
+
+  function removeNewAt(index, grid) {
+    discardPending(index, grid);
 
     var buttons = grid.querySelectorAll(".photo-preview-remove");
     if (buttons.length > 0) {
@@ -224,21 +253,29 @@
 
   // ── sequential upload of new photos ────────────────────────────────────────
 
-  async function uploadNewPhotos(recordId, statusEl) {
+  async function uploadNewPhotos(recordId, statusEl, grid) {
     var total = pendingItems.length;
-    for (var i = 0; i < pendingItems.length; i++) {
-      setText(statusEl, "사진 업로드 중 (" + (i + 1) + "/" + total + ")...");
+    var succeeded = 0;
+    setUploadLock(true, grid);
+    while (pendingItems.length > 0) {
+      setText(statusEl, "사진 업로드 중 (" + (succeeded + 1) + "/" + total + ")...");
       var formData = new FormData();
-      formData.append("image", pendingItems[i].file);
+      formData.append("image", pendingItems[0].file);
       var result = await window.TakuAPI.upload(
         "/api/visit-records/" + recordId + "/photos/",
         formData
       );
       if (result.status !== 201) {
-        return { succeeded: i, total: total };
+        setUploadLock(false, grid); // allow the grid to be edited again for a retry
+        return { succeeded: succeeded, total: total };
       }
+      // Drop the uploaded item so a retry (partial-failure resubmit) picks up
+      // where this attempt left off instead of re-sending it.
+      discardPending(0, grid);
+      succeeded++;
     }
-    return { succeeded: total, total: total };
+    setUploadLock(false, grid);
+    return { succeeded: succeeded, total: total };
   }
 
   // ── save (PATCH + new photos) and record delete ────────────────────────────
@@ -311,7 +348,7 @@
         return;
       }
 
-      var outcome = await uploadNewPhotos(recordId, statusEl);
+      var outcome = await uploadNewPhotos(recordId, statusEl, grid);
       if (outcome.succeeded === outcome.total) {
         setText(statusEl, "저장 완료. 이동 중...");
         window.location.assign(VISITS_URL);

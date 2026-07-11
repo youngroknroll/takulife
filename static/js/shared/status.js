@@ -76,18 +76,30 @@
     }
   }
 
-  function showCsrfError(button) {
+  function showInlineError(button, message) {
     var container = button.closest("[data-status-error-container]") || button.parentElement;
-    var existing = container.querySelector(".status-csrf-error");
+    var existing = container.querySelector(".status-inline-error");
     if (existing) {
+      existing.textContent = message;
       return;
     }
     var msg = document.createElement("p");
-    msg.className = "status-csrf-error";
+    msg.className = "status-inline-error";
     msg.setAttribute("role", "alert");
-    msg.textContent = "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.";
+    msg.textContent = message;
     msg.style.cssText = "color:#b91c1c;font-size:0.82rem;margin:4px 0 0;";
     container.appendChild(msg);
+  }
+
+  // Called at the start of every new attempt (mirrors archive_search.js's
+  // setSearchError("") reset) so a stale message from an earlier failed
+  // click never survives next to a control that goes on to succeed.
+  function clearInlineError(button) {
+    var container = button.closest("[data-status-error-container]") || button.parentElement;
+    var existing = container.querySelector(".status-inline-error");
+    if (existing) {
+      existing.remove();
+    }
   }
 
   function setButtonActive(button, statusSlug) {
@@ -144,20 +156,20 @@
 
     var isActive = button.classList.contains("active");
 
+    // Shared with the concurrent-click lock below.
+    var container = button.closest("[data-status-error-container]");
+
     // On a discovery card 관심/방문 예정 sit in the same row but an event holds
     // only one status. Find the sibling button that currently owns the
     // registration so this click can switch the status over instead of
     // conflicting. (Archive "change" controls never switch siblings.)
     var activeSibling = null;
-    if (action !== "change") {
-      var container = button.closest("[data-status-error-container]");
-      if (container) {
-        var siblings = container.querySelectorAll("button[data-status-action]");
-        for (var i = 0; i < siblings.length; i++) {
-          if (siblings[i] !== button && siblings[i].dataset.statusId) {
-            activeSibling = siblings[i];
-            break;
-          }
+    if (action !== "change" && container) {
+      var siblings = container.querySelectorAll("button[data-status-action]");
+      for (var i = 0; i < siblings.length; i++) {
+        if (siblings[i] !== button && siblings[i].dataset.statusId) {
+          activeSibling = siblings[i];
+          break;
         }
       }
     }
@@ -168,6 +180,28 @@
     }
 
     setButtonLoading(button, true);
+    clearInlineError(button);
+
+    // Lock sibling .status-btn controls in the same container so a second
+    // click before this request resolves (e.g. 방문 예정 then immediately
+    // 방문 완료) can't race it — the loser used to fall through to a
+    // silently-discarded 409 (Slow 3G repro).
+    var lockedSiblings = [];
+    if (container) {
+      var statusButtons = container.querySelectorAll(".status-btn");
+      for (var s = 0; s < statusButtons.length; s++) {
+        if (statusButtons[s] !== button && !statusButtons[s].disabled) {
+          statusButtons[s].disabled = true;
+          lockedSiblings.push(statusButtons[s]);
+        }
+      }
+    }
+
+    function unlockSiblings() {
+      lockedSiblings.forEach(function (sibling) {
+        sibling.disabled = false;
+      });
+    }
 
     // Discovery semantics (empty action):
     //   active button         → DELETE  (cancel its own registration)
@@ -202,6 +236,7 @@
       } else {
         // No subject to register against — nothing to do.
         setButtonLoading(button, false);
+        unlockSiblings();
         return;
       }
       result = await window.TakuAPI.post("/api/user-event-statuses/", payload);
@@ -214,11 +249,19 @@
     if (kind === "auth") {
       // session expired mid-page — prompt re-login rather than silently redirect
       window.TakuAPI.promptLogin();
+      unlockSiblings();
       return;
     }
 
-    if (kind === "csrf" || kind === "network") {
-      showCsrfError(button);
+    if (kind === "network") {
+      showInlineError(button, window.TakuAPI.formatError(result));
+      unlockSiblings();
+      return;
+    }
+
+    if (kind === "csrf") {
+      showInlineError(button, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      unlockSiblings();
       return;
     }
 
@@ -227,6 +270,7 @@
       if (code === "duplicate_user_event_status") {
         setButtonAlreadyAdded(button);
       }
+      unlockSiblings();
       return;
     }
 
@@ -245,6 +289,7 @@
           // Storage blocked — proceed without the toast.
         }
       }
+      unlockSiblings();
       window.location.reload();
       return;
     }
@@ -253,6 +298,7 @@
       delete button.dataset.statusId;
       setButtonDefault(button);
       removeRowIfOptedIn(button);
+      unlockSiblings();
       return;
     }
 
@@ -272,8 +318,14 @@
         button.dataset.statusId = newId;
       }
       setButtonActive(button, statusSlug);
+      unlockSiblings();
       return;
     }
+
+    // Nothing above matched (validation / notfound / server / unknown) —
+    // show the error instead of failing silently.
+    showInlineError(button, window.TakuAPI.formatError(result));
+    unlockSiblings();
   }
 
   // ── interest toggle (♡/♥) — fully independent from the funnel ──
@@ -320,6 +372,7 @@
     }
 
     window.TakuAPI.setLoading(button, true);
+    clearInlineError(button);
 
     var result;
     if (interestId) {
@@ -343,8 +396,13 @@
       return;
     }
 
-    if (kind === "csrf" || kind === "network") {
-      showCsrfError(button);
+    if (kind === "network") {
+      showInlineError(button, window.TakuAPI.formatError(result));
+      return;
+    }
+
+    if (kind === "csrf") {
+      showInlineError(button, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
       return;
     }
 
@@ -379,6 +437,10 @@
       }
       return;
     }
+
+    // Nothing above matched (validation / notfound / server / unknown) —
+    // show the error instead of failing silently.
+    showInlineError(button, window.TakuAPI.formatError(result));
   }
 
   // Idempotent: a button is wired at most once (data-status-bound guard), so
