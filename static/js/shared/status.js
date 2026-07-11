@@ -86,10 +86,9 @@
       return;
     }
     var msg = document.createElement("p");
-    msg.className = "status-inline-error";
+    msg.className = "status-inline-error inline-error";
     msg.setAttribute("role", "alert");
     msg.textContent = message;
-    msg.style.cssText = "color:#b91c1c;font-size:0.82rem;margin:4px 0 0;";
     container.appendChild(msg);
   }
 

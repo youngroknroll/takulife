@@ -329,6 +329,24 @@ class TestArchiveSearchIsolation:
 
 
 @pytest.mark.django_db
+class TestArchiveSearchErrorElementSharedStyle:
+    """The archive search partial's error line used a hardcoded inline
+    style (#b91c1c/0.82rem/4px) instead of the shared, token-based
+    .inline-error class (auth.css's .field-error uses the same tokens) —
+    verifies the rendered markup was migrated onto the shared class with no
+    leftover inline style."""
+
+    def test_archive_search_error_element_uses_shared_inline_error_class(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/archive/")
+
+        assert resp.status_code == 200
+        content = resp.content.decode()
+        assert '<p id="archive-search-error" class="inline-error" role="alert"></p>' in content
+
+
+@pytest.mark.django_db
 class TestQNormalisation:
     """q is strip()[:100]-normalised before filtering."""
 
