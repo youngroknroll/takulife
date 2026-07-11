@@ -65,6 +65,21 @@ ul.auth-error li {
   margin: 0.125rem 0;
 }
 
+/* Per-field error (below its input, not the boxed .auth-error summary
+   above). Same values as staff_events.css's .field-error — the two sheets
+   never load together, kept identical for one visual language. */
+.field-error {
+  color: var(--rose-ink);
+  font-size: var(--fs-xs);
+  margin: 0.25rem 0 0;
+  list-style: none;
+  padding: 0;
+}
+
+.field-error li {
+  margin: 0;
+}
+
 /* In-copy nav links ("비밀번호를 잊으셨나요?", "회원가입", "로그인 페이지로
    돌아가기" etc.) — every account/*.html template renders these as a bare
    `<a>` inside a `<p>` directly under .auth-container, with no class
