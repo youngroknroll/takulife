@@ -29,6 +29,7 @@
   {% block shell_css %}{% endblock %}{% block extra_css %}{% endblock %}
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
+  {% block skip_link %}<a class="skip-link" href="#content">본문으로 건너뛰기</a>{% endblock %}
   {% block site_header %}{% include "core/partials/_site_header.html" %}{% endblock %}
   {% if messages %}
     <ul class="site-messages" role="status">

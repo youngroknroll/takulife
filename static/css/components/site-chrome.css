@@ -1,3 +1,27 @@
+/* Skip link: visually hidden until focused, then pinned top-left. Same
+   values as staff-shell.css's .skip-link (same component, public shell)
+   — z-index 100 clears .site-header's 50 below. Both stylesheets load on
+   /staff/* pages, but the two rules are identical so cascade order between
+   them never produces a visible difference. */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.5rem 0.875rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 0.75rem;
+  top: 0.75rem;
+}
+
 /* ── global site header ─────────────────────────────────────── */
 /*
  * Persistent frame rendered once from base.html (_site_header.html). Replaces
