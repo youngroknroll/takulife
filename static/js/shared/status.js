@@ -76,16 +76,16 @@
     }
   }
 
-  function showCsrfError(button) {
+  function showInlineError(button, message) {
     var container = button.closest("[data-status-error-container]") || button.parentElement;
-    var existing = container.querySelector(".status-csrf-error");
+    var existing = container.querySelector(".status-inline-error");
     if (existing) {
       return;
     }
     var msg = document.createElement("p");
-    msg.className = "status-csrf-error";
+    msg.className = "status-inline-error";
     msg.setAttribute("role", "alert");
-    msg.textContent = "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.";
+    msg.textContent = message;
     msg.style.cssText = "color:#b91c1c;font-size:0.82rem;margin:4px 0 0;";
     container.appendChild(msg);
   }
@@ -217,8 +217,13 @@
       return;
     }
 
-    if (kind === "csrf" || kind === "network") {
-      showCsrfError(button);
+    if (kind === "network") {
+      showInlineError(button, window.TakuAPI.formatError(result));
+      return;
+    }
+
+    if (kind === "csrf") {
+      showInlineError(button, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
       return;
     }
 
@@ -343,8 +348,13 @@
       return;
     }
 
-    if (kind === "csrf" || kind === "network") {
-      showCsrfError(button);
+    if (kind === "network") {
+      showInlineError(button, window.TakuAPI.formatError(result));
+      return;
+    }
+
+    if (kind === "csrf") {
+      showInlineError(button, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
       return;
     }
 
