@@ -37,8 +37,10 @@ class EventPosterView(APIView):
     """Staff-only endpoint to upload or delete an event's poster image.
 
     Authentication is explicitly restricted to SessionAuthentication to prevent
-    BasicAuth from bypassing CSRF protection (the project has no global DRF
-    DEFAULT_AUTHENTICATION_CLASSES setting, so DRF's default includes BasicAuth).
+    BasicAuth from bypassing CSRF protection. The project's global DRF
+    DEFAULT_AUTHENTICATION_CLASSES setting (config/settings.py) already pins
+    this, but the local override stays as an explicit, view-level guard so
+    this admin-only endpoint doesn't silently depend on the global setting.
     """
 
     authentication_classes = [SessionAuthentication]
