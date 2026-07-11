@@ -133,11 +133,18 @@
   function close() {
     overlay.classList.remove("is-open");
 
-    // Wait for the CSS transition to finish before hiding
-    overlay.addEventListener("transitionend", function handler() {
-      overlay.removeEventListener("transitionend", handler);
+    // prefers-reduced-motion strips the CSS transition (confirm-modal.css),
+    // so transitionend never fires — restore hidden immediately instead of
+    // waiting for it.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       overlay.setAttribute("hidden", "");
-    });
+    } else {
+      // Wait for the CSS transition to finish before hiding
+      overlay.addEventListener("transitionend", function handler() {
+        overlay.removeEventListener("transitionend", handler);
+        overlay.setAttribute("hidden", "");
+      });
+    }
 
     if (previousFocus && typeof previousFocus.focus === "function") {
       previousFocus.focus();
