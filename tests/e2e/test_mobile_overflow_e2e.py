@@ -1,9 +1,9 @@
 """E2E: mobile viewport horizontal-overflow smoke (375x812 phone width).
 
 Automated re-run of the manual §10 Gate B check ("320px 이상에서 페이지 단위
-수평 스크롤 없음") across the four pages the mobile-first plan flagged —
-catches a CSS/JS regression that widens `body.scrollWidth` without waiting
-for the next manual pass.
+수평 스크롤 없음") across the pages the mobile-first plan flagged (see the
+test cases below for the current route list) — catches a CSS/JS regression
+that widens `body.scrollWidth` without waiting for the next manual pass.
 """
 import pytest
 
