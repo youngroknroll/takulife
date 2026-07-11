@@ -9,6 +9,7 @@ from core.vocab import CATEGORY
 
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
+from ._helpers import _action_log_kwargs, _staff_action_metadata
 
 
 @staff_console_required
@@ -37,11 +38,9 @@ def staff_home_categories(request):
         with transaction.atomic():
             config.save()
             StaffActionLog.objects.create(
-                actor=request.user,
-                action=StaffActionLog.Action.HOME_CATEGORIES,
-                target_draft=None,
-                ip_address=request.META.get("REMOTE_ADDR"),
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                **_action_log_kwargs(
+                    _staff_action_metadata(request), StaffActionLog.Action.HOME_CATEGORIES
+                )
             )
 
         messages.success(request, "카테고리 설정이 저장되었습니다.")

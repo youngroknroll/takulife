@@ -40,6 +40,7 @@ from ..services import (
     delete_event,
     event_archive_reference_counts,
 )
+from ._helpers import _action_log_kwargs, _staff_action_metadata
 
 # Korean labels for the 5 QUALITY_WARNING_KEYS, shared by the filter chips
 # and the per-row quality badges below. Mirrors the strings already used in
@@ -251,11 +252,11 @@ def staff_event_create(request):
                     summary=form_values["summary"],
                 )
                 StaffActionLog.objects.create(
-                    actor=request.user,
-                    action=StaffActionLog.Action.EVENT_CREATE,
-                    target_event=event,
-                    ip_address=request.META.get("REMOTE_ADDR"),
-                    user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                    **_action_log_kwargs(
+                        _staff_action_metadata(request),
+                        StaffActionLog.Action.EVENT_CREATE,
+                        target_event=event,
+                    )
                 )
         except MissingOfficialUrlError:
             field_errors["official_url"] = "공식 URL을 입력해야 합니다."
@@ -347,11 +348,11 @@ def staff_event_edit(request, pk):
                         summary=form_values["summary"],
                     )
                     StaffActionLog.objects.create(
-                        actor=request.user,
-                        action=StaffActionLog.Action.EVENT_UPDATE,
-                        target_event=event,
-                        ip_address=request.META.get("REMOTE_ADDR"),
-                        user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                        **_action_log_kwargs(
+                            _staff_action_metadata(request),
+                            StaffActionLog.Action.EVENT_UPDATE,
+                            target_event=event,
+                        )
                     )
             except MissingOfficialUrlError:
                 field_errors["official_url"] = "공식 URL을 입력해야 합니다."
@@ -442,11 +443,9 @@ def staff_event_toggle_publish(request, pk):
                 action = StaffActionLog.Action.EVENT_REPUBLISH
                 success_message = "다시 게시되었습니다."
             StaffActionLog.objects.create(
-                actor=request.user,
-                action=action,
-                target_event=event,
-                ip_address=request.META.get("REMOTE_ADDR"),
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                **_action_log_kwargs(
+                    _staff_action_metadata(request), action, target_event=event
+                )
             )
     except MissingOfficialUrlError:
         messages.error(request, "공식 URL이 없어 다시 게시할 수 없습니다.")
@@ -507,11 +506,11 @@ def staff_event_delete(request, pk):
     try:
         with transaction.atomic():
             StaffActionLog.objects.create(
-                actor=request.user,
-                action=StaffActionLog.Action.EVENT_DELETE,
-                target_event=event,
-                ip_address=request.META.get("REMOTE_ADDR"),
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                **_action_log_kwargs(
+                    _staff_action_metadata(request),
+                    StaffActionLog.Action.EVENT_DELETE,
+                    target_event=event,
+                )
             )
             delete_event(event=event)
     except EventHasArchiveReferencesError as exc:
