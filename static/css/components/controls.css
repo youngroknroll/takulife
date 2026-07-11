@@ -57,6 +57,16 @@
   content: "✓ ";
 }
 
+/* Disabled — sibling lock while another status-btn's request is in flight
+   (status.js), or a server-rendered unavailable option (e.g. ended-event
+   방문 예정). Excludes .active: "이미 추가됨" (setButtonAlreadyAdded) is a
+   permanent confirmed end state, not an unavailable one, and dimming it
+   would read as "still loading" instead of "done". */
+.status-btn:disabled:not(.active) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── interest button (찜 toggle — independent from .status-btn) ─ */
 /*
  * Intentionally NOT inheriting .status-btn so that .status-btn.active::before
