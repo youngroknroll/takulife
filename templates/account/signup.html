@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load socialaccount %}
+{% load form_extras %}
 
 {% block title %}회원가입 — takulife{% endblock %}
 {% block og_title %}회원가입 — takulife{% endblock %}
@@ -12,36 +13,21 @@
 {% block content %}
 <main class="auth-container" id="content">
   <h1>회원가입</h1>
-  {% if form.errors %}
-    <ul class="auth-error">
-      {% for field in form %}
-        {% for error in field.errors %}
-          <li>{{ error }}</li>
-        {% endfor %}
-      {% endfor %}
-      {% for error in form.non_field_errors %}
-        <li>{{ error }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
+  {% include "core/partials/_auth_form_errors.html" with errors=form.non_field_errors %}
   <form method="post" action="{% url 'account_signup' %}">
     {% csrf_token %}
     {{ redirect_field }}
+    {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
+    {% include "core/partials/_auth_field.html" with field=form.password1 label="비밀번호" %}
+    {% include "core/partials/_auth_field.html" with field=form.password2 label="비밀번호 확인" %}
     <div class="form-group">
-      <label for="id_email">이메일</label>
-      {{ form.email }}
-    </div>
-    <div class="form-group">
-      <label for="id_password1">비밀번호</label>
-      {{ form.password1 }}
-    </div>
-    <div class="form-group">
-      <label for="id_password2">비밀번호 확인</label>
-      {{ form.password2 }}
-    </div>
-    <div class="form-group">
-      {{ form.terms_agreed }}
+      {{ form.terms_agreed|describedby }}
       <label for="id_terms_agreed">{{ form.terms_agreed.label }}</label>
+      {% if form.terms_agreed.errors %}
+        <ul class="field-error" id="id_terms_agreed-error" role="alert">
+          {% for error in form.terms_agreed.errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      {% endif %}
     </div>
     <button type="submit" class="btn btn-primary btn-block">가입하기</button>
   </form>
