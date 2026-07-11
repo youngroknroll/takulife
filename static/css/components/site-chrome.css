@@ -3,6 +3,15 @@
  * Persistent frame rendered once from base.html (_site_header.html). Replaces
  * the per-page topbars: a single sticky bar with brand, primary nav, and auth.
  */
+:root {
+  /* Desktop rendered height of .site-header, for sticky panels elsewhere
+     (event_detail .aside, event_list .filters, layout .side-stack) to clear
+     it: 2×0.75rem .site-header-inner padding + .site-nav a's 2.5rem
+     min-height + 1px border-bottom = 65px. Describes the current render —
+     does not itself size the header. */
+  --site-header-h: 4.0625rem;
+}
+
 .site-header {
   position: sticky;
   top: 0;
