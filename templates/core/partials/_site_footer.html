@@ -36,7 +36,7 @@ copyright grouped in the bottom bar).
       <nav class="footer-legal" aria-label="법적 고지 및 문의">
         <a href="{% url 'legal-privacy-page' %}">개인정보처리방침</a>
         <a href="{% url 'legal-terms-page' %}">이용약관</a>
-        <a href="mailto:{{ support_email }}">문의하기</a>
+        {% if support_email %}<a href="mailto:{{ support_email }}">문의하기</a>{% endif %}
       </nav>
       <p>© 2026 logbetter</p>
     </div>
