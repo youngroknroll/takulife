@@ -12,7 +12,9 @@ from archive.queries import (
     list_user_visit_records,
     user_interest_count,
     user_interest_event_ids,
+    user_personal_place_count,
     user_status_counts,
+    user_visit_record_counts,
 )
 
 
@@ -254,3 +256,53 @@ def test_list_user_personal_entries_scopes_to_user_and_filters_kind(make_user, m
 
     only_goods = list(list_user_personal_entries(user, kind="goods"))
     assert only_goods == [goods]
+
+
+# ---------------------------------------------------------------------------
+# user_visit_record_counts (archive/visits/ summary cards)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_visit_record_counts_totals_and_memo_scoped_to_user(
+    make_user, make_event, make_visit
+):
+    user = make_user(username="visit-counts-user")
+    other = make_user(username="visit-counts-other")
+    e1 = make_event(title="VC E1")
+    e2 = make_event(title="VC E2")
+    e3 = make_event(title="VC E3")
+
+    make_visit(user, event=e1, visited_on="2026-01-01", short_review="좋았음")
+    make_visit(user, event=e2, visited_on="2026-01-02", short_review="")
+    make_visit(other, event=e3, visited_on="2026-01-03", short_review="다른 사용자")
+
+    counts = user_visit_record_counts(user)
+
+    assert counts == {"total_count": 2, "memo_count": 1}
+
+
+@pytest.mark.django_db
+def test_user_visit_record_counts_zero_for_no_visits(make_user):
+    user = make_user(username="visit-counts-empty")
+
+    counts = user_visit_record_counts(user)
+
+    assert counts == {"total_count": 0, "memo_count": 0}
+
+
+# ---------------------------------------------------------------------------
+# user_personal_place_count (archive/items/ summary cards)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_personal_place_count_scoped_to_user_and_kind(make_user, make_entry):
+    user = make_user(username="place-count-user")
+    other = make_user(username="place-count-other")
+    make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")
+    make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P2")
+    make_entry(user, kind=PersonalEntry.Kind.GOODS, title="G1")
+    make_entry(other, kind=PersonalEntry.Kind.PLACE, title="Other P")
+
+    assert user_personal_place_count(user) == 2

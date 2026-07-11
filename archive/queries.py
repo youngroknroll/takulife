@@ -140,6 +140,15 @@ def list_user_personal_entries(user, kind=None, *, q: str = ""):
     return queryset
 
 
+def user_personal_place_count(user) -> int:
+    """Return the number of a user's unofficial PLACE-kind entries.
+
+    Used by the archive/items/ page's summary cards alongside the caller's own
+    total count to derive goods_count (total - place) without an extra query.
+    """
+    return PersonalEntry.objects.filter(user=user, kind=PersonalEntry.Kind.PLACE).count()
+
+
 def user_personal_interest_ids(user) -> dict:
     """Return {personal_entry_id: interest_id} for the user's unofficial 찜.
 
@@ -165,6 +174,21 @@ def user_personal_statuses(user) -> dict:
         for row in UserEventStatus.objects.filter(
             user=user, personal_entry__isnull=False
         ).values("personal_entry_id", "status", "id")
+    }
+
+
+def user_visit_record_counts(user) -> dict:
+    """Return summary counts for a user's visit records.
+
+    Always counts the user's FULL visit history (not a filtered subset), so
+    the archive/visits/ page's summary cards report a stable total independent
+    of any active filter/search. ``memo_count`` is the subset with a non-empty
+    short_review.
+    """
+    queryset = VisitRecord.objects.filter(user=user)
+    return {
+        "total_count": queryset.count(),
+        "memo_count": queryset.exclude(short_review="").count(),
     }
 
 

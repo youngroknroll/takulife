@@ -25,9 +25,11 @@ from archive.queries import (
     user_interest_count,
     user_interest_event_ids,
     user_personal_interest_ids,
+    user_personal_place_count,
     user_personal_statuses,
     user_status_counts,
     user_visit_category_values,
+    user_visit_record_counts,
 )
 from core.models import HomeConfig
 from core.vocab import (
@@ -476,8 +478,9 @@ def archive_visits(request):
     # --- Summary counts from the unfiltered base -------------------------
     # These always report the user's total visit history, independent of any
     # active filter, so the summary cards never confusingly shrink.
-    total_count = VisitRecord.objects.filter(user=user).count()
-    memo_count = VisitRecord.objects.filter(user=user).exclude(short_review="").count()
+    visit_counts = user_visit_record_counts(user)
+    total_count = visit_counts["total_count"]
+    memo_count = visit_counts["memo_count"]
 
     # --- Filtered + paginated result set ----------------------------------
     filtered_qs = list_user_visit_records(
@@ -619,7 +622,7 @@ def archive_personal_entries(request):
     # report the user's total collection, independent of any active search.
     all_qs = list_user_personal_entries(user)
     total_count = all_qs.count()
-    place_count = all_qs.filter(kind=PersonalEntry.Kind.PLACE).count()
+    place_count = user_personal_place_count(user)
     goods_count = total_count - place_count
     has_entries = total_count > 0
 
