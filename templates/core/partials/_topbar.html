@@ -15,7 +15,7 @@ Context consumed:
 {% endcomment %}
 <nav class="topbar-auth" aria-label="계정 메뉴">
   {% if request.user.is_authenticated %}
-    <span class="topbar-username">{{ request.user.email }}</span>
+    <span class="topbar-username" title="{{ request.user.email }}">{{ request.user.email }}</span>
     {% if request.user.is_staff %}
       <a class="topbar-link" href="/staff/dashboard/" aria-label="스태프 콘솔 페이지">스태프 콘솔</a>
     {% endif %}
