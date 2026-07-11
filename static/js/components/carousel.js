@@ -119,6 +119,10 @@
     var autoTimer = null;
     var autoIdx = Math.round(center);
     var autoDir = 1;
+    // Set once a touch is seen — every startAuto() call below a touch is
+    // gated on !touched, so the shuffle never resumes after it (WCAG 2.2.2:
+    // touch has no hover-out equivalent to "leave" the deck with).
+    var touched = false;
 
     function autoTick() {
       autoIdx += autoDir;
@@ -188,7 +192,7 @@
       });
     });
     container.addEventListener("focusout", function (evt) {
-      if (!container.contains(evt.relatedTarget)) {
+      if (!touched && !container.contains(evt.relatedTarget)) {
         startAuto();
       }
     });
@@ -206,8 +210,15 @@
         }
       });
       track.addEventListener("mouseleave", function () {
-        startAuto(); // resume sweeping
+        if (!touched) { startAuto(); } // resume sweeping
       });
+      // Touch has no hover — stop on first touch and never resume (see
+      // `touched` above). iOS also fires a synthetic mouseleave/focusout
+      // after a tap, which the touched guard on those handlers also covers.
+      track.addEventListener("touchstart", function () {
+        touched = true;
+        stopAuto();
+      }, { passive: true });
     }
 
     // Keep the fan inside the viewport as it's resized/rotated (debounced —

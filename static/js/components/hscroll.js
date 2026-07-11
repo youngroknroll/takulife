@@ -129,6 +129,11 @@
     var autoTimer = null;
     var hovered = false;
     var focused = false;
+    // Set once a touch is seen — folded into shouldAutoplay() below so
+    // autoplay can never restart afterward (WCAG 2.2.2: touch has no
+    // hover-out equivalent, and iOS fires synthetic mouseleave/focusin/out
+    // after a tap that would otherwise re-trigger startAutoplay()).
+    var touched = false;
     var wantsAutoplay = wrap.hasAttribute("data-hscroll-auto");
 
     function isOverflowing() {
@@ -136,7 +141,7 @@
     }
 
     function shouldAutoplay() {
-      return wantsAutoplay && !prefersReducedMotion() && !hovered && !focused && isOverflowing();
+      return wantsAutoplay && !prefersReducedMotion() && !hovered && !focused && !touched && isOverflowing();
     }
 
     function stopAutoplay() {
@@ -181,6 +186,10 @@
           startAutoplay();
         }
       });
+      wrap.addEventListener("touchstart", function () {
+        touched = true;
+        stopAutoplay();
+      }, { passive: true });
 
       // Respect reduced-motion changes at runtime
       mqlReducedMotion.addEventListener("change", function () {
