@@ -53,6 +53,13 @@ class TestHscrollMobileArrowHitArea:
         track = page.locator("[data-hscroll-track]").first
         track.scroll_into_view_if_needed()
         page.evaluate("(el) => { el.scrollLeft = 200; }", track.element_handle())
+        # scroll-snap-type: x mandatory (mobile) settles the assigned 200 to
+        # the nearest snap point almost immediately (observed ~190, not
+        # 200) — wait for that drift to finish before taking the baseline,
+        # so the post-click assertion isn't measuring snap noise instead of
+        # an actual click.
+        page.wait_for_timeout(200)
+        baseline = page.evaluate("(el) => el.scrollLeft", track.element_handle())
 
         prev_btn = page.locator(".hscroll-prev.hscroll-btn").first
         prev_btn.scroll_into_view_if_needed()
@@ -62,15 +69,22 @@ class TestHscrollMobileArrowHitArea:
         assert box["width"] >= 44
         assert box["height"] >= 44
 
-        # Click 3px from the box's left edge — outside the old 30px visible
-        # circle (which starts 7px in), inside the new 44px hit area only.
-        edge_x = box["x"] + 3
+        # Click 1px from the box's left edge — outside the visible 30px
+        # circle (which starts 4px in), inside the extra hit area only. This
+        # pixel sits inside .hscroll-wrap's clip region only because the
+        # button's own box is flush against the wrap edge (left: 0) — an
+        # earlier -3px inset pushed this same relative pixel outside the
+        # wrap's overflow:hidden clip, where it silently missed every click.
+        edge_x = box["x"] + 1
         edge_y = box["y"] + box["height"] / 2
         page.mouse.click(edge_x, edge_y)
         page.wait_for_timeout(400)
 
         scroll_left = page.evaluate("(el) => el.scrollLeft", track.element_handle())
-        assert scroll_left < 200
+        # A real "prev" click jumps by roughly a card width (observed: to 0
+        # from a ~190 baseline) — a threshold well below the baseline, not
+        # just "< baseline", so snap-settling noise alone can't satisfy it.
+        assert scroll_left < baseline - 50
 
 
 class TestPhotoCarouselArrowTouchTarget:
