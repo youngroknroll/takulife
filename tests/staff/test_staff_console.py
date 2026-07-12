@@ -476,3 +476,51 @@ def test_non_staff_blocked_from_new_staff_paths(client, make_user, path):
     resp = client.get(path)
 
     assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Hero summary-grid: 최근 7일 처리 카운트 + 검토 대기 카드 링크 (Phase 2)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_staff_dashboard_recent_7d_count_reflects_actual_count_beyond_limit(staff_client):
+    """recent_actions_7d_count must reflect the true 7-day count, not the
+    recent_actions list's limit=10 cap (regression guard)."""
+    staff, client = staff_client()
+    for _ in range(12):
+        StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "최근 7일 처리" in content
+    assert "12건" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_prev_week_context(staff_client):
+    staff, client = staff_client()
+    for _ in range(2):
+        StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+    for _ in range(3):
+        log = StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+        StaffActionLog.objects.filter(pk=log.pk).update(
+            created_at=timezone.now() - datetime.timedelta(days=10)
+        )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert "지난주 3건" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_pending_card_links_to_pending_queue(staff_client):
+    staff, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">' in content

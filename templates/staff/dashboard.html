@@ -13,17 +13,18 @@
       <p>운영에 필요한 대기 작업과 최근 활동을 한눈에 확인하세요.</p>
 
       <div class="summary-grid" style="--summary-cols: 3;" aria-label="스태프 콘솔 요약">
-        <article class="summary-card">
+        <a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">
           <p class="summary-label">검토 대기 드래프트</p>
           <p class="summary-value">{{ pending_count }}건</p>
-        </article>
+        </a>
         <article class="summary-card">
           <p class="summary-label">품질 경고</p>
           <p class="summary-value">{{ quality_warnings.total }}건</p>
         </article>
         <article class="summary-card">
-          <p class="summary-label">최근 처리</p>
-          <p class="summary-value">{{ recent_actions|length }}건</p>
+          <p class="summary-label">최근 7일 처리</p>
+          <p class="summary-value">{{ recent_actions_7d_count }}건</p>
+          <p class="summary-context">지난주 {{ recent_actions_prev_7d_count }}건</p>
         </article>
       </div>
     </section>

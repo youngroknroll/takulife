@@ -56,6 +56,25 @@
   font-size: 1.05rem;
 }
 
+/* 검토 대기 카드는 큐로 이동하는 링크(article -> a 교체) — cards.css의
+   .summary-card 자체는 손대지 않고, 링크가 됐을 때만 필요한 문서 리셋과
+   hover 어포던스만 여기서 추가한다. */
+.summary-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.summary-card-link:hover {
+  border-color: var(--brand);
+}
+
+.summary-context {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
 .queue-link {
   display: inline-flex;
   align-items: center;

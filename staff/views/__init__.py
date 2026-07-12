@@ -25,7 +25,7 @@ from events.queries import published_quality_warnings
 
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
-from ..queries import recent_staff_actions
+from ..queries import recent_staff_actions, staff_actions_count_since
 from ._helpers import _action_log_kwargs, _staff_action_metadata
 from .drafts import (
     MAX_BULK_APPROVE_DRAFT_IDS,
@@ -164,6 +164,8 @@ def dashboard(request):
             "draft_source_rows": _build_source_rows(draft_sources),
             "draft_discovery_enabled": settings.DRAFT_DISCOVERY_ENABLED,
             "last_discovery_run_at": _last_discovery_run_at(),
+            "recent_actions_7d_count": staff_actions_count_since(days=7),
+            "recent_actions_prev_7d_count": staff_actions_count_since(days=7, offset=7),
         },
     )
 
