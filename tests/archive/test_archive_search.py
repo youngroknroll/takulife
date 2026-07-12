@@ -13,6 +13,7 @@ Behavior under test:
 - q containing special chars (%, &) never causes a 500.
 """
 import re
+from urllib.parse import quote
 
 import pytest
 
@@ -356,11 +357,17 @@ class TestArchiveSearchClearLink:
     the user had selected, in addition to clearing q."""
 
     def _clear_href(self, content):
-        match = re.search(r'class="archive-search-clear" href="([^"]*)"', content)
-        assert match, content
-        return match.group(1)
+        # Attribute-order independent: locate the anchor tag by its class,
+        # then pull href out of that same tag regardless of where it sits.
+        tag_match = re.search(r'<a\b[^>]*class="archive-search-clear"[^>]*>', content)
+        assert tag_match, content
+        href_match = re.search(r'href="([^"]*)"', tag_match.group(0))
+        assert href_match, tag_match.group(0)
+        return href_match.group(1)
 
     def test_clear_link_preserves_active_status_filter(self, user_client):
+        """Regression case for the original bug: the clear href always
+        collapsed to request.path, dropping the active status filter."""
         _, client = user_client()
 
         resp = client.get("/archive/statuses/?status=planned&q=여름")
@@ -369,6 +376,8 @@ class TestArchiveSearchClearLink:
         assert self._clear_href(resp.content.decode()) == "/archive/statuses/?status=planned"
 
     def test_clear_link_is_bare_path_when_no_status_filter_active(self, user_client):
+        """Characterization: pins the no-filter-active behavior (href ==
+        request.path) so a future change can't silently alter it."""
         _, client = user_client()
 
         resp = client.get("/archive/statuses/?q=여름")
@@ -377,12 +386,28 @@ class TestArchiveSearchClearLink:
         assert self._clear_href(resp.content.decode()) == "/archive/statuses/"
 
     def test_clear_link_has_no_hidden_param_when_partial_omits_hidden_name(self, user_client):
+        """Characterization: pins that pages which never pass hidden_name/
+        hidden_value (personal_entries.html) render a bare-path clear link."""
         _, client = user_client()
 
         resp = client.get("/archive/items/?q=여름")
 
         assert resp.status_code == 200
         assert self._clear_href(resp.content.decode()) == "/archive/items/"
+
+    def test_clear_link_preserves_active_visits_filter(self, user_client, make_event, make_visit):
+        """visits.html's hidden_name="filter" carries a Korean-label value
+        (cat:<라벨>) — the clear link must urlencode it, not echo the raw
+        non-ASCII value straight into the href."""
+        user, client = user_client()
+        event = make_event(title="팝업 행사", category="popup_store")
+        make_visit(user, event=event, visited_on="2026-06-01")
+
+        resp = client.get("/archive/visits/?filter=cat:팝업스토어&q=여름")
+
+        assert resp.status_code == 200
+        href = self._clear_href(resp.content.decode())
+        assert href == f"/archive/visits/?filter={quote('cat:팝업스토어')}"
 
 
 @pytest.mark.django_db
