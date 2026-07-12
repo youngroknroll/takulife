@@ -12,10 +12,6 @@
 
     <section class="hero">
       <h1>직접 등록 아카이브</h1>
-      <p>
-        공식 카탈로그에 없는 내가 찾은 장소(비공식 굿즈 카페 등)나 내가 산 굿즈를
-        직접 등록해 두는 곳입니다. 본인만 볼 수 있고, 공개 목록에는 노출되지 않습니다.
-      </p>
 
       <div class="summary-grid" style="--summary-cols: 3">
         <article class="summary-card">
@@ -38,7 +34,6 @@
     <section class="layout">
       <article class="panel">
         <h2>직접 등록 아카이브 목록</h2>
-        <p class="panel-note">직접 등록한 항목을 최신순으로 정리한 목록입니다.</p>
 
         {% include "core/partials/_archive_search.html" with q=q has_query=has_query %}
 
@@ -59,7 +54,6 @@
 
         <section class="panel">
           <h2>항목 추가</h2>
-          <p class="panel-note">장소나 굿즈를 직접 등록하세요.</p>
 
           <form id="entry-create-form" class="create-form" novalidate>
             <div class="form-group">

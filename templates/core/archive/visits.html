@@ -12,10 +12,6 @@
 
     <section class="hero">
       <h1>다녀온 기록</h1>
-      <p>
-        방문한 행사와 한줄 메모, 사진을 모아 보는 기록 화면입니다.
-        방문 직후 짧게 남긴 메모로 다음 일정 판단 기준을 만듭니다.
-      </p>
 
       <div class="summary-grid" style="--summary-cols: 2">
         <article class="summary-card">
@@ -34,7 +30,6 @@
     <section class="layout">
       <article class="panel">
         <h2>방문 타임라인</h2>
-        <p class="panel-note">방문한 행사를 최신순으로 정리한 타임라인입니다.</p>
 
         {% if has_visits and categories or has_visits and has_unofficial %}
           <div class="visit-filter">

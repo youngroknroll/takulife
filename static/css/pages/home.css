@@ -26,12 +26,6 @@
     line-height: 1.25;
     letter-spacing: -0.02em;
   }
-  .hero p {
-    margin: 0 0 1.125rem;
-    color: var(--muted);
-    font-size: var(--fs-base);
-    max-width: 60ch;
-  }
   .hero .search {
     max-width: 540px;
   }
@@ -392,11 +386,6 @@
   .section h2 {
     margin: 0;
     font-size: var(--fs-lg);
-  }
-  .section-note {
-    margin: 0;
-    color: var(--muted);
-    font-size: var(--fs-md);
   }
   /* ── Ticket-stub poster card (shared by ongoing/closing/recent) ──────
      Image tile (poster or category emoji) + an opaque caption strip below

@@ -160,13 +160,6 @@
   color: var(--text);
 }
 
-.footer-tagline {
-  margin: 0.5rem 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-  max-width: 30ch;
-}
-
 .footer-cols {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

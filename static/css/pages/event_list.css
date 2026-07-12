@@ -119,11 +119,6 @@
     margin: 0;
     font-size: var(--fs-base);
   }
-  .results-note {
-    margin: 0.125rem 0 0;
-    color: var(--muted);
-    font-size: var(--fs-sm);
-  }
   .sort {
     display: flex;
     align-items: center;
