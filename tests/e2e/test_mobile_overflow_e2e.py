@@ -95,3 +95,21 @@ class TestMobileOverflowSmoke:
         page.goto(f"{live_server.url}/archive/visits/new/")
 
         assert _no_horizontal_overflow(page)
+
+
+class TestMobileOverflow320px:
+    """320px is Chromium's own floor for a native `<input type="file">`
+    (~314px min-content) — the 375px class above is too wide to catch a
+    track that only breaks at the narrowest supported viewport."""
+
+    @pytest.fixture
+    def browser_context_args(self, browser_context_args):
+        return {**browser_context_args, "viewport": {"width": 320, "height": 740}}
+
+    def test_archive_personal_entries_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/archive/items/")
+
+        assert _no_horizontal_overflow(page)
