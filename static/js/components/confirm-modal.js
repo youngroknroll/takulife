@@ -55,9 +55,6 @@
 
     dialog = document.createElement("div");
     dialog.className = "confirm-dialog";
-    dialog.setAttribute("role", "dialog");
-    dialog.setAttribute("aria-modal", "true");
-    dialog.setAttribute("aria-labelledby", "confirm-modal-message");
 
     messageEl = document.createElement("p");
     messageEl.className = "confirm-message";

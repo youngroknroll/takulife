@@ -12,11 +12,11 @@ never overlap: "/" is home only, "/events/" and "/archive/" are exclusive prefix
 {% endcomment %}
 <header class="site-header">
   <div class="site-header-inner">
-    <a class="brand" href="/"{% if request.path == '/' %} aria-current="page"{% endif %}>takulife</a>
-    <nav class="site-nav" aria-label="주요 메뉴">
-      <a href="/"{% if request.path == '/' %} class="active" aria-current="page"{% endif %}>홈</a>
-      <a href="/events/"{% if '/events/' in request.path %} class="active" aria-current="page"{% endif %}>행사 둘러보기</a>
-      <a href="/archive/"{% if '/archive/' in request.path %} class="active" aria-current="page"{% endif %}>내 아카이브</a>
+    <a class="brand" href="/">takulife</a>
+    <nav class="site-nav">
+      <a href="/"{% if request.path == '/' %} class="active"{% endif %}>홈</a>
+      <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>행사 둘러보기</a>
+      <a href="/archive/"{% if '/archive/' in request.path %} class="active"{% endif %}>내 아카이브</a>
     </nav>
     {% include "core/partials/_topbar.html" %}
   </div>

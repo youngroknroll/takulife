@@ -17,7 +17,7 @@
         직접 등록해 두는 곳입니다. 본인만 볼 수 있고, 공개 목록에는 노출되지 않습니다.
       </p>
 
-      <div class="summary-grid" style="--summary-cols: 3" aria-label="직접 등록 아카이브 요약">
+      <div class="summary-grid" style="--summary-cols: 3">
         <article class="summary-card">
           <p class="summary-label">전체</p>
           <p class="summary-value">{{ total_count }}</p>
@@ -33,7 +33,7 @@
       </div>
     </section>
 
-    <div id="entry-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
+    <div id="entry-global-error" class="form-error" style="margin-bottom:8px;"></div>
 
     <section class="layout">
       <article class="panel">
@@ -47,7 +47,7 @@
         </div>
       </article>
 
-      <aside class="side-stack" aria-label="직접 등록 아카이브 보조 정보">
+      <aside class="side-stack">
         <section class="panel">
           <h2>빠른 이동</h2>
           <ul class="side-list side-list--row">
@@ -77,7 +77,7 @@
             <details class="entry-detail-group" id="entry-detail-fields">
               <summary class="entry-detail-toggle">
                 <span>상세 정보 (선택)</span>
-                <span class="entry-detail-caret" aria-hidden="true">▾</span>
+                <span class="entry-detail-caret">▾</span>
               </summary>
               <div class="entry-detail-body">
                 <div class="form-group">
@@ -108,7 +108,7 @@
               <input id="entry-image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
               <p class="field-hint">JPEG · PNG · WebP · 5MB 이하</p>
             </div>
-            <p class="form-error" id="entry-create-error" aria-live="polite"></p>
+            <p class="form-error" id="entry-create-error"></p>
             <button class="form-submit-btn" type="submit">항목 추가</button>
           </form>
         </section>

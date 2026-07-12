@@ -47,9 +47,8 @@
                     <button class="interest-btn active" type="button"
                       data-interest-toggle
                       data-interest-id="{{ row.interest_id }}"
-                      data-remove-on-cancel
-                      aria-pressed="true">
-                      <span aria-hidden="true" data-interest-glyph>♥</span>
+                      data-remove-on-cancel>
+                      <span data-interest-glyph>♥</span>
                       찜
                     </button>
                   </div>
@@ -61,8 +60,8 @@
             {% endfor %}
           </div>
         {% else %}
-          <div class="empty-state" role="status">
-            <p class="empty-icon" aria-hidden="true">♡</p>
+          <div class="empty-state">
+            <p class="empty-icon">♡</p>
             <p class="empty-title">아직 찜한 행사가 없어요</p>
             <p class="empty-note">행사 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요.</p>
             <a class="empty-action" href="/events/">행사 찾아보기</a>
@@ -70,7 +69,7 @@
         {% endif %}
       </article>
 
-      <aside class="side-stack" aria-label="찜 목록 보조 정보">
+      <aside class="side-stack">
         <section class="panel">
           <h2>빠른 이동</h2>
           <ul class="side-list">

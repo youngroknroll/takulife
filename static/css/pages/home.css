@@ -58,7 +58,7 @@
   .poster-deck {
     position: relative;
     width: 100%;
-    /* sizer card (aria-hidden clone) provides intrinsic height */
+    /* sizer card (hidden clone) provides intrinsic height */
   }
 
   /* Sizer: invisible structural clone that reserves layout height */

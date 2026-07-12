@@ -623,21 +623,6 @@ def test_staff_dashboard_quality_warnings_shows_notice_when_none(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_quality_warning_track_is_aria_hidden(staff_client, make_event, png_bytes):
-    staff, client = staff_client()
-    kwargs = _clean_quality_event_kwargs(0)
-    kwargs.pop("region")
-    event = make_event(**kwargs)
-    _attach_poster(event, png_bytes, 0)
-
-    resp = client.get("/staff/dashboard/")
-
-    assert resp.status_code == 200
-    content = resp.content.decode()
-    assert '<span class="warning-bar-track" aria-hidden="true">' in content
-
-
-@pytest.mark.django_db
 def test_staff_dashboard_quality_warning_bars_tie_break_by_label_definition_order(
     staff_client, make_event, png_bytes
 ):
@@ -666,7 +651,7 @@ def test_staff_dashboard_quality_warning_bars_tie_break_by_label_definition_orde
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_staff_dashboard_activity_chart_renders_14_columns_with_a11y_summary(staff_client):
+def test_staff_dashboard_activity_chart_renders_14_columns(staff_client):
     staff, client = staff_client()
     StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
 
@@ -676,8 +661,6 @@ def test_staff_dashboard_activity_chart_renders_14_columns_with_a11y_summary(sta
     content = resp.content.decode()
     columns = re.findall(r'<span class="activity-col[^"]*"', content)
     assert len(columns) == 14
-    assert 'role="img"' in content
-    assert 'aria-label="최근 14일 일별 처리 활동, 총 1건, 오늘 1건"' in content
 
 
 @pytest.mark.django_db
@@ -743,7 +726,7 @@ def test_staff_dashboard_source_status_dot_ok_for_enabled_recently_checked(staff
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--ok" aria-hidden="true"></span>' in content
+    assert '<span class="status-dot status-dot--ok"></span>' in content
 
 
 @pytest.mark.django_db
@@ -760,7 +743,7 @@ def test_staff_dashboard_source_status_dot_disabled_for_disabled_source(staff_cl
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--disabled" aria-hidden="true"></span>' in content
+    assert '<span class="status-dot status-dot--disabled"></span>' in content
 
 
 @pytest.mark.django_db
@@ -779,7 +762,7 @@ def test_staff_dashboard_source_status_dot_error_for_enabled_source_with_last_er
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--error" aria-hidden="true"></span>' in content
+    assert '<span class="status-dot status-dot--error"></span>' in content
 
 
 @pytest.mark.django_db
@@ -797,7 +780,7 @@ def test_staff_dashboard_source_status_dot_stale_for_enabled_source_never_checke
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--stale" aria-hidden="true"></span>' in content
+    assert '<span class="status-dot status-dot--stale"></span>' in content
 
 
 @pytest.mark.django_db
@@ -819,5 +802,5 @@ def test_staff_dashboard_source_status_dot_error_takes_priority_over_stale(staff
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--error" aria-hidden="true"></span>' in content
+    assert '<span class="status-dot status-dot--error"></span>' in content
     assert "status-dot--stale" not in content

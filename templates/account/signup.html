@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 {% load socialaccount %}
-{% load form_extras %}
 
 {% block title %}회원가입 — takulife{% endblock %}
 {% block og_title %}회원가입 — takulife{% endblock %}
@@ -21,10 +20,10 @@
     {% include "core/partials/_auth_field.html" with field=form.password1 label="비밀번호" %}
     {% include "core/partials/_auth_field.html" with field=form.password2 label="비밀번호 확인" %}
     <div class="form-group">
-      {{ form.terms_agreed|describedby }}
+      {{ form.terms_agreed }}
       <label for="id_terms_agreed">{{ form.terms_agreed.label }}</label>
       {% if form.terms_agreed.errors %}
-        <ul class="field-error" id="id_terms_agreed-error" role="alert">
+        <ul class="field-error" id="id_terms_agreed-error">
           {% for error in form.terms_agreed.errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
       {% endif %}

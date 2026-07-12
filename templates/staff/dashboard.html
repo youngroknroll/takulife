@@ -12,7 +12,7 @@
       <h1>스태프 콘솔</h1>
       <p>운영에 필요한 대기 작업과 최근 활동을 한눈에 확인하세요.</p>
 
-      <div class="summary-grid" style="--summary-cols: 3;" aria-label="스태프 콘솔 요약">
+      <div class="summary-grid" style="--summary-cols: 3;">
         <a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">
           <p class="summary-label">검토 대기 드래프트</p>
           <p class="summary-value">{{ pending_count }}건</p>
@@ -67,7 +67,7 @@
                 <tr>
                   <td>{{ row.source.name }}</td>
                   <td>
-                    <span class="status-dot status-dot--{{ row.status_level }}" aria-hidden="true"></span>
+                    <span class="status-dot status-dot--{{ row.status_level }}"></span>
                     {% if row.source.enabled %}활성{% else %}<span class="badge-soon">비활성</span>{% endif %}
                     {% if row.is_stale %}<span class="badge-stale">지연</span>{% endif %}
                     {% if row.has_error %}<span class="badge-error">오류</span>{% endif %}
@@ -99,7 +99,7 @@
                   <span class="warning-bar-label">{{ row.label }}</span>
                   <span class="warning-bar-visual">
                     {% if row.count > 0 %}
-                      <span class="warning-bar-track" aria-hidden="true"><span class="warning-bar-fill" style="--bar-w: {% widthratio row.count quality_warning_max 100 %}%"></span></span>
+                      <span class="warning-bar-track"><span class="warning-bar-fill" style="--bar-w: {% widthratio row.count quality_warning_max 100 %}%"></span></span>
                     {% endif %}
                     <span class="warning-bar-count">{{ row.count }}건</span>
                   </span>
@@ -113,8 +113,8 @@
         {% if activity_total_14d == 0 %}
           <p class="notice">최근 14일 처리 내역이 없습니다</p>
         {% else %}
-          <div class="activity-chart" role="img" aria-label="최근 14일 일별 처리 활동, 총 {{ activity_total_14d }}건, 오늘 {{ activity_today_count }}건">
-            <div class="activity-columns" aria-hidden="true">
+          <div class="activity-chart">
+            <div class="activity-columns">
               {% for col in activity_columns %}
                 <span class="activity-col{% if col.is_today %} activity-col--today{% endif %}" title="{{ col.date|date:'n/j' }} {{ col.count }}건" style="--col-h: {{ col.height_pct }}%"></span>
               {% endfor %}
@@ -175,7 +175,7 @@
         {% endif %}
       </article>
 
-      <aside class="side-stack" aria-label="스태프 콘솔 바로가기">
+      <aside class="side-stack">
         <section class="panel">
           <h2>바로가기</h2>
           <ul class="side-list">

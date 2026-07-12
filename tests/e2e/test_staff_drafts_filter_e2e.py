@@ -38,7 +38,6 @@ class TestStaffDraftsFilter:
         expect(page.locator(CHIPS)).to_have_count(4)
         all_chip = page.locator(CHIPS).first
         expect(all_chip).to_have_class(re.compile(r"\bactive\b"))
-        expect(all_chip).to_have_attribute("aria-current", "true")
 
     def test_clicking_pending_chip_filters_and_marks_active(
         self, live_server, page, seed, login
@@ -57,12 +56,12 @@ class TestStaffDraftsFilter:
         login(page, live_server.url, "e2e_staff@example.com", seed.password)
         page.goto(f"{live_server.url}/staff/drafts/")
 
-        page.click('a.chip[aria-label="검토 대기 필터"]')
+        page.click('a.chip:has-text("검토 대기")')
 
         expect(page).to_have_url(f"{live_server.url}/staff/drafts/?status=pending")
         expect(page.locator(".draft-card")).to_have_count(1)
         expect(page.locator(".draft-card").first).to_contain_text("검토 대기 드래프트")
-        expect(page.locator('a.chip[aria-label="검토 대기 필터"]')).to_have_class(
+        expect(page.locator('a.chip:has-text("검토 대기")')).to_have_class(
             re.compile(r"\bactive\b")
         )
 
@@ -82,7 +81,7 @@ class TestStaffDraftsFilter:
             f"{live_server.url}/staff/drafts/?page=2&status=pending"
         )
         expect(page.locator(".draft-card")).to_have_count(1)
-        expect(page.locator('a.chip[aria-label="검토 대기 필터"]')).to_have_class(
+        expect(page.locator('a.chip:has-text("검토 대기")')).to_have_class(
             re.compile(r"\bactive\b")
         )
 

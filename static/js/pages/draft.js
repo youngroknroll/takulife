@@ -28,7 +28,7 @@
  *   Raw text toggle (#raw-text-toggle)
  *     - server double-renders #raw-text-truncated (visible) and
  *       #raw-text-full (hidden) — this button only flips native `hidden`
- *       on each and syncs aria-expanded/label text. It never reads or
+ *       on each and syncs data-expanded/label text. It never reads or
  *       writes raw_text itself (no innerHTML, no textContent assignment
  *       of user content) — the XSS surface stays at 0.
  *
@@ -323,14 +323,14 @@
     }
 
     btn.addEventListener("click", function () {
-      var isExpanded = btn.getAttribute("aria-expanded") === "true";
+      var isExpanded = btn.getAttribute("data-expanded") === "true";
       var expand = !isExpanded;
 
       // Native `hidden` swap only — JS never touches raw_text content.
       truncatedEl.hidden = expand;
       fullEl.hidden = !expand;
 
-      btn.setAttribute("aria-expanded", String(expand));
+      btn.setAttribute("data-expanded", String(expand));
       btn.textContent = expand ? "접기" : "전체 보기";
     });
   }

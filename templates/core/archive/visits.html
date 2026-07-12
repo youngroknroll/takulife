@@ -17,7 +17,7 @@
         방문 직후 짧게 남긴 메모로 다음 일정 판단 기준을 만듭니다.
       </p>
 
-      <div class="summary-grid" style="--summary-cols: 2" aria-label="방문 기록 요약">
+      <div class="summary-grid" style="--summary-cols: 2">
         <article class="summary-card">
           <p class="summary-label">누적 방문</p>
           <p class="summary-value">{{ total_count }}</p>
@@ -29,7 +29,7 @@
       </div>
     </section>
 
-    <div id="visit-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
+    <div id="visit-global-error" class="form-error" style="margin-bottom:8px;"></div>
 
     <section class="layout">
       <article class="panel">
@@ -37,18 +37,16 @@
         <p class="panel-note">방문한 행사를 최신순으로 정리한 타임라인입니다.</p>
 
         {% if has_visits and categories or has_visits and has_unofficial %}
-          <div class="visit-filter" role="group" aria-label="카테고리 필터">
+          <div class="visit-filter">
             <a
               class="visit-filter-chip{% if not selected_filter %} is-active{% endif %}"
               href="?{% if has_query %}q={{ q|urlencode }}{% endif %}"
-              {% if not selected_filter %}aria-current="true"{% endif %}
             >전체</a>
             {% for label in categories %}
               {% with cat_token="cat:"|add:label %}
               <a
                 class="visit-filter-chip{% if selected_filter == cat_token %} is-active{% endif %}"
                 href="?filter=cat:{{ label|urlencode }}{{ search_suffix }}"
-                {% if selected_filter == cat_token %}aria-current="true"{% endif %}
               >{{ label }}</a>
               {% endwith %}
             {% endfor %}
@@ -56,7 +54,6 @@
               <a
                 class="visit-filter-chip{% if selected_filter == "unofficial" %} is-active{% endif %}"
                 href="?filter=unofficial{{ search_suffix }}"
-                {% if selected_filter == "unofficial" %}aria-current="true"{% endif %}
               >직접 등록</a>
             {% endif %}
           </div>
@@ -69,7 +66,7 @@
         </div>
       </article>
 
-      <aside class="side-stack" aria-label="방문 기록 보조 정보">
+      <aside class="side-stack">
         <section class="panel">
           <h2>빠른 이동</h2>
           <ul class="side-list side-list--row">

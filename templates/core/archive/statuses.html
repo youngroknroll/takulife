@@ -17,7 +17,7 @@
         저장한 행사를 상태별로 빠르게 훑고 바로 상세로 이동할 수 있습니다.
       </p>
 
-      <div class="summary-grid" style="--summary-cols: 3" aria-label="상태 요약">
+      <div class="summary-grid" style="--summary-cols: 3">
         <article class="summary-card">
           <p class="summary-label">방문 예정</p>
           <p class="summary-value">{{ status_counts.planned }}</p>
@@ -42,14 +42,12 @@
           </div>
         </div>
 
-        <div class="chips" role="group" aria-label="상태 필터">
-          <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/statuses/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체</a>
+        <div class="chips">
+          <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/statuses/">전체</a>
           {% for slug, label in ARCHIVE_STATUS %}
             <a
               class="chip{% if selected_status == slug %} active{% endif %}"
               href="/archive/statuses/?status={{ slug }}"
-              aria-label="{{ label }} 필터"
-              {% if selected_status == slug %}aria-current="true"{% endif %}
             >{{ label }}</a>
           {% endfor %}
         </div>
@@ -61,7 +59,7 @@
         </div>
       </article>
 
-      <aside class="side-stack" aria-label="나의 일정 보조 정보">
+      <aside class="side-stack">
         <section class="panel">
           <h2>빠른 이동</h2>
           <ul class="side-list side-list--row">

@@ -11,7 +11,7 @@
     </section>
 
     {% if messages %}
-      <div class="messages" role="status" aria-live="polite">
+      <div class="messages">
         {% for message in messages %}
           <p class="message message--{{ message.tags }}">{{ message }}</p>
         {% endfor %}
@@ -56,7 +56,6 @@
                       min="1"
                       max="99"
                       style="width: 4rem;"
-                      aria-label="{{ row.label }} 표시 순서"
                     >
                   </td>
                 </tr>

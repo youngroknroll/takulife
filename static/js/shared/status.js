@@ -87,7 +87,6 @@
     }
     var msg = document.createElement("p");
     msg.className = "status-inline-error inline-error";
-    msg.setAttribute("role", "alert");
     msg.textContent = message;
     container.appendChild(msg);
   }
@@ -109,7 +108,6 @@
     var label = button.dataset.labelActive || STATUS_LABELS[statusSlug] || statusSlug;
     button.textContent = label;
     button.classList.add("active");
-    button.setAttribute("aria-pressed", "true");
   }
 
   function setButtonDefault(button) {
@@ -117,19 +115,17 @@
     var label = button.dataset.label || STATUS_LABELS[slug] || slug;
     button.textContent = label;
     button.classList.remove("active");
-    button.setAttribute("aria-pressed", "false");
   }
 
   function setButtonAlreadyAdded(button) {
     button.textContent = "이미 추가됨";
     button.classList.add("active");
-    button.setAttribute("aria-pressed", "true");
     button.disabled = true;
   }
 
   function setButtonLoading(button, loading) {
     // Delegate to the shared helper so the button also shows the .is-loading
-    // spinner (disabled + aria-busy) while the request is in flight.
+    // spinner (disabled) while the request is in flight.
     window.TakuAPI.setLoading(button, loading);
   }
 
@@ -342,7 +338,6 @@
   function setInterestActive(button, interestId) {
     button.dataset.interestId = String(interestId);
     button.classList.add("active");
-    button.setAttribute("aria-pressed", "true");
     var glyph = button.querySelector("[data-interest-glyph]");
     if (glyph) {
       glyph.textContent = "♥";
@@ -352,7 +347,6 @@
   function setInterestDefault(button) {
     delete button.dataset.interestId;
     button.classList.remove("active");
-    button.setAttribute("aria-pressed", "false");
     var glyph = button.querySelector("[data-interest-glyph]");
     if (glyph) {
       glyph.textContent = "♡";
@@ -424,7 +418,6 @@
           setInterestActive(button, existingId);
         } else {
           button.classList.add("active");
-          button.setAttribute("aria-pressed", "true");
         }
       }
       return;
@@ -466,8 +459,6 @@
       if (!button.dataset.statusAction) {
         if (button.dataset.statusId) {
           setButtonActive(button, button.dataset.status);
-        } else {
-          button.setAttribute("aria-pressed", "false");
         }
       }
       button.addEventListener("click", handleClick);
@@ -491,11 +482,11 @@
       if (button.dataset.statusToggleBound) return;
       button.dataset.statusToggleBound = "1";
       button.addEventListener("click", function () {
-        var target = document.getElementById(button.getAttribute("aria-controls"));
+        var target = document.getElementById(button.getAttribute("data-controls"));
         if (!target) return;
         var willShow = target.hasAttribute("hidden");
         target.toggleAttribute("hidden", !willShow);
-        button.setAttribute("aria-expanded", String(willShow));
+        button.setAttribute("data-expanded", String(willShow));
       });
     });
   }

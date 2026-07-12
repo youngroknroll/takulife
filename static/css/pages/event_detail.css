@@ -13,8 +13,8 @@
   /* Ticket-stub signature #3 ("공식 확인" stamp) — event_detail header only
      (prompt_plan.md §0/§3: no repeated stamp elsewhere). Shown only when
      the event has an official_url, i.e. exactly the same condition that
-     unlocks the "공식 페이지에서 보기" action link below. Decorative only
-     (aria-hidden) — the real "official" signal is the link itself. */
+     unlocks the "공식 페이지에서 보기" action link below. Decorative only —
+     the real "official" signal is the link itself. */
   .official-stamp {
     position: absolute;
     top: 0.75rem;

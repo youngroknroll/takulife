@@ -18,7 +18,7 @@
     </section>
 
     {% if field_errors.non_field %}
-      <p class="notice" role="alert">{{ field_errors.non_field }}</p>
+      <p class="notice">{{ field_errors.non_field }}</p>
     {% endif %}
 
     <section class="layout">
@@ -31,7 +31,7 @@
             <div class="field full">
               <label for="create-title">제목</label>
               <input id="create-title" name="title" type="text" value="{{ form_values.title }}">
-              {% if field_errors.title %}<p class="field-error" role="alert">{{ field_errors.title }}</p>{% endif %}
+              {% if field_errors.title %}<p class="field-error">{{ field_errors.title }}</p>{% endif %}
             </div>
             <div class="field">
               <label for="create-category">카테고리</label>
@@ -62,17 +62,17 @@
             <div class="field">
               <label for="create-start-date">시작일</label>
               <input id="create-start-date" name="start_date" type="date" value="{{ form_values.start_date }}">
-              {% if field_errors.start_date %}<p class="field-error" role="alert">{{ field_errors.start_date }}</p>{% endif %}
+              {% if field_errors.start_date %}<p class="field-error">{{ field_errors.start_date }}</p>{% endif %}
             </div>
             <div class="field">
               <label for="create-end-date">종료일</label>
               <input id="create-end-date" name="end_date" type="date" value="{{ form_values.end_date }}">
-              {% if field_errors.end_date %}<p class="field-error" role="alert">{{ field_errors.end_date }}</p>{% endif %}
+              {% if field_errors.end_date %}<p class="field-error">{{ field_errors.end_date }}</p>{% endif %}
             </div>
             <div class="field full">
               <label for="create-official-url">공식 URL</label>
               <input id="create-official-url" name="official_url" type="text" value="{{ form_values.official_url }}">
-              {% if field_errors.official_url %}<p class="field-error" role="alert">{{ field_errors.official_url }}</p>{% endif %}
+              {% if field_errors.official_url %}<p class="field-error">{{ field_errors.official_url }}</p>{% endif %}
             </div>
             <div class="field">
               <label for="create-source-name">출처명</label>
