@@ -194,6 +194,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 /* Shared archive side action link (extracted from archive_statuses + archive_interests) */

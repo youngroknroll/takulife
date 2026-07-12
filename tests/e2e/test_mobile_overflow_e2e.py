@@ -7,7 +7,7 @@ that widens `body.scrollWidth` without waiting for the next manual pass.
 """
 import pytest
 
-from archive.models import PersonalEntry
+from archive.models import EventInterest, PersonalEntry, UserEventStatus, VisitRecord
 
 pytestmark = pytest.mark.e2e
 
@@ -133,4 +133,41 @@ class TestMobileOverflow320px:
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/items/")
 
+        assert _no_horizontal_overflow(page)
+
+    def test_archive_statuses_interests_visits_with_long_unbroken_subject_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        """A 직접 등록 subject with a long, unbroken title (URL) and category
+        (free-input classification) — rendered as an <h3> (line-clamped but
+        not word-broken by default) and an .event-category chip
+        (white-space: nowrap by default) — pushed all three cards that
+        reference the subject wider than the viewport."""
+        entry = PersonalEntry.objects.create(
+            user=seed.user,
+            kind=PersonalEntry.Kind.PLACE,
+            title="https://example.com/" + "a" * 60,
+            category="b" * 40,
+            location_name="긴 분류명 오버플로우 재현용 장소",
+        )
+        UserEventStatus.objects.create(
+            user=seed.user, personal_entry=entry, status=UserEventStatus.Status.PLANNED
+        )
+        EventInterest.objects.create(user=seed.user, personal_entry=entry)
+        VisitRecord.objects.create(
+            user=seed.user,
+            personal_entry=entry,
+            visited_on="2026-06-15",
+            short_review="긴 URL 재현 확인용 방문 기록",
+        )
+
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+
+        page.goto(f"{live_server.url}/archive/statuses/")
+        assert _no_horizontal_overflow(page)
+
+        page.goto(f"{live_server.url}/archive/interests/")
+        assert _no_horizontal_overflow(page)
+
+        page.goto(f"{live_server.url}/archive/visits/")
         assert _no_horizontal_overflow(page)
