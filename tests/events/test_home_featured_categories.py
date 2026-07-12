@@ -184,6 +184,20 @@ class TestStaffHomeCategoriesTemplateAssets:
 
         assert b'style="width: 4rem;"' not in resp.content
 
+    def test_layout_uses_single_column_variant(self, staff_client):
+        """staff_console.css now also loads on this page, which brings in
+        dashboard.html's desktop 2-column .layout override (57.5rem+) — this
+        page's .layout has only one .panel child (no side-stack), so at
+        920px+ the panel gets squeezed into the 1.7fr column and the 0.9fr
+        column renders empty. layout--single (archive_visit_create's
+        single-panel convention) forces display:block regardless of
+        viewport."""
+        _, client = staff_client()
+
+        resp = client.get("/staff/home-categories/")
+
+        assert b'class="layout layout--single"' in resp.content
+
 
 # ---------------------------------------------------------------------------
 # E. staff/home-categories — POST (PRG)

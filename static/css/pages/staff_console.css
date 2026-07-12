@@ -1,4 +1,5 @@
-/* staff_console.css — dashboard-only rules (templates/staff/dashboard.html) */
+/* staff_console.css — shared by templates/staff/dashboard.html and
+   templates/core/staff/home_categories.html */
 
 /* ── console density pass (PR-C2): mouse-first desktop console reads
    tighter than the public site — shave one step off panel padding and
@@ -42,6 +43,14 @@
   .layout {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
   }
+}
+
+/* home_categories.html: single .panel child, no side-stack — the desktop
+   2-column override above (57.5rem+) would otherwise leave the 0.9fr
+   column empty. archive_visit_create's single-panel convention
+   (archive_visits.css .layout--single) reused here. */
+.layout--single {
+  display: block;
 }
 
 @media (max-width: 57.5rem) {
