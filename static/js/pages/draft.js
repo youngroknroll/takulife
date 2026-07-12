@@ -248,6 +248,10 @@
             listLink.textContent = "목록으로 돌아가기";
             successEl.appendChild(listLink);
             successEl.hidden = false;
+            // Move focus here before disabling btn below — a disabled
+            // element that holds focus drops it to <body> with no
+            // announcement (tabindex=-1 keeps this <p> out of Tab order).
+            successEl.focus();
           }
           // No reload on success (see success panel above) — disable both
           // review buttons so an already-approved draft can't be resubmitted.
