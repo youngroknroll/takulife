@@ -191,6 +191,11 @@
         if (statusButtons[s] !== button && !statusButtons[s].disabled) {
           if (document.activeElement === statusButtons[s]) { focusedSibling = statusButtons[s]; }
           statusButtons[s].disabled = true;
+          // Marks this as a sibling-lock (not a server-rendered disabled
+          // state) so a bfcache pageshow restore (below) knows it's safe to
+          // clear — api.js's own pageshow listener only clears .is-loading,
+          // which this lock never sets.
+          statusButtons[s].classList.add("is-sibling-locked");
           lockedSiblings.push(statusButtons[s]);
         }
       }
@@ -199,6 +204,7 @@
     function unlockSiblings() {
       lockedSiblings.forEach(function (sibling) {
         sibling.disabled = false;
+        sibling.classList.remove("is-sibling-locked");
       });
       // Disabling the focused sibling bounced focus to <body>; put it back
       // now that the sibling is clickable again (the in-flight button itself
@@ -506,4 +512,20 @@
   // status/interest buttons need wiring (direct binding, not delegation). The
   // guard above keeps this safe to call repeatedly.
   document.addEventListener("archive:listswapped", initStatusButtons);
+
+  // A bfcache restore (event.persisted) can bring back a page with a
+  // sibling status-btn still locked (disabled, .is-sibling-locked) from an
+  // in-flight request the user navigated away from mid-request — that
+  // request's own unlockSiblings() never gets the chance to run again.
+  // Each file owns recovering its own lock kind: api.js's pageshow listener
+  // only clears .is-loading, so this lock needs its own here.
+  window.addEventListener("pageshow", function (evt) {
+    if (!evt.persisted) {
+      return;
+    }
+    document.querySelectorAll(".is-sibling-locked").forEach(function (button) {
+      button.disabled = false;
+      button.classList.remove("is-sibling-locked");
+    });
+  });
 })();
