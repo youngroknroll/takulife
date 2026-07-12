@@ -67,6 +67,7 @@
                 <tr>
                   <td>{{ row.source.name }}</td>
                   <td>
+                    <span class="status-dot status-dot--{{ row.status_level }}" aria-hidden="true"></span>
                     {% if row.source.enabled %}활성{% else %}<span class="badge-soon">비활성</span>{% endif %}
                     {% if row.is_stale %}<span class="badge-stale">지연</span>{% endif %}
                     {% if row.has_error %}<span class="badge-error">오류</span>{% endif %}

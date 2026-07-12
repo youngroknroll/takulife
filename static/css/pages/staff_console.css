@@ -166,6 +166,36 @@
   background: var(--brand);
 }
 
+/* ── 수집 소스 상태 점 ────────────────────────────────────────────
+   기존 활성/비활성 텍스트 + 지연·오류 배지에 색/모양 신호를 더한다.
+   disabled는 채우지 않은 원(hollow)으로 — "꺼짐"과 "켜져 있는데 문제
+   있음"을 색만이 아니라 모양으로도 구분한다(R4). */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.375rem;
+  vertical-align: middle;
+}
+
+.status-dot--ok {
+  background: var(--mint-ink);
+}
+
+.status-dot--stale {
+  background: var(--amber-ink);
+}
+
+.status-dot--error {
+  background: var(--rose-ink);
+}
+
+.status-dot--disabled {
+  background: transparent;
+  border: 1.5px solid var(--muted);
+}
+
 .queue-link {
   display: inline-flex;
   align-items: center;

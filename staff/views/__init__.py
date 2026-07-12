@@ -116,18 +116,35 @@ def _build_source_rows(sources):
     so a stale last_checked_at there is not a problem) — never checked
     (last_checked_at is None) and older than DRAFT_SOURCE_STALE_HOURS both
     count as stale.
+
+    status_level derives from has_error/is_stale (not a separate check)
+    so the status dot can never disagree with the badges rendered next to
+    it. Priority when several are true at once: disabled > error > stale >
+    ok — a disabled source is never miscolored as erroring, and an actively
+    failing source is flagged over a merely-stale one (see PR-D1 item 3:
+    never-checked + last_error can both be true simultaneously).
     """
     cutoff = timezone.now() - datetime.timedelta(hours=settings.DRAFT_SOURCE_STALE_HOURS)
     rows = []
     for source in sources:
+        has_error = bool(source.last_error)
         is_stale = source.enabled and (
             source.last_checked_at is None or source.last_checked_at < cutoff
         )
+        if not source.enabled:
+            status_level = "disabled"
+        elif has_error:
+            status_level = "error"
+        elif is_stale:
+            status_level = "stale"
+        else:
+            status_level = "ok"
         rows.append(
             {
                 "source": source,
-                "has_error": bool(source.last_error),
+                "has_error": has_error,
                 "is_stale": is_stale,
+                "status_level": status_level,
             }
         )
     return rows

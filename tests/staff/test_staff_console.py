@@ -698,3 +698,102 @@ def test_staff_dashboard_activity_chart_shows_notice_when_no_logs(staff_client):
     content = resp.content.decode()
     assert "최근 14일 처리 내역이 없습니다" in content
     assert "activity-columns" not in content
+
+
+# ---------------------------------------------------------------------------
+# 수집 소스 상태 점 (Phase 5)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_ok_for_enabled_recently_checked(staff_client):
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="정상 소스",
+        url="https://example.com/status-ok-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=timezone.now() - datetime.timedelta(hours=1),
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--ok" aria-hidden="true"></span>' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_disabled_for_disabled_source(staff_client):
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="비활성 소스",
+        url="https://example.com/status-disabled-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=False,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--disabled" aria-hidden="true"></span>' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_error_for_enabled_source_with_last_error(staff_client):
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="에러 소스",
+        url="https://example.com/status-error-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=timezone.now() - datetime.timedelta(hours=1),
+        last_error="Connection timed out while fetching feed",
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--error" aria-hidden="true"></span>' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_stale_for_enabled_source_never_checked(staff_client):
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="미수집 소스",
+        url="https://example.com/status-stale-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=None,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--stale" aria-hidden="true"></span>' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_error_takes_priority_over_stale(staff_client):
+    """PR-D1 item 3 established error+stale can both be true simultaneously
+    (never-checked + last_error set) — status_level must pick error, not
+    stale, so the dot doesn't disagree with the "오류" badge next to it."""
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="에러+지연 소스",
+        url="https://example.com/status-error-and-stale-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=None,
+        last_error="Connection timed out while fetching feed",
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--error" aria-hidden="true"></span>' in content
+    assert "status-dot--stale" not in content
