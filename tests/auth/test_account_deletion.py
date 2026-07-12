@@ -61,6 +61,30 @@ def test_anonymous_get_redirects_to_login(client):
 
 
 @pytest.mark.django_db
+def test_staff_get_is_forbidden(client, make_user, valid_password):
+    """Self-deletion is UI-hidden for staff (no header link, per §account
+    menu spec), but the view must also enforce it server-side — a staff
+    account is removed via Django admin only, never self-service."""
+    staff = make_user(password=valid_password, is_staff=True)
+    client.force_login(staff)
+
+    response = client.get(DELETE_URL)
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_staff_post_is_forbidden_and_account_survives(client, make_user, valid_password):
+    staff = make_user(password=valid_password, is_staff=True)
+    client.force_login(staff)
+
+    response = client.post(DELETE_URL, {"password": valid_password})
+
+    assert response.status_code == 403
+    assert User.objects.filter(pk=staff.pk).exists()
+
+
+@pytest.mark.django_db
 def test_authenticated_get_renders_confirm_form(client, make_user, valid_password):
     user = make_user(password=valid_password)
     client.force_login(user)
