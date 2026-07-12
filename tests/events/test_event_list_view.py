@@ -5,6 +5,8 @@ state ("행사 없음"), never a hard error screen. The JSON API keeps rejecting
 same input with 400 (covered in test_events_api.py) — only the browse page
 degrades gracefully.
 """
+from urllib.parse import quote
+
 import pytest
 from django.test import Client
 
@@ -123,6 +125,54 @@ class TestEventListActiveFilterChips:
 
         assert resp.status_code == 200
         assert "검색: 공연" in resp.context["active_filter_chips"]
+
+
+@pytest.mark.django_db
+class TestEventListPagerQEncoding:
+    """The pager's ?q= link must URL-encode the search term the same way
+    selected_sort already does, so a value containing '#' isn't truncated
+    into a URL fragment on click, losing the rest of the query string
+    (templates/core/events/list.html pager)."""
+
+    def test_pager_link_urlencodes_q_containing_hash(self, make_event):
+        for i in range(11):
+            make_event(title=f"#콜라보 행사 {i}")
+
+        resp = Client().get("/events/", {"q": "#콜라보"})
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert f"q={quote('#콜라보')}" in body
+        assert "&q=#" not in body
+
+    def test_pager_link_urlencodes_q_with_plus_and_space(self, make_event):
+        """q="a+b c" round-trips through Django's urlencode filter, which
+        quotes via urllib.parse.quote (not quote_plus) — '+' and ' ' both
+        get percent-escaped, not left as literal form-encoding chars."""
+        for i in range(11):
+            make_event(title=f"a+b c 행사 {i}")
+
+        resp = Client().get("/events/", {"q": "a+b c"})
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert f"q={quote('a+b c')}" in body
+        assert "q=a+b c" not in body
+
+    def test_pager_link_urlencodes_region_containing_special_chars(self, make_event):
+        """selected_region is echoed into the pager from an unvalidated
+        request.GET.getlist('region') — a value containing raw '&'/'=' must
+        not be re-injected into the href as extra query parameters."""
+        for i in range(11):
+            make_event(title=f"서울 행사 {i}", region="seoul")
+        malicious_region = "a&status=closed"
+
+        resp = Client().get("/events/", {"region": ["seoul", malicious_region]})
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert f"region={quote(malicious_region)}" in body
+        assert f"region={malicious_region}" not in body
 
 
 @pytest.mark.django_db

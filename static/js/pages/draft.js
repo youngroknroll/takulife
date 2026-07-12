@@ -188,9 +188,7 @@
 
       window.TakuAPI.patch("/api/event-drafts/" + draftId + "/", payload).then(
         function (result) {
-          if (submitBtn) {
-            submitBtn.disabled = false;
-          }
+          window.TakuAPI.setLoading(submitBtn, false);
           if (result.ok) {
             window.location.reload();
             return;

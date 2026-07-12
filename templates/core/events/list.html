@@ -183,17 +183,17 @@
           {% if page_obj.has_other_pages %}
             <nav class="pager" aria-label="페이지네이션">
               {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">이전</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% for r in selected_region %}&region={{ r|urlencode }}{% endfor %}{% for c in selected_category %}&category={{ c|urlencode }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">이전</a>
               {% endif %}
               {% for num in page_obj.paginator.page_range %}
                 {% if num == page_obj.number %}
                   <span class="current">{{ num }}</span>
                 {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
-                  <a href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">{{ num }}</a>
+                  <a href="?page={{ num }}{% if q %}&q={{ q|urlencode }}{% endif %}{% for r in selected_region %}&region={{ r|urlencode }}{% endfor %}{% for c in selected_category %}&category={{ c|urlencode }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">{{ num }}</a>
                 {% endif %}
               {% endfor %}
               {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% for r in selected_region %}&region={{ r }}{% endfor %}{% for c in selected_category %}&category={{ c }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">다음</a>
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% for r in selected_region %}&region={{ r|urlencode }}{% endfor %}{% for c in selected_category %}&category={{ c|urlencode }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">다음</a>
               {% endif %}
             </nav>
           {% endif %}
