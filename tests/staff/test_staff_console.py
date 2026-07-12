@@ -635,3 +635,66 @@ def test_staff_dashboard_quality_warning_track_is_aria_hidden(staff_client, make
     assert resp.status_code == 200
     content = resp.content.decode()
     assert '<span class="warning-bar-track" aria-hidden="true">' in content
+
+
+# ---------------------------------------------------------------------------
+# 최근 14일 활동 미니 컬럼 차트 (Phase 4)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_staff_dashboard_activity_chart_renders_14_columns_with_a11y_summary(staff_client):
+    staff, client = staff_client()
+    StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    columns = re.findall(r'<span class="activity-col[^"]*"', content)
+    assert len(columns) == 14
+    assert 'role="img"' in content
+    assert 'aria-label="최근 14일 일별 처리 활동, 총 1건"' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_activity_chart_marks_exactly_one_today_column_as_last(staff_client):
+    staff, client = staff_client()
+    StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    columns = re.findall(r'<span class="activity-col[^"]*"', content)
+    assert sum(1 for col in columns if "activity-col--today" in col) == 1
+    assert "activity-col--today" in columns[-1]
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_activity_chart_height_pct_scales_to_daily_max(staff_client):
+    staff, client = staff_client()
+    for _ in range(2):
+        StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+    yesterday_log = StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+    StaffActionLog.objects.filter(pk=yesterday_log.pk).update(
+        created_at=timezone.now() - datetime.timedelta(days=1)
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "--col-h: 100%" in content
+    assert "--col-h: 50%" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_activity_chart_shows_notice_when_no_logs(staff_client):
+    staff, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "최근 14일 처리 내역이 없습니다" in content
+    assert "activity-columns" not in content

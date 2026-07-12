@@ -25,7 +25,11 @@ from events.queries import published_quality_warnings
 
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
-from ..queries import recent_staff_actions, staff_actions_count_since
+from ..queries import (
+    recent_staff_actions,
+    staff_actions_count_since,
+    staff_actions_per_day,
+)
 from ._helpers import _action_log_kwargs, _staff_action_metadata
 from .drafts import (
     MAX_BULK_APPROVE_DRAFT_IDS,
@@ -148,6 +152,34 @@ def _build_quality_warning_rows(warnings):
     return [row for _, row in ranked]
 
 
+def _build_activity_columns(per_day):
+    """Attach chart-ready fields to each staff_actions_per_day() row for the
+    dashboard's "최근 14일 활동" column chart.
+
+    height_pct is computed here (not in the template) against the window's
+    own max count, so a day with the most activity always renders at 100%
+    and every other day scales relative to it; if every day is 0 (e.g. no
+    logs at all), every height_pct is 0 rather than dividing by zero.
+    is_today marks the last row via an explicit date comparison — per_day's
+    ordering already guarantees the last row *is* today, but comparing
+    against timezone.localdate() here keeps that guarantee from being a
+    silent assumption baked only into staff_actions_per_day's contract.
+    """
+    max_count = max((row["count"] for row in per_day), default=0)
+    today = timezone.localdate()
+    return [
+        {
+            "date": row["date"],
+            "count": row["count"],
+            "height_pct": (
+                round(row["count"] / max_count * 100) if max_count else 0
+            ),
+            "is_today": row["date"] == today,
+        }
+        for row in per_day
+    ]
+
+
 def _last_discovery_run_at():
     """Return the most recent DRAFT_DISCOVER StaffActionLog's created_at, or
     None if discovery has never been run.
@@ -173,6 +205,7 @@ def dashboard(request):
     draft_sources = list_draft_sources()
     quality_warnings = published_quality_warnings()
     quality_warning_rows = _build_quality_warning_rows(quality_warnings)
+    activity_columns = _build_activity_columns(staff_actions_per_day(days=14))
     return render(
         request,
         "staff/dashboard.html",
@@ -191,6 +224,14 @@ def dashboard(request):
             "last_discovery_run_at": _last_discovery_run_at(),
             "recent_actions_7d_count": staff_actions_count_since(days=7),
             "recent_actions_prev_7d_count": staff_actions_count_since(days=7, offset=7),
+            "activity_columns": activity_columns,
+            "activity_total_14d": sum(col["count"] for col in activity_columns),
+            # Explicit key rather than `{{ activity_columns|last }}.count` in
+            # the template — Django's `|last.count` filter/attribute chaining
+            # isn't valid template syntax.
+            "activity_today_count": (
+                activity_columns[-1]["count"] if activity_columns else 0
+            ),
         },
     )
 

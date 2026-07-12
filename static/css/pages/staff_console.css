@@ -142,6 +142,30 @@
   font-weight: 400;
 }
 
+/* ── 최근 14일 활동: 미니 컬럼 차트 ────────────────────────────────
+   flex 트랙이라 좁은 화면에서도 별도 미디어쿼리 없이 그대로 줄어든다.
+   border-bottom이 0건 날짜에도 축 형태를 유지해 "고장난 차트"로
+   보이지 않게 한다. */
+.activity-columns {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.125rem;
+  height: 48px;
+  border-bottom: 1px solid var(--line);
+  margin: 0.5rem 0 0.75rem;
+}
+
+.activity-col {
+  flex: 1;
+  height: var(--col-h);
+  background: var(--muted);
+  border-radius: 2px 2px 0 0;
+}
+
+.activity-col--today {
+  background: var(--brand);
+}
+
 .queue-link {
   display: inline-flex;
   align-items: center;
