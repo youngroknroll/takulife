@@ -637,6 +637,30 @@ def test_staff_dashboard_quality_warning_track_is_aria_hidden(staff_client, make
     assert '<span class="warning-bar-track" aria-hidden="true">' in content
 
 
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warning_bars_tie_break_by_label_definition_order(
+    staff_client, make_event, png_bytes
+):
+    """Regression guard for _build_quality_warning_rows' tie-break: two
+    warnings tied at count=1 must render in QUALITY_WARNING_LABELS'
+    definition order (missing_official_url before missing_poster), not in
+    whatever order sort() happens to leave them."""
+    staff, client = staff_client()
+    # Trips only missing_poster (poster left unset).
+    make_event(**_clean_quality_event_kwargs(0))
+    # Trips only missing_official_url (official_url left unset).
+    kwargs = _clean_quality_event_kwargs(1)
+    kwargs.pop("official_url")
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 1)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert content.index("공식 URL 없음") < content.index("포스터 없음")
+
+
 # ---------------------------------------------------------------------------
 # 최근 14일 활동 미니 컬럼 차트 (Phase 4)
 # ---------------------------------------------------------------------------
@@ -653,7 +677,7 @@ def test_staff_dashboard_activity_chart_renders_14_columns_with_a11y_summary(sta
     columns = re.findall(r'<span class="activity-col[^"]*"', content)
     assert len(columns) == 14
     assert 'role="img"' in content
-    assert 'aria-label="최근 14일 일별 처리 활동, 총 1건"' in content
+    assert 'aria-label="최근 14일 일별 처리 활동, 총 1건, 오늘 1건"' in content
 
 
 @pytest.mark.django_db
