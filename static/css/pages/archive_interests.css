@@ -22,7 +22,7 @@
      brand-ink 내비 링크 관례로 일원화) */
   @media (max-width: 56.25rem) {
     .layout {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     .side-stack {
       position: static;

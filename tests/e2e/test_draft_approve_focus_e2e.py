@@ -19,8 +19,14 @@ pytestmark = pytest.mark.e2e
 
 class TestDraftApproveSuccessFocus:
     def test_focus_moves_to_success_region_then_tabs_into_its_link(
-        self, live_server, page, seed, login
+        self, live_server, page, seed, login, browser_name
     ):
+        if browser_name == "webkit":
+            pytest.skip(
+                "WebKit skips links in Tab order (macOS convention) — "
+                "Tab-to-link assertion is Chromium-scoped"
+            )
+
         draft = EventDraft.objects.create(
             source_url="https://example.com/approve-focus-1",
             extracted_title="포커스 회귀 테스트",
