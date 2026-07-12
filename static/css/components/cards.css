@@ -183,6 +183,7 @@
 .status-top {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 0.4375rem;
   margin-bottom: 0.4375rem;
 }
@@ -194,6 +195,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 /* Shared archive side action link (extracted from archive_statuses + archive_interests) */

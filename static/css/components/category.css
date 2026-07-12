@@ -90,7 +90,7 @@
   padding: 0.25rem 0.5625rem;
   font-size: var(--fs-xs);
   font-weight: 700;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   background: var(--brand-soft);
   color: var(--brand);
 }
