@@ -12,6 +12,8 @@ Behavior under test:
 - q consisting only of whitespace acts as no filter.
 - q containing special chars (%, &) never causes a 500.
 """
+import re
+
 import pytest
 
 from archive.models import PersonalEntry
@@ -344,6 +346,43 @@ class TestArchiveSearchErrorElementSharedStyle:
         assert resp.status_code == 200
         content = resp.content.decode()
         assert '<p id="archive-search-error" class="inline-error" role="alert"></p>' in content
+
+
+@pytest.mark.django_db
+class TestArchiveSearchClearLink:
+    """The clear link on the archive search partial must fall back to the
+    page's active non-search filter (status/filter), not always the bare
+    page path — otherwise clicking 지우기 silently drops the status/filter
+    the user had selected, in addition to clearing q."""
+
+    def _clear_href(self, content):
+        match = re.search(r'class="archive-search-clear" href="([^"]*)"', content)
+        assert match, content
+        return match.group(1)
+
+    def test_clear_link_preserves_active_status_filter(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/archive/statuses/?status=planned&q=여름")
+
+        assert resp.status_code == 200
+        assert self._clear_href(resp.content.decode()) == "/archive/statuses/?status=planned"
+
+    def test_clear_link_is_bare_path_when_no_status_filter_active(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/archive/statuses/?q=여름")
+
+        assert resp.status_code == 200
+        assert self._clear_href(resp.content.decode()) == "/archive/statuses/"
+
+    def test_clear_link_has_no_hidden_param_when_partial_omits_hidden_name(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/archive/items/?q=여름")
+
+        assert resp.status_code == 200
+        assert self._clear_href(resp.content.decode()) == "/archive/items/"
 
 
 @pytest.mark.django_db
