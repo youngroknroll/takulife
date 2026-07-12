@@ -3,6 +3,8 @@
 Existing tests only exercised the staff *guard* (redirect / not-found). These
 cover the populated paths: the list row loop and the detail label rendering.
 """
+import re
+
 import pytest
 
 from drafts.models import EventDraft
@@ -208,6 +210,25 @@ class TestEventDraftDetailView:
         # Slugs resolved to human labels.
         assert resp.context["category_label"] == "팝업스토어"
         assert resp.context["region_label"] == "서울"
+
+    def test_approve_success_region_is_a_live_status_region(self, staff_client, make_draft):
+        """#draft-approve-success has no live-region markup, so screen reader
+        users get no announcement when an approve click succeeds. Match
+        #bulk-approve-result's attribute pair exactly (list.html), including
+        the absence of aria-atomic on that element."""
+        draft = make_draft(review_status=EventDraft.ReviewStatus.PENDING)
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        match = re.search(r'<p\s+id="draft-approve-success"[^>]*>', body)
+        assert match, body
+        tag = match.group(0)
+        assert 'role="status"' in tag
+        assert 'aria-live="polite"' in tag
+        assert "aria-atomic" not in tag
 
     def test_missing_draft_shows_not_found_notice(self, staff_client):
         _, client = staff_client()
