@@ -1,0 +1,11 @@
+/* ── /mypage/ ──────────────────────────────────────────────── */
+/* 4 cards at 320px would squeeze to ~65px each — too narrow to read a
+   label + value pair, so the grid drops to 2 columns below the phone
+   breakpoint. The desktop value (4) is already .summary-grid's own
+   fallback (cards.css), so no inline --summary-cols override is needed
+   on the template — this media query is the only declaration required. */
+@media (max-width: 45rem) {
+  .summary-grid {
+    --summary-cols: 2;
+  }
+}

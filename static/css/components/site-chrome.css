@@ -106,6 +106,13 @@
 
 .site-header .topbar-auth {
   margin-left: auto;
+  /* .site-nav gets order:3 below (mobile wrap), which paints it *after*
+     .topbar-auth as flex items regardless of source order — without this,
+     .site-nav could paint over the account-menu dropdown panel once it
+     wraps beneath the header on a narrow viewport. .topbar-auth is already
+     a flex item of .site-header-inner, so z-index alone (no position
+     change needed) is enough to promote its paint order above siblings. */
+  z-index: 1;
 }
 
 @media (max-width: 43.75rem) {
@@ -120,6 +127,14 @@
   }
   .site-header .topbar-auth {
     flex-wrap: wrap;
+  }
+  /* Desktop's 15rem cap (modal.css) budgets for brand + one-line nav +
+     username + several inline topbar-link pills all sharing one row — the
+     account-menu dropdown replaced those pills with a single 44px avatar
+     button, so the mobile budget is just brand + avatar, leaving far less
+     width for a wrapped 320px header. */
+  .topbar-username {
+    max-width: 10rem;
   }
 }
 
@@ -249,4 +264,111 @@
   font-weight: 700;
   color: var(--text);
   text-decoration: none;
+}
+
+/* ── account menu (header disclosure dropdown) ────────────────
+   Ported from event_list.js's region-select pattern: click toggle, close
+   on outside click, Escape closes + returns focus to the trigger. See
+   static/js/shared/account_menu.js. */
+[data-account-menu] {
+  position: relative;
+}
+
+/* 44px hit box (touch target) around a 30px visible circle — same ratio as
+   .hscroll-btn's ::before technique, but with a real child element instead
+   of a pseudo-element since the circle needs to hold the initial letter. */
+.account-menu-toggle {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.account-menu-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.account-mark {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  background: var(--bg-soft);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.account-menu-toggle:hover .account-mark,
+.account-menu-toggle:focus-visible .account-mark,
+.account-menu-toggle[data-expanded="true"] .account-mark {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-ink); /* --brand is AA-insufficient on white for text */
+}
+
+.account-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(17, 31, 55, 0.14);
+  padding: 0.5rem;
+}
+
+.account-menu-panel[hidden] {
+  display: none;
+}
+
+.account-menu-email {
+  margin: 0.25rem 0.75rem 0.5rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: break-word;
+}
+
+.account-menu-divider {
+  margin: 0.375rem 0;
+  border: none;
+  border-top: 1px solid var(--line);
+}
+
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-menu-item:hover {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
 }

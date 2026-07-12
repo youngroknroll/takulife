@@ -81,3 +81,11 @@ def delete_account(request):
         return redirect("home")
 
     return render(request, "account/delete_account.html", {"field_errors": {}})
+
+
+@login_required
+def account_settings(request):
+    """Account settings hub: links to allauth's email/password management
+    and, for a regular member only, the deletion flow — a staff member has
+    no self-deletion path anywhere in the UI."""
+    return render(request, "account/settings.html")

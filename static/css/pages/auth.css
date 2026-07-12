@@ -14,6 +14,12 @@
   font-size: var(--fs-xl);
 }
 
+/* 설정 페이지: 이메일/비밀번호 변경 + (일반 회원만) 회원 탈퇴 버튼 목록 */
+.settings-actions {
+  display: grid;
+  gap: 0.625rem;
+}
+
 .auth-error {
   margin: 0 0 0.875rem;
   padding: 0.625rem 0.75rem;

@@ -697,6 +697,21 @@ def archive_interests(request):
     )
 
 
+@login_required
+def mypage(request):
+    user = request.user
+    return render(
+        request,
+        "core/mypage.html",
+        {
+            "saved_count": sum(user_status_counts(user).values()),
+            "visit_count": user_visit_record_counts(user)["total_count"],
+            "personal_entry_count": user_personal_entry_counts(user)["total_count"],
+            "interest_count": user_interest_count(user),
+        },
+    )
+
+
 def legal_privacy(request):
     return render(request, "core/legal/privacy.html")
 
