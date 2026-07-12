@@ -34,3 +34,13 @@
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+
+/* ── shared inline error line ──
+ * One source of truth for the ad-hoc error line under a control (archive
+ * live-search, status buttons). Token-based like auth.css's .field-error —
+ * replaces the hardcoded #b91c1c/0.82rem/4px copies. */
+.inline-error {
+  color: var(--rose-ink);
+  font-size: var(--fs-xs);
+  margin: 0.25rem 0 0;
+}

@@ -21,6 +21,12 @@
   display: none;
 }
 
+/* Safety net: a not-open overlay must never absorb clicks, even if some
+   failure path leaves [hidden] unrestored. */
+.confirm-overlay:not(.is-open) {
+  pointer-events: none;
+}
+
 .confirm-overlay.is-open {
   opacity: 1;
 }

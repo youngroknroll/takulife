@@ -41,7 +41,9 @@
     }
     row.style.transition = "opacity .15s";
     row.style.opacity = "0";
-    row.addEventListener("transitionend", function () { row.remove(); }, { once: true });
+    var remove = function () { row.remove(); };
+    row.addEventListener("transitionend", remove, { once: true });
+    window.setTimeout(remove, 250);
   }
 
   // Graceful fallback to native confirm if confirm-modal.js didn't load.
@@ -84,10 +86,9 @@
       return;
     }
     var msg = document.createElement("p");
-    msg.className = "status-inline-error";
+    msg.className = "status-inline-error inline-error";
     msg.setAttribute("role", "alert");
     msg.textContent = message;
-    msg.style.cssText = "color:#b91c1c;font-size:0.82rem;margin:4px 0 0;";
     container.appendChild(msg);
   }
 
@@ -187,10 +188,12 @@
     // 방문 완료) can't race it — the loser used to fall through to a
     // silently-discarded 409 (Slow 3G repro).
     var lockedSiblings = [];
+    var focusedSibling = null;
     if (container) {
       var statusButtons = container.querySelectorAll(".status-btn");
       for (var s = 0; s < statusButtons.length; s++) {
         if (statusButtons[s] !== button && !statusButtons[s].disabled) {
+          if (document.activeElement === statusButtons[s]) { focusedSibling = statusButtons[s]; }
           statusButtons[s].disabled = true;
           lockedSiblings.push(statusButtons[s]);
         }
@@ -201,131 +204,137 @@
       lockedSiblings.forEach(function (sibling) {
         sibling.disabled = false;
       });
+      // Disabling the focused sibling bounced focus to <body>; put it back
+      // now that the sibling is clickable again (the in-flight button itself
+      // is disabled by setLoading while the request runs, so it can't take
+      // focus).
+      if (focusedSibling && focusedSibling.isConnected && document.activeElement === document.body) {
+        focusedSibling.focus();
+      }
     }
 
-    // Discovery semantics (empty action):
-    //   active button         → DELETE  (cancel its own registration)
-    //   inactive, sibling set → PATCH   (switch the event to this status)
-    //   inactive, none set    → POST    (register)
-    // Archive controls (action="change") switch the status in place via PATCH.
-    var result;
-    var mode;
+    // Locking is done above — everything below either returns or falls
+    // through to the bottom, so a single finally covers every exit path
+    // (including an exception from an unexpected await rejection) and the
+    // siblings can never stay disabled forever.
+    try {
+      // Discovery semantics (empty action):
+      //   active button         → DELETE  (cancel its own registration)
+      //   inactive, sibling set → PATCH   (switch the event to this status)
+      //   inactive, none set    → POST    (register)
+      // Archive controls (action="change") switch the status in place via PATCH.
+      var result;
+      var mode;
 
-    if (action === "change" && statusId) {
-      mode = "change";
-      result = await window.TakuAPI.patch(
-        "/api/user-event-statuses/" + statusId + "/",
-        { status: statusSlug }
-      );
-    } else if (statusId && (isActive || action === "unset")) {
-      mode = "cancel";
-      result = await window.TakuAPI.del("/api/user-event-statuses/" + statusId + "/");
-    } else if (activeSibling) {
-      mode = "switch";
-      result = await window.TakuAPI.patch(
-        "/api/user-event-statuses/" + activeSibling.dataset.statusId + "/",
-        { status: statusSlug }
-      );
-    } else {
-      mode = "register";
-      var payload = { status: statusSlug };
-      if (personalEntryId) {
-        payload.personal_entry = parseInt(personalEntryId, 10);
-      } else if (eventId) {
-        payload.event = parseInt(eventId, 10);
+      if (action === "change" && statusId) {
+        mode = "change";
+        result = await window.TakuAPI.patch(
+          "/api/user-event-statuses/" + statusId + "/",
+          { status: statusSlug }
+        );
+      } else if (statusId && (isActive || action === "unset")) {
+        mode = "cancel";
+        result = await window.TakuAPI.del("/api/user-event-statuses/" + statusId + "/");
+      } else if (activeSibling) {
+        mode = "switch";
+        result = await window.TakuAPI.patch(
+          "/api/user-event-statuses/" + activeSibling.dataset.statusId + "/",
+          { status: statusSlug }
+        );
       } else {
-        // No subject to register against — nothing to do.
-        setButtonLoading(button, false);
-        unlockSiblings();
+        mode = "register";
+        var payload = { status: statusSlug };
+        if (personalEntryId) {
+          payload.personal_entry = parseInt(personalEntryId, 10);
+        } else if (eventId) {
+          payload.event = parseInt(eventId, 10);
+        } else {
+          // No subject to register against — nothing to do.
+          setButtonLoading(button, false);
+          return;
+        }
+        result = await window.TakuAPI.post("/api/user-event-statuses/", payload);
+      }
+
+      setButtonLoading(button, false);
+
+      var kind = window.TakuAPI.classify(result);
+
+      if (kind === "auth") {
+        // session expired mid-page — prompt re-login rather than silently redirect
+        window.TakuAPI.promptLogin();
         return;
       }
-      result = await window.TakuAPI.post("/api/user-event-statuses/", payload);
-    }
 
-    setButtonLoading(button, false);
-
-    var kind = window.TakuAPI.classify(result);
-
-    if (kind === "auth") {
-      // session expired mid-page — prompt re-login rather than silently redirect
-      window.TakuAPI.promptLogin();
-      unlockSiblings();
-      return;
-    }
-
-    if (kind === "network") {
-      showInlineError(button, window.TakuAPI.formatError(result));
-      unlockSiblings();
-      return;
-    }
-
-    if (kind === "csrf") {
-      showInlineError(button, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
-      unlockSiblings();
-      return;
-    }
-
-    if (kind === "conflict") {
-      var code = result.data && result.data.code;
-      if (code === "duplicate_user_event_status") {
-        setButtonAlreadyAdded(button);
+      if (kind === "network") {
+        showInlineError(button, window.TakuAPI.formatError(result));
+        return;
       }
-      unlockSiblings();
-      return;
-    }
 
-    // Controls that opt into a reload (archive change buttons, the 비공식-page
-    // 예정 toggle) let the server re-derive the row badge, available actions,
-    // kind-aware labels and summary counts instead of patching the DOM piecemeal.
-    if ((result.ok || result.status === 204) && button.hasAttribute("data-reload-on-success")) {
-      if (button.hasAttribute("data-toast") && STATUS_TOAST_MESSAGES[statusSlug]) {
-        // Reload wipes the current document, so the message travels through
-        // sessionStorage; toast.js reads and clears it after the reload. A
-        // blocked storage (private mode / disabled) must never skip the
-        // reload — the server-side state change already happened.
-        try {
-          window.sessionStorage.setItem("taku:toast", STATUS_TOAST_MESSAGES[statusSlug]);
-        } catch (e) {
-          // Storage blocked — proceed without the toast.
+      if (kind === "csrf") {
+        showInlineError(button, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+        return;
+      }
+
+      if (kind === "conflict") {
+        var code = result.data && result.data.code;
+        if (code === "duplicate_user_event_status") {
+          setButtonAlreadyAdded(button);
         }
+        return;
       }
-      unlockSiblings();
-      window.location.reload();
-      return;
-    }
 
-    if (mode === "cancel" && (result.status === 204 || result.ok)) {
-      delete button.dataset.statusId;
-      setButtonDefault(button);
-      removeRowIfOptedIn(button);
-      unlockSiblings();
-      return;
-    }
-
-    if (result.ok) {
-      var responseData = result.data || {};
-      // A switch moves the single registration from the sibling to this button.
-      var fallbackId;
-      if (mode === "switch" && activeSibling) {
-        fallbackId = activeSibling.dataset.statusId;
-        delete activeSibling.dataset.statusId;
-        setButtonDefault(activeSibling);
+      // Controls that opt into a reload (archive change buttons, the 비공식-page
+      // 예정 toggle) let the server re-derive the row badge, available actions,
+      // kind-aware labels and summary counts instead of patching the DOM piecemeal.
+      if ((result.ok || result.status === 204) && button.hasAttribute("data-reload-on-success")) {
+        if (button.hasAttribute("data-toast") && STATUS_TOAST_MESSAGES[statusSlug]) {
+          // Reload wipes the current document, so the message travels through
+          // sessionStorage; toast.js reads and clears it after the reload. A
+          // blocked storage (private mode / disabled) must never skip the
+          // reload — the server-side state change already happened.
+          try {
+            window.sessionStorage.setItem("taku:toast", STATUS_TOAST_MESSAGES[statusSlug]);
+          } catch (e) {
+            // Storage blocked — proceed without the toast.
+          }
+        }
+        window.location.reload();
+        return;
       }
-      // Keep the empty action so the next click on this (now active) button
-      // toggles the registration off instead of re-PATCHing the same status.
-      var newId = responseData.id ? String(responseData.id) : fallbackId;
-      if (newId) {
-        button.dataset.statusId = newId;
-      }
-      setButtonActive(button, statusSlug);
-      unlockSiblings();
-      return;
-    }
 
-    // Nothing above matched (validation / notfound / server / unknown) —
-    // show the error instead of failing silently.
-    showInlineError(button, window.TakuAPI.formatError(result));
-    unlockSiblings();
+      if (mode === "cancel" && (result.status === 204 || result.ok)) {
+        delete button.dataset.statusId;
+        setButtonDefault(button);
+        removeRowIfOptedIn(button);
+        return;
+      }
+
+      if (result.ok) {
+        var responseData = result.data || {};
+        // A switch moves the single registration from the sibling to this button.
+        var fallbackId;
+        if (mode === "switch" && activeSibling) {
+          fallbackId = activeSibling.dataset.statusId;
+          delete activeSibling.dataset.statusId;
+          setButtonDefault(activeSibling);
+        }
+        // Keep the empty action so the next click on this (now active) button
+        // toggles the registration off instead of re-PATCHing the same status.
+        var newId = responseData.id ? String(responseData.id) : fallbackId;
+        if (newId) {
+          button.dataset.statusId = newId;
+        }
+        setButtonActive(button, statusSlug);
+        return;
+      }
+
+      // Nothing above matched (validation / notfound / server / unknown) —
+      // show the error instead of failing silently.
+      showInlineError(button, window.TakuAPI.formatError(result));
+    } finally {
+      unlockSiblings();
+    }
   }
 
   // ── interest toggle (♡/♥) — fully independent from the funnel ──
