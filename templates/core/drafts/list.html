@@ -71,7 +71,6 @@
             <div class="bulk-toolbar" id="bulk-toolbar" data-approved-label="승인됨" hidden>
               <label class="draft-select" for="draft-select-all">
                 <input type="checkbox" id="draft-select-all">
-                <span class="sr-only">이 페이지의 검토 대기 드래프트 전체 선택</span>
               </label>
               <span id="bulk-selected-count">0건 선택됨</span>
               <button type="button" id="bulk-approve-btn" class="action-button" disabled>선택 일괄 승인</button>
@@ -89,7 +88,6 @@
                     <input type="checkbox" id="draft-select-{{ row.draft.id }}" class="draft-select-checkbox"
                            data-draft-select data-draft-id="{{ row.draft.id }}"
                            {% if not title %}data-missing-title="true"{% endif %}>
-                    <span class="sr-only">{{ title|default:"제목 없음" }} 선택</span>
                   </label>
                 {% else %}
                   <span class="draft-select-spacer"></span>

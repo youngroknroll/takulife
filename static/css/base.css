@@ -1,6 +1,6 @@
 /*
  * base.css — global base layer: reset, document defaults, page wrapper,
- * focus outline, and the .sr-only a11y helper. Objects/components split out.
+ * and focus outline. Objects/components split out.
  *
  * ── Unit convention (fully applied) ───────────────────────────
  *   rem  = ALL spacing: font-size, padding, margin, gap, sticky top,
@@ -12,8 +12,9 @@
  *   px   = fixed values only: border-width, box-shadow, border-radius,
  *          min-height tap targets (44px), pill radius (999px),
  *          absolute-position corner offsets (badges/carousel insets),
- *          calc() safe-area offsets, the .sr-only -1px clip, and the
- *          fan deck-card centering margin (tied to fixed px card dims).
+ *          calc() safe-area offsets, the .photo-upload-native-input -1px
+ *          clip (photo-upload.css), and the fan deck-card centering margin
+ *          (tied to fixed px card dims).
  *
  *   Root is the browser default (16px) — no html{font-size} override — so
  *   rem tracks the user's font setting. Conversion was faithful /16
@@ -65,19 +66,6 @@ body {
   max-width: 1120px;
   margin: 0 auto;
   padding: 1.625rem 1.25rem 5rem;
-}
-
-/* ── accessibility ──────────────────────────────────────────── */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* ── site-wide messages (django.contrib.messages) ──────────── */

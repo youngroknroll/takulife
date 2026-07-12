@@ -67,7 +67,6 @@ Context consumed: request.user (via the calling page) is not needed here.
         data-event-id="{{ ev.id }}"
         {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
         <span data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
-        <span class="sr-only">찜{% if row.user_interested %} (등록됨){% endif %}</span>
       </button>
     {% endif %}
   </div>
