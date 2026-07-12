@@ -7,7 +7,7 @@
  * it — so the selection follows the cursor naturally. Click navigates.
  *
  * DOM contract (set by home.html template):
- *   [data-carousel]           — deck wrapper (role=region)
+ *   [data-carousel]           — deck wrapper
  *   [data-carousel-track]     — .poster-deck containing .deck-card elements
  *   [data-card-index]         — deck-card elements (original order index)
  *

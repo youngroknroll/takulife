@@ -9,7 +9,7 @@
 
 {% block content %}
   <main class="page" id="content">
-    <section class="hero" aria-label="메인 검색">
+    <section class="hero">
       <div class="hero-inner">
         <div class="hero-left">
           <h1>지금 갈 수 있는 공식 오프라인 이벤트를 <span class="hl">한눈에</span></h1>
@@ -19,7 +19,7 @@
             <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
             <button type="submit">검색</button>
           </form>
-          <div class="quick-filters" aria-label="빠른 필터">
+          <div class="quick-filters">
             <a class="chip" href="/events/?region=seoul">서울</a>
             <a class="chip" href="/events/?region=gyeonggi">경기</a>
             <a class="chip" href="/events/?region=incheon">인천</a>
@@ -33,14 +33,12 @@
         {% if popular_rows %}
           <div
             class="poster-deck-wrap"
-            role="region"
-            aria-label="많이 본 행사"
             data-carousel
           >
             <div class="poster-deck" data-carousel-track>
 
               {# Sizer: invisible clone that provides intrinsic height so deck doesn't collapse #}
-              <div class="deck-sizer" aria-hidden="true"></div>
+              <div class="deck-sizer"></div>
 
               {% for row in popular_rows %}
                 <div
@@ -51,7 +49,6 @@
                   <a
                     class="deck-slide{% if not row.event.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}"
                     href="/events/{{ row.event.id }}/"
-                    aria-label="{{ row.event.title }} 상세 보기"
                     tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
                     style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, #fff 100%);{% endif %}"
                   >
@@ -63,10 +60,10 @@
                         loading="lazy"
                       >
                     {% else %}
-                      <span class="cat-tile cat-{{ row.category_slug }} deck-fill-emoji" aria-hidden="true"></span>
+                      <span class="cat-tile cat-{{ row.category_slug }} deck-fill-emoji"></span>
                     {% endif %}
-                    <div class="slide-scrim" aria-hidden="true"></div>
-                    <div class="slide-caption" aria-hidden="true">
+                    <div class="slide-scrim"></div>
+                    <div class="slide-caption">
                       {% if row.event.work_title %}<p class="slide-work">{{ row.event.work_title }}</p>{% endif %}
                       <div class="slide-caption-row">
                         <p class="slide-title">{{ row.event.title }}</p>
@@ -80,14 +77,14 @@
             </div>
           </div>
         {% else %}
-          <div class="carousel-empty" aria-hidden="true">
+          <div class="carousel-empty">
             <p>표시할 인기 행사가 없습니다</p>
           </div>
         {% endif %}
       </div>
     </section>
 
-    <section class="section" aria-label="진행 중인 행사">
+    <section class="section">
       <div class="section-head">
         <h2>이번 주 갈 만한 행사</h2>
         <p class="section-note">현재 진행 중인 행사</p>
@@ -95,13 +92,13 @@
       {% if ongoing_rows %}
         {% if ongoing_rows|length > 6 %}
           <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" data-controls="hscroll-ongoing">&#8249;</button>
-            <ul class="hscroll-track" data-hscroll-track id="hscroll-ongoing" role="region" aria-label="이번 주 갈 만한 행사" tabindex="0">
+            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-ongoing">&#8249;</button>
+            <ul class="hscroll-track" data-hscroll-track id="hscroll-ongoing" tabindex="0">
               {% for row in ongoing_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}</li>
               {% endfor %}
             </ul>
-            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" data-controls="hscroll-ongoing">&#8250;</button>
+            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-ongoing">&#8250;</button>
           </div>
         {% else %}
           <div class="poster-card-grid">
@@ -115,7 +112,7 @@
       {% endif %}
     </section>
 
-    <section class="section" aria-label="곧 종료되는 행사">
+    <section class="section">
       <div class="section-head">
         <h2>곧 종료돼요</h2>
         <p class="section-note">오늘 기준 종료 임박 이벤트</p>
@@ -123,13 +120,13 @@
       {% if closing_rows %}
         {% if closing_rows|length > 3 %}
           <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" data-controls="hscroll-closing">&#8249;</button>
-            <ul class="hscroll-track" data-hscroll-track id="hscroll-closing" role="region" aria-label="곧 종료되는 행사" tabindex="0">
+            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-closing">&#8249;</button>
+            <ul class="hscroll-track" data-hscroll-track id="hscroll-closing" tabindex="0">
               {% for row in closing_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="closing" %}</li>
               {% endfor %}
             </ul>
-            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" data-controls="hscroll-closing">&#8250;</button>
+            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-closing">&#8250;</button>
           </div>
         {% else %}
           <div class="poster-card-grid">
@@ -143,32 +140,32 @@
       {% endif %}
     </section>
 
-    <section class="section" aria-label="카테고리로 둘러보기">
+    <section class="section">
       <div class="section-head">
         <h2>카테고리로 둘러보기</h2>
         <p class="section-note">관심 있는 유형부터 바로 탐색</p>
       </div>
       {% if category_tiles|length > 5 %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" data-controls="hscroll-cat">&#8249;</button>
-          <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" role="region" aria-label="카테고리로 둘러보기" tabindex="0">
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-cat">&#8249;</button>
+          <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" tabindex="0">
             {% for tile in category_tiles %}
               <li class="cat-browse-item">
                 <a class="cat-browse-link" href="/events/?category={{ tile.slug }}">
-                  <span class="cat-tile cat-{{ tile.slug }}" aria-hidden="true"></span>
+                  <span class="cat-tile cat-{{ tile.slug }}"></span>
                   <span class="cat-name">{{ tile.label }}</span>
                   <span class="cat-count">{{ tile.count }}개</span>
                 </a>
               </li>
             {% endfor %}
           </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" data-controls="hscroll-cat">&#8250;</button>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-cat">&#8250;</button>
         </div>
       {% else %}
         <div class="cat-browse">
           {% for tile in category_tiles %}
             <a href="/events/?category={{ tile.slug }}">
-              <span class="cat-tile cat-{{ tile.slug }}" aria-hidden="true"></span>
+              <span class="cat-tile cat-{{ tile.slug }}"></span>
               <span class="cat-name">{{ tile.label }}</span>
               <span class="cat-count">{{ tile.count }}개</span>
             </a>
@@ -177,7 +174,7 @@
       {% endif %}
     </section>
 
-    <section class="section" aria-label="새로 등록된 행사">
+    <section class="section">
       <div class="section-head">
         <h2>새 이벤트</h2>
         <p class="section-note">관리자 검수 후 게시된 최신 항목</p>
@@ -185,13 +182,13 @@
       {% if recent_rows %}
         {% if recent_rows|length > 6 %}
           <div class="hscroll-wrap" data-hscroll>
-            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" data-controls="hscroll-recent">&#8249;</button>
-            <ul class="hscroll-track" data-hscroll-track id="hscroll-recent" role="region" aria-label="새로 등록된 행사" tabindex="0">
+            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-recent">&#8249;</button>
+            <ul class="hscroll-track" data-hscroll-track id="hscroll-recent" tabindex="0">
               {% for row in recent_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="recent" %}</li>
               {% endfor %}
             </ul>
-            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" data-controls="hscroll-recent">&#8250;</button>
+            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-recent">&#8250;</button>
           </div>
         {% else %}
           <div class="poster-card-grid">

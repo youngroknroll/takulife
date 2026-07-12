@@ -12,7 +12,7 @@
       <h1>드래프트 관리</h1>
       <p>공식 URL에서 가져온 행사 후보를 검토합니다. 승인 전까지 공개 목록에 노출되지 않습니다.</p>
 
-      <div class="summary-grid" style="--summary-cols: 3;" aria-label="드래프트 요약">
+      <div class="summary-grid" style="--summary-cols: 3;">
         <article class="summary-card">
           <p class="summary-label">검토 대기</p>
           <p class="summary-value"><span id="stat-pending">{{ stats.pending }}</span>건</p>
@@ -36,19 +36,17 @@
 
           <div class="create-box">
             <form id="draft-create-form" novalidate>
-              <div class="create-form" aria-label="드래프트 생성 폼">
+              <div class="create-form">
                 <input
                   id="draft-url"
                   type="url"
                   placeholder="https://official.example/events/..."
-                  aria-label="공식 URL"
                   autocomplete="off"
                 >
                 <input
                   id="draft-source-name"
                   type="text"
                   placeholder="출처명 (선택)"
-                  aria-label="출처명"
                 >
                 <button type="submit">드래프트 생성</button>
               </div>
@@ -61,11 +59,11 @@
           </div>
         </details>
 
-        <div class="chips" role="group" aria-label="상태 필터">
-          <a class="chip{% if not selected_status %} active{% endif %}" href="/staff/drafts/" aria-label="전체 보기"{% if not selected_status %} aria-current="true"{% endif %}>전체 {{ stats_total }}</a>
-          <a class="chip{% if selected_status == "pending" %} active{% endif %}" href="/staff/drafts/?status=pending" aria-label="검토 대기 필터"{% if selected_status == "pending" %} aria-current="true"{% endif %}>검토 대기 <span id="chip-count-pending">{{ stats.pending }}</span></a>
-          <a class="chip{% if selected_status == "approved" %} active{% endif %}" href="/staff/drafts/?status=approved" aria-label="승인됨 필터"{% if selected_status == "approved" %} aria-current="true"{% endif %}>승인됨 <span id="chip-count-approved">{{ stats.approved }}</span></a>
-          <a class="chip{% if selected_status == "rejected" %} active{% endif %}" href="/staff/drafts/?status=rejected" aria-label="반려됨 필터"{% if selected_status == "rejected" %} aria-current="true"{% endif %}>반려됨 {{ stats.rejected }}</a>
+        <div class="chips">
+          <a class="chip{% if not selected_status %} active{% endif %}" href="/staff/drafts/">전체 {{ stats_total }}</a>
+          <a class="chip{% if selected_status == "pending" %} active{% endif %}" href="/staff/drafts/?status=pending">검토 대기 <span id="chip-count-pending">{{ stats.pending }}</span></a>
+          <a class="chip{% if selected_status == "approved" %} active{% endif %}" href="/staff/drafts/?status=approved">승인됨 <span id="chip-count-approved">{{ stats.approved }}</span></a>
+          <a class="chip{% if selected_status == "rejected" %} active{% endif %}" href="/staff/drafts/?status=rejected">반려됨 {{ stats.rejected }}</a>
         </div>
 
         {% if draft_rows %}
@@ -82,7 +80,7 @@
             </div>
           {% endif %}
 
-          <div class="draft-list" aria-label="드래프트 목록" data-selected-status="{{ selected_status }}">
+          <div class="draft-list" data-selected-status="{{ selected_status }}">
             {% for row in draft_rows %}
               {% with title=row.draft.extracted_title|default:row.draft.raw_title %}
               <article class="draft-card hover-lift">
@@ -94,7 +92,7 @@
                     <span class="sr-only">{{ title|default:"제목 없음" }} 선택</span>
                   </label>
                 {% else %}
-                  <span class="draft-select-spacer" aria-hidden="true"></span>
+                  <span class="draft-select-spacer"></span>
                 {% endif %}
                 <div>
                   <div class="draft-top">
@@ -137,7 +135,7 @@
         {% endif %}
       </article>
 
-      <aside class="side-stack" aria-label="검토 원칙">
+      <aside class="side-stack">
         <section class="panel">
           <h2>검토 원칙</h2>
           <p class="panel-note">승인 전까지 공개 행사 목록에는 노출하지 않습니다.</p>

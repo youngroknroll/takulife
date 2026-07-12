@@ -8,7 +8,7 @@ static/css/components/pager.css (loaded globally from base.html). Include with:
                Must begin with & (page is always the first param). Omit if none.
 {% endcomment %}
 {% if page_obj.has_other_pages %}
-  <nav class="pager" aria-label="페이지네이션">
+  <nav class="pager">
     {% if page_obj.has_previous %}
       <a href="?page={{ page_obj.previous_page_number }}{{ extra_query }}">이전</a>
     {% endif %}

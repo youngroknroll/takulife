@@ -46,7 +46,7 @@
 
           <div class="form-group">
             <label>기존 사진</label>
-            <div class="photo-preview-grid" id="existing-photo-grid" aria-label="기존 사진"{% if not photos %} hidden{% endif %}>
+            <div class="photo-preview-grid" id="existing-photo-grid"{% if not photos %} hidden{% endif %}>
               {% for photo in photos %}
                 <div class="photo-preview-tile" data-existing-tile>
                   <img src="{{ photo.image.url }}" alt="사진 {{ forloop.counter }}">
@@ -54,7 +54,6 @@
                     type="button"
                     class="photo-preview-remove"
                     data-existing-photo-id="{{ photo.id }}"
-                    aria-label="기존 사진 {{ forloop.counter }} 삭제"
                   >×</button>
                 </div>
               {% endfor %}
@@ -73,14 +72,12 @@
               accept="image/jpeg,image/png,image/webp"
               multiple
               tabindex="-1"
-              aria-describedby="visit-photos-hint"
-              aria-hidden="true"
             >
             <div class="photo-upload-row">
-              <button type="button" id="visit-photos-trigger" class="photo-add-tile" aria-label="사진 추가">
-                <span aria-hidden="true">+</span>
+              <button type="button" id="visit-photos-trigger" class="photo-add-tile">
+                <span>+</span>
               </button>
-              <div class="photo-preview-grid" id="photo-preview-grid" aria-label="추가할 사진 미리보기" hidden></div>
+              <div class="photo-preview-grid" id="photo-preview-grid" hidden></div>
             </div>
           </div>
 

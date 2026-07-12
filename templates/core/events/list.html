@@ -15,7 +15,7 @@
       <button type="submit">검색</button>
     </form>
 
-    <div class="quick-row" aria-label="빠른 필터">
+    <div class="quick-row">
       <a class="chip{% if 'seoul' in selected_region %} active{% endif %}" href="/events/?region=seoul">서울</a>
       <a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/?region=gyeonggi">경기</a>
       <a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/?region=incheon">인천</a>
@@ -24,8 +24,8 @@
       <a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/?category=collaboration_cafe">콜라보 카페</a>
     </div>
 
-    <section class="layout" aria-label="행사 목록 레이아웃">
-      <aside class="panel filters" aria-label="행사 필터">
+    <section class="layout">
+      <aside class="panel filters">
         <h1>행사 목록</h1>
         <button class="filter-toggle" type="button" data-expanded="false" data-controls="filter-body">필터 열기 ▾</button>
 
@@ -39,7 +39,7 @@
               <button type="button" class="region-select-toggle" data-region-toggle
                       data-expanded="false" data-controls="region-options">
                 <span data-region-summary>지역 전체</span>
-                <span class="region-caret" aria-hidden="true">▾</span>
+                <span class="region-caret">▾</span>
               </button>
               <ul class="region-select-menu filter-list" id="region-options" data-region-menu hidden>
                 {% for slug, label in REGION %}
@@ -112,7 +112,7 @@
         </div>
       </aside>
 
-      <article class="panel results" aria-label="행사 검색 결과">
+      <article class="panel results">
         {% if page_obj %}
           <header class="results-head">
             <div>
@@ -125,7 +125,7 @@
           </header>
 
           {% if active_filter_chips %}
-            <div class="applied-filters" aria-label="적용된 필터">
+            <div class="applied-filters">
               {% for chip in active_filter_chips %}
                 <span class="applied-chip">{{ chip }}</span>
               {% endfor %}
@@ -136,7 +136,7 @@
           <div class="event-list">
             {% for row in event_rows %}
               <article class="event-card hover-lift">
-                <span class="cat-tile cat-{{ row.category_slug }}" aria-hidden="true"></span>
+                <span class="cat-tile cat-{{ row.category_slug }}"></span>
                 <div class="card-body">
                   <div class="card-lead">
                     {% if row.status_slug == 'ended' %}
@@ -167,8 +167,8 @@
                       data-interest-toggle
                       data-toast
                       data-event-id="{{ row.event.id }}"
-                      {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
-                      <span aria-hidden="true" data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
+                      {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
+                      <span data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
                       찜
                     </button>
                     {% if row.user_status == 'visited' or row.user_status == 'missed' %}
@@ -181,7 +181,7 @@
           </div>
 
           {% if page_obj.has_other_pages %}
-            <nav class="pager" aria-label="페이지네이션">
+            <nav class="pager">
               {% if page_obj.has_previous %}
                 <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% for r in selected_region %}&region={{ r|urlencode }}{% endfor %}{% for c in selected_category %}&category={{ c|urlencode }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">이전</a>
               {% endif %}
@@ -200,7 +200,7 @@
 
         {% else %}
           {% if active_filter_chips %}
-            <div class="applied-filters" aria-label="적용된 필터">
+            <div class="applied-filters">
               {% for chip in active_filter_chips %}
                 <span class="applied-chip">{{ chip }}</span>
               {% endfor %}
@@ -208,7 +208,7 @@
             </div>
           {% endif %}
           <div class="empty-state">
-            <p class="empty-icon" aria-hidden="true">🔍</p>
+            <p class="empty-icon">🔍</p>
             {% if active_filters %}
               <p class="empty-title">조건에 맞는 행사가 없어요</p>
               <p class="empty-note">필터를 줄이거나 다른 키워드로 다시 찾아보세요.</p>

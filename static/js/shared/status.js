@@ -87,7 +87,6 @@
     }
     var msg = document.createElement("p");
     msg.className = "status-inline-error inline-error";
-    msg.setAttribute("role", "alert");
     msg.textContent = message;
     container.appendChild(msg);
   }
@@ -109,7 +108,6 @@
     var label = button.dataset.labelActive || STATUS_LABELS[statusSlug] || statusSlug;
     button.textContent = label;
     button.classList.add("active");
-    button.setAttribute("aria-pressed", "true");
   }
 
   function setButtonDefault(button) {
@@ -117,13 +115,11 @@
     var label = button.dataset.label || STATUS_LABELS[slug] || slug;
     button.textContent = label;
     button.classList.remove("active");
-    button.setAttribute("aria-pressed", "false");
   }
 
   function setButtonAlreadyAdded(button) {
     button.textContent = "이미 추가됨";
     button.classList.add("active");
-    button.setAttribute("aria-pressed", "true");
     button.disabled = true;
   }
 
@@ -342,7 +338,6 @@
   function setInterestActive(button, interestId) {
     button.dataset.interestId = String(interestId);
     button.classList.add("active");
-    button.setAttribute("aria-pressed", "true");
     var glyph = button.querySelector("[data-interest-glyph]");
     if (glyph) {
       glyph.textContent = "♥";
@@ -352,7 +347,6 @@
   function setInterestDefault(button) {
     delete button.dataset.interestId;
     button.classList.remove("active");
-    button.setAttribute("aria-pressed", "false");
     var glyph = button.querySelector("[data-interest-glyph]");
     if (glyph) {
       glyph.textContent = "♡";
@@ -424,7 +418,6 @@
           setInterestActive(button, existingId);
         } else {
           button.classList.add("active");
-          button.setAttribute("aria-pressed", "true");
         }
       }
       return;
@@ -466,8 +459,6 @@
       if (!button.dataset.statusAction) {
         if (button.dataset.statusId) {
           setButtonActive(button, button.dataset.status);
-        } else {
-          button.setAttribute("aria-pressed", "false");
         }
       }
       button.addEventListener("click", handleClick);

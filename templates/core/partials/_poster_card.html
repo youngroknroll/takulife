@@ -41,9 +41,9 @@ Context consumed: request.user (via the calling page) is not needed here.
     {% if ev.poster_image %}
       <img class="poster-card-img" src="{{ ev.poster_image.url }}" alt="{{ ev.title }} 포스터" loading="lazy">
     {% else %}
-      <span class="cat-tile cat-{{ row.category_slug }} poster-card-emoji" aria-hidden="true"></span>
+      <span class="cat-tile cat-{{ row.category_slug }} poster-card-emoji"></span>
     {% endif %}
-    <span class="glint" aria-hidden="true">✦</span>
+    <span class="glint">✦</span>
 
     {% comment %} Ongoing(이번 주 갈 만한 행사): no countdown badge — already visitable.
        Recent(새 이벤트): "오픈까지 N일"(upcoming) and/or "NEW"(등록 10일 이내) — both may show.
@@ -65,8 +65,8 @@ Context consumed: request.user (via the calling page) is not needed here.
         data-interest-toggle
         data-toast
         data-event-id="{{ ev.id }}"
-        {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
-        <span aria-hidden="true" data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
+        {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
+        <span data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
         <span class="sr-only">찜{% if row.user_interested %} (등록됨){% endif %}</span>
       </button>
     {% endif %}

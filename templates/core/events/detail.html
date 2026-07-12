@@ -13,7 +13,7 @@
     <section class="shell">
       <article class="content panel">
         {% if event.official_url %}
-          <span class="official-stamp" aria-hidden="true">공식<br>확인</span>
+          <span class="official-stamp">공식<br>확인</span>
         {% endif %}
         {% if category_label %}<span class="chip">{{ category_label }}</span>{% endif %}
         {% if status_label %}<span class="status-chip">{{ status_label }}</span>{% endif %}
@@ -27,7 +27,7 @@
           <p class="lead">{{ event.summary }}</p>
         {% endif %}
 
-        <div class="meta-grid" aria-label="행사 메타 정보">
+        <div class="meta-grid">
           <div class="meta-item">
             <span class="meta-label">기간</span>
             <strong>
@@ -57,7 +57,7 @@
         </div>
 
         {% if event.official_url %}
-          <section class="section" aria-label="유의사항">
+          <section class="section">
             <h2>유의사항</h2>
             <p class="notice">운영 시간·가격·예매 등 자세한 내용은 공식 페이지에서 확인해 주세요.</p>
           </section>
@@ -65,19 +65,19 @@
       </article>
 
       <aside class="aside panel">
-        <section class="side-block" aria-label="상태 및 액션">
+        <section class="side-block">
           <h2>참여 상태</h2>
           <div class="action-list">
             {% if event.official_url %}
-              <a class="action-link{% if user_status != 'visited' %} primary{% endif %}" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기"{% if user_status != 'visited' %} data-cta-watch{% endif %}>공식 페이지에서 보기 ↗</a>
+              <a class="action-link{% if user_status != 'visited' %} primary{% endif %}" href="{{ event.official_url }}" rel="noopener" target="_blank"{% if user_status != 'visited' %} data-cta-watch{% endif %}>공식 페이지에서 보기 ↗</a>
             {% endif %}
             <div class="status-row" data-status-error-container>
               <button class="interest-btn{% if user_interested %} active{% endif %}" type="button"
                 data-interest-toggle
                 data-toast
                 data-event-id="{{ event.id }}"
-                {% if user_interested %}data-interest-id="{{ user_interest_id }}" aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
-                <span aria-hidden="true" data-interest-glyph>{% if user_interested %}♥{% else %}♡{% endif %}</span>
+                {% if user_interested %}data-interest-id="{{ user_interest_id }}"{% endif %}>
+                <span data-interest-glyph>{% if user_interested %}♥{% else %}♡{% endif %}</span>
                 찜
               </button>
             </div>
@@ -98,24 +98,21 @@
                 data-status="planned"
                 data-reload-on-success
                 {% if user_status == 'planned' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
-                {% if status_slug == 'ended' %}disabled aria-disabled="true" title="종료된 행사는 방문 예정을 설정할 수 없습니다"{% endif %}
-                aria-pressed="{% if user_status == 'planned' %}true{% else %}false{% endif %}">방문 예정</button>
+                {% if status_slug == 'ended' %}disabled title="종료된 행사는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
               <button class="status-btn visited{% if user_status == 'visited' %} active{% endif %}" type="button"
                 data-status-action
                 data-toast
                 data-event-id="{{ event.id }}"
                 data-status="visited"
                 data-reload-on-success
-                {% if user_status == 'visited' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
-                aria-pressed="{% if user_status == 'visited' %}true{% else %}false{% endif %}">방문 완료</button>
+                {% if user_status == 'visited' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>방문 완료</button>
               <button class="status-btn missed{% if user_status == 'missed' %} active{% endif %}" type="button"
                 data-status-action
                 data-toast
                 data-event-id="{{ event.id }}"
                 data-status="missed"
                 data-reload-on-success
-                {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
-                aria-pressed="{% if user_status == 'missed' %}true{% else %}false{% endif %}">놓침</button>
+                {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>놓침</button>
             </div>
             {% if user_status == 'visited' %}
               <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}" data-cta-watch>기록 남기기</a>
@@ -123,7 +120,7 @@
           </div>
         </section>
 
-        <section class="side-block" aria-label="공식 출처">
+        <section class="side-block">
           <h2>공식 출처</h2>
           {% if event.source_name or event.official_url %}
             <div class="source-block">
@@ -141,7 +138,7 @@
         </section>
 
         {% if request.user.is_staff %}
-        <section class="side-block" aria-label="포스터 이미지 (스태프)">
+        <section class="side-block">
           <h2>포스터 이미지</h2>
 
           {% if event.poster_image %}
@@ -166,10 +163,9 @@
               accept="image/jpeg,image/png,image/webp"
               data-event-id="{{ event.id }}"
               tabindex="-1"
-              aria-hidden="true"
             >
-            <button type="button" id="poster-file-trigger" class="photo-add-tile" aria-label="포스터 이미지 선택" aria-describedby="poster-file-hint">
-              <span aria-hidden="true">+</span>
+            <button type="button" id="poster-file-trigger" class="photo-add-tile">
+              <span>+</span>
             </button>
 
             <button
@@ -210,7 +206,7 @@
       </div>
     {% elif event.official_url %}
       <div class="mobile-cta" data-cta-fixed hidden>
-        <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank" aria-label="공식 페이지에서 보기">공식 페이지에서 보기 ↗</a>
+        <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank">공식 페이지에서 보기 ↗</a>
       </div>
     {% endif %}
   </main>

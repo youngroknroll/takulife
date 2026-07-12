@@ -13,22 +13,22 @@ Context consumed:
   request.user.is_staff         — whether to show the draft management link
   request.user.is_superuser     — whether to show the Django admin link
 {% endcomment %}
-<nav class="topbar-auth" aria-label="계정 메뉴">
+<nav class="topbar-auth">
   {% if request.user.is_authenticated %}
     <span class="topbar-username" title="{{ request.user.email }}">{{ request.user.email }}</span>
     {% if request.user.is_staff %}
-      <a class="topbar-link" href="/staff/dashboard/" aria-label="스태프 콘솔 페이지">스태프 콘솔</a>
+      <a class="topbar-link" href="/staff/dashboard/">스태프 콘솔</a>
     {% endif %}
     {% if request.user.is_superuser %}
-      <a class="topbar-link" href="/admin/" aria-label="관리자 페이지">관리자</a>
+      <a class="topbar-link" href="/admin/">관리자</a>
     {% endif %}
-    <a class="topbar-link" href="/accounts/delete/" aria-label="회원 탈퇴">회원 탈퇴</a>
+    <a class="topbar-link" href="/accounts/delete/">회원 탈퇴</a>
     <form class="topbar-logout-form" method="post" action="/accounts/logout/">
       {% csrf_token %}
-      <button class="topbar-link topbar-logout-btn" type="submit" aria-label="로그아웃">로그아웃</button>
+      <button class="topbar-link topbar-logout-btn" type="submit">로그아웃</button>
     </form>
   {% else %}
-    <a class="topbar-link" href="/accounts/login/" aria-label="로그인">로그인</a>
-    <a class="topbar-link" href="/accounts/signup/" aria-label="회원가입">회원가입</a>
+    <a class="topbar-link" href="/accounts/login/">로그인</a>
+    <a class="topbar-link" href="/accounts/signup/">회원가입</a>
   {% endif %}
 </nav>

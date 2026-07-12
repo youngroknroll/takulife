@@ -34,20 +34,18 @@
             <a
               class="record-edit-link"
               href="/archive/visits/{{ row.record_id }}/edit/"
-              aria-label="{{ row.subject.title }} 방문 기록 수정"
             >수정</a>
             <button
               class="record-delete-btn"
               type="button"
               data-delete-record-id="{{ row.record_id }}"
-              aria-label="{{ row.subject.title }} 방문 기록 삭제"
             >기록 삭제</button>
           </div>
         </div>
 
         {% if row.photos %}
           <div class="visit-card-media">
-            <div class="photo-carousel" data-carousel aria-label="첨부 사진">
+            <div class="photo-carousel" data-carousel>
               <div class="photo-track">
                 {% for photo in row.photos %}
                   <div class="photo-slide">
@@ -60,9 +58,9 @@
                 {% endfor %}
               </div>
               {% if row.photos|length > 1 %}
-                <button class="carousel-btn carousel-prev" type="button" aria-label="이전 사진">‹</button>
-                <button class="carousel-btn carousel-next" type="button" aria-label="다음 사진">›</button>
-                <p class="carousel-counter" aria-hidden="true"><span class="carousel-index">1</span>/{{ row.photos|length }}</p>
+                <button class="carousel-btn carousel-prev" type="button">‹</button>
+                <button class="carousel-btn carousel-next" type="button">›</button>
+                <p class="carousel-counter"><span class="carousel-index">1</span>/{{ row.photos|length }}</p>
               {% endif %}
             </div>
           </div>
@@ -84,7 +82,7 @@
   {% endif %}
 {% else %}
   <div class="empty-state">
-    <p class="empty-icon" aria-hidden="true">📸</p>
+    <p class="empty-icon">📸</p>
     <p class="empty-title">아직 방문 기록이 없어요</p>
     <p class="empty-note">기록 추가 폼에서 방문한 행사와 한줄 메모를 남겨보세요.</p>
   </div>

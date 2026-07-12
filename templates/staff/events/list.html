@@ -19,15 +19,15 @@
     <section class="layout">
       <article class="panel">
         <h2>품질 경고 필터</h2>
-        <div class="chips" role="group" aria-label="품질 경고 필터">
-          <a class="chip{% if not selected_warning %} active{% endif %}" href="/staff/events/" aria-label="전체 보기"{% if not selected_warning %} aria-current="true"{% endif %}>전체</a>
+        <div class="chips">
+          <a class="chip{% if not selected_warning %} active{% endif %}" href="/staff/events/">전체</a>
           {% for chip in warning_chips %}
-            <a class="chip{% if selected_warning == chip.key %} active{% endif %}" href="/staff/events/?warning={{ chip.key }}" aria-label="{{ chip.label }} 필터"{% if selected_warning == chip.key %} aria-current="true"{% endif %}>{{ chip.label }}</a>
+            <a class="chip{% if selected_warning == chip.key %} active{% endif %}" href="/staff/events/?warning={{ chip.key }}">{{ chip.label }}</a>
           {% endfor %}
         </div>
 
         {% if event_rows %}
-          <div class="event-list" aria-label="이벤트 목록">
+          <div class="event-list">
             {% for row in event_rows %}
               <article class="event-row-card hover-lift">
                 <div class="event-row-top">

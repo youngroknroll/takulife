@@ -38,9 +38,8 @@
             data-interest-toggle
             data-personal-entry-id="{{ row.entry.id }}"
             {% if row.interest_id %}data-interest-id="{{ row.interest_id }}"{% endif %}
-            aria-pressed="{% if row.interest_id %}true{% else %}false{% endif %}"
           >
-            <span aria-hidden="true" data-interest-glyph>{% if row.interest_id %}♥{% else %}♡{% endif %}</span>
+            <span data-interest-glyph>{% if row.interest_id %}♥{% else %}♡{% endif %}</span>
             찜
           </button>
           <button
@@ -53,7 +52,6 @@
             data-label-active="{{ row.status_label|default:row.planned_label }}"
             data-reload-on-success
             {% if row.status_id %}data-status-id="{{ row.status_id }}"{% endif %}
-            aria-pressed="{% if row.status_id %}true{% else %}false{% endif %}"
           >{% if row.status_label %}{{ row.status_label }}{% else %}{{ row.planned_label }}{% endif %}</button>
         </div>
 
@@ -72,7 +70,6 @@
             class="record-delete-btn"
             type="button"
             data-delete-entry-id="{{ row.entry.id }}"
-            aria-label="{{ row.entry.title }} 삭제"
           >삭제</button>
         </div>
         </div>
@@ -98,7 +95,7 @@
   </div>
 {% else %}
   <div class="empty-state">
-    <p class="empty-icon" aria-hidden="true">🗂️</p>
+    <p class="empty-icon">🗂️</p>
     <p class="empty-title">아직 등록한 항목이 없어요</p>
     <p class="empty-note">오른쪽 폼에서 비공식 장소나 굿즈를 추가해 보세요.</p>
   </div>

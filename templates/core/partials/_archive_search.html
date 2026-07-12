@@ -12,7 +12,7 @@ Args:
   hidden_name  — optional: name attr of a hidden input to preserve the active filter
   hidden_value — optional: value attr; hidden input is skipped when this is empty
 {% endcomment %}
-<form method="get" role="search" class="archive-search">
+<form method="get" class="archive-search">
   {% if hidden_name and hidden_value %}
     <input type="hidden" name="{{ hidden_name }}" value="{{ hidden_value }}">
   {% endif %}
@@ -22,7 +22,6 @@ Args:
       name="q"
       value="{{ q }}"
       placeholder="제목·장소 검색"
-      aria-label="아카이브 검색"
     >
     <button type="submit">검색</button>
   </div>

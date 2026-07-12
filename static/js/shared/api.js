@@ -220,9 +220,6 @@
 
     var overlay = document.createElement("div");
     overlay.className = "auth-modal-overlay";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-labelledby", "auth-modal-title");
 
     var modal = document.createElement("div");
     modal.className = "auth-modal";
@@ -230,7 +227,6 @@
     var close = document.createElement("button");
     close.type = "button";
     close.className = "auth-modal-close";
-    close.setAttribute("aria-label", "닫기");
     close.textContent = "×";
 
     var title = document.createElement("h2");

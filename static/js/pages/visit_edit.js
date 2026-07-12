@@ -119,7 +119,6 @@
       remove.type = "button";
       remove.className = "photo-preview-remove";
       remove.textContent = "×";
-      remove.setAttribute("aria-label", "제거: " + item.file.name);
       remove.disabled = uploadLocked;
       remove.addEventListener("click", function () {
         removeNewAt(index, grid);
