@@ -6,6 +6,7 @@ import secrets
 import string
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 from drafts.models import DraftSource, EventDraft
@@ -524,3 +525,113 @@ def test_staff_dashboard_pending_card_links_to_pending_queue(staff_client):
     assert resp.status_code == 200
     content = resp.content.decode()
     assert '<a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">' in content
+
+
+# ---------------------------------------------------------------------------
+# 품질 경고 바 리스트 (Phase 3)
+# ---------------------------------------------------------------------------
+
+def _clean_quality_event_kwargs(index):
+    """Field values for a published Event that trips none of the 5 quality
+    warnings (unique official_url, both dates set with end_date in the
+    future, non-blank region). poster_image is deliberately NOT included
+    here — callers that want a fully clean event must also attach an
+    uploaded poster_image and save() (see events/queries.py predicates)."""
+    today = timezone.localdate()
+    return {
+        "official_url": f"https://example.com/quality-warning-{index}",
+        "start_date": today,
+        "end_date": today + datetime.timedelta(days=30),
+        "region": "서울",
+    }
+
+
+def _attach_poster(event, png_bytes, index):
+    event.poster_image = SimpleUploadedFile(
+        f"quality-warning-poster-{index}.png", png_bytes(), content_type="image/png"
+    )
+    event.save()
+    return event
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warnings_render_as_bars_with_all_five_hrefs(staff_client, make_event):
+    staff, client = staff_client()
+    make_event()  # bare event trips several warnings at once
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "warning-bars" in content
+    for key in (
+        "missing_official_url",
+        "ended_still_published",
+        "missing_poster",
+        "missing_dates",
+        "missing_region",
+    ):
+        assert f"?warning={key}" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warning_bars_sort_descending_by_count(staff_client, make_event, png_bytes):
+    staff, client = staff_client()
+    # 3 events trip only missing_poster (poster left unset).
+    for i in range(3):
+        make_event(**_clean_quality_event_kwargs(i))
+    # 1 event trips only missing_official_url (official_url left unset).
+    kwargs = _clean_quality_event_kwargs(100)
+    kwargs.pop("official_url")
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 100)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert content.index("포스터 없음") < content.index("공식 URL 없음")
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warning_zero_rows_have_no_bar_fill(staff_client, make_event, png_bytes):
+    """Only missing_region trips (count=1); the other 4 warnings stay at 0
+    and must not render a .warning-bar-fill span."""
+    staff, client = staff_client()
+    kwargs = _clean_quality_event_kwargs(0)
+    kwargs.pop("region")
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 0)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert content.count("warning-bar-fill") == 1
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warnings_shows_notice_when_none(staff_client):
+    staff, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "현재 품질 경고가 없습니다" in content
+    assert "warning-bars" not in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warning_track_is_aria_hidden(staff_client, make_event, png_bytes):
+    staff, client = staff_client()
+    kwargs = _clean_quality_event_kwargs(0)
+    kwargs.pop("region")
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 0)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="warning-bar-track" aria-hidden="true">' in content

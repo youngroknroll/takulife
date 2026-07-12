@@ -88,36 +88,25 @@
 
         <h3>품질 경고</h3>
         <p class="panel-note">게시(공개) 중인 행사를 대상으로 자동 점검한 결과입니다.</p>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th scope="col">점검 항목</th>
-              <th scope="col">건수</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><a href="/staff/events/?warning=missing_official_url">공식 URL 없음</a></td>
-              <td>{{ quality_warnings.missing_official_url }}건</td>
-            </tr>
-            <tr>
-              <td><a href="/staff/events/?warning=ended_still_published">종료됐지만 게시 중</a></td>
-              <td>{{ quality_warnings.ended_still_published }}건</td>
-            </tr>
-            <tr>
-              <td><a href="/staff/events/?warning=missing_poster">포스터 없음</a></td>
-              <td>{{ quality_warnings.missing_poster }}건</td>
-            </tr>
-            <tr>
-              <td><a href="/staff/events/?warning=missing_dates">날짜 정보 누락</a></td>
-              <td>{{ quality_warnings.missing_dates }}건</td>
-            </tr>
-            <tr>
-              <td><a href="/staff/events/?warning=missing_region">지역 정보 없음</a></td>
-              <td>{{ quality_warnings.missing_region }}건</td>
-            </tr>
-          </tbody>
-        </table>
+        {% if quality_warnings.total == 0 %}
+          <p class="notice">현재 품질 경고가 없습니다 ✓</p>
+        {% else %}
+          <ul class="warning-bars">
+            {% for row in quality_warning_rows %}
+              <li>
+                <a class="warning-bar-row{% if row.count == 0 %} warning-bar-row--zero{% endif %}" href="/staff/events/?warning={{ row.key }}">
+                  <span class="warning-bar-label">{{ row.label }}</span>
+                  <span class="warning-bar-visual">
+                    {% if row.count > 0 %}
+                      <span class="warning-bar-track" aria-hidden="true"><span class="warning-bar-fill" style="--bar-w: {% widthratio row.count quality_warning_max 100 %}%"></span></span>
+                    {% endif %}
+                    <span class="warning-bar-count">{{ row.count }}건</span>
+                  </span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
 
         <h3>최근 처리 내역 (최근 10건)</h3>
         {% if recent_actions %}

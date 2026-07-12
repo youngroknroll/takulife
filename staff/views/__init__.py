@@ -129,6 +129,25 @@ def _build_source_rows(sources):
     return rows
 
 
+def _build_quality_warning_rows(warnings):
+    """Attach display rows to the quality_warnings dict for the dashboard's
+    "품질 경고" bar list, sorted count descending.
+
+    Ties are broken by QUALITY_WARNING_LABELS' definition order rather than
+    left to sort() to decide arbitrarily: enumerate() captures each row's
+    original position before sorting, and that position becomes the
+    secondary sort key (the worst warning must
+    always be first, and tied warnings must render in a stable order across
+    requests).
+    """
+    rows = [
+        {"key": key, "label": label, "count": warnings[key]}
+        for key, label in QUALITY_WARNING_LABELS.items()
+    ]
+    ranked = sorted(enumerate(rows), key=lambda pair: (-pair[1]["count"], pair[0]))
+    return [row for _, row in ranked]
+
+
 def _last_discovery_run_at():
     """Return the most recent DRAFT_DISCOVER StaffActionLog's created_at, or
     None if discovery has never been run.
@@ -152,12 +171,18 @@ def dashboard(request):
     stats = draft_review_stats()
     recent_actions = recent_staff_actions()
     draft_sources = list_draft_sources()
+    quality_warnings = published_quality_warnings()
+    quality_warning_rows = _build_quality_warning_rows(quality_warnings)
     return render(
         request,
         "staff/dashboard.html",
         {
             "pending_count": stats["pending"],
-            "quality_warnings": published_quality_warnings(),
+            "quality_warnings": quality_warnings,
+            "quality_warning_rows": quality_warning_rows,
+            "quality_warning_max": max(
+                (row["count"] for row in quality_warning_rows), default=0
+            ),
             "recent_actions": recent_actions,
             "recent_action_rows": _build_action_rows(recent_actions),
             "draft_sources": draft_sources,

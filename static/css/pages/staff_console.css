@@ -75,6 +75,73 @@
   color: var(--muted);
 }
 
+.summary-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 품질 경고: 수평 바 리스트 (Gate D 후속) ──────────────────────
+   행 전체가 드릴다운 링크. 라벨은 고정폭, 값 영역(트랙+건수)이 남는
+   폭을 차지 — 바 길이 비교가 목적이라 건수 컬럼은 우측 정렬한다. */
+.warning-bars {
+  list-style: none;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0;
+}
+
+.warning-bar-row {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 9rem) 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.25rem 0;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--line);
+}
+
+.warning-bar-row:hover {
+  color: var(--brand-ink);
+}
+
+.warning-bar-label {
+  font-size: var(--fs-sm);
+}
+
+.warning-bar-visual {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warning-bar-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--bg-soft);
+}
+
+.warning-bar-fill {
+  display: block;
+  height: 100%;
+  width: var(--bar-w);
+  background: var(--amber-ink);
+  border-radius: 0 4px 4px 0;
+}
+
+.warning-bar-count {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.warning-bar-row--zero .warning-bar-label,
+.warning-bar-row--zero .warning-bar-count {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .queue-link {
   display: inline-flex;
   align-items: center;
