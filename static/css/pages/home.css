@@ -603,12 +603,6 @@
        reliably here. Left as a literal (no matching light-pink token). */
     color: #ff6b81;
   }
-  /* Small-count fallback grid (non-scroller) */
-  .poster-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.625rem;
-  }
   @media (max-width: 56.25rem) {
     .cat-browse {
       grid-template-columns: repeat(3, 1fr);
