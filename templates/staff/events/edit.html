@@ -28,8 +28,8 @@
       <article class="panel">
         <h2>필드 편집</h2>
 
-        {# action은 화이트리스트 기반 list_query를 보존 — POST 후 PRG 리다이렉트가
-           목록 필터(?warning=/?publish_status=)를 유지하려면 POST URL 자체에 실려야 함 #}
+        {% comment %}action은 화이트리스트 기반 list_query를 보존 — POST 후 PRG 리다이렉트가
+           목록 필터(?warning=/?publish_status=)를 유지하려면 POST URL 자체에 실려야 함{% endcomment %}
         <form method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" enctype="multipart/form-data" novalidate>
           {% csrf_token %}
           <div class="field-grid">
