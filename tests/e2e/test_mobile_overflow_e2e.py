@@ -7,6 +7,8 @@ that widens `body.scrollWidth` without waiting for the next manual pass.
 """
 import pytest
 
+from archive.models import PersonalEntry
+
 pytestmark = pytest.mark.e2e
 
 
@@ -109,6 +111,25 @@ class TestMobileOverflow320px:
     def test_archive_personal_entries_has_no_horizontal_overflow(
         self, live_server, page, seed, login
     ):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/archive/items/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_archive_personal_entries_with_long_unbroken_tokens_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        """memo/category are free-text fields with no whitespace requirement —
+        a long unbroken token (URL, run-on category label) must wrap instead
+        of pushing the card wider than the viewport."""
+        PersonalEntry.objects.create(
+            user=seed.user,
+            kind=PersonalEntry.Kind.PLACE,
+            title="긴 토큰 테스트",
+            category="a" * 30,
+            memo="https://example.com/" + "a" * 40,
+        )
+
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/items/")
 

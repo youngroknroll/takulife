@@ -80,6 +80,8 @@
   .visit-chip.category {
     background: var(--brand-soft);
     color: var(--brand);
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   /* 비공식 mark — unified gray, matching .event-category.unofficial on the
      기록장 / 예정 목록 / 찜 목록 pages (--muted-soft / --muted). */
@@ -96,6 +98,10 @@
     margin: 0.3125rem 0 0;
     color: var(--text);
     font-size: var(--fs-md);
+  }
+  .entry-list .meta,
+  .entry-list .review {
+    overflow-wrap: anywhere;
   }
   /* Photo carousel (view-only; add/delete happens on the edit page) */
   .photo-carousel {
