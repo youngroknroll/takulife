@@ -461,6 +461,13 @@
     opacity: 0.9;
   }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
+  /* §5.4 조작 영역 합격 기준(44px): 전역 .interest-btn(controls.css)은 다른
+     화면의 알약 크기를 그대로 쓰므로, 직접 등록 카드 컨텍스트에서만
+     확대한다(event_list.css:241의 동일 관례). */
+  .visit-card .interest-btn {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+  }
   /* 비공식 카드 하단 액션 바: 찜·예정(좌) / 공식 제보·마크·삭제(우) */
   .entry-list .entry-actions-bar {
     display: flex;
