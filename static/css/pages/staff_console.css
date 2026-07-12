@@ -332,3 +332,22 @@
     white-space: nowrap;
   }
 }
+
+/* ── home_categories.html: 노출 체크박스 / 순서 입력 터치 타깃 ──── */
+.home-cat-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+.home-cat-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}
+.home-cat-order {
+  width: 4rem;
+  min-height: 2.75rem;
+}

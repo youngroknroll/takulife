@@ -153,6 +153,39 @@ class TestStaffHomeCategoriesAuth:
 
 
 # ---------------------------------------------------------------------------
+# D2. staff/home-categories — template assets (touch-target regression)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestStaffHomeCategoriesTemplateAssets:
+    """home_categories.html had no extra_css block, so staff_console.css
+    never loaded — the checkbox/order-input touch targets rendered at raw UA
+    defaults (checkbox ~13px, order input inline style="width: 4rem;")."""
+
+    def test_response_loads_staff_console_css(self, staff_client):
+        _, client = staff_client()
+
+        resp = client.get("/staff/home-categories/")
+
+        assert b"css/pages/staff_console.css" in resp.content
+
+    def test_checkbox_is_wrapped_in_touch_target_label(self, staff_client):
+        _, client = staff_client()
+
+        resp = client.get("/staff/home-categories/")
+
+        assert b'class="home-cat-select"' in resp.content
+        assert b'class="home-cat-checkbox"' in resp.content
+
+    def test_order_input_has_no_inline_style(self, staff_client):
+        _, client = staff_client()
+
+        resp = client.get("/staff/home-categories/")
+
+        assert b'style="width: 4rem;"' not in resp.content
+
+
+# ---------------------------------------------------------------------------
 # E. staff/home-categories — POST (PRG)
 # ---------------------------------------------------------------------------
 
