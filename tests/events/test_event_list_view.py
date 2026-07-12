@@ -126,6 +126,25 @@ class TestEventListActiveFilterChips:
 
 
 @pytest.mark.django_db
+class TestEventListPagerQEncoding:
+    """The pager's ?q= link must URL-encode the search term the same way
+    selected_sort already does, so a value containing '#' isn't truncated
+    into a URL fragment on click, losing the rest of the query string
+    (templates/core/events/list.html pager)."""
+
+    def test_pager_link_urlencodes_q_containing_hash(self, make_event):
+        for i in range(11):
+            make_event(title=f"#콜라보 행사 {i}")
+
+        resp = Client().get("/events/", {"q": "#콜라보"})
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "q=%23%EC%BD%9C%EB%9D%BC%EB%B3%B4" in body
+        assert "&q=#" not in body
+
+
+@pytest.mark.django_db
 def test_personal_entry_never_appears_in_public_browse_page(client, make_user):
     """A private PersonalEntry item must not leak into the public browse page
     HTML (split from archive's test_personal_entry_never_appears_in_public_catalog
