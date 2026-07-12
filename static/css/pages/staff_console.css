@@ -253,6 +253,23 @@
   vertical-align: middle;
 }
 
+/* dashboard.html의 수집 소스 실행 버튼 — staff_events.css .action-button과
+   동일 값(대시보드는 이 페이지 CSS만 로드하므로 정의가 없었음). */
+.action-button {
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.625rem 0.75rem;
+  min-height: 44px;
+}
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── 최근 처리 내역: 모바일 카드형 (Gate D) ──────────────────────
    데스크톱은 기존 4열 .data-table을 그대로 유지하고, 좁은 화면에서만
    같은 데이터로 렌더된 카드 목록으로 전환한다. .data-table 자체는
