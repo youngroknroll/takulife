@@ -15,7 +15,6 @@
     <section class="hero">
       <div>
         <h1>이벤트 수정 #{{ event.id }}</h1>
-        <p>필드를 수정하고 저장하세요. 게시 상태 전환·삭제는 아래 별도 섹션에서.</p>
       </div>
       <span class="draft-chip {{ event.publish_status }}">{% if event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
     </section>
