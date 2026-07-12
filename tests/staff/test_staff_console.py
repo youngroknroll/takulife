@@ -6,6 +6,7 @@ import secrets
 import string
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 from drafts.models import DraftSource, EventDraft
@@ -476,3 +477,347 @@ def test_non_staff_blocked_from_new_staff_paths(client, make_user, path):
     resp = client.get(path)
 
     assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Hero summary-grid: 최근 7일 처리 카운트 + 검토 대기 카드 링크 (Phase 2)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_staff_dashboard_recent_7d_count_reflects_actual_count_beyond_limit(staff_client):
+    """recent_actions_7d_count must reflect the true 7-day count, not the
+    recent_actions list's limit=10 cap (regression guard)."""
+    staff, client = staff_client()
+    for _ in range(12):
+        StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "최근 7일 처리" in content
+    assert "12건" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_prev_week_context(staff_client):
+    staff, client = staff_client()
+    for _ in range(2):
+        StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+    for _ in range(3):
+        log = StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+        StaffActionLog.objects.filter(pk=log.pk).update(
+            created_at=timezone.now() - datetime.timedelta(days=10)
+        )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert "지난주 3건" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_pending_card_links_to_pending_queue(staff_client):
+    staff, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">' in content
+
+
+# ---------------------------------------------------------------------------
+# 품질 경고 바 리스트 (Phase 3)
+# ---------------------------------------------------------------------------
+
+def _clean_quality_event_kwargs(index):
+    """Field values for a published Event that trips none of the 5 quality
+    warnings (unique official_url, both dates set with end_date in the
+    future, non-blank region). poster_image is deliberately NOT included
+    here — callers that want a fully clean event must also attach an
+    uploaded poster_image and save() (see events/queries.py predicates)."""
+    today = timezone.localdate()
+    return {
+        "official_url": f"https://example.com/quality-warning-{index}",
+        "start_date": today,
+        "end_date": today + datetime.timedelta(days=30),
+        "region": "서울",
+    }
+
+
+def _attach_poster(event, png_bytes, index):
+    event.poster_image = SimpleUploadedFile(
+        f"quality-warning-poster-{index}.png", png_bytes(), content_type="image/png"
+    )
+    event.save()
+    return event
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warnings_render_as_bars_with_all_five_hrefs(staff_client, make_event):
+    staff, client = staff_client()
+    make_event()  # bare event trips several warnings at once
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "warning-bars" in content
+    for key in (
+        "missing_official_url",
+        "ended_still_published",
+        "missing_poster",
+        "missing_dates",
+        "missing_region",
+    ):
+        assert f"?warning={key}" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warning_bars_sort_descending_by_count(staff_client, make_event, png_bytes):
+    staff, client = staff_client()
+    # 3 events trip only missing_poster (poster left unset).
+    for i in range(3):
+        make_event(**_clean_quality_event_kwargs(i))
+    # 1 event trips only missing_official_url (official_url left unset).
+    kwargs = _clean_quality_event_kwargs(100)
+    kwargs.pop("official_url")
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 100)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert content.index("포스터 없음") < content.index("공식 URL 없음")
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warning_zero_rows_have_no_bar_fill(staff_client, make_event, png_bytes):
+    """Only missing_region trips (count=1); the other 4 warnings stay at 0
+    and must not render a .warning-bar-fill span."""
+    staff, client = staff_client()
+    kwargs = _clean_quality_event_kwargs(0)
+    kwargs.pop("region")
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 0)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert content.count("warning-bar-fill") == 1
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warnings_shows_notice_when_none(staff_client):
+    staff, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "현재 품질 경고가 없습니다" in content
+    assert "warning-bars" not in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warning_track_is_aria_hidden(staff_client, make_event, png_bytes):
+    staff, client = staff_client()
+    kwargs = _clean_quality_event_kwargs(0)
+    kwargs.pop("region")
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 0)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="warning-bar-track" aria-hidden="true">' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_quality_warning_bars_tie_break_by_label_definition_order(
+    staff_client, make_event, png_bytes
+):
+    """Regression guard for _build_quality_warning_rows' tie-break: two
+    warnings tied at count=1 must render in QUALITY_WARNING_LABELS'
+    definition order (missing_official_url before missing_poster), not in
+    whatever order sort() happens to leave them."""
+    staff, client = staff_client()
+    # Trips only missing_poster (poster left unset).
+    make_event(**_clean_quality_event_kwargs(0))
+    # Trips only missing_official_url (official_url left unset).
+    kwargs = _clean_quality_event_kwargs(1)
+    kwargs.pop("official_url")
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 1)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert content.index("공식 URL 없음") < content.index("포스터 없음")
+
+
+# ---------------------------------------------------------------------------
+# 최근 14일 활동 미니 컬럼 차트 (Phase 4)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_staff_dashboard_activity_chart_renders_14_columns_with_a11y_summary(staff_client):
+    staff, client = staff_client()
+    StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    columns = re.findall(r'<span class="activity-col[^"]*"', content)
+    assert len(columns) == 14
+    assert 'role="img"' in content
+    assert 'aria-label="최근 14일 일별 처리 활동, 총 1건, 오늘 1건"' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_activity_chart_marks_exactly_one_today_column_as_last(staff_client):
+    staff, client = staff_client()
+    StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    columns = re.findall(r'<span class="activity-col[^"]*"', content)
+    assert sum(1 for col in columns if "activity-col--today" in col) == 1
+    assert "activity-col--today" in columns[-1]
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_activity_chart_height_pct_scales_to_daily_max(staff_client):
+    staff, client = staff_client()
+    for _ in range(2):
+        StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+    yesterday_log = StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
+    StaffActionLog.objects.filter(pk=yesterday_log.pk).update(
+        created_at=timezone.now() - datetime.timedelta(days=1)
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "--col-h: 100%" in content
+    assert "--col-h: 50%" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_activity_chart_shows_notice_when_no_logs(staff_client):
+    staff, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "최근 14일 처리 내역이 없습니다" in content
+    assert "activity-columns" not in content
+
+
+# ---------------------------------------------------------------------------
+# 수집 소스 상태 점 (Phase 5)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_ok_for_enabled_recently_checked(staff_client):
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="정상 소스",
+        url="https://example.com/status-ok-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=timezone.now() - datetime.timedelta(hours=1),
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--ok" aria-hidden="true"></span>' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_disabled_for_disabled_source(staff_client):
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="비활성 소스",
+        url="https://example.com/status-disabled-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=False,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--disabled" aria-hidden="true"></span>' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_error_for_enabled_source_with_last_error(staff_client):
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="에러 소스",
+        url="https://example.com/status-error-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=timezone.now() - datetime.timedelta(hours=1),
+        last_error="Connection timed out while fetching feed",
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--error" aria-hidden="true"></span>' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_stale_for_enabled_source_never_checked(staff_client):
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="미수집 소스",
+        url="https://example.com/status-stale-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=None,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--stale" aria-hidden="true"></span>' in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_source_status_dot_error_takes_priority_over_stale(staff_client):
+    """PR-D1 item 3 established error+stale can both be true simultaneously
+    (never-checked + last_error set) — status_level must pick error, not
+    stale, so the dot doesn't disagree with the "오류" badge next to it."""
+    staff, client = staff_client()
+    DraftSource.objects.create(
+        name="에러+지연 소스",
+        url="https://example.com/status-error-and-stale-feed/",
+        source_type=DraftSource.SourceType.RSS,
+        enabled=True,
+        last_checked_at=None,
+        last_error="Connection timed out while fetching feed",
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert '<span class="status-dot status-dot--error" aria-hidden="true"></span>' in content
+    assert "status-dot--stale" not in content

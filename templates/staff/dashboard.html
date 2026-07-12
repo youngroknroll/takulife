@@ -13,17 +13,18 @@
       <p>운영에 필요한 대기 작업과 최근 활동을 한눈에 확인하세요.</p>
 
       <div class="summary-grid" style="--summary-cols: 3;" aria-label="스태프 콘솔 요약">
-        <article class="summary-card">
+        <a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">
           <p class="summary-label">검토 대기 드래프트</p>
           <p class="summary-value">{{ pending_count }}건</p>
-        </article>
+        </a>
         <article class="summary-card">
           <p class="summary-label">품질 경고</p>
           <p class="summary-value">{{ quality_warnings.total }}건</p>
         </article>
         <article class="summary-card">
-          <p class="summary-label">최근 처리</p>
-          <p class="summary-value">{{ recent_actions|length }}건</p>
+          <p class="summary-label">최근 7일 처리</p>
+          <p class="summary-value">{{ recent_actions_7d_count }}건</p>
+          <p class="summary-context">지난주 {{ recent_actions_prev_7d_count }}건</p>
         </article>
       </div>
     </section>
@@ -66,6 +67,7 @@
                 <tr>
                   <td>{{ row.source.name }}</td>
                   <td>
+                    <span class="status-dot status-dot--{{ row.status_level }}" aria-hidden="true"></span>
                     {% if row.source.enabled %}활성{% else %}<span class="badge-soon">비활성</span>{% endif %}
                     {% if row.is_stale %}<span class="badge-stale">지연</span>{% endif %}
                     {% if row.has_error %}<span class="badge-error">오류</span>{% endif %}
@@ -87,36 +89,38 @@
 
         <h3>품질 경고</h3>
         <p class="panel-note">게시(공개) 중인 행사를 대상으로 자동 점검한 결과입니다.</p>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th scope="col">점검 항목</th>
-              <th scope="col">건수</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><a href="/staff/events/?warning=missing_official_url">공식 URL 없음</a></td>
-              <td>{{ quality_warnings.missing_official_url }}건</td>
-            </tr>
-            <tr>
-              <td><a href="/staff/events/?warning=ended_still_published">종료됐지만 게시 중</a></td>
-              <td>{{ quality_warnings.ended_still_published }}건</td>
-            </tr>
-            <tr>
-              <td><a href="/staff/events/?warning=missing_poster">포스터 없음</a></td>
-              <td>{{ quality_warnings.missing_poster }}건</td>
-            </tr>
-            <tr>
-              <td><a href="/staff/events/?warning=missing_dates">날짜 정보 누락</a></td>
-              <td>{{ quality_warnings.missing_dates }}건</td>
-            </tr>
-            <tr>
-              <td><a href="/staff/events/?warning=missing_region">지역 정보 없음</a></td>
-              <td>{{ quality_warnings.missing_region }}건</td>
-            </tr>
-          </tbody>
-        </table>
+        {% if quality_warnings.total == 0 %}
+          <p class="notice">현재 품질 경고가 없습니다 ✓</p>
+        {% else %}
+          <ul class="warning-bars">
+            {% for row in quality_warning_rows %}
+              <li>
+                <a class="warning-bar-row{% if row.count == 0 %} warning-bar-row--zero{% endif %}" href="/staff/events/?warning={{ row.key }}">
+                  <span class="warning-bar-label">{{ row.label }}</span>
+                  <span class="warning-bar-visual">
+                    {% if row.count > 0 %}
+                      <span class="warning-bar-track" aria-hidden="true"><span class="warning-bar-fill" style="--bar-w: {% widthratio row.count quality_warning_max 100 %}%"></span></span>
+                    {% endif %}
+                    <span class="warning-bar-count">{{ row.count }}건</span>
+                  </span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        <h3>최근 14일 활동</h3>
+        {% if activity_total_14d == 0 %}
+          <p class="notice">최근 14일 처리 내역이 없습니다</p>
+        {% else %}
+          <div class="activity-chart" role="img" aria-label="최근 14일 일별 처리 활동, 총 {{ activity_total_14d }}건, 오늘 {{ activity_today_count }}건">
+            <div class="activity-columns" aria-hidden="true">
+              {% for col in activity_columns %}
+                <span class="activity-col{% if col.is_today %} activity-col--today{% endif %}" title="{{ col.date|date:'n/j' }} {{ col.count }}건" style="--col-h: {{ col.height_pct }}%"></span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
 
         <h3>최근 처리 내역 (최근 10건)</h3>
         {% if recent_actions %}
