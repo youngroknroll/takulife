@@ -1,9 +1,16 @@
 """staff/queries.py::recent_staff_actions — PR-2 sub-step F (backend)."""
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
+
 import pytest
+from django.utils import timezone
 
 from events.models import Event
 from staff.models import StaffActionLog
-from staff.queries import recent_staff_actions
+from staff.queries import (
+    recent_staff_actions,
+    staff_actions_count_since,
+)
 
 
 @pytest.mark.django_db
@@ -66,3 +73,42 @@ def test_recent_staff_actions_selects_related_target_event(
     with django_assert_num_queries(1):
         result = recent_staff_actions()
         assert result[0].target_event.title == "최근 이벤트"
+
+
+@pytest.mark.django_db
+def test_staff_actions_count_since_returns_zero_when_no_logs():
+    result = staff_actions_count_since(days=7)
+    assert result == 0
+
+
+@pytest.mark.django_db
+def test_staff_actions_count_since_counts_logs_within_window(make_user):
+    actor = make_user(is_staff=True)
+    for _ in range(4):
+        StaffActionLog.objects.create(actor=actor, action="approve")
+    result = staff_actions_count_since(days=7)
+    assert result == 4
+
+
+@pytest.mark.django_db
+def test_staff_actions_count_since_excludes_logs_older_than_window(make_user):
+    actor = make_user(is_staff=True)
+    log = StaffActionLog.objects.create(actor=actor, action="approve")
+    StaffActionLog.objects.filter(pk=log.pk).update(
+        created_at=timezone.now() - timedelta(days=8)
+    )
+    result = staff_actions_count_since(days=7)
+    assert result == 0
+
+
+@pytest.mark.django_db
+def test_staff_actions_count_since_offset_shifts_window(make_user):
+    """10일 전 로그는 직전 7일 창(offset=7)엔 포함되고 최근 7일 창(offset=0)엔 제외된다."""
+    actor = make_user(is_staff=True)
+    log = StaffActionLog.objects.create(actor=actor, action="approve")
+    StaffActionLog.objects.filter(pk=log.pk).update(
+        created_at=timezone.now() - timedelta(days=10)
+    )
+    assert staff_actions_count_since(days=7, offset=7) == 1
+    assert staff_actions_count_since(days=7, offset=0) == 0
+

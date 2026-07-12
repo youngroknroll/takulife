@@ -3,6 +3,10 @@
 Provides reusable read logic for staff-facing summaries. Business logic
 lives here, not in the view layer (mirrors drafts/queries.py, events/queries.py).
 """
+from datetime import timedelta
+
+from django.utils import timezone
+
 from .models import StaffActionLog
 
 
@@ -24,3 +28,20 @@ def recent_staff_actions(limit=10):
             "actor", "target_draft", "target_event"
         ).all()[:limit]
     )
+
+
+def staff_actions_count_since(days=7, offset=0):
+    """Return the count of StaffActionLog rows created in a trailing window.
+
+    The window is the half-open interval [now-(offset+days), now-offset),
+    so consecutive windows never double-count a row that lands exactly on
+    a boundary. offset shifts the window into the past: offset=0 is "the
+    last N days", offset=N is "the N days before that" — used to compare
+    the current period against the prior one (e.g. this week vs last week).
+    """
+    window_end = timezone.now() - timedelta(days=offset)
+    window_start = window_end - timedelta(days=days)
+    return StaffActionLog.objects.filter(
+        created_at__gte=window_start, created_at__lt=window_end
+    ).count()
+
