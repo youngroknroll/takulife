@@ -23,10 +23,7 @@
     <section class="hero">
       <div>
         <h1>드래프트 검토 #{{ draft.id }}</h1>
-        <p>
-          {% if draft.source_name %}{{ draft.source_name }}에서 가져온 {% endif %}
-          행사 후보입니다. 추출 필드를 확인하고 수정한 뒤 승인 또는 반려하세요.
-        </p>
+        {% if draft.source_name %}<p>출처: {{ draft.source_name }}</p>{% endif %}
       </div>
       <span class="status-chip {{ draft.review_status }} review-status-{{ draft.review_status }}">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %}</span>
     </section>
