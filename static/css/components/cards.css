@@ -183,6 +183,7 @@
 .status-top {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 0.4375rem;
   margin-bottom: 0.4375rem;
 }
