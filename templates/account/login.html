@@ -13,10 +13,10 @@
 <main class="auth-container" id="content">
   <h1>로그인</h1>
   {% if form.non_field_errors %}
-    {# Fixed generic copy on purpose — allauth's actual invalid_login text is
+    {% comment %}Fixed generic copy on purpose — allauth's actual invalid_login text is
        untranslated (no ko locale) and revealing which of login/password was
        wrong is its own minor info leak. Field-level errors (blank input)
-       render next to their own field below instead. #}
+       render next to their own field below instead.{% endcomment %}
     <p class="auth-error">이메일 또는 비밀번호가 올바르지 않습니다.</p>
   {% endif %}
   <form method="post" action="{% url 'account_login' %}">

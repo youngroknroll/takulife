@@ -26,8 +26,8 @@
 
         <form id="visit-create-form" class="create-form" novalidate>
           {% if preselect %}
-            {# Subject locked: arrived from a specific item's 기록 button. JS reads
-               the hidden input's value exactly like the select. #}
+            {% comment %}Subject locked: arrived from a specific item's 기록 button. JS reads
+               the hidden input's value exactly like the select.{% endcomment %}
             <div class="form-group">
               <label for="visit-subject">대상</label>
               <p class="locked-subject">{{ preselect.label }}</p>
