@@ -175,7 +175,7 @@
       justify-content: flex-start;
     }
     .layout {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     .page {
       padding-bottom: 6rem;
