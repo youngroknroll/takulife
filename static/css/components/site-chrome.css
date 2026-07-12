@@ -30,10 +30,10 @@
 :root {
   /* Desktop rendered height of .site-header, for sticky panels elsewhere
      (event_detail .aside, event_list .filters, layout .side-stack) to clear
-     it: 2×0.75rem .site-header-inner padding + .site-nav a's 2.5rem
-     min-height + 1px border-bottom = 65px. Describes the current render —
-     does not itself size the header. */
-  --site-header-h: 4.0625rem;
+     it: 2×0.75rem .site-header-inner padding + .site-nav a's 2.75rem
+     min-height (§5.4 44px touch target) + 1px border-bottom = 69px.
+     Describes the current render — does not itself size the header. */
+  --site-header-h: 4.3125rem;
 }
 
 .site-header {
@@ -63,7 +63,7 @@
 .site-nav a {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0.375rem 0.75rem;
   border-radius: 8px;
   text-decoration: none;

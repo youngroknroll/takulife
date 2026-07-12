@@ -64,8 +64,8 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 2;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--surface);
@@ -115,20 +115,62 @@
 @media (max-width: 43.75rem) {
   /* Keep arrows (JS toggles visibility by scroll position), but shrink
      them and fade slightly so they overlay card edges without crowding
-     the swipe surface. */
+     the swipe surface — intentional visual trade-off, kept as-is.
+     §5.4 44px touch target is instead met by growing the button's own
+     (invisible) box to 44px and painting the visible 30px circle on a
+     ::before positioned inside it (see .hscroll-prev/next::before below),
+     so the tappable area grows without the circle itself changing size or
+     position. */
   .hscroll-btn {
-    width: 30px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
     font-size: 0.95rem;
-    opacity: 0.8;
-    box-shadow: 0 2px 8px rgba(17, 31, 55, 0.16);
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 
+  .hscroll-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    opacity: 0.8;
+    box-shadow: 0 2px 8px rgba(17, 31, 55, 0.16);
+    /* .hscroll-btn is its own stacking context (position:absolute +
+       z-index:2 on the base rule), so a negative z-index here only drops
+       ::before behind the button's own in-flow content (the ‹/› glyph
+       text) — it cannot leak behind the track/cards outside the button.
+       Without this, ::before (z-index:auto, painted after in-flow
+       content per the pseudo-element painting order) covered the glyph. */
+    z-index: -1;
+  }
+
+  /* ::before is positioned relative to the button's own box, not centered
+     in it — left/right: 4px here reproduces the old 30px box's exact
+     left/right: 4px position. The button's own (invisible) box sits flush
+     against the wrap edge (left/right: 0) so the full 44px hit area stays
+     inside .hscroll-wrap's overflow:hidden clip instead of extending past
+     it (a -3px inset previously pushed part of the hit area outside the
+     wrap, silently unclickable). */
   .hscroll-prev {
+    left: 0;
+  }
+
+  .hscroll-prev::before {
     left: 4px;
   }
 
   .hscroll-next {
+    right: 0;
+  }
+
+  .hscroll-next::before {
     right: 4px;
   }
 

@@ -21,6 +21,13 @@
   display: none;
 }
 
+/* Applied to <html> while the modal is open (confirm-modal.js) — mobile-first
+   fix, no scrollbar-width compensation (desktop accepts a ~1px content
+   shift when the scrollbar disappears). */
+.confirm-scroll-lock {
+  overflow: hidden;
+}
+
 /* Safety net: a not-open overlay must never absorb clicks, even if some
    failure path leaves [hidden] unrestored. */
 .confirm-overlay:not(.is-open) {

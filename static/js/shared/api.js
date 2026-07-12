@@ -367,4 +367,22 @@
       }
     },
   };
+
+  // ── bfcache restore ───────────────────────────────────────────────────────
+
+  // A back/forward-cache restore (event.persisted) can bring back a page
+  // with a button still frozen in its in-flight state (disabled +
+  // .is-loading) from before the user navigated away — the request that
+  // would have called setLoading(btn, false) never got the chance to run
+  // again. Scoped to .is-loading only, so a button the server rendered
+  // disabled on purpose (e.g. an already-approved draft's 승인 button) is
+  // left untouched.
+  window.addEventListener("pageshow", function (evt) {
+    if (!evt.persisted) {
+      return;
+    }
+    document.querySelectorAll(".is-loading").forEach(function (btn) {
+      window.TakuAPI.setLoading(btn, false);
+    });
+  });
 })();
