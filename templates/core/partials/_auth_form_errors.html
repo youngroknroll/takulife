@@ -6,7 +6,7 @@ _auth_field.html); this covers only what's left over.
 Usage: {% include "core/partials/_auth_form_errors.html" with errors=form.non_field_errors %}
 {% endcomment %}
 {% if errors %}
-  <ul class="auth-error" role="alert">
+  <ul class="auth-error">
     {% for error in errors %}<li>{{ error }}</li>{% endfor %}
   </ul>
 {% endif %}

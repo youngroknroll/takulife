@@ -17,7 +17,7 @@
        untranslated (no ko locale) and revealing which of login/password was
        wrong is its own minor info leak. Field-level errors (blank input)
        render next to their own field below instead. #}
-    <p class="auth-error" role="alert">이메일 또는 비밀번호가 올바르지 않습니다.</p>
+    <p class="auth-error">이메일 또는 비밀번호가 올바르지 않습니다.</p>
   {% endif %}
   <form method="post" action="{% url 'account_login' %}">
     {% csrf_token %}

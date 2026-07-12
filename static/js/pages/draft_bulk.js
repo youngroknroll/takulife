@@ -22,18 +22,13 @@
  *                              individually selectable, per PO decision).
  *   #bulk-selected-count     — "N건 선택됨" live count.
  *   #bulk-approve-btn        — disabled while selection is empty.
- *   #bulk-approve-result     — single role=status/aria-live=polite region;
- *                              this is the ONLY place that announces the
- *                              routine "N/M 성공" summary (per-item failures
- *                              are static text, not additional live
- *                              announcements — avoids screen-reader spam).
- *   #bulk-approve-error      — role=alert, hidden by default. Reserved for
- *                              genuine request-level exceptions (403/lost
- *                              session, network, 5xx) that prevent any
- *                              result from coming back at all — mirrors the
- *                              existing #draft-action-error convention
- *                              (draft.js) rather than overloading the
- *                              polite status region with an interrupt.
+ *   #bulk-approve-result     — the "N/M 성공" summary text (per-item
+ *                              failures are static text, shown separately).
+ *   #bulk-approve-error      — hidden by default. Reserved for genuine
+ *                              request-level exceptions (403/lost session,
+ *                              network, 5xx) that prevent any result from
+ *                              coming back at all — mirrors the existing
+ *                              #draft-action-error convention (draft.js).
  *   .draft-list[data-selected-status] — current status filter ("" = all,
  *                              "pending", "approved", "rejected"). Drives
  *                              whether a succeeded card is removed outright

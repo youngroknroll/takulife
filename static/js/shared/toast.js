@@ -2,9 +2,8 @@
  * toast.js — lightweight success toast for takulife
  *
  * Exposes: window.TakuToast.show(message)
- *   role="status" aria-live="polite", textContent only (XSS-safe), auto-
- *   dismiss after ~3.5s. DOM: lazily built once on first use (singleton),
- *   same idiom as confirm-modal.js.
+ *   textContent only (XSS-safe), auto-dismiss after ~3.5s. DOM: lazily built
+ *   once on first use (singleton), same idiom as confirm-modal.js.
  *
  * Reload bridge: pages that reload after a successful action (status.js
  * data-reload-on-success) stash the message in sessionStorage under
@@ -27,8 +26,6 @@
   function build() {
     toastEl = document.createElement("div");
     toastEl.className = "taku-toast";
-    toastEl.setAttribute("role", "status");
-    toastEl.setAttribute("aria-live", "polite");
     toastEl.hidden = true;
     document.body.appendChild(toastEl);
   }

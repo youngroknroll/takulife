@@ -1,8 +1,8 @@
 {% load form_extras %}
 {% comment %}
 Auth form field — label + input (aria-describedby wired to its own error
-list via the `describedby` filter) + the error list itself (role="alert",
-only rendered when this specific field has errors).
+list via the `describedby` filter) + the error list itself (only rendered
+when this specific field has errors).
 
 Usage: {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
 Args:
@@ -13,7 +13,7 @@ Args:
   <label for="{{ field.id_for_label }}">{{ label }}</label>
   {{ field|describedby }}
   {% if field.errors %}
-    <ul class="field-error" id="{{ field.id_for_label }}-error" role="alert">
+    <ul class="field-error" id="{{ field.id_for_label }}-error">
       {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
     </ul>
   {% endif %}

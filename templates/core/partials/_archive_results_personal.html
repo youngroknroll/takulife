@@ -84,7 +84,7 @@
               <label for="promote-url-{{ row.entry.id }}">공식 URL</label>
               <input id="promote-url-{{ row.entry.id }}" type="url" name="official_url" placeholder="https://" required>
             </div>
-            <p class="form-error" data-promote-error="{{ row.entry.id }}" aria-live="polite"></p>
+            <p class="form-error" data-promote-error="{{ row.entry.id }}"></p>
             <button class="form-submit-btn" type="submit">제보하기</button>
           </form>
         {% endif %}
@@ -92,12 +92,12 @@
     {% endfor %}
   </div>
 {% elif has_entries and has_query %}
-  <div class="empty-state" role="status">
+  <div class="empty-state">
     <p class="empty-title">검색 결과가 없습니다</p>
     <p class="empty-note">"{{ q }}"에 해당하는 항목이 없어요. <a href="{{ request.path }}">지우기</a></p>
   </div>
 {% else %}
-  <div class="empty-state" role="status">
+  <div class="empty-state">
     <p class="empty-icon" aria-hidden="true">🗂️</p>
     <p class="empty-title">아직 등록한 항목이 없어요</p>
     <p class="empty-note">오른쪽 폼에서 비공식 장소나 굿즈를 추가해 보세요.</p>

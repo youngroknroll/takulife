@@ -26,7 +26,7 @@
         {% if field_errors.password %}aria-describedby="id_password-error"{% endif %}
       >
       {% if field_errors.password %}
-        <p class="field-error" id="id_password-error" role="alert">{{ field_errors.password }}</p>
+        <p class="field-error" id="id_password-error">{{ field_errors.password }}</p>
       {% endif %}
     </div>
     <button type="submit" class="btn btn-danger btn-block">계정 삭제 (되돌릴 수 없음)</button>

@@ -129,7 +129,7 @@
 
   function setButtonLoading(button, loading) {
     // Delegate to the shared helper so the button also shows the .is-loading
-    // spinner (disabled + aria-busy) while the request is in flight.
+    // spinner (disabled) while the request is in flight.
     window.TakuAPI.setLoading(button, loading);
   }
 

@@ -355,8 +355,8 @@
 
     /**
      * setLoading(button, isLoading) — toggle a button's in-flight state.
-     * Disables the button and adds the .is-loading spinner class (+ aria-busy)
-     * while a request runs, giving immediate click feedback and blocking
+     * Disables the button and adds the .is-loading spinner class while a
+     * request runs, giving immediate click feedback and blocking
      * double-submits. Safe to call with a null/undefined button.
      */
     setLoading: function (button, isLoading) {
@@ -366,10 +366,8 @@
       button.disabled = !!isLoading;
       if (isLoading) {
         button.classList.add("is-loading");
-        button.setAttribute("aria-busy", "true");
       } else {
         button.classList.remove("is-loading");
-        button.removeAttribute("aria-busy");
       }
     },
   };

@@ -28,5 +28,4 @@ Args:
   </div>
   <a class="archive-search-clear" href="{{ request.path }}{% if hidden_name and hidden_value %}?{{ hidden_name }}={{ hidden_value|urlencode }}{% endif %}"{% if not has_query %} hidden{% endif %}>지우기</a>
 </form>
-<p class="sr-only" id="archive-search-status" role="status" aria-live="polite" aria-atomic="true"></p>
-<p id="archive-search-error" class="inline-error" role="alert"></p>
+<p id="archive-search-error" class="inline-error"></p>

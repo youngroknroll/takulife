@@ -17,7 +17,7 @@
     </div>
 
     {% if draft_not_found %}
-      <p class="notice" role="alert">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="/staff/drafts/">목록으로 돌아가기</a></p>
+      <p class="notice">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="/staff/drafts/">목록으로 돌아가기</a></p>
     {% else %}
 
     <section class="hero">
@@ -32,7 +32,7 @@
     </section>
 
     {% if not is_pending %}
-      <p class="notice" role="status">
+      <p class="notice">
         이 드래프트는 <strong>{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %}</strong> 상태입니다. 수정, 승인, 반려는 검토 대기 상태에서만 가능합니다.
       </p>
       <p class="meta">
@@ -163,7 +163,6 @@
         <p
           id="draft-edit-error"
           class="notice"
-          role="alert"
           hidden
           style="margin-top:10px;"
         ></p>
@@ -225,15 +224,12 @@
             <p
               id="draft-approve-success"
               class="approve-success"
-              role="status"
-              aria-live="polite"
               hidden
               style="margin-top:8px;"
             ></p>
             <p
               id="draft-action-error"
               class="notice"
-              role="alert"
               hidden
               style="margin-top:8px;"
             ></p>

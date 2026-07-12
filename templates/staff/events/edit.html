@@ -21,7 +21,7 @@
     </section>
 
     {% if field_errors.non_field %}
-      <p class="notice" role="alert">{{ field_errors.non_field }}</p>
+      <p class="notice">{{ field_errors.non_field }}</p>
     {% endif %}
 
     <section class="layout">
@@ -36,7 +36,7 @@
             <div class="field full">
               <label for="edit-title">제목</label>
               <input id="edit-title" name="title" type="text" value="{{ form_values.title }}">
-              {% if field_errors.title %}<p class="field-error" role="alert">{{ field_errors.title }}</p>{% endif %}
+              {% if field_errors.title %}<p class="field-error">{{ field_errors.title }}</p>{% endif %}
             </div>
             <div class="field">
               <label for="edit-category">카테고리</label>
@@ -67,17 +67,17 @@
             <div class="field">
               <label for="edit-start-date">시작일</label>
               <input id="edit-start-date" name="start_date" type="date" value="{{ form_values.start_date }}">
-              {% if field_errors.start_date %}<p class="field-error" role="alert">{{ field_errors.start_date }}</p>{% endif %}
+              {% if field_errors.start_date %}<p class="field-error">{{ field_errors.start_date }}</p>{% endif %}
             </div>
             <div class="field">
               <label for="edit-end-date">종료일</label>
               <input id="edit-end-date" name="end_date" type="date" value="{{ form_values.end_date }}">
-              {% if field_errors.end_date %}<p class="field-error" role="alert">{{ field_errors.end_date }}</p>{% endif %}
+              {% if field_errors.end_date %}<p class="field-error">{{ field_errors.end_date }}</p>{% endif %}
             </div>
             <div class="field full">
               <label for="edit-official-url">공식 URL</label>
               <input id="edit-official-url" name="official_url" type="text" value="{{ form_values.official_url }}">
-              {% if field_errors.official_url %}<p class="field-error" role="alert">{{ field_errors.official_url }}</p>{% endif %}
+              {% if field_errors.official_url %}<p class="field-error">{{ field_errors.official_url }}</p>{% endif %}
             </div>
             <div class="field">
               <label for="edit-source-name">출처명</label>
@@ -93,7 +93,7 @@
                 <p class="panel-note">현재 포스터: <a href="{{ event.poster_image.url }}" target="_blank" rel="noopener">보기 ↗</a></p>
               {% endif %}
               <input id="edit-poster" name="poster" type="file" accept="image/png,image/jpeg,image/webp">
-              {% if field_errors.poster %}<p class="field-error" role="alert">{{ field_errors.poster }}</p>{% endif %}
+              {% if field_errors.poster %}<p class="field-error">{{ field_errors.poster }}</p>{% endif %}
               {% if event.poster_image %}
                 <label class="field-checkbox">
                   <input type="checkbox" name="clear_poster">

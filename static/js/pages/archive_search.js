@@ -66,30 +66,11 @@
 
   function setLoading(on) {
     results.classList.toggle("is-loading", on);
-    if (on) {
-      results.setAttribute("aria-busy", "true");
-    } else {
-      results.removeAttribute("aria-busy");
-    }
   }
 
-  // #archive-results itself isn't a live region — it's a full-card-list
-  // innerHTML swap, and every card would read as "new" content, so making it
-  // live would flood a screen reader with the entire result list on every
-  // keystroke. Announce a short count instead via this separate region
-  // (_archive_search.html).
-  var resultsStatus = document.getElementById("archive-search-status");
-
-  function announceResultsStatus() {
-    if (!resultsStatus) { return; }
-    var count = results.querySelectorAll("article").length;
-    resultsStatus.textContent = count > 0 ? count + "건 표시됨" : "검색 결과가 없습니다";
-  }
-
-  // Inline failure notice (_archive_search.html). role="alert" already reaches
-  // screen readers, so this — not #archive-search-status — is the one place a
-  // failed search gets announced; a fresh attempt clears it up front so it
-  // never lingers over results a later, successful search replaces.
+  // Inline failure notice (_archive_search.html) — a fresh attempt clears it
+  // up front so it never lingers over results a later, successful search
+  // replaces.
   var searchError = document.getElementById("archive-search-error");
 
   function setSearchError(message) {
@@ -129,12 +110,11 @@
       })
       .then(function (html) {
         // Clear loading for every non-abort outcome — including a redirect or a
-        // non-ok response that resolved `html` to null — so the dim/aria-busy
-        // state can never get stuck on after a server error.
+        // non-ok response that resolved `html` to null — so the dim state can
+        // never get stuck on after a server error.
         setLoading(false);
         if (html === null) { return; }
         results.innerHTML = html;
-        announceResultsStatus();
         if (push) {
           window.history.pushState({ q: term }, "", userUrl(params));
         }

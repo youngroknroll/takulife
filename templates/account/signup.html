@@ -24,7 +24,7 @@
       {{ form.terms_agreed|describedby }}
       <label for="id_terms_agreed">{{ form.terms_agreed.label }}</label>
       {% if form.terms_agreed.errors %}
-        <ul class="field-error" id="id_terms_agreed-error" role="alert">
+        <ul class="field-error" id="id_terms_agreed-error">
           {% for error in form.terms_agreed.errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
       {% endif %}
