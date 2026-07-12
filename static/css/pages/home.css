@@ -26,12 +26,6 @@
     line-height: 1.25;
     letter-spacing: -0.02em;
   }
-  .hero p {
-    margin: 0 0 1.125rem;
-    color: var(--muted);
-    font-size: var(--fs-base);
-    max-width: 60ch;
-  }
   .hero .search {
     max-width: 540px;
   }
