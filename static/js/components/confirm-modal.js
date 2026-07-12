@@ -139,6 +139,7 @@
 
     cancelPendingClose();
     overlay.removeAttribute("hidden");
+    document.documentElement.classList.add("confirm-scroll-lock");
 
     // rAF lets the browser paint the initial state before adding .is-open,
     // so the CSS opacity/transform transition actually fires
@@ -149,6 +150,11 @@
   }
 
   function close() {
+    // First statement so every close path (backdrop/ESC/예/아니오, all of
+    // which route through resolve() → close()) unlocks scroll immediately,
+    // without waiting on the fade-out transition or its fallback timer.
+    document.documentElement.classList.remove("confirm-scroll-lock");
+
     cancelPendingClose();
     overlay.classList.remove("is-open");
 
