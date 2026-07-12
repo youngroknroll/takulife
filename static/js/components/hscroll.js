@@ -59,12 +59,23 @@
       var atEnd = scrollLeft + clientWidth >= scrollWidth - 1;
 
       if (!overflowing) {
-        // Everything fits — hide both arrows, remove fades
+        // Everything fits — hide both arrows, and drop the edge-fade mask
+        // entirely. The wrap's base mask-image is a two-sided fade; only
+        // .at-start.at-end together (hscroll.css) resolve to mask-image:
+        // none, so both classes must be added here, not removed — removing
+        // them leaves the two-sided fade showing over content that never
+        // scrolls, clipping the first/last card's edge for no reason.
         prevBtn.style.visibility = "hidden";
         nextBtn.style.visibility = "hidden";
-        wrap.classList.remove("at-start", "at-end");
+        wrap.classList.add("at-start", "at-end");
+        // Nothing to scroll to — this track is not a meaningful Tab stop.
+        track.tabIndex = -1;
         return;
       }
+
+      // Overflowing again (e.g. after a resize) — restore the track as a
+      // normal Tab stop.
+      track.tabIndex = 0;
 
       // Show/hide each arrow based on scroll position
       prevBtn.style.visibility = atStart ? "hidden" : "visible";
@@ -120,6 +131,15 @@
     if (typeof ResizeObserver !== "undefined") {
       var ro = new ResizeObserver(function () {
         update();
+        // A resize can flip a track from non-overflowing to overflowing
+        // (or back) — re-evaluate autoplay too, not just arrow/mask state.
+        // startAutoplay() is a no-op via its own shouldAutoplay() gate when
+        // hover/focus/touch/reduced-motion/non-overflow still applies, so
+        // this is safe to call unconditionally whenever autoplay is opted
+        // in at all.
+        if (wantsAutoplay) {
+          startAutoplay();
+        }
       });
       ro.observe(track);
     }

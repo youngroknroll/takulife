@@ -170,6 +170,34 @@ class TestHomeSlidersDropEndedEvents:
 
 
 @pytest.mark.django_db
+class TestHomePosterSectionsAlwaysRenderSlider:
+    """The 3 poster sections (이번 주/곧 종료/새 이벤트) used to branch on row
+    count — a section at or below its threshold (ongoing<=6, closing<=3,
+    recent<=6) rendered a static .poster-card-grid instead of the
+    hscroll-wrap slider the other sections used, producing a visibly
+    different layout (no arrows, left-aligned static grid) whenever a
+    section happened to have few rows. All 3 sections now always render the
+    hscroll-wrap markup regardless of row count; hscroll.js hides the arrows
+    via visibility when there's nothing to scroll."""
+
+    def test_closing_section_renders_hscroll_wrap_with_few_rows(self, make_event):
+        today = date(2026, 6, 26)
+        for i in range(3):
+            make_event(
+                title=f"Closing {i}",
+                start_date=today - timedelta(days=1),
+                end_date=today + timedelta(days=i % 5 + 1),
+            )
+        with patch("core.views.timezone.localdate", return_value=today):
+            resp = Client().get("/")
+
+        assert len(resp.context["closing_rows"]) == 3
+        body = resp.content.decode()
+        assert 'id="hscroll-closing"' in body
+        assert "poster-card-grid" not in body
+
+
+@pytest.mark.django_db
 class TestHomeClosingStatusDivergence:
     """Guard: a D+5 event selected into closing_rows is still status_slug=="ongoing".
 
