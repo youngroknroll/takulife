@@ -3,7 +3,7 @@ const filterPanel = document.querySelector(".filters");
 if (filterToggle && filterPanel) {
   filterToggle.addEventListener("click", () => {
     const open = filterPanel.classList.toggle("open");
-    filterToggle.setAttribute("aria-expanded", String(open));
+    filterToggle.setAttribute("data-expanded", String(open));
     filterToggle.textContent = open ? "필터 닫기 ▴" : "필터 열기 ▾";
   });
 }
@@ -29,7 +29,7 @@ if (regionSelect) {
 
   const setOpen = (open) => {
     menu.hidden = !open;
-    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("data-expanded", String(open));
   };
 
   toggle.addEventListener("click", () => setOpen(menu.hidden));

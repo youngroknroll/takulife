@@ -27,7 +27,7 @@
     <section class="layout" aria-label="행사 목록 레이아웃">
       <aside class="panel filters" aria-label="행사 필터">
         <h1>행사 목록</h1>
-        <button class="filter-toggle" type="button" aria-expanded="false" aria-controls="filter-body">필터 열기 ▾</button>
+        <button class="filter-toggle" type="button" data-expanded="false" data-controls="filter-body">필터 열기 ▾</button>
 
         <div id="filter-body" class="filter-body">
         <form method="get" action="/events/">
@@ -37,7 +37,7 @@
             <h2>지역</h2>
             <div class="region-select" data-region-select>
               <button type="button" class="region-select-toggle" data-region-toggle
-                      aria-expanded="false" aria-controls="region-options">
+                      data-expanded="false" data-controls="region-options">
                 <span data-region-summary>지역 전체</span>
                 <span class="region-caret" aria-hidden="true">▾</span>
               </button>

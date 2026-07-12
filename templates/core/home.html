@@ -96,13 +96,13 @@
       {% if ongoing_rows %}
         {% if ongoing_rows|length > 6 %}
           <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-ongoing">&#8249;</button>
+            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" data-controls="hscroll-ongoing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-ongoing" role="region" aria-label="이번 주 갈 만한 행사" tabindex="0">
               {% for row in ongoing_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}</li>
               {% endfor %}
             </ul>
-            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-ongoing">&#8250;</button>
+            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" data-controls="hscroll-ongoing">&#8250;</button>
           </div>
         {% else %}
           <div class="poster-card-grid">
@@ -124,13 +124,13 @@
       {% if closing_rows %}
         {% if closing_rows|length > 3 %}
           <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-closing">&#8249;</button>
+            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" data-controls="hscroll-closing">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-closing" role="region" aria-label="곧 종료되는 행사" tabindex="0">
               {% for row in closing_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="closing" %}</li>
               {% endfor %}
             </ul>
-            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-closing">&#8250;</button>
+            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" data-controls="hscroll-closing">&#8250;</button>
           </div>
         {% else %}
           <div class="poster-card-grid">
@@ -151,7 +151,7 @@
       </div>
       {% if category_tiles|length > 5 %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-cat">&#8249;</button>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" data-controls="hscroll-cat">&#8249;</button>
           <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" role="region" aria-label="카테고리로 둘러보기" tabindex="0">
             {% for tile in category_tiles %}
               <li class="cat-browse-item">
@@ -163,7 +163,7 @@
               </li>
             {% endfor %}
           </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-cat">&#8250;</button>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" data-controls="hscroll-cat">&#8250;</button>
         </div>
       {% else %}
         <div class="cat-browse">
@@ -186,13 +186,13 @@
       {% if recent_rows %}
         {% if recent_rows|length > 6 %}
           <div class="hscroll-wrap" data-hscroll>
-            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" aria-controls="hscroll-recent">&#8249;</button>
+            <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev aria-label="이전" data-controls="hscroll-recent">&#8249;</button>
             <ul class="hscroll-track" data-hscroll-track id="hscroll-recent" role="region" aria-label="새로 등록된 행사" tabindex="0">
               {% for row in recent_rows %}
                 <li>{% include "core/partials/_poster_card.html" with row=row variant="recent" %}</li>
               {% endfor %}
             </ul>
-            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" aria-controls="hscroll-recent">&#8250;</button>
+            <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next aria-label="다음" data-controls="hscroll-recent">&#8250;</button>
           </div>
         {% else %}
           <div class="poster-card-grid">

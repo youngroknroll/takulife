@@ -491,11 +491,11 @@
       if (button.dataset.statusToggleBound) return;
       button.dataset.statusToggleBound = "1";
       button.addEventListener("click", function () {
-        var target = document.getElementById(button.getAttribute("aria-controls"));
+        var target = document.getElementById(button.getAttribute("data-controls"));
         if (!target) return;
         var willShow = target.hasAttribute("hidden");
         target.toggleAttribute("hidden", !willShow);
-        button.setAttribute("aria-expanded", String(willShow));
+        button.setAttribute("data-expanded", String(willShow));
       });
     });
   }

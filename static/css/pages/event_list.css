@@ -74,7 +74,7 @@
     transition: transform 0.15s ease;
     color: var(--muted);
   }
-  .region-select-toggle[aria-expanded="true"] .region-caret {
+  .region-select-toggle[data-expanded="true"] .region-caret {
     transform: rotate(180deg);
   }
   .region-select-menu {
