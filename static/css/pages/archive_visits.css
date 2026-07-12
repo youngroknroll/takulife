@@ -80,6 +80,8 @@
   .visit-chip.category {
     background: var(--brand-soft);
     color: var(--brand);
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   /* 비공식 mark — unified gray, matching .event-category.unofficial on the
      기록장 / 예정 목록 / 찜 목록 pages (--muted-soft / --muted). */
@@ -96,6 +98,10 @@
     margin: 0.3125rem 0 0;
     color: var(--text);
     font-size: var(--fs-md);
+  }
+  .entry-list .meta,
+  .entry-list .review {
+    overflow-wrap: anywhere;
   }
   /* Photo carousel (view-only; add/delete happens on the edit page) */
   .photo-carousel {
@@ -201,11 +207,13 @@
   /* Create form */
   .create-form {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.625rem;
     margin-top: 0.75rem;
   }
   .form-group {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.25rem;
   }
   .form-group label {
@@ -223,6 +231,9 @@
     font-family: inherit;
     background: #fff;
     width: 100%;
+  }
+  .create-form input[type="file"] {
+    max-width: 100%;
   }
   /* 직접 등록 폼의 상세 정보 접기 — _archive_nav.html의 details 관례(마커 숨김 +
      회전 caret)를 재사용. */
@@ -293,7 +304,7 @@
   }
   @media (max-width: 56.25rem) {
     .layout {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     .side-stack {
       position: static;

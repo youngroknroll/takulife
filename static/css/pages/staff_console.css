@@ -1,4 +1,5 @@
-/* staff_console.css — dashboard-only rules (templates/staff/dashboard.html) */
+/* staff_console.css — shared by templates/staff/dashboard.html and
+   templates/core/staff/home_categories.html */
 
 /* ── console density pass (PR-C2): mouse-first desktop console reads
    tighter than the public site — shave one step off panel padding and
@@ -42,6 +43,14 @@
   .layout {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
   }
+}
+
+/* home_categories.html: single .panel child, no side-stack — the desktop
+   2-column override above (57.5rem+) would otherwise leave the 0.9fr
+   column empty. archive_visit_create's single-panel convention
+   (archive_visits.css .layout--single) reused here. */
+.layout--single {
+  display: block;
 }
 
 @media (max-width: 57.5rem) {
@@ -253,6 +262,23 @@
   vertical-align: middle;
 }
 
+/* dashboard.html의 수집 소스 실행 버튼 — staff_events.css .action-button과
+   동일 값(대시보드는 이 페이지 CSS만 로드하므로 정의가 없었음). */
+.action-button {
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.625rem 0.75rem;
+  min-height: 44px;
+}
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── 최근 처리 내역: 모바일 카드형 (Gate D) ──────────────────────
    데스크톱은 기존 4열 .data-table을 그대로 유지하고, 좁은 화면에서만
    같은 데이터로 렌더된 카드 목록으로 전환한다. .data-table 자체는
@@ -314,4 +340,23 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+/* ── home_categories.html: 노출 체크박스 / 순서 입력 터치 타깃 ──── */
+.home-cat-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+.home-cat-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}
+.home-cat-order {
+  width: 4rem;
+  min-height: 2.75rem;
 }

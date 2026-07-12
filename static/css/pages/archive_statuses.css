@@ -80,6 +80,11 @@
   .status-row .cancel {
     margin-left: auto;
   }
+  /* §5.4 상태 버튼 기준(40px 이상): event_detail.css:166의 동일 관례를
+     예정/방문/놓침 상태 전환 버튼 컨텍스트에서도 확대. */
+  .status-row .status-btn {
+    min-height: 40px;
+  }
   .status-card > .side-action-link {
     grid-column: 2;
     grid-row: 1;

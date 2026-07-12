@@ -2,6 +2,10 @@
 {% load static %}
 {% block title %}{{ project_name }} | 홈 카테고리 설정{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/staff_console.css' %}">
+{% endblock %}
+
 {% block content %}
   <main class="page" id="staff-main">
     <section class="hero">
@@ -18,7 +22,7 @@
       </div>
     {% endif %}
 
-    <section class="layout">
+    <section class="layout layout--single">
       <article class="panel">
         <h2>노출 카테고리</h2>
         <p class="panel-note">체크된 카테고리만 홈에 표시됩니다. 순서 번호가 낮을수록 먼저 표시됩니다.</p>
@@ -37,13 +41,16 @@
               {% for row in category_rows %}
                 <tr>
                   <td>
-                    <input
-                      type="checkbox"
-                      id="feature_{{ row.slug }}"
-                      name="feature_{{ row.slug }}"
-                      value="on"
-                      {% if row.checked %}checked{% endif %}
-                    >
+                    <label class="home-cat-select">
+                      <input
+                        type="checkbox"
+                        id="feature_{{ row.slug }}"
+                        name="feature_{{ row.slug }}"
+                        value="on"
+                        class="home-cat-checkbox"
+                        {% if row.checked %}checked{% endif %}
+                      >
+                    </label>
                   </td>
                   <td>
                     <label for="feature_{{ row.slug }}">{{ row.label }}</label>
@@ -55,7 +62,7 @@
                       value="{{ row.order }}"
                       min="1"
                       max="99"
-                      style="width: 4rem;"
+                      class="home-cat-order"
                     >
                   </td>
                 </tr>
