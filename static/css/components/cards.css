@@ -145,6 +145,12 @@
   background: #fafcff;
 }
 
+/* 유사-중복 surface 리터럴 개별 다크 오버라이드 — #fafcff는 인접
+   토큰(--bg-card) 다크값을 그대로 준용해 #2E323E로 대응. */
+:root[data-theme="dark"] .empty-state {
+  background: #2e323e;
+}
+
 .empty-icon {
   font-size: 1.8rem;
   margin: 0 0 0.5rem;

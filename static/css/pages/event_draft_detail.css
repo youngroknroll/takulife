@@ -74,6 +74,15 @@
     color: var(--muted);
     cursor: not-allowed;
   }
+  /* 유사-중복 surface 리터럴 개별 다크 오버라이드 — #f4f6fa는 인접
+     토큰(--bg-soft) 다크값을 그대로 준용해 #292D38로 대응. */
+  :root[data-theme="dark"] input:read-only,
+  :root[data-theme="dark"] textarea:read-only,
+  :root[data-theme="dark"] input:disabled,
+  :root[data-theme="dark"] textarea:disabled,
+  :root[data-theme="dark"] select:disabled {
+    background: #292d38;
+  }
   textarea {
     min-height: 96px;
     resize: vertical;
@@ -157,6 +166,11 @@
     background: var(--rose-soft);
     color: var(--rose-ink);
     border-color: #fecdd3;
+  }
+  /* 유사-중복 surface 리터럴 개별 다크 오버라이드 — #fecdd3는 인접
+     토큰(--rose-soft) 다크값을 그대로 준용해 #43232B로 대응. */
+  :root[data-theme="dark"] .action-button.danger {
+    border-color: #43232b;
   }
   .action-button:disabled {
     opacity: 0.5;
