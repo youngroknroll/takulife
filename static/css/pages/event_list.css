@@ -231,10 +231,18 @@
      (objects/interaction.css utility, revealed via the .hover-lift already
      on .event-card), matching _poster_card.html's pattern. Replaces the
      old template-free .cat-tile::after variant, which only worked on the
-     no-poster fallback and left real poster images without a glint. */
+     no-poster fallback and left real poster images without a glint.
+     Bottom-left, not the shared top-right corner: every card here has a
+     .poster-interest button (unlike home's ongoing/recent variants), and
+     the 34px button (z-index:2) fully covers the glint (z-index:1) at that
+     shared position — measured 100% overlap on hover. No conditional
+     needed (unlike home.css's sibling selector) since the pairing is
+     unconditional in this file. */
   .event-card-media .glint {
-    top: 8px;
-    right: 8px;
+    top: auto;
+    bottom: 8px;
+    left: 8px;
+    right: auto;
     z-index: 1;
   }
   .event-card h2 {

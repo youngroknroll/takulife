@@ -464,6 +464,20 @@
     right: 8px;
     z-index: 1;
   }
+  /* Closing cards' 찜 button shares the glint's default top-right corner
+     (34px circle, z-index:2) and fully covers it — measured 100% overlap
+     on hover. .poster-interest ~ .glint (matches only when a button
+     sibling precedes the glint in the DOM, see _poster_card.html's markup
+     order comment) moves just that pairing to bottom-left: clear of the
+     button (top-right desktop / bottom-right mobile) and of the top-left
+     badge in both layouts. Ongoing/recent cards have no button sibling, so
+     this rule never matches them — their glint keeps the default corner. */
+  .poster-interest ~ .glint {
+    top: auto;
+    bottom: 8px;
+    left: 8px;
+    right: auto;
+  }
   .poster-card-caption {
     border-top: 1px dashed var(--line);
     background: var(--surface);
