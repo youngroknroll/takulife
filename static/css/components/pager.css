@@ -23,9 +23,14 @@
   /* 잉크 리터럴 개별 다크 오버라이드 — 신규 토큰 통합 없이 --muted 다크값과
      동일한 #A2A9B9로 직접 대응(다크모드 팔레트 문서 "크롬·그림자·잉크
      리터럴", 계획상 Deferred). 다크모드 PR-2에서 보고한 1.73:1 저대비
-     스팟 — 여기서 해소. */
+     스팟 — 여기서 해소.
+     span:not(.current) — .current(아래)가 이 파일의 유일한 <span>이라
+     :not() 없이는 이 규칙(특이도 0,3,1)이 .pager .current(0,2,0)의 흰
+     글자를 이겨 브랜드 레드 배경 위에 회색 글자가 남는 실결함이었다
+     (실측 2.18:1). .current를 제외해 원래 흰 글자(다크 --brand 위
+     5.13:1)가 그대로 살아남게 한다. */
   :root[data-theme="dark"] .pager a,
-  :root[data-theme="dark"] .pager span {
+  :root[data-theme="dark"] .pager span:not(.current) {
     color: #a2a9b9;
   }
   .pager .current {
