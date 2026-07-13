@@ -28,6 +28,16 @@
     el.textContent = "";
   }
 
+  // Styled confirm modal (confirm-modal.js) with a native window.confirm
+  // fallback if that script didn't load — same pattern as status.js/visit.js/
+  // draft.js's askConfirm.
+  function askConfirm(message) {
+    if (typeof window.TakuConfirm === "function") {
+      return window.TakuConfirm(message);
+    }
+    return Promise.resolve(window.confirm(message));
+  }
+
   // ── file-select trigger (visually-hidden input + "+" tile button) ─────────
 
   function bindTrigger(triggerBtn, fileInput) {
@@ -43,14 +53,23 @@
   function bindFilePreview(fileInput, previewImg) {
     if (!fileInput || !previewImg) { return; }
 
+    // Re-selecting a file (or clearing the input) after an earlier preview
+    // used to leak the previous blob URL — nothing ever revoked it, unlike
+    // the same pattern in visit_create.js/visit_edit.js.
+    var currentObjectUrl = null;
+
     fileInput.addEventListener("change", function () {
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
       if (!fileInput.files || fileInput.files.length === 0) {
         previewImg.style.display = "none";
         previewImg.src = "";
         return;
       }
-      var objectUrl = URL.createObjectURL(fileInput.files[0]);
-      previewImg.src = objectUrl;
+      currentObjectUrl = URL.createObjectURL(fileInput.files[0]);
+      previewImg.src = currentObjectUrl;
       previewImg.style.display = "block";
     });
   }
@@ -123,7 +142,7 @@
     deleteBtn.addEventListener("click", async function () {
       clearError(errorEl);
 
-      var confirmed = window.confirm("포스터를 삭제하시겠습니까?");
+      var confirmed = await askConfirm("포스터를 삭제하시겠습니까?");
       if (!confirmed) { return; }
 
       var eventId = deleteBtn.getAttribute("data-event-id");
