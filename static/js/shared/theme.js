@@ -15,8 +15,11 @@
  * mutation), the public toggle API, and the live system-theme listener.
  *
  * Exposes: window.TakuTheme.toggle() — flips the theme, stores the
- * explicit choice, and applies it immediately. Console-triggerable today;
- * PR-2's header button calls this.
+ * explicit choice, and applies it immediately. The header's
+ * [data-theme-toggle] button (core/partials/_site_header.html) is wired to
+ * it below; the icon swap itself is pure CSS (site-chrome.css reads the
+ * same data-theme attribute), so no DOM update is needed here beyond the
+ * attribute toggle already done by toggle().
  *
  * localStorage is this repo's first use of it — every access goes through
  * try/catch, since private-browsing/storage-blocked contexts can throw on
@@ -75,6 +78,19 @@
   });
 
   applyTheme(resolveTheme());
+
+  function bindToggleButtons() {
+    var buttons = document.querySelectorAll("[data-theme-toggle]");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener("click", toggle);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindToggleButtons);
+  } else {
+    bindToggleButtons();
+  }
 
   window.TakuTheme = {
     toggle: toggle,

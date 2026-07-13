@@ -171,7 +171,7 @@
   align-items: center;
   text-decoration: none;
   border: 1px solid var(--pink-border);
-  background: #fff;
+  background: var(--surface);
   color: var(--pink-ink);
   padding: 0.4375rem 0.75rem;
   border-radius: 999px;

@@ -13,7 +13,7 @@
   .pager span {
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fff;
+    background: var(--surface);
     color: #324a66;
     padding: 0.5rem 0.625rem;
     font-size: 0.82rem;

@@ -225,7 +225,7 @@
   align-items: center;
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   color: #25508a;
   font-size: 0.82rem;
   font-weight: 700;

@@ -17,7 +17,7 @@
   }
   .visit-filter-chip {
     border: 1px solid var(--line);
-    background: #fff;
+    background: var(--surface);
     color: var(--text);
     border-radius: var(--radius-chip);
     padding: 0.375rem 0.75rem;
@@ -179,7 +179,7 @@
   .record-delete-btn {
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fff;
+    background: var(--surface);
     color: var(--rose-ink);
     font-size: var(--fs-sm);
     font-weight: 600;
@@ -196,7 +196,7 @@
     align-items: center;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fff;
+    background: var(--surface);
     color: var(--text);
     font-size: var(--fs-sm);
     font-weight: 600;
@@ -232,7 +232,7 @@
     padding: 0.5rem 0.625rem;
     font-size: var(--fs-md);
     font-family: inherit;
-    background: #fff;
+    background: var(--surface);
     width: 100%;
   }
   .create-form input[type="file"] {

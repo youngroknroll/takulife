@@ -40,7 +40,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--chrome-glass);
   backdrop-filter: saturate(180%) blur(8px);
   border-bottom: 1px solid var(--line);
 }
@@ -149,9 +149,28 @@
      the 44px avatar toggle must fit in 288px. 10rem(160px) no longer fits
      (73.2+10+160+8+44=295.2 > 288, re-breaking the "320px header stays
      one row" fix); 9rem(144px) does (73.2+10+144+8+44=279.2, 8.8px
-     margin) — verified via Playwright with a 26-char stress email. */
+     margin) — verified via Playwright with a 26-char stress email.
+     Re-derived again for the dark-mode PR-2 header toggle (.theme-toggle,
+     32px mobile hit box, sits between .brand and .site-nav in source order
+     — same default flex order as .brand/.topbar-auth, so it also lands on
+     row 1, not on .site-nav's order:3 row). The new item plus the *two*
+     new .site-header-inner gaps it introduces (one on each side of it)
+     added 52px of row-1 demand: 73.2+10+32+10+144+8+44=321.2, 33.2px over
+     288px — .topbar-auth wrapped to its own row between brand+toggle and
+     .site-nav rather than just overflowing, turning the header into 3
+     lines. Closed by shrinking only this cap, leaving .brand and both
+     gaps untouched (they're shared by the whole mobile header, not just
+     this row, and .brand renders for every visitor regardless of login
+     state — the username cap only bites logged-in users, and only those
+     with a long address): 73.2+10+32+10+100+8+44=277.2, 10.8px margin —
+     verified via Playwright at exactly 320px with a 35-char stress email
+     (logged-in, one row) and the anonymous login/signup-pill state (also
+     one row, this cap doesn't apply there). Trade-off, also measured: a
+     real email now starts ellipsizing past ~13 characters instead of
+     ~19 (100px vs the prior 144px) — cosmetic only, .account-menu-panel
+     still shows the full, unclipped address once opened. */
   .site-header .topbar-username {
-    max-width: 9rem;
+    max-width: 6.25rem;
   }
 }
 
@@ -283,6 +302,76 @@
   text-decoration: none;
 }
 
+/* ── theme toggle (light/dark) ─────────────────────────────────
+   .account-menu-toggle 패턴 재사용(44px 히트박스/30px 원) — hover는
+   계정 메뉴 아바타와 달리 중립(--bg-soft/--line, 브랜드 레드는
+   상태·CTA 전용이라 배제, 다크모드 팔레트 문서 §9). 글리프 2종을 겹쳐
+   두고 [data-theme]로 하나만 보이게 하는 순수 CSS 전환 — FOUC 방지
+   인라인 스크립트가 첫 페인트 전에 data-theme을 이미 확정하므로 JS의
+   아이콘 교체 타이밍에 기댈 필요가 없다. */
+.theme-toggle {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.theme-toggle-mark {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.theme-toggle:hover .theme-toggle-mark,
+.theme-toggle:focus-visible .theme-toggle-mark {
+  border-color: var(--line);
+  background: var(--bg-soft);
+}
+
+.theme-toggle-icon-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle-icon-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle-icon-dark {
+  display: inline;
+}
+
+@media (max-width: 45rem) {
+  .theme-toggle {
+    width: 32px;
+    height: 32px;
+  }
+  .theme-toggle-mark {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+}
+
 /* ── account menu (header disclosure dropdown) ────────────────
    Ported from event_list.js's region-select pattern: click toggle, close
    on outside click, Escape closes + returns focus to the trigger. See
@@ -348,10 +437,10 @@
   max-width: min(18rem, calc(100vw - 1.5rem));
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(17, 31, 55, 0.14);
+  box-shadow: var(--shadow-dropdown);
   padding: 0.5rem;
 }
 

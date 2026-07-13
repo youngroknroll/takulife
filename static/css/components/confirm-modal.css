@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(17, 31, 55, 0.45);
+  background: var(--backdrop);
   z-index: 1000;
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -78,7 +78,7 @@
 }
 
 .confirm-no {
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--line);
 }

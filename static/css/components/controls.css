@@ -11,7 +11,7 @@
   padding: 0.3125rem 0.625rem;
   font-size: var(--fs-sm);
   color: var(--text);
-  background: #fff;
+  background: var(--surface);
   cursor: pointer;
 }
 
@@ -80,7 +80,7 @@
   padding: 0.3125rem 0.625rem;
   font-size: var(--fs-sm);
   color: var(--pink-ink);
-  background: #fff;
+  background: var(--surface);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -145,7 +145,7 @@
   padding: 0.625rem 0.75rem;
   font-size: 0.95rem;
   color: var(--text);
-  background: #fff;
+  background: var(--surface);
 }
 /* Ink, not brand-red: plan §0/§1 reserves red for the primary CTA
    (.btn-primary) and status/brand accents, so the search action itself
@@ -153,7 +153,10 @@
 .search button {
   border: 1px solid var(--text);
   background: var(--text);
-  color: #fff;
+  /* var(--bg), not a literal white — see toast.css's .taku-toast for the
+     same background:var(--text)+color:var(--bg) token-native inversion
+     technique (dark mode auto-flips this to a light pill with dark text). */
+  color: var(--bg);
   border-radius: 8px;
   padding: 0.625rem 0.875rem;
   font-weight: 700;

@@ -182,9 +182,9 @@
       right: 0;
       bottom: 0;
       padding: 0.625rem 0.875rem calc(10px + env(safe-area-inset-bottom));
-      background: rgba(255, 255, 255, 0.96);
+      background: var(--chrome-glass-cta);
       border-top: 1px solid var(--line);
-      box-shadow: 0 -8px 24px rgba(17, 31, 55, 0.10);
+      box-shadow: var(--shadow-cta);
       z-index: 20;
     }
     .mobile-cta a,

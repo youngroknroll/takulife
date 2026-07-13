@@ -75,7 +75,7 @@
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(17, 31, 55, 0.45);
+  background: var(--backdrop);
 }
 
 .auth-modal {
