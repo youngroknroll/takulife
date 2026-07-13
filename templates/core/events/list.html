@@ -171,7 +171,9 @@
                     <p class="meta">{{ row.event.location_name }}</p>
                   {% endif %}
                   {% if row.event.start_date and row.event.end_date %}
-                    <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
+                    <p class="period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</span></p>
+                  {% elif row.event.start_date %}
+                    <p class="period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} -</span></p>
                   {% endif %}
                   <div class="status-row">
                     {% if row.user_status == 'visited' or row.user_status == 'missed' %}
