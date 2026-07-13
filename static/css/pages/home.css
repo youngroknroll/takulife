@@ -632,6 +632,16 @@
     .hscroll-track--posters .poster-card {
       height: 100%;
     }
+    /* height:100% alone only stretches .poster-card's own box — its two
+       flex children (.poster-card-media, .poster-card-caption) still size
+       to their own content by default (flex-grow:0), so a card whose
+       sibling in the same row has a taller title (1 vs 2 lines) leaves a
+       ~17px empty gap at the caption's bottom instead of an even card
+       band. Growing the caption (not the media, which is aspect-ratio
+       locked) absorbs that leftover space. */
+    .hscroll-track--posters .poster-card-caption {
+      flex: 1 0 auto;
+    }
     .poster-card-title {
       font-size: var(--fs-sm);
     }
