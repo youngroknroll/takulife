@@ -81,7 +81,9 @@
     margin-left: auto;
   }
   /* §5.4 상태 버튼 기준(40px 이상): event_detail.css:166의 동일 관례를
-     예정/방문/놓침 상태 전환 버튼 컨텍스트에서도 확대. */
+     예정/방문/놓침 상태 전환 버튼 컨텍스트에서도 확대. 사용자 결정으로
+     모바일(45rem 이하)만 32px로 축소(아래 미디어쿼리) — AA 24x24 최소
+     기준은 유지, 데스크톱은 이 40px 그대로. */
   .status-row .status-btn {
     min-height: 40px;
   }
@@ -116,5 +118,12 @@
       min-height: 34px;
       padding: 0.375rem 0.6875rem;
       font-size: var(--fs-sm);
+    }
+    /* 사용자 시각 QA: 모바일 밀집 카드에서 40px 상태 버튼(방문 완료·방문
+       예정으로·놓침·삭제)이 과대해 보임 — 모바일 한정 32px로 축소(AA
+       24x24 최소 기준은 유지). 데스크톱(45rem 초과)은 §5.4 40px 그대로. */
+    .status-row .status-btn {
+      min-height: 32px;
+      font-size: var(--fs-xs);
     }
   }

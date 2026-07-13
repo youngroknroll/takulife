@@ -163,7 +163,9 @@
     min-height: 44px;
     padding: 0.5rem 0.75rem;
   }
-  /* §5.4 상태 버튼 기준(40px 이상): 예정/완료/놓침 3버튼 컨텍스트 확대. */
+  /* §5.4 상태 버튼 기준(40px 이상): 예정/완료/놓침 3버튼 컨텍스트 확대.
+     사용자 결정으로 모바일(45rem 이하)만 32px로 축소(아래 미디어쿼리) —
+     AA 24x24 최소 기준은 유지, 데스크톱은 이 40px 그대로. */
   #status-choices .status-btn {
     min-height: 40px;
   }
@@ -242,5 +244,11 @@
     }
     h1 {
       font-size: var(--fs-xl-mobile);
+    }
+    /* 사용자 시각 QA: archive_statuses.css와 동일 근거 — 모바일 한정
+       32px로 축소(AA 24x24 최소 기준은 유지). 데스크톱은 §5.4 40px 그대로. */
+    #status-choices .status-btn {
+      min-height: 32px;
+      font-size: var(--fs-xs);
     }
   }

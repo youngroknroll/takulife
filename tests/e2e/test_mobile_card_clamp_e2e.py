@@ -72,4 +72,4 @@ class TestArchiveStatusCardTitleClamp:
         assert title_height <= line_height * 2 + 2
 
         status_btn_height = card.locator(".status-btn").first.bounding_box()["height"]
-        assert status_btn_height >= 40
+        assert status_btn_height >= 32
