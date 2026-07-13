@@ -40,6 +40,18 @@
     opacity: 0.85;
     pointer-events: none;
   }
+  /* PR-4 대비 감사 발견: opacity:0.85가 텍스트 색을 배경과 15% 블렌딩해
+     실제 렌더 대비가 declared color 기준 산출값보다 낮다 — var(--brand-ink)
+     다크(#D98272)는 명목상 5.53:1이지만 블렌딩 후 실측 4.39:1로 AA 미달
+     (스크린샷 픽셀 샘플로 재확인: rgb(189,115,103), 계산값과 일치).
+     팔레트 공식대로 L을 소폭 올리고 S를 낮춰(HSL h=9.3 유지, L 64.9%->
+     66.9%, S 57.5%->45.5%) 블렌딩 후 4.75:1이 되는 #D19084로 이 스팟만
+     개별 보정 — var(--brand-ink) 토큰 자체는 이 한 곳만의 opacity 특수
+     상황 때문에 건드리지 않는다(다른 전 사용처는 opacity 없이 이미
+     5%+대 통과). */
+  :root[data-theme="dark"] .official-stamp {
+    color: #d19084;
+  }
   .aside {
     padding: 0.875rem;
     align-self: start;
