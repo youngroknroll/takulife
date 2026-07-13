@@ -16,8 +16,9 @@ Context consumed:
 Role-based account-menu items (no 탈퇴 link in any branch — see
 accounts.views.delete_account's server-side staff guard, and the settings
 page for the regular-member deletion entry point):
-  regular member — 마이페이지 / 로그아웃
-  staff          — 스태프 콘솔 / 로그아웃
+  regular member — 마이페이지 / 로그아웃 (마이페이지 -> 내정보 변경 -> 설정)
+  staff          — 스태프 콘솔 / 설정 / 로그아웃 (no mypage, so 설정 is the
+                    only click-reachable path to email/password management)
   +superuser     — 관리자 added to either branch above
 {% endcomment %}
 <nav class="topbar-auth">
@@ -33,6 +34,7 @@ page for the regular-member deletion entry point):
         <hr class="account-menu-divider">
         {% if request.user.is_staff %}
           <a class="account-menu-item" href="/staff/dashboard/">스태프 콘솔</a>
+          <a class="account-menu-item" href="/accounts/settings/">설정</a>
         {% else %}
           <a class="account-menu-item" href="/mypage/">마이페이지</a>
         {% endif %}

@@ -11,6 +11,7 @@ import pytest
 
 MYPAGE_LINK = b'href="/mypage/"'
 STAFF_CONSOLE_LINK = b'href="/staff/dashboard/"'
+SETTINGS_LINK = b'href="/accounts/settings/"'
 ADMIN_LINK = b'href="/admin/"'
 DELETE_LINK = b'href="/accounts/delete/"'
 
@@ -24,31 +25,37 @@ def test_regular_member_sees_mypage_not_staff_console(client, make_user):
 
     assert MYPAGE_LINK in response.content
     assert STAFF_CONSOLE_LINK not in response.content
+    assert SETTINGS_LINK not in response.content
     assert ADMIN_LINK not in response.content
     assert DELETE_LINK not in response.content
 
 
 @pytest.mark.django_db
-def test_staff_member_sees_staff_console_not_mypage(client, make_user):
+def test_staff_member_sees_staff_console_and_settings_not_mypage(client, make_user):
+    """Staff has no mypage (no personal archive summary), so 설정 is the
+    only click-reachable path to change email/password — without it staff
+    could never reach account_change_password/account_email from the UI."""
     staff = make_user(is_staff=True)
     client.force_login(staff)
 
     response = client.get("/")
 
     assert STAFF_CONSOLE_LINK in response.content
+    assert SETTINGS_LINK in response.content
     assert MYPAGE_LINK not in response.content
     assert ADMIN_LINK not in response.content
     assert DELETE_LINK not in response.content
 
 
 @pytest.mark.django_db
-def test_superuser_sees_admin_link_in_addition_to_staff_console(client, make_user):
+def test_superuser_sees_admin_link_in_addition_to_staff_console_and_settings(client, make_user):
     superuser = make_user(is_staff=True, is_superuser=True)
     client.force_login(superuser)
 
     response = client.get("/")
 
     assert STAFF_CONSOLE_LINK in response.content
+    assert SETTINGS_LINK in response.content
     assert ADMIN_LINK in response.content
     assert MYPAGE_LINK not in response.content
     assert DELETE_LINK not in response.content
@@ -60,5 +67,6 @@ def test_anonymous_visitor_sees_neither_account_menu_branch(client):
 
     assert MYPAGE_LINK not in response.content
     assert STAFF_CONSOLE_LINK not in response.content
+    assert SETTINGS_LINK not in response.content
     assert ADMIN_LINK not in response.content
     assert DELETE_LINK not in response.content
