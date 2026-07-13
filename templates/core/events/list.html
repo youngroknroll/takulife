@@ -144,8 +144,10 @@
                   </a>
                   {% if row.status_slug == 'ended' %}
                     <span class="event-card-dday-badge poster-badge poster-badge-ended">종료</span>
-                  {% elif row.dday is not None %}
-                    <span class="event-card-dday-badge poster-badge poster-badge-closing">D-{{ row.dday }}</span>
+                  {% elif row.status_slug == 'upcoming' %}
+                    <span class="event-card-dday-badge poster-badge poster-badge-open">{% if row.dday == 0 %}오늘 오픈{% else %}오픈까지 {{ row.dday }}일{% endif %}</span>
+                  {% elif row.status_slug == 'closing_soon' %}
+                    <span class="event-card-dday-badge poster-badge poster-badge-closing">{% if row.dday == 0 %}오늘 종료{% else %}종료까지 {{ row.dday }}일{% endif %}</span>
                   {% endif %}
                   <span class="glint">✦</span>
                   <button class="interest-btn poster-interest{% if row.user_interested %} active{% endif %}" type="button"
