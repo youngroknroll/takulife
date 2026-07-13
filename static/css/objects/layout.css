@@ -85,9 +85,10 @@
  * own, now-redundant override — removed, see archive_interests.css).
  * font-size fs-xs(12px, was fs-md 14px): originally a .side-list--row-only
  * fix for the 3-col grid's compressed width (see that rule below), but
- * 찜 목록(interests.html)과 스태프 바로가기(staff/dashboard.html)의 세로형
- * .side-list(--row 없음)는 축소 대상에서 빠져 14px로 남아있었다 — 같은
- * 컴포넌트는 동일 크기가 맞다는 사용자 판단으로 base 규칙으로 승격.
+ * 스태프 바로가기(staff/dashboard.html)의 세로형 .side-list(--row 없음)는
+ * 축소 대상에서 빠져 14px로 남아있었다 — 같은 컴포넌트는 동일 크기가
+ * 맞다는 사용자 판단으로 base 규칙으로 승격. (찜 목록 interests.html은
+ * PR #164에서 --row 3열로 통일돼 더 이상 세로형 예시가 아님.)
  * Column padding (.side-list li, unchanged) still carries the touch-target
  * height regardless of variant.
  */
