@@ -133,7 +133,7 @@
 
           <div class="event-list">
             {% for row in event_rows %}
-              <article class="event-card hover-lift">
+              <article class="event-card hover-lift" data-status-error-container>
                 <div class="event-card-media">
                   {% if row.event.poster_image %}
                     <img class="event-card-img" src="{{ row.event.poster_image.url }}" alt="{{ row.event.title }} 포스터" loading="lazy">
@@ -173,7 +173,7 @@
                   {% if row.event.start_date and row.event.end_date %}
                     <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
                   {% endif %}
-                  <div class="status-row" data-status-error-container>
+                  <div class="status-row">
                     {% if row.user_status == 'visited' or row.user_status == 'missed' %}
                       <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
                     {% endif %}

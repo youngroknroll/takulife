@@ -177,6 +177,16 @@
   .event-card::after {
     bottom: -5px;
   }
+  /* status.js's showInlineError/clearInlineError append/find
+     .status-inline-error via .closest("[data-status-error-container]")
+     from the clicked button — that container is .event-card itself (see
+     the article tag in list.html), so a JS-appended error lands as a 3rd
+     grid child. .event-card's grid only defines 2 explicit columns (media
+     + card-body); without this, grid auto-placement would drop the error
+     into a new row's first (96px) cell instead of spanning the card. */
+  .event-card > .status-inline-error {
+    grid-column: 1 / -1;
+  }
   /* Poster media column (replaces the bare 52px .cat-tile): a fixed 96px
      box (aspect 3/4 → 128px tall) holding either the event poster or the
      category-tile fallback, inset by the card's own padding like the old
