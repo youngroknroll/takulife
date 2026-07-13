@@ -142,13 +142,13 @@
     border-radius: 10px;
     padding: 0.75rem;
     /* Ticket-stub signature #1 (perforation): a dashed vertical rule between
-       the .cat-tile column and the card body, drawn as a background layer
-       (not a border) so it spans the full card height regardless of the
-       tile's own fixed 52px box. Positioned at padding-left + tile width
-       (0.75rem + 52px), matching the punch-notch circles below. */
+       the .event-card-media column and the card body, drawn as a background
+       layer (not a border) so it spans the full card height regardless of
+       the media box's own fixed 96px width. Positioned at padding-left +
+       media width (0.75rem + 96px), matching the punch-notch circles below. */
     background:
       repeating-linear-gradient(to bottom, var(--line) 0 4px, transparent 0 8px)
-        calc(0.75rem + 52px) 0 / 1px 100% no-repeat,
+        calc(0.75rem + 96px) 0 / 1px 100% no-repeat,
       var(--bg-card);
     display: grid;
     grid-template-columns: auto 1fr;
@@ -163,7 +163,7 @@
   .event-card::after {
     content: "";
     position: absolute;
-    left: calc(0.75rem + 52px);
+    left: calc(0.75rem + 96px);
     transform: translateX(-50%);
     width: 10px;
     height: 10px;
@@ -176,6 +176,38 @@
   }
   .event-card::after {
     bottom: -5px;
+  }
+  /* Poster media column (replaces the bare 52px .cat-tile): a fixed 96px
+     box (aspect 3/4 → 128px tall) holding either the event poster or the
+     category-tile fallback, inset by the card's own padding like the old
+     tile was. Self-contained rounding/clip (unlike the flush home poster
+     card) since this sits inset within the card, not flush to its edge. */
+  .event-card-media {
+    position: relative;
+    width: 96px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .event-card-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    object-position: center top;
+  }
+  /* No-poster fallback: stretches the 52px .cat-tile (components/category.css)
+     to fill the 96px media box, mirroring pages/home.css's .poster-card-emoji
+     override of the same base tile. */
+  .event-card-emoji {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    border-radius: 0;
+    font-size: 2.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   /* Ticket-stub signature #2 (glint): a ✦ sparkle revealed on hover/
      focus-within. Implemented template-free on the category tile's free
@@ -233,12 +265,10 @@
   .event-card h2 .card-official-badge {
     margin-top: 0.1875rem;
   }
-  /* §5.4 조작 영역 합격 기준(44px): 전역 .interest-btn(controls.css)은 다른
-     화면의 알약 크기를 그대로 쓰므로, 목록 카드 컨텍스트에서만 확대한다. */
-  .event-card .interest-btn {
-    min-height: 44px;
-    padding: 0.5rem 0.75rem;
-  }
+  /* §5.4 44px 확대 규칙은 여기서 제거됨: 찜 버튼이 .status-row 알약에서
+     .event-card-media 위 .poster-interest 오버레이(components/cards.css,
+     34px 원형 — 홈 포스터 카드와 동일한 §5.4 예외 관례)로 이동해 이 카드
+     컨텍스트 확대분은 더 이상 적용되지 않음. */
   .filter-toggle {
     display: none;
   }
