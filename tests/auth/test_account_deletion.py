@@ -12,9 +12,11 @@ import time as real_time
 import django.core.cache.backends.base as cache_base
 import django.core.cache.backends.locmem as cache_locmem
 import pytest
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from accounts.models import User
+from accounts.views import _delete_attempts_cache_key
 from archive.models import PersonalEntry, VisitRecord, VisitRecordPhoto
 
 DELETE_URL = "/accounts/delete/"
@@ -82,6 +84,25 @@ def test_staff_post_is_forbidden_and_account_survives(client, make_user, valid_p
 
     assert response.status_code == 403
     assert User.objects.filter(pk=staff.pk).exists()
+
+
+@pytest.mark.django_db
+def test_staff_wrong_password_posts_never_create_a_lockout_cache_entry(
+    client, make_user, valid_password
+):
+    """Regression guard for check ordering: the is_staff guard must run
+    *before* the lockout counter, or a staff account (already blocked by
+    role) would still burn through _register_failed_delete_attempt on every
+    repeated POST — a pointless side effect for a request that was always
+    going to be rejected."""
+    staff = make_user(password=valid_password, is_staff=True)
+    client.force_login(staff)
+
+    for _ in range(5):
+        response = client.post(DELETE_URL, {"password": "definitely-wrong"})
+        assert response.status_code == 403
+
+    assert cache.get(_delete_attempts_cache_key(staff)) is None
 
 
 @pytest.mark.django_db
