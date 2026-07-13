@@ -176,11 +176,11 @@
                   {% elif row.event.start_date %}
                     <p class="period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} -</span></p>
                   {% endif %}
-                  <div class="status-row">
-                    {% if row.user_status == 'visited' or row.user_status == 'missed' %}
+                  {% if row.user_status == 'visited' or row.user_status == 'missed' %}
+                    <div class="status-row">
                       <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
-                    {% endif %}
-                  </div>
+                    </div>
+                  {% endif %}
                 </div>
               </article>
             {% endfor %}
