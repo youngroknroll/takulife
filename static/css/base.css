@@ -98,6 +98,16 @@ body {
   color: #46617f;
 }
 
+/* 잉크 리터럴 개별 다크 오버라이드 — 처음엔 다른 7곳과 동일하게 --muted
+   다크값(#A2A9B9)으로 대응했으나, .site-message-info는 error(rose)/
+   success(mint)와 함께 상태 트리오를 이루는 형제 규칙이라 무채색 muted를
+   쓰면 정체성이 끊긴다는 게이트 지적(UX MED)으로 --up-ink로 교체 —
+   원래 라이트 잉크(#46617f)와 같은 블루 계열인 up 카테고리 토큰을
+   재사용해 "info=파랑" 형제 관계를 다크에서도 유지한다. */
+:root[data-theme="dark"] .site-message-info {
+  color: var(--up-ink);
+}
+
 .site-message-success {
   background: var(--mint-soft);
   color: var(--mint-ink);

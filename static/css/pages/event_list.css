@@ -198,6 +198,13 @@
     border-radius: 10px;
     overflow: hidden;
   }
+  /* 포스터 타일 완충 보더(다크 전용, home.css의 .poster-card-media와
+     동일한 대응) — 밝은 포스터가 다크 배경 위에서 떠 보이는 문제 대응.
+     이 요소는 자체 border-radius/overflow:hidden을 갖고 있어 inset
+     shadow가 바로 자기 모서리를 따라간다. 라이트는 무변경. */
+  :root[data-theme="dark"] .event-card-media {
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
   /* Wraps the img/fallback tile so the poster itself is a click target to
      the detail page (title link is the only other route in, and remains
      the sole tab stop — this anchor is tabindex="-1" in the template).

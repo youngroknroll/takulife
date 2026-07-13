@@ -42,6 +42,12 @@
     font-size: 0.8rem;
     font-weight: 700;
   }
+  /* 잉크 리터럴 개별 다크 오버라이드 — 신규 토큰 통합 없이 --muted 다크값과
+     동일한 #A2A9B9로 직접 대응(다크모드 팔레트 문서 "크롬·그림자·잉크
+     리터럴", 계획상 Deferred). */
+  :root[data-theme="dark"] label {
+    color: #a2a9b9;
+  }
   input,
   textarea,
   select {
@@ -67,6 +73,15 @@
     background: #f4f6fa;
     color: var(--muted);
     cursor: not-allowed;
+  }
+  /* 유사-중복 surface 리터럴 개별 다크 오버라이드 — #f4f6fa는 인접
+     토큰(--bg-soft) 다크값을 그대로 준용해 #292D38로 대응. */
+  :root[data-theme="dark"] input:read-only,
+  :root[data-theme="dark"] textarea:read-only,
+  :root[data-theme="dark"] input:disabled,
+  :root[data-theme="dark"] textarea:disabled,
+  :root[data-theme="dark"] select:disabled {
+    background: #292d38;
   }
   textarea {
     min-height: 96px;
@@ -94,6 +109,10 @@
     color: #2c4563;
     font-size: var(--fs-sm);
     overflow-wrap: anywhere;
+  }
+  /* 잉크 리터럴 개별 다크 오버라이드 — #A2A9B9(=--muted 다크값). */
+  :root[data-theme="dark"] .raw-box p {
+    color: #a2a9b9;
   }
   .meta {
     font-size: var(--fs-xs);
@@ -147,6 +166,11 @@
     background: var(--rose-soft);
     color: var(--rose-ink);
     border-color: #fecdd3;
+  }
+  /* 유사-중복 surface 리터럴 개별 다크 오버라이드 — #fecdd3는 인접
+     토큰(--rose-soft) 다크값을 그대로 준용해 #43232B로 대응. */
+  :root[data-theme="dark"] .action-button.danger {
+    border-color: #43232b;
   }
   .action-button:disabled {
     opacity: 0.5;

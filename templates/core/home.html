@@ -48,7 +48,7 @@
                     class="deck-slide{% if not row.event.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}"
                     href="/events/{{ row.event.id }}/"
                     tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
-                    style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, #fff 100%);{% endif %}"
+                    style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, var(--surface) 100%);{% endif %}"
                   >
                     {% if row.event.poster_image %}
                       <img

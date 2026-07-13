@@ -413,6 +413,16 @@
   .poster-card-media {
     position: relative;
   }
+  /* 포스터 타일 완충 보더(다크 전용) — 밝은 포스터가 다크 배경 위에서
+     떠 보이는 문제 대응. inset box-shadow 선택 이유: .poster-card-media
+     자체엔 border-radius가 없고 조상 .poster-card의 overflow:hidden +
+     border-radius:12px에 의해 시각적으로 잘려 렌더되므로, 진짜 border를
+     쓰면 반경 불일치로 모서리가 어긋나 보일 위험이 있다 — inset
+     shadow는 사각형이어도 조상의 클리핑을 그대로 따라가 둥근 모서리와
+     자연스럽게 맞물린다. 라이트는 무변경. */
+  :root[data-theme="dark"] .poster-card-media {
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
   .poster-card-img {
     display: block;
     width: 100%;

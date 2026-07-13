@@ -92,6 +92,22 @@
     bindToggleButtons();
   }
 
+  // A bfcache restore (event.persisted) can bring back a page frozen in
+  // whatever data-theme it had at the moment the visitor navigated away —
+  // if the theme changed since then (another tab's toggle, or the stored
+  // value expiring), the restored page never re-runs this file's own
+  // applyTheme(resolveTheme()) call above to pick that up. Re-applying is a
+  // no-op when the stored value hasn't changed, so this is safe to run on
+  // every bfcache restore. api.js's/status.js's own pageshow listeners
+  // recover their own unrelated frozen-state concerns; this file owns
+  // recovering its own (stale theme).
+  window.addEventListener("pageshow", function (evt) {
+    if (!evt.persisted) {
+      return;
+    }
+    applyTheme(resolveTheme());
+  });
+
   window.TakuTheme = {
     toggle: toggle,
   };
