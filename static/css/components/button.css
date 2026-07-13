@@ -13,6 +13,9 @@
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 0.6875rem 0.75rem;
+  /* §5.4 44px 터치 타깃: padding+line-height+border만으로는 ~42.24px
+     (실측)였음 — .btn-sm은 의도된 소형 변형이라 대상에서 제외. */
+  min-height: 44px;
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.2;
