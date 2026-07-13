@@ -272,6 +272,21 @@
 }
 
 @media (max-width: 45rem) {
+  /* dashboard.html sets --summary-cols inline (style="--summary-cols: 3")
+     because its desktop value (3) differs from .summary-grid's own
+     fallback (4, cards.css) — unlike mypage.html, which needs no inline
+     override at all since its desktop value already matches the fallback
+     (see mypage.css's own --summary-cols comment). An inline style has
+     higher precedence than any external selector regardless of
+     specificity, so !important is required here to actually collapse the
+     grid at this breakpoint — verified empirically (computed
+     --summary-cols stayed 3 without it). First (and, as of this change,
+     only) !important in the codebase; scoped to a single custom property
+     this page's own inline attribute otherwise wins. */
+  .summary-grid {
+    --summary-cols: 1 !important;
+  }
+
   .recent-actions-table {
     display: none;
   }
