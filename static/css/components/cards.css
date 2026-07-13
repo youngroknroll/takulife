@@ -321,3 +321,19 @@
      reliably here. Left as a literal (no matching light-pink token). */
   color: #ff6b81;
 }
+/* Mobile poster tile convention: 찜 sits bottom-right instead of top-right.
+   At 320px the top-right badge (e.g. home closing card's "종료까지 N일")
+   can run wide enough to graze the button (measured -8px overlap at 320px,
+   clear by 360px+) — bottom-right sidesteps that regardless of badge
+   width, and matches the moved position on both home poster cards and
+   event_list.css's mobile card (shared class, one rule fixes both). The
+   event_list.css mobile media-bottom notch (top:calc(100% - 5px), 10px
+   circle) leaves an ~3px gap under this 8px offset — verified by rect, no
+   overlap. */
+@media (max-width: 45rem) {
+  .poster-interest {
+    top: auto;
+    bottom: 8px;
+    right: 8px;
+  }
+}
