@@ -130,7 +130,14 @@
       });
   }
 
-  input.addEventListener("input", function () {
+  input.addEventListener("input", function (evt) {
+    // IME composition (한글/日本語/中文 등) fires an `input` event per
+    // intermediate keystroke while composing a character — searching on
+    // those fragments wastes fetches and can flash wrong results mid-type.
+    // Browsers fire a final `input` event with isComposing:false right
+    // after `compositionend`, so this alone is enough to pick up the
+    // completed term without a separate compositionend listener.
+    if (evt.isComposing) { return; }
     if (timer) { window.clearTimeout(timer); }
     var term = input.value.trim();
     syncClearLink(term);
