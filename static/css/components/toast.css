@@ -17,7 +17,13 @@
   padding: 0.625rem 1rem;
   border-radius: 999px;
   background: var(--text);
-  color: #fff;
+  /* var(--bg), not a literal white: --text/--bg are a matched high-contrast
+     pair in both themes (dark-on-light body text vs near-white page in
+     light mode, light-on-dark vs near-black page in dark mode), so pairing
+     them here — background:var(--text) already, color:var(--bg) — auto-
+     inverts the pill correctly instead of needing a separate dark override.
+     Light mode: near-identical to the old literal (#f5f6f8 vs #fff). */
+  color: var(--bg);
   font-size: var(--fs-md);
   font-weight: 600;
   text-align: center;

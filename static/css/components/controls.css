@@ -153,7 +153,10 @@
 .search button {
   border: 1px solid var(--text);
   background: var(--text);
-  color: #fff;
+  /* var(--bg), not a literal white — see toast.css's .taku-toast for the
+     same background:var(--text)+color:var(--bg) token-native inversion
+     technique (dark mode auto-flips this to a light pill with dark text). */
+  color: var(--bg);
   border-radius: 8px;
   padding: 0.625rem 0.875rem;
   font-weight: 700;
