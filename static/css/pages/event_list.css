@@ -322,3 +322,78 @@
       align-items: flex-start;
     }
   }
+
+  /* ── mobile poster grid: 2 cols × 5 rows ───────────────────────
+     PUBLIC_LISTING_PAGE_SIZE is already 10 (backend unchanged), so a full
+     page fills exactly one 2×5 screen. .event-card switches from the
+     side-by-side ticket row to a top-to-bottom stack with the media
+     bleeding flush to the card edge, mirroring pages/home.css's
+     .poster-card (unlike the desktop inset thumbnail above). */
+  @media (max-width: 45rem) {
+    .event-list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .event-card {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 0;
+      background: var(--bg-card);
+      overflow: hidden;
+      /* Grid items default to a content-based min-width floor; without
+         this, .card-official-badge's nowrap text (or similar) could push
+         a column past its 50% share and reopen horizontal overflow
+         (연구문서 §2.2), same risk as the home slider's li min-width:0. */
+      min-width: 0;
+    }
+    /* The desktop vertical perforation (left:calc(0.75rem+96px)) has no
+       meaning once the card stacks vertically — replaced below by a
+       horizontal seam (.card-body border-top + .event-card-media notch),
+       mirroring pages/home.css:439's .poster-card-media technique. */
+    .event-card::before,
+    .event-card::after {
+      display: none;
+    }
+    .event-card-media {
+      width: auto;
+      border-radius: 0;
+      overflow: visible;
+    }
+    /* Ticket-stub signature #1, horizontal form: punch-notch circles
+       straddle the media/body seam via top:calc(100% - 5px), resolving
+       against .event-card-media's OWN box so they land at the seam
+       regardless of the column's actual rendered width (percentage
+       anchors, not a hardcoded px guess). left/right:-5px lets
+       .event-card's overflow:hidden bite the outer half at the card's
+       edge — same "punched hole" technique as the desktop vertical notch
+       and pages/home.css's .poster-card-media::before/::after. */
+    .event-card-media::before,
+    .event-card-media::after {
+      content: "";
+      position: absolute;
+      top: calc(100% - 5px);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--line);
+    }
+    .event-card-media::before {
+      left: -5px;
+    }
+    .event-card-media::after {
+      right: -5px;
+    }
+    .card-body {
+      padding: 0.625rem 0.75rem 0.75rem;
+      border-top: 1px dashed var(--line);
+    }
+    .event-card h2 {
+      font-size: var(--fs-sm);
+    }
+    .event-card .meta,
+    .event-card .period {
+      font-size: var(--fs-xs);
+    }
+  }
