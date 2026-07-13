@@ -49,6 +49,10 @@
 .btn-social {
   display: block;
   padding: 0.6875rem 0.75rem;
+  /* Matches .btn's own §5.4 44px fix (button.css) — this button doesn't
+     share that component, so it needs its own min-height to stay level
+     with the primary .btn on the same login/signup forms. */
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
