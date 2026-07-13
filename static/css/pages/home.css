@@ -529,49 +529,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  /* Top-left badge pill */
-  .poster-badge {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    z-index: 2;
-    border-radius: var(--radius-chip);
-    padding: 0.1875rem 0.5625rem;
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    line-height: 1;
-  }
-  /* Wrapper when a card can show more than one badge (recent: 오픈까지 + NEW) */
-  .poster-badges {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    z-index: 2;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-  .poster-badges .poster-badge {
-    position: static;
-  }
-  .poster-badge-new {
-    background: var(--brand);
-    color: #fff;
-  }
-  .poster-badge-open {
-    background: var(--mint-soft);
-    color: var(--mint-ink);
-  }
-  .poster-badge-closing {
-    background: var(--amber-soft);
-    color: var(--amber-ink);
-  }
-  /* 종료(ended) — 4th lifecycle state (plan §0), kept visually distinct
-     from 종료임박(amber) so a closed event doesn't read as still-urgent. */
-  .poster-badge-ended {
-    background: var(--end-soft);
-    color: var(--end-ink);
-  }
+  /* .poster-badge(s) (top-left badge pill system): hoisted to
+     components/cards.css so event_list.css's mobile D-day/종료 overlay
+     badge can reuse the same visual language. */
   /* .poster-interest (top-right 찜 button overlay): hoisted to
      components/cards.css so event_list.css's desktop thumbnail + mobile
      grid can reuse it too (both pages load cards.css globally). */

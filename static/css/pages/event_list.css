@@ -284,6 +284,14 @@
     background: var(--amber-soft);
     color: var(--amber-ink);
   }
+  /* Mobile-only poster overlay badge (duplicate render of the same D-day/
+     종료 state as .card-lead .dday, toggled by viewport instead of moved
+     with JS/markup branching — see the <=45rem block below for the other
+     half of the toggle). Hidden by default (desktop keeps the card-lead
+     chip only). */
+  .event-card-dday-badge {
+    display: none;
+  }
   /* .status-row는 base.css로 통합됨 (중복 제거) */
   /* .pager는 components/pager.css로 hoist됨 (아카이브 페이지와 공유) */
   @media (max-width: 56.25rem) {
@@ -399,5 +407,15 @@
     .event-card .meta,
     .event-card .period {
       font-size: var(--fs-xs);
+    }
+    /* D-day/종료 moves onto the poster as a top-left badge (home
+       .poster-badge convention) instead of the card-lead chip — the card
+       body keeps only status/category chips. Both instances render
+       server-side unconditionally; only visibility toggles here. */
+    .event-card-dday-badge {
+      display: block;
+    }
+    .card-lead .dday {
+      display: none;
     }
   }
