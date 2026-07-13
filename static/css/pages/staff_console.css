@@ -1,6 +1,20 @@
 /* staff_console.css — shared by templates/staff/dashboard.html and
    templates/core/staff/home_categories.html */
 
+/* Dashboard's summary-grid desktop column count (3) differs from
+   .summary-grid's own fallback (4, cards.css), so it needs an explicit
+   value — kept here in CSS rather than as a template inline style
+   (dashboard.html used to carry style="--summary-cols: 3") so the mobile
+   override below can actually win the cascade. An inline custom-property
+   value has higher precedence than any external selector regardless of
+   specificity, so a plain @media rule below could never collapse the grid
+   while the inline style was in place (this bit the mobile fix below once
+   already — see its own comment). mypage.css never hit this because its
+   desktop value already matches the shared fallback. */
+.summary-grid {
+  --summary-cols: 3;
+}
+
 /* ── console density pass (PR-C2): mouse-first desktop console reads
    tighter than the public site — shave one step off panel padding and
    move body copy off --fs-base onto --fs-md/--fs-sm. Tokens only, no new
@@ -272,19 +286,15 @@
 }
 
 @media (max-width: 45rem) {
-  /* dashboard.html sets --summary-cols inline (style="--summary-cols: 3")
-     because its desktop value (3) differs from .summary-grid's own
-     fallback (4, cards.css) — unlike mypage.html, which needs no inline
-     override at all since its desktop value already matches the fallback
-     (see mypage.css's own --summary-cols comment). An inline style has
-     higher precedence than any external selector regardless of
-     specificity, so !important is required here to actually collapse the
-     grid at this breakpoint — verified empirically (computed
-     --summary-cols stayed 3 without it). First (and, as of this change,
-     only) !important in the codebase; scoped to a single custom property
-     this page's own inline attribute otherwise wins. */
+  /* 320px: the dashboard's 3-col grid squeezed each card to ~53px,
+     wrapping labels like "검토 대기 드래프트" onto 2 lines. Collapse to a
+     single column (cards stack full-width, ~258px at 320px) — same
+     technique as mypage.css. This only works because the desktop value
+     above lives in CSS now, not as a dashboard.html inline style; an
+     inline custom-property value would have out-ranked this rule
+     regardless of selector specificity (see the desktop rule's comment). */
   .summary-grid {
-    --summary-cols: 1 !important;
+    --summary-cols: 1;
   }
 
   .recent-actions-table {
