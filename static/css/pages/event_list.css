@@ -86,7 +86,7 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(17, 31, 55, 0.14);
+    box-shadow: var(--shadow-dropdown);
     max-height: 240px;
     overflow: auto;
     padding: 0.5rem;

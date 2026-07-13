@@ -88,6 +88,22 @@
      simply carries the existing --shadow value forward. */
   --shadow-hero: var(--shadow);
 
+  /* ── translucent chrome (다크모드 계획 PR-2 §3) — token pairs instead of
+     scattered [data-theme] selector overrides, per-token dark value lives
+     in the :root[data-theme="dark"] block below. */
+  /* Sticky site header (site-chrome.css .site-header). */
+  --chrome-glass: rgba(255, 255, 255, 0.9);
+  /* Mobile fixed CTA bars (event_detail.css / archive.css .mobile-cta) —
+     a slightly higher alpha than --chrome-glass, its own token. */
+  --chrome-glass-cta: rgba(255, 255, 255, 0.96);
+  --shadow-cta: 0 -8px 24px rgba(17, 31, 55, 0.1);
+  /* Floating dropdown panels (site-chrome.css .account-menu-panel,
+     event_list.css .region-select-menu — identical value, shared token). */
+  --shadow-dropdown: 0 8px 24px rgba(17, 31, 55, 0.14);
+  /* Modal/confirm backdrop (modal.css .auth-modal-overlay, confirm-
+     modal.css .confirm-overlay — identical value, shared token). */
+  --backdrop: rgba(17, 31, 55, 0.45);
+
   /* Shape tokens (PR-R2 consumes these for component signatures). */
   --radius-card: 10px;
   --radius-control: 8px;
@@ -187,6 +203,12 @@
   --end-ink: #a5acb6;
 
   --shadow: 0 18px 38px rgba(255, 255, 255, 0.04);
+
+  --chrome-glass: rgba(31, 35, 45, 0.88);
+  --chrome-glass-cta: rgba(31, 35, 45, 0.94);
+  --shadow-cta: 0 -8px 24px rgba(255, 255, 255, 0.05);
+  --shadow-dropdown: 0 8px 24px rgba(255, 255, 255, 0.05);
+  --backdrop: rgba(0, 0, 0, 0.6);
 }
 
 /* ── --page-pad-x: page/header/footer edge-margin token ───────
