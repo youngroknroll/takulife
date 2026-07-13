@@ -75,12 +75,11 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 43.75rem) {
+@media (max-width: 45rem) {
   /* .staff-shell-topbar's own mobile padding override is gone — its
      desktop rule's now-token-driven horizontal value already resolves to
-     the same 1rem/16px at this width (43.75rem is a subset of the
-     token's own <=45rem mobile tier), so a duplicate override here would
-     be a no-op. */
+     the same 1rem/16px at this width (--page-pad-x's own mobile tier,
+     tokens.css), so a duplicate override here would be a no-op. */
   .staff-shell-tabrow {
     flex-direction: column;
     align-items: stretch;
