@@ -321,6 +321,18 @@
      reliably here. Left as a literal (no matching light-pink token). */
   color: #ff6b81;
 }
+/* The shared .is-loading spinner (objects/interaction.css) assumes a
+   button with text before it — margin-left spaces the spinner away from
+   that text. .poster-interest has no text, only the glyph span, so the
+   glyph + spinner rendered side by side and spilled past the 34px circle.
+   Hide the glyph while loading and drop the margin so only the centered
+   spinner shows. */
+.poster-interest.is-loading [data-interest-glyph] {
+  display: none;
+}
+.poster-interest.is-loading::after {
+  margin-left: 0;
+}
 /* Mobile poster tile convention: 찜 sits bottom-right instead of top-right.
    At 320px the top-right badge (e.g. home closing card's "종료까지 N일")
    can run wide enough to graze the button (measured -8px overlap at 320px,
