@@ -20,6 +20,14 @@
     text-decoration: none;
     display: inline-block;
   }
+  /* 잉크 리터럴 개별 다크 오버라이드 — 신규 토큰 통합 없이 --muted 다크값과
+     동일한 #A2A9B9로 직접 대응(다크모드 팔레트 문서 "크롬·그림자·잉크
+     리터럴", 계획상 Deferred). 다크모드 PR-2에서 보고한 1.73:1 저대비
+     스팟 — 여기서 해소. */
+  :root[data-theme="dark"] .pager a,
+  :root[data-theme="dark"] .pager span {
+    color: #a2a9b9;
+  }
   .pager .current {
     background: var(--brand);
     border-color: var(--brand);

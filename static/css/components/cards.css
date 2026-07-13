@@ -103,6 +103,13 @@
   font-size: 0.88rem;
 }
 
+/* 잉크 리터럴 개별 다크 오버라이드 — 신규 토큰 통합 없이 --muted 다크값과
+   동일한 #A2A9B9로 직접 대응(다크모드 팔레트 문서 "크롬·그림자·잉크 리터럴",
+   계획상 Deferred). */
+:root[data-theme="dark"] .notice {
+  color: #a2a9b9;
+}
+
 /* ── applied filter chips (event_list) ───────────────────────── */
 .applied-filters {
   display: flex;
@@ -233,6 +240,11 @@
   text-decoration: none;
   white-space: nowrap;
   min-height: 44px;
+}
+
+/* 잉크 리터럴 개별 다크 오버라이드 — #A2A9B9(=--muted 다크값). */
+:root[data-theme="dark"] .side-action-link {
+  color: #a2a9b9;
 }
 
 /* Shared review-status chip colors (extracted from .draft-chip + .status-chip).

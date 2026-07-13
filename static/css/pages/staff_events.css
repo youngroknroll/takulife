@@ -79,6 +79,12 @@
     font-size: 0.8rem;
     font-weight: 700;
   }
+  /* 잉크 리터럴 개별 다크 오버라이드 — 신규 토큰 통합 없이 --muted 다크값과
+     동일한 #A2A9B9로 직접 대응(다크모드 팔레트 문서 "크롬·그림자·잉크
+     리터럴", 계획상 Deferred). */
+  :root[data-theme="dark"] .field label {
+    color: #a2a9b9;
+  }
   .field input,
   .field textarea,
   .field select {
