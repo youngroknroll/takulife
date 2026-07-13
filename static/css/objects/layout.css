@@ -116,4 +116,14 @@
 .side-list--row a {
   display: block;
   text-align: center;
+  /* Fixed short labels ("저장한 행사" etc.) — legitimate nowrap case
+     (연구문서 §2.2). 3-col width is non-monotonic across the viewport
+     range (worst at ~901px, the 2-col sidebar-compressed band, not at
+     320px), so a single fs-xs (12px, down from --fs-md's 14px) sized for
+     the narrowest realistic column fits every width rather than trying
+     to interpolate. Column padding (.side-list li, unchanged) still
+     carries the touch-target height — only the label's own font-size
+     changed here. */
+  white-space: nowrap;
+  font-size: var(--fs-xs);
 }
