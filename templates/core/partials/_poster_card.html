@@ -36,7 +36,7 @@ Params:
 Context consumed: request.user (via the calling page) is not needed here.
 {% endcomment %}
 {% with ev=row.event %}
-<article class="poster-card hover-lift{% if not ev.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}">
+<article class="poster-card hover-lift{% if not ev.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}" data-status-error-container>
   <div class="poster-card-media">
     {% if ev.poster_image %}
       <img class="poster-card-img" src="{{ ev.poster_image.url }}" alt="{{ ev.title }} 포스터" loading="lazy">
