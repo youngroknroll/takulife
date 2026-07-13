@@ -48,7 +48,7 @@
 .site-header-inner {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem var(--page-pad-x);
   display: flex;
   align-items: center;
   gap: 1.125rem;
@@ -119,7 +119,7 @@
   .site-header-inner {
     flex-wrap: wrap;
     gap: 0.625rem;
-    padding: 0.625rem 0.75rem;
+    padding: 0.625rem var(--page-pad-x);
   }
   .site-nav {
     order: 3;
@@ -172,7 +172,7 @@
 .site-footer-inner {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 2rem 1.25rem 1.5rem;
+  padding: 2rem var(--page-pad-x) 1.5rem;
   display: grid;
   grid-template-columns: 1.3fr 2fr;
   gap: 1.75rem;
@@ -219,7 +219,7 @@
 .site-footer-base-inner {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 1rem 1.25rem;
+  padding: 1rem var(--page-pad-x);
   display: flex;
   align-items: center;
   justify-content: space-between;
