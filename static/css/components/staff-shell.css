@@ -28,7 +28,7 @@
   max-width: 1120px;
   margin: 0 auto;
   min-height: var(--staff-shell-topbar-h);
-  padding: 0.625rem 1.25rem;
+  padding: 0.625rem var(--page-pad-x);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -56,7 +56,7 @@
 .staff-shell-tabrow {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0.625rem 1.25rem;
+  padding: 0.625rem var(--page-pad-x);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -76,12 +76,12 @@
 }
 
 @media (max-width: 43.75rem) {
-  .staff-shell-topbar {
-    padding: 0.625rem 1rem;
-  }
-
+  /* .staff-shell-topbar's own mobile padding override is gone — its
+     desktop rule's now-token-driven horizontal value already resolves to
+     the same 1rem/16px at this width (43.75rem is a subset of the
+     token's own <=45rem mobile tier), so a duplicate override here would
+     be a no-op. */
   .staff-shell-tabrow {
-    padding: 0.625rem 1rem;
     flex-direction: column;
     align-items: stretch;
   }

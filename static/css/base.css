@@ -23,6 +23,10 @@
  *   @media breakpoints in rem (CSS vars can't be used in @media):
  *     38.75rem(620) 43.75rem(700) 45rem(720) 47.5rem(760)
  *     53.75rem(860) 56.25rem(900) 57.5rem(920) 60rem(960)
+ *   64rem(1024) is a 9th, deliberate exception — the --page-pad-x edge-
+ *   margin token's tablet/desktop boundary (tokens.css) is a user-confirmed
+ *   value, not reused from the set above (900px/56.25rem was proposed and
+ *   rejected in favor of the explicit 1024px choice).
  */
 
 /* ── web font: Pretendard (self-hosted) ──────────────────────
@@ -65,14 +69,14 @@ body {
 .page {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 1.625rem 1.25rem 5rem;
+  padding: 1.625rem var(--page-pad-x) 5rem;
 }
 
 /* ── site-wide messages (django.contrib.messages) ──────────── */
 .site-messages {
   max-width: 1120px;
   margin: 0.75rem auto 0;
-  padding: 0 1.25rem;
+  padding: 0 var(--page-pad-x);
   list-style: none;
 }
 

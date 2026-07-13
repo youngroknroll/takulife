@@ -285,7 +285,7 @@
   }
   @media (max-width: 43.75rem) {
     .page {
-      padding: 1rem 0.75rem 3rem;
+      padding: 1rem var(--page-pad-x) 3rem;
     }
     .results-head {
       flex-direction: column;

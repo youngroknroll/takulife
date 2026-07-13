@@ -99,7 +99,7 @@
   }
   @media (max-width: 45rem) {
     .page {
-      padding: 1.125rem 0.875rem 4rem;
+      padding: 1.125rem var(--page-pad-x) 4rem;
     }
     .panel-head,
     .status-card {

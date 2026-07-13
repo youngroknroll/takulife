@@ -125,3 +125,42 @@
   --cat-fan_meeting-soft: #fce7f3;
   --cat-fan_meeting-ink: #9d174d;
 }
+
+/* ── --page-pad-x: page/header/footer edge-margin token ───────
+ * User-confirmed tiers: mobile <=45rem(720px) 16px / tablet 45-64rem 24px /
+ * desktop >64rem(1024px) 32px. 64rem is a new breakpoint (the existing
+ * 60rem/900px was proposed and rejected in favor of the user's explicit
+ * 1024px choice) — the other 8 breakpoints already in the codebase
+ * (see base.css's own comment) are untouched; this token only reuses
+ * 45rem for its mobile tier.
+ *
+ * Before this token, base .page sat at a fixed 20px horizontal padding
+ * above 700-720px, while roughly half the per-page mobile overrides used
+ * 12px and the other half 14px (two different ad-hoc mobile breakpoints).
+ * Consumers: .page/.site-messages (base.css), .site-header-inner/
+ * .site-footer-inner/.site-footer-base-inner (site-chrome.css),
+ * .staff-shell-topbar/.staff-shell-tabrow (staff-shell.css), and
+ * .auth-container's mobile-only override (auth.css — a narrow 420px
+ * centered card, not part of the 1120px page family, so it keeps its own
+ * fixed desktop/tablet padding and only picks up the token at mobile,
+ * where the card has no room left to stay narrower than the viewport).
+ * Each consumer keeps its own top/bottom padding and any of its own
+ * *other* breakpoints (mobile-cta clearance, layout reflow, header/staff
+ * -shell restructuring) untouched — only the horizontal value is
+ * token-driven now, so it stays correct regardless of which rule wins
+ * that file's own cascade. */
+:root {
+  --page-pad-x: 2rem; /* 32px, desktop default (>64rem) */
+}
+
+@media (max-width: 64rem) {
+  :root {
+    --page-pad-x: 1.5rem; /* 24px, tablet */
+  }
+}
+
+@media (max-width: 45rem) {
+  :root {
+    --page-pad-x: 1rem; /* 16px, mobile */
+  }
+}
