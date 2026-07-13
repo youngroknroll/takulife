@@ -48,12 +48,20 @@ def test_counts_reflect_seeded_archive_data(client, make_user, make_event):
     # 다녀온 기록
     VisitRecord.objects.create(user=user, event=event1, visited_on="2026-06-01")
     # 직접 등록
-    PersonalEntry.objects.create(
+    entry = PersonalEntry.objects.create(
         user=user, kind=PersonalEntry.Kind.PLACE, title="개인 항목"
     )
     # 찜 목록
     EventInterest.objects.create(user=user, event=event1)
     EventInterest.objects.create(user=user, event=event2)
+
+    # user_status_counts/user_interest_count carry no event__isnull filter —
+    # a status/interest on a personal_entry (unofficial item) must count
+    # toward 저장한 행사/찜 목록 too, same as an event-backed row.
+    UserEventStatus.objects.create(
+        user=user, personal_entry=entry, status=UserEventStatus.Status.PLANNED
+    )
+    EventInterest.objects.create(user=user, personal_entry=entry)
 
     # another user's rows must never leak into this user's counts
     UserEventStatus.objects.create(
@@ -68,10 +76,10 @@ def test_counts_reflect_seeded_archive_data(client, make_user, make_event):
     client.force_login(user)
     response = client.get(MYPAGE_URL)
 
-    assert response.context["saved_count"] == 2
+    assert response.context["saved_count"] == 3
     assert response.context["visit_count"] == 1
     assert response.context["personal_entry_count"] == 1
-    assert response.context["interest_count"] == 2
+    assert response.context["interest_count"] == 3
 
 
 @pytest.mark.django_db
