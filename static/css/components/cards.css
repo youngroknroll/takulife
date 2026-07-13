@@ -278,3 +278,46 @@
 .poster-card-badges {
   margin: 0.1875rem 0 0;
 }
+
+/* ── poster overlay 찜 button (shared: home poster card + event list card) ──
+   Hoisted from pages/home.css (was scoped to the closing-card poster only)
+   so event_list.css's desktop thumbnail and mobile poster grid can reuse
+   the same overlay convention — this file loads on every page (base.html),
+   both consumers already load it. Top-right translucent dark circle over
+   a poster image. Kept at 34px — the poster overlay has no room for a 44px
+   target without covering more of the image. WCAG 2.5.8 exception (24px
+   이상 + 주변 간격 확보); §5.4 예외 기록, 사용자 승인은 2단계 PR 참조. */
+.poster-interest {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poster-interest:hover,
+.poster-interest.active:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+}
+.poster-interest.active {
+  background: rgba(0, 0, 0, 0.45);
+  /* Bright coral, not --pink-ink: this glyph sits on a translucent dark
+     circle over an arbitrary poster image, so it needs a light colour
+     for contrast — --pink-ink (#b01e52) is dark and would not read
+     reliably here. Left as a literal (no matching light-pink token). */
+  color: #ff6b81;
+}
