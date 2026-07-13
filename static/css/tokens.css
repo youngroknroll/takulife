@@ -14,6 +14,8 @@
  * --shadow:      0 18px 38px ... (5/8 pages; list/detail used 0 16px 36px)
  */
 :root {
+  color-scheme: light;
+
   /* ── core palette (§0 confirmed values) ─────────────────────── */
   --bg: #f5f6f8;
   --surface: #ffffff;
@@ -32,6 +34,12 @@
      on white) is for the few small-text-on-white spots specifically. */
   --brand-ink: #c13a22;
   --hl: #d8ff3d;
+  /* Fixed ink for text sitting on --hl (text.css .hl) — --hl itself gets a
+     dark-mode remap, but text.css's original var(--text) pairing would
+     invert to a light-on-light failure once --text flips light-on-dark
+     (2026-07-13 다크모드 계획 §"var(--text) 역전 함정"). Theme-agnostic by
+     design, so it lives in base :root, not the dark override block below. */
+  --hl-ink: #1c222e;
   --focus: #8a94a6;
 
   /* Status pairs — soft/ink. mint = 진행중, amber = 종료임박, pink = 찜/관심
@@ -124,6 +132,61 @@
   --cat-exhibition-ink: #475569;
   --cat-fan_meeting-soft: #fce7f3;
   --cat-fan_meeting-ink: #9d174d;
+}
+
+/* ── dark mode token overrides ──────────────────────────────────
+ * Values are the confirmed palette in .docs/plans/2026-07-13-dark-mode-
+ * palette.md (designer proposal → PO WCAG spot-check, 4 inks raised for
+ * contrast, brand-ink margin widened) — implemented as-is, not re-derived
+ * here. Single override block per plan §1 (no duplicate light/dark rule
+ * sets elsewhere); static/js/shared/theme.js sets data-theme on <html>.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #13151b;
+  --surface: #1f232d;
+  --surface-alt: #272b35;
+  --bg-soft: #292d38;
+  --bg-card: #2e323e;
+  --border-soft: #373e4e;
+  --line: #3d465c;
+  --text: #e3e4e8;
+  --muted: #a2a9b9;
+  --focus: #969fb0;
+
+  --brand: #c63d24;
+  --brand-ink: #d98272;
+  --brand-soft: #422824;
+  --hl: #c1e52e;
+
+  --cat-popup_store-soft: #342442;
+  --cat-popup_store-ink: #b17edc;
+  --cat-collaboration_cafe-soft: #3d3024;
+  --cat-collaboration_cafe-ink: #bf9f82;
+  --cat-theater_bonus-soft: #272541;
+  --cat-theater_bonus-ink: #8f8bcf;
+  --cat-goods_reservation-soft: #20413f;
+  --cat-goods_reservation-ink: #64d8cf;
+  --cat-exhibition-soft: #23354e;
+  --cat-exhibition-ink: #839ec3;
+  --cat-fan_meeting-soft: #412530;
+  --cat-fan_meeting-ink: #da769e;
+
+  --pink-soft: #42242e;
+  --pink-ink: #d87497;
+  --mint-soft: #243d2e;
+  --mint-ink: #72cb95;
+  --amber-soft: #403221;
+  --amber-ink: #dba466;
+  --rose-soft: #43232b;
+  --rose-ink: #e0718c;
+  --up-soft: #242a3d;
+  --up-ink: #8897c8;
+  --end-soft: #2d3239;
+  --end-ink: #a5acb6;
+
+  --shadow: 0 18px 38px rgba(255, 255, 255, 0.04);
 }
 
 /* ── --page-pad-x: page/header/footer edge-margin token ───────
