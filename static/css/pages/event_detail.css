@@ -176,13 +176,13 @@
   }
   .action-link.ghost {
     border-color: var(--line);
-    background: #fff;
+    background: var(--surface);
     color: var(--muted);
   }
   .source-block {
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fff;
+    background: var(--surface);
     padding: 0.5rem 0.625rem;
     font-size: var(--fs-md);
     display: flex;

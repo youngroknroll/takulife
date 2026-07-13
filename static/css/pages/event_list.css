@@ -61,7 +61,7 @@
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 0.5rem 0.625rem;
-    background: #fff;
+    background: var(--surface);
     color: var(--text);
     font-size: var(--fs-md);
     cursor: pointer;
@@ -83,7 +83,7 @@
     right: 0;
     top: calc(100% + 4px);
     z-index: 30;
-    background: #fff;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(17, 31, 55, 0.14);
@@ -131,7 +131,7 @@
     border-radius: 8px;
     padding: 0.4375rem 0.5rem;
     color: var(--text);
-    background: #fff;
+    background: var(--surface);
   }
   .event-list {
     display: grid;

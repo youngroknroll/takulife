@@ -78,7 +78,7 @@
 }
 
 .confirm-no {
-  background: #fff;
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--line);
 }
