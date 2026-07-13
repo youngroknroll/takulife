@@ -1,6 +1,20 @@
 /* staff_console.css — shared by templates/staff/dashboard.html and
    templates/core/staff/home_categories.html */
 
+/* Dashboard's summary-grid desktop column count (3) differs from
+   .summary-grid's own fallback (4, cards.css), so it needs an explicit
+   value — kept here in CSS rather than as a template inline style
+   (dashboard.html used to carry style="--summary-cols: 3") so the mobile
+   override below can actually win the cascade. An inline custom-property
+   value has higher precedence than any external selector regardless of
+   specificity, so a plain @media rule below could never collapse the grid
+   while the inline style was in place (this bit the mobile fix below once
+   already — see its own comment). mypage.css never hit this because its
+   desktop value already matches the shared fallback. */
+.summary-grid {
+  --summary-cols: 3;
+}
+
 /* ── console density pass (PR-C2): mouse-first desktop console reads
    tighter than the public site — shave one step off panel padding and
    move body copy off --fs-base onto --fs-md/--fs-sm. Tokens only, no new
@@ -272,6 +286,20 @@
 }
 
 @media (max-width: 45rem) {
+  /* 320px: the dashboard's 3-col grid squeezed each card to ~53px,
+     wrapping labels like "검토 대기 드래프트" onto 2 lines. Drop to 2
+     columns (3 cards lay out 2+1) — same technique and column count as
+     mypage.css, per a single-column stack being judged excessive for only
+     3 cards. At 320px: 288px content - 10px gap = 139px/card, enough for
+     the longest label ("검토 대기 드래프트", ~129px incl. padding) on one
+     line. This only works because the desktop value above lives in CSS
+     now, not as a dashboard.html inline style; an inline custom-property
+     value would have out-ranked this rule regardless of selector
+     specificity (see the desktop rule's comment). */
+  .summary-grid {
+    --summary-cols: 2;
+  }
+
   .recent-actions-table {
     display: none;
   }
