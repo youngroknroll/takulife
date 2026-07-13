@@ -639,4 +639,38 @@
     .hscroll-track li {
       scroll-snap-align: start;
     }
+
+    /* Event poster sliders (이번 주/곧 종료/새 이벤트): 2-row column-flow
+       grid so 4 cards ([2,2]) are visible at once instead of ~1.9 in a
+       single fixed-168px row. .hscroll-track--posters is a template
+       modifier (home.html) scoped to the 3 poster tracks only — the
+       category track (#hscroll-cat, no modifier) keeps the plain flex row
+       and its own 180px item basis above. */
+    .hscroll-track--posters {
+      display: grid;
+      grid-auto-flow: column;
+      grid-template-rows: repeat(2, auto);
+      grid-auto-columns: calc((100% - 0.625rem) / 2); /* gap 0.625rem, existing .hscroll-track value */
+    }
+    .hscroll-track--posters li {
+      width: auto;
+      /* Grid items default to min-width:auto (content-based floor); without
+         this, .poster-card-meta's white-space:nowrap text can inflate the
+         column past its intended 50% share and reintroduce horizontal
+         overflow (연구문서 §2.2). */
+      min-width: 0;
+    }
+    /* Row-stretch: an auto grid row sizes to its tallest li, but a plain
+       block child doesn't fill that stretched height on its own — without
+       this, a shorter card in the same row leaves empty space below it
+       instead of an even card band. */
+    .hscroll-track--posters .poster-card {
+      height: 100%;
+    }
+    .poster-card-title {
+      font-size: var(--fs-sm);
+    }
+    .poster-card-meta {
+      font-size: var(--fs-xs);
+    }
   }
