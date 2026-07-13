@@ -135,11 +135,13 @@
             {% for row in event_rows %}
               <article class="event-card hover-lift" data-status-error-container>
                 <div class="event-card-media">
-                  {% if row.event.poster_image %}
-                    <img class="event-card-img" src="{{ row.event.poster_image.url }}" alt="{{ row.event.title }} 포스터" loading="lazy">
-                  {% else %}
-                    <span class="cat-tile cat-{{ row.category_slug }} event-card-emoji"></span>
-                  {% endif %}
+                  <a class="event-card-media-link" href="/events/{{ row.event.id }}/" tabindex="-1">
+                    {% if row.event.poster_image %}
+                      <img class="event-card-img" src="{{ row.event.poster_image.url }}" alt="{{ row.event.title }} 포스터" loading="lazy">
+                    {% else %}
+                      <span class="cat-tile cat-{{ row.category_slug }} event-card-emoji"></span>
+                    {% endif %}
+                  </a>
                   <span class="glint">✦</span>
                   <button class="interest-btn poster-interest{% if row.user_interested %} active{% endif %}" type="button"
                     data-interest-toggle

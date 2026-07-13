@@ -198,6 +198,14 @@
     border-radius: 10px;
     overflow: hidden;
   }
+  /* Wraps the img/fallback tile so the poster itself is a click target to
+     the detail page (title link is the only other route in, and remains
+     the sole tab stop — this anchor is tabindex="-1" in the template).
+     display:block mirrors pages/home.css's .deck-slide, the existing
+     precedent in this codebase for an <a> wrapping a block-level image. */
+  .event-card-media-link {
+    display: block;
+  }
   .event-card-img {
     display: block;
     width: 100%;
