@@ -1,11 +1,11 @@
 """E2E regression: top bar (.site-nav a, account menu) touch targets (§5.4
 44px). .site-nav a rendered at less than 44px before this fix (40px);
-.topbar-link's own 36px case was superseded when the account-menu dropdown
-(track-c-spec.md §1) replaced the authenticated topbar's inline pill links
-(스태프 콘솔/관리자/회원 탈퇴/로그아웃) with a single 44px avatar toggle plus
-an on-open item list — .topbar-link now renders only for the logged-out
-로그인/회원가입 pair, so the touch-target guarantee for the authenticated
-state moved to .account-menu-toggle/.account-menu-item below.
+.topbar-link's own 36px case was superseded when the header account-menu
+dropdown (core/partials/_topbar.html) replaced the authenticated topbar's
+inline pill links (스태프 콘솔/관리자/회원 탈퇴/로그아웃) with a single 44px
+avatar toggle plus an on-open item list — .topbar-link now renders only for
+the logged-out 로그인/회원가입 pair, so the touch-target guarantee for the
+authenticated state moved to .account-menu-toggle/.account-menu-item below.
 
 --site-header-h (site-chrome.css) is derived from .site-nav a's min-height
 and must stay in sync with it — a stale token would misposition every sticky

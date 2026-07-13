@@ -1,11 +1,13 @@
-"""E2E: header account-menu disclosure interaction (track-c-spec.md §1
-'참고' — a measurable gate: open -> Escape -> focus returns to the trigger).
+"""E2E: header account-menu disclosure interaction — a measurable gate:
+open -> Escape -> focus returns to the trigger.
 
 Ported from event_list.js's region-select dropdown (static/js/shared/
 account_menu.js) — same click-toggle/outside-click/Escape contract, but
-region-select itself has no e2e pin for it; this one test is pinned because
-the design spec explicitly calls it out as the one interaction worth
-automating, everything else in the account menu is manual/visual.
+region-select itself has no e2e pin for it; this one interaction is pinned
+because it is the one part of the account menu explicit enough to verify
+mechanically (the `hidden` attribute toggling plus document.activeElement),
+while everything else about the menu (visual layout, hover/focus colors) is
+manual/visual only.
 """
 import pytest
 
