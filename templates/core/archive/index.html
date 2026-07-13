@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 저장한 행사{% endblock %}
+{% block title %}{{ project_name }} | 내 아카이브{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
@@ -8,10 +8,10 @@
 
 {% block content %}
   <div class="page">
-    {% include "core/partials/_archive_nav.html" with active="record" active_label="저장한 행사" %}
+    {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" %}
 
     <section class="hero">
-      <h1>저장한 행사</h1>
+      <h1>내 아카이브</h1>
       <div class="summary-grid" style="--summary-cols: 3">
         <article class="summary-card">
           <p class="summary-label">방문 예정</p>
@@ -31,7 +31,7 @@
     <div class="layout">
       <main class="panel" id="content">
         <div class="panel-head">
-          <h2>저장한 행사 목록</h2>
+          <h2>전체 목록</h2>
           <div class="chips">
             <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/">전체</a>
             {% for slug, label in ARCHIVE_STATUS %}
