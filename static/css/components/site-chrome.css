@@ -132,8 +132,17 @@
      username + several inline topbar-link pills all sharing one row — the
      account-menu dropdown replaced those pills with a single 44px avatar
      button, so the mobile budget is just brand + avatar, leaving far less
-     width for a wrapped 320px header. */
-  .topbar-username {
+     width for a wrapped 320px header.
+     Selector must be .site-header .topbar-username, not bare
+     .topbar-username: modal.css's unconditional (no media query)
+     .topbar-username{max-width:15rem} loads *after* this file in base.html,
+     and at equal specificity the later rule wins regardless of this media
+     query's condition being true — the bare-class version silently lost to
+     it at every mobile width (FE gate finding, computed stayed 15rem/240px
+     down to 320px). The extra .site-header ancestor is real markup
+     (_site_header.html wraps _topbar.html), so this is a free specificity
+     bump, not a fabricated hook. */
+  .site-header .topbar-username {
     max-width: 10rem;
   }
 }
@@ -324,6 +333,11 @@
   right: 0;
   z-index: 30;
   min-width: 11rem;
+  /* Without a cap, an unbroken email (.account-menu-email's overflow-wrap
+     only breaks at a real word boundary) grows the panel to max-content —
+     right:0-anchored, so it grows leftward and can push past the viewport's
+     left edge on a narrow phone. */
+  max-width: min(18rem, calc(100vw - 1.5rem));
   display: flex;
   flex-direction: column;
   background: #fff;
