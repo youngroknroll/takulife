@@ -287,14 +287,17 @@
 
 @media (max-width: 45rem) {
   /* 320px: the dashboard's 3-col grid squeezed each card to ~53px,
-     wrapping labels like "검토 대기 드래프트" onto 2 lines. Collapse to a
-     single column (cards stack full-width, ~258px at 320px) — same
-     technique as mypage.css. This only works because the desktop value
-     above lives in CSS now, not as a dashboard.html inline style; an
-     inline custom-property value would have out-ranked this rule
-     regardless of selector specificity (see the desktop rule's comment). */
+     wrapping labels like "검토 대기 드래프트" onto 2 lines. Drop to 2
+     columns (3 cards lay out 2+1) — same technique and column count as
+     mypage.css, per a single-column stack being judged excessive for only
+     3 cards. At 320px: 288px content - 10px gap = 139px/card, enough for
+     the longest label ("검토 대기 드래프트", ~129px incl. padding) on one
+     line. This only works because the desktop value above lives in CSS
+     now, not as a dashboard.html inline style; an inline custom-property
+     value would have out-ranked this rule regardless of selector
+     specificity (see the desktop rule's comment). */
   .summary-grid {
-    --summary-cols: 1;
+    --summary-cols: 2;
   }
 
   .recent-actions-table {
