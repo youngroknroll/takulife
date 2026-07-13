@@ -278,3 +278,74 @@
 .poster-card-badges {
   margin: 0.1875rem 0 0;
 }
+
+/* ── poster overlay 찜 button (shared: home poster card + event list card) ──
+   Hoisted from pages/home.css (was scoped to the closing-card poster only)
+   so event_list.css's desktop thumbnail and mobile poster grid can reuse
+   the same overlay convention — this file loads on every page (base.html),
+   both consumers already load it. Top-right translucent dark circle over
+   a poster image. Kept at 34px — the poster overlay has no room for a 44px
+   target without covering more of the image. WCAG 2.5.8 exception (24px
+   이상 + 주변 간격 확보); §5.4 예외 기록, 사용자 승인은 2단계 PR 참조. */
+.poster-interest {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poster-interest:hover,
+.poster-interest.active:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+}
+.poster-interest.active {
+  background: rgba(0, 0, 0, 0.45);
+  /* Bright coral, not --pink-ink: this glyph sits on a translucent dark
+     circle over an arbitrary poster image, so it needs a light colour
+     for contrast — --pink-ink (#b01e52) is dark and would not read
+     reliably here. Left as a literal (no matching light-pink token). */
+  color: #ff6b81;
+}
+/* The shared .is-loading spinner (objects/interaction.css) assumes a
+   button with text before it — margin-left spaces the spinner away from
+   that text. .poster-interest has no text, only the glyph span, so the
+   glyph + spinner rendered side by side and spilled past the 34px circle.
+   Hide the glyph while loading and drop the margin so only the centered
+   spinner shows. */
+.poster-interest.is-loading [data-interest-glyph] {
+  display: none;
+}
+.poster-interest.is-loading::after {
+  margin-left: 0;
+}
+/* Mobile poster tile convention: 찜 sits bottom-right instead of top-right.
+   At 320px the top-right badge (e.g. home closing card's "종료까지 N일")
+   can run wide enough to graze the button (measured -8px overlap at 320px,
+   clear by 360px+) — bottom-right sidesteps that regardless of badge
+   width, and matches the moved position on both home poster cards and
+   event_list.css's mobile card (shared class, one rule fixes both). The
+   event_list.css mobile media-bottom notch (top:calc(100% - 5px), 10px
+   circle) leaves an ~3px gap under this 8px offset — verified by rect, no
+   overlap. */
+@media (max-width: 45rem) {
+  .poster-interest {
+    top: auto;
+    bottom: 8px;
+    right: 8px;
+  }
+}

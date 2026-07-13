@@ -554,44 +554,9 @@
     background: var(--end-soft);
     color: var(--end-ink);
   }
-  /* Top-right 찜 button (closing cards): translucent dark circle over poster.
-     Kept at 34px — the poster overlay has no room for a 44px target without
-     covering more of the image. WCAG 2.5.8 exception (24px 이상 + 주변 간격
-     확보); §5.4 예외 기록, 사용자 승인은 2단계 PR 참조. */
-  .poster-interest {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 2;
-    width: 34px;
-    height: 34px;
-    min-height: 0;
-    padding: 0;
-    gap: 0;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0, 0, 0, 0.45);
-    color: #fff;
-    font-size: 1rem;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .poster-interest:hover,
-  .poster-interest.active:hover {
-    background: rgba(0, 0, 0, 0.6);
-    border: none;
-  }
-  .poster-interest.active {
-    background: rgba(0, 0, 0, 0.45);
-    /* Bright coral, not --pink-ink: this glyph sits on a translucent dark
-       circle over an arbitrary poster image, so it needs a light colour
-       for contrast — --pink-ink (#b01e52) is dark and would not read
-       reliably here. Left as a literal (no matching light-pink token). */
-    color: #ff6b81;
-  }
+  /* .poster-interest (top-right 찜 button overlay): hoisted to
+     components/cards.css so event_list.css's desktop thumbnail + mobile
+     grid can reuse it too (both pages load cards.css globally). */
   @media (max-width: 56.25rem) {
     .cat-browse {
       grid-template-columns: repeat(3, 1fr);
@@ -634,9 +599,53 @@
   }
 
   /* Responsive: snap-align for home's scroller items */
-  @media (max-width: 43.75rem) {
+  @media (max-width: 45rem) {
     .hscroll-track .cat-browse-item,
     .hscroll-track li {
       scroll-snap-align: start;
+    }
+
+    /* Event poster sliders (이번 주/곧 종료/새 이벤트): 2-row column-flow
+       grid so 4 cards ([2,2]) are visible at once instead of ~1.9 in a
+       single fixed-168px row. .hscroll-track--posters is a template
+       modifier (home.html) scoped to the 3 poster tracks only — the
+       category track (#hscroll-cat, no modifier) keeps the plain flex row
+       and its own 180px item basis above. */
+    .hscroll-track--posters {
+      display: grid;
+      grid-auto-flow: column;
+      grid-template-rows: repeat(2, auto);
+      grid-auto-columns: calc((100% - 0.625rem) / 2); /* gap 0.625rem, existing .hscroll-track value */
+    }
+    .hscroll-track--posters li {
+      width: auto;
+      /* Grid items default to min-width:auto (content-based floor); without
+         this, .poster-card-meta's white-space:nowrap text can inflate the
+         column past its intended 50% share and reintroduce horizontal
+         overflow (연구문서 §2.2). */
+      min-width: 0;
+    }
+    /* Row-stretch: an auto grid row sizes to its tallest li, but a plain
+       block child doesn't fill that stretched height on its own — without
+       this, a shorter card in the same row leaves empty space below it
+       instead of an even card band. */
+    .hscroll-track--posters .poster-card {
+      height: 100%;
+    }
+    /* height:100% alone only stretches .poster-card's own box — its two
+       flex children (.poster-card-media, .poster-card-caption) still size
+       to their own content by default (flex-grow:0), so a card whose
+       sibling in the same row has a taller title (1 vs 2 lines) leaves a
+       ~17px empty gap at the caption's bottom instead of an even card
+       band. Growing the caption (not the media, which is aspect-ratio
+       locked) absorbs that leftover space. */
+    .hscroll-track--posters .poster-card-caption {
+      flex: 1 0 auto;
+    }
+    .poster-card-title {
+      font-size: var(--fs-sm);
+    }
+    .poster-card-meta {
+      font-size: var(--fs-xs);
     }
   }

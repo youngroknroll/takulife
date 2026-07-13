@@ -142,13 +142,13 @@
     border-radius: 10px;
     padding: 0.75rem;
     /* Ticket-stub signature #1 (perforation): a dashed vertical rule between
-       the .cat-tile column and the card body, drawn as a background layer
-       (not a border) so it spans the full card height regardless of the
-       tile's own fixed 52px box. Positioned at padding-left + tile width
-       (0.75rem + 52px), matching the punch-notch circles below. */
+       the .event-card-media column and the card body, drawn as a background
+       layer (not a border) so it spans the full card height regardless of
+       the media box's own fixed 96px width. Positioned at padding-left +
+       media width (0.75rem + 96px), matching the punch-notch circles below. */
     background:
       repeating-linear-gradient(to bottom, var(--line) 0 4px, transparent 0 8px)
-        calc(0.75rem + 52px) 0 / 1px 100% no-repeat,
+        calc(0.75rem + 96px) 0 / 1px 100% no-repeat,
       var(--bg-card);
     display: grid;
     grid-template-columns: auto 1fr;
@@ -163,7 +163,7 @@
   .event-card::after {
     content: "";
     position: absolute;
-    left: calc(0.75rem + 52px);
+    left: calc(0.75rem + 96px);
     transform: translateX(-50%);
     width: 10px;
     height: 10px;
@@ -177,37 +177,65 @@
   .event-card::after {
     bottom: -5px;
   }
-  /* Ticket-stub signature #2 (glint): a ✦ sparkle revealed on hover/
-     focus-within. Implemented template-free on the category tile's free
-     ::after slot (::before already renders the category emoji glyph in
-     components/category.css) rather than adding a <span class="glint">, so
-     list.html markup stays unchanged. Mirrors the shared .glint utility
-     language in objects/interaction.css (kept generic there for future
-     explicit-markup use, e.g. poster cards in PR-R3). */
-  .event-card .cat-tile {
+  /* status.js's showInlineError/clearInlineError append/find
+     .status-inline-error via .closest("[data-status-error-container]")
+     from the clicked button — that container is .event-card itself (see
+     the article tag in list.html), so a JS-appended error lands as a 3rd
+     grid child. .event-card's grid only defines 2 explicit columns (media
+     + card-body); without this, grid auto-placement would drop the error
+     into a new row's first (96px) cell instead of spanning the card. */
+  .event-card > .status-inline-error {
+    grid-column: 1 / -1;
+  }
+  /* Poster media column (replaces the bare 52px .cat-tile): a fixed 96px
+     box (aspect 3/4 → 128px tall) holding either the event poster or the
+     category-tile fallback, inset by the card's own padding like the old
+     tile was. Self-contained rounding/clip (unlike the flush home poster
+     card) since this sits inset within the card, not flush to its edge. */
+  .event-card-media {
     position: relative;
+    width: 96px;
+    border-radius: 10px;
+    overflow: hidden;
   }
-  .event-card .cat-tile::after {
-    content: "✦";
-    position: absolute;
-    top: 0.3rem;
-    right: 0.3rem;
-    opacity: 0;
-    transform: scale(0.7);
-    color: #fff;
-    text-shadow: 0 0 7px rgba(28, 34, 46, 0.55);
-    transition: opacity 0.15s ease, transform 0.15s ease;
-    pointer-events: none;
+  /* Wraps the img/fallback tile so the poster itself is a click target to
+     the detail page (title link is the only other route in, and remains
+     the sole tab stop — this anchor is tabindex="-1" in the template).
+     display:block mirrors pages/home.css's .deck-slide, the existing
+     precedent in this codebase for an <a> wrapping a block-level image. */
+  .event-card-media-link {
+    display: block;
   }
-  .event-card:hover .cat-tile::after,
-  .event-card:focus-within .cat-tile::after {
-    opacity: 1;
-    transform: scale(1);
+  .event-card-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    object-position: center top;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .event-card .cat-tile::after {
-      transition: none;
-    }
+  /* No-poster fallback: stretches the 52px .cat-tile (components/category.css)
+     to fill the 96px media box, mirroring pages/home.css's .poster-card-emoji
+     override of the same base tile. */
+  .event-card-emoji {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    border-radius: 0;
+    font-size: 2.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Ticket-stub signature #2 (glint): explicit <span class="glint"> markup
+     (objects/interaction.css utility, revealed via the .hover-lift already
+     on .event-card), matching _poster_card.html's pattern. Replaces the
+     old template-free .cat-tile::after variant, which only worked on the
+     no-poster fallback and left real poster images without a glint. */
+  .event-card-media .glint {
+    top: 8px;
+    right: 8px;
+    z-index: 1;
   }
   .event-card h2 {
     margin: 0 0 0.375rem;
@@ -233,12 +261,10 @@
   .event-card h2 .card-official-badge {
     margin-top: 0.1875rem;
   }
-  /* §5.4 조작 영역 합격 기준(44px): 전역 .interest-btn(controls.css)은 다른
-     화면의 알약 크기를 그대로 쓰므로, 목록 카드 컨텍스트에서만 확대한다. */
-  .event-card .interest-btn {
-    min-height: 44px;
-    padding: 0.5rem 0.75rem;
-  }
+  /* §5.4 44px 확대 규칙은 여기서 제거됨: 찜 버튼이 .status-row 알약에서
+     .event-card-media 위 .poster-interest 오버레이(components/cards.css,
+     34px 원형 — 홈 포스터 카드와 동일한 §5.4 예외 관례)로 이동해 이 카드
+     컨텍스트 확대분은 더 이상 적용되지 않음. */
   .filter-toggle {
     display: none;
   }
@@ -290,5 +316,80 @@
     .results-head {
       flex-direction: column;
       align-items: flex-start;
+    }
+  }
+
+  /* ── mobile poster grid: 2 cols × 5 rows ───────────────────────
+     PUBLIC_LISTING_PAGE_SIZE is already 10 (backend unchanged), so a full
+     page fills exactly one 2×5 screen. .event-card switches from the
+     side-by-side ticket row to a top-to-bottom stack with the media
+     bleeding flush to the card edge, mirroring pages/home.css's
+     .poster-card (unlike the desktop inset thumbnail above). */
+  @media (max-width: 45rem) {
+    .event-list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .event-card {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 0;
+      background: var(--bg-card);
+      overflow: hidden;
+      /* Grid items default to a content-based min-width floor; without
+         this, .card-official-badge's nowrap text (or similar) could push
+         a column past its 50% share and reopen horizontal overflow
+         (연구문서 §2.2), same risk as the home slider's li min-width:0. */
+      min-width: 0;
+    }
+    /* The desktop vertical perforation (left:calc(0.75rem+96px)) has no
+       meaning once the card stacks vertically — replaced below by a
+       horizontal seam (.card-body border-top + .event-card-media notch),
+       mirroring pages/home.css:439's .poster-card-media technique. */
+    .event-card::before,
+    .event-card::after {
+      display: none;
+    }
+    .event-card-media {
+      width: auto;
+      border-radius: 0;
+      overflow: visible;
+    }
+    /* Ticket-stub signature #1, horizontal form: punch-notch circles
+       straddle the media/body seam via top:calc(100% - 5px), resolving
+       against .event-card-media's OWN box so they land at the seam
+       regardless of the column's actual rendered width (percentage
+       anchors, not a hardcoded px guess). left/right:-5px lets
+       .event-card's overflow:hidden bite the outer half at the card's
+       edge — same "punched hole" technique as the desktop vertical notch
+       and pages/home.css's .poster-card-media::before/::after. */
+    .event-card-media::before,
+    .event-card-media::after {
+      content: "";
+      position: absolute;
+      top: calc(100% - 5px);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--line);
+    }
+    .event-card-media::before {
+      left: -5px;
+    }
+    .event-card-media::after {
+      right: -5px;
+    }
+    .card-body {
+      padding: 0.625rem 0.75rem 0.75rem;
+      border-top: 1px dashed var(--line);
+    }
+    .event-card h2 {
+      font-size: var(--fs-sm);
+    }
+    .event-card .meta,
+    .event-card .period {
+      font-size: var(--fs-xs);
     }
   }

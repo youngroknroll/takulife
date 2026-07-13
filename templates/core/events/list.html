@@ -133,8 +133,24 @@
 
           <div class="event-list">
             {% for row in event_rows %}
-              <article class="event-card hover-lift">
-                <span class="cat-tile cat-{{ row.category_slug }}"></span>
+              <article class="event-card hover-lift" data-status-error-container>
+                <div class="event-card-media">
+                  <a class="event-card-media-link" href="/events/{{ row.event.id }}/" tabindex="-1">
+                    {% if row.event.poster_image %}
+                      <img class="event-card-img" src="{{ row.event.poster_image.url }}" alt="{{ row.event.title }} 포스터" loading="lazy">
+                    {% else %}
+                      <span class="cat-tile cat-{{ row.category_slug }} event-card-emoji"></span>
+                    {% endif %}
+                  </a>
+                  <span class="glint">✦</span>
+                  <button class="interest-btn poster-interest{% if row.user_interested %} active{% endif %}" type="button"
+                    data-interest-toggle
+                    data-toast
+                    data-event-id="{{ row.event.id }}"
+                    {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
+                    <span data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
+                  </button>
+                </div>
                 <div class="card-body">
                   <div class="card-lead">
                     {% if row.status_slug == 'ended' %}
@@ -158,21 +174,15 @@
                     <p class="meta">{{ row.event.location_name }}</p>
                   {% endif %}
                   {% if row.event.start_date and row.event.end_date %}
-                    <p class="period">{{ row.event.start_date }} - {{ row.event.end_date }}</p>
+                    <p class="period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</span></p>
+                  {% elif row.event.start_date %}
+                    <p class="period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} -</span></p>
                   {% endif %}
-                  <div class="status-row" data-status-error-container>
-                    <button class="interest-btn{% if row.user_interested %} active{% endif %}" type="button"
-                      data-interest-toggle
-                      data-toast
-                      data-event-id="{{ row.event.id }}"
-                      {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
-                      <span data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
-                      찜
-                    </button>
-                    {% if row.user_status == 'visited' or row.user_status == 'missed' %}
+                  {% if row.user_status == 'visited' or row.user_status == 'missed' %}
+                    <div class="status-row">
                       <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
-                    {% endif %}
-                  </div>
+                    </div>
+                  {% endif %}
                 </div>
               </article>
             {% endfor %}
