@@ -51,10 +51,6 @@ REGION_LABELS: dict[str, str] = dict(REGION)
 # The slug IS the canonical CSS class name (G10 unification).
 # slug → display label
 # ---------------------------------------------------------------------------
-# "interested" is no longer an archive status — it lives in EventInterest.
-# The label is kept as a module constant for use in interest widgets and lists.
-INTEREST_LABEL = "찜"
-
 ARCHIVE_STATUS: tuple[tuple[str, str], ...] = (
     ("planned", "방문 예정"),
     ("visited", "방문 완료"),
