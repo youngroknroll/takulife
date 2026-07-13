@@ -634,7 +634,7 @@
   }
 
   /* Responsive: snap-align for home's scroller items */
-  @media (max-width: 43.75rem) {
+  @media (max-width: 45rem) {
     .hscroll-track .cat-browse-item,
     .hscroll-track li {
       scroll-snap-align: start;
