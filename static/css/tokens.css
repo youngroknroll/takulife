@@ -172,7 +172,14 @@
   --focus: #969fb0;
 
   --brand: #c63d24;
-  --brand-ink: #d98272;
+  /* PR-4 대비 감사 발견: 원안(#D98272)이 --bg-card 다크 위에서 4.4985:1로
+     AA 4.5:1에 0.03%(0.0015) 못 미침(.side-list a — 기록장/방문 기록/
+     예정 목록/찜 목록/스태프 대시보드 바로가기 공유 컴포넌트 — 실측
+     발견). HSL L을 64.9%→65.4%로 미세 상향해 #DA8474로 보정: bg-card
+     4.588:1(통과) / surface 5.637:1(기존 5.53에서 개선) / brand-soft
+     4.827:1(기존 4.73에서 개선) — 이미 통과하던 다른 페어링도 전부
+     같이 개선되고 역행 없음. */
+  --brand-ink: #da8474;
   --brand-soft: #422824;
   --hl: #c1e52e;
 
@@ -201,6 +208,12 @@
   --up-ink: #8897c8;
   --end-soft: #2d3239;
   --end-ink: #a5acb6;
+  /* PR-4 대비 감사 발견: --muted-soft에 다크값이 없어(PR-1 매핑 누락)
+     category.css/staff_events.css/archive_visits.css의 "비공식" 마커
+     칩이 다크에서도 라이트 배경(#eef0f3)에 다크 잉크(--muted #A2A9B9)
+     텍스트가 얹혀 2.06:1로 렌더되던 실결함. --surface-alt 다크값을
+     그대로 재사용(동일한 "중성 대체 표면" 역할, muted-ink 대비 6.01:1). */
+  --muted-soft: #272b35;
 
   --shadow: 0 18px 38px rgba(255, 255, 255, 0.04);
 
