@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}설정 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="auth-container" id="content">
+  <h1>설정</h1>
+  <p><a href="/mypage/">마이페이지로 돌아가기</a></p>
+
+  <div class="settings-actions">
+    <a class="btn btn-secondary btn-block" href="{% url 'account_email' %}">이메일 변경</a>
+    <a class="btn btn-secondary btn-block" href="{% url 'account_change_password' %}">비밀번호 변경</a>
+    {% if not request.user.is_staff %}
+      <hr class="panel-divider">
+      <a class="btn btn-danger btn-block" href="{% url 'account-delete-page' %}">회원 탈퇴</a>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

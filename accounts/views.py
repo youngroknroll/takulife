@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 
 # Password re-check on this view has no throttle of its own otherwise: axes
@@ -55,7 +56,16 @@ def delete_account(request):
 
     POST is also guarded by a per-user failed-attempt counter (see
     `_is_delete_locked`) so the password check itself cannot be brute-forced.
+
+    Staff accounts are blocked from self-deletion on both GET and POST
+    (403) — the header no longer links here for a staff user (account_menu
+    dropdown / settings page), but the UI hiding it is not itself a
+    guarantee, so the view enforces it directly. Staff removal is a Django
+    admin action only (superuser judgment call).
     """
+    if request.user.is_staff:
+        raise PermissionDenied
+
     if request.method == "POST":
         if _is_delete_locked(request.user):
             return render(
@@ -81,3 +91,11 @@ def delete_account(request):
         return redirect("home")
 
     return render(request, "account/delete_account.html", {"field_errors": {}})
+
+
+@login_required
+def account_settings(request):
+    """Account settings hub: links to allauth's email/password management
+    and, for a regular member only, the deletion flow — a staff member has
+    no self-deletion path anywhere in the UI."""
+    return render(request, "account/settings.html")

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 마이페이지{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="content">
+    <section class="hero">
+      <h1>마이페이지</h1>
+
+      <div class="summary-grid">
+        <a class="summary-card summary-card-link" href="/archive/">
+          <p class="summary-label">저장한 행사</p>
+          <p class="summary-value">{{ saved_count }}</p>
+        </a>
+        <a class="summary-card summary-card-link" href="/archive/visits/">
+          <p class="summary-label">다녀온 기록</p>
+          <p class="summary-value">{{ visit_count }}</p>
+        </a>
+        <a class="summary-card summary-card-link" href="/archive/items/">
+          <p class="summary-label">직접 등록</p>
+          <p class="summary-value">{{ personal_entry_count }}</p>
+        </a>
+        <a class="summary-card summary-card-link" href="/archive/interests/">
+          <p class="summary-label">찜 목록</p>
+          <p class="summary-value">{{ interest_count }}</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>계정</h2>
+      <p class="meta">{{ request.user.email }}</p>
+      <a class="btn btn-secondary" href="/accounts/settings/">내정보 변경</a>
+    </section>
+  </main>
+{% endblock %}

@@ -10,23 +10,44 @@ Usage:
 Context consumed:
   request.user.is_authenticated — provided by Django's auth context processor
   request.user.email            — authenticated user's display name (login identifier)
-  request.user.is_staff         — whether to show the draft management link
+  request.user.is_staff         — whether the account-menu shows 스태프 콘솔 (else 마이페이지)
   request.user.is_superuser     — whether to show the Django admin link
+
+Role-based account-menu items (no 탈퇴 link in any branch — see
+accounts.views.delete_account's server-side staff guard, and the settings
+page for the regular-member deletion entry point):
+  regular member — 마이페이지 / 로그아웃 (마이페이지 -> 내정보 변경 -> 설정)
+  staff          — 스태프 콘솔 / 설정 / 로그아웃 (no mypage, so 설정 is the
+                    only click-reachable path to email/password management)
+  +superuser     — 관리자 added to either branch above
 {% endcomment %}
 <nav class="topbar-auth">
   {% if request.user.is_authenticated %}
     <span class="topbar-username" title="{{ request.user.email }}">{{ request.user.email }}</span>
-    {% if request.user.is_staff %}
-      <a class="topbar-link" href="/staff/dashboard/">스태프 콘솔</a>
-    {% endif %}
-    {% if request.user.is_superuser %}
-      <a class="topbar-link" href="/admin/">관리자</a>
-    {% endif %}
-    <a class="topbar-link" href="/accounts/delete/">회원 탈퇴</a>
-    <form class="topbar-logout-form" method="post" action="/accounts/logout/">
-      {% csrf_token %}
-      <button class="topbar-link topbar-logout-btn" type="submit">로그아웃</button>
-    </form>
+    <div class="account-menu" data-account-menu>
+      <button type="button" class="account-menu-toggle" data-account-menu-toggle
+              data-expanded="false" data-controls="account-menu-panel">
+        <span class="account-mark">{{ request.user.email|first|upper }}</span>
+      </button>
+      <div id="account-menu-panel" class="account-menu-panel" data-account-menu-panel hidden>
+        <p class="account-menu-email">{{ request.user.email }}</p>
+        <hr class="account-menu-divider">
+        {% if request.user.is_staff %}
+          <a class="account-menu-item" href="/staff/dashboard/">스태프 콘솔</a>
+          <a class="account-menu-item" href="/accounts/settings/">설정</a>
+        {% else %}
+          <a class="account-menu-item" href="/mypage/">마이페이지</a>
+        {% endif %}
+        {% if request.user.is_superuser %}
+          <a class="account-menu-item" href="/admin/">관리자</a>
+        {% endif %}
+        <hr class="account-menu-divider">
+        <form class="topbar-logout-form" method="post" action="/accounts/logout/">
+          {% csrf_token %}
+          <button class="account-menu-item topbar-logout-btn" type="submit">로그아웃</button>
+        </form>
+      </div>
+    </div>
   {% else %}
     <a class="topbar-link" href="/accounts/login/">로그인</a>
     <a class="topbar-link" href="/accounts/signup/">회원가입</a>

@@ -36,6 +36,7 @@ urlpatterns = [
         name="archive-personal-entries-page",
     ),
     path("archive/interests/", core_views.archive_interests, name="archive-interests"),
+    path("mypage/", core_views.mypage, name="mypage-page"),
     path("legal/privacy/", core_views.legal_privacy, name="legal-privacy-page"),
     path("legal/terms/", core_views.legal_terms, name="legal-terms-page"),
     # Old draft-review URLs, relocated under the Staff Console (/staff/drafts/…).
@@ -54,10 +55,15 @@ urlpatterns = [
         name="event-draft-detail-page",
     ),
     path("staff/", include("staff.urls")),
-    # Registered before the allauth include so this explicit route always
-    # wins the match (allauth's own urlconf has no "delete/" pattern today,
-    # but this keeps the two from ever silently colliding).
+    # Registered before the allauth include so these explicit routes always
+    # win the match (allauth's own urlconf has no "delete/"/"settings/"
+    # pattern today, but this keeps them from ever silently colliding).
     path("accounts/delete/", accounts_views.delete_account, name="account-delete-page"),
+    path(
+        "accounts/settings/",
+        accounts_views.account_settings,
+        name="account-settings-page",
+    ),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("api/", include("core.urls")),

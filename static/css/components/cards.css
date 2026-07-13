@@ -7,6 +7,12 @@
   padding: 0.875rem;
 }
 
+.panel-divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0.875rem 0;
+}
+
 /* ── summary cards (shared across archive + drafts pages) ───── */
 /* Single source of truth for the summary bar. A page declares how many tiles it
    has via `--summary-cols` (= min(card count, 5)); the row fills left to right
@@ -37,6 +43,20 @@
   font-size: 1.28rem;
   font-weight: 700;
   line-height: 1.2;
+}
+
+/* A summary card can also be a drilldown link (article -> a swap, e.g. the
+   staff dashboard's 검토 대기 card, mypage's 4 summary cards) — this only
+   adds the document reset and hover affordance a link needs; .summary-card
+   itself (above) stays untouched. */
+.summary-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.summary-card-link:hover {
+  border-color: var(--brand);
 }
 
 /* ── hero block ─────────────────────────────────────────────── */
