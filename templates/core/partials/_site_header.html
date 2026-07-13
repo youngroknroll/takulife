@@ -13,6 +13,12 @@ never overlap: "/" is home only, "/events/" and "/archive/" are exclusive prefix
 <header class="site-header">
   <div class="site-header-inner">
     <a class="brand" href="/">takulife</a>
+    <button type="button" class="theme-toggle" data-theme-toggle>
+      <span class="theme-toggle-mark">
+        <span class="theme-toggle-icon theme-toggle-icon-light">&#9728;&#65038;</span>
+        <span class="theme-toggle-icon theme-toggle-icon-dark">&#9790;&#65038;</span>
+      </span>
+    </button>
     <nav class="site-nav">
       <a href="/"{% if request.path == '/' %} class="active"{% endif %}>홈</a>
       <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>행사 둘러보기</a>
