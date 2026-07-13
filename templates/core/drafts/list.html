@@ -102,12 +102,14 @@
                     {% endif %}
                   </div>
                   <h3>{{ title|default:"(제목 없음)" }}</h3>
-                  <p class="meta">
-                    {% if row.draft.extracted_work_title %}{{ row.draft.extracted_work_title }}{% endif %}
-                    {% if row.draft.extracted_work_title and row.region_label %} · {% endif %}
-                    {% if row.region_label %}{{ row.region_label }}{% endif %}
-                    {% if row.draft.extracted_start_date %} · {{ row.draft.extracted_start_date }}{% endif %}
-                  </p>
+                  {% if row.draft.extracted_work_title or row.region_label or row.draft.extracted_start_date %}
+                    <p class="meta">
+                      {% if row.draft.extracted_work_title %}{{ row.draft.extracted_work_title }}{% endif %}
+                      {% if row.draft.extracted_work_title and row.region_label %} · {% endif %}
+                      {% if row.region_label %}{{ row.region_label }}{% endif %}
+                      {% if row.draft.extracted_start_date %} · {{ row.draft.extracted_start_date }}{% endif %}
+                    </p>
+                  {% endif %}
                   <p class="source">
                     <a href="{{ row.draft.source_url }}" target="_blank" rel="noopener">
                       {{ row.draft.source_url }} ↗

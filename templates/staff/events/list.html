@@ -39,10 +39,12 @@
                   {% endfor %}
                 </div>
                 <h3>{{ row.event.title|default:"(제목 없음)" }}</h3>
-                <p class="meta">
-                  {% if row.region_label %}{{ row.region_label }}{% endif %}
-                  {% if row.event.start_date or row.event.end_date %} · {{ row.event.start_date|default:"?" }} ~ {{ row.event.end_date|default:"?" }}{% endif %}
-                </p>
+                {% if row.region_label or row.event.start_date or row.event.end_date %}
+                  <p class="meta">
+                    {% if row.region_label %}{{ row.region_label }}{% endif %}
+                    {% if row.event.start_date or row.event.end_date %} · {{ row.event.start_date|default:"?" }} ~ {{ row.event.end_date|default:"?" }}{% endif %}
+                  </p>
+                {% endif %}
                 <p class="meta">
                   <a class="btn btn-secondary btn-sm" href="/staff/events/{{ row.event.pk }}/edit/{% if pager_query %}?{{ pager_query|slice:'1:' }}{% endif %}">수정</a>
                 </p>
