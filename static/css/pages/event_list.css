@@ -219,37 +219,15 @@
     align-items: center;
     justify-content: center;
   }
-  /* Ticket-stub signature #2 (glint): a ✦ sparkle revealed on hover/
-     focus-within. Implemented template-free on the category tile's free
-     ::after slot (::before already renders the category emoji glyph in
-     components/category.css) rather than adding a <span class="glint">, so
-     list.html markup stays unchanged. Mirrors the shared .glint utility
-     language in objects/interaction.css (kept generic there for future
-     explicit-markup use, e.g. poster cards in PR-R3). */
-  .event-card .cat-tile {
-    position: relative;
-  }
-  .event-card .cat-tile::after {
-    content: "✦";
-    position: absolute;
-    top: 0.3rem;
-    right: 0.3rem;
-    opacity: 0;
-    transform: scale(0.7);
-    color: #fff;
-    text-shadow: 0 0 7px rgba(28, 34, 46, 0.55);
-    transition: opacity 0.15s ease, transform 0.15s ease;
-    pointer-events: none;
-  }
-  .event-card:hover .cat-tile::after,
-  .event-card:focus-within .cat-tile::after {
-    opacity: 1;
-    transform: scale(1);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .event-card .cat-tile::after {
-      transition: none;
-    }
+  /* Ticket-stub signature #2 (glint): explicit <span class="glint"> markup
+     (objects/interaction.css utility, revealed via the .hover-lift already
+     on .event-card), matching _poster_card.html's pattern. Replaces the
+     old template-free .cat-tile::after variant, which only worked on the
+     no-poster fallback and left real poster images without a glint. */
+  .event-card-media .glint {
+    top: 8px;
+    right: 8px;
+    z-index: 1;
   }
   .event-card h2 {
     margin: 0 0 0.375rem;
