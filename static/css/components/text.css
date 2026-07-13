@@ -29,7 +29,12 @@
  * wrap cleanly if the phrase breaks across a line. */
 .hl {
   background: var(--hl);
-  color: var(--text);
+  /* Fixed ink, not var(--text): --hl keeps a bright chartreuse tone in both
+     themes (tokens.css), but --text flips from dark-on-light to
+     light-on-dark — pairing it here would invert to light-text-on-bright-
+     background (near-illegible) once dark mode applies. --hl-ink is
+     theme-agnostic by design for exactly this pairing. */
+  color: var(--hl-ink);
   padding: 0 0.22em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;

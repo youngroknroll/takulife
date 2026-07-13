@@ -2,6 +2,30 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <!-- Inline (not defer) and placed before every stylesheet on purpose:
+       this must set data-theme before the browser paints anything, or the
+       page flashes the wrong theme for one frame (FOUC) — a deliberate
+       exception to this repo's defer convention. Minimal duplicate of
+       static/js/shared/theme.js's read-only resolution (localStorage ->
+       matchMedia -> light); that file owns writes/toggle/the live
+       system-theme listener, this snippet only ever reads. -->
+  <script>
+    (function () {
+      "use strict";
+      var theme = "light";
+      try {
+        var stored = window.localStorage.getItem("takulife-theme");
+        if (stored === "light" || stored === "dark") {
+          theme = stored;
+        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          theme = "dark";
+        }
+      } catch (e) {
+        // Storage or matchMedia blocked — theme keeps its "light" default.
+      }
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}takulife{% endblock %}</title>
   <meta name="description" content="팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.">
@@ -40,6 +64,7 @@
   {% endif %}
   {% block content %}{% endblock %}
   {% block site_footer %}{% include "core/partials/_site_footer.html" %}{% endblock %}
+  <script defer src="{% static 'js/shared/theme.js' %}"></script>
   <script defer src="{% static 'js/shared/api.js' %}"></script>
   <script defer src="{% static 'js/components/confirm-modal.js' %}"></script>
   <script defer src="{% static 'js/shared/toast.js' %}"></script>
