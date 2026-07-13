@@ -40,6 +40,7 @@
   {% endif %}
   {% block content %}{% endblock %}
   {% block site_footer %}{% include "core/partials/_site_footer.html" %}{% endblock %}
+  <script defer src="{% static 'js/shared/theme.js' %}"></script>
   <script defer src="{% static 'js/shared/api.js' %}"></script>
   <script defer src="{% static 'js/components/confirm-modal.js' %}"></script>
   <script defer src="{% static 'js/shared/toast.js' %}"></script>
