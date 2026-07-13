@@ -21,9 +21,9 @@
  *   (pixel-identical at default zoom). px↔rem mapping (16px base):
  *     4px .25rem · 8px .5rem · 12px .75rem · 16px 1rem · 20px 1.25rem · 24px 1.5rem
  *   @media breakpoints in rem (CSS vars can't be used in @media):
- *     38.75rem(620) 43.75rem(700) 45rem(720) 47.5rem(760)
+ *     38.75rem(620) 45rem(720) 47.5rem(760)
  *     53.75rem(860) 56.25rem(900) 57.5rem(920) 60rem(960)
- *   64rem(1024) is a 9th, deliberate exception — the --page-pad-x edge-
+ *   64rem(1024) is an 8th, deliberate exception — the --page-pad-x edge-
  *   margin token's tablet/desktop boundary (tokens.css) is a user-confirmed
  *   value, not reused from the set above (900px/56.25rem was proposed and
  *   rejected in favor of the explicit 1024px choice).

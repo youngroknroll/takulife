@@ -36,14 +36,13 @@ Params:
 Context consumed: request.user (via the calling page) is not needed here.
 {% endcomment %}
 {% with ev=row.event %}
-<article class="poster-card hover-lift{% if not ev.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}">
+<article class="poster-card hover-lift{% if not ev.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}" data-status-error-container>
   <div class="poster-card-media">
     {% if ev.poster_image %}
       <img class="poster-card-img" src="{{ ev.poster_image.url }}" alt="{{ ev.title }} 포스터" loading="lazy">
     {% else %}
       <span class="cat-tile cat-{{ row.category_slug }} poster-card-emoji"></span>
     {% endif %}
-    <span class="glint">✦</span>
 
     {% comment %} Ongoing(이번 주 갈 만한 행사): no countdown badge — already visitable.
        Recent(새 이벤트): "오픈까지 N일"(upcoming) and/or "NEW"(등록 10일 이내) — both may show.
@@ -69,6 +68,14 @@ Context consumed: request.user (via the calling page) is not needed here.
         <span data-interest-glyph>{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
       </button>
     {% endif %}
+    {% comment %} Markup order matters here: .glint comes AFTER the closing-
+       only 찜 button so home.css's `.poster-interest ~ .glint` sibling
+       selector can nudge the glint out from behind the button (which fully
+       covers it at their shared default top-right position) without a
+       :has() selector. Both are position:absolute, so this reorder has no
+       visual/tab-order effect on ongoing/recent cards, which have no
+       button sibling to match against. {% endcomment %}
+    <span class="glint">✦</span>
   </div>
 
   <div class="poster-card-caption">

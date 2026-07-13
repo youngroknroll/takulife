@@ -58,7 +58,6 @@
 
     messageEl = document.createElement("p");
     messageEl.className = "confirm-message";
-    messageEl.id = "confirm-modal-message";
 
     var actions = document.createElement("div");
     actions.className = "confirm-actions";

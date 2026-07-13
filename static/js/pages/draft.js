@@ -72,6 +72,16 @@
     container.hidden = true;
   }
 
+  // Styled confirm modal (confirm-modal.js) with a native window.confirm
+  // fallback if that script didn't load — same pattern as status.js/visit.js/
+  // visit_edit.js/personal_entries.js/draft_bulk.js's askCancel.
+  function askConfirm(message) {
+    if (typeof window.TakuConfirm === "function") {
+      return window.TakuConfirm(message);
+    }
+    return Promise.resolve(window.confirm(message));
+  }
+
   /* ── 403 message (lost session / CSRF) ──────────────────────────────── */
 
   var CSRF_OR_SESSION_MSG =
@@ -217,8 +227,8 @@
     var listUrlEl = btn.closest("[data-list-url]");
     var listUrl = listUrlEl ? listUrlEl.dataset.listUrl : "/staff/drafts/";
 
-    btn.addEventListener("click", function () {
-      var confirmed = window.confirm(
+    btn.addEventListener("click", async function () {
+      var confirmed = await askConfirm(
         "승인하고 게시하면 공개 행사 목록에 노출됩니다. 진행할까요?"
       );
       if (!confirmed) {
@@ -283,8 +293,8 @@
     var listUrlEl = btn.closest("[data-list-url]");
     var listUrl = listUrlEl ? listUrlEl.dataset.listUrl : "/staff/drafts/";
 
-    btn.addEventListener("click", function () {
-      var confirmed = window.confirm(
+    btn.addEventListener("click", async function () {
+      var confirmed = await askConfirm(
         "이 드래프트를 반려할까요? 공개 목록에는 노출되지 않습니다."
       );
       if (!confirmed) {

@@ -35,10 +35,17 @@ class TestDraftApproveSuccessFocus:
 
         login(page, live_server.url, "e2e_staff@example.com", seed.password)
         page.goto(f"{live_server.url}/staff/drafts/{draft.id}/")
-        page.on("dialog", lambda dialog: dialog.accept())
 
         page.locator("#draft-approve-btn").focus()
         page.keyboard.press("Enter")
+        # draft.js now confirms through the styled TakuConfirm modal
+        # (confirm-modal.js, loaded globally in base.html) instead of a
+        # native window.confirm — no page.on("dialog") handler fires for
+        # it. Accept via its own 예 button; this intermediate step is
+        # outside what this test is about (see module docstring), so a
+        # plain click is fine here even though the rest of the test uses
+        # real key events on purpose.
+        page.click(".confirm-yes")
         page.wait_for_selector("#draft-approve-success:not([hidden])")
 
         active = page.evaluate("() => document.activeElement.id")

@@ -1,7 +1,10 @@
 /* ── .btn — canonical generic button component ──────────────────
  * Base = skeleton only (layout, sizing, radius, transition). No color.
  * Skins (.btn-primary / .btn-secondary) own all color/border.
- * Size/width modifiers (.btn-sm / .btn-block) override padding/font only.
+ * Size/width modifiers (.btn-sm / .btn-block) override padding/font only —
+ * min-height:44px is not among the overridden properties, so .btn-sm
+ * keeps the same 44px touch target as every other variant; only its
+ * visual size (padding/font) shrinks.
  * Focus outline is inherited from the global a:focus/button:focus rule
  * in base.css — do not redeclare it here.
  */
@@ -13,6 +16,11 @@
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 0.6875rem 0.75rem;
+  /* §5.4 44px 터치 타깃: padding+line-height+border만으로는 ~42.24px
+     (실측)였음. .btn-sm은 min-height를 재정의하지 않아(패딩·폰트만
+     축소) 이 44px을 그대로 물려받음 — 축소는 시각 크기만이고 터치
+     타깃은 모든 변형이 동일하게 44px. */
+  min-height: 44px;
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.2;

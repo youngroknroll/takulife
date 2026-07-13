@@ -41,7 +41,6 @@ from core.vocab import (
     EVENT_SORT_LABELS,
     EVENT_STATUS,
     EVENT_STATUS_LABELS,
-    INTEREST_LABEL,
     REGION,
     REGION_LABELS,
 )
@@ -692,7 +691,6 @@ def archive_interests(request):
                 "interest_rows": interest_rows,
             "interest_count": interest_count,
             "has_interests": len(interest_rows) > 0,
-            "INTEREST_LABEL": INTEREST_LABEL,
         },
     )
 

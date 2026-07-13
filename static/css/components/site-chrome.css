@@ -115,7 +115,7 @@
   z-index: 1;
 }
 
-@media (max-width: 43.75rem) {
+@media (max-width: 45rem) {
   .site-header-inner {
     flex-wrap: wrap;
     gap: 0.625rem;

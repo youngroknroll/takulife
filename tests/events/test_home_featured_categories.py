@@ -13,7 +13,7 @@ import pytest
 from django.test import Client
 
 from core.models import HomeConfig
-from core.vocab import CATEGORY, CATEGORY_LABELS
+from core.vocab import CATEGORY
 
 
 # ---------------------------------------------------------------------------

@@ -279,6 +279,53 @@
   margin: 0.1875rem 0 0;
 }
 
+/* ── poster top-left badge pill (shared: home poster card + event list
+   card's mobile media overlay) ── Hoisted from pages/home.css so
+   event_list.css's mobile D-day/종료 badge (both consumers load this file
+   globally, base.html) can reuse the same visual language. */
+.poster-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  border-radius: var(--radius-chip);
+  padding: 0.1875rem 0.5625rem;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1;
+}
+/* Wrapper when a card can show more than one badge (recent: 오픈까지 + NEW) */
+.poster-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.poster-badges .poster-badge {
+  position: static;
+}
+.poster-badge-new {
+  background: var(--brand);
+  color: #fff;
+}
+.poster-badge-open {
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+.poster-badge-closing {
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+}
+/* 종료(ended) — 4th lifecycle state (plan §0), kept visually distinct
+   from 종료임박(amber) so a closed event doesn't read as still-urgent. */
+.poster-badge-ended {
+  background: var(--end-soft);
+  color: var(--end-ink);
+}
+
 /* ── poster overlay 찜 button (shared: home poster card + event list card) ──
    Hoisted from pages/home.css (was scoped to the closing-card poster only)
    so event_list.css's desktop thumbnail and mobile poster grid can reuse
