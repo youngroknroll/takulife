@@ -110,4 +110,15 @@ ul.auth-error li {
   .auth-container h1 {
     font-size: var(--fs-xl-mobile);
   }
+  /* .auth-container is a narrow (420px max-width) centered card, not part
+     of the 1120px page/header/footer family — its desktop/tablet padding
+     (1.5rem/24px) is genuine card padding, unrelated to page-edge
+     alignment, so it keeps its own fixed value at those widths. Below
+     this breakpoint the card has no room left to stay narrower than the
+     viewport (margin:auto resolves to 0 either side), so its own padding
+     *becomes* the page edge margin — token-driven here to match every
+     other page at 16px. */
+  .auth-container {
+    padding: 1.75rem var(--page-pad-x);
+  }
 }
