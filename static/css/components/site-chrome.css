@@ -138,12 +138,20 @@
      .topbar-username{max-width:15rem} loads *after* this file in base.html,
      and at equal specificity the later rule wins regardless of this media
      query's condition being true — the bare-class version silently lost to
-     it at every mobile width (FE gate finding, computed stayed 15rem/240px
-     down to 320px). The extra .site-header ancestor is real markup
-     (_site_header.html wraps _topbar.html), so this is a free specificity
-     bump, not a fabricated hook. */
+     it at every mobile width (FE gate finding). The extra .site-header
+     ancestor is real markup (_site_header.html wraps _topbar.html), so
+     this is a free specificity bump, not a fabricated hook.
+     Cap re-derived for the Track D edge-margin token (this file's mobile
+     .site-header-inner padding above went 12px->16px, shrinking the 320px
+     content budget 296px->288px): measured .brand width at 320px is
+     73.2px (Playwright, live_server render), + .site-header-inner's own
+     0.625rem(10px) gap + this cap + .topbar-auth's own 0.5rem(8px) gap +
+     the 44px avatar toggle must fit in 288px. 10rem(160px) no longer fits
+     (73.2+10+160+8+44=295.2 > 288, re-breaking the "320px header stays
+     one row" fix); 9rem(144px) does (73.2+10+144+8+44=279.2, 8.8px
+     margin) — verified via Playwright with a 26-char stress email. */
   .site-header .topbar-username {
-    max-width: 10rem;
+    max-width: 9rem;
   }
 }
 
