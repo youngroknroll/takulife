@@ -158,17 +158,36 @@
      added 52px of row-1 demand: 73.2+10+32+10+144+8+44=321.2, 33.2px over
      288px — .topbar-auth wrapped to its own row between brand+toggle and
      .site-nav rather than just overflowing, turning the header into 3
-     lines. Closed by shrinking only this cap, leaving .brand and both
-     gaps untouched (they're shared by the whole mobile header, not just
-     this row, and .brand renders for every visitor regardless of login
-     state — the username cap only bites logged-in users, and only those
-     with a long address): 73.2+10+32+10+100+8+44=277.2, 10.8px margin —
-     verified via Playwright at exactly 320px with a 35-char stress email
-     (logged-in, one row) and the anonymous login/signup-pill state (also
-     one row, this cap doesn't apply there). Trade-off, also measured: a
-     real email now starts ellipsizing past ~13 characters instead of
-     ~19 (100px vs the prior 144px) — cosmetic only, .account-menu-panel
-     still shows the full, unclipped address once opened. */
+     lines. Closed at the time by shrinking this cap to 6.25rem across the
+     whole <=45rem range (73.2+10+32+10+100+8+44=277.2, 10.8px margin) —
+     but a later gate review (UX MED) flagged that as overreach: the
+     33.2px overflow is a 320px-only problem (288px budget). 360px+ has
+     328px available and already fits the *original* 9rem cap even with
+     the toggle: 73.2+10+32+10+144+8+44=321.2 <= 328 (6.8px margin) — no
+     need to shrink the cap there at all. Split into two tiers instead:
+     this block reverts to the original 9rem (valid down to 360px), and
+     the dedicated @media (max-width: 22.5rem) block right below narrows
+     to 6.25rem only for the 320-360px sliver that actually needs it.
+     Verified via Playwright at 320/360/375/390px, both a stress-length
+     logged-in email and the anonymous login/signup-pill state: zero
+     wrap/overflow at every width, 9rem active at 360px+, 6.25rem only at
+     320px. Trade-off (320px only): a real email starts ellipsizing past
+     ~13 characters instead of ~19 — cosmetic, .account-menu-panel still
+     shows the full, unclipped address once opened. 360px+ never reaches
+     this trade-off at all now (9rem restored). */
+  .site-header .topbar-username {
+    max-width: 9rem;
+  }
+}
+
+/* Narrower companion to the <=45rem block above — only the 320-360px
+   sliver still needs the tighter 6.25rem username cap (288px budget vs
+   360px's 328px, see that block's comment for the full derivation and
+   the two-tier split rationale). Must come after the <=45rem block in
+   source order: a <=360px viewport matches *both* media queries, and at
+   equal specificity (.site-header .topbar-username in both) the later
+   rule in the cascade wins regardless of which condition is narrower. */
+@media (max-width: 22.5rem) {
   .site-header .topbar-username {
     max-width: 6.25rem;
   }
