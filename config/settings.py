@@ -136,7 +136,8 @@ def build_secure_ssl_settings(secure_ssl):
     """Extra settings applied when running behind a TLS-terminating reverse
     proxy (PaaS router). Empty dict when secure_ssl is False, so nothing here
     is set and Django's own (all off/zero) defaults apply — local dev/tests
-    are unaffected.
+    are unaffected. Only enable when the proxy is guaranteed to set (and
+    strip any client-supplied) X-Forwarded-Proto — see .env.example.
     """
     if not secure_ssl:
         return {}
