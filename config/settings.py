@@ -114,6 +114,30 @@ def load_secure_ssl():
     return _get_env("SECURE_SSL", "").lower() in ("1", "true", "yes")
 
 
+def load_trusted_proxy_count():
+    """Number of trusted reverse-proxy hops in front of this app, or None
+    when unset (historical behavior: REMOTE_ADDR is trusted as-is, no
+    X-Forwarded-For parsing). A non-integer value fails hard instead of
+    silently disabling proxy-aware IP resolution."""
+    raw = _get_env("TRUSTED_PROXY_COUNT", "")
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        raise ImproperlyConfigured(
+            f"TRUSTED_PROXY_COUNT must be an integer, got {raw!r}."
+        )
+
+
+def build_axes_client_ip_callable(trusted_proxy_count):
+    """AXES_CLIENT_IP_CALLABLE dotted path, or None to keep axes' own
+    REMOTE_ADDR-based default. Only opt into core.ip.get_client_ip when a
+    trusted proxy hop count is configured; otherwise the historical
+    REMOTE_ADDR behavior is unchanged."""
+    return "core.ip.get_client_ip" if trusted_proxy_count else None
+
+
 def load_staticfiles_storage(debug):
     """Static files storage backend for STORAGES["staticfiles"].
 
@@ -406,9 +430,15 @@ AXES_LOCKOUT_TEMPLATE = "account/lockout.html"
 # allauth posts the identifier under the form field named "login"; axes must
 # read the same field to record attempts against the right credential.
 AXES_USERNAME_FORM_FIELD = "login"
-# NOTE (deployment): behind a reverse proxy, configure AXES_IPWARE_* so the real
-# client IP is used — otherwise every request looks like the proxy IP and one
-# attacker can lock out everyone. Do not enable in prod until the proxy is set.
+# NOTE (deployment): behind a reverse proxy, set the TRUSTED_PROXY_COUNT env
+# var to the real number of proxy hops so axes locks out the real attacker
+# IP instead of the proxy IP (which would lock out everyone). This wires
+# AXES_CLIENT_IP_CALLABLE to core.ip.get_client_ip; unset TRUSTED_PROXY_COUNT
+# keeps axes' own REMOTE_ADDR-based default (see core/ip.py for why
+# django-axes' AXES_IPWARE_* settings are not used here — this project does
+# not depend on django-ipware).
+TRUSTED_PROXY_COUNT = load_trusted_proxy_count()
+AXES_CLIENT_IP_CALLABLE = build_axes_client_ip_callable(TRUSTED_PROXY_COUNT)
 
 # Secure cookies: disabled in development (http), enabled when SECURE_COOKIES env is set.
 _secure_cookies = os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
