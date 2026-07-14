@@ -141,13 +141,35 @@ def load_media_storage_config():
     bucket = _get_env("MEDIA_STORAGE_BUCKET")
     if not bucket:
         return {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+
+    access_key = _get_env("MEDIA_STORAGE_ACCESS_KEY_ID")
+    secret_key = _get_env("MEDIA_STORAGE_SECRET_ACCESS_KEY")
+    endpoint_url = _get_env("MEDIA_STORAGE_ENDPOINT_URL")
+    # REGION is excluded from this check: it has a real default ("auto",
+    # below), so an unset value is a valid configuration, not a mistake.
+    required = {
+        "MEDIA_STORAGE_ACCESS_KEY_ID": access_key,
+        "MEDIA_STORAGE_SECRET_ACCESS_KEY": secret_key,
+        "MEDIA_STORAGE_ENDPOINT_URL": endpoint_url,
+    }
+    missing = [name for name, value in required.items() if not value]
+    if missing:
+        raise ImproperlyConfigured(
+            "MEDIA_STORAGE_BUCKET is set but "
+            f"{', '.join(missing)} is missing. A partially configured "
+            "object storage backend would silently upload with empty "
+            "credentials and only fail on first use — set all of "
+            "MEDIA_STORAGE_ACCESS_KEY_ID, MEDIA_STORAGE_SECRET_ACCESS_KEY, "
+            "and MEDIA_STORAGE_ENDPOINT_URL, or unset MEDIA_STORAGE_BUCKET "
+            "to keep local-disk storage."
+        )
     return {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
             "bucket_name": bucket,
-            "access_key": _get_env("MEDIA_STORAGE_ACCESS_KEY_ID"),
-            "secret_key": _get_env("MEDIA_STORAGE_SECRET_ACCESS_KEY"),
-            "endpoint_url": _get_env("MEDIA_STORAGE_ENDPOINT_URL"),
+            "access_key": access_key,
+            "secret_key": secret_key,
+            "endpoint_url": endpoint_url,
             # "auto" is Cloudflare R2's documented region value for its S3
             # API (R2/B2 don't use AWS regions); harmless default when the
             # deployment doesn't set MEDIA_STORAGE_REGION explicitly.

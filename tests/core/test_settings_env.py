@@ -391,3 +391,21 @@ def test_load_media_storage_config_returns_s3_backend_when_bucket_set(monkeypatc
             "region_name": "auto",
         },
     }
+
+
+def test_load_media_storage_config_raises_when_bucket_set_but_secret_missing(
+    monkeypatch,
+):
+    monkeypatch.setenv("MEDIA_STORAGE_BUCKET", "takulife-media")
+    monkeypatch.setenv("MEDIA_STORAGE_ACCESS_KEY_ID", "key-id")
+    # Empty string (not delenv) short-circuits _get_env's .env-file fallback,
+    # matching the load_secret_key hard-fail test pattern above.
+    monkeypatch.setenv("MEDIA_STORAGE_SECRET_ACCESS_KEY", "")
+    monkeypatch.setenv(
+        "MEDIA_STORAGE_ENDPOINT_URL", "https://example.r2.cloudflarestorage.com"
+    )
+
+    settings_module = importlib.import_module("config.settings")
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_media_storage_config()
