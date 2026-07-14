@@ -34,9 +34,19 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-COPY --from=builder /app /app
+RUN groupadd --system appuser \
+    && useradd --system --create-home --gid appuser appuser
 
-RUN chmod +x /app/docker/entrypoint.sh
+COPY --from=builder --chown=appuser:appuser /app /app
+
+# STATIC_ROOT/MEDIA_ROOT (staticfiles/, media/) aren't part of the build
+# context (see .dockerignore) so they don't exist yet — collectstatic and
+# local-disk media storage need to create them at runtime as appuser.
+RUN chmod +x /app/docker/entrypoint.sh \
+    && mkdir -p /app/staticfiles /app/media \
+    && chown appuser:appuser /app/staticfiles /app/media
+
+USER appuser
 
 EXPOSE 8000
 
