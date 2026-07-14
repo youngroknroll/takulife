@@ -132,6 +132,30 @@ def load_staticfiles_storage(debug):
     return "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 
+def load_media_storage_config():
+    """Media storage backend for STORAGES["default"].
+
+    Unset MEDIA_STORAGE_BUCKET keeps the existing local-disk FileSystemStorage
+    (dev/CI/PaaS-less deployments unaffected).
+    """
+    bucket = _get_env("MEDIA_STORAGE_BUCKET")
+    if not bucket:
+        return {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+    return {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "bucket_name": bucket,
+            "access_key": _get_env("MEDIA_STORAGE_ACCESS_KEY_ID"),
+            "secret_key": _get_env("MEDIA_STORAGE_SECRET_ACCESS_KEY"),
+            "endpoint_url": _get_env("MEDIA_STORAGE_ENDPOINT_URL"),
+            # "auto" is Cloudflare R2's documented region value for its S3
+            # API (R2/B2 don't use AWS regions); harmless default when the
+            # deployment doesn't set MEDIA_STORAGE_REGION explicitly.
+            "region_name": _get_env("MEDIA_STORAGE_REGION", "auto"),
+        },
+    }
+
+
 def build_secure_ssl_settings(secure_ssl):
     """Extra settings applied when running behind a TLS-terminating reverse
     proxy (PaaS router). Empty dict when secure_ssl is False, so nothing here
@@ -265,7 +289,7 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": load_media_storage_config(),
     "staticfiles": {"BACKEND": load_staticfiles_storage(DEBUG)},
 }
 MEDIA_URL = "media/"
