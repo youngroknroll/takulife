@@ -3,6 +3,7 @@ from urllib.parse import urlsplit
 import os
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,8 +24,21 @@ def _get_env(name, default=""):
     return default
 
 
-def load_secret_key():
-    return _get_env("SECRET_KEY") or "django-insecure-local-dev-key-change-me"
+def load_secret_key(debug):
+    """Return SECRET_KEY from env/.env, or Django's documented insecure dev
+    fallback when DEBUG is True. When DEBUG is False and no SECRET_KEY is
+    configured, refuse to start: silently falling back to the hardcoded key
+    below in a production deployment would mean every deployment shares (and
+    leaks, since it's committed source) the same signing key.
+    """
+    secret_key = _get_env("SECRET_KEY")
+    if secret_key:
+        return secret_key
+    if debug:
+        return "django-insecure-local-dev-key-change-me"
+    raise ImproperlyConfigured(
+        "SECRET_KEY environment variable is required when DEBUG=false."
+    )
 
 
 def load_anthropic_api_key():
@@ -60,7 +74,85 @@ def load_debug():
     return _get_env("DEBUG", "true").lower() in ("1", "true", "yes")
 
 
-SECRET_KEY = load_secret_key()
+def load_allowed_hosts():
+    """Parse comma-separated ALLOWED_HOSTS env into a list. Unset keeps the
+    historical empty list — Django's Host-header validation still accepts
+    localhost/127.0.0.1/[::1] in that case as long as DEBUG=True (its own
+    built-in dev allowlist, not "any Host header"); a DEBUG=False deployment
+    must set this explicitly (enforced by guard_debug_allowed_hosts below).
+    """
+    raw = _get_env("ALLOWED_HOSTS", "")
+    return [host.strip() for host in raw.split(",") if host.strip()]
+
+
+def guard_debug_allowed_hosts(debug, allowed_hosts):
+    """Fail-open defense (security review H1, 2026-07-14): forgetting to set
+    DEBUG=false in a deployment would otherwise silently bypass
+    load_secret_key's hard fail too, and the app would serve the real domain
+    configured in ALLOWED_HOSTS with debug pages and the insecure dev
+    SECRET_KEY. Local dev never has a reason to set ALLOWED_HOSTS, so treat
+    a non-empty value as an unambiguous production signal and refuse to
+    start if DEBUG is still true.
+    """
+    if allowed_hosts and debug:
+        raise ImproperlyConfigured(
+            "ALLOWED_HOSTS is set but DEBUG=true. If this is a production "
+            "deployment, set DEBUG=false."
+        )
+
+
+def load_csrf_trusted_origins():
+    """Parse comma-separated CSRF_TRUSTED_ORIGINS env into a list. Unset
+    keeps Django's own default (no extra trusted origins)."""
+    raw = _get_env("CSRF_TRUSTED_ORIGINS", "")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+def load_secure_ssl():
+    # Same env-parsing convention as load_debug() above; default "" (off) so
+    # local dev/tests are unaffected unless the deployment opts in.
+    return _get_env("SECURE_SSL", "").lower() in ("1", "true", "yes")
+
+
+def load_staticfiles_storage(debug):
+    """Static files storage backend for STORAGES["staticfiles"].
+
+    CompressedManifestStaticFilesStorage requires a manifest
+    (staticfiles.json) written by `collectstatic`, which local dev and the
+    test suite never run — resolving {% static %} against it there raises
+    ValueError. DEBUG=true (dev and every test run: DEBUG defaults to true,
+    see load_debug()) keeps the plain filesystem storage so behavior is
+    unchanged from before whitenoise; only a DEBUG=false deployment (which
+    runs collectstatic before serving, see PR-0b — verified locally: 210
+    copied, 610 post-processed, manifest generated) gets the compressed/
+    manifest/whitenoise backend.
+    """
+    if debug:
+        return "django.contrib.staticfiles.storage.StaticFilesStorage"
+    return "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+
+def build_secure_ssl_settings(secure_ssl):
+    """Extra settings applied when running behind a TLS-terminating reverse
+    proxy (PaaS router). Empty dict when secure_ssl is False, so nothing here
+    is set and Django's own (all off/zero) defaults apply — local dev/tests
+    are unaffected. Only enable when the proxy is guaranteed to set (and
+    strip any client-supplied) X-Forwarded-Proto — see .env.example.
+    """
+    if not secure_ssl:
+        return {}
+    return {
+        "SECURE_PROXY_SSL_HEADER": ("HTTP_X_FORWARDED_PROTO", "https"),
+        "SECURE_SSL_REDIRECT": True,
+        "SECURE_HSTS_SECONDS": 31536000,
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS": True,
+        # Preload requires submitting the domain to browser HSTS preload
+        # lists, which is hard to reverse — stay conservative until that's a
+        # deliberate, separate decision.
+        "SECURE_HSTS_PRELOAD": False,
+    }
+
+
 ANTHROPIC_API_KEY = load_anthropic_api_key()
 LLM_MODEL = "claude-haiku-4-5-20251001"
 LLM_TIMEOUT_SECONDS = 10
@@ -88,7 +180,10 @@ DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 20
 # 48h covers a couple of missed daily runs before it reads as a problem.
 DRAFT_SOURCE_STALE_HOURS = 48
 DEBUG = load_debug()
-ALLOWED_HOSTS = []
+SECRET_KEY = load_secret_key(DEBUG)
+ALLOWED_HOSTS = load_allowed_hosts()
+guard_debug_allowed_hosts(DEBUG, ALLOWED_HOSTS)
+CSRF_TRUSTED_ORIGINS = load_csrf_trusted_origins()
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -114,6 +209,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Serves collected static files directly from the app process — no
+    # separate static-file server/CDN needed for the initial deployment.
+    # Must sit right after SecurityMiddleware (whitenoise docs).
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -164,6 +263,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": load_staticfiles_storage(DEBUG)},
+}
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
@@ -267,6 +371,18 @@ CSRF_COOKIE_SECURE = _secure_cookies
 # Keep CSRF_COOKIE_HTTPONLY False so the JS layer can read the csrftoken cookie.
 CSRF_COOKIE_HTTPONLY = False
 
+# Proxy/HTTPS security headers: opt-in via SECURE_SSL env (deployment behind a
+# TLS-terminating reverse proxy). Independent of SECURE_COOKIES above — kept
+# as a separate flag rather than reusing it (G4).
+SECURE_SSL = load_secure_ssl()
+_secure_ssl_settings = build_secure_ssl_settings(SECURE_SSL)
+if _secure_ssl_settings:
+    SECURE_PROXY_SSL_HEADER = _secure_ssl_settings["SECURE_PROXY_SSL_HEADER"]
+    SECURE_SSL_REDIRECT = _secure_ssl_settings["SECURE_SSL_REDIRECT"]
+    SECURE_HSTS_SECONDS = _secure_ssl_settings["SECURE_HSTS_SECONDS"]
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _secure_ssl_settings["SECURE_HSTS_INCLUDE_SUBDOMAINS"]
+    SECURE_HSTS_PRELOAD = _secure_ssl_settings["SECURE_HSTS_PRELOAD"]
+
 # Email (django-allauth verification / password reset). Blank EMAIL_HOST falls
 # back to the console backend so local dev never needs real SMTP credentials.
 EMAIL_HOST = _get_env("EMAIL_HOST")
@@ -299,5 +415,43 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "promotion": "20/day",
+    },
+}
+
+# Console logging (stdout), matching a PaaS deployment where the platform
+# collects stdout — no file handlers, no external log service (G8). django
+# and root default to INFO; django.request is raised to ERROR so unhandled
+# 5xx exceptions print with a stack trace, without also emitting Django's own
+# per-request INFO/WARNING noise (404s, etc.) at every request.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "format": "{asctime} {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
     },
 }
