@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+# Cancel a superseded run when new commits land on the same ref (e.g. rapid
+# PR pushes), saving free-tier Actions minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # DATABASE_URL matches the docker-compose.yml taku/taku Postgres convention
 # already used for local dev (see docker-compose.yml, .env.example). CI never
 # checks out a .env file, so config/settings.py's env-based DATABASE_URL
