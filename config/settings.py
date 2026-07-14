@@ -74,6 +74,22 @@ def load_debug():
     return _get_env("DEBUG", "true").lower() in ("1", "true", "yes")
 
 
+def load_allowed_hosts():
+    """Parse comma-separated ALLOWED_HOSTS env into a list. Unset keeps the
+    historical empty list — fine in DEBUG mode (Django serves any Host
+    header), but must be set explicitly for a DEBUG=false deployment.
+    """
+    raw = _get_env("ALLOWED_HOSTS", "")
+    return [host.strip() for host in raw.split(",") if host.strip()]
+
+
+def load_csrf_trusted_origins():
+    """Parse comma-separated CSRF_TRUSTED_ORIGINS env into a list. Unset
+    keeps Django's own default (no extra trusted origins)."""
+    raw = _get_env("CSRF_TRUSTED_ORIGINS", "")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
 ANTHROPIC_API_KEY = load_anthropic_api_key()
 LLM_MODEL = "claude-haiku-4-5-20251001"
 LLM_TIMEOUT_SECONDS = 10
@@ -102,7 +118,8 @@ DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 20
 DRAFT_SOURCE_STALE_HOURS = 48
 DEBUG = load_debug()
 SECRET_KEY = load_secret_key(DEBUG)
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = load_allowed_hosts()
+CSRF_TRUSTED_ORIGINS = load_csrf_trusted_origins()
 
 INSTALLED_APPS = [
     "django.contrib.admin",

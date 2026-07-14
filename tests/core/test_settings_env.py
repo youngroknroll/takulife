@@ -155,3 +155,48 @@ def test_load_secret_key_returns_env_value_regardless_of_debug(monkeypatch):
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.load_secret_key(debug=False) == "from-env"
+
+
+def test_load_allowed_hosts_defaults_to_empty_list_when_unset(monkeypatch, tmp_path):
+    monkeypatch.delenv("ALLOWED_HOSTS", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_allowed_hosts() == []
+
+
+def test_load_allowed_hosts_parses_comma_separated_env(monkeypatch):
+    monkeypatch.setenv(
+        "ALLOWED_HOSTS", "takulife.kr, www.takulife.kr ,api.takulife.kr"
+    )
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_allowed_hosts() == [
+        "takulife.kr",
+        "www.takulife.kr",
+        "api.takulife.kr",
+    ]
+
+
+def test_load_csrf_trusted_origins_defaults_to_empty_list_when_unset(monkeypatch, tmp_path):
+    monkeypatch.delenv("CSRF_TRUSTED_ORIGINS", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_csrf_trusted_origins() == []
+
+
+def test_load_csrf_trusted_origins_parses_comma_separated_env(monkeypatch):
+    monkeypatch.setenv(
+        "CSRF_TRUSTED_ORIGINS", "https://takulife.kr,https://www.takulife.kr"
+    )
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_csrf_trusted_origins() == [
+        "https://takulife.kr",
+        "https://www.takulife.kr",
+    ]
