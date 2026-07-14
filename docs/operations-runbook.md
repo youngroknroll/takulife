@@ -122,7 +122,65 @@ REST_FRAMEWORK = {
   사용한다 — 스푸핑 방어 기본값.
   이 프로젝트는 `django-ipware`를 설치하지 않으므로 axes 자체의
   `AXES_IPWARE_*` 설정은 죽은 설정이며 사용하지 않는다.
+
+### `TRUSTED_PROXY_COUNT`의 전제 조건 — 프록시가 append/overwrite 해야 한다
+
+`TRUSTED_PROXY_COUNT`는 각 신뢰 프록시 홉이 `X-Forwarded-For`에 실제
+클라이언트 IP를 **덧붙이거나(append) 자신이 받은 값을 검증 후
+재작성(overwrite)** 한다는 전제로만 안전하다. 프록시가 클라이언트가 보낸
+헤더를 그대로 통과(passthrough)시키면, 그 프록시는 신뢰 홉으로 세지만
+실제로는 아무 값도 검증하지 않으므로 클라이언트가 임의의
+`X-Forwarded-For`를 주입해 오른쪽에서 n번째 자리를 직접 조작할 수 있다
+— **passthrough 프록시는 신뢰 홉으로 세면 안 된다.**
+
+복붙 가능한 설정 예시(nginx, append 방식):
+
+```nginx
+location / {
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_pass http://app_upstream;
+}
+```
+
+`$proxy_add_x_forwarded_for`는 nginx가 수신한 `X-Forwarded-For`(있다면)
+뒤에 실제 커넥션의 클라이언트 IP를 **덧붙인다** — passthrough가 아니다.
+PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼이 대신
+관리하므로, T1/T2 확정 후 실제 사용할 PaaS의 공식 문서에서
+"X-Forwarded-For 처리 방식"과 "신뢰 프록시 홉 수"를 반드시 확인한다.
+
+### 비대칭 위험 — `TRUSTED_PROXY_COUNT`는 과대설정보다 과소설정이 안전하다
+
+- **과대설정**(실제 프록시 홉 수보다 큰 값, 또는 passthrough 프록시를
+  신뢰 홉으로 오산정): `X-Forwarded-For`의 왼쪽(공격자 제어 가능 영역)까지
+  신뢰 구간으로 끌어들여 **스푸핑 우회로 이어진다** — 치명적. axes
+  잠금과 `StaffActionLog.ip_address` 모두 위조된 IP를 실제 클라이언트로
+  기록한다.
+- **과소설정**(실제보다 작은 값, 또는 아예 미설정): `core.ip.get_client_ip`가
+  `REMOTE_ADDR`(프록시 IP)로 폴백할 뿐이다 — 이전(PR-0d 이전) 동작과
+  동일한 수준으로 **안전이 저하될 뿐, 새로운 스푸핑 경로는 열리지
+  않는다.**
+- 따라서 **실제 프록시 홉 수가 불확실하면 낮게 잡고(0 또는 미설정)
+  스테이징에서 검증한 뒤에만 올린다.** 확신 없이 추측값을 프로덕션에
+  바로 배포하지 않는다.
+
 - 별개로, `SECURE_COOKIES` 환경변수가 설정되면(`os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")`) `SESSION_COOKIE_SECURE`/`CSRF_COOKIE_SECURE`가 켜져 HTTPS에서만 쿠키가 전송된다. HTTPS 배포 시 이 환경변수를 반드시 설정한다.
+
+### 배포 체크리스트 — 위조 X-Forwarded-For 스테이징 검증
+
+- **스테이징에서 위조 `X-Forwarded-For`를 전송해, 앱이 기록하는 IP가
+  영향받지 않는지 확인한다** (예: `curl -H "X-Forwarded-For: 1.2.3.4"
+  https://staging.example/staff/home-categories/` 후
+  `StaffActionLog.ip_address`가 실제 요청 발신 IP인지 위조 값
+  `1.2.3.4`인지 확인). `TRUSTED_PROXY_COUNT`를 프로덕션 값으로 올리기
+  **전** 반드시 이 검증을 거친다.
+- axes 잠금과 프록시 IP 연동 자체는
+  `tests/auth/test_auth_lockout.py::test_axes_lockout_keys_by_forwarded_ip_behind_trusted_proxy`로
+  자동화 검증돼 있다(같은 `REMOTE_ADDR`·다른 `X-Forwarded-For`의 실패
+  로그인이 서로 다른 잠금 버킷으로 분리됨을 확인, 5회 연속 실행으로
+  결정성 확인됨). 다만 이 테스트는 Django 테스트 클라이언트가 직접
+  `X-Forwarded-For` 헤더를 주입하는 방식이라, **실제 프록시가 헤더를
+  append/overwrite하는지는 검증하지 않는다** — 위 스테이징 curl 검증이
+  그 갭을 메운다.
 
 ## 5. Staff Console Access (`/staff/`)
 
