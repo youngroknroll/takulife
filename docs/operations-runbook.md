@@ -107,15 +107,21 @@ REST_FRAMEWORK = {
 
 ## 4. Deployment WARNING — Reverse Proxy IP 해석 (가장 중요)
 
-`config/settings.py`의 인라인 주석이 명시하는 그대로:
-
-> NOTE (deployment): behind a reverse proxy, configure AXES_IPWARE_* so the real client IP is used — otherwise every request looks like the proxy IP and one attacker can lock out everyone. Do not enable in prod until the proxy is set.
+(2026-07-14 PR-0d로 해결: `TRUSTED_PROXY_COUNT` env + `core/ip.py` +
+`AXES_CLIENT_IP_CALLABLE`. 아래는 배포 시 실제로 설정해야 하는 값이다.)
 
 - axes의 잠금은 `ip_address` 기준이다. 리버스 프록시(nginx, 로드밸런서 등) 뒤에 배포하면, django-axes가 프록시 IP를 "클라이언트 IP"로 오인할 수 있다.
 - 이 상태에서는:
   - 모든 요청이 동일한(프록시) IP에서 온 것으로 보여 **공격자 한 명이 5회 실패시키면 전체 사용자가 잠긴다.**
   - 반대로 실제 공격자별 IP가 분리되지 않아 **잠금 자체가 무의미해질 수도 있다**(공격자가 IP를 회전하지 않아도 프록시 IP 뒤에서 실사용자와 섞임).
-- **프로덕션 배포 전 반드시** `AXES_IPWARE_*` 계열 설정(또는 동등한 신뢰 프록시 IP 해석 설정, 예: `django-ipware` 연동)을 구성해 실제 클라이언트 IP가 사용되도록 해야 한다. 이 설정이 끝나기 전에는 axes를 프로덕션에서 활성화하지 않는다.
+- **프로덕션 배포 전 반드시** `TRUSTED_PROXY_COUNT` env를 실제 프록시 홉 수(보통 1)로 설정해야 한다. 이 값이 설정되면 `config/settings.py`가
+  `AXES_CLIENT_IP_CALLABLE = "core.ip.get_client_ip"`로 배선하고, `core/ip.py`가
+  `X-Forwarded-For`의 **오른쪽에서 n번째** 홉을 신뢰(왼쪽은 공격자가 위조 가능)하여
+  `StaffActionLog.ip_address`와 axes 잠금 모두 동일한 파싱을 사용한다.
+  미설정 시(로컬 dev 기본값)에는 `X-Forwarded-For`를 아예 읽지 않고 `REMOTE_ADDR`만
+  사용한다 — 스푸핑 방어 기본값.
+  이 프로젝트는 `django-ipware`를 설치하지 않으므로 axes 자체의
+  `AXES_IPWARE_*` 설정은 죽은 설정이며 사용하지 않는다.
 - 별개로, `SECURE_COOKIES` 환경변수가 설정되면(`os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")`) `SESSION_COOKIE_SECURE`/`CSRF_COOKIE_SECURE`가 켜져 HTTPS에서만 쿠키가 전송된다. HTTPS 배포 시 이 환경변수를 반드시 설정한다.
 
 ## 5. Staff Console Access (`/staff/`)

@@ -5,13 +5,14 @@ call itself stays in each caller's own `transaction.atomic()` block (a log
 write failure must roll back the action it is auditing, so the create() call
 cannot be hidden behind an indirection that obscures that invariant).
 """
+from core.ip import get_client_ip
 
 
 def _staff_action_metadata(request):
     """Extract actor/ip/user-agent for a StaffActionLog entry from the request."""
     return {
         "actor": request.user,
-        "ip_address": request.META.get("REMOTE_ADDR"),
+        "ip_address": get_client_ip(request),
         "user_agent": request.META.get("HTTP_USER_AGENT", ""),
     }
 
