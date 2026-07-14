@@ -237,3 +237,33 @@ def test_build_secure_ssl_settings_configures_proxy_and_hsts_when_enabled():
         "SECURE_HSTS_INCLUDE_SUBDOMAINS": True,
         "SECURE_HSTS_PRELOAD": False,
     }
+
+
+def test_settings_module_defines_static_root():
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.STATIC_ROOT == settings_module.BASE_DIR / "staticfiles"
+
+
+def test_settings_module_uses_plain_static_storage_in_debug_mode():
+    """DEBUG=true (local dev / test settings) must not use whitenoise's
+    manifest storage — that backend requires collectstatic to have run first
+    (staticfiles.json), which local dev/test never does. Using the plain
+    filesystem storage in DEBUG keeps {% static %} resolvable without a
+    build step, matching current (pre-whitenoise) behavior exactly."""
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.DEBUG is True
+    assert (
+        settings_module.STORAGES["staticfiles"]["BACKEND"]
+        == "django.contrib.staticfiles.storage.StaticFilesStorage"
+    )
+
+
+def test_settings_module_registers_whitenoise_middleware_after_security():
+    settings_module = importlib.import_module("config.settings")
+
+    middleware = settings_module.MIDDLEWARE
+    security_index = middleware.index("django.middleware.security.SecurityMiddleware")
+
+    assert middleware[security_index + 1] == "whitenoise.middleware.WhiteNoiseMiddleware"

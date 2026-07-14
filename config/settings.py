@@ -171,6 +171,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Serves collected static files directly from the app process — no
+    # separate static-file server/CDN needed for the initial deployment.
+    # Must sit right after SecurityMiddleware (whitenoise docs).
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -221,6 +225,24 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+# CompressedManifestStaticFilesStorage requires a manifest (staticfiles.json)
+# written by `collectstatic`, which local dev and the test suite never run —
+# resolving {% static %} against it there raises ValueError. DEBUG=true (dev
+# and every test run: DEBUG defaults to true, see load_debug()) keeps the
+# plain filesystem storage so behavior is unchanged from before whitenoise;
+# only a DEBUG=false deployment (which runs collectstatic before serving, see
+# PR-0b) gets the compressed/manifest/whitenoise backend.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        )
+    },
+}
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
