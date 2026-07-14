@@ -55,8 +55,13 @@ jobs:
       - name: Run test suite (excludes e2e)
         run: uv run pytest -q -m "not e2e"
 
-      # Production-like env for `check --deploy`. SECRET_KEY here is a
-      # throwaway value for structural validation only, never a real secret.
+      # Production-like env for `check --deploy`. SECRET_KEY is a throwaway
+      # value for structural validation only, never a real secret — it is
+      # generated at runtime below (repeating, low-entropy pattern) instead
+      # of a literal in this file, so a high-entropy-looking string never
+      # sits in source for a secret scanner to flag (GitGuardian false
+      # positive on PR #173). It still clears Django's own W009 check
+      # (>=50 chars, >=5 unique chars, no "django-insecure-" prefix).
       # fail-level stays at the default (ERROR only): W021 (HSTS preload) is
       # a deliberate, approved deferral (config/settings.py build_secure_ssl_
       # settings sets SECURE_HSTS_PRELOAD=False — submitting to the browser
@@ -67,13 +72,13 @@ jobs:
       - name: Deployment checklist (check --deploy)
         env:
           DEBUG: "false"
-          SECRET_KEY: "ci-dummy-d770_nchrkRLctbSsDaaq9DWRmEggZGibCjTz362-WAILnr0Ti2P8Y1FNSbgIBufgTc"
           ALLOWED_HOSTS: ci.example
           CSRF_TRUSTED_ORIGINS: https://ci.example
           SECURE_SSL: "true"
           SECURE_COOKIES: "true"
         run: |
           set -o pipefail
+          export SECRET_KEY="ci-dummy-$(python3 -c "print('0123456789abcdef' * 4)")"
           uv run python manage.py check --deploy 2>&1 | tee deploy-check.txt
           if grep -E '\(security\.W[0-9]+\)' deploy-check.txt | grep -v 'security\.W021'; then
             echo "::error::Deploy check produced a warning beyond the accepted W021 (HSTS preload) exception"
