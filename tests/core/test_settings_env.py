@@ -267,3 +267,13 @@ def test_settings_module_registers_whitenoise_middleware_after_security():
     security_index = middleware.index("django.middleware.security.SecurityMiddleware")
 
     assert middleware[security_index + 1] == "whitenoise.middleware.WhiteNoiseMiddleware"
+
+
+def test_settings_module_defines_logging_console_handler():
+    settings_module = importlib.import_module("config.settings")
+
+    logging_config = settings_module.LOGGING
+
+    assert logging_config["handlers"]["console"]["class"] == "logging.StreamHandler"
+    assert logging_config["root"]["level"] == "INFO"
+    assert logging_config["loggers"]["django.request"]["level"] == "ERROR"

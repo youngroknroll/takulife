@@ -392,3 +392,41 @@ REST_FRAMEWORK = {
         "promotion": "20/day",
     },
 }
+
+# Console logging (stdout), matching a PaaS deployment where the platform
+# collects stdout — no file handlers, no external log service (G8). django
+# and root default to INFO; django.request is raised to ERROR so unhandled
+# 5xx exceptions print with a stack trace, without also emitting Django's own
+# per-request INFO/WARNING noise (404s, etc.) at every request.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "format": "{asctime} {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
