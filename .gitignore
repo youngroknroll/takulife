@@ -8,7 +8,6 @@ db.sqlite3
 !.env.example
 .lazyweb/
 .worktrees/
-AGENTS.md
 .claude/
 .docs/
 media/
