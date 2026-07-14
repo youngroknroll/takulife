@@ -350,3 +350,62 @@ def test_load_staticfiles_storage_returns_whitenoise_manifest_when_debug_false()
         settings_module.load_staticfiles_storage(False)
         == "whitenoise.storage.CompressedManifestStaticFilesStorage"
     )
+
+
+# ---------------------------------------------------------------------------
+# PR-0b checkpoint 2/3: media storage backend env gate (object storage)
+# ---------------------------------------------------------------------------
+
+
+def test_load_media_storage_config_defaults_to_filesystem_when_unset(
+    monkeypatch, tmp_path
+):
+    monkeypatch.delenv("MEDIA_STORAGE_BUCKET", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_media_storage_config() == {
+        "BACKEND": "django.core.files.storage.FileSystemStorage"
+    }
+
+
+def test_load_media_storage_config_returns_s3_backend_when_bucket_set(monkeypatch):
+    monkeypatch.setenv("MEDIA_STORAGE_BUCKET", "takulife-media")
+    monkeypatch.setenv("MEDIA_STORAGE_ACCESS_KEY_ID", "key-id")
+    monkeypatch.setenv("MEDIA_STORAGE_SECRET_ACCESS_KEY", "secret")
+    monkeypatch.setenv(
+        "MEDIA_STORAGE_ENDPOINT_URL", "https://example.r2.cloudflarestorage.com"
+    )
+    monkeypatch.setenv("MEDIA_STORAGE_REGION", "auto")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_media_storage_config() == {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "bucket_name": "takulife-media",
+            "access_key": "key-id",
+            "secret_key": "secret",
+            "endpoint_url": "https://example.r2.cloudflarestorage.com",
+            "region_name": "auto",
+        },
+    }
+
+
+def test_load_media_storage_config_raises_when_bucket_set_but_secret_missing(
+    monkeypatch,
+):
+    monkeypatch.setenv("MEDIA_STORAGE_BUCKET", "takulife-media")
+    monkeypatch.setenv("MEDIA_STORAGE_ACCESS_KEY_ID", "key-id")
+    # Empty string (not delenv) short-circuits _get_env's .env-file fallback,
+    # matching the load_secret_key hard-fail test pattern above.
+    monkeypatch.setenv("MEDIA_STORAGE_SECRET_ACCESS_KEY", "")
+    monkeypatch.setenv(
+        "MEDIA_STORAGE_ENDPOINT_URL", "https://example.r2.cloudflarestorage.com"
+    )
+
+    settings_module = importlib.import_module("config.settings")
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_media_storage_config()
