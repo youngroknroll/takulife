@@ -443,6 +443,19 @@ def test_load_trusted_proxy_count_raises_for_non_integer_value(monkeypatch):
         settings_module.load_trusted_proxy_count()
 
 
+def test_load_trusted_proxy_count_raises_for_negative_value(monkeypatch):
+    """Security follow-up (2026-07-14): a negative count would make
+    resolve_client_ip's hops[-trusted_proxy_count] a positive index,
+    trusting the attacker-controlled left end of X-Forwarded-For instead
+    of the right end — defeating the spoofing defense entirely."""
+    monkeypatch.setenv("TRUSTED_PROXY_COUNT", "-1")
+
+    settings_module = importlib.import_module("config.settings")
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_trusted_proxy_count()
+
+
 def test_build_axes_client_ip_callable_returns_none_when_trusted_proxy_count_falsy():
     settings_module = importlib.import_module("config.settings")
 

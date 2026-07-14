@@ -118,16 +118,27 @@ def load_trusted_proxy_count():
     """Number of trusted reverse-proxy hops in front of this app, or None
     when unset (historical behavior: REMOTE_ADDR is trusted as-is, no
     X-Forwarded-For parsing). A non-integer value fails hard instead of
-    silently disabling proxy-aware IP resolution."""
+    silently disabling proxy-aware IP resolution. A negative value also
+    fails hard: resolve_client_ip's hops[-trusted_proxy_count] would turn
+    into a positive index, trusting the attacker-controlled left end of
+    X-Forwarded-For instead of the right end — defeating the spoofing
+    defense (0 stays allowed; it is falsy and keeps the safe REMOTE_ADDR
+    path)."""
     raw = _get_env("TRUSTED_PROXY_COUNT", "")
     if not raw:
         return None
     try:
-        return int(raw)
+        value = int(raw)
     except ValueError:
         raise ImproperlyConfigured(
             f"TRUSTED_PROXY_COUNT must be an integer, got {raw!r}."
         )
+    if value < 0:
+        raise ImproperlyConfigured(
+            "TRUSTED_PROXY_COUNT must be an integer 0 or greater, got "
+            f"{value!r}."
+        )
+    return value
 
 
 def build_axes_client_ip_callable(trusted_proxy_count):
