@@ -31,6 +31,134 @@ Primary project documents:
 Do not reuse paths, product names, settings modules, or workflow assumptions
 from older projects.
 
+## Binding Product Decisions
+
+The following decisions summarize the current approved direction. The linked
+proposal and re-review remain the detailed sources. These are target contracts,
+not claims that the current application already implements them.
+
+### Core User Loop
+
+1. Discover a trustworthy official event.
+2. Express intent and attend the event.
+3. Record the visit with date, note, and photos.
+4. Add goods acquired at the event or obtained independently.
+5. Organize owned, duplicate, wanted, and tradeable collection intent.
+6. After product gates are met, discover qualified exchange candidates.
+7. Return to complete records, update the collection, and discover new events.
+
+Events do not happen daily. Optimize for repeated collection contribution and
+record quality, not forced daily sessions.
+
+### Collection Domain Target
+
+- Introduce a dedicated `CollectionItem` owned by `archive` for goods-specific
+  rules. Do not continue expanding `PersonalEntry` into the collection model.
+- Keep `PersonalEntry` focused on its remaining non-official place/event use;
+  finalize that scope in the collection migration plan.
+- Migrate existing `PersonalEntry(kind=GOODS)` data with an explicit mapping,
+  verification report, rollback strategy, and no silent data loss.
+- A collection item may optionally reference the visit or official event where
+  it was acquired. Goods must also support independent registration.
+- Goods are not visit targets, event-status targets, interest targets, or
+  official-promotion candidates.
+- Visit completion and experience-record creation must use an approved
+  orchestration contract so status and record cannot drift independently.
+
+Target dependency direction:
+
+```text
+archive -> events
+future trade -> stable archive public contract
+drafts -> events publication service
+```
+
+- `events` owns published official event data and does not calculate personal
+  collection or exchange state.
+- `archive` owns user state, visit experience, collection inventory, collection
+  intent, and collection privacy.
+- Future `trade` owns candidate matching, requests, and exchange workflow. It
+  must not mutate owned quantity or collection records directly.
+- `drafts` owns ingestion and pre-publication review and must not depend on
+  personal collection objects.
+
+### Collection Invariants And Privacy
+
+- Collection and visit data are private by default.
+- Exchange visibility requires explicit, revocable user opt-in and is separate
+  from owned/wanted state.
+- Tradeable quantity must be non-negative and cannot exceed owned quantity.
+- Wanted and owned may coexist when a user wants additional copies.
+- Collection reads and writes are owner-scoped unless an approved public
+  exchange contract exposes a minimal subset.
+- Contact information remains private until an approved exchange step requires
+  disclosure.
+- Retry paths must not duplicate records, uploads, state transitions, or future
+  exchange requests.
+
+### Target Information Architecture
+
+The approved top-level destinations are:
+
+```text
+Home / Events / Collection / Activity
+```
+
+- `Home`: personalized return surface for upcoming events, unfinished records,
+  recent goods, and collection summary.
+- `Events`: official discovery, search, filters, and event details.
+- `Collection`: owned goods, wanted goods, duplicates, tradeable intent,
+  registration, search, and filters.
+- `Activity`: schedules, visits, experience records, interests, and account
+  activity.
+- Empty collection states provide both `Find events` and `Add goods` recovery
+  paths.
+- Do not ship the target navigation or collection-first home before the
+  collection data contract and usable destination exist.
+
+### Product Metrics
+
+Initial north-star metric:
+
+```text
+Monthly collection-contributing users
+```
+
+A contributing user adds a visit experience or collection item, or meaningfully
+updates and organizes an existing collection during the month.
+
+Supporting evidence:
+
+- activation: first collection item and first completed experience record;
+- accumulation: items per user and second-registration rate;
+- quality: work, character, type, acquisition, and intent completeness;
+- retention: four-week return and repeated monthly contribution;
+- experience conversion: visit completion to saved record and record to goods;
+- exchange readiness: wanted/tradeable usage, candidates per user, zero-candidate
+  rate, identity accuracy, and cohort density;
+- future exchange health: request, acceptance, completion, report, and block
+  rates.
+
+DAU is diagnostic, not the initial north star.
+
+### Required Execution Sequence
+
+1. Complete deployment, data preservation, observability, backup, and recovery
+   foundations needed for real user assets.
+2. Approve `CollectionItem`, visit relationship, invariants, migration, rollback,
+   and dependency direction.
+3. Build the collection backend MVP: CRUD, photos, filters, acquisition source,
+   quantity, wanted, duplicate, tradeable, ownership, and privacy.
+4. Implement the collection-first home and target information architecture only
+   after the backend data contract is stable.
+5. Measure activation, monthly contribution, four-week return, intent usage,
+   identity quality, and candidate density with real cohorts.
+6. Start limited exchange matching design only after product, privacy, safety,
+   moderation, and operational gates pass approved measurable thresholds.
+
+Until gate 6, do not build a public exchange board, open chat, price listing,
+sales, payment, shipping, escrow, or marketplace guarantees.
+
 ## Source Of Truth
 
 - This file owns shared product context, authority, workflow, routing, quality
