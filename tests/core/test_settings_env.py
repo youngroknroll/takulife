@@ -200,3 +200,40 @@ def test_load_csrf_trusted_origins_parses_comma_separated_env(monkeypatch):
         "https://takulife.kr",
         "https://www.takulife.kr",
     ]
+
+
+def test_load_secure_ssl_defaults_to_false_when_unset(monkeypatch, tmp_path):
+    monkeypatch.delenv("SECURE_SSL", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_secure_ssl() is False
+
+
+def test_load_secure_ssl_true_when_env_set(monkeypatch):
+    monkeypatch.setenv("SECURE_SSL", "true")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_secure_ssl() is True
+
+
+def test_build_secure_ssl_settings_empty_when_disabled():
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.build_secure_ssl_settings(False) == {}
+
+
+def test_build_secure_ssl_settings_configures_proxy_and_hsts_when_enabled():
+    settings_module = importlib.import_module("config.settings")
+
+    result = settings_module.build_secure_ssl_settings(True)
+
+    assert result == {
+        "SECURE_PROXY_SSL_HEADER": ("HTTP_X_FORWARDED_PROTO", "https"),
+        "SECURE_SSL_REDIRECT": True,
+        "SECURE_HSTS_SECONDS": 31536000,
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS": True,
+        "SECURE_HSTS_PRELOAD": False,
+    }

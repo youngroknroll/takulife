@@ -90,6 +90,32 @@ def load_csrf_trusted_origins():
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
+def load_secure_ssl():
+    # Same env-parsing convention as load_debug() above; default "" (off) so
+    # local dev/tests are unaffected unless the deployment opts in.
+    return _get_env("SECURE_SSL", "").lower() in ("1", "true", "yes")
+
+
+def build_secure_ssl_settings(secure_ssl):
+    """Extra settings applied when running behind a TLS-terminating reverse
+    proxy (PaaS router). Empty dict when secure_ssl is False, so nothing here
+    is set and Django's own (all off/zero) defaults apply — local dev/tests
+    are unaffected.
+    """
+    if not secure_ssl:
+        return {}
+    return {
+        "SECURE_PROXY_SSL_HEADER": ("HTTP_X_FORWARDED_PROTO", "https"),
+        "SECURE_SSL_REDIRECT": True,
+        "SECURE_HSTS_SECONDS": 31536000,
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS": True,
+        # Preload requires submitting the domain to browser HSTS preload
+        # lists, which is hard to reverse — stay conservative until that's a
+        # deliberate, separate decision.
+        "SECURE_HSTS_PRELOAD": False,
+    }
+
+
 ANTHROPIC_API_KEY = load_anthropic_api_key()
 LLM_MODEL = "claude-haiku-4-5-20251001"
 LLM_TIMEOUT_SECONDS = 10
@@ -297,6 +323,18 @@ SESSION_COOKIE_SECURE = _secure_cookies
 CSRF_COOKIE_SECURE = _secure_cookies
 # Keep CSRF_COOKIE_HTTPONLY False so the JS layer can read the csrftoken cookie.
 CSRF_COOKIE_HTTPONLY = False
+
+# Proxy/HTTPS security headers: opt-in via SECURE_SSL env (deployment behind a
+# TLS-terminating reverse proxy). Independent of SECURE_COOKIES above — kept
+# as a separate flag rather than reusing it (G4).
+SECURE_SSL = load_secure_ssl()
+_secure_ssl_settings = build_secure_ssl_settings(SECURE_SSL)
+if _secure_ssl_settings:
+    SECURE_PROXY_SSL_HEADER = _secure_ssl_settings["SECURE_PROXY_SSL_HEADER"]
+    SECURE_SSL_REDIRECT = _secure_ssl_settings["SECURE_SSL_REDIRECT"]
+    SECURE_HSTS_SECONDS = _secure_ssl_settings["SECURE_HSTS_SECONDS"]
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _secure_ssl_settings["SECURE_HSTS_INCLUDE_SUBDOMAINS"]
+    SECURE_HSTS_PRELOAD = _secure_ssl_settings["SECURE_HSTS_PRELOAD"]
 
 # Email (django-allauth verification / password reset). Blank EMAIL_HOST falls
 # back to the console backend so local dev never needs real SMTP credentials.
