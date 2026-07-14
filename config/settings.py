@@ -76,11 +76,29 @@ def load_debug():
 
 def load_allowed_hosts():
     """Parse comma-separated ALLOWED_HOSTS env into a list. Unset keeps the
-    historical empty list — fine in DEBUG mode (Django serves any Host
-    header), but must be set explicitly for a DEBUG=false deployment.
+    historical empty list — Django's Host-header validation still accepts
+    localhost/127.0.0.1/[::1] in that case as long as DEBUG=True (its own
+    built-in dev allowlist, not "any Host header"); a DEBUG=False deployment
+    must set this explicitly (enforced by guard_debug_allowed_hosts below).
     """
     raw = _get_env("ALLOWED_HOSTS", "")
     return [host.strip() for host in raw.split(",") if host.strip()]
+
+
+def guard_debug_allowed_hosts(debug, allowed_hosts):
+    """Fail-open defense (security review H1, 2026-07-14): forgetting to set
+    DEBUG=false in a deployment would otherwise silently bypass
+    load_secret_key's hard fail too, and the app would serve the real domain
+    configured in ALLOWED_HOSTS with debug pages and the insecure dev
+    SECRET_KEY. Local dev never has a reason to set ALLOWED_HOSTS, so treat
+    a non-empty value as an unambiguous production signal and refuse to
+    start if DEBUG is still true.
+    """
+    if allowed_hosts and debug:
+        raise ImproperlyConfigured(
+            "ALLOWED_HOSTS is set but DEBUG=true. If this is a production "
+            "deployment, set DEBUG=false."
+        )
 
 
 def load_csrf_trusted_origins():
@@ -145,6 +163,7 @@ DRAFT_SOURCE_STALE_HOURS = 48
 DEBUG = load_debug()
 SECRET_KEY = load_secret_key(DEBUG)
 ALLOWED_HOSTS = load_allowed_hosts()
+guard_debug_allowed_hosts(DEBUG, ALLOWED_HOSTS)
 CSRF_TRUSTED_ORIGINS = load_csrf_trusted_origins()
 
 INSTALLED_APPS = [

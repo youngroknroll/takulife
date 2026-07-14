@@ -277,3 +277,52 @@ def test_settings_module_defines_logging_console_handler():
     assert logging_config["handlers"]["console"]["class"] == "logging.StreamHandler"
     assert logging_config["root"]["level"] == "INFO"
     assert logging_config["loggers"]["django.request"]["level"] == "ERROR"
+
+
+# ---------------------------------------------------------------------------
+# Security gate follow-up (2026-07-14): DEBUG fail-open defense (H1)
+# ---------------------------------------------------------------------------
+
+
+def test_guard_debug_allowed_hosts_raises_when_allowed_hosts_set_and_debug_true():
+    """H1: forgetting DEBUG=false alone must not silently bypass the
+    SECRET_KEY hard fail and serve a real domain with debug pages + the
+    insecure dev key. ALLOWED_HOSTS set is an unambiguous production signal —
+    local dev never has a reason to set it."""
+    settings_module = importlib.import_module("config.settings")
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.guard_debug_allowed_hosts(
+            debug=True, allowed_hosts=["takulife.kr"]
+        )
+
+
+def test_guard_debug_allowed_hosts_allows_debug_true_when_allowed_hosts_empty():
+    settings_module = importlib.import_module("config.settings")
+
+    # Must not raise — this is the local dev default.
+    settings_module.guard_debug_allowed_hosts(debug=True, allowed_hosts=[])
+
+
+def test_guard_debug_allowed_hosts_allows_debug_false_when_allowed_hosts_set():
+    settings_module = importlib.import_module("config.settings")
+
+    # Must not raise — this is the intended production configuration.
+    settings_module.guard_debug_allowed_hosts(
+        debug=False, allowed_hosts=["takulife.kr"]
+    )
+
+
+def test_settings_module_wires_allowed_hosts_attribute():
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.ALLOWED_HOSTS == settings_module.load_allowed_hosts()
+
+
+def test_settings_module_wires_csrf_trusted_origins_attribute():
+    settings_module = importlib.import_module("config.settings")
+
+    assert (
+        settings_module.CSRF_TRUSTED_ORIGINS
+        == settings_module.load_csrf_trusted_origins()
+    )
