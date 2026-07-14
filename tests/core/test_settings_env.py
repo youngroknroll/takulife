@@ -326,3 +326,27 @@ def test_settings_module_wires_csrf_trusted_origins_attribute():
         settings_module.CSRF_TRUSTED_ORIGINS
         == settings_module.load_csrf_trusted_origins()
     )
+
+
+# ---------------------------------------------------------------------------
+# Code review follow-up (2026-07-14): extract STORAGES.staticfiles branch
+# into a testable pure function, matching the load_* function pattern.
+# ---------------------------------------------------------------------------
+
+
+def test_load_staticfiles_storage_returns_plain_storage_when_debug_true():
+    settings_module = importlib.import_module("config.settings")
+
+    assert (
+        settings_module.load_staticfiles_storage(True)
+        == "django.contrib.staticfiles.storage.StaticFilesStorage"
+    )
+
+
+def test_load_staticfiles_storage_returns_whitenoise_manifest_when_debug_false():
+    settings_module = importlib.import_module("config.settings")
+
+    assert (
+        settings_module.load_staticfiles_storage(False)
+        == "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    )

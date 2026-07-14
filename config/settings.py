@@ -114,6 +114,24 @@ def load_secure_ssl():
     return _get_env("SECURE_SSL", "").lower() in ("1", "true", "yes")
 
 
+def load_staticfiles_storage(debug):
+    """Static files storage backend for STORAGES["staticfiles"].
+
+    CompressedManifestStaticFilesStorage requires a manifest
+    (staticfiles.json) written by `collectstatic`, which local dev and the
+    test suite never run — resolving {% static %} against it there raises
+    ValueError. DEBUG=true (dev and every test run: DEBUG defaults to true,
+    see load_debug()) keeps the plain filesystem storage so behavior is
+    unchanged from before whitenoise; only a DEBUG=false deployment (which
+    runs collectstatic before serving, see PR-0b — verified locally: 210
+    copied, 610 post-processed, manifest generated) gets the compressed/
+    manifest/whitenoise backend.
+    """
+    if debug:
+        return "django.contrib.staticfiles.storage.StaticFilesStorage"
+    return "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+
 def build_secure_ssl_settings(secure_ssl):
     """Extra settings applied when running behind a TLS-terminating reverse
     proxy (PaaS router). Empty dict when secure_ssl is False, so nothing here
@@ -245,22 +263,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# CompressedManifestStaticFilesStorage requires a manifest (staticfiles.json)
-# written by `collectstatic`, which local dev and the test suite never run —
-# resolving {% static %} against it there raises ValueError. DEBUG=true (dev
-# and every test run: DEBUG defaults to true, see load_debug()) keeps the
-# plain filesystem storage so behavior is unchanged from before whitenoise;
-# only a DEBUG=false deployment (which runs collectstatic before serving, see
-# PR-0b) gets the compressed/manifest/whitenoise backend.
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {
-        "BACKEND": (
-            "django.contrib.staticfiles.storage.StaticFilesStorage"
-            if DEBUG
-            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
-        )
-    },
+    "staticfiles": {"BACKEND": load_staticfiles_storage(DEBUG)},
 }
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
