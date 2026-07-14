@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# DATABASE_URL matches the docker-compose.yml taku/taku Postgres convention
+# already used for local dev (see docker-compose.yml, .env.example). CI never
+# checks out a .env file, so config/settings.py's env-based DATABASE_URL
+# wiring is exercised directly against the service container below instead of
+# falling back to sqlite.
+env:
+  DATABASE_URL: postgresql://taku:taku@localhost:5432/taku
+
+jobs:
+  test:
+    name: Test suite (PR gate)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: taku
+          POSTGRES_USER: taku
+          POSTGRES_PASSWORD: taku
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taku -d taku"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Django system check
+        run: uv run python manage.py check
+
+      - name: Check for missing migrations
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Run test suite (excludes e2e)
+        run: uv run pytest -q -m "not e2e"
+
+      # Production-like env for `check --deploy`. SECRET_KEY here is a
+      # throwaway value for structural validation only, never a real secret.
+      # fail-level stays at the default (ERROR only): W021 (HSTS preload) is
+      # a deliberate, approved deferral (config/settings.py build_secure_ssl_
+      # settings sets SECURE_HSTS_PRELOAD=False — submitting to the browser
+      # preload list is an irreversible, separate decision, see plan §8).
+      # `--fail-level WARNING` would fail on W021 every run, so instead this
+      # step greps the warning output and fails only if a warning other than
+      # W021 appears — new/regressed warnings still gate the PR.
+      - name: Deployment checklist (check --deploy)
+        env:
+          DEBUG: "false"
+          SECRET_KEY: "ci-dummy-d770_nchrkRLctbSsDaaq9DWRmEggZGibCjTz362-WAILnr0Ti2P8Y1FNSbgIBufgTc"
+          ALLOWED_HOSTS: ci.example
+          CSRF_TRUSTED_ORIGINS: https://ci.example
+          SECURE_SSL: "true"
+          SECURE_COOKIES: "true"
+        run: |
+          set -o pipefail
+          uv run python manage.py check --deploy 2>&1 | tee deploy-check.txt
+          if grep -E '\(security\.W[0-9]+\)' deploy-check.txt | grep -v 'security\.W021'; then
+            echo "::error::Deploy check produced a warning beyond the accepted W021 (HSTS preload) exception"
+            exit 1
+          fi
