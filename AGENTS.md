@@ -163,10 +163,12 @@ sales, payment, shipping, escrow, or marketplace guarantees.
 
 - This file owns shared product context, authority, workflow, routing, quality
   gates, TDD policy, frontend exceptions, reporting, and commit conventions.
+- `CLAUDE.md` is a concise, always-loaded bootstrap that summarizes this guide
+  and provides stable entry paths. It does not own or override shared policy.
 - `.claude/agents/*.md` files are thin runtime adapters. They own only role
   identity, activation boundaries, role-specific checks, output contracts, and
   handoffs.
-- When an adapter conflicts with this guide, this guide wins.
+- When `CLAUDE.md` or a role adapter conflicts with this guide, this guide wins.
 - Runtime model selection belongs only to each adapter's `model` frontmatter.
   Do not duplicate model names or versions here.
 - Shared policy must not be copied into every adapter. Update this file once.
@@ -206,6 +208,12 @@ sales, payment, shipping, escrow, or marketplace guarantees.
    - Required workflow may be skipped only after explicit user approval.
    - Chat agreement does not replace a required project document unless the
      user explicitly waives that document.
+
+6. **External Git actions require explicit user approval.**
+   - Do not commit, push, merge, or open a pull request unless the user has
+     explicitly approved that action.
+   - Approval for implementation or verification does not imply approval for an
+     external Git action.
 
 ## Role Catalog
 
@@ -362,6 +370,10 @@ Permitted refactoring scope:
 
 Use the smallest sufficient set of roles.
 
+Task shapes are cumulative. When a task matches multiple rows, activate the
+union of every matching row's required roles. A role that is conditional in one
+row remains required when another matching row requires it.
+
 | Task shape | Required roles | Conditional roles |
 |---|---|---|
 | Product direction or priority | Product Scope Owner | Web Experience Designer, Domain Architecture Reviewer |
@@ -372,16 +384,26 @@ Use the smallest sufficient set of roles.
 | Deployment/configuration change | Deployment & Operations Reviewer, Backend TDD Coach, Backend & Integration Engineer, Quality Verification Lead | Security & Resilience Reviewer |
 | Security-sensitive change | Security & Resilience Reviewer, Quality Verification Lead | Product Scope Owner, Domain Architecture Reviewer, Deployment & Operations Reviewer |
 | AI/LLM automation | Product Scope Owner, AI Automation Architect, Security & Resilience Reviewer, Quality Verification Lead | Domain Architecture Reviewer, Deployment & Operations Reviewer, Backend TDD Coach, Backend & Integration Engineer |
-| Documentation-only change | Document owner, Backend & Integration Engineer | Quality Verification Lead |
+| Documentation-only change | Backend & Integration Engineer | Product Scope Owner, Domain Architecture Reviewer, Deployment & Operations Reviewer, Quality Verification Lead, Security & Resilience Reviewer, Web Experience Designer, Browser Interaction Reviewer, Frontend Implementation Engineer |
+| Documentation review only | Relevant decision or review roles | Quality Verification Lead |
 
 `Product Scope Owner` and `Domain Architecture Reviewer` are not automatic for
 every bug fix. Activate them when behavior, scope, ownership, or dependency
 direction is ambiguous or changing.
 
+For documentation-only changes, activate conditional roles whose catalogued
+responsibility owns the document's subject. The Backend & Integration Engineer
+owns general documentation edits; the Frontend Implementation Engineer edits
+only explicitly assigned frontend documentation. Documentation reviews are
+read-only and do not activate an implementation role unless a follow-up change
+is separately approved.
+
 ## Operating Workflow
 
 1. **Classify and activate**
    - Read this guide, current plans, status, and relevant code.
+   - Start from the stable entry paths in `CLAUDE.md`; use `rg` when the exact
+     location remains unknown or a repository-wide pattern check is required.
    - Identify the task shape and risk triggers.
    - Record `Activated Roles` and `Not Activated` in the plan.
 
@@ -424,10 +446,13 @@ direction is ambiguous or changing.
    - The Quality Verification Lead maps evidence back to acceptance criteria.
    - Do not claim completion beyond observed evidence.
 
-8. **Document post-work state**
-   - Write the required refactoring or change log.
-   - Update `.docs/project-status.md` with status, evidence, deferred work, and
-     links to the plan and work log.
+8. **Document post-work state for file-changing implementation**
+   - When an implementation task changes files, the implementation role that
+     owns those files writes the required refactoring or change log.
+   - That implementation role updates `.docs/project-status.md` with status,
+     evidence, deferred work, and links to the plan and work log.
+   - Review-only tasks do not edit files. They report findings in chat or in a
+     separately approved review artifact.
 
 ## Backend TDD Cycle
 

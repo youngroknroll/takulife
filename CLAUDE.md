@@ -1,7 +1,9 @@
 # Claude Code Project Context
 
-This is takulife's concise, always-loaded bootstrap. Keep it under 100 lines.
-Detailed governance lives in `AGENTS.md` and is read just in time.
+This is takulife's concise, always-loaded bootstrap. Following current Claude
+Code guidance, the project target is to keep this file under 200 lines.
+Detailed governance lives in `AGENTS.md` and is read just in time. If this
+summary conflicts with `AGENTS.md`, `AGENTS.md` wins.
 
 ## Product
 takulife is a collection-first service for subculture fans.
@@ -51,6 +53,26 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
 - `core/`: shared web flows, queries, services, and LLM helpers
 - `templates/`, `static/`, `tests/`: web UI, browser assets, and verification
 
+## Stable Entry Paths
+- Runtime: `manage.py`, `pyproject.toml`, `pytest.ini`, `config/settings.py`,
+  `config/urls.py`
+- Accounts: `accounts/models.py`, `accounts/forms.py`, `accounts/views.py`
+- Collection and visits: `archive/models.py`, `archive/services.py`,
+  `archive/queries.py`, `archive/serializers.py`, `archive/urls.py`
+- Published events: `events/models.py`, `events/services.py`,
+  `events/queries.py`, `events/serializers.py`, `events/urls.py`
+- Ingestion and review: `drafts/models.py`, `drafts/services.py`,
+  `drafts/queries.py`, `drafts/urls.py`
+- Staff and shared web: `staff/services.py`, `staff/queries.py`, `staff/views/`,
+  `core/urls.py`, `core/views.py`
+- Frontend: `templates/base.html`, `templates/core/`, `templates/staff/`,
+  `static/css/`, `static/js/`
+- Tests and docs: `tests/<domain>/`, `tests/e2e/`, `.docs/plans/`,
+  `.docs/refactoring/`, `.docs/project-status.md`
+
+Start with these stable paths. Use `rg` when the exact location is still unknown
+or the task requires a repository-wide repeated-pattern check.
+
 ## Stack And Commands
 - Python 3.13, Django 5.2, Django REST Framework, PostgreSQL, `uv`
 - Sync: `uv sync`
@@ -66,9 +88,9 @@ targeted test before broad regression.
 
 ## Working Method
 1. Inspect `git status` and preserve existing user changes.
-2. Classify task shape and risk before activating roles.
-3. Read `AGENTS.md` and the approved plan before editing.
-4. Activate the smallest sufficient role set, never every role by default.
+2. Read `AGENTS.md` before planning, task classification, or role routing.
+3. Classify task shape and risk, then activate the smallest sufficient role set.
+4. Read the approved plan before editing.
 5. Backend behavior follows the Backend TDD Coach's one-test-at-a-time Kent Beck
    Red-Green-Refactor contract.
 6. Frontend review always pairs Web Experience Designer with Browser Interaction
@@ -96,5 +118,6 @@ targeted test before broad regression.
   need.
 
 ## Session Continuity
-At completion, update the required work log and `.docs/project-status.md`.
+After an implementation task changes files, its owning implementation role
+updates the required work log and `.docs/project-status.md`.
 Recover a fresh session from the plan, Git diff, status, and verification logs.

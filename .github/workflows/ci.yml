@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel a superseded run when new commits land on the same ref (e.g. rapid
+# PR pushes), saving free-tier Actions minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# DATABASE_URL matches the docker-compose.yml taku/taku Postgres convention
+# already used for local dev (see docker-compose.yml, .env.example). CI never
+# checks out a .env file, so config/settings.py's env-based DATABASE_URL
+# wiring is exercised directly against the service container below instead of
+# falling back to sqlite.
+env:
+  DATABASE_URL: postgresql://taku:taku@localhost:5432/taku
+
+jobs:
+  test:
+    name: Test suite (PR gate)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: taku
+          POSTGRES_USER: taku
+          POSTGRES_PASSWORD: taku
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taku -d taku"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Django system check
+        run: uv run python manage.py check
+
+      - name: Check for missing migrations
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Run test suite (excludes e2e)
+        run: uv run pytest -q -m "not e2e"
+
+      # Production-like env for `check --deploy`. SECRET_KEY is a throwaway
+      # value for structural validation only, never a real secret — it is
+      # generated at runtime below (repeating, low-entropy pattern) instead
+      # of a literal in this file, so a high-entropy-looking string never
+      # sits in source for a secret scanner to flag (GitGuardian false
+      # positive on PR #173). It still clears Django's own W009 check
+      # (>=50 chars, >=5 unique chars, no "django-insecure-" prefix).
+      # fail-level stays at the default (ERROR only): W021 (HSTS preload) is
+      # a deliberate, approved deferral (config/settings.py build_secure_ssl_
+      # settings sets SECURE_HSTS_PRELOAD=False — submitting to the browser
+      # preload list is an irreversible, separate decision, see plan §8).
+      # `--fail-level WARNING` would fail on W021 every run, so instead this
+      # step greps the warning output and fails only if a warning other than
+      # W021 appears — new/regressed warnings still gate the PR.
+      - name: Deployment checklist (check --deploy)
+        env:
+          DEBUG: "false"
+          ALLOWED_HOSTS: ci.example
+          CSRF_TRUSTED_ORIGINS: https://ci.example
+          SECURE_SSL: "true"
+          SECURE_COOKIES: "true"
+        run: |
+          set -o pipefail
+          export SECRET_KEY="ci-dummy-$(python3 -c "print('0123456789abcdef' * 4)")"
+          uv run python manage.py check --deploy 2>&1 | tee deploy-check.txt
+          if grep -E '\(security\.W[0-9]+\)' deploy-check.txt | grep -v 'security\.W021'; then
+            echo "::error::Deploy check produced a warning beyond the accepted W021 (HSTS preload) exception"
+            exit 1
+          fi
+
+  e2e:
+    name: E2E suite (Playwright, parallel)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: taku
+          POSTGRES_USER: taku
+          POSTGRES_PASSWORD: taku
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taku -d taku"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Install Playwright Chromium
+        run: uv run playwright install --with-deps chromium
+
+      - name: Run e2e suite (Playwright + Django live_server)
+        run: uv run pytest -m e2e -q
+
+  docker:
+    name: Docker build (no push)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t takulife:ci .
