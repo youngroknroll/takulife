@@ -1,6 +1,7 @@
 import importlib
 
 import pytest
+from django.core.exceptions import ImproperlyConfigured
 
 
 def test_settings_load_secret_key_from_env_file(monkeypatch, tmp_path):
@@ -12,7 +13,7 @@ def test_settings_load_secret_key_from_env_file(monkeypatch, tmp_path):
     settings_module = importlib.import_module("config.settings")
     monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
 
-    assert settings_module.load_secret_key() == "loaded-from-env-file"
+    assert settings_module.load_secret_key(debug=True) == "loaded-from-env-file"
 
 
 def test_settings_load_anthropic_api_key_from_env_file(monkeypatch, tmp_path):
@@ -118,3 +119,39 @@ def test_settings_debug_false_when_env_set_to_false(monkeypatch):
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.load_debug() is False
+
+
+# ---------------------------------------------------------------------------
+# PR-0a: settings production hardening
+# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0a)
+# ---------------------------------------------------------------------------
+
+
+def test_load_secret_key_raises_when_debug_false_and_env_unset(monkeypatch):
+    # Empty string (not delenv) short-circuits _get_env's .env-file fallback
+    # so this test is independent of whatever the developer's real .env has.
+    monkeypatch.setenv("SECRET_KEY", "")
+
+    settings_module = importlib.import_module("config.settings")
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_secret_key(debug=False)
+
+
+def test_load_secret_key_uses_insecure_dev_fallback_when_debug_true(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert (
+        settings_module.load_secret_key(debug=True)
+        == "django-insecure-local-dev-key-change-me"
+    )
+
+
+def test_load_secret_key_returns_env_value_regardless_of_debug(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "from-env")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_secret_key(debug=False) == "from-env"

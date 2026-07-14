@@ -3,6 +3,7 @@ from urllib.parse import urlsplit
 import os
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,8 +24,21 @@ def _get_env(name, default=""):
     return default
 
 
-def load_secret_key():
-    return _get_env("SECRET_KEY") or "django-insecure-local-dev-key-change-me"
+def load_secret_key(debug):
+    """Return SECRET_KEY from env/.env, or Django's documented insecure dev
+    fallback when DEBUG is True. When DEBUG is False and no SECRET_KEY is
+    configured, refuse to start: silently falling back to the hardcoded key
+    below in a production deployment would mean every deployment shares (and
+    leaks, since it's committed source) the same signing key.
+    """
+    secret_key = _get_env("SECRET_KEY")
+    if secret_key:
+        return secret_key
+    if debug:
+        return "django-insecure-local-dev-key-change-me"
+    raise ImproperlyConfigured(
+        "SECRET_KEY environment variable is required when DEBUG=false."
+    )
 
 
 def load_anthropic_api_key():
@@ -60,7 +74,6 @@ def load_debug():
     return _get_env("DEBUG", "true").lower() in ("1", "true", "yes")
 
 
-SECRET_KEY = load_secret_key()
 ANTHROPIC_API_KEY = load_anthropic_api_key()
 LLM_MODEL = "claude-haiku-4-5-20251001"
 LLM_TIMEOUT_SECONDS = 10
@@ -88,6 +101,7 @@ DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 20
 # 48h covers a couple of missed daily runs before it reads as a problem.
 DRAFT_SOURCE_STALE_HOURS = 48
 DEBUG = load_debug()
+SECRET_KEY = load_secret_key(DEBUG)
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
