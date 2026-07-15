@@ -221,6 +221,51 @@ def test_owner_can_patch_collection_item_fields(client, make_user, make_collecti
 
 
 @pytest.mark.django_db
+def test_create_collection_item_rejects_unpublished_event(client, make_user, make_event):
+    """`event` is scoped to Event.objects.published() on the serializer, the
+    same guard VisitRecordSerializer/UserEventStatusSerializer already use
+    (collection domain design plan §4 PR-C5 CP14)."""
+    from events.models import Event
+
+    user = make_user(username="ci-create-unpublished-event")
+    draft_event = make_event(title="미공개 이벤트", publish_status=Event.PublishStatus.DRAFT)
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "미공개 이벤트 굿즈", "event": draft_event.id},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "event" in response.json()
+    assert not CollectionItem.objects.filter(name="미공개 이벤트 굿즈").exists()
+
+
+@pytest.mark.django_db
+def test_create_collection_item_rejects_another_users_visit_record(
+    client, make_user, make_event, make_visit
+):
+    """API-level rejection of another user's visit_record — enforced by
+    create_collection_item's service-level ownership guard, not a serializer
+    queryset restriction (collection domain design plan §4 PR-C5 CP15)."""
+    user = make_user(username="ci-create-cross-user-visit")
+    other = make_user(username="ci-create-cross-user-visit-owner")
+    event = make_event(title="타인 방문 이벤트")
+    other_visit = make_visit(other, event=event, visited_on="2026-01-01")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "타인 방문 굿즈", "visit_record": other_visit.id},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not CollectionItem.objects.filter(name="타인 방문 굿즈").exists()
+
+
+@pytest.mark.django_db
 def test_patch_rejects_quantity_below_existing_tradeable_quantity(
     client, make_user, make_collection_item
 ):
