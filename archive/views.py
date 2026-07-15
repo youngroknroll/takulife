@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -15,8 +16,9 @@ from .models import (
     VisitRecord,
     VisitRecordPhoto,
 )
-from .queries import list_user_personal_entries
+from .queries import list_user_collection_items, list_user_personal_entries
 from .serializers import (
+    CollectionItemSerializer,
     EventInterestSerializer,
     PersonalEntrySerializer,
     UserEventStatusQuerySerializer,
@@ -33,6 +35,7 @@ from .services import (
     PhotoLimitExceededError,
     VisitRecordExistsError,
     complete_visit_with_record,
+    create_collection_item,
     create_event_interest,
     create_personal_entry,
     create_user_event_status,
@@ -42,6 +45,19 @@ from .services import (
     revert_to_planned,
     update_visit_record,
 )
+
+
+def _translate_domain_validation_error(exc):
+    """Re-raise a service-layer django ValidationError as a DRF
+    ValidationError, so archive.services invariant violations (e.g.
+    CollectionItem quantity/FK-pair guards) surface as 400 responses
+    instead of an unhandled 500 (collection domain design plan §4 PR-C5
+    CP12/CP13 — DRF's exception handler does not translate
+    django.core.exceptions.ValidationError on its own).
+    """
+    if hasattr(exc, "error_dict"):
+        raise ValidationError(exc.message_dict)
+    raise ValidationError(exc.messages)
 
 
 class PersonalEntryPagination(PageNumberPagination):
@@ -289,3 +305,25 @@ class VisitRecordPhotoDeleteView(APIView):
         )
         photo.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CollectionItemPagination(PageNumberPagination):
+    page_size = 20
+
+
+class CollectionItemListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CollectionItemSerializer
+    pagination_class = CollectionItemPagination
+
+    def get_queryset(self):
+        return list_user_collection_items(self.request.user)
+
+    def perform_create(self, serializer):
+        # owner is the requester, never the payload
+        try:
+            serializer.instance = create_collection_item(
+                user=self.request.user, **serializer.validated_data
+            )
+        except DjangoValidationError as exc:
+            _translate_domain_validation_error(exc)

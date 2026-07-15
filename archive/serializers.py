@@ -4,6 +4,7 @@ from events.image_validation import validate_uploaded_image
 from events.models import Event
 
 from .models import (
+    CollectionItem,
     EventInterest,
     PersonalEntry,
     UserEventStatus,
@@ -168,4 +169,58 @@ class VisitRecordPhotoUploadSerializer(serializers.Serializer):
     def validate_image(self, value):
         # Delegate to the shared validator (size, extension, real format, per-axis
         # dimension, and total pixel-area decompression-bomb guards).
+        return validate_uploaded_image(value)
+
+
+class CollectionItemSerializer(serializers.ModelSerializer):
+    """Owner is always taken from the request, never the payload.
+    `visibility` is deliberately absent from `fields` (not read_only) —
+    reserved for the future trade opt-in gate, no exposure until Stage 4
+    (collection domain design plan §3-1, PO decision 2026-07-16). Used for
+    both create and update (PATCH partial-validates automatically); no
+    fields are pinned read-only besides id/created_at/updated_at because,
+    unlike VisitRecord/UserEventStatus, a CollectionItem's event/visit_record
+    links are themselves user-editable after creation.
+    """
+
+    # event is scoped to published events only (same guard as
+    # VisitRecordSerializer/UserEventStatusSerializer). visit_record is
+    # intentionally NOT scoped to the requester here — cross-user rejection
+    # is enforced by create_collection_item/update_collection_item's
+    # ownership guard, not a queryset filter (collection domain design plan
+    # §4 PR-C5 CP15).
+    event = serializers.PrimaryKeyRelatedField(
+        queryset=Event.objects.published(), required=False, allow_null=True
+    )
+    visit_record = serializers.PrimaryKeyRelatedField(
+        queryset=VisitRecord.objects.all(), required=False, allow_null=True
+    )
+
+    class Meta:
+        model = CollectionItem
+        fields = [
+            "id",
+            "name",
+            "work_title",
+            "character_name",
+            "item_type",
+            "quantity",
+            "acquired_on",
+            "acquisition_source",
+            "event",
+            "visit_record",
+            "image",
+            "memo",
+            "is_wanted",
+            "tradeable_quantity",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate_image(self, value):
+        # Route the optional image through the shared guard, mirroring
+        # PersonalEntrySerializer.validate_image.
+        if value in (None, ""):
+            return value
         return validate_uploaded_image(value)
