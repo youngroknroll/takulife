@@ -30,10 +30,10 @@ from .services import (
     DuplicateEventInterestError,
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
+    complete_visit_with_record,
     create_event_interest,
     create_personal_entry,
     create_user_event_status,
-    create_visit_record,
     create_visit_record_photo,
     mark_missed,
     mark_visited,
@@ -203,7 +203,7 @@ class VisitRecordListCreateView(ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        record = create_visit_record(
+        record = complete_visit_with_record(
             user=request.user,
             event=serializer.validated_data.get("event"),
             personal_entry=serializer.validated_data.get("personal_entry"),
