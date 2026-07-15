@@ -16,6 +16,7 @@ from django.core.management import CommandError, call_command
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from core.analytics import distinct_user_key_count_since, event_name_counts_since
 from drafts.queries import (
     draft_review_stats,
     enabled_draft_sources_exist,
@@ -241,6 +242,8 @@ def dashboard(request):
             "last_discovery_run_at": _last_discovery_run_at(),
             "recent_actions_7d_count": staff_actions_count_since(days=7),
             "recent_actions_prev_7d_count": staff_actions_count_since(days=7, offset=7),
+            "weekly_active_user_count": distinct_user_key_count_since(days=7),
+            "weekly_event_count": sum(event_name_counts_since(days=7).values()),
             "activity_columns": activity_columns,
             "activity_total_14d": sum(col["count"] for col in activity_columns),
             # Explicit key rather than `{{ activity_columns|last }}.count` in
