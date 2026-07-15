@@ -8,13 +8,16 @@ re-implement that cleanup, it only orchestrates the password check, the
 delete, and ending the session.
 """
 import time as real_time
+from datetime import datetime, timezone as dt_timezone
 
 import django.core.cache.backends.base as cache_base
-import django.core.cache.backends.locmem as cache_locmem
+import django.core.cache.backends.db as cache_db
 import pytest
+from django.conf import settings
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+import accounts.views as accounts_views
 from accounts.models import User
 from accounts.views import _delete_attempts_cache_key
 from archive.models import PersonalEntry, VisitRecord, VisitRecordPhoto
@@ -43,14 +46,38 @@ class _FakeClock:
 
 @pytest.fixture
 def cache_clock(monkeypatch):
-    """Lets a test fast-forward LocMemCache's notion of "now" without
-    sleeping. `django.core.cache.backends.{locmem,base}` each do a bare
-    `import time` and call `time.time()`; replacing the `time` name in only
-    those two modules' namespaces controls cache expiry math without
-    touching the real `time` module everything else in the process uses."""
+    """Lets a test fast-forward the cache backend's notion of "now" without
+    sleeping.
+
+    PR-0e switched the default cache backend from LocMemCache to
+    DatabaseCache (config/settings.py CACHES), which reads "now" from two
+    independent places: `BaseCache.get_backend_timeout` (base.py) computes
+    the expiry as a raw `time.time() + timeout` epoch offset, while
+    `DatabaseCache.get`/`_base_set` (db.py) compares that expiry against
+    `django.utils.timezone.now()` — imported there as `from
+    django.utils.timezone import now as tz_now`, which binds the function
+    object into db.py's own namespace at import time. Patching
+    `django.utils.timezone.now` itself would not reach db.py's already-bound
+    `tz_now` reference, so both the `base.py` `time` module reference and
+    db.py's `tz_now` name are patched here, each to read off the same fake
+    clock, so expiry-setting and expiry-checking stay consistent under a
+    fast-forward.
+
+    accounts.views's own fixed-window lockout (_is_delete_locked /
+    _register_failed_delete_attempt) also reads `time.time()` directly (it
+    stores its own deadline rather than trusting the cache backend's TTL —
+    see accounts/views.py), so that module's `time` reference is patched too.
+    """
     clock = _FakeClock(real_time.time())
-    monkeypatch.setattr(cache_locmem, "time", clock)
     monkeypatch.setattr(cache_base, "time", clock)
+    monkeypatch.setattr(
+        cache_db,
+        "tz_now",
+        lambda: datetime.fromtimestamp(
+            clock.time(), tz=dt_timezone.utc if settings.USE_TZ else None
+        ),
+    )
+    monkeypatch.setattr(accounts_views, "time", clock)
     return clock
 
 

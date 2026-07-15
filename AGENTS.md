@@ -318,6 +318,8 @@ Permitted refactoring scope:
 - Keeps designs collection-first, practical, mobile-usable, and consistent with
   the existing visual system.
 - Produces implementable decisions, not general inspiration.
+- For frontend implementation, produces an experience specification before
+  editing and a source-grounded conformance verdict after browser verification.
 - Does not review JavaScript state-machine robustness in isolation; that belongs
   to the Browser Interaction Reviewer.
 
@@ -329,6 +331,8 @@ Permitted refactoring scope:
   z-index geometry, reduced motion, and empty-state recovery.
 - Grounds every defect in `file:line` evidence and a concrete failure scenario.
 - Searches repeated patterns repository-wide before calling a defect local.
+- For frontend implementation, produces interaction criteria before editing and
+  a source-grounded conformance verdict after browser verification.
 - Every frontend review must activate this role together with the Web
   Experience Designer. Skipping either makes the frontend review incomplete.
 
@@ -424,6 +428,7 @@ is separately approved.
      - acceptance criteria
      - Activated Roles and Not Activated
      - exact files and implementation steps
+     - Frontend Review Evidence for frontend implementation
      - Domain Boundary and Dependency Direction
      - Coupling and Cohesion Review
      - Pythonic Code Design for backend work
@@ -500,6 +505,59 @@ wiring are exempt from the backend TDD cycle.
   `.docs/frontend-integration-changelog.md` unless the user explicitly approves
   different document locations.
 
+### Frontend Dual Review Gate
+
+Every frontend implementation requires actual output from both the Web
+Experience Designer and Browser Interaction Reviewer before and after editing.
+Listing a role under `Activated Roles` is routing evidence, not review evidence.
+
+Before implementation:
+
+1. The integrated plan selects a review depth and explains why.
+2. The Web Experience Designer provides an implementation-ready experience
+   specification.
+3. The Browser Interaction Reviewer provides interaction and accessibility
+   criteria.
+4. The Frontend Implementation Engineer must not edit until both outputs exist.
+
+After implementation and the planned browser verification:
+
+1. The Web Experience Designer reviews the implementation against the approved
+   experience specification.
+2. The Browser Interaction Reviewer reviews the implementation against the
+   approved interaction criteria.
+3. Each reviewer returns `Conforms`, `Deviates`, or `Unverified` with the
+   evidence reviewed.
+4. The Quality Verification Lead must not mark the frontend task complete unless
+   both verdicts are `Conforms`, or the user explicitly accepts the stated
+   residual risk for a `Deviates` or `Unverified` verdict.
+
+Review depth is proportional to risk, but neither reviewer nor either verdict
+may be skipped:
+
+- `Light`: copy, isolated color, or similarly narrow changes. A concise
+  no-impact or conformance statement is sufficient.
+- `Standard`: component, form, layout, or responsive changes. Review relevant
+  viewports, static accessibility, focus and keyboard implications, and
+  recovery.
+- `High`: navigation, information architecture, async state, modal, sticky
+  geometry, upload, or cross-page pattern changes. Review repository-wide
+  patterns and full browser evidence appropriate to the risk.
+
+Every frontend implementation plan includes a `Frontend Review Evidence`
+section containing:
+
+- review depth and rationale;
+- Web Experience Designer pre-implementation specification;
+- Browser Interaction Reviewer pre-implementation criteria;
+- planned browser evidence;
+- both post-implementation verdicts and their evidence;
+- Quality Verification Lead completion decision.
+
+For frontend review-only tasks, both reviewers must each deliver their normal
+review output. No implementation-phase fields are required, but role names alone
+still do not count as review evidence.
+
 ## Domain And Design Policies
 
 ### Domain Boundary And Dependency Direction
@@ -555,6 +613,10 @@ Before the next task, confirm:
 - Backend business logic stayed out of HTTP and presentation layers.
 - Backend TDD evidence shows expected Red, minimum Green, then Refactor.
 - Frontend evidence follows the frontend policy when applicable.
+- Frontend editing did not start before both required pre-implementation review
+  outputs existed.
+- Frontend completion evidence includes both post-implementation verdicts and
+  the Quality Verification Lead's decision.
 - No unnecessary abstraction or unrelated cleanup was introduced.
 - Security, operations, reliability, UX, and QA impacts are addressed or
   explicitly deferred according to activated roles.

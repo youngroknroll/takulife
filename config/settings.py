@@ -330,6 +330,21 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {"default": load_database_config()}
 
+# Shared cache (G11): gunicorn runs multiple worker processes, and the default
+# LocMemCache is per-process — rate limits (allauth ACCOUNT_RATE_LIMITS,
+# accounts.views delete-attempt lockout) would silently reset per worker and
+# on every redeploy. DatabaseCache reuses the already-provisioned Postgres
+# (no new service) and is shared across all workers/redeploys. Applied
+# unconditionally (no env gate) so dev/test and production share the same
+# backend and the "django_cache" table (created by the core migration below)
+# is always exercised.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

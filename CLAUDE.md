@@ -93,8 +93,8 @@ targeted test before broad regression.
 4. Read the approved plan before editing.
 5. Backend behavior follows the Backend TDD Coach's one-test-at-a-time Kent Beck
    Red-Green-Refactor contract.
-6. Frontend review always pairs Web Experience Designer with Browser Interaction
-   Reviewer.
+6. Frontend changes require both frontend reviewers' pre-implementation outputs
+   and post-implementation verdicts; listing the roles alone is not evidence.
 7. Implement only approved scope; record larger ideas as deferred work.
 8. Run fresh verification and read complete output before claiming completion.
 

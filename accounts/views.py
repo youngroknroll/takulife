@@ -1,3 +1,5 @@
+import time
+
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -21,21 +23,36 @@ def _delete_attempts_cache_key(user):
 def _is_delete_locked(user):
     """True once `user` has exhausted the failure budget for this window.
 
-    Uses `cache.add` (sets the key only if absent) followed by `cache.incr`
-    so the 15-minute window starts on the *first* failure and is not
-    refreshed by later failures — a simple fixed window, not a sliding one.
-    Relies on the default (LocMem) cache: single-process only, and the
-    counter resets on process restart. Fine for a single-instance
-    deployment; a multi-instance deployment needs a shared cache backend
-    (e.g. Redis) for this counter to stay effective.
+    The window's deadline is stored explicitly in the cached record (rather
+    than relied on implicitly via the cache entry's own physical TTL): the
+    shared cache backend is DatabaseCache (config/settings.py CACHES, PR-0e),
+    and unlike LocMemCache.incr(), DatabaseCache has no incr() override —
+    BaseCache.incr() falls back to a plain `self.set(key, new_value)` call
+    with no timeout argument, which resets the entry's physical TTL to the
+    cache's default TIMEOUT on every failed attempt. If the fixed 15-minute
+    window were represented only by that physical TTL, each new failure
+    would silently shrink and refresh it, turning the intended fixed window
+    into an effectively sliding, shorter one. Storing our own deadline and
+    comparing it explicitly keeps the window fixed to the first failure
+    regardless of what the cache backend does to the physical TTL.
     """
-    return cache.get(_delete_attempts_cache_key(user), 0) >= MAX_DELETE_PASSWORD_ATTEMPTS
+    record = cache.get(_delete_attempts_cache_key(user))
+    if not record or record["deadline"] <= time.time():
+        return False
+    return record["count"] >= MAX_DELETE_PASSWORD_ATTEMPTS
 
 
 def _register_failed_delete_attempt(user):
     key = _delete_attempts_cache_key(user)
-    cache.add(key, 0, timeout=DELETE_PASSWORD_LOCKOUT_SECONDS)
-    cache.incr(key)
+    now = time.time()
+    record = cache.get(key)
+    if not record or record["deadline"] <= now:
+        record = {"count": 0, "deadline": now + DELETE_PASSWORD_LOCKOUT_SECONDS}
+    record["count"] += 1
+    # The cache entry's own TTL only needs to outlive the stored deadline —
+    # it is no longer the source of truth for the window (see
+    # _is_delete_locked above), so refreshing it on every write is safe.
+    cache.set(key, record, timeout=DELETE_PASSWORD_LOCKOUT_SECONDS)
 
 
 def _reset_delete_attempts(user):

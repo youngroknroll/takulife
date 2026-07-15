@@ -1,7 +1,8 @@
 /* staff_console.css — shared by templates/staff/dashboard.html and
    templates/core/staff/home_categories.html */
 
-/* Dashboard's summary-grid desktop column count (3) differs from
+/* Dashboard's summary-grid desktop column count (5, one row of 5 cards
+   since the weekly analytics cards were added) differs from
    .summary-grid's own fallback (4, cards.css), so it needs an explicit
    value — kept here in CSS rather than as a template inline style
    (dashboard.html used to carry style="--summary-cols: 3") so the mobile
@@ -12,7 +13,7 @@
    already — see its own comment). mypage.css never hit this because its
    desktop value already matches the shared fallback. */
 .summary-grid {
-  --summary-cols: 3;
+  --summary-cols: 5;
 }
 
 /* ── console density pass (PR-C2): mouse-first desktop console reads
@@ -292,18 +293,27 @@
 }
 
 @media (max-width: 45rem) {
-  /* 320px: the dashboard's 3-col grid squeezed each card to ~53px,
+  /* 320px: the dashboard's now-5-card grid squeezed each card to ~53px,
      wrapping labels like "검토 대기 드래프트" onto 2 lines. Drop to 2
-     columns (3 cards lay out 2+1) — same technique and column count as
-     mypage.css, per a single-column stack being judged excessive for only
-     3 cards. At 320px: 288px content - 10px gap = 139px/card, enough for
-     the longest label ("검토 대기 드래프트", ~129px incl. padding) on one
-     line. This only works because the desktop value above lives in CSS
-     now, not as a dashboard.html inline style; an inline custom-property
-     value would have out-ranked this rule regardless of selector
-     specificity (see the desktop rule's comment). */
+     columns — same technique and column count as mypage.css, per a
+     single-column stack being judged excessive for a summary bar (PR
+     #161 mobile-2-col convention for the staff summary, kept here
+     unchanged rather than shrinking to fit the extra cards). At 320px:
+     288px content - 10px gap = 139px/card, enough for the longest label
+     ("검토 대기 드래프트", ~129px incl. padding) on one line. This only
+     works because the desktop value above lives in CSS now, not as a
+     dashboard.html inline style; an inline custom-property value would
+     have out-ranked this rule regardless of selector specificity (see
+     the desktop rule's comment). 5 cards in 2 columns lay out 2+2+1; the
+     last (5th, "주간 이벤트 기록") card is stretched to the full row
+     below so no cell is left empty (cards.css's "no empty cells"
+     contract). */
   .summary-grid {
     --summary-cols: 2;
+  }
+
+  .summary-grid .summary-card:last-child {
+    grid-column: 1 / -1;
   }
 
   .recent-actions-table {
