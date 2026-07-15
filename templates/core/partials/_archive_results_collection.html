@@ -14,7 +14,7 @@ clear_query_suffix, request
               <span class="visit-chip category">{{ row.item.item_type }}</span>
             {% endif %}
             {% if row.is_wanted %}
-              <span class="visit-chip">구함</span>
+              <span class="visit-chip wanted">구함</span>
             {% endif %}
             {% if row.quantity_label %}
               <span class="visit-chip">{{ row.quantity_label }}</span>
@@ -35,14 +35,21 @@ clear_query_suffix, request
 
           <div class="visit-card-actions">
             <a class="record-edit-link" href="/archive/collection/{{ row.item.id }}/edit/">수정</a>
+            <button
+              class="record-delete-btn"
+              type="button"
+              data-delete-item-id="{{ row.item.id }}"
+            >굿즈 삭제</button>
           </div>
         </div>
 
-        {% if row.item.image %}
-          <div class="visit-card-media">
+        <div class="visit-card-media">
+          {% if row.item.image %}
             <img src="{{ row.item.image.url }}" alt="{{ row.item.name }}" loading="lazy">
-          </div>
-        {% endif %}
+          {% else %}
+            <div class="collection-thumb-placeholder"></div>
+          {% endif %}
+        </div>
       </article>
     {% endfor %}
   </div>
