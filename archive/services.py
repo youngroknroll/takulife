@@ -211,6 +211,52 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
     )
 
 
+def update_collection_item(*, item, **fields):
+    """Update an existing CollectionItem's editable fields.
+
+    Mirrors create_collection_item's invariant guards, applied to the
+    *merged* (existing + incoming) values so a partial PATCH cannot bypass
+    them by omitting the field that would make the merge invalid
+    (collection domain design plan §5 acceptance criterion 3). When
+    `visit_record` is supplied (and non-null), `event` is synced from
+    `visit_record.event`, exactly as create_collection_item does — the two
+    links can never disagree, and `visit_record` must belong to the item's
+    owner.
+
+    full_clean() is also run so the model's clean() FK-pair guard applies
+    even when only `event` is touched on a row whose `visit_record` is
+    already set (§6-b Deferred: full_clean had no caller before this).
+    """
+    quantity = fields.get("quantity", item.quantity)
+    tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
+    errors = {}
+    if quantity < 0:
+        errors["quantity"] = "quantity must be >= 0."
+    if tradeable_quantity < 0:
+        errors["tradeable_quantity"] = "tradeable_quantity must be >= 0."
+    elif tradeable_quantity > quantity:
+        errors["tradeable_quantity"] = "tradeable_quantity must be <= quantity."
+    if errors:
+        raise ValidationError(errors)
+
+    if "visit_record" in fields and fields["visit_record"] is not None:
+        visit_record = fields["visit_record"]
+        if visit_record.user_id != item.user_id:
+            raise ValidationError(
+                {"visit_record": "visit_record must belong to the item's owner."}
+            )
+        fields["event"] = visit_record.event
+
+    for field_name, value in fields.items():
+        setattr(item, field_name, value)
+
+    item.full_clean()
+    update_fields = set(fields.keys())
+    update_fields.add("updated_at")
+    item.save(update_fields=update_fields)
+    return item
+
+
 def create_visit_record(*, user, event=None, personal_entry=None, visited_on, short_review=""):
     record = VisitRecord.objects.create(
         user=user,

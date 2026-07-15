@@ -12,6 +12,7 @@ from archive.services import (
     create_personal_entry,
     create_user_event_status,
     create_visit_record_photo,
+    update_collection_item,
 )
 from events.models import Event
 
@@ -217,3 +218,124 @@ def test_create_collection_item_defaults_visibility_to_private(make_user):
     item = create_collection_item(user=user, name="기본 공개범위 확인")
 
     assert item.visibility == "private"
+
+
+# ---------------------------------------------------------------------------
+# update_collection_item (PR-C5)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_update_collection_item_updates_simple_fields(make_user):
+    user = make_user(username="ci-update-simple")
+    item = create_collection_item(user=user, name="원래 이름", memo="원래 메모")
+
+    updated = update_collection_item(item=item, name="바뀐 이름", memo="바뀐 메모")
+
+    item.refresh_from_db()
+    assert updated.name == "바뀐 이름"
+    assert item.name == "바뀐 이름"
+    assert item.memo == "바뀐 메모"
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_quantity_below_existing_tradeable(make_user):
+    """A partial PATCH that only sends quantity must still be checked against
+    the *existing* tradeable_quantity — omitting tradeable from the payload
+    must not bypass the invariant (collection domain design plan §5
+    acceptance criterion 3)."""
+    user = make_user(username="ci-update-merge-guard")
+    item = create_collection_item(
+        user=user, name="병합 가드", quantity=5, tradeable_quantity=3
+    )
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, quantity=1)
+
+    item.refresh_from_db()
+    assert item.quantity == 5
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_tradeable_exceeding_quantity_directly(make_user):
+    user = make_user(username="ci-update-direct-exceed")
+    item = create_collection_item(user=user, name="직접 초과", quantity=5)
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, tradeable_quantity=10)
+
+    item.refresh_from_db()
+    assert item.tradeable_quantity == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_visit_record_owned_by_another_user(
+    make_user, make_event, make_visit
+):
+    owner = make_user(username="ci-update-visit-owner")
+    other = make_user(username="ci-update-other-user")
+    item = create_collection_item(user=other, name="타인 소유 수정 시도")
+    event = make_event(title="타인 방문 이벤트")
+    visit_record = make_visit(owner, event=event, visited_on="2026-01-01")
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, visit_record=visit_record)
+
+    item.refresh_from_db()
+    assert item.visit_record_id is None
+
+
+@pytest.mark.django_db
+def test_update_collection_item_visit_record_overrides_conflicting_explicit_event(
+    make_user, make_event, make_visit
+):
+    user = make_user(username="ci-update-override")
+    visit_event = make_event(title="방문 이벤트")
+    conflicting_event = make_event(title="다른 이벤트")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+    item = create_collection_item(user=user, name="충돌 수정")
+
+    updated = update_collection_item(
+        item=item, visit_record=visit_record, event=conflicting_event
+    )
+
+    assert updated.event_id == visit_event.id
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_event_conflicting_with_existing_visit_record(
+    make_user, make_event, make_visit
+):
+    """full_clean() wiring (§6-b Deferred, collection domain design plan
+    §3-1 FK-pair invariant): a row already linked to a visit_record must
+    reject a PATCH that sets `event` alone to a value disagreeing with
+    visit_record.event — the FK-pair invariant is not just a create-time
+    guard, and CollectionItem.clean() had no caller before this."""
+    user = make_user(username="ci-update-fk-pair-conflict")
+    visit_event = make_event(title="고정된 방문 이벤트")
+    other_event = make_event(title="불일치 이벤트")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+    item = create_collection_item(
+        user=user, name="FK 쌍 확인", visit_record=visit_record
+    )
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, event=other_event)
+
+    item.refresh_from_db()
+    assert item.event_id == visit_event.id
+
+
+@pytest.mark.django_db
+def test_update_collection_item_allows_event_edit_when_no_visit_record(
+    make_user, make_event
+):
+    """The FK-pair guard only applies once a visit_record is attached — a
+    row with no visit_record can freely change its event link."""
+    user = make_user(username="ci-update-fk-pair-free")
+    new_event = make_event(title="자유롭게 연결할 이벤트")
+    item = create_collection_item(user=user, name="자유 편집")
+
+    updated = update_collection_item(item=item, event=new_event)
+
+    assert updated.event_id == new_event.id
