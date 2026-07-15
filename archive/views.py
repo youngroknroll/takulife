@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import (
+    CollectionItem,
     EventInterest,
     PersonalEntry,
     UserEventStatus,
@@ -327,3 +328,12 @@ class CollectionItemListCreateView(ListCreateAPIView):
             )
         except DjangoValidationError as exc:
             _translate_domain_validation_error(exc)
+
+
+class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "patch", "delete", "head", "options"]
+    permission_classes = [IsAuthenticated]
+    serializer_class = CollectionItemSerializer
+
+    def get_queryset(self):
+        return CollectionItem.objects.filter(user=self.request.user)

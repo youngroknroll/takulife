@@ -88,3 +88,84 @@ def test_create_collection_item_response_has_exact_field_set(client, make_user):
         "created_at",
         "updated_at",
     }
+
+
+# ---------------------------------------------------------------------------
+# CP4~CP6: owner scoping across list, detail (GET/PATCH/DELETE)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_collection_item_list_is_user_scoped(client, make_user, make_collection_item):
+    user = make_user(username="ci-list-scope")
+    other = make_user(username="ci-list-scope-other")
+    make_collection_item(user, name="Mine")
+    make_collection_item(other, name="Theirs")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["Mine"]
+
+
+@pytest.mark.django_db
+def test_collection_item_detail_get_for_another_user_returns_404(
+    client, make_user, make_collection_item
+):
+    owner = make_user(username="ci-detail-get-owner")
+    other = make_user(username="ci-detail-get-other")
+    item = make_collection_item(owner, name="타인 소유")
+
+    client.force_login(other)
+    response = client.get(f"/api/collection-items/{item.id}/")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_collection_item_detail_patch_for_another_user_returns_404(
+    client, make_user, make_collection_item
+):
+    owner = make_user(username="ci-detail-patch-owner")
+    other = make_user(username="ci-detail-patch-other")
+    item = make_collection_item(owner, name="타인 소유 수정 시도")
+
+    client.force_login(other)
+    response = client.patch(
+        f"/api/collection-items/{item.id}/",
+        {"name": "가로채기"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 404
+    item.refresh_from_db()
+    assert item.name == "타인 소유 수정 시도"
+
+
+@pytest.mark.django_db
+def test_collection_item_detail_delete_for_another_user_returns_404(
+    client, make_user, make_collection_item
+):
+    owner = make_user(username="ci-detail-delete-owner")
+    other = make_user(username="ci-detail-delete-other")
+    item = make_collection_item(owner, name="타인 소유 삭제 시도")
+
+    client.force_login(other)
+    response = client.delete(f"/api/collection-items/{item.id}/")
+
+    assert response.status_code == 404
+    assert CollectionItem.objects.filter(id=item.id).exists()
+
+
+@pytest.mark.django_db
+def test_collection_item_owner_can_delete(client, make_user, make_collection_item):
+    user = make_user(username="ci-delete-owner")
+    item = make_collection_item(user, name="삭제할 항목")
+
+    client.force_login(user)
+    response = client.delete(f"/api/collection-items/{item.id}/")
+
+    assert response.status_code == 204
+    assert not CollectionItem.objects.filter(id=item.id).exists()
