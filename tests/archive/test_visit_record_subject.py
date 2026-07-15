@@ -102,6 +102,24 @@ def test_api_create_visit_record_requires_exactly_one_subject(client, make_user)
 
 
 @pytest.mark.django_db
+def test_api_rejects_goods_personal_entry_subject(client, make_user):
+    """GOODS is no longer a valid archive-action subject (collection domain
+    plan §3-3) — only PLACE personal entries may be attached to a visit record."""
+    user = make_user(username="vr-api-goods")
+    entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/visit-records/",
+        {"personal_entry": entry.id, "visited_on": "2026-06-21"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not VisitRecord.objects.filter(personal_entry=entry).exists()
+
+
+@pytest.mark.django_db
 def test_api_cannot_attach_another_users_personal_entry(client, make_user):
     user = make_user(username="vr-api-scope")
     other = make_user(username="vr-api-scope-other")

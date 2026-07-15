@@ -65,6 +65,10 @@ class _SubjectScopedPersonalEntryMixin:
             raise serializers.ValidationError(
                 "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
             )
+        if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
+            raise serializers.ValidationError(
+                "goods personal_entry는 이 작업의 대상이 될 수 없습니다."
+            )
         return attrs
 
 
@@ -140,6 +144,10 @@ class VisitRecordSerializer(serializers.ModelSerializer):
         if bool(event) == bool(personal_entry):
             raise serializers.ValidationError(
                 "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
+            )
+        if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
+            raise serializers.ValidationError(
+                "goods personal_entry는 이 작업의 대상이 될 수 없습니다."
             )
         return attrs
 
