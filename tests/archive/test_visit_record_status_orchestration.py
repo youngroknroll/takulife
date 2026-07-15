@@ -207,3 +207,43 @@ def test_data_migration_fixes_planned_status_with_existing_record(
     untouched_status.refresh_from_db()
     assert mismatched_status.status == UserEventStatus.Status.VISITED
     assert untouched_status.status == UserEventStatus.Status.PLANNED
+
+
+# ---------------------------------------------------------------------------
+# Domain gate CRITICAL fix — analytics persistence failure inside the shared
+# atomic() must not poison the outer transaction (core.analytics record_event
+# needs its own savepoint so a DB error there can't fail subsequent domain
+# writes with TransactionManagementError).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_analytics_failure_during_transition_does_not_break_domain_writes(
+    monkeypatch, make_user, make_event, make_status
+):
+    user = make_user()
+    event = make_event()
+    status_row = make_status(user, event, status=UserEventStatus.Status.PLANNED)
+
+    # A monkeypatch that raises in pure Python (without ever hitting the DB)
+    # never poisons the real PostgreSQL transaction — it doesn't reproduce
+    # the bug. Force a *genuine* DB-level error instead: event_name is a
+    # VARCHAR(32) column, so a 100-char value overflows it at the database,
+    # which is exactly the kind of failure that aborts the ambient PG
+    # transaction if it isn't isolated behind its own savepoint.
+    def raise_real_database_error(**kwargs):
+        AnalyticsEvent(
+            event_name="x" * 100, user_key="", target_type="", target_id=None, context={}
+        ).save()
+
+    monkeypatch.setattr(
+        "core.analytics.AnalyticsEvent.objects.create", raise_real_database_error
+    )
+
+    # Must not raise — analytics persistence failure must not break the
+    # domain action it is attached to.
+    complete_visit_with_record(user=user, event=event, visited_on="2026-07-15")
+
+    status_row.refresh_from_db()
+    assert status_row.status == UserEventStatus.Status.VISITED
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 1

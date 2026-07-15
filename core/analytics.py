@@ -17,6 +17,7 @@ import logging
 from datetime import timedelta
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
@@ -75,7 +76,14 @@ def record_event(event_name, *, user, target_type="", target_id=None, context=No
     Persistence itself is best-effort: analytics must never break the
     domain action it is attached to (e.g. creating a visit record), so a
     persistence failure (e.g. a DB outage) is caught and logged, not
-    raised.
+    raised. The insert runs inside its own nested atomic() (a savepoint):
+    callers may already be inside a shared transaction.atomic() (e.g.
+    archive.services.complete_visit_with_record), and on PostgreSQL a
+    failed statement poisons the *entire* enclosing transaction until it is
+    rolled back — without a savepoint here, catching the exception would
+    stop it from propagating but leave the connection unusable, so the
+    caller's next domain write would fail with TransactionManagementError.
+    The savepoint scopes the damage to just this insert.
     """
     context = context or {}
     forbidden = FORBIDDEN_CONTEXT_KEYS & context.keys()
@@ -85,13 +93,14 @@ def record_event(event_name, *, user, target_type="", target_id=None, context=No
         )
 
     try:
-        AnalyticsEvent.objects.create(
-            event_name=event_name,
-            user_key=pseudonymous_user_key(user),
-            target_type=target_type,
-            target_id=target_id,
-            context=context,
-        )
+        with transaction.atomic():
+            AnalyticsEvent.objects.create(
+                event_name=event_name,
+                user_key=pseudonymous_user_key(user),
+                target_type=target_type,
+                target_id=target_id,
+                context=context,
+            )
     except Exception:
         logger.exception("Failed to record analytics event %r", event_name)
 
