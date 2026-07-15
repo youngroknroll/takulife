@@ -12,6 +12,7 @@ from .models import (
     VisitRecord,
     VisitRecordPhoto,
 )
+from .signals import _delete_file_best_effort
 
 
 MAX_PHOTOS_PER_RECORD = 5
@@ -247,6 +248,15 @@ def update_collection_item(*, item, **fields):
             )
         fields["event"] = visit_record.event
 
+    # Capture the file this update is about to replace *before* mutating the
+    # instance — Django's FieldFile reassignment does not delete the old
+    # storage object on its own, and post_delete only fires on row deletion,
+    # not on update-in-place (security gate M3, 2026-07-16). Grabbing the
+    # reference now is safe: reassigning item.image below does not mutate
+    # this already-bound FieldFile object.
+    old_image = item.image if "image" in fields else None
+    old_image_name = old_image.name if old_image else None
+
     for field_name, value in fields.items():
         setattr(item, field_name, value)
 
@@ -254,6 +264,11 @@ def update_collection_item(*, item, **fields):
     update_fields = set(fields.keys())
     update_fields.add("updated_at")
     item.save(update_fields=update_fields)
+
+    new_image_name = item.image.name if item.image else None
+    if old_image_name and old_image_name != new_image_name:
+        _delete_file_best_effort(old_image)
+
     return item
 
 

@@ -13,6 +13,7 @@ import re
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 
 from archive.models import CollectionItem
 
@@ -582,3 +583,66 @@ def test_create_collection_item_rejects_svg(client, make_user, settings, tmp_pat
 
     assert response.status_code == 400
     assert "image" in response.json()
+
+
+@pytest.mark.django_db
+def test_patch_replacing_image_deletes_previous_file(
+    client,
+    make_user,
+    make_collection_item,
+    png_bytes,
+    settings,
+    tmp_path,
+    django_capture_on_commit_callbacks,
+):
+    """Security gate M3 (2026-07-16): PATCHing a new image onto a
+    CollectionItem must delete the file it replaces — Django's FileField
+    reassignment does not remove the old storage object on its own, and
+    post_delete only fires on row deletion, not on update-in-place. Without
+    this, repeated image PATCHes on the same item accumulate unlimited
+    orphaned files per user. CollectionItem is the first archive model with
+    both an image and an update path (PersonalEntry has no PATCH,
+    VisitRecordPhoto is create/delete-only) — a genuinely new C5 surface."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user(username="ci-patch-image-replace")
+    item = make_collection_item(user, name="이미지 교체")
+
+    client.force_login(user)
+    # Django's test client only auto-encodes multipart file uploads for
+    # .post() — .patch() passes `data` through unencoded, so a file upload
+    # must be multipart-encoded by hand here (encode_multipart/BOUNDARY).
+    with django_capture_on_commit_callbacks(execute=True):
+        first_response = client.patch(
+            f"/api/collection-items/{item.id}/",
+            encode_multipart(
+                BOUNDARY,
+                {"image": SimpleUploadedFile("first.png", png_bytes(), content_type="image/png")},
+            ),
+            content_type=MULTIPART_CONTENT,
+        )
+    assert first_response.status_code == 200
+    item.refresh_from_db()
+    storage = item.image.storage
+    first_file_name = item.image.name
+    assert storage.exists(first_file_name)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        second_response = client.patch(
+            f"/api/collection-items/{item.id}/",
+            encode_multipart(
+                BOUNDARY,
+                {
+                    "image": SimpleUploadedFile(
+                        "second.png", png_bytes(color=(0, 255, 0)), content_type="image/png"
+                    )
+                },
+            ),
+            content_type=MULTIPART_CONTENT,
+        )
+    assert second_response.status_code == 200
+    item.refresh_from_db()
+    second_file_name = item.image.name
+
+    assert second_file_name != first_file_name
+    assert not storage.exists(first_file_name)
+    assert storage.exists(second_file_name)
