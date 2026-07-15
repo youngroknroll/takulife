@@ -23,6 +23,14 @@ proceeds to DELETE. A DELETE-count assertion alone would not have caught
 this defect; every bound listener does call TakuConfirm synchronously before
 that cancellation can happen, which is why that call count is the signal
 that actually distinguishes one binding from two.
+
+This masking effect is latent, not a live defect: bindItemDeletes()'s
+dataset.deleteBound guard currently prevents any double-bind from ever
+occurring, so no user sees a duplicate confirm, a duplicate DELETE, or an
+incorrect "already deleted" error today. The risk only resurfaces if that
+guard is later removed or bypassed — this test exists to catch exactly that
+regression, since a DELETE-count assertion would stay green even after the
+guard breaks.
 """
 import pytest
 
