@@ -13,6 +13,7 @@ from core.errors import error_response, field_error_response
 from core.promotion import (
     PromotionAlreadySubmittedError,
     PromotionDuplicateError,
+    PromotionKindNotAllowedError,
     PromotionNotFoundError,
     PromotionUnsafeUrlError,
     promote_personal_entry,
@@ -42,6 +43,8 @@ class PromotePersonalEntryView(APIView):
             )
         except PromotionNotFoundError:
             return error_response("Not found.", 404)
+        except PromotionKindNotAllowedError:
+            return error_response("This item cannot be promoted.", 400)
         except PromotionUnsafeUrlError:
             return field_error_response(
                 "official_url", "This URL is not allowed as an official URL."
