@@ -392,3 +392,24 @@ def test_update_collection_item_guards_against_concurrent_committed_state(make_u
     item.refresh_from_db()
     assert item.quantity == 5
     assert item.tradeable_quantity == 5
+
+
+@pytest.mark.django_db
+def test_update_collection_item_raises_does_not_exist_when_deleted_concurrently(make_user):
+    """Security gate follow-up (2026-07-16): M2's own fix — re-fetching
+    under select_for_update() — introduced a new TOCTOU crash: if another
+    request deletes the row between the caller's original fetch and this
+    call, `CollectionItem.objects.select_for_update().get(pk=item.pk)`
+    itself raises DoesNotExist. This is the service-layer half of that
+    finding — archive/views.py must translate it to Http404 (see
+    tests/archive/test_collection_items_api.py's
+    test_patch_race_with_concurrent_delete_returns_404 for the view-layer
+    half, which mirrors VisitRecordPhotoCreateView's identical
+    VisitRecord.DoesNotExist -> Http404 guard for the same race shape)."""
+    user = make_user(username="ci-update-concurrent-delete")
+    item = create_collection_item(user=user, name="동시 삭제 경합")
+    stale_item = CollectionItem.objects.get(pk=item.pk)  # a second caller's fetch
+    CollectionItem.objects.filter(pk=item.pk).delete()  # concurrent delete
+
+    with pytest.raises(CollectionItem.DoesNotExist):
+        update_collection_item(item=stale_item, quantity=2)

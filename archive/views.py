@@ -361,3 +361,11 @@ class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
             )
         except DjangoValidationError as exc:
             _translate_domain_validation_error(exc)
+        except CollectionItem.DoesNotExist:
+            # The item existed at this view's get_object() check above but
+            # was deleted (e.g. by a concurrent request) before the
+            # service's select_for_update().get(...) ran (security gate
+            # follow-up, 2026-07-16 — the same TOCTOU window
+            # VisitRecordPhotoCreateView already guards for VisitRecord).
+            # Surface it as a normal 404 instead of a 500.
+            raise Http404

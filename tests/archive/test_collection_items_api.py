@@ -403,6 +403,98 @@ def test_patch_fk_pair_conflict_returns_400_not_500(
 
 
 # ---------------------------------------------------------------------------
+# Security gate follow-up (2026-07-16): M2's select_for_update() re-fetch
+# inside update_collection_item can itself raise CollectionItem.DoesNotExist
+# if another request deletes the row in the window between this view's
+# get_object() and that re-fetch — a new TOCTOU crash M2's own fix
+# introduced. VisitRecordPhotoCreateView already guards the identical race
+# shape for VisitRecord.DoesNotExist (archive/views.py).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_patch_race_with_concurrent_delete_returns_404(
+    client, make_user, make_collection_item, monkeypatch
+):
+    """If the CollectionItem is deleted between the view's get_object() and
+    update_collection_item's select_for_update().get() re-fetch, the view
+    must return 404, not 500.
+
+    Stays at the view layer (rather than a pure service test) because the
+    race is simulated by monkeypatching archive.views' own imported
+    update_collection_item reference — that patch point only exists here
+    (mirrors test_visit_records_api.py's
+    test_upload_photo_race_with_concurrent_delete_returns_404 exactly). The
+    service-level fact that update_collection_item raises
+    CollectionItem.DoesNotExist under this race is covered separately in
+    tests/archive/test_archive_services.py, which is free to import
+    archive.services directly.
+    """
+    user = make_user(username="ci-patch-concurrent-delete")
+    item = make_collection_item(user, name="동시 삭제 경합")
+
+    from archive import views as archive_views
+
+    original_update_collection_item = archive_views.update_collection_item
+
+    def racing_update_collection_item(*, item, **fields):
+        # Simulate a concurrent delete landing between the view's
+        # get_object() and the service's select_for_update().get().
+        CollectionItem.objects.filter(pk=item.pk).delete()
+        return original_update_collection_item(item=item, **fields)
+
+    monkeypatch.setattr(
+        archive_views, "update_collection_item", racing_update_collection_item
+    )
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/collection-items/{item.id}/",
+        {"name": "실패해야 함"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 404
+    assert not CollectionItem.objects.filter(pk=item.id).exists()
+
+
+@pytest.mark.django_db
+def test_delete_survives_concurrent_delete_race(
+    client, make_user, make_collection_item, monkeypatch
+):
+    """Checked, not assumed (PO instruction, 2026-07-16): does DELETE have
+    the same TOCTOU crash as PATCH? destroy() calls instance.delete()
+    directly on the already-fetched object with no re-fetch step, and
+    Django's Model.delete() affects 0 rows (no exception) when the row is
+    already gone — so the answer should be no. Verified here by actually
+    deleting the row in the window between the view's get_object() and
+    perform_destroy()'s instance.delete() call, not just by reading
+    Model.delete()'s source."""
+    from archive.views import CollectionItemDetailView
+
+    user = make_user(username="ci-delete-concurrent-race")
+    item = make_collection_item(user, name="동시 삭제 경합 확인")
+
+    original_get_object = CollectionItemDetailView.get_object
+
+    def racing_get_object(self):
+        obj = original_get_object(self)
+        # Simulate a second concurrent DELETE request completing here,
+        # between this view's ownership-scoped fetch and perform_destroy's
+        # instance.delete() call below.
+        CollectionItem.objects.filter(pk=obj.pk).delete()
+        return obj
+
+    monkeypatch.setattr(CollectionItemDetailView, "get_object", racing_get_object)
+
+    client.force_login(user)
+    response = client.delete(f"/api/collection-items/{item.id}/")
+
+    assert response.status_code == 204
+    assert not CollectionItem.objects.filter(pk=item.id).exists()
+
+
+# ---------------------------------------------------------------------------
 # CP16~22: search/filter query params (work_title, character_name,
 # item_type, is_wanted, duplicate, tradeable). `duplicate`/`tradeable` are
 # *derived* from quantity/tradeable_quantity, not stored fields — the plan
