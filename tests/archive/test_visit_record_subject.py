@@ -16,7 +16,7 @@ from archive.models import PersonalEntry, VisitRecord
 @pytest.mark.django_db
 def test_visit_record_accepts_personal_entry_subject(make_user):
     user = make_user(username="vr-pe")
-    entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
     record = VisitRecord.objects.create(
         user=user, personal_entry=entry, visited_on="2026-06-20"

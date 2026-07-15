@@ -40,7 +40,7 @@ def test_promote_creates_draft_and_marks_entry_submitted(make_user, make_entry):
 def test_promote_other_users_entry_not_found(make_user, make_entry):
     owner = make_user(username="promo-owner")
     other = make_user(username="promo-other")
-    entry = make_entry(owner, kind="goods", title="X")
+    entry = make_entry(owner, kind="place", title="X")
 
     with pytest.raises(PromotionNotFoundError):
         promote_personal_entry(

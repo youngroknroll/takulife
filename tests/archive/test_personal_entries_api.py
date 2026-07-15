@@ -19,14 +19,14 @@ def test_create_personal_entry_returns_201_and_sets_owner(client, make_user):
     client.force_login(user)
     response = client.post(
         "/api/personal-entries/",
-        {"kind": "goods", "title": "내가 산 굿즈", "memo": "중고 득템"},
+        {"kind": "place", "title": "내가 발견한 장소", "memo": "즐겨찾음"},
         content_type="application/json",
     )
 
     assert response.status_code == 201
     data = response.json()
-    assert data["title"] == "내가 산 굿즈"
-    assert data["kind"] == "goods"
+    assert data["title"] == "내가 발견한 장소"
+    assert data["kind"] == "place"
     entry = PersonalEntry.objects.get(id=data["id"])
     assert entry.user == user  # owner taken from the request, not the payload
 
@@ -94,7 +94,7 @@ def test_create_personal_entry_rejects_non_image_bytes(client, make_user, settin
     response = client.post(
         "/api/personal-entries/",
         {
-            "kind": "goods",
+            "kind": "place",
             "title": "스푸핑 이미지",
             "image": SimpleUploadedFile(
                 "not_an_image.jpg", b"notanimage", content_type="image/jpeg"

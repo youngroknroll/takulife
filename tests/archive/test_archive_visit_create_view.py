@@ -42,7 +42,7 @@ class TestArchiveVisitCreateView:
     def test_selectable_personal_entries_scoped_to_user(self, make_user, make_entry):
         user = make_user()
         other = make_user(username="other")
-        mine = make_entry(user, kind="goods", title="내 굿즈")
+        mine = make_entry(user, kind="place", title="내 장소")
         make_entry(other, kind="place", title="남의 카페")
 
         client = Client()
