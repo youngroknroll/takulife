@@ -37,6 +37,18 @@
 # available correlation short of adding a schema field the plan didn't
 # approve). Unrelated pre-existing CollectionItem rows and the original
 # PersonalEntry rows are never touched by either direction.
+#
+# Reversibility window (approved 2026-07-16, PO sign-off, gate follow-up M1):
+# this reverse only fully works while 0018 has not yet been applied. Once
+# 0018 runs, `migrate archive 0016` still exits 0 but is a silent no-op in
+# practice: 0018's own reverse is RunPython.noop (see 0018's docstring), so
+# the GOODS rows this migration's reverse looks for
+# (PersonalEntry.objects.filter(kind="goods")) no longer exist — the loop
+# iterates zero rows and deletes zero CollectionItem copies. The DB is then
+# left in neither the pre-C4 state nor a fully-reverted one, but exactly the
+# post-0017 state (CollectionItem copies present, GOODS rows gone). This is
+# the approved design, not a defect — plan §3-5 deliberately scoped the
+# reversibility window to close at 0018.
 
 from django.core.files.base import ContentFile
 from django.db import migrations, transaction

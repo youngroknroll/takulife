@@ -12,6 +12,13 @@
 # restoring a deleted GOODS row loses no longer-recoverable information (the
 # 0017 CollectionItem copy is the durable record going forward), and this is
 # a dev-only rollback scenario with zero real users at the time of writing.
+#
+# This noop is also what closes 0017's reversibility window (gate follow-up
+# M1, see 0017's docstring for the full explanation): once this migration
+# has run, `migrate archive 0016` no longer restores GOODS rows, so 0017's
+# reverse finds nothing left to match and deletes no CollectionItem copies
+# either. That is the approved design (plan §3-5) — applying 0018 is the
+# deliberate end of the rollback window, not an accidental side effect.
 
 from django.db import migrations, models
 
