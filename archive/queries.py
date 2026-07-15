@@ -310,6 +310,11 @@ def user_collection_item_filter_values(user) -> dict:
     core.vocab import — work_title/character_name/item_type are stored as
     free text with no vocab resolution step, so dedup and blank exclusion are
     done directly here in the query layer rather than deferred to the view.
+
+    Each list is explicitly ordered — the caller renders these directly as
+    <select> options, and DISTINCT without ORDER BY has undefined row order
+    (e.g. the planner may choose a HashAggregate plan instead of an
+    index-derived Sort).
     """
     fields = ("work_title", "character_name", "item_type")
     return {
@@ -318,6 +323,7 @@ def user_collection_item_filter_values(user) -> dict:
             .exclude(**{field: ""})
             .values_list(field, flat=True)
             .distinct()
+            .order_by(field)
         )
         for field in fields
     }

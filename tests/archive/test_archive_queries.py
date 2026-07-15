@@ -490,6 +490,22 @@ def test_user_collection_item_filter_values_dedupes_and_scopes_to_owner(make_use
 
 
 @pytest.mark.django_db
+def test_user_collection_item_filter_values_returns_sorted_lists(make_user):
+    """Each list must be sorted — C5b-2 renders these directly as <select>
+    options, and DISTINCT without ORDER BY has undefined ordering (e.g. a
+    Postgres HashAggregate plan). Items are created out of order (C, A, B)
+    so this assertion only passes if the query actually sorts."""
+    user = make_user(username="ci-filter-values-order")
+    CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 C")
+    CollectionItem.objects.create(user=user, name="굿즈 2", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="굿즈 3", work_title="작품 B")
+
+    values = user_collection_item_filter_values(user)
+
+    assert values["work_title"] == ["작품 A", "작품 B", "작품 C"]
+
+
+@pytest.mark.django_db
 def test_user_collection_item_filter_values_excludes_blank_fields(make_user):
     """A row with no work_title/character_name/item_type set must not
     contribute an empty-string entry to any of the three lists."""
