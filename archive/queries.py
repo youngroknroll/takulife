@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from events.models import Event
 
-from .models import EventInterest, PersonalEntry, UserEventStatus, VisitRecord
+from .models import CollectionItem, EventInterest, PersonalEntry, UserEventStatus, VisitRecord
 
 # Canonical archive status slugs, sourced from the model's own choices so the
 # set has a single source of truth. Excludes "interested" (now EventInterest).
@@ -247,6 +247,14 @@ def list_user_visit_records(
             | Q(short_review__icontains=q)
         )
     return queryset
+
+
+def list_user_collection_items(user):
+    """Return a user's collection items, newest first, owner-scoped.
+
+    Mirrors list_user_personal_entries' owner-scoped ordering shape.
+    """
+    return CollectionItem.objects.filter(user=user).order_by("-id")
 
 
 def user_visit_category_values(user):

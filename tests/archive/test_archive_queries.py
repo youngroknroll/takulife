@@ -2,9 +2,10 @@
 
 import pytest
 
-from archive.models import PersonalEntry, VisitRecord
+from archive.models import CollectionItem, PersonalEntry, VisitRecord
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
+    list_user_collection_items,
     list_user_interests,
     list_user_personal_entries,
     list_user_planned_events,
@@ -317,3 +318,20 @@ def test_user_personal_entry_counts_zero_for_no_entries(make_user):
     counts = user_personal_entry_counts(user)
 
     assert counts == {"total_count": 0, "place_count": 0}
+
+
+# ---------------------------------------------------------------------------
+# list_user_collection_items (PR-C1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_list_user_collection_items_scopes_to_owner(make_user):
+    user = make_user(username="ci-query-owner")
+    other = make_user(username="ci-query-other")
+    mine = CollectionItem.objects.create(user=user, name="내 굿즈")
+    CollectionItem.objects.create(user=other, name="남의 굿즈")
+
+    items = list(list_user_collection_items(user))
+
+    assert items == [mine]
