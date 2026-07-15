@@ -13,18 +13,10 @@
     <section class="hero">
       <h1>직접 등록 아카이브</h1>
 
-      <div class="summary-grid" style="--summary-cols: 3">
+      <div class="summary-grid" style="--summary-cols: 1">
         <article class="summary-card">
           <p class="summary-label">전체</p>
           <p class="summary-value">{{ total_count }}</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">장소</p>
-          <p class="summary-value">{{ place_count }}</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">굿즈</p>
-          <p class="summary-value">{{ goods_count }}</p>
         </article>
       </div>
     </section>
@@ -56,16 +48,10 @@
           <h2>항목 추가</h2>
 
           <form id="entry-create-form" class="create-form" novalidate>
-            <div class="form-group">
-              <label for="entry-kind">종류</label>
-              <select id="entry-kind" name="kind" required>
-                <option value="place">장소 (카페·팝업 등)</option>
-                <option value="goods">굿즈 (상품)</option>
-              </select>
-            </div>
+            <input type="hidden" name="kind" value="place">
             <div class="form-group">
               <label for="entry-title">이름</label>
-              <input id="entry-title" type="text" name="title" maxlength="255" required placeholder="예: 숨은 콜라보 카페 / 아크릴 스탠드">
+              <input id="entry-title" type="text" name="title" maxlength="255" required placeholder="예: 숨은 콜라보 카페 / 한정 팝업스토어">
             </div>
 
             <details class="entry-detail-group" id="entry-detail-fields">
@@ -76,7 +62,7 @@
               <div class="entry-detail-body">
                 <div class="form-group">
                   <label for="entry-category">분류 (선택)</label>
-                  <input id="entry-category" type="text" name="category" maxlength="100" placeholder="예: 콜라보 카페, 굿즈">
+                  <input id="entry-category" type="text" name="category" maxlength="100" placeholder="예: 콜라보 카페, 팝업스토어">
                 </div>
                 <div class="form-group">
                   <label for="entry-work">작품명 (선택)</label>
@@ -112,7 +98,7 @@
           <ul class="rule-list">
             <li>직접 등록 아카이브는 본인만 보고 관리할 수 있습니다</li>
             <li>공개 행사 목록·검색에는 노출되지 않습니다</li>
-            <li>비공식 장소·굿즈를 자유롭게 기록할 수 있습니다</li>
+            <li>비공식 장소를 자유롭게 기록할 수 있습니다</li>
           </ul>
         </section>
       </aside>
