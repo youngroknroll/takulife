@@ -420,12 +420,36 @@ def test_list_user_collection_items_q_matches_name_work_title_character_name_or_
 
 @pytest.mark.django_db
 def test_list_user_collection_items_empty_q_is_a_no_op(make_user):
-    """An empty `q` must not filter anything out — mirrors the other list_*
-    functions' `if q:` guard (a `q is not None` guard would wrongly filter
-    every row to an empty-string match)."""
+    """An empty `q` must not filter anything out.
+
+    `if q:` is a query optimization, not a correctness guard: Django renders
+    `Q(field__icontains="")` as `field LIKE '%%'`, which always matches every
+    row regardless of the field's value, so `if q is not None:` would be a
+    behaviorally equivalent refactor here and must still pass this test —
+    the guard exists only to skip four no-op icontains clauses, not to
+    prevent an empty string from over-filtering.
+
+    All four searchable fields are populated with distinct, non-blank values
+    (rather than left at their blank default) so a genuinely broken lookup —
+    e.g. `icontains` swapped for `exact` with the guard removed, which would
+    only coincidentally match rows whose fields happen to be blank — cannot
+    slip through and still pass by accident.
+    """
     user = make_user(username="ci-query-q-empty")
-    first = CollectionItem.objects.create(user=user, name="굿즈 1")
-    second = CollectionItem.objects.create(user=user, name="굿즈 2")
+    first = CollectionItem.objects.create(
+        user=user,
+        name="굿즈 1",
+        work_title="작품 1",
+        character_name="캐릭터 1",
+        memo="메모 1",
+    )
+    second = CollectionItem.objects.create(
+        user=user,
+        name="굿즈 2",
+        work_title="작품 2",
+        character_name="캐릭터 2",
+        memo="메모 2",
+    )
 
     items = set(list_user_collection_items(user, q=""))
 
