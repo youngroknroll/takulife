@@ -176,3 +176,28 @@ class TestArchivePartialBranch:
         assert resp.status_code == 200
         assert "매칭 카페".encode() in resp.content
         assert "제외 장소".encode() not in resp.content
+
+    def test_items_page_hides_actions_on_goods_rows(self, user_client, make_entry):
+        # GOODS is no longer a valid interest/status/promotion subject
+        # (collection domain plan §3-3, gate M1: goods are unreachable via
+        # every UI path once C2 merges) — its row must render with no
+        # interest/status buttons and no 공식 제보 form, while a place row
+        # keeps them.
+        user, client = user_client()
+        make_entry(user, kind=PersonalEntry.Kind.PLACE, title="장소 항목")
+        make_entry(user, kind=PersonalEntry.Kind.GOODS, title="굿즈 항목")
+
+        resp = client.get("/archive/items/")
+
+        assert resp.status_code == 200
+        content = resp.content
+        assert b"data-interest-toggle" in content
+        assert b"data-status-action" in content
+        assert b"data-promote-toggle" in content
+
+        rows = {row["entry"].title: row for row in resp.context["entry_rows"]}
+        place_id = rows["장소 항목"]["entry"].id
+        goods_id = rows["굿즈 항목"]["entry"].id
+        assert f'data-personal-entry-id="{goods_id}"'.encode() not in content
+        assert f'data-promote-toggle="{goods_id}"'.encode() not in content
+        assert f'data-personal-entry-id="{place_id}"'.encode() in content

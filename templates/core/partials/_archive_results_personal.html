@@ -30,6 +30,7 @@
           </p>
         {% endif %}
 
+        {% if row.entry.kind == "place" %}
         <div class="entry-actions-bar">
         <div class="status-row" data-status-error-container>
           <button
@@ -84,6 +85,7 @@
             <p class="form-error" data-promote-error="{{ row.entry.id }}"></p>
             <button class="form-submit-btn" type="submit">제보하기</button>
           </form>
+        {% endif %}
         {% endif %}
       </article>
     {% endfor %}
