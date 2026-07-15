@@ -9,7 +9,7 @@ domain).
 """
 import pytest
 from django.db import IntegrityError
-from django.test import Client
+from django.test import Client, override_settings
 
 from core.models import HomeConfig
 from staff.models import StaffActionLog
@@ -225,3 +225,40 @@ class TestStaffHomeCategoriesAuditLog:
         config = HomeConfig.get_solo()
         assert config.featured_categories == original_categories
         assert StaffActionLog.objects.count() == 0
+
+    def test_post_ignores_forwarded_header_when_trusted_proxy_count_unset(self, staff_client):
+        """Spoofing guard: TRUSTED_PROXY_COUNT unset (the default) must not
+        let an untrusted X-Forwarded-For header override REMOTE_ADDR."""
+        staff, client = staff_client()
+
+        resp = client.post(
+            "/staff/home-categories/",
+            data={
+                "feature_exhibition": "on",
+                "order_exhibition": "1",
+            },
+            REMOTE_ADDR="203.0.113.9",
+            HTTP_X_FORWARDED_FOR="198.51.100.1",
+        )
+
+        assert resp.status_code == 302
+        entry = StaffActionLog.objects.get()
+        assert entry.ip_address == "203.0.113.9"
+
+    @override_settings(TRUSTED_PROXY_COUNT=1)
+    def test_post_resolves_forwarded_client_ip_when_trusted_proxy_count_set(self, staff_client):
+        staff, client = staff_client()
+
+        resp = client.post(
+            "/staff/home-categories/",
+            data={
+                "feature_exhibition": "on",
+                "order_exhibition": "1",
+            },
+            REMOTE_ADDR="10.0.0.5",
+            HTTP_X_FORWARDED_FOR="203.0.113.9",
+        )
+
+        assert resp.status_code == 302
+        entry = StaffActionLog.objects.get()
+        assert entry.ip_address == "203.0.113.9"

@@ -409,3 +409,73 @@ def test_load_media_storage_config_raises_when_bucket_set_but_secret_missing(
 
     with pytest.raises(ImproperlyConfigured):
         settings_module.load_media_storage_config()
+
+
+# ---------------------------------------------------------------------------
+# PR-0d: proxy-aware client IP (TDD Coach checkpoints CP-1..CP-3)
+# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0d)
+# ---------------------------------------------------------------------------
+
+
+def test_load_trusted_proxy_count_defaults_to_none_when_unset(monkeypatch, tmp_path):
+    monkeypatch.delenv("TRUSTED_PROXY_COUNT", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_trusted_proxy_count() is None
+
+
+def test_load_trusted_proxy_count_parses_env_int(monkeypatch):
+    monkeypatch.setenv("TRUSTED_PROXY_COUNT", "1")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_trusted_proxy_count() == 1
+
+
+def test_load_trusted_proxy_count_raises_for_non_integer_value(monkeypatch):
+    monkeypatch.setenv("TRUSTED_PROXY_COUNT", "abc")
+
+    settings_module = importlib.import_module("config.settings")
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_trusted_proxy_count()
+
+
+def test_load_trusted_proxy_count_raises_for_negative_value(monkeypatch):
+    """Security follow-up (2026-07-14): a negative count would make
+    resolve_client_ip's hops[-trusted_proxy_count] a positive index,
+    trusting the attacker-controlled left end of X-Forwarded-For instead
+    of the right end — defeating the spoofing defense entirely."""
+    monkeypatch.setenv("TRUSTED_PROXY_COUNT", "-1")
+
+    settings_module = importlib.import_module("config.settings")
+
+    with pytest.raises(ImproperlyConfigured):
+        settings_module.load_trusted_proxy_count()
+
+
+def test_build_axes_client_ip_callable_returns_none_when_trusted_proxy_count_falsy():
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.build_axes_client_ip_callable(None) is None
+    assert settings_module.build_axes_client_ip_callable(0) is None
+
+
+def test_build_axes_client_ip_callable_returns_core_ip_path_when_trusted_proxy_count_set():
+    settings_module = importlib.import_module("config.settings")
+
+    assert (
+        settings_module.build_axes_client_ip_callable(1) == "core.ip.get_client_ip"
+    )
+
+
+def test_settings_module_wires_axes_client_ip_callable_attribute():
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.AXES_CLIENT_IP_CALLABLE == (
+        settings_module.build_axes_client_ip_callable(
+            settings_module.TRUSTED_PROXY_COUNT
+        )
+    )
