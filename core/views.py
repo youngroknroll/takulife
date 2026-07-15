@@ -626,10 +626,7 @@ def archive_personal_entries(request):
 
     # Summary counts always come from the unfiltered set so the header cards
     # report the user's total collection, independent of any active search.
-    entry_counts = user_personal_entry_counts(user)
-    total_count = entry_counts["total_count"]
-    place_count = entry_counts["place_count"]
-    goods_count = total_count - place_count
+    total_count = user_personal_entry_counts(user)["total_count"]
     has_entries = total_count > 0
 
     # Page queryset is filtered by q (if provided) and then paginated.
@@ -647,7 +644,6 @@ def archive_personal_entries(request):
             {
                 "entry": entry,
                 "is_place": entry.kind == PersonalEntry.Kind.PLACE,
-                "kind_label": "장소" if entry.kind == PersonalEntry.Kind.PLACE else "굿즈",
                 "interest_id": interest_map.get(entry.id),
                 "status_slug": status_slug,
                 "status_id": status_id,
@@ -666,8 +662,6 @@ def archive_personal_entries(request):
         context={
             "entry_rows": entry_rows,
             "total_count": total_count,
-            "place_count": place_count,
-            "goods_count": goods_count,
             "has_entries": has_entries,
             "page_obj": page_obj,
             "pager_query": pager_query,
