@@ -479,3 +479,18 @@ def test_settings_module_wires_axes_client_ip_callable_attribute():
             settings_module.TRUSTED_PROXY_COUNT
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# PR-0e checkpoint A1: shared cache backend (G11)
+# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+# ---------------------------------------------------------------------------
+
+
+def test_settings_module_uses_database_cache_backend():
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.CACHES["default"] == {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }

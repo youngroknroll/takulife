@@ -10,6 +10,7 @@ import secrets
 import PIL.Image
 import pytest
 from django.core.cache import cache
+from django.db.utils import Error as DjangoDatabaseError
 from django.test import Client
 
 from drafts.models import DraftSource, EventDraft
@@ -17,16 +18,33 @@ from events.models import Event
 
 
 @pytest.fixture(autouse=True)
-def clear_cache():
+def clear_cache(db):
     """Isolate DRF throttle state between tests.
 
-    Scoped rate throttling stores request history in the default (LocMem) cache,
+    Scoped rate throttling stores request history in the default cache,
     which is not rolled back with the DB. Clear it around every test so one
     test's promotion requests never count against another's throttle budget.
+
+    Depends on the `db` fixture (PR-0e, DatabaseCache switch): the default
+    cache backend is now DatabaseCache (config/settings.py CACHES), so
+    cache.clear() itself needs a DB connection/transaction — every test gets
+    django_db-equivalent DB access as a side effect, matching the migration
+    to a Postgres-backed cache table.
+
+    The teardown clear is wrapped: a test that intentionally simulates a DB
+    outage (e.g. tests/core/test_api_bootstrap.py's
+    test_health_endpoint_returns_503_when_database_unreachable, which
+    monkeypatches connection.ensure_connection to always raise) leaves that
+    monkeypatch in effect for this fixture's post-yield teardown too — clear
+    is best-effort cache hygiene, not the behavior under test, so a DB error
+    here must not turn an intentional-outage test into a spurious failure.
     """
     cache.clear()
     yield
-    cache.clear()
+    try:
+        cache.clear()
+    except DjangoDatabaseError:
+        pass
 
 
 @pytest.fixture
