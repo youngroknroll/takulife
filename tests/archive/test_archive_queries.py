@@ -387,6 +387,49 @@ def test_list_user_collection_items_tradeable_filter_derives_from_tradeable_quan
     assert list(list_user_collection_items(user, tradeable=False)) == [not_tradeable]
 
 
+@pytest.mark.django_db
+def test_list_user_collection_items_q_matches_name_work_title_character_name_or_memo(
+    make_user,
+):
+    """`q` narrows to name/work_title/character_name/memo (icontains), mirroring
+    list_user_personal_entries' q pattern. item_type is deliberately NOT a q
+    target field — a decoy row matching only on item_type must be excluded."""
+    user = make_user(username="ci-query-q")
+    other = make_user(username="ci-query-q-other")
+    by_name = CollectionItem.objects.create(user=user, name="레어 스탬프")
+    by_work_title = CollectionItem.objects.create(
+        user=user, name="굿즈 1", work_title="레어 작품"
+    )
+    by_character_name = CollectionItem.objects.create(
+        user=user, name="굿즈 2", character_name="레어 캐릭터"
+    )
+    by_memo = CollectionItem.objects.create(user=user, name="굿즈 3", memo="레어 메모")
+    item_type_decoy = CollectionItem.objects.create(
+        user=user, name="굿즈 4", item_type="레어 타입"
+    )
+    other_user_same_name = CollectionItem.objects.create(user=other, name="레어 스탬프")
+
+    items = set(list_user_collection_items(user, q="레어"))
+
+    assert items == {by_name, by_work_title, by_character_name, by_memo}
+    assert item_type_decoy not in items
+    assert other_user_same_name not in items
+
+
+@pytest.mark.django_db
+def test_list_user_collection_items_empty_q_is_a_no_op(make_user):
+    """An empty `q` must not filter anything out — mirrors the other list_*
+    functions' `if q:` guard (a `q is not None` guard would wrongly filter
+    every row to an empty-string match)."""
+    user = make_user(username="ci-query-q-empty")
+    first = CollectionItem.objects.create(user=user, name="굿즈 1")
+    second = CollectionItem.objects.create(user=user, name="굿즈 2")
+
+    items = set(list_user_collection_items(user, q=""))
+
+    assert items == {first, second}
+
+
 # ---------------------------------------------------------------------------
 # user_personal_interest_ids / user_personal_statuses — exclude goods rows
 # (defensive filter against pre-C4 transitional data; goods can no longer be

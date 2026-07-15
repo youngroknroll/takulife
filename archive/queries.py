@@ -256,6 +256,7 @@ def list_user_collection_items(
     is_wanted=None,
     duplicate=None,
     tradeable=None,
+    q: str = "",
 ):
     """Return a user's collection items, newest first, owner-scoped, with
     optional filters (collection domain design plan §4 PR-C5 CP16~22).
@@ -265,6 +266,11 @@ def list_user_collection_items(
     fields — "duplicate" means quantity >= 2 and "tradeable" means
     tradeable_quantity > 0 (the plan deliberately removed a separate
     duplicate_count field, §3-1).
+
+    ``q`` narrows results to rows whose name, work_title, character_name, or
+    memo matches the search term (case-insensitive contains), mirroring
+    list_user_personal_entries' q pattern. item_type is deliberately not a
+    q target field.
     """
     queryset = CollectionItem.objects.filter(user=user).order_by("-id")
     if work_title:
@@ -275,6 +281,13 @@ def list_user_collection_items(
         queryset = queryset.filter(item_type=item_type)
     if is_wanted is not None:
         queryset = queryset.filter(is_wanted=is_wanted)
+    if q:
+        queryset = queryset.filter(
+            Q(name__icontains=q)
+            | Q(work_title__icontains=q)
+            | Q(character_name__icontains=q)
+            | Q(memo__icontains=q)
+        )
     if duplicate is not None:
         if duplicate:
             queryset = queryset.filter(quantity__gte=2)
