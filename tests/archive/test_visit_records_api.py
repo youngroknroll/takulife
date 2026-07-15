@@ -13,7 +13,7 @@ import PIL.Image
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from archive.models import VisitRecord, VisitRecordPhoto
+from archive.models import UserEventStatus, VisitRecord, VisitRecordPhoto
 
 
 # ---------------------------------------------------------------------------
@@ -85,6 +85,32 @@ def test_create_visit_record_requires_authentication(client, make_event):
     )
 
     assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Create auto-transitions the status subject to visited (PR-C3 orchestration)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_visit_record_via_api_auto_transitions_planned_status_to_visited(
+    client, make_user, make_event, make_status
+):
+    user = make_user()
+    event = make_event()
+    make_status(user, event, status=UserEventStatus.Status.PLANNED)
+
+    client.force_login(user)
+    response = client.post(
+        "/api/visit-records/",
+        {"event": event.id, "visited_on": "2026-05-26"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 201
+    assert UserEventStatus.objects.get(user=user, event=event).status == (
+        UserEventStatus.Status.VISITED
+    )
 
 
 # ---------------------------------------------------------------------------
