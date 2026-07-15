@@ -51,6 +51,23 @@ class TestArchiveRecordPageActions:
 
 
 @pytest.mark.django_db
+class TestVisitRecordCollectionShortcut:
+    """다녀온 기록 (/archive/visits/) 카드에 굿즈 등록 바로가기가 붙는다
+    (collection domain design plan §4 PR-C5b-2 CP-V1). 기존 수정/기록 삭제
+    액션 옆에 ?visit_record=<id>로 컬렉션 등록 폼을 프리셀렉트하는 링크가
+    붙는다 — test_visited_row_has_record_shortcut의 미러."""
+
+    def test_visit_row_has_collection_add_shortcut(self, user_client, make_event, make_visit):
+        user, client = user_client()
+        event = make_event(title="다녀온 행사")
+        record = make_visit(user, event=event, visited_on="2026-05-01")
+
+        resp = client.get("/archive/visits/")
+
+        assert f"/archive/collection/new/?visit_record={record.id}".encode() in resp.content
+
+
+@pytest.mark.django_db
 class TestVisitGuidanceMoved:
     def test_visits_page_drops_guidance_panel(self, user_client):
         _, client = user_client()
