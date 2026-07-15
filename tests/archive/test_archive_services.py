@@ -327,6 +327,31 @@ def test_update_collection_item_rejects_event_conflicting_with_existing_visit_re
 
 
 @pytest.mark.django_db
+def test_update_collection_item_rejects_nulling_event_with_existing_visit_record(
+    make_user, make_event, make_visit
+):
+    """QVL finding D1 (2026-07-16): the FK-pair guard above only fired when
+    the *merged* event was non-null and mismatched — model.clean()'s own
+    condition requires event_id is not None, so `PATCH {"event": None}`
+    silently detached event while visit_record stayed attached, breaking
+    the invariant by omission. The quantity guard already reads merged
+    values (`fields.get("quantity", item.quantity)`) regardless of what the
+    payload touched; this guard must apply the same discipline."""
+    user = make_user(username="ci-update-fk-pair-null-event")
+    visit_event = make_event(title="고정된 방문 이벤트 2")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+    item = create_collection_item(
+        user=user, name="FK 쌍 null 확인", visit_record=visit_record
+    )
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, event=None)
+
+    item.refresh_from_db()
+    assert item.event_id == visit_event.id
+
+
+@pytest.mark.django_db
 def test_update_collection_item_allows_event_edit_when_no_visit_record(
     make_user, make_event
 ):

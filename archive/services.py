@@ -224,9 +224,19 @@ def update_collection_item(*, item, **fields):
     links can never disagree, and `visit_record` must belong to the item's
     owner.
 
-    full_clean() is also run so the model's clean() FK-pair guard applies
-    even when only `event` is touched on a row whose `visit_record` is
-    already set (§6-b Deferred: full_clean had no caller before this).
+    The FK-pair check reads *merged* values (fields.get(..., item.X)), the
+    same discipline as the quantity guard below — a PATCH that touches
+    `event` alone (or omits both fields entirely) cannot leave the pair
+    silently inconsistent by omission (QVL finding D1, 2026-07-16: an
+    earlier version only checked full_clean()'s model-level clean(), which
+    doesn't fire when the merged event is None, so `PATCH {"event": null}`
+    on a visit_record-linked row slipped through). Explicitly detaching
+    (`PATCH {"visit_record": null}`) is unaffected — the pair is exempt from
+    this check once visit_record itself is cleared.
+
+    full_clean() also runs so the model's clean() FK-pair guard covers any
+    other assignment paths (§6-b Deferred: full_clean had no caller before
+    C5).
     """
     quantity = fields.get("quantity", item.quantity)
     tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
@@ -240,13 +250,29 @@ def update_collection_item(*, item, **fields):
     if errors:
         raise ValidationError(errors)
 
-    if "visit_record" in fields and fields["visit_record"] is not None:
+    if "visit_record" in fields:
         visit_record = fields["visit_record"]
-        if visit_record.user_id != item.user_id:
+        if visit_record is not None:
+            if visit_record.user_id != item.user_id:
+                raise ValidationError(
+                    {"visit_record": "visit_record must belong to the item's owner."}
+                )
+            fields["event"] = visit_record.event
+        # else: visit_record explicitly cleared — event is free to be
+        # whatever the payload says (or whatever it already was); the
+        # FK-pair invariant no longer applies once visit_record is gone.
+    elif item.visit_record_id is not None and "event" in fields:
+        # visit_record wasn't touched by this PATCH but the item already has
+        # one — the merged event must still agree with it.
+        if fields["event"] != item.visit_record.event:
             raise ValidationError(
-                {"visit_record": "visit_record must belong to the item's owner."}
+                {
+                    "event": (
+                        "event must match visit_record.event when a "
+                        "visit_record is already set."
+                    )
+                }
             )
-        fields["event"] = visit_record.event
 
     # Capture the file this update is about to replace *before* mutating the
     # instance — Django's FieldFile reassignment does not delete the old
