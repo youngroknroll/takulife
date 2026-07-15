@@ -779,7 +779,20 @@ def archive_collection_item_create(request):
 @login_required
 @ensure_csrf_cookie
 def archive_collection_item_edit(request, item_id):
-    raise NotImplementedError  # stub — implemented in the edit-page TDD cycle
+    """Owner-scoped edit page (404 for another user's item). Mirrors
+    archive_collection_item_create: no name="event" control (event stays
+    server-synced from visit_record) and no visibility control (§3-1,
+    reserved for the future trade opt-in gate).
+    """
+    item = get_object_or_404(CollectionItem, pk=item_id, user=request.user)
+    return render(
+        request,
+        "core/archive/collection_edit.html",
+        {
+            "item": item,
+            "COLLECTION_ITEM_TYPE": COLLECTION_ITEM_TYPE,
+        },
+    )
 
 
 @login_required
