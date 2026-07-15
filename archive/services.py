@@ -192,18 +192,18 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
     )
     errors = {}
     if quantity < 0:
-        errors["quantity"] = "quantity must be >= 0."
+        errors["quantity"] = "quantity는 0 이상이어야 합니다."
     if tradeable_quantity < 0:
-        errors["tradeable_quantity"] = "tradeable_quantity must be >= 0."
+        errors["tradeable_quantity"] = "tradeable_quantity는 0 이상이어야 합니다."
     elif tradeable_quantity > quantity:
-        errors["tradeable_quantity"] = "tradeable_quantity must be <= quantity."
+        errors["tradeable_quantity"] = "tradeable_quantity는 quantity 이하여야 합니다."
     if errors:
         raise ValidationError(errors)
 
     if visit_record is not None:
         if visit_record.user_id != user.id:
             raise ValidationError(
-                {"visit_record": "visit_record must belong to the requesting user."}
+                {"visit_record": "visit_record는 요청한 사용자의 소유여야 합니다."}
             )
         event = visit_record.event
 
@@ -254,11 +254,11 @@ def update_collection_item(*, item, **fields):
         tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
         errors = {}
         if quantity < 0:
-            errors["quantity"] = "quantity must be >= 0."
+            errors["quantity"] = "quantity는 0 이상이어야 합니다."
         if tradeable_quantity < 0:
-            errors["tradeable_quantity"] = "tradeable_quantity must be >= 0."
+            errors["tradeable_quantity"] = "tradeable_quantity는 0 이상이어야 합니다."
         elif tradeable_quantity > quantity:
-            errors["tradeable_quantity"] = "tradeable_quantity must be <= quantity."
+            errors["tradeable_quantity"] = "tradeable_quantity는 quantity 이하여야 합니다."
         if errors:
             raise ValidationError(errors)
 
@@ -267,7 +267,7 @@ def update_collection_item(*, item, **fields):
             if visit_record is not None:
                 if visit_record.user_id != item.user_id:
                     raise ValidationError(
-                        {"visit_record": "visit_record must belong to the item's owner."}
+                        {"visit_record": "visit_record는 아이템 소유자의 소유여야 합니다."}
                     )
                 fields["event"] = visit_record.event
             # else: visit_record explicitly cleared — event is free to be
@@ -280,8 +280,8 @@ def update_collection_item(*, item, **fields):
                 raise ValidationError(
                     {
                         "event": (
-                            "event must match visit_record.event when a "
-                            "visit_record is already set."
+                            "visit_record가 설정된 경우 event는 "
+                            "visit_record.event와 일치해야 합니다."
                         )
                     }
                 )

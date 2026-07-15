@@ -256,6 +256,7 @@ def list_user_collection_items(
     is_wanted=None,
     duplicate=None,
     tradeable=None,
+    q: str = "",
 ):
     """Return a user's collection items, newest first, owner-scoped, with
     optional filters (collection domain design plan §4 PR-C5 CP16~22).
@@ -265,6 +266,11 @@ def list_user_collection_items(
     fields — "duplicate" means quantity >= 2 and "tradeable" means
     tradeable_quantity > 0 (the plan deliberately removed a separate
     duplicate_count field, §3-1).
+
+    ``q`` narrows results to rows whose name, work_title, character_name, or
+    memo matches the search term (case-insensitive contains), mirroring
+    list_user_personal_entries' q pattern. item_type is deliberately not a
+    q target field.
     """
     queryset = CollectionItem.objects.filter(user=user).order_by("-id")
     if work_title:
@@ -275,6 +281,13 @@ def list_user_collection_items(
         queryset = queryset.filter(item_type=item_type)
     if is_wanted is not None:
         queryset = queryset.filter(is_wanted=is_wanted)
+    if q:
+        queryset = queryset.filter(
+            Q(name__icontains=q)
+            | Q(work_title__icontains=q)
+            | Q(character_name__icontains=q)
+            | Q(memo__icontains=q)
+        )
     if duplicate is not None:
         if duplicate:
             queryset = queryset.filter(quantity__gte=2)
@@ -286,6 +299,51 @@ def list_user_collection_items(
         else:
             queryset = queryset.filter(tradeable_quantity=0)
     return queryset
+
+
+def user_collection_item_filter_values(user) -> dict:
+    """Return the distinct work_title/character_name/item_type values used by
+    a user's collection items, for populating filter widget options.
+
+    Unlike user_visit_category_values (below) — whose caller dedupes only
+    after resolving core.vocab labels, keeping this module free of a
+    core.vocab import — work_title/character_name/item_type are stored as
+    free text with no vocab resolution step, so dedup and blank exclusion are
+    done directly here in the query layer rather than deferred to the view.
+
+    Each list is explicitly ordered — the caller renders these directly as
+    <select> options, and DISTINCT without ORDER BY has undefined row order
+    (e.g. the planner may choose a HashAggregate plan instead of an
+    index-derived Sort).
+    """
+    fields = ("work_title", "character_name", "item_type")
+    return {
+        field: list(
+            CollectionItem.objects.filter(user=user)
+            .exclude(**{field: ""})
+            .values_list(field, flat=True)
+            .distinct()
+            .order_by(field)
+        )
+        for field in fields
+    }
+
+
+def user_collection_item_summary_counts(user) -> dict:
+    """Return summary counts for a user's collection items, split by
+    is_wanted (the archive/collection/ summary cards).
+
+    is_wanted is a non-null boolean, so owned (False) and wanted (True) are a
+    complete partition of the user's collection items — owned_count +
+    wanted_count always equals the user's full item count, matching the
+    C5b-2 filter chips (전체 / 보유 / 구함) exactly. There is deliberately no
+    separate total_count key.
+    """
+    queryset = CollectionItem.objects.filter(user=user)
+    return {
+        "owned_count": queryset.filter(is_wanted=False).count(),
+        "wanted_count": queryset.filter(is_wanted=True).count(),
+    }
 
 
 def user_visit_category_values(user):

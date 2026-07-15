@@ -155,28 +155,42 @@ def test_create_collection_item_visit_record_overrides_conflicting_explicit_even
 def test_create_collection_item_rejects_negative_quantity_before_db(make_user):
     user = make_user(username="ci-service-neg-qty")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc_info:
         create_collection_item(user=user, name="음수 수량", quantity=-1)
+
+    # A negative quantity also numerically exceeds the default
+    # tradeable_quantity (0), so the tradeable_quantity>quantity elif also
+    # fires alongside this branch — check only the quantity key's message,
+    # not the full dict, so this test stays scoped to CP1's branch.
+    assert exc_info.value.message_dict["quantity"] == ["quantity는 0 이상이어야 합니다."]
 
 
 @pytest.mark.django_db
 def test_create_collection_item_rejects_negative_tradeable_quantity_before_db(make_user):
     user = make_user(username="ci-service-neg-tradeable")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc_info:
         create_collection_item(
             user=user, name="음수 교환 수량", quantity=5, tradeable_quantity=-1
         )
+
+    assert exc_info.value.message_dict == {
+        "tradeable_quantity": ["tradeable_quantity는 0 이상이어야 합니다."]
+    }
 
 
 @pytest.mark.django_db
 def test_create_collection_item_rejects_tradeable_exceeding_quantity_before_db(make_user):
     user = make_user(username="ci-service-tradeable-exceeds")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc_info:
         create_collection_item(
             user=user, name="초과 교환 수량", quantity=1, tradeable_quantity=2
         )
+
+    assert exc_info.value.message_dict == {
+        "tradeable_quantity": ["tradeable_quantity는 quantity 이하여야 합니다."]
+    }
 
 
 @pytest.mark.django_db
@@ -188,8 +202,12 @@ def test_create_collection_item_rejects_visit_record_owned_by_another_user(
     event = make_event(title="타인 방문 이벤트")
     visit_record = make_visit(owner, event=event, visited_on="2026-01-01")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc_info:
         create_collection_item(user=other, name="타인 소유 위반", visit_record=visit_record)
+
+    assert exc_info.value.message_dict == {
+        "visit_record": ["visit_record는 요청한 사용자의 소유여야 합니다."]
+    }
 
 
 @pytest.mark.django_db
@@ -257,13 +275,53 @@ def test_update_collection_item_rejects_quantity_below_existing_tradeable(make_u
 
 
 @pytest.mark.django_db
+def test_update_collection_item_rejects_negative_quantity_merged(make_user):
+    """update_collection_item's quantity<0 branch had no dedicated coverage
+    before this PR — CP1 only covered create_collection_item's mirror
+    check."""
+    user = make_user(username="ci-update-neg-qty")
+    item = create_collection_item(user=user, name="음수 수량 수정")
+
+    with pytest.raises(ValidationError) as exc_info:
+        update_collection_item(item=item, quantity=-1)
+
+    # Same cross-firing as the create-path test above: a negative merged
+    # quantity also numerically exceeds the item's existing tradeable_quantity
+    # (0), so check only the quantity key's message.
+    assert exc_info.value.message_dict["quantity"] == ["quantity는 0 이상이어야 합니다."]
+    item.refresh_from_db()
+    assert item.quantity == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_negative_tradeable_merged(make_user):
+    """update_collection_item's tradeable_quantity<0 branch had no dedicated
+    coverage before this PR — CP2 only covered create_collection_item's
+    mirror check."""
+    user = make_user(username="ci-update-neg-tradeable")
+    item = create_collection_item(user=user, name="음수 교환 수량 수정", quantity=5)
+
+    with pytest.raises(ValidationError) as exc_info:
+        update_collection_item(item=item, tradeable_quantity=-1)
+
+    assert exc_info.value.message_dict == {
+        "tradeable_quantity": ["tradeable_quantity는 0 이상이어야 합니다."]
+    }
+    item.refresh_from_db()
+    assert item.tradeable_quantity == 0
+
+
+@pytest.mark.django_db
 def test_update_collection_item_rejects_tradeable_exceeding_quantity_directly(make_user):
     user = make_user(username="ci-update-direct-exceed")
     item = create_collection_item(user=user, name="직접 초과", quantity=5)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc_info:
         update_collection_item(item=item, tradeable_quantity=10)
 
+    assert exc_info.value.message_dict == {
+        "tradeable_quantity": ["tradeable_quantity는 quantity 이하여야 합니다."]
+    }
     item.refresh_from_db()
     assert item.tradeable_quantity == 0
 
@@ -278,9 +336,12 @@ def test_update_collection_item_rejects_visit_record_owned_by_another_user(
     event = make_event(title="타인 방문 이벤트")
     visit_record = make_visit(owner, event=event, visited_on="2026-01-01")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc_info:
         update_collection_item(item=item, visit_record=visit_record)
 
+    assert exc_info.value.message_dict == {
+        "visit_record": ["visit_record는 아이템 소유자의 소유여야 합니다."]
+    }
     item.refresh_from_db()
     assert item.visit_record_id is None
 
@@ -319,9 +380,12 @@ def test_update_collection_item_rejects_event_conflicting_with_existing_visit_re
         user=user, name="FK 쌍 확인", visit_record=visit_record
     )
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc_info:
         update_collection_item(item=item, event=other_event)
 
+    assert exc_info.value.message_dict == {
+        "event": ["visit_record가 설정된 경우 event는 visit_record.event와 일치해야 합니다."]
+    }
     item.refresh_from_db()
     assert item.event_id == visit_event.id
 

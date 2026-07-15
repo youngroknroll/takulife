@@ -11,6 +11,8 @@ from archive.queries import (
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
+    user_collection_item_filter_values,
+    user_collection_item_summary_counts,
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
@@ -385,6 +387,202 @@ def test_list_user_collection_items_tradeable_filter_derives_from_tradeable_quan
 
     assert list(list_user_collection_items(user, tradeable=True)) == [tradeable]
     assert list(list_user_collection_items(user, tradeable=False)) == [not_tradeable]
+
+
+@pytest.mark.django_db
+def test_list_user_collection_items_q_matches_name_work_title_character_name_or_memo(
+    make_user,
+):
+    """`q` narrows to name/work_title/character_name/memo (icontains), mirroring
+    list_user_personal_entries' q pattern. item_type is deliberately NOT a q
+    target field — a decoy row matching only on item_type must be excluded."""
+    user = make_user(username="ci-query-q")
+    other = make_user(username="ci-query-q-other")
+    by_name = CollectionItem.objects.create(user=user, name="레어 스탬프")
+    by_work_title = CollectionItem.objects.create(
+        user=user, name="굿즈 1", work_title="레어 작품"
+    )
+    by_character_name = CollectionItem.objects.create(
+        user=user, name="굿즈 2", character_name="레어 캐릭터"
+    )
+    by_memo = CollectionItem.objects.create(user=user, name="굿즈 3", memo="레어 메모")
+    item_type_decoy = CollectionItem.objects.create(
+        user=user, name="굿즈 4", item_type="레어 타입"
+    )
+    other_user_same_name = CollectionItem.objects.create(user=other, name="레어 스탬프")
+
+    items = set(list_user_collection_items(user, q="레어"))
+
+    assert items == {by_name, by_work_title, by_character_name, by_memo}
+    assert item_type_decoy not in items
+    assert other_user_same_name not in items
+
+
+@pytest.mark.django_db
+def test_list_user_collection_items_empty_q_is_a_no_op(make_user):
+    """An empty `q` must not filter anything out.
+
+    `if q:` is a query optimization, not a correctness guard: Django renders
+    `Q(field__icontains="")` as `field LIKE '%%'`, which always matches every
+    row regardless of the field's value, so `if q is not None:` would be a
+    behaviorally equivalent refactor here and must still pass this test —
+    the guard exists only to skip four no-op icontains clauses, not to
+    prevent an empty string from over-filtering.
+
+    All four searchable fields are populated with distinct, non-blank values
+    (rather than left at their blank default) so a genuinely broken lookup —
+    e.g. `icontains` swapped for `exact` with the guard removed, which would
+    only coincidentally match rows whose fields happen to be blank — cannot
+    slip through and still pass by accident.
+    """
+    user = make_user(username="ci-query-q-empty")
+    first = CollectionItem.objects.create(
+        user=user,
+        name="굿즈 1",
+        work_title="작품 1",
+        character_name="캐릭터 1",
+        memo="메모 1",
+    )
+    second = CollectionItem.objects.create(
+        user=user,
+        name="굿즈 2",
+        work_title="작품 2",
+        character_name="캐릭터 2",
+        memo="메모 2",
+    )
+
+    items = set(list_user_collection_items(user, q=""))
+
+    assert items == {first, second}
+
+
+# ---------------------------------------------------------------------------
+# user_collection_item_filter_values (PR-C5b-1). Unlike
+# user_visit_category_values (whose caller dedupes after resolving
+# core.vocab labels, keeping archive/queries.py free of a core.vocab import),
+# work_title/character_name/item_type are stored as free text with no vocab
+# resolution step — so dedup and blank exclusion happen directly in the
+# query layer here instead of being deferred to the view.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_collection_item_filter_values_dedupes_and_scopes_to_owner(make_user):
+    user = make_user(username="ci-filter-values-user")
+    other = make_user(username="ci-filter-values-other")
+    CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="굿즈 2", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="굿즈 3", character_name="캐릭터 A")
+    CollectionItem.objects.create(user=user, name="굿즈 4", character_name="캐릭터 A")
+    CollectionItem.objects.create(user=user, name="굿즈 5", item_type="스탬프")
+    CollectionItem.objects.create(user=user, name="굿즈 6", item_type="스탬프")
+    CollectionItem.objects.create(
+        user=other, name="남의 굿즈", work_title="작품 A", character_name="캐릭터 A", item_type="스탬프"
+    )
+
+    values = user_collection_item_filter_values(user)
+
+    assert values == {
+        "work_title": ["작품 A"],
+        "character_name": ["캐릭터 A"],
+        "item_type": ["스탬프"],
+    }
+
+
+@pytest.mark.django_db
+def test_user_collection_item_filter_values_returns_sorted_lists(make_user):
+    """Each list must be sorted — C5b-2 renders these directly as <select>
+    options.
+
+    This test documents the contract; it does not guard the regression.
+    Migration 0019's (user, work_title)-style composite index makes
+    Postgres's planner return already-sorted rows for this table's size even
+    without `.order_by()`, so removing `.order_by()` here would NOT make
+    this test fail — verified by actually removing it and rerunning. The
+    correctness argument for `.order_by()` is that DISTINCT without ORDER BY
+    has undefined ordering in general (e.g. a HashAggregate plan the
+    planner could choose at a different row count or once statistics
+    change) — confirmed by forcing the planner off its index-derived plan
+    (`SET enable_indexscan/enable_sort = off`, etc.) and observing genuinely
+    unsorted output. That forced-planner check is not repeated here as an
+    automated test, since it would test Postgres's planner rather than this
+    codebase; see the change log for the reproduction.
+    """
+    user = make_user(username="ci-filter-values-order")
+    CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 C")
+    CollectionItem.objects.create(user=user, name="굿즈 2", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="굿즈 3", work_title="작품 B")
+
+    values = user_collection_item_filter_values(user)
+
+    assert values["work_title"] == ["작품 A", "작품 B", "작품 C"]
+
+
+@pytest.mark.django_db
+def test_user_collection_item_filter_values_excludes_blank_fields(make_user):
+    """A row with no work_title/character_name/item_type set must not
+    contribute an empty-string entry to any of the three lists."""
+    user = make_user(username="ci-filter-values-blank")
+    CollectionItem.objects.create(
+        user=user,
+        name="굿즈 1",
+        work_title="작품 B",
+        character_name="캐릭터 B",
+        item_type="피규어",
+    )
+    CollectionItem.objects.create(user=user, name="굿즈 2")  # all three fields blank
+
+    values = user_collection_item_filter_values(user)
+
+    assert values == {
+        "work_title": ["작품 B"],
+        "character_name": ["캐릭터 B"],
+        "item_type": ["피규어"],
+    }
+
+
+@pytest.mark.django_db
+def test_user_collection_item_filter_values_zero_for_no_items(make_user):
+    user = make_user(username="ci-filter-values-empty")
+
+    values = user_collection_item_filter_values(user)
+
+    assert values == {"work_title": [], "character_name": [], "item_type": []}
+
+
+# ---------------------------------------------------------------------------
+# user_collection_item_summary_counts (PR-C5b-1). owned_count/wanted_count
+# split on is_wanted, a non-null boolean field — True/False is a complete
+# partition, so these two counts match the C5b-2 filter chips (전체 / 보유
+# ?is_wanted=false / 구함 ?is_wanted=true) exactly, with no separate
+# total_count key (owned_count + wanted_count always equals the full count).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_collection_item_summary_counts_counts_rows_not_quantity_sum(make_user):
+    """owned_count/wanted_count must be row counts split by is_wanted, not a
+    Sum(quantity) — a single owned row with quantity=5 must count as 1, not
+    5."""
+    user = make_user(username="ci-summary-counts-user")
+    other = make_user(username="ci-summary-counts-other")
+    CollectionItem.objects.create(user=user, name="보유 굿즈", quantity=5, is_wanted=False)
+    CollectionItem.objects.create(user=user, name="구함 굿즈 1", quantity=1, is_wanted=True)
+    CollectionItem.objects.create(user=user, name="구함 굿즈 2", quantity=1, is_wanted=True)
+    CollectionItem.objects.create(user=other, name="남의 굿즈", quantity=9, is_wanted=False)
+
+    counts = user_collection_item_summary_counts(user)
+
+    assert counts == {"owned_count": 1, "wanted_count": 2}
+
+
+@pytest.mark.django_db
+def test_user_collection_item_summary_counts_zero_for_no_items(make_user):
+    user = make_user(username="ci-summary-counts-empty")
+
+    counts = user_collection_item_summary_counts(user)
+
+    assert counts == {"owned_count": 0, "wanted_count": 0}
 
 
 # ---------------------------------------------------------------------------
