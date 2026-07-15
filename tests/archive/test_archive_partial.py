@@ -201,3 +201,8 @@ class TestArchivePartialBranch:
         assert f'data-personal-entry-id="{goods_id}"'.encode() not in content
         assert f'data-promote-toggle="{goods_id}"'.encode() not in content
         assert f'data-personal-entry-id="{place_id}"'.encode() in content
+        # Delete is not restricted by the plan (only status/visit/interest/
+        # promotion are) — a goods row must still offer a way to remove
+        # itself during the transitional period before it migrates to
+        # CollectionItem (C4).
+        assert f'data-delete-entry-id="{goods_id}"'.encode() in content

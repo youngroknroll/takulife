@@ -564,7 +564,9 @@ def _parse_visit_preselect(request):
         if event is not None:
             return {"value": f"event:{event.pk}", "label": event.title}
     elif kind == "personal":
-        entry = PersonalEntry.objects.filter(pk=pk, user=request.user).first()
+        entry = PersonalEntry.objects.filter(
+            pk=pk, user=request.user, kind=PersonalEntry.Kind.PLACE
+        ).first()
         if entry is not None:
             return {"value": f"personal:{entry.pk}", "label": entry.title}
     return None

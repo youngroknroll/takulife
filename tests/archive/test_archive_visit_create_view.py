@@ -89,6 +89,17 @@ class TestArchiveVisitCreatePreselect:
             "label": "숨은 카페",
         }
 
+    def test_preselect_goods_personal_entry_ignored(self, user_client, make_entry):
+        # GOODS is no longer a valid visit subject (collection domain plan
+        # §3-3) — a crafted/legacy ?subject=personal:<goods id> must not lock
+        # the form onto it.
+        user, client = user_client()
+        entry = make_entry(user, kind="goods", title="굿즈")
+
+        resp = client.get(f"/archive/visits/new/?subject=personal:{entry.id}")
+
+        assert resp.context["preselect"] is None
+
     def test_preselect_unpublished_event_ignored(self, user_client, make_draft_event):
         _, client = user_client()
         draft = make_draft_event(title="비공개 행사")
