@@ -42,3 +42,17 @@ def test_staff_dashboard_shows_weekly_event_count(staff_client):
     content = resp.content.decode()
     assert "주간 이벤트 기록" in content
     assert "3건" in content
+
+
+@pytest.mark.django_db
+def test_staff_dashboard_shows_zero_state_when_no_analytics_events(staff_client):
+    staff, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "주간 활성 사용자" in content
+    assert "주간 이벤트 기록" in content
+    assert "0명" in content
+    assert "0건" in content
