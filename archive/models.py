@@ -201,3 +201,51 @@ class VisitRecordPhoto(models.Model):
         related_name="photos",
     )
     image = models.ImageField(upload_to="visit-record-photos/")
+
+
+class CollectionItem(models.Model):
+    """A user-owned goods collection item (archive/§3-1 of the collection
+    domain design plan). Always private to its owner; event/visit_record are
+    optional links to how the item was acquired.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="archive_collection_items",
+    )
+    name = models.CharField(max_length=255)
+    work_title = models.CharField(max_length=255, blank=True)
+    character_name = models.CharField(max_length=255, blank=True)
+    # Free-input type label — vocab is UI-side guidance, not a DB choices
+    # constraint (core.vocab.COLLECTION_ITEM_TYPE).
+    item_type = models.CharField(max_length=100, blank=True)
+    quantity = models.IntegerField(default=1)
+    acquired_on = models.DateField(null=True, blank=True)
+    acquisition_source = models.CharField(max_length=100, blank=True)
+    # TODO(C1 -> C8/C9): on_delete=CASCADE is a temporary placeholder until the
+    # dedicated checkpoints switch these to SET_NULL (upstream deletes must not
+    # silently wipe a user's collection).
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="archive_collection_items",
+        null=True,
+        blank=True,
+    )
+    visit_record = models.ForeignKey(
+        VisitRecord,
+        on_delete=models.CASCADE,
+        related_name="archive_collection_items",
+        null=True,
+        blank=True,
+    )
+    image = models.ImageField(upload_to="collection-items/", blank=True, null=True)
+    memo = models.TextField(blank=True)
+    is_wanted = models.BooleanField(default=False)
+    tradeable_quantity = models.IntegerField(default=0)
+    # Reserved for the future trade opt-in gate — no exposure until Stage 4.
+    visibility = models.CharField(max_length=20, default="private")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
