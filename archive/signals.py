@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
-from .models import PersonalEntry, VisitRecordPhoto
+from .models import CollectionItem, PersonalEntry, VisitRecordPhoto
 
 logger = logging.getLogger(__name__)
 
@@ -38,4 +38,9 @@ def delete_visit_record_photo_file(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=PersonalEntry)
 def delete_personal_entry_image_file(sender, instance, **kwargs):
+    _delete_file_best_effort(instance.image)
+
+
+@receiver(post_delete, sender=CollectionItem)
+def delete_collection_item_image_file(sender, instance, **kwargs):
     _delete_file_best_effort(instance.image)

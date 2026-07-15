@@ -12,7 +12,7 @@ from django.db import transaction
 
 import pytest
 
-from archive.models import PersonalEntry, VisitRecordPhoto
+from archive.models import CollectionItem, PersonalEntry, VisitRecordPhoto
 
 
 @pytest.mark.django_db
@@ -89,5 +89,29 @@ def test_deleting_personal_entry_removes_image_file(make_user, png_bytes, settin
 
     with django_capture_on_commit_callbacks(execute=True):
         entry.delete()
+
+    assert not storage.exists(file_name)
+
+
+@pytest.mark.django_db
+def test_deleting_collection_item_removes_image_file(
+    make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_collection_item
+):
+    """§6-b Deferred (C4 gate M4): CollectionItem had no post_delete image
+    cleanup receiver — this gap only became reachable once C5 added a
+    delete API/application path for CollectionItem."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user()
+    item = make_collection_item(
+        user,
+        name="이미지 있는 굿즈",
+        image=SimpleUploadedFile("cover.png", png_bytes(), content_type="image/png"),
+    )
+    storage = item.image.storage
+    file_name = item.image.name
+    assert storage.exists(file_name)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        item.delete()
 
     assert not storage.exists(file_name)
