@@ -350,7 +350,7 @@ def test_list_user_collection_items_scopes_to_owner(make_user):
 def test_user_personal_interest_ids_excludes_goods(make_user):
     user = make_user(username="interest-ids-goods")
     place = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="장소")
-    goods = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.GOODS, title="굿즈")
+    goods = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
     place_interest = EventInterest.objects.create(user=user, personal_entry=place)
     EventInterest.objects.create(user=user, personal_entry=goods)
 
@@ -363,7 +363,7 @@ def test_user_personal_interest_ids_excludes_goods(make_user):
 def test_user_personal_statuses_excludes_goods(make_user):
     user = make_user(username="statuses-goods")
     place = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="장소")
-    goods = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.GOODS, title="굿즈")
+    goods = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
     place_status = UserEventStatus.objects.create(
         user=user, personal_entry=place, status=UserEventStatus.Status.PLANNED
     )

@@ -273,8 +273,8 @@ class TestItemsPageQFilter:
 
     def test_q_matches_work_title(self, user_client, make_entry):
         user, client = user_client()
-        make_entry(user, kind=PersonalEntry.Kind.GOODS, title="A", work_title="원피스 콜라보")
-        make_entry(user, kind=PersonalEntry.Kind.GOODS, title="B", work_title="블리치")
+        make_entry(user, kind="goods", title="A", work_title="원피스 콜라보")
+        make_entry(user, kind="goods", title="B", work_title="블리치")
 
         resp = client.get("/archive/items/?q=원피스")
 

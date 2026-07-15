@@ -265,15 +265,13 @@ def _build_archive_status_rows(user_statuses):
     rows = []
     for us in user_statuses:
         subject = _subject_view(us)
-        kind = subject["kind"]
         rows.append(
             {
                 "status_id": us.pk,
                 "status_slug": us.derived_status,
-                # Kind-aware: a goods item reads 구매…, a place/event reads 방문….
-                "status_label": archive_status_label(us.derived_status, kind),
-                "label_visited": archive_status_label("visited", kind),
-                "label_planned": archive_status_label("planned", kind),
+                "status_label": archive_status_label(us.derived_status),
+                "label_visited": archive_status_label("visited"),
+                "label_planned": archive_status_label("planned"),
                 "subject": subject,
             }
         )
@@ -647,8 +645,8 @@ def archive_personal_entries(request):
                 "interest_id": interest_map.get(entry.id),
                 "status_slug": status_slug,
                 "status_id": status_id,
-                "status_label": archive_status_label(status_slug, entry.kind) if status_slug else "",
-                "planned_label": archive_status_label("planned", entry.kind),
+                "status_label": archive_status_label(status_slug) if status_slug else "",
+                "planned_label": archive_status_label("planned"),
                 "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
             }
         )

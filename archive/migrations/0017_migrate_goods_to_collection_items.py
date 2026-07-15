@@ -4,9 +4,18 @@
 # plan's §2 survey) into the new CollectionItem domain. The approved field
 # mapping is fixed and deliberately narrow (§3-5): title -> name, work_title,
 # memo, location_name -> acquisition_source, category -> item_type (matched
-# against core.vocab.COLLECTION_ITEM_TYPE, else "etc"), quantity=1,
-# tradeable_quantity=0, is_wanted=False, visibility="private", event=None,
-# visit_record=None, acquired_on=None (never guessed from created_at).
+# against a frozen snapshot of core.vocab.COLLECTION_ITEM_TYPE as of
+# 2026-07-15, else "etc"), quantity=1, tradeable_quantity=0, is_wanted=False,
+# visibility="private", event=None, visit_record=None, acquired_on=None
+# (never guessed from created_at).
+#
+# The vocab snapshot below is copied, not imported from core.vocab — a data
+# migration must stay runnable when `manage.py migrate` replays the entire
+# history against a fresh DB (new dev clone, CI test DB creation), and an app
+# module can be renamed or restructured long after this migration is
+# written. Importing it here would let a future, unrelated core.vocab change
+# break migration application for everyone (approved 2026-07-16, PO
+# sign-off).
 #
 # Defensive failure ("no silent data loss", AGENTS.md): the entire run aborts
 # with a clear per-row message — no partial commit — if any GOODS row is
@@ -32,10 +41,20 @@
 from django.core.files.base import ContentFile
 from django.db import migrations, transaction
 
-from core.vocab import COLLECTION_ITEM_TYPE
+# Frozen snapshot of core.vocab.COLLECTION_ITEM_TYPE as of 2026-07-15 — see
+# the module docstring above for why this is copied, not imported.
+_COLLECTION_ITEM_TYPE = (
+    ("acrylic_stand", "아크릴 스탠드"),
+    ("keyring", "키링"),
+    ("badge", "뱃지"),
+    ("photocard", "포토카드"),
+    ("plush", "인형"),
+    ("stationery", "문구"),
+    ("etc", "기타"),
+)
 
-_ITEM_TYPE_SLUGS = {slug for slug, _ in COLLECTION_ITEM_TYPE}
-_ITEM_TYPE_LABEL_TO_SLUG = {label: slug for slug, label in COLLECTION_ITEM_TYPE}
+_ITEM_TYPE_SLUGS = {slug for slug, _ in _COLLECTION_ITEM_TYPE}
+_ITEM_TYPE_LABEL_TO_SLUG = {label: slug for slug, label in _COLLECTION_ITEM_TYPE}
 
 
 class GoodsMigrationBlocked(Exception):

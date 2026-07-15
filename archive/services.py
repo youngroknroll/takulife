@@ -37,11 +37,11 @@ def create_personal_entry(*, user, kind, title, **fields):
     """Create a private, user-owned unofficial archive item.
 
     PersonalEntry is restricted to unofficial places (collection domain
-    design plan §3-3) — goods are moving to the dedicated CollectionItem
-    domain and can no longer be created here.
+    design plan §3-3) — goods moved to the dedicated CollectionItem domain
+    and can no longer be created here.
     """
     if kind != PersonalEntry.Kind.PLACE:
-        raise ValidationError({"kind": "goods는 더 이상 PersonalEntry로 생성할 수 없습니다."})
+        raise ValidationError({"kind": "place 외의 kind로는 PersonalEntry를 생성할 수 없습니다."})
     return PersonalEntry.objects.create(user=user, kind=kind, title=title, **fields)
 
 

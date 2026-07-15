@@ -46,7 +46,7 @@ class TestArchiveVisitsSelectableEvents:
         # row created before the write path was closed.
         user = make_user()
         place = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="내 장소")
-        make_entry(user, kind=PersonalEntry.Kind.GOODS, title="내 굿즈")
+        make_entry(user, kind="goods", title="내 굿즈")
 
         client = Client()
         client.force_login(user)
