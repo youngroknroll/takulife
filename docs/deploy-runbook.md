@@ -55,7 +55,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
      `python manage.py migrate` 를 한 번만 실행한다.
 4. **collectstatic**: entrypoint가 migrate 직후 `manage.py collectstatic --noinput`을
    자동 실행(docker/entrypoint.sh:11) — 별도 수동 절차 불필요.
-5. **헬스체크 연결**: `/health/`(`core/urls.py:10`, `core/views.py:728-735`)는
+5. **헬스체크 연결**: `/api/health/`(`core/urls.py:10`, `core/views.py:728-735`)는
    무인증 200을 반환하되 **`connection.ensure_connection()`으로 DB 접속을
    확인**하고, 실패 시 503을 반환한다. PaaS의 **liveness**(실패 시 컨테이너
    재시작) 프로브로 이 엔드포인트를 그대로 쓰면, DB 자체 장애 시 앱은 멀쩡한데도
@@ -86,7 +86,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    있음).
 5. **멀티레플리카 migrate**: 레플리카 2개 이상 또는 롤링 배포라면 §2-3의
    `RUN_DB_MIGRATIONS=false` + release-phase 전략을 실제로 적용했는지 재확인한다.
-6. **헬스 프로브 의미 인지**: `/health/`를 liveness로 쓰는 경우, DB 장애가
+6. **헬스 프로브 의미 인지**: `/api/health/`를 liveness로 쓰는 경우, DB 장애가
    재시작 루프로 이어질 수 있음을 인지하고 재시작 임계치·백오프를 보수적으로
    설정한다(§2-5).
 7. **R2 실왕복 확인**: object storage로 실제 파일을 업로드하고 다시 다운로드해
@@ -141,7 +141,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   확인 후 `manage.py migrate <app> <이전 마이그레이션 이름>`으로 역방향
   마이그레이션을 실행할지 판단한다. 데이터 손실 가능성이 있는 역방향
   마이그레이션(컬럼 삭제 등)은 실행 전 반드시 백업을 재확인한다.
-- **장애 시 점검 순서**: 헬스(`/health/` 응답 상태) → 애플리케이션 로그
+- **장애 시 점검 순서**: 헬스(`/api/health/` 응답 상태) → 애플리케이션 로그
   (`LOGGING`, config/settings.py 콘솔 구조화 로그) → DB(연결·쿼리 지연) →
   스토리지(R2 접근 가능 여부).
 
