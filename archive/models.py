@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from events.models import Event
@@ -264,3 +265,17 @@ class CollectionItem(models.Model):
                 condition=models.Q(tradeable_quantity__gte=0),
             ),
         ]
+
+    def clean(self):
+        super().clean()
+        # FK-pair invariant (§3-1): visit_record is a cross-table reference so
+        # this cannot be a DB CheckConstraint — guarded here as a second line
+        # of defense alongside create_collection_item's service-level sync.
+        if (
+            self.visit_record_id is not None
+            and self.event_id is not None
+            and self.visit_record.event_id != self.event_id
+        ):
+            raise ValidationError(
+                "event must match visit_record.event when both are set."
+            )

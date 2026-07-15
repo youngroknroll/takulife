@@ -1,5 +1,6 @@
 """Archive model tests — field defaults and constraints, no HTTP."""
 import pytest
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
 from archive.models import CollectionItem, PersonalEntry
@@ -89,3 +90,23 @@ def test_collection_item_negative_tradeable_quantity_violates_check_constraint(m
             CollectionItem.objects.create(
                 user=user, name="음수 교환", quantity=5, tradeable_quantity=-1
             )
+
+
+@pytest.mark.django_db
+def test_collection_item_clean_rejects_event_mismatched_with_visit_record(
+    make_user, make_event, make_visit
+):
+    user = make_user(username="ci-clean-mismatch")
+    visit_event = make_event(title="방문 이벤트 clean")
+    mismatched_event = make_event(title="불일치 이벤트 clean")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+
+    item = CollectionItem(
+        user=user,
+        name="불일치 항목",
+        visit_record=visit_record,
+        event=mismatched_event,
+    )
+
+    with pytest.raises(ValidationError):
+        item.clean()

@@ -7,6 +7,7 @@ from archive.models import VisitRecord
 from archive.services import (
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
+    create_collection_item,
     create_personal_entry,
     create_user_event_status,
     create_visit_record_photo,
@@ -98,3 +99,41 @@ def test_create_personal_entry_service(make_user):
     assert entry.pk is not None
     assert entry.user == user
     assert entry.location_name == "성수"
+
+
+# ---------------------------------------------------------------------------
+# create_collection_item (PR-C1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_collection_item_syncs_event_from_visit_record(make_user, make_event, make_visit):
+    user = make_user(username="ci-service-sync")
+    event = make_event(title="싱크할 이벤트")
+    visit_record = make_visit(user, event=event, visited_on="2026-01-01")
+
+    item = create_collection_item(
+        user=user, name="이벤트 한정 굿즈", visit_record=visit_record
+    )
+
+    assert item.visit_record_id == visit_record.id
+    assert item.event_id == event.id
+
+
+@pytest.mark.django_db
+def test_create_collection_item_visit_record_overrides_conflicting_explicit_event(
+    make_user, make_event, make_visit
+):
+    user = make_user(username="ci-service-override")
+    visit_event = make_event(title="방문 이벤트")
+    conflicting_event = make_event(title="다른 이벤트")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+
+    item = create_collection_item(
+        user=user,
+        name="충돌 굿즈",
+        visit_record=visit_record,
+        event=conflicting_event,
+    )
+
+    assert item.event_id == visit_event.id

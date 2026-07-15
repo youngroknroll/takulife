@@ -4,6 +4,7 @@ from core.analytics import record_event
 from core.models import AnalyticsEvent
 
 from .models import (
+    CollectionItem,
     EventInterest,
     PersonalEntry,
     UserEventStatus,
@@ -119,6 +120,21 @@ def revert_to_planned(*, user_event_status):
     user_event_status.missed_overridden = True
     user_event_status.save(update_fields=["status", "missed_overridden", "updated_at"])
     return user_event_status
+
+
+def create_collection_item(*, user, name, visit_record=None, event=None, **fields):
+    """Create a user-owned goods collection item.
+
+    When `visit_record` is supplied, `event` is always synced from
+    `visit_record.event` — a visit record's own subject wins over any
+    explicitly-passed `event`, so the two links can never disagree
+    (collection domain design plan §3-1 FK-pair invariant).
+    """
+    if visit_record is not None:
+        event = visit_record.event
+    return CollectionItem.objects.create(
+        user=user, name=name, visit_record=visit_record, event=event, **fields
+    )
 
 
 def create_visit_record(*, user, event=None, personal_entry=None, visited_on, short_review=""):
