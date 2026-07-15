@@ -247,6 +247,30 @@ def test_create_collection_item_rejects_unpublished_event(client, make_user, mak
 
 
 @pytest.mark.django_db
+def test_patch_rejects_unpublished_event(client, make_user, make_event, make_collection_item):
+    """QVL finding D2-2 (2026-07-16): CP14 only covered POST — the
+    serializer's `event` field is shared by create and update, but PATCH had
+    no dedicated test proving the same published-only guard applies there."""
+    from events.models import Event
+
+    user = make_user(username="ci-patch-unpublished-event")
+    draft_event = make_event(title="PATCH 미공개 이벤트", publish_status=Event.PublishStatus.DRAFT)
+    item = make_collection_item(user, name="PATCH 대상")
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/collection-items/{item.id}/",
+        {"event": draft_event.id},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "event" in response.json()
+    item.refresh_from_db()
+    assert item.event_id is None
+
+
+@pytest.mark.django_db
 def test_create_collection_item_rejects_another_users_visit_record(
     client, make_user, make_event, make_visit
 ):
@@ -334,6 +358,48 @@ def test_patch_rejects_quantity_below_existing_tradeable_quantity(
     assert response.status_code == 400
     item.refresh_from_db()
     assert item.quantity == 5
+
+
+@pytest.mark.django_db
+def test_patch_fk_pair_conflict_returns_400_not_500(
+    client, make_user, make_event, make_visit, make_collection_item
+):
+    """QVL finding D2-1 (2026-07-16): proves the FK-pair guard's rejection
+    reaches an actual HTTP 400 end-to-end, not just a service-layer
+    `pytest.raises(ValidationError)` — never previously exercised via a real
+    request, verified here rather than assumed.
+
+    Empirical correction to the original QVL framing: this scenario was
+    expected to exercise `_translate_domain_validation_error`'s non-dict
+    `exc.messages` fallback (model.clean() raises a plain string, surfaced
+    under NON_FIELD_ERRORS `__all__`). It does not — the D1 fix (merged-
+    value FK-pair guard, added in the same round) now intercepts this exact
+    scenario *before* full_clean()/clean() is ever reached, raising a
+    dict-shaped `ValidationError({"event": ...})` instead (confirmed via a
+    printed response body, not assumed). model.clean()'s NON_FIELD_ERRORS
+    path appears unreachable through the API now that D1 exhaustively
+    covers every visit_record/event field combination at the service layer
+    — full_clean() remains as a defense-in-depth call, but this specific
+    branch of `_translate_domain_validation_error` has no known live caller
+    left to exercise it (see work log for detail)."""
+    user = make_user(username="ci-patch-fk-pair-http")
+    visit_event = make_event(title="HTTP FK 쌍 확인 이벤트")
+    other_event = make_event(title="HTTP FK 쌍 불일치 이벤트")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+    item = make_collection_item(
+        user, name="HTTP FK 쌍 충돌", visit_record=visit_record, event=visit_event
+    )
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/collection-items/{item.id}/",
+        {"event": other_event.id},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    item.refresh_from_db()
+    assert item.event_id == visit_event.id
 
 
 # ---------------------------------------------------------------------------
