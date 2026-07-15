@@ -91,6 +91,30 @@ def test_create_collection_item_response_has_exact_field_set(client, make_user):
 
 
 # ---------------------------------------------------------------------------
+# CP12: a domain ValidationError raised by create_collection_item's quantity
+# guard must surface as a 400, not an unhandled 500 — DRF's default
+# exception handler does not translate django.core.exceptions.ValidationError
+# on its own.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_collection_item_rejects_negative_quantity_with_400(client, make_user):
+    user = make_user(username="ci-create-negative-quantity")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "음수 수량", "quantity": -1},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "quantity" in response.json()
+    assert not CollectionItem.objects.filter(name="음수 수량").exists()
+
+
+# ---------------------------------------------------------------------------
 # CP4~CP6: owner scoping across list, detail (GET/PATCH/DELETE)
 # ---------------------------------------------------------------------------
 
