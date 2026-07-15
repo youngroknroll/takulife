@@ -82,6 +82,16 @@ def create_user_event_status(*, user, event=None, personal_entry=None, status):
             existing = existing.filter(personal_entry=personal_entry)
         if existing.exists():
             raise DuplicateUserEventStatusError
+        # Same VisitRecord invariant PATCH enforces via mark_missed/
+        # revert_to_planned (§6-b Deferred): a fresh planned/missed row must
+        # not be creatable for a subject that already has a VisitRecord, or
+        # DELETE-then-POST would recreate the drift 0016 corrected. visited
+        # is exempt — it agrees with the record instead of contradicting it.
+        if status in (
+            UserEventStatus.Status.PLANNED,
+            UserEventStatus.Status.MISSED,
+        ) and _has_visit_record(user=user, event=event, personal_entry=personal_entry):
+            raise VisitRecordExistsError
         try:
             created = UserEventStatus.objects.create(
                 user=user, event=event, personal_entry=personal_entry, status=status
@@ -112,11 +122,11 @@ def mark_visited(*, user_event_status):
 
 
 class VisitRecordExistsError(Exception):
-    """Raised when a status-only PATCH would revert a subject to planned or
-    mark it missed while it already has a VisitRecord — recreating the exact
-    drift 0016 corrected (collection domain design plan §5 acceptance
-    criterion 5, §6-b Deferred). The subject's VisitRecord, not just this
-    status row, is the source of truth once it exists."""
+    """Raised when a status-only PATCH, or a fresh creation, would set a
+    subject to planned or missed while it already has a VisitRecord —
+    recreating the exact drift 0016 corrected (collection domain design plan
+    §5 acceptance criterion 5, §6-b Deferred). The subject's VisitRecord, not
+    just this status row, is the source of truth once it exists."""
 
 
 def _has_visit_record(*, user, event, personal_entry):

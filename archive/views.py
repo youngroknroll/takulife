@@ -153,6 +153,10 @@ class UserEventStatusListCreateView(ListCreateAPIView):
                 },
                 status=status.HTTP_409_CONFLICT,
             )
+        except VisitRecordExistsError:
+            raise ValidationError(
+                {"status": "이미 방문 기록이 있는 항목은 이 상태로 등록할 수 없습니다."}
+            )
         response_serializer = self.get_serializer(status_object)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
