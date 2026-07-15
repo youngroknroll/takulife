@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 
-from archive.models import VisitRecord
+from archive.models import CollectionItem, VisitRecord
 from archive.services import (
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
@@ -364,3 +364,31 @@ def test_update_collection_item_allows_event_edit_when_no_visit_record(
     updated = update_collection_item(item=item, event=new_event)
 
     assert updated.event_id == new_event.id
+
+
+@pytest.mark.django_db
+def test_update_collection_item_guards_against_concurrent_committed_state(make_user):
+    """Security gate M2 (2026-07-16): simulates a race between two PATCHes
+    without needing real threads. Caller B fetched its `item` object before
+    caller A's write committed `tradeable_quantity=5`; B's merge check must
+    be judged against the row's *current* DB state (via select_for_update),
+    not B's stale Python object — otherwise B's own merge check (quantity=1
+    vs its stale tradeable_quantity=0) would pass, and the resulting UPDATE
+    would either violate the DB CheckConstraint (crash) or silently commit
+    an inconsistent row, depending on timing. Verified by re-reading from
+    the DB, not the in-memory instance, so a save() that used update_fields
+    without actually persisting under a lock would not be missed."""
+    user = make_user(username="ci-update-concurrent-guard")
+    item = create_collection_item(
+        user=user, name="동시 PATCH 경합", quantity=5, tradeable_quantity=0
+    )
+    stale_item = CollectionItem.objects.get(pk=item.pk)  # a second caller's fetch
+    # Simulate another writer's PATCH already having committed in between.
+    CollectionItem.objects.filter(pk=item.pk).update(tradeable_quantity=5)
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=stale_item, quantity=1)
+
+    item.refresh_from_db()
+    assert item.quantity == 5
+    assert item.tradeable_quantity == 5

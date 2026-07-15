@@ -237,59 +237,71 @@ def update_collection_item(*, item, **fields):
     full_clean() also runs so the model's clean() FK-pair guard covers any
     other assignment paths (§6-b Deferred: full_clean had no caller before
     C5).
+
+    Runs under transaction.atomic() + select_for_update() (mirrors
+    create_visit_record_photo's count-check race guard) and re-fetches
+    `item` fresh under that lock before computing any merged value —
+    otherwise two concurrent PATCHes could each pass their own merge check
+    against a stale snapshot and one commits a value that violates the
+    constraint against the other's already-committed state, surfacing as an
+    unhandled IntegrityError instead of a clean 400 (security gate M2,
+    2026-07-16).
     """
-    quantity = fields.get("quantity", item.quantity)
-    tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
-    errors = {}
-    if quantity < 0:
-        errors["quantity"] = "quantity must be >= 0."
-    if tradeable_quantity < 0:
-        errors["tradeable_quantity"] = "tradeable_quantity must be >= 0."
-    elif tradeable_quantity > quantity:
-        errors["tradeable_quantity"] = "tradeable_quantity must be <= quantity."
-    if errors:
-        raise ValidationError(errors)
+    with transaction.atomic():
+        item = CollectionItem.objects.select_for_update().get(pk=item.pk)
 
-    if "visit_record" in fields:
-        visit_record = fields["visit_record"]
-        if visit_record is not None:
-            if visit_record.user_id != item.user_id:
-                raise ValidationError(
-                    {"visit_record": "visit_record must belong to the item's owner."}
-                )
-            fields["event"] = visit_record.event
-        # else: visit_record explicitly cleared — event is free to be
-        # whatever the payload says (or whatever it already was); the
-        # FK-pair invariant no longer applies once visit_record is gone.
-    elif item.visit_record_id is not None and "event" in fields:
-        # visit_record wasn't touched by this PATCH but the item already has
-        # one — the merged event must still agree with it.
-        if fields["event"] != item.visit_record.event:
-            raise ValidationError(
-                {
-                    "event": (
-                        "event must match visit_record.event when a "
-                        "visit_record is already set."
+        quantity = fields.get("quantity", item.quantity)
+        tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
+        errors = {}
+        if quantity < 0:
+            errors["quantity"] = "quantity must be >= 0."
+        if tradeable_quantity < 0:
+            errors["tradeable_quantity"] = "tradeable_quantity must be >= 0."
+        elif tradeable_quantity > quantity:
+            errors["tradeable_quantity"] = "tradeable_quantity must be <= quantity."
+        if errors:
+            raise ValidationError(errors)
+
+        if "visit_record" in fields:
+            visit_record = fields["visit_record"]
+            if visit_record is not None:
+                if visit_record.user_id != item.user_id:
+                    raise ValidationError(
+                        {"visit_record": "visit_record must belong to the item's owner."}
                     )
-                }
-            )
+                fields["event"] = visit_record.event
+            # else: visit_record explicitly cleared — event is free to be
+            # whatever the payload says (or whatever it already was); the
+            # FK-pair invariant no longer applies once visit_record is gone.
+        elif item.visit_record_id is not None and "event" in fields:
+            # visit_record wasn't touched by this PATCH but the item already
+            # has one — the merged event must still agree with it.
+            if fields["event"] != item.visit_record.event:
+                raise ValidationError(
+                    {
+                        "event": (
+                            "event must match visit_record.event when a "
+                            "visit_record is already set."
+                        )
+                    }
+                )
 
-    # Capture the file this update is about to replace *before* mutating the
-    # instance — Django's FieldFile reassignment does not delete the old
-    # storage object on its own, and post_delete only fires on row deletion,
-    # not on update-in-place (security gate M3, 2026-07-16). Grabbing the
-    # reference now is safe: reassigning item.image below does not mutate
-    # this already-bound FieldFile object.
-    old_image = item.image if "image" in fields else None
-    old_image_name = old_image.name if old_image else None
+        # Capture the file this update is about to replace *before* mutating
+        # the instance — Django's FieldFile reassignment does not delete the
+        # old storage object on its own, and post_delete only fires on row
+        # deletion, not on update-in-place (security gate M3, 2026-07-16).
+        # Grabbing the reference now is safe: reassigning item.image below
+        # does not mutate this already-bound FieldFile object.
+        old_image = item.image if "image" in fields else None
+        old_image_name = old_image.name if old_image else None
 
-    for field_name, value in fields.items():
-        setattr(item, field_name, value)
+        for field_name, value in fields.items():
+            setattr(item, field_name, value)
 
-    item.full_clean()
-    update_fields = set(fields.keys())
-    update_fields.add("updated_at")
-    item.save(update_fields=update_fields)
+        item.full_clean()
+        update_fields = set(fields.keys())
+        update_fields.add("updated_at")
+        item.save(update_fields=update_fields)
 
     new_image_name = item.image.name if item.image else None
     if old_image_name and old_image_name != new_image_name:

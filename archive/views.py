@@ -351,7 +351,13 @@ class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
         return CollectionItem.objects.filter(user=self.request.user)
 
     def perform_update(self, serializer):
+        # update_collection_item re-fetches its own row under
+        # select_for_update() (security gate M2) and returns that fresh
+        # instance rather than mutating serializer.instance in place — the
+        # response must be built from the returned object.
         try:
-            update_collection_item(item=serializer.instance, **serializer.validated_data)
+            serializer.instance = update_collection_item(
+                item=serializer.instance, **serializer.validated_data
+            )
         except DjangoValidationError as exc:
             _translate_domain_validation_error(exc)
