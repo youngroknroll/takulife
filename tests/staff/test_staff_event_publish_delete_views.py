@@ -9,7 +9,7 @@ import datetime
 
 import pytest
 
-from archive.models import EventInterest
+from archive.models import CollectionItem, EventInterest
 from events.models import Event
 from staff.models import StaffActionLog
 
@@ -219,3 +219,40 @@ def test_edit_page_shows_delete_button_when_unreferenced(staff_client, make_even
 
     assert resp.status_code == 200
     assert f'action="/staff/events/{event.pk}/delete/"' in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_edit_page_shows_reference_counts_for_collection_item_reference(
+    staff_client, make_user, make_event
+):
+    staff, client = staff_client()
+    event = make_event(
+        title="컬렉션 참조 행사", official_url="https://example.com/edit-blocked-collection"
+    )
+    owner = make_user()
+    CollectionItem.objects.create(user=owner, name="참조 굿즈", event=event)
+
+    resp = client.get(f"/staff/events/{event.pk}/edit/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "컬렉션 1" in content
+    assert f'action="/staff/events/{event.pk}/delete/"' not in content
+
+
+@pytest.mark.django_db
+def test_delete_blocked_message_includes_collection_item_count(
+    staff_client, make_user, make_event
+):
+    staff, client = staff_client()
+    event = make_event(
+        title="컬렉션 참조 삭제 차단", official_url="https://example.com/delete-blocked-collection"
+    )
+    owner = make_user()
+    CollectionItem.objects.create(user=owner, name="차단용 굿즈", event=event)
+
+    resp = client.post(_delete_url(event), {"confirmed": "yes"}, follow=True)
+
+    assert Event.objects.filter(pk=event.pk).exists()
+    messages_text = " ".join(str(m) for m in resp.context["messages"])
+    assert "컬렉션 1" in messages_text

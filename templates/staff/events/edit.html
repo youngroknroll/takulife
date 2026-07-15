@@ -129,10 +129,10 @@
 
       <article class="panel">
         <h2>삭제</h2>
-        {% with total=archive_reference_counts.interest|add:archive_reference_counts.status|add:archive_reference_counts.visit %}
+        {% with total=archive_reference_counts.interest|add:archive_reference_counts.status|add:archive_reference_counts.visit|add:archive_reference_counts.collection_item %}
           {% if total > 0 %}
             <p class="notice">
-              찜 {{ archive_reference_counts.interest }}·상태 {{ archive_reference_counts.status }}·방문기록 {{ archive_reference_counts.visit }}건이 연결되어 삭제할 수 없습니다.
+              찜 {{ archive_reference_counts.interest }}·상태 {{ archive_reference_counts.status }}·방문기록 {{ archive_reference_counts.visit }}·컬렉션 {{ archive_reference_counts.collection_item }}건이 연결되어 삭제할 수 없습니다.
             </p>
           {% else %}
             <p class="panel-note">아카이브 참조가 없어 하드 삭제가 가능합니다. 삭제는 되돌릴 수 없습니다.</p>
