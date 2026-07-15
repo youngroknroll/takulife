@@ -171,3 +171,39 @@ def test_status_write_failure_rolls_back_visit_record(monkeypatch, make_user, ma
 
     assert VisitRecord.objects.filter(user=user, event=event).count() == 0
     assert UserEventStatus.objects.filter(user=user, event=event).count() == 0
+
+
+# ---------------------------------------------------------------------------
+# CP10 — data migration corrects pre-existing planned/missed drift
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_data_migration_fixes_planned_status_with_existing_record(
+    make_user, make_event, make_status, make_visit
+):
+    import importlib
+
+    migration_module = importlib.import_module(
+        "archive.migrations.0016_fix_planned_status_with_existing_visit_record"
+    )
+    fix_planned_status_with_existing_visit_record = (
+        migration_module.fix_planned_status_with_existing_visit_record
+    )
+
+    user = make_user()
+    mismatched_event = make_event()
+    mismatched_status = make_status(user, mismatched_event, status=UserEventStatus.Status.PLANNED)
+    make_visit(user, event=mismatched_event, visited_on="2026-07-15")
+
+    untouched_event = make_event()
+    untouched_status = make_status(user, untouched_event, status=UserEventStatus.Status.PLANNED)
+
+    from django.apps import apps as real_apps
+
+    fix_planned_status_with_existing_visit_record(real_apps, None)
+
+    mismatched_status.refresh_from_db()
+    untouched_status.refresh_from_db()
+    assert mismatched_status.status == UserEventStatus.Status.VISITED
+    assert untouched_status.status == UserEventStatus.Status.PLANNED
