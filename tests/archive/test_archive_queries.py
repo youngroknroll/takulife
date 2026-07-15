@@ -492,9 +492,22 @@ def test_user_collection_item_filter_values_dedupes_and_scopes_to_owner(make_use
 @pytest.mark.django_db
 def test_user_collection_item_filter_values_returns_sorted_lists(make_user):
     """Each list must be sorted — C5b-2 renders these directly as <select>
-    options, and DISTINCT without ORDER BY has undefined ordering (e.g. a
-    Postgres HashAggregate plan). Items are created out of order (C, A, B)
-    so this assertion only passes if the query actually sorts."""
+    options.
+
+    This test documents the contract; it does not guard the regression.
+    Migration 0019's (user, work_title)-style composite index makes
+    Postgres's planner return already-sorted rows for this table's size even
+    without `.order_by()`, so removing `.order_by()` here would NOT make
+    this test fail — verified by actually removing it and rerunning. The
+    correctness argument for `.order_by()` is that DISTINCT without ORDER BY
+    has undefined ordering in general (e.g. a HashAggregate plan the
+    planner could choose at a different row count or once statistics
+    change) — confirmed by forcing the planner off its index-derived plan
+    (`SET enable_indexscan/enable_sort = off`, etc.) and observing genuinely
+    unsorted output. That forced-planner check is not repeated here as an
+    automated test, since it would test Postgres's planner rather than this
+    codebase; see the change log for the reproduction.
+    """
     user = make_user(username="ci-filter-values-order")
     CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 C")
     CollectionItem.objects.create(user=user, name="굿즈 2", work_title="작품 A")
