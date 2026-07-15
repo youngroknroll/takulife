@@ -161,6 +161,7 @@ def test_core_field_error_response_returns_field_payload():
         "core/llm/client.py",
         "core/llm/exceptions.py",
         "core/llm/__init__.py",
+        "core/analytics.py",
     ],
 )
 def test_core_errors_do_not_import_domain_modules(module_path):
