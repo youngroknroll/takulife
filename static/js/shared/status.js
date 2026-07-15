@@ -103,8 +103,8 @@
   }
 
   function setButtonActive(button, statusSlug) {
-    // A button may supply its own kind-aware label (e.g. goods → 구매 예정);
-    // fall back to the generic status vocabulary otherwise.
+    // A button may supply its own kind-aware label; fall back to the generic
+    // status vocabulary otherwise.
     var label = button.dataset.labelActive || STATUS_LABELS[statusSlug] || statusSlug;
     button.textContent = label;
     button.classList.add("active");
