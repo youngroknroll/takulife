@@ -14,8 +14,11 @@ URLs) — see FORBIDDEN_CONTEXT_KEYS.
 import hashlib
 import hmac
 import logging
+from datetime import timedelta
 
 from django.conf import settings
+from django.db.models import Count
+from django.utils import timezone
 
 from core.models import AnalyticsEvent
 
@@ -82,3 +85,30 @@ def record_event(event_name, *, user, target_type="", target_id=None, context=No
         )
     except Exception:
         logger.exception("Failed to record analytics event %r", event_name)
+
+
+def distinct_user_key_count_since(days=7):
+    """Count of distinct non-empty (identified) user_key values recorded in
+    the trailing `days` days. "" (anonymous, see pseudonymous_user_key) is
+    excluded — it does not represent one shared cohort."""
+    window_start = timezone.now() - timedelta(days=days)
+    return (
+        AnalyticsEvent.objects.filter(created_at__gte=window_start)
+        .exclude(user_key="")
+        .values("user_key")
+        .distinct()
+        .count()
+    )
+
+
+def event_name_counts_since(days=7):
+    """Return {event_name: count} for events recorded in the trailing
+    `days` days. An event_name with zero rows in the window is simply
+    absent from the returned dict."""
+    window_start = timezone.now() - timedelta(days=days)
+    rows = (
+        AnalyticsEvent.objects.filter(created_at__gte=window_start)
+        .values("event_name")
+        .annotate(count=Count("id"))
+    )
+    return {row["event_name"]: row["count"] for row in rows}
