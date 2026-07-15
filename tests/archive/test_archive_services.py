@@ -102,6 +102,16 @@ def test_create_personal_entry_service(make_user):
     assert entry.location_name == "성수"
 
 
+@pytest.mark.django_db
+def test_create_personal_entry_rejects_goods_kind(make_user):
+    """GOODS is no longer creatable via PersonalEntry (collection domain plan
+    §3-3) — goods live in the dedicated CollectionItem domain instead."""
+    user = make_user(username="pe-service-goods")
+
+    with pytest.raises(ValidationError):
+        create_personal_entry(user=user, kind="goods", title="차단되어야 할 굿즈")
+
+
 # ---------------------------------------------------------------------------
 # create_collection_item (PR-C1)
 # ---------------------------------------------------------------------------
