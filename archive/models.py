@@ -224,19 +224,19 @@ class CollectionItem(models.Model):
     quantity = models.IntegerField(default=1)
     acquired_on = models.DateField(null=True, blank=True)
     acquisition_source = models.CharField(max_length=100, blank=True)
-    # TODO(C1 -> C8/C9): on_delete=CASCADE is a temporary placeholder until the
-    # dedicated checkpoints switch these to SET_NULL (upstream deletes must not
-    # silently wipe a user's collection).
+    # SET_NULL: an upstream event hard-delete must not silently wipe a user's
+    # collection (no silent data loss, §3-1).
     event = models.ForeignKey(
         Event,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="archive_collection_items",
         null=True,
         blank=True,
     )
+    # SET_NULL: same no-silent-data-loss rationale as event, above.
     visit_record = models.ForeignKey(
         VisitRecord,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="archive_collection_items",
         null=True,
         blank=True,

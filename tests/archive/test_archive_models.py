@@ -110,3 +110,34 @@ def test_collection_item_clean_rejects_event_mismatched_with_visit_record(
 
     with pytest.raises(ValidationError):
         item.clean()
+
+
+@pytest.mark.django_db
+def test_collection_item_survives_event_hard_delete_with_event_set_null(
+    make_user, make_event
+):
+    user = make_user(username="ci-event-hard-delete")
+    event = make_event(title="삭제될 이벤트")
+    item = CollectionItem.objects.create(user=user, name="생존 항목", event=event)
+
+    event.delete()
+    item.refresh_from_db()
+
+    assert item.event_id is None
+
+
+@pytest.mark.django_db
+def test_collection_item_survives_visit_record_hard_delete_with_visit_record_set_null(
+    make_user, make_event, make_visit
+):
+    user = make_user(username="ci-visit-hard-delete")
+    event = make_event(title="방문 삭제 이벤트")
+    visit_record = make_visit(user, event=event, visited_on="2026-01-01")
+    item = CollectionItem.objects.create(
+        user=user, name="생존 항목 2", visit_record=visit_record
+    )
+
+    visit_record.delete()
+    item.refresh_from_db()
+
+    assert item.visit_record_id is None
