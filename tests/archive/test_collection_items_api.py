@@ -450,7 +450,70 @@ def test_collection_item_list_rejects_invalid_is_wanted_filter_value(client, mak
 
 
 # ---------------------------------------------------------------------------
-# CP23~24c: image upload — must share the hardened guard with visit photos /
+# L4 (security gate) — text filter params must reject values longer than the
+# model's own max_length, matching the underlying CharField caps.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_collection_item_list_rejects_work_title_filter_exceeding_max_length(client, make_user):
+    user = make_user(username="ci-filter-work-title-too-long")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?work_title=" + "가" * 256)
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_collection_item_list_rejects_character_name_filter_exceeding_max_length(
+    client, make_user
+):
+    user = make_user(username="ci-filter-character-name-too-long")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?character_name=" + "가" * 256)
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_collection_item_list_rejects_item_type_filter_exceeding_max_length(client, make_user):
+    user = make_user(username="ci-filter-item-type-too-long")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?item_type=" + "가" * 101)
+
+    assert response.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Domain gate M1 (2026-07-16) — an *empty* filter value (`?<param>=`) must
+# mean "don't filter on this", the same as the param being absent entirely.
+# All six filters share one empty-value contract so a client (C5b's filter
+# form) can naively serialize a form without per-field blank-stripping.
+# Genuinely invalid values (e.g. `?is_wanted=ture`) must still 400 — the
+# tolerance is only for emptiness, not for typos.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "query_param",
+    ["work_title", "character_name", "item_type", "is_wanted", "duplicate", "tradeable"],
+)
+def test_collection_item_list_treats_empty_filter_value_as_no_filter(
+    client, make_user, make_collection_item, query_param
+):
+    user = make_user(username=f"ci-filter-empty-{query_param}")
+    make_collection_item(user, name="항목 1")
+    make_collection_item(user, name="항목 2")
+
+    client.force_login(user)
+    response = client.get(f"/api/collection-items/?{query_param}=")
+
+    assert response.status_code == 200
+    assert response.json()["count"] == 2
 # personal entries (events.image_validation.validate_uploaded_image).
 # ---------------------------------------------------------------------------
 

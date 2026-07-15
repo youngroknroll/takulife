@@ -246,11 +246,18 @@ class CollectionItemQuerySerializer(serializers.Serializer):
     `duplicate`/`tradeable` are booleans selecting the *derived* condition
     (quantity >= 2 / tradeable_quantity > 0) — the query layer owns the
     actual filter logic, this serializer only validates shape.
+
+    Empty-value contract (domain gate finding, 2026-07-16): an *absent*
+    param and an *empty* param (`?work_title=`) both mean "no filter" —
+    uniform across all six filters so a client can naively serialize a form
+    without per-field blank-stripping. `max_length` mirrors the model's own
+    CharField caps (security gate L4). Genuinely invalid values (e.g.
+    `?is_wanted=ture`) still 400 — only emptiness is tolerated.
     """
 
-    work_title = serializers.CharField(required=False)
-    character_name = serializers.CharField(required=False)
-    item_type = serializers.CharField(required=False)
-    is_wanted = serializers.BooleanField(required=False)
-    duplicate = serializers.BooleanField(required=False)
-    tradeable = serializers.BooleanField(required=False)
+    work_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    character_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    item_type = serializers.CharField(required=False, allow_blank=True, max_length=100)
+    is_wanted = serializers.BooleanField(required=False, allow_null=True)
+    duplicate = serializers.BooleanField(required=False, allow_null=True)
+    tradeable = serializers.BooleanField(required=False, allow_null=True)
