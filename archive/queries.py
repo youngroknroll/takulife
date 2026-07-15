@@ -21,6 +21,7 @@ ARCHIVE_RECORD_PAGE_SIZE = 10  # 기록장 (/archive/) — 저장한 행사
 ARCHIVE_STATUS_PAGE_SIZE = 5  # 예정 목록 (/archive/statuses/)
 ARCHIVE_VISIT_PAGE_SIZE = 5  # 방문 기록 (/archive/visits/)
 ARCHIVE_PERSONAL_PAGE_SIZE = 5  # 비공식 목록 (/archive/items/)
+ARCHIVE_COLLECTION_PAGE_SIZE = 10  # 컬렉션 목록 (/archive/collection/)
 
 
 def user_status_counts(user, *, today=None) -> dict:

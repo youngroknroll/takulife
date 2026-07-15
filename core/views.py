@@ -11,18 +11,22 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from archive.models import PersonalEntry, UserEventStatus, VisitRecord
+from archive.models import CollectionItem, PersonalEntry, UserEventStatus, VisitRecord
 from archive.queries import (
+    ARCHIVE_COLLECTION_PAGE_SIZE,
     ARCHIVE_PERSONAL_PAGE_SIZE,
     ARCHIVE_RECORD_PAGE_SIZE,
     ARCHIVE_STATUS_PAGE_SIZE,
     ARCHIVE_STATUS_SLUGS,
     ARCHIVE_VISIT_PAGE_SIZE,
+    list_user_collection_items,
     list_user_interests,
     list_user_personal_entries,
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
+    user_collection_item_filter_values,
+    user_collection_item_summary_counts,
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
@@ -39,6 +43,7 @@ from core.vocab import (
     archive_status_label,
     CATEGORY,
     CATEGORY_LABELS,
+    COLLECTION_ITEM_TYPE,
     EVENT_SORT_LABELS,
     EVENT_STATUS,
     EVENT_STATUS_LABELS,
@@ -614,6 +619,117 @@ def archive_visit_edit(request, record_id):
             "photos": list(record.photos.all().order_by("id")),
         },
     )
+
+
+def _collection_item_row(item):
+    """Display row for one CollectionItem card.
+
+    ``quantity_label``/``tradeable_label`` are "" (no badge) whenever the
+    respective count is 0 — a wanted-only item with quantity=0 (D1) renders
+    with no numeric badge instead of "수량 0개".
+    """
+    return {
+        "item": item,
+        "quantity_label": f"수량 {item.quantity}개" if item.quantity > 0 else "",
+        "tradeable_label": (
+            f"교환 가능 {item.tradeable_quantity}개" if item.tradeable_quantity > 0 else ""
+        ),
+        "is_wanted": item.is_wanted,
+    }
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_collection_items(request):
+    user = request.user
+    q = _archive_query(request)
+    work_title = request.GET.get("work_title", "")
+    character_name = request.GET.get("character_name", "")
+    item_type = request.GET.get("item_type", "")
+    # Unrecognised values (including absence) mean "no filter" — mirrors the
+    # visits/personal-entries filter fallback discipline (500 prevention).
+    is_wanted = {"true": True, "false": False}.get(request.GET.get("is_wanted", ""))
+    is_wanted_value = {True: "true", False: "false"}.get(is_wanted, "")
+
+    summary_counts = user_collection_item_summary_counts(user)
+    has_items = (summary_counts["owned_count"] + summary_counts["wanted_count"]) > 0
+
+    filtered_qs = list_user_collection_items(
+        user,
+        work_title=work_title,
+        character_name=character_name,
+        item_type=item_type,
+        is_wanted=is_wanted,
+        q=q,
+    )
+    paginator = Paginator(filtered_qs, ARCHIVE_COLLECTION_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    item_rows = [_collection_item_row(item) for item in page_obj.object_list]
+
+    # --- Query-string helpers ----------------------------------------------
+    # Three DIFFERENT axis subsets, easy to confuse:
+    #   chip_query_suffix  — q + 3 filters, is_wanted EXCLUDED (chips switch it)
+    #   pager_query        — all 5 axes (paging changes nothing)
+    #   clear_query_suffix — is_wanted + 3 filters, q EXCLUDED (clear removes it)
+    filter_parts = []
+    if work_title:
+        filter_parts.append(("work_title", work_title))
+    if character_name:
+        filter_parts.append(("character_name", character_name))
+    if item_type:
+        filter_parts.append(("item_type", item_type))
+
+    chip_parts = list(filter_parts)
+    if q:
+        chip_parts.append(("q", q))
+    chip_query_suffix = "&" + urlencode(chip_parts) if chip_parts else ""
+
+    clear_parts = list(filter_parts)
+    if is_wanted_value:
+        clear_parts.append(("is_wanted", is_wanted_value))
+    clear_query_suffix = urlencode(clear_parts)
+
+    pager_parts = list(filter_parts)
+    if is_wanted_value:
+        pager_parts.append(("is_wanted", is_wanted_value))
+    if q:
+        pager_parts.append(("q", q))
+    pager_query = "&" + urlencode(pager_parts) if pager_parts else ""
+
+    return _render_archive_list(
+        request,
+        full_template="core/archive/collection.html",
+        fragment_template="core/partials/_archive_results_collection.html",
+        context={
+            "item_rows": item_rows,
+            "page_obj": page_obj,
+            "has_items": has_items,
+            "owned_count": summary_counts["owned_count"],
+            "wanted_count": summary_counts["wanted_count"],
+            "filter_values": user_collection_item_filter_values(user),
+            "q": q,
+            "has_query": bool(q),
+            "work_title": work_title,
+            "character_name": character_name,
+            "item_type": item_type,
+            "is_wanted_value": is_wanted_value,
+            "chip_query_suffix": chip_query_suffix,
+            "pager_query": pager_query,
+            "clear_query_suffix": clear_query_suffix,
+        },
+    )
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_collection_item_create(request):
+    raise NotImplementedError  # stub — implemented in the create-page TDD cycle
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_collection_item_edit(request, item_id):
+    raise NotImplementedError  # stub — implemented in the edit-page TDD cycle
 
 
 @login_required

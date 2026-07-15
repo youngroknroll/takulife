@@ -1,0 +1,69 @@
+{% comment %}
+내 컬렉션(archive_collection_items) 결과 영역 — 라이브 검색 swap 대상.
+풀 페이지(collection.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
+컨텍스트: item_rows, has_items, has_query, q, page_obj, pager_query,
+clear_query_suffix, request
+{% endcomment %}
+{% if item_rows %}
+  <div class="timeline">
+    {% for row in item_rows %}
+      <article class="visit-card hover-lift" data-collection-item-id="{{ row.item.id }}">
+        <div class="visit-card-body">
+          <div class="visit-card-top">
+            {% if row.item.item_type %}
+              <span class="visit-chip category">{{ row.item.item_type }}</span>
+            {% endif %}
+            {% if row.is_wanted %}
+              <span class="visit-chip">구함</span>
+            {% endif %}
+            {% if row.quantity_label %}
+              <span class="visit-chip">{{ row.quantity_label }}</span>
+            {% endif %}
+            {% if row.tradeable_label %}
+              <span class="visit-chip">{{ row.tradeable_label }}</span>
+            {% endif %}
+          </div>
+
+          <h3>{{ row.item.name }}</h3>
+          <p class="meta">
+            {% if row.item.work_title %}{{ row.item.work_title }}{% endif %}
+            {% if row.item.character_name %} · {{ row.item.character_name }}{% endif %}
+          </p>
+          {% if row.item.memo %}
+            <p class="review">{{ row.item.memo }}</p>
+          {% endif %}
+
+          <div class="visit-card-actions">
+            <a class="record-edit-link" href="/archive/collection/{{ row.item.id }}/edit/">수정</a>
+          </div>
+        </div>
+
+        {% if row.item.image %}
+          <div class="visit-card-media">
+            <img src="{{ row.item.image.url }}" alt="{{ row.item.name }}" loading="lazy">
+          </div>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
+{% elif has_items %}
+  {% if has_query %}
+    <div class="empty-state">
+      <p class="empty-title">검색 결과가 없습니다</p>
+      <p class="empty-note">"{{ q }}"에 해당하는 항목이 없어요. <a href="{{ request.path }}{% if clear_query_suffix %}?{{ clear_query_suffix }}{% endif %}">지우기</a></p>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p class="empty-title">이 필터에 해당하는 항목이 없습니다</p>
+      <p class="empty-note"><a href="/archive/collection/">전체 보기</a>로 돌아가세요.</p>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="empty-state">
+    <p class="empty-icon">🗂️</p>
+    <p class="empty-title">아직 등록한 컬렉션이 없어요</p>
+    <p class="empty-note">행사 없이도 바로 등록할 수 있어요.</p>
+  </div>
+{% endif %}
+
+{% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
