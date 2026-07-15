@@ -26,6 +26,8 @@
       </div>
     </section>
 
+    <div id="collection-global-error" class="form-error" style="margin-bottom:8px;"></div>
+
     <section class="layout">
       <article class="panel">
         <h2>내 컬렉션 목록</h2>
@@ -119,5 +121,6 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/pages/collection.js' %}"></script>
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
 {% endblock %}
