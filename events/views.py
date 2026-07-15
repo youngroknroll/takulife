@@ -7,6 +7,9 @@ from rest_framework.views import APIView
 
 from django.shortcuts import get_object_or_404
 
+from core.analytics import record_event
+from core.models import AnalyticsEvent
+
 from .models import Event
 from .queries import PUBLIC_LISTING_PAGE_SIZE, list_published_events, parse_public_listing_params
 from .serializers import EventPosterUploadSerializer, EventSerializer
@@ -23,6 +26,15 @@ class PublicEventListView(ListAPIView):
 
     def get_queryset(self):
         params = parse_public_listing_params(self.request.query_params)
+        # q present -> the user searched; absent -> a plain browse/filter
+        # view. The two are mutually exclusive analytics events (PR-0e
+        # checkpoint B10), recorded once per request.
+        event_name = (
+            AnalyticsEvent.EventName.EVENT_SEARCHED
+            if params.get("q")
+            else AnalyticsEvent.EventName.EVENT_LIST_VIEWED
+        )
+        record_event(event_name, user=self.request.user)
         return list_published_events(params)
 
 
@@ -31,6 +43,16 @@ class PublicEventDetailView(RetrieveAPIView):
 
     def get_queryset(self):
         return Event.objects.published()
+
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        record_event(
+            AnalyticsEvent.EventName.EVENT_DETAIL_VIEWED,
+            user=request.user,
+            target_type="event",
+            target_id=response.data["id"],
+        )
+        return response
 
 
 class EventPosterView(APIView):
