@@ -44,6 +44,10 @@ class TestArchiveVisitCreateView:
         other = make_user(username="other")
         mine = make_entry(user, kind="place", title="내 장소")
         make_entry(other, kind="place", title="남의 카페")
+        # GOODS is no longer a valid visit subject (collection domain plan
+        # §3-3) — must never appear in the selectable dropdown, even for a
+        # legacy row created before the write path was closed.
+        make_entry(user, kind="goods", title="내 굿즈")
 
         client = Client()
         client.force_login(user)

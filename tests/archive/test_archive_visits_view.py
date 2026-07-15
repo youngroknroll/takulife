@@ -40,6 +40,21 @@ class TestArchiveVisitsSelectableEvents:
         titles = [e.title for e in resp.context["selectable_events"]]
         assert titles == ["Planned"]
 
+    def test_selectable_personal_entries_excludes_goods(self, make_user, make_entry):
+        # GOODS is no longer a valid visit subject (collection domain plan
+        # §3-3) — must never appear in the inline dropdown, even for a legacy
+        # row created before the write path was closed.
+        user = make_user()
+        place = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="내 장소")
+        make_entry(user, kind=PersonalEntry.Kind.GOODS, title="내 굿즈")
+
+        client = Client()
+        client.force_login(user)
+        resp = client.get("/archive/visits/")
+
+        entries = list(resp.context["selectable_personal_entries"])
+        assert entries == [place]
+
 
 @pytest.mark.django_db
 class TestArchiveVisitsCategoryFilter:

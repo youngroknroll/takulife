@@ -528,7 +528,9 @@ def archive_visits(request):
             "has_unofficial": has_unofficial,
             "has_official": has_official,
             "selectable_events": list_user_planned_events(user),
-            "selectable_personal_entries": list_user_personal_entries(user),
+            "selectable_personal_entries": list_user_personal_entries(
+                user, kind=PersonalEntry.Kind.PLACE
+            ),
             "q": q,
             "has_query": bool(q),
             "selected_filter": selected_filter,
@@ -584,7 +586,9 @@ def archive_visit_create(request):
         "core/archive/visit_create.html",
         {
             "selectable_events": list_user_planned_events(request.user),
-            "selectable_personal_entries": list_user_personal_entries(request.user),
+            "selectable_personal_entries": list_user_personal_entries(
+                request.user, kind=PersonalEntry.Kind.PLACE
+            ),
             "preselect": _parse_visit_preselect(request),
         },
     )
