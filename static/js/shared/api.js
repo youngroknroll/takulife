@@ -6,8 +6,10 @@
  *   post(url, body)       — POST with JSON body
  *   patch(url, body)      — PATCH with JSON body
  *   del(url)              — DELETE (no body)
- *   upload(url, formData) — multipart POST; does NOT set Content-Type so the
- *                           browser sets the correct multipart boundary
+ *   upload(url, formData, method) — multipart request (default POST); does
+ *                           NOT set Content-Type so the browser sets the
+ *                           correct multipart boundary. method also accepts
+ *                           "PATCH" for a multipart partial update.
  *
  * All methods:
  *   - read the csrftoken cookie and inject X-CSRFToken header
@@ -324,14 +326,16 @@
     },
 
     /**
-     * upload(url, formData) — multipart POST
+     * upload(url, formData, method) — multipart request, default POST.
      * Does NOT set Content-Type so the browser sets the multipart boundary.
-     * Injects X-CSRFToken and sends credentials: 'same-origin'.
+     * Injects X-CSRFToken and sends credentials: 'same-origin'. Pass
+     * method: "PATCH" for a multipart partial update (e.g. replacing an
+     * image alongside other fields on an existing resource).
      */
-    upload: async function (url, formData) {
+    upload: async function (url, formData, method) {
       try {
         var response = await fetch(url, {
-          method: "POST",
+          method: method || "POST",
           credentials: "same-origin",
           headers: buildUploadHeaders(),
           body: formData,
