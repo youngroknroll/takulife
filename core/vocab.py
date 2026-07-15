@@ -68,6 +68,24 @@ GOODS_STATUS_LABELS: dict[str, str] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Collection item type vocabulary (D4)
+# Free-input on the model (no DB choices constraint) — this is UI-side
+# guidance for CollectionItem.item_type. slug → display label
+# ---------------------------------------------------------------------------
+COLLECTION_ITEM_TYPE: tuple[tuple[str, str], ...] = (
+    ("acrylic_stand", "아크릴 스탠드"),
+    ("keyring", "키링"),
+    ("badge", "뱃지"),
+    ("photocard", "포토카드"),
+    ("plush", "인형"),
+    ("stationery", "문구"),
+    ("etc", "기타"),
+)
+
+COLLECTION_ITEM_TYPE_LABELS: dict[str, str] = dict(COLLECTION_ITEM_TYPE)
+
+
 def archive_status_label(slug: str, kind: str = "") -> str:
     """Kind-aware archive-status label (goods → 구매…, otherwise → 방문…)."""
     if kind == "goods":

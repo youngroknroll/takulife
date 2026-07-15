@@ -411,7 +411,8 @@ def staff_event_edit(request, pk):
 def _reference_block_message(counts):
     return (
         f"찜 {counts['interest']}·상태 {counts['status']}·"
-        f"방문기록 {counts['visit']}건이 연결되어 삭제할 수 없습니다."
+        f"방문기록 {counts['visit']}·컬렉션 {counts['collection_item']}건이 "
+        "연결되어 삭제할 수 없습니다."
     )
 
 
@@ -521,6 +522,7 @@ def staff_event_delete(request, pk):
                     "interest": exc.interest_count,
                     "status": exc.status_count,
                     "visit": exc.visit_count,
+                    "collection_item": exc.collection_item_count,
                 }
             ),
         )

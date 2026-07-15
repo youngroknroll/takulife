@@ -1,5 +1,6 @@
 """Archive service-layer tests — direct service calls, no HTTP."""
 import pytest
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 
@@ -7,6 +8,7 @@ from archive.models import VisitRecord
 from archive.services import (
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
+    create_collection_item,
     create_personal_entry,
     create_user_event_status,
     create_visit_record_photo,
@@ -98,3 +100,110 @@ def test_create_personal_entry_service(make_user):
     assert entry.pk is not None
     assert entry.user == user
     assert entry.location_name == "성수"
+
+
+# ---------------------------------------------------------------------------
+# create_collection_item (PR-C1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_collection_item_syncs_event_from_visit_record(make_user, make_event, make_visit):
+    user = make_user(username="ci-service-sync")
+    event = make_event(title="싱크할 이벤트")
+    visit_record = make_visit(user, event=event, visited_on="2026-01-01")
+
+    item = create_collection_item(
+        user=user, name="이벤트 한정 굿즈", visit_record=visit_record
+    )
+
+    assert item.visit_record_id == visit_record.id
+    assert item.event_id == event.id
+
+
+@pytest.mark.django_db
+def test_create_collection_item_visit_record_overrides_conflicting_explicit_event(
+    make_user, make_event, make_visit
+):
+    user = make_user(username="ci-service-override")
+    visit_event = make_event(title="방문 이벤트")
+    conflicting_event = make_event(title="다른 이벤트")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+
+    item = create_collection_item(
+        user=user,
+        name="충돌 굿즈",
+        visit_record=visit_record,
+        event=conflicting_event,
+    )
+
+    assert item.event_id == visit_event.id
+
+
+@pytest.mark.django_db
+def test_create_collection_item_rejects_negative_quantity_before_db(make_user):
+    user = make_user(username="ci-service-neg-qty")
+
+    with pytest.raises(ValidationError):
+        create_collection_item(user=user, name="음수 수량", quantity=-1)
+
+
+@pytest.mark.django_db
+def test_create_collection_item_rejects_negative_tradeable_quantity_before_db(make_user):
+    user = make_user(username="ci-service-neg-tradeable")
+
+    with pytest.raises(ValidationError):
+        create_collection_item(
+            user=user, name="음수 교환 수량", quantity=5, tradeable_quantity=-1
+        )
+
+
+@pytest.mark.django_db
+def test_create_collection_item_rejects_tradeable_exceeding_quantity_before_db(make_user):
+    user = make_user(username="ci-service-tradeable-exceeds")
+
+    with pytest.raises(ValidationError):
+        create_collection_item(
+            user=user, name="초과 교환 수량", quantity=1, tradeable_quantity=2
+        )
+
+
+@pytest.mark.django_db
+def test_create_collection_item_rejects_visit_record_owned_by_another_user(
+    make_user, make_event, make_visit
+):
+    owner = make_user(username="ci-service-visit-owner")
+    other = make_user(username="ci-service-other-user")
+    event = make_event(title="타인 방문 이벤트")
+    visit_record = make_visit(owner, event=event, visited_on="2026-01-01")
+
+    with pytest.raises(ValidationError):
+        create_collection_item(user=other, name="타인 소유 위반", visit_record=visit_record)
+
+
+@pytest.mark.django_db
+def test_create_collection_item_syncs_none_event_from_unofficial_visit_record(
+    make_user, make_entry, make_visit, make_event
+):
+    user = make_user(username="ci-service-unofficial-visit")
+    personal_entry = make_entry(user)
+    visit_record = make_visit(user, personal_entry=personal_entry, visited_on="2026-01-01")
+    conflicting_event = make_event(title="무시되어야 할 이벤트")
+
+    item = create_collection_item(
+        user=user,
+        name="비공식 방문 굿즈",
+        visit_record=visit_record,
+        event=conflicting_event,
+    )
+
+    assert item.event_id is None
+
+
+@pytest.mark.django_db
+def test_create_collection_item_defaults_visibility_to_private(make_user):
+    user = make_user(username="ci-service-visibility-default")
+
+    item = create_collection_item(user=user, name="기본 공개범위 확인")
+
+    assert item.visibility == "private"
