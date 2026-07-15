@@ -293,6 +293,12 @@ ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS = {
     ("tests/staff/test_staff_draft_views.py", "drafts.queries"): frozenset(
         {"DRAFT_LISTING_PAGE_SIZE"}
     ),
+    # Imports only the ARCHIVE_COLLECTION_PAGE_SIZE constant, to compute how
+    # many collection items to seed for a pagination test — no query
+    # function is called.
+    ("tests/archive/test_archive_collection_view.py", "archive.queries"): frozenset(
+        {"ARCHIVE_COLLECTION_PAGE_SIZE"}
+    ),
 }
 
 # Sentinel used when a test file imports the whole services/queries module

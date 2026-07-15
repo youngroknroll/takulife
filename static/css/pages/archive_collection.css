@@ -1,0 +1,36 @@
+/* archive_collection.css — /archive/collection/ list card overrides.
+   Loaded after archive_visits.css (shared .visit-card/.visit-chip/.layout
+   base). Scoped via [data-collection-item-id], already present on every
+   collection card, so nothing here can leak onto /archive/visits/. */
+
+/* Fixed 96px thumbnail at every breakpoint — not the 200px carousel
+   treatment visit cards use (event_list.css:197 precedent). Collection
+   density matters more than a large preview, and a small fixed box never
+   needs archive_visits.css's stack-below-45rem media query. */
+.visit-card[data-collection-item-id] .visit-card-media {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+}
+.visit-card[data-collection-item-id] .visit-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+.collection-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+}
+
+/* "구함" chip reuses the existing 찜/wanted pink identity pairing
+   (archive_statuses.css .user-status.interested) instead of a new color —
+   already has dark-mode tokens (tokens.css --pink-soft/--pink-ink). */
+.visit-chip.wanted {
+  background: var(--pink-soft);
+  color: var(--pink-ink);
+}

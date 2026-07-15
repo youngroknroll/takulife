@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 컬렉션 항목 등록{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="content">
+    {% include "core/partials/_archive_nav.html" with active="collection" active_label="내 컬렉션" %}
+
+    <section class="hero">
+      <a class="back-link" href="/archive/collection/">← 내 컬렉션으로</a>
+      <h1>컬렉션 항목 등록</h1>
+    </section>
+
+    <div id="collection-global-error" class="form-error" style="margin-bottom:8px;"></div>
+
+    <section class="layout layout--single">
+      <article class="panel">
+        <h2>새 항목</h2>
+
+        <form id="collection-create-form" class="create-form" novalidate>
+          <div class="form-group">
+            <label for="collection-name">이름</label>
+            <input id="collection-name" type="text" name="name" maxlength="255" required placeholder="예: 유메 아크릴 스탠드">
+          </div>
+
+          <div class="form-group">
+            <label for="collection-image">이미지 (선택)</label>
+            <input id="collection-image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+            <p class="field-hint">JPEG · PNG · WebP · 5MB 이하</p>
+          </div>
+
+          <div class="form-group">
+            <label for="collection-quantity">수량</label>
+            <input id="collection-quantity" type="number" name="quantity" min="0" value="1">
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="collection-is-wanted" name="is_wanted">
+              구하는 중이에요
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="collection-memo">메모 (선택)</label>
+            <input id="collection-memo" type="text" name="memo" placeholder="짧은 메모">
+          </div>
+
+          <details class="entry-detail-group" id="collection-detail-fields">
+            <summary class="entry-detail-toggle">
+              <span>상세 정보 (선택)</span>
+              <span class="entry-detail-caret">▾</span>
+            </summary>
+            <div class="entry-detail-body">
+              <div class="form-group">
+                <label for="collection-work-title">작품명 (선택)</label>
+                <input id="collection-work-title" type="text" name="work_title" maxlength="255">
+              </div>
+              <div class="form-group">
+                <label for="collection-character-name">캐릭터명 (선택)</label>
+                <input id="collection-character-name" type="text" name="character_name" maxlength="255">
+              </div>
+              <div class="form-group">
+                <label for="collection-item-type">유형 (선택)</label>
+                <input
+                  id="collection-item-type"
+                  type="text"
+                  name="item_type"
+                  maxlength="100"
+                  list="collection-item-type-options"
+                >
+                <datalist id="collection-item-type-options">
+                  {% for slug, label in COLLECTION_ITEM_TYPE %}
+                    <option value="{{ label }}">
+                  {% endfor %}
+                </datalist>
+              </div>
+              <div class="form-group">
+                <label for="collection-acquired-on">획득일 (선택)</label>
+                <input id="collection-acquired-on" type="date" name="acquired_on">
+              </div>
+              <div class="form-group">
+                <label for="collection-acquisition-source">획득 경로 (선택)</label>
+                <input
+                  id="collection-acquisition-source"
+                  type="text"
+                  name="acquisition_source"
+                  maxlength="100"
+                  placeholder="예: 행사 현장, 통판, 양도"
+                >
+              </div>
+
+              <div class="form-group">
+                <label>방문 기록 연결 (선택)</label>
+                {% if preselect %}
+                  <p class="locked-subject">{{ preselect.label }}</p>
+                  <input type="hidden" id="collection-visit-record" name="visit_record" value="{{ preselect.id }}">
+                  <p class="field-hint">방문 기록에서 연결됨 — 대상은 변경할 수 없습니다.</p>
+                {% else %}
+                  <select id="collection-visit-record" name="visit_record">
+                    <option value="">연결 안 함</option>
+                    {% for record in selectable_visit_records %}
+                      <option value="{{ record.id }}">
+                        {% if record.event %}{{ record.event.title }}{% else %}{{ record.personal_entry.title }}{% endif %}
+                        · {{ record.visited_on }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                {% endif %}
+              </div>
+
+              <div class="form-group">
+                <label for="collection-tradeable-quantity">교환 가능 수량 (선택)</label>
+                <input id="collection-tradeable-quantity" type="number" name="tradeable_quantity" min="0" value="0">
+              </div>
+            </div>
+          </details>
+
+          <p class="form-error" id="collection-create-error"></p>
+          <p class="form-status" id="collection-create-status"></p>
+          <button class="form-submit-btn" type="submit">항목 저장</button>
+        </form>
+      </article>
+    </section>
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/pages/collection.js' %}"></script>
+{% endblock %}

@@ -31,6 +31,21 @@ urlpatterns = [
     ),
     path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
     path(
+        "archive/collection/new/",
+        core_views.archive_collection_item_create,
+        name="archive-collection-create-page",
+    ),
+    path(
+        "archive/collection/<int:item_id>/edit/",
+        core_views.archive_collection_item_edit,
+        name="archive-collection-edit-page",
+    ),
+    path(
+        "archive/collection/",
+        core_views.archive_collection_items,
+        name="archive-collection-page",
+    ),
+    path(
         "archive/items/",
         core_views.archive_personal_entries,
         name="archive-personal-entries-page",
