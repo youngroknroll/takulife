@@ -44,6 +44,7 @@ from .services import (
     mark_missed,
     mark_visited,
     revert_to_planned,
+    update_collection_item,
     update_visit_record,
 )
 
@@ -337,3 +338,9 @@ class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return CollectionItem.objects.filter(user=self.request.user)
+
+    def perform_update(self, serializer):
+        try:
+            update_collection_item(item=serializer.instance, **serializer.validated_data)
+        except DjangoValidationError as exc:
+            _translate_domain_validation_error(exc)

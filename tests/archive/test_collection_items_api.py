@@ -169,3 +169,51 @@ def test_collection_item_owner_can_delete(client, make_user, make_collection_ite
 
     assert response.status_code == 204
     assert not CollectionItem.objects.filter(id=item.id).exists()
+
+
+# ---------------------------------------------------------------------------
+# CP13: PATCH routes through update_collection_item (the guarded service),
+# not a raw ModelSerializer save.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_owner_can_patch_collection_item_fields(client, make_user, make_collection_item):
+    user = make_user(username="ci-patch-owner")
+    item = make_collection_item(user, name="원래 이름")
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/collection-items/{item.id}/",
+        {"name": "바뀐 이름", "memo": "메모 추가"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "바뀐 이름"
+    item.refresh_from_db()
+    assert item.name == "바뀐 이름"
+    assert item.memo == "메모 추가"
+
+
+@pytest.mark.django_db
+def test_patch_rejects_quantity_below_existing_tradeable_quantity(
+    client, make_user, make_collection_item
+):
+    """A PATCH that only sends `quantity` must still be checked against the
+    row's existing `tradeable_quantity` — proves the PATCH path runs through
+    update_collection_item's merged-value guard, not a raw serializer save
+    (collection domain design plan §5 acceptance criterion 3)."""
+    user = make_user(username="ci-patch-merge-guard")
+    item = make_collection_item(user, name="병합 가드", quantity=5, tradeable_quantity=3)
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/collection-items/{item.id}/",
+        {"quantity": 1},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    item.refresh_from_db()
+    assert item.quantity == 5
