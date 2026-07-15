@@ -249,3 +249,18 @@ class CollectionItem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                name="collectionitem_quantity_gte_0",
+                condition=models.Q(quantity__gte=0),
+            ),
+            models.CheckConstraint(
+                name="collectionitem_tradeable_lte_quantity",
+                condition=models.Q(tradeable_quantity__lte=models.F("quantity")),
+            ),
+            models.CheckConstraint(
+                name="collectionitem_tradeable_gte_0",
+                condition=models.Q(tradeable_quantity__gte=0),
+            ),
+        ]

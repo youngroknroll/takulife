@@ -1,5 +1,6 @@
 """Archive model tests — field defaults and constraints, no HTTP."""
 import pytest
+from django.db import IntegrityError, transaction
 
 from archive.models import CollectionItem, PersonalEntry
 
@@ -46,3 +47,45 @@ def test_collection_item_persists_with_owner_and_name(make_user):
     assert item.user_id == user.id
     assert item.name == "아크릴 스탠드"
 
+
+@pytest.mark.django_db
+def test_collection_item_negative_quantity_violates_check_constraint(make_user):
+    user = make_user(username="ci-neg-qty")
+
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            CollectionItem.objects.create(user=user, name="위시 아이템", quantity=-1)
+
+
+@pytest.mark.django_db
+def test_collection_item_zero_quantity_is_allowed(make_user):
+    """D1: quantity=0 represents a wanted-only (not-yet-owned) item."""
+    user = make_user(username="ci-zero-qty")
+
+    item = CollectionItem.objects.create(user=user, name="구함", quantity=0)
+
+    assert item.quantity == 0
+
+
+@pytest.mark.django_db
+def test_collection_item_tradeable_quantity_exceeding_quantity_violates_check_constraint(
+    make_user,
+):
+    user = make_user(username="ci-tradeable-exceeds")
+
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            CollectionItem.objects.create(
+                user=user, name="교환용", quantity=1, tradeable_quantity=2
+            )
+
+
+@pytest.mark.django_db
+def test_collection_item_negative_tradeable_quantity_violates_check_constraint(make_user):
+    user = make_user(username="ci-neg-tradeable")
+
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            CollectionItem.objects.create(
+                user=user, name="음수 교환", quantity=5, tradeable_quantity=-1
+            )
