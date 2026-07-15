@@ -111,8 +111,31 @@ def mark_visited(*, user_event_status):
     return user_event_status
 
 
+class VisitRecordExistsError(Exception):
+    """Raised when a status-only PATCH would revert a subject to planned or
+    mark it missed while it already has a VisitRecord — recreating the exact
+    drift 0016 corrected (collection domain design plan §5 acceptance
+    criterion 5, §6-b Deferred). The subject's VisitRecord, not just this
+    status row, is the source of truth once it exists."""
+
+
+def _has_visit_record(*, user, event, personal_entry):
+    queryset = VisitRecord.objects.filter(user=user)
+    if event is not None:
+        queryset = queryset.filter(event=event)
+    else:
+        queryset = queryset.filter(personal_entry=personal_entry)
+    return queryset.exists()
+
+
 def mark_missed(*, user_event_status):
     """Explicitly set a status row to missed. Works before or after the date."""
+    if _has_visit_record(
+        user=user_event_status.user,
+        event=user_event_status.event,
+        personal_entry=user_event_status.personal_entry,
+    ):
+        raise VisitRecordExistsError
     user_event_status.status = UserEventStatus.Status.MISSED
     user_event_status.save(update_fields=["status", "updated_at"])
     return user_event_status
@@ -124,6 +147,12 @@ def revert_to_planned(*, user_event_status):
     Setting ``missed_overridden`` is what makes the choice stick: otherwise the
     read-time derivation would re-show an ended planned row as missed.
     """
+    if _has_visit_record(
+        user=user_event_status.user,
+        event=user_event_status.event,
+        personal_entry=user_event_status.personal_entry,
+    ):
+        raise VisitRecordExistsError
     user_event_status.status = UserEventStatus.Status.PLANNED
     user_event_status.missed_overridden = True
     user_event_status.save(update_fields=["status", "missed_overridden", "updated_at"])
