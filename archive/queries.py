@@ -301,6 +301,28 @@ def list_user_collection_items(
     return queryset
 
 
+def user_collection_item_filter_values(user) -> dict:
+    """Return the distinct work_title/character_name/item_type values used by
+    a user's collection items, for populating filter widget options.
+
+    Unlike user_visit_category_values (below) — whose caller dedupes only
+    after resolving core.vocab labels, keeping this module free of a
+    core.vocab import — work_title/character_name/item_type are stored as
+    free text with no vocab resolution step, so dedup and blank exclusion are
+    done directly here in the query layer rather than deferred to the view.
+    """
+    fields = ("work_title", "character_name", "item_type")
+    return {
+        field: list(
+            CollectionItem.objects.filter(user=user)
+            .exclude(**{field: ""})
+            .values_list(field, flat=True)
+            .distinct()
+        )
+        for field in fields
+    }
+
+
 def user_visit_category_values(user):
     """Return (event__category, personal_entry__category) pairs for a user's visits.
 

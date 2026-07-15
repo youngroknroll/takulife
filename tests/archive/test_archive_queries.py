@@ -11,6 +11,7 @@ from archive.queries import (
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
+    user_collection_item_filter_values,
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
@@ -428,6 +429,71 @@ def test_list_user_collection_items_empty_q_is_a_no_op(make_user):
     items = set(list_user_collection_items(user, q=""))
 
     assert items == {first, second}
+
+
+# ---------------------------------------------------------------------------
+# user_collection_item_filter_values (PR-C5b-1). Unlike
+# user_visit_category_values (whose caller dedupes after resolving
+# core.vocab labels, keeping archive/queries.py free of a core.vocab import),
+# work_title/character_name/item_type are stored as free text with no vocab
+# resolution step — so dedup and blank exclusion happen directly in the
+# query layer here instead of being deferred to the view.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_collection_item_filter_values_dedupes_and_scopes_to_owner(make_user):
+    user = make_user(username="ci-filter-values-user")
+    other = make_user(username="ci-filter-values-other")
+    CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="굿즈 2", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="굿즈 3", character_name="캐릭터 A")
+    CollectionItem.objects.create(user=user, name="굿즈 4", character_name="캐릭터 A")
+    CollectionItem.objects.create(user=user, name="굿즈 5", item_type="스탬프")
+    CollectionItem.objects.create(user=user, name="굿즈 6", item_type="스탬프")
+    CollectionItem.objects.create(
+        user=other, name="남의 굿즈", work_title="작품 A", character_name="캐릭터 A", item_type="스탬프"
+    )
+
+    values = user_collection_item_filter_values(user)
+
+    assert values == {
+        "work_title": ["작품 A"],
+        "character_name": ["캐릭터 A"],
+        "item_type": ["스탬프"],
+    }
+
+
+@pytest.mark.django_db
+def test_user_collection_item_filter_values_excludes_blank_fields(make_user):
+    """A row with no work_title/character_name/item_type set must not
+    contribute an empty-string entry to any of the three lists."""
+    user = make_user(username="ci-filter-values-blank")
+    CollectionItem.objects.create(
+        user=user,
+        name="굿즈 1",
+        work_title="작품 B",
+        character_name="캐릭터 B",
+        item_type="피규어",
+    )
+    CollectionItem.objects.create(user=user, name="굿즈 2")  # all three fields blank
+
+    values = user_collection_item_filter_values(user)
+
+    assert values == {
+        "work_title": ["작품 B"],
+        "character_name": ["캐릭터 B"],
+        "item_type": ["피규어"],
+    }
+
+
+@pytest.mark.django_db
+def test_user_collection_item_filter_values_zero_for_no_items(make_user):
+    user = make_user(username="ci-filter-values-empty")
+
+    values = user_collection_item_filter_values(user)
+
+    assert values == {"work_title": [], "character_name": [], "item_type": []}
 
 
 # ---------------------------------------------------------------------------
