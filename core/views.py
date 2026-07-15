@@ -720,10 +720,60 @@ def archive_collection_items(request):
     )
 
 
+def _visit_record_option(record):
+    """Display option for one selectable/preselected visit record.
+
+    ``label`` combines the visit's subject title and date so the create
+    form's dropdown/locked display reads unambiguously even when the same
+    subject was visited more than once (collection domain design plan §3-4
+    (c): repeat visits are allowed, so titles alone can collide).
+    """
+    subject = _subject_view(record)
+    return {"id": record.pk, "label": f"{subject['title']} · {record.visited_on}"}
+
+
+def _parse_collection_visit_preselect(request):
+    """Resolve an optional ?visit_record=<id> into a locked visit record for
+    the collection-item create form.
+
+    Mirrors _parse_visit_preselect's ASCII/digit/length guard against a
+    crafted id turning into a 500, but scopes the lookup to VisitRecord rows
+    owned by the requester — an id that exists but belongs to another user
+    must not lock in their record. Returns None for any invalid, missing, or
+    foreign id, so the create form falls back to the selectable dropdown.
+    """
+    ident = request.GET.get("visit_record", "")
+    if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
+        return None
+    pk = int(ident)
+    record = (
+        VisitRecord.objects.filter(pk=pk, user=request.user)
+        .select_related("event", "personal_entry")
+        .first()
+    )
+    if record is None:
+        return None
+    return _visit_record_option(record)
+
+
 @login_required
 @ensure_csrf_cookie
 def archive_collection_item_create(request):
-    raise NotImplementedError  # stub — implemented in the create-page TDD cycle
+    """Read-only render: the form posts to the existing collection-item JSON
+    API (archive.collection_urls) from a future collection JS module. Event
+    is never a user-facing control here — create_collection_item always
+    syncs it from visit_record server-side (§3-1 FK-pair invariant), so this
+    page must never render a name="event" input.
+    """
+    return render(
+        request,
+        "core/archive/collection_create.html",
+        {
+            "selectable_visit_records": list_user_visit_records(request.user),
+            "preselect": _parse_collection_visit_preselect(request),
+            "COLLECTION_ITEM_TYPE": COLLECTION_ITEM_TYPE,
+        },
+    )
 
 
 @login_required
