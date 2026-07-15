@@ -4,6 +4,7 @@ from events.image_validation import validate_uploaded_image
 from events.models import Event
 
 from .models import (
+    CollectionItem,
     EventInterest,
     PersonalEntry,
     UserEventStatus,
@@ -169,3 +170,94 @@ class VisitRecordPhotoUploadSerializer(serializers.Serializer):
         # Delegate to the shared validator (size, extension, real format, per-axis
         # dimension, and total pixel-area decompression-bomb guards).
         return validate_uploaded_image(value)
+
+
+class CollectionItemSerializer(serializers.ModelSerializer):
+    """Owner is always taken from the request, never the payload.
+    `visibility` is deliberately absent from `fields` (not read_only) —
+    reserved for the future trade opt-in gate, no exposure until Stage 4
+    (collection domain design plan §3-1, PO decision 2026-07-16). Used for
+    both create and update (PATCH partial-validates automatically); no
+    fields are pinned read-only besides id/created_at/updated_at because,
+    unlike VisitRecord/UserEventStatus, a CollectionItem's event/visit_record
+    links are themselves user-editable after creation.
+    """
+
+    # event is scoped to published events only (same guard as
+    # VisitRecordSerializer/UserEventStatusSerializer).
+    event = serializers.PrimaryKeyRelatedField(
+        queryset=Event.objects.published(), required=False, allow_null=True
+    )
+    visit_record = serializers.PrimaryKeyRelatedField(
+        queryset=VisitRecord.objects.all(), required=False, allow_null=True
+    )
+
+    class Meta:
+        model = CollectionItem
+        fields = [
+            "id",
+            "name",
+            "work_title",
+            "character_name",
+            "item_type",
+            "quantity",
+            "acquired_on",
+            "acquisition_source",
+            "event",
+            "visit_record",
+            "image",
+            "memo",
+            "is_wanted",
+            "tradeable_quantity",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Scope visit_record to the requester (mirrors
+        # _SubjectScopedPersonalEntryMixin/VisitRecordSerializer's
+        # personal_entry scoping). Without this, a cross-user visit_record id
+        # reaches create_collection_item/update_collection_item's ownership
+        # guard, whose distinct error message makes the field an existence
+        # oracle for VisitRecord ids system-wide (security gate M1,
+        # 2026-07-16) — attachment could never succeed either way, but the
+        # two failure messages were distinguishable. The service-level
+        # ownership guard stays in place as defense in depth.
+        request = self.context.get("request")
+        if request is not None and request.user.is_authenticated:
+            self.fields["visit_record"].queryset = VisitRecord.objects.filter(
+                user=request.user
+            )
+
+    def validate_image(self, value):
+        # Route the optional image through the shared guard, mirroring
+        # PersonalEntrySerializer.validate_image.
+        if value in (None, ""):
+            return value
+        return validate_uploaded_image(value)
+
+
+class CollectionItemQuerySerializer(serializers.Serializer):
+    """Validates CollectionItem list query params before they reach
+    list_user_collection_items (mirrors UserEventStatusQuerySerializer).
+
+    `duplicate`/`tradeable` are booleans selecting the *derived* condition
+    (quantity >= 2 / tradeable_quantity > 0) — the query layer owns the
+    actual filter logic, this serializer only validates shape.
+
+    Empty-value contract (domain gate finding, 2026-07-16): an *absent*
+    param and an *empty* param (`?work_title=`) both mean "no filter" —
+    uniform across all six filters so a client can naively serialize a form
+    without per-field blank-stripping. `max_length` mirrors the model's own
+    CharField caps (security gate L4). Genuinely invalid values (e.g.
+    `?is_wanted=ture`) still 400 — only emptiness is tolerated.
+    """
+
+    work_title = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    character_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    item_type = serializers.CharField(required=False, allow_blank=True, max_length=100)
+    is_wanted = serializers.BooleanField(required=False, allow_null=True)
+    duplicate = serializers.BooleanField(required=False, allow_null=True)
+    tradeable = serializers.BooleanField(required=False, allow_null=True)

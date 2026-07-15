@@ -264,6 +264,14 @@ class CollectionItem(models.Model):
                 condition=models.Q(tradeable_quantity__gte=0),
             ),
         ]
+        # §6-b Deferred (C1): supports list_user_collection_items' owner-
+        # scoped work_title/character_name/item_type filters (PR-C5 CP16~22)
+        # without a per-filter table scan.
+        indexes = [
+            models.Index(fields=["user", "work_title"], name="collectionitem_user_work_idx"),
+            models.Index(fields=["user", "character_name"], name="collectionitem_user_char_idx"),
+            models.Index(fields=["user", "item_type"], name="collectionitem_user_type_idx"),
+        ]
 
     def clean(self):
         super().clean()

@@ -72,6 +72,7 @@ urlpatterns = [
     path("api/user-event-statuses/", include("archive.urls")),
     path("api/visit-records/", include("archive.visit_urls")),
     path("api/event-interests/", include("archive.interest_urls")),
+    path("api/collection-items/", include("archive.collection_urls")),
     path(
         "api/personal-entries/<int:pk>/promote/",
         PromotePersonalEntryView.as_view(),

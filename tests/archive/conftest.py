@@ -19,7 +19,14 @@ defaults, kept keyword-only for readability at the call site.
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from archive.models import EventInterest, PersonalEntry, UserEventStatus, VisitRecord, VisitRecordPhoto
+from archive.models import (
+    CollectionItem,
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+    VisitRecordPhoto,
+)
 
 
 @pytest.fixture
@@ -52,6 +59,14 @@ def make_entry(db):
 def make_interest(db):
     def _make(user, event=None, **kwargs):
         return EventInterest.objects.create(user=user, event=event, **kwargs)
+
+    return _make
+
+
+@pytest.fixture
+def make_collection_item(db):
+    def _make(user, *, name="수집 항목", **kwargs):
+        return CollectionItem.objects.create(user=user, name=name, **kwargs)
 
     return _make
 

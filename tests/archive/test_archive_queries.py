@@ -339,6 +339,55 @@ def test_list_user_collection_items_scopes_to_owner(make_user):
 
 
 # ---------------------------------------------------------------------------
+# list_user_collection_items filters (PR-C5, CP16~22). `duplicate`/
+# `tradeable` are *derived* from quantity/tradeable_quantity — CollectionItem
+# has no separate duplicate_count or tradeable flag field (§3-1).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_list_user_collection_items_work_title_filter_is_exact_match(make_user):
+    user = make_user(username="ci-query-work-title")
+    match = CollectionItem.objects.create(user=user, name="일치", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="불일치", work_title="작품 B")
+
+    items = list(list_user_collection_items(user, work_title="작품 A"))
+
+    assert items == [match]
+
+
+@pytest.mark.django_db
+def test_list_user_collection_items_duplicate_filter_derives_from_quantity_gte_2(make_user):
+    """`duplicate=True` must select quantity >= 2 rows — there is no
+    duplicate_count field to filter on directly (§3-1)."""
+    user = make_user(username="ci-query-duplicate")
+    two = CollectionItem.objects.create(user=user, name="둘", quantity=2)
+    one = CollectionItem.objects.create(user=user, name="하나", quantity=1)
+
+    assert list(list_user_collection_items(user, duplicate=True)) == [two]
+    assert list(list_user_collection_items(user, duplicate=False)) == [one]
+    assert not hasattr(two, "duplicate_count")
+
+
+@pytest.mark.django_db
+def test_list_user_collection_items_tradeable_filter_derives_from_tradeable_quantity_gt_0(
+    make_user,
+):
+    """`tradeable=True` must select tradeable_quantity > 0 rows — there is
+    no separate tradeable flag field (§3-1)."""
+    user = make_user(username="ci-query-tradeable")
+    tradeable = CollectionItem.objects.create(
+        user=user, name="교환 가능", quantity=3, tradeable_quantity=1
+    )
+    not_tradeable = CollectionItem.objects.create(
+        user=user, name="교환 불가", quantity=3, tradeable_quantity=0
+    )
+
+    assert list(list_user_collection_items(user, tradeable=True)) == [tradeable]
+    assert list(list_user_collection_items(user, tradeable=False)) == [not_tradeable]
+
+
+# ---------------------------------------------------------------------------
 # user_personal_interest_ids / user_personal_statuses — exclude goods rows
 # (defensive filter against pre-C4 transitional data; goods can no longer be
 # created as an interest/status subject, but ORM-created rows simulate a

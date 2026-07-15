@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -9,14 +10,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import (
+    CollectionItem,
     EventInterest,
     PersonalEntry,
     UserEventStatus,
     VisitRecord,
     VisitRecordPhoto,
 )
-from .queries import list_user_personal_entries
+from .queries import list_user_collection_items, list_user_personal_entries
 from .serializers import (
+    CollectionItemQuerySerializer,
+    CollectionItemSerializer,
     EventInterestSerializer,
     PersonalEntrySerializer,
     UserEventStatusQuerySerializer,
@@ -33,6 +37,7 @@ from .services import (
     PhotoLimitExceededError,
     VisitRecordExistsError,
     complete_visit_with_record,
+    create_collection_item,
     create_event_interest,
     create_personal_entry,
     create_user_event_status,
@@ -40,8 +45,22 @@ from .services import (
     mark_missed,
     mark_visited,
     revert_to_planned,
+    update_collection_item,
     update_visit_record,
 )
+
+
+def _translate_domain_validation_error(exc):
+    """Re-raise a service-layer django ValidationError as a DRF
+    ValidationError, so archive.services invariant violations (e.g.
+    CollectionItem quantity/FK-pair guards) surface as 400 responses
+    instead of an unhandled 500 (collection domain design plan §4 PR-C5
+    CP12/CP13 — DRF's exception handler does not translate
+    django.core.exceptions.ValidationError on its own).
+    """
+    if hasattr(exc, "error_dict"):
+        raise ValidationError(exc.message_dict)
+    raise ValidationError(exc.messages)
 
 
 class PersonalEntryPagination(PageNumberPagination):
@@ -289,3 +308,64 @@ class VisitRecordPhotoDeleteView(APIView):
         )
         photo.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CollectionItemPagination(PageNumberPagination):
+    page_size = 20
+
+
+class CollectionItemListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CollectionItemSerializer
+    pagination_class = CollectionItemPagination
+
+    def _validated_query_params(self):
+        # .dict() so DRF's BooleanField doesn't mistake the QueryDict for an
+        # HTML form submission — for MultiValueDict-like inputs, an absent
+        # optional BooleanField silently defaults to False instead of being
+        # skipped (DRF's html.is_html_input heuristic), which would make an
+        # un-set is_wanted/duplicate/tradeable filter wrongly narrow results.
+        serializer = CollectionItemQuerySerializer(data=self.request.query_params.dict())
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
+
+    def get_queryset(self):
+        return list_user_collection_items(self.request.user, **self._validated_query_params())
+
+    def perform_create(self, serializer):
+        # owner is the requester, never the payload
+        try:
+            serializer.instance = create_collection_item(
+                user=self.request.user, **serializer.validated_data
+            )
+        except DjangoValidationError as exc:
+            _translate_domain_validation_error(exc)
+
+
+class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "patch", "delete", "head", "options"]
+    permission_classes = [IsAuthenticated]
+    serializer_class = CollectionItemSerializer
+
+    def get_queryset(self):
+        return CollectionItem.objects.filter(user=self.request.user)
+
+    def perform_update(self, serializer):
+        # update_collection_item re-fetches its own row under
+        # select_for_update() (security gate M2) and returns that fresh
+        # instance rather than mutating serializer.instance in place — the
+        # response must be built from the returned object.
+        try:
+            serializer.instance = update_collection_item(
+                item=serializer.instance, **serializer.validated_data
+            )
+        except DjangoValidationError as exc:
+            _translate_domain_validation_error(exc)
+        except CollectionItem.DoesNotExist:
+            # The item existed at this view's get_object() check above but
+            # was deleted (e.g. by a concurrent request) before the
+            # service's select_for_update().get(...) ran (security gate
+            # follow-up, 2026-07-16 — the same TOCTOU window
+            # VisitRecordPhotoCreateView already guards for VisitRecord).
+            # Surface it as a normal 404 instead of a 500.
+            raise Http404

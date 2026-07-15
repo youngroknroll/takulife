@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 
-from archive.models import VisitRecord
+from archive.models import CollectionItem, VisitRecord
 from archive.services import (
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
@@ -12,6 +12,7 @@ from archive.services import (
     create_personal_entry,
     create_user_event_status,
     create_visit_record_photo,
+    update_collection_item,
 )
 from events.models import Event
 
@@ -217,3 +218,198 @@ def test_create_collection_item_defaults_visibility_to_private(make_user):
     item = create_collection_item(user=user, name="기본 공개범위 확인")
 
     assert item.visibility == "private"
+
+
+# ---------------------------------------------------------------------------
+# update_collection_item (PR-C5)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_update_collection_item_updates_simple_fields(make_user):
+    user = make_user(username="ci-update-simple")
+    item = create_collection_item(user=user, name="원래 이름", memo="원래 메모")
+
+    updated = update_collection_item(item=item, name="바뀐 이름", memo="바뀐 메모")
+
+    item.refresh_from_db()
+    assert updated.name == "바뀐 이름"
+    assert item.name == "바뀐 이름"
+    assert item.memo == "바뀐 메모"
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_quantity_below_existing_tradeable(make_user):
+    """A partial PATCH that only sends quantity must still be checked against
+    the *existing* tradeable_quantity — omitting tradeable from the payload
+    must not bypass the invariant (collection domain design plan §5
+    acceptance criterion 3)."""
+    user = make_user(username="ci-update-merge-guard")
+    item = create_collection_item(
+        user=user, name="병합 가드", quantity=5, tradeable_quantity=3
+    )
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, quantity=1)
+
+    item.refresh_from_db()
+    assert item.quantity == 5
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_tradeable_exceeding_quantity_directly(make_user):
+    user = make_user(username="ci-update-direct-exceed")
+    item = create_collection_item(user=user, name="직접 초과", quantity=5)
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, tradeable_quantity=10)
+
+    item.refresh_from_db()
+    assert item.tradeable_quantity == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_visit_record_owned_by_another_user(
+    make_user, make_event, make_visit
+):
+    owner = make_user(username="ci-update-visit-owner")
+    other = make_user(username="ci-update-other-user")
+    item = create_collection_item(user=other, name="타인 소유 수정 시도")
+    event = make_event(title="타인 방문 이벤트")
+    visit_record = make_visit(owner, event=event, visited_on="2026-01-01")
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, visit_record=visit_record)
+
+    item.refresh_from_db()
+    assert item.visit_record_id is None
+
+
+@pytest.mark.django_db
+def test_update_collection_item_visit_record_overrides_conflicting_explicit_event(
+    make_user, make_event, make_visit
+):
+    user = make_user(username="ci-update-override")
+    visit_event = make_event(title="방문 이벤트")
+    conflicting_event = make_event(title="다른 이벤트")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+    item = create_collection_item(user=user, name="충돌 수정")
+
+    updated = update_collection_item(
+        item=item, visit_record=visit_record, event=conflicting_event
+    )
+
+    assert updated.event_id == visit_event.id
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_event_conflicting_with_existing_visit_record(
+    make_user, make_event, make_visit
+):
+    """full_clean() wiring (§6-b Deferred, collection domain design plan
+    §3-1 FK-pair invariant): a row already linked to a visit_record must
+    reject a PATCH that sets `event` alone to a value disagreeing with
+    visit_record.event — the FK-pair invariant is not just a create-time
+    guard, and CollectionItem.clean() had no caller before this."""
+    user = make_user(username="ci-update-fk-pair-conflict")
+    visit_event = make_event(title="고정된 방문 이벤트")
+    other_event = make_event(title="불일치 이벤트")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+    item = create_collection_item(
+        user=user, name="FK 쌍 확인", visit_record=visit_record
+    )
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, event=other_event)
+
+    item.refresh_from_db()
+    assert item.event_id == visit_event.id
+
+
+@pytest.mark.django_db
+def test_update_collection_item_rejects_nulling_event_with_existing_visit_record(
+    make_user, make_event, make_visit
+):
+    """QVL finding D1 (2026-07-16): the FK-pair guard above only fired when
+    the *merged* event was non-null and mismatched — model.clean()'s own
+    condition requires event_id is not None, so `PATCH {"event": None}`
+    silently detached event while visit_record stayed attached, breaking
+    the invariant by omission. The quantity guard already reads merged
+    values (`fields.get("quantity", item.quantity)`) regardless of what the
+    payload touched; this guard must apply the same discipline."""
+    user = make_user(username="ci-update-fk-pair-null-event")
+    visit_event = make_event(title="고정된 방문 이벤트 2")
+    visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
+    item = create_collection_item(
+        user=user, name="FK 쌍 null 확인", visit_record=visit_record
+    )
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=item, event=None)
+
+    item.refresh_from_db()
+    assert item.event_id == visit_event.id
+
+
+@pytest.mark.django_db
+def test_update_collection_item_allows_event_edit_when_no_visit_record(
+    make_user, make_event
+):
+    """The FK-pair guard only applies once a visit_record is attached — a
+    row with no visit_record can freely change its event link."""
+    user = make_user(username="ci-update-fk-pair-free")
+    new_event = make_event(title="자유롭게 연결할 이벤트")
+    item = create_collection_item(user=user, name="자유 편집")
+
+    updated = update_collection_item(item=item, event=new_event)
+
+    assert updated.event_id == new_event.id
+
+
+@pytest.mark.django_db
+def test_update_collection_item_guards_against_concurrent_committed_state(make_user):
+    """Security gate M2 (2026-07-16): simulates a race between two PATCHes
+    without needing real threads. Caller B fetched its `item` object before
+    caller A's write committed `tradeable_quantity=5`; B's merge check must
+    be judged against the row's *current* DB state (via select_for_update),
+    not B's stale Python object — otherwise B's own merge check (quantity=1
+    vs its stale tradeable_quantity=0) would pass, and the resulting UPDATE
+    would either violate the DB CheckConstraint (crash) or silently commit
+    an inconsistent row, depending on timing. Verified by re-reading from
+    the DB, not the in-memory instance, so a save() that used update_fields
+    without actually persisting under a lock would not be missed."""
+    user = make_user(username="ci-update-concurrent-guard")
+    item = create_collection_item(
+        user=user, name="동시 PATCH 경합", quantity=5, tradeable_quantity=0
+    )
+    stale_item = CollectionItem.objects.get(pk=item.pk)  # a second caller's fetch
+    # Simulate another writer's PATCH already having committed in between.
+    CollectionItem.objects.filter(pk=item.pk).update(tradeable_quantity=5)
+
+    with pytest.raises(ValidationError):
+        update_collection_item(item=stale_item, quantity=1)
+
+    item.refresh_from_db()
+    assert item.quantity == 5
+    assert item.tradeable_quantity == 5
+
+
+@pytest.mark.django_db
+def test_update_collection_item_raises_does_not_exist_when_deleted_concurrently(make_user):
+    """Security gate follow-up (2026-07-16): M2's own fix — re-fetching
+    under select_for_update() — introduced a new TOCTOU crash: if another
+    request deletes the row between the caller's original fetch and this
+    call, `CollectionItem.objects.select_for_update().get(pk=item.pk)`
+    itself raises DoesNotExist. This is the service-layer half of that
+    finding — archive/views.py must translate it to Http404 (see
+    tests/archive/test_collection_items_api.py's
+    test_patch_race_with_concurrent_delete_returns_404 for the view-layer
+    half, which mirrors VisitRecordPhotoCreateView's identical
+    VisitRecord.DoesNotExist -> Http404 guard for the same race shape)."""
+    user = make_user(username="ci-update-concurrent-delete")
+    item = create_collection_item(user=user, name="동시 삭제 경합")
+    stale_item = CollectionItem.objects.get(pk=item.pk)  # a second caller's fetch
+    CollectionItem.objects.filter(pk=item.pk).delete()  # concurrent delete
+
+    with pytest.raises(CollectionItem.DoesNotExist):
+        update_collection_item(item=stale_item, quantity=2)
