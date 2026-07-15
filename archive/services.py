@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
 from core.analytics import record_event
@@ -128,10 +129,37 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
     When `visit_record` is supplied, `event` is always synced from
     `visit_record.event` — a visit record's own subject wins over any
     explicitly-passed `event`, so the two links can never disagree
-    (collection domain design plan §3-1 FK-pair invariant).
+    (collection domain design plan §3-1 FK-pair invariant). `visit_record`
+    must belong to `user` — attaching another user's visit record is
+    rejected here rather than surfacing as a cross-user data leak.
+
+    Quantity invariants (quantity >= 0, 0 <= tradeable_quantity <= quantity)
+    are re-checked here as a controlled ValidationError *before* the insert
+    — the DB CheckConstraints are the source of truth, this is the
+    service-level half of the plan's declared "model constraint +
+    application service" double guard (§3-1), not a replacement for them.
     """
+    quantity = fields.get("quantity", CollectionItem._meta.get_field("quantity").default)
+    tradeable_quantity = fields.get(
+        "tradeable_quantity", CollectionItem._meta.get_field("tradeable_quantity").default
+    )
+    errors = {}
+    if quantity < 0:
+        errors["quantity"] = "quantity must be >= 0."
+    if tradeable_quantity < 0:
+        errors["tradeable_quantity"] = "tradeable_quantity must be >= 0."
+    elif tradeable_quantity > quantity:
+        errors["tradeable_quantity"] = "tradeable_quantity must be <= quantity."
+    if errors:
+        raise ValidationError(errors)
+
     if visit_record is not None:
+        if visit_record.user_id != user.id:
+            raise ValidationError(
+                {"visit_record": "visit_record must belong to the requesting user."}
+            )
         event = visit_record.event
+
     return CollectionItem.objects.create(
         user=user, name=name, visit_record=visit_record, event=event, **fields
     )
