@@ -327,11 +327,31 @@ class TestArchiveCollectionEmptyStates:
 
 @pytest.mark.django_db
 class TestArchiveCollectionCardBadges:
-    """Row-level assertions read resp.context (not raw content) for the
-    is_wanted badge: the page-level filter chips also render a static "구함"
-    label whenever has_items is True, so a raw content search for "구함"
-    would pass even when a specific item's own badge is absent — the
-    computed row dict is the only collision-free signal for that flag."""
+    """quantity_label/tradeable_label assertions read resp.context — the
+    view assembles those label strings itself (the fixture only sets the
+    numeric quantity/tradeable_quantity, never the string), so this is not
+    tautological for them.
+
+    The is_wanted "구함" badge needs a different check. The literal text
+    "구함" ALSO appears in the page's summary card label and in the
+    is_wanted filter chip (both in collection.html, independent of any one
+    item's own flag) — a raw full-page content search for "구함" would pass
+    even if the item card itself never rendered a badge, and checking
+    resp.context["item_rows"][...]["is_wanted"] only proves the fixture's
+    own value round-trips through the view, not that the template renders
+    anything with it. This was caught in review: an earlier version of this
+    test used the context check and stayed green even when the badge's
+    {% if %} in _archive_results_collection.html was hard-disabled
+    (verified via a manual mutation round-trip).
+
+    The fix: ?partial=1 renders ONLY _archive_results_collection.html
+    (CP-L16/L17) — no summary card, no filter chips — so within that
+    fragment "구함" can only come from the item badge itself, making the
+    check a real rendering assertion. Do not revert this to a full-page
+    request "for consistency" with the other assertions in this class —
+    the collision is real and full-page content checks for "구함" are
+    unreliable regardless of what fixture data is present.
+    """
 
     def test_owned_item_shows_quantity_tradeable_and_wanted_badges(
         self, user_client, make_collection_item
@@ -341,14 +361,14 @@ class TestArchiveCollectionCardBadges:
             user, name="A아이템", quantity=3, tradeable_quantity=2, is_wanted=True
         )
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/archive/collection/?partial=1")
         row = resp.context["item_rows"][0]
 
         assert "수량 3개".encode() in resp.content
         assert "교환 가능 2개".encode() in resp.content
+        assert "구함".encode() in resp.content
         assert row["quantity_label"] == "수량 3개"
         assert row["tradeable_label"] == "교환 가능 2개"
-        assert row["is_wanted"] is True
 
     def test_zero_quantity_item_shows_no_quantity_or_tradeable_or_wanted_badges(
         self, user_client, make_collection_item
@@ -358,15 +378,15 @@ class TestArchiveCollectionCardBadges:
             user, name="B아이템", quantity=0, tradeable_quantity=0, is_wanted=False
         )
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/archive/collection/?partial=1")
         row = resp.context["item_rows"][0]
 
         assert "수량 0개".encode() not in resp.content
         assert "교환 가능".encode() not in resp.content
+        assert "구함".encode() not in resp.content
         assert "보유 3개".encode() not in resp.content
         assert row["quantity_label"] == ""
         assert row["tradeable_label"] == ""
-        assert row["is_wanted"] is False
 
 
 @pytest.mark.django_db
