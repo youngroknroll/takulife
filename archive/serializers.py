@@ -184,11 +184,7 @@ class CollectionItemSerializer(serializers.ModelSerializer):
     """
 
     # event is scoped to published events only (same guard as
-    # VisitRecordSerializer/UserEventStatusSerializer). visit_record is
-    # intentionally NOT scoped to the requester here — cross-user rejection
-    # is enforced by create_collection_item/update_collection_item's
-    # ownership guard, not a queryset filter (collection domain design plan
-    # §4 PR-C5 CP15).
+    # VisitRecordSerializer/UserEventStatusSerializer).
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(), required=False, allow_null=True
     )
@@ -217,6 +213,23 @@ class CollectionItemSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Scope visit_record to the requester (mirrors
+        # _SubjectScopedPersonalEntryMixin/VisitRecordSerializer's
+        # personal_entry scoping). Without this, a cross-user visit_record id
+        # reaches create_collection_item/update_collection_item's ownership
+        # guard, whose distinct error message makes the field an existence
+        # oracle for VisitRecord ids system-wide (security gate M1,
+        # 2026-07-16) — attachment could never succeed either way, but the
+        # two failure messages were distinguishable. The service-level
+        # ownership guard stays in place as defense in depth.
+        request = self.context.get("request")
+        if request is not None and request.user.is_authenticated:
+            self.fields["visit_record"].queryset = VisitRecord.objects.filter(
+                user=request.user
+            )
 
     def validate_image(self, value):
         # Route the optional image through the shared guard, mirroring

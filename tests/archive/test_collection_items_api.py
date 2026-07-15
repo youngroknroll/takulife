@@ -9,6 +9,8 @@ owner-scoped (collection domain design plan §4 PR-C5).
   PATCH  /api/collection-items/<id>/   → 200 or 404 (guarded update)
   DELETE /api/collection-items/<id>/   → 204 or 404
 """
+import re
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -247,9 +249,10 @@ def test_create_collection_item_rejects_unpublished_event(client, make_user, mak
 def test_create_collection_item_rejects_another_users_visit_record(
     client, make_user, make_event, make_visit
 ):
-    """API-level rejection of another user's visit_record — enforced by
-    create_collection_item's service-level ownership guard, not a serializer
-    queryset restriction (collection domain design plan §4 PR-C5 CP15)."""
+    """API-level rejection of another user's visit_record — enforced by the
+    serializer's owner-scoped visit_record queryset (security gate M1
+    hardening, 2026-07-16), with create_collection_item's ownership guard as
+    defense in depth (collection domain design plan §4 PR-C5 CP15)."""
     user = make_user(username="ci-create-cross-user-visit")
     other = make_user(username="ci-create-cross-user-visit-owner")
     event = make_event(title="타인 방문 이벤트")
@@ -264,6 +267,49 @@ def test_create_collection_item_rejects_another_users_visit_record(
 
     assert response.status_code == 400
     assert not CollectionItem.objects.filter(name="타인 방문 굿즈").exists()
+
+
+def _normalize_pk_in_message(payload):
+    """Strip the literal pk value DRF interpolates into a
+    PrimaryKeyRelatedField "does not exist" message (e.g. `pk "42"`), so two
+    responses can be compared by error *shape* instead of the (necessarily
+    different) id each one names."""
+    return {
+        field: [re.sub(r'"\d+"', '"<pk>"', message) for message in messages]
+        for field, messages in payload.items()
+    }
+
+
+@pytest.mark.django_db
+def test_create_collection_item_visit_record_error_does_not_reveal_existence(
+    client, make_user, make_event, make_visit
+):
+    """Another user's real visit_record id and a nonexistent id must fail
+    with the *same* error shape — otherwise the response distinguishes
+    "exists but not yours" from "doesn't exist", letting a caller enumerate
+    VisitRecord ids system-wide (security gate M1, 2026-07-16)."""
+    user = make_user(username="ci-create-visit-oracle")
+    other = make_user(username="ci-create-visit-oracle-owner")
+    event = make_event(title="오라클 확인 이벤트")
+    other_visit = make_visit(other, event=event, visited_on="2026-01-01")
+
+    client.force_login(user)
+    cross_user_response = client.post(
+        "/api/collection-items/",
+        {"name": "타인 방문 굿즈 오라클", "visit_record": other_visit.id},
+        content_type="application/json",
+    )
+    nonexistent_response = client.post(
+        "/api/collection-items/",
+        {"name": "존재하지 않는 방문 오라클", "visit_record": other_visit.id + 999999},
+        content_type="application/json",
+    )
+
+    assert cross_user_response.status_code == 400
+    assert nonexistent_response.status_code == 400
+    assert _normalize_pk_in_message(cross_user_response.json()) == _normalize_pk_in_message(
+        nonexistent_response.json()
+    )
 
 
 @pytest.mark.django_db
