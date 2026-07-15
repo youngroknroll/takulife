@@ -96,6 +96,27 @@ def test_api_promote_rejects_private_ip_official_url_400(client, make_user, make
 
 
 @pytest.mark.django_db
+def test_api_promote_goods_entry_returns_400(client, make_user, make_entry):
+    """A goods entry is not promotable (collection domain plan §3-3) — the
+    view must translate PromotionKindNotAllowedError into a controlled 400,
+    not let it bubble up as an unhandled 500."""
+    user = make_user(username="api-promo-goods")
+    entry = make_entry(user, kind="goods", title="굿즈")
+
+    client.force_login(user)
+    response = client.post(
+        f"/api/personal-entries/{entry.id}/promote/",
+        {"official_url": "https://api.example.com/goods"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    entry.refresh_from_db()
+    assert entry.promotion_status == PersonalEntry.PromotionStatus.NONE
+    assert not EventDraft.objects.filter(source_url="https://api.example.com/goods").exists()
+
+
+@pytest.mark.django_db
 def test_api_promote_other_users_entry_404(client, make_user, make_entry):
     owner = make_user(username="api-promo-owner")
     other = make_user(username="api-promo-other")

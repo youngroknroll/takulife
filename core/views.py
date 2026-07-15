@@ -528,7 +528,9 @@ def archive_visits(request):
             "has_unofficial": has_unofficial,
             "has_official": has_official,
             "selectable_events": list_user_planned_events(user),
-            "selectable_personal_entries": list_user_personal_entries(user),
+            "selectable_personal_entries": list_user_personal_entries(
+                user, kind=PersonalEntry.Kind.PLACE
+            ),
             "q": q,
             "has_query": bool(q),
             "selected_filter": selected_filter,
@@ -562,7 +564,9 @@ def _parse_visit_preselect(request):
         if event is not None:
             return {"value": f"event:{event.pk}", "label": event.title}
     elif kind == "personal":
-        entry = PersonalEntry.objects.filter(pk=pk, user=request.user).first()
+        entry = PersonalEntry.objects.filter(
+            pk=pk, user=request.user, kind=PersonalEntry.Kind.PLACE
+        ).first()
         if entry is not None:
             return {"value": f"personal:{entry.pk}", "label": entry.title}
     return None
@@ -584,7 +588,9 @@ def archive_visit_create(request):
         "core/archive/visit_create.html",
         {
             "selectable_events": list_user_planned_events(request.user),
-            "selectable_personal_entries": list_user_personal_entries(request.user),
+            "selectable_personal_entries": list_user_personal_entries(
+                request.user, kind=PersonalEntry.Kind.PLACE
+            ),
             "preselect": _parse_visit_preselect(request),
         },
     )
@@ -640,6 +646,7 @@ def archive_personal_entries(request):
         entry_rows.append(
             {
                 "entry": entry,
+                "is_place": entry.kind == PersonalEntry.Kind.PLACE,
                 "kind_label": "장소" if entry.kind == PersonalEntry.Kind.PLACE else "굿즈",
                 "interest_id": interest_map.get(entry.id),
                 "status_slug": status_slug,

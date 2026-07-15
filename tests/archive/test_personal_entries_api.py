@@ -19,14 +19,14 @@ def test_create_personal_entry_returns_201_and_sets_owner(client, make_user):
     client.force_login(user)
     response = client.post(
         "/api/personal-entries/",
-        {"kind": "goods", "title": "내가 산 굿즈", "memo": "중고 득템"},
+        {"kind": "place", "title": "내가 발견한 장소", "memo": "즐겨찾음"},
         content_type="application/json",
     )
 
     assert response.status_code == 201
     data = response.json()
-    assert data["title"] == "내가 산 굿즈"
-    assert data["kind"] == "goods"
+    assert data["title"] == "내가 발견한 장소"
+    assert data["kind"] == "place"
     entry = PersonalEntry.objects.get(id=data["id"])
     assert entry.user == user  # owner taken from the request, not the payload
 
@@ -79,6 +79,23 @@ def test_cannot_delete_another_users_personal_entry(client, make_user, make_entr
     assert PersonalEntry.objects.filter(id=theirs.id).exists()
 
 
+@pytest.mark.django_db
+def test_create_personal_entry_rejects_goods_kind(client, make_user):
+    """GOODS is no longer creatable via PersonalEntry (collection domain plan
+    §3-3) — goods live in the dedicated CollectionItem domain instead."""
+    user = make_user(username="pe-goods-blocked")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/personal-entries/",
+        {"kind": "goods", "title": "차단되어야 할 굿즈"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not PersonalEntry.objects.filter(title="차단되어야 할 굿즈").exists()
+
+
 # ---------------------------------------------------------------------------
 # image upload — must share the hardened guard with visit photos
 # ---------------------------------------------------------------------------
@@ -94,7 +111,7 @@ def test_create_personal_entry_rejects_non_image_bytes(client, make_user, settin
     response = client.post(
         "/api/personal-entries/",
         {
-            "kind": "goods",
+            "kind": "place",
             "title": "스푸핑 이미지",
             "image": SimpleUploadedFile(
                 "not_an_image.jpg", b"notanimage", content_type="image/jpeg"

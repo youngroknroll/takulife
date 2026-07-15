@@ -164,7 +164,9 @@ def user_personal_interest_ids(user) -> dict:
     return {
         row["personal_entry_id"]: row["id"]
         for row in EventInterest.objects.filter(
-            user=user, personal_entry__isnull=False
+            user=user,
+            personal_entry__isnull=False,
+            personal_entry__kind=PersonalEntry.Kind.PLACE,
         ).values("personal_entry_id", "id")
     }
 
@@ -178,7 +180,9 @@ def user_personal_statuses(user) -> dict:
     return {
         row["personal_entry_id"]: (row["status"], row["id"])
         for row in UserEventStatus.objects.filter(
-            user=user, personal_entry__isnull=False
+            user=user,
+            personal_entry__isnull=False,
+            personal_entry__kind=PersonalEntry.Kind.PLACE,
         ).values("personal_entry_id", "status", "id")
     }
 

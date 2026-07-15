@@ -26,6 +26,11 @@ class PromotionAlreadySubmittedError(Exception):
     """The entry has already been submitted for official review."""
 
 
+class PromotionKindNotAllowedError(Exception):
+    """The entry's kind is not eligible for promotion (goods entries live in
+    the CollectionItem domain and never become an official-venue draft)."""
+
+
 class PromotionDuplicateError(Exception):
     """A draft already exists for the supplied official URL."""
 
@@ -49,6 +54,9 @@ def promote_personal_entry(*, user, personal_entry_id, official_url):
             )
         except PersonalEntry.DoesNotExist as exc:
             raise PromotionNotFoundError from exc
+
+        if entry.kind != PersonalEntry.Kind.PLACE:
+            raise PromotionKindNotAllowedError
 
         if entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED:
             raise PromotionAlreadySubmittedError

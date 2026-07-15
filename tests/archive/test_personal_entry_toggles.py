@@ -8,18 +8,18 @@ from archive.models import PersonalEntry
 
 
 @pytest.mark.django_db
-def test_items_page_renders_inactive_toggles_for_new_goods(client, make_user, make_entry):
-    user = make_user(username="toggles-new")
+def test_items_page_hides_toggles_for_goods(client, make_user, make_entry):
+    # GOODS is no longer a valid interest/status subject (collection domain
+    # plan §3-3) — its row must render with no toggle markup at all, even for
+    # a legacy row created before the write path was closed.
+    user = make_user(username="toggles-goods-hidden")
     make_entry(user, kind="goods", title="아크릴 스탠드")
     client.force_login(user)
 
     body = client.get("/archive/items/").content.decode()
 
-    assert "data-interest-toggle" in body
-    assert "data-status-action" in body
-    # goods speaks 구매, not 방문, and starts inactive (no status id yet)
-    assert "구매 예정" in body
-    assert "♡" in body
+    assert "data-interest-toggle" not in body
+    assert "data-status-action" not in body
 
 
 @pytest.mark.django_db
@@ -36,17 +36,19 @@ def test_items_page_reflects_existing_interest(client, make_user, make_interest,
 
 
 @pytest.mark.django_db
-def test_items_page_reflects_existing_planned_status(client, make_user, make_status, make_entry):
-    user = make_user(username="toggles-planned")
+def test_items_page_hides_existing_planned_status_for_goods(client, make_user, make_status, make_entry):
+    # A goods row that already has a status (transitional data from before the
+    # gate existed) must not render its status-id markup — the whole
+    # interest/status action area is hidden for goods (collection domain plan
+    # §3-3).
+    user = make_user(username="toggles-goods-planned")
     entry = make_entry(user, kind="goods", title="굿즈")
     status = make_status(user, personal_entry=entry, status="planned")
     client.force_login(user)
 
     body = client.get("/archive/items/").content.decode()
 
-    assert f'data-status-id="{status.id}"' in body
-    # kind-aware: a planned goods status reads 구매 예정
-    assert "구매 예정" in body
+    assert f'data-status-id="{status.id}"' not in body
 
 
 @pytest.mark.django_db

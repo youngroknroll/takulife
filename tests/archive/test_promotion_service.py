@@ -13,6 +13,7 @@ from drafts.services import approve_draft
 from core.promotion import (
     PromotionAlreadySubmittedError,
     PromotionDuplicateError,
+    PromotionKindNotAllowedError,
     PromotionNotFoundError,
     PromotionUnsafeUrlError,
     promote_personal_entry,
@@ -40,12 +41,29 @@ def test_promote_creates_draft_and_marks_entry_submitted(make_user, make_entry):
 def test_promote_other_users_entry_not_found(make_user, make_entry):
     owner = make_user(username="promo-owner")
     other = make_user(username="promo-other")
-    entry = make_entry(owner, kind="goods", title="X")
+    entry = make_entry(owner, kind="place", title="X")
 
     with pytest.raises(PromotionNotFoundError):
         promote_personal_entry(
             user=other, personal_entry_id=entry.id, official_url="https://x.example.com/x"
         )
+
+
+@pytest.mark.django_db
+def test_promote_rejects_goods_entry(make_user, make_entry):
+    """GOODS entries are no longer promotable (collection domain plan §3-3) —
+    only place entries can be seeded into the official review pipeline."""
+    user = make_user(username="promo-goods")
+    entry = make_entry(user, kind="goods", title="굿즈")
+
+    with pytest.raises(PromotionKindNotAllowedError):
+        promote_personal_entry(
+            user=user, personal_entry_id=entry.id, official_url="https://goods.example.com/x"
+        )
+
+    entry.refresh_from_db()
+    assert entry.promotion_status == PersonalEntry.PromotionStatus.NONE
+    assert not EventDraft.objects.filter(source_url="https://goods.example.com/x").exists()
 
 
 @pytest.mark.django_db

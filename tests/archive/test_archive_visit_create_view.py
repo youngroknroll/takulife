@@ -42,8 +42,12 @@ class TestArchiveVisitCreateView:
     def test_selectable_personal_entries_scoped_to_user(self, make_user, make_entry):
         user = make_user()
         other = make_user(username="other")
-        mine = make_entry(user, kind="goods", title="내 굿즈")
+        mine = make_entry(user, kind="place", title="내 장소")
         make_entry(other, kind="place", title="남의 카페")
+        # GOODS is no longer a valid visit subject (collection domain plan
+        # §3-3) — must never appear in the selectable dropdown, even for a
+        # legacy row created before the write path was closed.
+        make_entry(user, kind="goods", title="내 굿즈")
 
         client = Client()
         client.force_login(user)
@@ -84,6 +88,17 @@ class TestArchiveVisitCreatePreselect:
             "value": f"personal:{entry.id}",
             "label": "숨은 카페",
         }
+
+    def test_preselect_goods_personal_entry_ignored(self, user_client, make_entry):
+        # GOODS is no longer a valid visit subject (collection domain plan
+        # §3-3) — a crafted/legacy ?subject=personal:<goods id> must not lock
+        # the form onto it.
+        user, client = user_client()
+        entry = make_entry(user, kind="goods", title="굿즈")
+
+        resp = client.get(f"/archive/visits/new/?subject=personal:{entry.id}")
+
+        assert resp.context["preselect"] is None
 
     def test_preselect_unpublished_event_ignored(self, user_client, make_draft_event):
         _, client = user_client()

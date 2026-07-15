@@ -19,7 +19,7 @@ from archive.models import EventInterest, PersonalEntry, UserEventStatus
 @pytest.mark.django_db
 def test_interest_accepts_personal_entry_subject(make_user):
     user = make_user(username="ei-pe")
-    entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
     interest = EventInterest.objects.create(user=user, personal_entry=entry)
 
@@ -61,7 +61,7 @@ def test_interest_event_subject_still_unique_per_user(make_user, make_event):
 @pytest.mark.django_db
 def test_interest_personal_subject_unique_per_user(make_user):
     user = make_user(username="ei-pe-unique")
-    entry = PersonalEntry.objects.create(user=user, kind="goods", title="G")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
 
     EventInterest.objects.create(user=user, personal_entry=entry)
     with pytest.raises(IntegrityError):
@@ -77,7 +77,7 @@ def test_interest_personal_subject_unique_per_user(make_user):
 @pytest.mark.django_db
 def test_status_accepts_personal_entry_subject(make_user):
     user = make_user(username="ues-pe")
-    entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
     status = UserEventStatus.objects.create(
         user=user, personal_entry=entry, status="planned"
@@ -206,7 +206,7 @@ def test_api_interest_cannot_attach_another_users_personal_entry(client, make_us
 @pytest.mark.django_db
 def test_api_interest_duplicate_personal_entry_returns_409(client, make_user):
     user = make_user(username="ei-api-dup")
-    entry = PersonalEntry.objects.create(user=user, kind="goods", title="G")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
 
     client.force_login(user)
     client.post(
@@ -231,7 +231,7 @@ def test_api_interest_duplicate_personal_entry_returns_409(client, make_user):
 @pytest.mark.django_db
 def test_api_create_status_with_personal_entry(client, make_user):
     user = make_user(username="ues-api-pe")
-    entry = PersonalEntry.objects.create(user=user, kind="goods", title="비공식 굿즈")
+    entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
     client.force_login(user)
     response = client.post(
@@ -295,6 +295,24 @@ def test_api_status_cannot_attach_another_users_personal_entry(client, make_user
 
 
 @pytest.mark.django_db
+def test_api_interest_rejects_goods_personal_entry(client, make_user):
+    """GOODS is no longer a valid archive-action subject (collection domain
+    plan §3-3) — only PLACE personal entries may be favourited."""
+    user = make_user(username="ei-api-goods")
+    entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/event-interests/",
+        {"personal_entry": entry.id},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not EventInterest.objects.filter(personal_entry=entry).exists()
+
+
+@pytest.mark.django_db
 def test_api_status_duplicate_personal_entry_returns_409(client, make_user):
     user = make_user(username="ues-api-dup")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
@@ -312,3 +330,21 @@ def test_api_status_duplicate_personal_entry_returns_409(client, make_user):
     )
 
     assert response.status_code == 409
+
+
+@pytest.mark.django_db
+def test_api_status_rejects_goods_personal_entry_subject(client, make_user):
+    """GOODS is no longer a valid archive-action subject (collection domain
+    plan §3-3) — only PLACE personal entries may carry a status."""
+    user = make_user(username="ues-api-goods")
+    entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/user-event-statuses/",
+        {"personal_entry": entry.id, "status": "planned"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not UserEventStatus.objects.filter(personal_entry=entry).exists()

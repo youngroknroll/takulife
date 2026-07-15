@@ -2,7 +2,7 @@
 
 import pytest
 
-from archive.models import CollectionItem, PersonalEntry, VisitRecord
+from archive.models import CollectionItem, EventInterest, PersonalEntry, UserEventStatus, VisitRecord
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
     list_user_collection_items,
@@ -14,6 +14,8 @@ from archive.queries import (
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
+    user_personal_interest_ids,
+    user_personal_statuses,
     user_status_counts,
     user_visit_record_counts,
 )
@@ -335,3 +337,41 @@ def test_list_user_collection_items_scopes_to_owner(make_user):
     items = list(list_user_collection_items(user))
 
     assert items == [mine]
+
+
+# ---------------------------------------------------------------------------
+# user_personal_interest_ids / user_personal_statuses — exclude goods rows
+# (defensive filter against pre-C4 transitional data; goods can no longer be
+# created as an interest/status subject, but ORM-created rows simulate a
+# leftover from before the gate existed — collection domain design plan §3-3)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_personal_interest_ids_excludes_goods(make_user):
+    user = make_user(username="interest-ids-goods")
+    place = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="장소")
+    goods = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.GOODS, title="굿즈")
+    place_interest = EventInterest.objects.create(user=user, personal_entry=place)
+    EventInterest.objects.create(user=user, personal_entry=goods)
+
+    result = user_personal_interest_ids(user)
+
+    assert result == {place.id: place_interest.id}
+
+
+@pytest.mark.django_db
+def test_user_personal_statuses_excludes_goods(make_user):
+    user = make_user(username="statuses-goods")
+    place = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="장소")
+    goods = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.GOODS, title="굿즈")
+    place_status = UserEventStatus.objects.create(
+        user=user, personal_entry=place, status=UserEventStatus.Status.PLANNED
+    )
+    UserEventStatus.objects.create(
+        user=user, personal_entry=goods, status=UserEventStatus.Status.PLANNED
+    )
+
+    result = user_personal_statuses(user)
+
+    assert result == {place.id: (UserEventStatus.Status.PLANNED, place_status.id)}
