@@ -192,6 +192,41 @@ def create_visit_record(*, user, event=None, personal_entry=None, visited_on, sh
     return record
 
 
+def complete_visit_with_record(
+    *, user, event=None, personal_entry=None, visited_on, short_review=""
+):
+    """Complete a visit and record the experience together, atomically
+    (collection domain design plan §3-4, F-02). The status subject is
+    auto-managed so a visit record can never exist while its status row
+    disagrees with "visited".
+    """
+    with transaction.atomic():
+        existing = UserEventStatus.objects.filter(user=user)
+        if event is not None:
+            existing = existing.filter(event=event)
+        else:
+            existing = existing.filter(personal_entry=personal_entry)
+        status_row = existing.first()
+
+        if status_row is None:
+            create_user_event_status(
+                user=user,
+                event=event,
+                personal_entry=personal_entry,
+                status=UserEventStatus.Status.VISITED,
+            )
+        elif status_row.status != UserEventStatus.Status.VISITED:
+            mark_visited(user_event_status=status_row)
+
+        return create_visit_record(
+            user=user,
+            event=event,
+            personal_entry=personal_entry,
+            visited_on=visited_on,
+            short_review=short_review,
+        )
+
+
 def update_visit_record(*, record, visited_on, short_review):
     """Update an existing record's editable fields. Subject stays pinned."""
     record.visited_on = visited_on
