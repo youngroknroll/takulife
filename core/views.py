@@ -646,6 +646,7 @@ def archive_personal_entries(request):
         entry_rows.append(
             {
                 "entry": entry,
+                "is_place": entry.kind == PersonalEntry.Kind.PLACE,
                 "kind_label": "장소" if entry.kind == PersonalEntry.Kind.PLACE else "굿즈",
                 "interest_id": interest_map.get(entry.id),
                 "status_slug": status_slug,
