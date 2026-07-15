@@ -323,6 +323,23 @@ def user_collection_item_filter_values(user) -> dict:
     }
 
 
+def user_collection_item_summary_counts(user) -> dict:
+    """Return summary counts for a user's collection items, split by
+    is_wanted (the archive/collection/ summary cards).
+
+    is_wanted is a non-null boolean, so owned (False) and wanted (True) are a
+    complete partition of the user's collection items — owned_count +
+    wanted_count always equals the user's full item count, matching the
+    C5b-2 filter chips (전체 / 보유 / 구함) exactly. There is deliberately no
+    separate total_count key.
+    """
+    queryset = CollectionItem.objects.filter(user=user)
+    return {
+        "owned_count": queryset.filter(is_wanted=False).count(),
+        "wanted_count": queryset.filter(is_wanted=True).count(),
+    }
+
+
 def user_visit_category_values(user):
     """Return (event__category, personal_entry__category) pairs for a user's visits.
 

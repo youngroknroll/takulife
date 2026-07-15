@@ -12,6 +12,7 @@ from archive.queries import (
     list_user_statuses,
     list_user_visit_records,
     user_collection_item_filter_values,
+    user_collection_item_summary_counts,
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
@@ -494,6 +495,41 @@ def test_user_collection_item_filter_values_zero_for_no_items(make_user):
     values = user_collection_item_filter_values(user)
 
     assert values == {"work_title": [], "character_name": [], "item_type": []}
+
+
+# ---------------------------------------------------------------------------
+# user_collection_item_summary_counts (PR-C5b-1). owned_count/wanted_count
+# split on is_wanted, a non-null boolean field — True/False is a complete
+# partition, so these two counts match the C5b-2 filter chips (전체 / 보유
+# ?is_wanted=false / 구함 ?is_wanted=true) exactly, with no separate
+# total_count key (owned_count + wanted_count always equals the full count).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_user_collection_item_summary_counts_counts_rows_not_quantity_sum(make_user):
+    """owned_count/wanted_count must be row counts split by is_wanted, not a
+    Sum(quantity) — a single owned row with quantity=5 must count as 1, not
+    5."""
+    user = make_user(username="ci-summary-counts-user")
+    other = make_user(username="ci-summary-counts-other")
+    CollectionItem.objects.create(user=user, name="보유 굿즈", quantity=5, is_wanted=False)
+    CollectionItem.objects.create(user=user, name="구함 굿즈 1", quantity=1, is_wanted=True)
+    CollectionItem.objects.create(user=user, name="구함 굿즈 2", quantity=1, is_wanted=True)
+    CollectionItem.objects.create(user=other, name="남의 굿즈", quantity=9, is_wanted=False)
+
+    counts = user_collection_item_summary_counts(user)
+
+    assert counts == {"owned_count": 1, "wanted_count": 2}
+
+
+@pytest.mark.django_db
+def test_user_collection_item_summary_counts_zero_for_no_items(make_user):
+    user = make_user(username="ci-summary-counts-empty")
+
+    counts = user_collection_item_summary_counts(user)
+
+    assert counts == {"owned_count": 0, "wanted_count": 0}
 
 
 # ---------------------------------------------------------------------------
