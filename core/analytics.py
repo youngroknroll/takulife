@@ -44,6 +44,15 @@ def pseudonymous_user_key(user):
     Returns "" for an anonymous/unauthenticated user (no pk to key on) —
     callers must treat "" as "no cohort", not a shared cohort of anonymous
     hits.
+
+    Security caveat: the pseudonymization strength here depends entirely on
+    SECRET_KEY staying secret. If SECRET_KEY leaks, user.pk is a small
+    sequential integer, so an attacker can exhaustively compute
+    HMAC(SECRET_KEY, str(i)) for every plausible i and instantly build a
+    full user_key -> pk reversal table — the pseudonymization is void once
+    the key is exposed. Do not reuse this key for authentication,
+    authorization, or any other security purpose beyond this pseudonymous
+    cohort key.
     """
     if not getattr(user, "pk", None):
         return ""
