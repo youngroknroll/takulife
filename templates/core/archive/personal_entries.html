@@ -12,20 +12,13 @@
 
     <section class="hero">
       <h1>직접 등록 아카이브</h1>
-
-      <div class="summary-grid" style="--summary-cols: 1">
-        <article class="summary-card">
-          <p class="summary-label">전체</p>
-          <p class="summary-value">{{ total_count }}</p>
-        </article>
-      </div>
     </section>
 
     <div id="entry-global-error" class="form-error" style="margin-bottom:8px;"></div>
 
     <section class="layout">
       <article class="panel">
-        <h2>직접 등록 아카이브 목록</h2>
+        <h2>직접 등록 아카이브 목록 {{ total_count }}건</h2>
 
         {% include "core/partials/_archive_search.html" with q=q has_query=has_query %}
 
