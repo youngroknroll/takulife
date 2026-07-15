@@ -224,3 +224,20 @@ class CollectionItemSerializer(serializers.ModelSerializer):
         if value in (None, ""):
             return value
         return validate_uploaded_image(value)
+
+
+class CollectionItemQuerySerializer(serializers.Serializer):
+    """Validates CollectionItem list query params before they reach
+    list_user_collection_items (mirrors UserEventStatusQuerySerializer).
+
+    `duplicate`/`tradeable` are booleans selecting the *derived* condition
+    (quantity >= 2 / tradeable_quantity > 0) — the query layer owns the
+    actual filter logic, this serializer only validates shape.
+    """
+
+    work_title = serializers.CharField(required=False)
+    character_name = serializers.CharField(required=False)
+    item_type = serializers.CharField(required=False)
+    is_wanted = serializers.BooleanField(required=False)
+    duplicate = serializers.BooleanField(required=False)
+    tradeable = serializers.BooleanField(required=False)

@@ -286,3 +286,117 @@ def test_patch_rejects_quantity_below_existing_tradeable_quantity(
     assert response.status_code == 400
     item.refresh_from_db()
     assert item.quantity == 5
+
+
+# ---------------------------------------------------------------------------
+# CP16~22: search/filter query params (work_title, character_name,
+# item_type, is_wanted, duplicate, tradeable). `duplicate`/`tradeable` are
+# *derived* from quantity/tradeable_quantity, not stored fields — the plan
+# deliberately removed a separate duplicate_count column (§3-1).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_collection_item_list_filters_by_work_title(client, make_user, make_collection_item):
+    user = make_user(username="ci-filter-work-title")
+    make_collection_item(user, name="일치", work_title="작품 A")
+    make_collection_item(user, name="불일치", work_title="작품 B")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?work_title=작품 A")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["일치"]
+
+
+@pytest.mark.django_db
+def test_collection_item_list_filters_by_character_name(client, make_user, make_collection_item):
+    user = make_user(username="ci-filter-character")
+    make_collection_item(user, name="일치", character_name="캐릭터 A")
+    make_collection_item(user, name="불일치", character_name="캐릭터 B")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?character_name=캐릭터 A")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["일치"]
+
+
+@pytest.mark.django_db
+def test_collection_item_list_filters_by_item_type(client, make_user, make_collection_item):
+    user = make_user(username="ci-filter-item-type")
+    make_collection_item(user, name="일치", item_type="keyring")
+    make_collection_item(user, name="불일치", item_type="badge")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?item_type=keyring")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["일치"]
+
+
+@pytest.mark.django_db
+def test_collection_item_list_filters_by_is_wanted(client, make_user, make_collection_item):
+    user = make_user(username="ci-filter-wanted")
+    make_collection_item(user, name="구함", is_wanted=True)
+    make_collection_item(user, name="보유", is_wanted=False)
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?is_wanted=true")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["구함"]
+
+
+@pytest.mark.django_db
+def test_collection_item_list_filters_by_duplicate_is_derived_from_quantity(
+    client, make_user, make_collection_item
+):
+    """`duplicate` has no stored field — it must be quantity >= 2, not a
+    separate duplicate_count column (collection domain design plan §3-1)."""
+    user = make_user(username="ci-filter-duplicate")
+    make_collection_item(user, name="중복", quantity=2)
+    make_collection_item(user, name="단일", quantity=1)
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?duplicate=true")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["중복"]
+    assert "duplicate_count" not in response.json()["results"][0]
+
+
+@pytest.mark.django_db
+def test_collection_item_list_filters_by_tradeable_is_derived_from_tradeable_quantity(
+    client, make_user, make_collection_item
+):
+    """`tradeable` has no separate flag field — it must be
+    tradeable_quantity > 0 (collection domain design plan §3-1)."""
+    user = make_user(username="ci-filter-tradeable")
+    make_collection_item(user, name="교환 가능", quantity=3, tradeable_quantity=1)
+    make_collection_item(user, name="교환 불가", quantity=3, tradeable_quantity=0)
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?tradeable=true")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["교환 가능"]
+
+
+@pytest.mark.django_db
+def test_collection_item_list_rejects_invalid_is_wanted_filter_value(client, make_user):
+    """CollectionItemQuerySerializer validates query params before they
+    reach list_user_collection_items (mirrors UserEventStatusQuerySerializer
+    — collection domain design plan §4 PR-C5 CP22)."""
+    user = make_user(username="ci-filter-invalid")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?is_wanted=maybe")
+
+    assert response.status_code == 400

@@ -247,12 +247,45 @@ def list_user_visit_records(
     return queryset
 
 
-def list_user_collection_items(user):
-    """Return a user's collection items, newest first, owner-scoped.
+def list_user_collection_items(
+    user,
+    *,
+    work_title: str = "",
+    character_name: str = "",
+    item_type: str = "",
+    is_wanted=None,
+    duplicate=None,
+    tradeable=None,
+):
+    """Return a user's collection items, newest first, owner-scoped, with
+    optional filters (collection domain design plan §4 PR-C5 CP16~22).
 
-    Mirrors list_user_personal_entries' owner-scoped ordering shape.
+    `work_title`/`character_name`/`item_type` are exact-match category
+    filters. `duplicate` and `tradeable` are *derived* filters, not stored
+    fields — "duplicate" means quantity >= 2 and "tradeable" means
+    tradeable_quantity > 0 (the plan deliberately removed a separate
+    duplicate_count field, §3-1).
     """
-    return CollectionItem.objects.filter(user=user).order_by("-id")
+    queryset = CollectionItem.objects.filter(user=user).order_by("-id")
+    if work_title:
+        queryset = queryset.filter(work_title=work_title)
+    if character_name:
+        queryset = queryset.filter(character_name=character_name)
+    if item_type:
+        queryset = queryset.filter(item_type=item_type)
+    if is_wanted is not None:
+        queryset = queryset.filter(is_wanted=is_wanted)
+    if duplicate is not None:
+        if duplicate:
+            queryset = queryset.filter(quantity__gte=2)
+        else:
+            queryset = queryset.filter(quantity__lt=2)
+    if tradeable is not None:
+        if tradeable:
+            queryset = queryset.filter(tradeable_quantity__gt=0)
+        else:
+            queryset = queryset.filter(tradeable_quantity=0)
+    return queryset
 
 
 def user_visit_category_values(user):

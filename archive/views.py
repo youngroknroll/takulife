@@ -19,6 +19,7 @@ from .models import (
 )
 from .queries import list_user_collection_items, list_user_personal_entries
 from .serializers import (
+    CollectionItemQuerySerializer,
     CollectionItemSerializer,
     EventInterestSerializer,
     PersonalEntrySerializer,
@@ -318,8 +319,18 @@ class CollectionItemListCreateView(ListCreateAPIView):
     serializer_class = CollectionItemSerializer
     pagination_class = CollectionItemPagination
 
+    def _validated_query_params(self):
+        # .dict() so DRF's BooleanField doesn't mistake the QueryDict for an
+        # HTML form submission — for MultiValueDict-like inputs, an absent
+        # optional BooleanField silently defaults to False instead of being
+        # skipped (DRF's html.is_html_input heuristic), which would make an
+        # un-set is_wanted/duplicate/tradeable filter wrongly narrow results.
+        serializer = CollectionItemQuerySerializer(data=self.request.query_params.dict())
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
+
     def get_queryset(self):
-        return list_user_collection_items(self.request.user)
+        return list_user_collection_items(self.request.user, **self._validated_query_params())
 
     def perform_create(self, serializer):
         # owner is the requester, never the payload
