@@ -294,3 +294,82 @@ def test_user_event_status_rejects_interested_as_status(client, make_user, make_
 
     assert response.status_code == 400
     assert "status" in response.json()
+
+
+# ---------------------------------------------------------------------------
+# §6-b Deferred: a status-only PATCH must not recreate the drift 0016
+# corrected — a subject with an existing VisitRecord can't be reverted to
+# planned or marked missed via this endpoint (collection domain design plan
+# §5 acceptance criterion 5).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_patch_to_planned_rejected_when_visit_record_exists(
+    client, make_user, make_event, make_status, make_visit
+):
+    user = make_user(email="revert-blocked@example.com", username="revert-blocked")
+    event = make_event(title="Visited event", publish_status=Event.PublishStatus.PUBLISHED)
+    status = make_status(user, event, status="visited")
+    make_visit(user, event=event, visited_on="2026-07-15")
+    status_id = status.id
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/user-event-statuses/{status_id}/",
+        {"status": "planned"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    row = UserEventStatus.objects.get(pk=status_id)
+    assert row.status == "visited"
+    assert row.missed_overridden is False
+
+
+@pytest.mark.django_db
+def test_patch_to_missed_rejected_when_visit_record_exists(
+    client, make_user, make_event, make_status, make_visit
+):
+    user = make_user(email="missed-blocked@example.com", username="missed-blocked")
+    event = make_event(title="Visited event", publish_status=Event.PublishStatus.PUBLISHED)
+    status = make_status(user, event, status="visited")
+    make_visit(user, event=event, visited_on="2026-07-15")
+    status_id = status.id
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/user-event-statuses/{status_id}/",
+        {"status": "missed"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    row = UserEventStatus.objects.get(pk=status_id)
+    assert row.status == "visited"
+
+
+@pytest.mark.django_db
+def test_patch_to_planned_allowed_after_visit_record_deleted(
+    client, make_user, make_event, make_status, make_visit
+):
+    """The mis-recorded-data recovery path (delete the record, then revert to
+    planned) must stay open — the guard only blocks while a VisitRecord still
+    exists for the subject."""
+    user = make_user(email="recovery-path@example.com", username="recovery-path")
+    event = make_event(title="Visited event", publish_status=Event.PublishStatus.PUBLISHED)
+    status = make_status(user, event, status="visited")
+    visit = make_visit(user, event=event, visited_on="2026-07-15")
+    visit.delete()
+    status_id = status.id
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/user-event-statuses/{status_id}/",
+        {"status": "planned"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    row = UserEventStatus.objects.get(pk=status_id)
+    assert row.status == "planned"

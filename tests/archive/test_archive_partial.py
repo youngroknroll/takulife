@@ -185,7 +185,7 @@ class TestArchivePartialBranch:
         # keeps them.
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="장소 항목")
-        make_entry(user, kind=PersonalEntry.Kind.GOODS, title="굿즈 항목")
+        make_entry(user, kind="goods", title="굿즈 항목")
 
         resp = client.get("/archive/items/")
 

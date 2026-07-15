@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, RetrieveDestroyAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -30,6 +31,7 @@ from .services import (
     DuplicateEventInterestError,
     DuplicateUserEventStatusError,
     PhotoLimitExceededError,
+    VisitRecordExistsError,
     complete_visit_with_record,
     create_event_interest,
     create_personal_entry,
@@ -182,7 +184,12 @@ class UserEventStatusDetailView(RetrieveUpdateDestroyAPIView):
         if transition is None:
             serializer.save()
             return
-        transition(user_event_status=serializer.instance)
+        try:
+            transition(user_event_status=serializer.instance)
+        except VisitRecordExistsError:
+            raise ValidationError(
+                {"status": "이미 방문 기록이 있는 항목은 이 상태로 되돌릴 수 없습니다."}
+            )
 
 
 class VisitRecordPagination(PageNumberPagination):

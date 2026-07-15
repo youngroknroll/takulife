@@ -122,7 +122,6 @@ class PersonalEntry(models.Model):
 
     class Kind(models.TextChoices):
         PLACE = "place", "Place"
-        GOODS = "goods", "Goods"
 
     class PromotionStatus(models.TextChoices):
         # "" = never submitted for official review; "submitted" = a review draft

@@ -210,6 +210,40 @@ def test_data_migration_fixes_planned_status_with_existing_record(
 
 
 # ---------------------------------------------------------------------------
+# CP10-bis — 0016 corrects a status row using only *that same user's* own
+# VisitRecord (§6-b Deferred: "0016 크로스 유저 격리 명시 테스트"). Another
+# user's VisitRecord for the same subject must never leak across accounts.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_data_migration_ignores_other_users_visit_record(
+    make_user, make_event, make_status, make_visit
+):
+    import importlib
+
+    migration_module = importlib.import_module(
+        "archive.migrations.0016_fix_planned_status_with_existing_visit_record"
+    )
+    fix_planned_status_with_existing_visit_record = (
+        migration_module.fix_planned_status_with_existing_visit_record
+    )
+
+    owner = make_user(username="owner-a2")
+    other_user = make_user(username="other-a2")
+    event = make_event()
+    owner_status = make_status(owner, event, status=UserEventStatus.Status.PLANNED)
+    make_visit(other_user, event=event, visited_on="2026-07-15")
+
+    from django.apps import apps as real_apps
+
+    fix_planned_status_with_existing_visit_record(real_apps, None)
+
+    owner_status.refresh_from_db()
+    assert owner_status.status == UserEventStatus.Status.PLANNED
+
+
+# ---------------------------------------------------------------------------
 # Domain gate CRITICAL fix — analytics persistence failure inside the shared
 # atomic() must not poison the outer transaction (core.analytics record_event
 # needs its own savepoint so a DB error there can't fail subsequent domain

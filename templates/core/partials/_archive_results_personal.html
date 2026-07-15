@@ -7,12 +7,11 @@
   <div class="timeline entry-list">
     {% for row in entry_rows %}
       <article class="visit-card hover-lift" data-entry-id="{{ row.entry.id }}">
-        <div class="visit-card-top">
-          <span class="visit-chip">{{ row.kind_label }}</span>
-          {% if row.entry.category %}
+        {% if row.entry.category %}
+          <div class="visit-card-top">
             <span class="visit-chip category">{{ row.entry.category }}</span>
-          {% endif %}
-        </div>
+          </div>
+        {% endif %}
 
         <h3>{{ row.entry.title }}</h3>
         {% if row.entry.location_name %}
@@ -101,7 +100,7 @@
   <div class="empty-state">
     <p class="empty-icon">🗂️</p>
     <p class="empty-title">아직 등록한 항목이 없어요</p>
-    <p class="empty-note">폼에서 비공식 장소나 굿즈를 추가해 보세요.</p>
+    <p class="empty-note">폼에서 비공식 장소를 추가해 보세요.</p>
   </div>
 {% endif %}
 

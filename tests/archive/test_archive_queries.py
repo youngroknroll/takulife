@@ -300,17 +300,16 @@ def test_user_visit_record_counts_zero_for_no_visits(make_user):
 
 
 @pytest.mark.django_db
-def test_user_personal_entry_counts_totals_and_place_scoped_to_user(make_user, make_entry):
+def test_user_personal_entry_counts_totals_scoped_to_user(make_user, make_entry):
     user = make_user(username="entry-counts-user")
     other = make_user(username="entry-counts-other")
     make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")
     make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P2")
-    make_entry(user, kind=PersonalEntry.Kind.GOODS, title="G1")
     make_entry(other, kind=PersonalEntry.Kind.PLACE, title="Other P")
 
     counts = user_personal_entry_counts(user)
 
-    assert counts == {"total_count": 3, "place_count": 2}
+    assert counts == {"total_count": 2}
 
 
 @pytest.mark.django_db
@@ -319,7 +318,7 @@ def test_user_personal_entry_counts_zero_for_no_entries(make_user):
 
     counts = user_personal_entry_counts(user)
 
-    assert counts == {"total_count": 0, "place_count": 0}
+    assert counts == {"total_count": 0}
 
 
 # ---------------------------------------------------------------------------
@@ -351,7 +350,7 @@ def test_list_user_collection_items_scopes_to_owner(make_user):
 def test_user_personal_interest_ids_excludes_goods(make_user):
     user = make_user(username="interest-ids-goods")
     place = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="장소")
-    goods = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.GOODS, title="굿즈")
+    goods = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
     place_interest = EventInterest.objects.create(user=user, personal_entry=place)
     EventInterest.objects.create(user=user, personal_entry=goods)
 
@@ -364,7 +363,7 @@ def test_user_personal_interest_ids_excludes_goods(make_user):
 def test_user_personal_statuses_excludes_goods(make_user):
     user = make_user(username="statuses-goods")
     place = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="장소")
-    goods = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.GOODS, title="굿즈")
+    goods = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
     place_status = UserEventStatus.objects.create(
         user=user, personal_entry=place, status=UserEventStatus.Status.PLANNED
     )

@@ -265,15 +265,13 @@ def _build_archive_status_rows(user_statuses):
     rows = []
     for us in user_statuses:
         subject = _subject_view(us)
-        kind = subject["kind"]
         rows.append(
             {
                 "status_id": us.pk,
                 "status_slug": us.derived_status,
-                # Kind-aware: a goods item reads 구매…, a place/event reads 방문….
-                "status_label": archive_status_label(us.derived_status, kind),
-                "label_visited": archive_status_label("visited", kind),
-                "label_planned": archive_status_label("planned", kind),
+                "status_label": archive_status_label(us.derived_status),
+                "label_visited": archive_status_label("visited"),
+                "label_planned": archive_status_label("planned"),
                 "subject": subject,
             }
         )
@@ -626,10 +624,7 @@ def archive_personal_entries(request):
 
     # Summary counts always come from the unfiltered set so the header cards
     # report the user's total collection, independent of any active search.
-    entry_counts = user_personal_entry_counts(user)
-    total_count = entry_counts["total_count"]
-    place_count = entry_counts["place_count"]
-    goods_count = total_count - place_count
+    total_count = user_personal_entry_counts(user)["total_count"]
     has_entries = total_count > 0
 
     # Page queryset is filtered by q (if provided) and then paginated.
@@ -647,12 +642,11 @@ def archive_personal_entries(request):
             {
                 "entry": entry,
                 "is_place": entry.kind == PersonalEntry.Kind.PLACE,
-                "kind_label": "장소" if entry.kind == PersonalEntry.Kind.PLACE else "굿즈",
                 "interest_id": interest_map.get(entry.id),
                 "status_slug": status_slug,
                 "status_id": status_id,
-                "status_label": archive_status_label(status_slug, entry.kind) if status_slug else "",
-                "planned_label": archive_status_label("planned", entry.kind),
+                "status_label": archive_status_label(status_slug) if status_slug else "",
+                "planned_label": archive_status_label("planned"),
                 "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
             }
         )
@@ -666,8 +660,6 @@ def archive_personal_entries(request):
         context={
             "entry_rows": entry_rows,
             "total_count": total_count,
-            "place_count": place_count,
-            "goods_count": goods_count,
             "has_entries": has_entries,
             "page_obj": page_obj,
             "pager_query": pager_query,

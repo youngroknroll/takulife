@@ -96,6 +96,16 @@ def test_create_personal_entry_rejects_goods_kind(client, make_user):
     assert not PersonalEntry.objects.filter(title="차단되어야 할 굿즈").exists()
 
 
+@pytest.mark.django_db
+def test_personal_entry_serializer_kind_choices_exclude_goods():
+    """goods is gone from the model's Kind enum (collection domain plan §3-5
+    M2) — the serializer's auto-generated kind ChoiceField must reflect that,
+    not just the (now-unreachable) validate_kind guard."""
+    from archive.serializers import PersonalEntrySerializer
+
+    assert "goods" not in dict(PersonalEntrySerializer().fields["kind"].choices)
+
+
 # ---------------------------------------------------------------------------
 # image upload — must share the hardened guard with visit photos
 # ---------------------------------------------------------------------------

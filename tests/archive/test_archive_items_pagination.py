@@ -64,30 +64,26 @@ class TestArchiveItemsPagination:
 class TestArchiveItemsSummaryCounts:
     """Summary card counts are always unfiltered totals."""
 
-    def test_counts_across_place_and_goods(self, user_client, make_entries):
+    def test_counts_total(self, user_client, make_entries):
         user, client = user_client()
-        make_entries(user, 4, kind=PersonalEntry.Kind.PLACE)
-        make_entries(user, 3, kind=PersonalEntry.Kind.GOODS, title_prefix="굿즈")
+        make_entries(user, 7, kind=PersonalEntry.Kind.PLACE)
 
         resp = client.get("/archive/items/")
 
         assert resp.context["total_count"] == 7
-        assert resp.context["place_count"] == 4
-        assert resp.context["goods_count"] == 3
+        assert "place_count" not in resp.context
+        assert "goods_count" not in resp.context
 
     def test_summary_unchanged_by_q_filter(self, user_client, make_entries):
-        """total/place/goods counts do not shrink when q narrows entry_rows."""
+        """total_count does not shrink when q narrows entry_rows."""
         user, client = user_client()
-        make_entries(user, 4, kind=PersonalEntry.Kind.PLACE)
-        make_entries(user, 3, kind=PersonalEntry.Kind.GOODS, title_prefix="굿즈")
+        make_entries(user, 7, kind=PersonalEntry.Kind.PLACE, title_prefix="항목")
 
-        # q="굿즈" would match only 3 goods entries
-        resp = client.get("/archive/items/?q=굿즈")
+        # q="00" would match only "항목 00"
+        resp = client.get("/archive/items/?q=00")
 
-        # Summary must still report 7/4/3, not 0/0/3
+        # Summary must still report 7, not the filtered count
         assert resp.context["total_count"] == 7
-        assert resp.context["place_count"] == 4
-        assert resp.context["goods_count"] == 3
 
     def test_has_entries_true_even_when_q_yields_zero(self, user_client, make_entry):
         user, client = user_client()

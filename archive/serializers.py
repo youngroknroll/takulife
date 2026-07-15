@@ -40,16 +40,6 @@ class PersonalEntrySerializer(serializers.ModelSerializer):
             return value
         return validate_uploaded_image(value)
 
-    def validate_kind(self, value):
-        # PersonalEntry is restricted to unofficial places (collection domain
-        # design plan §3-3) — goods are moving to the dedicated CollectionItem
-        # domain and can no longer be created here.
-        if value != PersonalEntry.Kind.PLACE:
-            raise serializers.ValidationError(
-                "goods는 더 이상 PersonalEntry로 생성할 수 없습니다."
-            )
-        return value
-
 
 class _SubjectScopedPersonalEntryMixin:
     """Scopes the ``personal_entry`` field to the requester and enforces that
@@ -77,7 +67,7 @@ class _SubjectScopedPersonalEntryMixin:
             )
         if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
             raise serializers.ValidationError(
-                "goods personal_entry는 이 작업의 대상이 될 수 없습니다."
+                "이 personal_entry는 이 작업의 대상이 될 수 없습니다."
             )
         return attrs
 
@@ -157,7 +147,7 @@ class VisitRecordSerializer(serializers.ModelSerializer):
             )
         if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
             raise serializers.ValidationError(
-                "goods personal_entry는 이 작업의 대상이 될 수 없습니다."
+                "이 personal_entry는 이 작업의 대상이 될 수 없습니다."
             )
         return attrs
 
