@@ -69,6 +69,20 @@ class AnalyticsEvent(models.Model):
         EVENT_MARKED_VISITED = "event_marked_visited", "Event marked visited"
         VISIT_RECORD_CREATED = "visit_record_created", "Visit record created"
         VISIT_PHOTO_ADDED = "visit_photo_added", "Visit photo added"
+        COLLECTION_ITEM_CREATED = "collection_item_created", "Collection item created"
+        COLLECTION_ITEM_UPDATED = "collection_item_updated", "Collection item updated"
+        COLLECTION_ITEM_LINKED_TO_VISIT = (
+            "collection_item_linked_to_visit",
+            "Collection item linked to visit",
+        )
+        COLLECTION_ITEM_MARKED_WANTED = (
+            "collection_item_marked_wanted",
+            "Collection item marked wanted",
+        )
+        COLLECTION_ITEM_MARKED_TRADEABLE = (
+            "collection_item_marked_tradeable",
+            "Collection item marked tradeable",
+        )
 
     event_name = models.CharField(max_length=32, choices=EventName.choices)
     # Pseudonymous per-user cohort key (see core.analytics), "" for an
