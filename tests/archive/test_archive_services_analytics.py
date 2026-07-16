@@ -329,3 +329,46 @@ def test_update_collection_item_records_updated_and_marked_wanted_independently(
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_create_collection_item_with_visit_record_and_is_wanted_records_all_three(
+    make_user, make_event, make_visit
+):
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    create_collection_item(user=user, name="아크릴 스탠드", visit_record=record, is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_new_visit_record_and_is_wanted_records_all_three(
+    make_user, make_collection_item, make_event, make_visit
+):
+    user = make_user()
+    item = make_collection_item(user)  # visit_record=None, is_wanted=False defaults
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    update_collection_item(item=item, visit_record=record, is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1
