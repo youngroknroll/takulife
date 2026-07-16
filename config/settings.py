@@ -380,7 +380,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/archive/"
+LOGIN_REDIRECT_URL = "/collection/"
 LOGOUT_REDIRECT_URL = "/"
 
 # django-allauth: email-only identifier, mandatory verification before login.
