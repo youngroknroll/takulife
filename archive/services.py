@@ -263,6 +263,7 @@ def update_collection_item(*, item, **fields):
     """
     with transaction.atomic():
         item = CollectionItem.objects.select_for_update().get(pk=item.pk)
+        previous_visit_record_id = item.visit_record_id
 
         quantity = fields.get("quantity", item.quantity)
         tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
@@ -327,6 +328,13 @@ def update_collection_item(*, item, **fields):
         target_type="collection_item",
         target_id=item.id,
     )
+    if item.visit_record_id is not None and previous_visit_record_id is None:
+        record_event(
+            AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT,
+            user=item.user,
+            target_type="collection_item",
+            target_id=item.id,
+        )
     return item
 
 
