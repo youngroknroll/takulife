@@ -29,7 +29,7 @@ class TestArchiveCollectionEditView:
             memo="메모입니다",
         )
 
-        resp = client.get(f"/archive/collection/{item.id}/edit/")
+        resp = client.get(f"/collection/{item.id}/edit/")
 
         assert resp.status_code == 200
         assert "core/archive/collection_edit.html" in [t.name for t in resp.templates]
@@ -44,7 +44,7 @@ class TestArchiveCollectionEditView:
         _, client = user_client()
         item = make_collection_item(owner, name="남의 아이템")
 
-        resp = client.get(f"/archive/collection/{item.id}/edit/")
+        resp = client.get(f"/collection/{item.id}/edit/")
 
         assert resp.status_code == 404
 
@@ -52,7 +52,7 @@ class TestArchiveCollectionEditView:
         owner = make_user()
         item = make_collection_item(owner, name="아이템")
 
-        resp = Client().get(f"/archive/collection/{item.id}/edit/")
+        resp = Client().get(f"/collection/{item.id}/edit/")
 
         assert resp.status_code == 302
         assert "/accounts/login" in resp.url
@@ -64,7 +64,7 @@ class TestArchiveCollectionEditHiddenFields:
         user, client = user_client()
         item = make_collection_item(user, name="아이템")
 
-        resp = client.get(f"/archive/collection/{item.id}/edit/")
+        resp = client.get(f"/collection/{item.id}/edit/")
 
         assert b'name="visibility"' not in resp.content
 
@@ -72,6 +72,6 @@ class TestArchiveCollectionEditHiddenFields:
         user, client = user_client()
         item = make_collection_item(user, name="아이템")
 
-        resp = client.get(f"/archive/collection/{item.id}/edit/")
+        resp = client.get(f"/collection/{item.id}/edit/")
 
         assert b'name="event"' not in resp.content

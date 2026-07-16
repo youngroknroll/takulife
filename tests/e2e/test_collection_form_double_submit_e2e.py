@@ -27,7 +27,7 @@ class TestCollectionCreateDoubleSubmit:
             route.continue_()
 
         login(page, live_server.url, "e2e_user@example.com", seed.password)
-        page.goto(f"{live_server.url}/archive/collection/new/")
+        page.goto(f"{live_server.url}/collection/new/")
         page.route("**/api/collection-items/", handle)
 
         page.fill("#collection-name", "더블클릭 테스트 굿즈")
@@ -45,7 +45,7 @@ class TestCollectionCreateDoubleSubmit:
             }"""
         )
 
-        page.wait_for_url(f"{live_server.url}/archive/collection/")
+        page.wait_for_url(f"{live_server.url}/collection/")
 
         assert len(post_requests) == 1
         assert (

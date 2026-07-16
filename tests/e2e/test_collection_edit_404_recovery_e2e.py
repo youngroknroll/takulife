@@ -23,7 +23,7 @@ class TestCollectionEdit404Recovery:
         item = CollectionItem.objects.create(user=seed.user, name="동시 삭제 테스트 굿즈")
 
         login(page, live_server.url, "e2e_user@example.com", seed.password)
-        page.goto(f"{live_server.url}/archive/collection/{item.id}/edit/")
+        page.goto(f"{live_server.url}/collection/{item.id}/edit/")
 
         # Concurrent delete: the row is gone before this page's own submit
         # reaches the server, reproducing the deterministic 404 race.

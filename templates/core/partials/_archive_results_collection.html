@@ -34,7 +34,7 @@ clear_query_suffix, request
           {% endif %}
 
           <div class="visit-card-actions">
-            <a class="record-edit-link" href="/archive/collection/{{ row.item.id }}/edit/">수정</a>
+            <a class="record-edit-link" href="/collection/{{ row.item.id }}/edit/">수정</a>
             <button
               class="record-delete-btn"
               type="button"
@@ -62,7 +62,7 @@ clear_query_suffix, request
   {% else %}
     <div class="empty-state">
       <p class="empty-title">이 필터에 해당하는 항목이 없습니다</p>
-      <p class="empty-note"><a href="/archive/collection/">전체 보기</a>로 돌아가세요.</p>
+      <p class="empty-note"><a href="/collection/">전체 보기</a>로 돌아가세요.</p>
     </div>
   {% endif %}
 {% else %}
