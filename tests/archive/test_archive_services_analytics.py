@@ -129,3 +129,18 @@ def test_update_collection_item_records_collection_item_updated(make_user, make_
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_create_collection_item_with_visit_record_records_linked_to_visit(
+    make_user, make_event, make_visit
+):
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    create_collection_item(user=user, name="아크릴 스탠드", visit_record=record)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 1

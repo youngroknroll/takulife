@@ -216,6 +216,13 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
         target_type="collection_item",
         target_id=item.id,
     )
+    if visit_record is not None:
+        record_event(
+            AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT,
+            user=user,
+            target_type="collection_item",
+            target_id=item.id,
+        )
     return item
 
 
