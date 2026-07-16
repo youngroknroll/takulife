@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 내 아카이브{% endblock %}
+{% block title %}{{ project_name }} | 내 활동{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
@@ -11,7 +11,7 @@
     {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" %}
 
     <section class="hero">
-      <h1>내 아카이브</h1>
+      <h1>내 활동</h1>
       <div class="summary-grid" style="--summary-cols: 3">
         <article class="summary-card">
           <p class="summary-label">방문 예정</p>

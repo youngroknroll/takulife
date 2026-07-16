@@ -1,9 +1,18 @@
 /* ── /mypage/ ──────────────────────────────────────────────── */
-/* 4 cards at 320px would squeeze to ~65px each — too narrow to read a
+/* Base rule sets 5 columns for the current 5 summary cards — an inline
+   style="--summary-cols: 5" on the template used to do this instead, but
+   an inline style always wins over the media query below regardless of
+   viewport match, which broke the mobile 2-column drop (WED
+   post-implementation finding, 2026-07-17). A same-specificity selector
+   rule here lets the later media query win at narrow widths as normal
+   cascade. */
+.summary-grid {
+  --summary-cols: 5;
+}
+
+/* 5 cards at 320px would squeeze to ~52px each — too narrow to read a
    label + value pair, so the grid drops to 2 columns below the phone
-   breakpoint. The desktop value (4) is already .summary-grid's own
-   fallback (cards.css), so no inline --summary-cols override is needed
-   on the template — this media query is the only declaration required. */
+   breakpoint. */
 @media (max-width: 45rem) {
   .summary-grid {
     --summary-cols: 2;

@@ -7,7 +7,13 @@ that widens `body.scrollWidth` without waiting for the next manual pass.
 """
 import pytest
 
-from archive.models import EventInterest, PersonalEntry, UserEventStatus, VisitRecord
+from archive.models import (
+    CollectionItem,
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+)
 
 pytestmark = pytest.mark.e2e
 
@@ -98,6 +104,26 @@ class TestMobileOverflowSmoke:
 
         assert _no_horizontal_overflow(page)
 
+    def test_collection_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/collection/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_collection_create_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/collection/new/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_collection_edit_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        item = CollectionItem.objects.create(user=seed.user, name="아이템")
+
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/collection/{item.id}/edit/")
+
+        assert _no_horizontal_overflow(page)
+
 
 class TestMobileOverflow320px:
     """320px is Chromium's own floor for a native `<input type="file">`
@@ -170,4 +196,24 @@ class TestMobileOverflow320px:
         assert _no_horizontal_overflow(page)
 
         page.goto(f"{live_server.url}/archive/visits/")
+        assert _no_horizontal_overflow(page)
+
+    def test_collection_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/collection/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_collection_create_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/collection/new/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_collection_edit_has_no_horizontal_overflow(self, live_server, page, seed, login):
+        item = CollectionItem.objects.create(user=seed.user, name="아이템")
+
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/collection/{item.id}/edit/")
+
         assert _no_horizontal_overflow(page)
