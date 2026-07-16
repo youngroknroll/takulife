@@ -1,5 +1,5 @@
 /**
- * collection.js — CollectionItem create/edit/delete (archive/collection screens)
+ * collection.js — CollectionItem create/edit/delete (collection screens)
  *
  * Handles:
  *   - Create via form#collection-create-form → POST /api/collection-items/

@@ -391,16 +391,18 @@ class TestArchiveCollectionCardBadges:
 
 @pytest.mark.django_db
 class TestArchiveCollectionNav:
-    def test_independent_nav_group_added(self, user_client):
+    """Target IA plan D1/§7-a-2 (.docs/plans/2026-07-16-target-ia-plan.md):
+    the collection page is now a top-level destination, not an Activity
+    sub-page — it must never render the Activity accordion (that structure's
+    own contents are locked separately in tests/archive/test_archive_nav.py,
+    exercised via an archive page that still includes it)."""
+
+    def test_no_archive_nav_accordion_rendered(self, user_client):
         _, client = user_client()
 
         resp = client.get("/collection/")
         content = resp.content
 
-        assert content.count(b'class="archive-nav-group"') == 3
-        assert b'href="/collection/"' in content
-        assert b'href="/collection/" class="active"' in content
-        # The pre-existing "내 기록" group's 3 links stay intact.
-        assert b'href="/archive/"' in content
-        assert b'href="/archive/statuses/"' in content
-        assert b'href="/archive/visits/"' in content
+        assert b'class="archive-nav"' not in content
+        assert b'class="sub-nav"' not in content
+        assert b"archive-nav-group" not in content

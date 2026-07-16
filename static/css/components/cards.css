@@ -185,6 +185,16 @@
   text-decoration: underline;
 }
 
+/* Dual-recovery CTA row for the true-empty collection state (D6) — wraps
+   two .empty-action pills side by side, centered, wrapping on narrow
+   widths. */
+.empty-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .empty-action {
   display: inline-block;
   border-radius: 8px;

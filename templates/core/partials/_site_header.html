@@ -3,12 +3,13 @@ _site_header.html — global site header rendered once from base.html on every p
 
 Provides the persistent site frame the per-page topbars never did:
   - brand (home link)
-  - primary navigation (홈 / 행사 둘러보기 / 내 아카이브), current section highlighted
+  - primary navigation (홈 / 행사 / 컬렉션 / 내 활동), current section highlighted
   - auth nav (login state) via _topbar.html
 
 Active section is derived from request.path (request context processor is
-already enabled — _topbar.html relies on request.user). The three sections
-never overlap: "/" is home only, "/events/" and "/archive/" are exclusive prefixes.
+already enabled — _topbar.html relies on request.user). The four sections
+never overlap: "/" is home only, "/events/", "/collection/", and "/archive/"
+are exclusive prefixes.
 {% endcomment %}
 <header class="site-header">
   <div class="site-header-inner">
@@ -21,8 +22,9 @@ never overlap: "/" is home only, "/events/" and "/archive/" are exclusive prefix
     </button>
     <nav class="site-nav">
       <a href="/"{% if request.path == '/' %} class="active"{% endif %}>홈</a>
-      <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>행사 둘러보기</a>
-      <a href="/archive/"{% if '/archive/' in request.path %} class="active"{% endif %}>내 아카이브</a>
+      <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>행사</a>
+      <a href="/collection/"{% if '/collection/' in request.path %} class="active"{% endif %}>컬렉션</a>
+      <a href="/archive/"{% if '/archive/' in request.path %} class="active"{% endif %}>내 활동</a>
     </nav>
     {% include "core/partials/_topbar.html" %}
   </div>

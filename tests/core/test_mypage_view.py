@@ -8,7 +8,13 @@ tests/core/test_architecture_boundaries.py).
 """
 import pytest
 
-from archive.models import EventInterest, PersonalEntry, UserEventStatus, VisitRecord
+from archive.models import (
+    CollectionItem,
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+)
 
 MYPAGE_URL = "/mypage/"
 
@@ -93,6 +99,22 @@ def test_counts_are_zero_for_a_user_with_no_archive_data(client, make_user):
     assert response.context["visit_count"] == 0
     assert response.context["personal_entry_count"] == 0
     assert response.context["interest_count"] == 0
+    assert response.context["collection_count"] == 0
+
+
+@pytest.mark.django_db
+def test_collection_count_is_owned_items_only_owner_scoped(client, make_user):
+    user = make_user()
+    other_user = make_user()
+    CollectionItem.objects.create(user=user, name="보유1", is_wanted=False)
+    CollectionItem.objects.create(user=user, name="보유2", is_wanted=False)
+    CollectionItem.objects.create(user=user, name="원함", is_wanted=True)
+    CollectionItem.objects.create(user=other_user, name="다른 유저 항목", is_wanted=False)
+
+    client.force_login(user)
+    response = client.get(MYPAGE_URL)
+
+    assert response.context["collection_count"] == 2
 
 
 @pytest.mark.django_db

@@ -12,8 +12,12 @@
       <h1>마이페이지</h1>
 
       <div class="summary-grid">
+        <a class="summary-card summary-card-link" href="/collection/">
+          <p class="summary-label">내 컬렉션</p>
+          <p class="summary-value">{{ collection_count }}</p>
+        </a>
         <a class="summary-card summary-card-link" href="/archive/">
-          <p class="summary-label">내 아카이브</p>
+          <p class="summary-label">내 활동</p>
           <p class="summary-value">{{ saved_count }}</p>
         </a>
         <a class="summary-card summary-card-link" href="/archive/visits/">
