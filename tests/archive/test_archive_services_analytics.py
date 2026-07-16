@@ -312,3 +312,20 @@ def test_update_collection_item_resend_same_tradeable_quantity_does_not_record_m
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
     ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_records_updated_and_marked_wanted_independently(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, is_wanted=False)
+
+    update_collection_item(item=item, memo="변경", is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1
