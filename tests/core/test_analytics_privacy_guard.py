@@ -28,6 +28,8 @@ from events.models import Event
 
 LEAK_PROBE_EMAIL = "leak-probe-user@example.com"
 LEAK_PROBE_REVIEW = "this private review text must never leak into analytics"
+LEAK_PROBE_NAME = "must never leak collection item name"
+LEAK_PROBE_MEMO = "must never leak collection item memo"
 
 
 def _walk_all_analytics_paths(make_user, make_event, png_bytes):
@@ -56,6 +58,12 @@ def _walk_all_analytics_paths(make_user, make_event, png_bytes):
         image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
     )
 
+    item = archive_services.create_collection_item(
+        user=user, name=LEAK_PROBE_NAME, memo=LEAK_PROBE_MEMO, visit_record=record,
+    )
+    archive_services.update_collection_item(item=item, is_wanted=True)
+    archive_services.update_collection_item(item=item, tradeable_quantity=1)
+
     http_client = Client()
     http_client.get("/api/events/")
     http_client.get("/api/events/", {"q": "guard"})
@@ -79,8 +87,16 @@ def test_no_analytics_event_row_ever_leaks_personal_data(make_user, make_event, 
         AnalyticsEvent.EventName.EVENT_MARKED_VISITED,
         AnalyticsEvent.EventName.VISIT_RECORD_CREATED,
         AnalyticsEvent.EventName.VISIT_PHOTO_ADDED,
+        AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED,
+        AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED,
+        AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT,
+        AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED,
+        AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE,
     }
-    assert len(events) >= 9  # event_marked_visited fires twice (create + mark_visited)
+    # event_marked_visited fires twice (create + mark_visited); the
+    # collection path below adds 6 more (created 1, linked_to_visit 1,
+    # updated 2x, marked_wanted 1, marked_tradeable 1).
+    assert len(events) >= 15
 
     expected_user_key = pseudonymous_user_key(user)
     for event in events:
@@ -88,6 +104,8 @@ def test_no_analytics_event_row_ever_leaks_personal_data(make_user, make_event, 
         serialized_context = str(event.context)
         assert LEAK_PROBE_EMAIL not in serialized_context
         assert LEAK_PROBE_REVIEW not in serialized_context
+        assert LEAK_PROBE_NAME not in serialized_context
+        assert LEAK_PROBE_MEMO not in serialized_context
         if event.user_key:
             # Equality against the known-non-reversible pseudonymous key
             # (see tests/core/test_analytics_pseudonymization.py) rather
