@@ -270,3 +270,45 @@ def test_update_collection_item_tradeable_quantity_transition_records_marked_tra
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_unrelated_field_does_not_record_marked_tradeable(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, quantity=2, tradeable_quantity=1)  # already tradeable
+
+    update_collection_item(item=item, memo="무관한 수정")
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_tradeable_quantity_positive_to_positive_does_not_record_marked_tradeable(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, quantity=3, tradeable_quantity=1)  # already positive
+
+    update_collection_item(item=item, tradeable_quantity=2)  # positive to positive, not a crossing
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_resend_same_tradeable_quantity_does_not_record_marked_tradeable(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, quantity=2, tradeable_quantity=1)  # already positive
+
+    update_collection_item(item=item, tradeable_quantity=1)  # explicit resend of same value
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 0
