@@ -192,3 +192,14 @@ def test_update_collection_item_resend_same_visit_record_does_not_record_linked_
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
     ).count() == 0
+
+
+@pytest.mark.django_db
+def test_create_collection_item_with_is_wanted_records_marked_wanted(make_user):
+    user = make_user()
+
+    create_collection_item(user=user, name="아크릴 스탠드", is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1

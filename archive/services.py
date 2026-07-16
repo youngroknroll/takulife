@@ -223,6 +223,13 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
             target_type="collection_item",
             target_id=item.id,
         )
+    if fields.get("is_wanted"):
+        record_event(
+            AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED,
+            user=user,
+            target_type="collection_item",
+            target_id=item.id,
+        )
     return item
 
 
