@@ -160,3 +160,35 @@ def test_update_collection_item_new_visit_record_records_linked_to_visit(
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_unrelated_field_does_not_record_linked_to_visit(
+    make_user, make_event, make_visit, make_collection_item
+):
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    item = make_collection_item(user, visit_record=record, event=event)  # already linked
+
+    update_collection_item(item=item, memo="무관한 수정")
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_resend_same_visit_record_does_not_record_linked_to_visit(
+    make_user, make_event, make_visit, make_collection_item
+):
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    item = make_collection_item(user, visit_record=record, event=event)  # already linked
+
+    update_collection_item(item=item, visit_record=record)  # explicit resend of same value
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 0
