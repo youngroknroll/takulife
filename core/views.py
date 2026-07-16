@@ -885,6 +885,7 @@ def mypage(request):
             "visit_count": user_visit_record_counts(user)["total_count"],
             "personal_entry_count": user_personal_entry_counts(user)["total_count"],
             "interest_count": user_interest_count(user),
+            "collection_count": user_collection_item_summary_counts(user)["owned_count"],
         },
     )
 
