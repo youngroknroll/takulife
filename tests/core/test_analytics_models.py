@@ -17,6 +17,11 @@ ALLOWED_EVENT_NAMES = [
     "event_marked_visited",
     "visit_record_created",
     "visit_photo_added",
+    "collection_item_created",
+    "collection_item_updated",
+    "collection_item_linked_to_visit",
+    "collection_item_marked_wanted",
+    "collection_item_marked_tradeable",
 ]
 
 

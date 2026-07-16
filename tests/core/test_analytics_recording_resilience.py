@@ -27,7 +27,7 @@ def test_record_event_does_not_raise_when_persistence_fails(monkeypatch, make_us
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "forbidden_key", ["short_review", "note", "email", "photo_url", "image"]
+    "forbidden_key", ["short_review", "note", "email", "photo_url", "image", "name", "memo"]
 )
 def test_record_event_hard_fails_on_forbidden_context_key(make_user, forbidden_key):
     user = make_user()

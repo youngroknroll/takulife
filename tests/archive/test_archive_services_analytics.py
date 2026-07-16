@@ -8,11 +8,13 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from archive.models import UserEventStatus
 from archive.services import (
+    create_collection_item,
     create_event_interest,
     create_user_event_status,
     create_visit_record,
     create_visit_record_photo,
     mark_visited,
+    update_collection_item,
 )
 from core.models import AnalyticsEvent
 
@@ -99,4 +101,274 @@ def test_create_visit_record_photo_records_visit_photo_added(
 
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.VISIT_PHOTO_ADDED
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_create_collection_item_records_collection_item_created(make_user):
+    user = make_user()
+
+    item = create_collection_item(user=user, name="아크릴 스탠드")
+
+    events = AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED
+    )
+    assert events.count() == 1
+    assert events.get().target_type == "collection_item"
+    assert events.get().target_id == item.id
+    assert events.get().context == {}
+
+
+@pytest.mark.django_db
+def test_update_collection_item_records_collection_item_updated(make_user, make_collection_item):
+    user = make_user()
+    item = make_collection_item(user)
+
+    update_collection_item(item=item, memo="새 메모")
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_create_collection_item_with_visit_record_records_linked_to_visit(
+    make_user, make_event, make_visit
+):
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    create_collection_item(user=user, name="아크릴 스탠드", visit_record=record)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_new_visit_record_records_linked_to_visit(
+    make_user, make_collection_item, make_event, make_visit
+):
+    user = make_user()
+    item = make_collection_item(user)  # visit_record=None default
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    update_collection_item(item=item, visit_record=record)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_unrelated_field_does_not_record_linked_to_visit(
+    make_user, make_event, make_visit, make_collection_item
+):
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    item = make_collection_item(user, visit_record=record, event=event)  # already linked
+
+    update_collection_item(item=item, memo="무관한 수정")
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_resend_same_visit_record_does_not_record_linked_to_visit(
+    make_user, make_event, make_visit, make_collection_item
+):
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    item = make_collection_item(user, visit_record=record, event=event)  # already linked
+
+    update_collection_item(item=item, visit_record=record)  # explicit resend of same value
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_create_collection_item_with_is_wanted_records_marked_wanted(make_user):
+    user = make_user()
+
+    create_collection_item(user=user, name="아크릴 스탠드", is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_is_wanted_transition_records_marked_wanted(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, is_wanted=False)
+
+    update_collection_item(item=item, is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_unrelated_field_does_not_record_marked_wanted(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, is_wanted=True)  # already wanted
+
+    update_collection_item(item=item, memo="무관한 수정")
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_resend_is_wanted_true_does_not_record_marked_wanted(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, is_wanted=True)  # already wanted
+
+    update_collection_item(item=item, is_wanted=True)  # explicit resend of same value
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_create_collection_item_with_tradeable_quantity_records_marked_tradeable(make_user):
+    user = make_user()
+
+    create_collection_item(user=user, name="아크릴 스탠드", quantity=2, tradeable_quantity=1)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_tradeable_quantity_transition_records_marked_tradeable(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, quantity=2, tradeable_quantity=0)
+
+    update_collection_item(item=item, tradeable_quantity=1)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_unrelated_field_does_not_record_marked_tradeable(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, quantity=2, tradeable_quantity=1)  # already tradeable
+
+    update_collection_item(item=item, memo="무관한 수정")
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_tradeable_quantity_positive_to_positive_does_not_record_marked_tradeable(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, quantity=3, tradeable_quantity=1)  # already positive
+
+    update_collection_item(item=item, tradeable_quantity=2)  # positive to positive, not a crossing
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_resend_same_tradeable_quantity_does_not_record_marked_tradeable(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, quantity=2, tradeable_quantity=1)  # already positive
+
+    update_collection_item(item=item, tradeable_quantity=1)  # explicit resend of same value
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_records_updated_and_marked_wanted_independently(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, is_wanted=False)
+
+    update_collection_item(item=item, memo="변경", is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_create_collection_item_with_visit_record_and_is_wanted_records_all_three(
+    make_user, make_event, make_visit
+):
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    create_collection_item(user=user, name="아크릴 스탠드", visit_record=record, is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_new_visit_record_and_is_wanted_records_all_three(
+    make_user, make_collection_item, make_event, make_visit
+):
+    user = make_user()
+    item = make_collection_item(user)  # visit_record=None, is_wanted=False defaults
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+
+    update_collection_item(item=item, visit_record=record, is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
+    ).count() == 1
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
     ).count() == 1
