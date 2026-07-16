@@ -279,6 +279,7 @@ def update_collection_item(*, item, **fields):
         item = CollectionItem.objects.select_for_update().get(pk=item.pk)
         previous_visit_record_id = item.visit_record_id
         previous_is_wanted = item.is_wanted
+        previous_tradeable_quantity = item.tradeable_quantity
 
         quantity = fields.get("quantity", item.quantity)
         tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
@@ -353,6 +354,13 @@ def update_collection_item(*, item, **fields):
     if item.is_wanted and not previous_is_wanted:
         record_event(
             AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED,
+            user=item.user,
+            target_type="collection_item",
+            target_id=item.id,
+        )
+    if item.tradeable_quantity > 0 and previous_tradeable_quantity == 0:
+        record_event(
+            AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE,
             user=item.user,
             target_type="collection_item",
             target_id=item.id,

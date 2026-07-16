@@ -256,3 +256,17 @@ def test_create_collection_item_with_tradeable_quantity_records_marked_tradeable
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_tradeable_quantity_transition_records_marked_tradeable(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, quantity=2, tradeable_quantity=0)
+
+    update_collection_item(item=item, tradeable_quantity=1)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 1
