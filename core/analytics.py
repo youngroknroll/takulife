@@ -28,8 +28,13 @@ logger = logging.getLogger(__name__)
 
 # Context keys that could carry personal data (free text a user typed,
 # contact info, or a media URL) are refused outright rather than silently
-# stored — see record_event.
-FORBIDDEN_CONTEXT_KEYS = frozenset({"short_review", "note", "email", "photo_url", "image"})
+# stored — see record_event. "name" and "memo" (collection item free text)
+# are a future-mistake guard: no current caller passes context at all for
+# the collection_item_* events (collection domain design plan §3-2), so
+# these two keys are not defending against a live call site today.
+FORBIDDEN_CONTEXT_KEYS = frozenset(
+    {"short_review", "note", "email", "photo_url", "image", "name", "memo"}
+)
 
 
 def pseudonymous_user_key(user):
