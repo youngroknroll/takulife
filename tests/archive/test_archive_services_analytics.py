@@ -217,3 +217,31 @@ def test_update_collection_item_is_wanted_transition_records_marked_wanted(
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_unrelated_field_does_not_record_marked_wanted(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, is_wanted=True)  # already wanted
+
+    update_collection_item(item=item, memo="무관한 수정")
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_update_collection_item_resend_is_wanted_true_does_not_record_marked_wanted(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, is_wanted=True)  # already wanted
+
+    update_collection_item(item=item, is_wanted=True)  # explicit resend of same value
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 0
