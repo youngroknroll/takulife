@@ -245,3 +245,14 @@ def test_update_collection_item_resend_is_wanted_true_does_not_record_marked_wan
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
     ).count() == 0
+
+
+@pytest.mark.django_db
+def test_create_collection_item_with_tradeable_quantity_records_marked_tradeable(make_user):
+    user = make_user()
+
+    create_collection_item(user=user, name="아크릴 스탠드", quantity=2, tradeable_quantity=1)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
+    ).count() == 1
