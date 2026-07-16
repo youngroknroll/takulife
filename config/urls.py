@@ -31,18 +31,40 @@ urlpatterns = [
     ),
     path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
     path(
-        "archive/collection/new/",
+        "collection/new/",
         core_views.archive_collection_item_create,
+        name="collection-create-page",
+    ),
+    path(
+        "collection/<int:item_id>/edit/",
+        core_views.archive_collection_item_edit,
+        name="collection-edit-page",
+    ),
+    path(
+        "collection/",
+        core_views.archive_collection_items,
+        name="collection-page",
+    ),
+    # Old collection URLs, promoted to top-level /collection/ routes above
+    # (target IA plan D1). Non-permanent 302s (bookmarks/links may still hold
+    # the old paths) that preserve any query string.
+    path(
+        "archive/collection/new/",
+        RedirectView.as_view(
+            url="/collection/new/", query_string=True, permanent=False
+        ),
         name="archive-collection-create-page",
     ),
     path(
         "archive/collection/<int:item_id>/edit/",
-        core_views.archive_collection_item_edit,
+        RedirectView.as_view(
+            url="/collection/%(item_id)s/edit/", query_string=True, permanent=False
+        ),
         name="archive-collection-edit-page",
     ),
     path(
         "archive/collection/",
-        core_views.archive_collection_items,
+        RedirectView.as_view(url="/collection/", query_string=True, permanent=False),
         name="archive-collection-page",
     ),
     path(

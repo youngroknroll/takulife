@@ -64,7 +64,7 @@ class TestVisitRecordCollectionShortcut:
 
         resp = client.get("/archive/visits/")
 
-        assert f"/archive/collection/new/?visit_record={record.id}".encode() in resp.content
+        assert f"/collection/new/?visit_record={record.id}".encode() in resp.content
 
 
 @pytest.mark.django_db

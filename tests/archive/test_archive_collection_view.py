@@ -1,7 +1,7 @@
 """Tests for the collection list page (core.views.archive_collection_items).
 
 Behavior under test (collection domain design plan §4 PR-C5b-2, CP-L1~L22):
-- /archive/collection/ is login-gated, owner-scoped, and paginated at 10.
+- /collection/ is login-gated, owner-scoped, and paginated at 10.
 - q / is_wanted / work_title / character_name / item_type filter server-side,
   reusing list_user_collection_items / user_collection_item_filter_values /
   user_collection_item_summary_counts unchanged.
@@ -26,13 +26,13 @@ class TestArchiveCollectionViewAuth:
     def test_authenticated_user_gets_200(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
 
         assert resp.status_code == 200
         assert "core/archive/collection.html" in [t.name for t in resp.templates]
 
     def test_anonymous_user_redirected_to_login(self, client):
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
 
         assert resp.status_code == 302
         assert "/accounts/login" in resp.url
@@ -47,7 +47,7 @@ class TestArchiveCollectionSummary:
         make_collection_item(user, name="내 위시템", is_wanted=True)
         make_collection_item(other, name="남의 물건", is_wanted=False)
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
 
         assert resp.context["owned_count"] == 1
         assert resp.context["wanted_count"] == 1
@@ -61,7 +61,7 @@ class TestArchiveCollectionListOwnerScope:
         make_collection_item(user, name="내 아이템")
         make_collection_item(other, name="남의 아이템")
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
 
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["내 아이템"]
@@ -75,14 +75,14 @@ class TestArchiveCollectionPagination:
         for i in range(11):
             make_collection_item(user, name=f"아이템{i:02d}")
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
         page_obj = resp.context["page_obj"]
 
         assert ARCHIVE_COLLECTION_PAGE_SIZE == 10
         assert page_obj.paginator.count == 11
         assert len(page_obj.object_list) == 10
 
-        resp2 = client.get("/archive/collection/?page=2")
+        resp2 = client.get("/collection/?page=2")
         assert len(resp2.context["page_obj"].object_list) == 1
 
 
@@ -93,7 +93,7 @@ class TestArchiveCollectionSearch:
         make_collection_item(user, name="유메 아크릴")
         make_collection_item(user, name="다른 굿즈")
 
-        resp = client.get("/archive/collection/?q=유메")
+        resp = client.get("/collection/?q=유메")
 
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["유메 아크릴"]
@@ -106,7 +106,7 @@ class TestArchiveCollectionIsWantedFilter:
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
 
-        resp = client.get("/archive/collection/?is_wanted=true")
+        resp = client.get("/collection/?is_wanted=true")
 
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["구함템"]
@@ -116,7 +116,7 @@ class TestArchiveCollectionIsWantedFilter:
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
 
-        resp = client.get("/archive/collection/?is_wanted=false")
+        resp = client.get("/collection/?is_wanted=false")
 
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["보유템"]
@@ -129,7 +129,7 @@ class TestArchiveCollectionIsWantedFilter:
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
 
-        resp = client.get(f"/archive/collection/?is_wanted={bad_value}")
+        resp = client.get(f"/collection/?is_wanted={bad_value}")
 
         names = {row["item"].name for row in resp.context["item_rows"]}
         assert names == {"보유템", "구함템"}
@@ -139,7 +139,7 @@ class TestArchiveCollectionIsWantedFilter:
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
 
         names = {row["item"].name for row in resp.context["item_rows"]}
         assert names == {"보유템", "구함템"}
@@ -152,7 +152,7 @@ class TestArchiveCollectionFilterOptions:
         make_collection_item(user, name="A", work_title="WorkA", character_name="CharA", item_type="keyring")
         make_collection_item(user, name="B", work_title="WorkB", character_name="CharB", item_type="badge")
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
 
         filter_values = resp.context["filter_values"]
         assert filter_values["work_title"] == ["WorkA", "WorkB"]
@@ -179,7 +179,7 @@ class TestArchiveCollectionExactMatchFilters:
         )
 
         resp = client.get(
-            "/archive/collection/?work_title=WorkA&character_name=CharB&item_type=keyring"
+            "/collection/?work_title=WorkA&character_name=CharB&item_type=keyring"
         )
 
         names = [row["item"].name for row in resp.context["item_rows"]]
@@ -199,7 +199,7 @@ class TestArchiveCollectionQueryStringHelpers:
         # existence matters here.
         CollectionItem.objects.create(user=user, name="배경 아이템")
         return client.get(
-            "/archive/collection/"
+            "/collection/"
             "?q=abc&work_title=WorkA&character_name=CharB&item_type=keyring&is_wanted=true"
         )
 
@@ -265,7 +265,7 @@ class TestArchiveCollectionQueryStringHelpers:
         for i in range(11):  # force a pager to exist
             make_collection_item(user, name=f"아이템{i:02d}")
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
 
         assert resp.context["pager_query"] == ""
 
@@ -275,7 +275,7 @@ class TestArchiveCollectionPartial:
     def test_partial_renders_fragment_only(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/?partial=1")
+        resp = client.get("/collection/?partial=1")
 
         assert resp.status_code == 200
         names = {t.name for t in resp.templates if t.name}
@@ -285,7 +285,7 @@ class TestArchiveCollectionPartial:
         assert b"<html" not in resp.content.lower()
 
     def test_partial_requires_login(self, client):
-        resp = client.get("/archive/collection/?partial=1")
+        resp = client.get("/collection/?partial=1")
 
         assert resp.status_code == 302
         assert "/accounts/login" in resp.url
@@ -296,7 +296,7 @@ class TestArchiveCollectionEmptyStates:
     def test_no_items_hides_filter_controls(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
         content = resp.content
 
         assert b'class="archive-search"' not in content
@@ -307,7 +307,7 @@ class TestArchiveCollectionEmptyStates:
         user, client = user_client()
         make_collection_item(user, name="보유템", is_wanted=False, work_title="WorkA")
 
-        resp = client.get("/archive/collection/?work_title=NoMatch")
+        resp = client.get("/collection/?work_title=NoMatch")
 
         assert resp.context["item_rows"] == []
         content = resp.content
@@ -318,7 +318,7 @@ class TestArchiveCollectionEmptyStates:
         user, client = user_client()
         make_collection_item(user, name="보유템")
 
-        resp = client.get("/archive/collection/?q=없는검색어")
+        resp = client.get("/collection/?q=없는검색어")
 
         assert resp.context["item_rows"] == []
         content = resp.content
@@ -361,7 +361,7 @@ class TestArchiveCollectionCardBadges:
             user, name="A아이템", quantity=3, tradeable_quantity=2, is_wanted=True
         )
 
-        resp = client.get("/archive/collection/?partial=1")
+        resp = client.get("/collection/?partial=1")
         row = resp.context["item_rows"][0]
 
         assert "수량 3개".encode() in resp.content
@@ -378,7 +378,7 @@ class TestArchiveCollectionCardBadges:
             user, name="B아이템", quantity=0, tradeable_quantity=0, is_wanted=False
         )
 
-        resp = client.get("/archive/collection/?partial=1")
+        resp = client.get("/collection/?partial=1")
         row = resp.context["item_rows"][0]
 
         assert "수량 0개".encode() not in resp.content
@@ -394,12 +394,12 @@ class TestArchiveCollectionNav:
     def test_independent_nav_group_added(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/")
+        resp = client.get("/collection/")
         content = resp.content
 
         assert content.count(b'class="archive-nav-group"') == 3
-        assert b'href="/archive/collection/"' in content
-        assert b'href="/archive/collection/" class="active"' in content
+        assert b'href="/collection/"' in content
+        assert b'href="/collection/" class="active"' in content
         # The pre-existing "내 기록" group's 3 links stay intact.
         assert b'href="/archive/"' in content
         assert b'href="/archive/statuses/"' in content

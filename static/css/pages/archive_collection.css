@@ -1,4 +1,4 @@
-/* archive_collection.css — /archive/collection/ list card overrides.
+/* archive_collection.css — /collection/ list card overrides.
    Loaded after archive_visits.css (shared .visit-card/.visit-chip/.layout
    base). Scoped via [data-collection-item-id], already present on every
    collection card, so nothing here can leak onto /archive/visits/. */

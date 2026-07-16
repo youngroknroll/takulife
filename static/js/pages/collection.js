@@ -19,7 +19,7 @@
 
   var MAX_BYTES = 5 * 1024 * 1024;
   var ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-  var LIST_URL = "/archive/collection/";
+  var LIST_URL = "/collection/";
   // Fields rendered inside the collapsed <details> group — a server error on
   // any of these must reopen it (personal_entries.js:107-111's pattern,
   // generalized to this form's larger field set).

@@ -1,7 +1,7 @@
 """Tests for the collection-item create page (core.views.archive_collection_item_create).
 
 Behavior under test (collection domain design plan §4 PR-C5b-2, CP-C1~C9):
-- /archive/collection/new/ is login-gated.
+- /collection/new/ is login-gated.
 - selectable_visit_records lists ONLY the requester's own visit records
   (list_user_visit_records(request.user), unfiltered).
 - ?visit_record=<id> preselects and locks the form to that visit record when
@@ -25,13 +25,13 @@ class TestArchiveCollectionCreateViewAuth:
     def test_authenticated_user_gets_200(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/new/")
+        resp = client.get("/collection/new/")
 
         assert resp.status_code == 200
         assert "core/archive/collection_create.html" in [t.name for t in resp.templates]
 
     def test_anonymous_user_redirected_to_login(self, client):
-        resp = client.get("/archive/collection/new/")
+        resp = client.get("/collection/new/")
 
         assert resp.status_code == 302
         assert "/accounts/login" in resp.url
@@ -47,7 +47,7 @@ class TestArchiveCollectionCreateSelectableVisitRecords:
         mine = make_visit(user, event=make_event(title="내 방문"), visited_on="2026-01-01")
         make_visit(other, event=make_event(title="남의 방문"), visited_on="2026-01-02")
 
-        resp = client.get("/archive/collection/new/")
+        resp = client.get("/collection/new/")
 
         records = list(resp.context["selectable_visit_records"])
         assert records == [mine]
@@ -60,7 +60,7 @@ class TestArchiveCollectionCreatePreselect:
         event = make_event(title="다녀온 행사")
         record = make_visit(user, event=event, visited_on="2026-05-01")
 
-        resp = client.get(f"/archive/collection/new/?visit_record={record.id}")
+        resp = client.get(f"/collection/new/?visit_record={record.id}")
 
         assert resp.context["preselect"] == {
             "id": record.id,
@@ -77,7 +77,7 @@ class TestArchiveCollectionCreatePreselect:
             other, event=make_event(title="남의 행사"), visited_on="2026-05-01"
         )
 
-        resp = client.get(f"/archive/collection/new/?visit_record={other_record.id}")
+        resp = client.get(f"/collection/new/?visit_record={other_record.id}")
 
         assert resp.status_code == 200
         assert resp.context["preselect"] is None
@@ -95,7 +95,7 @@ class TestArchiveCollectionCreatePreselect:
     def test_malformed_visit_record_param_falls_back(self, user_client, raw):
         _, client = user_client()
 
-        resp = client.get(f"/archive/collection/new/?visit_record={raw}")
+        resp = client.get(f"/collection/new/?visit_record={raw}")
 
         assert resp.status_code == 200
         assert resp.context["preselect"] is None
@@ -103,7 +103,7 @@ class TestArchiveCollectionCreatePreselect:
     def test_no_visit_record_param_keeps_dropdown(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/new/")
+        resp = client.get("/collection/new/")
 
         assert resp.context["preselect"] is None
         assert "selectable_visit_records" in resp.context
@@ -114,7 +114,7 @@ class TestArchiveCollectionCreateItemTypeDatalist:
     def test_datalist_has_seven_vocab_options(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/new/")
+        resp = client.get("/collection/new/")
         content = resp.content.decode()
 
         assert 'id="collection-item-type-options"' in content
@@ -134,13 +134,13 @@ class TestArchiveCollectionCreateHiddenFields:
     def test_visibility_field_never_rendered(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/new/")
+        resp = client.get("/collection/new/")
 
         assert b'name="visibility"' not in resp.content
 
     def test_event_control_never_rendered(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/collection/new/")
+        resp = client.get("/collection/new/")
 
         assert b'name="event"' not in resp.content

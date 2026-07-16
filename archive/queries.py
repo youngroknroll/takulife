@@ -21,7 +21,7 @@ ARCHIVE_RECORD_PAGE_SIZE = 10  # 기록장 (/archive/) — 저장한 행사
 ARCHIVE_STATUS_PAGE_SIZE = 5  # 예정 목록 (/archive/statuses/)
 ARCHIVE_VISIT_PAGE_SIZE = 5  # 방문 기록 (/archive/visits/)
 ARCHIVE_PERSONAL_PAGE_SIZE = 5  # 비공식 목록 (/archive/items/)
-ARCHIVE_COLLECTION_PAGE_SIZE = 10  # 컬렉션 목록 (/archive/collection/)
+ARCHIVE_COLLECTION_PAGE_SIZE = 10  # 컬렉션 목록 (/collection/)
 
 
 def user_status_counts(user, *, today=None) -> dict:
@@ -332,7 +332,7 @@ def user_collection_item_filter_values(user) -> dict:
 
 def user_collection_item_summary_counts(user) -> dict:
     """Return summary counts for a user's collection items, split by
-    is_wanted (the archive/collection/ summary cards).
+    is_wanted (the /collection/ summary cards).
 
     is_wanted is a non-null boolean, so owned (False) and wanted (True) are a
     complete partition of the user's collection items — owned_count +

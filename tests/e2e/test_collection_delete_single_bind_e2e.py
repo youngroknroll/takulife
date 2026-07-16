@@ -54,7 +54,7 @@ class TestCollectionDeleteSingleBinding:
         )
 
         login(page, live_server.url, "e2e_user@example.com", seed.password)
-        page.goto(f"{live_server.url}/archive/collection/{item.id}/edit/")
+        page.goto(f"{live_server.url}/collection/{item.id}/edit/")
 
         # Wrap TakuConfirm to log a marker on every invocation without
         # changing its behavior — still delegates to the real
@@ -72,7 +72,7 @@ class TestCollectionDeleteSingleBinding:
 
         page.click('[data-delete-item-id]')
         page.click(".confirm-yes")
-        page.wait_for_url(f"{live_server.url}/archive/collection/")
+        page.wait_for_url(f"{live_server.url}/collection/")
 
         assert len(confirm_calls) == 1
         assert not CollectionItem.objects.filter(pk=item.id).exists()
