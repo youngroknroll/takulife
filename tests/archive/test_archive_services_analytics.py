@@ -203,3 +203,17 @@ def test_create_collection_item_with_is_wanted_records_marked_wanted(make_user):
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_update_collection_item_is_wanted_transition_records_marked_wanted(
+    make_user, make_collection_item
+):
+    user = make_user()
+    item = make_collection_item(user, is_wanted=False)
+
+    update_collection_item(item=item, is_wanted=True)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
+    ).count() == 1
