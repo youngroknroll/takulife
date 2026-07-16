@@ -8,6 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from archive.models import UserEventStatus
 from archive.services import (
+    create_collection_item,
     create_event_interest,
     create_user_event_status,
     create_visit_record,
@@ -100,3 +101,17 @@ def test_create_visit_record_photo_records_visit_photo_added(
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.VISIT_PHOTO_ADDED
     ).count() == 1
+
+
+@pytest.mark.django_db
+def test_create_collection_item_records_collection_item_created(make_user):
+    user = make_user()
+
+    item = create_collection_item(user=user, name="아크릴 스탠드")
+
+    events = AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED
+    )
+    assert events.count() == 1
+    assert events.get().target_type == "collection_item"
+    assert events.get().target_id == item.id

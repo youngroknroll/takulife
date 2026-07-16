@@ -207,9 +207,16 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
             )
         event = visit_record.event
 
-    return CollectionItem.objects.create(
+    item = CollectionItem.objects.create(
         user=user, name=name, visit_record=visit_record, event=event, **fields
     )
+    record_event(
+        AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED,
+        user=user,
+        target_type="collection_item",
+        target_id=item.id,
+    )
+    return item
 
 
 def update_collection_item(*, item, **fields):
