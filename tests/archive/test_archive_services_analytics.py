@@ -14,6 +14,7 @@ from archive.services import (
     create_visit_record,
     create_visit_record_photo,
     mark_visited,
+    update_collection_item,
 )
 from core.models import AnalyticsEvent
 
@@ -115,3 +116,16 @@ def test_create_collection_item_records_collection_item_created(make_user):
     assert events.count() == 1
     assert events.get().target_type == "collection_item"
     assert events.get().target_id == item.id
+    assert events.get().context == {}
+
+
+@pytest.mark.django_db
+def test_update_collection_item_records_collection_item_updated(make_user, make_collection_item):
+    user = make_user()
+    item = make_collection_item(user)
+
+    update_collection_item(item=item, memo="새 메모")
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED
+    ).count() == 1

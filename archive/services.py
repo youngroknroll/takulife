@@ -314,6 +314,12 @@ def update_collection_item(*, item, **fields):
     if old_image_name and old_image_name != new_image_name:
         _delete_file_best_effort(old_image)
 
+    record_event(
+        AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED,
+        user=item.user,
+        target_type="collection_item",
+        target_id=item.id,
+    )
     return item
 
 
