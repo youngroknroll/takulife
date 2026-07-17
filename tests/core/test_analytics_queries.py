@@ -10,6 +10,8 @@ from django.utils import timezone
 from core.analytics import distinct_user_key_count_since, event_name_counts_since
 from core.models import AnalyticsEvent
 
+pytestmark = pytest.mark.domain
+
 
 def _create_event(event_name, user_key, days_ago=0):
     event = AnalyticsEvent.objects.create(event_name=event_name, user_key=user_key)
@@ -21,7 +23,7 @@ def _create_event(event_name, user_key, days_ago=0):
 
 
 @pytest.mark.django_db
-def test_distinct_user_key_count_since_counts_unique_keys_in_window():
+def test_최근_N일_창_안에서_고유_사용자_키_수를_센다():
     _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-a")
     _create_event(AnalyticsEvent.EventName.EVENT_SEARCHED, "user-a")
     _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-b")
@@ -31,7 +33,7 @@ def test_distinct_user_key_count_since_counts_unique_keys_in_window():
 
 
 @pytest.mark.django_db
-def test_distinct_user_key_count_since_excludes_anonymous_empty_key():
+def test_빈_사용자_키는_고유_사용자_수_집계에서_제외된다():
     _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "")
     _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-a")
 
@@ -39,7 +41,7 @@ def test_distinct_user_key_count_since_excludes_anonymous_empty_key():
 
 
 @pytest.mark.django_db
-def test_event_name_counts_since_counts_per_event_name_in_window():
+def test_최근_N일_창_안에서_이벤트명별_발생_건수를_센다():
     _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-a")
     _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-b")
     _create_event(AnalyticsEvent.EventName.EVENT_SEARCHED, "user-a")

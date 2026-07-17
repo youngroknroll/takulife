@@ -12,9 +12,11 @@ future backend change that breaks it is caught.
 import pytest
 from django.core.cache import cache
 
+pytestmark = pytest.mark.contract
+
 
 @pytest.mark.django_db
-def test_cache_set_and_get_round_trip_after_migrate():
+def test_공유_캐시는_저장한_값을_그대로_조회할_수_있다():
     cache.set("pr-0e-shared-cache-key", "shared-value", timeout=60)
 
     assert cache.get("pr-0e-shared-cache-key") == "shared-value"

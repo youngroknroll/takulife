@@ -7,14 +7,19 @@ tests (200 + a key phrase), not exhaustive content assertions — see
 """
 
 
-def test_privacy_page_renders_for_anonymous_user(client):
+import pytest
+
+pytestmark = pytest.mark.web
+
+
+def test_비로그인_사용자가_개인정보처리방침_페이지에_접근하면_200과_핵심_문구를_응답한다(client):
     resp = client.get("/legal/privacy/")
 
     assert resp.status_code == 200
     assert "개인정보처리방침" in resp.content.decode()
 
 
-def test_terms_page_renders_for_anonymous_user(client):
+def test_비로그인_사용자가_이용약관_페이지에_접근하면_200과_핵심_문구를_응답한다(client):
     resp = client.get("/legal/terms/")
 
     assert resp.status_code == 200

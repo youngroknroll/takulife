@@ -5,6 +5,8 @@ import pytest
 from django.urls import Resolver404, resolve
 
 
+pytestmark = pytest.mark.contract
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -20,7 +22,7 @@ def _imported_modules(module_path):
     return modules
 
 
-def test_draft_views_do_not_import_events_modules():
+def test_드래프트_뷰는_이벤트_모듈을_임포트하지_않는다():
     imported_modules = _imported_modules("drafts/views.py")
 
     assert not {module for module in imported_modules if module == "events" or module.startswith("events.")}
@@ -39,8 +41,19 @@ def test_draft_views_do_not_import_events_modules():
         "drafts/discovery.py",
         "drafts/management/commands/discover_drafts.py",
     ],
+    ids=[
+        "이벤트_뷰",
+        "이벤트_시리얼라이저",
+        "이벤트_쿼리셋",
+        "이벤트_서비스",
+        "드래프트_뷰",
+        "드래프트_서비스",
+        "드래프트_LLM_추출",
+        "드래프트_발견",
+        "드래프트_수집_명령",
+    ],
 )
-def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
+def test_활성_비아카이브_모듈은_아카이브_모듈을_임포트하지_않는다(module_path):
     imported_modules = _imported_modules(module_path)
 
     assert not {
@@ -50,8 +63,12 @@ def test_active_non_archive_modules_do_not_import_archive_modules(module_path):
     }
 
 
-@pytest.mark.parametrize("module_path", ["archive/models.py", "archive/serializers.py", "archive/services.py", "archive/views.py"])
-def test_archive_modules_do_not_import_drafts_modules(module_path):
+@pytest.mark.parametrize(
+    "module_path",
+    ["archive/models.py", "archive/serializers.py", "archive/services.py", "archive/views.py"],
+    ids=["아카이브_모델", "아카이브_시리얼라이저", "아카이브_서비스", "아카이브_뷰"],
+)
+def test_아카이브_모듈은_드래프트_모듈을_임포트하지_않는다(module_path):
     imported_modules = _imported_modules(module_path)
 
     assert not {
@@ -81,8 +98,26 @@ def test_archive_modules_do_not_import_drafts_modules(module_path):
         "archive/services.py",
         "archive/views.py",
     ],
+    ids=[
+        "이벤트_모델",
+        "이벤트_뷰",
+        "이벤트_시리얼라이저",
+        "이벤트_쿼리셋",
+        "이벤트_서비스",
+        "드래프트_모델",
+        "드래프트_뷰",
+        "드래프트_서비스",
+        "드래프트_시리얼라이저",
+        "드래프트_LLM_추출",
+        "드래프트_발견",
+        "드래프트_수집_명령",
+        "아카이브_모델",
+        "아카이브_시리얼라이저",
+        "아카이브_서비스",
+        "아카이브_뷰",
+    ],
 )
-def test_domain_modules_do_not_import_staff_modules(module_path):
+def test_도메인_모듈은_스태프_모듈을_임포트하지_않는다(module_path):
     """staff (presentation + audit infra) may depend on domain apps, never
     the reverse: events/drafts/archive must stay free of a `staff` import so
     domain business logic never leaks staff-only orchestration concerns."""
@@ -95,7 +130,7 @@ def test_domain_modules_do_not_import_staff_modules(module_path):
     }
 
 
-def test_draft_discovery_does_not_import_events_modules():
+def test_드래프트_발견_모듈은_이벤트_모듈을_임포트하지_않는다():
     """discovery.py is a pure link-extraction module (prompt_plan.md §2-1) —
     unlike drafts/services.py, which legitimately imports events.services to
     orchestrate draft-to-event promotion, discovery.py has no reason to touch
@@ -109,7 +144,7 @@ def test_draft_discovery_does_not_import_events_modules():
     }
 
 
-def test_discover_drafts_command_does_not_import_events_modules():
+def test_드래프트_수집_명령은_이벤트_모듈을_임포트하지_않는다():
     """discover_drafts orchestrates DraftSource -> EventDraft only, via
     create_draft_from_url (which itself owns the events.services boundary
     crossing) — the command has no reason to import events directly."""
@@ -122,7 +157,7 @@ def test_discover_drafts_command_does_not_import_events_modules():
     }
 
 
-def test_draft_discovery_does_not_import_core_llm_modules():
+def test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는다():
     """LLM extraction is a separate, flag-gated concern (drafts/llm_extraction.py)
     — discovery.py's deterministic filters (prompt_plan.md §1-4) must not
     pull in core.llm."""
@@ -135,7 +170,7 @@ def test_draft_discovery_does_not_import_core_llm_modules():
     }
 
 
-def test_core_error_response_returns_detail_payload():
+def test_에러_응답_헬퍼를_호출하면_detail_필드를_담은_응답을_반환한다():
     from core.errors import error_response
 
     response = error_response("Not found.", 404)
@@ -144,7 +179,7 @@ def test_core_error_response_returns_detail_payload():
     assert response.data == {"detail": "Not found."}
 
 
-def test_core_field_error_response_returns_field_payload():
+def test_필드_에러_응답_헬퍼를_호출하면_필드명을_키로_하는_에러_페이로드를_반환한다():
     from core.errors import field_error_response
 
     response = field_error_response("official_url", "Duplicate")
@@ -163,8 +198,9 @@ def test_core_field_error_response_returns_field_payload():
         "core/llm/__init__.py",
         "core/analytics.py",
     ],
+    ids=["에러_모듈", "LLM_설정", "LLM_클라이언트", "LLM_예외", "LLM_초기화", "분석_모듈"],
 )
-def test_core_errors_do_not_import_domain_modules(module_path):
+def test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다(module_path):
     imported_modules = _imported_modules(module_path)
 
     forbidden_prefixes = ("drafts.", "events.", "archive.", "staff.", "accounts.")
@@ -187,8 +223,16 @@ def test_core_errors_do_not_import_domain_modules(module_path):
         "/api/visit-record-photos/",
         "/api/visit-record-photos/1/",
     ],
+    ids=[
+        "me_사용자_행사_상태_상세",
+        "me_방문_기록_목록",
+        "me_방문_기록_사진_목록",
+        "me_방문_기록_사진_상세",
+        "방문_기록_사진_목록",
+        "방문_기록_사진_상세",
+    ],
 )
-def test_active_urlconf_does_not_resolve_deferred_archive_routes(path):
+def test_활성_urlconf는_보류된_아카이브_라우트를_해석하지_않는다(path):
     with pytest.raises(Resolver404):
         resolve(path)
 
@@ -201,8 +245,9 @@ def test_active_urlconf_does_not_resolve_deferred_archive_routes(path):
         "/api/visit-records/1/photos/",
         "/api/visit-records/1/photos/1/",
     ],
+    ids=["목록_생성", "상세", "사진_생성", "사진_삭제"],
 )
-def test_active_urlconf_resolves_visit_record_routes(path):
+def test_활성_urlconf는_방문_기록_라우트를_해석한다(path):
     match = resolve(path)
     assert match.url_name in {
         "visit-record-list-create",
@@ -212,8 +257,12 @@ def test_active_urlconf_resolves_visit_record_routes(path):
     }
 
 
-@pytest.mark.parametrize("path", ["/api/user-event-statuses/", "/api/user-event-statuses/1/"])
-def test_active_urlconf_resolves_user_event_status_routes(path):
+@pytest.mark.parametrize(
+    "path",
+    ["/api/user-event-statuses/", "/api/user-event-statuses/1/"],
+    ids=["목록_생성", "상세"],
+)
+def test_활성_urlconf는_사용자_행사_상태_라우트를_해석한다(path):
     match = resolve(path)
 
     assert match.url_name in {"user-event-status-list-create", "user-event-status-detail"}
@@ -225,15 +274,16 @@ def test_active_urlconf_resolves_user_event_status_routes(path):
         "/api/event-drafts/1/approve/",
         "/api/event-drafts/1/reject/",
     ],
+    ids=["승인", "반려"],
 )
-def test_old_draft_action_routes_do_not_resolve(path):
+def test_구_드래프트_액션_라우트는_더이상_해석되지_않는다(path):
     """PR-2 sub-step D moved approve/reject to /staff/drafts/<id>/… with no
     redirect — the old drafts API paths must not resolve at all."""
     with pytest.raises(Resolver404):
         resolve(path)
 
 
-def test_core_views_no_longer_imports_staff_permissions():
+def test_core_뷰는_더이상_스태프_모듈을_임포트하지_않는다():
     """PR-2 sub-step D moved the 3 draft/home-category SSR views into
     staff.views — core.views must no longer depend on staff at all."""
     imported_modules = _imported_modules("core/views.py")
@@ -347,7 +397,7 @@ def _has_client_family_fixture(path):
     return False
 
 
-def test_api_and_view_test_files_do_not_import_service_or_query_layers():
+def test_api_view_계층_테스트_파일은_서비스_쿼리_계층을_임포트하지_않는다():
     """API/view-layer test files must exercise only the HTTP/SSR boundary.
     A test that needs to reach into a services/queries module directly
     belongs in a dedicated *_services.py / *_queries.py file instead — that

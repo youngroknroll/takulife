@@ -18,6 +18,8 @@ from core.llm.exceptions import (
 )
 
 
+pytestmark = pytest.mark.unit
+
 TOOL_SCHEMA = {"type": "object", "properties": {"is_event": {"type": "boolean"}}}
 
 
@@ -37,7 +39,7 @@ def _tool_use_response(tool_input, name="extract", stop_reason="tool_use"):
 
 
 @override_settings(ANTHROPIC_API_KEY="")
-def test_call_tool_without_configured_key_or_injected_client_raises_configuration_error(monkeypatch):
+def test_api_키_미설정_및_클라이언트_미주입_상태에서_call_tool을_호출하면_설정_오류를_일으킨다(monkeypatch):
     from core.llm import client as client_module
 
     def _unexpected_client_creation(*args, **kwargs):
@@ -54,7 +56,7 @@ def test_call_tool_without_configured_key_or_injected_client_raises_configuratio
         )
 
 
-def test_call_tool_returns_tool_use_input_dict():
+def test_call_tool은_tool_use_응답을_받으면_input_딕셔너리를_반환한다():
     from core.llm.client import call_tool
 
     fake_client, calls = _fake_client(_tool_use_response({"is_event": True}))
@@ -70,7 +72,7 @@ def test_call_tool_returns_tool_use_input_dict():
     assert result == {"is_event": True}
 
 
-def test_call_tool_forces_tool_choice_and_includes_tool_schema():
+def test_call_tool은_요청에_tool_choice를_강제하고_tool_schema를_포함한다():
     from core.llm.client import call_tool
 
     fake_client, calls = _fake_client(_tool_use_response({"is_event": True}))
@@ -89,7 +91,7 @@ def test_call_tool_forces_tool_choice_and_includes_tool_schema():
 
 
 @override_settings(LLM_MODEL="claude-haiku-4-5-20251001")
-def test_call_tool_uses_configured_model():
+def test_call_tool은_설정된_LLM_MODEL을_요청에_사용한다():
     from core.llm.client import call_tool
     from django.conf import settings
 
@@ -106,7 +108,7 @@ def test_call_tool_uses_configured_model():
     assert calls[0]["model"] == settings.LLM_MODEL
 
 
-def test_call_tool_uses_explicit_model_override_when_given():
+def test_call_tool은_model_인자가_주어지면_설정값_대신_해당_모델을_사용한다():
     from core.llm.client import call_tool
 
     fake_client, calls = _fake_client(_tool_use_response({"is_event": True}))
@@ -124,7 +126,7 @@ def test_call_tool_uses_explicit_model_override_when_given():
 
 
 @override_settings(LLM_MODEL="claude-haiku-4-5-20251001")
-def test_call_tool_falls_back_to_settings_model_when_model_not_given():
+def test_call_tool은_model_인자가_없으면_설정된_LLM_MODEL로_폴백한다():
     from core.llm.client import call_tool
     from django.conf import settings
 
@@ -141,7 +143,7 @@ def test_call_tool_falls_back_to_settings_model_when_model_not_given():
     assert calls[0]["model"] == settings.LLM_MODEL
 
 
-def test_call_tool_uses_configured_max_tokens():
+def test_call_tool은_설정된_LLM_MAX_TOKENS를_요청에_사용한다():
     from core.llm.client import call_tool
     from django.conf import settings
 
@@ -158,7 +160,8 @@ def test_call_tool_uses_configured_max_tokens():
     assert calls[0]["max_tokens"] == settings.LLM_MAX_TOKENS
 
 
-def test_call_tool_with_injected_client_does_not_call_get_api_key(monkeypatch):
+@pytest.mark.contract
+def test_call_tool은_클라이언트가_주입되면_get_api_key를_호출하지_않는다(monkeypatch):
     """Client injection must skip get_api_key entirely — the caller already
     owns the client's credentials. This pins the contract independently of
     whether a local .env happens to have ANTHROPIC_API_KEY set."""
@@ -183,7 +186,7 @@ def test_call_tool_with_injected_client_does_not_call_get_api_key(monkeypatch):
     assert result == {"is_event": True}
 
 
-def test_call_tool_skips_tool_use_block_with_mismatched_name_and_raises_response_error():
+def test_call_tool은_tool_use_블록_이름이_일치하지_않으면_응답_오류를_일으킨다():
     from core.llm.client import call_tool
 
     mismatched_block = SimpleNamespace(type="tool_use", name="other_tool", input={"x": 1})
@@ -200,7 +203,7 @@ def test_call_tool_skips_tool_use_block_with_mismatched_name_and_raises_response
         )
 
 
-def test_call_tool_returns_input_from_matching_named_block_among_mismatched_blocks():
+def test_call_tool은_여러_tool_use_블록_중_이름이_일치하는_블록의_input을_반환한다():
     from core.llm.client import call_tool
 
     mismatched_block = SimpleNamespace(type="tool_use", name="other_tool", input={"x": 1})
@@ -219,7 +222,7 @@ def test_call_tool_returns_input_from_matching_named_block_among_mismatched_bloc
     assert result == {"is_event": True}
 
 
-def test_get_client_constructs_anthropic_client_with_configured_timeout(monkeypatch):
+def test_get_client는_설정된_타임아웃과_api_키로_anthropic_클라이언트를_생성한다(monkeypatch):
     from core.llm import client as client_module
     from django.conf import settings
 
@@ -239,7 +242,7 @@ def test_get_client_constructs_anthropic_client_with_configured_timeout(monkeypa
     assert captured["max_retries"] == 0
 
 
-def test_call_tool_raises_response_error_when_truncated_by_max_tokens():
+def test_call_tool은_max_tokens로_잘린_응답을_받으면_응답_오류를_일으킨다():
     """SDK does not treat hitting max_tokens as an error — tool_use.input can
     be a partial/incomplete dict in that case. A truncated response must not
     be returned to the caller as if it were complete."""
@@ -258,7 +261,7 @@ def test_call_tool_raises_response_error_when_truncated_by_max_tokens():
         )
 
 
-def test_call_tool_raises_response_error_when_no_tool_use_block():
+def test_call_tool은_tool_use_블록이_없으면_응답_오류를_일으킨다():
     from core.llm.client import call_tool
 
     text_only_response = SimpleNamespace(content=[SimpleNamespace(type="text", text="no tool call")])
@@ -274,7 +277,7 @@ def test_call_tool_raises_response_error_when_no_tool_use_block():
         )
 
 
-def test_call_tool_raises_response_error_when_content_is_empty():
+def test_call_tool은_응답_content가_비어있으면_응답_오류를_일으킨다():
     from core.llm.client import call_tool
 
     empty_response = SimpleNamespace(content=[])
@@ -290,7 +293,7 @@ def test_call_tool_raises_response_error_when_content_is_empty():
         )
 
 
-def test_call_tool_normalizes_api_timeout_error():
+def test_call_tool은_api_타임아웃_예외를_LLMTimeoutError로_정규화한다():
     from core.llm.client import call_tool
 
     request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
@@ -330,8 +333,9 @@ def _make_response_validation_error():
 @pytest.mark.parametrize(
     "build_error",
     [_make_connection_error, _make_internal_server_error, _make_response_validation_error],
+    ids=["연결_오류", "내부_서버_오류", "응답_검증_오류"],
 )
-def test_call_tool_normalizes_connection_and_server_errors_to_request_error(build_error):
+def test_call_tool은_연결_오류와_서버_오류를_LLMRequestError로_정규화한다(build_error):
     from core.llm.client import call_tool
 
     error = build_error()

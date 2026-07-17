@@ -7,9 +7,11 @@ import pytest
 from core.analytics import pseudonymous_user_key, record_event
 from core.models import AnalyticsEvent
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
-def test_record_event_persists_one_row_with_pseudonymous_user_key(make_user):
+def test_분석_이벤트를_기록하면_의사식별자_키를_가진_행_하나가_저장된다(make_user):
     user = make_user()
 
     record_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, user=user)

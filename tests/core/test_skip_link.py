@@ -10,9 +10,11 @@ a target that actually exists.
 """
 import pytest
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_home_page_includes_skip_link_to_content(client):
+def test_홈_페이지는_content로_건너뛰는_skip_link를_포함한다(client):
     resp = client.get("/")
 
     assert resp.status_code == 200
@@ -22,7 +24,7 @@ def test_home_page_includes_skip_link_to_content(client):
 
 
 @pytest.mark.django_db
-def test_event_list_skip_link_target_exists(client):
+def test_행사_목록_페이지의_skip_link_대상이_실제로_존재한다(client):
     resp = client.get("/events/")
 
     assert resp.status_code == 200
@@ -32,7 +34,7 @@ def test_event_list_skip_link_target_exists(client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_keeps_its_own_skip_link_only(client, make_user):
+def test_스태프_대시보드는_자신의_skip_link만_유지하고_공용_skip_link를_중복하지_않는다(client, make_user):
     staff = make_user(is_staff=True)
     client.force_login(staff)
 

@@ -3,8 +3,10 @@ import importlib
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 
+pytestmark = pytest.mark.contract
 
-def test_settings_load_secret_key_from_env_file(monkeypatch, tmp_path):
+
+def test_SECRET_KEY가_미설정이면_env_파일에서_값을_읽어온다(monkeypatch, tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text("SECRET_KEY=loaded-from-env-file\n", encoding="utf-8")
 
@@ -16,7 +18,7 @@ def test_settings_load_secret_key_from_env_file(monkeypatch, tmp_path):
     assert settings_module.load_secret_key(debug=True) == "loaded-from-env-file"
 
 
-def test_settings_load_anthropic_api_key_from_env_file(monkeypatch, tmp_path):
+def test_ANTHROPIC_API_KEY가_미설정이면_env_파일에서_값을_읽어온다(monkeypatch, tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text("ANTHROPIC_API_KEY=loaded-anthropic-key\n", encoding="utf-8")
 
@@ -28,7 +30,7 @@ def test_settings_load_anthropic_api_key_from_env_file(monkeypatch, tmp_path):
     assert settings_module.load_anthropic_api_key() == "loaded-anthropic-key"
 
 
-def test_load_database_config_falls_back_to_sqlite_when_unset(monkeypatch, tmp_path):
+def test_DATABASE_URL이_미설정이면_sqlite로_대체된다(monkeypatch, tmp_path):
     monkeypatch.delenv("DATABASE_URL", raising=False)
 
     settings_module = importlib.import_module("config.settings")
@@ -42,7 +44,7 @@ def test_load_database_config_falls_back_to_sqlite_when_unset(monkeypatch, tmp_p
     }
 
 
-def test_load_database_config_parses_postgres_url(monkeypatch):
+def test_DATABASE_URL이_postgres_스킴이면_접속_정보를_파싱한다(monkeypatch):
     monkeypatch.setenv(
         "DATABASE_URL", "postgresql://taku:taku@localhost:5432/taku"
     )
@@ -59,7 +61,7 @@ def test_load_database_config_parses_postgres_url(monkeypatch):
     assert config["PORT"] == 5432
 
 
-def test_load_database_config_defaults_port_when_omitted(monkeypatch):
+def test_DATABASE_URL에_포트가_없으면_빈_문자열로_남는다(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgres://taku:taku@localhost/taku")
 
     settings_module = importlib.import_module("config.settings")
@@ -71,7 +73,7 @@ def test_load_database_config_defaults_port_when_omitted(monkeypatch):
     assert config["PORT"] == ""
 
 
-def test_load_database_config_unquotes_special_characters_in_password(monkeypatch):
+def test_DATABASE_URL_비밀번호의_URL_인코딩_특수문자를_복원한다(monkeypatch):
     monkeypatch.setenv(
         "DATABASE_URL", "postgresql://taku:p%40ss%23word@localhost:5432/taku"
     )
@@ -83,7 +85,7 @@ def test_load_database_config_unquotes_special_characters_in_password(monkeypatc
     assert config["PASSWORD"] == "p@ss#word"
 
 
-def test_load_database_config_raises_for_unknown_scheme(monkeypatch):
+def test_DATABASE_URL_스킴을_알_수_없으면_예외를_발생시킨다(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "mysql://taku:taku@localhost:3306/taku")
 
     settings_module = importlib.import_module("config.settings")
@@ -92,7 +94,7 @@ def test_load_database_config_raises_for_unknown_scheme(monkeypatch):
         settings_module.load_database_config()
 
 
-def test_load_database_config_reflects_sslmode_query_param_in_options(monkeypatch):
+def test_DATABASE_URL의_sslmode_쿼리파라미터를_OPTIONS에_반영한다(monkeypatch):
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://taku:taku@localhost:5432/taku?sslmode=require",
@@ -105,7 +107,7 @@ def test_load_database_config_reflects_sslmode_query_param_in_options(monkeypatc
     assert config["OPTIONS"] == {"sslmode": "require"}
 
 
-def test_settings_debug_defaults_to_true_when_env_unset(monkeypatch):
+def test_DEBUG가_미설정이면_기본값_True를_사용한다(monkeypatch):
     monkeypatch.delenv("DEBUG", raising=False)
 
     settings_module = importlib.import_module("config.settings")
@@ -113,7 +115,7 @@ def test_settings_debug_defaults_to_true_when_env_unset(monkeypatch):
     assert settings_module.load_debug() is True
 
 
-def test_settings_debug_false_when_env_set_to_false(monkeypatch):
+def test_DEBUG_환경변수가_false이면_False로_해석한다(monkeypatch):
     monkeypatch.setenv("DEBUG", "false")
 
     settings_module = importlib.import_module("config.settings")
@@ -127,7 +129,7 @@ def test_settings_debug_false_when_env_set_to_false(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_load_secret_key_raises_when_debug_false_and_env_unset(monkeypatch):
+def test_DEBUG_False에서_SECRET_KEY가_없으면_예외를_발생시킨다(monkeypatch):
     # Empty string (not delenv) short-circuits _get_env's .env-file fallback
     # so this test is independent of whatever the developer's real .env has.
     monkeypatch.setenv("SECRET_KEY", "")
@@ -138,7 +140,7 @@ def test_load_secret_key_raises_when_debug_false_and_env_unset(monkeypatch):
         settings_module.load_secret_key(debug=False)
 
 
-def test_load_secret_key_uses_insecure_dev_fallback_when_debug_true(monkeypatch):
+def test_DEBUG_True에서_SECRET_KEY가_없으면_개발용_기본키를_사용한다(monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "")
 
     settings_module = importlib.import_module("config.settings")
@@ -149,7 +151,7 @@ def test_load_secret_key_uses_insecure_dev_fallback_when_debug_true(monkeypatch)
     )
 
 
-def test_load_secret_key_returns_env_value_regardless_of_debug(monkeypatch):
+def test_SECRET_KEY가_설정되어_있으면_DEBUG값과_무관하게_그대로_사용한다(monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "from-env")
 
     settings_module = importlib.import_module("config.settings")
@@ -157,7 +159,7 @@ def test_load_secret_key_returns_env_value_regardless_of_debug(monkeypatch):
     assert settings_module.load_secret_key(debug=False) == "from-env"
 
 
-def test_load_allowed_hosts_defaults_to_empty_list_when_unset(monkeypatch, tmp_path):
+def test_ALLOWED_HOSTS가_미설정이면_빈_리스트를_반환한다(monkeypatch, tmp_path):
     monkeypatch.delenv("ALLOWED_HOSTS", raising=False)
 
     settings_module = importlib.import_module("config.settings")
@@ -166,7 +168,7 @@ def test_load_allowed_hosts_defaults_to_empty_list_when_unset(monkeypatch, tmp_p
     assert settings_module.load_allowed_hosts() == []
 
 
-def test_load_allowed_hosts_parses_comma_separated_env(monkeypatch):
+def test_ALLOWED_HOSTS_콤마로_구분된_값을_리스트로_파싱한다(monkeypatch):
     monkeypatch.setenv(
         "ALLOWED_HOSTS", "takulife.kr, www.takulife.kr ,api.takulife.kr"
     )
@@ -180,7 +182,7 @@ def test_load_allowed_hosts_parses_comma_separated_env(monkeypatch):
     ]
 
 
-def test_load_csrf_trusted_origins_defaults_to_empty_list_when_unset(monkeypatch, tmp_path):
+def test_CSRF_TRUSTED_ORIGINS가_미설정이면_빈_리스트를_반환한다(monkeypatch, tmp_path):
     monkeypatch.delenv("CSRF_TRUSTED_ORIGINS", raising=False)
 
     settings_module = importlib.import_module("config.settings")
@@ -189,7 +191,7 @@ def test_load_csrf_trusted_origins_defaults_to_empty_list_when_unset(monkeypatch
     assert settings_module.load_csrf_trusted_origins() == []
 
 
-def test_load_csrf_trusted_origins_parses_comma_separated_env(monkeypatch):
+def test_CSRF_TRUSTED_ORIGINS_콤마로_구분된_값을_리스트로_파싱한다(monkeypatch):
     monkeypatch.setenv(
         "CSRF_TRUSTED_ORIGINS", "https://takulife.kr,https://www.takulife.kr"
     )
@@ -202,7 +204,7 @@ def test_load_csrf_trusted_origins_parses_comma_separated_env(monkeypatch):
     ]
 
 
-def test_load_secure_ssl_defaults_to_false_when_unset(monkeypatch, tmp_path):
+def test_SECURE_SSL이_미설정이면_False가_기본값이다(monkeypatch, tmp_path):
     monkeypatch.delenv("SECURE_SSL", raising=False)
 
     settings_module = importlib.import_module("config.settings")
@@ -211,7 +213,7 @@ def test_load_secure_ssl_defaults_to_false_when_unset(monkeypatch, tmp_path):
     assert settings_module.load_secure_ssl() is False
 
 
-def test_load_secure_ssl_true_when_env_set(monkeypatch):
+def test_SECURE_SSL_환경변수가_true이면_True로_해석한다(monkeypatch):
     monkeypatch.setenv("SECURE_SSL", "true")
 
     settings_module = importlib.import_module("config.settings")
@@ -219,13 +221,13 @@ def test_load_secure_ssl_true_when_env_set(monkeypatch):
     assert settings_module.load_secure_ssl() is True
 
 
-def test_build_secure_ssl_settings_empty_when_disabled():
+def test_SECURE_SSL이_꺼져있으면_보안_설정을_추가하지_않는다():
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.build_secure_ssl_settings(False) == {}
 
 
-def test_build_secure_ssl_settings_configures_proxy_and_hsts_when_enabled():
+def test_SECURE_SSL이_켜지면_프록시와_HSTS_설정을_구성한다():
     settings_module = importlib.import_module("config.settings")
 
     result = settings_module.build_secure_ssl_settings(True)
@@ -239,13 +241,13 @@ def test_build_secure_ssl_settings_configures_proxy_and_hsts_when_enabled():
     }
 
 
-def test_settings_module_defines_static_root():
+def test_설정_모듈은_STATIC_ROOT를_BASE_DIR_하위_staticfiles로_정의한다():
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.STATIC_ROOT == settings_module.BASE_DIR / "staticfiles"
 
 
-def test_settings_module_uses_plain_static_storage_in_debug_mode():
+def test_DEBUG_모드에서는_일반_정적파일_스토리지를_사용한다():
     """DEBUG=true (local dev / test settings) must not use whitenoise's
     manifest storage — that backend requires collectstatic to have run first
     (staticfiles.json), which local dev/test never does. Using the plain
@@ -260,7 +262,7 @@ def test_settings_module_uses_plain_static_storage_in_debug_mode():
     )
 
 
-def test_settings_module_registers_whitenoise_middleware_after_security():
+def test_whitenoise_미들웨어는_SecurityMiddleware_바로_다음에_등록된다():
     settings_module = importlib.import_module("config.settings")
 
     middleware = settings_module.MIDDLEWARE
@@ -269,7 +271,7 @@ def test_settings_module_registers_whitenoise_middleware_after_security():
     assert middleware[security_index + 1] == "whitenoise.middleware.WhiteNoiseMiddleware"
 
 
-def test_settings_module_defines_logging_console_handler():
+def test_설정_모듈은_콘솔_로깅_핸들러를_정의한다():
     settings_module = importlib.import_module("config.settings")
 
     logging_config = settings_module.LOGGING
@@ -284,7 +286,7 @@ def test_settings_module_defines_logging_console_handler():
 # ---------------------------------------------------------------------------
 
 
-def test_guard_debug_allowed_hosts_raises_when_allowed_hosts_set_and_debug_true():
+def test_DEBUG_True에서_ALLOWED_HOSTS가_설정되어_있으면_예외를_발생시킨다():
     """H1: forgetting DEBUG=false alone must not silently bypass the
     SECRET_KEY hard fail and serve a real domain with debug pages + the
     insecure dev key. ALLOWED_HOSTS set is an unambiguous production signal —
@@ -297,14 +299,14 @@ def test_guard_debug_allowed_hosts_raises_when_allowed_hosts_set_and_debug_true(
         )
 
 
-def test_guard_debug_allowed_hosts_allows_debug_true_when_allowed_hosts_empty():
+def test_DEBUG_True이고_ALLOWED_HOSTS가_비어있으면_통과한다():
     settings_module = importlib.import_module("config.settings")
 
     # Must not raise — this is the local dev default.
     settings_module.guard_debug_allowed_hosts(debug=True, allowed_hosts=[])
 
 
-def test_guard_debug_allowed_hosts_allows_debug_false_when_allowed_hosts_set():
+def test_DEBUG_False이고_ALLOWED_HOSTS가_설정되어_있으면_통과한다():
     settings_module = importlib.import_module("config.settings")
 
     # Must not raise — this is the intended production configuration.
@@ -313,13 +315,13 @@ def test_guard_debug_allowed_hosts_allows_debug_false_when_allowed_hosts_set():
     )
 
 
-def test_settings_module_wires_allowed_hosts_attribute():
+def test_설정_모듈의_ALLOWED_HOSTS_속성은_load_allowed_hosts_결과와_일치한다():
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.ALLOWED_HOSTS == settings_module.load_allowed_hosts()
 
 
-def test_settings_module_wires_csrf_trusted_origins_attribute():
+def test_설정_모듈의_CSRF_TRUSTED_ORIGINS_속성은_load_csrf_trusted_origins_결과와_일치한다():
     settings_module = importlib.import_module("config.settings")
 
     assert (
@@ -334,7 +336,7 @@ def test_settings_module_wires_csrf_trusted_origins_attribute():
 # ---------------------------------------------------------------------------
 
 
-def test_load_staticfiles_storage_returns_plain_storage_when_debug_true():
+def test_DEBUG_True이면_일반_정적파일_스토리지_경로를_반환한다():
     settings_module = importlib.import_module("config.settings")
 
     assert (
@@ -343,7 +345,7 @@ def test_load_staticfiles_storage_returns_plain_storage_when_debug_true():
     )
 
 
-def test_load_staticfiles_storage_returns_whitenoise_manifest_when_debug_false():
+def test_DEBUG_False이면_whitenoise_매니페스트_스토리지_경로를_반환한다():
     settings_module = importlib.import_module("config.settings")
 
     assert (
@@ -357,7 +359,7 @@ def test_load_staticfiles_storage_returns_whitenoise_manifest_when_debug_false()
 # ---------------------------------------------------------------------------
 
 
-def test_load_media_storage_config_defaults_to_filesystem_when_unset(
+def test_MEDIA_STORAGE_BUCKET이_미설정이면_파일시스템_스토리지로_대체된다(
     monkeypatch, tmp_path
 ):
     monkeypatch.delenv("MEDIA_STORAGE_BUCKET", raising=False)
@@ -370,7 +372,7 @@ def test_load_media_storage_config_defaults_to_filesystem_when_unset(
     }
 
 
-def test_load_media_storage_config_returns_s3_backend_when_bucket_set(monkeypatch):
+def test_MEDIA_STORAGE_BUCKET이_설정되면_S3_백엔드_설정을_반환한다(monkeypatch):
     monkeypatch.setenv("MEDIA_STORAGE_BUCKET", "takulife-media")
     monkeypatch.setenv("MEDIA_STORAGE_ACCESS_KEY_ID", "key-id")
     monkeypatch.setenv("MEDIA_STORAGE_SECRET_ACCESS_KEY", "secret")
@@ -393,7 +395,7 @@ def test_load_media_storage_config_returns_s3_backend_when_bucket_set(monkeypatc
     }
 
 
-def test_load_media_storage_config_raises_when_bucket_set_but_secret_missing(
+def test_MEDIA_STORAGE_BUCKET은_있는데_SECRET_ACCESS_KEY가_없으면_예외를_발생시킨다(
     monkeypatch,
 ):
     monkeypatch.setenv("MEDIA_STORAGE_BUCKET", "takulife-media")
@@ -417,7 +419,7 @@ def test_load_media_storage_config_raises_when_bucket_set_but_secret_missing(
 # ---------------------------------------------------------------------------
 
 
-def test_load_trusted_proxy_count_defaults_to_none_when_unset(monkeypatch, tmp_path):
+def test_TRUSTED_PROXY_COUNT가_미설정이면_None을_반환한다(monkeypatch, tmp_path):
     monkeypatch.delenv("TRUSTED_PROXY_COUNT", raising=False)
 
     settings_module = importlib.import_module("config.settings")
@@ -426,7 +428,7 @@ def test_load_trusted_proxy_count_defaults_to_none_when_unset(monkeypatch, tmp_p
     assert settings_module.load_trusted_proxy_count() is None
 
 
-def test_load_trusted_proxy_count_parses_env_int(monkeypatch):
+def test_TRUSTED_PROXY_COUNT_환경변수를_정수로_파싱한다(monkeypatch):
     monkeypatch.setenv("TRUSTED_PROXY_COUNT", "1")
 
     settings_module = importlib.import_module("config.settings")
@@ -434,7 +436,7 @@ def test_load_trusted_proxy_count_parses_env_int(monkeypatch):
     assert settings_module.load_trusted_proxy_count() == 1
 
 
-def test_load_trusted_proxy_count_raises_for_non_integer_value(monkeypatch):
+def test_TRUSTED_PROXY_COUNT가_정수가_아니면_예외를_발생시킨다(monkeypatch):
     monkeypatch.setenv("TRUSTED_PROXY_COUNT", "abc")
 
     settings_module = importlib.import_module("config.settings")
@@ -443,7 +445,7 @@ def test_load_trusted_proxy_count_raises_for_non_integer_value(monkeypatch):
         settings_module.load_trusted_proxy_count()
 
 
-def test_load_trusted_proxy_count_raises_for_negative_value(monkeypatch):
+def test_TRUSTED_PROXY_COUNT가_음수이면_예외를_발생시킨다(monkeypatch):
     """Security follow-up (2026-07-14): a negative count would make
     resolve_client_ip's hops[-trusted_proxy_count] a positive index,
     trusting the attacker-controlled left end of X-Forwarded-For instead
@@ -456,14 +458,14 @@ def test_load_trusted_proxy_count_raises_for_negative_value(monkeypatch):
         settings_module.load_trusted_proxy_count()
 
 
-def test_build_axes_client_ip_callable_returns_none_when_trusted_proxy_count_falsy():
+def test_TRUSTED_PROXY_COUNT가_없으면_axes_클라이언트_IP_콜백을_비운다():
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.build_axes_client_ip_callable(None) is None
     assert settings_module.build_axes_client_ip_callable(0) is None
 
 
-def test_build_axes_client_ip_callable_returns_core_ip_path_when_trusted_proxy_count_set():
+def test_TRUSTED_PROXY_COUNT가_설정되면_core_ip_경로를_axes_클라이언트_IP_콜백으로_사용한다():
     settings_module = importlib.import_module("config.settings")
 
     assert (
@@ -471,7 +473,7 @@ def test_build_axes_client_ip_callable_returns_core_ip_path_when_trusted_proxy_c
     )
 
 
-def test_settings_module_wires_axes_client_ip_callable_attribute():
+def test_설정_모듈의_AXES_CLIENT_IP_CALLABLE_속성은_build_axes_client_ip_callable_결과와_일치한다():
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.AXES_CLIENT_IP_CALLABLE == (
@@ -487,7 +489,7 @@ def test_settings_module_wires_axes_client_ip_callable_attribute():
 # ---------------------------------------------------------------------------
 
 
-def test_settings_module_uses_database_cache_backend():
+def test_설정_모듈은_DatabaseCache_백엔드를_기본_캐시로_사용한다():
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.CACHES["default"] == {

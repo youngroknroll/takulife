@@ -18,9 +18,11 @@ from archive.models import (
 
 MYPAGE_URL = "/mypage/"
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_anonymous_get_redirects_to_login(client):
+def test_비로그인_사용자가_마이페이지에_접근하면_로그인_페이지로_리다이렉트된다(client):
     response = client.get(MYPAGE_URL)
 
     assert response.status_code == 302
@@ -28,7 +30,7 @@ def test_anonymous_get_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_authenticated_get_renders_200(client, make_user):
+def test_로그인_사용자가_마이페이지에_접근하면_200을_응답한다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -38,7 +40,7 @@ def test_authenticated_get_renders_200(client, make_user):
 
 
 @pytest.mark.django_db
-def test_counts_reflect_seeded_archive_data(client, make_user, make_event):
+def test_마이페이지_카운트는_사용자_소유_아카이브_데이터만_집계하고_다른_사용자_데이터는_제외한다(client, make_user, make_event):
     user = make_user()
     other_user = make_user()
     event1 = make_event(title="Event 1")
@@ -89,7 +91,7 @@ def test_counts_reflect_seeded_archive_data(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_counts_are_zero_for_a_user_with_no_archive_data(client, make_user):
+def test_아카이브_데이터가_없는_사용자의_마이페이지_카운트는_모두_0이다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -103,7 +105,7 @@ def test_counts_are_zero_for_a_user_with_no_archive_data(client, make_user):
 
 
 @pytest.mark.django_db
-def test_collection_count_is_owned_items_only_owner_scoped(client, make_user):
+def test_컬렉션_카운트는_보유_항목만_집계하고_원함_항목과_다른_사용자_항목은_제외한다(client, make_user):
     user = make_user()
     other_user = make_user()
     CollectionItem.objects.create(user=user, name="보유1", is_wanted=False)
@@ -118,7 +120,7 @@ def test_collection_count_is_owned_items_only_owner_scoped(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_user_also_gets_200_no_block(staff_client):
+def test_스태프_사용자도_마이페이지에_접근하면_차단없이_200을_응답한다(staff_client):
     _staff, logged_in_client = staff_client()
 
     response = logged_in_client.get(MYPAGE_URL)

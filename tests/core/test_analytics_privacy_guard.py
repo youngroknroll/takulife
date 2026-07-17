@@ -25,6 +25,8 @@ from core.analytics import FORBIDDEN_CONTEXT_KEYS, pseudonymous_user_key
 from core.models import AnalyticsEvent
 from events.models import Event
 
+pytestmark = pytest.mark.contract
+
 
 LEAK_PROBE_EMAIL = "leak-probe-user@example.com"
 LEAK_PROBE_REVIEW = "this private review text must never leak into analytics"
@@ -73,7 +75,7 @@ def _walk_all_analytics_paths(make_user, make_event, png_bytes):
 
 
 @pytest.mark.django_db
-def test_no_analytics_event_row_ever_leaks_personal_data(make_user, make_event, png_bytes):
+def test_전_분석_이벤트_기록_경로를_실행해도_개인정보가_전혀_유출되지_않는다(make_user, make_event, png_bytes):
     user = _walk_all_analytics_paths(make_user, make_event, png_bytes)
 
     events = list(AnalyticsEvent.objects.all())

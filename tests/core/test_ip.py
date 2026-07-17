@@ -4,12 +4,15 @@
 TDD Coach checkpoints CP-7..CP-11)
 """
 
+import pytest
 from django.test import RequestFactory, override_settings
 
 from core.ip import get_client_ip, resolve_client_ip
 
+pytestmark = pytest.mark.unit
 
-def test_resolve_client_ip_ignores_forwarded_header_when_trusted_proxy_count_unset():
+
+def test_trusted_proxy_count가_미설정이면_forwarded_헤더를_무시하고_remote_addr를_사용한다():
     ip = resolve_client_ip(
         remote_addr="10.0.0.5",
         forwarded_for="203.0.113.9",
@@ -19,7 +22,7 @@ def test_resolve_client_ip_ignores_forwarded_header_when_trusted_proxy_count_uns
     assert ip == "10.0.0.5"
 
 
-def test_resolve_client_ip_returns_rightmost_nth_hop_when_trusted_proxy_count_set():
+def test_trusted_proxy_count가_설정되면_forwarded_헤더에서_오른쪽에서_n번째_홉_주소를_반환한다():
     ip = resolve_client_ip(
         remote_addr="10.0.0.5",
         forwarded_for="203.0.113.9",
@@ -37,7 +40,7 @@ def test_resolve_client_ip_returns_rightmost_nth_hop_when_trusted_proxy_count_se
     assert ip == "203.0.113.9"
 
 
-def test_resolve_client_ip_falls_back_to_remote_addr_when_forwarded_header_missing_or_too_short():
+def test_forwarded_헤더가_없거나_신뢰_홉_수보다_짧으면_remote_addr로_폴백한다():
     assert (
         resolve_client_ip(
             remote_addr="10.0.0.5", forwarded_for="", trusted_proxy_count=1
@@ -55,7 +58,7 @@ def test_resolve_client_ip_falls_back_to_remote_addr_when_forwarded_header_missi
     )
 
 
-def test_get_client_ip_uses_remote_addr_when_trusted_proxy_count_unset():
+def test_get_client_ip는_trusted_proxy_count가_미설정이면_remote_addr를_사용한다():
     request = RequestFactory().get(
         "/",
         REMOTE_ADDR="10.0.0.5",
@@ -66,7 +69,7 @@ def test_get_client_ip_uses_remote_addr_when_trusted_proxy_count_unset():
 
 
 @override_settings(TRUSTED_PROXY_COUNT=1)
-def test_get_client_ip_parses_forwarded_header_when_trusted_proxy_count_set():
+def test_get_client_ip는_trusted_proxy_count가_설정되면_forwarded_헤더를_파싱해_반환한다():
     request = RequestFactory().get(
         "/",
         REMOTE_ADDR="10.0.0.5",

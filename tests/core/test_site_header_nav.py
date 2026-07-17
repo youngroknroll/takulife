@@ -7,6 +7,8 @@ exclusive prefixes in the partial itself).
 """
 import pytest
 
+pytestmark = pytest.mark.web
+
 # (label, href) for each of the 4 sections, in header order.
 _SECTIONS = [
     ("홈", "/"),
@@ -34,24 +36,24 @@ def _assert_only_one_active(content, active_href):
 
 @pytest.mark.django_db
 class TestSiteHeaderActiveTab:
-    def test_home_is_the_only_active_tab_on_home(self, client):
+    def test_홈에서는_홈_탭만_active이다(self, client):
         resp = client.get("/")
 
         _assert_only_one_active(resp.content, "/")
 
-    def test_events_is_the_only_active_tab_on_event_list(self, client):
+    def test_행사_목록에서는_행사_탭만_active이다(self, client):
         resp = client.get("/events/")
 
         _assert_only_one_active(resp.content, "/events/")
 
-    def test_collection_is_the_only_active_tab_on_collection(self, user_client):
+    def test_컬렉션에서는_컬렉션_탭만_active이다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/collection/")
 
         _assert_only_one_active(resp.content, "/collection/")
 
-    def test_activity_is_the_only_active_tab_on_archive_statuses(self, user_client):
+    def test_나의_일정에서는_내_활동_탭만_active이다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/statuses/")
