@@ -264,12 +264,20 @@ sales, payment, shipping, escrow, or marketplace guarantees.
 - Does not own broad regression coverage; that belongs to the Quality
   Verification Lead.
 
-Backend TDD Coach output contract:
+Backend TDD Coach output contract (see Test Authoring Policy for field
+meaning):
 
 ```text
-Behavior:
-Expected observable result:
+Scenario ID:
+Business behavior:
+Given:
+When:
+Then:
 Next smallest test:
+Test name (Korean):
+Required verification boundary:
+Boundary rationale:
+DB/HTTP required:
 Expected Red reason:
 Minimum Green boundary:
 Refactoring allowed: No
@@ -279,10 +287,13 @@ Verification command:
 After Green:
 
 ```text
+Scenario ID:
 Green evidence:
 Regression impact:
+Test List status: Green | Refactored
 Refactoring allowed: Yes | No
 Permitted refactoring scope:
+Newly discovered scenarios:
 ```
 
 ### Deployment & Operations Reviewer
@@ -300,6 +311,27 @@ Permitted refactoring scope:
   checks; identifies realistic edge cases and missing evidence.
 - Does not dictate the next TDD micro-cycle and does not edit tests.
 - A completion assessment must distinguish passed, failed, and unverified.
+
+Backend completion checklist (in addition to the acceptance-criteria matrix
+above), per the Test Authoring Policy:
+
+- Do test names match the actual behavior of their assertions?
+- Does every new or changed test link to a Scenario ID in the Test List?
+- Does the Test List's Given-When-Then match the actual arrange, act, and
+  assert in the test?
+- Does every completed scenario have Red-for-the-expected-reason and fresh
+  Green evidence?
+- Is every unimplemented scenario marked `Deferred` with a reason, not left
+  blank?
+- Does the test pin implementation details it does not need to pin?
+- Could the same behavior be proven at a lower, faster boundary?
+- Is the same business rule duplicated at another layer?
+- Does a fixture hide an important precondition?
+- Do deleted or merged tests retain evidence that the protected behavior
+  still holds?
+- Do overall runtime and stability targets hold?
+- Is test-only configuration kept outside the production boundary?
+- Do all test commands and package changes follow the `uv`-only policy?
 
 ### Security & Resilience Reviewer
 
@@ -459,20 +491,174 @@ is separately approved.
    - Review-only tasks do not edit files. They report findings in chat or in a
      separately approved review artifact.
 
+## Test Authoring Policy
+
+This policy binds every backend test. Rationale, measurements, and the phased
+rollout live in `.docs/plans/2026-07-17-test-code-execution-policy-design.md`
+and `.docs/plans/2026-07-17-test-suite-improvement-plan.md`; do not duplicate
+their numbers or history here.
+
+### Test List Is The Starting Point
+
+A backend behavior change starts from a `Test List` in the approved
+implementation plan, not from a test or production function. The Test List
+breaks a requirement into executable examples; it is not a fully designed test
+suite written up front. Each entry carries at least these fields:
+
+| Field | Meaning |
+|---|---|
+| Scenario ID | Stable identifier linking the plan and the test |
+| Business behavior | One sentence a user could understand |
+| Given | State relevant to the behavior |
+| When | The one behavior under test |
+| Then | The externally observable result |
+| Verification boundary | One of `unit`, `domain`, `web`, `contract`, `slow`, `e2e` |
+| Boundary rationale | Why a higher-cost boundary is required, or why a lower boundary suffices |
+| Test name | The actual Korean pytest function name or parametrized case ID |
+| Status | `Pending`, `Red`, `Green`, `Refactored`, `Deferred` |
+| Evidence | Red/Green commands and key results, or a pointer to the work log |
+
+The default relationship is one scenario to one test. Only these exceptions
+are allowed:
+
+1. Same-rule data variations may be expressed as one parametrized test with
+   Korean `ids`.
+2. If one scenario must be verified at more than one layer, list each test's
+   owned contract as a separate Test List entry.
+3. Split the scenario when it has a distinct core `When` or an independent
+   observable result.
+
+Before renaming, moving, merging, or deleting an existing test, first restore
+the behavior it currently protects into a domain Test List entry (Scenario ID
+mapped to the existing pytest node ID). Do not attach a scenario after the
+fact just to make an existing test look compliant with this policy.
+
+### Given-When-Then Is A Meaning Rule
+
+Given-When-Then describes how a scenario and its test connect meaning, not a
+mandatory comment format.
+
+- **Given** holds only the state needed to understand the core behavior; do
+  not hide an important precondition inside a fixture default or helper.
+- **When** holds exactly one business behavior per test; the core behavior
+  must not run implicitly inside a helper.
+- **Then** holds observable results — return values, public responses,
+  persisted state, or an allowed side effect; do not hide the core assertion
+  inside a helper.
+- Multiple assertions are allowed only when they describe one result state;
+  independent results get separate scenarios.
+- Exception and rejection tests still express `When` as the attempted
+  behavior and `Then` as the observed failure contract.
+- Do not force `# Given` / `# When` / `# Then` comments on short, self-evident
+  tests. Use them when setup is long or the boundary call spans multiple
+  lines and the three parts would otherwise be unclear.
+
+### DAMP Over DRY
+
+- Prefer duplication that reveals meaning over abstraction that hides it.
+- Keep the core precondition, user behavior, and observed result directly in
+  the test body.
+- Extract only meaningless setup noise (object creation, login, image byte
+  generation) into fixtures or factories.
+- Never hide the behavior under test or its core assertion inside a helper.
+- A shared fixture's default value must never hide an important business
+  precondition.
+- One test describes one business behavior; multiple assertions are allowed
+  only for one result state.
+
+### Result-Oriented Verification
+
+- Verify return values, responses, persisted state, and allowed side effects
+  over internal function calls.
+- Do not pin internal function names, call order, private APIs, or ORM
+  authoring style as an external contract in an ordinary behavior test.
+- Use mocks to cut external boundaries, inject failures, or control
+  time/network — not to assert that an implementation function was called.
+
+The following remain legitimate to verify directly, because the interaction
+itself is the contract. Mark these `contract` rather than treating them as
+ordinary behavior tests:
+
+- domain dependency direction and forbidden imports;
+- transactions, atomicity, and idempotency;
+- prevention of personal-data leakage;
+- blocking outbound network or LLM calls;
+- exactly-once audit or analytics events;
+- approved query counts or performance budgets;
+- settings, migration, and deployment contracts.
+
+### Korean, Behavior-Centered Naming
+
+- Test function names are written in Korean.
+- Base grammar: `상황에서_행위하면_관찰가능한_결과가_된다`.
+- Use domain language (user, staff, event, visit record, collection, and so
+  on).
+- Do not use implementation-centered names such as `returns_200`,
+  `calls_service`, `uses_query`, or `response_has_context`.
+- Include an HTTP status code in the name only when it is essential to
+  distinguish a public protocol contract.
+- Parametrized `ids` are also Korean case names.
+- File names stay ASCII `test_*.py` for pytest discovery and tooling
+  compatibility.
+
+### Verification Boundaries
+
+Prove a behavior at the lowest, fastest boundary that can prove it.
+
+| Layer | Owns | Default resources |
+|---|---|---|
+| `unit` | Pure functions, parsing, value rules | No DB or HTTP |
+| `domain` | Model/service business behavior and invariants | DB as needed |
+| `web` | HTTP request/response, auth, permission, and error translation | Django/DRF test client |
+| `contract` | Architecture, settings, migration, and performance | Minimum resources per contract |
+| `slow` | Security lockouts, real files, and abnormal-recovery scenarios | Explicit opt-in |
+| `e2e` | Browser user flows | Playwright/live server |
+
+Do not repeat the same business rule across layers:
+
+- domain tests prove the rule itself;
+- web tests add only the HTTP translation of auth, input, and domain errors;
+- e2e proves only what is observable exclusively in the browser (wiring,
+  focus, layout, recovery).
+
+A lower layer's happy path may be re-confirmed at a higher layer, but do not
+repeat every boundary value and exception at every layer above it.
+
+### Speed And Isolation
+
+- A global autouse fixture must never promote every test to DB access; DB
+  dependencies are declared explicitly (`pytest.mark.django_db`, or the `db`
+  or `transactional_db` fixture).
+- A plain user factory defaults to an unusable password unless a test needs a
+  real, working password.
+- Authentication-behavior tests run under the test-only fast password hasher
+  (`config/settings_test.py`). Production `config/settings.py` never sets a
+  fast hasher.
+- Test settings must never be loadable from a production entry point or
+  deploy config; enforced by `tests/core/test_test_settings_boundary.py`.
+
 ## Backend TDD Cycle
 
-This cycle is mandatory for backend behavior changes.
+This cycle is mandatory for backend behavior changes and follows Canon TDD:
+build the Test List, take one item to Red, make it Green, refactor only if
+needed, then fold anything newly discovered back into the Test List.
 
-1. The Backend TDD Coach defines one smallest observable behavior test.
-2. The Backend & Integration Engineer writes only that test.
-3. Run it and confirm it fails for the coach's expected reason.
-4. If it fails for another reason, repair the test or setup before production
+1. Select one item from the implementation plan's Test List — the smallest,
+   most informative scenario not yet Green.
+2. The Backend TDD Coach defines that scenario as one smallest observable
+   behavior test.
+3. The Backend & Integration Engineer writes only that test.
+4. Run it and confirm it fails for the coach's expected reason (Red).
+5. If it fails for another reason, repair the test or setup before production
    changes.
-5. Implement the minimum behavior needed for Green.
-6. Run the targeted test and relevant regression slice.
-7. The coach reviews evidence and decides whether refactoring is allowed.
-8. Refactor only while tests remain Green.
-9. Repeat one behavior at a time.
+6. Implement the minimum behavior needed for Green.
+7. Run the targeted test and relevant regression slice.
+8. The coach reviews evidence and decides whether refactoring is allowed.
+9. Refactor only while tests remain Green; refactoring is optional and scoped
+   to the current scenario.
+10. Record any newly discovered scenario in the Test List instead of folding
+    it into the current test.
+11. Repeat one behavior at a time until the Test List is empty.
 
 Backend test rules:
 
@@ -557,6 +743,28 @@ section containing:
 For frontend review-only tasks, both reviewers must each deliver their normal
 review output. No implementation-phase fields are required, but role names alone
 still do not count as review evidence.
+
+## Package And Command Policy (uv-only)
+
+Python packages, virtual environments, and command execution are managed only
+with `uv`. Rationale lives in
+`.docs/plans/2026-07-17-test-code-execution-policy-design.md` §8.
+
+- The dependency source of truth is `pyproject.toml`; the lock source of truth
+  is `uv.lock`.
+- Add a runtime dependency with `uv add <package>`.
+- Add a dev or test dependency with `uv add --group dev <package>`.
+- Remove a dependency with `uv remove <package>`.
+- Sync the environment with `uv sync`.
+- Run tests, Django commands, and management commands with `uv run ...`.
+- CI and deployment use `uv sync --frozen` (add `--no-dev` for a production
+  image where appropriate).
+- `pip install`, `python -m pip`, manual `site-packages` edits, and a parallel
+  `requirements.txt` are forbidden.
+- Verify a dependency change in `pyproject.toml` and `uv.lock` together, in the
+  same change.
+- A new test-convenience package requires an approved plan and explicit user
+  approval; do not add one to solve a problem existing tooling already solves.
 
 ## Domain And Design Policies
 
