@@ -48,7 +48,7 @@ STUB_POST = """
 
 
 class TestStatusSiblingLockFocus:
-    def test_focus_restores_to_sibling_after_lock_releases(
+    def test_형제_버튼_잠금이_해제되면_포커스가_원래_있던_버튼으로_복원된다(
         self, live_server, page, seed, login, browser_name
     ):
         if browser_name == "webkit":

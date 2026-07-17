@@ -5,6 +5,8 @@ naive ``row.event.*`` access would raise on a personal row.
 """
 import pytest
 
+pytestmark = pytest.mark.web
+
 
 @pytest.fixture
 def mixed_user(make_user, make_event, make_entry, make_status, make_interest):
@@ -20,8 +22,10 @@ def mixed_user(make_user, make_event, make_entry, make_status, make_interest):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("url", ["/archive/", "/archive/statuses/"])
-def test_status_pages_render_official_and_unofficial(client, mixed_user, url):
+@pytest.mark.parametrize(
+    "url", ["/archive/", "/archive/statuses/"], ids=["전체_보기", "나의_일정"]
+)
+def test_기록장_페이지에_공식_행사와_비공식_항목이_함께_렌더링된다(client, mixed_user, url):
     user, event, entry = mixed_user
     client.force_login(user)
 
@@ -35,7 +39,7 @@ def test_status_pages_render_official_and_unofficial(client, mixed_user, url):
 
 
 @pytest.mark.django_db
-def test_interest_page_renders_official_and_unofficial(client, mixed_user):
+def test_찜_목록_페이지에_공식_행사와_비공식_항목이_함께_렌더링된다(client, mixed_user):
     user, event, entry = mixed_user
     client.force_login(user)
 
@@ -49,7 +53,7 @@ def test_interest_page_renders_official_and_unofficial(client, mixed_user):
 
 
 @pytest.mark.django_db
-def test_unofficial_status_has_no_public_detail_link(client, make_user, make_entry, make_status):
+def test_비공식_항목의_예정_행은_공개_행사_상세_링크를_갖지_않는다(client, make_user, make_entry, make_status):
     """A private personal entry must not be linked to a public /events/ page."""
     user = make_user(username="no-leak-link")
     entry = make_entry(user, kind="place", title="비공식 카페")

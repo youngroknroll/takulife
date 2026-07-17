@@ -14,9 +14,11 @@ import pytest
 
 from archive.models import CollectionItem, PersonalEntry, VisitRecordPhoto
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.mark.django_db
-def test_deleting_photo_removes_file_from_storage(client, make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
+def test_방문_사진을_삭제하면_스토리지에서_실제_파일도_제거된다(client, make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -35,7 +37,7 @@ def test_deleting_photo_removes_file_from_storage(client, make_user, make_event,
 
 
 @pytest.mark.django_db
-def test_deleting_visit_record_cascades_photo_file_deletion(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
+def test_방문_기록을_삭제하면_연쇄로_사진_파일도_제거된다(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -52,7 +54,7 @@ def test_deleting_visit_record_cascades_photo_file_deletion(make_user, make_even
 
 
 @pytest.mark.django_db
-def test_rolled_back_photo_delete_preserves_file(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
+def test_사진_삭제_트랜잭션이_롤백되면_파일이_보존된다(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
     """If the deleting transaction rolls back, the on_commit hook must never
     fire, so the file must remain in storage."""
     settings.MEDIA_ROOT = str(tmp_path)
@@ -79,7 +81,7 @@ def test_rolled_back_photo_delete_preserves_file(make_user, make_event, settings
 
 
 @pytest.mark.django_db
-def test_deleting_personal_entry_removes_image_file(make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_entry):
+def test_개인_항목을_삭제하면_이미지_파일도_제거된다(make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_entry):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="unofficial cafe", image=SimpleUploadedFile("cover.png", png_bytes(), content_type="image/png"))
@@ -94,7 +96,7 @@ def test_deleting_personal_entry_removes_image_file(make_user, png_bytes, settin
 
 
 @pytest.mark.django_db
-def test_deleting_collection_item_removes_image_file(
+def test_컬렉션_아이템을_삭제하면_이미지_파일도_제거된다(
     make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_collection_item
 ):
     """§6-b Deferred (C4 gate M4): CollectionItem had no post_delete image

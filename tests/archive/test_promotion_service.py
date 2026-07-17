@@ -22,7 +22,8 @@ from events.models import Event
 
 
 @pytest.mark.django_db
-def test_promote_creates_draft_and_marks_entry_submitted(make_user, make_entry):
+@pytest.mark.domain
+def test_비공식_항목을_공식_URL과_함께_승격하면_드래프트가_생성되고_항목이_제출됨_상태가_된다(make_user, make_entry):
     user = make_user(username="promo")
     entry = make_entry(user, kind="place", title="비공식 카페", location_name="연남동", memo="좋음")
 
@@ -38,7 +39,8 @@ def test_promote_creates_draft_and_marks_entry_submitted(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promote_other_users_entry_not_found(make_user, make_entry):
+@pytest.mark.domain
+def test_다른_사용자의_항목을_승격하려_하면_PromotionNotFoundError가_발생한다(make_user, make_entry):
     owner = make_user(username="promo-owner")
     other = make_user(username="promo-other")
     entry = make_entry(owner, kind="place", title="X")
@@ -50,7 +52,8 @@ def test_promote_other_users_entry_not_found(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promote_rejects_goods_entry(make_user, make_entry):
+@pytest.mark.domain
+def test_굿즈_항목을_승격하려_하면_PromotionKindNotAllowedError가_발생하고_상태가_변하지_않는다(make_user, make_entry):
     """GOODS entries are no longer promotable (collection domain plan §3-3) —
     only place entries can be seeded into the official review pipeline."""
     user = make_user(username="promo-goods")
@@ -67,7 +70,8 @@ def test_promote_rejects_goods_entry(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promote_already_submitted_raises(make_user, make_entry):
+@pytest.mark.domain
+def test_이미_제출된_항목을_다시_승격하려_하면_PromotionAlreadySubmittedError가_발생한다(make_user, make_entry):
     user = make_user(username="promo-twice")
     entry = make_entry(user, kind="place", title="C")
     promote_personal_entry(
@@ -81,7 +85,8 @@ def test_promote_already_submitted_raises(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promote_rejects_unsafe_official_url_scheme(make_user, make_entry):
+@pytest.mark.domain
+def test_ftp_스킴의_공식_URL로_승격하려_하면_PromotionUnsafeUrlError가_발생한다(make_user, make_entry):
     user = make_user(username="promo-unsafe-scheme")
     entry = make_entry(user, kind="place", title="F")
 
@@ -92,7 +97,8 @@ def test_promote_rejects_unsafe_official_url_scheme(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promote_rejects_localhost_official_url(make_user, make_entry):
+@pytest.mark.domain
+def test_localhost_공식_URL로_승격하려_하면_PromotionUnsafeUrlError가_발생한다(make_user, make_entry):
     user = make_user(username="promo-unsafe-localhost")
     entry = make_entry(user, kind="place", title="G")
 
@@ -103,7 +109,8 @@ def test_promote_rejects_localhost_official_url(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promote_rejects_private_ip_literal_official_url(make_user, make_entry):
+@pytest.mark.domain
+def test_사설_IP_리터럴_공식_URL로_승격하려_하면_PromotionUnsafeUrlError가_발생한다(make_user, make_entry):
     user = make_user(username="promo-unsafe-private-ip")
     entry = make_entry(user, kind="place", title="H")
 
@@ -114,7 +121,8 @@ def test_promote_rejects_private_ip_literal_official_url(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promote_duplicate_official_url_raises(make_user, make_entry):
+@pytest.mark.domain
+def test_이미_사용중인_공식_URL로_승격하려_하면_PromotionDuplicateError가_발생한다(make_user, make_entry):
     user = make_user(username="promo-dup")
     existing = make_entry(user, kind="place", title="D1")
     promote_personal_entry(
@@ -129,7 +137,8 @@ def test_promote_duplicate_official_url_raises(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_failed_promotion_does_not_mark_submitted(make_user, make_entry):
+@pytest.mark.contract
+def test_중복_URL_승격_실패는_트랜잭션이_롤백되어_항목이_제출됨으로_바뀌지_않는다(make_user, make_entry):
     """A duplicate-url failure must roll back; the entry stays promotable."""
     user = make_user(username="promo-rollback")
     first = make_entry(user, kind="place", title="E1")
@@ -156,7 +165,8 @@ def test_failed_promotion_does_not_mark_submitted(make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promoted_entry_stays_private_until_approved(make_user, make_entry):
+@pytest.mark.domain
+def test_승격된_항목은_관리자가_드래프트를_승인하기_전까지_비공개로_유지되다가_승인_후_공개_행사로_전환된다(make_user, make_entry):
     user = make_user(username="promo-private")
     entry = make_entry(user, kind="place", title="숨은 카페")
     result = promote_personal_entry(

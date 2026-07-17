@@ -18,9 +18,11 @@ from archive.services import (
 )
 from core.models import AnalyticsEvent
 
+pytestmark = pytest.mark.contract
+
 
 @pytest.mark.django_db
-def test_create_event_interest_records_event_interested(make_user, make_event):
+def test_행사_관심을_등록하면_EVENT_INTERESTED_분석_이벤트가_정확히_한_번_기록된다(make_user, make_event):
     user = make_user()
     event = make_event()
 
@@ -32,7 +34,7 @@ def test_create_event_interest_records_event_interested(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_create_user_event_status_planned_records_event_planned(make_user, make_event):
+def test_행사_상태를_planned로_생성하면_EVENT_PLANNED_분석_이벤트가_정확히_한_번_기록된다(make_user, make_event):
     user = make_user()
     event = make_event()
 
@@ -44,7 +46,7 @@ def test_create_user_event_status_planned_records_event_planned(make_user, make_
 
 
 @pytest.mark.django_db
-def test_create_user_event_status_visited_records_event_marked_visited(make_user, make_event):
+def test_행사_상태를_visited로_생성하면_EVENT_MARKED_VISITED_분석_이벤트가_정확히_한_번_기록된다(make_user, make_event):
     user = make_user()
     event = make_event()
 
@@ -56,7 +58,7 @@ def test_create_user_event_status_visited_records_event_marked_visited(make_user
 
 
 @pytest.mark.django_db
-def test_mark_visited_transition_records_event_marked_visited(make_user, make_event, make_status):
+def test_계획_상태를_방문완료로_전환하면_EVENT_MARKED_VISITED_분석_이벤트가_정확히_한_번_기록된다(make_user, make_event, make_status):
     user = make_user()
     event = make_event()
     status = make_status(user, event, status=UserEventStatus.Status.PLANNED)
@@ -69,7 +71,7 @@ def test_mark_visited_transition_records_event_marked_visited(make_user, make_ev
 
 
 @pytest.mark.django_db
-def test_create_visit_record_records_visit_record_created_without_short_review(
+def test_방문_기록을_생성하면_VISIT_RECORD_CREATED_이벤트가_기록되고_짧은_후기_내용은_컨텍스트에_노출되지_않는다(
     make_user, make_event
 ):
     user = make_user()
@@ -87,7 +89,7 @@ def test_create_visit_record_records_visit_record_created_without_short_review(
 
 
 @pytest.mark.django_db
-def test_create_visit_record_photo_records_visit_photo_added(
+def test_방문_기록에_사진을_추가하면_VISIT_PHOTO_ADDED_분석_이벤트가_정확히_한_번_기록된다(
     make_user, make_event, make_visit, png_bytes
 ):
     user = make_user()
@@ -105,7 +107,7 @@ def test_create_visit_record_photo_records_visit_photo_added(
 
 
 @pytest.mark.django_db
-def test_create_collection_item_records_collection_item_created(make_user):
+def test_수집_항목을_생성하면_COLLECTION_ITEM_CREATED_분석_이벤트가_대상_정보와_함께_정확히_한_번_기록된다(make_user):
     user = make_user()
 
     item = create_collection_item(user=user, name="아크릴 스탠드")
@@ -120,7 +122,7 @@ def test_create_collection_item_records_collection_item_created(make_user):
 
 
 @pytest.mark.django_db
-def test_update_collection_item_records_collection_item_updated(make_user, make_collection_item):
+def test_수집_항목을_수정하면_COLLECTION_ITEM_UPDATED_분석_이벤트가_정확히_한_번_기록된다(make_user, make_collection_item):
     user = make_user()
     item = make_collection_item(user)
 
@@ -132,7 +134,7 @@ def test_update_collection_item_records_collection_item_updated(make_user, make_
 
 
 @pytest.mark.django_db
-def test_create_collection_item_with_visit_record_records_linked_to_visit(
+def test_방문_기록과_연결해_수집_항목을_생성하면_COLLECTION_ITEM_LINKED_TO_VISIT_이벤트가_기록된다(
     make_user, make_event, make_visit
 ):
     user = make_user()
@@ -147,7 +149,7 @@ def test_create_collection_item_with_visit_record_records_linked_to_visit(
 
 
 @pytest.mark.django_db
-def test_update_collection_item_new_visit_record_records_linked_to_visit(
+def test_연결이_없던_수집_항목에_방문_기록을_새로_연결하면_COLLECTION_ITEM_LINKED_TO_VISIT_이벤트가_기록된다(
     make_user, make_collection_item, make_event, make_visit
 ):
     user = make_user()
@@ -163,7 +165,7 @@ def test_update_collection_item_new_visit_record_records_linked_to_visit(
 
 
 @pytest.mark.django_db
-def test_update_collection_item_unrelated_field_does_not_record_linked_to_visit(
+def test_이미_연결된_수집_항목의_무관한_필드를_수정해도_COLLECTION_ITEM_LINKED_TO_VISIT_이벤트는_다시_기록되지_않는다(
     make_user, make_event, make_visit, make_collection_item
 ):
     user = make_user()
@@ -179,7 +181,7 @@ def test_update_collection_item_unrelated_field_does_not_record_linked_to_visit(
 
 
 @pytest.mark.django_db
-def test_update_collection_item_resend_same_visit_record_does_not_record_linked_to_visit(
+def test_동일한_방문_기록_값을_재전송해도_COLLECTION_ITEM_LINKED_TO_VISIT_이벤트는_다시_기록되지_않는다(
     make_user, make_event, make_visit, make_collection_item
 ):
     user = make_user()
@@ -195,7 +197,7 @@ def test_update_collection_item_resend_same_visit_record_does_not_record_linked_
 
 
 @pytest.mark.django_db
-def test_create_collection_item_with_is_wanted_records_marked_wanted(make_user):
+def test_원하는_항목으로_수집_항목을_생성하면_COLLECTION_ITEM_MARKED_WANTED_이벤트가_기록된다(make_user):
     user = make_user()
 
     create_collection_item(user=user, name="아크릴 스탠드", is_wanted=True)
@@ -206,7 +208,7 @@ def test_create_collection_item_with_is_wanted_records_marked_wanted(make_user):
 
 
 @pytest.mark.django_db
-def test_update_collection_item_is_wanted_transition_records_marked_wanted(
+def test_원하는_항목이_아니었던_수집_항목을_원하는_항목으로_전환하면_COLLECTION_ITEM_MARKED_WANTED_이벤트가_기록된다(
     make_user, make_collection_item
 ):
     user = make_user()
@@ -220,7 +222,7 @@ def test_update_collection_item_is_wanted_transition_records_marked_wanted(
 
 
 @pytest.mark.django_db
-def test_update_collection_item_unrelated_field_does_not_record_marked_wanted(
+def test_이미_원하는_항목인_수집_항목의_무관한_필드를_수정해도_COLLECTION_ITEM_MARKED_WANTED_이벤트는_다시_기록되지_않는다(
     make_user, make_collection_item
 ):
     user = make_user()
@@ -234,7 +236,7 @@ def test_update_collection_item_unrelated_field_does_not_record_marked_wanted(
 
 
 @pytest.mark.django_db
-def test_update_collection_item_resend_is_wanted_true_does_not_record_marked_wanted(
+def test_이미_True인_is_wanted_값을_재전송해도_COLLECTION_ITEM_MARKED_WANTED_이벤트는_다시_기록되지_않는다(
     make_user, make_collection_item
 ):
     user = make_user()
@@ -248,7 +250,7 @@ def test_update_collection_item_resend_is_wanted_true_does_not_record_marked_wan
 
 
 @pytest.mark.django_db
-def test_create_collection_item_with_tradeable_quantity_records_marked_tradeable(make_user):
+def test_교환_가능_수량과_함께_수집_항목을_생성하면_COLLECTION_ITEM_MARKED_TRADEABLE_이벤트가_기록된다(make_user):
     user = make_user()
 
     create_collection_item(user=user, name="아크릴 스탠드", quantity=2, tradeable_quantity=1)
@@ -259,7 +261,7 @@ def test_create_collection_item_with_tradeable_quantity_records_marked_tradeable
 
 
 @pytest.mark.django_db
-def test_update_collection_item_tradeable_quantity_transition_records_marked_tradeable(
+def test_교환_가능_수량이_0에서_양수로_전환되면_COLLECTION_ITEM_MARKED_TRADEABLE_이벤트가_기록된다(
     make_user, make_collection_item
 ):
     user = make_user()
@@ -273,7 +275,7 @@ def test_update_collection_item_tradeable_quantity_transition_records_marked_tra
 
 
 @pytest.mark.django_db
-def test_update_collection_item_unrelated_field_does_not_record_marked_tradeable(
+def test_이미_교환_가능한_수집_항목의_무관한_필드를_수정해도_COLLECTION_ITEM_MARKED_TRADEABLE_이벤트는_다시_기록되지_않는다(
     make_user, make_collection_item
 ):
     user = make_user()
@@ -287,7 +289,7 @@ def test_update_collection_item_unrelated_field_does_not_record_marked_tradeable
 
 
 @pytest.mark.django_db
-def test_update_collection_item_tradeable_quantity_positive_to_positive_does_not_record_marked_tradeable(
+def test_교환_가능_수량이_양수에서_양수로_바뀌면_경계_교차가_아니므로_COLLECTION_ITEM_MARKED_TRADEABLE_이벤트가_기록되지_않는다(
     make_user, make_collection_item
 ):
     user = make_user()
@@ -301,7 +303,7 @@ def test_update_collection_item_tradeable_quantity_positive_to_positive_does_not
 
 
 @pytest.mark.django_db
-def test_update_collection_item_resend_same_tradeable_quantity_does_not_record_marked_tradeable(
+def test_동일한_교환_가능_수량_값을_재전송해도_COLLECTION_ITEM_MARKED_TRADEABLE_이벤트는_다시_기록되지_않는다(
     make_user, make_collection_item
 ):
     user = make_user()
@@ -315,7 +317,7 @@ def test_update_collection_item_resend_same_tradeable_quantity_does_not_record_m
 
 
 @pytest.mark.django_db
-def test_update_collection_item_records_updated_and_marked_wanted_independently(
+def test_한_번의_수정_요청에서_메모_변경과_원하는_항목_전환이_함께_일어나면_두_이벤트가_각각_독립적으로_기록된다(
     make_user, make_collection_item
 ):
     user = make_user()
@@ -332,7 +334,7 @@ def test_update_collection_item_records_updated_and_marked_wanted_independently(
 
 
 @pytest.mark.django_db
-def test_create_collection_item_with_visit_record_and_is_wanted_records_all_three(
+def test_방문_기록_연결과_원하는_항목_설정을_함께_생성하면_세_분석_이벤트가_모두_기록된다(
     make_user, make_event, make_visit
 ):
     user = make_user()
@@ -353,7 +355,7 @@ def test_create_collection_item_with_visit_record_and_is_wanted_records_all_thre
 
 
 @pytest.mark.django_db
-def test_update_collection_item_new_visit_record_and_is_wanted_records_all_three(
+def test_방문_기록_연결과_원하는_항목_전환을_함께_수정하면_세_분석_이벤트가_모두_기록된다(
     make_user, make_collection_item, make_event, make_visit
 ):
     user = make_user()

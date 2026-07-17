@@ -8,9 +8,11 @@ import pytest
 from core.models import AnalyticsEvent
 from events.models import Event
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_event_list_without_q_records_event_list_viewed(client, make_event):
+def test_검색어_없이_행사_목록을_조회하면_목록_조회_이벤트가_기록된다(client, make_event):
     make_event(publish_status=Event.PublishStatus.PUBLISHED)
 
     client.get("/api/events/")
@@ -24,7 +26,7 @@ def test_event_list_without_q_records_event_list_viewed(client, make_event):
 
 
 @pytest.mark.django_db
-def test_event_list_with_q_records_event_searched_not_viewed(client, make_event):
+def test_검색어로_행사_목록을_조회하면_검색_이벤트만_기록되고_목록_조회_이벤트는_기록되지_않는다(client, make_event):
     make_event(title="Seoul popup event", publish_status=Event.PublishStatus.PUBLISHED)
 
     client.get("/api/events/", {"q": "popup"})
@@ -38,7 +40,7 @@ def test_event_list_with_q_records_event_searched_not_viewed(client, make_event)
 
 
 @pytest.mark.django_db
-def test_event_detail_success_records_event_detail_viewed(client, make_event):
+def test_행사_상세를_조회하면_상세_조회_이벤트가_기록된다(client, make_event):
     event = make_event(publish_status=Event.PublishStatus.PUBLISHED)
 
     client.get(f"/api/events/{event.id}/")
@@ -51,7 +53,7 @@ def test_event_detail_success_records_event_detail_viewed(client, make_event):
 
 
 @pytest.mark.django_db
-def test_event_detail_404_does_not_record_event_detail_viewed(client, make_event):
+def test_비공개_행사_상세_조회는_404이며_상세_조회_이벤트가_기록되지_않는다(client, make_event):
     event = make_event(publish_status=Event.PublishStatus.DRAFT)
 
     client.get(f"/api/events/{event.id}/")

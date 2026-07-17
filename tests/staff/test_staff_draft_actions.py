@@ -17,6 +17,8 @@ from drafts.models import EventDraft
 from events.models import Event
 from staff.models import StaffActionLog
 
+pytestmark = pytest.mark.web
+
 
 def draft_approve_url(draft_id):
     return reverse("staff:draft-approve", kwargs={"draft_id": draft_id})
@@ -31,7 +33,7 @@ def draft_reject_url(draft_id):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_staff_can_approve_pending_draft(staff_client, make_draft):
+def test_스태프는_대기중_드래프트를_승인할_수_있다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", extracted_title="Sample pending event")
 
@@ -41,7 +43,7 @@ def test_staff_can_approve_pending_draft(staff_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_anonymous_cannot_approve_draft(client, make_draft):
+def test_익명_사용자는_드래프트를_승인할_수_없다(client, make_draft):
     draft = make_draft("https://example.com/event")
 
     response = client.post(draft_approve_url(draft.id))
@@ -50,7 +52,7 @@ def test_anonymous_cannot_approve_draft(client, make_draft):
 
 
 @pytest.mark.django_db
-def test_non_staff_cannot_approve_draft(client, make_user, make_draft):
+def test_일반_사용자는_드래프트를_승인할_수_없다(client, make_user, make_draft):
     user = make_user()
     client.force_login(user)
     draft = make_draft("https://example.com/event")
@@ -61,7 +63,7 @@ def test_non_staff_cannot_approve_draft(client, make_user, make_draft):
 
 
 @pytest.mark.django_db
-def test_anonymous_cannot_reject_draft(client, make_draft):
+def test_익명_사용자는_드래프트를_반려할_수_없다(client, make_draft):
     """StaffDraftRejectView shares the approve view's IsAdminUser gate —
     same 403 (not a redirect) for an unauthenticated request."""
     draft = make_draft("https://example.com/event")
@@ -72,7 +74,7 @@ def test_anonymous_cannot_reject_draft(client, make_draft):
 
 
 @pytest.mark.django_db
-def test_non_staff_cannot_reject_draft(client, make_user, make_draft):
+def test_일반_사용자는_드래프트를_반려할_수_없다(client, make_user, make_draft):
     user = make_user()
     client.force_login(user)
     draft = make_draft("https://example.com/event")
@@ -87,7 +89,7 @@ def test_non_staff_cannot_reject_draft(client, make_user, make_draft):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_approve_publishes_event_and_writes_one_audit_log(staff_client, make_draft):
+def test_드래프트를_승인하면_이벤트가_게시되고_감사_로그가_한_건_남는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", source_name="Official", extracted_title="Popup event", extracted_category="popup_store", extracted_work_title="Oshi Work", extracted_location_name="Seoul Mall", extracted_region="seoul", extracted_start_date="2026-06-01", extracted_end_date="2026-06-10", extracted_summary="Limited popup")
 
@@ -138,7 +140,7 @@ def test_approve_publishes_event_and_writes_one_audit_log(staff_client, make_dra
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_reject_marks_draft_rejected_and_writes_one_audit_log(staff_client, make_draft):
+def test_드래프트를_반려하면_상태가_반려로_바뀌고_감사_로그가_한_건_남는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/rejected-event", extracted_title="Rejected event")
 
@@ -172,7 +174,7 @@ def test_reject_marks_draft_rejected_and_writes_one_audit_log(staff_client, make
 
 
 @pytest.mark.django_db
-def test_reject_stores_populated_rejection_reason(staff_client, make_draft):
+def test_반려_사유를_함께_보내면_드래프트에_반려_사유가_저장된다(staff_client, make_draft):
     """PR-D2 item 11: a non-empty rejection_reason in the request body is
     passed through to reject_draft and stored on the draft."""
     staff, client = staff_client()
@@ -196,7 +198,7 @@ def test_reject_stores_populated_rejection_reason(staff_client, make_draft):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_approve_rejects_duplicate_official_url_and_logs_nothing(staff_client, make_draft):
+def test_공식_url이_중복된_드래프트는_승인이_거부되고_로그도_남지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     Event.objects.create(
         title="Already published",
@@ -217,7 +219,7 @@ def test_approve_rejects_duplicate_official_url_and_logs_nothing(staff_client, m
 
 
 @pytest.mark.django_db
-def test_approve_rejects_missing_official_url_and_logs_nothing(staff_client, make_draft):
+def test_공식_url이_없는_드래프트는_승인이_거부되고_로그도_남지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("", extracted_title="No URL event")
 
@@ -232,7 +234,7 @@ def test_approve_rejects_missing_official_url_and_logs_nothing(staff_client, mak
 
 
 @pytest.mark.django_db
-def test_approved_draft_cannot_be_rejected_and_logs_nothing(staff_client, make_draft):
+def test_이미_승인된_드래프트는_반려할_수_없고_로그도_남지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.APPROVED)
 
@@ -247,7 +249,7 @@ def test_approved_draft_cannot_be_rejected_and_logs_nothing(staff_client, make_d
 
 
 @pytest.mark.django_db
-def test_rejected_draft_cannot_be_approved_and_logs_nothing(staff_client, make_draft):
+def test_이미_반려된_드래프트는_승인할_수_없고_로그도_남지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.REJECTED)
 
@@ -262,7 +264,7 @@ def test_rejected_draft_cannot_be_approved_and_logs_nothing(staff_client, make_d
 
 
 @pytest.mark.django_db
-def test_approved_draft_cannot_be_approved_again_and_logs_nothing(staff_client, make_draft):
+def test_이미_승인된_드래프트는_다시_승인할_수_없고_로그도_남지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.APPROVED)
 
@@ -276,7 +278,7 @@ def test_approved_draft_cannot_be_approved_again_and_logs_nothing(staff_client, 
 
 
 @pytest.mark.django_db
-def test_rejected_draft_cannot_be_rejected_again_and_logs_nothing(staff_client, make_draft):
+def test_이미_반려된_드래프트는_다시_반려할_수_없고_로그도_남지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.REJECTED)
 
@@ -290,7 +292,7 @@ def test_rejected_draft_cannot_be_rejected_again_and_logs_nothing(staff_client, 
 
 
 @pytest.mark.django_db
-def test_missing_draft_cannot_be_approved_and_logs_nothing(staff_client):
+def test_존재하지_않는_드래프트는_승인할_수_없고_로그도_남지_않는다(staff_client):
     staff, client = staff_client()
 
     response = client.post(draft_approve_url(999999))
@@ -300,7 +302,7 @@ def test_missing_draft_cannot_be_approved_and_logs_nothing(staff_client):
 
 
 @pytest.mark.django_db
-def test_missing_draft_cannot_be_rejected_and_logs_nothing(staff_client):
+def test_존재하지_않는_드래프트는_반려할_수_없고_로그도_남지_않는다(staff_client):
     staff, client = staff_client()
 
     response = client.post(draft_reject_url(999999))
@@ -310,7 +312,7 @@ def test_missing_draft_cannot_be_rejected_and_logs_nothing(staff_client):
 
 
 @pytest.mark.django_db
-def test_approve_rejects_blank_title_and_logs_nothing(staff_client, make_draft):
+def test_제목이_비어있는_드래프트는_승인이_거부되고_로그도_남지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/blank-title-draft")
 
@@ -327,7 +329,7 @@ def test_approve_rejects_blank_title_and_logs_nothing(staff_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_approve_rejects_title_equal_to_official_url_and_logs_nothing(staff_client, make_draft):
+def test_제목이_공식_url과_같은_드래프트는_승인이_거부되고_로그도_남지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/self-titled-draft", extracted_title="https://example.com/self-titled-draft")
 
@@ -344,7 +346,7 @@ def test_approve_rejects_title_equal_to_official_url_and_logs_nothing(staff_clie
 
 
 @pytest.mark.django_db
-def test_approve_returns_controlled_error_when_event_creation_fails_and_logs_nothing(staff_client, monkeypatch, make_draft):
+def test_이벤트_생성이_실패하면_승인은_제어된_오류로_응답하고_로그도_남지_않는다(staff_client, monkeypatch, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/event", extracted_title="Broken event")
 
@@ -370,7 +372,7 @@ def test_approve_returns_controlled_error_when_event_creation_fails_and_logs_not
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_approve_rolls_back_entirely_when_audit_log_write_fails(staff_client, monkeypatch, make_draft):
+def test_감사_로그_기록이_실패하면_승인_전체가_롤백된다(staff_client, monkeypatch, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/rollback-event", extracted_title="Rollback event")
 
@@ -396,7 +398,7 @@ def test_approve_rolls_back_entirely_when_audit_log_write_fails(staff_client, mo
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_old_draft_approve_reject_routes_are_not_supported(staff_client, make_draft):
+def test_예전_드래프트_승인_반려_api_경로는_더_이상_지원되지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/legacy-route")
 

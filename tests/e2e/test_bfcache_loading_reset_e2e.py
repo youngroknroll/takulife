@@ -27,7 +27,7 @@ def _dispatch_persisted_pageshow(page):
 
 
 class TestBfcachePageshowResetsLoadingButtons:
-    def test_is_loading_button_resets_but_server_disabled_button_is_untouched(
+    def test_bfcache_복원_시_JS로_로딩중_표시된_버튼은_초기화되고_서버가_비활성화한_버튼은_그대로_유지된다(
         self, live_server, page, seed, login
     ):
         login(page, live_server.url, "e2e_user@example.com", seed.password)

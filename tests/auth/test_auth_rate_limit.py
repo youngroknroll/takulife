@@ -2,8 +2,12 @@
 
 allauth ships ACCOUNT_RATE_LIMITS with sensible defaults already active; these
 tests lock that behavior in so a future settings change cannot silently disable
-brute-force / signup-flood protection. The autouse ``clear_cache`` fixture
-(tests/conftest.py) resets the cache-backed counters between tests.
+brute-force / signup-flood protection. allauth's rate-limit counters live in
+the shared DatabaseCache, and — like any cache write made inside a
+``@pytest.mark.django_db`` test — are rolled back with that test's own
+transaction (``clear_cache`` is no longer autouse; see tests/conftest.py's
+``clear_cache`` docstring), so this file does not need to request it
+explicitly.
 
 Two distinct enforcement shapes are exercised, matching allauth's design:
 - login_failed -> the login form refuses further authentication (even with the
@@ -14,6 +18,8 @@ Two distinct enforcement shapes are exercised, matching allauth's design:
 import pytest
 from django.test import override_settings
 
+pytestmark = pytest.mark.slow
+
 
 def _is_authenticated(client):
     """A protected page returns 200 when logged in, 302 (to login) otherwise."""
@@ -22,7 +28,7 @@ def _is_authenticated(client):
 
 @pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"login_failed": "2/m/key"})
-def test_failed_logins_block_further_attempts_even_with_correct_password(
+def test_로그인_실패_횟수가_한도를_초과하면_올바른_비밀번호로도_로그인이_차단된다(
     client, make_verified_user, valid_password
 ):
     """After the per-account failure window is exhausted, the login form refuses
@@ -51,7 +57,7 @@ def test_failed_logins_block_further_attempts_even_with_correct_password(
 
 @pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"signup": "2/m/ip"})
-def test_signup_is_rate_limited(client, valid_password):
+def test_회원가입_요청이_동일_ip에서_한도를_초과하면_429로_차단된다(client, valid_password):
     """Repeated signups from one IP are throttled with a 429 once exceeded."""
     for i in range(2):
         resp = client.post(
@@ -79,7 +85,7 @@ def test_signup_is_rate_limited(client, valid_password):
 
 @pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"reset_password": "2/m/ip"})
-def test_password_reset_request_is_rate_limited(client, make_verified_user):
+def test_비밀번호_재설정_요청이_동일_ip에서_한도를_초과하면_429로_차단된다(client, make_verified_user):
     """Repeated password-reset requests from one IP are throttled with a 429."""
     make_verified_user("reset@example.com")
 
@@ -95,7 +101,7 @@ def test_password_reset_request_is_rate_limited(client, make_verified_user):
 
 @pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"signup": "1/m/ip"})
-def test_rate_limited_response_renders_localized_page(client, valid_password):
+def test_요청이_한도를_초과해_차단되면_한글_429_페이지가_렌더링된다(client, valid_password):
     """The 429 is served through the project's Korean ``429.html`` template,
     not allauth's bare English fallback."""
     client.post(

@@ -10,7 +10,7 @@ pytestmark = pytest.mark.e2e
 
 
 class TestLoginRedirectLanding:
-    def test_login_without_next_lands_on_collection(self, live_server, page, seed):
+    def test_next_파라미터_없이_로그인하면_내_컬렉션으로_이동하고_컬렉션_탭이_활성화된다(self, live_server, page, seed):
         page.goto(f"{live_server.url}/accounts/login/")
         page.fill('input[name="login"]', seed.user.email)
         page.fill('input[name="password"]', seed.password)

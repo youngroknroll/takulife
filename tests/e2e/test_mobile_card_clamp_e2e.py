@@ -36,7 +36,7 @@ def _clamped_to_two_lines(page, selector):
 
 
 class TestEventListCardTitleClamp:
-    def test_long_title_clamps_to_two_lines(self, live_server, page, seed):
+    def test_행사_목록_카드에서_긴_제목은_두_줄로_클램프된다(self, live_server, page, seed):
         event = Event.objects.create(
             title=LONG_TITLE,
             publish_status=Event.PublishStatus.PUBLISHED,
@@ -49,7 +49,7 @@ class TestEventListCardTitleClamp:
 
 
 class TestArchiveStatusCardTitleClamp:
-    def test_long_title_clamps_to_two_lines_and_status_button_meets_min_height(
+    def test_나의_일정_카드에서_긴_제목은_두_줄로_클램프되고_상태_버튼은_최소_높이를_유지한다(
         self, live_server, page, seed, login
     ):
         event = Event.objects.create(

@@ -16,6 +16,8 @@ import pytest
 
 from archive.models import PersonalEntry
 
+pytestmark = pytest.mark.web
+
 
 def _make_official_visits(user, make_event, make_visit, count, *, category="popup_store", with_memo=False, date_prefix="2026-05"):
     for i in range(count):
@@ -38,7 +40,7 @@ def _make_unofficial_visits(user, make_entry, make_visit, count, *, category="�
 class TestUnofficialFilter:
     """filter=unofficial keeps only 비공식 (personal_entry) records."""
 
-    def test_first_page_five_unofficial(self, user_client, make_event, make_visit, make_entry):
+    def test_비공식_필터를_적용하면_첫_페이지에_다섯_건까지_표시된다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
         _make_unofficial_visits(user, make_entry, make_visit, 7)
         _make_official_visits(user, make_event, make_visit, 3)
@@ -50,7 +52,7 @@ class TestUnofficialFilter:
         assert page_obj.paginator.count == 7
         assert len(page_obj.object_list) == 5
 
-    def test_second_page_two_unofficial(self, user_client, make_event, make_visit, make_entry):
+    def test_비공식_필터_적용_중_두_번째_페이지를_조회하면_남은_두_건이_표시된다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
         _make_unofficial_visits(user, make_entry, make_visit, 7)
         _make_official_visits(user, make_event, make_visit, 3)
@@ -62,7 +64,7 @@ class TestUnofficialFilter:
         assert page_obj.number == 2
         assert len(page_obj.object_list) == 2
 
-    def test_no_official_rows_leak_through_filter(self, user_client, make_event, make_visit, make_entry):
+    def test_비공식_필터를_적용하면_공식_행사_방문_기록은_포함되지_않는다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
         _make_unofficial_visits(user, make_entry, make_visit, 3)
         _make_official_visits(user, make_event, make_visit, 2)
@@ -73,7 +75,7 @@ class TestUnofficialFilter:
         for row in visit_rows:
             assert row["subject"]["is_official"] is False
 
-    def test_summary_counts_reflect_total_all_records(self, user_client, make_event, make_visit, make_entry):
+    def test_비공식_필터가_적용되어도_요약_건수는_전체_기록_기준으로_집계된다(self, user_client, make_event, make_visit, make_entry):
         """total_count and memo_count always count ALL records, not just filtered."""
         user, client = user_client()
         _make_unofficial_visits(user, make_entry, make_visit, 7, with_memo=True)
@@ -84,14 +86,14 @@ class TestUnofficialFilter:
         assert resp.context["total_count"] == 10
         assert resp.context["memo_count"] == 10
 
-    def test_selected_filter_in_context(self, user_client):
+    def test_비공식_필터로_조회하면_선택된_필터_값이_unofficial로_표시된다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/visits/?filter=unofficial")
 
         assert resp.context["selected_filter"] == "unofficial"
 
-    def test_no_filter_selected_filter_is_empty_string(self, user_client):
+    def test_필터_없이_조회하면_선택된_필터_값이_빈_문자열이다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/visits/")
@@ -108,7 +110,7 @@ class TestUnofficialFilter:
 class TestCategoryFilter:
     """filter=cat:<label> OR-matches official (by code) and unofficial (by label)."""
 
-    def test_cat_filter_matches_official_and_unofficial(self, user_client, make_event, make_visit, make_entry):
+    def test_카테고리_필터는_같은_라벨의_공식_행사와_비공식_기록을_모두_포함한다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
         # 2 official events with popup_store → CATEGORY_LABELS["popup_store"] = "팝업스토어"
         _make_official_visits(user, make_event, make_visit, 2, category="popup_store")
@@ -123,7 +125,7 @@ class TestCategoryFilter:
         assert resp.status_code == 200
         assert resp.context["page_obj"].paginator.count == 4
 
-    def test_cat_filter_excludes_non_matching_records(self, user_client, make_event, make_visit):
+    def test_카테고리_필터를_적용하면_다른_카테고리_기록은_제외된다(self, user_client, make_event, make_visit):
         user, client = user_client()
         _make_official_visits(user, make_event, make_visit, 3, category="popup_store")
         other_ev = make_event(title="콜라보", category="collaboration_cafe")
@@ -136,7 +138,7 @@ class TestCategoryFilter:
             label = row["subject"]["category_label"]
             assert label == "팝업스토어"
 
-    def test_cat_filter_selected_filter_in_context(self, user_client, make_event, make_visit):
+    def test_카테고리_필터로_조회하면_선택된_필터_값이_cat_라벨로_표시된다(self, user_client, make_event, make_visit):
         user, client = user_client()
         ev = make_event(title="팝업 행사", category="popup_store")
         make_visit(user, event=ev, visited_on="2026-06-01")
@@ -155,7 +157,7 @@ class TestCategoryFilter:
 class TestBadFilterFallback:
     """Unrecognised filter values never raise 500 and silently fall back."""
 
-    def test_unknown_filter_slug_falls_back_to_all(self, user_client, make_event, make_visit):
+    def test_알_수_없는_필터_값으로_조회하면_필터_없이_전체가_표시된다(self, user_client, make_event, make_visit):
         user, client = user_client()
         _make_official_visits(user, make_event, make_visit, 3)
 
@@ -165,7 +167,7 @@ class TestBadFilterFallback:
         assert resp.context["selected_filter"] == ""
         assert resp.context["page_obj"].paginator.count == 3
 
-    def test_cat_with_empty_label_falls_back(self, user_client, make_event, make_visit):
+    def test_카테고리_라벨_없이_cat_필터를_적용하면_필터가_무시된다(self, user_client, make_event, make_visit):
         user, client = user_client()
         _make_official_visits(user, make_event, make_visit, 2)
 
@@ -175,7 +177,7 @@ class TestBadFilterFallback:
         assert resp.context["selected_filter"] == ""
         assert resp.context["page_obj"].paginator.count == 2
 
-    def test_cat_with_unlisted_label_falls_back(self, user_client, make_event, make_visit):
+    def test_존재하지_않는_카테고리_라벨로_필터링하면_필터가_무시된다(self, user_client, make_event, make_visit):
         """A cat: label not in the whitelist derived from user's own data falls back."""
         user, client = user_client()
         ev = make_event(title="팝업", category="popup_store")
@@ -197,7 +199,7 @@ class TestBadFilterFallback:
 class TestCategoriesFromFullData:
     """categories chip list and has_unofficial must reflect ALL records."""
 
-    def test_category_from_page2_still_appears_in_chip_list(self, user_client, make_event, make_visit):
+    def test_두_번째_페이지에만_있는_카테고리도_카테고리_목록에_표시된다(self, user_client, make_event, make_visit):
         user, client = user_client()
         # 5 popup records (newer) — fill page 1
         for i in range(5):
@@ -213,7 +215,7 @@ class TestCategoriesFromFullData:
         assert "팝업스토어" in categories
         assert "콜라보 카페" in categories  # would be missing under old per-page logic
 
-    def test_has_unofficial_true_even_when_unofficial_on_page2(self, user_client, make_event, make_visit, make_entry):
+    def test_비공식_기록이_두_번째_페이지에_있어도_비공식_보유_여부는_참으로_표시된다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
         # 5 official records (newer) → fill page 1
         for i in range(5):
@@ -227,7 +229,7 @@ class TestCategoriesFromFullData:
 
         assert resp.context["has_unofficial"] is True
 
-    def test_has_official_reflects_full_data(self, user_client, make_event, make_visit):
+    def test_공식_행사_방문_기록이_있으면_공식_보유_여부가_참으로_표시된다(self, user_client, make_event, make_visit):
         user, client = user_client()
         ev = make_event(title="공식 행사")
         make_visit(user, event=ev, visited_on="2026-06-01")
@@ -236,7 +238,7 @@ class TestCategoriesFromFullData:
 
         assert resp.context["has_official"] is True
 
-    def test_has_official_false_when_only_unofficial(self, user_client, make_visit, make_entry):
+    def test_비공식_기록만_있으면_공식_보유_여부가_거짓으로_표시된다(self, user_client, make_visit, make_entry):
         user, client = user_client()
         entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="비공식")
         make_visit(user, personal_entry=entry, visited_on="2026-06-01")
@@ -255,7 +257,7 @@ class TestCategoriesFromFullData:
 class TestVisitsPagerQuery:
     """pager_query carries filter and q params so paging never drops them."""
 
-    def test_pager_preserves_unofficial_filter(self, user_client, make_visit, make_entry):
+    def test_비공식_필터_적용_중_페이지네이션_링크에_필터_값이_유지된다(self, user_client, make_visit, make_entry):
         user, client = user_client()
         _make_unofficial_visits(user, make_entry, make_visit, 7)  # 2 pages
 
@@ -265,7 +267,7 @@ class TestVisitsPagerQuery:
         assert "filter=unofficial" in pager_query
         assert b"page=2" in resp.content  # pager renders a page-2 link
 
-    def test_pager_preserves_filter_and_q_together(self, user_client, make_visit, make_entry):
+    def test_필터와_검색어를_함께_적용하면_페이지네이션_링크에_둘_다_유지된다(self, user_client, make_visit, make_entry):
         user, client = user_client()
         _make_unofficial_visits(user, make_entry, make_visit, 7)
 
@@ -276,14 +278,14 @@ class TestVisitsPagerQuery:
         assert "filter=unofficial" in pager_query
         assert "q=abc" in pager_query
 
-    def test_pager_query_empty_when_no_filter_no_q(self, user_client):
+    def test_필터와_검색어가_모두_없으면_페이지네이션_쿼리는_비어있다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/visits/")
 
         assert resp.context["pager_query"] == ""
 
-    def test_pager_query_only_q_when_no_filter(self, user_client, make_visit, make_entry):
+    def test_검색어만_있으면_페이지네이션_쿼리에_검색어만_포함된다(self, user_client, make_visit, make_entry):
         user, client = user_client()
         _make_unofficial_visits(user, make_entry, make_visit, 7)
 

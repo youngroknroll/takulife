@@ -16,8 +16,9 @@ from archive.models import EventInterest, PersonalEntry, UserEventStatus
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_interest_accepts_personal_entry_subject(make_user):
+def test_개인항목을_주체로_찜을_생성하면_이벤트는_없음으로_저장된다(make_user):
     user = make_user(username="ei-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
@@ -27,8 +28,9 @@ def test_interest_accepts_personal_entry_subject(make_user):
     assert interest.personal_entry == entry
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_interest_rejects_both_subjects(make_user, make_event):
+def test_이벤트와_개인항목을_동시에_지정해_찜을_생성하면_무결성_오류가_발생한다(make_user, make_event):
     user = make_user(username="ei-both")
     event = make_event(title="Official")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
@@ -38,8 +40,9 @@ def test_interest_rejects_both_subjects(make_user, make_event):
             EventInterest.objects.create(user=user, event=event, personal_entry=entry)
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_interest_rejects_no_subject(make_user):
+def test_주체를_지정하지_않고_찜을_생성하면_무결성_오류가_발생한다(make_user):
     user = make_user(username="ei-none")
 
     with pytest.raises(IntegrityError):
@@ -47,8 +50,9 @@ def test_interest_rejects_no_subject(make_user):
             EventInterest.objects.create(user=user)
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_interest_event_subject_still_unique_per_user(make_user, make_event):
+def test_같은_이벤트에_대한_찜을_중복_생성하면_무결성_오류가_발생한다(make_user, make_event):
     user = make_user(username="ei-ev-unique")
     event = make_event(title="E")
 
@@ -58,8 +62,9 @@ def test_interest_event_subject_still_unique_per_user(make_user, make_event):
             EventInterest.objects.create(user=user, event=event)
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_interest_personal_subject_unique_per_user(make_user):
+def test_같은_개인항목에_대한_찜을_중복_생성하면_무결성_오류가_발생한다(make_user):
     user = make_user(username="ei-pe-unique")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
 
@@ -74,8 +79,9 @@ def test_interest_personal_subject_unique_per_user(make_user):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_status_accepts_personal_entry_subject(make_user):
+def test_개인항목을_주체로_상태를_생성하면_이벤트는_없음으로_저장된다(make_user):
     user = make_user(username="ues-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
@@ -87,8 +93,9 @@ def test_status_accepts_personal_entry_subject(make_user):
     assert status.personal_entry == entry
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_status_rejects_both_subjects(make_user, make_event):
+def test_이벤트와_개인항목을_동시에_지정해_상태를_생성하면_무결성_오류가_발생한다(make_user, make_event):
     user = make_user(username="ues-both")
     event = make_event(title="Official")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
@@ -100,8 +107,9 @@ def test_status_rejects_both_subjects(make_user, make_event):
             )
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_status_rejects_no_subject(make_user):
+def test_주체를_지정하지_않고_상태를_생성하면_무결성_오류가_발생한다(make_user):
     user = make_user(username="ues-none")
 
     with pytest.raises(IntegrityError):
@@ -109,8 +117,9 @@ def test_status_rejects_no_subject(make_user):
             UserEventStatus.objects.create(user=user, status="planned")
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_status_event_subject_still_unique_per_user(make_user, make_event):
+def test_같은_이벤트에_대한_상태를_중복_생성하면_무결성_오류가_발생한다(make_user, make_event):
     user = make_user(username="ues-ev-unique")
     event = make_event(title="E")
 
@@ -120,8 +129,9 @@ def test_status_event_subject_still_unique_per_user(make_user, make_event):
             UserEventStatus.objects.create(user=user, event=event, status="visited")
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_status_personal_subject_unique_per_user(make_user):
+def test_같은_개인항목에_대한_상태를_중복_생성하면_무결성_오류가_발생한다(make_user):
     user = make_user(username="ues-pe-unique")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
 
@@ -138,8 +148,9 @@ def test_status_personal_subject_unique_per_user(make_user):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_interest_with_personal_entry(client, make_user):
+def test_개인항목_id로_찜_생성을_요청하면_201과_함께_이벤트는_없음으로_응답된다(client, make_user):
     user = make_user(username="ei-api-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 카페")
 
@@ -156,8 +167,9 @@ def test_api_create_interest_with_personal_entry(client, make_user):
     assert data["event"] is None
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_interest_with_event_still_works(client, make_user, make_event):
+def test_이벤트_id로_찜_생성을_요청하면_기존과_동일하게_201로_응답된다(client, make_user, make_event):
     user = make_user(username="ei-api-ev")
     event = make_event(title="Official event")
 
@@ -172,8 +184,9 @@ def test_api_create_interest_with_event_still_works(client, make_user, make_even
     assert response.json()["event"] == event.id
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_interest_requires_exactly_one_subject(client, make_user):
+def test_주체를_지정하지_않고_찜_생성을_요청하면_400으로_거부된다(client, make_user):
     user = make_user(username="ei-api-none")
 
     client.force_login(user)
@@ -186,8 +199,9 @@ def test_api_create_interest_requires_exactly_one_subject(client, make_user):
     assert response.status_code == 400
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_interest_cannot_attach_another_users_personal_entry(client, make_user):
+def test_타인_소유_개인항목으로_찜_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
     user = make_user(username="ei-api-scope")
     other = make_user(username="ei-api-scope-other")
     theirs = PersonalEntry.objects.create(user=other, kind="place", title="Theirs")
@@ -203,8 +217,9 @@ def test_api_interest_cannot_attach_another_users_personal_entry(client, make_us
     assert not EventInterest.objects.filter(personal_entry=theirs).exists()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_interest_duplicate_personal_entry_returns_409(client, make_user):
+def test_이미_찜한_개인항목에_다시_찜_생성을_요청하면_409로_거부된다(client, make_user):
     user = make_user(username="ei-api-dup")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
 
@@ -228,8 +243,9 @@ def test_api_interest_duplicate_personal_entry_returns_409(client, make_user):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_status_with_personal_entry(client, make_user):
+def test_개인항목_id로_상태_생성을_요청하면_201과_함께_이벤트는_없음으로_응답된다(client, make_user):
     user = make_user(username="ues-api-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
@@ -247,8 +263,9 @@ def test_api_create_status_with_personal_entry(client, make_user):
     assert data["status"] == "planned"
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_status_with_event_still_works(client, make_user, make_event):
+def test_이벤트_id로_상태_생성을_요청하면_기존과_동일하게_201로_응답된다(client, make_user, make_event):
     user = make_user(username="ues-api-ev")
     event = make_event(title="Official event")
 
@@ -263,8 +280,9 @@ def test_api_create_status_with_event_still_works(client, make_user, make_event)
     assert response.json()["event"] == event.id
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_status_requires_exactly_one_subject(client, make_user):
+def test_주체를_지정하지_않고_상태_생성을_요청하면_400으로_거부된다(client, make_user):
     user = make_user(username="ues-api-none")
 
     client.force_login(user)
@@ -277,8 +295,9 @@ def test_api_create_status_requires_exactly_one_subject(client, make_user):
     assert response.status_code == 400
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_status_cannot_attach_another_users_personal_entry(client, make_user):
+def test_타인_소유_개인항목으로_상태_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
     user = make_user(username="ues-api-scope")
     other = make_user(username="ues-api-scope-other")
     theirs = PersonalEntry.objects.create(user=other, kind="place", title="Theirs")
@@ -294,8 +313,9 @@ def test_api_status_cannot_attach_another_users_personal_entry(client, make_user
     assert not UserEventStatus.objects.filter(personal_entry=theirs).exists()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_interest_rejects_goods_personal_entry(client, make_user):
+def test_굿즈_kind_개인항목으로_찜_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
     """GOODS is no longer a valid archive-action subject (collection domain
     plan §3-3) — only PLACE personal entries may be favourited."""
     user = make_user(username="ei-api-goods")
@@ -312,8 +332,9 @@ def test_api_interest_rejects_goods_personal_entry(client, make_user):
     assert not EventInterest.objects.filter(personal_entry=entry).exists()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_status_duplicate_personal_entry_returns_409(client, make_user):
+def test_이미_상태가_있는_개인항목에_다시_상태_생성을_요청하면_409로_거부된다(client, make_user):
     user = make_user(username="ues-api-dup")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
 
@@ -332,8 +353,9 @@ def test_api_status_duplicate_personal_entry_returns_409(client, make_user):
     assert response.status_code == 409
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_status_rejects_goods_personal_entry_subject(client, make_user):
+def test_굿즈_kind_개인항목으로_상태_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
     """GOODS is no longer a valid archive-action subject (collection domain
     plan §3-3) — only PLACE personal entries may carry a status."""
     user = make_user(username="ues-api-goods")

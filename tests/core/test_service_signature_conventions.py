@@ -44,8 +44,15 @@ def _non_keyword_only_param_names(fn):
     ]
 
 
-@pytest.mark.parametrize("module_name", SERVICE_MODULES)
-def test_public_service_functions_are_keyword_only(module_name):
+pytestmark = pytest.mark.contract
+
+
+@pytest.mark.parametrize(
+    "module_name",
+    SERVICE_MODULES,
+    ids=["events_서비스", "archive_서비스", "drafts_서비스", "staff_서비스", "core_promotion"],
+)
+def test_공개_서비스_함수는_키워드_전용_인자만_받는다(module_name):
     violations = {
         f"{module_name}.{name}": bad_params
         for name, fn in _public_module_level_functions(module_name)

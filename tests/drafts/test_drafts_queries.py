@@ -16,6 +16,8 @@ import pytest
 
 from drafts.models import DraftSource, EventDraft
 
+pytestmark = pytest.mark.domain
+
 
 # ---------------------------------------------------------------------------
 # draft_review_stats() unit tests (moved from tests/drafts/test_drafts_stats.py)
@@ -24,7 +26,7 @@ from drafts.models import DraftSource, EventDraft
 
 @pytest.mark.django_db
 class TestDraftReviewStats:
-    def test_all_three_keys_present_when_no_drafts(self):
+    def test_드래프트가_없으면_세_상태_카운트가_모두_0으로_반환된다(self):
         from drafts.queries import draft_review_stats
 
         result = draft_review_stats()
@@ -34,7 +36,7 @@ class TestDraftReviewStats:
         assert result["approved"] == 0
         assert result["rejected"] == 0
 
-    def test_counts_match_review_status_distribution(self, make_draft):
+    def test_드래프트_상태별_개수가_실제_분포와_일치한다(self, make_draft):
         from drafts.queries import draft_review_stats
 
         make_draft("https://example.com/a")
@@ -48,7 +50,7 @@ class TestDraftReviewStats:
         assert result["approved"] == 1
         assert result["rejected"] == 1
 
-    def test_all_three_keys_present_when_only_pending_exist(self, make_draft):
+    def test_pending_드래프트만_있어도_세_키가_모두_포함된다(self, make_draft):
         from drafts.queries import draft_review_stats
 
         make_draft("https://example.com/only-pending")
@@ -59,7 +61,7 @@ class TestDraftReviewStats:
         assert result["approved"] == 0
         assert result["rejected"] == 0
 
-    def test_all_keys_present_when_only_approved_exist(self, make_draft):
+    def test_approved_드래프트만_있어도_세_키가_모두_포함된다(self, make_draft):
         from drafts.queries import draft_review_stats
 
         make_draft("https://example.com/only-approved", review_status=EventDraft.ReviewStatus.APPROVED)
@@ -73,7 +75,7 @@ class TestDraftReviewStats:
 
 @pytest.mark.django_db
 class TestListDrafts:
-    def test_no_status_filter_returns_all_drafts_ordered_by_id_desc(self, make_draft):
+    def test_상태_필터_없이_조회하면_전체_드래프트를_최신순으로_반환한다(self, make_draft):
         from drafts.queries import list_drafts
 
         first = make_draft("https://example.com/1")
@@ -84,7 +86,7 @@ class TestListDrafts:
 
         assert result == [third, second, first]
 
-    def test_pending_filter_excludes_approved_and_rejected(self, make_draft):
+    def test_pending_필터는_승인_거절된_드래프트를_제외한다(self, make_draft):
         from drafts.queries import list_drafts
 
         pending = make_draft("https://example.com/pending")
@@ -95,7 +97,7 @@ class TestListDrafts:
 
         assert result == [pending]
 
-    def test_filter_result_still_ordered_by_id_desc(self, make_draft):
+    def test_필터링된_결과도_최신순_정렬을_유지한다(self, make_draft):
         from drafts.queries import list_drafts
 
         older = make_draft("https://example.com/older-pending")
@@ -106,7 +108,7 @@ class TestListDrafts:
 
         assert result == [newer, older]
 
-    def test_unknown_status_returns_empty_queryset(self, make_draft):
+    def test_존재하지_않는_상태값으로_조회하면_빈_목록을_반환한다(self, make_draft):
         from drafts.queries import list_drafts
 
         make_draft("https://example.com/only-pending")
@@ -115,7 +117,7 @@ class TestListDrafts:
 
         assert result == []
 
-    def test_status_filter_counts_are_reliable_with_multiple_records(self, make_draft):
+    def test_각_상태_필터의_개수가_레코드가_여러_건이어도_정확히_집계된다(self, make_draft):
         from drafts.queries import list_drafts
 
         for i in range(2):
@@ -130,7 +132,7 @@ class TestListDrafts:
         assert list_drafts(status=EventDraft.ReviewStatus.REJECTED).count() == 2
 
 
-def test_draft_listing_page_size_constant_is_10():
+def test_드래프트_목록_페이지_크기_상수는_10이다():
     from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
     assert DRAFT_LISTING_PAGE_SIZE == 10
@@ -138,7 +140,7 @@ def test_draft_listing_page_size_constant_is_10():
 
 @pytest.mark.django_db
 class TestListDraftSources:
-    def test_orders_enabled_sources_before_disabled(self):
+    def test_활성화된_소스가_비활성_소스보다_먼저_정렬된다(self):
         from drafts.queries import list_draft_sources
 
         disabled = DraftSource.objects.create(
@@ -158,7 +160,7 @@ class TestListDraftSources:
 
         assert result == [enabled, disabled]
 
-    def test_orders_by_name_within_same_enabled_state(self):
+    def test_같은_활성_상태_내에서는_이름순으로_정렬된다(self):
         from drafts.queries import list_draft_sources
 
         zeta = DraftSource.objects.create(
@@ -178,7 +180,7 @@ class TestListDraftSources:
 
         assert result == [alpha, zeta]
 
-    def test_returns_empty_when_no_sources_exist(self):
+    def test_소스가_없으면_빈_목록을_반환한다(self):
         from drafts.queries import list_draft_sources
 
         result = list(list_draft_sources())
@@ -188,12 +190,12 @@ class TestListDraftSources:
 
 @pytest.mark.django_db
 class TestEnabledDraftSourcesExist:
-    def test_returns_false_when_no_sources_exist(self):
+    def test_소스가_없으면_활성_소스_존재_여부가_거짓이다(self):
         from drafts.queries import enabled_draft_sources_exist
 
         assert enabled_draft_sources_exist() is False
 
-    def test_returns_false_when_only_disabled_sources_exist(self):
+    def test_비활성_소스만_있으면_활성_소스_존재_여부가_거짓이다(self):
         from drafts.queries import enabled_draft_sources_exist
 
         DraftSource.objects.create(
@@ -205,7 +207,7 @@ class TestEnabledDraftSourcesExist:
 
         assert enabled_draft_sources_exist() is False
 
-    def test_returns_true_when_an_enabled_source_exists(self):
+    def test_활성_소스가_하나라도_있으면_존재_여부가_참이다(self):
         from drafts.queries import enabled_draft_sources_exist
 
         DraftSource.objects.create(

@@ -25,9 +25,11 @@ from drafts.services import (
 from drafts.url_safety import UnsafeFetchUrlError, validate_fetch_url
 from events.models import Event
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
-def test_approve_draft_creates_published_event_and_marks_draft_approved(make_user, make_draft):
+def test_드래프트를_승인하면_게시된_행사가_생성되고_드래프트가_승인_상태가_된다(make_user, make_draft):
     actor = make_user()
     draft = make_draft("https://example.com/event", source_name="Official", extracted_title="Popup event", extracted_category="popup_store", extracted_region="seoul")
 
@@ -48,7 +50,7 @@ def test_approve_draft_creates_published_event_and_marks_draft_approved(make_use
 
 
 @pytest.mark.django_db
-def test_reject_draft_marks_draft_rejected_without_creating_event(make_user, make_draft):
+def test_드래프트를_거절하면_행사_생성_없이_거절_상태가_된다(make_user, make_draft):
     actor = make_user()
     draft = make_draft("https://example.com/rejected-event", extracted_title="Rejected event")
 
@@ -66,7 +68,7 @@ def test_reject_draft_marks_draft_rejected_without_creating_event(make_user, mak
 
 
 @pytest.mark.django_db
-def test_reject_draft_records_rejection_reason(make_user, make_draft):
+def test_드래프트_거절_시_거절_사유를_기록한다(make_user, make_draft):
     actor = make_user()
     draft = make_draft("https://example.com/rejected-with-reason")
 
@@ -77,7 +79,7 @@ def test_reject_draft_records_rejection_reason(make_user, make_draft):
 
 
 @pytest.mark.django_db
-def test_approve_draft_attribution_survives_approve_then_publish(make_user, make_draft):
+def test_드래프트_승인_후_게시까지_승인자_귀속_정보가_유지된다(make_user, make_draft):
     actor = make_user()
     draft = make_draft("https://example.com/attributed-event", extracted_title="Attributed event")
 
@@ -90,7 +92,7 @@ def test_approve_draft_attribution_survives_approve_then_publish(make_user, make
 
 
 @pytest.mark.django_db
-def test_approve_draft_with_inverted_period_raises_and_stays_pending(make_user, make_draft):
+def test_시작일이_종료일보다_늦으면_승인이_거부되고_대기_상태를_유지한다(make_user, make_draft):
     actor = make_user()
     draft = make_draft("https://example.com/inverted-period", extracted_title="Inverted period event", extracted_start_date=datetime.date(2026, 8, 10), extracted_end_date=datetime.date(2026, 8, 1))
 
@@ -103,7 +105,7 @@ def test_approve_draft_with_inverted_period_raises_and_stays_pending(make_user, 
 
 
 @pytest.mark.django_db
-def test_approve_draft_rejects_blank_title_and_stays_pending(make_user, make_draft):
+def test_제목이_비어있으면_승인이_거부되고_대기_상태를_유지한다(make_user, make_draft):
     actor = make_user()
     draft = make_draft("https://example.com/blank-title-draft")
 
@@ -118,7 +120,7 @@ def test_approve_draft_rejects_blank_title_and_stays_pending(make_user, make_dra
 
 
 @pytest.mark.django_db
-def test_approve_draft_rejects_title_equal_to_official_url_and_stays_pending(make_user, make_draft):
+def test_제목이_원본_URL과_같으면_승인이_거부되고_대기_상태를_유지한다(make_user, make_draft):
     actor = make_user()
     draft = make_draft("https://example.com/self-titled-draft", extracted_title="https://example.com/self-titled-draft")
 
@@ -133,7 +135,7 @@ def test_approve_draft_rejects_title_equal_to_official_url_and_stays_pending(mak
 
 
 @pytest.mark.django_db
-def test_update_draft_updates_pending_draft_fields(make_draft):
+def test_대기_상태_드래프트는_필드_수정이_반영된다(make_draft):
     draft = make_draft("https://example.com/event")
 
     updated = update_draft(draft_id=draft.id, updates={"extracted_title": "Updated title", "extracted_region": "seoul"})
@@ -145,7 +147,7 @@ def test_update_draft_updates_pending_draft_fields(make_draft):
 
 
 @pytest.mark.django_db
-def test_update_draft_rejects_non_pending_state(make_draft):
+def test_대기_상태가_아닌_드래프트는_수정할_수_없다(make_draft):
     draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.APPROVED)
 
     with pytest.raises(DraftStateError):
@@ -153,7 +155,7 @@ def test_update_draft_rejects_non_pending_state(make_draft):
 
 
 @pytest.mark.django_db
-def test_create_draft_from_url_fetches_and_extracts(monkeypatch):
+def test_URL로_드래프트를_생성하면_페이지를_가져와_필드를_추출한다(monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Sample Event</title></html>")
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
@@ -176,7 +178,7 @@ def test_create_draft_from_url_fetches_and_extracts(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_create_draft_from_url_raises_when_extraction_empty(monkeypatch):
+def test_추출_결과가_비어있으면_드래프트_생성이_실패한다(monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html></html>")
     monkeypatch.setattr("drafts.services.extract_event_fields", lambda html: {"raw_title": "", "raw_text": ""})
 
@@ -185,7 +187,7 @@ def test_create_draft_from_url_raises_when_extraction_empty(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_create_draft_from_url_rejects_unsafe_redirect_target(monkeypatch):
+def test_리다이렉트_대상이_비공개_IP면_드래프트_생성이_거부된다(monkeypatch):
     client_class = httpx.Client
 
     def handler(request):
@@ -204,7 +206,7 @@ def test_create_draft_from_url_rejects_unsafe_redirect_target(monkeypatch):
         create_draft_from_url(source_url="https://example.com/event")
 
 
-def test_validate_fetch_url_rejects_hostname_resolving_to_loopback():
+def test_호스트명이_루프백_주소로_해석되면_URL_검증이_거부한다():
     def resolve_loopback(_hostname, _port, type):
         return [(2, type, 6, "", ("127.0.0.1", 0))]
 
@@ -212,7 +214,7 @@ def test_validate_fetch_url_rejects_hostname_resolving_to_loopback():
         validate_fetch_url("https://public.example/event", resolver=resolve_loopback)
 
 
-def test_create_draft_from_url_rejects_oversized_response_before_full_read(monkeypatch):
+def test_응답_크기가_초과되면_스트림을_끝까지_읽지_않고_즉시_거부한다(monkeypatch):
     chunks_read = 0
     client_class = httpx.Client
 
@@ -243,7 +245,7 @@ def test_create_draft_from_url_rejects_oversized_response_before_full_read(monke
 
 
 @pytest.mark.django_db
-def test_create_draft_from_url_maps_duplicate_create_race(monkeypatch):
+def test_동시_생성으로_인한_무결성_오류는_중복_드래프트_오류로_변환된다(monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<title>Event</title>")
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
@@ -260,7 +262,7 @@ def test_create_draft_from_url_maps_duplicate_create_race(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_create_draft_from_url_wraps_duplicate_create_in_savepoint(monkeypatch):
+def test_URL_드래프트_생성의_중복_처리는_세이브포인트_안에서_실행된다(monkeypatch):
     """The EventDraft.objects.create() call must run inside its own nested
     atomic block (a savepoint), so that when it is invoked from within an
     outer transaction.atomic() (e.g. core.promotion.promote_personal_entry),
@@ -287,7 +289,7 @@ def test_create_draft_from_url_wraps_duplicate_create_in_savepoint(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_create_draft_from_fields_wraps_duplicate_create_in_savepoint(monkeypatch):
+def test_직접_등록_드래프트_생성의_중복_처리도_세이브포인트_안에서_실행된다(monkeypatch):
     """Same savepoint guarantee as create_draft_from_url, for the direct
     (no-fetch) creation path used by core.promotion.promote_personal_entry,
     which calls this function from inside its own outer transaction.atomic()."""
@@ -306,7 +308,7 @@ def test_create_draft_from_fields_wraps_duplicate_create_in_savepoint(monkeypatc
 
 
 @pytest.mark.django_db
-def test_update_draft_rejects_immutable_fields_even_without_serializer(make_draft):
+def test_불변_필드는_서비스_계층에서도_직접_수정이_거부된다(make_draft):
     draft = make_draft("https://example.com/event")
 
     with pytest.raises(DraftImmutableFieldError):
@@ -321,7 +323,7 @@ def test_update_draft_rejects_immutable_fields_even_without_serializer(make_draf
 
 
 @pytest.mark.django_db
-def test_create_draft_from_fields_makes_pending_draft():
+def test_필드_직접_입력으로_드래프트를_생성하면_대기_상태로_생성된다():
     draft = create_draft_from_fields(
         source_url="https://official.example.com/popup",
         title="공식 팝업",
@@ -337,7 +339,7 @@ def test_create_draft_from_fields_makes_pending_draft():
 
 
 @pytest.mark.django_db
-def test_create_draft_from_fields_duplicate_url_raises():
+def test_같은_URL로_직접_등록을_두_번_하면_중복_오류가_발생한다():
     create_draft_from_fields(source_url="https://dup.example.com/a", title="A")
     with pytest.raises(DraftCreationDuplicateError):
         create_draft_from_fields(source_url="https://dup.example.com/a", title="B")

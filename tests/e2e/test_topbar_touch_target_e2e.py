@@ -30,8 +30,12 @@ def _nav_is_single_line(page):
 
 
 class TestTopbarNavLinkTouchTarget:
-    @pytest.mark.parametrize("width", [320, 375, 768])
-    def test_nav_links_meet_min_height_and_stay_single_line(
+    @pytest.mark.parametrize(
+        "width",
+        [320, 375, 768],
+        ids=["너비_320px", "너비_375px", "너비_768px"],
+    )
+    def test_뷰포트_너비에서도_네비게이션_링크가_44px_이상이고_한_줄을_유지한다(
         self, live_server, page, seed, width
     ):
         page.set_viewport_size({"width": width, "height": 900})
@@ -47,7 +51,9 @@ class TestTopbarNavLinkTouchTarget:
 
 
 class TestAccountMenuTouchTarget:
-    def test_account_menu_toggle_meets_min_height(self, live_server, page, seed, login):
+    def test_계정_메뉴_토글은_44px_이상의_터치_영역을_갖는다(
+        self, live_server, page, seed, login
+    ):
         login(page, live_server.url, "e2e_staff@example.com", seed.password)
         page.goto(live_server.url + "/")
 
@@ -55,7 +61,7 @@ class TestAccountMenuTouchTarget:
         assert box is not None
         assert box["height"] >= 44
 
-    def test_account_menu_items_meet_min_height_when_open(
+    def test_계정_메뉴를_열면_메뉴_항목들이_44px_이상의_터치_영역을_갖는다(
         self, live_server, page, seed, login
     ):
         login(page, live_server.url, "e2e_staff@example.com", seed.password)

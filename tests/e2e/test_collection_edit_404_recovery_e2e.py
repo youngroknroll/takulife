@@ -15,7 +15,7 @@ pytestmark = pytest.mark.e2e
 
 
 class TestCollectionEdit404Recovery:
-    def test_patch_404_locks_form_and_focuses_back_link(
+    def test_수정_제출_중_항목이_동시_삭제되어_404를_받으면_폼이_잠기고_목록_링크에_포커스가_이동한다(
         self, live_server, page, seed, login
     ):
         from archive.models import CollectionItem

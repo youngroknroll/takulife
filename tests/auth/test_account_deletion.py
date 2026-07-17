@@ -82,7 +82,8 @@ def cache_clock(monkeypatch):
 
 
 @pytest.mark.django_db
-def test_anonymous_get_redirects_to_login(client):
+@pytest.mark.web
+def test_비로그인_사용자가_계정_삭제_페이지에_접근하면_로그인_페이지로_리다이렉트된다(client):
     response = client.get(DELETE_URL)
 
     assert response.status_code == 302
@@ -90,7 +91,8 @@ def test_anonymous_get_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_staff_get_is_forbidden(client, make_user, valid_password):
+@pytest.mark.web
+def test_스태프가_계정_삭제_페이지에_접근하면_403으로_거부된다(client, make_user, valid_password):
     """Self-deletion is UI-hidden for staff (no header link, per §account
     menu spec), but the view must also enforce it server-side — a staff
     account is removed via Django admin only, never self-service."""
@@ -103,7 +105,8 @@ def test_staff_get_is_forbidden(client, make_user, valid_password):
 
 
 @pytest.mark.django_db
-def test_staff_post_is_forbidden_and_account_survives(client, make_user, valid_password):
+@pytest.mark.web
+def test_스태프의_계정_삭제_요청은_403으로_거부되고_계정이_유지된다(client, make_user, valid_password):
     staff = make_user(password=valid_password, is_staff=True)
     client.force_login(staff)
 
@@ -114,7 +117,8 @@ def test_staff_post_is_forbidden_and_account_survives(client, make_user, valid_p
 
 
 @pytest.mark.django_db
-def test_staff_wrong_password_posts_never_create_a_lockout_cache_entry(
+@pytest.mark.web
+def test_스태프의_잘못된_비밀번호_요청은_잠금_카운터를_증가시키지_않는다(
     client, make_user, valid_password
 ):
     """Regression guard for check ordering: the is_staff guard must run
@@ -133,7 +137,8 @@ def test_staff_wrong_password_posts_never_create_a_lockout_cache_entry(
 
 
 @pytest.mark.django_db
-def test_authenticated_get_renders_confirm_form(client, make_user, valid_password):
+@pytest.mark.web
+def test_로그인_사용자가_계정_삭제_페이지에_접근하면_확인_폼이_렌더링된다(client, make_user, valid_password):
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -143,7 +148,8 @@ def test_authenticated_get_renders_confirm_form(client, make_user, valid_passwor
 
 
 @pytest.mark.django_db
-def test_wrong_password_does_not_delete_the_account(client, make_user, valid_password):
+@pytest.mark.web
+def test_잘못된_비밀번호로_계정_삭제를_요청하면_계정이_삭제되지_않는다(client, make_user, valid_password):
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -154,7 +160,8 @@ def test_wrong_password_does_not_delete_the_account(client, make_user, valid_pas
 
 
 @pytest.mark.django_db
-def test_five_wrong_passwords_lock_out_even_the_correct_password(
+@pytest.mark.slow
+def test_다섯_번_잘못된_비밀번호_시도_후에는_올바른_비밀번호도_잠긴다(
     client, make_user, valid_password
 ):
     """A session-riding attacker cannot brute-force the password check
@@ -174,7 +181,8 @@ def test_five_wrong_passwords_lock_out_even_the_correct_password(
 
 
 @pytest.mark.django_db
-def test_lockout_shows_a_try_again_later_error(client, make_user, valid_password):
+@pytest.mark.slow
+def test_잠금_상태에서_요청하면_잠시_후_다시_시도하라는_오류가_표시된다(client, make_user, valid_password):
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -188,7 +196,8 @@ def test_lockout_shows_a_try_again_later_error(client, make_user, valid_password
 
 
 @pytest.mark.django_db
-def test_lockout_clears_after_the_window_expires(
+@pytest.mark.slow
+def test_잠금_후_15분이_지나면_올바른_비밀번호로_다시_삭제할_수_있다(
     client, make_user, valid_password, cache_clock
 ):
     """The lockout is a *fixed* 15-minute window, not a permanent block —
@@ -211,7 +220,8 @@ def test_lockout_clears_after_the_window_expires(
 
 
 @pytest.mark.django_db
-def test_lockout_window_is_fixed_to_the_first_failure_not_extended_by_later_ones(
+@pytest.mark.slow
+def test_잠금_창은_이후_실패로_연장되지_않고_최초_실패_시점_기준으로_고정된다(
     client, make_user, valid_password, cache_clock
 ):
     """Regression guard for the fixed-window design: if `cache.add` +
@@ -247,7 +257,8 @@ def test_lockout_window_is_fixed_to_the_first_failure_not_extended_by_later_ones
 
 
 @pytest.mark.django_db
-def test_fewer_than_five_failures_then_correct_password_still_deletes(
+@pytest.mark.slow
+def test_다섯_번_미만_실패_후_올바른_비밀번호는_계정을_삭제한다(
     client, make_user, valid_password
 ):
     """Below the lockout threshold, a subsequent correct password still
@@ -267,7 +278,8 @@ def test_fewer_than_five_failures_then_correct_password_still_deletes(
 
 
 @pytest.mark.django_db
-def test_lockout_counter_is_isolated_per_user(client, make_user, valid_password):
+@pytest.mark.slow
+def test_한_사용자의_잠금은_다른_사용자의_계정_삭제를_막지_않는다(client, make_user, valid_password):
     """One user's exhausted attempt budget must not lock out another user."""
     attacker = make_user(password=valid_password)
     victim = make_user(password=valid_password)
@@ -287,7 +299,8 @@ def test_lockout_counter_is_isolated_per_user(client, make_user, valid_password)
 
 
 @pytest.mark.django_db
-def test_correct_password_deletes_user_owned_data_and_media(
+@pytest.mark.web
+def test_올바른_비밀번호로_계정을_삭제하면_소유한_직접_등록_항목과_이미지_파일도_함께_삭제된다(
     client, make_user, valid_password, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
 ):
     settings.MEDIA_ROOT = str(tmp_path)
@@ -313,7 +326,8 @@ def test_correct_password_deletes_user_owned_data_and_media(
 
 
 @pytest.mark.django_db
-def test_correct_password_deletes_second_degree_cascade_photo_and_media(
+@pytest.mark.web
+def test_올바른_비밀번호로_계정을_삭제하면_방문_기록의_사진도_2차_연쇄로_삭제된다(
     client,
     make_user,
     make_event,
@@ -326,7 +340,7 @@ def test_correct_password_deletes_second_degree_cascade_photo_and_media(
     """User -> VisitRecord (1st-degree CASCADE) -> VisitRecordPhoto
     (2nd-degree CASCADE) must still fire archive.signals' post_delete file
     cleanup — the 1st-degree PersonalEntry path is already covered by
-    test_correct_password_deletes_user_owned_data_and_media above."""
+    test_올바른_비밀번호로_계정을_삭제하면_소유한_직접_등록_항목과_이미지_파일도_함께_삭제된다 above."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(password=valid_password)
     event = make_event()
@@ -349,7 +363,8 @@ def test_correct_password_deletes_second_degree_cascade_photo_and_media(
 
 
 @pytest.mark.django_db
-def test_correct_password_ends_the_session_immediately(client, make_user, valid_password):
+@pytest.mark.web
+def test_계정_삭제_직후_기존_세션으로는_보호된_페이지에_접근할_수_없다(client, make_user, valid_password):
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -363,7 +378,8 @@ def test_correct_password_ends_the_session_immediately(client, make_user, valid_
 
 
 @pytest.mark.django_db
-def test_deleted_account_can_no_longer_log_in(client, make_user, valid_password):
+@pytest.mark.web
+def test_삭제된_계정으로는_다시_로그인할_수_없다(client, make_user, valid_password):
     user = make_user(email="leaving@example.com", password=valid_password)
     client.force_login(user)
     client.post(DELETE_URL, {"password": valid_password})

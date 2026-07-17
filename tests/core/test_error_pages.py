@@ -7,9 +7,12 @@ codepath and the project's branded templates — not Django's DEBUG=True
 tracebacks. Mirrors the 429.html coverage in
 tests/auth/test_auth_rate_limit.py::test_rate_limited_response_renders_localized_page.
 """
+import pytest
+
+pytestmark = pytest.mark.web
 
 
-def test_404_page_uses_custom_template_and_links_home(client):
+def test_존재하지_않는_경로에_접근하면_커스텀_404_페이지가_홈_링크와_함께_렌더링된다(client):
     resp = client.get("/this-page-does-not-exist/")
 
     assert resp.status_code == 404
@@ -19,7 +22,7 @@ def test_404_page_uses_custom_template_and_links_home(client):
     assert 'href="/"' in body
 
 
-def test_500_page_renders_without_request_context(client, monkeypatch):
+def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스텀_500_페이지가_렌더링된다(client, monkeypatch):
     """Django's default 500 handler (django/views/defaults.py::server_error)
     renders templates/500.html via ``template.render()`` with NO context and
     NO request — context processors never run for this page. Simulate an
@@ -41,7 +44,7 @@ def test_500_page_renders_without_request_context(client, monkeypatch):
     assert 'href="mailto:"' not in body
 
 
-def test_home_page_footer_still_links_support_mailto(client, settings, db):
+def test_정상_홈_페이지_렌더링에서는_푸터가_실제_문의_메일_링크를_유지한다(client, settings, db):
     """Regression guard for the 500-page fix above: normal page renders
     (where core.context_processors.support_email does run) must keep the
     real mailto contact link in the footer."""

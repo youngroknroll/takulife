@@ -1,7 +1,11 @@
 import re
 from pathlib import Path
 
+import pytest
+
 from core.vocab import CATEGORY
+
+pytestmark = pytest.mark.contract
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TOKENS_CSS = PROJECT_ROOT / "static/css/tokens.css"
@@ -11,7 +15,7 @@ def _defined_custom_properties(css_text):
     return set(re.findall(r"--([a-zA-Z0-9_-]+):", css_text))
 
 
-def test_tokens_css_defines_soft_and_ink_for_every_category_slug():
+def test_tokens_css는_모든_카테고리_슬러그에_대해_soft_ink_토큰을_정의한다():
     """Contract guard: static/css/tokens.css must define --cat-{slug}-soft and
     --cat-{slug}-ink for every category slug in core.vocab.CATEGORY — the G10
     "slug = CSS name" principle extended to the custom-property layer.

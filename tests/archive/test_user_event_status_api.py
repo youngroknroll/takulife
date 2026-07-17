@@ -5,9 +5,11 @@ import pytest
 from archive.models import UserEventStatus
 from events.models import Event
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_authenticated_user_can_create_event_status_for_published_event(client, make_user, make_event):
+def test_게시된_행사에_인증된_사용자가_상태를_등록하면_생성된다(client, make_user, make_event):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -24,7 +26,7 @@ def test_authenticated_user_can_create_event_status_for_published_event(client, 
 
 
 @pytest.mark.django_db
-def test_legacy_me_event_status_route_remains_inactive(client, make_user, make_event):
+def test_레거시_me_행사상태_경로는_요청하면_404로_비활성_상태를_유지한다(client, make_user, make_event):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -39,7 +41,7 @@ def test_legacy_me_event_status_route_remains_inactive(client, make_user, make_e
 
 
 @pytest.mark.django_db
-def test_user_event_status_list_returns_only_current_users_statuses(client, make_user, make_event, make_status):
+def test_행사_상태_목록을_조회하면_현재_사용자_소유_상태만_반환된다(client, make_user, make_event, make_status):
     user = make_user(email="status-owner@example.com", username="status-owner")
     other_user = make_user(email="status-other@example.com", username="status-other")
     owned_event = make_event(title="Owned event", publish_status=Event.PublishStatus.PUBLISHED)
@@ -59,7 +61,7 @@ def test_user_event_status_list_returns_only_current_users_statuses(client, make
 
 
 @pytest.mark.django_db
-def test_user_event_status_list_filters_by_event_and_status(client, make_user, make_event, make_status):
+def test_행사_상태_목록을_event와_status로_필터링하면_일치하는_항목만_반환된다(client, make_user, make_event, make_status):
     user = make_user(email="status-owner@example.com", username="status-owner")
     event_one = make_event(title="Event one", publish_status=Event.PublishStatus.PUBLISHED)
     event_two = make_event(title="Event two", publish_status=Event.PublishStatus.PUBLISHED)
@@ -77,7 +79,7 @@ def test_user_event_status_list_filters_by_event_and_status(client, make_user, m
 
 
 @pytest.mark.django_db
-def test_user_event_status_list_rejects_invalid_status_filter(client, make_user, make_event, make_status):
+def test_행사_상태_목록에_허용되지_않는_status_필터를_지정하면_400으로_거부된다(client, make_user, make_event, make_status):
     user = make_user(email="status-owner@example.com", username="status-owner")
     event = make_event(title="Event one", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -91,7 +93,7 @@ def test_user_event_status_list_rejects_invalid_status_filter(client, make_user,
 
 
 @pytest.mark.django_db
-def test_user_event_status_detail_for_another_user_returns_404(client, make_user, make_event, make_status):
+def test_다른_사용자의_행사_상태_상세를_조회하면_404로_숨겨진다(client, make_user, make_event, make_status):
     user = make_user(email="status-owner@example.com", username="status-owner")
     other_user = make_user(email="status-other@example.com", username="status-other")
     event = make_event(title="Other event", publish_status=Event.PublishStatus.PUBLISHED)
@@ -111,7 +113,7 @@ def test_user_event_status_detail_for_another_user_returns_404(client, make_user
 
 
 @pytest.mark.django_db
-def test_user_event_status_rejects_unpublished_event(client, make_user, make_event):
+def test_발행되지_않은_행사에_상태를_등록하면_400으로_거부된다(client, make_user, make_event):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Draft event", publish_status=Event.PublishStatus.DRAFT)
 
@@ -127,7 +129,7 @@ def test_user_event_status_rejects_unpublished_event(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_user_event_status_rejects_invalid_status(client, make_user, make_event):
+def test_허용되지_않는_status_값으로_상태를_등록하면_400으로_거부된다(client, make_user, make_event):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -143,7 +145,7 @@ def test_user_event_status_rejects_invalid_status(client, make_user, make_event)
 
 
 @pytest.mark.django_db
-def test_user_event_status_duplicate_returns_409(client, make_user, make_event, make_status):
+def test_이미_존재하는_행사_상태를_다시_등록하면_409_중복_오류가_된다(client, make_user, make_event, make_status):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -164,7 +166,7 @@ def test_user_event_status_duplicate_returns_409(client, make_user, make_event, 
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_patch_event_status(client, make_user, make_event, make_status):
+def test_인증된_사용자가_행사_상태를_수정하면_새_상태로_반영된다(client, make_user, make_event, make_status):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -184,7 +186,7 @@ def test_authenticated_user_can_patch_event_status(client, make_user, make_event
 
 
 @pytest.mark.django_db
-def test_patch_to_planned_pins_override_so_it_stays_planned(client, make_user, make_event, make_status):
+def test_지난_행사에서_계획으로_되돌리면_missed_overridden이_고정되어_계획_상태를_유지한다(client, make_user, make_event, make_status):
     """Reverting an auto-missed (past planned) row to planned must stick.
 
     Without the override flag the read-time derivation would immediately show
@@ -217,7 +219,7 @@ def test_patch_to_planned_pins_override_so_it_stays_planned(client, make_user, m
 
 
 @pytest.mark.django_db
-def test_user_event_status_put_is_not_allowed(client, make_user, make_event, make_status):
+def test_행사_상태에_PUT_요청을_보내면_405로_거부되고_기존_값이_보존된다(client, make_user, make_event, make_status):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
     other_event = make_event(title="Other event", publish_status=Event.PublishStatus.PUBLISHED)
@@ -242,7 +244,7 @@ def test_user_event_status_put_is_not_allowed(client, make_user, make_event, mak
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_delete_event_status(client, make_user, make_event, make_status):
+def test_인증된_사용자가_행사_상태를_삭제하면_이후_조회에서_404가_된다(client, make_user, make_event, make_status):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -257,7 +259,7 @@ def test_authenticated_user_can_delete_event_status(client, make_user, make_even
 
 
 @pytest.mark.django_db
-def test_patch_without_status_saves_without_transition(client, make_event, make_user):
+def test_status_필드_없이_PATCH하면_상태_전환_없이_저장된다(client, make_event, make_user):
     """(moved from tests/core/test_coverage_supplements.py)"""
     user = make_user()
     event = make_event(title="상태 전환")
@@ -280,7 +282,7 @@ def test_patch_without_status_saves_without_transition(client, make_event, make_
 
 
 @pytest.mark.django_db
-def test_user_event_status_rejects_interested_as_status(client, make_user, make_event):
+def test_interested를_status로_등록하려_하면_400으로_거부된다(client, make_user, make_event):
     """After removing 'interested' from UserEventStatus choices, the API must reject it."""
     user = make_user(email="status-interested-reject@example.com", username="status-interested-reject")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
@@ -305,7 +307,7 @@ def test_user_event_status_rejects_interested_as_status(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_patch_to_planned_rejected_when_visit_record_exists(
+def test_방문_기록이_있는_상태에서_계획으로_되돌리려_하면_400으로_거부된다(
     client, make_user, make_event, make_status, make_visit
 ):
     user = make_user(email="revert-blocked@example.com", username="revert-blocked")
@@ -328,7 +330,7 @@ def test_patch_to_planned_rejected_when_visit_record_exists(
 
 
 @pytest.mark.django_db
-def test_patch_to_missed_rejected_when_visit_record_exists(
+def test_방문_기록이_있는_상태에서_놓침으로_변경하려_하면_400으로_거부된다(
     client, make_user, make_event, make_status, make_visit
 ):
     user = make_user(email="missed-blocked@example.com", username="missed-blocked")
@@ -350,7 +352,7 @@ def test_patch_to_missed_rejected_when_visit_record_exists(
 
 
 @pytest.mark.django_db
-def test_patch_to_planned_allowed_after_visit_record_deleted(
+def test_방문_기록을_삭제한_뒤에는_계획으로_되돌리기가_허용된다(
     client, make_user, make_event, make_status, make_visit
 ):
     """The mis-recorded-data recovery path (delete the record, then revert to
@@ -385,7 +387,7 @@ def test_patch_to_planned_allowed_after_visit_record_deleted(
 
 
 @pytest.mark.django_db
-def test_create_rejects_planned_when_visit_record_exists(
+def test_방문_기록이_남아있는_상태에서_계획_상태를_새로_생성하려_하면_400으로_거부된다(
     client, make_user, make_event, make_status, make_visit
 ):
     """Reproduces the delete-then-recreate drift: a visited status row is
@@ -412,7 +414,7 @@ def test_create_rejects_planned_when_visit_record_exists(
 
 
 @pytest.mark.django_db
-def test_create_rejects_missed_when_visit_record_exists(
+def test_방문_기록이_남아있는_상태에서_놓침_상태를_새로_생성하려_하면_400으로_거부된다(
     client, make_user, make_event, make_status, make_visit
 ):
     user = make_user(email="create-missed-blocked@example.com", username="create-missed-blocked")
@@ -435,7 +437,7 @@ def test_create_rejects_missed_when_visit_record_exists(
 
 
 @pytest.mark.django_db
-def test_create_allows_visited_when_visit_record_exists(client, make_user, make_event, make_visit):
+def test_방문_기록과_일치하는_방문완료_상태를_새로_생성하면_허용된다(client, make_user, make_event, make_visit):
     """A fresh 'visited' creation matching an existing VisitRecord is not
     drift — it agrees with the record instead of contradicting it."""
     user = make_user(email="create-visited-ok@example.com", username="create-visited-ok")
@@ -454,7 +456,7 @@ def test_create_allows_visited_when_visit_record_exists(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_create_planned_allowed_without_visit_record(client, make_user, make_event):
+def test_방문_기록이_없으면_계획_상태_생성이_영향받지_않는다(client, make_user, make_event):
     """No-regression baseline: creating 'planned' with no VisitRecord at all
     stays unaffected by the new guard."""
     user = make_user(email="create-planned-ok@example.com", username="create-planned-ok")
@@ -471,7 +473,7 @@ def test_create_planned_allowed_without_visit_record(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_create_rejects_planned_when_visit_record_exists_for_personal_entry(
+def test_개인_장소의_방문_기록이_있는_상태에서_계획_상태를_생성하려_하면_400으로_거부된다(
     client, make_user, make_entry, make_visit
 ):
     """_has_visit_record covers both subjects (event and personal_entry) —
@@ -492,7 +494,7 @@ def test_create_rejects_planned_when_visit_record_exists_for_personal_entry(
 
 
 @pytest.mark.django_db
-def test_create_planned_not_blocked_by_other_users_visit_record(client, make_user, make_event, make_visit):
+def test_다른_사용자의_방문_기록은_내_계획_상태_생성을_막지_않는다(client, make_user, make_event, make_visit):
     """Cross-user isolation: another user's VisitRecord for the same event
     must not block this user's own fresh 'planned' creation."""
     owner = make_user(email="cross-owner@example.com", username="cross-owner")

@@ -34,7 +34,7 @@ def _dispatch_persisted_pageshow(page):
 
 
 class TestCollectionEditBfcacheLockDurability:
-    def test_submit_button_stays_disabled_after_bfcache_restore(
+    def test_폼이_잠긴_상태에서_bfcache로_복원돼도_제출_버튼은_계속_비활성_상태를_유지한다(
         self, live_server, page, seed, login
     ):
         from archive.models import CollectionItem

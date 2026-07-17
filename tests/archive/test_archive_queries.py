@@ -28,9 +28,11 @@ from archive.queries import (
 
 TODAY = date(2026, 6, 26)
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
-def test_user_status_counts_zero_fills_all_slugs(make_user):
+def test_상태_기록이_없는_사용자의_상태별_집계는_모든_슬러그가_0으로_채워진다(make_user):
     """A user with no statuses gets every canonical slug present and zero."""
     user = make_user(username="counts-empty")
 
@@ -41,7 +43,7 @@ def test_user_status_counts_zero_fills_all_slugs(make_user):
 
 
 @pytest.mark.django_db
-def test_user_status_counts_counts_per_status(make_user, make_event, make_status):
+def test_상태별_집계는_본인의_상태만_세고_다른_사용자의_기록은_제외한다(make_user, make_event, make_status):
     """Counts reflect the user's rows and ignore other users' rows."""
     user = make_user(username="counts-user")
     other = make_user(username="counts-other")
@@ -60,7 +62,7 @@ def test_user_status_counts_counts_per_status(make_user, make_event, make_status
 
 
 @pytest.mark.django_db
-def test_list_user_statuses_filters_by_user_and_status(make_user, make_event, make_status):
+def test_상태_목록_조회는_사용자로_범위를_좁히고_상태값으로_추가_필터링한다(make_user, make_event, make_status):
     user = make_user(username="list-status-user")
     other = make_user(username="list-status-other")
     e1 = make_event(title="E1")
@@ -82,7 +84,7 @@ def test_list_user_statuses_filters_by_user_and_status(make_user, make_event, ma
 
 
 @pytest.mark.django_db
-def test_list_user_unrecorded_visited_statuses_includes_visited_without_record(
+def test_방문완료_상태에_방문기록이_없으면_미기록_방문완료_목록에_포함된다(
     make_user, make_event, make_status
 ):
     user = make_user(username="unrecorded-basic")
@@ -95,7 +97,7 @@ def test_list_user_unrecorded_visited_statuses_includes_visited_without_record(
 
 
 @pytest.mark.django_db
-def test_list_user_unrecorded_visited_statuses_excludes_visited_with_record(
+def test_방문완료_상태에_방문기록이_이미_있으면_미기록_방문완료_목록에서_제외된다(
     make_user, make_event, make_status, make_visit
 ):
     user = make_user(username="unrecorded-has-record")
@@ -109,7 +111,7 @@ def test_list_user_unrecorded_visited_statuses_excludes_visited_with_record(
 
 
 @pytest.mark.django_db
-def test_list_user_unrecorded_visited_statuses_includes_personal_entry_subject_and_excludes_once_recorded(
+def test_이벤트_주체와_마찬가지로_개인항목_주체의_방문완료_상태도_방문기록이_생기면_미기록_방문완료_목록에서_제외된다(
     make_user, make_entry, make_status, make_visit
 ):
     """Regression guard for the Exists subquery's OR (not AND) composition:
@@ -131,7 +133,7 @@ def test_list_user_unrecorded_visited_statuses_includes_personal_entry_subject_a
 
 
 @pytest.mark.django_db
-def test_list_user_unrecorded_visited_statuses_excludes_non_visited_and_other_users(
+def test_예정_상태이거나_다른_사용자의_방문완료_상태는_미기록_방문완료_목록에서_제외된다(
     make_user, make_event, make_status
 ):
     user = make_user(username="unrecorded-scope")
@@ -149,7 +151,7 @@ def test_list_user_unrecorded_visited_statuses_excludes_non_visited_and_other_us
 
 
 @pytest.mark.django_db
-def test_list_user_visit_records_scoped_and_ordered(make_user, make_event, make_visit):
+def test_방문기록_목록_조회는_사용자로_범위를_좁히고_최신_방문일_순으로_정렬한다(make_user, make_event, make_visit):
     user = make_user(username="list-visit-user")
     other = make_user(username="list-visit-other")
     e1 = make_event(title="E1")
@@ -165,7 +167,7 @@ def test_list_user_visit_records_scoped_and_ordered(make_user, make_event, make_
 
 
 @pytest.mark.django_db
-def test_list_user_visit_records_official_only(make_event, make_user):
+def test_공식_행사만_필터링하면_비공식_개인항목에_연결된_방문기록은_제외된다(make_event, make_user):
     """official=True excludes visits attached to a private PersonalEntry
     (moved from tests/core/test_coverage_supplements.py)."""
     user = make_user()
@@ -188,7 +190,7 @@ def test_list_user_visit_records_official_only(make_event, make_user):
 
 
 @pytest.mark.django_db
-def test_archive_status_slugs_excludes_interested(django_user_model):
+def test_아카이브_상태_슬러그_목록에는_찜_상태가_포함되지_않는다(django_user_model):
     assert "interested" not in ARCHIVE_STATUS_SLUGS
     assert "planned" in ARCHIVE_STATUS_SLUGS
     assert "visited" in ARCHIVE_STATUS_SLUGS
@@ -201,7 +203,7 @@ def test_archive_status_slugs_excludes_interested(django_user_model):
 
 
 @pytest.mark.django_db
-def test_user_status_counts_excludes_interested_key(make_user):
+def test_상태별_집계_결과에는_찜_키가_포함되지_않는다(make_user):
     """user_status_counts must not include 'interested' as a key."""
     user = make_user(username="counts-no-interested")
     counts = user_status_counts(user)
@@ -214,7 +216,7 @@ def test_user_status_counts_excludes_interested_key(make_user):
 
 
 @pytest.mark.django_db
-def test_list_user_interests_scoped_and_ordered(make_user, make_event, make_interest):
+def test_찜_목록_조회는_사용자로_범위를_좁히고_최신_등록_순으로_정렬한다(make_user, make_event, make_interest):
     user = make_user(username="interest-query-user")
     other = make_user(username="interest-query-other")
     e1 = make_event(title="Interest E1")
@@ -239,7 +241,7 @@ def test_list_user_interests_scoped_and_ordered(make_user, make_event, make_inte
 
 
 @pytest.mark.django_db
-def test_user_interest_event_ids_bounded(make_user, make_event, make_interest):
+def test_이벤트_id_목록으로_범위를_좁히면_해당_행사의_찜_id만_반환한다(make_user, make_event, make_interest):
     user = make_user(username="interest-ids-user")
     other = make_user(username="interest-ids-other")
     e1 = make_event(title="Interest IDs E1")
@@ -256,7 +258,7 @@ def test_user_interest_event_ids_bounded(make_user, make_event, make_interest):
 
 
 @pytest.mark.django_db
-def test_user_interest_event_ids_unbounded(make_user, make_event, make_interest):
+def test_이벤트_id_범위를_지정하지_않으면_사용자의_모든_찜_id를_반환한다(make_user, make_event, make_interest):
     user = make_user(username="interest-ids-unbound-user")
     e1 = make_event(title="Interest Unbound E1")
     e2 = make_event(title="Interest Unbound E2")
@@ -275,7 +277,7 @@ def test_user_interest_event_ids_unbounded(make_user, make_event, make_interest)
 
 
 @pytest.mark.django_db
-def test_user_interest_count(make_user, make_event, make_interest):
+def test_찜_총_개수는_본인의_찜만_세고_다른_사용자의_찜은_제외한다(make_user, make_event, make_interest):
     user = make_user(username="interest-count-user")
     other = make_user(username="interest-count-other")
     e1 = make_event(title="Interest Count E1")
@@ -295,7 +297,7 @@ def test_user_interest_count(make_user, make_event, make_interest):
 
 
 @pytest.mark.django_db
-def test_list_user_planned_events_returns_only_user_planned_published(make_user, make_event, make_draft_event, make_status):
+def test_방문예정_행사_목록은_본인이_예정_등록한_게시된_행사만_반환한다(make_user, make_event, make_draft_event, make_status):
     user = make_user(username="planner")
     other = make_user(username="planner-other")
     planned = make_event(title="Planned")
@@ -325,7 +327,7 @@ def test_list_user_planned_events_returns_only_user_planned_published(make_user,
 
 
 @pytest.mark.django_db
-def test_list_user_upcoming_planned_events_scopes_to_user_status_and_publish(
+def test_다가오는_예정_행사_목록은_본인이_예정_등록한_게시된_행사로_범위를_좁힌다(
     make_user, make_event, make_draft_event, make_status
 ):
     user = make_user(username="upcoming-planner")
@@ -353,7 +355,7 @@ def test_list_user_upcoming_planned_events_scopes_to_user_status_and_publish(
 
 
 @pytest.mark.django_db
-def test_list_user_upcoming_planned_events_excludes_today_and_past_start_dates(
+def test_다가오는_예정_행사_목록은_오늘과_지난_시작일을_제외하고_내일_이후만_포함한다(
     make_user, make_event, make_status
 ):
     user = make_user(username="upcoming-boundary")
@@ -373,7 +375,7 @@ def test_list_user_upcoming_planned_events_excludes_today_and_past_start_dates(
 
 
 @pytest.mark.django_db
-def test_list_user_upcoming_planned_events_orders_by_start_date_ascending(
+def test_다가오는_예정_행사_목록은_시작일이_이른_순으로_정렬된다(
     make_user, make_event, make_status
 ):
     user = make_user(username="upcoming-order")
@@ -396,7 +398,7 @@ def test_list_user_upcoming_planned_events_orders_by_start_date_ascending(
 
 
 @pytest.mark.django_db
-def test_list_user_personal_entries_scopes_to_user_and_filters_kind(make_user, make_entry):
+def test_비공식_항목_목록_조회는_사용자로_범위를_좁히고_kind로_추가_필터링한다(make_user, make_entry):
     user = make_user(username="pe-list")
     other = make_user(username="pe-other")
     place = make_entry(user, kind="place", title="P")
@@ -418,7 +420,7 @@ def test_list_user_personal_entries_scopes_to_user_and_filters_kind(make_user, m
 
 
 @pytest.mark.django_db
-def test_user_visit_record_counts_totals_and_memo_scoped_to_user(
+def test_방문기록_집계는_본인의_총_건수와_후기가_있는_건수를_함께_반환한다(
     make_user, make_event, make_visit
 ):
     user = make_user(username="visit-counts-user")
@@ -437,7 +439,7 @@ def test_user_visit_record_counts_totals_and_memo_scoped_to_user(
 
 
 @pytest.mark.django_db
-def test_user_visit_record_counts_zero_for_no_visits(make_user):
+def test_방문기록이_없는_사용자의_방문기록_집계는_0이다(make_user):
     user = make_user(username="visit-counts-empty")
 
     counts = user_visit_record_counts(user)
@@ -451,7 +453,7 @@ def test_user_visit_record_counts_zero_for_no_visits(make_user):
 
 
 @pytest.mark.django_db
-def test_user_personal_entry_counts_totals_scoped_to_user(make_user, make_entry):
+def test_비공식_항목_집계는_본인의_총_건수만_세고_다른_사용자의_항목은_제외한다(make_user, make_entry):
     user = make_user(username="entry-counts-user")
     other = make_user(username="entry-counts-other")
     make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")
@@ -464,7 +466,7 @@ def test_user_personal_entry_counts_totals_scoped_to_user(make_user, make_entry)
 
 
 @pytest.mark.django_db
-def test_user_personal_entry_counts_zero_for_no_entries(make_user):
+def test_비공식_항목이_없는_사용자의_항목_집계는_0이다(make_user):
     user = make_user(username="entry-counts-empty")
 
     counts = user_personal_entry_counts(user)
@@ -478,7 +480,7 @@ def test_user_personal_entry_counts_zero_for_no_entries(make_user):
 
 
 @pytest.mark.django_db
-def test_list_user_collection_items_scopes_to_owner(make_user):
+def test_컬렉션_아이템_목록_조회는_소유자로_범위를_좁힌다(make_user):
     user = make_user(username="ci-query-owner")
     other = make_user(username="ci-query-other")
     mine = CollectionItem.objects.create(user=user, name="내 굿즈")
@@ -497,7 +499,7 @@ def test_list_user_collection_items_scopes_to_owner(make_user):
 
 
 @pytest.mark.django_db
-def test_list_user_collection_items_work_title_filter_is_exact_match(make_user):
+def test_작품명_필터는_완전_일치하는_항목만_반환한다(make_user):
     user = make_user(username="ci-query-work-title")
     match = CollectionItem.objects.create(user=user, name="일치", work_title="작품 A")
     CollectionItem.objects.create(user=user, name="불일치", work_title="작품 B")
@@ -508,7 +510,7 @@ def test_list_user_collection_items_work_title_filter_is_exact_match(make_user):
 
 
 @pytest.mark.django_db
-def test_list_user_collection_items_duplicate_filter_derives_from_quantity_gte_2(make_user):
+def test_중복_필터는_별도_필드_없이_수량_2개_이상_여부로_판정된다(make_user):
     """`duplicate=True` must select quantity >= 2 rows — there is no
     duplicate_count field to filter on directly (§3-1)."""
     user = make_user(username="ci-query-duplicate")
@@ -521,7 +523,7 @@ def test_list_user_collection_items_duplicate_filter_derives_from_quantity_gte_2
 
 
 @pytest.mark.django_db
-def test_list_user_collection_items_tradeable_filter_derives_from_tradeable_quantity_gt_0(
+def test_교환가능_필터는_별도_필드_없이_교환가능_수량_1개_이상_여부로_판정된다(
     make_user,
 ):
     """`tradeable=True` must select tradeable_quantity > 0 rows — there is
@@ -539,7 +541,7 @@ def test_list_user_collection_items_tradeable_filter_derives_from_tradeable_quan
 
 
 @pytest.mark.django_db
-def test_list_user_collection_items_q_matches_name_work_title_character_name_or_memo(
+def test_통합검색어는_이름_작품명_캐릭터명_메모에서_일치하되_상품유형은_대상에서_제외한다(
     make_user,
 ):
     """`q` narrows to name/work_title/character_name/memo (icontains), mirroring
@@ -568,7 +570,7 @@ def test_list_user_collection_items_q_matches_name_work_title_character_name_or_
 
 
 @pytest.mark.django_db
-def test_list_user_collection_items_empty_q_is_a_no_op(make_user):
+def test_빈_통합검색어는_아무_항목도_걸러내지_않는다(make_user):
     """An empty `q` must not filter anything out.
 
     `if q:` is a query optimization, not a correctness guard: Django renders
@@ -616,7 +618,7 @@ def test_list_user_collection_items_empty_q_is_a_no_op(make_user):
 
 
 @pytest.mark.django_db
-def test_user_collection_item_filter_values_dedupes_and_scopes_to_owner(make_user):
+def test_필터_선택지_조회는_소유자로_범위를_좁히고_중복값을_제거한다(make_user):
     user = make_user(username="ci-filter-values-user")
     other = make_user(username="ci-filter-values-other")
     CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 A")
@@ -639,7 +641,7 @@ def test_user_collection_item_filter_values_dedupes_and_scopes_to_owner(make_use
 
 
 @pytest.mark.django_db
-def test_user_collection_item_filter_values_returns_sorted_lists(make_user):
+def test_필터_선택지_목록은_정렬된_순서로_반환된다(make_user):
     """Each list must be sorted — C5b-2 renders these directly as <select>
     options.
 
@@ -668,7 +670,7 @@ def test_user_collection_item_filter_values_returns_sorted_lists(make_user):
 
 
 @pytest.mark.django_db
-def test_user_collection_item_filter_values_excludes_blank_fields(make_user):
+def test_값이_비어있는_필드는_필터_선택지_목록에_포함되지_않는다(make_user):
     """A row with no work_title/character_name/item_type set must not
     contribute an empty-string entry to any of the three lists."""
     user = make_user(username="ci-filter-values-blank")
@@ -691,7 +693,7 @@ def test_user_collection_item_filter_values_excludes_blank_fields(make_user):
 
 
 @pytest.mark.django_db
-def test_user_collection_item_filter_values_zero_for_no_items(make_user):
+def test_컬렉션_아이템이_없는_사용자의_필터_선택지는_모두_빈_목록이다(make_user):
     user = make_user(username="ci-filter-values-empty")
 
     values = user_collection_item_filter_values(user)
@@ -709,7 +711,7 @@ def test_user_collection_item_filter_values_zero_for_no_items(make_user):
 
 
 @pytest.mark.django_db
-def test_user_collection_item_summary_counts_counts_rows_not_quantity_sum(make_user):
+def test_보유_구함_집계는_수량_합계가_아니라_행_개수를_센다(make_user):
     """owned_count/wanted_count must be row counts split by is_wanted, not a
     Sum(quantity) — a single owned row with quantity=5 must count as 1, not
     5."""
@@ -726,7 +728,7 @@ def test_user_collection_item_summary_counts_counts_rows_not_quantity_sum(make_u
 
 
 @pytest.mark.django_db
-def test_user_collection_item_summary_counts_zero_for_no_items(make_user):
+def test_컬렉션_아이템이_없는_사용자의_보유_구함_집계는_0이다(make_user):
     user = make_user(username="ci-summary-counts-empty")
 
     counts = user_collection_item_summary_counts(user)
@@ -743,7 +745,7 @@ def test_user_collection_item_summary_counts_zero_for_no_items(make_user):
 
 
 @pytest.mark.django_db
-def test_user_personal_interest_ids_excludes_goods(make_user):
+def test_비공식_찜_id_조회는_굿즈_kind_개인항목을_제외한다(make_user):
     user = make_user(username="interest-ids-goods")
     place = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="장소")
     goods = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
@@ -756,7 +758,7 @@ def test_user_personal_interest_ids_excludes_goods(make_user):
 
 
 @pytest.mark.django_db
-def test_user_personal_statuses_excludes_goods(make_user):
+def test_비공식_상태_조회는_굿즈_kind_개인항목을_제외한다(make_user):
     user = make_user(username="statuses-goods")
     place = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="장소")
     goods = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")

@@ -38,7 +38,7 @@ pytestmark = pytest.mark.e2e
 
 
 class TestCollectionDeleteSingleBinding:
-    def test_edit_page_delete_button_confirm_fires_exactly_once(
+    def test_수정_페이지_삭제_버튼을_클릭하면_확인_대화상자가_정확히_한_번만_호출되고_삭제된다(
         self, live_server, page, seed, login
     ):
         from archive.models import CollectionItem

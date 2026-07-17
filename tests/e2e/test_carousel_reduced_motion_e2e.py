@@ -53,7 +53,7 @@ def _move_mouse_over_first_card(page):
 
 
 class TestCarouselRuntimeReducedMotion:
-    def test_shuffle_stops_reacting_to_runtime_reduced_motion_switch(self, live_server, page, seed):
+    def test_런타임에_모션_감소를_켜면_캐러셀_셔플과_포인터_추적이_멈춘다(self, live_server, page, seed):
         page.goto(live_server.url + "/")
         page.wait_for_selector("[data-carousel-track].fan")
 
@@ -107,7 +107,7 @@ class TestCarouselRuntimeMotionRestored:
     def browser_context_args(self, browser_context_args):
         return {**browser_context_args, "reduced_motion": "reduce"}
 
-    def test_hover_tracking_starts_working_after_switching_off_reduced_motion(
+    def test_모션_감소_상태로_로드한_뒤_런타임에_끄면_호버_추적이_재로드_없이_작동한다(
         self, live_server, page, seed
     ):
         page.goto(live_server.url + "/")

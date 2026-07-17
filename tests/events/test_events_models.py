@@ -4,14 +4,16 @@ import pytest
 
 from events.models import Event
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
-def test_event_str():
+def test_행사를_문자열로_표현하면_제목이_된다():
     assert str(Event(title="행사 제목")) == "행사 제목"
 
 
 @pytest.mark.django_db
-def test_event_publish_status_defaults_to_draft():
+def test_모델_기본값으로_생성한_행사의_게시_상태는_초안이다():
     """The model's own field default, not make_event's PUBLISHED override —
     make_event injects publish_status=PUBLISHED for test convenience, which
     would silently hide a regression in the model's actual default. Created

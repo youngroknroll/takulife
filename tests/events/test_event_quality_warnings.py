@@ -18,6 +18,8 @@ from events.queries import (
     published_quality_warnings,
 )
 
+pytestmark = pytest.mark.domain
+
 
 # ---------------------------------------------------------------------------
 # count_published_missing_official_url
@@ -26,36 +28,36 @@ from events.queries import (
 
 @pytest.mark.django_db
 class TestCountPublishedMissingOfficialUrl:
-    def test_null_official_url_is_counted(self, make_event):
+    def test_공식_url이_null이면_누락_건수에_포함된다(self, make_event):
         make_event(official_url=None)
 
         assert count_published_missing_official_url() == 1
 
-    def test_blank_official_url_is_counted(self, make_event):
+    def test_공식_url이_빈_문자열이면_누락_건수에_포함된다(self, make_event):
         make_event(official_url="")
 
         assert count_published_missing_official_url() == 1
 
-    def test_present_official_url_is_not_counted(self, make_event):
+    def test_공식_url이_있으면_누락_건수에서_제외된다(self, make_event):
         make_event(official_url="https://example.com/a")
 
         assert count_published_missing_official_url() == 0
 
-    def test_non_published_excluded(self, make_draft_event):
+    def test_미게시_행사는_공식_url_누락_집계에서_제외된다(self, make_draft_event):
         make_draft_event(official_url=None)
 
         assert count_published_missing_official_url() == 0
 
-    def test_zero_when_none(self):
+    def test_행사가_없으면_공식_url_누락_건수는_0이다(self):
         assert count_published_missing_official_url() == 0
 
-    def test_mixed_null_and_present_only_null_counted(self, make_event):
+    def test_공식_url이_있는_행사와_없는_행사가_섞이면_없는_행사만_집계된다(self, make_event):
         make_event(official_url=None)
         make_event(official_url="https://example.com/b")
 
         assert count_published_missing_official_url() == 1
 
-    def test_two_matching_events_counts_two(self, make_event):
+    def test_공식_url이_없는_행사가_두_건이면_누락_건수는_2다(self, make_event):
         # Guards against a .count() -> .exists() regression: bool is a
         # subclass of int, so an exists()-based count would still pass the
         # 0/1 assertions above but silently break on N>=2.
@@ -74,49 +76,49 @@ class TestCountPublishedMissingOfficialUrl:
 
 @pytest.mark.django_db
 class TestCountPublishedEndedStillPublished:
-    def test_end_date_before_today_is_counted(self, make_event):
+    def test_종료일이_오늘보다_이전이면_종료후_게시_건수에_포함된다(self, make_event):
         today = date(2020, 6, 15)
         make_event(end_date=today - timedelta(days=1))
 
         assert count_published_ended_still_published(today=today) == 1
 
-    def test_end_date_equal_today_is_not_counted(self, make_event):
+    def test_종료일이_오늘과_같으면_종료후_게시_건수에서_제외된다(self, make_event):
         today = date(2020, 6, 15)
         make_event(end_date=today)
 
         assert count_published_ended_still_published(today=today) == 0
 
-    def test_end_date_after_today_is_not_counted(self, make_event):
+    def test_종료일이_오늘보다_이후면_종료후_게시_건수에서_제외된다(self, make_event):
         today = date(2020, 6, 15)
         make_event(end_date=today + timedelta(days=1))
 
         assert count_published_ended_still_published(today=today) == 0
 
-    def test_null_end_date_is_not_counted_and_does_not_crash(self, make_event):
+    def test_종료일이_없으면_오류_없이_종료후_게시_건수에서_제외된다(self, make_event):
         today = date(2020, 6, 15)
         make_event(end_date=None)
 
         assert count_published_ended_still_published(today=today) == 0
 
-    def test_non_published_ended_excluded(self, make_draft_event):
+    def test_미게시_행사는_종료후_게시_집계에서_제외된다(self, make_draft_event):
         today = date(2020, 6, 15)
         make_draft_event(end_date=today - timedelta(days=1))
 
         assert count_published_ended_still_published(today=today) == 0
 
-    def test_zero_when_none(self):
+    def test_행사가_없으면_종료후_게시_건수는_0이다(self):
         today = date(2020, 6, 15)
 
         assert count_published_ended_still_published(today=today) == 0
 
-    def test_default_today_returns_int_without_crash(self, make_event):
+    def test_기준일을_생략해도_오류_없이_정수_건수를_반환한다(self, make_event):
         make_event(end_date=date(2000, 1, 1))
 
         result = count_published_ended_still_published()
 
         assert isinstance(result, int)
 
-    def test_two_matching_events_counts_two(self, make_event):
+    def test_종료일이_지난_행사가_두_건이면_종료후_게시_건수는_2다(self, make_event):
         # Guards against a .count() -> .exists() regression (bool is a
         # subclass of int; an exists()-based count would still pass 0/1).
         today = date(2020, 6, 15)
@@ -133,12 +135,12 @@ class TestCountPublishedEndedStillPublished:
 
 @pytest.mark.django_db
 class TestCountPublishedMissingPoster:
-    def test_blank_poster_is_counted(self, make_event):
+    def test_포스터_이미지가_없으면_누락_건수에_포함된다(self, make_event):
         make_event(official_url=None)
 
         assert count_published_missing_poster() == 1
 
-    def test_set_poster_image_is_not_counted(self, make_event, png_bytes, settings, tmp_path):
+    def test_포스터_이미지가_있으면_누락_건수에서_제외된다(self, make_event, png_bytes, settings, tmp_path):
         settings.MEDIA_ROOT = str(tmp_path)
         event = make_event(official_url=None)
         event.poster_image = SimpleUploadedFile(
@@ -148,15 +150,15 @@ class TestCountPublishedMissingPoster:
 
         assert count_published_missing_poster() == 0
 
-    def test_non_published_excluded(self, make_draft_event):
+    def test_미게시_행사는_포스터_누락_집계에서_제외된다(self, make_draft_event):
         make_draft_event(official_url=None)
 
         assert count_published_missing_poster() == 0
 
-    def test_zero_when_none(self):
+    def test_행사가_없으면_포스터_누락_건수는_0이다(self):
         assert count_published_missing_poster() == 0
 
-    def test_two_matching_events_counts_two(self, make_event):
+    def test_포스터가_없는_행사가_두_건이면_누락_건수는_2다(self, make_event):
         # Guards against a .count() -> .exists() regression (bool is a
         # subclass of int; an exists()-based count would still pass 0/1).
         make_event(official_url=None)
@@ -172,41 +174,41 @@ class TestCountPublishedMissingPoster:
 
 @pytest.mark.django_db
 class TestCountPublishedMissingDates:
-    def test_null_start_date_is_counted(self, make_event):
+    def test_시작일이_없으면_날짜_누락_건수에_포함된다(self, make_event):
         make_event(official_url=None, start_date=None, end_date=date(2020, 1, 1))
 
         assert count_published_missing_dates() == 1
 
-    def test_null_end_date_is_counted(self, make_event):
+    def test_종료일이_없으면_날짜_누락_건수에_포함된다(self, make_event):
         make_event(official_url=None, start_date=date(2020, 1, 1), end_date=None)
 
         assert count_published_missing_dates() == 1
 
-    def test_both_dates_set_is_not_counted(self, make_event):
+    def test_시작일과_종료일이_모두_있으면_날짜_누락_건수에서_제외된다(self, make_event):
         make_event(
             official_url=None, start_date=date(2020, 1, 1), end_date=date(2020, 1, 2)
         )
 
         assert count_published_missing_dates() == 0
 
-    def test_both_dates_null_counted_exactly_once(self, make_event):
+    def test_시작일과_종료일이_모두_없어도_날짜_누락_건수에는_한_번만_집계된다(self, make_event):
         make_event(official_url=None, start_date=None, end_date=None)
 
         assert count_published_missing_dates() == 1
 
-    def test_non_published_excluded(self, make_draft_event):
+    def test_미게시_행사는_날짜_누락_집계에서_제외된다(self, make_draft_event):
         make_draft_event(official_url=None, start_date=None, end_date=None)
 
         assert count_published_missing_dates() == 0
 
-    def test_zero_when_none(self, make_event):
+    def test_날짜가_모두_있는_행사만_있으면_날짜_누락_건수는_0이다(self, make_event):
         make_event(
             official_url=None, start_date=date(2020, 1, 1), end_date=date(2020, 1, 2)
         )
 
         assert count_published_missing_dates() == 0
 
-    def test_two_matching_events_counts_two(self, make_event):
+    def test_날짜가_누락된_행사가_두_건이면_날짜_누락_건수는_2다(self, make_event):
         # Guards against a .count() -> .exists() regression (bool is a
         # subclass of int; an exists()-based count would still pass 0/1).
         make_event(official_url=None, start_date=None, end_date=date(2020, 1, 1))
@@ -224,17 +226,17 @@ class TestCountPublishedMissingDates:
 
 @pytest.mark.django_db
 class TestCountPublishedMissingRegion:
-    def test_blank_region_is_counted(self, make_event):
+    def test_지역이_빈_문자열이면_지역_누락_건수에_포함된다(self, make_event):
         make_event(official_url=None, region="")
 
         assert count_published_missing_region() == 1
 
-    def test_present_region_is_not_counted(self, make_event):
+    def test_지역이_있으면_지역_누락_건수에서_제외된다(self, make_event):
         make_event(official_url=None, region="서울")
 
         assert count_published_missing_region() == 0
 
-    def test_whitespace_only_region_is_not_counted(self, make_event):
+    def test_지역이_공백만_있으면_정규화_없이_지역_누락_건수에서_제외된다(self, make_event):
         # Conscious v1 decision: no strip/normalization. A whitespace-only
         # region is technically "blank" to a human, but this counter only
         # checks region == "" exactly, so it is NOT counted.
@@ -242,17 +244,17 @@ class TestCountPublishedMissingRegion:
 
         assert count_published_missing_region() == 0
 
-    def test_non_published_excluded(self, make_draft_event):
+    def test_미게시_행사는_지역_누락_집계에서_제외된다(self, make_draft_event):
         make_draft_event(official_url=None, region="")
 
         assert count_published_missing_region() == 0
 
-    def test_zero_when_none(self, make_event):
+    def test_지역_값이_있는_행사만_있으면_지역_누락_건수는_0이다(self, make_event):
         make_event(official_url=None, region="서울")
 
         assert count_published_missing_region() == 0
 
-    def test_two_matching_events_counts_two(self, make_event):
+    def test_지역이_없는_행사가_두_건이면_누락_건수는_2다(self, make_event):
         # Guards against a .count() -> .exists() regression (bool is a
         # subclass of int; an exists()-based count would still pass 0/1).
         make_event(official_url=None, region="")
@@ -268,7 +270,7 @@ class TestCountPublishedMissingRegion:
 
 @pytest.mark.django_db
 class TestPublishedQualityWarnings:
-    def test_all_five_keys_present_and_zero_on_empty_db(self):
+    def test_행사가_없으면_품질_경고_다섯_항목이_모두_0으로_반환된다(self):
         result = published_quality_warnings()
 
         assert result == {
@@ -282,7 +284,7 @@ class TestPublishedQualityWarnings:
         for value in result.values():
             assert isinstance(value, int)
 
-    def test_total_is_sum_of_the_five_warning_counts(self, make_event):
+    def test_품질_경고_총합은_다섯_항목_건수의_합과_같다(self, make_event):
         make_event(official_url=None, region="")
 
         result = published_quality_warnings()
@@ -295,7 +297,7 @@ class TestPublishedQualityWarnings:
             + result["missing_region"]
         )
 
-    def test_event_tripping_two_predicates_contributes_two_to_total(
+    def test_한_행사가_두_조건에_걸리면_총합에_2가_반영된다(
         self, make_event, png_bytes, settings, tmp_path
     ):
         # official_url and region both missing on the same event, with every
@@ -318,7 +320,7 @@ class TestPublishedQualityWarnings:
 
         assert result["total"] == 2
 
-    def test_independent_counts_no_cross_contamination(self, make_event, png_bytes, settings, tmp_path):
+    def test_각_행사가_서로_다른_조건에_걸리면_해당_항목에만_독립적으로_집계된다(self, make_event, png_bytes, settings, tmp_path):
         settings.MEDIA_ROOT = str(tmp_path)
         today = date(2020, 6, 15)
         future_end = today + timedelta(days=30)
@@ -382,7 +384,7 @@ class TestPublishedQualityWarnings:
             "total": 5,
         }
 
-    def test_one_event_tripping_two_predicates_counts_in_both_keys(self, make_event):
+    def test_한_행사가_두_조건에_걸리면_해당_두_항목_각각에_1씩_집계된다(self, make_event):
         make_event(official_url=None, region="")
 
         result = published_quality_warnings()
@@ -390,7 +392,7 @@ class TestPublishedQualityWarnings:
         assert result["missing_official_url"] == 1
         assert result["missing_region"] == 1
 
-    def test_non_published_event_tripping_all_counts_zero(self, make_draft_event):
+    def test_미게시_행사는_모든_조건에_걸려도_품질_경고_집계가_0이다(self, make_draft_event):
         today = date(2020, 6, 15)
         make_draft_event(
             official_url=None,
@@ -410,7 +412,7 @@ class TestPublishedQualityWarnings:
             "total": 0,
         }
 
-    def test_today_is_forwarded_to_ended_check(self, make_event):
+    def test_기준일_인자가_종료후_게시_판정에도_전달된다(self, make_event):
         fixed_today = date(2020, 1, 1)
         make_event(
             official_url="https://example.com/x",

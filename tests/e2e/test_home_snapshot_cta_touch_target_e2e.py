@@ -9,7 +9,7 @@ pytestmark = pytest.mark.e2e
 
 
 class TestHomeSnapshotCtaTouchTarget:
-    def test_empty_state_ctas_meet_min_height(self, live_server, page, seed, login):
+    def test_홈_컬렉션_스냅샷_빈_상태_CTA는_44px_이상의_터치_영역을_갖는다(self, live_server, page, seed, login):
         # The plain seeded user has no CollectionItem/visited/upcoming-planned
         # data (seed's own planned events carry no start_date, so they never
         # qualify as "upcoming") — snapshot_active is False, landing on the

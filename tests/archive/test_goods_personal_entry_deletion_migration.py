@@ -18,6 +18,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from archive.models import CollectionItem, PersonalEntry
 
+pytestmark = pytest.mark.contract
+
 
 def _deletion_migration_module():
     return importlib.import_module("archive.migrations.0018_remove_goods_personal_entries")
@@ -28,7 +30,7 @@ def _goods_migration_module():
 
 
 @pytest.mark.django_db
-def test_delete_goods_personal_entries_removes_goods_and_preserves_place(
+def test_삭제_마이그레이션을_실행하면_GOODS_행은_제거되고_PLACE_행은_보존된다(
     make_user, make_entry
 ):
     user = make_user()
@@ -45,7 +47,7 @@ def test_delete_goods_personal_entries_removes_goods_and_preserves_place(
 
 
 @pytest.mark.django_db
-def test_delete_goods_personal_entries_scoped_across_users(make_user):
+def test_삭제_마이그레이션은_사용자별로_GOODS_행만_제거하고_PLACE_행은_보존한다(make_user):
     user_a = make_user()
     user_b = make_user()
     place_a = PersonalEntry.objects.create(user=user_a, kind="place", title="A의 장소")
@@ -64,7 +66,7 @@ def test_delete_goods_personal_entries_scoped_across_users(make_user):
 
 
 @pytest.mark.django_db
-def test_sequential_0017_then_0018_preserves_migrated_collection_item_image(
+def test_이관_마이그레이션_이후_삭제_마이그레이션을_실행해도_이관된_이미지는_보존된다(
     make_user, png_bytes, settings, tmp_path
 ):
     """CP13's original intent: the CollectionItem image copy 0017 creates

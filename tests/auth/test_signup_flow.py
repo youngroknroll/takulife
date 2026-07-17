@@ -4,9 +4,11 @@ import re
 
 import pytest
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_register_redirects_to_safe_next_after_email_confirmation(client, mailoutbox, valid_password):
+def test_회원가입_후_이메일_인증을_완료하면_처음_요청한_next_경로로_리다이렉트된다(client, mailoutbox, valid_password):
     resp = client.post(
         "/accounts/signup/?next=/archive/visits/",
         data={

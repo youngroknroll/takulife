@@ -9,10 +9,12 @@ from django.test import Client
 
 from archive.models import PersonalEntry, UserEventStatus
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
 class TestArchiveVisitsSelectableEvents:
-    def test_dropdown_lists_only_user_planned_events(self, make_user, make_event, make_status):
+    def test_방문_기록_추가_드롭다운은_사용자가_방문_예정으로_등록한_행사만_보여준다(self, make_user, make_event, make_status):
         user = make_user()
         planned = make_event(title="Planned event")
         make_event(title="Other published event")  # published but not planned
@@ -26,7 +28,7 @@ class TestArchiveVisitsSelectableEvents:
         selectable = list(resp.context["selectable_events"])
         assert selectable == [planned]
 
-    def test_visited_and_missed_events_are_not_selectable(self, make_user, make_event, make_status):
+    def test_방문_기록_추가_드롭다운에서_이미_다녀왔거나_놓친_행사는_선택할_수_없다(self, make_user, make_event, make_status):
         user = make_user()
         planned = make_event(title="Planned")
         visited = make_event(title="Visited")
@@ -40,7 +42,7 @@ class TestArchiveVisitsSelectableEvents:
         titles = [e.title for e in resp.context["selectable_events"]]
         assert titles == ["Planned"]
 
-    def test_selectable_personal_entries_excludes_goods(self, make_user, make_entry):
+    def test_방문_기록_추가_드롭다운은_직접_등록한_굿즈_항목을_제외한다(self, make_user, make_entry):
         # GOODS is no longer a valid visit subject (collection domain plan
         # §3-3) — must never appear in the inline dropdown, even for a legacy
         # row created before the write path was closed.
@@ -58,7 +60,7 @@ class TestArchiveVisitsSelectableEvents:
 
 @pytest.mark.django_db
 class TestArchiveVisitsCategoryFilter:
-    def test_categories_and_has_unofficial_context(self, make_user, make_event, make_visit, make_entry):
+    def test_다녀온_기록_카테고리_목록은_행사와_직접_등록_항목_카테고리를_중복없이_모으고_비공식_여부를_표시한다(self, make_user, make_event, make_visit, make_entry):
         user = make_user()
         popup = make_event(title="Popup", category="popup_store")
         cafe = make_event(title="Cafe", category="collaboration_cafe")
@@ -76,7 +78,7 @@ class TestArchiveVisitsCategoryFilter:
         assert resp.context["categories"] == ["콜라보 카페", "팝업스토어"]
         assert resp.context["has_unofficial"] is True
 
-    def test_has_unofficial_false_without_personal_entries(self, make_user, make_event, make_visit):
+    def test_직접_등록_항목이_없으면_다녀온_기록에_비공식_방문이_없다고_표시한다(self, make_user, make_event, make_visit):
         user = make_user()
         event = make_event(title="Popup", category="popup_store")
         make_visit(user, event=event, visited_on="2026-05-20")

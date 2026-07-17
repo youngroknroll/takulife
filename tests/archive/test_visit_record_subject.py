@@ -13,8 +13,9 @@ from archive.models import PersonalEntry, VisitRecord
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_visit_record_accepts_personal_entry_subject(make_user):
+def test_비공식_장소를_대상으로_방문_기록을_생성하면_개인_항목이_연결된다(make_user):
     user = make_user(username="vr-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
@@ -26,8 +27,9 @@ def test_visit_record_accepts_personal_entry_subject(make_user):
     assert record.personal_entry == entry
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_visit_record_rejects_both_subjects(make_user, make_event):
+def test_방문_기록에_공식_행사와_비공식_장소를_동시에_지정하면_생성이_거부된다(make_user, make_event):
     user = make_user(username="vr-both")
     event = make_event(title="Official")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
@@ -39,8 +41,9 @@ def test_visit_record_rejects_both_subjects(make_user, make_event):
             )
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_visit_record_rejects_no_subject(make_user):
+def test_방문_기록에_대상을_지정하지_않으면_생성이_거부된다(make_user):
     user = make_user(username="vr-none")
 
     with pytest.raises(IntegrityError):
@@ -53,8 +56,9 @@ def test_visit_record_rejects_no_subject(make_user):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_visit_record_with_personal_entry(client, make_user):
+def test_API로_비공식_장소를_대상으로_방문_기록을_생성하면_개인_항목이_저장된다(client, make_user):
     user = make_user(username="vr-api-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 카페")
 
@@ -71,8 +75,9 @@ def test_api_create_visit_record_with_personal_entry(client, make_user):
     assert data["event"] is None
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_visit_record_with_event_still_works(client, make_user, make_event):
+def test_API로_공식_행사를_대상으로_방문_기록을_생성하면_행사가_저장된다(client, make_user, make_event):
     user = make_user(username="vr-api-ev")
     event = make_event(title="Official event")
 
@@ -87,8 +92,9 @@ def test_api_create_visit_record_with_event_still_works(client, make_user, make_
     assert response.json()["event"] == event.id
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_create_visit_record_requires_exactly_one_subject(client, make_user):
+def test_API로_대상_없이_방문_기록_생성을_요청하면_거부된다(client, make_user):
     user = make_user(username="vr-api-none")
 
     client.force_login(user)
@@ -101,8 +107,9 @@ def test_api_create_visit_record_requires_exactly_one_subject(client, make_user)
     assert response.status_code == 400
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_rejects_goods_personal_entry_subject(client, make_user):
+def test_굿즈_개인_항목을_대상으로_방문_기록_생성을_요청하면_거부된다(client, make_user):
     """GOODS is no longer a valid archive-action subject (collection domain
     plan §3-3) — only PLACE personal entries may be attached to a visit record."""
     user = make_user(username="vr-api-goods")
@@ -119,8 +126,9 @@ def test_api_rejects_goods_personal_entry_subject(client, make_user):
     assert not VisitRecord.objects.filter(personal_entry=entry).exists()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_api_cannot_attach_another_users_personal_entry(client, make_user):
+def test_타인의_개인_항목을_대상으로_방문_기록_생성을_요청하면_거부된다(client, make_user):
     user = make_user(username="vr-api-scope")
     other = make_user(username="vr-api-scope-other")
     theirs = PersonalEntry.objects.create(user=other, kind="place", title="Theirs")

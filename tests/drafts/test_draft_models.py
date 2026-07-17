@@ -7,21 +7,23 @@ from django.core.exceptions import ValidationError
 
 from drafts.models import EventDraft
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
 class TestExtractionMethodField:
-    def test_defaults_to_heuristic(self, make_draft):
+    def test_extraction_method를_지정하지_않으면_기본값_heuristic으로_저장된다(self, make_draft):
         draft = make_draft("https://example.com/event")
 
         assert draft.extraction_method == EventDraft.ExtractionMethod.HEURISTIC
 
-    def test_llm_value_round_trips(self, make_draft):
+    def test_extraction_method에_llm_값을_저장하면_그대로_유지된다(self, make_draft):
         draft = make_draft("https://example.com/event", extraction_method=EventDraft.ExtractionMethod.LLM)
         draft.refresh_from_db()
 
         assert draft.extraction_method == EventDraft.ExtractionMethod.LLM
 
-    def test_invalid_choice_raises_validation_error_on_full_clean(self):
+    def test_extraction_method에_허용되지_않은_값을_지정하면_full_clean에서_검증_오류가_난다(self):
         draft = EventDraft(
             source_url="https://example.com/event",
             extraction_method="not-a-real-method",
@@ -33,12 +35,12 @@ class TestExtractionMethodField:
 
 @pytest.mark.django_db
 class TestConfidenceField:
-    def test_defaults_to_none(self, make_draft):
+    def test_confidence를_지정하지_않으면_기본값_None으로_저장된다(self, make_draft):
         draft = make_draft("https://example.com/event")
 
         assert draft.confidence is None
 
-    def test_float_value_round_trips(self, make_draft):
+    def test_confidence에_실수_값을_저장하면_그대로_유지된다(self, make_draft):
         draft = make_draft("https://example.com/event", confidence=0.87)
         draft.refresh_from_db()
 
@@ -51,6 +53,6 @@ class TestConfidenceField:
 
 
 @pytest.mark.django_db
-def test_event_draft_str():
+def test_이벤트_드래프트를_문자열로_표현하면_출처_url이_된다():
     draft = EventDraft(source_url="https://example.com/x")
     assert str(draft) == "https://example.com/x"

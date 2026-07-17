@@ -9,6 +9,8 @@ is asserted for all three roles below, not just the regular-member case.
 """
 import pytest
 
+pytestmark = pytest.mark.web
+
 MYPAGE_LINK = b'href="/mypage/"'
 STAFF_CONSOLE_LINK = b'href="/staff/dashboard/"'
 SETTINGS_LINK = b'href="/accounts/settings/"'
@@ -17,7 +19,7 @@ DELETE_LINK = b'href="/accounts/delete/"'
 
 
 @pytest.mark.django_db
-def test_regular_member_sees_mypage_not_staff_console(client, make_user):
+def test_일반_회원은_마이페이지만_보이고_스태프_콘솔은_보이지_않는다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -31,7 +33,7 @@ def test_regular_member_sees_mypage_not_staff_console(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_member_sees_staff_console_and_settings_not_mypage(client, make_user):
+def test_스태프_회원은_스태프_콘솔과_설정만_보이고_마이페이지는_보이지_않는다(client, make_user):
     """Staff has no mypage (no personal archive summary), so 설정 is the
     only click-reachable path to change email/password — without it staff
     could never reach account_change_password/account_email from the UI."""
@@ -48,7 +50,7 @@ def test_staff_member_sees_staff_console_and_settings_not_mypage(client, make_us
 
 
 @pytest.mark.django_db
-def test_superuser_sees_admin_link_in_addition_to_staff_console_and_settings(client, make_user):
+def test_슈퍼유저는_스태프_콘솔_설정에_더해_관리자_링크도_보인다(client, make_user):
     superuser = make_user(is_staff=True, is_superuser=True)
     client.force_login(superuser)
 
@@ -62,7 +64,7 @@ def test_superuser_sees_admin_link_in_addition_to_staff_console_and_settings(cli
 
 
 @pytest.mark.django_db
-def test_anonymous_visitor_sees_neither_account_menu_branch(client):
+def test_비로그인_방문자는_계정_메뉴_어느_분기도_보이지_않는다(client):
     response = client.get("/")
 
     assert MYPAGE_LINK not in response.content

@@ -11,12 +11,14 @@ import pytest
 
 from archive.models import UserEventStatus
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
 class TestArchiveRecordPagination:
     """기록장 (/archive/) — 저장한 행사, 10 per page."""
 
-    def test_first_page_caps_at_ten(self, user_client, make_statuses):
+    def test_전체_보기_첫_페이지는_열_건까지만_보여준다(self, user_client, make_statuses):
         user, client = user_client()
         make_statuses(user, 12)
 
@@ -31,7 +33,7 @@ class TestArchiveRecordPagination:
         assert len(resp.context["status_rows"]) == 10
         assert resp.context["has_statuses"] is True
 
-    def test_second_page_holds_remainder(self, user_client, make_statuses):
+    def test_전체_보기_두번째_페이지는_남은_건수를_보여준다(self, user_client, make_statuses):
         user, client = user_client()
         make_statuses(user, 12)
 
@@ -42,7 +44,7 @@ class TestArchiveRecordPagination:
         assert page_obj.number == 2
         assert len(page_obj.object_list) == 2
 
-    def test_no_pager_when_within_one_page(self, user_client, make_statuses):
+    def test_전체_보기_건수가_한_페이지_이내면_페이저가_없다(self, user_client, make_statuses):
         user, client = user_client()
         make_statuses(user, 8)
 
@@ -56,7 +58,7 @@ class TestArchiveRecordPagination:
 class TestArchiveStatusesPagination:
     """예정 목록 (/archive/statuses/) — 5 per page, filter-preserving."""
 
-    def test_first_page_caps_at_five(self, user_client, make_statuses):
+    def test_나의_일정_첫_페이지는_다섯_건까지만_보여준다(self, user_client, make_statuses):
         user, client = user_client()
         make_statuses(user, 7)
 
@@ -68,7 +70,7 @@ class TestArchiveStatusesPagination:
         assert page_obj.paginator.num_pages == 2
         assert len(page_obj.object_list) == 5
 
-    def test_second_page_holds_remainder(self, user_client, make_statuses):
+    def test_나의_일정_두번째_페이지는_남은_건수를_보여준다(self, user_client, make_statuses):
         user, client = user_client()
         make_statuses(user, 7)
 
@@ -77,7 +79,7 @@ class TestArchiveStatusesPagination:
         assert resp.context["page_obj"].number == 2
         assert len(resp.context["page_obj"].object_list) == 2
 
-    def test_status_filter_preserved_in_pager_links(self, user_client, make_statuses):
+    def test_나의_일정_페이저_링크는_활성_상태_필터를_유지한다(self, user_client, make_statuses):
         user, client = user_client()
         make_statuses(user, 7, status=UserEventStatus.Status.PLANNED)
 
@@ -92,7 +94,7 @@ class TestArchiveStatusesPagination:
         # (correct HTML; the browser decodes it back to & when navigating).
         assert b"?page=2&amp;status=planned" in resp.content
 
-    def test_filtered_second_page_keeps_only_matching_rows(self, user_client, make_statuses):
+    def test_나의_일정_상태_필터의_두번째_페이지는_일치하는_행만_보여준다(self, user_client, make_statuses):
         user, client = user_client()
         make_statuses(user, 7, status=UserEventStatus.Status.PLANNED)
         # Visited rows must not leak into the planned-filtered list/count.
@@ -119,7 +121,7 @@ class TestArchiveVisitsPagination:
                 short_review="좋았어요" if i < with_memo else "",
             )
 
-    def test_first_page_caps_at_five(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_첫_페이지는_다섯_건까지만_보여준다(self, user_client, make_event, make_visit):
         user, client = user_client()
         self._make_visits(user, make_event, make_visit, 7)
 
@@ -132,7 +134,7 @@ class TestArchiveVisitsPagination:
         assert len(page_obj.object_list) == 5
         assert len(resp.context["visit_rows"]) == 5
 
-    def test_second_page_holds_remainder(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_두번째_페이지는_남은_건수를_보여준다(self, user_client, make_event, make_visit):
         user, client = user_client()
         self._make_visits(user, make_event, make_visit, 7)
 
@@ -140,7 +142,7 @@ class TestArchiveVisitsPagination:
 
         assert len(resp.context["page_obj"].object_list) == 2
 
-    def test_summary_counts_report_totals_not_page(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_요약_카드는_페이지가_아닌_전체_건수를_보여준다(self, user_client, make_event, make_visit):
         user, client = user_client()
         self._make_visits(user, make_event, make_visit, 7, with_memo=3)
 

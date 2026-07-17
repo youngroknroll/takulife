@@ -9,10 +9,12 @@ from django.utils import timezone
 
 from drafts.models import DraftSource
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
 class TestDraftSourceCreation:
-    def test_creates_with_required_fields(self):
+    def test_필수_필드만_지정하면_드래프트_소스가_생성된다(self):
         source = DraftSource.objects.create(
             name="atzip",
             url="https://atzip.kr/feed/",
@@ -24,7 +26,7 @@ class TestDraftSourceCreation:
         assert source.url == "https://atzip.kr/feed/"
         assert source.source_type == DraftSource.SourceType.RSS
 
-    def test_url_is_unique(self):
+    def test_동일한_url로_드래프트_소스를_중복_생성하면_무결성_오류가_난다(self):
         """Two DraftSource rows pointing at the same feed/sitemap/board URL
         would make discover_drafts (PR-3) check and fetch it twice every
         run — the registry itself must reject the duplicate."""
@@ -48,8 +50,9 @@ class TestSourceTypeField:
     @pytest.mark.parametrize(
         "source_type",
         [DraftSource.SourceType.RSS, DraftSource.SourceType.SITEMAP, DraftSource.SourceType.HTML],
+        ids=["RSS", "사이트맵", "HTML"],
     )
-    def test_round_trips(self, source_type):
+    def test_source_type_값을_저장하면_그대로_유지된다(self, source_type):
         source = DraftSource.objects.create(
             name="source", url="https://example.com/", source_type=source_type
         )
@@ -57,7 +60,7 @@ class TestSourceTypeField:
 
         assert source.source_type == source_type
 
-    def test_invalid_choice_raises_validation_error_on_full_clean(self):
+    def test_source_type에_허용되지_않은_값을_지정하면_full_clean에서_검증_오류가_난다(self):
         source = DraftSource(
             name="source", url="https://example.com/", source_type="atom"
         )
@@ -68,14 +71,14 @@ class TestSourceTypeField:
 
 @pytest.mark.django_db
 class TestEnabledField:
-    def test_defaults_to_false(self):
+    def test_enabled를_지정하지_않으면_기본값_False로_저장된다(self):
         source = DraftSource.objects.create(
             name="source", url="https://example.com/", source_type=DraftSource.SourceType.RSS
         )
 
         assert source.enabled is False
 
-    def test_true_value_round_trips(self):
+    def test_enabled를_True로_저장하면_그대로_유지된다(self):
         source = DraftSource.objects.create(
             name="source",
             url="https://example.com/",
@@ -89,14 +92,14 @@ class TestEnabledField:
 
 @pytest.mark.django_db
 class TestLinkSelectorField:
-    def test_defaults_to_blank_string(self):
+    def test_link_selector를_지정하지_않으면_기본값_빈_문자열로_저장된다(self):
         source = DraftSource.objects.create(
             name="source", url="https://example.com/", source_type=DraftSource.SourceType.HTML
         )
 
         assert source.link_selector == ""
 
-    def test_selector_value_round_trips(self):
+    def test_link_selector에_css_선택자_값을_저장하면_그대로_유지된다(self):
         source = DraftSource.objects.create(
             name="source",
             url="https://example.com/",
@@ -110,14 +113,14 @@ class TestLinkSelectorField:
 
 @pytest.mark.django_db
 class TestLastCheckedAtField:
-    def test_defaults_to_none(self):
+    def test_last_checked_at를_지정하지_않으면_기본값_None으로_저장된다(self):
         source = DraftSource.objects.create(
             name="source", url="https://example.com/", source_type=DraftSource.SourceType.RSS
         )
 
         assert source.last_checked_at is None
 
-    def test_datetime_value_round_trips(self):
+    def test_last_checked_at에_일시_값을_저장하면_그대로_유지된다(self):
         now = timezone.now()
         source = DraftSource.objects.create(
             name="source",
@@ -132,14 +135,14 @@ class TestLastCheckedAtField:
 
 @pytest.mark.django_db
 class TestLastErrorField:
-    def test_defaults_to_blank_string(self):
+    def test_last_error를_지정하지_않으면_기본값_빈_문자열로_저장된다(self):
         source = DraftSource.objects.create(
             name="source", url="https://example.com/", source_type=DraftSource.SourceType.RSS
         )
 
         assert source.last_error == ""
 
-    def test_stores_long_error_message_without_truncation_or_db_error(self):
+    def test_last_error는_긴_오류_메시지도_잘림_없이_저장한다(self):
         """A CharField would either truncate silently or raise a Postgres
         DataError for a long exception string — this must go through
         .objects.create() directly (not full_clean(), which would just

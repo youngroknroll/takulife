@@ -30,10 +30,6 @@ dev = [
     "pytest-playwright>=0.8.0",
 ]
 
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
-
 [tool.coverage.run]
 # Migrations are framework-generated and run once against the DB; their
 # data-backfill (RunPython) bodies don't execute on an empty test DB and are

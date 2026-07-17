@@ -34,7 +34,7 @@ def _png_bytes():
 
 
 class TestHscrollDesktopArrowTouchTarget:
-    def test_desktop_arrow_meets_min_height(self, live_server, page, seed):
+    def test_데스크톱_hscroll_화살표_버튼은_44px_이상의_터치_타깃을_가진다(self, live_server, page, seed):
         page.set_viewport_size({"width": 1280, "height": 900})
         page.goto(live_server.url + "/")
 
@@ -44,7 +44,7 @@ class TestHscrollDesktopArrowTouchTarget:
 
 
 class TestHscrollMobileArrowHitArea:
-    def test_mobile_arrow_hit_box_meets_min_height_and_edge_is_clickable(
+    def test_모바일_hscroll_화살표는_44px_히트_영역을_가지고_시각적_원_밖_가장자리를_클릭해도_스크롤된다(
         self, live_server, page, seed
     ):
         page.set_viewport_size({"width": 375, "height": 900})
@@ -88,7 +88,7 @@ class TestHscrollMobileArrowHitArea:
 
 
 class TestPhotoCarouselArrowTouchTarget:
-    def test_carousel_arrow_meets_min_height(self, live_server, page, seed, login):
+    def test_방문_기록_사진_캐러셀_화살표_버튼은_44px_이상의_터치_타깃을_가진다(self, live_server, page, seed, login):
         visit = VisitRecord.objects.create(
             user=seed.user, event=seed.events[0], visited_on="2026-06-16"
         )

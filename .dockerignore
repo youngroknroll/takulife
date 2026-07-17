@@ -10,6 +10,10 @@ db.sqlite3
 .env.*
 .docs
 tests
+# Test-only fast (MD5) password hasher module — never let the production
+# image load it (defense in depth on top of TS-INF-02b's source-boundary
+# check; see tests/core/test_test_settings_boundary.py).
+config/settings_test.py
 .pytest_cache
 .coverage
 htmlcov

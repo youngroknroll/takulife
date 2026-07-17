@@ -10,6 +10,8 @@ from archive.models import PersonalEntry, UserEventStatus, VisitRecord
 from archive.services import complete_visit_with_record
 from core.models import AnalyticsEvent
 
+pytestmark = pytest.mark.domain
+
 
 # ---------------------------------------------------------------------------
 # CP1 — no existing status row: auto-create visited
@@ -17,7 +19,7 @@ from core.models import AnalyticsEvent
 
 
 @pytest.mark.django_db
-def test_no_existing_status_auto_creates_visited(make_user, make_event):
+def test_상태_기록이_없는_행사를_방문_완료_처리하면_방문_완료_상태와_기록이_함께_생성된다(make_user, make_event):
     user = make_user()
     event = make_event()
 
@@ -34,7 +36,7 @@ def test_no_existing_status_auto_creates_visited(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_existing_planned_status_auto_transitions_to_visited(make_user, make_event, make_status):
+def test_참석_예정_상태에서_방문_완료_처리하면_같은_상태_행이_방문_완료로_전환된다(make_user, make_event, make_status):
     user = make_user()
     event = make_event()
     status_row = make_status(user, event, status=UserEventStatus.Status.PLANNED)
@@ -52,7 +54,7 @@ def test_existing_planned_status_auto_transitions_to_visited(make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_existing_missed_status_transitions_to_visited(make_user, make_event, make_status):
+def test_불참_상태에서_방문_완료_처리하면_상태가_방문_완료로_전환된다(make_user, make_event, make_status):
     user = make_user()
     event = make_event()
     status_row = make_status(user, event, status=UserEventStatus.Status.MISSED)
@@ -69,7 +71,7 @@ def test_existing_missed_status_transitions_to_visited(make_user, make_event, ma
 
 
 @pytest.mark.django_db
-def test_repeat_visit_on_already_visited_event_allowed_no_status_churn(
+def test_이미_방문_완료된_행사를_다시_방문_완료_처리하면_상태는_그대로_유지되고_기록만_추가된다(
     make_user, make_event, make_status
 ):
     user = make_user()
@@ -105,8 +107,9 @@ def test_repeat_visit_on_already_visited_event_allowed_no_status_churn(
 @pytest.mark.parametrize(
     "starting_status",
     [None, UserEventStatus.Status.PLANNED, UserEventStatus.Status.MISSED],
+    ids=["상태_없음", "참석_예정", "불참"],
 )
-def test_each_branch_records_marked_visited_exactly_once(
+def test_상태_없음_참석_예정_불참_중_어디서_시작해도_방문_완료_처리_시_방문_완료_이벤트가_한_번만_기록된다(
     make_user, make_event, make_status, starting_status
 ):
     user = make_user()
@@ -136,7 +139,7 @@ def test_each_branch_records_marked_visited_exactly_once(
 
 
 @pytest.mark.django_db
-def test_no_existing_status_auto_creates_visited_for_personal_entry_subject(make_user):
+def test_비공식_장소를_방문_완료_처리하면_해당_장소_기준으로_상태와_기록이_생성된다(make_user):
     user = make_user()
     entry = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="비공식 장소")
 
@@ -153,7 +156,7 @@ def test_no_existing_status_auto_creates_visited_for_personal_entry_subject(make
 
 
 @pytest.mark.django_db
-def test_status_write_failure_rolls_back_visit_record(monkeypatch, make_user, make_event):
+def test_상태_저장이_실패하면_방문_기록_생성도_함께_롤백된다(monkeypatch, make_user, make_event):
     from django.db import IntegrityError
 
     user = make_user()
@@ -179,7 +182,7 @@ def test_status_write_failure_rolls_back_visit_record(monkeypatch, make_user, ma
 
 
 @pytest.mark.django_db
-def test_data_migration_fixes_planned_status_with_existing_record(
+def test_방문_기록이_있는데_상태만_참석_예정으로_남아있으면_마이그레이션이_방문_완료로_보정한다(
     make_user, make_event, make_status, make_visit
 ):
     import importlib
@@ -217,7 +220,7 @@ def test_data_migration_fixes_planned_status_with_existing_record(
 
 
 @pytest.mark.django_db
-def test_data_migration_ignores_other_users_visit_record(
+def test_다른_사용자의_방문_기록은_마이그레이션_보정_대상에서_제외된다(
     make_user, make_event, make_status, make_visit
 ):
     import importlib
@@ -252,7 +255,7 @@ def test_data_migration_ignores_other_users_visit_record(
 
 
 @pytest.mark.django_db
-def test_analytics_failure_during_transition_does_not_break_domain_writes(
+def test_분석_이벤트_기록이_실패해도_방문_완료_상태_전환과_기록_저장은_유지된다(
     monkeypatch, make_user, make_event, make_status
 ):
     user = make_user()

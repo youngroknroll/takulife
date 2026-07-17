@@ -13,9 +13,11 @@ from staff.models import StaffActionLog
 
 CREATE_URL = "/staff/events/new/"
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_anonymous_redirects_to_login(client):
+def test_비로그인_사용자가_이벤트_생성_페이지에_접근하면_로그인_페이지로_리다이렉트된다(client):
     resp = client.get(CREATE_URL)
 
     assert resp.status_code == 302
@@ -23,7 +25,7 @@ def test_anonymous_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_non_staff_returns_403(client, make_user):
+def test_스태프가_아닌_사용자가_이벤트_생성_페이지에_접근하면_403을_응답한다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -33,7 +35,7 @@ def test_non_staff_returns_403(client, make_user):
 
 
 @pytest.mark.django_db
-def test_get_renders_blank_form(staff_client):
+def test_이벤트_생성_페이지_GET은_빈_폼을_렌더링한다(staff_client):
     staff, client = staff_client()
 
     resp = client.get(CREATE_URL)
@@ -43,7 +45,7 @@ def test_get_renders_blank_form(staff_client):
 
 
 @pytest.mark.django_db
-def test_post_creates_published_event_and_writes_audit_log(staff_client, staff_event_payload):
+def test_이벤트_생성_폼_제출은_게시된_이벤트를_생성하고_감사_로그를_남긴다(staff_client, staff_event_payload):
     staff, client = staff_client()
 
     resp = client.post(CREATE_URL, staff_event_payload())
@@ -60,7 +62,7 @@ def test_post_creates_published_event_and_writes_audit_log(staff_client, staff_e
 
 
 @pytest.mark.django_db
-def test_post_blank_title_returns_400_with_field_error_and_does_not_create(staff_client, staff_event_payload):
+def test_제목이_빈_값이면_400과_필드_오류를_응답하고_이벤트를_생성하지_않는다(staff_client, staff_event_payload):
     staff, client = staff_client()
 
     resp = client.post(
@@ -74,7 +76,7 @@ def test_post_blank_title_returns_400_with_field_error_and_does_not_create(staff
 
 
 @pytest.mark.django_db
-def test_post_duplicate_official_url_returns_400_with_field_error(
+def test_공식_URL이_중복되면_400과_필드_오류를_응답하고_이벤트를_생성하지_않는다(
     staff_client, make_event, staff_event_payload
 ):
     staff, client = staff_client()
@@ -91,7 +93,7 @@ def test_post_duplicate_official_url_returns_400_with_field_error(
 
 
 @pytest.mark.django_db
-def test_list_page_links_to_create_page(staff_client):
+def test_이벤트_목록_페이지는_생성_페이지로_가는_링크를_포함한다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/events/")

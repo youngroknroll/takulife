@@ -19,6 +19,9 @@ violation list — but any file containing one still fails the assertion.
 """
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.contract
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES_ROOT = PROJECT_ROOT / "templates"
@@ -33,7 +36,7 @@ def _unbalanced_comment_lines():
     return violations
 
 
-def test_no_multiline_django_comments_in_templates():
+def test_템플릿에_여러_줄에_걸친_django_주석이_없다():
     violations = _unbalanced_comment_lines()
 
     assert not violations, violations

@@ -21,12 +21,14 @@ from staff.models import StaffActionLog
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesAuth:
-    def test_anonymous_redirected(self):
+    pytestmark = pytest.mark.web
+
+    def test_비로그인_사용자가_홈_카테고리_설정_화면에_접근하면_302로_리다이렉트된다(self):
         resp = Client().get("/staff/home-categories/")
 
         assert resp.status_code == 302
 
-    def test_regular_user_redirected(self, make_user):
+    def test_일반_사용자가_홈_카테고리_설정_화면에_접근하면_403이_응답된다(self, make_user):
         user = make_user()
         client = Client()
         client.force_login(user)
@@ -35,7 +37,7 @@ class TestStaffHomeCategoriesAuth:
 
         assert resp.status_code == 403
 
-    def test_staff_user_gets_200(self, staff_client):
+    def test_스태프가_홈_카테고리_설정_화면에_접근하면_200이_응답된다(self, staff_client):
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
@@ -53,14 +55,16 @@ class TestStaffHomeCategoriesTemplateAssets:
     never loaded — the checkbox/order-input touch targets rendered at raw UA
     defaults (checkbox ~13px, order input inline style="width: 4rem;")."""
 
-    def test_response_loads_staff_console_css(self, staff_client):
+    pytestmark = pytest.mark.web
+
+    def test_홈_카테고리_설정_화면은_staff_console_css를_로드한다(self, staff_client):
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
 
         assert b"css/pages/staff_console.css" in resp.content
 
-    def test_checkbox_is_wrapped_in_touch_target_label(self, staff_client):
+    def test_홈_카테고리_설정_화면의_체크박스는_터치_타깃_라벨로_감싸져_있다(self, staff_client):
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
@@ -68,14 +72,14 @@ class TestStaffHomeCategoriesTemplateAssets:
         assert b'class="home-cat-select"' in resp.content
         assert b'class="home-cat-checkbox"' in resp.content
 
-    def test_order_input_has_no_inline_style(self, staff_client):
+    def test_홈_카테고리_설정_화면의_순서_입력_필드는_인라인_스타일을_갖지_않는다(self, staff_client):
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
 
         assert b'style="width: 4rem;"' not in resp.content
 
-    def test_layout_uses_single_column_variant(self, staff_client):
+    def test_홈_카테고리_설정_화면은_단일_컬럼_레이아웃_변형을_사용한다(self, staff_client):
         """staff_console.css now also loads on this page, which brings in
         dashboard.html's desktop 2-column .layout override (57.5rem+) — this
         page's .layout has only one .panel child (no side-stack), so at
@@ -96,7 +100,9 @@ class TestStaffHomeCategoriesTemplateAssets:
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesPost:
-    def test_post_saves_featured_categories_in_order(self, staff_client):
+    pytestmark = pytest.mark.web
+
+    def test_강조_카테고리를_저장하면_지정한_순서대로_저장된다(self, staff_client):
         _, client = staff_client()
 
         resp = client.post(
@@ -113,7 +119,7 @@ class TestStaffHomeCategoriesPost:
         config = HomeConfig.get_solo()
         assert config.featured_categories == ["exhibition", "popup_store"]
 
-    def test_post_respects_order_field(self, staff_client):
+    def test_강조_카테고리_저장시_순서_필드_값을_기준으로_정렬해_저장한다(self, staff_client):
         """order_<slug> fields determine the sort; popup_store first here."""
         _, client = staff_client()
 
@@ -131,7 +137,7 @@ class TestStaffHomeCategoriesPost:
         config = HomeConfig.get_solo()
         assert config.featured_categories == ["popup_store", "exhibition"]
 
-    def test_post_bogus_slug_in_form_data_ignored(self, staff_client):
+    def test_존재하지_않는_슬러그로_저장을_시도하면_무시되고_유효한_카테고리만_저장된다(self, staff_client):
         """Crafted feature_<bogus> POST fields must not reach saved config."""
         _, client = staff_client()
 
@@ -150,7 +156,7 @@ class TestStaffHomeCategoriesPost:
         assert "bogus_slug" not in config.featured_categories
         assert config.featured_categories == ["exhibition"]
 
-    def test_post_invalid_order_falls_back_safely(self, staff_client):
+    def test_순서_값이_숫자가_아니면_오류_없이_안전하게_저장된다(self, staff_client):
         """Non-integer order_<slug> must not raise 500."""
         _, client = staff_client()
 
@@ -173,7 +179,9 @@ class TestStaffHomeCategoriesPost:
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesAuditLog:
-    def test_post_writes_single_home_categories_log_entry(self, staff_client):
+    pytestmark = pytest.mark.contract
+
+    def test_강조_카테고리를_저장하면_감사_로그가_정확히_한_건_기록된다(self, staff_client):
         staff, client = staff_client()
 
         resp = client.post(
@@ -195,7 +203,7 @@ class TestStaffHomeCategoriesAuditLog:
         assert entry.ip_address == "203.0.113.9"
         assert entry.user_agent == "pytest/1.0"
 
-    def test_get_writes_no_log(self, staff_client):
+    def test_홈_카테고리_설정_화면을_조회만_하면_감사_로그가_기록되지_않는다(self, staff_client):
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
@@ -203,7 +211,7 @@ class TestStaffHomeCategoriesAuditLog:
         assert resp.status_code == 200
         assert StaffActionLog.objects.count() == 0
 
-    def test_post_rolls_back_config_when_audit_log_write_fails(self, staff_client, monkeypatch):
+    def test_감사_로그_기록이_실패하면_설정_변경도_함께_롤백된다(self, staff_client, monkeypatch):
         staff, client = staff_client()
         original_categories = list(HomeConfig.get_solo().featured_categories)
 
@@ -226,7 +234,7 @@ class TestStaffHomeCategoriesAuditLog:
         assert config.featured_categories == original_categories
         assert StaffActionLog.objects.count() == 0
 
-    def test_post_ignores_forwarded_header_when_trusted_proxy_count_unset(self, staff_client):
+    def test_신뢰할_프록시_설정이_없으면_전달된_X_Forwarded_For_헤더를_무시하고_원격_주소를_사용한다(self, staff_client):
         """Spoofing guard: TRUSTED_PROXY_COUNT unset (the default) must not
         let an untrusted X-Forwarded-For header override REMOTE_ADDR."""
         staff, client = staff_client()
@@ -246,7 +254,7 @@ class TestStaffHomeCategoriesAuditLog:
         assert entry.ip_address == "203.0.113.9"
 
     @override_settings(TRUSTED_PROXY_COUNT=1)
-    def test_post_resolves_forwarded_client_ip_when_trusted_proxy_count_set(self, staff_client):
+    def test_신뢰할_프록시_설정이_있으면_전달된_X_Forwarded_For_헤더에서_클라이언트_IP를_해석한다(self, staff_client):
         staff, client = staff_client()
 
         resp = client.post(

@@ -4,12 +4,14 @@ actually trigger a field error rather than asserting against static markup.
 """
 import pytest
 
+pytestmark = pytest.mark.web
+
 SIGNUP_URL = "/accounts/signup/"
 LOGIN_URL = "/accounts/login/"
 
 
 @pytest.mark.django_db
-def test_signup_missing_terms_shows_field_error(client, valid_password):
+def test_약관_동의_없이_가입하면_해당_필드에_오류가_표시된다(client, valid_password):
     response = client.post(
         SIGNUP_URL,
         {
@@ -26,7 +28,7 @@ def test_signup_missing_terms_shows_field_error(client, valid_password):
 
 
 @pytest.mark.django_db
-def test_signup_password_mismatch_error_targets_password2_only(client, valid_password):
+def test_비밀번호_확인이_일치하지_않으면_password2_필드에만_오류가_표시된다(client, valid_password):
     response = client.post(
         SIGNUP_URL,
         {
@@ -45,7 +47,7 @@ def test_signup_password_mismatch_error_targets_password2_only(client, valid_pas
 
 
 @pytest.mark.django_db
-def test_login_blank_fields_show_field_errors_not_generic_message(client):
+def test_로그인_필드를_비워둔_채_제출하면_일반_오류_대신_필드별_오류가_표시된다(client):
     """Blank login/password used to trigger the same generic "wrong
     credentials" copy as an actual failed login — misleading, since nothing
     was even attempted yet. Field-level required errors should show
@@ -60,7 +62,7 @@ def test_login_blank_fields_show_field_errors_not_generic_message(client):
 
 
 @pytest.mark.django_db
-def test_login_wrong_credentials_shows_generic_alert_only(client, make_verified_user):
+def test_로그인_자격_증명이_틀리면_필드별_오류_없이_일반_오류_문구만_표시된다(client, make_verified_user):
     make_verified_user(email="known@example.com")
 
     response = client.post(

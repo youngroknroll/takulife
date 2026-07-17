@@ -10,9 +10,11 @@ messages.success() call to drive.
 """
 import pytest
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_success_message_renders_with_site_message_success_class(client, make_user):
+def test_성공_메시지는_site_message_success_클래스로_렌더링된다(client, make_user):
     staff = make_user(is_staff=True)
     client.force_login(staff)
 

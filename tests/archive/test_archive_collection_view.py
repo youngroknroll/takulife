@@ -20,10 +20,12 @@ import pytest
 from archive.models import CollectionItem
 from archive.queries import ARCHIVE_COLLECTION_PAGE_SIZE
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
 class TestArchiveCollectionViewAuth:
-    def test_authenticated_user_gets_200(self, user_client):
+    def test_인증된_사용자가_컬렉션_페이지에_접근하면_200과_함께_컬렉션_템플릿이_렌더링된다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/collection/")
@@ -31,7 +33,7 @@ class TestArchiveCollectionViewAuth:
         assert resp.status_code == 200
         assert "core/archive/collection.html" in [t.name for t in resp.templates]
 
-    def test_anonymous_user_redirected_to_login(self, client):
+    def test_비로그인_사용자가_컬렉션_페이지에_접근하면_로그인_페이지로_리다이렉트된다(self, client):
         resp = client.get("/collection/")
 
         assert resp.status_code == 302
@@ -40,7 +42,7 @@ class TestArchiveCollectionViewAuth:
 
 @pytest.mark.django_db
 class TestArchiveCollectionSummary:
-    def test_summary_counts_owner_scoped(self, user_client, make_user, make_collection_item):
+    def test_컬렉션_요약_카운트는_본인_소유_항목만_집계한다(self, user_client, make_user, make_collection_item):
         user, client = user_client()
         other = make_user()
         make_collection_item(user, name="내 보유품", is_wanted=False)
@@ -55,7 +57,7 @@ class TestArchiveCollectionSummary:
 
 @pytest.mark.django_db
 class TestArchiveCollectionListOwnerScope:
-    def test_only_owner_items_listed(self, user_client, make_user, make_collection_item):
+    def test_컬렉션_목록에는_본인_소유_항목만_표시된다(self, user_client, make_user, make_collection_item):
         user, client = user_client()
         other = make_user()
         make_collection_item(user, name="내 아이템")
@@ -70,7 +72,7 @@ class TestArchiveCollectionListOwnerScope:
 
 @pytest.mark.django_db
 class TestArchiveCollectionPagination:
-    def test_page_size_is_ten(self, user_client, make_collection_item):
+    def test_컬렉션_목록은_10개_단위로_페이지네이션된다(self, user_client, make_collection_item):
         user, client = user_client()
         for i in range(11):
             make_collection_item(user, name=f"아이템{i:02d}")
@@ -88,7 +90,7 @@ class TestArchiveCollectionPagination:
 
 @pytest.mark.django_db
 class TestArchiveCollectionSearch:
-    def test_q_filters_by_name(self, user_client, make_collection_item):
+    def test_검색어로_컬렉션_목록을_필터링하면_이름이_일치하는_항목만_표시된다(self, user_client, make_collection_item):
         user, client = user_client()
         make_collection_item(user, name="유메 아크릴")
         make_collection_item(user, name="다른 굿즈")
@@ -101,7 +103,7 @@ class TestArchiveCollectionSearch:
 
 @pytest.mark.django_db
 class TestArchiveCollectionIsWantedFilter:
-    def test_is_wanted_true_narrows_to_wanted_only(self, user_client, make_collection_item):
+    def test_구함_필터를_true로_지정하면_구하는_항목만_표시된다(self, user_client, make_collection_item):
         user, client = user_client()
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
@@ -111,7 +113,7 @@ class TestArchiveCollectionIsWantedFilter:
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["구함템"]
 
-    def test_is_wanted_false_narrows_to_owned_only(self, user_client, make_collection_item):
+    def test_구함_필터를_false로_지정하면_보유한_항목만_표시된다(self, user_client, make_collection_item):
         user, client = user_client()
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
@@ -121,8 +123,12 @@ class TestArchiveCollectionIsWantedFilter:
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["보유템"]
 
-    @pytest.mark.parametrize("bad_value", ["", "ture", "1", "TRUE", "yes"])
-    def test_unrecognised_is_wanted_values_apply_no_filter(
+    @pytest.mark.parametrize(
+        "bad_value",
+        ["", "ture", "1", "TRUE", "yes"],
+        ids=["빈값", "오타", "숫자문자열", "대문자", "예_문자열"],
+    )
+    def test_구함_필터에_인식할_수_없는_값을_보내면_필터가_적용되지_않는다(
         self, user_client, make_collection_item, bad_value
     ):
         user, client = user_client()
@@ -134,7 +140,7 @@ class TestArchiveCollectionIsWantedFilter:
         names = {row["item"].name for row in resp.context["item_rows"]}
         assert names == {"보유템", "구함템"}
 
-    def test_missing_is_wanted_param_applies_no_filter(self, user_client, make_collection_item):
+    def test_구함_필터_파라미터가_없으면_필터가_적용되지_않는다(self, user_client, make_collection_item):
         user, client = user_client()
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
@@ -147,7 +153,7 @@ class TestArchiveCollectionIsWantedFilter:
 
 @pytest.mark.django_db
 class TestArchiveCollectionFilterOptions:
-    def test_filter_values_populated_from_query_layer(self, user_client, make_collection_item):
+    def test_필터_선택지는_쿼리_계층에서_계산된_값으로_채워진다(self, user_client, make_collection_item):
         user, client = user_client()
         make_collection_item(user, name="A", work_title="WorkA", character_name="CharA", item_type="keyring")
         make_collection_item(user, name="B", work_title="WorkB", character_name="CharB", item_type="badge")
@@ -162,7 +168,7 @@ class TestArchiveCollectionFilterOptions:
 
 @pytest.mark.django_db
 class TestArchiveCollectionExactMatchFilters:
-    def test_work_title_character_name_item_type_exact_match(self, user_client, make_collection_item):
+    def test_작품명_캐릭터명_굿즈유형을_동시에_지정하면_모두_일치하는_항목만_표시된다(self, user_client, make_collection_item):
         user, client = user_client()
         make_collection_item(
             user, name="일치", work_title="WorkA", character_name="CharB", item_type="keyring"
@@ -203,7 +209,7 @@ class TestArchiveCollectionQueryStringHelpers:
             "?q=abc&work_title=WorkA&character_name=CharB&item_type=keyring&is_wanted=true"
         )
 
-    def test_chip_query_suffix_excludes_is_wanted(self, user_client):
+    def test_칩_쿼리_문자열은_구함_필터를_제외한_나머지_축을_포함한다(self, user_client):
         user, client = user_client()
 
         resp = self._get_all_axes(user, client)
@@ -215,7 +221,7 @@ class TestArchiveCollectionQueryStringHelpers:
         assert "item_type=keyring" in chip_query_suffix
         assert "is_wanted" not in chip_query_suffix
 
-    def test_select_form_hidden_fields_are_q_and_is_wanted(self, user_client):
+    def test_선택_폼의_숨김_필드는_검색어와_구함_필터값을_담는다(self, user_client):
         user, client = user_client()
 
         resp = self._get_all_axes(user, client)
@@ -223,7 +229,7 @@ class TestArchiveCollectionQueryStringHelpers:
         assert b'name="q" value="abc"' in resp.content
         assert b'name="is_wanted" value="true"' in resp.content
 
-    def test_search_form_hidden_fields_are_is_wanted_and_three_filters(self, user_client):
+    def test_검색_폼의_숨김_필드는_구함_필터와_세_필터값을_담는다(self, user_client):
         user, client = user_client()
 
         resp = self._get_all_axes(user, client)
@@ -235,7 +241,7 @@ class TestArchiveCollectionQueryStringHelpers:
         assert b'name="item_type" value="keyring"' in content
         assert b"archive_search.js" in content
 
-    def test_clear_query_suffix_excludes_q(self, user_client):
+    def test_초기화_쿼리_문자열은_검색어를_제외한_나머지_축을_포함한다(self, user_client):
         user, client = user_client()
 
         resp = self._get_all_axes(user, client)
@@ -248,7 +254,7 @@ class TestArchiveCollectionQueryStringHelpers:
         assert "q=abc" not in clear_query_suffix
         assert "q=" not in clear_query_suffix
 
-    def test_pager_query_carries_all_five_axes(self, user_client):
+    def test_페이저_쿼리_문자열은_다섯_축을_모두_포함한다(self, user_client):
         user, client = user_client()
 
         resp = self._get_all_axes(user, client)
@@ -260,7 +266,7 @@ class TestArchiveCollectionQueryStringHelpers:
         assert "item_type=keyring" in pager_query
         assert "is_wanted=true" in pager_query
 
-    def test_pager_query_empty_when_no_filters_no_q(self, user_client, make_collection_item):
+    def test_필터와_검색어가_없으면_페이저_쿼리_문자열은_비어있다(self, user_client, make_collection_item):
         user, client = user_client()
         for i in range(11):  # force a pager to exist
             make_collection_item(user, name=f"아이템{i:02d}")
@@ -272,7 +278,7 @@ class TestArchiveCollectionQueryStringHelpers:
 
 @pytest.mark.django_db
 class TestArchiveCollectionPartial:
-    def test_partial_renders_fragment_only(self, user_client):
+    def test_partial_요청을_보내면_결과_조각_템플릿만_렌더링된다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/collection/?partial=1")
@@ -284,7 +290,7 @@ class TestArchiveCollectionPartial:
         assert "base.html" not in names
         assert b"<html" not in resp.content.lower()
 
-    def test_partial_requires_login(self, client):
+    def test_비로그인_사용자가_partial_요청을_보내면_로그인_페이지로_리다이렉트된다(self, client):
         resp = client.get("/collection/?partial=1")
 
         assert resp.status_code == 302
@@ -293,7 +299,7 @@ class TestArchiveCollectionPartial:
 
 @pytest.mark.django_db
 class TestArchiveCollectionEmptyStates:
-    def test_no_items_hides_filter_controls(self, user_client):
+    def test_보유_항목이_전혀_없으면_검색_필터_컨트롤이_숨겨진다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/collection/")
@@ -303,7 +309,7 @@ class TestArchiveCollectionEmptyStates:
         assert b'name="work_title"' not in content
         assert b'class="visit-filter"' not in content
 
-    def test_filtered_zero_results_keeps_filter_controls(self, user_client, make_collection_item):
+    def test_필터_결과가_0건이어도_검색_필터_컨트롤은_유지된다(self, user_client, make_collection_item):
         user, client = user_client()
         make_collection_item(user, name="보유템", is_wanted=False, work_title="WorkA")
 
@@ -314,7 +320,7 @@ class TestArchiveCollectionEmptyStates:
         assert b'class="archive-search"' in content
         assert b'name="work_title"' in content
 
-    def test_search_zero_results_keeps_filter_controls(self, user_client, make_collection_item):
+    def test_검색_결과가_0건이어도_검색_필터_컨트롤은_유지된다(self, user_client, make_collection_item):
         user, client = user_client()
         make_collection_item(user, name="보유템")
 
@@ -353,7 +359,7 @@ class TestArchiveCollectionCardBadges:
     unreliable regardless of what fixture data is present.
     """
 
-    def test_owned_item_shows_quantity_tradeable_and_wanted_badges(
+    def test_보유_항목_카드에는_수량_교환가능_구함_배지가_표시된다(
         self, user_client, make_collection_item
     ):
         user, client = user_client()
@@ -370,7 +376,7 @@ class TestArchiveCollectionCardBadges:
         assert row["quantity_label"] == "수량 3개"
         assert row["tradeable_label"] == "교환 가능 2개"
 
-    def test_zero_quantity_item_shows_no_quantity_or_tradeable_or_wanted_badges(
+    def test_수량이_0인_항목_카드에는_수량_교환가능_구함_배지가_표시되지_않는다(
         self, user_client, make_collection_item
     ):
         user, client = user_client()
@@ -397,7 +403,7 @@ class TestArchiveCollectionNav:
     own contents are locked separately in tests/archive/test_archive_nav.py,
     exercised via an archive page that still includes it)."""
 
-    def test_no_archive_nav_accordion_rendered(self, user_client):
+    def test_컬렉션_페이지에는_아카이브_내비게이션_아코디언이_렌더링되지_않는다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/collection/")

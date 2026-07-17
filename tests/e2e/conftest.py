@@ -24,9 +24,56 @@ import pytest
 
 from allauth.account.models import EmailAddress
 from archive.models import PersonalEntry, UserEventStatus, VisitRecord
+from django.core.cache import cache
+from django.db.utils import Error as DjangoDatabaseError
 from events.models import Event
 
 E2E_PASSWORD = "e2e-Pass-12345!"
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache_between_e2e_tests(transactional_db):
+    """Clear the shared cache before and after every e2e test.
+
+    This is not a reinstatement of the "promote everything to DB access"
+    autouse pattern the 2026-07-17 speed track removed from
+    tests/conftest.py — it is isolation for the one layer where a
+    transaction rollback cannot undo a cache write. Two facts combine to
+    make that leak observable only here:
+
+    1. The shared cache table (``core/migrations/0002_create_shared_cache_
+       table.py``, ``createcachetable``) has no Django model, so
+       pytest-django's ``transactional_db`` TRUNCATE-based flush — which
+       only knows about migrated *model* tables — never touches it. A
+       normal (non-e2e) ``@pytest.mark.django_db`` test's cache writes are
+       undone for free because they happen inside that test's own rolled-
+       back transaction; live_server requests run through a real HTTP
+       connection outside that transaction, so nothing rolls them back.
+    2. allauth merges its own rate-limit defaults under the project's
+       ``ACCOUNT_RATE_LIMITS`` (django-allauth ``app_settings.RATE_LIMITS``:
+       ``ret.update(rls)``), and config/settings.py never overrides the
+       default ``"login": "30/m/ip"`` — which counts every login attempt,
+       *including successes*. A full e2e run performs far more than 30 real
+       logins inside a minute, so without a clear the counter accumulates
+       across tests and a later test's login attempt gets silently 302'd
+       back to the form as a 429 — which ``_perform_login``'s
+       ``wait_for_url`` then times out on (TS-INF-04).
+
+    Depends on ``transactional_db`` rather than the root conftest's
+    ``db``-backed ``clear_cache``: every e2e test already depends on
+    ``live_server`` (directly, or via the ``seed`` fixture, itself
+    ``transactional_db``-backed), and pytest-django's ``db`` and
+    ``transactional_db`` fixtures are mutually exclusive — reusing the root
+    fixture here would conflict. ``ACCOUNT_RATE_LIMITS`` itself is untouched
+    (production security setting); this only clears the counter, it does
+    not loosen the limit.
+    """
+    cache.clear()
+    yield
+    try:
+        cache.clear()
+    except DjangoDatabaseError:
+        pass
 
 
 def _verified_user(django_user_model, email, **kwargs):

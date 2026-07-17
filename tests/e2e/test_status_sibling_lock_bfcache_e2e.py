@@ -23,7 +23,7 @@ def _dispatch_persisted_pageshow(page):
 
 
 class TestStatusSiblingLockBfcacheRecovery:
-    def test_sibling_locked_button_resets_but_server_disabled_button_is_untouched(
+    def test_bfcache_복원_시_형제_잠금_버튼은_해제되지만_서버가_비활성화한_버튼은_그대로_유지된다(
         self, live_server, page, seed, login
     ):
         login(page, live_server.url, "e2e_user@example.com", seed.password)

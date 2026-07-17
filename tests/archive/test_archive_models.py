@@ -5,6 +5,8 @@ from django.db import IntegrityError, transaction
 
 from archive.models import CollectionItem, PersonalEntry
 
+pytestmark = pytest.mark.domain
+
 
 # ---------------------------------------------------------------------------
 # __str__ (moved from tests/core/test_coverage_supplements.py)
@@ -12,7 +14,7 @@ from archive.models import CollectionItem, PersonalEntry
 
 
 @pytest.mark.django_db
-def test_personal_entry_str():
+def test_개인_항목을_문자열로_표현하면_제목이_된다():
     entry = PersonalEntry(title="비공식 카페")
     assert str(entry) == "비공식 카페"
 
@@ -23,7 +25,7 @@ def test_personal_entry_str():
 
 
 @pytest.mark.django_db
-def test_collection_item_persists_with_owner_and_name(make_user):
+def test_컬렉션_아이템을_생성하면_소유자와_이름이_저장된다(make_user):
     user = make_user(username="ci-owner")
 
     item = CollectionItem.objects.create(
@@ -37,7 +39,7 @@ def test_collection_item_persists_with_owner_and_name(make_user):
 
 
 @pytest.mark.django_db
-def test_collection_item_negative_quantity_violates_check_constraint(make_user):
+def test_수량이_음수인_컬렉션_아이템을_생성하면_제약_위반으로_거부된다(make_user):
     user = make_user(username="ci-neg-qty")
 
     with pytest.raises(IntegrityError):
@@ -46,7 +48,7 @@ def test_collection_item_negative_quantity_violates_check_constraint(make_user):
 
 
 @pytest.mark.django_db
-def test_collection_item_zero_quantity_is_allowed(make_user):
+def test_수량이_0인_컬렉션_아이템_생성이_허용된다(make_user):
     """D1: quantity=0 represents a wanted-only (not-yet-owned) item."""
     user = make_user(username="ci-zero-qty")
 
@@ -56,7 +58,7 @@ def test_collection_item_zero_quantity_is_allowed(make_user):
 
 
 @pytest.mark.django_db
-def test_collection_item_tradeable_quantity_exceeding_quantity_violates_check_constraint(
+def test_교환_가능_수량이_보유_수량을_초과하면_제약_위반으로_거부된다(
     make_user,
 ):
     user = make_user(username="ci-tradeable-exceeds")
@@ -69,7 +71,7 @@ def test_collection_item_tradeable_quantity_exceeding_quantity_violates_check_co
 
 
 @pytest.mark.django_db
-def test_collection_item_negative_tradeable_quantity_violates_check_constraint(make_user):
+def test_교환_가능_수량이_음수이면_제약_위반으로_거부된다(make_user):
     user = make_user(username="ci-neg-tradeable")
 
     with pytest.raises(IntegrityError):
@@ -80,7 +82,7 @@ def test_collection_item_negative_tradeable_quantity_violates_check_constraint(m
 
 
 @pytest.mark.django_db
-def test_collection_item_clean_rejects_event_mismatched_with_visit_record(
+def test_방문_기록의_행사와_다른_행사를_지정하면_검증_오류가_된다(
     make_user, make_event, make_visit
 ):
     user = make_user(username="ci-clean-mismatch")
@@ -100,7 +102,7 @@ def test_collection_item_clean_rejects_event_mismatched_with_visit_record(
 
 
 @pytest.mark.django_db
-def test_collection_item_survives_event_hard_delete_with_event_set_null(
+def test_연결된_행사가_삭제되면_컬렉션_아이템은_행사_참조만_비운_채_유지된다(
     make_user, make_event
 ):
     user = make_user(username="ci-event-hard-delete")
@@ -114,7 +116,7 @@ def test_collection_item_survives_event_hard_delete_with_event_set_null(
 
 
 @pytest.mark.django_db
-def test_collection_item_survives_visit_record_hard_delete_with_visit_record_set_null(
+def test_연결된_방문_기록이_삭제되면_컬렉션_아이템은_방문_기록_참조만_비운_채_유지된다(
     make_user, make_event, make_visit
 ):
     user = make_user(username="ci-visit-hard-delete")

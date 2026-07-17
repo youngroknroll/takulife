@@ -11,6 +11,8 @@ from drafts.services import (
 )
 from events.models import Event
 
+pytestmark = pytest.mark.web
+
 
 def _raise(exc):
     def _fn(*args, **kwargs):
@@ -28,7 +30,7 @@ def event_draft_detail_url(draft_id):
 
 
 @pytest.mark.django_db
-def test_admin_can_create_event_draft_from_url(admin_client, monkeypatch):
+def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_필드와_함께_저장된다(admin_client, monkeypatch):
     def fake_fetch(url):
         return "<html><title>Sample Event</title><meta name='description' content='Short summary'></html>"
 
@@ -54,7 +56,7 @@ def test_admin_can_create_event_draft_from_url(admin_client, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_admin_create_event_draft_rejects_unsafe_url(admin_client):
+def test_관리자가_안전하지_않은_url로_생성을_요청하면_400과_함께_거부된다(admin_client):
     response = admin_client.post(event_drafts_url(), {"source_url": "http://127.0.0.1/event"})
 
     assert response.status_code == 400
@@ -63,7 +65,7 @@ def test_admin_create_event_draft_rejects_unsafe_url(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_create_event_draft_maps_fetch_error_to_503(admin_client, monkeypatch):
+def test_url_가져오기가_실패하면_503으로_응답하고_드래프트를_생성하지_않는다(admin_client, monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: (_ for _ in ()).throw(RuntimeError("timeout")))
     admin_client.raise_request_exception = False
 
@@ -75,7 +77,7 @@ def test_admin_create_event_draft_maps_fetch_error_to_503(admin_client, monkeypa
 
 
 @pytest.mark.django_db
-def test_admin_can_retrieve_event_draft(admin_client, make_draft):
+def test_관리자는_이벤트_드래프트_상세를_조회할_수_있다(admin_client, make_draft):
     draft = make_draft("https://example.com/event")
 
     response = admin_client.get(event_draft_detail_url(draft.id))
@@ -85,7 +87,7 @@ def test_admin_can_retrieve_event_draft(admin_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_admin_retrieve_event_draft_includes_extraction_method_and_confidence(admin_client, make_draft):
+def test_이벤트_드래프트_상세_응답은_extraction_method와_confidence를_포함한다(admin_client, make_draft):
     draft = make_draft("https://example.com/event", extraction_method=EventDraft.ExtractionMethod.LLM, confidence=0.87)
 
     response = admin_client.get(event_draft_detail_url(draft.id))
@@ -96,7 +98,7 @@ def test_admin_retrieve_event_draft_includes_extraction_method_and_confidence(ad
 
 
 @pytest.mark.django_db
-def test_admin_can_patch_pending_event_draft(admin_client, make_draft):
+def test_관리자는_검토_대기중인_드래프트의_추출_필드를_수정할_수_있다(admin_client, make_draft):
     draft = make_draft("https://example.com/event")
 
     response = admin_client.patch(
@@ -112,7 +114,7 @@ def test_admin_can_patch_pending_event_draft(admin_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_approved_event_draft(admin_client, make_draft):
+def test_승인된_드래프트는_수정할_수_없다(admin_client, make_draft):
     draft = make_draft("https://example.com/event", extracted_title="Original title", review_status=EventDraft.ReviewStatus.APPROVED)
 
     response = admin_client.patch(
@@ -127,7 +129,7 @@ def test_admin_cannot_patch_approved_event_draft(admin_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_rejected_event_draft(admin_client, make_draft):
+def test_거절된_드래프트는_수정할_수_없다(admin_client, make_draft):
     draft = make_draft("https://example.com/event", extracted_title="Original title", review_status=EventDraft.ReviewStatus.REJECTED)
 
     response = admin_client.patch(
@@ -142,7 +144,7 @@ def test_admin_cannot_patch_rejected_event_draft(admin_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_source_url_or_raw_fields(admin_client, make_draft):
+def test_source_url과_원본_필드는_수정할_수_없다(admin_client, make_draft):
     draft = make_draft("https://example.com/event", raw_title="Original raw title", raw_text="Original raw text")
 
     response = admin_client.patch(
@@ -167,7 +169,7 @@ def test_admin_cannot_patch_source_url_or_raw_fields(admin_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_review_status(admin_client, make_draft):
+def test_review_status는_patch로_직접_변경할_수_없다(admin_client, make_draft):
     draft = make_draft("https://example.com/event", extracted_title="Original title")
 
     response = admin_client.patch(
@@ -188,7 +190,7 @@ def test_admin_cannot_patch_review_status(admin_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_admin_cannot_patch_extraction_method_or_confidence(admin_client, make_draft):
+def test_extraction_method와_confidence는_patch로_변경할_수_없다(admin_client, make_draft):
     draft = make_draft("https://example.com/event")
 
     response = admin_client.patch(
@@ -208,7 +210,7 @@ def test_admin_cannot_patch_extraction_method_or_confidence(admin_client, make_d
 
 
 @pytest.mark.django_db
-def test_admin_cannot_put_event_draft(admin_client, make_draft):
+def test_이벤트_드래프트에_put_요청을_보내면_405가_된다(admin_client, make_draft):
     draft = make_draft("https://example.com/event")
 
     response = admin_client.put(
@@ -221,7 +223,7 @@ def test_admin_cannot_put_event_draft(admin_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_non_admin_cannot_access_event_draft_review(client, make_user, make_draft):
+def test_일반_사용자는_이벤트_드래프트_검토_기능에_접근할_수_없다(client, make_user, make_draft):
     user = make_user()
     draft = make_draft("https://example.com/event")
     client.force_login(user)
@@ -242,7 +244,7 @@ def test_non_admin_cannot_access_event_draft_review(client, make_user, make_draf
 
 
 @pytest.mark.django_db
-def test_duplicate_source_url_is_rejected_on_create(admin_client, make_draft):
+def test_이미_존재하는_source_url로_생성을_요청하면_거부된다(admin_client, make_draft):
     make_draft("https://example.com/event")
 
     response = admin_client.post(event_drafts_url(), {"source_url": "https://example.com/event"})
@@ -252,7 +254,7 @@ def test_duplicate_source_url_is_rejected_on_create(admin_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_duplicate_source_url_race_uses_existing_field_error_contract(admin_client, monkeypatch):
+def test_생성_시점의_동시성_경쟁으로_인한_중복도_source_url_필드_오류로_응답한다(admin_client, monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<title>Event</title>")
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
@@ -271,7 +273,7 @@ def test_duplicate_source_url_race_uses_existing_field_error_contract(admin_clie
 
 
 @pytest.mark.django_db
-def test_non_http_source_url_is_rejected_on_create(admin_client):
+def test_http가_아닌_스킴의_url로_생성을_요청하면_거부된다(admin_client):
     response = admin_client.post(event_drafts_url(), {"source_url": "ftp://example.com/event"})
 
     assert response.status_code == 400
@@ -279,14 +281,14 @@ def test_non_http_source_url_is_rejected_on_create(admin_client):
 
 
 @pytest.mark.django_db
-def test_admin_event_draft_legacy_route_is_not_supported(admin_client):
+def test_이벤트_드래프트_구_경로는_더_이상_지원되지_않는다(admin_client):
     response = admin_client.get("/api/admin/event-drafts/")
 
     assert response.status_code == 404
 
 
 @pytest.mark.django_db
-def test_admin_cannot_delete_event_draft(admin_client, make_draft):
+def test_이벤트_드래프트는_삭제할_수_없다(admin_client, make_draft):
     draft = make_draft("https://example.com/event")
 
     response = admin_client.delete(event_draft_detail_url(draft.id))
@@ -305,7 +307,7 @@ def stats_url():
 
 
 @pytest.mark.django_db
-def test_admin_can_get_draft_stats_with_correct_counts(admin_client, make_draft):
+def test_드래프트_통계는_검토_상태별_건수를_정확히_집계한다(admin_client, make_draft):
     make_draft("https://example.com/p1")
     make_draft("https://example.com/p2")
     make_draft("https://example.com/a1", review_status=EventDraft.ReviewStatus.APPROVED)
@@ -321,7 +323,7 @@ def test_admin_can_get_draft_stats_with_correct_counts(admin_client, make_draft)
 
 
 @pytest.mark.django_db
-def test_admin_gets_stats_with_all_zero_when_no_drafts(admin_client):
+def test_드래프트가_없으면_통계는_모두_0을_반환한다(admin_client):
     response = admin_client.get(stats_url())
 
     assert response.status_code == 200
@@ -330,7 +332,7 @@ def test_admin_gets_stats_with_all_zero_when_no_drafts(admin_client):
 
 
 @pytest.mark.django_db
-def test_non_staff_user_cannot_get_draft_stats(client, make_user):
+def test_일반_사용자는_드래프트_통계를_조회할_수_없다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -340,7 +342,7 @@ def test_non_staff_user_cannot_get_draft_stats(client, make_user):
 
 
 @pytest.mark.django_db
-def test_anonymous_user_cannot_get_draft_stats(client):
+def test_비로그인_사용자는_드래프트_통계를_조회할_수_없다(client):
     response = client.get(stats_url())
 
     assert response.status_code == 403
@@ -352,11 +354,11 @@ def test_anonymous_user_cannot_get_draft_stats(client):
 
 
 class TestRouteOrdering:
-    def test_stats_path_resolves_to_stats_view(self):
+    def test_stats_경로는_통계_뷰로_해석된다(self):
         match = resolve("/api/event-drafts/stats/")
         assert match.url_name == "event-draft-stats"
 
-    def test_numeric_pk_path_resolves_to_detail_view(self):
+    def test_숫자_pk_경로는_상세_뷰로_해석된다(self):
         match = resolve("/api/event-drafts/1/")
         assert match.url_name == "event-draft-detail"
 
@@ -377,7 +379,7 @@ class TestAdminCreateEndpointErrorResponses:
             content_type="application/json",
         )
 
-    def test_unsupported_content_returns_400(self, staff_client, monkeypatch):
+    def test_지원하지_않는_콘텐츠_오류는_400으로_응답한다(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
             _raise(DraftCreationUnsupportedContentError()),
@@ -386,7 +388,7 @@ class TestAdminCreateEndpointErrorResponses:
         resp = self._post(client)
         assert resp.status_code == 400
 
-    def test_response_too_large_returns_400(self, staff_client, monkeypatch):
+    def test_응답_크기_초과_오류는_400으로_응답한다(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
             _raise(DraftCreationResponseTooLargeError()),
@@ -395,7 +397,7 @@ class TestAdminCreateEndpointErrorResponses:
         resp = self._post(client)
         assert resp.status_code == 400
 
-    def test_empty_extraction_returns_400(self, staff_client, monkeypatch):
+    def test_추출_결과_없음_오류는_400으로_응답한다(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
             _raise(DraftCreationEmptyExtractionError()),

@@ -12,8 +12,11 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 
+pytestmark = pytest.mark.contract
+
+
 @pytest.mark.django_db
-def test_no_missing_migrations():
+def test_모델_변경사항은_누락된_마이그레이션_없이_동기화되어_있다():
     out = StringIO()
     try:
         call_command(

@@ -9,8 +9,9 @@ from core.analytics import record_event
 from core.models import AnalyticsEvent
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_record_event_does_not_raise_when_persistence_fails(monkeypatch, make_user, caplog):
+def test_분석_이벤트_저장이_실패해도_예외를_전파하지_않는다(monkeypatch, make_user, caplog):
     user = make_user()
 
     def _boom(**kwargs):
@@ -25,11 +26,14 @@ def test_record_event_does_not_raise_when_persistence_fails(monkeypatch, make_us
     assert AnalyticsEvent.objects.count() == 0
 
 
+@pytest.mark.contract
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "forbidden_key", ["short_review", "note", "email", "photo_url", "image", "name", "memo"]
+    "forbidden_key",
+    ["short_review", "note", "email", "photo_url", "image", "name", "memo"],
+    ids=["한줄_후기", "비고_note", "이메일", "사진_URL", "이미지_파일", "이름", "메모"],
 )
-def test_record_event_hard_fails_on_forbidden_context_key(make_user, forbidden_key):
+def test_금지된_컨텍스트_키가_있으면_분석_이벤트_기록이_예외로_실패한다(make_user, forbidden_key):
     user = make_user()
 
     with pytest.raises(ValueError):

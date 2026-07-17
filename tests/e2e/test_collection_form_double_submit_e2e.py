@@ -14,7 +14,7 @@ pytestmark = pytest.mark.e2e
 
 
 class TestCollectionCreateDoubleSubmit:
-    def test_double_click_sends_one_request_and_creates_one_item(
+    def test_등록_버튼을_연속으로_두_번_클릭해도_요청은_한_번만_전송되고_항목도_하나만_생성된다(
         self, live_server, page, seed, login
     ):
         from archive.models import CollectionItem

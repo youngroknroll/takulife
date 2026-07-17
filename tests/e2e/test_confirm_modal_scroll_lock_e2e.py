@@ -14,7 +14,7 @@ OVERLAY = ".confirm-overlay"
 
 
 class TestConfirmModalScrollLock:
-    def test_background_scroll_is_locked_while_open_and_restored_on_close(
+    def test_확인_모달이_열려있는_동안_배경_스크롤이_잠기고_닫으면_복원된다(
         self, live_server, page, seed
     ):
         page.goto(live_server.url + "/")

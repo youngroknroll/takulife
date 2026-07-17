@@ -18,10 +18,12 @@ from events.services import (
 )
 from events.models import Event
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
 class TestCreatePublishedEventRace:
-    def test_integrity_error_maps_to_duplicate(self, monkeypatch):
+    def test_생성_경합으로_무결성_오류가_발생하면_공식_URL_중복_예외로_변환된다(self, monkeypatch):
         # Pre-check passes (no existing row), but the INSERT races and fails with
         # IntegrityError → mapped to DuplicateOfficialUrlError.
         def boom(*args, **kwargs):
@@ -37,7 +39,7 @@ class TestCreatePublishedEventRace:
 
 @pytest.mark.django_db
 class TestSetEventPosterCleanupFailure:
-    def test_old_poster_delete_failure_is_swallowed(self, make_event, png_bytes, monkeypatch):
+    def test_기존_포스터_삭제가_실패해도_새_포스터_업로드는_성공한다(self, make_event, png_bytes, monkeypatch):
         event = make_event(title="포스터 교체")
         event.poster_image.save("old.png", ContentFile(png_bytes()), save=True)
 

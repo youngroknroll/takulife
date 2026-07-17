@@ -6,15 +6,17 @@ import pytest
 
 from core.analytics import pseudonymous_user_key
 
+pytestmark = pytest.mark.contract
+
 
 @pytest.mark.django_db
-def test_pseudonymous_user_key_is_deterministic_for_the_same_user(make_user):
+def test_동일_사용자에게_의사식별자_키는_항상_같은_값을_반환한다(make_user):
     user = make_user()
 
     assert pseudonymous_user_key(user) == pseudonymous_user_key(user)
 
 
-def test_pseudonymous_user_key_does_not_contain_the_raw_pk():
+def test_의사식별자_키에는_원본_pk_값이_포함되지_않는다():
     # A distinctive, non-coincidental pk value (unlike a small sequential DB
     # pk such as 1 or 2, which could trivially appear as a hex-digest
     # substring by chance) — pseudonymous_user_key only reads `.pk`, so a
@@ -29,14 +31,14 @@ def test_pseudonymous_user_key_does_not_contain_the_raw_pk():
 
 
 @pytest.mark.django_db
-def test_pseudonymous_user_key_differs_between_users(make_user):
+def test_서로_다른_사용자의_의사식별자_키는_서로_다르다(make_user):
     first = make_user(email="first@example.com", username="first")
     second = make_user(email="second@example.com", username="second")
 
     assert pseudonymous_user_key(first) != pseudonymous_user_key(second)
 
 
-def test_pseudonymous_user_key_is_empty_for_anonymous_user():
+def test_익명_사용자의_의사식별자_키는_빈_문자열이다():
     from django.contrib.auth.models import AnonymousUser
 
     assert pseudonymous_user_key(AnonymousUser()) == ""
