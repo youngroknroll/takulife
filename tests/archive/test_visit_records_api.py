@@ -15,6 +15,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from archive.models import UserEventStatus, VisitRecord, VisitRecordPhoto
 
+pytestmark = pytest.mark.web
+
 
 # ---------------------------------------------------------------------------
 # VisitRecord create (POST /api/visit-records/)
@@ -22,7 +24,7 @@ from archive.models import UserEventStatus, VisitRecord, VisitRecordPhoto
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_create_visit_record(client, make_user, make_event):
+def test_로그인한_사용자가_방문_기록을_생성하면_저장된_방문_기록이_응답에_반영된다(client, make_user, make_event):
     user = make_user()
     event = make_event()
 
@@ -42,7 +44,7 @@ def test_authenticated_user_can_create_visit_record(client, make_user, make_even
 
 
 @pytest.mark.django_db
-def test_create_visit_record_persisted_under_correct_user(client, make_user, make_event):
+def test_방문_기록을_생성하면_요청한_사용자_소유로만_저장된다(client, make_user, make_event):
     user = make_user()
     other_user = make_user()
     event = make_event()
@@ -59,7 +61,7 @@ def test_create_visit_record_persisted_under_correct_user(client, make_user, mak
 
 
 @pytest.mark.django_db
-def test_create_visit_record_rejects_unpublished_event(client, make_user, make_draft_event):
+def test_미게시_행사를_대상으로_방문_기록을_생성하면_요청이_거부된다(client, make_user, make_draft_event):
     user = make_user()
     draft_event = make_draft_event()
 
@@ -75,7 +77,7 @@ def test_create_visit_record_rejects_unpublished_event(client, make_user, make_d
 
 
 @pytest.mark.django_db
-def test_create_visit_record_requires_authentication(client, make_event):
+def test_비로그인_사용자가_방문_기록_생성을_요청하면_거부된다(client, make_event):
     event = make_event()
 
     response = client.post(
@@ -93,7 +95,7 @@ def test_create_visit_record_requires_authentication(client, make_event):
 
 
 @pytest.mark.django_db
-def test_create_visit_record_via_api_auto_transitions_planned_status_to_visited(
+def test_참석_예정_행사에_방문_기록을_생성하면_상태가_방문_완료로_자동_전환된다(
     client, make_user, make_event, make_status
 ):
     user = make_user()
@@ -119,7 +121,7 @@ def test_create_visit_record_via_api_auto_transitions_planned_status_to_visited(
 
 
 @pytest.mark.django_db
-def test_same_user_can_create_multiple_visit_records_for_same_event(client, make_user, make_event):
+def test_같은_행사에_방문_기록을_여러_번_생성하면_모두_저장된다(client, make_user, make_event):
     user = make_user()
     event = make_event()
 
@@ -146,7 +148,7 @@ def test_same_user_can_create_multiple_visit_records_for_same_event(client, make
 
 
 @pytest.mark.django_db
-def test_visit_record_list_scoped_to_current_user(client, make_user, make_event, make_visit):
+def test_방문_기록_목록을_조회하면_본인_기록만_반환된다(client, make_user, make_event, make_visit):
     user = make_user()
     other_user = make_user()
     event = make_event()
@@ -164,7 +166,7 @@ def test_visit_record_list_scoped_to_current_user(client, make_user, make_event,
 
 
 @pytest.mark.django_db
-def test_visit_record_list_paginated(client, make_user, make_event, make_visit):
+def test_방문_기록이_페이지_크기를_초과하면_목록이_페이지네이션된다(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
     for i in range(21):
@@ -186,7 +188,7 @@ def test_visit_record_list_paginated(client, make_user, make_event, make_visit):
 
 
 @pytest.mark.django_db
-def test_owner_can_retrieve_visit_record(client, make_user, make_event, make_visit):
+def test_본인_방문_기록을_상세_조회하면_해당_기록이_반환된다(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
@@ -199,7 +201,7 @@ def test_owner_can_retrieve_visit_record(client, make_user, make_event, make_vis
 
 
 @pytest.mark.django_db
-def test_non_owner_retrieving_visit_record_returns_404(client, make_user, make_event, make_visit):
+def test_타인의_방문_기록을_상세_조회하면_404가_반환된다(client, make_user, make_event, make_visit):
     owner = make_user()
     attacker = make_user()
     event = make_event()
@@ -217,7 +219,7 @@ def test_non_owner_retrieving_visit_record_returns_404(client, make_user, make_e
 
 
 @pytest.mark.django_db
-def test_owner_can_delete_visit_record(client, make_user, make_event, make_visit):
+def test_본인_방문_기록을_삭제하면_기록이_제거된다(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
@@ -230,7 +232,7 @@ def test_owner_can_delete_visit_record(client, make_user, make_event, make_visit
 
 
 @pytest.mark.django_db
-def test_non_owner_deleting_visit_record_returns_404(client, make_user, make_event, make_visit):
+def test_타인의_방문_기록_삭제를_시도하면_404가_반환되고_기록이_유지된다(client, make_user, make_event, make_visit):
     owner = make_user()
     attacker = make_user()
     event = make_event()
@@ -249,7 +251,7 @@ def test_non_owner_deleting_visit_record_returns_404(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_owner_can_update_visit_record(client, make_user, make_event, make_visit):
+def test_본인_방문_기록을_수정하면_변경한_필드가_저장된다(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26", short_review="old")
@@ -268,7 +270,7 @@ def test_owner_can_update_visit_record(client, make_user, make_event, make_visit
 
 
 @pytest.mark.django_db
-def test_update_visit_record_subject_is_read_only(client, make_user, make_event, make_visit):
+def test_방문_기록_수정_요청에_대상_변경을_포함해도_대상은_그대로_유지된다(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
     other_event = make_event()
@@ -289,7 +291,7 @@ def test_update_visit_record_subject_is_read_only(client, make_user, make_event,
 
 
 @pytest.mark.django_db
-def test_non_owner_updating_visit_record_returns_404(client, make_user, make_event, make_visit):
+def test_타인의_방문_기록_수정을_시도하면_404가_반환되고_내용이_유지된다(client, make_user, make_event, make_visit):
     owner = make_user()
     attacker = make_user()
     event = make_event()
@@ -308,7 +310,7 @@ def test_non_owner_updating_visit_record_returns_404(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_update_visit_record_requires_authentication(client, make_user, make_event, make_visit):
+def test_비로그인_사용자가_방문_기록_수정을_요청하면_거부된다(client, make_user, make_event, make_visit):
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
@@ -328,7 +330,7 @@ def test_update_visit_record_requires_authentication(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_owner_can_upload_photo(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
+def test_본인_방문_기록에_사진을_업로드하면_사진이_저장된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -345,7 +347,7 @@ def test_owner_can_upload_photo(client, make_user, make_event, png_bytes, settin
 
 
 @pytest.mark.django_db
-def test_upload_photo_to_other_users_record_returns_404(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
+def test_타인의_방문_기록에_사진_업로드를_시도하면_404가_반환된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
     settings.MEDIA_ROOT = str(tmp_path)
     owner = make_user()
     attacker = make_user()
@@ -363,7 +365,7 @@ def test_upload_photo_to_other_users_record_returns_404(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_upload_missing_image_returns_400(client, make_user, make_event, settings, tmp_path, make_visit):
+def test_이미지_없이_사진_업로드를_요청하면_400이_반환된다(client, make_user, make_event, settings, tmp_path, make_visit):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -380,7 +382,7 @@ def test_upload_missing_image_returns_400(client, make_user, make_event, setting
 
 
 @pytest.mark.django_db
-def test_upload_non_image_bytes_rejected_400(client, make_user, make_event, settings, tmp_path, make_visit):
+def test_이미지가_아닌_바이트를_사진으로_업로드하면_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
     """Fake bytes labeled as .jpg must be rejected by Pillow content inspection."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
@@ -398,7 +400,7 @@ def test_upload_non_image_bytes_rejected_400(client, make_user, make_event, sett
 
 
 @pytest.mark.django_db
-def test_upload_oversized_file_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
+def test_5MB를_초과하는_사진을_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
     """Files larger than 5 MB must be rejected with 400."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
@@ -419,7 +421,7 @@ def test_upload_oversized_file_rejected_400(client, make_user, make_event, png_b
 
 
 @pytest.mark.django_db
-def test_upload_disallowed_extension_svg_rejected_400(client, make_user, make_event, settings, tmp_path, make_visit):
+def test_허용되지_않는_확장자인_SVG_파일을_업로드하면_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
     """SVG files must be rejected even if Pillow might accept them."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
@@ -438,7 +440,7 @@ def test_upload_disallowed_extension_svg_rejected_400(client, make_user, make_ev
 
 
 @pytest.mark.django_db
-def test_upload_format_spoofing_bmp_as_png_rejected_400(client, make_user, make_event, settings, tmp_path, make_visit):
+def test_PNG로_위장한_BMP_파일을_업로드하면_실제_포맷_기준으로_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
     """A valid BMP renamed with a .png extension must be rejected.
 
     The extension allowlist alone is attacker-controlled; the real decoded
@@ -465,7 +467,7 @@ def test_upload_format_spoofing_bmp_as_png_rejected_400(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_upload_pixel_area_bomb_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
+def test_픽셀_면적_상한을_초과하는_이미지를_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
     """An image within the per-axis cap but over the total pixel-area cap must be rejected.
 
     Proves the area guard is independent of both the 5 MB byte cap and the
@@ -494,7 +496,7 @@ def test_upload_pixel_area_bomb_rejected_400(client, make_user, make_event, png_
 
 
 @pytest.mark.django_db
-def test_sixth_photo_upload_rejected_400(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo):
+def test_방문_기록에_사진이_5장_있을_때_추가_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo):
     """The 6th photo for a single record must be rejected (cap is 5)."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
@@ -517,7 +519,7 @@ def test_sixth_photo_upload_rejected_400(client, make_user, make_event, png_byte
 
 
 @pytest.mark.django_db
-def test_upload_photo_race_with_concurrent_delete_returns_404(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
+def test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반환된다(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
     """If the VisitRecord is deleted between the existence check and the
     service call (TOCTOU race), the view must return 404, not 500.
 
@@ -560,7 +562,7 @@ def test_upload_photo_race_with_concurrent_delete_returns_404(client, make_user,
 
 
 @pytest.mark.django_db
-def test_owner_can_delete_photo(client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo):
+def test_본인_방문_기록의_사진을_삭제하면_사진이_제거된다(client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -575,7 +577,7 @@ def test_owner_can_delete_photo(client, make_user, make_event, settings, tmp_pat
 
 
 @pytest.mark.django_db
-def test_non_owner_deleting_photo_returns_404(client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo):
+def test_타인의_방문_기록_사진_삭제를_시도하면_404가_반환되고_사진이_유지된다(client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo):
     settings.MEDIA_ROOT = str(tmp_path)
     owner = make_user()
     attacker = make_user()
@@ -595,9 +597,13 @@ def test_non_owner_deleting_photo_returns_404(client, make_user, make_event, set
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("path", ["/api/me/visit-records/", "/api/visit-record-photos/", "/api/visit-record-photos/1/"])
+@pytest.mark.parametrize(
+    "path",
+    ["/api/me/visit-records/", "/api/visit-record-photos/", "/api/visit-record-photos/1/"],
+    ids=["구_me_방문_기록_목록", "구_사진_컬렉션", "구_사진_상세"],
+)
 @pytest.mark.django_db
-def test_legacy_visit_record_routes_remain_inactive(client, make_user, path):
+def test_사용되지_않는_레거시_방문_기록_경로에_접근하면_404가_반환된다(client, make_user, path):
     user = make_user()
     client.force_login(user)
     response = client.get(path)

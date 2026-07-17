@@ -18,6 +18,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from archive.models import CollectionItem, EventInterest, PersonalEntry, UserEventStatus, VisitRecord
 
+pytestmark = pytest.mark.contract
+
 
 def _migration_module():
     return importlib.import_module(
@@ -36,7 +38,7 @@ def _make_goods(user, **kwargs):
 
 
 @pytest.mark.django_db
-def test_migrates_basic_fields_with_matching_category_label(make_user):
+def test_GOODS_항목을_이관하면_기본_필드와_분류_라벨이_컬렉션_아이템에_반영된다(make_user):
     user = make_user()
     entry = _make_goods(
         user,
@@ -67,7 +69,7 @@ def test_migrates_basic_fields_with_matching_category_label(make_user):
 
 
 @pytest.mark.django_db
-def test_maps_category_slug_directly(make_user):
+def test_분류가_슬러그와_일치하면_그대로_굿즈_종류로_매핑된다(make_user):
     user = make_user()
     _make_goods(user, category="badge")
 
@@ -80,7 +82,7 @@ def test_maps_category_slug_directly(make_user):
 
 
 @pytest.mark.django_db
-def test_unmatched_category_maps_to_etc(make_user):
+def test_분류가_일치하지_않으면_굿즈_종류가_기타로_매핑된다(make_user):
     user = make_user()
     _make_goods(user, category="완전히 다른 분류")
 
@@ -93,7 +95,7 @@ def test_unmatched_category_maps_to_etc(make_user):
 
 
 @pytest.mark.django_db
-def test_blank_category_maps_to_etc(make_user):
+def test_분류가_비어있으면_굿즈_종류가_기타로_매핑된다(make_user):
     user = make_user()
     _make_goods(user, category="")
 
@@ -111,7 +113,7 @@ def test_blank_category_maps_to_etc(make_user):
 
 
 @pytest.mark.django_db
-def test_blocked_by_visit_record_reference_aborts_entire_run(make_user):
+def test_방문_기록이_참조하는_굿즈가_있으면_전체_이관이_중단된다(make_user):
     user = make_user()
     blocked = _make_goods(user, title="차단 대상")
     visit = VisitRecord.objects.create(user=user, personal_entry=blocked, visited_on="2026-07-15")
@@ -131,7 +133,7 @@ def test_blocked_by_visit_record_reference_aborts_entire_run(make_user):
 
 
 @pytest.mark.django_db
-def test_blocked_by_event_interest_reference(make_user):
+def test_찜_기록이_참조하는_굿즈가_있으면_전체_이관이_중단된다(make_user):
     user = make_user()
     blocked = _make_goods(user)
     interest = EventInterest.objects.create(user=user, personal_entry=blocked)
@@ -148,7 +150,7 @@ def test_blocked_by_event_interest_reference(make_user):
 
 
 @pytest.mark.django_db
-def test_blocked_by_user_event_status_reference(make_user):
+def test_사용자_행사_상태가_참조하는_굿즈가_있으면_전체_이관이_중단된다(make_user):
     user = make_user()
     blocked = _make_goods(user)
     status_row = UserEventStatus.objects.create(user=user, personal_entry=blocked, status="planned")
@@ -165,7 +167,7 @@ def test_blocked_by_user_event_status_reference(make_user):
 
 
 @pytest.mark.django_db
-def test_blocked_by_nonempty_url(make_user):
+def test_URL이_채워진_굿즈가_있으면_전체_이관이_중단된다(make_user):
     user = make_user()
     blocked = _make_goods(user, url="https://example.com/goods")
 
@@ -179,7 +181,7 @@ def test_blocked_by_nonempty_url(make_user):
 
 
 @pytest.mark.django_db
-def test_blocked_by_nonempty_region(make_user):
+def test_지역이_채워진_굿즈가_있으면_전체_이관이_중단된다(make_user):
     user = make_user()
     blocked = _make_goods(user, region="seoul")
 
@@ -193,7 +195,7 @@ def test_blocked_by_nonempty_region(make_user):
 
 
 @pytest.mark.django_db
-def test_blocked_by_submitted_promotion_status(make_user):
+def test_공식_등록_검토가_제출된_굿즈가_있으면_전체_이관이_중단된다(make_user):
     user = make_user()
     blocked = _make_goods(user, promotion_status="submitted")
 
@@ -214,7 +216,7 @@ def test_blocked_by_submitted_promotion_status(make_user):
 
 
 @pytest.mark.django_db
-def test_migrated_image_is_a_physically_independent_copy(
+def test_이미지가_있는_굿즈를_이관하면_원본과_물리적으로_독립된_파일이_생성된다(
     make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
 ):
     settings.MEDIA_ROOT = str(tmp_path)
@@ -250,7 +252,7 @@ def test_migrated_image_is_a_physically_independent_copy(
 
 
 @pytest.mark.django_db
-def test_entry_without_image_migrates_without_error(make_user):
+def test_이미지가_없는_굿즈도_오류_없이_이관된다(make_user):
     user = make_user()
     _make_goods(user)
 
@@ -268,7 +270,7 @@ def test_entry_without_image_migrates_without_error(make_user):
 
 
 @pytest.mark.django_db
-def test_multiple_users_get_one_to_one_owner_scoped_copies(make_user):
+def test_여러_사용자의_굿즈를_이관하면_각자_소유로_분리된_컬렉션_아이템이_생긴다(make_user):
     user_a = make_user()
     user_b = make_user()
     entry_a = _make_goods(user_a, title="A의 굿즈")
@@ -294,7 +296,7 @@ def test_multiple_users_get_one_to_one_owner_scoped_copies(make_user):
 
 
 @pytest.mark.django_db
-def test_reverse_deletes_only_migrated_copies(make_user):
+def test_역방향_마이그레이션은_이관된_사본만_삭제하고_원본과_기존_항목은_보존한다(make_user):
     user = make_user()
     entry = _make_goods(user, title="이전 대상")
     pre_existing = CollectionItem.objects.create(

@@ -12,7 +12,8 @@ from drafts.models import EventDraft
 
 
 @pytest.mark.django_db
-def test_api_promote_returns_201_and_marks_submitted(client, make_user, make_entry):
+@pytest.mark.web
+def test_비공식_항목을_공식_URL과_함께_승격_요청하면_201로_생성되고_제출됨_상태가_된다(client, make_user, make_entry):
     user = make_user(username="api-promo")
     entry = make_entry(user, kind="place", title="비공식")
 
@@ -30,7 +31,8 @@ def test_api_promote_returns_201_and_marks_submitted(client, make_user, make_ent
 
 
 @pytest.mark.django_db
-def test_api_promote_requires_official_url(client, make_user, make_entry):
+@pytest.mark.web
+def test_공식_URL_없이_승격을_요청하면_400으로_거부된다(client, make_user, make_entry):
     user = make_user(username="api-promo-nourl")
     entry = make_entry(user, kind="place", title="비공식")
 
@@ -45,7 +47,8 @@ def test_api_promote_requires_official_url(client, make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_api_promote_rejects_ftp_official_url_400(client, make_user, make_entry):
+@pytest.mark.web
+def test_ftp_스킴의_공식_URL로_승격을_요청하면_400으로_거부된다(client, make_user, make_entry):
     user = make_user(username="api-promo-ftp")
     entry = make_entry(user, kind="place", title="비공식")
 
@@ -62,7 +65,8 @@ def test_api_promote_rejects_ftp_official_url_400(client, make_user, make_entry)
 
 
 @pytest.mark.django_db
-def test_api_promote_rejects_localhost_official_url_400(client, make_user, make_entry):
+@pytest.mark.web
+def test_localhost_공식_URL로_승격을_요청하면_400으로_거부된다(client, make_user, make_entry):
     user = make_user(username="api-promo-localhost")
     entry = make_entry(user, kind="place", title="비공식")
 
@@ -79,7 +83,8 @@ def test_api_promote_rejects_localhost_official_url_400(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_api_promote_rejects_private_ip_official_url_400(client, make_user, make_entry):
+@pytest.mark.web
+def test_사설_IP_공식_URL로_승격을_요청하면_400으로_거부된다(client, make_user, make_entry):
     user = make_user(username="api-promo-private-ip")
     entry = make_entry(user, kind="place", title="비공식")
 
@@ -96,7 +101,8 @@ def test_api_promote_rejects_private_ip_official_url_400(client, make_user, make
 
 
 @pytest.mark.django_db
-def test_api_promote_goods_entry_returns_400(client, make_user, make_entry):
+@pytest.mark.web
+def test_굿즈_항목을_승격_요청하면_400으로_거부되고_제출됨으로_바뀌지_않는다(client, make_user, make_entry):
     """A goods entry is not promotable (collection domain plan §3-3) — the
     view must translate PromotionKindNotAllowedError into a controlled 400,
     not let it bubble up as an unhandled 500."""
@@ -117,7 +123,8 @@ def test_api_promote_goods_entry_returns_400(client, make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_api_promote_other_users_entry_404(client, make_user, make_entry):
+@pytest.mark.web
+def test_다른_사용자의_항목을_승격_요청하면_404로_숨겨진다(client, make_user, make_entry):
     owner = make_user(username="api-promo-owner")
     other = make_user(username="api-promo-other")
     entry = make_entry(owner, kind="place", title="비공식")
@@ -134,7 +141,8 @@ def test_api_promote_other_users_entry_404(client, make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_api_promote_already_submitted_409(client, make_user, make_entry):
+@pytest.mark.web
+def test_이미_제출된_항목을_다시_승격_요청하면_409_중복_오류가_된다(client, make_user, make_entry):
     user = make_user(username="api-promo-twice")
     entry = make_entry(user, kind="place", title="비공식")
     client.force_login(user)
@@ -153,7 +161,8 @@ def test_api_promote_already_submitted_409(client, make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_promote_with_existing_draft_url_returns_field_error(client, make_user, make_entry, make_draft):
+@pytest.mark.web
+def test_이미_존재하는_드래프트와_동일한_공식_URL로_승격_요청하면_필드_오류로_거부된다(client, make_user, make_entry, make_draft):
     """(moved from tests/core/test_coverage_supplements.py)"""
     user = make_user()
     entry = make_entry(user, kind="place", title="제보 대상")
@@ -172,7 +181,8 @@ def test_promote_with_existing_draft_url_returns_field_error(client, make_user, 
 
 
 @pytest.mark.django_db
-def test_api_promote_requires_authentication(client, make_user, make_entry):
+@pytest.mark.web
+def test_인증되지_않은_요청으로_승격을_시도하면_401_또는_403으로_거부된다(client, make_user, make_entry):
     user = make_user(username="api-promo-anon")
     entry = make_entry(user, kind="place", title="비공식")
 
@@ -191,7 +201,8 @@ def test_api_promote_requires_authentication(client, make_user, make_entry):
 
 
 @pytest.mark.django_db
-def test_api_promote_is_rate_limited_per_user(client, make_user, make_entry):
+@pytest.mark.slow
+def test_일일_승격_한도를_초과하면_429로_제한된다(client, make_user, make_entry):
     """After the daily promotion cap, further promotes are throttled (429)."""
     user = make_user(username="api-promo-flood")
     client.force_login(user)

@@ -11,6 +11,8 @@ import pytest
 
 from archive.models import EventInterest
 
+pytestmark = pytest.mark.web
+
 
 # ---------------------------------------------------------------------------
 # CREATE — 201
@@ -18,7 +20,7 @@ from archive.models import EventInterest
 
 
 @pytest.mark.django_db
-def test_create_event_interest_returns_201(client, make_user, make_event):
+def test_행사_찜을_등록하면_201을_응답한다(client, make_user, make_event):
     user = make_user(username="interest-create-user")
     event = make_event(title="Popup Store A")
 
@@ -42,7 +44,7 @@ def test_create_event_interest_returns_201(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_create_event_interest_duplicate_returns_409(client, make_user, make_event):
+def test_이미_찜한_행사를_다시_등록하면_409를_응답한다(client, make_user, make_event):
     user = make_user(username="interest-dup-user")
     event = make_event(title="Popup Store B")
 
@@ -71,7 +73,7 @@ def test_create_event_interest_duplicate_returns_409(client, make_user, make_eve
 
 
 @pytest.mark.django_db
-def test_create_event_interest_rejects_unpublished_event(client, make_user, make_draft_event):
+def test_미공개_행사를_찜하면_400을_응답한다(client, make_user, make_draft_event):
     user = make_user(username="interest-draft-user")
     event = make_draft_event(title="Draft Popup")
 
@@ -92,7 +94,7 @@ def test_create_event_interest_rejects_unpublished_event(client, make_user, make
 
 
 @pytest.mark.django_db
-def test_event_interest_list_is_user_scoped(client, make_user, make_event, make_interest):
+def test_찜_목록_조회는_본인_소유로만_한정된다(client, make_user, make_event, make_interest):
     user = make_user(username="interest-list-user")
     other = make_user(username="interest-list-other")
     event_a = make_event(title="Event A")
@@ -117,7 +119,7 @@ def test_event_interest_list_is_user_scoped(client, make_user, make_event, make_
 
 
 @pytest.mark.django_db
-def test_event_interest_list_ordered_newest_first(client, make_user, make_event, make_interest):
+def test_찜_목록은_최신_등록순으로_정렬된다(client, make_user, make_event, make_interest):
     user = make_user(username="interest-order-user")
     event_a = make_event(title="Event Order A")
     event_b = make_event(title="Event Order B")
@@ -140,7 +142,7 @@ def test_event_interest_list_ordered_newest_first(client, make_user, make_event,
 
 
 @pytest.mark.django_db
-def test_delete_event_interest_returns_204_then_404(client, make_user, make_event):
+def test_찜을_삭제하면_204이고_이후_조회는_404가_된다(client, make_user, make_event):
     user = make_user(username="interest-delete-user")
     event = make_event(title="Popup Delete")
 
@@ -166,7 +168,7 @@ def test_delete_event_interest_returns_204_then_404(client, make_user, make_even
 
 
 @pytest.mark.django_db
-def test_cross_user_delete_returns_404_and_row_survives(client, make_user, make_event, make_interest):
+def test_다른_사용자의_찜을_삭제하면_404이고_행이_보존된다(client, make_user, make_event, make_interest):
     owner = make_user(username="interest-owner")
     attacker = make_user(username="interest-attacker")
     event = make_event(title="Popup IDOR")
@@ -186,7 +188,7 @@ def test_cross_user_delete_returns_404_and_row_survives(client, make_user, make_
 
 
 @pytest.mark.django_db
-def test_interest_and_planned_status_coexist_on_same_event(client, make_user, make_event, make_interest):
+def test_같은_행사에_찜과_참석예정_상태가_동시에_존재할_수_있다(client, make_user, make_event, make_interest):
     """A user can hold both an EventInterest and a planned UserEventStatus
     for the same event simultaneously. Both must be independently retrievable."""
     from archive.models import UserEventStatus
@@ -222,7 +224,7 @@ def test_interest_and_planned_status_coexist_on_same_event(client, make_user, ma
 
 
 @pytest.mark.django_db
-def test_unauthenticated_cannot_create_event_interest(client, make_event):
+def test_비로그인_사용자가_찜을_등록하면_인증_오류가_된다(client, make_event):
     event = make_event(title="Popup Unauth")
 
     response = client.post(
@@ -235,6 +237,6 @@ def test_unauthenticated_cannot_create_event_interest(client, make_event):
 
 
 @pytest.mark.django_db
-def test_unauthenticated_cannot_list_event_interests(client):
+def test_비로그인_사용자가_찜_목록을_조회하면_인증_오류가_된다(client):
     response = client.get("/api/event-interests/")
     assert response.status_code in (401, 403)

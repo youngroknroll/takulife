@@ -15,6 +15,8 @@ from django.test import Client
 
 from archive.models import PersonalEntry
 
+pytestmark = pytest.mark.web
+
 # (url, full_template, fragment_template) for each search-enabled archive page.
 ARCHIVE_PAGES = [
     ("/archive/", "core/archive/index.html", "core/partials/_archive_results_record.html"),
@@ -22,6 +24,7 @@ ARCHIVE_PAGES = [
     ("/archive/visits/", "core/archive/visits.html", "core/partials/_archive_results_visits.html"),
     ("/archive/items/", "core/archive/personal_entries.html", "core/partials/_archive_results_personal.html"),
 ]
+ARCHIVE_PAGE_IDS = ["전체_보기", "나의_일정", "다녀온_기록", "직접_등록"]
 
 
 def _template_names(resp):
@@ -30,8 +33,10 @@ def _template_names(resp):
 
 @pytest.mark.django_db
 class TestArchivePartialBranch:
-    @pytest.mark.parametrize("url,full_template,fragment_template", ARCHIVE_PAGES)
-    def test_partial_renders_fragment_only(
+    @pytest.mark.parametrize(
+        "url,full_template,fragment_template", ARCHIVE_PAGES, ids=ARCHIVE_PAGE_IDS
+    )
+    def test_partial_1로_요청하면_결과_조각만_응답한다(
         self, user_client, url, full_template, fragment_template
     ):
         _user, client = user_client()
@@ -48,8 +53,10 @@ class TestArchivePartialBranch:
         assert b"<html" not in resp.content.lower()
         assert b'id="archive-results"' not in resp.content
 
-    @pytest.mark.parametrize("url,full_template,fragment_template", ARCHIVE_PAGES)
-    def test_full_page_unchanged(self, user_client, url, full_template, fragment_template):
+    @pytest.mark.parametrize(
+        "url,full_template,fragment_template", ARCHIVE_PAGES, ids=ARCHIVE_PAGE_IDS
+    )
+    def test_일반_요청은_전체_페이지를_그대로_렌더링한다(self, user_client, url, full_template, fragment_template):
         _user, client = user_client()
 
         resp = client.get(url)
@@ -63,8 +70,10 @@ class TestArchivePartialBranch:
         assert b'id="archive-results"' in resp.content
         assert b"<html" in resp.content.lower()
 
-    @pytest.mark.parametrize("url,full_template,fragment_template", ARCHIVE_PAGES)
-    def test_partial_requires_login(self, url, full_template, fragment_template):
+    @pytest.mark.parametrize(
+        "url,full_template,fragment_template", ARCHIVE_PAGES, ids=ARCHIVE_PAGE_IDS
+    )
+    def test_비로그인_사용자의_partial_요청은_로그인_페이지로_리다이렉트된다(self, url, full_template, fragment_template):
         client = Client()  # anonymous
 
         resp = client.get(url + "?partial=1")
@@ -73,9 +82,15 @@ class TestArchivePartialBranch:
         assert resp.status_code == 302
         assert "/accounts/login/" in resp["Location"]
 
-    @pytest.mark.parametrize("url,full_template,fragment_template", ARCHIVE_PAGES)
-    @pytest.mark.parametrize("bad_partial", ["", "0", "2", "true", "yes", "01"])
-    def test_non_one_partial_falls_back_to_full_page(
+    @pytest.mark.parametrize(
+        "url,full_template,fragment_template", ARCHIVE_PAGES, ids=ARCHIVE_PAGE_IDS
+    )
+    @pytest.mark.parametrize(
+        "bad_partial",
+        ["", "0", "2", "true", "yes", "01"],
+        ids=["빈_문자열", "값_0", "값_2", "문자열_true", "문자열_yes", "0으로_시작하는_01"],
+    )
+    def test_partial_값이_1이_아니면_전체_페이지로_대체_응답한다(
         self, user_client, url, full_template, fragment_template, bad_partial
     ):
         _user, client = user_client()
@@ -87,7 +102,7 @@ class TestArchivePartialBranch:
         assert full_template in names
         assert "base.html" in names
 
-    def test_partial_applies_q_filter_on_archive_dashboard(self, user_client, make_event, make_status):
+    def test_전체_보기_partial_렌더링에_검색어를_적용하면_일치하는_행사만_응답한다(self, user_client, make_event, make_status):
         # The /archive/ dashboard shares _archive_status_context with statuses but
         # renders the record fragment at a different page size — cover it directly.
         user, client = user_client()
@@ -105,7 +120,7 @@ class TestArchivePartialBranch:
         assert "매칭 이벤트".encode() in resp.content
         assert "다른 이벤트".encode() not in resp.content
 
-    def test_partial_status_filter_with_no_q_match_shows_empty_on_dashboard(self, user_client, make_event, make_status):
+    def test_전체_보기에서_검색어_없이_상태_필터만_적용해_일치하는_행이_없으면_상태별_빈_안내문구를_보여준다(self, user_client, make_event, make_status):
         # has_any=True, active status filter matches zero rows, no query → the
         # record fragment's `elif has_any` notice branch (not the search-empty one).
         user, client = user_client()
@@ -120,7 +135,7 @@ class TestArchivePartialBranch:
         assert "예정 행사".encode() not in resp.content
         assert "이 상태로 저장한 행사가 없습니다".encode() in resp.content
 
-    def test_partial_renders_pager(self, user_client, make_event, make_status):
+    def test_나의_일정_partial_렌더링이_페이지를_넘으면_partial_없는_페이저_링크를_포함한다(self, user_client, make_event, make_status):
         # More records than one page → the pager must render inside the fragment,
         # and its links must never carry partial= (else a click would navigate to
         # a chrome-less fragment). /archive/statuses/ paginates at 5 per page.
@@ -136,7 +151,7 @@ class TestArchivePartialBranch:
         assert b'class="pager"' in resp.content
         assert b"partial=" not in resp.content
 
-    def test_partial_applies_q_filter_on_statuses(self, user_client, make_event, make_status):
+    def test_나의_일정_partial_렌더링에_검색어를_적용하면_일치하는_행사만_응답한다(self, user_client, make_event, make_status):
         user, client = user_client()
         match = make_event(title="매칭 이벤트", location_name="서울")
         other = make_event(title="다른 이벤트", location_name="부산")
@@ -153,7 +168,7 @@ class TestArchivePartialBranch:
         assert "매칭 이벤트".encode() in resp.content
         assert "다른 이벤트".encode() not in resp.content
 
-    def test_partial_applies_q_filter_on_visits(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_partial_렌더링에_검색어를_적용하면_일치하는_행사만_응답한다(self, user_client, make_event, make_visit):
         user, client = user_client()
         match = make_event(title="방문 매칭")
         other = make_event(title="방문 제외")
@@ -166,7 +181,7 @@ class TestArchivePartialBranch:
         assert "방문 매칭".encode() in resp.content
         assert "방문 제외".encode() not in resp.content
 
-    def test_partial_applies_q_filter_on_items(self, user_client, make_entry):
+    def test_직접_등록_partial_렌더링에_검색어를_적용하면_일치하는_항목만_응답한다(self, user_client, make_entry):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 카페")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="제외 장소")
@@ -177,7 +192,7 @@ class TestArchivePartialBranch:
         assert "매칭 카페".encode() in resp.content
         assert "제외 장소".encode() not in resp.content
 
-    def test_items_page_hides_actions_on_goods_rows(self, user_client, make_entry):
+    def test_직접_등록_목록에서_굿즈_항목은_찜_상태_승격_액션은_없고_삭제만_가능하다(self, user_client, make_entry):
         # GOODS is no longer a valid interest/status/promotion subject
         # (collection domain plan §3-3, gate M1: goods are unreachable via
         # every UI path once C2 merges) — its row must render with no

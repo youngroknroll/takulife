@@ -14,10 +14,12 @@ re-assert the same structural fact once per page.
 """
 import pytest
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
 class TestArchiveNavAccordion:
-    def test_two_groups_activity_label_no_collection_link(self, user_client):
+    def test_아카이브_내비게이션_아코디언은_내_활동_라벨의_두_그룹만_보여주고_컬렉션_링크를_포함하지_않는다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/statuses/")

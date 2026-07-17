@@ -23,8 +23,9 @@ from archive.models import CollectionItem
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_requires_authentication(client):
+def test_미인증_사용자가_컬렉션_목록을_조회하면_인증_오류가_된다(client):
     response = client.get("/api/collection-items/")
 
     assert response.status_code in (401, 403)
@@ -35,8 +36,9 @@ def test_collection_item_list_requires_authentication(client):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_create_collection_item_returns_201_and_forces_owner_from_request(client, make_user):
+def test_다른_사용자_id를_담아_생성해도_소유자는_요청_사용자로_강제된다(client, make_user):
     user = make_user(username="ci-create-owner")
     other = make_user(username="ci-create-payload-user")
 
@@ -62,8 +64,9 @@ def test_create_collection_item_returns_201_and_forces_owner_from_request(client
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_create_collection_item_response_has_exact_field_set(client, make_user):
+def test_컬렉션_항목을_생성하면_응답에_정확한_필드_집합이_포함된다(client, make_user):
     user = make_user(username="ci-create-fields")
 
     client.force_login(user)
@@ -102,8 +105,9 @@ def test_create_collection_item_response_has_exact_field_set(client, make_user):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_create_collection_item_rejects_negative_quantity_with_400(client, make_user):
+def test_수량이_음수인_컬렉션_항목을_생성하면_400으로_거부된다(client, make_user):
     user = make_user(username="ci-create-negative-quantity")
 
     client.force_login(user)
@@ -123,8 +127,9 @@ def test_create_collection_item_rejects_negative_quantity_with_400(client, make_
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_is_user_scoped(client, make_user, make_collection_item):
+def test_컬렉션_목록을_조회하면_본인_소유_항목만_반환된다(client, make_user, make_collection_item):
     user = make_user(username="ci-list-scope")
     other = make_user(username="ci-list-scope-other")
     make_collection_item(user, name="Mine")
@@ -138,8 +143,9 @@ def test_collection_item_list_is_user_scoped(client, make_user, make_collection_
     assert names == ["Mine"]
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_detail_get_for_another_user_returns_404(
+def test_타인_소유_컬렉션_항목을_조회하면_404가_된다(
     client, make_user, make_collection_item
 ):
     owner = make_user(username="ci-detail-get-owner")
@@ -152,8 +158,9 @@ def test_collection_item_detail_get_for_another_user_returns_404(
     assert response.status_code == 404
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_detail_patch_for_another_user_returns_404(
+def test_타인_소유_컬렉션_항목을_수정하면_404가_되고_원본이_유지된다(
     client, make_user, make_collection_item
 ):
     owner = make_user(username="ci-detail-patch-owner")
@@ -172,8 +179,9 @@ def test_collection_item_detail_patch_for_another_user_returns_404(
     assert item.name == "타인 소유 수정 시도"
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_detail_delete_for_another_user_returns_404(
+def test_타인_소유_컬렉션_항목을_삭제하면_404가_되고_삭제되지_않는다(
     client, make_user, make_collection_item
 ):
     owner = make_user(username="ci-detail-delete-owner")
@@ -187,8 +195,9 @@ def test_collection_item_detail_delete_for_another_user_returns_404(
     assert CollectionItem.objects.filter(id=item.id).exists()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_owner_can_delete(client, make_user, make_collection_item):
+def test_소유자가_컬렉션_항목을_삭제하면_204와_함께_삭제된다(client, make_user, make_collection_item):
     user = make_user(username="ci-delete-owner")
     item = make_collection_item(user, name="삭제할 항목")
 
@@ -205,8 +214,9 @@ def test_collection_item_owner_can_delete(client, make_user, make_collection_ite
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_owner_can_patch_collection_item_fields(client, make_user, make_collection_item):
+def test_소유자가_컬렉션_항목_필드를_수정하면_변경사항이_저장된다(client, make_user, make_collection_item):
     user = make_user(username="ci-patch-owner")
     item = make_collection_item(user, name="원래 이름")
 
@@ -224,8 +234,9 @@ def test_owner_can_patch_collection_item_fields(client, make_user, make_collecti
     assert item.memo == "메모 추가"
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_create_collection_item_rejects_unpublished_event(client, make_user, make_event):
+def test_미공개_이벤트를_연결해_컬렉션_항목을_생성하면_400으로_거부된다(client, make_user, make_event):
     """`event` is scoped to Event.objects.published() on the serializer, the
     same guard VisitRecordSerializer/UserEventStatusSerializer already use
     (collection domain design plan §4 PR-C5 CP14)."""
@@ -246,8 +257,9 @@ def test_create_collection_item_rejects_unpublished_event(client, make_user, mak
     assert not CollectionItem.objects.filter(name="미공개 이벤트 굿즈").exists()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_patch_rejects_unpublished_event(client, make_user, make_event, make_collection_item):
+def test_컬렉션_항목을_미공개_이벤트로_수정하면_400으로_거부되고_기존값이_유지된다(client, make_user, make_event, make_collection_item):
     """QVL finding D2-2 (2026-07-16): CP14 only covered POST — the
     serializer's `event` field is shared by create and update, but PATCH had
     no dedicated test proving the same published-only guard applies there."""
@@ -270,8 +282,9 @@ def test_patch_rejects_unpublished_event(client, make_user, make_event, make_col
     assert item.event_id is None
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_create_collection_item_rejects_another_users_visit_record(
+def test_타인의_방문_기록을_연결해_컬렉션_항목을_생성하면_400으로_거부된다(
     client, make_user, make_event, make_visit
 ):
     """API-level rejection of another user's visit_record — enforced by the
@@ -305,8 +318,9 @@ def _normalize_pk_in_message(payload):
     }
 
 
+@pytest.mark.contract
 @pytest.mark.django_db
-def test_create_collection_item_visit_record_error_does_not_reveal_existence(
+def test_타인_방문_기록과_존재하지_않는_방문_기록은_동일한_오류_형태로_거부되어_존재_여부가_드러나지_않는다(
     client, make_user, make_event, make_visit
 ):
     """Another user's real visit_record id and a nonexistent id must fail
@@ -337,8 +351,9 @@ def test_create_collection_item_visit_record_error_does_not_reveal_existence(
     )
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_patch_rejects_quantity_below_existing_tradeable_quantity(
+def test_기존_교환_가능_수량보다_적은_수량으로_수정하면_400으로_거부된다(
     client, make_user, make_collection_item
 ):
     """A PATCH that only sends `quantity` must still be checked against the
@@ -360,8 +375,9 @@ def test_patch_rejects_quantity_below_existing_tradeable_quantity(
     assert item.quantity == 5
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_patch_fk_pair_conflict_returns_400_not_500(
+def test_방문_기록과_충돌하는_이벤트로_수정하면_500이_아닌_400으로_거부된다(
     client, make_user, make_event, make_visit, make_collection_item
 ):
     """QVL finding D2-1 (2026-07-16): proves the FK-pair guard's rejection
@@ -412,8 +428,9 @@ def test_patch_fk_pair_conflict_returns_400_not_500(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.contract
 @pytest.mark.django_db
-def test_patch_race_with_concurrent_delete_returns_404(
+def test_수정_중_동시에_삭제되면_404가_된다(
     client, make_user, make_collection_item, monkeypatch
 ):
     """If the CollectionItem is deleted between the view's get_object() and
@@ -458,8 +475,9 @@ def test_patch_race_with_concurrent_delete_returns_404(
     assert not CollectionItem.objects.filter(pk=item.id).exists()
 
 
+@pytest.mark.contract
 @pytest.mark.django_db
-def test_delete_survives_concurrent_delete_race(
+def test_삭제_중_동시_삭제_경합이_발생해도_204로_성공한다(
     client, make_user, make_collection_item, monkeypatch
 ):
     """Checked, not assumed (PO instruction, 2026-07-16): does DELETE have
@@ -502,8 +520,9 @@ def test_delete_survives_concurrent_delete_race(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_filters_by_work_title(client, make_user, make_collection_item):
+def test_작품명으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(client, make_user, make_collection_item):
     user = make_user(username="ci-filter-work-title")
     make_collection_item(user, name="일치", work_title="작품 A")
     make_collection_item(user, name="불일치", work_title="작품 B")
@@ -516,8 +535,9 @@ def test_collection_item_list_filters_by_work_title(client, make_user, make_coll
     assert names == ["일치"]
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_filters_by_character_name(client, make_user, make_collection_item):
+def test_캐릭터명으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(client, make_user, make_collection_item):
     user = make_user(username="ci-filter-character")
     make_collection_item(user, name="일치", character_name="캐릭터 A")
     make_collection_item(user, name="불일치", character_name="캐릭터 B")
@@ -530,8 +550,9 @@ def test_collection_item_list_filters_by_character_name(client, make_user, make_
     assert names == ["일치"]
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_filters_by_item_type(client, make_user, make_collection_item):
+def test_굿즈_유형으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(client, make_user, make_collection_item):
     user = make_user(username="ci-filter-item-type")
     make_collection_item(user, name="일치", item_type="keyring")
     make_collection_item(user, name="불일치", item_type="badge")
@@ -544,8 +565,9 @@ def test_collection_item_list_filters_by_item_type(client, make_user, make_colle
     assert names == ["일치"]
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_filters_by_is_wanted(client, make_user, make_collection_item):
+def test_구함_여부로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(client, make_user, make_collection_item):
     user = make_user(username="ci-filter-wanted")
     make_collection_item(user, name="구함", is_wanted=True)
     make_collection_item(user, name="보유", is_wanted=False)
@@ -558,8 +580,9 @@ def test_collection_item_list_filters_by_is_wanted(client, make_user, make_colle
     assert names == ["구함"]
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_filters_by_duplicate_is_derived_from_quantity(
+def test_중복_필터는_수량에서_파생되어_저장된_필드_없이_동작한다(
     client, make_user, make_collection_item
 ):
     """`duplicate` has no stored field — it must be quantity >= 2, not a
@@ -577,8 +600,9 @@ def test_collection_item_list_filters_by_duplicate_is_derived_from_quantity(
     assert "duplicate_count" not in response.json()["results"][0]
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_filters_by_tradeable_is_derived_from_tradeable_quantity(
+def test_교환가능_필터는_교환_가능_수량에서_파생되어_동작한다(
     client, make_user, make_collection_item
 ):
     """`tradeable` has no separate flag field — it must be
@@ -595,8 +619,9 @@ def test_collection_item_list_filters_by_tradeable_is_derived_from_tradeable_qua
     assert names == ["교환 가능"]
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_rejects_invalid_is_wanted_filter_value(client, make_user):
+def test_구함_필터에_잘못된_값을_보내면_400으로_거부된다(client, make_user):
     """CollectionItemQuerySerializer validates query params before they
     reach list_user_collection_items (mirrors UserEventStatusQuerySerializer
     — collection domain design plan §4 PR-C5 CP22)."""
@@ -614,8 +639,9 @@ def test_collection_item_list_rejects_invalid_is_wanted_filter_value(client, mak
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_rejects_work_title_filter_exceeding_max_length(client, make_user):
+def test_작품명_필터가_최대_길이를_초과하면_400으로_거부된다(client, make_user):
     user = make_user(username="ci-filter-work-title-too-long")
 
     client.force_login(user)
@@ -624,8 +650,9 @@ def test_collection_item_list_rejects_work_title_filter_exceeding_max_length(cli
     assert response.status_code == 400
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_rejects_character_name_filter_exceeding_max_length(
+def test_캐릭터명_필터가_최대_길이를_초과하면_400으로_거부된다(
     client, make_user
 ):
     user = make_user(username="ci-filter-character-name-too-long")
@@ -636,8 +663,9 @@ def test_collection_item_list_rejects_character_name_filter_exceeding_max_length
     assert response.status_code == 400
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_collection_item_list_rejects_item_type_filter_exceeding_max_length(client, make_user):
+def test_굿즈_유형_필터가_최대_길이를_초과하면_400으로_거부된다(client, make_user):
     user = make_user(username="ci-filter-item-type-too-long")
 
     client.force_login(user)
@@ -656,12 +684,14 @@ def test_collection_item_list_rejects_item_type_filter_exceeding_max_length(clie
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "query_param",
     ["work_title", "character_name", "item_type", "is_wanted", "duplicate", "tradeable"],
+    ids=["작품명", "캐릭터명", "굿즈_유형", "구함_여부", "중복", "교환가능"],
 )
-def test_collection_item_list_treats_empty_filter_value_as_no_filter(
+def test_빈_필터값을_보내면_필터가_적용되지_않은_것과_동일하게_처리된다(
     client, make_user, make_collection_item, query_param
 ):
     user = make_user(username=f"ci-filter-empty-{query_param}")
@@ -677,8 +707,9 @@ def test_collection_item_list_treats_empty_filter_value_as_no_filter(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_create_collection_item_rejects_non_image_bytes(client, make_user, settings, tmp_path):
+def test_이미지가_아닌_바이트를_jpg로_위장해_업로드하면_400으로_거부된다(client, make_user, settings, tmp_path):
     """Fake bytes labeled as .jpg must be rejected by Pillow content inspection."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(username="ci-img-fake")
@@ -699,8 +730,9 @@ def test_create_collection_item_rejects_non_image_bytes(client, make_user, setti
     assert not CollectionItem.objects.filter(name="스푸핑 이미지").exists()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_create_collection_item_rejects_oversized_image(
+def test_5MB를_초과하는_이미지를_업로드하면_400으로_거부된다(
     client, make_user, png_bytes, settings, tmp_path
 ):
     """Images larger than 5 MB must be rejected with 400 (decompression-bomb guard)."""
@@ -723,8 +755,9 @@ def test_create_collection_item_rejects_oversized_image(
     assert "image" in response.json()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_create_collection_item_rejects_svg(client, make_user, settings, tmp_path):
+def test_SVG_파일을_업로드하면_400으로_거부된다(client, make_user, settings, tmp_path):
     """SVG files must be rejected even if Pillow might accept them."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(username="ci-img-svg")
@@ -743,8 +776,9 @@ def test_create_collection_item_rejects_svg(client, make_user, settings, tmp_pat
     assert "image" in response.json()
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_patch_replacing_image_deletes_previous_file(
+def test_이미지를_교체하면_기존_파일이_삭제된다(
     client,
     make_user,
     make_collection_item,

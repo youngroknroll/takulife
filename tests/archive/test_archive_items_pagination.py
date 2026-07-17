@@ -13,6 +13,8 @@ import pytest
 
 from archive.models import PersonalEntry
 
+pytestmark = pytest.mark.web
+
 
 # ---------------------------------------------------------------------------
 # Basic pagination
@@ -23,7 +25,7 @@ from archive.models import PersonalEntry
 class TestArchiveItemsPagination:
     """7 items paginate at 5/page; page_obj is in the template context."""
 
-    def test_first_page_holds_five(self, user_client, make_entries):
+    def test_개인_기록_7건을_등록하면_첫_페이지에_5건이_표시된다(self, user_client, make_entries):
         user, client = user_client()
         make_entries(user, 7)
 
@@ -35,7 +37,7 @@ class TestArchiveItemsPagination:
         assert page_obj.paginator.num_pages == 2
         assert len(page_obj.object_list) == 5
 
-    def test_second_page_holds_two(self, user_client, make_entries):
+    def test_개인_기록_7건_중_두번째_페이지를_조회하면_나머지_2건이_표시된다(self, user_client, make_entries):
         user, client = user_client()
         make_entries(user, 7)
 
@@ -46,7 +48,7 @@ class TestArchiveItemsPagination:
         assert page_obj.number == 2
         assert len(page_obj.object_list) == 2
 
-    def test_single_page_when_five_or_fewer(self, user_client, make_entries):
+    def test_개인_기록이_5건_이하이면_페이지가_한_개만_생성된다(self, user_client, make_entries):
         user, client = user_client()
         make_entries(user, 4)
 
@@ -64,7 +66,7 @@ class TestArchiveItemsPagination:
 class TestArchiveItemsSummaryCounts:
     """Summary card counts are always unfiltered totals."""
 
-    def test_counts_total(self, user_client, make_entries):
+    def test_요약_카운트는_개인_기록_전체_건수를_집계한다(self, user_client, make_entries):
         user, client = user_client()
         make_entries(user, 7, kind=PersonalEntry.Kind.PLACE)
 
@@ -74,7 +76,7 @@ class TestArchiveItemsSummaryCounts:
         assert "place_count" not in resp.context
         assert "goods_count" not in resp.context
 
-    def test_summary_unchanged_by_q_filter(self, user_client, make_entries):
+    def test_검색어로_목록을_좁혀도_요약_전체_건수는_변하지_않는다(self, user_client, make_entries):
         """total_count does not shrink when q narrows entry_rows."""
         user, client = user_client()
         make_entries(user, 7, kind=PersonalEntry.Kind.PLACE, title_prefix="항목")
@@ -85,7 +87,7 @@ class TestArchiveItemsSummaryCounts:
         # Summary must still report 7, not the filtered count
         assert resp.context["total_count"] == 7
 
-    def test_has_entries_true_even_when_q_yields_zero(self, user_client, make_entry):
+    def test_검색_결과가_0건이어도_기록_보유_여부는_true로_유지된다(self, user_client, make_entry):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="내 항목")
 
@@ -104,7 +106,7 @@ class TestArchiveItemsSummaryCounts:
 class TestArchiveItemsSearch:
     """?q= filters entry_rows on /archive/items/."""
 
-    def test_q_filters_displayed_entry_rows(self, user_client, make_entry):
+    def test_검색어로_필터링하면_제목이_일치하는_기록만_표시된다(self, user_client, make_entry):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 항목")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="다른 항목")
@@ -115,7 +117,7 @@ class TestArchiveItemsSearch:
         assert "매칭 항목" in titles
         assert "다른 항목" not in titles
 
-    def test_q_filters_paginator_count(self, user_client, make_entry):
+    def test_검색어로_필터링하면_페이지네이터_건수도_검색_결과_기준으로_줄어든다(self, user_client, make_entry):
         """page_obj.paginator.count reflects the filtered (q-narrowed) count."""
         user, client = user_client()
         for i in range(3):
@@ -127,7 +129,7 @@ class TestArchiveItemsSearch:
 
         assert resp.context["page_obj"].paginator.count == 3
 
-    def test_empty_q_shows_all_entries(self, user_client, make_entries):
+    def test_빈_검색어를_보내면_모든_기록이_표시된다(self, user_client, make_entries):
         user, client = user_client()
         make_entries(user, 3)
 
@@ -146,7 +148,7 @@ class TestArchiveItemsSearch:
 class TestArchiveItemsContextKeys:
     """page_obj, q, has_query, pager_query must all be present in the context."""
 
-    def test_q_and_has_query_in_context(self, user_client):
+    def test_검색어를_보내면_컨텍스트에_검색어와_검색_여부가_담긴다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/items/?q=검색어")
@@ -154,7 +156,7 @@ class TestArchiveItemsContextKeys:
         assert resp.context["q"] == "검색어"
         assert resp.context["has_query"] is True
 
-    def test_no_q_param_gives_empty_q_and_false_has_query(self, user_client):
+    def test_검색어_파라미터가_없으면_컨텍스트의_검색어는_비어있고_검색_여부는_false다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/items/")
@@ -162,7 +164,7 @@ class TestArchiveItemsContextKeys:
         assert resp.context["q"] == ""
         assert resp.context["has_query"] is False
 
-    def test_pager_query_carries_q(self, user_client, make_entries):
+    def test_페이저_쿼리_문자열은_검색어를_포함한다(self, user_client, make_entries):
         user, client = user_client()
         make_entries(user, 7)  # 2 pages
 
@@ -171,7 +173,7 @@ class TestArchiveItemsContextKeys:
         pager_query = resp.context["pager_query"]
         assert "q=" in pager_query
 
-    def test_pager_query_empty_without_q(self, user_client, make_entries):
+    def test_검색어가_없으면_페이저_쿼리_문자열은_비어있다(self, user_client, make_entries):
         user, client = user_client()
         make_entries(user, 7)
 
@@ -179,7 +181,7 @@ class TestArchiveItemsContextKeys:
 
         assert resp.context["pager_query"] == ""
 
-    def test_whitespace_q_normalised_to_empty(self, user_client, make_entries):
+    def test_공백만_있는_검색어는_빈_검색어로_정규화된다(self, user_client, make_entries):
         user, client = user_client()
         make_entries(user, 3)
 
@@ -189,7 +191,7 @@ class TestArchiveItemsContextKeys:
         assert resp.context["has_query"] is False
         assert resp.context["page_obj"].paginator.count == 3
 
-    def test_long_q_truncated_no_server_error(self, user_client):
+    def test_과도하게_긴_검색어를_보내도_서버_오류_없이_100자로_잘린다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/items/?q=" + "Z" * 200)
