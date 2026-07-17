@@ -20,6 +20,7 @@ import pytest
 from datetime import date, timedelta
 from unittest.mock import patch
 
+from archive.models import UserEventStatus
 from events.models import Event
 
 pytestmark = pytest.mark.e2e
@@ -47,6 +48,46 @@ class TestHscrollNonOverflowingState:
         result = page.evaluate(
             """() => {
                 var track = document.getElementById('hscroll-closing');
+                var wrap = track.closest('.hscroll-wrap');
+                return {
+                    tabIndex: track.getAttribute('tabindex'),
+                    maskImage: getComputedStyle(wrap).maskImage
+                        || getComputedStyle(wrap).webkitMaskImage,
+                    hasAtStart: wrap.classList.contains('at-start'),
+                    hasAtEnd: wrap.classList.contains('at-end'),
+                };
+            }"""
+        )
+
+        assert result["tabIndex"] == "-1"
+        assert result["maskImage"] == "none"
+        assert result["hasAtStart"] is True
+        assert result["hasAtEnd"] is True
+
+
+class TestHomeSnapshotHscrollNonOverflowingState:
+    """Same !overflowing path (mask removal + tabindex="-1"), exercised on
+    the home collection-snapshot panel's (H-2) 기록 대기 sublist with a
+    single card — the newest hscroll render site most likely to hit this
+    branch routinely (a fresh user has few unrecorded visits, not many)."""
+
+    def test_record_track_with_one_card_drops_mask_and_tab_stop(
+        self, live_server, page, seed, login
+    ):
+        event = Event.objects.create(
+            title="기록 대기 단일 카드", publish_status=Event.PublishStatus.PUBLISHED
+        )
+        UserEventStatus.objects.create(
+            user=seed.user, event=event, status=UserEventStatus.Status.VISITED
+        )
+        page.set_viewport_size({"width": 1280, "height": 1000})
+
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(live_server.url + "/")
+
+        result = page.evaluate(
+            """() => {
+                var track = document.getElementById('hscroll-snap-record');
                 var wrap = track.closest('.hscroll-wrap');
                 return {
                     tabIndex: track.getAttribute('tabindex'),

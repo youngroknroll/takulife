@@ -24,6 +24,8 @@ from archive.queries import (
     list_user_personal_entries,
     list_user_planned_events,
     list_user_statuses,
+    list_user_unrecorded_visited_statuses,
+    list_user_upcoming_planned_events,
     list_user_visit_records,
     user_collection_item_filter_values,
     user_collection_item_summary_counts,
@@ -150,6 +152,39 @@ def home(request):
         "category_tiles": category_tiles,
         "popular_rows": _attach_display(popular_qs, today=today, user=request.user),
     }
+
+    if request.user.is_authenticated:
+        user = request.user
+        collection_summary = user_collection_item_summary_counts(user)
+        recent_goods = list(list_user_collection_items(user)[:5])
+        # Built directly rather than via _build_archive_status_rows: that
+        # helper reads .derived_status unconditionally (an annotation-only
+        # attribute), but this row's status is always "visited" by
+        # construction (list_user_unrecorded_visited_statuses already
+        # filters to it) — no derivation applies, and _subject_view itself
+        # has no derived_status dependency, so the raw slice is safe as-is.
+        unrecorded_rows = [
+            {"status_id": row.pk, "subject": _subject_view(row)}
+            for row in list_user_unrecorded_visited_statuses(user)[:5]
+        ]
+        upcoming_rows = _attach_display(
+            list_user_upcoming_planned_events(user, today=today)[:4],
+            today=today,
+            user=user,
+        )
+        context.update(
+            {
+                "collection_summary": collection_summary,
+                "recent_goods": recent_goods,
+                "unrecorded": unrecorded_rows,
+                "upcoming_planned": upcoming_rows,
+                "snapshot_active": bool(unrecorded_rows)
+                or bool(recent_goods)
+                or bool(upcoming_rows)
+                or (collection_summary["owned_count"] + collection_summary["wanted_count"] > 0),
+            }
+        )
+
     return render(request, "core/home.html", context)
 
 

@@ -4,7 +4,7 @@ Reusable query logic for user event statuses, event interests, and visit records
 Query/aggregate logic lives here, not in the view layer — mirrors
 drafts/queries.py.
 """
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.utils import timezone
 
 from events.models import Event
@@ -74,6 +74,31 @@ def list_user_statuses(user, status: str = "", *, q: str = "", today=None):
     return queryset
 
 
+def list_user_unrecorded_visited_statuses(user):
+    """Return a user's visited status rows whose subject has no visit record
+    yet — the collection-first home's "미완성 기록" surface.
+
+    Uses the raw stored status (not with_derived_status) since visited is
+    never a derived overlay value. The Exists subquery must OR the event and
+    personal_entry matches, not AND them: a status row's subject is exactly
+    one of the two (the other is always NULL), so ANDing would compare
+    OuterRef("event") or OuterRef("personal_entry") against NULL on every
+    row and always evaluate false — silently treating every personal_entry
+    subject as permanently unrecorded even after a visit record exists.
+    """
+    same_subject = VisitRecord.objects.filter(
+        Q(event=OuterRef("event")) | Q(personal_entry=OuterRef("personal_entry")),
+        user=OuterRef("user"),
+    )
+    return (
+        UserEventStatus.objects.filter(user=user, status=UserEventStatus.Status.VISITED)
+        .select_related("event", "personal_entry")
+        .annotate(has_record=Exists(same_subject))
+        .filter(has_record=False)
+        .order_by("-updated_at")
+    )
+
+
 def list_user_interests(user):
     """Return a user's event interests, newest first, with event selected.
 
@@ -118,6 +143,29 @@ def list_user_planned_events(user):
             archive_user_statuses__status=UserEventStatus.Status.PLANNED,
         )
         .order_by("title")
+    )
+
+
+def list_user_upcoming_planned_events(user, *, today=None):
+    """Return published events the user planned to attend that haven't
+    started yet, soonest first.
+
+    Differs from list_user_planned_events in two ways: filtered to
+    start_date strictly after today (a planned event starting today or
+    earlier is not "upcoming"), and ordered by start_date (not title) so
+    the nearest event leads — this is the collection-first home's "다가오는
+    예정 행사" surface, not the visit-record selectable set.
+    """
+    if today is None:
+        today = timezone.localdate()
+    return (
+        Event.objects.published()
+        .filter(
+            archive_user_statuses__user=user,
+            archive_user_statuses__status=UserEventStatus.Status.PLANNED,
+            start_date__gt=today,
+        )
+        .order_by("start_date")
     )
 
 

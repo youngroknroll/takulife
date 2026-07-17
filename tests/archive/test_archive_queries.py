@@ -1,5 +1,7 @@
 """Unit tests for the archive read layer (archive/queries.py)."""
 
+from datetime import date, timedelta
+
 import pytest
 
 from archive.models import CollectionItem, EventInterest, PersonalEntry, UserEventStatus, VisitRecord
@@ -10,6 +12,8 @@ from archive.queries import (
     list_user_personal_entries,
     list_user_planned_events,
     list_user_statuses,
+    list_user_unrecorded_visited_statuses,
+    list_user_upcoming_planned_events,
     list_user_visit_records,
     user_collection_item_filter_values,
     user_collection_item_summary_counts,
@@ -21,6 +25,8 @@ from archive.queries import (
     user_status_counts,
     user_visit_record_counts,
 )
+
+TODAY = date(2026, 6, 26)
 
 
 @pytest.mark.django_db
@@ -68,6 +74,78 @@ def test_list_user_statuses_filters_by_user_and_status(make_user, make_event, ma
     planned_only = list_user_statuses(user, "planned")
     assert planned_only.count() == 1
     assert planned_only.first().event_id == e1.id
+
+
+# ---------------------------------------------------------------------------
+# list_user_unrecorded_visited_statuses (collection-first home: 미완성 기록)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_list_user_unrecorded_visited_statuses_includes_visited_without_record(
+    make_user, make_event, make_status
+):
+    user = make_user(username="unrecorded-basic")
+    event = make_event(title="다녀온 행사")
+    status = make_status(user, event=event, status="visited")
+
+    rows = list(list_user_unrecorded_visited_statuses(user))
+
+    assert status in rows
+
+
+@pytest.mark.django_db
+def test_list_user_unrecorded_visited_statuses_excludes_visited_with_record(
+    make_user, make_event, make_status, make_visit
+):
+    user = make_user(username="unrecorded-has-record")
+    event = make_event(title="기록 있는 행사")
+    status = make_status(user, event=event, status="visited")
+    make_visit(user, event=event, visited_on="2026-06-01")
+
+    rows = list(list_user_unrecorded_visited_statuses(user))
+
+    assert status not in rows
+
+
+@pytest.mark.django_db
+def test_list_user_unrecorded_visited_statuses_includes_personal_entry_subject_and_excludes_once_recorded(
+    make_user, make_entry, make_status, make_visit
+):
+    """Regression guard for the Exists subquery's OR (not AND) composition:
+    ANDing the event/personal_entry matches would compare OuterRef("event")
+    against NULL for a personal_entry-subject row and always evaluate false,
+    silently keeping this row "unrecorded" forever even after a visit record
+    exists."""
+    user = make_user(username="unrecorded-personal")
+    entry = make_entry(user, title="비공식 방문지")
+    status = make_status(user, personal_entry=entry, status="visited")
+
+    before = list(list_user_unrecorded_visited_statuses(user))
+    assert status in before
+
+    make_visit(user, personal_entry=entry, visited_on="2026-06-01")
+
+    after = list(list_user_unrecorded_visited_statuses(user))
+    assert status not in after
+
+
+@pytest.mark.django_db
+def test_list_user_unrecorded_visited_statuses_excludes_non_visited_and_other_users(
+    make_user, make_event, make_status
+):
+    user = make_user(username="unrecorded-scope")
+    other = make_user(username="unrecorded-scope-other")
+    e1 = make_event(title="예정 행사")
+    e2 = make_event(title="타 유저 방문 행사")
+
+    planned = make_status(user, event=e1, status="planned")
+    others_visited = make_status(other, event=e2, status="visited")
+
+    rows = list(list_user_unrecorded_visited_statuses(user))
+
+    assert planned not in rows
+    assert others_visited not in rows
 
 
 @pytest.mark.django_db
@@ -239,6 +317,77 @@ def test_list_user_planned_events_returns_only_user_planned_published(make_user,
     assert missed not in events  # different status
     assert others_planned not in events  # different user
     assert draft_planned not in events  # not published
+
+
+# ---------------------------------------------------------------------------
+# list_user_upcoming_planned_events (collection-first home: 다가오는 예정 행사)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_list_user_upcoming_planned_events_scopes_to_user_status_and_publish(
+    make_user, make_event, make_draft_event, make_status
+):
+    user = make_user(username="upcoming-planner")
+    other = make_user(username="upcoming-planner-other")
+    future = TODAY + timedelta(days=5)
+    planned = make_event(title="Planned", start_date=future)
+    visited = make_event(title="Visited", start_date=future)
+    missed = make_event(title="Missed", start_date=future)
+    others_planned = make_event(title="Others planned", start_date=future)
+    draft_planned = make_draft_event(title="Draft planned", start_date=future)
+
+    make_status(user, event=planned, status="planned")
+    make_status(user, event=visited, status="visited")
+    make_status(user, event=missed, status="missed")
+    make_status(user, event=draft_planned, status="planned")
+    make_status(other, event=others_planned, status="planned")
+
+    events = list(list_user_upcoming_planned_events(user, today=TODAY))
+
+    assert planned in events
+    assert visited not in events  # different status
+    assert missed not in events  # different status
+    assert others_planned not in events  # different user
+    assert draft_planned not in events  # not published
+
+
+@pytest.mark.django_db
+def test_list_user_upcoming_planned_events_excludes_today_and_past_start_dates(
+    make_user, make_event, make_status
+):
+    user = make_user(username="upcoming-boundary")
+    yesterday_event = make_event(title="Yesterday", start_date=TODAY - timedelta(days=1))
+    today_event = make_event(title="Today", start_date=TODAY)
+    tomorrow_event = make_event(title="Tomorrow", start_date=TODAY + timedelta(days=1))
+
+    make_status(user, event=yesterday_event, status="planned")
+    make_status(user, event=today_event, status="planned")
+    make_status(user, event=tomorrow_event, status="planned")
+
+    events = list(list_user_upcoming_planned_events(user, today=TODAY))
+
+    assert yesterday_event not in events
+    assert today_event not in events  # exactly today is excluded (gt, not gte)
+    assert tomorrow_event in events
+
+
+@pytest.mark.django_db
+def test_list_user_upcoming_planned_events_orders_by_start_date_ascending(
+    make_user, make_event, make_status
+):
+    user = make_user(username="upcoming-order")
+    third = make_event(title="Third", start_date=TODAY + timedelta(days=30))
+    first = make_event(title="First", start_date=TODAY + timedelta(days=1))
+    second = make_event(title="Second", start_date=TODAY + timedelta(days=10))
+
+    make_status(user, event=third, status="planned")
+    make_status(user, event=first, status="planned")
+    make_status(user, event=second, status="planned")
+
+    titles = [e.title for e in list_user_upcoming_planned_events(user, today=TODAY)]
+
+    assert titles == ["First", "Second", "Third"]
 
 
 # ---------------------------------------------------------------------------

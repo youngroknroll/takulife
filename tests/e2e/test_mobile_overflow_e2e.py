@@ -5,6 +5,9 @@ Automated re-run of the manual §10 Gate B check ("320px 이상에서 페이지 
 test cases below for the current route list) — catches a CSS/JS regression
 that widens `body.scrollWidth` without waiting for the next manual pass.
 """
+from datetime import date, timedelta
+from unittest.mock import patch
+
 import pytest
 
 from archive.models import (
@@ -14,6 +17,7 @@ from archive.models import (
     UserEventStatus,
     VisitRecord,
 )
+from events.models import Event
 
 pytestmark = pytest.mark.e2e
 
@@ -25,6 +29,27 @@ def browser_context_args(browser_context_args):
 
 def _no_horizontal_overflow(page):
     return page.evaluate("document.body.scrollWidth <= window.innerWidth")
+
+
+def _seed_home_snapshot_active_axes(user, today):
+    """CollectionItem x2 + an unrecorded-visited event + a future-planned
+    event — activates all 3 home snapshot hscroll sublists at once (H-2)."""
+    CollectionItem.objects.create(user=user, name="스냅샷 아이템1")
+    CollectionItem.objects.create(user=user, name="스냅샷 아이템2")
+    unrecorded_event = Event.objects.create(
+        title="기록 대기 행사", publish_status=Event.PublishStatus.PUBLISHED
+    )
+    UserEventStatus.objects.create(
+        user=user, event=unrecorded_event, status=UserEventStatus.Status.VISITED
+    )
+    planned_event = Event.objects.create(
+        title="다가오는 스냅샷 행사",
+        publish_status=Event.PublishStatus.PUBLISHED,
+        start_date=today + timedelta(days=5),
+    )
+    UserEventStatus.objects.create(
+        user=user, event=planned_event, status=UserEventStatus.Status.PLANNED
+    )
 
 
 class TestMobileOverflowSmoke:
@@ -124,6 +149,26 @@ class TestMobileOverflowSmoke:
 
         assert _no_horizontal_overflow(page)
 
+    def test_home_snapshot_initial_state_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_home_snapshot_active_state_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        today = date(2026, 6, 26)
+        _seed_home_snapshot_active_axes(seed.user, today)
+
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        with patch("core.views.timezone.localdate", return_value=today):
+            page.goto(f"{live_server.url}/")
+
+        assert _no_horizontal_overflow(page)
+
 
 class TestMobileOverflow320px:
     """320px is Chromium's own floor for a native `<input type="file">`
@@ -215,5 +260,25 @@ class TestMobileOverflow320px:
 
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/collection/{item.id}/edit/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_home_snapshot_initial_state_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/")
+
+        assert _no_horizontal_overflow(page)
+
+    def test_home_snapshot_active_state_has_no_horizontal_overflow(
+        self, live_server, page, seed, login
+    ):
+        today = date(2026, 6, 26)
+        _seed_home_snapshot_active_axes(seed.user, today)
+
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        with patch("core.views.timezone.localdate", return_value=today):
+            page.goto(f"{live_server.url}/")
 
         assert _no_horizontal_overflow(page)

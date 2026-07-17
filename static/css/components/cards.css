@@ -195,10 +195,17 @@
   justify-content: center;
 }
 
+/* min-height: 44px added repo-wide (BIR IA-2 finding, PO-approved H-2
+   backlog sweep) — the 4 existing usages fell short at ~37-38px computed
+   height, below the project's touch-target convention every other
+   interactive element already follows. */
 .empty-action {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
   padding: 0.5rem 0.875rem;
+  min-height: 44px;
   background: var(--brand);
   color: #fff;
   font-size: 0.85rem;

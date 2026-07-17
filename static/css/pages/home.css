@@ -391,6 +391,115 @@
     margin: 0;
     font-size: var(--fs-lg);
   }
+
+  /* ── collection-first home snapshot panel (H-2) ──────────────────────
+     Shares .section/.section-head/.section h2 above — no changes to those
+     selectors themselves (WED §7-a-6 "격하 없음" requires their computed
+     style stay byte-identical with and without this panel). */
+  .snapshot-panel .summary-grid {
+    background: var(--brand-soft);
+    border-radius: 10px;
+    padding: 0.625rem;
+  }
+  .snapshot-sublist {
+    margin-top: 0.875rem;
+  }
+  .snapshot-sublist-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  .snapshot-sublist-head h3 {
+    margin: 0;
+    font-size: var(--fs-md);
+  }
+  .snapshot-more {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--brand-ink);
+    text-decoration: none;
+  }
+  .snapshot-more:hover {
+    text-decoration: underline;
+  }
+
+  /* "기록 대기" tile — no existing equivalent card, so this is new: title +
+     a reused .record-action-link (archive.css), stacked in the 168px hscroll
+     tile width the other two lists share (below). */
+  .snapshot-record-tile {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.5rem;
+    height: 100%;
+    min-height: 96px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-card);
+    padding: 0.75rem;
+  }
+  .snapshot-record-title {
+    margin: 0;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* "최근 등록한 굿즈" tile reuses .visit-card's border/background (archive_
+     visits.css) but at this page's 168px hscroll width, not that page's
+     2-column [text|media] grid (which only activates when a
+     .visit-card-body child is present — omitted here on purpose, so this
+     markup falls back to .visit-card's plain block styling and stacks
+     media above title instead). Scoped the same way archive_collection.css
+     scopes its own .visit-card override, via a class unique to this card. */
+  .snapshot-goods-card .visit-card-media {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    margin-bottom: 0.5rem;
+  }
+  .snapshot-goods-card .visit-card-media img,
+  .snapshot-goods-card .collection-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+  }
+  /* No-image fallback (WED post-implementation finding, 2026-07-17): a
+     centered generic-goods emoji instead of an empty tinted block, matching
+     this page's other no-image fallback (poster card's category emoji).
+     Scoped to .snapshot-goods-card only — /collection/'s own 96px thumbnail
+     use of this same class (archive_collection.css) is untouched. */
+  .snapshot-goods-card .collection-thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+  }
+  .snapshot-goods-card .collection-thumb-placeholder::before {
+    content: "🎁";
+  }
+  .snapshot-goods-card h3 {
+    margin: 0;
+    font-size: var(--fs-sm);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .snapshot-goods-card h3 a {
+    color: inherit;
+    text-decoration: none;
+  }
+
   /* ── Ticket-stub poster card (shared by ongoing/closing/recent) ──────
      Image tile (poster or category emoji) + an opaque caption strip below
      it, separated by a dashed perforation with punch-notch circles

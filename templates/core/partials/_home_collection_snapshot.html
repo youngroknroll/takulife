@@ -1,0 +1,119 @@
+{% comment %}
+_home_collection_snapshot.html — logged-in collection-first snapshot panel
+on the home page (H-2). Entire block sits behind
+`{% if request.user.is_authenticated %}` so an anonymous response carries
+zero bytes of this markup (BIR §7-b-1 — the view already gates the
+snapshot_* context keys behind the same auth check as a first line of
+defence; this is the second, template-level one).
+
+Two states inside one `{% if snapshot_active %}` branch:
+  - active: masthead (collection_summary chips, always rendered even at 0)
+    + up to 3 hscroll sublists, each entirely absent (heading included) when
+    its own row list is empty.
+  - initial (snapshot_active is False): the existing .empty-state pattern
+    with a two-button recovery CTA (D6/IA-2 precedent), same panel/heading.
+
+Context: collection_summary{owned_count,wanted_count}, recent_goods
+(CollectionItem list, ≤5, core.views.home), unrecorded (list of
+{status_id, subject} dicts, ≤5), upcoming_planned (_attach_display rows,
+≤4), snapshot_active.
+{% endcomment %}
+{% if request.user.is_authenticated %}
+<section class="section snapshot-panel">
+  <div class="section-head">
+    <h2>내 컬렉션 현황</h2>
+    {% if snapshot_active %}<a href="/collection/">전체 컬렉션 보기</a>{% endif %}
+  </div>
+
+  {% if snapshot_active %}
+    <div class="summary-grid" style="--summary-cols: 2">
+      <article class="summary-card">
+        <p class="summary-label">보유</p>
+        <p class="summary-value">{{ collection_summary.owned_count }}</p>
+      </article>
+      <article class="summary-card">
+        <p class="summary-label">구함</p>
+        <p class="summary-value">{{ collection_summary.wanted_count }}</p>
+      </article>
+    </div>
+
+    {% if unrecorded %}
+      <div class="snapshot-sublist">
+        <div class="snapshot-sublist-head">
+          <h3>기록 대기</h3>
+          <a class="snapshot-more" href="/archive/statuses/?status=visited">더보기</a>
+        </div>
+        <div class="hscroll-wrap" data-hscroll>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-record">&#8249;</button>
+          <ul class="hscroll-track" data-hscroll-track id="hscroll-snap-record" tabindex="0">
+            {% for row in unrecorded %}
+              <li class="snapshot-record-tile">
+                <p class="snapshot-record-title">{{ row.subject.title }}</p>
+                <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">기록</a>
+              </li>
+            {% endfor %}
+          </ul>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-snap-record">&#8250;</button>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if recent_goods %}
+      <div class="snapshot-sublist">
+        <div class="snapshot-sublist-head">
+          <h3>최근 등록한 굿즈</h3>
+          <a class="snapshot-more" href="/collection/">더보기</a>
+        </div>
+        <div class="hscroll-wrap" data-hscroll>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-goods">&#8249;</button>
+          <ul class="hscroll-track" data-hscroll-track id="hscroll-snap-goods" tabindex="0">
+            {% for item in recent_goods %}
+              <li>
+                <article class="visit-card hover-lift snapshot-goods-card">
+                  <div class="visit-card-media">
+                    {% if item.image %}
+                      <img src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
+                    {% else %}
+                      <div class="collection-thumb-placeholder"></div>
+                    {% endif %}
+                  </div>
+                  <h3><a href="/collection/{{ item.id }}/edit/">{{ item.name }}</a></h3>
+                </article>
+              </li>
+            {% endfor %}
+          </ul>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-snap-goods">&#8250;</button>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if upcoming_planned %}
+      <div class="snapshot-sublist">
+        <div class="snapshot-sublist-head">
+          <h3>다가오는 일정</h3>
+          <a class="snapshot-more" href="/archive/statuses/?status=planned">더보기</a>
+        </div>
+        <div class="hscroll-wrap" data-hscroll>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-planned">&#8249;</button>
+          <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-snap-planned" tabindex="0">
+            {% for row in upcoming_planned %}
+              <li>{% include "core/partials/_poster_card.html" with row=row variant="planned" %}</li>
+            {% endfor %}
+          </ul>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-snap-planned">&#8250;</button>
+        </div>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state">
+      <p class="empty-icon">🗂️</p>
+      <p class="empty-title">아직 기록이 없어요</p>
+      <p class="empty-note">행사를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
+      <div class="empty-actions">
+        <a class="empty-action" href="/events/">행사 찾기</a>
+        <a class="empty-action" href="/collection/new/">굿즈 등록</a>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
