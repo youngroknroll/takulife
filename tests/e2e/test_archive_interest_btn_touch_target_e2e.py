@@ -12,7 +12,7 @@ pytestmark = pytest.mark.e2e
 
 
 class TestArchiveInterestsInterestBtnTouchTarget:
-    def test_interest_btn_meets_min_height(self, live_server, page, seed, login):
+    def test_찜한_행사_목록의_찜_버튼은_최소_44px_터치_타깃을_만족한다(self, live_server, page, seed, login):
         EventInterest.objects.create(user=seed.user, event=seed.events[0])
 
         login(page, live_server.url, "e2e_user@example.com", seed.password)
@@ -23,7 +23,7 @@ class TestArchiveInterestsInterestBtnTouchTarget:
 
 
 class TestPersonalEntriesInterestBtnTouchTarget:
-    def test_interest_btn_meets_min_height(self, live_server, page, seed, login):
+    def test_직접_등록_목록의_찜_버튼은_최소_44px_터치_타깃을_만족한다(self, live_server, page, seed, login):
         # seed already creates one PersonalEntry for e2e_user, but keep this
         # test self-contained instead of depending on that seed detail.
         PersonalEntry.objects.create(

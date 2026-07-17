@@ -37,7 +37,7 @@ def _seed_few_closing_rows(today):
 
 
 class TestHscrollNonOverflowingState:
-    def test_non_overflowing_track_drops_mask_and_tab_stop(self, live_server, page):
+    def test_스크롤이_필요없는_hscroll_트랙은_마스크를_제거하고_탭_정지점에서_제외된다(self, live_server, page):
         today = date(2026, 6, 26)
         _seed_few_closing_rows(today)
         page.set_viewport_size({"width": 1280, "height": 1000})
@@ -71,7 +71,7 @@ class TestHomeSnapshotHscrollNonOverflowingState:
     single card — the newest hscroll render site most likely to hit this
     branch routinely (a fresh user has few unrecorded visits, not many)."""
 
-    def test_record_track_with_one_card_drops_mask_and_tab_stop(
+    def test_홈_스냅샷_기록_대기_트랙이_카드_한_장뿐이면_마스크를_제거하고_탭_정지점에서_제외된다(
         self, live_server, page, seed, login
     ):
         event = Event.objects.create(

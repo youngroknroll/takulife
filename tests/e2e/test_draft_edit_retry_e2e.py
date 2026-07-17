@@ -22,7 +22,7 @@ SAVE_BTN = '#draft-edit-form button[type="submit"]'
 
 
 class TestDraftEditRetryAfterFailure:
-    def test_save_button_recovers_from_failed_save_and_allows_mouse_retry(
+    def test_드래프트_수정_저장이_실패하면_저장_버튼이_복구되어_마우스로_재시도할_수_있다(
         self, live_server, page, seed, login
     ):
         draft = EventDraft.objects.create(

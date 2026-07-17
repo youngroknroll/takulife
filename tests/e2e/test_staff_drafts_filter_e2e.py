@@ -27,7 +27,9 @@ def _seed_drafts(count, status, start=0):
 
 
 class TestStaffDraftsFilter:
-    def test_status_chips_render_with_all_active(self, live_server, page, seed, login):
+    def test_드래프트_목록에_진입하면_상태_칩_4개가_렌더링되고_전체_칩이_활성화된다(
+        self, live_server, page, seed, login
+    ):
         _seed_drafts(1, EventDraft.ReviewStatus.PENDING)
         _seed_drafts(1, EventDraft.ReviewStatus.APPROVED)
         _seed_drafts(1, EventDraft.ReviewStatus.REJECTED)
@@ -39,7 +41,7 @@ class TestStaffDraftsFilter:
         all_chip = page.locator(CHIPS).first
         expect(all_chip).to_have_class(re.compile(r"\bactive\b"))
 
-    def test_clicking_pending_chip_filters_and_marks_active(
+    def test_검토_대기_칩을_클릭하면_목록이_필터링되고_해당_칩이_활성화된다(
         self, live_server, page, seed, login
     ):
         pending = EventDraft.objects.create(
@@ -65,7 +67,7 @@ class TestStaffDraftsFilter:
             re.compile(r"\bactive\b")
         )
 
-    def test_pager_preserves_status_filter_across_pages(
+    def test_페이저로_다음_페이지로_이동해도_상태_필터가_유지된다(
         self, live_server, page, seed, login
     ):
         _seed_drafts(11, EventDraft.ReviewStatus.PENDING)
@@ -85,7 +87,7 @@ class TestStaffDraftsFilter:
             re.compile(r"\bactive\b")
         )
 
-    def test_empty_status_filter_shows_notice_and_returns_to_all(
+    def test_필터_결과가_없으면_안내_문구가_노출되고_링크로_전체_목록에_복귀한다(
         self, live_server, page, seed, login
     ):
         EventDraft.objects.create(

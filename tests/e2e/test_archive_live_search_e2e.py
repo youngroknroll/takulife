@@ -16,7 +16,7 @@ CARDS = "#archive-results .status-card"
 
 
 class TestArchiveLiveSearch:
-    def test_typing_filters_list_and_syncs_url(self, live_server, page, seed, login):
+    def test_검색어를_입력하면_목록이_실시간으로_필터링되고_URL에_동기화된다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
@@ -32,7 +32,7 @@ class TestArchiveLiveSearch:
         expect(page).to_have_url(re.compile(r"\?q=%EC%97%AC%EB%A6%84"))
         assert "partial" not in page.url
 
-    def test_clearing_query_restores_full_list(self, live_server, page, seed, login):
+    def test_검색어를_지우면_전체_목록이_복원된다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
@@ -44,7 +44,7 @@ class TestArchiveLiveSearch:
         expect(page.locator(CARDS)).to_have_count(4)
         expect(page).to_have_url(re.compile(r"/archive/statuses/$"))
 
-    def test_back_button_restores_previous_results(self, live_server, page, seed, login):
+    def test_뒤로가기를_누르면_이전_검색_결과가_복원된다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
@@ -57,7 +57,7 @@ class TestArchiveLiveSearch:
         expect(page.locator(CARDS)).to_have_count(4)
         expect(page.locator(SEARCH)).to_have_value("")
 
-    def test_no_result_shows_empty_state(self, live_server, page, seed, login):
+    def test_검색_결과가_없으면_빈_상태_문구를_보여준다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/statuses/")
 
@@ -68,7 +68,7 @@ class TestArchiveLiveSearch:
             "검색 결과가 없습니다"
         )
 
-    def test_status_button_on_swapped_card_persists_write(
+    def test_실시간_검색으로_교체된_카드의_상태_버튼을_클릭해도_변경이_저장된다(
         self, live_server, page, seed, login
     ):
         """The strongest rebinding proof: act on a card that only exists after a

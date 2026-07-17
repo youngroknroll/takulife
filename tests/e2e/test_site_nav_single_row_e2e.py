@@ -12,7 +12,7 @@ pytestmark = pytest.mark.e2e
 
 
 class TestSiteNavSingleRowAt320px:
-    def test_four_tabs_share_the_same_row(self, live_server, page, seed):
+    def test_320px_뷰포트에서_4개_탭이_한_줄에_배치된다(self, live_server, page, seed):
         page.set_viewport_size({"width": 320, "height": 740})
         page.goto(live_server.url + "/")
 

@@ -18,7 +18,7 @@ pytestmark = pytest.mark.e2e
 
 
 class TestDraftApproveSuccessFocus:
-    def test_focus_moves_to_success_region_then_tabs_into_its_link(
+    def test_드래프트_승인에_성공하면_포커스가_성공_영역으로_이동하고_탭으로_링크에_도달한다(
         self, live_server, page, seed, login, browser_name
     ):
         if browser_name == "webkit":

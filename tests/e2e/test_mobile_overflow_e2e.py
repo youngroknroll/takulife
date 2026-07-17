@@ -53,7 +53,7 @@ def _seed_home_snapshot_active_axes(user, today):
 
 
 class TestMobileOverflowSmoke:
-    def test_home_has_no_horizontal_overflow(self, live_server, page, seed):
+    def test_홈_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed):
         page.goto(live_server.url + "/")
 
         # The hero carousel applies its "fan" layout (transforms) after init —
@@ -62,52 +62,52 @@ class TestMobileOverflowSmoke:
 
         assert _no_horizontal_overflow(page)
 
-    def test_event_list_has_no_horizontal_overflow(self, live_server, page, seed):
+    def test_행사_목록_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed):
         page.goto(f"{live_server.url}/events/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_event_detail_has_no_horizontal_overflow(self, live_server, page, seed):
+    def test_행사_상세_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed):
         event = seed.events[0]
         page.goto(f"{live_server.url}/events/{event.id}/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_archive_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_아카이브_전체_보기_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_staff_dashboard_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_스태프_대시보드_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_staff@example.com", seed.password)
         page.goto(f"{live_server.url}/staff/dashboard/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_legal_privacy_has_no_horizontal_overflow(self, live_server, page, seed):
+    def test_개인정보처리방침_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed):
         page.goto(f"{live_server.url}/legal/privacy/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_legal_terms_has_no_horizontal_overflow(self, live_server, page, seed):
+    def test_이용약관_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed):
         page.goto(f"{live_server.url}/legal/terms/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_account_delete_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_회원_탈퇴_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/accounts/delete/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_archive_visits_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_다녀온_기록_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/visits/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_archive_personal_entries_has_no_horizontal_overflow(
+    def test_직접_등록_화면은_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
@@ -115,13 +115,13 @@ class TestMobileOverflowSmoke:
 
         assert _no_horizontal_overflow(page)
 
-    def test_archive_interests_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_찜_목록_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/archive/interests/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_archive_visit_create_has_no_horizontal_overflow(
+    def test_다녀온_기록_작성_화면은_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
@@ -129,19 +129,19 @@ class TestMobileOverflowSmoke:
 
         assert _no_horizontal_overflow(page)
 
-    def test_collection_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_내_컬렉션_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/collection/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_collection_create_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_컬렉션_항목_등록_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/collection/new/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_collection_edit_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_컬렉션_항목_수정_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         item = CollectionItem.objects.create(user=seed.user, name="아이템")
 
         login(page, live_server.url, "e2e_user@example.com", seed.password)
@@ -149,7 +149,7 @@ class TestMobileOverflowSmoke:
 
         assert _no_horizontal_overflow(page)
 
-    def test_home_snapshot_initial_state_has_no_horizontal_overflow(
+    def test_홈_컬렉션_스냅샷_기본_상태_화면은_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
@@ -157,7 +157,7 @@ class TestMobileOverflowSmoke:
 
         assert _no_horizontal_overflow(page)
 
-    def test_home_snapshot_active_state_has_no_horizontal_overflow(
+    def test_홈_컬렉션_스냅샷_3개_영역이_모두_활성화된_화면은_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         today = date(2026, 6, 26)
@@ -179,7 +179,7 @@ class TestMobileOverflow320px:
     def browser_context_args(self, browser_context_args):
         return {**browser_context_args, "viewport": {"width": 320, "height": 740}}
 
-    def test_archive_personal_entries_has_no_horizontal_overflow(
+    def test_직접_등록_화면은_320px에서_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
@@ -187,7 +187,7 @@ class TestMobileOverflow320px:
 
         assert _no_horizontal_overflow(page)
 
-    def test_archive_personal_entries_with_long_unbroken_tokens_has_no_horizontal_overflow(
+    def test_긴_끊어지지_않는_메모와_카테고리를_가진_직접_등록_항목_화면은_320px에서_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         """memo/category are free-text fields with no whitespace requirement —
@@ -206,7 +206,7 @@ class TestMobileOverflow320px:
 
         assert _no_horizontal_overflow(page)
 
-    def test_archive_statuses_interests_visits_with_long_unbroken_subject_has_no_horizontal_overflow(
+    def test_긴_끊어지지_않는_제목의_직접_등록_주체는_나의_일정_찜_다녀온_기록_화면에서_320px_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         """A 직접 등록 subject with a long, unbroken title (URL) and category
@@ -243,19 +243,19 @@ class TestMobileOverflow320px:
         page.goto(f"{live_server.url}/archive/visits/")
         assert _no_horizontal_overflow(page)
 
-    def test_collection_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_내_컬렉션_화면은_320px에서_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/collection/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_collection_create_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_컬렉션_항목_등록_화면은_320px에서_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
         page.goto(f"{live_server.url}/collection/new/")
 
         assert _no_horizontal_overflow(page)
 
-    def test_collection_edit_has_no_horizontal_overflow(self, live_server, page, seed, login):
+    def test_컬렉션_항목_수정_화면은_320px에서_가로_스크롤_오버플로우가_없다(self, live_server, page, seed, login):
         item = CollectionItem.objects.create(user=seed.user, name="아이템")
 
         login(page, live_server.url, "e2e_user@example.com", seed.password)
@@ -263,7 +263,7 @@ class TestMobileOverflow320px:
 
         assert _no_horizontal_overflow(page)
 
-    def test_home_snapshot_initial_state_has_no_horizontal_overflow(
+    def test_홈_컬렉션_스냅샷_기본_상태_화면은_320px에서_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         login(page, live_server.url, "e2e_user@example.com", seed.password)
@@ -271,7 +271,7 @@ class TestMobileOverflow320px:
 
         assert _no_horizontal_overflow(page)
 
-    def test_home_snapshot_active_state_has_no_horizontal_overflow(
+    def test_홈_컬렉션_스냅샷_3개_영역이_모두_활성화된_화면은_320px에서_가로_스크롤_오버플로우가_없다(
         self, live_server, page, seed, login
     ):
         today = date(2026, 6, 26)

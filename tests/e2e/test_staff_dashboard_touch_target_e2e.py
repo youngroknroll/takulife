@@ -13,7 +13,9 @@ pytestmark = pytest.mark.e2e
 
 
 class TestStaffDashboardActionButtonTouchTarget:
-    def test_action_button_meets_min_height(self, live_server, page, seed, login):
+    def test_스태프_대시보드_수집_실행_버튼은_44px_이상의_터치_영역을_갖는다(
+        self, live_server, page, seed, login
+    ):
         login(page, live_server.url, "e2e_staff@example.com", seed.password)
         page.goto(f"{live_server.url}/staff/dashboard/")
 

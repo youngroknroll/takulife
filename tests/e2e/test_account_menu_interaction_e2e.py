@@ -14,7 +14,7 @@ import pytest
 pytestmark = pytest.mark.e2e
 
 
-def test_toggle_opens_panel_and_escape_closes_and_returns_focus(
+def test_계정_메뉴_토글을_클릭하면_패널이_열리고_Escape를_누르면_패널이_닫히며_포커스가_토글로_돌아온다(
     live_server, page, seed, login
 ):
     login(page, live_server.url, "e2e_user@example.com", seed.password)

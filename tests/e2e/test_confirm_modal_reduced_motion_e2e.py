@@ -31,7 +31,7 @@ class TestConfirmModalReducedMotion:
     def browser_context_args(self, browser_context_args):
         return {**browser_context_args, "reduced_motion": "reduce"}
 
-    def test_closes_immediately_and_page_stays_clickable(self, live_server, page, seed):
+    def test_reduced_motion에서_모달을_닫으면_즉시_사라지고_배경이_클릭_가능해진다(self, live_server, page, seed):
         _open_and_dismiss(page, live_server)
 
         expect(page.locator(OVERLAY)).to_be_hidden()
@@ -43,7 +43,7 @@ class TestConfirmModalReducedMotion:
 
 
 class TestConfirmModalDefaultMotion:
-    def test_closes_after_transition_without_reduced_motion(self, live_server, page, seed):
+    def test_reduced_motion이_아니면_트랜지션_종료_후_모달이_닫힌다(self, live_server, page, seed):
         """Regression guard for the pre-existing transitionend path."""
         _open_and_dismiss(page, live_server)
 
@@ -59,7 +59,7 @@ class TestConfirmModalTransitionDisabledByStylesheet:
     ever fire, so [hidden] never gets restored and the overlay stays up,
     silently absorbing clicks on the page behind it."""
 
-    def test_closes_even_when_a_stylesheet_disables_the_transition(self, live_server, page, seed):
+    def test_스타일시트가_트랜지션을_제거해도_모달이_닫히고_배경이_클릭_가능해진다(self, live_server, page, seed):
         page.goto(live_server.url + "/")
         page.add_style_tag(content=".confirm-overlay,.confirm-dialog{transition:none !important;}")
 
@@ -83,7 +83,7 @@ class TestConfirmModalReopenDuringClose:
     overlay's *next* open — otherwise the previous close's cleanup fires
     mid-open and hides a modal that is supposed to be open."""
 
-    def test_reopen_before_close_transition_finishes_stays_open(self, live_server, page, seed):
+    def test_닫힘_트랜지션_중에_다시_열면_모달이_열린_상태로_유지된다(self, live_server, page, seed):
         page.goto(live_server.url + "/")
 
         page.evaluate("() => { window.TakuConfirm('첫번째'); }")
