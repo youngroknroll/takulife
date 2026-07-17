@@ -31,7 +31,8 @@ control.
 Params:
   row      — display dict from _attach_display (core/views.py): event, dday,
              category_slug, category_label, user_interested, user_interest_id
-  variant  — "ongoing" | "closing" | "recent" (selects badge + meta + 찜 button)
+  variant  — "ongoing" | "closing" | "recent" | "planned" (selects badge +
+             meta + 찜 button)
 
 Context consumed: request.user (via the calling page) is not needed here.
 {% endcomment %}
@@ -47,7 +48,10 @@ Context consumed: request.user (via the calling page) is not needed here.
     {% comment %} Ongoing(이번 주 갈 만한 행사): no countdown badge — already visitable.
        Recent(새 이벤트): "오픈까지 N일"(upcoming) and/or "NEW"(등록 10일 이내) — both may show.
        Closing: descriptive "종료까지 N일" instead of D-day notation; "종료"(ended)
-       gets the neutral --end grey instead of the amber closing-soon colour. {% endcomment %}
+       gets the neutral --end grey instead of the amber closing-soon colour.
+       Planned(다가오는 일정, home snapshot): no badge either — same fallthrough
+       as ongoing (H-2 §7-a-2: a countdown on an event the user already
+       planned themselves would read as unwanted urgency-nudging). {% endcomment %}
     {% if variant == "recent" %}
       {% if row.status_slug == "upcoming" or row.is_new %}
         <div class="poster-badges">

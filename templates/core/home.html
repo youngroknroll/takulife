@@ -4,6 +4,8 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/hscroll.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
 {% endblock %}
 
@@ -81,6 +83,8 @@
         {% endif %}
       </div>
     </section>
+
+    {% include "core/partials/_home_collection_snapshot.html" %}
 
     <section class="section">
       <div class="section-head">
