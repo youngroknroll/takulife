@@ -17,19 +17,21 @@ from drafts.models import DraftSource, EventDraft
 from events.models import Event
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def clear_cache(db):
-    """Isolate DRF throttle state between tests.
+    """Isolate DRF throttle / rate-limit state between tests — request it
+    explicitly in tests that read or assert on cache-backed counters.
 
-    Scoped rate throttling stores request history in the default cache,
-    which is not rolled back with the DB. Clear it around every test so one
-    test's promotion requests never count against another's throttle budget.
+    Not autouse (2026-07-17 speed track): the cache backend is DatabaseCache
+    (config/settings.py CACHES), and a `@pytest.mark.django_db` test's own
+    transaction already rolls back any cache writes it makes — so most
+    cache/throttle tests are isolated for free and never needed an explicit
+    clear. Request this fixture only when a test's own setup (not the
+    previous test's teardown) needs a guaranteed-empty cache, e.g. because it
+    reads a cache key before writing to it.
 
-    Depends on the `db` fixture (PR-0e, DatabaseCache switch): the default
-    cache backend is now DatabaseCache (config/settings.py CACHES), so
-    cache.clear() itself needs a DB connection/transaction — every test gets
-    django_db-equivalent DB access as a side effect, matching the migration
-    to a Postgres-backed cache table.
+    Depends on the `db` fixture: cache.clear() itself needs a DB
+    connection/transaction, since the cache table lives in Postgres.
 
     The teardown clear is wrapped: a test that intentionally simulates a DB
     outage (e.g. tests/core/test_api_bootstrap.py's
@@ -68,9 +70,11 @@ def make_draft_event(make_event):
 def make_user(db, django_user_model):
     def _make(email=None, password=None, **kwargs):
         email = email or f"user_{secrets.token_hex(4)}@example.com"
-        # Strong by default so registration-validator paths pass; callers that
-        # care about the exact password pass their own.
-        password = password or "Aa1!" + secrets.token_urlsafe(16)
+        # No password requested: create_user(password=None) makes an
+        # unusable-password user (Django's make_password(None) contract) —
+        # cheaper than a real hash and correct for tests that never log the
+        # user in with a password (e.g. force_login). Callers that do need a
+        # working password (login/registration paths) pass their own.
         return django_user_model.objects.create_user(
             email=email, password=password, **kwargs
         )
