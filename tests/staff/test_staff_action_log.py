@@ -12,9 +12,11 @@ from events.models import Event
 from staff.admin import StaffActionLogAdmin
 from staff.models import StaffActionLog
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
-def test_staff_action_log_records_actor_action_target_and_metadata(make_user, make_draft):
+def test_스태프_액션_로그를_생성하면_행위자_행위_대상_드래프트와_메타데이터가_저장된다(make_user, make_draft):
     actor = make_user(is_staff=True)
     draft = make_draft("https://example.com/logged-event")
 
@@ -36,7 +38,7 @@ def test_staff_action_log_records_actor_action_target_and_metadata(make_user, ma
 
 
 @pytest.mark.django_db
-def test_staff_action_log_survives_actor_deletion(make_user):
+def test_행위자_사용자를_삭제해도_액션_로그는_남고_행위자_참조만_비워진다(make_user):
     actor = make_user(is_staff=True)
     entry = StaffActionLog.objects.create(actor=actor, action="reject")
 
@@ -47,7 +49,7 @@ def test_staff_action_log_survives_actor_deletion(make_user):
 
 
 @pytest.mark.django_db
-def test_staff_action_log_survives_target_draft_deletion(make_draft):
+def test_대상_드래프트를_삭제해도_액션_로그는_남고_대상_참조만_비워진다(make_draft):
     draft = make_draft("https://example.com/deleted-draft-log")
     entry = StaffActionLog.objects.create(action="approve", target_draft=draft)
 
@@ -58,7 +60,7 @@ def test_staff_action_log_survives_target_draft_deletion(make_draft):
 
 
 @pytest.mark.django_db
-def test_staff_action_log_orders_newest_first(make_user):
+def test_액션_로그_목록은_최신_순으로_정렬된다(make_user):
     actor = make_user(is_staff=True)
     first = StaffActionLog.objects.create(actor=actor, action="approve")
     second = StaffActionLog.objects.create(actor=actor, action="reject")
@@ -69,7 +71,7 @@ def test_staff_action_log_orders_newest_first(make_user):
 
 
 @pytest.mark.django_db
-def test_staff_action_log_str_without_target_draft_omits_hash_none(make_user):
+def test_대상_드래프트가_없는_로그의_문자열_표현은_해시_none을_포함하지_않는다(make_user):
     actor = make_user(is_staff=True)
     entry = StaffActionLog.objects.create(
         actor=actor, action=StaffActionLog.Action.HOME_CATEGORIES, target_draft=None
@@ -82,7 +84,7 @@ def test_staff_action_log_str_without_target_draft_omits_hash_none(make_user):
 
 
 @pytest.mark.django_db
-def test_staff_action_log_records_target_event(make_user):
+def test_액션_로그에_대상_이벤트를_지정하면_대상_이벤트가_저장된다(make_user):
     actor = make_user(is_staff=True)
     event = Event.objects.create(title="Logged event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -98,7 +100,7 @@ def test_staff_action_log_records_target_event(make_user):
 
 
 @pytest.mark.django_db
-def test_staff_action_log_survives_target_event_deletion():
+def test_대상_이벤트를_삭제해도_액션_로그는_남고_대상_참조만_비워진다():
     event = Event.objects.create(title="Deleted event", publish_status=Event.PublishStatus.PUBLISHED)
     entry = StaffActionLog.objects.create(action=StaffActionLog.Action.EVENT_UPDATE, target_event=event)
 
@@ -109,7 +111,7 @@ def test_staff_action_log_survives_target_event_deletion():
 
 
 @pytest.mark.django_db
-def test_staff_action_log_str_includes_target_event_id(make_user):
+def test_대상_이벤트가_있는_로그의_문자열_표현은_이벤트_id를_포함한다(make_user):
     actor = make_user(is_staff=True)
     event = Event.objects.create(title="Logged event", publish_status=Event.PublishStatus.PUBLISHED)
     entry = StaffActionLog.objects.create(
@@ -122,7 +124,7 @@ def test_staff_action_log_str_includes_target_event_id(make_user):
 
 
 @pytest.mark.django_db
-def test_staff_action_log_admin_view_permission_denied_for_plain_staff(make_user):
+def test_일반_스태프는_액션_로그_어드민_조회_권한이_없다(make_user):
     staff_user = make_user(is_staff=True)
     request = RequestFactory().get("/admin/staff/staffactionlog/")
     request.user = staff_user
@@ -133,7 +135,7 @@ def test_staff_action_log_admin_view_permission_denied_for_plain_staff(make_user
 
 
 @pytest.mark.django_db
-def test_staff_action_log_admin_view_permission_granted_for_superuser(make_user):
+def test_슈퍼유저는_액션_로그_어드민_조회_권한이_있다(make_user):
     superuser = make_user(is_staff=True, is_superuser=True)
     request = RequestFactory().get("/admin/staff/staffactionlog/")
     request.user = superuser
@@ -144,7 +146,7 @@ def test_staff_action_log_admin_view_permission_granted_for_superuser(make_user)
 
 
 @pytest.mark.django_db
-def test_staff_action_log_admin_disallows_add_change_delete(make_user):
+def test_슈퍼유저도_액션_로그_어드민에서_추가_수정_삭제는_할_수_없다(make_user):
     staff_user = make_user(is_staff=True, is_superuser=True)
     request = RequestFactory().get("/admin/staff/staffactionlog/")
     request.user = staff_user
@@ -156,7 +158,7 @@ def test_staff_action_log_admin_disallows_add_change_delete(make_user):
 
 
 @pytest.mark.django_db
-def test_staff_action_log_supports_event_crud_actions(make_event):
+def test_이벤트_crud_액션_값은_필드_길이_제한_안에서_정상_저장된다(make_event):
     """PR-E3: create/unpublish/republish/delete actions all fit the existing
     max_length=16 Action field — a value that overflowed it would raise a
     DataError (Postgres) rather than silently truncating.

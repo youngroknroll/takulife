@@ -13,6 +13,8 @@ from drafts.models import DraftSource, EventDraft
 from events.models import Event
 from staff.models import StaffActionLog
 
+pytestmark = pytest.mark.web
+
 
 def _password():
     """Runtime password with guaranteed complexity, no literal in source."""
@@ -30,7 +32,7 @@ def _basic_auth(email, password):
 
 
 @pytest.mark.django_db
-def test_staff_api_rejects_http_basic_auth(client, make_user):
+def test_http_basic_인증으로는_스태프_api에_인증할_수_없다(client, make_user):
     """HTTP Basic auth must NOT authenticate against staff DRF endpoints — Basic
     bypasses CSRF, so only SessionAuthentication is accepted. A valid staff
     credential sent via Basic is treated as unauthenticated (403)."""
@@ -50,7 +52,7 @@ def test_staff_api_rejects_http_basic_auth(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_anonymous_dashboard_redirects_to_accounts_login(client):
+def test_익명_사용자가_대시보드에_접근하면_로그인_페이지로_리다이렉트된다(client):
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 302
@@ -58,7 +60,7 @@ def test_anonymous_dashboard_redirects_to_accounts_login(client):
 
 
 @pytest.mark.django_db
-def test_non_staff_dashboard_returns_403(client, make_user):
+def test_일반_사용자가_대시보드에_접근하면_403이_된다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -68,7 +70,7 @@ def test_non_staff_dashboard_returns_403(client, make_user):
 
 
 @pytest.mark.django_db
-def test_authenticated_non_staff_does_not_redirect_loop(client, make_user):
+def test_로그인한_일반_사용자의_대시보드_요청은_리다이렉트를_따라가도_최종_403으로_끝난다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -79,7 +81,7 @@ def test_authenticated_non_staff_does_not_redirect_loop(client, make_user):
 
 
 @pytest.mark.django_db
-def test_authenticated_non_staff_gets_403_not_login_bounce(client, make_user):
+def test_로그인한_일반_사용자는_대시보드_접근시_로그인_페이지로_리다이렉트되지_않고_403을_받는다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -89,7 +91,7 @@ def test_authenticated_non_staff_gets_403_not_login_bounce(client, make_user):
 
 
 @pytest.mark.django_db
-def test_anonymous_still_redirects_to_login_not_403(client):
+def test_익명_사용자의_대시보드_접근은_403이_아니라_로그인_리다이렉트가_된다(client):
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 302
@@ -97,7 +99,7 @@ def test_anonymous_still_redirects_to_login_not_403(client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_returns_200_with_pending_count(staff_client, make_draft):
+def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5종을_컨텍스트로_제공한다(staff_client, make_draft):
     staff, client = staff_client()
     make_draft("https://example.com/a", extracted_title="드래프트 A", review_status=EventDraft.ReviewStatus.PENDING)
     make_draft("https://example.com/b", extracted_title="드래프트 B", review_status=EventDraft.ReviewStatus.APPROVED)
@@ -121,7 +123,7 @@ def test_staff_dashboard_returns_200_with_pending_count(staff_client, make_draft
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_context_includes_recent_actions_newest_first(staff_client, make_draft):
+def test_대시보드_최근_활동_목록은_최신순으로_정렬된다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/recent-action", extracted_title="드래프트 최근")
     first = StaffActionLog.objects.create(
@@ -140,7 +142,7 @@ def test_staff_dashboard_context_includes_recent_actions_newest_first(staff_clie
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_renders_recent_action_with_null_actor_and_target(staff_client):
+def test_행위자와_대상_드래프트가_없는_최근_활동은_빈_값으로_렌더링된다(staff_client):
     staff, client = staff_client()
     StaffActionLog.objects.create(
         actor=None, action=StaffActionLog.Action.APPROVE, target_draft=None
@@ -155,7 +157,7 @@ def test_staff_dashboard_renders_recent_action_with_null_actor_and_target(staff_
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_renders_home_categories_action_label(staff_client):
+def test_홈_카테고리_변경_액션은_대시보드에_전용_한글_라벨로_표시된다(staff_client):
     staff, client = staff_client()
     StaffActionLog.objects.create(
         actor=staff, action=StaffActionLog.Action.HOME_CATEGORIES, target_draft=None
@@ -170,7 +172,7 @@ def test_staff_dashboard_renders_home_categories_action_label(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_renders_draft_discover_action_label(staff_client):
+def test_드래프트_수집_실행_액션은_대시보드에_전용_한글_라벨로_표시된다(staff_client):
     """PR-D1 item 1: draft_discover must render its own Korean label, not
     fall through to the "홈 카테고리 변경" catch-all."""
     staff, client = staff_client()
@@ -186,7 +188,7 @@ def test_staff_dashboard_renders_draft_discover_action_label(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_renders_event_update_action_label_and_target_event_link(staff_client):
+def test_이벤트_수정_액션은_전용_라벨과_대상_이벤트_수정_페이지_링크를_함께_표시한다(staff_client):
     """PR-D1 item 1: event_* actions get their own Korean label and the
     target column links to the event's staff edit page (not "-")."""
     staff, client = staff_client()
@@ -207,7 +209,7 @@ def test_staff_dashboard_renders_event_update_action_label_and_target_event_link
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_context_includes_draft_sources_ordered(staff_client):
+def test_대시보드_드래프트_소스_목록은_비활성_우선_이름순으로_정렬된다(staff_client):
     """PR-5b: dashboard() must pass draft_sources via drafts.queries.list_draft_sources()
     (-enabled, name ordering), not a raw DraftSource query in the view."""
     staff, client = staff_client()
@@ -232,7 +234,7 @@ def test_staff_dashboard_context_includes_draft_sources_ordered(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_error_badge_and_summary_for_source_with_last_error(staff_client):
+def test_최근_오류가_있는_소스는_대시보드에_오류_배지와_오류_요약을_보여준다(staff_client):
     """PR-D1 item 3: a source with a non-empty last_error gets an error
     badge plus a (truncated) summary of the error text."""
     staff, client = staff_client()
@@ -253,7 +255,7 @@ def test_staff_dashboard_shows_error_badge_and_summary_for_source_with_last_erro
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_stale_badge_for_enabled_source_never_checked(staff_client):
+def test_한번도_수집되지_않은_활성_소스는_대시보드에_지연_배지를_보여준다(staff_client):
     """PR-D1 item 3: an enabled source that has never been checked
     (last_checked_at is None) is stale."""
     staff, client = staff_client()
@@ -272,7 +274,7 @@ def test_staff_dashboard_shows_stale_badge_for_enabled_source_never_checked(staf
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_stale_badge_for_enabled_source_past_threshold(staff_client, settings):
+def test_지연_임계_시간을_넘겨_수집된_활성_소스는_대시보드에_지연_배지를_보여준다(staff_client, settings):
     """PR-D1 item 3: an enabled source checked longer ago than
     DRAFT_SOURCE_STALE_HOURS is stale."""
     settings.DRAFT_SOURCE_STALE_HOURS = 48
@@ -292,7 +294,7 @@ def test_staff_dashboard_shows_stale_badge_for_enabled_source_past_threshold(sta
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_enabled_source_within_threshold_not_stale(staff_client, settings):
+def test_지연_임계_시간_이내에_수집된_활성_소스는_지연_배지를_보여주지_않는다(staff_client, settings):
     settings.DRAFT_SOURCE_STALE_HOURS = 48
     staff, client = staff_client()
     DraftSource.objects.create(
@@ -310,7 +312,7 @@ def test_staff_dashboard_enabled_source_within_threshold_not_stale(staff_client,
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_disabled_source_never_checked_not_stale(staff_client):
+def test_비활성_소스는_한번도_수집되지_않았어도_지연_배지를_보여주지_않는다(staff_client):
     """PR-D1 item 3: a disabled source is excluded from the stale check
     regardless of last_checked_at (it is not expected to be collecting)."""
     staff, client = staff_client()
@@ -329,7 +331,7 @@ def test_staff_dashboard_disabled_source_never_checked_not_stale(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_no_discovery_run_history_when_none_logged(staff_client):
+def test_드래프트_수집_실행_로그가_전혀_없으면_대시보드는_실행_이력_없음을_보여준다(staff_client):
     """PR-D1 item 4: with no DRAFT_DISCOVER log at all, the dashboard shows
     "실행 이력 없음" rather than a blank/misleading timestamp."""
     staff, client = staff_client()
@@ -342,7 +344,7 @@ def test_staff_dashboard_shows_no_discovery_run_history_when_none_logged(staff_c
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_no_discovery_run_history_when_only_other_actions_logged(staff_client):
+def test_수집_실행이_아닌_액션_로그만_있으면_대시보드는_실행_이력_없음을_보여준다(staff_client):
     """PR-D1 item 4: a non-DRAFT_DISCOVER log entry must not be mistaken for
     a discovery run."""
     staff, client = staff_client()
@@ -356,7 +358,7 @@ def test_staff_dashboard_shows_no_discovery_run_history_when_only_other_actions_
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_last_discovery_run_time(staff_client):
+def test_대시보드는_가장_최근_드래프트_수집_실행_시각을_보여준다(staff_client):
     """PR-D1 item 4: the most recent DRAFT_DISCOVER log's created_at is
     surfaced as last_discovery_run_at and rendered near the run button."""
     staff, client = staff_client()
@@ -374,7 +376,7 @@ def test_staff_dashboard_shows_last_discovery_run_time(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_context_draft_sources_empty_when_none_exist(staff_client):
+def test_등록된_드래프트_소스가_없으면_대시보드_소스_목록은_비어있다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/dashboard/")
@@ -384,7 +386,7 @@ def test_staff_dashboard_context_draft_sources_empty_when_none_exist(staff_clien
 
 
 @pytest.mark.django_db
-def test_staff_root_redirects_to_dashboard(staff_client):
+def test_스태프_루트_경로는_대시보드로_리다이렉트된다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/")
@@ -398,7 +400,7 @@ def test_staff_root_redirects_to_dashboard(staff_client):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_old_drafts_list_url_redirects_to_new_path(client):
+def test_예전_드래프트_목록_url은_새_스태프_경로로_리다이렉트된다(client):
     resp = client.get("/event-drafts/")
 
     assert resp.status_code == 302
@@ -406,7 +408,7 @@ def test_old_drafts_list_url_redirects_to_new_path(client):
 
 
 @pytest.mark.django_db
-def test_old_drafts_list_url_preserves_next_query_string(client):
+def test_예전_드래프트_목록_url_리다이렉트는_next_쿼리_문자열을_보존한다(client):
     resp = client.get("/event-drafts/?next=/x")
 
     assert resp.status_code == 302
@@ -414,7 +416,7 @@ def test_old_drafts_list_url_preserves_next_query_string(client):
 
 
 @pytest.mark.django_db
-def test_old_drafts_detail_url_redirects_to_new_path(client):
+def test_예전_드래프트_상세_url은_새_스태프_경로로_리다이렉트된다(client):
     resp = client.get("/event-drafts/5/")
 
     assert resp.status_code == 302
@@ -422,7 +424,7 @@ def test_old_drafts_detail_url_redirects_to_new_path(client):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_new_drafts_list_url(staff_client):
+def test_스태프는_새_드래프트_목록_경로에_접근할_수_있다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/drafts/")
@@ -431,7 +433,7 @@ def test_staff_can_access_new_drafts_list_url(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_new_draft_detail_url(staff_client, make_draft):
+def test_스태프는_새_드래프트_상세_경로에_접근할_수_있다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/c", extracted_title="드래프트 C")
 
@@ -441,7 +443,7 @@ def test_staff_can_access_new_draft_detail_url(staff_client, make_draft):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_home_categories_url(staff_client):
+def test_스태프는_홈_카테고리_관리_경로에_접근할_수_있다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/home-categories/")
@@ -450,7 +452,7 @@ def test_staff_can_access_home_categories_url(staff_client):
 
 
 @pytest.mark.django_db
-def test_anonymous_home_categories_redirects_to_accounts_login(client):
+def test_익명_사용자가_홈_카테고리_관리_경로에_접근하면_로그인_페이지로_리다이렉트된다(client):
     """staff_console_required's anonymous branch (redirect, not 403) — the
     non-staff 403 case for this path is already covered by
     test_non_staff_blocked_from_new_staff_paths below."""
@@ -469,8 +471,9 @@ def test_anonymous_home_categories_redirects_to_accounts_login(client):
         "/staff/drafts/1/",
         "/staff/home-categories/",
     ],
+    ids=["대시보드", "드래프트_목록", "드래프트_상세", "홈_카테고리"],
 )
-def test_non_staff_blocked_from_new_staff_paths(client, make_user, path):
+def test_일반_사용자는_새_스태프_경로_전부에서_403으로_차단된다(client, make_user, path):
     user = make_user()
     client.force_login(user)
 
@@ -484,7 +487,7 @@ def test_non_staff_blocked_from_new_staff_paths(client, make_user, path):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_staff_dashboard_recent_7d_count_reflects_actual_count_beyond_limit(staff_client):
+def test_최근_7일_처리_건수는_최근_활동_목록_표시_제한과_무관하게_실제_건수를_반영한다(staff_client):
     """recent_actions_7d_count must reflect the true 7-day count, not the
     recent_actions list's limit=10 cap (regression guard)."""
     staff, client = staff_client()
@@ -500,7 +503,7 @@ def test_staff_dashboard_recent_7d_count_reflects_actual_count_beyond_limit(staf
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_prev_week_context(staff_client):
+def test_대시보드는_지난주_처리_건수를_함께_보여준다(staff_client):
     staff, client = staff_client()
     for _ in range(2):
         StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
@@ -517,7 +520,7 @@ def test_staff_dashboard_shows_prev_week_context(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_pending_card_links_to_pending_queue(staff_client):
+def test_대기중_건수_요약_카드는_대기중_드래프트_목록으로_연결된다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/dashboard/")
@@ -555,7 +558,7 @@ def _attach_poster(event, png_bytes, index):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_quality_warnings_render_as_bars_with_all_five_hrefs(staff_client, make_event):
+def test_품질_경고_5종은_각각_필터_링크가_달린_막대로_렌더링된다(staff_client, make_event):
     staff, client = staff_client()
     make_event()  # bare event trips several warnings at once
 
@@ -575,7 +578,7 @@ def test_staff_dashboard_quality_warnings_render_as_bars_with_all_five_hrefs(sta
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_quality_warning_bars_sort_descending_by_count(staff_client, make_event, png_bytes):
+def test_품질_경고_막대는_건수_내림차순으로_정렬된다(staff_client, make_event, png_bytes):
     staff, client = staff_client()
     # 3 events trip only missing_poster (poster left unset).
     for i in range(3):
@@ -594,7 +597,7 @@ def test_staff_dashboard_quality_warning_bars_sort_descending_by_count(staff_cli
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_quality_warning_zero_rows_have_no_bar_fill(staff_client, make_event, png_bytes):
+def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는다(staff_client, make_event, png_bytes):
     """Only missing_region trips (count=1); the other 4 warnings stay at 0
     and must not render a .warning-bar-fill span."""
     staff, client = staff_client()
@@ -611,7 +614,7 @@ def test_staff_dashboard_quality_warning_zero_rows_have_no_bar_fill(staff_client
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_quality_warnings_shows_notice_when_none(staff_client):
+def test_품질_경고가_하나도_없으면_대시보드는_경고_없음_안내를_보여준다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/dashboard/")
@@ -623,7 +626,7 @@ def test_staff_dashboard_quality_warnings_shows_notice_when_none(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_quality_warning_bars_tie_break_by_label_definition_order(
+def test_건수가_동률인_품질_경고는_라벨_정의_순서대로_렌더링된다(
     staff_client, make_event, png_bytes
 ):
     """Regression guard for _build_quality_warning_rows' tie-break: two
@@ -651,7 +654,7 @@ def test_staff_dashboard_quality_warning_bars_tie_break_by_label_definition_orde
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_staff_dashboard_activity_chart_renders_14_columns(staff_client):
+def test_최근_활동_차트는_항상_14개_열을_렌더링한다(staff_client):
     staff, client = staff_client()
     StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
 
@@ -664,7 +667,7 @@ def test_staff_dashboard_activity_chart_renders_14_columns(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_activity_chart_marks_exactly_one_today_column_as_last(staff_client):
+def test_최근_활동_차트는_마지막_열_하나만_오늘로_표시한다(staff_client):
     staff, client = staff_client()
     StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
 
@@ -678,7 +681,7 @@ def test_staff_dashboard_activity_chart_marks_exactly_one_today_column_as_last(s
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_activity_chart_height_pct_scales_to_daily_max(staff_client):
+def test_최근_활동_차트_막대_높이는_일별_최대_건수_대비_비율로_계산된다(staff_client):
     staff, client = staff_client()
     for _ in range(2):
         StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
@@ -696,7 +699,7 @@ def test_staff_dashboard_activity_chart_height_pct_scales_to_daily_max(staff_cli
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_activity_chart_shows_notice_when_no_logs(staff_client):
+def test_액션_로그가_없으면_최근_활동_차트_대신_안내_문구를_보여준다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/dashboard/")
@@ -712,7 +715,7 @@ def test_staff_dashboard_activity_chart_shows_notice_when_no_logs(staff_client):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_staff_dashboard_source_status_dot_ok_for_enabled_recently_checked(staff_client):
+def test_최근_수집된_활성_소스는_정상_상태_점으로_표시된다(staff_client):
     staff, client = staff_client()
     DraftSource.objects.create(
         name="정상 소스",
@@ -730,7 +733,7 @@ def test_staff_dashboard_source_status_dot_ok_for_enabled_recently_checked(staff
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_source_status_dot_disabled_for_disabled_source(staff_client):
+def test_비활성_소스는_비활성_상태_점으로_표시된다(staff_client):
     staff, client = staff_client()
     DraftSource.objects.create(
         name="비활성 소스",
@@ -747,7 +750,7 @@ def test_staff_dashboard_source_status_dot_disabled_for_disabled_source(staff_cl
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_source_status_dot_error_for_enabled_source_with_last_error(staff_client):
+def test_최근_오류가_있는_활성_소스는_오류_상태_점으로_표시된다(staff_client):
     staff, client = staff_client()
     DraftSource.objects.create(
         name="에러 소스",
@@ -766,7 +769,7 @@ def test_staff_dashboard_source_status_dot_error_for_enabled_source_with_last_er
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_source_status_dot_stale_for_enabled_source_never_checked(staff_client):
+def test_한번도_수집되지_않은_활성_소스는_지연_상태_점으로_표시된다(staff_client):
     staff, client = staff_client()
     DraftSource.objects.create(
         name="미수집 소스",
@@ -784,7 +787,7 @@ def test_staff_dashboard_source_status_dot_stale_for_enabled_source_never_checke
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_source_status_dot_error_takes_priority_over_stale(staff_client):
+def test_오류와_지연이_동시에_성립하면_상태_점은_지연보다_오류를_우선한다(staff_client):
     """PR-D1 item 3 established error+stale can both be true simultaneously
     (never-checked + last_error set) — status_level must pick error, not
     stale, so the dot doesn't disagree with the "오류" badge next to it."""

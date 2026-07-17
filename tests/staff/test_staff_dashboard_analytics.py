@@ -6,9 +6,11 @@ import pytest
 
 from core.models import AnalyticsEvent
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_weekly_active_user_count(staff_client):
+def test_대시보드는_주간_활성_사용자_수를_보여준다(staff_client):
     staff, client = staff_client()
     AnalyticsEvent.objects.create(
         event_name=AnalyticsEvent.EventName.EVENT_LIST_VIEWED, user_key="user-a"
@@ -29,7 +31,7 @@ def test_staff_dashboard_shows_weekly_active_user_count(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_weekly_event_count(staff_client):
+def test_대시보드는_주간_이벤트_기록_건수를_보여준다(staff_client):
     staff, client = staff_client()
     for _ in range(3):
         AnalyticsEvent.objects.create(
@@ -45,7 +47,7 @@ def test_staff_dashboard_shows_weekly_event_count(staff_client):
 
 
 @pytest.mark.django_db
-def test_staff_dashboard_shows_zero_state_when_no_analytics_events(staff_client):
+def test_분석_이벤트가_없으면_대시보드는_0명_0건으로_표시한다(staff_client):
     staff, client = staff_client()
 
     resp = client.get("/staff/dashboard/")

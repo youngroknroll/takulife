@@ -18,8 +18,11 @@ def _edit_url(event):
     return f"/staff/events/{event.pk}/edit/"
 
 
+pytestmark = pytest.mark.web
+
+
 @pytest.mark.django_db
-def test_anonymous_redirects_to_login(client, make_event):
+def test_비로그인_사용자가_이벤트_수정_페이지에_접근하면_로그인_페이지로_리다이렉트된다(client, make_event):
     event = make_event(official_url="https://example.com/anon-edit")
 
     resp = client.get(_edit_url(event))
@@ -29,7 +32,7 @@ def test_anonymous_redirects_to_login(client, make_event):
 
 
 @pytest.mark.django_db
-def test_non_staff_returns_403(client, make_user, make_event):
+def test_스태프가_아닌_사용자가_이벤트_수정_페이지에_접근하면_403을_응답한다(client, make_user, make_event):
     user = make_user()
     client.force_login(user)
     event = make_event(official_url="https://example.com/403-edit")
@@ -40,7 +43,7 @@ def test_non_staff_returns_403(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_get_renders_current_field_values(staff_client, make_event):
+def test_이벤트_수정_페이지_GET은_현재_필드_값을_렌더링한다(staff_client, make_event):
     staff, client = staff_client()
     event = make_event(
         title="기존 제목",
@@ -57,7 +60,7 @@ def test_get_renders_current_field_values(staff_client, make_event):
 
 
 @pytest.mark.django_db
-def test_post_updates_event_and_writes_audit_log(staff_client, make_event, staff_event_payload):
+def test_이벤트_수정_폼_제출은_이벤트를_갱신하고_감사_로그를_남긴다(staff_client, make_event, staff_event_payload):
     staff, client = staff_client()
     event = make_event(title="변경 전", official_url="https://example.com/edit-target")
 
@@ -85,7 +88,7 @@ def test_post_updates_event_and_writes_audit_log(staff_client, make_event, staff
 
 
 @pytest.mark.django_db
-def test_post_blank_title_returns_400_with_field_error_and_preserves_input(
+def test_수정_시_제목이_빈_값이면_400과_필드_오류를_응답하고_입력값을_보존한다(
     staff_client, make_event, staff_event_payload
 ):
     staff, client = staff_client()
@@ -108,7 +111,7 @@ def test_post_blank_title_returns_400_with_field_error_and_preserves_input(
 
 
 @pytest.mark.django_db
-def test_post_blank_official_url_returns_400_with_field_error(
+def test_수정_시_공식_URL이_빈_값이면_400과_필드_오류를_응답한다(
     staff_client, make_event, staff_event_payload
 ):
     staff, client = staff_client()
@@ -126,7 +129,7 @@ def test_post_blank_official_url_returns_400_with_field_error(
 
 
 @pytest.mark.django_db
-def test_post_inverted_period_returns_400_with_field_error(
+def test_시작일이_종료일보다_늦으면_400과_필드_오류를_응답한다(
     staff_client, make_event, staff_event_payload
 ):
     staff, client = staff_client()
@@ -149,7 +152,7 @@ def test_post_inverted_period_returns_400_with_field_error(
 
 
 @pytest.mark.django_db
-def test_post_duplicate_official_url_returns_400_with_field_error(
+def test_수정_시_다른_이벤트가_이미_쓰는_공식_URL이면_400과_필드_오류를_응답한다(
     staff_client, make_event, staff_event_payload
 ):
     staff, client = staff_client()
@@ -168,7 +171,7 @@ def test_post_duplicate_official_url_returns_400_with_field_error(
 
 
 @pytest.mark.django_db
-def test_post_allows_saving_with_unchanged_official_url(
+def test_공식_URL을_바꾸지_않고_저장하면_수정이_허용된다(
     staff_client, make_event, staff_event_payload
 ):
     staff, client = staff_client()
@@ -186,7 +189,7 @@ def test_post_allows_saving_with_unchanged_official_url(
 
 
 @pytest.mark.django_db
-def test_list_row_links_to_edit_page(staff_client, make_event):
+def test_이벤트_목록_행은_수정_페이지로_가는_링크를_포함한다(staff_client, make_event):
     staff, client = staff_client()
     event = make_event(title="목록 이벤트", official_url="https://example.com/list-edit-link")
 
@@ -197,7 +200,7 @@ def test_list_row_links_to_edit_page(staff_client, make_event):
 
 
 @pytest.mark.django_db
-def test_get_form_action_preserves_list_filter_query(staff_client, make_event):
+def test_수정_폼_action은_목록_필터_쿼리를_유지한다(staff_client, make_event):
     """폼 action이 화이트리스트 필터 쿼리를 실어야 PRG 후에도 목록 필터가 유지된다.
 
     회귀 배경: action이 쿼리 없는 URL로 하드코딩돼 POST 시점에 ?warning=이
@@ -216,7 +219,7 @@ def test_get_form_action_preserves_list_filter_query(staff_client, make_event):
 
 
 @pytest.mark.django_db
-def test_post_redirect_preserves_list_filter_query(staff_client, make_event, staff_event_payload):
+def test_수정_저장_후_리다이렉트는_목록_필터_쿼리를_유지한다(staff_client, make_event, staff_event_payload):
     staff, client = staff_client()
     event = make_event(title="변경 전", official_url="https://example.com/prg-query")
 

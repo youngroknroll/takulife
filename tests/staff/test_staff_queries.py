@@ -14,8 +14,9 @@ from staff.queries import (
 )
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_recent_staff_actions_orders_newest_first(make_user):
+def test_최근_스태프_액션_목록은_최신순으로_정렬된다(make_user):
     actor = make_user(is_staff=True)
     first = StaffActionLog.objects.create(actor=actor, action="approve")
     second = StaffActionLog.objects.create(actor=actor, action="reject")
@@ -25,8 +26,9 @@ def test_recent_staff_actions_orders_newest_first(make_user):
     assert result == [second, first]
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_recent_staff_actions_respects_limit(make_user):
+def test_최근_스태프_액션_조회시_limit을_지정하면_해당_건수만큼만_반환된다(make_user):
     actor = make_user(is_staff=True)
     for _ in range(5):
         StaffActionLog.objects.create(actor=actor, action="approve")
@@ -36,15 +38,17 @@ def test_recent_staff_actions_respects_limit(make_user):
     assert len(result) == 2
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_recent_staff_actions_returns_empty_list_when_none():
+def test_스태프_액션_로그가_없으면_최근_액션_조회는_빈_목록을_반환한다():
     result = recent_staff_actions()
 
     assert result == []
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_recent_staff_actions_exposes_actor_and_target_draft_without_error(make_user, make_draft):
+def test_최근_스태프_액션은_행위자와_대상_드래프트_정보를_오류_없이_함께_노출한다(make_user, make_draft):
     actor = make_user(is_staff=True)
     draft = make_draft("https://example.com/recent-action-draft", extracted_title="드래프트 최근")
     StaffActionLog.objects.create(
@@ -57,8 +61,9 @@ def test_recent_staff_actions_exposes_actor_and_target_draft_without_error(make_
     assert result[0].target_draft.extracted_title == "드래프트 최근"
 
 
+@pytest.mark.contract
 @pytest.mark.django_db
-def test_recent_staff_actions_selects_related_target_event(
+def test_최근_스태프_액션_조회는_대상_이벤트를_추가_쿼리_없이_함께_가져온다(
     make_user, django_assert_num_queries
 ):
     """PR-D1 item 1: select_related must cover target_event too, so reading
@@ -76,14 +81,16 @@ def test_recent_staff_actions_selects_related_target_event(
         assert result[0].target_event.title == "최근 이벤트"
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_count_since_returns_zero_when_no_logs():
+def test_스태프_액션_로그가_없으면_기간_내_건수_집계는_0이다():
     result = staff_actions_count_since(days=7)
     assert result == 0
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_count_since_counts_logs_within_window(make_user):
+def test_지정한_기간_내의_스태프_액션_로그_건수를_정확히_집계한다(make_user):
     actor = make_user(is_staff=True)
     for _ in range(4):
         StaffActionLog.objects.create(actor=actor, action="approve")
@@ -91,8 +98,9 @@ def test_staff_actions_count_since_counts_logs_within_window(make_user):
     assert result == 4
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_count_since_excludes_logs_older_than_window(make_user):
+def test_지정한_기간보다_오래된_스태프_액션_로그는_집계에서_제외된다(make_user):
     actor = make_user(is_staff=True)
     log = StaffActionLog.objects.create(actor=actor, action="approve")
     StaffActionLog.objects.filter(pk=log.pk).update(
@@ -102,8 +110,9 @@ def test_staff_actions_count_since_excludes_logs_older_than_window(make_user):
     assert result == 0
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_count_since_offset_shifts_window(make_user):
+def test_offset을_지정하면_집계_기간이_그만큼_과거로_이동한다(make_user):
     """10일 전 로그는 직전 7일 창(offset=7)엔 포함되고 최근 7일 창(offset=0)엔 제외된다."""
     actor = make_user(is_staff=True)
     log = StaffActionLog.objects.create(actor=actor, action="approve")
@@ -114,14 +123,16 @@ def test_staff_actions_count_since_offset_shifts_window(make_user):
     assert staff_actions_count_since(days=7, offset=0) == 0
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_per_day_fills_empty_days_with_zero():
+def test_로그가_없는_날짜도_일별_집계에서_0건으로_채워진다():
     result = staff_actions_per_day(days=14)
     assert [row["count"] for row in result] == [0] * 14
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_per_day_returns_exactly_days_entries_ascending_ending_today():
+def test_일별_집계는_지정한_일수만큼_오늘로_끝나는_오름차순_날짜_목록을_반환한다():
     result = staff_actions_per_day(days=14)
     dates = [row["date"] for row in result]
     assert len(result) == 14
@@ -129,8 +140,9 @@ def test_staff_actions_per_day_returns_exactly_days_entries_ascending_ending_tod
     assert dates[-1] == timezone.localdate()
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_per_day_sums_multiple_logs_on_same_day(make_user):
+def test_같은_날짜에_여러_로그가_있으면_일별_집계에서_합산된다(make_user):
     actor = make_user(is_staff=True)
     for _ in range(3):
         StaffActionLog.objects.create(actor=actor, action="approve")
@@ -140,8 +152,9 @@ def test_staff_actions_per_day_sums_multiple_logs_on_same_day(make_user):
     assert today_row["count"] == 3
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_per_day_excludes_logs_outside_window(make_user):
+def test_집계_기간_밖의_로그는_일별_집계에서_제외된다(make_user):
     actor = make_user(is_staff=True)
     log = StaffActionLog.objects.create(actor=actor, action="approve")
     StaffActionLog.objects.filter(pk=log.pk).update(
@@ -151,8 +164,9 @@ def test_staff_actions_per_day_excludes_logs_outside_window(make_user):
     assert sum(row["count"] for row in result) == 0
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
-def test_staff_actions_per_day_buckets_by_kst_calendar_day_not_utc(make_user):
+def test_일별_집계는_UTC가_아닌_KST_달력_날짜_기준으로_버킷팅된다(make_user):
     """UTC 15:30에 기록된 로그는 KST로는 다음날 00:30 — KST 익일 버킷에 집계돼야 한다
     (UTC 날짜 그대로 버킷팅하면 하루 밀린 잘못된 결과가 나온다)."""
     actor = make_user(is_staff=True)

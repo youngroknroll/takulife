@@ -10,9 +10,11 @@ import pytest
 
 from events.models import Event
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_anonymous_redirects_to_login(client):
+def test_비로그인_사용자가_스태프_행사_목록에_접근하면_로그인_페이지로_리다이렉트된다(client):
     resp = client.get("/staff/events/")
 
     assert resp.status_code == 302
@@ -20,7 +22,7 @@ def test_anonymous_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_non_staff_returns_403(client, make_user):
+def test_스태프가_아닌_사용자가_스태프_행사_목록에_접근하면_403이_응답된다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -30,7 +32,7 @@ def test_non_staff_returns_403(client, make_user):
 
 
 @pytest.mark.django_db
-def test_staff_can_access_events_list(staff_client, make_event):
+def test_스태프가_행사_목록에_접근하면_게시된_행사가_노출된다(staff_client, make_event):
     staff, client = staff_client()
     make_event(title="공개 행사")
 
@@ -41,7 +43,7 @@ def test_staff_can_access_events_list(staff_client, make_event):
 
 
 @pytest.mark.django_db
-def test_events_list_includes_draft_events_by_default(staff_client, make_draft_event):
+def test_스태프_행사_목록은_기본적으로_초안_행사도_함께_보여준다(staff_client, make_draft_event):
     staff, client = staff_client()
     make_draft_event(title="비공개 초안", official_url=None)
 
@@ -52,7 +54,7 @@ def test_events_list_includes_draft_events_by_default(staff_client, make_draft_e
 
 
 @pytest.mark.django_db
-def test_warning_filter_scopes_rows_to_matching_events(staff_client, make_event):
+def test_경고_필터를_적용하면_해당_경고에_해당하는_행사만_노출된다(staff_client, make_event):
     staff, client = staff_client()
     make_event(title="URL 없는 행사", official_url=None)
     make_event(
@@ -73,7 +75,7 @@ def test_warning_filter_scopes_rows_to_matching_events(staff_client, make_event)
 
 
 @pytest.mark.django_db
-def test_unknown_warning_falls_back_to_no_filter(staff_client, make_event):
+def test_알_수_없는_경고_값을_지정하면_필터_없이_전체_행사가_노출된다(staff_client, make_event):
     staff, client = staff_client()
     make_event(title="아무 행사")
 
@@ -85,7 +87,7 @@ def test_unknown_warning_falls_back_to_no_filter(staff_client, make_event):
 
 
 @pytest.mark.django_db
-def test_publish_status_filter_restricts_rows(staff_client, make_event, make_draft_event):
+def test_게시_상태_필터를_적용하면_해당_상태의_행사만_노출된다(staff_client, make_event, make_draft_event):
     staff, client = staff_client()
     make_event(title="게시된 행사")
     make_draft_event(title="초안 행사", official_url=None)
@@ -100,7 +102,7 @@ def test_publish_status_filter_restricts_rows(staff_client, make_event, make_dra
 
 
 @pytest.mark.django_db
-def test_pagination_second_page(staff_client, make_event):
+def test_두번째_페이지를_요청하면_남은_건수만큼_행사가_노출된다(staff_client, make_event):
     from events.queries import STAFF_EVENT_LISTING_PAGE_SIZE
 
     staff, client = staff_client()
@@ -115,7 +117,7 @@ def test_pagination_second_page(staff_client, make_event):
 
 
 @pytest.mark.django_db
-def test_ended_still_published_warning_uses_server_today(staff_client, make_event):
+def test_종료됐지만_게시중인_경고_필터는_서버의_오늘_날짜를_기준으로_판정한다(staff_client, make_event):
     staff, client = staff_client()
     make_event(
         title="종료된 행사",

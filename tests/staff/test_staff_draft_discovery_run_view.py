@@ -22,9 +22,11 @@ from staff.models import StaffActionLog
 
 RUN_URL = "/staff/draft-discovery/run/"
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_run_anonymous_redirects_to_login(client):
+def test_비로그인_사용자가_수집_실행을_요청하면_로그인_페이지로_리다이렉트된다(client):
     resp = client.post(RUN_URL)
 
     assert resp.status_code == 302
@@ -32,7 +34,7 @@ def test_run_anonymous_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_run_non_staff_returns_403(client, make_user):
+def test_스태프가_아닌_사용자가_수집_실행을_요청하면_403을_응답한다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -42,7 +44,7 @@ def test_run_non_staff_returns_403(client, make_user):
 
 
 @pytest.mark.django_db
-def test_run_get_redirects_to_dashboard_instead_of_405(staff_client):
+def test_수집_실행_경로에_GET으로_접근하면_405_대신_대시보드로_리다이렉트된다(staff_client):
     """PR-D1 item 2: a GET (e.g. a session-expired POST bounced through
     login's `next=` redirect) must not dead-end on a 405 — it redirects back
     to the dashboard instead, same as the flag-off short-circuit."""
@@ -55,7 +57,7 @@ def test_run_get_redirects_to_dashboard_instead_of_405(staff_client):
 
 
 @pytest.mark.django_db
-def test_run_flag_off_shows_info_message_and_does_not_execute_command(staff_client, settings, monkeypatch, fail_if_called):
+def test_수집_기능_플래그가_꺼져_있으면_안내_메시지만_보여주고_명령을_실행하지_않는다(staff_client, settings, monkeypatch, fail_if_called):
     settings.DRAFT_DISCOVERY_ENABLED = False
     staff, client = staff_client()
 
@@ -70,7 +72,7 @@ def test_run_flag_off_shows_info_message_and_does_not_execute_command(staff_clie
 
 
 @pytest.mark.django_db
-def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(staff_client, settings, monkeypatch, make_source, fail_if_called):
+def test_활성_수집_소스가_없으면_안내_메시지만_보여주고_명령을_실행하지_않는다(staff_client, settings, monkeypatch, make_source, fail_if_called):
     """PR-D1 item 6: flag on, but zero enabled DraftSource rows — the same
     "no-op is an intended state" treatment as the flag-off case: an info
     message, no command execution, no audit log entry."""
@@ -89,7 +91,7 @@ def test_run_no_enabled_sources_shows_info_message_and_does_not_execute_command(
 
 
 @pytest.mark.django_db
-def test_run_success_shows_summary_message_and_writes_audit_log(staff_client, settings, monkeypatch, make_source):
+def test_수집_실행이_성공하면_요약_메시지를_보여주고_감사_로그를_남긴다(staff_client, settings, monkeypatch, make_source):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="enabled-source", url="https://example.com/enabled-feed/")
@@ -112,7 +114,7 @@ def test_run_success_shows_summary_message_and_writes_audit_log(staff_client, se
 
 
 @pytest.mark.django_db
-def test_run_partial_failure_shows_error_message_and_writes_audit_log(staff_client, settings, monkeypatch, make_source):
+def test_수집_실행이_부분_실패하면_오류_메시지를_보여주고_감사_로그를_남긴다(staff_client, settings, monkeypatch, make_source):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="enabled-source", url="https://example.com/enabled-feed/")
@@ -133,7 +135,7 @@ def test_run_partial_failure_shows_error_message_and_writes_audit_log(staff_clie
 
 
 @pytest.mark.django_db
-def test_run_unclassified_exception_shows_error_message_and_does_not_propagate(staff_client, settings, monkeypatch, make_source):
+def test_수집_실행_중_예외가_발생해도_전파되지_않고_오류_메시지와_감사_로그를_남긴다(staff_client, settings, monkeypatch, make_source):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="enabled-source", url="https://example.com/enabled-feed/")

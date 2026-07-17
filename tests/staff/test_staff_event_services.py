@@ -17,9 +17,11 @@ from staff.services import (
     event_archive_reference_counts,
 )
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
-def test_event_archive_reference_counts_all_zero_for_unreferenced_event(make_event):
+def test_아카이브_참조가_없는_행사는_참조_집계가_모두_0이다(make_event):
     event = make_event(official_url="https://example.com/no-refs")
 
     counts = event_archive_reference_counts(event=event)
@@ -28,7 +30,7 @@ def test_event_archive_reference_counts_all_zero_for_unreferenced_event(make_eve
 
 
 @pytest.mark.django_db
-def test_event_archive_reference_counts_reflects_each_kind(make_event, make_user):
+def test_아카이브_참조_종류별로_존재하면_집계에_각각_반영된다(make_event, make_user):
     event = make_event(official_url="https://example.com/with-refs")
     user = make_user()
     EventInterest.objects.create(user=user, event=event)
@@ -42,7 +44,7 @@ def test_event_archive_reference_counts_reflects_each_kind(make_event, make_user
 
 
 @pytest.mark.django_db
-def test_delete_event_removes_event_with_zero_references(make_event):
+def test_아카이브_참조가_없는_행사를_삭제하면_실제로_제거된다(make_event):
     event = make_event(official_url="https://example.com/deletable")
     pk = event.pk
 
@@ -52,7 +54,7 @@ def test_delete_event_removes_event_with_zero_references(make_event):
 
 
 @pytest.mark.django_db
-def test_delete_event_rejects_event_with_archive_interest_reference(make_event, make_user):
+def test_관심_참조가_있는_행사를_삭제하면_거부되고_관심_건수가_예외에_담긴다(make_event, make_user):
     event = make_event(official_url="https://example.com/blocked-by-interest")
     user = make_user()
     EventInterest.objects.create(user=user, event=event)
@@ -67,7 +69,7 @@ def test_delete_event_rejects_event_with_archive_interest_reference(make_event, 
 
 
 @pytest.mark.django_db
-def test_delete_event_rejects_event_with_archive_status_reference(make_event, make_user):
+def test_방문상태_참조가_있는_행사를_삭제하면_거부되고_상태_건수가_예외에_담긴다(make_event, make_user):
     event = make_event(official_url="https://example.com/blocked-by-status")
     user = make_user()
     UserEventStatus.objects.create(user=user, event=event, status=UserEventStatus.Status.PLANNED)
@@ -80,7 +82,7 @@ def test_delete_event_rejects_event_with_archive_status_reference(make_event, ma
 
 
 @pytest.mark.django_db
-def test_delete_event_rejects_event_with_archive_visit_reference(make_event, make_user):
+def test_방문기록_참조가_있는_행사를_삭제하면_거부되고_방문_건수가_예외에_담긴다(make_event, make_user):
     event = make_event(official_url="https://example.com/blocked-by-visit")
     user = make_user()
     VisitRecord.objects.create(user=user, event=event, visited_on=datetime.date(2026, 1, 1))
@@ -93,7 +95,7 @@ def test_delete_event_rejects_event_with_archive_visit_reference(make_event, mak
 
 
 @pytest.mark.django_db
-def test_delete_event_rejects_event_with_collection_item_reference(make_event, make_user):
+def test_컬렉션_항목_참조가_있는_행사를_삭제하면_거부되고_컬렉션_항목_건수가_예외에_담긴다(make_event, make_user):
     event = make_event(official_url="https://example.com/blocked-by-collection-item")
     user = make_user()
     CollectionItem.objects.create(user=user, name="참조 굿즈", event=event)

@@ -17,6 +17,8 @@ from events.models import Event
 from staff.models import StaffActionLog
 from staff.views import MAX_BULK_APPROVE_DRAFT_IDS
 
+pytestmark = pytest.mark.web
+
 
 def bulk_approve_url():
     return reverse("staff:draft-bulk-approve")
@@ -27,7 +29,7 @@ def bulk_approve_url():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_anonymous_cannot_bulk_approve_drafts(client):
+def test_익명_사용자는_드래프트_일괄_승인을_할_수_없다(client):
     response = client.post(
         bulk_approve_url(), data={"draft_ids": []}, content_type="application/json"
     )
@@ -36,7 +38,7 @@ def test_anonymous_cannot_bulk_approve_drafts(client):
 
 
 @pytest.mark.django_db
-def test_non_staff_cannot_bulk_approve_drafts(client, make_user):
+def test_일반_사용자는_드래프트_일괄_승인을_할_수_없다(client, make_user):
     user = make_user()
     client.force_login(user)
 
@@ -52,7 +54,7 @@ def test_non_staff_cannot_bulk_approve_drafts(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_empty_draft_ids(staff_client):
+def test_draft_ids가_비어있으면_일괄_승인_요청을_거부한다(staff_client):
     staff, client = staff_client()
 
     response = client.post(
@@ -65,7 +67,7 @@ def test_bulk_approve_rejects_empty_draft_ids(staff_client):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_non_dict_body(staff_client):
+def test_요청_본문이_객체가_아니면_일괄_승인_요청을_거부한다(staff_client):
     staff, client = staff_client()
 
     response = client.post(bulk_approve_url(), [1, 2, 3], content_type="application/json")
@@ -76,7 +78,7 @@ def test_bulk_approve_rejects_non_dict_body(staff_client):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_non_integer_draft_id(staff_client):
+def test_draft_ids에_정수가_아닌_값이_있으면_일괄_승인_요청을_거부한다(staff_client):
     staff, client = staff_client()
 
     response = client.post(
@@ -91,7 +93,7 @@ def test_bulk_approve_rejects_non_integer_draft_id(staff_client):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_when_exceeding_max_draft_ids(staff_client, make_draft):
+def test_draft_ids_개수가_상한을_초과하면_일괄_승인_요청을_거부하고_아무것도_변경하지_않는다(staff_client, make_draft):
     staff, client = staff_client()
     drafts = [
         make_draft(f"https://example.com/over-cap-{i}", extracted_title=f"Over cap {i}")
@@ -117,7 +119,7 @@ def test_bulk_approve_rejects_when_exceeding_max_draft_ids(staff_client, make_dr
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_boolean_as_draft_id(staff_client):
+def test_draft_ids에_불리언_값이_섞이면_정수가_아닌_값으로_거부한다(staff_client):
     """Regression guard: bool is an int subclass in Python — must not sneak past
     the integer check (True/False are not valid draft ids)."""
     staff, client = staff_client()
@@ -134,7 +136,7 @@ def test_bulk_approve_rejects_boolean_as_draft_id(staff_client):
 
 
 @pytest.mark.django_db
-def test_bulk_approve_rejects_non_list_draft_ids(staff_client):
+def test_draft_ids가_리스트가_아니면_일괄_승인_요청을_거부한다(staff_client):
     """Regression guard: a non-list draft_ids value (e.g. a bare string) must be
     rejected structurally rather than iterated."""
     staff, client = staff_client()
@@ -155,7 +157,7 @@ def test_bulk_approve_rejects_non_list_draft_ids(staff_client):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_approves_all_pending_drafts_and_logs_each_success(staff_client, make_draft):
+def test_대기중_드래프트_여러_건을_일괄_승인하면_모두_게시되고_건별로_감사_로그가_남는다(staff_client, make_draft):
     staff, client = staff_client()
     draft_a = make_draft("https://example.com/bulk-a", extracted_title="Bulk A")
     draft_b = make_draft("https://example.com/bulk-b", extracted_title="Bulk B")
@@ -188,7 +190,7 @@ def test_bulk_approve_approves_all_pending_drafts_and_logs_each_success(staff_cl
 
 
 @pytest.mark.django_db
-def test_bulk_approve_approves_exactly_max_draft_ids(staff_client, make_draft):
+def test_draft_ids_개수가_정확히_상한이면_전부_승인된다(staff_client, make_draft):
     """Boundary lock-in: exactly MAX_BULK_APPROVE_DRAFT_IDS pending drafts must
     pass the cap check and all succeed (over-cap is tested separately)."""
     staff, client = staff_client()
@@ -219,7 +221,7 @@ def test_bulk_approve_approves_exactly_max_draft_ids(staff_client, make_draft):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_reports_not_found_for_unknown_draft_id(staff_client):
+def test_존재하지_않는_draft_id는_전체_요청_실패가_아니라_건별_실패로_보고된다(staff_client):
     staff, client = staff_client()
 
     response = client.post(
@@ -242,7 +244,7 @@ def test_bulk_approve_reports_not_found_for_unknown_draft_id(staff_client):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_treats_repeated_id_as_success_then_already_processed(staff_client, make_draft):
+def test_같은_draft_id를_중복_전달하면_첫_처리만_성공하고_두번째는_이미_처리됨으로_실패한다(staff_client, make_draft):
     staff, client = staff_client()
     draft = make_draft("https://example.com/bulk-repeat", extracted_title="Bulk repeat")
 
@@ -267,7 +269,7 @@ def test_bulk_approve_treats_repeated_id_as_success_then_already_processed(staff
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_mixed_results_partial_success_with_reasons(staff_client, make_draft):
+def test_여러_실패_사유가_섞인_draft_ids를_일괄_승인하면_성공과_실패가_사유와_함께_부분_보고된다(staff_client, make_draft):
     staff, client = staff_client()
 
     already_approved = make_draft("https://example.com/bulk-already-approved", extracted_title="Already approved", review_status=EventDraft.ReviewStatus.APPROVED)
@@ -328,7 +330,7 @@ def test_bulk_approve_mixed_results_partial_success_with_reasons(staff_client, m
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_bulk_approve_continues_processing_after_unexpected_error_in_one_item(staff_client, monkeypatch, caplog, make_draft):
+def test_한_항목의_감사_로그_기록이_예기치_못한_오류로_실패해도_나머지_항목_처리는_계속된다(staff_client, monkeypatch, caplog, make_draft):
     staff, client = staff_client()
     draft_1 = make_draft("https://example.com/bulk-continue-1", extracted_title="Bulk continue 1")
     draft_2 = make_draft("https://example.com/bulk-continue-2", extracted_title="Bulk continue 2")

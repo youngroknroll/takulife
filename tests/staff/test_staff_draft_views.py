@@ -7,10 +7,12 @@ import pytest
 
 from drafts.models import EventDraft
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
 class TestEventDraftsListView:
-    def test_list_renders_draft_rows(self, staff_client, make_draft):
+    def test_드래프트_목록_페이지는_등록된_드래프트_행을_렌더링한다(self, staff_client, make_draft):
         make_draft("https://example.com/a", extracted_title="드래프트 A", extracted_category="popup_store")
         make_draft("https://example.com/b", extracted_title="드래프트 B")
 
@@ -32,7 +34,7 @@ def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, star
 class TestEventDraftsListFilterPagination:
     """/staff/drafts/ status filter + pagination (shared pager, list_drafts)."""
 
-    def test_first_page_caps_at_page_size_with_pager(self, staff_client, make_draft):
+    def test_드래프트_목록_첫_페이지는_페이지_크기만큼만_보여주고_페이저를_포함한다(self, staff_client, make_draft):
         from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
         _seed_drafts(make_draft, DRAFT_LISTING_PAGE_SIZE + 1)
@@ -46,7 +48,7 @@ class TestEventDraftsListFilterPagination:
         assert len(page_obj.object_list) == DRAFT_LISTING_PAGE_SIZE
         assert page_obj.has_other_pages() is True
 
-    def test_no_pager_when_within_one_page(self, staff_client, make_draft):
+    def test_드래프트_건수가_한_페이지_이내면_페이저가_없다(self, staff_client, make_draft):
         from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
         _seed_drafts(make_draft, DRAFT_LISTING_PAGE_SIZE)
@@ -56,7 +58,7 @@ class TestEventDraftsListFilterPagination:
 
         assert resp.context["page_obj"].has_other_pages() is False
 
-    def test_second_page_holds_remainder_and_differs_from_first(self, staff_client, make_draft):
+    def test_드래프트_목록_두번째_페이지는_남은_건수를_보여주고_첫_페이지와_겹치지_않는다(self, staff_client, make_draft):
         from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
         _seed_drafts(make_draft, DRAFT_LISTING_PAGE_SIZE + 1)
@@ -73,8 +75,12 @@ class TestEventDraftsListFilterPagination:
         second_ids = [row["draft"].id for row in second.context["draft_rows"]]
         assert set(first_ids).isdisjoint(second_ids)
 
-    @pytest.mark.parametrize("page_value", ["abc", "9999", "0"])
-    def test_invalid_page_values_return_200(self, staff_client, page_value, make_draft):
+    @pytest.mark.parametrize(
+        "page_value",
+        ["abc", "9999", "0"],
+        ids=["문자열_abc", "범위를_초과하는_9999", "0"],
+    )
+    def test_잘못된_page_값을_주어도_200을_응답한다(self, staff_client, page_value, make_draft):
         _seed_drafts(make_draft, 21)
 
         _, client = staff_client()
@@ -82,7 +88,7 @@ class TestEventDraftsListFilterPagination:
 
         assert resp.status_code == 200
 
-    def test_status_filter_shows_only_matching_rows(self, staff_client, make_draft):
+    def test_상태_필터를_적용하면_일치하는_드래프트만_보여준다(self, staff_client, make_draft):
         pending = make_draft("https://example.com/pending-1", review_status=EventDraft.ReviewStatus.PENDING)
         make_draft("https://example.com/approved-1", review_status=EventDraft.ReviewStatus.APPROVED)
         make_draft("https://example.com/rejected-1", review_status=EventDraft.ReviewStatus.REJECTED)
@@ -94,7 +100,7 @@ class TestEventDraftsListFilterPagination:
         rows = resp.context["draft_rows"]
         assert [row["draft"].id for row in rows] == [pending.id]
 
-    def test_no_status_returns_all_ordered_by_id_desc(self, staff_client, make_draft):
+    def test_상태_필터가_없으면_전체_드래프트를_id_내림차순으로_보여준다(self, staff_client, make_draft):
         first = make_draft("https://example.com/x-1")
         second = make_draft("https://example.com/x-2")
 
@@ -104,7 +110,7 @@ class TestEventDraftsListFilterPagination:
         rows = resp.context["draft_rows"]
         assert [row["draft"].id for row in rows] == [second.id, first.id]
 
-    def test_unknown_status_falls_back_to_all(self, staff_client, make_draft):
+    def test_알_수_없는_상태_값은_전체_보기로_대체된다(self, staff_client, make_draft):
         make_draft("https://example.com/y-1")
 
         _, client = staff_client()
@@ -113,7 +119,7 @@ class TestEventDraftsListFilterPagination:
         assert resp.status_code == 200
         assert resp.context["selected_status"] == ""
 
-    def test_pager_query_preserves_status_filter(self, staff_client, make_draft):
+    def test_드래프트_목록_페이저는_상태_필터를_유지한다(self, staff_client, make_draft):
         _seed_drafts(make_draft, 21, status=EventDraft.ReviewStatus.PENDING)
 
         _, client = staff_client()
@@ -123,7 +129,7 @@ class TestEventDraftsListFilterPagination:
         assert resp.context["pager_query"] == "&status=pending"
         assert b"?page=2&amp;status=pending" in resp.content
 
-    def test_stats_report_totals_not_filtered_subset(self, staff_client, make_draft):
+    def test_드래프트_통계_카드는_필터링된_부분집합이_아닌_전체_건수를_보여준다(self, staff_client, make_draft):
         _seed_drafts(make_draft, 2, status=EventDraft.ReviewStatus.PENDING)
         _seed_drafts(make_draft, 3, status=EventDraft.ReviewStatus.APPROVED)
         _seed_drafts(make_draft, 1, status=EventDraft.ReviewStatus.REJECTED)
@@ -137,7 +143,7 @@ class TestEventDraftsListFilterPagination:
         assert stats["approved"] == 3
         assert stats["rejected"] == 1
 
-    def test_filtered_status_keeps_order_across_page_boundary(self, staff_client, make_draft):
+    def test_상태_필터가_적용된_상태에서도_페이지_경계를_넘어_정렬_순서가_유지된다(self, staff_client, make_draft):
         _seed_drafts(make_draft, 21, status=EventDraft.ReviewStatus.PENDING)
 
         _, client = staff_client()
@@ -148,14 +154,14 @@ class TestEventDraftsListFilterPagination:
         ids = [row["draft"].id for row in rows]
         assert ids == sorted(ids, reverse=True)
 
-    def test_empty_state_when_no_drafts_at_all(self, staff_client):
+    def test_드래프트가_전혀_없으면_등록_안내_빈_상태를_보여준다(self, staff_client):
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
 
         assert resp.status_code == 200
         assert "등록된 드래프트가 없습니다" in resp.content.decode()
 
-    def test_empty_state_for_selected_status_with_other_status_present(self, staff_client, make_draft):
+    def test_선택한_상태에_해당하는_드래프트가_없으면_해당_상태_빈_상태_문구를_보여준다(self, staff_client, make_draft):
         make_draft("https://example.com/only-pending", review_status=EventDraft.ReviewStatus.PENDING)
 
         _, client = staff_client()
@@ -167,7 +173,7 @@ class TestEventDraftsListFilterPagination:
         assert "전체 보기" in body
         assert "등록된 드래프트가 없습니다" not in body
 
-    def test_empty_state_falls_back_to_a_when_db_totally_empty_with_status(self, staff_client):
+    def test_상태_필터가_있어도_DB가_완전히_비어있으면_등록_안내_빈_상태를_보여준다(self, staff_client):
         """Pin: ?status=pending with zero drafts anywhere shows empty-state A
         (creation prompt), not the "no matching status" empty-state B."""
         _, client = staff_client()
@@ -184,7 +190,7 @@ class TestEventDraftsListBulkToolbarLabelContract:
     string "approved" (see static/js/pages/draft_bulk.js). Pin the rendered
     attribute so that regression is caught in the fast suite, not manually."""
 
-    def test_pending_filter_renders_approved_label_data_attribute(self, staff_client, make_draft):
+    def test_대기_상태_필터_목록은_승인_라벨_데이터_속성을_렌더링한다(self, staff_client, make_draft):
         make_draft("https://example.com/pending-label", review_status=EventDraft.ReviewStatus.PENDING)
 
         _, client = staff_client()
@@ -196,7 +202,7 @@ class TestEventDraftsListBulkToolbarLabelContract:
 
 @pytest.mark.django_db
 class TestEventDraftDetailView:
-    def test_existing_draft_renders_with_labels(self, staff_client, make_draft):
+    def test_존재하는_드래프트_상세는_카테고리_지역_라벨을_사람이_읽을_수_있게_보여준다(self, staff_client, make_draft):
         draft = make_draft("https://example.com/c", extracted_title="상세 드래프트", extracted_category="popup_store", extracted_region="seoul")
 
         _, client = staff_client()
@@ -209,7 +215,7 @@ class TestEventDraftDetailView:
         assert resp.context["category_label"] == "팝업스토어"
         assert resp.context["region_label"] == "서울"
 
-    def test_missing_draft_shows_not_found_notice(self, staff_client):
+    def test_존재하지_않는_드래프트_상세는_찾을_수_없음_안내를_보여준다(self, staff_client):
         _, client = staff_client()
         resp = client.get("/staff/drafts/999999/")
 
@@ -227,7 +233,7 @@ class TestEventDraftDetailView:
 
 
 @pytest.mark.django_db
-def test_anonymous_access_to_event_drafts_html_redirects(client):
+def test_비로그인_사용자의_드래프트_목록_접근은_로그인_페이지로_리다이렉트된다(client):
     response = client.get("/staff/drafts/")
 
     assert response.status_code == 302
@@ -235,7 +241,7 @@ def test_anonymous_access_to_event_drafts_html_redirects(client):
 
 
 @pytest.mark.django_db
-def test_anonymous_access_to_event_draft_detail_html_redirects(client):
+def test_비로그인_사용자의_드래프트_상세_접근은_로그인_페이지로_리다이렉트된다(client):
     response = client.get("/staff/drafts/1/")
 
     assert response.status_code == 302
