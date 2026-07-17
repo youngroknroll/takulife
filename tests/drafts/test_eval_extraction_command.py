@@ -10,6 +10,8 @@ from django.core.management import call_command
 
 from drafts.models import EventDraft
 
+pytestmark = pytest.mark.domain
+
 
 def _make_draft(make_draft, **overrides):
     defaults = {
@@ -25,7 +27,7 @@ def _make_draft(make_draft, **overrides):
 
 
 @pytest.mark.django_db
-def test_no_approved_drafts_reports_empty_golden_set_without_error(capsys):
+def test_승인된_드래프트가_없으면_오류_없이_빈_평가셋을_보고한다(capsys):
     call_command("eval_extraction")
 
     output = capsys.readouterr().out
@@ -33,7 +35,7 @@ def test_no_approved_drafts_reports_empty_golden_set_without_error(capsys):
 
 
 @pytest.mark.django_db
-def test_only_pending_and_rejected_drafts_yield_empty_golden_set(capsys, make_draft):
+def test_대기_거절_드래프트만_있으면_평가셋이_비어있다(capsys, make_draft):
     _make_draft(make_draft, source_url="https://example.com/pending", review_status=EventDraft.ReviewStatus.PENDING)
     _make_draft(make_draft, source_url="https://example.com/rejected", review_status=EventDraft.ReviewStatus.REJECTED)
 
@@ -44,7 +46,7 @@ def test_only_pending_and_rejected_drafts_yield_empty_golden_set(capsys, make_dr
 
 
 @pytest.mark.django_db
-def test_excludes_approved_drafts_without_raw_text(monkeypatch, capsys, make_draft):
+def test_원문이_없는_승인_드래프트는_평가셋에서_제외된다(monkeypatch, capsys, make_draft):
     _make_draft(make_draft, 
         source_url="https://example.com/no-raw-text",
         raw_title="",
@@ -70,7 +72,7 @@ def test_excludes_approved_drafts_without_raw_text(monkeypatch, capsys, make_dra
 
 
 @pytest.mark.django_db
-def test_default_run_uses_llm_extractor(monkeypatch, capsys, make_draft, fail_if_called):
+def test_기본_실행은_휴리스틱_없이_LLM_추출기를_사용한다(monkeypatch, capsys, make_draft, fail_if_called):
     _make_draft(make_draft, review_status=EventDraft.ReviewStatus.APPROVED)
     monkeypatch.setattr(
         "drafts.management.commands.eval_extraction.extract_event_fields_heuristic", fail_if_called
@@ -84,7 +86,7 @@ def test_default_run_uses_llm_extractor(monkeypatch, capsys, make_draft, fail_if
 
 
 @pytest.mark.django_db
-def test_heuristic_flag_uses_heuristic_extractor_only(monkeypatch, capsys, make_draft, fail_if_called):
+def test_heuristic_플래그를_주면_LLM_없이_휴리스틱_추출기만_사용한다(monkeypatch, capsys, make_draft, fail_if_called):
     _make_draft(make_draft, review_status=EventDraft.ReviewStatus.APPROVED)
     monkeypatch.setattr(
         "drafts.management.commands.eval_extraction.extract_event_fields_llm", fail_if_called
@@ -98,7 +100,7 @@ def test_heuristic_flag_uses_heuristic_extractor_only(monkeypatch, capsys, make_
 
 
 @pytest.mark.django_db
-def test_perfect_match_report_includes_field_names_and_accuracy(monkeypatch, capsys, make_draft):
+def test_완전히_일치하면_보고서에_필드명과_정확도가_포함된다(monkeypatch, capsys, make_draft):
     _make_draft(make_draft, review_status=EventDraft.ReviewStatus.APPROVED)
     monkeypatch.setattr(
         "drafts.management.commands.eval_extraction.extract_event_fields_llm",
@@ -114,7 +116,7 @@ def test_perfect_match_report_includes_field_names_and_accuracy(monkeypatch, cap
 
 
 @pytest.mark.django_db
-def test_limit_option_caps_golden_set_size_and_extractor_call_count(monkeypatch, capsys, make_draft):
+def test_limit_옵션은_평가셋_크기와_추출기_호출_횟수를_제한한다(monkeypatch, capsys, make_draft):
     for i in range(3):
         _make_draft(make_draft, source_url=f"https://example.com/approved-{i}", review_status=EventDraft.ReviewStatus.APPROVED)
 

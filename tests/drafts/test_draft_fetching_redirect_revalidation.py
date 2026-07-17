@@ -22,7 +22,10 @@ from drafts.fetching import fetch_html
 from drafts.url_safety import UnsafeFetchUrlError, validate_fetch_url
 
 
-def test_redirect_to_private_ip_literal_is_rejected(monkeypatch, install_mock_transport):
+pytestmark = pytest.mark.contract
+
+
+def test_리다이렉트_대상이_사설_IP_리터럴이면_거부된다(monkeypatch, install_mock_transport):
     calls = []
 
     def handler(request):
@@ -43,7 +46,7 @@ def test_redirect_to_private_ip_literal_is_rejected(monkeypatch, install_mock_tr
     assert len(calls) == 1
 
 
-def test_redirect_to_hostname_resolving_to_private_ip_is_rejected(
+def test_리다이렉트_대상_호스트명이_사설_IP로_해석되면_거부된다(
     monkeypatch, install_mock_transport, fake_resolver
 ):
     calls = []

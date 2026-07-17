@@ -16,7 +16,11 @@ Report contract: {"fields": [{"field", "correct", "total", "accuracy",
   extraction_method == "heuristic" increments "fallback" (surfaces silent
   LLM-mode fallback contaminating the calibration data).
 """
+import pytest
+
 from drafts.eval import EVAL_FIELDS, build_field_accuracy_report
+
+pytestmark = pytest.mark.unit
 
 
 def _extract_fn(mapping):
@@ -33,7 +37,7 @@ def _by_field(report):
 
 
 class TestEmptyGoldenSet:
-    def test_empty_golden_set_reports_zero_total_without_zero_division(self):
+    def test_골든_세트가_비어있으면_0으로_나누지_않고_모든_필드가_0으로_집계된다(self):
         report = build_field_accuracy_report([], extract_fn=lambda raw_title, raw_text: {})
 
         assert len(report["fields"]) == len(EVAL_FIELDS)
@@ -46,7 +50,7 @@ class TestEmptyGoldenSet:
 
 
 class TestExactFieldComparison:
-    def test_category_mismatch_lowers_accuracy_for_that_field_only(self):
+    def test_한_필드의_불일치는_그_필드의_정확도만_낮추고_다른_필드에_영향을_주지_않는다(self):
         golden_rows = [
             ("Title A", "Text A", {"category": "popup_store", "region": "seoul"}),
             ("Title B", "Text B", {"category": "collaboration_cafe", "region": "seoul"}),
@@ -66,7 +70,7 @@ class TestExactFieldComparison:
 
 
 class TestNormalizedFieldComparison:
-    def test_work_title_matches_after_whitespace_normalization(self):
+    def test_work_title은_공백과_대소문자_차이를_정규화한_뒤_비교한다(self):
         golden_rows = [
             ("Title A", "Text A", {"work_title": "아이브 IVE"}),
         ]
@@ -83,7 +87,7 @@ class TestNormalizedFieldComparison:
 
 
 class TestExactFieldsAreNotNormalized:
-    def test_category_region_and_dates_are_not_normalization_matched(self):
+    def test_category_region_날짜_필드는_정규화_없이_정확히_비교된다(self):
         # Whitespace/case difference must NOT be forgiven for exact fields —
         # only work_title/location_name get normalization.
         golden_rows = [
@@ -117,7 +121,7 @@ class TestExactFieldsAreNotNormalized:
 
 
 class TestRowLevelExceptionIsolation:
-    def test_one_row_raising_is_skipped_and_counted_as_error_without_killing_batch(self):
+    def test_한_행에서_추출_함수가_예외를_던지면_errors로_집계하고_나머지_행은_계속_처리한다(self):
         golden_rows = [
             ("Title A", "Text A", {"category": "popup_store"}),
             ("Title B", "Text B", {"category": "popup_store"}),
@@ -138,7 +142,7 @@ class TestRowLevelExceptionIsolation:
 
 
 class TestBothEmptyExclusion:
-    def test_both_expected_and_actual_empty_excluded_from_accuracy_denominator(self):
+    def test_골든_값과_추출_값이_모두_비어있으면_그_필드의_정확도_분모에서_제외된다(self):
         golden_rows = [
             ("Title A", "Text A", {"start_date": None}),
         ]
@@ -154,7 +158,7 @@ class TestBothEmptyExclusion:
         assert by_field["start_date"]["both_empty"] == 1
         assert by_field["start_date"]["accuracy"] == 0
 
-    def test_empty_string_counts_as_empty_for_both_empty_check(self):
+    def test_빈_문자열도_both_empty_판정에서_비어있는_값으로_취급된다(self):
         golden_rows = [
             ("Title A", "Text A", {"work_title": ""}),
         ]
@@ -170,7 +174,7 @@ class TestBothEmptyExclusion:
 
 
 class TestFallbackVisibility:
-    def test_row_with_heuristic_extraction_method_counts_as_fallback(self):
+    def test_추출_방식이_heuristic이면_fallback으로_집계된다(self):
         golden_rows = [
             ("Title A", "Text A", {"category": "popup_store"}),
         ]
@@ -185,7 +189,7 @@ class TestFallbackVisibility:
 
         assert report["fallback"] == 1
 
-    def test_row_with_llm_extraction_method_does_not_count_as_fallback(self):
+    def test_추출_방식이_llm이면_fallback으로_집계되지_않는다(self):
         golden_rows = [
             ("Title A", "Text A", {"category": "popup_store"}),
         ]

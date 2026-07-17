@@ -12,10 +12,12 @@ from drafts.extraction import EmptyExtractionError
 from drafts.models import EventDraft
 from drafts.services import DraftCreationEmptyExtractionError, create_draft_from_url
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
 @override_settings(DRAFT_LLM_EXTRACTION_ENABLED=True)
-def test_flag_enabled_uses_llm_extractor_with_parsed_raw_fields(monkeypatch, sample_extraction):
+def test_LLM_추출_플래그가_켜지면_파싱된_원문_필드로_LLM_추출기를_호출한다(monkeypatch, sample_extraction):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Sample</title></html>")
     monkeypatch.setattr(
         "drafts.services.parse_raw_fields",
@@ -54,7 +56,7 @@ def test_flag_enabled_uses_llm_extractor_with_parsed_raw_fields(monkeypatch, sam
 
 
 @pytest.mark.django_db
-def test_flag_disabled_never_calls_llm_extractor(monkeypatch, fail_if_called, sample_extraction):
+def test_LLM_추출_플래그가_꺼지면_LLM_추출기를_호출하지_않는다(monkeypatch, fail_if_called, sample_extraction):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Sample</title></html>")
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
@@ -73,7 +75,7 @@ def test_flag_disabled_never_calls_llm_extractor(monkeypatch, fail_if_called, sa
 
 @pytest.mark.django_db
 @override_settings(DRAFT_LLM_EXTRACTION_ENABLED=True)
-def test_flag_enabled_empty_extraction_raises_without_calling_llm(monkeypatch, fail_if_called):
+def test_원문_파싱이_비어있으면_LLM_추출기_호출_없이_추출_실패_예외를_던진다(monkeypatch, fail_if_called):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html></html>")
 
     def raise_empty(html):
@@ -88,7 +90,7 @@ def test_flag_enabled_empty_extraction_raises_without_calling_llm(monkeypatch, f
 
 @pytest.mark.django_db
 @override_settings(DRAFT_LLM_EXTRACTION_ENABLED=True)
-def test_flag_enabled_heuristic_fallback_result_is_recorded_as_is(monkeypatch, sample_extraction):
+def test_LLM_추출기가_휴리스틱으로_대체한_결과를_그대로_기록한다(monkeypatch, sample_extraction):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Sample</title></html>")
     monkeypatch.setattr(
         "drafts.services.parse_raw_fields",
@@ -121,7 +123,7 @@ def test_flag_enabled_heuristic_fallback_result_is_recorded_as_is(monkeypatch, s
 
 @pytest.mark.django_db
 @override_settings(DRAFT_LLM_EXTRACTION_ENABLED=True)
-def test_flag_enabled_ignores_is_event_key_in_llm_result(monkeypatch, sample_extraction):
+def test_LLM_결과의_is_event_키는_드래프트_생성에_영향을_주지_않는다(monkeypatch, sample_extraction):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Sample</title></html>")
     monkeypatch.setattr(
         "drafts.services.parse_raw_fields",
@@ -153,7 +155,7 @@ def test_flag_enabled_ignores_is_event_key_in_llm_result(monkeypatch, sample_ext
 
 
 @pytest.mark.django_db
-def test_flag_disabled_defaults_extraction_method_heuristic_and_confidence_none(monkeypatch, sample_extraction):
+def test_LLM_추출_플래그가_꺼지면_추출_방식과_신뢰도가_기본값으로_설정된다(monkeypatch, sample_extraction):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Sample</title></html>")
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
@@ -168,7 +170,7 @@ def test_flag_disabled_defaults_extraction_method_heuristic_and_confidence_none(
 
 @pytest.mark.django_db
 @override_settings(DRAFT_LLM_EXTRACTION_ENABLED=True)
-def test_create_draft_from_fields_never_calls_llm_even_when_flag_enabled(monkeypatch, fail_if_called):
+def test_직접_등록_경로는_LLM_추출_플래그가_켜져도_LLM_추출기를_호출하지_않는다(monkeypatch, fail_if_called):
     from drafts.services import create_draft_from_fields
 
     monkeypatch.setattr("drafts.services.extract_event_fields_llm", fail_if_called)

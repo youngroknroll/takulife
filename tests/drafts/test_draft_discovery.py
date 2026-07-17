@@ -30,10 +30,13 @@ ENTITY_EXPANSION_XML = """<?xml version="1.0"?>
 """
 
 
+pytestmark = pytest.mark.unit
+
+
 class TestExtractLinksRss:
     BASE_URL = "https://atzip.kr/feed/"
 
-    def test_extracts_link_element_and_description_anchors(self, rss_xml):
+    def test_RSS_link_요소와_description_앵커에서_외부_링크를_추출한다(self, rss_xml):
         content = rss_xml(
             link="https://atzip.kr/2026/07/04/goods-reservation/",
             description_anchors=[
@@ -48,7 +51,7 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_removes_self_domain_links(self, rss_xml):
+    def test_RSS에서_자기_도메인_링크는_제거된다(self, rss_xml):
         content = rss_xml(
             link="https://atzip.kr/2026/07/04/self/",
             description_anchors=["https://official-site.com/event"],
@@ -58,7 +61,7 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_self_domain_match_is_exact_hostname_not_subdomain(self, rss_xml):
+    def test_RSS_자기_도메인_판정은_서브도메인이_아닌_정확한_호스트명만_일치한다(self, rss_xml):
         content = rss_xml(
             link="https://shop.atzip.kr/goods/1",
             description_anchors=["https://official-site.com/event"],
@@ -68,7 +71,7 @@ class TestExtractLinksRss:
 
         assert "https://shop.atzip.kr/goods/1" in result
 
-    def test_self_domain_match_is_case_insensitive(self, rss_xml):
+    def test_RSS_자기_도메인_판정은_대소문자를_구분하지_않는다(self, rss_xml):
         content = rss_xml(
             link="https://ATZIP.KR/2026/07/04/self/",
             description_anchors=["https://official-site.com/event"],
@@ -85,8 +88,9 @@ class TestExtractLinksRss:
             "https://x.com/example",
             "https://www.instagram.com/example",
         ],
+        ids=["트위터", "X닷컴", "인스타그램"],
     )
-    def test_removes_sns_domain_links(self, sns_url, rss_xml):
+    def test_RSS에서_SNS_도메인_링크는_제거된다(self, sns_url, rss_xml):
         content = rss_xml(description_anchors=["https://official-site.com/event", sns_url])
 
         result = extract_links_rss(content, self.BASE_URL)
@@ -100,30 +104,35 @@ class TestExtractLinksRss:
             "https://official-site.com/banner.png",
             "https://official-site.com/banner.png?v=2",
         ],
+        ids=["jpg", "png", "쿼리있는_png"],
     )
-    def test_removes_image_extension_links(self, image_url, rss_xml):
+    def test_RSS에서_이미지_확장자_링크는_제거된다(self, image_url, rss_xml):
         content = rss_xml(description_anchors=["https://official-site.com/event", image_url])
 
         result = extract_links_rss(content, self.BASE_URL)
 
         assert result == ["https://official-site.com/event"]
 
-    def test_strips_tracking_query_params_but_keeps_url(self, rss_xml):
+    def test_RSS에서_추적_쿼리_파라미터는_제거하고_URL은_유지한다(self, rss_xml):
         content = rss_xml(description_anchors=["https://official-site.com/event?utm_source=x&id=1"])
 
         result = extract_links_rss(content, self.BASE_URL)
 
         assert result == ["https://official-site.com/event?id=1"]
 
-    @pytest.mark.parametrize("non_http_url", ["mailto:contact@example.com", "javascript:void(0)"])
-    def test_removes_non_http_scheme_links(self, non_http_url, rss_xml):
+    @pytest.mark.parametrize(
+        "non_http_url",
+        ["mailto:contact@example.com", "javascript:void(0)"],
+        ids=["mailto", "javascript"],
+    )
+    def test_RSS에서_http가_아닌_스킴_링크는_제거된다(self, non_http_url, rss_xml):
         content = rss_xml(description_anchors=["https://official-site.com/event", non_http_url])
 
         result = extract_links_rss(content, self.BASE_URL)
 
         assert result == ["https://official-site.com/event"]
 
-    def test_removes_duplicate_links_preserving_order(self, rss_xml):
+    def test_RSS에서_중복_링크는_순서를_보존하며_제거된다(self, rss_xml):
         content = rss_xml(
             description_anchors=[
                 "https://official-site.com/event-a?utm_source=x",
@@ -139,7 +148,7 @@ class TestExtractLinksRss:
             "https://official-site.com/event-b",
         ]
 
-    def test_no_items_returns_empty_list(self):
+    def test_RSS에_아이템이_없으면_빈_목록을_반환한다(self):
         content = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel><title>atzip</title></channel></rss>"""
 
@@ -147,7 +156,7 @@ class TestExtractLinksRss:
 
         assert result == []
 
-    def test_accepts_str_with_xml_encoding_declaration(self, rss_xml):
+    def test_RSS는_encoding_선언이_있는_문자열도_파싱한다(self, rss_xml):
         """§2-4: fetch_html returns a decoded str; a str containing an
         <?xml ... encoding="..."?> declaration must not raise ValueError."""
         content = rss_xml(description_anchors=["https://official-site.com/event"])
@@ -157,17 +166,17 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_rejects_entity_expansion_payload(self):
+    def test_RSS는_엔티티_확장_공격_페이로드를_거부한다(self):
         with pytest.raises(DiscoveryParseError):
             extract_links_rss(ENTITY_EXPANSION_XML, self.BASE_URL)
 
-    def test_malformed_xml_raises_discovery_parse_error(self):
+    def test_RSS_XML이_손상되면_DiscoveryParseError를_발생시킨다(self):
         malformed = "<rss><channel><item><link>https://example.com/</item></channel></rss>"
 
         with pytest.raises(DiscoveryParseError):
             extract_links_rss(malformed, self.BASE_URL)
 
-    def test_encoding_like_text_without_xml_prolog_is_not_mutated(self):
+    def test_XML_prolog가_없으면_본문_속의_encoding_유사_문자열이_변형되지_않는다(self):
         """§2-4/PR-2 gate fix: the encoding-normalization substitution must
         only touch a real <?xml ... encoding="..." ?> prolog declaration.
         This fixture has no XML prolog at all, so a literal `encoding="x"`
@@ -184,7 +193,7 @@ class TestExtractLinksRss:
 
         assert result == ['https://official-site.com/event?token=encoding%3D%22x%22']
 
-    def test_accepts_content_with_leading_bom(self, rss_xml):
+    def test_RSS는_선행_BOM이_있어도_파싱한다(self, rss_xml):
         """Characterization test: aniplus's items.xml RSS feed ships with a
         leading U+FEFF BOM character ahead of the <?xml ... ?> declaration.
         _parse_xml already handles this — the BOM survives the UTF-8
@@ -196,7 +205,7 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_self_domain_match_ignores_port(self, rss_xml):
+    def test_RSS_자기_도메인_판정은_포트를_무시한다(self, rss_xml):
         """Characterization test: self-domain matching compares hostname
         only (urlsplit(url).hostname never includes the port), so a
         same-host link on a different port than base_url's is still treated
@@ -212,7 +221,7 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_extracts_content_encoded_anchors_and_ignores_self_domain_description(self, rss_xml):
+    def test_RSS는_content_encoded_앵커도_추출하고_자기_도메인_필터를_동일하게_적용한다(self, rss_xml):
         """Real-source gap (atzip.kr/feed/ smoke): the <description> field
         holds only an excerpt + a self-domain "read more" anchor; the actual
         body HTML with outbound official links lives in <content:encoded>
@@ -233,7 +242,7 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_protocol_relative_urls_are_resolved_and_self_domain_still_removed(self, rss_xml):
+    def test_RSS는_프로토콜_상대_URL을_해석하고_자기_도메인은_계속_제거한다(self, rss_xml):
         """Characterization test: a protocol-relative href ("//host/path")
         resolves against base_url's scheme via urljoin — an official-site
         link survives, but a protocol-relative link back to atzip's own
@@ -250,7 +259,7 @@ class TestExtractLinksRss:
 class TestExtractLinksSitemap:
     BASE_URL = "https://aniplustv.com/sitemap.xml"
 
-    def test_extracts_loc_elements(self, sitemap_xml):
+    def test_사이트맵_loc_요소를_추출한다(self, sitemap_xml):
         content = sitemap_xml(
             "https://aniplustv.com/events/1", "https://aniplustv.com/events/2"
         )
@@ -262,7 +271,7 @@ class TestExtractLinksSitemap:
             "https://aniplustv.com/events/2",
         ]
 
-    def test_keeps_same_domain_links(self, sitemap_xml):
+    def test_사이트맵은_같은_도메인_링크를_유지한다(self, sitemap_xml):
         """Sitemap sources point directly at an official site's own pages —
         the opposite of RSS, which links out from a roundup post."""
         content = sitemap_xml("https://aniplustv.com/events/1")
@@ -274,15 +283,16 @@ class TestExtractLinksSitemap:
     @pytest.mark.parametrize(
         "image_url",
         ["https://aniplustv.com/banner.jpg", "https://aniplustv.com/banner.png"],
+        ids=["jpg", "png"],
     )
-    def test_removes_image_extension_links(self, image_url, sitemap_xml):
+    def test_사이트맵에서_이미지_확장자_링크는_제거된다(self, image_url, sitemap_xml):
         content = sitemap_xml("https://aniplustv.com/events/1", image_url)
 
         result = extract_links_sitemap(content, self.BASE_URL)
 
         assert result == ["https://aniplustv.com/events/1"]
 
-    def test_strips_tracking_query_params_and_dedups(self, sitemap_xml):
+    def test_사이트맵에서_추적_쿼리_파라미터를_제거하고_중복을_제거한다(self, sitemap_xml):
         content = sitemap_xml(
             "https://aniplustv.com/events/1",
             "https://aniplustv.com/events/1?utm_source=x",
@@ -292,7 +302,7 @@ class TestExtractLinksSitemap:
 
         assert result == ["https://aniplustv.com/events/1"]
 
-    def test_no_urls_returns_empty_list(self):
+    def test_사이트맵에_URL이_없으면_빈_목록을_반환한다(self):
         content = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>"""
 
@@ -300,7 +310,7 @@ class TestExtractLinksSitemap:
 
         assert result == []
 
-    def test_accepts_str_with_xml_encoding_declaration(self, sitemap_xml):
+    def test_사이트맵은_encoding_선언이_있는_문자열도_파싱한다(self, sitemap_xml):
         """§2-4: the main smoke-test source (aniplustv sitemap) breaks
         exactly on this path — a str containing an encoding declaration."""
         content = sitemap_xml("https://aniplustv.com/events/1")
@@ -310,17 +320,17 @@ class TestExtractLinksSitemap:
 
         assert result == ["https://aniplustv.com/events/1"]
 
-    def test_rejects_entity_expansion_payload(self):
+    def test_사이트맵은_엔티티_확장_공격_페이로드를_거부한다(self):
         with pytest.raises(DiscoveryParseError):
             extract_links_sitemap(ENTITY_EXPANSION_XML, self.BASE_URL)
 
-    def test_malformed_xml_raises_discovery_parse_error(self):
+    def test_사이트맵_XML이_손상되면_DiscoveryParseError를_발생시킨다(self):
         malformed = "<urlset><url><loc>https://aniplustv.com/events/1</url></urlset>"
 
         with pytest.raises(DiscoveryParseError):
             extract_links_sitemap(malformed, self.BASE_URL)
 
-    def test_accepts_content_with_leading_bom(self, sitemap_xml):
+    def test_사이트맵은_선행_BOM이_있어도_파싱한다(self, sitemap_xml):
         """Characterization test mirroring aniplustv's real items.xml, which
         ships with a leading U+FEFF BOM character (see TestExtractLinksRss's
         equivalent test for why _parse_xml already tolerates this)."""
@@ -330,7 +340,7 @@ class TestExtractLinksSitemap:
 
         assert result == ["https://aniplustv.com/events/1"]
 
-    def test_sorts_by_lastmod_descending(self, sitemap_xml):
+    def test_사이트맵_URL은_lastmod_내림차순으로_정렬된다(self, sitemap_xml):
         content = sitemap_xml(
             ("https://aniplustv.com/events/1", "2026-01-01"),
             ("https://aniplustv.com/events/2", "2026-07-01"),
@@ -345,7 +355,7 @@ class TestExtractLinksSitemap:
             "https://aniplustv.com/events/1",
         ]
 
-    def test_entries_without_lastmod_are_kept_last_in_document_order(self, sitemap_xml):
+    def test_lastmod이_없는_URL은_문서_순서대로_맨_뒤에_유지된다(self, sitemap_xml):
         content = sitemap_xml(
             ("https://aniplustv.com/events/no-date-a", None),
             ("https://aniplustv.com/events/dated", "2026-07-01"),
@@ -360,7 +370,7 @@ class TestExtractLinksSitemap:
             "https://aniplustv.com/events/no-date-b",
         ]
 
-    def test_sitemapindex_loc_extraction_is_unaffected_by_lastmod_sort(self):
+    def test_sitemapindex의_loc_추출도_lastmod_정렬_규칙을_동일하게_따른다(self):
         """`<sitemapindex>` groups by <sitemap> instead of <url>, but the
         per-group loc+lastmod extraction is tag-name agnostic, so behavior
         here is unchanged from plain loc extraction."""
@@ -381,7 +391,7 @@ class TestExtractLinksSitemap:
 class TestExtractLinksHtml:
     BASE_URL = "https://www.animate.co.jp/board/"
 
-    def test_extracts_anchors_matching_selector_with_relative_urls_resolved(self):
+    def test_HTML은_셀렉터에_일치하는_앵커의_상대_URL을_절대_URL로_해석한다(self):
         content = """
         <html><body>
         <div class="board-list">
@@ -397,7 +407,7 @@ class TestExtractLinksHtml:
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_link_selector_excludes_anchors_outside_scope(self):
+    def test_HTML_링크_셀렉터는_범위_밖_앵커를_제외한다(self):
         content = """
         <html><body>
         <div class="board-list"><a href="/goods/1">공식 상품 1</a></div>
@@ -409,14 +419,14 @@ class TestExtractLinksHtml:
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_keeps_same_domain_links(self):
+    def test_HTML은_같은_도메인_링크를_유지한다(self):
         content = '<html><body><a href="https://www.animate.co.jp/goods/1">공식 상품 1</a></body></html>'
 
         result = extract_links_html(content, self.BASE_URL, selector="")
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_removes_image_extension_links(self):
+    def test_HTML에서_이미지_확장자_링크는_제거된다(self):
         content = """
         <html><body>
         <a href="/goods/1">공식 상품 1</a>
@@ -428,7 +438,7 @@ class TestExtractLinksHtml:
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_removes_sns_domain_links(self):
+    def test_HTML에서_SNS_도메인_링크는_제거된다(self):
         content = """
         <html><body>
         <a href="/goods/1">공식 상품 1</a>
@@ -440,7 +450,7 @@ class TestExtractLinksHtml:
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_removes_non_http_scheme_links(self):
+    def test_HTML에서_http가_아닌_스킴_링크는_제거된다(self):
         content = """
         <html><body>
         <a href="/goods/1">공식 상품 1</a>
@@ -452,7 +462,7 @@ class TestExtractLinksHtml:
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_strips_tracking_query_params_and_dedups(self):
+    def test_HTML에서_추적_쿼리_파라미터를_제거하고_중복을_제거한다(self):
         content = """
         <html><body>
         <a href="/goods/1?utm_source=a">공식 상품 1</a>
@@ -464,7 +474,7 @@ class TestExtractLinksHtml:
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_query_value_spaces_are_reserialized_as_plus(self):
+    def test_HTML_쿼리_값의_공백은_plus_기호로_재직렬화된다(self):
         """Characterization test: stripping tracking params re-serializes the
         surviving query string via urlencode, which normalizes a %20-encoded
         space to "+" — both are valid space encodings in a query string, so
@@ -475,21 +485,21 @@ class TestExtractLinksHtml:
 
         assert result == ["https://www.animate.co.jp/goods/1?title=a+b"]
 
-    def test_selector_matching_nothing_returns_empty_list(self):
+    def test_HTML_셀렉터가_아무것도_찾지_못하면_빈_목록을_반환한다(self):
         content = '<html><body><a href="/goods/1">공식 상품 1</a></body></html>'
 
         result = extract_links_html(content, self.BASE_URL, selector=".no-such-class a")
 
         assert result == []
 
-    def test_malformed_html_returns_empty_list_not_raises(self):
+    def test_손상된_HTML은_예외_대신_빈_목록을_반환한다(self):
         malformed = "<html><body><a href='unclosed<div><p>broken"
 
         result = extract_links_html(malformed, self.BASE_URL, selector="")
 
         assert result == []
 
-    def test_self_referencing_anchors_are_excluded(self):
+    def test_HTML에서_자기_참조_앵커는_제외된다(self):
         """A bare href="" or a same-page href="#top" resolves to the listing
         page itself (fragment-only navigation), never a distinct candidate
         event page — this must be excluded even though html sources keep
@@ -506,7 +516,7 @@ class TestExtractLinksHtml:
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_invalid_selector_raises_discovery_parse_error(self):
+    def test_HTML_셀렉터_문법이_잘못되면_DiscoveryParseError를_발생시킨다(self):
         """A malformed `link_selector` (soupsieve SelectorSyntaxError) must
         surface as DiscoveryParseError rather than a silent empty result —
         an empty result here looks identical to "no links on the page today"
@@ -517,7 +527,7 @@ class TestExtractLinksHtml:
         with pytest.raises(DiscoveryParseError):
             extract_links_html(content, self.BASE_URL, selector="[[[")
 
-    def test_blank_selector_matches_all_anchors_in_document(self):
+    def test_빈_셀렉터는_문서의_모든_앵커에_매칭한다(self):
         content = """
         <html><body>
         <a href="/goods/1">공식 상품 1</a>
@@ -534,21 +544,21 @@ class TestExtractLinksHtml:
 
 
 class TestExtractCandidateUrls:
-    def test_dispatches_rss_source_type(self, rss_xml):
+    def test_소스_타입이_rss면_RSS_추출_로직으로_디스패치한다(self, rss_xml):
         content = rss_xml(description_anchors=["https://official-site.com/event"])
 
         result = extract_candidate_urls("rss", content, "https://atzip.kr/feed/")
 
         assert result == ["https://official-site.com/event"]
 
-    def test_dispatches_sitemap_source_type(self, sitemap_xml):
+    def test_소스_타입이_sitemap이면_사이트맵_추출_로직으로_디스패치한다(self, sitemap_xml):
         content = sitemap_xml("https://aniplustv.com/events/1")
 
         result = extract_candidate_urls("sitemap", content, "https://aniplustv.com/sitemap.xml")
 
         assert result == ["https://aniplustv.com/events/1"]
 
-    def test_dispatches_html_with_selector(self):
+    def test_소스_타입이_html이면_셀렉터와_함께_HTML_추출_로직으로_디스패치한다(self):
         content = '<html><body><div class="board-list"><a href="/goods/1">공식 상품 1</a></div></body></html>'
 
         result = extract_candidate_urls(
@@ -560,13 +570,13 @@ class TestExtractCandidateUrls:
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_html_without_selector_argument_defaults_to_blank_string(self):
+    def test_HTML_추출에서_셀렉터_인자를_생략하면_빈_문자열로_기본_처리된다(self):
         content = '<html><body><a href="/goods/1">공식 상품 1</a></body></html>'
 
         result = extract_candidate_urls("html", content, "https://www.animate.co.jp/board/")
 
         assert result == ["https://www.animate.co.jp/goods/1"]
 
-    def test_unknown_source_type_raises_value_error(self):
+    def test_알_수_없는_소스_타입은_ValueError를_발생시킨다(self):
         with pytest.raises(ValueError):
             extract_candidate_urls("atom", "<xml/>", "https://example.com/")

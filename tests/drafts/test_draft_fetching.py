@@ -19,11 +19,14 @@ from drafts.fetching import (
 )
 
 
+pytestmark = pytest.mark.unit
+
+
 def _install(monkeypatch, install_mock_transport, handler):
     install_mock_transport(monkeypatch, handler, stub_validate_fetch_url=True)
 
 
-def test_success_returns_decoded_html(monkeypatch, install_mock_transport):
+def test_정상_응답은_디코딩된_HTML을_반환한다(monkeypatch, install_mock_transport):
     def handler(request):
         return httpx.Response(
             200, headers={"content-type": "text/html; charset=utf-8"},
@@ -34,7 +37,7 @@ def test_success_returns_decoded_html(monkeypatch, install_mock_transport):
     assert "본문" in fetch_html("https://example.com/")
 
 
-def test_non_html_content_type_rejected(monkeypatch, install_mock_transport):
+def test_HTML이_아닌_content_type은_거부된다(monkeypatch, install_mock_transport):
     def handler(request):
         return httpx.Response(200, headers={"content-type": "application/json"}, content=b"{}")
 
@@ -43,7 +46,7 @@ def test_non_html_content_type_rejected(monkeypatch, install_mock_transport):
         fetch_html("https://example.com/data")
 
 
-def test_response_too_large_rejected(monkeypatch, install_mock_transport):
+def test_응답_크기가_상한을_넘으면_거부된다(monkeypatch, install_mock_transport):
     def handler(request):
         body = b"x" * (MAX_RESPONSE_BYTES + 1)
         return httpx.Response(200, headers={"content-type": "text/html"}, content=body)
@@ -53,7 +56,7 @@ def test_response_too_large_rejected(monkeypatch, install_mock_transport):
         fetch_html("https://example.com/big")
 
 
-def test_too_many_redirects_raises_fetch_error(monkeypatch, install_mock_transport):
+def test_리다이렉트가_상한을_넘으면_FetchError를_발생시킨다(monkeypatch, install_mock_transport):
     def handler(request):
         return httpx.Response(302, headers={"location": "https://example.com/next"})
 
@@ -62,7 +65,7 @@ def test_too_many_redirects_raises_fetch_error(monkeypatch, install_mock_transpo
         fetch_html("https://example.com/loop")
 
 
-def test_transport_http_error_maps_to_fetch_error(monkeypatch, install_mock_transport):
+def test_전송_계층_오류는_FetchError로_매핑된다(monkeypatch, install_mock_transport):
     def handler(request):
         raise httpx.ConnectError("connection refused", request=request)
 
@@ -71,7 +74,7 @@ def test_transport_http_error_maps_to_fetch_error(monkeypatch, install_mock_tran
         fetch_html("https://example.com/down")
 
 
-def test_fetch_html_accepts_opted_in_xml_content_type(monkeypatch, install_mock_transport):
+def test_명시적으로_허용한_xml_content_type은_수용된다(monkeypatch, install_mock_transport):
     def handler(request):
         return httpx.Response(
             200, headers={"content-type": "application/rss+xml"}, content=b"<rss></rss>"
@@ -84,7 +87,7 @@ def test_fetch_html_accepts_opted_in_xml_content_type(monkeypatch, install_mock_
     assert result == "<rss></rss>"
 
 
-def test_fetch_html_opted_in_content_types_replace_default_not_merge(monkeypatch, install_mock_transport):
+def test_명시적_허용_content_type_목록은_기본값을_대체하고_병합하지_않는다(monkeypatch, install_mock_transport):
     def handler(request):
         return httpx.Response(200, headers={"content-type": "text/html"}, content=b"<html></html>")
 
@@ -93,8 +96,8 @@ def test_fetch_html_opted_in_content_types_replace_default_not_merge(monkeypatch
         fetch_html("https://example.com/feed.xml", allowed_content_types=("application/rss+xml",))
 
 
-@pytest.mark.parametrize("status", [404, 500])
-def test_fetch_html_raises_status_error_with_code_for_http_error_responses(monkeypatch, status, install_mock_transport):
+@pytest.mark.parametrize("status", [404, 500], ids=["404_응답", "500_응답"])
+def test_HTTP_오류_응답은_상태코드를_포함한_FetchHttpStatusError를_발생시킨다(monkeypatch, status, install_mock_transport):
     def handler(request):
         return httpx.Response(status, headers={"content-type": "text/html"}, content=b"")
 
@@ -105,7 +108,7 @@ def test_fetch_html_raises_status_error_with_code_for_http_error_responses(monke
     assert exc_info.value.status_code == status
 
 
-def test_fetch_html_response_too_large_enforced_with_xml_content_type(monkeypatch, install_mock_transport):
+def test_xml_content_type_응답에도_크기_상한이_적용된다(monkeypatch, install_mock_transport):
     def handler(request):
         body = b"x" * (MAX_RESPONSE_BYTES + 1)
         return httpx.Response(200, headers={"content-type": "application/rss+xml"}, content=body)
@@ -115,7 +118,7 @@ def test_fetch_html_response_too_large_enforced_with_xml_content_type(monkeypatc
         fetch_html("https://example.com/feed.xml", allowed_content_types=("application/rss+xml",))
 
 
-def test_fetch_html_user_agent_defaults_to_current_value_when_contact_unset(monkeypatch, install_mock_transport):
+def test_연락처_설정이_없으면_기본_User_Agent_값을_사용한다(monkeypatch, install_mock_transport):
     captured = {}
 
     def handler(request):
@@ -128,7 +131,7 @@ def test_fetch_html_user_agent_defaults_to_current_value_when_contact_unset(monk
 
 
 @override_settings(DRAFT_FETCH_CONTACT="https://example.com/about")
-def test_fetch_html_user_agent_appends_contact_when_settings_configured(monkeypatch, install_mock_transport):
+def test_연락처_설정이_있으면_User_Agent에_연락처를_덧붙인다(monkeypatch, install_mock_transport):
     captured = {}
 
     def handler(request):
@@ -141,7 +144,7 @@ def test_fetch_html_user_agent_appends_contact_when_settings_configured(monkeypa
 
 
 @override_settings(DRAFT_FETCH_CONTACT="https://example.com/about\n")
-def test_fetch_html_user_agent_strips_trailing_whitespace_from_contact(monkeypatch, install_mock_transport):
+def test_연락처_설정_끝의_공백은_User_Agent에서_제거된다(monkeypatch, install_mock_transport):
     # Defends against a trailing newline left in a .env value (a common
     # copy/paste mistake) leaking into the User-Agent header.
     captured = {}

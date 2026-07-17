@@ -22,7 +22,7 @@ from drafts.robots import ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED, RobotsCheckRes
 from drafts.services import DraftCreationDuplicateError, DraftCreationEmptyExtractionError, DraftCreationFetchError
 
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.domain]
 
 
 @pytest.fixture(autouse=True)
@@ -69,7 +69,7 @@ def _patch_robots_checker(monkeypatch, checker):
 
 
 class TestFlagGating:
-    def test_flag_disabled_refuses_to_run(self, settings, monkeypatch, capsys, fail_if_called):
+    def test_DRAFT_DISCOVERY_ENABLED가_꺼져_있으면_실행을_거부하고_설정명을_안내한다(self, settings, monkeypatch, capsys, fail_if_called):
         settings.DRAFT_DISCOVERY_ENABLED = False
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
@@ -90,7 +90,7 @@ class TestFlagGating:
         output = capsys.readouterr().out
         assert "DRAFT_DISCOVERY_ENABLED" in output
 
-    def test_no_enabled_sources_reports_and_exits_cleanly(self, monkeypatch, capsys, fail_if_called):
+    def test_활성_소스가_없으면_안내_문구를_출력하고_정상_종료한다(self, monkeypatch, capsys, fail_if_called):
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
         )
@@ -110,7 +110,7 @@ class TestFlagGating:
         output = capsys.readouterr().out
         assert "활성 소스가 없습니다" in output
 
-    def test_disabled_source_is_not_processed(self, monkeypatch, make_source, fail_if_called):
+    def test_비활성_소스는_처리되지_않는다(self, monkeypatch, make_source, fail_if_called):
         make_source(enabled=False)
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
@@ -128,8 +128,10 @@ class TestFlagGating:
 
 
 class TestListingLevel:
-    @pytest.mark.parametrize("reason", [ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED])
-    def test_listing_robots_outcome_skips_source_and_records_reason(self, monkeypatch, reason, make_source, fail_if_called):
+    @pytest.mark.parametrize(
+        "reason", [ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED], ids=["robots_불허", "robots_페치_실패"]
+    )
+    def test_리스팅_페이지가_robots에_의해_차단되면_소스를_건너뛰고_사유를_기록한다(self, monkeypatch, reason, make_source, fail_if_called):
         source = make_source()
         checker = _FakeRobotsChecker(outcomes={source.url: RobotsCheckResult(False, reason)})
         _patch_robots_checker(monkeypatch, checker)
@@ -151,7 +153,7 @@ class TestListingLevel:
         assert reason in source.last_error
         assert source.last_checked_at is not None
 
-    def test_source_with_no_candidates_clears_last_error_and_reports_zero_found(self, monkeypatch, capsys, make_source, fail_if_called):
+    def test_후보가_없으면_이전_에러를_지우고_0건을_보고한다(self, monkeypatch, capsys, make_source, fail_if_called):
         source = make_source(last_error="이전 실행에서 남은 에러")
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
         monkeypatch.setattr(
@@ -173,8 +175,8 @@ class TestListingLevel:
         output = capsys.readouterr().out
         assert "0" in output
 
-    @pytest.mark.parametrize("failure_mode", ["fetch", "parse"])
-    def test_source_level_failure_is_isolated_and_causes_nonzero_exit(self, monkeypatch, failure_mode, make_draft, make_source):
+    @pytest.mark.parametrize("failure_mode", ["fetch", "parse"], ids=["페치_실패", "파싱_실패"])
+    def test_소스_레벨_실패는_다른_소스에_전파되지_않고_0이_아닌_종료코드를_유발한다(self, monkeypatch, failure_mode, make_draft, make_source):
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
         source_b = make_source(name="B", url="https://b.example.com/feed.xml")
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
@@ -209,7 +211,7 @@ class TestListingLevel:
         assert source_a.last_error != ""
         assert EventDraft.objects.filter(source_url="https://b.example.com/event-1").exists()
 
-    def test_corrupted_source_type_is_isolated_to_its_own_source(self, monkeypatch, make_draft, make_source):
+    def test_손상된_source_type을_가진_소스는_자신에게만_실패가_격리된다(self, monkeypatch, make_draft, make_source):
         """A source_type outside DraftSource.SourceType.choices can still
         reach the DB — Model.objects.create() does not validate choices, so
         a stale/typo'd source_type is a real (if rare) production state, not
@@ -253,7 +255,7 @@ def _install_listing(monkeypatch, candidate_urls):
 
 
 class TestCandidateLevel:
-    def test_single_new_candidate_is_created_with_source_name(self, monkeypatch, make_source):
+    def test_신규_후보는_소스_이름과_함께_드래프트로_생성된다(self, monkeypatch, make_source):
         source = make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
@@ -271,7 +273,7 @@ class TestCandidateLevel:
 
         assert calls == [("https://target.example.com/event-1", source.name)]
 
-    def test_preexisting_source_url_is_deduped_before_candidate_robots_check(self, monkeypatch, make_draft, make_source, fail_if_called):
+    def test_이미_존재하는_URL은_후보_robots_점검_전에_중복_제거된다(self, monkeypatch, make_draft, make_source, fail_if_called):
         source = make_source()
         candidate_url = "https://target.example.com/event-1"
         make_draft(candidate_url, review_status=EventDraft.ReviewStatus.REJECTED)
@@ -295,8 +297,9 @@ class TestCandidateLevel:
             (ROBOTS_DISALLOWED, "robots 불허 1건"),
             (ROBOTS_FETCH_FAILED, "robots 페치 실패 1건"),
         ],
+        ids=["robots_불허", "robots_페치_실패"],
     )
-    def test_candidate_robots_outcome_skips_without_failing_run(self, monkeypatch, reason, report_substring, capsys, make_source, fail_if_called):
+    def test_후보_URL이_robots에_의해_차단되면_실행_실패_없이_사유별로_건너뛴다(self, monkeypatch, reason, report_substring, capsys, make_source, fail_if_called):
         source = make_source()
         candidate_url = "https://target.example.com/event-1"
         _install_listing(monkeypatch, [candidate_url])
@@ -313,7 +316,7 @@ class TestCandidateLevel:
         output = capsys.readouterr().out
         assert report_substring in output
 
-    def test_duplicate_creation_error_is_a_normal_skip(self, monkeypatch, make_source):
+    def test_중복_생성_오류는_실행_실패로_이어지지_않고_건너뛴다(self, monkeypatch, make_source):
         source = make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
@@ -327,7 +330,7 @@ class TestCandidateLevel:
 
         call_command("discover_drafts")
 
-    def test_empty_extraction_error_is_a_normal_skip(self, monkeypatch, make_source):
+    def test_빈_추출_오류도_실행_실패로_이어지지_않고_건너뛴다(self, monkeypatch, make_source):
         source = make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
@@ -341,7 +344,7 @@ class TestCandidateLevel:
 
         call_command("discover_drafts")
 
-    def test_genuine_creation_failure_is_isolated_but_causes_nonzero_exit(self, monkeypatch, capsys, make_draft, make_source):
+    def test_후보_생성_실패는_다른_후보에_전파되지_않지만_0이_아닌_종료코드를_유발하고_소스_에러는_바꾸지_않는다(self, monkeypatch, capsys, make_draft, make_source):
         source = make_source()
         failing_url = "https://target.example.com/event-1"
         succeeding_url = "https://target.example.com/event-2"
@@ -372,7 +375,7 @@ class TestCandidateLevel:
         assert failing_url in stderr_output
         assert "DraftCreationFetchError" in stderr_output
 
-    def test_cross_source_url_collision_in_same_run_is_a_normal_skip(self, monkeypatch, make_source):
+    def test_같은_실행에서_서로_다른_소스가_같은_URL을_후보로_내면_한_건만_생성되고_나머지는_건너뛴다(self, monkeypatch, make_source):
         """Sociable exception (pr3-test-design.md 12b): real
         create_draft_from_url, only drafts.services.fetch_html stubbed — this
         is the one test that exercises the actual IntegrityError ->
@@ -402,7 +405,7 @@ class TestCandidateLevel:
 
 
 class TestCaps:
-    def test_creation_cap_stops_further_creation_and_reports_held_back(self, monkeypatch, settings, capsys, make_draft, make_source):
+    def test_생성_상한에_도달하면_이후_후보_생성을_멈추고_보류_건수를_보고한다(self, monkeypatch, settings, capsys, make_draft, make_source):
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
         make_source()
         url1 = "https://target.example.com/event-1"
@@ -427,7 +430,7 @@ class TestCaps:
         output = capsys.readouterr().out
         assert "1건 보류" in output
 
-    def test_per_source_fetch_cap_does_not_count_deduped_candidates(self, monkeypatch, settings, make_draft, make_source):
+    def test_중복_제거된_후보는_소스별_페치_상한을_소비하지_않는다(self, monkeypatch, settings, make_draft, make_source):
         settings.DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 1
         make_source()
         dup_url = "https://target.example.com/existing"
@@ -452,7 +455,7 @@ class TestCaps:
         assert not EventDraft.objects.filter(source_url=new_url2).exists()
         assert new_url2 not in checker.calls
 
-    def test_creation_cap_is_shared_across_sources_not_applied_per_source(self, monkeypatch, settings, make_draft, make_source):
+    def test_생성_상한은_소스별이_아니라_실행_전체에서_공유된다(self, monkeypatch, settings, make_draft, make_source):
         """If DRAFT_DISCOVERY_MAX_PER_RUN were (incorrectly) applied
         per-source instead of once for the whole run, both sources' single
         candidate would be created here — this pins the total-across-the-run
@@ -484,7 +487,7 @@ class TestCaps:
         assert EventDraft.objects.filter(source_url=url_a).exists()
         assert not EventDraft.objects.filter(source_url=url_b).exists()
 
-    def test_per_source_fetch_cap_does_not_starve_other_sources(self, monkeypatch, settings, make_draft, make_source):
+    def test_소스별_페치_상한은_다른_소스의_예산을_굶기지_않는다(self, monkeypatch, settings, make_draft, make_source):
         """If the per-source fetch budget were (incorrectly) shared globally
         instead of tracked per source, source B's candidate would also be
         held back once source A exhausts the shared budget — this pins the
@@ -527,7 +530,7 @@ class TestCaps:
 
 
 class TestCandidatePacing:
-    def test_sleep_is_invoked_once_per_fetch_consuming_candidate(self, monkeypatch, make_draft, make_source):
+    def test_페치_예산을_소비한_후보마다_한_번씩_일시정지한다(self, monkeypatch, make_draft, make_source):
         """Etiquette pacing after every candidate that actually consumed
         network fetch budget (a robots check, at minimum) — behavior only;
         exact seconds are out of scope (pr3-test-design.md), so this checks
@@ -554,7 +557,7 @@ class TestCandidatePacing:
         assert len(sleep_calls) == 2
         assert checker.crawl_delay_calls == [url1, url2]
 
-    def test_held_back_and_deduped_candidates_do_not_trigger_a_pause(self, monkeypatch, settings, make_draft, make_source):
+    def test_보류되거나_중복_제거된_후보는_일시정지를_유발하지_않는다(self, monkeypatch, settings, make_draft, make_source):
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
         make_source()
         url1 = "https://target.example.com/event-1"
@@ -581,7 +584,7 @@ class TestCandidatePacing:
 
 
 class TestRobotsCache:
-    def test_robots_txt_is_fetched_at_most_once_per_host_across_the_whole_run(self, monkeypatch, make_draft, make_source):
+    def test_robots_txt는_전체_실행에서_호스트당_최대_한_번만_페치된다(self, monkeypatch, make_draft, make_source):
         """Exception to the module's general mocking rule: uses the real
         RobotsChecker (not patched at the command import location), with
         only drafts.robots.fetch_html patched to count calls — this is what
@@ -625,9 +628,11 @@ class TestRobotsCache:
 
 class TestListingContentType:
     @pytest.mark.parametrize(
-        "source_type", [DraftSource.SourceType.RSS, DraftSource.SourceType.SITEMAP]
+        "source_type",
+        [DraftSource.SourceType.RSS, DraftSource.SourceType.SITEMAP],
+        ids=["RSS", "사이트맵"],
     )
-    def test_listing_fetch_opts_into_xml_content_types_for_rss_and_sitemap(self, monkeypatch, source_type, make_source):
+    def test_RSS와_사이트맵_리스팅_페치는_XML_content_type을_명시적으로_허용한다(self, monkeypatch, source_type, make_source):
         make_source(source_type=source_type)
         captured = {}
 

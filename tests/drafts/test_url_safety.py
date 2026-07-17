@@ -11,18 +11,24 @@ from drafts.url_safety import (
     validate_fetch_url,
 )
 
+pytestmark = pytest.mark.unit
+
 
 class TestSchemeAndHost:
-    @pytest.mark.parametrize("url", ["ftp://example.com", "file:///etc/passwd", "javascript:alert(1)"])
-    def test_non_http_scheme_rejected(self, url):
+    @pytest.mark.parametrize(
+        "url",
+        ["ftp://example.com", "file:///etc/passwd", "javascript:alert(1)"],
+        ids=["ftp_스킴", "file_스킴", "javascript_스킴"],
+    )
+    def test_http_https가_아닌_스킴은_거부된다(self, url):
         with pytest.raises(InvalidFetchUrlError):
             validate_fetch_url(url)
 
-    def test_missing_hostname_rejected(self):
+    def test_호스트명이_없는_URL은_거부된다(self):
         with pytest.raises(InvalidFetchUrlError):
             validate_fetch_url("http:///path-only")
 
-    def test_localhost_rejected(self):
+    def test_localhost는_거부된다(self):
         with pytest.raises(UnsafeFetchUrlError):
             validate_fetch_url("http://localhost/page")
 
@@ -38,25 +44,33 @@ class TestLiteralIp:
             "http://[::1]/",
             "http://0.0.0.0/",
         ],
+        ids=[
+            "루프백_127",
+            "사설망_10대",
+            "사설망_192대",
+            "클라우드_메타데이터_주소",
+            "IPv6_루프백",
+            "모든_주소_0000",
+        ],
     )
-    def test_private_or_special_ip_rejected(self, url):
+    def test_사설_또는_특수_리터럴_IP는_거부된다(self, url):
         with pytest.raises(UnsafeFetchUrlError):
             validate_fetch_url(url)
 
-    def test_public_ip_allowed(self):
+    def test_공인_리터럴_IP는_허용된다(self):
         # Returns None (no raise) for a public literal IP.
         assert validate_fetch_url("http://8.8.8.8/") is None
 
 
 class TestResolverPath:
-    def test_hostname_resolving_to_private_ip_rejected(self, fake_resolver):
+    def test_사설_IP로_해석되는_호스트명은_거부된다(self, fake_resolver):
         with pytest.raises(UnsafeFetchUrlError):
             validate_fetch_url(
                 "http://evil.example.com/",
                 resolver=fake_resolver("10.1.2.3"),
             )
 
-    def test_hostname_resolving_to_public_ip_allowed(self, fake_resolver):
+    def test_공인_IP로_해석되는_호스트명은_허용된다(self, fake_resolver):
         assert (
             validate_fetch_url(
                 "https://good.example.com/",
@@ -65,6 +79,6 @@ class TestResolverPath:
             is None
         )
 
-    def test_hostname_without_resolver_is_not_validated(self):
+    def test_리졸버를_전달하지_않으면_DNS_기반_검증을_건너뛴다(self):
         # With no resolver the DNS path is skipped (caller opts in to resolution).
         assert validate_fetch_url("https://unresolved.example.com/") is None
