@@ -12,6 +12,8 @@ import pytest
 from django.test import Client
 from rest_framework.test import APIClient
 
+pytestmark = pytest.mark.web
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -33,7 +35,7 @@ def _create_status(client, event, status_value="planned"):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_user_b_patch_on_user_a_status_returns_404(client, make_user, make_event):
+def test_다른_사용자의_일정_상태를_PATCH하면_404로_숨겨진다(client, make_user, make_event):
     """User B cannot PATCH user A's UserEventStatus — 404, not leaked."""
     user_a = make_user(username="idor-user-a")
     user_b = make_user(username="idor-user-b")
@@ -53,7 +55,7 @@ def test_user_b_patch_on_user_a_status_returns_404(client, make_user, make_event
 
 
 @pytest.mark.django_db
-def test_user_b_delete_on_user_a_status_returns_404(client, make_user, make_event):
+def test_다른_사용자의_일정_상태를_DELETE하면_404로_숨겨진다(client, make_user, make_event):
     """User B cannot DELETE user A's UserEventStatus — 404, not leaked."""
     user_a = make_user(username="idor-del-a")
     user_b = make_user(username="idor-del-b")
@@ -69,7 +71,7 @@ def test_user_b_delete_on_user_a_status_returns_404(client, make_user, make_even
 
 
 @pytest.mark.django_db
-def test_user_b_list_excludes_user_a_statuses(client, make_user, make_event):
+def test_일정_상태_목록_조회는_다른_사용자의_기록을_포함하지_않는다(client, make_user, make_event):
     """GET list for user B does not include user A's statuses."""
     user_a = make_user(username="list-user-a")
     user_b = make_user(username="list-user-b")
@@ -86,7 +88,7 @@ def test_user_b_list_excludes_user_a_statuses(client, make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_post_cannot_set_user_field_owner_is_requester(client, make_user, make_event):
+def test_일정_상태_생성_시_user_필드를_지정해도_소유자는_요청자로_고정된다(client, make_user, make_event):
     """POST body cannot override user; owner is always the authenticated requester."""
     user_a = make_user(username="post-user-a")
     user_b = make_user(username="post-user-b")
@@ -112,7 +114,7 @@ def test_post_cannot_set_user_field_owner_is_requester(client, make_user, make_e
 
 
 @pytest.mark.django_db
-def test_patch_cannot_change_event_field(client, make_user, make_event):
+def test_일정_상태_수정_시_event_필드_변경_요청은_무시된다(client, make_user, make_event):
     """PATCH with different event id is silently ignored (event is read-only on update)."""
     user = make_user(username="patch-event-user")
     event = make_event(title="Original Event")
@@ -138,7 +140,7 @@ def test_patch_cannot_change_event_field(client, make_user, make_event):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_anonymous_api_get_returns_403():
+def test_비로그인_사용자의_일정_상태_API_조회는_403으로_거부된다():
     """Anonymous GET to archive API returns 403 (DRF SessionAuthentication default)."""
     client = Client()
     response = client.get("/api/user-event-statuses/")
@@ -146,7 +148,7 @@ def test_anonymous_api_get_returns_403():
 
 
 @pytest.mark.django_db
-def test_anonymous_api_post_returns_403(make_event):
+def test_비로그인_사용자의_일정_상태_API_생성_요청은_403으로_거부된다(make_event):
     """Anonymous POST to archive API returns 403 (DRF SessionAuthentication default)."""
     event = make_event()
     client = Client()
@@ -159,7 +161,7 @@ def test_anonymous_api_post_returns_403(make_event):
 
 
 @pytest.mark.django_db
-def test_authenticated_post_without_csrf_returns_403(make_user, make_event):
+def test_CSRF_토큰_없이_일정_상태를_생성하면_403으로_거부된다(make_user, make_event):
     """
     Authenticated POST without CSRF header returns 403 because
     SessionAuthentication enforces CSRF for unsafe methods.
@@ -182,7 +184,7 @@ def test_authenticated_post_without_csrf_returns_403(make_user, make_event):
 
 
 @pytest.mark.django_db
-def test_authenticated_post_with_csrf_succeeds(client, make_user, make_event):
+def test_CSRF_토큰과_함께_일정_상태를_생성하면_201로_성공한다(client, make_user, make_event):
     """
     Authenticated POST with proper session + CSRF succeeds.
 
@@ -207,14 +209,14 @@ def test_authenticated_post_with_csrf_succeeds(client, make_user, make_event):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_registration_get_renders_form(client):
+def test_회원가입_페이지에_접근하면_가입_폼이_렌더링된다(client):
     """GET /accounts/signup/ returns 200."""
     response = client.get("/accounts/signup/")
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
-def test_valid_registration_does_not_log_in_before_verification(client, django_user_model, valid_password):
+def test_회원가입_직후에는_이메일_인증_전이라_로그인_상태가_되지_않는다(client, django_user_model, valid_password):
     """Signup creates an unverified user and does NOT grant a session yet."""
     response = client.post(
         "/accounts/signup/",
@@ -236,7 +238,7 @@ def test_valid_registration_does_not_log_in_before_verification(client, django_u
 
 
 @pytest.mark.django_db
-def test_confirming_email_logs_the_user_in(client, django_user_model, mailoutbox, valid_password):
+def test_이메일_인증_링크를_클릭하면_로그인_상태가_된다(client, django_user_model, mailoutbox, valid_password):
     """Clicking the emailed confirmation link authenticates the session."""
     client.post(
         "/accounts/signup/",
@@ -259,7 +261,7 @@ def test_confirming_email_logs_the_user_in(client, django_user_model, mailoutbox
 
 
 @pytest.mark.django_db
-def test_weak_password_rejected_by_validators(client, django_user_model):
+def test_취약한_비밀번호로_가입하면_거부되고_계정이_생성되지_않는다(client, django_user_model):
     """Weak password (all digits, too common) is rejected by AUTH_PASSWORD_VALIDATORS."""
     response = client.post(
         "/accounts/signup/",
@@ -276,7 +278,7 @@ def test_weak_password_rejected_by_validators(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_duplicate_email_rejected(client, django_user_model, mailoutbox, valid_password):
+def test_이미_가입된_이메일로_다시_가입해도_중복_계정이_생성되지_않는다(client, django_user_model, mailoutbox, valid_password):
     """Signing up with an existing email does not create a second account.
 
     django-allauth's default ACCOUNT_PREVENT_ENUMERATION=True responds with
@@ -306,7 +308,7 @@ def test_duplicate_email_rejected(client, django_user_model, mailoutbox, valid_p
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_anonymous_archive_redirects_to_login(client):
+def test_비로그인_사용자가_아카이브에_접근하면_next_파라미터와_함께_로그인_페이지로_리다이렉트된다(client):
     """Anonymous GET /archive/ → 302 to /accounts/login/?next=/archive/."""
     response = client.get("/archive/")
     assert response.status_code == 302
@@ -314,7 +316,7 @@ def test_anonymous_archive_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_anonymous_archive_statuses_redirects_to_login(client):
+def test_비로그인_사용자가_나의_일정_페이지에_접근하면_로그인_페이지로_리다이렉트된다(client):
     """Anonymous GET /archive/statuses/ → 302 to login."""
     response = client.get("/archive/statuses/")
     assert response.status_code == 302
@@ -322,7 +324,7 @@ def test_anonymous_archive_statuses_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_anonymous_archive_visits_redirects_to_login(client):
+def test_비로그인_사용자가_다녀온_기록_페이지에_접근하면_로그인_페이지로_리다이렉트된다(client):
     """Anonymous GET /archive/visits/ → 302 to login."""
     response = client.get("/archive/visits/")
     assert response.status_code == 302
@@ -330,7 +332,7 @@ def test_anonymous_archive_visits_redirects_to_login(client):
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_access_archive(client, make_user):
+def test_로그인_사용자는_아카이브_페이지에_접근할_수_있다(client, make_user):
     """Authenticated user GET /archive/ → 200."""
     user = make_user(username="archive-viewer")
     client.force_login(user)
@@ -343,7 +345,7 @@ def test_authenticated_user_can_access_archive(client, make_user):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_login_page_signup_link_preserves_next(client):
+def test_next_파라미터가_있는_로그인_페이지의_가입_링크는_next를_유지한다(client):
     """GET /accounts/login/?next=X renders a signup link carrying next=X."""
     response = client.get("/accounts/login/?next=/archive/")
     assert response.status_code == 200
@@ -351,7 +353,7 @@ def test_login_page_signup_link_preserves_next(client):
 
 
 @pytest.mark.django_db
-def test_signup_page_login_link_preserves_next(client):
+def test_next_파라미터가_있는_가입_페이지의_로그인_링크는_next를_유지한다(client):
     """GET /accounts/signup/?next=X renders a login link carrying next=X."""
     response = client.get("/accounts/signup/?next=/archive/")
     assert response.status_code == 200
@@ -359,7 +361,7 @@ def test_signup_page_login_link_preserves_next(client):
 
 
 @pytest.mark.django_db
-def test_login_page_signup_link_omits_next_when_absent(client):
+def test_next_파라미터가_없는_로그인_페이지의_가입_링크는_next_없이_생성된다(client):
     """GET /accounts/login/ without next renders a bare signup link."""
     response = client.get("/accounts/login/")
     assert response.status_code == 200

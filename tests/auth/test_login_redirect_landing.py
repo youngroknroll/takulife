@@ -4,9 +4,11 @@ product entry point), not /archive/.
 """
 import pytest
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_login_without_next_redirects_to_collection(client, make_verified_user, valid_password):
+def test_next_파라미터_없이_로그인하면_컬렉션_페이지로_리다이렉트된다(client, make_verified_user, valid_password):
     user = make_verified_user()
 
     response = client.post("/accounts/login/", {"login": user.email, "password": valid_password})

@@ -174,7 +174,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
   `1.2.3.4`인지 확인). `TRUSTED_PROXY_COUNT`를 프로덕션 값으로 올리기
   **전** 반드시 이 검증을 거친다.
 - axes 잠금과 프록시 IP 연동 자체는
-  `tests/auth/test_auth_lockout.py::test_axes_lockout_keys_by_forwarded_ip_behind_trusted_proxy`로
+  `tests/auth/test_auth_lockout.py::test_신뢰된_프록시_뒤에서는_공유_프록시_주소가_아닌_전달된_클라이언트_IP_기준으로_잠긴다`로
   자동화 검증돼 있다(같은 `REMOTE_ADDR`·다른 `X-Forwarded-For`의 실패
   로그인이 서로 다른 잠금 버킷으로 분리됨을 확인, 5회 연속 실행으로
   결정성 확인됨). 다만 이 테스트는 Django 테스트 클라이언트가 직접

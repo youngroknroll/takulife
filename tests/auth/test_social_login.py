@@ -30,8 +30,9 @@ _UNCONFIGURED_GOOGLE_PROVIDER = {
 }
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_login_page_shows_google_button_when_configured(client, settings):
+def test_구글_로그인이_설정되어_있으면_로그인_페이지에_구글_버튼이_노출된다(client, settings):
     """The login page links to the Google login flow once credentials exist."""
     settings.SOCIALACCOUNT_PROVIDERS = _CONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/login/")
@@ -39,8 +40,9 @@ def test_login_page_shows_google_button_when_configured(client, settings):
     assert GOOGLE_LOGIN_PATH in response.content.decode("utf-8", "ignore")
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_signup_page_shows_google_button_when_configured(client, settings):
+def test_구글_로그인이_설정되어_있으면_회원가입_페이지에_구글_버튼이_노출된다(client, settings):
     """The signup page also offers Google once credentials exist."""
     settings.SOCIALACCOUNT_PROVIDERS = _CONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/signup/")
@@ -48,8 +50,9 @@ def test_signup_page_shows_google_button_when_configured(client, settings):
     assert GOOGLE_LOGIN_PATH in response.content.decode("utf-8", "ignore")
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_login_page_hides_google_button_when_unconfigured(client, settings):
+def test_구글_로그인이_미설정이면_로그인_페이지에_구글_버튼이_노출되지_않는다(client, settings):
     """A blank client_id hides the button instead of showing a dead link."""
     settings.SOCIALACCOUNT_PROVIDERS = _UNCONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/login/")
@@ -57,8 +60,9 @@ def test_login_page_hides_google_button_when_unconfigured(client, settings):
     assert GOOGLE_LOGIN_PATH not in response.content.decode("utf-8", "ignore")
 
 
+@pytest.mark.web
 @pytest.mark.django_db
-def test_signup_page_hides_google_button_when_unconfigured(client, settings):
+def test_구글_로그인이_미설정이면_회원가입_페이지에_구글_버튼이_노출되지_않는다(client, settings):
     """A blank client_id hides the button instead of showing a dead link."""
     settings.SOCIALACCOUNT_PROVIDERS = _UNCONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/signup/")
@@ -66,14 +70,16 @@ def test_signup_page_hides_google_button_when_unconfigured(client, settings):
     assert GOOGLE_LOGIN_PATH not in response.content.decode("utf-8", "ignore")
 
 
-def test_google_provider_requests_email_scope(settings):
+@pytest.mark.contract
+def test_구글_provider_설정은_email_scope를_요청한다(settings):
     """Google is configured to request the email scope — without it allauth
     cannot obtain the verified address the linking policy relies on."""
     google = settings.SOCIALACCOUNT_PROVIDERS["google"]
     assert "email" in google["SCOPE"]
 
 
-def test_verified_email_linking_policy_is_enabled(settings):
+@pytest.mark.contract
+def test_구글_이메일_인증_계정연결_정책_설정이_활성화되어_있다(settings):
     """A Google login whose provider-verified email matches an existing local
     account must log into (and connect to) that account — the approved policy.
     Guarded here so it can't be silently disabled. Safe only because Google is

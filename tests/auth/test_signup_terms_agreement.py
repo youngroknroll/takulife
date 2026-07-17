@@ -5,11 +5,13 @@ from django.utils import timezone
 
 import pytest
 
+pytestmark = pytest.mark.web
+
 SIGNUP_URL = "/accounts/signup/"
 
 
 @pytest.mark.django_db
-def test_signup_without_terms_agreed_is_rejected(client, django_user_model, valid_password):
+def test_약관_동의_없이_회원가입하면_가입이_거부되고_사용자가_생성되지_않는다(client, django_user_model, valid_password):
     response = client.post(
         SIGNUP_URL,
         {
@@ -26,7 +28,7 @@ def test_signup_without_terms_agreed_is_rejected(client, django_user_model, vali
 
 
 @pytest.mark.django_db
-def test_signup_with_terms_agreed_creates_user_and_records_timestamp(
+def test_약관에_동의하고_회원가입하면_사용자가_생성되고_동의_시각이_기록된다(
     client, django_user_model, valid_password
 ):
     before = timezone.now()
@@ -48,7 +50,7 @@ def test_signup_with_terms_agreed_creates_user_and_records_timestamp(
 
 
 @pytest.mark.django_db
-def test_signup_page_renders_terms_agreement_checkbox(client):
+def test_회원가입_페이지는_약관_동의_체크박스를_렌더링한다(client):
     response = client.get(SIGNUP_URL)
 
     assert response.status_code == 200
@@ -57,7 +59,7 @@ def test_signup_page_renders_terms_agreement_checkbox(client):
 
 
 @pytest.mark.django_db
-def test_terms_agreement_label_links_to_named_legal_urls(client):
+def test_약관_동의_라벨은_이용약관과_개인정보처리방침_페이지로_연결된다(client):
     """The label's hrefs are derived from reverse_lazy (accounts/forms.py),
     not hardcoded strings — this guards against a future /legal/ route
     rename silently leaving a dead link on the signup page."""
