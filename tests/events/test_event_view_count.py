@@ -13,14 +13,18 @@ from events.models import Event
 
 @pytest.mark.django_db
 class TestViewCountDefault:
-    def test_new_event_has_view_count_zero(self, make_event):
+    pytestmark = pytest.mark.domain
+
+    def test_새로_생성된_행사의_조회수는_0이다(self, make_event):
         event = make_event()
         assert event.view_count == 0
 
 
 @pytest.mark.django_db
 class TestViewCountIncrement:
-    def test_two_detail_gets_increment_view_count_to_two(self, make_event):
+    pytestmark = pytest.mark.web
+
+    def test_행사_상세를_두_번_조회하면_조회수가_2로_증가한다(self, make_event):
         event = make_event()
         client = Client()
 
@@ -30,7 +34,7 @@ class TestViewCountIncrement:
         event.refresh_from_db()
         assert event.view_count == 2
 
-    def test_draft_detail_returns_404_and_does_not_increment(self, make_event):
+    def test_미게시_행사_상세_조회는_404를_반환하고_조회수를_증가시키지_않는다(self, make_event):
         event = make_event(publish_status=Event.PublishStatus.DRAFT)
         client = Client()
 

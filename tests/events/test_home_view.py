@@ -15,10 +15,12 @@ from django.test import Client
 
 from events.models import Event
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
 class TestHomeCategoryTiles:
-    def test_tiles_cover_every_category_in_vocab_order(self):
+    def test_홈_화면_카테고리_타일은_전체_카테고리를_어휘_순서대로_모두_포함한다(self):
         resp = Client().get("/")
 
         assert resp.status_code == 200
@@ -32,7 +34,7 @@ class TestHomeCategoryTiles:
             "fan_meeting",
         ]
 
-    def test_tile_counts_only_published_events_per_category(self, make_event):
+    def test_카테고리_타일_건수는_게시된_행사만_집계하고_초안은_제외한다(self, make_event):
         make_event(category="popup_store")
         make_event(category="popup_store")
         make_event(category="exhibition")
@@ -46,7 +48,7 @@ class TestHomeCategoryTiles:
         assert tiles["exhibition"]["count"] == 1
         assert tiles["collaboration_cafe"]["count"] == 0
 
-    def test_tiles_carry_korean_labels(self):
+    def test_카테고리_타일은_한글_라벨을_포함한다(self):
         resp = Client().get("/")
 
         tiles = {t["slug"]: t for t in resp.context["category_tiles"]}
@@ -79,28 +81,28 @@ class TestHomeContextCaps:
                 end_date=today + timedelta(days=i % 5 + 1),  # D+1 to D+5
             )
 
-    def test_ongoing_capped_at_15(self, make_event):
+    def test_진행중_행사가_15건을_넘으면_홈_화면에_15건까지만_노출된다(self, make_event):
         today = date(2026, 6, 26)
         self._make_ongoing(make_event, today, 16)
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["ongoing_rows"]) == 15
 
-    def test_recent_capped_at_15(self, make_event):
+    def test_신규_행사가_15건을_넘으면_홈_화면에_15건까지만_노출된다(self, make_event):
         today = date(2026, 6, 26)
         self._make_recent(make_event, 16)
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["recent_rows"]) == 15
 
-    def test_closing_capped_at_15(self, make_event):
+    def test_마감_임박_행사가_15건을_넘으면_홈_화면에_15건까지만_노출된다(self, make_event):
         today = date(2026, 6, 26)
         self._make_closing(make_event, today, 16)
         with patch("core.views.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["closing_rows"]) == 15
 
-    def test_all_empty_keys_present_as_empty_lists(self):
+    def test_행사가_전혀_없어도_홈_화면_섹션_리스트_키는_빈_리스트로_카테고리_타일_키는_값이_존재한다(self):
         resp = Client().get("/")
         assert resp.context["ongoing_rows"] == []
         assert resp.context["closing_rows"] == []
@@ -113,7 +115,7 @@ class TestHomeContextCaps:
 class TestHomeClosingWindow:
     """Home view uses a D-5 closing window (not the global D-4 window)."""
 
-    def test_event_ending_today_plus_5_appears_in_closing_rows(self, make_event):
+    def test_종료일이_오늘로부터_5일_후인_행사는_마감_임박_목록에_포함된다(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+5 closing",
@@ -125,7 +127,7 @@ class TestHomeClosingWindow:
         closing_ids = [row["event"].id for row in resp.context["closing_rows"]]
         assert event.id in closing_ids
 
-    def test_event_ending_today_plus_6_does_not_appear_in_closing_rows(self, make_event):
+    def test_종료일이_오늘로부터_6일_후인_행사는_마감_임박_목록에서_제외된다(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+6 not closing",
@@ -142,7 +144,7 @@ class TestHomeClosingWindow:
 class TestHomeSlidersDropEndedEvents:
     """Sliders hide events whose period has passed (end_date < today)."""
 
-    def test_ended_event_excluded_from_recent_rows(self, make_event):
+    def test_종료일이_지난_행사는_신규_행사_목록에서_제외되고_진행중인_행사는_유지된다(self, make_event):
         today = date(2026, 6, 26)
         ended = make_event(
             title="Ended",
@@ -160,7 +162,7 @@ class TestHomeSlidersDropEndedEvents:
         assert ended.id not in recent_ids
         assert live.id in recent_ids
 
-    def test_event_without_end_date_kept_in_recent_rows(self, make_event):
+    def test_종료일이_없는_행사는_신규_행사_목록에서_계속_유지된다(self, make_event):
         today = date(2026, 6, 26)
         no_dates = make_event(title="No dates")
         with patch("core.views.timezone.localdate", return_value=today):
@@ -180,7 +182,7 @@ class TestHomePosterSectionsAlwaysRenderSlider:
     hscroll-wrap markup regardless of row count; hscroll.js hides the arrows
     via visibility when there's nothing to scroll."""
 
-    def test_closing_section_renders_hscroll_wrap_with_few_rows(self, make_event):
+    def test_마감_임박_섹션은_행이_적어도_정적_그리드_대신_hscroll_슬라이더로_렌더링된다(self, make_event):
         today = date(2026, 6, 26)
         for i in range(3):
             make_event(
@@ -210,7 +212,7 @@ class TestHomeClosingStatusDivergence:
     accidental coupling.
     """
 
-    def test_d5_event_in_closing_rows_has_status_slug_ongoing(self, make_event):
+    def test_마감_임박_목록에_포함된_D플러스5_행사도_상태_슬러그는_진행중이다(self, make_event):
         today = date(2026, 6, 26)
         make_event(
             title="D+5 boundary",
@@ -242,14 +244,14 @@ class TestHomeCollectionSnapshotContext:
         "snapshot_active",
     )
 
-    def test_anonymous_response_has_no_snapshot_context_keys(self):
+    def test_비로그인_사용자의_홈_응답에는_컬렉션_스냅샷_컨텍스트_키가_없다(self):
         resp = Client().get("/")
 
         assert resp.status_code == 200
         for key in self.SNAPSHOT_KEYS:
             assert key not in resp.context
 
-    def test_anonymous_response_has_no_snapshot_markup(self):
+    def test_비로그인_사용자의_홈_응답에는_컬렉션_스냅샷_마크업이_전혀_포함되지_않는다(self):
         """§7-b-1: the template gates the whole panel behind {% if
         request.user.is_authenticated %} as a second, template-level
         defence beyond the context-key check above — an anonymous response
@@ -260,7 +262,7 @@ class TestHomeCollectionSnapshotContext:
         assert b"snapshot-panel" not in resp.content
         assert b"hscroll-snap" not in resp.content
 
-    def test_authenticated_response_has_snapshot_context_keys_owner_scoped(
+    def test_로그인_사용자의_홈_컬렉션_스냅샷은_본인_데이터만_담고_다른_사용자_데이터는_섞이지_않는다(
         self, make_user, make_event
     ):
         from archive.models import CollectionItem, UserEventStatus
@@ -304,7 +306,7 @@ class TestHomeCollectionSnapshotContext:
         assert resp.context["upcoming_planned"][0]["event"].id == upcoming_event.id
         assert "status_slug" in resp.context["upcoming_planned"][0]
 
-    def test_recent_goods_capped_at_5(self, make_user):
+    def test_보유_아이템이_5건을_넘으면_스냅샷_최근_굿즈는_5건까지만_노출된다(self, make_user):
         from archive.models import CollectionItem
 
         user = make_user()
@@ -317,7 +319,7 @@ class TestHomeCollectionSnapshotContext:
 
         assert len(resp.context["recent_goods"]) == 5
 
-    def test_unrecorded_capped_at_5(self, make_user, make_event):
+    def test_기록_미완성_행사가_5건을_넘으면_스냅샷에_5건까지만_노출된다(self, make_user, make_event):
         from archive.models import UserEventStatus
 
         user = make_user()
@@ -333,7 +335,7 @@ class TestHomeCollectionSnapshotContext:
 
         assert len(resp.context["unrecorded"]) == 5
 
-    def test_upcoming_planned_capped_at_4(self, make_user, make_event):
+    def test_다가오는_방문_예정_행사가_4건을_넘으면_스냅샷에_4건까지만_노출된다(self, make_user, make_event):
         from archive.models import UserEventStatus
 
         user = make_user()
@@ -353,7 +355,7 @@ class TestHomeCollectionSnapshotContext:
 
         assert len(resp.context["upcoming_planned"]) == 4
 
-    def test_snapshot_active_true_when_any_axis_has_data(self, make_user):
+    def test_보유는_없고_구하는_아이템만_있어도_컬렉션_스냅샷이_활성화된다(self, make_user):
         """snapshot_active is owned+wanted (H4) — deliberately different from
         mypage's collection_count, which counts owned only. A wanted-only
         collection (owned 0) must still activate the snapshot."""
@@ -368,7 +370,7 @@ class TestHomeCollectionSnapshotContext:
 
         assert resp.context["snapshot_active"] is True
 
-    def test_snapshot_active_false_when_all_axes_empty(self, make_user):
+    def test_컬렉션_방문_기록이_모두_비어있으면_스냅샷이_비활성화된다(self, make_user):
         user = make_user()
 
         client = Client()
@@ -377,7 +379,7 @@ class TestHomeCollectionSnapshotContext:
 
         assert resp.context["snapshot_active"] is False
 
-    def test_get_home_does_not_mutate_user_event_status_count_or_updated_at(
+    def test_홈_화면을_반복_조회해도_방문_예정_상태_레코드는_생성되거나_변경되지_않는다(
         self, make_user, make_event
     ):
         from archive.models import UserEventStatus

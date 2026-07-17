@@ -18,6 +18,8 @@ from events.image_validation import (
     validate_uploaded_image,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def _img_bytes(fmt="PNG", size=(10, 10), color=(255, 0, 0)):
     buf = io.BytesIO()
@@ -42,7 +44,7 @@ def _upload(content, name="photo.png", content_type="image/png"):
 
 
 class TestValidImage:
-    def test_valid_png_passes_as_a_still_valid_decodable_image(self):
+    def test_유효한_PNG는_형식과_크기를_유지한_채_통과한다(self):
         # The accept path now re-encodes to strip metadata, so the returned
         # file is a new object — assert it decodes back to the same format/
         # size rather than asserting object identity.
@@ -56,7 +58,7 @@ class TestValidImage:
 
 
 class TestExifStripping:
-    def test_gps_exif_is_stripped_from_uploaded_jpeg(self):
+    def test_업로드한_JPEG의_GPS_EXIF_정보는_제거된다(self):
         value = _upload(
             _jpeg_bytes_with_gps_exif(), name="photo.jpg", content_type="image/jpeg"
         )
@@ -69,7 +71,7 @@ class TestExifStripping:
         assert ExifTags.Base.GPSInfo not in result_exif
         assert not result_exif.get_ifd(ExifTags.IFD.GPSInfo)
 
-    def test_exif_orientation_is_baked_into_pixels_not_left_as_a_tag(self):
+    def test_EXIF_방향_태그는_픽셀_회전으로_반영되고_태그_자체는_남지_않는다(self):
         # orientation=6 ("rotate 90") on a 30x10 source must land as a
         # 10x30 image with no orientation tag left for a naive viewer to
         # apply a second time.
@@ -88,38 +90,42 @@ class TestExifStripping:
 
 
 class TestRejections:
-    def test_oversized_file_rejected(self):
+    def test_최대_크기를_초과한_파일은_업로드가_거부된다(self):
         big = b"\x89PNG\r\n" + b"0" * (MAX_IMAGE_SIZE_BYTES + 1)
         value = _upload(big, name="big.png")
         with pytest.raises(serializers.ValidationError):
             validate_uploaded_image(value)
 
-    @pytest.mark.parametrize("name", ["evil.svg", "sneaky.gif", "noext"])
-    def test_disallowed_extension_rejected(self, name):
+    @pytest.mark.parametrize(
+        "name",
+        ["evil.svg", "sneaky.gif", "noext"],
+        ids=["svg_확장자", "gif_확장자", "확장자_없음"],
+    )
+    def test_허용되지_않은_확장자는_업로드가_거부된다(self, name):
         value = _upload(_img_bytes("PNG"), name=name)
         with pytest.raises(serializers.ValidationError):
             validate_uploaded_image(value)
 
-    def test_non_image_content_rejected(self):
+    def test_이미지가_아닌_내용은_업로드가_거부된다(self):
         value = _upload(b"this is definitely not an image", name="fake.png")
         with pytest.raises(serializers.ValidationError):
             validate_uploaded_image(value)
 
-    def test_format_spoofed_with_allowed_extension_rejected(self):
+    def test_허용된_확장자로_위장한_다른_형식_이미지는_업로드가_거부된다(self):
         # Real GIF bytes behind a .png name: extension passes, decoded format
         # (GIF) is not in the allowlist → rejected.
         value = _upload(_img_bytes("GIF"), name="spoof.png")
         with pytest.raises(serializers.ValidationError):
             validate_uploaded_image(value)
 
-    def test_oversized_dimensions_rejected(self):
+    def test_한_축_크기가_최대_치수를_초과한_이미지는_업로드가_거부된다(self):
         # Over the per-axis cap but well under the pixel-bomb limit so it decodes.
         wide = _img_bytes("PNG", size=(MAX_IMAGE_DIMENSION_PX + 1, 10))
         value = _upload(wide, name="wide.png")
         with pytest.raises(serializers.ValidationError):
             validate_uploaded_image(value)
 
-    def test_reopen_failure_reports_dimension_error(self, monkeypatch):
+    def test_두번째_이미지_열기가_실패하면_치수_오류로_거부된다(self, monkeypatch):
         # The image passes verify() but the second open (to read dimensions)
         # fails — a corruption/TOCTOU guard. Simulate by failing the 2nd open.
         import unittest.mock

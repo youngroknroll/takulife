@@ -15,6 +15,8 @@ import secrets
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+pytestmark = pytest.mark.web
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -31,7 +33,7 @@ def _poster_url(pk):
 
 
 @pytest.mark.django_db
-def test_staff_upload_poster_returns_200_with_poster_url(staff_client, make_event, png_bytes, settings, tmp_path):
+def test_스태프가_포스터_이미지를_업로드하면_포스터_URL이_응답되고_행사에_저장된다(staff_client, make_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 
@@ -56,7 +58,7 @@ def test_staff_upload_poster_returns_200_with_poster_url(staff_client, make_even
 
 
 @pytest.mark.django_db
-def test_non_staff_upload_poster_returns_403(client, make_user, make_event, png_bytes, settings, tmp_path):
+def test_스태프가_아닌_로그인_사용자의_포스터_업로드는_403으로_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
@@ -76,7 +78,7 @@ def test_non_staff_upload_poster_returns_403(client, make_user, make_event, png_
 
 
 @pytest.mark.django_db
-def test_anonymous_upload_poster_returns_403(client, make_event, png_bytes, settings, tmp_path):
+def test_로그인하지_않은_사용자의_포스터_업로드는_401이_아닌_403으로_거부된다(client, make_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 
@@ -94,7 +96,7 @@ def test_anonymous_upload_poster_returns_403(client, make_event, png_bytes, sett
 
 
 @pytest.mark.django_db
-def test_upload_poster_nonexistent_event_returns_404(staff_client, png_bytes, settings, tmp_path):
+def test_존재하지_않는_행사에_포스터를_업로드하면_404를_반환한다(staff_client, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
 
     _, client = staff_client()
@@ -112,7 +114,7 @@ def test_upload_poster_nonexistent_event_returns_404(staff_client, png_bytes, se
 
 
 @pytest.mark.django_db
-def test_upload_poster_to_draft_event_returns_404(staff_client, make_draft_event, png_bytes, settings, tmp_path):
+def test_미게시_행사에_포스터를_업로드하면_404를_반환한다(staff_client, make_draft_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
     event = make_draft_event(title="Draft Event", official_url=f"https://example.com/draft-{secrets.token_hex(4)}")
 
@@ -131,7 +133,7 @@ def test_upload_poster_to_draft_event_returns_404(staff_client, make_draft_event
 
 
 @pytest.mark.django_db
-def test_upload_non_image_bytes_returns_400(staff_client, make_event, settings, tmp_path):
+def test_이미지가_아닌_바이트를_업로드하면_400과_함께_image_오류가_반환된다(staff_client, make_event, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 
@@ -151,7 +153,7 @@ def test_upload_non_image_bytes_returns_400(staff_client, make_event, settings, 
 
 
 @pytest.mark.django_db
-def test_staff_delete_poster_returns_204_and_clears_image(staff_client, make_event, png_bytes, settings, tmp_path):
+def test_스태프가_포스터를_삭제하면_204와_함께_이미지가_비워진다(staff_client, make_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 
@@ -176,7 +178,7 @@ def test_staff_delete_poster_returns_204_and_clears_image(staff_client, make_eve
 
 
 @pytest.mark.django_db
-def test_second_upload_replaces_first_poster(staff_client, make_event, png_bytes, settings, tmp_path):
+def test_포스터를_다시_업로드하면_기존_이미지가_새_이미지로_교체된다(staff_client, make_event, png_bytes, settings, tmp_path):
     settings.MEDIA_ROOT = str(tmp_path)
     event = make_event(official_url=f"https://example.com/{secrets.token_hex(4)}")
 

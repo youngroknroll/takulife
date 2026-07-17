@@ -17,8 +17,9 @@ from events.models import Event
 # derive_event_display
 # ---------------------------------------------------------------------------
 
+@pytest.mark.unit
 class TestDeriveEventDisplay:
-    def test_upcoming_status_and_dday(self):
+    def test_시작_예정일_전이면_상태는_예정이고_디데이는_시작까지_남은_일수다(self):
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -28,7 +29,7 @@ class TestDeriveEventDisplay:
         assert result["status"] == "upcoming"
         assert result["dday"] == 3  # days to start
 
-    def test_ongoing_status_and_dday(self):
+    def test_진행_기간_중이면_상태는_진행중이고_디데이는_종료까지_남은_일수다(self):
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -38,7 +39,7 @@ class TestDeriveEventDisplay:
         assert result["status"] == "ongoing"
         assert result["dday"] == 5  # days to end
 
-    def test_closing_soon_at_exactly_4_days(self):
+    def test_종료일이_4일_후면_마감임박_상태로_분류된다(self):
         """end_date == today + 4 days is exactly within the closing_soon window."""
         from events.presenters import derive_event_display
 
@@ -49,7 +50,7 @@ class TestDeriveEventDisplay:
         assert result["status"] == "closing_soon"
         assert result["dday"] == 4
 
-    def test_closing_soon_at_zero_days(self):
+    def test_종료일이_오늘이면_마감임박_상태로_분류된다(self):
         """end_date == today is also closing_soon (ends today)."""
         from events.presenters import derive_event_display
 
@@ -60,7 +61,7 @@ class TestDeriveEventDisplay:
         assert result["status"] == "closing_soon"
         assert result["dday"] == 0
 
-    def test_not_closing_soon_at_5_days(self):
+    def test_종료일이_5일_후면_마감임박이_아닌_진행중_상태로_분류된다(self):
         """end_date == today + 5 days is ongoing, NOT closing_soon."""
         from events.presenters import derive_event_display
 
@@ -71,7 +72,7 @@ class TestDeriveEventDisplay:
         assert result["status"] == "ongoing"
         assert result["dday"] == 5
 
-    def test_ended_status_and_no_dday(self):
+    def test_종료일이_지났으면_상태는_종료이고_디데이는_없다(self):
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -81,7 +82,7 @@ class TestDeriveEventDisplay:
         assert result["status"] == "ended"
         assert result["dday"] is None
 
-    def test_null_start_date_returns_none_status_and_dday(self):
+    def test_시작일이_없으면_상태와_디데이_모두_None이다(self):
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -91,7 +92,7 @@ class TestDeriveEventDisplay:
         assert result["status"] is None
         assert result["dday"] is None
 
-    def test_null_end_date_returns_none_status_and_dday(self):
+    def test_종료일이_없으면_상태와_디데이_모두_None이다(self):
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -101,7 +102,7 @@ class TestDeriveEventDisplay:
         assert result["status"] is None
         assert result["dday"] is None
 
-    def test_both_null_dates_returns_none_without_crash(self):
+    def test_시작일과_종료일이_모두_없어도_오류_없이_None을_반환한다(self):
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -111,7 +112,7 @@ class TestDeriveEventDisplay:
         assert result["status"] is None
         assert result["dday"] is None
 
-    def test_uses_today_default_when_not_provided(self):
+    def test_기준일을_생략해도_결과_딕셔너리를_반환한다(self):
         """When today is not provided, the function still returns a result dict."""
         from events.presenters import derive_event_display
 
@@ -121,7 +122,7 @@ class TestDeriveEventDisplay:
         assert "status" in result
         assert "dday" in result
 
-    def test_returns_dict_with_required_keys(self):
+    def test_반환값에는_상태와_디데이_키가_모두_포함된다(self):
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -136,9 +137,10 @@ class TestDeriveEventDisplay:
 # most_viewed queryset method
 # ---------------------------------------------------------------------------
 
+@pytest.mark.domain
 @pytest.mark.django_db
 class TestMostViewed:
-    def test_returns_events_ordered_by_view_count_descending(self, make_event):
+    def test_조회수_내림차순으로_행사를_정렬해_반환한다(self, make_event):
         low = make_event(title="Low")
         high = make_event(title="High")
         mid = make_event(title="Mid")
@@ -152,14 +154,14 @@ class TestMostViewed:
         assert ids.index(high.id) < ids.index(mid.id)
         assert ids.index(mid.id) < ids.index(low.id)
 
-    def test_returns_at_most_limit_events(self, make_event):
+    def test_지정한_limit_개수를_넘지_않게_반환한다(self, make_event):
         for i in range(7):
             make_event(title=f"Event {i}")
 
         result = list(Event.objects.published().most_viewed(5))
         assert len(result) <= 5
 
-    def test_excludes_draft_events(self, make_event):
+    def test_조회수가_높아도_초안_행사는_제외한다(self, make_event):
         published = make_event(title="Published")
         draft = make_event(title="Draft", publish_status=Event.PublishStatus.DRAFT)
         Event.objects.filter(pk=draft.pk).update(view_count=999)
@@ -169,7 +171,7 @@ class TestMostViewed:
         assert draft.id not in ids
         assert published.id in ids
 
-    def test_equal_view_count_tiebreaks_by_id_descending(self, make_event):
+    def test_조회수가_같으면_id_내림차순으로_정렬한다(self, make_event):
         first = make_event(title="First")
         second = make_event(title="Second")
 
@@ -184,6 +186,7 @@ class TestMostViewed:
 # EventQuerySet.ending_within_days
 # ---------------------------------------------------------------------------
 
+@pytest.mark.domain
 @pytest.mark.django_db
 class TestEndingWithinDays:
     """Behavior tests for EventQuerySet.ending_within_days(days, today=today).
@@ -192,7 +195,7 @@ class TestEndingWithinDays:
     (inclusive) and today+days (inclusive), ordered soonest-first.
     """
 
-    def test_end_date_today_plus_5_is_included(self, make_event):
+    def test_종료일이_오늘로부터_5일_후면_포함된다(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+5",
@@ -202,7 +205,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id in list(qs.values_list("id", flat=True))
 
-    def test_end_date_today_plus_6_is_excluded(self, make_event):
+    def test_종료일이_오늘로부터_6일_후면_제외된다(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+6",
@@ -212,7 +215,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id not in list(qs.values_list("id", flat=True))
 
-    def test_end_date_today_is_included(self, make_event):
+    def test_종료일이_오늘이면_포함된다(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="D+0",
@@ -222,7 +225,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id in list(qs.values_list("id", flat=True))
 
-    def test_end_date_yesterday_is_excluded(self, make_event):
+    def test_종료일이_어제면_제외된다(self, make_event):
         today = date(2026, 6, 26)
         event = make_event(
             title="Ended yesterday",
@@ -232,7 +235,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id not in list(qs.values_list("id", flat=True))
 
-    def test_upcoming_event_within_window_is_excluded(self, make_event):
+    def test_아직_시작하지_않은_행사는_종료일이_창_안에_있어도_제외된다(self, make_event):
         """start_date > today means the event has not started yet; must be excluded."""
         today = date(2026, 6, 26)
         event = make_event(
@@ -243,7 +246,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id not in list(qs.values_list("id", flat=True))
 
-    def test_draft_within_window_is_excluded(self, make_event):
+    def test_초안_행사는_종료일이_창_안에_있어도_제외된다(self, make_event):
         """Draft events must not appear even if end_date is within the window."""
         today = date(2026, 6, 26)
         event = make_event(
@@ -255,7 +258,7 @@ class TestEndingWithinDays:
         qs = Event.objects.published().ending_within_days(5, today=today)
         assert event.id not in list(qs.values_list("id", flat=True))
 
-    def test_ordering_is_by_end_date_ascending(self, make_event):
+    def test_종료일_오름차순으로_정렬한다(self, make_event):
         today = date(2026, 6, 26)
         later = make_event(
             title="Later",
@@ -282,9 +285,10 @@ class TestEndingWithinDays:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
 class TestListStaffEvents:
-    def test_no_filters_returns_all_events_regardless_of_publish_status(
+    def test_필터가_없으면_게시_상태와_무관하게_모든_행사를_반환한다(
         self, make_event, make_draft_event
     ):
         from events.queries import list_staff_events
@@ -297,7 +301,7 @@ class TestListStaffEvents:
         ids = {e.id for e in result}
         assert ids == {published.id, draft.id}
 
-    def test_ordered_by_created_at_descending(self, make_event):
+    def test_생성일_내림차순으로_정렬한다(self, make_event):
         from events.queries import list_staff_events
 
         older = make_event(title="older")
@@ -307,7 +311,7 @@ class TestListStaffEvents:
 
         assert [e.id for e in result] == [newer.id, older.id]
 
-    def test_publish_status_filter_restricts_to_that_status(
+    def test_게시_상태_필터를_지정하면_해당_상태의_행사만_반환한다(
         self, make_event, make_draft_event
     ):
         from events.queries import list_staff_events
@@ -320,7 +324,7 @@ class TestListStaffEvents:
 
         assert [e.id for e in result] == [published.id]
 
-    def test_unknown_publish_status_is_ignored(self, make_event):
+    def test_알_수_없는_게시_상태_필터는_무시하고_전체를_반환한다(self, make_event):
         from events.queries import list_staff_events
 
         event = make_event(official_url="https://example.com/a")
@@ -343,8 +347,9 @@ class TestListStaffEvents:
             ),
             ("missing_region", {"official_url": "https://example.com/region", "region": ""}),
         ],
+        ids=["공식_URL_누락", "날짜_누락", "지역_누락"],
     )
-    def test_warning_filter_matches_matching_event_and_excludes_clean_event(
+    def test_경고_필터는_해당_경고에_해당하는_행사만_포함하고_정상_행사는_제외한다(
         self, make_event, warning, setup_kwargs
     ):
         from events.queries import list_staff_events
@@ -363,7 +368,7 @@ class TestListStaffEvents:
         assert matching.id in ids
         assert clean.id not in ids
 
-    def test_missing_poster_warning_matches_matching_event_and_excludes_clean_event(
+    def test_포스터_누락_경고_필터는_포스터_없는_행사만_포함하고_있는_행사는_제외한다(
         self, make_event, png_bytes, settings, tmp_path
     ):
         from django.core.files.uploadedfile import SimpleUploadedFile
@@ -384,7 +389,7 @@ class TestListStaffEvents:
         assert matching.id in ids
         assert clean.id not in ids
 
-    def test_ended_still_published_warning_uses_today_override(self, make_event):
+    def test_종료됐지만_게시중_경고_필터는_기준일_인자_기준으로_판정한다(self, make_event):
         from events.queries import list_staff_events
 
         today = date(2020, 6, 15)
@@ -403,7 +408,7 @@ class TestListStaffEvents:
         assert ended.id in ids
         assert not_ended.id not in ids
 
-    def test_warning_filter_excludes_draft_events_even_if_matching(
+    def test_경고_조건에_맞아도_초안_행사는_경고_필터_결과에서_제외된다(
         self, make_draft_event
     ):
         """Warning drilldowns are published-scoped, matching count_published_*."""
@@ -415,7 +420,7 @@ class TestListStaffEvents:
 
         assert list(result) == []
 
-    def test_unknown_warning_is_ignored(self, make_event, make_draft_event):
+    def test_알_수_없는_경고_필터는_무시하고_전체를_반환한다(self, make_event, make_draft_event):
         from events.queries import list_staff_events
 
         published = make_event(official_url="https://example.com/a")
@@ -426,7 +431,7 @@ class TestListStaffEvents:
         ids = {e.id for e in result}
         assert ids == {published.id, draft.id}
 
-    def test_warning_count_matches_count_published_function(self, make_event, make_draft_event):
+    def test_경고_필터_결과_건수는_대시보드_집계_함수의_값과_일치한다(self, make_event, make_draft_event):
         """Drilldown row count must equal the dashboard's count_published_* value."""
         from events.queries import count_published_missing_region, list_staff_events
 

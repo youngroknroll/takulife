@@ -16,21 +16,23 @@ from events.services import (
     update_published_event,
 )
 
+pytestmark = pytest.mark.domain
+
 
 @pytest.mark.django_db
-def test_create_published_event_rejects_none_official_url():
+def test_공식_url이_None이면_행사_게시를_거부한다():
     with pytest.raises(MissingOfficialUrlError):
         create_published_event(title="Event", official_url=None)
 
 
 @pytest.mark.django_db
-def test_create_published_event_rejects_blank_official_url():
+def test_공식_url이_공백이면_행사_게시를_거부한다():
     with pytest.raises(MissingOfficialUrlError):
         create_published_event(title="Event", official_url="   ")
 
 
 @pytest.mark.django_db
-def test_create_published_event_creates_published_event_with_official_url():
+def test_공식_url을_제공하면_게시_상태로_행사를_생성한다():
     event = create_published_event(title="Event", official_url="https://example.com/event")
 
     assert event.publish_status == Event.PublishStatus.PUBLISHED
@@ -38,7 +40,7 @@ def test_create_published_event_creates_published_event_with_official_url():
 
 
 @pytest.mark.django_db
-def test_create_published_event_maps_duplicate_url_to_domain_error(make_event):
+def test_이미_사용중인_공식_url로_생성하면_중복_오류가_발생한다(make_event):
     make_event(
         title="Existing event",
         official_url="https://example.com/event",
@@ -50,7 +52,7 @@ def test_create_published_event_maps_duplicate_url_to_domain_error(make_event):
 
 
 @pytest.mark.django_db
-def test_create_published_event_maps_unexpected_error_to_publish_event_error(monkeypatch):
+def test_예상치_못한_오류는_PublishEventError로_변환된다(monkeypatch):
     def raise_runtime_error(**kwargs):
         raise RuntimeError("database unavailable")
 
@@ -61,7 +63,7 @@ def test_create_published_event_maps_unexpected_error_to_publish_event_error(mon
 
 
 @pytest.mark.django_db
-def test_create_published_event_rejects_inverted_period():
+def test_시작일이_종료일보다_늦으면_행사_게시를_거부한다():
     with pytest.raises(InvalidEventPeriodError):
         create_published_event(
             title="Event",
@@ -71,16 +73,16 @@ def test_create_published_event_rejects_inverted_period():
         )
 
 
-def test_invalid_event_period_error_is_a_publish_event_error():
+def test_InvalidEventPeriodError는_PublishEventError의_하위_타입이다():
     assert issubclass(InvalidEventPeriodError, PublishEventError)
 
 
-def test_publish_event_title_error_is_a_publish_event_error():
+def test_PublishEventTitleError는_PublishEventError의_하위_타입이다():
     assert issubclass(PublishEventTitleError, PublishEventError)
 
 
 @pytest.mark.django_db
-def test_create_published_event_allows_equal_start_and_end_date():
+def test_시작일과_종료일이_같으면_행사_게시를_허용한다():
     event = create_published_event(
         title="Event",
         official_url="https://example.com/same-day",
@@ -92,7 +94,7 @@ def test_create_published_event_allows_equal_start_and_end_date():
 
 
 @pytest.mark.django_db
-def test_create_published_event_allows_start_date_without_end_date():
+def test_종료일_없이_시작일만_있어도_행사_게시를_허용한다():
     event = create_published_event(
         title="Event",
         official_url="https://example.com/open-ended",
@@ -104,7 +106,7 @@ def test_create_published_event_allows_start_date_without_end_date():
 
 
 @pytest.mark.django_db
-def test_create_published_event_rejects_blank_title():
+def test_제목이_빈_문자열이면_행사_게시를_거부하고_행을_생성하지_않는다():
     with pytest.raises(PublishEventTitleError):
         create_published_event(title="", official_url="https://example.com/blank-title")
 
@@ -112,7 +114,7 @@ def test_create_published_event_rejects_blank_title():
 
 
 @pytest.mark.django_db
-def test_create_published_event_rejects_whitespace_only_title():
+def test_제목이_공백만_있으면_행사_게시를_거부하고_행을_생성하지_않는다():
     with pytest.raises(PublishEventTitleError):
         create_published_event(title="   ", official_url="https://example.com/whitespace-title")
 
@@ -120,7 +122,7 @@ def test_create_published_event_rejects_whitespace_only_title():
 
 
 @pytest.mark.django_db
-def test_create_published_event_rejects_title_equal_to_official_url():
+def test_제목이_공식_url과_동일하면_행사_게시를_거부하고_행을_생성하지_않는다():
     with pytest.raises(PublishEventTitleError):
         create_published_event(
             title="https://example.com/matching-title",
@@ -131,7 +133,7 @@ def test_create_published_event_rejects_title_equal_to_official_url():
 
 
 @pytest.mark.django_db
-def test_create_published_event_rejects_title_matching_official_url_with_trailing_slash_difference():
+def test_제목과_공식_url이_슬래시_유무만_다르면_행사_게시를_거부한다():
     with pytest.raises(PublishEventTitleError):
         create_published_event(
             title="https://example.com/slash-title/",
@@ -148,7 +150,7 @@ def test_create_published_event_rejects_title_matching_official_url_with_trailin
 
 
 @pytest.mark.django_db
-def test_create_published_event_allows_title_differing_only_by_case_from_official_url():
+def test_제목이_공식_url과_대소문자만_다르면_행사_게시를_허용한다():
     event = create_published_event(
         title="HTTPS://EXAMPLE.COM/case-title",
         official_url="https://example.com/case-title",
@@ -164,7 +166,7 @@ def test_create_published_event_allows_title_differing_only_by_case_from_officia
 
 
 @pytest.mark.django_db
-def test_update_published_event_updates_fields():
+def test_행사_수정을_요청하면_전달한_필드가_모두_갱신된다():
     event = create_published_event(title="Original", official_url="https://example.com/original")
 
     updated = update_published_event(
@@ -198,7 +200,7 @@ def test_update_published_event_updates_fields():
 
 
 @pytest.mark.django_db
-def test_update_published_event_allows_saving_with_unchanged_official_url():
+def test_공식_url을_그대로_유지한_채_저장하면_수정을_허용한다():
     event = create_published_event(title="Event", official_url="https://example.com/self")
 
     updated = update_published_event(
@@ -212,7 +214,7 @@ def test_update_published_event_allows_saving_with_unchanged_official_url():
 
 
 @pytest.mark.django_db
-def test_update_published_event_rejects_blank_official_url():
+def test_공식_url을_공백으로_수정하면_거부하고_기존_값을_유지한다():
     event = create_published_event(title="Event", official_url="https://example.com/blank-target")
 
     with pytest.raises(MissingOfficialUrlError):
@@ -223,7 +225,7 @@ def test_update_published_event_rejects_blank_official_url():
 
 
 @pytest.mark.django_db
-def test_update_published_event_rejects_blank_title():
+def test_제목을_공백으로_수정하면_거부하고_기존_값을_유지한다():
     event = create_published_event(title="Event", official_url="https://example.com/blank-title-target")
 
     with pytest.raises(PublishEventTitleError):
@@ -234,7 +236,7 @@ def test_update_published_event_rejects_blank_title():
 
 
 @pytest.mark.django_db
-def test_update_published_event_rejects_inverted_period():
+def test_수정_시_시작일이_종료일보다_늦으면_거부하고_원래_상태를_유지한다():
     event = create_published_event(title="Event", official_url="https://example.com/period-target")
 
     with pytest.raises(InvalidEventPeriodError):
@@ -252,7 +254,7 @@ def test_update_published_event_rejects_inverted_period():
 
 
 @pytest.mark.django_db
-def test_update_published_event_rejects_duplicate_official_url_from_other_event():
+def test_다른_행사가_사용중인_공식_url로_수정하면_거부하고_기존_값을_유지한다():
     create_published_event(title="Other event", official_url="https://example.com/taken")
     event = create_published_event(title="Event", official_url="https://example.com/mine")
 
@@ -264,7 +266,7 @@ def test_update_published_event_rejects_duplicate_official_url_from_other_event(
 
 
 @pytest.mark.django_db
-def test_update_published_event_maps_unexpected_error_to_publish_event_error(monkeypatch):
+def test_수정_중_예상치_못한_오류는_PublishEventError로_변환된다(monkeypatch):
     event = create_published_event(title="Event", official_url="https://example.com/unexpected")
 
     def raise_runtime_error(*args, **kwargs):
@@ -282,7 +284,7 @@ def test_update_published_event_maps_unexpected_error_to_publish_event_error(mon
 
 
 @pytest.mark.django_db
-def test_unpublish_event_moves_published_event_to_draft():
+def test_게시_취소를_요청하면_행사가_초안_상태로_전환된다():
     event = create_published_event(title="Event", official_url="https://example.com/unpublish-me")
 
     unpublish_event(event=event)
@@ -292,7 +294,7 @@ def test_unpublish_event_moves_published_event_to_draft():
 
 
 @pytest.mark.django_db
-def test_republish_event_moves_draft_event_back_to_published():
+def test_재게시를_요청하면_초안_행사가_다시_게시_상태로_전환된다():
     event = create_published_event(title="Event", official_url="https://example.com/republish-me")
     unpublish_event(event=event)
     event.refresh_from_db()
@@ -304,7 +306,7 @@ def test_republish_event_moves_draft_event_back_to_published():
 
 
 @pytest.mark.django_db
-def test_republish_event_rejects_event_with_blank_title():
+def test_제목이_공백인_초안_행사는_재게시를_거부하고_초안_상태를_유지한다():
     event = create_published_event(title="Event", official_url="https://example.com/broken-republish")
     unpublish_event(event=event)
     event.title = "   "
@@ -318,7 +320,7 @@ def test_republish_event_rejects_event_with_blank_title():
 
 
 @pytest.mark.django_db
-def test_republish_event_rejects_event_with_missing_official_url():
+def test_공식_url이_없는_초안_행사는_재게시를_거부하고_초안_상태를_유지한다():
     event = create_published_event(title="Event", official_url="https://example.com/broken-republish-url")
     unpublish_event(event=event)
     event.official_url = ""
@@ -338,7 +340,7 @@ def test_republish_event_rejects_event_with_missing_official_url():
 
 
 @pytest.mark.django_db
-def test_hard_delete_event_deletes_the_event_row():
+def test_영구_삭제를_요청하면_행사_행이_삭제된다():
     event = create_published_event(title="Event", official_url="https://example.com/delete-me")
     pk = event.pk
 
@@ -348,7 +350,7 @@ def test_hard_delete_event_deletes_the_event_row():
 
 
 @pytest.mark.django_db
-def test_hard_delete_event_cleans_up_poster_file(tmp_path, settings):
+def test_영구_삭제를_요청하면_포스터_파일도_함께_삭제된다(tmp_path, settings):
     from django.core.files.uploadedfile import SimpleUploadedFile
 
     settings.MEDIA_ROOT = tmp_path

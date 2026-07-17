@@ -16,8 +16,9 @@ from events.models import Event
 # parse_public_listing_params
 # ---------------------------------------------------------------------------
 
+@pytest.mark.unit
 class TestParsePublicListingParams:
-    def test_accepts_all_allowed_fields(self):
+    def test_허용된_모든_필드를_받아들여_파싱한다(self):
         from events.queries import parse_public_listing_params
 
         raw = {
@@ -39,7 +40,7 @@ class TestParsePublicListingParams:
         assert result["start_date_to"] == date(2026, 6, 30)
         assert result["status"] == "upcoming"
 
-    def test_collects_multiple_region_and_category_values(self):
+    def test_지역과_카테고리는_여러_값을_리스트로_모은다(self):
         from django.http import QueryDict
         from events.queries import parse_public_listing_params
 
@@ -50,7 +51,7 @@ class TestParsePublicListingParams:
         assert result["region"] == ["seoul", "gyeonggi"]
         assert result["category"] == ["popup_store", "exhibition"]
 
-    def test_drops_unknown_keys(self):
+    def test_알_수_없는_키는_결과에서_제외한다(self):
         from events.queries import parse_public_listing_params
 
         raw = {"q": "popup", "unknown_key": "should_be_dropped", "another": "also_dropped"}
@@ -59,14 +60,14 @@ class TestParsePublicListingParams:
         assert "another" not in result
         assert result["q"] == "popup"
 
-    def test_drops_page_key(self):
+    def test_페이지_번호_키는_결과에서_제외한다(self):
         from events.queries import parse_public_listing_params
 
         raw = {"page": "2", "q": "test"}
         result = parse_public_listing_params(raw)
         assert "page" not in result
 
-    def test_validates_status_choice(self):
+    def test_잘못된_상태_값은_거부한다(self):
         from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
 
@@ -74,7 +75,7 @@ class TestParsePublicListingParams:
             parse_public_listing_params({"status": "invalid_status"})
         assert "status" in str(exc_info.value.detail)
 
-    def test_rejects_bad_date_format(self):
+    def test_잘못된_형식의_시작일_이후_값을_거부한다(self):
         from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
 
@@ -82,7 +83,7 @@ class TestParsePublicListingParams:
             parse_public_listing_params({"start_date_from": "2026/06/01"})
         assert "start_date_from" in str(exc_info.value.detail)
 
-    def test_rejects_bad_start_date_to_format(self):
+    def test_잘못된_형식의_시작일_이전_값을_거부한다(self):
         from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
 
@@ -90,7 +91,7 @@ class TestParsePublicListingParams:
             parse_public_listing_params({"start_date_to": "06-01-2026"})
         assert "start_date_to" in str(exc_info.value.detail)
 
-    def test_ignores_blank_string_for_q(self):
+    def test_검색어_빈_문자열은_유효한_값으로_받아들인다(self):
         from events.queries import parse_public_listing_params
 
         result = parse_public_listing_params({"q": ""})
@@ -99,31 +100,31 @@ class TestParsePublicListingParams:
         # The querysets.py filter_for_public_listing skips blank values via truthiness check.
         assert result.get("q", "") == ""
 
-    def test_ignores_blank_string_for_region(self):
+    def test_지역_빈_문자열은_유효한_값으로_받아들인다(self):
         from events.queries import parse_public_listing_params
 
         result = parse_public_listing_params({"region": ""})
         assert result.get("region", "") == ""
 
-    def test_ignores_blank_string_for_category(self):
+    def test_카테고리_빈_문자열은_유효한_값으로_받아들인다(self):
         from events.queries import parse_public_listing_params
 
         result = parse_public_listing_params({"category": ""})
         assert result.get("category", "") == ""
 
-    def test_ignores_blank_string_for_work_title(self):
+    def test_원작_빈_문자열은_유효한_값으로_받아들인다(self):
         from events.queries import parse_public_listing_params
 
         result = parse_public_listing_params({"work_title": ""})
         assert result.get("work_title", "") == ""
 
-    def test_empty_params_returns_empty_dict(self):
+    def test_빈_파라미터는_빈_딕셔너리를_반환한다(self):
         from events.queries import parse_public_listing_params
 
         result = parse_public_listing_params({})
         assert result == {}
 
-    def test_accepts_dict_like_mapping(self):
+    def test_DRF_QueryDict이_아닌_일반_딕셔너리도_받아들인다(self):
         """Should accept any Mapping, not just DRF QueryDict."""
         from events.queries import parse_public_listing_params
 
@@ -131,13 +132,13 @@ class TestParsePublicListingParams:
         result = parse_public_listing_params(raw)
         assert result["q"] == "test"
 
-    def test_accepts_sort_choice(self):
+    def test_정렬_값을_받아들인다(self):
         from events.queries import parse_public_listing_params
 
         result = parse_public_listing_params({"sort": "closing_soon"})
         assert result["sort"] == "closing_soon"
 
-    def test_rejects_invalid_sort_choice(self):
+    def test_잘못된_정렬_값은_거부한다(self):
         from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
 
@@ -150,9 +151,10 @@ class TestParsePublicListingParams:
 # list_published_events
 # ---------------------------------------------------------------------------
 
+@pytest.mark.domain
 @pytest.mark.django_db
 class TestListPublishedEvents:
-    def test_returns_only_published_events(self, make_event):
+    def test_게시된_행사만_반환한다(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -164,7 +166,7 @@ class TestListPublishedEvents:
         assert published.id in ids
         assert len(ids) == 1
 
-    def test_filters_by_status_upcoming(self, make_event):
+    def test_상태_필터_예정으로_거르면_예정_행사만_반환한다(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -183,7 +185,7 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert [upcoming.id] == ids
 
-    def test_filters_by_status_ongoing(self, make_event):
+    def test_상태_필터_진행중으로_거르면_진행중_행사만_반환한다(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -203,7 +205,7 @@ class TestListPublishedEvents:
         assert ongoing.id in ids
         assert len(ids) == 1
 
-    def test_default_order_ongoing_then_upcoming_then_ended(self, make_event):
+    def test_기본_정렬은_진행중_예정_종료_순이다(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -228,7 +230,7 @@ class TestListPublishedEvents:
         assert ids.index(ongoing.id) < ids.index(upcoming.id)
         assert ids.index(upcoming.id) < ids.index(ended.id)
 
-    def test_uses_today_default_via_localdate_when_not_provided(self, make_event):
+    def test_기준일을_생략해도_결과를_반환한다(self, make_event):
         """When today is omitted, the function still returns a queryset."""
         from events.queries import list_published_events
 
@@ -236,10 +238,10 @@ class TestListPublishedEvents:
         qs = list_published_events({})
         assert qs.count() == 1
 
-    def test_sort_closing_soon_orders_not_ended_events_first_ascending_nulls_last(self, make_event):
+    def test_마감임박_정렬은_종료되지_않은_행사를_종료일_오름차순으로_먼저_배치하고_날짜_없는_행사는_그_뒤에_둔다(self, make_event):
         """Closing-soon sort ranks not-yet-ended events (end_date null or >= today)
         first, soonest-ending first (nulls last). Already-ended events are pushed
-        to the back — see test_sort_closing_soon_never_surfaces_ended_event_at_top
+        to the back — see test_마감임박_정렬에서_이미_종료된_행사는_진행중_행사보다_앞에_오지_않는다
         for the regression this guards against."""
         from events.queries import list_published_events
 
@@ -265,7 +267,7 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert ids == [ongoing.id, upcoming.id, no_end.id, ended.id]
 
-    def test_sort_closing_soon_never_surfaces_ended_event_at_top(self, make_event):
+    def test_마감임박_정렬에서_이미_종료된_행사는_진행중_행사보다_앞에_오지_않는다(self, make_event):
         """Regression guard: an event that ended long ago (smallest end_date)
         must never rank above a currently-ongoing event under closing_soon sort."""
         from events.queries import list_published_events
@@ -287,7 +289,7 @@ class TestListPublishedEvents:
         assert ids[0] == ongoing.id
         assert ids.index(ongoing.id) < ids.index(long_ended.id)
 
-    def test_sort_closing_soon_ended_group_orders_most_recently_ended_first(self, make_event):
+    def test_마감임박_정렬의_종료된_그룹_안에서는_최근_종료된_행사가_먼저_온다(self, make_event):
         """Within the already-ended group, most-recently-ended sorts first."""
         from events.queries import list_published_events
 
@@ -307,7 +309,7 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert ids == [ended_recently.id, ended_long_ago.id]
 
-    def test_sort_closing_soon_tiebreaks_by_id(self, make_event):
+    def test_마감임박_정렬에서_종료일이_같으면_id_오름차순으로_정렬한다(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -319,7 +321,7 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert ids.index(first.id) < ids.index(second.id)
 
-    def test_sort_start_asc_orders_by_start_date_ascending(self, make_event):
+    def test_시작일_오름차순_정렬은_상태와_무관하게_시작일_순으로만_배치한다(self, make_event):
         """start_asc sort must order purely by start_date, ignoring the default
         ongoing/upcoming/ended state ranking (ended has the earliest start_date
         here but ranks last under the default order_for_public_listing)."""
@@ -346,7 +348,7 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert ids == [ended.id, ongoing.id, upcoming.id]
 
-    def test_sort_start_asc_tiebreaks_by_id(self, make_event):
+    def test_시작일_오름차순_정렬에서_시작일이_같으면_id_오름차순으로_정렬한다(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -358,7 +360,7 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert ids.index(first.id) < ids.index(second.id)
 
-    def test_sort_newest_orders_by_id_descending(self, make_event):
+    def test_최신순_정렬은_id_내림차순으로_배치한다(self, make_event):
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -369,7 +371,7 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert ids == [second.id, first.id]
 
-    def test_no_sort_param_keeps_default_ordering(self, make_event):
+    def test_정렬_파라미터를_생략하면_기본_정렬을_유지한다(self, make_event):
         """Regression guard: omitting sort must not change the existing default order."""
         from events.queries import list_published_events
 
@@ -404,8 +406,9 @@ class TestListPublishedEvents:
 # PUBLIC_LISTING_PAGE_SIZE constant
 # ---------------------------------------------------------------------------
 
+@pytest.mark.unit
 class TestPublicListingPageSize:
-    def test_page_size_constant_is_10(self):
+    def test_공개_목록_페이지_크기는_10건이다(self):
         from events.queries import PUBLIC_LISTING_PAGE_SIZE
 
         assert PUBLIC_LISTING_PAGE_SIZE == 10
@@ -416,9 +419,10 @@ class TestPublicListingPageSize:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.domain
 @pytest.mark.django_db
 class TestWithPublicStatus:
-    def test_with_public_status_ended(self, make_event):
+    def test_종료_상태_필터는_종료된_행사만_포함한다(self, make_event):
         today = date(2026, 7, 1)
         ended = make_event(
             title="끝난 행사",
@@ -436,7 +440,7 @@ class TestWithPublicStatus:
         assert ended in result
         assert ongoing not in result
 
-    def test_with_public_status_unknown_returns_unfiltered(self, make_event):
+    def test_알_수_없는_상태_필터는_전체_행사를_그대로_반환한다(self, make_event):
         today = date(2026, 7, 1)
         make_event(title="아무 행사")
         qs = Event.objects.published()

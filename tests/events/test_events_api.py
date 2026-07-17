@@ -4,16 +4,18 @@ from django.utils import timezone
 
 from events.models import Event
 
+pytestmark = pytest.mark.web
+
 
 @pytest.mark.django_db
-def test_public_event_list_is_available(client):
+def test_공개_행사_목록_API는_응답한다(client):
     response = client.get("/api/events/")
 
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
-def test_public_event_list_returns_only_published_events(client, make_event):
+def test_공개_행사_목록은_게시된_행사만_반환한다(client, make_event):
     published = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
     make_event(title="Draft event", publish_status=Event.PublishStatus.DRAFT)
 
@@ -25,7 +27,7 @@ def test_public_event_list_returns_only_published_events(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_detail_returns_published_event(client, make_event):
+def test_공개_행사_상세는_게시된_행사_정보를_반환한다(client, make_event):
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get(f"/api/events/{event.id}/")
@@ -36,7 +38,7 @@ def test_public_event_detail_returns_published_event(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_detail_hides_unpublished_event(client, make_event):
+def test_공개_행사_상세는_게시되지_않은_행사를_404로_숨긴다(client, make_event):
     event = make_event(title="Draft event", publish_status=Event.PublishStatus.DRAFT)
 
     response = client.get(f"/api/events/{event.id}/")
@@ -45,7 +47,7 @@ def test_public_event_detail_hides_unpublished_event(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_q(client, make_event):
+def test_공개_행사_목록은_검색어로_필터링된다(client, make_event):
     matching = make_event(title="Seoul popup event", publish_status=Event.PublishStatus.PUBLISHED)
     make_event(title="Busan cafe event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -56,7 +58,7 @@ def test_public_event_list_filters_by_q(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_region(client, make_event):
+def test_공개_행사_목록은_지역으로_필터링된다(client, make_event):
     matching = make_event(
         title="Seoul event",
         region="seoul",
@@ -75,7 +77,7 @@ def test_public_event_list_filters_by_region(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_category(client, make_event):
+def test_공개_행사_목록은_카테고리로_필터링된다(client, make_event):
     matching = make_event(
         title="Popup event",
         category="popup_store",
@@ -94,7 +96,7 @@ def test_public_event_list_filters_by_category(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_combines_q_region_and_category_filters(client, make_event):
+def test_공개_행사_목록은_검색어_지역_카테고리_필터를_동시에_적용한다(client, make_event):
     matching = make_event(
         title="Seoul popup event",
         category="popup_store",
@@ -124,7 +126,7 @@ def test_public_event_list_combines_q_region_and_category_filters(client, make_e
 
 
 @pytest.mark.django_db
-def test_public_event_response_uses_category_and_hides_publish_status(client, make_event):
+def test_공개_행사_응답은_카테고리를_포함하고_게시_상태는_숨긴다(client, make_event):
     event = make_event(
         title="Popup event",
         category="popup_store",
@@ -140,7 +142,7 @@ def test_public_event_response_uses_category_and_hides_publish_status(client, ma
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_start_date_from(client, make_event):
+def test_공개_행사_목록은_시작일_이후_조건으로_필터링된다(client, make_event):
     matching = make_event(
         title="June event",
         start_date="2026-06-01",
@@ -159,7 +161,7 @@ def test_public_event_list_filters_by_start_date_from(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_start_date_to(client, make_event):
+def test_공개_행사_목록은_시작일_이전_조건으로_필터링된다(client, make_event):
     matching = make_event(
         title="May event",
         start_date="2026-05-31",
@@ -178,7 +180,7 @@ def test_public_event_list_filters_by_start_date_to(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_status_upcoming_ongoing_ended(client, make_event):
+def test_공개_행사_목록은_상태_필터로_예정_진행중_종료_행사를_구분해_반환한다(client, make_event):
     today = timezone.localdate()
     upcoming = make_event(
         title="Upcoming event",
@@ -212,7 +214,7 @@ def test_public_event_list_filters_by_status_upcoming_ongoing_ended(client, make
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_status_closing_soon(client, make_event):
+def test_공개_행사_목록은_마감임박_상태_필터로_5일_이내_종료_행사만_반환한다(client, make_event):
     today = timezone.localdate()
     closing_today = make_event(
         title="Closing today",
@@ -255,7 +257,7 @@ def test_public_event_list_filters_by_status_closing_soon(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_rejects_invalid_status_filter(client, make_event):
+def test_공개_행사_목록은_잘못된_상태_필터값을_거부한다(client, make_event):
     first = make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
     second = make_event(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -266,7 +268,7 @@ def test_public_event_list_rejects_invalid_status_filter(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_accepts_blank_status_filter(client, make_event):
+def test_공개_행사_목록은_빈_상태_필터값을_무시하고_전체를_반환한다(client, make_event):
     matching = make_event(title="Listed", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"status": ""})
@@ -276,7 +278,7 @@ def test_public_event_list_accepts_blank_status_filter(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_multiple_regions(client, make_event):
+def test_공개_행사_목록은_여러_지역_값을_동시에_필터링한다(client, make_event):
     seoul = make_event(
         title="Seoul", region="seoul", publish_status=Event.PublishStatus.PUBLISHED
     )
@@ -295,7 +297,7 @@ def test_public_event_list_filters_by_multiple_regions(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_filters_by_category_work_title_and_start_date_range(client, make_event):
+def test_공개_행사_목록은_카테고리_원작_시작일_범위_필터를_함께_적용한다(client, make_event):
     matching = make_event(
         title="June popup",
         category="popup_store",
@@ -340,7 +342,7 @@ def test_public_event_list_filters_by_category_work_title_and_start_date_range(c
 
 
 @pytest.mark.django_db
-def test_public_event_list_reversed_start_date_range_returns_empty_results(client, make_event):
+def test_공개_행사_목록은_시작일_범위가_역순이면_빈_결과를_반환한다(client, make_event):
     make_event(
         title="June event",
         start_date="2026-06-10",
@@ -357,7 +359,7 @@ def test_public_event_list_reversed_start_date_range_returns_empty_results(clien
 
 
 @pytest.mark.django_db
-def test_public_event_list_rejects_invalid_start_date_from(client, make_event):
+def test_공개_행사_목록은_잘못된_형식의_시작일_이후_조건을_거부한다(client, make_event):
     make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"start_date_from": "2026/06/01"})
@@ -367,7 +369,7 @@ def test_public_event_list_rejects_invalid_start_date_from(client, make_event):
 
 
 @pytest.mark.django_db
-def test_public_event_list_rejects_invalid_start_date_to(client, make_event):
+def test_공개_행사_목록은_잘못된_형식의_시작일_이전_조건을_거부한다(client, make_event):
     make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"start_date_to": "2026/06/30"})
@@ -376,9 +378,13 @@ def test_public_event_list_rejects_invalid_start_date_to(client, make_event):
     assert "start_date_to" in response.json()
 
 
-@pytest.mark.parametrize("query_param", ["q", "region", "category", "work_title"])
+@pytest.mark.parametrize(
+    "query_param",
+    ["q", "region", "category", "work_title"],
+    ids=["검색어", "지역", "카테고리", "원작"],
+)
 @pytest.mark.django_db
-def test_public_event_list_ignores_blank_documented_string_filters(client, query_param, make_event):
+def test_공개_행사_목록은_빈_문자열_필터값을_무시하고_전체를_반환한다(client, query_param, make_event):
     first = make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
     second = make_event(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -389,7 +395,7 @@ def test_public_event_list_ignores_blank_documented_string_filters(client, query
 
 
 @pytest.mark.django_db
-def test_public_event_list_default_order_prioritizes_ongoing_then_upcoming_then_ended(client, make_event):
+def test_공개_행사_목록_기본_정렬은_진행중_예정_종료_순으로_행사를_배치한다(client, make_event):
     today = timezone.localdate()
     ended_old = make_event(
         title="Ended long ago",
@@ -442,7 +448,7 @@ def test_public_event_list_default_order_prioritizes_ongoing_then_upcoming_then_
 
 
 @pytest.mark.django_db
-def test_public_event_list_places_null_date_events_after_ranked_events(client, make_event):
+def test_공개_행사_목록_기본_정렬은_날짜_없는_행사를_맨_뒤에_배치한다(client, make_event):
     today = timezone.localdate()
     null_date = make_event(
         title="Undated event",
