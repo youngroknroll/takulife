@@ -82,3 +82,10 @@ class TestResolverPath:
     def test_리졸버를_전달하지_않으면_DNS_기반_검증을_건너뛴다(self):
         # With no resolver the DNS path is skipped (caller opts in to resolution).
         assert validate_fetch_url("https://unresolved.example.com/") is None
+
+    def test_호스트명이_루프백_주소로_해석되면_URL_검증이_거부한다(self):
+        def resolve_loopback(_hostname, _port, type):
+            return [(2, type, 6, "", ("127.0.0.1", 0))]
+
+        with pytest.raises(UnsafeFetchUrlError):
+            validate_fetch_url("https://public.example/event", resolver=resolve_loopback)

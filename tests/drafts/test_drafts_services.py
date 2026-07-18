@@ -22,7 +22,7 @@ from drafts.services import (
     reject_draft,
     update_draft,
 )
-from drafts.url_safety import UnsafeFetchUrlError, validate_fetch_url
+from drafts.url_safety import validate_fetch_url
 from events.models import Event
 
 pytestmark = pytest.mark.domain
@@ -204,14 +204,6 @@ def test_리다이렉트_대상이_비공개_IP면_드래프트_생성이_거부
 
     with pytest.raises(DraftCreationUnsafeUrlError):
         create_draft_from_url(source_url="https://example.com/event")
-
-
-def test_호스트명이_루프백_주소로_해석되면_URL_검증이_거부한다():
-    def resolve_loopback(_hostname, _port, type):
-        return [(2, type, 6, "", ("127.0.0.1", 0))]
-
-    with pytest.raises(UnsafeFetchUrlError):
-        validate_fetch_url("https://public.example/event", resolver=resolve_loopback)
 
 
 def test_응답_크기가_초과되면_스트림을_끝까지_읽지_않고_즉시_거부한다(monkeypatch):
