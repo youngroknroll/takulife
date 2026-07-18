@@ -13,6 +13,7 @@ from archive.services import (
     create_collection_item,
     create_personal_entry,
     create_user_event_status,
+    create_visit_record,
     create_visit_record_photo,
     update_collection_item,
 )
@@ -319,6 +320,55 @@ def test_서로_다른_사용자가_같은_클라이언트_토큰으로_컬렉�
     assert CollectionItem.objects.filter(client_token=token).count() == 2
     assert CollectionItem.objects.filter(user=user_a, client_token=token).count() == 1
     assert CollectionItem.objects.filter(user=user_b, client_token=token).count() == 1
+
+
+# ---------------------------------------------------------------------------
+# create_visit_record (bfcache idempotency)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_같은_사용자가_같은_클라이언트_토큰으로_방문_기록_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(
+    make_user, make_event
+):
+    """bfcache duplicate-creation track (INTG-BE-01-VR): a user replaying the
+    same create-visit-record request with the same client_token (e.g. a
+    bfcache-restored page re-submitting a stale form) must not create a
+    second row — the second call must be an idempotent replay that returns
+    the original row untouched, not a second create with the replay's own
+    field values. Mirrors the CollectionItem idempotency guard
+    (INTG-BE-01-CI) already in place above."""
+    user = make_user(username="vr-service-idempotent-token")
+    event = make_event(title="멱등성 확인 이벤트")
+    token = uuid.uuid4()
+
+    # Given: no VisitRecord owned by this user with this token yet.
+    assert not VisitRecord.objects.filter(user=user, client_token=token).exists()
+
+    # When: the same user submits the same client_token twice, with a
+    # different short_review on the second (replayed) call.
+    first = create_visit_record(
+        user=user,
+        event=event,
+        visited_on="2026-01-01",
+        short_review="원래 리뷰",
+        client_token=token,
+    )
+    second = create_visit_record(
+        user=user,
+        event=event,
+        visited_on="2026-01-01",
+        short_review="다른 리뷰",
+        client_token=token,
+    )
+
+    # Then: exactly one row exists, both calls return the same row, and the
+    # replay's payload did not overwrite the original short_review.
+    assert VisitRecord.objects.filter(user=user, client_token=token).count() == 1
+    assert first.id == second.id
+    first.refresh_from_db()
+    assert first.short_review == "원래 리뷰"
 
 
 # ---------------------------------------------------------------------------
