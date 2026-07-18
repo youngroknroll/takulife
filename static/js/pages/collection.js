@@ -272,9 +272,12 @@
 
           if (result.status === 204) {
             if (onEditPage) {
-              window.location.assign(LIST_URL);
+              window.TakuAPI.commitAndNavigate(btn, LIST_URL);
             } else {
-              window.location.reload();
+              // List-card delete reload-equivalent: destination is the
+              // current URL (WED §5-2 boundary ③ — same fidelity as the
+              // reload it replaces, query string included).
+              window.TakuAPI.commitAndNavigate(btn, window.location.href);
             }
             return;
           }

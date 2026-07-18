@@ -38,8 +38,8 @@
  *   #draft-action-error  — shown inline on approve/reject failure
  *
  * Success:
- *   Create  → window.location.reload()
- *   Edit    → window.location.reload()
+ *   Create  → TakuAPI.commitAndNavigate(현재 URL — reload 등가)
+ *   Edit    → TakuAPI.commitAndNavigate(현재 URL — reload 등가)
  *   Approve → show event_id link + "목록으로 돌아가기" link in
  *             #draft-approve-success (stays visible, no reload); both
  *             review buttons are disabled to block resubmission
@@ -120,7 +120,9 @@
       }).then(function (result) {
         window.TakuAPI.setLoading(submitBtn, false);
         if (result.ok) {
-          window.location.reload();
+          // Reload-equivalent: destination is the current URL (WED §5-2
+          // boundary ③ — same fidelity as the reload it replaces).
+          window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
           return;
         }
         if (result.status === 403) {
@@ -200,7 +202,9 @@
         function (result) {
           window.TakuAPI.setLoading(submitBtn, false);
           if (result.ok) {
-            window.location.reload();
+            // Reload-equivalent: destination is the current URL (WED §5-2
+            // boundary ③ — same fidelity as the reload it replaces).
+            window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
             return;
           }
           if (result.status === 403) {

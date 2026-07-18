@@ -377,7 +377,7 @@
 
         var result = await window.TakuAPI.del("/api/visit-records/" + recordId + "/");
         if (result.status === 204) {
-          window.location.assign(VISITS_URL);
+          window.TakuAPI.commitAndNavigate(deleteBtn, VISITS_URL);
           return;
         }
 
