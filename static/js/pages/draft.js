@@ -118,13 +118,17 @@
         source_url: sourceUrl,
         source_name: sourceName,
       }).then(function (result) {
-        window.TakuAPI.setLoading(submitBtn, false);
         if (result.ok) {
           // Reload-equivalent: destination is the current URL (WED §5-2
           // boundary ③ — same fidelity as the reload it replaces).
+          // submitBtn is deliberately left in-flight (.is-loading intact)
+          // instead of setLoading(false) here — it must still be found by
+          // api.js's pageshow marker scan on a bfcache restore for the
+          // forced-forward branch to fire.
           window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
           return;
         }
+        window.TakuAPI.setLoading(submitBtn, false);
         if (result.status === 403) {
           showError(errorEl, CSRF_OR_SESSION_MSG);
           return;
@@ -200,13 +204,17 @@
 
       window.TakuAPI.patch("/api/event-drafts/" + draftId + "/", payload).then(
         function (result) {
-          window.TakuAPI.setLoading(submitBtn, false);
           if (result.ok) {
             // Reload-equivalent: destination is the current URL (WED §5-2
             // boundary ③ — same fidelity as the reload it replaces).
+            // submitBtn is deliberately left in-flight (.is-loading intact)
+            // instead of setLoading(false) here — it must still be found by
+            // api.js's pageshow marker scan on a bfcache restore for the
+            // forced-forward branch to fire.
             window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
             return;
           }
+          window.TakuAPI.setLoading(submitBtn, false);
           if (result.status === 403) {
             showError(errorEl, CSRF_OR_SESSION_MSG);
             return;
@@ -313,11 +321,15 @@
         "/staff/drafts/" + draftId + "/reject/",
         { rejection_reason: rejectionReason }
       ).then(function (result) {
-        window.TakuAPI.setLoading(btn, false);
         if (result.ok) {
+          // btn is deliberately left in-flight (.is-loading intact) instead
+          // of setLoading(false) here — it must still be found by api.js's
+          // pageshow marker scan on a bfcache restore for the forced-forward
+          // branch to fire.
           window.TakuAPI.commitAndNavigate(btn, listUrl);
           return;
         }
+        window.TakuAPI.setLoading(btn, false);
         if (result.status === 403) {
           showError(errorEl, CSRF_OR_SESSION_MSG);
           return;
