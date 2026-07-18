@@ -81,11 +81,12 @@
   }
 
   // Shared field collection for create/edit — every editable text/number/
-  // checkbox field except image (handled separately by the caller) and
+  // checkbox field except image (handled separately by the caller),
   // visit_record (create-only; the edit form never renders a writable
-  // visit_record control, per core/views.py's FK-pair invariant).
+  // visit_record control, per core/views.py's FK-pair invariant), and
+  // client_token (create-only for the same reason — see below).
   function collectSharedFields(form) {
-    return {
+    var fields = {
       name: form.elements["name"].value.trim(),
       quantity: parseIntOrDefault(form.elements["quantity"].value, 0),
       tradeable_quantity: parseIntOrDefault(form.elements["tradeable_quantity"].value, 0),
@@ -96,6 +97,20 @@
       item_type: form.elements["item_type"].value.trim(),
       acquisition_source: form.elements["acquisition_source"].value.trim(),
     };
+    // client_token exists only as a hidden input on the create form
+    // (collection_create.html, SSR-issued uuid4 for idempotency replay,
+    // DAR §5-1) — the edit form renders no such control. This existence
+    // guard is what keeps the token out of PATCH payloads on the edit
+    // path; a PATCH-side replay isn't a supported idempotency case here.
+    // Also require a non-empty value: an empty string would still pass an
+    // existence-only guard and serialize as client_token: "", which the
+    // serializer's UUIDField rejects with 400 — turning a missing/stale
+    // template context into a hard create failure instead of a silent
+    // fallback. Empty value → send no token (degrades to pre-token
+    // behavior, avoids the 400).
+    var clientTokenEl = form.elements["client_token"];
+    if (clientTokenEl && clientTokenEl.value) { fields.client_token = clientTokenEl.value; }
+    return fields;
   }
 
   function buildFormData(fields, imageFile) {
@@ -160,7 +175,7 @@
         : await window.TakuAPI.post("/api/collection-items/", fields);
 
       if (result.status === 201) {
-        window.location.assign(LIST_URL);
+        window.TakuAPI.commitAndNavigate(submitBtn, LIST_URL);
         return;
       }
 
@@ -329,7 +344,7 @@
         : await window.TakuAPI.patch("/api/collection-items/" + itemId + "/", fields);
 
       if (result.status === 200) {
-        window.location.assign(LIST_URL);
+        window.TakuAPI.commitAndNavigate(submitBtn, LIST_URL);
         return;
       }
 

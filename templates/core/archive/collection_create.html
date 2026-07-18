@@ -20,6 +20,7 @@
         <h2>새 항목</h2>
 
         <form id="collection-create-form" class="create-form" novalidate>
+          <input type="hidden" name="client_token" value="{{ client_token }}">
           <div class="form-group">
             <label for="collection-name">이름</label>
             <input id="collection-name" type="text" name="name" maxlength="255" required placeholder="예: 유메 아크릴 스탠드">

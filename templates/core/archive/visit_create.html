@@ -24,6 +24,7 @@
         <p class="panel-note">대상과 방문 날짜는 필수, 메모와 사진은 선택입니다.</p>
 
         <form id="visit-create-form" class="create-form" novalidate>
+          <input type="hidden" name="client_token" value="{{ client_token }}">
           {% if preselect %}
             {% comment %}Subject locked: arrived from a specific item's 기록 button. JS reads
                the hidden input's value exactly like the select.{% endcomment %}

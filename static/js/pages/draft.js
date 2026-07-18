@@ -311,7 +311,7 @@
       ).then(function (result) {
         window.TakuAPI.setLoading(btn, false);
         if (result.ok) {
-          window.location.assign(listUrl);
+          window.TakuAPI.commitAndNavigate(btn, listUrl);
           return;
         }
         if (result.status === 403) {
