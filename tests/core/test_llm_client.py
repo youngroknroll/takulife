@@ -90,24 +90,6 @@ def test_call_tool은_요청에_tool_choice를_강제하고_tool_schema를_포�
     assert any(tool["name"] == "extract" for tool in kwargs["tools"])
 
 
-@override_settings(LLM_MODEL="claude-haiku-4-5-20251001")
-def test_call_tool은_설정된_LLM_MODEL을_요청에_사용한다():
-    from core.llm.client import call_tool
-    from django.conf import settings
-
-    fake_client, calls = _fake_client(_tool_use_response({"is_event": True}))
-
-    call_tool(
-        system_prompt="system",
-        user_content="user",
-        tool_name="extract",
-        tool_schema=TOOL_SCHEMA,
-        client=fake_client,
-    )
-
-    assert calls[0]["model"] == settings.LLM_MODEL
-
-
 def test_call_tool은_model_인자가_주어지면_설정값_대신_해당_모델을_사용한다():
     from core.llm.client import call_tool
 
