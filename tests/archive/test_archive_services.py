@@ -1,4 +1,6 @@
 """Archive service-layer tests — direct service calls, no HTTP."""
+import uuid
+
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -250,6 +252,33 @@ def test_공개범위를_지정하지_않고_생성하면_기본값은_비공개
     item = create_collection_item(user=user, name="기본 공개범위 확인")
 
     assert item.visibility == "private"
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_같은_사용자가_같은_클라이언트_토큰으로_컬렉션_항목_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-01-CI): a user replaying the
+    same create request with the same client_token (e.g. bfcache-restored
+    page re-submitting a stale form) must not create a second row — the
+    second call must be an idempotent replay that returns the original row
+    untouched, not a second create with the replay's own field values."""
+    user = make_user(username="ci-service-idempotent-token")
+    token = uuid.uuid4()
+
+    # Given: no CollectionItem owned by this user yet.
+    assert not CollectionItem.objects.filter(user=user, client_token=token).exists()
+
+    # When: the same user submits the same client_token twice, with
+    # different field values on the second (replayed) call.
+    first = create_collection_item(user=user, name="원래 이름", client_token=token)
+    second = create_collection_item(user=user, name="다른 이름", client_token=token)
+
+    # Then: exactly one row exists, both calls return the same row, and the
+    # replay's payload did not overwrite the original name.
+    assert CollectionItem.objects.filter(user=user, client_token=token).count() == 1
+    assert first.id == second.id
+    first.refresh_from_db()
+    assert first.name == "원래 이름"
 
 
 # ---------------------------------------------------------------------------

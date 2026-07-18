@@ -170,7 +170,7 @@ def revert_to_planned(*, user_event_status):
     return user_event_status
 
 
-def create_collection_item(*, user, name, visit_record=None, event=None, **fields):
+def create_collection_item(*, user, name, visit_record=None, event=None, client_token=None, **fields):
     """Create a user-owned goods collection item.
 
     When `visit_record` is supplied, `event` is always synced from
@@ -185,6 +185,17 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
     — the DB CheckConstraints are the source of truth, this is the
     service-level half of the plan's declared "model constraint +
     application service" double guard (§3-1), not a replacement for them.
+
+    `client_token` is a client-supplied idempotency key (bfcache duplicate
+    creation fix): a replayed submission with the same (user, client_token)
+    hits the UniqueConstraint and is treated as "already created" rather than
+    a second item — the existing row is looked up and returned as-is (never
+    overwritten with the replay's field values) *before* any of the
+    analytics calls below run, so a replay is exactly-once for both the row
+    and its analytics events, not just the row. The replay lookup runs
+    *outside* the atomic block: catching inside it would query on an
+    already-aborted transaction (PostgreSQL forbids further statements until
+    the savepoint rolls back on exit).
     """
     quantity = fields.get("quantity", CollectionItem._meta.get_field("quantity").default)
     tradeable_quantity = fields.get(
@@ -207,9 +218,20 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
             )
         event = visit_record.event
 
-    item = CollectionItem.objects.create(
-        user=user, name=name, visit_record=visit_record, event=event, **fields
-    )
+    try:
+        with transaction.atomic():
+            item = CollectionItem.objects.create(
+                user=user,
+                name=name,
+                visit_record=visit_record,
+                event=event,
+                client_token=client_token,
+                **fields,
+            )
+    except IntegrityError:
+        if client_token is None:
+            raise
+        return CollectionItem.objects.get(user=user, client_token=client_token)
     record_event(
         AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED,
         user=user,
