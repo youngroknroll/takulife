@@ -193,6 +193,47 @@ def test_같은_클라이언트_토큰으로_방문_기록_생성_POST를_두_�
 
 
 # ---------------------------------------------------------------------------
+# INTG-BE-05-VR (bfcache duplicate-creation plan §6, verification boundary
+# "web/slow") — mirrors INTG-BE-05-CI in
+# tests/archive/test_collection_items_api.py: the create endpoint must cap
+# flood-style repeated POSTs with a 30/minute scoped throttle, distinct from
+# the client_token idempotency guard above. Reuses one event across all 30
+# creates (multiple visits per event are allowed, proven above) so the
+# throttle — not a business-rule rejection — is what stops the 31st request.
+# GET (list) must stay unaffected.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_방문_기록_생성_요청이_설정된_한도를_초과하면_429로_제한된다(client, make_user, make_event):
+    user = make_user()
+    event = make_event()
+    client.force_login(user)
+
+    # 30/minute budget: 30 creates succeed, the 31st is throttled.
+    for i in range(30):
+        response = client.post(
+            "/api/visit-records/",
+            {"event": event.id, "visited_on": "2026-05-26"},
+            content_type="application/json",
+        )
+        assert response.status_code == 201, f"create {i} should succeed"
+
+    throttled = client.post(
+        "/api/visit-records/",
+        {"event": event.id, "visited_on": "2026-05-26"},
+        content_type="application/json",
+    )
+
+    assert throttled.status_code == 429
+    assert VisitRecord.objects.count() == 30
+
+    listed = client.get("/api/visit-records/")
+    assert listed.status_code == 200
+
+
+# ---------------------------------------------------------------------------
 # VisitRecord list (GET /api/visit-records/)
 # ---------------------------------------------------------------------------
 

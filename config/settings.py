@@ -507,6 +507,9 @@ SUPPORT_EMAIL = _get_env("SUPPORT_EMAIL", "support@takulife.example")
 # DRF: rate-limit 공식 제보 (promotion) so an authenticated user cannot flood the
 # admin review queue with promoted PersonalEntry drafts. Scoped throttle only —
 # applied per-view (PromotePersonalEntryView), so other endpoints are unaffected.
+# collection_item_create / visit_record_create: a manual form can never reach
+# 30/minute — the cap only stops bfcache-style duplicate-submit bursts and
+# spam floods, not normal use.
 REST_FRAMEWORK = {
     # Session auth only — the app is browser/session based. Dropping the DRF
     # default BasicAuthentication closes a CSRF-bypass hole: Basic-authenticated
@@ -517,6 +520,8 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "promotion": "20/day",
+        "collection_item_create": "30/minute",
+        "visit_record_create": "30/minute",
     },
 }
 

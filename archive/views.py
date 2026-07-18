@@ -7,6 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import (
@@ -224,6 +225,15 @@ class VisitRecordListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = VisitRecordSerializer
     pagination_class = VisitRecordPagination
+    throttle_scope = "visit_record_create"
+
+    def get_throttles(self):
+        # ScopedRateThrottle applies to the whole view, so scope it to the
+        # write path only — a creation flood guard must not also throttle
+        # the list (GET) path.
+        if self.request.method == "POST":
+            return [ScopedRateThrottle()]
+        return []
 
     def get_queryset(self):
         return (
@@ -320,6 +330,15 @@ class CollectionItemListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CollectionItemSerializer
     pagination_class = CollectionItemPagination
+    throttle_scope = "collection_item_create"
+
+    def get_throttles(self):
+        # ScopedRateThrottle applies to the whole view, so scope it to the
+        # write path only — a creation flood guard must not also throttle
+        # the list (GET) path.
+        if self.request.method == "POST":
+            return [ScopedRateThrottle()]
+        return []
 
     def _validated_query_params(self):
         # .dict() so DRF's BooleanField doesn't mistake the QueryDict for an
