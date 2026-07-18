@@ -891,3 +891,17 @@ Rules:
   `Related to`.
 
 Convention source: https://nohack.tistory.com/17
+
+### Commit And PR Cadence
+
+- Commit per small, self-contained feature: each commit passes tests on its
+  own and can be reverted independently. Separate rename, move, delete, and
+  behavior changes into their own commits.
+- Open a pull request automatically at the completion of each large stage
+  (a planned track, phase, or a coherent group of small-feature commits) —
+  a per-PR approval prompt is not required. Keep unrelated concerns in
+  separate stages, and therefore separate PRs.
+- Standing approval covers commit, push, and opening the PR. Merging still
+  requires explicit user approval.
+- `prompt_plan.md` and other pre-existing uncommitted changes not produced by
+  the current task stay unstaged; stage files explicitly, never `git add -A`.
