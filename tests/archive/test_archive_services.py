@@ -281,6 +281,46 @@ def test_같은_사용자가_같은_클라이언트_토큰으로_컬렉션_항�
     assert first.name == "원래 이름"
 
 
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_클라이언트_토큰_없이_동일한_내용으로_컬렉션_항목_생성을_두_번_요청하면_행이_각각_생성된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-02-CI): the idempotency
+    guard is scoped to (user, client_token) — a caller that never supplies a
+    client_token (e.g. two genuinely separate legitimate purchases of the
+    same goods) must not be coalesced into one row. This proves the
+    UniqueConstraint/lookup added for INTG-BE-01-CI does not over-block
+    legitimate duplicate ownership when no idempotency key is present."""
+    user = make_user(username="ci-service-no-token-duplicate")
+
+    first = create_collection_item(user=user, name="같은 이름 굿즈")
+    second = create_collection_item(user=user, name="같은 이름 굿즈")
+
+    assert first.id != second.id
+    assert CollectionItem.objects.filter(user=user, name="같은 이름 굿즈").count() == 2
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_서로_다른_사용자가_같은_클라이언트_토큰으로_컬렉션_항목을_생성하면_각각_독립적으로_생성된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-03-CI): the idempotency key
+    is scoped per (user, client_token), not by client_token alone — two
+    different users replaying the same client-generated uuid4 (e.g. a bug or
+    a shared client library instance) must each get their own row, and
+    neither user's create can be short-circuited by the other user's
+    existing row for the same token (no cross-user existence oracle)."""
+    user_a = make_user(username="ci-service-token-user-a")
+    user_b = make_user(username="ci-service-token-user-b")
+    token = uuid.uuid4()
+
+    item_a = create_collection_item(user=user_a, name="사용자 A 굿즈", client_token=token)
+    item_b = create_collection_item(user=user_b, name="사용자 B 굿즈", client_token=token)
+
+    assert item_a.id != item_b.id
+    assert CollectionItem.objects.filter(client_token=token).count() == 2
+    assert CollectionItem.objects.filter(user=user_a, client_token=token).count() == 1
+    assert CollectionItem.objects.filter(user=user_b, client_token=token).count() == 1
+
+
 # ---------------------------------------------------------------------------
 # update_collection_item (PR-C5)
 # ---------------------------------------------------------------------------

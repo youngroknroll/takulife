@@ -3,6 +3,8 @@
 
 (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
 """
+import uuid
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -119,6 +121,24 @@ def test_수집_항목을_생성하면_COLLECTION_ITEM_CREATED_분석_이벤트�
     assert events.get().target_type == "collection_item"
     assert events.get().target_id == item.id
     assert events.get().context == {}
+
+
+@pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_컬렉션_항목_생성을_재요청해도_COLLECTION_ITEM_CREATED_이벤트는_한_번만_기록된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-06-CI, DAR ②): a replayed
+    create with the same (user, client_token) must be exactly-once for the
+    COLLECTION_ITEM_CREATED analytics event, not just the row — the replay
+    branch returns the existing row *before* create_collection_item's
+    analytics call runs, so a second call must not double-count."""
+    user = make_user()
+    token = uuid.uuid4()
+
+    create_collection_item(user=user, name="아크릴 스탠드", client_token=token)
+    create_collection_item(user=user, name="아크릴 스탠드", client_token=token)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED
+    ).count() == 1
 
 
 @pytest.mark.django_db
