@@ -91,6 +91,28 @@ def test_방문_기록을_생성하면_VISIT_RECORD_CREATED_이벤트가_기록�
 
 
 @pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_방문_기록_생성을_재요청해도_VISIT_RECORD_CREATED_이벤트는_한_번만_기록된다(
+    make_user, make_event
+):
+    """bfcache duplicate-creation track (INTG-BE-06-VR, DAR ②): a replayed
+    create with the same (user, client_token) must be exactly-once for the
+    VISIT_RECORD_CREATED analytics event, not just the row — the replay
+    branch returns the existing row *before* create_visit_record's analytics
+    call runs, so a second call must not double-count. Mirrors the
+    CollectionItem analytics idempotency test (INTG-BE-06-CI) above."""
+    user = make_user()
+    event = make_event()
+    token = uuid.uuid4()
+
+    create_visit_record(user=user, event=event, visited_on="2026-05-26", client_token=token)
+    create_visit_record(user=user, event=event, visited_on="2026-05-26", client_token=token)
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.VISIT_RECORD_CREATED
+    ).count() == 1
+
+
+@pytest.mark.django_db
 def test_방문_기록에_사진을_추가하면_VISIT_PHOTO_ADDED_분석_이벤트가_정확히_한_번_기록된다(
     make_user, make_event, make_visit, png_bytes
 ):

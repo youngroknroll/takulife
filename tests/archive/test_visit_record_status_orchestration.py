@@ -4,6 +4,8 @@ orchestration (collection domain design plan §3-4, PR-C3, F-02).
 Covers the (a)/(b)/(c)/(d)/(e) contract approved in the plan: a visit record
 can never exist while its status subject disagrees with "visited".
 """
+import uuid
+
 import pytest
 
 from archive.models import PersonalEntry, UserEventStatus, VisitRecord
@@ -119,6 +121,63 @@ def test_상태_없음_참석_예정_불참_중_어디서_시작해도_방문_�
 
     complete_visit_with_record(user=user, event=event, visited_on="2026-07-15")
 
+    assert (
+        AnalyticsEvent.objects.filter(
+            event_name=AnalyticsEvent.EventName.EVENT_MARKED_VISITED
+        ).count()
+        == 1
+    )
+    assert (
+        AnalyticsEvent.objects.filter(
+            event_name=AnalyticsEvent.EventName.VISIT_RECORD_CREATED
+        ).count()
+        == 1
+    )
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-04 — bfcache duplicate-creation track: complete_visit_with_record
+# needs its own client_token idempotency guard, mirroring create_visit_record
+# and create_collection_item (INTG-BE-01-VR/CI). A replayed "완료 처리" submit
+# (e.g. a bfcache-restored page re-POSTing the same form) must not fire a
+# second status transition or a second VisitRecord/analytics event.
+# complete_visit_with_record does not yet accept client_token, so this call
+# is expected to raise TypeError until the orchestration guard lands.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_방문_완료_처리를_두_번_요청하면_상태_전환과_기록_생성_모두_중복되지_않는다(
+    make_user, make_event
+):
+    user = make_user()
+    event = make_event()
+    token = uuid.uuid4()
+
+    # Given: no status row yet for this (user, event) pair.
+    assert not UserEventStatus.objects.filter(user=user, event=event).exists()
+
+    complete_visit_with_record(
+        user=user, event=event, visited_on="2026-07-15", client_token=token
+    )
+
+    status_row = UserEventStatus.objects.get(user=user, event=event)
+    assert status_row.status == UserEventStatus.Status.VISITED
+    original_updated_at = status_row.updated_at
+
+    # When: the same client_token is replayed (e.g. a bfcache-restored page
+    # re-submitting the same "완료 처리" form).
+    complete_visit_with_record(
+        user=user, event=event, visited_on="2026-07-16", client_token=token
+    )
+
+    # Then: the status row is untouched (proves mark_visited did not fire a
+    # second time) and no second VisitRecord or analytics event was created.
+    status_row.refresh_from_db()
+    assert status_row.status == UserEventStatus.Status.VISITED
+    assert status_row.updated_at == original_updated_at
+    assert UserEventStatus.objects.filter(user=user, event=event).count() == 1
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 1
     assert (
         AnalyticsEvent.objects.filter(
             event_name=AnalyticsEvent.EventName.EVENT_MARKED_VISITED

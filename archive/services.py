@@ -436,12 +436,17 @@ def create_visit_record(
 
 
 def complete_visit_with_record(
-    *, user, event=None, personal_entry=None, visited_on, short_review=""
+    *, user, event=None, personal_entry=None, visited_on, short_review="", client_token=None
 ):
     """Complete a visit and record the experience together, atomically
     (collection domain design plan §3-4, F-02). The status subject is
     auto-managed so a visit record can never exist while its status row
-    disagrees with "visited".
+    disagrees with "visited". `client_token` is threaded straight through to
+    `create_visit_record` for its own idempotent-replay guard (INTG-BE-01-VR);
+    a replay of this call is self-consistently a no-op for the status branch
+    too, since by the time a replay arrives status_row is already VISITED
+    from the first call, so neither the create nor the mark_visited branch
+    fires again.
     """
     with transaction.atomic():
         existing = UserEventStatus.objects.filter(user=user)
@@ -467,6 +472,7 @@ def complete_visit_with_record(
             personal_entry=personal_entry,
             visited_on=visited_on,
             short_review=short_review,
+            client_token=client_token,
         )
 
 

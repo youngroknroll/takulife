@@ -371,6 +371,58 @@ def test_같은_사용자가_같은_클라이언트_토큰으로_방문_기록_�
     assert first.short_review == "원래 리뷰"
 
 
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_클라이언트_토큰_없이_동일한_내용으로_방문_기록_생성을_두_번_요청하면_행이_각각_생성된다(
+    make_user, make_event
+):
+    """bfcache duplicate-creation track (INTG-BE-02-VR): the idempotency
+    guard is scoped to (user, client_token) — a caller that never supplies a
+    client_token (e.g. two genuinely separate visit-record submissions for
+    the same event) must not be coalesced into one row. This proves the
+    UniqueConstraint/lookup added for INTG-BE-01-VR does not over-block
+    legitimate duplicate visit records when no idempotency key is present.
+    Mirrors the CollectionItem no-token test (INTG-BE-02-CI) above."""
+    user = make_user(username="vr-service-no-token-duplicate")
+    event = make_event(title="토큰 없는 중복 확인 이벤트")
+
+    first = create_visit_record(user=user, event=event, visited_on="2026-01-01")
+    second = create_visit_record(user=user, event=event, visited_on="2026-01-01")
+
+    assert first.id != second.id
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 2
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_서로_다른_사용자가_같은_클라이언트_토큰으로_방문_기록을_생성하면_각각_독립적으로_생성된다(
+    make_user, make_event
+):
+    """bfcache duplicate-creation track (INTG-BE-03-VR): the idempotency key
+    is scoped per (user, client_token), not by client_token alone — two
+    different users replaying the same client-generated uuid4 (e.g. a bug or
+    a shared client library instance) must each get their own row, and
+    neither user's create can be short-circuited by the other user's
+    existing row for the same token (no cross-user existence oracle).
+    Mirrors the CollectionItem cross-user token test (INTG-BE-03-CI) above."""
+    user_a = make_user(username="vr-service-token-user-a")
+    user_b = make_user(username="vr-service-token-user-b")
+    event = make_event(title="교차 사용자 토큰 확인 이벤트")
+    token = uuid.uuid4()
+
+    record_a = create_visit_record(
+        user=user_a, event=event, visited_on="2026-01-01", client_token=token
+    )
+    record_b = create_visit_record(
+        user=user_b, event=event, visited_on="2026-01-01", client_token=token
+    )
+
+    assert record_a.id != record_b.id
+    assert VisitRecord.objects.filter(client_token=token).count() == 2
+    assert VisitRecord.objects.filter(user=user_a, client_token=token).count() == 1
+    assert VisitRecord.objects.filter(user=user_b, client_token=token).count() == 1
+
+
 # ---------------------------------------------------------------------------
 # update_collection_item (PR-C5)
 # ---------------------------------------------------------------------------
