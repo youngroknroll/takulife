@@ -370,6 +370,29 @@
         button.classList.remove("is-loading");
       }
     },
+
+    /**
+     * commitAndNavigate(button, url) — mark a just-succeeded submit as
+     * committed, then navigate to url. The marker
+     * (data-committed-redirect=url) is plain DOM state, so it survives a
+     * back/forward-cache snapshot the way in-memory JS state cannot — on
+     * restore, the pageshow handler below reads the marker as proof that
+     * the prior submit already succeeded, instead of guessing from the
+     * .is-loading class alone. Order (marker set before navigation
+     * starts) is guaranteed by this helper, not by call-site discipline —
+     * relying on call sites to remember that order already failed in
+     * three files. Uses assign, not replace, because this is the normal
+     * forward navigation after a successful submit and should keep a
+     * normal history entry; only the bfcache restore path below needs
+     * replace. Safe to call with a null/undefined button — navigation
+     * still happens, only the marker is skipped.
+     */
+    commitAndNavigate: function (button, url) {
+      if (button) {
+        button.setAttribute("data-committed-redirect", url);
+      }
+      window.location.assign(url);
+    },
   };
 
   // ── bfcache restore ───────────────────────────────────────────────────────
@@ -380,13 +403,30 @@
   // would have called setLoading(btn, false) never got the chance to run
   // again. Scoped to .is-loading only, so a button the server rendered
   // disabled on purpose (e.g. an already-approved draft's 승인 button) is
-  // left untouched.
+  // left untouched. If a .is-loading button carries a
+  // data-committed-redirect marker (set by commitAndNavigate right before
+  // the prior submit navigated away), that prior submit is known to have
+  // succeeded — re-enabling it would let the user resubmit an already-
+  // committed form. Instead force the page forward to that destination
+  // with replace, not assign: assign would let every future restore push
+  // a fresh history entry, leaving a Back → form → forced-forward → Back
+  // → form loop in place, while replace collapses the restored snapshot
+  // in one hop. The first marked button found wins and the loop stops
+  // there — navigation is about to leave the page anyway, so any buttons
+  // re-enabled before it was found are harmless.
   window.addEventListener("pageshow", function (evt) {
     if (!evt.persisted) {
       return;
     }
-    document.querySelectorAll(".is-loading").forEach(function (btn) {
+    var loadingButtons = document.querySelectorAll(".is-loading");
+    for (var i = 0; i < loadingButtons.length; i++) {
+      var btn = loadingButtons[i];
+      var committedRedirect = btn.dataset.committedRedirect;
+      if (committedRedirect) {
+        window.location.replace(committedRedirect);
+        return;
+      }
       window.TakuAPI.setLoading(btn, false);
-    });
+    }
   });
 })();

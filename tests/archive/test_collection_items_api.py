@@ -10,6 +10,7 @@ owner-scoped (collection domain design plan §4 PR-C5).
   DELETE /api/collection-items/<id>/   → 204 or 404
 """
 import re
+import uuid
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -838,3 +839,117 @@ def test_이미지를_교체하면_기존_파일이_삭제된다(
     assert second_file_name != first_file_name
     assert not storage.exists(first_file_name)
     assert storage.exists(second_file_name)
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-01-CI-WEB (bfcache duplicate-creation plan §6) — the HTTP boundary
+# contract for client_token idempotency: the serializer must actually wire
+# the write-only client_token through to create_collection_item's
+# validated_data, and the field must never leak back out in the response.
+# domain-layer replay itself is already proven in
+# tests/archive/test_archive_services.py; this proves the DRF wiring on top.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_컬렉션_항목_생성_POST를_두_번_보내면_두_응답_모두_201이고_동일한_id를_반환하며_DB에는_행이_하나만_생성된다(
+    client, make_user
+):
+    user = make_user(username="ci-create-client-token-idempotent")
+    client_token = str(uuid.uuid4())
+
+    client.force_login(user)
+    first_response = client.post(
+        "/api/collection-items/",
+        {"name": "멱등 생성 굿즈", "client_token": client_token},
+        content_type="application/json",
+    )
+    second_response = client.post(
+        "/api/collection-items/",
+        {"name": "멱등 생성 굿즈", "client_token": client_token},
+        content_type="application/json",
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["id"] == second_response.json()["id"]
+    assert "client_token" not in first_response.json()
+    assert "client_token" not in second_response.json()
+    assert CollectionItem.objects.count() == 1
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-07 (bfcache duplicate-creation plan §6, DAR mandatory fix ③) —
+# CollectionItemSerializer is shared by create and update; a client_token
+# sent on PATCH must not overwrite the item's existing token, otherwise the
+# create-time idempotency key leaks into the update path.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_컬렉션_항목_PATCH_요청에_클라이언트_토큰을_담아_보내도_기존_토큰_값은_변경되지_않는다(
+    client, make_user
+):
+    user = make_user(username="ci-patch-client-token-pinned")
+    original_token = uuid.uuid4()
+
+    client.force_login(user)
+    create_response = client.post(
+        "/api/collection-items/",
+        {"name": "토큰 고정 확인", "client_token": str(original_token)},
+        content_type="application/json",
+    )
+    assert create_response.status_code == 201
+    item_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/api/collection-items/{item_id}/",
+        {"name": "이름 변경", "client_token": str(uuid.uuid4())},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    item = CollectionItem.objects.get(id=item_id)
+    assert item.client_token == original_token
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-05-CI (bfcache duplicate-creation plan §6, verification boundary
+# "web/slow") — the create endpoint must also cap flood-style repeated POSTs,
+# distinct from the client_token idempotency guard above: a scoped throttle
+# of 30/minute limits CollectionItem creation, mirroring
+# tests/archive/test_promotion_api.py's daily-promotion flood test
+# (test_일일_승격_한도를_초과하면_429로_제한된다). GET (list) must stay
+# unaffected — the throttle only guards the write path.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_컬렉션_항목_생성_요청이_설정된_한도를_초과하면_429로_제한된다(client, make_user):
+    user = make_user(username="ci-create-flood")
+    client.force_login(user)
+
+    # 30/minute budget: 30 creates succeed, the 31st is throttled.
+    for i in range(30):
+        response = client.post(
+            "/api/collection-items/",
+            {"name": f"한도 확인 굿즈 {i}"},
+            content_type="application/json",
+        )
+        assert response.status_code == 201, f"create {i} should succeed"
+
+    throttled = client.post(
+        "/api/collection-items/",
+        {"name": "한도 초과 굿즈"},
+        content_type="application/json",
+    )
+
+    assert throttled.status_code == 429
+    assert CollectionItem.objects.count() == 30
+
+    listed = client.get("/api/collection-items/")
+    assert listed.status_code == 200

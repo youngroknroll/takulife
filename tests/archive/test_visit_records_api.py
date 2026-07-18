@@ -8,6 +8,7 @@ per-record photo cap of 5.
 """
 
 import io
+import uuid
 
 import PIL.Image
 import pytest
@@ -140,6 +141,96 @@ def test_같은_행사에_방문_기록을_여러_번_생성하면_모두_저장
     assert r1.status_code == 201
     assert r2.status_code == 201
     assert VisitRecord.objects.filter(user=user, event=event).count() == 2
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-01-VR-WEB (bfcache duplicate-creation plan §6) — the HTTP boundary
+# contract for client_token idempotency on VisitRecord create, mirroring
+# INTG-BE-01-CI-WEB in tests/archive/test_collection_items_api.py.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_방문_기록_생성_POST를_두_번_보내면_두_응답_모두_201이고_동일한_id를_반환하며_DB에는_행이_하나만_생성된다(
+    client, make_user, make_event
+):
+    user = make_user()
+    event = make_event()
+    client_token = str(uuid.uuid4())
+
+    client.force_login(user)
+    first_response = client.post(
+        "/api/visit-records/",
+        {
+            "event": event.id,
+            "visited_on": "2026-05-26",
+            "short_review": "first",
+            "client_token": client_token,
+        },
+        content_type="application/json",
+    )
+    second_response = client.post(
+        "/api/visit-records/",
+        {
+            "event": event.id,
+            "visited_on": "2026-05-26",
+            "short_review": "second",
+            "client_token": client_token,
+        },
+        content_type="application/json",
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["id"] == second_response.json()["id"]
+    assert "client_token" not in first_response.json()
+    assert "client_token" not in second_response.json()
+    assert (
+        VisitRecord.objects.filter(user=user, client_token=client_token).count() == 1
+    )
+    record = VisitRecord.objects.get(user=user, client_token=client_token)
+    assert record.short_review == "first"
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-05-VR (bfcache duplicate-creation plan §6, verification boundary
+# "web/slow") — mirrors INTG-BE-05-CI in
+# tests/archive/test_collection_items_api.py: the create endpoint must cap
+# flood-style repeated POSTs with a 30/minute scoped throttle, distinct from
+# the client_token idempotency guard above. Reuses one event across all 30
+# creates (multiple visits per event are allowed, proven above) so the
+# throttle — not a business-rule rejection — is what stops the 31st request.
+# GET (list) must stay unaffected.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_방문_기록_생성_요청이_설정된_한도를_초과하면_429로_제한된다(client, make_user, make_event):
+    user = make_user()
+    event = make_event()
+    client.force_login(user)
+
+    # 30/minute budget: 30 creates succeed, the 31st is throttled.
+    for i in range(30):
+        response = client.post(
+            "/api/visit-records/",
+            {"event": event.id, "visited_on": "2026-05-26"},
+            content_type="application/json",
+        )
+        assert response.status_code == 201, f"create {i} should succeed"
+
+    throttled = client.post(
+        "/api/visit-records/",
+        {"event": event.id, "visited_on": "2026-05-26"},
+        content_type="application/json",
+    )
+
+    assert throttled.status_code == 429
+    assert VisitRecord.objects.count() == 30
+
+    listed = client.get("/api/visit-records/")
+    assert listed.status_code == 200
 
 
 # ---------------------------------------------------------------------------

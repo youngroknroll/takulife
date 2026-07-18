@@ -92,7 +92,9 @@
       var result = await window.TakuAPI.post("/api/visit-records/", payload);
 
       if (result.status === 201) {
-        window.location.reload();
+        // Reload-equivalent: destination is the current URL (WED §5-2
+        // boundary ③ — same fidelity as the reload it replaces).
+        window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
         return;
       }
 
@@ -174,7 +176,9 @@
           );
 
           if (result.status === 204) {
-            window.location.reload();
+            // Reload-equivalent: destination is the current URL (WED §5-2
+            // boundary ③ — same fidelity as the reload it replaces).
+            window.TakuAPI.commitAndNavigate(btn, window.location.href);
             return;
           }
 

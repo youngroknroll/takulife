@@ -343,14 +343,14 @@
       }
 
       if (pendingItems.length === 0) {
-        window.location.assign(VISITS_URL);
+        window.TakuAPI.commitAndNavigate(submitBtn, VISITS_URL);
         return;
       }
 
       var outcome = await uploadNewPhotos(recordId, statusEl, grid);
       if (outcome.succeeded === outcome.total) {
         setText(statusEl, "저장 완료. 이동 중...");
-        window.location.assign(VISITS_URL);
+        window.TakuAPI.commitAndNavigate(submitBtn, VISITS_URL);
         return;
       }
 
@@ -377,7 +377,7 @@
 
         var result = await window.TakuAPI.del("/api/visit-records/" + recordId + "/");
         if (result.status === 204) {
-          window.location.assign(VISITS_URL);
+          window.TakuAPI.commitAndNavigate(deleteBtn, VISITS_URL);
           return;
         }
 

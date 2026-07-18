@@ -1,3 +1,4 @@
+import uuid
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
@@ -621,6 +622,8 @@ def archive_visit_create(request):
     '기록' button) — then the form shows that subject locked instead of the
     dropdown.
     """
+    # Issued once per form render into a hidden input so the token survives
+    # a bfcache DOM snapshot and serves as the replay idempotency key (plan §4-1).
     return render(
         request,
         "core/archive/visit_create.html",
@@ -630,6 +633,7 @@ def archive_visit_create(request):
                 request.user, kind=PersonalEntry.Kind.PLACE
             ),
             "preselect": _parse_visit_preselect(request),
+            "client_token": uuid.uuid4(),
         },
     )
 
@@ -800,6 +804,8 @@ def archive_collection_item_create(request):
     syncs it from visit_record server-side (§3-1 FK-pair invariant), so this
     page must never render a name="event" input.
     """
+    # Issued once per form render into a hidden input so the token survives
+    # a bfcache DOM snapshot and serves as the replay idempotency key (plan §4-1).
     return render(
         request,
         "core/archive/collection_create.html",
@@ -807,6 +813,7 @@ def archive_collection_item_create(request):
             "selectable_visit_records": list_user_visit_records(request.user),
             "preselect": _parse_collection_visit_preselect(request),
             "COLLECTION_ITEM_TYPE": COLLECTION_ITEM_TYPE,
+            "client_token": uuid.uuid4(),
         },
     )
 

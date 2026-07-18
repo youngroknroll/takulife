@@ -248,6 +248,19 @@
       } else {
         payload.event = subjectId;
       }
+      // client_token: SSR-issued uuid4 hidden input (visit_create.html,
+      // DAR §5-1) for create-side idempotency replay. Existence guard
+      // mirrors collection.js's collectSharedFields — this page has no
+      // edit-form twin, but the guard keeps the payload safe if the
+      // hidden input is ever removed from the template. Also require a
+      // non-empty value: an empty string would still pass an
+      // existence-only guard and serialize as client_token: "", which
+      // the serializer's UUIDField rejects with 400 — turning a
+      // missing/stale template context into a hard create failure
+      // instead of a silent fallback. Empty value → send no token
+      // (degrades to pre-token behavior, avoids the 400).
+      var clientTokenEl = form.elements["client_token"];
+      if (clientTokenEl && clientTokenEl.value) { payload.client_token = clientTokenEl.value; }
 
       window.TakuAPI.setLoading(submitBtn, true);
       setText(statusEl, "기록 저장 중...");
@@ -271,7 +284,7 @@
       var recordId = result.data && result.data.id;
 
       if (pendingItems.length === 0 || !recordId) {
-        window.location.assign(VISITS_URL);
+        window.TakuAPI.commitAndNavigate(submitBtn, VISITS_URL);
         return;
       }
 
@@ -279,7 +292,7 @@
 
       if (outcome.failedAt === -1) {
         setText(statusEl, "저장 완료. 이동 중...");
-        window.location.assign(VISITS_URL);
+        window.TakuAPI.commitAndNavigate(submitBtn, VISITS_URL);
         return;
       }
 

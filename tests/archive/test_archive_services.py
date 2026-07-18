@@ -1,4 +1,6 @@
 """Archive service-layer tests — direct service calls, no HTTP."""
+import uuid
+
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -11,6 +13,7 @@ from archive.services import (
     create_collection_item,
     create_personal_entry,
     create_user_event_status,
+    create_visit_record,
     create_visit_record_photo,
     update_collection_item,
 )
@@ -250,6 +253,174 @@ def test_공개범위를_지정하지_않고_생성하면_기본값은_비공개
     item = create_collection_item(user=user, name="기본 공개범위 확인")
 
     assert item.visibility == "private"
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_같은_사용자가_같은_클라이언트_토큰으로_컬렉션_항목_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-01-CI): a user replaying the
+    same create request with the same client_token (e.g. bfcache-restored
+    page re-submitting a stale form) must not create a second row — the
+    second call must be an idempotent replay that returns the original row
+    untouched, not a second create with the replay's own field values."""
+    user = make_user(username="ci-service-idempotent-token")
+    token = uuid.uuid4()
+
+    # Given: no CollectionItem owned by this user yet.
+    assert not CollectionItem.objects.filter(user=user, client_token=token).exists()
+
+    # When: the same user submits the same client_token twice, with
+    # different field values on the second (replayed) call.
+    first = create_collection_item(user=user, name="원래 이름", client_token=token)
+    second = create_collection_item(user=user, name="다른 이름", client_token=token)
+
+    # Then: exactly one row exists, both calls return the same row, and the
+    # replay's payload did not overwrite the original name.
+    assert CollectionItem.objects.filter(user=user, client_token=token).count() == 1
+    assert first.id == second.id
+    first.refresh_from_db()
+    assert first.name == "원래 이름"
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_클라이언트_토큰_없이_동일한_내용으로_컬렉션_항목_생성을_두_번_요청하면_행이_각각_생성된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-02-CI): the idempotency
+    guard is scoped to (user, client_token) — a caller that never supplies a
+    client_token (e.g. two genuinely separate legitimate purchases of the
+    same goods) must not be coalesced into one row. This proves the
+    UniqueConstraint/lookup added for INTG-BE-01-CI does not over-block
+    legitimate duplicate ownership when no idempotency key is present."""
+    user = make_user(username="ci-service-no-token-duplicate")
+
+    first = create_collection_item(user=user, name="같은 이름 굿즈")
+    second = create_collection_item(user=user, name="같은 이름 굿즈")
+
+    assert first.id != second.id
+    assert CollectionItem.objects.filter(user=user, name="같은 이름 굿즈").count() == 2
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_서로_다른_사용자가_같은_클라이언트_토큰으로_컬렉션_항목을_생성하면_각각_독립적으로_생성된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-03-CI): the idempotency key
+    is scoped per (user, client_token), not by client_token alone — two
+    different users replaying the same client-generated uuid4 (e.g. a bug or
+    a shared client library instance) must each get their own row, and
+    neither user's create can be short-circuited by the other user's
+    existing row for the same token (no cross-user existence oracle)."""
+    user_a = make_user(username="ci-service-token-user-a")
+    user_b = make_user(username="ci-service-token-user-b")
+    token = uuid.uuid4()
+
+    item_a = create_collection_item(user=user_a, name="사용자 A 굿즈", client_token=token)
+    item_b = create_collection_item(user=user_b, name="사용자 B 굿즈", client_token=token)
+
+    assert item_a.id != item_b.id
+    assert CollectionItem.objects.filter(client_token=token).count() == 2
+    assert CollectionItem.objects.filter(user=user_a, client_token=token).count() == 1
+    assert CollectionItem.objects.filter(user=user_b, client_token=token).count() == 1
+
+
+# ---------------------------------------------------------------------------
+# create_visit_record (bfcache idempotency)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_같은_사용자가_같은_클라이언트_토큰으로_방문_기록_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(
+    make_user, make_event
+):
+    """bfcache duplicate-creation track (INTG-BE-01-VR): a user replaying the
+    same create-visit-record request with the same client_token (e.g. a
+    bfcache-restored page re-submitting a stale form) must not create a
+    second row — the second call must be an idempotent replay that returns
+    the original row untouched, not a second create with the replay's own
+    field values. Mirrors the CollectionItem idempotency guard
+    (INTG-BE-01-CI) already in place above."""
+    user = make_user(username="vr-service-idempotent-token")
+    event = make_event(title="멱등성 확인 이벤트")
+    token = uuid.uuid4()
+
+    # Given: no VisitRecord owned by this user with this token yet.
+    assert not VisitRecord.objects.filter(user=user, client_token=token).exists()
+
+    # When: the same user submits the same client_token twice, with a
+    # different short_review on the second (replayed) call.
+    first = create_visit_record(
+        user=user,
+        event=event,
+        visited_on="2026-01-01",
+        short_review="원래 리뷰",
+        client_token=token,
+    )
+    second = create_visit_record(
+        user=user,
+        event=event,
+        visited_on="2026-01-01",
+        short_review="다른 리뷰",
+        client_token=token,
+    )
+
+    # Then: exactly one row exists, both calls return the same row, and the
+    # replay's payload did not overwrite the original short_review.
+    assert VisitRecord.objects.filter(user=user, client_token=token).count() == 1
+    assert first.id == second.id
+    first.refresh_from_db()
+    assert first.short_review == "원래 리뷰"
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_클라이언트_토큰_없이_동일한_내용으로_방문_기록_생성을_두_번_요청하면_행이_각각_생성된다(
+    make_user, make_event
+):
+    """bfcache duplicate-creation track (INTG-BE-02-VR): the idempotency
+    guard is scoped to (user, client_token) — a caller that never supplies a
+    client_token (e.g. two genuinely separate visit-record submissions for
+    the same event) must not be coalesced into one row. This proves the
+    UniqueConstraint/lookup added for INTG-BE-01-VR does not over-block
+    legitimate duplicate visit records when no idempotency key is present.
+    Mirrors the CollectionItem no-token test (INTG-BE-02-CI) above."""
+    user = make_user(username="vr-service-no-token-duplicate")
+    event = make_event(title="토큰 없는 중복 확인 이벤트")
+
+    first = create_visit_record(user=user, event=event, visited_on="2026-01-01")
+    second = create_visit_record(user=user, event=event, visited_on="2026-01-01")
+
+    assert first.id != second.id
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 2
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_서로_다른_사용자가_같은_클라이언트_토큰으로_방문_기록을_생성하면_각각_독립적으로_생성된다(
+    make_user, make_event
+):
+    """bfcache duplicate-creation track (INTG-BE-03-VR): the idempotency key
+    is scoped per (user, client_token), not by client_token alone — two
+    different users replaying the same client-generated uuid4 (e.g. a bug or
+    a shared client library instance) must each get their own row, and
+    neither user's create can be short-circuited by the other user's
+    existing row for the same token (no cross-user existence oracle).
+    Mirrors the CollectionItem cross-user token test (INTG-BE-03-CI) above."""
+    user_a = make_user(username="vr-service-token-user-a")
+    user_b = make_user(username="vr-service-token-user-b")
+    event = make_event(title="교차 사용자 토큰 확인 이벤트")
+    token = uuid.uuid4()
+
+    record_a = create_visit_record(
+        user=user_a, event=event, visited_on="2026-01-01", client_token=token
+    )
+    record_b = create_visit_record(
+        user=user_b, event=event, visited_on="2026-01-01", client_token=token
+    )
+
+    assert record_a.id != record_b.id
+    assert VisitRecord.objects.filter(client_token=token).count() == 2
+    assert VisitRecord.objects.filter(user=user_a, client_token=token).count() == 1
+    assert VisitRecord.objects.filter(user=user_b, client_token=token).count() == 1
 
 
 # ---------------------------------------------------------------------------

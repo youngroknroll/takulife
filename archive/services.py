@@ -170,7 +170,7 @@ def revert_to_planned(*, user_event_status):
     return user_event_status
 
 
-def create_collection_item(*, user, name, visit_record=None, event=None, **fields):
+def create_collection_item(*, user, name, visit_record=None, event=None, client_token=None, **fields):
     """Create a user-owned goods collection item.
 
     When `visit_record` is supplied, `event` is always synced from
@@ -185,6 +185,17 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
     — the DB CheckConstraints are the source of truth, this is the
     service-level half of the plan's declared "model constraint +
     application service" double guard (§3-1), not a replacement for them.
+
+    `client_token` is a client-supplied idempotency key (bfcache duplicate
+    creation fix): a replayed submission with the same (user, client_token)
+    hits the UniqueConstraint and is treated as "already created" rather than
+    a second item — the existing row is looked up and returned as-is (never
+    overwritten with the replay's field values) *before* any of the
+    analytics calls below run, so a replay is exactly-once for both the row
+    and its analytics events, not just the row. The replay lookup runs
+    *outside* the atomic block: catching inside it would query on an
+    already-aborted transaction (PostgreSQL forbids further statements until
+    the savepoint rolls back on exit).
     """
     quantity = fields.get("quantity", CollectionItem._meta.get_field("quantity").default)
     tradeable_quantity = fields.get(
@@ -207,9 +218,20 @@ def create_collection_item(*, user, name, visit_record=None, event=None, **field
             )
         event = visit_record.event
 
-    item = CollectionItem.objects.create(
-        user=user, name=name, visit_record=visit_record, event=event, **fields
-    )
+    try:
+        with transaction.atomic():
+            item = CollectionItem.objects.create(
+                user=user,
+                name=name,
+                visit_record=visit_record,
+                event=event,
+                client_token=client_token,
+                **fields,
+            )
+    except IntegrityError:
+        if client_token is None:
+            raise
+        return CollectionItem.objects.get(user=user, client_token=client_token)
     record_event(
         AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED,
         user=user,
@@ -368,14 +390,39 @@ def update_collection_item(*, item, **fields):
     return item
 
 
-def create_visit_record(*, user, event=None, personal_entry=None, visited_on, short_review=""):
-    record = VisitRecord.objects.create(
-        user=user,
-        event=event,
-        personal_entry=personal_entry,
-        visited_on=visited_on,
-        short_review=short_review,
-    )
+def create_visit_record(
+    *, user, event=None, personal_entry=None, visited_on, short_review="", client_token=None
+):
+    """Create a visit record.
+
+    `client_token` is a client-supplied idempotency key (bfcache duplicate
+    creation fix): a replayed submission with the same (user, client_token)
+    hits the UniqueConstraint and is treated as "already created" rather than
+    a second record — the existing row is looked up and returned as-is
+    (never overwritten with the replay's field values) *before* the
+    analytics call below runs, so a replay is exactly-once for both the row
+    and its analytics event, not just the row. The replay lookup runs
+    *outside* the atomic block: catching inside it would query on an
+    already-aborted transaction (PostgreSQL forbids further statements until
+    the savepoint rolls back on exit). The atomic block is inner-scoped so
+    that when this function runs inside `complete_visit_with_record`'s own
+    `transaction.atomic()`, a caught IntegrityError only rolls back this
+    savepoint, not the outer status-sync transaction.
+    """
+    try:
+        with transaction.atomic():
+            record = VisitRecord.objects.create(
+                user=user,
+                event=event,
+                personal_entry=personal_entry,
+                visited_on=visited_on,
+                short_review=short_review,
+                client_token=client_token,
+            )
+    except IntegrityError:
+        if client_token is None:
+            raise
+        return VisitRecord.objects.get(user=user, client_token=client_token)
     target_type, target_id = _subject_target(event=event, personal_entry=personal_entry)
     # short_review is deliberately excluded from context — it is free text a
     # user typed, one of record_event's forbidden context keys (personal data).
@@ -389,12 +436,17 @@ def create_visit_record(*, user, event=None, personal_entry=None, visited_on, sh
 
 
 def complete_visit_with_record(
-    *, user, event=None, personal_entry=None, visited_on, short_review=""
+    *, user, event=None, personal_entry=None, visited_on, short_review="", client_token=None
 ):
     """Complete a visit and record the experience together, atomically
     (collection domain design plan §3-4, F-02). The status subject is
     auto-managed so a visit record can never exist while its status row
-    disagrees with "visited".
+    disagrees with "visited". `client_token` is threaded straight through to
+    `create_visit_record` for its own idempotent-replay guard (INTG-BE-01-VR);
+    a replay of this call is self-consistently a no-op for the status branch
+    too, since by the time a replay arrives status_row is already VISITED
+    from the first call, so neither the create nor the mark_visited branch
+    fires again.
     """
     with transaction.atomic():
         existing = UserEventStatus.objects.filter(user=user)
@@ -420,6 +472,7 @@ def complete_visit_with_record(
             personal_entry=personal_entry,
             visited_on=visited_on,
             short_review=short_review,
+            client_token=client_token,
         )
 
 

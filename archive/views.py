@@ -7,6 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import (
@@ -21,6 +22,7 @@ from .queries import list_user_collection_items, list_user_personal_entries
 from .serializers import (
     CollectionItemQuerySerializer,
     CollectionItemSerializer,
+    CollectionItemUpdateSerializer,
     EventInterestSerializer,
     PersonalEntrySerializer,
     UserEventStatusQuerySerializer,
@@ -223,6 +225,15 @@ class VisitRecordListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = VisitRecordSerializer
     pagination_class = VisitRecordPagination
+    throttle_scope = "visit_record_create"
+
+    def get_throttles(self):
+        # ScopedRateThrottle applies to the whole view, so scope it to the
+        # write path only — a creation flood guard must not also throttle
+        # the list (GET) path.
+        if self.request.method == "POST":
+            return [ScopedRateThrottle()]
+        return []
 
     def get_queryset(self):
         return (
@@ -239,6 +250,7 @@ class VisitRecordListCreateView(ListCreateAPIView):
             personal_entry=serializer.validated_data.get("personal_entry"),
             visited_on=serializer.validated_data["visited_on"],
             short_review=serializer.validated_data.get("short_review", ""),
+            client_token=serializer.validated_data.get("client_token"),
         )
         response_serializer = self.get_serializer(record)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -318,6 +330,15 @@ class CollectionItemListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CollectionItemSerializer
     pagination_class = CollectionItemPagination
+    throttle_scope = "collection_item_create"
+
+    def get_throttles(self):
+        # ScopedRateThrottle applies to the whole view, so scope it to the
+        # write path only — a creation flood guard must not also throttle
+        # the list (GET) path.
+        if self.request.method == "POST":
+            return [ScopedRateThrottle()]
+        return []
 
     def _validated_query_params(self):
         # .dict() so DRF's BooleanField doesn't mistake the QueryDict for an
@@ -345,10 +366,14 @@ class CollectionItemListCreateView(ListCreateAPIView):
 class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete", "head", "options"]
     permission_classes = [IsAuthenticated]
-    serializer_class = CollectionItemSerializer
 
     def get_queryset(self):
         return CollectionItem.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method == "PATCH":
+            return CollectionItemUpdateSerializer
+        return CollectionItemSerializer
 
     def perform_update(self, serializer):
         # update_collection_item re-fetches its own row under

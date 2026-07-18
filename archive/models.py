@@ -181,6 +181,9 @@ class VisitRecord(models.Model):
     )
     visited_on = models.DateField()
     short_review = models.CharField(max_length=255, blank=True)
+    # Client-supplied idempotency key for bfcache replay dedup — not user
+    # editable, unset (null) for rows created before this field existed.
+    client_token = models.UUIDField(null=True, blank=True, editable=False)
 
     class Meta:
         constraints = [
@@ -190,6 +193,11 @@ class VisitRecord(models.Model):
                     models.Q(event__isnull=False, personal_entry__isnull=True)
                     | models.Q(event__isnull=True, personal_entry__isnull=False)
                 ),
+            ),
+            models.UniqueConstraint(
+                fields=["user", "client_token"],
+                condition=models.Q(client_token__isnull=False),
+                name="unique_archive_visit_record_user_client_token",
             ),
         ]
 
@@ -246,6 +254,9 @@ class CollectionItem(models.Model):
     tradeable_quantity = models.IntegerField(default=0)
     # Reserved for the future trade opt-in gate — no exposure until Stage 4.
     visibility = models.CharField(max_length=20, default="private")
+    # Client-supplied idempotency key for bfcache replay dedup — not user
+    # editable, unset (null) for rows created before this field existed.
+    client_token = models.UUIDField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -262,6 +273,11 @@ class CollectionItem(models.Model):
             models.CheckConstraint(
                 name="collectionitem_tradeable_gte_0",
                 condition=models.Q(tradeable_quantity__gte=0),
+            ),
+            models.UniqueConstraint(
+                fields=["user", "client_token"],
+                condition=models.Q(client_token__isnull=False),
+                name="unique_archive_collection_item_user_client_token",
             ),
         ]
         # §6-b Deferred (C1): supports list_user_collection_items' owner-
