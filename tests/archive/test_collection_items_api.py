@@ -10,6 +10,7 @@ owner-scoped (collection domain design plan §4 PR-C5).
   DELETE /api/collection-items/<id>/   → 204 or 404
 """
 import re
+import uuid
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -838,3 +839,72 @@ def test_이미지를_교체하면_기존_파일이_삭제된다(
     assert second_file_name != first_file_name
     assert not storage.exists(first_file_name)
     assert storage.exists(second_file_name)
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-01-CI-WEB (bfcache duplicate-creation plan §6) — the HTTP boundary
+# contract for client_token idempotency: the serializer must actually wire
+# the write-only client_token through to create_collection_item's
+# validated_data, and the field must never leak back out in the response.
+# domain-layer replay itself is already proven in
+# tests/archive/test_archive_services.py; this proves the DRF wiring on top.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_컬렉션_항목_생성_POST를_두_번_보내면_두_응답_모두_201이고_동일한_id를_반환하며_DB에는_행이_하나만_생성된다(
+    client, make_user
+):
+    user = make_user(username="ci-create-client-token-idempotent")
+    client_token = str(uuid.uuid4())
+
+    client.force_login(user)
+    first_response = client.post(
+        "/api/collection-items/",
+        {"name": "멱등 생성 굿즈", "client_token": client_token},
+        content_type="application/json",
+    )
+    second_response = client.post(
+        "/api/collection-items/",
+        {"name": "멱등 생성 굿즈", "client_token": client_token},
+        content_type="application/json",
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["id"] == second_response.json()["id"]
+    assert "client_token" not in first_response.json()
+    assert "client_token" not in second_response.json()
+    assert CollectionItem.objects.count() == 1
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-07 (bfcache duplicate-creation plan §6, DAR mandatory fix ③) —
+# CollectionItemSerializer is shared by create and update; a client_token
+# sent on PATCH must not overwrite the item's existing token, otherwise the
+# create-time idempotency key leaks into the update path.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_컬렉션_항목_PATCH_요청에_클라이언트_토큰을_담아_보내도_기존_토큰_값은_변경되지_않는다(
+    client, make_user
+):
+    from archive.services import create_collection_item
+
+    user = make_user(username="ci-patch-client-token-pinned")
+    original_token = uuid.uuid4()
+    item = create_collection_item(user=user, name="토큰 고정 확인", client_token=original_token)
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/collection-items/{item.id}/",
+        {"name": "이름 변경", "client_token": str(uuid.uuid4())},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    item.refresh_from_db()
+    assert item.client_token == original_token

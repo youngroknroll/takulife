@@ -176,11 +176,13 @@ class CollectionItemSerializer(serializers.ModelSerializer):
     """Owner is always taken from the request, never the payload.
     `visibility` is deliberately absent from `fields` (not read_only) —
     reserved for the future trade opt-in gate, no exposure until Stage 4
-    (collection domain design plan §3-1, PO decision 2026-07-16). Used for
-    both create and update (PATCH partial-validates automatically); no
-    fields are pinned read-only besides id/created_at/updated_at because,
-    unlike VisitRecord/UserEventStatus, a CollectionItem's event/visit_record
-    links are themselves user-editable after creation.
+    (collection domain design plan §3-1, PO decision 2026-07-16). Create-only
+    (see `CollectionItemUpdateSerializer` for PATCH): `client_token` is a
+    create-time idempotency key and must not leak into the update path
+    (bfcache duplicate-creation plan, DAR mandatory fix ③). No fields are
+    pinned read-only besides id/created_at/updated_at because, unlike
+    VisitRecord/UserEventStatus, a CollectionItem's event/visit_record links
+    are themselves user-editable after creation.
     """
 
     # event is scoped to published events only (same guard as
@@ -191,6 +193,9 @@ class CollectionItemSerializer(serializers.ModelSerializer):
     visit_record = serializers.PrimaryKeyRelatedField(
         queryset=VisitRecord.objects.all(), required=False, allow_null=True
     )
+    # Client-supplied idempotency key (bfcache duplicate-creation plan §4-1).
+    # write_only so a replayed create's token is never echoed back.
+    client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = CollectionItem
@@ -209,6 +214,7 @@ class CollectionItemSerializer(serializers.ModelSerializer):
             "memo",
             "is_wanted",
             "tradeable_quantity",
+            "client_token",
             "created_at",
             "updated_at",
         ]
@@ -237,6 +243,19 @@ class CollectionItemSerializer(serializers.ModelSerializer):
         if value in (None, ""):
             return value
         return validate_uploaded_image(value)
+
+
+class CollectionItemUpdateSerializer(CollectionItemSerializer):
+    """PATCH serializer: identical to `CollectionItemSerializer` except
+    `client_token` is structurally excluded — a create-time idempotency key
+    must never be re-read or overwritten on update (DAR mandatory fix ③).
+    Inherits visit_record scoping (__init__) and validate_image unchanged.
+    """
+
+    client_token = None
+
+    class Meta(CollectionItemSerializer.Meta):
+        fields = [field for field in CollectionItemSerializer.Meta.fields if field != "client_token"]
 
 
 class CollectionItemQuerySerializer(serializers.Serializer):

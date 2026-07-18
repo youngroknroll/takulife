@@ -21,6 +21,7 @@ from .queries import list_user_collection_items, list_user_personal_entries
 from .serializers import (
     CollectionItemQuerySerializer,
     CollectionItemSerializer,
+    CollectionItemUpdateSerializer,
     EventInterestSerializer,
     PersonalEntrySerializer,
     UserEventStatusQuerySerializer,
@@ -345,10 +346,14 @@ class CollectionItemListCreateView(ListCreateAPIView):
 class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete", "head", "options"]
     permission_classes = [IsAuthenticated]
-    serializer_class = CollectionItemSerializer
 
     def get_queryset(self):
         return CollectionItem.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method == "PATCH":
+            return CollectionItemUpdateSerializer
+        return CollectionItemSerializer
 
     def perform_update(self, serializer):
         # update_collection_item re-fetches its own row under
