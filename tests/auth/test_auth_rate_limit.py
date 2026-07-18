@@ -126,3 +126,31 @@ def test_요청이_한도를_초과해_차단되면_한글_429_페이지가_렌�
     assert "429.html" in [t.name for t in throttled.templates if t.name]
     body = throttled.content.decode("utf-8", "ignore")
     assert "요청이 너무 많습니다" in body
+
+
+@pytest.mark.django_db
+@override_settings(ACCOUNT_RATE_LIMITS={"login": "2/m/ip"})
+def test_성공한_로그인도_login_한도에_포함되어_초과하면_429로_차단된다(
+    client, make_verified_user, valid_password
+):
+    """allauth의 기본 ``login`` 한도(30/m/ip)는 config/settings.py가
+    override하지 않아 병합으로 활성이며 성공 로그인까지 카운트한다 —
+    tests/e2e/conftest.py의 autouse 캐시 격리 fixture가 보상하던 결함
+    (TS-INF-04)을, 브라우저·live_server 없이 계층 하강해 방어한다.
+    한도만 좁힐 뿐 운영 ACCOUNT_RATE_LIMITS는 무변경."""
+    make_verified_user("loginlimit@example.com")
+
+    for _ in range(2):
+        client.logout()
+        resp = client.post(
+            "/accounts/login/",
+            {"login": "loginlimit@example.com", "password": valid_password},
+        )
+        assert resp.status_code in (302, 200), resp.status_code
+
+    client.logout()
+    throttled = client.post(
+        "/accounts/login/",
+        {"login": "loginlimit@example.com", "password": valid_password},
+    )
+    assert throttled.status_code == 429, throttled.status_code

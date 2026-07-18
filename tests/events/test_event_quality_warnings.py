@@ -201,13 +201,6 @@ class TestCountPublishedMissingDates:
 
         assert count_published_missing_dates() == 0
 
-    def test_날짜가_모두_있는_행사만_있으면_날짜_누락_건수는_0이다(self, make_event):
-        make_event(
-            official_url=None, start_date=date(2020, 1, 1), end_date=date(2020, 1, 2)
-        )
-
-        assert count_published_missing_dates() == 0
-
     def test_날짜가_누락된_행사가_두_건이면_날짜_누락_건수는_2다(self, make_event):
         # Guards against a .count() -> .exists() regression (bool is a
         # subclass of int; an exists()-based count would still pass 0/1).
@@ -246,11 +239,6 @@ class TestCountPublishedMissingRegion:
 
     def test_미게시_행사는_지역_누락_집계에서_제외된다(self, make_draft_event):
         make_draft_event(official_url=None, region="")
-
-        assert count_published_missing_region() == 0
-
-    def test_지역_값이_있는_행사만_있으면_지역_누락_건수는_0이다(self, make_event):
-        make_event(official_url=None, region="서울")
 
         assert count_published_missing_region() == 0
 

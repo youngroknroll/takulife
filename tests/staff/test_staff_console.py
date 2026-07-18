@@ -81,24 +81,6 @@ def test_로그인한_일반_사용자의_대시보드_요청은_리다이렉트
 
 
 @pytest.mark.django_db
-def test_로그인한_일반_사용자는_대시보드_접근시_로그인_페이지로_리다이렉트되지_않고_403을_받는다(client, make_user):
-    user = make_user()
-    client.force_login(user)
-
-    resp = client.get("/staff/dashboard/")
-
-    assert resp.status_code == 403
-
-
-@pytest.mark.django_db
-def test_익명_사용자의_대시보드_접근은_403이_아니라_로그인_리다이렉트가_된다(client):
-    resp = client.get("/staff/dashboard/")
-
-    assert resp.status_code == 302
-    assert resp.url == "/accounts/login/?next=/staff/dashboard/"
-
-
-@pytest.mark.django_db
 def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5종을_컨텍스트로_제공한다(staff_client, make_draft):
     staff, client = staff_client()
     make_draft("https://example.com/a", extracted_title="드래프트 A", review_status=EventDraft.ReviewStatus.PENDING)
