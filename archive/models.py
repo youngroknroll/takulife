@@ -246,6 +246,9 @@ class CollectionItem(models.Model):
     tradeable_quantity = models.IntegerField(default=0)
     # Reserved for the future trade opt-in gate — no exposure until Stage 4.
     visibility = models.CharField(max_length=20, default="private")
+    # Client-supplied idempotency key for bfcache replay dedup — not user
+    # editable, unset (null) for rows created before this field existed.
+    client_token = models.UUIDField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -262,6 +265,11 @@ class CollectionItem(models.Model):
             models.CheckConstraint(
                 name="collectionitem_tradeable_gte_0",
                 condition=models.Q(tradeable_quantity__gte=0),
+            ),
+            models.UniqueConstraint(
+                fields=["user", "client_token"],
+                condition=models.Q(client_token__isnull=False),
+                name="unique_archive_collection_item_user_client_token",
             ),
         ]
         # §6-b Deferred (C1): supports list_user_collection_items' owner-
