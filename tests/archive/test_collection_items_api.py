@@ -892,19 +892,64 @@ def test_같은_클라이언트_토큰으로_컬렉션_항목_생성_POST를_두
 def test_컬렉션_항목_PATCH_요청에_클라이언트_토큰을_담아_보내도_기존_토큰_값은_변경되지_않는다(
     client, make_user
 ):
-    from archive.services import create_collection_item
-
     user = make_user(username="ci-patch-client-token-pinned")
     original_token = uuid.uuid4()
-    item = create_collection_item(user=user, name="토큰 고정 확인", client_token=original_token)
 
     client.force_login(user)
+    create_response = client.post(
+        "/api/collection-items/",
+        {"name": "토큰 고정 확인", "client_token": str(original_token)},
+        content_type="application/json",
+    )
+    assert create_response.status_code == 201
+    item_id = create_response.json()["id"]
+
     response = client.patch(
-        f"/api/collection-items/{item.id}/",
+        f"/api/collection-items/{item_id}/",
         {"name": "이름 변경", "client_token": str(uuid.uuid4())},
         content_type="application/json",
     )
 
     assert response.status_code == 200
-    item.refresh_from_db()
+    item = CollectionItem.objects.get(id=item_id)
     assert item.client_token == original_token
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-05-CI (bfcache duplicate-creation plan §6, verification boundary
+# "web/slow") — the create endpoint must also cap flood-style repeated POSTs,
+# distinct from the client_token idempotency guard above: a scoped throttle
+# of 30/minute limits CollectionItem creation, mirroring
+# tests/archive/test_promotion_api.py's daily-promotion flood test
+# (test_일일_승격_한도를_초과하면_429로_제한된다). GET (list) must stay
+# unaffected — the throttle only guards the write path.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_컬렉션_항목_생성_요청이_설정된_한도를_초과하면_429로_제한된다(client, make_user):
+    user = make_user(username="ci-create-flood")
+    client.force_login(user)
+
+    # 30/minute budget: 30 creates succeed, the 31st is throttled.
+    for i in range(30):
+        response = client.post(
+            "/api/collection-items/",
+            {"name": f"한도 확인 굿즈 {i}"},
+            content_type="application/json",
+        )
+        assert response.status_code == 201, f"create {i} should succeed"
+
+    throttled = client.post(
+        "/api/collection-items/",
+        {"name": "한도 초과 굿즈"},
+        content_type="application/json",
+    )
+
+    assert throttled.status_code == 429
+    assert CollectionItem.objects.count() == 30
+
+    listed = client.get("/api/collection-items/")
+    assert listed.status_code == 200
