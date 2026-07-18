@@ -240,6 +240,7 @@ class VisitRecordListCreateView(ListCreateAPIView):
             personal_entry=serializer.validated_data.get("personal_entry"),
             visited_on=serializer.validated_data["visited_on"],
             short_review=serializer.validated_data.get("short_review", ""),
+            client_token=serializer.validated_data.get("client_token"),
         )
         response_serializer = self.get_serializer(record)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)

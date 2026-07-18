@@ -123,10 +123,20 @@ class VisitRecordSerializer(serializers.ModelSerializer):
     personal_entry = serializers.PrimaryKeyRelatedField(
         queryset=PersonalEntry.objects.none(), required=False, allow_null=True
     )
+    # Client-supplied idempotency key (bfcache duplicate-creation plan §4-1).
+    # write_only so a replayed create's token is never echoed back.
+    client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = VisitRecord
-        fields = ["id", "event", "personal_entry", "visited_on", "short_review"]
+        fields = [
+            "id",
+            "event",
+            "personal_entry",
+            "visited_on",
+            "short_review",
+            "client_token",
+        ]
         read_only_fields = ["id"]
 
     def __init__(self, *args, **kwargs):
