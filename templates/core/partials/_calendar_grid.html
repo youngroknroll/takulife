@@ -1,0 +1,64 @@
+{% comment %}
+Shared month calendar grid (Events calendar today; Activity calendar is a
+future consumer of the same contract). Single flat CSS grid — weekday header
+cells and day cells are plain siblings (no <table>, no nesting). Styling:
+static/css/components/calendar.css.
+
+Include with:
+  {% include "core/partials/_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
+  weeks        list of week rows; each week is a list of exactly 7 day cell
+               dicts: {date, in_month, today, selected, items, more_count, count}
+               date        a real date, or None for an out-of-range filler
+                           cell at the year 1 / year 9999 boundary (render as
+                           a link-less void cell — no number, no navigation).
+               items       list of up to 2 {title, url} dicts (url is not
+                           consumed here — the whole cell is the single link
+                           target, per the no-nested-<a> constraint).
+               more_count  events beyond the first 2 (desktop "외 N개").
+               count       total events that day (mobile dot + number).
+  extra_query  querystring tail carrying the active q/region/category/status
+               filters, already formatted with its own leading '&' (or "" if
+               none) — see core.views._calendar_extra_query. Append directly
+               after '?month=...&date=...', no extra '&' needed.
+ARIA/role/sr-only intentionally omitted (repo-wide policy) — state is
+data-in-month/data-today/data-selected only.
+{% endcomment %}
+<div class="month-grid">
+  <span class="month-grid-weekday">일</span>
+  <span class="month-grid-weekday">월</span>
+  <span class="month-grid-weekday">화</span>
+  <span class="month-grid-weekday">수</span>
+  <span class="month-grid-weekday">목</span>
+  <span class="month-grid-weekday">금</span>
+  <span class="month-grid-weekday">토</span>
+
+  {% for week in weeks %}
+    {% for day in week %}
+      {% if day.date %}
+        <a
+          class="day-cell"
+          href="?month={{ day.date|date:"Y-m" }}&date={{ day.date|date:"Y-m-d" }}{{ extra_query }}#selected-date"
+          data-in-month="{{ day.in_month|yesno:"true,false" }}"
+          data-today="{{ day.today|yesno:"true,false" }}"
+          data-selected="{{ day.selected|yesno:"true,false" }}"
+        >
+          <span class="day-num">{{ day.date|date:"j" }}</span>
+          {% if day.items %}
+            <span class="day-items">
+              {% for item in day.items %}<span class="day-item">{{ item.title }}</span>{% endfor %}
+              {% if day.more_count %}<span class="day-more">외 {{ day.more_count }}개</span>{% endif %}
+            </span>
+          {% endif %}
+          {% if day.count %}
+            <span class="day-mobile-meta">
+              <span class="day-dot"></span>
+              <span class="day-count">{{ day.count }}</span>
+            </span>
+          {% endif %}
+        </a>
+      {% else %}
+        <span class="day-cell" data-void></span>
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+</div>

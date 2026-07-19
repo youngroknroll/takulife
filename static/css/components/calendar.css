@@ -1,0 +1,167 @@
+/* ── calendar.css — shared month-grid component ─────────────────
+ * Consumed by templates/core/partials/_calendar_grid.html (Events calendar
+ * today; Activity calendar is a future consumer of the same grid markup).
+ * Flat CSS grid only (no <table>) — see plan
+ * .docs/plans/2026-07-19-dual-calendar-frontend-pre-review.md §A-1.
+ * Breakpoints: 45rem only (§A-3 — no foreign 53.75/56.25/60rem boundaries
+ * borrowed from other pages). State is expressed purely via
+ * data-in-month/data-today/data-selected + color swaps (§A-7 — opacity is
+ * banned for state, per an earlier low-contrast finding elsewhere).
+ *
+ * Legend/multi-kind dot colors (§A-8, 일정=--up-*/찜=--pink-*/상태 변경=
+ * --brand-*/방문=--mint-*/굿즈=--amber-*) are intentionally NOT implemented
+ * here yet — this file's only current consumer (the Events calendar) has a
+ * single kind (a solid --brand dot, see .day-dot below). The multi-kind
+ * legend belongs to whichever change adds the Activity calendar, its actual
+ * first consumer.
+ */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.month-grid-weekday {
+  text-align: center;
+  padding: 0.25rem 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Base cell — both the real (<a>) and void (<span data-void>, year 1/9999
+   boundary filler with no representable date) share this box so the grid
+   never reflows a hole. */
+.day-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-height: 6.5rem; /* desktop/tablet — §A-4 */
+  padding: 0.375rem 0.3125rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.day-cell:hover {
+  border-color: var(--brand);
+}
+
+/* Focus outline is inherited from base.css's global a:focus rule — not
+   redefined here (§A-17). */
+
+.day-cell[data-void] {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+.day-cell[data-today="true"] {
+  border: 2px solid var(--brand);
+}
+
+.day-cell[data-selected="true"] {
+  background: var(--brand-soft);
+}
+
+.day-cell[data-selected="true"] .day-num {
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+
+.day-cell[data-in-month="false"] {
+  background: var(--bg);
+}
+
+.day-cell[data-in-month="false"] .day-num {
+  color: var(--muted);
+}
+
+.day-num {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* Desktop: up to 2 event titles (1-line ellipsis, not line-clamp — §A-5)
+   plus an "외 N개" overflow marker. Hidden on mobile below. */
+.day-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.day-item {
+  font-size: var(--fs-xs);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.day-more {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* Mobile: dot + total count only, no title text (§A-5). Hidden on desktop
+   by default; the 45rem block below is the only place it's shown. */
+.day-mobile-meta {
+  display: none;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: auto;
+}
+
+/* Events has a single kind — one solid --brand dot (§A-8). */
+.day-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.day-count {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── error panel (.empty-state shape + rose tokens, §A-13) ──────
+   Reserves --rose-* strictly for this panel — never a kind marker
+   (§A-8). */
+.calendar-error-panel {
+  border-color: var(--rose-border);
+  background: var(--rose-soft);
+}
+
+@media (max-width: 45rem) {
+  .month-grid {
+    gap: 2px;
+  }
+  /* 320px arithmetic (§A-4): 288px content width / 7 columns ≈ 39-41px —
+     44px-wide cells are not arithmetically possible here (a documented,
+     pre-existing mobile exception). The vertical 44px minimum stays. */
+  .day-cell {
+    min-height: 44px;
+    padding: 0.25rem 0.125rem;
+    border-radius: 6px;
+  }
+  .day-items {
+    display: none;
+  }
+  .day-mobile-meta {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day-cell {
+    transition: none;
+  }
+}

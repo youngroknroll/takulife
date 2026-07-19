@@ -1,0 +1,51 @@
+/* ── /events/calendar/ page skin ─────────────────────────────────
+ * Minimal layout-only rules — the grid/cell/error-panel look lives in
+ * components/calendar.css (shared), and the filter form / event card reuse
+ * pages/event_list.css verbatim (region-select dropdown, filter-group/
+ * filter-list/filter-check/filter-actions, .event-card). This file only
+ * places those pieces on a full-width page instead of event_list.html's
+ * 280px sidebar (.layout is deliberately not used here — plan
+ * .docs/plans/2026-07-19-dual-calendar-frontend-pre-review.md §A-2).
+ * Breakpoints: 45rem only (§A-3).
+ */
+.calendar-page-toggle {
+  margin: 0.75rem 0 1.25rem;
+}
+
+.calendar-filters {
+  margin-bottom: 0.875rem;
+}
+
+.calendar-month-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-bottom: 0.875rem;
+}
+
+.calendar-month-label {
+  margin: 0;
+  min-width: 8rem;
+  text-align: center;
+  font-size: var(--fs-lg);
+}
+
+.date-detail-section {
+  margin-top: 1.25rem;
+}
+
+.date-detail-section h2 {
+  margin: 0 0 0.625rem;
+  font-size: var(--fs-base);
+}
+
+@media (max-width: 45rem) {
+  /* event_list.css's mobile .event-list is a 2-col poster grid, sized for a
+     full 10-item results page. A single day rarely has more than a couple
+     of events, so the detail section keeps a single column instead. */
+  .date-detail-section .event-list {
+    grid-template-columns: 1fr;
+  }
+}
