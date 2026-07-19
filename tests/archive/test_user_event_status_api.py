@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from archive.models import UserEventStatus
+from archive.models import ActivityLogEntry, UserEventStatus
 from events.models import Event
 
 pytestmark = pytest.mark.web
@@ -256,6 +256,34 @@ def test_인증된_사용자가_행사_상태를_삭제하면_이후_조회에�
 
     assert response.status_code == 204
     assert client.get(f"/api/user-event-statuses/{status_id}/").status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# CAL-2-13 — (신설) DELETE must go through remove_user_event_status so a
+# status_removed ActivityLogEntry is recorded (perform_destroy wiring
+# regression guard, dual-calendar Test List §단계 2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_상태_삭제_API를_호출하면_status_removed_활동_이력이_기록된다(
+    client, make_user, make_event, make_status
+):
+    user = make_user(email="status-removed-activity@example.com", username="status-removed-activity")
+    event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
+    status = make_status(user, event, status="planned")
+    status_id = status.id
+
+    client.force_login(user)
+    response = client.delete(f"/api/user-event-statuses/{status_id}/")
+
+    assert response.status_code == 204
+    assert (
+        ActivityLogEntry.objects.filter(
+            user=user, kind=ActivityLogEntry.Kind.STATUS_REMOVED, event=event
+        ).count()
+        == 1
+    )
 
 
 @pytest.mark.django_db
