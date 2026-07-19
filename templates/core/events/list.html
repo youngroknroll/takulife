@@ -26,7 +26,7 @@
     <section class="layout">
       <aside class="panel filters">
         <h1>행사 목록</h1>
-        <nav class="nav-links">
+        <nav class="nav-links" aria-label="목록·달력 전환">
           <a class="active" href="/events/?{{ request.GET.urlencode }}">목록</a>
           <a href="/events/calendar/?{{ request.GET.urlencode }}">달력</a>
         </nav>
@@ -200,7 +200,7 @@
           </div>
 
           {% if page_obj.has_other_pages %}
-            <nav class="pager">
+            <nav class="pager" aria-label="페이지 번호">
               {% if page_obj.has_previous %}
                 <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% for r in selected_region %}&region={{ r|urlencode }}{% endfor %}{% for c in selected_category %}&category={{ c|urlencode }}{% endfor %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_sort %}&sort={{ selected_sort|urlencode }}{% endif %}">이전</a>
               {% endif %}

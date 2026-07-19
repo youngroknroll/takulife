@@ -6,7 +6,7 @@ Include with:  {% include "core/partials/_archive_nav.html" with active="visits"
 찜 목록 stays a standalone pink pill (현행 유지), always visible beside the header.
 {% endcomment %}
 <div class="sub-nav">
-  <nav class="archive-nav-wrap">
+  <nav class="archive-nav-wrap" aria-label="내 활동 하위 메뉴">
     <details class="archive-nav">
       <summary class="archive-nav-summary">
         <span class="archive-nav-current">내 활동{% if active_label %} · {{ active_label }}{% endif %}</span>

@@ -21,12 +21,12 @@ page for the regular-member deletion entry point):
                     only click-reachable path to email/password management)
   +superuser     — 관리자 added to either branch above
 {% endcomment %}
-<nav class="topbar-auth">
+<nav class="topbar-auth" aria-label="계정">
   {% if request.user.is_authenticated %}
     <span class="topbar-username" title="{{ request.user.email }}">{{ request.user.email }}</span>
     <div class="account-menu" data-account-menu>
       <button type="button" class="account-menu-toggle" data-account-menu-toggle
-              data-expanded="false" data-controls="account-menu-panel">
+              data-expanded="false" data-controls="account-menu-panel" aria-label="계정 메뉴">
         <span class="account-mark">{{ request.user.email|first|upper }}</span>
       </button>
       <div id="account-menu-panel" class="account-menu-panel" data-account-menu-panel hidden>

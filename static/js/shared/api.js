@@ -235,17 +235,23 @@
 
     var modal = document.createElement("div");
     modal.className = "auth-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "auth-modal-title");
+    modal.setAttribute("aria-describedby", "auth-modal-desc");
 
     var close = document.createElement("button");
     close.type = "button";
     close.className = "auth-modal-close";
     close.textContent = "×";
+    close.setAttribute("aria-label", "닫기");
 
     var title = document.createElement("h2");
     title.id = "auth-modal-title";
     title.textContent = "로그인이 필요합니다";
 
     var desc = document.createElement("p");
+    desc.id = "auth-modal-desc";
     desc.textContent = "찜·방문 예정을 저장하려면 로그인해 주세요.";
 
     var actions = document.createElement("div");
