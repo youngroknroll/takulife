@@ -262,3 +262,21 @@ def test_선택_날짜_상세에는_그_날짜_항목만_방문_및_일정_겹�
     assert "선택일상세일정겹침행사" in detail_section
     assert "선택일상세방문행사" in detail_section
     assert "선택일상세다른날짜행사" not in detail_section
+
+
+# ---------------------------------------------------------------------------
+# CALFIX-2 — active_filter_count is exposed in context (calendar review fixes
+# plan .docs/plans/2026-07-19-calendar-review-fixes-plan.md 단계 1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_활동_달력을_종류_필터와_함께_조회하면_활성_필터_개수가_컨텍스트에_담긴다(
+    user_client,
+):
+    _, client = user_client()
+
+    resp = client.get("/archive/calendar/", {"type": ["visit", "goods"]})
+
+    assert resp.status_code == 200
+    assert resp.context["active_filter_count"] == 2
