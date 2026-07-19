@@ -306,7 +306,7 @@ def staff_draft_discovery_run(request):
         summary = _summarize_command_output(out)
         messages.error(request, f"수집이 부분적으로 실패했습니다: {exc}" + (f" ({summary})" if summary else ""))
     except Exception:
-        logger.exception("discover_drafts 실행 중 예상치 못한 오류 발생")
+        logger.exception("Unexpected error while running discover_drafts")
         messages.error(request, "수집 실행 중 오류가 발생했습니다.")
     else:
         summary = _summarize_command_output(out)
