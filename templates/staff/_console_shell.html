@@ -17,7 +17,7 @@ No sidebar, no collapse toggle, no icons, no badges — see plan "하지 말 것
     <span class="staff-shell-brand">takulife 스태프 콘솔</span>
   </div>
   <div class="staff-shell-tabrow">
-    <nav class="staff-shell-tabs nav-links">
+    <nav class="staff-shell-tabs nav-links" aria-label="스태프 콘솔 메뉴">
       <a href="/staff/dashboard/"{% if request.resolver_match.url_name == 'dashboard' %} class="active"{% endif %}>스태프 콘솔</a>
       <a href="/staff/drafts/"{% if request.resolver_match.url_name == 'draft-list' or request.resolver_match.url_name == 'draft-detail' %} class="active"{% endif %}>드래프트 관리</a>
       <a href="/staff/events/"{% if request.resolver_match.url_name == 'event-list' or request.resolver_match.url_name == 'event-edit' %} class="active"{% endif %}>이벤트 관리</a>

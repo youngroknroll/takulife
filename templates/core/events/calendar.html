@@ -13,7 +13,7 @@
   <main class="page" id="content">
     <h1>행사 달력</h1>
 
-    <nav class="nav-links calendar-page-toggle">
+    <nav class="nav-links calendar-page-toggle" aria-label="목록·달력 전환">
       <a href="/events/?{{ request.GET.urlencode }}">목록</a>
       <a class="active" href="/events/calendar/?{{ request.GET.urlencode }}">달력</a>
     </nav>
@@ -117,7 +117,7 @@
       </form>
     </section>
 
-    <nav class="calendar-month-nav">
+    <nav class="calendar-month-nav" aria-label="월 이동">
       <a class="btn btn-secondary" href="?month={{ prev_month }}{{ extra_query }}">‹ 이전달</a>
       <h2 class="calendar-month-label">{{ month_label }}</h2>
       <a class="btn btn-secondary" href="?month={{ next_month }}{{ extra_query }}">다음달 ›</a>
