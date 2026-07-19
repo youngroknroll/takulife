@@ -1,4 +1,5 @@
-from datetime import timedelta
+import calendar
+from datetime import date, timedelta
 
 from django.db import models
 from django.db.models import Case, DateField, F, IntegerField, Value, When
@@ -9,6 +10,22 @@ CLOSING_SOON_DAYS = 4
 class EventQuerySet(models.QuerySet):
     def published(self):
         return self.filter(publish_status="published")
+
+    def overlapping_month(self, year, month):
+        """Published-or-not events whose run overlaps the given (year, month)
+        (dual-calendar service design §6). A null start_date always excludes
+        an event. An event with no end_date is treated as a single day on
+        start_date, so its "effective end" is start_date itself.
+        """
+        month_start = date(year, month, 1)
+        month_end = date(year, month, calendar.monthrange(year, month)[1])
+        return self.filter(
+            start_date__isnull=False,
+            start_date__lte=month_end,
+        ).filter(
+            models.Q(end_date__isnull=True, start_date__gte=month_start)
+            | models.Q(end_date__isnull=False, end_date__gte=month_start)
+        )
 
     def filter_for_public_listing(self, params, *, today):
         queryset = self
