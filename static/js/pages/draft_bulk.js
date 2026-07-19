@@ -22,7 +22,7 @@
  *                              individually selectable, per PO decision).
  *   #bulk-selected-count     — "N건 선택됨" live count.
  *   #bulk-approve-btn        — disabled while selection is empty.
- *   #bulk-approve-result     — the "N/M 성공" summary text (per-item
+ *   #bulk-approve-result     — the completion summary text (per-item
  *                              failures are static text, shown separately).
  *   #bulk-approve-error      — hidden by default. Reserved for genuine
  *                              request-level exceptions (403/lost session,
@@ -237,8 +237,15 @@
 
     var resultEl = document.getElementById("bulk-approve-result");
     if (resultEl) {
+      var total = succeeded.length + failed.length;
       resultEl.textContent =
-        succeeded.length + "/" + (succeeded.length + failed.length) + " 성공";
+        failed.length === 0
+          ? succeeded.length + "건 모두 승인 완료."
+          : succeeded.length +
+            "/" +
+            total +
+            "건 승인 완료. 승인되지 않은 항목은 카드에서 사유를 확인하세요.";
+      resultEl.focus();
     }
   }
 
@@ -290,6 +297,7 @@
                   ? CSRF_OR_SESSION_MSG
                   : window.TakuAPI.formatError(result);
               errorEl.hidden = false;
+              errorEl.focus();
             }
             updateToolbarState();
             return;

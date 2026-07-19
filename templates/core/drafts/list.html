@@ -53,6 +53,7 @@
             <p
               id="draft-create-error"
               class="notice"
+              tabindex="-1"
               hidden
             ></p>
           </div>
@@ -73,8 +74,8 @@
               </label>
               <span id="bulk-selected-count">0건 선택됨</span>
               <button type="button" id="bulk-approve-btn" class="action-button" disabled>선택 일괄 승인</button>
-              <p id="bulk-approve-result"></p>
-              <p id="bulk-approve-error" class="notice" hidden></p>
+              <p id="bulk-approve-result" tabindex="-1"></p>
+              <p id="bulk-approve-error" class="notice" tabindex="-1" hidden></p>
             </div>
           {% endif %}
 

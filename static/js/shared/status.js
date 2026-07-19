@@ -83,12 +83,16 @@
     var existing = container.querySelector(".status-inline-error");
     if (existing) {
       existing.textContent = message;
+      existing.tabIndex = -1;
+      existing.focus();
       return;
     }
     var msg = document.createElement("p");
     msg.className = "status-inline-error inline-error";
     msg.textContent = message;
+    msg.tabIndex = -1;
     container.appendChild(msg);
+    msg.focus();
   }
 
   // Called at the start of every new attempt (mirrors archive_search.js's
@@ -344,6 +348,7 @@
   function setInterestActive(button, interestId) {
     button.dataset.interestId = String(interestId);
     button.classList.add("active");
+    button.setAttribute("aria-pressed", "true");
     var glyph = button.querySelector("[data-interest-glyph]");
     if (glyph) {
       glyph.textContent = "♥";
@@ -353,6 +358,7 @@
   function setInterestDefault(button) {
     delete button.dataset.interestId;
     button.classList.remove("active");
+    button.setAttribute("aria-pressed", "false");
     var glyph = button.querySelector("[data-interest-glyph]");
     if (glyph) {
       glyph.textContent = "♡";
@@ -424,6 +430,11 @@
           setInterestActive(button, existingId);
         } else {
           button.classList.add("active");
+          button.setAttribute("aria-pressed", "true");
+          var glyph = button.querySelector("[data-interest-glyph]");
+          if (glyph) {
+            glyph.textContent = "♥";
+          }
         }
       }
       return;

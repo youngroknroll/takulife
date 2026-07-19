@@ -37,9 +37,10 @@
             type="button"
             data-interest-toggle
             data-personal-entry-id="{{ row.entry.id }}"
+            aria-pressed="{% if row.interest_id %}true{% else %}false{% endif %}"
             {% if row.interest_id %}data-interest-id="{{ row.interest_id }}"{% endif %}
           >
-            <span data-interest-glyph>{% if row.interest_id %}♥{% else %}♡{% endif %}</span>
+            <span data-interest-glyph aria-hidden="true">{% if row.interest_id %}♥{% else %}♡{% endif %}</span>
             찜
           </button>
           <button

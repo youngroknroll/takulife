@@ -76,8 +76,9 @@
                 data-interest-toggle
                 data-toast
                 data-event-id="{{ event.id }}"
+                aria-pressed="{% if user_interested %}true{% else %}false{% endif %}"
                 {% if user_interested %}data-interest-id="{{ user_interest_id }}"{% endif %}>
-                <span data-interest-glyph>{% if user_interested %}♥{% else %}♡{% endif %}</span>
+                <span data-interest-glyph aria-hidden="true">{% if user_interested %}♥{% else %}♡{% endif %}</span>
                 찜
               </button>
             </div>

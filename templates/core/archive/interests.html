@@ -42,8 +42,9 @@
                     <button class="interest-btn active" type="button"
                       data-interest-toggle
                       data-interest-id="{{ row.interest_id }}"
-                      data-remove-on-cancel>
-                      <span data-interest-glyph>♥</span>
+                      data-remove-on-cancel
+                      aria-pressed="true">
+                      <span data-interest-glyph aria-hidden="true">♥</span>
                       찜
                     </button>
                   </div>

@@ -62,6 +62,7 @@
     }
     container.textContent = message;
     container.hidden = false;
+    container.focus();
   }
 
   function hideError(container) {
