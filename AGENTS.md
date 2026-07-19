@@ -810,6 +810,14 @@ explicitly accepts the tradeoff.
 - Do not optimize without a current requirement or measured problem.
 - Record larger improvements as deferred work instead of expanding scope.
 
+### Error Handling And Logging
+
+- The full policy for exception design, HTTP translation at the view
+  boundary, approved catch-all cases, and logging rules lives in
+  `.docs/error-handling-logging-policy.md`.
+- `tests/core/test_error_logging_policy.py` enforces the policy's
+  deterministic rules as an AST contract guard.
+
 ## Review Gate After Each Task
 
 Before the next task, confirm:
