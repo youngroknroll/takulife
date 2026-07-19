@@ -4,8 +4,15 @@ handleClick disables every other `.status-btn` in the same
 [data-status-error-container] while a request is in flight, so a second
 click can't race it (Slow 3G repro history). Disabling the *focused*
 sibling makes the browser bounce focus to <body> with no announcement — a
-keyboard/screen-reader user loses their place. status.js now remembers which
-sibling held focus and restores it once the siblings are unlocked again.
+keyboard/screen-reader user loses their place. status.js remembers which
+sibling held focus and restores it once the siblings are unlocked again —
+but only as a fallback: since the ARIA restoration stage 2 track,
+showInlineError() moves focus onto the rendered `.status-inline-error`
+message on a failure path, and unlockSiblings()'s restore guard only
+restores the remembered sibling when `document.activeElement` is still
+`<body>` (i.e. nothing else has claimed focus in the meantime). On a
+failure, the inline error wins the focus; the sibling-restore path is a
+fallback for cases where nothing else claims focus first.
 
 Uses the event detail page's "참여 상태" status-choices row (three sibling
 .status-btn controls: 방문 예정 / 방문 완료 / 놓침). window.TakuAPI.post is
@@ -48,7 +55,7 @@ STUB_POST = """
 
 
 class TestStatusSiblingLockFocus:
-    def test_형제_버튼_잠금이_해제되면_포커스가_원래_있던_버튼으로_복원된다(
+    def test_실패로_형제_잠금이_해제되면_포커스가_인라인_에러로_이동한다(
         self, live_server, page, seed, login, browser_name
     ):
         if browser_name == "webkit":
@@ -88,9 +95,13 @@ class TestStatusSiblingLockFocus:
         # runs and unlockSiblings() fires in the `finally`.
         page.evaluate("() => window.__resolveStatusRequest({ ok: false, status: 0, data: null })")
 
-        # Once siblings unlock, focus comes back to the sibling that held it
-        # before the lock.
+        # Once siblings unlock, the sibling lock itself is still lifted (the
+        # regression this test protects) — but focus does NOT return to the
+        # sibling: showInlineError() has already moved it onto the rendered
+        # inline error message, and unlockSiblings()'s restore guard only
+        # restores the remembered sibling when activeElement is still
+        # <body>, which it no longer is.
         expect(page.locator(PLANNED_BTN)).to_be_enabled()
         assert page.evaluate(
-            f"document.activeElement === document.querySelector({PLANNED_BTN!r})"
+            "document.activeElement === document.querySelector('.status-inline-error')"
         )
