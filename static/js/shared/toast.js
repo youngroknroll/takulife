@@ -2,8 +2,9 @@
  * toast.js — lightweight success toast for takulife
  *
  * Exposes: window.TakuToast.show(message)
- *   textContent only (XSS-safe), auto-dismiss after ~3.5s. DOM: lazily built
- *   once on first use (singleton), same idiom as confirm-modal.js.
+ *   textContent only (XSS-safe), auto-dismiss after ~3.5s. DOM: built once,
+ *   unconditionally, at script load (singleton) — role="status" must be
+ *   present in the a11y tree before the first show().
  *
  * Reload bridge: pages that reload after a successful action (status.js
  * data-reload-on-success) stash the message in sessionStorage under
@@ -26,32 +27,30 @@
   function build() {
     toastEl = document.createElement("div");
     toastEl.className = "taku-toast";
-    toastEl.hidden = true;
+    toastEl.setAttribute("role", "status");
     document.body.appendChild(toastEl);
   }
 
   function show(message) {
-    if (!toastEl) {
-      build();
-    }
     if (hideTimer) {
       window.clearTimeout(hideTimer);
       hideTimer = null;
     }
 
-    toastEl.textContent = message;
-    toastEl.hidden = false;
+    // Empty first so a repeat of the same message is still a detectable
+    // mutation for assistive tech.
+    toastEl.textContent = "";
     toastEl.classList.remove("is-visible");
 
     // rAF lets the browser paint the hidden state first so the CSS
     // opacity/transform transition actually fires (mirrors confirm-modal.js).
     requestAnimationFrame(function () {
+      toastEl.textContent = message;
       toastEl.classList.add("is-visible");
     });
 
     hideTimer = window.setTimeout(function () {
       toastEl.classList.remove("is-visible");
-      toastEl.hidden = true;
       hideTimer = null;
     }, DISMISS_MS);
   }
@@ -74,6 +73,8 @@
     }
     show(pending);
   }
+
+  build();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initReloadBridge);
