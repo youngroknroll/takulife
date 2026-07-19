@@ -95,7 +95,7 @@
             </div>
             <a class="archive-search-clear" href="{{ request.path }}{% if clear_query_suffix %}?{{ clear_query_suffix }}{% endif %}"{% if not has_query %} hidden{% endif %}>지우기</a>
           </form>
-          <p id="archive-search-error" class="inline-error"></p>
+          <p id="archive-search-error" class="inline-error" aria-live="polite"></p>
         {% endif %}
 
         <div id="archive-results" data-archive-results>

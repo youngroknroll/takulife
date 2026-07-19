@@ -348,7 +348,7 @@ class TestArchiveSearchErrorElementSharedStyle:
 
         assert resp.status_code == 200
         content = resp.content.decode()
-        assert '<p id="archive-search-error" class="inline-error"></p>' in content
+        assert '<p id="archive-search-error" class="inline-error" aria-live="polite"></p>' in content
 
 
 @pytest.mark.django_db
