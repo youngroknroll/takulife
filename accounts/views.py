@@ -111,6 +111,7 @@ def delete_account(request):
 
         _reset_delete_attempts(request.user)
         user = request.user
+        logger.info("Deleting user account user_pk=%s", user.pk)
         user.delete()
         logout(request)
         messages.success(request, "회원 탈퇴가 완료되었습니다.")
