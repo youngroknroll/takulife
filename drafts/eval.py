@@ -68,6 +68,7 @@ def build_field_accuracy_report(golden_rows, extract_fn):
         try:
             actual_fields = extract_fn(raw_title, raw_text)
         except Exception:
+            # except-ok: extraction failures are counted and reported in the eval summary
             errors += 1
             continue
 
