@@ -13,7 +13,13 @@
 
     <h1>활동 달력</h1>
 
-    <section class="panel calendar-filters">
+    <section class="panel calendar-filters"
+             data-disclosure data-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
+      <button type="button" class="calendar-filters-toggle" data-disclosure-toggle>
+        <span data-state="closed">필터 열기 ▾</span>
+        <span data-state="open">필터 닫기 ▴</span>
+        {% if active_filter_count %}<span class="calendar-filters-badge">{{ active_filter_count }}개 적용됨</span>{% endif %}
+      </button>
       <form method="get" action="/archive/calendar/">
         <div class="filter-group">
           <h2>종류</h2>
@@ -122,4 +128,8 @@
       {% endif %}
     </section>
   </main>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="{% static 'js/shared/disclosure.js' %}"></script>
 {% endblock %}

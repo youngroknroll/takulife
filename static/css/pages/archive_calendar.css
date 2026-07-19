@@ -105,7 +105,46 @@
   margin-left: auto;
 }
 
+.calendar-filters-toggle {
+  display: none;
+}
+
 @media (max-width: 45rem) {
+  .calendar-filters-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-soft);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 0.625rem 0.75rem;
+    font-size: var(--fs-md);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .calendar-filters-badge {
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+
+  .calendar-filters[data-expanded="false"] .calendar-filters-toggle [data-state="open"] {
+    display: none;
+  }
+
+  .calendar-filters[data-expanded="true"] .calendar-filters-toggle [data-state="closed"] {
+    display: none;
+  }
+
+  .calendar-filters[data-expanded="false"] form {
+    display: none;
+  }
+
   .filter-list {
     display: grid;
     gap: 0.375rem;
