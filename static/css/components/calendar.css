@@ -1,19 +1,23 @@
 /* ── calendar.css — shared month-grid component ─────────────────
- * Consumed by templates/core/partials/_calendar_grid.html (Events calendar
- * today; Activity calendar is a future consumer of the same grid markup).
- * Flat CSS grid only (no <table>) — see plan
+ * Consumed by templates/core/partials/_calendar_grid.html (Events calendar)
+ * and templates/core/partials/_archive_calendar_grid.html (Activity
+ * calendar) — both include the same .month-grid/.day-cell skeleton and
+ * data-in-month/data-today/data-selected state wiring; only the cell
+ * *contents* differ per partial (Events: item titles; Activity: kind
+ * dots). Flat CSS grid only (no <table>) — see plan
  * .docs/plans/2026-07-19-dual-calendar-frontend-pre-review.md §A-1.
  * Breakpoints: 45rem only (§A-3 — no foreign 53.75/56.25/60rem boundaries
  * borrowed from other pages). State is expressed purely via
  * data-in-month/data-today/data-selected + color swaps (§A-7 — opacity is
  * banned for state, per an earlier low-contrast finding elsewhere).
  *
- * Legend/multi-kind dot colors (§A-8, 일정=--up-*/찜=--pink-*/상태 변경=
- * --brand-*/방문=--mint-*/굿즈=--amber-*) are intentionally NOT implemented
- * here yet — this file's only current consumer (the Events calendar) has a
- * single kind (a solid --brand dot, see .day-dot below). The multi-kind
- * legend belongs to whichever change adds the Activity calendar, its actual
- * first consumer.
+ * Legend/multi-kind dot colors (§A-8: 일정=--up-*/찜=--pink-*/상태 변경=
+ * --brand-*/방문=--mint-*/굿즈=--amber-*, --rose-* reserved for the error
+ * panel only, never a kind marker) are scoped to `.day-dot[data-kind]` —
+ * Events never sets a data-kind attribute on its single dot, so its plain
+ * solid --brand circle (the bare `.day-dot` rule below) is unaffected by
+ * the kind-colored swatch rules added for the Activity calendar, their
+ * actual first consumer.
  */
 .month-grid {
   display: grid;
@@ -117,7 +121,9 @@
   margin-top: auto;
 }
 
-/* Events has a single kind — one solid --brand dot (§A-8). */
+/* Events has a single kind — one solid --brand dot (§A-8). Bare rule (no
+   data-kind attribute), so the [data-kind] swatch overrides below never
+   touch it. */
 .day-dot {
   display: inline-block;
   width: 6px;
@@ -126,10 +132,68 @@
   background: var(--brand);
 }
 
+/* Activity calendar's 5 kinds — soft background + border swatch, reusing
+   the -soft/-border token pairs tokens.css already provisions specifically
+   for "archive calendar day/legend swatches" (see that file's own
+   comment). data-kind="status" falls through to this base [data-kind]
+   rule (brand-soft/brand border, §A-8's 상태 변경=--brand-* pairing) — no
+   dedicated rule needed for it below. */
+.day-dot[data-kind] {
+  background: var(--brand-soft);
+  border: 1px solid var(--brand);
+}
+
+/* §A-8: no --up-border token exists — border-color: currentColor instead
+   of inventing one. */
+.day-dot[data-kind="schedule"] {
+  background: var(--up-soft);
+  color: var(--up-ink);
+  border-color: currentColor;
+}
+
+.day-dot[data-kind="interest"] {
+  background: var(--pink-soft);
+  border-color: var(--pink-border);
+}
+
+.day-dot[data-kind="visit"] {
+  background: var(--mint-soft);
+  border-color: var(--mint-border);
+}
+
+.day-dot[data-kind="goods"] {
+  background: var(--amber-soft);
+  border-color: var(--amber-border);
+}
+
+/* Activity's day-cell kind dots (deduplicated, up to 5 per cell). */
+.day-kind-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+
 .day-count {
   font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--text);
+}
+
+/* ── legend (Activity calendar only — 5 kind dot + label pairs) ── */
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1.25rem;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
 }
 
 /* ── error panel (.empty-state shape + rose tokens, §A-13) ──────

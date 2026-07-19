@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 활동 달력{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/calendar.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive_calendar.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="content">
+    {% include "core/partials/_archive_nav.html" with active="calendar" active_label="활동 달력" %}
+
+    <h1>활동 달력</h1>
+
+    <section class="panel calendar-filters">
+      <form method="get" action="/archive/calendar/">
+        <div class="filter-group">
+          <h2>종류</h2>
+          <ul class="filter-list">
+            <li>
+              <label class="filter-check">
+                <input type="checkbox" name="type" value="schedule"{% if 'schedule' in selected_types %} checked{% endif %}>
+                <span class="day-dot" data-kind="schedule"></span> 일정
+              </label>
+            </li>
+            <li>
+              <label class="filter-check">
+                <input type="checkbox" name="type" value="interest"{% if 'interest' in selected_types %} checked{% endif %}>
+                <span class="day-dot" data-kind="interest"></span> 찜
+              </label>
+            </li>
+            <li>
+              <label class="filter-check">
+                <input type="checkbox" name="type" value="status"{% if 'status' in selected_types %} checked{% endif %}>
+                <span class="day-dot" data-kind="status"></span> 상태 변경
+              </label>
+            </li>
+            <li>
+              <label class="filter-check">
+                <input type="checkbox" name="type" value="visit"{% if 'visit' in selected_types %} checked{% endif %}>
+                <span class="day-dot" data-kind="visit"></span> 방문
+              </label>
+            </li>
+            <li>
+              <label class="filter-check">
+                <input type="checkbox" name="type" value="goods"{% if 'goods' in selected_types %} checked{% endif %}>
+                <span class="day-dot" data-kind="goods"></span> 굿즈
+              </label>
+            </li>
+          </ul>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-primary btn-sm" type="submit">필터 적용</button>
+          <a class="btn btn-secondary btn-sm" href="/archive/calendar/">초기화</a>
+        </div>
+      </form>
+    </section>
+
+    <nav class="calendar-month-nav">
+      <a class="btn btn-secondary" href="?month={{ prev_month }}{{ extra_query }}">‹ 이전달</a>
+      <h2 class="calendar-month-label">{{ month_label }}</h2>
+      <a class="btn btn-secondary" href="?month={{ next_month }}{{ extra_query }}">다음달 ›</a>
+      <a class="btn btn-secondary" href="?{{ extra_query }}">오늘</a>
+    </nav>
+
+    {% if calendar_error == "invalid" %}
+      <div class="empty-state calendar-error-panel">
+        <p class="empty-title">요청한 날짜를 확인할 수 없어요</p>
+        <p class="empty-note">주소의 월 또는 날짜 값이 올바르지 않습니다.</p>
+        <a class="empty-action" href="?{{ extra_query }}">이번 달 보기</a>
+      </div>
+    {% elif calendar_error == "query_failed" %}
+      <div class="empty-state calendar-error-panel">
+        <p class="empty-title">불러오지 못했어요</p>
+        <p class="empty-note">잠시 후 다시 시도해 주세요.</p>
+        <a class="empty-action" href="{{ request.get_full_path }}">다시 시도</a>
+      </div>
+    {% endif %}
+
+    {% include "core/partials/_archive_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
+
+    <div class="calendar-legend">
+      <span class="legend-item"><span class="day-dot" data-kind="schedule"></span>일정</span>
+      <span class="legend-item"><span class="day-dot" data-kind="interest"></span>찜</span>
+      <span class="legend-item"><span class="day-dot" data-kind="status"></span>상태 변경</span>
+      <span class="legend-item"><span class="day-dot" data-kind="visit"></span>방문</span>
+      <span class="legend-item"><span class="day-dot" data-kind="goods"></span>굿즈</span>
+    </div>
+
+    <section class="date-detail-section" id="selected-date">
+      <h2>{{ selected_date|date:"n월 j일" }}의 활동</h2>
+      {% if not has_any_items %}
+        <div class="empty-state">
+          <p class="empty-icon">🗂️</p>
+          <p class="empty-title">아직 기록이 없어요</p>
+          <p class="empty-note">행사를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
+          <div class="empty-actions">
+            <a class="empty-action" href="/events/">행사 찾기</a>
+            <a class="empty-action" href="/collection/new/">굿즈 등록</a>
+          </div>
+        </div>
+      {% elif selected_items %}
+        <ul class="side-list calendar-item-list">
+          {% for item in selected_items %}
+            <li class="calendar-item-row">
+              <span class="day-dot" data-kind="{{ item.group }}"></span>
+              <span class="calendar-item-label">{{ item.label }}</span>
+              {% if item.date_text %}<span class="calendar-item-date">{{ item.date_text }}</span>{% endif %}
+              {% if item.url %}
+                <a class="side-action-link" href="{{ item.url }}">{% if item.group == 'visit' or item.group == 'goods' %}수정{% else %}상세 보기{% endif %}</a>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">
+          <p class="empty-title">이 날짜에는 기록된 활동이 없어요</p>
+        </div>
+      {% endif %}
+    </section>
+  </main>
+{% endblock %}
