@@ -198,9 +198,9 @@
                     {% endif %}
                   </div>
                 {% else %}
-                  <p class="calendar-login-cta">
-                    <a href="/accounts/login/?next={{ request.get_full_path|urlencode }}">로그인하고 찜하기</a>
-                  </p>
+                  <div class="status-row">
+                    <a class="side-action-link" href="/accounts/login/?next={{ request.get_full_path|urlencode }}">로그인하고 찜하기</a>
+                  </div>
                 {% endif %}
               </div>
             </article>
