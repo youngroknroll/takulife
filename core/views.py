@@ -1,4 +1,7 @@
+import logging
 import uuid
+from collections import defaultdict
+from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
@@ -6,6 +9,7 @@ from django.core.paginator import Paginator
 from django.db import OperationalError, connection
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.decorators import api_view
@@ -39,6 +43,7 @@ from archive.queries import (
     user_visit_category_values,
     user_visit_record_counts,
 )
+from core.calendar_grid import default_selected_date, month_grid
 from core.models import HomeConfig
 from core.vocab import (
     ARCHIVE_STATUS,
@@ -58,8 +63,11 @@ from events.presenters import derive_event_display, is_recently_added
 from events.queries import (
     PUBLIC_LISTING_PAGE_SIZE,
     list_published_events,
+    list_published_events_for_month,
     parse_public_listing_params,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _archive_query(request) -> str:
@@ -254,8 +262,216 @@ def event_list(request):
         "selected_status": selected_status,
         "selected_sort": selected_sort,
         "selected_sort_label": EVENT_SORT_LABELS.get(selected_sort, EVENT_SORT_LABELS[""]),
+        # List<->calendar toggle link querystring preservation (dual-calendar
+        # plan §단계 5) — event_list had no such context before; added here
+        # rather than duplicating its own already-working filter extraction.
+        "extra_query": _calendar_extra_query(request),
     }
     return render(request, "core/events/list.html", context)
+
+
+def _calendar_extra_query(request):
+    """Return the current q/region/category/status filters as a '&key=value'
+    querystring tail — leading '&', matching
+    templates/core/partials/_pager.html's extra_query convention — so the
+    same context key can be dropped straight after a '?month=...'/'?page=...'
+    value in a template. Deliberately excludes 'sort' and the calendar-only
+    'month'/'date' params (dual-calendar service design §6 only requires
+    q/region/category/status parity with the existing listing).
+    """
+    pairs = []
+    for key in ("q", "region", "category", "status"):
+        for value in request.GET.getlist(key):
+            if value:
+                pairs.append((key, value))
+    if not pairs:
+        return ""
+    return "&" + urlencode(pairs)
+
+
+def _adjacent_month(year, month, delta):
+    """Return the (year, month) `delta` months away from (year, month),
+    wrapping across year boundaries (delta is typically -1 or +1)."""
+    total = year * 12 + (month - 1) + delta
+    new_year, new_month0 = divmod(total, 12)
+    return new_year, new_month0 + 1
+
+
+def _parse_calendar_month(raw_month, *, today):
+    """Parse the ?month=YYYY-MM param. Returns (year, month, error) where
+    error is None on success or "invalid" on a malformed/out-of-range value.
+
+    Only a truly *absent* key (raw_month is None) defaults to today's month
+    (service design §11.1: "month 부재는 오류가 아니며 당월을 표시한다") —
+    a key that is *present* with a blank value (?month=) is itself a format
+    error ("month 형식 오류(...,빈 값)는... 오류 패널"), not "absent". The
+    caller must pass request.GET.get("month") with no default so this
+    function can see that distinction; collapsing both cases to "" here
+    would silently treat `?month=` the same as no `month` key at all.
+    """
+    if raw_month is None:
+        return today.year, today.month, None
+    try:
+        parsed = datetime.strptime(raw_month, "%Y-%m")
+    except ValueError:
+        return None, None, "invalid"
+    return parsed.year, parsed.month, None
+
+
+def _parse_calendar_date(raw_date, *, year, month, today):
+    """Parse the ?date=YYYY-MM-DD param against the already-resolved
+    (year, month). Returns (date, error) where error is None on success or
+    "invalid" for a malformed value, a nonexistent calendar date, or a date
+    outside the displayed month (service design §11.1).
+
+    Only a truly *absent* key (raw_date is None) falls back to
+    CAL-4-04/05's default-selection rule — a *present* blank value
+    (?date=) is a format error, mirroring _parse_calendar_month's same
+    absent-vs-blank distinction. The caller must pass
+    request.GET.get("date") with no default.
+    """
+    if raw_date is None:
+        return default_selected_date(year=year, month=month, today=today), None
+    try:
+        parsed = datetime.strptime(raw_date, "%Y-%m-%d").date()
+    except ValueError:
+        return None, "invalid"
+    if (parsed.year, parsed.month) != (year, month):
+        return None, "invalid"
+    return parsed, None
+
+
+def event_calendar(request):
+    """Events calendar SSR view (dual-calendar plan §단계 5 / PR-C).
+
+    Presentation-only: date-range/overlap business rules stay owned by
+    events.queries.list_published_events_for_month and
+    core.calendar_grid.month_grid — this view only parses request params,
+    calls those, and reshapes the results into the template context
+    contract below (keys fixed, do not rename — the Frontend
+    Implementation Engineer's templates are being built against this exact
+    contract in parallel):
+
+    calendar_error (None|"invalid"|"query_failed"), month_label
+    ("YYYY년 M월"), weeks (7-cell-per-week list of
+    {date, in_month, today, selected, items[{title,url}] (max 2),
+    more_count, count}), selected_date, selected_events, prev_month/
+    next_month ("YYYY-MM"), extra_query, plus the same filter-panel context
+    keys event_list already provides (CATEGORY/REGION/EVENT_STATUS,
+    q/selected_region/selected_category/selected_status/selected_sort/
+    selected_sort_label) so the existing filter-check markup can be reused
+    verbatim.
+    """
+    today = timezone.localdate()
+
+    year, month, calendar_error = _parse_calendar_month(request.GET.get("month"), today=today)
+    selected_date = None
+    if calendar_error is None:
+        selected_date, calendar_error = _parse_calendar_date(
+            request.GET.get("date"), year=year, month=month, today=today
+        )
+
+    if calendar_error:
+        year, month = today.year, today.month
+        selected_date = today
+
+    try:
+        params = parse_public_listing_params(request.GET)
+    except ValidationError:
+        # Same degrade as event_list: an unrecognised/invalid filter value is
+        # "no match", never an error screen — independent of calendar_error.
+        params = {}
+
+    try:
+        events = list(list_published_events_for_month(params, year=year, month=month))
+    except Exception:
+        logger.exception(
+            "Failed to query events calendar for year=%s month=%s", year, month
+        )
+        events = []
+        if calendar_error is None:
+            calendar_error = "query_failed"
+
+    events_by_date = defaultdict(list)
+    for event in events:
+        day = event.start_date
+        end = event.end_date or event.start_date
+        while day <= end:
+            events_by_date[day].append(event)
+            day += timedelta(days=1)
+
+    try:
+        grid = month_grid(year, month)
+    except Exception:
+        # core.calendar_grid.month_grid can raise for a month whose leading/
+        # trailing filler week would need a date outside year 1..9999 (e.g.
+        # year=1/month=1 needs a few December-of-year-0 filler days) — a
+        # known gap in the already-merged CAL-4 grid module (its own unit
+        # tests only covered year=2026), surfaced by CAL-5-07's extreme-month
+        # scenario. Degraded here rather than fixed at the source, which is
+        # out of this change's authorized scope; flagged for a follow-up fix
+        # to core/calendar_grid.py.
+        logger.exception(
+            "Failed to build calendar grid for year=%s month=%s", year, month
+        )
+        grid = []
+        if calendar_error is None:
+            calendar_error = "query_failed"
+
+    weeks = [
+        [
+            {
+                "date": cell.date,
+                "in_month": cell.in_month,
+                "today": cell.date == today,
+                "selected": cell.date == selected_date,
+                "items": [
+                    {"title": event.title, "url": reverse("event-detail-page", args=[event.id])}
+                    for event in events_by_date.get(cell.date, [])[:2]
+                ],
+                "more_count": max(len(events_by_date.get(cell.date, [])) - 2, 0),
+                "count": len(events_by_date.get(cell.date, [])),
+            }
+            for cell in week
+        ]
+        for week in grid
+    ]
+
+    selected_events = _attach_display(
+        events_by_date.get(selected_date, []), today=today, user=request.user
+    )
+
+    prev_year, prev_month_num = _adjacent_month(year, month, -1)
+    next_year, next_month_num = _adjacent_month(year, month, 1)
+
+    selected_region = request.GET.getlist("region")
+    selected_category = request.GET.getlist("category")
+    selected_status = request.GET.get("status", "")
+    q = request.GET.get("q", "")
+    selected_sort = request.GET.get("sort", "")
+
+    context = {
+        "calendar_error": calendar_error,
+        "month_label": f"{year}년 {month}월",
+        "weeks": weeks,
+        "selected_date": selected_date,
+        "selected_events": selected_events,
+        "prev_month": f"{prev_year:04d}-{prev_month_num:02d}",
+        "next_month": f"{next_year:04d}-{next_month_num:02d}",
+        "extra_query": _calendar_extra_query(request),
+        # filter-panel context, mirrored verbatim from event_list so its
+        # existing filter-check markup can be reused as-is.
+        "CATEGORY": CATEGORY,
+        "REGION": REGION,
+        "EVENT_STATUS": EVENT_STATUS,
+        "q": q,
+        "selected_region": selected_region,
+        "selected_category": selected_category,
+        "selected_status": selected_status,
+        "selected_sort": selected_sort,
+        "selected_sort_label": EVENT_SORT_LABELS.get(selected_sort, EVENT_SORT_LABELS[""]),
+    }
+    return render(request, "core/events/calendar.html", context)
 
 
 def event_detail(request, event_id):
