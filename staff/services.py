@@ -7,7 +7,11 @@ hard-delete?" question needs to read archive's 3 Event-referencing models
 staff is the presentation/orchestration layer allowed to depend on both
 events and archive, so that guard lives here instead of in events/services.py.
 """
+import logging
+
 from events.services import hard_delete_event
+
+logger = logging.getLogger(__name__)
 
 
 class EventHasArchiveReferencesError(Exception):
@@ -63,4 +67,5 @@ def delete_event(*, event):
             visit_count=counts["visit"],
             collection_item_count=counts["collection_item"],
         )
+    logger.info("Hard-deleting event pk=%s", event.pk)
     hard_delete_event(event=event)
