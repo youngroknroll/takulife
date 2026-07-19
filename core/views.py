@@ -474,6 +474,10 @@ def event_calendar(request):
         "selected_status": selected_status,
         "selected_sort": selected_sort,
         "selected_sort_label": EVENT_SORT_LABELS.get(selected_sort, EVENT_SORT_LABELS[""]),
+        "active_filter_count": len(selected_region)
+        + len(selected_category)
+        + (1 if selected_status else 0)
+        + (1 if q else 0),
     }
     return render(request, "core/events/calendar.html", context)
 
@@ -691,6 +695,7 @@ def activity_calendar(request):
         "extra_query": _activity_extra_query(selected_types),
         "selected_types": selected_types,
         "has_any_items": has_any_items,
+        "active_filter_count": len(selected_types),
     }
     return render(request, "core/archive/calendar.html", context)
 

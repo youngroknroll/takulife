@@ -377,3 +377,27 @@ def test_여러_날_진행되는_행사를_아무_날짜로_선택해도_상세_
 
     assert resp.status_code == 200
     assert title in _selected_date_section(resp.content.decode())
+
+
+# ---------------------------------------------------------------------------
+# CALFIX-1 — active_filter_count is exposed in context (calendar review fixes
+# plan .docs/plans/2026-07-19-calendar-review-fixes-plan.md 단계 1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "query_params, expected_count",
+    [
+        ({"region": "seoul", "q": "포스터"}, 2),
+        ({}, 0),
+    ],
+    ids=["지역과_검색어_2개", "무필터_0개"],
+)
+def test_행사_달력을_필터와_함께_조회하면_활성_필터_개수가_컨텍스트에_담긴다(
+    query_params, expected_count
+):
+    resp = Client().get("/events/calendar/", query_params)
+
+    assert resp.status_code == 200
+    assert resp.context["active_filter_count"] == expected_count
