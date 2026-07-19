@@ -5,6 +5,8 @@ neutral layer (core.promotion). A promotion seeds a PENDING EventDraft from the
 user's private item + a required official URL; the item is then marked submitted.
 The item stays private until an admin approves the draft into a published Event.
 """
+import logging
+
 import pytest
 
 from archive.models import PersonalEntry
@@ -106,6 +108,26 @@ def test_localhost_공식_URL로_승격하려_하면_PromotionUnsafeUrlError가_
         promote_personal_entry(
             user=user, personal_entry_id=entry.id, official_url="http://localhost/x"
         )
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_승격에서_안전하지_않은_url이_거부되어도_경고_로그가_기록되지_않는다(make_user, make_entry, caplog):
+    caplog.set_level(logging.WARNING)
+    user = make_user(username="promo-unsafe-no-log")
+    entry = make_entry(user, kind="place", title="I")
+
+    with pytest.raises(PromotionUnsafeUrlError):
+        promote_personal_entry(
+            user=user, personal_entry_id=entry.id, official_url="http://localhost/x"
+        )
+
+    warnings = [
+        record
+        for record in caplog.records
+        if record.levelno >= logging.WARNING and record.name.startswith("core")
+    ]
+    assert warnings == []
 
 
 @pytest.mark.django_db

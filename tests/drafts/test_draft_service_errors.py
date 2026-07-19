@@ -5,6 +5,8 @@ DraftCreation* errors, exercised here with fetch_html stubbed so no network
 is touched. The admin create endpoint's HTTP-response mapping for these same
 errors lives in tests/drafts/test_drafts_api.py (that endpoint's home).
 """
+import logging
+
 import pytest
 
 import drafts.services as services
@@ -35,6 +37,20 @@ class TestCreateDraftErrorMapping:
         with pytest.raises(DraftCreationUnsafeUrlError):
             create_draft_from_url(source_url="https://ok.example.com/")
 
+    def test_fetch_단계에서_안전하지_않은_url이_거부되면_단계_표시와_함께_경고가_기록된다(self, monkeypatch, caplog):
+        caplog.set_level(logging.WARNING, logger="drafts.services")
+        monkeypatch.setattr(services, "fetch_html", _raise(UnsafeFetchUrlError()))
+
+        with pytest.raises(DraftCreationUnsafeUrlError):
+            create_draft_from_url(source_url="https://ok.example.com/")
+
+        warnings = [record for record in caplog.records if record.levelno >= logging.WARNING]
+        assert len(warnings) == 1
+        message = warnings[0].getMessage()
+        assert "scheme=https" in message
+        assert "ok.example.com" in message
+        assert "during fetch" in message
+
     def test_fetch_html이_지원하지_않는_콘텐츠_타입_오류를_던지면_DraftCreationUnsupportedContentError로_변환된다(self, monkeypatch):
         monkeypatch.setattr(services, "fetch_html", _raise(UnsupportedContentTypeError()))
         with pytest.raises(DraftCreationUnsupportedContentError):
@@ -55,3 +71,18 @@ class TestCreateDraftErrorMapping:
         """(moved from tests/core/test_coverage_supplements.py)"""
         with pytest.raises(ValueError):
             create_draft_from_url(source_url="ftp://not-allowed/")
+
+
+def test_사전_검증에서_안전하지_않은_url이_거부되면_스킴과_호스트만_경고로_기록되고_쿼리는_포함되지_않는다(caplog):
+    caplog.set_level(logging.WARNING, logger="drafts.services")
+
+    with pytest.raises(DraftCreationUnsafeUrlError):
+        create_draft_from_url(source_url="http://localhost/page?token=secret")
+
+    warnings = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    assert len(warnings) == 1
+    message = warnings[0].getMessage()
+    assert "scheme=http" in message
+    assert "localhost" in message
+    assert "token" not in message
+    assert "secret" not in message

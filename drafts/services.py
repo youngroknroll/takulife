@@ -1,4 +1,6 @@
+import logging
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -17,6 +19,8 @@ from .fetching import ResponseTooLargeError, UnsupportedContentTypeError, fetch_
 from .llm_extraction import extract_event_fields_llm
 from .models import EventDraft
 from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
+
+logger = logging.getLogger(__name__)
 
 
 class DraftStateError(Exception):
@@ -83,11 +87,21 @@ def create_draft_from_url(*, source_url, source_name=""):
     except InvalidFetchUrlError as exc:
         raise ValueError("invalid source url") from exc
     except UnsafeFetchUrlError as exc:
+        parsed = urlparse(source_url)
+        logger.warning(
+            "Rejected unsafe fetch URL: scheme=%s host=%r", parsed.scheme, parsed.hostname
+        )
         raise DraftCreationUnsafeUrlError from exc
 
     try:
         html = fetch_html(source_url)
     except UnsafeFetchUrlError as exc:
+        parsed = urlparse(source_url)
+        logger.warning(
+            "Rejected unsafe fetch URL during fetch: scheme=%s host=%r",
+            parsed.scheme,
+            parsed.hostname,
+        )
         raise DraftCreationUnsafeUrlError from exc
     except UnsupportedContentTypeError as exc:
         raise DraftCreationUnsupportedContentError from exc

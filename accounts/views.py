@@ -1,3 +1,4 @@
+import logging
 import time
 
 from django.contrib import messages
@@ -6,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
+
+logger = logging.getLogger(__name__)
 
 # Password re-check on this view has no throttle of its own otherwise: axes
 # only hooks the login backend, and allauth's ACCOUNT_RATE_LIMITS does not
@@ -49,6 +52,12 @@ def _register_failed_delete_attempt(user):
     if not record or record["deadline"] <= now:
         record = {"count": 0, "deadline": now + DELETE_PASSWORD_LOCKOUT_SECONDS}
     record["count"] += 1
+    if record["count"] == MAX_DELETE_PASSWORD_ATTEMPTS:
+        logger.warning(
+            "Account deletion password lockout triggered for user %s after %s failed attempts",
+            user.pk,
+            record["count"],
+        )
     # The cache entry's own TTL only needs to outlive the stored deadline —
     # it is no longer the source of truth for the window (see
     # _is_delete_locked above), so refreshing it on every write is safe.
@@ -102,6 +111,7 @@ def delete_account(request):
 
         _reset_delete_attempts(request.user)
         user = request.user
+        logger.info("Deleting user account user_pk=%s", user.pk)
         user.delete()
         logout(request)
         messages.success(request, "회원 탈퇴가 완료되었습니다.")

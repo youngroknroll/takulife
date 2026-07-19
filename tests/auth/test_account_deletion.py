@@ -7,6 +7,7 @@ wiring (see archive/models.py, archive/signals.py) — this view does not
 re-implement that cleanup, it only orchestrates the password check, the
 delete, and ending the session.
 """
+import logging
 import time as real_time
 from datetime import datetime, timezone as dt_timezone
 
@@ -178,6 +179,47 @@ def test_다섯_번_잘못된_비밀번호_시도_후에는_올바른_비밀번�
 
     assert locked_response.status_code == 200
     assert User.objects.filter(pk=user.pk).exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.slow
+def test_다섯_번_잘못된_비밀번호_시도_시_잠금_경고가_사용자와_횟수를_포함해_정확히_1회_기록된다(
+    client, make_user, valid_password, caplog
+):
+    """The lockout WARNING is the only observable signal a hijacked-session
+    brute-force attempt leaves behind (LOG-01/LOG-02,
+    .docs/plans/2026-07-19-logging-coverage-plan.md §4): it must fire exactly
+    once at the moment the budget is exhausted, carry the user's pk and the
+    attempt count, and never leak the password, session key, or client IP —
+    further failed attempts while already locked must not add more
+    warnings."""
+    caplog.set_level(logging.WARNING, logger="accounts.views")
+    user = make_user(password=valid_password)
+    client.force_login(user)
+
+    for _ in range(5):
+        response = client.post(DELETE_URL, {"password": "definitely-wrong"})
+        assert response.status_code == 200
+
+    warnings = [record for record in caplog.records if record.name == "accounts.views"]
+    assert len(warnings) == 1
+    message = warnings[0].getMessage()
+    assert str(user.pk) in message
+    assert "5" in message
+    assert "definitely-wrong" not in message
+    session_key = client.session.session_key
+    assert session_key is not None
+    assert session_key not in message
+    assert "127.0.0.1" not in message
+
+    for _ in range(3):
+        locked_response = client.post(DELETE_URL, {"password": "definitely-wrong"})
+        assert locked_response.status_code == 200
+
+    warnings_after_lockout = [
+        record for record in caplog.records if record.name == "accounts.views"
+    ]
+    assert len(warnings_after_lockout) == 1
 
 
 @pytest.mark.django_db
