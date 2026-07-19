@@ -20,7 +20,8 @@
  * Shared error helpers (consumed by status.js, draft.js, visit.js):
  *   classify(result)   — returns a stable error kind string:
  *                         'auth' | 'csrf' | 'validation' | 'conflict' |
- *                         'notfound' | 'server' | 'network' | 'unknown'
+ *                         'notfound' | 'server' | 'network' | 'ratelimited' |
+ *                         'unknown'
  *   formatError(result) — human-readable Korean message from DRF error envelopes:
  *                          field-error dicts, detail string, and known code values
  *   redirectToLogin()  — builds /accounts/login/?next=<encoded current path>
@@ -112,6 +113,7 @@
    * 'notfound'   — 404 Not Found
    * 'server'     — 500+
    * 'network'    — status 0 (fetch threw, no connection)
+   * 'ratelimited' — 429 Too Many Requests
    * 'unknown'    — everything else
    */
   function classify(result) {
@@ -131,6 +133,7 @@
     }
     if (s === 404) { return "notfound"; }
     if (s === 409) { return "conflict"; }
+    if (s === 429) { return "ratelimited"; }
     if (s >= 500) { return "server"; }
     return "unknown";
   }
@@ -147,6 +150,13 @@
   function formatError(result) {
     if (result.status === 0) {
       return "네트워크 오류가 발생했습니다. 다시 시도해 주세요.";
+    }
+    // 429 Too Many Requests — checked before the data-presence check below
+    // since a throttled response isn't guaranteed to carry a JSON body.
+    // No automatic retry here; the caller's normal error-display path
+    // (an inline message, no resubmission) is enough.
+    if (result.status === 429) {
+      return "요청이 많아요. 잠시 후 다시 시도해 주세요.";
     }
     var data = result.data;
     if (!data) {
