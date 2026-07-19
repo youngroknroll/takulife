@@ -67,6 +67,9 @@
                 type="button"
                 data-promote-toggle="{{ row.entry.id }}"
                 data-expanded="false"
+                data-controls="promote-form-{{ row.entry.id }}"
+                aria-controls="promote-form-{{ row.entry.id }}"
+                aria-expanded="false"
               >공식 제보</button>
             {% endif %}
           {% endif %}
@@ -79,7 +82,7 @@
         </div>
 
         {% if row.is_place and not row.is_submitted %}
-          <form class="promote-form" data-promote-form="{{ row.entry.id }}" hidden novalidate>
+          <form class="promote-form" id="promote-form-{{ row.entry.id }}" data-promote-form="{{ row.entry.id }}" hidden novalidate>
             <p class="promote-note">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다.</p>
             <div class="form-group">
               <label for="promote-url-{{ row.entry.id }}">공식 URL</label>

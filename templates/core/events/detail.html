@@ -85,7 +85,8 @@
             {% if user_status %}
               <p class="panel-note" style="margin: 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
               <div class="status-change-row">
-                <button class="action-link" type="button" data-status-toggle data-expanded="false" data-controls="status-choices">상태 변경</button>
+                <button class="action-link" type="button" data-status-toggle data-expanded="false" data-controls="status-choices"
+                        aria-expanded="false" aria-controls="status-choices">상태 변경</button>
                 {% if user_status == 'planned' %}
                   <a class="action-link" href="/archive/statuses/?status=planned">일정에서 보기</a>
                 {% endif %}

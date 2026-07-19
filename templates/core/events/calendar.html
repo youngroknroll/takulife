@@ -28,9 +28,11 @@
       <button type="submit">검색</button>
     </form>
 
-    <section class="panel calendar-filters"
+    <section class="panel calendar-filters" id="calendar-filters-panel"
              data-disclosure data-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
-      <button type="button" class="calendar-filters-toggle" data-disclosure-toggle>
+      <button type="button" class="calendar-filters-toggle" data-disclosure-toggle
+              data-controls="calendar-filters-panel" aria-controls="calendar-filters-panel"
+              aria-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
         <span data-state="closed">필터 열기 ▾</span>
         <span data-state="open">필터 닫기 ▴</span>
         {% if active_filter_count %}<span class="calendar-filters-badge">{{ active_filter_count }}개 적용됨</span>{% endif %}
@@ -43,7 +45,8 @@
           <h2>지역</h2>
           <div class="region-select" data-region-select>
             <button type="button" class="region-select-toggle" data-region-toggle
-                    data-expanded="false" data-controls="calendar-region-options">
+                    data-expanded="false" data-controls="calendar-region-options"
+                    aria-expanded="false" aria-controls="calendar-region-options">
               <span data-region-summary>지역 전체</span>
               <span class="region-caret">▾</span>
             </button>

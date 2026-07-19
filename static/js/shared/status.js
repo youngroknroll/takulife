@@ -504,6 +504,7 @@
         var willShow = target.hasAttribute("hidden");
         target.toggleAttribute("hidden", !willShow);
         button.setAttribute("data-expanded", String(willShow));
+        button.setAttribute("aria-expanded", String(willShow));
       });
     });
   }

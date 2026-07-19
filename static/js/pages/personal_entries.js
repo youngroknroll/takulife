@@ -184,6 +184,7 @@
           var nowHidden = !form.hidden;
           form.hidden = nowHidden;
           btn.setAttribute("data-expanded", String(!nowHidden));
+          btn.setAttribute("aria-expanded", String(!nowHidden));
           if (!nowHidden) {
             var input = form.querySelector('input[name="official_url"]');
             if (input) { input.focus(); }
