@@ -186,6 +186,7 @@ def _process_listing(source, robots_checker):
         content_types = _LISTING_CONTENT_TYPES_BY_SOURCE_TYPE[source.source_type]
         content = fetch_html(source.url, allowed_content_types=content_types)
     except Exception as exc:
+        # except-ok: failure is recorded on source.error and shown in the staff console
         _mark_source_checked(source, error=f"목록 fetch 실패: {exc}")
         return _ListingOutcome(errored=True)
 
@@ -196,6 +197,7 @@ def _process_listing(source, robots_checker):
             )
         )
     except Exception as exc:
+        # except-ok: failure is recorded on source.error and shown in the staff console
         _mark_source_checked(source, error=f"목록 파싱 실패: {exc}")
         return _ListingOutcome(errored=True)
 
@@ -275,6 +277,7 @@ def _decide_and_create_candidate(
     except Exception as exc:
         # Only the URL and the exception's class name — never str(exc),
         # which could echo back response bodies or other fetched content.
+        # except-ok: reported to stderr with the exception class name only
         stderr.write(f"후보 생성 실패 {url}: {type(exc).__name__}")
         return _CandidateOutcome(consumed_fetch_budget=True, errored=True)
 
