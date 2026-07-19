@@ -9,7 +9,7 @@ Endpoint coverage:
 
 import pytest
 
-from archive.models import EventInterest
+from archive.models import ActivityLogEntry, EventInterest
 
 pytestmark = pytest.mark.web
 
@@ -160,6 +160,37 @@ def test_찜을_삭제하면_204이고_이후_조회는_404가_된다(client, ma
 
     get_response = client.get(f"/api/event-interests/{interest_id}/")
     assert get_response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# CAL-2-03 — DELETE must go through remove_event_interest so an
+# interest_removed ActivityLogEntry is recorded (perform_destroy wiring
+# regression guard, dual-calendar Test List §단계 2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_찜_해제_API를_호출하면_interest_removed_활동_이력이_기록된다(client, make_user, make_event):
+    user = make_user(username="interest-removed-activity-user")
+    event = make_event(title="Popup Activity Removed")
+
+    client.force_login(user)
+    create_response = client.post(
+        "/api/event-interests/",
+        {"event": event.id},
+        content_type="application/json",
+    )
+    interest_id = create_response.json()["id"]
+
+    delete_response = client.delete(f"/api/event-interests/{interest_id}/")
+
+    assert delete_response.status_code == 204
+    assert (
+        ActivityLogEntry.objects.filter(
+            user=user, kind=ActivityLogEntry.Kind.INTEREST_REMOVED, event=event
+        ).count()
+        == 1
+    )
 
 
 # ---------------------------------------------------------------------------

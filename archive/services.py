@@ -1,10 +1,14 @@
+from datetime import date
+
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from core.analytics import record_event
 from core.models import AnalyticsEvent
 
 from .models import (
+    ActivityLogEntry,
     CollectionItem,
     EventInterest,
     PersonalEntry,
@@ -16,6 +20,11 @@ from .signals import _delete_file_best_effort
 
 
 MAX_PHOTOS_PER_RECORD = 5
+
+# CollectionItem fields whose actual change is logged as
+# collection_item_organized (dual-calendar plan §7.2 allowed change_summary
+# values) — memo/image/etc. are plain edits, not "organizing" the collection.
+_COLLECTION_ITEM_ORGANIZE_FIELDS = ("quantity", "is_wanted", "tradeable_quantity", "acquired_on")
 
 # UserEventStatus.Status -> the AnalyticsEvent recorded on creation with that
 # status. MISSED has no entry: only PLANNED/VISITED are stage-0 collection
@@ -32,6 +41,56 @@ def _subject_target(*, event=None, personal_entry=None):
     if event is not None:
         return "event", event.id
     return "personal_entry", personal_entry.id
+
+
+def _subject_label(*, event=None, personal_entry=None):
+    """Return the durable display title for whichever subject was supplied
+    (dual-calendar plan §7.1 `subject_label` — survives the subject's own
+    deletion)."""
+    if event is not None:
+        return event.title
+    return personal_entry.title
+
+
+def _record_activity(
+    *,
+    user,
+    kind,
+    subject_label,
+    occurred_at=None,
+    event=None,
+    visit_record=None,
+    collection_item=None,
+    change_summary=None,
+    operation_key=None,
+):
+    """Write one ActivityLogEntry row (dual-calendar plan §8 write
+    orchestration). Module-private — always called from inside the same
+    application-service transaction as the action it describes, never from a
+    signal or exposed as its own public entry point."""
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=kind,
+        occurred_at=occurred_at or timezone.now(),
+        event=event,
+        visit_record=visit_record,
+        collection_item=collection_item,
+        subject_label=subject_label,
+        change_summary=change_summary or {},
+        operation_key=operation_key,
+    )
+
+
+def _json_safe_change_value(value):
+    """Convert one allowed change_summary value into a JSON-safe value
+    (design plan §13: change_summary is built by an explicit per-allowed-
+    field function, not a model-wide serializer or JSONField encoder swap).
+    `date` -> ISO string; `int`/`bool`/`None` (the other
+    _COLLECTION_ITEM_ORGANIZE_FIELDS value types) already round-trip through
+    JSON as-is."""
+    if isinstance(value, date):
+        return value.isoformat()
+    return value
 
 
 def create_personal_entry(*, user, kind, title, **fields):
@@ -62,6 +121,12 @@ def create_event_interest(*, user, event=None, personal_entry=None):
             )
         except IntegrityError as exc:
             raise DuplicateEventInterestError from exc
+        _record_activity(
+            user=user,
+            kind=ActivityLogEntry.Kind.INTEREST_ADDED,
+            event=event,
+            subject_label=_subject_label(event=event, personal_entry=personal_entry),
+        )
     target_type, target_id = _subject_target(event=event, personal_entry=personal_entry)
     record_event(
         AnalyticsEvent.EventName.EVENT_INTERESTED,
@@ -70,6 +135,23 @@ def create_event_interest(*, user, event=None, personal_entry=None):
         target_id=target_id,
     )
     return interest
+
+
+def remove_event_interest(*, interest):
+    """Delete an EventInterest and record an interest_removed activity log
+    entry (dual-calendar plan §7.2, CAL-2-02). user/event/subject_label are
+    captured before the delete so the entry survives the row's removal."""
+    user = interest.user
+    event = interest.event
+    subject_label = _subject_label(event=interest.event, personal_entry=interest.personal_entry)
+    with transaction.atomic():
+        interest.delete()
+        _record_activity(
+            user=user,
+            kind=ActivityLogEntry.Kind.INTEREST_REMOVED,
+            event=event,
+            subject_label=subject_label,
+        )
 
 
 def create_user_event_status(*, user, event=None, personal_entry=None, status):
@@ -99,6 +181,13 @@ def create_user_event_status(*, user, event=None, personal_entry=None, status):
             )
         except IntegrityError as exc:
             raise DuplicateUserEventStatusError from exc
+        _record_activity(
+            user=user,
+            kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+            event=event,
+            subject_label=_subject_label(event=event, personal_entry=personal_entry),
+            change_summary={"to": status},
+        )
     event_name = _STATUS_ANALYTICS_EVENT_NAME.get(status)
     if event_name is not None:
         target_type, target_id = _subject_target(event=event, personal_entry=personal_entry)
@@ -108,8 +197,19 @@ def create_user_event_status(*, user, event=None, personal_entry=None, status):
 
 def mark_visited(*, user_event_status):
     """Set a status row to visited (e.g. 'I actually went')."""
+    previous_status = user_event_status.status
     user_event_status.status = UserEventStatus.Status.VISITED
     user_event_status.save(update_fields=["status", "updated_at"])
+    if previous_status != UserEventStatus.Status.VISITED:
+        _record_activity(
+            user=user_event_status.user,
+            kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+            event=user_event_status.event,
+            subject_label=_subject_label(
+                event=user_event_status.event, personal_entry=user_event_status.personal_entry
+            ),
+            change_summary={"from": previous_status, "to": UserEventStatus.Status.VISITED},
+        )
     target_type, target_id = _subject_target(
         event=user_event_status.event, personal_entry=user_event_status.personal_entry
     )
@@ -147,8 +247,19 @@ def mark_missed(*, user_event_status):
         personal_entry=user_event_status.personal_entry,
     ):
         raise VisitRecordExistsError
+    previous_status = user_event_status.status
     user_event_status.status = UserEventStatus.Status.MISSED
     user_event_status.save(update_fields=["status", "updated_at"])
+    if previous_status != UserEventStatus.Status.MISSED:
+        _record_activity(
+            user=user_event_status.user,
+            kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+            event=user_event_status.event,
+            subject_label=_subject_label(
+                event=user_event_status.event, personal_entry=user_event_status.personal_entry
+            ),
+            change_summary={"from": previous_status, "to": UserEventStatus.Status.MISSED},
+        )
     return user_event_status
 
 
@@ -164,10 +275,40 @@ def revert_to_planned(*, user_event_status):
         personal_entry=user_event_status.personal_entry,
     ):
         raise VisitRecordExistsError
+    previous_status = user_event_status.status
     user_event_status.status = UserEventStatus.Status.PLANNED
     user_event_status.missed_overridden = True
     user_event_status.save(update_fields=["status", "missed_overridden", "updated_at"])
+    if previous_status != UserEventStatus.Status.PLANNED:
+        _record_activity(
+            user=user_event_status.user,
+            kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+            event=user_event_status.event,
+            subject_label=_subject_label(
+                event=user_event_status.event, personal_entry=user_event_status.personal_entry
+            ),
+            change_summary={"from": previous_status, "to": UserEventStatus.Status.PLANNED},
+        )
     return user_event_status
+
+
+def remove_user_event_status(*, user_event_status):
+    """Delete a UserEventStatus and record a status_removed activity log
+    entry (dual-calendar plan §7.2, CAL-2-13). user/event/subject_label are
+    captured before the delete so the entry survives the row's removal."""
+    user = user_event_status.user
+    event = user_event_status.event
+    subject_label = _subject_label(
+        event=user_event_status.event, personal_entry=user_event_status.personal_entry
+    )
+    with transaction.atomic():
+        user_event_status.delete()
+        _record_activity(
+            user=user,
+            kind=ActivityLogEntry.Kind.STATUS_REMOVED,
+            event=event,
+            subject_label=subject_label,
+        )
 
 
 def create_collection_item(*, user, name, visit_record=None, event=None, client_token=None, **fields):
@@ -227,6 +368,13 @@ def create_collection_item(*, user, name, visit_record=None, event=None, client_
                 event=event,
                 client_token=client_token,
                 **fields,
+            )
+            _record_activity(
+                user=user,
+                kind=ActivityLogEntry.Kind.COLLECTION_ITEM_CREATED,
+                collection_item=item,
+                subject_label=item.name,
+                operation_key=client_token,
             )
     except IntegrityError:
         if client_token is None:
@@ -302,6 +450,10 @@ def update_collection_item(*, item, **fields):
         previous_visit_record_id = item.visit_record_id
         previous_is_wanted = item.is_wanted
         previous_tradeable_quantity = item.tradeable_quantity
+        previous_organize_values = {
+            field_name: getattr(item, field_name)
+            for field_name in _COLLECTION_ITEM_ORGANIZE_FIELDS
+        }
 
         quantity = fields.get("quantity", item.quantity)
         tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
@@ -355,6 +507,21 @@ def update_collection_item(*, item, **fields):
         update_fields = set(fields.keys())
         update_fields.add("updated_at")
         item.save(update_fields=update_fields)
+
+        organize_changes = {
+            field_name: _json_safe_change_value(getattr(item, field_name))
+            for field_name in _COLLECTION_ITEM_ORGANIZE_FIELDS
+            if field_name in fields
+            and getattr(item, field_name) != previous_organize_values[field_name]
+        }
+        if organize_changes:
+            _record_activity(
+                user=item.user,
+                kind=ActivityLogEntry.Kind.COLLECTION_ITEM_ORGANIZED,
+                collection_item=item,
+                subject_label=item.name,
+                change_summary=organize_changes,
+            )
 
     new_image_name = item.image.name if item.image else None
     if old_image_name and old_image_name != new_image_name:
@@ -418,6 +585,14 @@ def create_visit_record(
                 visited_on=visited_on,
                 short_review=short_review,
                 client_token=client_token,
+            )
+            _record_activity(
+                user=user,
+                kind=ActivityLogEntry.Kind.VISIT_RECORD_CREATED,
+                event=event,
+                visit_record=record,
+                subject_label=_subject_label(event=event, personal_entry=personal_entry),
+                operation_key=client_token,
             )
     except IntegrityError:
         if client_token is None:

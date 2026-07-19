@@ -46,6 +46,8 @@ from .services import (
     create_visit_record_photo,
     mark_missed,
     mark_visited,
+    remove_event_interest,
+    remove_user_event_status,
     revert_to_planned,
     update_collection_item,
     update_visit_record,
@@ -132,6 +134,9 @@ class EventInterestDetailView(RetrieveDestroyAPIView):
     def get_queryset(self):
         return EventInterest.objects.filter(user=self.request.user)
 
+    def perform_destroy(self, instance):
+        remove_event_interest(interest=instance)
+
 
 class UserEventStatusPagination(PageNumberPagination):
     page_size = 20
@@ -215,6 +220,9 @@ class UserEventStatusDetailView(RetrieveUpdateDestroyAPIView):
             raise ValidationError(
                 {"status": "이미 방문 기록이 있는 항목은 이 상태로 되돌릴 수 없습니다."}
             )
+
+    def perform_destroy(self, instance):
+        remove_user_event_status(user_event_status=instance)
 
 
 class VisitRecordPagination(PageNumberPagination):

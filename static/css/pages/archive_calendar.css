@@ -1,0 +1,113 @@
+/* ── /archive/calendar/ page skin ────────────────────────────────
+ * Grid/cell/dot/legend/error-panel look lives in components/calendar.css
+ * (shared with the Events calendar). This page has its own filter-group/
+ * filter-list/filter-check/filter-actions rules (not a shared component —
+ * matches this repo's per-page filter-check convention, since the type
+ * vocabulary here — schedule/interest/status/visit/goods — has nothing in
+ * common with event_list.css's region/category/status/sort filters) and a
+ * full-width layout (no .layout 2-column split — plan
+ * .docs/plans/2026-07-19-dual-calendar-frontend-pre-review.md §A-2, which
+ * applies to both calendar pages). Breakpoints: 45rem only (§A-3).
+ */
+.calendar-filters {
+  margin: 0.875rem 0;
+}
+
+.filter-group {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.625rem;
+  background: var(--bg-card);
+}
+
+.filter-group h2 {
+  margin: 0 0 0.5rem;
+  font-size: var(--fs-md);
+}
+
+/* Desktop/tablet: the 5 kind checkboxes in one horizontal band instead of
+   a tall vertical stack — same band principle as the Events calendar's
+   filter form (event_calendar.css), the grid is this page's main content.
+   Reverts to the original vertical stack at <=45rem below. */
+.filter-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text);
+  font-size: var(--fs-md);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.calendar-month-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-bottom: 0.875rem;
+}
+
+.calendar-month-label {
+  margin: 0;
+  min-width: 8rem;
+  text-align: center;
+  font-size: var(--fs-lg);
+}
+
+.date-detail-section {
+  margin-top: 1.25rem;
+}
+
+.date-detail-section h2 {
+  margin: 0 0 0.625rem;
+  font-size: var(--fs-base);
+}
+
+.calendar-item-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Text label paired with the kind dot (design §9.1: color alone must never
+   carry meaning) — small muted text, no new chip/badge component. */
+.calendar-item-kind {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.calendar-item-label {
+  font-weight: 600;
+}
+
+.calendar-item-date {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.calendar-item-row .side-action-link {
+  margin-left: auto;
+}
+
+@media (max-width: 45rem) {
+  .filter-list {
+    display: grid;
+    gap: 0.375rem;
+  }
+}

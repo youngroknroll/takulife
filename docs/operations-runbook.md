@@ -188,3 +188,10 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 - **익명 사용자** → `settings.LOGIN_URL`(`/accounts/login/`)로 리다이렉트(`next` 파라미터 보존).
 - **로그인했지만 스태프가 아닌 사용자** → `403 PermissionDenied`(로그인 페이지로 되돌리지 않는다 — 이미 로그인된 상태에서 LOGIN_URL로 보내면 allauth의 인증됨 리다이렉트와 충돌해 무한 루프가 될 수 있기 때문).
 - Django 기본 관리자 페이지(`/admin/`)는 슈퍼유저용 백업 경로로 계속 유지된다 — Staff Console 접근에 문제가 생기면 슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다.
+
+## 6. Migration Rollback — `archive` 0022 (`ActivityLogEntry`) 역적용 금지
+
+- **`archive` 0022(`activitylogentry`) 마이그레이션을 명시적으로 역적용(`python manage.py migrate archive <0022 이전 번호>`)하지 않는다.** 0022의 reverse 연산은 `DropModel`이라, 그때까지 쌓인 사용자 활동 이력(찜·상태 변경·방문 기록·굿즈 등록/정리)이 **전량 소실**된다.
+- **코드만 롤백하는 경우는 안전하다** — 이전 이미지를 재배포해도 배포 entrypoint의 `migrate`는 코드에 없는(더 앞선) 마이그레이션을 자동으로 역적용하지 않는다. 즉 "코드는 이전 버전, 스키마는 0022 유지" 상태로 안전하게 되돌아간다.
+- 위험한 것은 오직 **운영자가 직접 `migrate archive <0022 이전>`을 실행하는 경우**뿐이다.
+- 스키마(테이블) 자체를 제거해야 하는 경우는 별도 승인과 보존 정책이 먼저 필요하다(`.docs/plans/2026-07-19-dual-calendar-service-design.md` §14).

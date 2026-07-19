@@ -302,3 +302,74 @@ class CollectionItem(models.Model):
             raise ValidationError(
                 "event must match visit_record.event when both are set."
             )
+
+
+class ActivityLogEntry(models.Model):
+    """A calendar-oriented record of a user's collection/visit actions (dual-
+    calendar plan §1). Written by the owning service call inside the same
+    transaction as the action it describes — never by a signal.
+    """
+
+    class Kind(models.TextChoices):
+        INTEREST_ADDED = "interest_added", "Interest added"
+        INTEREST_REMOVED = "interest_removed", "Interest removed"
+        STATUS_CHANGED = "status_changed", "Status changed"
+        STATUS_REMOVED = "status_removed", "Status removed"
+        VISIT_RECORD_CREATED = "visit_record_created", "Visit record created"
+        COLLECTION_ITEM_CREATED = "collection_item_created", "Collection item created"
+        COLLECTION_ITEM_ORGANIZED = "collection_item_organized", "Collection item organized"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="archive_activity_log_entries",
+    )
+    kind = models.CharField(max_length=30, choices=Kind.choices)
+    occurred_at = models.DateTimeField()
+    # Each FK below is an optional pointer to the row the entry is about — not
+    # a "subject = exactly one of" pair like EventInterest/UserEventStatus/
+    # VisitRecord above, so there is no exactly-one CheckConstraint here.
+    # SET_NULL: an upstream hard-delete must not silently wipe calendar
+    # history (subject_label is the durable snapshot once the FK is gone).
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.SET_NULL,
+        related_name="archive_activity_log_entries",
+        null=True,
+        blank=True,
+    )
+    visit_record = models.ForeignKey(
+        VisitRecord,
+        on_delete=models.SET_NULL,
+        related_name="activity_log_entries",
+        null=True,
+        blank=True,
+    )
+    collection_item = models.ForeignKey(
+        CollectionItem,
+        on_delete=models.SET_NULL,
+        related_name="activity_log_entries",
+        null=True,
+        blank=True,
+    )
+    subject_label = models.CharField(max_length=255)
+    change_summary = models.JSONField(default=dict, blank=True)
+    # Client-supplied idempotency key for bfcache/replay dedup — mirrors the
+    # VisitRecord/CollectionItem client_token convention, scoped by
+    # (user, kind) rather than (user,) alone: one client_token (e.g. a
+    # VisitRecord create) can fan out into more than one kind of entry.
+    operation_key = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "kind", "operation_key"],
+                condition=models.Q(operation_key__isnull=False),
+                name="unique_archive_activity_log_entry_user_kind_operation_key",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["user", "occurred_at"], name="archive_actlog_user_occ_idx"
+            ),
+        ]

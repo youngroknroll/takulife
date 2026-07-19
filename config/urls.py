@@ -12,6 +12,7 @@ from core.promotion_views import PromotePersonalEntryView
 urlpatterns = [
     path("", core_views.home, name="home"),
     path("events/", core_views.event_list, name="event-list-page"),
+    path("events/calendar/", core_views.event_calendar, name="event-calendar-page"),
     path("events/<int:event_id>/", core_views.event_detail, name="event-detail-page"),
     path("archive/", core_views.archive, name="archive-page"),
     path(
@@ -30,6 +31,7 @@ urlpatterns = [
         name="archive-visit-edit-page",
     ),
     path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
+    path("archive/calendar/", core_views.activity_calendar, name="archive-calendar-page"),
     path(
         "collection/new/",
         core_views.archive_collection_item_create,

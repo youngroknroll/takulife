@@ -70,6 +70,26 @@ def list_published_events(params, *, today=None):
     )
 
 
+def list_published_events_for_month(params, *, year, month, today=None):
+    """Return an ordered QuerySet of published events for the Events calendar
+    (dual-calendar service design §6): published, overlapping the given
+    (year, month), combined with the same params-driven filters/ordering
+    list_published_events already applies — no filter logic is duplicated
+    here, only the month-overlap queryset method is added to the chain.
+
+    params: same validated_data shape as list_published_events.
+    today: date override for testing; defaults to timezone.localdate().
+    """
+    if today is None:
+        today = timezone.localdate()
+    return (
+        Event.objects.published()
+        .overlapping_month(year, month)
+        .filter_for_public_listing(params, today=today)
+        .order_for_public_listing(today=today, sort=params.get("sort"))
+    )
+
+
 # ---------------------------------------------------------------------------
 # Staff dashboard quality-warning counters (PR-1b) + drilldown (PR-E1)
 #
