@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import date as _date
 
 from django.db.models import Count, Exists, OuterRef, Q
+from django.urls import reverse
 from django.utils import timezone
 
 from events.models import Event
@@ -461,12 +462,32 @@ class CalendarActivityItem:
     §7.3). A single-fact-date item (방문/굿즈 획득/행동성 활동) sets `date`
     and leaves `start`/`end` None; a period item (일정) sets `start`/`end`
     (inclusive) and leaves `date` None.
+
+    `label`/`url`/`time_text` (additive — web-layer display fields, not new
+    business rules; each private helper below fills them from the exact
+    object it already holds at construction time):
+    - `label`: the subject's display name (event title / CollectionItem.name
+      / ActivityLogEntry.subject_label — the durable snapshot that survives
+      the source row's own deletion).
+    - `url`: the linked edit/detail screen (event detail, visit-record edit,
+      collection-item edit), or `None` when the underlying row is a
+      SET_NULL ActivityLogEntry whose target has since been deleted (only
+      `subject_label` survives that case — there is nothing left to link
+      to).
+    - `time_text`: localtime "HH:MM" for action-time items sourced from
+      ActivityLogEntry.occurred_at only (§7.3-3 "행동성 활동"); every other
+      source has no time-of-day to show (VisitRecord.visited_on and
+      CollectionItem's date fields are plain dates, and a period item is a
+      date range) and leaves this "".
     """
 
     kind: str
     date: _date | None = None
     start: _date | None = None
     end: _date | None = None
+    label: str = ""
+    url: str | None = None
+    time_text: str = ""
 
 
 def _calendar_month_bounds(year, month):
@@ -498,6 +519,8 @@ def _schedule_items(user, month_start, month_end):
             kind=SCHEDULE_KIND,
             start=status.event.start_date,
             end=status.event.end_date or status.event.start_date,
+            label=status.event.title,
+            url=reverse("event-detail-page", args=[status.event_id]),
         )
         for status in statuses
     ]
@@ -506,8 +529,16 @@ def _schedule_items(user, month_start, month_end):
 def _visit_items(user, month_start, month_end):
     visits = VisitRecord.objects.filter(
         user=user, visited_on__gte=month_start, visited_on__lte=month_end
-    )
-    return [CalendarActivityItem(kind=VISIT_KIND, date=visit.visited_on) for visit in visits]
+    ).select_related("event", "personal_entry")
+    return [
+        CalendarActivityItem(
+            kind=VISIT_KIND,
+            date=visit.visited_on,
+            label=visit.event.title if visit.event_id else visit.personal_entry.title,
+            url=reverse("archive-visit-edit-page", args=[visit.id]),
+        )
+        for visit in visits
+    ]
 
 
 def _goods_acquired_items(user, month_start, month_end):
@@ -515,20 +546,54 @@ def _goods_acquired_items(user, month_start, month_end):
     for item in CollectionItem.objects.filter(user=user):
         display_date = item.acquired_on or timezone.localdate(item.created_at)
         if month_start <= display_date <= month_end:
-            items.append(CalendarActivityItem(kind=GOODS_ACQUIRED_KIND, date=display_date))
+            items.append(
+                CalendarActivityItem(
+                    kind=GOODS_ACQUIRED_KIND,
+                    date=display_date,
+                    label=item.name,
+                    url=reverse("collection-edit-page", args=[item.id]),
+                )
+            )
     return items
 
 
 def _log_entry_items(user, month_start, month_end):
+    """ActivityLogEntry rows carry a durable `subject_label` snapshot
+    precisely so this source still has a label after its target row is
+    gone (event/visit_record/collection_item are all SET_NULL on the
+    target's own deletion, archive/models.py) — `url` degrades to `None`
+    in that case since there is nothing left to link to."""
     entries = ActivityLogEntry.objects.filter(
         user=user,
         occurred_at__date__gte=month_start,
         occurred_at__date__lte=month_end,
     )
-    return [
-        CalendarActivityItem(kind=entry.kind, date=timezone.localdate(entry.occurred_at))
-        for entry in entries
-    ]
+    items = []
+    for entry in entries:
+        if entry.event_id:
+            url = reverse("event-detail-page", args=[entry.event_id])
+        elif entry.visit_record_id:
+            url = reverse("archive-visit-edit-page", args=[entry.visit_record_id])
+        elif entry.collection_item_id:
+            url = reverse("collection-edit-page", args=[entry.collection_item_id])
+        else:
+            url = None
+        # timezone.localdate(entry.occurred_at) == timezone.localtime(entry.occurred_at).date()
+        # for an aware datetime (USE_TZ=True here) — same displayed date as
+        # before this field addition, just derived from the same localtime
+        # value that also yields time_text, so CAL-3's (kind, date)
+        # observations are unchanged.
+        local_dt = timezone.localtime(entry.occurred_at)
+        items.append(
+            CalendarActivityItem(
+                kind=entry.kind,
+                date=local_dt.date(),
+                label=entry.subject_label,
+                url=url,
+                time_text=local_dt.strftime("%H:%M"),
+            )
+        )
+    return items
 
 
 def _interest_added_fallback_items(user, month_start, month_end):
@@ -545,13 +610,18 @@ def _interest_added_fallback_items(user, month_start, month_end):
     )
     interests = EventInterest.objects.filter(user=user, event__isnull=False).exclude(
         event_id__in=logged_event_ids
-    )
+    ).select_related("event")
     items = []
     for interest in interests:
         display_date = timezone.localdate(interest.created_at)
         if month_start <= display_date <= month_end:
             items.append(
-                CalendarActivityItem(kind=ActivityLogEntry.Kind.INTEREST_ADDED, date=display_date)
+                CalendarActivityItem(
+                    kind=ActivityLogEntry.Kind.INTEREST_ADDED,
+                    date=display_date,
+                    label=interest.event.title,
+                    url=reverse("event-detail-page", args=[interest.event_id]),
+                )
             )
     return items
 

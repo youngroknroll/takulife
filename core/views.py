@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from archive.models import CollectionItem, PersonalEntry, UserEventStatus, VisitRecord
+from archive.models import ActivityLogEntry, CollectionItem, PersonalEntry, UserEventStatus, VisitRecord
 from archive.queries import (
     ARCHIVE_COLLECTION_PAGE_SIZE,
     ARCHIVE_PERSONAL_PAGE_SIZE,
@@ -24,6 +24,10 @@ from archive.queries import (
     ARCHIVE_STATUS_PAGE_SIZE,
     ARCHIVE_STATUS_SLUGS,
     ARCHIVE_VISIT_PAGE_SIZE,
+    GOODS_ACQUIRED_KIND,
+    SCHEDULE_KIND,
+    VISIT_KIND,
+    list_user_activity_for_month,
     list_user_collection_items,
     list_user_interests,
     list_user_personal_entries,
@@ -472,6 +476,223 @@ def event_calendar(request):
         "selected_sort_label": EVENT_SORT_LABELS.get(selected_sort, EVENT_SORT_LABELS[""]),
     }
     return render(request, "core/events/calendar.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Activity calendar (dual-calendar plan §단계 5 / PR-D). Grouped here with
+# event_calendar (rather than beside the other archive/* views further down)
+# because it reuses that function's month/date parsing helpers, grid
+# builder, and query-failure guard pattern directly — the URL prefix is
+# archive/, but the implementation is part of the same calendar feature.
+# ---------------------------------------------------------------------------
+
+# 5 user-facing activity groups -> the archive.queries kind constants each
+# one covers (dual-calendar service design §7.2/§7.3; mapping given by the
+# coordinator's message). "interest" also covers the §7.5 legacy-찜
+# fallback, which archive.queries._interest_added_fallback_items already
+# reuses ActivityLogEntry.Kind.INTEREST_ADDED for (no separate kind string).
+_ACTIVITY_TYPE_GROUPS = {
+    "schedule": [SCHEDULE_KIND],
+    "interest": [ActivityLogEntry.Kind.INTEREST_ADDED, ActivityLogEntry.Kind.INTEREST_REMOVED],
+    "status": [ActivityLogEntry.Kind.STATUS_CHANGED, ActivityLogEntry.Kind.STATUS_REMOVED],
+    "visit": [VISIT_KIND, ActivityLogEntry.Kind.VISIT_RECORD_CREATED],
+    "goods": [
+        GOODS_ACQUIRED_KIND,
+        ActivityLogEntry.Kind.COLLECTION_ITEM_CREATED,
+        ActivityLogEntry.Kind.COLLECTION_ITEM_ORGANIZED,
+    ],
+}
+
+_KIND_TO_ACTIVITY_TYPE_GROUP = {
+    kind: group for group, kinds in _ACTIVITY_TYPE_GROUPS.items() for kind in kinds
+}
+
+
+def _parse_activity_type_filter(request):
+    """Return the ?type= values that are one of the 5 valid groups, in
+    request order, de-duplicated. An unrecognised value is silently
+    ignored (mirrors event_list's existing unrecognised-filter-value
+    convention) rather than raising."""
+    selected = []
+    seen = set()
+    for raw_value in request.GET.getlist("type"):
+        if raw_value in _ACTIVITY_TYPE_GROUPS and raw_value not in seen:
+            seen.add(raw_value)
+            selected.append(raw_value)
+    return selected
+
+
+def _activity_extra_query(selected_types):
+    """Return the current (already-validated) type= selections as a
+    '&type=...&type=...' querystring tail — same leading-'&' convention as
+    _calendar_extra_query/_pager.html's extra_query."""
+    if not selected_types:
+        return ""
+    return "&" + urlencode([("type", value) for value in selected_types])
+
+
+def _format_month_day(value):
+    return f"{value.month}월 {value.day}일"
+
+
+def _build_selected_activity_items(items):
+    """Reshape the selected date's archive.queries.CalendarActivityItem rows
+    into detail-list display dicts: {group, label, url, date_text}.
+
+    `label`/`url` now come straight from CalendarActivityItem (archive/queries.py
+    additive extension — each private helper there fills them from the exact
+    object it already holds, e.g. Event.title/CollectionItem.name/
+    ActivityLogEntry.subject_label for label; event-detail/visit-edit/
+    collection-edit reverse() for url, `None` when a SET_NULL target is
+    gone). `date_text` is assembled here (day-level from `.date`/`.start`/
+    `.end`, plus `.time_text` appended for action-time items — service
+    design §9.3's "7월 19일 14:32" example) since that combined format is a
+    presentation-only concern.
+    """
+    display_items = []
+    for item in items:
+        group = _KIND_TO_ACTIVITY_TYPE_GROUP.get(item.kind)
+        if group is None:
+            continue
+        if item.date is not None:
+            date_text = _format_month_day(item.date)
+            if item.time_text:
+                date_text = f"{date_text} {item.time_text}"
+        else:
+            date_text = f"{_format_month_day(item.start)}~{_format_month_day(item.end)}"
+        display_items.append(
+            {"group": group, "label": item.label, "url": item.url, "date_text": date_text}
+        )
+    return display_items
+
+
+@login_required
+def activity_calendar(request):
+    """Activity calendar SSR view (dual-calendar plan §단계 5 / PR-D).
+
+    Presentation-only, mirroring event_calendar: month/date parsing reuses
+    the exact same _parse_calendar_month/_parse_calendar_date helpers
+    (service design §11.1 rules identical), and query/grid-build failures
+    degrade the same way (calendar_error="query_failed", never a 500).
+    archive.queries.list_user_activity_for_month owns which activity
+    belongs to which date — this view only buckets its already-computed
+    result by day (grid dot counts/kinds) and reshapes the selected date's
+    rows into display dicts.
+
+    Context contract (keys fixed, frontend building templates against this
+    in parallel): calendar_error (None|"invalid"|"query_failed"),
+    month_label, weeks (7-cell-per-week list of {date, in_month, today,
+    selected, count, kinds} — no per-item titles, dots only), selected_date,
+    selected_items (list of {group, label, url, date_text} — sourced from
+    archive.queries.CalendarActivityItem's label/url/time_text fields, see
+    _build_selected_activity_items), prev_month/next_month, extra_query
+    (type= only, month/date excluded),
+    selected_types, has_any_items (whole displayed month, under the current
+    type filter — see completion report for why this simplification was
+    chosen over an always-unfiltered second query).
+
+    Sub-nav active-state note: existing archive/* templates
+    (templates/core/archive/*.html) hardcode
+    `{% include "core/partials/_archive_nav.html" with active="..." %}"`
+    directly in the template, not from a view context key — there is no
+    existing "archive_nav_active"-style context convention to mirror, so
+    none is added here (confirmed by reading _archive_nav.html and every
+    template that includes it).
+    """
+    today = timezone.localdate()
+
+    year, month, calendar_error = _parse_calendar_month(request.GET.get("month"), today=today)
+    selected_date = None
+    if calendar_error is None:
+        selected_date, calendar_error = _parse_calendar_date(
+            request.GET.get("date"), year=year, month=month, today=today
+        )
+
+    if calendar_error:
+        year, month = today.year, today.month
+        selected_date = today
+
+    selected_types = _parse_activity_type_filter(request)
+    kinds = None
+    if selected_types:
+        kinds = [kind for type_group in selected_types for kind in _ACTIVITY_TYPE_GROUPS[type_group]]
+
+    try:
+        items = list(
+            list_user_activity_for_month(request.user, year=year, month=month, kinds=kinds)
+        )
+    except Exception:
+        logger.exception(
+            "Failed to query activity calendar for year=%s month=%s", year, month
+        )
+        items = []
+        if calendar_error is None:
+            calendar_error = "query_failed"
+
+    has_any_items = bool(items)
+
+    items_by_date = defaultdict(list)
+    for item in items:
+        if item.date is not None:
+            items_by_date[item.date].append(item)
+        else:
+            day = item.start
+            while day <= item.end:
+                items_by_date[day].append(item)
+                day += timedelta(days=1)
+
+    try:
+        grid = month_grid(year, month)
+    except Exception:
+        # Same known core.calendar_grid.month_grid gap flagged in
+        # event_calendar (year=1/9999 boundary filler cells) — degraded
+        # here rather than fixed at the source, out of this change's scope.
+        logger.exception(
+            "Failed to build activity calendar grid for year=%s month=%s", year, month
+        )
+        grid = []
+        if calendar_error is None:
+            calendar_error = "query_failed"
+
+    weeks = [
+        [
+            {
+                "date": cell.date,
+                "in_month": cell.in_month,
+                "today": cell.date == today,
+                "selected": cell.date == selected_date,
+                "count": len(items_by_date.get(cell.date, [])),
+                "kinds": sorted(
+                    {
+                        group
+                        for day_item in items_by_date.get(cell.date, [])
+                        if (group := _KIND_TO_ACTIVITY_TYPE_GROUP.get(day_item.kind)) is not None
+                    }
+                ),
+            }
+            for cell in week
+        ]
+        for week in grid
+    ]
+
+    selected_items = _build_selected_activity_items(items_by_date.get(selected_date, []))
+
+    prev_year, prev_month_num = _adjacent_month(year, month, -1)
+    next_year, next_month_num = _adjacent_month(year, month, 1)
+
+    context = {
+        "calendar_error": calendar_error,
+        "month_label": f"{year}년 {month}월",
+        "weeks": weeks,
+        "selected_date": selected_date,
+        "selected_items": selected_items,
+        "prev_month": f"{prev_year:04d}-{prev_month_num:02d}",
+        "next_month": f"{next_year:04d}-{next_month_num:02d}",
+        "extra_query": _activity_extra_query(selected_types),
+        "selected_types": selected_types,
+        "has_any_items": has_any_items,
+    }
+    return render(request, "core/archive/calendar.html", context)
 
 
 def event_detail(request, event_id):

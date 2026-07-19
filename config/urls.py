@@ -31,6 +31,7 @@ urlpatterns = [
         name="archive-visit-edit-page",
     ),
     path("archive/visits/", core_views.archive_visits, name="archive-visits-page"),
+    path("archive/calendar/", core_views.activity_calendar, name="archive-calendar-page"),
     path(
         "collection/new/",
         core_views.archive_collection_item_create,
