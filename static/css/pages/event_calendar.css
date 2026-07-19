@@ -16,6 +16,23 @@
   margin-bottom: 0.875rem;
 }
 
+/* Desktop/tablet: the 4 reused filter-groups (region/category/status/sort)
+   plus the actions band side by side instead of stacked full-height panels
+   that push the grid below the fold — the grid is this page's main
+   content, not the filters. Reverts to the original vertical stack at
+   <=45rem below. */
+.calendar-filters form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.875rem;
+  align-items: start;
+}
+
+.calendar-filters .filter-actions {
+  align-self: end;
+  justify-self: end;
+}
+
 .calendar-month-nav {
   display: flex;
   flex-wrap: wrap;
@@ -72,5 +89,39 @@
      of events, so the detail section keeps a single column instead. */
   .date-detail-section .event-list {
     grid-template-columns: 1fr;
+  }
+
+  /* Restore the original vertical filter stack below the desktop band
+     breakpoint. */
+  .calendar-filters form {
+    display: block;
+  }
+
+  /* User-confirmed: the day-detail agenda is text-only on mobile (no
+     poster) — desktop keeps the full card above. display:none (not a
+     second, duplicated no-image markup branch) so the reused event-card
+     text parts stay a single source of truth; combined with the existing
+     loading="lazy" on the <img> (event_list.css's markup, reused as-is
+     here), evergreen browsers never fetch it — a lazy image only loads
+     once it's judged "near the viewport" via its own layout box, and a
+     display:none ancestor never has one, so it's simply never scheduled.
+     Not a hard spec guarantee (implementation-defined optimization), but
+     it's the de-facto behaviour Chromium/Firefox/Safari all ship, and the
+     same "server renders both, CSS toggles" idea event_list.css already
+     uses for its own .event-card-dday-badge/.card-lead .dday pair below. */
+  .date-detail-card .event-card-media {
+    display: none;
+  }
+
+  .date-detail-card .card-body {
+    border-top: none;
+  }
+
+  /* event_list.css's own mobile block hides .card-lead .dday in favour of
+     a poster-overlay badge inside .event-card-media (now hidden above) —
+     restore the text chip here so the D-day/종료 state stays visible in
+     this card's now-image-free mobile layout. */
+  .date-detail-card .card-lead .dday {
+    display: inline-flex;
   }
 }

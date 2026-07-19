@@ -106,6 +106,7 @@
           {% for item in selected_items %}
             <li class="calendar-item-row">
               <span class="day-dot" data-kind="{{ item.group }}"></span>
+              <span class="calendar-item-kind">{% if item.group == 'schedule' %}일정{% elif item.group == 'interest' %}찜{% elif item.group == 'status' %}상태 변경{% elif item.group == 'visit' %}방문{% elif item.group == 'goods' %}굿즈{% endif %}</span>
               <span class="calendar-item-label">{{ item.label }}</span>
               {% if item.date_text %}<span class="calendar-item-date">{{ item.date_text }}</span>{% endif %}
               {% if item.url %}
