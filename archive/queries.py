@@ -4,12 +4,28 @@ Reusable query logic for user event statuses, event interests, and visit records
 Query/aggregate logic lives here, not in the view layer — mirrors
 drafts/queries.py.
 """
+import calendar
+from dataclasses import dataclass
+# Aliased (not `from datetime import date`): a dataclass field below is also
+# named `date`, and for `field: T = default` Python binds the default value
+# to the field name *before* evaluating the annotation `T` at class-body
+# scope — an unaliased same-named import would already be rebound to `None`
+# by the time its own annotation tried to reference it.
+from datetime import date as _date
+
 from django.db.models import Count, Exists, OuterRef, Q
 from django.utils import timezone
 
 from events.models import Event
 
-from .models import CollectionItem, EventInterest, PersonalEntry, UserEventStatus, VisitRecord
+from .models import (
+    ActivityLogEntry,
+    CollectionItem,
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+)
 
 # Canonical archive status slugs, sourced from the model's own choices so the
 # set has a single source of truth. Excludes "interested" (now EventInterest).
@@ -407,3 +423,159 @@ def user_visit_category_values(user):
         .order_by("-visited_on", "-id")
         .values_list("event__category", "personal_entry__category")
     )
+
+
+# ---------------------------------------------------------------------------
+# Personal activity calendar month query (dual-calendar plan §단계 3,
+# CAL-3-03~11). Combines 5 read sources into one flat list of calendar items,
+# always scoped to the given user first:
+#
+#   schedule ("일정")       — planned UserEventStatus rows, the linked
+#                             event's full run (start..end, inclusive)
+#   visit ("방문")           — VisitRecord.visited_on
+#   goods_acquired ("굿즈")  — CollectionItem.acquired_on, falling back to
+#                             created_at's local date when unset
+#   <ActivityLogEntry.Kind> — the append-only action trail, dated by
+#                             occurred_at's local date
+#   <ActivityLogEntry.Kind.INTEREST_ADDED> fallback — a still-existing
+#                             EventInterest with no matching log row (legacy
+#                             pre-launch 찜, §7.5 "no backfill" — the fallback
+#                             is only used when no log row already covers it,
+#                             so the two never double-count the same 찜)
+#
+# Each source is a single query; date-derivation and month-window filtering
+# for the two "fact date with a fallback" sources (goods, 찜) happens in
+# Python since the fallback can't be expressed as one simple field lookup —
+# acceptable at today's per-user row counts (no aggregation table, service
+# design §14).
+# ---------------------------------------------------------------------------
+
+SCHEDULE_KIND = "schedule"
+VISIT_KIND = "visit"
+GOODS_ACQUIRED_KIND = "goods_acquired"
+
+
+@dataclass(frozen=True)
+class CalendarActivityItem:
+    """One calendar-displayable activity row (dual-calendar service design
+    §7.3). A single-fact-date item (방문/굿즈 획득/행동성 활동) sets `date`
+    and leaves `start`/`end` None; a period item (일정) sets `start`/`end`
+    (inclusive) and leaves `date` None.
+    """
+
+    kind: str
+    date: _date | None = None
+    start: _date | None = None
+    end: _date | None = None
+
+
+def _calendar_month_bounds(year, month):
+    month_start = _date(year, month, 1)
+    month_end = _date(year, month, calendar.monthrange(year, month)[1])
+    return month_start, month_end
+
+
+def _schedule_items(user, month_start, month_end):
+    """Planned-status rows whose linked event run overlaps the month —
+    mirrors events.querysets.EventQuerySet.overlapping_month's boundary rule,
+    applied through the event FK instead of Event.objects directly."""
+    statuses = (
+        UserEventStatus.objects.filter(
+            user=user,
+            status=UserEventStatus.Status.PLANNED,
+            event__isnull=False,
+            event__start_date__isnull=False,
+            event__start_date__lte=month_end,
+        )
+        .filter(
+            Q(event__end_date__isnull=True, event__start_date__gte=month_start)
+            | Q(event__end_date__isnull=False, event__end_date__gte=month_start)
+        )
+        .select_related("event")
+    )
+    return [
+        CalendarActivityItem(
+            kind=SCHEDULE_KIND,
+            start=status.event.start_date,
+            end=status.event.end_date or status.event.start_date,
+        )
+        for status in statuses
+    ]
+
+
+def _visit_items(user, month_start, month_end):
+    visits = VisitRecord.objects.filter(
+        user=user, visited_on__gte=month_start, visited_on__lte=month_end
+    )
+    return [CalendarActivityItem(kind=VISIT_KIND, date=visit.visited_on) for visit in visits]
+
+
+def _goods_acquired_items(user, month_start, month_end):
+    items = []
+    for item in CollectionItem.objects.filter(user=user):
+        display_date = item.acquired_on or timezone.localdate(item.created_at)
+        if month_start <= display_date <= month_end:
+            items.append(CalendarActivityItem(kind=GOODS_ACQUIRED_KIND, date=display_date))
+    return items
+
+
+def _log_entry_items(user, month_start, month_end):
+    entries = ActivityLogEntry.objects.filter(
+        user=user,
+        occurred_at__date__gte=month_start,
+        occurred_at__date__lte=month_end,
+    )
+    return [
+        CalendarActivityItem(kind=entry.kind, date=timezone.localdate(entry.occurred_at))
+        for entry in entries
+    ]
+
+
+def _interest_added_fallback_items(user, month_start, month_end):
+    """§7.5 no-backfill fallback: a still-existing EventInterest with no
+    matching interest_added log row (legacy data from before ActivityLogEntry
+    existed). Excludes any event already covered by a real log row so a
+    post-launch 찜 is never counted twice."""
+    logged_event_ids = set(
+        ActivityLogEntry.objects.filter(
+            user=user,
+            kind=ActivityLogEntry.Kind.INTEREST_ADDED,
+            event__isnull=False,
+        ).values_list("event_id", flat=True)
+    )
+    interests = EventInterest.objects.filter(user=user, event__isnull=False).exclude(
+        event_id__in=logged_event_ids
+    )
+    items = []
+    for interest in interests:
+        display_date = timezone.localdate(interest.created_at)
+        if month_start <= display_date <= month_end:
+            items.append(
+                CalendarActivityItem(kind=ActivityLogEntry.Kind.INTEREST_ADDED, date=display_date)
+            )
+    return items
+
+
+def list_user_activity_for_month(user, *, year, month, kinds=None):
+    """Return the user's calendar-displayable activity for one month as a
+    flat list of CalendarActivityItem, always scoped to `user` first.
+
+    `kinds`, when given, narrows the result to that subset of kind strings
+    (SCHEDULE_KIND, VISIT_KIND, GOODS_ACQUIRED_KIND, or an
+    ActivityLogEntry.Kind value).
+    """
+    month_start, month_end = _calendar_month_bounds(year, month)
+
+    items = (
+        _schedule_items(user, month_start, month_end)
+        + _visit_items(user, month_start, month_end)
+        + _goods_acquired_items(user, month_start, month_end)
+        + _log_entry_items(user, month_start, month_end)
+        + _interest_added_fallback_items(user, month_start, month_end)
+    )
+
+    if kinds is not None:
+        allowed = set(kinds)
+        items = [item for item in items if item.kind in allowed]
+
+    return items
