@@ -55,9 +55,13 @@
 
     dialog = document.createElement("div");
     dialog.className = "confirm-dialog";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "confirm-message");
 
     messageEl = document.createElement("p");
     messageEl.className = "confirm-message";
+    messageEl.id = "confirm-message";
 
     var actions = document.createElement("div");
     actions.className = "confirm-actions";
