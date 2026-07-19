@@ -11,8 +11,8 @@
  * data-in-month/data-today/data-selected + color swaps (§A-7 — opacity is
  * banned for state, per an earlier low-contrast finding elsewhere).
  *
- * Legend/multi-kind dot colors (§A-8: 일정=--up-*/찜=--pink-*/상태 변경=
- * --brand-*/방문=--mint-*/굿즈=--amber-*, --rose-* reserved for the error
+ * Legend/multi-kind dot colors (§A-8: 일정=--up-*, 찜=--pink-*, 상태 변경=
+ * --brand-*, 방문=--mint-*, 굿즈=--amber-*, --rose-* reserved for the error
  * panel only, never a kind marker) are scoped to `.day-dot[data-kind]` —
  * Events never sets a data-kind attribute on its single dot, so its plain
  * solid --brand circle (the bare `.day-dot` rule below) is unaffected by
@@ -81,6 +81,13 @@
 }
 
 .day-cell[data-in-month="false"] .day-num {
+  color: var(--muted);
+}
+
+/* Adjacent-month item titles read at the same strength as the current
+   month's, so the current month didn't stand out (browser QA finding) —
+   muted to match the already-muted .day-num/.day-more for that cell. */
+.day-cell[data-in-month="false"] .day-item {
   color: var(--muted);
 }
 
