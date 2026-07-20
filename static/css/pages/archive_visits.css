@@ -81,15 +81,9 @@
   }
   .visit-chip.category {
     background: var(--brand-soft);
-    color: var(--brand);
+    color: var(--brand-ink);
     white-space: normal;
     overflow-wrap: anywhere;
-  }
-  /* PR-4 대비 감사 발견: color:var(--brand) on --brand-soft는 텍스트 아닌
-     solid-fill 토큰 오용 — 다크 2.62:1 AA 미달(12파일 15곳 동일 패턴,
-     전수는 PR-4 보고). --brand-ink로 다크만 교체 시 4.73:1. */
-  :root[data-theme="dark"] .visit-chip.category {
-    color: var(--brand-ink);
   }
   /* 비공식 mark — unified gray, matching .event-category.unofficial on the
      기록장 / 예정 목록 / 찜 목록 pages (--muted-soft / --muted). */
@@ -509,19 +503,12 @@
     border: 1px solid var(--brand);
     border-radius: 8px;
     background: var(--brand-soft);
-    color: var(--brand);
+    color: var(--brand-ink);
     font-size: var(--fs-sm);
     font-weight: 700;
     padding: 0.4375rem 0.75rem;
     min-height: 36px;
     cursor: pointer;
-  }
-  /* PR-4 대비 감사 발견: color:var(--brand) on --brand-soft(idle 상태만
-     — :hover는 이미 --brand 배경+#fff라 테마 무관) 다크 2.62:1 AA 미달
-     (12파일 15곳 동일 패턴, 전수는 PR-4 보고). --brand-ink로 다크만
-     교체 시 4.73:1. */
-  :root[data-theme="dark"] .promote-btn {
-    color: var(--brand-ink);
   }
   .promote-btn:hover { background: var(--brand); color: #fff; }
   .promote-badge {

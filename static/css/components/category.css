@@ -16,7 +16,7 @@
   line-height: 1;
   flex-shrink: 0;
   background: var(--brand-soft);
-  color: var(--brand);
+  color: var(--brand-ink);
 }
 
 .cat-tile::before {
@@ -30,7 +30,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   background: var(--brand-soft);
-  color: var(--brand);
+  color: var(--brand-ink);
 }
 
 /* per-category colors — shared by tile and chip */
@@ -92,17 +92,14 @@
   font-weight: 700;
   overflow-wrap: anywhere;
   background: var(--brand-soft);
-  color: var(--brand);
-}
-/* PR-4 대비 감사 발견: color:var(--brand) on --brand-soft는 텍스트 아닌
-   solid-fill 토큰 오용 — 다크 2.62:1 AA 미달(12파일 15곳 동일 패턴,
-   전수는 PR-4 보고). --brand-ink로 다크만 교체 시 통과. (.cat-tile/
-   .cat-chip은 카테고리 슬러그별 오버라이드와 특이도가 충돌해 같은
-   수정을 적용하지 않고 되돌림 — 실제 렌더는 항상 슬러그가 매치되어
-   폴백 브랜드색이 나타나지 않는다.) */
-:root[data-theme="dark"] .event-category {
   color: var(--brand-ink);
 }
+/* 공용 디자인 규칙 §1.4-2: color:var(--brand) on --brand-soft는 텍스트
+   아닌 solid-fill 토큰 오용 — 라이트 3.71:1·다크 2.62:1 모두 AA 미달
+   (12파일 15곳 동일 패턴). 베이스를 --brand-ink로 전환해 양 테마
+   4.5:1+ 통과, 다크 전용 오버라이드는 중복이라 제거. (.cat-tile/
+   .cat-chip도 동일 전환 — "베이스는 렌더 안 됨" 전제가 모델 레이어에서
+   비보장이라 특이도 동일한 베이스 전환이 더 안전하다.) */
 .event-category.unofficial {
   display: inline-flex;
   align-items: center;
