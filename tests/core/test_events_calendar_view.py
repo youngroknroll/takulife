@@ -401,3 +401,49 @@ def test_행사_달력을_필터와_함께_조회하면_활성_필터_개수가_
 
     assert resp.status_code == 200
     assert resp.context["active_filter_count"] == expected_count
+
+
+# ---------------------------------------------------------------------------
+# CAL-EDIT-1 — active_filter_chips is exposed in context, same derivation as
+# event_list (편집 계획 §D)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_필터가_적용된_달력_요청의_컨텍스트에_적용_필터_칩이_담긴다():
+    resp = Client().get("/events/calendar/", {"region": "seoul", "q": "포스터"})
+
+    assert resp.status_code == 200
+    chips = resp.context["active_filter_chips"]
+    assert "검색: 포스터" in chips
+    assert any("서울" in chip for chip in chips)
+
+
+# ---------------------------------------------------------------------------
+# CAL-EDIT-2 — weeks[].items[] carries category_slug for date-cell category
+# bars/dots (편집 계획 §D)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_달력_주_항목에_카테고리_슬러그가_담긴다(make_event):
+    make_event(
+        title="카테고리슬러그테스트행사",
+        category="goods-sale",
+        start_date=date(2026, 7, 10),
+        end_date=date(2026, 7, 10),
+    )
+
+    resp = Client().get("/events/calendar/", {"month": "2026-07"})
+
+    assert resp.status_code == 200
+    weeks = resp.context["weeks"]
+    matching_items = [
+        item
+        for week in weeks
+        for cell in week
+        if cell["date"] == date(2026, 7, 10)
+        for item in cell["items"]
+    ]
+    assert matching_items
+    assert all(item["category_slug"] == "goods-sale" for item in matching_items)

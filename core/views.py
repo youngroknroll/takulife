@@ -201,6 +201,24 @@ def home(request):
     return render(request, "core/home.html", context)
 
 
+def _active_filter_chips(*, q, selected_region, selected_category, selected_status):
+    """Human-readable chips summarising the active q/region/category/status
+    filters (Eventbrite-style). Shared by event_list and event_calendar so
+    both pages derive the same chip labels from the same selections (calendar
+    editorial plan §D — no new query, only relabels values the caller already
+    parsed)."""
+    chips = []
+    if q:
+        chips.append(f"검색: {q}")
+    for region in selected_region:
+        chips.append(REGION_LABELS.get(region, region))
+    for category in selected_category:
+        chips.append(CATEGORY_LABELS.get(category, category))
+    if selected_status:
+        chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
+    return chips
+
+
 def event_list(request):
     page_obj = None
     total_count = 0
@@ -239,15 +257,12 @@ def event_list(request):
     )
 
     # Human-readable chips summarising the active filters (Eventbrite-style).
-    active_filter_chips = []
-    if q:
-        active_filter_chips.append(f"검색: {q}")
-    for region in selected_region:
-        active_filter_chips.append(REGION_LABELS.get(region, region))
-    for category in selected_category:
-        active_filter_chips.append(CATEGORY_LABELS.get(category, category))
-    if selected_status:
-        active_filter_chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
+    active_filter_chips = _active_filter_chips(
+        q=q,
+        selected_region=selected_region,
+        selected_category=selected_category,
+        selected_status=selected_status,
+    )
 
     context = {
         "page_obj": page_obj,
@@ -430,7 +445,11 @@ def event_calendar(request):
                 "today": cell.date == today,
                 "selected": cell.date == selected_date,
                 "items": [
-                    {"title": event.title, "url": reverse("event-detail-page", args=[event.id])}
+                    {
+                        "title": event.title,
+                        "url": reverse("event-detail-page", args=[event.id]),
+                        "category_slug": event.category,
+                    }
                     for event in events_by_date.get(cell.date, [])[:2]
                 ],
                 "more_count": max(len(events_by_date.get(cell.date, [])) - 2, 0),
@@ -463,6 +482,12 @@ def event_calendar(request):
         "prev_month": f"{prev_year:04d}-{prev_month_num:02d}",
         "next_month": f"{next_year:04d}-{next_month_num:02d}",
         "extra_query": _calendar_extra_query(request),
+        "active_filter_chips": _active_filter_chips(
+            q=q,
+            selected_region=selected_region,
+            selected_category=selected_category,
+            selected_status=selected_status,
+        ),
         # filter-panel context, mirrored verbatim from event_list so its
         # existing filter-check markup can be reused as-is.
         "CATEGORY": CATEGORY,
@@ -756,6 +781,7 @@ def _build_archive_status_rows(user_statuses):
                 "label_visited": archive_status_label("visited"),
                 "label_planned": archive_status_label("planned"),
                 "subject": subject,
+                "updated_at": us.updated_at,
             }
         )
     return rows
@@ -881,6 +907,7 @@ def _subject_view(obj):
         return {
             "title": event.title,
             "category_label": CATEGORY_LABELS.get(event.category, event.category),
+            "category_slug": event.category,
             "location": event.location_name,
             "start_date": event.start_date,
             "end_date": event.end_date,
