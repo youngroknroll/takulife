@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-  <div class="page">
+  <main class="page" id="content">
     {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" %}
 
     <section class="hero">
@@ -28,8 +28,8 @@
       </div>
     </section>
 
-    <div class="layout">
-      <main class="panel" id="content">
+    <section class="layout">
+      <article class="panel">
         <div class="panel-head">
           <h2>전체 목록</h2>
           <div class="chips">
@@ -45,7 +45,7 @@
         <div id="archive-results" data-archive-results>
           {% include "core/partials/_archive_results_record.html" %}
         </div>
-      </main>
+      </article>
 
       <aside class="panel">
         <h2>기록 액션</h2>
@@ -66,12 +66,12 @@
           </div>
         </div>
       </aside>
-    </div>
+    </section>
 
     <div class="mobile-cta" data-cta-fixed hidden>
       <a href="/archive/visits/new/">기록 추가</a>
     </div>
-  </div>
+  </main>
 {% endblock %}
 
 {% block extra_js %}

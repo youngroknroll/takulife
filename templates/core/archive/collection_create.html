@@ -94,7 +94,7 @@
               </div>
 
               <div class="form-group">
-                <label>방문 기록 연결 (선택)</label>
+                <label for="collection-visit-record">방문 기록 연결 (선택)</label>
                 {% if preselect %}
                   <p class="locked-subject">{{ preselect.label }}</p>
                   <input type="hidden" id="collection-visit-record" name="visit_record" value="{{ preselect.id }}">

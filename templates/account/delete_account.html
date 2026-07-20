@@ -23,6 +23,7 @@
         name="password"
         id="id_password"
         required
+        {% if field_errors.password %}aria-describedby="id_password-error"{% endif %}
       >
       {% if field_errors.password %}
         <p class="field-error" id="id_password-error">{{ field_errors.password }}</p>
