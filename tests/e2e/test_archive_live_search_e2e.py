@@ -95,3 +95,14 @@ class TestArchiveLiveSearch:
             user=seed.user, event=seed.events[3]
         )
         assert status.status == "missed"
+
+    def test_검색어를_입력하면_결과_요약_리전에_건수가_표시된다(self, live_server, page, seed, login):
+        login(page, live_server.url, "e2e_user@example.com", seed.password)
+        page.goto(f"{live_server.url}/archive/statuses/")
+
+        page.fill(SEARCH, "여름")
+
+        # Debounced swap narrows the list to the single planned match…
+        expect(page.locator(CARDS)).to_have_count(1)
+        # …and the SSR status region reports the same server-truth count.
+        expect(page.locator("#archive-search-status")).to_have_text("1건 검색됨")
