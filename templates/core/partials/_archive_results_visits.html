@@ -62,9 +62,9 @@
                 {% endfor %}
               </div>
               {% if row.photos|length > 1 %}
-                <button class="carousel-btn carousel-prev" type="button">‹</button>
-                <button class="carousel-btn carousel-next" type="button">›</button>
-                <p class="carousel-counter"><span class="carousel-index">1</span>/{{ row.photos|length }}</p>
+                <button class="carousel-btn carousel-prev" type="button" aria-label="{{ row.subject.title }} 사진, 이전">‹</button>
+                <button class="carousel-btn carousel-next" type="button" aria-label="{{ row.subject.title }} 사진, 다음">›</button>
+                <p class="carousel-counter" role="status"><span class="carousel-index">1</span>/{{ row.photos|length }}</p>
               {% endif %}
             </div>
           </div>
