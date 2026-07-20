@@ -399,16 +399,19 @@ class TestArchiveCollectionCardBadges:
 class TestArchiveCollectionNav:
     """Target IA plan D1/§7-a-2 (.docs/plans/2026-07-16-target-ia-plan.md):
     the collection page is now a top-level destination, not an Activity
-    sub-page — it must never render the Activity accordion (that structure's
-    own contents are locked separately in tests/archive/test_archive_nav.py,
-    exercised via an archive page that still includes it)."""
+    sub-page — it must never render the Activity sub-nav tab bar (that
+    structure's own contents, an always-visible tab bar since the 2026-07-21
+    리디자인 ④단계 §B markup swap, are locked separately in
+    tests/archive/test_archive_nav.py, exercised via an archive page that
+    still includes it)."""
 
-    def test_컬렉션_페이지에는_아카이브_내비게이션_아코디언이_렌더링되지_않는다(self, user_client):
+    def test_컬렉션_페이지에는_아카이브_내비게이션_탭바가_렌더링되지_않는다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/collection/")
         content = resp.content
 
-        assert b'class="archive-nav"' not in content
+        assert '내 활동 하위 메뉴'.encode() not in content
+        assert b'class="archive-nav-wrap"' not in content
+        assert b'class="archive-nav-tabs"' not in content
         assert b'class="sub-nav"' not in content
-        assert b"archive-nav-group" not in content
