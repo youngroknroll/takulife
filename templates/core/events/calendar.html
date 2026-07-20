@@ -18,26 +18,35 @@
       <a class="active" href="/events/calendar/?{{ request.GET.urlencode }}">달력</a>
     </nav>
 
-    <form class="search" action="/events/calendar/" method="get">
-      <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
-      {% for v in selected_region %}<input type="hidden" name="region" value="{{ v }}">{% endfor %}
-      {% for v in selected_category %}<input type="hidden" name="category" value="{{ v }}">{% endfor %}
-      {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
-      <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
-      <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
-      <button type="submit">검색</button>
-    </form>
+    <div class="calendar-search-row">
+      <form class="search" action="/events/calendar/" method="get">
+        <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
+        {% for v in selected_region %}<input type="hidden" name="region" value="{{ v }}">{% endfor %}
+        {% for v in selected_category %}<input type="hidden" name="category" value="{{ v }}">{% endfor %}
+        {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+        <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
+        <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
+        <button type="submit">검색</button>
+      </form>
 
-    <section class="panel calendar-filters" id="calendar-filters-panel"
-             data-disclosure data-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
-      <button type="button" class="calendar-filters-toggle" data-disclosure-toggle
-              data-controls="calendar-filters-panel" aria-controls="calendar-filters-panel"
-              aria-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
-        <span data-state="closed">필터 열기 ▾</span>
-        <span data-state="open">필터 닫기 ▴</span>
-        {% if active_filter_count %}<span class="calendar-filters-badge">{{ active_filter_count }}개 적용됨</span>{% endif %}
-      </button>
-      <form method="get" action="/events/calendar/">
+      <section class="panel calendar-filters" id="calendar-filters-panel"
+               data-disclosure data-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
+        <div class="calendar-filters-summary">
+          {% if active_filter_chips %}
+            <div class="applied-filters">
+              {% for chip in active_filter_chips %}<span class="applied-chip">{{ chip }}</span>{% endfor %}
+              <a class="applied-clear" href="/events/calendar/">전체 해제</a>
+            </div>
+          {% endif %}
+          <button type="button" class="calendar-filters-toggle" data-disclosure-toggle
+                  data-controls="calendar-filters-panel" aria-controls="calendar-filters-panel"
+                  aria-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
+            <span data-state="closed">＋ 필터</span>
+            <span data-state="open">필터 닫기 ▴</span>
+            {% if active_filter_count %}<span class="calendar-filters-badge">{{ active_filter_count }}개 적용됨</span>{% endif %}
+          </button>
+        </div>
+        <form method="get" action="/events/calendar/">
         {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
         <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
         <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
@@ -118,13 +127,18 @@
           <a class="btn btn-secondary btn-sm" href="/events/calendar/">초기화</a>
         </div>
       </form>
-    </section>
+      </section>
+    </div>
 
     <nav class="calendar-month-nav" aria-label="월 이동">
-      <a class="btn btn-secondary" href="?month={{ prev_month }}{{ extra_query }}">‹ 이전달</a>
-      <h2 class="calendar-month-label">{{ month_label }}</h2>
-      <a class="btn btn-secondary" href="?month={{ next_month }}{{ extra_query }}">다음달 ›</a>
-      <a class="btn btn-secondary" href="?{{ extra_query }}">오늘</a>
+      <h2 class="calendar-month-label">
+        <span class="calendar-month-year">{{ selected_date|date:"Y" }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ selected_date|date:"n" }}월</span>
+      </h2>
+      <div class="calendar-month-controls">
+        <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="이전 달">‹</a>
+        <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="다음 달">›</a>
+        <a class="calendar-month-today" href="?{{ extra_query }}">오늘</a>
+      </div>
     </nav>
 
     {% if calendar_error == "invalid" %}
@@ -144,7 +158,10 @@
     {% include "core/partials/_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
 
     <section class="date-detail-section" id="selected-date">
-      <h2>{{ selected_date|date:"n월 j일" }}의 행사</h2>
+      <div class="date-detail-head">
+        <h2>{{ selected_date|date:"n월 j일" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
+        {% if selected_events %}<span class="date-detail-count">행사 {{ selected_events|length }}건</span>{% endif %}
+      </div>
       {% if selected_events %}
         <div class="event-list">
           {% for row in selected_events %}

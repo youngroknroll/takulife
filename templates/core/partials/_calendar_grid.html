@@ -11,9 +11,13 @@ Include with:
                date        a real date, or None for an out-of-range filler
                            cell at the year 1 / year 9999 boundary (render as
                            a link-less void cell — no number, no navigation).
-               items       list of up to 2 {title, url} dicts (url is not
-                           consumed here — the whole cell is the single link
-                           target, per the no-nested-<a> constraint).
+               items       list of up to 2 {title, url, category_slug} dicts
+                           (url is not consumed here — the whole cell is the
+                           single link target, per the no-nested-<a>
+                           constraint; category_slug drives the
+                           [data-category] swatch bar/dot, event_calendar.css
+                           only — falls back to a plain --brand mark if
+                           absent/blank).
                more_count  events beyond the first 2 (desktop "외 N개").
                count       total events that day (mobile dot + number).
   extra_query  querystring tail carrying the active q/region/category/status
@@ -49,13 +53,19 @@ contract rather than an accessible-name concern.
           <span class="day-num">{{ day.date|date:"j" }}</span>
           {% if day.items %}
             <span class="day-items">
-              {% for item in day.items %}<span class="day-item">{{ item.title }}</span>{% endfor %}
+              {% for item in day.items %}<span class="day-item"><span class="day-item-cat" data-category="{{ item.category_slug }}" aria-hidden="true"></span><span class="day-item-title">{{ item.title }}</span></span>{% endfor %}
               {% if day.more_count %}<span class="day-more">외 {{ day.more_count }}개</span>{% endif %}
             </span>
           {% endif %}
           {% if day.count %}
             <span class="day-mobile-meta">
-              <span class="day-dot"></span>
+              {% if day.items %}
+                <span class="day-mobile-cats" aria-hidden="true">
+                  {% for item in day.items %}<span class="day-mobile-dot" data-category="{{ item.category_slug }}"></span>{% endfor %}
+                </span>
+              {% else %}
+                <span class="day-dot"></span>
+              {% endif %}
               <span class="day-count">{{ day.count }}</span>
             </span>
           {% endif %}
