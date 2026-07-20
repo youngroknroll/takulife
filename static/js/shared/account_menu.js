@@ -28,6 +28,7 @@
     function setOpen(open) {
       panel.hidden = !open;
       toggle.setAttribute("data-expanded", String(open));
+      toggle.setAttribute("aria-expanded", String(open));
     }
 
     toggle.addEventListener("click", function () {

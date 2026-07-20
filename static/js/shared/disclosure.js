@@ -25,7 +25,9 @@
     var container = event.currentTarget.closest("[data-disclosure]");
     if (!container) { return; }
     var expanded = container.getAttribute("data-expanded") === "true";
-    container.setAttribute("data-expanded", expanded ? "false" : "true");
+    var nextExpanded = expanded ? "false" : "true";
+    container.setAttribute("data-expanded", nextExpanded);
+    event.currentTarget.setAttribute("aria-expanded", nextExpanded);
   }
 
   if (document.readyState === "loading") {

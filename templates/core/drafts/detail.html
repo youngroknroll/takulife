@@ -189,7 +189,8 @@
             {% if draft.raw_text|length > 300 %}
               <p id="raw-text-full" hidden>{{ draft.raw_text }}</p>
               <button type="button" id="raw-text-toggle" class="link-button"
-                      data-expanded="false" data-controls="raw-text-full">전체 보기</button>
+                      data-expanded="false" data-controls="raw-text-full"
+                      aria-expanded="false" aria-controls="raw-text-full">전체 보기</button>
             {% endif %}
           </div>
         </section>

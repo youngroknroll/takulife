@@ -362,6 +362,7 @@
       fullEl.hidden = !expand;
 
       btn.setAttribute("data-expanded", String(expand));
+      btn.setAttribute("aria-expanded", String(expand));
       btn.textContent = expand ? "접기" : "전체 보기";
     });
   }

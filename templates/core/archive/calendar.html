@@ -13,9 +13,11 @@
 
     <h1>활동 달력</h1>
 
-    <section class="panel calendar-filters"
+    <section class="panel calendar-filters" id="calendar-filters-panel"
              data-disclosure data-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
-      <button type="button" class="calendar-filters-toggle" data-disclosure-toggle>
+      <button type="button" class="calendar-filters-toggle" data-disclosure-toggle
+              data-controls="calendar-filters-panel" aria-controls="calendar-filters-panel"
+              aria-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
         <span data-state="closed">필터 열기 ▾</span>
         <span data-state="open">필터 닫기 ▴</span>
         {% if active_filter_count %}<span class="calendar-filters-badge">{{ active_filter_count }}개 적용됨</span>{% endif %}
