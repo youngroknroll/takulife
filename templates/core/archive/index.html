@@ -10,28 +10,31 @@
   <main class="page" id="content">
     {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" %}
 
-    <section class="hero">
-      <h1>내 활동</h1>
-      <div class="summary-grid" style="--summary-cols: 3">
-        <article class="summary-card">
-          <p class="summary-label">방문 예정</p>
-          <p class="summary-value">{{ status_counts.planned }}</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">방문 완료</p>
-          <p class="summary-value">{{ status_counts.visited }}</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">놓침</p>
-          <p class="summary-value">{{ status_counts.missed }}</p>
-        </article>
+    <section class="hero hero-activity">
+      <div class="hero-lead">
+        <h1>내 활동</h1>
+        <div class="summary-grid" style="--summary-cols: 3">
+          <article class="summary-card">
+            <p class="summary-label">방문 예정</p>
+            <p class="summary-value">{{ status_counts.planned }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">방문 완료</p>
+            <p class="summary-value">{{ status_counts.visited }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">놓침</p>
+            <p class="summary-value">{{ status_counts.missed }}</p>
+          </article>
+        </div>
       </div>
+      <a class="hero-action" href="/archive/visits/new/" data-cta-watch><span aria-hidden="true">＋</span> 기록 추가</a>
     </section>
 
     <section class="layout">
-      <article class="panel">
-        <div class="panel-head">
-          <h2>전체 목록</h2>
+      <aside class="panel" aria-label="상태 필터 및 빠른 이동">
+        <div class="right-section">
+          <h2 class="aside-label">필터</h2>
           <div class="chips">
             <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/">전체</a>
             {% for slug, label in ARCHIVE_STATUS %}
@@ -40,32 +43,32 @@
           </div>
         </div>
 
-        {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+        <div class="right-section">
+          <h2 class="aside-label">검색</h2>
+          {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+        </div>
+
+        <div class="right-section">
+          <h2 class="aside-label">빠른 이동</h2>
+          <ul class="side-list">
+            <li><a href="/archive/statuses/">나의 일정</a></li>
+            <li><a href="/archive/visits/">다녀온 기록</a></li>
+            <li><a href="/archive/calendar/">활동 달력</a></li>
+            <li><a href="/events/">행사 찾기</a></li>
+          </ul>
+        </div>
+      </aside>
+
+      <article class="panel">
+        <div class="results-head">
+          <h2>전체 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
+          <span class="results-sort">최근순</span>
+        </div>
 
         <div id="archive-results" data-archive-results>
           {% include "core/partials/_archive_results_record.html" %}
         </div>
       </article>
-
-      <aside class="panel">
-        <h2>기록 액션</h2>
-
-        <div class="right-section">
-          <h3>빠른 이동</h3>
-          <ul class="side-list side-list--row">
-            <li><a href="/archive/statuses/">나의 일정</a></li>
-            <li><a href="/archive/visits/">다녀온 기록</a></li>
-            <li><a href="/events/">행사 찾기</a></li>
-          </ul>
-        </div>
-
-        <div class="right-section">
-          <h3>새 기록</h3>
-          <div class="cta">
-            <a href="/archive/visits/new/" data-cta-watch>기록 추가</a>
-          </div>
-        </div>
-      </aside>
     </section>
 
     <div class="mobile-cta" data-cta-fixed hidden>

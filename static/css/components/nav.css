@@ -35,133 +35,57 @@
   border-color: var(--brand);
 }
 
-/* ── archive accordion sub-nav (collapsing header → grouped panel) ── */
+/* ── archive tab bar (always-visible sub-nav, shared by 5 archive pages) ──
+   Replaces the former <details> accordion (2026-07-21 리디자인 ④단계 §B) —
+   same aria-label/href set, now rendered as a persistent row of links with
+   an underline active-state (site-nav's `.active::after` convention
+   reused, plan §B). */
 .archive-nav-wrap {
   display: flex;
-  align-items: flex-start;
-  gap: 0.625rem;
-  width: 100%;
-}
-
-.archive-nav {
-  position: relative;             /* anchor for the dropdown panel */
-}
-
-.archive-nav-summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  list-style: none;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-soft);
-  color: var(--text);
-  padding: 0.4375rem 0.875rem;
-  border-radius: 999px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  min-height: 44px;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-}
-
-.archive-nav-summary::-webkit-details-marker {
-  display: none;                  /* hide native disclosure triangle */
-}
-
-.archive-nav-summary:hover {
-  border-color: var(--brand);
-  background: var(--brand-soft);
-  box-shadow: 0 2px 8px rgba(216, 67, 42, 0.14);
-}
-
-.archive-nav-caret {
-  font-size: 0.7rem;
-  transition: transform 0.15s ease;
-}
-
-.archive-nav[open] .archive-nav-caret {
-  transform: rotate(180deg);
-}
-
-.archive-nav-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 30;
-  min-width: 260px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  padding: 0.75rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-
-.archive-nav-group-label {
-  margin: 0 0 0.375rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.archive-nav-group + .archive-nav-group {
-  border-top: 1px solid var(--line);
-  padding-top: 0.625rem;
-}
-
-.archive-nav-row {
-  display: flex;
   flex-wrap: wrap;
-  gap: 0.125rem 1.125rem;
+  align-items: center;
+  gap: 0.375rem 0.625rem;
+  width: 100%;
+  border-bottom: 1px solid var(--line);
 }
 
-/* text-style links (not pill buttons) with an animated underline on hover */
-.archive-nav-row a {
+.archive-nav-tabs {
+  display: flex;
+  flex-wrap: wrap;                /* 320px 전 탭 도달 보장 — overflow:hidden 금지 */
+  gap: 0.125rem 0.5rem;
+}
+
+.archive-nav-tabs a {
   position: relative;
   display: inline-flex;
   align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.625rem;
   text-decoration: none;
-  background: none;
-  border: none;
-  color: var(--text);
-  padding: 0.5rem 0.125rem;
-  font-size: 0.9rem;
+  color: var(--muted);
+  font-size: 0.88rem;
   font-weight: 600;
-  min-height: 44px;               /* keep WCAG tap target */
   transition: color 0.15s ease;
 }
 
-.archive-nav-row a::after {
-  content: "";
-  position: absolute;
-  left: 2px;
-  right: 2px;
-  bottom: 8px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--brand);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.18s ease;
-}
-
-.archive-nav-row a:hover {
+.archive-nav-tabs a:hover {
   color: var(--brand-ink);
 }
 
-.archive-nav-row a:hover::after {
-  transform: scaleX(1);
-}
-
-.archive-nav-row a.active {
-  color: var(--brand-ink);
+.archive-nav-tabs a.active {
+  color: var(--text);
   font-weight: 700;
 }
 
-.archive-nav-row a.active::after {
-  transform: scaleX(1);           /* persistent underline marks the current page */
+.archive-nav-tabs a.active::after {
+  content: "";
+  position: absolute;
+  left: 0.625rem;
+  right: 0.625rem;
+  bottom: -1px;                   /* flush with .archive-nav-wrap's hairline */
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
 }
 
 /* 찜 목록 — standalone pink pill (현행 유지), right-aligned */
