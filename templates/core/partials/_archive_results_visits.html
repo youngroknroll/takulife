@@ -3,6 +3,7 @@
 풀 페이지(visits.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: visit_rows, has_visits, has_query, q, page_obj, pager_query, request
 {% endcomment %}
+<p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if visit_rows %}
   <div class="timeline">
     {% for row in visit_rows %}

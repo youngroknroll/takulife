@@ -3,6 +3,7 @@
 풀 페이지(personal_entries.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: entry_rows, has_entries, has_query, q, page_obj, pager_query, request
 {% endcomment %}
+<p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if entry_rows %}
   <div class="timeline entry-list">
     {% for row in entry_rows %}

@@ -4,6 +4,7 @@
 컨텍스트: item_rows, has_items, has_query, q, page_obj, pager_query,
 clear_query_suffix, request
 {% endcomment %}
+<p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if item_rows %}
   <div class="timeline">
     {% for row in item_rows %}

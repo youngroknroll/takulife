@@ -49,3 +49,19 @@
   font-size: var(--fs-xs);
   margin: 0.25rem 0 0;
 }
+
+/* ── live search result summary (screen-reader only) ──
+ * The results fragment swap (archive_search.js) has no visible count
+ * indicator by design; this region announces it to assistive tech only.
+ * Clip technique matches photo-upload.css's .photo-upload-native-input. */
+.archive-search-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

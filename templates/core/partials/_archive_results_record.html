@@ -3,6 +3,7 @@
 풀 페이지(index.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: has_statuses, status_rows, has_any, has_query, q, page_obj, pager_query, request
 {% endcomment %}
+<p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if has_statuses %}
   <div class="status-list">
     {% for row in status_rows %}

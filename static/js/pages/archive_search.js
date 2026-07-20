@@ -77,6 +77,35 @@
     if (searchError) { searchError.textContent = message; }
   }
 
+  // SR-only result count summary (_archive_search.html) — the innerHTML swap
+  // itself never fires accessibility events, so this is the only announcement
+  // a screen reader gets for a search outcome.
+  var searchStatus = document.getElementById("archive-search-status");
+
+  // Reads the server-rendered count marker out of the just-swapped fragment
+  // and announces it. Defensive: a blank term clears with no announcement, a
+  // missing/unparseable marker leaves the region untouched rather than
+  // announcing a broken state.
+  function announceResultCount(term) {
+    if (!searchStatus) { return; }
+    if (!term) {
+      searchStatus.textContent = "";
+      return;
+    }
+    var marker = results.querySelector("[data-result-count]");
+    if (!marker) { return; }
+    var count = parseInt(marker.getAttribute("data-result-count"), 10);
+    if (isNaN(count)) { return; }
+    var message = count > 0 ? count + "건 검색됨" : "검색 결과가 없습니다";
+
+    // Empty first so a repeat of the same message is still a detectable
+    // mutation for assistive tech (mirrors toast.js).
+    searchStatus.textContent = "";
+    requestAnimationFrame(function () {
+      searchStatus.textContent = message;
+    });
+  }
+
   // Fetch the results fragment for `term` and swap it in. `push` controls
   // whether a new history entry is created (false when replaying popstate).
   function runSearch(term, push) {
@@ -115,6 +144,7 @@
         setLoading(false);
         if (html === null) { return; }
         results.innerHTML = html;
+        announceResultCount(term);
         if (push) {
           window.history.pushState({ q: term }, "", userUrl(params));
         }
