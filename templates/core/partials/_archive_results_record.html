@@ -2,37 +2,60 @@
 기록장(archive) 결과 영역 — 라이브 검색 swap 대상.
 풀 페이지(index.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: has_statuses, status_rows, has_any, has_query, q, page_obj, pager_query, request
+
+레코드 행(.record-row)은 2026-07-21 리디자인 ④단계 §D: 날짜(month/day) ·
+카테고리(색 텍스트, row.subject.category_slug|slugify 가드 — BIE가 채워
+넣는 중인 필드라 없을 때는 조용히 생략) · 장소 · 제목 · 상태 필 ·
+visited 행의 "기록" 링크. row.updated_at은 개인 등록(비공식) 항목처럼
+subject에 start_date가 없을 때의 날짜 폴백(BIE가 채워 넣는 중 — 아직
+없으면 날짜 열이 빈 상태로 남고, 채워지면 자동으로 채워진다).
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if has_statuses %}
-  <div class="status-list">
+  <div class="record-rows">
     {% for row in status_rows %}
-      <article class="record-card hover-lift">
-        <div class="record-top">
-          <h3 class="record-title">
-            {% if row.subject.detail_url %}
-              <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
+      {% with display_date=row.subject.start_date|default:row.updated_at %}
+        <article class="record-row">
+          <div class="record-row-date">
+            {% if display_date %}
+              <time datetime="{{ display_date|date:'Y-m-d' }}">
+                <span class="record-row-month">{{ display_date|date:'n월' }}</span>
+                <span class="record-row-day">{{ display_date|date:'d' }}</span>
+              </time>
             {% else %}
-              {{ row.subject.title }}
+              <span class="record-row-date-empty" aria-hidden="true">–</span>
             {% endif %}
-          </h3>
-          <span class="status {{ row.status_slug }}">{{ row.status_label }}</span>
-        </div>
-        {% if not row.subject.is_official %}
-          <p class="record-meta"><span class="event-category unofficial">직접 등록</span></p>
-        {% endif %}
-        {% if row.subject.location %}
-          <p class="record-meta">{{ row.subject.location }}</p>
-        {% endif %}
-        {% if row.subject.start_date and row.subject.end_date %}
-          <p class="record-meta">{{ row.subject.start_date }} ~ {{ row.subject.end_date }}</p>
-        {% endif %}
-        {% if row.status_slug == 'visited' %}
-          <p class="record-actions">
-            <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">기록</a>
-          </p>
-        {% endif %}
-      </article>
+          </div>
+
+          <div class="record-row-body">
+            <p class="record-row-meta">
+              {% if row.subject.category_slug %}
+                <span class="record-row-cat" style="color: var(--cat-{{ row.subject.category_slug|slugify }}-ink, var(--brand-ink));">{{ row.subject.category_label }}</span>
+              {% elif not row.subject.is_official %}
+                <span class="event-category unofficial">직접 등록</span>
+              {% endif %}
+              {% if row.subject.location %}
+                <span class="record-row-dot" aria-hidden="true">·</span>
+                <span class="record-row-place">{{ row.subject.location }}</span>
+              {% endif %}
+            </p>
+            <h3 class="record-row-title">
+              {% if row.subject.detail_url %}
+                <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
+              {% else %}
+                {{ row.subject.title }}
+              {% endif %}
+            </h3>
+          </div>
+
+          <div class="record-row-end">
+            <span class="status {{ row.status_slug }}">{{ row.status_label }}</span>
+            {% if row.status_slug == 'visited' %}
+              <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">기록</a>
+            {% endif %}
+          </div>
+        </article>
+      {% endwith %}
     {% endfor %}
   </div>
 {% elif has_any and has_query %}
