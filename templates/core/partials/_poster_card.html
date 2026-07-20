@@ -85,17 +85,28 @@ Context consumed: request.user (via the calling page) is not needed here.
   </div>
 
   <div class="poster-card-caption">
-    <h3 class="poster-card-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
-    {% if ev.official_url %}
-      <p class="poster-card-badges"><span class="card-official-badge">공식</span></p>
-    {% endif %}
-    {% comment %} Location + period collapsed into one meta line (designer
-       guidance: a title + location + period 3-line stack reads heavy on a
-       narrow card — condense to title + one period-centred meta line,
-       matching PR-R2's .tk-strip reference). {% endcomment %}
-    {% if ev.location_name or ev.start_date %}
-      <p class="poster-card-meta">{% if ev.location_name %}{{ ev.location_name }}{% if ev.start_date %} · {% endif %}{% endif %}{% if ev.start_date and ev.end_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} - {% if ev.start_date|date:"Y" == ev.end_date|date:"Y" %}{{ ev.end_date|date:"m/d" }}{% else %}{{ ev.end_date|date:"Y/m/d" }}{% endif %}</span>{% elif ev.start_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} -</span>{% endif %}</p>
-    {% endif %}
+    {% comment %} Accent bar (editorial redesign, 2026-07-21): rendered as a
+       border-left on this wrapper, NOT as an absolutely-positioned child —
+       any `position: relative` between the title and `.poster-card` would
+       make the title's stretched link (.poster-card-title a::after,
+       `inset:0`) resolve against that box instead of the card and shrink
+       the clickable area to just the caption (BIR finding; a first
+       relative-wrapper attempt reproduced exactly that, caught by click
+       measurement). border-left needs no positioning context at all, so
+       the whole card stays clickable. {% endcomment %}
+    <div class="poster-card-caption-inner" style="border-color: var(--cat-{{ row.category_slug }}-ink);">
+      <h3 class="poster-card-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
+      {% if ev.official_url %}
+        <p class="poster-card-badges"><span class="card-official-badge">공식</span></p>
+      {% endif %}
+      {% comment %} Location + period collapsed into one meta line (designer
+         guidance: a title + location + period 3-line stack reads heavy on a
+         narrow card — condense to title + one period-centred meta line,
+         matching PR-R2's .tk-strip reference). {% endcomment %}
+      {% if ev.location_name or ev.start_date %}
+        <p class="poster-card-meta">{% if ev.location_name %}{{ ev.location_name }}{% if ev.start_date %} · {% endif %}{% endif %}{% if ev.start_date and ev.end_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} - {% if ev.start_date|date:"Y" == ev.end_date|date:"Y" %}{{ ev.end_date|date:"m/d" }}{% else %}{{ ev.end_date|date:"Y/m/d" }}{% endif %}</span>{% elif ev.start_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} -</span>{% endif %}</p>
+      {% endif %}
+    </div>
   </div>
 </article>
 {% endwith %}

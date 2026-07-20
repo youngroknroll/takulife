@@ -31,49 +31,53 @@
         </div>
 
         {% if popular_rows %}
-          <div
-            class="poster-deck-wrap"
-            data-carousel
-          >
-            <div class="poster-deck" data-carousel-track>
-
-              {# Sizer: invisible clone that provides intrinsic height so deck doesn't collapse #}
-              <div class="deck-sizer"></div>
-
+          <div class="deck-wrap">
+            <div class="deck" data-deck>
               {% for row in popular_rows %}
-                <div
-                  class="deck-card"
-                  data-slide="{{ forloop.counter0 }}"
-                  data-card-index="{{ forloop.counter0 }}"
+                <a
+                  class="deck-card{% if not row.event.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}"
+                  data-deck-card
+                  data-deck-index="{{ forloop.counter0 }}"
+                  href="/events/{{ row.event.id }}/"
+                  tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+                  style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, var(--surface) 100%);{% endif %}"
                 >
-                  <a
-                    class="deck-slide{% if not row.event.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}"
-                    href="/events/{{ row.event.id }}/"
-                    tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
-                    style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, var(--surface) 100%);{% endif %}"
-                  >
-                    {% if row.event.poster_image %}
-                      <img
-                        class="slide-img"
-                        src="{{ row.event.poster_image.url }}"
-                        alt="{{ row.event.title }} 포스터"
-                        loading="lazy"
-                      >
-                    {% else %}
-                      <span class="cat-tile cat-{{ row.category_slug }} deck-fill-emoji"></span>
-                    {% endif %}
-                    <div class="slide-scrim"></div>
-                    <div class="slide-caption">
-                      {% if row.event.work_title %}<p class="slide-work">{{ row.event.work_title }}</p>{% endif %}
-                      <div class="slide-caption-row">
-                        <p class="slide-title">{{ row.event.title }}</p>
-                        {% if row.dday is not None %}<span class="slide-dday">D-{{ row.dday }}</span>{% endif %}
-                      </div>
-                      {% if row.event.start_date and row.event.end_date %}<p class="slide-period">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</p>{% elif row.event.start_date %}<p class="slide-period">{{ row.event.start_date|date:"Y/m/d" }} -</p>{% endif %}
+                  {% if row.event.poster_image %}
+                    <img
+                      class="deck-card-img"
+                      src="{{ row.event.poster_image.url }}"
+                      alt="{{ row.event.title }} 포스터"
+                      loading="lazy"
+                    >
+                  {% else %}
+                    <span class="cat-tile cat-{{ row.category_slug }} deck-card-emoji"></span>
+                  {% endif %}
+                  <div class="deck-card-scrim"></div>
+                  <span class="deck-card-eyebrow">이번 주 주목</span>
+                  <div class="deck-card-caption">
+                    {% if row.event.work_title %}<p class="deck-card-work">{{ row.event.work_title }}</p>{% endif %}
+                    <div class="deck-card-caption-row">
+                      <p class="deck-card-title">{{ row.event.title }}</p>
+                      {% if row.dday is not None %}<span class="deck-card-dday">D-{{ row.dday }}</span>{% endif %}
                     </div>
-                  </a>
-                </div>
+                    {% if row.event.start_date and row.event.end_date %}<p class="deck-card-period">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</p>{% elif row.event.start_date %}<p class="deck-card-period">{{ row.event.start_date|date:"Y/m/d" }} -</p>{% endif %}
+                  </div>
+                </a>
               {% endfor %}
+              {% if popular_rows|length > 1 %}
+                <div class="deck-dots" data-deck-dots>
+                  {% for row in popular_rows %}
+                    <button
+                      type="button"
+                      class="deck-dot{% if forloop.first %} active{% endif %}"
+                      data-deck-dot
+                      data-deck-index="{{ forloop.counter0 }}"
+                      aria-label="{{ forloop.counter }}번 포스터"
+                      aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
+                    ></button>
+                  {% endfor %}
+                </div>
+              {% endif %}
             </div>
           </div>
         {% else %}
@@ -88,7 +92,11 @@
 
     <section class="section">
       <div class="section-head">
-        <h2>이번 주 갈 만한 행사</h2>
+        <div>
+          <span class="section-eyebrow">이번 주</span>
+          <h2>이번 주 갈 만한 행사</h2>
+        </div>
+        <a class="section-more" href="/events/?status=ongoing">더보기 ›</a>
       </div>
       {% if ongoing_rows %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
@@ -107,7 +115,11 @@
 
     <section class="section">
       <div class="section-head">
-        <h2>곧 종료돼요</h2>
+        <div>
+          <span class="section-eyebrow section-eyebrow--amber">마감 임박</span>
+          <h2>곧 종료돼요</h2>
+        </div>
+        <a class="section-more" href="/events/?status=closing_soon">더보기 ›</a>
       </div>
       {% if closing_rows %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
@@ -126,7 +138,10 @@
 
     <section class="section">
       <div class="section-head">
-        <h2>카테고리로 둘러보기</h2>
+        <div>
+          <span class="section-eyebrow">카테고리</span>
+          <h2>카테고리로 둘러보기</h2>
+        </div>
       </div>
       {% if category_tiles|length > 5 %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
@@ -134,10 +149,12 @@
           <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" tabindex="0">
             {% for tile in category_tiles %}
               <li class="cat-browse-item">
-                <a class="cat-browse-link" href="/events/?category={{ tile.slug }}">
-                  <span class="cat-tile cat-{{ tile.slug }}"></span>
-                  <span class="cat-name">{{ tile.label }}</span>
-                  <span class="cat-count">{{ tile.count }}개</span>
+                <a class="cat-dot" href="/events/?category={{ tile.slug }}">
+                  <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink);" aria-hidden="true"></span>
+                  <span class="cat-dot-info">
+                    <span class="cat-name">{{ tile.label }}</span>
+                    <span class="cat-count">{{ tile.count }}개</span>
+                  </span>
                 </a>
               </li>
             {% endfor %}
@@ -147,10 +164,12 @@
       {% else %}
         <div class="cat-browse">
           {% for tile in category_tiles %}
-            <a href="/events/?category={{ tile.slug }}">
-              <span class="cat-tile cat-{{ tile.slug }}"></span>
-              <span class="cat-name">{{ tile.label }}</span>
-              <span class="cat-count">{{ tile.count }}개</span>
+            <a class="cat-dot" href="/events/?category={{ tile.slug }}">
+              <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink);" aria-hidden="true"></span>
+              <span class="cat-dot-info">
+                <span class="cat-name">{{ tile.label }}</span>
+                <span class="cat-count">{{ tile.count }}개</span>
+              </span>
             </a>
           {% endfor %}
         </div>
@@ -159,7 +178,11 @@
 
     <section class="section">
       <div class="section-head">
-        <h2>새 이벤트</h2>
+        <div>
+          <span class="section-eyebrow">방금 올라온</span>
+          <h2>새 이벤트</h2>
+        </div>
+        <a class="section-more" href="/events/?sort=newest">더보기 ›</a>
       </div>
       {% if recent_rows %}
         <div class="hscroll-wrap" data-hscroll>
@@ -179,6 +202,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script defer src="{% static 'js/components/carousel.js' %}"></script>
+<script defer src="{% static 'js/components/deck.js' %}"></script>
 <script defer src="{% static 'js/components/hscroll.js' %}"></script>
 {% endblock %}

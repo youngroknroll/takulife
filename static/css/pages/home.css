@@ -4,27 +4,46 @@
   .page {
     padding-bottom: 1.5rem;
   }
+  /* ── Hero: editorial de-chroming (home-editorial plan §A) ────────────
+     No card box (border/shadow/background/padding) — flat, directly on the
+     page background. `.hero` stays only as a spacing/grid wrapper.
+     The four box properties must be redeclared here explicitly: the shared
+     cards.css `.hero` (same specificity, earlier in load order) sets them,
+     and the cascade only drops a property this later rule actually
+     redeclares (WED post-implementation finding — margin-only override
+     left the card box fully intact). cards.css itself stays untouched
+     (26 other templates share it). */
   .hero {
-    background:
-      radial-gradient(120% 140% at 100% 0%, var(--bg) 0%, transparent 55%),
-      var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    padding: 2rem 1.75rem;
-    margin-bottom: 0.875rem;
+    margin-bottom: 3.25rem; /* ~52px, plan §A's 46–52px section rhythm */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
   }
   .hero-inner {
     display: grid;
     grid-template-columns: 3fr 2fr;
-    gap: 1.5rem;
+    gap: 2.5rem;
     align-items: start;
   }
   .hero h1 {
-    margin: 0 0 0.625rem;
-    font-size: var(--fs-xl);
-    line-height: 1.25;
+    margin: 0 0 1.5rem;
+    font-size: 2.5rem;
+    font-weight: 300;
+    line-height: 1.22;
     letter-spacing: -0.02em;
+  }
+  /* Highlight literal (design-rules.md §4-c ①, §1.5 시안 판정 conforms):
+     the proposal's orange gradient is a non-token rgba literal, accepted
+     for this one hero phrase only — dark-mode contrast is a deferred risk
+     (design-rules §5), not re-derived from tokens here. Overrides the
+     shared .hl utility (components/text.css) inside .hero only, so no
+     other .hl usage on the site is touched. */
+  .hero .hl {
+    font-weight: 800;
+    background: linear-gradient(transparent 60%, rgba(224, 126, 36, 0.92));
+    color: var(--brand-ink);
+    padding: 0 0.25rem;
   }
   .hero .search {
     max-width: 540px;
@@ -35,276 +54,66 @@
     gap: 0.5rem;
   }
 
-  /* ── Stacked card deck ───────────────────────────────────────── */
-
-  /* Outer wrapper: positions deck + controls in flow */
-  .poster-deck-wrap {
+  /* ── Hero stack deck (deck.js) ─────────────────────────────────────
+     Tarot-fan carousel replaced (carousel.js deleted — this was its only
+     consumer). Every card is a real <a href="/events/N/">, so the front
+     card's image area needs no JS at all to "navigate on click" — deck.js
+     only intercepts clicks on *back* cards (bring-to-front instead of
+     following that card's own link immediately). */
+  .deck-wrap {
+    width: 100%;
+  }
+  .deck {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    aspect-ratio: 4 / 5;
     width: 100%;
-    /* fan lifts upward, so only a little breathing room is needed below */
-    padding-bottom: 0.75rem;
   }
-
-  /* Deck: relative container that sizes itself to a hidden sizer card */
-  .poster-deck {
-    position: relative;
-    width: 100%;
-    /* sizer card (hidden clone) provides intrinsic height */
-  }
-
-  /* Sizer: invisible structural clone that reserves layout height */
-  .deck-sizer {
-    visibility: hidden;
-    pointer-events: none;
-    width: 100%;
-    min-height: 200px;
-    border-radius: 12px;
-    border: 1px solid transparent;
-  }
-
-  /* Every card is absolutely positioned over the sizer */
   .deck-card {
     position: absolute;
     inset: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    will-change: transform, opacity;
-    /* Default transition for back cards */
-    transition:
-      transform 0.42s cubic-bezier(0.18, 0.98, 0.45, 1),
-      opacity   0.42s cubic-bezier(0.18, 0.98, 0.45, 1),
-      z-index   0s;
-  }
-
-  /* Front card gets a slightly snappier transition */
-  .deck-card[data-slide="0"] {
-    transition:
-      transform   0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
-      opacity     0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
-      box-shadow  0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
-      z-index     0s;
-  }
-
-  /* Hover/focus lift on the front (interactive) card */
-  .deck-card[data-slide="0"]:hover,
-  .deck-card[data-slide="0"]:focus-within {
-    transform: translateY(-8px) scale(1);
-    box-shadow: 0 14px 30px rgba(17, 31, 55, 0.18);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    /* No movement; keep a subtle shadow as the hover affordance */
-    .deck-card[data-slide="0"]:hover,
-    .deck-card[data-slide="0"]:focus-within {
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  /* Stack depth positions — JS sets data-slide attribute */
-  .deck-card[data-slide="0"] { transform: translateY(0)   scale(1);     opacity: 1;   z-index: 6; }
-  .deck-card[data-slide="1"] { transform: translateY(12px) scale(0.975); opacity: 0.9; z-index: 5; }
-  .deck-card[data-slide="2"] { transform: translateY(24px) scale(0.950); opacity: 0.8; z-index: 4; }
-  .deck-card[data-slide="3"] { transform: translateY(36px) scale(0.925); opacity: 0.7; z-index: 3; }
-  .deck-card[data-slide="4"] { transform: translateY(48px) scale(0.900); opacity: 0.6; z-index: 2; }
-  .deck-card[data-slide="5"] { transform: translateY(60px) scale(0.875); opacity: 0.5; z-index: 1; }
-  /* depth 6+ capped at the same resting position as depth 5 */
-  .deck-card[data-slide="6"],
-  .deck-card[data-slide="7"],
-  .deck-card[data-slide="8"],
-  .deck-card[data-slide="9"] { transform: translateY(60px) scale(0.875); opacity: 0;   z-index: 0; }
-
-  /* Hover: split the stack open. Back cards (depth >= 1) fan further down
-     and grow slightly so they peek out from behind the front card, which
-     lifts via its own :hover. First card is untouched here. Motion-gated so
-     reduced-motion users keep the resting stack. */
-  @media (prefers-reduced-motion: no-preference) {
-    /* Bottom anchor: scaling a hovered card grows it upward (its base stays
-       put) so the pointer never loses the strip it is on, and deeper cards
-       are not covered. */
-    .poster-deck:hover .deck-card { transform-origin: bottom center; }
-
-    /* Wide gaps so every back card exposes a comfortably hittable strip
-       (each ~24px tall) instead of a 9px sliver — lets the pointer reach the
-       3rd card and deeper. */
-    .poster-deck:hover .deck-card[data-slide="1"] { transform: translateY(30px)  scale(0.99);  opacity: 1;    }
-    .poster-deck:hover .deck-card[data-slide="2"] { transform: translateY(64px)  scale(0.975); opacity: 0.96; }
-    .poster-deck:hover .deck-card[data-slide="3"] { transform: translateY(98px)  scale(0.96);  opacity: 0.92; }
-    .poster-deck:hover .deck-card[data-slide="4"] { transform: translateY(132px) scale(0.945); opacity: 0.86; }
-    .poster-deck:hover .deck-card[data-slide="5"] { transform: translateY(166px) scale(0.93);  opacity: 0.80; }
-
-    /* Pointer-targeted card: lift it up and forward like picking a card from
-       a poker hand. translateY stays at the split position (base anchored via
-       transform-origin: bottom) so scaling up grows the card upward and on top
-       without nudging the row or sliding over the cards below it. */
-    .poster-deck:hover .deck-card[data-slide="1"]:hover { transform: translateY(30px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-    .poster-deck:hover .deck-card[data-slide="2"]:hover { transform: translateY(64px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-    .poster-deck:hover .deck-card[data-slide="3"]:hover { transform: translateY(98px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-    .poster-deck:hover .deck-card[data-slide="4"]:hover { transform: translateY(132px) scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-    .poster-deck:hover .deck-card[data-slide="5"]:hover { transform: translateY(166px) scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-  }
-
-  /* Back cards are not interactive until they become the front */
-  .deck-card[data-slide]:not([data-slide="0"]) {
-    cursor: pointer;
-  }
-
-  /* ── Tarot-style horizontal card fan ─────────────────────────────
-     carousel.js adds .fan and drives per-card transform/z-index inline.
-     Cards become portrait, centered on the deck, and overlap as a hand. */
-  .poster-deck.fan {
-    overflow: visible;
-  }
-  .poster-deck.fan .deck-card {
-    inset: auto;
-    left: 50%;
-    top: 50%;
-    width: 124px;
-    height: 174px;
-    margin: -87px 0 0 -62px; /* center on the deck (half height / half width) */
-    transform-origin: center center;
-    transition:
-      transform 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
-      box-shadow 0.26s ease;
-    box-shadow: 0 6px 18px rgba(17, 31, 55, 0.16);
-    cursor: pointer;
-  }
-  .poster-deck.fan .deck-card:hover {
-    box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    /* Keyboard nav still moves the lifted card (carousel.js), but the
-       lift/part/scale transition itself should not animate. */
-    .poster-deck.fan .deck-card {
-      transition: none;
-    }
-  }
-  /* The fan's resting cards lean; keep the poster filling the smaller tile */
-  .poster-deck.fan .deck-slide {
-    min-height: 0;
-    height: 100%;
-  }
-  .poster-deck.fan .deck-slide img.slide-img {
-    min-height: 0;
-  }
-  /* Smaller caption text so titles fit the narrow fan card. Floor is
-     --fs-xs(12px) — .slide-work/.slide-period/.slide-dday previously sat
-     below it (0.62/0.64/0.6rem, a leftover from before the 12px floor
-     policy) while .slide-title next to them was already pinned to
-     --fs-xs; title keeps its distinction via font-weight:700, not size. */
-  .poster-deck.fan .slide-caption { padding: 0.4375rem 0.5625rem 0.5625rem; }
-  .poster-deck.fan .slide-caption .slide-title { font-size: var(--fs-xs); line-height: 1.25; }
-  .poster-deck.fan .slide-caption .slide-work { font-size: var(--fs-xs); }
-  .poster-deck.fan .slide-caption .slide-period { font-size: var(--fs-xs); }
-  .poster-deck.fan .slide-dday { font-size: var(--fs-xs); padding: 0.125rem 0.375rem; }
-  .poster-deck.fan .slide-caption-row { gap: 0.3125rem; }
-
-  /* Slide anchor — fills the card entirely */
-  .deck-slide {
-    position: relative;
     display: block;
-    width: 100%;
-    height: 100%;
-    min-height: 240px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 14px 34px rgba(20, 22, 28, 0.22);
     color: inherit;
     text-decoration: none;
     background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    overflow: hidden;
+    transform-origin: top center;
+    will-change: transform, opacity;
+    transition:
+      transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1),
+      opacity   0.5s ease;
   }
+  .deck-card:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .deck-card {
+      transition: none;
+    }
+  }
+  /* Pre-init / non-JS depth fallback — deck.js overwrites these via inline
+     style the instant it runs (nth-of-type is lower precedence than an
+     inline style on the same property), so this only covers the brief
+     window before the deferred script executes. */
+  .deck-card:nth-of-type(1) { z-index: 30; }
+  .deck-card:nth-of-type(2) { transform: translateY(12px) scale(0.965); opacity: 0.9; z-index: 29; }
+  .deck-card:nth-of-type(3) { transform: translateY(24px) scale(0.93);  opacity: 0.8; z-index: 28; }
+  .deck-card:nth-of-type(4) { transform: translateY(36px) scale(0.895); opacity: 0.7; z-index: 27; }
+  .deck-card:nth-of-type(n+5) { opacity: 0; pointer-events: none; z-index: 1; }
 
-  /* Poster image slides */
-  .deck-slide img.slide-img {
+  .deck-card-img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center top;
+    object-position: center 18%;
     display: block;
-    min-height: 240px;
   }
-
-  /* Bottom gradient scrim — applies to both poster and style-card branches */
-  .slide-scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.30) 45%, transparent 78%);
-    pointer-events: none;
-  }
-
-  /* Bottom caption overlay — shared by both card types */
-  .slide-caption {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 0.625rem 0.75rem 0.75rem;
-    color: #fff;
-  }
-
-  .slide-caption .slide-work {
-    margin: 0 0 0.1875rem;
-    font-size: var(--fs-xs);
-    color: rgba(255,255,255,0.82);
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* Title + D-day on one row: title left, D-day right */
-  .slide-caption-row {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .slide-caption .slide-title {
-    margin: 0;
-    font-size: var(--fs-md);
-    font-weight: 700;
-    color: #fff;
-    line-height: 1.35;
-    flex: 1;
-    min-width: 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .slide-caption .slide-period {
-    margin: 0.1875rem 0 0;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    color: rgba(255,255,255,0.92);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* D-day pill — inline in caption row, right-aligned via space-between */
-  .slide-dday {
-    background: rgba(0,0,0,0.45);
-    color: #fff;
-    border-radius: 999px;
-    padding: 0.1875rem 0.5625rem;
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    white-space: nowrap;
-    flex: none;
-  }
-
-  /* Style card (no poster): allow fill emoji to be absolutely placed */
-  .deck-slide.style-card {
-    padding: 0;
-  }
-
-  /* Large centered emoji fill for no-poster cards */
-  .deck-fill-emoji {
+  .deck-card-emoji {
     position: absolute;
     inset: 0;
     display: flex;
@@ -315,8 +124,132 @@
     border-radius: 0;
     font-size: 2.6rem;
   }
+  .deck-card.style-card {
+    padding: 0;
+  }
+  .deck-card-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.15) 45%, transparent 72%);
+    pointer-events: none;
+  }
+  .deck-card-eyebrow {
+    position: absolute;
+    top: 0.875rem;
+    left: 0.875rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+  }
+  .deck-card-caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 1.125rem 1.125rem 2rem;
+    color: #fff;
+  }
+  .deck-card-work {
+    margin: 0 0 0.25rem;
+    font-size: var(--fs-xs);
+    color: rgba(255, 255, 255, 0.82);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .deck-card-caption-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.625rem;
+  }
+  .deck-card-title {
+    margin: 0;
+    font-size: 1.3125rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: #fff;
+    flex: 1;
+    min-width: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .deck-card-dday {
+    background: var(--brand);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.1875rem 0.6875rem;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    white-space: nowrap;
+    flex: none;
+  }
+  .deck-card-period {
+    margin: 0.375rem 0 0;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-  /* Empty state when no ongoing events */
+  /* Dot indicators — visible size 7/18px is the design literal
+     (design-rules.md §4-c); ::before supplies the 44px hit box the visible
+     dot doesn't have room for. Active state (aria-current, deck.js) also
+     drives the width/shape change. */
+  .deck-dots {
+    position: absolute;
+    left: 50%;
+    bottom: 0.6875rem;
+    transform: translateX(-50%);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: rgba(0, 0, 0, 0.32);
+    padding: 0.375rem 0.5625rem;
+    border-radius: 999px;
+  }
+  .deck-dot {
+    position: relative;
+    height: 7px;
+    width: 7px;
+    border: none;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: width 0.2s ease, background 0.2s ease, border-radius 0.2s ease;
+  }
+  .deck-dot:focus-visible {
+    /* Same explicit ring as .deck-card/.cat-dot/.section-more (BIR Low
+       finding) — UA default alone reads inconsistently next to them. */
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .deck-dot::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+  .deck-dot.active {
+    width: 18px;
+    border-radius: 4px;
+    background: #fff;
+  }
+
+  /* Empty state when no popular events */
   .carousel-empty {
     display: flex;
     align-items: center;
@@ -336,7 +269,7 @@
     .hero-inner {
       grid-template-columns: 1fr;
     }
-    .poster-deck-wrap {
+    .deck-wrap {
       max-width: 480px;
       margin: 0 auto;
     }
@@ -346,24 +279,41 @@
     grid-template-columns: repeat(5, 1fr);
     gap: 0.625rem;
   }
-  .cat-browse a,
-  .cat-browse-link {
+  /* ── Category chips (.cat-dot, plan §D) — replaces the old icon-tile
+     .cat-browse-link. Shared .cat-tile (components/category.css) is not
+     touched: the swatch below reads the same `--cat-*-ink` custom
+     properties directly via inline style (home.html), same convention as
+     the poster card's category-tinted style-card fallback. */
+  .cat-dot {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    text-align: center;
-    text-decoration: none;
-    padding: 1rem 0.625rem;
+    gap: 0.6875rem;
+    min-width: 0;
+    padding: 0.8125rem 1.0625rem;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: var(--bg-card);
+    background: var(--surface);
+    text-decoration: none;
     color: var(--text);
   }
-  .cat-browse a:hover,
-  .cat-browse-link:hover {
+  .cat-dot:hover {
     border-color: var(--border-soft);
     box-shadow: var(--shadow);
+  }
+  .cat-dot:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .cat-dot-swatch {
+    flex: none;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+  }
+  .cat-dot-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
   }
   .cat-name {
     font-size: var(--fs-md);
@@ -373,23 +323,59 @@
     font-size: var(--fs-sm);
     color: var(--muted);
   }
+
+  /* ── Section chrome (editorial de-boxing, plan §A) ───────────────────
+     No card box — an eyebrow label + h2 + margin replace the border/
+     shadow/background/padding this used to carry. Shared by the snapshot
+     panel below (its own h2 "내 컬렉션 현황" keeps no eyebrow — out of this
+     track's approved scope). */
   .section {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 0.875rem;
-    margin-bottom: 0.875rem;
+    margin-bottom: 3rem; /* ~48px, plan §A's 46–52px rhythm */
   }
   .section-head {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.625rem;
+    align-items: flex-end;
+    margin-bottom: 1.125rem;
+  }
+  .section-eyebrow {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--brand-ink);
+    margin-bottom: 0.25rem;
+  }
+  .section-eyebrow--amber {
+    color: var(--amber-ink);
   }
   .section h2 {
     margin: 0;
     font-size: var(--fs-lg);
+  }
+  .section-more {
+    position: relative;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--brand-ink);
+    text-decoration: none;
+  }
+  .section-more::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+  .section-more:hover {
+    text-decoration: underline;
+  }
+  .section-more:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 
   /* ── collection-first home snapshot panel (H-2) ──────────────────────
@@ -515,6 +501,10 @@
     overflow: hidden;
     border: 1px solid var(--line);
     background: var(--surface);
+    /* Item-level shadow (plan §C editorial re-style — design literal, not a
+       token; matches the deck card / hscroll-btn precedent of a one-off
+       rgba shadow elsewhere on this page). */
+    box-shadow: 0 10px 26px rgba(20, 22, 28, 0.12);
   }
   /* Image region: badges / 찜 button / glint anchor here (top edge of this
      box is the card's top edge, so their existing top:8px/left|right:8px
@@ -610,6 +600,21 @@
        their own chips/tiles, not body copy. */
     color: var(--text);
   }
+  /* Accent bar wrapper (plan §C — editorial caption). This element, NOT
+     .poster-card-caption itself, is position:relative: giving the caption
+     relative would move the title's stretched link (.poster-card-title
+     a::after, `inset:0`) to resolve against the caption box instead of
+     .poster-card and shrink the whole-card click target down to just the
+     caption strip (BIR finding, home-editorial plan §사전 검토). Sized to
+     its own content (title + badges + meta), so the bar spans exactly that
+     height regardless of how many lines the title wraps to. */
+  .poster-card-caption-inner {
+    /* Accent bar as border-left — never position:relative here (stretched
+       link would collapse to the caption; see _poster_card.html comment).
+       border-color comes from the per-category inline style. */
+    border-left: 3px solid var(--brand-ink);
+    padding-left: 0.5625rem;
+  }
   .poster-card-title {
     margin: 0 0 0.1875rem;
     font-size: var(--fs-base);
@@ -664,10 +669,10 @@
       padding: 1rem var(--page-pad-x) 3rem;
     }
     .hero {
-      padding: 1.375rem 1.125rem;
+      margin-bottom: 2.5rem;
     }
     .hero h1 {
-      font-size: var(--fs-xl-mobile);
+      font-size: 1.625rem;
     }
     .section-head {
       align-items: flex-start;
