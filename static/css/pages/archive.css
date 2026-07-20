@@ -1,8 +1,15 @@
   /* ── hero (2026-07-21 리디자인 ④단계 §A): shared .hero box flattened for
      this page only — 4 properties re-declared (background/border/box-shadow/
      padding), not just margin, per the home-stage cascade lesson (margin-only
-     re-declaration lets cards.css's box survive). cards.css itself untouched. */
-  .hero {
+     re-declaration lets cards.css's box survive). cards.css itself untouched.
+     Scoped to `.hero-activity` (not bare `.hero`, 2026-07-21 CI regression
+     fix): archive.css is also loaded by home.html for the shared
+     .record-action-link/.status rules further down, and home.html's own
+     deck hero also carries a bare `.hero` class — an unscoped `.hero` here
+     leaked its new flex/display declarations onto that unrelated hero and
+     broke the 320px overflow gate. index.html adds `hero-activity` alongside
+     `hero` so this block only ever matches the archive hub. */
+  .hero-activity {
     background: none;
     border: none;
     box-shadow: none;
@@ -18,7 +25,7 @@
   .hero-lead {
     min-width: 0;
   }
-  .hero h1 {
+  .hero-activity h1 {
     margin: 0 0 0.625rem;
     font-size: var(--fs-xl);
   }
@@ -26,31 +33,31 @@
      baseline stat row for this page only — value/label order is flipped via
      flex `order` (DOM stays label-then-value, matching every other archive
      page that reuses these two classes unmodified). */
-  .hero .summary-grid {
+  .hero-activity .summary-grid {
     display: flex;
     align-items: baseline;
     gap: 0;
     margin-top: 0;
   }
-  .hero .summary-card {
+  .hero-activity .summary-card {
     display: flex;
     align-items: baseline;
     gap: 0.4375rem;
     padding: 0 1.25rem;
     border-left: 1px solid var(--line);
   }
-  .hero .summary-card:first-child {
+  .hero-activity .summary-card:first-child {
     padding-left: 0;
     border-left: none;
   }
-  .hero .summary-label {
+  .hero-activity .summary-label {
     order: 2;
     margin: 0;
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--muted);
   }
-  .hero .summary-value {
+  .hero-activity .summary-value {
     order: 1;
     margin: 0;
     font-size: 1.625rem;
@@ -58,13 +65,13 @@
     line-height: 1.15;
     font-variant-numeric: tabular-nums;
   }
-  .hero .summary-card:nth-child(1) .summary-value {
+  .hero-activity .summary-card:nth-child(1) .summary-value {
     color: var(--up-ink);
   }
-  .hero .summary-card:nth-child(2) .summary-value {
+  .hero-activity .summary-card:nth-child(2) .summary-value {
     color: var(--mint-ink);
   }
-  .hero .summary-card:nth-child(3) .summary-value {
+  .hero-activity .summary-card:nth-child(3) .summary-value {
     color: var(--end-ink);
   }
   .hero-action {
