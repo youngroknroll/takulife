@@ -1,8 +1,8 @@
 {% comment %}
 _poster_card.html — ticket-stub poster card (image tile + caption strip)
 
-Renders one event as a portrait poster tile. Image (poster or category emoji
-fallback) sits in `.poster-card-media`; the title + combined location/period
+Renders one event as a portrait poster tile. Image (poster or a category-
+gradient watermark fallback) sits in `.poster-card-media`; the title + combined location/period
 line sit below it in an opaque `.poster-card-caption` strip, separated by a
 dashed perforation with punch-notch circles (ticket-stub signature #1 —
 prompt_plan.md §0 / PR-R2's `.tk-strip` technique). This replaces the old
@@ -24,25 +24,38 @@ is the same pixel position (media sits flush at the card's top edge) so
 their placement is unchanged.
 
 The title is the ONLY link, stretched over the whole card via CSS (::after),
-so the entire poster is clickable. The 찜 (interest) button on closing cards
-sits above that stretched link with its own z-index, staying an independent
-control.
+so the entire poster is clickable. The 찜 (interest) button sits on every
+card (2026-07-21: expanded from closing-only — hero deck is a separate
+component and stays button-free) above that stretched link with its own
+z-index, staying an independent control.
 
 Params:
   row      — display dict from _attach_display (core/views.py): event, dday,
              category_slug, category_label, user_interested, user_interest_id
-  variant  — "ongoing" | "closing" | "recent" | "planned" (selects badge +
-             meta + 찜 button)
+  variant  — "ongoing" | "closing" | "recent" | "planned" (selects badge only
+             — 찜 button now renders for every variant)
 
 Context consumed: request.user (via the calling page) is not needed here.
 {% endcomment %}
 {% with ev=row.event %}
-<article class="poster-card hover-lift{% if not ev.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}" data-status-error-container>
-  <div class="poster-card-media">
+<article class="poster-card hover-lift" data-status-error-container>
+  {% comment %} No-poster fallback (design-rules.md §4-c 시안 우선, mock's
+     gradFor()/565~568행): a 105deg gradient through two color-mix() stops
+     replaces the old flat .cat-tile emoji tile, with a large rotated
+     category-label watermark instead of an emoji glyph (decorative — the
+     title below carries the actual information). `style-card`/`cat-{{slug}}`
+     on the article itself are dropped here: grep confirmed no CSS selector
+     in this codebase reads `.poster-card.style-card` or `.poster-card.cat-*`
+     — they were dead modifiers left over from the pre-editorial emoji tile.
+     color-mix() has no prior use in this codebase (grepped) — accepted as
+     the mock's own formula (modern-browser baseline); a browser without
+     color-mix() support falls back to the gradient's first colour stop
+     (var(--surface)), a safe flat background, not a crash. {% endcomment %}
+  <div class="poster-card-media{% if not ev.poster_image %} poster-card-media--fill{% endif %}"{% if not ev.poster_image %} style="background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft))) 100%);"{% endif %}>
     {% if ev.poster_image %}
       <img class="poster-card-img" src="{{ ev.poster_image.url }}" alt="{{ ev.title }} 포스터" loading="lazy">
     {% else %}
-      <span class="cat-tile cat-{{ row.category_slug }} poster-card-emoji"></span>
+      <span class="poster-fill-label" style="color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));" aria-hidden="true">{{ row.category_label }}</span>
     {% endif %}
 
     {% comment %} Ongoing(이번 주 갈 만한 행사): no countdown badge — already visitable.
@@ -63,39 +76,50 @@ Context consumed: request.user (via the calling page) is not needed here.
       <span class="poster-badge {% if row.dday is None %}poster-badge-ended{% else %}poster-badge-closing{% endif %}">{% if row.dday is None %}종료{% elif row.status_slug == "upcoming" %}{% if row.dday == 0 %}오늘 오픈{% else %}오픈까지 {{ row.dday }}일{% endif %}{% else %}{% if row.dday == 0 %}오늘 종료{% else %}종료까지 {{ row.dday }}일{% endif %}{% endif %}</span>
     {% endif %}
 
-    {% if variant == "closing" %}
-      <button class="interest-btn poster-interest{% if row.user_interested %} active{% endif %}" type="button"
-        data-interest-toggle
-        data-toast
-        data-event-id="{{ ev.id }}"
-        aria-label="찜"
-        aria-pressed="{% if row.user_interested %}true{% else %}false{% endif %}"
-        {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
-        <span data-interest-glyph aria-hidden="true">{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
-      </button>
-    {% endif %}
-    {% comment %} Markup order matters here: .glint comes AFTER the closing-
-       only 찜 button so home.css's `.poster-interest ~ .glint` sibling
-       selector can nudge the glint out from behind the button (which fully
-       covers it at their shared default top-right position) without a
-       :has() selector. Both are position:absolute, so this reorder has no
-       visual/tab-order effect on ongoing/recent cards, which have no
-       button sibling to match against. {% endcomment %}
+    {% comment %} 찜 button (2026-07-21: every card, not just closing —
+       coordinator instruction, hero deck excluded since it's a separate
+       component/template). Markup order matters: .glint comes AFTER the
+       button so home.css's `.poster-interest ~ .glint` sibling selector can
+       nudge the glint out from behind the button (which fully covers it at
+       their shared default top-right position) without a :has() selector.
+       Both are position:absolute, so this reorder has no visual/tab-order
+       effect beyond that repositioning — now applies uniformly since every
+       card has the button sibling. {% endcomment %}
+    <button class="interest-btn poster-interest{% if row.user_interested %} active{% endif %}" type="button"
+      data-interest-toggle
+      data-toast
+      data-event-id="{{ ev.id }}"
+      aria-label="찜"
+      aria-pressed="{% if row.user_interested %}true{% else %}false{% endif %}"
+      {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
+      <span data-interest-glyph aria-hidden="true">{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
+    </button>
     <span class="glint">✦</span>
   </div>
 
   <div class="poster-card-caption">
-    <h3 class="poster-card-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
-    {% if ev.official_url %}
-      <p class="poster-card-badges"><span class="card-official-badge">공식</span></p>
-    {% endif %}
-    {% comment %} Location + period collapsed into one meta line (designer
-       guidance: a title + location + period 3-line stack reads heavy on a
-       narrow card — condense to title + one period-centred meta line,
-       matching PR-R2's .tk-strip reference). {% endcomment %}
-    {% if ev.location_name or ev.start_date %}
-      <p class="poster-card-meta">{% if ev.location_name %}{{ ev.location_name }}{% if ev.start_date %} · {% endif %}{% endif %}{% if ev.start_date and ev.end_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} - {% if ev.start_date|date:"Y" == ev.end_date|date:"Y" %}{{ ev.end_date|date:"m/d" }}{% else %}{{ ev.end_date|date:"Y/m/d" }}{% endif %}</span>{% elif ev.start_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} -</span>{% endif %}</p>
-    {% endif %}
+    {% comment %} Accent bar (editorial redesign, 2026-07-21): rendered as a
+       border-left on this wrapper, NOT as an absolutely-positioned child —
+       any `position: relative` between the title and `.poster-card` would
+       make the title's stretched link (.poster-card-title a::after,
+       `inset:0`) resolve against that box instead of the card and shrink
+       the clickable area to just the caption (BIR finding; a first
+       relative-wrapper attempt reproduced exactly that, caught by click
+       measurement). border-left needs no positioning context at all, so
+       the whole card stays clickable. {% endcomment %}
+    <div class="poster-card-caption-inner" style="border-color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));">
+      <h3 class="poster-card-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
+      {% if ev.official_url %}
+        <p class="poster-card-badges"><span class="card-official-badge">공식</span></p>
+      {% endif %}
+      {% comment %} Location + period collapsed into one meta line (designer
+         guidance: a title + location + period 3-line stack reads heavy on a
+         narrow card — condense to title + one period-centred meta line,
+         matching PR-R2's .tk-strip reference). {% endcomment %}
+      {% if ev.location_name or ev.start_date %}
+        <p class="poster-card-meta">{% if ev.location_name %}{{ ev.location_name }}{% if ev.start_date %} · {% endif %}{% endif %}{% if ev.start_date and ev.end_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} - {% if ev.start_date|date:"Y" == ev.end_date|date:"Y" %}{{ ev.end_date|date:"m/d" }}{% else %}{{ ev.end_date|date:"Y/m/d" }}{% endif %}</span>{% elif ev.start_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} -</span>{% endif %}</p>
+      {% endif %}
+    </div>
   </div>
 </article>
 {% endwith %}

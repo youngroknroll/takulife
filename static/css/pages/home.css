@@ -4,27 +4,60 @@
   .page {
     padding-bottom: 1.5rem;
   }
+  /* ── Hero: editorial de-chroming (home-editorial plan §A) ────────────
+     No card box (border/shadow/background/padding) — flat, directly on the
+     page background. `.hero` stays only as a spacing/grid wrapper.
+     The four box properties must be redeclared here explicitly: the shared
+     cards.css `.hero` (same specificity, earlier in load order) sets them,
+     and the cascade only drops a property this later rule actually
+     redeclares (WED post-implementation finding — margin-only override
+     left the card box fully intact). cards.css itself stays untouched
+     (26 other templates share it). */
   .hero {
-    background:
-      radial-gradient(120% 140% at 100% 0%, var(--bg) 0%, transparent 55%),
-      var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    padding: 2rem 1.75rem;
-    margin-bottom: 0.875rem;
+    margin-bottom: 3.25rem; /* ~52px, plan §A's 46–52px section rhythm */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
   }
+  /* Hero card background (mock parity, 2026-07-21 user instruction): the
+     mock's `data-hero-card` div is both the grid container AND the surface
+     whose background tracks the deck's active poster (deck.js render()) —
+     same element here, no extra wrapper. Base background/radius/padding
+     apply even with JS disabled or an empty deck (--brand-soft fallback);
+     home.html sets the initial inline background from the first
+     popular_rows entry so there's no flash-of-wrong-colour before deck.js's
+     first render(). Background-only transition (no transform), so it needs
+     no prefers-reduced-motion gate (design-rules.md §3.1-1 — colour fades
+     are non-transform feedback, always allowed). */
   .hero-inner {
     display: grid;
     grid-template-columns: 3fr 2fr;
-    gap: 1.5rem;
+    gap: 2.5rem;
     align-items: start;
+    background: var(--brand-soft);
+    border-radius: 20px;
+    padding: 2.125rem;
+    transition: background 0.6s ease;
   }
   .hero h1 {
-    margin: 0 0 0.625rem;
-    font-size: var(--fs-xl);
-    line-height: 1.25;
+    margin: 0 0 1.5rem;
+    font-size: 2.5rem;
+    font-weight: 300;
+    line-height: 1.22;
     letter-spacing: -0.02em;
+  }
+  /* Highlight literal (design-rules.md §4-c ①, §1.5 시안 판정 conforms):
+     the proposal's orange gradient is a non-token rgba literal, accepted
+     for this one hero phrase only — dark-mode contrast is a deferred risk
+     (design-rules §5), not re-derived from tokens here. Overrides the
+     shared .hl utility (components/text.css) inside .hero only, so no
+     other .hl usage on the site is touched. */
+  .hero .hl {
+    font-weight: 800;
+    background: linear-gradient(transparent 60%, rgba(224, 126, 36, 0.92));
+    color: var(--brand-ink);
+    padding: 0 0.25rem;
   }
   .hero .search {
     max-width: 540px;
@@ -35,239 +68,136 @@
     gap: 0.5rem;
   }
 
-  /* ── Stacked card deck ───────────────────────────────────────── */
-
-  /* Outer wrapper: positions deck + controls in flow */
-  .poster-deck-wrap {
+  /* ── Hero stack deck (deck.js) ─────────────────────────────────────
+     Tarot-fan carousel replaced (carousel.js deleted — this was its only
+     consumer). Every card is a real <a href="/events/N/">, so the front
+     card's image area needs no JS at all to "navigate on click" — deck.js
+     only intercepts clicks on *back* cards (bring-to-front instead of
+     following that card's own link immediately). */
+  .deck-wrap {
+    width: 100%;
+  }
+  .deck {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    aspect-ratio: 4 / 5;
     width: 100%;
-    /* fan lifts upward, so only a little breathing room is needed below */
-    padding-bottom: 0.75rem;
   }
-
-  /* Deck: relative container that sizes itself to a hidden sizer card */
-  .poster-deck {
-    position: relative;
-    width: 100%;
-    /* sizer card (hidden clone) provides intrinsic height */
-  }
-
-  /* Sizer: invisible structural clone that reserves layout height */
-  .deck-sizer {
-    visibility: hidden;
-    pointer-events: none;
-    width: 100%;
-    min-height: 200px;
-    border-radius: 12px;
-    border: 1px solid transparent;
-  }
-
-  /* Every card is absolutely positioned over the sizer */
   .deck-card {
     position: absolute;
     inset: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    will-change: transform, opacity;
-    /* Default transition for back cards */
-    transition:
-      transform 0.42s cubic-bezier(0.18, 0.98, 0.45, 1),
-      opacity   0.42s cubic-bezier(0.18, 0.98, 0.45, 1),
-      z-index   0s;
-  }
-
-  /* Front card gets a slightly snappier transition */
-  .deck-card[data-slide="0"] {
-    transition:
-      transform   0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
-      opacity     0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
-      box-shadow  0.30s cubic-bezier(0.18, 0.98, 0.45, 1),
-      z-index     0s;
-  }
-
-  /* Hover/focus lift on the front (interactive) card */
-  .deck-card[data-slide="0"]:hover,
-  .deck-card[data-slide="0"]:focus-within {
-    transform: translateY(-8px) scale(1);
-    box-shadow: 0 14px 30px rgba(17, 31, 55, 0.18);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    /* No movement; keep a subtle shadow as the hover affordance */
-    .deck-card[data-slide="0"]:hover,
-    .deck-card[data-slide="0"]:focus-within {
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  /* Stack depth positions — JS sets data-slide attribute */
-  .deck-card[data-slide="0"] { transform: translateY(0)   scale(1);     opacity: 1;   z-index: 6; }
-  .deck-card[data-slide="1"] { transform: translateY(12px) scale(0.975); opacity: 0.9; z-index: 5; }
-  .deck-card[data-slide="2"] { transform: translateY(24px) scale(0.950); opacity: 0.8; z-index: 4; }
-  .deck-card[data-slide="3"] { transform: translateY(36px) scale(0.925); opacity: 0.7; z-index: 3; }
-  .deck-card[data-slide="4"] { transform: translateY(48px) scale(0.900); opacity: 0.6; z-index: 2; }
-  .deck-card[data-slide="5"] { transform: translateY(60px) scale(0.875); opacity: 0.5; z-index: 1; }
-  /* depth 6+ capped at the same resting position as depth 5 */
-  .deck-card[data-slide="6"],
-  .deck-card[data-slide="7"],
-  .deck-card[data-slide="8"],
-  .deck-card[data-slide="9"] { transform: translateY(60px) scale(0.875); opacity: 0;   z-index: 0; }
-
-  /* Hover: split the stack open. Back cards (depth >= 1) fan further down
-     and grow slightly so they peek out from behind the front card, which
-     lifts via its own :hover. First card is untouched here. Motion-gated so
-     reduced-motion users keep the resting stack. */
-  @media (prefers-reduced-motion: no-preference) {
-    /* Bottom anchor: scaling a hovered card grows it upward (its base stays
-       put) so the pointer never loses the strip it is on, and deeper cards
-       are not covered. */
-    .poster-deck:hover .deck-card { transform-origin: bottom center; }
-
-    /* Wide gaps so every back card exposes a comfortably hittable strip
-       (each ~24px tall) instead of a 9px sliver — lets the pointer reach the
-       3rd card and deeper. */
-    .poster-deck:hover .deck-card[data-slide="1"] { transform: translateY(30px)  scale(0.99);  opacity: 1;    }
-    .poster-deck:hover .deck-card[data-slide="2"] { transform: translateY(64px)  scale(0.975); opacity: 0.96; }
-    .poster-deck:hover .deck-card[data-slide="3"] { transform: translateY(98px)  scale(0.96);  opacity: 0.92; }
-    .poster-deck:hover .deck-card[data-slide="4"] { transform: translateY(132px) scale(0.945); opacity: 0.86; }
-    .poster-deck:hover .deck-card[data-slide="5"] { transform: translateY(166px) scale(0.93);  opacity: 0.80; }
-
-    /* Pointer-targeted card: lift it up and forward like picking a card from
-       a poker hand. translateY stays at the split position (base anchored via
-       transform-origin: bottom) so scaling up grows the card upward and on top
-       without nudging the row or sliding over the cards below it. */
-    .poster-deck:hover .deck-card[data-slide="1"]:hover { transform: translateY(30px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-    .poster-deck:hover .deck-card[data-slide="2"]:hover { transform: translateY(64px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-    .poster-deck:hover .deck-card[data-slide="3"]:hover { transform: translateY(98px)  scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-    .poster-deck:hover .deck-card[data-slide="4"]:hover { transform: translateY(132px) scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-    .poster-deck:hover .deck-card[data-slide="5"]:hover { transform: translateY(166px) scale(1.1); opacity: 1; z-index: 7; box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28); }
-  }
-
-  /* Back cards are not interactive until they become the front */
-  .deck-card[data-slide]:not([data-slide="0"]) {
-    cursor: pointer;
-  }
-
-  /* ── Tarot-style horizontal card fan ─────────────────────────────
-     carousel.js adds .fan and drives per-card transform/z-index inline.
-     Cards become portrait, centered on the deck, and overlap as a hand. */
-  .poster-deck.fan {
-    overflow: visible;
-  }
-  .poster-deck.fan .deck-card {
-    inset: auto;
-    left: 50%;
-    top: 50%;
-    width: 124px;
-    height: 174px;
-    margin: -87px 0 0 -62px; /* center on the deck (half height / half width) */
-    transform-origin: center center;
-    transition:
-      transform 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
-      box-shadow 0.26s ease;
-    box-shadow: 0 6px 18px rgba(17, 31, 55, 0.16);
-    cursor: pointer;
-  }
-  .poster-deck.fan .deck-card:hover {
-    box-shadow: 0 18px 40px rgba(17, 31, 55, 0.28);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    /* Keyboard nav still moves the lifted card (carousel.js), but the
-       lift/part/scale transition itself should not animate. */
-    .poster-deck.fan .deck-card {
-      transition: none;
-    }
-  }
-  /* The fan's resting cards lean; keep the poster filling the smaller tile */
-  .poster-deck.fan .deck-slide {
-    min-height: 0;
-    height: 100%;
-  }
-  .poster-deck.fan .deck-slide img.slide-img {
-    min-height: 0;
-  }
-  /* Smaller caption text so titles fit the narrow fan card. Floor is
-     --fs-xs(12px) — .slide-work/.slide-period/.slide-dday previously sat
-     below it (0.62/0.64/0.6rem, a leftover from before the 12px floor
-     policy) while .slide-title next to them was already pinned to
-     --fs-xs; title keeps its distinction via font-weight:700, not size. */
-  .poster-deck.fan .slide-caption { padding: 0.4375rem 0.5625rem 0.5625rem; }
-  .poster-deck.fan .slide-caption .slide-title { font-size: var(--fs-xs); line-height: 1.25; }
-  .poster-deck.fan .slide-caption .slide-work { font-size: var(--fs-xs); }
-  .poster-deck.fan .slide-caption .slide-period { font-size: var(--fs-xs); }
-  .poster-deck.fan .slide-dday { font-size: var(--fs-xs); padding: 0.125rem 0.375rem; }
-  .poster-deck.fan .slide-caption-row { gap: 0.3125rem; }
-
-  /* Slide anchor — fills the card entirely */
-  .deck-slide {
-    position: relative;
     display: block;
-    width: 100%;
-    height: 100%;
-    min-height: 240px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 14px 34px rgba(20, 22, 28, 0.22);
     color: inherit;
     text-decoration: none;
     background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    overflow: hidden;
+    transform-origin: top center;
+    will-change: transform, opacity;
+    transition:
+      transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1),
+      opacity   0.5s ease;
   }
+  .deck-card:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .deck-card {
+      transition: none;
+    }
+  }
+  /* Pre-init / non-JS depth fallback — deck.js overwrites these via inline
+     style the instant it runs (nth-of-type is lower precedence than an
+     inline style on the same property), so this only covers the brief
+     window before the deferred script executes. */
+  .deck-card:nth-of-type(1) { z-index: 30; }
+  .deck-card:nth-of-type(2) { transform: translateY(12px) scale(0.965); opacity: 0.9; z-index: 29; }
+  .deck-card:nth-of-type(3) { transform: translateY(24px) scale(0.93);  opacity: 0.8; z-index: 28; }
+  .deck-card:nth-of-type(4) { transform: translateY(36px) scale(0.895); opacity: 0.7; z-index: 27; }
+  .deck-card:nth-of-type(n+5) { opacity: 0; pointer-events: none; z-index: 1; }
 
-  /* Poster image slides */
-  .deck-slide img.slide-img {
+  .deck-card-img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center top;
+    object-position: center 18%;
     display: block;
-    min-height: 240px;
   }
-
-  /* Bottom gradient scrim — applies to both poster and style-card branches */
-  .slide-scrim {
+  /* No-poster fallback (design-rules.md §4-c 시안 우선, mock's gradFor()/
+     565~568행): the gradient itself is set inline (per-card category slug,
+     home.html) on `.deck-card` — it's already a full inset:0 box, so no
+     extra sizing modifier is needed here, only the watermark label.
+     color-mix() has no prior use in this codebase (grepped) — accepted as
+     the mock's own formula; a color-mix()-less browser falls back to the
+     gradient's first stop (var(--surface)), a safe flat background. */
+  .deck-fill-label {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.30) 45%, transparent 78%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    opacity: 0.14;
+    transform: rotate(-5deg);
+    white-space: nowrap;
     pointer-events: none;
   }
-
-  /* Bottom caption overlay — shared by both card types */
-  .slide-caption {
+  .deck-card-scrim {
     position: absolute;
-    bottom: 0;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.15) 45%, transparent 72%);
+    pointer-events: none;
+  }
+  .deck-card-eyebrow {
+    position: absolute;
+    top: 0.875rem;
+    left: 0.875rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+  }
+  .deck-card-caption {
+    position: absolute;
     left: 0;
     right: 0;
-    padding: 0.625rem 0.75rem 0.75rem;
+    bottom: 0;
+    padding: 1.125rem 1.125rem 2rem;
     color: #fff;
   }
-
-  .slide-caption .slide-work {
-    margin: 0 0 0.1875rem;
+  /* .hero-prefixed: shared cards.css's `.hero p { color: var(--muted) }`
+     (0,1,1) outranks a bare class (0,1,0) — these captions are <p> inside
+     .hero, so without the prefix the white text computes muted grey
+     (user-reported regression, live-verified). */
+  .hero .deck-card-work {
+    margin: 0 0 0.25rem;
     font-size: var(--fs-xs);
-    color: rgba(255,255,255,0.82);
+    color: rgba(255, 255, 255, 0.82);
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
-  /* Title + D-day on one row: title left, D-day right */
-  .slide-caption-row {
+  .deck-card-caption-row {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.625rem;
   }
-
-  .slide-caption .slide-title {
+  .hero .deck-card-title {
     margin: 0;
-    font-size: var(--fs-md);
-    font-weight: 700;
+    font-size: 1.3125rem;
+    font-weight: 800;
+    line-height: 1.25;
     color: #fff;
-    line-height: 1.35;
     flex: 1;
     min-width: 0;
     display: -webkit-box;
@@ -275,48 +205,76 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
-  .slide-caption .slide-period {
-    margin: 0.1875rem 0 0;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    color: rgba(255,255,255,0.92);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* D-day pill — inline in caption row, right-aligned via space-between */
-  .slide-dday {
-    background: rgba(0,0,0,0.45);
+  .deck-card-dday {
+    background: var(--brand);
     color: #fff;
     border-radius: 999px;
-    padding: 0.1875rem 0.5625rem;
+    padding: 0.1875rem 0.6875rem;
     font-size: var(--fs-xs);
     font-weight: 700;
     white-space: nowrap;
     flex: none;
   }
-
-  /* Style card (no poster): allow fill emoji to be absolutely placed */
-  .deck-slide.style-card {
-    padding: 0;
+  .hero .deck-card-period {
+    margin: 0.375rem 0 0;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* Large centered emoji fill for no-poster cards */
-  .deck-fill-emoji {
+  /* Dot indicators — visible size 7/18px is the design literal
+     (design-rules.md §4-c); ::before supplies the 44px hit box the visible
+     dot doesn't have room for. Active state (aria-current, deck.js) also
+     drives the width/shape change. */
+  .deck-dots {
     position: absolute;
-    inset: 0;
+    left: 50%;
+    bottom: 0.6875rem;
+    transform: translateX(-50%);
+    z-index: 40;
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: auto;
-    height: auto;
-    border-radius: 0;
-    font-size: 2.6rem;
+    gap: 0.375rem;
+    background: rgba(0, 0, 0, 0.32);
+    padding: 0.375rem 0.5625rem;
+    border-radius: 999px;
+  }
+  .deck-dot {
+    position: relative;
+    height: 7px;
+    width: 7px;
+    border: none;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: width 0.2s ease, background 0.2s ease, border-radius 0.2s ease;
+  }
+  .deck-dot:focus-visible {
+    /* Same explicit ring as .deck-card/.cat-dot/.section-more (BIR Low
+       finding) — UA default alone reads inconsistently next to them. */
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .deck-dot::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+  .deck-dot.active {
+    width: 18px;
+    border-radius: 4px;
+    background: #fff;
   }
 
-  /* Empty state when no ongoing events */
+  /* Empty state when no popular events */
   .carousel-empty {
     display: flex;
     align-items: center;
@@ -336,34 +294,61 @@
     .hero-inner {
       grid-template-columns: 1fr;
     }
-    .poster-deck-wrap {
+    .deck-wrap {
       max-width: 480px;
       margin: 0 auto;
     }
   }
+  /* Fixed 4 columns at every width (2026-07-21 user re-command — "4열로
+     표출되도록 반응형 사이즈 적용", superseding both the earlier flat 2/3
+     shrink AND the slide/hscroll variant it replaced — column *count*
+     stays 4 always, block width/typography respond to viewport instead;
+     see the ≤64rem tier below). */
   .cat-browse {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.625rem;
   }
-  .cat-browse a,
-  .cat-browse-link {
+  /* ── Category chips (.cat-dot, plan §D) — replaces the old icon-tile
+     .cat-browse-link. Shared .cat-tile (components/category.css) is not
+     touched: the swatch below reads the same `--cat-*-ink` custom
+     properties directly via inline style (home.html), same convention as
+     the poster card's category-tinted style-card fallback. Base rule here
+     is the desktop/wide size (>64rem) — 4 columns leaves at least as much
+     room per chip as the old 5-column layout did, so this is the original
+     pre-2/3-shrink sizing; the ≤64rem tier below is the one that actually
+     needs to shrink, and switches to a vertical (icon-over-label) layout
+     instead of scaling the horizontal one down further. */
+  .cat-dot {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    text-align: center;
-    text-decoration: none;
-    padding: 1rem 0.625rem;
+    gap: 0.6875rem;
+    min-width: 0;
+    padding: 0.8125rem 1.0625rem;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: var(--bg-card);
+    background: var(--surface);
+    text-decoration: none;
     color: var(--text);
   }
-  .cat-browse a:hover,
-  .cat-browse-link:hover {
+  .cat-dot:hover {
     border-color: var(--border-soft);
     box-shadow: var(--shadow);
+  }
+  .cat-dot:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .cat-dot-swatch {
+    flex: none;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+  }
+  .cat-dot-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
   }
   .cat-name {
     font-size: var(--fs-md);
@@ -373,23 +358,59 @@
     font-size: var(--fs-sm);
     color: var(--muted);
   }
+
+  /* ── Section chrome (editorial de-boxing, plan §A) ───────────────────
+     No card box — an eyebrow label + h2 + margin replace the border/
+     shadow/background/padding this used to carry. Shared by the snapshot
+     panel below (its own h2 "내 컬렉션 현황" keeps no eyebrow — out of this
+     track's approved scope). */
   .section {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 0.875rem;
-    margin-bottom: 0.875rem;
+    margin-bottom: 3rem; /* ~48px, plan §A's 46–52px rhythm */
   }
   .section-head {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.625rem;
+    align-items: flex-end;
+    margin-bottom: 1.125rem;
+  }
+  .section-eyebrow {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--brand-ink);
+    margin-bottom: 0.25rem;
+  }
+  .section-eyebrow--amber {
+    color: var(--amber-ink);
   }
   .section h2 {
     margin: 0;
     font-size: var(--fs-lg);
+  }
+  .section-more {
+    position: relative;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--brand-ink);
+    text-decoration: none;
+  }
+  .section-more::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+  .section-more:hover {
+    text-decoration: underline;
+  }
+  .section-more:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 
   /* ── collection-first home snapshot panel (H-2) ──────────────────────
@@ -515,6 +536,10 @@
     overflow: hidden;
     border: 1px solid var(--line);
     background: var(--surface);
+    /* Item-level shadow (plan §C editorial re-style — design literal, not a
+       token; matches the deck card / hscroll-btn precedent of a one-off
+       rgba shadow elsewhere on this page). */
+    box-shadow: 0 10px 26px rgba(20, 22, 28, 0.12);
   }
   /* Image region: badges / 찜 button / glint anchor here (top edge of this
      box is the card's top edge, so their existing top:8px/left|right:8px
@@ -540,16 +565,29 @@
     object-fit: cover;
     object-position: center top;
   }
-  /* No-poster fallback: category-soft tile fills the image region, large centered emoji */
-  .poster-card-emoji {
+  /* No-poster fallback (design-rules.md §4-c 시안 우선, mock's gradFor()/
+     565~568행): a 105deg gradient through two color-mix() stops (inline
+     style, home/_poster_card.html — per-card category slug) replaces the
+     old flat .cat-tile emoji tile; this modifier only supplies the sizing/
+     centering the image region needs when there's no <img> child to carry
+     it. color-mix() has no prior use in this codebase (grepped) — accepted
+     as the mock's own formula; a color-mix()-less browser falls back to
+     the gradient's first stop (var(--surface)), a safe flat background. */
+  .poster-card-media--fill {
     width: 100%;
-    height: auto;
     aspect-ratio: 3 / 4;
-    border-radius: 0;
-    font-size: 2.6rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+  }
+  .poster-fill-label {
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    opacity: 0.14;
+    transform: rotate(-5deg);
+    white-space: nowrap;
   }
   /* Punch-notch circles (signature #1): anchored to .poster-card-media's
      OWN box via top:calc(100% - Npx), so they straddle the media/caption
@@ -610,11 +648,57 @@
        their own chips/tiles, not body copy. */
     color: var(--text);
   }
+  /* Accent bar wrapper (plan §C — editorial caption). This element, NOT
+     .poster-card-caption itself, is position:relative: giving the caption
+     relative would move the title's stretched link (.poster-card-title
+     a::after, `inset:0`) to resolve against the caption box instead of
+     .poster-card and shrink the whole-card click target down to just the
+     caption strip (BIR finding, home-editorial plan §사전 검토). Sized to
+     its own content (title + badges + meta), so the bar spans exactly that
+     height regardless of how many lines the title wraps to. */
+  /* Fixed-height caption (2026-07-21, coordinator instruction — same-track
+     card-height parity): a rail's cards must all be the same height no
+     matter how much a given event's title wraps (1 vs 2 lines) or whether
+     its optional official badge (.poster-card-badges/.card-official-badge,
+     cards.css — only when event.official_url is set) or meta line
+     (.poster-card-meta — only when location_name/start_date exist) is
+     present in the DOM at all. Row-stretch (flex/grid on the parent) only
+     equalizes the outer <li>/.poster-card box, not this in-flow content —
+     so instead every optional row gets its own worst-case reserve, and the
+     whole block additionally floors at their sum, deliberately summed
+     without crediting CSS margin-collapse (a same-or-taller floor is
+     harmless; an under-estimate would break the guarantee for the
+     worst-case card):
+       title (2 lines, .poster-card-title's own min-height below) = 2.7em
+         = var(--fs-base)*1.35(line-height)*2                      = 2.565rem
+       + title margin-bottom                                       = 0.1875rem
+       + official badge worst case: .poster-card-badges margin-top
+         0.1875rem + .card-official-badge line box (var(--fs-xs)*1.6,
+         inherited body line-height) 1.2rem + padding 0.1875rem*2   = 1.7625rem
+       + meta line (1 line, .poster-card-meta's own min-height below)
+         = var(--fs-sm)*1.3(line-height)                            = 1.04rem
+     raw total 5.555rem, rounded up to the repo's 0.0625rem grain with a
+     small safety margin: 5.625rem. Mobile (≤45rem) recomputes the same sum
+     with the breakpoint's smaller title/meta font-size overrides — see
+     that media query below. */
+  .poster-card-caption-inner {
+    /* Accent bar as border-left — never position:relative here (stretched
+       link would collapse to the caption; see _poster_card.html comment).
+       border-color comes from the per-category inline style. */
+    border-left: 3px solid var(--brand-ink);
+    padding-left: 0.5625rem;
+    min-height: 5.625rem;
+  }
   .poster-card-title {
     margin: 0 0 0.1875rem;
     font-size: var(--fs-base);
     font-weight: 700;
     line-height: 1.35;
+    /* 2 lines, em-relative to this element's own font-size so it still
+       holds after the mobile font-size override below — a 1-line title
+       must not shrink the card even before the container floor above is
+       considered. */
+    min-height: 2.7em;
   }
   .poster-card-title a {
     color: inherit;
@@ -643,6 +727,12 @@
   .poster-card-meta {
     margin: 0;
     font-size: var(--fs-sm);
+    line-height: 1.3;
+    /* 1 line, em-relative — same reasoning as .poster-card-title's
+       min-height above (this element is entirely absent from the DOM when
+       neither location_name nor start_date exist, which the container
+       floor on .poster-card-caption-inner above covers instead). */
+    min-height: 1.3em;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
@@ -654,40 +744,29 @@
   /* .poster-interest (top-right 찜 button overlay): hoisted to
      components/cards.css so event_list.css's desktop thumbnail + mobile
      grid can reuse it too (both pages load cards.css globally). */
-  @media (max-width: 56.25rem) {
-    .cat-browse {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
   @media (max-width: 45rem) {
     .page {
       padding: 1rem var(--page-pad-x) 3rem;
     }
     .hero {
-      padding: 1.375rem 1.125rem;
+      margin-bottom: 2.5rem;
+    }
+    .hero-inner {
+      padding: 1.25rem;
+      border-radius: 16px;
     }
     .hero h1 {
-      font-size: var(--fs-xl-mobile);
+      font-size: 1.625rem;
     }
     .section-head {
       align-items: flex-start;
       flex-direction: column;
       gap: 0.25rem;
     }
-    .cat-browse {
-      grid-template-columns: repeat(2, 1fr);
-    }
   }
 
   /* ── horizontal scroller — home-specific bindings ───────────── */
   /* Generic component rules live in static/css/hscroll.css */
-
-  /* Per-section item min-widths in scroller mode */
-  /* Category tiles: fixed 180px basis so 5 fit at desktop width and the 6th overflows */
-  .hscroll-track .cat-browse-item {
-    flex: 0 0 180px;
-    min-width: 180px;
-  }
 
   /* Event poster cards (ongoing/closing/recent) — each wrapped in a plain <li> */
   .hscroll-track li {
@@ -695,54 +774,157 @@
     width: 168px;
   }
 
-  /* Responsive: snap-align for home's scroller items */
+  /* Responsive: snap-align for home's scroller items (poster rails get
+     their own snap-align inside the ≤64rem block below, which supersedes
+     this for them at every width it covers — this rule now only matters
+     for any future non-poster, non-category .hscroll-track use on this
+     page; harmless no-op today since the category rail's slide/hscroll
+     variant was removed, see .cat-browse below). */
   @media (max-width: 45rem) {
-    .hscroll-track .cat-browse-item,
     .hscroll-track li {
       scroll-snap-align: start;
     }
+  }
 
-    /* Event poster sliders (이번 주/곧 종료/새 이벤트): 2-row column-flow
-       grid so 4 cards ([2,2]) are visible at once instead of ~1.9 in a
-       single fixed-168px row. .hscroll-track--posters is a template
-       modifier (home.html) scoped to the 3 poster tracks only — the
-       category track (#hscroll-cat, no modifier) keeps the plain flex row
-       and its own 180px item basis above. */
-    .hscroll-track--posters {
-      display: grid;
-      grid-auto-flow: column;
-      grid-template-rows: repeat(2, auto);
-      grid-auto-columns: calc((100% - 0.625rem) / 2); /* gap 0.625rem, existing .hscroll-track value */
-    }
+  /* ── Poster rail: single-row 2-up slide + ≈2/3 card scale ────────────
+     2026-07-21 coordinator instruction — "모바일(스마트폰+태블릿)" means
+     phones AND tablets, so this uses a wider ≤64rem(1024px) ceiling than
+     the rest of this file's ≤45rem phone-only tier (desktop >64rem is
+     unchanged). Replaces the old ≤45rem 2-row [2,2] grid entirely — both
+     covered the same rail, and keeping both would fight at phone widths
+     (a later, narrower-window rule doesn't automatically "win"; only
+     removing the old block guarantees phones and tablets get the same
+     result). Scope: `.hscroll-track--posters` is the template modifier
+     (home.html) on the 3 discovery rails + the snapshot panel's own
+     upcoming-planned rail (same class, same partial → automatically
+     included) — NOT the category grid (`.cat-browse`, its own tier is
+     further below; it never had a --posters modifier and its slide/hscroll
+     variant no longer exists in the template at all — see that block). */
+  @media (max-width: 64rem) {
+    /* Single row, 2 cards visible per viewport — li width = half the
+       track's content width minus half the existing 0.625rem gap. Plain
+       flex row (same overflow-x/scroll-snap machinery hscroll.css/
+       hscroll.js already drive on desktop) — no JS change needed. */
     .hscroll-track--posters li {
+      flex: 0 0 calc((100% - 0.625rem) / 2);
       width: auto;
-      /* Grid items default to min-width:auto (content-based floor); without
-         this, .poster-card-meta's white-space:nowrap text can inflate the
-         column past its intended 50% share and reintroduce horizontal
-         overflow (연구문서 §2.2). */
-      min-width: 0;
+      min-width: 0; /* content-based floor would fight the fixed flex-basis */
+      scroll-snap-align: start;
     }
-    /* Row-stretch: an auto grid row sizes to its tallest li, but a plain
-       block child doesn't fill that stretched height on its own — without
-       this, a shorter card in the same row leaves empty space below it
-       instead of an even card band. */
-    .hscroll-track--posters .poster-card {
-      height: 100%;
-    }
-    /* height:100% alone only stretches .poster-card's own box — its two
-       flex children (.poster-card-media, .poster-card-caption) still size
-       to their own content by default (flex-grow:0), so a card whose
-       sibling in the same row has a taller title (1 vs 2 lines) leaves a
-       ~17px empty gap at the caption's bottom instead of an even card
-       band. Growing the caption (not the media, which is aspect-ratio
-       locked) absorbs that leftover space. */
-    .hscroll-track--posters .poster-card-caption {
-      flex: 1 0 auto;
+
+    /* The old row-stretch hooks (height:100% on .poster-card, flex:1 0 auto
+       on .poster-card-caption) are gone on purpose, not just superseded:
+       with a single row there's no sibling row to stretch to, and — more
+       importantly — a hard height:100% would clip an appended status.js
+       inline error (.status-inline-error, [data-status-error-container] on
+       .poster-card, which has overflow:hidden) against whatever height the
+       old row-stretch computed. Without that hard height, .poster-card is
+       free to grow for the error message instead. Height parity across the
+       rail still holds — it now comes entirely from
+       .poster-card-caption-inner's min-height floor below, the same
+       mechanism the desktop rail already uses (no row-stretch dependency
+       there either). */
+
+    /* Card scale ≈2/3 (ballpark target — the hard gate is the overflow e2e
+       at 320/375, not an exact pixel match). Width is fixed by the 2-up
+       layout above, not a free variable, and the caption floor is already
+       dominated by the official-badge portion (cards.css's
+       .poster-card-badges/.card-official-badge, can't shrink further
+       without touching that shared file) — so the lever here is the
+       image tile's aspect-ratio, not typography, which is already pinned
+       to this file's 12px floor (--fs-xs) on both caption lines.
+       Derivation (375px reference, --page-pad-x 1rem at this width):
+         content width   375 - 2*16                             = 343px
+         li width        (343 - 10) / 2                         ≈ 166.5px
+         [before] media 3:4 portrait   166.5 * 4/3               ≈ 222px
+         [before] caption floor (5.125rem, old ≤45rem tier)      = 82px
+         [before] border 1px*2                                    = 2px
+         [before] total                                          ≈ 306px
+         [target] 306 * 2/3                                      ≈ 204px
+         [after] caption floor recomputed for this tier (title
+           capped to --fs-xs too, see .poster-card-caption-inner
+           below)                                                ≈ 79px
+         [after] media budget   204 - 79 - 2                     ≈ 123px
+         [after] aspect-ratio needed   166.5 / 123                ≈ 4:3
+       4:3 (landscape) lands within a few px of the ≈2/3 target — adopted
+       below. object-position stays "center top" (.poster-card-img,
+       unchanged) so the crop keeps the poster's top (title/character
+       art) — same precedent as the hero deck's own aspect-ratio choice. */
+    /* Only the elements that actually establish their own height need the
+       override — .poster-card-media (bare, with-poster case) has no width
+       of its own and just shrink-wraps .poster-card-img's rendered height,
+       so an aspect-ratio there would be inert; leaving it off. */
+    .poster-card-img,
+    .poster-card-media--fill {
+      aspect-ratio: 4 / 3;
     }
     .poster-card-title {
-      font-size: var(--fs-sm);
+      font-size: var(--fs-xs);
+      line-height: 1.3;
+      min-height: 2.6em; /* 2 lines * 1.3 line-height, em-relative like desktop */
     }
     .poster-card-meta {
+      font-size: var(--fs-xs);
+    }
+    /* Container floor recomputed for this tier — both caption lines at
+       --fs-xs now (title was --fs-sm in the old ≤45rem tier), badge
+       portion unchanged (cards.css has no mobile override for
+       .card-official-badge):
+         title (2 lines) = var(--fs-xs)*1.3(line-height)*2 = 1.95rem
+           + margin-bottom                                  = 0.1875rem
+         + badge worst case (unchanged)                     = 1.7625rem
+         + meta (1 line) = var(--fs-xs)*1.3                  = 0.975rem
+       raw total 4.8825rem, rounded up to the grain: 4.9375rem. */
+    .poster-card-caption-inner {
+      min-height: 4.9375rem;
+    }
+  }
+
+  /* ── Category chips: fixed 4 columns, vertical stack at narrow widths ──
+     2026-07-21 user re-command — "4열로 표출되도록 반응형 사이즈 적용
+     (블록너비, 폰트사이즈), 슬라이드 기능은 제거": .cat-browse (home.html)
+     is now always the plain grid (the >5-tiles hscroll/slide branch was
+     removed from the template), fixed at repeat(4, 1fr) — column *count*
+     never changes, only each chip's own width (which the grid already
+     handles automatically) and, at this tier, its internal layout/font.
+     Reuses the ≤64rem breakpoint established above for the poster rail
+     (same "phones + tablets" scope this session has used throughout).
+     Horizontal .cat-dot (base rule above) doesn't fit 4-per-row at phone
+     widths — width budget at a 320px reference:
+       content width   320 - 2*16(--page-pad-x)                 = 288px
+       3 gaps * 0.625rem                                          = 30px
+       column width   (288 - 30) / 4                             ≈ 64.5px
+     A swatch-left + 2-line-text-right horizontal chip can't fit a label
+     like "콜라보 카페" in that width, so this tier switches .cat-dot to a
+     vertical stack (swatch on top, centered label/count below) instead of
+     just shrinking the horizontal one further — same shape the original
+     mock used for its own mobile category tile. Labels are allowed to wrap
+     to 2 lines (no white-space:nowrap here) rather than truncate — same
+     "let CJK wrap naturally" precedent as the footer's 4-column mobile
+     tier (site-chrome.css). Font stays at this file's 12px floor
+     (--fs-xs) — same floor already established for the poster caption and
+     the flat-shrink attempt this instruction supersedes. */
+  @media (max-width: 64rem) {
+    .cat-dot {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.25rem;
+      padding: 0.5rem 0.25rem;
+      border-radius: 8px;
+    }
+    .cat-dot-swatch {
+      width: 0.5rem;
+      height: 0.5rem;
+    }
+    .cat-dot-info {
+      align-items: center;
+    }
+    .cat-name {
+      font-size: var(--fs-xs);
+      line-height: 1.25;
+    }
+    .cat-count {
       font-size: var(--fs-xs);
     }
   }

@@ -12,9 +12,17 @@
 {% block content %}
   <main class="page" id="content">
     <section class="hero">
-      <div class="hero-inner">
+      {% comment %} data-hero-card (mock parity, 2026-07-21 user instruction):
+         deck.js reads this ancestor via deckEl.closest("[data-hero-card]")
+         and swaps its background to the active card's data-cardbg on every
+         advance — same technique/attribute name as the mock's own script.
+         Initial background uses the first popular_rows entry's category so
+         there's no flash-of-wrong-colour before deck.js's first render();
+         when popular_rows is empty (no deck at all), the CSS default
+         (--brand-soft) applies instead. {% endcomment %}
+      <div class="hero-inner" data-hero-card{% if popular_rows %} style="background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft))) 100%);"{% endif %}>
         <div class="hero-left">
-          <h1>지금 갈 수 있는 공식 오프라인 이벤트를 <span class="hl">한눈에</span></h1>
+          <h1>지금 갈 수 있는 이벤트를 <span class="hl">한눈에</span></h1>
           <form class="search" action="/events/" method="get">
             <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
             <button type="submit">검색</button>
@@ -22,7 +30,7 @@
           <div class="quick-filters">
             <a class="chip" href="/events/?region=seoul">서울</a>
             <a class="chip" href="/events/?region=gyeonggi">경기</a>
-            <a class="chip" href="/events/?region=incheon">인천</a>
+            <a class="chip" href="/events/?region=busan">부산</a>
             <a class="chip" href="/events/?status=closing_soon">종료 임박</a>
             <a class="chip" href="/events/?category=popup_store">팝업스토어</a>
             <a class="chip" href="/events/?category=collaboration_cafe">콜라보 카페</a>
@@ -31,49 +39,54 @@
         </div>
 
         {% if popular_rows %}
-          <div
-            class="poster-deck-wrap"
-            data-carousel
-          >
-            <div class="poster-deck" data-carousel-track>
-
-              {# Sizer: invisible clone that provides intrinsic height so deck doesn't collapse #}
-              <div class="deck-sizer"></div>
-
+          <div class="deck-wrap">
+            <div class="deck" data-deck>
               {% for row in popular_rows %}
-                <div
+                <a
                   class="deck-card"
-                  data-slide="{{ forloop.counter0 }}"
-                  data-card-index="{{ forloop.counter0 }}"
+                  data-deck-card
+                  data-deck-index="{{ forloop.counter0 }}"
+                  data-cardbg="linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft))) 100%)"
+                  href="/events/{{ row.event.id }}/"
+                  tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+                  style="{% if not row.event.poster_image %}background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft))) 100%);{% endif %}"
                 >
-                  <a
-                    class="deck-slide{% if not row.event.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}"
-                    href="/events/{{ row.event.id }}/"
-                    tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
-                    style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, var(--surface) 100%);{% endif %}"
-                  >
-                    {% if row.event.poster_image %}
-                      <img
-                        class="slide-img"
-                        src="{{ row.event.poster_image.url }}"
-                        alt="{{ row.event.title }} 포스터"
-                        loading="lazy"
-                      >
-                    {% else %}
-                      <span class="cat-tile cat-{{ row.category_slug }} deck-fill-emoji"></span>
-                    {% endif %}
-                    <div class="slide-scrim"></div>
-                    <div class="slide-caption">
-                      {% if row.event.work_title %}<p class="slide-work">{{ row.event.work_title }}</p>{% endif %}
-                      <div class="slide-caption-row">
-                        <p class="slide-title">{{ row.event.title }}</p>
-                        {% if row.dday is not None %}<span class="slide-dday">D-{{ row.dday }}</span>{% endif %}
-                      </div>
-                      {% if row.event.start_date and row.event.end_date %}<p class="slide-period">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</p>{% elif row.event.start_date %}<p class="slide-period">{{ row.event.start_date|date:"Y/m/d" }} -</p>{% endif %}
+                  {% if row.event.poster_image %}
+                    <img
+                      class="deck-card-img"
+                      src="{{ row.event.poster_image.url }}"
+                      alt="{{ row.event.title }} 포스터"
+                      loading="lazy"
+                    >
+                  {% else %}
+                    <span class="deck-fill-label" style="color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));" aria-hidden="true">{{ row.category_label }}</span>
+                  {% endif %}
+                  <div class="deck-card-scrim"></div>
+                  <span class="deck-card-eyebrow">이번 주 주목</span>
+                  <div class="deck-card-caption">
+                    {% if row.event.work_title %}<p class="deck-card-work">{{ row.event.work_title }}</p>{% endif %}
+                    <div class="deck-card-caption-row">
+                      <p class="deck-card-title">{{ row.event.title }}</p>
+                      {% if row.dday is not None %}<span class="deck-card-dday">D-{{ row.dday }}</span>{% endif %}
                     </div>
-                  </a>
-                </div>
+                    {% if row.event.start_date and row.event.end_date %}<p class="deck-card-period">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</p>{% elif row.event.start_date %}<p class="deck-card-period">{{ row.event.start_date|date:"Y/m/d" }} -</p>{% endif %}
+                  </div>
+                </a>
               {% endfor %}
+              {% if popular_rows|length > 1 %}
+                <div class="deck-dots" data-deck-dots>
+                  {% for row in popular_rows %}
+                    <button
+                      type="button"
+                      class="deck-dot{% if forloop.first %} active{% endif %}"
+                      data-deck-dot
+                      data-deck-index="{{ forloop.counter0 }}"
+                      aria-label="{{ forloop.counter }}번 포스터"
+                      aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
+                    ></button>
+                  {% endfor %}
+                </div>
+              {% endif %}
             </div>
           </div>
         {% else %}
@@ -88,7 +101,11 @@
 
     <section class="section">
       <div class="section-head">
-        <h2>이번 주 갈 만한 행사</h2>
+        <div>
+          <span class="section-eyebrow">이번 주</span>
+          <h2>이번 주 갈 만한 행사</h2>
+        </div>
+        <a class="section-more" href="/events/?status=ongoing">더보기 ›</a>
       </div>
       {% if ongoing_rows %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
@@ -107,7 +124,11 @@
 
     <section class="section">
       <div class="section-head">
-        <h2>곧 종료돼요</h2>
+        <div>
+          <span class="section-eyebrow section-eyebrow--amber">마감 임박</span>
+          <h2>곧 종료돼요</h2>
+        </div>
+        <a class="section-more" href="/events/?status=closing_soon">더보기 ›</a>
       </div>
       {% if closing_rows %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
@@ -126,40 +147,34 @@
 
     <section class="section">
       <div class="section-head">
-        <h2>카테고리로 둘러보기</h2>
-      </div>
-      {% if category_tiles|length > 5 %}
-        <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-cat" aria-label="카테고리로 둘러보기, 이전">&#8249;</button>
-          <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" tabindex="0">
-            {% for tile in category_tiles %}
-              <li class="cat-browse-item">
-                <a class="cat-browse-link" href="/events/?category={{ tile.slug }}">
-                  <span class="cat-tile cat-{{ tile.slug }}"></span>
-                  <span class="cat-name">{{ tile.label }}</span>
-                  <span class="cat-count">{{ tile.count }}개</span>
-                </a>
-              </li>
-            {% endfor %}
-          </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-cat" aria-label="카테고리로 둘러보기, 다음">&#8250;</button>
+        <div>
+          <span class="section-eyebrow">카테고리</span>
+          <h2>카테고리로 둘러보기</h2>
         </div>
-      {% else %}
-        <div class="cat-browse">
-          {% for tile in category_tiles %}
-            <a href="/events/?category={{ tile.slug }}">
-              <span class="cat-tile cat-{{ tile.slug }}"></span>
+      </div>
+      {% comment %} Slide/hscroll variant removed (2026-07-21 user
+         instruction — "슬라이드 기능은 제거", always the fixed 4-column
+         grid now regardless of category_tiles count). {% endcomment %}
+      <div class="cat-browse">
+        {% for tile in category_tiles %}
+          <a class="cat-dot" href="/events/?category={{ tile.slug }}">
+            <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink);" aria-hidden="true"></span>
+            <span class="cat-dot-info">
               <span class="cat-name">{{ tile.label }}</span>
               <span class="cat-count">{{ tile.count }}개</span>
-            </a>
-          {% endfor %}
-        </div>
-      {% endif %}
+            </span>
+          </a>
+        {% endfor %}
+      </div>
     </section>
 
     <section class="section">
       <div class="section-head">
-        <h2>새 이벤트</h2>
+        <div>
+          <span class="section-eyebrow">방금 올라온</span>
+          <h2>새 이벤트</h2>
+        </div>
+        <a class="section-more" href="/events/?sort=newest">더보기 ›</a>
       </div>
       {% if recent_rows %}
         <div class="hscroll-wrap" data-hscroll>
@@ -179,6 +194,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script defer src="{% static 'js/components/carousel.js' %}"></script>
+<script defer src="{% static 'js/components/deck.js' %}"></script>
 <script defer src="{% static 'js/components/hscroll.js' %}"></script>
 {% endblock %}

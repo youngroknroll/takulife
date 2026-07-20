@@ -10,7 +10,9 @@
  *   - Multiple independent scrollers per page
  *   - Optional autoplay (data-hscroll-auto): advances every 3500ms, loops to
  *     start at end, pauses on hover/focus/manual arrow click, respects
- *     prefers-reduced-motion, only runs when overflowing
+ *     prefers-reduced-motion, only runs when overflowing, and only runs at
+ *     desktop widths (home-editorial plan §4-c — mobile rail auto-slide is
+ *     off; re-evaluated live on viewport-boundary changes)
  *
  * DOM contract (set by home.html template):
  *   [data-hscroll]        — section wrap (position: relative; overflow: hidden)
@@ -29,9 +31,17 @@
   var AUTOPLAY_INTERVAL = 3500;
 
   var mqlReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  // Desktop breakpoint (tokens.css §page-pad-x / home.css use 45rem as the
+  // mobile ceiling) — matches immediately above it so mobile rail autoplay
+  // is off (design-rules.md §4-c, user-confirmed).
+  var mqlDesktop = window.matchMedia("(min-width: 45.0625rem)");
 
   function prefersReducedMotion() {
     return mqlReducedMotion.matches;
+  }
+
+  function isDesktopViewport() {
+    return mqlDesktop.matches;
   }
 
   // ── scroller factory ──────────────────────────────────────────────────────
@@ -161,7 +171,7 @@
     }
 
     function shouldAutoplay() {
-      return wantsAutoplay && !prefersReducedMotion() && !hovered && !focused && !touched && isOverflowing();
+      return wantsAutoplay && isDesktopViewport() && !prefersReducedMotion() && !hovered && !focused && !touched && isOverflowing();
     }
 
     function stopAutoplay() {
@@ -217,6 +227,17 @@
           stopAutoplay();
         } else {
           startAutoplay();
+        }
+      });
+
+      // Re-evaluate on crossing the desktop/mobile boundary (resize,
+      // rotation, devtools viewport change) — mirrors the reduced-motion
+      // listener above.
+      mqlDesktop.addEventListener("change", function () {
+        if (isDesktopViewport()) {
+          startAutoplay();
+        } else {
+          stopAutoplay();
         }
       });
 

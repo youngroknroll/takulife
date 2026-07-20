@@ -56,9 +56,9 @@ class TestMobileOverflowSmoke:
     def test_홈_화면은_가로_스크롤_오버플로우가_없다(self, live_server, page, seed):
         page.goto(live_server.url + "/")
 
-        # The hero carousel applies its "fan" layout (transforms) after init —
-        # measuring before that would miss the layout the fan settles into.
-        page.wait_for_selector("[data-carousel-track].fan")
+        # The hero stack deck signals layout readiness via data-deck-ready
+        # after init — measuring before that would miss the settled layout.
+        page.wait_for_selector("[data-deck][data-deck-ready]")
 
         assert _no_horizontal_overflow(page)
 
