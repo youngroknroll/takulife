@@ -121,7 +121,8 @@
           <p class="notice">최근 14일 처리 내역이 없습니다</p>
         {% else %}
           <div class="activity-chart">
-            <div class="activity-columns">
+            <div class="activity-columns" role="img"
+                 aria-label="최근 14일 활동: 총 {{ activity_total_14d }}건, 오늘 {{ activity_today_count }}건">
               {% for col in activity_columns %}
                 <span class="activity-col{% if col.is_today %} activity-col--today{% endif %}" title="{{ col.date|date:'n/j' }} {{ col.count }}건" style="--col-h: {{ col.height_pct }}%"></span>
               {% endfor %}
