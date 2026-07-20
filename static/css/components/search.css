@@ -29,7 +29,7 @@
 .archive-search-row button[type="submit"] {
   border: 1px solid var(--border-soft);
   background: var(--brand-soft);
-  color: var(--brand);
+  color: var(--brand-ink);
   border-radius: 8px;
   padding: 0.5rem 0.875rem;
   font-size: 0.9rem;
@@ -38,15 +38,11 @@
   font-family: inherit;
   white-space: nowrap;
 }
-/* PR-4 대비 감사 발견: color:var(--brand) on background:var(--brand-soft)는
-   --brand가 텍스트용이 아닌 solid-fill 토큰이라 다크에서 2.62:1(라이트도
-   3.71:1)로 AA 미달 — 이 파일 포함 12개 파일 15곳에 동일 패턴 반복
-   확인(전수 목록은 PR-4 보고 참고). --brand-ink로 다크만 개별 교체하면
-   4.73:1 통과(라이트는 이 스코프 밖이라 미변경, 참고용 계산은 3.71→
-   4.53:1로 별도 후속 논의 필요). */
-:root[data-theme="dark"] .archive-search-row button[type="submit"] {
-  color: var(--brand-ink);
-}
+/* 공용 디자인 규칙 §1.4-2: color:var(--brand) on background:var(--brand-soft)는
+   --brand가 텍스트용이 아닌 solid-fill 토큰이라 라이트 3.71:1·다크 2.62:1
+   모두 AA 미달 — 이 파일 포함 12개 파일 15곳에 동일 패턴 반복 확인(전수
+   목록은 공용 디자인 규칙 §1.4 참고). 베이스를 --brand-ink로 전환해 양
+   테마 4.5:1+ 통과, 다크 전용 오버라이드는 중복이라 제거. */
 
 .archive-search-row button[type="submit"]:hover {
   background: var(--brand);

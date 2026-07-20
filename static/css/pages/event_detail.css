@@ -27,11 +27,15 @@
     text-align: center;
     border: 2px solid var(--brand);
     border-radius: 50%;
-    /* --brand-ink not --brand: this text is small (0.62rem) on white
-       (.panel), and --brand-on-white measures 4.42:1 (fails 4.5:1 AA) —
-       see tokens.css. The border above only needs the 3:1 non-text
-       threshold, which --brand already clears. */
-    color: var(--brand-ink);
+    /* 공용 디자인 규칙 §1.4-1 발견: opacity:0.85가 텍스트 색을 배경과
+       15% 블렌딩해 실제 렌더 대비가 declared color 기준 산출값보다
+       낮다 — var(--brand-ink) 라이트(#c13a22)는 명목상 5.42:1이지만
+       블렌딩 후 실측 4.21:1로 AA 미달. 팔레트 공식대로 L을 소폭 낮춰
+       블렌딩 후 4.61:1이 되는 #b33620으로 이 스팟만 개별 보정 —
+       var(--brand-ink) 토큰 자체는 이 한 곳만의 opacity 특수 상황
+       때문에 건드리지 않는다(다른 전 사용처는 opacity 없이 이미
+       4.5%+대 통과). */
+    color: #b33620;
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -66,14 +70,8 @@
     padding: 0.25rem 0.625rem;
     font-size: var(--fs-xs);
     font-weight: 700;
-    color: var(--brand);
-    background: var(--brand-soft);
-  }
-  /* PR-4 대비 감사 발견: color:var(--brand) on --brand-soft는 텍스트 아닌
-     solid-fill 토큰 오용 — 다크 2.62:1 AA 미달(12파일 15곳 동일 패턴,
-     전수는 PR-4 보고). --brand-ink로 다크만 교체 시 4.73:1. */
-  :root[data-theme="dark"] .chip {
     color: var(--brand-ink);
+    background: var(--brand-soft);
   }
   .status-chip {
     display: inline-block;

@@ -75,7 +75,7 @@
 
 .site-nav a:hover {
   background: var(--brand-soft);
-  color: var(--brand);
+  color: var(--brand-ink);
 }
 
 /* Ticket-stub signature #4 (nav accent): the current page reads as a red
@@ -101,14 +101,6 @@
 
 .site-nav a.active:hover {
   background: var(--brand-soft);
-  color: var(--brand);
-}
-
-/* PR-4 대비 감사 발견: color:var(--brand) on --brand-soft(텍스트 아닌
-   solid-fill 토큰 오용) — 다크 2.62:1 AA 미달, 12개 파일 15곳 동일
-   패턴(전수는 PR-4 보고). --brand-ink로 다크만 교체 시 4.73:1. */
-:root[data-theme="dark"] .site-nav a:hover,
-:root[data-theme="dark"] .site-nav a.active:hover {
   color: var(--brand-ink);
 }
 
