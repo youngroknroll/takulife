@@ -1,27 +1,31 @@
-"""Account deletion (accounts.views.delete_account).
+"""Account deletion request (accounts.views.delete_account).
 
 GET /accounts/delete/ renders a password-reconfirm form (login required).
-POST verifies the current password before deleting the account; owned
-archive data and media files cascade via existing FK on_delete/signals
-wiring (see archive/models.py, archive/signals.py) — this view does not
-re-implement that cleanup, it only orchestrates the password check, the
-delete, and ending the session.
+POST verifies the current password, then records a 10-day grace-period
+deletion request via accounts.services.request_deletion (see
+.docs/plans/2026-07-20-deletion-grace-period-plan.md) — the account itself
+is not deleted here. The eventual hard delete, and the archive data/media
+cascade it triggers (see archive/models.py, archive/signals.py), happen in
+accounts.services.execute_pending_deletions and are verified in
+tests/auth/test_account_deletion_purge.py, not this file.
 """
 import logging
 import time as real_time
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 import django.core.cache.backends.base as cache_base
 import django.core.cache.backends.db as cache_db
 import pytest
 from django.conf import settings
 from django.core.cache import cache
-from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client
+from django.utils import timezone
 
 import accounts.views as accounts_views
+from accounts import services
 from accounts.models import User
+from accounts.signals import cancel_pending_deletion_on_login
 from accounts.views import _delete_attempts_cache_key
-from archive.models import PersonalEntry, VisitRecord, VisitRecordPhoto
 
 DELETE_URL = "/accounts/delete/"
 
@@ -239,11 +243,12 @@ def test_잠금_상태에서_요청하면_잠시_후_다시_시도하라는_오�
 
 @pytest.mark.django_db
 @pytest.mark.slow
-def test_잠금_후_15분이_지나면_올바른_비밀번호로_다시_삭제할_수_있다(
+def test_잠금_후_15분이_지나면_올바른_비밀번호로_다시_탈퇴를_예약할_수_있다(
     client, make_user, valid_password, cache_clock
 ):
     """The lockout is a *fixed* 15-minute window, not a permanent block —
-    once it elapses, the correct password deletes the account again."""
+    once it elapses, the correct password reserves the deletion again (see
+    .docs/plans/2026-07-20-deletion-grace-period-plan.md DEL-10)."""
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -258,7 +263,9 @@ def test_잠금_후_15분이_지나면_올바른_비밀번호로_다시_삭제�
     response = client.post(DELETE_URL, {"password": valid_password})
 
     assert response.status_code == 302
-    assert not User.objects.filter(pk=user.pk).exists()
+    assert User.objects.filter(pk=user.pk).exists()
+    user.refresh_from_db()
+    assert user.deletion_requested_at is not None
 
 
 @pytest.mark.django_db
@@ -295,12 +302,14 @@ def test_잠금_창은_이후_실패로_연장되지_않고_최초_실패_시점
     response = client.post(DELETE_URL, {"password": valid_password})
 
     assert response.status_code == 302
-    assert not User.objects.filter(pk=user.pk).exists()
+    assert User.objects.filter(pk=user.pk).exists()
+    user.refresh_from_db()
+    assert user.deletion_requested_at is not None
 
 
 @pytest.mark.django_db
 @pytest.mark.slow
-def test_다섯_번_미만_실패_후_올바른_비밀번호는_계정을_삭제한다(
+def test_다섯_번_미만_실패_후_올바른_비밀번호는_탈퇴를_예약한다(
     client, make_user, valid_password
 ):
     """Below the lockout threshold, a subsequent correct password still
@@ -316,12 +325,14 @@ def test_다섯_번_미만_실패_후_올바른_비밀번호는_계정을_삭제
     response = client.post(DELETE_URL, {"password": valid_password})
 
     assert response.status_code == 302
-    assert not User.objects.filter(pk=user.pk).exists()
+    assert User.objects.filter(pk=user.pk).exists()
+    user.refresh_from_db()
+    assert user.deletion_requested_at is not None
 
 
 @pytest.mark.django_db
 @pytest.mark.slow
-def test_한_사용자의_잠금은_다른_사용자의_계정_삭제를_막지_않는다(client, make_user, valid_password):
+def test_한_사용자의_잠금은_다른_사용자의_계정_탈퇴_예약을_막지_않는다(client, make_user, valid_password):
     """One user's exhausted attempt budget must not lock out another user."""
     attacker = make_user(password=valid_password)
     victim = make_user(password=valid_password)
@@ -337,71 +348,9 @@ def test_한_사용자의_잠금은_다른_사용자의_계정_삭제를_막지_
     response = client.post(DELETE_URL, {"password": valid_password})
 
     assert response.status_code == 302
-    assert not User.objects.filter(pk=victim.pk).exists()
-
-
-@pytest.mark.django_db
-@pytest.mark.web
-def test_올바른_비밀번호로_계정을_삭제하면_소유한_직접_등록_항목과_이미지_파일도_함께_삭제된다(
-    client, make_user, valid_password, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
-):
-    settings.MEDIA_ROOT = str(tmp_path)
-    user = make_user(password=valid_password)
-    entry = PersonalEntry.objects.create(
-        user=user,
-        kind=PersonalEntry.Kind.PLACE,
-        title="탈퇴 테스트 항목",
-        image=SimpleUploadedFile("cover.png", png_bytes(), content_type="image/png"),
-    )
-    storage = entry.image.storage
-    file_name = entry.image.name
-    assert storage.exists(file_name)
-
-    client.force_login(user)
-    with django_capture_on_commit_callbacks(execute=True):
-        response = client.post(DELETE_URL, {"password": valid_password})
-
-    assert response.status_code == 302
-    assert not User.objects.filter(pk=user.pk).exists()
-    assert not PersonalEntry.objects.filter(pk=entry.pk).exists()
-    assert not storage.exists(file_name)
-
-
-@pytest.mark.django_db
-@pytest.mark.web
-def test_올바른_비밀번호로_계정을_삭제하면_방문_기록의_사진도_2차_연쇄로_삭제된다(
-    client,
-    make_user,
-    make_event,
-    valid_password,
-    png_bytes,
-    settings,
-    tmp_path,
-    django_capture_on_commit_callbacks,
-):
-    """User -> VisitRecord (1st-degree CASCADE) -> VisitRecordPhoto
-    (2nd-degree CASCADE) must still fire archive.signals' post_delete file
-    cleanup — the 1st-degree PersonalEntry path is already covered by
-    test_올바른_비밀번호로_계정을_삭제하면_소유한_직접_등록_항목과_이미지_파일도_함께_삭제된다 above."""
-    settings.MEDIA_ROOT = str(tmp_path)
-    user = make_user(password=valid_password)
-    event = make_event()
-    record = VisitRecord.objects.create(user=user, event=event, visited_on="2026-05-26")
-    photo = VisitRecordPhoto.objects.create(
-        visit_record=record,
-        image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
-    )
-    storage = photo.image.storage
-    file_name = photo.image.name
-    assert storage.exists(file_name)
-
-    client.force_login(user)
-    with django_capture_on_commit_callbacks(execute=True):
-        response = client.post(DELETE_URL, {"password": valid_password})
-
-    assert response.status_code == 302
-    assert not VisitRecordPhoto.objects.filter(pk=photo.pk).exists()
-    assert not storage.exists(file_name)
+    assert User.objects.filter(pk=victim.pk).exists()
+    victim.refresh_from_db()
+    assert victim.deletion_requested_at is not None
 
 
 @pytest.mark.django_db
@@ -422,9 +371,19 @@ def test_계정_삭제_직후_기존_세션으로는_보호된_페이지에_접�
 @pytest.mark.django_db
 @pytest.mark.web
 def test_삭제된_계정으로는_다시_로그인할_수_없다(client, make_user, valid_password):
+    """DEL-11: the deletion-request POST alone no longer removes the
+    account (10-day grace period) — this test now drives the account past
+    the grace period via execute_pending_deletions before attempting the
+    login, so the originally-protected "a purged account cannot log back
+    in" behavior stays covered under the new policy (see
+    .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
     user = make_user(email="leaving@example.com", password=valid_password)
     client.force_login(user)
     client.post(DELETE_URL, {"password": valid_password})
+    User.objects.filter(pk=user.pk).update(
+        deletion_requested_at=timezone.now() - timedelta(days=10, hours=1)
+    )
+    services.execute_pending_deletions()
 
     login_response = client.post(
         "/accounts/login/",
@@ -435,3 +394,123 @@ def test_삭제된_계정으로는_다시_로그인할_수_없다(client, make_u
     archive_response = client.get("/archive/")
     assert archive_response.status_code == 302
     assert "/accounts/login/" in archive_response["Location"]
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_올바른_비밀번호로_탈퇴를_요청하면_계정은_유지되고_삭제_예약_시각이_기록된다(
+    client, make_user, valid_password
+):
+    """DEL-01 (10-day grace period): a correct-password deletion request no
+    longer hard-deletes the account immediately — it must survive, and the
+    request is recorded as a pending deletion via `deletion_requested_at`
+    (see .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    user = make_user(password=valid_password)
+    client.force_login(user)
+
+    response = client.post(DELETE_URL, {"password": valid_password})
+
+    assert response.status_code == 302
+    assert User.objects.filter(pk=user.pk).exists()
+    user.refresh_from_db()
+    assert user.deletion_requested_at is not None
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_탈퇴를_요청하면_다른_기기의_세션도_함께_종료된다(client, make_user, valid_password):
+    """DEL-02 (10-day grace period): a hijacked or simply forgotten second
+    device's session must not survive the owner's deletion request for the
+    remaining 10 days — every session belonging to the user is invalidated,
+    not just the one that submitted the request (see
+    .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    user = make_user(password=valid_password)
+    client_a = client
+    client_b = Client()
+    client_a.force_login(user)
+    client_b.force_login(user)
+
+    response = client_a.post(DELETE_URL, {"password": valid_password})
+    assert response.status_code == 302
+
+    other_device_response = client_b.get("/archive/")
+
+    assert other_device_response.status_code == 302
+    assert "/accounts/login/" in other_device_response["Location"]
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_유예_기간_중_다시_로그인하면_탈퇴_예약이_취소되고_안내_메시지가_표시된다(
+    client, make_verified_user, valid_password
+):
+    """DEL-03: logging back in during the 10-day grace period is itself the
+    cancellation — no extra confirmation step is needed, because a
+    successful login is already re-authentication (see
+    .docs/plans/2026-07-20-deletion-grace-period-plan.md). The pending
+    request is set up explicitly here via accounts.services.request_deletion
+    rather than hidden behind a dedicated fixture, so the precondition stays
+    visible in the test body."""
+    user = make_verified_user()
+    services.request_deletion(user)
+    assert user.deletion_requested_at is not None
+
+    response = client.post(
+        "/accounts/login/",
+        {"login": user.email, "password": valid_password},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    user.refresh_from_db()
+    assert user.deletion_requested_at is None
+    messages_text = " ".join(str(message) for message in response.context["messages"])
+    assert "취소" in messages_text
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_삭제_예약이_없는_사용자가_로그인하면_아무_안내도_표시되지_않는다(
+    client, make_verified_user, valid_password
+):
+    """DEL-04: an ordinary login (no pending deletion) must stay a no-op —
+    `cancel_deletion`'s rowcount is 0, so the login-cancels-deletion signal
+    must not surface a cancellation message that never happened (see
+    .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    user = make_verified_user()
+    assert user.deletion_requested_at is None
+
+    response = client.post(
+        "/accounts/login/",
+        {"login": user.email, "password": valid_password},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    user.refresh_from_db()
+    assert user.deletion_requested_at is None
+    messages_text = " ".join(str(message) for message in response.context["messages"])
+    assert "취소" not in messages_text
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_로그인_시그널이_발화하면_로그인_경로와_무관하게_탈퇴_예약이_취소된다(make_verified_user):
+    """DEL-05: the receiver's own contract is path-independent and
+    request-optional cancellation, exercised here by calling
+    `cancel_pending_deletion_on_login` directly instead of sending
+    `user_logged_in` (django-axes' own receiver on that signal requires a
+    real `request` and raises AttributeError on `request=None` — an
+    environment quirk unrelated to our receiver, not something under test
+    here). The signal *wiring* itself is already proven by DEL-03's web
+    login path. `request=None` exercises the no-request guard: no messages
+    backend is available, so the receiver must skip the notification rather
+    than raise (see .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    user = make_verified_user()
+    services.request_deletion(user)
+    assert user.deletion_requested_at is not None
+
+    cancel_pending_deletion_on_login(sender=type(user), request=None, user=user)
+
+    user.refresh_from_db()
+    assert user.deletion_requested_at is None

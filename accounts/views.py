@@ -8,6 +8,8 @@ from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 
+from . import services
+
 logger = logging.getLogger(__name__)
 
 # Password re-check on this view has no throttle of its own otherwise: axes
@@ -70,15 +72,16 @@ def _reset_delete_attempts(user):
 
 @login_required
 def delete_account(request):
-    """Password-reconfirmed account deletion.
+    """Password-reconfirmed account deletion request (10-day grace period).
 
     GET renders the confirmation form. POST verifies the current password
-    before deleting the account; owned archive rows and their media files
-    cascade via each model's on_delete=CASCADE FK plus the archive.signals
-    post_delete cleanup (see archive/models.py, archive/signals.py) — this
-    view does not re-implement that cleanup. The session is flushed right
-    after the delete so the browser's existing cookie can never keep
-    authenticating the now-gone account.
+    then records the deletion request via accounts.services.request_deletion
+    (see .docs/plans/2026-07-20-deletion-grace-period-plan.md) — the account
+    itself is not deleted here; it survives for a 10-day grace period, purged
+    later by accounts.management.commands.purge_deleted_accounts unless the
+    user logs back in and cancels it. The session is flushed right after the
+    request is recorded so the browser's existing cookie stops authenticating
+    for the rest of this visit.
 
     POST is also guarded by a per-user failed-attempt counter (see
     `_is_delete_locked`) so the password check itself cannot be brute-forced.
@@ -111,10 +114,13 @@ def delete_account(request):
 
         _reset_delete_attempts(request.user)
         user = request.user
-        logger.info("Deleting user account user_pk=%s", user.pk)
-        user.delete()
+        logger.info("Requesting account deletion user_pk=%s", user.pk)
+        services.request_deletion(user)
         logout(request)
-        messages.success(request, "회원 탈퇴가 완료되었습니다.")
+        messages.success(
+            request,
+            "탈퇴가 예약되었습니다. 10일 안에 다시 로그인하면 취소됩니다.",
+        )
         return redirect("home")
 
     return render(request, "account/delete_account.html", {"field_errors": {}})
