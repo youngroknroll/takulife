@@ -174,9 +174,18 @@
      320px. Trade-off (320px only): a real email starts ellipsizing past
      ~13 characters instead of ~19 — cosmetic, .account-menu-panel still
      shows the full, unclipped address once opened. 360px+ never reaches
-     this trade-off at all now (9rem restored). */
+     this trade-off at all now (9rem restored).
+     Re-derived a third time for the shared-shell hamburger
+     (.nav-menu-toggle, 32px, row 1 between .brand and .theme-toggle —
+     adds 32px + one 10px gap of new row-1 demand across the whole
+     <=45rem range). Fixed row-1 demand is now
+     73.2+10+32+10+32+10=167.2, and .topbar-auth needs cap+8+44. At the
+     360px floor of this tier (328px budget): 9rem(144) overflows
+     (167.2+144+52=363.2 > 328); 6.25rem(100) fits
+     (167.2+100+52=319.2, 8.8px margin) — the old 22.5rem-tier value
+     becomes this whole tier's cap. */
   .site-header .topbar-username {
-    max-width: 9rem;
+    max-width: 6.25rem;
   }
 }
 
@@ -188,8 +197,119 @@
    equal specificity (.site-header .topbar-username in both) the later
    rule in the cascade wins regardless of which condition is narrower. */
 @media (max-width: 22.5rem) {
+  /* Hamburger re-derivation, 320px sliver (288px budget): the anonymous
+     login/signup pill pair alone measures ~131px, and with the default
+     0.625rem gaps the fixed row-1 demand (167.2px) leaves only 120.8px —
+     the anon state would wrap. Tightening the three row-1 gaps to
+     0.375rem(6px) reclaims 12px (fixed demand 155.2px, auth budget
+     132.8px >= 131, 1.8px margin). Logged-in: cap+52 <= 132.8 needs the
+     cap at 4.5rem(72px) (155.2+72+52=279.2, 8.8px margin — same margin
+     convention as the tiers above). */
+  .site-header-inner {
+    gap: 0.375rem;
+  }
   .site-header .topbar-username {
-    max-width: 6.25rem;
+    max-width: 4.5rem;
+  }
+}
+
+/* ── mobile nav toggle (hamburger) ─────────────────────────────
+   design-rules.md §4-b: 시안 아이콘 채택, 인터랙션은 계정 메뉴 관례
+   (aria-expanded/aria-controls/Escape/포커스 복귀) 재사용. §2.2(b) 헤더
+   아이콘 토글 패턴 그대로: 데스크톱 44px 히트박스 예비값이지만 >45rem에서는
+   .site-nav가 항상 보이므로 이 버튼 자체를 숨긴다(모바일 전용 컨트롤). */
+.nav-menu-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.nav-menu-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.nav-menu-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+@media (max-width: 45rem) {
+  .nav-menu-toggle {
+    display: flex;
+    width: 32px;
+    height: 32px;
+  }
+  .nav-menu-icon {
+    font-size: 1.5rem; /* 24px glyph in a 32px hit box, §2.2(b) */
+  }
+  /* .site-nav[data-expanded] 토글: >45rem에서는 이 규칙 자체가 매치되지
+     않으므로 항상 표시(무영향) — design-rules.md §4-b 중재안. */
+  .site-nav[data-expanded="false"] {
+    display: none;
+  }
+}
+
+/* ── notice banner (marquee) ───────────────────────────────────
+   design-rules.md §4: <header> 밖 형제, 본문 최상단. §4-b: 가시 pause
+   버튼 없이 순수 CSS 무한 루프만 구현(사용자 승인 예외) — 대신
+   prefers-reduced-motion에서 애니메이션을 완전히 끈다. */
+.site-banner {
+  background: var(--brand-soft);
+  overflow: hidden;
+}
+
+.site-banner-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 24s linear infinite;
+}
+
+.marquee-set {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1.5rem;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--brand-ink);
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 45rem) {
+  .marquee-track {
+    animation-duration: 18s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none !important;
   }
 }
 
@@ -228,11 +348,19 @@
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
+  display: block;
+}
+
+.footer-tagline {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .footer-cols {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.25rem;
 }
 
@@ -256,6 +384,27 @@
 
 .footer-col a:hover {
   color: var(--brand-ink);
+}
+
+/* 안내 문구는 4개 메뉴 컬럼(행사/컬렉션/내 활동/계정)에 속하지 않는
+   별도 행 — design-rules.md §4 "전 페이지 메뉴 추가"로 컬럼이 3→4로
+   늘면서 시안(ContextFooter)의 3번째 컬럼 자리를 내 활동/계정이 대신
+   차지해, 기존 안내 2문장은 컬럼 밖으로 옮겨졌다(문구·랜드마크 없음은
+   불변, 배치만 조정). */
+.site-footer-notice {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 var(--page-pad-x) 1.5rem;
+}
+
+.site-footer-notice p {
+  margin: 0 0 0.375rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.site-footer-notice p:last-child {
+  margin-bottom: 0;
 }
 
 .site-footer-base {
@@ -303,9 +452,6 @@
   }
   .footer-cols {
     grid-template-columns: 1fr 1fr;
-  }
-  .footer-col--notice {
-    grid-column: 1 / -1;
   }
   .site-footer-base-inner {
     flex-direction: column;
