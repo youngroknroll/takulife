@@ -41,8 +41,8 @@
         {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
         <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
         <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
-        <div class="filter-group">
-          <h2>지역</h2>
+        <fieldset class="filter-group">
+          <legend>지역</legend>
           <div class="region-select" data-region-select>
             <button type="button" class="region-select-toggle" data-region-toggle
                     data-expanded="false" data-controls="calendar-region-options"
@@ -67,10 +67,10 @@
             <input type="checkbox" name="region" value="online"{% if 'online' in selected_region %} checked{% endif %}>
             온라인
           </label>
-        </div>
+        </fieldset>
 
-        <div class="filter-group">
-          <h2>카테고리</h2>
+        <fieldset class="filter-group">
+          <legend>카테고리</legend>
           <ul class="filter-list">
             {% for slug, label in CATEGORY %}
               <li>
@@ -81,10 +81,10 @@
               </li>
             {% endfor %}
           </ul>
-        </div>
+        </fieldset>
 
-        <div class="filter-group">
-          <h2>행사 상태</h2>
+        <fieldset class="filter-group">
+          <legend>행사 상태</legend>
           <ul class="filter-list">
             <li>
               <label class="filter-check">
@@ -101,7 +101,7 @@
               </li>
             {% endfor %}
           </ul>
-        </div>
+        </fieldset>
 
         <div class="filter-group">
           <h2>정렬</h2>

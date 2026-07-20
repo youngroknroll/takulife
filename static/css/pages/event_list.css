@@ -26,13 +26,17 @@
   }
   .filter-group {
     margin-bottom: 0.75rem;
+    margin-inline: 0;
+    min-width: 0;
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 0.625rem;
     background: var(--bg-card);
   }
-  .filter-group h2 {
+  .filter-group h2,
+  .filter-group legend {
     margin: 0 0 0.5rem;
+    padding: 0;
     font-size: var(--fs-md);
   }
   .filter-list {
