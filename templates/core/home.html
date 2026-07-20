@@ -12,9 +12,17 @@
 {% block content %}
   <main class="page" id="content">
     <section class="hero">
-      <div class="hero-inner">
+      {% comment %} data-hero-card (mock parity, 2026-07-21 user instruction):
+         deck.js reads this ancestor via deckEl.closest("[data-hero-card]")
+         and swaps its background to the active card's data-cardbg on every
+         advance — same technique/attribute name as the mock's own script.
+         Initial background uses the first popular_rows entry's category so
+         there's no flash-of-wrong-colour before deck.js's first render();
+         when popular_rows is empty (no deck at all), the CSS default
+         (--brand-soft) applies instead. {% endcomment %}
+      <div class="hero-inner" data-hero-card{% if popular_rows %} style="background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft))) 100%);"{% endif %}>
         <div class="hero-left">
-          <h1>지금 갈 수 있는 공식 오프라인 이벤트를 <span class="hl">한눈에</span></h1>
+          <h1>지금 갈 수 있는 이벤트를 <span class="hl">한눈에</span></h1>
           <form class="search" action="/events/" method="get">
             <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
             <button type="submit">검색</button>
@@ -22,7 +30,7 @@
           <div class="quick-filters">
             <a class="chip" href="/events/?region=seoul">서울</a>
             <a class="chip" href="/events/?region=gyeonggi">경기</a>
-            <a class="chip" href="/events/?region=incheon">인천</a>
+            <a class="chip" href="/events/?region=busan">부산</a>
             <a class="chip" href="/events/?status=closing_soon">종료 임박</a>
             <a class="chip" href="/events/?category=popup_store">팝업스토어</a>
             <a class="chip" href="/events/?category=collaboration_cafe">콜라보 카페</a>
@@ -35,12 +43,13 @@
             <div class="deck" data-deck>
               {% for row in popular_rows %}
                 <a
-                  class="deck-card{% if not row.event.poster_image %} style-card cat-{{ row.category_slug }}{% endif %}"
+                  class="deck-card"
                   data-deck-card
                   data-deck-index="{{ forloop.counter0 }}"
+                  data-cardbg="linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft))) 100%)"
                   href="/events/{{ row.event.id }}/"
                   tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
-                  style="{% if not row.event.poster_image %}background: linear-gradient(135deg, var(--cat-{{ row.category_slug }}-soft, var(--brand-soft)) 0%, var(--surface) 100%);{% endif %}"
+                  style="{% if not row.event.poster_image %}background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft))) 100%);{% endif %}"
                 >
                   {% if row.event.poster_image %}
                     <img
@@ -50,7 +59,7 @@
                       loading="lazy"
                     >
                   {% else %}
-                    <span class="cat-tile cat-{{ row.category_slug }} deck-card-emoji"></span>
+                    <span class="deck-fill-label" style="color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));" aria-hidden="true">{{ row.category_label }}</span>
                   {% endif %}
                   <div class="deck-card-scrim"></div>
                   <span class="deck-card-eyebrow">이번 주 주목</span>

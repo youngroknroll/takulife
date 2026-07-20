@@ -12,11 +12,18 @@
  *
  * DOM contract (set by home.html template):
  *   [data-deck]              — deck container (position: relative)
- *   [data-deck-card]         — each card, a real <a href="/events/N/">
+ *   [data-deck-card]         — each card, a real <a href="/events/N/">, with
+ *                              a data-cardbg gradient value used for the
+ *                              hero background swap below (independent of
+ *                              whether that card itself shows a poster
+ *                              image or the gradient fallback)
  *   [data-deck-dots]         — optional dot-indicator wrapper (nested inside
  *                              [data-deck], only rendered when there is more
  *                              than one card)
  *   [data-deck-dot]          — each dot button
+ *   [data-hero-card]         — ancestor of [data-deck] (mock parity,
+ *                              2026-07-21) whose background is swapped to
+ *                              the front card's data-cardbg on every render
  *
  * Once the initial depth layout has been applied, the deck container gets
  * `data-deck-ready` — the e2e mobile-overflow smoke test waits on
@@ -57,6 +64,9 @@
     var dots = dotsWrap
       ? Array.prototype.slice.call(dotsWrap.querySelectorAll("[data-deck-dot]"))
       : [];
+    // Same technique/attribute name as the mock's own script — an ancestor
+    // "hero card" whose background follows the active poster's category.
+    var heroCard = deckEl.closest("[data-hero-card]");
 
     var offset = 0;
     var timer = null;
@@ -84,6 +94,11 @@
         dot.classList.toggle("active", active);
         dot.setAttribute("aria-current", active ? "true" : "false");
       });
+      var front = cards[offset];
+      var cardbg = front ? front.getAttribute("data-cardbg") : null;
+      if (heroCard && cardbg) {
+        heroCard.style.background = cardbg;
+      }
     }
 
     function goTo(i) {

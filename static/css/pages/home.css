@@ -20,11 +20,25 @@
     box-shadow: none;
     padding: 0;
   }
+  /* Hero card background (mock parity, 2026-07-21 user instruction): the
+     mock's `data-hero-card` div is both the grid container AND the surface
+     whose background tracks the deck's active poster (deck.js render()) —
+     same element here, no extra wrapper. Base background/radius/padding
+     apply even with JS disabled or an empty deck (--brand-soft fallback);
+     home.html sets the initial inline background from the first
+     popular_rows entry so there's no flash-of-wrong-colour before deck.js's
+     first render(). Background-only transition (no transform), so it needs
+     no prefers-reduced-motion gate (design-rules.md §3.1-1 — colour fades
+     are non-transform feedback, always allowed). */
   .hero-inner {
     display: grid;
     grid-template-columns: 3fr 2fr;
     gap: 2.5rem;
     align-items: start;
+    background: var(--brand-soft);
+    border-radius: 20px;
+    padding: 2.125rem;
+    transition: background 0.6s ease;
   }
   .hero h1 {
     margin: 0 0 1.5rem;
@@ -113,19 +127,26 @@
     object-position: center 18%;
     display: block;
   }
-  .deck-card-emoji {
+  /* No-poster fallback (design-rules.md §4-c 시안 우선, mock's gradFor()/
+     565~568행): the gradient itself is set inline (per-card category slug,
+     home.html) on `.deck-card` — it's already a full inset:0 box, so no
+     extra sizing modifier is needed here, only the watermark label.
+     color-mix() has no prior use in this codebase (grepped) — accepted as
+     the mock's own formula; a color-mix()-less browser falls back to the
+     gradient's first stop (var(--surface)), a safe flat background. */
+  .deck-fill-label {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: auto;
-    height: auto;
-    border-radius: 0;
-    font-size: 2.6rem;
-  }
-  .deck-card.style-card {
-    padding: 0;
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    opacity: 0.14;
+    transform: rotate(-5deg);
+    white-space: nowrap;
+    pointer-events: none;
   }
   .deck-card-scrim {
     position: absolute;
@@ -530,16 +551,29 @@
     object-fit: cover;
     object-position: center top;
   }
-  /* No-poster fallback: category-soft tile fills the image region, large centered emoji */
-  .poster-card-emoji {
+  /* No-poster fallback (design-rules.md §4-c 시안 우선, mock's gradFor()/
+     565~568행): a 105deg gradient through two color-mix() stops (inline
+     style, home/_poster_card.html — per-card category slug) replaces the
+     old flat .cat-tile emoji tile; this modifier only supplies the sizing/
+     centering the image region needs when there's no <img> child to carry
+     it. color-mix() has no prior use in this codebase (grepped) — accepted
+     as the mock's own formula; a color-mix()-less browser falls back to
+     the gradient's first stop (var(--surface)), a safe flat background. */
+  .poster-card-media--fill {
     width: 100%;
-    height: auto;
     aspect-ratio: 3 / 4;
-    border-radius: 0;
-    font-size: 2.6rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+  }
+  .poster-fill-label {
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    opacity: 0.14;
+    transform: rotate(-5deg);
+    white-space: nowrap;
   }
   /* Punch-notch circles (signature #1): anchored to .poster-card-media's
      OWN box via top:calc(100% - Npx), so they straddle the media/caption
@@ -608,18 +642,49 @@
      caption strip (BIR finding, home-editorial plan §사전 검토). Sized to
      its own content (title + badges + meta), so the bar spans exactly that
      height regardless of how many lines the title wraps to. */
+  /* Fixed-height caption (2026-07-21, coordinator instruction — same-track
+     card-height parity): a rail's cards must all be the same height no
+     matter how much a given event's title wraps (1 vs 2 lines) or whether
+     its optional official badge (.poster-card-badges/.card-official-badge,
+     cards.css — only when event.official_url is set) or meta line
+     (.poster-card-meta — only when location_name/start_date exist) is
+     present in the DOM at all. Row-stretch (flex/grid on the parent) only
+     equalizes the outer <li>/.poster-card box, not this in-flow content —
+     so instead every optional row gets its own worst-case reserve, and the
+     whole block additionally floors at their sum, deliberately summed
+     without crediting CSS margin-collapse (a same-or-taller floor is
+     harmless; an under-estimate would break the guarantee for the
+     worst-case card):
+       title (2 lines, .poster-card-title's own min-height below) = 2.7em
+         = var(--fs-base)*1.35(line-height)*2                      = 2.565rem
+       + title margin-bottom                                       = 0.1875rem
+       + official badge worst case: .poster-card-badges margin-top
+         0.1875rem + .card-official-badge line box (var(--fs-xs)*1.6,
+         inherited body line-height) 1.2rem + padding 0.1875rem*2   = 1.7625rem
+       + meta line (1 line, .poster-card-meta's own min-height below)
+         = var(--fs-sm)*1.3(line-height)                            = 1.04rem
+     raw total 5.555rem, rounded up to the repo's 0.0625rem grain with a
+     small safety margin: 5.625rem. Mobile (≤45rem) recomputes the same sum
+     with the breakpoint's smaller title/meta font-size overrides — see
+     that media query below. */
   .poster-card-caption-inner {
     /* Accent bar as border-left — never position:relative here (stretched
        link would collapse to the caption; see _poster_card.html comment).
        border-color comes from the per-category inline style. */
     border-left: 3px solid var(--brand-ink);
     padding-left: 0.5625rem;
+    min-height: 5.625rem;
   }
   .poster-card-title {
     margin: 0 0 0.1875rem;
     font-size: var(--fs-base);
     font-weight: 700;
     line-height: 1.35;
+    /* 2 lines, em-relative to this element's own font-size so it still
+       holds after the mobile font-size override below — a 1-line title
+       must not shrink the card even before the container floor above is
+       considered. */
+    min-height: 2.7em;
   }
   .poster-card-title a {
     color: inherit;
@@ -648,6 +713,12 @@
   .poster-card-meta {
     margin: 0;
     font-size: var(--fs-sm);
+    line-height: 1.3;
+    /* 1 line, em-relative — same reasoning as .poster-card-title's
+       min-height above (this element is entirely absent from the DOM when
+       neither location_name nor start_date exist, which the container
+       floor on .poster-card-caption-inner above covers instead). */
+    min-height: 1.3em;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
@@ -670,6 +741,10 @@
     }
     .hero {
       margin-bottom: 2.5rem;
+    }
+    .hero-inner {
+      padding: 1.25rem;
+      border-radius: 16px;
     }
     .hero h1 {
       font-size: 1.625rem;
@@ -749,5 +824,15 @@
     }
     .poster-card-meta {
       font-size: var(--fs-xs);
+    }
+    /* Container floor recomputed for this breakpoint's smaller title/meta
+       font-size overrides above (the badge portion is unchanged — cards.css
+       has no mobile override for .card-official-badge):
+         title (2 lines) = var(--fs-sm)*1.35*2 = 2.16rem + margin 0.1875rem
+         + badge worst case (unchanged)         = 1.7625rem
+         + meta (1 line) = var(--fs-xs)*1.3     = 0.975rem
+       raw total 5.085rem, rounded up to the grain: 5.125rem. */
+    .poster-card-caption-inner {
+      min-height: 5.125rem;
     }
   }
