@@ -19,7 +19,7 @@
     </nav>
 
     <form class="search" action="/events/calendar/" method="get">
-      <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 행사명, 장소를 검색">
+      <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
       {% for v in selected_region %}<input type="hidden" name="region" value="{{ v }}">{% endfor %}
       {% for v in selected_category %}<input type="hidden" name="category" value="{{ v }}">{% endfor %}
       {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}

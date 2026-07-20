@@ -16,7 +16,7 @@
         <div class="hero-left">
           <h1>지금 갈 수 있는 공식 오프라인 이벤트를 <span class="hl">한눈에</span></h1>
           <form class="search" action="/events/" method="get">
-            <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색">
+            <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
             <button type="submit">검색</button>
           </form>
           <div class="quick-filters">
@@ -92,13 +92,13 @@
       </div>
       {% if ongoing_rows %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-ongoing">&#8249;</button>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-ongoing" aria-label="이번 주 갈 만한 행사, 이전">&#8249;</button>
           <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-ongoing" tabindex="0">
             {% for row in ongoing_rows %}
               <li>{% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}</li>
             {% endfor %}
           </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-ongoing">&#8250;</button>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-ongoing" aria-label="이번 주 갈 만한 행사, 다음">&#8250;</button>
         </div>
       {% else %}
         <p class="notice">현재 진행 중인 행사가 없습니다.</p>
@@ -111,13 +111,13 @@
       </div>
       {% if closing_rows %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-closing">&#8249;</button>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-closing" aria-label="곧 종료돼요, 이전">&#8249;</button>
           <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-closing" tabindex="0">
             {% for row in closing_rows %}
               <li>{% include "core/partials/_poster_card.html" with row=row variant="closing" %}</li>
             {% endfor %}
           </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-closing">&#8250;</button>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-closing" aria-label="곧 종료돼요, 다음">&#8250;</button>
         </div>
       {% else %}
         <p class="notice">종료 임박 행사가 없습니다.</p>
@@ -130,7 +130,7 @@
       </div>
       {% if category_tiles|length > 5 %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-cat">&#8249;</button>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-cat" aria-label="카테고리로 둘러보기, 이전">&#8249;</button>
           <ul class="hscroll-track" data-hscroll-track id="hscroll-cat" tabindex="0">
             {% for tile in category_tiles %}
               <li class="cat-browse-item">
@@ -142,7 +142,7 @@
               </li>
             {% endfor %}
           </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-cat">&#8250;</button>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-cat" aria-label="카테고리로 둘러보기, 다음">&#8250;</button>
         </div>
       {% else %}
         <div class="cat-browse">
@@ -163,13 +163,13 @@
       </div>
       {% if recent_rows %}
         <div class="hscroll-wrap" data-hscroll>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-recent">&#8249;</button>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-recent" aria-label="새 이벤트, 이전">&#8249;</button>
           <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-recent" tabindex="0">
             {% for row in recent_rows %}
               <li>{% include "core/partials/_poster_card.html" with row=row variant="recent" %}</li>
             {% endfor %}
           </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-recent">&#8250;</button>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-recent" aria-label="새 이벤트, 다음">&#8250;</button>
         </div>
       {% else %}
         <p class="notice">등록된 행사가 없습니다.</p>
