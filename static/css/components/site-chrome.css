@@ -175,41 +175,13 @@
      ~13 characters instead of ~19 — cosmetic, .account-menu-panel still
      shows the full, unclipped address once opened. 360px+ never reaches
      this trade-off at all now (9rem restored).
-     Re-derived a third time for the shared-shell hamburger
-     (.nav-menu-toggle, 32px, row 1 between .brand and .theme-toggle —
-     adds 32px + one 10px gap of new row-1 demand across the whole
-     <=45rem range). Fixed row-1 demand is now
-     73.2+10+32+10+32+10=167.2, and .topbar-auth needs cap+8+44. At the
-     360px floor of this tier (328px budget): 9rem(144) overflows
-     (167.2+144+52=363.2 > 328); 6.25rem(100) fits
-     (167.2+100+52=319.2, 8.8px margin) — the old 22.5rem-tier value
-     becomes this whole tier's cap. */
+     2026-07-20 사용자 결정: ≤45rem에서 아이디 자체를 숨김(§4-b "헤더 조정
+     4건" ②, WED truncate-don't-hide 권고 기각 — 계정 메뉴 패널에서 전체
+     주소 확인 가능). 위 캡 도출(9rem/6.25rem/햄버거 재산정 포함)은 이력
+     참고용일 뿐, 숨김 상태에서는 폭 계산이 더 이상 적용되지 않는다 —
+     현재는 display:none이 우선한다. */
   .site-header .topbar-username {
-    max-width: 6.25rem;
-  }
-}
-
-/* Narrower companion to the <=45rem block above — only the 320-360px
-   sliver still needs the tighter 6.25rem username cap (288px budget vs
-   360px's 328px, see that block's comment for the full derivation and
-   the two-tier split rationale). Must come after the <=45rem block in
-   source order: a <=360px viewport matches *both* media queries, and at
-   equal specificity (.site-header .topbar-username in both) the later
-   rule in the cascade wins regardless of which condition is narrower. */
-@media (max-width: 22.5rem) {
-  /* Hamburger re-derivation, 320px sliver (288px budget): the anonymous
-     login/signup pill pair alone measures ~131px, and with the default
-     0.625rem gaps the fixed row-1 demand (167.2px) leaves only 120.8px —
-     the anon state would wrap. Tightening the three row-1 gaps to
-     0.375rem(6px) reclaims 12px (fixed demand 155.2px, auth budget
-     132.8px >= 131, 1.8px margin). Logged-in: cap+52 <= 132.8 needs the
-     cap at 4.5rem(72px) (155.2+72+52=279.2, 8.8px margin — same margin
-     convention as the tiers above). */
-  .site-header-inner {
-    gap: 0.375rem;
-  }
-  .site-header .topbar-username {
-    max-width: 4.5rem;
+    display: none;
   }
 }
 
@@ -445,13 +417,35 @@
   color: var(--brand-ink); /* --brand는 흰 배경 AA 미달 — brand-ink 사용 */
 }
 
+/* design-rules.md §4-b "푸터 4컬럼 전 뷰포트 1행 유지"(2026-07-20 사용자
+   확정, 셸 계획 §C supersede): 이전의 <=47.5rem 2x2 붕괴(.footer-cols
+   grid-template-columns:1fr 1fr)를 폐기하고 기본 repeat(4,1fr)를 전 구간
+   유지 — 대신 이 티어에서 gap/폰트/여백만 축소한다. 320px 예산: 이
+   구간(<=45rem)의 --page-pad-x는 1rem(16px, tokens.css)이므로 콘텐츠
+   폭 = 320 - 2*16 = 288px. gap 0.5rem(8px)*3 = 24px를 뺀 264px를 4열로
+   나누면 컬럼 폭 66px. 최장 라벨("마이페이지"/"항목 등록"/"활동
+   달력" 5글자 안팎)은 축소 폰트 0.72rem(11.52px) 기준 전각 글자당
+   ~11.5px로 5글자 약 57.6px — 66px 컬럼에 여유 8.4px로 개행 없이
+   들어간다(더 짧은 다른 7개 라벨은 전부 여유가 더 큼). 자연 개행은
+   금지하지 않음 — white-space 강제 없음, 넘칠 경우 CJK 기본 줄바꿈
+   규칙이 컬럼 밖 가로 오버플로를 막는다. 이 계산은 정적 산식이며(본
+   작업 지시상 서버·브라우저 실행 금지), 후속 브라우저 실측이 필요. */
 @media (max-width: 47.5rem) {
   .site-footer-inner {
     grid-template-columns: 1fr;
     gap: 1.25rem;
   }
   .footer-cols {
-    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .footer-col h2 {
+    font-size: 0.7rem;
+    margin-bottom: 0.375rem;
+  }
+  .footer-col a,
+  .footer-col p {
+    font-size: 0.72rem;
+    margin-bottom: 0.25rem;
   }
   .site-footer-base-inner {
     flex-direction: column;
