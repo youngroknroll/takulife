@@ -15,6 +15,14 @@ never gains a *new* wrap point from the touch-target bump (measured before
 and after: nav stays single-line at every one of those widths, in every
 auth state, both before and after this change — only the header's raw
 height grew, proportionally to the min-height increase).
+
+Updated for the shared-shell plan (.docs/plans/2026-07-20-shared-shell-plan.md
+§D-2): at <=45rem the nav links only render visibly once the hamburger panel
+(button.nav-menu-toggle[data-nav-menu-toggle]) is opened, so the 320/375
+cases open the panel first before measuring link heights. The 768px case is
+above the 45rem breakpoint and stays unmodified (nav inline, no toggle
+click). A new case pins the toggle button's own hit target at >=32px
+(§B — 32px hit box / 24px glyph, theme-toggle mobile pattern reused).
 """
 import pytest
 
@@ -32,13 +40,29 @@ def _nav_is_single_line(page):
 class TestTopbarNavLinkTouchTarget:
     @pytest.mark.parametrize(
         "width",
-        [320, 375, 768],
-        ids=["너비_320px", "너비_375px", "너비_768px"],
+        [320, 375],
+        ids=["너비_320px", "너비_375px"],
     )
-    def test_뷰포트_너비에서도_네비게이션_링크가_44px_이상이고_한_줄을_유지한다(
+    def test_모바일_뷰포트에서_햄버거를_열면_네비게이션_링크가_44px_이상이고_한_줄을_유지한다(
         self, live_server, page, seed, width
     ):
         page.set_viewport_size({"width": width, "height": 900})
+        page.goto(live_server.url + "/")
+
+        page.locator("[data-nav-menu-toggle]").click()
+
+        heights = page.evaluate(
+            "() => Array.from(document.querySelectorAll('.site-nav a'))"
+            ".map(a => a.getBoundingClientRect().height)"
+        )
+        assert heights, "no .site-nav a links found"
+        assert all(h >= 44 for h in heights)
+        assert _nav_is_single_line(page)
+
+    def test_768px_뷰포트에서도_네비게이션_링크가_44px_이상이고_한_줄을_유지한다(
+        self, live_server, page, seed
+    ):
+        page.set_viewport_size({"width": 768, "height": 900})
         page.goto(live_server.url + "/")
 
         heights = page.evaluate(
@@ -48,6 +72,22 @@ class TestTopbarNavLinkTouchTarget:
         assert heights, "no .site-nav a links found"
         assert all(h >= 44 for h in heights)
         assert _nav_is_single_line(page)
+
+    @pytest.mark.parametrize(
+        "width",
+        [320, 375],
+        ids=["너비_320px", "너비_375px"],
+    )
+    def test_모바일_뷰포트에서_햄버거_토글_버튼_자체가_32px_이상의_터치_영역을_갖는다(
+        self, live_server, page, seed, width
+    ):
+        page.set_viewport_size({"width": width, "height": 900})
+        page.goto(live_server.url + "/")
+
+        box = page.locator("[data-nav-menu-toggle]").bounding_box()
+        assert box is not None
+        assert box["height"] >= 32
+        assert box["width"] >= 32
 
 
 class TestAccountMenuTouchTarget:

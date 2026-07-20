@@ -34,19 +34,23 @@
   display: inline-block;
 }
 
+/* 2026-07-20 사용자 결정 — design-rules.md §4-b "헤더 조정 4건" ①: §2.1
+   44px 의무층의 사용자 승인 예외. 원본값의 정확히 3/4로 축소(계산 근거:
+   0.82rem×0.75=0.615rem / 0.4375rem×0.75=0.328rem / 0.625rem×0.75=0.469rem /
+   44px×0.75=33px). WCAG 2.5.8 잔존 리스크는 사용자 인지·수용. */
 .topbar-link {
   display: inline-flex;
   align-items: center;
-  font-size: 0.82rem;
+  font-size: 0.615rem;
   font-weight: 600;
   color: var(--brand-ink);
   text-decoration: none;
   border: 1px solid var(--border-soft);
   background: var(--bg-soft);
   border-radius: 8px;
-  padding: 0.4375rem 0.625rem;
+  padding: 0.328rem 0.469rem;
   white-space: nowrap;
-  min-height: 44px;
+  min-height: 33px;
 }
 
 .topbar-link:hover {

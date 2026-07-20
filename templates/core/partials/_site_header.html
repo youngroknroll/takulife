@@ -13,6 +13,11 @@ are exclusive prefixes.
 {% endcomment %}
 <header class="site-header">
   <div class="site-header-inner">
+    <button type="button" class="nav-menu-toggle" data-nav-menu-toggle
+            data-expanded="false" aria-expanded="false" aria-controls="primary-nav"
+            aria-label="주 메뉴">
+      <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+    </button>
     <a class="brand" href="/">takulife</a>
     <button type="button" class="theme-toggle" data-theme-toggle aria-label="다크모드 전환">
       <span class="theme-toggle-mark">
@@ -20,7 +25,7 @@ are exclusive prefixes.
         <span class="theme-toggle-icon theme-toggle-icon-dark">&#9790;&#65038;</span>
       </span>
     </button>
-    <nav class="site-nav" aria-label="주 메뉴">
+    <nav id="primary-nav" class="site-nav" data-expanded="false" aria-label="주 메뉴">
       <a href="/"{% if request.path == '/' %} class="active"{% endif %}>홈</a>
       <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>행사</a>
       <a href="/collection/"{% if '/collection/' in request.path %} class="active"{% endif %}>컬렉션</a>

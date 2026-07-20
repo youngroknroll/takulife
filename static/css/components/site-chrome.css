@@ -174,22 +174,114 @@
      320px. Trade-off (320px only): a real email starts ellipsizing past
      ~13 characters instead of ~19 — cosmetic, .account-menu-panel still
      shows the full, unclipped address once opened. 360px+ never reaches
-     this trade-off at all now (9rem restored). */
+     this trade-off at all now (9rem restored).
+     2026-07-20 사용자 결정: ≤45rem에서 아이디 자체를 숨김(§4-b "헤더 조정
+     4건" ②, WED truncate-don't-hide 권고 기각 — 계정 메뉴 패널에서 전체
+     주소 확인 가능). 위 캡 도출(9rem/6.25rem/햄버거 재산정 포함)은 이력
+     참고용일 뿐, 숨김 상태에서는 폭 계산이 더 이상 적용되지 않는다 —
+     현재는 display:none이 우선한다. */
   .site-header .topbar-username {
-    max-width: 9rem;
+    display: none;
   }
 }
 
-/* Narrower companion to the <=45rem block above — only the 320-360px
-   sliver still needs the tighter 6.25rem username cap (288px budget vs
-   360px's 328px, see that block's comment for the full derivation and
-   the two-tier split rationale). Must come after the <=45rem block in
-   source order: a <=360px viewport matches *both* media queries, and at
-   equal specificity (.site-header .topbar-username in both) the later
-   rule in the cascade wins regardless of which condition is narrower. */
-@media (max-width: 22.5rem) {
-  .site-header .topbar-username {
-    max-width: 6.25rem;
+/* ── mobile nav toggle (hamburger) ─────────────────────────────
+   design-rules.md §4-b: 시안 아이콘 채택, 인터랙션은 계정 메뉴 관례
+   (aria-expanded/aria-controls/Escape/포커스 복귀) 재사용. §2.2(b) 헤더
+   아이콘 토글 패턴 그대로: 데스크톱 44px 히트박스 예비값이지만 >45rem에서는
+   .site-nav가 항상 보이므로 이 버튼 자체를 숨긴다(모바일 전용 컨트롤). */
+.nav-menu-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.nav-menu-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.nav-menu-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+@media (max-width: 45rem) {
+  .nav-menu-toggle {
+    display: flex;
+    width: 32px;
+    height: 32px;
+  }
+  .nav-menu-icon {
+    font-size: 1.5rem; /* 24px glyph in a 32px hit box, §2.2(b) */
+  }
+  /* .site-nav[data-expanded] 토글: >45rem에서는 이 규칙 자체가 매치되지
+     않으므로 항상 표시(무영향) — design-rules.md §4-b 중재안. */
+  .site-nav[data-expanded="false"] {
+    display: none;
+  }
+}
+
+/* ── notice banner (marquee) ───────────────────────────────────
+   design-rules.md §4: <header> 밖 형제, 본문 최상단. §4-b: 가시 pause
+   버튼 없이 순수 CSS 무한 루프만 구현(사용자 승인 예외) — 대신
+   prefers-reduced-motion에서 애니메이션을 완전히 끈다. */
+.site-banner {
+  background: var(--brand-soft);
+  overflow: hidden;
+}
+
+.site-banner-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 24s linear infinite;
+}
+
+.marquee-set {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1.5rem;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--brand-ink);
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 45rem) {
+  .marquee-track {
+    animation-duration: 18s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none !important;
   }
 }
 
@@ -228,11 +320,19 @@
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
+  display: block;
+}
+
+.footer-tagline {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .footer-cols {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.25rem;
 }
 
@@ -256,6 +356,27 @@
 
 .footer-col a:hover {
   color: var(--brand-ink);
+}
+
+/* 안내 문구는 4개 메뉴 컬럼(행사/컬렉션/내 활동/계정)에 속하지 않는
+   별도 행 — design-rules.md §4 "전 페이지 메뉴 추가"로 컬럼이 3→4로
+   늘면서 시안(ContextFooter)의 3번째 컬럼 자리를 내 활동/계정이 대신
+   차지해, 기존 안내 2문장은 컬럼 밖으로 옮겨졌다(문구·랜드마크 없음은
+   불변, 배치만 조정). */
+.site-footer-notice {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 var(--page-pad-x) 1.5rem;
+}
+
+.site-footer-notice p {
+  margin: 0 0 0.375rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.site-footer-notice p:last-child {
+  margin-bottom: 0;
 }
 
 .site-footer-base {
@@ -296,16 +417,35 @@
   color: var(--brand-ink); /* --brand는 흰 배경 AA 미달 — brand-ink 사용 */
 }
 
+/* design-rules.md §4-b "푸터 4컬럼 전 뷰포트 1행 유지"(2026-07-20 사용자
+   확정, 셸 계획 §C supersede): 이전의 <=47.5rem 2x2 붕괴(.footer-cols
+   grid-template-columns:1fr 1fr)를 폐기하고 기본 repeat(4,1fr)를 전 구간
+   유지 — 대신 이 티어에서 gap/폰트/여백만 축소한다. 320px 예산: 이
+   구간(<=45rem)의 --page-pad-x는 1rem(16px, tokens.css)이므로 콘텐츠
+   폭 = 320 - 2*16 = 288px. gap 0.5rem(8px)*3 = 24px를 뺀 264px를 4열로
+   나누면 컬럼 폭 66px. 최장 라벨("마이페이지"/"항목 등록"/"활동
+   달력" 5글자 안팎)은 축소 폰트 0.72rem(11.52px) 기준 전각 글자당
+   ~11.5px로 5글자 약 57.6px — 66px 컬럼에 여유 8.4px로 개행 없이
+   들어간다(더 짧은 다른 7개 라벨은 전부 여유가 더 큼). 자연 개행은
+   금지하지 않음 — white-space 강제 없음, 넘칠 경우 CJK 기본 줄바꿈
+   규칙이 컬럼 밖 가로 오버플로를 막는다. 이 계산은 정적 산식이며(본
+   작업 지시상 서버·브라우저 실행 금지), 후속 브라우저 실측이 필요. */
 @media (max-width: 47.5rem) {
   .site-footer-inner {
     grid-template-columns: 1fr;
     gap: 1.25rem;
   }
   .footer-cols {
-    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
   }
-  .footer-col--notice {
-    grid-column: 1 / -1;
+  .footer-col h2 {
+    font-size: 0.7rem;
+    margin-bottom: 0.375rem;
+  }
+  .footer-col a,
+  .footer-col p {
+    font-size: 0.72rem;
+    margin-bottom: 0.25rem;
   }
   .site-footer-base-inner {
     flex-direction: column;

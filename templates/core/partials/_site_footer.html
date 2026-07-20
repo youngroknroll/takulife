@@ -6,16 +6,25 @@ home for the operating-principle/curation notes that previously sat on the
 consumer homepage. Modelled on standard discovery-service footers
 (brand + tagline + section links + notice, with legal/contact links and
 copyright grouped in the bottom bar).
+
+4-column menu (design-rules.md §4/§4-b, shared-shell plan §C): 행사/컬렉션/
+내 활동/계정 — every project route, not just the pre-existing 4 links. All
+menus render for anonymous visitors too (existing convention: login-required
+pages redirect rather than hide their entry point). The 계정 column is the
+only one gated on auth state: staff sees only 설정 (no 스태프 콘솔/관리자/
+로그아웃 — console/admin links stay out of the public footer by design).
 {% endcomment %}
 <footer class="site-footer">
   <div class="site-footer-inner">
     <div class="footer-brand">
       <span class="footer-logo">takulife</span>
+      <p class="footer-tagline">그대들의 오타쿠 라이프를 위하여.<br>행사·컬렉션·활동 기록을 한곳에.</p>
     </div>
     <nav class="footer-cols" aria-label="바닥글 링크">
       <div class="footer-col">
-        <h2>둘러보기</h2>
+        <h2>행사</h2>
         <a href="/events/">행사 목록</a>
+        <a href="/events/calendar/">행사 달력</a>
         <a href="/events/?status=closing_soon">종료 임박</a>
       </div>
       <div class="footer-col">
@@ -23,12 +32,30 @@ copyright grouped in the bottom bar).
         <a href="/collection/">내 컬렉션</a>
         <a href="/collection/new/">항목 등록</a>
       </div>
-      <div class="footer-col footer-col--notice">
-        <h2>안내</h2>
-        <p>공식 URL 기준으로만 큐레이션합니다.</p>
-        <p>관리자 검수를 거친 행사만 게시됩니다.</p>
+      <div class="footer-col">
+        <h2>내 활동</h2>
+        <a href="/archive/">전체 보기</a>
+        <a href="/archive/calendar/">활동 달력</a>
+        <a href="/archive/interests/">찜 목록</a>
+      </div>
+      <div class="footer-col">
+        <h2>계정</h2>
+        {% if request.user.is_authenticated %}
+          {% if request.user.is_staff %}
+            <a href="/accounts/settings/">설정</a>
+          {% else %}
+            <a href="/mypage/">마이페이지</a>
+          {% endif %}
+        {% else %}
+          <a href="/accounts/login/">로그인</a>
+          <a href="/accounts/signup/">회원가입</a>
+        {% endif %}
       </div>
     </nav>
+  </div>
+  <div class="site-footer-notice">
+    <p>공식 URL 기준으로만 큐레이션합니다.</p>
+    <p>관리자 검수를 거친 행사만 게시됩니다.</p>
   </div>
   <div class="site-footer-base">
     <div class="site-footer-base-inner">

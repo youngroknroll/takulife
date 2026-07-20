@@ -55,6 +55,32 @@
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
   {% block skip_link %}<a class="skip-link" href="#content">본문으로 건너뛰기</a>{% endblock %}
   {% block site_header %}{% include "core/partials/_site_header.html" %}{% endblock %}
+  {% block site_banner %}
+    {% comment %}
+    Notice marquee — sibling of <header>, not part of it (design-rules.md
+    §4: "공지 배너(마퀴) 라인은 헤더 소속이 아니다" — 2026-07-20 사용자
+    결정). Non-sticky, --site-header-h excludes it (3 sticky consumers
+    unaffected). No landmark, no aria-live: the second .marquee-set is a
+    full duplicate for the seamless CSS loop and is aria-hidden so a
+    screen reader never hears the notice repeated; the visible set is
+    plain flow text, not a live region (design-rules.md §3.1-3's
+    "aria-live 부여 금지"). Visible pause/replay toggle intentionally
+    omitted — design-rules.md §4-b user-approved exception to §3.1-3
+    (reduced-motion:none below is the only stop mechanism shipped).
+    {% endcomment %}
+    <div class="site-banner">
+      <div class="site-banner-inner">
+        <div class="marquee-track">
+          <div class="marquee-set">
+            {% for i in "123456" %}<span class="marquee-item"><span aria-hidden="true">✦</span> 현재는 베타 서비스 중입니다</span>{% endfor %}
+          </div>
+          <div class="marquee-set" aria-hidden="true">
+            {% for i in "123456" %}<span class="marquee-item"><span aria-hidden="true">✦</span> 현재는 베타 서비스 중입니다</span>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endblock %}
   {% if messages %}
     <ul class="site-messages">
       {% for message in messages %}
@@ -70,6 +96,7 @@
   <script defer src="{% static 'js/shared/toast.js' %}"></script>
   <script defer src="{% static 'js/shared/status.js' %}"></script>
   <script defer src="{% static 'js/shared/account_menu.js' %}"></script>
+  <script defer src="{% static 'js/shared/nav_menu.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
