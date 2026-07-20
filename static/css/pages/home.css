@@ -299,16 +299,26 @@
       margin: 0 auto;
     }
   }
+  /* Fixed 4 columns at every width (2026-07-21 user re-command — "4열로
+     표출되도록 반응형 사이즈 적용", superseding both the earlier flat 2/3
+     shrink AND the slide/hscroll variant it replaced — column *count*
+     stays 4 always, block width/typography respond to viewport instead;
+     see the ≤64rem tier below). */
   .cat-browse {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.625rem;
   }
   /* ── Category chips (.cat-dot, plan §D) — replaces the old icon-tile
      .cat-browse-link. Shared .cat-tile (components/category.css) is not
      touched: the swatch below reads the same `--cat-*-ink` custom
      properties directly via inline style (home.html), same convention as
-     the poster card's category-tinted style-card fallback. */
+     the poster card's category-tinted style-card fallback. Base rule here
+     is the desktop/wide size (>64rem) — 4 columns leaves at least as much
+     room per chip as the old 5-column layout did, so this is the original
+     pre-2/3-shrink sizing; the ≤64rem tier below is the one that actually
+     needs to shrink, and switches to a vertical (icon-over-label) layout
+     instead of scaling the horizontal one down further. */
   .cat-dot {
     display: flex;
     align-items: center;
@@ -734,11 +744,6 @@
   /* .poster-interest (top-right 찜 button overlay): hoisted to
      components/cards.css so event_list.css's desktop thumbnail + mobile
      grid can reuse it too (both pages load cards.css globally). */
-  @media (max-width: 56.25rem) {
-    .cat-browse {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
   @media (max-width: 45rem) {
     .page {
       padding: 1rem var(--page-pad-x) 3rem;
@@ -758,20 +763,10 @@
       flex-direction: column;
       gap: 0.25rem;
     }
-    .cat-browse {
-      grid-template-columns: repeat(2, 1fr);
-    }
   }
 
   /* ── horizontal scroller — home-specific bindings ───────────── */
   /* Generic component rules live in static/css/hscroll.css */
-
-  /* Per-section item min-widths in scroller mode */
-  /* Category tiles: fixed 180px basis so 5 fit at desktop width and the 6th overflows */
-  .hscroll-track .cat-browse-item {
-    flex: 0 0 180px;
-    min-width: 180px;
-  }
 
   /* Event poster cards (ongoing/closing/recent) — each wrapped in a plain <li> */
   .hscroll-track li {
@@ -779,64 +774,157 @@
     width: 168px;
   }
 
-  /* Responsive: snap-align for home's scroller items */
+  /* Responsive: snap-align for home's scroller items (poster rails get
+     their own snap-align inside the ≤64rem block below, which supersedes
+     this for them at every width it covers — this rule now only matters
+     for any future non-poster, non-category .hscroll-track use on this
+     page; harmless no-op today since the category rail's slide/hscroll
+     variant was removed, see .cat-browse below). */
   @media (max-width: 45rem) {
-    .hscroll-track .cat-browse-item,
     .hscroll-track li {
       scroll-snap-align: start;
     }
+  }
 
-    /* Event poster sliders (이번 주/곧 종료/새 이벤트): 2-row column-flow
-       grid so 4 cards ([2,2]) are visible at once instead of ~1.9 in a
-       single fixed-168px row. .hscroll-track--posters is a template
-       modifier (home.html) scoped to the 3 poster tracks only — the
-       category track (#hscroll-cat, no modifier) keeps the plain flex row
-       and its own 180px item basis above. */
-    .hscroll-track--posters {
-      display: grid;
-      grid-auto-flow: column;
-      grid-template-rows: repeat(2, auto);
-      grid-auto-columns: calc((100% - 0.625rem) / 2); /* gap 0.625rem, existing .hscroll-track value */
-    }
+  /* ── Poster rail: single-row 2-up slide + ≈2/3 card scale ────────────
+     2026-07-21 coordinator instruction — "모바일(스마트폰+태블릿)" means
+     phones AND tablets, so this uses a wider ≤64rem(1024px) ceiling than
+     the rest of this file's ≤45rem phone-only tier (desktop >64rem is
+     unchanged). Replaces the old ≤45rem 2-row [2,2] grid entirely — both
+     covered the same rail, and keeping both would fight at phone widths
+     (a later, narrower-window rule doesn't automatically "win"; only
+     removing the old block guarantees phones and tablets get the same
+     result). Scope: `.hscroll-track--posters` is the template modifier
+     (home.html) on the 3 discovery rails + the snapshot panel's own
+     upcoming-planned rail (same class, same partial → automatically
+     included) — NOT the category grid (`.cat-browse`, its own tier is
+     further below; it never had a --posters modifier and its slide/hscroll
+     variant no longer exists in the template at all — see that block). */
+  @media (max-width: 64rem) {
+    /* Single row, 2 cards visible per viewport — li width = half the
+       track's content width minus half the existing 0.625rem gap. Plain
+       flex row (same overflow-x/scroll-snap machinery hscroll.css/
+       hscroll.js already drive on desktop) — no JS change needed. */
     .hscroll-track--posters li {
+      flex: 0 0 calc((100% - 0.625rem) / 2);
       width: auto;
-      /* Grid items default to min-width:auto (content-based floor); without
-         this, .poster-card-meta's white-space:nowrap text can inflate the
-         column past its intended 50% share and reintroduce horizontal
-         overflow (연구문서 §2.2). */
-      min-width: 0;
+      min-width: 0; /* content-based floor would fight the fixed flex-basis */
+      scroll-snap-align: start;
     }
-    /* Row-stretch: an auto grid row sizes to its tallest li, but a plain
-       block child doesn't fill that stretched height on its own — without
-       this, a shorter card in the same row leaves empty space below it
-       instead of an even card band. */
-    .hscroll-track--posters .poster-card {
-      height: 100%;
-    }
-    /* height:100% alone only stretches .poster-card's own box — its two
-       flex children (.poster-card-media, .poster-card-caption) still size
-       to their own content by default (flex-grow:0), so a card whose
-       sibling in the same row has a taller title (1 vs 2 lines) leaves a
-       ~17px empty gap at the caption's bottom instead of an even card
-       band. Growing the caption (not the media, which is aspect-ratio
-       locked) absorbs that leftover space. */
-    .hscroll-track--posters .poster-card-caption {
-      flex: 1 0 auto;
+
+    /* The old row-stretch hooks (height:100% on .poster-card, flex:1 0 auto
+       on .poster-card-caption) are gone on purpose, not just superseded:
+       with a single row there's no sibling row to stretch to, and — more
+       importantly — a hard height:100% would clip an appended status.js
+       inline error (.status-inline-error, [data-status-error-container] on
+       .poster-card, which has overflow:hidden) against whatever height the
+       old row-stretch computed. Without that hard height, .poster-card is
+       free to grow for the error message instead. Height parity across the
+       rail still holds — it now comes entirely from
+       .poster-card-caption-inner's min-height floor below, the same
+       mechanism the desktop rail already uses (no row-stretch dependency
+       there either). */
+
+    /* Card scale ≈2/3 (ballpark target — the hard gate is the overflow e2e
+       at 320/375, not an exact pixel match). Width is fixed by the 2-up
+       layout above, not a free variable, and the caption floor is already
+       dominated by the official-badge portion (cards.css's
+       .poster-card-badges/.card-official-badge, can't shrink further
+       without touching that shared file) — so the lever here is the
+       image tile's aspect-ratio, not typography, which is already pinned
+       to this file's 12px floor (--fs-xs) on both caption lines.
+       Derivation (375px reference, --page-pad-x 1rem at this width):
+         content width   375 - 2*16                             = 343px
+         li width        (343 - 10) / 2                         ≈ 166.5px
+         [before] media 3:4 portrait   166.5 * 4/3               ≈ 222px
+         [before] caption floor (5.125rem, old ≤45rem tier)      = 82px
+         [before] border 1px*2                                    = 2px
+         [before] total                                          ≈ 306px
+         [target] 306 * 2/3                                      ≈ 204px
+         [after] caption floor recomputed for this tier (title
+           capped to --fs-xs too, see .poster-card-caption-inner
+           below)                                                ≈ 79px
+         [after] media budget   204 - 79 - 2                     ≈ 123px
+         [after] aspect-ratio needed   166.5 / 123                ≈ 4:3
+       4:3 (landscape) lands within a few px of the ≈2/3 target — adopted
+       below. object-position stays "center top" (.poster-card-img,
+       unchanged) so the crop keeps the poster's top (title/character
+       art) — same precedent as the hero deck's own aspect-ratio choice. */
+    /* Only the elements that actually establish their own height need the
+       override — .poster-card-media (bare, with-poster case) has no width
+       of its own and just shrink-wraps .poster-card-img's rendered height,
+       so an aspect-ratio there would be inert; leaving it off. */
+    .poster-card-img,
+    .poster-card-media--fill {
+      aspect-ratio: 4 / 3;
     }
     .poster-card-title {
-      font-size: var(--fs-sm);
+      font-size: var(--fs-xs);
+      line-height: 1.3;
+      min-height: 2.6em; /* 2 lines * 1.3 line-height, em-relative like desktop */
     }
     .poster-card-meta {
       font-size: var(--fs-xs);
     }
-    /* Container floor recomputed for this breakpoint's smaller title/meta
-       font-size overrides above (the badge portion is unchanged — cards.css
-       has no mobile override for .card-official-badge):
-         title (2 lines) = var(--fs-sm)*1.35*2 = 2.16rem + margin 0.1875rem
-         + badge worst case (unchanged)         = 1.7625rem
-         + meta (1 line) = var(--fs-xs)*1.3     = 0.975rem
-       raw total 5.085rem, rounded up to the grain: 5.125rem. */
+    /* Container floor recomputed for this tier — both caption lines at
+       --fs-xs now (title was --fs-sm in the old ≤45rem tier), badge
+       portion unchanged (cards.css has no mobile override for
+       .card-official-badge):
+         title (2 lines) = var(--fs-xs)*1.3(line-height)*2 = 1.95rem
+           + margin-bottom                                  = 0.1875rem
+         + badge worst case (unchanged)                     = 1.7625rem
+         + meta (1 line) = var(--fs-xs)*1.3                  = 0.975rem
+       raw total 4.8825rem, rounded up to the grain: 4.9375rem. */
     .poster-card-caption-inner {
-      min-height: 5.125rem;
+      min-height: 4.9375rem;
+    }
+  }
+
+  /* ── Category chips: fixed 4 columns, vertical stack at narrow widths ──
+     2026-07-21 user re-command — "4열로 표출되도록 반응형 사이즈 적용
+     (블록너비, 폰트사이즈), 슬라이드 기능은 제거": .cat-browse (home.html)
+     is now always the plain grid (the >5-tiles hscroll/slide branch was
+     removed from the template), fixed at repeat(4, 1fr) — column *count*
+     never changes, only each chip's own width (which the grid already
+     handles automatically) and, at this tier, its internal layout/font.
+     Reuses the ≤64rem breakpoint established above for the poster rail
+     (same "phones + tablets" scope this session has used throughout).
+     Horizontal .cat-dot (base rule above) doesn't fit 4-per-row at phone
+     widths — width budget at a 320px reference:
+       content width   320 - 2*16(--page-pad-x)                 = 288px
+       3 gaps * 0.625rem                                          = 30px
+       column width   (288 - 30) / 4                             ≈ 64.5px
+     A swatch-left + 2-line-text-right horizontal chip can't fit a label
+     like "콜라보 카페" in that width, so this tier switches .cat-dot to a
+     vertical stack (swatch on top, centered label/count below) instead of
+     just shrinking the horizontal one further — same shape the original
+     mock used for its own mobile category tile. Labels are allowed to wrap
+     to 2 lines (no white-space:nowrap here) rather than truncate — same
+     "let CJK wrap naturally" precedent as the footer's 4-column mobile
+     tier (site-chrome.css). Font stays at this file's 12px floor
+     (--fs-xs) — same floor already established for the poster caption and
+     the flat-shrink attempt this instruction supersedes. */
+  @media (max-width: 64rem) {
+    .cat-dot {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.25rem;
+      padding: 0.5rem 0.25rem;
+      border-radius: 8px;
+    }
+    .cat-dot-swatch {
+      width: 0.5rem;
+      height: 0.5rem;
+    }
+    .cat-dot-info {
+      align-items: center;
+    }
+    .cat-name {
+      font-size: var(--fs-xs);
+      line-height: 1.25;
+    }
+    .cat-count {
+      font-size: var(--fs-xs);
     }
   }
