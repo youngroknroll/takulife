@@ -225,10 +225,14 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 0.25rem;
   }
-  .form-group label {
+  .form-group label,
+  .form-group .form-static-label {
     font-size: var(--fs-md);
     font-weight: 600;
     color: var(--text);
+  }
+  .form-group .form-static-label {
+    margin: 0;
   }
   .form-group select,
   .form-group input[type="date"],

@@ -110,7 +110,7 @@
 
               {% if item.visit_record %}
                 <div class="form-group">
-                  <label>연결된 방문 기록</label>
+                  <p class="form-static-label">연결된 방문 기록</p>
                   <p class="subject-readonly">
                     {% if item.visit_record.event %}{{ item.visit_record.event.title }}{% else %}{{ item.visit_record.personal_entry.title }}{% endif %}
                     · {{ item.visit_record.visited_on }}
