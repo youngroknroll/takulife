@@ -11,8 +11,10 @@
 <main class="auth-container" id="content">
   <h1>회원 탈퇴</h1>
   <p class="auth-error">
-    탈퇴하면 계정과 저장한 행사, 다녀온 기록, 직접 등록한 항목 및 첨부 이미지가
-    모두 삭제되며 되돌릴 수 없습니다.
+    탈퇴를 신청하면 계정이 삭제 예약 상태로 전환되고 모든 기기에서 로그아웃됩니다.
+    10일 안에 다시 로그인하면 예약이 자동으로 취소됩니다. 10일이 지나면 계정과
+    저장한 행사, 다녀온 기록, 컬렉션에 등록한 굿즈, 직접 등록한 항목 및 첨부
+    이미지가 모두 삭제되며 되돌릴 수 없습니다.
   </p>
   <form method="post" action="{% url 'account-delete-page' %}">
     {% csrf_token %}
@@ -29,7 +31,7 @@
         <p class="field-error" id="id_password-error">{{ field_errors.password }}</p>
       {% endif %}
     </div>
-    <button type="submit" class="btn btn-danger btn-block">계정 삭제 (되돌릴 수 없음)</button>
+    <button type="submit" class="btn btn-danger btn-block">탈퇴 예약하기</button>
   </form>
   <p><a href="/collection/">취소하고 돌아가기</a></p>
 </main>
