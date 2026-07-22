@@ -100,7 +100,7 @@
                 data-status="planned"
                 data-reload-on-success
                 {% if user_status == 'planned' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
-                {% if status_slug == 'ended' %}disabled title="종료된 행사는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
+                {% if status_slug == 'ended' %}disabled title="종료된 이벤트는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
               <button class="status-btn visited{% if user_status == 'visited' %} active{% endif %}" type="button"
                 data-status-action
                 data-toast

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 행사 달력{% endblock %}
-{% block og_title %}{{ project_name }} | 행사 달력{% endblock %}
+{% block title %}{{ project_name }} | 이벤트 달력{% endblock %}
+{% block og_title %}{{ project_name }} | 이벤트 달력{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/event_list.css' %}">
@@ -11,7 +11,7 @@
 
 {% block content %}
   <main class="page" id="content">
-    <h1>행사 달력</h1>
+    <h1>이벤트 달력</h1>
 
     <nav class="nav-links calendar-page-toggle" aria-label="목록·달력 전환">
       <a href="/events/?{{ request.GET.urlencode }}">목록</a>
@@ -20,7 +20,7 @@
 
     <div class="calendar-search-row">
       <form class="search" action="/events/calendar/" method="get">
-        <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
+        <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
         {% for v in selected_region %}<input type="hidden" name="region" value="{{ v }}">{% endfor %}
         {% for v in selected_category %}<input type="hidden" name="category" value="{{ v }}">{% endfor %}
         {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
@@ -93,7 +93,7 @@
         </fieldset>
 
         <fieldset class="filter-group">
-          <legend>행사 상태</legend>
+          <legend>이벤트 상태</legend>
           <ul class="filter-list">
             <li>
               <label class="filter-check">
@@ -160,7 +160,7 @@
     <section class="date-detail-section" id="selected-date">
       <div class="date-detail-head">
         <h2>{{ selected_date|date:"n월 j일" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
-        {% if selected_events %}<span class="date-detail-count">행사 {{ selected_events|length }}건</span>{% endif %}
+        {% if selected_events %}<span class="date-detail-count">이벤트 {{ selected_events|length }}건</span>{% endif %}
       </div>
       {% if selected_events %}
         <div class="event-list">
@@ -234,7 +234,7 @@
                         data-status="planned"
                         data-reload-on-success
                         {% if row.user_status == 'planned' and row.user_status_id %}data-status-id="{{ row.user_status_id }}"{% endif %}
-                        {% if row.status_slug == 'ended' %}disabled title="종료된 행사는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
+                        {% if row.status_slug == 'ended' %}disabled title="종료된 이벤트는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
                     {% endif %}
                   </div>
                 {% else %}
@@ -248,8 +248,8 @@
         </div>
       {% else %}
         <div class="empty-state">
-          <p class="empty-title">이 날짜에는 등록된 공식 행사가 없어요</p>
-          <a class="empty-action" href="/events/">전체 행사 보기</a>
+          <p class="empty-title">이 날짜에는 등록된 공식 이벤트가 없어요</p>
+          <a class="empty-action" href="/events/">전체 이벤트 보기</a>
         </div>
       {% endif %}
     </section>

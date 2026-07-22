@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 행사 목록{% endblock %}
-{% block og_title %}{{ project_name }} | 행사 목록{% endblock %}
+{% block title %}{{ project_name }} | 이벤트 목록{% endblock %}
+{% block og_title %}{{ project_name }} | 이벤트 목록{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/event_list.css' %}">
@@ -10,7 +10,7 @@
 {% block content %}
   <main class="page events-page" id="content">
     <div class="events-head">
-      <h1>행사 목록</h1>
+      <h1>이벤트 목록</h1>
       <nav class="events-tabs" aria-label="목록·달력 전환">
         <a class="active" aria-current="page" href="/events/?{{ request.GET.urlencode }}">목록</a>
         <a href="/events/calendar/?{{ request.GET.urlencode }}">달력</a>
@@ -20,7 +20,7 @@
     <form class="search events-search" action="/events/" method="get">
       <span class="events-search-field">
         <span class="events-search-icon" aria-hidden="true">⌕</span>
-        <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
+        <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
       </span>
       <button type="submit">검색</button>
     </form>
@@ -76,7 +76,7 @@
           </fieldset>
 
           <fieldset class="filter-group">
-            <legend>행사 상태</legend>
+            <legend>이벤트 상태</legend>
             <ul class="filter-list">
               <li>
                 <label class="filter-check">
@@ -225,12 +225,12 @@
           <div class="empty-state">
             <p class="empty-icon">🔍</p>
             {% if active_filters %}
-              <p class="empty-title">조건에 맞는 행사가 없어요</p>
+              <p class="empty-title">조건에 맞는 이벤트가 없어요</p>
               <p class="empty-note">필터를 줄이거나 다른 키워드로 다시 찾아보세요.</p>
               <a class="empty-action" href="/events/">필터 전체 해제</a>
             {% else %}
-              <p class="empty-title">아직 등록된 행사가 없어요</p>
-              <p class="empty-note">관리자 검수를 거친 행사가 게시되면 여기에 표시돼요.</p>
+              <p class="empty-title">아직 등록된 이벤트가 없어요</p>
+              <p class="empty-note">관리자 검수를 거친 이벤트가 게시되면 여기에 표시돼요.</p>
             {% endif %}
           </div>
         {% endif %}

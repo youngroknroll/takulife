@@ -278,7 +278,7 @@
     padding: 0 0.75rem 0.75rem;
   }
   /* Locked subject shown when the write page is opened for a specific item
-     (e.g. a 방문 완료 행사's 기록 button) instead of the selectable dropdown. */
+     (e.g. a 방문 완료 이벤트's 기록 button) instead of the selectable dropdown. */
   .locked-subject {
     margin: 0;
     border: 1px solid var(--border-soft);

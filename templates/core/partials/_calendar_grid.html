@@ -47,7 +47,7 @@ contract rather than an accessible-name concern.
           data-in-month="{{ day.in_month|yesno:"true,false" }}"
           data-today="{{ day.today|yesno:"true,false" }}"
           data-selected="{{ day.selected|yesno:"true,false" }}"
-          aria-label="{{ day.date|date:"Y년 n월 j일 l" }}{% if day.count %}, 행사 {{ day.count }}개{% endif %}{% if day.today %}, 오늘{% endif %}{% if day.selected %}, 선택한 날짜{% endif %}"
+          aria-label="{{ day.date|date:"Y년 n월 j일 l" }}{% if day.count %}, 이벤트 {{ day.count }}개{% endif %}{% if day.today %}, 오늘{% endif %}{% if day.selected %}, 선택한 날짜{% endif %}"
           {% if day.today %}aria-current="date"{% endif %}
         >
           <span class="day-num">{{ day.date|date:"j" }}</span>

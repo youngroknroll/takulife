@@ -3,7 +3,7 @@ _site_header.html — global site header rendered once from base.html on every p
 
 Provides the persistent site frame the per-page topbars never did:
   - brand (home link)
-  - primary navigation (홈 / 행사 / 컬렉션 / 내 활동), current section highlighted
+  - primary navigation (홈 / 이벤트 / 컬렉션 / 내 활동), current section highlighted
   - auth nav (login state) via _topbar.html
 
 Active section is derived from request.path (request context processor is
@@ -27,7 +27,7 @@ are exclusive prefixes.
     </button>
     <nav id="primary-nav" class="site-nav" data-expanded="false" aria-label="주 메뉴">
       <a href="/"{% if request.path == '/' %} class="active"{% endif %}>홈</a>
-      <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>행사</a>
+      <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>이벤트</a>
       <a href="/collection/"{% if '/collection/' in request.path %} class="active"{% endif %}>컬렉션</a>
       <a href="/archive/"{% if '/archive/' in request.path %} class="active"{% endif %}>내 활동</a>
     </nav>

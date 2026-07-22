@@ -23,7 +23,7 @@
 }
 
 /* ── status-row (찜/예정 등 카드 액션 버튼 줄) ───────────────────
-   여러 페이지(비공식·찜목록·예정목록·행사목록·행사상세)가 공유하는
+   여러 페이지(비공식·찜목록·예정목록·이벤트목록·이벤트상세)가 공유하는
    단일 정의. 예전엔 4개 페이지 CSS에 중복돼 있던 것을 여기로 통합했다. */
 .status-row {
   display: flex;
@@ -131,7 +131,7 @@
 .side-list--row a {
   display: block;
   text-align: center;
-  /* Fixed short labels ("저장한 행사" etc.) — legitimate nowrap case
+  /* Fixed short labels ("저장한 이벤트" etc.) — legitimate nowrap case
      (연구문서 §2.2). 3-col width is non-monotonic across the viewport
      range (worst at ~901px, the 2-col sidebar-compressed band, not at
      320px) — nowrap forces single-line regardless of that squeeze.

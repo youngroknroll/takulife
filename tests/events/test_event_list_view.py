@@ -26,7 +26,7 @@ class TestEventListInvalidFilters:
 
         assert resp.status_code == 200
         body = resp.content.decode()
-        assert "조건에 맞는 행사가 없어요" in body
+        assert "조건에 맞는 이벤트가 없어요" in body
         assert "잘못된 필터 값" not in body
 
     def test_존재하지_않는_카테고리_값으로_필터링하면_빈_상태_문구를_보여준다(self, make_event):
@@ -35,7 +35,7 @@ class TestEventListInvalidFilters:
         resp = Client().get("/events/", {"category": "zzz"})
 
         assert resp.status_code == 200
-        assert "조건에 맞는 행사가 없어요" in resp.content.decode()
+        assert "조건에 맞는 이벤트가 없어요" in resp.content.decode()
 
     def test_유효한_카테고리로_필터링하면_일치하는_행사만_노출된다(self, make_event):
         make_event(title="Popup match", category="popup_store")

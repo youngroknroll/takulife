@@ -16,7 +16,7 @@
 
     <section class="layout">
       <article class="panel">
-        <h2>찜한 행사 {{ interest_count }}건</h2>
+        <h2>찜한 이벤트 {{ interest_count }}건</h2>
 
         {% if has_interests %}
           <div class="status-list">
@@ -58,9 +58,9 @@
         {% else %}
           <div class="empty-state">
             <p class="empty-icon">♡</p>
-            <p class="empty-title">아직 찜한 행사가 없어요</p>
-            <p class="empty-note">행사 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요.</p>
-            <a class="empty-action" href="/events/">행사 찾아보기</a>
+            <p class="empty-title">아직 찜한 이벤트가 없어요</p>
+            <p class="empty-note">이벤트 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요.</p>
+            <a class="empty-action" href="/events/">이벤트 찾아보기</a>
           </div>
         {% endif %}
       </article>
@@ -71,7 +71,7 @@
           <ul class="side-list side-list--row">
             <li><a href="/archive/">전체 보기</a></li>
             <li><a href="/archive/statuses/">나의 일정</a></li>
-            <li><a href="/events/">행사 찾기</a></li>
+            <li><a href="/events/">이벤트 찾기</a></li>
           </ul>
         </section>
 

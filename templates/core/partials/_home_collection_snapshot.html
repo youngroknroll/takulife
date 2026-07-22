@@ -70,7 +70,7 @@ Context: collection_summary{owned_count,wanted_count}, recent_goods
                 {% endif %}
                 <p class="snapshot-record-title">{{ row.subject.title }}</p>
                 {% comment %} 시안의 3번째 줄은 "07/18 방문"이지만 방문 날짜는 여기 없다 —
-                   VisitRecord가 아직 없다는 게 이 목록의 정의다. 그래서 행사
+                   VisitRecord가 아직 없다는 게 이 목록의 정의다. 그래서 이벤트
                    종료일을 기준으로 쓰고, 날짜가 없는 직접 등록 항목은 장소로
                    대체한다(둘 다 없으면 줄 자체를 생략). {% endcomment %}
                 {% if row.subject.end_date %}
@@ -138,9 +138,9 @@ Context: collection_summary{owned_count,wanted_count}, recent_goods
     <div class="empty-state">
       <p class="empty-icon">🗂️</p>
       <p class="empty-title">아직 기록이 없어요</p>
-      <p class="empty-note">행사를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
+      <p class="empty-note">이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
       <div class="empty-actions">
-        <a class="empty-action" href="/events/">행사 찾기</a>
+        <a class="empty-action" href="/events/">이벤트 찾기</a>
         <a class="empty-action" href="/collection/new/">굿즈 등록</a>
       </div>
     </div>

@@ -89,7 +89,7 @@
 
       var eventId = uploadBtn.getAttribute("data-event-id");
       if (!eventId) {
-        setError(errorEl, "행사 정보를 찾을 수 없습니다.");
+        setError(errorEl, "이벤트 정보를 찾을 수 없습니다.");
         return;
       }
 
@@ -123,7 +123,7 @@
       }
 
       if (result.status === 404) {
-        setError(errorEl, "해당 행사를 찾을 수 없습니다.");
+        setError(errorEl, "해당 이벤트를 찾을 수 없습니다.");
         return;
       }
 
@@ -149,7 +149,7 @@
 
       var eventId = deleteBtn.getAttribute("data-event-id");
       if (!eventId) {
-        setError(errorEl, "행사 정보를 찾을 수 없습니다.");
+        setError(errorEl, "이벤트 정보를 찾을 수 없습니다.");
         return;
       }
 
@@ -174,7 +174,7 @@
       }
 
       if (result.status === 404) {
-        setError(errorEl, "해당 행사를 찾을 수 없습니다.");
+        setError(errorEl, "해당 이벤트를 찾을 수 없습니다.");
         return;
       }
 
