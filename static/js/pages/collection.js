@@ -222,7 +222,7 @@
   // would re-enable that one button on a bfcache restore while every other
   // control here stays correctly disabled (BIR post-implementation finding,
   // 2026-07-16: reachable via this page's own "목록으로 돌아가기" link +
-  // browser Back). See tests/e2e/test_collection_edit_bfcache_lock_e2e.py.
+  // browser Back). Verified manually — the e2e suite was deleted 2026-07-22.
   function lockForm(form) {
     var controls = form.querySelectorAll("input, select, textarea, button");
     for (var i = 0; i < controls.length; i++) {

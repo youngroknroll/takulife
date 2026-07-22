@@ -2,7 +2,7 @@
  * toast.css — success toast (§6.4)
  *
  * position: fixed so it never joins document flow (must not widen
- * body.scrollWidth — tests/e2e/test_mobile_overflow_e2e.py). z-index sits
+ * body.scrollWidth at 320/375). z-index sits
  * above the fixed CTA bar (event_detail.css .mobile-cta: 20) and below the
  * confirm modal (confirm-modal.css .confirm-overlay: 1000).
  */

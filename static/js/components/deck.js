@@ -40,9 +40,9 @@
  *                              any image has loaded) — unchanged here.
  *
  * Once the initial depth layout has been applied, the deck container gets
- * `data-deck-ready` — the e2e mobile-overflow smoke test waits on
- * `[data-deck][data-deck-ready]` before measuring layout, so this attribute
- * must always be set (even for a single-card deck with no autoplay).
+ * `data-deck-ready`, the signal that layout is measurable. It must always be
+ * set (even for a single-card deck with no autoplay) so manual browser checks
+ * have a stable point to measure from.
  *
  * Motion contract (design-rules.md §3.1-2 — WCAG 2.2.2): autoplay every
  * 4200ms, paused on hover, paused on focusin (cards are real links, so

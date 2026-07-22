@@ -825,8 +825,8 @@
        mechanism the desktop rail already uses (no row-stretch dependency
        there either). */
 
-    /* Card scale ≈2/3 (ballpark target — the hard gate is the overflow e2e
-       at 320/375, not an exact pixel match). Width is fixed by the 2-up
+    /* Card scale ≈2/3 (ballpark target — the gate is a manual no-overflow
+       check at 320/375, not an exact pixel match). Width is fixed by the 2-up
        layout above, not a free variable, and the caption floor is already
        dominated by the official-badge portion (cards.css's
        .poster-card-badges/.card-official-badge, can't shrink further

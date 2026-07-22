@@ -179,7 +179,7 @@ Reason
 - PostgreSQL 전환 고려 설계
 - URL fetch + extraction workflow
 - 서비스 레이어 분리
-- pytest 기반 테스트 구성 (+ Playwright E2E)
+- pytest 기반 백엔드 로직 테스트 구성
 
 ## Key Takeaway
 

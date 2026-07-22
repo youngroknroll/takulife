@@ -67,7 +67,7 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
   `core/urls.py`, `core/views.py`
 - Frontend: `templates/base.html`, `templates/core/`, `templates/staff/`,
   `static/css/`, `static/js/`
-- Tests and docs: `tests/<domain>/`, `tests/e2e/`, `.docs/plans/`,
+- Tests and docs: `tests/<domain>/`, `.docs/plans/`,
   `.docs/refactoring/`, `.docs/project-status.md`
 
 Start with these stable paths. Use `rg` when the exact location is still unknown
@@ -79,12 +79,14 @@ or the task requires a repository-wide repeated-pattern check.
 - Django check: `uv run python manage.py check`
 - Migration drift: `uv run python manage.py makemigrations --check --dry-run`
 - Targeted test: `uv run pytest -q <test-path>`
-- Backend regression: `uv run pytest -q -m "not e2e"`
-- Browser e2e: `uv run pytest -m e2e -q`
+- Backend regression: `uv run pytest -q`
 - Local server: `uv run python manage.py runserver`
 
-Run e2e only when the plan requires browser evidence. During Red-Green, run the
-targeted test before broad regression.
+Automated tests cover backend logic only — there is no browser/e2e suite
+(deleted 2026-07-22). Browser behavior is verified by driving Chromium with
+Playwright or the Chrome DevTools MCP tools against the local dev server;
+Playwright stays installed as a verification tool, never as a test framework.
+During Red-Green, run the targeted test before broad regression.
 
 ## Working Method
 1. Inspect `git status` and preserve existing user changes.
