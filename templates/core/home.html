@@ -24,7 +24,7 @@
         <div class="hero-left">
           <h1>내가 원하는 이벤트를 <span class="hl">한눈에</span></h1>
           <form class="search" action="/events/" method="get">
-            <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
+            <input id="q" name="q" type="text" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
             <button type="submit">검색</button>
           </form>
           <div class="quick-filters">
@@ -91,7 +91,7 @@
           </div>
         {% else %}
           <div class="carousel-empty">
-            <p>표시할 인기 행사가 없습니다</p>
+            <p>표시할 인기 이벤트가 없습니다</p>
           </div>
         {% endif %}
       </div>
@@ -103,22 +103,22 @@
       <div class="section-head">
         <div>
           <span class="section-eyebrow">이번 주</span>
-          <h2>이번 주 갈 만한 행사</h2>
+          <h2>이번 주 눈여겨 볼 이벤트</h2>
         </div>
         <a class="section-more" href="/events/?status=ongoing">더보기 ›</a>
       </div>
       {% if ongoing_rows %}
         <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-ongoing" aria-label="이번 주 갈 만한 행사, 이전">&#8249;</button>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-ongoing" aria-label="이번 주 눈여겨 볼 이벤트, 이전">&#8249;</button>
           <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-ongoing" tabindex="0">
             {% for row in ongoing_rows %}
               <li>{% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}</li>
             {% endfor %}
           </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-ongoing" aria-label="이번 주 갈 만한 행사, 다음">&#8250;</button>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-ongoing" aria-label="이번 주 눈여겨 볼 이벤트, 다음">&#8250;</button>
         </div>
       {% else %}
-        <p class="notice">현재 진행 중인 행사가 없습니다.</p>
+        <p class="notice">현재 진행 중인 이벤트가 없습니다.</p>
       {% endif %}
     </section>
 
@@ -141,7 +141,7 @@
           <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-closing" aria-label="곧 종료돼요, 다음">&#8250;</button>
         </div>
       {% else %}
-        <p class="notice">종료 임박 행사가 없습니다.</p>
+        <p class="notice">종료 임박 이벤트가 없습니다.</p>
       {% endif %}
     </section>
 
@@ -187,7 +187,7 @@
           <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-recent" aria-label="새 이벤트, 다음">&#8250;</button>
         </div>
       {% else %}
-        <p class="notice">등록된 행사가 없습니다.</p>
+        <p class="notice">등록된 이벤트가 없습니다.</p>
       {% endif %}
     </section>
   </main>

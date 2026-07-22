@@ -278,7 +278,7 @@
     background: var(--rose-soft);
     color: var(--rose-ink);
   }
-  /* 방문 완료 행사 카드의 '기록' 작성 바로가기 — home의 컬렉션 스냅샷
+  /* 방문 완료 이벤트 카드의 '기록' 작성 바로가기 — home의 컬렉션 스냅샷
      패널(_home_collection_snapshot.html)도 재사용하는 공유 클래스. */
   .record-action-link {
     display: inline-flex;

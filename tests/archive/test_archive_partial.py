@@ -133,7 +133,7 @@ class TestArchivePartialBranch:
         assert resp.context["has_any"] is True
         assert resp.context["has_statuses"] is False
         assert "예정 행사".encode() not in resp.content
-        assert "이 상태로 저장한 행사가 없습니다".encode() in resp.content
+        assert "이 상태로 저장한 이벤트가 없습니다".encode() in resp.content
 
     def test_나의_일정_partial_렌더링이_페이지를_넘으면_partial_없는_페이저_링크를_포함한다(self, user_client, make_event, make_status):
         # More records than one page → the pager must render inside the fragment,

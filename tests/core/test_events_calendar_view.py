@@ -30,7 +30,7 @@ message specified; concrete template/markup is the implementer's choice):
   the actual template; now confirmed).
 - Valid extreme months (0001-01, 9999-12) render normally (no error panel),
   with the selected date's own empty-state copy when there is no data
-  (service design §9.4: "이 날짜에는 등록된 공식 행사가 없어요").
+  (service design §9.4: "이 날짜에는 등록된 공식 이벤트가 없어요").
 - List↔calendar toggle links: confirmed via the actual templates —
   `<nav class="nav-links">` on templates/core/events/list.html and
   `<nav class="nav-links calendar-page-toggle">` on
@@ -295,7 +295,7 @@ def test_유효한_극단적_월은_클램프_없이_그대로_렌더링된다(m
     assert resp.status_code == 200
     body = resp.content.decode()
     assert "요청한 날짜를 확인할 수 없어요" not in body
-    assert "이 날짜에는 등록된 공식 행사가 없어요" in body
+    assert "이 날짜에는 등록된 공식 이벤트가 없어요" in body
 
 
 # ---------------------------------------------------------------------------

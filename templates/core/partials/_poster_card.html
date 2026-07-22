@@ -58,7 +58,7 @@ Context consumed: request.user (via the calling page) is not needed here.
       <span class="poster-fill-label" style="color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));" aria-hidden="true">{{ row.category_label }}</span>
     {% endif %}
 
-    {% comment %} Ongoing(이번 주 갈 만한 행사): no countdown badge — already visitable.
+    {% comment %} Ongoing(이번 주 눈여겨 볼 이벤트): no countdown badge — already visitable.
        Recent(새 이벤트): "오픈까지 N일"(upcoming) and/or "NEW"(등록 10일 이내) — both may show.
        Closing: descriptive "종료까지 N일" instead of D-day notation; "종료"(ended)
        gets the neutral --end grey instead of the amber closing-soon colour.

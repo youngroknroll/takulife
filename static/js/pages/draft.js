@@ -242,7 +242,7 @@
 
     btn.addEventListener("click", async function () {
       var confirmed = await askConfirm(
-        "승인하고 게시하면 공개 행사 목록에 노출됩니다. 진행할까요?"
+        "승인하고 게시하면 공개 이벤트 목록에 노출됩니다. 진행할까요?"
       );
       if (!confirmed) {
         return;
@@ -262,7 +262,7 @@
             if (eventId) {
               var eventLink = document.createElement("a");
               eventLink.href = "/events/" + eventId + "/";
-              eventLink.textContent = "행사 #" + eventId + " 보기";
+              eventLink.textContent = "이벤트 #" + eventId + " 보기";
               successEl.appendChild(eventLink);
               successEl.appendChild(document.createTextNode(" · "));
             }

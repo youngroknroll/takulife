@@ -12,7 +12,7 @@ pytestmark = pytest.mark.web
 # (label, href) for each of the 4 sections, in header order.
 _SECTIONS = [
     ("홈", "/"),
-    ("행사", "/events/"),
+    ("이벤트", "/events/"),
     ("컬렉션", "/collection/"),
     ("내 활동", "/archive/"),
 ]
