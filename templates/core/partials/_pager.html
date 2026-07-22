@@ -1,26 +1,63 @@
-{% comment %}
-Shared pagination nav. Renders a windowed page list (±3 around the current page)
-with 이전/다음. Markup mirrors the public browse page's pager; styling lives in
-static/css/components/pager.css (loaded globally from base.html). Include with:
+{% load pager_tags %}{% comment %}
+Shared pagination nav — used by all seven paginated lists (컬렉션 / 다녀온 기록 /
+나의 일정 / 직접 등록 / 전체 보기 / 드래프트 목록 / 스태프 이벤트 목록).
+
+Windowing (5 pages around the current one, … where truncated, « ‹ › » arrows)
+is computed in core/pagination.py and reached through the pager_data tag —
+templates cannot call Paginator methods that take arguments, and expressing the
+boundary cases as {% if %} chains here would be untestable.
+
+Arrows at the ends render as disabled <span>s rather than disappearing, so the
+row keeps a stable width and a click never lands on a control that just moved.
+« » only appear past core.pagination.JUMP_ARROWS_MIN_PAGES, where paging one at
+a time actually becomes tedious.
+
+Include with:
   {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
   page_obj     a Django Page (from Paginator.get_page)
-  extra_query  optional querystring tail to preserve filters, e.g. "&status=planned".
+  extra_query  optional querystring tail preserving filters, e.g. "&status=planned".
                Must begin with & (page is always the first param). Omit if none.
+Styling: static/css/components/pager.css (loaded globally from base.html).
 {% endcomment %}
 {% if page_obj.has_other_pages %}
-  <nav class="pager" aria-label="페이지 번호">
-    {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}{{ extra_query }}">이전</a>
+  {% pager_data page_obj as pg %}
+  <nav class="pager" aria-label="페이지 이동">
+    {% if pg.show_jump_arrows %}
+      {% if pg.has_previous %}
+        <a class="pager-arrow" href="?page={{ pg.jump_back }}{{ extra_query }}" aria-label="5페이지 뒤로">«</a>
+      {% else %}
+        <span class="pager-arrow is-disabled" aria-hidden="true">«</span>
+      {% endif %}
     {% endif %}
-    {% for num in page_obj.paginator.page_range %}
-      {% if num == page_obj.number %}
-        <span class="current">{{ num }}</span>
-      {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
-        <a href="?page={{ num }}{{ extra_query }}">{{ num }}</a>
+
+    {% if pg.has_previous %}
+      <a class="pager-arrow" href="?page={{ pg.previous }}{{ extra_query }}" aria-label="이전 페이지">‹</a>
+    {% else %}
+      <span class="pager-arrow is-disabled" aria-hidden="true">‹</span>
+    {% endif %}
+
+    {% for num in pg.pages %}
+      {% if num == pg.ellipsis %}
+        <span class="pager-gap" aria-hidden="true">{{ pg.ellipsis }}</span>
+      {% elif num == pg.current %}
+        <span class="pager-page is-current" aria-current="page">{{ num }}</span>
+      {% else %}
+        <a class="pager-page" href="?page={{ num }}{{ extra_query }}">{{ num }}</a>
       {% endif %}
     {% endfor %}
-    {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{{ extra_query }}">다음</a>
+
+    {% if pg.has_next %}
+      <a class="pager-arrow" href="?page={{ pg.next }}{{ extra_query }}" aria-label="다음 페이지">›</a>
+    {% else %}
+      <span class="pager-arrow is-disabled" aria-hidden="true">›</span>
+    {% endif %}
+
+    {% if pg.show_jump_arrows %}
+      {% if pg.has_next %}
+        <a class="pager-arrow" href="?page={{ pg.jump_forward }}{{ extra_query }}" aria-label="5페이지 앞으로">»</a>
+      {% else %}
+        <span class="pager-arrow is-disabled" aria-hidden="true">»</span>
+      {% endif %}
     {% endif %}
   </nav>
 {% endif %}
