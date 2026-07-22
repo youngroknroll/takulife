@@ -19,6 +19,7 @@ import pytest
 
 from archive.models import CollectionItem
 from archive.queries import ARCHIVE_COLLECTION_PAGE_SIZE
+from core.views import _collection_item_row, _series_ink_class
 
 pytestmark = pytest.mark.web
 
@@ -198,7 +199,7 @@ class TestArchiveCollectionQueryStringHelpers:
     omission cannot accidentally pass (verified via context, mirroring
     TestVisitsPagerQuery's substring-membership style — never parses hrefs)."""
 
-    def _get_all_axes(self, user, client):
+    def _get_all_axes(self, user, client, extra=""):
         # has_items must be True for the filter/search controls to render at
         # all (PO decision: an empty collection hides them entirely) — this
         # item deliberately does NOT match the filters below, only its mere
@@ -207,6 +208,7 @@ class TestArchiveCollectionQueryStringHelpers:
         return client.get(
             "/collection/"
             "?q=abc&work_title=WorkA&character_name=CharB&item_type=keyring&is_wanted=true"
+            f"{extra}"
         )
 
     def test_칩_쿼리_문자열은_구함_필터를_제외한_나머지_축을_포함한다(self, user_client):
@@ -221,13 +223,23 @@ class TestArchiveCollectionQueryStringHelpers:
         assert "item_type=keyring" in chip_query_suffix
         assert "is_wanted" not in chip_query_suffix
 
-    def test_선택_폼의_숨김_필드는_검색어와_구함_필터값을_담는다(self, user_client):
+    def test_검색_폼의_숨김_필드는_목록_보기모드를_담는다(self, user_client):
+        """The 3-select filter form that used to carry these axes is gone
+        (2026-07-23 에디토리얼 리빌드); the search form is now the only form on
+        the page, so it must carry view= itself — otherwise searching from the
+        목록 뷰 silently drops the user back to 갤러리."""
+        user, client = user_client()
+
+        resp = self._get_all_axes(user, client, extra="&view=list")
+
+        assert b'name="view" value="list"' in resp.content
+
+    def test_갤러리_보기모드에서는_검색_폼에_보기모드_숨김_필드가_없다(self, user_client):
         user, client = user_client()
 
         resp = self._get_all_axes(user, client)
 
-        assert b'name="q" value="abc"' in resp.content
-        assert b'name="is_wanted" value="true"' in resp.content
+        assert b'name="view"' not in resp.content
 
     def test_검색_폼의_숨김_필드는_구함_필터와_세_필터값을_담는다(self, user_client):
         user, client = user_client()
@@ -415,3 +427,222 @@ class TestArchiveCollectionNav:
         assert b'class="archive-nav-wrap"' not in content
         assert b'class="archive-nav-tabs"' not in content
         assert b'class="sub-nav"' not in content
+
+
+@pytest.mark.django_db
+class TestArchiveCollectionDuplicateFilter:
+    """?duplicate=true/false narrows on quantity, mirroring the existing
+    is_wanted fallback discipline (unrecognised/missing value = no filter,
+    never a 500)."""
+
+    def test_중복_필터를_true로_지정하면_수량_2개_이상인_항목만_표시된다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="중복템", quantity=2)
+        make_collection_item(user, name="단일템", quantity=1)
+
+        resp = client.get("/collection/?duplicate=true")
+
+        names = [row["item"].name for row in resp.context["item_rows"]]
+        assert names == ["중복템"]
+
+    @pytest.mark.parametrize(
+        "bad_value",
+        ["", "maybe", "1"],
+        ids=["빈값", "오타", "숫자문자열"],
+    )
+    def test_중복_필터에_인식할_수_없는_값을_보내면_필터가_적용되지_않는다(
+        self, user_client, make_collection_item, bad_value
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="중복템", quantity=2)
+        make_collection_item(user, name="단일템", quantity=1)
+
+        resp = client.get(f"/collection/?duplicate={bad_value}")
+
+        names = {row["item"].name for row in resp.context["item_rows"]}
+        assert names == {"중복템", "단일템"}
+
+
+@pytest.mark.django_db
+class TestArchiveCollectionTradeableFilter:
+    def test_교환가능_필터를_true로_지정하면_교환가능_수량이_1개_이상인_항목만_표시된다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="교환가능템", quantity=2, tradeable_quantity=1)
+        make_collection_item(user, name="교환불가템", quantity=2, tradeable_quantity=0)
+
+        resp = client.get("/collection/?tradeable=true")
+
+        names = [row["item"].name for row in resp.context["item_rows"]]
+        assert names == ["교환가능템"]
+
+    @pytest.mark.parametrize(
+        "bad_value",
+        ["", "maybe", "1"],
+        ids=["빈값", "오타", "숫자문자열"],
+    )
+    def test_교환가능_필터에_인식할_수_없는_값을_보내면_필터가_적용되지_않는다(
+        self, user_client, make_collection_item, bad_value
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="교환가능템", quantity=2, tradeable_quantity=1)
+        make_collection_item(user, name="교환불가템", quantity=2, tradeable_quantity=0)
+
+        resp = client.get(f"/collection/?tradeable={bad_value}")
+
+        names = {row["item"].name for row in resp.context["item_rows"]}
+        assert names == {"교환가능템", "교환불가템"}
+
+
+@pytest.mark.django_db
+class TestArchiveCollectionViewMode:
+    def test_view가_list이면_컨텍스트의_view_mode는_list이다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/collection/?view=list")
+
+        assert resp.context["view_mode"] == "list"
+
+    def test_view_파라미터가_없으면_컨텍스트의_view_mode는_gallery이다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/collection/")
+
+        assert resp.context["view_mode"] == "gallery"
+
+    def test_view에_인식할_수_없는_값을_보내면_view_mode는_gallery로_폴백된다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/collection/?view=grid")
+
+        assert resp.context["view_mode"] == "gallery"
+
+
+@pytest.mark.django_db
+class TestArchiveCollectionQueryStringHelpersV2:
+    """Extends TestArchiveCollectionQueryStringHelpers for the collection
+    리디자인's new axes: view/duplicate/tradeable.
+
+    is_wanted/duplicate/tradeable are mutually-exclusive 서브탭 axes (a
+    single active sub-tab swaps between them), so all three must be
+    EXCLUDED from chip_query_suffix (chips only ever add work_title/
+    character_name/item_type/q/view on top of whichever sub-tab is
+    already active) but INCLUDED in pager_query and clear_query_suffix.
+    """
+
+    def _get_all_axes(self, user, client):
+        # has_items must be True for the filter/search controls to render at
+        # all (PO decision: an empty collection hides them entirely).
+        CollectionItem.objects.create(user=user, name="배경 아이템")
+        return client.get(
+            "/collection/"
+            "?q=abc&work_title=WorkA&character_name=CharB&item_type=keyring"
+            "&is_wanted=true&duplicate=true&tradeable=true&view=list"
+        )
+
+    def test_보기모드는_칩_쿼리_문자열에_보존된다(self, user_client):
+        user, client = user_client()
+
+        resp = self._get_all_axes(user, client)
+
+        assert "view=list" in resp.context["chip_query_suffix"]
+
+    def test_보기모드는_페이저_쿼리_문자열에_보존된다(self, user_client):
+        user, client = user_client()
+
+        resp = self._get_all_axes(user, client)
+
+        assert "view=list" in resp.context["pager_query"]
+
+    def test_보기모드는_초기화_쿼리_문자열에_보존된다(self, user_client):
+        user, client = user_client()
+
+        resp = self._get_all_axes(user, client)
+
+        assert "view=list" in resp.context["clear_query_suffix"]
+
+    def test_중복_교환가능_필터는_칩_쿼리_문자열에서_제외된다(self, user_client):
+        user, client = user_client()
+
+        resp = self._get_all_axes(user, client)
+        chip_query_suffix = resp.context["chip_query_suffix"]
+
+        assert "duplicate" not in chip_query_suffix
+        assert "tradeable" not in chip_query_suffix
+        assert "is_wanted" not in chip_query_suffix
+
+    def test_중복_교환가능_필터는_페이저와_초기화_쿼리_문자열에는_포함된다(self, user_client):
+        user, client = user_client()
+
+        resp = self._get_all_axes(user, client)
+        pager_query = resp.context["pager_query"]
+        clear_query_suffix = resp.context["clear_query_suffix"]
+
+        assert "duplicate=true" in pager_query
+        assert "tradeable=true" in pager_query
+        assert "is_wanted=true" in pager_query
+        assert "duplicate=true" in clear_query_suffix
+        assert "tradeable=true" in clear_query_suffix
+        assert "is_wanted=true" in clear_query_suffix
+
+
+@pytest.mark.django_db
+class TestArchiveCollectionWorkTitleAndTradeableCounts:
+    def test_컨텍스트에_교환가능_집계와_작품별_집계가_담긴다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="A", work_title="작품 A", tradeable_quantity=1, quantity=1)
+        make_collection_item(user, name="B", work_title="작품 A", quantity=1)
+
+        resp = client.get("/collection/")
+
+        assert resp.context["tradeable_count"] == 1
+        # The view carries the card's own series_ink_class onto each facet so
+        # the sidebar dot matches the cards it filters to.
+        assert resp.context["work_title_counts"] == [
+            {"title": "작품 A", "count": 2, "series_ink_class": _series_ink_class("작품 A")}
+        ]
+
+
+@pytest.mark.django_db
+class TestCollectionItemRowSeriesInkClass:
+    """_collection_item_row()'s new series_ink_class assigns a deterministic
+    accent-color bucket ("gi-1".."gi-6") per work_title, used by the
+    리디자인's per-series color coding — "gi-0" is the explicit no-series
+    bucket for a blank work_title."""
+
+    def test_작품명이_같은_항목은_항상_같은_series_ink_class를_받는다(
+        self, make_user, make_collection_item
+    ):
+        user = make_user(username="row-series-ink-consistent")
+        first = make_collection_item(user, name="A1", work_title="작품 X")
+        second = make_collection_item(user, name="A2", work_title="작품 X")
+
+        first_row = _collection_item_row(first)
+        second_row = _collection_item_row(second)
+
+        assert first_row["series_ink_class"] == second_row["series_ink_class"]
+
+    def test_series_ink_class는_gi_1부터_gi_6_사이의_값이다(
+        self, make_user, make_collection_item
+    ):
+        user = make_user(username="row-series-ink-range")
+        item = make_collection_item(user, name="A1", work_title="작품 Y")
+
+        row = _collection_item_row(item)
+
+        assert row["series_ink_class"] in {f"gi-{i}" for i in range(1, 7)}
+
+    def test_작품명이_비어있으면_series_ink_class는_gi_0이다(
+        self, make_user, make_collection_item
+    ):
+        user = make_user(username="row-series-ink-blank")
+        item = make_collection_item(user, name="A1", work_title="")
+
+        row = _collection_item_row(item)
+
+        assert row["series_ink_class"] == "gi-0"

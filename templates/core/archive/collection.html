@@ -3,118 +3,167 @@
 {% block title %}{{ project_name }} | 내 컬렉션{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/archive_collection.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    <section class="hero">
-      <h1>내 컬렉션</h1>
+  <main class="page collection-page" id="content">
+    <div id="collection-global-error" class="form-error" style="margin-bottom:8px;"></div>
 
-      <div class="summary-grid" style="--summary-cols: 2">
-        <article class="summary-card">
-          <p class="summary-label">보유</p>
-          <p class="summary-value">{{ owned_count }}</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">구함</p>
-          <p class="summary-value">{{ wanted_count }}</p>
-        </article>
+    <section class="collection-head">
+      <div class="collection-head-title">
+        <h1>내 컬렉션</h1>
+        <p class="collection-stats">
+          <span class="collection-stat collection-stat--owned"><b>{{ owned_count }}</b>보유</span>
+          <span class="collection-stat collection-stat--wanted"><b>{{ wanted_count }}</b>구함</span>
+          <span class="collection-stat collection-stat--trade"><b>{{ tradeable_count }}</b>교환</span>
+        </p>
+      </div>
+
+      {# 토글과 추가 버튼은 각각 독립된 그리드 자식이다 — 한 래퍼에 같이 두면 #}
+      {# 둘이 한 칸(auto)을 나눠 써서 토글이 가운데로 가지 않고 3열이 빈다.   #}
+      {# 열 번호를 CSS에서 명시하므로 has_items가 false여도 버튼은 3열 유지.  #}
+      {% if has_items %}
+        <div class="collection-view-toggle" role="group" aria-label="보기 방식">
+          <a
+            class="collection-view-btn{% if view_mode == "list" %} is-active{% endif %}"
+            href="?view=list{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+            {% if view_mode == "list" %}aria-current="page"{% endif %}
+          >목록</a>
+          <a
+            class="collection-view-btn{% if view_mode == "gallery" %} is-active{% endif %}"
+            href="?view=gallery{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+            {% if view_mode == "gallery" %}aria-current="page"{% endif %}
+          >갤러리</a>
+        </div>
+      {% endif %}
+
+      <div class="collection-head-actions">
+        <a class="collection-add-btn" href="/collection/new/">＋ 굿즈 추가</a>
       </div>
     </section>
 
-    <div id="collection-global-error" class="form-error" style="margin-bottom:8px;"></div>
+    {% if has_items %}
+      {# 시안: 서브탭과 검색이 한 헤어라인 레일 위에 있고 검색이 오른쪽 끝으로 #}
+      {# 밀린다. .archive-search 는 여전히 페이지 내 유일한 form 이어야 하므로 #}
+      {# (archive_search.js 가 첫 매치만 잡는다) 툴바는 form 을 감싸지 않고     #}
+      {# nav 와 form 을 형제로 두는 순수 레이아웃 컨테이너다.                  #}
+      <div class="collection-toolbar">
+      <nav class="collection-tabs" aria-label="컬렉션 하위 보기">
+        <a
+          class="collection-tab{% if not is_wanted_value and not duplicate_value and not tradeable_value %} is-active{% endif %}"
+          href="?{{ chip_query_suffix|slice:"1:" }}"
+          {% if not is_wanted_value and not duplicate_value and not tradeable_value %}aria-current="page"{% endif %}
+        >전체 보기</a>
+        <a
+          class="collection-tab{% if is_wanted_value == "false" %} is-active{% endif %}"
+          href="?is_wanted=false{{ chip_query_suffix }}"
+          {% if is_wanted_value == "false" %}aria-current="page"{% endif %}
+        >보유</a>
+        <a
+          class="collection-tab{% if is_wanted_value == "true" %} is-active{% endif %}"
+          href="?is_wanted=true{{ chip_query_suffix }}"
+          {% if is_wanted_value == "true" %}aria-current="page"{% endif %}
+        >구함</a>
+        <a
+          class="collection-tab{% if duplicate_value == "true" %} is-active{% endif %}"
+          href="?duplicate=true{{ chip_query_suffix }}"
+          {% if duplicate_value == "true" %}aria-current="page"{% endif %}
+        >중복</a>
+        <a
+          class="collection-tab{% if tradeable_value == "true" %} is-active{% endif %}"
+          href="?tradeable=true{{ chip_query_suffix }}"
+          {% if tradeable_value == "true" %}aria-current="page"{% endif %}
+        >교환 가능</a>
+      </nav>
 
-    <section class="layout">
-      <article class="panel">
-        <h2>내 컬렉션 목록</h2>
-
-        {% if has_items %}
-          <div class="visit-filter">
-            <a
-              class="visit-filter-chip{% if not is_wanted_value %} is-active{% endif %}"
-              href="?{{ chip_query_suffix|slice:"1:" }}"
-            >전체</a>
-            <a
-              class="visit-filter-chip{% if is_wanted_value == "false" %} is-active{% endif %}"
-              href="?is_wanted=false{{ chip_query_suffix }}"
-            >보유</a>
-            <a
-              class="visit-filter-chip{% if is_wanted_value == "true" %} is-active{% endif %}"
-              href="?is_wanted=true{{ chip_query_suffix }}"
-            >구함</a>
-          </div>
-
-          <form method="get" class="create-form">
-            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
-            {% if is_wanted_value %}<input type="hidden" name="is_wanted" value="{{ is_wanted_value }}">{% endif %}
-            <div class="form-group">
-              <label for="collection-filter-work">작품명</label>
-              <select id="collection-filter-work" name="work_title">
-                <option value="">작품명 전체</option>
-                {% for val in filter_values.work_title %}
-                  <option value="{{ val }}"{% if val == work_title %} selected{% endif %}>{{ val }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="collection-filter-char">캐릭터</label>
-              <select id="collection-filter-char" name="character_name">
-                <option value="">캐릭터 전체</option>
-                {% for val in filter_values.character_name %}
-                  <option value="{{ val }}"{% if val == character_name %} selected{% endif %}>{{ val }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="collection-filter-type">유형</label>
-              <select id="collection-filter-type" name="item_type">
-                <option value="">유형 전체</option>
-                {% for val in filter_values.item_type %}
-                  <option value="{{ val }}"{% if val == item_type %} selected{% endif %}>{{ val }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <button class="btn btn-secondary btn-sm" type="submit">필터 적용</button>
-          </form>
-
-          <form method="get" class="archive-search">
-            {% if is_wanted_value %}<input type="hidden" name="is_wanted" value="{{ is_wanted_value }}">{% endif %}
-            {% if work_title %}<input type="hidden" name="work_title" value="{{ work_title }}">{% endif %}
-            {% if character_name %}<input type="hidden" name="character_name" value="{{ character_name }}">{% endif %}
-            {% if item_type %}<input type="hidden" name="item_type" value="{{ item_type }}">{% endif %}
-            <div class="archive-search-row">
-              <input
-                type="search"
-                name="q"
-                value="{{ q }}"
-                placeholder="이름·작품명·캐릭터 검색"
-                aria-label="컬렉션 검색"
-              >
-              <button type="submit">검색</button>
-            </div>
-            <a class="archive-search-clear" href="{{ request.path }}{% if clear_query_suffix %}?{{ clear_query_suffix }}{% endif %}"{% if not has_query %} hidden{% endif %}>지우기</a>
-          </form>
-          <p id="archive-search-error" class="inline-error" aria-live="polite"></p>
-          <p id="archive-search-status" class="archive-search-status" role="status"></p>
-        {% endif %}
-
-        <div id="archive-results" data-archive-results>
-          {% include "core/partials/_archive_results_collection.html" %}
+      <form method="get" class="archive-search">
+        {% if is_wanted_value %}<input type="hidden" name="is_wanted" value="{{ is_wanted_value }}">{% endif %}
+        {% if duplicate_value %}<input type="hidden" name="duplicate" value="{{ duplicate_value }}">{% endif %}
+        {% if tradeable_value %}<input type="hidden" name="tradeable" value="{{ tradeable_value }}">{% endif %}
+        {% if work_title %}<input type="hidden" name="work_title" value="{{ work_title }}">{% endif %}
+        {% if character_name %}<input type="hidden" name="character_name" value="{{ character_name }}">{% endif %}
+        {% if item_type %}<input type="hidden" name="item_type" value="{{ item_type }}">{% endif %}
+        {% if view_mode == "list" %}<input type="hidden" name="view" value="list">{% endif %}
+        <div class="archive-search-row">
+          <span class="collection-search-icon" aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            name="q"
+            value="{{ q }}"
+            placeholder="굿즈명 검색"
+            aria-label="컬렉션 검색"
+          >
+          {# 시안엔 제출 버튼이 없다. JS 없이도 검색이 되어야 하므로 버튼은 DOM에 #}
+          {# 남기고 시각적으로만 숨기되, 포커스를 받으면 다시 나타난다 — 보이지 #}
+          {# 않는 탭 정지점이 생기지 않게(스킵 링크와 같은 방식).                #}
+          <button type="submit">검색</button>
         </div>
-      </article>
+        <a class="archive-search-clear" href="{{ request.path }}{% if clear_query_suffix %}?{{ clear_query_suffix }}{% endif %}"{% if not has_query %} hidden{% endif %}>지우기</a>
+      </form>
+      </div>
+      <p id="archive-search-error" class="inline-error" aria-live="polite"></p>
+      <p id="archive-search-status" class="archive-search-status" role="status"></p>
+    {% endif %}
 
-      <aside class="side-stack">
-        <section class="panel">
-          <h2>다음 행동</h2>
-          <ul class="side-list side-list--row">
-            <li><a href="/events/">이벤트 찾기</a></li>
+    <div class="layout">
+      {# DOM order IS the mobile order: 유형 → 결과 → 작품별. The two facet     #}
+      {# groups are separate <aside> siblings of #archive-results rather than #}
+      {# one wrapper, so desktop's left column is built with grid placement   #}
+      {# (below) instead of CSS `order`. Deliberate: `order` would repaint    #}
+      {# 작품별 under the results while leaving it BEFORE them in tab order    #}
+      {# (WCAG 2.4.3), and a `display:contents` wrapper would drop its        #}
+      {# landmark from the a11y tree. This way visual and tab order match at  #}
+      {# every width and both landmarks survive.                             #}
+
+      {# Guarded on the real type values, not has_items: with no types the #}
+      {# group is just a "유형" heading over a lone 전체 chip that filters   #}
+      {# nothing — dead chrome beside the empty state.                     #}
+      {% if filter_values.item_type %}
+        <aside class="collection-facet-group collection-facet-group--type" aria-label="유형 필터">
+          <h2>유형</h2>
+          <div class="collection-type-chips">
+            <a
+              class="collection-type-chip{% if not item_type %} is-active{% endif %}"
+              href="?item_type={% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+              {% if not item_type %}aria-current="true"{% endif %}
+            >전체</a>
+            {% for val in filter_values.item_type %}
+              <a
+                class="collection-type-chip{% if val == item_type %} is-active{% endif %}"
+                href="?item_type={{ val|urlencode }}{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+                {% if val == item_type %}aria-current="true"{% endif %}
+              >{{ val }}</a>
+            {% endfor %}
+          </div>
+        </aside>
+      {% endif %}
+
+      <div id="archive-results" data-archive-results>
+        {% include "core/partials/_archive_results_collection.html" %}
+      </div>
+
+      {% if work_title_counts %}
+        <aside class="collection-facet-group collection-facet-group--work" aria-label="작품별 필터">
+          <h2>작품별</h2>
+            <ul class="collection-work-list">
+              {% for facet in work_title_counts|slice:":8" %}
+                <li>
+                  <a
+                    class="collection-work-link{% if facet.title == work_title %} is-active{% endif %}"
+                    href="?work_title={{ facet.title|urlencode }}{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+                    {% if facet.title == work_title %}aria-current="true"{% endif %}
+                  >
+                    <span class="series-dot {{ facet.series_ink_class }}" aria-hidden="true"></span>
+                    <span class="collection-work-title">{{ facet.title }}</span>
+                    <span class="collection-work-count">{{ facet.count }}</span>
+                  </a>
+                </li>
+            {% endfor %}
           </ul>
-          <a class="record-cta" href="/collection/new/">＋ 항목 추가</a>
-        </section>
-      </aside>
-    </section>
+        </aside>
+      {% endif %}
+    </div>
   </main>
 {% endblock %}
 

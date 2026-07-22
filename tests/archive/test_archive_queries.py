@@ -17,6 +17,7 @@ from archive.queries import (
     list_user_visit_records,
     user_collection_item_filter_values,
     user_collection_item_summary_counts,
+    user_collection_item_work_title_counts,
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
@@ -724,7 +725,7 @@ def test_보유_구함_집계는_수량_합계가_아니라_행_개수를_센다
 
     counts = user_collection_item_summary_counts(user)
 
-    assert counts == {"owned_count": 1, "wanted_count": 2}
+    assert counts == {"owned_count": 1, "wanted_count": 2, "tradeable_count": 0}
 
 
 @pytest.mark.django_db
@@ -733,7 +734,7 @@ def test_컬렉션_아이템이_없는_사용자의_보유_구함_집계는_0이
 
     counts = user_collection_item_summary_counts(user)
 
-    assert counts == {"owned_count": 0, "wanted_count": 0}
+    assert counts == {"owned_count": 0, "wanted_count": 0, "tradeable_count": 0}
 
 
 # ---------------------------------------------------------------------------
@@ -772,3 +773,95 @@ def test_비공식_상태_조회는_굿즈_kind_개인항목을_제외한다(mak
     result = user_personal_statuses(user)
 
     assert result == {place.id: (UserEventStatus.Status.PLANNED, place_status.id)}
+
+
+# ---------------------------------------------------------------------------
+# user_collection_item_summary_counts — tradeable_count (collection 리디자인
+# 백엔드). tradeable_count is a DERIVED, OVERLAPPING axis, not a third
+# partition alongside owned/wanted — an owned item with tradeable_quantity>0
+# must be counted in BOTH owned_count and tradeable_count simultaneously.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_요약_집계는_교환가능_수량이_1개_이상인_항목_개수를_tradeable_count로_반환한다(make_user):
+    user = make_user(username="ci-summary-tradeable")
+    CollectionItem.objects.create(
+        user=user, name="교환 가능 1", quantity=2, tradeable_quantity=1
+    )
+    CollectionItem.objects.create(
+        user=user, name="교환 가능 2", quantity=3, tradeable_quantity=2
+    )
+    CollectionItem.objects.create(
+        user=user, name="교환 불가", quantity=3, tradeable_quantity=0
+    )
+
+    counts = user_collection_item_summary_counts(user)
+
+    assert counts["tradeable_count"] == 2
+
+
+@pytest.mark.django_db
+def test_교환가능_집계는_보유_구함_분할과_겹치는_축이라_보유_항목이_교환가능이면_양쪽_모두_집계된다(make_user):
+    """tradeable_count is not a third mutually-exclusive partition — an
+    owned (is_wanted=False) item with tradeable_quantity>0 must be counted
+    in owned_count AND tradeable_count at the same time (they overlap by
+    design, unlike owned_count/wanted_count which partition is_wanted)."""
+    user = make_user(username="ci-summary-tradeable-overlap")
+    CollectionItem.objects.create(
+        user=user,
+        name="보유하며_교환가능",
+        is_wanted=False,
+        quantity=2,
+        tradeable_quantity=1,
+    )
+
+    counts = user_collection_item_summary_counts(user)
+
+    assert counts["owned_count"] == 1
+    assert counts["tradeable_count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# user_collection_item_work_title_counts (collection 리디자인 백엔드,
+# 작품별 색상 인덱스/필터 근거 집계). blank work_title excluded, sorted by
+# count desc then work_title asc for tie-break determinism, owner-scoped.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_작품명별_항목_개수_집계는_작품명이_비어있는_항목을_제외한다(make_user):
+    user = make_user(username="ci-work-title-counts-blank")
+    CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="굿즈 2")  # work_title 비어있음
+
+    counts = user_collection_item_work_title_counts(user)
+
+    assert counts == [("작품 A", 1)]
+
+
+@pytest.mark.django_db
+def test_작품명별_항목_개수_집계는_개수_내림차순_동수는_작품명_오름차순으로_정렬된다(make_user):
+    user = make_user(username="ci-work-title-counts-order")
+    # 작품 C: 1건, 작품 A: 2건, 작품 B: 2건 (A/B는 개수가 같아 동수 정렬 케이스)
+    CollectionItem.objects.create(user=user, name="C1", work_title="작품 C")
+    CollectionItem.objects.create(user=user, name="A1", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="A2", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="B1", work_title="작품 B")
+    CollectionItem.objects.create(user=user, name="B2", work_title="작품 B")
+
+    counts = user_collection_item_work_title_counts(user)
+
+    assert counts == [("작품 A", 2), ("작품 B", 2), ("작품 C", 1)]
+
+
+@pytest.mark.django_db
+def test_작품명별_항목_개수_집계는_소유자로_범위를_좁힌다(make_user):
+    user = make_user(username="ci-work-title-counts-owner")
+    other = make_user(username="ci-work-title-counts-other")
+    CollectionItem.objects.create(user=user, name="내 굿즈", work_title="작품 A")
+    CollectionItem.objects.create(user=other, name="남의 굿즈", work_title="작품 A")
+
+    counts = user_collection_item_work_title_counts(user)
+
+    assert counts == [("작품 A", 1)]

@@ -404,12 +404,41 @@ def user_collection_item_summary_counts(user) -> dict:
     wanted_count always equals the user's full item count, matching the
     C5b-2 filter chips (전체 / 보유 / 구함) exactly. There is deliberately no
     separate total_count key.
+
+    tradeable_count is a THIRD, OVERLAPPING axis, not part of that
+    partition — it counts tradeable_quantity > 0 rows regardless of
+    is_wanted, so a row can be counted in both owned_count and
+    tradeable_count at once (an owned item is very often also tradeable).
+    Do not sum owned_count + wanted_count + tradeable_count as a total; that
+    double-counts every owned-and-tradeable row.
     """
     queryset = CollectionItem.objects.filter(user=user)
     return {
         "owned_count": queryset.filter(is_wanted=False).count(),
         "wanted_count": queryset.filter(is_wanted=True).count(),
+        "tradeable_count": queryset.filter(tradeable_quantity__gt=0).count(),
     }
+
+
+def user_collection_item_work_title_counts(user) -> list:
+    """Return (work_title, count) pairs for a user's collection items,
+    excluding blank work_title, owner-scoped.
+
+    Sorted by count descending, then work_title ascending as a tie-break —
+    same reasoning as user_collection_item_filter_values' explicit
+    .order_by(): GROUP BY without ORDER BY has undefined row order (the
+    planner may choose a HashAggregate plan instead of an index-derived
+    Sort), so the tie-break must be requested explicitly rather than relied
+    on implicitly.
+    """
+    return list(
+        CollectionItem.objects.filter(user=user)
+        .exclude(work_title="")
+        .values("work_title")
+        .annotate(count=Count("id"))
+        .order_by("-count", "work_title")
+        .values_list("work_title", "count")
+    )
 
 
 def user_visit_category_values(user):
