@@ -24,9 +24,12 @@
 
    TOUCH TARGETS: the design's own controls are 42px (tabs) / 36px (chips).
    The interactive controls here are raised to 44px per this page's review
-   contract; that is the one systematic deviation from the design's metrics.
-   Everything visual — radius, fill, border, type scale, spacing — follows the
-   design. */
+   contract — with two deliberate exceptions that follow repo-wide convention
+   rather than this page's: the search field/button (34px desktop / 40px
+   narrow, matching event_list.css and archive_statuses.css search controls)
+   and the 작품별 facet rows (36px, a dense index). Both clear the WCAG 2.5.8
+   24px floor. Everything visual — radius, fill, border, type scale, spacing —
+   follows the design. */
 
 /* ── page head: title + stats left, view toggle centered, add button right
    ────────────────────────────────────────────────────────────────────────
@@ -155,8 +158,20 @@
   text-decoration: none;
   white-space: nowrap;
 }
+.collection-page .collection-view-btn {
+  transition: color 0.15s ease;
+}
+/* Same --brand-ink hover as the sub-tabs. Here the ACTIVE item is already
+   brand-ink, so hover matches its colour — that is fine because colour was
+   never the active indicator on this page: the 2px underline and weight 700
+   carry it, deliberately, so the state stays legible without relying on hue. */
 .collection-page .collection-view-btn:hover {
-  color: var(--text);
+  color: var(--brand-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .collection-page .collection-view-btn {
+    transition: none;
+  }
 }
 .collection-page .collection-view-btn.is-active {
   color: var(--brand-ink);
@@ -192,8 +207,19 @@
   text-decoration: none;
   white-space: nowrap;
 }
+.collection-page .collection-tab {
+  transition: color 0.15s ease;
+}
+/* --brand-ink, not --text: --text is the ACTIVE tab's colour, so hovering an
+   inactive tab would make it momentarily indistinguishable from the active
+   one. Brand ink is a third, unambiguous state. */
 .collection-page .collection-tab:hover {
-  color: var(--text);
+  color: var(--brand-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .collection-page .collection-tab {
+    transition: none;
+  }
 }
 .collection-page .collection-tab.is-active {
   color: var(--text);
@@ -213,7 +239,9 @@
 }
 .collection-page .archive-search-row {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 .collection-page .collection-search-icon {
   position: absolute;
@@ -226,7 +254,7 @@
   pointer-events: none;
 }
 .collection-page .archive-search input[type="search"] {
-  width: 15.5rem;
+  width: 13.75rem;
   height: 34px;
   padding: 0 0.875rem 0 2.125rem;
   border: 1px solid var(--border-soft);
@@ -238,36 +266,26 @@
 .collection-page .archive-search input[type="search"]::placeholder {
   color: var(--muted);
 }
-/* No submit button in the design. It stays in the DOM so the no-JS GET form
-   still works, clipped out of view — and un-clips on focus so it never becomes
-   an invisible tab stop. Revealed absolutely, so the rail never reflows. */
+/* Visible submit beside the field. The design board has no button, but the
+   no-JS GET form needs a real submit and a visible one is easier to reach than
+   a focus-revealed control, so it is shown and sized to match the field. */
 .collection-page .archive-search button[type="submit"] {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-.collection-page .archive-search button[type="submit"]:focus-visible {
-  top: calc(100% + 0.25rem);
-  right: 0;
-  left: auto;
-  width: auto;
-  height: auto;
-  margin: 0;
-  padding: 0.375rem 0.75rem;
-  overflow: visible;
-  clip: auto;
+  flex: none;
+  height: 34px;
+  padding: 0 0.875rem;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
-  background: var(--brand);
-  color: #fff;
+  background: var(--surface);
+  color: var(--text);
   font-size: 0.8125rem;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
+}
+.collection-page .archive-search button[type="submit"]:hover {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
 }
 .collection-page .archive-search-clear {
   position: absolute;
@@ -278,11 +296,11 @@
 }
 
 /* ── layout: facet sidebar + results ──────────────────────────────────
-   Desktop left column is assembled by GRID PLACEMENT, not source order: the
-   two facet asides sit either side of #archive-results in the DOM (유형 →
-   결과 → 작품별) because that is exactly the stacked mobile order we want, so
-   the narrow layout needs no reordering at all and tab order always matches
-   what is on screen. `order`/`display:contents` were both rejected: `order`
+   Desktop left column is assembled by GRID PLACEMENT, not source order: in the
+   DOM both facet asides come BEFORE #archive-results (유형 → 작품별 → 결과)
+   because that is exactly the stacked narrow-width order we want, so the
+   narrow layout needs no reordering at all and tab order always matches what
+   is on screen. `order`/`display:contents` were both rejected: `order`
    repaints without moving tab order (WCAG 2.4.3) and `display:contents` would
    drop the wrapper's landmark from the accessibility tree.
 
@@ -321,7 +339,7 @@
     grid-template-rows: auto;
   }
   /* Hand every child back to auto-placement so the single column follows DOM
-     order (유형 → 결과 → 작품별) — the explicit desktop placement above would
+     order (유형 → 작품별 → 결과) — the explicit desktop placement above would
      otherwise keep forcing them into a column 2 that no longer exists. */
   .collection-page .collection-facet-group--type,
   .collection-page #archive-results,
@@ -329,9 +347,114 @@
     grid-column: 1;
     grid-row: auto;
   }
+  /* 작품별 becomes a collapsed text toggle sitting directly under the type
+     chips, so the default state costs one line instead of a whole list. */
   .collection-page .collection-facet-group--work {
-    padding-top: 1.25rem;
+    padding-top: 0;
+    margin-top: 0.125rem;
+    border-top: 0;
   }
+  .collection-page .collection-facet-group--work h2 {
+    display: none;
+  }
+  /* `.collection-facet-group--work` qualifier is load-bearing: the base
+     `.collection-page .series-toggle { display: none }` rule is declared LATER
+     in this file and a media query adds no specificity, so at equal specificity
+     the later rule wins and the toggle stays hidden at every width. */
+  .collection-page .collection-facet-group--work .series-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 2px 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .collection-page .series-toggle-arrow {
+    font-weight: 600;
+  }
+  /* Arrow swaps by CSS off the container's data-expanded — no JS text
+     rewriting (calendar filter panel precedent). */
+  .collection-page [data-expanded="false"] .series-toggle-arrow[data-state="open"],
+  .collection-page [data-expanded="true"] .series-toggle-arrow[data-state="closed"] {
+    display: none;
+  }
+  .collection-page [data-expanded="false"] .collection-work-list {
+    display: none;
+  }
+  .collection-page [data-expanded="true"] .collection-work-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.5625rem;
+  }
+  /* Chip form: the count sits right after the name instead of being pushed to
+     a far right edge that no longer exists once the row is a pill.
+
+     Every selector here carries the `.collection-facet-group--work` ancestor
+     on purpose. The desktop base rules for these same classes are declared
+     LATER in this file, and a media query adds no specificity — without the
+     extra class the later rules win and the list keeps rendering as 36px
+     desktop rows at every width. */
+  .collection-page .collection-facet-group--work .collection-work-link {
+    min-height: 0;
+    gap: 0.375rem;
+    padding: 0.3125rem 0.6875rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    background: var(--bg-soft);
+    color: var(--text);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  /* The chip's resting background is already --bg-soft, so the desktop row
+     hover (which sets exactly that) would be invisible here — lift the chip to
+     --surface and bring the border up to brand instead. */
+  .collection-page .collection-facet-group--work .collection-work-link {
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .collection-page .collection-facet-group--work .collection-work-link:hover {
+    background: var(--surface);
+    border-color: var(--brand);
+  }
+  .collection-page .collection-facet-group--work .collection-work-link.is-active {
+    border-color: var(--brand);
+    box-shadow: none;
+  }
+  .collection-page .collection-facet-group--work .collection-work-link.is-active:hover {
+    background: var(--brand-soft);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .collection-page .collection-facet-group--work .collection-work-link {
+      transition: none;
+    }
+  }
+  .collection-page .collection-facet-group--work .collection-work-title {
+    flex: 0 1 auto;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .collection-page .collection-facet-group--work .collection-work-count {
+    margin-left: 0;
+  }
+  .collection-page .collection-facet-group--work .series-dot {
+    width: 7px;
+    height: 7px;
+  }
+}
+
+/* ── 작품별 disclosure toggle — narrow widths only ────────────────────
+   Desktop keeps the facet list permanently open, so both the toggle and the
+   collapse live entirely inside the narrow media query below. That way
+   data-expanded="false" (the server-rendered default) can never hide the list
+   on desktop, where there is no control to reopen it. */
+.collection-page .series-toggle {
+  display: none;
 }
 
 .collection-page .collection-facet-group h2 {
@@ -363,8 +486,25 @@
   font-weight: 600;
   text-decoration: none;
 }
+/* Same hover language as the 작품별 chips: brand border + a background shift.
+   The direction is inverted because the resting backgrounds are — a type chip
+   sits on --surface, a 작품별 chip on --bg-soft, so each moves to the other's
+   tone to make the change visible. */
+.collection-page .collection-type-chip {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
 .collection-page .collection-type-chip:hover {
-  border-color: var(--muted);
+  background: var(--bg-soft);
+  border-color: var(--brand);
+}
+.collection-page .collection-type-chip.is-active:hover {
+  background: var(--brand-ink);
+  border-color: var(--brand-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .collection-page .collection-type-chip {
+    transition: none;
+  }
 }
 .collection-page .collection-type-chip.is-active {
   border-color: var(--brand);
@@ -772,13 +912,22 @@
     width: 100%;
     margin: 0.625rem 0 0;
   }
-  /* Design's mobile field: full width, 40px tall, 10px radius. */
+  /* Design's mobile field metrics (40px tall, 10px radius), but flex-sized
+     rather than width:100% — a fixed full width would push the submit button
+     out of the row. */
   .collection-page .archive-search input[type="search"] {
-    width: 100%;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
     height: 40px;
     padding: 0 0.8125rem 0 2.125rem;
     border-radius: 10px;
     font-size: 0.78rem;
+  }
+  .collection-page .archive-search button[type="submit"] {
+    height: 40px;
+    padding: 0 0.75rem;
+    border-radius: 10px;
   }
   /* `:not([hidden])` is required: a bare `display: inline-block` here outranks
      the UA's `[hidden] { display: none }` and makes 지우기 show with no active
@@ -835,13 +984,19 @@
   }
 }
 
-/* ── series ink rebinding: .gi-0..gi-6 bind --series-ink to one of the
-   6 existing category tokens from components/category.css — no new color
-   tokens introduced. */
+/* ── series ink rebinding: .gi-0..gi-12 bind --series-ink to the
+   dedicated series tokens (tokens.css --series-1-ink..--series-12-ink) —
+   a distinct 12-bucket palette, not the 6 event-category tokens. */
 .collection-page .gi-0 { --series-ink: var(--muted); }
-.collection-page .gi-1 { --series-ink: var(--cat-popup_store-ink); }
-.collection-page .gi-2 { --series-ink: var(--cat-collaboration_cafe-ink); }
-.collection-page .gi-3 { --series-ink: var(--cat-theater_bonus-ink); }
-.collection-page .gi-4 { --series-ink: var(--cat-goods_reservation-ink); }
-.collection-page .gi-5 { --series-ink: var(--cat-exhibition-ink); }
-.collection-page .gi-6 { --series-ink: var(--cat-fan_meeting-ink); }
+.collection-page .gi-1 { --series-ink: var(--series-1-ink); }
+.collection-page .gi-2 { --series-ink: var(--series-2-ink); }
+.collection-page .gi-3 { --series-ink: var(--series-3-ink); }
+.collection-page .gi-4 { --series-ink: var(--series-4-ink); }
+.collection-page .gi-5 { --series-ink: var(--series-5-ink); }
+.collection-page .gi-6 { --series-ink: var(--series-6-ink); }
+.collection-page .gi-7 { --series-ink: var(--series-7-ink); }
+.collection-page .gi-8 { --series-ink: var(--series-8-ink); }
+.collection-page .gi-9 { --series-ink: var(--series-9-ink); }
+.collection-page .gi-10 { --series-ink: var(--series-10-ink); }
+.collection-page .gi-11 { --series-ink: var(--series-11-ink); }
+.collection-page .gi-12 { --series-ink: var(--series-12-ink); }
