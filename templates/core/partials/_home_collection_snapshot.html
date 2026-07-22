@@ -21,40 +21,70 @@ Context: collection_summary{owned_count,wanted_count}, recent_goods
 {% if request.user.is_authenticated %}
 <section class="section snapshot-panel">
   <div class="section-head">
-    <h2>내 컬렉션 현황</h2>
-    {% if snapshot_active %}<a href="/collection/">전체 컬렉션 보기</a>{% endif %}
+    <div>
+      <span class="section-eyebrow">MY</span>
+      <h2>내 컬렉션 현황</h2>
+    </div>
+    {% if snapshot_active %}<a class="section-more" href="/collection/">전체 컬렉션 보기 ›</a>{% endif %}
   </div>
 
   {% if snapshot_active %}
-    <div class="summary-grid" style="--summary-cols: 2">
-      <article class="summary-card">
-        <p class="summary-label">보유</p>
-        <p class="summary-value">{{ collection_summary.owned_count }}</p>
-      </article>
-      <article class="summary-card">
-        <p class="summary-label">구함</p>
-        <p class="summary-value">{{ collection_summary.wanted_count }}</p>
-      </article>
-    </div>
+    {% comment %} 공용 .summary-grid/.summary-card 대신 전용 마크업: 시안의 4칸은 한 장의
+       테두리를 헤어라인으로 나눈 형태라, 카드가 각자 상자를 갖는 공용 컴포넌트와
+       구조가 다르다. 다른 페이지의 요약 카드는 손대지 않는다. {% endcomment %}
+    <dl class="snapshot-stats">
+      <div class="snapshot-stat" data-tone="owned">
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>보유</dt>
+        <dd>{{ collection_summary.owned_count }}</dd>
+      </div>
+      <div class="snapshot-stat" data-tone="wanted">
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>구함</dt>
+        <dd>{{ collection_summary.wanted_count }}</dd>
+      </div>
+      <div class="snapshot-stat" data-tone="visited">
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>기록</dt>
+        <dd>{{ snapshot_visit_count }}</dd>
+      </div>
+      <div class="snapshot-stat" data-tone="interest">
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>위시</dt>
+        <dd>{{ snapshot_interest_count }}</dd>
+      </div>
+    </dl>
 
     {% if unrecorded %}
       <div class="snapshot-sublist">
         <div class="snapshot-sublist-head">
-          <h3>기록 대기</h3>
-          <a class="snapshot-more" href="/archive/statuses/?status=visited">더보기</a>
+          <h3>기록 대기 <span class="snapshot-count">{{ unrecorded|length }}</span></h3>
+          <a class="snapshot-more" href="/archive/statuses/?status=visited">더보기 ›</a>
         </div>
-        <div class="hscroll-wrap" data-hscroll>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-record" aria-label="기록 대기, 이전">&#8249;</button>
-          <ul class="hscroll-track" data-hscroll-track id="hscroll-snap-record" tabindex="0">
-            {% for row in unrecorded %}
-              <li class="snapshot-record-tile">
+        {% comment %} 가로 스크롤 레일 → 3열 그리드(모바일 1열). 시안이 이 목록만 평면
+           행으로 바꿨다 — 아래 두 서브리스트(굿즈·일정)는 포스터/카드라
+           레일을 유지한다. {% endcomment %}
+        <ul class="snapshot-record-rows">
+          {% for row in unrecorded %}
+            <li class="snapshot-record-row" data-cat="{{ row.subject.category_slug|default:'' }}">
+              <span class="snapshot-record-bar" aria-hidden="true"></span>
+              <div class="snapshot-record-body">
+                {% if row.subject.category_label %}
+                  <p class="snapshot-record-cat">{{ row.subject.category_label }}</p>
+                {% endif %}
                 <p class="snapshot-record-title">{{ row.subject.title }}</p>
-                <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">기록</a>
-              </li>
-            {% endfor %}
-          </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-snap-record" aria-label="기록 대기, 다음">&#8250;</button>
-        </div>
+                {% comment %} 시안의 3번째 줄은 "07/18 방문"이지만 방문 날짜는 여기 없다 —
+                   VisitRecord가 아직 없다는 게 이 목록의 정의다. 그래서 행사
+                   종료일을 기준으로 쓰고, 날짜가 없는 직접 등록 항목은 장소로
+                   대체한다(둘 다 없으면 줄 자체를 생략). {% endcomment %}
+                {% if row.subject.end_date %}
+                  <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.end_date|date:"m/d" }}</span> 종료</p>
+                {% elif row.subject.start_date %}
+                  <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.start_date|date:"m/d" }}</span> 시작</p>
+                {% elif row.subject.location %}
+                  <p class="snapshot-record-when">{{ row.subject.location }}</p>
+                {% endif %}
+              </div>
+              <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">기록</a>
+            </li>
+          {% endfor %}
+        </ul>
       </div>
     {% endif %}
 
@@ -62,7 +92,7 @@ Context: collection_summary{owned_count,wanted_count}, recent_goods
       <div class="snapshot-sublist">
         <div class="snapshot-sublist-head">
           <h3>최근 등록한 굿즈</h3>
-          <a class="snapshot-more" href="/collection/">더보기</a>
+          <a class="snapshot-more" href="/collection/">더보기 ›</a>
         </div>
         <div class="hscroll-wrap" data-hscroll>
           <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-goods" aria-label="최근 등록한 굿즈, 이전">&#8249;</button>
@@ -91,7 +121,7 @@ Context: collection_summary{owned_count,wanted_count}, recent_goods
       <div class="snapshot-sublist">
         <div class="snapshot-sublist-head">
           <h3>다가오는 일정</h3>
-          <a class="snapshot-more" href="/archive/statuses/?status=planned">더보기</a>
+          <a class="snapshot-more" href="/archive/statuses/?status=planned">더보기 ›</a>
         </div>
         <div class="hscroll-wrap" data-hscroll>
           <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-planned" aria-label="다가오는 일정, 이전">&#8249;</button>

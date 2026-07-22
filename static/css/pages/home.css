@@ -362,8 +362,8 @@
   /* ── Section chrome (editorial de-boxing, plan §A) ───────────────────
      No card box — an eyebrow label + h2 + margin replace the border/
      shadow/background/padding this used to carry. Shared by the snapshot
-     panel below (its own h2 "내 컬렉션 현황" keeps no eyebrow — out of this
-     track's approved scope). */
+     panel below, which gained its own "MY" eyebrow in the 2026-07-23
+     collection-section pass. */
   .section {
     margin-bottom: 3rem; /* ~48px, plan §A's 46–52px rhythm */
   }
@@ -417,10 +417,71 @@
      Shares .section/.section-head/.section h2 above — no changes to those
      selectors themselves (WED §7-a-6 "격하 없음" requires their computed
      style stay byte-identical with and without this panel). */
-  .snapshot-panel .summary-grid {
-    background: var(--brand-soft);
-    border-radius: 10px;
-    padding: 0.625rem;
+  /* ── 4-up stat strip (2026-07-23, design source: claude.ai/design
+     "홈 리디자인 (에디토리얼).dc.html" §내 컬렉션 현황) ──────────────
+     One bordered card divided by hairlines, not four separate boxes — which
+     is why this is its own <dl> rather than the shared .summary-grid/
+     .summary-card (components/cards.css): those give every cell its own box,
+     a different structure, and they are consumed unmodified by five archive
+     pages. cards.css is untouched.
+     The value is weight 300 on purpose (mock): a light large numeral against
+     a 600-weight label is the contrast this strip is built on. */
+  .snapshot-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .snapshot-stat {
+    padding: 1.25rem 1.375rem;
+    min-width: 0;
+  }
+  .snapshot-stat + .snapshot-stat {
+    border-left: 1px solid var(--line);
+  }
+  .snapshot-stat dt {
+    display: flex;
+    align-items: center;
+    gap: 0.4375rem;
+    margin-bottom: 0.625rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .snapshot-stat dd {
+    margin: 0;
+    font-size: 2.25rem;
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .snapshot-stat-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  /* Each cell's dot borrows an existing status/category ink rather than
+     introducing a new colour: 보유 = the goods category, 구함 = brand,
+     기록 = the "예정/기록" blue already used for archive stats, 위시 = the
+     찜 pink used by every interest control in the app. */
+  .snapshot-stat[data-tone="owned"] .snapshot-stat-dot {
+    background: var(--cat-goods_reservation-ink);
+  }
+  .snapshot-stat[data-tone="wanted"] .snapshot-stat-dot {
+    background: var(--brand-ink);
+  }
+  .snapshot-stat[data-tone="visited"] .snapshot-stat-dot {
+    background: var(--up-ink);
+  }
+  .snapshot-stat[data-tone="interest"] .snapshot-stat-dot {
+    background: var(--pink-ink);
   }
   .snapshot-sublist {
     margin-top: 0.875rem;
@@ -445,31 +506,148 @@
     text-decoration: underline;
   }
 
-  /* "기록 대기" tile — no existing equivalent card, so this is new: title +
-     a reused .record-action-link (archive.css), stacked in the 168px hscroll
-     tile width the other two lists share (below). */
-  .snapshot-record-tile {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 0.5rem;
-    height: 100%;
-    min-height: 96px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--bg-card);
-    padding: 0.75rem;
+  /* "기록 대기" rows (2026-07-23) — the horizontal rail became a 3-up grid,
+     per the mock. Only this sublist changed: the other two hold posters and
+     goods cards, which the mock leaves on rails.
+     The category accent is a 3px bar rather than a border-left on the row
+     itself, so the row keeps its full rounded border while the accent still
+     spans the text block's height. */
+  .snapshot-record-rows {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
+  .snapshot-record-row {
+    --rec-ink: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 0.875rem 1rem;
+  }
+  .snapshot-record-row[data-cat="popup_store"] { --rec-ink: var(--cat-popup_store-ink); }
+  .snapshot-record-row[data-cat="collaboration_cafe"] { --rec-ink: var(--cat-collaboration_cafe-ink); }
+  .snapshot-record-row[data-cat="theater_bonus"] { --rec-ink: var(--cat-theater_bonus-ink); }
+  .snapshot-record-row[data-cat="goods_reservation"] { --rec-ink: var(--cat-goods_reservation-ink); }
+  .snapshot-record-row[data-cat="exhibition"] { --rec-ink: var(--cat-exhibition-ink); }
+  .snapshot-record-row[data-cat="fan_meeting"] { --rec-ink: var(--cat-fan_meeting-ink); }
+  .snapshot-record-bar {
+    flex: none;
+    width: 3px;
+    align-self: stretch;
+    min-height: 2.625rem;
+    border-radius: 2px;
+    background: var(--rec-ink);
+  }
+  .snapshot-record-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .snapshot-record-cat {
+    margin: 0 0 0.125rem;
+    font-size: 0.69rem;
+    font-weight: 700;
+    color: var(--rec-ink);
+  }
+  /* Single-line ellipsis per the mock — the row is a pointer to the record
+     form, not the place you read the full title. */
   .snapshot-record-title {
     margin: 0;
-    font-size: var(--fs-sm);
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 700;
     line-height: 1.35;
-    overflow-wrap: anywhere;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+    color: var(--text);
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .snapshot-record-when {
+    margin: 0.0625rem 0 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  /* 시안의 기록 버튼은 채움이 아니라 아웃라인 알약이다. .record-action-link는
+     아카이브 5개 페이지가 함께 쓰는 공유 컴포넌트(archive.css)라 이 행 안에서만
+     재선언한다 — 배경·글자색·테두리 반경 4속성을 모두 명시해야 원본 상자가
+     살아남지 않는다(홈·활동 단계에서 얻은 교훈). archive.css는 무접촉. */
+  .snapshot-record-row .record-action-link {
+    flex: none;
+    border-radius: 999px;
+    background: none;
+    border: 1px solid var(--brand);
+    color: var(--brand-ink);
+    padding: 0.4375rem 1.0625rem;
+    font-size: 0.78rem;
+  }
+  .snapshot-record-row .record-action-link:hover {
+    background: var(--brand-soft);
+  }
+  .snapshot-count {
+    color: var(--brand-ink);
+  }
+
+  /* 스냅샷 모바일 (≤45rem) — 시안의 모바일 보드 그대로: 통계는 헤어라인으로
+     나눈 한 장 대신 낱장 카드 4개(가로 폭이 좁아 셀 내부 여백이 먼저 무너진다),
+     기록 대기는 3열 → 1열. */
+  @media (max-width: 45rem) {
+    .snapshot-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.4375rem;
+      border: none;
+      border-radius: 0;
+      overflow: visible;
+      background: none;
+    }
+    .snapshot-stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 0.6875rem 0.5rem;
+      text-align: center;
+    }
+    .snapshot-stat + .snapshot-stat {
+      border-left: 1px solid var(--line);
+    }
+    .snapshot-stat dt {
+      justify-content: center;
+      gap: 0.3125rem;
+      margin-bottom: 0.375rem;
+      font-size: 0.66rem;
+    }
+    .snapshot-stat dd {
+      font-size: 1.375rem;
+    }
+    .snapshot-stat-dot {
+      width: 6px;
+      height: 6px;
+    }
+    .snapshot-record-rows {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.5625rem;
+    }
+    .snapshot-record-row {
+      gap: 0.75rem;
+      padding: 0.75rem 0.875rem;
+    }
+    .snapshot-record-bar {
+      min-height: 2.375rem;
+    }
+    .snapshot-record-title {
+      font-size: 0.85rem;
+    }
+    .snapshot-record-cat {
+      font-size: 0.66rem;
+    }
+    .snapshot-record-when {
+      font-size: 0.69rem;
+    }
   }
 
   /* "최근 등록한 굿즈" tile reuses .visit-card's border/background (archive_
