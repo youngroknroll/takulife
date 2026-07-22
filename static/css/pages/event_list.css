@@ -7,13 +7,17 @@
  * instead of borders and shadows.
  *
  * SCOPING (important): this stylesheet is also loaded by
- * templates/core/events/calendar.html, which reuses this file's filter form
- * (.filter-group/.filter-check/.filter-list/.filter-actions, .region-select*)
- * and its .event-card day-detail cards verbatim. Every rule that restyles one
- * of those shared class names is therefore scoped under `.events-page` — a
- * class that only templates/core/events/list.html puts on <main>. The legacy
- * block at the bottom of this file is untouched and now serves the calendar
- * page alone; the list page no longer renders any of it.
+ * templates/core/events/calendar.html (2026-07-23 editorial v2 rebuild),
+ * which now shares the exact same shell markup as this page — `.events-page`
+ * on <main>, `.events-head`/`.events-tabs`, `.events-search`, `.quick-row`,
+ * `.layout`/`.filters`/`.filter-toggle`/`.filter-body`, and
+ * `.filter-group`/`.filter-check`/`.filter-list`/`.filter-actions`/
+ * `.applied-filters`. Every rule that restyles one of those shared class
+ * names is scoped under `.events-page` so it can never leak into any other
+ * page that might reuse the same class name in a different shell. The old
+ * LEGACY block (boxed `.filter-group`, `.region-select*`, `.event-card`,
+ * `.event-list`, `.dday`) has been deleted — its only consumer was the
+ * calendar page's pre-2026-07-23 markup, which no longer exists.
  */
 
 /* ── page head: title left, 목록/달력 tabs centered ─────────────
@@ -144,8 +148,9 @@
   }
 
 /* ── two-column layout ──────────────────────────────────────────
-   .layout is deliberately absent from calendar.html (see that page's own
-   note), so these rules need no .events-page prefix. */
+   .layout is also used by the calendar page (2026-07-23 rebuild — see this
+   file's header comment), so these rules need no .events-page prefix; the
+   shared shape is identical on both pages. */
   .layout {
     display: grid;
     grid-template-columns: minmax(180px, 232px) minmax(0, 1fr);
@@ -537,8 +542,13 @@
   }
 
 /* ── filter disclosure (tablet and below) ───────────────────────
-   .filter-toggle / .filter-body are list-page-only markup (the calendar
-   uses its own data-disclosure panel), so these stay unscoped. */
+   Shared by both pages since 2026-07-23: the calendar page used to run its
+   own data-disclosure panel at a different breakpoint, which meant two
+   mechanisms were live between 45rem and 56.25rem. It now renders the same
+   .filter-toggle/.filter-body markup driven by the same event_list.js
+   handler, so this is the single collapse point for both — change it here
+   and verify both pages. (data-disclosure/disclosure.js still exist, but
+   only for templates/core/archive/calendar.html.) */
   .filter-toggle {
     display: none;
   }
@@ -665,277 +675,5 @@
       width: 26px;
       height: 26px;
       font-size: 0.75rem;
-    }
-  }
-
-/* ═══════════════════════════════════════════════════════════════
-   LEGACY — consumed by templates/core/events/calendar.html only
-   ═══════════════════════════════════════════════════════════════
-   The calendar page reuses this file's filter form and day-detail cards
-   verbatim (see its own header comment). Everything below is the
-   pre-2026-07-22 styling, kept as-is so that page is unaffected by the list
-   page's editorial rebuild. templates/core/events/list.html renders none of
-   it. Retire this block only together with the calendar page's own markup.
-   ═══════════════════════════════════════════════════════════════ */
-  .filter-group {
-    margin-bottom: 0.75rem;
-    margin-inline: 0;
-    min-width: 0;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 0.625rem;
-    background: var(--bg-card);
-  }
-  .filter-group h2,
-  .filter-group legend {
-    margin: 0 0 0.5rem;
-    padding: 0;
-    font-size: var(--fs-md);
-  }
-  .filter-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 0.375rem;
-  }
-  .filter-check {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    color: var(--text);
-    font-size: var(--fs-md);
-  }
-  .filter-check input:focus {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
-  .filter-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .region-select {
-    position: relative;
-  }
-  .region-select-toggle {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 0.5rem 0.625rem;
-    background: var(--surface);
-    color: var(--text);
-    font-size: var(--fs-md);
-    cursor: pointer;
-  }
-  .region-select-toggle:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
-  .region-caret {
-    transition: transform 0.15s ease;
-    color: var(--muted);
-  }
-  .region-select-toggle[data-expanded="true"] .region-caret {
-    transform: rotate(180deg);
-  }
-  .region-select-menu {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 4px);
-    z-index: 30;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    box-shadow: var(--shadow-dropdown);
-    max-height: 240px;
-    overflow: auto;
-    padding: 0.5rem;
-  }
-  .region-select-menu[hidden] {
-    display: none;
-  }
-  .region-online {
-    margin-top: 0.5rem;
-  }
-  .event-list {
-    display: grid;
-    gap: 0.625rem;
-  }
-  .event-card {
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 0.75rem;
-    /* Ticket-stub signature #1 (perforation): a dashed vertical rule between
-       the .event-card-media column and the card body, drawn as a background
-       layer (not a border) so it spans the full card height regardless of
-       the media box's own fixed 96px width. Positioned at padding-left +
-       media width (0.75rem + 96px), matching the punch-notch circles below. */
-    background:
-      repeating-linear-gradient(to bottom, var(--line) 0 4px, transparent 0 8px)
-        calc(0.75rem + 96px) 0 / 1px 100% no-repeat,
-      var(--bg-card);
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.75rem;
-    align-items: start;
-    position: relative;
-  }
-  /* Ticket-stub signature #1 (punch notch): paper-coloured, line-bordered
-     circles straddle the card's top/bottom edge at the perforation line —
-     plain circle pseudo-elements, no mask (prompt_plan.md §0). */
-  .event-card::before,
-  .event-card::after {
-    content: "";
-    position: absolute;
-    left: calc(0.75rem + 96px);
-    transform: translateX(-50%);
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--bg);
-    border: 1px solid var(--line);
-  }
-  .event-card::before {
-    top: -5px;
-  }
-  .event-card::after {
-    bottom: -5px;
-  }
-  .event-card > .status-inline-error {
-    grid-column: 1 / -1;
-  }
-  .event-card-media {
-    position: relative;
-    width: 96px;
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  /* 포스터 타일 완충 보더(다크 전용, home.css의 .poster-card-media와
-     동일한 대응) — 밝은 포스터가 다크 배경 위에서 떠 보이는 문제 대응. */
-  :root[data-theme="dark"] .event-card-media {
-    box-shadow: inset 0 0 0 1px var(--line);
-  }
-  .event-card-media-link {
-    display: block;
-  }
-  .event-card-img {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 3 / 4;
-    object-fit: cover;
-    object-position: center top;
-  }
-  .event-card-emoji {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 3 / 4;
-    border-radius: 0;
-    font-size: 2.6rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .event-card-media .glint {
-    top: auto;
-    bottom: 8px;
-    left: 8px;
-    right: auto;
-    z-index: 1;
-  }
-  .event-card h2 {
-    margin: 0 0 0.375rem;
-    font-size: var(--fs-base);
-    line-height: 1.35;
-  }
-  .event-card h2 a {
-    color: inherit;
-    text-decoration: none;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .event-card h2 a:focus {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  .dday {
-    border-radius: var(--radius-chip);
-    padding: 0.3125rem 0.625rem;
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    background: var(--amber-soft);
-    color: var(--amber-ink);
-  }
-  .event-card-dday-badge {
-    display: none;
-  }
-  @media (max-width: 45rem) {
-    .event-list {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .event-card {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0;
-      padding: 0;
-      background: var(--bg-card);
-      overflow: hidden;
-      min-width: 0;
-    }
-    .event-card::before,
-    .event-card::after {
-      display: none;
-    }
-    .event-card-media {
-      width: auto;
-      border-radius: 0;
-      overflow: visible;
-    }
-    /* Ticket-stub signature #1, horizontal form: punch-notch circles
-       straddle the media/body seam via top:calc(100% - 5px), resolving
-       against .event-card-media's OWN box so they land at the seam
-       regardless of the column's actual rendered width. */
-    .event-card-media::before,
-    .event-card-media::after {
-      content: "";
-      position: absolute;
-      top: calc(100% - 5px);
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--bg);
-      border: 1px solid var(--line);
-    }
-    .event-card-media::before {
-      left: -5px;
-    }
-    .event-card-media::after {
-      right: -5px;
-    }
-    .card-body {
-      padding: 0.625rem 0.75rem 0.75rem;
-      border-top: 1px dashed var(--line);
-    }
-    .event-card h2 {
-      font-size: var(--fs-sm);
-    }
-    .event-card .meta,
-    .event-card .period {
-      font-size: var(--fs-xs);
-    }
-    .event-card-dday-badge {
-      display: block;
-    }
-    .card-lead .dday {
-      display: none;
     }
   }
