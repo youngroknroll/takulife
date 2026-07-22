@@ -42,6 +42,10 @@
         <div id="filter-body" class="filter-body">
         <form method="get" action="/events/">
           {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+          {# 정렬 컨트롤은 결과 헤더의 토글 메뉴로 이동했지만(2026-07-22), 현재 #}
+          {# 정렬은 q와 같은 방식으로 이 폼에 실어 보낸다 — 그러지 않으면 필터를 #}
+          {# 적용할 때마다 정렬이 조용히 기본순으로 되돌아간다. #}
+          {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
 
           <fieldset class="filter-group">
             <legend>지역</legend>
@@ -91,16 +95,6 @@
             </ul>
           </fieldset>
 
-          <div class="filter-group">
-            <h2>정렬</h2>
-            <select name="sort">
-              <option value="" {% if not selected_sort %}selected{% endif %}>기본순</option>
-              <option value="closing_soon" {% if selected_sort == "closing_soon" %}selected{% endif %}>종료 임박순</option>
-              <option value="start_asc" {% if selected_sort == "start_asc" %}selected{% endif %}>시작일 빠른순</option>
-              <option value="newest" {% if selected_sort == "newest" %}selected{% endif %}>최신 등록순</option>
-            </select>
-          </div>
-
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" type="submit">필터 적용</button>
             <a class="btn btn-secondary btn-sm" href="/events/">초기화</a>
@@ -113,7 +107,19 @@
         {% if page_obj %}
           <header class="results-head">
             <h2 class="results-title">검색 결과 <span class="results-count">{{ total_count }}</span>개</h2>
-            <p class="results-sort">정렬 <span>{{ selected_sort_label }}</span></p>
+            {# <details>, not a JS dropdown: the options are plain GET links, so #}
+            {# native disclosure gives keyboard operation and a no-JS fallback   #}
+            {# for free. event_list.js only adds outside-click dismissal on top. #}
+            <details class="results-sort" data-sort-menu>
+              <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
+              <ul class="results-sort-menu">
+                {% for slug, label in EVENT_SORT %}
+                  <li>
+                    <a href="?sort={{ slug|urlencode }}{{ extra_query }}"{% if selected_sort == slug %} aria-current="true"{% endif %}>{{ label }}</a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </details>
           </header>
 
           {% if active_filter_chips %}
