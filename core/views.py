@@ -56,6 +56,7 @@ from core.vocab import (
     CATEGORY,
     CATEGORY_LABELS,
     COLLECTION_ITEM_TYPE,
+    EVENT_SORT,
     EVENT_SORT_LABELS,
     EVENT_STATUS,
     EVENT_STATUS_LABELS,
@@ -274,6 +275,10 @@ def event_list(request):
         "CATEGORY": CATEGORY,
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
+        # Sort moved out of the sidebar filter form and into the results-head
+        # toggle menu (2026-07-22), so the template needs the vocab tuple to
+        # render one link per option instead of four hardcoded <option>s.
+        "EVENT_SORT": EVENT_SORT,
         # current selections
         "q": q,
         "selected_region": selected_region,
