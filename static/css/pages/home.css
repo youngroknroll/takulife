@@ -34,7 +34,11 @@
     display: grid;
     grid-template-columns: 3fr 2fr;
     gap: 2.5rem;
-    align-items: start;
+    /* 좌측 컬럼(제목·검색·칩)을 덱 높이에 맞춰 세로 중앙 정렬(2026-07-23
+       사용자 지시: "히어로 블럭 검색 필드 수직 중앙 정렬"). start였을 땐
+       덱이 좌측보다 길어 검색 필드가 블럭 상단에 몰려 있었다. 한 컬럼으로
+       무너지는 ≤64rem에서는 무의미해지지만 해가 없어 그대로 둔다. */
+    align-items: center;
     background: var(--brand-soft);
     border-radius: 20px;
     padding: 2.125rem;
@@ -364,8 +368,22 @@
      shadow/background/padding this used to carry. Shared by the snapshot
      panel below, which gained its own "MY" eyebrow in the 2026-07-23
      collection-section pass. */
+  /* 섹션 간격(2026-07-23 사용자 지시): 48px 순수 여백만으로 나누니 섹션들이
+     서로 흩어져 보였다. 여백을 20px로 줄이고 그 자리에 헤어라인 구분자를 둔다 —
+     구분은 선이 맡고 여백은 숨 쉴 틈만 남기는 방식이라, 총 간격이 48→41px로
+     줄면서도 경계는 오히려 또렷해진다.
+     `.section + .section`이라 첫 섹션에는 선이 붙지 않고, 비로그인 사용자처럼
+     스냅샷 패널이 통째로 빠지는 경우에도 그다음 섹션이 자동으로 첫 섹션이 된다. */
   .section {
-    margin-bottom: 3rem; /* ~48px, plan §A's 46–52px rhythm */
+    margin-bottom: 1.25rem; /* 20px */
+  }
+  .section + .section {
+    border-top: 1px solid var(--line);
+    padding-top: 1.25rem; /* 20px — 위아래 대칭 */
+  }
+  /* 마지막 섹션의 꼬리 여백은 .page의 하단 패딩이 이미 담당한다. */
+  .section:last-child {
+    margin-bottom: 0;
   }
   .section-head {
     display: flex;
