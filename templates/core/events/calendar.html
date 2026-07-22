@@ -10,253 +10,207 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    <h1>이벤트 달력</h1>
-
-    <nav class="nav-links calendar-page-toggle" aria-label="목록·달력 전환">
-      <a href="/events/?{{ request.GET.urlencode }}">목록</a>
-      <a class="active" href="/events/calendar/?{{ request.GET.urlencode }}">달력</a>
-    </nav>
-
-    <div class="calendar-search-row">
-      <form class="search" action="/events/calendar/" method="get">
-        <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
-        {% for v in selected_region %}<input type="hidden" name="region" value="{{ v }}">{% endfor %}
-        {% for v in selected_category %}<input type="hidden" name="category" value="{{ v }}">{% endfor %}
-        {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
-        <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
-        <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
-        <button type="submit">검색</button>
-      </form>
-
-      <section class="panel calendar-filters" id="calendar-filters-panel"
-               data-disclosure data-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
-        <div class="calendar-filters-summary">
-          {% if active_filter_chips %}
-            <div class="applied-filters">
-              {% for chip in active_filter_chips %}<span class="applied-chip">{{ chip }}</span>{% endfor %}
-              <a class="applied-clear" href="/events/calendar/">전체 해제</a>
-            </div>
-          {% endif %}
-          <button type="button" class="calendar-filters-toggle" data-disclosure-toggle
-                  data-controls="calendar-filters-panel" aria-controls="calendar-filters-panel"
-                  aria-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
-            <span data-state="closed">＋ 필터</span>
-            <span data-state="open">필터 닫기 ▴</span>
-            {% if active_filter_count %}<span class="calendar-filters-badge">{{ active_filter_count }}개 적용됨</span>{% endif %}
-          </button>
-        </div>
-        <form method="get" action="/events/calendar/">
-        {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
-        <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
-        <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
-        <fieldset class="filter-group">
-          <legend>지역</legend>
-          <div class="region-select" data-region-select>
-            <button type="button" class="region-select-toggle" data-region-toggle
-                    data-expanded="false" data-controls="calendar-region-options"
-                    aria-expanded="false" aria-controls="calendar-region-options">
-              <span data-region-summary>지역 전체</span>
-              <span class="region-caret">▾</span>
-            </button>
-            <ul class="region-select-menu filter-list" id="calendar-region-options" data-region-menu hidden>
-              {% for slug, label in REGION %}
-                {% if slug != 'online' %}
-                  <li>
-                    <label class="filter-check">
-                      <input type="checkbox" name="region" value="{{ slug }}"{% if slug in selected_region %} checked{% endif %}>
-                      {{ label }}
-                    </label>
-                  </li>
-                {% endif %}
-              {% endfor %}
-            </ul>
-          </div>
-          <label class="filter-check region-online">
-            <input type="checkbox" name="region" value="online"{% if 'online' in selected_region %} checked{% endif %}>
-            온라인
-          </label>
-        </fieldset>
-
-        <fieldset class="filter-group">
-          <legend>카테고리</legend>
-          <ul class="filter-list">
-            {% for slug, label in CATEGORY %}
-              <li>
-                <label class="filter-check">
-                  <input type="checkbox" name="category" value="{{ slug }}"{% if slug in selected_category %} checked{% endif %}>
-                  {{ label }}
-                </label>
-              </li>
-            {% endfor %}
-          </ul>
-        </fieldset>
-
-        <fieldset class="filter-group">
-          <legend>이벤트 상태</legend>
-          <ul class="filter-list">
-            <li>
-              <label class="filter-check">
-                <input type="radio" name="status" value=""{% if not selected_status %} checked{% endif %}>
-                전체
-              </label>
-            </li>
-            {% for slug, label in EVENT_STATUS %}
-              <li>
-                <label class="filter-check">
-                  <input type="radio" name="status" value="{{ slug }}"{% if selected_status == slug %} checked{% endif %}>
-                  {{ label }}
-                </label>
-              </li>
-            {% endfor %}
-          </ul>
-        </fieldset>
-
-        <div class="filter-group">
-          <h2>정렬</h2>
-          <select name="sort">
-            <option value="" {% if not selected_sort %}selected{% endif %}>기본순</option>
-            <option value="closing_soon" {% if selected_sort == "closing_soon" %}selected{% endif %}>종료 임박순</option>
-            <option value="start_asc" {% if selected_sort == "start_asc" %}selected{% endif %}>시작일 빠른순</option>
-            <option value="newest" {% if selected_sort == "newest" %}selected{% endif %}>최신 등록순</option>
-          </select>
-        </div>
-
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" type="submit">필터 적용</button>
-          <a class="btn btn-secondary btn-sm" href="/events/calendar/">초기화</a>
-        </div>
-      </form>
-      </section>
+  <main class="page events-page" id="content">
+    <div class="events-head">
+      <h1>이벤트 달력</h1>
+      <nav class="events-tabs" aria-label="목록·달력 전환">
+        <a href="/events/?{{ request.GET.urlencode }}">목록</a>
+        <a class="active" aria-current="page" href="/events/calendar/?{{ request.GET.urlencode }}">달력</a>
+      </nav>
     </div>
 
-    <nav class="calendar-month-nav" aria-label="월 이동">
-      <h2 class="calendar-month-label">
-        <span class="calendar-month-year">{{ selected_date|date:"Y" }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ selected_date|date:"n" }}월</span>
-      </h2>
-      <div class="calendar-month-controls">
-        <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="이전 달">‹</a>
-        <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="다음 달">›</a>
-        <a class="calendar-month-today" href="?{{ extra_query }}">오늘</a>
-      </div>
-    </nav>
+    <form class="search events-search" action="/events/calendar/" method="get">
+      <span class="events-search-field">
+        <span class="events-search-icon" aria-hidden="true">⌕</span>
+        <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
+      </span>
+      {% for v in selected_region %}<input type="hidden" name="region" value="{{ v }}">{% endfor %}
+      {% for v in selected_category %}<input type="hidden" name="category" value="{{ v }}">{% endfor %}
+      {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+      <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
+      <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
+      <button type="submit">검색</button>
+    </form>
 
-    {% if calendar_error == "invalid" %}
-      <div class="empty-state calendar-error-panel">
-        <p class="empty-title">요청한 날짜를 확인할 수 없어요</p>
-        <p class="empty-note">주소의 월 또는 날짜 값이 올바르지 않습니다.</p>
-        <a class="empty-action" href="?{{ extra_query }}">이번 달 보기</a>
-      </div>
-    {% elif calendar_error == "query_failed" %}
-      <div class="empty-state calendar-error-panel">
-        <p class="empty-title">불러오지 못했어요</p>
-        <p class="empty-note">잠시 후 다시 시도해 주세요.</p>
-        <a class="empty-action" href="{{ request.get_full_path }}">다시 시도</a>
-      </div>
-    {% endif %}
+    <div class="quick-row">
+      <a class="chip{% if 'seoul' in selected_region %} active{% endif %}" href="/events/calendar/?region=seoul">서울</a>
+      <a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/calendar/?region=gyeonggi">경기</a>
+      <a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/calendar/?region=incheon">인천</a>
+      <a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/calendar/?status=closing_soon">종료 임박</a>
+      <a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" href="/events/calendar/?category=popup_store">팝업스토어</a>
+      <a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/calendar/?category=collaboration_cafe">콜라보 카페</a>
+    </div>
 
-    {% include "core/partials/_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
+    <section class="layout">
+      <aside class="panel filters">
+        <button class="filter-toggle" type="button" data-expanded="false" data-controls="filter-body"
+                aria-expanded="false" aria-controls="filter-body">필터 열기 ▾</button>
 
-    <section class="date-detail-section" id="selected-date">
-      <div class="date-detail-head">
-        <h2>{{ selected_date|date:"n월 j일" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
-        {% if selected_events %}<span class="date-detail-count">이벤트 {{ selected_events|length }}건</span>{% endif %}
-      </div>
-      {% if selected_events %}
-        <div class="event-list">
-          {% for row in selected_events %}
-            <article class="event-card hover-lift date-detail-card" data-status-error-container>
-              <div class="event-card-media">
-                <a class="event-card-media-link" href="/events/{{ row.event.id }}/" tabindex="-1">
-                  {% if row.event.poster_image %}
-                    <img class="event-card-img" src="{{ row.event.poster_image.url }}" alt="{{ row.event.title }} 포스터" loading="lazy">
-                  {% else %}
-                    <span class="cat-tile cat-{{ row.category_slug }} event-card-emoji"></span>
-                  {% endif %}
-                </a>
-                {% if row.status_slug == 'ended' %}
-                  <span class="event-card-dday-badge poster-badge poster-badge-ended">종료</span>
-                {% elif row.status_slug == 'upcoming' %}
-                  <span class="event-card-dday-badge poster-badge poster-badge-open">{% if row.dday == 0 %}오늘 오픈{% else %}오픈까지 {{ row.dday }}일{% endif %}</span>
-                {% elif row.status_slug == 'closing_soon' %}
-                  <span class="event-card-dday-badge poster-badge poster-badge-closing">{% if row.dday == 0 %}오늘 종료{% else %}종료까지 {{ row.dday }}일{% endif %}</span>
-                {% endif %}
-                <span class="glint">✦</span>
-              </div>
-              <div class="card-body">
-                <div class="card-lead">
-                  {% if row.status_slug == 'ended' %}
-                    <span class="dday">종료</span>
-                  {% elif row.dday is not None %}
-                    <span class="dday">D-{{ row.dday }}</span>
-                  {% endif %}
-                  {% if row.status_label %}
-                    <span class="lead-status">{{ row.status_label }}</span>
-                  {% endif %}
-                  {% if row.category_label %}
-                    <span class="cat-chip cat-{{ row.category_slug }}">{{ row.category_label }}</span>
-                  {% endif %}
-                </div>
-                <h2><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
-                {% if row.region_label and row.event.location_name %}
-                  <p class="meta">{{ row.region_label }} · {{ row.event.location_name }}</p>
-                {% elif row.region_label %}
-                  <p class="meta">{{ row.region_label }}</p>
-                {% elif row.event.location_name %}
-                  <p class="meta">{{ row.event.location_name }}</p>
-                {% endif %}
-                {% if row.event.start_date and row.event.end_date %}
-                  <p class="period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</span></p>
-                {% elif row.event.start_date %}
-                  <p class="period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} -</span></p>
-                {% endif %}
-                {% if row.user_status == 'visited' or row.user_status == 'missed' %}
-                  <div class="status-row">
-                    <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
-                  </div>
-                {% endif %}
-                {% if request.user.is_authenticated %}
-                  <div class="status-row">
-                    <button class="interest-btn{% if row.user_interested %} active{% endif %}" type="button"
-                      data-interest-toggle
-                      data-toast
-                      data-event-id="{{ row.event.id }}"
-                      aria-pressed="{% if row.user_interested %}true{% else %}false{% endif %}"
-                      {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
-                      <span data-interest-glyph aria-hidden="true">{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
-                      찜
-                    </button>
-                    {% if not row.user_status or row.user_status == 'planned' %}
-                      <button class="status-btn planned{% if row.user_status == 'planned' %} active{% endif %}" type="button"
-                        data-status-action
-                        data-toast
-                        data-event-id="{{ row.event.id }}"
-                        data-status="planned"
-                        data-reload-on-success
-                        {% if row.user_status == 'planned' and row.user_status_id %}data-status-id="{{ row.user_status_id }}"{% endif %}
-                        {% if row.status_slug == 'ended' %}disabled title="종료된 이벤트는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
+        <div id="filter-body" class="filter-body">
+        <form method="get" action="/events/calendar/">
+          {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+          {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
+          <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
+          <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
+
+          <fieldset class="filter-group">
+            <legend>지역</legend>
+            <ul class="filter-list">
+              {% for slug, label in REGION %}
+                <li>
+                  <label class="filter-check">
+                    <input type="checkbox" name="region" value="{{ slug }}"{% if slug in selected_region %} checked{% endif %}>
+                    {{ label }}
+                  </label>
+                </li>
+              {% endfor %}
+            </ul>
+          </fieldset>
+
+          <fieldset class="filter-group">
+            <legend>카테고리</legend>
+            <ul class="filter-list">
+              {% for slug, label in CATEGORY %}
+                <li>
+                  <label class="filter-check">
+                    <input type="checkbox" name="category" value="{{ slug }}"{% if slug in selected_category %} checked{% endif %}>
+                    {{ label }}
+                  </label>
+                </li>
+              {% endfor %}
+            </ul>
+          </fieldset>
+
+          <fieldset class="filter-group">
+            <legend>이벤트 상태</legend>
+            <ul class="filter-list">
+              <li>
+                <label class="filter-check">
+                  <input type="radio" name="status" value=""{% if not selected_status %} checked{% endif %}>
+                  전체
+                </label>
+              </li>
+              {% for slug, label in EVENT_STATUS %}
+                <li>
+                  <label class="filter-check">
+                    <input type="radio" name="status" value="{{ slug }}"{% if selected_status == slug %} checked{% endif %}>
+                    {{ label }}
+                  </label>
+                </li>
+              {% endfor %}
+            </ul>
+          </fieldset>
+
+          <div class="filter-actions">
+            <button class="btn btn-primary btn-sm" type="submit">필터 적용</button>
+            <a class="btn btn-secondary btn-sm" href="/events/calendar/">초기화</a>
+          </div>
+        </form>
+        </div>
+      </aside>
+
+      <article class="panel results">
+        {% if active_filter_chips %}
+          <div class="applied-filters">
+            {% for chip in active_filter_chips %}
+              <span class="applied-chip">{{ chip }}</span>
+            {% endfor %}
+            <a class="applied-clear" href="/events/calendar/">전체 해제</a>
+          </div>
+        {% endif %}
+
+        <nav class="calendar-month-nav" aria-label="월 이동">
+          <h2 class="calendar-month-label">
+            <span class="calendar-month-year">{{ selected_date|date:"Y" }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ selected_date|date:"n" }}월</span>
+          </h2>
+          <div class="calendar-month-controls">
+            <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="이전 달">‹</a>
+            <a class="calendar-month-today" href="?{{ extra_query }}">이번 달</a>
+            <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="다음 달">›</a>
+          </div>
+        </nav>
+
+        {% if calendar_error == "invalid" %}
+          <div class="empty-state calendar-error-panel">
+            <p class="empty-title">요청한 날짜를 확인할 수 없어요</p>
+            <p class="empty-note">주소의 월 또는 날짜 값이 올바르지 않습니다.</p>
+            <a class="empty-action" href="?{{ extra_query }}">이번 달 보기</a>
+          </div>
+        {% elif calendar_error == "query_failed" %}
+          <div class="empty-state calendar-error-panel">
+            <p class="empty-title">불러오지 못했어요</p>
+            <p class="empty-note">잠시 후 다시 시도해 주세요.</p>
+            <a class="empty-action" href="{{ request.get_full_path }}">다시 시도</a>
+          </div>
+        {% endif %}
+
+        {% include "core/partials/_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
+
+        <section class="date-detail-section" id="selected-date">
+          <div class="date-detail-head">
+            <h2>{{ selected_date|date:"n월 j일" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
+            {% if selected_events %}<span class="date-detail-count">이벤트 {{ selected_events|length }}건</span>{% endif %}
+          </div>
+          {% if selected_events %}
+            <div class="agenda-rows">
+              {% for row in selected_events %}
+                <article class="agenda-row" data-status-error-container data-cat="{{ row.category_slug }}">
+                  <span class="agenda-bar" aria-hidden="true"></span>
+                  <div class="agenda-body">
+                    <p class="agenda-meta">
+                      {% if row.category_label %}
+                        <span class="agenda-cat">{{ row.category_label }}</span>
+                      {% endif %}
+                      {% if row.category_label and row.status_label %}
+                        <span class="agenda-dot" aria-hidden="true"></span>
+                      {% endif %}
+                      {% if row.status_label %}
+                        <span class="agenda-tone">{{ row.status_label }}</span>
+                      {% endif %}
+                      {% if row.user_status == 'visited' or row.user_status == 'missed' %}
+                        <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
+                      {% endif %}
+                    </p>
+                    <h3 class="agenda-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
+                    {% if row.region_label and row.event.location_name %}
+                      <p class="agenda-place">{{ row.region_label }} · {{ row.event.location_name }}</p>
+                    {% elif row.region_label %}
+                      <p class="agenda-place">{{ row.region_label }}</p>
+                    {% elif row.event.location_name %}
+                      <p class="agenda-place">{{ row.event.location_name }}</p>
                     {% endif %}
                   </div>
-                {% else %}
-                  <div class="status-row">
-                    <a class="side-action-link" href="/accounts/login/?next={{ request.get_full_path|urlencode }}">로그인하고 찜하기</a>
+                  <div class="agenda-end">
+                    {% if request.user.is_authenticated %}
+                      <button class="interest-btn event-row-interest{% if row.user_interested %} active{% endif %}" type="button"
+                        data-interest-toggle
+                        data-toast
+                        data-event-id="{{ row.event.id }}"
+                        aria-label="찜"
+                        aria-pressed="{% if row.user_interested %}true{% else %}false{% endif %}"
+                        {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
+                        <span data-interest-glyph aria-hidden="true">{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
+                      </button>
+                    {% else %}
+                      <a class="side-action-link" href="/accounts/login/?next={{ request.get_full_path|urlencode }}">로그인하고 찜하기</a>
+                    {% endif %}
+                    <a class="side-action-link" href="/events/{{ row.event.id }}/" tabindex="-1">자세히 ›</a>
                   </div>
-                {% endif %}
-              </div>
-            </article>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-state">
-          <p class="empty-title">이 날짜에는 등록된 공식 이벤트가 없어요</p>
-          <a class="empty-action" href="/events/">전체 이벤트 보기</a>
-        </div>
-      {% endif %}
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <p class="empty-title">이 날짜에는 등록된 공식 이벤트가 없어요</p>
+              <a class="empty-action" href="/events/">전체 이벤트 보기</a>
+            </div>
+          {% endif %}
+        </section>
+      </article>
     </section>
   </main>
 {% endblock %}
 
 {% block extra_js %}
 <script defer src="{% static 'js/pages/event_list.js' %}"></script>
-<script defer src="{% static 'js/shared/disclosure.js' %}"></script>
 {% endblock %}
