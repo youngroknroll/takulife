@@ -38,6 +38,7 @@ from archive.queries import (
     list_user_visit_records,
     user_collection_item_filter_values,
     user_collection_item_summary_counts,
+    user_collection_item_work_title_counts,
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
@@ -1139,6 +1140,22 @@ def archive_visit_edit(request, record_id):
     )
 
 
+def _series_ink_class(work_title: str) -> str:
+    """Deterministic accent-color bucket for a CollectionItem's work_title.
+
+    work_title is free text entered by the user, so there is no fixed
+    lookup table to map it to a color — instead this hashes the string
+    itself, which guarantees the same work_title always lands in the same
+    bucket (needed so a sidebar dot and its matching card share one color).
+    "gi-0" is the explicit no-series bucket for a blank work_title; a
+    populated work_title always maps to one of "gi-1".."gi-6" via the sum of
+    its codepoints modulo 6.
+    """
+    if not work_title:
+        return "gi-0"
+    return f"gi-{sum(ord(ch) for ch in work_title) % 6 + 1}"
+
+
 def _collection_item_row(item):
     """Display row for one CollectionItem card.
 
@@ -1153,6 +1170,7 @@ def _collection_item_row(item):
             f"교환 가능 {item.tradeable_quantity}개" if item.tradeable_quantity > 0 else ""
         ),
         "is_wanted": item.is_wanted,
+        "series_ink_class": _series_ink_class(item.work_title),
     }
 
 
@@ -1168,6 +1186,13 @@ def archive_collection_items(request):
     # visits/personal-entries filter fallback discipline (500 prevention).
     is_wanted = {"true": True, "false": False}.get(request.GET.get("is_wanted", ""))
     is_wanted_value = {True: "true", False: "false"}.get(is_wanted, "")
+    duplicate = {"true": True, "false": False}.get(request.GET.get("duplicate", ""))
+    duplicate_value = {True: "true", False: "false"}.get(duplicate, "")
+    tradeable = {"true": True, "false": False}.get(request.GET.get("tradeable", ""))
+    tradeable_value = {True: "true", False: "false"}.get(tradeable, "")
+    # Only "list" is recognised; absence or any other value falls back to the
+    # default gallery view (same 500-prevention fallback discipline as above).
+    view_mode = "list" if request.GET.get("view") == "list" else "gallery"
 
     summary_counts = user_collection_item_summary_counts(user)
     has_items = (summary_counts["owned_count"] + summary_counts["wanted_count"]) > 0
@@ -1178,6 +1203,8 @@ def archive_collection_items(request):
         character_name=character_name,
         item_type=item_type,
         is_wanted=is_wanted,
+        duplicate=duplicate,
+        tradeable=tradeable,
         q=q,
     )
     paginator = Paginator(filtered_qs, ARCHIVE_COLLECTION_PAGE_SIZE)
@@ -1185,10 +1212,15 @@ def archive_collection_items(request):
     item_rows = [_collection_item_row(item) for item in page_obj.object_list]
 
     # --- Query-string helpers ----------------------------------------------
-    # Three DIFFERENT axis subsets, easy to confuse:
-    #   chip_query_suffix  — q + 3 filters, is_wanted EXCLUDED (chips switch it)
-    #   pager_query        — all 5 axes (paging changes nothing)
-    #   clear_query_suffix — is_wanted + 3 filters, q EXCLUDED (clear removes it)
+    # Four DIFFERENT axis subsets, easy to confuse:
+    #   chip_query_suffix  — q + 3 filters + view; is_wanted/duplicate/tradeable
+    #                        EXCLUDED (they are one exclusive sub-tab axis that
+    #                        chips switch between, so a chip must never carry
+    #                        the sub-tab that's already active)
+    #   pager_query        — all 3 filters + q + view + all 3 sub-tab values
+    #                        (paging changes nothing about the active filters)
+    #   clear_query_suffix — 3 filters + view + all 3 sub-tab values, q
+    #                        EXCLUDED (clear removes only the search term)
     filter_parts = []
     if work_title:
         filter_parts.append(("work_title", work_title))
@@ -1197,21 +1229,29 @@ def archive_collection_items(request):
     if item_type:
         filter_parts.append(("item_type", item_type))
 
+    sub_tab_parts = []
+    if is_wanted_value:
+        sub_tab_parts.append(("is_wanted", is_wanted_value))
+    if duplicate_value:
+        sub_tab_parts.append(("duplicate", duplicate_value))
+    if tradeable_value:
+        sub_tab_parts.append(("tradeable", tradeable_value))
+
+    view_parts = [("view", "list")] if view_mode == "list" else []
+
     chip_parts = list(filter_parts)
     if q:
         chip_parts.append(("q", q))
+    chip_parts += view_parts
     chip_query_suffix = "&" + urlencode(chip_parts) if chip_parts else ""
 
-    clear_parts = list(filter_parts)
-    if is_wanted_value:
-        clear_parts.append(("is_wanted", is_wanted_value))
+    clear_parts = list(filter_parts) + sub_tab_parts + view_parts
     clear_query_suffix = urlencode(clear_parts)
 
-    pager_parts = list(filter_parts)
-    if is_wanted_value:
-        pager_parts.append(("is_wanted", is_wanted_value))
+    pager_parts = list(filter_parts) + sub_tab_parts
     if q:
         pager_parts.append(("q", q))
+    pager_parts += view_parts
     pager_query = "&" + urlencode(pager_parts) if pager_parts else ""
 
     return _render_archive_list(
@@ -1224,6 +1264,19 @@ def archive_collection_items(request):
             "has_items": has_items,
             "owned_count": summary_counts["owned_count"],
             "wanted_count": summary_counts["wanted_count"],
+            "tradeable_count": summary_counts["tradeable_count"],
+            # Same _series_ink_class() the cards use, so a sidebar dot and the
+            # cards it filters to always share one color — the whole point of
+            # the per-series coding. The query layer stays shape-agnostic
+            # (title, count) tuples; the color is a display concern.
+            "work_title_counts": [
+                {
+                    "title": title,
+                    "count": count,
+                    "series_ink_class": _series_ink_class(title),
+                }
+                for title, count in user_collection_item_work_title_counts(user)
+            ],
             "filter_values": user_collection_item_filter_values(user),
             "q": q,
             "has_query": bool(q),
@@ -1231,6 +1284,9 @@ def archive_collection_items(request):
             "character_name": character_name,
             "item_type": item_type,
             "is_wanted_value": is_wanted_value,
+            "duplicate_value": duplicate_value,
+            "tradeable_value": tradeable_value,
+            "view_mode": view_mode,
             "chip_query_suffix": chip_query_suffix,
             "pager_query": pager_query,
             "clear_query_suffix": clear_query_suffix,

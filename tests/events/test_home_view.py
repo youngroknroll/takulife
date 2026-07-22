@@ -332,7 +332,11 @@ class TestHomeCollectionSnapshotContext:
         with patch("core.views.timezone.localdate", return_value=today):
             resp = client.get("/")
 
-        assert resp.context["collection_summary"] == {"owned_count": 1, "wanted_count": 0}
+        assert resp.context["collection_summary"] == {
+            "owned_count": 1,
+            "wanted_count": 0,
+            "tradeable_count": 0,
+        }
         assert resp.context["recent_goods"][0].name == "보유 아이템"
         assert resp.context["unrecorded"][0]["subject"]["subject_type"] == "event"
         assert resp.context["unrecorded"][0]["subject"]["subject_id"] == visited_event.id
