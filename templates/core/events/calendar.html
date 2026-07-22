@@ -197,7 +197,7 @@
                     <span class="cat-chip cat-{{ row.category_slug }}">{{ row.category_label }}</span>
                   {% endif %}
                 </div>
-                <h2><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a>{% if row.event.official_url %} <span class="card-official-badge">공식</span>{% endif %}</h2>
+                <h2><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
                 {% if row.region_label and row.event.location_name %}
                   <p class="meta">{{ row.region_label }} · {{ row.event.location_name }}</p>
                 {% elif row.region_label %}

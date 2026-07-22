@@ -109,9 +109,6 @@ Context consumed: request.user (via the calling page) is not needed here.
        the whole card stays clickable. {% endcomment %}
     <div class="poster-card-caption-inner" style="border-color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));">
       <h3 class="poster-card-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
-      {% if ev.official_url %}
-        <p class="poster-card-badges"><span class="card-official-badge">공식</span></p>
-      {% endif %}
       {% comment %} Location + period collapsed into one meta line (designer
          guidance: a title + location + period 3-line stack reads heavy on a
          narrow card — condense to title + one period-centred meta line,

@@ -654,15 +654,14 @@
      a::after, `inset:0`) to resolve against the caption box instead of
      .poster-card and shrink the whole-card click target down to just the
      caption strip (BIR finding, home-editorial plan §사전 검토). Sized to
-     its own content (title + badges + meta), so the bar spans exactly that
+     its own content (title + meta), so the bar spans exactly that
      height regardless of how many lines the title wraps to. */
   /* Fixed-height caption (2026-07-21, coordinator instruction — same-track
      card-height parity): a rail's cards must all be the same height no
      matter how much a given event's title wraps (1 vs 2 lines) or whether
-     its optional official badge (.poster-card-badges/.card-official-badge,
-     cards.css — only when event.official_url is set) or meta line
-     (.poster-card-meta — only when location_name/start_date exist) is
-     present in the DOM at all. Row-stretch (flex/grid on the parent) only
+     its optional meta line (.poster-card-meta — only when
+     location_name/start_date exist) is present in the DOM at all.
+     Row-stretch (flex/grid on the parent) only
      equalizes the outer <li>/.poster-card box, not this in-flow content —
      so instead every optional row gets its own worst-case reserve, and the
      whole block additionally floors at their sum, deliberately summed
@@ -672,13 +671,10 @@
        title (2 lines, .poster-card-title's own min-height below) = 2.7em
          = var(--fs-base)*1.35(line-height)*2                      = 2.565rem
        + title margin-bottom                                       = 0.1875rem
-       + official badge worst case: .poster-card-badges margin-top
-         0.1875rem + .card-official-badge line box (var(--fs-xs)*1.6,
-         inherited body line-height) 1.2rem + padding 0.1875rem*2   = 1.7625rem
        + meta line (1 line, .poster-card-meta's own min-height below)
          = var(--fs-sm)*1.3(line-height)                            = 1.04rem
-     raw total 5.555rem, rounded up to the repo's 0.0625rem grain with a
-     small safety margin: 5.625rem. Mobile (≤45rem) recomputes the same sum
+     raw total 3.7925rem, rounded up to the repo's 0.0625rem grain with a
+     small safety margin: 3.875rem. Mobile (≤45rem) recomputes the same sum
      with the breakpoint's smaller title/meta font-size overrides — see
      that media query below. */
   .poster-card-caption-inner {
@@ -687,7 +683,7 @@
        border-color comes from the per-category inline style. */
     border-left: 3px solid var(--brand-ink);
     padding-left: 0.5625rem;
-    min-height: 5.625rem;
+    min-height: 3.875rem;
   }
   .poster-card-title {
     margin: 0 0 0.1875rem;
@@ -825,29 +821,25 @@
        mechanism the desktop rail already uses (no row-stretch dependency
        there either). */
 
-    /* Card scale ≈2/3 (ballpark target — the gate is a manual no-overflow
-       check at 320/375, not an exact pixel match). Width is fixed by the 2-up
-       layout above, not a free variable, and the caption floor is already
-       dominated by the official-badge portion (cards.css's
-       .poster-card-badges/.card-official-badge, can't shrink further
-       without touching that shared file) — so the lever here is the
-       image tile's aspect-ratio, not typography, which is already pinned
-       to this file's 12px floor (--fs-xs) on both caption lines.
+    /* Card scale reduction (the gate is a manual no-overflow check at
+       320/375, not an exact pixel match). Width is fixed by the 2-up layout
+       above, not a free variable. The 4:3 media ratio remains the lever;
+       typography is already pinned to this file's 12px floor (--fs-xs) on
+       both caption lines.
        Derivation (375px reference, --page-pad-x 1rem at this width):
          content width   375 - 2*16                             = 343px
          li width        (343 - 10) / 2                         ≈ 166.5px
          [before] media 3:4 portrait   166.5 * 4/3               ≈ 222px
-         [before] caption floor (5.125rem, old ≤45rem tier)      = 82px
+         [before] caption floor (3.875rem)                        = 62px
          [before] border 1px*2                                    = 2px
-         [before] total                                          ≈ 306px
-         [target] 306 * 2/3                                      ≈ 204px
-         [after] caption floor recomputed for this tier (title
-           capped to --fs-xs too, see .poster-card-caption-inner
-           below)                                                ≈ 79px
-         [after] media budget   204 - 79 - 2                     ≈ 123px
-         [after] aspect-ratio needed   166.5 / 123                ≈ 4:3
-       4:3 (landscape) lands within a few px of the ≈2/3 target — adopted
-       below. object-position stays "center top" (.poster-card-img,
+         [before] total                                          ≈ 286px
+         [after] media 4:3 landscape  166.5 * 3/4                ≈ 125px
+         [after] caption floor (3.125rem)                         = 50px
+         [after] border 1px*2                                    = 2px
+         [after] total                                           ≈ 177px
+       4:3 (landscape) preserves the existing media crop while the smaller
+       caption floor reduces the card height. object-position stays
+       "center top" (.poster-card-img,
        unchanged) so the crop keeps the poster's top (title/character
        art) — same precedent as the hero deck's own aspect-ratio choice. */
     /* Only the elements that actually establish their own height need the
@@ -867,16 +859,13 @@
       font-size: var(--fs-xs);
     }
     /* Container floor recomputed for this tier — both caption lines at
-       --fs-xs now (title was --fs-sm in the old ≤45rem tier), badge
-       portion unchanged (cards.css has no mobile override for
-       .card-official-badge):
-         title (2 lines) = var(--fs-xs)*1.3(line-height)*2 = 1.95rem
-           + margin-bottom                                  = 0.1875rem
-         + badge worst case (unchanged)                     = 1.7625rem
+       --fs-xs now (title was --fs-sm in the old ≤45rem tier):
+       title (2 lines) = var(--fs-xs)*1.3(line-height)*2 = 1.95rem
+         + margin-bottom                                  = 0.1875rem
          + meta (1 line) = var(--fs-xs)*1.3                  = 0.975rem
-       raw total 4.8825rem, rounded up to the grain: 4.9375rem. */
+       raw total 3.1125rem, rounded up to the grain: 3.125rem. */
     .poster-card-caption-inner {
-      min-height: 4.9375rem;
+      min-height: 3.125rem;
     }
   }
 
