@@ -231,7 +231,7 @@ def event_list(request):
     event_rows = []
 
     # Invalid / unrecognised filter values are treated as "no match" so the
-    # browse page degrades to the empty state ("행사 없음") instead of an error
+    # browse page degrades to the empty state ("이벤트 없음") instead of an error
     # screen. The JSON API still rejects the same input with 400.
     try:
         params = parse_public_listing_params(request.GET)
@@ -1062,7 +1062,7 @@ def _parse_visit_preselect(request):
     """Resolve an optional ?subject=event:<id> / personal:<id> into a locked
     subject for the visit-create form.
 
-    Returns ``{"value": "event:5", "label": "행사명"}`` when the param points at a
+    Returns ``{"value": "event:5", "label": "이벤트명"}`` when the param points at a
     published event or one of the requester's own personal entries; ``None``
     otherwise (the form then falls back to the selectable dropdown). This lets a
     '기록' button on an already-visited event — which is not in the planned-only
@@ -1097,7 +1097,7 @@ def archive_visit_create(request):
 
     Read-only render: the form posts to the existing JSON/photo APIs from
     visit_create.js. Subject choices mirror the inline form they replace, except
-    when ``?subject=`` preselects a specific subject (e.g. from a 방문 완료 행사's
+    when ``?subject=`` preselects a specific subject (e.g. from a 방문 완료 이벤트's
     '기록' button) — then the form shows that subject locked instead of the
     dropdown.
     """
