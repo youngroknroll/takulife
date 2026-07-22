@@ -2,6 +2,8 @@ import logging
 
 from django.db import IntegrityError, transaction
 
+from core.vocab import is_valid_category, is_valid_region
+
 from .models import Event
 
 logger = logging.getLogger(__name__)
@@ -54,7 +56,17 @@ class PublishEventTitleError(PublishEventError):
     pass
 
 
-def _validate_publish_fields(*, title, official_url, start_date, end_date, existing_queryset):
+class PublishEventCategoryError(PublishEventError):
+    pass
+
+
+class PublishEventRegionError(PublishEventError):
+    pass
+
+
+def _validate_publish_fields(
+    *, title, official_url, start_date, end_date, category, region, existing_queryset
+):
     """Shared invariant checks for create_published_event and update_published_event.
 
     `existing_queryset` scopes the official_url uniqueness check: the full
@@ -81,6 +93,15 @@ def _validate_publish_fields(*, title, official_url, start_date, end_date, exist
     if start_date is not None and end_date is not None and start_date > end_date:
         raise InvalidEventPeriodError
 
+    # Vocabulary membership (2026-07-23). Neither field has `choices`, so this
+    # is the only thing standing between a hand-made staff POST and free text
+    # in the DB — the staff console's <select> is a client-side hint, not a
+    # constraint. "" stays valid on both (미분류 / 지역 미상).
+    if not is_valid_category(category or ""):
+        raise PublishEventCategoryError
+    if not is_valid_region(region or ""):
+        raise PublishEventRegionError
+
     return normalized_title, normalized_official_url
 
 
@@ -102,6 +123,8 @@ def create_published_event(
         official_url=official_url,
         start_date=start_date,
         end_date=end_date,
+        category=category,
+        region=region,
         existing_queryset=Event.objects.all(),
     )
 
@@ -155,6 +178,8 @@ def update_published_event(
         official_url=official_url,
         start_date=start_date,
         end_date=end_date,
+        category=category,
+        region=region,
         existing_queryset=Event.objects.exclude(pk=event.pk),
     )
 
@@ -220,6 +245,11 @@ def republish_event(*, event):
         official_url=event.official_url,
         start_date=event.start_date,
         end_date=event.end_date,
+        # Vocabulary is checked here too, for the reason this function exists:
+        # a row that reached an invalid state by some other path must not slip
+        # back into the published set without passing the same gate.
+        category=event.category,
+        region=event.region,
         existing_queryset=Event.objects.exclude(pk=event.pk),
     )
     event.publish_status = Event.PublishStatus.PUBLISHED

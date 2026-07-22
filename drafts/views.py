@@ -17,6 +17,7 @@ from .services import (
     DraftCreationUnsupportedContentError,
     DraftCreationUnsafeUrlError,
     DraftStateError,
+    DraftVocabError,
     create_draft_from_url,
     update_draft,
 )
@@ -83,5 +84,9 @@ class AdminEventDraftDetailView(RetrieveUpdateAPIView):
             updated_draft = update_draft(draft_id=draft.id, updates=serializer.validated_data)
         except DraftStateError:
             return error_response("Only pending drafts can be updated.", 400)
+        except DraftVocabError:
+            return error_response(
+                "category/region must be a known vocabulary slug.", 400
+            )
 
         return Response(EventDraftSerializer(updated_draft).data, status=status.HTTP_200_OK)

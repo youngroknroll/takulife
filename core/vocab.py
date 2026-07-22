@@ -40,6 +40,12 @@ REGION: tuple[tuple[str, str], ...] = (
     ("gyeonggi", "경기"),
     ("incheon", "인천"),
     ("busan", "부산"),
+    # 대구·대전·광주는 2026-07-23에 추가됐다. 실데이터가 이미 이 세 도시를
+    # 쓰고 있었는데 어휘에 없어 지역 필터 어디에도 걸리지 않았다 — 어휘 가드를
+    # 걸기 전에 먼저 메워야 했던 구멍이다.
+    ("daegu", "대구"),
+    ("daejeon", "대전"),
+    ("gwangju", "광주"),
     ("online", "온라인"),
 )
 
@@ -107,3 +113,41 @@ EVENT_SORT: tuple[tuple[str, str], ...] = (
 )
 
 EVENT_SORT_LABELS: dict[str, str] = dict(EVENT_SORT)
+
+
+# ---------------------------------------------------------------------------
+# Vocabulary membership checks (2026-07-23).
+#
+# Event.category / Event.region are plain CharFields with no `choices`, so
+# nothing at the model or DB layer rejects a value outside these tuples. The
+# LLM extraction path already revalidates against the same vocabulary
+# (drafts/llm_extraction.py) and the public API is read-only, but the staff
+# write paths relied on the template <select> alone — a hand-made POST went
+# straight through, which is how free text like "카페/팝업" reached the dev DB
+# and silently disabled the category colour system.
+#
+# These return a bool rather than raising: each caller owns the domain error
+# its own layer reports (events.services raises PublishEvent*Error, which the
+# staff console maps to a field error; drafts.services raises DraftVocabError).
+#
+# `choices=` on the model was considered and rejected: this project has no
+# ModelForms for events (the staff console builds form_values by hand) and
+# CATEGORY_LABELS already covers display, so it would buy nothing while adding
+# an AlterField migration to every future vocabulary edit — and this
+# vocabulary demonstrably still grows (see the 2026-07-23 REGION additions).
+# ---------------------------------------------------------------------------
+def is_valid_category(value: str) -> bool:
+    """True when `value` is a known category slug or "" (미분류).
+
+    Blank is deliberately valid: category is optional on Event, and rejecting
+    it would make an uncategorised event impossible to register.
+    """
+    return value == "" or value in CATEGORY_LABELS
+
+
+def is_valid_region(value: str) -> bool:
+    """True when `value` is a known region slug or "" (지역 미상).
+
+    Blank is deliberately valid — see is_valid_category.
+    """
+    return value == "" or value in REGION_LABELS

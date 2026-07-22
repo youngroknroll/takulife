@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from core.vocab import is_valid_category, is_valid_region
 from events.services import (
     DuplicateOfficialUrlError,
     MissingOfficialUrlError,
@@ -28,6 +29,15 @@ class DraftStateError(Exception):
 
 
 class DraftImmutableFieldError(Exception):
+    pass
+
+
+class DraftVocabError(Exception):
+    """A draft edit tried to set extracted_category/extracted_region to a value
+    outside core.vocab. Raised at edit time rather than at approval: the staff
+    operator who typed it should hear about it immediately, and a bad value
+    must never sit in the review queue looking legitimate."""
+
     pass
 
 
@@ -212,6 +222,21 @@ def update_draft(*, draft_id, updates):
     }
     if not set(updates).issubset(mutable_fields):
         raise DraftImmutableFieldError
+
+    # Field-name validation above says *which* fields may change; this says
+    # *what* they may change to. Without it a hand-edited draft carried free
+    # text through approve_draft into a published event unchallenged.
+    # Checked before the atomic block so a rejected value writes nothing at
+    # all — a partial save would leave the operator's screen disagreeing with
+    # the DB.
+    if "extracted_category" in updates and not is_valid_category(
+        updates["extracted_category"] or ""
+    ):
+        raise DraftVocabError
+    if "extracted_region" in updates and not is_valid_region(
+        updates["extracted_region"] or ""
+    ):
+        raise DraftVocabError
 
     with transaction.atomic():
         draft = _get_pending_draft_for_update(draft_id)

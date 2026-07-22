@@ -23,7 +23,9 @@ from events.services import (
     DuplicateOfficialUrlError,
     InvalidEventPeriodError,
     MissingOfficialUrlError,
+    PublishEventCategoryError,
     PublishEventError,
+    PublishEventRegionError,
     PublishEventTitleError,
     clear_event_poster,
     create_published_event,
@@ -266,6 +268,10 @@ def staff_event_create(request):
             field_errors["official_url"] = "이미 다른 이벤트가 사용 중인 공식 URL입니다."
         except InvalidEventPeriodError:
             field_errors["end_date"] = "종료일은 시작일 이후여야 합니다."
+        except PublishEventCategoryError:
+            field_errors["category"] = "목록에 없는 카테고리입니다. 다시 선택하세요."
+        except PublishEventRegionError:
+            field_errors["region"] = "목록에 없는 지역입니다. 다시 선택하세요."
         except PublishEventError:
             field_errors["non_field"] = "생성 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
 
@@ -362,6 +368,10 @@ def staff_event_edit(request, pk):
                 field_errors["official_url"] = "이미 다른 이벤트가 사용 중인 공식 URL입니다."
             except InvalidEventPeriodError:
                 field_errors["end_date"] = "종료일은 시작일 이후여야 합니다."
+            except PublishEventCategoryError:
+                field_errors["category"] = "목록에 없는 카테고리입니다. 다시 선택하세요."
+            except PublishEventRegionError:
+                field_errors["region"] = "목록에 없는 지역입니다. 다시 선택하세요."
             except PublishEventError:
                 field_errors["non_field"] = "저장 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
 
@@ -456,6 +466,10 @@ def staff_event_toggle_publish(request, pk):
         messages.error(request, "다른 이벤트가 이미 이 공식 URL을 사용 중입니다.")
     except InvalidEventPeriodError:
         messages.error(request, "종료일이 시작일보다 빨라 다시 게시할 수 없습니다.")
+    except PublishEventCategoryError:
+        messages.error(request, "카테고리가 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요.")
+    except PublishEventRegionError:
+        messages.error(request, "지역이 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요.")
     except PublishEventError:
         messages.error(request, "게시 상태를 변경하는 중 오류가 발생했습니다.")
     else:
