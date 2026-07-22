@@ -498,6 +498,27 @@ rollout live in `.docs/plans/2026-07-17-test-code-execution-policy-design.md`
 and `.docs/plans/2026-07-17-test-suite-improvement-plan.md`; do not duplicate
 their numbers or history here.
 
+### Automated Tests Cover Backend Logic Only (2026-07-22 user decision)
+
+Automated tests exist for backend logic: domain rules, services, persistence,
+HTTP request/response behavior, authorization, and settings or migration
+contracts. Nothing else is a test target.
+
+- Do not write browser or end-to-end tests. The `e2e` marker, `tests/e2e/`,
+  the `pytest-playwright` plugin, and the CI e2e job were deleted on
+  2026-07-22.
+- Do not test templates, CSS, browser JavaScript, layout, spacing, sizing,
+  visual state, transition, animation, or touch-target geometry.
+- Browser behavior is verified by driving a real browser and reported as
+  evidence in the work log, never encoded as a regression test.
+- **Playwright remains installed as a verification tool, not a test
+  framework.** Reviewers drive Chromium with it - ad-hoc scripts against the
+  local dev server, or the Chrome DevTools MCP tools - to measure geometry,
+  overflow, focus, and interaction state. What is forbidden is committing that
+  measurement as a test; running it to produce evidence is expected.
+- When a defect is browser-observable but caused by backend logic, descend to
+  the owning backend layer and test it there.
+
 ### Test List Is The Starting Point
 
 A backend behavior change starts from a `Test List` in the approved
@@ -512,7 +533,7 @@ suite written up front. Each entry carries at least these fields:
 | Given | State relevant to the behavior |
 | When | The one behavior under test |
 | Then | The externally observable result |
-| Verification boundary | One of `unit`, `domain`, `web`, `contract`, `slow`, `e2e` |
+| Verification boundary | One of `unit`, `domain`, `web`, `contract`, `slow` |
 | Boundary rationale | Why a higher-cost boundary is required, or why a lower boundary suffices |
 | Test name | The actual Korean pytest function name or parametrized case ID |
 | Status | `Pending`, `Red`, `Green`, `Refactored`, `Deferred` |
@@ -612,14 +633,14 @@ Prove a behavior at the lowest, fastest boundary that can prove it.
 | `web` | HTTP request/response, auth, permission, and error translation | Django/DRF test client |
 | `contract` | Architecture, settings, migration, and performance | Minimum resources per contract |
 | `slow` | Security lockouts, real files, and abnormal-recovery scenarios | Explicit opt-in |
-| `e2e` | Browser user flows | Playwright/live server |
+
+There is no browser layer. `web` is the highest boundary; behavior that only a
+real browser could observe is verified manually, not by an automated test.
 
 Do not repeat the same business rule across layers:
 
 - domain tests prove the rule itself;
-- web tests add only the HTTP translation of auth, input, and domain errors;
-- e2e proves only what is observable exclusively in the browser (wiring,
-  focus, layout, recovery).
+- web tests add only the HTTP translation of auth, input, and domain errors.
 
 A lower layer's happy path may be re-confirmed at a higher layer, but do not
 repeat every boundary value and exception at every layer above it.
@@ -678,15 +699,26 @@ wiring are exempt from the backend TDD cycle.
 - Do not create automated tests for purely presentational layout, spacing,
   sizing, visual state, transition, animation, or markup rearrangement.
 - Verify frontend work with HTTP render checks, browser screenshots at agreed
-  viewports, interaction click-through, console inspection, and accessibility
-  checks appropriate to scope.
-- A Playwright regression is allowed only for a concrete measurable acceptance
-  gate such as an overflow budget, minimum touch-target size, line-clamp height,
-  or post-interaction focus target.
+  viewports, interaction click-through, and console inspection appropriate to
+  scope. Drive the browser with Playwright or the Chrome DevTools MCP tools and
+  report the measurements as evidence; the run itself is the verification, and
+  its output is never committed as a test.
+- Do not write browser or end-to-end tests. The e2e suite was deleted on
+  2026-07-22 by user decision; overflow budgets, touch-target sizes, line-clamp
+  heights, and focus targets are measured on demand, not enforced by a gate.
 - Any backend endpoint, validation, persistence, or business rule introduced for
   frontend work still follows the Backend TDD Cycle.
 - Every frontend review includes both the Web Experience Designer and Browser
   Interaction Reviewer.
+- The shared design-rule protocol is abolished (2026-07-22 user decision;
+  `.docs/design-rules.md` §1-§3). Brand contrast ratios, the 44px touch-target
+  duty layer, and the motion pause contract are no longer compliance gates, and
+  no reviewer may require a documented "user-approved exception" to build what
+  the design intent specifies. Design intent - the mock and the user's
+  instruction - is the standard. Reviewers may still note these topics as
+  information, and functional defects such as broken layout, overflow,
+  keyboard-unreachable controls, focus traps, and unreadable text remain
+  defects.
 - Frontend implementation requires an approved `prompt_plan.md` and a completed
   `.docs/frontend-integration-changelog.md` unless the user explicitly approves
   different document locations.
@@ -713,7 +745,10 @@ After implementation and the planned browser verification:
 2. The Browser Interaction Reviewer reviews the implementation against the
    approved interaction criteria.
 3. Each reviewer returns `Conforms`, `Deviates`, or `Unverified` with the
-   evidence reviewed.
+   evidence reviewed. A `Deviates` verdict requires a deviation from the
+   approved specification or a functional defect; abolished design-rule topics
+   (contrast ratio, 44px touch target, motion pause) cannot produce `Deviates`
+   and are reported as information only.
 4. The Quality Verification Lead must not mark the frontend task complete unless
    both verdicts are `Conforms`, or the user explicitly accepts the stated
    residual risk for a `Deviates` or `Unverified` verdict.
