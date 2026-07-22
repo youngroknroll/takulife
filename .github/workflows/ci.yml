@@ -58,8 +58,8 @@ jobs:
       - name: Check for missing migrations
         run: uv run python manage.py makemigrations --check --dry-run
 
-      - name: Run test suite (excludes e2e)
-        run: uv run pytest -q -m "not e2e"
+      - name: Run test suite
+        run: uv run pytest -q
 
       # Production-like env for `check --deploy`. SECRET_KEY is a throwaway
       # value for structural validation only, never a real secret — it is
@@ -90,44 +90,6 @@ jobs:
             echo "::error::Deploy check produced a warning beyond the accepted W021 (HSTS preload) exception"
             exit 1
           fi
-
-  e2e:
-    name: E2E suite (Playwright, parallel)
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: taku
-          POSTGRES_USER: taku
-          POSTGRES_PASSWORD: taku
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U taku -d taku"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Install Python 3.13
-        run: uv python install 3.13
-
-      - name: Install dependencies
-        run: uv sync --frozen
-
-      - name: Install Playwright Chromium
-        run: uv run playwright install --with-deps chromium
-
-      - name: Run e2e suite (Playwright + Django live_server)
-        run: uv run pytest -m e2e -q
 
   docker:
     name: Docker build (no push)
