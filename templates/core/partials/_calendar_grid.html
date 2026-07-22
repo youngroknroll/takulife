@@ -29,7 +29,17 @@ aria-label/aria-current were introduced 2026-07-19 (policy reversal, see
 data-in-month/data-today/data-selected only, since that remains a CSS/JS
 contract rather than an accessible-name concern.
 {% endcomment %}
-<div class="month-grid">
+{% comment %}
+2026-07-23: the weekday header and the day cells are two sibling .month-grid
+containers rather than one flat list. The editorial v2 skin draws a single
+hairline-separated box around the day cells only (rounded, clipped), and the
+weekday labels have to sit outside that box — which is impossible while they
+are the box's own first row. Both keep the .month-grid class, so the shared
+7-column geometry in components/calendar.css still applies to each, and the
+:nth-child(7n+1)/(7n) Sunday/Saturday tints still land on the same columns
+(day cells simply start at position 1 now instead of 8).
+{% endcomment %}
+<div class="month-grid month-grid-head">
   <span class="month-grid-weekday">일</span>
   <span class="month-grid-weekday">월</span>
   <span class="month-grid-weekday">화</span>
@@ -37,7 +47,8 @@ contract rather than an accessible-name concern.
   <span class="month-grid-weekday">목</span>
   <span class="month-grid-weekday">금</span>
   <span class="month-grid-weekday">토</span>
-
+</div>
+<div class="month-grid month-grid-body">
   {% for week in weeks %}
     {% for day in week %}
       {% if day.date %}
