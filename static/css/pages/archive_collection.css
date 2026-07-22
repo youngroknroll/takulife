@@ -1,36 +1,847 @@
-/* archive_collection.css — /collection/ list card overrides.
-   Loaded after archive_visits.css (shared .visit-card/.visit-chip/.layout
-   base). Scoped via [data-collection-item-id], already present on every
-   collection card, so nothing here can leak onto /archive/visits/. */
+/* archive_collection.css — /collection/ editorial rebuild.
+   Design source: claude.ai/design "컬렉션 페이지 (에디토리얼).dc.html".
 
-/* Fixed 96px thumbnail at every breakpoint — not the 200px carousel
-   treatment visit cards use (event_list.css:197 precedent). Collection
-   density matters more than a large preview, and a small fixed box never
-   needs archive_visits.css's stack-below-45rem media query. */
-.visit-card[data-collection-item-id] .visit-card-media {
-  width: 96px;
-  height: 96px;
-  flex: 0 0 96px;
+   Scoped entirely under .collection-page (the page root `<main>` class in
+   collection.html) instead of loading archive_visits.css. Two reasons, both
+   from prior track incidents (events-calendar-v2, PR #218):
+   1. archive_visits.css is shared by 8 templates; overriding `.archive-search`
+      or `.layout` from a second page-CSS file without a page-root scope wins
+      or loses purely on stylesheet <link> order, and has previously leaked
+      onto unrelated archive pages. This file never touches `.visit-card`,
+      `.visit-filter-chip`, or `.timeline` and is not loaded together with
+      archive_visits.css on this page.
+   2. `.panel h2` in archive.css/archive_visits.css lands at specificity
+      (0,1,1) and silently pins every heading to 16px — this file avoids
+      `.panel` entirely and defines its own heading rules under
+      `.collection-page`, so nothing here can be re-pinned by that selector
+      and nothing here can leak out to pages that still use `.panel`.
+
+   TOKEN NOTE: the design doc declares its own `--accent` / `--accent-ink` in
+   an inline var block; neither exists in tokens.css. They are the same values
+   as `--brand` / `--brand-ink` there, so every `--accent*` in the design maps
+   to `--brand*` here. Referencing the design's name directly makes the
+   declaration invalid at computed-value time and drops it with no error.
+
+   TOUCH TARGETS: the design's own controls are 42px (tabs) / 36px (chips).
+   The interactive controls here are raised to 44px per this page's review
+   contract; that is the one systematic deviation from the design's metrics.
+   Everything visual — radius, fill, border, type scale, spacing — follows the
+   design. */
+
+/* ── page head: title + stats left, view toggle centered, add button right
+   ────────────────────────────────────────────────────────────────────────
+   `1fr auto 1fr` rather than the design's absolute centering, matching the
+   .events-head precedent (event_list.css): the toggle stays optically centered
+   while the title column keeps a real min-content floor, so the two can never
+   overlap at 320px. The heavy 1.5px --text rule under the whole block is the
+   design's masthead device and is what separates this page from a plain list. */
+.collection-page .collection-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 1rem;
+  padding-bottom: 1.125rem;
+  margin-bottom: 0;
+  border-bottom: 1.5px solid var(--text);
 }
-.visit-card[data-collection-item-id] .visit-card-media img {
+
+/* Explicit column numbers, not source order: the toggle is absent when the
+   collection is empty, and auto-placement would then slide the add button into
+   the centre column. */
+.collection-page .collection-head-title {
+  grid-column: 1;
+}
+.collection-page .collection-view-toggle {
+  grid-column: 2;
+  justify-self: center;
+}
+.collection-page .collection-head-actions {
+  grid-column: 3;
+}
+
+.collection-page .collection-head-title h1 {
+  margin: 0 0 0.375rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+/* Three color-coded counts: the numeral carries the size and the tone
+   (mint/amber/up), the label stays small and muted. tabular-nums keeps the
+   labels from shifting as counts change. Divider is a ::before hairline on
+   every stat but the first, so no separator markup is needed. */
+.collection-page .collection-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.375rem;
+  margin: 0;
+}
+.collection-page .collection-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4375rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.collection-page .collection-stat + .collection-stat::before {
+  content: "";
+  align-self: center;
+  width: 1px;
+  height: 1.125rem;
+  margin-right: 0.9375rem;
+  background: var(--line);
+}
+.collection-page .collection-stat b {
+  font-size: 1.625rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.collection-page .collection-stat--owned b {
+  color: var(--mint-ink);
+}
+.collection-page .collection-stat--wanted b {
+  color: var(--amber-ink);
+}
+.collection-page .collection-stat--trade b {
+  color: var(--up-ink);
+}
+
+.collection-page .collection-head-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.collection-page .collection-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.collection-page .collection-add-btn:hover {
+  background: var(--brand-ink);
+}
+
+/* ── view toggle: 갤러리/목록 — underlined text, not a segmented box ───
+   The design treats this as a quiet section switcher sitting above the
+   masthead rule, so it gets the same underline vocabulary as the sub-tabs
+   rather than a filled control that would compete with ＋굿즈 추가. */
+.collection-page .collection-view-toggle {
+  align-self: start;
+  display: flex;
+  gap: 1rem;
+}
+.collection-page .collection-view-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-bottom: 0.1875rem;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.collection-page .collection-view-btn:hover {
+  color: var(--text);
+}
+.collection-page .collection-view-btn.is-active {
+  color: var(--brand-ink);
+  font-weight: 700;
+  border-bottom-color: var(--brand);
+}
+
+/* ── toolbar: sub-tabs left, search right, one hairline rail ───────────
+   Own classes, never .visit-filter-chip (that shared class is 36px and lives
+   in a stylesheet 8 templates load). */
+.collection-page .collection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin-top: 1.125rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+.collection-page .collection-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+  min-width: 0;
+}
+.collection-page .collection-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.8125rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.collection-page .collection-tab:hover {
+  color: var(--text);
+}
+.collection-page .collection-tab.is-active {
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--brand);
+}
+
+/* Search: ONE 248×34 field with the ⌕ set inside it, pushed to the rail's
+   right end — the design has no separate submit button, and the field is
+   deliberately shorter than the 44px tabs so the two read as different ranks
+   (the design pairs 42px tabs with a 34px field). The clear link is taken out
+   of flow so showing it can never change the rail's height. */
+.collection-page .archive-search {
+  position: relative;
+  margin: 0 0 0 auto;
+  flex: none;
+}
+.collection-page .archive-search-row {
+  position: relative;
+  display: block;
+}
+.collection-page .collection-search-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1;
+  pointer-events: none;
+}
+.collection-page .archive-search input[type="search"] {
+  width: 15.5rem;
+  height: 34px;
+  padding: 0 0.875rem 0 2.125rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8125rem;
+}
+.collection-page .archive-search input[type="search"]::placeholder {
+  color: var(--muted);
+}
+/* No submit button in the design. It stays in the DOM so the no-JS GET form
+   still works, clipped out of view — and un-clips on focus so it never becomes
+   an invisible tab stop. Revealed absolutely, so the rail never reflows. */
+.collection-page .archive-search button[type="submit"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.collection-page .archive-search button[type="submit"]:focus-visible {
+  top: calc(100% + 0.25rem);
+  right: 0;
+  left: auto;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  overflow: visible;
+  clip: auto;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.collection-page .archive-search-clear {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* ── layout: facet sidebar + results ──────────────────────────────────
+   Desktop left column is assembled by GRID PLACEMENT, not source order: the
+   two facet asides sit either side of #archive-results in the DOM (유형 →
+   결과 → 작품별) because that is exactly the stacked mobile order we want, so
+   the narrow layout needs no reordering at all and tab order always matches
+   what is on screen. `order`/`display:contents` were both rejected: `order`
+   repaints without moving tab order (WCAG 2.4.3) and `display:contents` would
+   drop the wrapper's landmark from the accessibility tree.
+
+   `auto 1fr` rows are required, not cosmetic: #archive-results spans both
+   rows, and with two auto rows the grid splits that tall item's height evenly
+   between them — which pushes 작품별 hundreds of px down the left column, away
+   from 유형. Pinning row 1 to content height sends all the slack to row 2.
+
+   The 56.25rem collapse is deliberately independent from the gallery column
+   breakpoints further down. */
+.collection-page .layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 232px) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 1.75rem;
+  align-items: start;
+}
+.collection-page .collection-facet-group--type {
+  grid-column: 1;
+  grid-row: 1;
+}
+.collection-page #archive-results {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.collection-page .collection-facet-group--work {
+  grid-column: 1;
+  grid-row: 2;
+  padding-top: 0.9375rem;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 56.25rem) {
+  .collection-page .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+  /* Hand every child back to auto-placement so the single column follows DOM
+     order (유형 → 결과 → 작품별) — the explicit desktop placement above would
+     otherwise keep forcing them into a column 2 that no longer exists. */
+  .collection-page .collection-facet-group--type,
+  .collection-page #archive-results,
+  .collection-page .collection-facet-group--work {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .collection-page .collection-facet-group--work {
+    padding-top: 1.25rem;
+  }
+}
+
+.collection-page .collection-facet-group h2 {
+  margin: 0 0 0.5625rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+/* ── type chips: pills, filled-brand when active ──────────────────────
+   The filled active state is the design's, and it is a non-color cue as well
+   as a color one (the fill/weight invert), so it does not rely on hue alone. */
+.collection-page .collection-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.collection-page .collection-type-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.collection-page .collection-type-chip:hover {
+  border-color: var(--muted);
+}
+.collection-page .collection-type-chip.is-active {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── work-title facet list ────────────────────────────────────────────
+   36px rows rather than the 44px used elsewhere on the page: this is a dense
+   index, the design's own chip minimum is 36px, and it stays well clear of the
+   24px WCAG 2.5.8 floor. */
+.collection-page .collection-work-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+.collection-page .collection-work-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 36px;
+  padding: 0 0.375rem;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.8125rem;
+}
+.collection-page .collection-work-link:hover {
+  background: var(--bg-soft);
+}
+.collection-page .collection-work-link.is-active {
+  background: var(--bg-soft);
+  box-shadow: inset 2px 0 0 var(--brand);
+}
+.collection-page .collection-work-link.is-active .collection-work-title {
+  font-weight: 700;
+}
+/* 8px rounded square, not a circle — the design uses the squared dot to tell
+   this index apart from the round status pills. Color comes from the same
+   .gi-N bucket the cards use (the view supplies series_ink_class on each
+   facet), so a work_title's dot and its cards always match. */
+.collection-page .series-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: var(--series-ink, var(--muted));
+  flex: 0 0 auto;
+}
+.collection-page .collection-work-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.collection-page .collection-work-count {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── results header: 전체 N점 ─────────────────────────────────────────── */
+.collection-page .collection-resulthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.875rem;
+}
+.collection-page .collection-resulthead--list {
+  margin-bottom: 0.375rem;
+}
+.collection-page .collection-resulthead h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.collection-page .collection-resulthead h2 span {
+  color: var(--brand-ink);
+}
+
+/* ── status pill (보유/구함/교환) — shared shape for card + row ──────── */
+.collection-page .collection-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6875rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.collection-page .collection-pill.is-owned {
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+.collection-page .collection-pill.is-wanted {
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+}
+.collection-page .collection-pill.is-tradeable {
+  background: var(--up-soft);
+  color: var(--up-ink);
+}
+/* On a cover the pill sits directly on the tile with no plate behind it —
+   the tone background IS the plate. */
+.collection-page .collection-pill--cover {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.1875rem 0.5625rem;
+  font-size: 0.66rem;
+}
+
+/* ── gallery grid ─────────────────────────────────────────────────────
+   Borderless cards: the cover tile carries the border and radius, and the
+   text below sits flush on the page. Boxing the whole card would turn the
+   magazine grid back into the pre-redesign card wall.
+   Column-count breakpoints deliberately independent from the .layout
+   56.25rem collapse above. */
+.collection-page .collection-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.375rem 1.125rem;
+}
+@media (max-width: 64rem) {
+  .collection-page .collection-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 45rem) {
+  .collection-page .collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.875rem 0.625rem;
+  }
+}
+
+.collection-page .collection-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5625rem;
+}
+
+.collection-page .gcard-cover {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.collection-page .gcard-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
   display: block;
 }
-.collection-thumb-placeholder {
+.collection-page .gcard-noimg {
+  position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 10px;
-  background: var(--bg-soft);
-  border: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.collection-page .gcard-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--series-ink, var(--muted));
+}
+.collection-page .gcard-noimg-label {
+  padding: 0 0.625rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
 }
 
-/* "구함" chip reuses the existing 찜/wanted pink identity pairing
-   (archive_statuses.css .user-status.interested) instead of a new color —
-   already has dark-mode tokens (tokens.css --pink-soft/--pink-ink). */
-.visit-chip.wanted {
-  background: var(--pink-soft);
-  color: var(--pink-ink);
+.collection-page .gcard-body {
+  display: flex;
+  flex-direction: column;
 }
+.collection-page .gcard-work {
+  margin: 0 0 0.125rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--series-ink, var(--muted));
+}
+.collection-page .gcard-name {
+  margin: 0 0 0.1875rem;
+  font-size: 0.845rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.collection-page .gcard-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-page .gcard-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.375rem;
+}
+
+/* ── list rows: hairline-separated, not boxed ─────────────────────────── */
+.collection-page .collection-rows {
+  display: flex;
+  flex-direction: column;
+}
+.collection-page .collection-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.875rem 0.125rem;
+  border-bottom: 1px solid var(--line);
+}
+.collection-page .collection-row-thumb {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.collection-page .collection-row-thumb::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--series-ink, var(--muted));
+}
+.collection-page .collection-row-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.collection-page .collection-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 0.25rem;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  overflow: hidden;
+}
+.collection-page .collection-row-text {
+  min-width: 0;
+}
+.collection-page .collection-row-work {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--series-ink, var(--muted));
+}
+.collection-page .collection-row-name {
+  margin: 0 0 0.1875rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+.collection-page .collection-row-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-page .collection-row-note {
+  margin: 0.125rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-page .collection-row-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.collection-page .collection-row-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* ── edit/delete: plain text links, not bordered buttons ──────────────
+   The design keeps these as quiet inline text so they never compete with the
+   cover art. They stay a real <a>/<button> pair (collection.js binds the
+   button by [data-delete-item-id]); only the skin is text. */
+.collection-page .collection-edit-link,
+.collection-page .collection-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.collection-page .collection-edit-link {
+  color: var(--brand-ink);
+}
+.collection-page .collection-delete-btn {
+  color: var(--muted);
+  font-weight: 500;
+}
+.collection-page .collection-edit-link:hover,
+.collection-page .collection-delete-btn:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.collection-page .collection-delete-btn:hover {
+  color: var(--rose-ink);
+}
+
+.collection-page #collection-global-error.form-error {
+  font-size: var(--fs-sm);
+  color: var(--rose-ink);
+  min-height: 1.2em;
+}
+
+/* ── narrow: stack the masthead, let the rail wrap, full-width search ── */
+@media (max-width: 45rem) {
+  /* Two tracks, not one: the title spans both and the toggle/button share the
+     row beneath it. Leaving the desktop `grid-column: 2/3` in place here would
+     conjure phantom columns in a 1-track grid and squeeze the stats onto three
+     lines. */
+  .collection-page .collection-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding-bottom: 0.875rem;
+  }
+  .collection-page .collection-head-title {
+    grid-column: 1 / -1;
+  }
+  .collection-page .collection-view-toggle {
+    grid-column: 1;
+    justify-self: start;
+  }
+  .collection-page .collection-head-actions {
+    grid-column: 2;
+  }
+  .collection-page .collection-head-title h1 {
+    font-size: 1.1875rem;
+  }
+  .collection-page .collection-stat b {
+    font-size: 1.125rem;
+  }
+  .collection-page .collection-stat + .collection-stat::before {
+    margin-right: 0.5rem;
+  }
+  .collection-page .collection-view-toggle {
+    align-self: auto;
+  }
+  .collection-page .collection-toolbar {
+    flex-wrap: wrap;
+    border-bottom: 0;
+    margin-bottom: 0.75rem;
+  }
+  .collection-page .collection-tabs {
+    width: 100%;
+    border-bottom: 1px solid var(--line);
+  }
+  .collection-page .collection-tab {
+    padding: 0.5rem 0.5625rem;
+    font-size: 0.8125rem;
+  }
+  .collection-page .archive-search {
+    width: 100%;
+    margin: 0.625rem 0 0;
+  }
+  /* Design's mobile field: full width, 40px tall, 10px radius. */
+  .collection-page .archive-search input[type="search"] {
+    width: 100%;
+    height: 40px;
+    padding: 0 0.8125rem 0 2.125rem;
+    border-radius: 10px;
+    font-size: 0.78rem;
+  }
+  /* `:not([hidden])` is required: a bare `display: inline-block` here outranks
+     the UA's `[hidden] { display: none }` and makes 지우기 show with no active
+     query — archive_search.js toggles this link via the hidden attribute. */
+  .collection-page .archive-search-clear:not([hidden]) {
+    position: static;
+    display: inline-block;
+    margin-top: 0.375rem;
+  }
+  .collection-page .gcard-cover {
+    border-radius: 9px;
+  }
+  .collection-page .gcard-bar {
+    width: 3px;
+  }
+  .collection-page .gcard-noimg-label {
+    font-size: 0.625rem;
+    padding: 0 0.375rem;
+  }
+  .collection-page .collection-pill--cover {
+    top: 0.375rem;
+    right: 0.375rem;
+    padding: 0.125rem 0.4375rem;
+    font-size: 0.5625rem;
+  }
+  .collection-page .gcard-work {
+    font-size: 0.59rem;
+  }
+  .collection-page .gcard-name {
+    font-size: 0.75rem;
+  }
+  .collection-page .collection-row {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 0.625rem;
+    align-items: start;
+    padding: 0.6875rem 0;
+  }
+  .collection-page .collection-row-thumb {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+  }
+  .collection-page .collection-row-name {
+    font-size: 0.8125rem;
+  }
+  /* Side column drops under the text column rather than squeezing a third
+     track into 375px — the design's mobile row is a 2-column grid. */
+  .collection-page .collection-row-side {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* ── series ink rebinding: .gi-0..gi-6 bind --series-ink to one of the
+   6 existing category tokens from components/category.css — no new color
+   tokens introduced. */
+.collection-page .gi-0 { --series-ink: var(--muted); }
+.collection-page .gi-1 { --series-ink: var(--cat-popup_store-ink); }
+.collection-page .gi-2 { --series-ink: var(--cat-collaboration_cafe-ink); }
+.collection-page .gi-3 { --series-ink: var(--cat-theater_bonus-ink); }
+.collection-page .gi-4 { --series-ink: var(--cat-goods_reservation-ink); }
+.collection-page .gi-5 { --series-ink: var(--cat-exhibition-ink); }
+.collection-page .gi-6 { --series-ink: var(--cat-fan_meeting-ink); }
