@@ -148,6 +148,36 @@
   --cat-exhibition-ink: #475569;
   --cat-fan_meeting-soft: #fce7f3;
   --cat-fan_meeting-ink: #9d174d;
+
+  /* Series (work_title) accent palette — a different axis from --cat-*
+     above. --cat-* colors an event's fixed category enum; --series-N-ink
+     colors a free-text work_title bucketed by first-registration order
+     (see core/views.py _series_ink_classes, SERIES_INK_COUNT=12). Do not
+     mix the two axes.
+     Generated as 12 OKLCH hues at 30° steps. Lightness alternates odd/even
+     (light L=0.50/0.40, dark L=0.70/0.80) but only in the contrast-safe
+     direction — light buckets go darker only, dark buckets go lighter
+     only. Swinging both directions measured AA down to 4.21:1; this
+     one-directional alternation keeps every pairing at AA. The odd/even
+     split itself exists so colorblind users can still separate adjacent
+     hues by lightness. Verified: 3 light backgrounds × 3 dark backgrounds
+     (72 pairings), 0 below AA 4.5:1, worst case 4.91:1. Colorblindness
+     simulation: alternating lightness dropped confusable pairs from 11→5
+     (tritanopia, light) and 12→4 (tritanopia, dark).
+     No -soft companion by design — series color marks text/dots/bars
+     only, never a fill background. Add one only if that need appears. */
+  --series-1-ink: #a6373f;
+  --series-2-ink: #743200;
+  --series-3-ink: #825b00;
+  --series-4-ink: #4b4b00;
+  --series-5-ink: #2c7619;
+  --series-6-ink: #005541;
+  --series-7-ink: #007276;
+  --series-8-ink: #004f6b;
+  --series-9-ink: #2d60b4;
+  --series-10-ink: #4a328e;
+  --series-11-ink: #864296;
+  --series-12-ink: #7c1852;
 }
 
 /* ── dark mode token overrides ──────────────────────────────────
@@ -195,6 +225,24 @@
   --cat-exhibition-ink: #839ec3;
   --cat-fan_meeting-soft: #412530;
   --cat-fan_meeting-ink: #da769e;
+
+  /* All 12 series buckets need a dark override here — a missing entry
+     falls back silently to var(--series-ink, var(--muted)) with no
+     error or console warning, turning that bucket flat grey in dark
+     mode. This project has hit that exact silent-fallback failure
+     mode twice already; keep the count at 12. */
+  --series-1-ink: #da8282;
+  --series-2-ink: #f7a97c;
+  --series-3-ink: #c29647;
+  --series-4-ink: #c2c46e;
+  --series-5-ink: #79af6d;
+  --series-6-ink: #6cd5b3;
+  --series-7-ink: #2bb3b9;
+  --series-8-ink: #6bcbf7;
+  --series-9-ink: #769fe3;
+  --series-10-ink: #bcb2ff;
+  --series-11-ink: #bd88c9;
+  --series-12-ink: #f4a0c8;
 
   --pink-soft: #42242e;
   --pink-ink: #d87497;

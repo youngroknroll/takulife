@@ -38,7 +38,7 @@ from archive.queries import (
     list_user_visit_records,
     user_collection_item_filter_values,
     user_collection_item_summary_counts,
-    user_collection_item_work_title_counts,
+    user_collection_item_work_title_facets,
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
@@ -1140,28 +1140,56 @@ def archive_visit_edit(request, record_id):
     )
 
 
-def _series_ink_class(work_title: str) -> str:
-    """Deterministic accent-color bucket for a CollectionItem's work_title.
+SERIES_INK_COUNT = 12
+# Must stay coprime with SERIES_INK_COUNT — a shared factor would visit only
+# part of the palette and reintroduce collisions well before 12 works.
+SERIES_INK_STRIDE = 5
 
-    work_title is free text entered by the user, so there is no fixed
-    lookup table to map it to a color — instead this hashes the string
-    itself, which guarantees the same work_title always lands in the same
-    bucket (needed so a sidebar dot and its matching card share one color).
-    "gi-0" is the explicit no-series bucket for a blank work_title; a
-    populated work_title always maps to one of "gi-1".."gi-6" via the sum of
-    its codepoints modulo 6.
+
+def _series_ink_classes(titles_in_registration_order) -> dict[str, str]:
+    """Assign an accent-color bucket ("gi-1".."gi-{SERIES_INK_COUNT}") to
+    each work_title by FIRST-REGISTRATION ORDER, not a hash.
+
+    A hash-of-the-string scheme (the previous approach) still collides even
+    after growing the bucket count, by the birthday paradox — with
+    SERIES_INK_COUNT=12 buckets, just 5 distinct work_titles already have
+    roughly a 62% chance that two of them land in the same bucket. Assigning
+    by position instead makes collisions mathematically impossible as long
+    as the number of distinct work_titles stays within SERIES_INK_COUNT.
+
+    The order must be REGISTRATION order (earliest-first_id first), not
+    count-descending display order: sorting by count would make a
+    work_title's color shift whenever any item is added anywhere in the
+    collection, since that can change the count ranking. Sorting by first
+    registration keeps a work_title's color stable for its whole lifetime.
+
+    Consecutive registrations are spread around the hue wheel by
+    SERIES_INK_STRIDE rather than taking adjacent buckets. The palette walks
+    the hue wheel in order, so bucket N and N+1 are the 30°-apart pair that is
+    hardest to tell apart at an 8px dot — and back-to-back registrations are
+    exactly the common case. Striding by 5 puts a user's first two works 150°
+    apart instead of 30°. The stride is coprime with SERIES_INK_COUNT, so the
+    mapping is still a bijection and the no-collision guarantee is untouched.
+
+    Titles beyond SERIES_INK_COUNT wrap back around to "gi-1".
     """
-    if not work_title:
-        return "gi-0"
-    return f"gi-{sum(ord(ch) for ch in work_title) % 6 + 1}"
+    return {
+        title: f"gi-{index * SERIES_INK_STRIDE % SERIES_INK_COUNT + 1}"
+        for index, title in enumerate(titles_in_registration_order)
+    }
 
 
-def _collection_item_row(item):
+def _collection_item_row(item, series_ink_classes):
     """Display row for one CollectionItem card.
 
     ``quantity_label``/``tradeable_label`` are "" (no badge) whenever the
     respective count is 0 — a wanted-only item with quantity=0 (D1) renders
     with no numeric badge instead of "수량 0개".
+
+    ``series_ink_classes`` is the {work_title: class} map from
+    _series_ink_classes(). A blank work_title is never a key in that map
+    (the facet query excludes it), so .get(..., "gi-0") falls through to the
+    no-series bucket without a separate blank-check branch here.
     """
     return {
         "item": item,
@@ -1170,7 +1198,7 @@ def _collection_item_row(item):
             f"교환 가능 {item.tradeable_quantity}개" if item.tradeable_quantity > 0 else ""
         ),
         "is_wanted": item.is_wanted,
-        "series_ink_class": _series_ink_class(item.work_title),
+        "series_ink_class": series_ink_classes.get(item.work_title, "gi-0"),
     }
 
 
@@ -1209,7 +1237,19 @@ def archive_collection_items(request):
     )
     paginator = Paginator(filtered_qs, ARCHIVE_COLLECTION_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
-    item_rows = [_collection_item_row(item) for item in page_obj.object_list]
+
+    # One facet query for the WHOLE collection (not the filtered/paged
+    # subset) drives both the sidebar counts and the per-series color
+    # palette, so the same work_title always gets the same color no matter
+    # which page, filter, or search narrowed the current view.
+    work_title_facets = user_collection_item_work_title_facets(user)
+    palette_titles = [
+        facet["work_title"]
+        for facet in sorted(work_title_facets, key=lambda facet: facet["first_id"])
+    ]
+    series_ink_classes = _series_ink_classes(palette_titles)
+
+    item_rows = [_collection_item_row(item, series_ink_classes) for item in page_obj.object_list]
 
     # --- Query-string helpers ----------------------------------------------
     # Four DIFFERENT axis subsets, easy to confuse:
@@ -1265,17 +1305,19 @@ def archive_collection_items(request):
             "owned_count": summary_counts["owned_count"],
             "wanted_count": summary_counts["wanted_count"],
             "tradeable_count": summary_counts["tradeable_count"],
-            # Same _series_ink_class() the cards use, so a sidebar dot and the
-            # cards it filters to always share one color — the whole point of
-            # the per-series coding. The query layer stays shape-agnostic
-            # (title, count) tuples; the color is a display concern.
+            # Same series_ink_classes map the cards use (built once above from
+            # the whole collection), so a sidebar dot and the cards it
+            # filters to structurally always share one color — the whole
+            # point of the per-series coding. work_title_facets is already
+            # sorted count-descending by the query layer, so this just
+            # relabels it with the display color; no re-sort here.
             "work_title_counts": [
                 {
-                    "title": title,
-                    "count": count,
-                    "series_ink_class": _series_ink_class(title),
+                    "title": facet["work_title"],
+                    "count": facet["count"],
+                    "series_ink_class": series_ink_classes.get(facet["work_title"], "gi-0"),
                 }
-                for title, count in user_collection_item_work_title_counts(user)
+                for facet in work_title_facets
             ],
             "filter_values": user_collection_item_filter_values(user),
             "q": q,

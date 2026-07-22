@@ -17,7 +17,7 @@ from archive.queries import (
     list_user_visit_records,
     user_collection_item_filter_values,
     user_collection_item_summary_counts,
-    user_collection_item_work_title_counts,
+    user_collection_item_work_title_facets,
     user_interest_count,
     user_interest_event_ids,
     user_personal_entry_counts,
@@ -823,45 +823,64 @@ def test_교환가능_집계는_보유_구함_분할과_겹치는_축이라_보�
 
 
 # ---------------------------------------------------------------------------
-# user_collection_item_work_title_counts (collection 리디자인 백엔드,
+# user_collection_item_work_title_facets (collection 리디자인 백엔드,
 # 작품별 색상 인덱스/필터 근거 집계). blank work_title excluded, sorted by
 # count desc then work_title asc for tie-break determinism, owner-scoped.
+# 각 facet 은 {"work_title", "count", "first_id"} dict 이며 first_id 는
+# 그 작품의 최초 등록(가장 작은 id) 아이템의 id 다 — 순번 기반 색 배정의
+# 근거가 되는 필드라 해시 대체(색 배정을 순번으로 바꾸는 이번 변경)의 핵심.
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
-def test_작품명별_항목_개수_집계는_작품명이_비어있는_항목을_제외한다(make_user):
+def test_작품명별_항목_facet_집계는_작품명이_비어있는_항목을_제외한다(make_user):
     user = make_user(username="ci-work-title-counts-blank")
-    CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 A")
+    item = CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 A")
     CollectionItem.objects.create(user=user, name="굿즈 2")  # work_title 비어있음
 
-    counts = user_collection_item_work_title_counts(user)
+    facets = user_collection_item_work_title_facets(user)
 
-    assert counts == [("작품 A", 1)]
+    assert facets == [{"work_title": "작품 A", "count": 1, "first_id": item.id}]
 
 
 @pytest.mark.django_db
-def test_작품명별_항목_개수_집계는_개수_내림차순_동수는_작품명_오름차순으로_정렬된다(make_user):
+def test_작품명별_항목_facet_집계는_개수_내림차순_동수는_작품명_오름차순으로_정렬된다(make_user):
     user = make_user(username="ci-work-title-counts-order")
     # 작품 C: 1건, 작품 A: 2건, 작품 B: 2건 (A/B는 개수가 같아 동수 정렬 케이스)
-    CollectionItem.objects.create(user=user, name="C1", work_title="작품 C")
-    CollectionItem.objects.create(user=user, name="A1", work_title="작품 A")
+    c1 = CollectionItem.objects.create(user=user, name="C1", work_title="작품 C")
+    a1 = CollectionItem.objects.create(user=user, name="A1", work_title="작품 A")
     CollectionItem.objects.create(user=user, name="A2", work_title="작품 A")
-    CollectionItem.objects.create(user=user, name="B1", work_title="작품 B")
+    b1 = CollectionItem.objects.create(user=user, name="B1", work_title="작품 B")
     CollectionItem.objects.create(user=user, name="B2", work_title="작품 B")
 
-    counts = user_collection_item_work_title_counts(user)
+    facets = user_collection_item_work_title_facets(user)
 
-    assert counts == [("작품 A", 2), ("작품 B", 2), ("작품 C", 1)]
+    assert facets == [
+        {"work_title": "작품 A", "count": 2, "first_id": a1.id},
+        {"work_title": "작품 B", "count": 2, "first_id": b1.id},
+        {"work_title": "작품 C", "count": 1, "first_id": c1.id},
+    ]
 
 
 @pytest.mark.django_db
-def test_작품명별_항목_개수_집계는_소유자로_범위를_좁힌다(make_user):
+def test_작품명별_항목_facet_집계는_소유자로_범위를_좁힌다(make_user):
     user = make_user(username="ci-work-title-counts-owner")
     other = make_user(username="ci-work-title-counts-other")
-    CollectionItem.objects.create(user=user, name="내 굿즈", work_title="작품 A")
+    item = CollectionItem.objects.create(user=user, name="내 굿즈", work_title="작품 A")
     CollectionItem.objects.create(user=other, name="남의 굿즈", work_title="작품 A")
 
-    counts = user_collection_item_work_title_counts(user)
+    facets = user_collection_item_work_title_facets(user)
 
-    assert counts == [("작품 A", 1)]
+    assert facets == [{"work_title": "작품 A", "count": 1, "first_id": item.id}]
+
+
+@pytest.mark.django_db
+def test_작품명별_항목_facet_집계의_first_id는_그_작품의_최초_등록_아이템_id다(make_user):
+    user = make_user(username="ci-work-title-counts-first-id")
+    first = CollectionItem.objects.create(user=user, name="첫번째", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="두번째", work_title="작품 A")
+    CollectionItem.objects.create(user=user, name="세번째", work_title="작품 A")
+
+    facets = user_collection_item_work_title_facets(user)
+
+    assert facets == [{"work_title": "작품 A", "count": 3, "first_id": first.id}]
