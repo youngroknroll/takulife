@@ -151,7 +151,8 @@ def test_목록에서_달력으로_전환해도_지역_필터가_유지된다():
     list_body = list_resp.content.decode()
 
     # 목록 페이지는 2026-07-22 에디토리얼 리빌드에서 전환 탭을 nav-links(알약)
-    # 대신 events-tabs(밑줄 탭)로 바꿨다. 달력 페이지는 nav-links 그대로.
+    # 대신 events-tabs(밑줄 탭)로 바꿨다. 달력 페이지도 2026-07-23 에디토리얼
+    # v2 리빌드에서 같은 events-tabs 셸을 공유하게 됐다.
     list_toggle_hrefs = _extract_nav_hrefs(list_body, "events-tabs")
     calendar_href = _first_containing(list_toggle_hrefs, "/events/calendar/")
     assert calendar_href is not None, "목록 페이지 events-tabs에 달력 전환 링크가 없음"
@@ -161,9 +162,9 @@ def test_목록에서_달력으로_전환해도_지역_필터가_유지된다():
     assert calendar_resp.status_code == 200
     calendar_body = calendar_resp.content.decode()
 
-    calendar_toggle_hrefs = _extract_nav_hrefs(calendar_body, "nav-links")
+    calendar_toggle_hrefs = _extract_nav_hrefs(calendar_body, "events-tabs")
     list_href = _first_containing(calendar_toggle_hrefs, "/events/?")
-    assert list_href is not None, "달력 페이지 nav-links에 목록 전환 링크가 없음"
+    assert list_href is not None, "달력 페이지 events-tabs에 목록 전환 링크가 없음"
     assert "region=seoul" in list_href
 
 
