@@ -1,29 +1,609 @@
+/* ── /events/ page skin ──────────────────────────────────────────
+ *
+ * 2026-07-22 editorial rebuild (design source: claude.ai/design
+ * "행사 목록 페이지 (에디토리얼).dc.html"). The boxed ticket-stub card grid
+ * is replaced by a magazine-index row list: a 3/4 category tile, a text
+ * column, and a right-aligned tone pill + 찜 circle, separated by hairlines
+ * instead of borders and shadows.
+ *
+ * SCOPING (important): this stylesheet is also loaded by
+ * templates/core/events/calendar.html, which reuses this file's filter form
+ * (.filter-group/.filter-check/.filter-list/.filter-actions, .region-select*)
+ * and its .event-card day-detail cards verbatim. Every rule that restyles one
+ * of those shared class names is therefore scoped under `.events-page` — a
+ * class that only templates/core/events/list.html puts on <main>. The legacy
+ * block at the bottom of this file is untouched and now serves the calendar
+ * page alone; the list page no longer renders any of it.
+ */
+
+/* ── page head: title left, 목록/달력 tabs centered ─────────────
+   `1fr auto 1fr` rather than absolute centering: the tabs stay optically
+   centered while the title column keeps a real min-content floor, so the
+   two can never overlap at 320px (absolute positioning has no such floor). */
+  .events-head {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .events-head h1 {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 800;
+  }
+  .events-tabs {
+    display: flex;
+    gap: 1.5rem;
+  }
+  /* Underline active-state, reusing the .archive-nav-tabs convention
+     (components/nav.css) rather than nav.css's filled pill — this page's
+     switcher is a section tab, not a navigation chip. */
+  .events-tabs a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.25rem 0.125rem 0.5rem;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 0.94rem;
+    font-weight: 600;
+    transition: color 0.15s ease;
+  }
+  .events-tabs a:hover {
+    color: var(--brand-ink);
+  }
+  .events-tabs a.active {
+    color: var(--text);
+    font-weight: 700;
+  }
+  .events-tabs a.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.375rem;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--brand);
+  }
+
+/* ── search row ─────────────────────────────────────────────────
+   Own classes rather than an override of the shared `.search`
+   (components/controls.css), which the calendar page and home also use:
+   this page's field is 44px tall with a leading ⌕ glyph and a brand-filled
+   submit, none of which should reach those pages. */
+  .events-search {
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+  }
+  .events-search-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+  .events-search-icon {
+    position: absolute;
+    left: 0.9375rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .events-search input {
+    height: 44px;
+    padding: 0 0.9375rem 0 2.25rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    font-size: var(--fs-md);
+  }
+  .events-search button {
+    height: 44px;
+    padding: 0 1.25rem;
+    border: 1px solid var(--brand);
+    border-radius: 10px;
+    background: var(--brand);
+    color: #fff;
+    font-size: var(--fs-md);
+    font-weight: 700;
+  }
+  .events-search button:hover {
+    filter: brightness(0.95);
+  }
+
+/* ── quick chips ────────────────────────────────────────────────
+   Scoped to .quick-row so the shared `.chip` signature (ticket-stub radius,
+   solid-brand active fill — components/controls.css) survives everywhere
+   else. Here the active state is the softer brand-soft/brand-ink pairing
+   the design uses for filter state. */
   .quick-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    gap: 0.4375rem;
+    margin-bottom: 1.25rem;
   }
+  .quick-row .chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.78rem;
+    padding: 0.375rem 0.8125rem;
+    text-decoration: none;
+  }
+  .quick-row .chip.active {
+    background: var(--brand-soft);
+    border-color: var(--brand);
+    color: var(--brand-ink);
+    font-weight: 600;
+  }
+
+/* ── two-column layout ──────────────────────────────────────────
+   .layout is deliberately absent from calendar.html (see that page's own
+   note), so these rules need no .events-page prefix. */
   .layout {
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: minmax(180px, 232px) minmax(0, 1fr);
+    gap: 1.75rem;
+    align-items: start;
+  }
+  /* Shared .panel box (components/cards.css) flattened for both columns —
+     all four box properties re-declared, not just padding, per the home/
+     activity stage lesson that a partial re-declaration lets the original
+     box survive. cards.css itself is untouched. */
+  .layout .panel {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
   }
   .filters {
-    padding: 0.875rem;
     align-self: start;
     position: sticky;
-    top: calc(var(--site-header-h) + 0.75rem);
+    top: calc(var(--site-header-h) + 1rem);
   }
-  .filters h1 {
-    margin: 0 0 0.25rem;
-    font-size: var(--fs-lg);
+
+/* ── sidebar filter sections (list page only) ───────────────────
+   `.filter-group + .filter-group` rather than `:first-child` for the
+   hairline: the form's first child is a conditional hidden `q` input, so a
+   first-child rule would silently target the wrong element whenever a search
+   term is active. */
+  .events-page .filter-group {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    min-width: 0;
   }
-  .filters .caption {
-    margin: 0 0 0.75rem;
+  .events-page .filter-group + .filter-group,
+  .events-page .filter-actions {
+    margin-top: 0.875rem;
+    padding-top: 0.9375rem;
+    border-top: 1px solid var(--line);
+  }
+  .events-page .filter-group h2,
+  .events-page .filter-group legend {
+    margin: 0 0 0.5625rem;
+    padding: 0;
+    font-size: 0.69rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
     color: var(--muted);
-    font-size: var(--fs-md);
   }
+  .events-page .filter-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0;
+  }
+  .events-page .filter-check {
+    display: flex;
+    gap: 0.5625rem;
+    align-items: center;
+    padding: 0.3125rem 0;
+    color: var(--muted);
+    font-size: 0.84rem;
+  }
+  .events-page .filter-check input {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--brand);
+  }
+  /* Checked rows darken and bolden, matching the design's two-weight list.
+     Progressive enhancement: browsers without :has() simply keep every row
+     at the unchecked weight — the checkbox itself still shows the state. */
+  .events-page .filter-check:has(input:checked) {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .events-page .filter-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .events-page .results-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.625rem;
+    margin-bottom: 0.75rem;
+  }
+  /* `.events-page` prefix is load-bearing on every h2 rule in this file, not
+     decoration: components/cards.css's `.panel h2 { font-size: 1rem }` is
+     (0,1,1) and silently beat the bare class selectors, pinning both the
+     results heading and every row title at 16px (caught by measurement, not
+     by reading). Same trap archive.css sidesteps with `.results-head h2`. */
+  .events-page .results-title {
+    margin: 0;
+    font-size: 0.94rem;
+    font-weight: 700;
+  }
+  .results-count {
+    color: var(--brand-ink);
+  }
+  .results-sort {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .results-sort span {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+/* ── editorial event rows ───────────────────────────────────────
+   Per-row category and tone inks are published as custom properties on the
+   row itself so the tile, the category label, and the D-day pill all read
+   the same value without repeating six category selectors three times. */
+  .event-rows {
+    display: flex;
+    flex-direction: column;
+  }
+  .event-row {
+    --row-cat-ink: var(--muted);
+    --row-tone-ink: var(--muted);
+    --row-tone-soft: var(--muted-soft);
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: start;
+    padding: 0.9375rem 0.125rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .event-row[data-cat="popup_store"] {
+    --row-cat-ink: var(--cat-popup_store-ink);
+  }
+  .event-row[data-cat="collaboration_cafe"] {
+    --row-cat-ink: var(--cat-collaboration_cafe-ink);
+  }
+  .event-row[data-cat="theater_bonus"] {
+    --row-cat-ink: var(--cat-theater_bonus-ink);
+  }
+  .event-row[data-cat="goods_reservation"] {
+    --row-cat-ink: var(--cat-goods_reservation-ink);
+  }
+  .event-row[data-cat="exhibition"] {
+    --row-cat-ink: var(--cat-exhibition-ink);
+  }
+  .event-row[data-cat="fan_meeting"] {
+    --row-cat-ink: var(--cat-fan_meeting-ink);
+  }
+  .event-row[data-tone="ongoing"] {
+    --row-tone-ink: var(--mint-ink);
+    --row-tone-soft: var(--mint-soft);
+  }
+  .event-row[data-tone="closing_soon"] {
+    --row-tone-ink: var(--amber-ink);
+    --row-tone-soft: var(--amber-soft);
+  }
+  .event-row[data-tone="upcoming"] {
+    --row-tone-ink: var(--up-ink);
+    --row-tone-soft: var(--up-soft);
+  }
+  .event-row[data-tone="ended"] {
+    --row-tone-ink: var(--end-ink);
+    --row-tone-soft: var(--end-soft);
+  }
+  /* status.js appends .status-inline-error via
+     .closest("[data-status-error-container]"), which is .event-row itself —
+     without this it would land in the 3rd (auto) column instead of spanning
+     the row. Same guard the legacy .event-card carries below. */
+  .event-row > .status-inline-error {
+    grid-column: 1 / -1;
+  }
+
+/* Poster/category tile. The category ink at 14% over --surface tints in
+   both themes from one declaration (both inputs are themed tokens), so no
+   dark-mode override is needed. The flat --bg-soft line before it is the
+   fallback for engines without color-mix(). */
+  .event-row-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    overflow: hidden;
+    text-decoration: none;
+    background: var(--bg-soft);
+    background: color-mix(in srgb, var(--row-cat-ink) 14%, var(--surface));
+    color: var(--row-cat-ink);
+  }
+  .event-row-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+  }
+  .event-row-initial {
+    font-size: 1.1875rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .event-row-body {
+    min-width: 0;
+  }
+  .event-row-meta {
+    margin: 0 0 0.3125rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.69rem;
+  }
+  .event-row-cat {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--row-cat-ink);
+  }
+  .event-row-dot {
+    flex: none;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .event-row-tone {
+    font-weight: 600;
+    color: var(--row-tone-ink);
+  }
+  .events-page .event-row-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.03rem;
+    font-weight: 700;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .event-row-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .event-row-title a:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .event-row-place {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .event-row-period {
+    margin: 0.125rem 0 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .event-row-end {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.625rem;
+  }
+  .event-row-dday {
+    border-radius: 999px;
+    padding: 0.25rem 0.6875rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    background: var(--row-tone-soft);
+    color: var(--row-tone-ink);
+  }
+  /* 찜 moves off the poster overlay (.poster-interest) and into the row's
+     end column as an outlined circle — it no longer sits on an arbitrary
+     image, so it takes themed border/surface tokens instead of the
+     translucent-black treatment the overlay needed. */
+  .event-row-interest {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    min-height: 0;
+    padding: 0;
+    gap: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1;
+  }
+  .event-row-interest:hover {
+    border-color: var(--pink-ink);
+    background: var(--pink-soft);
+    color: var(--pink-ink);
+  }
+  .event-row-interest.active {
+    border-color: var(--pink-border);
+    background: var(--pink-soft);
+    color: var(--pink-ink);
+    font-weight: 700;
+  }
+  /* The shared .is-loading spinner (objects/interaction.css) assumes text
+     before it. This button has only the glyph, so the two rendered side by
+     side and spilled past the 30px circle — same fix .poster-interest
+     carries in components/cards.css. */
+  .event-row-interest.is-loading [data-interest-glyph] {
+    display: none;
+  }
+  .event-row-interest.is-loading::after {
+    margin-left: 0;
+  }
+
+/* ── filter disclosure (tablet and below) ───────────────────────
+   .filter-toggle / .filter-body are list-page-only markup (the calendar
+   uses its own data-disclosure panel), so these stay unscoped. */
+  .filter-toggle {
+    display: none;
+  }
+  @media (max-width: 56.25rem) {
+    .layout {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .filters {
+      position: static;
+    }
+    .filter-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.375rem;
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--border-soft);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 0.625rem 0.75rem;
+      font-size: var(--fs-md);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .filter-body {
+      display: none;
+    }
+    .filters.open .filter-body {
+      display: block;
+      padding-top: 0.875rem;
+    }
+  }
+
+  @media (max-width: 45rem) {
+    .page {
+      padding: 1rem var(--page-pad-x) 3rem;
+    }
+    .events-head {
+      margin-bottom: 0.75rem;
+    }
+    .events-head h1 {
+      font-size: 1.25rem;
+    }
+    .events-tabs {
+      gap: 1.25rem;
+    }
+    .events-tabs a {
+      font-size: 0.85rem;
+    }
+    .events-search input {
+      height: 40px;
+      font-size: var(--fs-sm);
+    }
+    .events-search button {
+      height: 40px;
+      padding: 0 1rem;
+    }
+    .quick-row {
+      gap: 0.375rem;
+      margin-bottom: 0.875rem;
+    }
+    .quick-row .chip {
+      font-size: 0.72rem;
+      padding: 0.3125rem 0.6875rem;
+      white-space: nowrap;
+    }
+    /* The results heading has to sit below the row titles it introduces —
+       at the desktop 0.94rem it outweighed the 0.85rem mobile title and
+       inverted the hierarchy (measured on the 375px capture). */
+    .events-page .results-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .results-count {
+      font-weight: 700;
+    }
+    .results-sort {
+      font-size: 0.72rem;
+    }
+    .event-row {
+      grid-template-columns: 52px minmax(0, 1fr) auto;
+      gap: 0.6875rem;
+      padding: 0.75rem 0;
+    }
+    .event-row-initial {
+      font-size: 0.875rem;
+    }
+    .event-row-meta {
+      gap: 0.375rem;
+      font-size: 0.63rem;
+      margin-bottom: 0.1875rem;
+    }
+    /* The design truncates the mobile title to one ellipsised line. Clamped
+       to two lines instead: at 320px the text column is ~164px, which cuts a
+       Korean title at roughly 12 characters — too aggressive for a listing
+       whose only job is letting you recognise the event. Two lines keep the
+       compact row rhythm without destroying the title. */
+    .events-page .event-row-title {
+      font-size: 0.85rem;
+      margin-bottom: 0.1875rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .event-row-place {
+      font-size: 0.69rem;
+    }
+    .event-row-period {
+      font-size: 0.66rem;
+    }
+    .event-row-end {
+      gap: 0.5rem;
+    }
+    .event-row-dday {
+      font-size: 0.66rem;
+      padding: 0.1875rem 0.5rem;
+    }
+    .event-row-interest {
+      width: 26px;
+      height: 26px;
+      font-size: 0.75rem;
+    }
+  }
+
+/* ═══════════════════════════════════════════════════════════════
+   LEGACY — consumed by templates/core/events/calendar.html only
+   ═══════════════════════════════════════════════════════════════
+   The calendar page reuses this file's filter form and day-detail cards
+   verbatim (see its own header comment). Everything below is the
+   pre-2026-07-22 styling, kept as-is so that page is unaffected by the list
+   page's editorial rebuild. templates/core/events/list.html renders none of
+   it. Retire this block only together with the calendar page's own markup.
+   ═══════════════════════════════════════════════════════════════ */
   .filter-group {
     margin-bottom: 0.75rem;
     margin-inline: 0;
@@ -52,6 +632,14 @@
     align-items: center;
     color: var(--text);
     font-size: var(--fs-md);
+  }
+  .filter-check input:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .filter-actions {
+    display: flex;
+    gap: 0.5rem;
   }
   .region-select {
     position: relative;
@@ -101,42 +689,6 @@
   .region-online {
     margin-top: 0.5rem;
   }
-  .filter-check input:focus {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
-  .filter-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .results {
-    padding: 0.75rem;
-  }
-  .results-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.625rem;
-  }
-  .results-title {
-    margin: 0;
-    font-size: var(--fs-base);
-  }
-  .sort {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    color: var(--muted);
-    font-size: var(--fs-sm);
-  }
-  .sort select {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 0.4375rem 0.5rem;
-    color: var(--text);
-    background: var(--surface);
-  }
   .event-list {
     display: grid;
     gap: 0.625rem;
@@ -181,21 +733,9 @@
   .event-card::after {
     bottom: -5px;
   }
-  /* status.js's showInlineError/clearInlineError append/find
-     .status-inline-error via .closest("[data-status-error-container]")
-     from the clicked button — that container is .event-card itself (see
-     the article tag in list.html), so a JS-appended error lands as a 3rd
-     grid child. .event-card's grid only defines 2 explicit columns (media
-     + card-body); without this, grid auto-placement would drop the error
-     into a new row's first (96px) cell instead of spanning the card. */
   .event-card > .status-inline-error {
     grid-column: 1 / -1;
   }
-  /* Poster media column (replaces the bare 52px .cat-tile): a fixed 96px
-     box (aspect 3/4 → 128px tall) holding either the event poster or the
-     category-tile fallback, inset by the card's own padding like the old
-     tile was. Self-contained rounding/clip (unlike the flush home poster
-     card) since this sits inset within the card, not flush to its edge. */
   .event-card-media {
     position: relative;
     width: 96px;
@@ -203,17 +743,10 @@
     overflow: hidden;
   }
   /* 포스터 타일 완충 보더(다크 전용, home.css의 .poster-card-media와
-     동일한 대응) — 밝은 포스터가 다크 배경 위에서 떠 보이는 문제 대응.
-     이 요소는 자체 border-radius/overflow:hidden을 갖고 있어 inset
-     shadow가 바로 자기 모서리를 따라간다. 라이트는 무변경. */
+     동일한 대응) — 밝은 포스터가 다크 배경 위에서 떠 보이는 문제 대응. */
   :root[data-theme="dark"] .event-card-media {
     box-shadow: inset 0 0 0 1px var(--line);
   }
-  /* Wraps the img/fallback tile so the poster itself is a click target to
-     the detail page (title link is the only other route in, and remains
-     the sole tab stop — this anchor is tabindex="-1" in the template).
-     display:block mirrors pages/home.css's .deck-slide, the existing
-     precedent in this codebase for an <a> wrapping a block-level image. */
   .event-card-media-link {
     display: block;
   }
@@ -225,9 +758,6 @@
     object-fit: cover;
     object-position: center top;
   }
-  /* No-poster fallback: stretches the 52px .cat-tile (components/category.css)
-     to fill the 96px media box, mirroring pages/home.css's .poster-card-emoji
-     override of the same base tile. */
   .event-card-emoji {
     width: 100%;
     height: auto;
@@ -238,17 +768,6 @@
     align-items: center;
     justify-content: center;
   }
-  /* Ticket-stub signature #2 (glint): explicit <span class="glint"> markup
-     (objects/interaction.css utility, revealed via the .hover-lift already
-     on .event-card), matching _poster_card.html's pattern. Replaces the
-     old template-free .cat-tile::after variant, which only worked on the
-     no-poster fallback and left real poster images without a glint.
-     Bottom-left, not the shared top-right corner: every card here has a
-     .poster-interest button (unlike home's ongoing/recent variants), and
-     the 34px button (z-index:2) fully covers the glint (z-index:1) at that
-     shared position — measured 100% overlap on hover. No conditional
-     needed (unlike home.css's sibling selector) since the pairing is
-     unconditional in this file. */
   .event-card-media .glint {
     top: auto;
     bottom: 8px;
@@ -274,18 +793,8 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
-  /* h2 a is a line-clamp box (display:-webkit-box), not flex, so the
-     sibling badge already falls onto its own line (components/cards.css
-     .poster-card-badges 관례) — this just adds a touch of top spacing. */
   .event-card h2 .card-official-badge {
     margin-top: 0.1875rem;
-  }
-  /* §5.4 44px 확대 규칙은 여기서 제거됨: 찜 버튼이 .status-row 알약에서
-     .event-card-media 위 .poster-interest 오버레이(components/cards.css,
-     34px 원형 — 홈 포스터 카드와 동일한 §5.4 예외 관례)로 이동해 이 카드
-     컨텍스트 확대분은 더 이상 적용되지 않음. */
-  .filter-toggle {
-    display: none;
   }
   .dday {
     border-radius: var(--radius-chip);
@@ -295,63 +804,9 @@
     background: var(--amber-soft);
     color: var(--amber-ink);
   }
-  /* Mobile-only poster overlay badge (duplicate render of the same D-day/
-     종료 state as .card-lead .dday, toggled by viewport instead of moved
-     with JS/markup branching — see the <=45rem block below for the other
-     half of the toggle). Hidden by default (desktop keeps the card-lead
-     chip only). */
   .event-card-dday-badge {
     display: none;
   }
-  /* .status-row는 base.css로 통합됨 (중복 제거) */
-  /* .pager는 components/pager.css로 hoist됨 (아카이브 페이지와 공유) */
-  @media (max-width: 56.25rem) {
-    .layout {
-      grid-template-columns: 1fr;
-    }
-    .filters {
-      position: static;
-    }
-    .filter-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.375rem;
-      width: 100%;
-      min-height: 44px;
-      margin-top: 0.5rem;
-      border: 1px solid var(--border-soft);
-      background: var(--bg-soft);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 0.625rem 0.75rem;
-      font-size: var(--fs-md);
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .filter-body {
-      display: none;
-    }
-    .filters.open .filter-body {
-      display: block;
-    }
-  }
-  @media (max-width: 45rem) {
-    .page {
-      padding: 1rem var(--page-pad-x) 3rem;
-    }
-    .results-head {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-
-  /* ── mobile poster grid: 2 cols × 5 rows ───────────────────────
-     PUBLIC_LISTING_PAGE_SIZE is already 10 (backend unchanged), so a full
-     page fills exactly one 2×5 screen. .event-card switches from the
-     side-by-side ticket row to a top-to-bottom stack with the media
-     bleeding flush to the card edge, mirroring pages/home.css's
-     .poster-card (unlike the desktop inset thumbnail above). */
   @media (max-width: 45rem) {
     .event-list {
       grid-template-columns: repeat(2, 1fr);
@@ -364,16 +819,8 @@
       padding: 0;
       background: var(--bg-card);
       overflow: hidden;
-      /* Grid items default to a content-based min-width floor; without
-         this, .card-official-badge's nowrap text (or similar) could push
-         a column past its 50% share and reopen horizontal overflow
-         (연구문서 §2.2), same risk as the home slider's li min-width:0. */
       min-width: 0;
     }
-    /* The desktop vertical perforation (left:calc(0.75rem+96px)) has no
-       meaning once the card stacks vertically — replaced below by a
-       horizontal seam (.card-body border-top + .event-card-media notch),
-       mirroring pages/home.css:439's .poster-card-media technique. */
     .event-card::before,
     .event-card::after {
       display: none;
@@ -386,11 +833,7 @@
     /* Ticket-stub signature #1, horizontal form: punch-notch circles
        straddle the media/body seam via top:calc(100% - 5px), resolving
        against .event-card-media's OWN box so they land at the seam
-       regardless of the column's actual rendered width (percentage
-       anchors, not a hardcoded px guess). left/right:-5px lets
-       .event-card's overflow:hidden bite the outer half at the card's
-       edge — same "punched hole" technique as the desktop vertical notch
-       and pages/home.css's .poster-card-media::before/::after. */
+       regardless of the column's actual rendered width. */
     .event-card-media::before,
     .event-card-media::after {
       content: "";
@@ -419,10 +862,6 @@
     .event-card .period {
       font-size: var(--fs-xs);
     }
-    /* D-day/종료 moves onto the poster as a top-left badge (home
-       .poster-badge convention) instead of the card-lead chip — the card
-       body keeps only status/category chips. Both instances render
-       server-side unconditionally; only visibility toggles here. */
     .event-card-dday-badge {
       display: block;
     }
