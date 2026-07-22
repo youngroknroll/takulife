@@ -1,59 +1,89 @@
 {% comment %}
 내 컬렉션(archive_collection_items) 결과 영역 — 라이브 검색 swap 대상.
 풀 페이지(collection.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
-컨텍스트: item_rows, has_items, has_query, q, page_obj, pager_query,
+컨텍스트: item_rows, view_mode, has_items, has_query, q, page_obj, pager_query,
 clear_query_suffix, request
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if item_rows %}
-  <div class="timeline">
-    {% for row in item_rows %}
-      <article class="visit-card hover-lift" data-collection-item-id="{{ row.item.id }}">
-        <div class="visit-card-body">
-          <div class="visit-card-top">
-            {% if row.item.item_type %}
-              <span class="visit-chip category">{{ row.item.item_type }}</span>
-            {% endif %}
-            {% if row.is_wanted %}
-              <span class="visit-chip wanted">구함</span>
-            {% endif %}
-            {% if row.quantity_label %}
-              <span class="visit-chip">{{ row.quantity_label }}</span>
-            {% endif %}
-            {% if row.tradeable_label %}
-              <span class="visit-chip">{{ row.tradeable_label }}</span>
-            {% endif %}
-          </div>
-
-          <h3>{{ row.item.name }}</h3>
-          <p class="meta">
-            {% if row.item.work_title %}{{ row.item.work_title }}{% endif %}
-            {% if row.item.character_name %} · {{ row.item.character_name }}{% endif %}
-          </p>
-          {% if row.item.memo %}
-            <p class="review">{{ row.item.memo }}</p>
-          {% endif %}
-
-          <div class="visit-card-actions">
-            <a class="record-edit-link" href="/collection/{{ row.item.id }}/edit/">수정</a>
-            <button
-              class="record-delete-btn"
-              type="button"
-              data-delete-item-id="{{ row.item.id }}"
-            >굿즈 삭제</button>
-          </div>
-        </div>
-
-        <div class="visit-card-media">
-          {% if row.item.image %}
-            <img src="{{ row.item.image.url }}" alt="{{ row.item.name }}" loading="lazy">
-          {% else %}
-            <div class="collection-thumb-placeholder"></div>
-          {% endif %}
-        </div>
-      </article>
-    {% endfor %}
+  {# 시안의 결과 헤더. 시안의 "최근 등록순 ▾" 정렬 토글은 백엔드가 -id 고정이라 #}
+  {# 의도적으로 제외했고(죽은 UI 금지), 건수 표시만 가져왔다.                  #}
+  <div class="collection-resulthead collection-resulthead--{{ view_mode }}">
+    <h2>전체 <span>{{ page_obj.paginator.count }}</span>점</h2>
   </div>
+  {% if view_mode == "list" %}
+    <div class="collection-rows">
+      {% for row in item_rows %}
+        <article class="collection-row" data-collection-item-id="{{ row.item.id }}">
+          <div class="collection-row-thumb {{ row.series_ink_class }}">
+            {% if row.item.image %}
+              <img src="{{ row.item.image.url }}" alt="{{ row.item.name }}" loading="lazy">
+            {% else %}
+              <span class="collection-thumb-placeholder">{{ row.item.item_type }}</span>
+            {% endif %}
+          </div>
+          <div class="collection-row-text">
+            <p class="collection-row-work {{ row.series_ink_class }}">
+              {{ row.item.work_title }}{% if row.item.item_type %} · {{ row.item.item_type }}{% endif %}
+            </p>
+            <h3 class="collection-row-name">{{ row.item.name }}</h3>
+            {# 구분자는 앞에 실제 값이 있을 때만 — 캐릭터명이 비면 선행 "·"가 #}
+            {# 그대로 보인다(시안엔 없는 잔여 기호).                          #}
+            <p class="collection-row-meta">
+              {% if row.item.character_name %}{{ row.item.character_name }}{% endif %}
+              {% if row.quantity_label %}{% if row.item.character_name %} · {% endif %}{{ row.quantity_label }}{% endif %}
+              {% if row.tradeable_label %}{% if row.item.character_name or row.quantity_label %} · {% endif %}{{ row.tradeable_label }}{% endif %}
+            </p>
+            {% if row.item.memo %}
+              <p class="collection-row-note">“{{ row.item.memo }}”</p>
+            {% endif %}
+          </div>
+          <div class="collection-row-side">
+            <span class="collection-pill{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">
+              {% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}
+            </span>
+            <div class="collection-row-actions">
+              <a class="collection-edit-link" href="/collection/{{ row.item.id }}/edit/">수정</a>
+              <button class="collection-delete-btn" type="button" data-delete-item-id="{{ row.item.id }}">삭제</button>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="collection-grid">
+      {% for row in item_rows %}
+        <article class="collection-card" data-collection-item-id="{{ row.item.id }}">
+          <div class="gcard-cover">
+            {% if row.item.image %}
+              <img src="{{ row.item.image.url }}" alt="{{ row.item.name }}" loading="lazy">
+            {% else %}
+              <div class="gcard-noimg {{ row.series_ink_class }}">
+                <span class="gcard-bar" aria-hidden="true"></span>
+                <span class="gcard-noimg-label">{{ row.item.item_type }}</span>
+              </div>
+            {% endif %}
+            <span class="collection-pill collection-pill--cover{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">
+              {% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}
+            </span>
+          </div>
+          <div class="gcard-body">
+            <p class="gcard-work {{ row.series_ink_class }}">{{ row.item.work_title }}</p>
+            <h3 class="gcard-name">{{ row.item.name }}</h3>
+            <p class="gcard-meta">
+              {% if row.item.character_name %}{{ row.item.character_name }}{% endif %}
+              {% if row.quantity_label %}{% if row.item.character_name %} · {% endif %}{{ row.quantity_label }}{% endif %}
+              {% if row.tradeable_label %}{% if row.item.character_name or row.quantity_label %} · {% endif %}{{ row.tradeable_label }}{% endif %}
+            </p>
+            <div class="gcard-actions">
+              <a class="collection-edit-link" href="/collection/{{ row.item.id }}/edit/">수정</a>
+              <button class="collection-delete-btn" type="button" data-delete-item-id="{{ row.item.id }}">삭제</button>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
 {% elif has_items %}
   {% if has_query %}
     <div class="empty-state">
