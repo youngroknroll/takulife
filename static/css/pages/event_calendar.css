@@ -486,3 +486,27 @@
     font-size: 0.72rem;
   }
 }
+
+/* ── agenda row action links (자세히 / 로그인하고 찜하기) hover ─────────
+   `.side-action-link` is a SHARED component (components/cards.css) that the
+   archive calendar, 찜 목록, and 나의 일정 pages also render, so this hover is
+   scoped to `.events-page .agenda-end` — styling the bare class here would
+   silently restyle those three pages too.
+
+   Same hover language as the collection page's chips: brand border, a
+   background shift, and brand ink. */
+.events-page .agenda-end .side-action-link {
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease;
+}
+.events-page .agenda-end .side-action-link:hover {
+  background: var(--bg-soft);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .events-page .agenda-end .side-action-link {
+    transition: none;
+  }
+}
