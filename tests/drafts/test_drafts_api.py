@@ -405,3 +405,38 @@ class TestAdminCreateEndpointErrorResponses:
         _, client = staff_client(is_superuser=True)
         resp = self._post(client)
         assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+class TestDraftUpdateApiVocabError:
+    """PATCH /api/event-drafts/<id>/ 는 DraftStateError만 잡고 있었다.
+    어휘(core.vocab) 위반이 여기로 올라오면 500이 되므로 400으로 번역해야 한다.
+    서비스 계층 가드 자체는 tests/drafts/test_draft_vocab_guard.py가 검증한다."""
+
+    def test_어휘_밖_카테고리로_PATCH하면_500이_아니라_400을_응답한다(
+        self, admin_client, make_draft
+    ):
+        draft = make_draft(extracted_category="popup_store")
+
+        resp = admin_client.patch(
+            f"/api/event-drafts/{draft.id}/",
+            {"extracted_category": "카페/팝업"},
+            content_type="application/json",
+        )
+
+        assert resp.status_code == 400
+        draft.refresh_from_db()
+        assert draft.extracted_category == "popup_store"
+
+    def test_어휘_밖_지역으로_PATCH하면_400을_응답한다(self, admin_client, make_draft):
+        draft = make_draft(extracted_region="seoul")
+
+        resp = admin_client.patch(
+            f"/api/event-drafts/{draft.id}/",
+            {"extracted_region": "서울특별시"},
+            content_type="application/json",
+        )
+
+        assert resp.status_code == 400
+        draft.refresh_from_db()
+        assert draft.extracted_region == "seoul"
