@@ -154,7 +154,7 @@
                       <span class="event-row-tone">{{ row.status_label }}</span>
                     {% endif %}
                   </p>
-                  <h2 class="event-row-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a>{% if row.event.official_url %} <span class="card-official-badge">공식</span>{% endif %}</h2>
+                  <h2 class="event-row-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
                   {% if row.region_label and row.event.location_name %}
                     <p class="event-row-place">{{ row.region_label }} · {{ row.event.location_name }}</p>
                   {% elif row.region_label %}
