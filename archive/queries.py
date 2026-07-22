@@ -13,7 +13,7 @@ from dataclasses import dataclass
 # by the time its own annotation tried to reference it.
 from datetime import date as _date
 
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, Min, OuterRef, Q
 from django.urls import reverse
 from django.utils import timezone
 
@@ -420,9 +420,9 @@ def user_collection_item_summary_counts(user) -> dict:
     }
 
 
-def user_collection_item_work_title_counts(user) -> list:
-    """Return (work_title, count) pairs for a user's collection items,
-    excluding blank work_title, owner-scoped.
+def user_collection_item_work_title_facets(user) -> list:
+    """Return {"work_title", "count", "first_id"} facets for a user's
+    collection items, excluding blank work_title, owner-scoped.
 
     Sorted by count descending, then work_title ascending as a tie-break —
     same reasoning as user_collection_item_filter_values' explicit
@@ -430,14 +430,24 @@ def user_collection_item_work_title_counts(user) -> list:
     planner may choose a HashAggregate plan instead of an index-derived
     Sort), so the tie-break must be requested explicitly rather than relied
     on implicitly.
+
+    first_id is the id of the work_title's earliest-registered item
+    (Min("id")). The caller uses it to re-sort facets into REGISTRATION
+    order and derive a per-series color palette from that order — display
+    order (count descending) and palette order (first-registered) are
+    deliberately different. Assigning colors by count order would make an
+    existing work_title's color shift every time any item is added, since
+    adding one item can change the count ranking; assigning by
+    first-registration order keeps a work_title's color stable for its
+    whole lifetime.
     """
     return list(
         CollectionItem.objects.filter(user=user)
         .exclude(work_title="")
         .values("work_title")
-        .annotate(count=Count("id"))
+        .annotate(count=Count("id"), first_id=Min("id"))
         .order_by("-count", "work_title")
-        .values_list("work_title", "count")
+        .values("work_title", "count", "first_id")
     )
 
 
