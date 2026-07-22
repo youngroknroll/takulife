@@ -242,7 +242,40 @@ class TestHomeCollectionSnapshotContext:
         "unrecorded",
         "upcoming_planned",
         "snapshot_active",
+        # 2026-07-23 에디토리얼 리디자인: 통계가 2칸(보유/구함)에서 4칸으로
+        # 늘면서 방문 기록 수와 찜 수가 추가됐다. 비로그인 응답에서 새지
+        # 않아야 하는 키 목록이므로 여기에도 함께 등재한다.
+        "snapshot_visit_count",
+        "snapshot_interest_count",
     )
+
+    def test_로그인_사용자의_스냅샷에_방문_기록_수와_찜_수가_담긴다(self, make_user, make_event):
+        """4칸 통계의 나머지 두 칸. 보유/구함은 collection_summary가 이미
+        담당하고, 이 둘은 각각 VisitRecord와 EventInterest에서 온다."""
+        from archive.models import EventInterest, VisitRecord
+
+        user = make_user()
+        event = make_event(title="스냅샷카운트행사")
+        VisitRecord.objects.create(user=user, event=event, visited_on="2026-07-01")
+        EventInterest.objects.create(user=user, event=event)
+
+        client = Client()
+        client.force_login(user)
+        resp = client.get("/")
+
+        assert resp.status_code == 200
+        assert resp.context["snapshot_visit_count"] == 1
+        assert resp.context["snapshot_interest_count"] == 1
+
+    def test_기록도_찜도_없는_사용자는_두_카운트가_0이다(self, make_user):
+        user = make_user()
+        client = Client()
+        client.force_login(user)
+
+        resp = client.get("/")
+
+        assert resp.context["snapshot_visit_count"] == 0
+        assert resp.context["snapshot_interest_count"] == 0
 
     def test_비로그인_사용자의_홈_응답에는_컬렉션_스냅샷_컨텍스트_키가_없다(self):
         resp = Client().get("/")

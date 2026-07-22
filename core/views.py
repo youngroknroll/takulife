@@ -189,6 +189,11 @@ def home(request):
         context.update(
             {
                 "collection_summary": collection_summary,
+                # 2026-07-23 에디토리얼 리디자인: 통계가 2칸에서 4칸으로 늘었다.
+                # 보유/구함은 collection_summary가 담당하고, 나머지 두 칸은
+                # 방문 기록 수와 찜 수. 둘 다 단순 count 쿼리다.
+                "snapshot_visit_count": user_visit_record_counts(user)["total_count"],
+                "snapshot_interest_count": user_interest_count(user),
                 "recent_goods": recent_goods,
                 "unrecorded": unrecorded_rows,
                 "upcoming_planned": upcoming_rows,
