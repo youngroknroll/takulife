@@ -194,7 +194,7 @@
                     {% else %}
                       <a class="side-action-link" href="/accounts/login/?next={{ request.get_full_path|urlencode }}">로그인하고 찜하기</a>
                     {% endif %}
-                    <a class="side-action-link" href="/events/{{ row.event.id }}/" tabindex="-1">자세히 ›</a>
+                    <a class="agenda-more" href="/events/{{ row.event.id }}/" tabindex="-1">자세히 ›</a>
                   </div>
                 </article>
               {% endfor %}

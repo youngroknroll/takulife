@@ -321,6 +321,7 @@
   gap: 0.875rem;
   align-items: start;
   padding: 0.8125rem 0.125rem;
+  border-bottom: 1px solid var(--line);
 }
 
 .agenda-row[data-cat="popup_store"] {
@@ -416,6 +417,36 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
+}
+
+/* Mirrors home.css's .section-more: the agenda's detail action is a compact
+   brand link, not the shared archive side-action button. */
+.agenda-more {
+  position: relative;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+
+.agenda-more::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.agenda-more:hover {
+  text-decoration: underline;
+}
+
+.agenda-more:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @media (max-width: 45rem) {
