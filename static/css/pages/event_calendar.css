@@ -1,134 +1,48 @@
 /* ── /events/calendar/ page skin ─────────────────────────────────
- * Minimal layout-only rules — the grid/cell/error-panel look lives in
- * components/calendar.css (shared), and the filter form / event card reuse
- * pages/event_list.css verbatim (region-select dropdown, filter-group/
- * filter-list/filter-check/filter-actions, .event-card). This file only
- * places those pieces on a full-width page instead of event_list.html's
- * 280px sidebar (.layout is deliberately not used here — plan
- * .docs/plans/2026-07-19-dual-calendar-frontend-pre-review.md §A-2).
- * Breakpoints: 45rem only (§A-3).
+ * Editorial v2 rebuild (design source: claude.ai/design "행사 달력 페이지 v2
+ * (에디토리얼).dc.html", plan .docs/plans/2026-07-23-events-calendar-v2-plan.md).
  *
- * 2026-07-21 editorial pass (.docs/plans/2026-07-21-calendar-editorial-plan.md
- * §A-C): the filter disclosure is now collapsed-by-default at every
- * viewport (not just <=45rem), the day-cell category bar/dot reuses
- * components/calendar.css's shared .day-cell skeleton via a page-scoped
- * [data-category] attribute (deliberately distinct from the Activity
- * calendar's own [data-kind] — this file is loaded only on this page, so
- * even a same-named override here can never reach templates/core/archive/
- * calendar.html), and the day-detail poster is hidden at every viewport
- * instead of <=45rem only. No rule in static/css/components/calendar.css
- * is modified — every look here is an override layered on top of it.
+ * This is the ONLY file allowed to change how the calendar grid/cell looks.
+ * The skeleton (.month-grid/.day-cell/data-in-month/data-today/data-selected
+ * wiring) still lives in components/calendar.css, shared with the Activity
+ * calendar (templates/core/archive/calendar.html) — that file is never
+ * touched. Every look change here is a targeted override layered on top of
+ * it, scoped so it never leaks to the Activity page (that page never loads
+ * this stylesheet).
+ *
+ * This page now shares templates/core/events/list.html's shell
+ * (.events-page/.events-head/.events-tabs/.events-search/.quick-row/.layout/
+ * .filters/.filter-toggle/.filter-body/.filter-group/.applied-filters — all
+ * from event_list.css, unchanged here) instead of its own full-width
+ * search-row/disclosure-panel markup. That collapses this page down to two
+ * breakpoints instead of one:
+ *   - 56.25rem: the shared `.layout` two-column → one-column collapse
+ *     (event_list.css's own breakpoint, unmodified here).
+ *   - 45rem: this page's own cell/typography collapse, matching
+ *     components/calendar.css's existing mobile boundary.
+ * ("45rem only" is no longer accurate for this page as a whole — only for
+ * the grid/agenda rules below.)
  */
-.calendar-page-toggle {
-  margin: 0.75rem 0 1.25rem;
-}
 
-/* ── search + filter disclosure share one row (desktop/tablet); the
-   disclosure panel's own width naturally forces it onto its own full-width
-   line once expanded (its content — the reused filter <form>, laid out as
-   a grid below — outgrows the remaining flex space), so no extra
-   state-specific layout rule is needed to make that happen. */
-.calendar-search-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 0.875rem;
-}
-
-.calendar-search-row .search {
-  flex: 1 1 220px;
-  margin: 0;
-}
-
-.calendar-filters {
-  flex: 0 1 auto;
-  margin: 0;
-}
-
-.calendar-filters-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.calendar-filters-summary .applied-filters {
-  margin: 0;
-}
-
-/* Desktop/tablet: the 4 reused filter-groups (region/category/status/sort)
-   plus the actions band side by side instead of stacked full-height panels
-   that push the grid below the fold — the grid is this page's main
-   content, not the filters. Reverts to the original vertical stack at
-   <=45rem below. */
-.calendar-filters form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: 0.875rem;
-  align-items: start;
-  margin-top: 0.75rem;
-}
-
-.calendar-filters .filter-actions {
-  align-self: end;
-  justify-self: end;
-}
-
-/* "＋ 필터" trigger (dashed pill, per the design system's "+필터" chip) —
-   visible at every viewport now, not just <=45rem, so the collapsed state
-   sits inline with the search box (§A). Real min-height/min-width box
-   (design-rules.md §2.3), not a ::before overlay: the pill's own padded
-   box already clears 44px without needing a separate hit-box layer. */
-.calendar-filters-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 44px;
-  border: 1px dashed var(--border-soft);
-  background: transparent;
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 0.5rem 0.9rem;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.calendar-filters-badge {
-  color: var(--muted);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-}
-
-.calendar-filters[data-expanded="false"] .calendar-filters-toggle [data-state="open"] {
-  display: none;
-}
-
-.calendar-filters[data-expanded="true"] .calendar-filters-toggle [data-state="closed"] {
-  display: none;
-}
-
-.calendar-filters[data-expanded="false"] form {
-  display: none;
-}
-
-/* ── month nav: light-weight "YYYY · M월" label + glyph prev/next + text
-   "오늘" reset, space-between across the row (§B). */
+/* ── month nav: 1fr auto 1fr, "YYYY · M월" left, prev/today/next centered */
 .calendar-month-nav {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.875rem;
 }
 
-.calendar-month-label {
+/* `.events-page` prefix is load-bearing, not decoration: this <h2> now sits
+   inside `.panel.results`, and components/cards.css's `.panel h2 { font-size:
+   1rem }` is (0,1,1) — it silently beat the bare class and pinned the month
+   label at 16px (caught by measurement, not by reading). Same trap
+   event_list.css documents for .results-title/.event-row-title. */
+.events-page .calendar-month-label {
   margin: 0;
   min-width: 0;
+  font-size: 1.6875rem; /* bespoke page value — not --fs-xl (home hero only) */
   font-weight: 300;
-  font-size: var(--fs-lg);
   letter-spacing: -0.01em;
 }
 
@@ -146,15 +60,9 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  justify-self: center;
 }
 
-/* Glyph-only prev/next: no visible label text (the design system's reduced
-   month-nav treatment, design-rules.md §2.4/§B) — the accessible name comes
-   solely from aria-label, same pattern as this codebase's other icon-only
-   controls (hscroll.css's .hscroll-btn). Real 44x44 box, not a ::before
-   overlay: unlike hscroll's arrows (which must stay visually smaller than
-   their hit area to avoid overlapping the card edge), these sit in open
-   nav space with no neighbours to crowd. */
 .calendar-month-glyph {
   display: inline-flex;
   align-items: center;
@@ -171,34 +79,99 @@
   color: var(--text);
 }
 
-/* Standalone nav link, not inline prose — §2.1's mandatory tier applies to
-   both axes, and the text alone measured 34px wide (browser-verified), so
-   the box is widened rather than left to the glyph's intrinsic size. */
 .calendar-month-today {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
-  padding: 0 0.375rem;
+  padding: 0 0.5rem;
   color: var(--brand-ink);
   font-size: var(--fs-sm);
   font-weight: 600;
-  border-bottom: 1.5px solid var(--brand);
   text-decoration: none;
 }
 
-/* ── weekday header + day number tint (§B): Sunday = --brand-ink, Saturday
-   = --up-ink — both existing tokens, no new ones. .month-grid's flat
-   children are the 7 weekday-header <span>s (positions 1-7) followed by
-   7-per-row day cells, so :nth-child(7n+1)/:nth-child(7n) land on the
-   Sunday/Saturday column for both the header row (n=0 -> position 1/7) and
-   every day-cell row after it — one selector covers both without a
-   separate rule per row. Day cells further guard out data-selected/
-   data-today (which already own the .day-num color, brand-ink/white — see
-   the today-badge override below) and data-in-month="false" (calendar.css
-   already mutes adjacent-month numbers; the weekday tint should not
-   override that muting). */
+.calendar-month-today:hover {
+  text-decoration: underline;
+}
+
+/* ── month grid: seamless 1px hairline grid, radius 12, no per-cell border
+   (WED reselection checklist — these 5 are new additions on top of the
+   shared skeleton). */
+/* The header has to reproduce the body's column geometry exactly, not just
+   its column count: it keeps the shared 6px gap otherwise, while the body
+   below runs at 1px, and the two column tracks drift apart cumulatively
+   (measured: Saturday's label landed 5px right of its own column). `gap`
+   matches the body's, and the 1px inline padding stands in for the body's
+   1px outer border, which shrinks its content box by the same amount. */
+.month-grid-head {
+  gap: 1px;
+  padding-inline: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.month-grid-body {
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.day-cell {
+  border: none;
+  border-radius: 0;
+  min-height: 7.375rem;
+  padding: 0.6875rem 0.6875rem 0.8125rem;
+  gap: 0.375rem;
+}
+
+/* Attribute selector (0,2,0) always beats the bare class (0,1,0) — the
+   shared 2px brand border must be killed explicitly, not assumed gone. */
+.day-cell[data-today="true"] {
+  border: none;
+}
+
+.day-cell[data-selected="true"] {
+  background: var(--bg-soft);
+  box-shadow: inset 0 -3px 0 var(--brand);
+}
+
+/* [data-in-month="false"] background is intentionally left untouched — the
+   shared rule already wins here and re-declaring it would only create a
+   second source of truth. */
+
+.day-num {
+  text-align: right;
+  align-self: flex-end;
+  font-size: 1.0625rem;
+  font-weight: 300;
+}
+
+/* Today: brand-filled circular date pill, no cell border. */
+.day-cell[data-today="true"] .day-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Weekday header: left-aligned, bold caps tracking; Sunday/Saturday tint
+   reuses the existing nth-child convention (7 flat children per row). */
+.month-grid-weekday {
+  text-align: left;
+  padding: 0 0.375rem;
+  font-size: 0.65625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
 .month-grid > .month-grid-weekday:nth-child(7n+1) {
   color: var(--brand-ink);
 }
@@ -215,68 +188,25 @@
   color: var(--up-ink);
 }
 
-/* ── today cell: circular date badge instead of the shared component's
-   cell-border treatment (§B). Overrides components/calendar.css's
-   [data-today="true"] border here only — the Activity calendar (which
-   never loads this file) keeps the original border look untouched. */
-.day-cell[data-today="true"] {
-  border: 1px solid var(--line);
+/* Focus ring compensation: the grid's own overflow:hidden would otherwise
+   crop an outline drawn on the first row/column's cells (BIR criterion 1) —
+   drawing it 2px inset keeps it entirely inside the cell box instead of
+   relying on a bigger grid gap. Color/width still inherit base.css's global
+   a:focus rule. */
+.day-cell:focus,
+.day-cell:focus-visible {
+  outline-offset: -2px;
 }
 
-.day-cell[data-today="true"] .day-num {
-  align-self: flex-end;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.6rem;
-  height: 1.6rem;
-  padding: 0 0.25rem;
-  border-radius: 999px;
-  background: var(--brand);
-  color: #fff;
+/* Hover feedback replacement: cells no longer carry a border to swap color
+   on, so hover now tints the surface instead. Excluded for the selected/void
+   states, which already carry their own background. */
+.day-cell:not([data-selected="true"]):not([data-void]):hover {
+  background: var(--bg-soft);
 }
 
-/* ── date item category bar (desktop) / dots (mobile), §B. Page-scoped
-   [data-category] attribute — deliberately not [data-kind] (the Activity
-   calendar's own scheme in components/calendar.css) so the two never
-   collide even if both files were ever loaded together. Falls back to a
-   plain --brand mark when category_slug is blank/missing (BIE contract —
-   "없을 때 깨지지 않게"). */
-.day-item {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.day-item-cat {
-  width: 3px;
-  align-self: stretch;
-  min-height: 0.85em;
-  border-radius: 2px;
-  flex: none;
-  background: var(--brand);
-}
-
-.day-item-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.day-mobile-cats {
-  display: inline-flex;
-  gap: 3px;
-}
-
-.day-mobile-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-
+/* ── date items: 3px category bar + 1-line title, "외 N개" overflow (D-1:
+   Korean copy kept, not the mock's "+N more"). */
 .day-item-cat[data-category="popup_store"],
 .day-mobile-dot[data-category="popup_store"] {
   background: var(--cat-popup_store-ink);
@@ -307,7 +237,48 @@
   background: var(--cat-fan_meeting-ink);
 }
 
-/* ── date-detail agenda (§C) ─────────────────────────────────── */
+/* The bar/title pair only works inside a flex context: without this the
+   3px bar is an inline box, `width` does not apply, and the category swatch
+   disappears entirely while still reporting the right background colour. */
+.day-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.day-item-cat {
+  width: 3px;
+  align-self: stretch;
+  min-height: 0.85em;
+  border-radius: 2px;
+  flex: none;
+  background: var(--brand);
+}
+
+.day-item-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Same trap as .day-item above: the dots are inline <span>s, so without a
+   flex/inline-flex parent their `width` is ignored and they render at 0px
+   while still reporting the correct 6px computed width. */
+.day-mobile-cats {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.day-mobile-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+/* ── selected-date agenda (flat rows, no ticket-stub card) ──────── */
 .date-detail-section {
   margin-top: 1.25rem;
 }
@@ -338,63 +309,180 @@
   font-size: var(--fs-sm);
 }
 
-/* User-confirmed: the day-detail agenda is text-only at every viewport now
-   (no poster) — display:none (not a second, duplicated no-image markup
-   branch) so the reused event-card text parts stay a single source of
-   truth; combined with the existing loading="lazy" on the <img>
-   (event_list.css's markup, reused as-is here), evergreen browsers never
-   fetch it — a lazy image only loads once it's judged "near the viewport"
-   via its own layout box, and a display:none ancestor never has one, so
-   it's simply never scheduled. Not a hard spec guarantee
-   (implementation-defined optimization), but it's the de-facto behaviour
-   Chromium/Firefox/Safari all ship, and the same "server renders both, CSS
-   toggles" idea event_list.css already uses for its own
-   .event-card-dday-badge/.card-lead .dday pair (still viewport-toggled
-   below — desktop already shows .card-lead .dday by default with no
-   override needed here). */
-.date-detail-card .event-card-media {
-  display: none;
+.agenda-rows {
+  display: flex;
+  flex-direction: column;
 }
 
-/* PR-E quick actions (§A-12/§B-1): the global .interest-btn/.status-btn
-   pill is ~27px tall (components/controls.css) — an existing, approved
-   exception elsewhere, but the day-detail card is scoped up to the full
-   44px touch target instead of changing that global default. Month-nav
-   prev/next/today controls are handled separately above (glyph-ified,
-   §B — real min-height/min-width boxes instead of .btn's own 44px). */
-.date-detail-card .interest-btn,
-.date-detail-card .status-btn {
-  min-height: 44px;
+.agenda-row {
+  --row-cat-ink: var(--muted);
+  display: grid;
+  grid-template-columns: 4px minmax(0, 1fr) auto;
+  gap: 0.875rem;
+  align-items: start;
+  padding: 0.8125rem 0.125rem;
+}
+
+.agenda-row[data-cat="popup_store"] {
+  --row-cat-ink: var(--cat-popup_store-ink);
+}
+
+.agenda-row[data-cat="collaboration_cafe"] {
+  --row-cat-ink: var(--cat-collaboration_cafe-ink);
+}
+
+.agenda-row[data-cat="theater_bonus"] {
+  --row-cat-ink: var(--cat-theater_bonus-ink);
+}
+
+.agenda-row[data-cat="goods_reservation"] {
+  --row-cat-ink: var(--cat-goods_reservation-ink);
+}
+
+.agenda-row[data-cat="exhibition"] {
+  --row-cat-ink: var(--cat-exhibition-ink);
+}
+
+.agenda-row[data-cat="fan_meeting"] {
+  --row-cat-ink: var(--cat-fan_meeting-ink);
+}
+
+.agenda-bar {
+  align-self: stretch;
+  min-height: 2.625rem;
+  border-radius: 2px;
+  background: var(--row-cat-ink);
+}
+
+/* status.js appends .status-inline-error via
+   .closest("[data-status-error-container]"), which is .agenda-row itself —
+   without this it would land in the 3rd (auto) column instead of spanning
+   the row (BIR criterion 4). */
+.agenda-row > .status-inline-error {
+  grid-column: 1 / -1;
+}
+
+.agenda-meta {
+  margin: 0 0 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.69rem;
+}
+
+.agenda-cat {
+  color: var(--row-cat-ink);
+  font-weight: 600;
+}
+
+.agenda-dot {
+  flex: none;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.agenda-tone {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.agenda-title {
+  margin: 0 0 0.1875rem;
+  font-size: 0.97rem;
+  font-weight: 600;
+}
+
+.agenda-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.agenda-title a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.agenda-place {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.agenda-end {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
 }
 
 @media (max-width: 45rem) {
-  .calendar-search-row {
-    flex-direction: column;
-    align-items: stretch;
+  /* Restore everything the desktop block killed above. `gap` has to be
+     restated here too: the desktop `gap: 1px` above sits outside any media
+     query and is declared later in the cascade than components/calendar.css's
+     own `@media (max-width: 45rem) { gap: 2px }`, so it would otherwise win
+     on mobile and quietly replace the 320px 7-column arithmetic that file
+     already validated. */
+  .month-grid {
+    gap: 2px;
   }
 
-  /* event_list.css's mobile .event-list is a 2-col poster grid, sized for a
-     full 10-item results page. A single day rarely has more than a couple
-     of events, so the detail section keeps a single column instead. */
-  .date-detail-section .event-list {
-    grid-template-columns: 1fr;
+  /* The body loses its border here, so the header's border compensation goes
+     with it; gap follows the mobile 2px like everything else. */
+  .month-grid-head {
+    gap: 2px;
+    padding-inline: 0;
   }
 
-  /* Restore the original vertical filter stack below the desktop band
-     breakpoint. */
-  .calendar-filters form {
-    display: block;
+  .month-grid-body {
+    background: none;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
   }
 
-  .date-detail-card .card-body {
-    border-top: none;
+  .day-cell {
+    min-height: 3.25rem;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
   }
 
-  /* event_list.css's own mobile block hides .card-lead .dday in favour of
-     a poster-overlay badge inside .event-card-media (hidden at every
-     viewport above) — restore the text chip here so the D-day/종료 state
-     stays visible in this card's now-image-free mobile layout. */
-  .date-detail-card .card-lead .dday {
-    display: inline-flex;
+  .day-cell[data-today="true"] {
+    border: 2px solid var(--brand);
+  }
+
+  .day-num {
+    text-align: center;
+    align-self: center;
+    font-size: 0.625rem;
+    font-weight: 600;
+  }
+
+  .day-cell[data-today="true"] .day-num {
+    width: 1.375rem;
+    height: 1.375rem;
+    font-size: 0.625rem;
+  }
+
+  .calendar-month-nav {
+    grid-template-columns: 1fr auto;
+  }
+
+  .events-page .calendar-month-label {
+    font-size: 1.5rem;
+  }
+
+  .agenda-row {
+    padding: 0.6875rem 0.125rem;
+  }
+
+  .agenda-title {
+    font-size: 0.85rem;
+  }
+
+  .agenda-place {
+    font-size: 0.72rem;
   }
 }
