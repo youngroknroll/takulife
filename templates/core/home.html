@@ -22,7 +22,7 @@
          (--brand-soft) applies instead. {% endcomment %}
       <div class="hero-inner" data-hero-card{% if popular_rows %} style="background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft))) 100%);"{% endif %}>
         <div class="hero-left">
-          <h1>지금 갈 수 있는 이벤트를 <span class="hl">한눈에</span></h1>
+          <h1>내가 원하는 이벤트를 <span class="hl">한눈에</span></h1>
           <form class="search" action="/events/" method="get">
             <input id="q" name="q" type="text" placeholder="작품명, 행사명, 장소를 검색" aria-label="행사 검색">
             <button type="submit">검색</button>
