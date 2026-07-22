@@ -19,7 +19,7 @@ import pytest
 
 from archive.models import CollectionItem
 from archive.queries import ARCHIVE_COLLECTION_PAGE_SIZE
-from core.views import _collection_item_row, _series_ink_class
+from core.views import _collection_item_row, _series_ink_classes
 
 pytestmark = pytest.mark.web
 
@@ -602,18 +602,20 @@ class TestArchiveCollectionWorkTitleAndTradeableCounts:
 
         assert resp.context["tradeable_count"] == 1
         # The view carries the card's own series_ink_class onto each facet so
-        # the sidebar dot matches the cards it filters to.
+        # the sidebar dot matches the cards it filters to. Only one work_title
+        # is registered, so it gets the first slot in registration order.
         assert resp.context["work_title_counts"] == [
-            {"title": "작품 A", "count": 2, "series_ink_class": _series_ink_class("작품 A")}
+            {"title": "작품 A", "count": 2, "series_ink_class": "gi-1"}
         ]
 
 
 @pytest.mark.django_db
 class TestCollectionItemRowSeriesInkClass:
-    """_collection_item_row()'s new series_ink_class assigns a deterministic
-    accent-color bucket ("gi-1".."gi-6") per work_title, used by the
-    리디자인's per-series color coding — "gi-0" is the explicit no-series
-    bucket for a blank work_title."""
+    """_collection_item_row()'s new series_ink_class assigns an accent-color
+    bucket ("gi-1".."gi-12") per work_title based on FIRST-REGISTRATION ORDER
+    (not a hash), via a caller-supplied {work_title: class} map from
+    _series_ink_classes() — "gi-0" is the explicit no-series bucket for a
+    blank work_title."""
 
     def test_작품명이_같은_항목은_항상_같은_series_ink_class를_받는다(
         self, make_user, make_collection_item
@@ -621,28 +623,281 @@ class TestCollectionItemRowSeriesInkClass:
         user = make_user(username="row-series-ink-consistent")
         first = make_collection_item(user, name="A1", work_title="작품 X")
         second = make_collection_item(user, name="A2", work_title="작품 X")
+        series_ink_classes = _series_ink_classes(["작품 X"])
 
-        first_row = _collection_item_row(first)
-        second_row = _collection_item_row(second)
+        first_row = _collection_item_row(first, series_ink_classes)
+        second_row = _collection_item_row(second, series_ink_classes)
 
         assert first_row["series_ink_class"] == second_row["series_ink_class"]
-
-    def test_series_ink_class는_gi_1부터_gi_6_사이의_값이다(
-        self, make_user, make_collection_item
-    ):
-        user = make_user(username="row-series-ink-range")
-        item = make_collection_item(user, name="A1", work_title="작품 Y")
-
-        row = _collection_item_row(item)
-
-        assert row["series_ink_class"] in {f"gi-{i}" for i in range(1, 7)}
 
     def test_작품명이_비어있으면_series_ink_class는_gi_0이다(
         self, make_user, make_collection_item
     ):
         user = make_user(username="row-series-ink-blank")
         item = make_collection_item(user, name="A1", work_title="")
+        series_ink_classes = _series_ink_classes([])
 
-        row = _collection_item_row(item)
+        row = _collection_item_row(item, series_ink_classes)
 
         assert row["series_ink_class"] == "gi-0"
+
+
+@pytest.mark.django_db
+class TestSeriesInkClassesRegistrationOrder:
+    """_series_ink_classes() assigns colors by FIRST-REGISTRATION ORDER, not
+    a hash — this is the whole point of the fix: with only 6 hash buckets,
+    작품이 4개만 되어도 충돌이 났다 (달빛 카페 / 굿즈 페스타가 실제로 같은 색을
+    받았다). 순번 배정은 12개 버킷을 다 쓸 때까지 충돌이 없다."""
+
+    def test_서로_다른_작품_12개는_전부_다른_series_ink_class를_받는다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        titles = [f"작품 {i:02d}" for i in range(12)]
+        for title in titles:
+            make_collection_item(user, name=title, work_title=title)
+
+        resp = client.get("/collection/")
+
+        classes = {facet["series_ink_class"] for facet in resp.context["work_title_counts"]}
+        assert len(classes) == 12
+
+    def test_새_작품이_등록되어도_기존_작품들의_series_ink_class는_바뀌지_않는다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="A", work_title="작품 A")
+        make_collection_item(user, name="B", work_title="작품 B")
+        make_collection_item(user, name="C", work_title="작품 C")
+
+        before = {
+            facet["title"]: facet["series_ink_class"]
+            for facet in client.get("/collection/").context["work_title_counts"]
+        }
+
+        # 작품 D를 추가로 등록해 개수 기준 정렬이 흔들리게 만든다 — 이래도
+        # 기존 3개 작품의 색은 그대로여야 한다 (등록 순번 기반이라).
+        make_collection_item(user, name="D1", work_title="작품 D")
+        make_collection_item(user, name="D2", work_title="작품 D")
+        make_collection_item(user, name="D3", work_title="작품 D")
+
+        after = {
+            facet["title"]: facet["series_ink_class"]
+            for facet in client.get("/collection/").context["work_title_counts"]
+        }
+
+        assert after["작품 A"] == before["작품 A"]
+        assert after["작품 B"] == before["작품 B"]
+        assert after["작품 C"] == before["작품 C"]
+
+    def test_13번째로_등록된_작품은_1번째와_같은_series_ink_class로_순환한다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        titles = [f"작품 {i:02d}" for i in range(13)]
+        for title in titles:
+            make_collection_item(user, name=title, work_title=title)
+
+        resp = client.get("/collection/")
+
+        facets = {facet["title"]: facet["series_ink_class"] for facet in resp.context["work_title_counts"]}
+        assert facets["작품 00"] == "gi-1"
+        assert facets["작품 12"] == "gi-1"
+
+    def test_사이드바_작품별_집계의_색과_카드의_색은_일치한다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="A1", work_title="작품 A")
+        make_collection_item(user, name="B1", work_title="작품 B")
+
+        resp = client.get("/collection/")
+
+        facet_classes = {
+            facet["title"]: facet["series_ink_class"] for facet in resp.context["work_title_counts"]
+        }
+        for row in resp.context["item_rows"]:
+            item = row["item"]
+            if item.work_title:
+                assert row["series_ink_class"] == facet_classes[item.work_title]
+
+
+@pytest.mark.django_db
+class TestSeriesInkClassesWholeCollectionPalette:
+    """회귀 가드: 팔레트가 '전체 컬렉션' 기준이어야 한다는 계약을 필터/검색/
+    페이지/partial 각 경로에서 개별적으로 고정한다. 기존 테스트는 전부
+    무필터 client.get("/collection/") 뿐이라, 다음 편집자가 "쿼리 하나
+    아끼자"며 팔레트를 filtered_qs 나 page_obj.object_list 에서 만들어도
+    기존 테스트는 통과해버린다 — 그러면 같은 작품의 색이 검색/필터/페이지
+    마다 달라지는데 아무 테스트도 못 잡는다."""
+
+    def test_구함_필터를_걸어도_작품_색은_무필터_기준과_같다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="A1", work_title="작품 A", is_wanted=False)
+        make_collection_item(user, name="B1", work_title="작품 B", is_wanted=True)
+        make_collection_item(user, name="C1", work_title="작품 C", is_wanted=False)
+
+        baseline = {
+            facet["title"]: facet["series_ink_class"]
+            for facet in client.get("/collection/").context["work_title_counts"]
+        }
+
+        filtered_resp = client.get("/collection/?is_wanted=true")
+        for row in filtered_resp.context["item_rows"]:
+            item = row["item"]
+            assert row["series_ink_class"] == baseline[item.work_title]
+
+    def test_검색어로_필터링해도_작품_색은_무필터_기준과_같다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="굿즈 알파", work_title="작품 A")
+        make_collection_item(user, name="굿즈 베타", work_title="작품 B")
+        make_collection_item(user, name="굿즈 감마", work_title="작품 C")
+
+        baseline = {
+            facet["title"]: facet["series_ink_class"]
+            for facet in client.get("/collection/").context["work_title_counts"]
+        }
+
+        searched_resp = client.get("/collection/?q=베타")
+        for row in searched_resp.context["item_rows"]:
+            item = row["item"]
+            assert row["series_ink_class"] == baseline[item.work_title]
+
+    def test_2페이지에만_있는_작품도_전체_기준_색을_받는다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        assert ARCHIVE_COLLECTION_PAGE_SIZE == 10
+        # 서로 다른 작품 11개. 목록은 -id(최신 등록 순)로 정렬되므로 가장
+        # 먼저 등록한("작품 00", 가장 작은 id) 아이템이 가장 오래된 것으로
+        # 밀려나 2페이지에만 등장한다.
+        for i in range(11):
+            make_collection_item(user, name=f"굿즈 {i:02d}", work_title=f"작품 {i:02d}")
+
+        # work_title_counts 는 페이지와 무관하게 사용자 전체 컬렉션 기준이므로,
+        # 1페이지 응답에서 이미 "작품 00"(2페이지 전용)의 기대 색을 얻을 수 있다.
+        baseline_resp = client.get("/collection/")
+        baseline = {
+            facet["title"]: facet["series_ink_class"]
+            for facet in baseline_resp.context["work_title_counts"]
+        }
+        assert "작품 00" in baseline
+
+        page2_resp = client.get("/collection/?page=2")
+        page2_titles = {row["item"].work_title: row["series_ink_class"] for row in page2_resp.context["item_rows"]}
+        assert "작품 00" in page2_titles
+        assert page2_titles["작품 00"] == baseline["작품 00"]
+
+    def test_partial_프래그먼트도_전체_기준_색을_쓴다(
+        self, user_client, make_collection_item
+    ):
+        # 작품 5개: 2개짜리 픽스처로는 "현재 페이지 기준으로 팔레트를 만드는"
+        # 실수를 넣어도 두 경로가 우연히 같은 버킷에 떨어져 통과해버린다.
+        # 검색 대상(작품 D)을 등록 순번 한가운데 두어 전체 기준과 결과 기준의
+        # 순번이 반드시 달라지게 한다.
+        user, client = user_client()
+        for idx, title in enumerate(["작품 A", "작품 B", "작품 C", "작품 D", "작품 E"]):
+            make_collection_item(user, name=f"굿즈 {idx}", work_title=title)
+
+        baseline = {
+            facet["title"]: facet["series_ink_class"]
+            for facet in client.get("/collection/").context["work_title_counts"]
+        }
+        expected_class = baseline["작품 D"]
+
+        partial_resp = client.get("/collection/?partial=1&q=굿즈 3")
+
+        html = partial_resp.content.decode()
+        assert f'class="gcard-work {expected_class}">작품 D</p>' in html
+
+    def test_최초_등록_아이템_삭제는_알려진_한계로_작품_색_재배정을_유발한다(
+        self, user_client, make_collection_item
+    ):
+        """Min(id) 기반 순번은 색을 DB에 저장하지 않는 트레이드오프의 대가로
+        '최초 등록 아이템 삭제'에 취약하다는 알려진 한계를 그대로 고정한다
+        (버그가 아니라 현재 계약의 문서화) — 작품(work_title)은 자유 입력
+        문자열일 뿐 엔티티가 아니라서, 순수 표시용 색 때문에 스키마를
+        늘리지 않기로 한 트레이드오프의 결과다. 등록(추가)에는 안정적이고
+        (test_새_작품이_등록되어도... 로 보증), 삭제에는 취약하다.
+
+        아래는 작품 2개짜리 최소 재현이라 두 작품이 서로 바뀌는 것으로 끝나지만,
+        실제 컬렉션에서는 **한 번의 삭제가 2개보다 많은 작품의 색을 옮길 수
+        있다** — 이르게 등록된 작품의 최초 아이템을 지우면 그 작품의 Min(id)가
+        여러 작품을 한꺼번에 건너뛰기 때문이다."""
+        user, client = user_client()
+        a1 = make_collection_item(user, name="A1", work_title="작품 A")
+        make_collection_item(user, name="B1", work_title="작품 B")
+        make_collection_item(user, name="A2", work_title="작품 A")
+
+        before = {
+            facet["title"]: facet["series_ink_class"]
+            for facet in client.get("/collection/").context["work_title_counts"]
+        }
+        # 등록 순번 0·1 은 SERIES_INK_STRIDE(=5) 만큼 떨어진 슬롯을 받는다
+        # (색상환에서 150° 간격) — 인접 슬롯 gi-1/gi-2 가 아니다.
+        assert before["작품 A"] == "gi-1"
+        assert before["작품 B"] == "gi-6"
+
+        # 작품 A의 최초 등록 아이템(A1)을 삭제하면, 작품 A의 Min(id)는 A2로
+        # 밀려나 작품 B보다 뒤로 가고, 두 작품의 색이 서로 뒤바뀐다.
+        a1.delete()
+
+        after = {
+            facet["title"]: facet["series_ink_class"]
+            for facet in client.get("/collection/").context["work_title_counts"]
+        }
+        assert after["작품 A"] == "gi-6"
+        assert after["작품 B"] == "gi-1"
+
+
+@pytest.mark.django_db
+class TestArchiveCollectionSeriesInkFacetQueryCount:
+    """작품별 집계(user_collection_item_work_title_facets)가 요청당 정확히
+    1회만 실행되고, 아이템 수가 늘어도 쿼리 수가 늘지 않는지(행별 쿼리 없음)
+    고정한다 — 팔레트를 item_rows 순회 중 매번 다시 조회하는 회귀를 막는다."""
+
+    def test_작품_집계_쿼리는_요청당_한_번만_실행된다(
+        self, user_client, make_collection_item
+    ):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        user, client = user_client()
+        make_collection_item(user, name="A1", work_title="작품 A")
+        make_collection_item(user, name="B1", work_title="작품 B")
+
+        with CaptureQueriesContext(connection) as ctx:
+            client.get("/collection/")
+
+        facet_queries = [
+            query
+            for query in ctx.captured_queries
+            if "GROUP BY" in query["sql"].upper() and "work_title" in query["sql"]
+        ]
+        assert len(facet_queries) == 1
+
+    def test_아이템_수가_늘어도_요청당_총_쿼리_수는_늘지_않는다(
+        self, make_user, user_client, make_collection_item
+    ):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        small_user, small_client = user_client(username="query-count-small")
+        for i in range(3):
+            make_collection_item(small_user, name=f"소{i}", work_title=f"작품 소{i}")
+
+        big_user, big_client = user_client(username="query-count-big")
+        for i in range(15):
+            make_collection_item(big_user, name=f"대{i}", work_title=f"작품 대{i}")
+
+        with CaptureQueriesContext(connection) as small_ctx:
+            small_client.get("/collection/")
+
+        with CaptureQueriesContext(connection) as big_ctx:
+            big_client.get("/collection/")
+
+        assert len(big_ctx.captured_queries) == len(small_ctx.captured_queries)
