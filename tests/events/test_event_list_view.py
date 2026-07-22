@@ -5,10 +5,14 @@ state ("행사 없음"), never a hard error screen. The JSON API keeps rejecting
 same input with 400 (covered in test_events_api.py) — only the browse page
 degrades gracefully.
 """
-from urllib.parse import quote
+import re
+from html import unescape
+from urllib.parse import parse_qs, quote, urlparse
 
 import pytest
 from django.test import Client
+
+from core.vocab import EVENT_SORT, EVENT_SORT_LABELS
 
 pytestmark = pytest.mark.web
 
@@ -175,6 +179,61 @@ class TestEventListPagerQEncoding:
         body = resp.content.decode()
         assert f"region={quote(malicious_region)}" in body
         assert f"region={malicious_region}" not in body
+
+
+@pytest.mark.django_db
+class TestEventListSortMenu:
+    """정렬은 2026-07-22부터 사이드바 <select>가 아니라 결과 헤더 우측 상단의
+    토글 메뉴로 조작한다. 메뉴 항목은 링크이므로 정렬을 바꿀 때 현재 필터가
+    쿼리스트링으로 함께 실려야 한다 — 그게 이 계층이 지킬 계약이다."""
+
+    def test_정렬_메뉴는_모든_정렬_항목을_현재_필터를_유지한_링크로_제공한다(self, make_event):
+        make_event(title="정렬메뉴필터유지행사", region="seoul")
+
+        resp = Client().get("/events/", {"region": "seoul", "q": "정렬메뉴"})
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        menu = re.search(
+            r'<ul[^>]*class="results-sort-menu"[^>]*>(.*?)</ul>', body, re.DOTALL
+        )
+        assert menu, "결과 헤더에 정렬 메뉴가 렌더링되지 않음"
+
+        hrefs = re.findall(r'href="([^"]+)"', menu.group(1))
+        sort_values = []
+        for href in hrefs:
+            params = parse_qs(
+                urlparse(unescape(href)).query, keep_blank_values=True
+            )
+            assert params.get("region") == ["seoul"], f"{href}: 지역 필터 유실"
+            assert params.get("q") == ["정렬메뉴"], f"{href}: 검색어 유실"
+            sort_values.append(params.get("sort", [""])[0])
+
+        assert sort_values == [slug for slug, _label in EVENT_SORT]
+
+    def test_선택된_정렬_항목만_현재_항목으로_표시된다(self, make_event):
+        make_event(title="정렬메뉴선택표시행사")
+
+        resp = Client().get("/events/", {"sort": "closing_soon"})
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        menu = re.search(
+            r'<ul[^>]*class="results-sort-menu"[^>]*>(.*?)</ul>', body, re.DOTALL
+        )
+        assert menu
+        current = re.findall(
+            r'<a[^>]*aria-current="true"[^>]*>([^<]+)</a>', menu.group(1)
+        )
+        assert current == [EVENT_SORT_LABELS["closing_soon"]]
+
+    def test_사이드바_필터_폼에는_정렬_선택_상자가_남아있지_않다(self, make_event):
+        make_event(title="정렬셀렉트제거행사")
+
+        resp = Client().get("/events/")
+
+        assert resp.status_code == 200
+        assert '<select name="sort"' not in resp.content.decode()
 
 
 @pytest.mark.django_db
