@@ -802,4 +802,21 @@
     color: inherit;
     font-weight: 600;
   }
+
+  /* M1 fix (post-implementation BIR re-check): the mock's selected-date
+     inset is -2px on mobile, not the desktop -3px value carried down
+     unchanged. Re-declared here, scoped to <=45rem only. */
+  .activity-page .day-cell[data-selected="true"] {
+    box-shadow: inset 0 -2px 0 var(--teal);
+  }
+
+  /* M2 fix (post-implementation BIR re-check): the mock's mobile kind dot
+     is 5x5, not the shared 6x6 .day-dot geometry (calendar.css:134-140)
+     that Events' bare, attribute-less dot also inherits — that shared rule
+     stays untouched. Scoped narrowly to the mobile-only dot row so Events
+     is structurally unreachable (it never renders .day-mobile-dots). */
+  .day-mobile-dots .day-dot {
+    width: 5px;
+    height: 5px;
+  }
 }
