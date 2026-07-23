@@ -296,8 +296,31 @@ def event_list(request):
         # plan §단계 5) — event_list had no such context before; added here
         # rather than duplicating its own already-working filter extraction.
         "extra_query": _calendar_extra_query(request),
+        # List page pager (PR #221 shared pager) needs sort preserved too, so
+        # it cannot reuse _calendar_extra_query (which deliberately drops
+        # sort for the calendar toggle contract).
+        "pager_query": _event_list_pager_query(request),
     }
     return render(request, "core/events/list.html", context)
+
+
+def _event_list_pager_query(request):
+    """Return the current q/region/category/status/sort filters as a
+    '&key=value' querystring tail — leading '&', matching
+    templates/core/partials/_pager.html's extra_query convention — so the
+    same context key can be dropped straight after a '?page=...' value in a
+    template. Unlike _calendar_extra_query, this includes 'sort': the events
+    list pager must preserve sort order across pages, while the calendar
+    toggle link deliberately does not.
+    """
+    pairs = []
+    for key in ("q", "region", "category", "status", "sort"):
+        for value in request.GET.getlist(key):
+            if value:
+                pairs.append((key, value))
+    if not pairs:
+        return ""
+    return "&" + urlencode(pairs)
 
 
 def _calendar_extra_query(request):
