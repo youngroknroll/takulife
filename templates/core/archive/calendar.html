@@ -9,14 +9,61 @@
 
 {% block content %}
   <main class="page activity-page" id="content">
-    {% include "core/partials/_archive_nav.html" with active="calendar" active_label="활동 달력" %}
+    {# Masthead — activity-calendar-editorial plan §3/§4-b: h1 + 3-stat rail +
+       ＋기록 추가 CTA + centered 목록|달력 toggle, all above a 1.5px --text
+       rule. `position: relative` here is load-bearing for the toggle's
+       absolute centering below (plan §7-3-b constraint 10 / BIR Medium). #}
+    <section class="activity-masthead">
+      <div class="masthead-lead">
+        <h1>내 활동</h1>
+        <div class="summary-grid" style="--summary-cols: 3">
+          <article class="summary-card">
+            <p class="summary-label">방문 예정</p>
+            <p class="summary-value">{{ status_counts.planned }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">방문 완료</p>
+            <p class="summary-value">{{ status_counts.visited }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">놓침</p>
+            <p class="summary-value">{{ status_counts.missed }}</p>
+          </article>
+        </div>
+      </div>
 
-    <div class="activity-view-toggle">
-      <a class="activity-view-btn" href="/archive/">목록</a>
-      <a class="activity-view-btn is-active" href="/archive/calendar/" aria-current="page">달력</a>
+      <div class="activity-view-toggle">
+        <a class="activity-view-btn" href="/archive/">목록</a>
+        <a class="activity-view-btn is-active" href="/archive/calendar/" aria-current="page">달력</a>
+      </div>
+
+      <a class="hero-action" href="/archive/visits/new/"><span aria-hidden="true">＋</span> 기록 추가</a>
+    </section>
+
+    {# Sub-nav / search / 찜 목록 rail — page-local plain GET search form, not
+       _archive_search.html (that partial ships archive_search.js's live-region
+       pair; this page is a full PRG reload with no live search, plan §4-a-1 /
+       §7-3 constraint 5/7). Hidden month/date/type[] preserve the displayed
+       month so a no-match search never bounces the user to today's month
+       (events/calendar.html:27-31 precedent; BIR High). #}
+    <div class="activity-toolbar">
+      {% include "core/partials/_archive_nav.html" with active="calendar" hide_interest=True %}
+      <form method="get" action="/archive/calendar/" class="calendar-search" role="search">
+        <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
+        <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
+        {% for v in selected_types %}<input type="hidden" name="type" value="{{ v }}">{% endfor %}
+        <input
+          type="text"
+          name="q"
+          value="{{ q }}"
+          placeholder="⌕ 활동 검색"
+          aria-label="활동 검색"
+          aria-describedby="calendar-search-note"
+        >
+        <button type="submit">검색</button>
+      </form>
+      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> 찜 목록</a>
     </div>
-
-    <h1>활동 달력</h1>
 
     <section class="panel calendar-filters" id="calendar-filters-panel"
              data-disclosure data-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
@@ -34,7 +81,7 @@
             <li>
               <label class="filter-check">
                 <input type="checkbox" name="type" value="schedule"{% if 'schedule' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="schedule"></span> 일정
+                <span class="day-dot" data-kind="schedule"></span> 방문 예정 이벤트 일정
               </label>
             </li>
             <li>
@@ -45,20 +92,14 @@
             </li>
             <li>
               <label class="filter-check">
-                <input type="checkbox" name="type" value="status"{% if 'status' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="status"></span> 상태 변경
-              </label>
-            </li>
-            <li>
-              <label class="filter-check">
                 <input type="checkbox" name="type" value="visit"{% if 'visit' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="visit"></span> 방문
+                <span class="day-dot" data-kind="visit"></span> 방문 완료
               </label>
             </li>
             <li>
               <label class="filter-check">
                 <input type="checkbox" name="type" value="goods"{% if 'goods' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="goods"></span> 굿즈
+                <span class="day-dot" data-kind="goods"></span> 굿즈 획득
               </label>
             </li>
           </ul>
@@ -71,69 +112,107 @@
       </form>
     </section>
 
-    <nav class="calendar-month-nav" aria-label="월 이동">
-      <a class="btn btn-secondary" href="?month={{ prev_month }}{{ extra_query }}">‹ 이전달</a>
-      <h2 class="calendar-month-label">{{ month_label }}</h2>
-      <a class="btn btn-secondary" href="?month={{ next_month }}{{ extra_query }}">다음달 ›</a>
-      <a class="btn btn-secondary" href="?{{ extra_query }}">오늘</a>
-    </nav>
-
-    {% if calendar_error == "invalid" %}
-      <div class="empty-state calendar-error-panel">
-        <p class="empty-title">요청한 날짜를 확인할 수 없어요</p>
-        <p class="empty-note">주소의 월 또는 날짜 값이 올바르지 않습니다.</p>
-        <a class="empty-action" href="?{{ extra_query }}">이번 달 보기</a>
-      </div>
-    {% elif calendar_error == "query_failed" %}
-      <div class="empty-state calendar-error-panel">
-        <p class="empty-title">불러오지 못했어요</p>
-        <p class="empty-note">잠시 후 다시 시도해 주세요.</p>
-        <a class="empty-action" href="{{ request.get_full_path }}">다시 시도</a>
-      </div>
-    {% endif %}
-
-    {% include "core/partials/_archive_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
-
-    <div class="calendar-legend">
-      <span class="legend-item"><span class="day-dot" data-kind="schedule"></span>일정</span>
-      <span class="legend-item"><span class="day-dot" data-kind="interest"></span>찜</span>
-      <span class="legend-item"><span class="day-dot" data-kind="status"></span>상태 변경</span>
-      <span class="legend-item"><span class="day-dot" data-kind="visit"></span>방문</span>
-      <span class="legend-item"><span class="day-dot" data-kind="goods"></span>굿즈</span>
-    </div>
-
-    <section class="date-detail-section" id="selected-date">
-      <h2>{{ selected_date|date:"n월 j일" }}의 활동</h2>
-      {% if not has_any_items %}
-        <div class="empty-state">
-          <p class="empty-icon">🗂️</p>
-          <p class="empty-title">아직 기록이 없어요</p>
-          <p class="empty-note">이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
-          <div class="empty-actions">
-            <a class="empty-action" href="/events/">이벤트 찾기</a>
-            <a class="empty-action" href="/collection/new/">굿즈 등록</a>
-          </div>
-        </div>
-      {% elif selected_items %}
-        <ul class="side-list calendar-item-list">
-          {% for item in selected_items %}
-            <li class="calendar-item-row">
-              <span class="day-dot" data-kind="{{ item.group }}"></span>
-              <span class="calendar-item-kind">{% if item.group == 'schedule' %}일정{% elif item.group == 'interest' %}찜{% elif item.group == 'status' %}상태 변경{% elif item.group == 'visit' %}방문{% elif item.group == 'goods' %}굿즈{% endif %}</span>
-              <span class="calendar-item-label">{{ item.label }}</span>
-              {% if item.date_text %}<span class="calendar-item-date">{{ item.date_text }}</span>{% endif %}
-              {% if item.url %}
-                <a class="side-action-link" href="{{ item.url }}">{% if item.group == 'visit' or item.group == 'goods' %}수정{% else %}상세 보기{% endif %}</a>
-              {% endif %}
-            </li>
-          {% endfor %}
+    <div class="activity-layout">
+      <aside class="activity-aside" aria-label="활동 종류 범례 및 빠른 이동">
+        <h2 class="aside-label">활동 종류</h2>
+        <ul class="calendar-legend">
+          <li class="legend-item">
+            <span class="legend-swatch" data-kind="schedule" aria-hidden="true"></span>
+            <span class="legend-label">방문 예정 이벤트 일정</span>
+            <span class="legend-count">{{ kind_counts.schedule }}</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch" data-kind="interest" aria-hidden="true"></span>
+            <span class="legend-label">찜</span>
+            <span class="legend-count">{{ kind_counts.interest }}</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch" data-kind="visit" aria-hidden="true"></span>
+            <span class="legend-label">방문 완료</span>
+            <span class="legend-count">{{ kind_counts.visit }}</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch" data-kind="goods" aria-hidden="true"></span>
+            <span class="legend-label">굿즈 획득</span>
+            <span class="legend-count">{{ kind_counts.goods }}</span>
+          </li>
         </ul>
-      {% else %}
-        <div class="empty-state">
-          <p class="empty-title">이 날짜에는 기록된 활동이 없어요</p>
+
+        <div class="aside-quick">
+          <h2 class="aside-label">빠른 이동</h2>
+          <ul class="side-list">
+            <li><a class="quick-link-list" href="/archive/">목록으로 →</a></li>
+            <li><a class="quick-link-events" href="/events/">행사 찾기 →</a></li>
+          </ul>
         </div>
-      {% endif %}
-    </section>
+      </aside>
+
+      <div class="activity-calendar-col">
+        <nav class="calendar-month-nav" aria-label="월 이동">
+          <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="이전 달">‹</a>
+          <h2 class="calendar-month-label">{{ month_label }}</h2>
+          <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="다음 달">›</a>
+          <a class="calendar-month-today" href="?{{ extra_query }}">오늘</a>
+        </nav>
+
+        {% if calendar_error == "invalid" %}
+          <div class="empty-state calendar-error-panel">
+            <p class="empty-title">요청한 날짜를 확인할 수 없어요</p>
+            <p class="empty-note">주소의 월 또는 날짜 값이 올바르지 않습니다.</p>
+            <a class="empty-action" href="?{{ extra_query }}">이번 달 보기</a>
+          </div>
+        {% elif calendar_error == "query_failed" %}
+          <div class="empty-state calendar-error-panel">
+            <p class="empty-title">불러오지 못했어요</p>
+            <p class="empty-note">잠시 후 다시 시도해 주세요.</p>
+            <a class="empty-action" href="{{ request.get_full_path }}">다시 시도</a>
+          </div>
+        {% elif search_no_match %}
+          <div class="empty-state calendar-error-panel" id="calendar-search-note">
+            <p class="empty-title">‘{{ q }}’에 일치하는 활동을 찾지 못했어요</p>
+            <p class="empty-note">다른 검색어로 다시 시도해 주세요.</p>
+          </div>
+        {% endif %}
+
+        {% include "core/partials/_archive_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
+
+        <section class="date-detail-section" id="selected-date" tabindex="-1">
+          <div class="date-detail-head">
+            <h2>{{ selected_date|date:"n월 j일" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
+            {% if has_any_items %}<span class="date-detail-count">활동 {{ selected_items|length }}건</span>{% endif %}
+          </div>
+          {% if not has_any_items %}
+            <div class="empty-state">
+              <p class="empty-icon">🗂️</p>
+              <p class="empty-title">아직 기록이 없어요</p>
+              <p class="empty-note">이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
+              <div class="empty-actions">
+                <a class="empty-action" href="/events/">이벤트 찾기</a>
+                <a class="empty-action" href="/collection/new/">굿즈 등록</a>
+              </div>
+            </div>
+          {% elif selected_items %}
+            <ul class="side-list calendar-item-list">
+              {% for item in selected_items %}
+                <li class="calendar-item-row">
+                  <span class="detail-item-bar" data-kind="{{ item.group }}" aria-hidden="true"></span>
+                  <span class="calendar-item-kind" data-kind="{{ item.group }}">{% if item.group == 'schedule' %}방문 예정 이벤트 일정{% elif item.group == 'interest' %}찜{% elif item.group == 'visit' %}방문 완료{% elif item.group == 'goods' %}굿즈 획득{% endif %}</span>
+                  <span class="calendar-item-label">{{ item.label }}</span>
+                  {% if item.date_text %}<span class="calendar-item-date">{{ item.date_text }}</span>{% endif %}
+                  {% if item.url %}
+                    <a class="side-action-link" href="{{ item.url }}">{% if item.group == 'visit' or item.group == 'goods' %}수정 ›{% else %}상세 보기 ›{% endif %}</a>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="empty-state">
+              <p class="empty-title">이 날짜에는 기록된 활동이 없어요</p>
+            </div>
+          {% endif %}
+        </section>
+      </div>
+    </div>
   </main>
 {% endblock %}
 
