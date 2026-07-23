@@ -259,7 +259,46 @@
   margin-top: 0.75rem;
 }
 
+/* F1 fix (post-implementation BIR, High): the toggle/badge/data-expanded
+   show-hide rules used to live only inside the <=45rem media query below,
+   which left the toggle permanently display:none (unreachable by mouse or
+   keyboard) and the form permanently visible at every wider viewport —
+   disclosure only ever worked on phones. Promoted to unconditional base
+   rules so [data-disclosure]/[data-disclosure-toggle] (static/js/shared/
+   disclosure.js) function at every width; the <=45rem block below now only
+   adds the mobile-only checkbox-list stacking. */
 .calendar-filters-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-soft);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.625rem 0.75rem;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calendar-filters-badge {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.calendar-filters[data-expanded="false"] .calendar-filters-toggle [data-state="open"] {
+  display: none;
+}
+
+.calendar-filters[data-expanded="true"] .calendar-filters-toggle [data-state="closed"] {
+  display: none;
+}
+
+.calendar-filters[data-expanded="false"] form {
   display: none;
 }
 
@@ -655,41 +694,9 @@
     width: auto;
     flex: 1;
   }
-  .calendar-filters-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    width: 100%;
-    min-height: 44px;
-    border: 1px solid var(--border-soft);
-    background: var(--bg-soft);
-    color: var(--text);
-    border-radius: 8px;
-    padding: 0.625rem 0.75rem;
-    font-size: var(--fs-md);
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .calendar-filters-badge {
-    color: var(--muted);
-    font-size: var(--fs-xs);
-    font-weight: 600;
-  }
-
-  .calendar-filters[data-expanded="false"] .calendar-filters-toggle [data-state="open"] {
-    display: none;
-  }
-
-  .calendar-filters[data-expanded="true"] .calendar-filters-toggle [data-state="closed"] {
-    display: none;
-  }
-
-  .calendar-filters[data-expanded="false"] form {
-    display: none;
-  }
-
+  /* Toggle/badge/data-expanded show-hide rules are now unconditional base
+     rules above (F1 fix) — only the mobile checkbox-list stacking stays
+     viewport-scoped here. */
   .filter-list {
     display: grid;
     gap: 0.375rem;
