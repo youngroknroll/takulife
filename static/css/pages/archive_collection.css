@@ -273,19 +273,18 @@
   flex: none;
   height: 34px;
   padding: 0 0.875rem;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--brand);
   border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
+  background: var(--brand);
+  color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
 .collection-page .archive-search button[type="submit"]:hover {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
+  background: var(--brand-ink);
+  border-color: var(--brand-ink);
 }
 .collection-page .archive-search-clear {
   position: absolute;
