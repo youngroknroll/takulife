@@ -2,8 +2,11 @@
 Archive sub-nav — always-visible tab bar (replaces the former <details>
 accordion, 2026-07-21 리디자인 ④단계 §B: 시안 미감 보존 + JS 0, 순수 <a>
 나열이라 <details> 키보드 계약을 재구현할 필요가 없다).
+2026-07-23 v2 에디토리얼: `활동 달력` 탭 제거(6→5링크). 달력은 이제
+`/archive/`와 `/archive/calendar/`가 서로 왕복하는 `.activity-view-toggle`
+(목록|달력)이 전담한다. 이 서브탭과 그 토글은 중복 진입로가 아니다.
 Include with:  {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
-  active        one of: record | statuses | visits | calendar | items | interests
+  active        one of: record | statuses | visits | items | interests
   active_label  kept for call-site compatibility (unused by this markup)
 찜 목록 stays a standalone pink pill (현행 유지), always visible beside the tabs.
 {% endcomment %}
@@ -13,7 +16,6 @@ Include with:  {% include "core/partials/_archive_nav.html" with active="visits"
       <a href="/archive/"{% if active == "record" %} class="active"{% endif %}>전체 보기</a>
       <a href="/archive/statuses/"{% if active == "statuses" %} class="active"{% endif %}>나의 일정</a>
       <a href="/archive/visits/"{% if active == "visits" %} class="active"{% endif %}>다녀온 기록</a>
-      <a href="/archive/calendar/"{% if active == "calendar" %} class="active"{% endif %}>활동 달력</a>
       <a href="/archive/items/"{% if active == "items" %} class="active"{% endif %}>직접 등록</a>
     </div>
 

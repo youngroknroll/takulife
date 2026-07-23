@@ -8,8 +8,13 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
+  <main class="page activity-page" id="content">
     {% include "core/partials/_archive_nav.html" with active="calendar" active_label="활동 달력" %}
+
+    <div class="activity-view-toggle">
+      <a class="activity-view-btn" href="/archive/">목록</a>
+      <a class="activity-view-btn is-active" href="/archive/calendar/" aria-current="page">달력</a>
+    </div>
 
     <h1>활동 달력</h1>
 
