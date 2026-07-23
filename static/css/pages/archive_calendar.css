@@ -721,8 +721,14 @@
    text link, not the shared .side-action-link box (components/cards.css) —
    override every box property here (border/background/border-radius/
    padding/min-height), scoped to this row only, matching the 12px/600/
-   nowrap mock spec. */
-.calendar-item-row .side-action-link {
+   nowrap mock spec. `.activity-page` is prefixed (0,3,0) specifically to
+   out-rank components/cards.css's own
+   `:root[data-theme="dark"] .side-action-link` dark-mode color override
+   (also (0,3,0) — :root pseudo-class + attribute + class) — a bare
+   `.calendar-item-row .side-action-link` ((0,2,0)) loses that fight in
+   dark mode regardless of stylesheet load order, which is exactly why the
+   first pass still rendered muted in dark mode (F2 follow-up). */
+.activity-page .calendar-item-row .side-action-link {
   margin-left: auto;
   display: inline;
   border: none;
