@@ -2,32 +2,49 @@
 Activity-calendar month grid (templates/core/archive/calendar.html only).
 Deliberately a separate partial from _calendar_grid.html (the Events
 calendar's), not a branch inside it — the two contracts don't share a cell
-shape (this one has no items/more_count, only an aggregate count + a
-deduplicated list of kind codes), and mixing both shapes into one file would
-make the already-shipped Events grid harder to read for zero shared benefit.
-Skeleton, state wiring, and CSS classes for the shared bits (.month-grid,
-.day-cell, data-in-month/data-today/data-selected, void cells) match
-_calendar_grid.html exactly — both are styled by
-static/css/components/calendar.css.
+shape. Skeleton, state wiring, and CSS classes for the shared bits
+(.month-grid, .day-cell, data-in-month/data-today/data-selected, void cells)
+match _calendar_grid.html — both are styled by static/css/components/calendar.css,
+with this page's editorial-only differences (112px cells, hairline-boxed
+grid, left-aligned weekday header, teal today pill/selected inset) layered on
+via `.activity-page`-scoped overrides in static/css/pages/archive_calendar.css
+(activity-calendar-editorial plan §4-b / WED pre-spec §3).
+
+2026-07-24 editorial rebuild: split into two sibling .month-grid containers
+(head/body) — same reason as _calendar_grid.html's 2026-07-23 comment (the
+hairline box wraps only the day cells, and the weekday labels sit outside it).
 
 Include with:
   {% include "core/partials/_archive_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
   weeks        list of week rows; each week is a list of exactly 7 day cell
-               dicts: {date, in_month, today, selected, count, kinds}
-               date   a real date, or None for an out-of-range filler cell
-                      (year 1 / year 9999 boundary) — rendered void, no link.
-               kinds  list of distinct group codes present that day
-                      (schedule/interest/status/visit/goods), already
-                      deduplicated by the view.
+               dicts: {date, in_month, today, selected, count, kinds, items,
+               more_count}
+               date        a real date, or None for an out-of-range filler cell
+                           (year 1 / year 9999 boundary) — rendered void, no link.
+               kinds       list of distinct group codes present that day
+                           (schedule/interest/visit/goods — "status" is always
+                           excluded server-side), deduplicated, used only for
+                           the mobile dot row below (up to 3 shown).
+               items       the day's first 2 activities as {group, label} —
+                           per the no-nested-<a> constraint (mirrors
+                           _calendar_grid.html:14-20,64-70) these render as
+                           plain <span> children of the cell's single <a>;
+                           item.url is intentionally not consumed here.
+               more_count  however many more activities remain beyond the 2
+                           shown ("+N").
   extra_query  querystring tail (own leading '&', or "") carrying the active
                type= filters — see core.views' Activity counterpart of
                _calendar_extra_query.
 aria-label/aria-current were introduced 2026-07-19 (policy reversal, see
 .docs/plans/2026-07-19-calendar-review-fixes-plan.md); state wiring stays
 data-in-month/data-today/data-selected only, since that remains a CSS/JS
-contract rather than an accessible-name concern.
+contract rather than an accessible-name concern. aria-label is preserved
+verbatim from the pre-editorial markup (activity-calendar-editorial plan
+§7-3 constraint 6) — it already carries the day's activity count and, since
+aria-label overrides the accessible-name subtree per the accname algorithm,
+the new visible item-title <span>s below never inflate it.
 {% endcomment %}
-<div class="month-grid">
+<div class="month-grid month-grid-head">
   <span class="month-grid-weekday">일</span>
   <span class="month-grid-weekday">월</span>
   <span class="month-grid-weekday">화</span>
@@ -35,7 +52,8 @@ contract rather than an accessible-name concern.
   <span class="month-grid-weekday">목</span>
   <span class="month-grid-weekday">금</span>
   <span class="month-grid-weekday">토</span>
-
+</div>
+<div class="month-grid month-grid-body">
   {% for week in weeks %}
     {% for day in week %}
       {% if day.date %}
@@ -49,13 +67,21 @@ contract rather than an accessible-name concern.
           {% if day.today %}aria-current="date"{% endif %}
         >
           <span class="day-num">{{ day.date|date:"j" }}</span>
-          {% if day.kinds %}
-            <span class="day-kind-dots">
-              {% for kind in day.kinds %}<span class="day-dot" data-kind="{{ kind }}"></span>{% endfor %}
+          {% if day.items %}
+            <span class="day-items">
+              {% for item in day.items %}
+                <span class="day-item">
+                  <span class="day-item-bar" data-kind="{{ item.group }}" aria-hidden="true"></span>
+                  <span class="day-item-title">{{ item.label }}</span>
+                </span>
+              {% endfor %}
+              {% if day.more_count %}<span class="day-more">+{{ day.more_count }}</span>{% endif %}
             </span>
           {% endif %}
-          {% if day.count %}
-            <span class="day-count">{{ day.count }}</span>
+          {% if day.kinds %}
+            <span class="day-mobile-dots" aria-hidden="true">
+              {% for kind in day.kinds|slice:":3" %}<span class="day-dot" data-kind="{{ kind }}"></span>{% endfor %}
+            </span>
           {% endif %}
         </a>
       {% else %}
