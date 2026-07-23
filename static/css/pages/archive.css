@@ -136,33 +136,109 @@
     justify-self: center;
   }
 
-  /* ── activity-toolbar: 서브탭(_archive_nav.html)+검색(_archive_search.html)을
-     한 헤어라인 레일로 (v2 §E). 클래스명이 이 페이지에만 존재해 홈 누출
-     걱정 없음. `_archive_nav.html`의 `.archive-nav-wrap`은 원래 자기 자신의
-     border-bottom을 갖고 width:100%인 독립 컴포넌트(nav.css) — 여기서는
-     레일 안 유연 아이템으로만 재선언(원본 무접촉, PR-R3 관례 그대로). */
+  /* ── activity-toolbar: 서브탭(_archive_nav.html) / 검색(_archive_search.html) /
+     찜 목록(index.html의 리터럴 앵커, 3구획 재배치)을 한 헤어라인 레일로
+     (v2 §E, 2026-07-23 §H). 클래스명이 이 페이지에만 존재해 홈 누출 걱정 없음.
+     2026-07-23 §H: 중앙 정렬 기법으로 더블 auto-margin 대신 grid 3열을 쓴다
+     (`.hero-activity`의 `minmax(min-content,1fr) auto minmax(min-content,1fr)`
+     패턴 재사용, 위 참조). 더블 auto-margin은 flexbox가 두 auto-margin에
+     남는 공간을 균등 분배하므로 좌우 아이템 폭이 같을 때만 중앙에 오는데
+     실측 폭(탭 400px, 검색 360px, 찜 90px)에서는 검색 중심이 진짜 중앙보다
+     +155px 오른쪽으로 밀린다 — 이 페이지 실측값 자체의 함정이라 grid로
+     대체한다. 1열=`.sub-nav`(탭), 2열=`.archive-search`, 3열=`.nav-interest`
+     (`justify-self:end`, `.hero-action`의 3열 그리드 선례와 동일 패턴).
+     `_archive_nav.html`의 `.archive-nav-wrap`은 원래 자기 자신의 border-bottom을
+     갖고 width:100%인 독립 컴포넌트(nav.css) — 여기서는 레일 안 그리드
+     아이템으로만 재선언(원본 무접촉, PR-R3 관례 그대로). */
   .activity-toolbar {
     position: relative; /* #archive-search-error 절대 배치 기준점 */
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    /* 2026-07-23 사후 결함 수정 ③: `minmax(min-content,1fr) auto
+       minmax(min-content,1fr)`는 "레일 전체" 기준 중앙 정렬이라, 탭
+       열과 찜 열의 실측 폭이 다르면(탭 458px 끝, 찜 1131px 시작) 검색
+       중심이 "탭↔찜 사이 중앙"에서 -154.6px 어긋난다(실측). 사용자
+       지시는 "탭과 찜 사이에서 중앙" — 1·3열을 콘텐츠 폭(`auto`)으로
+       줄이면 2열(`1fr`)이 탭 끝과 찜 시작 사이 남는 공간 전부를 갖게
+       되고, 그 안에서 `justify-self:center`로 정렬하면 정확히 그 구간의
+       중앙이 된다. */
+    grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 0.75rem;
     border-bottom: 1px solid var(--line);
     margin-bottom: 1.25rem;
   }
   .activity-toolbar .sub-nav {
-    flex: 1 1 auto;
+    /* site-chrome.css's `.sub-nav` card box (background/border/border-radius/
+       box-shadow/padding, site-chrome.css:289-301) is only (0,1,0) — this rail
+       redeclares all four box properties explicitly so the tab row becomes a
+       flat hairline strip instead of a boxed card floating inside
+       `.activity-toolbar` (same class of miss as `.summary-card` above). */
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 0;
     min-width: 0;
   }
   .activity-toolbar .archive-nav-wrap {
     width: auto;
     border-bottom: none;
   }
+  /* 2026-07-23 §H: 찜 목록이 더 이상 `<nav class="archive-nav-wrap">` 안에
+     없다(index.html이 hide_interest=True로 파셜의 pill을 끄고, 그리드의 3번째
+     열에 직접 형제로 렌더) — 그래서 nav.css의 `.archive-nav-wrap .nav-interest`
+     핑크 필 규칙은 이 페이지에서 특이도 승부가 아니라 구조적으로 매치 자체가
+     안 된다(대상 요소가 그 <nav> 밖에 있음). 이 규칙이 처음부터 그 필을
+     대신할 플랫 텍스트 링크 모양을 이 레일 전용으로 재정의한다. `.nav-interest`
+     클래스 자체는 공유 클래스라 다른 7개 아카이브 페이지는 그대로 핑크 필로
+     렌더된다(해당 페이지들의 nav.css 규칙은 무변경, 무영향). */
+  .activity-toolbar .nav-interest {
+    justify-self: end; /* 그리드 자식에서는 margin-left:auto 대신 이 방식 사용
+      — 그리드 아이템에 좌우 auto-margin은 트랙 안에서만 작동하고, 3열 트랙
+      자체를 우측 끝까지 밀지는 않으므로 `justify-self:end`가 정확하다. */
+    display: inline-flex;
+    align-items: center;
+    /* 2026-07-23 사후 결함 수정 ⑤: 하트(`<span aria-hidden>♥</span>`)를
+       공유 파셜에 추가하면서 이 페이지의 평면화된(non-pill) 링크에도 같은
+       마크업이 붙는다. 마크업 안 공백 문자에만 기대면 템플릿 개행/공백
+       처리에 따라 간격이 흔들릴 수 있어, `.interest-btn`(controls.css:89
+       `gap: 0.25rem`)이 이미 쓰는 아이콘-텍스트 간격 관례를 여기 명시
+       재사용한다. */
+    gap: 0.25rem;
+    border: none;
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    min-height: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    /* 2026-07-23 사후 결함 수정 ①: 찜을 <nav> 밖으로 옮기면서
+       `nav.css`의 `.archive-nav-wrap .nav-interest`(자손 선택자)가
+       더 이상 매칭되지 않는다 — 그 규칙이 주던 `--pink-ink`도 함께
+       사라져 상속원 없는 이 앵커가 브라우저 기본 링크색(rgb(0,0,238))
+       으로 렌더되고 있었다(실측 확인). 상속에 기대지 않고 여기서
+       명시 선언한다. 라이트/다크 모두 `--pink-ink` 토큰이 있어 다크
+       모드도 자동으로 맞는 값을 받는다. */
+    color: var(--pink-ink);
+    transition: color 0.15s ease;
+  }
+  .activity-toolbar .nav-interest:hover,
+  .activity-toolbar .nav-interest.active {
+    background: none;
+    border-color: transparent;
+    transform: none;
+    box-shadow: none;
+  }
   .activity-toolbar .archive-search {
-    flex: 1 1 21.25rem; /* 실측 340px */
-    max-width: 21.25rem;
+    width: 21.25rem; /* 실측 340px — 2열(1fr) 폭과 무관하게 고정 폭 유지 */
+    max-width: 100%; /* 2열이 340px보다 좁아지는 폭에서도 넘치지 않게 */
     min-width: 0;
     margin: 0;
+    /* 사후 결함 수정 ③: 2열은 이제 탭↔찜 사이 남는 공간을 모두 차지하는
+       `1fr` 트랙이므로, 그 트랙 안에서 고정폭 검색창을 다시 중앙 정렬
+       해야 "탭과 찜 사이 중앙"이 된다. */
+    justify-self: center;
   }
   /* `#archive-search-error`(text.css:47-51 `.inline-error`, 블록 <p>)가
      흐름 안에 있으면 런타임에 에러 텍스트가 채워질 때 레일을 리플로우해
@@ -565,27 +641,59 @@
     .hero-action {
       justify-self: start;
     }
+    /* 2026-07-23 §H: 좁은 폭에서는 grid를 단일 열로 접어 DOM 순서 그대로
+       탭 → 검색 → 찜 3행을 세로로 쌓는다(`order`/`display:contents` 금지 —
+       탭 순서 어긋남 WCAG 2.4.3 위반 / 랜드마크 상실 위험, 컬렉션 트랙 교훈
+       재적용). 데스크톱의 `justify-self:end`(찜)는 단일 열에서 그대로 두면
+       텍스트가 우측 끝에 붙어 다른 두 행과 정렬이 어긋나므로 나머지 행과
+       맞춰 좌측 정렬로 되돌린다. */
+    .activity-toolbar {
+      grid-template-columns: minmax(0, 1fr);
+      /* 사후 결함 수정 ④: `#archive-search-error`는 `.activity-toolbar`에
+         절대배치 앵커되고(위 `.archive-search` 규칙의 주석 참조), 그 위치는
+         `.activity-toolbar`의 전체 높이(찜 행까지 포함) + `top:calc(100% +
+         2rem)`로 정해진다 — 즉 여백을 여기, 찜 행 다음·`.layout` 시작 전에
+         둬야 실제로 err를 감싼다. 2rem(32px) + 에러 2줄(≈38.4px) ≈ 70.4px
+         = 4.4rem. 기존 1.25rem(153행 기본값)을 이 폭에서만 덮어쓴다.
+
+         2026-07-23 §H 재검증(오케스트레이터 375px 실측, 검색어 입력 +
+         fetch 실패 주입): 4.4rem 에서 실제 `.layout` 여유가 에러 1줄일 때
+         20.2px, **에러 2줄일 때 1.0px** 로 안전 여유가 아니었다(이 저장소는
+         같은 자리에서 0.3px 여유로 통과시켰다가 재작업한 전례가 있음).
+         `--fs-xs`가 rem 기반이라 사용자 글꼴 확대 시 즉시 재침범하므로,
+         2줄 기준 최소 1rem(16px) 여유를 확보한다: 필요 증분 = 16px - 1.0px
+         = 15px = 0.9375rem → 4.4rem + 0.9375rem = 5.3375rem. */
+      margin-bottom: 5.3375rem;
+    }
+    .activity-toolbar .nav-interest {
+      justify-self: start;
+    }
     /* 검색창은 레일 아래로 wrap되어 전체 폭을 쓴다. */
     .activity-toolbar .archive-search {
-      flex-basis: 100%;
+      width: auto;
       max-width: none;
-    }
-    /* Narrow-width-only room for the two now-absolute rail extras above
-       (`.archive-search-clear` + `#archive-search-error`) stacked below the
-       rail: clear's own row (~0.25rem + ~20.5px measured) + the error's
-       `calc(100% + 2rem)` offset + one line of error text (~19.2px
-       measured) needs more clearance than the desktop 1.25rem leaves, so
-       this widens only the narrow-viewport gap — the ≥53.75rem desktop
-       rail keeps its original 1.25rem margin-bottom untouched.
-       Measured at 320px with the error forced to wrap: at 3.5rem the
-       single-line error clears `.layout` by only 5.8px (natural text width
-       268.7px vs 269px clientWidth — 0.3px from wrapping), and once the
-       error wraps to 2 lines (38.4px tall vs ~19.2px for 1 line, which
-       `--fs-xs`'s rem base makes trivial via browser font-size zoom), it
-       invades `.layout` by 13.39px. 4.5rem keeps a margin past that 2-line
-       case. */
-    .activity-toolbar {
-      margin-bottom: 4.5rem;
+      /* 2026-07-23 사후 결함 수정 ④: 이전 주석은 `#archive-search-error`가
+         `.archive-search`의 `position:relative` 박스에 앵커된다고 적었으나
+         실제 마크업(`_archive_search.html`)은 `<p id="archive-search-error">`
+         를 `</form>` 바깥, `.activity-toolbar`의 형제 자식으로 렌더한다 —
+         절대배치 기준점은 `.archive-search`가 아니라 `.activity-toolbar`
+         (153행 `position: relative`)다. 반면 `.archive-search-clear`는
+         `<form>` 안에 있어 실제로 `.archive-search`에 앵커된다(맞음).
+         두 오버레이의 기준점이 서로 달라 예약을 한 곳에 몰아둘 수 없다.
+
+         375px 실측(§H 사후 검증): search 407.6–442.6 · clear 452.6–473.1 ·
+         찜(nav-interest) 525.0–545.8 · .layout 566.8 · err 577.8–597.0
+         (.layout 안으로 30.2px 침범). 원인: err의 `top:calc(100% + 2rem)`
+         은 `.activity-toolbar` 전체 높이(찜 행까지 포함) 기준인데, 예약
+         여백이 전부 `.archive-search`에만 있어 `.activity-toolbar`의
+         `margin-bottom`(기존 1.25rem)이 err의 실제 낙하 지점을 못 따라간다.
+
+         해법: 지우기(≈4px+20.5px=24.5px, `.archive-search`에 앵커)는
+         여기서 계속 예약하되 찜 행 시작 전까지만 필요하므로 1.75rem(28px)
+         으로 축소. 에러(≈2rem+38.4px=70.4px, `.activity-toolbar`에 앵커)
+         예약은 아래 `.activity-toolbar` 규칙의 `margin-bottom`으로 옮겨
+         찜 행 다음, `.layout` 시작 전에 확보한다. */
+      margin-bottom: 1.75rem;
     }
     .nav-links {
       justify-content: flex-start;
