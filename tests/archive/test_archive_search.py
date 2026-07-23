@@ -12,6 +12,7 @@ Behavior under test:
 - q consisting only of whitespace acts as no filter.
 - q containing special chars (%, &) never causes a 500.
 """
+import html
 import re
 from urllib.parse import quote
 
@@ -136,6 +137,31 @@ class TestStatusPagesQFilter:
         pager_query = resp.context["pager_query"]
         assert "status=planned" in pager_query
         assert "q=" in pager_query
+
+    def test_전체_보기에서_검색어가_있을_때_상태_칩_링크는_검색어를_유지한다(self, user_client):
+        """core/views.py already computes search_suffix into context (838,845);
+        index.html not consuming it in the chip hrefs was the bug (2026-07-23
+        v2 plan §동반 수정 1). Clicking a status chip while a search is active
+        must not silently drop the search term."""
+        _, client = user_client()
+
+        resp = client.get("/archive/?q=test")
+
+        # Django auto-escapes `{{ search_suffix }}` in the href attribute, so
+        # the raw HTML source has `&amp;` (browsers decode it back to `&` —
+        # see core/views.py:836-837). Unescape before matching or this
+        # assertion never sees the `&` it's looking for.
+        content = html.unescape(resp.content.decode())
+        assert 'href="/archive/?status=planned&q=test"' in content
+
+    def test_나의_일정에서_검색어가_있을_때_상태_칩_링크는_검색어를_유지한다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/archive/statuses/?q=test")
+
+        # See unescape note above — auto-escaping turns `&` into `&amp;`.
+        content = html.unescape(resp.content.decode())
+        assert 'href="/archive/statuses/?status=planned&q=test"' in content
 
 
 # ---------------------------------------------------------------------------
