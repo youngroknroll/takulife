@@ -143,17 +143,19 @@
                   {% endif %}
                 </a>
                 <div class="event-row-body">
+                  {% if row.category_label or row.status_label and row.status_slug != 'ongoing' and row.status_slug != 'ended' %}
                   <p class="event-row-meta">
                     {% if row.category_label %}
                       <span class="event-row-cat">{{ row.category_label }}</span>
                     {% endif %}
-                    {% if row.category_label and row.status_label %}
+                    {% if row.category_label and row.status_label and row.status_slug != 'ongoing' and row.status_slug != 'ended' %}
                       <span class="event-row-dot" aria-hidden="true"></span>
                     {% endif %}
-                    {% if row.status_label %}
+                    {% if row.status_label and row.status_slug != 'ongoing' and row.status_slug != 'ended' %}
                       <span class="event-row-tone">{{ row.status_label }}</span>
                     {% endif %}
                   </p>
+                  {% endif %}
                   <h2 class="event-row-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
                   {% if row.region_label and row.event.location_name %}
                     <p class="event-row-place">{{ row.region_label }} · {{ row.event.location_name }}</p>
