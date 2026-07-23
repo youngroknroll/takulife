@@ -34,6 +34,15 @@ clear_query_suffix, request
               {% if row.quantity_label %}{% if row.item.character_name %} · {% endif %}{{ row.quantity_label }}{% endif %}
               {% if row.tradeable_label %}{% if row.item.character_name or row.quantity_label %} · {% endif %}{{ row.tradeable_label }}{% endif %}
             </p>
+            {% with acquired=row.item.acquired_on %}
+              <p class="collection-row-date">
+                {% if acquired %}
+                  획득 <time class="mono-num" datetime="{{ acquired|date:'Y-m-d' }}">{{ acquired|date:'Y/m/d' }}</time>
+                {% else %}
+                  등록 <time class="mono-num" datetime="{{ row.item.created_at|date:'Y-m-d' }}">{{ row.item.created_at|date:'Y/m/d' }}</time>
+                {% endif %}
+              </p>
+            {% endwith %}
             {% if row.item.memo %}
               <p class="collection-row-note">“{{ row.item.memo }}”</p>
             {% endif %}
@@ -75,6 +84,15 @@ clear_query_suffix, request
               {% if row.quantity_label %}{% if row.item.character_name %} · {% endif %}{{ row.quantity_label }}{% endif %}
               {% if row.tradeable_label %}{% if row.item.character_name or row.quantity_label %} · {% endif %}{{ row.tradeable_label }}{% endif %}
             </p>
+            {% with acquired=row.item.acquired_on %}
+              <p class="gcard-date">
+                {% if acquired %}
+                  획득 <time class="mono-num" datetime="{{ acquired|date:'Y-m-d' }}">{{ acquired|date:'Y/m/d' }}</time>
+                {% else %}
+                  등록 <time class="mono-num" datetime="{{ row.item.created_at|date:'Y-m-d' }}">{{ row.item.created_at|date:'Y/m/d' }}</time>
+                {% endif %}
+              </p>
+            {% endwith %}
             <div class="gcard-actions">
               <a class="collection-edit-link" href="/collection/{{ row.item.id }}/edit/">수정</a>
               <button class="collection-delete-btn" type="button" data-delete-item-id="{{ row.item.id }}">삭제</button>
