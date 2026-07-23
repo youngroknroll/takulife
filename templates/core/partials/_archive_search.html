@@ -11,17 +11,22 @@ Args:
   has_query    — True when q is non-empty
   hidden_name  — optional: name attr of a hidden input to preserve the active filter
   hidden_value — optional: value attr; hidden input is skipped when this is empty
+
+The decorative ⌕ icon (.archive-search-icon) sits in-flow before the input,
+not as an absolute-positioned ::before overlay, to avoid colliding with the
+native browser decoration on type="search" inputs.
 {% endcomment %}
 <form method="get" class="archive-search">
   {% if hidden_name and hidden_value %}
     <input type="hidden" name="{{ hidden_name }}" value="{{ hidden_value }}">
   {% endif %}
   <div class="archive-search-row">
+    <span class="archive-search-icon" aria-hidden="true">⌕</span>
     <input
       type="search"
       name="q"
       value="{{ q }}"
-      placeholder="제목·장소 검색"
+      placeholder="행사명·장소 검색"
       aria-label="아카이브 검색"
     >
     <button type="submit">검색</button>
