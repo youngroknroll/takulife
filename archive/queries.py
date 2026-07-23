@@ -13,7 +13,7 @@ from dataclasses import dataclass
 # by the time its own annotation tried to reference it.
 from datetime import date as _date
 
-from django.db.models import Count, Exists, Min, OuterRef, Q
+from django.db.models import Count, Exists, Min, OuterRef, Q, Subquery
 from django.urls import reverse
 from django.utils import timezone
 
@@ -40,6 +40,16 @@ ARCHIVE_VISIT_PAGE_SIZE = 5  # 방문 기록 (/archive/visits/)
 ARCHIVE_PERSONAL_PAGE_SIZE = 5  # 비공식 목록 (/archive/items/)
 ARCHIVE_COLLECTION_PAGE_SIZE = 10  # 컬렉션 목록 (/collection/)
 
+# Sort slugs for list_user_statuses, mapped to their order_by field. "" (the
+# default) is the pre-existing -updated_at ordering, kept unlisted here so an
+# unknown/missing slug falls back to it via .get(sort, default) with no
+# explicit "" entry needed. Only axes with a plain column on UserEventStatus
+# are offered — cross-table axes (e.g. event.start_date) would need an
+# annotate and are out of scope.
+ARCHIVE_STATUS_SORT_ORDERING: dict[str, str] = {
+    "created_at": "-created_at",
+}
+
 
 def user_status_counts(user, *, today=None) -> dict:
     """Return per-status counts for a user's archive statuses.
@@ -60,7 +70,7 @@ def user_status_counts(user, *, today=None) -> dict:
     return {slug: counts.get(slug, 0) for slug in ARCHIVE_STATUS_SLUGS}
 
 
-def list_user_statuses(user, status: str = "", *, q: str = "", today=None):
+def list_user_statuses(user, status: str = "", *, q: str = "", sort: str = "", today=None):
     """Return a user's archive statuses, newest first, optionally filtered.
 
     Filtering and the rows' effective status use the *derived* status overlay,
@@ -70,14 +80,32 @@ def list_user_statuses(user, status: str = "", *, q: str = "", today=None):
     ``q`` narrows results to rows whose event or personal_entry title/location
     matches the search term (case-insensitive contains). The user filter is
     always applied first so no cross-user leakage is possible.
+
+    ``sort`` selects the ordering via ARCHIVE_STATUS_SORT_ORDERING; an unknown
+    or empty value falls back to the default -updated_at ordering rather than
+    raising or returning an empty result.
     """
     if today is None:
         today = timezone.localdate()
+    ordering = ARCHIVE_STATUS_SORT_ORDERING.get(sort, "-updated_at")
+    # OR (not AND): a status row's subject is exactly one of event/personal_entry
+    # (the other is always NULL) — mirrors list_user_unrecorded_visited_statuses'
+    # same_subject Exists filter above, which hit the same NULL=NULL trap with AND.
+    # Ordering matches list_user_visit_records' canonical -visited_on, -id so the
+    # "latest visit" picked here is the same row that list would surface first.
+    latest_visit = VisitRecord.objects.filter(
+        Q(event=OuterRef("event")) | Q(personal_entry=OuterRef("personal_entry")),
+        user=OuterRef("user"),
+    ).order_by("-visited_on", "-id")
     queryset = (
         UserEventStatus.objects.filter(user=user)
         .with_derived_status(today=today)
         .select_related("event", "personal_entry")
-        .order_by("-updated_at")
+        .annotate(
+            visit_record_id=Subquery(latest_visit.values("id")[:1]),
+            review_text=Subquery(latest_visit.values("short_review")[:1]),
+        )
+        .order_by(ordering)
     )
     if status:
         queryset = queryset.filter(derived_status=status)

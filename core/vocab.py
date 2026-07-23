@@ -87,6 +87,19 @@ COLLECTION_ITEM_TYPE_LABELS: dict[str, str] = dict(COLLECTION_ITEM_TYPE)
 def archive_status_label(slug: str) -> str:
     return ARCHIVE_STATUS_LABELS.get(slug, slug)
 
+
+# ---------------------------------------------------------------------------
+# Archive status list sort vocabulary (slug matches
+# archive.queries.ARCHIVE_STATUS_SORT_ORDERING). Empty slug "" is the default
+# (등록일 최근 수정순 / -updated_at). slug → display label
+# ---------------------------------------------------------------------------
+ARCHIVE_STATUS_SORT: tuple[tuple[str, str], ...] = (
+    ("", "최근 수정순"),
+    ("created_at", "등록순"),
+)
+
+ARCHIVE_STATUS_SORT_LABELS: dict[str, str] = dict(ARCHIVE_STATUS_SORT)
+
 # ---------------------------------------------------------------------------
 # Event status vocabulary (independent axis from archive status)
 # Describes the publication/temporal state of an Event object.

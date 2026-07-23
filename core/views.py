@@ -53,6 +53,8 @@ from core.models import HomeConfig
 from core.vocab import (
     ARCHIVE_STATUS,
     ARCHIVE_STATUS_LABELS,
+    ARCHIVE_STATUS_SORT,
+    ARCHIVE_STATUS_SORT_LABELS,
     archive_status_label,
     CATEGORY,
     CATEGORY_LABELS,
@@ -816,12 +818,16 @@ def _build_archive_status_rows(user_statuses):
                 "label_planned": archive_status_label("planned"),
                 "subject": subject,
                 "updated_at": us.updated_at,
+                "review_text": us.review_text,
+                "visit_record_id": us.visit_record_id,
             }
         )
     return rows
 
 
-def _archive_status_context(user, selected_status, *, page_size, page_number, q: str = ""):
+def _archive_status_context(
+    user, selected_status, *, page_size, page_number, q: str = "", sort: str = ""
+):
     """Build the shared context for the archive dashboard and statuses pages.
 
     Both pages derive 'missed' identically via the shared read helper (instead
@@ -832,19 +838,25 @@ def _archive_status_context(user, selected_status, *, page_size, page_number, q:
     current page's rows are built into the heavier display dicts. The two pages
     pass different sizes (기록장 10 vs 예정 목록 5). ``has_statuses`` reflects the
     total match count, not the current page, so the empty state shows only when
-    the user genuinely has none. ``pager_query`` preserves the status filter
-    and q param across page links.
+    the user genuinely has none. ``pager_query`` preserves the status filter,
+    q param, and sort across page links.
 
     ``q`` narrows the status list server-side (title/location search). Summary
     counts (status_counts) always reflect the unfiltered totals.
     ``has_any`` signals that the user owns at least one status of any kind,
     independent of the current filter; this lets templates distinguish an
     empty-filter result from a genuinely empty archive.
+
+    ``sort`` selects list_user_statuses' ordering; an unrecognized value falls
+    back to "" (the default ordering) the same way an unrecognized status
+    falls back to "" (all).
     """
     if selected_status not in ARCHIVE_STATUS_SLUGS:
         selected_status = ""
+    if sort not in ARCHIVE_STATUS_SORT_LABELS:
+        sort = ""
 
-    qs = list_user_statuses(user, selected_status, q=q)
+    qs = list_user_statuses(user, selected_status, q=q, sort=sort)
     paginator = Paginator(qs, page_size)
     page_obj = paginator.get_page(page_number)
     status_rows = _build_archive_status_rows(page_obj.object_list)
@@ -854,11 +866,16 @@ def _archive_status_context(user, selected_status, *, page_size, page_number, q:
         parts.append(("status", selected_status))
     if q:
         parts.append(("q", q))
+    if sort:
+        parts.append(("sort", sort))
     pager_query = "&" + urlencode(parts) if parts else ""
     # Tail that filter chips append to preserve the active search across a
     # filter switch (urlencoded so 한글/space/& are safe; the template escapes
     # the leading & to &amp; in the href, which the browser decodes).
-    search_suffix = "&" + urlencode([("q", q)]) if q else ""
+    search_suffix_parts = [("q", q)] if q else []
+    if sort:
+        search_suffix_parts.append(("sort", sort))
+    search_suffix = "&" + urlencode(search_suffix_parts) if search_suffix_parts else ""
 
     counts = user_status_counts(user)
     return {
@@ -873,6 +890,9 @@ def _archive_status_context(user, selected_status, *, page_size, page_number, q:
         "ARCHIVE_STATUS": ARCHIVE_STATUS,
         "q": q,
         "has_query": bool(q),
+        "selected_sort": sort,
+        "selected_sort_label": ARCHIVE_STATUS_SORT_LABELS[sort],
+        "ARCHIVE_STATUS_SORT": ARCHIVE_STATUS_SORT,
     }
 
 
@@ -899,6 +919,7 @@ def archive(request):
         page_size=ARCHIVE_RECORD_PAGE_SIZE,
         page_number=request.GET.get("page"),
         q=_archive_query(request),
+        sort=request.GET.get("sort", ""),
     )
     return _render_archive_list(
         request,
@@ -917,6 +938,7 @@ def archive_statuses(request):
         page_size=ARCHIVE_STATUS_PAGE_SIZE,
         page_number=request.GET.get("page"),
         q=_archive_query(request),
+        sort=request.GET.get("sort", ""),
     )
     return _render_archive_list(
         request,
