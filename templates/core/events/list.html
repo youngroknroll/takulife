@@ -143,6 +143,14 @@
                   {% endif %}
                 </a>
                 <div class="event-row-body">
+                  {% comment %}
+                  Django `and`/`or` precedence (no parens in templates) parses this as
+                  `category_label OR (status_label AND 표시가능 status_slug)` — i.e. this
+                  wrapper renders <p class="event-row-meta"> only when it will end up with
+                  at least one child span. Today category_label is effectively always truthy
+                  so the OR branch never fires alone, but keep both operands if this
+                  condition is ever edited.
+                  {% endcomment %}
                   {% if row.category_label or row.status_label and row.status_slug != 'ongoing' and row.status_slug != 'ended' %}
                   <p class="event-row-meta">
                     {% if row.category_label %}
