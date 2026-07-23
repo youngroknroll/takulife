@@ -80,14 +80,18 @@
   .hero-activity .summary-card:nth-child(3) .summary-value {
     color: var(--end-ink);
   }
+  /* 시안 재취득본(2026-07-23) CTA 배경이 --brand(레드)에서 --accent(청록)로
+     바뀜 — 저장소 대응 토큰은 --teal. `.hero-action`은 archive/index.html
+     에서만 쓰이는 클래스(rg 확인, home.html 등 다른 템플릿 미사용)라
+     페이지 스코프 없이 바로 바꿔도 안전하다. */
   .hero-action {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     text-decoration: none;
     border-radius: 10px;
-    border: 1px solid var(--brand);
-    background: var(--brand);
+    border: 1px solid var(--teal);
+    background: var(--teal);
     color: #fff;
     padding: 0 1.25rem;
     min-height: 44px;
@@ -203,7 +207,14 @@
     border-top: none;
     padding-top: 0;
   }
-  .aside-label {
+  /* v3 사후 결함 수정 A: `.aside-label`(0,1,0)이 `components/cards.css:211`
+     `.panel h2`(0,1,1)에 밀려 11px 규칙이 무음 사망하고 computed가 16px로
+     떨어지는 특이도 패배 — 로드 순서 문제가 아니라 특이도 자체가 진 것이라
+     순서를 바꿔도 못 고친다(이 저장소가 event_list.css:244·
+     event_calendar.css:37·archive_collection.css:13 세 곳에 이미 남긴
+     `.panel h2` 함정 경고와 동일 유형). `.activity-page` 스코프로
+     (0,2,0)까지 끌어올려 승리. */
+  .activity-page .aside-label {
     margin: 0 0 0.625rem;
     font-size: 0.6875rem; /* 시안 실측 11px */
     font-weight: 800;
@@ -222,8 +233,15 @@
     background: none;
     padding: 0;
   }
+  /* 빠른 이동 기본색 = 청록(`--teal-ink`, 시안 재취득본 `--accent-ink`에
+     대응). "행사 찾기"는 이 기본색 그대로 두고, "활동 달력 →"만 아래
+     `.quick-link-calendar`로 `--up-ink`를 덮어 구분한다. */
   .activity-page .side-list a {
     font-size: 0.84375rem; /* 시안 실측 13.5px */
+    color: var(--teal-ink);
+  }
+  .activity-page .side-list a.quick-link-calendar {
+    color: var(--up-ink);
   }
   /* ── teal accent (v2 §B): `.chip.active`/`.pager-page.is-current`
      재선언은 `components/nav.css`로 이전(2026-07-23 사후 결함 수정 B) —
@@ -241,7 +259,10 @@
     gap: 0.625rem;
     margin-bottom: 0.5rem;
   }
-  .results-head h2 {
+  /* `.results-head h2`도 `.panel h2`(0,1,1)와 동률(0,1,1)이라 지금은
+     로드 순서로만 이기고 있다 — 위 `.aside-label`과 같은 함정이라 함께
+     `.activity-page` 스코프(0,2,1)로 승격해 순서 독립으로 만든다. */
+  .activity-page .results-head h2 {
     margin: 0;
     font-size: 0.94rem;
     font-weight: 700;
@@ -252,6 +273,12 @@
   .results-sort {
     font-size: 0.8rem;
     color: var(--muted);
+  }
+  /* 실기능 없는 순수 시각 캐럿(정렬 텍스트 옆 ▾) — 클릭 가능성을 암시하면
+     허위 어포던스이므로 cursor/hover/focus 스타일은 의도적으로 두지 않는다. */
+  .results-sort-caret {
+    color: var(--text);
+    font-weight: 600;
   }
 
   /* ── record rows (flat divider list, replaces the boxed .record-card,
@@ -314,14 +341,26 @@
     overflow-wrap: anywhere;
   }
   .record-row-cat {
+    font-size: 0.6875rem; /* 시안 실측 11px */
     font-weight: 700;
   }
+  .record-row-place {
+    font-size: 0.6875rem; /* 시안 실측 11px */
+    font-weight: 600;
+  }
+  /* 마크업의 텍스트 `·`(aria-hidden)를 CSS로 숨기고 3×3px 원형 박스로
+     대체 — 템플릿은 무편집, 폰트 렌더링에 기대던 점을 실제 도형으로. */
   .record-row-dot {
-    color: var(--muted);
+    font-size: 0;
+    display: inline-block;
+    width: 0.1875rem;
+    height: 0.1875rem;
+    border-radius: 50%;
+    background: var(--muted);
   }
   .record-row-title {
     margin: 0;
-    font-size: var(--fs-base);
+    font-size: 1rem; /* 시안 실측 16px */
     font-weight: 700;
     line-height: 1.35;
     overflow-wrap: anywhere;
@@ -365,28 +404,17 @@
   }
 
   /* Archive timeline status badges (display only, not interactive buttons).
-     v2 (2026-07-23): planned/missed 색을 시안대로 교체(사용자 확정 #4) —
-     `visited`(mint)만 변경 없음. planned은 기존 amber(종료임박 의미와
-     겹침)에서 up(예정)으로, missed는 rose(에러 의미와 겹침)에서
-     end(종료)로 옮겨 상태별 의미 축을 분리한다. */
+     v3 사후 결함 수정 D: v2가 도입한 `.status.visited`/`.planned`/`.missed`
+     색 오버라이드 3개를 제거 — `controls.css`의 전역 `.status-btn.planned,
+     .status.planned` 등이 이제 같은 값(up/mint/end)으로 통일돼 여기서
+     재선언하면 값이 100% 겹치는 순수 중복이 된다. 기하값(radius/padding/
+     font-size 등)만 이 파일에 남긴다. */
   .status {
     border-radius: var(--radius-chip);
     padding: 0.25rem 0.5625rem;
     font-size: var(--fs-xs);
     font-weight: 700;
     white-space: nowrap;
-  }
-  .status.visited {
-    background: var(--mint-soft);
-    color: var(--mint-ink);
-  }
-  .status.planned {
-    background: var(--up-soft);
-    color: var(--up-ink);
-  }
-  .status.missed {
-    background: var(--end-soft);
-    color: var(--end-ink);
   }
   /* 방문 완료 이벤트 카드의 '기록' 작성 바로가기 — home의 컬렉션 스냅샷
      패널(_home_collection_snapshot.html)도 재사용하는 공유 클래스. */

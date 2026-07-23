@@ -55,7 +55,7 @@
           <h2 class="aside-label">빠른 이동</h2>
           <ul class="side-list">
             <li><a href="/events/">행사 찾기 →</a></li>
-            <li><a href="/archive/calendar/">활동 달력 →</a></li>
+            <li><a class="quick-link-calendar" href="/archive/calendar/">활동 달력 →</a></li>
           </ul>
         </div>
       </aside>
@@ -63,7 +63,7 @@
       <article class="panel">
         <div class="results-head">
           <h2>전체 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
-          <span class="results-sort">최근순</span>
+          <span class="results-sort">최근순 <span class="results-sort-caret" aria-hidden="true">▾</span></span>
         </div>
 
         <div id="archive-results" data-archive-results>
