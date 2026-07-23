@@ -426,8 +426,16 @@ def test_머스트헤드_통계는_표시_월과_무관하게_전체_기간_상�
     user_client, make_event
 ):
     user, client = user_client()
+    # Deliberately a *future* month, not just a different one: user_status_counts
+    # (archive/queries.py) counts the *derived* status (auto-miss overlay) — a
+    # PLANNED status whose event run has already ended is derived as "missed",
+    # not "planned" (see its docstring). A past other-month date would silently
+    # flip this fixture's own status out from under the assertion below, so
+    # this has to stay in the future relative to whatever "today" the test
+    # suite runs under to keep asserting "planned" while still proving the
+    # count spans months outside the displayed one.
     other_month_event = make_event(
-        title="통계전체기간확인행사", start_date=date(2026, 3, 1), end_date=date(2026, 3, 1)
+        title="통계전체기간확인행사", start_date=date(2026, 12, 1), end_date=date(2026, 12, 1)
     )
     UserEventStatus.objects.create(
         user=user, event=other_month_event, status=UserEventStatus.Status.PLANNED
