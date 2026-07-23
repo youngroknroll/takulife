@@ -105,11 +105,23 @@
           <h2 class="aside-label legend-caption">종류</h2>
           <a class="legend-reset" href="{{ reset_filter_url }}">전체 보기</a>
         </div>
+        {% comment %}
+        Active-state accessible name (2026-07-24 사후 검토 수정, WED/BIR
+        AX-tree 실측): Chromium doesn't expose `aria-current` in the a11y
+        tree (same gap this page's today-cell `aria-current="date"` already
+        has), so a screen-reader user hears every legend link as plain
+        "…N건" with no way to tell active from inactive. `aria-current`
+        itself stays (future browser support hook + visual CSS hook) but an
+        active link also gets an explicit `aria-label` that repeats its own
+        visible text plus an "적용됨" suffix (WCAG 2.5.3 Label in Name — the
+        label must still contain the visible string verbatim). Inactive
+        links keep their default text-concatenation name unchanged.
+        {% endcomment %}
         <ul class="calendar-legend">
           {% for f in kind_filters %}
             <li>
               <a class="legend-item{% if f.is_active %} is-active{% endif %}"
-                 href="{{ f.toggle_url }}"{% if f.is_active %} aria-current="true"{% endif %}>
+                 href="{{ f.toggle_url }}"{% if f.is_active %} aria-current="true" aria-label="{% if f.group == 'schedule' %}방문 예정 이벤트 일정{% elif f.group == 'interest' %}찜{% elif f.group == 'visit' %}방문 완료{% elif f.group == 'goods' %}굿즈 획득{% endif %} {{ f.count }}건, 적용됨"{% endif %}>
                 <span class="legend-swatch" data-kind="{{ f.group }}" aria-hidden="true"></span>
                 <span class="legend-label">{% if f.group == 'schedule' %}방문 예정 이벤트 일정{% elif f.group == 'interest' %}찜{% elif f.group == 'visit' %}방문 완료{% elif f.group == 'goods' %}굿즈 획득{% endif %}</span>
                 <span class="legend-count">{{ f.count }}건</span>
