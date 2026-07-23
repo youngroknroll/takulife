@@ -114,11 +114,22 @@
   /* Shape tokens (PR-R2 consumes these for component signatures). */
   --radius-card: 10px;
   --radius-control: 8px;
-  /* "Ticket tab" — chips, badges, and pill-shaped status/action controls
-     (plan §0). One rounded end + one clipped end, evoking a torn ticket
-     stub. Pure circular pills (999px) are reserved for nav-tab/legend
-     controls not covered by this signature. */
-  --radius-chip: 4px 999px 999px 4px;
+  /* Chips, badges, and pill-shaped status/action controls (plan §0).
+     The former "ticket tab" signature (one rounded end + one clipped end,
+     evoking a torn ticket stub) is retired: user-confirmed global switch
+     to fully circular pills to match the editorial v3 mock, which draws
+     status pills and filter chips as pure 999px capsules
+     (.docs/plans/2026-07-23-activity-editorial-v3-plan.md, 확정 #1 —
+     user decision, not agent judgement). The mock only specifies status
+     pills/filter chips; poster badges, favorite buttons, and category
+     chips also consume this token and change together as a side effect,
+     though the mock never addressed them — flag for backlog review if
+     that turns out unwanted. Consumers as of 2026-07-23 (`rg -l
+     "radius-chip" static/css/`): pages/archive_statuses.css,
+     pages/archive_visits.css, pages/archive.css, pages/event_detail.css,
+     components/cards.css, components/controls.css,
+     components/category.css. */
+  --radius-chip: 999px;
 
   /* Type scale (§0 6-step scale). Applied across pages/*.css by PR-R3
      (this PR) for the 0.74–0.95rem band; --fs-xl is reserved for the single
