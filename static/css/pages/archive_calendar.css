@@ -1,214 +1,58 @@
-/* ── /archive/calendar/ page skin (2026-07-24 editorial rebuild) ─────────
+/* ── /archive/calendar/ page skin (2026-07-24 editorial rebuild,
+ * §8-A R-1..R-5 top/filter rework) ───────────────────────────────────────
  * Grid/cell/dot/error-panel base look lives in components/calendar.css
- * (shared with the Events calendar). This file layers the editorial-only
- * differences onto that shared skeleton via `.activity-page`-scoped
- * overrides (activity-calendar-editorial plan §4-b, WED pre-spec §3 — the
- * sibling `.activity-page .aside-label` precedent in pages/archive.css:313
- * is the model this file follows throughout) plus this page's own
- * masthead/toolbar/legend/aside/detail rules that have no shared-file
- * counterpart at all.
+ * (shared with the Events calendar). Masthead/toolbar look now comes from
+ * the shared pages/archive.css (§8-A D9/D5 — loaded ahead of this file;
+ * WED §8-A-1 item 1 supersedes the earlier "duplicate, don't link
+ * archive.css" call: archive.css's rules are scoped to
+ * `.hero-activity`/`.activity-toolbar`, not the bare `.hero` that caused
+ * the historical home.html leak, so a second scoped consumer can't
+ * reproduce that leak). This file layers the editorial-only differences
+ * onto the shared calendar skeleton via `.activity-page`-scoped overrides
+ * (plan §4-b, WED pre-spec §3 — the sibling `.activity-page .aside-label`
+ * precedent in pages/archive.css:313 is the model this file follows
+ * throughout) plus this page's own month-nav/legend/aside/detail rules
+ * that have no shared-file counterpart at all.
  *
- * Breakpoints: 45rem only (§A-3 carried over from the pre-editorial file —
- * no foreign 53.75/56.25/60rem boundaries borrowed from other pages).
- *
- * `archive.css` is deliberately NOT <link>ed on this page (WED pre-spec §2):
- * its `.hero-activity`/`.activity-toolbar` rules are close cousins of what
- * this page needs, but that file's breakpoints and its own page-scoping
- * would collide, and this repo has already suffered one archive.css leak
- * onto home.html. The handful of rules this page needs from that family are
- * duplicated below instead, as an accepted, documented trade-off.
+ * Breakpoints: this file's own layout (aside/grid/legend/detail) commits to
+ * 45rem only (§A-3 carried over from the pre-editorial file — no foreign
+ * 53.75/56.25/60rem boundaries borrowed from other pages). The
+ * masthead/toolbar now stack at archive.css's own 53.75rem instead — two
+ * independently-scoped breakpoints coexisting on one page, not a conflict
+ * (plan §8-A D5 / WED §8-A-1 item 1: "두 독립 경계").
  */
 
-/* ── masthead ─────────────────────────────────────────────────────────── */
-.activity-masthead {
-  /* `position: relative` is load-bearing for the toggle's absolute
-     centering below — without it the toggle centers on <main class="page">
-     instead (activity-calendar-editorial plan §7-3-b constraint 10 / BIR
-     Medium finding). */
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1.25rem;
-  padding-bottom: 1.125rem;
-  margin: 0 0 1.5rem;
-  border-bottom: 1.5px solid var(--text);
-}
-
-.masthead-lead h1 {
-  margin: 0 0 0.625rem;
-  font-size: 1.5rem;
-  font-weight: 800;
-}
-
-/* Shared .summary-grid/.summary-card (components/cards.css) flattened into
-   an inline baseline stat row for this masthead only — same technique as
-   pages/archive.css's `.hero-activity .summary-card` (duplicated here per
-   the file-header trade-off note, not imported). */
-.masthead-lead .summary-grid {
-  display: flex;
-  align-items: baseline;
-  gap: 0;
-  margin-top: 0;
-}
-
-.masthead-lead .summary-card {
-  background: none;
-  border: none;
-  border-radius: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 0.4375rem;
-  padding: 0 1.25rem;
-  border-left: 1px solid var(--line);
-}
-
-.masthead-lead .summary-card:first-child {
-  padding-left: 0;
-  border-left: none;
-}
-
-.masthead-lead .summary-label {
-  order: 2;
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.masthead-lead .summary-value {
-  order: 1;
-  margin: 0;
-  font-size: 1.625rem;
-  font-weight: 800;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-}
-
-.masthead-lead .summary-card:nth-child(1) .summary-value {
-  color: var(--up-ink);
-}
-
-.masthead-lead .summary-card:nth-child(2) .summary-value {
-  color: var(--mint-ink);
-}
-
-.masthead-lead .summary-card:nth-child(3) .summary-value {
-  color: var(--end-ink);
-}
-
-/* 목록|달력 toggle — component look (colors/hover/is-active) lives in the
-   globally-loaded components/nav.css; this is only the masthead-local
-   centering position (plan §3 "룰 영역 가운데 절대 배치"). */
-.activity-masthead .activity-view-toggle {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* CTA — same teal-filled pill as pages/archive.css's `.hero-action`,
-   duplicated per the file-header trade-off note. */
-.hero-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  text-decoration: none;
-  border-radius: 10px;
-  border: 1px solid var(--teal);
-  background: var(--teal);
-  color: #fff;
-  padding: 0 1.25rem;
-  min-height: 44px;
-  font-size: var(--fs-md);
-  font-weight: 700;
-  flex: none;
-}
-
-.hero-action:hover {
-  filter: brightness(0.95);
-}
-
 /* ── sub-nav / search / 찜 목록 rail ──────────────────────────────────── */
-/* 찜 목록 stays inside _archive_nav.html's own <nav> — DOM placement and
-   visual placement are independent here (2026-07-24 후속: 처음 구현이 찜을
-   <nav> 밖으로 꺼내 tests/archive/test_archive_interest_placement.py의
-   회귀 가드를 깼다 — 정확히 직전 트랙의 사후 결함 재발이라 되돌림).
-   `.sub-nav` is stretched to fill the toolbar's remaining width (flex: 1)
-   and `.archive-nav-wrap` to its own full width, so the *existing*
-   `.archive-nav-wrap .nav-interest { margin-left: auto }` rule
-   (components/nav.css:92-93) still reaches the row's right edge on its
-   own — no interest-specific override needed here, and the pink pill look
-   stays exactly as every other archive page's (per _archive_nav.html's own
-   "찜 목록 stays a standalone pink pill" contract). The search field is
-   absolutely centered over the whole toolbar instead (same centering
-   technique as the masthead's view toggle above) so its position is
-   independent of how much room the tabs+interest row actually uses. */
-.activity-toolbar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 0.875rem;
-  margin-bottom: 1.25rem;
-}
-
-.activity-toolbar .sub-nav {
-  flex: 1;
-  min-width: 0;
-  background: none;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 0;
-  margin: 0;
-}
-
-.activity-toolbar .archive-nav-wrap {
-  width: 100%;
-  border-bottom: none;
-}
-
-/* F3 fix (post-implementation BIR): the mock's 찜 목록 is a plain link, not
-   nav.css's shared pink pill (`.archive-nav-wrap .nav-interest`, border/
-   background/999px radius) that every other archive page keeps. nav.css
-   itself stays untouched (7 sibling pages still get the pill) — this
-   flattens the look on this page only via a higher-specificity
-   `.activity-page`-scoped override, same technique as pages/archive.css's
-   own `.activity-toolbar .nav-interest` precedent for the same component. */
-.activity-page .archive-nav-wrap .nav-interest {
-  border: none;
-  background: none;
-  border-radius: 0;
-  padding: 0.625rem 0.75rem;
-  min-height: 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--pink-ink);
-  transition: color 0.15s ease;
-}
-
-.activity-page .archive-nav-wrap .nav-interest:hover,
-.activity-page .archive-nav-wrap .nav-interest.active {
-  background: none;
-  border-color: transparent;
-  transform: none;
-  box-shadow: none;
-}
-
 /* Page-local plain GET search (not _archive_search.html — that partial
    ships archive_search.js's live-region pair, which this full-PRG-reload
-   page must not carry, plan §7-3 constraint 5/7). */
-.calendar-search {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+   page must not carry, plan §7-3 constraint 5/7). Everything else about the
+   toolbar row (grid/columns/sub-nav/nav-interest look) now comes from the
+   shared `.activity-toolbar` rules in pages/archive.css — this is the one
+   mirror rule §8-A-1 item 1 condition ① calls for, matching
+   `.archive-search`'s width/centering so `.calendar-search` lands the same
+   way in the toolbar grid's middle (1fr) track. */
+.activity-toolbar .calendar-search {
   display: flex;
   align-items: center;
   gap: 0.375rem;
+  width: 21.25rem;
+  max-width: 100%;
+  justify-self: center;
+  margin: 0;
+}
+
+/* archive.css's own `.activity-toolbar` grid stacks to a single column at
+   its 53.75rem breakpoint (plan §8-A D5 — the toolbar's own sanctioned
+   second boundary, not a foreign one borrowed for this file's 45rem-scoped
+   layout below); the fixed-width search must give up that width there too
+   or it overflows the collapsed single-column row (BIR §8-A-2 AC8). Mirrors
+   archive.css's own `.archive-search` reset at the same breakpoint. */
+@media (max-width: 53.75rem) {
+  .activity-toolbar .calendar-search {
+    width: auto;
+    max-width: none;
+    margin-bottom: 1.75rem;
+  }
 }
 
 .calendar-search input[type="text"] {
@@ -241,94 +85,6 @@
   filter: brightness(0.95);
 }
 
-/* ── filter disclosure panel (full width, unchanged position — WED
-   pre-spec §4: do not fold this into the aside) ─────────────────────── */
-.calendar-filters {
-  margin: 0 0 1.25rem;
-}
-
-.filter-group {
-  margin-inline: 0;
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.625rem;
-  background: var(--bg-card);
-}
-
-.filter-group h2,
-.filter-group legend {
-  margin: 0 0 0.5rem;
-  padding: 0;
-  font-size: var(--fs-md);
-}
-
-.filter-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-}
-
-.filter-check {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text);
-  font-size: var(--fs-md);
-}
-
-.filter-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-/* F1 fix (post-implementation BIR, High): the toggle/badge/data-expanded
-   show-hide rules used to live only inside the <=45rem media query below,
-   which left the toggle permanently display:none (unreachable by mouse or
-   keyboard) and the form permanently visible at every wider viewport —
-   disclosure only ever worked on phones. Promoted to unconditional base
-   rules so [data-disclosure]/[data-disclosure-toggle] (static/js/shared/
-   disclosure.js) function at every width; the <=45rem block below now only
-   adds the mobile-only checkbox-list stacking. */
-.calendar-filters-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-soft);
-  color: var(--text);
-  border-radius: 8px;
-  padding: 0.625rem 0.75rem;
-  font-size: var(--fs-md);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.calendar-filters-badge {
-  color: var(--muted);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-}
-
-.calendar-filters[data-expanded="false"] .calendar-filters-toggle [data-state="open"] {
-  display: none;
-}
-
-.calendar-filters[data-expanded="true"] .calendar-filters-toggle [data-state="closed"] {
-  display: none;
-}
-
-.calendar-filters[data-expanded="false"] form {
-  display: none;
-}
-
 /* ── two-column layout: aside (232px) | calendar column ──────────────── */
 .activity-layout {
   display: grid;
@@ -353,20 +109,43 @@
    .aside-label default — scoped to this one heading only (a modifier
    class, not a redefinition of .aside-label) since "빠른 이동" below was
    not flagged and keeps its existing look. */
+.legend-caption-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.6875rem;
+}
+
 .legend-caption {
+  margin: 0;
   font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: 0.07em;
 }
 
-/* ── legend — vertical stack with per-kind counts (WED pre-spec §1/§6:
-   aside top, solid-ink square swatch, not the shared circular .day-dot).
-   Reuses the .calendar-legend/.legend-item class names from
-   components/calendar.css (Activity-only there) but restructures their
-   layout for this page only, matching the file-header trade-off note. */
+/* "전체 보기" reset link (plan §8-A R-5/D3) — undoes a multi-toggle legend
+   selection in one click, mirroring index.html's "전체" chip affordance. */
+.legend-reset {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--teal-ink);
+  text-decoration: underline;
+}
+
+/* ── legend — now doubles as a clickable multi-toggle filter (plan §8-A
+   R-5/D2/D10): each row is a GET `<a>` to kind_filters[].toggle_url. Active
+   state is a --teal-soft row fill + bold text, never color/opacity alone —
+   the swatch ink stays the kind's identity color, not a state signal (WED
+   §8-A-1 item 3 / BIR §8-A-2 High "aria-current, not aria-pressed"). Aside
+   top, solid-ink square swatch, not the shared circular .day-dot (WED
+   pre-spec §1/§6). Reuses the .calendar-legend/.legend-item class names
+   from components/calendar.css (Activity-only there) but restructures
+   their layout for this page only, matching the file-header trade-off
+   note. */
 .calendar-legend {
   display: grid;
-  gap: 0.5625rem;
+  gap: 0.375rem;
   margin: 0 0 1rem;
   padding: 0;
   list-style: none;
@@ -377,6 +156,23 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.1875rem 0.375rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.legend-item:hover {
+  background: var(--bg-soft);
+}
+
+.legend-item.is-active {
+  background: var(--teal-soft);
+}
+
+.legend-item.is-active .legend-label,
+.legend-item.is-active .legend-count {
+  font-weight: 700;
 }
 
 .legend-label {
@@ -451,13 +247,14 @@
   min-width: 0;
 }
 
-/* F4 fix (post-implementation BIR): the month label sits at the row's left
-   edge and the ‹/›/오늘 trio groups together at the right edge (gap 16px) —
-   not arrows straddling the label with 오늘 stranded further right. */
+/* §8-A R-3/R-4/D6 rework: month name heading on its own line, the
+   `‹ 이번달 ›` trio centered on the line below via `justify-content:center`
+   (no `position:absolute`, no CSS `order` — DOM order already physically
+   `‹`, 이번달, `›` in the template). */
 .calendar-month-nav {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.625rem;
   margin-bottom: 0.875rem;
 }
 
@@ -478,6 +275,7 @@
 .calendar-month-controls {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1rem; /* 16px */
 }
 
@@ -743,37 +541,9 @@
 }
 
 @media (max-width: 45rem) {
-  .activity-masthead {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.875rem;
-  }
-  .activity-masthead .activity-view-toggle {
-    position: static;
-    transform: none;
-    justify-content: center;
-  }
-  .activity-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .calendar-search {
-    position: static;
-    top: auto;
-    left: auto;
-    transform: none;
-    width: 100%;
-  }
   .calendar-search input[type="text"] {
     width: auto;
     flex: 1;
-  }
-  /* Toggle/badge/data-expanded show-hide rules are now unconditional base
-     rules above (F1 fix) — only the mobile checkbox-list stacking stays
-     viewport-scoped here. */
-  .filter-list {
-    display: grid;
-    gap: 0.375rem;
   }
 
   .activity-layout {
