@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import OperationalError, connection
 from django.db.models import Count
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -27,6 +27,7 @@ from archive.queries import (
     GOODS_ACQUIRED_KIND,
     SCHEDULE_KIND,
     VISIT_KIND,
+    find_latest_activity_date_for_query,
     list_user_activity_for_month,
     list_user_collection_items,
     list_user_interests,
@@ -572,6 +573,25 @@ _KIND_TO_ACTIVITY_TYPE_GROUP = {
     kind: group for group, kinds in _ACTIVITY_TYPE_GROUPS.items() for kind in kinds
 }
 
+# The 4 user-facing groups actually shown in the calendar's legend/cell
+# items/selected-date list/counts (activity-calendar editorial plan §4-a
+# B2 — "status" stays a real, matchable ?type= group for backward-compat
+# bookmarks and _ACTIVITY_TYPE_GROUPS keeps its entry for other possible
+# consumers, but it is never rendered or counted anywhere on this page).
+_VISIBLE_ACTIVITY_TYPE_GROUPS = ("schedule", "interest", "visit", "goods")
+
+
+def _visible_activity_group(kind):
+    """Map an activity kind to its display group, or None when that kind
+    should never appear in the calendar's legend/cell items/selected-date
+    list/counts — the single point every one of those four consumers calls
+    through, so they can never quietly disagree (BIR Medium: a status-only
+    day's aria-label count must match its actually-rendered item count)."""
+    group = _KIND_TO_ACTIVITY_TYPE_GROUP.get(kind)
+    if group == "status":
+        return None
+    return group
+
 
 def _parse_activity_type_filter(request):
     """Return the ?type= values that are one of the 5 valid groups, in
@@ -616,7 +636,7 @@ def _build_selected_activity_items(items):
     """
     display_items = []
     for item in items:
-        group = _KIND_TO_ACTIVITY_TYPE_GROUP.get(item.kind)
+        group = _visible_activity_group(item.kind)
         if group is None:
             continue
         if item.date is not None:
@@ -647,14 +667,40 @@ def activity_calendar(request):
     Context contract (keys fixed, frontend building templates against this
     in parallel): calendar_error (None|"invalid"|"query_failed"),
     month_label, weeks (7-cell-per-week list of {date, in_month, today,
-    selected, count, kinds} — no per-item titles, dots only), selected_date,
+    selected, count, kinds, items, more_count} — count/kinds/items agree with
+    each other and always exclude the "status" group (activity-calendar
+    editorial plan §4-a B1/B2: a status-only day counts/shows as empty
+    everywhere, not just in the cell — see selected_items/kind_counts below
+    too); `items` is the day's first 2 activities as {group, label},
+    `more_count` is however many more remain), selected_date,
     selected_items (list of {group, label, url, date_text} — sourced from
     archive.queries.CalendarActivityItem's label/url/time_text fields, see
-    _build_selected_activity_items), prev_month/next_month, extra_query
-    (type= only, month/date excluded),
-    selected_types, has_any_items (whole displayed month, under the current
-    type filter — see completion report for why this simplification was
-    chosen over an always-unfiltered second query).
+    _build_selected_activity_items; "status"-group rows are excluded here
+    too), prev_month/next_month, extra_query (type= only, month/date
+    excluded), selected_types, has_any_items (whole displayed month, under
+    the current type filter — see completion report for why this
+    simplification was chosen over an always-unfiltered second query;
+    unlike count/items above this is unfiltered by the "status" exclusion,
+    since it predates B1/B2 and no case has required it to change),
+    kind_counts (dict of the 4 visible groups -> count, for the displayed
+    month under the current type filter — reuses `items`, no extra query),
+    status_counts (archive.queries.user_status_counts(user) verbatim — the
+    masthead's whole-history 예정/방문 완료/놓침 totals, independent of the
+    displayed month; deliberately a *different* context key from
+    kind_counts so the two aggregates never collapse into one binding), q
+    (the current ?q= search term, always present even when blank),
+    search_no_match (True only when a non-blank q was submitted and matched
+    nothing — the search input's value and this flag are what let a
+    template render an inline no-match notice without resetting month/date;
+    see _search_activity_date_jump below for the redirect-on-match half of
+    this contract).
+
+    "status" stays a real, matchable ?type= group (_ACTIVITY_TYPE_GROUPS is
+    unchanged) purely for ?type=status bookmark backward-compatibility
+    (§4-a B5) — every rendering/counting consumer above filters it out via
+    _visible_activity_group, so such a bookmark now reliably renders a
+    genuinely-empty (never crashing, never falsely-nonzero) day instead of
+    the previous ungated count.
 
     Sub-nav active-state note: existing archive/* templates
     (templates/core/archive/*.html) hardcode
@@ -682,6 +728,15 @@ def activity_calendar(request):
     if selected_types:
         kinds = [kind for type_group in selected_types for kind in _ACTIVITY_TYPE_GROUPS[type_group]]
 
+    q = request.GET.get("q", "").strip()
+    search_no_match = False
+    if calendar_error is None and q:
+        redirect_response, search_no_match = _search_activity_date_jump(
+            request, q=q, selected_types=selected_types
+        )
+        if redirect_response is not None:
+            return redirect_response
+
     try:
         items = list(
             list_user_activity_for_month(request.user, year=year, month=month, kinds=kinds)
@@ -696,8 +751,16 @@ def activity_calendar(request):
 
     has_any_items = bool(items)
 
+    kind_counts = dict.fromkeys(_VISIBLE_ACTIVITY_TYPE_GROUPS, 0)
+    for item in items:
+        group = _visible_activity_group(item.kind)
+        if group is not None:
+            kind_counts[group] += 1
+
     items_by_date = defaultdict(list)
     for item in items:
+        if _visible_activity_group(item.kind) is None:
+            continue
         if item.date is not None:
             items_by_date[item.date].append(item)
         else:
@@ -728,12 +791,13 @@ def activity_calendar(request):
                 "selected": cell.date == selected_date,
                 "count": len(items_by_date.get(cell.date, [])),
                 "kinds": sorted(
-                    {
-                        group
-                        for day_item in items_by_date.get(cell.date, [])
-                        if (group := _KIND_TO_ACTIVITY_TYPE_GROUP.get(day_item.kind)) is not None
-                    }
+                    {_visible_activity_group(day_item.kind) for day_item in items_by_date.get(cell.date, [])}
                 ),
+                "items": [
+                    {"group": _visible_activity_group(day_item.kind), "label": day_item.label}
+                    for day_item in items_by_date.get(cell.date, [])[:2]
+                ],
+                "more_count": max(0, len(items_by_date.get(cell.date, [])) - 2),
             }
             for cell in week
         ]
@@ -757,8 +821,55 @@ def activity_calendar(request):
         "selected_types": selected_types,
         "has_any_items": has_any_items,
         "active_filter_count": len(selected_types),
+        "kind_counts": kind_counts,
+        "status_counts": user_status_counts(request.user),
+        "q": q,
+        "search_no_match": search_no_match,
     }
     return render(request, "core/archive/calendar.html", context)
+
+
+def _search_activity_date_jump(request, *, q, selected_types):
+    """Resolve the activity calendar's ?q= date-jump search (editorial plan
+    §4-a-1 / B6): a non-blank `q` searches the user's whole activity history
+    (not just the displayed month) and, on a match, returns a PRG-redirect
+    response to that date; on no match, returns (None, True) so the caller
+    keeps rendering the currently-parsed month/date unchanged (BIR High: the
+    caller must not fall back to today just because the search missed).
+
+    "status" is always excluded from what a jump can land on (mirrors
+    _visible_activity_group) even when the caller passed no explicit
+    selected_types — landing on a date whose only match is a hidden status
+    change would show a selected-date section with nothing in it. An active
+    type= filter narrows the search the same way it narrows the grid, so a
+    jump never surfaces a kind currently hidden by the user's own filter
+    (§4-a-1 "필터 상호작용").
+    """
+    search_group_names = [
+        group
+        for group in (selected_types or list(_ACTIVITY_TYPE_GROUPS))
+        if group != "status"
+    ]
+    search_kinds = [
+        kind for group in search_group_names for kind in _ACTIVITY_TYPE_GROUPS[group]
+    ]
+
+    try:
+        match_date = find_latest_activity_date_for_query(request.user, q, kinds=search_kinds)
+    except Exception:
+        logger.exception("Failed to search activity calendar for q=%r", q)
+        match_date = None
+
+    if match_date is None:
+        return None, True
+
+    redirect_params = [
+        ("month", f"{match_date.year:04d}-{match_date.month:02d}"),
+        ("date", match_date.isoformat()),
+    ]
+    redirect_params += [("type", value) for value in selected_types]
+    redirect_url = f"{reverse('archive-calendar-page')}?{urlencode(redirect_params)}#selected-date"
+    return redirect(redirect_url), False
 
 
 def event_detail(request, event_id):
