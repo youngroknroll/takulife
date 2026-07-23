@@ -59,7 +59,6 @@ from django.test import Client
 from django.utils import timezone
 
 from archive.models import ActivityLogEntry, CollectionItem, UserEventStatus, VisitRecord
-from archive.queries import user_status_counts
 
 pytestmark = pytest.mark.web
 
@@ -444,8 +443,12 @@ def test_머스트헤드_통계는_표시_월과_무관하게_전체_기간_상�
     resp = client.get("/archive/calendar/", {"month": "2026-07"})
 
     assert resp.status_code == 200
-    assert resp.context["status_counts"] == user_status_counts(user)
-    assert resp.context["status_counts"]["planned"] >= 1
+    # Literal expectation (not a call to archive.queries.user_status_counts):
+    # the user has exactly one status row, so this is the full derived-status
+    # breakdown, not just a wiring check that would pass even if the helper
+    # and the view were both wrong the same way. Also proves the count spans
+    # a month (December) outside the displayed one (July).
+    assert resp.context["status_counts"] == {"planned": 1, "visited": 0, "missed": 0}
     assert resp.context["status_counts"] is not resp.context["kind_counts"]
 
 
