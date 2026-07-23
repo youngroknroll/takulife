@@ -376,6 +376,15 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+  /* v3 §F-2 리뷰 인용 — 제목 아래 1줄 말줄임, review_text가 있을 때만 렌더. */
+  .record-row-review {
+    margin: 0.1875rem 0 0;
+    font-size: 0.78125rem; /* 시안 실측 12.5px */
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .record-row-end {
     grid-area: end;
     display: flex;
@@ -383,6 +392,71 @@
     align-items: flex-end;
     gap: 0.5rem;
   }
+  /* v3 §F-3 조건부 행 액션 — 상태 필 아래 가로 배치, gap 12px(시안 실측). */
+  .record-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+  /* "＋ 기록" — 방문 완료 && 리뷰 없음. `.record-action-link`(home 컬렉션
+     스냅샷과 공유하는 채움 스타일)와는 별도 클래스 — 이 시안은 아웃라인+
+     accent-soft 배경이라 공유 클래스를 고치면 home.html에 번진다. */
+  .record-row-add-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.75rem; /* 28px */
+    padding: 0.25rem 0.6875rem; /* 4px 11px */
+    border: 1px solid var(--teal);
+    border-radius: 0.5rem; /* 8px */
+    background: var(--teal-soft);
+    color: var(--teal-ink);
+    font-size: 0.71875rem; /* 11.5px */
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  /* "수정" — 방문 완료 && 리뷰 있음 && visit_record_id 있음. */
+  .record-row-edit-link {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 600;
+    color: var(--teal-ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .record-row-edit-link:hover,
+  .record-row-add-link:hover {
+    text-decoration: underline;
+  }
+  /* "삭제" — 전 행 공통. 순수 텍스트 버튼, .status-btn 계열 채움 스타일
+     상속 없음(같은 컨테이너에 .status-btn이 없어 sibling-lock 로직 대상도
+     아니다 — status.js:167-176 참고). */
+  .record-row-delete-btn {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 0.75rem; /* 12px */
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .record-row-delete-btn:hover {
+    text-decoration: underline;
+  }
+  .record-row-add-link:focus-visible,
+  .record-row-edit-link:focus-visible,
+  .record-row-delete-btn:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  /* 대비 실측(2026-07-22 결정: 대비는 차단 게이트가 아님, 정보로만 기록) —
+     --teal-soft(라이트 #d3edf2) 위 --teal-ink(라이트 #0e7490) = 4.38:1.
+     WCAG AA 소형 텍스트 기준(4.5:1) 미달이나 사용자 승인된 시안 리터럴
+     그대로 진행. */
   @media (max-width: 45rem) {
     .record-row {
       grid-template-columns: 2.75rem 1fr; /* 44px date column, mobile */
