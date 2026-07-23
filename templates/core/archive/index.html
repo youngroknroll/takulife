@@ -7,9 +7,7 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" %}
-
+  <main class="page activity-page" id="content">
     <section class="hero hero-activity">
       <div class="hero-lead">
         <h1>내 활동</h1>
@@ -28,33 +26,36 @@
           </article>
         </div>
       </div>
+
+      <div class="activity-view-toggle">
+        <a class="activity-view-btn is-active" href="/archive/" aria-current="page">목록</a>
+        <a class="activity-view-btn" href="/archive/calendar/">달력</a>
+      </div>
+
       <a class="hero-action" href="/archive/visits/new/" data-cta-watch><span aria-hidden="true">＋</span> 기록 추가</a>
     </section>
 
+    {# 서브탭과 검색을 한 헤어라인 레일에 형제로 둔다(.archive-search는 페이지 내 #}
+    {# 유일 form이어야 하므로 archive_search.js:27이 잡는 첫 매치를 유지한다). #}
+    <div class="activity-toolbar">
+      {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" %}
+      {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+    </div>
+
     <section class="layout">
       <aside class="panel" aria-label="상태 필터 및 빠른 이동">
-        <div class="right-section">
-          <h2 class="aside-label">필터</h2>
-          <div class="chips">
-            <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/">전체</a>
-            {% for slug, label in ARCHIVE_STATUS %}
-              <a class="chip{% if selected_status == slug %} active{% endif %}" href="/archive/?status={{ slug }}">{{ label }}</a>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="right-section">
-          <h2 class="aside-label">검색</h2>
-          {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+        <div class="chips">
+          <a class="chip{% if not selected_status %} active{% endif %}"{% if not selected_status %} aria-current="page"{% endif %} href="/archive/{% if has_query %}?q={{ q|urlencode }}{% endif %}">전체</a>
+          {% for slug, label in ARCHIVE_STATUS %}
+            <a class="chip{% if selected_status == slug %} active{% endif %}"{% if selected_status == slug %} aria-current="page"{% endif %} href="/archive/?status={{ slug }}{{ search_suffix }}">{{ label }}</a>
+          {% endfor %}
         </div>
 
         <div class="right-section">
           <h2 class="aside-label">빠른 이동</h2>
           <ul class="side-list">
-            <li><a href="/archive/statuses/">나의 일정</a></li>
-            <li><a href="/archive/visits/">다녀온 기록</a></li>
-            <li><a href="/archive/calendar/">활동 달력</a></li>
-            <li><a href="/events/">이벤트 찾기</a></li>
+            <li><a href="/events/">행사 찾기 →</a></li>
+            <li><a href="/archive/calendar/">활동 달력 →</a></li>
           </ul>
         </div>
       </aside>

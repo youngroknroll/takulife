@@ -9,6 +9,11 @@
      leaked its new flex/display declarations onto that unrelated hero and
      broke the 320px overflow gate. index.html adds `hero-activity` alongside
      `hero` so this block only ever matches the archive hub. */
+  /* v2 (2026-07-23 에디토리얼): 3열 그리드로 전환 — DOM 순서 그대로
+     hero-lead / activity-view-toggle / hero-action이 각 열을 채운다
+     (컬렉션 `.collection-head` 1fr auto 1fr 선례, archive_collection.css).
+     바깥 두 열은 `minmax(min-content, 1fr)`로 최소폭을 보장해 320px에서
+     가운데 토글과 겹치지 않게 한다(겹침 대신 필요 시 가로 스크롤). */
   .hero-activity {
     background: none;
     border: none;
@@ -16,18 +21,19 @@
     padding: 0 0 1.125rem;
     margin: 0 0 1.5rem;
     border-bottom: 1.5px solid var(--text);
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(min-content, 1fr) auto minmax(min-content, 1fr);
     align-items: flex-end;
-    justify-content: space-between;
     gap: 1.25rem;
-    flex-wrap: wrap;
   }
   .hero-lead {
     min-width: 0;
   }
   .hero-activity h1 {
     margin: 0 0 0.625rem;
-    font-size: var(--fs-xl);
+    font-size: 1.5rem;
+    /* --fs-xl(tokens.css:116-119)은 "페이지당 유일 홈 히어로 제목 전용"으로
+       못박은 토큰 — 이 페이지의 현행 사용은 오용이라 리터럴로 하향. */
   }
   /* Shared .summary-grid/.summary-card (cards.css) flattened into an inline
      baseline stat row for this page only — value/label order is flipped via
@@ -88,9 +94,87 @@
     font-size: var(--fs-md);
     font-weight: 700;
     flex: none;
+    justify-self: end; /* 3열 그리드의 3번째 열 — 우측 정렬 유지 */
   }
   .hero-action:hover {
     filter: brightness(0.95);
+  }
+
+  /* ── view toggle: 목록 | 달력 — 컴포넌트 자체 모양(display/색/hover/
+     is-active)은 `components/nav.css`로 이전(2026-07-23 사후 결함 수정 A):
+     `/archive/calendar/`는 이 스타일시트(archive.css)를 로드하지 않아
+     `.activity-view-toggle`/`.activity-view-btn`이 완전 무스타일로
+     렌더되던 결함이 있었다. `nav.css`는 base.html에서 전역 로드되므로
+     양쪽 페이지 모두에서 스타일이 적용된다. 이 페이지에서는 `.hero-activity`
+     3열 그리드 안에서의 위치(justify-self)만 남긴다 — calendar.html은
+     그리드가 아닌 단순 블록이라 이 위치 규칙이 필요 없다. */
+  .hero-activity .activity-view-toggle {
+    justify-self: center;
+  }
+
+  /* ── activity-toolbar: 서브탭(_archive_nav.html)+검색(_archive_search.html)을
+     한 헤어라인 레일로 (v2 §E). 클래스명이 이 페이지에만 존재해 홈 누출
+     걱정 없음. `_archive_nav.html`의 `.archive-nav-wrap`은 원래 자기 자신의
+     border-bottom을 갖고 width:100%인 독립 컴포넌트(nav.css) — 여기서는
+     레일 안 유연 아이템으로만 재선언(원본 무접촉, PR-R3 관례 그대로). */
+  .activity-toolbar {
+    position: relative; /* #archive-search-error 절대 배치 기준점 */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 1.25rem;
+  }
+  .activity-toolbar .sub-nav {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .activity-toolbar .archive-nav-wrap {
+    width: auto;
+    border-bottom: none;
+  }
+  .activity-toolbar .archive-search {
+    flex: 1 1 21.25rem; /* 실측 340px */
+    max-width: 21.25rem;
+    min-width: 0;
+    margin: 0;
+  }
+  /* `#archive-search-error`(text.css:47-51 `.inline-error`, 블록 <p>)가
+     흐름 안에 있으면 런타임에 에러 텍스트가 채워질 때 레일을 리플로우해
+     서브탭·찜 필을 밀어낸다(BIR 필수 수정, archive_collection.css:290-296
+     `.archive-search-clear` 처리와 같은 해법). `.activity-page`로 스코프해
+     아직 이 레일로 이전되지 않은 다른 아카이브 페이지(statuses/visits/
+     items)의 기존 흐름형 렌더링에는 영향 없게 한다. */
+  .activity-page #archive-search-error {
+    position: absolute;
+    top: calc(100% + 2rem); /* see `.archive-search-clear` below: stacked one
+      row under the clear link's own reserved row so the two never share a
+      line regardless of how wide the error text renders. */
+    left: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  /* `.archive-search-clear` (components/search.css) is `display:inline-block`
+     and sits in normal flow right after `.archive-search-row`, so unhiding it
+     the moment a query is typed grows `.archive-search` — and with it the
+     whole `.activity-toolbar` — by its own height. Measured at 320px:
+     `.activity-toolbar` 224px → 252.09px (+28px), which pushes `.layout`'s
+     top down by the same 28px at runtime, success or failure. Taken out of
+     flow exactly like `.archive-search-clear` in
+     archive_collection.css:290-296 ("the clear link is taken out of flow so
+     showing it can never change the rail's height") so its own visibility
+     can never change `.activity-toolbar`'s height again. Anchored to
+     `.archive-search` (not `.activity-toolbar`) so it always tracks the
+     search field's own box. */
+  .activity-page .archive-search {
+    position: relative;
+  }
+  .activity-page .archive-search-clear {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    right: 0;
   }
 
   /* ── two-column layout: aside(필터/검색/빠른 이동) 좌측, article(결과) 우측
@@ -121,11 +205,35 @@
   }
   .aside-label {
     margin: 0 0 0.625rem;
-    font-size: 0.72rem;
+    font-size: 0.6875rem; /* 시안 실측 11px */
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em; /* 시안 실측 */
     color: var(--muted);
   }
+  /* ── 빠른 이동: 시안은 박스가 아니라 평문 링크 + 화살표(화살표는 템플릿
+     텍스트 리터럴 "→", CSS 아이콘 아님). `objects/layout.css`의 공용
+     `.side-list` 박스 스타일(다른 5개 아카이브 페이지가 그대로 씀)은
+     무접촉 — 이 페이지에서만 `.activity-page` 스코프로 되돌린다. */
+  .activity-page .side-list li {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+  .activity-page .side-list a {
+    font-size: 0.84375rem; /* 시안 실측 13.5px */
+  }
+  /* ── teal accent (v2 §B): `.chip.active`/`.pager-page.is-current`
+     재선언은 `components/nav.css`로 이전(2026-07-23 사후 결함 수정 B) —
+     이 페이지(`/archive/`)만 로드하는 스타일시트에 있으면 각자 자기
+     페이지 CSS만 로드하는 `/archive/statuses/`·`/visits/`·`/items/`·
+     `/interests/`에는 적용되지 않아 한 화면에서 밑줄은 teal인데 칩·
+     페이저는 브랜드 레드로 남는 결함이 있었다. `controls.css`/`pager.css`
+     원본은 여전히 무접촉 — `nav.css`가 `.activity-page` 스코프로
+     재선언한다(특이도 (0,3,0)로 `archive_statuses.css`의 무스코프
+     `.chip.active` (0,2,0)를 로드 순서와 무관하게 이긴다). */
   .results-head {
     display: flex;
     justify-content: space-between;
@@ -139,7 +247,7 @@
     font-weight: 700;
   }
   .results-count {
-    color: var(--brand-ink);
+    color: var(--teal-ink);
   }
   .results-sort {
     font-size: 0.8rem;
@@ -256,9 +364,11 @@
     }
   }
 
-  /* Archive timeline status badges (display only, not interactive buttons) —
-     colours unchanged from the pre-리디자인 version (existing app
-     consistency over the design mock's own palette, plan §D). */
+  /* Archive timeline status badges (display only, not interactive buttons).
+     v2 (2026-07-23): planned/missed 색을 시안대로 교체(사용자 확정 #4) —
+     `visited`(mint)만 변경 없음. planned은 기존 amber(종료임박 의미와
+     겹침)에서 up(예정)으로, missed는 rose(에러 의미와 겹침)에서
+     end(종료)로 옮겨 상태별 의미 축을 분리한다. */
   .status {
     border-radius: var(--radius-chip);
     padding: 0.25rem 0.5625rem;
@@ -271,12 +381,12 @@
     color: var(--mint-ink);
   }
   .status.planned {
-    background: var(--amber-soft);
-    color: var(--amber-ink);
+    background: var(--up-soft);
+    color: var(--up-ink);
   }
   .status.missed {
-    background: var(--rose-soft);
-    color: var(--rose-ink);
+    background: var(--end-soft);
+    color: var(--end-ink);
   }
   /* 방문 완료 이벤트 카드의 '기록' 작성 바로가기 — home의 컬렉션 스냅샷
      패널(_home_collection_snapshot.html)도 재사용하는 공유 클래스. */
@@ -311,6 +421,49 @@
   @media (max-width: 53.75rem) {
     .hero h1 {
       font-size: var(--fs-xl-mobile);
+    }
+    /* `.hero-activity h1`은 `.hero h1`과 특이도가 같아(둘 다 클래스+타입),
+       같은 캐스케이드 컨텍스트에서는 소스 순서가 이긴다 — 이 규칙이 위
+       `.hero h1` 바로 다음이라 `.hero-activity`(=`.hero`와 dual-class)
+       요소에는 이쪽이 최종 적용된다. */
+    .hero-activity h1 {
+      font-size: 1.1875rem;
+    }
+    /* DOM 순서(hero-lead → toggle → action)를 그대로 세로로 쌓는다.
+       `order`/`display:contents`는 쓰지 않는다(컬렉션 트랙 교훈: 탭
+       순서 어긋남 WCAG 2.4.3 위반 / 랜드마크 상실 위험). */
+    .hero-activity {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+      gap: 0.875rem;
+    }
+    .hero-activity .activity-view-toggle {
+      justify-self: start;
+    }
+    .hero-action {
+      justify-self: start;
+    }
+    /* 검색창은 레일 아래로 wrap되어 전체 폭을 쓴다. */
+    .activity-toolbar .archive-search {
+      flex-basis: 100%;
+      max-width: none;
+    }
+    /* Narrow-width-only room for the two now-absolute rail extras above
+       (`.archive-search-clear` + `#archive-search-error`) stacked below the
+       rail: clear's own row (~0.25rem + ~20.5px measured) + the error's
+       `calc(100% + 2rem)` offset + one line of error text (~19.2px
+       measured) needs more clearance than the desktop 1.25rem leaves, so
+       this widens only the narrow-viewport gap — the ≥53.75rem desktop
+       rail keeps its original 1.25rem margin-bottom untouched.
+       Measured at 320px with the error forced to wrap: at 3.5rem the
+       single-line error clears `.layout` by only 5.8px (natural text width
+       268.7px vs 269px clientWidth — 0.3px from wrapping), and once the
+       error wraps to 2 lines (38.4px tall vs ~19.2px for 1 line, which
+       `--fs-xs`'s rem base makes trivial via browser font-size zoom), it
+       invades `.layout` by 13.39px. 4.5rem keeps a margin past that 2-line
+       case. */
+    .activity-toolbar {
+      margin-bottom: 4.5rem;
     }
     .nav-links {
       justify-content: flex-start;
