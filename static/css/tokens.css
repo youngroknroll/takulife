@@ -55,6 +55,13 @@
   --rose-ink: #be123c;
   --up-soft: #e4eafb;
   --up-ink: #33488f;
+  /* teal = 내 활동(archive) 계열 전용 액센트(2026-07-23 에디토리얼 v2).
+     칩·서브탭 밑줄·페이저 current에 쓰인다. 시안의 `--sat`은 별도 토큰을
+     만들지 않는다 — 라이트 #33488f/다크 #8897c8가 위 --up-ink와 정확히
+     동일해 var(--up-ink)를 직접 매핑한다. */
+  --teal: #0e7490;
+  --teal-soft: #d3edf2;
+  --teal-ink: #0e7490;
   /* end = 종료 (event lifecycle's 4th state). Also reused for the archive
      "missed" status button (PR-R3), which was a stray grey literal
      (#f4f5f7/#d9dde4/#5d6673) before this token existed.
@@ -254,6 +261,12 @@
   --rose-ink: #e0718c;
   --up-soft: #242a3d;
   --up-ink: #8897c8;
+  /* 시안 원안 --teal #2f9bad는 흰 텍스트 대비 3.27:1로 AA 4.5:1 미달
+     (오케스트레이터 실측) — #17707f로 보정해 5.74:1 확보(사용자 확정).
+     --teal-ink는 시안 원안(#5ac9d4) 그대로 유지. */
+  --teal: #17707f;
+  --teal-soft: #173b42;
+  --teal-ink: #5ac9d4;
   --end-soft: #2d3239;
   --end-ink: #a5acb6;
   /* PR-4 대비 감사 발견: --muted-soft에 다크값이 없어(PR-1 매핑 누락)
