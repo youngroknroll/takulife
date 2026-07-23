@@ -850,6 +850,11 @@ def _archive_status_context(
     ``sort`` selects list_user_statuses' ordering; an unrecognized value falls
     back to "" (the default ordering) the same way an unrecognized status
     falls back to "" (all).
+
+    ``sort_query`` (via _archive_sort_link_query) is a separate status/q-only
+    tail for the sort <details> menu's own links; unlike pager_query/
+    search_suffix above it excludes 'sort' and 'page' so a new sort value
+    doesn't get overwritten by the old one still in the tail.
     """
     if selected_status not in ARCHIVE_STATUS_SLUGS:
         selected_status = ""
@@ -876,6 +881,7 @@ def _archive_status_context(
     if sort:
         search_suffix_parts.append(("sort", sort))
     search_suffix = "&" + urlencode(search_suffix_parts) if search_suffix_parts else ""
+    sort_query = _archive_sort_link_query(selected_status, q)
 
     counts = user_status_counts(user)
     return {
@@ -893,7 +899,32 @@ def _archive_status_context(
         "selected_sort": sort,
         "selected_sort_label": ARCHIVE_STATUS_SORT_LABELS[sort],
         "ARCHIVE_STATUS_SORT": ARCHIVE_STATUS_SORT,
+        "sort_query": sort_query,
     }
+
+
+def _archive_sort_link_query(selected_status, q):
+    """Return the current status/q filters as a '&key=value' querystring
+    tail — leading '&', matching templates/core/partials/_pager.html's
+    extra_query convention — for the archive sort <details> menu's
+    '?sort=<value>...' links to append.
+
+    Deliberately excludes 'sort' and 'page', unlike _archive_status_context's
+    own pager_query/search_suffix (which intentionally include 'sort' because
+    they must preserve the active ordering across pagination/search). A sort
+    link already starts with '?sort=<new value>', so reusing pager_query's
+    tail here would duplicate the 'sort' key
+    (?sort=NEW&status=...&sort=OLD); QueryDict.get() returns the last value,
+    silently discarding the new sort. Excluding 'page' means picking a new
+    sort resets the list to page 1, mirroring _calendar_extra_query's
+    exclusion of its own page-like params for the same reason.
+    """
+    parts = []
+    if selected_status:
+        parts.append(("status", selected_status))
+    if q:
+        parts.append(("q", q))
+    return "&" + urlencode(parts) if parts else ""
 
 
 def _render_archive_list(request, *, full_template, fragment_template, context):
