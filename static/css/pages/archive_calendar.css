@@ -348,6 +348,17 @@
   color: var(--muted);
 }
 
+/* F6 fix (post-implementation BIR): the legend's own caption ("종류") uses
+   a smaller, heavier, tracked typographic treatment than the shared
+   .aside-label default — scoped to this one heading only (a modifier
+   class, not a redefinition of .aside-label) since "빠른 이동" below was
+   not flagged and keeps its existing look. */
+.legend-caption {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
 /* ── legend — vertical stack with per-kind counts (WED pre-spec §1/§6:
    aside top, solid-ink square swatch, not the shared circular .day-dot).
    Reuses the .calendar-legend/.legend-item class names from
