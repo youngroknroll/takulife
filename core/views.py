@@ -719,9 +719,11 @@ def activity_calendar(request):
     excluded), selected_types, has_any_items (whole displayed month, under
     the current type filter — see completion report for why this
     simplification was chosen over an always-unfiltered second query;
-    unlike count/items above this is unfiltered by the "status" exclusion,
-    since it predates B1/B2 and no case has required it to change),
-    kind_counts (dict of the 4 visible groups -> count, for the displayed
+    derived from items_by_date, so like count/items above it also excludes
+    the "status" group — a status-only month renders the empty-state CTA
+    the same way a genuinely-empty month does, instead of the previous
+    ungated "activity has_any_items but the grid/detail show nothing"
+    contradiction), kind_counts (dict of the 4 visible groups -> count, for the displayed
     month, **independent of the current ?type= filter** — activity-calendar
     editorial plan §8-A D1: reuses `items` as-is when no filter narrowed the
     query, otherwise a second unfiltered list_user_activity_for_month call,
@@ -804,8 +806,6 @@ def activity_calendar(request):
         if calendar_error is None:
             calendar_error = "query_failed"
 
-    has_any_items = bool(items)
-
     # kind_counts must stay filter-independent (activity-calendar editorial
     # plan §8-A D1 / WED-BIR 독립 합의): deriving it from the already-filtered
     # `items` would zero out every currently-hidden kind, breaking the
@@ -844,6 +844,8 @@ def activity_calendar(request):
             while day <= item.end:
                 items_by_date[day].append(item)
                 day += timedelta(days=1)
+
+    has_any_items = bool(items_by_date)
 
     try:
         grid = month_grid(year, month)
