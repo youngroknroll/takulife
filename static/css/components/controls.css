@@ -149,16 +149,16 @@
   color: var(--text);
   background: var(--surface);
 }
-/* Ink, not brand-red: plan §0/§1 reserves red for the primary CTA
-   (.btn-primary) and status/brand accents, so the search action itself
-   reads as a neutral "ink" command rather than competing with real CTAs. */
+/* Brand-red is the site-wide default (2026-07-23 user decision superseding
+   the earlier "ink, not brand-red" reservation below); only 내 활동
+   (`.archive-search-row button[type="submit"]`, search.css:37-42) stays
+   teal. Next to .collection-add-btn on the collection page, the two brand-red
+   fills read apart by SIZE (34px here vs 44px there) and row position, not
+   colour — do not grow this button's height or add extra emphasis later. */
 .search button {
-  border: 1px solid var(--text);
-  background: var(--text);
-  /* var(--bg), not a literal white — see toast.css's .taku-toast for the
-     same background:var(--text)+color:var(--bg) token-native inversion
-     technique (dark mode auto-flips this to a light pill with dark text). */
-  color: var(--bg);
+  border: 1px solid var(--brand);
+  background: var(--brand);
+  color: #fff;
   border-radius: 8px;
   padding: 0.625rem 0.875rem;
   font-weight: 700;
@@ -166,7 +166,7 @@
   transition: filter 0.15s ease;
 }
 .search button:hover {
-  filter: brightness(1.2);
+  filter: brightness(0.95);
 }
 
 /* ── form fields (shared) ─────────────────────────────────── */

@@ -45,7 +45,7 @@
  * have a stable point to measure from.
  *
  * Motion contract (design-rules.md §3.1-2 — WCAG 2.2.2): autoplay every
- * 2500ms, paused on hover, paused on focusin (cards are real links, so
+ * 3000ms, paused on hover, paused on focusin (cards are real links, so
  * focus-pause applies), and permanently stopped after the first touch (no
  * hover-out equivalent on touch). prefers-reduced-motion never starts the
  * timer, and a runtime change is re-checked (same pattern as hscroll.js /
@@ -55,7 +55,7 @@
 (function () {
   "use strict";
 
-  var AUTOPLAY_INTERVAL = 2500;
+  var AUTOPLAY_INTERVAL = 3000;
   var DEPTH_STEP_Y = 12; // px per depth step
   var DEPTH_STEP_SCALE = 0.035; // scale reduction per depth step
   var MAX_VISIBLE_DEPTH = 4; // depths beyond this are fully hidden

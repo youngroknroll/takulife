@@ -138,11 +138,16 @@
 }
 
 /* ── view toggle: 갤러리/목록 — underlined text, not a segmented box ───
-   The design treats this as a quiet section switcher sitting above the
-   masthead rule, so it gets the same underline vocabulary as the sub-tabs
-   rather than a filled control that would compete with ＋굿즈 추가. */
+   The design treats this as a quiet section switcher, so it gets the same
+   underline vocabulary as the sub-tabs rather than a filled control that
+   would compete with ＋굿즈 추가 by weight. Vertically it now shares the
+   masthead row's common baseline with the rest of `.collection-head`
+   (align-items: end, :44) instead of opting out to the top — 2026-07-23
+   user instruction, following the 내 활동 `.activity-toolbar` precedent
+   (align-items: center, archive.css:165) of letting the toggle sit in the
+   same row as its siblings rather than floating above it. */
 .collection-page .collection-view-toggle {
-  align-self: start;
+  align-self: end;
   display: flex;
   gap: 1rem;
 }
@@ -273,19 +278,18 @@
   flex: none;
   height: 34px;
   padding: 0 0.875rem;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--brand);
   border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
+  background: var(--brand);
+  color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
 .collection-page .archive-search button[type="submit"]:hover {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
+  background: var(--brand-ink);
+  border-color: var(--brand-ink);
 }
 .collection-page .archive-search-clear {
   position: absolute;
@@ -721,6 +725,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.collection-page .gcard-date {
+  margin: 0.125rem 0 0;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .collection-page .gcard-actions {
   display: flex;
   gap: 0.75rem;
@@ -797,6 +809,14 @@
 }
 .collection-page .collection-row-meta {
   margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-page .collection-row-date {
+  margin: 0.125rem 0 0;
   color: var(--muted);
   font-size: 0.72rem;
   overflow: hidden;
