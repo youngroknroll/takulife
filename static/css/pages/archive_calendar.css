@@ -131,9 +131,23 @@
 }
 
 /* ── sub-nav / search / 찜 목록 rail ──────────────────────────────────── */
+/* 찜 목록 stays inside _archive_nav.html's own <nav> — DOM placement and
+   visual placement are independent here (2026-07-24 후속: 처음 구현이 찜을
+   <nav> 밖으로 꺼내 tests/archive/test_archive_interest_placement.py의
+   회귀 가드를 깼다 — 정확히 직전 트랙의 사후 결함 재발이라 되돌림).
+   `.sub-nav` is stretched to fill the toolbar's remaining width (flex: 1)
+   and `.archive-nav-wrap` to its own full width, so the *existing*
+   `.archive-nav-wrap .nav-interest { margin-left: auto }` rule
+   (components/nav.css:92-93) still reaches the row's right edge on its
+   own — no interest-specific override needed here, and the pink pill look
+   stays exactly as every other archive page's (per _archive_nav.html's own
+   "찜 목록 stays a standalone pink pill" contract). The search field is
+   absolutely centered over the whole toolbar instead (same centering
+   technique as the masthead's view toggle above) so its position is
+   independent of how much room the tabs+interest row actually uses. */
 .activity-toolbar {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--line);
@@ -142,39 +156,29 @@
 }
 
 .activity-toolbar .sub-nav {
+  flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   border-radius: 0;
   box-shadow: none;
   padding: 0;
   margin: 0;
-  min-width: 0;
 }
 
 .activity-toolbar .archive-nav-wrap {
-  width: auto;
+  width: 100%;
   border-bottom: none;
-}
-
-.activity-toolbar .nav-interest {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  border: none;
-  background: none;
-  border-radius: 0;
-  padding: 0;
-  min-height: 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--pink-ink);
 }
 
 /* Page-local plain GET search (not _archive_search.html — that partial
    ships archive_search.js's live-region pair, which this full-PRG-reload
    page must not carry, plan §7-3 constraint 5/7). */
 .calendar-search {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   gap: 0.375rem;
@@ -636,8 +640,16 @@
     transform: none;
     justify-content: center;
   }
-  .activity-toolbar .nav-interest {
-    margin-left: 0;
+  .activity-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .calendar-search {
+    position: static;
+    top: auto;
+    left: auto;
+    transform: none;
+    width: 100%;
   }
   .calendar-search input[type="text"] {
     width: auto;

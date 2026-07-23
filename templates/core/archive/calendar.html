@@ -9,10 +9,12 @@
 
 {% block content %}
   <main class="page activity-page" id="content">
-    {# Masthead — activity-calendar-editorial plan §3/§4-b: h1 + 3-stat rail +
-       ＋기록 추가 CTA + centered 목록|달력 toggle, all above a 1.5px --text
-       rule. `position: relative` here is load-bearing for the toggle's
-       absolute centering below (plan §7-3-b constraint 10 / BIR Medium). #}
+    {% comment %}
+    Masthead — activity-calendar-editorial plan §3/§4-b: h1 + 3-stat rail +
+    ＋기록 추가 CTA + centered 목록|달력 toggle, all above a 1.5px --text
+    rule. `position: relative` here is load-bearing for the toggle's
+    absolute centering below (plan §7-3-b constraint 10 / BIR Medium).
+    {% endcomment %}
     <section class="activity-masthead">
       <div class="masthead-lead">
         <h1>내 활동</h1>
@@ -40,14 +42,27 @@
       <a class="hero-action" href="/archive/visits/new/"><span aria-hidden="true">＋</span> 기록 추가</a>
     </section>
 
-    {# Sub-nav / search / 찜 목록 rail — page-local plain GET search form, not
-       _archive_search.html (that partial ships archive_search.js's live-region
-       pair; this page is a full PRG reload with no live search, plan §4-a-1 /
-       §7-3 constraint 5/7). Hidden month/date/type[] preserve the displayed
-       month so a no-match search never bounces the user to today's month
-       (events/calendar.html:27-31 precedent; BIR High). #}
+    {% comment %}
+    Sub-nav / search / 찜 목록 rail — page-local plain GET search form, not
+    _archive_search.html (that partial ships archive_search.js's live-region
+    pair; this page is a full PRG reload with no live search, plan §4-a-1 /
+    §7-3 constraint 5/7). Hidden month/date/type[] preserve the displayed
+    month so a no-match search never bounces the user to today's month
+    (events/calendar.html:27-31 precedent; BIR High).
+
+    찜 목록 stays inside _archive_nav.html's own <nav> (hide_interest left at
+    its default/falsy — tests/archive/test_archive_interest_placement.py
+    guards every non-index archive page for exactly this, after a past
+    incident where an activity-editorial track moved it out of <nav> and
+    broke selector matching). The visual "tabs left / search center / 찜
+    right, one row" layout is done with CSS only (archive_calendar.css: the
+    search form is absolutely centered over the toolbar, and .archive-nav-wrap
+    stretches to the toolbar's full width so its own margin-left:auto still
+    pushes 찜 to the row's right edge) — DOM placement and visual placement
+    are kept independent.
+    {% endcomment %}
     <div class="activity-toolbar">
-      {% include "core/partials/_archive_nav.html" with active="calendar" hide_interest=True %}
+      {% include "core/partials/_archive_nav.html" with active="calendar" %}
       <form method="get" action="/archive/calendar/" class="calendar-search" role="search">
         <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
         <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
@@ -62,7 +77,6 @@
         >
         <button type="submit">검색</button>
       </form>
-      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> 찜 목록</a>
     </div>
 
     <section class="panel calendar-filters" id="calendar-filters-panel"
