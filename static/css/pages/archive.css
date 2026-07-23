@@ -366,15 +366,94 @@
   .results-count {
     color: var(--teal-ink);
   }
+  /* Sort control — a <details> disclosure anchored to the results head's right
+     edge (ported from event_list.css, teal-swapped for this page's accent).
+     The panel is absolutely positioned so opening it never reflows the row
+     list underneath. `position: relative` here is load-bearing: without it
+     the menu's `position: absolute` resolves against a farther ancestor. */
   .results-sort {
+    position: relative;
     font-size: 0.8rem;
     color: var(--muted);
   }
-  /* 실기능 없는 순수 시각 캐럿(정렬 텍스트 옆 ▾) — 클릭 가능성을 암시하면
-     허위 어포던스이므로 cursor/hover/focus 스타일은 의도적으로 두지 않는다. */
-  .results-sort-caret {
+  .results-sort-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    min-height: 44px;
+    padding: 0 0.125rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    list-style: none; /* Firefox */
+    white-space: nowrap;
+  }
+  /* Safari/Chrome still paint the default triangle without this, and it sits
+     on the wrong side of the label for a right-aligned control. */
+  .results-sort-toggle::-webkit-details-marker {
+    display: none;
+  }
+  .results-sort-toggle span {
     color: var(--text);
     font-weight: 600;
+  }
+  .results-sort-toggle::after {
+    content: "▾";
+    font-size: 0.66rem;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  .results-sort[open] .results-sort-toggle::after {
+    transform: rotate(180deg);
+  }
+  .results-sort-toggle:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  /* No `display` declared here on purpose: declaring one would override the
+     native `details:not([open]) > :not(summary){display:none}` collapse and
+     leave the closed menu's links reachable by Tab. */
+  .results-sort-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% - 0.375rem);
+    z-index: 30;
+    min-width: 9.5rem;
+    margin: 0;
+    padding: 0.3125rem;
+    list-style: none;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    box-shadow: var(--shadow-dropdown);
+  }
+  .results-sort-menu a {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 0.6875rem;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .results-sort-menu a:hover {
+    background: var(--bg-soft);
+  }
+  /* Teal accent (WED §3 for this track): /events/'s source uses
+     --brand-soft/--brand-ink, which would make this page's sort menu the
+     only red-accented control among an otherwise all-teal chip/pager scheme. */
+  .results-sort-menu a[aria-current="true"] {
+    background: var(--teal-soft);
+    color: var(--teal-ink);
+    font-weight: 700;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .results-sort-toggle::after {
+      transition: none;
+    }
   }
 
   /* ── record rows (flat divider list, replaces the boxed .record-card,
@@ -554,6 +633,12 @@
      WCAG AA 소형 텍스트 기준(4.5:1) 미달이나 사용자 승인된 시안 리터럴
      그대로 진행. */
   @media (max-width: 45rem) {
+    /* Label grew from "최근순 ▾" (5 chars) to "정렬 최근 수정순 ▾" (~10 chars)
+       once the toggle carries its own "정렬" prefix — shrink to match
+       event_list.css's equivalent narrow-width rule (BIR §6). */
+    .results-sort {
+      font-size: 0.72rem;
+    }
     .record-row {
       grid-template-columns: 2.75rem 1fr; /* 44px date column, mobile */
       grid-template-areas:

@@ -18,6 +18,9 @@
  *     interpolates the query into markup.
  *   - After each swap it dispatches `archive:listswapped` so status.js / visit.js
  *     / personal_entries.js re-wire the freshly inserted controls.
+ *   - The results-head sort <details> menu lives outside #archive-results (so
+ *     it is never swapped); its links' `q` param is rewritten in place after
+ *     each swap so a sort click never drops the current search term.
  */
 (function () {
   "use strict";
@@ -66,6 +69,30 @@
 
   function setLoading(on) {
     results.classList.toggle("is-loading", on);
+  }
+
+  // The sort <details> menu (results-head) lives outside #archive-results, so
+  // live search never swaps it — its anchors are only rendered once, at the
+  // page's original GET. Without this, the `q` baked into their hrefs goes
+  // stale the moment the user types a new search term, and clicking a sort
+  // option silently drops what they just searched for. Only the `q` param is
+  // rewritten; each anchor's own `sort` value (and any other existing params)
+  // is left untouched. Pages without a sort menu (statuses/visits/items) have
+  // no `[data-sort-menu]` element, so this is a no-op there.
+  var sortMenu = document.querySelector("[data-sort-menu]");
+  var sortLinks = sortMenu ? sortMenu.querySelectorAll("a[href]") : [];
+
+  function syncSortLinks(term) {
+    for (var i = 0; i < sortLinks.length; i++) {
+      var link = sortLinks[i];
+      var url = new URL(link.getAttribute("href"), window.location.href);
+      if (term) {
+        url.searchParams.set("q", term);
+      } else {
+        url.searchParams.delete("q");
+      }
+      link.setAttribute("href", url.pathname + url.search);
+    }
   }
 
   // Inline failure notice (_archive_search.html) — a fresh attempt clears it
@@ -145,6 +172,7 @@
         if (html === null) { return; }
         results.innerHTML = html;
         announceResultCount(term);
+        syncSortLinks(term);
         if (push) {
           window.history.pushState({ q: term }, "", userUrl(params));
         }
