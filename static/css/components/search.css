@@ -15,23 +15,19 @@
   gap: 0.375rem;
 }
 
-/* 검색 input 앞 ⌕ 아이콘(aria-hidden, 흐름 안 실제 요소 — `::before` 오버레이는
-   `type="search"` 네이티브 장식과 이중 아이콘 충돌 위험이 있어 배제).
-   `.archive-search-clear`/`#archive-search-error`는 이미 절대배치라 이 아이콘과
-   같은 좌표 공간을 다투지 않는다(흐름 안 요소 vs 절대배치 요소, 겹침 없음). */
-.archive-search-icon {
-  flex: none;
-  color: var(--muted);
-  font-size: 1rem;
-  line-height: 1;
-}
-
+/* 2026-07-23 §H (user-confirmed): the standalone `.archive-search-icon` span
+   is gone — the ⌕ glyph now ships as the leading character of the input's
+   own placeholder (see _archive_search.html). `.archive-search-row` no
+   longer needs to lay out a separate flex child for it, and the input's own
+   left padding is nudged from 0.75rem to 0.875rem so the placeholder glyph
+   doesn't read as flush against the field's border now that nothing
+   precedes it in the row. */
 .archive-search-row input[type="search"] {
   flex: 1;
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.875rem;
   font-size: 0.9rem;
   color: var(--text);
   background: var(--surface);

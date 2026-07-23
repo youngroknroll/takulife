@@ -12,21 +12,25 @@ Args:
   hidden_name  — optional: name attr of a hidden input to preserve the active filter
   hidden_value — optional: value attr; hidden input is skipped when this is empty
 
-The decorative ⌕ icon (.archive-search-icon) sits in-flow before the input,
-not as an absolute-positioned ::before overlay, to avoid colliding with the
-native browser decoration on type="search" inputs.
+2026-07-23 §H (user-confirmed): the decorative ⌕ glyph moved from a standalone
+`.archive-search-icon` span into the input's own placeholder text. The user
+explicitly accepted that the glyph disappears once typing starts (placeholder
+text is replaced by input value) — no absolute-positioned overlay replaces it.
+Trade-off recorded per BIR: the old span carried `aria-hidden="true"`, keeping
+the glyph out of assistive-tech announcements; some AT may read placeholder
+text aloud, so this glyph is no longer guaranteed hidden from screen readers.
+`aria-label="아카이브 검색"` is kept as the field's accessible name regardless.
 {% endcomment %}
 <form method="get" class="archive-search">
   {% if hidden_name and hidden_value %}
     <input type="hidden" name="{{ hidden_name }}" value="{{ hidden_value }}">
   {% endif %}
   <div class="archive-search-row">
-    <span class="archive-search-icon" aria-hidden="true">⌕</span>
     <input
       type="search"
       name="q"
       value="{{ q }}"
-      placeholder="행사명·장소 검색"
+      placeholder="⌕ 행사명·장소 검색"
       aria-label="아카이브 검색"
     >
     <button type="submit">검색</button>
