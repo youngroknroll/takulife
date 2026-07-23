@@ -451,10 +451,13 @@
   min-width: 0;
 }
 
+/* F4 fix (post-implementation BIR): the month label sits at the row's left
+   edge and the ‹/›/오늘 trio groups together at the right edge (gap 16px) —
+   not arrows straddling the label with 오늘 stranded further right. */
 .calendar-month-nav {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
   margin-bottom: 0.875rem;
 }
 
@@ -462,6 +465,20 @@
   margin: 0;
   font-size: 1.625rem;
   font-weight: 300;
+  color: var(--text);
+}
+
+/* F5 fix: "2026 · 7월" — only the middle dot is muted/regular weight; the
+   year and month numerals stay --text/300 (already the parent's rule). */
+.calendar-month-sep {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.calendar-month-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* 16px */
 }
 
 .calendar-month-glyph {
@@ -477,7 +494,6 @@
 }
 
 .calendar-month-today {
-  margin-left: auto;
   color: var(--teal-ink);
   text-decoration: underline;
   font-size: var(--fs-md);
