@@ -33,22 +33,24 @@
     font-weight: 700;
     white-space: nowrap;
   }
-  /* Canonical archive status classes (slug = CSS class name) */
+  /* Canonical archive status classes (slug = CSS class name).
+     v3 사후 결함 수정 D: planned(앰버→up)·missed(로즈→end)를 `/archive/`·
+     `controls.css`와 동일 팔레트로 통일 — visited/interested는 이미 일치. */
   .user-status.interested {
     background: var(--pink-soft);
     color: var(--pink-ink);
   }
   .user-status.planned {
-    background: var(--amber-soft);
-    color: var(--amber-ink);
+    background: var(--up-soft);
+    color: var(--up-ink);
   }
   .user-status.visited {
     background: var(--mint-soft);
     color: var(--mint-ink);
   }
   .user-status.missed {
-    background: var(--rose-soft);
-    color: var(--rose-ink);
+    background: var(--end-soft);
+    color: var(--end-ink);
   }
   .side-title {
     display: block;
