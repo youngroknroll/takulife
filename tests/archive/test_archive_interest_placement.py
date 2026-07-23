@@ -21,6 +21,18 @@ visit_create.html/visit_edit.html은 폼 제출 흐름(POST 대상, VisitRecord
 정적 검사(§H 실측)로 이미 무수정임이 확인되었고, 런타임 렌더 확인은 각각의
 전용 뷰 테스트(test_archive_visit_create_view.py,
 test_archive_visit_edit_view.py)가 더 적합한 위치다.
+
+**2026-07-24 일반화** (활동 달력 에디토리얼 계획 §8-A D7 / §8-A-1 item 2 /
+§8-A-2): 활동 달력이 서브탭 행을 목록과 완전 통일하면서(R-1) 찜도 index와
+같은 3구획 grid 배치를 채택 — `<nav>` 밖으로 옮기고 `hide_interest=True`를
+전달하게 됐다. 이는 가드가 "확장점"으로 이미 문서화한 구조적 이유의 두
+번째 적용(§8-A-1 WED 판정)이지 우회가 아니므로, `/archive/calendar/`를
+`TestSiblingPagesKeepInterestInsideNav`(nav 안 유지 그룹)에서 제거하고
+`TestIndexMovesInterestOutsideNavAfterSearch`(nav 밖 이동 그룹)로 옮긴다 —
+커버리지 삭제가 아니라 이동이다. 검색 필드 DOM-순서 마커는 index가
+`.archive-search`(공유 파셜), 달력이 `.calendar-search`(로컬 마크업, WED
+사전 명세 §8-A-1 item 1 조건)로 클래스명이 달라 페이지별로 다른 마커를
+쓰도록 파라미터화했다.
 """
 import pytest
 
@@ -42,7 +54,6 @@ class TestSiblingPagesKeepInterestInsideNav:
             "/archive/visits/",
             "/archive/items/",
             "/archive/interests/",
-            "/archive/calendar/",
         ],
     )
     def test_index_외_아카이브_페이지에서_찜_링크는_서브내비게이션_안에_그대로_남는다(
@@ -64,12 +75,20 @@ class TestSiblingPagesKeepInterestInsideNav:
 
 @pytest.mark.django_db
 class TestIndexMovesInterestOutsideNavAfterSearch:
+    @pytest.mark.parametrize(
+        ("path", "search_marker"),
+        [
+            ("/archive/", 'class="archive-search"'),
+            ("/archive/calendar/", 'class="calendar-search"'),
+        ],
+        ids=["index", "calendar"],
+    )
     def test_아카이브_전체보기_페이지에서_찜_링크는_내비게이션_밖_검색폼_뒤로_이동한다(
-        self, user_client
+        self, user_client, path, search_marker
     ):
         _, client = user_client()
 
-        resp = client.get("/archive/")
+        resp = client.get(path)
         content = resp.content.decode()
 
         nav = _extract_nav(content)
@@ -83,8 +102,11 @@ class TestIndexMovesInterestOutsideNavAfterSearch:
         # (b) 페이지 전체에는 찜 링크가 존재한다(사라진 게 아니라 옮겨진 것).
         assert 'href="/archive/interests/"' in content
 
-        # (c) DOM 순서상 검색 폼이 찜 앵커보다 앞에 온다.
-        search_index = content.index('class="archive-search"')
+        # (c) DOM 순서상 검색 폼이 찜 앵커보다 앞에 온다. 마커 클래스는
+        # 페이지마다 다르다 — index는 공유 파셜 `.archive-search`,
+        # 달력은 로컬 마크업 `.calendar-search`(모듈 docstring 2026-07-24
+        # 일반화 참고).
+        search_index = content.index(search_marker)
         interest_index = content.index('href="/archive/interests/"')
         assert search_index < interest_index
 

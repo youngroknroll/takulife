@@ -139,46 +139,47 @@
   background: var(--brand);
 }
 
-/* Activity calendar's 5 kinds — soft background + border swatch, reusing
-   the -soft/-border token pairs tokens.css already provisions specifically
-   for "archive calendar day/legend swatches" (see that file's own
-   comment). data-kind="status" falls through to this base [data-kind]
-   rule (brand-soft/brand border, §A-8's 상태 변경=--brand-* pairing) — no
-   dedicated rule needed for it below. */
+/* Activity calendar's 4 visible kinds — solid ink swatch (2026-07-24
+   editorial rebuild, activity-calendar-editorial plan §4-b / WED pre-spec
+   §1: soft background + border → solid ink, in place). This block is
+   already Activity-only within a shared file (§ comment above this rule
+   group) and Events never sets a data-kind attribute, so this edit cannot
+   leak onto the Events calendar's bare `.day-dot` (§A-8 unaffected).
+   "status" no longer renders a data-kind="status" swatch anywhere in the
+   live templates (the group is display-filtered server-side and its
+   filter checkbox was removed, plan §4-a B4) — no dedicated rule for it
+   below; a stray occurrence would simply fall through to this bare
+   [data-kind] rule (dormant, not a reused live color). */
 .day-dot[data-kind] {
-  background: var(--brand-soft);
-  border: 1px solid var(--brand);
+  border: none;
 }
 
-/* §A-8: no --up-border token exists — border-color: currentColor instead
-   of inventing one. */
 .day-dot[data-kind="schedule"] {
-  background: var(--up-soft);
-  color: var(--up-ink);
-  border-color: currentColor;
+  background: var(--up-ink);
 }
 
 .day-dot[data-kind="interest"] {
-  background: var(--pink-soft);
-  border-color: var(--pink-border);
+  background: var(--pink-ink);
 }
 
 .day-dot[data-kind="visit"] {
-  background: var(--mint-soft);
-  border-color: var(--mint-border);
+  background: var(--mint-ink);
 }
 
 .day-dot[data-kind="goods"] {
-  background: var(--amber-soft);
-  border-color: var(--amber-border);
+  background: var(--amber-ink);
 }
 
-/* Activity's day-cell kind dots (deduplicated, up to 5 per cell). */
-.day-kind-dots {
-  display: flex;
+/* Activity's mobile-only kind dot row (deduplicated, up to 3 per cell —
+   template caps with |slice:":3"). Renamed from .day-kind-dots (2026-07-24
+   editorial rebuild): the new desktop cell shows item titles instead, so
+   this row is mobile-exclusive now, hidden by default and shown in the
+   45rem block below (mirrors Events' .day-mobile-meta same-file pattern). */
+.day-mobile-dots {
+  display: none;
   flex-wrap: wrap;
   gap: 3px;
-  margin-top: 2px;
+  margin-top: auto;
 }
 
 .day-count {
@@ -227,6 +228,9 @@
     display: none;
   }
   .day-mobile-meta {
+    display: flex;
+  }
+  .day-mobile-dots {
     display: flex;
   }
 }

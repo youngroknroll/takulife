@@ -1,84 +1,480 @@
-/* ── /archive/calendar/ page skin ────────────────────────────────
- * Grid/cell/dot/legend/error-panel look lives in components/calendar.css
- * (shared with the Events calendar). This page has its own filter-group/
- * filter-list/filter-check/filter-actions rules (not a shared component —
- * matches this repo's per-page filter-check convention, since the type
- * vocabulary here — schedule/interest/status/visit/goods — has nothing in
- * common with event_list.css's region/category/status/sort filters) and a
- * full-width layout (no .layout 2-column split — plan
- * .docs/plans/2026-07-19-dual-calendar-frontend-pre-review.md §A-2, which
- * applies to both calendar pages). Breakpoints: 45rem only (§A-3).
+/* ── /archive/calendar/ page skin (2026-07-24 editorial rebuild,
+ * §8-A R-1..R-5 top/filter rework) ───────────────────────────────────────
+ * Grid/cell/dot/error-panel base look lives in components/calendar.css
+ * (shared with the Events calendar). Masthead/toolbar look now comes from
+ * the shared pages/archive.css (§8-A D9/D5 — loaded ahead of this file;
+ * WED §8-A-1 item 1 supersedes the earlier "duplicate, don't link
+ * archive.css" call: archive.css's rules are scoped to
+ * `.hero-activity`/`.activity-toolbar`, not the bare `.hero` that caused
+ * the historical home.html leak, so a second scoped consumer can't
+ * reproduce that leak). This file layers the editorial-only differences
+ * onto the shared calendar skeleton via `.activity-page`-scoped overrides
+ * (plan §4-b, WED pre-spec §3 — the sibling `.activity-page .aside-label`
+ * precedent in pages/archive.css:313 is the model this file follows
+ * throughout) plus this page's own month-nav/legend/aside/detail rules
+ * that have no shared-file counterpart at all.
+ *
+ * Breakpoints: this file's own layout (aside/grid/legend/detail) commits to
+ * 45rem only (§A-3 carried over from the pre-editorial file — no foreign
+ * 53.75/56.25/60rem boundaries borrowed from other pages). The
+ * masthead/toolbar now stack at archive.css's own 53.75rem instead — two
+ * independently-scoped breakpoints coexisting on one page, not a conflict
+ * (plan §8-A D5 / WED §8-A-1 item 1: "두 독립 경계").
  */
-.calendar-filters {
-  margin: 0.875rem 0;
-}
 
-.filter-group {
-  margin-inline: 0;
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.625rem;
-  background: var(--bg-card);
-}
-
-.filter-group h2,
-.filter-group legend {
-  margin: 0 0 0.5rem;
-  padding: 0;
-  font-size: var(--fs-md);
-}
-
-/* Desktop/tablet: the 5 kind checkboxes in one horizontal band instead of
-   a tall vertical stack — same band principle as the Events calendar's
-   filter form (event_calendar.css), the grid is this page's main content.
-   Reverts to the original vertical stack at <=45rem below. */
-.filter-list {
+/* ── sub-nav / search / 찜 목록 rail ──────────────────────────────────── */
+/* Page-local plain GET search (not _archive_search.html — that partial
+   ships archive_search.js's live-region pair, which this full-PRG-reload
+   page must not carry, plan §7-3 constraint 5/7). Everything else about the
+   toolbar row (grid/columns/sub-nav/nav-interest look) now comes from the
+   shared `.activity-toolbar` rules in pages/archive.css — this is the one
+   mirror rule §8-A-1 item 1 condition ① calls for, matching
+   `.archive-search`'s width/centering so `.calendar-search` lands the same
+   way in the toolbar grid's middle (1fr) track. */
+.activity-toolbar .calendar-search {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 21.25rem;
+  max-width: 100%;
+  justify-self: center;
   margin: 0;
+}
+
+/* archive.css's own `.activity-toolbar` grid stacks to a single column at
+   its 53.75rem breakpoint (plan §8-A D5 — the toolbar's own sanctioned
+   second boundary, not a foreign one borrowed for this file's 45rem-scoped
+   layout below); the fixed-width search must give up that width there too
+   or it overflows the collapsed single-column row (BIR §8-A-2 AC8). Mirrors
+   archive.css's own `.archive-search` reset at the same breakpoint. */
+@media (max-width: 53.75rem) {
+  .activity-toolbar .calendar-search {
+    width: auto;
+    max-width: none;
+    margin-bottom: 1.75rem;
+  }
+}
+
+.calendar-search input[type="text"] {
+  width: 15.5rem; /* ~248px */
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem 0.5rem 0.875rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--surface);
+  font-family: inherit;
+}
+
+.calendar-search button[type="submit"] {
+  border: 1px solid var(--teal);
+  background: var(--teal);
+  color: #fff;
+  border-radius: 8px;
+  min-height: 34px;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.calendar-search button[type="submit"]:hover {
+  filter: brightness(0.95);
+}
+
+/* ── two-column layout: aside (232px) | calendar column ──────────────── */
+.activity-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 14.5rem) minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: start;
+}
+
+.activity-aside {
+  min-width: 0;
+}
+
+.aside-label {
+  margin: 0 0 0.6875rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* F6 fix (post-implementation BIR): the legend's own caption ("종류") uses
+   a smaller, heavier, tracked typographic treatment than the shared
+   .aside-label default — scoped to this one heading only (a modifier
+   class, not a redefinition of .aside-label) since "빠른 이동" below was
+   not flagged and keeps its existing look. */
+.legend-caption-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.6875rem;
+}
+
+.legend-caption {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+/* "전체 보기" reset link (plan §8-A R-5/D3) — undoes a multi-toggle legend
+   selection in one click, mirroring index.html's "전체" chip affordance. */
+.legend-reset {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--teal-ink);
+  text-decoration: underline;
+}
+
+/* ── legend — now doubles as a clickable multi-toggle filter (plan §8-A
+   R-5/D2/D10): each row is a GET `<a>` to kind_filters[].toggle_url. Active
+   state is a --teal-soft row fill + bold text, never color/opacity alone —
+   the swatch ink stays the kind's identity color, not a state signal (WED
+   §8-A-1 item 3 / BIR §8-A-2 High "aria-current, not aria-pressed"). Aside
+   top, solid-ink square swatch, not the shared circular .day-dot (WED
+   pre-spec §1/§6). Reuses the .calendar-legend/.legend-item class names
+   from components/calendar.css (Activity-only there) but restructures
+   their layout for this page only, matching the file-header trade-off
+   note. */
+.calendar-legend {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0 0 1rem;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
+  font-size: var(--fs-xs);
 }
 
-.filter-check {
+.legend-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.1875rem 0.375rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.legend-item:hover {
+  background: var(--bg-soft);
+}
+
+.legend-item.is-active {
+  background: var(--teal-soft);
+}
+
+.legend-item.is-active .legend-label,
+.legend-item.is-active .legend-count {
+  font-weight: 700;
+}
+
+.legend-label {
   color: var(--text);
-  font-size: var(--fs-md);
+  flex: 1;
+  min-width: 0;
 }
 
-.filter-actions {
+.legend-count {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Legend swatch — dedicated class (not .day-dot): the mockup's 9x9 rounded
+   square is a different shape from the shared 6px circle geometry that the
+   Events calendar's bare `.day-dot` inherits (calendar.css:134-140 must stay
+   untouched, WED pre-spec §1). */
+.legend-swatch {
+  display: inline-block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.legend-swatch[data-kind="schedule"] {
+  background: var(--up-ink);
+}
+
+.legend-swatch[data-kind="interest"] {
+  background: var(--pink-ink);
+}
+
+.legend-swatch[data-kind="visit"] {
+  background: var(--mint-ink);
+}
+
+.legend-swatch[data-kind="goods"] {
+  background: var(--amber-ink);
+}
+
+.aside-quick {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 1rem;
+}
+
+/* 빠른 이동: 박스가 아니라 평문 링크 + 화살표(화살표는 템플릿 텍스트
+   리터럴 "→"). objects/layout.css의 공용 .side-list 박스 스타일을 이
+   페이지에서만 되돌린다 (pages/archive.css의 동일 처리를 duplicate). */
+.activity-aside .side-list li {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  align-items: center;
+  min-height: 44px;
+  border: none;
+  background: none;
+  padding: 0;
 }
 
+.activity-aside .side-list a {
+  font-size: 0.84375rem;
+  color: var(--teal-ink);
+}
+
+.activity-aside .side-list a.quick-link-events {
+  color: var(--up-ink);
+}
+
+/* ── calendar column ──────────────────────────────────────────────────── */
+.activity-calendar-col {
+  min-width: 0;
+}
+
+/* §8-A R-3/R-4/D6 rework: month name heading on its own line, the
+   `‹ 이번달 ›` trio centered on the line below via `justify-content:center`
+   (no `position:absolute`, no CSS `order` — DOM order already physically
+   `‹`, 이번달, `›` in the template). */
 .calendar-month-nav {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   gap: 0.625rem;
   margin-bottom: 0.875rem;
 }
 
 .calendar-month-label {
   margin: 0;
-  min-width: 8rem;
-  text-align: center;
-  font-size: var(--fs-lg);
+  font-size: 1.625rem;
+  font-weight: 300;
+  color: var(--text);
 }
 
+/* F5 fix: "2026 · 7월" — only the middle dot is muted/regular weight; the
+   year and month numerals stay --text/300 (already the parent's rule). */
+.calendar-month-sep {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.calendar-month-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem; /* 16px */
+}
+
+.calendar-month-glyph {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: 0.25rem;
+}
+
+.calendar-month-glyph:hover {
+  color: var(--teal-ink);
+}
+
+.calendar-month-today {
+  color: var(--teal-ink);
+  text-decoration: underline;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+/* ── grid editorial skin — everything that differs from the shared
+   .month-grid/.day-cell skeleton (calendar.css:22-97) layered on here per
+   `.activity-page` scope (WED pre-spec §3): hairline-boxed grid (gap 1px on
+   a --line fill, 1px border, 12px radius, clipped), 112px cells, right-
+   aligned date, teal today pill, teal selected inset. ─────────────────── */
+.activity-page .month-grid-body {
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.activity-page .month-grid-head {
+  margin-bottom: 0.5rem;
+}
+
+.activity-page .month-grid-head .month-grid-weekday {
+  text-align: left;
+  padding: 0 0.3125rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.activity-page .month-grid-head .month-grid-weekday:first-child {
+  color: var(--brand);
+}
+
+.activity-page .month-grid-head .month-grid-weekday:last-child {
+  color: var(--up-ink);
+}
+
+.activity-page .day-cell {
+  min-height: 7rem; /* 112px */
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.activity-page .day-num {
+  align-self: flex-end;
+}
+
+/* Shared calendar.css's hover affordance is a border-color swap
+   (calendar.css:53-55); with per-cell borders removed above for the
+   hairline-boxed grid, this page needs its own hover feedback instead. */
+.activity-page .day-cell:hover {
+  background: var(--bg-soft);
+}
+
+.activity-page .day-cell[data-today="true"] {
+  border: none;
+}
+
+.activity-page .day-cell[data-today="true"] .day-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+}
+
+.activity-page .day-cell[data-selected="true"] {
+  background: var(--bg-soft);
+  box-shadow: inset 0 -3px 0 var(--teal);
+}
+
+.activity-page .day-cell[data-selected="true"] .day-num {
+  color: var(--teal-ink);
+  font-weight: 700;
+}
+
+/* Cell item title row (up to 2 titles + a 3px color bar each, plus a
+   "+N" overflow marker) — geometry only; color-per-kind is on
+   .day-item-bar[data-kind] below (dedicated class, not .day-dot — WED
+   pre-spec §1's "새 바 형태는 .day-dot에 얹지 말 것"). */
+/* Overrides components/calendar.css's `.day-item` (a plain nowrap-ellipsis
+   text span for the Events calendar) — this page reuses the class name for
+   a flex row (bar + title) instead, so `overflow`/`white-space` are reset
+   here to avoid clipping the .day-item-bar against the Events rule's
+   `overflow: hidden` (cascade merges unset properties across same-specificity
+   rules; ellipsis truncation now lives on .day-item-title alone). */
+.day-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  overflow: visible;
+  white-space: normal;
+  font-size: 0.65625rem; /* 10.5px */
+  line-height: 1.3;
+}
+
+.day-item-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.day-item-bar,
+.detail-item-bar {
+  flex: none;
+  display: inline-block;
+  border-radius: 2px;
+}
+
+.day-item-bar {
+  width: 3px;
+  height: 1rem;
+  align-self: stretch;
+}
+
+.detail-item-bar {
+  width: 4px;
+  align-self: stretch;
+}
+
+.day-item-bar[data-kind="schedule"],
+.detail-item-bar[data-kind="schedule"] {
+  background: var(--up-ink);
+}
+
+.day-item-bar[data-kind="interest"],
+.detail-item-bar[data-kind="interest"] {
+  background: var(--pink-ink);
+}
+
+.day-item-bar[data-kind="visit"],
+.detail-item-bar[data-kind="visit"] {
+  background: var(--mint-ink);
+}
+
+.day-item-bar[data-kind="goods"],
+.detail-item-bar[data-kind="goods"] {
+  background: var(--amber-ink);
+}
+
+/* ── selected-date detail ────────────────────────────────────────────── */
 .date-detail-section {
   margin-top: 1.25rem;
 }
 
-.date-detail-section h2 {
+.date-detail-section:focus {
+  outline: none; /* PRG date-jump focus target (plan §7-3-b constraint 4) —
+    no visible focus ring needed since this is a programmatic-navigation
+    landing point, not a keyboard-tabbed control; base.html's global
+    a:focus rule doesn't apply here (not a link) and the section has no
+    click affordance of its own. */
+}
+
+.date-detail-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.625rem;
   margin: 0 0 0.625rem;
+}
+
+.date-detail-head h2 {
+  margin: 0;
   font-size: var(--fs-base);
+}
+
+.date-detail-weekday {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.date-detail-count {
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .calendar-item-row {
@@ -88,15 +484,29 @@
   gap: 0.5rem;
 }
 
-/* Text label paired with the kind dot (design §9.1: color alone must never
-   carry meaning) — small muted text, no new chip/badge component. */
 .calendar-item-kind {
-  color: var(--muted);
-  font-size: var(--fs-xs);
-  font-weight: 600;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+}
+
+.calendar-item-kind[data-kind="schedule"] {
+  color: var(--up-ink);
+}
+
+.calendar-item-kind[data-kind="interest"] {
+  color: var(--pink-ink);
+}
+
+.calendar-item-kind[data-kind="visit"] {
+  color: var(--mint-ink);
+}
+
+.calendar-item-kind[data-kind="goods"] {
+  color: var(--amber-ink);
 }
 
 .calendar-item-label {
+  font-size: 0.9375rem; /* 15px */
   font-weight: 600;
 }
 
@@ -105,52 +515,78 @@
   font-size: var(--fs-xs);
 }
 
-.calendar-item-row .side-action-link {
+/* F2 fix (post-implementation BIR): the mock's action link is a plain teal
+   text link, not the shared .side-action-link box (components/cards.css) —
+   override every box property here (border/background/border-radius/
+   padding/min-height), scoped to this row only, matching the 12px/600/
+   nowrap mock spec. `.activity-page` is prefixed (0,3,0) specifically to
+   out-rank components/cards.css's own
+   `:root[data-theme="dark"] .side-action-link` dark-mode color override
+   (also (0,3,0) — :root pseudo-class + attribute + class) — a bare
+   `.calendar-item-row .side-action-link` ((0,2,0)) loses that fight in
+   dark mode regardless of stylesheet load order, which is exactly why the
+   first pass still rendered muted in dark mode (F2 follow-up). */
+.activity-page .calendar-item-row .side-action-link {
   margin-left: auto;
-}
-
-.calendar-filters-toggle {
-  display: none;
+  display: inline;
+  border: none;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  min-height: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--teal-ink);
+  white-space: nowrap;
 }
 
 @media (max-width: 45rem) {
-  .calendar-filters-toggle {
-    display: flex;
+  .calendar-search input[type="text"] {
+    width: auto;
+    flex: 1;
+  }
+
+  .activity-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .activity-page .day-cell {
+    min-height: 52px;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    width: 100%;
-    min-height: 44px;
-    border: 1px solid var(--border-soft);
-    background: var(--bg-soft);
-    color: var(--text);
-    border-radius: 8px;
-    padding: 0.625rem 0.75rem;
-    font-size: var(--fs-md);
+  }
+
+  .activity-page .day-num {
+    align-self: center;
+  }
+
+  .activity-page .day-cell[data-today="true"] {
+    border: 2px solid var(--teal);
+  }
+
+  .activity-page .day-cell[data-today="true"] .day-num {
+    display: inline;
+    min-width: 0;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    color: inherit;
     font-weight: 600;
-    cursor: pointer;
   }
 
-  .calendar-filters-badge {
-    color: var(--muted);
-    font-size: var(--fs-xs);
-    font-weight: 600;
+  /* M1 fix (post-implementation BIR re-check): the mock's selected-date
+     inset is -2px on mobile, not the desktop -3px value carried down
+     unchanged. Re-declared here, scoped to <=45rem only. */
+  .activity-page .day-cell[data-selected="true"] {
+    box-shadow: inset 0 -2px 0 var(--teal);
   }
 
-  .calendar-filters[data-expanded="false"] .calendar-filters-toggle [data-state="open"] {
-    display: none;
-  }
-
-  .calendar-filters[data-expanded="true"] .calendar-filters-toggle [data-state="closed"] {
-    display: none;
-  }
-
-  .calendar-filters[data-expanded="false"] form {
-    display: none;
-  }
-
-  .filter-list {
-    display: grid;
-    gap: 0.375rem;
+  /* M2 fix (post-implementation BIR re-check): the mock's mobile kind dot
+     is 5x5, not the shared 6x6 .day-dot geometry (calendar.css:134-140)
+     that Events' bare, attribute-less dot also inherits — that shared rule
+     stays untouched. Scoped narrowly to the mobile-only dot row so Events
+     is structurally unreachable (it never renders .day-mobile-dots). */
+  .day-mobile-dots .day-dot {
+    width: 5px;
+    height: 5px;
   }
 }

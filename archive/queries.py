@@ -716,3 +716,49 @@ def list_user_activity_for_month(user, *, year, month, kinds=None):
         items = [item for item in items if item.kind in allowed]
 
     return items
+
+
+def find_latest_activity_date_for_query(user, q, *, kinds=None):
+    """Return the most recent calendar date where one of `user`'s activity
+    items' label contains `q` (case-insensitive), or None with no match —
+    the read side of the activity calendar's date-jump search (dual-calendar
+    editorial plan §4-a-1). Blank/whitespace-only `q` always returns None
+    without querying.
+
+    Reuses the exact same per-source item builders as
+    list_user_activity_for_month, called with an effectively unbounded date
+    range instead of one month's bounds, so the (kind, label, date) rules a
+    match is judged by are identical to the calendar's own display — this
+    function's only caller (core.views.activity_calendar) passes it the
+    currently active type= filter's kinds, so a jump never lands on a date
+    whose only match is a kind currently hidden from view.
+
+    A period item (schedule) is matched by its whole displayed range, but
+    the date returned for it is `.start` — the first day the month grid
+    would actually show it (mirrors list_user_activity_for_month's own
+    day-by-day bucketing of period items).
+    """
+    q = q.strip()
+    if not q:
+        return None
+
+    unbounded_start, unbounded_end = _date.min, _date.max
+    items = (
+        _schedule_items(user, unbounded_start, unbounded_end)
+        + _visit_items(user, unbounded_start, unbounded_end)
+        + _goods_acquired_items(user, unbounded_start, unbounded_end)
+        + _log_entry_items(user, unbounded_start, unbounded_end)
+        + _interest_added_fallback_items(user, unbounded_start, unbounded_end)
+    )
+
+    if kinds is not None:
+        allowed = set(kinds)
+        items = [item for item in items if item.kind in allowed]
+
+    needle = q.casefold()
+    match_dates = [
+        item.date if item.date is not None else item.start
+        for item in items
+        if needle in item.label.casefold()
+    ]
+    return max(match_dates) if match_dates else None

@@ -4,139 +4,229 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/calendar.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/archive_calendar.css' %}">
 {% endblock %}
 
 {% block content %}
   <main class="page activity-page" id="content">
-    {% include "core/partials/_archive_nav.html" with active="calendar" active_label="활동 달력" %}
-
-    <div class="activity-view-toggle">
-      <a class="activity-view-btn" href="/archive/">목록</a>
-      <a class="activity-view-btn is-active" href="/archive/calendar/" aria-current="page">달력</a>
-    </div>
-
-    <h1>활동 달력</h1>
-
-    <section class="panel calendar-filters" id="calendar-filters-panel"
-             data-disclosure data-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
-      <button type="button" class="calendar-filters-toggle" data-disclosure-toggle
-              data-controls="calendar-filters-panel" aria-controls="calendar-filters-panel"
-              aria-expanded="{% if active_filter_count %}true{% else %}false{% endif %}">
-        <span data-state="closed">필터 열기 ▾</span>
-        <span data-state="open">필터 닫기 ▴</span>
-        {% if active_filter_count %}<span class="calendar-filters-badge">{{ active_filter_count }}개 적용됨</span>{% endif %}
-      </button>
-      <form method="get" action="/archive/calendar/">
-        <fieldset class="filter-group">
-          <legend>종류</legend>
-          <ul class="filter-list">
-            <li>
-              <label class="filter-check">
-                <input type="checkbox" name="type" value="schedule"{% if 'schedule' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="schedule"></span> 일정
-              </label>
-            </li>
-            <li>
-              <label class="filter-check">
-                <input type="checkbox" name="type" value="interest"{% if 'interest' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="interest"></span> 찜
-              </label>
-            </li>
-            <li>
-              <label class="filter-check">
-                <input type="checkbox" name="type" value="status"{% if 'status' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="status"></span> 상태 변경
-              </label>
-            </li>
-            <li>
-              <label class="filter-check">
-                <input type="checkbox" name="type" value="visit"{% if 'visit' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="visit"></span> 방문
-              </label>
-            </li>
-            <li>
-              <label class="filter-check">
-                <input type="checkbox" name="type" value="goods"{% if 'goods' in selected_types %} checked{% endif %}>
-                <span class="day-dot" data-kind="goods"></span> 굿즈
-              </label>
-            </li>
-          </ul>
-        </fieldset>
-
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" type="submit">필터 적용</button>
-          <a class="btn btn-secondary btn-sm" href="/archive/calendar/">초기화</a>
+    {% comment %}
+    Masthead — activity-calendar-editorial plan §8-A R-1/D9: identical class
+    structure to templates/core/archive/index.html's own hero (`.hero
+    .hero-activity` / `.hero-lead` / `.summary-grid` / `.activity-view-toggle`
+    / `.hero-action`), all styled by the now-shared pages/archive.css (WED
+    §8-A-1 pre-spec item 1 — the earlier "duplicate, don't link archive.css"
+    call is superseded for this track: archive.css's rules are already
+    scoped to `.hero-activity`/`.activity-toolbar`, not the bare `.hero` that
+    caused the historical home.html leak, so a second scoped consumer can't
+    reproduce that leak mechanism).
+    {% endcomment %}
+    <section class="hero hero-activity">
+      <div class="hero-lead">
+        <h1>내 활동</h1>
+        <div class="summary-grid" style="--summary-cols: 3">
+          <article class="summary-card">
+            <p class="summary-label">방문 예정</p>
+            <p class="summary-value">{{ status_counts.planned }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">방문 완료</p>
+            <p class="summary-value">{{ status_counts.visited }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">놓침</p>
+            <p class="summary-value">{{ status_counts.missed }}</p>
+          </article>
         </div>
-      </form>
+      </div>
+
+      <div class="activity-view-toggle">
+        <a class="activity-view-btn" href="/archive/">목록</a>
+        <a class="activity-view-btn is-active" href="/archive/calendar/" aria-current="page">달력</a>
+      </div>
+
+      <a class="hero-action" href="/archive/visits/new/"><span aria-hidden="true">＋</span> 기록 추가</a>
     </section>
 
-    <nav class="calendar-month-nav" aria-label="월 이동">
-      <a class="btn btn-secondary" href="?month={{ prev_month }}{{ extra_query }}">‹ 이전달</a>
-      <h2 class="calendar-month-label">{{ month_label }}</h2>
-      <a class="btn btn-secondary" href="?month={{ next_month }}{{ extra_query }}">다음달 ›</a>
-      <a class="btn btn-secondary" href="?{{ extra_query }}">오늘</a>
-    </nav>
+    {% comment %}
+    Sub-nav / search / 찜 목록 rail — same 3-column `.activity-toolbar` grid
+    as index.html (archive.css), with 찜 목록 rendered as index.html's own
+    literal anchor outside `_archive_nav.html`'s `<nav>` (hide_interest=True).
+    tests/archive/test_archive_interest_placement.py currently asserts the
+    opposite ("찜 stays inside <nav>" for /archive/calendar/) — that guard
+    needs the same "moved outside" generalization index.html already has
+    (plan §8-A D7); left to the Backend & Integration Engineer, out of this
+    role's file scope (templates/CSS only).
 
-    {% if calendar_error == "invalid" %}
-      <div class="empty-state calendar-error-panel">
-        <p class="empty-title">요청한 날짜를 확인할 수 없어요</p>
-        <p class="empty-note">주소의 월 또는 날짜 값이 올바르지 않습니다.</p>
-        <a class="empty-action" href="?{{ extra_query }}">이번 달 보기</a>
-      </div>
-    {% elif calendar_error == "query_failed" %}
-      <div class="empty-state calendar-error-panel">
-        <p class="empty-title">불러오지 못했어요</p>
-        <p class="empty-note">잠시 후 다시 시도해 주세요.</p>
-        <a class="empty-action" href="{{ request.get_full_path }}">다시 시도</a>
-      </div>
-    {% endif %}
-
-    {% include "core/partials/_archive_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
-
-    <div class="calendar-legend">
-      <span class="legend-item"><span class="day-dot" data-kind="schedule"></span>일정</span>
-      <span class="legend-item"><span class="day-dot" data-kind="interest"></span>찜</span>
-      <span class="legend-item"><span class="day-dot" data-kind="status"></span>상태 변경</span>
-      <span class="legend-item"><span class="day-dot" data-kind="visit"></span>방문</span>
-      <span class="legend-item"><span class="day-dot" data-kind="goods"></span>굿즈</span>
+    Search stays a page-local plain GET form (`.calendar-search`, not
+    _archive_search.html — that partial ships archive_search.js's live-region
+    pair, which this full-PRG-reload page must not carry, plan §7-3
+    constraint 5/7 / §8-A-1 item 5). Its only archive.css-shared behavior is
+    landing in the toolbar grid's middle (1fr) track by DOM order; a single
+    mirror rule below (`.activity-toolbar .calendar-search`) matches
+    `.archive-search`'s width/centering so R-2's vertical/horizontal
+    alignment is inherited, not duplicated (WED §8-A-1 item 1 condition ①).
+    Hidden month/date/type[] preserve the displayed month so a no-match
+    search never bounces the user to today's month (events/calendar.html:
+    27-31 precedent; BIR High).
+    {% endcomment %}
+    <div class="activity-toolbar">
+      {% include "core/partials/_archive_nav.html" with active="calendar" hide_interest=True %}
+      <form method="get" action="/archive/calendar/" class="calendar-search" role="search">
+        <input type="hidden" name="month" value="{{ selected_date|date:"Y-m" }}">
+        <input type="hidden" name="date" value="{{ selected_date|date:"Y-m-d" }}">
+        {% for v in selected_types %}<input type="hidden" name="type" value="{{ v }}">{% endfor %}
+        <input
+          type="text"
+          name="q"
+          value="{{ q }}"
+          placeholder="⌕ 활동 검색"
+          aria-label="활동 검색"
+          aria-describedby="calendar-search-note"
+        >
+        <button type="submit">검색</button>
+      </form>
+      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> 찜 목록</a>
     </div>
 
-    <section class="date-detail-section" id="selected-date">
-      <h2>{{ selected_date|date:"n월 j일" }}의 활동</h2>
-      {% if not has_any_items %}
-        <div class="empty-state">
-          <p class="empty-icon">🗂️</p>
-          <p class="empty-title">아직 기록이 없어요</p>
-          <p class="empty-note">이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
-          <div class="empty-actions">
-            <a class="empty-action" href="/events/">이벤트 찾기</a>
-            <a class="empty-action" href="/collection/new/">굿즈 등록</a>
-          </div>
+    <div class="activity-layout">
+      <aside class="activity-aside" aria-label="활동 종류 범례 및 빠른 이동">
+        {% comment %}
+        Legend rows doubled as clickable filters (plan §8-A R-5/D2-D4/D10):
+        each is a GET link to kind_filters[].toggle_url (multi-toggle,
+        preserves month/date), `aria-current="true"` (not aria-pressed — BIR
+        §8-A-2 High: anchors have no valid pressed state) when active, and
+        the accessible name already carries the "N건" unit via its own
+        visible text (no separate aria-label needed). Active state is a
+        --teal-soft row fill + bold, never color/opacity alone (D10) — the
+        swatch ink stays the kind identity signal, not a state signal.
+        {% endcomment %}
+        <div class="legend-caption-row">
+          <h2 class="aside-label legend-caption">종류</h2>
+          <a class="legend-reset" href="{{ reset_filter_url }}">전체 보기</a>
         </div>
-      {% elif selected_items %}
-        <ul class="side-list calendar-item-list">
-          {% for item in selected_items %}
-            <li class="calendar-item-row">
-              <span class="day-dot" data-kind="{{ item.group }}"></span>
-              <span class="calendar-item-kind">{% if item.group == 'schedule' %}일정{% elif item.group == 'interest' %}찜{% elif item.group == 'status' %}상태 변경{% elif item.group == 'visit' %}방문{% elif item.group == 'goods' %}굿즈{% endif %}</span>
-              <span class="calendar-item-label">{{ item.label }}</span>
-              {% if item.date_text %}<span class="calendar-item-date">{{ item.date_text }}</span>{% endif %}
-              {% if item.url %}
-                <a class="side-action-link" href="{{ item.url }}">{% if item.group == 'visit' or item.group == 'goods' %}수정{% else %}상세 보기{% endif %}</a>
-              {% endif %}
+        {% comment %}
+        Active-state accessible name (2026-07-24 사후 검토 수정, WED/BIR
+        AX-tree 실측): Chromium doesn't expose `aria-current` in the a11y
+        tree (same gap this page's today-cell `aria-current="date"` already
+        has), so a screen-reader user hears every legend link as plain
+        "…N건" with no way to tell active from inactive. `aria-current`
+        itself stays (future browser support hook + visual CSS hook) but an
+        active link also gets an explicit `aria-label` that repeats its own
+        visible text plus an "적용됨" suffix (WCAG 2.5.3 Label in Name — the
+        label must still contain the visible string verbatim). Inactive
+        links keep their default text-concatenation name unchanged.
+        {% endcomment %}
+        <ul class="calendar-legend">
+          {% for f in kind_filters %}
+            <li>
+              <a class="legend-item{% if f.is_active %} is-active{% endif %}"
+                 href="{{ f.toggle_url }}"{% if f.is_active %} aria-current="true" aria-label="{% if f.group == 'schedule' %}방문 예정 이벤트 일정{% elif f.group == 'interest' %}찜{% elif f.group == 'visit' %}방문 완료{% elif f.group == 'goods' %}굿즈 획득{% endif %} {{ f.count }}건, 적용됨"{% endif %}>
+                <span class="legend-swatch" data-kind="{{ f.group }}" aria-hidden="true"></span>
+                <span class="legend-label">{% if f.group == 'schedule' %}방문 예정 이벤트 일정{% elif f.group == 'interest' %}찜{% elif f.group == 'visit' %}방문 완료{% elif f.group == 'goods' %}굿즈 획득{% endif %}</span>
+                <span class="legend-count">{{ f.count }}건</span>
+              </a>
             </li>
           {% endfor %}
         </ul>
-      {% else %}
-        <div class="empty-state">
-          <p class="empty-title">이 날짜에는 기록된 활동이 없어요</p>
+
+        <div class="aside-quick">
+          <h2 class="aside-label">빠른 이동</h2>
+          <ul class="side-list">
+            <li><a class="quick-link-list" href="/archive/">목록으로 →</a></li>
+            <li><a class="quick-link-events" href="/events/">행사 찾기 →</a></li>
+          </ul>
         </div>
-      {% endif %}
-    </section>
+      </aside>
+
+      <div class="activity-calendar-col">
+        {% comment %}
+        Month label assembled from `selected_date` (not the backend's Korean
+        `month_label`) so the mock's "2026 · 7월" literal — a muted middle
+        dot between plain year and month — can be built without touching
+        core/views.py. `selected_date` is always inside the displayed
+        (year, month) (core/views.py's _parse_calendar_date guarantee), so
+        this is equivalent to the displayed month, not a different value.
+
+        `‹ 이번달 ›` (plan §8-A R-3/R-4/D6): month name on its own heading
+        line above, the trio centered on a line below via
+        `justify-content:center` (no `position:absolute`, no CSS `order` —
+        DOM order is physically `‹`, 이번달, `›`). "이번달" keeps its visible
+        text but gets a disambiguated accessible name
+        (`aria-label="오늘로 이동"`) since the visible word alone is ambiguous
+        while viewing a non-current month. Always a plain, always-enabled
+        `<a>` (no `disabled`, which is invalid on anchors anyway) — jumping
+        to today when already there is an idempotent no-op GET.
+        {% endcomment %}
+        <nav class="calendar-month-nav" aria-label="월 이동">
+          <h2 class="calendar-month-label">{{ selected_date|date:"Y" }} <span class="calendar-month-sep">·</span> {{ selected_date|date:"n" }}월</h2>
+          <div class="calendar-month-controls">
+            <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="이전 달">‹</a>
+            <a class="calendar-month-today" href="?{{ extra_query }}" aria-label="오늘로 이동">이번달</a>
+            <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="다음 달">›</a>
+          </div>
+        </nav>
+
+        {% if calendar_error == "invalid" %}
+          <div class="empty-state calendar-error-panel">
+            <p class="empty-title">요청한 날짜를 확인할 수 없어요</p>
+            <p class="empty-note">주소의 월 또는 날짜 값이 올바르지 않습니다.</p>
+            <a class="empty-action" href="?{{ extra_query }}">이번 달 보기</a>
+          </div>
+        {% elif calendar_error == "query_failed" %}
+          <div class="empty-state calendar-error-panel">
+            <p class="empty-title">불러오지 못했어요</p>
+            <p class="empty-note">잠시 후 다시 시도해 주세요.</p>
+            <a class="empty-action" href="{{ request.get_full_path }}">다시 시도</a>
+          </div>
+        {% elif search_no_match %}
+          <div class="empty-state calendar-error-panel" id="calendar-search-note">
+            <p class="empty-title">‘{{ q }}’에 일치하는 활동을 찾지 못했어요</p>
+            <p class="empty-note">다른 검색어로 다시 시도해 주세요.</p>
+          </div>
+        {% endif %}
+
+        {% include "core/partials/_archive_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
+
+        <section class="date-detail-section" id="selected-date" tabindex="-1">
+          <div class="date-detail-head">
+            <h2>{{ selected_date|date:"n월 j일" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
+            {% if has_any_items %}<span class="date-detail-count">활동 {{ selected_items|length }}건</span>{% endif %}
+          </div>
+          {% if not has_any_items %}
+            <div class="empty-state">
+              <p class="empty-icon">🗂️</p>
+              <p class="empty-title">아직 기록이 없어요</p>
+              <p class="empty-note">이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
+              <div class="empty-actions">
+                <a class="empty-action" href="/events/">이벤트 찾기</a>
+                <a class="empty-action" href="/collection/new/">굿즈 등록</a>
+              </div>
+            </div>
+          {% elif selected_items %}
+            <ul class="side-list calendar-item-list">
+              {% for item in selected_items %}
+                <li class="calendar-item-row">
+                  <span class="detail-item-bar" data-kind="{{ item.group }}" aria-hidden="true"></span>
+                  <span class="calendar-item-kind" data-kind="{{ item.group }}">{% if item.group == 'schedule' %}방문 예정 이벤트 일정{% elif item.group == 'interest' %}찜{% elif item.group == 'visit' %}방문 완료{% elif item.group == 'goods' %}굿즈 획득{% endif %}</span>
+                  <span class="calendar-item-label">{{ item.label }}</span>
+                  {% if item.date_text %}<span class="calendar-item-date">{{ item.date_text }}</span>{% endif %}
+                  {% if item.url %}
+                    <a class="side-action-link" href="{{ item.url }}">{% if item.group == 'visit' or item.group == 'goods' %}수정 ›{% else %}상세 보기 ›{% endif %}</a>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="empty-state">
+              <p class="empty-title">이 날짜에는 기록된 활동이 없어요</p>
+            </div>
+          {% endif %}
+        </section>
+      </div>
+    </div>
   </main>
 {% endblock %}
 
 {% block extra_js %}
-<script defer src="{% static 'js/shared/disclosure.js' %}"></script>
 {% endblock %}
