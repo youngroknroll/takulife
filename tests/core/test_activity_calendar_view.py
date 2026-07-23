@@ -274,21 +274,20 @@ def test_선택_날짜_상세에는_그_날짜_항목만_방문_및_일정_겹�
 
 
 # ---------------------------------------------------------------------------
-# CALFIX-2 — active_filter_count is exposed in context (calendar review fixes
-# plan .docs/plans/2026-07-19-calendar-review-fixes-plan.md 단계 1)
+# D8 (activity-calendar-editorial plan §8-A) — the filter disclosure panel is
+# gone, so active_filter_count (its "N개 선택됨" affordance) is dead context
+# on this view. Supersedes the CALFIX-2 test, which asserted the opposite.
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
-def test_활동_달력을_종류_필터와_함께_조회하면_활성_필터_개수가_컨텍스트에_담긴다(
-    user_client,
-):
+def test_활동_달력_컨텍스트에는_더이상_active_filter_count가_없다(user_client):
     _, client = user_client()
 
     resp = client.get("/archive/calendar/", {"type": ["visit", "goods"]})
 
     assert resp.status_code == 200
-    assert resp.context["active_filter_count"] == 2
+    assert "active_filter_count" not in resp.context
 
 
 # ---------------------------------------------------------------------------
@@ -560,3 +559,137 @@ def test_활성_종류_필터가_검색에도_적용되어_필터_밖_일치는_
     query = parse_qs(urlparse(resp.url).query)
     assert query["date"] == ["2026-07-03"]
     assert query["type"] == ["schedule"]
+
+
+# ---------------------------------------------------------------------------
+# D1 (activity-calendar-editorial plan §8-A) — kind_counts stays the whole
+# displayed-month tally for all 4 visible groups regardless of the active
+# ?type= filter, so switching a kind back on always has a truthful count to
+# show (WED/BIR 독립 합의: 필터셋에서 파생하면 방금 끈 종류가 0으로 보임).
+# ---------------------------------------------------------------------------
+
+
+def _find_kind_filter(kind_filters, group):
+    for entry in kind_filters:
+        if entry["group"] == group:
+            return entry
+    raise AssertionError(f"{group!r} kind_filters 항목을 찾을 수 없음")
+
+
+@pytest.mark.django_db
+def test_type_필터가_있어도_kind_counts는_필터와_무관하게_표시_월_전체_건수를_유지한다(
+    user_client, make_event
+):
+    user, client = user_client()
+    scheduled_event = make_event(
+        title="필터무관카운트일정행사", start_date=date(2026, 7, 3), end_date=date(2026, 7, 3)
+    )
+    UserEventStatus.objects.create(
+        user=user, event=scheduled_event, status=UserEventStatus.Status.PLANNED
+    )
+    for i in range(2):
+        ActivityLogEntry.objects.create(
+            user=user,
+            kind=ActivityLogEntry.Kind.INTEREST_ADDED,
+            occurred_at=timezone.make_aware(timezone.datetime(2026, 7, 10, 10, i)),
+            subject_label=f"필터무관카운트찜{i}",
+        )
+    for i in range(3):
+        CollectionItem.objects.create(
+            user=user, name=f"필터무관카운트굿즈{i}", acquired_on=date(2026, 7, 12)
+        )
+
+    filtered_resp = client.get(
+        "/archive/calendar/", {"month": "2026-07", "type": "visit"}
+    )
+    unfiltered_resp = client.get("/archive/calendar/", {"month": "2026-07"})
+
+    assert filtered_resp.status_code == 200
+    assert unfiltered_resp.status_code == 200
+    expected = {"schedule": 1, "interest": 2, "visit": 0, "goods": 3}
+    assert filtered_resp.context["kind_counts"] == expected
+    assert unfiltered_resp.context["kind_counts"] == expected
+
+
+# ---------------------------------------------------------------------------
+# D2/D3 (activity-calendar-editorial plan §8-A) — the legend is a clickable
+# multi-toggle filter: each kind's link adds itself when inactive, removes
+# itself when active, and a separate reset link clears every type= while
+# still preserving month/date (§9-1의 hidden-input 교훈과 같은 이유).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_비활성_종류의_토글_url은_그_종류를_추가한다(user_client):
+    _, client = user_client()
+
+    resp = client.get(
+        "/archive/calendar/", {"month": "2026-07", "date": "2026-07-10", "type": "schedule"}
+    )
+
+    assert resp.status_code == 200
+    goods_filter = _find_kind_filter(resp.context["kind_filters"], "goods")
+    assert goods_filter["is_active"] is False
+    toggle_query = parse_qs(urlparse(goods_filter["toggle_url"]).query)
+    assert toggle_query["type"] == ["schedule", "goods"]
+
+
+@pytest.mark.django_db
+def test_활성_종류의_토글_url은_그_종류를_제거한다(user_client):
+    _, client = user_client()
+
+    resp = client.get(
+        "/archive/calendar/",
+        {"month": "2026-07", "date": "2026-07-10", "type": ["schedule", "goods"]},
+    )
+
+    assert resp.status_code == 200
+    schedule_filter = _find_kind_filter(resp.context["kind_filters"], "schedule")
+    assert schedule_filter["is_active"] is True
+    toggle_query = parse_qs(urlparse(schedule_filter["toggle_url"]).query)
+    assert toggle_query["type"] == ["goods"]
+
+
+@pytest.mark.django_db
+def test_토글_url에_현재_month와_date가_보존된다(user_client):
+    _, client = user_client()
+
+    resp = client.get(
+        "/archive/calendar/", {"month": "2026-07", "date": "2026-07-10", "type": "visit"}
+    )
+
+    assert resp.status_code == 200
+    interest_filter = _find_kind_filter(resp.context["kind_filters"], "interest")
+    toggle_query = parse_qs(urlparse(interest_filter["toggle_url"]).query)
+    assert toggle_query["month"] == ["2026-07"]
+    assert toggle_query["date"] == ["2026-07-10"]
+
+
+@pytest.mark.django_db
+def test_전체_보기_리셋_url에는_type이_없고_month와_date가_보존된다(user_client):
+    _, client = user_client()
+
+    resp = client.get(
+        "/archive/calendar/",
+        {"month": "2026-07", "date": "2026-07-10", "type": ["schedule", "goods"]},
+    )
+
+    assert resp.status_code == 200
+    reset_query = parse_qs(urlparse(resp.context["reset_filter_url"]).query)
+    assert "type" not in reset_query
+    assert reset_query["month"] == ["2026-07"]
+    assert reset_query["date"] == ["2026-07-10"]
+
+
+@pytest.mark.django_db
+def test_활성_플래그가_selected_types를_반영한다(user_client):
+    _, client = user_client()
+
+    resp = client.get(
+        "/archive/calendar/", {"type": ["interest", "visit"]}
+    )
+
+    assert resp.status_code == 200
+    kind_filters = resp.context["kind_filters"]
+    active_groups = {entry["group"] for entry in kind_filters if entry["is_active"]}
+    assert active_groups == {"interest", "visit"}
