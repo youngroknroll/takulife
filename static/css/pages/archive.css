@@ -15,8 +15,16 @@
      바깥 두 열은 `minmax(min-content, 1fr)`로 최소폭을 보장해 320px에서
      가운데 토글과 겹치지 않게 한다(겹침 대신 필요 시 가로 스크롤). */
   .hero-activity {
+    /* cards.css's shared `.hero` box (63-69행, (0,1,0)) also sets
+       `border-radius: 12px`. This rule already re-declares background/
+       border/box-shadow/padding but had missed border-radius — the third
+       instance in this track of the same "4속성 재선언 누락" pattern
+       (summary-card / sub-nav 참조). With no visible border on this element
+       (only `border-bottom`), the un-reset 12px radius curled the two ends
+       of the 1.5px rule upward instead of a straight line. */
     background: none;
     border: none;
+    border-radius: 0;
     box-shadow: none;
     padding: 0 0 1.125rem;
     margin: 0 0 1.5rem;
@@ -34,6 +42,10 @@
     font-size: 1.5rem;
     /* --fs-xl(tokens.css:116-119)은 "페이지당 유일 홈 히어로 제목 전용"으로
        못박은 토큰 — 이 페이지의 현행 사용은 오용이라 리터럴로 하향. */
+    /* cards.css의 `.hero h1`(72-76행)은 font-weight를 선언하지 않아 브라우저
+       기본 h1 굵기(700)로 렌더된다. /collection/의 `.collection-head h1`은
+       800 — 시안 일치를 위해 명시적으로 맞춘다. */
+    font-weight: 800;
   }
   /* Shared .summary-grid/.summary-card (cards.css) flattened into an inline
      baseline stat row for this page only — value/label order is flipped via
@@ -46,6 +58,14 @@
     margin-top: 0;
   }
   .hero-activity .summary-card {
+    /* cards.css's `.summary-card` box (border/border-radius/background,
+       cards.css:28-33) is only (0,1,0) — this flattened rail redeclares all
+       three explicitly instead of only adding border-left, otherwise the
+       unreclared properties survive and the white boxed card stays visible
+       under the flattened baseline row (2026-07-23 발견, 재발 방지). */
+    background: none;
+    border: none;
+    border-radius: 0;
     display: flex;
     align-items: baseline;
     gap: 0.4375rem;
