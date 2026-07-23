@@ -56,8 +56,10 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.test import Client
+from django.utils import timezone
 
-from archive.models import CollectionItem, UserEventStatus, VisitRecord
+from archive.models import ActivityLogEntry, CollectionItem, UserEventStatus, VisitRecord
+from archive.queries import user_status_counts
 
 pytestmark = pytest.mark.web
 
@@ -97,6 +99,14 @@ def _first_containing(hrefs, needle):
         if needle in href:
             return href
     return None
+
+
+def _find_cell(weeks, target_date):
+    for week in weeks:
+        for cell in week:
+            if cell["date"] == target_date:
+                return cell
+    raise AssertionError(f"{target_date} 셀을 weeks에서 찾을 수 없음")
 
 
 def _selected_date_section(body):
@@ -280,3 +290,262 @@ def test_활동_달력을_종류_필터와_함께_조회하면_활성_필터_개
 
     assert resp.status_code == 200
     assert resp.context["active_filter_count"] == 2
+
+
+# ---------------------------------------------------------------------------
+# B1 — a day's weeks cell exposes up to 2 item summaries plus an overflow
+# count (활동 달력 에디토리얼 계획 §4-a B1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_같은_날_아이템이_3건이면_셀에는_2건만_담기고_초과분이_more_count에_담긴다(
+    user_client,
+):
+    user, client = user_client()
+    for name in ("셀아이템첫번째굿즈", "셀아이템두번째굿즈", "셀아이템세번째굿즈"):
+        CollectionItem.objects.create(user=user, name=name, acquired_on=date(2026, 7, 10))
+
+    resp = client.get("/archive/calendar/", {"month": "2026-07", "date": "2026-07-10"})
+
+    assert resp.status_code == 200
+    cell = _find_cell(resp.context["weeks"], date(2026, 7, 10))
+    assert cell["count"] == 3
+    assert len(cell["items"]) == 2
+    assert all(entry["group"] == "goods" for entry in cell["items"])
+    assert cell["more_count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# B2 — a day with only "status" activity counts/shows as empty everywhere
+# (셀 count, items, aria-label이 쓰는 수, 선택일 목록이 전부 0/빈 리스트로
+# 일치해야 한다 — PO 결정 2 / BIR Medium)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_상태_변경만_있는_날은_셀_카운트와_아이템과_선택일_목록이_모두_0이다(
+    user_client,
+):
+    user, client = user_client()
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+        occurred_at=timezone.make_aware(timezone.datetime(2026, 7, 10, 10, 0)),
+        subject_label="상태변경만있는날행사",
+    )
+
+    resp = client.get("/archive/calendar/", {"month": "2026-07", "date": "2026-07-10"})
+
+    assert resp.status_code == 200
+    cell = _find_cell(resp.context["weeks"], date(2026, 7, 10))
+    assert cell["count"] == 0
+    assert cell["items"] == []
+    assert cell["more_count"] == 0
+    assert resp.context["selected_items"] == []
+    assert "상태변경만있는날행사" not in _selected_date_section(resp.content.decode())
+
+
+# ---------------------------------------------------------------------------
+# B5 — ?type=status stays parseable (backward-compat bookmark) and, combined
+# with B2, still renders a genuinely-zero day rather than crashing or lying
+# in the count (BIR Medium ties this to the same fix)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_type가_status인_북마크는_500이나_거짓_카운트_없이_0건으로_렌더된다(
+    user_client,
+):
+    user, client = user_client()
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+        occurred_at=timezone.make_aware(timezone.datetime(2026, 7, 10, 10, 0)),
+        subject_label="type_status_북마크확인행사",
+    )
+
+    resp = client.get(
+        "/archive/calendar/", {"month": "2026-07", "date": "2026-07-10", "type": "status"}
+    )
+
+    assert resp.status_code == 200
+    cell = _find_cell(resp.context["weeks"], date(2026, 7, 10))
+    assert cell["count"] == 0
+
+
+# ---------------------------------------------------------------------------
+# B3 — legend counts reflect the displayed month's per-kind counts (4 groups
+# only — no "status" key), reusing the same items the view already fetched
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_범례_카운트가_표시_월의_종류별_건수_4종을_반영한다(
+    user_client, make_event
+):
+    user, client = user_client()
+    scheduled_event = make_event(
+        title="범례카운트일정행사", start_date=date(2026, 7, 3), end_date=date(2026, 7, 5)
+    )
+    UserEventStatus.objects.create(
+        user=user, event=scheduled_event, status=UserEventStatus.Status.PLANNED
+    )
+    for i in range(2):
+        ActivityLogEntry.objects.create(
+            user=user,
+            kind=ActivityLogEntry.Kind.INTEREST_ADDED,
+            occurred_at=timezone.make_aware(timezone.datetime(2026, 7, 10, 10, i)),
+            subject_label=f"범례카운트찜{i}",
+        )
+    for i in range(3):
+        CollectionItem.objects.create(
+            user=user, name=f"범례카운트굿즈{i}", acquired_on=date(2026, 7, 12)
+        )
+
+    resp = client.get("/archive/calendar/", {"month": "2026-07"})
+
+    assert resp.status_code == 200
+    assert resp.context["kind_counts"] == {
+        "schedule": 1,
+        "interest": 2,
+        "visit": 0,
+        "goods": 3,
+    }
+
+
+# ---------------------------------------------------------------------------
+# B4 — masthead stats (status_counts) are the whole-history totals from the
+# existing user_status_counts helper, independent of the displayed month —
+# bound to a *different* context key than kind_counts (WED 구속 기준)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_머스트헤드_통계는_표시_월과_무관하게_전체_기간_상태_카운트를_반영한다(
+    user_client, make_event
+):
+    user, client = user_client()
+    other_month_event = make_event(
+        title="통계전체기간확인행사", start_date=date(2026, 3, 1), end_date=date(2026, 3, 1)
+    )
+    UserEventStatus.objects.create(
+        user=user, event=other_month_event, status=UserEventStatus.Status.PLANNED
+    )
+
+    resp = client.get("/archive/calendar/", {"month": "2026-07"})
+
+    assert resp.status_code == 200
+    assert resp.context["status_counts"] == user_status_counts(user)
+    assert resp.context["status_counts"]["planned"] >= 1
+    assert resp.context["status_counts"] is not resp.context["kind_counts"]
+
+
+# ---------------------------------------------------------------------------
+# B6 — date-jump search (신규 계약, §4-a-1). GET ?q=... redirects (PRG) to
+# the matching activity's date; no match keeps the currently-displayed month
+# and preserves q instead of falling back to today.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_검색어가_일치하면_해당_날짜로_PRG_리다이렉트된다(user_client):
+    user, client = user_client()
+    CollectionItem.objects.create(
+        user=user, name="검색점프뷰단일일치굿즈", acquired_on=date(2026, 7, 10)
+    )
+
+    resp = client.get("/archive/calendar/", {"q": "검색점프뷰단일일치"})
+
+    assert resp.status_code == 302
+    parsed = urlparse(resp.url)
+    query = parse_qs(parsed.query)
+    assert query["month"] == ["2026-07"]
+    assert query["date"] == ["2026-07-10"]
+    assert parsed.fragment == "selected-date"
+
+
+@pytest.mark.django_db
+def test_검색어가_여러_건_일치하면_가장_최근_날짜로_리다이렉트된다(user_client):
+    user, client = user_client()
+    CollectionItem.objects.create(
+        user=user, name="검색점프뷰다중일치굿즈오래됨", acquired_on=date(2026, 1, 5)
+    )
+    CollectionItem.objects.create(
+        user=user, name="검색점프뷰다중일치굿즈최근", acquired_on=date(2026, 7, 20)
+    )
+
+    resp = client.get("/archive/calendar/", {"q": "검색점프뷰다중일치"})
+
+    assert resp.status_code == 302
+    query = parse_qs(urlparse(resp.url).query)
+    assert query["month"] == ["2026-07"]
+    assert query["date"] == ["2026-07-20"]
+
+
+@pytest.mark.django_db
+def test_검색어가_무일치면_리다이렉트하지_않고_현재_월을_유지하며_검색어를_보존한다(
+    user_client,
+):
+    _, client = user_client()
+
+    resp = client.get(
+        "/archive/calendar/", {"month": "2026-03", "date": "2026-03-15", "q": "존재하지않는검색어"}
+    )
+
+    assert resp.status_code == 200
+    assert resp.context["month_label"] == "2026년 3월"
+    assert resp.context["q"] == "존재하지않는검색어"
+    assert resp.context["search_no_match"] is True
+
+
+@pytest.mark.django_db
+def test_검색어가_빈_문자열이면_검색을_시도하지_않고_평소대로_렌더된다(user_client):
+    _, client = user_client()
+
+    resp = client.get("/archive/calendar/", {"month": "2026-07", "q": ""})
+
+    assert resp.status_code == 200
+    assert resp.context["q"] == ""
+    assert resp.context["search_no_match"] is False
+
+
+@pytest.mark.django_db
+def test_다른_사용자의_활동은_검색으로_찾아지지_않는다(user_client, make_user):
+    user, client = user_client()
+    other_user = make_user(username="search-jump-view-other-user")
+    CollectionItem.objects.create(
+        user=other_user, name="타인검색점프뷰굿즈", acquired_on=date(2026, 7, 10)
+    )
+
+    resp = client.get(
+        "/archive/calendar/", {"month": "2026-07", "date": "2026-07-01", "q": "타인검색점프뷰"}
+    )
+
+    assert resp.status_code == 200
+    assert resp.context["search_no_match"] is True
+
+
+@pytest.mark.django_db
+def test_활성_종류_필터가_검색에도_적용되어_필터_밖_일치는_건너뛴다(
+    user_client, make_event
+):
+    user, client = user_client()
+    scheduled_event = make_event(
+        title="검색필터병용일치행사", start_date=date(2026, 7, 3), end_date=date(2026, 7, 3)
+    )
+    UserEventStatus.objects.create(
+        user=user, event=scheduled_event, status=UserEventStatus.Status.PLANNED
+    )
+    CollectionItem.objects.create(
+        user=user, name="검색필터병용일치굿즈", acquired_on=date(2026, 7, 20)
+    )
+
+    resp = client.get(
+        "/archive/calendar/", {"q": "검색필터병용일치", "type": "schedule"}
+    )
+
+    assert resp.status_code == 302
+    query = parse_qs(urlparse(resp.url).query)
+    assert query["date"] == ["2026-07-03"]
+    assert query["type"] == ["schedule"]
