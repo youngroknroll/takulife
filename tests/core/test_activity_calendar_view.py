@@ -693,3 +693,67 @@ def test_활성_플래그가_selected_types를_반영한다(user_client):
     kind_filters = resp.context["kind_filters"]
     active_groups = {entry["group"] for entry in kind_filters if entry["is_active"]}
     assert active_groups == {"interest", "visit"}
+
+
+# ---------------------------------------------------------------------------
+# 활동 달력 백로그 #1 — has_any_items는 status 제외를 반영해야 한다: 표시
+# 월에 "status" 그룹 활동만 있고 화면에 그려지는 활동은 없으면, 빈 상태
+# CTA(has_any_items=False)가 떠야 한다. status는 §4-a B1/B2에서 그리드/상세
+# 어디에도 표시되지 않으므로 has_any_items도 같은 규칙을 따라야 한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_status_활동만_있는_달은_활동이_없는_것으로_취급되어_빈_상태_CTA를_렌더한다(
+    user_client,
+):
+    user, client = user_client()
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=ActivityLogEntry.Kind.STATUS_REMOVED,
+        occurred_at=timezone.make_aware(timezone.datetime(2026, 7, 10, 9, 0)),
+        subject_label="상태전용달력행사",
+    )
+
+    resp = client.get("/archive/calendar/", {"month": "2026-07", "date": "2026-07-10"})
+
+    assert resp.status_code == 200
+    assert resp.context["has_any_items"] is False
+    body = resp.content.decode()
+    detail_section = _selected_date_section(body)
+    assert "아직 기록이 없어요" in detail_section
+    assert "상태전용달력행사" not in body
+
+
+@pytest.mark.django_db
+def test_표시_가능한_활동이_있으면_같은_달의_status_활동과_무관하게_has_any_items가_참이다(
+    user_client, make_event
+):
+    user, client = user_client()
+    visited_event = make_event(title="정상활동있음달력행사")
+    VisitRecord.objects.create(user=user, event=visited_event, visited_on=date(2026, 7, 10))
+    ActivityLogEntry.objects.create(
+        user=user,
+        kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+        occurred_at=timezone.make_aware(timezone.datetime(2026, 7, 15, 9, 0)),
+        subject_label="같은달상태전용행사",
+    )
+
+    resp = client.get("/archive/calendar/", {"month": "2026-07", "date": "2026-07-10"})
+
+    assert resp.status_code == 200
+    assert resp.context["has_any_items"] is True
+
+
+@pytest.mark.django_db
+def test_필터로_모두_걸러진_달은_has_any_items가_거짓이다(user_client, make_event):
+    user, client = user_client()
+    visited_event = make_event(title="필터로걸러진달력행사")
+    VisitRecord.objects.create(user=user, event=visited_event, visited_on=date(2026, 7, 10))
+
+    resp = client.get(
+        "/archive/calendar/", {"month": "2026-07", "date": "2026-07-10", "type": "goods"}
+    )
+
+    assert resp.status_code == 200
+    assert resp.context["has_any_items"] is False
