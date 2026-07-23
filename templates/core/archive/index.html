@@ -37,9 +37,14 @@
 
     {# 서브탭과 검색을 한 헤어라인 레일에 형제로 둔다(.archive-search는 페이지 내 #}
     {# 유일 form이어야 하므로 archive_search.js:27이 잡는 첫 매치를 유지한다). #}
+    {# 2026-07-23 §H: 3구획 재배치(탭 / 검색 / 찜 목록, archive.css의 grid 3열). #}
+    {# 찜 목록은 _archive_nav.html의 <nav> 안이 아니라 여기 리터럴 앵커로 직접 #}
+    {# 렌더한다(hide_interest=True로 파셜의 기본 pill을 끔) — 8개 include 사이트 #}
+    {# 중 이 페이지 하나만 배치가 다르므로 별도 파셜 추출은 하지 않는다. #}
     <div class="activity-toolbar">
-      {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" %}
+      {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" hide_interest=True %}
       {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> 찜 목록</a>
     </div>
 
     <section class="layout">

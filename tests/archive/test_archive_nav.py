@@ -25,6 +25,18 @@ Exercised via /archive/statuses/ as one representative page — the partial's
 inclusion is otherwise identical across the other archive pages (same
 include tag, only `active`/`active_label` vary), so this file does not
 re-assert the same structural fact once per page.
+
+2026-07-23 v3 §H (.docs/plans/2026-07-23-activity-editorial-v3-plan.md):
+that "otherwise identical across pages" premise above is now broken for one
+page. /archive/(index.html) alone moves the 찜 anchor out of this nav (via a
+`hide_interest` include flag) while the other seven pages keep it inside —
+so /archive/statuses/ no longer stands in for /archive/ on the
+찜-inside-nav fact. This file is left unchanged (statuses.html itself is
+unmodified and this test's 5-link/no-찜-leak assertions still hold there),
+but the cross-page coverage gap this premise created is now closed by
+tests/archive/test_archive_interest_placement.py, which asserts the
+sibling-pages-keep-찜-inside-nav fact across all five reachable list pages
+and the index-specific moved-outside-nav fact separately.
 """
 import pytest
 
@@ -53,6 +65,10 @@ class TestArchiveNavTabs:
         assert ">다녀온 기록</a>" in nav
         assert ">직접 등록</a>" in nav
         assert ">전체 보기</a>" in nav
-        assert ">찜 목록</a>" in nav
+        # href로 고정한다: 하트 아이콘(♥) 도입으로 찜 앵커 내용이
+        # `<span aria-hidden="true">♥</span> 찜 목록</a>`가 되면 레이블 문자열
+        # `>찜 목록</a>`로는 매치되지 않는다. href는 아이콘·레이블 문구
+        # 변경에 영향받지 않는 안정적 식별자다.
+        assert 'href="/archive/interests/"' in nav
         assert ">활동 달력</a>" not in nav
         assert "/collection/" not in nav

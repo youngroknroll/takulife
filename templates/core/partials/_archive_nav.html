@@ -8,7 +8,16 @@ accordion, 2026-07-21 리디자인 ④단계 §B: 시안 미감 보존 + JS 0, �
 Include with:  {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
   active        one of: record | statuses | visits | items | interests
   active_label  kept for call-site compatibility (unused by this markup)
-찜 목록 stays a standalone pink pill (현행 유지), always visible beside the tabs.
+  hide_interest optional: pass True to suppress the in-nav 찜 목록 link when the
+                call site renders its own 찜 목록 anchor elsewhere (2026-07-23
+                §H toolbar re-layout — /archive/ only). A negative flag is used
+                on purpose: Django treats an unpassed variable as falsy, so the
+                default (unpassed → falsy → not-hidden) keeps 찜 목록 visible on
+                every other include site without their needing to opt in. A
+                positive `show_interest` flag would invert this and silently
+                drop 찜 목록 from all 7 other archive pages that never pass it.
+찜 목록 stays a standalone pink pill (현행 유지) on every page except /archive/,
+which renders its own 찜 목록 anchor outside this <nav> (§H 3-column toolbar).
 {% endcomment %}
 <div class="sub-nav">
   <nav class="archive-nav-wrap" aria-label="내 활동 하위 메뉴">
@@ -19,9 +28,11 @@ Include with:  {% include "core/partials/_archive_nav.html" with active="visits"
       <a href="/archive/items/"{% if active == "items" %} class="active"{% endif %}>직접 등록</a>
     </div>
 
-    <a
-      class="nav-interest{% if active == "interests" %} active{% endif %}"
-      href="/archive/interests/"
-    >찜 목록</a>
+    {% if not hide_interest %}
+      <a
+        class="nav-interest{% if active == "interests" %} active{% endif %}"
+        href="/archive/interests/"
+      ><span aria-hidden="true">♥</span> 찜 목록</a>
+    {% endif %}
   </nav>
 </div>
