@@ -13,7 +13,7 @@ from dataclasses import dataclass
 # by the time its own annotation tried to reference it.
 from datetime import date as _date
 
-from django.db.models import Count, Exists, Min, OuterRef, Q, Subquery
+from django.db.models import Count, Exists, Max, Min, OuterRef, Q, Subquery
 from django.urls import reverse
 from django.utils import timezone
 
@@ -718,6 +718,90 @@ def list_user_activity_for_month(user, *, year, month, kinds=None):
     return items
 
 
+def _latest_schedule_match_date(user, q, kinds):
+    """Latest .start among PLANNED statuses whose event title matches `q` —
+    mirrors _schedule_items' (kind, label, date) rules but filters by title
+    in the DB instead of building every row and comparing in Python."""
+    if kinds is not None and SCHEDULE_KIND not in kinds:
+        return None
+    return UserEventStatus.objects.filter(
+        user=user,
+        status=UserEventStatus.Status.PLANNED,
+        event__isnull=False,
+        event__title__icontains=q,
+    ).aggregate(latest=Max("event__start_date"))["latest"]
+
+
+def _latest_visit_match_date(user, q, kinds):
+    """Latest visited_on among visits whose event or personal_entry title
+    matches `q` — mirrors _visit_items' label sourcing (event title if
+    linked, else personal_entry title)."""
+    if kinds is not None and VISIT_KIND not in kinds:
+        return None
+    return (
+        VisitRecord.objects.filter(user=user)
+        .filter(Q(event__title__icontains=q) | Q(personal_entry__title__icontains=q))
+        .aggregate(latest=Max("visited_on"))["latest"]
+    )
+
+
+def _latest_goods_match_date(user, q, kinds):
+    """Latest derived display date (acquired_on or created_at's local date)
+    among CollectionItems whose name matches `q`. The display date is a
+    derived value, not a plain column, so it cannot be aggregated in the DB —
+    but the row set itself is already narrowed by name__icontains, so only
+    the small set of actual matches (not the user's whole collection) is
+    pulled into Python to pick the max."""
+    if kinds is not None and GOODS_ACQUIRED_KIND not in kinds:
+        return None
+    match_dates = [
+        item.acquired_on or timezone.localdate(item.created_at)
+        for item in CollectionItem.objects.filter(user=user, name__icontains=q)
+    ]
+    return max(match_dates) if match_dates else None
+
+
+def _latest_log_entry_match_date(user, q, kinds):
+    """Latest local display date among ActivityLogEntry rows whose
+    subject_label matches `q`, optionally narrowed to `kinds` first (a
+    kind__in filter in the DB, same effect as list_user_activity_for_month's
+    Python-side kind filter). occurred_at -> local date is a derived value
+    (timezone.localtime(...).date(), same as _log_entry_items), so it is
+    computed in Python only over the already-matched rows."""
+    entries = ActivityLogEntry.objects.filter(user=user, subject_label__icontains=q)
+    if kinds is not None:
+        entries = entries.filter(kind__in=kinds)
+    match_dates = [
+        timezone.localtime(occurred_at).date()
+        for occurred_at in entries.values_list("occurred_at", flat=True)
+    ]
+    return max(match_dates) if match_dates else None
+
+
+def _latest_interest_fallback_match_date(user, q, kinds):
+    """Latest derived display date (created_at's local date) among the §7.5
+    no-backfill fallback's still-existing EventInterests whose event title
+    matches `q`, excluding any event already covered by a real
+    interest_added log row — mirrors _interest_added_fallback_items exactly,
+    just narrowed by title in the DB first."""
+    if kinds is not None and ActivityLogEntry.Kind.INTEREST_ADDED not in kinds:
+        return None
+    logged_event_ids = set(
+        ActivityLogEntry.objects.filter(
+            user=user,
+            kind=ActivityLogEntry.Kind.INTEREST_ADDED,
+            event__isnull=False,
+        ).values_list("event_id", flat=True)
+    )
+    created_ats = (
+        EventInterest.objects.filter(user=user, event__isnull=False, event__title__icontains=q)
+        .exclude(event_id__in=logged_event_ids)
+        .values_list("created_at", flat=True)
+    )
+    match_dates = [timezone.localdate(created_at) for created_at in created_ats]
+    return max(match_dates) if match_dates else None
+
+
 def find_latest_activity_date_for_query(user, q, *, kinds=None):
     """Return the most recent calendar date where one of `user`'s activity
     items' label contains `q` (case-insensitive), or None with no match —
@@ -725,11 +809,16 @@ def find_latest_activity_date_for_query(user, q, *, kinds=None):
     editorial plan §4-a-1). Blank/whitespace-only `q` always returns None
     without querying.
 
-    Reuses the exact same per-source item builders as
-    list_user_activity_for_month, called with an effectively unbounded date
-    range instead of one month's bounds, so the (kind, label, date) rules a
-    match is judged by are identical to the calendar's own display — this
-    function's only caller (core.views.activity_calendar) passes it the
+    Unlike list_user_activity_for_month (bounded to one month, so its
+    per-source Python loops stay small), this function's date range is
+    unbounded — the whole activity history — so the `q`-vs-label comparison
+    is pushed into each source's own DB query (name/title/subject_label
+    __icontains=q) instead of building every row across the user's entire
+    history and filtering in Python. Each per-source helper above mirrors
+    the exact (kind, label, date) rules its list_user_activity_for_month
+    counterpart uses, just narrowed by `q` (and `kinds`) in the DB first.
+
+    This function's only caller (core.views.activity_calendar) passes it the
     currently active type= filter's kinds, so a jump never lands on a date
     whose only match is a kind currently hidden from view.
 
@@ -742,23 +831,15 @@ def find_latest_activity_date_for_query(user, q, *, kinds=None):
     if not q:
         return None
 
-    unbounded_start, unbounded_end = _date.min, _date.max
-    items = (
-        _schedule_items(user, unbounded_start, unbounded_end)
-        + _visit_items(user, unbounded_start, unbounded_end)
-        + _goods_acquired_items(user, unbounded_start, unbounded_end)
-        + _log_entry_items(user, unbounded_start, unbounded_end)
-        + _interest_added_fallback_items(user, unbounded_start, unbounded_end)
-    )
-
-    if kinds is not None:
-        allowed = set(kinds)
-        items = [item for item in items if item.kind in allowed]
-
-    needle = q.casefold()
     match_dates = [
-        item.date if item.date is not None else item.start
-        for item in items
-        if needle in item.label.casefold()
+        match_date
+        for match_date in (
+            _latest_schedule_match_date(user, q, kinds),
+            _latest_visit_match_date(user, q, kinds),
+            _latest_goods_match_date(user, q, kinds),
+            _latest_log_entry_match_date(user, q, kinds),
+            _latest_interest_fallback_match_date(user, q, kinds),
+        )
+        if match_date is not None
     ]
     return max(match_dates) if match_dates else None
