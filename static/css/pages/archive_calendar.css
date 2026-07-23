@@ -171,6 +171,33 @@
   border-bottom: none;
 }
 
+/* F3 fix (post-implementation BIR): the mock's 찜 목록 is a plain link, not
+   nav.css's shared pink pill (`.archive-nav-wrap .nav-interest`, border/
+   background/999px radius) that every other archive page keeps. nav.css
+   itself stays untouched (7 sibling pages still get the pill) — this
+   flattens the look on this page only via a higher-specificity
+   `.activity-page`-scoped override, same technique as pages/archive.css's
+   own `.activity-toolbar .nav-interest` precedent for the same component. */
+.activity-page .archive-nav-wrap .nav-interest {
+  border: none;
+  background: none;
+  border-radius: 0;
+  padding: 0.625rem 0.75rem;
+  min-height: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pink-ink);
+  transition: color 0.15s ease;
+}
+
+.activity-page .archive-nav-wrap .nav-interest:hover,
+.activity-page .archive-nav-wrap .nav-interest.active {
+  background: none;
+  border-color: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Page-local plain GET search (not _archive_search.html — that partial
    ships archive_search.js's live-region pair, which this full-PRG-reload
    page must not carry, plan §7-3 constraint 5/7). */
