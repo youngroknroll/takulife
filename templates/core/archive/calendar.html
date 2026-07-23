@@ -162,11 +162,21 @@
       </aside>
 
       <div class="activity-calendar-col">
+        {% comment %}
+        Month label assembled from `selected_date` (not the backend's Korean
+        `month_label`) so the mock's "2026 · 7월" literal — a muted middle
+        dot between plain year and month — can be built without touching
+        core/views.py. `selected_date` is always inside the displayed
+        (year, month) (core/views.py's _parse_calendar_date guarantee), so
+        this is equivalent to the displayed month, not a different value.
+        {% endcomment %}
         <nav class="calendar-month-nav" aria-label="월 이동">
-          <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="이전 달">‹</a>
-          <h2 class="calendar-month-label">{{ month_label }}</h2>
-          <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="다음 달">›</a>
-          <a class="calendar-month-today" href="?{{ extra_query }}">오늘</a>
+          <h2 class="calendar-month-label">{{ selected_date|date:"Y" }} <span class="calendar-month-sep">·</span> {{ selected_date|date:"n" }}월</h2>
+          <div class="calendar-month-controls">
+            <a class="calendar-month-glyph" href="?month={{ prev_month }}{{ extra_query }}" aria-label="이전 달">‹</a>
+            <a class="calendar-month-glyph" href="?month={{ next_month }}{{ extra_query }}" aria-label="다음 달">›</a>
+            <a class="calendar-month-today" href="?{{ extra_query }}">오늘</a>
+          </div>
         </nav>
 
         {% if calendar_error == "invalid" %}
