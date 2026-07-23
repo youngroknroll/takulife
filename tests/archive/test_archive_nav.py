@@ -4,19 +4,39 @@ archive/{index,statuses,visits,items,interests}.html.
 2026-07-21 리디자인 ④단계 §B (.docs/plans/2026-07-21-activity-editorial-plan.md):
 the former <details> accordion was replaced by an always-visible tab bar
 (user-confirmed "시안 우선"); that accordion/summary/panel markup was a
-disposable implementation detail and is not protected here. What the original
-test locked in — and what this file keeps locking in across the markup swap —
-is the underlying navigation contract from Target IA plan D1/§7-a-3
-(.docs/plans/2026-07-16-target-ia-plan.md): the sub-nav exposes only the
-Activity-family destinations (record/statuses/visits/calendar/items +
-interests), the active destination is marked, and it carries no /collection/
-link anywhere (collection moved to a top-level destination;
+disposable implementation detail and is not protected here.
+
+2026-07-23 v2 §C (.docs/plans/2026-07-23-activity-editorial-v2-plan.md):
+the user explicitly confirmed dropping "활동 달력" from this tab bar in
+favor of a 목록/달력 view toggle on /archive/ and /archive/calendar/
+themselves (사용자 확정 #3 — overriding all three reviewers' recommendation
+to keep the tab). The sub-nav link count contract therefore moves from six
+to five; "활동 달력" is no longer one of the tab bar's own links (it stays
+reachable via the new toggle and the site footer, per the plan's stated
+residual-risk note). What remains locked in here — unchanged by this
+count shrink — is the underlying navigation contract from Target IA plan
+D1/§7-a-3 (.docs/plans/2026-07-16-target-ia-plan.md): the sub-nav exposes
+only the remaining Activity-family destinations (record/statuses/visits/
+items + interests), the active destination is marked, and it carries no
+/collection/ link anywhere (collection moved to a top-level destination;
 tests/archive/test_archive_collection_view.py's TestArchiveCollectionNav
 locks that /collection/ itself doesn't link back into this sub-nav).
 Exercised via /archive/statuses/ as one representative page — the partial's
 inclusion is otherwise identical across the other archive pages (same
 include tag, only `active`/`active_label` vary), so this file does not
 re-assert the same structural fact once per page.
+
+2026-07-23 v3 §H (.docs/plans/2026-07-23-activity-editorial-v3-plan.md):
+that "otherwise identical across pages" premise above is now broken for one
+page. /archive/(index.html) alone moves the 찜 anchor out of this nav (via a
+`hide_interest` include flag) while the other seven pages keep it inside —
+so /archive/statuses/ no longer stands in for /archive/ on the
+찜-inside-nav fact. This file is left unchanged (statuses.html itself is
+unmodified and this test's 5-link/no-찜-leak assertions still hold there),
+but the cross-page coverage gap this premise created is now closed by
+tests/archive/test_archive_interest_placement.py, which asserts the
+sibling-pages-keep-찜-inside-nav fact across all five reachable list pages
+and the index-specific moved-outside-nav fact separately.
 """
 import pytest
 
@@ -25,7 +45,7 @@ pytestmark = pytest.mark.web
 
 @pytest.mark.django_db
 class TestArchiveNavTabs:
-    def test_아카이브_내비게이션_탭바는_내_활동_계열_다섯_링크와_찜_목록만_보여주고_컬렉션_링크를_포함하지_않는다(self, user_client):
+    def test_아카이브_내비게이션_탭바는_내_활동_계열_다섯_링크만_보여주고_활동_달력과_컬렉션_링크를_포함하지_않는다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/archive/statuses/")
@@ -39,12 +59,16 @@ class TestArchiveNavTabs:
         end = content.index("</nav>", start)
         nav = content[start:end]
 
-        assert nav.count("<a ") + nav.count('<a\n') + nav.count('<a\r\n') == 6
+        assert nav.count("<a ") + nav.count('<a\n') + nav.count('<a\r\n') == 5
         assert '>나의 일정</a>' in nav
         assert 'class="active">나의 일정</a>' in nav
         assert ">다녀온 기록</a>" in nav
-        assert ">활동 달력</a>" in nav
         assert ">직접 등록</a>" in nav
         assert ">전체 보기</a>" in nav
-        assert ">찜 목록</a>" in nav
+        # href로 고정한다: 하트 아이콘(♥) 도입으로 찜 앵커 내용이
+        # `<span aria-hidden="true">♥</span> 찜 목록</a>`가 되면 레이블 문자열
+        # `>찜 목록</a>`로는 매치되지 않는다. href는 아이콘·레이블 문구
+        # 변경에 영향받지 않는 안정적 식별자다.
+        assert 'href="/archive/interests/"' in nav
+        assert ">활동 달력</a>" not in nav
         assert "/collection/" not in nav

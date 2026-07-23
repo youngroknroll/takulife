@@ -7,9 +7,7 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" %}
-
+  <main class="page activity-page" id="content">
     <section class="hero hero-activity">
       <div class="hero-lead">
         <h1>내 활동</h1>
@@ -28,33 +26,41 @@
           </article>
         </div>
       </div>
+
+      <div class="activity-view-toggle">
+        <a class="activity-view-btn is-active" href="/archive/" aria-current="page">목록</a>
+        <a class="activity-view-btn" href="/archive/calendar/">달력</a>
+      </div>
+
       <a class="hero-action" href="/archive/visits/new/" data-cta-watch><span aria-hidden="true">＋</span> 기록 추가</a>
     </section>
 
+    {# 서브탭과 검색을 한 헤어라인 레일에 형제로 둔다(.archive-search는 페이지 내 #}
+    {# 유일 form이어야 하므로 archive_search.js:27이 잡는 첫 매치를 유지한다). #}
+    {# 2026-07-23 §H: 3구획 재배치(탭 / 검색 / 찜 목록, archive.css의 grid 3열). #}
+    {# 찜 목록은 _archive_nav.html의 <nav> 안이 아니라 여기 리터럴 앵커로 직접 #}
+    {# 렌더한다(hide_interest=True로 파셜의 기본 pill을 끔) — 8개 include 사이트 #}
+    {# 중 이 페이지 하나만 배치가 다르므로 별도 파셜 추출은 하지 않는다. #}
+    <div class="activity-toolbar">
+      {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" hide_interest=True %}
+      {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> 찜 목록</a>
+    </div>
+
     <section class="layout">
       <aside class="panel" aria-label="상태 필터 및 빠른 이동">
-        <div class="right-section">
-          <h2 class="aside-label">필터</h2>
-          <div class="chips">
-            <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/">전체</a>
-            {% for slug, label in ARCHIVE_STATUS %}
-              <a class="chip{% if selected_status == slug %} active{% endif %}" href="/archive/?status={{ slug }}">{{ label }}</a>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="right-section">
-          <h2 class="aside-label">검색</h2>
-          {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+        <div class="chips">
+          <a class="chip{% if not selected_status %} active{% endif %}"{% if not selected_status %} aria-current="page"{% endif %} href="/archive/{% if has_query %}?q={{ q|urlencode }}{% endif %}">전체</a>
+          {% for slug, label in ARCHIVE_STATUS %}
+            <a class="chip{% if selected_status == slug %} active{% endif %}"{% if selected_status == slug %} aria-current="page"{% endif %} href="/archive/?status={{ slug }}{{ search_suffix }}">{{ label }}</a>
+          {% endfor %}
         </div>
 
         <div class="right-section">
           <h2 class="aside-label">빠른 이동</h2>
           <ul class="side-list">
-            <li><a href="/archive/statuses/">나의 일정</a></li>
-            <li><a href="/archive/visits/">다녀온 기록</a></li>
-            <li><a href="/archive/calendar/">활동 달력</a></li>
-            <li><a href="/events/">이벤트 찾기</a></li>
+            <li><a href="/events/">행사 찾기 →</a></li>
+            <li><a class="quick-link-calendar" href="/archive/calendar/">활동 달력 →</a></li>
           </ul>
         </div>
       </aside>
@@ -62,7 +68,17 @@
       <article class="panel">
         <div class="results-head">
           <h2>전체 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
-          <span class="results-sort">최근순</span>
+          {# <details>, not a JS dropdown: the options are plain GET links, so #}
+          {# native disclosure gives keyboard operation and a no-JS fallback   #}
+          {# for free. event_list.js only adds outside-click dismissal on top. #}
+          <details class="results-sort" data-sort-menu>
+            <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
+            <ul class="results-sort-menu">
+              {% for slug, label in ARCHIVE_STATUS_SORT %}
+                <li><a href="?sort={{ slug|urlencode }}{{ sort_query }}"{% if selected_sort == slug %} aria-current="true"{% endif %}>{{ label }}</a></li>
+              {% endfor %}
+            </ul>
+          </details>
         </div>
 
         <div id="archive-results" data-archive-results>
@@ -80,4 +96,10 @@
 {% block extra_js %}
   <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
+  {# event_list.js now loads on two pages (/events/ and /archive/) for the   #}
+  {# sort <details> menu's outside-click/Esc/focusout dismissal. Its        #}
+  {# .filter-toggle/.filters selectors only exist on the /events/ templates #}
+  {# so they no-op here (verified 2026-07-23) — reconsider this sharing if  #}
+  {# /events/-only behavior is ever added to that file. #}
+  <script defer src="{% static 'js/pages/event_list.js' %}"></script>
 {% endblock %}

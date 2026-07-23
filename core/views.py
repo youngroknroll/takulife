@@ -53,6 +53,8 @@ from core.models import HomeConfig
 from core.vocab import (
     ARCHIVE_STATUS,
     ARCHIVE_STATUS_LABELS,
+    ARCHIVE_STATUS_SORT,
+    ARCHIVE_STATUS_SORT_LABELS,
     archive_status_label,
     CATEGORY,
     CATEGORY_LABELS,
@@ -296,8 +298,31 @@ def event_list(request):
         # plan §단계 5) — event_list had no such context before; added here
         # rather than duplicating its own already-working filter extraction.
         "extra_query": _calendar_extra_query(request),
+        # List page pager (PR #221 shared pager) needs sort preserved too, so
+        # it cannot reuse _calendar_extra_query (which deliberately drops
+        # sort for the calendar toggle contract).
+        "pager_query": _event_list_pager_query(request),
     }
     return render(request, "core/events/list.html", context)
+
+
+def _event_list_pager_query(request):
+    """Return the current q/region/category/status/sort filters as a
+    '&key=value' querystring tail — leading '&', matching
+    templates/core/partials/_pager.html's extra_query convention — so the
+    same context key can be dropped straight after a '?page=...' value in a
+    template. Unlike _calendar_extra_query, this includes 'sort': the events
+    list pager must preserve sort order across pages, while the calendar
+    toggle link deliberately does not.
+    """
+    pairs = []
+    for key in ("q", "region", "category", "status", "sort"):
+        for value in request.GET.getlist(key):
+            if value:
+                pairs.append((key, value))
+    if not pairs:
+        return ""
+    return "&" + urlencode(pairs)
 
 
 def _calendar_extra_query(request):
@@ -793,12 +818,16 @@ def _build_archive_status_rows(user_statuses):
                 "label_planned": archive_status_label("planned"),
                 "subject": subject,
                 "updated_at": us.updated_at,
+                "review_text": us.review_text,
+                "visit_record_id": us.visit_record_id,
             }
         )
     return rows
 
 
-def _archive_status_context(user, selected_status, *, page_size, page_number, q: str = ""):
+def _archive_status_context(
+    user, selected_status, *, page_size, page_number, q: str = "", sort: str = ""
+):
     """Build the shared context for the archive dashboard and statuses pages.
 
     Both pages derive 'missed' identically via the shared read helper (instead
@@ -809,19 +838,30 @@ def _archive_status_context(user, selected_status, *, page_size, page_number, q:
     current page's rows are built into the heavier display dicts. The two pages
     pass different sizes (기록장 10 vs 예정 목록 5). ``has_statuses`` reflects the
     total match count, not the current page, so the empty state shows only when
-    the user genuinely has none. ``pager_query`` preserves the status filter
-    and q param across page links.
+    the user genuinely has none. ``pager_query`` preserves the status filter,
+    q param, and sort across page links.
 
     ``q`` narrows the status list server-side (title/location search). Summary
     counts (status_counts) always reflect the unfiltered totals.
     ``has_any`` signals that the user owns at least one status of any kind,
     independent of the current filter; this lets templates distinguish an
     empty-filter result from a genuinely empty archive.
+
+    ``sort`` selects list_user_statuses' ordering; an unrecognized value falls
+    back to "" (the default ordering) the same way an unrecognized status
+    falls back to "" (all).
+
+    ``sort_query`` (via _archive_sort_link_query) is a separate status/q-only
+    tail for the sort <details> menu's own links; unlike pager_query/
+    search_suffix above it excludes 'sort' and 'page' so a new sort value
+    doesn't get overwritten by the old one still in the tail.
     """
     if selected_status not in ARCHIVE_STATUS_SLUGS:
         selected_status = ""
+    if sort not in ARCHIVE_STATUS_SORT_LABELS:
+        sort = ""
 
-    qs = list_user_statuses(user, selected_status, q=q)
+    qs = list_user_statuses(user, selected_status, q=q, sort=sort)
     paginator = Paginator(qs, page_size)
     page_obj = paginator.get_page(page_number)
     status_rows = _build_archive_status_rows(page_obj.object_list)
@@ -831,11 +871,17 @@ def _archive_status_context(user, selected_status, *, page_size, page_number, q:
         parts.append(("status", selected_status))
     if q:
         parts.append(("q", q))
+    if sort:
+        parts.append(("sort", sort))
     pager_query = "&" + urlencode(parts) if parts else ""
     # Tail that filter chips append to preserve the active search across a
     # filter switch (urlencoded so 한글/space/& are safe; the template escapes
     # the leading & to &amp; in the href, which the browser decodes).
-    search_suffix = "&" + urlencode([("q", q)]) if q else ""
+    search_suffix_parts = [("q", q)] if q else []
+    if sort:
+        search_suffix_parts.append(("sort", sort))
+    search_suffix = "&" + urlencode(search_suffix_parts) if search_suffix_parts else ""
+    sort_query = _archive_sort_link_query(selected_status, q)
 
     counts = user_status_counts(user)
     return {
@@ -850,7 +896,35 @@ def _archive_status_context(user, selected_status, *, page_size, page_number, q:
         "ARCHIVE_STATUS": ARCHIVE_STATUS,
         "q": q,
         "has_query": bool(q),
+        "selected_sort": sort,
+        "selected_sort_label": ARCHIVE_STATUS_SORT_LABELS[sort],
+        "ARCHIVE_STATUS_SORT": ARCHIVE_STATUS_SORT,
+        "sort_query": sort_query,
     }
+
+
+def _archive_sort_link_query(selected_status, q):
+    """Return the current status/q filters as a '&key=value' querystring
+    tail — leading '&', matching templates/core/partials/_pager.html's
+    extra_query convention — for the archive sort <details> menu's
+    '?sort=<value>...' links to append.
+
+    Deliberately excludes 'sort' and 'page', unlike _archive_status_context's
+    own pager_query/search_suffix (which intentionally include 'sort' because
+    they must preserve the active ordering across pagination/search). A sort
+    link already starts with '?sort=<new value>', so reusing pager_query's
+    tail here would duplicate the 'sort' key
+    (?sort=NEW&status=...&sort=OLD); QueryDict.get() returns the last value,
+    silently discarding the new sort. Excluding 'page' means picking a new
+    sort resets the list to page 1, mirroring _calendar_extra_query's
+    exclusion of its own page-like params for the same reason.
+    """
+    parts = []
+    if selected_status:
+        parts.append(("status", selected_status))
+    if q:
+        parts.append(("q", q))
+    return "&" + urlencode(parts) if parts else ""
 
 
 def _render_archive_list(request, *, full_template, fragment_template, context):
@@ -876,6 +950,7 @@ def archive(request):
         page_size=ARCHIVE_RECORD_PAGE_SIZE,
         page_number=request.GET.get("page"),
         q=_archive_query(request),
+        sort=request.GET.get("sort", ""),
     )
     return _render_archive_list(
         request,
@@ -894,6 +969,7 @@ def archive_statuses(request):
         page_size=ARCHIVE_STATUS_PAGE_SIZE,
         page_number=request.GET.get("page"),
         q=_archive_query(request),
+        sort=request.GET.get("sort", ""),
     )
     return _render_archive_list(
         request,

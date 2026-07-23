@@ -135,10 +135,21 @@ class TestEventListActiveFilterChips:
 
 @pytest.mark.django_db
 class TestEventListPagerQEncoding:
-    """The pager's ?q= link must URL-encode the search term the same way
-    selected_sort already does, so a value containing '#' isn't truncated
-    into a URL fragment on click, losing the rest of the query string
-    (templates/core/events/list.html pager)."""
+    """The pager's ?q= link must URL-encode the search term, so a value
+    containing '#' isn't truncated into a URL fragment on click, losing the
+    rest of the query string.
+
+    /events/ now renders pagination through the shared pager partial
+    (templates/core/partials/_pager.html), whose extra_query is built with
+    urllib.parse.urlencode (quote_plus-style) — the same encoding the other
+    seven paginated lists already use (core/views.py:857). The old inline
+    pager this replaced used Django's `|urlencode` template filter
+    (urllib.parse.quote-style), which escaped '+'/space as %2B/%20 instead of
+    +. Both styles round-trip to the identical original string with no data
+    loss, so the '+'/space case below asserts the round-trip outcome (decoded
+    q equals the original search term) rather than pinning one literal
+    encoding — only the '#' case, whose whole point is avoiding a URL
+    fragment, still asserts the specific escaped literal."""
 
     def test_검색어에_해시_기호가_있으면_페이저_링크의_q_값이_URL_인코딩되어_잘리지_않는다(self, make_event):
         for i in range(11):
@@ -151,10 +162,11 @@ class TestEventListPagerQEncoding:
         assert f"q={quote('#콜라보')}" in body
         assert "&q=#" not in body
 
-    def test_검색어에_더하기와_공백이_있으면_페이저_링크의_q_값이_URL_인코딩되어_보존된다(self, make_event):
-        """q="a+b c" round-trips through Django's urlencode filter, which
-        quotes via urllib.parse.quote (not quote_plus) — '+' and ' ' both
-        get percent-escaped, not left as literal form-encoding chars."""
+    def test_검색어에_더하기와_공백이_있으면_페이저_링크의_q_값이_원래_검색어로_보존된다(self, make_event):
+        """'+'/space must never reach the href unescaped (raw form-encoding
+        chars in a query value are ambiguous), and the pager link must decode
+        back to the exact original search term 'a+b c' — regardless of
+        whether the encoder chose %2B/%20 or %2B/+ to represent it."""
         for i in range(11):
             make_event(title=f"a+b c 행사 {i}")
 
@@ -162,8 +174,15 @@ class TestEventListPagerQEncoding:
 
         assert resp.status_code == 200
         body = resp.content.decode()
-        assert f"q={quote('a+b c')}" in body
         assert "q=a+b c" not in body
+
+        href = next(
+            href
+            for href in re.findall(r'href="([^"]*[?&]page=[^"]*)"', body)
+            if "q=" in href
+        )
+        query = parse_qs(urlparse(unescape(href)).query, keep_blank_values=True)
+        assert query.get("q") == ["a+b c"]
 
     def test_지역_값에_특수문자가_있으면_페이저_링크에_추가_쿼리_파라미터로_주입되지_않도록_URL_인코딩된다(self, make_event):
         """selected_region is echoed into the pager from an unvalidated

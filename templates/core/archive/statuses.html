@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
+  <main class="page activity-page" id="content">
     {% include "core/partials/_archive_nav.html" with active="statuses" active_label="나의 일정" %}
 
     <section class="hero">
@@ -38,11 +38,16 @@
         </div>
 
         <div class="chips">
-          <a class="chip{% if not selected_status %} active{% endif %}" href="/archive/statuses/">전체</a>
+          <a
+            class="chip{% if not selected_status %} active{% endif %}"
+            {% if not selected_status %}aria-current="page"{% endif %}
+            href="/archive/statuses/{% if has_query %}?q={{ q|urlencode }}{% endif %}"
+          >전체</a>
           {% for slug, label in ARCHIVE_STATUS %}
             <a
               class="chip{% if selected_status == slug %} active{% endif %}"
-              href="/archive/statuses/?status={{ slug }}"
+              {% if selected_status == slug %}aria-current="page"{% endif %}
+              href="/archive/statuses/?status={{ slug }}{{ search_suffix }}"
             >{{ label }}</a>
           {% endfor %}
         </div>

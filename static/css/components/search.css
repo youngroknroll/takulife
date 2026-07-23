@@ -11,15 +11,23 @@
 
 .archive-search-row {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.375rem;
 }
 
+/* 2026-07-23 §H (user-confirmed): the standalone `.archive-search-icon` span
+   is gone — the ⌕ glyph now ships as the leading character of the input's
+   own placeholder (see _archive_search.html). `.archive-search-row` no
+   longer needs to lay out a separate flex child for it, and the input's own
+   left padding is nudged from 0.75rem to 0.875rem so the placeholder glyph
+   doesn't read as flush against the field's border now that nothing
+   precedes it in the row. */
 .archive-search-row input[type="search"] {
   flex: 1;
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.875rem;
   font-size: 0.9rem;
   color: var(--text);
   background: var(--surface);
@@ -27,10 +35,14 @@
 }
 
 .archive-search-row button[type="submit"] {
-  border: 1px solid var(--border-soft);
-  background: var(--brand-soft);
-  color: var(--brand-ink);
+  /* 재취득 시안(2026-07-23)은 청록 채움 버튼 — 저장소 대응 토큰 --teal(흰
+     텍스트, tokens.css 라이트 5.36:1 / 다크 5.74:1 AA 확보, activity-editorial
+     v2 트랙 실측). 4개 아카이브 페이지 공유 컴포넌트라 공통 적용. */
+  border: 1px solid var(--teal);
+  background: var(--teal);
+  color: #fff;
   border-radius: 8px;
+  min-height: 34px;
   padding: 0.5rem 0.875rem;
   font-size: 0.9rem;
   font-weight: 700;
@@ -38,16 +50,9 @@
   font-family: inherit;
   white-space: nowrap;
 }
-/* 공용 디자인 규칙 §1.4-2: color:var(--brand) on background:var(--brand-soft)는
-   --brand가 텍스트용이 아닌 solid-fill 토큰이라 라이트 3.71:1·다크 2.62:1
-   모두 AA 미달 — 이 파일 포함 12개 파일 15곳에 동일 패턴 반복 확인(전수
-   목록은 공용 디자인 규칙 §1.4 참고). 베이스를 --brand-ink로 전환해 양
-   테마 4.5:1+ 통과, 다크 전용 오버라이드는 중복이라 제거. */
 
 .archive-search-row button[type="submit"]:hover {
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand);
+  filter: brightness(0.95);
 }
 
 .archive-search-clear {

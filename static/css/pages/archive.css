@@ -9,25 +9,43 @@
      leaked its new flex/display declarations onto that unrelated hero and
      broke the 320px overflow gate. index.html adds `hero-activity` alongside
      `hero` so this block only ever matches the archive hub. */
+  /* v2 (2026-07-23 에디토리얼): 3열 그리드로 전환 — DOM 순서 그대로
+     hero-lead / activity-view-toggle / hero-action이 각 열을 채운다
+     (컬렉션 `.collection-head` 1fr auto 1fr 선례, archive_collection.css).
+     바깥 두 열은 `minmax(min-content, 1fr)`로 최소폭을 보장해 320px에서
+     가운데 토글과 겹치지 않게 한다(겹침 대신 필요 시 가로 스크롤). */
   .hero-activity {
+    /* cards.css's shared `.hero` box (63-69행, (0,1,0)) also sets
+       `border-radius: 12px`. This rule already re-declares background/
+       border/box-shadow/padding but had missed border-radius — the third
+       instance in this track of the same "4속성 재선언 누락" pattern
+       (summary-card / sub-nav 참조). With no visible border on this element
+       (only `border-bottom`), the un-reset 12px radius curled the two ends
+       of the 1.5px rule upward instead of a straight line. */
     background: none;
     border: none;
+    border-radius: 0;
     box-shadow: none;
     padding: 0 0 1.125rem;
     margin: 0 0 1.5rem;
     border-bottom: 1.5px solid var(--text);
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(min-content, 1fr) auto minmax(min-content, 1fr);
     align-items: flex-end;
-    justify-content: space-between;
     gap: 1.25rem;
-    flex-wrap: wrap;
   }
   .hero-lead {
     min-width: 0;
   }
   .hero-activity h1 {
     margin: 0 0 0.625rem;
-    font-size: var(--fs-xl);
+    font-size: 1.5rem;
+    /* --fs-xl(tokens.css:116-119)은 "페이지당 유일 홈 히어로 제목 전용"으로
+       못박은 토큰 — 이 페이지의 현행 사용은 오용이라 리터럴로 하향. */
+    /* cards.css의 `.hero h1`(72-76행)은 font-weight를 선언하지 않아 브라우저
+       기본 h1 굵기(700)로 렌더된다. /collection/의 `.collection-head h1`은
+       800 — 시안 일치를 위해 명시적으로 맞춘다. */
+    font-weight: 800;
   }
   /* Shared .summary-grid/.summary-card (cards.css) flattened into an inline
      baseline stat row for this page only — value/label order is flipped via
@@ -40,6 +58,14 @@
     margin-top: 0;
   }
   .hero-activity .summary-card {
+    /* cards.css's `.summary-card` box (border/border-radius/background,
+       cards.css:28-33) is only (0,1,0) — this flattened rail redeclares all
+       three explicitly instead of only adding border-left, otherwise the
+       unreclared properties survive and the white boxed card stays visible
+       under the flattened baseline row (2026-07-23 발견, 재발 방지). */
+    background: none;
+    border: none;
+    border-radius: 0;
     display: flex;
     align-items: baseline;
     gap: 0.4375rem;
@@ -74,23 +100,181 @@
   .hero-activity .summary-card:nth-child(3) .summary-value {
     color: var(--end-ink);
   }
+  /* 시안 재취득본(2026-07-23) CTA 배경이 --brand(레드)에서 --accent(청록)로
+     바뀜 — 저장소 대응 토큰은 --teal. `.hero-action`은 archive/index.html
+     에서만 쓰이는 클래스(rg 확인, home.html 등 다른 템플릿 미사용)라
+     페이지 스코프 없이 바로 바꿔도 안전하다. */
   .hero-action {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     text-decoration: none;
     border-radius: 10px;
-    border: 1px solid var(--brand);
-    background: var(--brand);
+    border: 1px solid var(--teal);
+    background: var(--teal);
     color: #fff;
     padding: 0 1.25rem;
     min-height: 44px;
     font-size: var(--fs-md);
     font-weight: 700;
     flex: none;
+    justify-self: end; /* 3열 그리드의 3번째 열 — 우측 정렬 유지 */
   }
   .hero-action:hover {
     filter: brightness(0.95);
+  }
+
+  /* ── view toggle: 목록 | 달력 — 컴포넌트 자체 모양(display/색/hover/
+     is-active)은 `components/nav.css`로 이전(2026-07-23 사후 결함 수정 A):
+     `/archive/calendar/`는 이 스타일시트(archive.css)를 로드하지 않아
+     `.activity-view-toggle`/`.activity-view-btn`이 완전 무스타일로
+     렌더되던 결함이 있었다. `nav.css`는 base.html에서 전역 로드되므로
+     양쪽 페이지 모두에서 스타일이 적용된다. 이 페이지에서는 `.hero-activity`
+     3열 그리드 안에서의 위치(justify-self)만 남긴다 — calendar.html은
+     그리드가 아닌 단순 블록이라 이 위치 규칙이 필요 없다. */
+  .hero-activity .activity-view-toggle {
+    justify-self: center;
+  }
+
+  /* ── activity-toolbar: 서브탭(_archive_nav.html) / 검색(_archive_search.html) /
+     찜 목록(index.html의 리터럴 앵커, 3구획 재배치)을 한 헤어라인 레일로
+     (v2 §E, 2026-07-23 §H). 클래스명이 이 페이지에만 존재해 홈 누출 걱정 없음.
+     2026-07-23 §H: 중앙 정렬 기법으로 더블 auto-margin 대신 grid 3열을 쓴다
+     (`.hero-activity`의 `minmax(min-content,1fr) auto minmax(min-content,1fr)`
+     패턴 재사용, 위 참조). 더블 auto-margin은 flexbox가 두 auto-margin에
+     남는 공간을 균등 분배하므로 좌우 아이템 폭이 같을 때만 중앙에 오는데
+     실측 폭(탭 400px, 검색 360px, 찜 90px)에서는 검색 중심이 진짜 중앙보다
+     +155px 오른쪽으로 밀린다 — 이 페이지 실측값 자체의 함정이라 grid로
+     대체한다. 1열=`.sub-nav`(탭), 2열=`.archive-search`, 3열=`.nav-interest`
+     (`justify-self:end`, `.hero-action`의 3열 그리드 선례와 동일 패턴).
+     `_archive_nav.html`의 `.archive-nav-wrap`은 원래 자기 자신의 border-bottom을
+     갖고 width:100%인 독립 컴포넌트(nav.css) — 여기서는 레일 안 그리드
+     아이템으로만 재선언(원본 무접촉, PR-R3 관례 그대로). */
+  .activity-toolbar {
+    position: relative; /* #archive-search-error 절대 배치 기준점 */
+    display: grid;
+    /* 2026-07-23 사후 결함 수정 ③: `minmax(min-content,1fr) auto
+       minmax(min-content,1fr)`는 "레일 전체" 기준 중앙 정렬이라, 탭
+       열과 찜 열의 실측 폭이 다르면(탭 458px 끝, 찜 1131px 시작) 검색
+       중심이 "탭↔찜 사이 중앙"에서 -154.6px 어긋난다(실측). 사용자
+       지시는 "탭과 찜 사이에서 중앙" — 1·3열을 콘텐츠 폭(`auto`)으로
+       줄이면 2열(`1fr`)이 탭 끝과 찜 시작 사이 남는 공간 전부를 갖게
+       되고, 그 안에서 `justify-self:center`로 정렬하면 정확히 그 구간의
+       중앙이 된다. */
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 1.25rem;
+  }
+  .activity-toolbar .sub-nav {
+    /* site-chrome.css's `.sub-nav` card box (background/border/border-radius/
+       box-shadow/padding, site-chrome.css:289-301) is only (0,1,0) — this rail
+       redeclares all four box properties explicitly so the tab row becomes a
+       flat hairline strip instead of a boxed card floating inside
+       `.activity-toolbar` (same class of miss as `.summary-card` above). */
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 0;
+    min-width: 0;
+  }
+  .activity-toolbar .archive-nav-wrap {
+    width: auto;
+    border-bottom: none;
+  }
+  /* 2026-07-23 §H: 찜 목록이 더 이상 `<nav class="archive-nav-wrap">` 안에
+     없다(index.html이 hide_interest=True로 파셜의 pill을 끄고, 그리드의 3번째
+     열에 직접 형제로 렌더) — 그래서 nav.css의 `.archive-nav-wrap .nav-interest`
+     핑크 필 규칙은 이 페이지에서 특이도 승부가 아니라 구조적으로 매치 자체가
+     안 된다(대상 요소가 그 <nav> 밖에 있음). 이 규칙이 처음부터 그 필을
+     대신할 플랫 텍스트 링크 모양을 이 레일 전용으로 재정의한다. `.nav-interest`
+     클래스 자체는 공유 클래스라 다른 7개 아카이브 페이지는 그대로 핑크 필로
+     렌더된다(해당 페이지들의 nav.css 규칙은 무변경, 무영향). */
+  .activity-toolbar .nav-interest {
+    justify-self: end; /* 그리드 자식에서는 margin-left:auto 대신 이 방식 사용
+      — 그리드 아이템에 좌우 auto-margin은 트랙 안에서만 작동하고, 3열 트랙
+      자체를 우측 끝까지 밀지는 않으므로 `justify-self:end`가 정확하다. */
+    display: inline-flex;
+    align-items: center;
+    /* 2026-07-23 사후 결함 수정 ⑤: 하트(`<span aria-hidden>♥</span>`)를
+       공유 파셜에 추가하면서 이 페이지의 평면화된(non-pill) 링크에도 같은
+       마크업이 붙는다. 마크업 안 공백 문자에만 기대면 템플릿 개행/공백
+       처리에 따라 간격이 흔들릴 수 있어, `.interest-btn`(controls.css:89
+       `gap: 0.25rem`)이 이미 쓰는 아이콘-텍스트 간격 관례를 여기 명시
+       재사용한다. */
+    gap: 0.25rem;
+    border: none;
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    min-height: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    /* 2026-07-23 사후 결함 수정 ①: 찜을 <nav> 밖으로 옮기면서
+       `nav.css`의 `.archive-nav-wrap .nav-interest`(자손 선택자)가
+       더 이상 매칭되지 않는다 — 그 규칙이 주던 `--pink-ink`도 함께
+       사라져 상속원 없는 이 앵커가 브라우저 기본 링크색(rgb(0,0,238))
+       으로 렌더되고 있었다(실측 확인). 상속에 기대지 않고 여기서
+       명시 선언한다. 라이트/다크 모두 `--pink-ink` 토큰이 있어 다크
+       모드도 자동으로 맞는 값을 받는다. */
+    color: var(--pink-ink);
+    transition: color 0.15s ease;
+  }
+  .activity-toolbar .nav-interest:hover,
+  .activity-toolbar .nav-interest.active {
+    background: none;
+    border-color: transparent;
+    transform: none;
+    box-shadow: none;
+  }
+  .activity-toolbar .archive-search {
+    width: 21.25rem; /* 실측 340px — 2열(1fr) 폭과 무관하게 고정 폭 유지 */
+    max-width: 100%; /* 2열이 340px보다 좁아지는 폭에서도 넘치지 않게 */
+    min-width: 0;
+    margin: 0;
+    /* 사후 결함 수정 ③: 2열은 이제 탭↔찜 사이 남는 공간을 모두 차지하는
+       `1fr` 트랙이므로, 그 트랙 안에서 고정폭 검색창을 다시 중앙 정렬
+       해야 "탭과 찜 사이 중앙"이 된다. */
+    justify-self: center;
+  }
+  /* `#archive-search-error`(text.css:47-51 `.inline-error`, 블록 <p>)가
+     흐름 안에 있으면 런타임에 에러 텍스트가 채워질 때 레일을 리플로우해
+     서브탭·찜 필을 밀어낸다(BIR 필수 수정, archive_collection.css:290-296
+     `.archive-search-clear` 처리와 같은 해법). `.activity-page`로 스코프해
+     아직 이 레일로 이전되지 않은 다른 아카이브 페이지(statuses/visits/
+     items)의 기존 흐름형 렌더링에는 영향 없게 한다. */
+  .activity-page #archive-search-error {
+    position: absolute;
+    top: calc(100% + 2rem); /* see `.archive-search-clear` below: stacked one
+      row under the clear link's own reserved row so the two never share a
+      line regardless of how wide the error text renders. */
+    left: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  /* `.archive-search-clear` (components/search.css) is `display:inline-block`
+     and sits in normal flow right after `.archive-search-row`, so unhiding it
+     the moment a query is typed grows `.archive-search` — and with it the
+     whole `.activity-toolbar` — by its own height. Measured at 320px:
+     `.activity-toolbar` 224px → 252.09px (+28px), which pushes `.layout`'s
+     top down by the same 28px at runtime, success or failure. Taken out of
+     flow exactly like `.archive-search-clear` in
+     archive_collection.css:290-296 ("the clear link is taken out of flow so
+     showing it can never change the rail's height") so its own visibility
+     can never change `.activity-toolbar`'s height again. Anchored to
+     `.archive-search` (not `.activity-toolbar`) so it always tracks the
+     search field's own box. */
+  .activity-page .archive-search {
+    position: relative;
+  }
+  .activity-page .archive-search-clear {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    right: 0;
   }
 
   /* ── two-column layout: aside(필터/검색/빠른 이동) 좌측, article(결과) 우측
@@ -119,13 +303,51 @@
     border-top: none;
     padding-top: 0;
   }
-  .aside-label {
+  /* v3 사후 결함 수정 A: `.aside-label`(0,1,0)이 `components/cards.css:211`
+     `.panel h2`(0,1,1)에 밀려 11px 규칙이 무음 사망하고 computed가 16px로
+     떨어지는 특이도 패배 — 로드 순서 문제가 아니라 특이도 자체가 진 것이라
+     순서를 바꿔도 못 고친다(이 저장소가 event_list.css:244·
+     event_calendar.css:37·archive_collection.css:13 세 곳에 이미 남긴
+     `.panel h2` 함정 경고와 동일 유형). `.activity-page` 스코프로
+     (0,2,0)까지 끌어올려 승리. */
+  .activity-page .aside-label {
     margin: 0 0 0.625rem;
-    font-size: 0.72rem;
+    font-size: 0.6875rem; /* 시안 실측 11px */
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em; /* 시안 실측 */
     color: var(--muted);
   }
+  /* ── 빠른 이동: 시안은 박스가 아니라 평문 링크 + 화살표(화살표는 템플릿
+     텍스트 리터럴 "→", CSS 아이콘 아님). `objects/layout.css`의 공용
+     `.side-list` 박스 스타일(다른 5개 아카이브 페이지가 그대로 씀)은
+     무접촉 — 이 페이지에서만 `.activity-page` 스코프로 되돌린다. */
+  .activity-page .side-list li {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+  /* 빠른 이동 기본색 = 청록(`--teal-ink`, 시안 재취득본 `--accent-ink`에
+     대응). "행사 찾기"는 이 기본색 그대로 두고, "활동 달력 →"만 아래
+     `.quick-link-calendar`로 `--up-ink`를 덮어 구분한다. */
+  .activity-page .side-list a {
+    font-size: 0.84375rem; /* 시안 실측 13.5px */
+    color: var(--teal-ink);
+  }
+  .activity-page .side-list a.quick-link-calendar {
+    color: var(--up-ink);
+  }
+  /* ── teal accent (v2 §B): `.chip.active`/`.pager-page.is-current`
+     재선언은 `components/nav.css`로 이전(2026-07-23 사후 결함 수정 B) —
+     이 페이지(`/archive/`)만 로드하는 스타일시트에 있으면 각자 자기
+     페이지 CSS만 로드하는 `/archive/statuses/`·`/visits/`·`/items/`·
+     `/interests/`에는 적용되지 않아 한 화면에서 밑줄은 teal인데 칩·
+     페이저는 브랜드 레드로 남는 결함이 있었다. `controls.css`/`pager.css`
+     원본은 여전히 무접촉 — `nav.css`가 `.activity-page` 스코프로
+     재선언한다(특이도 (0,3,0)로 `archive_statuses.css`의 무스코프
+     `.chip.active` (0,2,0)를 로드 순서와 무관하게 이긴다). */
   .results-head {
     display: flex;
     justify-content: space-between;
@@ -133,17 +355,105 @@
     gap: 0.625rem;
     margin-bottom: 0.5rem;
   }
-  .results-head h2 {
+  /* `.results-head h2`도 `.panel h2`(0,1,1)와 동률(0,1,1)이라 지금은
+     로드 순서로만 이기고 있다 — 위 `.aside-label`과 같은 함정이라 함께
+     `.activity-page` 스코프(0,2,1)로 승격해 순서 독립으로 만든다. */
+  .activity-page .results-head h2 {
     margin: 0;
     font-size: 0.94rem;
     font-weight: 700;
   }
   .results-count {
-    color: var(--brand-ink);
+    color: var(--teal-ink);
   }
+  /* Sort control — a <details> disclosure anchored to the results head's right
+     edge (ported from event_list.css, teal-swapped for this page's accent).
+     The panel is absolutely positioned so opening it never reflows the row
+     list underneath. `position: relative` here is load-bearing: without it
+     the menu's `position: absolute` resolves against a farther ancestor. */
   .results-sort {
+    position: relative;
     font-size: 0.8rem;
     color: var(--muted);
+  }
+  .results-sort-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    min-height: 44px;
+    padding: 0 0.125rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    list-style: none; /* Firefox */
+    white-space: nowrap;
+  }
+  /* Safari/Chrome still paint the default triangle without this, and it sits
+     on the wrong side of the label for a right-aligned control. */
+  .results-sort-toggle::-webkit-details-marker {
+    display: none;
+  }
+  .results-sort-toggle span {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .results-sort-toggle::after {
+    content: "▾";
+    font-size: 0.66rem;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  .results-sort[open] .results-sort-toggle::after {
+    transform: rotate(180deg);
+  }
+  .results-sort-toggle:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  /* No `display` declared here on purpose: declaring one would override the
+     native `details:not([open]) > :not(summary){display:none}` collapse and
+     leave the closed menu's links reachable by Tab. */
+  .results-sort-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% - 0.375rem);
+    z-index: 30;
+    min-width: 9.5rem;
+    margin: 0;
+    padding: 0.3125rem;
+    list-style: none;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    box-shadow: var(--shadow-dropdown);
+  }
+  .results-sort-menu a {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 0.6875rem;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .results-sort-menu a:hover {
+    background: var(--bg-soft);
+  }
+  /* Teal accent (WED §3 for this track): /events/'s source uses
+     --brand-soft/--brand-ink, which would make this page's sort menu the
+     only red-accented control among an otherwise all-teal chip/pager scheme. */
+  .results-sort-menu a[aria-current="true"] {
+    background: var(--teal-soft);
+    color: var(--teal-ink);
+    font-weight: 700;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .results-sort-toggle::after {
+      transition: none;
+    }
   }
 
   /* ── record rows (flat divider list, replaces the boxed .record-card,
@@ -206,14 +516,26 @@
     overflow-wrap: anywhere;
   }
   .record-row-cat {
+    font-size: 0.6875rem; /* 시안 실측 11px */
     font-weight: 700;
   }
+  .record-row-place {
+    font-size: 0.6875rem; /* 시안 실측 11px */
+    font-weight: 600;
+  }
+  /* 마크업의 텍스트 `·`(aria-hidden)를 CSS로 숨기고 3×3px 원형 박스로
+     대체 — 템플릿은 무편집, 폰트 렌더링에 기대던 점을 실제 도형으로. */
   .record-row-dot {
-    color: var(--muted);
+    font-size: 0;
+    display: inline-block;
+    width: 0.1875rem;
+    height: 0.1875rem;
+    border-radius: 50%;
+    background: var(--muted);
   }
   .record-row-title {
     margin: 0;
-    font-size: var(--fs-base);
+    font-size: 1rem; /* 시안 실측 16px */
     font-weight: 700;
     line-height: 1.35;
     overflow-wrap: anywhere;
@@ -229,6 +551,15 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+  /* v3 §F-2 리뷰 인용 — 제목 아래 1줄 말줄임, review_text가 있을 때만 렌더. */
+  .record-row-review {
+    margin: 0.1875rem 0 0;
+    font-size: 0.78125rem; /* 시안 실측 12.5px */
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .record-row-end {
     grid-area: end;
     display: flex;
@@ -236,7 +567,78 @@
     align-items: flex-end;
     gap: 0.5rem;
   }
+  /* v3 §F-3 조건부 행 액션 — 상태 필 아래 가로 배치, gap 12px(시안 실측). */
+  .record-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+  /* "＋ 기록" — 방문 완료 && 리뷰 없음. `.record-action-link`(home 컬렉션
+     스냅샷과 공유하는 채움 스타일)와는 별도 클래스 — 이 시안은 아웃라인+
+     accent-soft 배경이라 공유 클래스를 고치면 home.html에 번진다. */
+  .record-row-add-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.75rem; /* 28px */
+    padding: 0.25rem 0.6875rem; /* 4px 11px */
+    border: 1px solid var(--teal);
+    border-radius: 0.5rem; /* 8px */
+    background: var(--teal-soft);
+    color: var(--teal-ink);
+    font-size: 0.71875rem; /* 11.5px */
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  /* "수정" — 방문 완료 && 리뷰 있음 && visit_record_id 있음. */
+  .record-row-edit-link {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 600;
+    color: var(--teal-ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .record-row-edit-link:hover,
+  .record-row-add-link:hover {
+    text-decoration: underline;
+  }
+  /* "삭제" — 전 행 공통. 순수 텍스트 버튼, .status-btn 계열 채움 스타일
+     상속 없음(같은 컨테이너에 .status-btn이 없어 sibling-lock 로직 대상도
+     아니다 — status.js:167-176 참고). */
+  .record-row-delete-btn {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 0.75rem; /* 12px */
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .record-row-delete-btn:hover {
+    text-decoration: underline;
+  }
+  .record-row-add-link:focus-visible,
+  .record-row-edit-link:focus-visible,
+  .record-row-delete-btn:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  /* 대비 실측(2026-07-22 결정: 대비는 차단 게이트가 아님, 정보로만 기록) —
+     --teal-soft(라이트 #d3edf2) 위 --teal-ink(라이트 #0e7490) = 4.38:1.
+     WCAG AA 소형 텍스트 기준(4.5:1) 미달이나 사용자 승인된 시안 리터럴
+     그대로 진행. */
   @media (max-width: 45rem) {
+    /* Label grew from "최근순 ▾" (5 chars) to "정렬 최근 수정순 ▾" (~10 chars)
+       once the toggle carries its own "정렬" prefix — shrink to match
+       event_list.css's equivalent narrow-width rule (BIR §6). */
+    .results-sort {
+      font-size: 0.72rem;
+    }
     .record-row {
       grid-template-columns: 2.75rem 1fr; /* 44px date column, mobile */
       grid-template-areas:
@@ -256,27 +658,18 @@
     }
   }
 
-  /* Archive timeline status badges (display only, not interactive buttons) —
-     colours unchanged from the pre-리디자인 version (existing app
-     consistency over the design mock's own palette, plan §D). */
+  /* Archive timeline status badges (display only, not interactive buttons).
+     v3 사후 결함 수정 D: v2가 도입한 `.status.visited`/`.planned`/`.missed`
+     색 오버라이드 3개를 제거 — `controls.css`의 전역 `.status-btn.planned,
+     .status.planned` 등이 이제 같은 값(up/mint/end)으로 통일돼 여기서
+     재선언하면 값이 100% 겹치는 순수 중복이 된다. 기하값(radius/padding/
+     font-size 등)만 이 파일에 남긴다. */
   .status {
     border-radius: var(--radius-chip);
     padding: 0.25rem 0.5625rem;
     font-size: var(--fs-xs);
     font-weight: 700;
     white-space: nowrap;
-  }
-  .status.visited {
-    background: var(--mint-soft);
-    color: var(--mint-ink);
-  }
-  .status.planned {
-    background: var(--amber-soft);
-    color: var(--amber-ink);
-  }
-  .status.missed {
-    background: var(--rose-soft);
-    color: var(--rose-ink);
   }
   /* 방문 완료 이벤트 카드의 '기록' 작성 바로가기 — home의 컬렉션 스냅샷
      패널(_home_collection_snapshot.html)도 재사용하는 공유 클래스. */
@@ -311,6 +704,81 @@
   @media (max-width: 53.75rem) {
     .hero h1 {
       font-size: var(--fs-xl-mobile);
+    }
+    /* `.hero-activity h1`은 `.hero h1`과 특이도가 같아(둘 다 클래스+타입),
+       같은 캐스케이드 컨텍스트에서는 소스 순서가 이긴다 — 이 규칙이 위
+       `.hero h1` 바로 다음이라 `.hero-activity`(=`.hero`와 dual-class)
+       요소에는 이쪽이 최종 적용된다. */
+    .hero-activity h1 {
+      font-size: 1.1875rem;
+    }
+    /* DOM 순서(hero-lead → toggle → action)를 그대로 세로로 쌓는다.
+       `order`/`display:contents`는 쓰지 않는다(컬렉션 트랙 교훈: 탭
+       순서 어긋남 WCAG 2.4.3 위반 / 랜드마크 상실 위험). */
+    .hero-activity {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+      gap: 0.875rem;
+    }
+    .hero-activity .activity-view-toggle {
+      justify-self: start;
+    }
+    .hero-action {
+      justify-self: start;
+    }
+    /* 2026-07-23 §H: 좁은 폭에서는 grid를 단일 열로 접어 DOM 순서 그대로
+       탭 → 검색 → 찜 3행을 세로로 쌓는다(`order`/`display:contents` 금지 —
+       탭 순서 어긋남 WCAG 2.4.3 위반 / 랜드마크 상실 위험, 컬렉션 트랙 교훈
+       재적용). 데스크톱의 `justify-self:end`(찜)는 단일 열에서 그대로 두면
+       텍스트가 우측 끝에 붙어 다른 두 행과 정렬이 어긋나므로 나머지 행과
+       맞춰 좌측 정렬로 되돌린다. */
+    .activity-toolbar {
+      grid-template-columns: minmax(0, 1fr);
+      /* 사후 결함 수정 ④: `#archive-search-error`는 `.activity-toolbar`에
+         절대배치 앵커되고(위 `.archive-search` 규칙의 주석 참조), 그 위치는
+         `.activity-toolbar`의 전체 높이(찜 행까지 포함) + `top:calc(100% +
+         2rem)`로 정해진다 — 즉 여백을 여기, 찜 행 다음·`.layout` 시작 전에
+         둬야 실제로 err를 감싼다. 2rem(32px) + 에러 2줄(≈38.4px) ≈ 70.4px
+         = 4.4rem. 기존 1.25rem(153행 기본값)을 이 폭에서만 덮어쓴다.
+
+         2026-07-23 §H 재검증(오케스트레이터 375px 실측, 검색어 입력 +
+         fetch 실패 주입): 4.4rem 에서 실제 `.layout` 여유가 에러 1줄일 때
+         20.2px, **에러 2줄일 때 1.0px** 로 안전 여유가 아니었다(이 저장소는
+         같은 자리에서 0.3px 여유로 통과시켰다가 재작업한 전례가 있음).
+         `--fs-xs`가 rem 기반이라 사용자 글꼴 확대 시 즉시 재침범하므로,
+         2줄 기준 최소 1rem(16px) 여유를 확보한다: 필요 증분 = 16px - 1.0px
+         = 15px = 0.9375rem → 4.4rem + 0.9375rem = 5.3375rem. */
+      margin-bottom: 5.3375rem;
+    }
+    .activity-toolbar .nav-interest {
+      justify-self: start;
+    }
+    /* 검색창은 레일 아래로 wrap되어 전체 폭을 쓴다. */
+    .activity-toolbar .archive-search {
+      width: auto;
+      max-width: none;
+      /* 2026-07-23 사후 결함 수정 ④: 이전 주석은 `#archive-search-error`가
+         `.archive-search`의 `position:relative` 박스에 앵커된다고 적었으나
+         실제 마크업(`_archive_search.html`)은 `<p id="archive-search-error">`
+         를 `</form>` 바깥, `.activity-toolbar`의 형제 자식으로 렌더한다 —
+         절대배치 기준점은 `.archive-search`가 아니라 `.activity-toolbar`
+         (153행 `position: relative`)다. 반면 `.archive-search-clear`는
+         `<form>` 안에 있어 실제로 `.archive-search`에 앵커된다(맞음).
+         두 오버레이의 기준점이 서로 달라 예약을 한 곳에 몰아둘 수 없다.
+
+         375px 실측(§H 사후 검증): search 407.6–442.6 · clear 452.6–473.1 ·
+         찜(nav-interest) 525.0–545.8 · .layout 566.8 · err 577.8–597.0
+         (.layout 안으로 30.2px 침범). 원인: err의 `top:calc(100% + 2rem)`
+         은 `.activity-toolbar` 전체 높이(찜 행까지 포함) 기준인데, 예약
+         여백이 전부 `.archive-search`에만 있어 `.activity-toolbar`의
+         `margin-bottom`(기존 1.25rem)이 err의 실제 낙하 지점을 못 따라간다.
+
+         해법: 지우기(≈4px+20.5px=24.5px, `.archive-search`에 앵커)는
+         여기서 계속 예약하되 찜 행 시작 전까지만 필요하므로 1.75rem(28px)
+         으로 축소. 에러(≈2rem+38.4px=70.4px, `.activity-toolbar`에 앵커)
+         예약은 아래 `.activity-toolbar` 규칙의 `margin-bottom`으로 옮겨
+         찜 행 다음, `.layout` 시작 전에 확보한다. */
+      margin-bottom: 1.75rem;
     }
     .nav-links {
       justify-content: flex-start;
