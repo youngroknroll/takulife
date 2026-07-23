@@ -17,6 +17,8 @@ this read layer.
 from datetime import date
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from archive.models import CollectionItem
 from archive.queries import GOODS_ACQUIRED_KIND, SCHEDULE_KIND, find_latest_activity_date_for_query
@@ -118,3 +120,36 @@ def test_빈_검색어는_None을_반환한다(make_user, blank_q):
     result = find_latest_activity_date_for_query(user, blank_q)
 
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# 활동 달력 백로그 #2 — 날짜 점프 검색은 label 매칭을 DB로 내려야 한다
+# (전체 이력 무제한 범위를 파이썬 레벨 casefold 비교로 훑는 풀스캔 금지).
+# 이 계약은 쿼리 "개수"만으로는 검증되지 않는다 — 기존(결함이 있는) 구현도
+# 소스별 1쿼리씩 실행하지만 그 쿼리에 이름/라벨 조건이 전혀 없어 사용자의
+# 전체 데이터를 그대로 가져와 파이썬에서 걸렀다. 그래서 실행된 SQL 자체에
+# 검색어가 WHERE절로 내려갔는지를 직접 확인한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+def test_검색어가_DB_쿼리의_WHERE절로_내려가_전체_이력을_파이썬으로_훑지_않는다(
+    make_user,
+):
+    user = make_user()
+    CollectionItem.objects.create(
+        user=user, name="쿼리하향검색굿즈", acquired_on=date(2026, 7, 10)
+    )
+    for i in range(30):
+        CollectionItem.objects.create(
+            user=user, name=f"쿼리하향무관굿즈{i}", acquired_on=date(2020, 1, 1)
+        )
+
+    with CaptureQueriesContext(connection) as ctx:
+        result = find_latest_activity_date_for_query(user, "쿼리하향검색")
+
+    assert result == date(2026, 7, 10)
+    assert any(
+        "쿼리하향검색" in query["sql"] for query in ctx.captured_queries
+    ), "검색어가 DB 쿼리 WHERE절로 내려가지 않음 — 파이썬 레벨 전체 스캔 의심"
