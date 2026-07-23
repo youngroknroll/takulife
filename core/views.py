@@ -620,6 +620,45 @@ def _format_month_day(value):
     return f"{value.month}월 {value.day}일"
 
 
+def _activity_filter_url(*, year, month, selected_date, types):
+    """Build a full /archive/calendar/ URL preserving the displayed
+    month/date and carrying the given ?type= selections (activity-calendar
+    editorial plan §8-A B-b — every legend link, toggle or reset, goes
+    through this so month/date are never dropped, mirroring the existing
+    hidden-input lesson from the date-jump search form)."""
+    params = [("month", f"{year:04d}-{month:02d}")]
+    if selected_date is not None:
+        params.append(("date", selected_date.isoformat()))
+    params += [("type", value) for value in types]
+    return f"{reverse('archive-calendar-page')}?{urlencode(params)}"
+
+
+def _activity_kind_filters(*, year, month, selected_date, selected_types, kind_counts):
+    """Return the 4 visible groups as clickable legend-filter entries
+    (§8-A D2/D3): each is {group, count, is_active, toggle_url}, where
+    toggle_url adds the group to the current selection when inactive and
+    removes it when active. `count` comes from the caller's filter-independent
+    kind_counts (§8-A D1) — never recomputed here from a filtered set."""
+    filters = []
+    for group in _VISIBLE_ACTIVITY_TYPE_GROUPS:
+        is_active = group in selected_types
+        if is_active:
+            toggled_types = [value for value in selected_types if value != group]
+        else:
+            toggled_types = selected_types + [group]
+        filters.append(
+            {
+                "group": group,
+                "count": kind_counts[group],
+                "is_active": is_active,
+                "toggle_url": _activity_filter_url(
+                    year=year, month=month, selected_date=selected_date, types=toggled_types
+                ),
+            }
+        )
+    return filters
+
+
 def _build_selected_activity_items(items):
     """Reshape the selected date's archive.queries.CalendarActivityItem rows
     into detail-list display dicts: {group, label, url, date_text}.
@@ -683,7 +722,18 @@ def activity_calendar(request):
     unlike count/items above this is unfiltered by the "status" exclusion,
     since it predates B1/B2 and no case has required it to change),
     kind_counts (dict of the 4 visible groups -> count, for the displayed
-    month under the current type filter — reuses `items`, no extra query),
+    month, **independent of the current ?type= filter** — activity-calendar
+    editorial plan §8-A D1: reuses `items` as-is when no filter narrowed the
+    query, otherwise a second unfiltered list_user_activity_for_month call,
+    so turning a kind's legend link back on always shows its true count
+    rather than the 0 a filtered-source count would leave behind),
+    kind_filters (§8-A D2/D3 — the 4 visible groups as clickable legend
+    filters: list of {group, count, is_active, toggle_url}; count mirrors
+    kind_counts, toggle_url is a full /archive/calendar/ URL that adds the
+    group to the current ?type= selection when inactive and removes it when
+    active, always preserving month/date), reset_filter_url (a full
+    /archive/calendar/ URL with every ?type= cleared, month/date preserved —
+    the "전체 보기" affordance for undoing a multi-toggle selection),
     status_counts (archive.queries.user_status_counts(user) verbatim — the
     masthead's whole-history 예정/방문 완료/놓침 totals, independent of the
     displayed month; deliberately a *different* context key from
@@ -694,6 +744,11 @@ def activity_calendar(request):
     template render an inline no-match notice without resetting month/date;
     see _search_activity_date_jump below for the redirect-on-match half of
     this contract).
+
+    active_filter_count (the filter-disclosure panel's "N개 선택됨" affordance)
+    is deliberately *not* in this context: §8-A D8 removed the disclosure
+    panel in favor of the kind_filters legend above, for this view only —
+    event_calendar's own active_filter_count context key is untouched.
 
     "status" stays a real, matchable ?type= group (_ACTIVITY_TYPE_GROUPS is
     unchanged) purely for ?type=status bookmark backward-compatibility
@@ -751,8 +806,29 @@ def activity_calendar(request):
 
     has_any_items = bool(items)
 
+    # kind_counts must stay filter-independent (activity-calendar editorial
+    # plan §8-A D1 / WED-BIR 독립 합의): deriving it from the already-filtered
+    # `items` would zero out every currently-hidden kind, breaking the
+    # legend's "what to turn back on" map. Reuse `items` as-is when no
+    # ?type= filter narrowed the query (kinds is None); only re-query
+    # unfiltered when a filter is active.
+    if kinds is None:
+        all_kind_items = items
+    else:
+        try:
+            all_kind_items = list(
+                list_user_activity_for_month(request.user, year=year, month=month, kinds=None)
+            )
+        except Exception:
+            logger.exception(
+                "Failed to query unfiltered activity kind counts for year=%s month=%s",
+                year,
+                month,
+            )
+            all_kind_items = []
+
     kind_counts = dict.fromkeys(_VISIBLE_ACTIVITY_TYPE_GROUPS, 0)
-    for item in items:
+    for item in all_kind_items:
         group = _visible_activity_group(item.kind)
         if group is not None:
             kind_counts[group] += 1
@@ -820,8 +896,17 @@ def activity_calendar(request):
         "extra_query": _activity_extra_query(selected_types),
         "selected_types": selected_types,
         "has_any_items": has_any_items,
-        "active_filter_count": len(selected_types),
         "kind_counts": kind_counts,
+        "kind_filters": _activity_kind_filters(
+            year=year,
+            month=month,
+            selected_date=selected_date,
+            selected_types=selected_types,
+            kind_counts=kind_counts,
+        ),
+        "reset_filter_url": _activity_filter_url(
+            year=year, month=month, selected_date=selected_date, types=[]
+        ),
         "status_counts": user_status_counts(request.user),
         "q": q,
         "search_no_match": search_no_match,
