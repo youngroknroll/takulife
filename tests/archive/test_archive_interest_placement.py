@@ -33,6 +33,15 @@ test_archive_visit_edit_view.py)가 더 적합한 위치다.
 `.archive-search`(공유 파셜), 달력이 `.calendar-search`(로컬 마크업, WED
 사전 명세 §8-A-1 item 1 조건)로 클래스명이 달라 페이지별로 다른 마커를
 쓰도록 파라미터화했다.
+
+**2026-07-24 나의 일정 에디토리얼 통일**: `/archive/statuses/`도 index와
+동일한 3구획 툴바를 채택해(`hide_interest=True` 전달, 찜 앵커가 검색 폼
+뒤로 이동) 위와 동일한 구조적 이유(§8-A-1 WED 판정 확장점)의 세 번째
+적용이 됐다. `/archive/statuses/`를 `TestSiblingPagesKeepInterestInsideNav`
+에서 제거하고 `TestIndexMovesInterestOutsideNavAfterSearch`로 옮긴다 —
+이번에도 삭제가 아니라 이동이다. statuses는 달력과 달리 로컬 검색 마크업이
+아니라 공유 파셜 `_archive_search.html`을 그대로 쓰므로, 검색 마커는 달력의
+`.calendar-search`가 아니라 index와 동일한 `.archive-search`다.
 """
 import pytest
 
@@ -50,7 +59,6 @@ class TestSiblingPagesKeepInterestInsideNav:
     @pytest.mark.parametrize(
         "path",
         [
-            "/archive/statuses/",
             "/archive/visits/",
             "/archive/items/",
             "/archive/interests/",
@@ -79,9 +87,10 @@ class TestIndexMovesInterestOutsideNavAfterSearch:
         ("path", "search_marker"),
         [
             ("/archive/", 'class="archive-search"'),
+            ("/archive/statuses/", 'class="archive-search"'),
             ("/archive/calendar/", 'class="calendar-search"'),
         ],
-        ids=["index", "calendar"],
+        ids=["index", "statuses", "calendar"],
     )
     def test_아카이브_전체보기_페이지에서_찜_링크는_내비게이션_밖_검색폼_뒤로_이동한다(
         self, user_client, path, search_marker
