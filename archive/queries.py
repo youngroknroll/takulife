@@ -50,6 +50,16 @@ ARCHIVE_STATUS_SORT_ORDERING: dict[str, str] = {
     "created_at": "-created_at",
 }
 
+# Sort slugs for list_user_visit_records, mapped to their order_by tuple.
+# "" (the default) is the pre-existing -visited_on, -id ordering, listed
+# explicitly here (unlike ARCHIVE_STATUS_SORT_ORDERING above) so
+# .get(sort, ARCHIVE_VISIT_SORT_ORDERING[""]) has a single source for the
+# default instead of a duplicated literal.
+ARCHIVE_VISIT_SORT_ORDERING: dict[str, tuple[str, str]] = {
+    "": ("-visited_on", "-id"),
+    "oldest": ("visited_on", "id"),
+}
+
 
 def user_status_counts(user, *, today=None) -> dict:
     """Return per-status counts for a user's archive statuses.
@@ -297,6 +307,7 @@ def list_user_visit_records(
     category_codes=(),
     category_label: str = "",
     q: str = "",
+    sort: str = "",
 ):
     """Return a user's visit records, newest first, with related data prefetched.
 
@@ -314,12 +325,16 @@ def list_user_visit_records(
 
     ``q`` — case-insensitive contains search across title, location_name (both
     FK sides) and short_review.
+
+    ``sort`` selects the ordering via ARCHIVE_VISIT_SORT_ORDERING; an unknown
+    or empty value falls back to the default -visited_on, -id ordering rather
+    than raising or returning an empty result.
     """
     queryset = (
         VisitRecord.objects.filter(user=user)
         .select_related("event", "personal_entry")
         .prefetch_related("photos")
-        .order_by("-visited_on", "-id")
+        .order_by(*ARCHIVE_VISIT_SORT_ORDERING.get(sort, ARCHIVE_VISIT_SORT_ORDERING[""]))
     )
     if official is True:
         queryset = queryset.filter(event__isnull=False)

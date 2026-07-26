@@ -101,6 +101,18 @@ ARCHIVE_STATUS_SORT: tuple[tuple[str, str], ...] = (
 ARCHIVE_STATUS_SORT_LABELS: dict[str, str] = dict(ARCHIVE_STATUS_SORT)
 
 # ---------------------------------------------------------------------------
+# Archive visit-record list sort vocabulary (slug matches
+# archive.queries.ARCHIVE_VISIT_SORT_ORDERING). Empty slug "" is the default
+# (최근 방문순 / -visited_on, -id). slug → display label
+# ---------------------------------------------------------------------------
+ARCHIVE_VISIT_SORT: tuple[tuple[str, str], ...] = (
+    ("", "최근 방문순"),
+    ("oldest", "오래된 방문순"),
+)
+
+ARCHIVE_VISIT_SORT_LABELS: dict[str, str] = dict(ARCHIVE_VISIT_SORT)
+
+# ---------------------------------------------------------------------------
 # Event status vocabulary (independent axis from archive status)
 # Describes the publication/temporal state of an Event object.
 # slug → display label

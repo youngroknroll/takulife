@@ -74,6 +74,40 @@ def test_정렬_쿼리스트링을_전달하면_예정_목록_페이지_순서�
 
 
 @pytest.mark.django_db
+def test_정렬_쿼리스트링을_전달하면_다녀온_기록_목록_순서와_선택된_정렬이_함께_바뀐다(
+    user_client, make_event, make_visit
+):
+    user, client = user_client()
+    e1 = make_event(title="E1")
+    e2 = make_event(title="E2")
+
+    older = make_visit(user, event=e1, visited_on="2026-05-01")
+    newer = make_visit(user, event=e2, visited_on="2026-06-01")
+
+    resp = client.get("/archive/visits/?sort=oldest")
+
+    assert resp.status_code == 200
+    visit_rows = resp.context["visit_rows"]
+    assert [row["record_id"] for row in visit_rows] == [older.id, newer.id]
+    assert resp.context["selected_sort"] == "oldest"
+    assert resp.context["selected_sort_label"] == "오래된 방문순"
+
+
+@pytest.mark.django_db
+def test_알_수_없는_정렬_값으로_조회하면_기본_정렬로_폴백하고_500이_발생하지_않는다(
+    user_client, make_event, make_visit
+):
+    user, client = user_client()
+    event = make_event(title="행사")
+    make_visit(user, event=event, visited_on="2026-06-01")
+
+    resp = client.get("/archive/visits/?sort=xyz")
+
+    assert resp.status_code == 200
+    assert resp.context["selected_sort"] == ""
+
+
+@pytest.mark.django_db
 def test_상태_행_컨텍스트에_최신_방문기록의_리뷰와_id가_담긴다(
     user_client, make_event, make_status, make_visit
 ):

@@ -56,6 +56,8 @@ from core.vocab import (
     ARCHIVE_STATUS_LABELS,
     ARCHIVE_STATUS_SORT,
     ARCHIVE_STATUS_SORT_LABELS,
+    ARCHIVE_VISIT_SORT,
+    ARCHIVE_VISIT_SORT_LABELS,
     archive_status_label,
     CATEGORY,
     CATEGORY_LABELS,
@@ -1223,6 +1225,9 @@ def archive_visits(request):
     user = request.user
     q = _archive_query(request)
     raw_filter = request.GET.get("filter", "")
+    sort = request.GET.get("sort", "")
+    if sort not in ARCHIVE_VISIT_SORT_LABELS:
+        sort = ""
 
     # --- Category chips derived from the user's FULL visit history --------
     # Using the whole dataset (not just the current page) guarantees chips are
@@ -1282,6 +1287,7 @@ def archive_visits(request):
         category_codes=category_codes,
         category_label=category_label,
         q=q,
+        sort=sort,
     )
     paginator = Paginator(filtered_qs, ARCHIVE_VISIT_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -1303,9 +1309,14 @@ def archive_visits(request):
         parts.append(("filter", selected_filter))
     if q:
         parts.append(("q", q))
+    if sort:
+        parts.append(("sort", sort))
     pager_query = "&" + urlencode(parts) if parts else ""
     # Tail filter chips append to keep the active search when switching filters.
-    search_suffix = "&" + urlencode([("q", q)]) if q else ""
+    search_suffix_parts = [("q", q)] if q else []
+    if sort:
+        search_suffix_parts.append(("sort", sort))
+    search_suffix = "&" + urlencode(search_suffix_parts) if search_suffix_parts else ""
 
     return _render_archive_list(
         request,
@@ -1329,6 +1340,9 @@ def archive_visits(request):
             "selected_filter": selected_filter,
             "pager_query": pager_query,
             "search_suffix": search_suffix,
+            "selected_sort": sort,
+            "selected_sort_label": ARCHIVE_VISIT_SORT_LABELS[sort],
+            "ARCHIVE_VISIT_SORT": ARCHIVE_VISIT_SORT,
         },
     )
 
