@@ -27,16 +27,21 @@
         </div>
       </div>
 
+      <div class="activity-view-toggle">
+        <a class="activity-view-btn is-active" href="/archive/statuses/" aria-current="page">목록</a>
+        <a class="activity-view-btn" href="/archive/calendar/">달력</a>
+      </div>
+
       <a class="hero-action" href="/archive/visits/new/" data-cta-watch><span aria-hidden="true">＋</span> 기록 추가</a>
     </section>
 
     {# index.html과 동일한 3구획 툴바(탭 / 검색 / 찜 목록). 목록|달력 토글은 #}
-    {# 이 페이지에서 생략(계획 §2): /archive/·/archive/calendar/ 어느 쪽도 #}
-    {# 현재 URL이 아니라 정직한 aria-current를 붙일 수 없다. #}
+    {# 이제 이 페이지에도 있다(2026-07-27 셸 폴리시 v2 §2): self-link(목록)가 #}
+    {# 현재 URL이라 aria-current="page"가 정직하다. #}
     <div class="activity-toolbar">
       {% include "core/partials/_archive_nav.html" with active="statuses" active_label="나의 일정" hide_interest=True %}
       {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
-      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> 찜 목록</a>
+      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> <span class="nav-interest-full">찜 목록</span><span class="nav-interest-short">찜</span></a>
     </div>
 
     <section class="layout">

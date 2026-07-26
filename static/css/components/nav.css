@@ -88,6 +88,28 @@
   background: var(--teal);
 }
 
+/* 서브탭 짧은 라벨(내 활동 셸 폴리시 v2 §3, 2026-07-27) — 각 탭 앵커가
+   `.tab-label-full`/`.tab-label-short` 두 span을 함께 렌더하고, 브레이크
+   포인트별로 CSS만으로 하나를 고른다(JS 0). `_archive_nav.html`은 8개
+   include 사이트에 쓰이는데 그중 절반(items/interests/visit_edit/
+   visit_create)은 `pages/archive.css`를 로드하지 않는다 — 이 규칙을
+   페이지 스코프 스타일시트에 두면 위 `.activity-view-toggle`과 똑같이
+   "한쪽은 완전 무스타일"이 될 자리라, 전역 로드되는 이 컴포넌트 파일에
+   둔다(a11y 트리에 정확히 하나의 라벨만 남기는 것이 핵심이라 `display:none`
+   사용, opacity/clip 금지 — 그러면 스크린리더가 "전체 보기전체"를 읽는다). */
+.tab-label-short {
+  display: none;
+}
+
+@media (max-width: 53.75rem) {
+  .tab-label-full {
+    display: none;
+  }
+  .tab-label-short {
+    display: inline;
+  }
+}
+
 /* 찜 목록 — standalone pink pill (현행 유지), right-aligned */
 .archive-nav-wrap .nav-interest {
   margin-left: auto;
