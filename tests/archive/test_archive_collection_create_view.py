@@ -9,8 +9,11 @@ Behavior under test (collection domain design plan §4 PR-C5b-2, CP-C1~C9):
   missing, or another user's id) falls back to the selectable dropdown
   instead of a 500 — mirrors _parse_visit_preselect's isascii/isdigit/length
   guard (visit_create.html's ?subject= precedent).
-- item_type is a free-text input suggested via a <datalist> of the 7
-  core.vocab.COLLECTION_ITEM_TYPE options.
+- item_type is a free-text input suggested via recommendation chips
+  (button.collection-form-type-chip[data-type-label]) for the 7
+  core.vocab.COLLECTION_ITEM_TYPE options — the <datalist> mechanism was
+  replaced by chips on 2026-07-27; this test file locks the chip mechanism
+  (coverage move, not deletion).
 - `visibility` (reserved for the future trade opt-in gate) and any
   `name="event"` control (event is server-synced from visit_record, never
   user-selected — collection domain design plan §3-1) are never rendered.
@@ -119,19 +122,21 @@ class TestArchiveCollectionCreatePreselect:
 
 
 @pytest.mark.django_db
-class TestArchiveCollectionCreateItemTypeDatalist:
-    def test_굿즈_종류_입력에_어휘_7종이_데이터리스트로_제공된다(self, user_client):
+class TestArchiveCollectionCreateItemTypeChips:
+    def test_굿즈_종류_입력에_어휘_7종이_추천_칩으로_제공된다(self, user_client):
         _, client = user_client()
 
         resp = client.get("/collection/new/")
         content = resp.content.decode()
 
-        assert 'id="collection-item-type-options"' in content
+        assert 'class="collection-form-type-chip"' in content
         for _, label in COLLECTION_ITEM_TYPE:
-            assert f'<option value="{label}">' in content
-        start = content.index('id="collection-item-type-options"')
-        end = content.index("</datalist>", start)
-        assert content[start:end].count("<option") == 7
+            assert f'data-type-label="{label}"' in content
+        assert content.count('class="collection-form-type-chip"') == 7
+
+        assert 'name="item_type"' in content
+        assert 'id="collection-item-type-options"' not in content
+        assert "<datalist" not in content
 
 
 @pytest.mark.django_db
