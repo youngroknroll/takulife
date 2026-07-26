@@ -122,6 +122,92 @@
     return formData;
   }
 
+  // ── type chips (item_type quick-pick, create + edit) ───────────────────
+
+  // Chips only ever write to the item_type text input — never a separate
+  // hidden field — so the single collectSharedFields() read of
+  // form.elements["item_type"] above stays the one source of truth whether
+  // the user clicked a chip or typed a custom value.
+  function bindTypeChips() {
+    var groups = document.querySelectorAll(".collection-form-type-chips");
+    for (var i = 0; i < groups.length; i++) {
+      (function (group) {
+        if (group.dataset.chipsBound) { return; }
+        group.dataset.chipsBound = "1";
+
+        var form = group.closest("form");
+        if (!form) { return; }
+        var input = form.elements["item_type"];
+        if (!input) { return; }
+        var chips = group.querySelectorAll(".collection-form-type-chip");
+
+        function syncFromValue() {
+          var value = input.value;
+          for (var j = 0; j < chips.length; j++) {
+            var isMatch = chips[j].dataset.typeLabel === value;
+            chips[j].classList.toggle("is-active", isMatch);
+            chips[j].setAttribute("aria-pressed", isMatch ? "true" : "false");
+          }
+        }
+
+        for (var k = 0; k < chips.length; k++) {
+          chips[k].addEventListener("click", function () {
+            input.value = this.dataset.typeLabel;
+            syncFromValue();
+          });
+        }
+        input.addEventListener("input", syncFromValue);
+
+        // One sync pass against whatever the input already holds (edit
+        // prefill, or a server re-render after a validation error).
+        syncFromValue();
+      })(groups[i]);
+    }
+  }
+
+  // ── image preview (create + edit dropzone) ─────────────────────────────
+
+  // Tracks the last created object URL per dropzone label so a second file
+  // selection revokes the previous one instead of leaking it.
+  function bindImagePreview() {
+    var input = document.getElementById("collection-image");
+    if (!input || input.dataset.previewBound) { return; }
+    input.dataset.previewBound = "1";
+
+    var dropzone = input.closest(".collection-form-dropzone");
+    if (!dropzone) { return; }
+    var placeholder = dropzone.querySelector(".collection-form-dropzone-placeholder");
+    var currentUrl = null;
+
+    input.addEventListener("change", function () {
+      var file = input.files && input.files[0];
+      if (!file) { return; }
+
+      // Reuses the same validator the submit handler calls — an invalid
+      // file gets no preview and falls through to that handler's existing
+      // error message on submit, rather than this function duplicating it.
+      var errorEl = document.getElementById(
+        input.form && input.form.id === "collection-edit-form"
+          ? "collection-edit-error"
+          : "collection-create-error"
+      );
+      if (!validateImageFile(file, errorEl)) { return; }
+      setText(errorEl, "");
+
+      if (currentUrl) { URL.revokeObjectURL(currentUrl); }
+      currentUrl = URL.createObjectURL(file);
+
+      var img = dropzone.querySelector("img");
+      if (!img) {
+        img = document.createElement("img");
+        img.alt = "미리보기";
+        dropzone.appendChild(img);
+      }
+      img.src = currentUrl;
+      if (placeholder) { placeholder.hidden = true; }
+    });
+  }
+
   // ── create ──────────────────────────────────────────────────────────────
 
   function bindCreateForm() {
@@ -385,6 +471,8 @@
     bindCreateForm();
     bindEditForm();
     bindItemDeletes();
+    bindTypeChips();
+    bindImagePreview();
   }
 
   if (document.readyState === "loading") {
@@ -395,6 +483,12 @@
 
   // Live search (archive_search.js) swaps #archive-results on the list page
   // — the create/edit forms live outside that region and are unaffected;
-  // the per-button dataset.deleteBound guard keeps this idempotent.
-  document.addEventListener("archive:listswapped", bindItemDeletes);
+  // the per-element dataset guards (deleteBound/chipsBound/previewBound)
+  // keep every one of these idempotent if this ever fires on a page where
+  // the swapped region does contain them.
+  document.addEventListener("archive:listswapped", function () {
+    bindItemDeletes();
+    bindTypeChips();
+    bindImagePreview();
+  });
 })();
