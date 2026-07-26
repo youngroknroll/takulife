@@ -294,3 +294,24 @@ class TestVisitsPagerQuery:
         pager_query = resp.context["pager_query"]
         assert "q=" in pager_query
         assert "filter" not in pager_query
+
+    def test_오래된순_정렬_적용_중_페이지네이션_링크에_정렬_값이_유지된다(self, user_client, make_event, make_visit):
+        user, client = user_client()
+        _make_official_visits(user, make_event, make_visit, 7)  # 2 pages
+
+        resp = client.get("/archive/visits/?sort=oldest")
+
+        assert resp.status_code == 200
+        pager_query = resp.context["pager_query"]
+        assert "sort=oldest" in pager_query
+        assert b"page=2" in resp.content  # pager renders a page-2 link
+
+    def test_필터와_오래된순_정렬을_함께_적용하면_필터_링크에도_정렬_값이_유지된다(self, user_client, make_event, make_visit, make_entry):
+        user, client = user_client()
+        _make_unofficial_visits(user, make_entry, make_visit, 3)
+        _make_official_visits(user, make_event, make_visit, 2)
+
+        resp = client.get("/archive/visits/?filter=unofficial&sort=oldest")
+
+        assert resp.status_code == 200
+        assert "sort=oldest" in resp.context["search_suffix"]

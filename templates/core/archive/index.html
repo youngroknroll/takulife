@@ -44,7 +44,7 @@
     <div class="activity-toolbar">
       {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" hide_interest=True %}
       {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
-      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> 찜 목록</a>
+      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> <span class="nav-interest-full">찜 목록</span><span class="nav-interest-short">찜</span></a>
     </div>
 
     <section class="layout">

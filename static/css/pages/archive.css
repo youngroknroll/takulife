@@ -101,9 +101,10 @@
     color: var(--end-ink);
   }
   /* 시안 재취득본(2026-07-23) CTA 배경이 --brand(레드)에서 --accent(청록)로
-     바뀜 — 저장소 대응 토큰은 --teal. `.hero-action`은 archive/index.html
-     에서만 쓰이는 클래스(rg 확인, home.html 등 다른 템플릿 미사용)라
-     페이지 스코프 없이 바로 바꿔도 안전하다. */
+     바뀜 — 저장소 대응 토큰은 --teal. `.hero-action`은 2026-07-24 나의 일정
+     에디토리얼 통일 이후 `/archive/`·`/archive/statuses/`·`/archive/visits/`
+     등 활동 셸 템플릿 전반(6개 템플릿 blast radius)에서 공유되는 클래스라
+     이 페이지 전용 스코프 없이 바로 바뀌는 값은 셸 전체에 영향을 준다. */
   .hero-action {
     display: inline-flex;
     align-items: center;
@@ -160,7 +161,9 @@
      갖고 width:100%인 독립 컴포넌트(nav.css) — 여기서는 레일 안 그리드
      아이템으로만 재선언(원본 무접촉, PR-R3 관례 그대로). */
   .activity-toolbar {
-    position: relative; /* #archive-search-error 절대 배치 기준점 */
+    position: relative; /* 2026-07-27: #archive-search-error가 in-flow 그리드
+      행으로 전환되며 더 이상 이 값의 절대 배치 기준점 용도는 아니지만,
+      다른 잠재 자손 배치를 깨지 않도록 보수적으로 유지(무해). */
     display: grid;
     /* 2026-07-23 사후 결함 수정 ③: `minmax(min-content,1fr) auto
        minmax(min-content,1fr)`는 "레일 전체" 기준 중앙 정렬이라, 탭
@@ -239,6 +242,13 @@
     transform: none;
     box-shadow: none;
   }
+  /* 찜 짧은 라벨(§3) — 위 `.tab-label-short`와 같은 이유(전역 vs 페이지
+     스코프)로 갈리지만, 이 리터럴 `.nav-interest` 앵커는 index/statuses/
+     visits 세 include 사이트에만 있고 셋 다 이 스타일시트를 로드하므로
+     여기 페이지 스코프에 둬도 무스타일 페이지가 생기지 않는다. */
+  .activity-toolbar .nav-interest-short {
+    display: none;
+  }
   .activity-toolbar .archive-search {
     width: 21.25rem; /* 실측 340px — 2열(1fr) 폭과 무관하게 고정 폭 유지 */
     max-width: 100%; /* 2열이 340px보다 좁아지는 폭에서도 넘치지 않게 */
@@ -249,20 +259,23 @@
        해야 "탭과 찜 사이 중앙"이 된다. */
     justify-self: center;
   }
-  /* `#archive-search-error`(text.css:47-51 `.inline-error`, 블록 <p>)가
-     흐름 안에 있으면 런타임에 에러 텍스트가 채워질 때 레일을 리플로우해
-     서브탭·찜 필을 밀어낸다(BIR 필수 수정, archive_collection.css:290-296
-     `.archive-search-clear` 처리와 같은 해법). `.activity-page`로 스코프해
-     아직 이 레일로 이전되지 않은 다른 아카이브 페이지(statuses/visits/
-     items)의 기존 흐름형 렌더링에는 영향 없게 한다. */
+  /* 2026-07-27 오케스트레이터 실측: 데스크톱에서도 `#archive-search-error`가
+     `.layout`(결과 헤드)과 겹친다(에러 y=322 vs `.layout` y=311 — 절대
+     배치 `top: calc(100% + 2rem)`가 데스크톱 `.activity-toolbar`의 평면
+     `margin-bottom: 1.25rem`보다 커서 발생). 모바일 전용이 아니라 전
+     폭에서 in-flow(정적) 그리드 행으로 전환 — 보일 때는 툴바를 자연스럽게
+     늘리고, 비었을 때는 `:empty`로 접혀 여백이 생기지 않는다. `.activity-
+     page`로 스코프해 아직 이 레일로 이전되지 않은 다른 아카이브 페이지
+     (statuses/visits/items)의 기존 흐름형 렌더링에는 영향 없게 한다.
+     `#archive-search-status`(sr-only 클립 리전, components/text.css:57-67)는
+     손대지 않는다 — in-flow로 바꾸면 클립이 깨져 상태 텍스트가 노출된다. */
   .activity-page #archive-search-error {
-    position: absolute;
-    top: calc(100% + 2rem); /* see `.archive-search-clear` below: stacked one
-      row under the clear link's own reserved row so the two never share a
-      line regardless of how wide the error text renders. */
-    left: 0;
-    max-width: 100%;
-    margin: 0;
+    position: static;
+    grid-column: 1 / -1;
+    margin: 0.5rem 0 0;
+  }
+  .activity-page #archive-search-error:empty {
+    display: none;
   }
 
   /* `.archive-search-clear` (components/search.css) is `display:inline-block`
@@ -620,15 +633,6 @@
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
-  /* 정렬 백엔드가 없는 다녀온 기록 페이지용 정적 라벨 — statuses의 작동하는
-     `<details>` 정렬 메뉴와 달리 여기선 항목이 하나뿐이라 죽은 어포던스를
-     만들지 않기 위해 순수 텍스트로 둔다(WED 결정 ①). */
-  .results-sort-static {
-    font-size: 0.8rem;
-    color: var(--muted);
-    font-weight: 600;
-  }
-
   .record-row-end {
     grid-area: end;
     display: flex;
@@ -736,6 +740,12 @@
     .record-row-actions .status-btn {
       min-height: 1.625rem; /* 26px, mobile */
     }
+    .record-row-actions .record-row-add-link {
+      margin-right: auto;
+    }
+    .record-row-actions {
+      width: 100%;
+    }
     /* 42px 썸네일, 모바일 74px→44px 날짜 열 축소에 맞춘 축소(계획 §3). */
     .record-row-photo,
     .record-row-photo-more {
@@ -802,79 +812,116 @@
        `order`/`display:contents`는 쓰지 않는다(컬렉션 트랙 교훈: 탭
        순서 어긋남 WCAG 2.4.3 위반 / 랜드마크 상실 위험). */
     .hero-activity {
-      grid-template-columns: minmax(0, 1fr);
-      justify-items: start;
-      gap: 0.875rem;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.75rem;
+      padding-bottom: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .hero-lead {
+      grid-column: 1 / -1;
     }
     .hero-activity .activity-view-toggle {
+      grid-column: 1;
       justify-self: start;
     }
     .hero-action {
-      grid-column: auto; /* 데스크톱의 `grid-column: 3`을 단일 열에서 해제 */
-      justify-self: start;
+      grid-column: 2;
+      justify-self: end;
+      /* 시안/컬렉션 모바일 사이즈·여백 통일; .layout gap은 시안 고유값 */
+      min-height: 2.125rem;
+      height: 2.125rem;
+      padding: 0 0.8125rem;
+      font-size: var(--fs-xs);
     }
-    /* 2026-07-23 §H: 좁은 폭에서는 grid를 단일 열로 접어 DOM 순서 그대로
-       탭 → 검색 → 찜 3행을 세로로 쌓는다(`order`/`display:contents` 금지 —
-       탭 순서 어긋남 WCAG 2.4.3 위반 / 랜드마크 상실 위험, 컬렉션 트랙 교훈
-       재적용). 데스크톱의 `justify-self:end`(찜)는 단일 열에서 그대로 두면
-       텍스트가 우측 끝에 붙어 다른 두 행과 정렬이 어긋나므로 나머지 행과
-       맞춰 좌측 정렬로 되돌린다. */
+    /* 2026-07-27 셸 폴리시 v2 §3: 시안 모바일 배열로 재작성 — 서브탭 1행
+       (가로) + ♥찜 우측, 그 아래 검색 전체 폭 행. 이전(§H)의 3행 세로 스택
+       (탭 wrap → 검색 → 찜)을 대체한다. `grid-template-areas`로 DOM 순서는
+       그대로 두되(탭 → 검색 → 찜, `order`/`display:contents` 금지 — 탭 순서
+       어긋남 WCAG 2.4.3 위반 / 랜드마크 상실 위험, 컬렉션 트랙 교훈 재적용)
+       시각 순서만 재배치한다(찜이 DOM상 검색 뒤에 있어도 grid-area가 1행
+       우측에 배치). */
     .activity-toolbar {
-      grid-template-columns: minmax(0, 1fr);
-      /* 사후 결함 수정 ④: `#archive-search-error`는 `.activity-toolbar`에
-         절대배치 앵커되고(위 `.archive-search` 규칙의 주석 참조), 그 위치는
-         `.activity-toolbar`의 전체 높이(찜 행까지 포함) + `top:calc(100% +
-         2rem)`로 정해진다 — 즉 여백을 여기, 찜 행 다음·`.layout` 시작 전에
-         둬야 실제로 err를 감싼다. 2rem(32px) + 에러 2줄(≈38.4px) ≈ 70.4px
-         = 4.4rem. 기존 1.25rem(153행 기본값)을 이 폭에서만 덮어쓴다.
-
-         2026-07-23 §H 재검증(오케스트레이터 375px 실측, 검색어 입력 +
-         fetch 실패 주입): 4.4rem 에서 실제 `.layout` 여유가 에러 1줄일 때
-         20.2px, **에러 2줄일 때 1.0px** 로 안전 여유가 아니었다(이 저장소는
-         같은 자리에서 0.3px 여유로 통과시켰다가 재작업한 전례가 있음).
-         `--fs-xs`가 rem 기반이라 사용자 글꼴 확대 시 즉시 재침범하므로,
-         2줄 기준 최소 1rem(16px) 여유를 확보한다: 필요 증분 = 16px - 1.0px
-         = 15px = 0.9375rem → 4.4rem + 0.9375rem = 5.3375rem. */
-      margin-bottom: 5.3375rem;
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "tabs interest"
+        "search search";
+      row-gap: 0.75rem;
+      /* 2026-07-27: 옛 3행 스택 기준 예약값(5.3375rem→3.3375rem, 미실측
+         추정치)을 제거. `#archive-search-error`가 이제 전 폭에서 in-flow
+         그리드 행(위 265행 근방 `.activity-page #archive-search-error`
+         참조)이라 더 이상 예약 공간이 필요 없다 — 컬렉션 페이지와 맞춘
+         평범한 값으로 대체(데스크톱 `margin-bottom: 1.25rem`,
+         177행 근방과 별개로 이 폭 전용 값). */
+      margin-bottom: 0.75rem;
+    }
+    .activity-toolbar .sub-nav {
+      grid-area: tabs;
     }
     .activity-toolbar .nav-interest {
-      justify-self: start;
+      grid-area: interest;
+      justify-self: end;
+      align-self: center;
     }
-    /* 검색창은 레일 아래로 wrap되어 전체 폭을 쓴다. */
+    /* 검색창은 2행 전체 폭을 쓴다. */
     .activity-toolbar .archive-search {
+      grid-area: search;
       width: auto;
       max-width: none;
-      /* 2026-07-23 사후 결함 수정 ④: 이전 주석은 `#archive-search-error`가
-         `.archive-search`의 `position:relative` 박스에 앵커된다고 적었으나
-         실제 마크업(`_archive_search.html`)은 `<p id="archive-search-error">`
-         를 `</form>` 바깥, `.activity-toolbar`의 형제 자식으로 렌더한다 —
-         절대배치 기준점은 `.archive-search`가 아니라 `.activity-toolbar`
-         (153행 `position: relative`)다. 반면 `.archive-search-clear`는
-         `<form>` 안에 있어 실제로 `.archive-search`에 앵커된다(맞음).
-         두 오버레이의 기준점이 서로 달라 예약을 한 곳에 몰아둘 수 없다.
-
-         375px 실측(§H 사후 검증): search 407.6–442.6 · clear 452.6–473.1 ·
-         찜(nav-interest) 525.0–545.8 · .layout 566.8 · err 577.8–597.0
-         (.layout 안으로 30.2px 침범). 원인: err의 `top:calc(100% + 2rem)`
-         은 `.activity-toolbar` 전체 높이(찜 행까지 포함) 기준인데, 예약
-         여백이 전부 `.archive-search`에만 있어 `.activity-toolbar`의
-         `margin-bottom`(기존 1.25rem)이 err의 실제 낙하 지점을 못 따라간다.
-
-         해법: 지우기(≈4px+20.5px=24.5px, `.archive-search`에 앵커)는
-         여기서 계속 예약하되 찜 행 시작 전까지만 필요하므로 1.75rem(28px)
-         으로 축소. 에러(≈2rem+38.4px=70.4px, `.activity-toolbar`에 앵커)
-         예약은 아래 `.activity-toolbar` 규칙의 `margin-bottom`으로 옮겨
-         찜 행 다음, `.layout` 시작 전에 확보한다. */
+      justify-self: stretch;
+      /* 2026-07-27: `#archive-search-error`는 더 이상 절대 배치가 아니라
+         전 폭 in-flow 그리드 행(위 261-278행 `.activity-page #archive-
+         search-error` 참조)이므로 이 여백과 무관해졌다 — 이 아래 값은
+         순수하게 `.archive-search-clear`(지우기, `<form>` 안에 있어
+         `.archive-search`에 앵커되는 별개의 절대배치 오버레이) 전용 예약
+         여백이다. 지우기는 이 페이지 재배치의 영향을 받지 않는 별개
+         오버레이라 이 값 그대로 유지. */
       margin-bottom: 1.75rem;
+    }
+    /* 찜 짧은 라벨(§3) — 데스크톱 기본값(위 `.activity-toolbar .nav-interest-
+       short { display: none }`)을 이 폭에서 뒤집는다. */
+    .activity-toolbar .nav-interest-full {
+      display: none;
+    }
+    .activity-toolbar .nav-interest-short {
+      display: inline;
     }
     .nav-links {
       justify-content: flex-start;
     }
     .layout {
       grid-template-columns: minmax(0, 1fr);
+      /* 시안 고유값(컬렉션 페이지는 1.75rem 유지) */
+      gap: 1rem;
     }
     .page {
       padding-bottom: 6rem;
+    }
+    /* 시안/컬렉션 모바일 사이즈·여백 통일; .layout gap은 시안 고유값 */
+    .activity-page .archive-search input[type="search"] {
+      height: 2.5rem;
+      border-radius: 0.625rem;
+    }
+    .activity-page .archive-search button[type="submit"] {
+      min-height: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.625rem;
+      padding: 0 0.9375rem;
+    }
+    .activity-page .side-list {
+      gap: 0.4375rem;
+    }
+    .activity-page .side-list li {
+      min-height: 1.5rem;
+    }
+    .activity-page .side-list a {
+      display: flex;
+      align-items: center;
+      min-height: 1.5rem;
+    }
+    .right-section {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
     }
     .mobile-cta {
       display: block;

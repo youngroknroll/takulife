@@ -24,10 +24,10 @@ and /archive/calendar/, which render their own 찜 목록 anchor outside this <n
 <div class="sub-nav">
   <nav class="archive-nav-wrap" aria-label="내 활동 하위 메뉴">
     <div class="archive-nav-tabs">
-      <a href="/archive/"{% if active == "record" %} class="active"{% endif %}>전체 보기</a>
-      <a href="/archive/statuses/"{% if active == "statuses" %} class="active"{% endif %}>나의 일정</a>
-      <a href="/archive/visits/"{% if active == "visits" %} class="active"{% endif %}>다녀온 기록</a>
-      <a href="/archive/items/"{% if active == "items" %} class="active"{% endif %}>직접 등록</a>
+      <a href="/archive/"{% if active == "record" %} class="active"{% endif %}><span class="tab-label-full">전체 보기</span><span class="tab-label-short">전체</span></a>
+      <a href="/archive/statuses/"{% if active == "statuses" %} class="active"{% endif %}><span class="tab-label-full">나의 일정</span><span class="tab-label-short">일정</span></a>
+      <a href="/archive/visits/"{% if active == "visits" %} class="active"{% endif %}><span class="tab-label-full">다녀온 기록</span><span class="tab-label-short">기록</span></a>
+      <a href="/archive/items/"{% if active == "items" %} class="active"{% endif %}><span class="tab-label-full">직접 등록</span><span class="tab-label-short">직접</span></a>
     </div>
 
     {% if not hide_interest %}

@@ -67,6 +67,17 @@ only the active tab under test shifts from "다녀온 기록" to "직접 등록"
 The 찜-outside-nav fact for /archive/visits/ is now covered by
 tests/archive/test_archive_interest_placement.py's
 TestIndexMovesInterestOutsideNavAfterSearch, so no coverage is lost.
+
+2026-07-27 내 활동 셸 폴리시 v2: each tab's label text moved from a bare
+text node into a pair of spans — `<span class="tab-label-full">LABEL</span>`
+followed by `<span class="tab-label-short">SHORT</span>` — so a narrow
+viewport can show the short form via CSS while the full label stays in the
+accessibility tree. A bare `>LABEL</a>` substring check no longer matches
+(the label is no longer the last thing before `</a>`; the short span is), so
+assertions below match the full-label span instead. The active tab is
+asserted by anchoring `class="active"` directly to the active tab's
+full-label span in one substring, so the check still proves *which* tab is
+marked active, not merely that some tab somewhere is.
 """
 import pytest
 
@@ -90,15 +101,18 @@ class TestArchiveNavTabs:
         nav = content[start:end]
 
         assert nav.count("<a ") + nav.count('<a\n') + nav.count('<a\r\n') == 5
-        assert '>나의 일정</a>' in nav
-        assert 'class="active">직접 등록</a>' in nav
-        assert ">다녀온 기록</a>" in nav
-        assert ">직접 등록</a>" in nav
-        assert ">전체 보기</a>" in nav
+        assert '<span class="tab-label-full">나의 일정</span>' in nav
+        assert (
+            'class="active"><span class="tab-label-full">직접 등록</span>'
+            in nav
+        )
+        assert '<span class="tab-label-full">다녀온 기록</span>' in nav
+        assert '<span class="tab-label-full">직접 등록</span>' in nav
+        assert '<span class="tab-label-full">전체 보기</span>' in nav
         # href로 고정한다: 하트 아이콘(♥) 도입으로 찜 앵커 내용이
         # `<span aria-hidden="true">♥</span> 찜 목록</a>`가 되면 레이블 문자열
         # `>찜 목록</a>`로는 매치되지 않는다. href는 아이콘·레이블 문구
         # 변경에 영향받지 않는 안정적 식별자다.
         assert 'href="/archive/interests/"' in nav
-        assert ">활동 달력</a>" not in nav
+        assert '<span class="tab-label-full">활동 달력</span>' not in nav
         assert "/collection/" not in nav
