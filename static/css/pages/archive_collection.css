@@ -1020,3 +1020,391 @@
 .collection-page .gi-10 { --series-ink: var(--series-10-ink); }
 .collection-page .gi-11 { --series-ink: var(--series-11-ink); }
 .collection-page .gi-12 { --series-ink: var(--series-12-ink); }
+
+/* ── /collection/new/ form — 굿즈 직접 등록 에디토리얼 ───────────────────
+   Design source: "굿즈 직접 등록 페이지 (에디토리얼).dc.html". This create
+   form used to load archive_visits.css and its shared `.create-form` /
+   `.form-group` / `.entry-detail-*` / `.locked-subject` / `.form-submit-btn` /
+   `.field-hint` / `.layout--single` classes (6-template file). None of those
+   selectors exist in THIS file, so switching the page's <link> to
+   archive_collection.css (collection_create.html) means every one of them had
+   to be replaced with a `.collection-page`-scoped equivalent below — a
+   half-swap would silently unstyle the form (BIR CRITICAL, see prompt_plan.md
+   "CSS 스위치 안전"). archive_visits.css itself is untouched; collection_edit
+   .html keeps loading it and is unaffected.
+
+   TOKEN NOTE: the plan calls for `--border-strong` on the dropzone border.
+   That token does not exist in tokens.css (verified by grep before writing
+   this section — the same "mock token silently doesn't exist" trap WED
+   flagged from a prior track). `--muted` is used instead: it is the darkest
+   neutral tone available short of `--text`, giving the dashed border visible
+   presence against `--bg-soft` in both themes without inventing a new token
+   this task isn't scoped to add. */
+
+.collection-page .collection-form-head {
+  padding-bottom: 1.125rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1.5px solid var(--text);
+}
+.collection-page .collection-form-head h1 {
+  margin: 0.5rem 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.collection-page .collection-form-subtitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.collection-page .collection-form-legend {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.collection-page .collection-form {
+  max-width: 56.25rem;
+}
+
+/* Two columns (fields, image) — DOM order is fields-then-image (이름 reaches
+   tab order first), the image is pulled into the left column purely by grid
+   placement, matching this file's established "grid placement, not source
+   order" convention (see .layout above). */
+.collection-page .collection-form-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 2.375rem;
+  align-items: start;
+}
+.collection-page .collection-form-fields {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.collection-page .collection-form-image {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.collection-page .collection-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+}
+.collection-page .collection-form-group label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.collection-page .collection-form-row {
+  display: grid;
+  gap: 1rem;
+}
+.collection-page .collection-form-row--split {
+  grid-template-columns: 180px minmax(0, 1fr);
+  align-items: end;
+}
+.collection-page .collection-form-row--even {
+  grid-template-columns: 1fr 1fr;
+}
+.collection-page .collection-form-row--visit {
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: end;
+}
+
+.collection-page .collection-form-checkbox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  justify-content: center;
+  min-height: 2.625rem;
+  padding: 0 0.8125rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5625rem;
+  background: var(--bg-soft);
+}
+.collection-page .collection-form-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.collection-page .collection-form-checkbox-hint {
+  margin: 0 0 0 1.625rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+/* Dropzone: the file input stays a real, focusable, keyboard-reachable
+   control layered over the label — opacity:0 + absolute fill, never
+   display:none (that would drop it from the tab order entirely). */
+.collection-page .collection-form-dropzone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 3 / 4;
+  border: 1px dashed var(--muted);
+  border-radius: 0.8125rem;
+  background: var(--bg-soft);
+  cursor: pointer;
+  overflow: hidden;
+}
+.collection-page .collection-form-dropzone:focus-within {
+  border-color: var(--brand);
+  border-style: solid;
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.collection-page .collection-form-dropzone-placeholder {
+  padding: 0 1rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+}
+.collection-page .collection-form-dropzone img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.collection-page .collection-form-dropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.collection-page .collection-form-hint {
+  margin: 0.5625rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+/* ── shared input skin ─────────────────────────────────────────────────── */
+.collection-page .collection-form input[type="text"],
+.collection-page .collection-form input[type="number"],
+.collection-page .collection-form input[type="date"],
+.collection-page .collection-form select {
+  height: 2.625rem;
+  padding: 0 0.8125rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5625rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  width: 100%;
+}
+.collection-page .collection-form input[type="text"]:focus-visible,
+.collection-page .collection-form input[type="number"]:focus-visible,
+.collection-page .collection-form input[type="date"]:focus-visible,
+.collection-page .collection-form select:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+/* ── divider + details body ────────────────────────────────────────────── */
+.collection-page .collection-detail {
+  margin-top: 2rem;
+}
+.collection-page .collection-form-detail-toggle {
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.collection-page .collection-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-top: 1.25rem;
+}
+
+/* ── type chips (item_type quick-picks) ────────────────────────────────── */
+.collection-page .collection-form-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+.collection-page .collection-form-type-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.9375rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.collection-page .collection-form-type-chip:hover {
+  border-color: var(--brand);
+  background: var(--bg-soft);
+}
+.collection-page .collection-form-type-chip:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.collection-page .collection-form-type-chip.is-active,
+.collection-page .collection-form-type-chip[aria-pressed="true"] {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── locked visit-record box (preselected, non-editable) ───────────────── */
+.collection-page .collection-form-locked {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.625rem;
+  padding: 0 0.8125rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5625rem;
+  background: var(--bg-soft);
+}
+.collection-page .collection-form-locked-label {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-page .collection-form-locked-badge {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── error banner — hidden entirely while empty, unlike the plain
+   .form-error text this page used to inherit from archive_visits.css ────── */
+.collection-page .collection-form-error {
+  margin: 1.25rem 0 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 0.5625rem;
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.collection-page .collection-form-error:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* ── actions row — becomes a fixed bottom bar under 45rem ───────────────── */
+.collection-page .collection-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.collection-page .collection-form-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 1.5rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.collection-page .collection-form-submit:hover {
+  background: var(--brand-ink);
+}
+.collection-page .collection-form-cancel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.375rem;
+  border: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.collection-page .collection-form-cancel:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.collection-page .collection-form-note {
+  margin: 0 0 0 auto;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 45rem) {
+  .collection-page .collection-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .collection-page .collection-form-fields {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .collection-page .collection-form-image {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: 150px;
+    margin: 0 auto 1.25rem;
+  }
+  .collection-page .collection-form-row--split,
+  .collection-page .collection-form-row--even,
+  .collection-page .collection-form-row--visit {
+    grid-template-columns: 1fr;
+  }
+  /* Sticky bottom action bar: the submit/cancel pair stays reachable without
+     scrolling to the very end of a long, detail-expanded form. The note
+     line is dropped here (no room), and the form gets bottom padding so the
+     bar never occludes the last field or the error banner above it. */
+  .collection-page .collection-form {
+    padding-bottom: 5rem;
+  }
+  .collection-page .collection-form-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    margin-top: 0;
+    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .collection-page .collection-form-note {
+    display: none;
+  }
+}
