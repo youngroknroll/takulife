@@ -65,14 +65,6 @@ a.pager-page:hover {
   font-weight: 700;
 }
 
-/* End-of-range arrows stay in place so the row width never changes; they are
-   inert <span>s, and pointer-events guards any future variant that renders
-   them as anchors. */
-.pager-arrow.is-disabled {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   a.pager-arrow,
   a.pager-page {

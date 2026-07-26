@@ -2,15 +2,18 @@
 Shared pagination nav — used by all seven paginated lists (컬렉션 / 다녀온 기록 /
 나의 일정 / 직접 등록 / 전체 보기 / 드래프트 목록 / 스태프 이벤트 목록).
 
-Windowing (5 pages around the current one, … where truncated, « ‹ › » arrows)
-is computed in core/pagination.py and reached through the pager_data tag —
-templates cannot call Paginator methods that take arguments, and expressing the
-boundary cases as {% if %} chains here would be untestable.
+Windowing is computed in core/pagination.py and reached through the pager_data
+tag — templates cannot call Paginator methods that take arguments, and
+expressing the boundary cases as {% if %} chains here would be untestable.
+The window is the 5-page block the current page falls in, followed by the
+last page (rendered as "… {last}", collapsing to just "{last}" when it is
+adjacent to the block).
 
-Arrows at the ends render as disabled <span>s rather than disappearing, so the
-row keeps a stable width and a click never lands on a control that just moved.
-« » only appear past core.pagination.JUMP_ARROWS_MIN_PAGES, where paging one at
-a time actually becomes tedious.
+« » jump 5 pages at a time (jump_back / jump_forward); ‹ › step one page.
+At the first block the left arrows (« ‹) are omitted entirely, and at the
+last block the right arrows (› ») are omitted entirely — not disabled, just
+absent. `.pager` is centered (justify-content: center) so the row stays
+centered even though its width legitimately varies by block.
 
 Include with:
   {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
@@ -22,18 +25,9 @@ Styling: static/css/components/pager.css (loaded globally from base.html).
 {% if page_obj.has_other_pages %}
   {% pager_data page_obj as pg %}
   <nav class="pager" aria-label="페이지 이동">
-    {% if pg.show_jump_arrows %}
-      {% if pg.has_previous %}
-        <a class="pager-arrow" href="?page={{ pg.jump_back }}{{ extra_query }}" aria-label="5페이지 뒤로">«</a>
-      {% else %}
-        <span class="pager-arrow is-disabled" aria-hidden="true">«</span>
-      {% endif %}
-    {% endif %}
-
-    {% if pg.has_previous %}
+    {% if pg.show_back %}
+      <a class="pager-arrow" href="?page={{ pg.jump_back }}{{ extra_query }}" aria-label="5페이지 뒤로">«</a>
       <a class="pager-arrow" href="?page={{ pg.previous }}{{ extra_query }}" aria-label="이전 페이지">‹</a>
-    {% else %}
-      <span class="pager-arrow is-disabled" aria-hidden="true">‹</span>
     {% endif %}
 
     {% for num in pg.pages %}
@@ -46,18 +40,9 @@ Styling: static/css/components/pager.css (loaded globally from base.html).
       {% endif %}
     {% endfor %}
 
-    {% if pg.has_next %}
+    {% if pg.show_forward %}
       <a class="pager-arrow" href="?page={{ pg.next }}{{ extra_query }}" aria-label="다음 페이지">›</a>
-    {% else %}
-      <span class="pager-arrow is-disabled" aria-hidden="true">›</span>
-    {% endif %}
-
-    {% if pg.show_jump_arrows %}
-      {% if pg.has_next %}
-        <a class="pager-arrow" href="?page={{ pg.jump_forward }}{{ extra_query }}" aria-label="5페이지 앞으로">»</a>
-      {% else %}
-        <span class="pager-arrow is-disabled" aria-hidden="true">»</span>
-      {% endif %}
+      <a class="pager-arrow" href="?page={{ pg.jump_forward }}{{ extra_query }}" aria-label="5페이지 앞으로">»</a>
     {% endif %}
   </nav>
 {% endif %}
