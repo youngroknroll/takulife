@@ -2,74 +2,83 @@
 방문 기록(archive_visits) 결과 영역 — 라이브 검색 swap 대상.
 풀 페이지(visits.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: visit_rows, has_visits, has_query, q, page_obj, pager_query, request
+
+2026-07-27 다녀온 기록 에디토리얼 통일: `_archive_results_record.html`/
+`_archive_results_statuses.html`과 같은 `.record-row` 시스템으로 재작성한다.
+행별 방문완료 필은 생략(전 행이 방문 완료라 무정보 반복). 카테고리/장소
+배치는 statuses와 동일하게 제목 위(`.record-row-meta`) — 신규 CSS 0으로
+통일 우선.
+
+신규 `.record-row-photos`(최대 3장 정적 썸네일 + "+N" 더보기)가 캐러셀
+(`.photo-carousel`/`[data-carousel]`)을 대체한다 — WED 결정: 4번째+ 사진
+열람 상실은 의도적 트레이드오프, 수정 페이지에서 여전히 접근 가능. 타일은
+비인터랙티브 그리드가 아니라 edit 링크 앵커라 키보드 포커스 가능.
+
+"삭제" 버튼은 #archive-results 안(라이브 검색이 innerHTML로 통째 교체하는
+영역)에 있으므로 `<button data-delete-record-id>`로 유지 — visit.js가
+전체 리로드 방식으로 삭제를 처리해(계획 참조) 유령 행 경로를 만들지 않는다.
+전역 에러 표시 노드(#visit-global-error)는 이 fragment 밖(visits.html)에
+있다 — 삭제 in-flight 중 검색 스왑이 겹쳐도 closure된 참조가 살아있도록.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if visit_rows %}
-  <div class="timeline">
+  <div class="record-rows">
     {% for row in visit_rows %}
-      <article
-        class="visit-card hover-lift"
-        data-record-id="{{ row.record_id }}"
-      >
-        <div class="visit-card-body">
-          <div class="visit-card-top">
-            {% if not row.subject.is_official %}
-              <span class="visit-chip unofficial">직접 등록</span>
-            {% endif %}
-            {% if row.subject.category_label %}
-              <span class="visit-chip category">{{ row.subject.category_label }}</span>
-            {% endif %}
-            <span class="visit-chip">방문 완료</span>
-          </div>
-
-          <h3>{{ row.subject.title }}</h3>
-          <p class="meta">
-            {{ row.visited_on }}
-            {% if row.subject.location %} · {{ row.subject.location }}{% endif %}
-          </p>
-          {% if row.short_review %}
-            <p class="review">{{ row.short_review }}</p>
-          {% endif %}
-
-          <div class="visit-card-actions">
-            <a
-              class="record-edit-link"
-              href="/archive/visits/{{ row.record_id }}/edit/"
-            >수정</a>
-            <a
-              class="record-edit-link"
-              href="/collection/new/?visit_record={{ row.record_id }}"
-            >굿즈 등록</a>
-            <button
-              class="record-delete-btn"
-              type="button"
-              data-delete-record-id="{{ row.record_id }}"
-            >기록 삭제</button>
-          </div>
+      <article class="record-row" data-record-id="{{ row.record_id }}">
+        <div class="record-row-date">
+          <time datetime="{{ row.visited_on|date:'Y-m-d' }}">
+            <span class="record-row-month">{{ row.visited_on|date:'n월' }}</span>
+            <span class="record-row-day">{{ row.visited_on|date:'d' }}</span>
+          </time>
         </div>
 
-        {% if row.photos %}
-          <div class="visit-card-media">
-            <div class="photo-carousel" data-carousel>
-              <div class="photo-track">
-                {% for photo in row.photos %}
-                  <div class="photo-slide">
-                    <img
-                      src="{{ photo.image.url }}"
-                      alt="방문 사진 {{ forloop.counter }}"
-                      loading="lazy"
-                    >
-                  </div>
-                {% endfor %}
-              </div>
-              {% if row.photos|length > 1 %}
-                <button class="carousel-btn carousel-prev" type="button" aria-label="{{ row.subject.title }} 사진, 이전">‹</button>
-                <button class="carousel-btn carousel-next" type="button" aria-label="{{ row.subject.title }} 사진, 다음">›</button>
-                <p class="carousel-counter" role="status"><span class="carousel-index">1</span>/{{ row.photos|length }}</p>
+        <div class="record-row-body">
+          <p class="record-row-meta">
+            {% if row.subject.category_slug %}
+              <span class="record-row-cat" style="color: var(--cat-{{ row.subject.category_slug|slugify }}-ink, var(--brand-ink));">{{ row.subject.category_label }}</span>
+            {% elif not row.subject.is_official %}
+              <span class="event-category unofficial">직접 등록</span>
+              {% if row.subject.category_label %}
+                <span class="record-row-dot" aria-hidden="true">·</span>
+                <span class="record-row-place">{{ row.subject.category_label }}</span>
+              {% endif %}
+            {% endif %}
+            {% if row.subject.location %}
+              <span class="record-row-dot" aria-hidden="true">·</span>
+              <span class="record-row-place">{{ row.subject.location }}</span>
+            {% endif %}
+          </p>
+          <h3 class="record-row-title">
+            {% if row.subject.detail_url %}
+              <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
+            {% else %}
+              {{ row.subject.title }}
+            {% endif %}
+          </h3>
+          {% if row.short_review %}
+            <p class="record-row-review">&ldquo;{{ row.short_review }}&rdquo;</p>
+          {% endif %}
+          {% if row.photos %}
+            <div class="record-row-photos">
+              {% for photo in row.photos|slice:":3" %}
+                <a class="record-row-photo" href="/archive/visits/{{ row.record_id }}/edit/">
+                  <img src="{{ photo.image.url }}" alt="{{ row.subject.title }} 사진 {{ forloop.counter }}" loading="lazy">
+                </a>
+              {% endfor %}
+              {% if row.photos|length > 3 %}
+                <span class="record-row-photo-more">+{{ row.photos|length|add:'-3' }}</span>
               {% endif %}
             </div>
+          {% endif %}
+        </div>
+
+        <div class="record-row-end">
+          <div class="record-row-actions">
+            <a class="record-row-add-link" href="/collection/new/?visit_record={{ row.record_id }}"><span aria-hidden="true">＋</span> 굿즈 등록</a>
+            <a class="record-row-edit-link" href="/archive/visits/{{ row.record_id }}/edit/">수정</a>
+            <button type="button" class="record-row-delete-btn" data-delete-record-id="{{ row.record_id }}">삭제</button>
           </div>
-        {% endif %}
+        </div>
       </article>
     {% endfor %}
   </div>
