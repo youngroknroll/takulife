@@ -118,7 +118,16 @@
     font-size: var(--fs-md);
     font-weight: 700;
     flex: none;
-    justify-self: end; /* 3열 그리드의 3번째 열 — 우측 정렬 유지 */
+    /* 3열 그리드의 마지막 열에 명시 배치 + 그 안에서 우측 정렬. index.html은
+       세 자식(lead/toggle/action)이 다 있어 action이 자동으로 3열에 놓이지만,
+       /archive/statuses/는 목록|달력 토글을 생략해 자식이 둘뿐 → 자동 배치가
+       action을 가운데 auto 열(2열)에 놓아 히어로 우측에 빈 3열이 남는다
+       (2026-07-24 QVL 실측: action 우측 가장자리와 히어로 우측 사이 472px 공백).
+       `grid-column: 3`으로 자식 수와 무관하게 항상 마지막 열에 고정한다
+       (index는 이미 3열이라 무영향). 모바일 단일 열에서는 아래 53.75rem
+       블록에서 auto로 되돌린다. */
+    grid-column: 3;
+    justify-self: end;
   }
   .hero-action:hover {
     filter: brightness(0.95);
@@ -337,6 +346,13 @@
     color: var(--teal-ink);
   }
   .activity-page .side-list a.quick-link-calendar {
+    color: var(--up-ink);
+  }
+  /* 2026-07-24 나의 일정 에디토리얼 통일: /archive/statuses/의 "이벤트
+     찾기 →"도 위 `.quick-link-calendar`와 같은 선례로 `--up-ink` 덮어쓰기
+     (신규 토큰 불필요 — archive_calendar.css의 `.quick-link-events`와 동일
+     색). */
+  .activity-page .side-list a.quick-link-events {
     color: var(--up-ink);
   }
   /* ── teal accent (v2 §B): `.chip.active`/`.pager-page.is-current`
@@ -575,6 +591,14 @@
     justify-content: flex-end;
     gap: 0.75rem;
   }
+  /* 2026-07-24 나의 일정 에디토리얼 통일: /archive/statuses/ 행은 이
+     컨테이너에 상태 전환 `.status-btn` 필 2개 + 텍스트 전용 삭제 버튼까지
+     최대 3개 형제가 들어간다(다른 아카이브 페이지엔 없던 조합). 색/필
+     지오메트리는 `components/controls.css`가 이미 제공 — 여기서는 탭
+     오인식을 막을 최소 높이만 보강한다. */
+  .record-row-actions .status-btn {
+    min-height: 1.875rem; /* 30px, desktop */
+  }
   /* "＋ 기록" — 방문 완료 && 리뷰 없음. `.record-action-link`(home 컬렉션
      스냅샷과 공유하는 채움 스타일)와는 별도 클래스 — 이 시안은 아웃라인+
      accent-soft 배경이라 공유 클래스를 고치면 home.html에 번진다. */
@@ -656,6 +680,9 @@
       align-items: center;
       gap: 0.5rem;
     }
+    .record-row-actions .status-btn {
+      min-height: 1.625rem; /* 26px, mobile */
+    }
   }
 
   /* Archive timeline status badges (display only, not interactive buttons).
@@ -724,6 +751,7 @@
       justify-self: start;
     }
     .hero-action {
+      grid-column: auto; /* 데스크톱의 `grid-column: 3`을 단일 열에서 해제 */
       justify-self: start;
     }
     /* 2026-07-23 §H: 좁은 폭에서는 grid를 단일 열로 접어 DOM 순서 그대로

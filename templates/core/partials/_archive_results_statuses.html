@@ -1,63 +1,99 @@
 {% comment %}
-예정 목록(archive_statuses) 결과 영역 — 라이브 검색 swap 대상.
+나의 일정(archive_statuses) 결과 영역 — 라이브 검색 swap 대상.
 풀 페이지(statuses.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: has_statuses, status_rows, has_any, has_query, q, selected_status, page_obj, pager_query, request
+
+2026-07-24 나의 일정 에디토리얼 통일: `_archive_results_record.html`의
+`.record-row` 시스템(날짜 열/카테고리·장소/제목/리뷰 인용/상태 필)을 그대로
+재사용하고, 이 페이지 고유의 상태 전환 버튼(visited/missed/planned)을
+`.record-row-end` 안에 보존한다.
+
+"삭제" 버튼은 #archive-results 안(라이브 검색이 innerHTML로 통째 교체하는
+영역)에 있으므로 data-remove-on-cancel(낙관적 DOM 스플라이스)을 쓰지 않는다
+— 삭제 인플라이트 중 검색 스왑이 겹치면 서버가 이미 지운 행이 새로 렌더돼
+유령 행으로 남는다. 대신 status.js:296의 data-reload-on-success 분기를 태워
+204 확인 후 전체 리로드한다 — 이 분기가 data-remove-on-cancel보다 먼저
+검사되므로(status.js:296 vs 312) 유령 행 경로 자체에 도달하지 않는다.
+`.record-row-actions`에 data-status-error-container를 명시 부착 —
+`.record-row`에 상태 전환 버튼 2개 + 삭제 버튼까지 최대 3개 형제가 생기므로
+sibling-lock가 parentElement 폴백에 의존하면 안 된다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if has_statuses %}
-  <div class="status-list">
+  <div class="record-rows">
     {% for row in status_rows %}
-      <article class="status-card">
-        <div>
-          <div class="status-top">
-            {% if not row.subject.is_official %}
-              <span class="event-category unofficial">직접 등록</span>
+      {% with display_date=row.subject.start_date|default:row.updated_at %}
+        <article class="record-row">
+          <div class="record-row-date">
+            {% if display_date %}
+              <time datetime="{{ display_date|date:'Y-m-d' }}">
+                <span class="record-row-month">{{ display_date|date:'n월' }}</span>
+                <span class="record-row-day">{{ display_date|date:'d' }}</span>
+              </time>
+            {% else %}
+              <span class="record-row-date-empty" aria-hidden="true">–</span>
             {% endif %}
-            {% if row.subject.category_label %}
-              <span class="event-category">{{ row.subject.category_label }}</span>
-            {% endif %}
-            <span class="user-status {{ row.status_slug }}">{{ row.status_label }}</span>
           </div>
-          <h3>{{ row.subject.title }}</h3>
-          {% if row.subject.location %}
-            <p class="meta">{{ row.subject.location }}</p>
-          {% endif %}
-          {% if row.subject.start_date and row.subject.end_date %}
-            <p class="period">{{ row.subject.start_date }} ~ {{ row.subject.end_date }}</p>
-          {% endif %}
-        </div>
-        <div class="status-row" data-status-error-container>
-            {% if row.status_slug == 'planned' %}
-              <button class="status-btn visited" type="button" data-status-action="change"
-                data-status="visited"
-                data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_visited }}</button>
-              <button class="status-btn missed" type="button" data-status-action="change"
-                data-status="missed"
-                data-status-id="{{ row.status_id }}" data-reload-on-success>놓침</button>
-            {% elif row.status_slug == 'missed' %}
-              <button class="status-btn visited" type="button" data-status-action="change"
-                data-status="visited"
-                data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_visited }}</button>
-              <button class="status-btn planned" type="button" data-status-action="change"
-                data-status="planned"
-                data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
-            {% elif row.status_slug == 'visited' %}
-              <button class="status-btn planned" type="button" data-status-action="change"
-                data-status="planned"
-                data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
+
+          <div class="record-row-body">
+            <p class="record-row-meta">
+              {% if row.subject.category_slug %}
+                <span class="record-row-cat" style="color: var(--cat-{{ row.subject.category_slug|slugify }}-ink, var(--brand-ink));">{{ row.subject.category_label }}</span>
+              {% elif not row.subject.is_official %}
+                <span class="event-category unofficial">직접 등록</span>
+              {% endif %}
+              {% if row.subject.location %}
+                <span class="record-row-dot" aria-hidden="true">·</span>
+                <span class="record-row-place">{{ row.subject.location }}</span>
+              {% endif %}
+            </p>
+            <h3 class="record-row-title">
+              {% if row.subject.detail_url %}
+                <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
+              {% else %}
+                {{ row.subject.title }}
+              {% endif %}
+            </h3>
+            {% if row.review_text %}
+              <p class="record-row-review">&ldquo;{{ row.review_text }}&rdquo;</p>
             {% endif %}
-            <button class="status-btn cancel" type="button"
-              data-status-action="unset"
-              data-status="{{ row.status_slug }}"
-              data-status-id="{{ row.status_id }}"
-              data-remove-on-cancel
-              data-confirm-message="삭제하시겠습니까?"
-            >삭제</button>
           </div>
-        {% if row.subject.detail_url %}
-          <a class="side-action-link" href="{{ row.subject.detail_url }}">상세 보기</a>
-        {% endif %}
-      </article>
+
+          <div class="record-row-end">
+            <span class="status {{ row.status_slug }}">{{ row.status_label }}</span>
+            <div class="record-row-actions" data-status-error-container>
+              {% if row.status_slug == 'planned' %}
+                <button class="status-btn visited" type="button" data-status-action="change"
+                  data-status="visited"
+                  data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_visited }}</button>
+                <button class="status-btn missed" type="button" data-status-action="change"
+                  data-status="missed"
+                  data-status-id="{{ row.status_id }}" data-reload-on-success>놓침</button>
+              {% elif row.status_slug == 'missed' %}
+                <button class="status-btn visited" type="button" data-status-action="change"
+                  data-status="visited"
+                  data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_visited }}</button>
+                <button class="status-btn planned" type="button" data-status-action="change"
+                  data-status="planned"
+                  data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
+              {% elif row.status_slug == 'visited' %}
+                <button class="status-btn planned" type="button" data-status-action="change"
+                  data-status="planned"
+                  data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
+              {% endif %}
+              <button
+                type="button"
+                class="record-row-delete-btn"
+                data-status-action="unset"
+                data-status="{{ row.status_slug }}"
+                data-status-id="{{ row.status_id }}"
+                data-reload-on-success
+                data-confirm-message="이 상태 기록만 삭제되며, 작성한 방문 기록과 사진은 그대로 유지됩니다."
+              >삭제</button>
+            </div>
+          </div>
+        </article>
+      {% endwith %}
     {% endfor %}
   </div>
 {% elif has_any and has_query %}
@@ -65,14 +101,15 @@
     <p class="empty-title">검색 결과가 없습니다</p>
     <p class="empty-note">"{{ q }}"에 해당하는 기록이 없어요. <a href="{{ request.path }}">지우기</a></p>
   </div>
+{% elif has_any %}
+  <p class="notice">이 상태로 저장한 이벤트가 없습니다. <a href="/archive/statuses/">전체 해제</a></p>
 {% else %}
-  <p class="notice">
-    {% if selected_status %}
-      이 상태로 저장한 이벤트가 없습니다. <a href="/archive/statuses/">전체 해제</a>
-    {% else %}
-      아직 저장한 이벤트가 없습니다. <a href="/events/">이벤트 목록에서 찾아보세요</a>
-    {% endif %}
-  </p>
+  <div class="empty-state">
+    <p class="empty-icon">🗂️</p>
+    <p class="empty-title">아직 저장한 이벤트가 없어요</p>
+    <p class="empty-note">방문 예정·방문 완료·놓침 상태를 표시하면 여기에 모여요.</p>
+    <a class="empty-action" href="/events/">이벤트 찾아보기</a>
+  </div>
 {% endif %}
 
 {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}

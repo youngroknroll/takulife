@@ -3,83 +3,95 @@
 {% block title %}{{ project_name }} | 나의 일정{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/archive_statuses.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
 {% endblock %}
 
 {% block content %}
   <main class="page activity-page" id="content">
-    {% include "core/partials/_archive_nav.html" with active="statuses" active_label="나의 일정" %}
-
-    <section class="hero">
-      <h1>나의 일정</h1>
-
-      <div class="summary-grid" style="--summary-cols: 3">
-        <article class="summary-card">
-          <p class="summary-label">방문 예정</p>
-          <p class="summary-value">{{ status_counts.planned }}</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">방문 완료</p>
-          <p class="summary-value">{{ status_counts.visited }}</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">놓침</p>
-          <p class="summary-value">{{ status_counts.missed }}</p>
-        </article>
+    <section class="hero hero-activity">
+      <div class="hero-lead">
+        <h1>내 활동</h1>
+        <div class="summary-grid" style="--summary-cols: 3">
+          <article class="summary-card">
+            <p class="summary-label">방문 예정</p>
+            <p class="summary-value">{{ status_counts.planned }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">방문 완료</p>
+            <p class="summary-value">{{ status_counts.visited }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">놓침</p>
+            <p class="summary-value">{{ status_counts.missed }}</p>
+          </article>
+        </div>
       </div>
+
+      <a class="hero-action" href="/archive/visits/new/" data-cta-watch><span aria-hidden="true">＋</span> 기록 추가</a>
     </section>
 
-    <section class="layout">
-      <article class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>나의 일정 상태</h2>
-          </div>
-        </div>
+    {# index.html과 동일한 3구획 툴바(탭 / 검색 / 찜 목록). 목록|달력 토글은 #}
+    {# 이 페이지에서 생략(계획 §2): /archive/·/archive/calendar/ 어느 쪽도 #}
+    {# 현재 URL이 아니라 정직한 aria-current를 붙일 수 없다. #}
+    <div class="activity-toolbar">
+      {% include "core/partials/_archive_nav.html" with active="statuses" active_label="나의 일정" hide_interest=True %}
+      {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> 찜 목록</a>
+    </div>
 
+    <section class="layout">
+      <aside class="panel" aria-label="상태 필터 및 빠른 이동">
         <div class="chips">
-          <a
-            class="chip{% if not selected_status %} active{% endif %}"
-            {% if not selected_status %}aria-current="page"{% endif %}
-            href="/archive/statuses/{% if has_query %}?q={{ q|urlencode }}{% endif %}"
-          >전체</a>
+          <a class="chip{% if not selected_status %} active{% endif %}"{% if not selected_status %} aria-current="page"{% endif %} href="/archive/statuses/{% if has_query %}?q={{ q|urlencode }}{% endif %}">전체</a>
           {% for slug, label in ARCHIVE_STATUS %}
-            <a
-              class="chip{% if selected_status == slug %} active{% endif %}"
-              {% if selected_status == slug %}aria-current="page"{% endif %}
-              href="/archive/statuses/?status={{ slug }}{{ search_suffix }}"
-            >{{ label }}</a>
+            <a class="chip{% if selected_status == slug %} active{% endif %}"{% if selected_status == slug %} aria-current="page"{% endif %} href="/archive/statuses/?status={{ slug }}{{ search_suffix }}">{{ label }}</a>
           {% endfor %}
         </div>
 
-        {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
+        <div class="right-section">
+          <h2 class="aside-label">빠른 이동</h2>
+          <ul class="side-list">
+            <li><a href="/archive/visits/">다녀온 기록 →</a></li>
+            <li><a class="quick-link-events" href="/events/">이벤트 찾기 →</a></li>
+          </ul>
+        </div>
+      </aside>
+
+      <article class="panel">
+        <div class="results-head">
+          <h2>전체 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
+          {# <details>, not a JS dropdown: the options are plain GET links, so #}
+          {# native disclosure gives keyboard operation and a no-JS fallback   #}
+          {# for free. event_list.js only adds outside-click dismissal on top. #}
+          <details class="results-sort" data-sort-menu>
+            <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
+            <ul class="results-sort-menu">
+              {% for slug, label in ARCHIVE_STATUS_SORT %}
+                <li><a href="?sort={{ slug|urlencode }}{{ sort_query }}"{% if selected_sort == slug %} aria-current="true"{% endif %}>{{ label }}</a></li>
+              {% endfor %}
+            </ul>
+          </details>
+        </div>
 
         <div id="archive-results" data-archive-results>
           {% include "core/partials/_archive_results_statuses.html" %}
         </div>
       </article>
-
-      <aside class="side-stack">
-        <section class="panel">
-          <h2>빠른 이동</h2>
-          <ul class="side-list side-list--row">
-            <li><a href="/archive/">전체 보기</a></li>
-            <li><a href="/archive/visits/">다녀온 기록</a></li>
-            <li><a href="/events/">이벤트 찾기</a></li>
-          </ul>
-        </section>
-
-        <section class="panel">
-          <h2>다녀온 기록</h2>
-          <p class="empty-note">
-            <a href="/archive/visits/new/">다녀온 기록 작성하러 가기</a>
-          </p>
-        </section>
-      </aside>
     </section>
+
+    <div class="mobile-cta" data-cta-fixed hidden>
+      <a href="/archive/visits/new/">기록 추가</a>
+    </div>
   </main>
 {% endblock %}
 
 {% block extra_js %}
+  <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
+  {# event_list.js now loads on two pages (/events/ and /archive/) for the   #}
+  {# sort <details> menu's outside-click/Esc/focusout dismissal. Its        #}
+  {# .filter-toggle/.filters selectors only exist on the /events/ templates #}
+  {# so they no-op here (verified 2026-07-23) — reconsider this sharing if  #}
+  {# /events/-only behavior is ever added to that file. #}
+  <script defer src="{% static 'js/pages/event_list.js' %}"></script>
 {% endblock %}

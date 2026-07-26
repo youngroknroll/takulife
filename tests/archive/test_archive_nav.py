@@ -37,6 +37,21 @@ but the cross-page coverage gap this premise created is now closed by
 tests/archive/test_archive_interest_placement.py, which asserts the
 sibling-pages-keep-찜-inside-nav fact across all five reachable list pages
 and the index-specific moved-outside-nav fact separately.
+
+2026-07-24 나의 일정 에디토리얼 통일: the §H claim above that
+"statuses.html itself is unmodified and this test's 5-link/no-찜-leak
+assertions still hold there" is now FALSE — /archive/statuses/ has adopted
+the index-style 3-column toolbar (`hide_interest=True`), moving its 찜
+anchor out of this nav just like /archive/ and /archive/calendar/. This
+test's representative page therefore moves from /archive/statuses/ to
+/archive/visits/, a stable sibling that still keeps 찜 inside the nav, so
+the 5-link count and the in-nav `href="/archive/interests/"` assertion
+continue to hold. The tab-bar contract itself (five destinations, active
+marking, no 활동 달력, no /collection/) is unchanged by this swap — only
+the active tab under test shifts from "나의 일정" to "다녀온 기록". The
+찜-outside-nav fact for /archive/statuses/ is now covered by
+tests/archive/test_archive_interest_placement.py's
+TestIndexMovesInterestOutsideNavAfterSearch, so no coverage is lost.
 """
 import pytest
 
@@ -48,7 +63,7 @@ class TestArchiveNavTabs:
     def test_아카이브_내비게이션_탭바는_내_활동_계열_다섯_링크만_보여주고_활동_달력과_컬렉션_링크를_포함하지_않는다(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/statuses/")
+        resp = client.get("/archive/visits/")
         content = resp.content.decode()
 
         # Scoped to the sub-nav landmark itself — the global header also
@@ -61,7 +76,7 @@ class TestArchiveNavTabs:
 
         assert nav.count("<a ") + nav.count('<a\n') + nav.count('<a\r\n') == 5
         assert '>나의 일정</a>' in nav
-        assert 'class="active">나의 일정</a>' in nav
+        assert 'class="active">다녀온 기록</a>' in nav
         assert ">다녀온 기록</a>" in nav
         assert ">직접 등록</a>" in nav
         assert ">전체 보기</a>" in nav
