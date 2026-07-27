@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 컬렉션{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/archive_collection_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page collection-detail-page" id="content">
+    <a class="collection-detail-back-link" href="/collection/">← 내 컬렉션으로</a>
+    <div id="collection-global-error" class="collection-detail-global-error" aria-live="polite"></div>
+    <div class="collection-detail-grid">
+      <div class="collection-detail-gallery">
+        <div class="collection-detail-cover">
+          {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.name }}">
+          {% else %}
+            <div class="collection-detail-noimg {{ row.series_ink_class }}">
+              <span class="collection-detail-bar" aria-hidden="true"></span>
+              <span class="collection-detail-noimg-label">{{ item.item_type }}</span>
+            </div>
+          {% endif %}
+          <span class="collection-detail-pill{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">{% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}</span>
+        </div>
+        <div class="collection-detail-actions">
+          <a class="collection-detail-edit-btn" href="/collection/{{ item.id }}/edit/">수정</a>
+          <button type="button" class="collection-detail-delete-btn"
+                  data-delete-item-id="{{ item.id }}" aria-label="굿즈 삭제">
+            <span class="collection-detail-delete-text" aria-hidden="true">삭제</span>
+            <span class="collection-detail-delete-icon" aria-hidden="true">🗑</span>
+          </button>
+        </div>
+      </div>
+      <div class="collection-detail-main">
+        <div class="collection-detail-identity">
+          <span class="collection-detail-bar-dot {{ row.series_ink_class }}" aria-hidden="true"></span>
+          <span class="collection-detail-work {{ row.series_ink_class }}">{{ item.work_title }}</span>
+          {% if item.character_name %}<span class="collection-detail-dot" aria-hidden="true">·</span>
+          <span class="collection-detail-character">{{ item.character_name }}</span>{% endif %}
+        </div>
+        <h1 class="collection-detail-title">{{ item.name }}</h1>
+        {% if item.item_type %}<p class="collection-detail-type">{{ item.item_type }}</p>{% endif %}
+        {% if meta_rows %}
+        <dl class="collection-detail-meta">
+          {% for r in meta_rows %}
+          <div class="collection-detail-meta-row">
+            <dt>{{ r.label }}</dt>
+            <dd>{% if r.url %}<a href="{{ r.url }}">{{ r.value }}</a>{% else %}{{ r.value }}{% endif %}{% if r.lock_hint %}<span class="collection-detail-meta-lock">🔒 변경 불가</span>{% endif %}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+        {% endif %}
+        {% if item.memo %}
+          <h2 class="collection-detail-memo-head">메모</h2>
+          <p class="collection-detail-memo">{{ item.memo }}</p>
+        {% endif %}
+        {% if tradeable_quantity > 0 %}
+        <div class="collection-detail-trade-banner">
+          <div class="collection-detail-trade-text">
+            <p class="collection-detail-trade-title">교환 가능 {{ tradeable_quantity }}개</p>
+            <p class="collection-detail-trade-note">중복분을 교환 장터에 올릴 수 있어요</p>
+          </div>
+          {% comment %}
+          TODO(trade): 교환 장터는 게이트 승인 전 착수 금지 범위다. tradeable_quantity 표시는
+          실데이터이고 이 버튼은 대상 라우트·엔드포인트가 없어 비활성으로 둔다. 게이트 통과 시
+          실제 대상을 연결하고 disabled와 준비 중 힌트를 제거할 것.
+          {% endcomment %}
+          <button type="button" class="collection-detail-trade-cta" disabled
+                  aria-describedby="collection-trade-hint">
+            교환 장터에 내놓기
+            <span class="collection-detail-trade-hint" id="collection-trade-hint">준비 중</span>
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/pages/collection_detail.js' %}"></script>
+{% endblock %}

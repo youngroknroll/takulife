@@ -855,6 +855,34 @@ class TestSeriesInkClassesWholeCollectionPalette:
 
 
 @pytest.mark.django_db
+class TestArchiveCollectionCardLinksToDetail:
+    """CD-16 (컬렉션 상세 페이지 트랙): the list card's name and thumbnail must
+    link to the not-yet-existing detail route `/collection/<id>/` — a wiring
+    regression guard for prompt_plan.md's 컬렉션 상세 페이지 addition."""
+
+    @pytest.mark.parametrize("view_mode", ["리스트", "갤러리"])
+    def test_목록_카드의_이름과_이미지는_상세_페이지로_연결된다(
+        self, user_client, make_collection_item, view_mode
+    ):
+        user, client = user_client()
+        item = make_collection_item(user, name="상세연결굿즈")
+
+        query = "?view=list" if view_mode == "리스트" else ""
+        resp = client.get(f"/collection/{query}")
+
+        # substring 단언(`in`)만으로는 이름 링크와 이미지 링크 중 하나만
+        # 남아도(예: 썸네일/커버의 href 제거) 다른 하나가 여전히 그 문자열을
+        # 포함해 통과한다 — 계획 §7의 "이름 + 이미지 둘 다 연결"의 절반이
+        # 사라져도 초록이 되는 결함이다. 리스트는 `.collection-row-thumb` +
+        # 이름 링크, 갤러리는 `.gcard-cover` + 이름 링크로 정확히 2개의
+        # 동일 href가 나와야 하므로 등장 횟수를 센다. 클래스명 자체는
+        # 단언하지 않아 프론트의 클래스 리네이밍에는 영향받지 않는다.
+        detail_href = f'href="/collection/{item.pk}/"'.encode()
+        content = resp.content
+        assert content.count(detail_href) >= 2
+
+
+@pytest.mark.django_db
 class TestArchiveCollectionSeriesInkFacetQueryCount:
     """작품별 집계(user_collection_item_work_title_facets)가 요청당 정확히
     1회만 실행되고, 아이템 수가 늘어도 쿼리 수가 늘지 않는지(행별 쿼리 없음)

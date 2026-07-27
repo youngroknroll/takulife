@@ -1,0 +1,461 @@
+/* archive_collection_detail.css — /collection/<id>/ 전용 읽기 전용 상세
+   페이지. Design source: collection-detail-fe-brief (WED+BIR 사전 산출물
+   통합, 2026-07-27).
+
+   Mirrors archive_visit_detail.css's structure/tokens/mobile-fixed-bar
+   pattern (2-col grid, gallery column, ≤45rem single column + fixed
+   action bar, icon-only .is-loading spinner fix). Entirely scoped under
+   `.collection-detail-page` (this page's <main> root class). Does NOT
+   edit archive_collection.css / collection.js / any shared file in
+   place — this file ports fresh, page-scoped copies of the pieces it
+   needs (series-ink rebinding, no-image fallback, status pill, danger
+   button skin) instead of a "half-swap" (goods-create-editorial-track /
+   dannyeoon-girok-editorial-track lesson).
+
+   TOKEN NOTE: no new hex values except #fff for on-brand button text —
+   all colors are existing tokens.css custom properties. Brief's D1/D2/D3
+   deviations from the mock are implemented here (series palette instead
+   of --cat-*-ink, 3-way status pill, disabled trade CTA). */
+
+.collection-detail-page {
+  max-width: 53rem;
+  margin: 0 auto;
+}
+
+.collection-detail-page .collection-detail-back-link {
+  display: inline-block;
+  margin-bottom: 0.875rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+.collection-detail-page .collection-detail-back-link:hover {
+  text-decoration: underline;
+}
+
+/* ── global (top-of-page) error banner ───────────────────────────────── */
+.collection-detail-page .collection-detail-global-error {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 0.5625rem;
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.collection-detail-page .collection-detail-global-error:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* ── two-column grid ─────────────────────────────────────────────────── */
+.collection-detail-page .collection-detail-grid {
+  display: grid;
+  grid-template-columns: 20.5rem minmax(0, 1fr);
+  gap: 2.375rem;
+  align-items: start;
+}
+
+/* ── cover ───────────────────────────────────────────────────────────── */
+.collection-detail-page .collection-detail-cover {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 13px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.collection-detail-page .collection-detail-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── no-image fallback — page-scoped copy of .gcard-noimg's shape.
+   Reusing .gcard-noimg's name here would be silently unstyled (that
+   class only exists under .collection-page), so this ports the values
+   under a page-scoped name instead. */
+.collection-detail-page .collection-detail-noimg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.collection-detail-page .collection-detail-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--series-ink, var(--muted));
+}
+.collection-detail-page .collection-detail-noimg-label {
+  padding: 0 1.25rem;
+  max-width: 80%;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* ── status pill (보유/구함/교환) — left-top on the cover, page-scoped
+   copy of archive_collection.css's .collection-pill/.collection-pill--cover
+   pair (values identical, position moved per WED: left instead of right so
+   it never collides with a portrait cover's brightest corner). Pill text
+   itself carries the status, so no aria-hidden here. */
+.collection-detail-page .collection-detail-pill {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6875rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.collection-detail-page .collection-detail-pill.is-owned {
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+.collection-detail-page .collection-detail-pill.is-wanted {
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+}
+.collection-detail-page .collection-detail-pill.is-tradeable {
+  background: var(--up-soft);
+  color: var(--up-ink);
+}
+
+/* ── actions (desktop): 수정 → 삭제, both DOM order and visual order ── */
+.collection-detail-page .collection-detail-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+.collection-detail-page .collection-detail-edit-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.625rem;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.collection-detail-page .collection-detail-edit-btn:hover {
+  background: var(--brand-ink);
+}
+.collection-detail-page .collection-detail-edit-btn.is-item-gone-locked {
+  background: var(--bg-soft);
+  color: var(--muted);
+  pointer-events: none;
+}
+.collection-detail-page .collection-detail-delete-btn {
+  height: 2.625rem;
+  padding: 0 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--rose-border);
+  background: var(--surface);
+  color: var(--rose-ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.collection-detail-page .collection-detail-delete-btn:hover {
+  background: var(--rose-soft);
+}
+.collection-detail-page .collection-detail-delete-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+/* Icon glyph is desktop-hidden — desktop reads the 삭제 text label. */
+.collection-detail-page .collection-detail-delete-icon {
+  display: none;
+}
+
+/* ── identity line (작품 · 캐릭터) ────────────────────────────────────── */
+.collection-detail-page .collection-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  margin-bottom: 0.5625rem;
+  min-width: 0;
+}
+.collection-detail-page .collection-detail-bar-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: var(--series-ink, var(--muted));
+  flex-shrink: 0;
+}
+.collection-detail-page .collection-detail-work {
+  font-weight: 700;
+  color: var(--series-ink, var(--muted));
+}
+.collection-detail-page .collection-detail-character {
+  font-weight: 600;
+  color: var(--muted);
+}
+.collection-detail-page .collection-detail-work,
+.collection-detail-page .collection-detail-character {
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-detail-page .collection-detail-dot {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* ── title · type ──────────────────────────────────────────────────── */
+.collection-detail-page .collection-detail-title {
+  margin: 0 0 0.375rem;
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+.collection-detail-page .collection-detail-type {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 1.375rem;
+}
+
+/* ── meta hairline ─────────────────────────────────────────────────── */
+.collection-detail-page .collection-detail-meta {
+  margin: 0 0 1.375rem;
+  border-top: 1.5px solid var(--text);
+}
+.collection-detail-page .collection-detail-meta-row {
+  display: grid;
+  grid-template-columns: 6.875rem 1fr;
+  gap: 0.875rem;
+  padding: 0.75rem 0.125rem;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+}
+.collection-detail-page .collection-detail-meta-row dt {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.collection-detail-page .collection-detail-meta-row dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.collection-detail-page .collection-detail-meta-row dd a {
+  color: var(--brand-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.collection-detail-page .collection-detail-meta-row dd a:hover {
+  text-decoration: underline;
+}
+.collection-detail-page .collection-detail-meta-lock {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+/* ── memo ──────────────────────────────────────────────────────────── */
+.collection-detail-page .collection-detail-memo-head {
+  margin: 0 0 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.collection-detail-page .collection-detail-memo {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* ── trade banner (D3: rendered with real tradeable_quantity, CTA
+   disabled — trade marketplace has no route until the exchange gate is
+   approved). Info side keeps full --up-ink/--up-soft saturation because
+   the quantity is real data; the CTA is deliberately one step duller than
+   a live button so it doesn't read as tappable. */
+.collection-detail-page .collection-detail-trade-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--up-ink);
+  border-radius: 11px;
+  background: var(--up-soft);
+}
+.collection-detail-page .collection-detail-trade-title {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--up-ink);
+}
+.collection-detail-page .collection-detail-trade-note {
+  margin: 0.125rem 0 0;
+  font-size: 0.78rem;
+  color: var(--up-ink);
+  opacity: 0.85;
+}
+.collection-detail-page .collection-detail-trade-cta {
+  margin-left: auto;
+  flex-shrink: 0;
+  height: 2.375rem;
+  padding: 0 1rem;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: not-allowed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.0625rem;
+}
+.collection-detail-page .collection-detail-trade-hint {
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+/* ── .gi-N series-ink rebinding — REQUIRED, page-scoped copy of
+   archive_visit_detail.css's .visit-detail-page .gi-0..gi-12 block
+   (values identical to archive_collection.css's .collection-page
+   equivalent). Without this the color bar/dot/work-title text render
+   flat grey (previous detail-page track's recorded regression). */
+.collection-detail-page .gi-0 { --series-ink: var(--muted); }
+.collection-detail-page .gi-1 { --series-ink: var(--series-1-ink); }
+.collection-detail-page .gi-2 { --series-ink: var(--series-2-ink); }
+.collection-detail-page .gi-3 { --series-ink: var(--series-3-ink); }
+.collection-detail-page .gi-4 { --series-ink: var(--series-4-ink); }
+.collection-detail-page .gi-5 { --series-ink: var(--series-5-ink); }
+.collection-detail-page .gi-6 { --series-ink: var(--series-6-ink); }
+.collection-detail-page .gi-7 { --series-ink: var(--series-7-ink); }
+.collection-detail-page .gi-8 { --series-ink: var(--series-8-ink); }
+.collection-detail-page .gi-9 { --series-ink: var(--series-9-ink); }
+.collection-detail-page .gi-10 { --series-ink: var(--series-10-ink); }
+.collection-detail-page .gi-11 { --series-ink: var(--series-11-ink); }
+.collection-detail-page .gi-12 { --series-ink: var(--series-12-ink); }
+
+/* ── narrow (≤45rem): single column, fixed bottom action bar ─────────── */
+@media (max-width: 45rem) {
+  /* Reserves space for the fixed bar below — sized off the bar's own
+     content (0.625rem top/bottom padding + ~2.75rem button height +
+     safe-area) with headroom, not the mock's flat 64px constant (BIR
+     HIGH: verify by scrolling to the very bottom that the last meta row
+     / memo paragraph is never covered). */
+  .collection-detail-page {
+    padding-bottom: 6rem;
+  }
+  .collection-detail-page .collection-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .collection-detail-page .collection-detail-gallery {
+    grid-row: 1;
+  }
+  .collection-detail-page .collection-detail-main {
+    grid-row: 2;
+  }
+  .collection-detail-page .collection-detail-title {
+    font-size: var(--fs-xl-mobile);
+    line-height: 1.25;
+  }
+  .collection-detail-page .collection-detail-meta-row {
+    grid-template-columns: 5.375rem 1fr;
+    gap: 0.625rem;
+    padding: 0.5625rem 0;
+  }
+  .collection-detail-page .collection-detail-pill {
+    left: 0.625rem;
+    top: 0.625rem;
+    font-size: 0.66rem;
+    padding: 0.1875rem 0.625rem;
+  }
+  .collection-detail-page .collection-detail-trade-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .collection-detail-page .collection-detail-trade-cta {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Fixed, full-width action bar (BIR-approved deviation from the mock's
+     floating inset card). DOM order stays 수정 → 삭제 (D5 — no `order`,
+     no row-reverse, no reversed grid-column: a past track's `order`
+     reversal was judged a WCAG 2.4.3 tab-order violation, so this page
+     does not repeat it even though the mock's mobile frame shows 삭제
+     on the left). */
+  .collection-detail-page .collection-detail-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    margin-top: 0;
+    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--chrome-glass-cta);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .collection-detail-page .collection-detail-edit-btn {
+    height: 2.75rem;
+  }
+  .collection-detail-page .collection-detail-delete-btn {
+    flex: none;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+  }
+  .collection-detail-page .collection-detail-delete-text {
+    display: none;
+  }
+  .collection-detail-page .collection-detail-delete-icon {
+    display: inline;
+    font-size: 1.1rem;
+  }
+
+  /* Icon-only .is-loading spinner fix, scoped to this breakpoint only —
+     applying `color: transparent` globally would also blank the
+     desktop text-label button, which carries no icon to fall back to
+     (recorded regression, 2 prior recurrences). .is-loading itself
+     already sets position: relative (interaction.css), so no extra
+     positioning context is needed here. */
+  .collection-detail-page .collection-detail-delete-btn.is-loading {
+    color: transparent;
+  }
+  .collection-detail-page .collection-detail-delete-btn.is-loading::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: 0;
+    transform: translate(-50%, -50%);
+    color: var(--rose-ink);
+  }
+}

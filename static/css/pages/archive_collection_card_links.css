@@ -1,0 +1,31 @@
+/* archive_collection_card_links.css — CD-16 (collection-detail-fe-brief §7).
+   The list card's thumbnail/cover and name now link to the new
+   `/collection/<id>/` detail route (templates/core/partials/
+   _archive_results_collection.html). Kept out of archive_collection.css
+   itself (that file is off-limits for this track) because the two
+   selectors that changed tag — `.collection-row-thumb` (was a <div>) and
+   `.gcard-cover` (was a <div>) — are now <a> elements, and an <a>'s UA
+   default `display: inline` would ignore archive_collection.css's own
+   width/height/aspect-ratio rules for these classes (no tag qualifier in
+   those selectors, so the class rules still match, but an inline box
+   can't honor them). This file only restores `display: block` plus the
+   plain-text link skin; it does not re-declare any dimension, color, or
+   spacing value that archive_collection.css already owns. `.gcard-name`
+   needed no such fix — its own rule already sets `display: -webkit-box`
+   regardless of tag. `.collection-row-name` keeps its original <h3>
+   element (an inner <a> carries the href instead) specifically so the
+   row's name stays in the heading tree; only that inner link needs a
+   skin reset here. */
+
+.collection-page .collection-row-thumb,
+.collection-page .gcard-cover {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.collection-page .collection-row-name a,
+.collection-page .gcard-name a {
+  color: inherit;
+  text-decoration: none;
+}
