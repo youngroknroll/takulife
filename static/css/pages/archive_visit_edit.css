@@ -1,0 +1,478 @@
+/* archive_visit_edit.css — /archive/visits/<id>/edit/ 전용 수정 페이지.
+   Design source: dannyeoon-girok-editorial-track 후속, MERGED 형제 페이지
+   archive_visit_create.css를 그대로 미러링(구조/토큰/모바일 바).
+
+   Entirely scoped under `.visit-edit-page` (this page's `<main>` root
+   class). Does NOT edit archive_visits.css / photo-upload.css in place —
+   both are shared across other pages (visit list/detail/create, staff
+   poster upload). This file ports fresh, page-scoped, teal-themed copies
+   of the pieces it needs from archive_visits.css instead
+   (goods-create-editorial-track's "half-swap silently unstyles the form"
+   lesson).
+
+   TOKEN NOTE: `--border-strong` and `--danger-*`/`--accent*` do not exist
+   in tokens.css (verified by grep before writing this file). `--muted` is
+   used for the dashed dropzone/add-tile border; `--rose-*` for danger. */
+
+.visit-edit-page {
+  max-width: 51.25rem;
+  margin: 0 auto;
+}
+
+.visit-edit-page .visit-edit-back-link {
+  display: inline-block;
+  margin-bottom: 0.875rem;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--teal-ink);
+  text-decoration: none;
+}
+.visit-edit-page .visit-edit-back-link:hover {
+  text-decoration: underline;
+}
+
+/* ── header: title + subtitle, heavy hairline rule ───────────────────── */
+.visit-edit-page .visit-edit-head {
+  padding-bottom: 1.125rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1.5px solid var(--text);
+}
+.visit-edit-page .visit-edit-head h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.visit-edit-page .visit-edit-subtitle {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* ── global (top-of-page) error banner ───────────────────────────────── */
+.visit-edit-page .visit-edit-global-error {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 0.5625rem;
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.visit-edit-page .visit-edit-global-error:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* ── two-column grid: 320px photo column, flexible fields column ────────── */
+.visit-edit-page .visit-edit-grid {
+  display: grid;
+  grid-template-columns: 20rem minmax(0, 1fr);
+  gap: 2.375rem;
+  align-items: start;
+}
+.visit-edit-page .visit-edit-photo-col {
+  grid-column: 1;
+  grid-row: 1;
+}
+.visit-edit-page .visit-edit-fields {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.visit-edit-page .visit-edit-field-label {
+  display: block;
+  margin: 0 0 0.4375rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ── photo mosaic: existing + new grids merged into one 4-col layout ───── */
+.visit-edit-page .visit-edit-photo-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+.visit-edit-page #existing-photo-grid,
+.visit-edit-page #photo-preview-grid {
+  display: contents;
+}
+.visit-edit-page .photo-add-tile {
+  border-color: var(--muted);
+}
+.visit-edit-page .photo-add-tile:hover {
+  border-color: var(--teal);
+  color: var(--teal-ink);
+  background: var(--teal-soft);
+}
+.visit-edit-page .photo-add-tile:focus-visible {
+  outline-color: var(--teal);
+}
+/* Empty state: no existing photos AND no new previews — big dashed
+   dropzone spanning the full row. */
+.visit-edit-page .visit-edit-photo-row:has(#existing-photo-grid[hidden]):has(#photo-preview-grid[hidden]) #visit-photos-trigger {
+  grid-column: 1 / -1;
+  width: auto;
+  height: auto;
+  aspect-ratio: 4 / 3;
+}
+/* Non-empty state: small square add-tile fills a single grid cell. */
+.visit-edit-page .visit-edit-photo-row:has(#existing-photo-grid:not([hidden])) #visit-photos-trigger,
+.visit-edit-page .visit-edit-photo-row:has(#photo-preview-grid:not([hidden])) #visit-photos-trigger {
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+/* Preview tiles ported + re-themed from archive_visits.css (page-scoped
+   copy, not an edit of the shared file). Sized to fill their grid cell
+   instead of the shared page's fixed 80px. Applies to both the existing
+   photo grid and the new-preview grid — a single shared cover rule marks
+   whichever tile JS designates as 대표 (refreshCover() in visit_edit.js). */
+.visit-edit-page .photo-preview-tile {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+}
+.visit-edit-page .photo-preview-tile.is-cover {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  aspect-ratio: 4 / 3;
+}
+.visit-edit-page .photo-preview-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  display: block;
+}
+.visit-edit-page .photo-preview-tile.is-cover img {
+  border-color: var(--teal);
+  border-width: 2px;
+}
+.visit-edit-page .photo-preview-cover-badge {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.125rem 0.3125rem;
+  border-radius: 4px;
+}
+.visit-edit-page .photo-preview-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.visit-edit-page .photo-preview-remove::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+.visit-edit-page .photo-preview-remove:hover {
+  background: rgba(180, 0, 0, 0.75);
+}
+/* The shared .is-loading spinner (objects/interaction.css) assumes a
+   button with visible text before it — margin-left spaces the spinner
+   away from that text. .photo-preview-remove is a 22px icon-only circle
+   (bare "×" text node, existing-photo delete calls TakuAPI.setLoading on
+   it), so glyph + spinner rendered side by side and spilled past the
+   circle. Hide the glyph and center the spinner instead — same fix shape
+   as cards.css's .poster-interest.is-loading precedent, adapted for a
+   bare text node (no wrapping glyph span to target). */
+.visit-edit-page .photo-preview-remove.is-loading {
+  color: transparent;
+}
+.visit-edit-page .photo-preview-remove.is-loading::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: 0;
+  transform: translate(-50%, -50%);
+  color: #fff;
+}
+.visit-edit-page .visit-edit-photo-col .field-hint {
+  margin: 0.5625rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+/* ── field groups ─────────────────────────────────────────────────────── */
+.visit-edit-page .visit-edit-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+}
+.visit-edit-page .visit-edit-group label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.visit-edit-page .visit-edit-group .field-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* Read-only subject box — the edit page cannot change what a record is
+   linked to. Ported + page-scoped from archive_visits.css's
+   .subject-readonly/.subject-title, teal-themed page but chip semantics
+   stay brand/muted (content categorisation, not the page accent). */
+.visit-edit-page .subject-readonly {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 0.625rem 0.75rem;
+  background: var(--bg-soft);
+}
+.visit-edit-page .subject-title {
+  font-weight: 700;
+  color: var(--text);
+}
+.visit-edit-page .visit-chip {
+  border-radius: var(--radius-chip);
+  padding: 0.25rem 0.5625rem;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+.visit-edit-page .visit-chip.category {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.visit-edit-page .visit-chip.unofficial {
+  background: var(--muted-soft);
+  color: var(--muted);
+}
+.visit-edit-page .subject-lock {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* ── shared input skin ────────────────────────────────────────────────── */
+.visit-edit-page .visit-edit-fields input[type="text"],
+.visit-edit-page .visit-edit-fields input[type="date"] {
+  height: 2.625rem;
+  padding: 0 0.8125rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5625rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  width: 100%;
+}
+.visit-edit-page .visit-edit-fields input[type="text"]:focus-visible,
+.visit-edit-page .visit-edit-fields input[type="date"]:focus-visible {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-soft);
+}
+
+/* ── error/status boxes — hidden entirely while empty ────────────────── */
+.visit-edit-page .visit-edit-error {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rose-ink);
+}
+.visit-edit-page .visit-edit-error:empty {
+  display: none;
+  margin: 0;
+}
+.visit-edit-page .visit-edit-status {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--teal-ink);
+}
+.visit-edit-page .visit-edit-status:empty {
+  display: none;
+  margin: 0;
+}
+
+/* ── actions row ──────────────────────────────────────────────────────── */
+.visit-edit-page .visit-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.visit-edit-page .visit-edit-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 1.5rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.visit-edit-page .visit-edit-submit:hover {
+  background: var(--teal-ink);
+}
+.visit-edit-page .visit-edit-cancel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.375rem;
+  border: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.visit-edit-page .visit-edit-cancel:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Danger delete — sits at the far end of the actions row. */
+.visit-edit-page .visit-edit-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-left: auto;
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--rose-ink);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.visit-edit-page .visit-edit-delete-btn:hover {
+  background: var(--rose-soft);
+  border-color: var(--rose-border);
+}
+.visit-edit-page .visit-edit-delete-icon {
+  display: none;
+}
+
+/* Screen-reader-only helper text (this page's own scoped copy — no shared
+   `.sr-only` utility exists repo-wide; clip technique matches the
+   create-page sibling's equivalent). */
+.visit-edit-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── narrow (≤45rem): single column, fixed bottom action bar ────────────── */
+@media (max-width: 45rem) {
+  .visit-edit-page {
+    padding-bottom: 6rem;
+  }
+  .visit-edit-page .visit-edit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .visit-edit-page .visit-edit-photo-col {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .visit-edit-page .visit-edit-fields {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .visit-edit-page .visit-edit-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    margin-top: 0;
+    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--chrome-glass-cta);
+  }
+  .visit-edit-page .visit-edit-cancel {
+    display: none;
+  }
+  .visit-edit-page .visit-edit-submit {
+    flex: 1;
+    justify-content: center;
+  }
+  .visit-edit-page .visit-edit-delete-btn {
+    flex: none;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+  .visit-edit-page .visit-edit-delete-text {
+    display: none;
+  }
+  .visit-edit-page .visit-edit-delete-icon {
+    display: inline;
+    font-size: 1.1rem;
+  }
+  /* Mobile-only: .visit-edit-delete-btn is icon-only here (🗑, text hidden
+     above), so the shared .is-loading::after spinner (interaction.css,
+     margin-left assumes trailing text) rendered next to the glyph instead
+     of replacing it — same case as .photo-preview-remove.is-loading above,
+     same fix: hide the glyph (color:transparent) and give the ::after
+     spinner its own explicit visible colour + centered position. Desktop
+     is untouched — there the "기록 삭제" text stays visible with a
+     trailing spinner, which is fine. */
+  .visit-edit-page .visit-edit-delete-btn.is-loading {
+    color: transparent;
+  }
+  .visit-edit-page .visit-edit-delete-btn.is-loading::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: 0;
+    transform: translate(-50%, -50%);
+    color: var(--rose-ink);
+  }
+}
