@@ -872,6 +872,121 @@
     }
   }
 
+  /* ── record-row--interest (2026-07-28 찜 목록 에디토리얼) ───────────────
+     visits/statuses/personal과 같은 `.record-row` 시스템이지만 첫 열은
+     D-day(카운트다운) 셀 — 시안 실측 4rem(64px) 폭, area명은 dday/body/end로
+     기존 두 모디파이어(date/photo)와 완전히 분리해 서로 충돌하지 않는다.
+     45rem 이하에서는 컬럼 수(3열, 4rem 1fr auto)는 그대로 두고 area만
+     재배치한다(브리프 §4 지시 — gap·padding·min-height는 base 상속) —
+     D-day 셀은 좁은 첫 열에 그대로, 본문·액션이 2·3열에 걸쳐 아래로
+     쌓인다. */
+  .record-row--interest {
+    grid-template-columns: 4rem 1fr auto;
+    grid-template-areas: "dday body end";
+  }
+  .record-row-dday {
+    grid-area: dday;
+    text-align: center;
+  }
+  .record-row-dday-label {
+    display: block;
+    font-size: 0.6875rem; /* 시안 실측 11px */
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .record-row-dday-value {
+    display: block;
+    font-size: 1.0625rem; /* 시안 실측 17px */
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .record-row-dday-value[data-tone="mint"] {
+    color: var(--mint-ink);
+  }
+  .record-row-dday-value[data-tone="up"] {
+    color: var(--up-ink);
+  }
+  .record-row-dday-value[data-tone="end"] {
+    color: var(--end-ink);
+  }
+  /* 배지 줄(비공식 배지·카테고리·상태 필) — 시안 실측 gap 8px. */
+  .record-row-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.25rem;
+  }
+  .record-row-status {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-chip);
+    padding: 0.125rem 0.5625rem; /* 시안 실측 2px 9px */
+    font-size: 0.6875rem; /* 시안 실측 11px */
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .record-row-status[data-tone="mint"] {
+    background: var(--mint-soft);
+    color: var(--mint-ink);
+  }
+  .record-row-status[data-tone="up"] {
+    background: var(--up-soft);
+    color: var(--up-ink);
+  }
+  .record-row-status[data-tone="end"] {
+    background: var(--end-soft);
+    color: var(--end-ink);
+  }
+  /* 버튼 줄(♥ 찜 해제 + 방문 예정 추가) — 시안 실측 gap 6px, 형제 두 클래스
+     (.interest-btn/controls.css, .status-btn.planned/controls.css)는 이미
+     알약 모양·색을 갖고 있어 이 페이지에서는 높이만 시안값으로 보강한다. */
+  .record-row-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .record-row-pills .interest-btn,
+  .record-row-pills .status-btn {
+    min-height: 1.875rem; /* 시안 실측 30px, desktop */
+    padding: 0 0.75rem;
+  }
+  .record-row-detail-link {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 600;
+    color: var(--teal-ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .record-row-detail-link:hover {
+    text-decoration: underline;
+  }
+  .record-row-detail-link:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  @media (max-width: 45rem) {
+    .record-row--interest {
+      grid-template-areas:
+        "dday body body"
+        ".    end  end";
+    }
+    .record-row-dday-label {
+      font-size: 0.59375rem; /* 시안 실측 9.5px */
+    }
+    .record-row-dday-value {
+      font-size: 0.875rem; /* 시안 실측 14px */
+    }
+    .record-row-pills .interest-btn,
+    .record-row-pills .status-btn {
+      min-height: 1.625rem; /* 시안 실측 26px, mobile */
+      padding: 0 0.625rem;
+    }
+  }
+
   /* Archive timeline status badges (display only, not interactive buttons).
      v3 사후 결함 수정 D: v2가 도입한 `.status.visited`/`.planned`/`.missed`
      색 오버라이드 3개를 제거 — `controls.css`의 전역 `.status-btn.planned,
@@ -1076,4 +1191,33 @@
     .mobile-cta[hidden] {
       display: none;
     }
+  }
+
+  /* ── interests-page overrides (2026-07-28 찜 목록 에디토리얼) ────────────
+     `/archive/interests/`만 `interests-page` 스코프 클래스를 추가로 얹는다
+     (`main class="page activity-page interests-page"`) — 다른 4개 아카이브
+     페이지는 이 클래스가 없어 아래 규칙 무영향. 셀렉터에 `.interests-page`를
+     덧붙여 특이도를 원본보다 항상 높여 로드 순서와 무관하게 이기도록 한다
+     (원본 규칙은 그대로 두고 이 파일 안에서만 값을 되짚는다, 브리프 §4). */
+  .interests-page .hero-activity .summary-card:nth-child(1) .summary-value {
+    color: var(--pink-ink);
+  }
+  .interests-page .hero-activity .summary-card:nth-child(2) .summary-value {
+    color: var(--mint-ink);
+  }
+  .interests-page .hero-activity .summary-card:nth-child(3) .summary-value {
+    color: var(--up-ink);
+  }
+  .interests-page .results-count {
+    color: var(--pink-ink);
+  }
+  /* `.activity-toolbar .nav-interest:hover, .activity-toolbar .nav-interest.active`
+     (위 238-244행 근방)가 이 조합에서 box-shadow를 항상 none으로 되돌리는데,
+     다른 4탭에는 `.active`가 붙는 지점이 없어 지금까지 죽어 있던 규칙이었다
+     — 이 페이지가 처음 그 조합을 실사용한다. `.interests-page` 접두로
+     특이도를 올려 그 box-shadow만 되짚는다(나머지 속성은 원본 규칙 값을
+     그대로 물려받는다 — background:none/border-color:transparent/
+     transform:none은 이 페이지에서도 그대로 원하는 값이라 재선언 불필요). */
+  .interests-page .activity-toolbar .nav-interest.active {
+    box-shadow: inset 0 -2px 0 var(--pink-ink);
   }

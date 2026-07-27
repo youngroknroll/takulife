@@ -1,0 +1,127 @@
+{% comment %}
+찜 목록(archive_interests) 결과 영역 — 라이브 검색 swap 대상.
+풀 페이지(interests.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
+컨텍스트: interest_rows, has_interests, has_query, q, page_obj, pager_query, request
+
+2026-07-28 찜 목록 에디토리얼: visits/statuses/personal과 같은 `.record-row`
+시스템으로 재작성한다(`.record-row--interest` 모디파이어, 첫 열은 D-day).
+공식(이벤트) 찜만 상태 필·D-day·(can_plan일 때만) 방문 예정 추가 버튼을
+렌더한다 — 비공식(직접 등록) 찜은 날짜가 없어 파생이 불가능하므로(D-day
+칸은 `.record-row-date-empty` "–") "직접 등록" 배지 + ♥만 렌더한다
+(오케스트레이터 확정 #1, `interests-mock-2026-07-28.md` 참조). `detail_url`이
+빈 문자열인 비공식 행에는 "상세 보기" 링크를 렌더하지 않는다(빈 href 금지).
+
+♥ 버튼은 `data-reload-on-success`를 부착한다(`data-remove-on-cancel`은 제거) —
+찜 행이 이 라이브 검색 swap 영역 안에 들어오면서, 삭제 in-flight 중 검색
+스왑이 겹치면 서버가 이미 지운 행이 새로 렌더돼 유령 행으로 남는 결함
+(`_archive_results_statuses.html`/`_archive_results_record.html`이 이미 두
+번 고친 결함과 동일 유형)이 생기기 때문이다. status.js의 handleInterestClick
+에 handleClick(:296-310)과 동일한 조기 분기를 복제해 두었다(2026-07-28).
+리로드가 통계 3종·"N건"도 함께 서버에서 재계산한다.
+
+방문 예정 추가 버튼은 `row.can_plan`(뷰가 `user_status == ""`일 때만 True로
+계산 — 이미 다른 상태가 걸린 행에서 이 버튼이 그 기록을 지우는 사고를
+차단)일 때만 렌더한다. 항상 신규 등록(discovery register) 경로만 타므로
+`data-status-id`는 붙이지 않는다.
+{% endcomment %}
+<p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
+{% if interest_rows %}
+  <div class="record-rows">
+    {% for row in interest_rows %}
+      <article class="record-row record-row--interest" data-interest-id="{{ row.interest_id }}">
+        <div class="record-row-dday">
+          {% if row.subject.is_official and row.dday is not None %}
+            <span class="record-row-dday-label">D-DAY</span>
+            <span class="record-row-dday-value" data-tone="{% if row.status == 'upcoming' %}up{% elif row.status == 'ended' %}end{% else %}mint{% endif %}">D-{{ row.dday }}</span>
+          {% elif row.subject.is_official and row.status == 'ended' and row.subject.end_date %}
+            <span class="record-row-dday-label">{{ row.subject.end_date|date:"n월" }}</span>
+            <span class="record-row-dday-value" data-tone="end">{{ row.subject.end_date|date:"d" }}</span>
+          {% else %}
+            <span class="record-row-date-empty" aria-hidden="true">–</span>
+          {% endif %}
+        </div>
+
+        <div class="record-row-body">
+          <p class="record-row-badges">
+            {% if not row.subject.is_official %}
+              <span class="event-category unofficial">직접 등록</span>
+            {% endif %}
+            {% if row.subject.category_label %}
+              <span class="record-row-cat"{% if row.subject.category_slug %} style="color: var(--cat-{{ row.subject.category_slug|slugify }}-ink, var(--brand-ink));"{% endif %}>{{ row.subject.category_label }}</span>
+            {% endif %}
+            {% if row.subject.is_official %}
+              {% if row.status == 'upcoming' %}
+                <span class="record-row-status" data-tone="up">예정</span>
+              {% elif row.status == 'ended' %}
+                <span class="record-row-status" data-tone="end">종료</span>
+              {% else %}
+                <span class="record-row-status" data-tone="mint">진행 중</span>
+              {% endif %}
+            {% endif %}
+          </p>
+
+          <h3 class="record-row-title">
+            {% if row.subject.detail_url %}
+              <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
+            {% else %}
+              {{ row.subject.title }}
+            {% endif %}
+          </h3>
+
+          {% if row.subject.location or row.subject.start_date %}
+            <p class="record-row-meta">
+              {% if row.subject.location %}
+                <span class="record-row-place">{{ row.subject.location }}</span>
+              {% endif %}
+              {% if row.subject.location and row.subject.start_date %}
+                <span class="record-row-dot" aria-hidden="true">·</span>
+              {% endif %}
+              {% if row.subject.start_date %}
+                <span class="mono-num">{{ row.subject.start_date|date:"Y/m/d" }}{% if row.subject.end_date %} - {% if row.subject.start_date|date:"Y" == row.subject.end_date|date:"Y" %}{{ row.subject.end_date|date:"m/d" }}{% else %}{{ row.subject.end_date|date:"Y/m/d" }}{% endif %}{% endif %}</span>
+              {% endif %}
+            </p>
+          {% endif %}
+        </div>
+
+        <div class="record-row-end">
+          <div class="record-row-pills" data-status-error-container>
+            <button class="interest-btn active" type="button"
+              data-interest-toggle
+              data-interest-id="{{ row.interest_id }}"
+              data-reload-on-success
+              aria-pressed="true">
+              <span data-interest-glyph aria-hidden="true">♥</span>
+              찜
+            </button>
+            {% if row.can_plan %}
+              <button class="status-btn planned" type="button"
+                data-status-action
+                data-event-id="{{ row.subject.subject_id }}"
+                data-status="planned"
+                data-label="방문 예정 추가"
+                data-reload-on-success
+              >방문 예정 추가</button>
+            {% endif %}
+          </div>
+          {% if row.subject.detail_url %}
+            <a class="record-row-detail-link" href="{{ row.subject.detail_url }}">상세 보기</a>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% elif has_interests and has_query %}
+  <div class="empty-state">
+    <p class="empty-title">검색 결과가 없습니다</p>
+    <p class="empty-note">"{{ q }}"에 해당하는 찜한 이벤트가 없어요. <a href="{{ request.path }}">지우기</a></p>
+  </div>
+{% else %}
+  <div class="empty-state">
+    <p class="empty-icon">♡</p>
+    <p class="empty-title">아직 찜한 이벤트가 없어요</p>
+    <p class="empty-note">이벤트 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요.</p>
+    <a class="empty-action" href="/events/">이벤트 찾아보기</a>
+  </div>
+{% endif %}
+
+{% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
