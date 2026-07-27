@@ -52,23 +52,24 @@
   margin: 0.75rem 0 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5625rem;
 }
 .rule-list li {
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--bg-card);
-  padding: 0.5625rem 0.625rem;
-  color: #2c4563;
+  display: flex;
+  gap: 0.5625rem;
+  align-items: flex-start;
+  color: var(--muted);
   font-size: 0.86rem;
+  line-height: 1.5;
 }
-
-/* 잉크 리터럴 개별 다크 오버라이드 — 신규 토큰 통합 없이 --muted 다크값과
-   동일한 #A2A9B9로 직접 대응(다크모드 팔레트 문서 "크롬·그림자·잉크 리터럴",
-   계획상 Deferred). */
-:root[data-theme="dark"] .rule-list li {
-  color: #a2a9b9;
+.rule-list li::before {
+  content: "·";
+  flex: none;
+  color: var(--brand-ink);
+  font-weight: 700;
+  line-height: 1.5;
 }
 .side-list {
   list-style: none;
