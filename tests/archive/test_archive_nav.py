@@ -57,7 +57,7 @@ TestIndexMovesInterestOutsideNavAfterSearch, so no coverage is lost.
 adopted the index-style 3-column toolbar (`hide_interest=True`), moving its
 찜 anchor out of this nav — so it can no longer stand in for the
 찜-inside-nav 5-link fact either. This test's representative page therefore
-moves again, from /archive/visits/ to /archive/items/, a stable sibling
+moves again, from /archive/visits/ to /archive/personal/, a stable sibling
 that still keeps 찜 inside the nav (confirmed by
 test_archive_interest_placement.py's TestSiblingPagesKeepInterestInsideNav),
 so the 5-link count and the in-nav `href="/archive/interests/"` assertion
@@ -65,6 +65,28 @@ continue to hold. The tab-bar contract itself (five destinations, active
 marking, no 활동 달력, no /collection/) is unchanged by this second swap —
 only the active tab under test shifts from "다녀온 기록" to "직접 등록".
 The 찜-outside-nav fact for /archive/visits/ is now covered by
+tests/archive/test_archive_interest_placement.py's
+TestIndexMovesInterestOutsideNavAfterSearch, so no coverage is lost.
+
+2026-07-27 직접 등록 에디토리얼 통일: the representative-page chain above is
+now exhausted — /archive/personal/ has also adopted the index-style
+3-column toolbar (`hide_interest=True`), so every content list page
+(record/statuses/visits/personal) now moves 찜 out of this nav. The only
+remaining archive page that still renders 찜 *inside* `<nav aria-label="내
+활동 하위 메뉴">` is /archive/interests/ itself (confirmed by
+test_archive_interest_placement.py's TestSiblingPagesKeepInterestInsideNav,
+which now carries only that one path). This test's representative page
+therefore moves to /archive/interests/ — the last surviving sibling for the
+찜-inside-nav 5-link fact, not a new one. That page's own include renders
+with `active="interests"`, so the *active* element is no longer one of the
+four content tabs (none of them carry `class="active"` there) — it is the
+찜 anchor itself, which the nav partial marks via
+`class="nav-interest active"` when `active == "interests"`. The active
+assertion below is therefore rewritten to require `nav-interest active`
+rather than a content tab's full-label span; the four content tabs' mere
+*presence* (not their active state) and the 5-link count/no-활동 달력/no-
+/collection/ facts are all unchanged by this swap. The 찜-outside-nav fact
+for /archive/personal/ is now covered by
 tests/archive/test_archive_interest_placement.py's
 TestIndexMovesInterestOutsideNavAfterSearch, so no coverage is lost.
 
@@ -89,7 +111,7 @@ class TestArchiveNavTabs:
     def test_아카이브_내비게이션_탭바는_내_활동_계열_다섯_링크만_보여주고_활동_달력과_컬렉션_링크를_포함하지_않는다(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/items/")
+        resp = client.get("/archive/interests/")
         content = resp.content.decode()
 
         # Scoped to the sub-nav landmark itself — the global header also
@@ -102,10 +124,10 @@ class TestArchiveNavTabs:
 
         assert nav.count("<a ") + nav.count('<a\n') + nav.count('<a\r\n') == 5
         assert '<span class="tab-label-full">나의 일정</span>' in nav
-        assert (
-            'class="active"><span class="tab-label-full">직접 등록</span>'
-            in nav
-        )
+        # /archive/interests/ renders with active=="interests", so none of
+        # the four content tabs are active here — the 찜 anchor itself is
+        # (see module docstring, 2026-07-27 직접 등록 에디토리얼 통일).
+        assert 'class="nav-interest active"' in nav
         assert '<span class="tab-label-full">다녀온 기록</span>' in nav
         assert '<span class="tab-label-full">직접 등록</span>' in nav
         assert '<span class="tab-label-full">전체 보기</span>' in nav

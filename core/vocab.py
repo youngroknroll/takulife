@@ -113,6 +113,33 @@ ARCHIVE_VISIT_SORT: tuple[tuple[str, str], ...] = (
 ARCHIVE_VISIT_SORT_LABELS: dict[str, str] = dict(ARCHIVE_VISIT_SORT)
 
 # ---------------------------------------------------------------------------
+# Archive personal-entry list sort vocabulary (slug matches
+# archive.queries.ARCHIVE_PERSONAL_SORT_ORDERING). Empty slug "" is the
+# default (최근 등록순 / -created_at, -id). slug → display label
+# ---------------------------------------------------------------------------
+ARCHIVE_PERSONAL_SORT: tuple[tuple[str, str], ...] = (
+    ("", "최근 등록순"),
+    ("oldest", "오래된 등록순"),
+)
+
+ARCHIVE_PERSONAL_SORT_LABELS: dict[str, str] = dict(ARCHIVE_PERSONAL_SORT)
+
+# ---------------------------------------------------------------------------
+# Personal-entry category suggestions (직접 등록 작성 페이지). Free-input hint
+# chips, not a `choices` constraint — PersonalEntry.category is a plain
+# CharField and any free text is still accepted (mirrors
+# COLLECTION_ITEM_TYPE's "UI-side guidance only" note above).
+# ---------------------------------------------------------------------------
+PERSONAL_ENTRY_CATEGORY_SUGGESTIONS: tuple[str, ...] = (
+    "카페",
+    "팝업스토어",
+    "전시",
+    "성지순례",
+    "굿즈숍",
+    "기타",
+)
+
+# ---------------------------------------------------------------------------
 # Event status vocabulary (independent axis from archive status)
 # Describes the publication/temporal state of an Event object.
 # slug → display label

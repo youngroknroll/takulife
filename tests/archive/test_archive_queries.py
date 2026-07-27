@@ -617,6 +617,42 @@ def test_비공식_항목_목록_조회는_사용자로_범위를_좁히고_kind
     assert only_goods == [goods]
 
 
+@pytest.mark.django_db
+def test_비공식_항목_목록_기본_정렬은_최근_등록순이다(make_user, make_entry):
+    user = make_user(username="pe-sort-default")
+    older = make_entry(user, title="Older")
+    newer = make_entry(user, title="Newer")
+
+    titles = [entry.title for entry in list_user_personal_entries(user)]
+
+    assert titles == [newer.title, older.title]
+
+
+@pytest.mark.django_db
+def test_비공식_항목_목록_정렬을_oldest로_지정하면_오래된_등록순이다(make_user, make_entry):
+    user = make_user(username="pe-sort-oldest")
+    older = make_entry(user, title="Older")
+    newer = make_entry(user, title="Newer")
+
+    titles = [entry.title for entry in list_user_personal_entries(user, sort="oldest")]
+
+    assert titles == [older.title, newer.title]
+
+
+@pytest.mark.django_db
+def test_비공식_항목_목록_미인식_정렬은_기본_최근_등록순으로_폴백한다(make_user, make_entry):
+    user = make_user(username="pe-sort-fallback")
+    older = make_entry(user, title="Older")
+    newer = make_entry(user, title="Newer")
+
+    titles = [
+        entry.title
+        for entry in list_user_personal_entries(user, sort="not-a-real-option")
+    ]
+
+    assert titles == [newer.title, older.title]
+
+
 # ---------------------------------------------------------------------------
 # user_visit_record_counts (archive/visits/ summary cards)
 # ---------------------------------------------------------------------------
@@ -651,7 +687,7 @@ def test_방문기록이_없는_사용자의_방문기록_집계는_0이다(make
 
 
 # ---------------------------------------------------------------------------
-# user_personal_entry_counts (archive/items/ summary cards)
+# user_personal_entry_counts (archive/personal/ summary cards)
 # ---------------------------------------------------------------------------
 
 
@@ -665,7 +701,7 @@ def test_비공식_항목_집계는_본인의_총_건수만_세고_다른_사용
 
     counts = user_personal_entry_counts(user)
 
-    assert counts == {"total_count": 2}
+    assert counts == {"total_count": 2, "visit_linked_count": 0}
 
 
 @pytest.mark.django_db
@@ -674,7 +710,51 @@ def test_비공식_항목이_없는_사용자의_항목_집계는_0이다(make_u
 
     counts = user_personal_entry_counts(user)
 
-    assert counts == {"total_count": 0}
+    assert counts == {"total_count": 0, "visit_linked_count": 0}
+
+
+@pytest.mark.django_db
+def test_방문_기록이_연결된_개인_항목_수만_visit_linked_count로_집계된다(
+    make_user, make_entry, make_visit
+):
+    user = make_user(username="entry-counts-visit-linked")
+    linked_1 = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")
+    linked_2 = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P2")
+    make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P3")  # no visit
+    make_visit(user, personal_entry=linked_1, visited_on="2026-01-01")
+    make_visit(user, personal_entry=linked_2, visited_on="2026-01-02")
+
+    counts = user_personal_entry_counts(user)
+
+    assert counts == {"total_count": 3, "visit_linked_count": 2}
+
+
+@pytest.mark.django_db
+def test_공식_이벤트_방문_기록은_방문_기록_연결_집계에_영향을_주지_않는다(
+    make_user, make_entry, make_event, make_visit
+):
+    user = make_user(username="entry-counts-official-only")
+    make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")
+    event = make_event(title="공식 이벤트")
+    make_visit(user, event=event, visited_on="2026-01-01")
+
+    counts = user_personal_entry_counts(user)
+
+    assert counts == {"total_count": 1, "visit_linked_count": 0}
+
+
+@pytest.mark.django_db
+def test_한_항목에_방문_기록이_여러_건이어도_visit_linked_count는_distinct로_1건만_센다(
+    make_user, make_entry, make_visit
+):
+    user = make_user(username="entry-counts-distinct")
+    entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")
+    make_visit(user, personal_entry=entry, visited_on="2026-01-01")
+    make_visit(user, personal_entry=entry, visited_on="2026-01-02")
+
+    counts = user_personal_entry_counts(user)
+
+    assert counts == {"total_count": 1, "visit_linked_count": 1}
 
 
 # ---------------------------------------------------------------------------

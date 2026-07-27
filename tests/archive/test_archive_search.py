@@ -257,20 +257,20 @@ class TestVisitsPageQFilter:
 
 
 # ---------------------------------------------------------------------------
-# Items page (/archive/items/)
+# Items page (/archive/personal/)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestItemsPageQFilter:
-    """q filters entry_rows on /archive/items/."""
+    """q filters entry_rows on /archive/personal/."""
 
     def test_직접_등록에서_검색어가_항목_제목과_일치하면_해당_항목만_노출된다(self, user_client, make_entry):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 항목")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="다른 항목")
 
-        resp = client.get("/archive/items/?q=매칭")
+        resp = client.get("/archive/personal/?q=매칭")
 
         assert resp.status_code == 200
         titles = [row["entry"].title for row in resp.context["entry_rows"]]
@@ -282,7 +282,7 @@ class TestItemsPageQFilter:
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="A", memo="특별한 내용")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="B", memo="보통 내용")
 
-        resp = client.get("/archive/items/?q=특별한")
+        resp = client.get("/archive/personal/?q=특별한")
 
         titles = [row["entry"].title for row in resp.context["entry_rows"]]
         assert "A" in titles
@@ -293,7 +293,7 @@ class TestItemsPageQFilter:
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="A", location_name="신촌")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="B", location_name="강남")
 
-        resp = client.get("/archive/items/?q=신촌")
+        resp = client.get("/archive/personal/?q=신촌")
 
         titles = [row["entry"].title for row in resp.context["entry_rows"]]
         assert "A" in titles
@@ -304,7 +304,7 @@ class TestItemsPageQFilter:
         make_entry(user, kind="goods", title="A", work_title="원피스 콜라보")
         make_entry(user, kind="goods", title="B", work_title="블리치")
 
-        resp = client.get("/archive/items/?q=원피스")
+        resp = client.get("/archive/personal/?q=원피스")
 
         titles = [row["entry"].title for row in resp.context["entry_rows"]]
         assert "A" in titles
@@ -315,7 +315,7 @@ class TestItemsPageQFilter:
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="A", category="팝업스토어")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="B", category="카페")
 
-        resp = client.get("/archive/items/?q=팝업")
+        resp = client.get("/archive/personal/?q=팝업")
 
         titles = [row["entry"].title for row in resp.context["entry_rows"]]
         assert "A" in titles
@@ -418,10 +418,10 @@ class TestArchiveSearchClearLink:
         hidden_value (personal_entries.html) render a bare-path clear link."""
         _, client = user_client()
 
-        resp = client.get("/archive/items/?q=여름")
+        resp = client.get("/archive/personal/?q=여름")
 
         assert resp.status_code == 200
-        assert self._clear_href(resp.content.decode()) == "/archive/items/"
+        assert self._clear_href(resp.content.decode()) == "/archive/personal/"
 
     def test_다녀온_기록의_검색_지우기_링크는_한글_필터_값을_URL_인코딩해_유지한다(self, user_client, make_event, make_visit):
         """visits.html's hidden_name="filter" carries a Korean-label value
@@ -447,7 +447,7 @@ class TestQNormalisation:
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="항목 A")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="항목 B")
 
-        resp = client.get("/archive/items/?q=   ")
+        resp = client.get("/archive/personal/?q=   ")
 
         assert resp.status_code == 200
         assert resp.context["q"] == ""
@@ -458,7 +458,7 @@ class TestQNormalisation:
     def test_긴_검색어는_잘려서_오류_없이_처리된다(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/items/?q=" + "A" * 200)
+        resp = client.get("/archive/personal/?q=" + "A" * 200)
 
         assert resp.status_code == 200
 

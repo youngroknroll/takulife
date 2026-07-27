@@ -22,7 +22,7 @@ ARCHIVE_PAGES = [
     ("/archive/", "core/archive/index.html", "core/partials/_archive_results_record.html"),
     ("/archive/statuses/", "core/archive/statuses.html", "core/partials/_archive_results_statuses.html"),
     ("/archive/visits/", "core/archive/visits.html", "core/partials/_archive_results_visits.html"),
-    ("/archive/items/", "core/archive/personal_entries.html", "core/partials/_archive_results_personal.html"),
+    ("/archive/personal/", "core/archive/personal_entries.html", "core/partials/_archive_results_personal.html"),
 ]
 ARCHIVE_PAGE_IDS = ["전체_보기", "나의_일정", "다녀온_기록", "직접_등록"]
 
@@ -186,7 +186,7 @@ class TestArchivePartialBranch:
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 카페")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="제외 장소")
 
-        resp = client.get("/archive/items/?q=매칭&partial=1")
+        resp = client.get("/archive/personal/?q=매칭&partial=1")
 
         assert resp.status_code == 200
         assert "매칭 카페".encode() in resp.content
@@ -202,7 +202,7 @@ class TestArchivePartialBranch:
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="장소 항목")
         make_entry(user, kind="goods", title="굿즈 항목")
 
-        resp = client.get("/archive/items/")
+        resp = client.get("/archive/personal/")
 
         assert resp.status_code == 200
         content = resp.content

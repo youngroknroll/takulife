@@ -70,9 +70,22 @@ urlpatterns = [
         name="archive-collection-page",
     ),
     path(
-        "archive/items/",
+        "archive/personal/new/",
+        core_views.archive_personal_entry_create,
+        name="archive-personal-entry-create-page",
+    ),
+    path(
+        "archive/personal/",
         core_views.archive_personal_entries,
         name="archive-personal-entries-page",
+    ),
+    # Old 비공식 목록 URL, renamed to /archive/personal/ (직접 등록 에디토리얼
+    # plan Part 1 §URL 통일, 사용자 확정 2026-07-27). Permanent redirect —
+    # bookmarks/links may still hold the old path.
+    path(
+        "archive/items/",
+        RedirectView.as_view(url="/archive/personal/", permanent=True),
+        name="archive-personal-entries-legacy-redirect",
     ),
     path("archive/interests/", core_views.archive_interests, name="archive-interests"),
     path("mypage/", core_views.mypage, name="mypage-page"),

@@ -52,6 +52,8 @@ from archive.queries import (
 from core.calendar_grid import default_selected_date, month_grid
 from core.models import HomeConfig
 from core.vocab import (
+    ARCHIVE_PERSONAL_SORT,
+    ARCHIVE_PERSONAL_SORT_LABELS,
     ARCHIVE_STATUS,
     ARCHIVE_STATUS_LABELS,
     ARCHIVE_STATUS_SORT,
@@ -66,6 +68,7 @@ from core.vocab import (
     EVENT_SORT_LABELS,
     EVENT_STATUS,
     EVENT_STATUS_LABELS,
+    PERSONAL_ENTRY_CATEGORY_SUGGESTIONS,
     REGION,
     REGION_LABELS,
 )
@@ -1707,14 +1710,19 @@ def archive_collection_item_edit(request, item_id):
 def archive_personal_entries(request):
     user = request.user
     q = _archive_query(request)
+    sort = request.GET.get("sort", "")
+    if sort not in ARCHIVE_PERSONAL_SORT_LABELS:
+        sort = ""
 
     # Summary counts always come from the unfiltered set so the header cards
     # report the user's total collection, independent of any active search.
-    total_count = user_personal_entry_counts(user)["total_count"]
+    entry_counts = user_personal_entry_counts(user)
+    total_count = entry_counts["total_count"]
+    visit_linked_count = entry_counts["visit_linked_count"]
     has_entries = total_count > 0
 
     # Page queryset is filtered by q (if provided) and then paginated.
-    page_qs = list_user_personal_entries(user, q=q)
+    page_qs = list_user_personal_entries(user, q=q, sort=sort)
     paginator = Paginator(page_qs, ARCHIVE_PERSONAL_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
 
@@ -1737,7 +1745,14 @@ def archive_personal_entries(request):
             }
         )
 
-    pager_query = "&" + urlencode([("q", q)]) if q else ""
+    # Pager query string preserves both an active search and a non-default
+    # sort — mirrors archive_visits' parts-list pattern above.
+    parts = []
+    if q:
+        parts.append(("q", q))
+    if sort:
+        parts.append(("sort", sort))
+    pager_query = "&" + urlencode(parts) if parts else ""
 
     return _render_archive_list(
         request,
@@ -1746,12 +1761,31 @@ def archive_personal_entries(request):
         context={
             "entry_rows": entry_rows,
             "total_count": total_count,
+            "visit_linked_count": visit_linked_count,
             "has_entries": has_entries,
             "page_obj": page_obj,
             "pager_query": pager_query,
             "q": q,
             "has_query": bool(q),
+            "selected_sort": sort,
+            "selected_sort_label": ARCHIVE_PERSONAL_SORT_LABELS[sort],
+            "ARCHIVE_PERSONAL_SORT": ARCHIVE_PERSONAL_SORT,
         },
+    )
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_personal_entry_create(request):
+    """Read-only render: the form posts to the existing personal-entries JSON
+    API (`/api/personal-entries/`), not a new endpoint — mirrors
+    archive_collection_item_create's render-only shape. Context carries
+    PERSONAL_ENTRY_CATEGORY_SUGGESTIONS as free-input hint chips (not a
+    `choices` constraint — the field stays free text)."""
+    return render(
+        request,
+        "core/archive/personal_create.html",
+        {"PERSONAL_ENTRY_CATEGORY_SUGGESTIONS": PERSONAL_ENTRY_CATEGORY_SUGGESTIONS},
     )
 
 
