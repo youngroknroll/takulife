@@ -440,6 +440,19 @@
       return;
     }
 
+    // Controls that opt into a reload (2026-07-28 찜 목록 페이지) let the
+    // server re-derive the row, available actions and summary counts instead
+    // of patching the DOM piecemeal — mirrors handleClick's identical branch
+    // above (:296-310). Needed because 찜 rows now live inside the live-search
+    // swap region (#archive-results): without a reload, a cancel in flight
+    // while a search swap lands can leave the server-deleted row re-rendered
+    // as a ghost (the same fixed-twice bug documented on the statuses/record
+    // fragments).
+    if ((result.ok || result.status === 204) && button.hasAttribute("data-reload-on-success")) {
+      window.location.reload();
+      return;
+    }
+
     if (interestId && (result.status === 204 || result.ok)) {
       setInterestDefault(button);
       removeRowIfOptedIn(button);
