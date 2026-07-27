@@ -209,7 +209,7 @@
 /* ── meta list ───────────────────────────────────────────────────────── */
 .visit-detail-page .visit-detail-meta {
   margin: 0 0 1.5rem;
-  border-top: 1.5px solid var(--text);
+  border-top: 2px solid var(--text);
 }
 .visit-detail-page .visit-detail-meta-row {
   display: flex;

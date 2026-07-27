@@ -242,7 +242,7 @@
 /* ── meta hairline ─────────────────────────────────────────────────── */
 .collection-detail-page .collection-detail-meta {
   margin: 0 0 1.375rem;
-  border-top: 1.5px solid var(--text);
+  border-top: 2px solid var(--text);
 }
 .collection-detail-page .collection-detail-meta-row {
   display: grid;

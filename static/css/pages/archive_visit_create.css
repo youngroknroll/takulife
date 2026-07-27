@@ -37,7 +37,7 @@
 .visit-create-page .visit-create-head {
   padding-bottom: 1.125rem;
   margin-bottom: 1.5rem;
-  border-bottom: 1.5px solid var(--text);
+  border-bottom: 2px solid var(--text);
 }
 .visit-create-page .visit-create-head-row {
   display: flex;

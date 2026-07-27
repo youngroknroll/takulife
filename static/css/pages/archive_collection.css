@@ -36,7 +36,7 @@
    `1fr auto 1fr` rather than the design's absolute centering, matching the
    .events-head precedent (event_list.css): the toggle stays optically centered
    while the title column keeps a real min-content floor, so the two can never
-   overlap at 320px. The heavy 1.5px --text rule under the whole block is the
+   overlap at 320px. The heavy 2px --text rule under the whole block is the
    design's masthead device and is what separates this page from a plain list. */
 .collection-page .collection-head {
   display: grid;
@@ -45,7 +45,7 @@
   gap: 1rem;
   padding-bottom: 1.125rem;
   margin-bottom: 0;
-  border-bottom: 1.5px solid var(--text);
+  border-bottom: 2px solid var(--text);
 }
 
 /* Explicit column numbers, not source order: the toggle is absent when the
@@ -1044,7 +1044,7 @@
 .collection-page .collection-form-head {
   padding-bottom: 1.125rem;
   margin-bottom: 1.75rem;
-  border-bottom: 1.5px solid var(--text);
+  border-bottom: 2px solid var(--text);
 }
 .collection-page .collection-form-head h1 {
   margin: 0.5rem 0 0.5rem;
