@@ -15,18 +15,18 @@ clear_query_suffix, request
     <div class="collection-rows">
       {% for row in item_rows %}
         <article class="collection-row" data-collection-item-id="{{ row.item.id }}">
-          <div class="collection-row-thumb {{ row.series_ink_class }}">
+          <a class="collection-row-thumb {{ row.series_ink_class }}" href="/collection/{{ row.item.id }}/">
             {% if row.item.image %}
               <img src="{{ row.item.image.url }}" alt="{{ row.item.name }}" loading="lazy">
             {% else %}
               <span class="collection-thumb-placeholder">{{ row.item.item_type }}</span>
             {% endif %}
-          </div>
+          </a>
           <div class="collection-row-text">
             <p class="collection-row-work {{ row.series_ink_class }}">
               {{ row.item.work_title }}{% if row.item.item_type %} · {{ row.item.item_type }}{% endif %}
             </p>
-            <h3 class="collection-row-name">{{ row.item.name }}</h3>
+            <h3 class="collection-row-name"><a href="/collection/{{ row.item.id }}/">{{ row.item.name }}</a></h3>
             {# 구분자는 앞에 실제 값이 있을 때만 — 캐릭터명이 비면 선행 "·"가 #}
             {# 그대로 보인다(시안엔 없는 잔여 기호).                          #}
             <p class="collection-row-meta">
@@ -63,7 +63,7 @@ clear_query_suffix, request
     <div class="collection-grid">
       {% for row in item_rows %}
         <article class="collection-card" data-collection-item-id="{{ row.item.id }}">
-          <div class="gcard-cover">
+          <a class="gcard-cover" href="/collection/{{ row.item.id }}/">
             {% if row.item.image %}
               <img src="{{ row.item.image.url }}" alt="{{ row.item.name }}" loading="lazy">
             {% else %}
@@ -75,10 +75,10 @@ clear_query_suffix, request
             <span class="collection-pill collection-pill--cover{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">
               {% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}
             </span>
-          </div>
+          </a>
           <div class="gcard-body">
             <p class="gcard-work {{ row.series_ink_class }}">{{ row.item.work_title }}</p>
-            <h3 class="gcard-name">{{ row.item.name }}</h3>
+            <h3 class="gcard-name"><a href="/collection/{{ row.item.id }}/">{{ row.item.name }}</a></h3>
             <p class="gcard-meta">
               {% if row.item.character_name %}{{ row.item.character_name }}{% endif %}
               {% if row.quantity_label %}{% if row.item.character_name %} · {% endif %}{{ row.quantity_label }}{% endif %}
