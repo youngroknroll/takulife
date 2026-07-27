@@ -53,10 +53,9 @@
  * `<span class="glint">✦</span>` placed inside a
  * position:relative element that also carries .hover-lift. Hidden by
  * default; revealed only while the nearest .hover-lift ancestor is
- * hovered or has focus-within. No current template uses this class yet —
- * pages/event_list.css applies the same visual language to .event-card's
- * .cat-tile::after instead, to avoid a markup change (see that file for
- * the template-free variant).
+ * hovered or has focus-within. No current template uses this class
+ * (the template-free .cat-tile::after variant that once mirrored this in
+ * pages/event_list.css was removed along with .cat-tile).
  */
 .glint {
   position: absolute;

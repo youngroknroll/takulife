@@ -80,8 +80,6 @@
      (PR-R3: were literal hex values, unnamed, duplicated across .day.* and
      .legend-dot.*). Values preserved as-is — a touch darker than their
      matching -soft background so the swatch border reads against --bg-card. */
-  --mint-border: #b9efce;
-  --amber-border: #fde39f;
   --rose-border: #f8b7c3;
   /* Wraps the literal #f8bfd8 used by .interest-btn / .nav-interest
      (PR-R3) — a pastel pink border lighter than --pink-ink, kept as its
@@ -90,10 +88,6 @@
   --pink-border: #f8bfd8;
 
   --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
-  /* New alias for the hero/large-surface shadow language (PR-R3 will apply
-     the flat-card / big-hero-shadow split described in plan §0). For now it
-     simply carries the existing --shadow value forward. */
-  --shadow-hero: var(--shadow);
 
   /* ── translucent chrome (다크모드 계획 PR-2 §3) — token pairs instead of
      scattered [data-theme] selector overrides, per-token dark value lives
@@ -153,7 +147,13 @@
 
   /* Category palette — low-saturation tones, kept distinct from the four
      status hues (pink/brand/mint/grey) so category and status never clash.
-     Used by .cat-tile color tiles and .event-type category chips. */
+     -ink is read via inline `var(--cat-{{ category_slug }}-ink, var(--brand-ink))`
+     in templates (home.html, events/detail.html, poster/status/visit
+     partials), and event_list.css / event_calendar.css / home.css also
+     reference the six -ink names literally by category slug.
+     -soft (12 defs: 6 light-mode above + 6 dark-mode override below) has no
+     literal consumer anywhere — kept anyway to preserve the soft/ink pair
+     structure per category; do not delete for "unused" without re-checking. */
   --cat-popup_store-soft: #f3e8ff;
   --cat-popup_store-ink: #7e22ce;
   --cat-collaboration_cafe-soft: #f5ecdf;
