@@ -267,33 +267,11 @@
   height: 1px;
   background: var(--line);
 }
-/* Override the shared .rule-list box (objects/layout.css:58) → plain
-   teal-bullet lines, page-scoped only. */
+/* Bullet layout + brand-red marker now come from the shared .rule-list base
+   (objects/layout.css). Only reset the base's top margin here — the head row
+   above already provides the gap. */
 .visit-create-page .visit-create-rules .rule-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5625rem;
   margin: 0;
-}
-.visit-create-page .visit-create-rules .rule-list li {
-  display: flex;
-  gap: 0.5625rem;
-  align-items: flex-start;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  padding: 0;
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-.visit-create-page .visit-create-rules .rule-list li::before {
-  content: "·";
-  flex: none;
-  color: var(--teal-ink);
-  font-weight: 700;
-  line-height: 1.5;
 }
 
 /* ── error/status boxes — hidden entirely while empty ────────────────── */
