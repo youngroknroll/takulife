@@ -5,12 +5,11 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/hscroll.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
-<link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
+  <main class="page home-page" id="content">
     <section class="hero">
       {% comment %} data-hero-card (mock parity, 2026-07-21 user instruction):
          deck.js reads this ancestor via deckEl.closest("[data-hero-card]")
