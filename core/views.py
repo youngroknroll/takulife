@@ -1743,6 +1743,97 @@ def archive_collection_item_edit(request, item_id):
     )
 
 
+def _collection_item_meta_rows(item):
+    """Derived meta headline rows for the read-only detail page.
+
+    Each row is omitted whenever its backing field is empty — the caller
+    template renders the whole ``<dl>`` conditionally on this list being
+    non-empty (CD-15). The linked-visit row's title prefers the visit's
+    Event title, falling back to the PersonalEntry title when the visit has
+    no Event, mirroring collection_edit.html:115's existing branch.
+    """
+    rows = []
+    if item.quantity > 0:
+        rows.append(
+            {"label": "수량", "value": f"{item.quantity}개", "url": None, "lock_hint": False}
+        )
+    if item.tradeable_quantity > 0:
+        rows.append(
+            {
+                "label": "교환 가능",
+                "value": f"{item.tradeable_quantity}개",
+                "url": None,
+                "lock_hint": False,
+            }
+        )
+    if item.acquired_on:
+        rows.append(
+            {
+                "label": "획득일",
+                "value": item.acquired_on.strftime("%Y.%m.%d"),
+                "url": None,
+                "lock_hint": False,
+            }
+        )
+    if item.acquisition_source:
+        rows.append(
+            {
+                "label": "획득 경로",
+                "value": item.acquisition_source,
+                "url": None,
+                "lock_hint": False,
+            }
+        )
+    visit = item.visit_record
+    if visit is not None:
+        title = visit.event.title if visit.event else visit.personal_entry.title
+        rows.append(
+            {
+                "label": "연결된 방문 기록",
+                "value": f"{title} · {visit.visited_on:%m-%d}",
+                "url": f"/archive/visits/{visit.pk}/",
+                "lock_hint": True,
+            }
+        )
+    return rows
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_collection_item_detail(request, item_id):
+    """Read-only detail page for one CollectionItem (owner-scoped).
+
+    Shares the whole-collection color palette with archive_collection_items
+    (built from user_collection_item_work_title_facets, sorted by
+    first_id) rather than computing a single-item palette — a work_title's
+    color bucket must be identical whether the user is viewing the list or
+    one item's detail page (CD-14).
+    """
+    item = get_object_or_404(
+        CollectionItem.objects.select_related(
+            "visit_record__event", "visit_record__personal_entry"
+        ),
+        pk=item_id,
+        user=request.user,
+    )
+    work_title_facets = user_collection_item_work_title_facets(request.user)
+    palette_titles = [
+        facet["work_title"]
+        for facet in sorted(work_title_facets, key=lambda facet: facet["first_id"])
+    ]
+    series_ink_classes = _series_ink_classes(palette_titles)
+    return render(
+        request,
+        "core/archive/collection_detail.html",
+        {
+            "item": item,
+            "row": _collection_item_row(item, series_ink_classes),
+            "meta_rows": _collection_item_meta_rows(item),
+            "tradeable_quantity": item.tradeable_quantity,
+        },
+    )
+
+
 @login_required
 @ensure_csrf_cookie
 def archive_personal_entries(request):

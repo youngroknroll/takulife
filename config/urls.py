@@ -48,6 +48,11 @@ urlpatterns = [
         name="collection-edit-page",
     ),
     path(
+        "collection/<int:item_id>/",
+        core_views.archive_collection_item_detail,
+        name="collection-detail-page",
+    ),
+    path(
         "collection/",
         core_views.archive_collection_items,
         name="collection-page",
