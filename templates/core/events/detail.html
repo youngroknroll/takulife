@@ -9,152 +9,46 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    <section class="shell">
-      <article class="content panel">
-        {% if event.official_url %}
-          <span class="official-stamp">공식<br>확인</span>
-        {% endif %}
-        {% if category_label %}<span class="chip">{{ category_label }}</span>{% endif %}
-        {% if status_label %}<span class="status-chip">{{ status_label }}</span>{% endif %}
-        {% if status_slug == 'ended' %}
-          <span class="dday-chip">종료</span>
-        {% elif dday is not None %}
-          <span class="dday-chip">D-{{ dday }}</span>
-        {% endif %}
-        <h1>{{ event.title }}</h1>
-        {% if event.summary %}
-          <p class="lead">{{ event.summary }}</p>
-        {% endif %}
+  <main class="page event-detail-page" id="content">
+    <nav class="event-detail-breadcrumb" aria-label="이동 경로">
+      <a href="/events/">‹ 행사 목록</a>{% if event.category %}<span aria-hidden="true"> · </span><a href="/events/?category={{ event.category }}">{{ category_label }}</a>{% endif %}
+    </nav>
 
-        <div class="meta-grid">
-          <div class="meta-item">
-            <span class="meta-label">기간</span>
-            <strong>
-              {% if event.start_date and event.end_date %}
-                {{ event.start_date }} ~ {{ event.end_date }}
-              {% elif event.start_date %}
-                {{ event.start_date }} ~
-              {% else %}
-                —
-              {% endif %}
-            </strong>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">장소</span>
-            <strong>{% if event.location_name %}{{ event.location_name }}{% else %}—{% endif %}</strong>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">카테고리</span>
-            <strong>{% if category_label %}{{ category_label }}{% else %}—{% endif %}</strong>
-          </div>
-          {% if event.work_title %}
-            <div class="meta-item">
-              <span class="meta-label">원작명</span>
-              <strong>{{ event.work_title }}</strong>
-            </div>
+    <div class="event-detail-grid">
+      {% if event.official_url %}
+        <span class="event-detail-stamp" aria-hidden="true">공식<br>확인</span>
+      {% endif %}
+
+      <div class="event-detail-gallery">
+        <div class="event-detail-poster-frame{% if not event.poster_image %} no-poster{% endif %}"{% if not event.poster_image %} style="--cat-ink: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink)); --cat-soft: var(--cat-{{ event.category|slugify }}-soft, var(--brand-soft));"{% endif %}>
+          <span class="event-detail-status-pill" data-tone="{{ status_slug }}" aria-hidden="true">{{ status_label }}</span>
+          {% if event.poster_image %}
+            <img src="{{ event.poster_image.url }}" alt="{{ event.title }} 포스터">
+          {% else %}
+            <span class="event-detail-poster-watermark" aria-hidden="true">{{ category_label }}</span>
           {% endif %}
         </div>
-
-        {% if event.official_url %}
-          <section class="section">
-            <h2>유의사항</h2>
-            <p class="notice">운영 시간·가격·예매 등 자세한 내용은 공식 페이지에서 확인해 주세요.</p>
-          </section>
+        {% if request.user.is_staff %}
+          <p class="event-detail-poster-caption">이미지 영역을 클릭하거나 드롭하여 포스터를 등록하세요</p>
+        {% elif event.poster_image %}
+          <p class="event-detail-poster-caption">공식 포스터</p>
         {% endif %}
-      </article>
-
-      <aside class="aside panel">
-        <section class="side-block">
-          <h2>참여 상태</h2>
-          <div class="action-list">
-            {% if event.official_url %}
-              <a class="action-link{% if user_status != 'visited' %} primary{% endif %}" href="{{ event.official_url }}" rel="noopener" target="_blank"{% if user_status != 'visited' %} data-cta-watch{% endif %}>공식 페이지에서 보기 ↗</a>
-            {% endif %}
-            <div class="status-row" data-status-error-container>
-              <button class="interest-btn{% if user_interested %} active{% endif %}" type="button"
-                data-interest-toggle
-                data-toast
-                data-event-id="{{ event.id }}"
-                aria-pressed="{% if user_interested %}true{% else %}false{% endif %}"
-                {% if user_interested %}data-interest-id="{{ user_interest_id }}"{% endif %}>
-                <span data-interest-glyph aria-hidden="true">{% if user_interested %}♥{% else %}♡{% endif %}</span>
-                찜
-              </button>
-            </div>
-            {% if user_status %}
-              <p class="panel-note" style="margin: 0;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
-              <div class="status-change-row">
-                <button class="action-link" type="button" data-status-toggle data-expanded="false" data-controls="status-choices"
-                        aria-expanded="false" aria-controls="status-choices">상태 변경</button>
-                {% if user_status == 'planned' %}
-                  <a class="action-link" href="/archive/statuses/?status=planned">일정에서 보기</a>
-                {% endif %}
-              </div>
-            {% endif %}
-            <div class="status-row" id="status-choices" data-status-error-container{% if user_status %} hidden{% endif %}>
-              <button class="status-btn planned{% if user_status == 'planned' %} active{% endif %}" type="button"
-                data-status-action
-                data-toast
-                data-event-id="{{ event.id }}"
-                data-status="planned"
-                data-reload-on-success
-                {% if user_status == 'planned' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
-                {% if status_slug == 'ended' %}disabled title="종료된 이벤트는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
-              <button class="status-btn visited{% if user_status == 'visited' %} active{% endif %}" type="button"
-                data-status-action
-                data-toast
-                data-event-id="{{ event.id }}"
-                data-status="visited"
-                data-reload-on-success
-                {% if user_status == 'visited' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>방문 완료</button>
-              <button class="status-btn missed{% if user_status == 'missed' %} active{% endif %}" type="button"
-                data-status-action
-                data-toast
-                data-event-id="{{ event.id }}"
-                data-status="missed"
-                data-reload-on-success
-                {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>놓침</button>
-            </div>
-            {% if user_status == 'visited' %}
-              <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}" data-cta-watch>기록 남기기</a>
-            {% endif %}
-          </div>
-        </section>
-
-        <section class="side-block">
-          <h2>공식 출처</h2>
-          {% if event.source_name or event.official_url %}
-            <div class="source-block">
-              {% if event.official_url %}
-                <a href="{{ event.official_url }}" rel="noopener" target="_blank">
-                  {% if event.source_name %}{{ event.source_name }}{% else %}공식 페이지{% endif %} ↗
-                </a>
-              {% else %}
-                <span>{{ event.source_name }}</span>
-              {% endif %}
-            </div>
-          {% else %}
-            <p class="notice" style="margin: 0;">출처 정보가 없습니다.</p>
-          {% endif %}
-        </section>
 
         {% if request.user.is_staff %}
-        <section class="side-block">
-          <h2>포스터 이미지</h2>
-
+        <div class="event-detail-poster-upload">
           {% if event.poster_image %}
             <img
               src="{{ event.poster_image.url }}"
               alt="{{ event.title }} 포스터 미리보기"
-              style="max-height:160px; width:100%; object-fit:contain; display:block; border-radius:6px; border:1px solid var(--line); margin-bottom:10px;"
+              class="event-detail-poster-upload-preview"
             >
           {% endif %}
 
           <img
             id="poster-preview"
             alt="선택한 포스터 미리보기"
-            style="display:none; max-height:160px; width:100%; object-fit:contain; border-radius:6px; border:1px solid var(--line); margin-bottom:10px;"
+            class="event-detail-poster-upload-preview"
+            style="display:none;"
           >
 
           <div class="action-list">
@@ -196,11 +90,163 @@
             data-status-error-container
             style="color:var(--rose-ink); margin-top:6px;"
           ></p>
-        </section>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="event-detail-main">
+        {% if category_label %}
+          <div class="event-detail-cat-row">
+            <span class="event-detail-cat-bar" aria-hidden="true" style="background: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));"></span>
+            <span class="event-detail-cat-label" style="color: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));">{{ category_label }}</span>
+          </div>
+        {% endif %}
+        <h1 class="event-detail-title">{{ event.title }}</h1>
+        {% if event.source_name %}
+          <p class="event-detail-subtitle">{{ event.source_name }} 제공</p>
         {% endif %}
 
-      </aside>
-    </section>
+        <dl class="event-detail-meta">
+          <div class="event-detail-meta-row">
+            <dt>기간</dt>
+            <dd>
+              {% if event.start_date and event.end_date %}
+                {{ event.start_date }} ~ {{ event.end_date }}
+              {% elif event.start_date %}
+                {{ event.start_date }} ~
+              {% else %}
+                —
+              {% endif %}
+            </dd>
+          </div>
+          <div class="event-detail-meta-row">
+            <dt>장소</dt>
+            <dd>{% if event.location_name %}{{ event.location_name }}{% else %}—{% endif %}</dd>
+          </div>
+          {% if region_label %}
+            <div class="event-detail-meta-row">
+              <dt>지역</dt>
+              <dd>{{ region_label }}</dd>
+            </div>
+          {% endif %}
+          <div class="event-detail-meta-row">
+            <dt>카테고리</dt>
+            <dd>{% if category_label %}{{ category_label }}{% else %}—{% endif %}</dd>
+          </div>
+          {% if event.work_title %}
+            <div class="event-detail-meta-row">
+              <dt>원작명</dt>
+              <dd>{{ event.work_title }}</dd>
+            </div>
+          {% endif %}
+        </dl>
+
+        <div class="event-detail-actions">
+          <div class="status-row" data-status-error-container>
+            <button class="event-detail-pill event-detail-pill-interest{% if user_interested %} active{% endif %}" type="button"
+              data-interest-toggle
+              data-toast
+              data-event-id="{{ event.id }}"
+              aria-pressed="{% if user_interested %}true{% else %}false{% endif %}"
+              {% if user_interested %}data-interest-id="{{ user_interest_id }}"{% endif %}>
+              <span data-interest-glyph aria-hidden="true">{% if user_interested %}♥{% else %}♡{% endif %}</span>
+              찜
+            </button>
+          </div>
+          {% if event.official_url %}
+            <a class="event-detail-pill event-detail-pill-official" href="{{ event.official_url }}" rel="noopener" target="_blank"{% if user_status != 'visited' %} data-cta-watch{% endif %}>공식 페이지로 ↗</a>
+          {% endif %}
+        </div>
+
+        <section class="event-detail-participation">
+          <h2>참여 상태</h2>
+          {% if user_status %}
+            <p class="panel-note" style="margin: 0 0 0.625rem;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
+            <div class="status-change-row">
+              <button class="action-link" type="button" data-status-toggle data-expanded="false" data-controls="status-choices"
+                      aria-expanded="false" aria-controls="status-choices">상태 변경</button>
+              {% if user_status == 'planned' %}
+                <a class="action-link" href="/archive/statuses/?status=planned">일정에서 보기</a>
+              {% endif %}
+            </div>
+          {% endif %}
+          <div class="status-row" id="status-choices" data-status-error-container{% if user_status %} hidden{% endif %}>
+            <button class="status-btn planned{% if user_status == 'planned' %} active{% endif %}" type="button"
+              data-status-action
+              data-toast
+              data-event-id="{{ event.id }}"
+              data-status="planned"
+              data-reload-on-success
+              {% if user_status == 'planned' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
+              {% if status_slug == 'ended' %}disabled title="종료된 이벤트는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
+            <button class="status-btn visited{% if user_status == 'visited' %} active{% endif %}" type="button"
+              data-status-action
+              data-toast
+              data-event-id="{{ event.id }}"
+              data-status="visited"
+              data-reload-on-success
+              {% if user_status == 'visited' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>방문 완료</button>
+            <button class="status-btn missed{% if user_status == 'missed' %} active{% endif %}" type="button"
+              data-status-action
+              data-toast
+              data-event-id="{{ event.id }}"
+              data-status="missed"
+              data-reload-on-success
+              {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>놓침</button>
+          </div>
+          {% if user_status == 'visited' %}
+            <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}" data-cta-watch>기록 남기기</a>
+          {% endif %}
+        </section>
+
+        {% if event.summary %}
+          <section class="event-detail-section">
+            <h2>행사 소개</h2>
+            <p>{{ event.summary }}</p>
+          </section>
+        {% endif %}
+
+        {% if event.official_url %}
+          <section class="event-detail-section">
+            <h2>공식 공지 · 특전</h2>
+            {# TODO(backend): 구조화된 공지·특전(EventNotice) 데이터 연결 지점 #}
+            <p>공식 공지·특전 정보는 아직 준비 중입니다. 운영 시간·예약 등 최신 내용은 공식 페이지에서 확인해 주세요.</p>
+          </section>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if event.location_name %}
+      <section class="event-detail-location">
+        <h2>위치</h2>
+        <p class="event-detail-location-name">{{ event.location_name }}</p>
+        {% if region_label %}<p class="event-detail-location-region">{{ region_label }}</p>{% endif %}
+        <a class="event-detail-location-link" href="https://map.naver.com/p/search/{{ event.location_name|urlencode }}" target="_blank" rel="noopener">지도 앱에서 열기 <span aria-hidden="true">↗</span></a>
+        {# TODO(backend): 좌표/지오코딩/지도 임베드 삽입 지점 #}
+        <div class="event-detail-map" data-map-embed-slot></div>
+      </section>
+    {% endif %}
+
+    {% if related_events %}
+      <section class="event-detail-related">
+        <div class="event-detail-related-head">
+          <h2>이런 행사도 있어요</h2>
+          <a href="/events/">행사 목록 →</a>
+        </div>
+        <div class="event-detail-related-rows">
+          {% for r in related_events %}
+            <a class="event-detail-related-row" href="/events/{{ r.event.id }}/">
+              <span class="event-detail-related-tile" aria-hidden="true" style="background: var(--cat-{{ r.category_slug|slugify }}-ink, var(--brand-ink));"></span>
+              <span class="event-detail-related-body">
+                <span class="event-detail-related-title">{{ r.event.title }}</span>
+                <span class="event-detail-related-meta">{{ r.category_label }}{% if r.event.location_name %} · {{ r.event.location_name }}{% endif %}{% if r.event.start_date %} · <span class="mono-num">{% if r.event.end_date %}{{ r.event.start_date|date:"Y/m/d" }} - {% if r.event.start_date|date:"Y" == r.event.end_date|date:"Y" %}{{ r.event.end_date|date:"m/d" }}{% else %}{{ r.event.end_date|date:"Y/m/d" }}{% endif %}{% else %}{{ r.event.start_date|date:"Y/m/d" }} -{% endif %}</span>{% endif %}</span>
+              </span>
+              <span class="event-detail-related-tone" data-tone="{{ r.status_slug }}">{{ r.status_label }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
 
     {% if user_status == 'visited' %}
       <div class="mobile-cta" data-cta-fixed hidden>
