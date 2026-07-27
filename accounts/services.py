@@ -54,6 +54,16 @@ def cancel_deletion(user):
     )
 
 
+def record_password_change(user):
+    """Stamp `user.password_changed_at` with now; the sole write path for
+    that field. Called from accounts.signals' allauth password-lifecycle
+    receivers (password_changed, password_set, password_reset) — never
+    written directly from a signal handler (see .docs mypage brief).
+    """
+    user.password_changed_at = timezone.now()
+    user.save(update_fields=["password_changed_at"])
+
+
 def execute_pending_deletions(now=None):
     """Purge every account whose grace period has fully elapsed.
 
