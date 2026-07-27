@@ -7,38 +7,69 @@
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    <section class="hero">
-      <h1>마이페이지</h1>
-
-      <div class="summary-grid">
-        <a class="summary-card summary-card-link" href="/collection/">
-          <p class="summary-label">내 컬렉션</p>
-          <p class="summary-value">{{ collection_count }}</p>
-        </a>
-        <a class="summary-card summary-card-link" href="/archive/">
-          <p class="summary-label">내 활동</p>
-          <p class="summary-value">{{ saved_count }}</p>
-        </a>
-        <a class="summary-card summary-card-link" href="/archive/visits/">
-          <p class="summary-label">다녀온 기록</p>
-          <p class="summary-value">{{ visit_count }}</p>
-        </a>
-        <a class="summary-card summary-card-link" href="/archive/personal/">
-          <p class="summary-label">직접 등록</p>
-          <p class="summary-value">{{ personal_entry_count }}</p>
-        </a>
-        <a class="summary-card summary-card-link" href="/archive/interests/">
-          <p class="summary-label">찜 목록</p>
-          <p class="summary-value">{{ interest_count }}</p>
-        </a>
+  <main class="page mypage-page" id="content">
+    <header class="mypage-header">
+      <span class="mypage-avatar" aria-hidden="true">{{ request.user.email|first|upper }}</span>
+      <div class="mypage-header-body">
+        <h1>마이페이지</h1>
+        <p class="mypage-email" title="{{ request.user.email }}">{{ request.user.email }}</p>
       </div>
-    </section>
+      <p class="mypage-tenure">
+        <span class="mypage-tenure-value">{{ joined_year }}</span>
+        <span class="mypage-tenure-label">년 활동 중</span>
+      </p>
+    </header>
 
-    <section class="panel">
+    <div class="mypage-index">
+      {% for row in index_rows %}
+        <a class="mypage-index-row is-{{ row.ink }}" href="{{ row.url }}">
+          <span class="mypage-index-tick" aria-hidden="true"></span>
+          <span class="mypage-index-body">
+            <span class="mypage-index-title-line">
+              <span class="mypage-index-title">{{ row.title }}</span>
+              {% if row.domain_label %}
+                <span class="mypage-index-badge">{{ row.domain_label }}</span>
+              {% endif %}
+            </span>
+            <span class="mypage-index-desc">{{ row.description }}</span>
+          </span>
+          <span class="mypage-index-count">
+            <span class="mypage-index-value">{{ row.count }}</span>
+            <span class="mypage-index-unit">{{ row.unit }}</span>
+          </span>
+          <span class="mypage-index-chevron" aria-hidden="true">&rsaquo;</span>
+        </a>
+      {% endfor %}
+    </div>
+
+    <section class="mypage-account">
       <h2>계정</h2>
-      <p class="meta">{{ request.user.email }}</p>
-      <a class="btn btn-secondary" href="/accounts/settings/">내정보 변경</a>
+
+      <div class="mypage-account-row">
+        <span class="mypage-account-field">
+          <span class="mypage-account-key">이메일</span>
+          <span class="mypage-account-value" title="{{ request.user.email }}">{{ request.user.email }}</span>
+        </span>
+        <a class="mypage-account-action is-teal" href="/accounts/settings/">내정보 변경</a>
+      </div>
+
+      <div class="mypage-account-row">
+        <span class="mypage-account-field">
+          <span class="mypage-account-key">비밀번호</span>
+          <span class="mypage-account-value">{{ password_changed_display }}</span>
+        </span>
+        <a class="mypage-account-action is-teal" href="{% url 'account_change_password' %}">변경</a>
+      </div>
+
+      {% if not request.user.is_staff %}
+        <div class="mypage-account-row mypage-account-row-danger">
+          <span class="mypage-account-field">
+            <span class="mypage-account-key">회원 탈퇴</span>
+            <span class="mypage-account-value">모든 기록과 컬렉션이 삭제됩니다</span>
+          </span>
+          <a class="mypage-account-action is-rose" href="{% url 'account-delete-page' %}">탈퇴</a>
+        </div>
+      {% endif %}
     </section>
   </main>
 {% endblock %}
