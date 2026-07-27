@@ -75,6 +75,20 @@ class EventQuerySet(models.QuerySet):
     def most_viewed(self, limit=5):
         return self.order_by("-view_count", "-id")[:limit]
 
+    def related_to(self, event, *, today, limit=3):
+        """Related events for a detail page: same category, excluding the event
+        itself, ordered by the public-listing state ranking (ongoing → upcoming →
+        ended), capped at ``limit``. An event with a blank category has no
+        related events. Chain after ``published()`` to restrict to public events.
+        """
+        if not event.category:
+            return self.none()
+        return (
+            self.filter(category=event.category)
+            .exclude(pk=event.pk)
+            .order_for_public_listing(today=today)[:limit]
+        )
+
     def order_for_public_listing(self, *, today, sort=None):
         """Order published events for the public listing.
 

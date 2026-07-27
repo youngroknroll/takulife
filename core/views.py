@@ -988,17 +988,25 @@ def event_detail(request, event_id):
         user_interest_id = interest_map.get(event.id)
         user_interested = user_interest_id is not None
 
+    today = timezone.localdate()
+    related_events = _attach_display(
+        Event.objects.published().related_to(event, today=today, limit=3),
+        today=today,
+    )
+
     context = {
         "event": event,
         "status_slug": status_slug,
         "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
         "category_label": CATEGORY_LABELS.get(event.category, event.category),
+        "region_label": REGION_LABELS.get(event.region, "") if event.region else "",
         "dday": display["dday"],
         "user_status": user_status,
         "user_status_id": user_status_id,
         "user_status_label": ARCHIVE_STATUS_LABELS.get(user_status, ""),
         "user_interested": user_interested,
         "user_interest_id": user_interest_id,
+        "related_events": related_events,
     }
     return render(request, "core/events/detail.html", context)
 

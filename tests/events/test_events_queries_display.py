@@ -442,3 +442,79 @@ class TestListStaffEvents:
         result = list_staff_events(warning="missing_region")
 
         assert result.count() == count_published_missing_region()
+
+
+# ---------------------------------------------------------------------------
+# EventQuerySet.related_to
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+class TestRelatedTo:
+    """Behavior tests for EventQuerySet.related_to(event, *, today, limit=3).
+
+    Selection rule: published events sharing the same category as the given
+    event, excluding the event itself, ordered by the existing public-listing
+    state ranking, capped at `limit`. An event whose own category is blank
+    has no related events (empty queryset).
+    """
+
+    def test_같은_카테고리의_다른_공개_행사를_관련_행사로_반환한다(self, make_event):
+        today = date(2026, 6, 26)
+        base = make_event(title="Base", category="popup_store")
+        other = make_event(title="Other", category="popup_store")
+
+        result = Event.objects.published().related_to(base, today=today)
+
+        assert other.id in list(result.values_list("id", flat=True))
+
+    def test_다른_카테고리_행사는_관련_행사에서_제외된다(self, make_event):
+        today = date(2026, 6, 26)
+        base = make_event(title="Base", category="popup_store")
+        other = make_event(title="Other", category="exhibition")
+
+        result = Event.objects.published().related_to(base, today=today)
+
+        assert other.id not in list(result.values_list("id", flat=True))
+
+    def test_자기_자신은_관련_행사에서_제외된다(self, make_event):
+        today = date(2026, 6, 26)
+        base = make_event(title="Base", category="popup_store")
+
+        result = Event.objects.published().related_to(base, today=today)
+
+        assert base.id not in list(result.values_list("id", flat=True))
+
+    def test_limit_개수를_넘는_관련_행사는_반환하지_않는다(self, make_event):
+        today = date(2026, 6, 26)
+        base = make_event(title="Base", category="popup_store")
+        for i in range(5):
+            make_event(title=f"Other {i}", category="popup_store")
+
+        result = list(Event.objects.published().related_to(base, today=today, limit=3))
+
+        assert len(result) <= 3
+
+    def test_카테고리가_빈_행사는_관련_행사가_없다(self, make_event):
+        """A blank category has no meaningful 'same category' relation."""
+        today = date(2026, 6, 26)
+        base = make_event(title="Base", category="")
+        make_event(title="Other", category="")
+
+        result = Event.objects.published().related_to(base, today=today)
+
+        assert list(result) == []
+
+    def test_published_체인_뒤에서_초안_행사는_관련_행사에서_제외된다(self, make_event):
+        today = date(2026, 6, 26)
+        base = make_event(title="Base", category="popup_store")
+        draft = make_event(
+            title="Draft",
+            category="popup_store",
+            publish_status=Event.PublishStatus.DRAFT,
+        )
+
+        result = Event.objects.published().related_to(base, today=today)
+
+        assert draft.id not in list(result.values_list("id", flat=True))
