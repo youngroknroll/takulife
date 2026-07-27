@@ -4,92 +4,73 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/photo-upload.css' %}">
-<link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive_visit_edit.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
-
-    <section class="hero">
-      <a class="back-link" href="/archive/visits/">← 다녀온 기록으로</a>
+  <main class="page visit-edit-page" id="content">
+    <a class="visit-edit-back-link" href="/archive/visits/">← 다녀온 기록으로</a>
+    <section class="visit-edit-head">
       <h1>다녀온 기록 수정</h1>
+      <p class="visit-edit-subtitle">방문 날짜·메모·사진을 수정할 수 있습니다</p>
     </section>
 
-    <div id="visit-global-error" class="form-error" style="margin-bottom:8px;"></div>
+    <div id="visit-global-error" class="visit-edit-global-error" aria-live="polite"></div>
 
-    <section class="layout layout--single">
-      <article class="panel">
-        <h2>기록 수정</h2>
-
-        <form id="visit-edit-form" class="create-form" data-record-id="{{ record_id }}" novalidate>
-          <div class="form-group">
-            <p class="form-static-label">대상</p>
-            <div class="subject-readonly">
-              {% if not subject.is_official %}<span class="visit-chip">직접 등록</span>{% endif %}
-              {% if subject.category_label %}<span class="visit-chip category">{{ subject.category_label }}</span>{% endif %}
-              <span class="subject-title">{{ subject.title }}</span>
-            </div>
-            <p class="field-hint">대상은 변경할 수 없습니다.</p>
+    <form id="visit-edit-form" class="visit-edit-grid" data-record-id="{{ record_id }}" novalidate>
+      <div class="visit-edit-photo-col">
+        <p class="visit-edit-field-label">기존 사진</p>
+        <div class="visit-edit-photo-row">
+          <div class="photo-preview-grid" id="existing-photo-grid"{% if not photos %} hidden{% endif %}>
+            {% for photo in photos %}
+              <div class="photo-preview-tile" data-existing-tile>
+                <img src="{{ photo.image.url }}" alt="사진 {{ forloop.counter }}">
+                <button type="button" class="photo-preview-remove" data-existing-photo-id="{{ photo.id }}">×</button>
+              </div>
+            {% endfor %}
           </div>
+          <div class="photo-preview-grid" id="photo-preview-grid" hidden></div>
+          <button type="button" id="visit-photos-trigger" class="photo-add-tile"><span>+</span></button>
+        </div>
+        <p class="field-hint" id="visit-photos-hint">기존 포함 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지</p>
+        <input id="visit-photos" class="photo-multi-input photo-upload-native-input" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple tabindex="-1">
+      </div>
 
-          <div class="form-group">
-            <label for="visit-date">방문 날짜</label>
-            <input id="visit-date" type="date" name="visited_on" value="{{ visited_on|date:'Y-m-d' }}" required>
+      <div class="visit-edit-fields">
+        <div class="visit-edit-group">
+          <p class="visit-edit-field-label">대상</p>
+          <div class="subject-readonly">
+            {% if not subject.is_official %}<span class="visit-chip unofficial">직접 등록</span>{% endif %}
+            {% if subject.category_label %}<span class="visit-chip category">{{ subject.category_label }}</span>{% endif %}
+            <span class="subject-title">{{ subject.title }}</span>
+            <span class="subject-lock" aria-hidden="true">🔒 변경 불가</span>
           </div>
+          <p class="field-hint">대상은 변경할 수 없습니다</p>
+        </div>
 
-          <div class="form-group">
-            <label for="visit-review">한줄 메모 (선택)</label>
-            <input id="visit-review" type="text" name="short_review" maxlength="255" value="{{ short_review }}" placeholder="짧은 메모를 남겨보세요">
-          </div>
+        <div class="visit-edit-group">
+          <label for="visit-date">방문 날짜 <span aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
+          <input id="visit-date" type="date" name="visited_on" value="{{ visited_on|date:'Y-m-d' }}" required>
+        </div>
 
-          <div class="form-group">
-            <p class="form-static-label">기존 사진</p>
-            <div class="photo-preview-grid" id="existing-photo-grid"{% if not photos %} hidden{% endif %}>
-              {% for photo in photos %}
-                <div class="photo-preview-tile" data-existing-tile>
-                  <img src="{{ photo.image.url }}" alt="사진 {{ forloop.counter }}">
-                  <button
-                    type="button"
-                    class="photo-preview-remove"
-                    data-existing-photo-id="{{ photo.id }}"
-                  >×</button>
-                </div>
-              {% endfor %}
-            </div>
-            <p class="field-hint" id="existing-empty-hint"{% if photos %} hidden{% endif %}>등록된 사진이 없습니다.</p>
-          </div>
+        <div class="visit-edit-group">
+          <label for="visit-review">한줄 메모 (선택)</label>
+          <input id="visit-review" type="text" name="short_review" maxlength="255" value="{{ short_review }}" placeholder="짧은 메모를 남겨보세요">
+        </div>
 
-          <div class="form-group">
-            <label for="visit-photos">사진 추가</label>
-            <p class="field-hint" id="visit-photos-hint">JPEG · PNG · WebP · (기존 포함) 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지</p>
-            <input
-              id="visit-photos"
-              class="photo-multi-input photo-upload-native-input"
-              type="file"
-              name="photos"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              tabindex="-1"
-            >
-            <div class="photo-upload-row">
-              <button type="button" id="visit-photos-trigger" class="photo-add-tile">
-                <span>+</span>
-              </button>
-              <div class="photo-preview-grid" id="photo-preview-grid" hidden></div>
-            </div>
-          </div>
+        <p class="visit-edit-error" id="visit-edit-error" aria-live="polite"></p>
+        <p class="visit-edit-status" id="visit-edit-status" role="status"></p>
 
-          <p class="form-error" id="visit-edit-error"></p>
-          <p class="form-status" id="visit-edit-status"></p>
-
-          <div class="edit-actions">
-            <button class="form-submit-btn" type="submit">저장</button>
-            <button class="record-delete-btn" type="button" data-delete-record-id="{{ record_id }}">기록 삭제</button>
-          </div>
-        </form>
-      </article>
-    </section>
+        <div class="visit-edit-actions">
+          <button class="visit-edit-submit" type="submit">저장</button>
+          <a class="visit-edit-cancel" href="/archive/visits/">취소</a>
+          <button class="visit-edit-delete-btn" type="button" data-delete-record-id="{{ record_id }}" aria-label="기록 삭제">
+            <span class="visit-edit-delete-text" aria-hidden="true">기록 삭제</span>
+            <span class="visit-edit-delete-icon" aria-hidden="true">🗑</span>
+          </button>
+        </div>
+      </div>
+    </form>
   </main>
 {% endblock %}
 
