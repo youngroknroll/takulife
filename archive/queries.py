@@ -523,6 +523,16 @@ def user_collection_item_work_title_facets(user) -> list:
     )
 
 
+def list_items_acquired_at_visit(visit):
+    """Return the CollectionItems linked to one VisitRecord, in registration
+    order — the visit-record detail page's "이 방문에서 얻은 굿즈" section.
+
+    Uses the reverse FK (CollectionItem.visit_record), so this is an
+    intra-archive query with no new cross-domain coupling.
+    """
+    return list(visit.archive_collection_items.all().order_by("id"))
+
+
 def user_visit_category_values(user):
     """Return (event__category, personal_entry__category) pairs for a user's visits.
 

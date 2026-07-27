@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 다녀온 기록{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/archive_visit_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page visit-detail-page" id="content">
+    <a class="visit-detail-back-link" href="/archive/visits/">← 다녀온 기록으로</a>
+    <div id="visit-global-error" class="visit-detail-global-error" aria-live="polite"></div>
+    <div class="visit-detail-grid">
+      <div class="visit-detail-gallery">
+        <div class="visit-detail-cover">
+          {% if photos %}<img src="{{ photos.0.image.url }}" alt="{{ subject.title }} 사진 1">
+          {% else %}<div class="visit-detail-cover-empty" aria-hidden="true">📷</div><p class="sr-only">등록된 사진이 없습니다</p>{% endif %}
+        </div>
+        {% if photos|length > 1 %}
+        <div class="visit-detail-thumbs">
+          {% for photo in photos|slice:"1:5" %}<div class="visit-detail-thumb"><img src="{{ photo.image.url }}" alt="{{ subject.title }} 사진 {{ forloop.counter|add:'1' }}"></div>{% endfor %}
+        </div>
+        {% endif %}
+        <p class="visit-detail-photo-hint">사진은 기록당 최대 5장까지 등록할 수 있습니다</p>
+        <div class="visit-detail-gallery-actions">
+          <a class="visit-detail-edit-btn" href="/archive/visits/{{ record_id }}/edit/">기록 수정</a>
+          <button type="button" class="visit-detail-delete-btn" data-delete-record-id="{{ record_id }}" aria-label="기록 삭제">
+            <span class="visit-detail-delete-text" aria-hidden="true">삭제</span>
+            <span class="visit-detail-delete-icon" aria-hidden="true">🗑</span>
+          </button>
+        </div>
+      </div>
+      <div class="visit-detail-main">
+        <div class="visit-detail-badges">
+          {% if subject.category_slug %}<span class="visit-detail-cat" style="color: var(--cat-{{ subject.category_slug }}-ink, var(--brand-ink));">{{ subject.category_label }}</span><span class="visit-detail-dot" aria-hidden="true">·</span>
+          {% elif subject.category_label %}<span class="visit-detail-cat visit-detail-cat--muted">{{ subject.category_label }}</span><span class="visit-detail-dot" aria-hidden="true">·</span>{% endif %}
+          <span class="visit-detail-origin">{% if subject.is_official %}공식 행사{% else %}직접 등록{% endif %}</span>
+          <span class="status visited">방문 완료</span>
+        </div>
+        <h1 class="visit-detail-title">{{ subject.title }}</h1>
+        <div class="visit-detail-date-row">
+          <span class="visit-detail-date">{{ visited_on|date:"Y.m.d" }}</span>
+          <span class="visit-detail-weekday">{{ visited_on|date:"l" }} 방문</span>
+        </div>
+        <dl class="visit-detail-meta">
+          <div class="visit-detail-meta-row"><dt>방문일</dt><dd>{{ visited_on|date:"Y년 n월 j일" }}</dd></div>
+          <div class="visit-detail-meta-row"><dt>대상</dt><dd>{{ subject.title }}</dd></div>
+          {% if subject.location %}<div class="visit-detail-meta-row"><dt>장소</dt><dd>{{ subject.location }}</dd></div>{% endif %}
+          {% if subject.category_label %}<div class="visit-detail-meta-row"><dt>카테고리</dt><dd>{{ subject.category_label }}</dd></div>{% endif %}
+          <div class="visit-detail-meta-row"><dt>사진</dt><dd>{{ photos|length }}장</dd></div>
+        </dl>
+        {% if short_review %}
+          <h2 class="visit-detail-section-head">후기</h2>
+          <p class="visit-detail-review">{{ short_review }}</p>
+        {% endif %}
+        <div class="visit-detail-goods-head">
+          <h2>이 방문에서 얻은 굿즈 <span>{{ goods_count }}</span>점</h2>
+          <a class="visit-detail-goods-add" href="/collection/new/?visit_record={{ record_id }}"><span aria-hidden="true">＋</span> 굿즈 등록</a>
+        </div>
+        {% if goods_rows %}
+          <div class="visit-detail-goods-rows">
+            {% for row in goods_rows %}
+            <article class="visit-detail-goods-row">
+              <div class="visit-detail-goods-tile {{ row.series_ink_class }}"><span class="visit-detail-goods-tile-label">{{ row.item.item_type }}</span></div>
+              <div class="visit-detail-goods-text">
+                <p class="visit-detail-goods-name">{{ row.item.name }}</p>
+                <p class="visit-detail-goods-sub">{% if row.quantity_label %}{{ row.quantity_label }}{% endif %}{% if row.tradeable_label %}{% if row.quantity_label %} · {% endif %}{{ row.tradeable_label }}{% endif %}</p>
+              </div>
+              <span class="visit-detail-goods-pill{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">{% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}</span>
+            </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="visit-detail-goods-empty">
+            <p class="empty-title">아직 등록된 굿즈가 없습니다</p>
+            <a class="visit-detail-goods-add" href="/collection/new/?visit_record={{ record_id }}"><span aria-hidden="true">＋</span> 굿즈 등록</a>
+          </div>
+        {% endif %}
+        {% if subject.detail_url %}
+          <div class="visit-detail-source-card">
+            <p class="visit-detail-source-label">원본 행사 정보</p>
+            <a class="visit-detail-source-link" href="{{ subject.detail_url }}">행사 상세 보기 <span aria-hidden="true">→</span></a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/pages/visit_detail.js' %}"></script>
+{% endblock %}
