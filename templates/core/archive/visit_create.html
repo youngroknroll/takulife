@@ -4,105 +4,100 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/photo-upload.css' %}">
-<link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive_visit_create.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
-
-    <section class="hero">
-      <a class="back-link" href="/archive/visits/">← 다녀온 기록으로</a>
-      <h1>다녀온 기록 작성</h1>
+  <main class="page visit-create-page" id="content">
+    <a class="visit-create-back-link" href="/archive/visits/">← 다녀온 기록으로</a>
+    <section class="visit-create-head">
+      <div class="visit-create-head-row">
+        <h1>다녀온 기록 작성</h1>
+        <span class="visit-create-legend">＊ 표시는 필수</span>
+      </div>
+      <p class="visit-create-subtitle">대상과 방문 날짜는 필수, 메모와 사진은 선택입니다</p>
     </section>
 
-    <div id="visit-global-error" class="form-error" style="margin-bottom:8px;"></div>
+    <div id="visit-global-error" class="visit-create-error"></div>
 
-    <section class="layout layout--single">
-      <article class="panel">
-        <h2>새 방문 기록</h2>
-        <p class="panel-note">대상과 방문 날짜는 필수, 메모와 사진은 선택입니다.</p>
+    <form id="visit-create-form" class="visit-create-grid" novalidate>
+      <input type="hidden" name="client_token" value="{{ client_token }}">
 
-        <form id="visit-create-form" class="create-form" novalidate>
-          <input type="hidden" name="client_token" value="{{ client_token }}">
-          {% if preselect %}
-            {% comment %}Subject locked: arrived from a specific item's 기록 button. JS reads
-               the hidden input's value exactly like the select.{% endcomment %}
-            <div class="form-group">
-              <label for="visit-subject">대상</label>
-              <p class="locked-subject">{{ preselect.label }}</p>
-              <input type="hidden" id="visit-subject" name="subject" value="{{ preselect.value }}">
-            </div>
-          {% else %}
-            <div class="form-group">
-              <label for="visit-subject">대상</label>
-              <select id="visit-subject" name="subject" required>
-                <option value="">대상을 선택하세요</option>
-                {% if selectable_events %}
-                  <optgroup label="공식 예정 이벤트">
-                    {% for event in selectable_events %}
-                      <option value="event:{{ event.id }}">{{ event.title }}</option>
-                    {% endfor %}
-                  </optgroup>
-                {% endif %}
-                {% if selectable_personal_entries %}
-                  <optgroup label="직접 등록 아카이브">
-                    {% for entry in selectable_personal_entries %}
-                      <option value="personal:{{ entry.id }}">{{ entry.title }}</option>
-                    {% endfor %}
-                  </optgroup>
-                {% endif %}
-              </select>
-            </div>
-          {% endif %}
+      <div class="visit-create-photo-col">
+        <label class="visit-create-field-label" for="visit-photos-trigger">사진 (선택)</label>
+        <div class="photo-upload-row visit-create-photo-row">
+          <div class="photo-preview-grid" id="photo-preview-grid" hidden></div>
+          <button type="button" id="visit-photos-trigger" class="photo-add-tile"><span>+</span></button>
+        </div>
+        <p class="field-hint visit-create-photo-hint" id="visit-photos-hint">JPEG · PNG · WebP · 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지</p>
+        <input id="visit-photos" class="photo-multi-input photo-upload-native-input" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple tabindex="-1">
+      </div>
 
-          <div class="form-group">
-            <label for="visit-date">방문 날짜</label>
-            <input id="visit-date" type="date" name="visited_on" required>
+      <div class="visit-create-fields">
+        {% if preselect %}
+          {% comment %}Subject locked: arrived from a specific item's 기록 button. JS reads
+             the hidden input's value exactly like the select.{% endcomment %}
+          <div class="visit-create-group">
+            <label for="visit-subject">대상</label>
+            <p class="locked-subject">{{ preselect.label }}</p>
+            <input type="hidden" id="visit-subject" name="subject" value="{{ preselect.value }}">
           </div>
-
-          <div class="form-group">
-            <label for="visit-review">한줄 메모 (선택)</label>
-            <input id="visit-review" type="text" name="short_review" maxlength="255" placeholder="짧은 메모를 남겨보세요">
+        {% else %}
+          <div class="visit-create-group">
+            <label for="visit-subject">대상 <span aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
+            <select id="visit-subject" name="subject" required>
+              <option value="">대상을 선택하세요</option>
+              {% if selectable_events %}
+                <optgroup label="공식 예정 이벤트">
+                  {% for event in selectable_events %}
+                    <option value="event:{{ event.id }}">{{ event.title }}</option>
+                  {% endfor %}
+                </optgroup>
+              {% endif %}
+              {% if selectable_personal_entries %}
+                <optgroup label="직접 등록 아카이브">
+                  {% for entry in selectable_personal_entries %}
+                    <option value="personal:{{ entry.id }}">{{ entry.title }}</option>
+                  {% endfor %}
+                </optgroup>
+              {% endif %}
+            </select>
           </div>
+        {% endif %}
 
-          <div class="form-group">
-            <label for="visit-photos">사진 (선택)</label>
-            <p class="field-hint" id="visit-photos-hint">JPEG · PNG · WebP · 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지</p>
-            <input
-              id="visit-photos"
-              class="photo-multi-input photo-upload-native-input"
-              type="file"
-              name="photos"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              tabindex="-1"
-            >
-            <div class="photo-upload-row">
-              <button type="button" id="visit-photos-trigger" class="photo-add-tile">
-                <span>+</span>
-              </button>
-              <div class="photo-preview-grid" id="photo-preview-grid" hidden></div>
-            </div>
+        <div class="visit-create-group">
+          <label for="visit-date">방문 날짜 <span aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
+          <input id="visit-date" type="date" name="visited_on" required>
+        </div>
+
+        <div class="visit-create-group">
+          <label for="visit-review">한줄 메모 (선택)</label>
+          <input id="visit-review" type="text" name="short_review" maxlength="255" placeholder="짧은 메모를 남겨보세요 (선택)">
+        </div>
+
+        <div class="visit-create-rules">
+          <div class="visit-create-rules-head">
+            <span class="visit-create-rules-label">기록 안내</span>
+            <span class="visit-create-rules-line" aria-hidden="true"></span>
           </div>
+          <ul class="rule-list">
+            <li>다녀온 기록은 본인만 보고 관리할 수 있습니다</li>
+            <li>공식 예정 이벤트 또는 내 비공식 항목에 기록을 남길 수 있습니다</li>
+            <li>사진은 JPEG, PNG, WebP 형식을 지원합니다</li>
+            <li>사진은 기록당 최대 5장까지 첨부할 수 있습니다</li>
+            <li>사진 파일 크기는 5MB 이하여야 합니다</li>
+          </ul>
+        </div>
 
-          <p class="form-error" id="visit-create-error"></p>
-          <p class="form-status" id="visit-create-status"></p>
-          <button class="form-submit-btn" type="submit">기록 저장</button>
-        </form>
-      </article>
+        <p class="visit-create-error" id="visit-create-error" aria-live="polite"></p>
+        <p class="visit-create-status" id="visit-create-status" role="status"></p>
 
-      <section class="panel">
-        <h2>기록 안내</h2>
-        <ul class="rule-list">
-          <li>다녀온 기록은 본인만 보고 관리할 수 있습니다</li>
-          <li>공식 예정 이벤트 또는 내 비공식 항목에 기록을 남길 수 있습니다</li>
-          <li>사진은 JPEG, PNG, WebP 형식을 지원합니다</li>
-          <li>사진은 기록당 최대 5장까지 첨부할 수 있습니다</li>
-          <li>사진 파일 크기는 5MB 이하여야 합니다</li>
-        </ul>
-      </section>
-    </section>
+        <div class="visit-create-actions">
+          <button class="visit-create-submit" type="submit">기록 저장</button>
+          <a class="visit-create-cancel" href="/archive/visits/">취소</a>
+        </div>
+      </div>
+    </form>
   </main>
 {% endblock %}
 
