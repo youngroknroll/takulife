@@ -4,16 +4,28 @@
 {% block title %}페이지를 찾을 수 없어요 — takulife{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/errors.css' %}">
 {% endblock %}
 
 {% block content %}
-<main class="auth-container" id="content">
-  <h1>페이지를 찾을 수 없어요</h1>
-  <p class="auth-error">
-    요청하신 페이지가 삭제되었거나, 주소가 바뀌었거나, 존재하지 않습니다.
-  </p>
-  <p><a href="/">홈으로 돌아가기</a></p>
-  <p><a href="{% url 'event-list-page' %}">이벤트 목록 보러 가기</a></p>
+<main class="page error-page" id="content">
+  <span class="error-page-bg" aria-hidden="true">404</span>
+  <div class="error-page-body">
+    <p class="error-page-label">ERROR 404</p>
+    <h1 class="error-page-title">페이지를 찾을 수 없어요</h1>
+    <p class="error-page-message">
+      요청하신 페이지가 삭제되었거나, 주소가 바뀌었거나, 존재하지 않습니다.
+    </p>
+    <ul class="error-page-links">
+      <li class="error-page-link-row">
+        <a class="error-page-link is-brand" href="/">홈으로 돌아가기<span
+           class="error-page-arrow" aria-hidden="true">→</span></a>
+      </li>
+      <li class="error-page-link-row">
+        <a class="error-page-link is-teal" href="{% url 'event-list-page' %}">이벤트 목록 보러 가기<span
+           class="error-page-arrow" aria-hidden="true">→</span></a>
+      </li>
+    </ul>
+  </div>
 </main>
 {% endblock %}

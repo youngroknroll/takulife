@@ -4,15 +4,24 @@
 {% block title %}요청이 너무 많습니다 — takulife{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/errors.css' %}">
 {% endblock %}
 
 {% block content %}
-<main class="auth-container" id="content">
-  <h1>요청이 너무 많습니다</h1>
-  <p class="auth-error">
-    짧은 시간에 너무 많은 요청이 접수되었습니다. 잠시 후 다시 시도해 주세요.
-  </p>
-  <p><a href="{% url 'account_login' %}">로그인으로 돌아가기</a></p>
+<main class="page error-page" id="content">
+  <span class="error-page-bg" aria-hidden="true">429</span>
+  <div class="error-page-body">
+    <p class="error-page-label">ERROR 429</p>
+    <h1 class="error-page-title">요청이 너무 많습니다</h1>
+    <p class="error-page-message">
+      짧은 시간에 너무 많은 요청이 접수되었습니다. 잠시 후 다시 시도해 주세요.
+    </p>
+    <ul class="error-page-links">
+      <li class="error-page-link-row">
+        <a class="error-page-link is-brand" href="{% url 'account_login' %}">로그인으로 돌아가기<span
+           class="error-page-arrow" aria-hidden="true">→</span></a>
+      </li>
+    </ul>
+  </div>
 </main>
 {% endblock %}
