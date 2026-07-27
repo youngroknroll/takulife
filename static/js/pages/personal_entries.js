@@ -1,9 +1,14 @@
 /**
- * personal_entries.js — "내 항목" (PersonalEntry) actions for takulife
+ * personal_entries.js — "직접 등록" (PersonalEntry) list-page actions for
+ * takulife
  *
  * Handles:
- *   - Create personal entry via form#entry-create-form
  *   - Delete personal entry via [data-delete-entry-id]
+ *   - Promote to official-review via [data-promote-toggle]/[data-promote-form]
+ *
+ * Create moved to a dedicated write page (/archive/personal/new/,
+ * personal_create.html + personal_create.js) on 2026-07-27 — this file no
+ * longer binds a create form on the list page.
  *
  * Relies on window.TakuAPI (api.js) for requests, 403 disambiguation and error
  * formatting. All DOM writes use textContent only.
@@ -37,81 +42,6 @@
       return window.TakuConfirm(message);
     }
     return Promise.resolve(window.confirm(message));
-  }
-
-  function bindCreateForm() {
-    var form = document.getElementById("entry-create-form");
-    if (!form) { return; }
-    var errorEl = document.getElementById("entry-create-error");
-    var submitBtn = form.querySelector('[type="submit"]');
-
-    form.addEventListener("submit", async function (evt) {
-      evt.preventDefault();
-      clearError(errorEl);
-
-      var title = form.elements["title"].value.trim();
-      if (!title) {
-        setError(errorEl, "이름을 입력해 주세요.");
-        return;
-      }
-
-      var fields = {
-        kind: form.elements["kind"].value,
-        title: title,
-        category: form.elements["category"].value.trim(),
-        work_title: form.elements["work_title"].value.trim(),
-        location_name: form.elements["location_name"].value.trim(),
-        url: form.elements["url"].value.trim(),
-        memo: form.elements["memo"].value.trim(),
-      };
-
-      // Image attached → multipart request (matches visit_create.js's use of
-      // TakuAPI.upload for binary payloads). No image → keep the plain JSON
-      // path unchanged.
-      var imageInput = form.elements["image"];
-      var imageFile = imageInput && imageInput.files && imageInput.files[0];
-
-      window.TakuAPI.setLoading(submitBtn, true);
-
-      var result;
-      if (imageFile) {
-        var formData = new FormData();
-        Object.keys(fields).forEach(function (key) {
-          formData.append(key, fields[key]);
-        });
-        formData.append("image", imageFile);
-        result = await window.TakuAPI.upload("/api/personal-entries/", formData);
-      } else {
-        result = await window.TakuAPI.post("/api/personal-entries/", fields);
-      }
-
-      if (result.status === 201) {
-        // Reload-equivalent: destination is the current URL (WED §5-2
-        // boundary ③ — same fidelity as the reload it replaces).
-        window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
-        return;
-      }
-
-      window.TakuAPI.setLoading(submitBtn, false);
-
-      if (result.status === 403) {
-        handle403(result, errorEl);
-        return;
-      }
-
-      if (result.status === 0) {
-        setError(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
-        return;
-      }
-
-      setError(errorEl, window.TakuAPI.formatError(result));
-
-      // 상세 정보(접힘) 그룹 안의 url 필드가 원인이면 펼쳐서 보여준다.
-      if (result.data && result.data.url) {
-        var detailFields = document.getElementById("entry-detail-fields");
-        if (detailFields) { detailFields.open = true; }
-      }
-    });
   }
 
   function bindEntryDeletes() {
@@ -250,7 +180,6 @@
   }
 
   function init() {
-    bindCreateForm();
     bindEntryDeletes();
     bindPromote();
   }
@@ -262,9 +191,9 @@
   }
 
   // Live search swaps the results fragment: re-wire the new cards' delete and
-  // promote controls. The create form lives outside the swap region, so it is
-  // left alone; the per-element guards keep this idempotent. (Status/interest
-  // buttons in the swapped cards are re-wired by status.js's own listener.)
+  // promote controls. The per-element guards keep this idempotent.
+  // (Status/interest buttons in the swapped cards are re-wired by status.js's
+  // own listener.)
   document.addEventListener("archive:listswapped", function () {
     bindEntryDeletes();
     bindPromote();

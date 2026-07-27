@@ -37,7 +37,7 @@ ARCHIVE_STATUS_SLUGS: tuple[str, ...] = tuple(UserEventStatus.Status.values)
 ARCHIVE_RECORD_PAGE_SIZE = 10  # 기록장 (/archive/) — 저장한 이벤트
 ARCHIVE_STATUS_PAGE_SIZE = 5  # 예정 목록 (/archive/statuses/)
 ARCHIVE_VISIT_PAGE_SIZE = 5  # 방문 기록 (/archive/visits/)
-ARCHIVE_PERSONAL_PAGE_SIZE = 5  # 비공식 목록 (/archive/items/)
+ARCHIVE_PERSONAL_PAGE_SIZE = 5  # 비공식 목록 (/archive/personal/)
 ARCHIVE_COLLECTION_PAGE_SIZE = 10  # 컬렉션 목록 (/collection/)
 
 # Sort slugs for list_user_statuses, mapped to their order_by field. "" (the
@@ -58,6 +58,16 @@ ARCHIVE_STATUS_SORT_ORDERING: dict[str, str] = {
 ARCHIVE_VISIT_SORT_ORDERING: dict[str, tuple[str, str]] = {
     "": ("-visited_on", "-id"),
     "oldest": ("visited_on", "id"),
+}
+
+# Sort slugs for list_user_personal_entries, mapped to their order_by tuple.
+# Mirrors ARCHIVE_VISIT_SORT_ORDERING's shape exactly: "" (the default) is
+# the pre-existing -created_at, -id ordering, listed explicitly so
+# .get(sort, ARCHIVE_PERSONAL_SORT_ORDERING[""]) has a single source for the
+# default instead of a duplicated literal.
+ARCHIVE_PERSONAL_SORT_ORDERING: dict[str, tuple[str, str]] = {
+    "": ("-created_at", "-id"),
+    "oldest": ("created_at", "id"),
 }
 
 
@@ -224,13 +234,19 @@ def list_user_upcoming_planned_events(user, *, today=None):
     )
 
 
-def list_user_personal_entries(user, kind=None, *, q: str = ""):
+def list_user_personal_entries(user, kind=None, *, q: str = "", sort: str = ""):
     """Return a user's private unofficial items, newest first, optional kind filter.
 
     ``q`` narrows results to rows whose title, category, location_name,
     work_title, or memo matches the search term (case-insensitive contains).
+
+    ``sort`` selects the ordering via ARCHIVE_PERSONAL_SORT_ORDERING; an
+    unknown or empty value falls back to the default -created_at, -id
+    ordering rather than raising or returning an empty result.
     """
-    queryset = PersonalEntry.objects.filter(user=user).order_by("-created_at", "-id")
+    queryset = PersonalEntry.objects.filter(user=user).order_by(
+        *ARCHIVE_PERSONAL_SORT_ORDERING.get(sort, ARCHIVE_PERSONAL_SORT_ORDERING[""])
+    )
     if kind:
         queryset = queryset.filter(kind=kind)
     if q:
@@ -247,10 +263,23 @@ def list_user_personal_entries(user, kind=None, *, q: str = ""):
 def user_personal_entry_counts(user) -> dict:
     """Return summary counts for a user's unofficial (personal) entries.
 
-    Used by the archive/items/ page's summary card and mypage's collection
+    Used by the archive/personal/ page's summary card and mypage's collection
     count.
+
+    ``visit_linked_count`` is the number of the user's PersonalEntry rows that
+    have at least one linked VisitRecord (distinct — a single entry with
+    multiple visit records still counts once). An official Event visit never
+    touches this count since it filters through the personal_entry FK only.
     """
-    return {"total_count": PersonalEntry.objects.filter(user=user).count()}
+    queryset = PersonalEntry.objects.filter(user=user)
+    return {
+        "total_count": queryset.count(),
+        "visit_linked_count": queryset.filter(
+            archive_user_visit_records__isnull=False
+        )
+        .distinct()
+        .count(),
+    }
 
 
 def user_personal_interest_ids(user) -> dict:

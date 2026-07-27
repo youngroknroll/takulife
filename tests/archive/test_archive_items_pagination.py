@@ -1,4 +1,4 @@
-"""Tests for pagination and search on /archive/items/ (비공식 personal entries).
+"""Tests for pagination and search on /archive/personal/ (비공식 personal entries).
 
 Behavior under test:
 - 7 entries are paginated at 5 per page; page_obj is in the context.
@@ -29,7 +29,7 @@ class TestArchiveItemsPagination:
         user, client = user_client()
         make_entries(user, 7)
 
-        resp = client.get("/archive/items/")
+        resp = client.get("/archive/personal/")
 
         assert resp.status_code == 200
         page_obj = resp.context["page_obj"]
@@ -41,7 +41,7 @@ class TestArchiveItemsPagination:
         user, client = user_client()
         make_entries(user, 7)
 
-        resp = client.get("/archive/items/?page=2")
+        resp = client.get("/archive/personal/?page=2")
 
         assert resp.status_code == 200
         page_obj = resp.context["page_obj"]
@@ -52,7 +52,7 @@ class TestArchiveItemsPagination:
         user, client = user_client()
         make_entries(user, 4)
 
-        resp = client.get("/archive/items/")
+        resp = client.get("/archive/personal/")
 
         assert resp.context["page_obj"].paginator.num_pages == 1
 
@@ -70,7 +70,7 @@ class TestArchiveItemsSummaryCounts:
         user, client = user_client()
         make_entries(user, 7, kind=PersonalEntry.Kind.PLACE)
 
-        resp = client.get("/archive/items/")
+        resp = client.get("/archive/personal/")
 
         assert resp.context["total_count"] == 7
         assert "place_count" not in resp.context
@@ -82,7 +82,7 @@ class TestArchiveItemsSummaryCounts:
         make_entries(user, 7, kind=PersonalEntry.Kind.PLACE, title_prefix="항목")
 
         # q="00" would match only "항목 00"
-        resp = client.get("/archive/items/?q=00")
+        resp = client.get("/archive/personal/?q=00")
 
         # Summary must still report 7, not the filtered count
         assert resp.context["total_count"] == 7
@@ -91,27 +91,27 @@ class TestArchiveItemsSummaryCounts:
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="내 항목")
 
-        resp = client.get("/archive/items/?q=없는검색어XYZ")
+        resp = client.get("/archive/personal/?q=없는검색어XYZ")
 
         assert resp.status_code == 200
         assert resp.context["has_entries"] is True  # 1 entry exists regardless
 
 
 # ---------------------------------------------------------------------------
-# q search on /archive/items/
+# q search on /archive/personal/
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestArchiveItemsSearch:
-    """?q= filters entry_rows on /archive/items/."""
+    """?q= filters entry_rows on /archive/personal/."""
 
     def test_검색어로_필터링하면_제목이_일치하는_기록만_표시된다(self, user_client, make_entry):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 항목")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="다른 항목")
 
-        resp = client.get("/archive/items/?q=매칭")
+        resp = client.get("/archive/personal/?q=매칭")
 
         titles = [row["entry"].title for row in resp.context["entry_rows"]]
         assert "매칭 항목" in titles
@@ -125,7 +125,7 @@ class TestArchiveItemsSearch:
         for i in range(4):
             make_entry(user, kind=PersonalEntry.Kind.PLACE, title=f"기타{i}")
 
-        resp = client.get("/archive/items/?q=매칭")
+        resp = client.get("/archive/personal/?q=매칭")
 
         assert resp.context["page_obj"].paginator.count == 3
 
@@ -133,7 +133,7 @@ class TestArchiveItemsSearch:
         user, client = user_client()
         make_entries(user, 3)
 
-        resp = client.get("/archive/items/?q=")
+        resp = client.get("/archive/personal/?q=")
 
         assert resp.context["page_obj"].paginator.count == 3
         assert resp.context["has_query"] is False
@@ -151,7 +151,7 @@ class TestArchiveItemsContextKeys:
     def test_검색어를_보내면_컨텍스트에_검색어와_검색_여부가_담긴다(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/items/?q=검색어")
+        resp = client.get("/archive/personal/?q=검색어")
 
         assert resp.context["q"] == "검색어"
         assert resp.context["has_query"] is True
@@ -159,7 +159,7 @@ class TestArchiveItemsContextKeys:
     def test_검색어_파라미터가_없으면_컨텍스트의_검색어는_비어있고_검색_여부는_false다(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/items/")
+        resp = client.get("/archive/personal/")
 
         assert resp.context["q"] == ""
         assert resp.context["has_query"] is False
@@ -168,7 +168,7 @@ class TestArchiveItemsContextKeys:
         user, client = user_client()
         make_entries(user, 7)  # 2 pages
 
-        resp = client.get("/archive/items/?q=항목")
+        resp = client.get("/archive/personal/?q=항목")
 
         pager_query = resp.context["pager_query"]
         assert "q=" in pager_query
@@ -177,7 +177,7 @@ class TestArchiveItemsContextKeys:
         user, client = user_client()
         make_entries(user, 7)
 
-        resp = client.get("/archive/items/")
+        resp = client.get("/archive/personal/")
 
         assert resp.context["pager_query"] == ""
 
@@ -185,7 +185,7 @@ class TestArchiveItemsContextKeys:
         user, client = user_client()
         make_entries(user, 3)
 
-        resp = client.get("/archive/items/?q=   ")
+        resp = client.get("/archive/personal/?q=   ")
 
         assert resp.context["q"] == ""
         assert resp.context["has_query"] is False
@@ -194,7 +194,62 @@ class TestArchiveItemsContextKeys:
     def test_과도하게_긴_검색어를_보내도_서버_오류_없이_100자로_잘린다(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/items/?q=" + "Z" * 200)
+        resp = client.get("/archive/personal/?q=" + "Z" * 200)
 
         assert resp.status_code == 200
         assert len(resp.context["q"]) <= 100
+
+
+# ---------------------------------------------------------------------------
+# visit_linked_count + sort context (직접 등록 에디토리얼 plan Part 1 §5, PC)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestArchiveItemsVisitLinkedCountAndSort:
+    def test_목록_뷰_컨텍스트에_방문_기록_연결_카운트가_담긴다(
+        self, user_client, make_entry, make_visit
+    ):
+        user, client = user_client()
+        linked = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")
+        make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P2")
+        make_visit(user, personal_entry=linked, visited_on="2026-01-01")
+
+        resp = client.get("/archive/personal/")
+
+        assert resp.context["visit_linked_count"] == 1
+
+    def test_정렬_파라미터를_보내면_페이저_쿼리에도_정렬이_유지된다(
+        self, user_client, make_entries
+    ):
+        user, client = user_client()
+        make_entries(user, 7)  # 2 pages
+
+        resp = client.get("/archive/personal/?sort=oldest")
+
+        assert resp.context["pager_query"] == "&sort=oldest"
+        assert resp.context["page_obj"].number == 1
+
+    def test_검색어와_정렬을_함께_보내면_페이저_쿼리에_둘_다_유지된다(
+        self, user_client, make_entries
+    ):
+        user, client = user_client()
+        make_entries(user, 7, title_prefix="항목")
+
+        resp = client.get("/archive/personal/?q=항목&sort=oldest")
+
+        pager_query = resp.context["pager_query"]
+        assert "q=" in pager_query
+        assert "sort=oldest" in pager_query
+
+    def test_목록_뷰_컨텍스트에_선택된_정렬과_라벨과_정렬_옵션이_담긴다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/archive/personal/?sort=oldest")
+
+        assert resp.context["selected_sort"] == "oldest"
+        assert resp.context["selected_sort_label"] == "오래된 등록순"
+        assert resp.context["ARCHIVE_PERSONAL_SORT"] == (
+            ("", "최근 등록순"),
+            ("oldest", "오래된 등록순"),
+        )
