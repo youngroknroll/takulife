@@ -100,6 +100,41 @@ assertions below match the full-label span instead. The active tab is
 asserted by anchoring `class="active"` directly to the active tab's
 full-label span in one substring, so the check still proves *which* tab is
 marked active, not merely that some tab somewhere is.
+
+2026-07-28 찜 목록 페이지 자체의 통일 — CONTRACT REWRITE: the premise this
+file's 2026-07-27 entry relied on — "/archive/interests/ is the last
+surviving sibling that still renders 찜 *inside* this nav" — is now FALSE.
+/archive/interests/ has adopted the same index-style 3-column toolbar
+(`hide_interest=True`) as every other archive list page
+(tests/archive/test_archive_interest_placement.py's 2026-07-28 entry), so
+찜 is rendered outside `<nav aria-label="내 활동 하위 메뉴">` on *every*
+reachable archive page. There is no longer any page for which a
+"5-link, 찜-inside-nav" fact holds, so a representative-page swap cannot
+repair this test the way five prior swaps did — the contract itself must
+change.
+
+The sub-nav's job is now exactly four content-tab destinations: 전체 보기
+(record), 나의 일정 (statuses), 다녀온 기록 (visits), 직접 등록 (personal).
+찜 is never one of this nav's own links on any page; it always lives outside
+`<nav>`, next to the search form (asserted per-page by
+tests/archive/test_archive_interest_placement.py's
+TestIndexMovesInterestOutsideNavAfterSearch, which now covers all six list
+pages including interests). This file's link-count assertion therefore drops
+from five to four, and a new assertion locks that the 찜 anchor's href does
+not appear inside the nav at all (replacing the old in-nav 찜-href/active-찜
+assertions, which asserted the very fact that no longer holds anywhere).
+What remains unchanged from the 2026-07-23 v2 §C contract this file has
+carried since: the tab bar still excludes "활동 달력" and never links
+`/collection/` — those two exclusions and the four content-tab labels'
+presence are asserted exactly as before, just re-counted for four links
+instead of five.
+
+The representative page moves to /archive/personal/ (active="items",
+i.e. 직접 등록), simply because it is the last page this file's
+representative-page chain reached (2026-07-27 entry above) and remains a
+valid, stable choice under the new four-link contract — any of the four
+content pages would do equally well now that none of them keep 찜 inside
+this nav.
 """
 import pytest
 
@@ -108,10 +143,10 @@ pytestmark = pytest.mark.web
 
 @pytest.mark.django_db
 class TestArchiveNavTabs:
-    def test_아카이브_내비게이션_탭바는_내_활동_계열_다섯_링크만_보여주고_활동_달력과_컬렉션_링크를_포함하지_않는다(self, user_client):
+    def test_아카이브_내비게이션_탭바는_내_활동_계열_네_링크만_보여주고_찜과_활동_달력과_컬렉션_링크를_포함하지_않는다(self, user_client):
         _, client = user_client()
 
-        resp = client.get("/archive/interests/")
+        resp = client.get("/archive/personal/")
         content = resp.content.decode()
 
         # Scoped to the sub-nav landmark itself — the global header also
@@ -122,19 +157,23 @@ class TestArchiveNavTabs:
         end = content.index("</nav>", start)
         nav = content[start:end]
 
-        assert nav.count("<a ") + nav.count('<a\n') + nav.count('<a\r\n') == 5
+        assert nav.count("<a ") + nav.count('<a\n') + nav.count('<a\r\n') == 4
         assert '<span class="tab-label-full">나의 일정</span>' in nav
-        # /archive/interests/ renders with active=="interests", so none of
-        # the four content tabs are active here — the 찜 anchor itself is
-        # (see module docstring, 2026-07-27 직접 등록 에디토리얼 통일).
-        assert 'class="nav-interest active"' in nav
         assert '<span class="tab-label-full">다녀온 기록</span>' in nav
         assert '<span class="tab-label-full">직접 등록</span>' in nav
+        # /archive/personal/ renders with active=="items" — anchored to the
+        # 직접 등록 anchor's own href+class in one substring so the check
+        # proves *which* tab is marked active, not merely that some tab
+        # somewhere is.
+        assert 'href="/archive/personal/" class="active">' in nav
         assert '<span class="tab-label-full">전체 보기</span>' in nav
-        # href로 고정한다: 하트 아이콘(♥) 도입으로 찜 앵커 내용이
-        # `<span aria-hidden="true">♥</span> 찜 목록</a>`가 되면 레이블 문자열
-        # `>찜 목록</a>`로는 매치되지 않는다. href는 아이콘·레이블 문구
-        # 변경에 영향받지 않는 안정적 식별자다.
-        assert 'href="/archive/interests/"' in nav
+        # 찜 is never one of this nav's own links on any page now (모듈
+        # docstring 2026-07-28 참고) — it always renders outside `<nav>`,
+        # verified per-page by
+        # tests/archive/test_archive_interest_placement.py's
+        # TestIndexMovesInterestOutsideNavAfterSearch. href로 고정한다: 하트
+        # 아이콘(♥) 도입으로 찜 앵커 내용이 바뀌어도 href는 안정적 식별자다.
+        assert 'href="/archive/interests/"' not in nav
+        assert "nav-interest" not in nav
         assert '<span class="tab-label-full">활동 달력</span>' not in nav
         assert "/collection/" not in nav

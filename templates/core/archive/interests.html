@@ -3,83 +3,96 @@
 {% block title %}{{ project_name }} | 찜 목록{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/archive_interests.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page activity-page" id="content">
-    {% include "core/partials/_archive_nav.html" with active="interests" %}
+  <main class="page activity-page interests-page" id="content">
+    <section class="hero hero-activity">
+      <div class="hero-lead">
+        <h1>내 활동</h1>
+        <div class="summary-grid" style="--summary-cols: 3">
+          <article class="summary-card">
+            <p class="summary-label">찜한 이벤트</p>
+            <p class="summary-value">{{ interest_count }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">진행 중</p>
+            <p class="summary-value">{{ ongoing_count }}</p>
+          </article>
+          <article class="summary-card">
+            <p class="summary-label">방문 예정 겹침</p>
+            <p class="summary-value">{{ planned_overlap_count }}</p>
+          </article>
+        </div>
+      </div>
 
-    <section class="hero">
-      <h1>찜 목록</h1>
+      <div class="activity-view-toggle">
+        <a class="activity-view-btn is-active" href="/archive/interests/" aria-current="page">목록</a>
+        <a class="activity-view-btn" href="/archive/calendar/">달력</a>
+      </div>
+
+      <a class="hero-action" href="/events/" data-cta-watch><span aria-hidden="true">＋</span> 이벤트 찾기</a>
     </section>
+
+    <div class="activity-toolbar">
+      {% include "core/partials/_archive_nav.html" with active="interests" active_label="찜 목록" hide_interest=True %}
+      {% include "core/partials/_archive_search.html" with q=q has_query=has_query %}
+      <a class="nav-interest active" href="/archive/interests/" aria-current="page"><span aria-hidden="true">♥</span> <span class="nav-interest-full">찜 목록</span><span class="nav-interest-short">찜</span></a>
+    </div>
 
     <section class="layout">
-      <article class="panel">
-        <h2>찜한 이벤트 {{ interest_count }}건</h2>
+      <aside class="panel" aria-label="찜 안내 및 빠른 이동">
+        <h2 class="aside-label">찜 안내</h2>
+        <ul class="rule-list">
+          <li>찜은 방문 예정과 독립적으로 동시에 등록할 수 있습니다</li>
+          <li>이벤트 카드의 ♡ 버튼으로 언제든 추가·해제할 수 있습니다</li>
+        </ul>
 
-        {% if has_interests %}
-          <div class="status-list">
-            {% for row in interest_rows %}
-              <article class="status-card hover-lift">
-                <div>
-                  <div class="status-top">
-                    {% if not row.subject.is_official %}
-                      <span class="event-category unofficial">직접 등록</span>
-                    {% endif %}
-                    {% if row.subject.category_label %}
-                      <span class="event-category">{{ row.subject.category_label }}</span>
-                    {% endif %}
-                  </div>
-                  <h3>{{ row.subject.title }}</h3>
-                  {% if row.subject.location %}
-                    <p class="meta">{{ row.subject.location }}</p>
-                  {% endif %}
-                  {% if row.subject.start_date and row.subject.end_date %}
-                    <p class="period">{{ row.subject.start_date }} ~ {{ row.subject.end_date }}</p>
-                  {% endif %}
-                  <div class="status-row" data-status-error-container>
-                    <button class="interest-btn active" type="button"
-                      data-interest-toggle
-                      data-interest-id="{{ row.interest_id }}"
-                      data-remove-on-cancel
-                      aria-pressed="true">
-                      <span data-interest-glyph aria-hidden="true">♥</span>
-                      찜
-                    </button>
-                  </div>
-                </div>
-                {% if row.subject.detail_url %}
-                  <a class="side-action-link" href="{{ row.subject.detail_url }}">상세 보기</a>
-                {% endif %}
-              </article>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="empty-state">
-            <p class="empty-icon">♡</p>
-            <p class="empty-title">아직 찜한 이벤트가 없어요</p>
-            <p class="empty-note">이벤트 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요.</p>
-            <a class="empty-action" href="/events/">이벤트 찾아보기</a>
-          </div>
-        {% endif %}
-      </article>
-
-      <aside class="side-stack">
-        <section class="panel">
-          <h2>빠른 이동</h2>
-          <ul class="side-list side-list--row">
-            <li><a href="/archive/">전체 보기</a></li>
-            <li><a href="/archive/statuses/">나의 일정</a></li>
-            <li><a href="/events/">이벤트 찾기</a></li>
+        <div class="right-section">
+          <h2 class="aside-label">빠른 이동</h2>
+          <ul class="side-list">
+            <li><a href="/archive/statuses/">나의 일정 →</a></li>
+            <li><a class="quick-link-events" href="/events/">이벤트 찾기 →</a></li>
           </ul>
-        </section>
-
-        <section class="panel">
-          <h2>찜 안내</h2>
-          <p class="panel-note">찜은 방문 예정과 독립적으로 동시에 등록할 수 있습니다.</p>
-        </section>
+        </div>
       </aside>
+
+      <article class="panel">
+        <div class="results-head">
+          <h2>찜한 이벤트 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
+          {# <details>, not a JS dropdown — visits.html/personal_entries.html 선례 미러 #}
+          {# (native disclosure gives keyboard operation and a no-JS fallback for #}
+          {# free; event_list.js only adds outside-click dismissal on top). #}
+          <details class="results-sort" data-sort-menu>
+            <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
+            <ul class="results-sort-menu">
+              {% for slug, label in ARCHIVE_INTEREST_SORT %}
+                <li><a href="?sort={{ slug|urlencode }}{% if has_query %}&amp;q={{ q|urlencode }}{% endif %}"{% if selected_sort == slug %} aria-current="true"{% endif %}>{{ label }}</a></li>
+              {% endfor %}
+            </ul>
+          </details>
+        </div>
+
+        <div id="archive-results" data-archive-results>
+          {% include "core/partials/_archive_results_interests.html" %}
+        </div>
+      </article>
     </section>
+
+    <div class="mobile-cta" data-cta-fixed hidden>
+      <a href="/events/">이벤트 찾기</a>
+    </div>
   </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
+  <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
+  {# event_list.js now loads on five pages (/events/, /archive/, /archive/    #}
+  {# statuses/, /archive/visits/, /archive/personal/, /archive/interests/)   #}
+  {# for the sort <details> menu's outside-click/Esc/focusout dismissal. Its #}
+  {# .filter-toggle/.filters selectors only exist on the /events/ templates  #}
+  {# so they no-op here (mirrors the sibling tabs' identical note). #}
+  <script defer src="{% static 'js/pages/event_list.js' %}"></script>
 {% endblock %}

@@ -125,6 +125,18 @@ ARCHIVE_PERSONAL_SORT: tuple[tuple[str, str], ...] = (
 ARCHIVE_PERSONAL_SORT_LABELS: dict[str, str] = dict(ARCHIVE_PERSONAL_SORT)
 
 # ---------------------------------------------------------------------------
+# Archive interest (찜) list sort vocabulary (slug matches
+# archive.queries.list_user_interests' internal ordering). Empty slug "" is
+# the default (최근 찜순 / -id). slug → display label
+# ---------------------------------------------------------------------------
+ARCHIVE_INTEREST_SORT: tuple[tuple[str, str], ...] = (
+    ("", "최근 찜순"),
+    ("oldest", "오래된 찜순"),
+)
+
+ARCHIVE_INTEREST_SORT_LABELS: dict[str, str] = dict(ARCHIVE_INTEREST_SORT)
+
+# ---------------------------------------------------------------------------
 # Personal-entry category suggestions (직접 등록 작성 페이지). Free-input hint
 # chips, not a `choices` constraint — PersonalEntry.category is a plain
 # CharField and any free text is still accepted (mirrors

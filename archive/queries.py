@@ -39,6 +39,16 @@ ARCHIVE_STATUS_PAGE_SIZE = 5  # 예정 목록 (/archive/statuses/)
 ARCHIVE_VISIT_PAGE_SIZE = 5  # 방문 기록 (/archive/visits/)
 ARCHIVE_PERSONAL_PAGE_SIZE = 5  # 비공식 목록 (/archive/personal/)
 ARCHIVE_COLLECTION_PAGE_SIZE = 10  # 컬렉션 목록 (/collection/)
+ARCHIVE_INTEREST_PAGE_SIZE = 10  # 찜 목록 (/archive/interests/)
+
+# Sort slugs for list_user_interests, mapped to their order_by field. "" (the
+# default) is the pre-existing -id ordering (최근 찜순), listed explicitly here
+# so .get(sort, ARCHIVE_INTEREST_SORT_ORDERING[""]) has a single source for the
+# default instead of a duplicated literal — mirrors ARCHIVE_VISIT_SORT_ORDERING.
+ARCHIVE_INTEREST_SORT_ORDERING: dict[str, str] = {
+    "": "-id",
+    "oldest": "id",
+}
 
 # Sort slugs for list_user_statuses, mapped to their order_by field. "" (the
 # default) is the pre-existing -updated_at ordering, kept unlisted here so an
@@ -164,16 +174,85 @@ def list_user_unrecorded_visited_statuses(user):
     )
 
 
-def list_user_interests(user):
-    """Return a user's event interests, newest first, with event selected.
+def list_user_interests(user, *, q: str = "", sort: str = ""):
+    """Return a user's event interests, with event/personal_entry selected.
 
-    The event is selected together to avoid per-row queries during rendering.
+    The subject is selected together to avoid per-row queries during rendering.
+
+    ``q`` narrows results to rows whose event or personal_entry title/location
+    matches the search term (case-insensitive contains) — mirrors
+    list_user_statuses' same OR-across-both-subjects pattern.
+
+    ``sort`` selects the ordering via ARCHIVE_INTEREST_SORT_ORDERING; an
+    unknown or empty value falls back to the default -id (최근 찜순) ordering
+    rather than raising or returning an empty result.
     """
-    return (
+    queryset = (
         EventInterest.objects.filter(user=user)
         .select_related("event", "personal_entry")
-        .order_by("-id")
+        .order_by(
+            ARCHIVE_INTEREST_SORT_ORDERING.get(sort, ARCHIVE_INTEREST_SORT_ORDERING[""])
+        )
     )
+    if q:
+        queryset = queryset.filter(
+            Q(event__title__icontains=q)
+            | Q(event__location_name__icontains=q)
+            | Q(personal_entry__title__icontains=q)
+            | Q(personal_entry__location_name__icontains=q)
+        )
+    return queryset
+
+
+def user_interest_summary_counts(user, *, today=None) -> dict:
+    """Return summary counts for the 찜 목록 page's header cards.
+
+    ``interest_count`` — total 찜 rows (official + unofficial).
+
+    ``ongoing_count`` — official (event-linked) 찜 whose event run is
+    currently active, inclusive of both boundary days AND the closing_soon
+    window (start_date <= today <= end_date). This matches the row status
+    filter shown on screen (events/presenters.derive_event_display's
+    ongoing/closing_soon states both render as "진행 중" there), so the
+    header number and the row status pills never disagree (§1 D2).
+
+    ``planned_overlap_count`` — official 찜 whose linked event has a
+    UserEventStatus row for this user whose *derived* status
+    (archive/querysets.with_derived_status) is "planned". Using the derived
+    status (not the raw stored value) excludes rows that have auto-derived
+    to "missed" (an ended, non-overridden, visit-less planned row) even
+    though the stored column still literally says "planned" (§1 D3).
+
+    Both event-scoped counts exclude unofficial (personal_entry-linked) 찜 —
+    a PersonalEntry has no run period and is never a status subject target.
+    """
+    if today is None:
+        today = timezone.localdate()
+
+    interest_count = EventInterest.objects.filter(user=user).count()
+
+    ongoing_count = EventInterest.objects.filter(
+        user=user,
+        event__isnull=False,
+        event__start_date__lte=today,
+        event__end_date__gte=today,
+    ).count()
+
+    planned_event_ids = (
+        UserEventStatus.objects.filter(user=user, event__isnull=False)
+        .with_derived_status(today=today)
+        .filter(derived_status="planned")
+        .values_list("event_id", flat=True)
+    )
+    planned_overlap_count = EventInterest.objects.filter(
+        user=user, event__isnull=False, event_id__in=planned_event_ids
+    ).count()
+
+    return {
+        "interest_count": interest_count,
+        "ongoing_count": ongoing_count,
+        "planned_overlap_count": planned_overlap_count,
+    }
 
 
 def user_interest_event_ids(user, event_ids=None) -> dict:
