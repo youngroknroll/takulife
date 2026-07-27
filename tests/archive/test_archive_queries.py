@@ -8,6 +8,7 @@ from django.utils import timezone
 from archive.models import CollectionItem, EventInterest, PersonalEntry, UserEventStatus, VisitRecord
 from archive.queries import (
     ARCHIVE_STATUS_SLUGS,
+    list_items_acquired_at_visit,
     list_user_collection_items,
     list_user_interests,
     list_user_personal_entries,
@@ -385,6 +386,26 @@ def test_공식_행사만_필터링하면_비공식_개인항목에_연결된_�
 
     assert all(r.event_id is not None for r in official)
     assert len(official) == 1
+
+
+@pytest.mark.django_db
+def test_해당_방문에_연결된_굿즈만_등록순으로_반환한다(
+    make_user, make_event, make_visit, make_collection_item
+):
+    user = make_user()
+    record = make_visit(user, event=make_event(), visited_on="2026-05-26")
+    other_record = make_visit(
+        user, event=make_event(title="다른 방문"), visited_on="2026-05-27"
+    )
+
+    first_item = make_collection_item(user, name="첫 번째 굿즈", visit_record=record)
+    second_item = make_collection_item(user, name="두 번째 굿즈", visit_record=record)
+    make_collection_item(user, name="다른 방문의 굿즈", visit_record=other_record)
+    make_collection_item(user, name="방문 미연결 굿즈")
+
+    result = list(list_items_acquired_at_visit(record))
+
+    assert result == [first_item, second_item]
 
 
 # ---------------------------------------------------------------------------

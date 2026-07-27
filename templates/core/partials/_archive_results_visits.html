@@ -49,11 +49,7 @@
             {% endif %}
           </p>
           <h3 class="record-row-title">
-            {% if row.subject.detail_url %}
-              <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
-            {% else %}
-              {{ row.subject.title }}
-            {% endif %}
+            <a href="/archive/visits/{{ row.record_id }}/">{{ row.subject.title }}</a>
           </h3>
           {% if row.short_review %}
             <p class="record-row-review">&ldquo;{{ row.short_review }}&rdquo;</p>
@@ -61,7 +57,7 @@
           {% if row.photos %}
             <div class="record-row-photos">
               {% for photo in row.photos|slice:":3" %}
-                <a class="record-row-photo" href="/archive/visits/{{ row.record_id }}/edit/">
+                <a class="record-row-photo" href="/archive/visits/{{ row.record_id }}/">
                   <img src="{{ photo.image.url }}" alt="{{ row.subject.title }} 사진 {{ forloop.counter }}" loading="lazy">
                 </a>
               {% endfor %}

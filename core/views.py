@@ -28,6 +28,7 @@ from archive.queries import (
     SCHEDULE_KIND,
     VISIT_KIND,
     find_latest_activity_date_for_query,
+    list_items_acquired_at_visit,
     list_user_activity_for_month,
     list_user_collection_items,
     list_user_interests,
@@ -1427,6 +1428,35 @@ def archive_visit_edit(request, record_id):
             "visited_on": record.visited_on,
             "short_review": record.short_review,
             "photos": list(record.photos.all().order_by("id")),
+        },
+    )
+
+
+@login_required
+@ensure_csrf_cookie
+def archive_visit_detail(request, record_id):
+    """Read-only detail page for one visit record (owner-scoped).
+
+    Shows the visit's subject, date, memo, photos, and the CollectionItems
+    acquired at that visit (archive/queries.list_items_acquired_at_visit) —
+    an intra-archive reverse-FK read, no new cross-domain coupling.
+    ``@ensure_csrf_cookie`` is required here (not just on the edit page)
+    because the page's delete action needs the CSRF cookie set.
+    """
+    record = get_object_or_404(VisitRecord, pk=record_id, user=request.user)
+    goods = list_items_acquired_at_visit(record)
+    series_ink_classes = _series_ink_classes([item.work_title for item in goods])
+    return render(
+        request,
+        "core/archive/visit_detail.html",
+        {
+            "record_id": record.pk,
+            "subject": _subject_view(record),
+            "visited_on": record.visited_on,
+            "short_review": record.short_review,
+            "photos": list(record.photos.all().order_by("id")),
+            "goods_rows": [_collection_item_row(item, series_ink_classes) for item in goods],
+            "goods_count": len(goods),
         },
     )
 
