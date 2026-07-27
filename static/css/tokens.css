@@ -270,6 +270,15 @@
   --amber-ink: #dba466;
   --rose-soft: #43232b;
   --rose-ink: #e0718c;
+  /* --rose-border had no dark override — the light block's rule (78-82행:
+     "a touch darker than -soft so the swatch reads against --bg-card")
+     inverts in dark mode, where a border must be lighter than the
+     background to read (as --line/--border-soft already are), so the
+     light #f8b7c3 leaked straight through and rendered too bright on
+     delete buttons / error banners. #c46278 verified 4.01:1 on --surface
+     and 3.54:1 on --rose-soft, both above the 3:1 non-text threshold
+     (WED value, contrast independently checked). */
+  --rose-border: #c46278;
   --up-soft: #242a3d;
   --up-ink: #8897c8;
   /* 시안 원안 --teal #2f9bad는 흰 텍스트 대비 3.27:1로 AA 4.5:1 미달
