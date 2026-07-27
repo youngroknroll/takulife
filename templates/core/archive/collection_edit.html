@@ -1,103 +1,114 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 컬렉션 항목 수정{% endblock %}
+{% block title %}{{ project_name }} | 굿즈 수정{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/archive_visits.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive_collection.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive_collection_edit.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="content">
-    <section class="hero">
-      <a class="back-link" href="/collection/">← 내 컬렉션으로</a>
-      <h1>컬렉션 항목 수정</h1>
-    </section>
-
+  <main class="page collection-page collection-edit-page" id="content">
+    <a class="collection-edit-back-link" href="/collection/{{ item.id }}/">← 굿즈 상세로</a>
     <div id="collection-global-error" class="form-error" style="margin-bottom:8px;"></div>
 
-    <section class="layout layout--single">
-      <article class="panel">
-        <h2>항목 수정</h2>
+    <section class="collection-form-head">
+      <h1>굿즈 수정</h1>
+      <p class="collection-form-subtitle">
+        <span class="collection-edit-subtitle-text">
+          <span class="collection-edit-subtitle-name">{{ item.name }}</span>
+          <span class="collection-edit-subtitle-date"> · {{ item.created_at|date:"Y.m.d" }} 등록</span>
+        </span>
+        <span class="collection-form-legend">＊ 표시는 필수</span>
+      </p>
+    </section>
 
-        <form id="collection-edit-form" class="create-form" data-item-id="{{ item.id }}" novalidate>
-          <div class="form-group">
-            <label for="collection-name">이름</label>
-            <input id="collection-name" type="text" name="name" maxlength="255" required value="{{ item.name }}">
+    <form id="collection-edit-form" class="collection-form" data-item-id="{{ item.id }}" novalidate>
+      <div class="collection-form-grid">
+        <div class="collection-form-fields">
+          <div class="collection-form-group">
+            <label for="collection-name">이름 <span aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
+            <input
+              id="collection-name"
+              type="text"
+              name="name"
+              maxlength="255"
+              required
+              aria-describedby="collection-edit-error"
+              value="{{ item.name }}"
+            >
           </div>
 
-          <div class="form-group">
-            <p class="form-static-label">기존 이미지</p>
-            {% if item.image %}
-              <div class="photo-preview-grid" id="existing-collection-image">
-                <div class="photo-preview-tile" data-existing-tile>
-                  <img src="{{ item.image.url }}" alt="{{ item.name }}">
-                </div>
-              </div>
-            {% else %}
-              <p class="field-hint">등록된 이미지가 없습니다.</p>
-            {% endif %}
-          </div>
-          <div class="form-group">
-            <label for="collection-image">이미지 교체 (선택)</label>
-            <input id="collection-image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+          <div class="collection-form-group">
+            <p class="collection-form-group-label-static">상태</p>
+            <div class="collection-edit-toggle">
+              <input type="checkbox" id="collection-is-wanted" name="is_wanted"
+                     class="collection-edit-toggle-input" aria-label="구하는 중"
+                     {% if item.is_wanted %}checked{% endif %}>
+              <label class="collection-edit-toggle-option collection-edit-toggle-option--owned"
+                     for="collection-is-wanted">보유 중</label>
+              <label class="collection-edit-toggle-option collection-edit-toggle-option--wanted"
+                     for="collection-is-wanted">구하는 중</label>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="collection-quantity">수량</label>
-            <input id="collection-quantity" type="number" name="quantity" min="0" value="{{ item.quantity }}">
+          <div class="collection-form-row collection-form-row--even">
+            <div class="collection-form-group">
+              <label for="collection-quantity">수량</label>
+              <input id="collection-quantity" type="number" name="quantity" min="0" value="{{ item.quantity }}">
+            </div>
+            <div class="collection-form-group">
+              <label for="collection-tradeable-quantity">교환 가능 수량</label>
+              <input id="collection-tradeable-quantity" type="number" name="tradeable_quantity" min="0" value="{{ item.tradeable_quantity }}">
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="collection-is-wanted" name="is_wanted"{% if item.is_wanted %} checked{% endif %}>
-              구하는 중이에요
-            </label>
-          </div>
-
-          <div class="form-group">
+          <div class="collection-form-group">
             <label for="collection-memo">메모 (선택)</label>
             <input id="collection-memo" type="text" name="memo" value="{{ item.memo }}">
           </div>
 
-          <details
-            class="entry-detail-group"
-            id="collection-detail-fields"
-            {% if item.work_title or item.character_name or item.item_type or item.acquired_on or item.acquisition_source or item.visit_record_id %}open{% endif %}
-          >
-            <summary class="entry-detail-toggle">
-              <span>상세 정보 (선택)</span>
-              <span class="entry-detail-caret">▾</span>
-            </summary>
-            <div class="entry-detail-body">
-              <div class="form-group">
+          <div class="collection-edit-divider">
+            <span class="collection-edit-divider-label">상세 정보</span>
+            <span class="collection-edit-divider-optional">선택</span>
+            <span class="collection-edit-divider-line" aria-hidden="true"></span>
+          </div>
+
+          <div id="collection-detail-fields" class="collection-edit-detail-body">
+            <div class="collection-form-row collection-form-row--even">
+              <div class="collection-form-group">
                 <label for="collection-work-title">작품명 (선택)</label>
                 <input id="collection-work-title" type="text" name="work_title" maxlength="255" value="{{ item.work_title }}">
               </div>
-              <div class="form-group">
+              <div class="collection-form-group">
                 <label for="collection-character-name">캐릭터명 (선택)</label>
                 <input id="collection-character-name" type="text" name="character_name" maxlength="255" value="{{ item.character_name }}">
               </div>
-              <div class="form-group">
-                <label for="collection-item-type">유형 (선택)</label>
-                <input
-                  id="collection-item-type"
-                  type="text"
-                  name="item_type"
-                  maxlength="100"
-                  value="{{ item.item_type }}"
-                  list="collection-item-type-options"
-                >
-                <datalist id="collection-item-type-options">
-                  {% for slug, label in COLLECTION_ITEM_TYPE %}
-                    <option value="{{ label }}">
-                  {% endfor %}
-                </datalist>
+            </div>
+
+            <div class="collection-form-group">
+              <label for="collection-item-type">유형 (선택)</label>
+              <div class="collection-form-type-chips">
+                {% for slug, label in COLLECTION_ITEM_TYPE %}
+                  <button type="button" class="collection-form-type-chip" data-type-label="{{ label }}" aria-pressed="false">{{ label }}</button>
+                {% endfor %}
               </div>
-              <div class="form-group">
+              <input
+                id="collection-item-type"
+                type="text"
+                name="item_type"
+                maxlength="100"
+                value="{{ item.item_type }}"
+                placeholder="직접 입력 — 위 추천 외 유형"
+              >
+            </div>
+
+            <div class="collection-form-row collection-form-row--even">
+              <div class="collection-form-group">
                 <label for="collection-acquired-on">획득일 (선택)</label>
                 <input id="collection-acquired-on" type="date" name="acquired_on" value="{{ item.acquired_on|date:'Y-m-d' }}">
               </div>
-              <div class="form-group">
+              <div class="collection-form-group">
                 <label for="collection-acquisition-source">획득 경로 (선택)</label>
                 <input
                   id="collection-acquisition-source"
@@ -107,35 +118,52 @@
                   value="{{ item.acquisition_source }}"
                 >
               </div>
+            </div>
 
-              {% if item.visit_record %}
-                <div class="form-group">
-                  <p class="form-static-label">연결된 방문 기록</p>
-                  <p class="subject-readonly">
+            {% if item.visit_record %}
+              <div class="collection-form-group">
+                <p class="collection-form-group-label-static">방문 기록 연결</p>
+                <div class="collection-edit-visit-locked">
+                  <span class="collection-edit-visit-lock-icon" aria-hidden="true">🔒</span>
+                  <p class="collection-edit-visit-label">
                     {% if item.visit_record.event %}{{ item.visit_record.event.title }}{% else %}{{ item.visit_record.personal_entry.title }}{% endif %}
                     · {{ item.visit_record.visited_on }}
                   </p>
-                  <p class="field-hint">연결은 변경할 수 없습니다.</p>
+                  <span class="collection-edit-visit-locked-badge">변경 불가</span>
                 </div>
-              {% endif %}
-
-              <div class="form-group">
-                <label for="collection-tradeable-quantity">교환 가능 수량 (선택)</label>
-                <input id="collection-tradeable-quantity" type="number" name="tradeable_quantity" min="0" value="{{ item.tradeable_quantity }}">
               </div>
-            </div>
-          </details>
-
-          <p class="form-error" id="collection-edit-error"></p>
-          <p class="form-status" id="collection-edit-status"></p>
-
-          <div class="edit-actions">
-            <button class="form-submit-btn" type="submit">저장</button>
-            <button class="record-delete-btn" type="button" data-delete-item-id="{{ item.id }}">굿즈 삭제</button>
+            {% endif %}
           </div>
-        </form>
-      </article>
-    </section>
+
+          <p class="collection-form-error" id="collection-edit-error"></p>
+          <p class="form-status" id="collection-edit-status"></p>
+        </div>
+
+        <div class="collection-form-image collection-edit-cover-col">
+          <p class="collection-edit-photo-label">기존 이미지</p>
+          <label class="collection-form-dropzone collection-edit-cover" for="collection-image">
+            {% if item.image %}
+              <img src="{{ item.image.url }}" alt="{{ item.name }}">
+            {% else %}
+              <span class="collection-form-dropzone-placeholder collection-edit-noimg-label">등록된 이미지가 없습니다</span>
+            {% endif %}
+            <input id="collection-image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+          </label>
+          <div class="collection-edit-image-row">
+            <label class="collection-edit-replace-btn" for="collection-image">이미지 교체</label>
+            <span class="collection-edit-image-hint">JPEG · PNG · WebP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="collection-edit-actions-row">
+        <div class="collection-edit-actions">
+          <button class="collection-form-submit" type="submit">저장</button>
+          <a class="collection-edit-cancel" href="/collection/{{ item.id }}/">취소</a>
+        </div>
+        <button type="button" class="collection-edit-delete" data-delete-item-id="{{ item.id }}">굿즈 삭제</button>
+      </div>
+    </form>
   </main>
 {% endblock %}
 

@@ -433,7 +433,7 @@
         : await window.TakuAPI.patch("/api/collection-items/" + itemId + "/", fields);
 
       if (result.status === 200) {
-        window.TakuAPI.commitAndNavigate(submitBtn, LIST_URL);
+        window.TakuAPI.commitAndNavigate(submitBtn, "/collection/" + itemId + "/");
         return;
       }
 
