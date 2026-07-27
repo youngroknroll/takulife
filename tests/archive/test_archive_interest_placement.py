@@ -65,6 +65,20 @@ statuses/visits와 동일한 공유 파셜 `_archive_search.html`을 그대로 �
 `TestSiblingPagesKeepInterestInsideNav`(nav 안 유지 그룹)에는 이제
 `/archive/interests/` 하나만 남는다 — 찜을 nav 밖으로 옮기지 않은 유일한
 아카이브 페이지다.
+
+**2026-07-28 찜 목록 페이지 자체의 통일**: `/archive/interests/`도 마침내
+index와 동일한 3구획 툴바를 채택해(`hide_interest=True` 전달) 찜 앵커가 자기
+자신의 nav 밖, 검색 폼 뒤로 이동했다 — 위와 동일한 구조적 이유(§8-A-1 WED
+판정 확장점)의 여섯 번째이자 마지막 적용이다. 이로써
+`TestSiblingPagesKeepInterestInsideNav`가 지키던 "찜을 nav 안에 유지하는
+아카이브 페이지" 사실은 저장소 어디에도 더 이상 존재하지 않는다 — 옮길 남은
+형제 페이지가 없으므로, 과거 다섯 차례처럼 항목을 이동하는 대신 이 클래스
+자체를 제거한다(파일 자체의 선례: 클래스는 빈 parametrize로 남겨두지 않고
+사실이 소진되면 삭제해 왔다 — 이는 첫 사례이지만, 빈 리스트로 방치하면
+"보호 중"이라는 착시만 남기고 실제로는 0건을 수집·스킵해 침묵하는 구멍이
+된다). `/archive/interests/`는 다른 다섯 페이지와 동일한 검색 마커
+`class="archive-search"`를 쓰므로 `TestIndexMovesInterestOutsideNavAfterSearch`
+파라미터에 여섯 번째 항목으로 합류한다 — 삭제가 아니라 마지막 이동이다.
 """
 import pytest
 
@@ -77,31 +91,10 @@ def _extract_nav(content):
     return content[start:end]
 
 
-@pytest.mark.django_db
-class TestSiblingPagesKeepInterestInsideNav:
-    @pytest.mark.parametrize(
-        "path",
-        [
-            "/archive/interests/",
-        ],
-    )
-    def test_index_외_아카이브_페이지에서_찜_링크는_서브내비게이션_안에_그대로_남는다(
-        self, user_client, path
-    ):
-        _, client = user_client()
-
-        resp = client.get(path)
-        content = resp.content.decode()
-
-        nav = _extract_nav(content)
-
-        # href로 고정한다: 하트 아이콘(♥) 도입으로 앵커 내용이
-        # `<span aria-hidden="true">♥</span> 찜 목록</a>`가 되어 레이블 문자열
-        # `>찜 목록</a>`(꺾쇠 직후 바로 찜)로는 더 이상 매치되지 않는다.
-        # href는 아이콘·레이블 문구 변경에 영향받지 않는 안정적 식별자다.
-        assert 'href="/archive/interests/"' in nav
-
-
+# 2026-07-28: TestSiblingPagesKeepInterestInsideNav가 지키던 "찜을 nav 안에
+# 유지하는 아카이브 페이지" 사실은 /archive/interests/의 통일로 저장소 어디
+# 에도 남지 않았다. 옮길 형제가 없어 이 클래스는 삭제하고(모듈 docstring
+# 2026-07-28 참고), 마지막 남은 경로는 아래 nav-밖 그룹으로 합류시킨다.
 @pytest.mark.django_db
 class TestIndexMovesInterestOutsideNavAfterSearch:
     @pytest.mark.parametrize(
@@ -112,8 +105,9 @@ class TestIndexMovesInterestOutsideNavAfterSearch:
             ("/archive/calendar/", 'class="calendar-search"'),
             ("/archive/visits/", 'class="archive-search"'),
             ("/archive/personal/", 'class="archive-search"'),
+            ("/archive/interests/", 'class="archive-search"'),
         ],
-        ids=["index", "statuses", "calendar", "visits", "personal"],
+        ids=["index", "statuses", "calendar", "visits", "personal", "interests"],
     )
     def test_아카이브_전체보기_페이지에서_찜_링크는_내비게이션_밖_검색폼_뒤로_이동한다(
         self, user_client, path, search_marker
@@ -137,9 +131,13 @@ class TestIndexMovesInterestOutsideNavAfterSearch:
         # (c) DOM 순서상 검색 폼이 찜 앵커보다 앞에 온다. 마커 클래스는
         # 페이지마다 다르다 — index는 공유 파셜 `.archive-search`,
         # 달력은 로컬 마크업 `.calendar-search`(모듈 docstring 2026-07-24
-        # 일반화 참고).
+        # 일반화 참고). 마커는 `class="nav-interest`로 고정한다 —
+        # `/archive/interests/`는 히어로의 목록/달력 토글이 자기 자신을
+        # 가리키는 `href="/archive/interests/"`를 검색 폼보다 먼저 렌더하므로
+        # (2026-07-28), 순수 href 검색은 그 앞선 토글 링크를 잘못 짚는다.
+        # `nav-interest` 클래스는 이동한 찜 앵커에만 붙는다.
         search_index = content.index(search_marker)
-        interest_index = content.index('href="/archive/interests/"')
+        interest_index = content.index('class="nav-interest')
         assert search_index < interest_index
 
         # (d) 접근성 계약: 찜 앵커의 하트 아이콘은 aria-hidden으로 감싸져
