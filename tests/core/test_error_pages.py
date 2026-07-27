@@ -20,6 +20,7 @@ def test_존재하지_않는_경로에_접근하면_커스텀_404_페이지가_�
     body = resp.content.decode("utf-8", "ignore")
     assert "takulife" in body
     assert 'href="/"' in body
+    assert "ERROR 404" in body
 
 
 def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스텀_500_페이지가_렌더링된다(client, monkeypatch):
@@ -42,6 +43,7 @@ def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스�
     body = resp.content.decode("utf-8", "ignore")
     assert "takulife" in body
     assert 'href="mailto:"' not in body
+    assert "ERROR 500" in body
 
 
 def test_정상_홈_페이지_렌더링에서는_푸터가_실제_문의_메일_링크를_유지한다(client, settings, db):
