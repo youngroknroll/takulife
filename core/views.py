@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from archive.models import ActivityLogEntry, CollectionItem, PersonalEntry, UserEventStatus, VisitRecord
 from archive.queries import (
     ARCHIVE_COLLECTION_PAGE_SIZE,
+    ARCHIVE_INTEREST_PAGE_SIZE,
     ARCHIVE_PERSONAL_PAGE_SIZE,
     ARCHIVE_RECORD_PAGE_SIZE,
     ARCHIVE_STATUS_PAGE_SIZE,
@@ -43,6 +44,7 @@ from archive.queries import (
     user_collection_item_work_title_facets,
     user_interest_count,
     user_interest_event_ids,
+    user_interest_summary_counts,
     user_personal_entry_counts,
     user_personal_interest_ids,
     user_personal_statuses,
@@ -53,6 +55,8 @@ from archive.queries import (
 from core.calendar_grid import default_selected_date, month_grid
 from core.models import HomeConfig
 from core.vocab import (
+    ARCHIVE_INTEREST_SORT,
+    ARCHIVE_INTEREST_SORT_LABELS,
     ARCHIVE_PERSONAL_SORT,
     ARCHIVE_PERSONAL_SORT_LABELS,
     ARCHIVE_STATUS,
@@ -1921,25 +1925,95 @@ def archive_personal_entry_create(request):
 @login_required
 @ensure_csrf_cookie
 def archive_interests(request):
-    interests = list_user_interests(request.user)
-    interest_count = user_interest_count(request.user)
+    user = request.user
+    q = _archive_query(request)
+    sort = request.GET.get("sort", "")
+    if sort not in ARCHIVE_INTEREST_SORT_LABELS:
+        sort = ""
+
+    # --- Summary counts from the unfiltered base ---------------------------
+    # Always describe the user's full 찜 set, independent of any active
+    # search — mirrors the sibling tabs' summary-card behavior (§1 D2/D3, V5).
+    counts = user_interest_summary_counts(user)
+    interest_count = counts["interest_count"]
+    ongoing_count = counts["ongoing_count"]
+    planned_overlap_count = counts["planned_overlap_count"]
+
+    # --- Filtered + paginated result set ------------------------------------
+    filtered_qs = list_user_interests(user, q=q, sort=sort)
+    paginator = Paginator(filtered_qs, ARCHIVE_INTEREST_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    page_interests = list(page_obj.object_list)
+
+    # Official (event-linked) rows are batched through _attach_display once
+    # (not per-row, which would be N+1) and mapped back by event id.
+    official_events = [
+        interest.event for interest in page_interests if interest.event_id
+    ]
+    display_by_event_id = {
+        display["event"].id: display
+        for display in _attach_display(official_events, user=user)
+    }
 
     interest_rows = []
-    for interest in interests:
-        interest_rows.append(
-            {
-                "interest_id": interest.pk,
-                "subject": _subject_view(interest),
-            }
-        )
+    for interest in page_interests:
+        if interest.event_id:
+            display = display_by_event_id[interest.event_id]
+            user_status = display["user_status"]
+            interest_rows.append(
+                {
+                    "interest_id": interest.pk,
+                    "subject": _subject_view(interest),
+                    "status": display["status_slug"],
+                    "dday": display["dday"],
+                    "user_status": user_status,
+                    # §1 D1: only offer 방문 예정 when the viewer has no
+                    # status on this event yet — a shared status button on an
+                    # already-tracked row (e.g. 방문 완료) would otherwise
+                    # silently overwrite that existing record. Also exclude
+                    # already-ended events — planning a visit to an event
+                    # that is already over is meaningless, and the design
+                    # never shows this button on an ended row.
+                    "can_plan": user_status == "" and display["status_slug"] != "ended",
+                }
+            )
+        else:
+            interest_rows.append(
+                {
+                    "interest_id": interest.pk,
+                    "subject": _subject_view(interest),
+                    "status": None,
+                    "dday": None,
+                    "user_status": None,
+                    "can_plan": False,
+                }
+            )
 
-    return render(
+    # --- Pager query string --------------------------------------------------
+    parts = []
+    if q:
+        parts.append(("q", q))
+    if sort:
+        parts.append(("sort", sort))
+    pager_query = "&" + urlencode(parts) if parts else ""
+
+    return _render_archive_list(
         request,
-        "core/archive/interests.html",
-        {
-                "interest_rows": interest_rows,
+        full_template="core/archive/interests.html",
+        fragment_template="core/partials/_archive_results_interests.html",
+        context={
+            "interest_rows": interest_rows,
             "interest_count": interest_count,
-            "has_interests": len(interest_rows) > 0,
+            "ongoing_count": ongoing_count,
+            "planned_overlap_count": planned_overlap_count,
+            "has_interests": interest_count > 0,
+            "page_obj": page_obj,
+            "q": q,
+            "has_query": bool(q),
+            "pager_query": pager_query,
+            "selected_sort": sort,
+            "selected_sort_label": ARCHIVE_INTEREST_SORT_LABELS[sort],
+            "ARCHIVE_INTEREST_SORT": ARCHIVE_INTEREST_SORT,
         },
     )
 
