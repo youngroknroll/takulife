@@ -81,7 +81,7 @@ def test_로그인한_일반_사용자의_대시보드_요청은_리다이렉트
 
 
 @pytest.mark.django_db
-def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5종을_컨텍스트로_제공한다(staff_client, make_draft):
+def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_6종을_컨텍스트로_제공한다(staff_client, make_draft):
     staff, client = staff_client()
     make_draft("https://example.com/a", extracted_title="드래프트 A", review_status=EventDraft.ReviewStatus.PENDING)
     make_draft("https://example.com/b", extracted_title="드래프트 B", review_status=EventDraft.ReviewStatus.APPROVED)
@@ -98,6 +98,7 @@ def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5
         "missing_poster",
         "missing_dates",
         "missing_region",
+        "needs_reverification",
         "total",
     }
     for value in quality_warnings.values():
@@ -580,11 +581,18 @@ def test_품질_경고_막대는_건수_내림차순으로_정렬된다(staff_cl
 
 @pytest.mark.django_db
 def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는다(staff_client, make_event, png_bytes):
-    """Only missing_region trips (count=1); the other 4 warnings stay at 0
-    and must not render a .warning-bar-fill span."""
+    """Only missing_region trips (count=1); the other 4 warnings (plus
+    needs_reverification) stay at 0 and must not render a
+    .warning-bar-fill span."""
     staff, client = staff_client()
     kwargs = _clean_quality_event_kwargs(0)
     kwargs.pop("region")
+    # _clean_quality_event_kwargs' start_date=today/end_date=today+30 also
+    # falls inside the needs_reverification D-7 window; without an explicit
+    # verified_at this event would additionally trip needs_reverification
+    # and the fill count would be 2, not 1 (see test_event_quality_warnings.py
+    # for the same technique).
+    kwargs["verified_at"] = timezone.now()
     event = make_event(**kwargs)
     _attach_poster(event, png_bytes, 0)
 
@@ -593,6 +601,23 @@ def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는
     assert resp.status_code == 200
     content = resp.content.decode()
     assert content.count("warning-bar-fill") == 1
+
+
+@pytest.mark.django_db
+def test_품질_경고_표는_시작_임박_미확인_행을_렌더링한다(staff_client, make_event):
+    """PR-E1 §12: the needs_reverification row's label and drilldown link
+    must reach the rendered HTML, not just the quality_warnings context
+    dict (already covered by
+    test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_6종을_컨텍스트로_제공한다)."""
+    staff, client = staff_client()
+    make_event(**_clean_quality_event_kwargs(0))  # in D-7 window, never verified
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "시작 임박, 미확인" in content
+    assert "?warning=needs_reverification" in content
 
 
 @pytest.mark.django_db
@@ -605,6 +630,34 @@ def test_품질_경고가_하나도_없으면_대시보드는_경고_없음_안�
     content = resp.content.decode()
     assert "현재 품질 경고가 없습니다" in content
     assert "warning-bars" not in content
+
+
+@pytest.mark.django_db
+def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_보여주지_않고_히어로_카드에_실제_값을_보여준다(
+    staff_client, make_event, png_bytes
+):
+    """total excludes needs_reverification (6th warning), so an event that
+    trips only needs_reverification leaves total == 0 while the table still
+    has a non-zero row to show. The "no warnings" notice must not hide the
+    table in that case."""
+    staff, client = staff_client()
+    # Clean on the first 5 warnings (official_url, dates, region, poster all
+    # set); verified_at deliberately left unset so needs_reverification (the
+    # 6th, excluded from total) still trips via the D-7 window.
+    kwargs = _clean_quality_event_kwargs(0)
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 0)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "warning-bars" in content
+    assert "현재 품질 경고가 없습니다" not in content
+    # Guards against a constant-0 regression in needs_reverification: the
+    # count "1" must actually appear, not just the "총계 외" phrasing.
+    assert "<p class=\"summary-value\">0건</p>" in content
+    assert "총계 외 · 시작 임박, 미확인 1건" in content
 
 
 @pytest.mark.django_db

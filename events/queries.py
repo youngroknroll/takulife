@@ -4,6 +4,8 @@ Provides reusable filter/order logic that both the JSON API (events/views.py)
 and the upcoming SSR views (core/views.py) can call without duplicating
 validation or query construction.
 """
+from datetime import timedelta
+
 from django.db import models
 from django.utils import timezone
 
@@ -128,6 +130,36 @@ def _missing_region_qs():
     return Event.objects.published().filter(region="")
 
 
+def _needs_reverification_qs(*, today=None):
+    """Published events starting soon (or already underway, not yet ended)
+    that have never been verified, or were last verified before the D-7
+    cutoff (start_date - 7 days).
+
+    today: date override for testing; defaults to timezone.localdate().
+    Conscious v1 decision (matches _missing_dates_qs' ownership of the gap):
+    events missing start_date or end_date never match here — the arithmetic
+    comparisons against a NULL date return NULL in SQL, so they are
+    naturally excluded rather than explicitly isnull-filtered. That absence
+    is missing_dates' responsibility; counting it here too would double it
+    across two warning totals for one root cause.
+    """
+    if today is None:
+        today = timezone.localdate()
+    reverify_deadline = models.ExpressionWrapper(
+        models.F("start_date") - timedelta(days=7),
+        output_field=models.DateField(),
+    )
+    return (
+        Event.objects.published()
+        .annotate(reverify_deadline=reverify_deadline)
+        .filter(end_date__gte=today, reverify_deadline__lte=today)
+        .filter(
+            models.Q(verified_at__isnull=True)
+            | models.Q(verified_at__date__lt=models.F("reverify_deadline"))
+        )
+    )
+
+
 def count_published_missing_official_url() -> int:
     """Count published events with no official_url (NULL or blank)."""
     return _missing_official_url_qs().count()
@@ -165,30 +197,48 @@ def count_published_missing_region() -> int:
     return _missing_region_qs().count()
 
 
+def count_published_needs_reverification(*, today=None) -> int:
+    """Count published events needing D-7 reverification.
+
+    today: date override for testing; defaults to timezone.localdate().
+    See _needs_reverification_qs for the full predicate and its NULL-date
+    exclusion decision.
+    """
+    return _needs_reverification_qs(today=today).count()
+
+
 def published_quality_warnings(*, today=None) -> dict:
     """Return quality-warning counts for the staff dashboard as a dict.
 
-    All 5 per-predicate keys are always present, even when a given warning
-    has zero matches. today is forwarded only to the ended-still-published
-    check.
+    All 5 per-predicate keys plus "needs_reverification" are always present,
+    even when a given warning has zero matches. today is forwarded to both
+    the ended-still-published check and the needs-reverification check.
 
-    "total" is the SUM of the 5 warning counts above (flags tripped), not a
-    count of distinct events. This keeps it consistent with the dashboard's
-    visible 5-row breakdown (total == row sum): an event tripping 2
-    predicates contributes 2 to total. It is computed from the 5 values
-    already gathered here, so no extra query is run.
+    "total" is the SUM of only the original 5 warning counts above (flags
+    tripped), not a count of distinct events, and it deliberately excludes
+    "needs_reverification". This keeps it consistent with the dashboard's
+    visible 5-row breakdown (total == row sum): an event tripping 2 of the
+    5 predicates contributes 2 to total. The dashboard table
+    (QUALITY_WARNING_LABELS in staff/views/events.py) still renders only
+    those 5 rows, so folding needs_reverification into total would break the
+    "table sum == total" invariant. Whether needs_reverification should join
+    total is decided together with adding its dashboard row, not here. It is
+    computed from the 5 values already gathered here, so no extra query is
+    run for total itself.
     """
     missing_official_url = count_published_missing_official_url()
     ended_still_published = count_published_ended_still_published(today=today)
     missing_poster = count_published_missing_poster()
     missing_dates = count_published_missing_dates()
     missing_region = count_published_missing_region()
+    needs_reverification = count_published_needs_reverification(today=today)
     return {
         "missing_official_url": missing_official_url,
         "ended_still_published": ended_still_published,
         "missing_poster": missing_poster,
         "missing_dates": missing_dates,
         "missing_region": missing_region,
+        "needs_reverification": needs_reverification,
         "total": (
             missing_official_url
             + ended_still_published
@@ -209,6 +259,7 @@ QUALITY_WARNING_KEYS = (
     "missing_poster",
     "missing_dates",
     "missing_region",
+    "needs_reverification",
 )
 
 STAFF_EVENT_LISTING_PAGE_SIZE = 10
@@ -236,11 +287,14 @@ def list_staff_events(*, warning=None, publish_status=None, today=None):
       statuses included). Note a warning filter is already published-only by
       construction, so pairing it with publish_status=draft yields an empty
       queryset rather than an error.
-    today: date override forwarded only to the ended_still_published
-      warning (see _ended_still_published_qs); ignored otherwise.
+    today: date override forwarded to the ended_still_published and
+      needs_reverification warnings (see _ended_still_published_qs and
+      _needs_reverification_qs); ignored otherwise.
     """
     if warning == "ended_still_published":
         queryset = _ended_still_published_qs(today=today)
+    elif warning == "needs_reverification":
+        queryset = _needs_reverification_qs(today=today)
     elif warning in _NON_DATED_WARNING_QUERYSETS:
         queryset = _NON_DATED_WARNING_QUERYSETS[warning]()
     else:

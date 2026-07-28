@@ -135,3 +135,28 @@ def test_종료됐지만_게시중인_경고_필터는_서버의_오늘_날짜�
     content = resp.content.decode()
     assert "종료된 행사" in content
     assert "진행중 행사" not in content
+
+
+@pytest.mark.django_db
+def test_재확인_필요_경고_필터를_적용하면_해당_경고에_해당하는_행사만_노출된다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(
+        title="시작임박미확인행사",
+        official_url="https://example.com/needs-reverify",
+        start_date=date.today(),
+        end_date=date.today() + timedelta(days=10),
+    )
+    make_event(
+        title="여유있는행사",
+        official_url="https://example.com/plenty-of-time",
+        start_date=date.today() + timedelta(days=30),
+        end_date=date.today() + timedelta(days=40),
+    )
+
+    resp = client.get("/staff/events/?warning=needs_reverification")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "시작임박미확인행사" in content
+    assert "여유있는행사" not in content
+    assert resp.context["selected_warning"] == "needs_reverification"

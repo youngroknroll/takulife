@@ -1,6 +1,7 @@
 import logging
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from core.vocab import is_valid_category, is_valid_region
 
@@ -254,6 +255,17 @@ def republish_event(*, event):
     )
     event.publish_status = Event.PublishStatus.PUBLISHED
     event.save(update_fields=["publish_status"])
+    return event
+
+
+def mark_event_verified(*, event):
+    """Record that an event has been manually verified, right now.
+
+    `verified_at` stays null until the first verification; null means "never
+    verified".
+    """
+    event.verified_at = timezone.now()
+    event.save(update_fields=["verified_at"])
     return event
 
 

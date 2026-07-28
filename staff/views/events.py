@@ -54,6 +54,7 @@ QUALITY_WARNING_LABELS = {
     "missing_poster": "포스터 없음",
     "missing_dates": "날짜 정보 누락",
     "missing_region": "지역 정보 없음",
+    "needs_reverification": "시작 임박, 미확인",
 }
 
 

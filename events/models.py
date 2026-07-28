@@ -27,6 +27,7 @@ class Event(models.Model):
     poster_image = models.ImageField(upload_to="event-posters/", blank=True, null=True)
     view_count = models.PositiveIntegerField(default=0, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
     objects = EventQuerySet.as_manager()
 
     def __str__(self):
