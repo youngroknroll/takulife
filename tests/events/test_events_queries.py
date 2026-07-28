@@ -81,6 +81,24 @@ class TestParsePublicListingParams:
         result = parse_public_listing_params({"status": "all"})
         assert result["status"] == "all"
 
+    def test_뷰_전용_active_상태값도_잘못된_값으로_거부한다(self):
+        """"active"는 공개 API 계약이 아니다.
+
+        "active"는 `core/views.py::event_list`가 파싱 이후 주입하는
+        뷰 내부 전용 값이다. `events/querysets.py::with_public_status`의
+        "active" 분기에는 이미 "View-internal only" 주석이 달려 있다.
+
+        이 테스트가 잠그는 것: 누군가 `EventQuerySerializer.STATUS_CHOICES`에
+        "active"를 추가하면 이 테스트가 깨진다 — 공개 목록 API가 뷰 전용 값을
+        그대로 받아들이게 되는 계약 확장을 여기서 막는다.
+        """
+        from events.queries import parse_public_listing_params
+        from rest_framework.exceptions import ValidationError
+
+        with pytest.raises(ValidationError) as exc_info:
+            parse_public_listing_params({"status": "active"})
+        assert "status" in str(exc_info.value.detail)
+
     def test_잘못된_형식의_시작일_이후_값을_거부한다(self):
         from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
