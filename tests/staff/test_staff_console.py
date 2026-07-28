@@ -633,6 +633,34 @@ def test_품질_경고가_하나도_없으면_대시보드는_경고_없음_안�
 
 
 @pytest.mark.django_db
+def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_보여주지_않고_히어로_카드에_실제_값을_보여준다(
+    staff_client, make_event, png_bytes
+):
+    """total excludes needs_reverification (6th warning), so an event that
+    trips only needs_reverification leaves total == 0 while the table still
+    has a non-zero row to show. The "no warnings" notice must not hide the
+    table in that case."""
+    staff, client = staff_client()
+    # Clean on the first 5 warnings (official_url, dates, region, poster all
+    # set); verified_at deliberately left unset so needs_reverification (the
+    # 6th, excluded from total) still trips via the D-7 window.
+    kwargs = _clean_quality_event_kwargs(0)
+    event = make_event(**kwargs)
+    _attach_poster(event, png_bytes, 0)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "warning-bars" in content
+    assert "현재 품질 경고가 없습니다" not in content
+    # Guards against a constant-0 regression in needs_reverification: the
+    # count "1" must actually appear, not just the "총계 외" phrasing.
+    assert "<p class=\"summary-value\">0건</p>" in content
+    assert "총계 외 · 시작 임박, 미확인 1건" in content
+
+
+@pytest.mark.django_db
 def test_건수가_동률인_품질_경고는_라벨_정의_순서대로_렌더링된다(
     staff_client, make_event, png_bytes
 ):
