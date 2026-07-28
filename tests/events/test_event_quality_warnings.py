@@ -388,6 +388,39 @@ class TestPublishedQualityWarnings:
             "total": 5,
         }
 
+    def test_재확인_대상_행사가_있어도_총합에는_반영되지_않고_재확인_대상_건수에는_실제_값이_반영된다(
+        self, make_event
+    ):
+        # poster_image is deliberately left empty. Making the other five
+        # predicates clean would require an actual PNG fixture + MEDIA_ROOT
+        # (as the 313-line test above does); since this test asserts the
+        # *whole* result dict, missing_poster tripping alongside it does not
+        # blur which counter caught what -- it's the cheaper setup. And
+        # verified_at is deliberately left unset (NULL): an unverified event
+        # is the Given for this scenario.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url="https://example.com/reverify",
+            region="서울",
+            start_date=today,
+            end_date=today + timedelta(days=30),
+        )
+
+        result = published_quality_warnings(today=today)
+
+        # The load-bearing line is total == 1: needs_reverification is 1,
+        # but total only counts poster here. This locks in the user decision
+        # that the 6th key (needs_reverification) is excluded from total.
+        assert result == {
+            "missing_official_url": 0,
+            "ended_still_published": 0,
+            "missing_poster": 1,
+            "missing_dates": 0,
+            "missing_region": 0,
+            "needs_reverification": 1,
+            "total": 1,
+        }
+
     def test_한_행사가_두_조건에_걸리면_해당_두_항목_각각에_1씩_집계된다(self, make_event):
         make_event(official_url=None, region="")
 
