@@ -108,18 +108,29 @@ def test_아카이브_데이터가_없는_사용자의_마이페이지_카운트
 
 
 @pytest.mark.django_db
-def test_컬렉션_카운트는_보유_항목만_집계하고_원함_항목과_다른_사용자_항목은_제외한다(client, make_user):
+def test_컬렉션_카운트는_원함_전용_항목과_축_없는_항목도_포함해_전체_등록_수를_세고_다른_사용자_항목만_제외한다(
+    client, make_user
+):
+    """collection_count is mypage's "모은 굿즈" figure (index row title "내
+    컬렉션") — every item the user has registered, not merely the ones
+    currently in stock. A wanted-only row (quantity=0) and a row off all
+    three axes (quantity=0, is_wanted=False, tradeable_quantity=0) both
+    still count, since both are registered CollectionItem rows; only another
+    user's rows must be excluded (owner scope)."""
     user = make_user()
     other_user = make_user()
     CollectionItem.objects.create(user=user, name="보유1", is_wanted=False)
     CollectionItem.objects.create(user=user, name="보유2", is_wanted=False)
-    CollectionItem.objects.create(user=user, name="원함", is_wanted=True)
+    CollectionItem.objects.create(user=user, name="원함", is_wanted=True, quantity=0)
+    CollectionItem.objects.create(
+        user=user, name="미분류행", quantity=0, is_wanted=False, tradeable_quantity=0
+    )
     CollectionItem.objects.create(user=other_user, name="다른 유저 항목", is_wanted=False)
 
     client.force_login(user)
     response = client.get(MYPAGE_URL)
 
-    assert response.context["collection_count"] == 2
+    assert response.context["collection_count"] == 4
 
 
 @pytest.mark.django_db

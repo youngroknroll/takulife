@@ -47,7 +47,7 @@ class TestArchiveCollectionSummary:
         user, client = user_client()
         other = make_user()
         make_collection_item(user, name="내 보유품", is_wanted=False)
-        make_collection_item(user, name="내 위시템", is_wanted=True)
+        make_collection_item(user, name="내 위시템", is_wanted=True, quantity=0)
         make_collection_item(other, name="남의 물건", is_wanted=False)
 
         resp = client.get("/collection/")
@@ -114,15 +114,16 @@ class TestArchiveCollectionIsWantedFilter:
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["구함템"]
 
-    def test_구함_필터를_false로_지정하면_보유한_항목만_표시된다(self, user_client, make_collection_item):
-        user, client = user_client()
-        make_collection_item(user, name="보유템", is_wanted=False)
-        make_collection_item(user, name="구함템", is_wanted=True)
-
-        resp = client.get("/collection/?is_wanted=false")
-
-        names = [row["item"].name for row in resp.context["item_rows"]]
-        assert names == ["보유템"]
+    # test_구함_필터를_false로_지정하면_보유한_항목만_표시된다 removed
+    # (2026-07-28): ?is_wanted=false now 302-redirects to ?owned=true (user
+    # decision, legacy bookmark compat — see TestArchiveCollectionOwnedRedirect
+    # below), so a direct GET to /collection/?is_wanted=false no longer
+    # renders a 200 filtered page on the web. The underlying
+    # list_user_collection_items(user, is_wanted=False) filter behavior is
+    # still guarded at the query layer
+    # (test_archive_queries.py::test_구함_필터_False는_구함이_아닌_항목만_반환한다)
+    # and the DRF API boundary
+    # (test_collection_items_api.py::test_구함_필터를_false로_보내면_API에서는_리다이렉트_없이_보유_항목만_반환된다).
 
     @pytest.mark.parametrize(
         "bad_value",
@@ -150,6 +151,113 @@ class TestArchiveCollectionIsWantedFilter:
 
         names = {row["item"].name for row in resp.context["item_rows"]}
         assert names == {"보유템", "구함템"}
+
+
+@pytest.mark.django_db
+class TestArchiveCollectionOwnedFilter:
+    def test_보유_필터를_true로_지정하면_보유한_항목만_표시된다(self, user_client, make_collection_item):
+        user, client = user_client()
+        make_collection_item(user, name="가진 것", quantity=3)
+        make_collection_item(user, name="안 가진 것", quantity=0)
+
+        resp = client.get("/collection/?owned=true")
+
+        names = [row["item"].name for row in resp.context["item_rows"]]
+        assert names == ["가진 것"]
+
+    def test_보유_필터를_false로_지정하면_미보유_항목만_표시된다(self, user_client, make_collection_item):
+        user, client = user_client()
+        make_collection_item(user, name="가진 것", quantity=3)
+        make_collection_item(user, name="안 가진 것", quantity=0)
+
+        resp = client.get("/collection/?owned=false")
+
+        names = [row["item"].name for row in resp.context["item_rows"]]
+        assert names == ["안 가진 것"]
+
+    @pytest.mark.parametrize(
+        "bad_value",
+        ["", "ture", "1", "TRUE", "yes"],
+        ids=["빈값", "오타", "숫자문자열", "대문자", "예_문자열"],
+    )
+    def test_보유_필터에_인식할_수_없는_값을_보내면_필터가_적용되지_않는다(
+        self, user_client, make_collection_item, bad_value
+    ):
+        user, client = user_client()
+        make_collection_item(user, name="가진 것", quantity=3)
+        make_collection_item(user, name="안 가진 것", quantity=0)
+
+        resp = client.get(f"/collection/?owned={bad_value}")
+
+        names = {row["item"].name for row in resp.context["item_rows"]}
+        assert names == {"가진 것", "안 가진 것"}
+
+    def test_보유_필터_파라미터가_없으면_필터가_적용되지_않는다(self, user_client, make_collection_item):
+        user, client = user_client()
+        make_collection_item(user, name="가진 것", quantity=3)
+        make_collection_item(user, name="안 가진 것", quantity=0)
+
+        resp = client.get("/collection/")
+
+        names = {row["item"].name for row in resp.context["item_rows"]}
+        assert names == {"가진 것", "안 가진 것"}
+
+
+@pytest.mark.django_db
+class TestArchiveCollectionOwnedRedirect:
+    """Legacy bookmark compat: `?is_wanted=false` used to BE the owned tab's
+    URL; now that owned is its own axis (Cycle 2-B), a bookmarked
+    `?is_wanted=false` link must forward to `?owned=true` so it stops
+    under-counting (owned-and-wanted rows used to be excluded) and the
+    correct sub-tab shows active. Web page only — the DRF API
+    (/api/collection-items/?is_wanted=false) keeps is_wanted's original
+    meaning and is untouched by this redirect.
+
+    Policy for `?is_wanted=false&owned=...` (unreachable via any in-app
+    link, only by hand-composing the URL): the redirect is skipped when
+    `owned` is already present in the query string — an explicit `owned`
+    value means the caller already made a deliberate choice on the new axis,
+    so this legacy-compat shim must not overwrite it.
+    """
+
+    def test_구_보유_탭_URL은_새_보유_필터로_리다이렉트된다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/collection/?is_wanted=false")
+
+        assert resp.status_code == 302
+        assert resp.url == "/collection/?owned=true"
+
+    def test_리다이렉트는_다른_쿼리_파라미터를_보존한다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/collection/?is_wanted=false&q=abc")
+
+        assert resp.status_code == 302
+        assert resp.url == "/collection/?q=abc&owned=true"
+
+    def test_구함_탭_URL은_리다이렉트되지_않는다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/collection/?is_wanted=true")
+
+        assert resp.status_code == 200
+
+    def test_파라미터가_없으면_리다이렉트되지_않는다(self, user_client):
+        _, client = user_client()
+
+        resp = client.get("/collection/")
+
+        assert resp.status_code == 200
+
+    def test_owned_파라미터가_이미_있으면_is_wanted_false여도_리다이렉트되지_않는다(
+        self, user_client
+    ):
+        _, client = user_client()
+
+        resp = client.get("/collection/?is_wanted=false&owned=false")
+
+        assert resp.status_code == 200
 
 
 @pytest.mark.django_db
@@ -339,6 +447,24 @@ class TestArchiveCollectionEmptyStates:
         resp = client.get("/collection/?q=없는검색어")
 
         assert resp.context["item_rows"] == []
+        content = resp.content
+        assert b'class="archive-search"' in content
+
+    def test_어느_축에도_속하지_않는_등록_항목만_있어도_검색_필터_컨트롤은_유지된다(
+        self, user_client, make_collection_item
+    ):
+        """A registered row that is off all three axes (quantity=0,
+        is_wanted=False, tradeable_quantity=0) still means the user has an
+        item on record — has_items must stay True so the search/filter
+        controls are not wrongly hidden."""
+        user, client = user_client()
+        make_collection_item(
+            user, name="미분류행", quantity=0, is_wanted=False, tradeable_quantity=0
+        )
+
+        resp = client.get("/collection/")
+
+        assert resp.context["has_items"] is True
         content = resp.content
         assert b'class="archive-search"' in content
 
@@ -540,7 +666,7 @@ class TestArchiveCollectionQueryStringHelpersV2:
         return client.get(
             "/collection/"
             "?q=abc&work_title=WorkA&character_name=CharB&item_type=keyring"
-            "&is_wanted=true&duplicate=true&tradeable=true&view=list"
+            "&is_wanted=true&duplicate=true&tradeable=true&owned=true&view=list"
         )
 
     def test_보기모드는_칩_쿼리_문자열에_보존된다(self, user_client):
@@ -573,6 +699,7 @@ class TestArchiveCollectionQueryStringHelpersV2:
         assert "duplicate" not in chip_query_suffix
         assert "tradeable" not in chip_query_suffix
         assert "is_wanted" not in chip_query_suffix
+        assert "owned" not in chip_query_suffix
 
     def test_중복_교환가능_필터는_페이저와_초기화_쿼리_문자열에는_포함된다(self, user_client):
         user, client = user_client()
@@ -587,6 +714,16 @@ class TestArchiveCollectionQueryStringHelpersV2:
         assert "duplicate=true" in clear_query_suffix
         assert "tradeable=true" in clear_query_suffix
         assert "is_wanted=true" in clear_query_suffix
+
+    def test_보유_필터는_페이저와_초기화_쿼리_문자열에는_포함된다(self, user_client):
+        user, client = user_client()
+
+        resp = self._get_all_axes(user, client)
+        pager_query = resp.context["pager_query"]
+        clear_query_suffix = resp.context["clear_query_suffix"]
+
+        assert "owned=true" in pager_query
+        assert "owned=true" in clear_query_suffix
 
 
 @pytest.mark.django_db

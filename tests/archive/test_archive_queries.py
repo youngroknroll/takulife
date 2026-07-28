@@ -1085,6 +1085,39 @@ def test_교환가능_필터는_별도_필드_없이_교환가능_수량_1개_�
 
 
 @pytest.mark.django_db
+def test_보유_필터는_별도_필드_없이_수량_1개_이상_여부로_판정된다(make_user):
+    """`owned=True` must select quantity > 0 rows — there is no separate
+    owned flag field, matching the duplicate/tradeable derived-filter
+    pattern (§3-1)."""
+    user = make_user(username="ci-query-owned")
+    held = CollectionItem.objects.create(user=user, name="가진 것", quantity=3)
+    not_held = CollectionItem.objects.create(user=user, name="안 가진 것", quantity=0)
+
+    assert list(list_user_collection_items(user, owned=True)) == [held]
+    assert list(list_user_collection_items(user, owned=False)) == [not_held]
+
+
+@pytest.mark.django_db
+def test_구함_필터_False는_구함이_아닌_항목만_반환한다(make_user):
+    """`is_wanted=False` selects is_wanted-is-False rows regardless of
+    quantity — it is NOT "owned" (owned/wanted are independent axes,
+    collection domain design plan §D1). A quantity>0 & is_wanted=True row
+    must be excluded from is_wanted=False results even though it is also
+    "owned"; this is the query-layer guard for a behavior that used to be
+    reachable at /collection/?is_wanted=false on the web (now redirected to
+    ?owned=true for legacy bookmarks — API callers still use is_wanted=false
+    directly via /api/collection-items/)."""
+    user = make_user(username="ci-query-is-wanted-false")
+    not_wanted = CollectionItem.objects.create(user=user, name="보유", quantity=3, is_wanted=False)
+    owned_and_wanted = CollectionItem.objects.create(
+        user=user, name="보유하며구함", quantity=2, is_wanted=True
+    )
+
+    assert list(list_user_collection_items(user, is_wanted=False)) == [not_wanted]
+    assert owned_and_wanted not in list(list_user_collection_items(user, is_wanted=False))
+
+
+@pytest.mark.django_db
 def test_통합검색어는_이름_작품명_캐릭터명_메모에서_일치하되_상품유형은_대상에서_제외한다(
     make_user,
 ):
@@ -1246,11 +1279,16 @@ def test_컬렉션_아이템이_없는_사용자의_필터_선택지는_모두_�
 
 
 # ---------------------------------------------------------------------------
-# user_collection_item_summary_counts (PR-C5b-1). owned_count/wanted_count
-# split on is_wanted, a non-null boolean field — True/False is a complete
-# partition, so these two counts match the C5b-2 filter chips (전체 / 보유
-# ?is_wanted=false / 구함 ?is_wanted=true) exactly, with no separate
-# total_count key (owned_count + wanted_count always equals the full count).
+# user_collection_item_summary_counts (PR-C5b-1, revised by the collection
+# 3축 독립화 track, 2026-07-28). owned/wanted/tradeable are THREE
+# INDEPENDENT axes, not a partition (collection domain design plan §D1,
+# .docs/plans/2026-07-15-collection-domain-design-plan.md:55, "wanted와
+# 보유 공존 허용") — a single row can be owned and wanted at once, so
+# owned_count + wanted_count is NOT the full count. total_count exists
+# separately for that reason. On the web, the 구함 chip still uses
+# ?is_wanted=true, but the former 보유 chip URL ?is_wanted=false now
+# 302-redirects to ?owned=true (legacy bookmark compat) — the DRF API keeps
+# ?is_wanted=false in its original, unredirected meaning.
 # ---------------------------------------------------------------------------
 
 
@@ -1262,13 +1300,18 @@ def test_보유_구함_집계는_수량_합계가_아니라_행_개수를_센다
     user = make_user(username="ci-summary-counts-user")
     other = make_user(username="ci-summary-counts-other")
     CollectionItem.objects.create(user=user, name="보유 굿즈", quantity=5, is_wanted=False)
-    CollectionItem.objects.create(user=user, name="구함 굿즈 1", quantity=1, is_wanted=True)
-    CollectionItem.objects.create(user=user, name="구함 굿즈 2", quantity=1, is_wanted=True)
+    CollectionItem.objects.create(user=user, name="구함 굿즈 1", quantity=0, is_wanted=True)
+    CollectionItem.objects.create(user=user, name="구함 굿즈 2", quantity=0, is_wanted=True)
     CollectionItem.objects.create(user=other, name="남의 굿즈", quantity=9, is_wanted=False)
 
     counts = user_collection_item_summary_counts(user)
 
-    assert counts == {"owned_count": 1, "wanted_count": 2, "tradeable_count": 0}
+    assert counts == {
+        "owned_count": 1,
+        "wanted_count": 2,
+        "tradeable_count": 0,
+        "total_count": 3,
+    }
 
 
 @pytest.mark.django_db
@@ -1277,7 +1320,71 @@ def test_컬렉션_아이템이_없는_사용자의_보유_구함_집계는_0이
 
     counts = user_collection_item_summary_counts(user)
 
-    assert counts == {"owned_count": 0, "wanted_count": 0, "tradeable_count": 0}
+    assert counts == {
+        "owned_count": 0,
+        "wanted_count": 0,
+        "tradeable_count": 0,
+        "total_count": 0,
+    }
+
+
+@pytest.mark.django_db
+def test_보유_구함_교환희망_세_축은_서로_독립적으로_집계된다(make_user):
+    """owned/wanted/tradeable are three independent axes (collection domain
+    design plan §D1, .docs/plans/2026-07-15-collection-domain-design-plan.md:55,
+    "wanted와 보유 공존 허용" — quantity>0, is_wanted=True, tradeable_quantity>0
+    may combine in any way on a single row), not a mutually exclusive
+    partition. A row can count toward more than one axis at once."""
+    user = make_user(username="ci-summary-counts-axes")
+    CollectionItem.objects.create(
+        user=user, name="품목1", quantity=3, is_wanted=False, tradeable_quantity=0
+    )
+    CollectionItem.objects.create(
+        user=user, name="품목2", quantity=0, is_wanted=True, tradeable_quantity=0
+    )
+    CollectionItem.objects.create(
+        user=user, name="품목3", quantity=2, is_wanted=True, tradeable_quantity=0
+    )
+    CollectionItem.objects.create(
+        user=user, name="품목4", quantity=4, is_wanted=False, tradeable_quantity=2
+    )
+    CollectionItem.objects.create(
+        user=user, name="품목5", quantity=3, is_wanted=True, tradeable_quantity=2
+    )
+
+    counts = user_collection_item_summary_counts(user)
+
+    assert counts["owned_count"] == 4
+    assert counts["wanted_count"] == 3
+    assert counts["tradeable_count"] == 2
+
+
+@pytest.mark.django_db
+def test_전체_집계는_보유_구함_카운트의_단순_합과_다르다(make_user):
+    """total_count counts every row the user owns (existence, regardless of
+    axis membership), and must NOT be derivable by summing owned_count +
+    wanted_count — collection domain design plan §D1
+    (.docs/plans/2026-07-15-collection-domain-design-plan.md:55, "wanted와
+    보유 공존 허용") means a row can be double-counted across axes, so the
+    axis counts cannot stand in for a full inventory total."""
+    user = make_user(username="ci-summary-counts-total")
+    other = make_user(username="ci-summary-counts-total-other")
+    CollectionItem.objects.create(
+        user=user, name="줄1", quantity=3, is_wanted=False, tradeable_quantity=0
+    )
+    CollectionItem.objects.create(
+        user=user, name="줄2", quantity=0, is_wanted=True, tradeable_quantity=0
+    )
+    CollectionItem.objects.create(
+        user=user, name="줄3", quantity=0, is_wanted=False, tradeable_quantity=0
+    )
+    CollectionItem.objects.create(user=other, name="타인의 줄", quantity=1, is_wanted=False)
+
+    counts = user_collection_item_summary_counts(user)
+
+    assert counts["total_count"] == 3
+    assert counts["owned_count"] + counts["wanted_count"] == 2
+    assert counts["owned_count"] + counts["wanted_count"] != counts["total_count"]
 
 
 # ---------------------------------------------------------------------------

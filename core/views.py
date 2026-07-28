@@ -1523,7 +1523,30 @@ def _collection_item_row(item, series_ink_classes):
     _series_ink_classes(). A blank work_title is never a key in that map
     (the facet query excludes it), so .get(..., "gi-0") falls through to the
     no-series bucket without a separate blank-check branch here.
+
+    ``badges`` is the fixed-order (owned -> wanted -> tradeable) badge list
+    consumed by templates/core/partials/_collection_badges.html. Computed
+    once here so the four template consumers never each re-derive
+    ``item.quantity > 0`` themselves (that duplication is what hid the
+    original owned/wanted axis bug). ``tradeable=True`` implies
+    ``owned=True`` at the DB level (tradeable_quantity <= quantity), so the
+    "owned False, tradeable True" branch is unreachable and intentionally
+    has no code path here.
     """
+    owned = item.quantity > 0
+    wanted = item.is_wanted
+    tradeable = item.tradeable_quantity > 0
+    if owned or wanted or tradeable:
+        badges = []
+        if owned:
+            badges.append({"tone": "owned", "label": "보유"})
+        if wanted:
+            badges.append({"tone": "wanted", "label": "구함"})
+        if tradeable:
+            badges.append({"tone": "tradeable", "label": "교환"})
+    else:
+        badges = [{"tone": "none", "label": "미보유"}]
+
     return {
         "item": item,
         "quantity_label": f"수량 {item.quantity}개" if item.quantity > 0 else "",
@@ -1531,6 +1554,7 @@ def _collection_item_row(item, series_ink_classes):
             f"교환 가능 {item.tradeable_quantity}개" if item.tradeable_quantity > 0 else ""
         ),
         "is_wanted": item.is_wanted,
+        "badges": badges,
         "series_ink_class": series_ink_classes.get(item.work_title, "gi-0"),
     }
 
@@ -1538,6 +1562,20 @@ def _collection_item_row(item, series_ink_classes):
 @login_required
 @ensure_csrf_cookie
 def archive_collection_items(request):
+    # Legacy bookmark compat (2026-07-28): ?is_wanted=false used to BE the
+    # owned tab's URL; now that owned is its own axis, a bookmarked
+    # ?is_wanted=false link must forward to ?owned=true so it stops
+    # under-counting (owned-and-wanted rows used to be excluded). Skipped
+    # when owned is already present — an explicit owned value means the
+    # caller already made a deliberate choice on the new axis, and this
+    # shim must not overwrite it. Placed before any query work since a
+    # redirected request has no reason to hit the database.
+    if request.GET.get("is_wanted") == "false" and "owned" not in request.GET:
+        redirect_params = request.GET.copy()
+        del redirect_params["is_wanted"]
+        redirect_params["owned"] = "true"
+        return redirect(f"{request.path}?{redirect_params.urlencode()}")
+
     user = request.user
     q = _archive_query(request)
     work_title = request.GET.get("work_title", "")
@@ -1551,12 +1589,14 @@ def archive_collection_items(request):
     duplicate_value = {True: "true", False: "false"}.get(duplicate, "")
     tradeable = {"true": True, "false": False}.get(request.GET.get("tradeable", ""))
     tradeable_value = {True: "true", False: "false"}.get(tradeable, "")
+    owned = {"true": True, "false": False}.get(request.GET.get("owned", ""))
+    owned_value = {True: "true", False: "false"}.get(owned, "")
     # Only "list" is recognised; absence or any other value falls back to the
     # default gallery view (same 500-prevention fallback discipline as above).
     view_mode = "list" if request.GET.get("view") == "list" else "gallery"
 
     summary_counts = user_collection_item_summary_counts(user)
-    has_items = (summary_counts["owned_count"] + summary_counts["wanted_count"]) > 0
+    has_items = summary_counts["total_count"] > 0
 
     filtered_qs = list_user_collection_items(
         user,
@@ -1566,6 +1606,7 @@ def archive_collection_items(request):
         is_wanted=is_wanted,
         duplicate=duplicate,
         tradeable=tradeable,
+        owned=owned,
         q=q,
     )
     paginator = Paginator(filtered_qs, ARCHIVE_COLLECTION_PAGE_SIZE)
@@ -1609,6 +1650,8 @@ def archive_collection_items(request):
         sub_tab_parts.append(("duplicate", duplicate_value))
     if tradeable_value:
         sub_tab_parts.append(("tradeable", tradeable_value))
+    if owned_value:
+        sub_tab_parts.append(("owned", owned_value))
 
     view_parts = [("view", "list")] if view_mode == "list" else []
 
@@ -1661,6 +1704,7 @@ def archive_collection_items(request):
             "is_wanted_value": is_wanted_value,
             "duplicate_value": duplicate_value,
             "tradeable_value": tradeable_value,
+            "owned_value": owned_value,
             "view_mode": view_mode,
             "chip_query_suffix": chip_query_suffix,
             "pager_query": pager_query,
@@ -2025,7 +2069,7 @@ def mypage(request):
     visit_count = user_visit_record_counts(user)["total_count"]
     personal_entry_count = user_personal_entry_counts(user)["total_count"]
     interest_count = user_interest_count(user)
-    collection_count = user_collection_item_summary_counts(user)["owned_count"]
+    collection_count = user_collection_item_summary_counts(user)["total_count"]
 
     # index_rows drives mypage.html's index list; row order and ink values
     # are fixed by the mypage brief (§1). Each row is rendered as a single
