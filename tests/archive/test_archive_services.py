@@ -6,9 +6,10 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 
-from archive.models import CollectionItem, VisitRecord
+from archive.models import CollectionItem, PersonalEntry, VisitRecord
 from archive.services import (
     DuplicateUserEventStatusError,
+    MAX_PHOTOS_PER_RECORD,
     PhotoLimitExceededError,
     create_collection_item,
     create_personal_entry,
@@ -100,6 +101,142 @@ def test_방문기록_사진이_상한에_도달하면_추가_업로드는_예�
 
 @pytest.mark.domain
 @pytest.mark.django_db
+def test_상한을_채운_마지막_사진과_같은_클라이언트_토큰으로_재시도하면_상한_예외_없이_기존_사진이_반환된다(
+    make_user, make_event, make_visit, make_visit_photo, png_bytes, settings, tmp_path
+):
+    """bfcache duplicate-creation track (INTG-BE-04-VRP): a dropped-response
+    retry for the very photo that filled MAX_PHOTOS_PER_RECORD is the actual
+    failure scenario this idempotency key exists to fix — the client never
+    saw the first response and resubmits the same client_token. Today's
+    create_visit_record_photo checks the count-then-create limit *before* the
+    replay lookup, so this retry is misclassified as "one photo too many" and
+    rejected with PhotoLimitExceededError instead of returning the row that
+    already exists. This test documents the expected fixed behavior (no
+    exception, same row returned, count unchanged) and is expected to fail
+    with PhotoLimitExceededError — a different exception type than an
+    assertion failure — until the count-check/replay-lookup ordering bug is
+    fixed in a later cycle."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user(username="vrp-service-limit-replay")
+    event = make_event(title="상한 재시도 확인 이벤트")
+    record = make_visit(user, event=event, visited_on="2026-01-01")
+    token = uuid.uuid4()
+
+    # Given: the cap is filled — every photo before the last is created
+    # without a token, and only the cap-filling photo itself carries the
+    # token under test.
+    for i in range(MAX_PHOTOS_PER_RECORD - 1):
+        make_visit_photo(record, filename=f"photo-{i}.png")
+    last = create_visit_record_photo(
+        visit_record=record,
+        image=SimpleUploadedFile("last.png", png_bytes(), content_type="image/png"),
+        client_token=token,
+    )
+    assert record.photos.count() == MAX_PHOTOS_PER_RECORD
+
+    # When: the client never saw the response for `last` and retries the
+    # exact same request (same token).
+    retried = create_visit_record_photo(
+        visit_record=record,
+        image=SimpleUploadedFile("retry.png", png_bytes(), content_type="image/png"),
+        client_token=token,
+    )
+
+    # Then: no PhotoLimitExceededError, the existing row is returned
+    # untouched, and the record's photo count stays at the cap (does not
+    # grow).
+    assert retried.id == last.id
+    assert record.photos.count() == MAX_PHOTOS_PER_RECORD
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_같은_방문기록에_같은_클라이언트_토큰으로_사진_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(
+    make_user, make_event, make_visit, png_bytes, settings, tmp_path
+):
+    """bfcache duplicate-creation track (INTG-BE-01-VRP): a client replaying
+    the same photo-upload request with the same client_token (e.g. a
+    bfcache-restored page re-submitting a stale form, or a dropped-response
+    retry right at MAX_PHOTOS_PER_RECORD) must not create a second row — the
+    second call must be an idempotent replay that returns the original photo
+    row untouched, not a second create whose image overwrites the first.
+    Mirrors the VisitRecord idempotency guard (INTG-BE-01-VR) above, but
+    scoped by (visit_record, client_token) rather than (user, client_token) —
+    see INTG-BE-03-VRP below for the scope-boundary proof."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user(username="vrp-service-idempotent-token")
+    event = make_event(title="사진 멱등성 확인 이벤트")
+    record = make_visit(user, event=event, visited_on="2026-01-01")
+    token = uuid.uuid4()
+    first_bytes = png_bytes(color=(255, 0, 0))
+    second_bytes = png_bytes(color=(0, 255, 0))
+
+    # Given: no photo on this record with this token yet, and well under
+    # MAX_PHOTOS_PER_RECORD so the limit guard cannot interfere.
+    assert not record.photos.filter(client_token=token).exists()
+
+    # When: the same record receives the same client_token twice, with a
+    # different image on the second (replayed) call.
+    first = create_visit_record_photo(
+        visit_record=record,
+        image=SimpleUploadedFile("first.png", first_bytes, content_type="image/png"),
+        client_token=token,
+    )
+    second = create_visit_record_photo(
+        visit_record=record,
+        image=SimpleUploadedFile("second.png", second_bytes, content_type="image/png"),
+        client_token=token,
+    )
+
+    # Then: exactly one row exists, both calls return the same row, and the
+    # replay's image did not overwrite the original file.
+    assert record.photos.filter(client_token=token).count() == 1
+    assert first.id == second.id
+    first.refresh_from_db()
+    stored_bytes = first.image.read()
+    assert stored_bytes == first_bytes
+    assert stored_bytes != second_bytes
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_같은_사용자의_서로_다른_방문기록에_같은_클라이언트_토큰으로_사진을_생성하면_각각_독립적으로_생성된다(
+    make_user, make_event, make_visit, png_bytes, settings, tmp_path
+):
+    """bfcache duplicate-creation track (INTG-BE-03-VRP): unlike
+    PersonalEntry/CollectionItem/VisitRecord, whose idempotency key is scoped
+    per (user, client_token), a photo's idempotency key is scoped per
+    (visit_record, client_token) — photos are VisitRecord's child rows, not a
+    user-owned aggregate root, and a single user creates many photos across
+    many records. Two different records owned by the same user replaying the
+    same client-generated uuid4 must each get their own photo row; neither
+    record's create can be short-circuited by the other record's existing
+    photo for the same token (no cross-record existence oracle)."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user(username="vrp-service-token-scope-user")
+    event = make_event(title="사진 스코프 확인 이벤트")
+    record_a = make_visit(user, event=event, visited_on="2026-01-01")
+    record_b = make_visit(user, event=event, visited_on="2026-01-02")
+    token = uuid.uuid4()
+
+    photo_a = create_visit_record_photo(
+        visit_record=record_a,
+        image=SimpleUploadedFile("a.png", png_bytes(), content_type="image/png"),
+        client_token=token,
+    )
+    photo_b = create_visit_record_photo(
+        visit_record=record_b,
+        image=SimpleUploadedFile("b.png", png_bytes(), content_type="image/png"),
+        client_token=token,
+    )
+
+    assert photo_a.id != photo_b.id
+    assert record_a.photos.filter(client_token=token).count() == 1
+    assert record_b.photos.filter(client_token=token).count() == 1
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
 def test_비공식_항목을_생성하면_입력한_필드가_그대로_저장된다(make_user):
     user = make_user(username="pe-service")
     entry = create_personal_entry(
@@ -120,6 +257,84 @@ def test_굿즈_kind로_비공식_항목_생성을_시도하면_거부된다(mak
 
     with pytest.raises(ValidationError):
         create_personal_entry(user=user, kind="goods", title="차단되어야 할 굿즈")
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_같은_사용자가_같은_클라이언트_토큰으로_비공식_항목_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-01-PE): a user replaying the
+    same create request with the same client_token (e.g. bfcache-restored
+    page re-submitting a stale form) must not create a second row — the
+    second call must be an idempotent replay that returns the original row
+    untouched, not a second create with the replay's own field values.
+    Mirrors the CollectionItem idempotency guard (INTG-BE-01-CI) below."""
+    user = make_user(username="pe-service-idempotent-token")
+    token = uuid.uuid4()
+
+    # Given: no PersonalEntry owned by this user with this token yet.
+    assert not PersonalEntry.objects.filter(user=user, client_token=token).exists()
+
+    # When: the same user submits the same client_token twice, with a
+    # different title on the second (replayed) call.
+    first = create_personal_entry(
+        user=user, kind="place", title="원래 제목", client_token=token
+    )
+    second = create_personal_entry(
+        user=user, kind="place", title="다른 제목", client_token=token
+    )
+
+    # Then: exactly one row exists, both calls return the same row, and the
+    # replay's payload did not overwrite the original title.
+    assert PersonalEntry.objects.filter(user=user, client_token=token).count() == 1
+    assert first.id == second.id
+    first.refresh_from_db()
+    assert first.title == "원래 제목"
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_서로_다른_사용자가_같은_클라이언트_토큰으로_비공식_항목을_생성하면_각각_독립적으로_생성된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-03-PE): the idempotency key
+    is scoped per (user, client_token), not by client_token alone — two
+    different users replaying the same client-generated uuid4 (e.g. a bug or
+    a shared client library instance) must each get their own row, and
+    neither user's create can be short-circuited by the other user's
+    existing row for the same token (no cross-user existence oracle).
+    Mirrors the CollectionItem cross-user test (INTG-BE-03-CI) below."""
+    user_a = make_user(username="pe-service-token-user-a")
+    user_b = make_user(username="pe-service-token-user-b")
+    token = uuid.uuid4()
+
+    item_a = create_personal_entry(
+        user=user_a, kind="place", title="사용자 A 항목", client_token=token
+    )
+    item_b = create_personal_entry(
+        user=user_b, kind="place", title="사용자 B 항목", client_token=token
+    )
+
+    assert item_a.id != item_b.id
+    assert PersonalEntry.objects.filter(client_token=token).count() == 2
+    assert PersonalEntry.objects.filter(user=user_a, client_token=token).count() == 1
+    assert PersonalEntry.objects.filter(user=user_b, client_token=token).count() == 1
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+def test_클라이언트_토큰_없이_동일한_내용으로_비공식_항목_생성을_두_번_요청하면_행이_각각_생성된다(make_user):
+    """bfcache duplicate-creation track (INTG-BE-02-PE): the idempotency
+    guard is scoped to (user, client_token) — a caller that never supplies a
+    client_token (e.g. two genuinely separate legitimate entries with the
+    same title) must not be coalesced into one row. This proves the
+    conditional UniqueConstraint added for INTG-BE-01-PE does not over-block
+    legitimate duplicate entries when no idempotency key is present. Mirrors
+    the CollectionItem no-token test (INTG-BE-02-CI) above."""
+    user = make_user(username="pe-service-no-token-duplicate")
+
+    first = create_personal_entry(user=user, kind="place", title="같은 이름 장소")
+    second = create_personal_entry(user=user, kind="place", title="같은 이름 장소")
+
+    assert first.id != second.id
+    assert PersonalEntry.objects.filter(user=user, title="같은 이름 장소").count() == 2
 
 
 # ---------------------------------------------------------------------------

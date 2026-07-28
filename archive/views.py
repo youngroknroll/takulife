@@ -296,8 +296,7 @@ class VisitRecordPhotoCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         try:
             photo = create_visit_record_photo(
-                visit_record=record,
-                image=serializer.validated_data["image"],
+                visit_record=record, **serializer.validated_data
             )
         except PhotoLimitExceededError:
             return Response(

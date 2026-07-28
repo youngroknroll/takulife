@@ -15,6 +15,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from archive.models import UserEventStatus, VisitRecord, VisitRecordPhoto
+from archive.services import MAX_PHOTOS_PER_RECORD
 
 pytestmark = pytest.mark.web
 
@@ -645,6 +646,101 @@ def test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반
 
     assert response.status_code == 404
     assert VisitRecordPhoto.objects.count() == 0
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-01-VRP-WEB / INTG-BE-04-VRP-WEB (bfcache duplicate-creation plan
+# §6) — the HTTP boundary contract for client_token idempotency on photo
+# upload, mirroring INTG-BE-01-VR-WEB above. Photo dedup is scoped by
+# (visit_record, client_token), not (user, client_token) — see
+# VisitRecordPhoto's UniqueConstraint and create_visit_record_photo's
+# docstring for why.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_사진_업로드_POST를_두_번_보내면_두_응답_모두_201이고_동일한_id를_반환하며_DB에는_사진이_하나만_생성된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, make_visit
+):
+    """INTG-BE-01-VRP-WEB: below the cap, a replayed photo upload with the
+    same client_token (e.g. a bfcache-restored page re-submitting a stale
+    form) must not create a second row — both responses succeed with the
+    same id, and only one row exists."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    client_token = str(uuid.uuid4())
+
+    client.force_login(user)
+    first_response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {
+            "image": SimpleUploadedFile("first.png", png_bytes(), content_type="image/png"),
+            "client_token": client_token,
+        },
+    )
+    second_response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {
+            "image": SimpleUploadedFile("second.png", png_bytes(), content_type="image/png"),
+            "client_token": client_token,
+        },
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["id"] == second_response.json()["id"]
+    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == 1
+
+
+@pytest.mark.django_db
+def test_상한을_채운_마지막_사진과_같은_클라이언트_토큰으로_사진_업로드_POST를_재전송하면_201이고_동일한_id가_반환된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo
+):
+    """INTG-BE-04-VRP-WEB: the actual dropped-response-then-retry scenario —
+    the client never saw the 201 for the photo that filled
+    MAX_PHOTOS_PER_RECORD and resubmits the same client_token. This must
+    still be a 201 idempotent replay, not the 400 photo_limit_exceeded a
+    caller with a genuinely new photo would get at the cap."""
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    client_token = str(uuid.uuid4())
+
+    # Given: the cap is filled — every photo before the last is untokened,
+    # and only the cap-filling photo itself is created (via this same
+    # endpoint) with the token under test.
+    for i in range(MAX_PHOTOS_PER_RECORD - 1):
+        make_visit_photo(record, filename=f"photo-{i}.png")
+
+    client.force_login(user)
+    first_response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {
+            "image": SimpleUploadedFile("last.png", png_bytes(), content_type="image/png"),
+            "client_token": client_token,
+        },
+    )
+    assert first_response.status_code == 201
+    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == MAX_PHOTOS_PER_RECORD
+
+    # When: the client never saw the response for `first_response` and
+    # retries the exact same request (same token).
+    retried_response = client.post(
+        f"/api/visit-records/{record.id}/photos/",
+        {
+            "image": SimpleUploadedFile("retry.png", png_bytes(), content_type="image/png"),
+            "client_token": client_token,
+        },
+    )
+
+    # Then: 201, same id, no growth past the cap — not the 400
+    # photo_limit_exceeded a real 6th photo would get.
+    assert retried_response.status_code == 201
+    assert retried_response.json()["id"] == first_response.json()["id"]
+    assert VisitRecordPhoto.objects.filter(visit_record=record).count() == MAX_PHOTOS_PER_RECORD
 
 
 # ---------------------------------------------------------------------------

@@ -14,6 +14,10 @@ from .models import (
 
 
 class PersonalEntrySerializer(serializers.ModelSerializer):
+    # Client-supplied idempotency key (bfcache duplicate-creation plan §4-1).
+    # write_only so a replayed create's token is never echoed back.
+    client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = PersonalEntry
         fields = [
@@ -27,6 +31,7 @@ class PersonalEntrySerializer(serializers.ModelSerializer):
             "url",
             "memo",
             "image",
+            "client_token",
             "created_at",
         ]
         # owner is taken from the request, never the payload
@@ -175,6 +180,11 @@ class VisitRecordUpdateSerializer(serializers.ModelSerializer):
 
 class VisitRecordPhotoUploadSerializer(serializers.Serializer):
     image = serializers.ImageField(required=True)
+    # Client-supplied idempotency key (bfcache duplicate-creation plan §4-1),
+    # scoped by (visit_record, client_token) — see VisitRecordPhoto's
+    # UniqueConstraint. write_only so a replayed create's token is never
+    # echoed back.
+    client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
 
     def validate_image(self, value):
         # Delegate to the shared validator (size, extension, real format, per-axis

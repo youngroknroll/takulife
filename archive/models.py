@@ -153,6 +153,18 @@ class PersonalEntry(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Client-supplied idempotency key for bfcache replay dedup — not user
+    # editable, unset (null) for rows created before this field existed.
+    client_token = models.UUIDField(null=True, blank=True, editable=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "client_token"],
+                condition=models.Q(client_token__isnull=False),
+                name="unique_archive_personal_entry_user_client_token",
+            ),
+        ]
 
     def __str__(self):
         return self.title
@@ -209,6 +221,22 @@ class VisitRecordPhoto(models.Model):
         related_name="photos",
     )
     image = models.ImageField(upload_to="visit-record-photos/")
+    # Client-supplied idempotency key for bfcache replay dedup — scoped by
+    # (visit_record, client_token), NOT (user, client_token) like
+    # PersonalEntry/VisitRecord/CollectionItem above. A photo is a child of a
+    # single VisitRecord, not a user-owned aggregate root, and one user
+    # creates many photos across many records, so the dedup key must be
+    # per-record.
+    client_token = models.UUIDField(null=True, blank=True, editable=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["visit_record", "client_token"],
+                condition=models.Q(client_token__isnull=False),
+                name="unique_archive_visit_record_photo_visit_record_client_token",
+            ),
+        ]
 
 
 class CollectionItem(models.Model):
