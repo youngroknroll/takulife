@@ -309,6 +309,54 @@ class TestEventListDefaultExcludesClosed:
 
 
 @pytest.mark.django_db
+class TestEventListExplicitStatusGuard:
+    """core/views.py::event_list injects status="active" only when the
+    request omits/blanks the status param (A5). These two tests guard the
+    injection's if-guard itself: an explicit status value the sidebar/chip
+    UI sends must pass through untouched, not get silently overwritten."""
+
+    def test_상태를_종료로_지정하면_종료된_행사만_보인다(self, make_event):
+        today = timezone.localdate()
+        make_event(
+            title="지난달에_끝난_행사",
+            start_date=today - timedelta(days=32),
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            title="다음달에_열리는_행사",
+            start_date=today + timedelta(days=30),
+            end_date=today + timedelta(days=32),
+        )
+
+        resp = Client().get("/events/", {"status": "ended"})
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "지난달에_끝난_행사" in body
+        assert "다음달에_열리는_행사" not in body
+
+    def test_상태를_전체로_지정하면_종료된_행사도_다시_보인다(self, make_event):
+        today = timezone.localdate()
+        make_event(
+            title="지난달에_끝난_행사",
+            start_date=today - timedelta(days=32),
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            title="다음달에_열리는_행사",
+            start_date=today + timedelta(days=30),
+            end_date=today + timedelta(days=32),
+        )
+
+        resp = Client().get("/events/", {"status": "all"})
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "지난달에_끝난_행사" in body
+        assert "다음달에_열리는_행사" in body
+
+
+@pytest.mark.django_db
 def test_비공개_직접_등록_항목은_공개_행사_목록_페이지에_노출되지_않는다(client, make_user):
     """A private PersonalEntry item must not leak into the public browse page
     HTML (split from archive's test_personal_entry_never_appears_in_public_catalog
