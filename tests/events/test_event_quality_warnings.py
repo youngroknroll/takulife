@@ -260,7 +260,7 @@ class TestCountPublishedMissingRegion:
 
 @pytest.mark.django_db
 class TestPublishedQualityWarnings:
-    def test_행사가_없으면_품질_경고_다섯_항목이_모두_0으로_반환된다(self):
+    def test_행사가_없으면_품질_경고_여섯_항목이_모두_0으로_반환된다(self):
         result = published_quality_warnings()
 
         assert result == {
@@ -269,6 +269,7 @@ class TestPublishedQualityWarnings:
             "missing_poster": 0,
             "missing_dates": 0,
             "missing_region": 0,
+            "needs_reverification": 0,
             "total": 0,
         }
         for value in result.values():
@@ -323,13 +324,23 @@ class TestPublishedQualityWarnings:
             return event
 
         # Each event trips exactly one predicate; every other predicate on it
-        # is deliberately kept "clean" so the 5 counts stay independent.
+        # is deliberately kept "clean" so the 6 counts stay independent.
+        #
+        # The official-url/poster/region events below all share
+        # start_date=2020-01-01 and an unended future end_date, which also
+        # puts them inside the needs_reverification D-7 window. Without an
+        # explicit verified_at, they would additionally trip
+        # needs_reverification and break the "exactly one predicate" premise
+        # this test is named after, so verified_at is set to a moment after
+        # their reverify_deadline (2019-12-25) to mark them as already
+        # verified and keep needs_reverification at 0 for this test.
         _with_poster(
             make_event(
                 official_url=None,
                 region="서울",
                 start_date=date(2020, 1, 1),
                 end_date=future_end,
+                verified_at=timezone.make_aware(datetime(2020, 6, 1)),
             )
         )
         _with_poster(
@@ -345,6 +356,7 @@ class TestPublishedQualityWarnings:
             region="서울",
             start_date=date(2020, 1, 1),
             end_date=future_end,
+            verified_at=timezone.make_aware(datetime(2020, 6, 1)),
         )  # left without a poster on purpose
         _with_poster(
             make_event(
@@ -360,6 +372,7 @@ class TestPublishedQualityWarnings:
                 region="",
                 start_date=date(2020, 1, 1),
                 end_date=future_end,
+                verified_at=timezone.make_aware(datetime(2020, 6, 1)),
             )
         )
 
@@ -371,6 +384,7 @@ class TestPublishedQualityWarnings:
             "missing_poster": 1,
             "missing_dates": 1,
             "missing_region": 1,
+            "needs_reverification": 0,
             "total": 5,
         }
 
@@ -399,6 +413,7 @@ class TestPublishedQualityWarnings:
             "missing_poster": 0,
             "missing_dates": 0,
             "missing_region": 0,
+            "needs_reverification": 0,
             "total": 0,
         }
 

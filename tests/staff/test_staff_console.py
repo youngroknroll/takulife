@@ -81,7 +81,7 @@ def test_로그인한_일반_사용자의_대시보드_요청은_리다이렉트
 
 
 @pytest.mark.django_db
-def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5종을_컨텍스트로_제공한다(staff_client, make_draft):
+def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_6종을_컨텍스트로_제공한다(staff_client, make_draft):
     staff, client = staff_client()
     make_draft("https://example.com/a", extracted_title="드래프트 A", review_status=EventDraft.ReviewStatus.PENDING)
     make_draft("https://example.com/b", extracted_title="드래프트 B", review_status=EventDraft.ReviewStatus.APPROVED)
@@ -98,6 +98,7 @@ def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5
         "missing_poster",
         "missing_dates",
         "missing_region",
+        "needs_reverification",
         "total",
     }
     for value in quality_warnings.values():

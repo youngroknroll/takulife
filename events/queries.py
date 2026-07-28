@@ -210,27 +210,35 @@ def count_published_needs_reverification(*, today=None) -> int:
 def published_quality_warnings(*, today=None) -> dict:
     """Return quality-warning counts for the staff dashboard as a dict.
 
-    All 5 per-predicate keys are always present, even when a given warning
-    has zero matches. today is forwarded only to the ended-still-published
-    check.
+    All 5 per-predicate keys plus "needs_reverification" are always present,
+    even when a given warning has zero matches. today is forwarded to both
+    the ended-still-published check and the needs-reverification check.
 
-    "total" is the SUM of the 5 warning counts above (flags tripped), not a
-    count of distinct events. This keeps it consistent with the dashboard's
-    visible 5-row breakdown (total == row sum): an event tripping 2
-    predicates contributes 2 to total. It is computed from the 5 values
-    already gathered here, so no extra query is run.
+    "total" is the SUM of only the original 5 warning counts above (flags
+    tripped), not a count of distinct events, and it deliberately excludes
+    "needs_reverification". This keeps it consistent with the dashboard's
+    visible 5-row breakdown (total == row sum): an event tripping 2 of the
+    5 predicates contributes 2 to total. The dashboard table
+    (QUALITY_WARNING_LABELS in staff/views/events.py) still renders only
+    those 5 rows, so folding needs_reverification into total would break the
+    "table sum == total" invariant. Whether needs_reverification should join
+    total is decided together with adding its dashboard row, not here. It is
+    computed from the 5 values already gathered here, so no extra query is
+    run for total itself.
     """
     missing_official_url = count_published_missing_official_url()
     ended_still_published = count_published_ended_still_published(today=today)
     missing_poster = count_published_missing_poster()
     missing_dates = count_published_missing_dates()
     missing_region = count_published_missing_region()
+    needs_reverification = count_published_needs_reverification(today=today)
     return {
         "missing_official_url": missing_official_url,
         "ended_still_published": ended_still_published,
         "missing_poster": missing_poster,
         "missing_dates": missing_dates,
         "missing_region": missing_region,
+        "needs_reverification": needs_reverification,
         "total": (
             missing_official_url
             + ended_still_published
