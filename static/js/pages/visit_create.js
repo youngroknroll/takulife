@@ -262,6 +262,12 @@
       var clientTokenEl = form.elements["client_token"];
       if (clientTokenEl && clientTokenEl.value) { payload.client_token = clientTokenEl.value; }
 
+      // Note: pendingItems below intentionally carry no client_token (unlike
+      // visit_edit.js's per-photo tokens). On this create page a failed photo
+      // upload leaves the user on the visit-records list, not on this form —
+      // there is no retry channel that would resend the same File object, so
+      // there is nothing for a photo-level token to protect against.
+
       window.TakuAPI.setLoading(submitBtn, true);
       setText(statusEl, "기록 저장 중...");
 

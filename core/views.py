@@ -1959,10 +1959,15 @@ def archive_personal_entry_create(request):
     archive_collection_item_create's render-only shape. Context carries
     PERSONAL_ENTRY_CATEGORY_SUGGESTIONS as free-input hint chips (not a
     `choices` constraint — the field stays free text)."""
+    # Issued once per form render into a hidden input so the token survives
+    # a bfcache DOM snapshot and serves as the replay idempotency key (plan §4-1).
     return render(
         request,
         "core/archive/personal_create.html",
-        {"PERSONAL_ENTRY_CATEGORY_SUGGESTIONS": PERSONAL_ENTRY_CATEGORY_SUGGESTIONS},
+        {
+            "PERSONAL_ENTRY_CATEGORY_SUGGESTIONS": PERSONAL_ENTRY_CATEGORY_SUGGESTIONS,
+            "client_token": uuid.uuid4(),
+        },
     )
 
 

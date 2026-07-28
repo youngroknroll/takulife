@@ -93,16 +93,33 @@ def _json_safe_change_value(value):
     return value
 
 
-def create_personal_entry(*, user, kind, title, **fields):
+def create_personal_entry(*, user, kind, title, client_token=None, **fields):
     """Create a private, user-owned unofficial archive item.
 
     PersonalEntry is restricted to unofficial places (collection domain
     design plan §3-3) — goods moved to the dedicated CollectionItem domain
     and can no longer be created here.
+
+    `client_token` is a client-supplied idempotency key (bfcache duplicate
+    creation fix): a replayed submission with the same (user, client_token)
+    hits the UniqueConstraint and is treated as "already created" rather than
+    a second item — the existing row is looked up and returned as-is (never
+    overwritten with the replay's field values). The replay lookup runs
+    *outside* the atomic block: catching inside it would query on an
+    already-aborted transaction (PostgreSQL forbids further statements until
+    the savepoint rolls back on exit).
     """
     if kind != PersonalEntry.Kind.PLACE:
         raise ValidationError({"kind": "place 외의 kind로는 PersonalEntry를 생성할 수 없습니다."})
-    return PersonalEntry.objects.create(user=user, kind=kind, title=title, **fields)
+    try:
+        with transaction.atomic():
+            return PersonalEntry.objects.create(
+                user=user, kind=kind, title=title, client_token=client_token, **fields
+            )
+    except IntegrityError:
+        if client_token is None:
+            raise
+        return PersonalEntry.objects.get(user=user, client_token=client_token)
 
 
 class DuplicateUserEventStatusError(Exception):
@@ -663,12 +680,49 @@ class PhotoLimitExceededError(Exception):
     pass
 
 
-def create_visit_record_photo(*, visit_record, image):
-    with transaction.atomic():
-        locked_record = VisitRecord.objects.select_for_update().get(pk=visit_record.pk)
-        if locked_record.photos.count() >= MAX_PHOTOS_PER_RECORD:
-            raise PhotoLimitExceededError
-        photo = VisitRecordPhoto.objects.create(visit_record=locked_record, image=image)
+def create_visit_record_photo(*, visit_record, image, client_token=None):
+    """Add a photo to a VisitRecord (a child row, not a user-owned aggregate
+    root).
+
+    `client_token` is a client-supplied idempotency key (bfcache duplicate
+    creation fix), scoped by (visit_record, client_token) rather than (user,
+    client_token) — see VisitRecordPhoto's UniqueConstraint for why.
+
+    The token replay check runs *first*, inside the same lock acquired for
+    the count check below — not before acquiring the lock, and not after the
+    limit check. A replay of the very upload that filled
+    MAX_PHOTOS_PER_RECORD is the real-world case this key exists for (a
+    dropped response, then a client retry): if the limit check ran first, a
+    row that already exists would be rejected as "one too many" instead of
+    being returned. Doing the lookup after acquiring the lock (rather than
+    before, as a cheap unlocked pre-check) costs nothing extra, since every
+    call already takes this lock for the count check that follows — and it
+    means a concurrent request for the same (visit_record, client_token)
+    blocks on the lock and then sees the just-committed row via this same
+    lookup, rather than racing the limit check. The IntegrityError fallback
+    below still exists as a second line of defense outside this function's
+    own lock scope (e.g. a caller bypassing this lock via a raw insert), and
+    its replay lookup still runs *outside* the atomic block: catching inside
+    it would query on an already-aborted transaction (PostgreSQL forbids
+    further statements until the savepoint rolls back on exit) — mirrors
+    create_personal_entry.
+    """
+    try:
+        with transaction.atomic():
+            locked_record = VisitRecord.objects.select_for_update().get(pk=visit_record.pk)
+            if client_token is not None:
+                existing = locked_record.photos.filter(client_token=client_token).first()
+                if existing is not None:
+                    return existing
+            if locked_record.photos.count() >= MAX_PHOTOS_PER_RECORD:
+                raise PhotoLimitExceededError
+            photo = VisitRecordPhoto.objects.create(
+                visit_record=locked_record, image=image, client_token=client_token
+            )
+    except IntegrityError:
+        if client_token is None:
+            raise
+        return VisitRecordPhoto.objects.get(visit_record=visit_record, client_token=client_token)
     record_event(
         AnalyticsEvent.EventName.VISIT_PHOTO_ADDED,
         user=locked_record.user,

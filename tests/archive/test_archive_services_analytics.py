@@ -131,6 +131,38 @@ def test_방문_기록에_사진을_추가하면_VISIT_PHOTO_ADDED_분석_이벤
 
 
 @pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_방문기록_사진_생성을_재요청해도_VISIT_PHOTO_ADDED_이벤트는_한_번만_기록된다(
+    make_user, make_event, make_visit, png_bytes
+):
+    """bfcache duplicate-creation track (INTG-BE-06-VRP, DAR ②): a replayed
+    photo upload with the same (visit_record, client_token) must be
+    exactly-once for the VISIT_PHOTO_ADDED analytics event, not just the row
+    — the replay branch returns the existing row *before*
+    create_visit_record_photo's analytics call runs, so a second call must
+    not double-count. Mirrors the VisitRecord/CollectionItem analytics
+    idempotency tests (INTG-BE-06-VR/CI) above."""
+    user = make_user()
+    event = make_event()
+    record = make_visit(user, event=event, visited_on="2026-05-26")
+    token = uuid.uuid4()
+
+    create_visit_record_photo(
+        visit_record=record,
+        image=SimpleUploadedFile("photo.png", png_bytes(), content_type="image/png"),
+        client_token=token,
+    )
+    create_visit_record_photo(
+        visit_record=record,
+        image=SimpleUploadedFile("retry.png", png_bytes(), content_type="image/png"),
+        client_token=token,
+    )
+
+    assert AnalyticsEvent.objects.filter(
+        event_name=AnalyticsEvent.EventName.VISIT_PHOTO_ADDED
+    ).count() == 1
+
+
+@pytest.mark.django_db
 def test_수집_항목을_생성하면_COLLECTION_ITEM_CREATED_분석_이벤트가_대상_정보와_함께_정확히_한_번_기록된다(make_user):
     user = make_user()
 

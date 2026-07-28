@@ -194,7 +194,18 @@
         continue;
       }
       if (isDuplicate(file)) { continue; }
-      pendingItems.push({ file: file, url: URL.createObjectURL(file) });
+      var item = { file: file, url: URL.createObjectURL(file) };
+      // Issued once here (not per upload attempt) so a retry after a
+      // lost-response duplicate resends the same token — the server can
+      // recognize the replay and return the original row instead of
+      // creating a second one. Feature-detected: crypto.randomUUID is not
+      // a security boundary here, just a dedup key, so unsupported
+      // browsers simply fall back to the pre-existing (no-token) behavior
+      // instead of throwing or using a weaker substitute.
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        item.clientToken = crypto.randomUUID();
+      }
+      pendingItems.push(item);
     }
 
     if (rejected.length > 0) {
@@ -260,6 +271,11 @@
       setText(statusEl, "사진 업로드 중 (" + (succeeded + 1) + "/" + total + ")...");
       var formData = new FormData();
       formData.append("image", pendingItems[0].file);
+      // Omit entirely when unset — an empty string fails the serializer's
+      // UUIDField parsing (400 for the whole request), not just a no-op.
+      if (pendingItems[0].clientToken) {
+        formData.append("client_token", pendingItems[0].clientToken);
+      }
       var result = await window.TakuAPI.upload(
         "/api/visit-records/" + recordId + "/photos/",
         formData

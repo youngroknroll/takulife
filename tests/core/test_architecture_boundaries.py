@@ -349,6 +349,12 @@ ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS = {
     ("tests/archive/test_archive_collection_view.py", "archive.queries"): frozenset(
         {"ARCHIVE_COLLECTION_PAGE_SIZE"}
     ),
+    # Imports only the MAX_PHOTOS_PER_RECORD constant, to compute how many
+    # untokened photos to seed up to the cap for the photo-upload idempotency
+    # tests — no service function is called.
+    ("tests/archive/test_visit_records_api.py", "archive.services"): frozenset(
+        {"MAX_PHOTOS_PER_RECORD"}
+    ),
 }
 
 # Sentinel used when a test file imports the whole services/queries module

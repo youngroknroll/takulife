@@ -6,6 +6,8 @@ items, owner-scoped. PersonalEntry is never part of the public catalog.
   GET    /api/personal-entries/<id>/   → 200 or 404
   DELETE /api/personal-entries/<id>/   → 204 or 404
 """
+import uuid
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -111,6 +113,53 @@ def test_개인_항목_시리얼라이저의_종류_선택지에_굿즈가_없�
     from archive.serializers import PersonalEntrySerializer
 
     assert "goods" not in dict(PersonalEntrySerializer().fields["kind"].choices)
+
+
+# ---------------------------------------------------------------------------
+# INTG-BE-01-PE-WEB (bfcache duplicate-creation plan §6) — the HTTP boundary
+# contract for client_token idempotency on PersonalEntry create, mirroring
+# INTG-BE-01-VR-WEB in tests/archive/test_visit_records_api.py:153-192.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_같은_클라이언트_토큰으로_개인_항목_생성_POST를_두_번_보내면_두_응답_모두_201이고_동일한_id를_반환하며_DB에는_행이_하나만_생성된다(
+    client, make_user
+):
+    user = make_user(username="pe-idempotent-token")
+    client_token = str(uuid.uuid4())
+
+    client.force_login(user)
+    first_response = client.post(
+        "/api/personal-entries/",
+        {
+            "kind": "place",
+            "title": "첫 번째 제목",
+            "client_token": client_token,
+        },
+        content_type="application/json",
+    )
+    second_response = client.post(
+        "/api/personal-entries/",
+        {
+            "kind": "place",
+            "title": "두 번째 제목",
+            "client_token": client_token,
+        },
+        content_type="application/json",
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["id"] == second_response.json()["id"]
+    assert "client_token" not in first_response.json()
+    assert "client_token" not in second_response.json()
+    assert (
+        PersonalEntry.objects.filter(user=user, client_token=client_token).count() == 1
+    )
+    entry = PersonalEntry.objects.get(user=user, client_token=client_token)
+    assert entry.title == "첫 번째 제목"
 
 
 # ---------------------------------------------------------------------------

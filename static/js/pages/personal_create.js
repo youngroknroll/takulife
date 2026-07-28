@@ -158,6 +158,19 @@
         memo: form.elements["memo"].value.trim(),
       };
 
+      // client_token: SSR-issued uuid4 hidden input (personal_create.html,
+      // DAR §5-1) for create-side idempotency replay. Existence guard
+      // mirrors visit_create.js's precedent — this page has no edit-form
+      // twin, but the guard keeps the payload safe if the hidden input is
+      // ever removed from the template. Also require a non-empty value: an
+      // empty string would still pass an existence-only guard and serialize
+      // as client_token: "", which the serializer's UUIDField rejects with
+      // 400 — turning a missing/stale template context into a hard create
+      // failure instead of a silent fallback. Empty value → send no token
+      // (degrades to pre-token behavior, avoids the 400).
+      var clientTokenEl = form.elements["client_token"];
+      if (clientTokenEl && clientTokenEl.value) { fields.client_token = clientTokenEl.value; }
+
       window.TakuAPI.setLoading(submitBtn, true);
 
       var result;
