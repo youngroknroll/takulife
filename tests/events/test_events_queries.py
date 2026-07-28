@@ -75,6 +75,12 @@ class TestParsePublicListingParams:
             parse_public_listing_params({"status": "invalid_status"})
         assert "status" in str(exc_info.value.detail)
 
+    def test_상태값_all은_유효한_값으로_받아들여진다(self):
+        from events.queries import parse_public_listing_params
+
+        result = parse_public_listing_params({"status": "all"})
+        assert result["status"] == "all"
+
     def test_잘못된_형식의_시작일_이후_값을_거부한다(self):
         from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
@@ -400,6 +406,40 @@ class TestListPublishedEvents:
         ids = list(qs_no_sort.values_list("id", flat=True))
         assert ids.index(ongoing.id) < ids.index(upcoming.id)
         assert ids.index(upcoming.id) < ids.index(ended.id)
+
+    def test_상태값_all은_종료된_행사도_포함한다(self, make_event):
+        """status="all" behaves like no filter — ended events are included.
+
+        Deliberately routes the raw params through parse_public_listing_params
+        instead of passing a raw dict straight to list_published_events (the
+        sibling tests' convention). with_public_status has no explicit "all"
+        arm; any unrecognised string falls through the same catch-all
+        (`return self`) as an unfiltered status. So passing a raw
+        {"status": "all"} dict directly would pass whether or not the
+        serializer accepts "all" as valid, making the assertion vacuous. This
+        test's entire point is to prove "all" survives the
+        EventQuerySerializer.STATUS_CHOICES validation layer used by the API,
+        so it must exercise that layer.
+        """
+        from events.queries import list_published_events, parse_public_listing_params
+
+        today = date(2026, 6, 24)
+        ended = make_event(
+            title="Ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=1),
+        )
+        ongoing = make_event(
+            title="Ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+
+        params = parse_public_listing_params({"status": "all"})
+        qs = list_published_events(params, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ended.id in ids
+        assert ongoing.id in ids
 
 
 # ---------------------------------------------------------------------------
