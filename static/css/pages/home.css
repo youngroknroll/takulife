@@ -1,7 +1,7 @@
   /* Home has no mobile-cta, so the global 5rem .page bottom padding is dead
      space above the footer (which already adds its own 40px margin-top). Trim
      it; the mobile @media below keeps its own 3rem bottom. */
-  .page {
+  .home-page {
     padding-bottom: 1.5rem;
   }
   /* ── Hero: editorial de-chroming (home-editorial plan §A) ────────────
@@ -314,10 +314,11 @@
     gap: 0.625rem;
   }
   /* ── Category chips (.cat-dot, plan §D) — replaces the old icon-tile
-     .cat-browse-link. Shared .cat-tile (components/category.css) is not
-     touched: the swatch below reads the same `--cat-*-ink` custom
-     properties directly via inline style (home.html), same convention as
-     the poster card's category-tinted style-card fallback. Base rule here
+     .cat-browse-link. The .cat-tile component (components/category.css)
+     it once sat alongside is gone; the swatch below reads the
+     `--cat-*-ink` custom properties directly via inline style (home.html),
+     same convention as the poster card's category-tinted style-card
+     fallback. Base rule here
      is the desktop/wide size (>64rem) — 4 columns leaves at least as much
      room per chip as the old 5-column layout did, so this is the original
      pre-2/3-shrink sizing; the ≤64rem tier below is the one that actually
@@ -668,13 +669,38 @@
     }
   }
 
-  /* "최근 등록한 굿즈" tile reuses .visit-card's border/background (archive_
-     visits.css) but at this page's 168px hscroll width, not that page's
-     2-column [text|media] grid (which only activates when a
-     .visit-card-body child is present — omitted here on purpose, so this
+  /* .visit-card / .visit-card-media / .visit-card h3: migrated from the
+     now-deleted archive_visits.css (2026-07-28 CSS sweep). home.html was
+     that file's only remaining loader — 54 of its 58 selectors had zero
+     consumers here, but these 3 base rules are the "최근 등록한 굿즈" tile's
+     plain-block box/media/title styling (see .snapshot-goods-card usage
+     below), so they move here verbatim instead of disappearing with the
+     file. Declarations are unchanged from the source. */
+  .visit-card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-card);
+    padding: 0.75rem;
+  }
+  .visit-card-media {
+    align-self: stretch;
+  }
+  .visit-card h3 {
+    margin: 0 0 0.3125rem;
+    font-size: var(--fs-base);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  /* "최근 등록한 굿즈" tile reuses .visit-card's border/background (migrated
+     above) but at this page's 168px hscroll width, not the old archive
+     visits page's 2-column [text|media] grid (which only activated when a
+     .visit-card-body child was present — omitted here on purpose, so this
      markup falls back to .visit-card's plain block styling and stacks
      media above title instead). Scoped the same way archive_collection.css
-     scopes its own .visit-card override, via a class unique to this card. */
+     scopes its own .visit-card override, via a class unique to this card.
+     Specificity note: this compound selector (0,2,0) still beats the bare
+     .visit-card-media above (0,1,0) regardless of source order within this
+     file, so the override survives the migration unchanged. */
   .snapshot-goods-card .visit-card-media {
     width: 100%;
     aspect-ratio: 3 / 4;
@@ -937,7 +963,7 @@
      components/cards.css so event_list.css's desktop thumbnail + mobile
      grid can reuse it too (both pages load cards.css globally). */
   @media (max-width: 45rem) {
-    .page {
+    .home-page {
       padding: 1rem var(--page-pad-x) 3rem;
     }
     .hero {

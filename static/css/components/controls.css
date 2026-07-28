@@ -52,7 +52,7 @@
    `.active` is the class the status JS toggles, so server and client agree. */
 .status-btn.active {
   font-weight: 700;
-  box-shadow: inset 0 0 0 1.5px currentColor;
+  box-shadow: inset 0 0 0 2px currentColor;
 }
 
 .status-btn.active::before {

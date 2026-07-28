@@ -94,7 +94,7 @@ Context consumed: request.user (via the calling page) is not needed here.
       {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
       <span data-interest-glyph aria-hidden="true">{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
     </button>
-    <span class="glint">✦</span>
+    <span class="glint" aria-hidden="true">✦</span>
   </div>
 
   <div class="poster-card-caption">

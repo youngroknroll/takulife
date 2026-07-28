@@ -275,12 +275,14 @@
     modal.appendChild(actions);
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    document.documentElement.classList.add("confirm-scroll-lock");
 
     var previouslyFocused = document.activeElement;
     var focusables = [close, loginLink, registerLink];
 
     function dismiss() {
       overlay.remove();
+      document.documentElement.classList.remove("confirm-scroll-lock");
       document.removeEventListener("keydown", onKey);
       if (previouslyFocused && typeof previouslyFocused.focus === "function") {
         previouslyFocused.focus();

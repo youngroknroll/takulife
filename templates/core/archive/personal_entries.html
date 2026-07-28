@@ -40,7 +40,7 @@
     {# BIR 판정(visits.html 선례 재사용): 이 노드는 #archive-results(라이브 검색 #}
     {# swap 대상) 밖에 있어야 한다 — 삭제 in-flight 중 검색 스왑이 겹치면 #}
     {# closure된 globalErrorEl이 detached돼 오류가 무음 처리된다. #}
-    <div id="entry-global-error" class="form-error" style="margin-bottom:8px;"></div>
+    <div id="entry-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
 
     <section class="layout">
       <aside class="panel" aria-label="안내 및 빠른 이동">

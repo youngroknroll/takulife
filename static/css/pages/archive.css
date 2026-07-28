@@ -21,14 +21,14 @@
        instance in this track of the same "4속성 재선언 누락" pattern
        (summary-card / sub-nav 참조). With no visible border on this element
        (only `border-bottom`), the un-reset 12px radius curled the two ends
-       of the 1.5px rule upward instead of a straight line. */
+       of the 2px rule upward instead of a straight line. */
     background: none;
     border: none;
     border-radius: 0;
     box-shadow: none;
     padding: 0 0 1.125rem;
     margin: 0 0 1.5rem;
-    border-bottom: 1.5px solid var(--text);
+    border-bottom: 2px solid var(--text);
     display: grid;
     grid-template-columns: minmax(min-content, 1fr) auto minmax(min-content, 1fr);
     align-items: flex-end;
@@ -1127,7 +1127,7 @@
       /* 시안 고유값(컬렉션 페이지는 1.75rem 유지) */
       gap: 1rem;
     }
-    .page {
+    .activity-page {
       padding-bottom: 6rem;
     }
     /* 시안/컬렉션 모바일 사이즈·여백 통일; .layout gap은 시안 고유값 */

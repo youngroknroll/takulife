@@ -1,90 +1,17 @@
-/* ── category color system (tiles + chips) ─────────────────── */
+/* ── category color system (archive list chip) ─────────────── */
 /*
- * Shared category visual language: a left color tile (.cat-tile) acts as a
- * scan anchor on wide discovery rows, and a color chip (.cat-chip) labels the
- * category. Both take a .cat-<slug> modifier whose slug IS the vocab category
- * key, so templates inject the class directly from category_slug.
+ * The .cat-tile color tile and .cat-chip color chip this file once defined
+ * are gone (removed dead code); category color today is delivered by
+ * templates reading the --cat-<slug>-ink token directly (see tokens.css).
+ * What remains in this file is the .event-category chip below.
  * Category hues are desaturated to stay distinct from the four status colors.
  */
-.cat-tile {
-  width: 52px;
-  height: 52px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  font-size: 1.45rem;
-  line-height: 1;
-  flex-shrink: 0;
-  background: var(--brand-soft);
-  color: var(--brand-ink);
-}
-
-.cat-tile::before {
-  content: "🎫";
-}
-
-.cat-chip {
-  display: inline-block;
-  border-radius: var(--radius-chip);
-  padding: 0.25rem 0.5625rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background: var(--brand-soft);
-  color: var(--brand-ink);
-}
-
-/* per-category colors — shared by tile and chip */
-.cat-popup_store {
-  background: var(--cat-popup_store-soft);
-  color: var(--cat-popup_store-ink);
-}
-.cat-collaboration_cafe {
-  background: var(--cat-collaboration_cafe-soft);
-  color: var(--cat-collaboration_cafe-ink);
-}
-.cat-theater_bonus {
-  background: var(--cat-theater_bonus-soft);
-  color: var(--cat-theater_bonus-ink);
-}
-.cat-goods_reservation {
-  background: var(--cat-goods_reservation-soft);
-  color: var(--cat-goods_reservation-ink);
-}
-.cat-exhibition {
-  background: var(--cat-exhibition-soft);
-  color: var(--cat-exhibition-ink);
-}
-.cat-fan_meeting {
-  background: var(--cat-fan_meeting-soft);
-  color: var(--cat-fan_meeting-ink);
-}
-
-/* per-category icons — tile only (chip stays text) */
-.cat-tile.cat-popup_store::before {
-  content: "🛍️";
-}
-.cat-tile.cat-collaboration_cafe::before {
-  content: "☕";
-}
-.cat-tile.cat-theater_bonus::before {
-  content: "🎬";
-}
-.cat-tile.cat-goods_reservation::before {
-  content: "📦";
-}
-.cat-tile.cat-exhibition::before {
-  content: "🖼️";
-}
-.cat-tile.cat-fan_meeting::before {
-  content: "🎤";
-}
-
 /* ── archive list chip (.event-category) ──────────────────────
  * Archive list/status/interests pages render <span class="event-category">
  * for the category label and <span class="event-category unofficial"> for the
  * private-entry marker. Geometry + default (category) skin here; .unofficial
  * overrides display + colour. Extracted from the per-page sheets, where this
- * was duplicated across three archive pages. Distinct from .cat-chip above. */
+ * was duplicated across three archive pages. */
 .event-category {
   border-radius: var(--radius-chip);
   padding: 0.25rem 0.5625rem;
@@ -97,9 +24,7 @@
 /* 공용 디자인 규칙 §1.4-2: color:var(--brand) on --brand-soft는 텍스트
    아닌 solid-fill 토큰 오용 — 라이트 3.71:1·다크 2.62:1 모두 AA 미달
    (12파일 15곳 동일 패턴). 베이스를 --brand-ink로 전환해 양 테마
-   4.5:1+ 통과, 다크 전용 오버라이드는 중복이라 제거. (.cat-tile/
-   .cat-chip도 동일 전환 — "베이스는 렌더 안 됨" 전제가 모델 레이어에서
-   비보장이라 특이도 동일한 베이스 전환이 더 안전하다.) */
+   4.5:1+ 통과, 다크 전용 오버라이드는 중복이라 제거. */
 .event-category.unofficial {
   display: inline-flex;
   align-items: center;
