@@ -60,6 +60,13 @@ class EventQuerySet(models.QuerySet):
             )
         if status == "ended":
             return self.filter(end_date__lt=today)
+        if status == "active":
+            # View-internal only: "active" is not in the public STATUS_CHOICES
+            # contract. NULL end_date is kept (SQL NULL < today is unknown, so
+            # exclude() does not drop it) — an event with no end date is not
+            # ended. `__lt`, not `__lte`: an event ending today is not ended
+            # yet.
+            return self.exclude(end_date__lt=today)
         return self
 
     def increment_view_count(self, pk):

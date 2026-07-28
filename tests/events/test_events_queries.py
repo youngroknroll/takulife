@@ -440,6 +440,50 @@ class TestWithPublicStatus:
         assert ended in result
         assert ongoing not in result
 
+    def test_상태_필터_active는_종료된_행사만_제외하고_종료일_없는_행사도_포함한다(
+        self, make_event
+    ):
+        today = date(2026, 7, 1)
+        ended = make_event(
+            title="끝난 행사",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=1),
+        )
+        ongoing = make_event(
+            title="진행 행사",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+        upcoming = make_event(
+            title="예정 행사",
+            start_date=today + timedelta(days=10),
+            end_date=today + timedelta(days=12),
+        )
+        # Off-by-one guard: end_date == today must still count as "not ended
+        # yet". Without this fixture, mutating `end_date__lt` to `end_date__lte`
+        # in the exclude clause would not be caught by any assertion here.
+        ends_today = make_event(
+            title="오늘 종료 행사",
+            start_date=today - timedelta(days=3),
+            end_date=today,
+        )
+        # Deliberate: end_date=None is the case under test, not a null trap.
+        # Part A's "active" predicate treats a missing end date as "not
+        # ended", asymmetric with Part B's dataset-carryover predicate.
+        no_end_date = make_event(
+            title="종료일 없는 행사",
+            start_date=today - timedelta(days=30),
+            end_date=None,
+        )
+
+        result = Event.objects.published().with_public_status("active", today=today)
+
+        assert ended not in result
+        assert ongoing in result
+        assert upcoming in result
+        assert ends_today in result
+        assert no_end_date in result
+
     def test_알_수_없는_상태_필터는_전체_행사를_그대로_반환한다(self, make_event):
         today = date(2026, 7, 1)
         make_event(title="아무 행사")
