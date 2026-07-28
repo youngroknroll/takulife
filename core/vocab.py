@@ -164,6 +164,14 @@ EVENT_STATUS: tuple[tuple[str, str], ...] = (
 )
 
 EVENT_STATUS_LABELS: dict[str, str] = dict(EVENT_STATUS)
+# "all" is a list-view-only filter value, NOT a member of EVENT_STATUS: that
+# tuple is also iterated by templates/core/events/calendar.html to render its
+# status radios, and the calendar's status filter already defaults to "all
+# statuses" via a value="" radio — adding "all" to EVENT_STATUS would render a
+# second, duplicate "전체" radio there. This label-only entry exists so
+# _active_filter_chips (core/views.py) can show a human label instead of the
+# raw "all" string when the list view's status=all control is active.
+EVENT_STATUS_LABELS["all"] = "전체"
 
 # ---------------------------------------------------------------------------
 # Public listing sort vocabulary (event_list ordering).

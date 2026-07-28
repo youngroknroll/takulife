@@ -30,6 +30,7 @@
       <a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/?region=gyeonggi">경기</a>
       <a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/?region=incheon">인천</a>
       <a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/?status=closing_soon">종료 임박</a>
+      <a class="chip{% if selected_status == 'all' %} active{% endif %}" href="/events/?status=all">전체</a>
       <a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" href="/events/?category=popup_store">팝업스토어</a>
       <a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/?category=collaboration_cafe">콜라보 카페</a>
     </div>
@@ -81,7 +82,7 @@
               <li>
                 <label class="filter-check">
                   <input type="radio" name="status" value=""{% if not selected_status %} checked{% endif %}>
-                  전체
+                  진행·예정
                 </label>
               </li>
               {% for slug, label in EVENT_STATUS %}
@@ -92,6 +93,12 @@
                   </label>
                 </li>
               {% endfor %}
+              <li>
+                <label class="filter-check">
+                  <input type="radio" name="status" value="all"{% if selected_status == 'all' %} checked{% endif %}>
+                  전체
+                </label>
+              </li>
             </ul>
           </fieldset>
 
@@ -221,10 +228,19 @@
             {% if active_filters %}
               <p class="empty-title">조건에 맞는 이벤트가 없어요</p>
               <p class="empty-note">필터를 줄이거나 다른 키워드로 다시 찾아보세요.</p>
-              <a class="empty-action" href="/events/">필터 전체 해제</a>
             {% else %}
-              <p class="empty-title">아직 등록된 이벤트가 없어요</p>
-              <p class="empty-note">관리자 검수를 거친 이벤트가 게시되면 여기에 표시돼요.</p>
+              <p class="empty-title">진행·예정 이벤트가 없어요</p>
+              <p class="empty-note">새로운 이벤트가 등록되면 여기에 표시돼요.</p>
+            {% endif %}
+            {% if active_filters or not selected_status %}
+              <div class="empty-actions">
+                {% if active_filters %}
+                  <a class="empty-action" href="/events/">필터 전체 해제</a>
+                {% endif %}
+                {% if not selected_status %}
+                  <a class="empty-action" href="?{{ request.GET.urlencode }}&status=all">종료 포함 전체 보기</a>
+                {% endif %}
+              </div>
             {% endif %}
           </div>
         {% endif %}
