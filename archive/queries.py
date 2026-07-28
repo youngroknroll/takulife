@@ -473,16 +473,17 @@ def list_user_collection_items(
     is_wanted=None,
     duplicate=None,
     tradeable=None,
+    owned=None,
     q: str = "",
 ):
     """Return a user's collection items, newest first, owner-scoped, with
     optional filters (collection domain design plan §4 PR-C5 CP16~22).
 
     `work_title`/`character_name`/`item_type` are exact-match category
-    filters. `duplicate` and `tradeable` are *derived* filters, not stored
-    fields — "duplicate" means quantity >= 2 and "tradeable" means
-    tradeable_quantity > 0 (the plan deliberately removed a separate
-    duplicate_count field, §3-1).
+    filters. `duplicate`, `tradeable`, and `owned` are *derived* filters, not
+    stored fields — "duplicate" means quantity >= 2, "tradeable" means
+    tradeable_quantity > 0, and "owned" means quantity > 0 (the plan
+    deliberately removed a separate duplicate_count field, §3-1).
 
     ``q`` narrows results to rows whose name, work_title, character_name, or
     memo matches the search term (case-insensitive contains), mirroring
@@ -515,6 +516,11 @@ def list_user_collection_items(
             queryset = queryset.filter(tradeable_quantity__gt=0)
         else:
             queryset = queryset.filter(tradeable_quantity=0)
+    if owned is not None:
+        if owned:
+            queryset = queryset.filter(quantity__gt=0)
+        else:
+            queryset = queryset.filter(quantity=0)
     return queryset
 
 
@@ -547,27 +553,38 @@ def user_collection_item_filter_values(user) -> dict:
 
 
 def user_collection_item_summary_counts(user) -> dict:
-    """Return summary counts for a user's collection items, split by
-    is_wanted (the /collection/ summary cards).
+    """Return summary counts for a user's collection items (the /collection/
+    summary cards).
 
-    is_wanted is a non-null boolean, so owned (False) and wanted (True) are a
-    complete partition of the user's collection items — owned_count +
-    wanted_count always equals the user's full item count, matching the
-    C5b-2 filter chips (전체 / 보유 / 구함) exactly. There is deliberately no
-    separate total_count key.
+    owned, wanted, and tradeable are THREE INDEPENDENT axes, not a
+    partition — collection domain design plan §D1
+    (.docs/plans/2026-07-15-collection-domain-design-plan.md:55, "wanted와
+    보유 공존 허용") approves a row being owned and wanted at once (e.g. a
+    duplicate someone still wants more of), and tradeable_quantity > 0 can
+    combine with either. A single row can be counted in more than one of
+    owned_count / wanted_count / tradeable_count at the same time, so their
+    sum is NOT the user's full item count — do not add them together as a
+    total. total_count exists precisely because that sum is unreliable: it
+    counts every row the user owns regardless of axis membership (a row can
+    be off all three axes, e.g. quantity=0/is_wanted=False/
+    tradeable_quantity=0, and still be a registered item), so it is the only
+    reliable "does this user have any collection items at all" figure.
 
-    tradeable_count is a THIRD, OVERLAPPING axis, not part of that
-    partition — it counts tradeable_quantity > 0 rows regardless of
-    is_wanted, so a row can be counted in both owned_count and
-    tradeable_count at once (an owned item is very often also tradeable).
-    Do not sum owned_count + wanted_count + tradeable_count as a total; that
-    double-counts every owned-and-tradeable row.
+    - owned_count: quantity > 0 rows (physically held), regardless of
+      is_wanted or tradeable_quantity.
+    - wanted_count: is_wanted = True rows, regardless of quantity or
+      tradeable_quantity.
+    - tradeable_count: tradeable_quantity > 0 rows, regardless of quantity or
+      is_wanted.
+    - total_count: every row belonging to the user, independent of all three
+      axes.
     """
     queryset = CollectionItem.objects.filter(user=user)
     return {
-        "owned_count": queryset.filter(is_wanted=False).count(),
+        "owned_count": queryset.filter(quantity__gt=0).count(),
         "wanted_count": queryset.filter(is_wanted=True).count(),
         "tradeable_count": queryset.filter(tradeable_quantity__gt=0).count(),
+        "total_count": queryset.count(),
     }
 
 

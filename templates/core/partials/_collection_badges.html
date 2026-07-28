@@ -1,0 +1,18 @@
+{% comment %}
+공용 컬렉션 상태 배지 파셜. 소비자 4곳(목록 행·갤러리 커버·방문 상세 굿즈 행·굿즈
+상세 커버)이 각자 복제하던 "구함 > 교환 > 보유" 배타 체인을 대체한다.
+
+컨텍스트:
+  badges       — row.badges (core/views.py _collection_item_row가 고정 순서로
+                 계산: 보유 -> 구함 -> 교환, 셋 다 거짓이면 [{"tone": "none",
+                 "label": "미보유"}] 하나뿐). 템플릿은 quantity/tradeable를
+                 다시 계산하지 않는다.
+  wrapper_class — 호출자가 배치(절대 위치 커버 오버레이 vs 인라인 플렉스 행)를
+                 소유하는 기존 래퍼 클래스 문자열(예: "collection-pill",
+                 "collection-pill collection-pill--cover").
+  badge_class   — 배지 낱개에 붙는 톤 베이스 클래스(예: "collection-pill-tag").
+                 호출자 CSS가 `{{ badge_class }}.is-{tone}`로 색을 낸다.
+{% endcomment %}
+<span class="{{ wrapper_class }}">
+  {% for badge in badges %}<span class="{{ badge_class }} is-{{ badge.tone }}">{{ badge.label }}</span>{% endfor %}
+</span>

@@ -336,6 +336,7 @@ class TestHomeCollectionSnapshotContext:
             "owned_count": 1,
             "wanted_count": 0,
             "tradeable_count": 0,
+            "total_count": 1,
         }
         assert resp.context["recent_goods"][0].name == "보유 아이템"
         assert resp.context["unrecorded"][0]["subject"]["subject_type"] == "event"
@@ -394,7 +395,8 @@ class TestHomeCollectionSnapshotContext:
 
     def test_보유는_없고_구하는_아이템만_있어도_컬렉션_스냅샷이_활성화된다(self, make_user):
         """snapshot_active is owned+wanted (H4) — deliberately different from
-        mypage's collection_count, which counts owned only. A wanted-only
+        mypage's collection_count, which counts every registered row
+        (total_count) regardless of axis membership. A wanted-only
         collection (owned 0) must still activate the snapshot."""
         from archive.models import CollectionItem
 

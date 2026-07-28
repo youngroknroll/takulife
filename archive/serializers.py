@@ -272,9 +272,10 @@ class CollectionItemQuerySerializer(serializers.Serializer):
     """Validates CollectionItem list query params before they reach
     list_user_collection_items (mirrors UserEventStatusQuerySerializer).
 
-    `duplicate`/`tradeable` are booleans selecting the *derived* condition
-    (quantity >= 2 / tradeable_quantity > 0) — the query layer owns the
-    actual filter logic, this serializer only validates shape.
+    `duplicate`/`tradeable`/`owned` are booleans selecting the *derived*
+    condition (quantity >= 2 / tradeable_quantity > 0 / quantity > 0) — the
+    query layer owns the actual filter logic, this serializer only validates
+    shape.
 
     Empty-value contract (domain gate finding, 2026-07-16): an *absent*
     param and an *empty* param (`?work_title=`) both mean "no filter" —
@@ -290,3 +291,4 @@ class CollectionItemQuerySerializer(serializers.Serializer):
     is_wanted = serializers.BooleanField(required=False, allow_null=True)
     duplicate = serializers.BooleanField(required=False, allow_null=True)
     tradeable = serializers.BooleanField(required=False, allow_null=True)
+    owned = serializers.BooleanField(required=False, allow_null=True)

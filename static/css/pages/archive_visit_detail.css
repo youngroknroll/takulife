@@ -333,7 +333,17 @@
   color: var(--muted);
   font-size: 0.75rem;
 }
+/* .visit-detail-goods-pill is a WRAPPER around 1-3 -tag badges (multi-badge
+   support) — wraps to a second line on narrow widths since it's a
+   secondary meta column, not the primary label. */
 .visit-detail-page .visit-detail-goods-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.visit-detail-page .visit-detail-goods-pill-tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -343,17 +353,21 @@
   font-weight: 700;
   white-space: nowrap;
 }
-.visit-detail-page .visit-detail-goods-pill.is-owned {
+.visit-detail-page .visit-detail-goods-pill-tag.is-owned {
   background: var(--mint-soft);
   color: var(--mint-ink);
 }
-.visit-detail-page .visit-detail-goods-pill.is-tradeable {
+.visit-detail-page .visit-detail-goods-pill-tag.is-tradeable {
   background: var(--up-soft);
   color: var(--up-ink);
 }
-.visit-detail-page .visit-detail-goods-pill.is-wanted {
+.visit-detail-page .visit-detail-goods-pill-tag.is-wanted {
   background: var(--amber-soft);
   color: var(--amber-ink);
+}
+.visit-detail-page .visit-detail-goods-pill-tag.is-none {
+  background: var(--end-soft);
+  color: var(--end-ink);
 }
 
 .visit-detail-page .visit-detail-goods-empty {

@@ -21,7 +21,7 @@
               <span class="collection-detail-noimg-label">{{ item.item_type }}</span>
             </div>
           {% endif %}
-          <span class="collection-detail-pill{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">{% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}</span>
+          {% include "core/partials/_collection_badges.html" with badges=row.badges wrapper_class="collection-detail-pill" badge_class="collection-detail-pill-tag" %}
         </div>
         <div class="collection-detail-actions">
           <a class="collection-detail-edit-btn" href="/collection/{{ item.id }}/edit/">수정</a>

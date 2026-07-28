@@ -28,12 +28,12 @@
         <div class="collection-view-toggle" role="group" aria-label="보기 방식">
           <a
             class="collection-view-btn{% if view_mode == "list" %} is-active{% endif %}"
-            href="?view=list{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+            href="?view=list{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if owned_value %}&owned={{ owned_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
             {% if view_mode == "list" %}aria-current="page"{% endif %}
           >목록</a>
           <a
             class="collection-view-btn{% if view_mode == "gallery" %} is-active{% endif %}"
-            href="?view=gallery{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+            href="?view=gallery{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if owned_value %}&owned={{ owned_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
             {% if view_mode == "gallery" %}aria-current="page"{% endif %}
           >갤러리</a>
         </div>
@@ -52,14 +52,14 @@
       <div class="collection-toolbar">
       <nav class="collection-tabs" aria-label="컬렉션 하위 보기">
         <a
-          class="collection-tab{% if not is_wanted_value and not duplicate_value and not tradeable_value %} is-active{% endif %}"
+          class="collection-tab{% if not is_wanted_value and not duplicate_value and not tradeable_value and not owned_value %} is-active{% endif %}"
           href="?{{ chip_query_suffix|slice:"1:" }}"
-          {% if not is_wanted_value and not duplicate_value and not tradeable_value %}aria-current="page"{% endif %}
+          {% if not is_wanted_value and not duplicate_value and not tradeable_value and not owned_value %}aria-current="page"{% endif %}
         >전체 보기</a>
         <a
-          class="collection-tab{% if is_wanted_value == "false" %} is-active{% endif %}"
-          href="?is_wanted=false{{ chip_query_suffix }}"
-          {% if is_wanted_value == "false" %}aria-current="page"{% endif %}
+          class="collection-tab{% if owned_value == "true" %} is-active{% endif %}"
+          href="?owned=true{{ chip_query_suffix }}"
+          {% if owned_value == "true" %}aria-current="page"{% endif %}
         >보유</a>
         <a
           class="collection-tab{% if is_wanted_value == "true" %} is-active{% endif %}"
@@ -82,6 +82,7 @@
         {% if is_wanted_value %}<input type="hidden" name="is_wanted" value="{{ is_wanted_value }}">{% endif %}
         {% if duplicate_value %}<input type="hidden" name="duplicate" value="{{ duplicate_value }}">{% endif %}
         {% if tradeable_value %}<input type="hidden" name="tradeable" value="{{ tradeable_value }}">{% endif %}
+        {% if owned_value %}<input type="hidden" name="owned" value="{{ owned_value }}">{% endif %}
         {% if work_title %}<input type="hidden" name="work_title" value="{{ work_title }}">{% endif %}
         {% if character_name %}<input type="hidden" name="character_name" value="{{ character_name }}">{% endif %}
         {% if item_type %}<input type="hidden" name="item_type" value="{{ item_type }}">{% endif %}
@@ -123,13 +124,13 @@
           <div class="collection-type-chips">
             <a
               class="collection-type-chip{% if not item_type %} is-active{% endif %}"
-              href="?item_type={% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+              href="?item_type={% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if owned_value %}&owned={{ owned_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
               {% if not item_type %}aria-current="true"{% endif %}
             >전체</a>
             {% for val in filter_values.item_type %}
               <a
                 class="collection-type-chip{% if val == item_type %} is-active{% endif %}"
-                href="?item_type={{ val|urlencode }}{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+                href="?item_type={{ val|urlencode }}{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if owned_value %}&owned={{ owned_value }}{% endif %}{% if work_title %}&work_title={{ work_title|urlencode }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
                 {% if val == item_type %}aria-current="true"{% endif %}
               >{{ val }}</a>
             {% endfor %}
@@ -161,7 +162,7 @@
                 <li>
                   <a
                     class="collection-work-link{% if facet.title == work_title %} is-active{% endif %}"
-                    href="?work_title={{ facet.title|urlencode }}{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+                    href="?work_title={{ facet.title|urlencode }}{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if owned_value %}&owned={{ owned_value }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
                     {% if facet.title == work_title %}aria-current="true"{% endif %}
                   >
                     <span class="series-dot {{ facet.series_ink_class }}" aria-hidden="true"></span>

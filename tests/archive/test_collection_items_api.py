@@ -583,6 +583,32 @@ def test_구함_여부로_컬렉션_목록을_필터링하면_일치하는_항�
 
 @pytest.mark.web
 @pytest.mark.django_db
+def test_구함_필터를_false로_보내면_API에서는_리다이렉트_없이_보유_항목만_반환된다(
+    client, make_user, make_collection_item
+):
+    """DRF API boundary lock (user decision, 2026-07-28): the web page's
+    /collection/?is_wanted=false 302-redirects to ?owned=true for legacy
+    bookmark compat (owned-and-wanted rows used to be wrongly excluded from
+    that URL), but the API is a stable machine contract with its own
+    versioning story — it must NOT redirect, and is_wanted keeps its
+    original meaning (is_wanted is False, regardless of quantity). A
+    quantity>0 & is_wanted=True row must still be excluded here even though
+    it is also "owned", proving this endpoint was never touched by the web
+    redirect."""
+    user = make_user(username="ci-filter-not-wanted")
+    make_collection_item(user, name="보유", quantity=3, is_wanted=False)
+    make_collection_item(user, name="보유하며구함", quantity=2, is_wanted=True)
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?is_wanted=false")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["보유"]
+
+
+@pytest.mark.web
+@pytest.mark.django_db
 def test_중복_필터는_수량에서_파생되어_저장된_필드_없이_동작한다(
     client, make_user, make_collection_item
 ):
@@ -618,6 +644,36 @@ def test_교환가능_필터는_교환_가능_수량에서_파생되어_동작�
     assert response.status_code == 200
     names = [row["name"] for row in response.json()["results"]]
     assert names == ["교환 가능"]
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_보유_필터는_수량에서_파생되어_저장된_필드_없이_동작한다(
+    client, make_user, make_collection_item
+):
+    """`owned` has no stored field — it must be quantity > 0, not a
+    separate owned flag column (collection domain design plan §3-1)."""
+    user = make_user(username="ci-filter-owned")
+    make_collection_item(user, name="가진 것", quantity=3)
+    make_collection_item(user, name="안 가진 것", quantity=0)
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?owned=true")
+
+    assert response.status_code == 200
+    names = [row["name"] for row in response.json()["results"]]
+    assert names == ["가진 것"]
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_보유_필터에_잘못된_값을_보내면_400으로_거부된다(client, make_user):
+    user = make_user(username="ci-filter-owned-invalid")
+
+    client.force_login(user)
+    response = client.get("/api/collection-items/?owned=maybe")
+
+    assert response.status_code == 400
 
 
 @pytest.mark.web
@@ -689,8 +745,8 @@ def test_굿즈_유형_필터가_최대_길이를_초과하면_400으로_거부�
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "query_param",
-    ["work_title", "character_name", "item_type", "is_wanted", "duplicate", "tradeable"],
-    ids=["작품명", "캐릭터명", "굿즈_유형", "구함_여부", "중복", "교환가능"],
+    ["work_title", "character_name", "item_type", "is_wanted", "duplicate", "tradeable", "owned"],
+    ids=["작품명", "캐릭터명", "굿즈_유형", "구함_여부", "중복", "교환가능", "보유_여부"],
 )
 def test_빈_필터값을_보내면_필터가_적용되지_않은_것과_동일하게_처리된다(
     client, make_user, make_collection_item, query_param
