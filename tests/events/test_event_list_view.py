@@ -6,11 +6,13 @@ same input with 400 (covered in test_events_api.py) — only the browse page
 degrades gracefully.
 """
 import re
+from datetime import timedelta
 from html import unescape
 from urllib.parse import parse_qs, quote, urlparse
 
 import pytest
 from django.test import Client
+from django.utils import timezone
 
 from core.vocab import EVENT_SORT, EVENT_SORT_LABELS
 
@@ -60,9 +62,16 @@ class TestEventListInvalidFilters:
         assert "Gyeonggi one" in body
         assert "Busan one" not in body
 
-    def test_사이드바_폼의_빈_상태_값은_필터_없음으로_처리되어_다른_필터와_함께_정상_동작한다(self, make_event):
+    def test_사이드바_폼의_빈_상태_값은_오류_없이_다른_필터와_함께_정상_동작한다(self, make_event):
         """The sidebar form always submits status="" (전체) and sort="";
-        a blank status must mean "no status filter", not an error."""
+        a blank status must not raise ValidationError / degrade to the empty
+        state — it must still combine with other filters (region here).
+
+        Split off A5 (core/views.py::event_list now defaults an absent/blank
+        status to "active"): a blank status no longer means "no status
+        filter" — see test_사이드바_폼의_빈_상태_값도_기본적으로_진행_예정만_남긴다 below
+        for that new contract. This test only guards the still-true half:
+        blank must not error."""
         make_event(title="Seoul match", region="seoul")
 
         resp = Client().get(
@@ -73,6 +82,27 @@ class TestEventListInvalidFilters:
         body = resp.content.decode()
         assert "검색 결과" in body
         assert "Seoul match" in body
+
+    def test_사이드바_폼의_빈_상태_값도_기본적으로_진행_예정만_남긴다(self, make_event):
+        """New contract since A5: an explicitly blank status="" is treated
+        the same as an absent status param, so it now also defaults to
+        "active" and excludes closed events — the matching fixture needs a
+        real past end_date, or this proves nothing (a NULL end_date event
+        would survive regardless of the default)."""
+        today = timezone.localdate()
+        make_event(
+            title="Seoul closed",
+            region="seoul",
+            start_date=today - timedelta(days=32),
+            end_date=today - timedelta(days=1),
+        )
+
+        resp = Client().get(
+            "/events/", {"region": "seoul", "status": "", "sort": ""}
+        )
+
+        assert resp.status_code == 200
+        assert "Seoul closed" not in resp.content.decode()
 
 
 @pytest.mark.django_db
@@ -253,6 +283,29 @@ class TestEventListSortMenu:
 
         assert resp.status_code == 200
         assert '<select name="sort"' not in resp.content.decode()
+
+
+@pytest.mark.django_db
+class TestEventListDefaultExcludesClosed:
+    def test_상태_파라미터가_없으면_기본_행사_목록에서_종료된_행사가_제외된다(self, make_event):
+        today = timezone.localdate()
+        make_event(
+            title="지난달에_끝난_행사",
+            start_date=today - timedelta(days=32),
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            title="다음달에_열리는_행사",
+            start_date=today + timedelta(days=30),
+            end_date=today + timedelta(days=32),
+        )
+
+        resp = Client().get("/events/")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "다음달에_열리는_행사" in body
+        assert "지난달에_끝난_행사" not in body
 
 
 @pytest.mark.django_db
