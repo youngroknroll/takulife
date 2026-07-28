@@ -581,11 +581,18 @@ def test_품질_경고_막대는_건수_내림차순으로_정렬된다(staff_cl
 
 @pytest.mark.django_db
 def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는다(staff_client, make_event, png_bytes):
-    """Only missing_region trips (count=1); the other 4 warnings stay at 0
-    and must not render a .warning-bar-fill span."""
+    """Only missing_region trips (count=1); the other 4 warnings (plus
+    needs_reverification) stay at 0 and must not render a
+    .warning-bar-fill span."""
     staff, client = staff_client()
     kwargs = _clean_quality_event_kwargs(0)
     kwargs.pop("region")
+    # _clean_quality_event_kwargs' start_date=today/end_date=today+30 also
+    # falls inside the needs_reverification D-7 window; without an explicit
+    # verified_at this event would additionally trip needs_reverification
+    # and the fill count would be 2, not 1 (see test_event_quality_warnings.py
+    # for the same technique).
+    kwargs["verified_at"] = timezone.now()
     event = make_event(**kwargs)
     _attach_poster(event, png_bytes, 0)
 
@@ -594,6 +601,23 @@ def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는
     assert resp.status_code == 200
     content = resp.content.decode()
     assert content.count("warning-bar-fill") == 1
+
+
+@pytest.mark.django_db
+def test_품질_경고_표는_시작_임박_미확인_행을_렌더링한다(staff_client, make_event):
+    """PR-E1 §12: the needs_reverification row's label and drilldown link
+    must reach the rendered HTML, not just the quality_warnings context
+    dict (already covered by
+    test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_6종을_컨텍스트로_제공한다)."""
+    staff, client = staff_client()
+    make_event(**_clean_quality_event_kwargs(0))  # in D-7 window, never verified
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "시작 임박, 미확인" in content
+    assert "?warning=needs_reverification" in content
 
 
 @pytest.mark.django_db

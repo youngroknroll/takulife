@@ -408,6 +408,35 @@ class TestListStaffEvents:
         assert ended.id in ids
         assert not_ended.id not in ids
 
+    def test_재확인_대상_경고_필터는_기준일_인자_기준으로_해당_행사만_포함한다(
+        self, make_event
+    ):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        # 해당됨: start_date가 오늘이라 D-7 창(start_date - 7일 <= 오늘) 안이고,
+        # end_date가 미래라 아직 종료되지 않았으며, verified_at이 NULL이라 미확인.
+        needs_reverification = make_event(
+            official_url="https://example.com/needs-reverification",
+            start_date=today,
+            end_date=today + timedelta(days=30),
+        )
+        # 해당 안 됨: start_date를 먼 미래(오늘+30일)로 잡아 D-7 창 밖으로
+        # 벗어나게 한다(reverify_deadline = start_date - 7일 > 오늘).
+        # verified_at은 여기서도 NULL로 두어, "미확인" 여부가 아니라 창 밖이라는
+        # 이유 하나만으로 제외됨을 분명히 한다.
+        outside_window = make_event(
+            official_url="https://example.com/outside-window",
+            start_date=today + timedelta(days=30),
+            end_date=today + timedelta(days=60),
+        )
+
+        result = list_staff_events(warning="needs_reverification", today=today)
+
+        ids = {e.id for e in result}
+        assert needs_reverification.id in ids
+        assert outside_window.id not in ids
+
     def test_경고_조건에_맞아도_초안_행사는_경고_필터_결과에서_제외된다(
         self, make_draft_event
     ):

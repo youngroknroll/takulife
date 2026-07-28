@@ -259,6 +259,7 @@ QUALITY_WARNING_KEYS = (
     "missing_poster",
     "missing_dates",
     "missing_region",
+    "needs_reverification",
 )
 
 STAFF_EVENT_LISTING_PAGE_SIZE = 10
@@ -286,11 +287,14 @@ def list_staff_events(*, warning=None, publish_status=None, today=None):
       statuses included). Note a warning filter is already published-only by
       construction, so pairing it with publish_status=draft yields an empty
       queryset rather than an error.
-    today: date override forwarded only to the ended_still_published
-      warning (see _ended_still_published_qs); ignored otherwise.
+    today: date override forwarded to the ended_still_published and
+      needs_reverification warnings (see _ended_still_published_qs and
+      _needs_reverification_qs); ignored otherwise.
     """
     if warning == "ended_still_published":
         queryset = _ended_still_published_qs(today=today)
+    elif warning == "needs_reverification":
+        queryset = _needs_reverification_qs(today=today)
     elif warning in _NON_DATED_WARNING_QUERYSETS:
         queryset = _NON_DATED_WARNING_QUERYSETS[warning]()
     else:
