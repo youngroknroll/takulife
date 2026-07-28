@@ -412,3 +412,18 @@ class TestPublishedQualityWarnings:
         result = published_quality_warnings(today=fixed_today)
 
         assert result["ended_still_published"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Event.verified_at (D-7 재확인 정책, B1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestEventVerifiedAt:
+    def test_이벤트를_생성하면_검증_시각은_비어있다(self, make_event):
+        event = make_event()
+
+        event.refresh_from_db()
+
+        assert event.verified_at is None
