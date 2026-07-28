@@ -1,6 +1,7 @@
 import datetime
 
 import pytest
+from django.utils import timezone
 
 from events.models import Event
 from events.services import (
@@ -11,6 +12,7 @@ from events.services import (
     PublishEventTitleError,
     create_published_event,
     hard_delete_event,
+    mark_event_verified,
     republish_event,
     unpublish_event,
     update_published_event,
@@ -337,6 +339,30 @@ def test_공식_url이_없는_초안_행사는_재게시를_거부하고_초안_
 # hard_delete_event — PR-E3 (pure deletion primitive, no archive knowledge —
 # callers must confirm zero archive references first, see staff/services.py)
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# mark_event_verified — B12 (persists verification timestamp to the DB)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_검증을_요청하면_검증_시각이_DB에_영속된다():
+    event = create_published_event(title="Event", official_url="https://example.com/verify-me")
+
+    before = timezone.now()
+    mark_event_verified(event=event)
+    after = timezone.now()
+
+    # refresh_from_db() is required: asserting against the in-memory `event`
+    # instance would pass even if mark_event_verified() forgot to call
+    # save(), since the in-memory attribute may already be mutated without
+    # ever reaching the database. Re-reading from the DB is what actually
+    # proves persistence. Do not remove this re-fetch.
+    event.refresh_from_db()
+
+    assert event.verified_at is not None
+    assert before <= event.verified_at <= after
 
 
 @pytest.mark.django_db
