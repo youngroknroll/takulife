@@ -46,4 +46,9 @@ urlpatterns = [
         name="event-toggle-publish",
     ),
     path("events/<int:pk>/delete/", staff_views.staff_event_delete, name="event-delete"),
+    path(
+        "events/<int:pk>/verify/",
+        staff_views.staff_event_verify,
+        name="event-verify",
+    ),
 ]
