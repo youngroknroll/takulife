@@ -4,6 +4,8 @@ Provides reusable filter/order logic that both the JSON API (events/views.py)
 and the upcoming SSR views (core/views.py) can call without duplicating
 validation or query construction.
 """
+from datetime import timedelta
+
 from django.db import models
 from django.utils import timezone
 
@@ -128,6 +130,36 @@ def _missing_region_qs():
     return Event.objects.published().filter(region="")
 
 
+def _needs_reverification_qs(*, today=None):
+    """Published events starting soon (or already underway, not yet ended)
+    that have never been verified, or were last verified before the D-7
+    cutoff (start_date - 7 days).
+
+    today: date override for testing; defaults to timezone.localdate().
+    Conscious v1 decision (matches _missing_dates_qs' ownership of the gap):
+    events missing start_date or end_date never match here — the arithmetic
+    comparisons against a NULL date return NULL in SQL, so they are
+    naturally excluded rather than explicitly isnull-filtered. That absence
+    is missing_dates' responsibility; counting it here too would double it
+    across two warning totals for one root cause.
+    """
+    if today is None:
+        today = timezone.localdate()
+    reverify_deadline = models.ExpressionWrapper(
+        models.F("start_date") - timedelta(days=7),
+        output_field=models.DateField(),
+    )
+    return (
+        Event.objects.published()
+        .annotate(reverify_deadline=reverify_deadline)
+        .filter(end_date__gte=today, reverify_deadline__lte=today)
+        .filter(
+            models.Q(verified_at__isnull=True)
+            | models.Q(verified_at__date__lt=models.F("reverify_deadline"))
+        )
+    )
+
+
 def count_published_missing_official_url() -> int:
     """Count published events with no official_url (NULL or blank)."""
     return _missing_official_url_qs().count()
@@ -163,6 +195,16 @@ def count_published_missing_region() -> int:
     region (e.g. " ") is NOT counted here.
     """
     return _missing_region_qs().count()
+
+
+def count_published_needs_reverification(*, today=None) -> int:
+    """Count published events needing D-7 reverification.
+
+    today: date override for testing; defaults to timezone.localdate().
+    See _needs_reverification_qs for the full predicate and its NULL-date
+    exclusion decision.
+    """
+    return _needs_reverification_qs(today=today).count()
 
 
 def published_quality_warnings(*, today=None) -> dict:

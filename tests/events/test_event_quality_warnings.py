@@ -15,6 +15,7 @@ from events.queries import (
     count_published_missing_official_url,
     count_published_missing_poster,
     count_published_missing_region,
+    count_published_needs_reverification,
     published_quality_warnings,
 )
 
@@ -427,3 +428,107 @@ class TestEventVerifiedAt:
         event.refresh_from_db()
 
         assert event.verified_at is None
+
+
+# ---------------------------------------------------------------------------
+# count_published_needs_reverification
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestCountPublishedNeedsReverification:
+    def test_시작이_임박한_행사가_검증_이력이_없으면_재확인_대상_건수에_포함된다(self, make_event):
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=today,
+            end_date=today + timedelta(days=1),
+        )
+
+        assert count_published_needs_reverification(today=today) == 1
+
+    def test_시작일이_없는_행사는_재확인_대상_건수에서_제외된다(self, make_event):
+        # end_date는 오늘로부터 30일 뒤(아직 종료되지 않은 유효한 미래 날짜)로
+        # 명시해, D-7 상한("종료 안 된 행사") 게이트는 통과시킨다. 이렇게 해야
+        # start_date=None 단 하나만이 이 행을 배제하는 유일한 이유가 된다 —
+        # end_date까지 기본값(NULL)에 맡기면 두 게이트가 동시에 걸려, start_date
+        # 배제 로직만 되돌리는 뮤테이션에도 거짓으로 초록이 나온다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=None,
+            end_date=today + timedelta(days=30),
+        )
+
+        assert count_published_needs_reverification(today=today) == 0
+
+    def test_시작일이_오늘로부터_8일_뒤이면_아직_재확인_대상이_아니다(self, make_event):
+        # end_date는 오늘로부터 30일 뒤로 명시해 "종료 안 된 행사" 게이트를
+        # 통과시킨다. D-7 창(시작일 - 7일 <= 오늘) 경계 하나만이 이 행을
+        # 배제하는 유일한 이유가 되게 한다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=today + timedelta(days=8),
+            end_date=today + timedelta(days=30),
+        )
+
+        assert count_published_needs_reverification(today=today) == 0
+
+    def test_시작일이_오늘로부터_정확히_7일_뒤이면_재확인_대상_건수에_포함된다(self, make_event):
+        # end_date는 오늘로부터 30일 뒤로 명시해 "종료 안 된 행사" 게이트를
+        # 통과시킨다. D-7 창 경계(시작일 - 7일 == 오늘)가 포함되는지가
+        # 이 테스트의 유일한 관심사다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=today + timedelta(days=7),
+            end_date=today + timedelta(days=30),
+        )
+
+        assert count_published_needs_reverification(today=today) == 1
+
+    def test_종료일이_없는_행사는_재확인_대상_건수에서_제외된다(self, make_event):
+        # start_date는 오늘로 명시해, D-7 기한 게이트(오늘로부터 7일 이내 시작)를
+        # 이미 충족시킨다. 이렇게 해야 end_date=None 단 하나만이 이 행을 배제하는
+        # 유일한 이유가 된다 — start_date까지 기본값(NULL)에 맡기면 두 게이트가
+        # 동시에 걸려, end_date 배제 로직만 되돌리는 뮤테이션에도 거짓으로
+        # 초록이 나온다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=today,
+            end_date=None,
+        )
+
+        assert count_published_needs_reverification(today=today) == 0
+
+    def test_이미_종료된_행사는_D_7_창_안에_있어도_재확인_대상_건수에서_제외된다(self, make_event):
+        # start_date는 오늘로부터 90일 전으로 명시해, D-7 창 조건(시작일 - 7일
+        # <= 오늘)을 통과시킨다. verified_at은 기본값(NULL)에 맡겨 신선도
+        # 조건도 무조건 참이 되게 한다. 두 조건 모두 통과한 상태에서 남는
+        # 유일한 배제 사유는 end_date가 60일 전이라 "종료 안 된 행사"라는
+        # 상한 절뿐이다 — 몇 달 전 미검증 행사가 영원히 경고로 남는 것을
+        # 막는 그 절이다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=today - timedelta(days=90),
+            end_date=today - timedelta(days=60),
+        )
+
+        assert count_published_needs_reverification(today=today) == 0
+
+    def test_종료일이_오늘이면_아직_재확인_대상_건수에_포함된다(self, make_event):
+        # start_date와 end_date를 둘 다 오늘로 명시해 D-7 창 조건을 확실히
+        # 통과시킨다. verified_at은 기본값(NULL)에 맡겨 신선도 조건도 무조건
+        # 참이 되게 한다. end_date == today 경계가 아직 배제 대상이 아님을
+        # 확인한다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=today,
+            end_date=today,
+        )
+
+        assert count_published_needs_reverification(today=today) == 1
