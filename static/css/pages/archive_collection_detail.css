@@ -107,15 +107,24 @@
   overflow-wrap: anywhere;
 }
 
-/* ── status pill (보유/구함/교환) — left-top on the cover, page-scoped
+/* ── status badges (보유/구함/교환/미보유) — left-top on the cover, page-scoped
    copy of archive_collection.css's .collection-pill/.collection-pill--cover
    pair (values identical, position moved per WED: left instead of right so
-   it never collides with a portrait cover's brightest corner). Pill text
-   itself carries the status, so no aria-hidden here. */
+   it never collides with a portrait cover's brightest corner). Badge text
+   itself carries the status, so no aria-hidden here. .collection-detail-pill
+   is now a WRAPPER around 1-3 -tag badges, stacked vertically and
+   left-aligned (mirrors archive_collection.css's cover stack). */
 .collection-detail-page .collection-detail-pill {
   position: absolute;
   left: 0.75rem;
   top: 0.75rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  pointer-events: none;
+}
+.collection-detail-page .collection-detail-pill-tag {
   display: inline-flex;
   align-items: center;
   padding: 0.25rem 0.6875rem;
@@ -123,19 +132,22 @@
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
-  pointer-events: none;
 }
-.collection-detail-page .collection-detail-pill.is-owned {
+.collection-detail-page .collection-detail-pill-tag.is-owned {
   background: var(--mint-soft);
   color: var(--mint-ink);
 }
-.collection-detail-page .collection-detail-pill.is-wanted {
+.collection-detail-page .collection-detail-pill-tag.is-wanted {
   background: var(--amber-soft);
   color: var(--amber-ink);
 }
-.collection-detail-page .collection-detail-pill.is-tradeable {
+.collection-detail-page .collection-detail-pill-tag.is-tradeable {
   background: var(--up-soft);
   color: var(--up-ink);
+}
+.collection-detail-page .collection-detail-pill-tag.is-none {
+  background: var(--end-soft);
+  color: var(--end-ink);
 }
 
 /* ── actions (desktop): 수정 → 삭제, both DOM order and visual order ── */
@@ -393,6 +405,8 @@
   .collection-detail-page .collection-detail-pill {
     left: 0.625rem;
     top: 0.625rem;
+  }
+  .collection-detail-page .collection-detail-pill-tag {
     font-size: 0.66rem;
     padding: 0.1875rem 0.625rem;
   }

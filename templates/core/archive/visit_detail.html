@@ -66,7 +66,7 @@
                 <p class="visit-detail-goods-name">{{ row.item.name }}</p>
                 <p class="visit-detail-goods-sub">{% if row.quantity_label %}{{ row.quantity_label }}{% endif %}{% if row.tradeable_label %}{% if row.quantity_label %} · {% endif %}{{ row.tradeable_label }}{% endif %}</p>
               </div>
-              <span class="visit-detail-goods-pill{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">{% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}</span>
+              {% include "core/partials/_collection_badges.html" with badges=row.badges wrapper_class="visit-detail-goods-pill" badge_class="visit-detail-goods-pill-tag" %}
             </article>
             {% endfor %}
           </div>

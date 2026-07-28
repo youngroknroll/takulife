@@ -48,9 +48,7 @@ clear_query_suffix, request
             {% endif %}
           </div>
           <div class="collection-row-side">
-            <span class="collection-pill{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">
-              {% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}
-            </span>
+            {% include "core/partials/_collection_badges.html" with badges=row.badges wrapper_class="collection-pill" badge_class="collection-pill-tag" %}
             <div class="collection-row-actions">
               <a class="collection-edit-link" href="/collection/{{ row.item.id }}/edit/">수정</a>
               <button class="collection-delete-btn" type="button" data-delete-item-id="{{ row.item.id }}">삭제</button>
@@ -72,9 +70,7 @@ clear_query_suffix, request
                 <span class="gcard-noimg-label">{{ row.item.item_type }}</span>
               </div>
             {% endif %}
-            <span class="collection-pill collection-pill--cover{% if row.is_wanted %} is-wanted{% elif row.tradeable_label %} is-tradeable{% else %} is-owned{% endif %}">
-              {% if row.is_wanted %}구함{% elif row.tradeable_label %}교환{% else %}보유{% endif %}
-            </span>
+            {% include "core/partials/_collection_badges.html" with badges=row.badges wrapper_class="collection-pill collection-pill--cover" badge_class="collection-pill-tag" %}
           </a>
           <div class="gcard-body">
             <p class="gcard-work {{ row.series_ink_class }}">{{ row.item.work_title }}</p>
