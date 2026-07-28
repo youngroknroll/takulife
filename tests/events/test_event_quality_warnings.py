@@ -4,10 +4,11 @@ All counters are scoped to Event.objects.published() only. Each predicate is
 an independent per-column check (one event can trip multiple warnings), so
 there is no if/elif classification anywhere here or in the implementation.
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 from events.queries import (
     count_published_ended_still_published,
@@ -529,6 +530,39 @@ class TestCountPublishedNeedsReverification:
             official_url=None,
             start_date=today,
             end_date=today,
+        )
+
+        assert count_published_needs_reverification(today=today) == 1
+
+    def test_검증_시각이_재확인_기한일과_같으면_아직_재확인_대상이_아니다(self, make_event):
+        # start_date는 오늘로부터 7일 뒤로 잡아 reverify_deadline(start_date - 7일)이
+        # 정확히 오늘이 되게 한다. end_date는 오늘로부터 30일 뒤로 명시해 "종료 안
+        # 된 행사" 상한 게이트를 통과시킨다. verified_at을 기한일 당일로 잡으면
+        # 신선도 절만이 이 행을 배제하는 유일한 이유가 된다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=today + timedelta(days=7),
+            end_date=today + timedelta(days=30),
+            verified_at=timezone.make_aware(datetime(2020, 6, 15, 9, 0)),
+        )
+
+        assert count_published_needs_reverification(today=today) == 0
+
+    def test_검증_시각이_재확인_기한일보다_이전이면_재확인_대상_건수에_포함된다(self, make_event):
+        # 기한 여백 12일 + 검증 격차 5일: B2/B3에 배정된 days=6/days=8 뮤테이션이
+        # 만드는 ±1일 이동에 이 테스트가 흔들리지 않도록 일부러 여유를 크게
+        # 두었다(둘 다 D-7 창 경계 검증용이며, 기한 여백을 0으로 잡으면 이 행이
+        # 신선도 절에 닿기도 전에 D-7 게이트에서 먼저 탈락해버린다). start_date는
+        # 오늘로부터 5일 전(reverify_deadline = 오늘 - 12일)으로 잡아 D-7 창
+        # 조건을 확실히 통과시키고, end_date는 오늘로부터 30일 뒤로 명시해 "종료
+        # 안 된 행사" 상한 게이트도 통과시킨다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url=None,
+            start_date=today - timedelta(days=5),
+            end_date=today + timedelta(days=30),
+            verified_at=timezone.make_aware(datetime(2020, 5, 29, 10, 0)),
         )
 
         assert count_published_needs_reverification(today=today) == 1
