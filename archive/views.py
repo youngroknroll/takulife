@@ -25,6 +25,7 @@ from .serializers import (
     CollectionItemUpdateSerializer,
     EventInterestSerializer,
     PersonalEntrySerializer,
+    PersonalEntryUpdateSerializer,
     UserEventStatusQuerySerializer,
     UserEventStatusSerializer,
     UserEventStatusUpdateSerializer,
@@ -86,12 +87,18 @@ class PersonalEntryListCreateView(ListCreateAPIView):
         )
 
 
-class PersonalEntryDetailView(RetrieveDestroyAPIView):
+class PersonalEntryDetailView(RetrieveUpdateDestroyAPIView):
+    http_method_names = ["get", "patch", "delete", "head", "options"]  # 전체교체(PUT) 미허용 — CollectionItemDetailView와 동일 취지
     permission_classes = [IsAuthenticated]
     serializer_class = PersonalEntrySerializer
 
     def get_queryset(self):
         return PersonalEntry.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method == "PATCH":
+            return PersonalEntryUpdateSerializer
+        return PersonalEntrySerializer
 
 
 class EventInterestPagination(PageNumberPagination):

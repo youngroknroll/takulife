@@ -10,8 +10,24 @@ pytestmark = pytest.mark.contract
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _dynamic_import_target(call):
+    """importlib.import_module(...) 또는 __import__(...) 호출이면 첫 인자 문자열을, 아니면 None을 돌려준다."""
+    is_importlib_call = (
+        isinstance(call.func, ast.Attribute)
+        and call.func.attr == "import_module"
+        and isinstance(call.func.value, ast.Name)
+        and call.func.value.id == "importlib"
+    )
+    is_builtin_import_call = isinstance(call.func, ast.Name) and call.func.id == "__import__"
+    if not (is_importlib_call or is_builtin_import_call):
+        return None
+    if call.args and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str):
+        return call.args[0].value
+    return None
+
+
 def _imported_modules(module_path):
-    """Return all module names a source file imports (Import + ImportFrom)."""
+    """Return all module names a source file imports (Import + ImportFrom + importlib.import_module/__import__ 호출)."""
     tree = ast.parse((PROJECT_ROOT / module_path).read_text())
     modules = set()
     for node in ast.walk(tree):
@@ -19,6 +35,11 @@ def _imported_modules(module_path):
             modules.add(node.module)
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
+        # 동적 import도 정적 import처럼 다른 도메인을 불러올 수 있어 함께 본다.
+        if isinstance(node, ast.Call):
+            target = _dynamic_import_target(node)
+            if target is not None:
+                modules.add(target)
     return modules
 
 
@@ -28,26 +49,59 @@ def test_드래프트_뷰는_이벤트_모듈을_임포트하지_않는다():
     assert not {module for module in imported_modules if module == "events" or module.startswith("events.")}
 
 
+def test_동적_임포트로_다른_도메인을_불러오면_경계_스캐너가_탐지한다(tmp_path):
+    fixture = tmp_path / "dynamic_import_fixture.py"
+    fixture.write_text(
+        "import importlib\n"
+        'importlib.import_module("archive.models")\n'
+    )
+
+    # _imported_modules는 PROJECT_ROOT / module_path를 계산하는데, pathlib은
+    # 우변이 절대 경로면 좌변을 버리므로 절대 경로 문자열을 그대로 넘기면 된다.
+    imported_modules = _imported_modules(str(fixture))
+
+    assert "archive.models" in imported_modules
+
+
+def test_내장_import_함수로_다른_도메인을_불러오면_경계_스캐너가_탐지한다(tmp_path):
+    fixture = tmp_path / "builtin_import_fixture.py"
+    fixture.write_text('__import__("archive.models")\n')
+
+    imported_modules = _imported_modules(str(fixture))
+
+    assert "archive.models" in imported_modules
+
+
 @pytest.mark.parametrize(
     "module_path",
     [
+        "events/models.py",
         "events/views.py",
         "events/serializers.py",
         "events/querysets.py",
         "events/services.py",
+        "events/queries.py",
+        "drafts/models.py",
         "drafts/views.py",
         "drafts/services.py",
+        "drafts/serializers.py",
+        "drafts/queries.py",
         "drafts/llm_extraction.py",
         "drafts/discovery.py",
         "drafts/management/commands/discover_drafts.py",
     ],
     ids=[
+        "이벤트_모델",
         "이벤트_뷰",
         "이벤트_시리얼라이저",
         "이벤트_쿼리셋",
         "이벤트_서비스",
+        "이벤트_쿼리",
+        "드래프트_모델",
         "드래프트_뷰",
         "드래프트_서비스",
+        "드래프트_시리얼라이저",
+        "드래프트_쿼리",
         "드래프트_LLM_추출",
         "드래프트_발견",
         "드래프트_수집_명령",
@@ -285,14 +339,21 @@ def test_구_드래프트_액션_라우트는_더이상_해석되지_않는다(p
 
 def test_core_뷰는_더이상_스태프_모듈을_임포트하지_않는다():
     """PR-2 sub-step D moved the 3 draft/home-category SSR views into
-    staff.views — core.views must no longer depend on staff at all."""
-    imported_modules = _imported_modules("core/views.py")
+    staff.views — core.views must no longer depend on staff at all. core.views
+    is now a package (core/views/), so every module file under it is scanned."""
+    view_module_paths = sorted((PROJECT_ROOT / "core" / "views").rglob("*.py"))
+    assert view_module_paths, "core/views 아래 스캔할 .py 파일이 없다"
 
-    assert not {
-        module
-        for module in imported_modules
-        if module == "staff" or module.startswith("staff.")
-    }
+    for module_path in view_module_paths:
+        relative_path = module_path.relative_to(PROJECT_ROOT)
+        imported_modules = _imported_modules(str(relative_path))
+
+        violating_modules = {
+            module
+            for module in imported_modules
+            if module == "staff" or module.startswith("staff.")
+        }
+        assert not violating_modules, f"{relative_path}가 staff 모듈을 임포트한다: {violating_modules}"
 
 
 # ---------------------------------------------------------------------------

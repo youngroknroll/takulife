@@ -9,6 +9,11 @@ function is exactly the kind of drift this test exists to catch.
 Private helpers (name starting with "_") are out of scope: they are an
 internal implementation detail of their module, not a boundary other modules
 call across, so this guard does not constrain their parameter style.
+
+accounts.services is deliberately left out of SERVICE_MODULES: every caller of
+its public functions lives inside the accounts app itself, so it never forms
+the cross-domain boundary this guard protects, and its positional arguments
+are not a violation of this convention.
 """
 import importlib
 import inspect

@@ -30,12 +30,12 @@ AXES_USERNAME_FORM_FIELD = "login"
 
 | 상황 | 올바른 명령 | 틀린 명령(효과 없음) |
 |---|---|---|
-| 특정 IP가 잠긴 경우 | `python manage.py axes_reset_ip <ip>` | `python manage.py axes_reset_username <email>` |
-| 전체 초기화(비상시) | `python manage.py axes_reset` | - |
+| 특정 IP가 잠긴 경우 | `uv run python manage.py axes_reset_ip <ip>` | `uv run python manage.py axes_reset_username <email>` |
+| 전체 초기화(비상시) | `uv run python manage.py axes_reset` | - |
 
 **주의:** `axes_reset_username <email>`은 해당 사용자명으로 기록된 시도 카운트만 지운다. 잠금 자체는 IP 파라미터에 걸려 있으므로, 이 명령을 실행해도 **IP 기반 잠금은 풀리지 않는다.** 사용자가 "로그인이 안 된다"고 문의하면, 운영자는 반드시 실제로 잠긴 대상이 IP라는 것을 인지하고 `axes_reset_ip`를 사용해야 한다.
 
-### 확인된 axes 관리 명령 (`python manage.py help` 실측)
+### 확인된 axes 관리 명령 (`uv run python manage.py help` 실측)
 
 ```
 [axes]
@@ -52,13 +52,13 @@ AXES_USERNAME_FORM_FIELD = "login"
 
 ```bash
 # 특정 IP 잠금 해제 (1차 대응 — 가장 일반적인 케이스)
-python manage.py axes_reset_ip 203.0.113.10
+uv run python manage.py axes_reset_ip 203.0.113.10
 
 # 전체 잠금/시도 기록 초기화 (비상시)
-python manage.py axes_reset
+uv run python manage.py axes_reset
 
 # 현재 잠긴/기록된 시도 목록 확인
-python manage.py axes_list_attempts
+uv run python manage.py axes_list_attempts
 ```
 
 ### 시도 기록 확인 위치
@@ -191,7 +191,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 
 ## 6. Migration Rollback — `archive` 0022 (`ActivityLogEntry`) 역적용 금지
 
-- **`archive` 0022(`activitylogentry`) 마이그레이션을 명시적으로 역적용(`python manage.py migrate archive <0022 이전 번호>`)하지 않는다.** 0022의 reverse 연산은 `DropModel`이라, 그때까지 쌓인 사용자 활동 이력(찜·상태 변경·방문 기록·굿즈 등록/정리)이 **전량 소실**된다.
+- **`archive` 0022(`activitylogentry`) 마이그레이션을 명시적으로 역적용(`uv run python manage.py migrate archive <0022 이전 번호>`)하지 않는다.** 0022의 reverse 연산은 `DropModel`이라, 그때까지 쌓인 사용자 활동 이력(찜·상태 변경·방문 기록·굿즈 등록/정리)이 **전량 소실**된다.
 - **코드만 롤백하는 경우는 안전하다** — 이전 이미지를 재배포해도 배포 entrypoint의 `migrate`는 코드에 없는(더 앞선) 마이그레이션을 자동으로 역적용하지 않는다. 즉 "코드는 이전 버전, 스키마는 0022 유지" 상태로 안전하게 되돌아간다.
 - 위험한 것은 오직 **운영자가 직접 `migrate archive <0022 이전>`을 실행하는 경우**뿐이다.
 - 스키마(테이블) 자체를 제거해야 하는 경우는 별도 승인과 보존 정책이 먼저 필요하다(`.docs/plans/2026-07-19-dual-calendar-service-design.md` §14).

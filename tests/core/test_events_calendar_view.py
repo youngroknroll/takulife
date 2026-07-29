@@ -13,7 +13,7 @@ Assumed web-layer contract (fixed only to the extent the coordinator's
 message specified; concrete template/markup is the implementer's choice):
 - Query params: `month=YYYY-MM` (absent → today's month, `timezone.localdate()`
   read the same way core.views.home/event_list already do — see
-  tests/events/test_home_view.py's `patch("core.views.timezone.localdate",
+  tests/events/test_home_view.py's `patch("core.views.events.timezone.localdate",
   ...)` convention, reused here), `date=YYYY-MM-DD` (absent → the CAL-4-04/05
   default-selection rule), plus the existing q/region/category/status
   filters (same param names as `/events/`).
@@ -227,7 +227,7 @@ def test_month_파라미터가_없으면_오류_없이_당월이_표시된다(ma
     fixed_today = date(2026, 7, 19)
     make_event(title="당월기본표시행사", start_date=fixed_today, end_date=fixed_today)
 
-    with patch("core.views.timezone.localdate", return_value=fixed_today):
+    with patch("core.views.events.timezone.localdate", return_value=fixed_today):
         resp = Client().get("/events/calendar/")
 
     assert resp.status_code == 200
@@ -309,7 +309,7 @@ def test_월_조회가_실패하면_500대신_오류_패널과_재시도_안내�
     def _raise(*args, **kwargs):
         raise RuntimeError("월 조회 실패 주입")
 
-    monkeypatch.setattr("core.views.list_published_events_for_month", _raise)
+    monkeypatch.setattr("core.views.events.list_published_events_for_month", _raise)
 
     resp = Client().get("/events/calendar/")
 

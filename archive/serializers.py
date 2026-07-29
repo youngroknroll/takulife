@@ -47,6 +47,18 @@ class PersonalEntrySerializer(serializers.ModelSerializer):
         return validate_uploaded_image(value)
 
 
+class PersonalEntryUpdateSerializer(PersonalEntrySerializer):
+    """PATCH serializer: identical to `PersonalEntrySerializer` except
+    `client_token` is structurally excluded — a create-time idempotency key
+    must never be re-read or overwritten on update.
+    """
+
+    client_token = None
+
+    class Meta(PersonalEntrySerializer.Meta):
+        fields = [field for field in PersonalEntrySerializer.Meta.fields if field != "client_token"]
+
+
 class _SubjectScopedPersonalEntryMixin:
     """Scopes the ``personal_entry`` field to the requester and enforces that
     exactly one subject (event or personal_entry) is supplied.
