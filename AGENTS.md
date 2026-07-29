@@ -34,7 +34,8 @@ disposable: a file that is missing is routine housekeeping, not a lost artifact,
 and must never be reported as an accident or recreated on a guess. Never leave a
 rule, an approved decision, or a live backlog here alone — promote it to `docs/`.
 
-- Current status and backlog index: `.docs/project-status.md`
+- Current backlog and next-action index: `docs/backlog.md`
+- Optional local continuity notes: `.docs/project-status.md`
 - Product direction: `.docs/proposal/2026-07-13-takulife-product-direction-redefinition.html`
 - Backend plans and technical records: `.docs/BE/`
 - Database, schema, and migration records: `.docs/DB/`
@@ -44,6 +45,22 @@ rule, an approved decision, or a live backlog here alone — promote it to `docs
 New plans and technical records go under `.docs/BE/`, `.docs/DB/`, or `.docs/FE/`
 by owning area. Do not add new files to `.docs/plans/` or `.docs/refactoring/`;
 those hold prior work and are kept for background only.
+
+### Reference Loading Order
+
+Read only the smallest set that owns the task:
+
+1. Always read this guide.
+2. Read `docs/backlog.md` for current priority; add the matching durable
+   runbook only for deployment, operations, or event-operations work.
+3. Read the active area plan or technical record in `.docs/BE/`, `.docs/DB/`,
+   or `.docs/FE/` only when it exists and directly covers the workstream.
+4. Read `.docs/plans/` or `.docs/refactoring/` only to understand history.
+   They never override this guide or provide a current command, test boundary,
+   approval requirement, or acceptance criterion.
+
+Do not load every document by default. A missing local note is normal; verify
+the current code and this guide instead of recreating it or inferring a rule.
 
 Do not reuse paths, product names, settings modules, or workflow assumptions
 from older projects.
@@ -226,11 +243,13 @@ sales, payment, shipping, escrow, or marketplace guarantees.
    - Chat agreement does not replace a required project document unless the
      user explicitly waives that document.
 
-6. **External Git actions require explicit user approval.**
-   - Do not commit, push, merge, or open a pull request unless the user has
-     explicitly approved that action.
-   - Approval for implementation or verification does not imply approval for an
-     external Git action.
+6. **External Git publication and merge authority are separate.**
+   - After a planned stage has fresh verification evidence, commit, push, and
+     pull-request creation proceed automatically under this project's standing
+     approval.
+   - A pull request merge requires the user's explicit approval for that pull
+     request. The only exception is an expressly granted standing automatic-
+     merge approval; its scope and duration must be recorded before use.
 
 ## Role Catalog
 
@@ -454,7 +473,9 @@ is separately approved.
 ## Operating Workflow
 
 1. **Classify and activate**
-   - Read this guide, current plans, status, and relevant code.
+   - Read this guide, the relevant version-controlled backlog or runbook, the
+     active canonical plan, and relevant code. Read local continuity notes only
+     when they are present and directly relevant.
    - Start from the stable entry paths in `CLAUDE.md`; use `rg` when the exact
      location remains unknown or a repository-wide pattern check is required.
    - Identify the task shape and risk triggers.
@@ -514,11 +535,11 @@ is separately approved.
      relevant canonical document exists; it then becomes the update target.
    - Keep each handoff record compact. Include only applicable fields:
      `Current fact`, `Decision`, `Guardrail`, `Known gap`, and `Evidence`.
-   - Update `.docs/project-status.md` only when the project's current state or
-     next action changes. Keep it a concise index with links, not a task diary.
+   - Update `docs/backlog.md` only when the durable current state or next action
+     changes. Keep it a concise index with links, not a task diary.
    - Put major changes, decisions, and unresolved problems in the related
-     subject document under `.docs/`, rather than duplicating their detail in
-     status or a new per-task document.
+     subject document under `docs/`; local `.docs/` notes may supplement a
+     handoff but are not the only copy of a durable fact.
    - Review-only tasks do not edit files. They report findings in chat or in a
      separately approved review artifact.
 
@@ -556,10 +577,8 @@ if item.owner_id == request.user.id:
 
 ## Test Authoring Policy
 
-This policy binds every backend test. Rationale, measurements, and the phased
-rollout live in `.docs/plans/2026-07-17-test-code-execution-policy-design.md`
-and `.docs/plans/2026-07-17-test-suite-improvement-plan.md`; do not duplicate
-their numbers or history here.
+This policy binds every backend test. Historical test-policy records may explain
+past measurements, but this section is the current test boundary and workflow.
 
 ### Automated Tests Cover Backend Logic Only (2026-07-22 user decision)
 
@@ -852,8 +871,7 @@ still do not count as review evidence.
 ## Package And Command Policy (uv-only)
 
 Python packages, virtual environments, and command execution are managed only
-with `uv`. Rationale lives in
-`.docs/plans/2026-07-17-test-code-execution-policy-design.md` §8.
+with `uv`. This section is the current command policy.
 
 - The dependency source of truth is `pyproject.toml`; the lock source of truth
   is `uv.lock`.
@@ -862,6 +880,7 @@ with `uv`. Rationale lives in
 - Remove a dependency with `uv remove <package>`.
 - Sync the environment with `uv sync`.
 - Run tests, Django commands, and management commands with `uv run ...`.
+- CI and deployment one-off Python expressions also use `uv run python ...`.
 - CI and deployment use `uv sync --frozen` (add `--no-dev` for a production
   image where appropriate).
 - `pip install`, `python -m pip`, manual `site-packages` edits, and a parallel
@@ -917,14 +936,16 @@ explicitly accepts the tradeoff.
 
 ### Error Handling And Logging
 
-- The full policy for exception design, HTTP translation at the view
-  boundary, approved catch-all cases, and logging rules lives in
-  `.docs/plans/2026-07-19-error-handling-logging-policy-plan.md` §2-§3. The
-  former standalone `.docs/error-handling-logging-policy.md` was deleted; the
-  six mechanical rules it stated are restated in the guard test's module
-  docstring.
-- `tests/core/test_error_logging_policy.py` enforces the policy's
-  deterministic rules as an AST contract guard.
+- Translate expected domain failures at the HTTP boundary. Do not use broad
+  exception handling to hide an unknown failure.
+- A catch-all handler must log, re-raise, or carry an `# except-ok: <reason>`
+  marker explaining the deliberate suppression. Bare `except:` is forbidden.
+- Production code does not use `print()`. Module loggers use
+  `logging.getLogger(__name__)`, English-ASCII messages, and lazy `%`-style
+  formatting for the first message argument. User-facing Korean messages are
+  not logger messages and are outside this rule.
+- `tests/core/test_error_logging_policy.py` enforces these deterministic rules
+  as an AST contract guard. Historical policy plans are background only.
 
 ## Review Gate After Each Task
 
@@ -1017,7 +1038,8 @@ Convention source: https://nohack.tistory.com/17
   (a planned track, phase, or a coherent group of small-feature commits) —
   a per-PR approval prompt is not required. Keep unrelated concerns in
   separate stages, and therefore separate PRs.
-- Standing approval covers commit, push, and opening the PR. Merging still
-  requires explicit user approval.
+- Standing approval covers commit, push, and opening the PR after fresh planned
+  verification. Merging still requires per-PR user approval unless the user has
+  expressly granted and recorded standing automatic-merge approval.
 - `prompt_plan.md` and other pre-existing uncommitted changes not produced by
   the current task stay unstaged; stage files explicitly, never `git add -A`.

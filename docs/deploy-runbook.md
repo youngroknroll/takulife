@@ -52,7 +52,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    - **레플리카 2개 이상 또는 롤링 배포**: 앱 인스턴스에는
      `RUN_DB_MIGRATIONS=false`를 설정해 동시 DDL 충돌을 피하고, 대신 PaaS의
      release-phase(배포 전 1회 실행되는 훅, 플랫폼별 명칭 상이)에서
-     `python manage.py migrate` 를 한 번만 실행한다.
+     `uv run python manage.py migrate` 를 한 번만 실행한다.
 4. **collectstatic**: entrypoint가 migrate 직후 `manage.py collectstatic --noinput`을
    자동 실행(docker/entrypoint.sh:11) — 별도 수동 절차 불필요.
 5. **헬스체크 연결**: `/api/health/`(`core/urls.py:10`, `core/views.py:728-735`)는

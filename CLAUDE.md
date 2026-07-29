@@ -38,8 +38,10 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
 ## Context Loading
 - Do not preload every plan, report, or governance document.
 - Before planning, role routing, or editing, read `AGENTS.md`.
-- Read only the current plan, relevant status section, code, and domain sources.
-- Treat `.docs/project-status.md` as continuity context, not current source code.
+- Read only the current plan, relevant `docs/backlog.md` or runbook, code, and
+  domain sources. Read a local continuity note only when it is directly relevant.
+- Treat `.docs/project-status.md` as optional local history, never as current
+  source code or durable project state.
 - Verify repository facts from code and configuration before relying on prose.
 - Local role adapters live in `.claude/agents/` and load only when activated.
 - Do not duplicate detailed role contracts or import all of `AGENTS.md` here.
@@ -70,8 +72,8 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
 - Backlog and runbooks (version-controlled): `docs/backlog.md`,
   `docs/deploy-runbook.md`, `docs/operations-runbook.md`,
   `docs/event-operations-criteria.md`
-- Tests and working notes: `tests/<domain>/`, `.docs/project-status.md`,
-  `.docs/BE/`, `.docs/DB/`, `.docs/FE/`
+- Tests and optional local working notes: `tests/<domain>/`,
+  `.docs/project-status.md`, `.docs/BE/`, `.docs/DB/`, `.docs/FE/`
 
 Start with these stable paths. Use `rg` when the exact location is still unknown
 or the task requires a repository-wide repeated-pattern check.
@@ -113,7 +115,9 @@ During Red-Green, run the targeted test before broad regression.
   a translation of the code. The detailed standard is in `AGENTS.md`.
 - Use `rg` for search and `apply_patch` for manual edits.
 - Never revert unrelated changes or overwrite `prompt_plan.md` unless assigned.
-- Do not commit, push, merge, or open a PR without explicit user approval.
+- After planned verification, commit, push, and PR creation are automatic.
+  Merge needs per-PR user approval unless an expressly recorded standing
+  automatic-merge approval applies. `AGENTS.md` owns the detailed contract.
 - Report failed and unverified checks directly; confidence is not evidence.
 
 ## Instruction Placement
@@ -129,7 +133,8 @@ During Red-Green, run the targeted test before broad regression.
 
 ## Session Continuity
 After an implementation task changes files, its owning implementation role
-records only handoff-critical facts: update current status when it changes and
-the existing relevant technical document when a later worker could otherwise
-make a mistake. Do not create routine work logs; read only the needed section.
+records only handoff-critical facts: update `docs/backlog.md` when durable
+current state changes and the existing relevant technical document when a later
+worker could otherwise make a mistake. Do not create routine work logs; read
+only the needed section.
 Recover a fresh session from the plan, Git diff, status, and verification logs.

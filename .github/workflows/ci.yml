@@ -84,7 +84,7 @@ jobs:
           SECURE_COOKIES: "true"
         run: |
           set -o pipefail
-          export SECRET_KEY="ci-dummy-$(python3 -c "print('0123456789abcdef' * 4)")"
+          export SECRET_KEY="ci-dummy-$(uv run python -c "print('0123456789abcdef' * 4)")"
           uv run python manage.py check --deploy 2>&1 | tee deploy-check.txt
           if grep -E '\(security\.W[0-9]+\)' deploy-check.txt | grep -v 'security\.W021'; then
             echo "::error::Deploy check produced a warning beyond the accepted W021 (HSTS preload) exception"

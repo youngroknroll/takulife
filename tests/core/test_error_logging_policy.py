@@ -1,13 +1,12 @@
 """AST contract guards for the error-handling/logging policy.
 
-`.docs/error-handling-logging-policy.md` documents the rules this file
-enforces mechanically: no bare `except:`, every catch-all handler is
+`AGENTS.md`'s Error Handling And Logging section documents the live rules this
+file enforces mechanically: no bare `except:`, every catch-all handler is
 explicit about why it swallows the exception (log, re-raise, or a
 `# except-ok: <reason>` marker), no stray `print()` in production code,
 module loggers are English-ASCII with lazy `%`-style first arguments, and
-`logging.getLogger` is only ever called with `__name__`. See
-`.docs/plans/2026-07-19-error-handling-logging-policy-plan.md` §5 for the
-Test List these six functions implement one-to-one (EHL-01..EHL-06).
+`logging.getLogger` is only ever called with `__name__`. These six functions
+implement one deterministic contract each (EHL-01..EHL-06).
 
 Scan scope mirrors `test_test_authoring_policy.py`'s file-walk style: every
 `*.py` under the production packages, `migrations/` excluded (generated,
@@ -16,8 +15,8 @@ not hand-authored).
 Two of the checks below (message ASCII / first-arg-is-constant) must first
 resolve which names are actually loggers — a bare method-name match (e.g.
 `.error(...)`) would also catch `messages.error(request, "...")` calls,
-which are user-facing Korean text explicitly out of this policy's scope
-(see plan §2, "명시적 제외"). `_logger_target_names` does a first AST pass
+which are user-facing Korean text explicitly out of this policy's scope.
+`_logger_target_names` does a first AST pass
 per file collecting `X = logging.getLogger(...)` assignment targets; only
 calls on those names count as logger calls.
 """
