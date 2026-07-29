@@ -28,6 +28,8 @@ cleanup. Anything that must not be lost belongs here.
 - Deployment runbook: `docs/deploy-runbook.md`
 - Operations runbook: `docs/operations-runbook.md`
 - Event operations criteria: `docs/event-operations-criteria.md`
+- Backend technical records: `docs/BE/` (and `docs/DB/`, `docs/FE/` as they are
+  needed) — a record that states a guardrail belongs here, not in `.docs/`
 
 Working notes (`.docs/`). **This tree is git-ignored.** Treat every file in it as
 disposable: a file that is missing is routine housekeeping, not a lost artifact,
@@ -42,9 +44,13 @@ rule, an approved decision, or a live backlog here alone — promote it to `docs
 - Frontend plans and technical records: `.docs/FE/`
 - Historical archive, read-only: `.docs/plans/`, `.docs/refactoring/`
 
-New plans and technical records go under `.docs/BE/`, `.docs/DB/`, or `.docs/FE/`
-by owning area. Do not add new files to `.docs/plans/` or `.docs/refactoring/`;
-those hold prior work and are kept for background only.
+New plans and technical records go under `BE/`, `DB/`, or `FE/` by owning area.
+The same three names exist under both trees and the choice between them is what
+the document does, not what it is about: a draft, a scratch measurement, or a
+note only this week needs goes to `.docs/`; a record that states a guardrail a
+later worker could break goes to `docs/`, because that is the tree that survives.
+Do not add new files to `.docs/plans/` or `.docs/refactoring/`; those hold prior
+work and are kept for background only.
 
 ### Reference Loading Order
 
