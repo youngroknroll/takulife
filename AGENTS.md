@@ -21,12 +21,29 @@ payment, shipping, or transaction marketplace without separate approval.
 
 Primary project documents:
 
+Version-controlled (`docs/`). These survive a clone, a reset, and a working-copy
+cleanup. Anything that must not be lost belongs here.
+
+- Current backlog: `docs/backlog.md`
+- Deployment runbook: `docs/deploy-runbook.md`
+- Operations runbook: `docs/operations-runbook.md`
+- Event operations criteria: `docs/event-operations-criteria.md`
+
+Working notes (`.docs/`). **This tree is git-ignored.** Treat every file in it as
+disposable: a file that is missing is routine housekeeping, not a lost artifact,
+and must never be reported as an accident or recreated on a guess. Never leave a
+rule, an approved decision, or a live backlog here alone — promote it to `docs/`.
+
+- Current status and backlog index: `.docs/project-status.md`
 - Product direction: `.docs/proposal/2026-07-13-takulife-product-direction-redefinition.html`
-- Direction re-review: `.docs/report/2026-07-14-product-direction-project-rereview.html`
-- Responsive research: `.docs/report/2026-07-13-responsive-ui-ux-research.md`
-- Implementation plans: `.docs/plans/`
-- Current status: `.docs/project-status.md`
-- Refactoring and work logs: `.docs/refactoring/`
+- Backend plans and technical records: `.docs/BE/`
+- Database, schema, and migration records: `.docs/DB/`
+- Frontend plans and technical records: `.docs/FE/`
+- Historical archive, read-only: `.docs/plans/`, `.docs/refactoring/`
+
+New plans and technical records go under `.docs/BE/`, `.docs/DB/`, or `.docs/FE/`
+by owning area. Do not add new files to `.docs/plans/` or `.docs/refactoring/`;
+those hold prior work and are kept for background only.
 
 Do not reuse paths, product names, settings modules, or workflow assumptions
 from older projects.
@@ -455,6 +472,10 @@ is separately approved.
 4. **Write the integrated plan**
    - A plan document is required before file edits unless the user explicitly
      waives it.
+   - Reuse the existing canonical plan for the workstream whenever one exists.
+     Do not create a date-named plan for each subtask. A new plan is allowed
+     only when no relevant canonical plan exists, and it becomes the future
+     update target for that workstream.
    - The plan is the implementation boundary and must include:
      - approved scope and explicit exclusions
      - acceptance criteria
@@ -467,6 +488,7 @@ is separately approved.
      - TDD checkpoints for backend work
      - verification commands and expected evidence
      - deferred work
+     - documentation target and handoff-critical conditions
 
 5. **Implement**
    - Backend work follows the Backend TDD Cycle below.
@@ -484,12 +506,53 @@ is separately approved.
    - Do not claim completion beyond observed evidence.
 
 8. **Document post-work state for file-changing implementation**
-   - When an implementation task changes files, the implementation role that
-     owns those files writes the required refactoring or change log.
-   - That implementation role updates `.docs/project-status.md` with status,
-     evidence, deferred work, and links to the plan and work log.
+   - Record information only when a later worker could otherwise make a
+     mistake: a user decision, non-obvious rationale, contract boundary,
+     unresolved risk, verification limitation, or other durable constraint.
+   - Update the existing technical document for the affected subject. Do not
+     create a routine work log. Create a new subject document only when no
+     relevant canonical document exists; it then becomes the update target.
+   - Keep each handoff record compact. Include only applicable fields:
+     `Current fact`, `Decision`, `Guardrail`, `Known gap`, and `Evidence`.
+   - Update `.docs/project-status.md` only when the project's current state or
+     next action changes. Keep it a concise index with links, not a task diary.
+   - Put major changes, decisions, and unresolved problems in the related
+     subject document under `.docs/`, rather than duplicating their detail in
+     status or a new per-task document.
    - Review-only tasks do not edit files. They report findings in chat or in a
      separately approved review artifact.
+
+## Code Comment Policy
+
+This policy applies to ordinary code comments and docstrings. The test-specific
+Given-When-Then guidance in the Test Authoring Policy remains separate.
+
+- Write a comment only when it explains an intent, constraint, trade-off, or
+  exception that the code itself cannot make clear. Do not translate a name,
+  condition, loop, or other self-evident statement into prose.
+- Use short, plain Korean that a non-developer can understand. If a technical
+  term is unavoidable, explain its meaning in the surrounding words.
+- Keep one comment to one or two lines. Put longer design rationale in the
+  approved canonical technical document instead.
+- Preserve the reason behind non-obvious security, privacy, data-preservation,
+  external-integration, performance, and temporary-compatibility decisions
+  when that reason would otherwise be lost.
+- Do not use comments as a change history or a substitute for clear naming and
+  small functions. Update or remove a comment whenever its related code changes.
+
+Example — avoid a code translation:
+
+```python
+# 사용자가 로그인했는지 확인한다.
+if request.user.is_authenticated:
+```
+
+Prefer a brief explanation of the user-facing reason:
+
+```python
+# 수집 기록은 소유자만 볼 수 있어 다른 사람에게 노출되지 않는다.
+if item.owner_id == request.user.id:
+```
 
 ## Test Authoring Policy
 
@@ -510,7 +573,8 @@ contracts. Nothing else is a test target.
 - Do not test templates, CSS, browser JavaScript, layout, spacing, sizing,
   visual state, transition, animation, or touch-target geometry.
 - Browser behavior is verified by driving a real browser and reported as
-  evidence in the work log, never encoded as a regression test.
+  evidence in the handoff or technical record, never encoded as a regression
+  test.
 - **Playwright remains installed as a verification tool, not a test
   framework.** Reviewers drive Chromium with it - ad-hoc scripts against the
   local dev server, or the Chrome DevTools MCP tools - to measure geometry,
@@ -537,7 +601,7 @@ suite written up front. Each entry carries at least these fields:
 | Boundary rationale | Why a higher-cost boundary is required, or why a lower boundary suffices |
 | Test name | The actual Korean pytest function name or parametrized case ID |
 | Status | `Pending`, `Red`, `Green`, `Refactored`, `Deferred` |
-| Evidence | Red/Green commands and key results, or a pointer to the work log |
+| Evidence | Red/Green commands and key results, or a pointer to the handoff or technical record |
 
 The default relationship is one scenario to one test. Only these exceptions
 are allowed:
@@ -710,8 +774,9 @@ wiring are exempt from the backend TDD cycle.
   frontend work still follows the Backend TDD Cycle.
 - Every frontend review includes both the Web Experience Designer and Browser
   Interaction Reviewer.
-- The shared design-rule protocol is abolished (2026-07-22 user decision;
-  `.docs/design-rules.md` §1-§3). Brand contrast ratios, the 44px touch-target
+- The shared design-rule protocol is abolished (2026-07-22 user decision; the
+  former `.docs/design-rules.md` §1-§3, since deleted). Brand contrast ratios,
+  the 44px touch-target
   duty layer, and the motion pause contract are no longer compliance gates, and
   no reviewer may require a documented "user-approved exception" to build what
   the design intent specifies. Design intent - the mock and the user's
@@ -719,9 +784,14 @@ wiring are exempt from the backend TDD cycle.
   information, and functional defects such as broken layout, overflow,
   keyboard-unreachable controls, focus traps, and unreadable text remain
   defects.
-- Frontend implementation requires an approved `prompt_plan.md` and a completed
-  `.docs/frontend-integration-changelog.md` unless the user explicitly approves
-  different document locations.
+- Frontend implementation requires an approved plan and a completed technical
+  record under `.docs/FE/` unless the user explicitly approves a different
+  document location. The former `.docs/frontend-integration-changelog.md` was
+  deleted; do not recreate it.
+- The design-review queue and every backlog derived from the superseded mocks
+  are abolished (2026-07-29 user decision) together with the mock rework. Do not
+  recreate `.docs/design-review-queue.md`, and do not schedule work from a
+  mock-derived backlog without first confirming the item against current code.
 
 ### Frontend Dual Review Gate
 
@@ -849,7 +919,10 @@ explicitly accepts the tradeoff.
 
 - The full policy for exception design, HTTP translation at the view
   boundary, approved catch-all cases, and logging rules lives in
-  `.docs/error-handling-logging-policy.md`.
+  `.docs/plans/2026-07-19-error-handling-logging-policy-plan.md` §2-§3. The
+  former standalone `.docs/error-handling-logging-policy.md` was deleted; the
+  six mechanical rules it stated are restated in the guard test's module
+  docstring.
 - `tests/core/test_error_logging_policy.py` enforces the policy's
   deterministic rules as an AST contract guard.
 

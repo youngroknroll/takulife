@@ -67,8 +67,11 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
   `core/urls.py`, `core/views.py`
 - Frontend: `templates/base.html`, `templates/core/`, `templates/staff/`,
   `static/css/`, `static/js/`
-- Tests and docs: `tests/<domain>/`, `.docs/plans/`,
-  `.docs/refactoring/`, `.docs/project-status.md`
+- Backlog and runbooks (version-controlled): `docs/backlog.md`,
+  `docs/deploy-runbook.md`, `docs/operations-runbook.md`,
+  `docs/event-operations-criteria.md`
+- Tests and working notes: `tests/<domain>/`, `.docs/project-status.md`,
+  `.docs/BE/`, `.docs/DB/`, `.docs/FE/`
 
 Start with these stable paths. Use `rg` when the exact location is still unknown
 or the task requires a repository-wide repeated-pattern check.
@@ -105,6 +108,9 @@ During Red-Green, run the targeted test before broad regression.
 - Keep business rules in owning models, domain functions, or application services.
 - Avoid speculative abstractions, adjacent cleanup, silent mutation, and broad
   refactors.
+- Write code comments and docstrings only for non-obvious intent or constraints;
+  use one or two short lines of plain Korean a non-developer can follow, never
+  a translation of the code. The detailed standard is in `AGENTS.md`.
 - Use `rg` for search and `apply_patch` for manual edits.
 - Never revert unrelated changes or overwrite `prompt_plan.md` unless assigned.
 - Do not commit, push, merge, or open a PR without explicit user approval.
@@ -114,12 +120,16 @@ During Red-Green, run the targeted test before broad regression.
 - `CLAUDE.md`: facts and gates needed in almost every session
 - `AGENTS.md`: detailed product constraints, workflow, roles, and review gates
 - `.claude/agents/`: local role adapters
-- `.docs/plans/`, `.docs/refactoring/`: task boundaries and completion evidence
+- `docs/`: version-controlled runbooks — the only durable document tree
+- `.docs/BE/`, `.docs/DB/`, `.docs/FE/`: task boundaries and completion evidence.
+  **`.docs/` is git-ignored**; a missing file there is housekeeping, not a loss
 - Deterministic restrictions belong in settings or hooks, not advisory prose.
 - Repeated procedures become skills or path-scoped rules only after demonstrated
   need.
 
 ## Session Continuity
 After an implementation task changes files, its owning implementation role
-updates the required work log and `.docs/project-status.md`.
+records only handoff-critical facts: update current status when it changes and
+the existing relevant technical document when a later worker could otherwise
+make a mistake. Do not create routine work logs; read only the needed section.
 Recover a fresh session from the plan, Git diff, status, and verification logs.
