@@ -55,7 +55,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
      `uv run python manage.py migrate` 를 한 번만 실행한다.
 4. **collectstatic**: entrypoint가 migrate 직후 `manage.py collectstatic --noinput`을
    자동 실행(docker/entrypoint.sh:11) — 별도 수동 절차 불필요.
-5. **헬스체크 연결**: `/api/health/`(`core/urls.py:10`, `core/views.py:728-735`)는
+5. **헬스체크 연결**: `/api/health/`(`core/urls.py`, `core/views/system.py`의 `health()`)는
    무인증 200을 반환하되 **`connection.ensure_connection()`으로 DB 접속을
    확인**하고, 실패 시 503을 반환한다. PaaS의 **liveness**(실패 시 컨테이너
    재시작) 프로브로 이 엔드포인트를 그대로 쓰면, DB 자체 장애 시 앱은 멀쩡한데도
