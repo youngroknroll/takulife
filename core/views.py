@@ -249,6 +249,14 @@ def event_list(request):
     # screen. The JSON API still rejects the same input with 400.
     try:
         params = parse_public_listing_params(request.GET)
+        # Default to "active" (ongoing/upcoming) when the caller sent no
+        # status filter. Must stay after parsing, not before: "active" is
+        # deliberately absent from STATUS_CHOICES, so injecting it into the
+        # raw request.GET would make parse_public_listing_params raise
+        # ValidationError, which the except below silently swallows into an
+        # empty-state page.
+        if not params.get("status"):
+            params = {**params, "status": "active"}
         qs = list_published_events(params)
         total_count = qs.count()
         paginator = Paginator(qs, PUBLIC_LISTING_PAGE_SIZE)

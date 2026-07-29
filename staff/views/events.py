@@ -29,6 +29,7 @@ from events.services import (
     PublishEventTitleError,
     clear_event_poster,
     create_published_event,
+    mark_event_verified,
     republish_event,
     set_event_poster,
     unpublish_event,
@@ -475,6 +476,39 @@ def staff_event_toggle_publish(request, pk):
         messages.error(request, "게시 상태를 변경하는 중 오류가 발생했습니다.")
     else:
         messages.success(request, success_message)
+
+    return redirect(redirect_url)
+
+
+@staff_console_required
+@require_POST
+def staff_event_verify(request, pk):
+    """Staff console: confirm an event's official details have been re-checked.
+
+    Records the check as `verified_at` (see events.services.mark_event_verified
+    and the D-7 reverification gate in events.queries) and writes a
+    StaffActionLog entry in the same transaction — a log-write failure must
+    roll back the verification it is auditing, same invariant as every other
+    action view in this module (see _helpers.py's module docstring).
+    mark_event_verified never raises a domain exception, so unlike
+    staff_event_toggle_publish above there is no except branch here.
+    """
+    event = get_object_or_404(Event, pk=pk)
+    list_query = urlencode(_event_filter_query_pairs(request.GET))
+    redirect_url = reverse("staff:event-edit", args=[event.pk])
+    if list_query:
+        redirect_url = f"{redirect_url}?{list_query}"
+
+    with transaction.atomic():
+        mark_event_verified(event=event)
+        StaffActionLog.objects.create(
+            **_action_log_kwargs(
+                _staff_action_metadata(request),
+                StaffActionLog.Action.EVENT_VERIFY,
+                target_event=event,
+            )
+        )
+    messages.success(request, "검증이 완료되었습니다.")
 
     return redirect(redirect_url)
 

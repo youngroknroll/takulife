@@ -48,6 +48,7 @@ from .events import (
     staff_event_delete,
     staff_event_edit,
     staff_event_toggle_publish,
+    staff_event_verify,
     staff_events,
 )
 from .home_categories import staff_home_categories
@@ -63,6 +64,7 @@ __all__ = [
     "staff_event_delete",
     "staff_event_edit",
     "staff_event_toggle_publish",
+    "staff_event_verify",
     "staff_events",
     "MAX_BULK_APPROVE_DRAFT_IDS",
     "StaffDraftApproveView",

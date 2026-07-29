@@ -75,6 +75,30 @@ class TestParsePublicListingParams:
             parse_public_listing_params({"status": "invalid_status"})
         assert "status" in str(exc_info.value.detail)
 
+    def test_상태값_all은_유효한_값으로_받아들여진다(self):
+        from events.queries import parse_public_listing_params
+
+        result = parse_public_listing_params({"status": "all"})
+        assert result["status"] == "all"
+
+    def test_뷰_전용_active_상태값도_잘못된_값으로_거부한다(self):
+        """"active"는 공개 API 계약이 아니다.
+
+        "active"는 `core/views.py::event_list`가 파싱 이후 주입하는
+        뷰 내부 전용 값이다. `events/querysets.py::with_public_status`의
+        "active" 분기에는 이미 "View-internal only" 주석이 달려 있다.
+
+        이 테스트가 잠그는 것: 누군가 `EventQuerySerializer.STATUS_CHOICES`에
+        "active"를 추가하면 이 테스트가 깨진다 — 공개 목록 API가 뷰 전용 값을
+        그대로 받아들이게 되는 계약 확장을 여기서 막는다.
+        """
+        from events.queries import parse_public_listing_params
+        from rest_framework.exceptions import ValidationError
+
+        with pytest.raises(ValidationError) as exc_info:
+            parse_public_listing_params({"status": "active"})
+        assert "status" in str(exc_info.value.detail)
+
     def test_잘못된_형식의_시작일_이후_값을_거부한다(self):
         from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
@@ -401,6 +425,40 @@ class TestListPublishedEvents:
         assert ids.index(ongoing.id) < ids.index(upcoming.id)
         assert ids.index(upcoming.id) < ids.index(ended.id)
 
+    def test_상태값_all은_종료된_행사도_포함한다(self, make_event):
+        """status="all" behaves like no filter — ended events are included.
+
+        Deliberately routes the raw params through parse_public_listing_params
+        instead of passing a raw dict straight to list_published_events (the
+        sibling tests' convention). with_public_status has no explicit "all"
+        arm; any unrecognised string falls through the same catch-all
+        (`return self`) as an unfiltered status. So passing a raw
+        {"status": "all"} dict directly would pass whether or not the
+        serializer accepts "all" as valid, making the assertion vacuous. This
+        test's entire point is to prove "all" survives the
+        EventQuerySerializer.STATUS_CHOICES validation layer used by the API,
+        so it must exercise that layer.
+        """
+        from events.queries import list_published_events, parse_public_listing_params
+
+        today = date(2026, 6, 24)
+        ended = make_event(
+            title="Ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=1),
+        )
+        ongoing = make_event(
+            title="Ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+
+        params = parse_public_listing_params({"status": "all"})
+        qs = list_published_events(params, today=today)
+        ids = list(qs.values_list("id", flat=True))
+        assert ended.id in ids
+        assert ongoing.id in ids
+
 
 # ---------------------------------------------------------------------------
 # PUBLIC_LISTING_PAGE_SIZE constant
@@ -439,6 +497,50 @@ class TestWithPublicStatus:
 
         assert ended in result
         assert ongoing not in result
+
+    def test_상태_필터_active는_종료된_행사만_제외하고_종료일_없는_행사도_포함한다(
+        self, make_event
+    ):
+        today = date(2026, 7, 1)
+        ended = make_event(
+            title="끝난 행사",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=1),
+        )
+        ongoing = make_event(
+            title="진행 행사",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=5),
+        )
+        upcoming = make_event(
+            title="예정 행사",
+            start_date=today + timedelta(days=10),
+            end_date=today + timedelta(days=12),
+        )
+        # Off-by-one guard: end_date == today must still count as "not ended
+        # yet". Without this fixture, mutating `end_date__lt` to `end_date__lte`
+        # in the exclude clause would not be caught by any assertion here.
+        ends_today = make_event(
+            title="오늘 종료 행사",
+            start_date=today - timedelta(days=3),
+            end_date=today,
+        )
+        # Deliberate: end_date=None is the case under test, not a null trap.
+        # Part A's "active" predicate treats a missing end date as "not
+        # ended", asymmetric with Part B's dataset-carryover predicate.
+        no_end_date = make_event(
+            title="종료일 없는 행사",
+            start_date=today - timedelta(days=30),
+            end_date=None,
+        )
+
+        result = Event.objects.published().with_public_status("active", today=today)
+
+        assert ended not in result
+        assert ongoing in result
+        assert upcoming in result
+        assert ends_today in result
+        assert no_end_date in result
 
     def test_알_수_없는_상태_필터는_전체_행사를_그대로_반환한다(self, make_event):
         today = date(2026, 7, 1)

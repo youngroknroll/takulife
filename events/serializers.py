@@ -23,7 +23,9 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventQuerySerializer(serializers.Serializer):
-    STATUS_CHOICES = ("upcoming", "ongoing", "closing_soon", "ended")
+    # "all" has no branch in with_public_status; it falls through to the
+    # catch-all and behaves the same as an unset status (no filtering).
+    STATUS_CHOICES = ("upcoming", "ongoing", "closing_soon", "ended", "all")
     SORT_CHOICES = ("closing_soon", "start_asc", "newest")
 
     q = serializers.CharField(required=False, allow_blank=True)
