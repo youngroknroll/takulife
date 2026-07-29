@@ -69,9 +69,9 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
   `core/urls.py`, `core/views.py`
 - Frontend: `templates/base.html`, `templates/core/`, `templates/staff/`,
   `static/css/`, `static/js/`
-- Backlog and runbooks (version-controlled): `docs/backlog.md`,
+- Backlog, runbooks, technical records (version-controlled): `docs/backlog.md`,
   `docs/deploy-runbook.md`, `docs/operations-runbook.md`,
-  `docs/event-operations-criteria.md`
+  `docs/event-operations-criteria.md`, `docs/BE/`
 - Tests and optional local working notes: `tests/<domain>/`,
   `.docs/project-status.md`, `.docs/BE/`, `.docs/DB/`, `.docs/FE/`
 
@@ -124,8 +124,9 @@ During Red-Green, run the targeted test before broad regression.
 - `CLAUDE.md`: facts and gates needed in almost every session
 - `AGENTS.md`: detailed product constraints, workflow, roles, and review gates
 - `.claude/agents/`: local role adapters
-- `docs/`: version-controlled runbooks — the only durable document tree
-- `.docs/BE/`, `.docs/DB/`, `.docs/FE/`: task boundaries and completion evidence.
+- `docs/`: the only durable document tree — backlog, runbooks, and any technical
+  record stating a guardrail (`docs/BE/`, and `DB/`/`FE/` when needed)
+- `.docs/BE/`, `.docs/DB/`, `.docs/FE/`: drafts and working measurements.
   **`.docs/` is git-ignored**; a missing file there is housekeeping, not a loss
 - Deterministic restrictions belong in settings or hooks, not advisory prose.
 - Repeated procedures become skills or path-scoped rules only after demonstrated
