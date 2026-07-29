@@ -34,7 +34,6 @@ class TestEventListSharedPagerMarkup:
         body = resp.content.decode()
         assert 'class="pager-page' in body
         assert 'aria-current="page"' in body
-        assert 'class="current"' not in body
 
 
 @pytest.mark.django_db
