@@ -339,14 +339,21 @@ def test_구_드래프트_액션_라우트는_더이상_해석되지_않는다(p
 
 def test_core_뷰는_더이상_스태프_모듈을_임포트하지_않는다():
     """PR-2 sub-step D moved the 3 draft/home-category SSR views into
-    staff.views — core.views must no longer depend on staff at all."""
-    imported_modules = _imported_modules("core/views.py")
+    staff.views — core.views must no longer depend on staff at all. core.views
+    is now a package (core/views/), so every module file under it is scanned."""
+    view_module_paths = sorted((PROJECT_ROOT / "core" / "views").rglob("*.py"))
+    assert view_module_paths, "core/views 아래 스캔할 .py 파일이 없다"
 
-    assert not {
-        module
-        for module in imported_modules
-        if module == "staff" or module.startswith("staff.")
-    }
+    for module_path in view_module_paths:
+        relative_path = module_path.relative_to(PROJECT_ROOT)
+        imported_modules = _imported_modules(str(relative_path))
+
+        violating_modules = {
+            module
+            for module in imported_modules
+            if module == "staff" or module.startswith("staff.")
+        }
+        assert not violating_modules, f"{relative_path}가 staff 모듈을 임포트한다: {violating_modules}"
 
 
 # ---------------------------------------------------------------------------
