@@ -6,6 +6,10 @@
 <link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
 {% endblock %}
 
+{% block extra_js %}
+<script defer src="{% static 'js/pages/staff_event_edit.js' %}"></script>
+{% endblock %}
+
 {% block content %}
   <main class="page" id="staff-main">
     <div class="detail-topline">
@@ -105,6 +109,25 @@
           <div style="margin-top:12px;">
             <button class="action-button" type="submit">저장</button>
           </div>
+        </form>
+      </article>
+
+      <article class="panel">
+        <h2>검증</h2>
+        <p class="panel-note">
+          {% if event.verified_at %}
+            마지막 검증: {{ event.verified_at|timesince }} 전
+          {% else %}
+            검증 이력 없음
+          {% endif %}
+        </p>
+        <form method="post" action="/staff/events/{{ event.id }}/verify/{% if list_query %}?{{ list_query }}{% endif %}" id="staff-event-verify-form">
+          {% csrf_token %}
+          {% if event.verified_at %}
+            <button class="action-button secondary" type="submit">다시 검증</button>
+          {% else %}
+            <button class="action-button" type="submit">검증 완료</button>
+          {% endif %}
         </form>
       </article>
 
