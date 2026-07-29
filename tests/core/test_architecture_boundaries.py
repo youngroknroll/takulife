@@ -10,8 +10,24 @@ pytestmark = pytest.mark.contract
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _dynamic_import_target(call):
+    """importlib.import_module(...) 또는 __import__(...) 호출이면 첫 인자 문자열을, 아니면 None을 돌려준다."""
+    is_importlib_call = (
+        isinstance(call.func, ast.Attribute)
+        and call.func.attr == "import_module"
+        and isinstance(call.func.value, ast.Name)
+        and call.func.value.id == "importlib"
+    )
+    is_builtin_import_call = isinstance(call.func, ast.Name) and call.func.id == "__import__"
+    if not (is_importlib_call or is_builtin_import_call):
+        return None
+    if call.args and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str):
+        return call.args[0].value
+    return None
+
+
 def _imported_modules(module_path):
-    """Return all module names a source file imports (Import + ImportFrom + importlib.import_module 호출)."""
+    """Return all module names a source file imports (Import + ImportFrom + importlib.import_module/__import__ 호출)."""
     tree = ast.parse((PROJECT_ROOT / module_path).read_text())
     modules = set()
     for node in ast.walk(tree):
@@ -19,18 +35,11 @@ def _imported_modules(module_path):
             modules.add(node.module)
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
-        # importlib.import_module("...")도 정적 import처럼 다른 도메인을 불러올 수 있어 함께 본다.
-        if (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and node.func.attr == "import_module"
-            and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == "importlib"
-            and node.args
-            and isinstance(node.args[0], ast.Constant)
-            and isinstance(node.args[0].value, str)
-        ):
-            modules.add(node.args[0].value)
+        # 동적 import도 정적 import처럼 다른 도메인을 불러올 수 있어 함께 본다.
+        if isinstance(node, ast.Call):
+            target = _dynamic_import_target(node)
+            if target is not None:
+                modules.add(target)
     return modules
 
 
@@ -49,6 +58,15 @@ def test_동적_임포트로_다른_도메인을_불러오면_경계_스캐너�
 
     # _imported_modules는 PROJECT_ROOT / module_path를 계산하는데, pathlib은
     # 우변이 절대 경로면 좌변을 버리므로 절대 경로 문자열을 그대로 넘기면 된다.
+    imported_modules = _imported_modules(str(fixture))
+
+    assert "archive.models" in imported_modules
+
+
+def test_내장_import_함수로_다른_도메인을_불러오면_경계_스캐너가_탐지한다(tmp_path):
+    fixture = tmp_path / "builtin_import_fixture.py"
+    fixture.write_text('__import__("archive.models")\n')
+
     imported_modules = _imported_modules(str(fixture))
 
     assert "archive.models" in imported_modules
