@@ -425,9 +425,9 @@ class TestArchiveCollectionEmptyStates:
         resp = client.get("/collection/")
         content = resp.content
 
-        assert b'class="archive-search"' not in content
+        # 검색 입력의 접근 이름은 리네임과 무관하게 고정된다.
         assert b'name="work_title"' not in content
-        assert b'class="visit-filter"' not in content
+        assert "aria-label=\"컬렉션 검색\"".encode() not in content
 
     def test_필터_결과가_0건이어도_검색_필터_컨트롤은_유지된다(self, user_client, make_collection_item):
         user, client = user_client()

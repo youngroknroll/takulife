@@ -175,5 +175,6 @@ class TestArchiveNavTabs:
         # 아이콘(♥) 도입으로 찜 앵커 내용이 바뀌어도 href는 안정적 식별자다.
         assert 'href="/archive/interests/"' not in nav
         assert "nav-interest" not in nav
-        assert '<span class="tab-label-full">활동 달력</span>' not in nav
+        # href로 고정한다: 라벨 클래스가 리네임돼도 href는 안정적 식별자다(위 찜 주석과 동일 관례).
+        assert 'href="/archive/calendar/"' not in nav
         assert "/collection/" not in nav
