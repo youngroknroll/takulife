@@ -19,7 +19,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `uv run pytest -q` → **2013 passed** (23.9s) |
+| 백엔드 회귀 | `uv run pytest -q` → **2024 passed** (20.9s) |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건** (보안·운영 검토 모두) |
@@ -50,17 +50,29 @@
 - 범위: 파라미터 목록 5줄 추가 + `_imported_modules`가 `ast.Call`의
   `importlib.import_module(...)`/`__import__(...)` 문자열 인자도 수집하도록 확장
 
-### A2 [실측] `accounts.services`의 규약 위반 4건이 가드 밖에 있다
+### A2 [실측] 서명 규약 가드가 `core.analytics`를 보지 않는다
 
-- 근거: `tests/core/test_service_signature_conventions.py:19-25`의
-  `SERVICE_MODULES`에 `accounts.services`가 없음
-- 실측: 목록에 `accounts.services`를 추가하자 즉시 **1 failed** —
-  `request_deletion(user)`, `cancel_deletion(user)`,
-  `record_password_change(user)`, `execute_pending_deletions(now=None)`
-  4건이 위치 인자를 받는다(`accounts/services.py:26,42,57,67`).
-- 판단 필요: `core.analytics`도 같은 상태다(`core/analytics.py:40,73,113,127`).
-  서비스 모듈로 볼지 여부는 Domain Architecture Reviewer 판정 대상.
-- 범위: 목록 등록 후 위반 함수를 키워드 전용으로 전환. 호출처 동반 수정.
+**최초 서술 정정(2026-07-30).** 이 항목은 원래 "`accounts.services`의 위반
+4건"으로 적혀 있었다. **그 전제가 틀렸다.** 이 가드가 보호하는 것은 *다른
+앱이 가로질러 호출하는* 서비스 경계이고, `accounts.services`는 호출처가
+전부 앱 내부다(`accounts/views.py:118`, `accounts/signals.py:18,34`,
+`purge_deleted_accounts.py:18`). `rg`로 재확인 — `accounts` 밖에서
+임포트하는 프로덕션 코드 **0건**. 따라서 그 모듈의 위치 인자는 위반이
+아니며, 목록에 넣고 서명을 바꾸는 것은 규약 집행이 아니라 규약 발명이었다.
+호출처 약 20곳을 바꾸는 헛일이 될 뻔했다.
+
+- **처리 완료**: `tests/core/test_service_signature_conventions.py` 모듈
+  독스트링에 제외 근거를 기록했다. 다음 사람이 같은 오판을 하지 않도록.
+- **실제 누락은 `core.analytics`다.** 이쪽은 진짜 교차 도메인 서비스다 —
+  `events/views.py:10`, `staff/views/__init__.py:19`, `archive/services.py:7`이
+  임포트한다. 이미 목록에 있는 `core.promotion`과 같은 성격인데 빠져 있다.
+  비준수 함수 4개: `pseudonymous_user_key(user)`, `record_event(event_name, *, ...)`,
+  `distinct_user_key_count_since(days=7)`, `event_name_counts_since(days=7)`
+  (`core/analytics.py:40,73,113,127`).
+- **미착수 — 별도 승인 필요.** `record_event` 호출처만 프로덕션 15곳 이상
+  (`archive/services.py`에 다수)이라 A2보다 범위가 훨씬 크다. 위치 인자가
+  의도된 설계라는 근거는 코드·문서 어디에도 없어 드리프트로 판단하지만,
+  원 설계 의사는 **미확인**이다.
 
 ### A3 [실측] 보유/구함/교환 3축 술어가 8곳에 흩어져 있고 뮤테이션에 걸리지 않는다
 
@@ -71,9 +83,29 @@
 - 이 중복은 이미 한 번 결함을 만들었다. `core/views.py:1538`의 주석이
   *"that duplication is what hid the original owned/wanted axis bug"* 라고
   스스로 적고 있다(PR #245).
-- 범위: `CollectionItem`에 `is_owned`/`is_tradeable` 속성 또는 쿼리셋 메서드를
-  두고 8곳을 그것으로 대체. 스키마 변경 없음. 대체 후 같은 뮤테이션이 실제로
-  Red가 되는지 왕복 확인.
+
+**전수 실측(2026-07-30).** 술어 10개 지점 각각에 `> 0` → `>= 0`
+(`__gt` → `__gte`) 뮤테이션을 걸고 매번 전체 스위트를 돌렸다. 종료 코드로만
+판정했다 — 처음엔 stdout에서 `failed`를 문자열로 찾다가 AXES 로그의
+"failed login attempts"를 테스트 실패로 오독했다.
+
+| 지점 | 결과 |
+|---|---|
+| `views:1544` 보유 배지 | **무방비** (2022 passed) |
+| `views:1546` 교환 배지 | **무방비** (2022 passed) |
+| `views:1560·1562` 라벨 | 잡힘 (각 1건) |
+| `views:1812·1816` 상세 행 | 잡힘 (2건·3건) |
+| `queries:516·521·584·586` | 잡힘 (3~5건) |
+
+미보호는 **10곳 중 2곳뿐**이었다. 원인은 `tests/archive/test_archive_collection_view.py:532`가
+이미 `quantity=0` 항목을 만들어 **라벨만 단언하고 배지는 보지 않았기** 때문이다.
+
+- **처리 완료**: 배지 축 테스트 2건 추가. 각 뮤테이션이 실제로 Red가 되는 것을
+  왕복 확인했다(`:1544` → 1건, `:1546` → 2건).
+- **남은 것은 안전이 아니라 구조다.** 10곳 모두 테스트로 덮였으므로 술어를
+  모델로 옮기는 일은 더 이상 안전망 작업이 아니다. **E군(구조)으로 이관** —
+  `core/views.py`를 크게 여는 [E1] 분할과 같은 트랙에서 처리하는 편이
+  충돌이 적다.
 
 ### A4 [코드] 마크업 리터럴 `not in` 단언이 리네임에 무력하다
 
