@@ -84,6 +84,14 @@ urlpatterns = [
         core_views.archive_personal_entry_create,
         name="archive-personal-entry-create-page",
     ),
+    # <int:entry_id> before the list route, mirroring the collection block
+    # above (new/ -> <int:id>/ -> list) — the int converter never matches
+    # "new" so the order isn't load-bearing, but this keeps the pattern consistent.
+    path(
+        "archive/personal/<int:entry_id>/",
+        core_views.archive_personal_entry_detail,
+        name="archive-personal-entry-detail-page",
+    ),
     path(
         "archive/personal/",
         core_views.archive_personal_entries,

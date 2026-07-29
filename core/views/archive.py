@@ -544,6 +544,13 @@ def archive_personal_entry_create(request):
 
 
 @login_required
+def archive_personal_entry_detail(request, entry_id):
+    """Read-only detail page for one PersonalEntry (owner-scoped)."""
+    entry = get_object_or_404(PersonalEntry, pk=entry_id, user=request.user)
+    return render(request, "core/archive/personal_detail.html", {"entry": entry})
+
+
+@login_required
 @ensure_csrf_cookie
 def archive_interests(request):
     user = request.user
