@@ -88,6 +88,52 @@ def test_다른_사용자의_개인_항목을_삭제하면_404이고_삭제되�
 
 @pytest.mark.web
 @pytest.mark.django_db
+def test_본인_개인_항목의_장소명을_PATCH로_수정하면_200이고_DB에도_반영된다(client, make_user, make_entry):
+    user = make_user(username="pe-patch-owner")
+    entry = make_entry(user, kind="place", title="원래 제목", location_name="오타난 이름")
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/personal-entries/{entry.id}/",
+        {"location_name": "고친 이름"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["location_name"] == "고친 이름"
+    entry.refresh_from_db()
+    assert entry.location_name == "고친 이름"
+    assert entry.title == "원래 제목"  # partial update — other fields must survive
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_개인_항목을_PATCH할_때_client_token을_같이_보내도_저장된_멱등_키는_바뀌지_않는다(
+    client, make_user, make_entry
+):
+    """A create-time idempotency key must never be re-read or overwritten on
+    update (DAR mandatory fix ③), mirroring CollectionItemUpdateSerializer's
+    existing guard in archive/serializers.py."""
+    user = make_user(username="pe-patch-token")
+    original_token = uuid.UUID("11111111-1111-1111-1111-111111111111")
+    replay_token = uuid.UUID("22222222-2222-2222-2222-222222222222")
+    entry = make_entry(user, kind="place", title="원래 제목", client_token=original_token)
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/personal-entries/{entry.id}/",
+        {"location_name": "고친 이름", "client_token": str(replay_token)},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["location_name"] == "고친 이름"
+    entry.refresh_from_db()
+    assert entry.client_token == original_token
+
+
+@pytest.mark.web
+@pytest.mark.django_db
 def test_굿즈_종류로_개인_항목을_등록하면_거부된다(client, make_user):
     """GOODS is no longer creatable via PersonalEntry (collection domain plan
     §3-3) — goods live in the dedicated CollectionItem domain instead."""
