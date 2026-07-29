@@ -162,6 +162,19 @@ class TestEventListActiveFilterChips:
         assert resp.status_code == 200
         assert "검색: 공연" in resp.context["active_filter_chips"]
 
+    def test_상태를_전체로_필터링하면_활성_필터_칩에_전체가_표시된다(self, make_event):
+        """status='all' must not leak as a raw 'all' chip (EVENT_STATUS_LABELS
+        has no 'all' entry — it's the sidebar's "전체" override, never a member
+        of EVENT_STATUS itself, see calendar's dedicated value="" all-status
+        radio for why it can't just be added there)."""
+        make_event(title="전체상태칩행사")
+
+        resp = Client().get("/events/", {"status": "all"})
+
+        assert resp.status_code == 200
+        assert "전체" in resp.context["active_filter_chips"]
+        assert "all" not in resp.context["active_filter_chips"]
+
 
 @pytest.mark.django_db
 class TestEventListPagerQEncoding:
@@ -354,6 +367,49 @@ class TestEventListExplicitStatusGuard:
         body = resp.content.decode()
         assert "지난달에_끝난_행사" in body
         assert "다음달에_열리는_행사" in body
+
+
+@pytest.mark.django_db
+class TestEventListGenuinelyEmptyState:
+    """진행·예정 목록에 실제로 노출할 행사가 없을 때의 두 서로 다른 시나리오.
+
+    (1) 게시된 행사가 아예 하나도 없는 경우: 정직한 제목을 보여줘야 하고,
+    옛 문구("아직 등록된 이벤트가 없어요")는 남아있으면 안 된다.
+    (2) 게시된 행사는 있지만 전부 종료돼 기본 필터(진행·예정)에 걸리지 않는
+    경우: 카탈로그엔 행사가 있는데 화면은 비어 보이므로, 종료 포함 전체
+    보기로 이어지는 회복 링크가 나와야 한다. Given(행사 존재 여부)과 관찰
+    결과(회복 링크 유무)가 서로 달라 하나로 묶지 않고 별도 테스트로 나눈다.
+    """
+
+    def test_게시된_행사가_전혀_없으면_정직한_빈_상태_제목이_보인다(self):
+        resp = Client().get("/events/")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "진행·예정 이벤트가 없어요" in body
+        assert "아직 등록된 이벤트가 없어요" not in body
+
+    def test_기본_필터에서_0건이면_종료_포함_전체_보기_회복_링크가_보인다(self, make_event):
+        today = timezone.localdate()
+        make_event(
+            title="지난달에_끝난_행사",
+            start_date=today - timedelta(days=32),
+            end_date=today - timedelta(days=1),
+        )
+
+        resp = Client().get("/events/")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "종료 포함 전체 보기" in body
+
+        href = re.search(
+            r'<a class="empty-action" href="([^"]*)">종료 포함 전체 보기</a>',
+            body,
+        )
+        assert href, "회복 링크를 찾지 못함"
+        query = parse_qs(unescape(href.group(1)).split("?", 1)[1])
+        assert query.get("status") == ["all"]
 
 
 @pytest.mark.django_db
