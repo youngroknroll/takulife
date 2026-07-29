@@ -19,7 +19,7 @@ import pytest
 
 from archive.models import CollectionItem
 from archive.queries import ARCHIVE_COLLECTION_PAGE_SIZE
-from core.views import _collection_item_row, _series_ink_classes
+from core.views.collection import _collection_item_row, _series_ink_classes
 
 pytestmark = pytest.mark.web
 
