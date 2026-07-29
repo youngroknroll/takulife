@@ -532,6 +532,32 @@ class TestArchiveCollectionCardBadges:
         assert row["quantity_label"] == ""
         assert row["tradeable_label"] == ""
 
+    def test_보유_수량이_0이면_보유_톤_배지_없이_미보유_배지만_담긴다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(
+            user, name="C아이템", quantity=0, tradeable_quantity=0, is_wanted=False
+        )
+
+        resp = client.get("/collection/?partial=1")
+        row = resp.context["item_rows"][0]
+
+        assert row["badges"] == [{"tone": "none", "label": "미보유"}]
+
+    def test_교환가능_수량이_0이면_보유_수량이_양수여도_교환_톤_배지가_없다(
+        self, user_client, make_collection_item
+    ):
+        user, client = user_client()
+        make_collection_item(
+            user, name="D아이템", quantity=3, tradeable_quantity=0, is_wanted=False
+        )
+
+        resp = client.get("/collection/?partial=1")
+        row = resp.context["item_rows"][0]
+
+        assert {"tone": "tradeable", "label": "교환"} not in row["badges"]
+
 
 @pytest.mark.django_db
 class TestArchiveCollectionNav:
