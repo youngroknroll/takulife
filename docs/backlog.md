@@ -136,8 +136,23 @@
 - 참고: 삭제 경고 문구는 정확히 있다
   (`static/js/pages/personal_entries.js:57-58`). 즉 "몰래 사라지는" 결함이
   아니라 **수정 경로 자체가 없는** 결함이다.
-- 범위: `PersonalEntryDetailView`를 `RetrieveUpdateDestroyAPIView`로,
-  PATCH 허용 필드 확정, 수정 화면 배선. Backend TDD Cycle 적용.
+**백엔드 완료(2026-07-30).** `PersonalEntryDetailView`가 PATCH를 받는다.
+PUT은 `http_method_names`로 제외했다 — 부분 수정이 언급하지 않은 필드를
+비우면 안 되기 때문이다.
+
+**PATCH를 열자 멱등 키가 함께 열렸다.** `client_token`이 시리얼라이저에
+명시 선언돼 있어 모델의 `editable=False`를 덮는다. 실측으로 확인했다 —
+PATCH 페이로드의 토큰이 저장값을 덮어썼고, 그러면 PR #246이 막았던 중복
+생성이 다시 열린다. `CollectionItemUpdateSerializer`와 같은 방식으로
+구조적 배제해 닫았다. **두 변경을 한 커밋에 넣은 이유**는 앞의 것만으로는
+회귀이기 때문이다.
+
+- **남은 절반: 수정 화면이 없다.** 라우트 자체가 없다(작성
+  `/archive/personal/new/`와 목록만 존재). API만으로는 사용자가 도달할 수
+  없으므로 데이터 소실 문제가 아직 해결되지 않았다.
+- **다만 지금 만들면 재작업 위험이 있다.** 신규 페이지 신설이고 프론트
+  이중 게이트 대상인데, 시안이 재작업 중이다. **새 시안이 나온 뒤 착수를
+  권한다.**
 
 ---
 
