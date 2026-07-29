@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _imported_modules(module_path):
-    """Return all module names a source file imports (Import + ImportFrom)."""
+    """Return all module names a source file imports (Import + ImportFrom + importlib.import_module 호출)."""
     tree = ast.parse((PROJECT_ROOT / module_path).read_text())
     modules = set()
     for node in ast.walk(tree):
@@ -19,6 +19,18 @@ def _imported_modules(module_path):
             modules.add(node.module)
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
+        # importlib.import_module("...")도 정적 import처럼 다른 도메인을 불러올 수 있어 함께 본다.
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "import_module"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "importlib"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
+            modules.add(node.args[0].value)
     return modules
 
 
@@ -28,26 +40,50 @@ def test_드래프트_뷰는_이벤트_모듈을_임포트하지_않는다():
     assert not {module for module in imported_modules if module == "events" or module.startswith("events.")}
 
 
+def test_동적_임포트로_다른_도메인을_불러오면_경계_스캐너가_탐지한다(tmp_path):
+    fixture = tmp_path / "dynamic_import_fixture.py"
+    fixture.write_text(
+        "import importlib\n"
+        'importlib.import_module("archive.models")\n'
+    )
+
+    # _imported_modules는 PROJECT_ROOT / module_path를 계산하는데, pathlib은
+    # 우변이 절대 경로면 좌변을 버리므로 절대 경로 문자열을 그대로 넘기면 된다.
+    imported_modules = _imported_modules(str(fixture))
+
+    assert "archive.models" in imported_modules
+
+
 @pytest.mark.parametrize(
     "module_path",
     [
+        "events/models.py",
         "events/views.py",
         "events/serializers.py",
         "events/querysets.py",
         "events/services.py",
+        "events/queries.py",
+        "drafts/models.py",
         "drafts/views.py",
         "drafts/services.py",
+        "drafts/serializers.py",
+        "drafts/queries.py",
         "drafts/llm_extraction.py",
         "drafts/discovery.py",
         "drafts/management/commands/discover_drafts.py",
     ],
     ids=[
+        "이벤트_모델",
         "이벤트_뷰",
         "이벤트_시리얼라이저",
         "이벤트_쿼리셋",
         "이벤트_서비스",
+        "이벤트_쿼리",
+        "드래프트_모델",
         "드래프트_뷰",
         "드래프트_서비스",
+        "드래프트_시리얼라이저",
+        "드래프트_쿼리",
         "드래프트_LLM_추출",
         "드래프트_발견",
         "드래프트_수집_명령",
