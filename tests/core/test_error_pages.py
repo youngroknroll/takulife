@@ -23,12 +23,14 @@ def test_존재하지_않는_경로에_접근하면_커스텀_404_페이지가_�
     assert "ERROR 404" in body
 
 
-def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스텀_500_페이지가_렌더링된다(client, monkeypatch):
+def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스텀_500_페이지가_렌더링된다(client, monkeypatch, db):
     """Django's default 500 handler (django/views/defaults.py::server_error)
     renders templates/500.html via ``template.render()`` with NO context and
     NO request — context processors never run for this page. Simulate an
     unhandled view exception on "/" to exercise that exact codepath and
-    confirm 500.html still renders (rather than raising a template error)."""
+    confirm 500.html still renders (rather than raising a template error).
+    Without the ``db`` fixture, DB access is blocked before the monkeypatch
+    can even take effect, producing a 500 for the wrong reason."""
 
     def _boom(*args, **kwargs):
         raise RuntimeError("simulated view failure")
