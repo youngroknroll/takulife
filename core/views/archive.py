@@ -573,6 +573,24 @@ def archive_personal_entry_detail(request, entry_id):
 
 
 @login_required
+def archive_personal_entry_edit(request, entry_id):
+    """Render-only edit page (owner-scoped). Saving stays on the existing
+    DRF PATCH (`/api/personal-entries/<id>/`), mirrored from
+    archive_collection_item_edit. Context carries
+    PERSONAL_ENTRY_CATEGORY_SUGGESTIONS as free-input hint chips (not a
+    `choices` constraint), same as archive_personal_entry_create."""
+    entry = get_object_or_404(PersonalEntry, pk=entry_id, user=request.user)
+    return render(
+        request,
+        "core/archive/personal_edit.html",
+        {
+            "entry": entry,
+            "PERSONAL_ENTRY_CATEGORY_SUGGESTIONS": PERSONAL_ENTRY_CATEGORY_SUGGESTIONS,
+        },
+    )
+
+
+@login_required
 @ensure_csrf_cookie
 def archive_interests(request):
     user = request.user
