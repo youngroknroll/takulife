@@ -30,16 +30,16 @@ logger = logging.getLogger(__name__)
 # coordinator's message). "interest" also covers the §7.5 legacy-찜
 # fallback, which archive.queries._interest_added_fallback_items already
 # reuses ActivityLogEntry.Kind.INTEREST_ADDED for (no separate kind string).
+# "visit"과 "goods"는 상태 테이블(VisitRecord/CollectionItem)만 출처로
+# 삼는다 — 방문·등록·수정 각 행동은 행동 로그에도 흔적을 남기는데, 그
+# 로그까지 함께 세면 같은 활동이 두 번 보인다 (2026-07-31 중복 표시 결함
+# 수정, 사용자 결정: 상태 테이블 우선).
 _ACTIVITY_TYPE_GROUPS = {
     "schedule": [SCHEDULE_KIND],
     "interest": [ActivityLogEntry.Kind.INTEREST_ADDED, ActivityLogEntry.Kind.INTEREST_REMOVED],
     "status": [ActivityLogEntry.Kind.STATUS_CHANGED, ActivityLogEntry.Kind.STATUS_REMOVED],
-    "visit": [VISIT_KIND, ActivityLogEntry.Kind.VISIT_RECORD_CREATED],
-    "goods": [
-        GOODS_ACQUIRED_KIND,
-        ActivityLogEntry.Kind.COLLECTION_ITEM_CREATED,
-        ActivityLogEntry.Kind.COLLECTION_ITEM_ORGANIZED,
-    ],
+    "visit": [VISIT_KIND],
+    "goods": [GOODS_ACQUIRED_KIND],
 }
 
 _KIND_TO_ACTIVITY_TYPE_GROUP = {

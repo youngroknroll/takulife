@@ -757,3 +757,148 @@ def test_필터로_모두_걸러진_달은_has_any_items가_거짓이다(user_cl
 
     assert resp.status_code == 200
     assert resp.context["has_any_items"] is False
+
+
+# ---------------------------------------------------------------------------
+# CAL-DEFECT-01 (2026-07-31 중복 표시 결함 계획 §7) — 방문 기록 1건은 방문
+# 활동 1건으로만 집계돼야 한다. POST /api/visit-records/는 내부적으로
+# complete_visit_with_record를 호출해 VisitRecord(상태 테이블)와
+# ActivityLogEntry(행동 로그)를 함께 쓰므로, 현재 뷰가 두 출처를 같은
+# "visit" 그룹으로 묶으면 이 한 번의 요청만으로도 중복이 재현된다.
+# (아키텍처 가드 tests/core/test_architecture_boundaries.py가 client 계열
+# 픽스처를 쓰는 view 테스트 파일의 서비스·쿼리 계층 임포트를 금지하므로,
+# 준비는 서비스 함수 직접 호출이 아니라 실제 API 엔드포인트를 경유한다.)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_방문_기록을_하나_남기면_달력에서_방문_활동이_한_건으로만_집계된다(
+    user_client, make_event
+):
+    _, client = user_client()
+    event = make_event(title="방문중복집계확인행사")
+    today = timezone.localdate()
+    # visited_on을 오늘로 맞춰야 ActivityLogEntry.occurred_at(기본값 now())의
+    # 로컬 날짜와 같은 달력 셀에 떨어져 결함이 재현된다.
+    create_resp = client.post(
+        "/api/visit-records/",
+        {"event": event.id, "visited_on": today.isoformat()},
+        content_type="application/json",
+    )
+    assert create_resp.status_code == 201
+
+    resp = client.get("/archive/calendar/")
+
+    assert resp.status_code == 200
+    cell = _find_cell(resp.context["weeks"], today)
+    assert cell["count"] == 1
+    assert resp.context["kind_counts"]["visit"] == 1
+
+
+# ---------------------------------------------------------------------------
+# CAL-DEFECT-02 / CAL-DEFECT-03 (2026-07-31 중복 표시 결함 계획 §7) — 굿즈
+# 등록 1건도 방문과 같은 이유로 상태 테이블(CollectionItem)과 행동 로그
+# (ActivityLogEntry)에 동시에 흔적을 남긴다. 두 시나리오는 "goods" 그룹에서
+# COLLECTION_ITEM_CREATED를 빼는 같은 수정 하나로 함께 닫히므로, 02를 먼저
+# Green으로 만들지 않고 03과 함께 Red로 세운다 — 순서를 바꾸면 03이 프로덕션
+# 변경 없이 우연히 통과해 버려 실패했어야 할 이유를 확인할 기회가 사라진다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_굿즈를_하나_등록하면_달력에서_굿즈_활동이_한_건으로만_집계된다(user_client):
+    _, client = user_client()
+    today = timezone.localdate()
+    # acquired_on을 오늘로 맞춰야 ActivityLogEntry.occurred_at(기본값 now())의
+    # 로컬 날짜와 같은 달력 셀에 떨어져 결함이 재현된다.
+    create_resp = client.post(
+        "/api/collection-items/",
+        {"name": "굿즈중복집계확인아이템", "acquired_on": today.isoformat()},
+        content_type="application/json",
+    )
+    assert create_resp.status_code == 201
+
+    resp = client.get("/archive/calendar/")
+
+    assert resp.status_code == 200
+    cell = _find_cell(resp.context["weeks"], today)
+    assert cell["count"] == 1
+    assert resp.context["kind_counts"]["goods"] == 1
+
+
+@pytest.mark.django_db
+def test_굿즈를_하드_삭제하면_등록_로그가_남아도_달력에_표시되지_않는다(user_client):
+    _, client = user_client()
+    today = timezone.localdate()
+    create_resp = client.post(
+        "/api/collection-items/",
+        {"name": "굿즈하드삭제잔존확인아이템", "acquired_on": today.isoformat()},
+        content_type="application/json",
+    )
+    assert create_resp.status_code == 201
+    item_id = create_resp.json()["id"]
+    # DELETE /api/collection-items/<id>/는 CollectionItemDetailView의 기본
+    # destroy 경로(하드 삭제)를 그대로 탄다 — ActivityLogEntry는
+    # on_delete=SET_NULL이라 subject_label 스냅샷을 지닌 채 살아남는데, 이
+    # 잔존 로그가 유령 표시의 메커니즘이다.
+    delete_resp = client.delete(f"/api/collection-items/{item_id}/")
+    assert delete_resp.status_code == 204
+
+    resp = client.get("/archive/calendar/")
+
+    assert resp.status_code == 200
+    cell = _find_cell(resp.context["weeks"], today)
+    assert cell["count"] == 0
+    assert resp.context["kind_counts"]["goods"] == 0
+    # 오늘 하루 동안 다른 활동은 전혀 만들지 않았으므로, 선택일 목록이 완전히
+    # 비어 있는지 확인하는 것만으로 "그 굿즈가 안 보인다"는 사실이 충분히
+    # 증명된다 — 다른 그룹 항목이 섞여 들어와 이름 검사만으로는 놓칠 수 있는
+    # 여지 자체가 없다.
+    assert resp.context["selected_items"] == []
+
+
+# ---------------------------------------------------------------------------
+# CAL-DEFECT-04 (2026-07-31 중복 표시 결함 계획 §7) — 굿즈 수량만 고치는
+# 것은 "언제 획득했나"를 바꾸지 않으므로 달력에 새 활동이 생기면 안 된다
+# (사용자 결정: 굿즈 수정은 달력에 표시하지 않는다). visit/goods 생성
+# 시점과 달리 이건 별개 kind(COLLECTION_ITEM_ORGANIZED)라 독자적인 Red가
+# 필요하다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_굿즈_수량만_수정하면_달력에_새_활동이_생기지_않는다(user_client):
+    _, client = user_client()
+    today = timezone.localdate()
+    # 정리(organize) 로그의 occurred_at은 서비스가 실제 현재 시각(오늘)으로
+    # 찍으므로, 획득일을 오늘과 겹치게 두면 두 활동이 같은 셀에 섞여 "새
+    # 활동이 생겼는지"를 구분할 수 없다. 이번 달 안에서 오늘과 다른 날짜가
+    # 필요한데, 오늘이 매월 1일이면 "이번 달 1일"을 못 쓰므로 그때만 2일을
+    # 쓴다 — 어느 달이든 1일과 2일은 항상 존재해 월초에도 안전하다.
+    acquired_on = today.replace(day=2) if today.day == 1 else today.replace(day=1)
+    create_resp = client.post(
+        "/api/collection-items/",
+        {
+            "name": "굿즈수정활동미생성확인아이템",
+            "acquired_on": acquired_on.isoformat(),
+            "quantity": 1,
+        },
+        content_type="application/json",
+    )
+    assert create_resp.status_code == 201
+    item_id = create_resp.json()["id"]
+    update_resp = client.patch(
+        f"/api/collection-items/{item_id}/",
+        {"quantity": 5},
+        content_type="application/json",
+    )
+    assert update_resp.status_code == 200
+
+    resp = client.get("/archive/calendar/")
+
+    assert resp.status_code == 200
+    today_cell = _find_cell(resp.context["weeks"], today)
+    assert today_cell["count"] == 0
+    assert resp.context["kind_counts"]["goods"] == 1
+    acquired_cell = _find_cell(resp.context["weeks"], acquired_on)
+    assert acquired_cell["count"] == 1
