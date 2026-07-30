@@ -4,35 +4,78 @@
 {% block title %}회원 탈퇴 — takulife{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/account_settings.css' %}">
 {% endblock %}
 
 {% block content %}
-<main class="auth-container" id="content">
-  <h1>회원 탈퇴</h1>
-  <p class="auth-error">
-    탈퇴를 신청하면 계정이 삭제 예약 상태로 전환되고 모든 기기에서 로그아웃됩니다.
-    10일 안에 다시 로그인하면 예약이 자동으로 취소됩니다. 10일이 지나면 계정과
-    저장한 이벤트, 다녀온 기록, 컬렉션에 등록한 굿즈, 직접 등록한 항목 및 첨부
-    이미지가 모두 삭제되며 되돌릴 수 없습니다.
-  </p>
-  <form method="post" action="{% url 'account-delete-page' %}">
-    {% csrf_token %}
-    <div class="form-group">
-      <label for="id_password">현재 비밀번호로 확인</label>
-      <input
-        type="password"
-        name="password"
-        id="id_password"
-        required
-        {% if field_errors.password %}aria-describedby="id_password-error"{% endif %}
-      >
-      {% if field_errors.password %}
-        <p class="field-error" id="id_password-error">{{ field_errors.password }}</p>
+<main class="page account-settings-page" id="content">
+  <div class="account-settings-shell">
+    {% include "core/partials/_account_settings_index.html" with active="delete" %}
+    <div class="account-settings-panel account-settings-panel-danger">
+      {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="회원 탈퇴" description="되돌릴 수 없는 작업입니다. 아래 내용을 확인한 뒤 진행하세요." %}
+
+      {% comment %}
+      순서가 의미(비밀번호 확인 → 10일 유예 → 영구 삭제)라 <ol>로 마크업한다
+      (.rule-list는 순서 없는 안내 불릿 전용이라 여기 쓰지 않는다).
+      {% endcomment %}
+      <ol class="account-settings-delete-steps">
+        <li><span class="account-settings-step-num is-brand" aria-hidden="true">1</span><span class="account-settings-step-body">비밀번호로 본인 확인</span></li>
+        <li><span class="account-settings-step-num is-mint" aria-hidden="true">2</span><span class="account-settings-step-body">10일 안에 다시 로그인하면 자동 취소</span></li>
+        <li><span class="account-settings-step-num is-rose" aria-hidden="true">3</span><span class="account-settings-step-body">10일 경과 시 영구 삭제</span></li>
+      </ol>
+
+      <div class="account-settings-info-boxes">
+        <div class="account-settings-info-box">
+          <h2>개인정보 처리</h2>
+          <p>10일이 지나면 계정과 저장한 이벤트, 다녀온 기록, 컬렉션에 등록한 굿즈, 직접 등록한 항목 및 첨부 이미지가 모두 삭제되며 되돌릴 수 없습니다.</p>
+        </div>
+        <div class="account-settings-info-box">
+          <h2>세션 유지</h2>
+          <p>탈퇴를 신청하면 이 기기를 포함한 모든 기기에서 즉시 로그아웃됩니다.</p>
+        </div>
+        <div class="account-settings-info-box">
+          <h2>복구 방법</h2>
+          <p>10일 안에 같은 이메일로 다시 로그인하면 삭제 예약이 자동으로 취소됩니다.</p>
+        </div>
+      </div>
+
+      {% if delete_targets %}
+        <h2 class="account-settings-delete-targets-head">삭제될 항목</h2>
+        <div class="account-settings-delete-targets">
+          {% for target in delete_targets %}
+            <div class="account-settings-delete-target">
+              <span class="account-settings-delete-target-label">{{ target.label }}</span>
+              <span class="account-settings-delete-target-value">{{ target.count }}{{ target.unit }}</span>
+            </div>
+          {% endfor %}
+        </div>
       {% endif %}
+
+      <form method="post" action="{% url 'account-delete-page' %}" class="account-settings-form" data-submit-guard>
+        {% csrf_token %}
+        <div class="account-settings-field">
+          <label for="id_password">현재 비밀번호로 확인 <span class="account-settings-required" aria-hidden="true">*</span></label>
+          <input
+            type="password"
+            name="password"
+            id="id_password"
+            required
+            {% if field_errors.password %}aria-describedby="id_password-error" aria-invalid="true"{% endif %}
+          >
+          {% if field_errors.password %}
+            <p class="account-settings-field-error" id="id_password-error">{{ field_errors.password }}</p>
+          {% endif %}
+        </div>
+        <button type="submit" class="account-settings-submit-btn is-rose">탈퇴 예약하기</button>
+      </form>
+
+      <p class="account-settings-back"><a href="{% url 'account-settings-page' %}">취소하고 돌아가기</a></p>
     </div>
-    <button type="submit" class="btn btn-danger btn-block">탈퇴 예약하기</button>
-  </form>
-  <p><a href="/collection/">취소하고 돌아가기</a></p>
+  </div>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/shared/staff_submit_guard.js' %}"></script>
+  <script defer src="{% static 'js/pages/account_settings.js' %}"></script>
 {% endblock %}

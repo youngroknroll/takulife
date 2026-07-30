@@ -1,0 +1,31 @@
+{% comment %}
+_account_settings_field.html — label(+*) + input + field error, wired for
+IC4 (id="{id}-error", aria-describedby only when this field has an error).
+
+Renders the <input> manually instead of `{{ field }}` — the only way to
+attach a conditional aria-describedby without a Python-side widget change
+(_auth_field.html's own version of this gap is deliberately deferred
+elsewhere, out of scope: 12 templates outside this plan). Preserves any
+attrs the form field's widget already sets (autocomplete, maxlength, ...)
+by echoing widget.attrs verbatim. Password inputs never echo back
+`field.value` — Django's own PasswordInput renders empty for the same
+reason (render_value=False); reproducing that manually here matters
+because this partial replaces `{{ field }}` entirely.
+
+Usage: {% include "core/partials/_account_settings_field.html" with field=form.email label="이메일" %}
+{% endcomment %}
+<div class="account-settings-field">
+  <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="account-settings-required" aria-hidden="true">*</span>{% endif %}</label>
+  <input
+    type="{{ field.field.widget.input_type }}"
+    name="{{ field.html_name }}"
+    id="{{ field.id_for_label }}"
+    {% if field.field.widget.input_type != "password" and field.value %}value="{{ field.value }}"{% endif %}
+    {% if field.field.required %}required{% endif %}
+    {% for attr_name, attr_value in field.field.widget.attrs.items %}{{ attr_name }}="{{ attr_value }}" {% endfor %}
+    {% if field.errors %}aria-describedby="{{ field.id_for_label }}-error" aria-invalid="true"{% endif %}
+  >
+  {% if field.errors %}
+    <p class="account-settings-field-error" id="{{ field.id_for_label }}-error">{{ field.errors.0 }}</p>
+  {% endif %}
+</div>

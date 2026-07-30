@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}이메일 변경 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/account_settings.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="page account-settings-page" id="content">
+  <div class="account-settings-shell">
+    {% include "core/partials/_account_settings_index.html" with active="email" %}
+    <div class="account-settings-panel">
+      {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 변경" description="현재 비밀번호를 확인한 뒤 새 이메일로 변경해요." errors=form.non_field_errors %}
+
+      <h2 class="account-settings-delete-targets-head">현재 이메일</h2>
+      <div class="account-settings-email-current">
+        <span class="account-settings-overview-value" title="{{ current_emailaddress.email|default:request.user.email }}">{{ current_emailaddress.email|default:request.user.email }}</span>
+        {% if current_emailaddress %}
+          <span class="account-settings-badge is-mint">인증됨</span>
+        {% else %}
+          <span class="account-settings-badge is-warn">미인증</span>
+          {% comment %}
+          제출 가드가 버튼을 disable하면 버튼 name은 전송에서 빠진다. allauth는
+          이 이름으로 분기하므로 hidden으로 보낸다.
+          {% endcomment %}
+          <form method="post" action="{% url 'account_email' %}" class="account-settings-inline-form" data-submit-guard>
+            {% csrf_token %}
+            <input type="hidden" name="email" value="{{ request.user.email }}">
+            <input type="hidden" name="action_send" value="1">
+            <button type="submit" class="account-settings-link-btn">인증 메일 보내기</button>
+          </form>
+        {% endif %}
+        <p class="account-settings-email-hint">이 주소로 로그인하고 알림을 받습니다.</p>
+      </div>
+
+      {% if new_emailaddress %}
+        <div class="account-settings-email-pending">
+          <span class="account-settings-overview-value" title="{{ new_emailaddress.email }}">{{ new_emailaddress.email }}</span>
+          <span class="account-settings-badge is-warn">인증 대기</span>
+          <div class="account-settings-pending-actions">
+            {% comment %}
+            제출 가드가 버튼을 disable하면 버튼 name은 전송에서 빠진다. allauth는
+            이 이름으로 분기하므로 hidden으로 보낸다.
+            {% endcomment %}
+            <form method="post" action="{% url 'account_email' %}" class="account-settings-inline-form" data-submit-guard>
+              {% csrf_token %}
+              <input type="hidden" name="email" value="{{ new_emailaddress.email }}">
+              <input type="hidden" name="action_send" value="1">
+              <button type="submit" class="account-settings-link-btn">인증 메일 재발송</button>
+            </form>
+            <form method="post" action="{% url 'account_email' %}" class="account-settings-inline-form" data-submit-guard>
+              {% csrf_token %}
+              <input type="hidden" name="email" value="{{ new_emailaddress.email }}">
+              <input type="hidden" name="action_remove" value="1">
+              <button type="submit" class="account-settings-link-btn is-rose">변경 취소</button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+
+      {% comment %}
+      제출 가드가 버튼을 disable하면 버튼 name은 전송에서 빠진다. allauth는
+      이 이름으로 분기하므로 hidden으로 보낸다.
+      {% endcomment %}
+      <form method="post" action="{% url 'account_email' %}" class="account-settings-form" data-submit-guard>
+        {% csrf_token %}
+        {% include "core/partials/_account_settings_field.html" with field=form.email label="새 이메일" %}
+        {% include "core/partials/_account_settings_field.html" with field=form.current_password label="현재 비밀번호" %}
+        <input type="hidden" name="action_add" value="1">
+        <button type="submit" class="account-settings-submit-btn">이메일 변경하기</button>
+      </form>
+
+      <p class="account-settings-back"><a href="{% url 'account-settings-page' %}">취소하고 돌아가기</a></p>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/shared/staff_submit_guard.js' %}"></script>
+  <script defer src="{% static 'js/pages/account_settings.js' %}"></script>
+{% endblock %}

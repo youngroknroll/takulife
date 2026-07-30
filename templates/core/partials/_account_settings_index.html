@@ -1,0 +1,49 @@
+{% comment %}
+_account_settings_index.html — shared left index for the 6 account-settings
+screens (settings/email_change/password_change/delete_account share the
+2-col shell; email_confirm/delete_done render standalone and never include
+this). Placed FIRST in the DOM, before the right-hand panel — IC2: no
+`order`/`display:contents`/`grid-column` swap on mobile reflow, this repo's
+3rd-time-confirmed rule (archive_collection.css/archive.css/
+archive_visit_detail.css already learned this the hard way).
+
+Usage: {% include "core/partials/_account_settings_index.html" with active="email" %}
+  active — one of: hub | email | password | delete
+
+The 로그인 정보 block below the nav reads request.user directly (never a
+view-supplied account_email/date_joined) so this single partial works
+unmodified across every including view, even ones that don't pass an
+account overview context (email_change/password_change/delete_account only
+ever pass email_verified for their own body, not the sidebar).
+{% endcomment %}
+<nav class="account-settings-index" aria-label="계정 설정 메뉴">
+  <div class="account-settings-index-tabs">
+    <a
+      href="{% url 'account-settings-page' %}"
+      class="account-settings-index-tab{% if active == "hub" %} is-active{% endif %}"
+      {% if active == "hub" %}aria-current="page" aria-label="로그인 정보, 현재 위치"{% endif %}
+    >로그인 정보</a>
+    <a
+      href="{% url 'account_email' %}"
+      class="account-settings-index-tab{% if active == "email" %} is-active{% endif %}"
+      {% if active == "email" %}aria-current="page" aria-label="이메일 변경, 현재 위치"{% endif %}
+    >이메일 변경</a>
+    <a
+      href="{% url 'account_change_password' %}"
+      class="account-settings-index-tab{% if active == "password" %} is-active{% endif %}"
+      {% if active == "password" %}aria-current="page" aria-label="비밀번호 변경, 현재 위치"{% endif %}
+    >비밀번호 변경</a>
+    {% if not request.user.is_staff %}
+      <a
+        href="{% url 'account-delete-page' %}"
+        class="account-settings-index-tab is-danger{% if active == "delete" %} is-active{% endif %}"
+        {% if active == "delete" %}aria-current="page" aria-label="회원 탈퇴, 현재 위치"{% endif %}
+      >회원 탈퇴</a>
+    {% endif %}
+  </div>
+
+  <div class="account-settings-login-info">
+    <p class="account-settings-login-info-email" title="{{ request.user.email }}">{{ request.user.email }}</p>
+    <p class="account-settings-login-info-joined">{{ request.user.date_joined|date:"Y.m.d" }} 가입</p>
+  </div>
+</nav>

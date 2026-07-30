@@ -1,0 +1,26 @@
+{% comment %}
+_account_settings_panel_head.html — kicker + h1 + description + an optional
+top-of-panel error banner (role="alert", IC4). Shared across all 6 account
+screens (including the two standalone ones, email_confirm/delete_done).
+
+Usage:
+  {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 변경" description="..." errors=form.non_field_errors %}
+  {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 확인" error_text="이 이메일은 이미 다른 계정에서 확인되었습니다." %}
+Args:
+  kicker       — small red-ink label above the title
+  title        — <h1> text
+  description  — optional paragraph under the title
+  errors       — optional iterable of error strings (e.g. form.non_field_errors)
+  error_text   — optional single error string (for views with no bound form,
+                 e.g. allauth's ConfirmEmailView) — takes priority over `errors`
+{% endcomment %}
+<p class="account-settings-kicker">{{ kicker }}</p>
+<h1 class="account-settings-title">{{ title }}</h1>
+{% if description %}<p class="account-settings-description">{{ description }}</p>{% endif %}
+{% if error_text %}
+  <div class="account-settings-error-banner" role="alert">{{ error_text }}</div>
+{% elif errors %}
+  <div class="account-settings-error-banner" role="alert">
+    <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+  </div>
+{% endif %}
