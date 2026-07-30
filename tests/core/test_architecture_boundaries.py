@@ -120,6 +120,53 @@ def test_손유지_목록에_없는_새_파일의_금지_임포트도_탐지한�
     assert any(path.name == "poison.py" for path in violations), violations
 
 
+def test_같은_이름의_로컬_서브모듈을_상대_임포트하면_위반으로_잡히지_않는다(tmp_path):
+    """core/views/__init__.py의 `from .archive import (...)` 형태를 재현한다.
+    이 저장소의 앱은 전부 최상위 패키지라 상대 임포트(level>0)로는 애초에
+    앱 경계를 넘을 수 없다 — archive라는 이름의 로컬 서브모듈(core/views/archive.py)을
+    상대 경로로 부르는 것과, archive 앱을 절대 경로로 부르는 것은 이름은
+    같아도 다른 대상이므로 전자는 오탐이다. 이 방어선은 core 가드를 손유지
+    목록에서 글롭으로 전환하는 후속 작업의 선행 조건이다."""
+    (tmp_path / "core" / "views").mkdir(parents=True)
+    (tmp_path / "core" / "views" / "__init__.py").write_text(
+        "from .archive import archive\n"
+    )
+    (tmp_path / "core" / "views" / "archive.py").write_text("")
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "archive" / "models.py").write_text("")
+
+    files = _domain_source_files(tmp_path, ["core", "archive"])
+    violations = {
+        path: mods
+        for path in files
+        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+    }
+
+    assert not violations, violations
+
+
+def test_같은_이름의_절대_임포트는_상대_임포트_스킵과_무관하게_여전히_잡힌다(tmp_path):
+    """앞선 오탐 방지 테스트가 스킵 로직을 통째로 넓히는 방향(모든 ImportFrom
+    스킵)으로 퇴화해도 통과해버리지 않도록 대조하는 테스트다 — 같은 archive라는
+    이름이라도 level=0인 절대 임포트는 실제로 archive 앱 경계를 넘으므로
+    여전히 위반으로 탐지되어야 한다."""
+    (tmp_path / "core" / "views").mkdir(parents=True)
+    (tmp_path / "core" / "views" / "__init__.py").write_text(
+        "from archive import archive\n"
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "archive" / "models.py").write_text("")
+
+    files = _domain_source_files(tmp_path, ["core", "archive"])
+    violations = {
+        path: mods
+        for path in files
+        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+    }
+
+    assert any(path.name == "__init__.py" for path in violations), violations
+
+
 def test_금지_임포트가_없는_새_파일은_위반으로_보고되지_않는다(tmp_path):
     (tmp_path / "events").mkdir()
     (tmp_path / "archive").mkdir()
