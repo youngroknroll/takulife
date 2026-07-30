@@ -996,6 +996,33 @@ Deferred Refactoring Note
 - Include file and line evidence for review findings whenever source exists.
 - Do not hide unresolved risk.
 
+### Numbers In Documents (binding)
+
+A count written in a document is a claim, and four of them have already
+misdirected work here: `docs/backlog.md` A3 said 8 unguarded sites and
+measurement found 2; A4 said 41 risky assertions and measurement found 1; A1
+read as not started while its fix had merged hours earlier; the boundary-guard
+record said 34 entries over 41 files when the truth was 18 unique files and 48.
+Every one of them read as fact. Three of the four were written by an
+orchestrator who had already run commands that session, so recent measurement
+elsewhere is not protection.
+
+- **Name the unit.** `34` meant registrations, not files. A bare count that
+  does not say what it counts is not evidence and must not size work.
+- **Mark how it was obtained.** `[실측]` for a number produced by running a
+  command; `[코드]` for one read from source. A `[코드]` number is an estimate.
+- **Record the reproducing command** whenever it is short enough to inline.
+- **Re-measure before acting on any number an earlier session wrote**,
+  including your own from earlier in the same session. Documents go stale
+  within hours.
+- **When measurement contradicts the document, correct it in the same commit**
+  and keep the original text marked as the pre-measurement record. The gap
+  between the two is what makes the next reader check instead of trust.
+
+Prefer a set operation over a hand count: `git show <ref>:<file>` parsed with
+`ast`, then compared against the live set, settles in seconds what an estimate
+gets wrong.
+
 ## Git Commit Convention
 
 Allowed prefixes:
