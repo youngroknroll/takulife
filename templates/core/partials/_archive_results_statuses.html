@@ -17,6 +17,12 @@
 `.record-row-actions`에 data-status-error-container를 명시 부착 —
 `.record-row`에 상태 전환 버튼 2개 + 삭제 버튼까지 최대 3개 형제가 생기므로
 sibling-lock가 parentElement 폴백에 의존하면 안 된다.
+
+2026-07-31 백로그 D1: visited 분기에 `_archive_results_record.html`의
+기록 CTA 3분기(＋기록/수정/생략)를 그대로 이식했다. 형제와 다른 점은
+이 파셜엔 "예정으로" 되돌리기 버튼이 있어 CTA 뒤에 보존한다는 것뿐 —
+CSS margin-right:auto가 첫 자식에만 걸리므로 DOM 순서는 [CTA] →
+[예정으로] → [삭제]를 유지해야 한다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if has_statuses %}
@@ -77,6 +83,13 @@ sibling-lock가 parentElement 폴백에 의존하면 안 된다.
                   data-status="planned"
                   data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
               {% elif row.status_slug == 'visited' %}
+                {% if row.review_text %}
+                  {% if row.visit_record_id %}
+                    <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">수정</a>
+                  {% endif %}
+                {% else %}
+                  <a class="record-row-add-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">＋ 기록</a>
+                {% endif %}
                 <button class="status-btn planned" type="button" data-status-action="change"
                   data-status="planned"
                   data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>

@@ -19,7 +19,7 @@
 
     <section class="layout">
       <article class="panel">
-        <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}">
+        <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}" data-submit-guard>
           {% csrf_token %}
           <input type="hidden" name="confirmed" value="yes">
           <button class="action-button danger" type="submit">삭제 확정</button>

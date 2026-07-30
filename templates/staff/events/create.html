@@ -25,7 +25,7 @@
       <article class="panel">
         <h2>필드 입력</h2>
 
-        <form method="post" action="/staff/events/new/" novalidate>
+        <form method="post" action="/staff/events/new/" novalidate data-submit-guard>
           {% csrf_token %}
           <div class="field-grid">
             <div class="field full">

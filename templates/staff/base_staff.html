@@ -14,6 +14,17 @@ this only replaces layout blocks.
 {% endblock %}
 
 {% comment %}
+Loaded once for every staff page here (not per-template extra_js) so the
+double-submit guard (static/js/shared/staff_submit_guard.js) covers create/
+edit/delete/discovery forms without editing each template's own extra_js
+block — see prompt_plan.md D3. Opt-in via data-submit-guard on each form;
+this script never assumes which forms exist on the current page.
+{% endcomment %}
+{% block shell_js %}
+<script defer src="{% static 'js/shared/staff_submit_guard.js' %}"></script>
+{% endblock %}
+
+{% comment %}
 The public skip link (base.html) targets #content, which staff pages don't
 have (they use #staff-main) — suppressed here since _console_shell.html
 already ships its own skip link pointed at the right target.
