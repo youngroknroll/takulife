@@ -50,7 +50,7 @@
         <hr class="panel-divider">
 
         <h3>수집 소스 상태</h3>
-        <form method="post" action="{% url 'staff:draft-discovery-run' %}">
+        <form method="post" action="{% url 'staff:draft-discovery-run' %}" data-submit-guard>
           {% csrf_token %}
           {% if draft_discovery_enabled %}
             <button class="action-button" type="submit">지금 수집</button>

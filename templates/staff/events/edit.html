@@ -33,7 +33,7 @@
 
         {% comment %}action은 화이트리스트 기반 list_query를 보존 — POST 후 PRG 리다이렉트가
            목록 필터(?warning=/?publish_status=)를 유지하려면 POST URL 자체에 실려야 함{% endcomment %}
-        <form method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" enctype="multipart/form-data" novalidate>
+        <form method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" enctype="multipart/form-data" novalidate data-submit-guard>
           {% csrf_token %}
           <div class="field-grid">
             <div class="field full">
@@ -140,7 +140,7 @@
             현재 비공개(초안)입니다. 다시 게시하면 공개 사이트에 노출됩니다.
           {% endif %}
         </p>
-        <form method="post" action="/staff/events/{{ event.id }}/toggle-publish/{% if list_query %}?{{ list_query }}{% endif %}">
+        <form method="post" action="/staff/events/{{ event.id }}/toggle-publish/{% if list_query %}?{{ list_query }}{% endif %}" data-submit-guard>
           {% csrf_token %}
           {% if event.publish_status == "published" %}
             <button class="action-button secondary" type="submit">게시 내리기</button>
