@@ -26,6 +26,7 @@ from .models import (
     PersonalEntry,
     UserEventStatus,
     VisitRecord,
+    VisitRecordPhoto,
 )
 
 # Canonical archive status slugs, sourced from the model's own choices so the
@@ -406,6 +407,13 @@ def user_visit_record_counts(user) -> dict:
         "total_count": queryset.count(),
         "memo_count": queryset.exclude(short_review="").count(),
     }
+
+
+def user_visit_record_photo_count(user) -> int:
+    """Return the total number of visit-record photos owned by the given user
+    (used by the account-deletion 삭제 대상 요약, not folded into
+    user_visit_record_counts to keep that function's single queryset focus)."""
+    return VisitRecordPhoto.objects.filter(visit_record__user=user).count()
 
 
 def list_user_visit_records(
