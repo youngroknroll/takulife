@@ -1,0 +1,450 @@
+/* archive_personal_detail.css — /archive/personal/<id>/ 읽기 전용 상세.
+   Design source: docs/FE/personal-place-detail-edit.md (WED+BIR 사전 산출물,
+   2026-07-30). Mirrors archive_collection_detail.css's 2-col grid / gallery
+   column / ≤45rem single-column + fixed CTA bar structure and tokens.
+
+   This page does NOT load archive.css (personal_entries.html의 페이지 전용
+   시트) — 그 파일의 최상위 미스코프 클래스(.promote-btn, .record-row-*,
+   .mobile-cta 등)를 그대로 끌어오면 이 페이지에 없는 다른 선택자와 우연히
+   충돌할 수 있다(half-swap 회피, collection_detail 트랙 선례). 대신
+   .promote-badge/.promote-btn/.promote-form/.promote-note/.form-group/
+   .form-error/.form-submit-btn은 base.html이 전역 로드하는
+   components/controls.css 소유라 그대로 재사용하고(WED 판정 1과 동일 원칙 —
+   전역 컴포넌트는 페이지가 다시 칠하지 않는다), 이 페이지에서만 쓰는 사진/
+   찜·상태 줄/고정 CTA/메타/방문기록 목록만 아래에 페이지 스코프로 정의한다.
+   .status-btn/.interest-btn/.status-row/.chip/.form-group도 전역
+   (controls.css/objects/layout.css) 그대로 — WED 판정 1: 시안 청록 재도색
+   금지, 목록과 상세가 같은 상태에 같은 색이어야 한다. */
+
+.personal-detail-page {
+  max-width: 53rem;
+  margin: 0 auto;
+}
+
+.personal-detail-page .personal-detail-back-link {
+  display: inline-block;
+  margin-bottom: 0.875rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+.personal-detail-page .personal-detail-back-link:hover {
+  text-decoration: underline;
+}
+
+/* ── global (top-of-page) error banner ───────────────────────────────── */
+.personal-detail-page .personal-detail-global-error {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 0.5625rem;
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.personal-detail-page .personal-detail-global-error:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* ── two-column grid ─────────────────────────────────────────────────── */
+.personal-detail-page .personal-detail-grid {
+  display: grid;
+  grid-template-columns: 20.5rem minmax(0, 1fr);
+  gap: 2.375rem;
+  align-items: start;
+}
+
+/* ── cover — 4:3 (WED 화면 구조: "사진 4:3(없으면 📍 + sr-only)") ──────── */
+.personal-detail-page .personal-detail-cover {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 13px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.personal-detail-page .personal-detail-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.personal-detail-page .personal-detail-noimg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+  color: var(--muted);
+}
+
+/* ── 🔒 나만 보기 — 좌상단 정적 필. WED §화면구조: 항상 "나만 보기"라
+   템플릿 상수(컨텍스트에 없음) — 토글도 링크도 아닌 정적 표시. */
+.personal-detail-page .personal-detail-lock-pill {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6875rem;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── 찜 + 상태 필 줄 — .status-row(objects/layout.css)를 그대로 쓰고 위
+   여백만 이 페이지 값으로 보정한다. */
+.personal-detail-page .personal-detail-status-row {
+  margin-top: 0.875rem;
+}
+
+/* ── ＋ 방문 기록 남기기 — 전폭, 인플로우(WED 판정 3: 모바일 고정 바는
+   이 CTA 단독, 수정/삭제는 인플로우로 별도 위치). data-cta-watch가 이
+   버튼이 화면 밖으로 스크롤되는 시점을 cta_visibility.js에 알린다. */
+.personal-detail-page .personal-detail-visit-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  height: 2.75rem;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.personal-detail-page .personal-detail-visit-cta:hover {
+  background: var(--brand-ink);
+}
+.personal-detail-page .personal-detail-visit-cta.is-item-gone-locked {
+  background: var(--bg-soft);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ── 기록 정보 (등록일 / 마지막 수정 / 공개 범위) ────────────────────── */
+.personal-detail-page .personal-detail-record-info {
+  margin: 1.125rem 0 0;
+  border-top: 1px solid var(--line);
+}
+.personal-detail-page .personal-detail-record-info-row {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 0.625rem;
+  padding: 0.625rem 0.125rem;
+  border-bottom: 1px solid var(--line);
+}
+.personal-detail-page .personal-detail-record-info-row dt {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.personal-detail-page .personal-detail-record-info-row dd {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text);
+}
+
+/* ── 우열: 칩 행(카테고리 · 작품명 · · · 비공식 장소) ─────────────────── */
+.personal-detail-page .personal-detail-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-bottom: 0.625rem;
+}
+.personal-detail-page .personal-detail-chip {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.personal-detail-page .personal-detail-chip--kind {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1875rem 0.5625rem;
+  border-radius: var(--radius-chip);
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-weight: 600;
+}
+.personal-detail-page .personal-detail-dot {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* ── title ─────────────────────────────────────────────────────────── */
+.personal-detail-page .personal-detail-title {
+  margin: 0 0 0.5rem;
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+/* ── 장소명 · 지역 + 수정/삭제 ───────────────────────────────────────── */
+.personal-detail-page .personal-detail-subtitle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.125rem;
+}
+.personal-detail-page .personal-detail-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.personal-detail-page .personal-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+.personal-detail-page .personal-detail-edit-link {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+.personal-detail-page .personal-detail-edit-link:hover {
+  text-decoration: underline;
+}
+.personal-detail-page .personal-detail-edit-link.is-item-gone-locked {
+  color: var(--muted);
+  pointer-events: none;
+  text-decoration: none;
+}
+.personal-detail-page .personal-detail-delete-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--rose-ink);
+  cursor: pointer;
+}
+.personal-detail-page .personal-detail-delete-btn:hover {
+  text-decoration: underline;
+}
+.personal-detail-page .personal-detail-delete-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  text-decoration: none;
+}
+
+/* ── 메타 5행 ─────────────────────────────────────────────────────────── */
+.personal-detail-page .personal-detail-meta {
+  margin: 0 0 1.375rem;
+  border-top: 2px solid var(--text);
+}
+.personal-detail-page .personal-detail-meta-row {
+  display: grid;
+  grid-template-columns: 6.875rem 1fr;
+  gap: 0.875rem;
+  padding: 0.75rem 0.125rem;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+}
+.personal-detail-page .personal-detail-meta-row dt {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.personal-detail-page .personal-detail-meta-row dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.personal-detail-page .personal-detail-meta-row dd a {
+  color: var(--brand-ink);
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.personal-detail-page .personal-detail-meta-row dd a:hover {
+  text-decoration: underline;
+}
+
+/* ── 메모 ──────────────────────────────────────────────────────────── */
+.personal-detail-page .personal-detail-memo-head {
+  margin: 0 0 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.personal-detail-page .personal-detail-memo {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* ── 공식 제보 (전역 .promote-btn/.promote-badge/.promote-form/.promote-note
+   재사용 — controls.css가 정의). 이 페이지에서만 필요한 세로 간격만 보정. */
+.personal-detail-page .promote-btn,
+.personal-detail-page .promote-badge {
+  margin-bottom: 1.25rem;
+}
+.personal-detail-page .promote-btn.is-item-gone-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.personal-detail-page .personal-detail-promote-form {
+  margin-bottom: 1.25rem;
+}
+
+/* ── 이 장소의 방문 기록 ─────────────────────────────────────────────── */
+.personal-detail-page .personal-detail-visits-head {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.personal-detail-page .personal-detail-visits-head span {
+  color: var(--brand-ink);
+}
+.personal-detail-page .personal-detail-visit-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.personal-detail-page .personal-detail-visit-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--text);
+}
+.personal-detail-page .personal-detail-visit-row:hover {
+  background: var(--bg-soft);
+}
+.personal-detail-page .personal-detail-visit-date {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.personal-detail-page .personal-detail-visit-review {
+  font-size: 0.85rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.personal-detail-page .personal-detail-visit-row.is-item-gone-locked {
+  pointer-events: none;
+  opacity: 0.6;
+}
+.personal-detail-page .personal-detail-visits-empty {
+  margin: 0;
+  padding: 0.875rem;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ── sr-only (페이지 스코프 복제본 — 저장소 전역 유틸 없음, 형제 페이지
+   동일 관례) ─────────────────────────────────────────────────────────── */
+.personal-detail-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── 모바일 고정 CTA 바 — cta_visibility.js가 [data-cta-fixed]의 hidden을
+   토글한다. 단일 버튼(WED 판정 3). 안전 여백 6rem(WED 판정 6). ─────────── */
+.personal-detail-page .personal-detail-cta-bar {
+  display: none;
+}
+
+@media (max-width: 45rem) {
+  .personal-detail-page {
+    padding-bottom: 6rem;
+  }
+  .personal-detail-page .personal-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .personal-detail-page .personal-detail-gallery {
+    grid-row: 1;
+  }
+  .personal-detail-page .personal-detail-main {
+    grid-row: 2;
+  }
+  .personal-detail-page .personal-detail-title {
+    font-size: var(--fs-xl-mobile);
+    line-height: 1.25;
+  }
+  .personal-detail-page .personal-detail-meta-row {
+    grid-template-columns: 5.375rem 1fr;
+    gap: 0.625rem;
+    padding: 0.5625rem 0;
+  }
+
+  .personal-detail-page .personal-detail-cta-bar {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--chrome-glass-cta);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .personal-detail-page .personal-detail-cta-bar[hidden] {
+    display: none;
+  }
+  .personal-detail-page .personal-detail-cta-bar a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.75rem;
+    border-radius: 10px;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+  .personal-detail-page .personal-detail-cta-bar a.is-item-gone-locked {
+    background: var(--bg-soft);
+    color: var(--muted);
+    pointer-events: none;
+  }
+}

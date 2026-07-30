@@ -336,8 +336,15 @@
       }
 
       // Nothing above matched (validation / notfound / server / unknown) —
-      // show the error instead of failing silently.
+      // show the error instead of failing silently. Also broadcast the raw
+      // result so a page-specific listener (e.g. personal_detail.js's 404
+      // lock cascade) can react without this shared module knowing about it.
+      // 순서 중요: showInlineError가 먼저 포커스를 잡아야, 뒤이은 dispatch의
+      // 리스너가 그 오류 요소를 지우고 백링크로 포커스를 옮길 수 있다.
       showInlineError(button, window.TakuAPI.formatError(result));
+      document.dispatchEvent(
+        new CustomEvent("status:request-failed", { detail: { result: result } })
+      );
     } finally {
       unlockSiblings();
     }
@@ -471,8 +478,15 @@
     }
 
     // Nothing above matched (validation / notfound / server / unknown) —
-    // show the error instead of failing silently.
+    // show the error instead of failing silently. Also broadcast the raw
+    // result so a page-specific listener (e.g. personal_detail.js's 404
+    // lock cascade) can react without this shared module knowing about it.
+    // 순서 중요: showInlineError가 먼저 포커스를 잡아야, 뒤이은 dispatch의
+    // 리스너가 그 오류 요소를 지우고 백링크로 포커스를 옮길 수 있다.
     showInlineError(button, window.TakuAPI.formatError(result));
+    document.dispatchEvent(
+      new CustomEvent("status:request-failed", { detail: { result: result } })
+    );
   }
 
   // Idempotent: a button is wired at most once (data-status-bound guard), so

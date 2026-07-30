@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from archive.models import PersonalEntry, UserEventStatus
+from core.vocab import archive_status_label
 
 pytestmark = pytest.mark.web
 
@@ -247,3 +248,33 @@ class TestArchivePersonalEntryDetailVisitRecords:
 
         assert resp.context["visit_records"] == []
         assert resp.context["visit_records_count"] == 0
+
+
+@pytest.mark.django_db
+class TestArchivePersonalEntryDetailStatusLabel:
+    """PD-12: 목록 뷰(archive_personal_entries)는 이미 어휘 정본
+    archive_status_label()로 status_label/planned_label을 계산해 넘긴다
+    (core/views/archive.py:492-493). 상세 뷰가 같은 문구를 템플릿 안에
+    if/elif로 하드코딩하면, vocab을 고칠 때 목록은 따라가고 상세는
+    안 따라가는 드리프트가 생긴다. 두 케이스의 Given 차이는 상태 유무뿐이므로
+    파라미터화한다.
+    """
+
+    @pytest.mark.parametrize(
+        "status",
+        [UserEventStatus.Status.VISITED, None],
+        ids=["상태가_있음", "상태가_없음"],
+    )
+    def test_상황에서_상태_필의_라벨이_어휘_정본에서_계산되어_전달된다(
+        self, user_client, make_entry, make_status, status
+    ):
+        user, client = user_client()
+        entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="상태 라벨 확인용 장소")
+        if status is not None:
+            make_status(user, personal_entry=entry, status=status)
+
+        resp = client.get(reverse("archive-personal-entry-detail-page", args=[entry.pk]))
+
+        expected_status_label = archive_status_label(status) if status else ""
+        assert resp.context["status_label"] == expected_status_label
+        assert resp.context["planned_label"] == archive_status_label("planned")

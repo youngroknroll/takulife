@@ -560,6 +560,8 @@ def archive_personal_entry_detail(request, entry_id):
             "interest_id": interest_map.get(entry.id),
             "status_slug": status_slug,
             "status_id": status_id,
+            "status_label": archive_status_label(status_slug) if status_slug else "",
+            "planned_label": archive_status_label("planned"),
             "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
             # 라벨-필드 매핑만 뷰가 소유하고, 지역화된 날짜 표기는 템플릿 |date: 필터가 담당
             "record_info_rows": [
