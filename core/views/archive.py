@@ -547,11 +547,17 @@ def archive_personal_entry_create(request):
 def archive_personal_entry_detail(request, entry_id):
     """Read-only detail page for one PersonalEntry (owner-scoped)."""
     entry = get_object_or_404(PersonalEntry, pk=entry_id, user=request.user)
+    interest_map = user_personal_interest_ids(request.user)
+    status_map = user_personal_statuses(request.user)
+    status_slug, status_id = status_map.get(entry.id, ("", None))
     return render(
         request,
         "core/archive/personal_detail.html",
         {
             "entry": entry,
+            "interest_id": interest_map.get(entry.id),
+            "status_slug": status_slug,
+            "status_id": status_id,
             "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
             # 라벨-필드 매핑만 뷰가 소유하고, 지역화된 날짜 표기는 템플릿 |date: 필터가 담당
             "record_info_rows": [
