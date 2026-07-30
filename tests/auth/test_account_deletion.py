@@ -1,4 +1,7 @@
-"""Account deletion request (accounts.views.delete_account).
+"""Account deletion request (core.views.account.delete_account — moved here
+from accounts.views by the account-settings-editorial plan B5, since the GET
+context now reads archive counts and accounts must not import archive; the
+password-lockout security rule itself stays owned by accounts.services).
 
 GET /accounts/delete/ renders a password-reconfirm form (login required).
 POST verifies the current password, then records a 10-day grace-period
@@ -18,14 +21,23 @@ import django.core.cache.backends.db as cache_db
 import pytest
 from django.conf import settings
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.utils import timezone
 
-import accounts.views as accounts_views
 from accounts import services
 from accounts.models import User
+from accounts.services import delete_attempts_cache_key
 from accounts.signals import cancel_pending_deletion_on_login
-from accounts.views import _delete_attempts_cache_key
+from archive.models import (
+    CollectionItem,
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+    VisitRecordPhoto,
+)
+from events.models import Event
 
 DELETE_URL = "/accounts/delete/"
 
@@ -68,10 +80,11 @@ def cache_clock(monkeypatch):
     clock, so expiry-setting and expiry-checking stay consistent under a
     fast-forward.
 
-    accounts.views's own fixed-window lockout (_is_delete_locked /
-    _register_failed_delete_attempt) also reads `time.time()` directly (it
+    accounts.services's own fixed-window lockout (is_delete_locked /
+    register_failed_delete_attempt) also reads `time.time()` directly (it
     stores its own deadline rather than trusting the cache backend's TTL —
-    see accounts/views.py), so that module's `time` reference is patched too.
+    see accounts/services.py), so that module's `time` reference is patched
+    too.
     """
     clock = _FakeClock(real_time.time())
     monkeypatch.setattr(cache_base, "time", clock)
@@ -82,7 +95,7 @@ def cache_clock(monkeypatch):
             clock.time(), tz=dt_timezone.utc if settings.USE_TZ else None
         ),
     )
-    monkeypatch.setattr(accounts_views, "time", clock)
+    monkeypatch.setattr(services, "time", clock)
     return clock
 
 
@@ -138,7 +151,7 @@ def test_스태프의_잘못된_비밀번호_요청은_잠금_카운터를_증�
         response = client.post(DELETE_URL, {"password": "definitely-wrong"})
         assert response.status_code == 403
 
-    assert cache.get(_delete_attempts_cache_key(staff)) is None
+    assert cache.get(delete_attempts_cache_key(staff)) is None
 
 
 @pytest.mark.django_db
@@ -197,7 +210,7 @@ def test_다섯_번_잘못된_비밀번호_시도_시_잠금_경고가_사용자
     attempt count, and never leak the password, session key, or client IP —
     further failed attempts while already locked must not add more
     warnings."""
-    caplog.set_level(logging.WARNING, logger="accounts.views")
+    caplog.set_level(logging.WARNING, logger="accounts.services")
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -205,7 +218,7 @@ def test_다섯_번_잘못된_비밀번호_시도_시_잠금_경고가_사용자
         response = client.post(DELETE_URL, {"password": "definitely-wrong"})
         assert response.status_code == 200
 
-    warnings = [record for record in caplog.records if record.name == "accounts.views"]
+    warnings = [record for record in caplog.records if record.name == "accounts.services"]
     assert len(warnings) == 1
     message = warnings[0].getMessage()
     assert str(user.pk) in message
@@ -221,7 +234,7 @@ def test_다섯_번_잘못된_비밀번호_시도_시_잠금_경고가_사용자
         assert locked_response.status_code == 200
 
     warnings_after_lockout = [
-        record for record in caplog.records if record.name == "accounts.views"
+        record for record in caplog.records if record.name == "accounts.services"
     ]
     assert len(warnings_after_lockout) == 1
 
@@ -514,3 +527,234 @@ def test_로그인_시그널이_발화하면_로그인_경로와_무관하게_�
 
     user.refresh_from_db()
     assert user.deletion_requested_at is None
+
+
+# ---------------------------------------------------------------------------
+# 삭제 대상 6종 컨텍스트 (AS-9/AS-10, account-settings-editorial 계획서 B5)
+#
+# tests/archive/conftest.py의 make_visit/make_entry/make_collection_item/
+# make_interest/make_status 팩토리는 tests/auth/ 디렉터리에서 보이지 않으므로
+# (conftest.py는 디렉터리 스코프), tests/core/test_mypage_view.py와 같은
+# 패턴으로 archive 모델을 직접 생성한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_로그인_사용자가_계정_삭제_페이지에_접근하면_삭제_대상_6종이_본인_데이터만_정확히_집계된다(
+    client, make_user, png_bytes, valid_password
+):
+    """6종을 서로 다른 건수로 만든다 — 전부 같은 수면 순서 뒤바뀜 결함을 못
+    잡는다(계획서 픽스처 함정 4번). 컬렉션 굿즈는 quantity=0(미보유) 행도
+    섞어 total_count가 보유 외 행도 포함함을 전제로 한다(계획서 픽스처
+    함정 3번)."""
+    user = make_user(password=valid_password)
+    other = make_user(password=valid_password)
+    event1 = Event.objects.create(title="관심 행사 1")
+    event2 = Event.objects.create(title="관심 행사 2")
+
+    # 찜한 행사 = 2건
+    EventInterest.objects.create(user=user, event=event1)
+    EventInterest.objects.create(user=user, event=event2)
+
+    # 나의 일정 = 1건
+    UserEventStatus.objects.create(
+        user=user, event=event1, status=UserEventStatus.Status.PLANNED
+    )
+
+    # 다녀온 기록 = 3건
+    visit1 = VisitRecord.objects.create(user=user, event=event1, visited_on="2026-01-01")
+    visit2 = VisitRecord.objects.create(user=user, event=event2, visited_on="2026-01-02")
+    VisitRecord.objects.create(user=user, event=event1, visited_on="2026-01-03")
+
+    # 기록 사진 = 4장
+    for photo_index in range(2):
+        VisitRecordPhoto.objects.create(
+            visit_record=visit1,
+            image=SimpleUploadedFile(f"v1-{photo_index}.png", png_bytes(), content_type="image/png"),
+        )
+    for photo_index in range(2):
+        VisitRecordPhoto.objects.create(
+            visit_record=visit2,
+            image=SimpleUploadedFile(f"v2-{photo_index}.png", png_bytes(), content_type="image/png"),
+        )
+
+    # 컬렉션 굿즈 = 5건 (보유 4 + 원함 전용/미보유 1)
+    for goods_index in range(4):
+        CollectionItem.objects.create(user=user, name=f"보유 굿즈 {goods_index}", quantity=1)
+    CollectionItem.objects.create(
+        user=user, name="원함 전용 굿즈", quantity=0, is_wanted=True
+    )
+
+    # 직접 등록 항목 = 6건
+    for entry_index in range(6):
+        PersonalEntry.objects.create(
+            user=user, kind=PersonalEntry.Kind.PLACE, title=f"직접 등록 {entry_index}"
+        )
+
+    # 타 사용자 데이터 — 절대 집계되면 안 된다
+    EventInterest.objects.create(user=other, event=event1)
+    UserEventStatus.objects.create(
+        user=other, event=event1, status=UserEventStatus.Status.PLANNED
+    )
+    VisitRecord.objects.create(user=other, event=event1, visited_on="2026-02-01")
+    CollectionItem.objects.create(user=other, name="남의 굿즈")
+    PersonalEntry.objects.create(
+        user=other, kind=PersonalEntry.Kind.PLACE, title="남의 항목"
+    )
+
+    client.force_login(user)
+
+    response = client.get(DELETE_URL)
+
+    targets = response.context["delete_targets"]
+    assert [(t["label"], t["count"], t["unit"]) for t in targets] == [
+        ("찜한 행사", 2, "건"),
+        ("나의 일정", 1, "건"),
+        ("다녀온 기록", 3, "건"),
+        ("기록 사진", 4, "장"),
+        ("컬렉션 굿즈", 5, "건"),
+        ("직접 등록 항목", 6, "건"),
+    ]
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_삭제_대상_데이터가_없는_사용자의_삭제_페이지_카운트는_6종_모두_0이다(
+    client, make_user, valid_password
+):
+    user = make_user(password=valid_password)
+    client.force_login(user)
+
+    response = client.get(DELETE_URL)
+
+    targets = response.context["delete_targets"]
+    assert len(targets) == 6
+    assert [t["count"] for t in targets] == [0, 0, 0, 0, 0, 0]
+
+
+# ---------------------------------------------------------------------------
+# delete_targets 회귀 가드 (AS-14/AS-15, H1 — 브라우저 실측으로 드러난 결함:
+# POST 실패 경로(비밀번호 오류/락아웃)가 delete_targets 없이 렌더돼 사용자가
+# 탈퇴 판단 근거를 잃었다). GET에서 관찰한 실제 값과 비교한다 — 키 존재만
+# 확인하면 빈 리스트도 통과하는 무력한 가드가 된다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_탈퇴_화면에서_비밀번호를_틀려도_삭제_대상_카운트는_그대로_보인다(
+    client, make_user, png_bytes, valid_password
+):
+    user = make_user(password=valid_password)
+    event1 = Event.objects.create(title="오류경로 관심 행사 1")
+    event2 = Event.objects.create(title="오류경로 관심 행사 2")
+
+    # 찜한 행사 = 2건
+    EventInterest.objects.create(user=user, event=event1)
+    EventInterest.objects.create(user=user, event=event2)
+
+    # 나의 일정 = 1건
+    UserEventStatus.objects.create(
+        user=user, event=event1, status=UserEventStatus.Status.PLANNED
+    )
+
+    # 다녀온 기록 = 3건
+    visit1 = VisitRecord.objects.create(user=user, event=event1, visited_on="2026-01-01")
+    visit2 = VisitRecord.objects.create(user=user, event=event2, visited_on="2026-01-02")
+    VisitRecord.objects.create(user=user, event=event1, visited_on="2026-01-03")
+
+    # 기록 사진 = 4장
+    for photo_index in range(2):
+        VisitRecordPhoto.objects.create(
+            visit_record=visit1,
+            image=SimpleUploadedFile(
+                f"err-v1-{photo_index}.png", png_bytes(), content_type="image/png"
+            ),
+        )
+    for photo_index in range(2):
+        VisitRecordPhoto.objects.create(
+            visit_record=visit2,
+            image=SimpleUploadedFile(
+                f"err-v2-{photo_index}.png", png_bytes(), content_type="image/png"
+            ),
+        )
+
+    # 컬렉션 굿즈 = 5건
+    for goods_index in range(4):
+        CollectionItem.objects.create(user=user, name=f"오류경로 굿즈 {goods_index}", quantity=1)
+    CollectionItem.objects.create(
+        user=user, name="오류경로 원함 전용 굿즈", quantity=0, is_wanted=True
+    )
+
+    # 직접 등록 항목 = 6건
+    for entry_index in range(6):
+        PersonalEntry.objects.create(
+            user=user, kind=PersonalEntry.Kind.PLACE, title=f"오류경로 직접 등록 {entry_index}"
+        )
+
+    client.force_login(user)
+    get_response = client.get(DELETE_URL)
+    expected_targets = get_response.context["delete_targets"]
+    assert [t["count"] for t in expected_targets] == [2, 1, 3, 4, 5, 6]  # 서로 다른 건수 확인
+
+    post_response = client.post(DELETE_URL, {"password": "definitely-wrong"})
+
+    assert post_response.status_code == 200
+    assert post_response.context["delete_targets"] == expected_targets
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_비밀번호_잠금_상태의_탈퇴_화면에서도_삭제_대상_카운트가_보인다(
+    client, make_user, png_bytes, valid_password
+):
+    user = make_user(password=valid_password)
+    event1 = Event.objects.create(title="잠금경로 관심 행사 1")
+    event2 = Event.objects.create(title="잠금경로 관심 행사 2")
+    event3 = Event.objects.create(title="잠금경로 관심 행사 3")
+
+    # 찜한 행사 = 3건
+    EventInterest.objects.create(user=user, event=event1)
+    EventInterest.objects.create(user=user, event=event2)
+    EventInterest.objects.create(user=user, event=event3)
+
+    # 나의 일정 = 1건
+    UserEventStatus.objects.create(
+        user=user, event=event1, status=UserEventStatus.Status.PLANNED
+    )
+
+    # 다녀온 기록 = 2건
+    visit1 = VisitRecord.objects.create(user=user, event=event1, visited_on="2026-01-01")
+    VisitRecord.objects.create(user=user, event=event2, visited_on="2026-01-02")
+
+    # 기록 사진 = 5장
+    for photo_index in range(5):
+        VisitRecordPhoto.objects.create(
+            visit_record=visit1,
+            image=SimpleUploadedFile(
+                f"lock-{photo_index}.png", png_bytes(), content_type="image/png"
+            ),
+        )
+
+    # 컬렉션 굿즈 = 4건
+    for goods_index in range(4):
+        CollectionItem.objects.create(user=user, name=f"잠금경로 굿즈 {goods_index}", quantity=1)
+
+    # 직접 등록 항목 = 6건
+    for entry_index in range(6):
+        PersonalEntry.objects.create(
+            user=user, kind=PersonalEntry.Kind.PLACE, title=f"잠금경로 직접 등록 {entry_index}"
+        )
+
+    client.force_login(user)
+    get_response = client.get(DELETE_URL)
+    expected_targets = get_response.context["delete_targets"]
+    assert [t["count"] for t in expected_targets] == [3, 1, 2, 5, 4, 6]  # 서로 다른 건수 확인
+
+    for _ in range(5):
+        client.post(DELETE_URL, {"password": "definitely-wrong"})
+    locked_response = client.post(DELETE_URL, {"password": valid_password})
+
+    assert locked_response.status_code == 200
+    assert locked_response.context["delete_targets"] == expected_targets

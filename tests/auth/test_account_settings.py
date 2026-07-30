@@ -4,7 +4,10 @@ server-side 403 guard on accounts.views.delete_account itself (see
 tests/auth/test_account_deletion.py) — UI hiding alone would not be enough,
 but the two together keep the page consistent with what the view allows.
 """
+import datetime as dt
+
 import pytest
+from django.utils import timezone
 
 pytestmark = pytest.mark.web
 
@@ -48,3 +51,63 @@ def test_스태프의_설정_페이지에는_계정_삭제_링크가_노출되�
 
     assert response.status_code == 200
     assert DELETE_LINK not in response.content
+
+
+# ---------------------------------------------------------------------------
+# 개요 컨텍스트 (AS-6~AS-8, account-settings-editorial 계획서 B4)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_인증완료_사용자가_설정_페이지에_접근하면_개요_컨텍스트에_이메일_인증여부_가입일이_담긴다(
+    client, make_verified_user
+):
+    """make_verified_user만 EmailAddress 행을 만든다 — 인증됨 분기는 이
+    픽스처로만 실제로 실행된다(계획서 픽스처 함정 1번)."""
+    user = make_verified_user()
+    client.force_login(user)
+
+    response = client.get(SETTINGS_URL)
+
+    assert response.context["account_email"] == user.email
+    assert response.context["email_verified"] is True
+    assert response.context["date_joined"] == user.date_joined
+
+
+@pytest.mark.django_db
+def test_이메일_인증_행이_없는_사용자가_설정_페이지에_접근하면_200이며_미인증으로_표시된다(
+    client, make_user
+):
+    """make_user는 EmailAddress 행을 만들지 않는다 — null 분기는 이
+    픽스처로만 실제로 실행된다(계획서 픽스처 함정 1번)."""
+    user = make_user()
+    client.force_login(user)
+
+    response = client.get(SETTINGS_URL)
+
+    assert response.status_code == 200
+    assert response.context["email_verified"] is False
+
+
+@pytest.mark.django_db
+def test_비밀번호_변경_이력이_있으면_설정_페이지의_변경일_표시가_UTC가_아닌_로컬_타임존_날짜를_따른다(
+    client, make_user
+):
+    """password_changed_at은 UTC aware datetime으로 저장되므로, 화면 표시는
+    settings.TIME_ZONE(Asia/Seoul) 기준 날짜여야 한다(마이페이지의 동일 규칙,
+    tests/core/test_mypage_view.py와 동일 패턴)."""
+    user = make_user()
+    utc_changed_at = timezone.now().astimezone(dt.timezone.utc).replace(
+        hour=23, minute=0, second=0, microsecond=0
+    )
+    user.password_changed_at = utc_changed_at
+    user.save(update_fields=["password_changed_at"])
+    expected_local_date = timezone.localtime(utc_changed_at).date()
+    assert expected_local_date != utc_changed_at.date()  # 시간대 경계 확인
+    client.force_login(user)
+
+    response = client.get(SETTINGS_URL)
+
+    assert response.context["password_changed_display"] == expected_local_date.strftime(
+        "%Y.%m.%d"
+    )
