@@ -1,4 +1,130 @@
 {% extends "base.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 장소 정보 수정{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/archive_personal_create.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/archive_personal_edit.css' %}">
+{% endblock %}
+
 {% block content %}
-{{ entry.title }}
+  <main class="page personal-create-page personal-edit-page" id="content">
+    <a class="personal-form-back-link" href="/archive/personal/{{ entry.id }}/">← 장소 상세로</a>
+    <div id="personal-edit-global-error" class="personal-edit-global-error" aria-live="polite"></div>
+
+    <section class="personal-form-head">
+      <div class="personal-form-head-row">
+        <h1>장소 정보 수정</h1>
+        <span class="personal-form-legend">＊ 표시는 필수</span>
+      </div>
+      <p class="personal-form-subtitle">{{ entry.title }}</p>
+    </section>
+
+    <form id="personal-edit-form" class="personal-form" data-entry-id="{{ entry.id }}" novalidate>
+      <div class="personal-form-grid">
+        <div class="personal-form-image">
+          <label for="personal-image" class="personal-form-dropzone">
+            {% if entry.image %}
+              <img src="{{ entry.image.url }}" alt="{{ entry.title }}">
+            {% else %}
+              <span class="personal-form-dropzone-placeholder">사진을 선택하세요</span>
+            {% endif %}
+            <input id="personal-image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+          </label>
+          <div class="personal-edit-image-row">
+            <label class="personal-edit-replace-btn" for="personal-image">사진 교체</label>
+            {% if entry.image %}
+              <button type="button" class="personal-edit-remove-btn" data-remove-image>삭제</button>
+            {% endif %}
+          </div>
+          <p class="personal-form-hint">JPEG · PNG · WebP · 5MB 이하</p>
+
+          <div class="personal-form-privacy-banner personal-edit-privacy-banner">
+            <span class="personal-form-banner-glyph" aria-hidden="true">🔒</span>
+            <div>
+              <p class="personal-form-banner-title">이 항목은 나만 볼 수 있습니다</p>
+              <p class="personal-form-banner-note">공식 행사 목록이나 다른 사용자에게 노출되지 않습니다</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="personal-form-fields">
+          <div class="personal-form-group">
+            <label for="personal-title">이름 <span aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
+            <input
+              id="personal-title"
+              type="text"
+              name="title"
+              maxlength="255"
+              required
+              aria-describedby="personal-edit-error"
+              value="{{ entry.title }}"
+            >
+          </div>
+
+          <h2>장소 정보</h2>
+
+          <div class="personal-form-group">
+            <label for="personal-category">카테고리 (선택)</label>
+            <div class="personal-form-category-chips">
+              {% for label in PERSONAL_ENTRY_CATEGORY_SUGGESTIONS %}
+                <button type="button" class="personal-form-category-chip" data-category-label="{{ label }}" aria-pressed="false">{{ label }}</button>
+              {% endfor %}
+            </div>
+            <input
+              id="personal-category"
+              type="text"
+              name="category"
+              maxlength="100"
+              value="{{ entry.category }}"
+              placeholder="직접 입력 — 위 추천 외 카테고리"
+            >
+          </div>
+
+          <div class="personal-form-group">
+            <label for="personal-work-title">작품명 (선택)</label>
+            <input id="personal-work-title" type="text" name="work_title" maxlength="255" value="{{ entry.work_title }}">
+          </div>
+
+          <div class="personal-form-row personal-form-row--location">
+            <div class="personal-form-group">
+              <label for="personal-location-name">장소명 (선택)</label>
+              <input id="personal-location-name" type="text" name="location_name" maxlength="255" value="{{ entry.location_name }}" placeholder="예: 서울 성수">
+            </div>
+            <div class="personal-form-group">
+              <label for="personal-region">지역 (선택)</label>
+              <input id="personal-region" type="text" name="region" maxlength="100" value="{{ entry.region }}">
+            </div>
+          </div>
+
+          <h2>참고 (선택)</h2>
+
+          <div class="personal-form-group">
+            <label for="personal-url">참고 링크 (선택)</label>
+            <input id="personal-url" type="url" name="url" value="{{ entry.url }}" placeholder="https://">
+            <p class="personal-form-hint">공식 출처가 아니어도 됩니다 — 내가 다시 찾아볼 용도</p>
+          </div>
+
+          <div class="personal-form-group">
+            <label for="personal-memo">메모 (선택)</label>
+            <textarea id="personal-memo" name="memo" rows="4">{{ entry.memo }}</textarea>
+          </div>
+
+          <p class="personal-form-error" id="personal-edit-error"></p>
+        </div>
+      </div>
+
+      <div class="personal-edit-actions-row">
+        <div class="personal-edit-actions">
+          <button class="personal-form-submit" type="submit">저장</button>
+          <a class="personal-form-cancel" href="/archive/personal/{{ entry.id }}/">취소</a>
+        </div>
+        <button type="button" class="personal-edit-delete" data-delete-entry-id="{{ entry.id }}">장소 삭제</button>
+      </div>
+    </form>
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/pages/personal_edit.js' %}"></script>
 {% endblock %}

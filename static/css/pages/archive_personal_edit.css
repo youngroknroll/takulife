@@ -1,0 +1,211 @@
+/* archive_personal_edit.css — /archive/personal/<id>/edit/ 전용 수정 페이지.
+   Design source: docs/FE/personal-place-detail-edit.md (WED+BIR 사전 산출물,
+   2026-07-30) — 시안 파일 "비공식 장소 상세 페이지 (에디토리얼).dc.html" 내
+   수정 화면.
+
+   Loaded alongside archive_personal_create.css, which supplies every
+   `.personal-form-*` class this page reuses verbatim (head, subtitle, grid,
+   dropzone, group, row, shared input skin, category chips, error banner,
+   submit/cancel button skins). This template's <main> carries both
+   `.personal-create-page` and `.personal-edit-page` (collection_edit.css's
+   dual-class pattern), so those shared rules keep applying without a
+   half-swap. This file adds only what the create page has no equivalent
+   for: the global error banner (delete/image-delete/404 messages), the
+   image replace/remove row, the actions-row split (저장·취소 vs a separate
+   장소 삭제 button — WED §4), and the 404 "item already gone" lock state.
+
+   TOKEN NOTE: verified against tokens.css before writing — no new tokens
+   introduced. */
+
+.personal-edit-page .personal-form-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── global error banner (delete / image-delete / 404-lock messages) ──── */
+.personal-edit-page .personal-edit-global-error {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 0.5625rem;
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.personal-edit-page .personal-edit-global-error:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* ── image replace/remove row under the dropzone ───────────────────────── */
+.personal-edit-page .personal-edit-image-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  margin-top: 0.625rem;
+}
+.personal-edit-page .personal-edit-replace-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 0.875rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.personal-edit-page .personal-edit-replace-btn:hover {
+  border-color: var(--brand);
+}
+.personal-edit-page .personal-edit-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 0.875rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--rose-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.personal-edit-page .personal-edit-remove-btn:hover {
+  background: var(--rose-soft);
+}
+
+.personal-edit-page .personal-edit-privacy-banner {
+  margin-top: 1.5rem;
+  margin-bottom: 0;
+}
+
+/* ── actions row: 저장·취소 grouped, 장소 삭제 pushed to the far end
+   (WED §4: 수정 화면에도 삭제를 둔다 — collection_edit.css의 actions-row
+   레이아웃을 그대로 이식). ─────────────────────────────────────────────── */
+.personal-edit-page .personal-edit-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.personal-edit-page .personal-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.personal-edit-page .personal-edit-delete {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 1.125rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--rose-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.personal-edit-page .personal-edit-delete:hover {
+  background: var(--rose-soft);
+}
+
+/* "목록으로 돌아가기" — JS가 404 잠금 시에만 생성한다(personal_edit.js의
+   revealBackLink). 수정 화면은 상단 back-link·취소 링크 모두 대상(상세)이
+   같이 사라지므로 죽여야 하고, 유일하게 살아남는 이동 경로가 이 링크다
+   (BIR: collection.js의 revealBackLink 선례, 상세 화면과 다르게 새로
+   만든다). */
+.personal-edit-page .record-cta {
+  display: inline-block;
+  margin-top: 1.25rem;
+  color: var(--brand-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* ── 404 "item already gone" lock state (archive_collection_edit.css 선례:
+   네이티브 disabled 디밍이 공유 input 스킨에 덮이는 문제를 여기서도 보정) ── */
+.personal-edit-page .personal-form input:disabled,
+.personal-edit-page .personal-form textarea:disabled {
+  background: var(--bg-soft);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.personal-edit-page .personal-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* back-link/취소 링크는 <a>라 disabled 속성을 받지 않는다 — JS가 직접
+   .is-item-gone-locked를 붙이고, 여기서 클릭 무력화 + 흐림 처리만 담당. */
+.personal-edit-page .personal-form-back-link.is-item-gone-locked,
+.personal-edit-page .personal-form-cancel.is-item-gone-locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+@media (max-width: 45rem) {
+  /* WED §6: 6파일 다수 관례를 따라 6rem(형제 수정 화면 collection_edit·
+     visit_edit와 동일) — archive_personal_create.css가 .personal-create-page
+     에 먼저 5rem을 설정하지만, 이 파일이 뒤에 로드되고 .personal-edit-page
+     쪽 선택자가 나중 소스 순서로 이겨 6rem이 최종 적용된다. */
+  .personal-edit-page {
+    padding-bottom: 6rem;
+  }
+
+  .personal-edit-page .personal-edit-actions-row {
+    display: block;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+  .personal-edit-page .personal-edit-actions-row::before {
+    content: "";
+    display: block;
+    margin: 1.25rem 0 1rem;
+    height: 1px;
+    background: var(--line);
+  }
+  .personal-edit-page .personal-edit-delete {
+    display: flex;
+    width: 100%;
+  }
+  /* WED §5: 모바일에서도 취소를 숨기지 않는다 — visit_edit.css가 그 페이지
+     한정으로 취소를 숨기는 관례를 여기엔 적용하지 않는다. 시안이 저장·취소
+     둘 다 요구한다(2버튼 고정 바 — 이 저장소의 기존 수정 화면은 전부
+     1버튼이라 새로 만드는 조합). */
+  .personal-edit-page .personal-edit-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    gap: 0.5rem;
+    padding: 0.625rem var(--page-pad-x) calc(0.625rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--chrome-glass-cta, var(--surface));
+  }
+  .personal-edit-page .personal-form-cancel {
+    flex: none;
+  }
+  .personal-edit-page .personal-form-submit {
+    flex: 1;
+    justify-content: center;
+  }
+}
