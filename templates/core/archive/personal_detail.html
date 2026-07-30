@@ -88,23 +88,9 @@
           </div>
         </div>
 
-        {% if entry.category or entry.work_title or entry.location_name or entry.region or entry.url %}
+        {% if entry.url %}
         <dl class="personal-detail-meta">
-          {% if entry.category %}
-          <div class="personal-detail-meta-row"><dt>카테고리</dt><dd>{{ entry.category }}</dd></div>
-          {% endif %}
-          {% if entry.work_title %}
-          <div class="personal-detail-meta-row"><dt>작품명</dt><dd>{{ entry.work_title }}</dd></div>
-          {% endif %}
-          {% if entry.location_name %}
-          <div class="personal-detail-meta-row"><dt>장소명</dt><dd>{{ entry.location_name }}</dd></div>
-          {% endif %}
-          {% if entry.region %}
-          <div class="personal-detail-meta-row"><dt>지역</dt><dd>{{ entry.region }}</dd></div>
-          {% endif %}
-          {% if entry.url %}
           <div class="personal-detail-meta-row"><dt>참고 링크</dt><dd><a href="{{ entry.url }}" rel="noopener" target="_blank">{{ entry.url }}</a></dd></div>
-          {% endif %}
         </dl>
         {% endif %}
 

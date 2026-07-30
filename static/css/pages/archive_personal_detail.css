@@ -249,7 +249,10 @@
   text-decoration: none;
 }
 
-/* ── 메타 5행 ─────────────────────────────────────────────────────────── */
+/* ── 메타 1행(참고 링크만) — 카테고리·작품명은 칩 행, 장소명·지역은 부제에서
+   이미 보여 메타에는 중복되지 않는 값만 남긴다(WED 사후 정정, 형제 선례
+   _collection_item_meta_rows). border-top·행 패딩은 1행에서도 그대로
+   유효 — 행 수와 무관한 시각 규칙이라 별도 보정 불필요. ─────────────────── */
 .personal-detail-page .personal-detail-meta {
   margin: 0 0 1.375rem;
   border-top: 2px solid var(--text);
