@@ -182,3 +182,40 @@ class TestArchivePersonalEntryDetailInterestAndStatus:
         assert resp_b.context["interest_id"] == interest_b.pk
         assert resp_b.context["status_slug"] == UserEventStatus.Status.VISITED
         assert resp_b.context["status_id"] == status_b.pk
+
+
+@pytest.mark.django_db
+class TestArchivePersonalEntryDetailVisitRecords:
+    def test_대상_장소에_연결된_방문_기록의_목록과_개수가_컨텍스트에_반영된다(
+        self, user_client, make_entry, make_visit
+    ):
+        """PD-9b: 미끼로 같은 사용자가 소유한 다른 PersonalEntry에 연결된 방문 기록을 하나
+        추가한다. 뷰가 list_visit_records_for_personal_entry(entry) 대신
+        list_user_visit_records(user)처럼 사용자 전체 방문 기록을 넘기면 개수가 2가 아니라
+        3이 되어 실패한다 — 순회 순서가 아니라 개수로 잡으므로 정렬과 무관하게 유효하다.
+        """
+        user, client = user_client()
+        entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="방문 기록 확인용 장소")
+        decoy_entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="미끼 장소")
+        make_visit(user, personal_entry=decoy_entry, visited_on=datetime(2026, 1, 1).date())
+        visit_1 = make_visit(user, personal_entry=entry, visited_on=datetime(2026, 2, 1).date())
+        visit_2 = make_visit(user, personal_entry=entry, visited_on=datetime(2026, 3, 1).date())
+
+        resp = client.get(reverse("archive-personal-entry-detail-page", args=[entry.pk]))
+
+        visit_records = resp.context["visit_records"]
+        assert len(visit_records) == 2
+        assert resp.context["visit_records_count"] == 2
+        assert {record.pk for record in visit_records} == {visit_1.pk, visit_2.pk}
+
+    def test_연결된_방문_기록이_없으면_목록은_빈_상태로_표시된다(
+        self, user_client, make_entry
+    ):
+        # PD-10
+        user, client = user_client()
+        entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="방문 기록 없는 장소")
+
+        resp = client.get(reverse("archive-personal-entry-detail-page", args=[entry.pk]))
+
+        assert resp.context["visit_records"] == []
+        assert resp.context["visit_records_count"] == 0

@@ -22,6 +22,7 @@ from archive.queries import (
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
+    list_visit_records_for_personal_entry,
     user_interest_summary_counts,
     user_personal_entry_counts,
     user_personal_interest_ids,
@@ -550,6 +551,7 @@ def archive_personal_entry_detail(request, entry_id):
     interest_map = user_personal_interest_ids(request.user)
     status_map = user_personal_statuses(request.user)
     status_slug, status_id = status_map.get(entry.id, ("", None))
+    visit_records = list_visit_records_for_personal_entry(entry)
     return render(
         request,
         "core/archive/personal_detail.html",
@@ -564,6 +566,8 @@ def archive_personal_entry_detail(request, entry_id):
                 {"label": "등록일", "value": entry.created_at},
                 {"label": "마지막 수정", "value": entry.updated_at},
             ],
+            "visit_records": visit_records,
+            "visit_records_count": len(visit_records),
         },
     )
 

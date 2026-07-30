@@ -629,6 +629,21 @@ def list_items_acquired_at_visit(visit):
     return list(visit.archive_collection_items.all().order_by("id"))
 
 
+def list_visit_records_for_personal_entry(entry):
+    """Return the VisitRecords attached to one PersonalEntry, newest first —
+    the personal-place detail page's "이 장소의 방문 기록" section.
+
+    A dedicated function rather than an extra list_user_visit_records
+    argument: that function already has two consumers, and adding a
+    parameter for a single detail page would affect both. No `user` filter
+    is applied here (matches list_items_acquired_at_visit's precedent) —
+    the caller's get_object_or_404(..., user=request.user) already scopes
+    `entry` to its owner, and no write path can attach another user's visit
+    to it.
+    """
+    return list(entry.archive_user_visit_records.all().order_by("-visited_on", "-id"))
+
+
 def user_visit_category_values(user):
     """Return (event__category, personal_entry__category) pairs for a user's visits.
 
