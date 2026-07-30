@@ -26,12 +26,19 @@ def _dynamic_import_target(call):
     return None
 
 
-def _imported_modules(module_path):
-    """Return all module names a source file imports (Import + ImportFrom + importlib.import_module/__import__ 호출)."""
-    tree = ast.parse((PROJECT_ROOT / module_path).read_text())
+def _parse_imported_module_names(source_path):
+    """정적 Import/ImportFrom과 동적 importlib.import_module/__import__ 호출에서
+    임포트된 모듈명을 모은다. 상대 임포트(level>0)는 건너뛴다 — 이 저장소의 앱은
+    전부 최상위 패키지라 상대 임포트로는 앱 경계를 넘을 수 없으므로, 건너뛰어도
+    탐지력 손실은 0이고 core/views·staff/views의 `from .archive import ...`
+    같은 오탐만 사라진다(.docs/BE/boundary-guard-glob-plan.md 승인 범위 3).
+    `_imported_modules`와 `_forbidden_imports_in_file`이 공유하는 단일 파서다."""
+    tree = ast.parse(source_path.read_text())
     modules = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module is not None:
+            if node.level:
+                continue
             modules.add(node.module)
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
@@ -41,6 +48,147 @@ def _imported_modules(module_path):
             if target is not None:
                 modules.add(target)
     return modules
+
+
+def _imported_modules(module_path):
+    """Return all module names a source file imports — PROJECT_ROOT 상대경로
+    문자열을 받는 얇은 래퍼. 실제 파싱은 _parse_imported_module_names가 한다."""
+    return _parse_imported_module_names(PROJECT_ROOT / module_path)
+
+
+# ---------------------------------------------------------------------------
+# 파일시스템 유도 스캔: 손유지 파라미터 목록 대신 root 아래를 직접 순회한다.
+# root를 주입받아 실제 PROJECT_ROOT와 tmp_path 합성 트리 양쪽에 쓸 수 있다
+# (.docs/BE/boundary-guard-glob-plan.md 승인 범위 1).
+# ---------------------------------------------------------------------------
+
+
+def _domain_source_files(root, app_names):
+    """root 아래 app_names 각각의 *.py를 재귀 순회한다. migrations/는 데이터
+    마이그레이션이 apps.get_model() historical API를 써서 앱 임포트 경로를
+    타지 않으므로 제외한다. 발견 결과가 0개면(오탈자 난 앱 이름 포함) 공허하게
+    통과하지 않고 즉시 실패한다."""
+    files = []
+    for app_name in app_names:
+        app_dir = root / app_name
+        for path in sorted(app_dir.rglob("*.py")):
+            if "migrations" in path.relative_to(app_dir).parts:
+                continue
+            files.append(path)
+    assert files, f"{app_names} 아래 스캔할 .py 파일이 없다 (root={root})"
+    return files
+
+
+def _forbidden_imports_in_file(path, forbidden_apps):
+    """path가 forbidden_apps 중 하나를 임포트하면 그 모듈명 집합을 돌려준다."""
+    modules = _parse_imported_module_names(path)
+    return {
+        module
+        for module in modules
+        if any(module == app or module.startswith(f"{app}.") for app in forbidden_apps)
+    }
+
+
+def test_스캔_대상이_없는_root는_공허하게_통과하지_않고_실패한다(tmp_path):
+    with pytest.raises(AssertionError):
+        _domain_source_files(tmp_path, ["events"])
+
+
+def test_오탈자_난_앱_이름도_공허하게_통과하지_않고_실패한다(tmp_path):
+    (tmp_path / "events").mkdir()
+    (tmp_path / "events" / "models.py").write_text("")
+
+    with pytest.raises(AssertionError):
+        _domain_source_files(tmp_path, ["evnets"])
+
+
+def test_손유지_목록에_없는_새_파일의_금지_임포트도_탐지한다(tmp_path):
+    (tmp_path / "events").mkdir()
+    (tmp_path / "archive").mkdir()
+    # poison.py는 어떤 가드의 하드코딩 목록에도 등장한 적 없는 파일명이다 —
+    # root 주입 없이는 이 사각지대를 애초에 재현할 수 없었다.
+    (tmp_path / "events" / "poison.py").write_text("import archive.models\n")
+    (tmp_path / "archive" / "models.py").write_text("")
+
+    files = _domain_source_files(tmp_path, ["events", "archive"])
+    violations = {
+        path: mods
+        for path in files
+        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+    }
+
+    assert any(path.name == "poison.py" for path in violations), violations
+
+
+def test_같은_이름의_로컬_서브모듈을_상대_임포트하면_위반으로_잡히지_않는다(tmp_path):
+    """core/views/__init__.py의 `from .archive import (...)` 형태를 재현한다.
+    이 저장소의 앱은 전부 최상위 패키지라 상대 임포트(level>0)로는 애초에
+    앱 경계를 넘을 수 없다 — archive라는 이름의 로컬 서브모듈(core/views/archive.py)을
+    상대 경로로 부르는 것과, archive 앱을 절대 경로로 부르는 것은 이름은
+    같아도 다른 대상이므로 전자는 오탐이다. 이 방어선은 core 가드를 손유지
+    목록에서 글롭으로 전환하는 후속 작업의 선행 조건이다."""
+    (tmp_path / "core" / "views").mkdir(parents=True)
+    (tmp_path / "core" / "views" / "__init__.py").write_text(
+        "from .archive import archive\n"
+    )
+    (tmp_path / "core" / "views" / "archive.py").write_text("")
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "archive" / "models.py").write_text("")
+
+    files = _domain_source_files(tmp_path, ["core", "archive"])
+    violations = {
+        path: mods
+        for path in files
+        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+    }
+
+    assert not violations, violations
+
+
+def test_같은_이름의_절대_임포트는_상대_임포트_스킵과_무관하게_여전히_잡힌다(tmp_path):
+    """앞선 오탐 방지 테스트가 스킵 로직을 통째로 넓히는 방향(모든 ImportFrom
+    스킵)으로 퇴화해도 통과해버리지 않도록 대조하는 테스트다 — 같은 archive라는
+    이름이라도 level=0인 절대 임포트는 실제로 archive 앱 경계를 넘으므로
+    여전히 위반으로 탐지되어야 한다."""
+    (tmp_path / "core" / "views").mkdir(parents=True)
+    (tmp_path / "core" / "views" / "__init__.py").write_text(
+        "from archive import archive\n"
+    )
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "archive" / "models.py").write_text("")
+
+    files = _domain_source_files(tmp_path, ["core", "archive"])
+    violations = {
+        path: mods
+        for path in files
+        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+    }
+
+    assert any(path.name == "__init__.py" for path in violations), violations
+
+
+def test_금지_임포트가_없는_새_파일은_위반으로_보고되지_않는다(tmp_path):
+    (tmp_path / "events").mkdir()
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "events" / "clean.py").write_text("import os\n")
+    (tmp_path / "archive" / "models.py").write_text("")
+
+    files = _domain_source_files(tmp_path, ["events", "archive"])
+    violations = {
+        path: mods
+        for path in files
+        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+    }
+
+    assert not violations, violations
+
+
+def test_실제_저장소_스캔_대상에_이벤트_모델이_포함된다():
+    """글롭이 나중에 *.py에서 views.py로 좁혀지면 여기서 시끄럽게 깨진다 —
+    models.py는 뷰가 아니므로."""
+    files = _domain_source_files(PROJECT_ROOT, ["events"])
+
+    assert any(path.relative_to(PROJECT_ROOT) == Path("events/models.py") for path in files)
 
 
 def test_드래프트_뷰는_이벤트_모듈을_임포트하지_않는다():
@@ -72,116 +220,58 @@ def test_내장_import_함수로_다른_도메인을_불러오면_경계_스캐�
     assert "archive.models" in imported_modules
 
 
-@pytest.mark.parametrize(
-    "module_path",
-    [
-        "events/models.py",
-        "events/views.py",
-        "events/serializers.py",
-        "events/querysets.py",
-        "events/services.py",
-        "events/queries.py",
-        "drafts/models.py",
-        "drafts/views.py",
-        "drafts/services.py",
-        "drafts/serializers.py",
-        "drafts/queries.py",
-        "drafts/llm_extraction.py",
-        "drafts/discovery.py",
-        "drafts/management/commands/discover_drafts.py",
-    ],
-    ids=[
-        "이벤트_모델",
-        "이벤트_뷰",
-        "이벤트_시리얼라이저",
-        "이벤트_쿼리셋",
-        "이벤트_서비스",
-        "이벤트_쿼리",
-        "드래프트_모델",
-        "드래프트_뷰",
-        "드래프트_서비스",
-        "드래프트_시리얼라이저",
-        "드래프트_쿼리",
-        "드래프트_LLM_추출",
-        "드래프트_발견",
-        "드래프트_수집_명령",
-    ],
-)
-def test_활성_비아카이브_모듈은_아카이브_모듈을_임포트하지_않는다(module_path):
-    imported_modules = _imported_modules(module_path)
+def test_활성_비아카이브_모듈은_아카이브_모듈을_임포트하지_않는다():
+    files = _domain_source_files(PROJECT_ROOT, ["events", "drafts"])
 
-    assert not {
-        module
-        for module in imported_modules
-        if module == "archive" or module.startswith("archive.")
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"archive"}))
     }
 
+    assert not violations, violations
 
-@pytest.mark.parametrize(
-    "module_path",
-    ["archive/models.py", "archive/serializers.py", "archive/services.py", "archive/views.py"],
-    ids=["아카이브_모델", "아카이브_시리얼라이저", "아카이브_서비스", "아카이브_뷰"],
-)
-def test_아카이브_모듈은_드래프트_모듈을_임포트하지_않는다(module_path):
-    imported_modules = _imported_modules(module_path)
 
-    assert not {
-        module
-        for module in imported_modules
-        if module == "drafts" or module.startswith("drafts.")
+def test_아카이브_모듈은_드래프트_모듈을_임포트하지_않는다():
+    files = _domain_source_files(PROJECT_ROOT, ["archive"])
+
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"drafts"}))
     }
 
+    assert not violations, violations
 
-@pytest.mark.parametrize(
-    "module_path",
-    [
-        "events/models.py",
-        "events/views.py",
-        "events/serializers.py",
-        "events/querysets.py",
-        "events/services.py",
-        "drafts/models.py",
-        "drafts/views.py",
-        "drafts/services.py",
-        "drafts/serializers.py",
-        "drafts/llm_extraction.py",
-        "drafts/discovery.py",
-        "drafts/management/commands/discover_drafts.py",
-        "archive/models.py",
-        "archive/serializers.py",
-        "archive/services.py",
-        "archive/views.py",
-    ],
-    ids=[
-        "이벤트_모델",
-        "이벤트_뷰",
-        "이벤트_시리얼라이저",
-        "이벤트_쿼리셋",
-        "이벤트_서비스",
-        "드래프트_모델",
-        "드래프트_뷰",
-        "드래프트_서비스",
-        "드래프트_시리얼라이저",
-        "드래프트_LLM_추출",
-        "드래프트_발견",
-        "드래프트_수집_명령",
-        "아카이브_모델",
-        "아카이브_시리얼라이저",
-        "아카이브_서비스",
-        "아카이브_뷰",
-    ],
-)
-def test_도메인_모듈은_스태프_모듈을_임포트하지_않는다(module_path):
+
+def test_이벤트_모듈은_드래프트_모듈을_임포트하지_않는다():
+    """승인된 의존 방향은 `drafts/services.py` -> `events.services`
+    단방향뿐이다(AGENTS.md) — 정당한 그 반대 방향과 혼동하지 말 것. 이
+    테스트가 잡는 것은 events가 drafts를 끌어오는, 근거 없는 역방향이다."""
+    files = _domain_source_files(PROJECT_ROOT, ["events"])
+
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"drafts"}))
+    }
+
+    assert not violations, violations
+
+
+def test_도메인_모듈은_스태프_모듈을_임포트하지_않는다():
     """staff (presentation + audit infra) may depend on domain apps, never
     the reverse: events/drafts/archive must stay free of a `staff` import so
     domain business logic never leaks staff-only orchestration concerns."""
-    imported_modules = _imported_modules(module_path)
+    files = _domain_source_files(PROJECT_ROOT, ["events", "drafts", "archive"])
 
-    assert not {
-        module
-        for module in imported_modules
-        if module == "staff" or module.startswith("staff.")
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"staff"}))
     }
+
+    assert not violations, violations
 
 
 def test_드래프트_발견_모듈은_이벤트_모듈을_임포트하지_않는다():
