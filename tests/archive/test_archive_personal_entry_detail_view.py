@@ -57,6 +57,34 @@ class TestArchivePersonalEntryDetailView:
         assert resp.status_code == 302
         assert "/accounts/login" in resp.url
 
+    def test_상세_페이지를_직접_열면_비동기_컨트롤을_위한_CSRF_쿠키가_설정된다(
+        self, user_client, make_entry
+    ):
+        """PD-11: 이 상세 페이지는 찜·상태·제보·삭제 4종의 비동기 컨트롤을 갖는다. 작성 시점에
+        이미 통과하는 회귀 가드이지 Red-Green 시나리오가 아니다 — 뷰에 ``@ensure_csrf_cookie``가
+        없어도 로그인 상태에서는 쿠키가 설정된다. 실제 출처는 이 뷰가 아니라
+        `_topbar.html`의 로그아웃 폼 `{% csrf_token %}`(인증 사용자에게만 렌더되는 분기)이며,
+        `base.html` 상속 경로를 통해 인증된 모든 페이지가 이를 우연히 물려받는다. 즉 이 페이지의
+        비동기 컨트롤은 다른 파일(토파바)에 의존하고, 이 테스트가 그 결합을 잇는 유일한 가드다
+        — 로그아웃이 fetch로 바뀌는 등 토파바가 변경되면 이 페이지의 컨트롤이 조용히 깨진다.
+        이런 이유로 `@ensure_csrf_cookie`는 의도적으로 붙이지 않았다: 없어도 결함이 아니고,
+        붙여도 실패하는 테스트로 증명할 수 없다(토파바가 이미 쿠키를 설정하므로 제거 뮤테이션이
+        걸리지 않는다).
+
+        user_client의 Client()는 force_login만 수행하고(HTTP 요청 없이 세션 쿠키만 심는다)
+        어떤 요청도 아직 보내지 않았으므로 이 GET 이전엔 CSRF 쿠키가 없다. 또한
+        `resp.cookies`는 이 응답이 새로 설정한 쿠키만 담으므로, 이전 요청에서 심어졌을 쿠키와
+        섞일 걱정 없이 "이 상세 페이지가 쿠키를 설정했는가"만 검증한다.
+        """
+        # PD-11
+        user, client = user_client()
+        entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="CSRF 쿠키 확인용 장소")
+        assert "csrftoken" not in client.cookies
+
+        resp = client.get(reverse("archive-personal-entry-detail-page", args=[entry.pk]))
+
+        assert "csrftoken" in resp.cookies
+
 
 @pytest.mark.django_db
 class TestArchivePersonalEntryDetailPromotionStatus:
