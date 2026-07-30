@@ -1,0 +1,569 @@
+/* account_settings.css — 6 account screens (계정 설정 에디토리얼).
+   templates/account/{settings,email_change,password_change,delete_account,
+   email_confirm,delete_done}.html. Replaces auth.css on these 5 templates
+   (auth.css itself is untouched — it still backs 12 other templates, see
+   .docs/FE/account-settings-editorial.md).
+
+   Color decision (user-confirmed, overrides the mock's blanket brand-red):
+   brand/brand-ink for kicker, active index tick, danger-panel border/head,
+   warning badges ("미인증"/"인증 대기"), step-1 number, in-copy action
+   links; rose for every error (banner + field) and the final destructive
+   action (탈퇴 button, step-3 number); mint for step-2 number and the
+   "인증됨" badge. No new hex literals — #fff below is only ever text on a
+   solid brand/rose button background, same convention as
+   archive_collection_detail.css's edit button. */
+
+.account-settings-page {
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+/* ── 2-col shell: index FIRST in the DOM, panel second (IC2) ─────────── */
+.account-settings-shell {
+  display: grid;
+  grid-template-columns: 14.75rem minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+/* ── left index (nav + 로그인 정보) ───────────────────────────────────── */
+.account-settings-index-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.account-settings-index-tab {
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  border-left: 3px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.account-settings-index-tab:hover {
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+.account-settings-index-tab.is-active {
+  border-left-color: var(--brand-ink);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+
+.account-settings-index-tab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.account-settings-login-info {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.account-settings-login-info-email {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.account-settings-login-info-joined {
+  margin: 0.125rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* ── right panel ───────────────────────────────────────────────────── */
+.account-settings-panel {
+  padding: 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.account-settings-panel-standalone {
+  max-width: 28rem;
+  margin: 3rem auto;
+}
+
+/* 위험구역 카드는 border/kicker에 brand — 최종 파괴적 동작(탈퇴 버튼)만
+   rose로 남기고, 카드 자체의 경계는 brand로 "여기부터 위험 영역"을
+   표시한다(사용자 확정 색 결정). */
+.account-settings-panel-danger {
+  border-color: var(--brand);
+}
+
+.account-settings-kicker {
+  margin: 0 0 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--brand-ink);
+}
+
+.account-settings-title {
+  margin: 0 0 0.5rem;
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  color: var(--text);
+}
+
+.account-settings-description {
+  margin: 0 0 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.account-settings-error-banner {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--rose-border);
+  border-radius: 0.625rem;
+  background: var(--rose-soft);
+  color: var(--rose-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.account-settings-error-banner ul {
+  margin: 0;
+  padding-left: 1.125rem;
+}
+
+/* ── overview rows (설정 허브 / 탈퇴 완료 화면) ───────────────────────── */
+.account-settings-overview {
+  margin: 0 0 1.25rem;
+  border-top: 2px solid var(--text);
+}
+
+.account-settings-overview-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 0.125rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-settings-overview-row dt {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.account-settings-overview-row dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.account-settings-overview-value {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 개요 행의 이메일/비밀번호 액션 — mypage.css .mypage-account-action과 동일
+   패턴(항상 행 끝으로 밀어낸다). 가입일 행에는 액션이 없다. */
+.account-settings-overview-action {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+
+.account-settings-overview-action:hover,
+.account-settings-overview-action:focus-visible {
+  text-decoration: underline;
+}
+
+.account-settings-overview-action:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── badges ────────────────────────────────────────────────────────── */
+.account-settings-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0.1875rem 0.5625rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.account-settings-badge.is-mint {
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+
+.account-settings-badge.is-warn {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+/* ── email 변경: 현재/대기 이메일 행 ──────────────────────────────────── */
+.account-settings-email-current,
+.account-settings-email-pending {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.875rem 0;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-settings-pending-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+/* 현재 이메일 블록의 보조 문구 — flex-wrap 행에서 항상 다음 줄 전체 폭을
+   차지하도록 flex-basis:100%를 준다. */
+.account-settings-email-hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.78125rem;
+  color: var(--muted);
+}
+
+/* IC1: "변경 취소"/"재발송"은 서버 상태를 바꾸므로 CSRF POST 버튼이다 —
+   시각적으로만 링크처럼 스타일링한다. */
+.account-settings-inline-form {
+  display: inline-flex;
+}
+
+.account-settings-link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--brand-ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.account-settings-link-btn:hover {
+  color: var(--brand);
+}
+
+.account-settings-link-btn.is-rose {
+  color: var(--rose-ink);
+}
+
+.account-settings-link-btn.is-rose:hover {
+  filter: brightness(1.15);
+}
+
+.account-settings-link-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── form fields ───────────────────────────────────────────────────── */
+.account-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.account-settings-field label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.account-settings-required {
+  color: var(--brand-ink);
+}
+
+.account-settings-field input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.account-settings-field input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  border-color: var(--focus);
+}
+
+.account-settings-field-error {
+  margin: 0.375rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rose-ink);
+}
+
+.account-settings-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1.5rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-settings-submit-btn:hover {
+  background: var(--brand-ink);
+}
+
+.account-settings-submit-btn.is-rose {
+  background: var(--rose-ink);
+}
+
+.account-settings-submit-btn.is-rose:hover {
+  filter: brightness(0.92);
+}
+
+.account-settings-notice {
+  padding: 0.875rem 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.625rem;
+  background: var(--bg-soft);
+}
+
+.account-settings-notice p {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* ── 회원 탈퇴: 3단계(순서 있음, <ol>) ─────────────────────────────────── */
+.account-settings-delete-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.account-settings-delete-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.account-settings-step-num {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.account-settings-step-num.is-brand {
+  background: var(--brand);
+}
+
+.account-settings-step-num.is-mint {
+  background: var(--mint-ink);
+}
+
+.account-settings-step-num.is-rose {
+  background: var(--rose-ink);
+}
+
+/* ── 사실 고지 박스 3개(프라이버시/세션유지/복구방법) — 소개성 문구가
+   아니라 실제 동작 고지라 삭제 정책 대상이 아니다. ───────────────────── */
+.account-settings-info-boxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.account-settings-info-box {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.625rem;
+  background: var(--bg-soft);
+}
+
+.account-settings-info-box h2 {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.account-settings-info-box p {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* ── 삭제될 항목 6종: 2열, gap:1px + background:line = 헤어라인 ───────── */
+.account-settings-delete-targets-head {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.account-settings-delete-targets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.account-settings-delete-target {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+}
+
+.account-settings-delete-target-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.account-settings-delete-target-value {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── back link ─────────────────────────────────────────────────────── */
+.account-settings-back {
+  margin: 0;
+}
+
+.account-settings-back a {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--brand-ink);
+  text-decoration: underline;
+}
+
+/* 탈퇴 완료 화면: 복구 수단(다시 로그인)이 주 버튼, 홈으로는 보조 링크
+   (Web Experience Designer E4 — 시안대로 두 버튼을 나란히 둔다). */
+.account-settings-done-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.account-settings-done-secondary {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--brand-ink);
+  text-decoration: underline;
+}
+
+/* ── narrow (≤45rem): index becomes a horizontal chip strip, single
+   column stacking follows DOM order as-is — no `order`/`grid-column`
+   swap needed, the collapse to 1fr already keeps index-before-panel
+   (IC2, this repo's 3rd-time-confirmed rule). ─────────────────────── */
+@media (max-width: 45rem) {
+  .account-settings-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  /* Horizontal scroll is isolated to the tab track only (IC9) — the page
+     itself never gains a horizontal scrollbar. Same JS-less
+     nowrap+overflow-x pattern as .staff-shell-tabs. */
+  .account-settings-index-tabs {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .account-settings-index-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* 이메일은 각 패널 본문에 이미 표시되므로 사이드바 로그인 정보는
+     모바일에서 숨긴다. */
+  .account-settings-login-info {
+    display: none;
+  }
+
+  .account-settings-panel {
+    padding: 1.25rem 1rem;
+  }
+
+  .account-settings-panel-standalone {
+    margin: 1.5rem auto;
+  }
+
+  .account-settings-overview-row {
+    grid-template-columns: 5.5rem 1fr;
+  }
+
+  .account-settings-pending-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .account-settings-delete-targets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

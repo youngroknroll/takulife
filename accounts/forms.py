@@ -1,5 +1,7 @@
+from allauth.account.forms import AddEmailForm
 from allauth.account.forms import SignupForm as AllauthSignupForm
-from django.forms import BooleanField
+from django import forms
+from django.forms import BooleanField, CharField, PasswordInput
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -38,3 +40,22 @@ class SignupForm(AllauthSignupForm):
         super().custom_signup(request, user)
         user.terms_agreed_at = timezone.now()
         user.save(update_fields=["terms_agreed_at"])
+
+
+class EmailChangeForm(AddEmailForm):
+    """Adds a current-password re-check to allauth's add-email form
+    (registered via settings.ACCOUNT_FORMS["add_email"]).
+
+    The check lives in clean(), not save(): allauth's EmailView.form_valid
+    only calls add_email()/save() when is_valid() is True, so failing
+    validation here is what actually stops the email-change side effect.
+    self.user is set by AddEmailForm's own base class (allauth UserForm).
+    """
+
+    current_password = CharField(widget=PasswordInput, label="현재 비밀번호")
+
+    def clean_current_password(self):
+        current_password = self.cleaned_data["current_password"]
+        if not self.user.check_password(current_password):
+            raise forms.ValidationError("비밀번호가 올바르지 않습니다.")
+        return current_password

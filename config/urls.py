@@ -134,7 +134,14 @@ urlpatterns = [
     # Registered before the allauth include so these explicit routes always
     # win the match (allauth's own urlconf has no "delete/"/"settings/"
     # pattern today, but this keeps them from ever silently colliding).
-    path("accounts/delete/", accounts_views.delete_account, name="account-delete-page"),
+    # delete_account lives in core.views (not accounts.views) — its GET needs
+    # archive counts, and accounts must not import archive (boundary guard).
+    path("accounts/delete/", core_views.delete_account, name="account-delete-page"),
+    path(
+        "accounts/delete/done/",
+        accounts_views.delete_account_done,
+        name="account-delete-done-page",
+    ),
     path(
         "accounts/settings/",
         accounts_views.account_settings,

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}탈퇴 신청 완료 — takulife{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/account_settings.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="page account-settings-page" id="content">
+  <div class="account-settings-panel account-settings-panel-standalone">
+    {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="탈퇴가 접수되었습니다" %}
+
+    <dl class="account-settings-overview">
+      <div class="account-settings-overview-row">
+        <dt>신청 시각</dt>
+        <dd>{{ deletion_requested_at|date:"Y.m.d H:i" }}</dd>
+      </div>
+      <div class="account-settings-overview-row">
+        <dt>삭제 예정일</dt>
+        <dd>{{ deletion_scheduled_for|date:"Y.m.d H:i" }}</dd>
+      </div>
+    </dl>
+
+    <div class="account-settings-info-box">
+      <h2>복구 방법</h2>
+      <p>삭제 예정일 전에 같은 이메일로 다시 로그인하면 탈퇴 신청이 자동으로 취소됩니다.</p>
+    </div>
+
+    <div class="account-settings-done-actions">
+      <a href="{% url 'account_login' %}" class="account-settings-submit-btn">다시 로그인</a>
+      <a href="/" class="account-settings-done-secondary">홈으로 가기</a>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/pages/account_delete_done.js' %}"></script>
+{% endblock %}

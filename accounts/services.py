@@ -7,9 +7,11 @@ than accounts.management.commands.purge_deleted_accounts may call
 reads or writes `deletion_requested_at` through the functions below.
 """
 import logging
+import time
 from datetime import timedelta
 
 from django.contrib.sessions.models import Session
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -21,6 +23,83 @@ logger = logging.getLogger(__name__)
 # execute_pending_deletions' purge (see
 # .docs/plans/2026-07-20-deletion-grace-period-plan.md).
 DELETION_GRACE_PERIOD = timedelta(days=10)
+
+# 탈퇴 완료 안내(accounts.views.delete_account_done) 전용 세션 키. 신청 시각·
+# 삭제 예정일을 담는 쪽(core.views.account.delete_account)과 읽는 쪽
+# (accounts.views) 둘 다 이 이름을 공유해야 하므로 양쪽이 이미 임포트하는
+# accounts.services에 둔다. 메시지 프레임워크 대신 전용 키를 쓰는 이유는
+# 키가 없으면(직접 URL 접근) 홈으로 보내 노출을 막기 위해서다.
+DELETE_DONE_SESSION_KEY = "account_delete_done"
+
+# Password re-check on the deletion view has no throttle of its own
+# otherwise: axes only hooks the login backend, and allauth's
+# ACCOUNT_RATE_LIMITS does not cover this custom view, so a hijacked session
+# could brute-force the password indefinitely without this counter.
+# Promoted here (from accounts/views.py) by the account-settings-editorial
+# plan B5 — the deletion view itself moved to core/views/account.py (it needs
+# to read archive counts, and accounts must not import archive), but the
+# lockout security rule stays owned by accounts.
+MAX_DELETE_PASSWORD_ATTEMPTS = 5
+DELETE_PASSWORD_LOCKOUT_SECONDS = 60 * 15
+DELETE_LOCKOUT_MESSAGE = "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해 주세요."
+
+
+def delete_attempts_cache_key(user):
+    return f"account-delete-attempts:{user.pk}"
+
+
+def is_delete_locked(user):
+    """True once `user` has exhausted the failure budget for this window.
+
+    The window's deadline is stored explicitly in the cached record (rather
+    than relied on implicitly via the cache entry's own physical TTL): the
+    shared cache backend is DatabaseCache (config/settings.py CACHES, PR-0e),
+    and unlike LocMemCache.incr(), DatabaseCache has no incr() override —
+    BaseCache.incr() falls back to a plain `self.set(key, new_value)` call
+    with no timeout argument, which resets the entry's physical TTL to the
+    cache's default TIMEOUT on every failed attempt. If the fixed 15-minute
+    window were represented only by that physical TTL, each new failure
+    would silently shrink and refresh it, turning the intended fixed window
+    into an effectively sliding, shorter one. Storing our own deadline and
+    comparing it explicitly keeps the window fixed to the first failure
+    regardless of what the cache backend does to the physical TTL.
+    """
+    record = cache.get(delete_attempts_cache_key(user))
+    if not record or record["deadline"] <= time.time():
+        return False
+    return record["count"] >= MAX_DELETE_PASSWORD_ATTEMPTS
+
+
+def register_failed_delete_attempt(user):
+    key = delete_attempts_cache_key(user)
+    now = time.time()
+    record = cache.get(key)
+    if not record or record["deadline"] <= now:
+        record = {"count": 0, "deadline": now + DELETE_PASSWORD_LOCKOUT_SECONDS}
+    record["count"] += 1
+    if record["count"] == MAX_DELETE_PASSWORD_ATTEMPTS:
+        logger.warning(
+            "Account deletion password lockout triggered for user %s after %s failed attempts",
+            user.pk,
+            record["count"],
+        )
+    # The cache entry's own TTL only needs to outlive the stored deadline —
+    # it is no longer the source of truth for the window (see
+    # is_delete_locked above), so refreshing it on every write is safe.
+    cache.set(key, record, timeout=DELETE_PASSWORD_LOCKOUT_SECONDS)
+
+
+def reset_delete_attempts(user):
+    cache.delete(delete_attempts_cache_key(user))
+
+
+def format_password_changed_display(password_changed_at):
+    """password_changed_at(UTC aware datetime|None)을 화면 표시용 로컬
+    타임존 날짜 문자열로 바꾼다. 마이페이지와 계정 설정 화면이 같은 사실을
+    다르게 표기하지 않도록 공유하는 단일 소스."""
+    if password_changed_at is None:
+        return "변경 이력 없음"
+    return timezone.localtime(password_changed_at).strftime("%Y.%m.%d")
 
 
 def request_deletion(user):

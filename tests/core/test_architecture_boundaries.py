@@ -371,6 +371,22 @@ def test_활성_비아카이브_모듈은_아카이브_모듈을_임포트하지
     assert not violations, violations
 
 
+def test_accounts_모듈은_아카이브_모듈을_임포트하지_않는다():
+    """B5(account-settings-editorial 계획서)는 탈퇴 화면의 archive 카운트
+    합성을 core/views/account.py에만 두고 accounts는 archive를 임포트하지
+    않는 것을 전제로 한다 — 기존 스캔 대상이 ["events", "drafts"]뿐이라
+    accounts가 목록 밖이었던 사각지대(AS-13)를 신설한다."""
+    files = _domain_source_files(PROJECT_ROOT, ["accounts"])
+
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"archive"}))
+    }
+
+    assert not violations, violations
+
+
 def test_아카이브_모듈은_드래프트_모듈을_임포트하지_않는다():
     files = _domain_source_files(PROJECT_ROOT, ["archive"])
 

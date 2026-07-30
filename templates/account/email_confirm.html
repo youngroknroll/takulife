@@ -4,27 +4,35 @@
 {% block title %}이메일 인증 — takulife{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/account_settings.css' %}">
 {% endblock %}
 
 {% block content %}
-<main class="auth-container" id="content">
-  <h1>이메일 주소 확인</h1>
-  {% if confirmation %}
-    {% user_display confirmation.email_address.user as user_display %}
-    {% if can_confirm %}
-      <p>{{ confirmation.email_address.email }}이(가) {{ user_display }}님의 이메일 주소가 맞는지 확인해주세요.</p>
-      <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
-        {% csrf_token %}
-        {{ redirect_field }}
-        <button type="submit" class="btn btn-primary btn-block">확인</button>
-      </form>
+<main class="page account-settings-page" id="content">
+  <div class="account-settings-panel account-settings-panel-standalone">
+    {% if confirmation %}
+      {% user_display confirmation.email_address.user as user_display %}
+      {% if can_confirm %}
+        {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 주소 확인" %}
+        <p class="account-settings-description">{{ confirmation.email_address.email }}이(가) {{ user_display }}님의 이메일 주소가 맞는지 확인해주세요.</p>
+        <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="account-settings-form">
+          {% csrf_token %}
+          {{ redirect_field }}
+          <button type="submit" class="account-settings-submit-btn">확인</button>
+        </form>
+      {% else %}
+        {% comment %}
+        can_confirm=False: 이 이메일이 이미 다른 계정에서 확인된 상태다.
+        재요청 링크는 도움이 안 된다(이미 다른 계정이 가져간 주소는 재요청으로
+        해결되지 않는다) — 대신 이메일 관리 화면으로 돌려보낸다.
+        {% endcomment %}
+        {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 주소 확인" error_text="이 이메일은 이미 다른 계정에서 확인되었습니다." %}
+        <p class="account-settings-back"><a href="{% url 'account_email' %}">이메일 관리로 돌아가기</a></p>
+      {% endif %}
     {% else %}
-      <p class="auth-error">이 이메일은 이미 다른 계정에서 확인되었습니다.</p>
+      {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 주소 확인" error_text="인증 링크가 만료되었거나 올바르지 않습니다." %}
+      <p class="account-settings-back"><a href="{% url 'account_email' %}">인증 메일을 다시 요청하기</a></p>
     {% endif %}
-  {% else %}
-    <p class="auth-error">인증 링크가 만료되었거나 올바르지 않습니다.</p>
-    <p><a href="{% url 'account_email' %}">인증 메일을 다시 요청하기</a></p>
-  {% endif %}
+  </div>
 </main>
 {% endblock %}

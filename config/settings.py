@@ -393,10 +393,16 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+# 다중 이메일 UI 대신 단일 이메일 교체 흐름을 쓴다(계정 설정 에디토리얼
+# 계획서) — allauth가 account/email_change.html을 찾게 된다.
+ACCOUNT_CHANGE_EMAIL = True
 # Custom signup form adds the mandatory terms/privacy-policy agreement
 # checkbox (accounts/forms.py) on top of allauth's default email/password
-# fields.
-ACCOUNT_FORMS = {"signup": "accounts.forms.SignupForm"}
+# fields. add_email은 현재 비밀번호 재확인을 추가한 EmailChangeForm으로 교체.
+ACCOUNT_FORMS = {
+    "signup": "accounts.forms.SignupForm",
+    "add_email": "accounts.forms.EmailChangeForm",
+}
 
 # django-allauth socialaccount: Google sign-in. Credentials come from env
 # (never committed); register the OAuth client in Google Cloud Console with the
@@ -435,10 +441,13 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 #     password) until it cools off. Durable IP lockout is a follow-up (B1b: axes).
 #   - reset_password: throttles password-reset email requests (allauth default).
 # Rate-limit hits render templates/429.html.
+#   - manage_email: 이메일 변경(/accounts/email/)에 현재 비밀번호 재확인이
+#     새로 생겨 allauth 기본 10/m/user(느슨한 롤링 제한)보다 좁게 고정한다.
 ACCOUNT_RATE_LIMITS = {
     "signup": "5/m/ip,30/h/ip",
     "login_failed": "10/m/ip,5/300s/key",
     "reset_password": "20/m/ip,5/m/key",
+    "manage_email": "5/m/user,20/h/user",
 }
 
 # django-axes: durable brute-force lockout on top of allauth's per-window
