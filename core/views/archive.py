@@ -547,7 +547,19 @@ def archive_personal_entry_create(request):
 def archive_personal_entry_detail(request, entry_id):
     """Read-only detail page for one PersonalEntry (owner-scoped)."""
     entry = get_object_or_404(PersonalEntry, pk=entry_id, user=request.user)
-    return render(request, "core/archive/personal_detail.html", {"entry": entry})
+    return render(
+        request,
+        "core/archive/personal_detail.html",
+        {
+            "entry": entry,
+            "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
+            # 라벨-필드 매핑만 뷰가 소유하고, 지역화된 날짜 표기는 템플릿 |date: 필터가 담당
+            "record_info_rows": [
+                {"label": "등록일", "value": entry.created_at},
+                {"label": "마지막 수정", "value": entry.updated_at},
+            ],
+        },
+    )
 
 
 @login_required
