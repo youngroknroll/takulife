@@ -119,6 +119,10 @@ During Red-Green, run the targeted test before broad regression.
   Merge needs per-PR user approval unless an expressly recorded standing
   automatic-merge approval applies. `AGENTS.md` owns the detailed contract.
 - Report failed and unverified checks directly; confidence is not evidence.
+- Every number written into a document must name its unit and say whether it
+  was measured or read, and must be re-measured before it sizes any work.
+  `AGENTS.md` "Numbers In Documents" is binding and lists the four counts that
+  already misdirected work here.
 
 ## Instruction Placement
 - `CLAUDE.md`: facts and gates needed in almost every session
