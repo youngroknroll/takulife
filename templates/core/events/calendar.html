@@ -33,12 +33,12 @@
     </form>
 
     <div class="quick-row">
-      <a class="chip{% if 'seoul' in selected_region %} active{% endif %}" href="/events/calendar/?region=seoul">서울</a>
-      <a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/calendar/?region=gyeonggi">경기</a>
-      <a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/calendar/?region=incheon">인천</a>
-      <a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/calendar/?status=closing_soon">종료 임박</a>
-      <a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" href="/events/calendar/?category=popup_store">팝업스토어</a>
-      <a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/calendar/?category=collaboration_cafe">콜라보 카페</a>
+      <a class="chip{% if 'seoul' in selected_region %} active{% endif %}" href="/events/calendar/?region=seoul"{% if 'seoul' in selected_region %} aria-current="true" aria-label="서울, 적용됨"{% endif %}>서울</a>
+      <a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/calendar/?region=gyeonggi"{% if 'gyeonggi' in selected_region %} aria-current="true" aria-label="경기, 적용됨"{% endif %}>경기</a>
+      <a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/calendar/?region=incheon"{% if 'incheon' in selected_region %} aria-current="true" aria-label="인천, 적용됨"{% endif %}>인천</a>
+      <a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/calendar/?status=closing_soon"{% if selected_status == 'closing_soon' %} aria-current="true" aria-label="종료 임박, 적용됨"{% endif %}>종료 임박</a>
+      <a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" href="/events/calendar/?category=popup_store"{% if 'popup_store' in selected_category %} aria-current="true" aria-label="팝업스토어, 적용됨"{% endif %}>팝업스토어</a>
+      <a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/calendar/?category=collaboration_cafe"{% if 'collaboration_cafe' in selected_category %} aria-current="true" aria-label="콜라보 카페, 적용됨"{% endif %}>콜라보 카페</a>
     </div>
 
     <section class="layout">
