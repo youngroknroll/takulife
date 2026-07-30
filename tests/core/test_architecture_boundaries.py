@@ -89,6 +89,145 @@ def _forbidden_imports_in_file(path, forbidden_apps):
     }
 
 
+# ---------------------------------------------------------------------------
+# core 공용 모듈 도메인 임포트 가드 — 기본 거부(default-deny) + 허용 목록.
+# 손유지 목록이 아니라 core/**/*.py 전부를 스캔하고, 정당한 예외 두 건만
+# 허용 목록에 근거와 함께 등록한다(.docs/BE/boundary-guard-glob-plan.md 승인
+# 범위 4). 심볼 단위가 아니라 모듈/디렉터리 단위다 — 471행 아래
+# ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS는 테스트 계층 순수성을
+# 지키는 다른 가드의 표이며, 그 심볼 단위 입도를 여기로 가져오면 core/views가
+# 새 함수를 하나 쓸 때마다 표를 고쳐야 해서 손유지 목록으로 회귀한다.
+# ---------------------------------------------------------------------------
+
+
+def _is_core_domain_import_allowlisted(path, root):
+    """path(core/ 하위 실제 파일)가 도메인 임포트 허용 목록에 해당하면 True.
+    root를 인자로 받아야 한다 — PROJECT_ROOT를 하드코딩하면 합성 tmp_path
+    트리에서 relative_to가 ValueError를 던지거나 항상 허용/거부로 고정된다.
+    경로 비교는 세그먼트 완전 일치다 — `"views" in str(path)` 같은 부분
+    문자열 비교는 core/promotion_views.py(이름이 promotion으로 시작하고
+    views를 포함)나 core/views_extra.py(디렉터리 밖, 이름만 유사) 같은
+    실재하는 파일을 조용히 새게 한다."""
+    relative_parts = path.relative_to(root / "core").parts
+    if relative_parts[:1] == ("views",):
+        # core/views/ 디렉터리 전체 — 프레젠테이션 합성 계층. 쓰기 호출 0건
+        # (유일한 `.update(`는 딕셔너리 `context.update(...)`), 쓰기는 기존
+        # DRF API로 간다. 패키지 전체 예외이며, 개별 파일이 실제로 도메인을
+        # 임포트하는지는 별개다 — system.py/__init__.py처럼 도메인 임포트가
+        # 0건인 파일도 이 예외에 포함된다.
+        return True
+    if relative_parts == ("promotion.py",):
+        # 유일한 교차 도메인 쓰기 오케스트레이터 — transaction.atomic()과
+        # select_for_update()를 소유해 core/views/와 성격이 달라 별도 파일
+        # 엔트리로 등록한다(디렉터리로 묶지 않는다).
+        return True
+    return False
+
+
+def _local_domain_apps(root):
+    """core를 제외한 이 프로젝트 소유 앱 이름 집합을 Django 앱 레지스트리에서
+    파생시킨다 — 손으로 쓴 리터럴이 사라지면 새 로컬 앱이 INSTALLED_APPS에
+    추가되는 순간 자동으로 금지 집합에 들어온다. 함수 안에서만
+    django.apps.apps를 호출해 settings 구성 이전 import-time 호출을 피한다.
+
+    로컬 앱 판정은 `AppConfig.path`의 부모 디렉터리가 root와 같은지로 한다 —
+    단순히 `Path(path).is_relative_to(root)`만 쓰면 이 저장소의 `.venv`가
+    프로젝트 루트 바로 아래에 있어(`uv`가 인repo venv를 만듦) rest_framework,
+    axes, allauth 같은 서드파티까지 "root 아래"로 오탐된다. 로컬 앱은 항상
+    root의 직계 자식 디렉터리(`archive/`, `events/` 등)이므로 parent 비교가
+    실제 경계다.
+    """
+    from django.apps import apps as django_apps
+
+    local_app_names = {
+        config.name
+        for config in django_apps.get_app_configs()
+        if Path(config.path).resolve().parent == root
+    }
+    forbidden = local_app_names - {"core"}
+    assert forbidden, f"파생된 금지 앱 집합이 비어 있다 (root={root}) — 앱 레지스트리 스캔이 잘못됐다"
+    return forbidden
+
+
+CORE_FORBIDDEN_DOMAIN_APPS = _local_domain_apps(PROJECT_ROOT)
+
+
+def test_금지_앱_집합은_로컬_도메인_앱을_담고_서드파티와_core_자신은_뺀다():
+    forbidden = _local_domain_apps(PROJECT_ROOT)
+
+    assert "archive" in forbidden
+    assert "rest_framework" not in forbidden
+    assert "core" not in forbidden
+
+
+def test_금지_앱_파생_대상이_없는_root는_공허하게_통과하지_않고_실패한다(tmp_path):
+    with pytest.raises(AssertionError):
+        _local_domain_apps(tmp_path)
+
+
+def test_core_promotion_모듈의_실제_도메인_임포트는_허용_목록으로_통과한다():
+    path = PROJECT_ROOT / "core" / "promotion.py"
+
+    forbidden = _forbidden_imports_in_file(path, CORE_FORBIDDEN_DOMAIN_APPS)
+    assert forbidden, "promotion.py가 도메인 모듈을 임포트하지 않는다 — 이 시나리오의 전제가 깨졌다"
+    assert _is_core_domain_import_allowlisted(path, PROJECT_ROOT)
+
+
+def test_core_views_패키지_전체의_실제_도메인_임포트는_허용_목록으로_통과한다():
+    # system.py/__init__.py는 일부러 뺀다 — 도메인 임포트가 0건이라 "허용
+    # 목록 덕분에 통과"인지 "애초에 안 잡히는 것"인지 구분되지 않는다.
+    view_module_names = ("_helpers.py", "account.py", "activity.py", "archive.py", "collection.py", "events.py")
+    view_module_paths = [PROJECT_ROOT / "core" / "views" / name for name in view_module_names]
+
+    for path in view_module_paths:
+        forbidden = _forbidden_imports_in_file(path, CORE_FORBIDDEN_DOMAIN_APPS)
+        assert forbidden, f"{path.name}가 도메인 모듈을 임포트하지 않는다 — 이 시나리오의 전제가 깨졌다"
+        assert _is_core_domain_import_allowlisted(path, PROJECT_ROOT), path
+
+
+def test_core_views_디렉터리에_새로_생기는_파일도_등록_없이_허용된다(tmp_path):
+    (tmp_path / "core" / "views").mkdir(parents=True)
+    new_module = tmp_path / "core" / "views" / "new_module.py"
+    new_module.write_text("import archive.models\n")
+
+    assert _is_core_domain_import_allowlisted(new_module, tmp_path)
+
+
+def test_core_views_디렉터리_밖의_이름만_유사한_파일은_허용되지_않는다(tmp_path):
+    (tmp_path / "core" / "views").mkdir(parents=True)
+    lookalike = tmp_path / "core" / "views_extra.py"
+    lookalike.write_text("import archive.models\n")
+    control = tmp_path / "core" / "views" / "actual.py"
+    control.write_text("import archive.models\n")
+
+    assert not _is_core_domain_import_allowlisted(lookalike, tmp_path)
+    assert _is_core_domain_import_allowlisted(control, tmp_path)
+
+
+def test_promotion_py와_파일명_접두만_같은_새_파일은_허용되지_않는다(tmp_path):
+    (tmp_path / "core").mkdir()
+    lookalike = tmp_path / "core" / "promotion_extra.py"
+    lookalike.write_text("import archive.models\n")
+    control = tmp_path / "core" / "promotion.py"
+    control.write_text("import archive.models\n")
+
+    assert not _is_core_domain_import_allowlisted(lookalike, tmp_path)
+    assert _is_core_domain_import_allowlisted(control, tmp_path)
+
+
+def test_core_공용_모듈은_허용_목록_밖에서_도메인_앱_모듈을_임포트하지_않는다():
+    files = _domain_source_files(PROJECT_ROOT, ["core"])
+
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if not _is_core_domain_import_allowlisted(path, PROJECT_ROOT)
+        and (forbidden := _forbidden_imports_in_file(path, CORE_FORBIDDEN_DOMAIN_APPS))
+    }
+
+    assert not violations, violations
+
+
 def test_스캔_대상이_없는_root는_공허하게_통과하지_않고_실패한다(tmp_path):
     with pytest.raises(AssertionError):
         _domain_source_files(tmp_path, ["events"])
@@ -330,31 +469,6 @@ def test_필드_에러_응답_헬퍼를_호출하면_필드명을_키로_하는_
 
     assert response.status_code == 400
     assert response.data == {"official_url": ["Duplicate"]}
-
-
-@pytest.mark.parametrize(
-    "module_path",
-    [
-        "core/errors.py",
-        "core/llm/config.py",
-        "core/llm/client.py",
-        "core/llm/exceptions.py",
-        "core/llm/__init__.py",
-        "core/analytics.py",
-    ],
-    ids=["에러_모듈", "LLM_설정", "LLM_클라이언트", "LLM_예외", "LLM_초기화", "분석_모듈"],
-)
-def test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다(module_path):
-    imported_modules = _imported_modules(module_path)
-
-    forbidden_prefixes = ("drafts.", "events.", "archive.", "staff.", "accounts.")
-    forbidden_names = {"drafts", "events", "archive", "staff", "accounts"}
-
-    assert not {
-        module
-        for module in imported_modules
-        if module in forbidden_names or module.startswith(forbidden_prefixes)
-    }
 
 
 @pytest.mark.parametrize(
