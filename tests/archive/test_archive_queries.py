@@ -17,6 +17,7 @@ from archive.queries import (
     list_user_unrecorded_visited_statuses,
     list_user_upcoming_planned_events,
     list_user_visit_records,
+    list_visit_records_for_personal_entry,
     user_collection_item_filter_values,
     user_collection_item_summary_counts,
     user_collection_item_work_title_facets,
@@ -407,6 +408,26 @@ def test_해당_방문에_연결된_굿즈만_등록순으로_반환한다(
     result = list(list_items_acquired_at_visit(record))
 
     assert result == [first_item, second_item]
+
+
+@pytest.mark.django_db
+def test_한_장소에_연결된_방문_기록만_최신순으로_반환한다(
+    make_user, make_entry, make_event, make_visit
+):
+    """Scenario PD-9a: only visits attached to the target PersonalEntry are
+    returned, newest visited_on first (matches list_user_visit_records'
+    default -visited_on, -id ordering)."""
+    user = make_user()
+    entry = make_entry(user, title="대상 장소")
+    other_entry = make_entry(user, title="다른 장소")
+    older = make_visit(user, personal_entry=entry, visited_on="2026-01-01")
+    newer = make_visit(user, personal_entry=entry, visited_on="2026-02-01")
+    make_visit(user, personal_entry=other_entry, visited_on="2026-03-01")
+    make_visit(user, event=make_event(), visited_on="2026-04-01")
+
+    result = list(list_visit_records_for_personal_entry(entry))
+
+    assert [record.id for record in result] == [newer.id, older.id]
 
 
 # ---------------------------------------------------------------------------

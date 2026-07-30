@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ entry.title }} | 직접 등록{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/archive_personal_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page personal-detail-page" id="content">
+    <a class="personal-detail-back-link" href="/archive/personal/">← 직접 등록 목록으로</a>
+    <div id="personal-detail-global-error" class="personal-detail-global-error" aria-live="polite"></div>
+
+    <div class="personal-detail-grid">
+      <div class="personal-detail-gallery">
+        <div class="personal-detail-cover">
+          {% if entry.image %}
+            <img src="{{ entry.image.url }}" alt="{{ entry.title }}">
+          {% else %}
+            <div class="personal-detail-noimg" aria-hidden="true">📍</div>
+            <p class="sr-only">등록된 사진이 없습니다</p>
+          {% endif %}
+          <span class="personal-detail-lock-pill">🔒 나만 보기</span>
+        </div>
+
+        <div class="personal-detail-status-row status-row" data-status-error-container>
+          <button
+            class="interest-btn{% if interest_id %} active{% endif %}"
+            type="button"
+            data-interest-toggle
+            data-personal-entry-id="{{ entry.id }}"
+            aria-pressed="{% if interest_id %}true{% else %}false{% endif %}"
+            {% if interest_id %}data-interest-id="{{ interest_id }}"{% endif %}
+          >
+            <span data-interest-glyph aria-hidden="true">{% if interest_id %}♥{% else %}♡{% endif %}</span>
+            찜
+          </button>
+          <button
+            class="status-btn {% if status_slug %}{{ status_slug }}{% else %}planned{% endif %}{% if status_id %} active{% endif %}"
+            type="button"
+            data-status-action
+            data-personal-entry-id="{{ entry.id }}"
+            data-status="planned"
+            data-label="{{ planned_label }}"
+            data-label-active="{{ status_label|default:planned_label }}"
+            data-reload-on-success
+            {% if status_id %}data-status-id="{{ status_id }}"{% endif %}
+          >{% if status_label %}{{ status_label }}{% else %}{{ planned_label }}{% endif %}</button>
+        </div>
+
+        <a class="personal-detail-visit-cta" href="/archive/visits/new/?subject=personal:{{ entry.id }}" data-cta-watch>
+          <span aria-hidden="true">＋</span> 방문 기록 남기기
+        </a>
+
+        <dl class="personal-detail-record-info">
+          {% for row in record_info_rows %}
+          <div class="personal-detail-record-info-row">
+            <dt>{{ row.label }}</dt>
+            <dd>{{ row.value|date:"Y.m.d" }}</dd>
+          </div>
+          {% endfor %}
+          <div class="personal-detail-record-info-row">
+            <dt>공개 범위</dt>
+            <dd>나만 보기</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="personal-detail-main">
+        <div class="personal-detail-chips">
+          {% if entry.category %}<span class="personal-detail-chip">{{ entry.category }}</span>{% endif %}
+          {% if entry.work_title %}<span class="personal-detail-chip">{{ entry.work_title }}</span>{% endif %}
+          {% if entry.category or entry.work_title %}<span class="personal-detail-dot" aria-hidden="true">·</span>{% endif %}
+          <span class="personal-detail-chip personal-detail-chip--kind">비공식 장소</span>
+        </div>
+
+        <h1 class="personal-detail-title">{{ entry.title }}</h1>
+
+        <div class="personal-detail-subtitle-row">
+          {% if entry.location_name or entry.region %}
+          <p class="personal-detail-subtitle">
+            {% if entry.location_name %}{{ entry.location_name }}{% endif %}{% if entry.location_name and entry.region %}<span aria-hidden="true"> · </span>{% endif %}{% if entry.region %}{{ entry.region }}{% endif %}
+          </p>
+          {% endif %}
+          <div class="personal-detail-actions">
+            <a class="personal-detail-edit-link" href="/archive/personal/{{ entry.id }}/edit/">수정</a>
+            <button type="button" class="personal-detail-delete-btn" data-delete-entry-id="{{ entry.id }}">삭제</button>
+          </div>
+        </div>
+
+        {% if entry.url %}
+        <dl class="personal-detail-meta">
+          <div class="personal-detail-meta-row"><dt>참고 링크</dt><dd><a href="{{ entry.url }}" rel="noopener" target="_blank">{{ entry.url }}</a></dd></div>
+        </dl>
+        {% endif %}
+
+        {% if entry.memo %}
+          <h2 class="personal-detail-memo-head">메모</h2>
+          <p class="personal-detail-memo">{{ entry.memo }}</p>
+        {% endif %}
+
+        {% if is_submitted %}
+          <span class="promote-badge" title="관리자 검수 후 공개 목록에 게시됩니다">공식 제보됨 · 검수 중</span>
+        {% else %}
+          <button
+            class="promote-btn"
+            type="button"
+            data-promote-toggle="{{ entry.id }}"
+            data-expanded="false"
+            data-controls="promote-form-{{ entry.id }}"
+            aria-controls="promote-form-{{ entry.id }}"
+            aria-expanded="false"
+          >공식 제보</button>
+          <form class="promote-form personal-detail-promote-form" id="promote-form-{{ entry.id }}" data-promote-form="{{ entry.id }}" hidden novalidate>
+            <p class="promote-note">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다.</p>
+            <div class="form-group">
+              <label for="promote-url-{{ entry.id }}">공식 URL</label>
+              <input id="promote-url-{{ entry.id }}" type="url" name="official_url" placeholder="https://" required>
+            </div>
+            <p class="form-error" data-promote-error="{{ entry.id }}"></p>
+            <button class="form-submit-btn" type="submit">제보하기</button>
+          </form>
+        {% endif %}
+
+        <h2 class="personal-detail-visits-head">이 장소의 방문 기록 <span>{{ visit_records_count }}</span></h2>
+        {% if visit_records %}
+          <div class="personal-detail-visit-rows">
+            {% for record in visit_records %}
+            <a class="personal-detail-visit-row" href="/archive/visits/{{ record.id }}/">
+              <span class="personal-detail-visit-date">{{ record.visited_on|date:"Y.m.d" }}</span>
+              {% if record.short_review %}<span class="personal-detail-visit-review">{{ record.short_review }}</span>{% endif %}
+            </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="personal-detail-visits-empty">아직 방문 기록이 없어요.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="personal-detail-cta-bar" data-cta-fixed hidden>
+      <a href="/archive/visits/new/?subject=personal:{{ entry.id }}">＋ 방문 기록 남기기</a>
+    </div>
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
+  <script defer src="{% static 'js/pages/personal_detail.js' %}"></script>
+{% endblock %}

@@ -22,6 +22,7 @@ from archive.queries import (
     list_user_planned_events,
     list_user_statuses,
     list_user_visit_records,
+    list_visit_records_for_personal_entry,
     user_interest_summary_counts,
     user_personal_entry_counts,
     user_personal_interest_ids,
@@ -539,6 +540,54 @@ def archive_personal_entry_create(request):
         {
             "PERSONAL_ENTRY_CATEGORY_SUGGESTIONS": PERSONAL_ENTRY_CATEGORY_SUGGESTIONS,
             "client_token": uuid.uuid4(),
+        },
+    )
+
+
+@login_required
+def archive_personal_entry_detail(request, entry_id):
+    """Read-only detail page for one PersonalEntry (owner-scoped)."""
+    entry = get_object_or_404(PersonalEntry, pk=entry_id, user=request.user)
+    interest_map = user_personal_interest_ids(request.user)
+    status_map = user_personal_statuses(request.user)
+    status_slug, status_id = status_map.get(entry.id, ("", None))
+    visit_records = list_visit_records_for_personal_entry(entry)
+    return render(
+        request,
+        "core/archive/personal_detail.html",
+        {
+            "entry": entry,
+            "interest_id": interest_map.get(entry.id),
+            "status_slug": status_slug,
+            "status_id": status_id,
+            "status_label": archive_status_label(status_slug) if status_slug else "",
+            "planned_label": archive_status_label("planned"),
+            "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
+            # 라벨-필드 매핑만 뷰가 소유하고, 지역화된 날짜 표기는 템플릿 |date: 필터가 담당
+            "record_info_rows": [
+                {"label": "등록일", "value": entry.created_at},
+                {"label": "마지막 수정", "value": entry.updated_at},
+            ],
+            "visit_records": visit_records,
+            "visit_records_count": len(visit_records),
+        },
+    )
+
+
+@login_required
+def archive_personal_entry_edit(request, entry_id):
+    """Render-only edit page (owner-scoped). Saving stays on the existing
+    DRF PATCH (`/api/personal-entries/<id>/`), mirrored from
+    archive_collection_item_edit. Context carries
+    PERSONAL_ENTRY_CATEGORY_SUGGESTIONS as free-input hint chips (not a
+    `choices` constraint), same as archive_personal_entry_create."""
+    entry = get_object_or_404(PersonalEntry, pk=entry_id, user=request.user)
+    return render(
+        request,
+        "core/archive/personal_edit.html",
+        {
+            "entry": entry,
+            "PERSONAL_ENTRY_CATEGORY_SUGGESTIONS": PERSONAL_ENTRY_CATEGORY_SUGGESTIONS,
         },
     )
 

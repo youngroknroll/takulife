@@ -19,7 +19,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `uv run pytest -q` → **2026 passed** (24.1s) |
+| 백엔드 회귀 | `uv run pytest -q` → **2045 passed** |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건** (보안·운영 검토 모두) |
@@ -197,12 +197,12 @@ PATCH 페이로드의 토큰이 저장값을 덮어썼고, 그러면 PR #246이 
 구조적 배제해 닫았다. **두 변경을 한 커밋에 넣은 이유**는 앞의 것만으로는
 회귀이기 때문이다.
 
-- **남은 절반: 수정 화면이 없다.** 라우트 자체가 없다(작성
-  `/archive/personal/new/`와 목록만 존재). API만으로는 사용자가 도달할 수
-  없으므로 데이터 소실 문제가 아직 해결되지 않았다.
-- **다만 지금 만들면 재작업 위험이 있다.** 신규 페이지 신설이고 프론트
-  이중 게이트 대상인데, 시안이 재작업 중이다. **새 시안이 나온 뒤 착수를
-  권한다.**
+**해결됨(2026-07-30).** 브랜치 `feat/personal-place-detail-edit`(커밋 8건,
+main 대비 +2199/−2)가 상세 라우트 `/archive/personal/<int:entry_id>/`와
+수정 라우트 `/archive/personal/<int:entry_id>/edit/`를 열어 남은 절반을
+닫았다. 상세 근거는 `docs/FE/personal-place-detail-edit.md`(프론트 이중
+게이트 사후 verdict 4건, 전부 `Conforms`). 검증: `uv run pytest -q` →
+**2045 passed**, Django check 0 issues, 마이그레이션 드리프트 없음.
 
 ---
 
