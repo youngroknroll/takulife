@@ -382,7 +382,7 @@ class TestArchiveCollectionQueryStringHelpers:
 
     def test_필터와_검색어가_없으면_페이저_쿼리_문자열은_비어있다(self, user_client, make_collection_item):
         user, client = user_client()
-        for i in range(11):  # force a pager to exist
+        for i in range(11):  # 페이저가 생기도록 한 쪽 분량을 넘긴다
             make_collection_item(user, name=f"아이템{i:02d}")
 
         resp = client.get("/collection/")

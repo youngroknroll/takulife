@@ -1,5 +1,5 @@
 """
-Staff-only event poster upload/delete API tests.
+스태프만 쓸 수 있는 행사 포스터 업로드·삭제 API 테스트.
 
 Endpoint: /api/events/<pk>/poster/
 POST  → 200 {"poster_url": "..."}  (staff only)

@@ -53,7 +53,7 @@ def test_다른_사용자_id를_담아_생성해도_소유자는_요청_사용�
     data = response.json()
     assert data["name"] == "새 굿즈"
     item = CollectionItem.objects.get(id=data["id"])
-    assert item.user_id == user.id  # payload's "user" is ignored
+    assert item.user_id == user.id  # 요청 본문의 "user"는 무시된다
 
 
 # ---------------------------------------------------------------------------

@@ -177,7 +177,7 @@ def activity_calendar(request):
     그룹을 제외한다. 상태만 있는 날은 셀뿐 아니라 어디서든 빈 것처럼
     카운트/표시된다(아래 selected_items/kind_counts도 마찬가지). `items`는
     그날의 활동 앞 2개를 {group, label}로, `more_count`는 남은 개수),
-    selected_date, selected_items(list of {group, label, url, date_text}
+    selected_date, selected_items({group, label, url, date_text} 목록
     — archive.queries.CalendarActivityItem의 label/url/time_text에서
     가져온다, _build_selected_activity_items 참고. 여기도 "status" 그룹
     행은 제외), prev_month/next_month, extra_query(type=만 포함, month/date
