@@ -9,7 +9,7 @@
   규칙을 쓴다(서비스 설계 §11.1: 파라미터 부재와 "빈 값이지만 존재"를
   구분, 무효값 → `calendar_error="invalid"`). `type=`은 반복 파라미터로
   5개 그룹(schedule/interest/status/visit/goods) 중 일부를 고르며, 각각
-  archive.queries의 kind 상수로 매핑된다(schedule→SCHEDULE_KIND,
+  archive.activity_calendar_queries의 kind 상수로 매핑된다(schedule→SCHEDULE_KIND,
   interest→INTEREST_ADDED/REMOVED + §7.5 레거시 찜 폴백,
   status→STATUS_CHANGED/REMOVED, visit→VISIT_KIND + VISIT_RECORD_CREATED,
   goods→GOODS_ACQUIRED_KIND + COLLECTION_ITEM_CREATED/ORGANIZED).

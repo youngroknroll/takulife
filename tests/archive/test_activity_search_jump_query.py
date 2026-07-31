@@ -1,7 +1,7 @@
 """날짜 점프 검색 읽기 계층 (활동 달력 에디토리얼 계획 §4-a-1/B6).
 
-archive.queries.find_latest_activity_date_for_query가 아직 없어 이 파일은
-ImportError로 수집 실패하는 게 정상이다(test_activity_calendar_queries.py와
+archive.activity_calendar_queries.find_latest_activity_date_for_query가 아직
+없어 이 파일은 ImportError로 수집 실패하는 게 정상이다(test_activity_calendar_queries.py와
 동일한 관례).
 
 범위: 이 파일은 읽기 쪽 매칭/날짜 선택 계약(순수 쿼리 함수)만 다룬다.
@@ -17,8 +17,12 @@ import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
+from archive.activity_calendar_queries import (
+    GOODS_ACQUIRED_KIND,
+    SCHEDULE_KIND,
+    find_latest_activity_date_for_query,
+)
 from archive.models import CollectionItem
-from archive.queries import GOODS_ACQUIRED_KIND, SCHEDULE_KIND, find_latest_activity_date_for_query
 
 pytestmark = pytest.mark.domain
 
