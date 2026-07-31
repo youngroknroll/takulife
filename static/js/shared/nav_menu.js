@@ -1,23 +1,9 @@
 /**
- * nav_menu.js — mobile hamburger toggle for the primary nav
- *
- * Toggles visibility of #primary-nav (see core/partials/_site_header.html)
- * on narrow viewports via [data-nav-menu-toggle] / .site-nav[data-expanded]
- * (see static/css/components/site-chrome.css's <=45rem block — >45rem the
- * CSS never hides the nav regardless of this attribute, so the toggle is a
- * no-op there). A dedicated data hook, not account_menu.js's
- * [data-account-menu-toggle]: that module's init queries the DOM once for
- * a single account-menu instance, so reusing its hook here would make one
- * of the two toggles silently unwired depending on source order.
- *
- * Deliberately does *not* close on outside click, unlike account_menu.js's
- * dropdown: the expanded nav is an in-flow block (pushes the header taller,
- * same shape as _archive_nav's <details> panel), not an overlay floating
- * above page content, so there is no "away" affordance to click through —
- * closing only on Escape (or re-tapping the toggle / navigating away) is
- * the archive-nav precedent this follows. No focus trap either: every item
- * inside is a plain navigation link, nothing to manage once opened (same
- * rationale as account_menu.js).
+ * 모바일 햄버거 메뉴 토글. 넓은 화면에서는 CSS가 메뉴를 항상 보여주므로
+ * 이 토글은 아무 동작도 하지 않는다.
+ * 계정 드롭다운(account_menu.js)과 달리 바깥 클릭으로는 닫히지 않는다 —
+ * 펼쳐진 메뉴는 떠 있는 오버레이가 아니라 헤더를 늘리는 블록이라 "바깥"이라는
+ * 개념이 없고, Escape나 토글 재클릭·페이지 이동으로만 닫힌다.
  */
 (function () {
   "use strict";
@@ -39,12 +25,9 @@
       setOpen(nav.getAttribute("data-expanded") !== "true");
     });
 
-    // Document-level, like account_menu.js: right after opening via click
-    // the focus sits on the toggle (outside the nav), and a nav-scoped
-    // listener would never see that Escape. Gated on focus context so an
-    // Escape aimed at another open widget (e.g. the account dropdown, whose
-    // own handler bubbles here without stopPropagation) can't also close
-    // this nav and steal the focus that widget just restored.
+    // 열린 직후 포커스가 메뉴 밖의 토글 버튼에 있어 document 전체에 리스너를 건다.
+    // 열림 상태와 포커스 위치를 함께 확인해, 계정 드롭다운 등 다른 위젯을 향한
+    // Escape가 이 메뉴까지 닫아버리고 포커스를 가로채지 않도록 막는다.
     document.addEventListener("keydown", function (event) {
       if (event.key !== "Escape" || nav.getAttribute("data-expanded") !== "true") {
         return;

@@ -1,7 +1,7 @@
   .page {
     max-width: 1160px;
   }
-  /* "목록으로" back-link row (shell no longer carries it — page-owned) */
+  /* "목록으로" 링크 줄. 공용 셸이 아니라 이 페이지가 직접 소유한다 */
   .detail-topline {
     margin: 0 0 0.75rem;
   }
@@ -42,9 +42,7 @@
     font-size: 0.8rem;
     font-weight: 700;
   }
-  /* 잉크 리터럴 개별 다크 오버라이드 — 신규 토큰 통합 없이 --muted 다크값과
-     동일한 #A2A9B9로 직접 대응(다크모드 팔레트 문서 "크롬·그림자·잉크
-     리터럴", 계획상 Deferred). */
+  /* 이 글자색은 토큰화 대신 --muted의 다크값(#A2A9B9)을 그대로 리터럴로 맞춰둔 것이다. */
   :root[data-theme="dark"] label {
     color: #a2a9b9;
   }
@@ -74,8 +72,7 @@
     color: var(--muted);
     cursor: not-allowed;
   }
-  /* 유사-중복 surface 리터럴 개별 다크 오버라이드 — #f4f6fa는 인접
-     토큰(--bg-soft) 다크값을 그대로 준용해 #292D38로 대응. */
+  /* #f4f6fa의 다크값은 인접 토큰 --bg-soft의 다크값(#292D38)을 그대로 따른다. */
   :root[data-theme="dark"] input:read-only,
   :root[data-theme="dark"] textarea:read-only,
   :root[data-theme="dark"] input:disabled,
@@ -90,9 +87,7 @@
   .full {
     grid-column: 1 / -1;
   }
-  /* ── console density pass (PR-C2): raw/meta info panels only — form
-     fields above (label/input/textarea/select) keep their size for review
-     readability, per plan. Tokens only, no new colors. */
+  /* 원문/메타 패널만 촘촘하게 줄인다. 위 입력 폼 필드는 검토 가독성을 위해 크기를 유지한다. */
   .raw-box {
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -110,7 +105,7 @@
     font-size: var(--fs-sm);
     overflow-wrap: anywhere;
   }
-  /* 잉크 리터럴 개별 다크 오버라이드 — #A2A9B9(=--muted 다크값). */
+  /* --muted 다크값(#A2A9B9)을 그대로 쓴다. */
   :root[data-theme="dark"] .raw-box p {
     color: #a2a9b9;
   }
@@ -123,10 +118,8 @@
     text-decoration: none;
     overflow-wrap: anywhere;
   }
-  /* Full raw body (expanded via #raw-text-toggle) can run very long —
-     capped and scrollable so it doesn't push the review panel out of
-     view. Scoped to this id only: .raw-box p also covers the truncated
-     preview and the official-URL box, neither of which should scroll. */
+  /* 원문 전체는 길어질 수 있어 높이를 제한하고 스크롤시킨다. 이 id에만
+     적용한다 — .raw-box p는 요약 미리보기와 공식 URL 박스도 가리켜서다. */
   #raw-text-full {
     max-height: 320px;
     overflow-y: auto;
@@ -167,8 +160,7 @@
     color: var(--rose-ink);
     border-color: #fecdd3;
   }
-  /* 유사-중복 surface 리터럴 개별 다크 오버라이드 — #fecdd3는 인접
-     토큰(--rose-soft) 다크값을 그대로 준용해 #43232B로 대응. */
+  /* #fecdd3의 다크값은 인접 토큰 --rose-soft의 다크값(#43232B)을 그대로 따른다. */
   :root[data-theme="dark"] .action-button.danger {
     border-color: #43232b;
   }

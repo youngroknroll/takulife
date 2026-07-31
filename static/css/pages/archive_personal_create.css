@@ -1,28 +1,18 @@
-/* archive_personal_create.css — /archive/personal/new/ 전용 작성 페이지.
-   Design source: "비공식 장소 등록 페이지 (에디토리얼).dc.html".
+/* archive_personal_create.css — /archive/personal/new/ 전용 작성
+   페이지. `.personal-create-page` 스코프에서만 동작하며
+   archive_visits.css / archive_collection.css는 로드하지 않는다 — 두
+   시트의 클래스가 이 페이지에, 이 페이지의 `.personal-form-*` 클래스가
+   두 시트에 각각 나타나지 않으므로 절반만 바꾸면 폼이 조용히
+   스타일을 잃는다(과거 사례로 확인된 함정).
 
-   Entirely scoped under `.personal-create-page` (this page's `<main>` root
-   class). Does NOT load archive_visits.css or archive_collection.css — those
-   two stylesheets' `.create-form`/`.form-group`/`.entry-detail-*`/
-   `.collection-form-*` classes never appear on this page, and this file's own
-   `.personal-form-*` classes never appear on theirs (goods-create-editorial-
-   track's "half-swap silently unstyles the form" lesson, mirrored here for a
-   brand-new page instead of a CSS swap).
+   TOKEN NOTE: 시안이 요구하는 `--border-strong`은 tokens.css에 없어
+   `--muted`로 대체(prompt_plan.md 확정 결정).
+   ACCENT NOTE: "teal" 역할은 이 저장소의 `--teal`/`--teal-soft`/
+   `--teal-ink` 토큰에 매핑한다(별도 --accent* 계열 없음). */
 
-   TOKEN NOTE: the design calls for `--border-strong` on the dropzone dashed
-   border. That token does not exist in tokens.css (verified by grep before
-   writing this file — same trap WED flagged on the goods-create track).
-   `--muted` is used instead, per prompt_plan.md's confirmed decision.
-
-   ACCENT NOTE: "teal" role in the plan maps to this repo's `--teal`/
-   `--teal-soft`/`--teal-ink` tokens (no separate `--accent*` family exists;
-   same substitution collection/archive.css already use for this design
-   series' "청록" accent). */
-
-/* ── global error banner (kept for parity with collection_create.html's
-   convention even though this page currently has no delete action to feed
-   it — personal_create.js still writes network/auth errors from the create
-   submit itself into #personal-create-error inside the form, not here). */
+/* ── global error banner ───────────────────────────────────────── */
+/* 다른 등록 페이지와 관례를 맞추려고 남겨 뒀다. 지금 이 페이지의 등록
+   오류는 여기가 아니라 폼 안 `#personal-create-error`에 표시된다. */
 .personal-create-page {
   max-width: 56.25rem;
   margin: 0 auto;
@@ -118,10 +108,10 @@
   gap: 1.25rem;
 }
 
-/* Dropzone: 4/3 aspect (WED confirmed — no 150px cap on mobile either).
-   The file input stays a real, focusable, keyboard-reachable control layered
-   over the label (opacity:0 + absolute fill, never display:none — that would
-   drop it from the tab order entirely, BIR criterion). */
+/* 드롭존: 4:3 비율(WED 확정 — 모바일에서도 150px 상한 없음). 파일
+   input은 실제로 포커스/키보드 접근 가능한 상태를 유지한다(opacity:0 +
+   absolute로 덮되 display:none은 쓰지 않음 — display:none은 탭 순서에서
+   완전히 빠진다, BIR 기준). */
 .personal-create-page .personal-form-dropzone {
   position: relative;
   display: flex;
@@ -364,9 +354,9 @@
   font-size: 0.78rem;
 }
 
-/* Screen-reader-only helper text (this page's own scoped copy — no shared
-   `.sr-only` utility exists repo-wide; clip technique matches
-   components/text.css's `.archive-search-status`). */
+/* 스크린리더 전용 보조 텍스트(이 페이지 자체 복제본 — 저장소 전역
+   `.sr-only` 유틸리티가 없다; clip 기법은 components/text.css의
+   `.archive-search-status`와 동일). */
 .personal-create-page .sr-only {
   position: absolute;
   width: 1px;

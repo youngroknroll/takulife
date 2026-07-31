@@ -1,18 +1,11 @@
-/*
- * hscroll.css — horizontal scroller component
- *
- * Generic, page-agnostic styles for the [data-hscroll] component.
- * Depends only on --surface, --line, --text, --border-soft tokens (from tokens.css).
- * Pair with static/js/hscroll.js and [data-hscroll] markup.
- */
+/* [data-hscroll] 마크업, static/js/hscroll.js와 짝을 이루는 공용 컴포넌트다. */
 
 /* ── wrap ───────────────────────────────────────────────────── */
 
 .hscroll-wrap {
   position: relative;
   overflow: hidden;
-  /* Edge-fade mask: both sides faded by default; .at-start and .at-end
-     remove the corresponding fade so only the non-edge side shows it */
+  /* 기본은 양쪽 다 흐리게, .at-start/.at-end가 붙으면 그쪽 흐림만 없앤다. */
   -webkit-mask-image:
     linear-gradient(to right, transparent 0px, #000 40px, #000 calc(100% - 40px), transparent 100%);
   mask-image:
@@ -43,9 +36,9 @@
 .hscroll-track {
   display: flex;
   overflow-x: auto;
-  scroll-behavior: auto; /* JS controls smooth/instant via scrollBy */
+  scroll-behavior: auto; /* 부드러운/즉시 스크롤 전환은 JS의 scrollBy가 담당한다 */
   gap: 0.625rem;
-  /* Hide scrollbar but keep scrollable */
+  /* 스크롤은 되지만 스크롤바만 숨긴다 */
   scrollbar-width: none;
   -ms-overflow-style: none;
   list-style: none;
@@ -79,7 +72,7 @@
   color: var(--text);
   padding: 0;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  /* Start hidden; JS sets visibility after measuring overflow */
+  /* 처음엔 숨김. overflow 측정 후 JS가 visibility를 정한다 */
   visibility: hidden;
 }
 
@@ -113,14 +106,8 @@
 /* ── mobile: native swipe + compact translucent overlay arrows ─ */
 
 @media (max-width: 45rem) {
-  /* Keep arrows (JS toggles visibility by scroll position), but shrink
-     them and fade slightly so they overlay card edges without crowding
-     the swipe surface — intentional visual trade-off, kept as-is.
-     §5.4 44px touch target is instead met by growing the button's own
-     (invisible) box to 44px and painting the visible 30px circle on a
-     ::before positioned inside it (see .hscroll-prev/next::before below),
-     so the tappable area grows without the circle itself changing size or
-     position. */
+  /* 화살표는 시각적으로 30px 원이지만, 44px 터치 타깃은 보이지 않는 버튼
+     박스 자체를 44px로 키우고 그 안의 ::before에 30px 원을 그려서 맞춘다. */
   .hscroll-btn {
     width: 44px;
     height: 44px;
@@ -142,22 +129,15 @@
     border: 1px solid var(--line);
     opacity: 0.8;
     box-shadow: 0 2px 8px rgba(17, 31, 55, 0.16);
-    /* .hscroll-btn is its own stacking context (position:absolute +
-       z-index:2 on the base rule), so a negative z-index here only drops
-       ::before behind the button's own in-flow content (the ‹/› glyph
-       text) — it cannot leak behind the track/cards outside the button.
-       Without this, ::before (z-index:auto, painted after in-flow
-       content per the pseudo-element painting order) covered the glyph. */
+    /* .hscroll-btn 자체가 별도 stacking context라 이 음수 z-index는
+       버튼 안의 ‹/› 글자 뒤로만 가고, 바깥 트랙/카드까지 새지 않는다.
+       없으면 ::before가 글자를 덮어버린다. */
     z-index: -1;
   }
 
-  /* ::before is positioned relative to the button's own box, not centered
-     in it — left/right: 4px here reproduces the old 30px box's exact
-     left/right: 4px position. The button's own (invisible) box sits flush
-     against the wrap edge (left/right: 0) so the full 44px hit area stays
-     inside .hscroll-wrap's overflow:hidden clip instead of extending past
-     it (a -3px inset previously pushed part of the hit area outside the
-     wrap, silently unclickable). */
+  /* 버튼의 보이지 않는 박스는 wrap 가장자리에 딱 붙여야(left/right: 0)
+     44px 히트 영역 전체가 .hscroll-wrap의 overflow:hidden 안에 들어간다.
+     밖으로 삐져나가면 그 부분은 클릭이 안 먹는다. */
   .hscroll-prev {
     left: 0;
   }

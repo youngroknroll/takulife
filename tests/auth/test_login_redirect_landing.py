@@ -1,6 +1,6 @@
-"""Target IA plan D4 (.docs/plans/2026-07-16-target-ia-plan.md §3): a login
-with no explicit ``?next=`` must land on /collection/ (the collection-first
-product entry point), not /archive/.
+"""목표 IA 계획 D4(.docs/plans/2026-07-16-target-ia-plan.md §3): 명시적인
+``?next=`` 없는 로그인은 /archive/가 아니라 /collection/(컬렉션 우선
+제품 진입점)로 도착해야 한다.
 """
 import pytest
 

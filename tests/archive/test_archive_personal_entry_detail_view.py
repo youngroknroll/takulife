@@ -1,10 +1,9 @@
-"""Tests for the read-only personal-entry (unofficial place) detail page
-(core.views, URL name "archive-personal-entry-detail-page").
+"""비공식 장소(PersonalEntry) 읽기 전용 상세 페이지 테스트
+(core.views, URL 이름 "archive-personal-entry-detail-page").
 
-The page shows one PersonalEntry's title and, separately, its current
-official-submission status via `resp.context["is_submitted"]`. The page is
-owner-scoped: a non-owner request 404s and an anonymous request redirects
-to login.
+이 페이지는 PersonalEntry의 제목과, 별도로 `resp.context["is_submitted"]`를 통해
+현재 공식 제보 상태를 보여준다. 소유자 범위로 제한되어 타인의 요청은 404, 비로그인
+요청은 로그인 페이지로 리다이렉트된다.
 """
 from datetime import datetime
 

@@ -1,20 +1,13 @@
-"""Tests for drafts.eval.build_field_accuracy_report — a pure function, no DB.
+"""drafts.eval.build_field_accuracy_report(DB 없는 순수 함수) 테스트.
 
-golden_rows: iterable of (raw_title, raw_text, expected_fields_dict).
-extract_fn: callable(raw_title, raw_text) -> extracted fields dict, matching
-the extract_event_fields_heuristic/extract_event_fields_llm return shape.
-
-Report contract: {"fields": [{"field", "correct", "total", "accuracy",
+리포트 계약: {"fields": [{"field", "correct", "total", "accuracy",
 "both_empty"}, ...], "errors": n, "fallback": n}.
-- A golden row whose extract_fn call raises is skipped entirely (not counted
-  in any field, or in fallback) and increments "errors".
-- A field where both the golden value and the extracted value are empty
-  (None or "") is excluded from that field's correct/total (would inflate
-  accuracy on an uncorrected golden set) and increments that field's
-  "both_empty".
-- A successfully-evaluated row whose result dict has
-  extraction_method == "heuristic" increments "fallback" (surfaces silent
-  LLM-mode fallback contaminating the calibration data).
+- extract_fn이 예외를 던진 골든 행은 어떤 필드에도 집계되지 않고 "errors"만
+  증가한다.
+- 골든 값과 추출 값이 둘 다 비어 있는 필드는 correct/total에서 제외되고(안 그러면
+  정확도가 부풀려짐) "both_empty"만 증가한다.
+- 성공적으로 평가된 행의 extraction_method가 "heuristic"이면 "fallback"이
+  증가한다(LLM 모드에서 조용히 대체됐음을 드러낸다).
 """
 import pytest
 
@@ -24,7 +17,7 @@ pytestmark = pytest.mark.unit
 
 
 def _extract_fn(mapping):
-    """Builds an extract_fn from {(raw_title, raw_text): result_dict}."""
+    """{(raw_title, raw_text): result_dict} 매핑으로 extract_fn을 만든다."""
 
     def fn(raw_title, raw_text):
         return mapping[(raw_title, raw_text)]
@@ -88,8 +81,8 @@ class TestNormalizedFieldComparison:
 
 class TestExactFieldsAreNotNormalized:
     def test_category_region_날짜_필드는_정규화_없이_정확히_비교된다(self):
-        # Whitespace/case difference must NOT be forgiven for exact fields —
-        # only work_title/location_name get normalization.
+        # work_title/location_name만 정규화 대상이고, 나머지 필드는 공백·대소문자
+        # 차이도 그대로 오답으로 취급돼야 한다.
         golden_rows = [
             (
                 "Title A",

@@ -1,9 +1,9 @@
-"""core.views.legal_privacy / legal_terms — smoke coverage for the two
-legal informational pages (/legal/privacy/, /legal/terms/).
+"""core.views.legal_privacy / legal_terms — 법적 안내 페이지 두 개(/legal/privacy/,
+/legal/terms/)에 대한 스모크 검증.
 
-Render-only views with no auth requirement; these are deliberately smoke
-tests (200 + a key phrase), not exhaustive content assertions — see
-.docs/plans/2026-07-10-legal-pages-plan.md §4 commit 5.
+인증이 필요 없는 렌더 전용 뷰다. 일부러 전체 내용을 단언하지 않고 200과
+핵심 문구만 확인하는 스모크 테스트다 — .docs/plans/2026-07-10-legal-pages-plan.md
+§4 참고.
 """
 
 

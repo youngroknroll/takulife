@@ -1,12 +1,11 @@
-"""base.html — site-wide django.contrib.messages rendering (PR-D1 item 5).
+"""base.html — 사이트 전역 django.contrib.messages 렌더링.
 
-A success message must render with its own site-message-success class
-instead of falling into the generic "error/warning -> error, else -> info"
-2-way switch. This is a shared-chrome change (templates/base.html +
-static/css/base.css) — it affects every page that uses
-django.contrib.messages, not just the staff console; the staff
-home-categories POST is used here only because it is the simplest existing
-messages.success() call to drive.
+성공 메시지는 "error/warning -> error, 그 외 -> info"의 2분기 일반 규칙에
+빠지지 않고 자기 전용 site-message-success 클래스로 렌더돼야 한다. 이건
+공용 셸 변경(templates/base.html + static/css/base.css)이라 스태프
+콘솔뿐 아니라 django.contrib.messages를 쓰는 모든 페이지에 영향을 준다 —
+여기서 스태프 홈카테고리 POST를 쓰는 건 그게 구동하기 가장 간단한 기존
+messages.success() 호출이기 때문일 뿐이다.
 """
 import pytest
 

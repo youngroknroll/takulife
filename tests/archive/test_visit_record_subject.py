@@ -1,6 +1,6 @@
-"""Phase 2: VisitRecord can point at an Event (official) OR a PersonalEntry
-(unofficial) — exactly one. Covers the model constraint and the API either/or
-validation (including owner-scoping of personal_entry).
+"""Phase 2: VisitRecord는 Event(공식) 또는 PersonalEntry(비공식) 중 정확히
+하나만 가리킬 수 있다. 모델 제약과 API either/or 검증(personal_entry 소유자
+범위 포함)을 다룬다.
 """
 import pytest
 from django.db import IntegrityError, transaction
@@ -9,7 +9,7 @@ from archive.models import PersonalEntry, VisitRecord
 
 
 # ---------------------------------------------------------------------------
-# model constraint — exactly one subject
+# 모델 제약 — 대상은 정확히 하나여야 한다
 # ---------------------------------------------------------------------------
 
 
@@ -52,7 +52,7 @@ def test_방문_기록에_대상을_지정하지_않으면_생성이_거부된�
 
 
 # ---------------------------------------------------------------------------
-# API — either/or
+# API — 둘 중 하나만 허용
 # ---------------------------------------------------------------------------
 
 
@@ -110,8 +110,8 @@ def test_API로_대상_없이_방문_기록_생성을_요청하면_거부된다(
 @pytest.mark.web
 @pytest.mark.django_db
 def test_굿즈_개인_항목을_대상으로_방문_기록_생성을_요청하면_거부된다(client, make_user):
-    """GOODS is no longer a valid archive-action subject (collection domain
-    plan §3-3) — only PLACE personal entries may be attached to a visit record."""
+    """GOODS는 더 이상 유효한 아카이브 액션 대상이 아니다 (컬렉션 도메인
+    설계안 §3-3) — 방문 기록에는 PLACE 개인 항목만 연결할 수 있다."""
     user = make_user(username="vr-api-goods")
     entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
 

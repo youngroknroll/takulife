@@ -1,10 +1,6 @@
-/* ── legal pages (개인정보처리방침 / 이용약관) ────────────────────
- * Long-form prose document. No table of contents — a single scrolling
- * h2-section flow (plan §2026-07-10-legal-pages-plan §4-5). Reuses the
- * global .page wrapper and .panel card (components/cards.css); this sheet
- * only adds the prose-specific width cap, heading rhythm, and list style
- * that the shared components don't already cover.
- */
+/* ── legal pages (개인정보처리방침 / 이용약관) ──────────────────── */
+/* 공용 .page/.panel을 그대로 쓰고, 여기선 긴 글에 필요한 너비 제한과
+   제목·목록 스타일만 추가한다. */
 .legal-doc {
   max-width: 46rem;
   margin: 0 auto;

@@ -1,29 +1,28 @@
-"""Proxy-aware client IP resolution.
+"""프록시를 인식하는 클라이언트 IP 해석.
 
-Wired into django-axes via ``AXES_CLIENT_IP_CALLABLE`` (see
-``config.settings.build_axes_client_ip_callable``) rather than axes' own
-``AXES_IPWARE_*`` settings: those require the optional ``django-ipware``
-dependency, which this project does not install, so they are dead
-configuration that silently does nothing. ``AXES_CLIENT_IP_CALLABLE`` is
-axes' first-priority IP source (see ``axes/helpers.py``) and needs no extra
-dependency.
+axes 자체 ``AXES_IPWARE_*`` 설정 대신 ``AXES_CLIENT_IP_CALLABLE``
+(``config.settings.build_axes_client_ip_callable`` 참고)로
+django-axes에 연결한다: 그 설정들은 이 프로젝트에 설치하지 않은 선택적
+``django-ipware`` 의존성이 필요해서 조용히 아무 동작도 안 하는 죽은
+설정이 된다. ``AXES_CLIENT_IP_CALLABLE``은 axes가 가장 먼저 확인하는 IP
+소스라 추가 의존성이 필요 없다.
 
-Trusts ``X-Forwarded-For`` only when ``TRUSTED_PROXY_COUNT`` is explicitly
-configured, and only the rightmost N hops of that header — the left end of
-the chain is attacker-controlled (any client can send an arbitrary
-``X-Forwarded-For`` header), while the right end is appended by each proxy
-hop the deployment actually trusts.
+``TRUSTED_PROXY_COUNT``가 명시적으로 설정된 경우에만, 그리고 그 헤더의
+오른쪽에서 N개 홉만 ``X-Forwarded-For``를 신뢰한다 — 체인의 왼쪽 끝은
+공격자가 조작할 수 있고(어떤 클라이언트든 임의의 ``X-Forwarded-For``
+헤더를 보낼 수 있다), 오른쪽 끝은 배포가 실제로 신뢰하는 각 프록시
+홉이 덧붙인 값이다.
 """
 
 
 def resolve_client_ip(*, remote_addr, forwarded_for, trusted_proxy_count):
-    """Return the client IP given raw request values.
+    """원시 요청 값으로 클라이언트 IP를 반환한다.
 
-    When ``trusted_proxy_count`` is falsy (None or 0), ``forwarded_for`` is
-    not even inspected — this is the spoofing-safe default matching
-    historical REMOTE_ADDR-only behavior. When set, the Nth-from-the-right
-    hop of ``forwarded_for`` is used, falling back to ``remote_addr`` when
-    the header is missing or has fewer hops than ``trusted_proxy_count``.
+    ``trusted_proxy_count``가 falsy(None 또는 0)면 ``forwarded_for``는
+    아예 검사하지 않는다 — 기존 REMOTE_ADDR 전용 동작과 같은,
+    스푸핑에 안전한 기본값이다. 설정돼 있으면 ``forwarded_for``의
+    오른쪽에서 N번째 홉을 쓰고, 헤더가 없거나 홉 수가
+    ``trusted_proxy_count``보다 적으면 ``remote_addr``로 대체한다.
     """
     if not trusted_proxy_count:
         return remote_addr
@@ -36,9 +35,9 @@ def resolve_client_ip(*, remote_addr, forwarded_for, trusted_proxy_count):
 
 
 def get_client_ip(request):
-    """Resolve the client IP for a Django ``request`` using the deployment's
-    ``TRUSTED_PROXY_COUNT`` setting (unset/0 disables X-Forwarded-For
-    parsing entirely)."""
+    """배포의 ``TRUSTED_PROXY_COUNT`` 설정을 이용해 Django ``request``의
+    클라이언트 IP를 해석한다(미설정/0이면 X-Forwarded-For 파싱을 아예
+    하지 않는다)."""
     from django.conf import settings
 
     return resolve_client_ip(

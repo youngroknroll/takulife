@@ -1,19 +1,7 @@
-"""Regression lock: fetch_html re-validates the SSRF guard on every redirect
-hop, not just the initial URL.
-
-This is the "per-hop resolver revalidation" safety property from
-prompt_plan.md §2-3 — the authoritative SSRF gate now that IP pinning is out
-of scope for PR-1 (httpx has no public DNS hook to pin against). Unlike
-tests/test_draft_fetching.py's `install_mock_transport(..., stub_validate_fetch_url=True)`
-usage (which stubs validate_fetch_url away entirely so those tests can focus
-on fetch mechanics), these tests deliberately exercise validate_fetch_url's
-real logic on the redirect target so a regression that skips revalidation on
-later hops would be caught.
-
-These are not red/green tests — they must already pass against the baseline
-fetching.py (the per-hop call was already there) and must still pass after
-the allowed_content_types/FetchHttpStatusError/UA changes land.
-"""
+"""회귀 방지: fetch_html은 최초 URL뿐 아니라 모든 리다이렉트 홉마다 SSRF 검사를
+다시 수행해야 한다. httpx는 DNS를 직접 고정할 훅이 없어 IP 고정 대신 매 홉마다
+validate_fetch_url의 실제 로직을 태우는 것이 지금의 SSRF 방어선이다. 다른 fetching
+테스트와 달리 여기서는 validate_fetch_url을 스텁하지 않는다."""
 import httpx
 import pytest
 
@@ -33,9 +21,7 @@ def test_리다이렉트_대상이_사설_IP_리터럴이면_거부된다(monkey
         return httpx.Response(302, headers={"location": "http://127.0.0.1/private"})
 
     install_mock_transport(monkeypatch, handler)
-    # Drop the resolver kwarg only (same technique as
-    # tests/test_drafts_services.py:187-190): the literal-IP branch of
-    # validate_fetch_url needs no DNS resolution anyway.
+    # resolver 인자만 제거한다. 리터럴 IP 분기는 애초에 DNS 조회가 필요 없다.
     monkeypatch.setattr(
         fetching, "validate_fetch_url", lambda url, **kwargs: validate_fetch_url(url)
     )

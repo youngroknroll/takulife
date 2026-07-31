@@ -1,8 +1,7 @@
-"""Tests for the dedicated visit-record write page (core.views.archive_visit_create).
+"""방문 기록 작성 전용 페이지(core.views.archive_visit_create) 테스트.
 
-Behavior under test: a focused create page at /archive/visits/new/ that renders
-the same subject choices as the inline form used to (own planned events + own
-personal entries), gated by login.
+/archive/visits/new/ 는 기존 인라인 폼과 같은 대상 선택지(본인 참석예정 행사 +
+본인 직접 등록 항목)를 보여주며 로그인이 필요하다.
 """
 import pytest
 from django.test import Client
@@ -46,9 +45,8 @@ class TestArchiveVisitCreateView:
         other = make_user(username="other")
         mine = make_entry(user, kind="place", title="내 장소")
         make_entry(other, kind="place", title="남의 카페")
-        # GOODS is no longer a valid visit subject (collection domain plan
-        # §3-3) — must never appear in the selectable dropdown, even for a
-        # legacy row created before the write path was closed.
+        # 굿즈는 더 이상 유효한 방문 대상이 아니다(컬렉션 도메인 계획 §3-3) — 과거에
+        # 만들어진 기존 행이라도 선택 목록에 노출되면 안 된다.
         make_entry(user, kind="goods", title="내 굿즈")
 
         client = Client()
@@ -61,10 +59,10 @@ class TestArchiveVisitCreateView:
 
 @pytest.mark.django_db
 class TestArchiveVisitCreatePreselect:
-    """?subject=event:<id> / personal:<id> locks the write form to one subject.
+    """?subject=event:<id> / personal:<id> 로 접근하면 작성 폼의 대상이 하나로 고정된다.
 
-    Lets a 방문 완료 행사's 기록 button open the page ready to save, even though a
-    visited event is absent from the planned-only dropdown.
+    방문 완료 행사는 예정 목록에는 없지만, "기록" 버튼으로 바로 저장 가능한 상태로
+    페이지를 열 수 있게 한다.
     """
 
     def test_게시된_행사를_subject로_지정해_접근하면_해당_행사로_대상이_고정된다(self, user_client, make_event):
@@ -92,9 +90,8 @@ class TestArchiveVisitCreatePreselect:
         }
 
     def test_굿즈_항목을_subject로_지정해_접근하면_사전_선택이_무시된다(self, user_client, make_entry):
-        # GOODS is no longer a valid visit subject (collection domain plan
-        # §3-3) — a crafted/legacy ?subject=personal:<goods id> must not lock
-        # the form onto it.
+        # 굿즈는 더 이상 유효한 방문 대상이 아니다(컬렉션 도메인 계획 §3-3) — 조작되거나
+        # 과거에 만들어진 ?subject=personal:<굿즈id> 로도 폼을 고정시키면 안 된다.
         user, client = user_client()
         entry = make_entry(user, kind="goods", title="굿즈")
 
@@ -122,15 +119,15 @@ class TestArchiveVisitCreatePreselect:
     def test_잘못된_형식의_subject_값으로_접근해도_오류_없이_사전_선택이_무시된다(self, user_client):
         _, client = user_client()
 
-        # Includes crafted vectors that pass a naive isdigit() guard but would
-        # crash int()/the ORM: a non-ASCII "digit" and an oversized id.
+        # 단순 isdigit() 검사는 통과하지만 int()/ORM에서 예외를 일으킬 수 있는 값들을
+        # 포함한다: 비ASCII "숫자"와 범위를 벗어난 id.
         for raw in (
             "garbage",
             "event:",
             "event:abc",
             "weird:1",
-            "event:²",  # superscript two — isdigit() True, int() raises
-            "event:" + "9" * 30,  # past the DB integer range
+            "event:²",  # 위첨자 2 — isdigit()는 True지만 int()는 예외 발생
+            "event:" + "9" * 30,  # DB 정수 범위를 벗어남
         ):
             resp = client.get(f"/archive/visits/new/?subject={raw}")
             assert resp.status_code == 200

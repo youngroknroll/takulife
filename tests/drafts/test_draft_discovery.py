@@ -1,11 +1,7 @@
-"""Tests for drafts.discovery — pure link-extraction functions for the
-auto-discovery pipeline (PR-2 of prompt_plan.md §2-1/§2-4/§2-5).
-
-Pure str fixtures only: no DB, no network. `content` here stands in for what
-`fetch_html` already decoded to a Python str, which is why the XML fixtures
-below include an encoding declaration — that is the exact case that breaks a
-naive `xml.etree.ElementTree.fromstring(str)` call (see §2-4).
-"""
+"""drafts.discovery(자동 발견 파이프라인의 순수 링크 추출 함수) 테스트. DB·네트워크
+없이 문자열 fixture만 쓴다. XML fixture에 encoding 선언을 넣는 이유는 fetch_html이
+이미 디코딩한 str을 그대로 흉내 내기 위해서다 — 이 경우 xml.etree의 단순
+fromstring(str) 호출이 깨진다."""
 import pytest
 
 from drafts.discovery import (
@@ -17,10 +13,8 @@ from drafts.discovery import (
 )
 
 
-# A billion-laughs style entity-expansion payload, kept small for a fast
-# test: a handful of nested entity references rather than the real attack's
-# exponential blowup. defusedxml must reject this outright regardless of
-# size, so the miniature form still exercises the guard.
+# billion-laughs류 엔티티 확장 공격 페이로드를 축소한 것. defusedxml은 크기와
+# 무관하게 이 형태 자체를 거부해야 한다.
 ENTITY_EXPANSION_XML = """<?xml version="1.0"?>
 <!DOCTYPE rss [
 <!ENTITY a "spam">
@@ -157,8 +151,8 @@ class TestExtractLinksRss:
         assert result == []
 
     def test_RSS는_encoding_선언이_있는_문자열도_파싱한다(self, rss_xml):
-        """§2-4: fetch_html returns a decoded str; a str containing an
-        <?xml ... encoding="..."?> declaration must not raise ValueError."""
+        """fetch_html은 이미 디코딩된 str을 반환하므로, encoding 선언이 들어있는
+        문자열이어도 ValueError 없이 파싱돼야 한다."""
         content = rss_xml(description_anchors=["https://official-site.com/event"])
         assert content.startswith('<?xml version="1.0" encoding="UTF-8"?>')
 
@@ -177,12 +171,9 @@ class TestExtractLinksRss:
             extract_links_rss(malformed, self.BASE_URL)
 
     def test_XML_prolog가_없으면_본문_속의_encoding_유사_문자열이_변형되지_않는다(self):
-        """§2-4/PR-2 gate fix: the encoding-normalization substitution must
-        only touch a real <?xml ... encoding="..." ?> prolog declaration.
-        This fixture has no XML prolog at all, so a literal `encoding="x"`
-        substring living in ordinary element text (here, inside a <link>
-        URL) must survive parsing byte-for-byte instead of being rewritten
-        to `encoding="UTF-8"`."""
+        """encoding 정규화 치환은 실제 <?xml ... encoding="..." ?> 선언부만
+        건드려야 한다. 이 fixture는 XML prolog가 없으므로 본문 텍스트(링크 URL)
+        속 "encoding=" 문자열이 잘못 치환되지 않고 그대로 살아남아야 한다."""
         content = (
             '<rss version="2.0"><channel><title>atzip</title>'
             '<item><link>https://official-site.com/event?token=encoding="x"</link></item>'
@@ -194,11 +185,8 @@ class TestExtractLinksRss:
         assert result == ['https://official-site.com/event?token=encoding%3D%22x%22']
 
     def test_RSS는_선행_BOM이_있어도_파싱한다(self, rss_xml):
-        """Characterization test: aniplus's items.xml RSS feed ships with a
-        leading U+FEFF BOM character ahead of the <?xml ... ?> declaration.
-        _parse_xml already handles this — the BOM survives the UTF-8
-        re-encode as the standard 3-byte UTF-8 BOM sequence, which expat
-        (defusedxml's backend) skips transparently."""
+        """aniplus의 실제 items.xml RSS 피드는 <?xml ...?> 선언 앞에 BOM 문자가
+        붙어 온다. _parse_xml이 이미 이를 처리하므로 파싱이 정상 동작해야 한다."""
         content = "﻿" + rss_xml(description_anchors=["https://official-site.com/event"])
 
         result = extract_links_rss(content, self.BASE_URL)
@@ -206,10 +194,8 @@ class TestExtractLinksRss:
         assert result == ["https://official-site.com/event"]
 
     def test_RSS_자기_도메인_판정은_포트를_무시한다(self, rss_xml):
-        """Characterization test: self-domain matching compares hostname
-        only (urlsplit(url).hostname never includes the port), so a
-        same-host link on a different port than base_url's is still treated
-        as self-domain and removed."""
+        """자기 도메인 판정은 호스트명만 비교하므로(포트 미포함) base_url과
+        포트가 달라도 같은 호스트면 자기 도메인으로 제거돼야 한다."""
         content = rss_xml(
             description_anchors=[
                 "https://atzip.kr:9443/x",
@@ -222,12 +208,9 @@ class TestExtractLinksRss:
         assert result == ["https://official-site.com/event"]
 
     def test_RSS는_content_encoded_앵커도_추출하고_자기_도메인_필터를_동일하게_적용한다(self, rss_xml):
-        """Real-source gap (atzip.kr/feed/ smoke): the <description> field
-        holds only an excerpt + a self-domain "read more" anchor; the actual
-        body HTML with outbound official links lives in <content:encoded>
-        (CDATA, xmlns:content namespace). Both fields must be scanned for
-        anchors, and the existing filter chain (self-domain, SNS) must still
-        apply to whatever content:encoded contains."""
+        """atzip.kr/feed/의 실제 구조: <description>은 발췌만 담고, 외부 공식
+        링크가 있는 실제 본문 HTML은 <content:encoded>에 있다. 두 필드 모두
+        앵커를 스캔하고 기존 필터(자기 도메인, SNS)를 동일하게 적용해야 한다."""
         content = rss_xml(
             link="https://atzip.kr/2026/07/04/goods-reservation/",
             description_anchors=["https://atzip.kr/2026/07/04/goods-reservation/"],
@@ -243,10 +226,9 @@ class TestExtractLinksRss:
         assert result == ["https://official-site.com/event"]
 
     def test_RSS는_프로토콜_상대_URL을_해석하고_자기_도메인은_계속_제거한다(self, rss_xml):
-        """Characterization test: a protocol-relative href ("//host/path")
-        resolves against base_url's scheme via urljoin — an official-site
-        link survives, but a protocol-relative link back to atzip's own
-        domain is still removed by the RSS self-domain rule."""
+        """프로토콜 상대 href("//host/path")는 base_url의 스킴으로 해석된다.
+        공식 사이트 링크는 남고, atzip 자기 도메인으로 가는 링크는 여전히
+        제거돼야 한다."""
         content = rss_xml(
             description_anchors=["//official-site.com/event", "//atzip.kr/x"]
         )
@@ -272,8 +254,8 @@ class TestExtractLinksSitemap:
         ]
 
     def test_사이트맵은_같은_도메인_링크를_유지한다(self, sitemap_xml):
-        """Sitemap sources point directly at an official site's own pages —
-        the opposite of RSS, which links out from a roundup post."""
+        """사이트맵 소스는 RSS(외부로 링크하는 정리글)와 반대로 공식 사이트
+        자신의 페이지를 직접 가리킨다."""
         content = sitemap_xml("https://aniplustv.com/events/1")
 
         result = extract_links_sitemap(content, self.BASE_URL)
@@ -311,8 +293,8 @@ class TestExtractLinksSitemap:
         assert result == []
 
     def test_사이트맵은_encoding_선언이_있는_문자열도_파싱한다(self, sitemap_xml):
-        """§2-4: the main smoke-test source (aniplustv sitemap) breaks
-        exactly on this path — a str containing an encoding declaration."""
+        """실제 스모크 테스트 대상인 aniplustv 사이트맵이 바로 이 경로(encoding
+        선언이 포함된 문자열)에서 깨졌었다."""
         content = sitemap_xml("https://aniplustv.com/events/1")
         assert content.startswith('<?xml version="1.0" encoding="UTF-8"?>')
 
@@ -331,9 +313,7 @@ class TestExtractLinksSitemap:
             extract_links_sitemap(malformed, self.BASE_URL)
 
     def test_사이트맵은_선행_BOM이_있어도_파싱한다(self, sitemap_xml):
-        """Characterization test mirroring aniplustv's real items.xml, which
-        ships with a leading U+FEFF BOM character (see TestExtractLinksRss's
-        equivalent test for why _parse_xml already tolerates this)."""
+        """aniplustv의 실제 items.xml처럼 선행 BOM 문자가 있어도 파싱돼야 한다."""
         content = "﻿" + sitemap_xml("https://aniplustv.com/events/1")
 
         result = extract_links_sitemap(content, self.BASE_URL)
@@ -371,9 +351,8 @@ class TestExtractLinksSitemap:
         ]
 
     def test_sitemapindex의_loc_추출도_lastmod_정렬_규칙을_동일하게_따른다(self):
-        """`<sitemapindex>` groups by <sitemap> instead of <url>, but the
-        per-group loc+lastmod extraction is tag-name agnostic, so behavior
-        here is unchanged from plain loc extraction."""
+        """<sitemapindex>는 <url> 대신 <sitemap>으로 묶이지만 loc+lastmod
+        추출은 태그명과 무관하므로 일반 loc 추출과 동일하게 동작한다."""
         content = """<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <sitemap><loc>https://aniplustv.com/sitemap-events.xml</loc><lastmod>2026-07-01</lastmod></sitemap>
@@ -475,10 +454,8 @@ class TestExtractLinksHtml:
         assert result == ["https://www.animate.co.jp/goods/1"]
 
     def test_HTML_쿼리_값의_공백은_plus_기호로_재직렬화된다(self):
-        """Characterization test: stripping tracking params re-serializes the
-        surviving query string via urlencode, which normalizes a %20-encoded
-        space to "+" — both are valid space encodings in a query string, so
-        this is accepted, documented behavior rather than a defect."""
+        """추적 파라미터 제거 후 남은 쿼리를 urlencode로 재직렬화하면 %20이
+        "+"로 바뀐다. 둘 다 유효한 공백 인코딩이라 결함이 아니라 의도된 동작이다."""
         content = '<html><body><a href="/goods/1?title=a%20b">공식 상품 1</a></body></html>'
 
         result = extract_links_html(content, self.BASE_URL, selector="")
@@ -500,10 +477,9 @@ class TestExtractLinksHtml:
         assert result == []
 
     def test_HTML에서_자기_참조_앵커는_제외된다(self):
-        """A bare href="" or a same-page href="#top" resolves to the listing
-        page itself (fragment-only navigation), never a distinct candidate
-        event page — this must be excluded even though html sources keep
-        same-domain links (remove_self_domain=False)."""
+        """href=""나 href="#top"은 목록 페이지 자신을 가리킬 뿐 별개의 후보
+        페이지가 아니다. html 소스가 같은 도메인 링크를 남기더라도 이런
+        자기 참조 앵커는 제외해야 한다."""
         content = """
         <html><body>
         <a href="">빈 링크</a>
@@ -517,11 +493,9 @@ class TestExtractLinksHtml:
         assert result == ["https://www.animate.co.jp/goods/1"]
 
     def test_HTML_셀렉터_문법이_잘못되면_DiscoveryParseError를_발생시킨다(self):
-        """A malformed `link_selector` (soupsieve SelectorSyntaxError) must
-        surface as DiscoveryParseError rather than a silent empty result —
-        an empty result here looks identical to "no links on the page today"
-        and would hide a permanently broken selector from PR-3's last_error
-        reporting."""
+        """잘못된 link_selector는 빈 결과가 아니라 DiscoveryParseError로
+        드러나야 한다. 빈 결과는 "오늘은 링크가 없음"과 구분이 안 되어
+        영구히 고장난 셀렉터를 운영 화면(last_error)에서 숨겨버린다."""
         content = '<html><body><a href="/goods/1">공식 상품 1</a></body></html>'
 
         with pytest.raises(DiscoveryParseError):

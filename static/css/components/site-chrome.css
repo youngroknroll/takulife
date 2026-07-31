@@ -1,8 +1,7 @@
-/* Skip link: visually hidden until focused, then pinned top-left. Same
-   values as staff-shell.css's .skip-link (same component, public shell)
-   — z-index 100 clears .site-header's 50 below. Both stylesheets load on
-   /staff/* pages, but the two rules are identical so cascade order between
-   them never produces a visible difference. */
+/* 스킵 링크. 포커스 전엔 화면 밖에 숨어 있다가 포커스되면 좌상단에
+   나타난다. staff-shell.css의 같은 컴포넌트와 값이 같아 두 스타일시트가
+   같이 로드돼도(스태프 페이지) 순서와 무관하게 동일하게 보인다.
+   z-index 100은 아래 .site-header의 50보다 위다. */
 .skip-link {
   position: absolute;
   left: -999px;
@@ -23,16 +22,13 @@
 }
 
 /* ── global site header ─────────────────────────────────────── */
-/*
- * Persistent frame rendered once from base.html (_site_header.html). Replaces
- * the per-page topbars: a single sticky bar with brand, primary nav, and auth.
+/* base.html에서 한 번만 렌더되는 상단 고정 바 — 브랜드/메인 내비/로그인
+ * 상태를 담는다.
  */
 :root {
-  /* Desktop rendered height of .site-header, for sticky panels elsewhere
-     (event_detail .aside, event_list .filters, layout .side-stack) to clear
-     it: 2×0.75rem .site-header-inner padding + .site-nav a's 2.75rem
-     min-height (§5.4 44px touch target) + 1px border-bottom = 69px.
-     Describes the current render — does not itself size the header. */
+  /* .site-header의 데스크톱 실제 높이값. 다른 곳(사이드바 등)에서
+     헤더 아래에 딱 붙게 고정 배치할 때 쓴다 — 이 값을 바꾼다고 헤더
+     자체 높이가 바뀌지는 않는다. */
   --site-header-h: 4.3125rem;
 }
 
@@ -78,10 +74,8 @@
   color: var(--brand-ink);
 }
 
-/* Ticket-stub signature #4 (nav accent): the current page reads as a red
-   underline rather than a filled pill (plan §0 / §1 PR-R2), so nav no
-   longer competes visually with the ticket-tab chips/badges elsewhere on
-   the page. Hover keeps the existing soft background for feedback. */
+/* 현재 페이지는 채워진 필이 아니라 빨간 밑줄로 표시한다 — 그래야 페이지
+   안 다른 칩·배지와 시각적으로 겹치지 않는다. */
 .site-nav a.active {
   background: transparent;
   color: var(--text);
@@ -106,12 +100,8 @@
 
 .site-header .topbar-auth {
   margin-left: auto;
-  /* .site-nav gets order:3 below (mobile wrap), which paints it *after*
-     .topbar-auth as flex items regardless of source order — without this,
-     .site-nav could paint over the account-menu dropdown panel once it
-     wraps beneath the header on a narrow viewport. .topbar-auth is already
-     a flex item of .site-header-inner, so z-index alone (no position
-     change needed) is enough to promote its paint order above siblings. */
+  /* 모바일에서 .site-nav가 헤더 아래로 줄바꿈될 때 계정 메뉴 드롭다운
+     패널을 덮어 그리지 않도록 그리기 순서를 올린다. */
   z-index: 1;
 }
 
@@ -128,68 +118,22 @@
   .site-header .topbar-auth {
     flex-wrap: wrap;
   }
-  /* Desktop's 15rem cap (modal.css) budgets for brand + one-line nav +
-     username + several inline topbar-link pills all sharing one row — the
-     account-menu dropdown replaced those pills with a single 44px avatar
-     button, so the mobile budget is just brand + avatar, leaving far less
-     width for a wrapped 320px header.
-     Selector must be .site-header .topbar-username, not bare
-     .topbar-username: modal.css's unconditional (no media query)
-     .topbar-username{max-width:15rem} loads *after* this file in base.html,
-     and at equal specificity the later rule wins regardless of this media
-     query's condition being true — the bare-class version silently lost to
-     it at every mobile width (FE gate finding). The extra .site-header
-     ancestor is real markup (_site_header.html wraps _topbar.html), so
-     this is a free specificity bump, not a fabricated hook.
-     Cap re-derived for the Track D edge-margin token (this file's mobile
-     .site-header-inner padding above went 12px->16px, shrinking the 320px
-     content budget 296px->288px): measured .brand width at 320px is
-     73.2px (Playwright, live_server render), + .site-header-inner's own
-     0.625rem(10px) gap + this cap + .topbar-auth's own 0.5rem(8px) gap +
-     the 44px avatar toggle must fit in 288px. 10rem(160px) no longer fits
-     (73.2+10+160+8+44=295.2 > 288, re-breaking the "320px header stays
-     one row" fix); 9rem(144px) does (73.2+10+144+8+44=279.2, 8.8px
-     margin) — verified via Playwright with a 26-char stress email.
-     Re-derived again for the dark-mode PR-2 header toggle (.theme-toggle,
-     32px mobile hit box, sits between .brand and .site-nav in source order
-     — same default flex order as .brand/.topbar-auth, so it also lands on
-     row 1, not on .site-nav's order:3 row). The new item plus the *two*
-     new .site-header-inner gaps it introduces (one on each side of it)
-     added 52px of row-1 demand: 73.2+10+32+10+144+8+44=321.2, 33.2px over
-     288px — .topbar-auth wrapped to its own row between brand+toggle and
-     .site-nav rather than just overflowing, turning the header into 3
-     lines. Closed at the time by shrinking this cap to 6.25rem across the
-     whole <=45rem range (73.2+10+32+10+100+8+44=277.2, 10.8px margin) —
-     but a later gate review (UX MED) flagged that as overreach: the
-     33.2px overflow is a 320px-only problem (288px budget). 360px+ has
-     328px available and already fits the *original* 9rem cap even with
-     the toggle: 73.2+10+32+10+144+8+44=321.2 <= 328 (6.8px margin) — no
-     need to shrink the cap there at all. Split into two tiers instead:
-     this block reverts to the original 9rem (valid down to 360px), and
-     the dedicated @media (max-width: 22.5rem) block right below narrows
-     to 6.25rem only for the 320-360px sliver that actually needs it.
-     Verified via Playwright at 320/360/375/390px, both a stress-length
-     logged-in email and the anonymous login/signup-pill state: zero
-     wrap/overflow at every width, 9rem active at 360px+, 6.25rem only at
-     320px. Trade-off (320px only): a real email starts ellipsizing past
-     ~13 characters instead of ~19 — cosmetic, .account-menu-panel still
-     shows the full, unclipped address once opened. 360px+ never reaches
-     this trade-off at all now (9rem restored).
-     2026-07-20 사용자 결정: ≤45rem에서 아이디 자체를 숨김(§4-b "헤더 조정
-     4건" ②, WED truncate-don't-hide 권고 기각 — 계정 메뉴 패널에서 전체
-     주소 확인 가능). 위 캡 도출(9rem/6.25rem/햄버거 재산정 포함)은 이력
-     참고용일 뿐, 숨김 상태에서는 폭 계산이 더 이상 적용되지 않는다 —
-     현재는 display:none이 우선한다. */
+  /* 모바일(45rem 이하)에서는 아이디 표시 자체를 숨긴다(사용자 결정) —
+     전체 주소는 계정 메뉴 패널을 열면 확인할 수 있다.
+     셀렉터는 반드시 `.site-header .topbar-username`으로 스코프해야 한다.
+     modal.css가 미디어쿼리 없이 `.topbar-username{max-width:15rem}`을
+     이 파일보다 뒤에 불러오는데, 특이도가 같으면 나중에 로드된 규칙이
+     이겨 이 규칙이 조용히 무시된다 — .site-header 조상을 붙여 특이도를
+     올려서 이긴다. */
   .site-header .topbar-username {
     display: none;
   }
 }
 
 /* ── mobile nav toggle (hamburger) ─────────────────────────────
-   design-rules.md §4-b: 시안 아이콘 채택, 인터랙션은 계정 메뉴 관례
-   (aria-expanded/aria-controls/Escape/포커스 복귀) 재사용. §2.2(b) 헤더
-   아이콘 토글 패턴 그대로: 데스크톱 44px 히트박스 예비값이지만 >45rem에서는
-   .site-nav가 항상 보이므로 이 버튼 자체를 숨긴다(모바일 전용 컨트롤). */
+   계정 메뉴와 같은 인터랙션 관례(aria-expanded/aria-controls/Escape/
+   포커스 복귀)를 재사용한다. 45rem 초과에서는 .site-nav가 항상 보이므로
+   이 버튼 자체를 숨긴다(모바일 전용 컨트롤). */
 .nav-menu-toggle {
   display: none;
   width: 44px;
@@ -221,19 +165,18 @@
     height: 32px;
   }
   .nav-menu-icon {
-    font-size: 1.5rem; /* 24px glyph in a 32px hit box, §2.2(b) */
+    font-size: 1.5rem; /* 32px 히트박스 안에 24px 아이콘 */
   }
-  /* .site-nav[data-expanded] 토글: >45rem에서는 이 규칙 자체가 매치되지
-     않으므로 항상 표시(무영향) — design-rules.md §4-b 중재안. */
+  /* 45rem 초과에서는 이 규칙 자체가 매치되지 않아 항상 보이는 상태를
+     유지한다. */
   .site-nav[data-expanded="false"] {
     display: none;
   }
 }
 
 /* ── notice banner (marquee) ───────────────────────────────────
-   design-rules.md §4: <header> 밖 형제, 본문 최상단. §4-b: 가시 pause
-   버튼 없이 순수 CSS 무한 루프만 구현(사용자 승인 예외) — 대신
-   prefers-reduced-motion에서 애니메이션을 완전히 끈다. */
+   보이는 정지 버튼 없이 순수 CSS 무한 루프로만 구현했다(사용자 승인
+   예외) — 대신 prefers-reduced-motion에서는 애니메이션을 완전히 끈다. */
 .site-banner {
   background: var(--brand-soft);
   overflow: hidden;
@@ -359,10 +302,7 @@
 }
 
 /* 안내 문구는 4개 메뉴 컬럼(이벤트/컬렉션/내 활동/계정)에 속하지 않는
-   별도 행 — design-rules.md §4 "전 페이지 메뉴 추가"로 컬럼이 3→4로
-   늘면서 시안(ContextFooter)의 3번째 컬럼 자리를 내 활동/계정이 대신
-   차지해, 기존 안내 2문장은 컬럼 밖으로 옮겨졌다(문구·랜드마크 없음은
-   불변, 배치만 조정). */
+   별도 행이다. */
 .site-footer-notice {
   max-width: 1120px;
   margin: 0 auto;
@@ -417,19 +357,9 @@
   color: var(--brand-ink); /* --brand는 흰 배경 AA 미달 — brand-ink 사용 */
 }
 
-/* design-rules.md §4-b "푸터 4컬럼 전 뷰포트 1행 유지"(2026-07-20 사용자
-   확정, 셸 계획 §C supersede): 이전의 <=47.5rem 2x2 붕괴(.footer-cols
-   grid-template-columns:1fr 1fr)를 폐기하고 기본 repeat(4,1fr)를 전 구간
-   유지 — 대신 이 티어에서 gap/폰트/여백만 축소한다. 320px 예산: 이
-   구간(<=45rem)의 --page-pad-x는 1rem(16px, tokens.css)이므로 콘텐츠
-   폭 = 320 - 2*16 = 288px. gap 0.5rem(8px)*3 = 24px를 뺀 264px를 4열로
-   나누면 컬럼 폭 66px. 최장 라벨("마이페이지"/"항목 등록"/"활동
-   달력" 5글자 안팎)은 축소 폰트 0.72rem(11.52px) 기준 전각 글자당
-   ~11.5px로 5글자 약 57.6px — 66px 컬럼에 여유 8.4px로 개행 없이
-   들어간다(더 짧은 다른 7개 라벨은 전부 여유가 더 큼). 자연 개행은
-   금지하지 않음 — white-space 강제 없음, 넘칠 경우 CJK 기본 줄바꿈
-   규칙이 컬럼 밖 가로 오버플로를 막는다. 이 계산은 정적 산식이며(본
-   작업 지시상 서버·브라우저 실행 금지), 후속 브라우저 실측이 필요. */
+/* 좁은 화면에서도 푸터는 2x2로 접지 않고 4컬럼 한 줄을 유지한다(사용자
+   확정) — 대신 이 구간에서는 gap/폰트/여백만 줄인다. 320px에서도 가장
+   긴 라벨이 줄바꿈 없이 들어가는 여유폭이 있는 것을 산식으로 확인했다. */
 @media (max-width: 47.5rem) {
   .site-footer-inner {
     grid-template-columns: 1fr;
@@ -532,16 +462,16 @@
 }
 
 /* ── account menu (header disclosure dropdown) ────────────────
-   Ported from event_list.js's region-select pattern: click toggle, close
-   on outside click, Escape closes + returns focus to the trigger. See
-   static/js/shared/account_menu.js. */
+   event_list.js의 지역 선택 드롭다운과 같은 방식: 클릭으로 열고, 바깥
+   클릭이나 Escape로 닫히며 포커스가 트리거로 돌아간다.
+   static/js/shared/account_menu.js 참고. */
 [data-account-menu] {
   position: relative;
 }
 
-/* 44px hit box (touch target) around a 30px visible circle — same ratio as
-   .hscroll-btn's ::before technique, but with a real child element instead
-   of a pseudo-element since the circle needs to hold the initial letter. */
+/* 눈에 보이는 30px 원 바깥에 44px 탭 타깃을 둔다. .hscroll-btn의
+   ::before 기법과 같은 비율이지만, 원 안에 이니셜 글자를 넣어야 해서
+   가상 요소 대신 실제 자식 요소를 쓴다. */
 .account-menu-toggle {
   width: 44px;
   height: 44px;
@@ -580,7 +510,7 @@
 .account-menu-toggle[data-expanded="true"] .account-mark {
   border-color: var(--brand);
   background: var(--brand-soft);
-  color: var(--brand-ink); /* --brand is AA-insufficient on white for text */
+  color: var(--brand-ink); /* --brand는 흰 배경 글자로 쓰기엔 대비가 부족하다 */
 }
 
 .account-menu-panel {
@@ -589,10 +519,9 @@
   right: 0;
   z-index: 30;
   min-width: 11rem;
-  /* Without a cap, an unbroken email (.account-menu-email's overflow-wrap
-     only breaks at a real word boundary) grows the panel to max-content —
-     right:0-anchored, so it grows leftward and can push past the viewport's
-     left edge on a narrow phone. */
+  /* 최대 너비를 안 두면 안 끊기는 이메일 주소 때문에 패널이 한없이
+     넓어진다 — right:0 기준이라 왼쪽으로 커지면서 좁은 화면에서 뷰포트
+     밖으로 나갈 수 있다. */
   max-width: min(18rem, calc(100vw - 1.5rem));
   display: flex;
   flex-direction: column;

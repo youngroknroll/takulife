@@ -1,7 +1,7 @@
-"""Tests for the event_detail HTML view, including the authenticated branch.
+"""event_detail HTML 뷰를 검증한다(로그인 분기 포함).
 
-The logged-in path (a viewer's own status/interest reflected on a public event
-page) was uncovered: anonymous viewers exercised only the empty defaults.
+로그인 경로(공개 행사 페이지에 본인 상태/찜 여부가 반영되는지)는 그동안
+검증되지 않았다: 비로그인 사용자만 빈 기본값을 확인해왔다.
 """
 import pytest
 from django.test import Client

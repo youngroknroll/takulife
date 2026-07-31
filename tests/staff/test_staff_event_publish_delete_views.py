@@ -1,9 +1,8 @@
-"""staff.views — PR-E3 D (publish-status toggle + guarded hard delete).
+"""게시 상태 토글 + 참조 보호 하드 삭제 검증.
 
-Covers /staff/events/<pk>/toggle-publish/ (unpublish<->republish) and
-/staff/events/<pk>/delete/ (2-step server-rendered confirm — no new JS file,
-see prompt_plan.md's "하지 말 것"). Both are POST-only SSR actions reached
-from the edit page's own forms, never a JSON API.
+/staff/events/<pk>/toggle-publish/(게시 취소↔재게시)와
+/staff/events/<pk>/delete/(서버 렌더 2단계 확인)를 다룬다. 둘 다 수정 페이지
+폼에서만 오는 POST 전용 SSR 액션이며 JSON API가 아니다.
 """
 import datetime
 
@@ -23,11 +22,6 @@ def _delete_url(event):
 
 
 pytestmark = pytest.mark.web
-
-
-# ---------------------------------------------------------------------------
-# toggle-publish
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -105,11 +99,6 @@ def test_제목이_없는_초안_이벤트는_재게시_토글이_거부되고_�
     event.refresh_from_db()
     assert event.publish_status == Event.PublishStatus.DRAFT
     assert not StaffActionLog.objects.filter(target_event=event).exists()
-
-
-# ---------------------------------------------------------------------------
-# delete
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db

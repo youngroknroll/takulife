@@ -1,9 +1,9 @@
-"""templates/base.html — favicon + meta description + Open Graph tags.
+"""templates/base.html — favicon + meta description + 오픈그래프 태그.
 
-The shared head (templates/base.html) previously had no favicon and no
-meta description / Open Graph tags, so a shared link preview shows only
-a bare URL. This is a smoke test against the home page response since
-every page inherits templates/base.html and gets these tags automatically.
+공용 head(templates/base.html)에 원래 favicon도 meta description/오픈그래프
+태그도 없어서, 링크를 공유하면 미리보기에 URL만 덩그러니 나왔다. 모든
+페이지가 templates/base.html을 상속해 이 태그들을 자동으로 얻으므로, 홈
+페이지 응답으로 스모크 테스트한다.
 """
 import pytest
 

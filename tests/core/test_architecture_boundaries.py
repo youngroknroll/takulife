@@ -415,9 +415,9 @@ def test_이벤트_모듈은_드래프트_모듈을_임포트하지_않는다():
 
 
 def test_도메인_모듈은_스태프_모듈을_임포트하지_않는다():
-    """staff (presentation + audit infra) may depend on domain apps, never
-    the reverse: events/drafts/archive must stay free of a `staff` import so
-    domain business logic never leaks staff-only orchestration concerns."""
+    """staff(화면+감사 인프라)는 도메인 앱에 의존할 수 있어도 반대는 금지다 —
+    events/drafts/archive가 staff를 임포트하면 도메인 규칙에 화면 전용
+    로직이 새어 들어간다."""
     files = _domain_source_files(PROJECT_ROOT, ["events", "drafts", "archive"])
 
     violations = {
@@ -430,10 +430,9 @@ def test_도메인_모듈은_스태프_모듈을_임포트하지_않는다():
 
 
 def test_드래프트_발견_모듈은_이벤트_모듈을_임포트하지_않는다():
-    """discovery.py is a pure link-extraction module (prompt_plan.md §2-1) —
-    unlike drafts/services.py, which legitimately imports events.services to
-    orchestrate draft-to-event promotion, discovery.py has no reason to touch
-    the events domain at all."""
+    """discovery.py는 링크 추출만 하는 순수 모듈이다 — 드래프트 승격을 위해
+    events.services를 정당하게 임포트하는 drafts/services.py와 달리, 여기는
+    events 도메인을 건드릴 이유가 없다."""
     imported_modules = _imported_modules("drafts/discovery.py")
 
     assert not {
@@ -444,9 +443,9 @@ def test_드래프트_발견_모듈은_이벤트_모듈을_임포트하지_않�
 
 
 def test_드래프트_수집_명령은_이벤트_모듈을_임포트하지_않는다():
-    """discover_drafts orchestrates DraftSource -> EventDraft only, via
-    create_draft_from_url (which itself owns the events.services boundary
-    crossing) — the command has no reason to import events directly."""
+    """discover_drafts는 create_draft_from_url을 통해서만 DraftSource를
+    EventDraft로 이어준다(경계를 넘는 책임은 그 함수가 진다) — 이 명령이
+    events를 직접 임포트할 이유는 없다."""
     imported_modules = _imported_modules("drafts/management/commands/discover_drafts.py")
 
     assert not {
@@ -457,9 +456,8 @@ def test_드래프트_수집_명령은_이벤트_모듈을_임포트하지_않�
 
 
 def test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는다():
-    """LLM extraction is a separate, flag-gated concern (drafts/llm_extraction.py)
-    — discovery.py's deterministic filters (prompt_plan.md §1-4) must not
-    pull in core.llm."""
+    """LLM 추출은 플래그로 켜고 끄는 별도 관심사(drafts/llm_extraction.py)다
+    — discovery.py의 결정적 필터링 로직은 core.llm을 끌어오면 안 된다."""
     imported_modules = _imported_modules("drafts/discovery.py")
 
     assert not {
@@ -551,16 +549,16 @@ def test_활성_urlconf는_사용자_행사_상태_라우트를_해석한다(pat
     ids=["승인", "반려"],
 )
 def test_구_드래프트_액션_라우트는_더이상_해석되지_않는다(path):
-    """PR-2 sub-step D moved approve/reject to /staff/drafts/<id>/… with no
-    redirect — the old drafts API paths must not resolve at all."""
+    """승인/반려는 /staff/drafts/<id>/… 로 옮겨갔고 리다이렉트는 없다 — 옛
+    드래프트 API 경로는 전혀 해석되지 않아야 한다."""
     with pytest.raises(Resolver404):
         resolve(path)
 
 
 def test_core_뷰는_더이상_스태프_모듈을_임포트하지_않는다():
-    """PR-2 sub-step D moved the 3 draft/home-category SSR views into
-    staff.views — core.views must no longer depend on staff at all. core.views
-    is now a package (core/views/), so every module file under it is scanned."""
+    """드래프트·홈카테고리 SSR 뷰 3개가 staff.views로 옮겨가 core.views는
+    더이상 staff에 의존하면 안 된다. core.views가 패키지(core/views/)이므로
+    그 아래 모든 모듈 파일을 스캔한다."""
     view_module_paths = sorted((PROJECT_ROOT / "core" / "views").rglob("*.py"))
     assert view_module_paths, "core/views 아래 스캔할 .py 파일이 없다"
 
@@ -577,35 +575,30 @@ def test_core_뷰는_더이상_스태프_모듈을_임포트하지_않는다():
 
 
 # ---------------------------------------------------------------------------
-# Test-layer purity: "test file name = layer under test" contract
-#
-# The test-suite refactor (PR-9/PR-10) separated tests into dedicated files
-# per layer (HTTP API, SSR view, service, query) so a file's name tells the
-# reader exactly which boundary it exercises. This guard protects that
-# contract from eroding: an *_api.py / *_view(s).py test file that imports a
-# services/queries module is a sign a test reached past the HTTP/SSR
-# boundary to arrange state directly — that test belongs in the matching
-# *_services.py / *_queries.py file instead (see
-# tests/archive/test_archive_services.py, tests/archive/test_archive_queries.py).
+# 테스트 계층 순수성 — "파일명 = 검증 계층" 규약.
+# 테스트는 계층(HTTP API, SSR 뷰, 서비스, 쿼리)별로 전용 파일에 나뉘어 있어
+# 파일명만 보면 어떤 경계를 검증하는지 알 수 있다. 이 가드는 그 규약이
+# 무너지지 않도록 지킨다 — *_api.py / *_view(s).py 테스트가 services/queries
+# 모듈을 임포트한다면 HTTP/SSR 경계를 넘어 직접 상태를 조립했다는 신호이며,
+# 그런 테스트는 대응하는 *_services.py / *_queries.py 파일로 옮겨야 한다
+# (tests/archive/test_archive_services.py, tests/archive/test_archive_queries.py 참고).
 # ---------------------------------------------------------------------------
 
 API_OR_VIEW_TEST_GLOBS = ("test_*_api.py", "test_*_view.py", "test_*_views.py")
 _DOMAIN_APPS_WITH_SERVICE_QUERY_LAYERS = ("archive", "drafts", "events", "staff")
 _CLIENT_FAMILY_FIXTURE_NAMES = ("client", "admin_client", "user_client", "staff_client")
 
-# (file, module) -> the exact names this guard permits importing from that
-# module. Anything imported that is not in this set fails the guard — this
-# is a per-name allow-list, not a per-file exemption, so widening what a
-# file imports from services/queries (even within an already-allowed module)
-# requires touching this table.
+# (파일, 모듈) -> 그 모듈에서 임포트를 허용하는 정확한 이름 집합. 여기 없는
+# 이름을 임포트하면 가드가 실패한다 — 파일 단위 예외가 아니라 이름 단위
+# 허용 목록이라, 이미 허용된 모듈 안에서도 새 이름을 쓰려면 이 표를 고쳐야
+# 한다.
 ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS = {
-    # Imports only the DraftCreation*Error exception classes, to monkeypatch
-    # draft_views.create_draft_from_url so it raises them — this exercises
-    # the API's error-to-status-code mapping contract, never calling the
-    # service function to arrange data. (The actual monkeypatch targets,
-    # e.g. 'drafts.services.fetch_html', are string paths passed to
-    # monkeypatch.setattr, which this AST check cannot see and which are
-    # not imports anyway.)
+    # DraftCreation*Error 예외 클래스만 임포트해 draft_views.create_draft_from_url이
+    # 그 예외를 던지도록 monkeypatch한다 — 서비스 함수를 호출해 데이터를
+    # 조립하는 게 아니라 API의 에러→상태코드 매핑만 검증한다. (실제
+    # monkeypatch 대상인 'drafts.services.fetch_html' 같은 문자열 경로는
+    # monkeypatch.setattr에 넘기는 값이라 이 AST 검사로는 보이지 않고,
+    # 애초에 임포트도 아니다.)
     ("tests/drafts/test_drafts_api.py", "drafts.services"): frozenset(
         {
             "DraftCreationEmptyExtractionError",
@@ -613,44 +606,42 @@ ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS = {
             "DraftCreationUnsupportedContentError",
         }
     ),
-    # Imports only the STAFF_EVENT_LISTING_PAGE_SIZE constant, to compute how
-    # many events to seed for a pagination test — no query function is
-    # called.
+    # STAFF_EVENT_LISTING_PAGE_SIZE 상수만 임포트해 페이지네이션 테스트용
+    # 행사 시드 개수를 계산한다 — 쿼리 함수는 호출하지 않는다.
     ("tests/staff/test_staff_events_views.py", "events.queries"): frozenset(
         {"STAFF_EVENT_LISTING_PAGE_SIZE"}
     ),
-    # Imports only the DRAFT_LISTING_PAGE_SIZE constant, to compute how many
-    # drafts to seed for a pagination test — no query function is called.
+    # DRAFT_LISTING_PAGE_SIZE 상수만 임포트해 페이지네이션 테스트용 드래프트
+    # 시드 개수를 계산한다 — 쿼리 함수는 호출하지 않는다.
     ("tests/staff/test_staff_draft_views.py", "drafts.queries"): frozenset(
         {"DRAFT_LISTING_PAGE_SIZE"}
     ),
-    # Imports only the ARCHIVE_COLLECTION_PAGE_SIZE constant, to compute how
-    # many collection items to seed for a pagination test — no query
-    # function is called.
+    # ARCHIVE_COLLECTION_PAGE_SIZE 상수만 임포트해 페이지네이션 테스트용
+    # 컬렉션 아이템 시드 개수를 계산한다 — 쿼리 함수는 호출하지 않는다.
     ("tests/archive/test_archive_collection_view.py", "archive.queries"): frozenset(
         {"ARCHIVE_COLLECTION_PAGE_SIZE"}
     ),
-    # Imports only the MAX_PHOTOS_PER_RECORD constant, to compute how many
-    # untokened photos to seed up to the cap for the photo-upload idempotency
-    # tests — no service function is called.
+    # MAX_PHOTOS_PER_RECORD 상수만 임포트해 사진 업로드 멱등성 테스트에서
+    # 상한까지 채울 미토큰 사진 개수를 계산한다 — 서비스 함수는 호출하지
+    # 않는다.
     ("tests/archive/test_visit_records_api.py", "archive.services"): frozenset(
         {"MAX_PHOTOS_PER_RECORD"}
     ),
 }
 
-# Sentinel used when a test file imports the whole services/queries module
-# object (`import <app>.services`, or `from <app> import services`) rather
-# than specific names — there is nothing to whitelist by name in that case,
-# so any such import is always a violation unless "*" itself is allow-listed.
+# 테스트 파일이 특정 이름이 아니라 services/queries 모듈 전체를
+# (`import <app>.services` 또는 `from <app> import services`) 임포트할 때
+# 쓰는 표식이다 — 이 경우 이름 단위로 허용할 게 없으므로, "*" 자체가 허용
+# 목록에 없는 한 이런 임포트는 항상 위반이다.
 _WHOLE_MODULE_IMPORT = "*"
 
 
 def _imported_names_by_service_or_query_module(module_path, apps):
-    """Return {"<app>.services" or "<app>.queries": {imported names}} for a
-    test file, resolving all three import spellings (`import <app>.services`,
-    `from <app>.services import X`, `from <app> import services`) into the
-    same module key. A bare module import (no specific names) is recorded
-    under the sentinel name "*" (see _WHOLE_MODULE_IMPORT)."""
+    """테스트 파일에서 {"<app>.services" 또는 "<app>.queries": {임포트된 이름}}을
+    돌려준다. `import <app>.services`, `from <app>.services import X`,
+    `from <app> import services` 세 가지 임포트 표기를 같은 모듈 키로
+    합친다. 이름 없이 모듈 전체를 임포트한 경우 "*" 표식으로 기록한다
+    (_WHOLE_MODULE_IMPORT 참고)."""
     tree = ast.parse((PROJECT_ROOT / module_path).read_text())
     found = {}
     for node in ast.walk(tree):
@@ -672,10 +663,10 @@ def _imported_names_by_service_or_query_module(module_path, apps):
 
 
 def _has_client_family_fixture(path):
-    """True if any test function in the file declares a client/admin_client/
-    user_client/staff_client parameter — a structural AST fact (the argument
-    name in a `def test_...(...)` signature), not a variable-name guess at
-    call sites."""
+    """파일 안의 테스트 함수 중 client/admin_client/user_client/staff_client
+    파라미터를 선언한 것이 하나라도 있으면 True — 호출부의 변수명을 추측하는
+    게 아니라 `def test_...(...)` 시그니처의 인자 이름이라는 구조적 AST
+    사실로 판정한다."""
     tree = ast.parse(path.read_text())
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
@@ -685,19 +676,15 @@ def _has_client_family_fixture(path):
 
 
 def test_api_view_계층_테스트_파일은_서비스_쿼리_계층을_임포트하지_않는다():
-    """API/view-layer test files must exercise only the HTTP/SSR boundary.
-    A test that needs to reach into a services/queries module directly
-    belongs in a dedicated *_services.py / *_queries.py file instead — that
-    is the "test file name = layer under test" contract this refactor
-    established.
+    """API/뷰 계층 테스트 파일은 HTTP/SSR 경계만 검증해야 한다. services/queries
+    모듈에 직접 손을 대야 하는 테스트는 전용 *_services.py / *_queries.py
+    파일로 옮겨야 한다 — "파일명 = 검증 계층" 규약이다.
 
-    In scope by two independent signals: the filename pattern
-    (*_api.py / *_view(s).py) and, more broadly, any test file that
-    declares a client-family fixture parameter (it exercises HTTP/SSR
-    regardless of what its filename says). Legitimate narrow exceptions are
-    tracked by exact imported name in
-    ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS, with the reason
-    as a comment above each entry.
+    대상 판정은 두 신호를 함께 쓴다 — 파일명 패턴(*_api.py / *_view(s).py),
+    그리고 파일명과 무관하게 client 계열 픽스처 파라미터를 선언한 모든 테스트
+    파일(HTTP/SSR을 검증한다는 뜻이므로). 정당한 좁은 예외는
+    ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS에 근거 주석과 함께
+    이름 단위로 등록한다.
     """
     tests_dir = PROJECT_ROOT / "tests"
 

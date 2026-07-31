@@ -1,10 +1,7 @@
-"""staff.views.staff_event_edit — PR-E2 (/staff/events/<pk>/edit/ SSR form).
+"""이벤트 수정 페이지(/staff/events/<pk>/edit/) 검증.
 
-Covers the staff_console_required gate (mirrors test_staff_events_views.py
-conventions), GET rendering of current field values, a successful POST-PRG
-that updates the event + writes a StaffActionLog(event_update), and the
-invariant-violation / duplicate-url error paths mapped to field errors with
-POSTed values preserved (no silent data loss on a rejected save).
+수정 성공 시 StaffActionLog(event_update)를 남기고, 규칙 위반이나 URL 중복은
+필드 오류로 매핑하되 입력값은 그대로 보존해 데이터 유실이 없도록 한다.
 """
 from datetime import date
 
@@ -102,7 +99,6 @@ def test_수정_시_제목이_빈_값이면_400과_필드_오류를_응답하고
     assert resp.status_code == 400
     content = resp.content.decode()
     assert "제목" in content
-    # POSTed values (not the stale DB values) are redisplayed
     assert "https://example.com/blank-title-edit" in content
 
     event.refresh_from_db()

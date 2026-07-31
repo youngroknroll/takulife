@@ -35,8 +35,8 @@
 
       <div class="visit-create-fields">
         {% if preselect %}
-          {% comment %}Subject locked: arrived from a specific item's 기록 button. JS reads
-             the hidden input's value exactly like the select.{% endcomment %}
+          {% comment %}특정 항목의 기록 버튼으로 들어와 대상이 고정된 상태다. JS는 이
+             hidden input 값을 select와 똑같은 방식으로 읽는다.{% endcomment %}
           <div class="visit-create-group">
             <label for="visit-subject">대상</label>
             <p class="locked-subject">{{ preselect.label }}</p>

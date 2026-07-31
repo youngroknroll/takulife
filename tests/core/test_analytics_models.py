@@ -1,6 +1,5 @@
-"""core.models.AnalyticsEvent (PR-0e checkpoint B1).
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+"""core.models.AnalyticsEvent 검증
+(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
 import pytest
 from django.core.exceptions import ValidationError

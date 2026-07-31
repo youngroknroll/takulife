@@ -1,21 +1,13 @@
-/* archive_personal_edit.css — /archive/personal/<id>/edit/ 전용 수정 페이지.
-   Design source: docs/FE/personal-place-detail-edit.md (WED+BIR 사전 산출물,
-   2026-07-30) — 시안 파일 "비공식 장소 상세 페이지 (에디토리얼).dc.html" 내
-   수정 화면.
-
-   Loaded alongside archive_personal_create.css, which supplies every
-   `.personal-form-*` class this page reuses verbatim (head, subtitle, grid,
-   dropzone, group, row, shared input skin, category chips, error banner,
-   submit/cancel button skins). This template's <main> carries both
-   `.personal-create-page` and `.personal-edit-page` (collection_edit.css's
-   dual-class pattern), so those shared rules keep applying without a
-   half-swap. This file adds only what the create page has no equivalent
-   for: the global error banner (delete/image-delete/404 messages), the
-   image replace/remove row, the actions-row split (저장·취소 vs a separate
-   장소 삭제 button — WED §4), and the 404 "item already gone" lock state.
-
-   TOKEN NOTE: verified against tokens.css before writing — no new tokens
-   introduced. */
+/* archive_personal_edit.css — /archive/personal/<id>/edit/ 전용 수정
+   페이지. archive_personal_create.css가 제공하는 `.personal-form-*`
+   클래스(헤드/부제/그리드/드롭존/그룹/행/입력 스킨/카테고리 칩/오류
+   배너/제출·취소 버튼)를 그대로 재사용한다 — 템플릿의 <main>이
+   `.personal-create-page`와 `.personal-edit-page`를 함께 갖는
+   구조(collection_edit.css와 동일 패턴)라 half-swap 없이 공용 규칙이
+   계속 적용된다. 이 파일은 create 페이지에 없는 것만 추가한다: 전역
+   오류 배너(삭제/이미지삭제/404 메시지), 이미지 교체·제거 행,
+   액션 행 분리(저장·취소 vs 별도 장소 삭제 버튼, WED §4), 404 잠금
+   상태. tokens.css 확인 결과 새 토큰은 없다. */
 
 .personal-edit-page .personal-form-subtitle {
   overflow: hidden;

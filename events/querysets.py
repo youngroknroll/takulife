@@ -12,10 +12,8 @@ class EventQuerySet(models.QuerySet):
         return self.filter(publish_status="published")
 
     def overlapping_month(self, year, month):
-        """Published-or-not events whose run overlaps the given (year, month)
-        (dual-calendar service design §6). A null start_date always excludes
-        an event. An event with no end_date is treated as a single day on
-        start_date, so its "effective end" is start_date itself.
+        """(year, month)와 기간이 겹치는 이벤트(게시 여부 무관, 이중 달력 설계 §6).
+        start_date가 없으면 무조건 제외하고, end_date가 없으면 start_date 당일만 있는 것으로 본다.
         """
         month_start = date(year, month, 1)
         month_end = date(year, month, calendar.monthrange(year, month)[1])
@@ -61,11 +59,8 @@ class EventQuerySet(models.QuerySet):
         if status == "ended":
             return self.filter(end_date__lt=today)
         if status == "active":
-            # View-internal only: "active" is not in the public STATUS_CHOICES
-            # contract. NULL end_date is kept (SQL NULL < today is unknown, so
-            # exclude() does not drop it) — an event with no end date is not
-            # ended. `__lt`, not `__lte`: an event ending today is not ended
-            # yet.
+            # "active"는 공개 STATUS_CHOICES에 없는 화면 내부 전용 값이다.
+            # 종료일이 없는 이벤트는 SQL에서 NULL 비교가 걸러주므로 그대로 유지된다.
             return self.exclude(end_date__lt=today)
         return self
 
@@ -83,10 +78,8 @@ class EventQuerySet(models.QuerySet):
         return self.order_by("-view_count", "-id")[:limit]
 
     def related_to(self, event, *, today, limit=3):
-        """Related events for a detail page: same category, excluding the event
-        itself, ordered by the public-listing state ranking (ongoing → upcoming →
-        ended), capped at ``limit``. An event with a blank category has no
-        related events. Chain after ``published()`` to restrict to public events.
+        """상세 페이지의 관련 이벤트: 같은 카테고리, 자기 자신 제외, 공개 목록과 같은 상태
+        순위(진행중→예정→종료)로 정렬해 limit개까지. category가 빈 값이면 결과 없음.
         """
         if not event.category:
             return self.none()
@@ -97,17 +90,10 @@ class EventQuerySet(models.QuerySet):
         )
 
     def order_for_public_listing(self, *, today, sort=None):
-        """Order published events for the public listing.
-
-        sort (optional): explicit user-selected ordering from the browse UI's
-        "sort" select. When omitted/falsy, falls back to the original
-        ongoing/upcoming/ended state ranking below (unchanged behaviour).
-        """
+        """게시 이벤트를 공개 목록 순서로 정렬한다. sort 미지정 시 진행중/예정/종료 순위로 정렬한다."""
         if sort == "closing_soon":
-            # "종료 임박순" ranks not-yet-ended events (end_date null or >= today)
-            # first, soonest-ending first (nulls last); already-ended events are
-            # pushed to the back, most-recently-ended first, so a plain end_date
-            # ascending sort never surfaces long-ended events at the top.
+            # 아직 종료 안 된 이벤트(종료일 없음 또는 오늘 이후)를 종료 임박순으로 먼저,
+            # 이미 종료된 이벤트는 뒤로 밀어 최근 종료순으로 배치한다.
             return self.annotate(
                 _closing_rank=Case(
                     When(

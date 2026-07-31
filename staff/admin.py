@@ -5,11 +5,10 @@ from .models import StaffActionLog
 
 @admin.register(StaffActionLog)
 class StaffActionLogAdmin(admin.ModelAdmin):
-    """Superuser-only read access to the staff audit trail.
+    """감사 로그는 조회만 가능하다.
 
-    Append-only: add/change/delete are always disallowed here, regardless of
-    permission level — log entries are only ever created by the staff view
-    boundary (see PR-2 sub-step D), never through the admin UI.
+    추가/수정/삭제는 항상 막는다 — 로그는 스태프 뷰 쪽에서만 만들어지고
+    관리자 화면에서 직접 만들거나 고칠 수는 없다.
     """
 
     list_display = ["created_at", "action", "actor", "target_draft"]

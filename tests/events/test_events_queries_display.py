@@ -1,21 +1,16 @@
-"""Tests for events/queries.py and events/presenters.py: display derivation,
-most-viewed/ending-soon querysets, and staff listing.
+"""events/queries.py와 events/presenters.py를 검증한다: 표시값 도출,
+조회수순/마감임박 쿼리셋, 스태프 목록.
 
-Covers:
-- derive_event_display: status classification, closing_soon boundary, dday, null dates
-- most_viewed / ending_within_days: EventQuerySet ordering/filtering methods
-- list_staff_events: staff quality-warning drilldown listing (PR-E1)
+다루는 범위:
+- derive_event_display: 상태 분류, closing_soon 경계, dday, null 날짜
+- most_viewed / ending_within_days: EventQuerySet 정렬·필터 메서드
+- list_staff_events: 스태프 품질경고 드릴다운 목록
 """
 import pytest
 from datetime import date, timedelta
 
 from events.models import Event
 
-
-
-# ---------------------------------------------------------------------------
-# derive_event_display
-# ---------------------------------------------------------------------------
 
 @pytest.mark.unit
 class TestDeriveEventDisplay:
@@ -27,7 +22,7 @@ class TestDeriveEventDisplay:
         result = derive_event_display(event, today=today)
 
         assert result["status"] == "upcoming"
-        assert result["dday"] == 3  # days to start
+        assert result["dday"] == 3
 
     def test_진행_기간_중이면_상태는_진행중이고_디데이는_종료까지_남은_일수다(self):
         from events.presenters import derive_event_display
@@ -37,10 +32,10 @@ class TestDeriveEventDisplay:
         result = derive_event_display(event, today=today)
 
         assert result["status"] == "ongoing"
-        assert result["dday"] == 5  # days to end
+        assert result["dday"] == 5
 
     def test_종료일이_4일_후면_마감임박_상태로_분류된다(self):
-        """end_date == today + 4 days is exactly within the closing_soon window."""
+        """종료일이 오늘+4일인 경계값이 closing_soon 창 안에 정확히 포함된다."""
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -51,7 +46,7 @@ class TestDeriveEventDisplay:
         assert result["dday"] == 4
 
     def test_종료일이_오늘이면_마감임박_상태로_분류된다(self):
-        """end_date == today is also closing_soon (ends today)."""
+        """종료일이 오늘이어도 closing_soon이다(오늘 종료)."""
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -62,7 +57,7 @@ class TestDeriveEventDisplay:
         assert result["dday"] == 0
 
     def test_종료일이_5일_후면_마감임박이_아닌_진행중_상태로_분류된다(self):
-        """end_date == today + 5 days is ongoing, NOT closing_soon."""
+        """종료일이 오늘+5일이면 closing_soon이 아니라 ongoing이다."""
         from events.presenters import derive_event_display
 
         today = date(2026, 6, 24)
@@ -113,7 +108,7 @@ class TestDeriveEventDisplay:
         assert result["dday"] is None
 
     def test_기준일을_생략해도_결과_딕셔너리를_반환한다(self):
-        """When today is not provided, the function still returns a result dict."""
+        """today를 넘기지 않아도 결과 딕셔너리를 반환한다."""
         from events.presenters import derive_event_display
 
         event = Event(start_date=None, end_date=None)
@@ -132,10 +127,6 @@ class TestDeriveEventDisplay:
         assert "status" in result
         assert "dday" in result
 
-
-# ---------------------------------------------------------------------------
-# most_viewed queryset method
-# ---------------------------------------------------------------------------
 
 @pytest.mark.domain
 @pytest.mark.django_db
@@ -175,24 +166,18 @@ class TestMostViewed:
         first = make_event(title="First")
         second = make_event(title="Second")
 
-        # Both have same view_count (0 by default)
         result = list(Event.objects.published().most_viewed(5))
         ids = [e.id for e in result]
-        # Higher id comes first when view_count is equal
         assert ids.index(second.id) < ids.index(first.id)
 
-
-# ---------------------------------------------------------------------------
-# EventQuerySet.ending_within_days
-# ---------------------------------------------------------------------------
 
 @pytest.mark.domain
 @pytest.mark.django_db
 class TestEndingWithinDays:
-    """Behavior tests for EventQuerySet.ending_within_days(days, today=today).
+    """EventQuerySet.ending_within_days(days, today=today)의 동작을 검증한다.
 
-    Selection rule: published ongoing events whose end_date is between today
-    (inclusive) and today+days (inclusive), ordered soonest-first.
+    선정 규칙: 게시·진행중이며 end_date가 오늘(포함)부터 오늘+days(포함)
+    사이인 행사를, 종료가 빠른 순으로 정렬해 반환한다.
     """
 
     def test_종료일이_오늘로부터_5일_후면_포함된다(self, make_event):
@@ -236,7 +221,7 @@ class TestEndingWithinDays:
         assert event.id not in list(qs.values_list("id", flat=True))
 
     def test_아직_시작하지_않은_행사는_종료일이_창_안에_있어도_제외된다(self, make_event):
-        """start_date > today means the event has not started yet; must be excluded."""
+        """start_date가 오늘보다 미래면 아직 시작 전이라 제외돼야 한다."""
         today = date(2026, 6, 26)
         event = make_event(
             title="Not started yet",
@@ -247,7 +232,7 @@ class TestEndingWithinDays:
         assert event.id not in list(qs.values_list("id", flat=True))
 
     def test_초안_행사는_종료일이_창_안에_있어도_제외된다(self, make_event):
-        """Draft events must not appear even if end_date is within the window."""
+        """초안 행사는 end_date가 창 안에 있어도 나타나면 안 된다."""
         today = date(2026, 6, 26)
         event = make_event(
             title="Draft event",
@@ -275,14 +260,10 @@ class TestEndingWithinDays:
         assert ids.index(sooner.id) < ids.index(later.id)
 
 
-# ---------------------------------------------------------------------------
-# list_staff_events (PR-E1 — staff quality-warning drilldown)
-#
-# warning drilldowns must return exactly the same population the matching
-# count_published_* function counts (dashboard drilldown parity). Unknown/
-# blank warning values are ignored (fallback to no warning filter), mirroring
-# the existing selected_status normalisation pattern in staff views.
-# ---------------------------------------------------------------------------
+# 경고 드릴다운은 대응하는 count_published_* 함수가 세는 것과 정확히 같은
+# 대상 집합을 반환해야 한다(대시보드 드릴다운 정합성). 알 수 없거나 빈 경고
+# 값은 무시된다(경고 필터 없음으로 폴백) — 스태프 화면의 기존
+# selected_status 정규화 패턴과 같은 방식이다.
 
 
 @pytest.mark.domain
@@ -440,7 +421,7 @@ class TestListStaffEvents:
     def test_경고_조건에_맞아도_초안_행사는_경고_필터_결과에서_제외된다(
         self, make_draft_event
     ):
-        """Warning drilldowns are published-scoped, matching count_published_*."""
+        """경고 드릴다운은 count_published_*와 마찬가지로 게시된 행사만 대상으로 한다."""
         from events.queries import list_staff_events
 
         make_draft_event(official_url=None)
@@ -461,7 +442,7 @@ class TestListStaffEvents:
         assert ids == {published.id, draft.id}
 
     def test_경고_필터_결과_건수는_대시보드_집계_함수의_값과_일치한다(self, make_event, make_draft_event):
-        """Drilldown row count must equal the dashboard's count_published_* value."""
+        """드릴다운 결과 건수는 대시보드의 count_published_* 값과 같아야 한다."""
         from events.queries import count_published_missing_region, list_staff_events
 
         make_event(official_url="https://example.com/a", region="")
@@ -473,20 +454,14 @@ class TestListStaffEvents:
         assert result.count() == count_published_missing_region()
 
 
-# ---------------------------------------------------------------------------
-# EventQuerySet.related_to
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.domain
 @pytest.mark.django_db
 class TestRelatedTo:
-    """Behavior tests for EventQuerySet.related_to(event, *, today, limit=3).
+    """EventQuerySet.related_to(event, *, today, limit=3)의 동작을 검증한다.
 
-    Selection rule: published events sharing the same category as the given
-    event, excluding the event itself, ordered by the existing public-listing
-    state ranking, capped at `limit`. An event whose own category is blank
-    has no related events (empty queryset).
+    선정 규칙: 대상 행사와 같은 카테고리를 가진 게시 행사를(자기 자신 제외)
+    기존 공개 목록의 상태 정렬 기준으로 정렬해 limit 개까지 반환한다.
+    카테고리가 빈 행사는 관련 행사가 없다(빈 쿼리셋).
     """
 
     def test_같은_카테고리의_다른_공개_행사를_관련_행사로_반환한다(self, make_event):
@@ -526,7 +501,7 @@ class TestRelatedTo:
         assert len(result) <= 3
 
     def test_카테고리가_빈_행사는_관련_행사가_없다(self, make_event):
-        """A blank category has no meaningful 'same category' relation."""
+        """카테고리가 빈 행사는 '같은 카테고리'라는 관계 자체가 성립하지 않는다."""
         today = date(2026, 6, 26)
         base = make_event(title="Base", category="")
         make_event(title="Other", category="")

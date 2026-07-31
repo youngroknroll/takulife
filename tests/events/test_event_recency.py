@@ -1,8 +1,8 @@
-"""Unit tests for events.presenters.is_recently_added (NEW badge window).
+"""events.presenters.is_recently_added(신규 뱃지 노출 기간)에 대한 단위 테스트.
 
-An event is "NEW" while fewer than NEW_WINDOW_DAYS (10) days have passed since
-its created_at. Day 0..9 = NEW; day 10 = no longer new. No DB needed — the helper
-only reads event.created_at, so plain stub objects exercise the boundaries.
+created_at으로부터 NEW_WINDOW_DAYS(10)일 미만이면 "신규"다(0~9일차는 신규,
+10일차부터는 아니다). 이 헬퍼는 event.created_at만 읽으므로 DB 없이 단순
+스텁 객체로 경계값을 검증한다.
 """
 from datetime import date, datetime
 from types import SimpleNamespace
@@ -28,11 +28,9 @@ class TestIsRecentlyAdded:
         assert is_recently_added(_event(datetime(2026, 6, 27, 9, 0)), today=TODAY) is True
 
     def test_9일_전에_생성된_행사는_아직_신규로_판정된다(self):
-        # boundary: day 9 still NEW
         assert is_recently_added(_event(datetime(2026, 6, 18, 23, 0)), today=TODAY) is True
 
     def test_정확히_10일_전에_생성된_행사는_더이상_신규가_아니다(self):
-        # boundary: day 10 no longer NEW
         assert is_recently_added(_event(datetime(2026, 6, 17, 1, 0)), today=TODAY) is False
 
     def test_오래전에_생성된_행사는_신규가_아니다(self):

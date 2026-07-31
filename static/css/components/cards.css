@@ -14,10 +14,9 @@
 }
 
 /* ── summary cards (shared across archive + drafts pages) ───── */
-/* Single source of truth for the summary bar. A page declares how many tiles it
-   has via `--summary-cols` (= min(card count, 5)); the row fills left to right
-   up to 5 columns, then wraps. Fewer cards → that many equal columns, no empty
-   cells. No per-page redefinition — keeps every archive page's summary identical. */
+/* 요약 바의 공통 스타일. 각 페이지는 `--summary-cols`(카드 수, 최대 5)만
+   지정하면 되고 카드 수만큼 균등한 열로 채워진다 — 페이지마다 다시
+   정의하지 않아 모든 보관함 페이지의 요약 바가 항상 같은 모양이다. */
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(var(--summary-cols, 4), minmax(0, 1fr));
@@ -45,10 +44,8 @@
   line-height: 1.2;
 }
 
-/* A summary card can also be a drilldown link (article -> a swap, e.g. the
-   staff dashboard's 검토 대기 card, mypage's 4 summary cards) — this only
-   adds the document reset and hover affordance a link needs; .summary-card
-   itself (above) stays untouched. */
+/* 요약 카드가 클릭 가능한 링크(article → a)로 쓰일 때만 붙는 스타일이다.
+   기본 .summary-card 자체는 건드리지 않는다. */
 .summary-card-link {
   display: block;
   text-decoration: none;
@@ -167,18 +164,15 @@
   font-size: 0.88rem;
   color: var(--muted);
 }
-/* In-copy prose link (e.g. "지우기" / "방문 기록 작성하러 가기") — same
- * brand-ink + underline pattern as .auth-links-label (auth.css). Defined
- * here (shared component), not per page, since .empty-note is reused
- * across several pages, each loading a different page-specific stylesheet. */
+/* 본문 안에 섞인 링크("지우기" 등). .empty-note가 여러 페이지에서
+   재사용되므로 페이지별 스타일시트가 아니라 여기 공용 컴포넌트에 둔다. */
 .empty-note a {
   color: var(--brand-ink);
   text-decoration: underline;
 }
 
-/* Dual-recovery CTA row for the true-empty collection state (D6) — wraps
-   two .empty-action pills side by side, centered, wrapping on narrow
-   widths. */
+/* 컬렉션이 완전히 비었을 때 버튼 두 개를 나란히 보여주는 행 — 좁은
+   화면에서는 줄바꿈된다. */
 .empty-actions {
   display: flex;
   gap: 0.5rem;
@@ -186,10 +180,8 @@
   justify-content: center;
 }
 
-/* min-height: 44px added repo-wide (BIR IA-2 finding, PO-approved H-2
-   backlog sweep) — the 4 existing usages fell short at ~37-38px computed
-   height, below the project's touch-target convention every other
-   interactive element already follows. */
+/* min-height: 44px — 원래 계산 높이가 약 37~38px로 다른 인터랙티브
+   요소가 지키는 44px 탭 타깃 기준에 못 미쳐 맞춰 넣었다. */
 .empty-action {
   display: inline-flex;
   align-items: center;
@@ -216,7 +208,7 @@
   font-size: 0.84rem;
 }
 
-/* Shared archive side action link (extracted from archive_statuses + archive_interests) */
+/* 보관함 여러 페이지가 함께 쓰는 사이드 액션 링크 */
 .side-action-link {
   display: inline-flex;
   justify-content: center;
@@ -238,8 +230,8 @@
   color: #a2a9b9;
 }
 
-/* Shared review-status chip colors (extracted from .draft-chip + .status-chip).
-   Color only — the page sheets keep .draft-chip / .status-chip for shape. */
+/* 검토 상태 칩 색상만 공용으로 뺐다 — 모양(.draft-chip / .status-chip)은
+   각 페이지 스타일시트가 그대로 담당한다. */
 .review-status-pending {
   background: var(--amber-soft);
   color: var(--amber-ink);
@@ -253,10 +245,7 @@
   color: var(--rose-ink);
 }
 
-/* ── poster top-left badge pill (shared: home poster card + event list
-   card's mobile media overlay) ── Hoisted from pages/home.css so
-   event_list.css's mobile D-day/종료 badge (both consumers load this file
-   globally, base.html) can reuse the same visual language. */
+/* ── 포스터 좌상단 배지 (홈 포스터 카드 + 행사 목록 모바일 카드 공용) ── */
 .poster-badge {
   position: absolute;
   top: 8px;
@@ -268,7 +257,7 @@
   font-weight: 700;
   line-height: 1;
 }
-/* Wrapper when a card can show more than one badge (recent: 오픈까지 + NEW) */
+/* 배지가 두 개 이상 겹칠 때(예: 오픈까지 + NEW)의 래퍼 */
 .poster-badges {
   position: absolute;
   top: 8px;
@@ -293,21 +282,17 @@
   background: var(--amber-soft);
   color: var(--amber-ink);
 }
-/* 종료(ended) — 4th lifecycle state (plan §0), kept visually distinct
-   from 종료임박(amber) so a closed event doesn't read as still-urgent. */
+/* 종료(ended) — 종료임박(amber)과 색을 분리해 이미 끝난 행사가 아직
+   급한 것처럼 보이지 않게 한다. */
 .poster-badge-ended {
   background: var(--end-soft);
   color: var(--end-ink);
 }
 
-/* ── poster overlay 찜 button (shared: home poster card + event list card) ──
-   Hoisted from pages/home.css (was scoped to the closing-card poster only)
-   so event_list.css's desktop thumbnail and mobile poster grid can reuse
-   the same overlay convention — this file loads on every page (base.html),
-   both consumers already load it. Top-right translucent dark circle over
-   a poster image. Kept at 34px — the poster overlay has no room for a 44px
-   target without covering more of the image. WCAG 2.5.8 exception (24px
-   이상 + 주변 간격 확보); §5.4 예외 기록, 사용자 승인은 2단계 PR 참조. */
+/* ── 포스터 위 찜 버튼(홈 포스터 카드 + 행사 목록 카드 공용) ──
+   포스터 이미지 우상단에 반투명 검은 원으로 올린다. 44px 탭 타깃을
+   채우면 이미지를 너무 가려서 34px로 뒀다 — WCAG 2.5.8 예외 기준
+   (24px 이상 + 주변 여백 확보)은 지키며, 사용자 승인을 받은 예외다. */
 .poster-interest {
   position: absolute;
   top: 8px;
@@ -336,33 +321,24 @@
 }
 .poster-interest.active {
   background: rgba(0, 0, 0, 0.45);
-  /* Bright coral, not --pink-ink: this glyph sits on a translucent dark
-     circle over an arbitrary poster image, so it needs a light colour
-     for contrast — --pink-ink (#b01e52) is dark and would not read
-     reliably here. Left as a literal (no matching light-pink token). */
+  /* 어두운 반투명 원 위에 올라가므로 밝은 산호색을 쓴다 — 어두운
+     --pink-ink는 이 배경에서 잘 안 보인다. 맞는 밝은 핑크 토큰이 없어
+     리터럴 값을 그대로 둔다. */
   color: #ff6b81;
 }
-/* The shared .is-loading spinner (objects/interaction.css) assumes a
-   button with text before it — margin-left spaces the spinner away from
-   that text. .poster-interest has no text, only the glyph span, so the
-   glyph + spinner rendered side by side and spilled past the 34px circle.
-   Hide the glyph while loading and drop the margin so only the centered
-   spinner shows. */
+/* 공용 로딩 스피너(objects/interaction.css)는 앞에 텍스트가 있는
+   버튼을 전제로 여백을 둔다. 이 버튼은 텍스트 없이 아이콘뿐이라 그대로
+   두면 아이콘+스피너가 34px 원을 벗어나므로, 로딩 중엔 아이콘을 숨기고
+   여백을 없애 스피너만 가운데 보이게 한다. */
 .poster-interest.is-loading [data-interest-glyph] {
   display: none;
 }
 .poster-interest.is-loading::after {
   margin-left: 0;
 }
-/* Mobile poster tile convention: 찜 sits bottom-right instead of top-right.
-   At 320px the top-right badge (e.g. home closing card's "종료까지 N일")
-   can run wide enough to graze the button (measured -8px overlap at 320px,
-   clear by 360px+) — bottom-right sidesteps that regardless of badge
-   width, and matches the moved position on both home poster cards and
-   event_list.css's mobile card (shared class, one rule fixes both). The
-   event_list.css mobile media-bottom notch (top:calc(100% - 5px), 10px
-   circle) leaves an ~3px gap under this 8px offset — verified by rect, no
-   overlap. */
+/* 모바일에서는 찜 버튼을 우상단 대신 우하단으로 옮긴다. 320px 화면에서는
+   우상단 배지("종료까지 N일" 등)가 버튼과 겹칠 만큼 넓어질 수 있어서다
+   (실측: 320px에서 -8px 겹침, 360px 이상에서는 안 겹침). */
 @media (max-width: 45rem) {
   .poster-interest {
     top: auto;

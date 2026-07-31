@@ -1,48 +1,21 @@
 {% comment %}
-Activity-calendar month grid (templates/core/archive/calendar.html only).
-Deliberately a separate partial from _calendar_grid.html (the Events
-calendar's), not a branch inside it — the two contracts don't share a cell
-shape. Skeleton, state wiring, and CSS classes for the shared bits
-(.month-grid, .day-cell, data-in-month/data-today/data-selected, void cells)
-match _calendar_grid.html — both are styled by static/css/components/calendar.css,
-with this page's editorial-only differences (112px cells, hairline-boxed
-grid, left-aligned weekday header, teal today pill/selected inset) layered on
-via `.activity-page`-scoped overrides in static/css/pages/archive_calendar.css
-(activity-calendar-editorial plan §4-b / WED pre-spec §3).
+활동 달력(calendar.html) 전용 월 그리드다. 이벤트 달력의 _calendar_grid.html과
+셀 구조가 달라 분기 대신 별도 파셜로 둔다. 요일 머리글과 날짜 본문을 서로 다른
+.month-grid 컨테이너로 나눈 이유도 _calendar_grid.html과 같다 — 헤어라인 박스가
+날짜 셀만 감싸고 요일 라벨은 그 밖에 있어야 해서다.
 
-2026-07-24 editorial rebuild: split into two sibling .month-grid containers
-(head/body) — same reason as _calendar_grid.html's 2026-07-23 comment (the
-hairline box wraps only the day cells, and the weekday labels sit outside it).
-
-Include with:
+사용법:
   {% include "core/partials/_archive_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
-  weeks        list of week rows; each week is a list of exactly 7 day cell
-               dicts: {date, in_month, today, selected, count, kinds, items,
-               more_count}
-               date        a real date, or None for an out-of-range filler cell
-                           (year 1 / year 9999 boundary) — rendered void, no link.
-               kinds       list of distinct group codes present that day
-                           (schedule/interest/visit/goods — "status" is always
-                           excluded server-side), deduplicated, used only for
-                           the mobile dot row below (up to 3 shown).
-               items       the day's first 2 activities as {group, label} —
-                           per the no-nested-<a> constraint (mirrors
-                           _calendar_grid.html:14-20,64-70) these render as
-                           plain <span> children of the cell's single <a>;
-                           item.url is intentionally not consumed here.
-               more_count  however many more activities remain beyond the 2
-                           shown ("+N").
-  extra_query  querystring tail (own leading '&', or "") carrying the active
-               type= filters — see core.views' Activity counterpart of
-               _calendar_extra_query.
-aria-label/aria-current were introduced 2026-07-19 (policy reversal, see
-.docs/plans/2026-07-19-calendar-review-fixes-plan.md); state wiring stays
-data-in-month/data-today/data-selected only, since that remains a CSS/JS
-contract rather than an accessible-name concern. aria-label is preserved
-verbatim from the pre-editorial markup (activity-calendar-editorial plan
-§7-3 constraint 6) — it already carries the day's activity count and, since
-aria-label overrides the accessible-name subtree per the accname algorithm,
-the new visible item-title <span>s below never inflate it.
+  weeks       — 7일씩 담은 주 목록. 각 날짜는 {date, in_month, today, selected,
+                count, kinds, items, more_count} 딕셔너리(date가 없으면 범위
+                밖 빈 칸, 링크 없이 렌더).
+  items       — 해당 날짜 활동 최대 2건을 {group, label}로. 셀 전체가 이미
+                하나의 <a>라 <a> 중첩을 피하려고 <span>으로만 렌더한다.
+  extra_query — 활성 type= 필터를 유지하는 쿼리스트링 꼬리.
+
+aria-label은 날짜의 활동 건수를 이미 포함하고 있고, aria-label이 하위 트리의
+접근 가능한 이름 계산을 덮어써서 아래 항목 제목 <span>들이 이름에 끼어들지
+않는다.
 {% endcomment %}
 <div class="month-grid month-grid-head">
   <span class="month-grid-weekday">일</span>

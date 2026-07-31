@@ -1,23 +1,22 @@
 """
-core/vocab.py — Single source of domain vocabulary for takulife.
+core/vocab.py — takulife 도메인 어휘의 단일 출처.
 
-This module defines canonical slug→label mappings for categories, regions,
-archive statuses, and event statuses. All templates, context processors, and
-future filter validators must reference these constants rather than maintaining
-their own local copies.
+이 모듈은 카테고리, 지역, archive 상태, event 상태의 표준 slug→label
+매핑을 정의한다. 모든 템플릿, 컨텍스트 프로세서, 앞으로 만들 필터
+검증기는 각자 로컬 사본을 두지 말고 이 상수를 참조해야 한다.
 
-Design decisions (per prompt_plan.md §3.4, confirmed 2026-06-24):
-- Slug keys (left side) are what the API stores and filters on.
-- Korean labels (right side) are what the UI displays.
-- The canonical CSS class for archive/user-event status IS the slug itself
-  (interested / planned / visited / missed), replacing the old wish/plan/done/miss
-  class names used in early mock templates.
-- Exposed as plain tuples/dicts (no magic, no metaclasses, immutable-friendly).
+설계 결정:
+- slug 키(왼쪽)는 API가 저장·필터링에 쓰는 값이다.
+- 한글 라벨(오른쪽)은 UI가 표시하는 값이다.
+- archive/user-event 상태의 표준 CSS 클래스는 slug 그 자체다
+  (interested / planned / visited / missed) — 초기 목업 템플릿의
+  wish/plan/done/miss 클래스명을 대체한다.
+- 순수 튜플/딕셔너리로 노출한다(매직 없음, 메타클래스 없음, 불변에 친화적).
 """
 
 # ---------------------------------------------------------------------------
-# Event category vocabulary
-# slug → display label
+# 행사 카테고리 어휘
+# slug → 표시 라벨
 # ---------------------------------------------------------------------------
 CATEGORY: tuple[tuple[str, str], ...] = (
     ("popup_store", "팝업스토어"),
@@ -28,21 +27,21 @@ CATEGORY: tuple[tuple[str, str], ...] = (
     ("fan_meeting", "팬미팅"),
 )
 
-# Convenience dict for O(1) label lookup.
+# O(1) 라벨 조회용 편의 딕셔너리.
 CATEGORY_LABELS: dict[str, str] = dict(CATEGORY)
 
 # ---------------------------------------------------------------------------
-# Region vocabulary
-# slug → display label
+# 지역 어휘
+# slug → 표시 라벨
 # ---------------------------------------------------------------------------
 REGION: tuple[tuple[str, str], ...] = (
     ("seoul", "서울"),
     ("gyeonggi", "경기"),
     ("incheon", "인천"),
     ("busan", "부산"),
-    # 대구·대전·광주는 2026-07-23에 추가됐다. 실데이터가 이미 이 세 도시를
-    # 쓰고 있었는데 어휘에 없어 지역 필터 어디에도 걸리지 않았다 — 어휘 가드를
-    # 걸기 전에 먼저 메워야 했던 구멍이다.
+    # 실데이터가 이미 대구·대전·광주를 쓰고 있었는데 어휘에 없어 지역
+    # 필터 어디에도 걸리지 않았다 — 어휘 가드를 걸기 전에 먼저 메워야
+    # 했던 구멍이다.
     ("daegu", "대구"),
     ("daejeon", "대전"),
     ("gwangju", "광주"),
@@ -52,10 +51,10 @@ REGION: tuple[tuple[str, str], ...] = (
 REGION_LABELS: dict[str, str] = dict(REGION)
 
 # ---------------------------------------------------------------------------
-# Archive / user-event status vocabulary
-# These are the statuses a user assigns to an event they are tracking.
-# The slug IS the canonical CSS class name (G10 unification).
-# slug → display label
+# Archive / user-event 상태 어휘
+# 사용자가 추적 중인 행사에 부여하는 상태들이다.
+# slug가 곧 표준 CSS 클래스명이다.
+# slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_STATUS: tuple[tuple[str, str], ...] = (
     ("planned", "방문 예정"),
@@ -67,9 +66,9 @@ ARCHIVE_STATUS_LABELS: dict[str, str] = dict(ARCHIVE_STATUS)
 
 
 # ---------------------------------------------------------------------------
-# Collection item type vocabulary (D4)
-# Free-input on the model (no DB choices constraint) — this is UI-side
-# guidance for CollectionItem.item_type. slug → display label
+# 컬렉션 항목 종류 어휘
+# 모델에는 자유 입력(DB choices 제약 없음)이며, 이건 CollectionItem.item_type에
+# 대한 UI 쪽 안내일 뿐이다. slug → 표시 라벨
 # ---------------------------------------------------------------------------
 COLLECTION_ITEM_TYPE: tuple[tuple[str, str], ...] = (
     ("acrylic_stand", "아크릴 스탠드"),
@@ -89,9 +88,9 @@ def archive_status_label(slug: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Archive status list sort vocabulary (slug matches
-# archive.queries.ARCHIVE_STATUS_SORT_ORDERING). Empty slug "" is the default
-# (등록일 최근 수정순 / -updated_at). slug → display label
+# Archive 상태 목록 정렬 어휘(slug는
+# archive.queries.ARCHIVE_STATUS_SORT_ORDERING과 일치). 빈 slug ""가 기본값
+# (최근 수정순 / -updated_at). slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_STATUS_SORT: tuple[tuple[str, str], ...] = (
     ("", "최근 수정순"),
@@ -101,9 +100,9 @@ ARCHIVE_STATUS_SORT: tuple[tuple[str, str], ...] = (
 ARCHIVE_STATUS_SORT_LABELS: dict[str, str] = dict(ARCHIVE_STATUS_SORT)
 
 # ---------------------------------------------------------------------------
-# Archive visit-record list sort vocabulary (slug matches
-# archive.queries.ARCHIVE_VISIT_SORT_ORDERING). Empty slug "" is the default
-# (최근 방문순 / -visited_on, -id). slug → display label
+# Archive 방문 기록 목록 정렬 어휘(slug는
+# archive.queries.ARCHIVE_VISIT_SORT_ORDERING과 일치). 빈 slug ""가 기본값
+# (최근 방문순 / -visited_on, -id). slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_VISIT_SORT: tuple[tuple[str, str], ...] = (
     ("", "최근 방문순"),
@@ -113,9 +112,9 @@ ARCHIVE_VISIT_SORT: tuple[tuple[str, str], ...] = (
 ARCHIVE_VISIT_SORT_LABELS: dict[str, str] = dict(ARCHIVE_VISIT_SORT)
 
 # ---------------------------------------------------------------------------
-# Archive personal-entry list sort vocabulary (slug matches
-# archive.queries.ARCHIVE_PERSONAL_SORT_ORDERING). Empty slug "" is the
-# default (최근 등록순 / -created_at, -id). slug → display label
+# Archive 비공식 등록 목록 정렬 어휘(slug는
+# archive.queries.ARCHIVE_PERSONAL_SORT_ORDERING과 일치). 빈 slug ""가
+# 기본값(최근 등록순 / -created_at, -id). slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_PERSONAL_SORT: tuple[tuple[str, str], ...] = (
     ("", "최근 등록순"),
@@ -125,9 +124,8 @@ ARCHIVE_PERSONAL_SORT: tuple[tuple[str, str], ...] = (
 ARCHIVE_PERSONAL_SORT_LABELS: dict[str, str] = dict(ARCHIVE_PERSONAL_SORT)
 
 # ---------------------------------------------------------------------------
-# Archive interest (찜) list sort vocabulary (slug matches
-# archive.queries.list_user_interests' internal ordering). Empty slug "" is
-# the default (최근 찜순 / -id). slug → display label
+# Archive 찜 목록 정렬 어휘(slug는 archive.queries.list_user_interests의
+# 내부 정렬과 일치). 빈 slug ""가 기본값(최근 찜순 / -id). slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_INTEREST_SORT: tuple[tuple[str, str], ...] = (
     ("", "최근 찜순"),
@@ -137,10 +135,10 @@ ARCHIVE_INTEREST_SORT: tuple[tuple[str, str], ...] = (
 ARCHIVE_INTEREST_SORT_LABELS: dict[str, str] = dict(ARCHIVE_INTEREST_SORT)
 
 # ---------------------------------------------------------------------------
-# Personal-entry category suggestions (직접 등록 작성 페이지). Free-input hint
-# chips, not a `choices` constraint — PersonalEntry.category is a plain
-# CharField and any free text is still accepted (mirrors
-# COLLECTION_ITEM_TYPE's "UI-side guidance only" note above).
+# 비공식 등록 카테고리 제안(직접 등록 작성 페이지). `choices` 제약이 아니라
+# 자유 입력을 돕는 힌트 칩이다 — PersonalEntry.category는 평범한
+# CharField라 어떤 자유 텍스트도 받아들여진다(위 COLLECTION_ITEM_TYPE의
+# "UI 쪽 안내일 뿐" 원칙과 같다).
 # ---------------------------------------------------------------------------
 PERSONAL_ENTRY_CATEGORY_SUGGESTIONS: tuple[str, ...] = (
     "카페",
@@ -152,9 +150,9 @@ PERSONAL_ENTRY_CATEGORY_SUGGESTIONS: tuple[str, ...] = (
 )
 
 # ---------------------------------------------------------------------------
-# Event status vocabulary (independent axis from archive status)
-# Describes the publication/temporal state of an Event object.
-# slug → display label
+# 행사 상태 어휘(archive 상태와 독립된 축)
+# Event 객체의 공개/시간적 상태를 나타낸다.
+# slug → 표시 라벨
 # ---------------------------------------------------------------------------
 EVENT_STATUS: tuple[tuple[str, str], ...] = (
     ("upcoming", "예정"),
@@ -164,18 +162,18 @@ EVENT_STATUS: tuple[tuple[str, str], ...] = (
 )
 
 EVENT_STATUS_LABELS: dict[str, str] = dict(EVENT_STATUS)
-# "all" is a list-view-only filter value, NOT a member of EVENT_STATUS: that
-# tuple is also iterated by templates/core/events/calendar.html to render its
-# status radios, and the calendar's status filter already defaults to "all
-# statuses" via a value="" radio — adding "all" to EVENT_STATUS would render a
-# second, duplicate "전체" radio there. This label-only entry exists so
-# _active_filter_chips (core/views.py) can show a human label instead of the
-# raw "all" string when the list view's status=all control is active.
+# "all"은 목록 화면 전용 필터 값일 뿐 EVENT_STATUS의 멤버가 아니다: 그
+# 튜플은 templates/core/events/calendar.html이 상태 라디오를 그리는 데도
+# 쓰이는데, 달력의 상태 필터는 이미 value="" 라디오로 "전체 상태"를
+# 기본값으로 삼고 있어 "all"을 EVENT_STATUS에 넣으면 "전체" 라디오가
+# 중복으로 하나 더 생긴다. 이 라벨 전용 항목은 목록 화면의 status=all이
+# 활성일 때 _active_filter_chips(core/views.py)가 원문 "all" 대신 사람이
+# 읽을 라벨을 보여줄 수 있게 하기 위해서만 존재한다.
 EVENT_STATUS_LABELS["all"] = "전체"
 
 # ---------------------------------------------------------------------------
-# Public listing sort vocabulary (event_list ordering).
-# Empty slug "" is the default ordering. slug → display label
+# 공개 목록 정렬 어휘(event_list 정렬).
+# 빈 slug ""가 기본 정렬. slug → 표시 라벨
 # ---------------------------------------------------------------------------
 EVENT_SORT: tuple[tuple[str, str], ...] = (
     ("", "기본순"),
@@ -188,38 +186,38 @@ EVENT_SORT_LABELS: dict[str, str] = dict(EVENT_SORT)
 
 
 # ---------------------------------------------------------------------------
-# Vocabulary membership checks (2026-07-23).
+# 어휘 소속 검사.
 #
-# Event.category / Event.region are plain CharFields with no `choices`, so
-# nothing at the model or DB layer rejects a value outside these tuples. The
-# LLM extraction path already revalidates against the same vocabulary
-# (drafts/llm_extraction.py) and the public API is read-only, but the staff
-# write paths relied on the template <select> alone — a hand-made POST went
-# straight through, which is how free text like "카페/팝업" reached the dev DB
-# and silently disabled the category colour system.
+# Event.category / Event.region은 `choices` 없는 평범한 CharField라
+# 모델이나 DB 레이어에서 이 튜플 밖의 값을 막지 못한다. LLM 추출 경로는
+# 이미 같은 어휘로 재검증하고(drafts/llm_extraction.py) 공개 API는
+# 읽기 전용이지만, 스태프 쓰기 경로는 템플릿 <select>에만 의존했다 —
+# 수작업 POST가 그대로 통과해 "카페/팝업" 같은 자유 텍스트가 개발 DB에
+# 들어가 카테고리 색상 시스템을 조용히 무력화한 적이 있다.
 #
-# These return a bool rather than raising: each caller owns the domain error
-# its own layer reports (events.services raises PublishEvent*Error, which the
-# staff console maps to a field error; drafts.services raises DraftVocabError).
+# 예외를 던지지 않고 bool을 반환한다: 각 호출자가 자신의 레이어에 맞는
+# 도메인 오류를 직접 다룬다(events.services는 PublishEvent*Error를
+# 던지고 스태프 콘솔이 필드 오류로 매핑, drafts.services는
+# DraftVocabError를 던진다).
 #
-# `choices=` on the model was considered and rejected: this project has no
-# ModelForms for events (the staff console builds form_values by hand) and
-# CATEGORY_LABELS already covers display, so it would buy nothing while adding
-# an AlterField migration to every future vocabulary edit — and this
-# vocabulary demonstrably still grows (see the 2026-07-23 REGION additions).
+# 모델에 `choices=`를 쓰는 방법도 검토했지만 기각했다: 이 프로젝트는
+# events용 ModelForm이 없고(스태프 콘솔이 form_values를 수작업으로
+# 만든다) CATEGORY_LABELS가 이미 표시를 담당하므로 얻는 게 없이 어휘를
+# 고칠 때마다 AlterField 마이그레이션만 늘어난다 — 그리고 이 어휘는
+# 실제로 계속 늘어나고 있다(REGION 추가 사례 참고).
 # ---------------------------------------------------------------------------
 def is_valid_category(value: str) -> bool:
-    """True when `value` is a known category slug or "" (미분류).
+    """`value`가 알려진 카테고리 slug이거나 ""(미분류)이면 True.
 
-    Blank is deliberately valid: category is optional on Event, and rejecting
-    it would make an uncategorised event impossible to register.
+    빈 값은 일부러 유효하다: Event에서 카테고리는 선택 항목이라, 빈 값을
+    거부하면 카테고리 없는 행사를 아예 등록할 수 없게 된다.
     """
     return value == "" or value in CATEGORY_LABELS
 
 
 def is_valid_region(value: str) -> bool:
-    """True when `value` is a known region slug or "" (지역 미상).
+    """`value`가 알려진 지역 slug이거나 ""(지역 미상)이면 True.
 
-    Blank is deliberately valid — see is_valid_category.
+    빈 값은 일부러 유효하다 — is_valid_category 참고.
     """
     return value == "" or value in REGION_LABELS

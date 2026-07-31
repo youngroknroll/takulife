@@ -11,14 +11,10 @@
 {% block content %}
   <main class="page home-page" id="content">
     <section class="hero">
-      {% comment %} data-hero-card (mock parity, 2026-07-21 user instruction):
-         deck.js reads this ancestor via deckEl.closest("[data-hero-card]")
-         and swaps its background to the active card's data-cardbg on every
-         advance — same technique/attribute name as the mock's own script.
-         Initial background uses the first popular_rows entry's category so
-         there's no flash-of-wrong-colour before deck.js's first render();
-         when popular_rows is empty (no deck at all), the CSS default
-         (--brand-soft) applies instead. {% endcomment %}
+      {% comment %} deck.js가 data-hero-card 조상 요소를 찾아 카드가 넘어갈 때마다
+         배경을 바꾼다. 초기 배경은 popular_rows 첫 항목의 카테고리로 미리 채워
+         deck.js가 처음 그리기 전에 색이 잘못 반짝이지 않게 한다. popular_rows가
+         비어 있으면 CSS 기본값(--brand-soft)이 대신 적용된다. {% endcomment %}
       <div class="hero-inner" data-hero-card{% if popular_rows %} style="background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft))) 100%);"{% endif %}>
         <div class="hero-left">
           <h1>내가 원하는 이벤트를 <span class="hl">한눈에</span></h1>
@@ -151,9 +147,6 @@
           <h2>카테고리로 둘러보기</h2>
         </div>
       </div>
-      {% comment %} Slide/hscroll variant removed (2026-07-21 user
-         instruction — "슬라이드 기능은 제거", always the fixed 4-column
-         grid now regardless of category_tiles count). {% endcomment %}
       <div class="cat-browse">
         {% for tile in category_tiles %}
           <a class="cat-dot" href="/events/?category={{ tile.slug }}">

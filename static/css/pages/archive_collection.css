@@ -1,43 +1,19 @@
-/* archive_collection.css — /collection/ editorial rebuild.
-   Design source: claude.ai/design "컬렉션 페이지 (에디토리얼).dc.html".
+/* /collection/ 페이지 전용 CSS. 디자인 출처: claude.ai design "컬렉션 페이지 (에디토리얼).dc.html".
 
-   Scoped entirely under .collection-page (the page root `<main>` class in
-   collection.html) instead of loading archive_visits.css. Two reasons, both
-   from prior track incidents (events-calendar-v2, PR #218):
-   1. archive_visits.css is shared by 8 templates; overriding `.archive-search`
-      or `.layout` from a second page-CSS file without a page-root scope wins
-      or loses purely on stylesheet <link> order, and has previously leaked
-      onto unrelated archive pages. This file never touches `.visit-card`,
-      `.visit-filter-chip`, or `.timeline` and is not loaded together with
-      archive_visits.css on this page.
-   2. `.panel h2` in archive.css/archive_visits.css lands at specificity
-      (0,1,1) and silently pins every heading to 16px — this file avoids
-      `.panel` entirely and defines its own heading rules under
-      `.collection-page`, so nothing here can be re-pinned by that selector
-      and nothing here can leak out to pages that still use `.panel`.
+   archive_visits.css를 쓰지 않고 .collection-page로 전부 스코프한다 — 그 파일은
+   템플릿 8곳이 공유해 로드 순서에 따라 스타일이 새어나온 전례가 있고,
+   `.panel h2`가 특이도 (0,1,1)라 모든 제목을 16px로 고정해버리는 함정도 있다.
 
-   TOKEN NOTE: the design doc declares its own `--accent` / `--accent-ink` in
-   an inline var block; neither exists in tokens.css. They are the same values
-   as `--brand` / `--brand-ink` there, so every `--accent*` in the design maps
-   to `--brand*` here. Referencing the design's name directly makes the
-   declaration invalid at computed-value time and drops it with no error.
+   디자인 문서의 --accent/--accent-ink는 tokens.css에 없는 이름이라 같은 값인
+   --brand/--brand-ink로 옮겨 썼다.
 
-   TOUCH TARGETS: the design's own controls are 42px (tabs) / 36px (chips).
-   The interactive controls here are raised to 44px per this page's review
-   contract — with two deliberate exceptions that follow repo-wide convention
-   rather than this page's: the search field/button (34px desktop / 40px
-   narrow, matching event_list.css and archive_statuses.css search controls)
-   and the 작품별 facet rows (36px, a dense index). Both clear the WCAG 2.5.8
-   24px floor. Everything visual — radius, fill, border, type scale, spacing —
-   follows the design. */
+   터치 타겟은 기본 44px이고, 검색창(34/40px)과 작품별 목록(36px)만 저장소
+   공통 관례를 따라 예외로 뒀다. 전부 WCAG 2.5.8 24px 기준은 넘는다. */
 
 /* ── page head: title + stats left, view toggle centered, add button right
-   ────────────────────────────────────────────────────────────────────────
-   `1fr auto 1fr` rather than the design's absolute centering, matching the
-   .events-head precedent (event_list.css): the toggle stays optically centered
-   while the title column keeps a real min-content floor, so the two can never
-   overlap at 320px. The heavy 2px --text rule under the whole block is the
-   design's masthead device and is what separates this page from a plain list. */
+   ──────────────────────────────────────────────────────────────────────── */
+/* `1fr auto 1fr`로 짜서 토글은 시각적으로 중앙에 있으면서도 제목 칸이 최소
+   너비를 확보해 320px에서 겹치지 않는다. */
 .collection-page .collection-head {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -48,9 +24,8 @@
   border-bottom: 2px solid var(--text);
 }
 
-/* Explicit column numbers, not source order: the toggle is absent when the
-   collection is empty, and auto-placement would then slide the add button into
-   the centre column. */
+/* 열 번호를 직접 지정한다 — 컬렉션이 비어 토글이 사라지면 자동 배치가
+   추가 버튼을 가운데 열로 밀어 넣기 때문이다. */
 .collection-page .collection-head-title {
   grid-column: 1;
 }
@@ -69,10 +44,7 @@
   color: var(--text);
 }
 
-/* Three color-coded counts: the numeral carries the size and the tone
-   (mint/amber/up), the label stays small and muted. tabular-nums keeps the
-   labels from shifting as counts change. Divider is a ::before hairline on
-   every stat but the first, so no separator markup is needed. */
+/* 숫자마다 색을 다르게 입히고, 구분선은 마크업 없이 ::before로만 그린다. */
 .collection-page .collection-stats {
   display: flex;
   flex-wrap: wrap;
@@ -137,15 +109,9 @@
   background: var(--brand-ink);
 }
 
-/* ── view toggle: 갤러리/목록 — underlined text, not a segmented box ───
-   The design treats this as a quiet section switcher, so it gets the same
-   underline vocabulary as the sub-tabs rather than a filled control that
-   would compete with ＋굿즈 추가 by weight. Vertically it now shares the
-   masthead row's common baseline with the rest of `.collection-head`
-   (align-items: end, :44) instead of opting out to the top — 2026-07-23
-   user instruction, following the 내 활동 `.activity-toolbar` precedent
-   (align-items: center, archive.css:165) of letting the toggle sit in the
-   same row as its siblings rather than floating above it. */
+/* ── view toggle: 갤러리/목록 — underlined text, not a segmented box ─── */
+/* ＋굿즈 추가와 무게가 겹치지 않도록 서브탭과 같은 밑줄 방식을 쓴다.
+   세로 정렬도 masthead 행의 다른 요소와 같은 기준선을 공유한다. */
 .collection-page .collection-view-toggle {
   align-self: end;
   display: flex;
@@ -166,10 +132,8 @@
 .collection-page .collection-view-btn {
   transition: color 0.15s ease;
 }
-/* Same --brand-ink hover as the sub-tabs. Here the ACTIVE item is already
-   brand-ink, so hover matches its colour — that is fine because colour was
-   never the active indicator on this page: the 2px underline and weight 700
-   carry it, deliberately, so the state stays legible without relying on hue. */
+/* 활성 항목도 이미 brand-ink라 hover와 색이 같아 보이지만, 상태를 나타내는
+   건 색이 아니라 밑줄과 굵기라서 문제되지 않는다. */
 .collection-page .collection-view-btn:hover {
   color: var(--brand-ink);
 }
@@ -184,9 +148,9 @@
   border-bottom-color: var(--brand);
 }
 
-/* ── toolbar: sub-tabs left, search right, one hairline rail ───────────
-   Own classes, never .visit-filter-chip (that shared class is 36px and lives
-   in a stylesheet 8 templates load). */
+/* ── toolbar: sub-tabs left, search right, one hairline rail ─────────── */
+/* .visit-filter-chip(템플릿 8곳이 공유하는 36px 클래스)를 쓰지 않고 이
+   페이지 전용 클래스를 새로 둔다. */
 .collection-page .collection-toolbar {
   display: flex;
   align-items: center;
@@ -215,9 +179,8 @@
 .collection-page .collection-tab {
   transition: color 0.15s ease;
 }
-/* --brand-ink, not --text: --text is the ACTIVE tab's colour, so hovering an
-   inactive tab would make it momentarily indistinguishable from the active
-   one. Brand ink is a third, unambiguous state. */
+/* --text는 활성 탭의 색이라 hover에 쓰면 활성 탭과 구별이 안 된다.
+   그래서 hover는 --brand-ink로 따로 둔다. */
 .collection-page .collection-tab:hover {
   color: var(--brand-ink);
 }
@@ -232,11 +195,8 @@
   box-shadow: inset 0 -2px 0 var(--brand);
 }
 
-/* Search: ONE 248×34 field with the ⌕ set inside it, pushed to the rail's
-   right end — the design has no separate submit button, and the field is
-   deliberately shorter than the 44px tabs so the two read as different ranks
-   (the design pairs 42px tabs with a 34px field). The clear link is taken out
-   of flow so showing it can never change the rail's height. */
+/* 탭(44px)보다 검색창을 일부러 낮게(34px) 둬서 위계를 구분한다. 지우기
+   링크는 흐름 밖에 둬 나타나도 레일 높이가 바뀌지 않게 한다. */
 .collection-page .archive-search {
   position: relative;
   margin: 0 0 0 auto;
@@ -271,9 +231,7 @@
 .collection-page .archive-search input[type="search"]::placeholder {
   color: var(--muted);
 }
-/* Visible submit beside the field. The design board has no button, but the
-   no-JS GET form needs a real submit and a visible one is easier to reach than
-   a focus-revealed control, so it is shown and sized to match the field. */
+/* JS 없이도 동작하는 GET 폼이라 제출 버튼이 실제로 필요해 눈에 보이게 뒀다. */
 .collection-page .archive-search button[type="submit"] {
   flex: none;
   height: 34px;
@@ -299,22 +257,17 @@
   color: var(--muted);
 }
 
-/* ── layout: facet sidebar + results ──────────────────────────────────
-   Desktop left column is assembled by GRID PLACEMENT, not source order: in the
-   DOM both facet asides come BEFORE #archive-results (유형 → 작품별 → 결과)
-   because that is exactly the stacked narrow-width order we want, so the
-   narrow layout needs no reordering at all and tab order always matches what
-   is on screen. `order`/`display:contents` were both rejected: `order`
-   repaints without moving tab order (WCAG 2.4.3) and `display:contents` would
-   drop the wrapper's landmark from the accessibility tree.
+/* ── layout: facet sidebar + results ────────────────────────────────── */
+/* 데스크톱 왼쪽 열은 grid 배치로만 조립한다 — DOM 순서(유형→작품별→결과)가
+   좁은 화면 순서와 같아서 순서를 바꿀 필요가 없고 탭 순서도 항상 화면과
+   맞는다. `order`는 탭 순서를 안 옮기고(WCAG 2.4.3 위반), `display:contents`는
+   접근성 트리에서 랜드마크가 사라져 둘 다 쓰지 않는다.
 
-   `auto 1fr` rows are required, not cosmetic: #archive-results spans both
-   rows, and with two auto rows the grid splits that tall item's height evenly
-   between them — which pushes 작품별 hundreds of px down the left column, away
-   from 유형. Pinning row 1 to content height sends all the slack to row 2.
+   행을 `auto 1fr`로 둔 이유: #archive-results가 두 행에 걸치는데 auto를
+   두 번 쓰면 그 높이가 반씩 나뉘어 작품별이 유형에서 멀리 밀려난다.
+   1행을 content 높이로 고정해야 여유 공간이 전부 2행으로 간다.
 
-   The 56.25rem collapse is deliberately independent from the gallery column
-   breakpoints further down. */
+   이 56.25rem 접힘은 아래 갤러리 열 브레이크포인트와 별개다. */
 .collection-page .layout {
   display: grid;
   grid-template-columns: minmax(180px, 232px) minmax(0, 1fr);
@@ -342,17 +295,15 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
   }
-  /* Hand every child back to auto-placement so the single column follows DOM
-     order (유형 → 작품별 → 결과) — the explicit desktop placement above would
-     otherwise keep forcing them into a column 2 that no longer exists. */
+  /* 자식들을 전부 자동 배치로 되돌려 한 열이 DOM 순서(유형→작품별→결과)를
+     따르게 한다. 그대로 두면 위 데스크톱 배치가 사라진 열 2를 계속 요구한다. */
   .collection-page .collection-facet-group--type,
   .collection-page #archive-results,
   .collection-page .collection-facet-group--work {
     grid-column: 1;
     grid-row: auto;
   }
-  /* 작품별 becomes a collapsed text toggle sitting directly under the type
-     chips, so the default state costs one line instead of a whole list. */
+  /* 작품별은 접힌 텍스트 토글이 돼 기본 상태에서 목록 전체 대신 한 줄만 차지한다. */
   .collection-page .collection-facet-group--work {
     padding-top: 0;
     margin-top: 0.125rem;
@@ -361,10 +312,9 @@
   .collection-page .collection-facet-group--work h2 {
     display: none;
   }
-  /* `.collection-facet-group--work` qualifier is load-bearing: the base
-     `.collection-page .series-toggle { display: none }` rule is declared LATER
-     in this file and a media query adds no specificity, so at equal specificity
-     the later rule wins and the toggle stays hidden at every width. */
+  /* `.collection-facet-group--work` 한정자를 빼면 안 된다 — 뒤에 나오는
+     기본 `.series-toggle { display: none }`이 특이도가 같아 미디어쿼리
+     안에서도 나중 규칙이 이겨 토글이 모든 너비에서 숨는다. */
   .collection-page .collection-facet-group--work .series-toggle {
     display: inline-flex;
     align-items: center;
@@ -381,8 +331,7 @@
   .collection-page .series-toggle-arrow {
     font-weight: 600;
   }
-  /* Arrow swaps by CSS off the container's data-expanded — no JS text
-     rewriting (calendar filter panel precedent). */
+  /* 화살표는 data-expanded 값으로 CSS가 바꾼다 — JS로 텍스트를 다시 쓰지 않는다. */
   .collection-page [data-expanded="false"] .series-toggle-arrow[data-state="open"],
   .collection-page [data-expanded="true"] .series-toggle-arrow[data-state="closed"] {
     display: none;
@@ -397,14 +346,9 @@
     gap: 0.375rem;
     margin-top: 0.5625rem;
   }
-  /* Chip form: the count sits right after the name instead of being pushed to
-     a far right edge that no longer exists once the row is a pill.
-
-     Every selector here carries the `.collection-facet-group--work` ancestor
-     on purpose. The desktop base rules for these same classes are declared
-     LATER in this file, and a media query adds no specificity — without the
-     extra class the later rules win and the list keeps rendering as 36px
-     desktop rows at every width. */
+  /* 칩 형태라 개수를 이름 바로 뒤에 붙인다. 여기 셀렉터마다
+     `.collection-facet-group--work` 조상을 붙인 이유는 위와 같다 — 없으면
+     뒤에 나오는 데스크톱 기본 규칙이 특이도 동률로 이겨버린다. */
   .collection-page .collection-facet-group--work .collection-work-link {
     min-height: 0;
     gap: 0.375rem;
@@ -416,9 +360,8 @@
     font-size: 0.72rem;
     font-weight: 600;
   }
-  /* The chip's resting background is already --bg-soft, so the desktop row
-     hover (which sets exactly that) would be invisible here — lift the chip to
-     --surface and bring the border up to brand instead. */
+  /* 칩의 기본 배경이 이미 --bg-soft라 데스크톱 hover와 같은 색을 쓰면
+     변화가 안 보인다. 그래서 --surface로 올리고 테두리를 brand로 바꾼다. */
   .collection-page .collection-facet-group--work .collection-work-link {
     transition: background-color 0.15s ease, border-color 0.15s ease;
   }
@@ -452,11 +395,10 @@
   }
 }
 
-/* ── 작품별 disclosure toggle — narrow widths only ────────────────────
-   Desktop keeps the facet list permanently open, so both the toggle and the
-   collapse live entirely inside the narrow media query below. That way
-   data-expanded="false" (the server-rendered default) can never hide the list
-   on desktop, where there is no control to reopen it. */
+/* ── 작품별 disclosure toggle — narrow widths only ──────────────────── */
+/* 데스크톱은 목록을 항상 펼쳐두므로 토글/접힘 규칙은 좁은 화면 미디어쿼리
+   안에만 둔다. 그래야 서버가 기본으로 내려주는 data-expanded="false"가
+   되돌릴 수단이 없는 데스크톱을 숨기는 일이 없다. */
 .collection-page .series-toggle {
   display: none;
 }
@@ -469,9 +411,8 @@
   color: var(--muted);
 }
 
-/* ── type chips: pills, filled-brand when active ──────────────────────
-   The filled active state is the design's, and it is a non-color cue as well
-   as a color one (the fill/weight invert), so it does not rely on hue alone. */
+/* ── type chips: pills, filled-brand when active ────────────────────── */
+/* 활성 상태는 색뿐 아니라 채움·굵기도 함께 바뀌어 색에만 의존하지 않는다. */
 .collection-page .collection-type-chips {
   display: flex;
   flex-wrap: wrap;
@@ -490,10 +431,8 @@
   font-weight: 600;
   text-decoration: none;
 }
-/* Same hover language as the 작품별 chips: brand border + a background shift.
-   The direction is inverted because the resting backgrounds are — a type chip
-   sits on --surface, a 작품별 chip on --bg-soft, so each moves to the other's
-   tone to make the change visible. */
+/* 작품별 칩과 같은 hover 방식이지만 기본 배경이 서로 반대(--surface ↔
+   --bg-soft)라 변화가 보이도록 서로의 톤으로 바뀐다. */
 .collection-page .collection-type-chip {
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
@@ -517,10 +456,9 @@
   font-weight: 700;
 }
 
-/* ── work-title facet list ────────────────────────────────────────────
-   36px rows rather than the 44px used elsewhere on the page: this is a dense
-   index, the design's own chip minimum is 36px, and it stays well clear of the
-   24px WCAG 2.5.8 floor. */
+/* ── work-title facet list ──────────────────────────────────────────── */
+/* 촘촘한 색인이라 이 페이지 다른 곳의 44px 대신 36px 행을 쓴다.
+   WCAG 2.5.8 24px 기준은 넘는다. */
 .collection-page .collection-work-list {
   list-style: none;
   margin: 0;
@@ -550,10 +488,8 @@
 .collection-page .collection-work-link.is-active .collection-work-title {
   font-weight: 700;
 }
-/* 8px rounded square, not a circle — the design uses the squared dot to tell
-   this index apart from the round status pills. Color comes from the same
-   .gi-N bucket the cards use (the view supplies series_ink_class on each
-   facet), so a work_title's dot and its cards always match. */
+/* 원이 아닌 각진 점으로 둥근 상태 배지와 구분한다. 색은 카드와 같은
+   .gi-N 버킷을 써서 이 점과 실제 카드가 항상 같은 색을 갖는다. */
 .collection-page .series-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -596,11 +532,9 @@
   color: var(--brand-ink);
 }
 
-/* ── status badges (보유/구함/교환/미보유) — shared shape for card + row ──
-   .collection-pill is now a WRAPPER around 1-3 .collection-pill-tag badges
-   (multi-badge support), not a colored pill itself. Inline placement (row
-   side) wraps to a second line if needed; the cover placement below
-   overrides it to a right-aligned vertical stack. */
+/* ── status badges (보유/구함/교환/미보유) — shared shape for card + row ── */
+/* .collection-pill은 배지 자체가 아니라 .collection-pill-tag 1~3개를
+   감싸는 래퍼다(다중 배지 지원). */
 .collection-page .collection-pill {
   display: inline-flex;
   align-items: center;
@@ -632,9 +566,8 @@
   background: var(--end-soft);
   color: var(--end-ink);
 }
-/* On a cover the badges sit directly on the tile with no plate behind them —
-   the tone background IS the plate. Stacked vertically, right-aligned, so a
-   3-badge item doesn't run off the tile edge. */
+/* 커버 위 배지는 배지 자체 배경이 판 역할을 해 따로 판을 두지 않는다.
+   세로로 쌓아 오른쪽 정렬해 3개가 붙어도 타일 밖으로 안 나간다. */
 .collection-page .collection-pill--cover {
   position: absolute;
   top: 0.5rem;
@@ -647,12 +580,10 @@
   font-size: 0.66rem;
 }
 
-/* ── gallery grid ─────────────────────────────────────────────────────
-   Borderless cards: the cover tile carries the border and radius, and the
-   text below sits flush on the page. Boxing the whole card would turn the
-   magazine grid back into the pre-redesign card wall.
-   Column-count breakpoints deliberately independent from the .layout
-   56.25rem collapse above. */
+/* ── gallery grid ───────────────────────────────────────────────────── */
+/* 카드 전체가 아니라 커버 타일에만 테두리를 준다. 카드 전체를 박스로
+   두르면 이전 카드 벽 형태로 되돌아간다. 이 열 개수 브레이크포인트는
+   위 .layout의 56.25rem 접힘과 별개다. */
 .collection-page .collection-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -861,10 +792,9 @@
   gap: 0.75rem;
 }
 
-/* ── edit/delete: plain text links, not bordered buttons ──────────────
-   The design keeps these as quiet inline text so they never compete with the
-   cover art. They stay a real <a>/<button> pair (collection.js binds the
-   button by [data-delete-item-id]); only the skin is text. */
+/* ── edit/delete: plain text links, not bordered buttons ────────────── */
+/* 실제로는 여전히 <a>/<button> 요소다(collection.js가 [data-delete-item-id]로
+   버튼을 찾는다) — 겉모습만 텍스트로 바꿨다. */
 .collection-page .collection-edit-link,
 .collection-page .collection-delete-btn {
   display: inline-flex;
@@ -902,10 +832,9 @@
 
 /* ── narrow: stack the masthead, let the rail wrap, full-width search ── */
 @media (max-width: 45rem) {
-  /* Two tracks, not one: the title spans both and the toggle/button share the
-     row beneath it. Leaving the desktop `grid-column: 2/3` in place here would
-     conjure phantom columns in a 1-track grid and squeeze the stats onto three
-     lines. */
+  /* 열을 2개로 둔다 — 제목이 둘을 가로지르고 토글/버튼이 아래 행을 나눠 쓴다.
+     데스크톱의 `grid-column: 2/3`를 그대로 두면 1열 grid에 없는 열을 참조해
+     통계가 세 줄로 밀린다. */
   .collection-page .collection-head {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -951,9 +880,8 @@
     width: 100%;
     margin: 0.625rem 0 0;
   }
-  /* Design's mobile field metrics (40px tall, 10px radius), but flex-sized
-     rather than width:100% — a fixed full width would push the submit button
-     out of the row. */
+  /* width:100% 대신 flex로 크기를 잡는다 — 고정 폭이면 제출 버튼이
+     행 밖으로 밀려난다. */
   .collection-page .archive-search input[type="search"] {
     flex: 1 1 auto;
     width: auto;
@@ -968,9 +896,9 @@
     padding: 0 0.75rem;
     border-radius: 10px;
   }
-  /* `:not([hidden])` is required: a bare `display: inline-block` here outranks
-     the UA's `[hidden] { display: none }` and makes 지우기 show with no active
-     query — archive_search.js toggles this link via the hidden attribute. */
+  /* `:not([hidden])`가 없으면 `display: inline-block`이 브라우저 기본
+     `[hidden]{display:none}`을 이겨 검색어가 없어도 지우기가 보인다.
+     archive_search.js가 hidden 속성으로 이 링크를 여닫는다. */
   .collection-page .archive-search-clear:not([hidden]) {
     position: static;
     display: inline-block;
@@ -1014,8 +942,7 @@
   .collection-page .collection-row-name {
     font-size: 0.8125rem;
   }
-  /* Side column drops under the text column rather than squeezing a third
-     track into 375px — the design's mobile row is a 2-column grid. */
+  /* 375px에 세 번째 열을 억지로 넣는 대신 옆 열을 텍스트 열 아래로 내린다. */
   .collection-page .collection-row-side {
     grid-column: 2;
     flex-direction: row;
@@ -1026,8 +953,8 @@
 }
 
 /* ── series ink rebinding: .gi-0..gi-12 bind --series-ink to the
-   dedicated series tokens (tokens.css --series-1-ink..--series-12-ink) —
-   a distinct 12-bucket palette, not the 6 event-category tokens. */
+   dedicated series tokens (tokens.css --series-1-ink..--series-12-ink) ── */
+/* 이벤트 카테고리용 6색과는 다른, 작품 구분 전용 12색 팔레트다. */
 .collection-page .gi-0 { --series-ink: var(--muted); }
 .collection-page .gi-1 { --series-ink: var(--series-1-ink); }
 .collection-page .gi-2 { --series-ink: var(--series-2-ink); }
@@ -1042,25 +969,15 @@
 .collection-page .gi-11 { --series-ink: var(--series-11-ink); }
 .collection-page .gi-12 { --series-ink: var(--series-12-ink); }
 
-/* ── /collection/new/ form — 굿즈 직접 등록 에디토리얼 ───────────────────
-   Design source: "굿즈 직접 등록 페이지 (에디토리얼).dc.html". This create
-   form used to load archive_visits.css and its shared `.create-form` /
-   `.form-group` / `.entry-detail-*` / `.locked-subject` / `.form-submit-btn` /
-   `.field-hint` / `.layout--single` classes (6-template file). None of those
-   selectors exist in THIS file, so switching the page's <link> to
-   archive_collection.css (collection_create.html) means every one of them had
-   to be replaced with a `.collection-page`-scoped equivalent below — a
-   half-swap would silently unstyle the form (BIR CRITICAL, see prompt_plan.md
-   "CSS 스위치 안전"). archive_visits.css itself is untouched; collection_edit
-   .html keeps loading it and is unaffected.
+/* ── /collection/new/ form — 굿즈 직접 등록 에디토리얼 ─────────────────── */
+/* 디자인 출처: "굿즈 직접 등록 페이지 (에디토리얼).dc.html". 이 폼은 예전엔
+   archive_visits.css의 공유 클래스를 썼지만 이 파일로 완전히 옮겼다 —
+   절반만 옮기면 폼 스타일이 조용히 빠지므로 전부 `.collection-page` 스코프로
+   교체했다. archive_visits.css 자체는 그대로고 collection_edit.html은
+   여전히 그걸 쓴다.
 
-   TOKEN NOTE: the plan calls for `--border-strong` on the dropzone border.
-   That token does not exist in tokens.css (verified by grep before writing
-   this section — the same "mock token silently doesn't exist" trap WED
-   flagged from a prior track). `--muted` is used instead: it is the darkest
-   neutral tone available short of `--text`, giving the dashed border visible
-   presence against `--bg-soft` in both themes without inventing a new token
-   this task isn't scoped to add. */
+   드롭존 테두리에 계획된 `--border-strong` 토큰은 tokens.css에 없어
+   `--muted`로 대신했다(두 테마 모두에서 --bg-soft 위에 점선이 잘 보인다). */
 
 .collection-page .collection-form-head {
   padding-bottom: 1.125rem;
@@ -1092,10 +1009,8 @@
   max-width: 56.25rem;
 }
 
-/* Two columns (fields, image) — DOM order is fields-then-image (이름 reaches
-   tab order first), the image is pulled into the left column purely by grid
-   placement, matching this file's established "grid placement, not source
-   order" convention (see .layout above). */
+/* DOM 순서는 필드-다음-이미지(이름이 탭 순서상 먼저 오도록)라 이미지는
+   grid 배치만으로 왼쪽 열로 옮긴다. */
 .collection-page .collection-form-grid {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
@@ -1166,9 +1081,8 @@
   font-size: 0.72rem;
 }
 
-/* Dropzone: the file input stays a real, focusable, keyboard-reachable
-   control layered over the label — opacity:0 + absolute fill, never
-   display:none (that would drop it from the tab order entirely). */
+/* 파일 입력은 opacity:0으로 숨기되 display:none은 쓰지 않는다 —
+   display:none이면 탭 순서에서 완전히 빠져 키보드로 접근할 수 없다. */
 .collection-page .collection-form-dropzone {
   position: relative;
   display: flex;
@@ -1322,8 +1236,7 @@
   white-space: nowrap;
 }
 
-/* ── error banner — hidden entirely while empty, unlike the plain
-   .form-error text this page used to inherit from archive_visits.css ────── */
+/* ── error banner — hidden entirely while empty ────────────────────────── */
 .collection-page .collection-form-error {
   margin: 1.25rem 0 0;
   padding: 0.75rem 1rem;
@@ -1407,10 +1320,9 @@
   .collection-page .collection-form-row--visit {
     grid-template-columns: 1fr;
   }
-  /* Sticky bottom action bar: the submit/cancel pair stays reachable without
-     scrolling to the very end of a long, detail-expanded form. The note
-     line is dropped here (no room), and the form gets bottom padding so the
-     bar never occludes the last field or the error banner above it. */
+  /* 하단 고정 바로 만들어 긴 폼 끝까지 스크롤하지 않아도 제출/취소에
+     닿을 수 있게 한다. 폼에 준 하단 여백은 이 바가 마지막 필드를
+     가리지 않게 하기 위함이다. */
   .collection-page .collection-form {
     padding-bottom: 5rem;
   }

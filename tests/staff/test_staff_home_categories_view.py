@@ -1,12 +1,4 @@
-"""staff.views.home_categories — /staff/home-categories/ (auth guard,
-template assets, POST save, audit log).
-
-Moved out of tests/events/test_home_featured_categories.py (2026-07-12):
-that file mixed home-domain rendering tests (HomeConfig, "/" view) with
-staff-route tests for this one view — pure relocation, no assertions
-changed. HomeConfig/home-view coverage stays in tests/events/ (home
-domain).
-"""
+"""홈 카테고리 설정 화면(/staff/home-categories/) 인증 게이트, 템플릿 자산, 저장, 감사 로그 검증."""
 import pytest
 from django.db import IntegrityError
 from django.test import Client, override_settings
@@ -14,10 +6,6 @@ from django.test import Client, override_settings
 from core.models import HomeConfig
 from staff.models import StaffActionLog
 
-
-# ---------------------------------------------------------------------------
-# D. staff/home-categories — auth guard
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesAuth:
@@ -45,15 +33,9 @@ class TestStaffHomeCategoriesAuth:
         assert resp.status_code == 200
 
 
-# ---------------------------------------------------------------------------
-# D2. staff/home-categories — template assets (touch-target regression)
-# ---------------------------------------------------------------------------
-
 @pytest.mark.django_db
 class TestStaffHomeCategoriesTemplateAssets:
-    """home_categories.html had no extra_css block, so staff_console.css
-    never loaded — the checkbox/order-input touch targets rendered at raw UA
-    defaults (checkbox ~13px, order input inline style="width: 4rem;")."""
+    """staff_console.css를 로드하지 않으면 체크박스·순서 입력의 터치 타깃이 브라우저 기본 크기로 작게 렌더링된다."""
 
     pytestmark = pytest.mark.web
 
@@ -80,23 +62,14 @@ class TestStaffHomeCategoriesTemplateAssets:
         assert b'style="width: 4rem;"' not in resp.content
 
     def test_홈_카테고리_설정_화면은_단일_컬럼_레이아웃_변형을_사용한다(self, staff_client):
-        """staff_console.css now also loads on this page, which brings in
-        dashboard.html's desktop 2-column .layout override (57.5rem+) — this
-        page's .layout has only one .panel child (no side-stack), so at
-        920px+ the panel gets squeezed into the 1.7fr column and the 0.9fr
-        column renders empty. layout--single (archive_visit_create's
-        single-panel convention) forces display:block regardless of
-        viewport."""
+        """staff_console.css가 데스크톱 2단 레이아웃도 함께 불러오는데, 이 화면은 패널이 하나뿐이라
+        layout--single로 강제 단일 컬럼 처리하지 않으면 넓은 화면에서 빈 컬럼이 생긴다."""
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
 
         assert b'class="layout layout--single"' in resp.content
 
-
-# ---------------------------------------------------------------------------
-# E. staff/home-categories — POST (PRG)
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesPost:
@@ -120,7 +93,6 @@ class TestStaffHomeCategoriesPost:
         assert config.featured_categories == ["exhibition", "popup_store"]
 
     def test_강조_카테고리_저장시_순서_필드_값을_기준으로_정렬해_저장한다(self, staff_client):
-        """order_<slug> fields determine the sort; popup_store first here."""
         _, client = staff_client()
 
         resp = client.post(
@@ -138,7 +110,7 @@ class TestStaffHomeCategoriesPost:
         assert config.featured_categories == ["popup_store", "exhibition"]
 
     def test_존재하지_않는_슬러그로_저장을_시도하면_무시되고_유효한_카테고리만_저장된다(self, staff_client):
-        """Crafted feature_<bogus> POST fields must not reach saved config."""
+        """조작된 필드로 존재하지 않는 슬러그를 보내도 저장된 설정에 반영되면 안 된다."""
         _, client = staff_client()
 
         resp = client.post(
@@ -157,7 +129,6 @@ class TestStaffHomeCategoriesPost:
         assert config.featured_categories == ["exhibition"]
 
     def test_순서_값이_숫자가_아니면_오류_없이_안전하게_저장된다(self, staff_client):
-        """Non-integer order_<slug> must not raise 500."""
         _, client = staff_client()
 
         resp = client.post(
@@ -172,10 +143,6 @@ class TestStaffHomeCategoriesPost:
         config = HomeConfig.get_solo()
         assert "exhibition" in config.featured_categories
 
-
-# ---------------------------------------------------------------------------
-# F. staff/home-categories — audit log (PR-3)
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesAuditLog:
@@ -235,8 +202,7 @@ class TestStaffHomeCategoriesAuditLog:
         assert StaffActionLog.objects.count() == 0
 
     def test_신뢰할_프록시_설정이_없으면_전달된_X_Forwarded_For_헤더를_무시하고_원격_주소를_사용한다(self, staff_client):
-        """Spoofing guard: TRUSTED_PROXY_COUNT unset (the default) must not
-        let an untrusted X-Forwarded-For header override REMOTE_ADDR."""
+        """신뢰 프록시 설정이 없을 때는 X-Forwarded-For를 신뢰하면 IP가 위조될 수 있어 무시해야 한다."""
         staff, client = staff_client()
 
         resp = client.post(

@@ -1,74 +1,56 @@
-"""Events calendar SSR view (dual-calendar Test List §단계 5, Events 분):
-CAL-5-02~5-11 excluding CAL-5-01 (Activity-only, next round).
+"""행사 달력 SSR 뷰(이중 달력 테스트 목록 §단계 5, Events 분) —
+CAL-5-01(Activity 전용, 다음 회차)을 뺀 CAL-5-02~5-11.
 
-`GET /events/calendar/` does not exist yet (config/urls.py has no
-`event-calendar-page` route) — every test below is expected to fail with a
-404 (Resolver404 at the Django test-client level, i.e. `response.status_code
-== 404`, not a 200/assertion mismatch) until the SSR view and route are
-added. This is a different Red shape from the §단계 3/4 files (those failed
-at collection with ImportError): this file's tests all collect fine, they
-fail at *assertion* time on the very first `assert resp.status_code == 200`.
-
-Assumed web-layer contract (fixed only to the extent the coordinator's
-message specified; concrete template/markup is the implementer's choice):
-- Query params: `month=YYYY-MM` (absent → today's month, `timezone.localdate()`
-  read the same way core.views.home/event_list already do — see
-  tests/events/test_home_view.py's `patch("core.views.events.timezone.localdate",
-  ...)` convention, reused here), `date=YYYY-MM-DD` (absent → the CAL-4-04/05
-  default-selection rule), plus the existing q/region/category/status
-  filters (same param names as `/events/`).
-- Invalid month/date (parse failure, out-of-range, nonexistent date, or a
-  date outside the displayed month) → HTTP 200 with an inline error panel
-  containing the exact copy the Web Experience Designer fixed
-  (frontend pre-review §A-13): title "요청한 날짜를 확인할 수 없어요" and an
-  "이번 달 보기" recovery link whose href drops every invalid param.
-- A month-query failure (exception raised inside the view's query call) →
-  HTTP 200 with an inline error + retry cue, never 500. Retry copy
-  (templates/core/events/calendar.html, now built): note "잠시 후 다시
-  시도해 주세요.", recovery link text "다시 시도" — asserted below via the
-  "다시 시도" substring (previously "재시도", flagged as provisional pending
-  the actual template; now confirmed).
-- Valid extreme months (0001-01, 9999-12) render normally (no error panel),
-  with the selected date's own empty-state copy when there is no data
-  (service design §9.4: "이 날짜에는 등록된 공식 이벤트가 없어요").
-- List↔calendar toggle links: confirmed via the actual templates —
-  `<nav class="nav-links">` on templates/core/events/list.html and
-  `<nav class="nav-links calendar-page-toggle">` on
-  templates/core/events/calendar.html, each containing exactly the 목록/달력
-  anchor pair, querystring-preserving (`?{{ request.GET.urlencode }}`).
-  Extraction below is scoped to that `<nav>` block specifically — the page
-  also renders the site's global header nav (templates/core/partials/
-  _site_header.html), whose own plain `href="/events/"` link would
-  otherwise be matched first by an unscoped page-wide search.
-- Month-nav links (previous/next): confirmed via
-  templates/core/events/calendar.html's `<nav class="calendar-month-nav">`,
-  rendered as page-relative `href="?month=...{{ extra_query }}"` (no leading
-  path — a browser resolves this against the current page, but Django's
-  test Client needs an absolute path, so tests below re-prefix it with
-  `/events/calendar/` before following it). Extraction is scoped to that
-  `<nav>` specifically — the day-cell grid (templates/core/partials/
-  _calendar_grid.html) also emits `href="?month=...&date=...#selected-date"`
-  links for every visible day (including adjacent-month filler days), which
-  an unscoped search could otherwise match instead of the intended
-  previous/next control. Filter-preservation is verified via the
-  destination page's own filter-checkbox `checked` state (existing
-  `filter-check` markup, templates/core/events/list.html /
-  templates/core/events/calendar.html), using `region="seoul"`, a real
-  slug from core.vocab.REGION.
-- The selected date's event(s) appear by title; an event on a different day
-  within the same displayed month does not (CAL-5-04/5-11). Assertions are
-  scoped to the response body *after* `id="selected-date"`
-  (templates/core/events/calendar.html's `<section ... id="selected-date">`)
-  — the month grid itself also renders each day's event titles in its own
-  cell (templates/core/partials/_calendar_grid.html's `.day-item` spans), so
-  an unscoped whole-body search would find the "other day" event's title
-  too (in its own grid cell), even though it correctly does not appear in
-  the selected-date detail list.
-- CAL-5-09/5-10 call the pre-existing EventInterest/UserEventStatus JSON
-  APIs directly (not a calendar-specific endpoint) — these two may already
-  be green today, since those APIs predate this page; they exist to pin the
-  "calendar quick actions reuse the existing public contract, no new
-  endpoint" premise for CAL-5-09/5-10, not to test new behavior.
+웹 계층 계약:
+- 쿼리 파라미터 `month=YYYY-MM`(부재 시 오늘의 달, core.views.home/event_list와
+  같은 방식으로 `timezone.localdate()`를 읽는다 — tests/events/test_home_view.py의
+  `patch("core.views.events.timezone.localdate", ...)` 관례를 재사용),
+  `date=YYYY-MM-DD`(부재 시 CAL-4-04/05 기본 선택 규칙), 그리고 기존
+  q/region/category/status 필터(`/events/`와 같은 파라미터명).
+- 무효한 month/date(파싱 실패, 범위 밖, 존재하지 않는 날짜, 표시 월 밖 날짜)
+  → HTTP 200과 함께 인라인 오류 패널, 문구는 WED가 확정한 그대로(프런트
+  사전검토 §A-13): 제목 "요청한 날짜를 확인할 수 없어요", "이번 달 보기"
+  복구 링크(href에서 무효 파라미터는 전부 제거).
+- 월 조회 실패(뷰의 쿼리 호출 내부에서 예외 발생) → HTTP 200과 함께 인라인
+  오류 + 재시도 안내, 500은 절대 아니다. 재시도 문구
+  (templates/core/events/calendar.html): "잠시 후 다시 시도해 주세요.",
+  복구 링크 문구 "다시 시도".
+- 유효한 극단적 월(0001-01, 9999-12)은 오류 패널 없이 정상 렌더되고,
+  데이터가 없으면 선택일 자체의 빈 상태 문구를 쓴다(서비스 설계 §9.4:
+  "이 날짜에는 등록된 공식 이벤트가 없어요").
+- 목록↔달력 전환 링크: 실제 템플릿으로 확인됨 —
+  templates/core/events/list.html의 `<nav class="nav-links">`와
+  templates/core/events/calendar.html의
+  `<nav class="nav-links calendar-page-toggle">`, 둘 다 목록/달력 앵커
+  쌍만 담고 쿼리스트링을 보존한다(`?{{ request.GET.urlencode }}`). 아래
+  추출은 그 `<nav>` 블록으로 범위를 좁힌다 — 페이지는 사이트 전역 헤더 nav
+  (templates/core/partials/_site_header.html)도 함께 렌더하는데, 그 안의
+  단순 `href="/events/"` 링크가 범위 없는 검색에서 먼저 걸릴 수 있다.
+- 월 이동(이전/다음) 링크: templates/core/events/calendar.html의
+  `<nav class="calendar-month-nav">`로 확인됨. 페이지 상대 경로인
+  `href="?month=...{{ extra_query }}"`로 렌더되므로(경로 접두 없음 — 브라우저는
+  현재 페이지 기준으로 풀지만 Django 테스트 클라이언트는 절대 경로가
+  필요해 아래 테스트가 따라갈 때 `/events/calendar/`를 앞에 붙인다).
+  추출은 그 `<nav>`로 범위를 좁힌다 — 날짜 셀 그리드
+  (templates/core/partials/_calendar_grid.html)도 보이는 모든 날짜(인접
+  달의 채움 날짜 포함)마다 `href="?month=...&date=...#selected-date"`
+  링크를 내므로, 범위 없는 검색은 의도한 이전/다음 컨트롤 대신 이걸 잡을
+  수 있다. 필터 보존은 목적지 페이지 자체의 필터 체크박스 `checked`
+  상태로 검증한다(기존 `filter-check` 마크업), `region="seoul"`은
+  core.vocab.REGION의 실제 슬러그를 쓴다.
+- 선택일의 행사는 제목으로 나타나고, 같은 표시 월 안의 다른 날 행사는
+  나타나지 않는다(CAL-5-04/5-11). 단언은 `id="selected-date"` 이후의
+  응답 본문으로 범위를 좁힌다(templates/core/events/calendar.html의
+  `<section ... id="selected-date">`) — 월 그리드 자체도 각 날짜 셀에
+  행사 제목을 그리므로(templates/core/partials/_calendar_grid.html의
+  `.day-item`), 범위 없는 전체 본문 검색은 "다른 날" 행사의 제목도(그
+  날짜의 그리드 셀 안에서) 찾아버려, 선택일 상세 목록에는 정확히 없는데도
+  검사가 통과할 수 있다.
+- CAL-5-09/5-10은 달력 전용 엔드포인트가 아니라 기존 EventInterest/
+  UserEventStatus JSON API를 직접 호출한다 — 이 API들은 이 페이지보다
+  먼저 있었으니 이미 초록일 수 있다. 새 동작을 검증하는 게 아니라 "달력
+  빠른 작업은 새 엔드포인트 없이 기존 공개 계약을 재사용한다"는 전제를
+  고정해 둔다.
 """
 import html
 import re
@@ -86,21 +68,20 @@ def _extract_href(body, link_text):
         rf'<a[^>]*href="([^"]*)"[^>]*>\s*{re.escape(link_text)}\s*</a>', body
     )
     assert match, f"{link_text!r} 링크를 찾을 수 없음"
-    # `href="?{{ extra_query }}"` is a Django-autoescaped variable
-    # substitution, so a literal '&' inside extra_query's value is rendered
-    # as the HTML entity '&amp;' in the response bytes — a real browser
-    # decodes that back to '&' before using the href as a URL; unescape
-    # here so this test does the same instead of feeding a literal
-    # "&amp;"-containing string to Client().get().
+    # `href="?{{ extra_query }}"`는 Django가 자동 이스케이프하는 변수
+    # 치환이라, extra_query 값 안의 '&'는 응답 바이트에서 HTML 엔티티
+    # '&amp;'로 렌더된다 — 실제 브라우저는 href를 URL로 쓰기 전에 이걸
+    # '&'로 되돌리므로, 이 테스트도 "&amp;"가 섞인 문자열을 그대로
+    # Client().get()에 넘기지 않도록 여기서 언이스케이프한다.
     return html.unescape(match.group(1))
 
 
 def _extract_nav_hrefs(body, nav_class):
-    """Return every href inside the first <nav class="{nav_class}..."> block
-    — scopes extraction to a specific nav instead of the whole page, so an
-    unrelated link elsewhere (e.g. the global site header's own /events/
-    link, or the day-cell grid's own ?month=... links) is never picked up
-    by accident. Hrefs are HTML-unescaped (see _extract_href's comment)."""
+    """첫 <nav class="{nav_class}..."> 블록 안의 모든 href를 돌려준다 —
+    페이지 전체가 아니라 특정 nav로 범위를 좁혀, 다른 곳의 무관한 링크
+    (예: 전역 사이트 헤더의 /events/ 링크, 날짜 셀 그리드의 ?month=... 링크)를
+    실수로 집어 오지 않는다. href는 HTML 언이스케이프한다(_extract_href
+    주석 참고)."""
     match = re.search(
         rf'<nav[^>]*class="{re.escape(nav_class)}[^"]*"[^>]*>(.*?)</nav>',
         body,
@@ -118,21 +99,20 @@ def _first_containing(hrefs, needle):
 
 
 def _as_absolute(href, *, base_path):
-    """Some nav links are emitted as page-relative query-only hrefs (e.g.
-    '?month=2026-08&region=seoul') — a browser resolves that against the
-    current page's own path, but Django's test Client takes the given
-    string as a literal path, so prefix it with the current page's path
-    first when the href itself has none."""
+    """일부 nav 링크는 페이지 상대 쿼리 전용 href로 나온다(예:
+    '?month=2026-08&region=seoul') — 브라우저는 현재 페이지 경로 기준으로
+    풀지만, Django 테스트 클라이언트는 주어진 문자열을 그대로 경로로
+    받아들이므로, href 자체에 경로가 없으면 현재 페이지 경로를 먼저
+    붙인다."""
     if href.startswith("?"):
         return base_path + href
     return href
 
 
 def _selected_date_section(body):
-    """Return the response body from `id="selected-date"` onward — scopes
-    CAL-5-04/5-11's title presence/absence checks to the selected-date
-    detail section, since the month grid also renders event titles in its
-    own day cells (see module docstring)."""
+    """`id="selected-date"` 이후의 응답 본문을 돌려준다 — 월 그리드도 각
+    날짜 셀에 행사 제목을 그리므로(모듈 독스트링 참고), CAL-5-04/5-11의
+    제목 존재/부재 검사는 선택일 상세 섹션으로 범위를 좁힌다."""
     marker = 'id="selected-date"'
     index = body.find(marker)
     assert index != -1, f"{marker!r} 섹션을 찾을 수 없음"
@@ -140,7 +120,7 @@ def _selected_date_section(body):
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-02 — list↔calendar toggle preserves the filter querystring
+# CAL-5-02 — 목록↔달력 전환은 필터 쿼리스트링을 보존한다
 # ---------------------------------------------------------------------------
 
 
@@ -169,7 +149,7 @@ def test_목록에서_달력으로_전환해도_지역_필터가_유지된다():
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-03 — month navigation preserves the filter querystring
+# CAL-5-03 — 월 이동은 필터 쿼리스트링을 보존한다
 # ---------------------------------------------------------------------------
 
 
@@ -198,7 +178,7 @@ def test_다음_달로_이동해도_기존_필터가_유지된다(make_event):
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-04 — the detail list shows only the selected date's events
+# CAL-5-04 — 상세 목록에는 선택일의 행사만 표시된다
 # ---------------------------------------------------------------------------
 
 
@@ -218,7 +198,7 @@ def test_날짜를_선택하면_그_날짜에_진행되는_행사만_상세_목�
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-05 — month absent defaults to today's month, no error
+# CAL-5-05 — month이 없으면 오류 없이 오늘의 달로 기본 표시된다
 # ---------------------------------------------------------------------------
 
 
@@ -237,7 +217,7 @@ def test_month_파라미터가_없으면_오류_없이_당월이_표시된다(ma
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-06 — invalid month/date → 200 + inline error panel + recovery link
+# CAL-5-06 — 무효한 month/date → 200 + 인라인 오류 패널 + 복구 링크
 # ---------------------------------------------------------------------------
 
 
@@ -280,7 +260,7 @@ def test_잘못된_month_date_입력은_200과_함께_인라인_오류_패널로
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-07 — valid extreme months render without clamping
+# CAL-5-07 — 유효한 극단적 월은 클램프 없이 그대로 렌더된다
 # ---------------------------------------------------------------------------
 
 
@@ -300,7 +280,7 @@ def test_유효한_극단적_월은_클램프_없이_그대로_렌더링된다(m
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-08 — a month-query failure degrades to an error panel, never 500
+# CAL-5-08 — 월 조회 실패는 500이 아니라 오류 패널로 처리된다
 # ---------------------------------------------------------------------------
 
 
@@ -318,9 +298,8 @@ def test_월_조회가_실패하면_500대신_오류_패널과_재시도_안내�
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-09/5-10 — calendar quick actions reuse the existing public API
-# contract verbatim (premise recheck; may already be green today — see
-# module docstring).
+# CAL-5-09/5-10 — 달력 빠른 작업은 기존 공개 API 계약을 그대로 재사용한다
+# (전제 재확인용 — 이미 초록일 수 있음, 모듈 독스트링 참고).
 # ---------------------------------------------------------------------------
 
 
@@ -359,8 +338,8 @@ def test_행사_달력_날짜_상세에서_방문_예정_등록_요청이_기존
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-11 — a multi-day event appears in the detail list for any day in
-# its run, not only its start date
+# CAL-5-11 — 여러 날 진행되는 행사는 시작일뿐 아니라 기간 중 어느 날을
+# 선택해도 상세 목록에 나타난다
 # ---------------------------------------------------------------------------
 
 
@@ -383,8 +362,8 @@ def test_여러_날_진행되는_행사를_아무_날짜로_선택해도_상세_
 
 
 # ---------------------------------------------------------------------------
-# CALFIX-1 — active_filter_count is exposed in context (calendar review fixes
-# plan .docs/plans/2026-07-19-calendar-review-fixes-plan.md 단계 1)
+# CALFIX-1 — active_filter_count가 컨텍스트에 노출된다(달력 검토 수정 계획
+# .docs/plans/2026-07-19-calendar-review-fixes-plan.md 단계 1)
 # ---------------------------------------------------------------------------
 
 
@@ -407,8 +386,8 @@ def test_행사_달력을_필터와_함께_조회하면_활성_필터_개수가_
 
 
 # ---------------------------------------------------------------------------
-# CAL-EDIT-1 — active_filter_chips is exposed in context, same derivation as
-# event_list (편집 계획 §D)
+# CAL-EDIT-1 — active_filter_chips가 컨텍스트에 노출되며, event_list와 같은
+# 방식으로 파생된다(편집 계획 §D)
 # ---------------------------------------------------------------------------
 
 
@@ -423,8 +402,8 @@ def test_필터가_적용된_달력_요청의_컨텍스트에_적용_필터_칩�
 
 
 # ---------------------------------------------------------------------------
-# CAL-EDIT-2 — weeks[].items[] carries category_slug for date-cell category
-# bars/dots (편집 계획 §D)
+# CAL-EDIT-2 — weeks[].items[]가 날짜 셀 카테고리 바/점 표시를 위한
+# category_slug를 담는다(편집 계획 §D)
 # ---------------------------------------------------------------------------
 
 

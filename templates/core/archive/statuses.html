@@ -36,8 +36,7 @@
     </section>
 
     {# index.html과 동일한 3구획 툴바(탭 / 검색 / 찜 목록). 목록|달력 토글은 #}
-    {# 이제 이 페이지에도 있다(2026-07-27 셸 폴리시 v2 §2): self-link(목록)가 #}
-    {# 현재 URL이라 aria-current="page"가 정직하다. #}
+    {# self-link(목록)가 현재 URL이라 aria-current="page"를 그대로 붙여도 정직하다. #}
     <div class="activity-toolbar">
       {% include "core/partials/_archive_nav.html" with active="statuses" active_label="나의 일정" hide_interest=True %}
       {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
@@ -65,9 +64,9 @@
       <article class="panel">
         <div class="results-head">
           <h2>전체 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
-          {# <details>, not a JS dropdown: the options are plain GET links, so #}
-          {# native disclosure gives keyboard operation and a no-JS fallback   #}
-          {# for free. event_list.js only adds outside-click dismissal on top. #}
+          {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
+          {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
+          {# 생긴다. event_list.js는 바깥 클릭 시 닫는 동작만 더한다. #}
           <details class="results-sort" data-sort-menu>
             <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
             <ul class="results-sort-menu">
@@ -93,10 +92,9 @@
 {% block extra_js %}
   <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
-  {# event_list.js now loads on two pages (/events/ and /archive/) for the   #}
-  {# sort <details> menu's outside-click/Esc/focusout dismissal. Its        #}
-  {# .filter-toggle/.filters selectors only exist on the /events/ templates #}
-  {# so they no-op here (verified 2026-07-23) — reconsider this sharing if  #}
-  {# /events/-only behavior is ever added to that file. #}
+  {# event_list.js는 /events/와 /archive/ 두 페이지에서 정렬 메뉴의 바깥 클릭/Esc #}
+  {# 닫기를 위해 쓴다. .filter-toggle/.filters 선택자는 /events/ 템플릿에만 있어 #}
+  {# 이 페이지에서는 그냥 무시된다 — /events/ 전용 동작이 늘어나면 공유 여부를 #}
+  {# 다시 검토할 것. #}
   <script defer src="{% static 'js/pages/event_list.js' %}"></script>
 {% endblock %}

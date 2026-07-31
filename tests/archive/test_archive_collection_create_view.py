@@ -1,22 +1,19 @@
-"""Tests for the collection-item create page (core.views.archive_collection_item_create).
+"""굿즈 등록 페이지(core.views.archive_collection_item_create) 테스트.
 
-Behavior under test (collection domain design plan §4 PR-C5b-2, CP-C1~C9):
-- /collection/new/ is login-gated.
-- selectable_visit_records lists ONLY the requester's own visit records
-  (list_user_visit_records(request.user), unfiltered).
-- ?visit_record=<id> preselects and locks the form to that visit record when
-  it exists and belongs to the requester; any other value (malformed,
-  missing, or another user's id) falls back to the selectable dropdown
-  instead of a 500 — mirrors _parse_visit_preselect's isascii/isdigit/length
-  guard (visit_create.html's ?subject= precedent).
-- item_type is a free-text input suggested via recommendation chips
-  (button.collection-form-type-chip[data-type-label]) for the 7
-  core.vocab.COLLECTION_ITEM_TYPE options — the <datalist> mechanism was
-  replaced by chips on 2026-07-27; this test file locks the chip mechanism
-  (coverage move, not deletion).
-- `visibility` (reserved for the future trade opt-in gate) and any
-  `name="event"` control (event is server-synced from visit_record, never
-  user-selected — collection domain design plan §3-1) are never rendered.
+검증 대상 동작(컬렉션 도메인 설계 계획 §4 PR-C5b-2, CP-C1~C9):
+- /collection/new/ 는 로그인 필수.
+- selectable_visit_records 는 요청자 본인의 방문 기록만 나열한다
+  (list_user_visit_records(request.user), 무필터).
+- ?visit_record=<id> 는 그 기록이 존재하고 요청자 소유일 때만 폼을 그 값으로
+  고정한다; 그 외 값(형식 오류·존재하지 않음·타인 소유)은 500 대신 선택
+  드롭다운으로 폴백한다 — _parse_visit_preselect의 isascii/isdigit/length
+  가드를 따른다(visit_create.html의 ?subject= 선례).
+- item_type 은 자유 텍스트 입력이며 core.vocab.COLLECTION_ITEM_TYPE 7종을
+  추천 칩(button.collection-form-type-chip[data-type-label])으로 제안한다
+  — <datalist> 방식에서 칩 방식으로 전환됐다(삭제가 아니라 커버리지 이동).
+- `visibility`(향후 교환 opt-in 게이트용)와 `name="event"` 컨트롤(event는
+  visit_record에서 서버가 동기화하며 사용자가 직접 선택하지 않음 — 컬렉션
+  도메인 설계 계획 §3-1)은 절대 렌더되지 않는다.
 """
 import pytest
 
@@ -141,9 +138,9 @@ class TestArchiveCollectionCreateItemTypeChips:
 
 @pytest.mark.django_db
 class TestArchiveCollectionCreateHiddenFields:
-    """visibility and event must never be exposed as form controls — event is
-    always server-synced from visit_record (§3-1), and visibility is reserved
-    for the future trade opt-in gate (no exposure until Stage 4)."""
+    """visibility·event는 폼 컨트롤로 절대 노출되지 않는다 — event는 항상
+    visit_record에서 서버가 동기화하며(§3-1), visibility는 4단계 전까지
+    노출하지 않는 향후 교환 opt-in 게이트용이다."""
 
     def test_공개_범위_필드는_등록_폼에_노출되지_않는다(self, user_client):
         _, client = user_client()

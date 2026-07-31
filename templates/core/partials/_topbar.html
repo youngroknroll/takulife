@@ -1,25 +1,15 @@
 {% comment %}
-_topbar.html — shared auth-nav partial (login / logout / register links)
+로그인 상태 내비(로그인/로그아웃/가입) 공용 파셜. 전체 헤더(_site_header.html)가
+모든 페이지 우측에 렌더한다.
 
-Rendered by the global site header (_site_header.html) to show the login-state
-auth navigation on the right side of every page.
+사용법: {% include "core/partials/_topbar.html" %}
 
-Usage:
-  {% include "core/partials/_topbar.html" %}
-
-Context consumed:
-  request.user.is_authenticated — provided by Django's auth context processor
-  request.user.email            — authenticated user's display name (login identifier)
-  request.user.is_staff         — whether the account-menu shows 스태프 콘솔 (else 마이페이지)
-  request.user.is_superuser     — whether to show the Django admin link
-
-Role-based account-menu items (no 탈퇴 link in any branch — see
-accounts.views.delete_account's server-side staff guard, and the settings
-page for the regular-member deletion entry point):
-  regular member — 마이페이지 / 로그아웃 (마이페이지 -> 내정보 변경 -> 설정)
-  staff          — 스태프 콘솔 / 설정 / 로그아웃 (no mypage, so 설정 is the
-                    only click-reachable path to email/password management)
-  +superuser     — 관리자 added to either branch above
+역할별 계정 메뉴(어느 분기에도 탈퇴 링크는 없다 — 스태프는 서버에서 탈퇴가
+막혀 있고, 일반 회원은 설정 화면에 별도 탈퇴 진입점이 있다):
+  일반 회원  — 마이페이지 / 로그아웃
+  스태프     — 스태프 콘솔 / 설정 / 로그아웃(마이페이지 없음, 설정이 이메일·
+               비밀번호 관리로 가는 유일한 경로)
+  +superuser — 위 두 분기 어디든 관리자 링크가 추가된다
 {% endcomment %}
 <nav class="topbar-auth" aria-label="계정">
   {% if request.user.is_authenticated %}

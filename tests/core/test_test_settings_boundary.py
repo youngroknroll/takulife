@@ -1,13 +1,12 @@
-"""Test-infrastructure contracts (2026-07-17 test-suite speed track).
+"""테스트 인프라 계약(테스트 스위트 속도 개선 트랙).
 
-These guard the boundary introduced by `config/settings_test.py`: the
-production settings module keeps its real password hasher, no production
-entry point or deploy config ever loads the test-only settings module, and
-the shared `make_user` fixture stops paying for a real password hash when a
-test does not care about one.
+`config/settings_test.py`가 도입한 경계를 지킨다: 프로덕션 설정 모듈은
+실제 비밀번호 해셔를 그대로 유지하고, 어떤 프로덕션 진입점이나 배포
+설정도 테스트 전용 설정 모듈을 로드하지 않으며, 공용 `make_user` 픽스처는
+테스트가 비밀번호 해시를 신경 쓰지 않을 때 그 비용을 치르지 않는다.
 
-See .docs/plans/2026-07-17-test-suite-improvement-plan.md §4 (TS-INF-01..03)
-and .docs/plans/2026-07-17-test-code-execution-policy-design.md §5, §7.
+.docs/plans/2026-07-17-test-suite-improvement-plan.md §4(TS-INF-01..03)와
+.docs/plans/2026-07-17-test-code-execution-policy-design.md §5, §7 참고.
 """
 from pathlib import Path
 
@@ -19,8 +18,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 _PRODUCTION_SETTINGS_MODULE = "config.settings"
 
-# Production code entry points must set DJANGO_SETTINGS_MODULE to the
-# production module explicitly (not rely on some other default).
+# 프로덕션 코드 진입점은 DJANGO_SETTINGS_MODULE을 다른 기본값에 기대지
+# 않고 프로덕션 모듈로 명시적으로 설정해야 한다.
 _ENTRY_POINTS_MUST_REFERENCE_PRODUCTION_SETTINGS = (
     "manage.py",
     "config/wsgi.py",
@@ -28,10 +27,9 @@ _ENTRY_POINTS_MUST_REFERENCE_PRODUCTION_SETTINGS = (
 )
 _ENTRY_POINT_IDS = ("관리_명령", "WSGI_진입점", "ASGI_진입점")
 
-# Entry points plus CI/deploy config: none of these may reference the
-# test-only settings module. pytest's own config (pytest.ini) is the one
-# legitimate place `settings_test` is referenced and is deliberately
-# excluded from this list.
+# 진입점과 CI/배포 설정: 이 중 어느 것도 테스트 전용 설정 모듈을 참조하면
+# 안 된다. `settings_test`를 참조해도 되는 유일한 정당한 곳은 pytest
+# 자체 설정(pytest.ini)이라 이 목록에서 일부러 뺐다.
 _DEPLOY_CONFIGS_MUST_NOT_REFERENCE_TEST_SETTINGS = (
     "manage.py",
     "config/wsgi.py",

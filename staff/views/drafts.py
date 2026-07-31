@@ -1,5 +1,4 @@
-"""Staff Console views: draft listing/detail SSR pages and the approve/reject
-action endpoints (single + bulk)."""
+"""스태프 콘솔 뷰: 초안 목록/상세 화면과 승인/반려(단건+일괄) 엔드포인트."""
 import logging
 from urllib.parse import urlencode
 
@@ -36,11 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def _build_draft_rows(drafts):
-    """Attach display labels to each draft for template rendering.
-
-    Returns a list of dicts with the draft object plus resolved
-    category_label and region_label so templates use simple dot notation.
-    """
+    """템플릿이 점 표기법만으로 쓸 수 있도록 카테고리/지역 라벨을 붙인다."""
     rows = []
     for draft in drafts:
         rows.append(
@@ -90,9 +85,8 @@ def event_drafts(request):
 @staff_console_required
 @ensure_csrf_cookie
 def event_draft_detail(request, draft_id):
-    # Use filter().first() so the staff guard test (which does not seed the DB)
-    # still returns 200 (staff can reach the URL). When draft is None the
-    # template shows a "not found" notice rather than raising Http404.
+    # get_object_or_404 대신 filter().first()를 써서, draft가 없어도
+    # 404를 던지지 않고 템플릿이 "찾을 수 없음" 안내를 보여주게 한다.
     draft = EventDraft.objects.filter(pk=draft_id).first()
     if draft is None:
         return render(
@@ -126,13 +120,11 @@ def event_draft_detail(request, draft_id):
 
 
 class StaffDraftApproveView(APIView):
-    """Approve a pending draft and publish it as an Event.
+    """대기 중인 초안을 승인하고 Event로 게시한다.
 
-    Same request/response contract as the former
-    drafts.views.AdminEventDraftApproveView. The audit log write happens at
-    this view boundary, inside an OUTER transaction.atomic() that wraps the
-    service call's own (inner) atomic block — if the log write fails, the
-    whole approval (including the published Event) rolls back too.
+    감사 로그 기록은 서비스 호출의 내부 atomic 블록을 감싸는 바깥쪽
+    transaction.atomic() 안에서 이뤄진다 — 로그 기록이 실패하면 방금
+    게시한 Event를 포함해 승인 전체가 롤백된다.
     """
 
     permission_classes = [IsAdminUser]
@@ -173,15 +165,11 @@ MAX_BULK_APPROVE_DRAFT_IDS = 20
 
 
 def _validate_bulk_draft_ids(draft_ids):
-    """Return an error message if draft_ids fails structural validation, else None.
-
-    Structural-only: whether each id actually exists/is pending is decided
-    per-item inside the view's loop, not here.
-    """
+    """구조만 검사한다. 각 id가 실제 존재/대기 상태인지는 뷰의 반복문에서
+    항목별로 판단한다."""
     if not isinstance(draft_ids, list) or not draft_ids:
         return "draft_ids must be a non-empty list."
-    # Cap check runs before the per-item scan so an oversized payload is
-    # rejected without a full O(n) integer-type scan first.
+    # 개수 상한 검사를 먼저 해서, 과도하게 큰 payload는 전체를 훑기 전에 걸러낸다.
     if len(draft_ids) > MAX_BULK_APPROVE_DRAFT_IDS:
         return f"draft_ids must contain at most {MAX_BULK_APPROVE_DRAFT_IDS} ids."
     if not all(
@@ -193,15 +181,11 @@ def _validate_bulk_draft_ids(draft_ids):
 
 
 class StaffDraftBulkApproveView(APIView):
-    """Approve up to MAX_BULK_APPROVE_DRAFT_IDS pending drafts in one request.
+    """한 요청으로 최대 MAX_BULK_APPROVE_DRAFT_IDS개의 초안을 승인한다.
 
-    Each id is processed independently, in its own outer-atomic block — the
-    same approve_draft() + StaffActionLog.objects.create() pairing as
-    StaffDraftApproveView, repeated per item. One item's failure never rolls
-    back another's success. The response is always 200 (partial success is
-    the normal case, not an error); 400 is reserved for requests that are
-    structurally invalid before any item is touched (see
-    _validate_bulk_draft_ids).
+    각 id는 독립된 트랜잭션으로 처리돼 한 항목의 실패가 다른 항목의
+    성공을 롤백하지 않는다. 부분 성공이 정상 케이스라 응답은 항상 200이고,
+    400은 요청 자체가 구조적으로 잘못됐을 때만 쓴다.
     """
 
     permission_classes = [IsAdminUser]
@@ -228,12 +212,11 @@ class StaffDraftBulkApproveView(APIView):
 
     @staticmethod
     def _approve_one(draft_id, metadata):
-        """Approve a single draft. Return None on success, else a failure reason.
+        """단건 승인. 성공하면 None, 실패하면 사유 문자열을 반환한다.
 
-        Mirrors StaffDraftApproveView's per-item outer-atomic pattern: the
-        StaffActionLog write is inside the same transaction.atomic() block as
-        the approve_draft() call, so a log-write failure rolls back that
-        item's approval too, without touching any other item.
+        StaffActionLog 기록이 approve_draft()와 같은 transaction.atomic()
+        안에 있어, 로그 기록 실패가 이 항목만 롤백시키고 다른 항목에는
+        영향을 주지 않는다.
         """
         try:
             with transaction.atomic():
@@ -256,12 +239,9 @@ class StaffDraftBulkApproveView(APIView):
         except DraftPublicationError:
             return "Event publication failed."
         except Exception:
-            # Catch-all so one item's unclassified failure (e.g. a log-write
-            # IntegrityError) never aborts the rest of the batch — the
-            # transaction.atomic() block above has already rolled back this
-            # item's own changes by the time control reaches here. Log the
-            # real exception (see events/services.py convention) while still
-            # returning the same static client-facing reason.
+            # 분류되지 않은 실패라도 배치 나머지를 막지 않는다. 이 시점엔
+            # 이 항목의 변경분은 이미 롤백된 상태다. 실제 예외는 로그로
+            # 남기고, 클라이언트에는 고정된 문구만 돌려준다.
             logger.exception(
                 "bulk approve: unexpected error for draft_id=%s", draft_id
             )
@@ -270,12 +250,8 @@ class StaffDraftBulkApproveView(APIView):
 
 
 class StaffDraftRejectView(APIView):
-    """Reject a pending draft.
-
-    Same request/response contract as the former
-    drafts.views.AdminEventDraftRejectView. See StaffDraftApproveView for the
-    outer-atomic audit log rationale.
-    """
+    """대기 중인 초안을 반려한다. 감사 로그의 트랜잭션 구조는
+    StaffDraftApproveView와 같다."""
 
     permission_classes = [IsAdminUser]
 
@@ -284,9 +260,8 @@ class StaffDraftRejectView(APIView):
 
         try:
             with transaction.atomic():
-                # draft.js posts an optional rejection_reason (PR-D2 item 11);
-                # default "" preserves the pre-existing empty-body contract
-                # (tests/test_staff_draft_actions.py's happy-reject case).
+                # rejection_reason은 선택 항목이라 기본값 ""로 기존 빈-본문
+                # 요청과의 호환을 유지한다.
                 rejection_reason = request.data.get("rejection_reason", "")
                 draft = reject_draft(
                     draft_id=draft_id,

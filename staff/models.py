@@ -3,13 +3,11 @@ from django.db import models
 
 
 class StaffActionLog(models.Model):
-    """Append-only audit trail for staff actions.
+    """스태프 행동을 기록하는 추가 전용 감사 로그.
 
-    Minimal v1 scope: no before/after snapshot, no polymorphic target —
-    records draft approve/reject actions as well as home-category config
-    changes (which have no target draft). Read access is restricted to
-    superusers (see `staff/admin.py`); operators (is_staff) can only see the
-    dashboard's `recent_actions` summary (actor/action/target/time, no ip/ua).
+    변경 전/후 스냅샷은 남기지 않는다. 전체 조회는 슈퍼유저만 가능하고
+    (`staff/admin.py`), 운영자(is_staff)는 대시보드 요약(행위자/행동/대상/
+    시각만, ip·user-agent 제외)만 볼 수 있다.
     """
 
     class Action(models.TextChoices):

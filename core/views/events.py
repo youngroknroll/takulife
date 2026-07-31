@@ -59,14 +59,14 @@ def home(request):
     today = timezone.localdate()
     ongoing_qs = list_published_events({"status": "ongoing"}, today=today)
     closing_qs = Event.objects.published().ending_within_days(5, today=today)
-    # Sliders drop events whose period has already ended (end_date < today);
-    # events without an end_date are kept (cannot be "ended").
+    # 슬라이더는 기간이 이미 끝난 행사(end_date < today)를 제외한다.
+    # end_date가 없는 행사는 "종료"가 될 수 없으므로 그대로 남긴다.
     recent_qs = (
         Event.objects.published().exclude(end_date__lt=today).order_by("-id")[:15]
     )
 
-    # "카테고리로 둘러보기" tiles: staff-curated order/selection via HomeConfig.
-    # Falls back to all vocab categories when no selection is stored.
+    # "카테고리로 둘러보기" 타일: HomeConfig로 스태프가 순서/선택을 큐레이션한다.
+    # 저장된 선택이 없으면 어휘의 전체 카테고리로 대체한다.
     category_counts = {
         row["category"]: row["count"]
         for row in Event.objects.published().values("category").annotate(count=Count("id"))
@@ -90,12 +90,12 @@ def home(request):
         user = request.user
         collection_summary = user_collection_item_summary_counts(user)
         recent_goods = list(list_user_collection_items(user)[:5])
-        # Built directly rather than via _build_archive_status_rows: that
-        # helper reads .derived_status unconditionally (an annotation-only
-        # attribute), but this row's status is always "visited" by
-        # construction (list_user_unrecorded_visited_statuses already
-        # filters to it) — no derivation applies, and _subject_view itself
-        # has no derived_status dependency, so the raw slice is safe as-is.
+        # _build_archive_status_rows를 거치지 않고 직접 만든다: 그 헬퍼는
+        # .derived_status(annotation 전용 속성)를 무조건 읽는데, 이 행의
+        # 상태는 구조상 항상 "visited"이므로(list_user_unrecorded_visited_
+        # statuses가 이미 그것만 걸러낸다) 별도 유도가 필요 없고
+        # _subject_view 자체도 derived_status에 의존하지 않으므로 이
+        # 원본 슬라이스를 그대로 써도 안전하다.
         unrecorded_rows = [
             {"status_id": row.pk, "subject": _subject_view(row)}
             for row in list_user_unrecorded_visited_statuses(user)[:5]
@@ -108,9 +108,9 @@ def home(request):
         context.update(
             {
                 "collection_summary": collection_summary,
-                # 2026-07-23 에디토리얼 리디자인: 통계가 2칸에서 4칸으로 늘었다.
-                # 보유/구함은 collection_summary가 담당하고, 나머지 두 칸은
-                # 방문 기록 수와 찜 수. 둘 다 단순 count 쿼리다.
+                # 통계 칸이 2개에서 4개로 늘었다. 보유/구함은
+                # collection_summary가 담당하고, 나머지 두 칸은 방문 기록 수와
+                # 찜 수 — 둘 다 단순 count 쿼리다.
                 "snapshot_visit_count": user_visit_record_counts(user)["total_count"],
                 "snapshot_interest_count": user_interest_count(user),
                 "recent_goods": recent_goods,
@@ -127,11 +127,10 @@ def home(request):
 
 
 def _active_filter_chips(*, q, selected_region, selected_category, selected_status):
-    """Human-readable chips summarising the active q/region/category/status
-    filters (Eventbrite-style). Shared by event_list and event_calendar so
-    both pages derive the same chip labels from the same selections (calendar
-    editorial plan §D — no new query, only relabels values the caller already
-    parsed)."""
+    """활성 q/region/category/status 필터를 사람이 읽을 수 있는 칩으로
+    요약한다(Eventbrite 스타일). event_list와 event_calendar가 공유해
+    두 페이지가 같은 선택으로부터 같은 칩 라벨을 만들게 한다 — 새 조회
+    없이 호출자가 이미 파싱한 값에 라벨만 붙인다."""
     chips = []
     if q:
         chips.append(f"검색: {q}")
@@ -149,17 +148,17 @@ def event_list(request):
     total_count = 0
     event_rows = []
 
-    # Invalid / unrecognised filter values are treated as "no match" so the
-    # browse page degrades to the empty state ("이벤트 없음") instead of an error
-    # screen. The JSON API still rejects the same input with 400.
+    # 잘못됐거나 인식되지 않는 필터 값은 "매치 없음"으로 취급해, 열람
+    # 페이지가 오류 화면 대신 빈 상태("이벤트 없음")로 완화된다. JSON
+    # API는 같은 입력을 여전히 400으로 거부한다.
     try:
         params = parse_public_listing_params(request.GET)
-        # Default to "active" (ongoing/upcoming) when the caller sent no
-        # status filter. Must stay after parsing, not before: "active" is
-        # deliberately absent from STATUS_CHOICES, so injecting it into the
-        # raw request.GET would make parse_public_listing_params raise
-        # ValidationError, which the except below silently swallows into an
-        # empty-state page.
+        # 호출자가 status 필터를 보내지 않으면 "active"(진행 중/예정)로
+        # 기본값을 둔다. 파싱 전이 아니라 반드시 파싱 후에 둬야 한다:
+        # "active"는 일부러 STATUS_CHOICES에 없어서, 원본
+        # request.GET에 끼워 넣으면 parse_public_listing_params가
+        # ValidationError를 던지고 아래 except가 그걸 조용히 빈 상태
+        # 페이지로 삼켜버린다.
         if not params.get("status"):
             params = {**params, "status": "active"}
         qs = list_published_events(params)
@@ -176,10 +175,11 @@ def event_list(request):
     q = request.GET.get("q", "")
     selected_sort = request.GET.get("sort", "")
 
-    # Defensive scalar-wrap left over from an earlier non-QueryDict code path.
-    # Unreachable today: getlist(k) is empty iff get(k) is None for the same
-    # key, so `not getlist and get` can never hold. Kept (not deleted) but
-    # excluded from coverage; safe to remove in a dedicated cleanup.
+    # 예전 QueryDict가 아니던 코드 경로에서 남은 방어적 스칼라 감싸기다.
+    # 지금은 도달 불가능하다: 같은 키에서 getlist(k)가 비어 있는 것과
+    # get(k)가 None인 것은 항상 같이 성립하므로 `not getlist and get`은
+    # 절대 참이 될 수 없다. 삭제하지 않고 남겨뒀으며 커버리지에서는
+    # 제외한다 — 별도 정리 작업에서 지워도 안전하다.
     if not selected_region and request.GET.get("region"):  # pragma: no cover
         selected_region = [request.GET.get("region")]
     if not selected_category and request.GET.get("category"):  # pragma: no cover
@@ -189,7 +189,7 @@ def event_list(request):
         q or selected_region or selected_category or selected_status
     )
 
-    # Human-readable chips summarising the active filters (Eventbrite-style).
+    # 활성 필터를 사람이 읽을 수 있는 칩으로 요약한다(Eventbrite 스타일).
     active_filter_chips = _active_filter_chips(
         q=q,
         selected_region=selected_region,
@@ -203,41 +203,40 @@ def event_list(request):
         "event_rows": event_rows,
         "active_filters": active_filters,
         "active_filter_chips": active_filter_chips,
-        # vocab tuples for filter UI
+        # 필터 UI용 어휘 튜플
         "CATEGORY": CATEGORY,
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
-        # Sort moved out of the sidebar filter form and into the results-head
-        # toggle menu (2026-07-22), so the template needs the vocab tuple to
-        # render one link per option instead of four hardcoded <option>s.
+        # 정렬이 사이드바 필터 폼에서 결과 상단 토글 메뉴로 옮겨져,
+        # 템플릿이 하드코딩된 <option> 4개 대신 어휘 튜플로 옵션마다
+        # 링크 하나씩을 렌더링해야 한다.
         "EVENT_SORT": EVENT_SORT,
-        # current selections
+        # 현재 선택 값
         "q": q,
         "selected_region": selected_region,
         "selected_category": selected_category,
         "selected_status": selected_status,
         "selected_sort": selected_sort,
         "selected_sort_label": EVENT_SORT_LABELS.get(selected_sort, EVENT_SORT_LABELS[""]),
-        # List<->calendar toggle link querystring preservation (dual-calendar
-        # plan §단계 5) — event_list had no such context before; added here
-        # rather than duplicating its own already-working filter extraction.
+        # 목록<->달력 전환 링크가 쿼리스트링을 보존하게 한다 —
+        # event_list엔 원래 이런 컨텍스트가 없었고, 이미 잘 동작하는
+        # 필터 추출을 중복 구현하지 않고 여기서 추가했다.
         "extra_query": _calendar_extra_query(request),
-        # List page pager (PR #221 shared pager) needs sort preserved too, so
-        # it cannot reuse _calendar_extra_query (which deliberately drops
-        # sort for the calendar toggle contract).
+        # 목록 페이지 페이저는 정렬도 보존해야 해서 _calendar_extra_query
+        # (달력 전환 계약을 위해 일부러 정렬을 뺀다)를 재사용할 수 없다.
         "pager_query": _event_list_pager_query(request),
     }
     return render(request, "core/events/list.html", context)
 
 
 def _event_list_pager_query(request):
-    """Return the current q/region/category/status/sort filters as a
-    '&key=value' querystring tail — leading '&', matching
-    templates/core/partials/_pager.html's extra_query convention — so the
-    same context key can be dropped straight after a '?page=...' value in a
-    template. Unlike _calendar_extra_query, this includes 'sort': the events
-    list pager must preserve sort order across pages, while the calendar
-    toggle link deliberately does not.
+    """현재 q/region/category/status/sort 필터를 '&key=value'
+    쿼리스트링 꼬리로 반환한다(선행 '&',
+    templates/core/partials/_pager.html의 extra_query 관례와 동일) —
+    템플릿에서 '?page=...' 값 바로 뒤에 같은 컨텍스트 키를 그대로 붙일
+    수 있게 한다. _calendar_extra_query와 달리 'sort'를 포함한다: 행사
+    목록 페이저는 페이지를 넘나들며 정렬을 보존해야 하지만 달력 전환
+    링크는 일부러 그러지 않는다.
     """
     pairs = []
     for key in ("q", "region", "category", "status", "sort"):
@@ -250,13 +249,12 @@ def _event_list_pager_query(request):
 
 
 def _calendar_extra_query(request):
-    """Return the current q/region/category/status filters as a '&key=value'
-    querystring tail — leading '&', matching
-    templates/core/partials/_pager.html's extra_query convention — so the
-    same context key can be dropped straight after a '?month=...'/'?page=...'
-    value in a template. Deliberately excludes 'sort' and the calendar-only
-    'month'/'date' params (dual-calendar service design §6 only requires
-    q/region/category/status parity with the existing listing).
+    """현재 q/region/category/status 필터를 '&key=value' 쿼리스트링
+    꼬리로 반환한다(선행 '&', templates/core/partials/_pager.html의
+    extra_query 관례와 동일) — 템플릿에서 '?month=...'/'?page=...' 값
+    바로 뒤에 같은 컨텍스트 키를 그대로 붙일 수 있게 한다. 'sort'와
+    달력 전용 'month'/'date' 파라미터는 일부러 제외한다(기존 목록과는
+    q/region/category/status만 맞추면 된다).
     """
     pairs = []
     for key in ("q", "region", "category", "status"):
@@ -269,25 +267,24 @@ def _calendar_extra_query(request):
 
 
 def event_calendar(request):
-    """Events calendar SSR view (dual-calendar plan §단계 5 / PR-C).
+    """행사 달력 SSR 뷰.
 
-    Presentation-only: date-range/overlap business rules stay owned by
-    events.queries.list_published_events_for_month and
-    core.calendar_grid.month_grid — this view only parses request params,
-    calls those, and reshapes the results into the template context
-    contract below (keys fixed, do not rename — the Frontend
-    Implementation Engineer's templates are being built against this exact
-    contract in parallel):
+    표시 전용이다: 날짜 범위/겹침 비즈니스 규칙은 계속
+    events.queries.list_published_events_for_month과
+    core.calendar_grid.month_grid가 소유한다 — 이 뷰는 요청 파라미터를
+    파싱해 그것들을 호출하고 결과를 아래 템플릿 컨텍스트 계약대로
+    재구성할 뿐이다(키는 고정, 이름 바꾸지 말 것 — 프론트가 이 계약을
+    기준으로 템플릿을 병행 개발 중이다):
 
-    calendar_error (None|"invalid"|"query_failed"), month_label
-    ("YYYY년 M월"), weeks (7-cell-per-week list of
-    {date, in_month, today, selected, items[{title,url}] (max 2),
-    more_count, count}), selected_date, selected_events, prev_month/
-    next_month ("YYYY-MM"), extra_query, plus the same filter-panel context
-    keys event_list already provides (CATEGORY/REGION/EVENT_STATUS,
+    calendar_error(None|"invalid"|"query_failed"), month_label
+    ("YYYY년 M월"), weeks(주당 7칸 리스트, 각 칸은 {date, in_month,
+    today, selected, items[{title,url}](최대 2개), more_count, count}),
+    selected_date, selected_events, prev_month/next_month("YYYY-MM"),
+    extra_query, 그리고 event_list가 이미 제공하는 것과 같은 필터
+    패널 컨텍스트 키(CATEGORY/REGION/EVENT_STATUS,
     q/selected_region/selected_category/selected_status/selected_sort/
-    selected_sort_label) so the existing filter-check markup can be reused
-    verbatim.
+    selected_sort_label)를 그대로 담아 기존 필터 체크 마크업을 그대로
+    재사용할 수 있게 한다.
     """
     today = timezone.localdate()
 
@@ -305,8 +302,8 @@ def event_calendar(request):
     try:
         params = parse_public_listing_params(request.GET)
     except ValidationError:
-        # Same degrade as event_list: an unrecognised/invalid filter value is
-        # "no match", never an error screen — independent of calendar_error.
+        # event_list와 같은 완화 방식: 인식되지 않거나 잘못된 필터 값은
+        # calendar_error와 무관하게 "매치 없음"이지 절대 오류 화면이 아니다.
         params = {}
 
     try:
@@ -330,14 +327,12 @@ def event_calendar(request):
     try:
         grid = month_grid(year, month)
     except Exception:
-        # core.calendar_grid.month_grid can raise for a month whose leading/
-        # trailing filler week would need a date outside year 1..9999 (e.g.
-        # year=1/month=1 needs a few December-of-year-0 filler days) — a
-        # known gap in the already-merged CAL-4 grid module (its own unit
-        # tests only covered year=2026), surfaced by CAL-5-07's extreme-month
-        # scenario. Degraded here rather than fixed at the source, which is
-        # out of this change's authorized scope; flagged for a follow-up fix
-        # to core/calendar_grid.py.
+        # core.calendar_grid.month_grid는 앞뒤 채움 주가 1~9999년 범위
+        # 밖의 날짜를 필요로 하는 달에서 예외를 던질 수 있다(예:
+        # year=1/month=1은 "0년 12월" 채움 날짜 며칠이 필요하다) — 이미
+        # 병합된 그리드 모듈의 알려진 한계다(자체 단위 테스트는 2026년만
+        # 다뤘다). 근본 수정은 이번 변경 권한 범위 밖이라 여기서는
+        # 완화만 하고 core/calendar_grid.py 후속 수정으로 남겨둔다.
         logger.exception(
             "Failed to build calendar grid for year=%s month=%s", year, month
         )
@@ -396,8 +391,8 @@ def event_calendar(request):
             selected_category=selected_category,
             selected_status=selected_status,
         ),
-        # filter-panel context, mirrored verbatim from event_list so its
-        # existing filter-check markup can be reused as-is.
+        # 필터 패널 컨텍스트. event_list와 그대로 맞춰 기존 필터 체크
+        # 마크업을 그대로 재사용할 수 있게 한다.
         "CATEGORY": CATEGORY,
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,

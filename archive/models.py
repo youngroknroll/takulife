@@ -13,7 +13,7 @@ class EventInterest(models.Model):
         on_delete=models.CASCADE,
         related_name="archive_event_interests",
     )
-    # subject = exactly one of event (official) or personal_entry (unofficial).
+    # 대상은 공식 event와 비공식 personal_entry 중 정확히 하나여야 한다.
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,
@@ -63,7 +63,7 @@ class UserEventStatus(models.Model):
         on_delete=models.CASCADE,
         related_name="archive_event_statuses",
     )
-    # subject = exactly one of event (official) or personal_entry (unofficial).
+    # 대상은 공식 event와 비공식 personal_entry 중 정확히 하나여야 한다.
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,
@@ -79,9 +79,8 @@ class UserEventStatus(models.Model):
         blank=True,
     )
     status = models.CharField(max_length=20, choices=Status.choices)
-    # When True, the user opted this planned row out of auto-miss (revert from
-    # an auto-derived 'missed' back to planned). Only consulted on the planned
-    # branch of the derivation; visited/missed already short-circuit.
+    # 사용자가 자동 '놓침' 처리를 거부하고 '예정'으로 되돌린 경우 True.
+    # 상태가 이미 방문/놓침으로 확정된 행에는 영향을 주지 않는다.
     missed_overridden = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -111,22 +110,20 @@ class UserEventStatus(models.Model):
 
 
 class PersonalEntry(models.Model):
-    """A user-owned, private, *unofficial* archive subject.
+    """사용자 소유의 비공식 기록.
 
-    Unlike Event (curated, admin-reviewed, public), a PersonalEntry is something
-    the user found or owns themselves — an unofficial goods cafe, a product they
-    bought, etc. It is always private to its owner and never appears in the public
-    catalog. Archive actions (interest/status/visit) will be able to point at one
-    of these instead of an Event in later phases.
+    관리자 검수를 거쳐 공개되는 Event와 달리, 사용자가 직접 찾거나 소유한
+    비공식 굿즈샵·구매품 등이다. 항상 소유자 본인에게만 비공개이며 공개
+    카탈로그에는 절대 노출되지 않는다.
     """
 
     class Kind(models.TextChoices):
         PLACE = "place", "Place"
 
     class PromotionStatus(models.TextChoices):
-        # "" = never submitted for official review; "submitted" = a review draft
-        # has been created. Set by the neutral core.promotion orchestrator (no FK
-        # to drafts — archive must not depend on drafts).
+        # ""=공식 검수에 제출된 적 없음, "submitted"=검수용 초안이 생성됨.
+        # archive는 drafts에 의존하면 안 되므로 drafts를 향한 FK가 아니라
+        # 중립적인 core.promotion 조정자가 이 값을 설정한다.
         NONE = "", "None"
         SUBMITTED = "submitted", "Submitted"
 
@@ -141,7 +138,7 @@ class PersonalEntry(models.Model):
     work_title = models.CharField(max_length=255, blank=True)
     location_name = models.CharField(max_length=255, blank=True)
     region = models.CharField(max_length=100, blank=True)
-    # A user reference link (tweet / blog / shop). NOT unique and NOT "official".
+    # 사용자가 남기는 참고 링크(트윗/블로그/샵)로, 유일값도 공식 출처도 아니다.
     url = models.URLField(blank=True)
     memo = models.TextField(blank=True)
     image = models.ImageField(upload_to="personal-entries/", blank=True, null=True)
@@ -153,8 +150,9 @@ class PersonalEntry(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    # Client-supplied idempotency key for bfcache replay dedup — not user
-    # editable, unset (null) for rows created before this field existed.
+    # bfcache 재생 등으로 같은 요청이 중복 전송돼도 한 번만 처리되도록
+    # 클라이언트가 발급하는 멱등 키. 사용자가 직접 수정할 수 없고, 이
+    # 필드가 생기기 전에 만들어진 행은 비어 있다(null).
     client_token = models.UUIDField(null=True, blank=True, editable=False)
 
     class Meta:
@@ -176,7 +174,7 @@ class VisitRecord(models.Model):
         on_delete=models.CASCADE,
         related_name="archive_visit_records",
     )
-    # subject = exactly one of event (official) or personal_entry (unofficial).
+    # 대상은 공식 event와 비공식 personal_entry 중 정확히 하나여야 한다.
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,
@@ -193,8 +191,9 @@ class VisitRecord(models.Model):
     )
     visited_on = models.DateField()
     short_review = models.CharField(max_length=255, blank=True)
-    # Client-supplied idempotency key for bfcache replay dedup — not user
-    # editable, unset (null) for rows created before this field existed.
+    # bfcache 재생 등으로 같은 요청이 중복 전송돼도 한 번만 처리되도록
+    # 클라이언트가 발급하는 멱등 키. 사용자가 직접 수정할 수 없고, 이
+    # 필드가 생기기 전에 만들어진 행은 비어 있다(null).
     client_token = models.UUIDField(null=True, blank=True, editable=False)
 
     class Meta:
@@ -221,12 +220,10 @@ class VisitRecordPhoto(models.Model):
         related_name="photos",
     )
     image = models.ImageField(upload_to="visit-record-photos/")
-    # Client-supplied idempotency key for bfcache replay dedup — scoped by
-    # (visit_record, client_token), NOT (user, client_token) like
-    # PersonalEntry/VisitRecord/CollectionItem above. A photo is a child of a
-    # single VisitRecord, not a user-owned aggregate root, and one user
-    # creates many photos across many records, so the dedup key must be
-    # per-record.
+    # 멱등 키를 (user, client_token)이 아니라 (visit_record, client_token)로
+    # 잡는다. 사진은 사용자 소유 최상위 대상이 아니라 한 방문 기록의
+    # 하위 항목이고, 한 사용자가 여러 기록에 걸쳐 많은 사진을 올리므로
+    # 중복 방지 키는 기록 단위여야 한다.
     client_token = models.UUIDField(null=True, blank=True, editable=False)
 
     class Meta:
@@ -240,9 +237,10 @@ class VisitRecordPhoto(models.Model):
 
 
 class CollectionItem(models.Model):
-    """A user-owned goods collection item (archive/§3-1 of the collection
-    domain design plan). Always private to its owner; event/visit_record are
-    optional links to how the item was acquired.
+    """사용자 소유의 굿즈 컬렉션 항목.
+
+    항상 소유자 본인에게만 비공개이며, event/visit_record는 어떻게
+    입수했는지를 가리키는 선택적 링크일 뿐이다.
     """
 
     user = models.ForeignKey(
@@ -253,14 +251,14 @@ class CollectionItem(models.Model):
     name = models.CharField(max_length=255)
     work_title = models.CharField(max_length=255, blank=True)
     character_name = models.CharField(max_length=255, blank=True)
-    # Free-input type label — vocab is UI-side guidance, not a DB choices
-    # constraint (core.vocab.COLLECTION_ITEM_TYPE).
+    # 자유 입력 항목이다. core.vocab.COLLECTION_ITEM_TYPE의 어휘 목록은
+    # UI 안내용일 뿐 DB choices 제약이 아니다.
     item_type = models.CharField(max_length=100, blank=True)
     quantity = models.IntegerField(default=1)
     acquired_on = models.DateField(null=True, blank=True)
     acquisition_source = models.CharField(max_length=100, blank=True)
-    # SET_NULL: an upstream event hard-delete must not silently wipe a user's
-    # collection (no silent data loss, §3-1).
+    # SET_NULL: 상위 event가 완전 삭제돼도 사용자의 컬렉션 항목이 조용히
+    # 함께 사라지면 안 된다.
     event = models.ForeignKey(
         Event,
         on_delete=models.SET_NULL,
@@ -268,7 +266,7 @@ class CollectionItem(models.Model):
         null=True,
         blank=True,
     )
-    # SET_NULL: same no-silent-data-loss rationale as event, above.
+    # SET_NULL: 위 event와 같은 이유(데이터 유실 방지)로 지정한다.
     visit_record = models.ForeignKey(
         VisitRecord,
         on_delete=models.SET_NULL,
@@ -280,10 +278,12 @@ class CollectionItem(models.Model):
     memo = models.TextField(blank=True)
     is_wanted = models.BooleanField(default=False)
     tradeable_quantity = models.IntegerField(default=0)
-    # Reserved for the future trade opt-in gate — no exposure until Stage 4.
+    # 추후 교환 옵트인 게이트를 위해 남겨둔 필드다. 그 단계가 승인되기
+    # 전까지는 어디에도 노출하지 않는다.
     visibility = models.CharField(max_length=20, default="private")
-    # Client-supplied idempotency key for bfcache replay dedup — not user
-    # editable, unset (null) for rows created before this field existed.
+    # bfcache 재생 등으로 같은 요청이 중복 전송돼도 한 번만 처리되도록
+    # 클라이언트가 발급하는 멱등 키. 사용자가 직접 수정할 수 없고, 이
+    # 필드가 생기기 전에 만들어진 행은 비어 있다(null).
     client_token = models.UUIDField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -308,9 +308,8 @@ class CollectionItem(models.Model):
                 name="unique_archive_collection_item_user_client_token",
             ),
         ]
-        # §6-b Deferred (C1): supports list_user_collection_items' owner-
-        # scoped work_title/character_name/item_type filters (PR-C5 CP16~22)
-        # without a per-filter table scan.
+        # 소유자별 work_title/character_name/item_type 필터 조회가 매번
+        # 테이블 전체를 스캔하지 않도록 지원한다.
         indexes = [
             models.Index(fields=["user", "work_title"], name="collectionitem_user_work_idx"),
             models.Index(fields=["user", "character_name"], name="collectionitem_user_char_idx"),
@@ -319,9 +318,9 @@ class CollectionItem(models.Model):
 
     def clean(self):
         super().clean()
-        # FK-pair invariant (§3-1): visit_record is a cross-table reference so
-        # this cannot be a DB CheckConstraint — guarded here as a second line
-        # of defense alongside create_collection_item's service-level sync.
+        # visit_record는 다른 테이블을 참조하므로 DB CheckConstraint로는
+        # 강제할 수 없다. create_collection_item의 서비스 단 동기화에 더해
+        # 여기서 2차로 방어한다.
         if (
             self.visit_record_id is not None
             and self.event_id is not None
@@ -333,9 +332,10 @@ class CollectionItem(models.Model):
 
 
 class ActivityLogEntry(models.Model):
-    """A calendar-oriented record of a user's collection/visit actions (dual-
-    calendar plan §1). Written by the owning service call inside the same
-    transaction as the action it describes — never by a signal.
+    """사용자의 컬렉션·방문 활동을 달력용으로 기록한다.
+
+    반드시 해당 활동을 처리하는 서비스 함수가 같은 트랜잭션 안에서
+    직접 기록한다. 시그널로 기록하지 않는다.
     """
 
     class Kind(models.TextChoices):
@@ -354,11 +354,11 @@ class ActivityLogEntry(models.Model):
     )
     kind = models.CharField(max_length=30, choices=Kind.choices)
     occurred_at = models.DateTimeField()
-    # Each FK below is an optional pointer to the row the entry is about — not
-    # a "subject = exactly one of" pair like EventInterest/UserEventStatus/
-    # VisitRecord above, so there is no exactly-one CheckConstraint here.
-    # SET_NULL: an upstream hard-delete must not silently wipe calendar
-    # history (subject_label is the durable snapshot once the FK is gone).
+    # 아래 각 FK는 이 기록이 무엇을 가리키는지에 대한 선택적 포인터일 뿐,
+    # 위 EventInterest/UserEventStatus/VisitRecord처럼 "정확히 하나"를
+    # 강제하는 쌍이 아니라서 여기엔 그런 CheckConstraint가 없다.
+    # SET_NULL: 상위 행이 완전 삭제돼도 달력 이력이 조용히 사라지면
+    # 안 된다. FK가 사라진 뒤엔 subject_label이 그 자리를 대신한다.
     event = models.ForeignKey(
         Event,
         on_delete=models.SET_NULL,
@@ -382,10 +382,10 @@ class ActivityLogEntry(models.Model):
     )
     subject_label = models.CharField(max_length=255)
     change_summary = models.JSONField(default=dict, blank=True)
-    # Client-supplied idempotency key for bfcache/replay dedup — mirrors the
-    # VisitRecord/CollectionItem client_token convention, scoped by
-    # (user, kind) rather than (user,) alone: one client_token (e.g. a
-    # VisitRecord create) can fan out into more than one kind of entry.
+    # VisitRecord/CollectionItem의 client_token과 같은 취지의 멱등 키다.
+    # (user,) 단독이 아니라 (user, kind)로 스코프한 이유는, 하나의
+    # client_token(예: VisitRecord 생성)이 여러 종류의 기록으로 나뉘어
+    # 기록될 수 있기 때문이다.
     operation_key = models.UUIDField(null=True, blank=True)
 
     class Meta:

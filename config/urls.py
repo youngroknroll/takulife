@@ -57,9 +57,8 @@ urlpatterns = [
         core_views.archive_collection_items,
         name="collection-page",
     ),
-    # Old collection URLs, promoted to top-level /collection/ routes above
-    # (target IA plan D1). Non-permanent 302s (bookmarks/links may still hold
-    # the old paths) that preserve any query string.
+    # 옛 컬렉션 URL. 위의 최상위 /collection/ 경로로 옮겨졌다. 북마크·링크가
+    # 옛 경로를 여전히 가리킬 수 있어 쿼리스트링을 보존하는 임시(302) 리디렉션이다.
     path(
         "archive/collection/new/",
         RedirectView.as_view(
@@ -84,10 +83,10 @@ urlpatterns = [
         core_views.archive_personal_entry_create,
         name="archive-personal-entry-create-page",
     ),
-    # <int:entry_id> before the list route, mirroring the collection block
-    # above (new/ -> <int:id>/edit/ -> <int:id>/ -> list) — the int converter
-    # never matches "new" or "edit" so the order isn't load-bearing, but this
-    # keeps the pattern consistent.
+    # <int:entry_id>를 목록 경로보다 앞에 둬 위 컬렉션 블록과 순서를 맞춘다
+    # (new/ -> <int:id>/edit/ -> <int:id>/ -> 목록). int 변환기는 "new"나
+    # "edit"와 절대 매치되지 않으므로 이 순서가 동작에 영향을 주진 않지만,
+    # 패턴 일관성을 위해 유지한다.
     path(
         "archive/personal/<int:entry_id>/edit/",
         core_views.archive_personal_entry_edit,
@@ -103,9 +102,8 @@ urlpatterns = [
         core_views.archive_personal_entries,
         name="archive-personal-entries-page",
     ),
-    # Old 비공식 목록 URL, renamed to /archive/personal/ (직접 등록 에디토리얼
-    # plan Part 1 §URL 통일, 사용자 확정 2026-07-27). Permanent redirect —
-    # bookmarks/links may still hold the old path.
+    # 옛 비공식 목록 URL, /archive/personal/로 이름이 바뀌었다. 북마크·링크가
+    # 옛 경로를 여전히 가리킬 수 있어 영구(301) 리디렉션으로 둔다.
     path(
         "archive/items/",
         RedirectView.as_view(url="/archive/personal/", permanent=True),
@@ -115,9 +113,9 @@ urlpatterns = [
     path("mypage/", core_views.mypage, name="mypage-page"),
     path("legal/privacy/", core_views.legal_privacy, name="legal-privacy-page"),
     path("legal/terms/", core_views.legal_terms, name="legal-terms-page"),
-    # Old draft-review URLs, relocated under the Staff Console (/staff/drafts/…).
-    # Non-permanent 302s (browsers/bookmarks may still hold the old links) that
-    # preserve any ?next= query string.
+    # 옛 드래프트 검토 URL, 스태프 콘솔(/staff/drafts/…) 아래로 옮겨졌다.
+    # 브라우저·북마크가 옛 링크를 여전히 가질 수 있어 ?next= 쿼리스트링을
+    # 보존하는 임시(302) 리디렉션이다.
     path(
         "event-drafts/",
         RedirectView.as_view(url="/staff/drafts/", query_string=True, permanent=False),
@@ -131,11 +129,11 @@ urlpatterns = [
         name="event-draft-detail-page",
     ),
     path("staff/", include("staff.urls")),
-    # Registered before the allauth include so these explicit routes always
-    # win the match (allauth's own urlconf has no "delete/"/"settings/"
-    # pattern today, but this keeps them from ever silently colliding).
-    # delete_account lives in core.views (not accounts.views) — its GET needs
-    # archive counts, and accounts must not import archive (boundary guard).
+    # allauth include보다 먼저 등록해 이 명시적 경로들이 항상 먼저 매치되게
+    # 한다(현재 allauth 자체 urlconf엔 "delete/"/"settings/" 패턴이 없지만,
+    # 나중에 조용히 충돌하는 일을 막아둔다). delete_account는 accounts.views가
+    # 아니라 core.views에 있다 — GET이 archive 카운트가 필요한데 accounts는
+    # archive를 임포트할 수 없기 때문(경계 가드).
     path("accounts/delete/", core_views.delete_account, name="account-delete-page"),
     path(
         "accounts/delete/done/",

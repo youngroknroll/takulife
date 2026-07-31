@@ -70,15 +70,12 @@
       <article class="panel">
         <div class="results-head">
           <h2>방문 타임라인 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
-          {# <details>, not a JS dropdown: the options are plain GET links, so #}
-          {# native disclosure gives keyboard operation and a no-JS fallback   #}
-          {# for free. event_list.js only adds outside-click dismissal on top. #}
-          {# FE deviation note: statuses/index use a `sort_query` context var  #}
-          {# for the filter/q-only tail; archive_visits' view context has no  #}
-          {# such key, so the tail is built inline here from the already-     #}
-          {# available `selected_filter`/`q` (mirrors _archive_sort_link_query's #}
-          {# contract: excludes sort/page so a new sort value never collides  #}
-          {# with the old one still in the query string). #}
+          {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
+          {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
+          {# 생긴다. event_list.js는 바깥 클릭 시 닫는 동작만 더한다. #}
+          {# 이 페이지는 sort_query 컨텍스트 변수가 없어 filter/q 꼬리를 #}
+          {# selected_filter·q로 직접 조립한다 — sort/page는 빼서 새 정렬값이 #}
+          {# 쿼리에 남은 옛 값과 겹치지 않게 한다. #}
           <details class="results-sort" data-sort-menu>
             <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
             <ul class="results-sort-menu">
@@ -105,11 +102,8 @@
   <script defer src="{% static 'js/pages/visit.js' %}"></script>
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
   <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
-  {# event_list.js now loads on three pages (/events/, /archive/, /archive/  #}
-  {# visits/) for the sort <details> menu's outside-click/Esc/focusout      #}
-  {# dismissal. Its .filter-toggle/.filters selectors only exist on the     #}
-  {# /events/ templates so they no-op here (verified 2026-07-27) —         #}
-  {# reconsider this sharing if /events/-only behavior is ever added to    #}
-  {# that file. #}
+  {# event_list.js는 /events/, /archive/, /archive/visits/ 세 페이지에서 정렬 #}
+  {# 메뉴의 바깥 클릭/Esc 닫기를 위해 쓴다. .filter-toggle/.filters 선택자는 #}
+  {# /events/ 템플릿에만 있어 이 페이지에서는 그냥 무시된다. #}
   <script defer src="{% static 'js/pages/event_list.js' %}"></script>
 {% endblock %}

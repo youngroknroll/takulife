@@ -26,9 +26,7 @@ class PublicEventListView(ListAPIView):
 
     def get_queryset(self):
         params = parse_public_listing_params(self.request.query_params)
-        # q present -> the user searched; absent -> a plain browse/filter
-        # view. The two are mutually exclusive analytics events (PR-0e
-        # checkpoint B10), recorded once per request.
+        # q가 있으면 검색, 없으면 단순 열람으로 보고 둘 중 하나만 요청당 한 번 기록한다.
         event_name = (
             AnalyticsEvent.EventName.EVENT_SEARCHED
             if params.get("q")
@@ -56,13 +54,11 @@ class PublicEventDetailView(RetrieveAPIView):
 
 
 class EventPosterView(APIView):
-    """Staff-only endpoint to upload or delete an event's poster image.
+    """스태프 전용: 이벤트 포스터 이미지를 업로드/삭제한다.
 
-    Authentication is explicitly restricted to SessionAuthentication to prevent
-    BasicAuth from bypassing CSRF protection. The project's global DRF
-    DEFAULT_AUTHENTICATION_CLASSES setting (config/settings.py) already pins
-    this, but the local override stays as an explicit, view-level guard so
-    this admin-only endpoint doesn't silently depend on the global setting.
+    인증을 SessionAuthentication으로 못박아 BasicAuth가 CSRF 보호를 우회하지 못하게 한다.
+    전역 DRF 설정(config/settings.py)이 이미 같은 값을 쓰지만, 관리자 전용 엔드포인트가
+    전역 설정 변경에 조용히 휩쓸리지 않도록 여기서도 명시적으로 고정한다.
     """
 
     authentication_classes = [SessionAuthentication]

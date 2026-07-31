@@ -1,67 +1,26 @@
 /**
- * deck.js — Home hero stack deck for takulife
- *
- * Editorial redesign replacement for carousel.js's tarot-style fan (deleted —
- * this is the only consumer). Cards are stacked with a fixed depth offset
- * (front card full-size, back cards progressively smaller/lower/fainter).
- * Every card is a real <a> to its own event, so the front card's image area
- * navigates on click like any link — no JS interception. Clicking a *back*
- * card instead brings it to the front (its own click is prevented so the
- * user can look before navigating); dots and ArrowLeft/ArrowRight jump/step
- * the same way.
- *
- * DOM contract (set by home.html template):
- *   [data-deck]              — deck container (position: relative)
- *   [data-deck-card]         — each card, a real <a href="/events/N/">, with
- *                              a data-cardbg gradient value used as the hero
- *                              background *fallback* (category gradient —
- *                              present on every card regardless of whether
- *                              it shows a poster image or the gradient
- *                              fallback tile itself)
- *   .deck-card-img            — poster <img>, when present. Its rendered
- *                              edge colour (see cacheEdgeColor below)
- *                              is the *primary* hero background source,
- *                              cached on the card's `data-edge-rgb`.
- *   [data-deck-dots]         — optional dot-indicator wrapper (nested inside
- *                              [data-deck], only rendered when there is more
- *                              than one card)
- *   [data-deck-dot]          — each dot button
- *   [data-hero-card]         — ancestor of [data-deck] whose background is
- *                              swapped on every render() — 2026-07-21
- *                              correction: not the front card's category
- *                              (data-cardbg) but an average of its poster
- *                              image's own edge pixels, so the hero tint
- *                              follows the actual artwork. data-cardbg
- *                              stays the fallback when there's no poster,
- *                              the image hasn't loaded yet, or canvas
- *                              extraction fails. The template still sets an
- *                              initial inline background on [data-hero-card]
- *                              (category-based, for the first paint before
- *                              any image has loaded) — unchanged here.
- *
- * Once the initial depth layout has been applied, the deck container gets
- * `data-deck-ready`, the signal that layout is measurable. It must always be
- * set (even for a single-card deck with no autoplay) so manual browser checks
- * have a stable point to measure from.
- *
- * Motion contract (design-rules.md §3.1-2 — WCAG 2.2.2): autoplay every
- * 3000ms, paused on hover, paused on focusin (cards are real links, so
- * focus-pause applies), and permanently stopped after the first touch (no
- * hover-out equivalent on touch). prefers-reduced-motion never starts the
- * timer, and a runtime change is re-checked (same pattern as hscroll.js /
- * the old carousel.js).
+ * 홈 히어로의 카드 더미(deck). 앞 카드는 원래 크기, 뒤 카드일수록 작고
+ * 아래로 처지며 흐려진다. 모든 카드가 실제 <a> 링크라 앞 카드는 그냥
+ * 클릭하면 이동하고, 뒤 카드를 클릭하면 이동 대신 앞으로 가져온다.
+ * 점 표시와 좌우 화살표 키도 같은 방식으로 이동한다.
+ * 히어로 배경은 앞 카드 포스터 이미지의 가장자리 색을 평균 내 우려낸
+ * 색을 쓰고, 포스터가 없거나 아직 로드되지 않았거나 캔버스 추출이
+ * 실패하면 카테고리별 고정 그라디언트로 대체한다.
+ * 자동 재생은 3초 간격이며 마우스오버·포커스 시 멈추고, 터치가 한 번이라도
+ * 감지되면 이후 다시 켜지지 않는다(터치에는 마우스가 떠나는 개념이 없어서다).
+ * 동작 최소화 설정에서는 자동 재생을 시작하지 않는다.
  */
 
 (function () {
   "use strict";
 
   var AUTOPLAY_INTERVAL = 3000;
-  var DEPTH_STEP_Y = 12; // px per depth step
-  var DEPTH_STEP_SCALE = 0.035; // scale reduction per depth step
-  var MAX_VISIBLE_DEPTH = 4; // depths beyond this are fully hidden
+  var DEPTH_STEP_Y = 12; // 깊이 단계당 px
+  var DEPTH_STEP_SCALE = 0.035; // 깊이 단계당 축소 비율
+  var MAX_VISIBLE_DEPTH = 4; // 이보다 깊으면 완전히 숨긴다
 
   var EDGE_SAMPLE_W = 32;
-  var EDGE_SAMPLE_H = 40; // 4:5, matches the deck's own aspect-ratio
+  var EDGE_SAMPLE_H = 40; // 4:5, 덱 자체의 가로세로 비율과 맞춤
 
   var mqlReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -69,16 +28,13 @@
     return mqlReducedMotion.matches;
   }
 
-  // Average the 4-edge border pixels of a downscaled poster into one RGB
-  // colour, cached on the card's own dataset (data-edge-rgb) so it's only
-  // computed once per image. try/catch guards canvas readback — getImageData
-  // throws SecurityError on a tainted canvas; posters are same-origin
-  // uploaded media today so this isn't expected to fire, but a future
-  // external image source (or any other decode failure) must not break the
-  // deck, so any failure here just leaves data-edge-rgb unset and the caller
-  // falls back to data-cardbg (see heroBackgroundFor below).
+  // 포스터를 축소한 뒤 가장자리 픽셀들을 평균 내 하나의 RGB 색으로
+  // 만들고 카드의 data-edge-rgb에 캐시해 이미지당 한 번만 계산한다.
+  // 캔버스 읽기가 실패해도(외부 이미지 등으로 인한 보안 오류 포함) 덱
+  // 자체가 깨지면 안 되므로, 실패 시 그냥 data-edge-rgb를 비워두고
+  // 아래 heroBackgroundFor에서 data-cardbg로 대체한다.
   function cacheEdgeColor(card, img) {
-    if (card.dataset.edgeRgb) { return; } // already computed for this card
+    if (card.dataset.edgeRgb) { return; } // 이미 계산됨
     try {
       var canvas = document.createElement("canvas");
       canvas.width = EDGE_SAMPLE_W;
@@ -103,14 +59,13 @@
       card.dataset.edgeRgb =
         Math.round(sumR / count) + "," + Math.round(sumG / count) + "," + Math.round(sumB / count);
     } catch (err) {
-      // Canvas readback failed — leave data-edge-rgb unset, data-cardbg
-      // fallback handles it (see comment above).
+      // 캔버스 읽기 실패 — data-edge-rgb를 비워두면 data-cardbg로 대체된다.
     }
   }
 
-  // Primary source: the front card's own poster edge colour (once cached).
-  // Fallback: its data-cardbg category gradient (also covers no-poster
-  // cards, not-yet-loaded images, and canvas extraction failures).
+  // 우선순위: 앞 카드 포스터의 가장자리 색(캐시됐다면). 없으면 카테고리
+  // 그라디언트(data-cardbg)로 대체 — 포스터가 없거나 아직 로드 전이거나
+  // 추출에 실패한 경우 모두 포함.
   function heroBackgroundFor(card) {
     if (!card) { return null; }
     if (card.dataset.edgeRgb) {
@@ -135,8 +90,7 @@
     var dots = dotsWrap
       ? Array.prototype.slice.call(dotsWrap.querySelectorAll("[data-deck-dot]"))
       : [];
-    // Ancestor "hero card" whose background follows the active poster
-    // (edge colour once available — see heroBackgroundFor above).
+    // 활성 포스터의 색을 따라가는 조상 "히어로 카드"
     var heroCard = deckEl.closest("[data-hero-card]");
 
     var offset = 0;
@@ -152,7 +106,7 @@
       card.style.opacity = hidden ? "0" : "1";
       card.style.zIndex = String(30 - d);
       card.style.pointerEvents = hidden ? "none" : "auto";
-      // Roving tabindex: only the front card is a Tab stop.
+      // 앞 카드만 Tab으로 멈춘다.
       card.tabIndex = d === 0 ? 0 : -1;
     }
 
@@ -199,9 +153,8 @@
       timer = window.setInterval(advance, AUTOPLAY_INTERVAL);
     }
 
-    // Click on a non-front card brings it to the front instead of following
-    // its link immediately; the front card has no interception, so its own
-    // click navigates via the real href (image-area click navigation).
+    // 앞이 아닌 카드를 클릭하면 링크를 바로 따라가는 대신 앞으로 가져온다.
+    // 앞 카드는 가로채지 않아 그대로 실제 href로 이동한다.
     deckEl.addEventListener("click", function (e) {
       var card = e.target && e.target.closest ? e.target.closest("[data-deck-card]") : null;
       if (!card) { return; }
@@ -213,7 +166,7 @@
       start();
     });
 
-    // Keyboard: ArrowLeft/ArrowRight while focus is inside the deck.
+    // 키보드: 포커스가 덱 안에 있을 때 좌우 화살표로 이동한다.
     deckEl.addEventListener("keydown", function (e) {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") { return; }
       e.preventDefault();
@@ -241,13 +194,13 @@
         start();
       }
     });
-    // Touch has no hover-out equivalent — stop permanently (WCAG 2.2.2).
+    // 터치에는 "마우스가 떠난다"는 개념이 없어 아예 영구적으로 멈춘다.
     deckEl.addEventListener("touchstart", function () {
       touched = true;
       stop();
     }, { passive: true });
 
-    // Respect reduced-motion changes at runtime (same pattern as hscroll.js).
+    // 실행 중 동작 최소화 설정이 바뀌어도 반영한다.
     mqlReducedMotion.addEventListener("change", function () {
       if (prefersReducedMotion()) {
         stop();
@@ -256,17 +209,12 @@
       }
     });
 
-    // Per-card poster edge-colour extraction (2026-07-21 correction — the
-    // hero background follows the actual artwork, not the category). An
-    // already-loaded image (cache hit, `complete` true) is scanned right
-    // away; otherwise a one-shot `load` listener scans it once it finishes.
-    // Either way, if the card being scanned is the *current* front card,
-    // updateHeroBackground() re-runs so the hero swaps from the data-cardbg
-    // fallback to the real edge colour the moment it becomes available,
-    // without waiting for the next advance().
+    // 카드별로 포스터 가장자리 색을 추출한다. 이미 로드된 이미지는 바로
+    // 처리하고, 아니면 load 이벤트를 한 번만 듣는다. 처리된 카드가 지금
+    // 앞 카드라면 다음 넘김을 기다리지 않고 바로 히어로 배경을 갱신한다.
     cards.forEach(function (card) {
       var img = card.querySelector(".deck-card-img");
-      if (!img) { return; } // no-poster card — data-cardbg fallback only
+      if (!img) { return; } // 포스터가 없는 카드는 data-cardbg만 쓴다
       if (img.complete && img.naturalWidth > 0) {
         cacheEdgeColor(card, img);
         return;
@@ -275,9 +223,8 @@
         cacheEdgeColor(card, img);
         if (cards[offset] === card) { updateHeroBackground(); }
       });
-      // No explicit "error" handler needed: a failed load leaves
-      // data-edge-rgb unset, and heroBackgroundFor() already falls back to
-      // data-cardbg for that case.
+      // 로드 실패 시 별도 처리 없이 data-edge-rgb를 비워두면
+      // heroBackgroundFor()가 알아서 data-cardbg로 대체한다.
     });
 
     render();

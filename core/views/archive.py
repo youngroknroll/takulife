@@ -52,11 +52,11 @@ from .collection import _collection_item_row, _series_ink_classes
 
 
 def _build_archive_status_rows(user_statuses):
-    """Build display rows for archive status entries (official or unofficial).
+    """archive 상태 항목(공식/비공식)의 표시 행을 만든다.
 
-    Returns dicts carrying status_id/slug/label plus a uniform, null-safe
-    ``subject`` view so the template renders an Event and a PersonalEntry the
-    same way (with a 비공식 marker for the latter).
+    status_id/slug/label과, Event와 PersonalEntry를 템플릿이 같은
+    방식으로 렌더링할 수 있도록 균일하고 null 안전한 ``subject`` 뷰
+    (비공식은 표시가 붙는다)를 담은 dict를 반환한다.
     """
     rows = []
     for us in user_statuses:
@@ -80,33 +80,32 @@ def _build_archive_status_rows(user_statuses):
 def _archive_status_context(
     user, selected_status, *, page_size, page_number, q: str = "", sort: str = ""
 ):
-    """Build the shared context for the archive dashboard and statuses pages.
+    """archive 대시보드와 상태 목록 페이지가 공유하는 컨텍스트를 만든다.
 
-    Both pages derive 'missed' identically via the shared read helper (instead
-    of reading raw stored status); the summary counts stay unfiltered (aggregate
-    across all statuses). Invalid status filters fall back to "" (all).
+    두 페이지 모두 원본 저장 상태를 직접 읽지 않고 공유 조회 헬퍼로 똑같이
+    'missed'를 유도한다. 요약 카운트는 필터 없이(전체 상태 집계)
+    유지된다. 잘못된 상태 필터는 ""(전체)로 대체한다.
 
-    The status list is paginated (``page_size`` rows per page) so only the
-    current page's rows are built into the heavier display dicts. The two pages
-    pass different sizes (기록장 10 vs 예정 목록 5). ``has_statuses`` reflects the
-    total match count, not the current page, so the empty state shows only when
-    the user genuinely has none. ``pager_query`` preserves the status filter,
-    q param, and sort across page links.
+    상태 목록은 페이지네이션되며(``page_size``개씩), 현재 페이지 행만
+    무거운 표시용 dict로 만든다. 두 페이지는 서로 다른 크기를 넘긴다
+    (기록장 10, 예정 목록 5). ``has_statuses``는 현재 페이지가 아니라
+    전체 매치 수를 반영해, 사용자가 정말로 하나도 없을 때만 빈 상태를
+    보여준다. ``pager_query``는 페이지 링크를 넘나들 때도 상태 필터, q
+    파라미터, 정렬을 보존한다.
 
-    ``q`` narrows the status list server-side (title/location search). Summary
-    counts (status_counts) always reflect the unfiltered totals.
-    ``has_any`` signals that the user owns at least one status of any kind,
-    independent of the current filter; this lets templates distinguish an
-    empty-filter result from a genuinely empty archive.
+    ``q``는 서버 쪽에서 상태 목록을 좁힌다(제목/위치 검색). 요약
+    카운트(status_counts)는 항상 필터 없는 전체 값을 반영한다.
+    ``has_any``는 현재 필터와 무관하게 사용자가 어떤 종류든 상태를 하나
+    이상 가지고 있는지를 알려준다 — 템플릿이 "필터 결과가 없음"과 "진짜
+    빈 archive"를 구분할 수 있게 한다.
 
-    ``sort`` selects list_user_statuses' ordering; an unrecognized value falls
-    back to "" (the default ordering) the same way an unrecognized status
-    falls back to "" (all).
+    ``sort``는 list_user_statuses의 정렬을 고르며, 알 수 없는 값은
+    (알 수 없는 상태가 ""로 대체되듯) ""(기본 정렬)로 대체된다.
 
-    ``sort_query`` (via _archive_sort_link_query) is a separate status/q-only
-    tail for the sort <details> menu's own links; unlike pager_query/
-    search_suffix above it excludes 'sort' and 'page' so a new sort value
-    doesn't get overwritten by the old one still in the tail.
+    ``sort_query``(_archive_sort_link_query 경유)는 정렬 <details> 메뉴
+    자체 링크를 위한, status/q만 담은 별도 꼬리다 — 위의
+    pager_query/search_suffix와 달리 'sort'와 'page'를 제외하는데, 새
+    정렬 값이 꼬리에 남아 있는 옛 값에 덮여쓰이지 않게 하기 위해서다.
     """
     if selected_status not in ARCHIVE_STATUS_SLUGS:
         selected_status = ""
@@ -126,9 +125,9 @@ def _archive_status_context(
     if sort:
         parts.append(("sort", sort))
     pager_query = "&" + urlencode(parts) if parts else ""
-    # Tail that filter chips append to preserve the active search across a
-    # filter switch (urlencoded so 한글/space/& are safe; the template escapes
-    # the leading & to &amp; in the href, which the browser decodes).
+    # 필터 칩이 붙이는 꼬리로, 필터를 바꿔도 현재 검색을 유지한다
+    # (urlencode라 한글/공백/&가 안전하다. 템플릿이 href 안 선행 &를
+    # &amp;로 이스케이프하고 브라우저가 다시 디코딩한다).
     search_suffix_parts = [("q", q)] if q else []
     if sort:
         search_suffix_parts.append(("sort", sort))
@@ -156,20 +155,20 @@ def _archive_status_context(
 
 
 def _archive_sort_link_query(selected_status, q):
-    """Return the current status/q filters as a '&key=value' querystring
-    tail — leading '&', matching templates/core/partials/_pager.html's
-    extra_query convention — for the archive sort <details> menu's
-    '?sort=<value>...' links to append.
+    """현재 status/q 필터를 '&key=value' 쿼리스트링 꼬리로 반환한다
+    (선행 '&', templates/core/partials/_pager.html의 extra_query 관례와
+    동일) — archive 정렬 <details> 메뉴의 '?sort=<value>...' 링크가
+    붙이는 용도다.
 
-    Deliberately excludes 'sort' and 'page', unlike _archive_status_context's
-    own pager_query/search_suffix (which intentionally include 'sort' because
-    they must preserve the active ordering across pagination/search). A sort
-    link already starts with '?sort=<new value>', so reusing pager_query's
-    tail here would duplicate the 'sort' key
-    (?sort=NEW&status=...&sort=OLD); QueryDict.get() returns the last value,
-    silently discarding the new sort. Excluding 'page' means picking a new
-    sort resets the list to page 1, mirroring _calendar_extra_query's
-    exclusion of its own page-like params for the same reason.
+    _archive_status_context 자체의 pager_query/search_suffix(페이지네이션
+    /검색을 넘나들며 현재 정렬을 보존해야 해서 일부러 'sort'를 포함한다)와
+    달리, 여기선 일부러 'sort'와 'page'를 제외한다. 정렬 링크는 이미
+    '?sort=<새 값>'으로 시작하므로 pager_query의 꼬리를 그대로 쓰면
+    'sort' 키가 중복되고(?sort=NEW&status=...&sort=OLD),
+    QueryDict.get()은 마지막 값을 반환해 새 정렬이 조용히 버려진다.
+    'page'를 제외하는 이유는 새 정렬을 고르면 목록이 1페이지로
+    돌아가야 하기 때문이다(_calendar_extra_query가 같은 이유로 자신의
+    페이지 관련 파라미터를 제외하는 것과 같다).
     """
     parts = []
     if selected_status:
@@ -227,10 +226,10 @@ def archive_visits(request):
     if sort not in ARCHIVE_VISIT_SORT_LABELS:
         sort = ""
 
-    # --- Category chips derived from the user's FULL visit history --------
-    # Using the whole dataset (not just the current page) guarantees chips are
-    # stable across pages. Labels are resolved here so archive/queries.py stays
-    # free of any core.vocab import (prevents circular dependency).
+    # --- 사용자의 전체 방문 기록에서 뽑은 카테고리 칩 -----------------------
+    # 현재 페이지가 아니라 전체 데이터셋을 써서 페이지가 바뀌어도 칩이
+    # 안정적으로 유지된다. 라벨은 여기서 해석해 archive/queries.py가
+    # core.vocab을 임포트하지 않게 한다(순환 의존 방지).
     pairs = user_visit_category_values(user)
     categories = []
     seen_labels: set = set()
@@ -244,16 +243,16 @@ def archive_visits(request):
         if label not in seen_labels:
             categories.append(label)
             seen_labels.add(label)
-    # Determine axis presence by checking which FK is null in the pair — the
-    # event__category column is None when there is no event (unofficial), and
-    # personal_entry__category is None when there is no personal_entry (official).
-    # Using None-identity (not truthiness) avoids false negatives when an
-    # official event has an empty category string.
+    # 쌍에서 어느 FK가 null인지로 축의 존재 여부를 판단한다 — event가
+    # 없으면(비공식) event__category 컬럼이 None이고, personal_entry가
+    # 없으면(공식) personal_entry__category가 None이다. truthy 여부가
+    # 아니라 None 여부로 판단해야 공식 행사의 카테고리가 빈 문자열일 때
+    # 잘못 걸러지지 않는다.
     has_unofficial = any(event_cat is None for event_cat, _ in pairs)
     has_official = any(personal_cat is None for _, personal_cat in pairs)
 
-    # --- Filter parsing with whitelist check ------------------------------
-    # Unrecognised values fall back to no-filter (500 prevention).
+    # --- 화이트리스트 검사가 있는 필터 파싱 --------------------------------
+    # 알 수 없는 값은 필터 없음으로 대체한다(500 방지).
     official = None
     category_codes: tuple = ()
     category_label = ""
@@ -267,18 +266,18 @@ def archive_visits(request):
             category_codes = tuple(
                 code for code, lbl in CATEGORY_LABELS.items() if lbl == label
             )
-        # else: empty label or label not in whitelist → no-filter fallback
+        # else: 라벨이 비었거나 화이트리스트에 없음 → 필터 없음으로 대체
 
     selected_filter = raw_filter if (official is not None or category_label) else ""
 
-    # --- Summary counts from the unfiltered base -------------------------
-    # These always report the user's total visit history, independent of any
-    # active filter, so the summary cards never confusingly shrink.
+    # --- 필터 없는 전체 기준 요약 카운트 -----------------------------------
+    # 활성 필터와 무관하게 사용자의 전체 방문 기록을 보고해, 요약
+    # 카드가 헷갈리게 줄어드는 일이 없게 한다.
     visit_counts = user_visit_record_counts(user)
     total_count = visit_counts["total_count"]
     memo_count = visit_counts["memo_count"]
 
-    # --- Filtered + paginated result set ----------------------------------
+    # --- 필터링 + 페이지네이션된 결과 집합 ----------------------------------
     filtered_qs = list_user_visit_records(
         user,
         official=official,
@@ -301,7 +300,7 @@ def archive_visits(request):
         for record in page_obj.object_list
     ]
 
-    # --- Pager query string -----------------------------------------------
+    # --- 페이저 쿼리스트링 --------------------------------------------------
     parts = []
     if selected_filter:
         parts.append(("filter", selected_filter))
@@ -310,7 +309,7 @@ def archive_visits(request):
     if sort:
         parts.append(("sort", sort))
     pager_query = "&" + urlencode(parts) if parts else ""
-    # Tail filter chips append to keep the active search when switching filters.
+    # 필터 칩이 붙이는 꼬리로, 필터를 바꿔도 현재 검색을 유지한다.
     search_suffix_parts = [("q", q)] if q else []
     if sort:
         search_suffix_parts.append(("sort", sort))
@@ -346,21 +345,20 @@ def archive_visits(request):
 
 
 def _parse_visit_preselect(request):
-    """Resolve an optional ?subject=event:<id> / personal:<id> into a locked
-    subject for the visit-create form.
+    """방문 기록 작성 폼을 위해, 선택적인 ?subject=event:<id> / personal:<id>를
+    잠긴 대상으로 해석한다.
 
-    Returns ``{"value": "event:5", "label": "이벤트명"}`` when the param points at a
-    published event or one of the requester's own personal entries; ``None``
-    otherwise (the form then falls back to the selectable dropdown). This lets a
-    '기록' button on an already-visited event — which is not in the planned-only
-    dropdown — still write a record, since the visit API accepts any published
-    event. The id is validated here, so the template can render it as a trusted
-    locked field.
+    파라미터가 공개된 행사나 요청자 본인의 비공식 등록을 가리키면
+    ``{"value": "event:5", "label": "이벤트명"}``을, 아니면 ``None``을
+    반환한다(그러면 폼이 선택 드롭다운으로 대체된다). 이미 방문한
+    행사(예정 전용 드롭다운엔 없다)의 '기록' 버튼으로도 기록을 남길 수
+    있게 해준다 — 방문 API는 공개된 어떤 행사든 받아준다. id는 여기서
+    검증하므로 템플릿은 이를 신뢰된 잠금 필드로 렌더링할 수 있다.
     """
     kind, _, ident = request.GET.get("subject", "").partition(":")
-    # Guard against non-ASCII "digits" (int() rejects them) and oversized ids
-    # (a pk past the DB integer range raises on the ORM lookup) — both would
-    # otherwise turn a crafted ?subject= into a 500.
+    # 비ASCII "숫자"(int()가 거부한다)와 지나치게 큰 id(DB 정수 범위를
+    # 넘는 pk는 ORM 조회에서 예외를 던진다)를 막는다 — 둘 다 조작된
+    # ?subject=이 500 오류로 이어지는 걸 막기 위한 것이다.
     if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
         return None
     pk = int(ident)
@@ -380,16 +378,15 @@ def _parse_visit_preselect(request):
 @login_required
 @ensure_csrf_cookie
 def archive_visit_create(request):
-    """Dedicated write page for creating a visit record.
+    """방문 기록 생성 전용 작성 페이지.
 
-    Read-only render: the form posts to the existing JSON/photo APIs from
-    visit_create.js. Subject choices mirror the inline form they replace, except
-    when ``?subject=`` preselects a specific subject (e.g. from a 방문 완료 이벤트's
-    '기록' button) — then the form shows that subject locked instead of the
-    dropdown.
+    렌더링만 하는 뷰다: 폼은 visit_create.js의 기존 JSON/사진 API로
+    제출된다. 대상 선택지는 이 페이지가 대체한 인라인 폼과 같되,
+    ``?subject=``가 특정 대상을 미리 지정하면(예: 방문 완료 이벤트의
+    '기록' 버튼에서) 드롭다운 대신 그 대상을 잠근 채로 보여준다.
     """
-    # Issued once per form render into a hidden input so the token survives
-    # a bfcache DOM snapshot and serves as the replay idempotency key (plan §4-1).
+    # 폼을 렌더링할 때마다 한 번씩 발급해 숨은 input에 담는다 — 이 토큰이
+    # bfcache DOM 스냅샷에서도 살아남아 재전송 방지용 멱등 키로 쓰인다.
     return render(
         request,
         "core/archive/visit_create.html",
@@ -407,10 +404,10 @@ def archive_visit_create(request):
 @login_required
 @ensure_csrf_cookie
 def archive_visit_edit(request, record_id):
-    """Edit page for one visit record (owner-scoped).
+    """방문 기록 하나를 수정하는 페이지(소유자 한정).
 
-    Pre-fills date/memo and lists existing photos; edits happen via the PATCH /
-    photo APIs from visit_edit.js. Subject is shown read-only.
+    날짜/메모를 미리 채우고 기존 사진을 나열한다. 수정은 visit_edit.js의
+    PATCH/사진 API로 이뤄진다. 대상은 읽기 전용으로 표시된다.
     """
     record = get_object_or_404(VisitRecord, pk=record_id, user=request.user)
     return render(
@@ -429,13 +426,13 @@ def archive_visit_edit(request, record_id):
 @login_required
 @ensure_csrf_cookie
 def archive_visit_detail(request, record_id):
-    """Read-only detail page for one visit record (owner-scoped).
+    """방문 기록 하나의 읽기 전용 상세 페이지(소유자 한정).
 
-    Shows the visit's subject, date, memo, photos, and the CollectionItems
-    acquired at that visit (archive/queries.list_items_acquired_at_visit) —
-    an intra-archive reverse-FK read, no new cross-domain coupling.
-    ``@ensure_csrf_cookie`` is required here (not just on the edit page)
-    because the page's delete action needs the CSRF cookie set.
+    방문의 대상, 날짜, 메모, 사진, 그 방문에서 획득한 CollectionItem
+    (archive/queries.list_items_acquired_at_visit)을 보여준다 — archive
+    내부의 역방향 FK 조회일 뿐 새로운 도메인 간 결합은 아니다.
+    이 페이지의 삭제 동작에 CSRF 쿠키가 필요해 (수정 페이지뿐 아니라)
+    여기도 ``@ensure_csrf_cookie``가 필요하다.
     """
     record = get_object_or_404(VisitRecord, pk=record_id, user=request.user)
     goods = list_items_acquired_at_visit(record)
@@ -464,14 +461,14 @@ def archive_personal_entries(request):
     if sort not in ARCHIVE_PERSONAL_SORT_LABELS:
         sort = ""
 
-    # Summary counts always come from the unfiltered set so the header cards
-    # report the user's total collection, independent of any active search.
+    # 요약 카운트는 항상 필터 없는 전체 집합에서 가져와, 헤더 카드가
+    # 활성 검색과 무관하게 사용자의 전체 컬렉션을 보고한다.
     entry_counts = user_personal_entry_counts(user)
     total_count = entry_counts["total_count"]
     visit_linked_count = entry_counts["visit_linked_count"]
     has_entries = total_count > 0
 
-    # Page queryset is filtered by q (if provided) and then paginated.
+    # 페이지 쿼리셋은 q가 있으면 필터링한 뒤 페이지네이션한다.
     page_qs = list_user_personal_entries(user, q=q, sort=sort)
     paginator = Paginator(page_qs, ARCHIVE_PERSONAL_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -495,8 +492,8 @@ def archive_personal_entries(request):
             }
         )
 
-    # Pager query string preserves both an active search and a non-default
-    # sort — mirrors archive_visits' parts-list pattern above.
+    # 페이저 쿼리스트링은 활성 검색과 기본이 아닌 정렬을 모두 보존한다
+    # — 위 archive_visits의 parts 리스트 패턴과 동일.
     parts = []
     if q:
         parts.append(("q", q))
@@ -527,13 +524,13 @@ def archive_personal_entries(request):
 @login_required
 @ensure_csrf_cookie
 def archive_personal_entry_create(request):
-    """Read-only render: the form posts to the existing personal-entries JSON
-    API (`/api/personal-entries/`), not a new endpoint — mirrors
-    archive_collection_item_create's render-only shape. Context carries
-    PERSONAL_ENTRY_CATEGORY_SUGGESTIONS as free-input hint chips (not a
-    `choices` constraint — the field stays free text)."""
-    # Issued once per form render into a hidden input so the token survives
-    # a bfcache DOM snapshot and serves as the replay idempotency key (plan §4-1).
+    """렌더링만 하는 뷰다: 폼은 새 엔드포인트가 아니라 기존 비공식 등록
+    JSON API(`/api/personal-entries/`)로 제출된다 — archive_collection_
+    item_create의 렌더링 전용 구조와 같다. 컨텍스트에 담긴
+    PERSONAL_ENTRY_CATEGORY_SUGGESTIONS는 자유 입력을 돕는 힌트 칩일
+    뿐(`choices` 제약이 아니다 — 필드는 계속 자유 텍스트다)."""
+    # 폼을 렌더링할 때마다 한 번씩 발급해 숨은 input에 담는다 — 이 토큰이
+    # bfcache DOM 스냅샷에서도 살아남아 재전송 방지용 멱등 키로 쓰인다.
     return render(
         request,
         "core/archive/personal_create.html",
@@ -546,7 +543,7 @@ def archive_personal_entry_create(request):
 
 @login_required
 def archive_personal_entry_detail(request, entry_id):
-    """Read-only detail page for one PersonalEntry (owner-scoped)."""
+    """PersonalEntry 하나의 읽기 전용 상세 페이지(소유자 한정)."""
     entry = get_object_or_404(PersonalEntry, pk=entry_id, user=request.user)
     interest_map = user_personal_interest_ids(request.user)
     status_map = user_personal_statuses(request.user)
@@ -576,11 +573,11 @@ def archive_personal_entry_detail(request, entry_id):
 
 @login_required
 def archive_personal_entry_edit(request, entry_id):
-    """Render-only edit page (owner-scoped). Saving stays on the existing
-    DRF PATCH (`/api/personal-entries/<id>/`), mirrored from
-    archive_collection_item_edit. Context carries
-    PERSONAL_ENTRY_CATEGORY_SUGGESTIONS as free-input hint chips (not a
-    `choices` constraint), same as archive_personal_entry_create."""
+    """렌더링만 하는 수정 페이지(소유자 한정). 저장은 archive_collection_
+    item_edit과 마찬가지로 기존 DRF PATCH(`/api/personal-entries/<id>/`)로
+    이뤄진다. 컨텍스트의 PERSONAL_ENTRY_CATEGORY_SUGGESTIONS는
+    archive_personal_entry_create와 같이 자유 입력 힌트 칩일 뿐(`choices`
+    제약 아님)."""
     entry = get_object_or_404(PersonalEntry, pk=entry_id, user=request.user)
     return render(
         request,
@@ -601,22 +598,22 @@ def archive_interests(request):
     if sort not in ARCHIVE_INTEREST_SORT_LABELS:
         sort = ""
 
-    # --- Summary counts from the unfiltered base ---------------------------
-    # Always describe the user's full 찜 set, independent of any active
-    # search — mirrors the sibling tabs' summary-card behavior (§1 D2/D3, V5).
+    # --- 필터 없는 전체 기준 요약 카운트 -----------------------------------
+    # 활성 검색과 무관하게 사용자의 전체 찜 목록을 설명한다 — 다른 탭들의
+    # 요약 카드 동작과 동일하다.
     counts = user_interest_summary_counts(user)
     interest_count = counts["interest_count"]
     ongoing_count = counts["ongoing_count"]
     planned_overlap_count = counts["planned_overlap_count"]
 
-    # --- Filtered + paginated result set ------------------------------------
+    # --- 필터링 + 페이지네이션된 결과 집합 ----------------------------------
     filtered_qs = list_user_interests(user, q=q, sort=sort)
     paginator = Paginator(filtered_qs, ARCHIVE_INTEREST_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
     page_interests = list(page_obj.object_list)
 
-    # Official (event-linked) rows are batched through _attach_display once
-    # (not per-row, which would be N+1) and mapped back by event id.
+    # 공식(행사 연결) 행들은 행마다 부르지 않고(N+1이 된다)한 번에
+    # _attach_display로 묶어 처리한 뒤 event id로 다시 매핑한다.
     official_events = [
         interest.event for interest in page_interests if interest.event_id
     ]
@@ -637,13 +634,12 @@ def archive_interests(request):
                     "status": display["status_slug"],
                     "dday": display["dday"],
                     "user_status": user_status,
-                    # §1 D1: only offer 방문 예정 when the viewer has no
-                    # status on this event yet — a shared status button on an
-                    # already-tracked row (e.g. 방문 완료) would otherwise
-                    # silently overwrite that existing record. Also exclude
-                    # already-ended events — planning a visit to an event
-                    # that is already over is meaningless, and the design
-                    # never shows this button on an ended row.
+                    # 조회자가 이 행사에 아직 상태가 없을 때만 방문 예정을
+                    # 제안한다 — 이미 추적 중인 행(예: 방문 완료)에 공용
+                    # 상태 버튼을 두면 기존 기록을 조용히 덮어쓴다. 이미
+                    # 끝난 행사도 제외한다 — 끝난 행사의 방문을 계획하는
+                    # 건 의미가 없고, 종료된 행에는 이 버튼을 보여주지
+                    # 않기로 설계됐다.
                     "can_plan": user_status == "" and display["status_slug"] != "ended",
                 }
             )
@@ -659,7 +655,7 @@ def archive_interests(request):
                 }
             )
 
-    # --- Pager query string --------------------------------------------------
+    # --- 페이저 쿼리스트링 --------------------------------------------------
     parts = []
     if q:
         parts.append(("q", q))

@@ -11,33 +11,19 @@
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
-  /* A long email otherwise forces .topbar-auth wide enough to push
-     .site-nav's 3 links into wrapping, growing the sticky .site-header to
-     2 lines (measured 905px viewport, staff account: 69px → 195px, and
-     .aside/.filters sticky top offset is exactly one line's worth short of
-     that — see site-chrome.css --site-header-h). 15rem is sized (Chromium,
-     905px viewport, staff links only — no admin) so brand + nav one line +
-     username + 스태프 콘솔/회원 탈퇴/로그아웃 all still fit: measured
-     865px content width - 73px brand - 240px one-line nav - 36px header
-     gaps - 219.7px (3 topbar-link widths) - 24px topbar-auth gaps =
-     272px max before nav is forced to wrap; 15rem/240px leaves ~32px
-     margin. Verified live: header stays 69px/nav 44px (§5.4 44px touch
-     target) with this cap even at a pathological 57-char email, and short
-     emails (~150px) are
-     untouched (never reach the cap). Superuser adds a 4th link (관리자,
-     ~85px) which this budget doesn't cover — nav still wraps to 2 lines
-     there (measured 117px header, better than uncapped but not 1-line) —
-     accepted as a known residual gap, not fixed here. */
+  /* 이메일이 길면 .topbar-auth가 늘어나 .site-nav 링크가 줄바꿈되고
+     sticky .site-header가 2줄로 커진다(site-chrome.css --site-header-h가
+     그 높이에 맞춰져 있음). max-width로 상한을 둬 헤더 한 줄을 지킨다.
+     단, 관리자 링크까지 4개가 붙는 슈퍼유저는 이 상한으로도 못 막아
+     2줄이 되는 잔여 한계가 있다. */
   max-width: 15rem;
   overflow: hidden;
   text-overflow: ellipsis;
   display: inline-block;
 }
 
-/* 2026-07-20 사용자 결정 — design-rules.md §4-b "헤더 조정 4건" ①: §2.1
-   44px 의무층의 사용자 승인 예외. 원본값의 정확히 3/4로 축소(계산 근거:
-   0.82rem×0.75=0.615rem / 0.4375rem×0.75=0.328rem / 0.625rem×0.75=0.469rem /
-   44px×0.75=33px). WCAG 2.5.8 잔존 리스크는 사용자 인지·수용. */
+/* 44px 터치 타깃 기준의 사용자 승인 예외 — 원래 값의 3/4로 축소했다.
+   WCAG 2.5.8 미달 위험은 사용자가 인지하고 수용했다. */
 .topbar-link {
   display: inline-flex;
   align-items: center;
@@ -57,7 +43,7 @@
   background: var(--brand-soft);
 }
 
-/* Logout form: reset all form chrome so the button looks like a link */
+/* 로그아웃 폼의 기본 form 스타일을 지워 버튼이 링크처럼 보이게 한다 */
 .topbar-logout-form {
   display: inline-flex;
   margin: 0;

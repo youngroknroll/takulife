@@ -1,18 +1,11 @@
 {% comment %}
-_site_footer.html — global site footer rendered once from base.html on every page.
+전체 사이트 바닥글 — base.html에서 모든 페이지에 한 번만 렌더한다.
 
-Gives every page a grounded close (the site had no footer before) and is the new
-home for the operating-principle/curation notes that previously sat on the
-consumer homepage. Modelled on standard discovery-service footers
-(brand + tagline + section links + notice, with legal/contact links and
-copyright grouped in the bottom bar).
-
-4-column menu (design-rules.md §4/§4-b, shared-shell plan §C): 이벤트/컬렉션/
-내 활동/계정 — every project route, not just the pre-existing 4 links. All
-menus render for anonymous visitors too (existing convention: login-required
-pages redirect rather than hide their entry point). The 계정 column is the
-only one gated on auth state: staff sees only 설정 (no 스태프 콘솔/관리자/
-로그아웃 — console/admin links stay out of the public footer by design).
+4단 메뉴(이벤트/컬렉션/내 활동/계정)는 로그인 여부와 상관없이 항상 렌더한다
+— 로그인이 필요한 페이지는 진입점을 감추지 않고 로그인으로 리다이렉트하는
+기존 관례를 따른다. 계정 열만 로그인 상태에 따라 달라지며, 스태프는 설정만
+보여준다(스태프 콘솔/관리자/로그아웃 링크는 공개 바닥글에 일부러 넣지
+않는다).
 {% endcomment %}
 <footer class="site-footer">
   <div class="site-footer-inner">

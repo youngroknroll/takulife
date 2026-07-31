@@ -1,24 +1,11 @@
 /**
- * personal_detail.js — PersonalEntry (비공식 장소) read-only detail page
- * (archive_personal_detail).
+ * 비공식 장소(PersonalEntry) 상세 페이지. 항목 삭제와 공식 제보를 담당한다.
+ * 찜/상태 버튼은 base.html이 전역 로드하는 status.js가 알아서 연결하므로
+ * 이 파일은 건드리지 않는다.
  *
- * Responsibilities:
- *   - Entry delete: DELETE /api/personal-entries/<id>/
- *   - 공식 제보 토글/제출: POST /api/personal-entries/<id>/promote/
- *     (personal_entries.js와 동일 로직 — 이 페이지엔 인스턴스가 1개뿐이라
- *     루프 없이 단일 바인딩으로 이식)
- *
- * 찜/상태 버튼은 base.html이 전역 로드하는 status.js가 자동으로 바인딩한다
- * (personal_entries.html의 목록 카드와 동일한 data-* 계약) — 이 파일은
- * 건드리지 않는다.
- *
- * 404 잠금 캐스케이드(BIR 핵심 계약): 삭제 요청이 "이미 삭제됨"을 확인하면
- * 찜·상태·제보·방문기록 CTA(인플로우 + 모바일 고정 바)·수정 링크까지
- * 5종 이상을 함께 잠근다 — 형제(collection_detail.js)는 수정 링크 1개만
- * 잠갔지만, 이 페이지는 핵심 루프 CTA(방문 기록 남기기)까지 살아있으면
- * 이미 사라진 항목에 두 번째 막다른 골목을 만든다. 상단 "← 직접 등록
- * 목록으로" 링크는 이미 살아있는 정적 링크이므로 새로 만들지 않고
- * `.focus()`만 이동한다.
+ * 삭제 요청이 "이미 삭제됨"(404)을 확인하면 찜·상태·제보·방문기록
+ * CTA·수정 링크까지 함께 잠근다 — 방문 기록 남기기 같은 핵심 동작이
+ * 살아 있으면 이미 사라진 항목으로 또 다른 막다른 길을 만들기 때문이다.
  */
 
 (function () {
@@ -48,10 +35,8 @@
 
   // ── 404 잠금 캐스케이드 ──────────────────────────────────────────────
 
-  // A settled fact (the item is gone), not an interrupted in-flight request
-  // — deliberately not .is-loading, matching collection_detail.js's
-  // lockEditLink precedent (api.js's global pageshow handler only restores
-  // .is-loading, which this lock must survive across a bfcache round trip).
+  // 항목이 사라졌다는 확정된 사실이라 .is-loading은 쓰지 않는다 — bfcache
+  // 복원 시 api.js가 .is-loading만 되돌리므로 이 잠금은 그대로 살아남아야 한다.
   function lockLink(link) {
     if (!link) { return; }
     link.removeAttribute("href");
@@ -81,7 +66,7 @@
     lockButton(document.querySelector("[data-status-action]"));
     lockButton(document.querySelector("[data-promote-toggle]"));
     lockButton(document.querySelector("[data-delete-entry-id]"));
-    // The expanded 제보 form (if open) has nothing left to submit to.
+    // 제보 폼이 열려 있어도 이제 제출할 대상이 없다.
     var promoteForm = document.querySelector("[data-promote-form]");
     if (promoteForm) { promoteForm.hidden = true; }
     lockLink(document.querySelector(".personal-detail-visit-cta"));
@@ -141,8 +126,8 @@
         return;
       }
       setText(globalErrorEl, "");
-      // Synchronous disable before the first await — a second click arriving
-      // while the request is in flight finds the button already disabled.
+      // 첫 await 전에 동기적으로 비활성화해, 요청 중 다시 클릭해도
+      // 이미 막힌 상태를 보게 한다.
       window.TakuAPI.setLoading(deleteBtn, true);
 
       var result = await window.TakuAPI.del("/api/personal-entries/" + entryId + "/");

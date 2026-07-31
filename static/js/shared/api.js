@@ -1,49 +1,22 @@
 /**
- * api.js — CSRF-aware REST client for takulife
- *
- * Exposes window.TakuAPI with the following methods:
- *   get(url)              — GET request, returns {ok, status, data}
- *   post(url, body)       — POST with JSON body
- *   patch(url, body)      — PATCH with JSON body
- *   del(url)              — DELETE (no body)
- *   upload(url, formData, method) — multipart request (default POST); does
- *                           NOT set Content-Type so the browser sets the
- *                           correct multipart boundary. method also accepts
- *                           "PATCH" for a multipart partial update.
- *
- * All methods:
- *   - read the csrftoken cookie and inject X-CSRFToken header
- *     (upload omits Content-Type only; still injects X-CSRFToken)
- *   - send credentials: 'same-origin'
- *   - return a normalized { ok, status, data } object
- *
- * Shared error helpers (consumed by status.js, draft.js, visit.js):
- *   classify(result)   — returns a stable error kind string:
- *                         'auth' | 'csrf' | 'validation' | 'conflict' |
- *                         'notfound' | 'server' | 'network' | 'ratelimited' |
- *                         'unknown'
- *   formatError(result) — human-readable Korean message from DRF error envelopes:
- *                          field-error dicts, detail string, and known code values
- *   redirectToLogin()  — builds /accounts/login/?next=<encoded current path>
- *                        and navigates; single definition used by all consumers
- *
- * Security contract:
- *   - CSRF token is read from the csrftoken cookie (CSRF_COOKIE_HTTPONLY=False).
- *   - Header name is X-CSRFToken (matches Django's CSRF_HEADER_NAME default).
- *   - credentials: 'same-origin' ensures the session cookie is sent.
+ * CSRF 토큰을 자동으로 붙이는 공용 REST 클라이언트. window.TakuAPI로 노출된다.
+ * 모든 요청은 csrftoken 쿠키 값을 읽어 X-CSRFToken 헤더로 보내고
+ * (Django의 기본 CSRF 헤더명과 맞춘 것이다), 세션 쿠키가 함께 가도록
+ * credentials: 'same-origin'을 쓴다. 항목 업로드(upload)는 Content-Type을
+ * 직접 지정하지 않는데, 그래야 브라우저가 multipart 경계값을 알아서 채운다.
  */
 
 (function () {
   "use strict";
 
-  // DRF's "not authenticated" 403 detail, in every locale this app serves
-  // (Django LANGUAGE_CODE is ko, so the Korean string is what actually ships).
+  // DRF가 "인증되지 않음" 403에 붙이는 detail 문구. 앱은 한국어(ko)로만
+  // 서비스되므로 실제로는 한국어 문자열만 오지만 영어도 함께 대비해둔다.
   var AUTH_DETAIL_MARKERS = [
     "Authentication credentials were not provided",
     "자격 인증 데이터가 제공되지 않았습니다",
   ];
 
-  // ── cookie reader ──────────────────────────────────────────────────────────
+  // ── 쿠키 읽기 ──────────────────────────────────────────────────────────
 
   function getCookie(name) {
     var prefix = name + "=";
@@ -56,7 +29,7 @@
     return "";
   }
 
-  // ── internal request helpers ───────────────────────────────────────────────
+  // ── 내부 요청 헬퍼 ───────────────────────────────────────────────
 
   function buildJsonHeaders() {
     return {
@@ -66,7 +39,7 @@
   }
 
   function buildUploadHeaders() {
-    // Do NOT include Content-Type — browser must set multipart boundary
+    // Content-Type을 넣지 않아야 브라우저가 multipart 경계값을 직접 설정한다
     return {
       "X-CSRFToken": getCookie("csrftoken"),
     };
@@ -92,29 +65,20 @@
     }
     try {
       var response = await fetch(url, options);
-      // await is required: parseResponse's own await (response.json()) can
-      // reject, and an un-awaited return here would let that rejection
-      // escape this try/catch instead of hitting the network-error fallback.
+      // parseResponse 내부의 response.json()도 실패할 수 있어, await 없이
+      // 그냥 반환하면 그 오류가 이 try/catch를 빠져나가 잡히지 않는다.
       return await parseResponse(response);
     } catch (_networkError) {
       return { ok: false, status: 0, data: null };
     }
   }
 
-  // ── shared error helpers ───────────────────────────────────────────────────
+  // ── 공용 오류 헬퍼 ───────────────────────────────────────────────
 
   /**
-   * classify(result) → stable error kind string
-   *
-   * 'auth'       — 403 whose detail mentions authentication/credentials
-   * 'csrf'       — other 403 (CSRF failure, permission denied)
-   * 'validation' — 400 Bad Request
-   * 'conflict'   — 409 Conflict
-   * 'notfound'   — 404 Not Found
-   * 'server'     — 500+
-   * 'network'    — status 0 (fetch threw, no connection)
-   * 'ratelimited' — 429 Too Many Requests
-   * 'unknown'    — everything else
+   * 응답을 고정된 오류 종류 문자열로 분류한다: auth(인증 필요) / csrf /
+   * validation(400) / conflict(409) / notfound(404) / server(500대) /
+   * network(연결 실패) / ratelimited(429) / unknown.
    */
   function classify(result) {
     var s = result.status;
@@ -138,23 +102,12 @@
     return "unknown";
   }
 
-  /**
-   * formatError(result) → human-readable Korean message
-   *
-   * Handles:
-   *   - Network error (status 0)
-   *   - Known code values: duplicate_user_event_status, photo_limit_exceeded
-   *   - detail string
-   *   - Field-error dict: { field: ["msg", ...] } or { field: "msg" }
-   */
+  // 응답을 사람이 읽을 수 있는 한국어 오류 메시지로 바꾼다.
   function formatError(result) {
     if (result.status === 0) {
       return "네트워크 오류가 발생했습니다. 다시 시도해 주세요.";
     }
-    // 429 Too Many Requests — checked before the data-presence check below
-    // since a throttled response isn't guaranteed to carry a JSON body.
-    // No automatic retry here; the caller's normal error-display path
-    // (an inline message, no resubmission) is enough.
+    // 429는 JSON 본문이 없을 수 있어 data 존재 여부를 확인하기 전에 먼저 처리한다.
     if (result.status === 429) {
       return "요청이 많아요. 잠시 후 다시 시도해 주세요.";
     }
@@ -162,7 +115,7 @@
     if (!data) {
       return "알 수 없는 오류가 발생했습니다.";
     }
-    // Known semantic codes
+    // 서버가 내려주는 의미별 오류 코드
     if (data.code === "duplicate_user_event_status") {
       return "이미 추가됨";
     }
@@ -172,11 +125,11 @@
     if (data.code === "photo_limit_exceeded") {
       return "사진은 기록당 최대 5장까지 첨부할 수 있습니다.";
     }
-    // detail string (DRF default for non-field errors)
+    // DRF가 필드에 속하지 않는 오류에 기본으로 담는 detail 문자열
     if (typeof data.detail === "string") {
       return data.detail;
     }
-    // Field-error dict: { field: ["msg", ...], ... } or { field: "msg", ... }
+    // 필드별 오류 딕셔너리
     if (typeof data === "object") {
       var parts = [];
       Object.keys(data).forEach(function (field) {
@@ -191,11 +144,8 @@
     return "알 수 없는 오류가 발생했습니다.";
   }
 
-  /**
-   * redirectToLogin() — builds /accounts/login/?next=<current path+search>
-   * and navigates. Single definition; all consumers call this instead of
-   * each constructing their own login URL.
-   */
+  // 현재 경로를 next로 붙인 로그인 URL로 이동한다. 모든 호출자가 URL을
+  // 각자 만들지 않고 이 함수 하나를 공유한다.
   function redirectToLogin() {
     var next = encodeURIComponent(
       window.location.pathname + window.location.search
@@ -203,25 +153,15 @@
     window.location.href = "/accounts/login/?next=" + next;
   }
 
-  /**
-   * isAuthenticated() — read the login state the server stamped on <body>.
-   * Lets callers skip a doomed request and prompt for login up front.
-   */
+  // 서버가 <body>에 남겨둔 로그인 상태를 읽는다. 어차피 실패할 요청을
+  // 보내는 대신 미리 로그인 안내를 띄우기 위해서다.
   function isAuthenticated() {
     return document.body.dataset.authenticated === "true";
   }
 
-  /**
-   * promptLogin() — show a modal asking the visitor to log in or sign up,
-   * instead of a hard redirect or a misleading error. Login/register links
-   * carry ?next so the visitor returns to the current page. Idempotent
-   * (one modal at a time). All text via textContent — no markup injection.
-   *
-   * Accessibility: focus moves to the close button on open, Tab/Shift+Tab
-   * cycle only through the modal's focusable controls (close, login,
-   * register), and focus returns to the element that had it before the
-   * modal opened once the modal is dismissed.
-   */
+  // 강제 이동이나 헷갈리는 오류 대신 로그인/회원가입을 안내하는 모달을 띄운다.
+  // 이미 열려 있으면 다시 열지 않는다. 열리면 포커스가 닫기 버튼으로 가고
+  // Tab은 모달 안의 컨트롤 사이에서만 순환하며, 닫으면 원래 포커스로 되돌아간다.
   function promptLogin() {
     if (document.querySelector(".auth-modal-overlay")) {
       return;
@@ -322,7 +262,7 @@
     close.focus();
   }
 
-  // ── public API ─────────────────────────────────────────────────────────────
+  // ── 외부 공개 API ─────────────────────────────────────────────────────────────
 
   window.TakuAPI = {
     getCookie: getCookie,
@@ -343,13 +283,8 @@
       return request("DELETE", url, undefined);
     },
 
-    /**
-     * upload(url, formData, method) — multipart request, default POST.
-     * Does NOT set Content-Type so the browser sets the multipart boundary.
-     * Injects X-CSRFToken and sends credentials: 'same-origin'. Pass
-     * method: "PATCH" for a multipart partial update (e.g. replacing an
-     * image alongside other fields on an existing resource).
-     */
+    // 멀티파트 업로드(기본 POST). method에 "PATCH"를 넘기면 기존 자원의
+    // 부분 수정(예: 이미지 교체)에도 쓸 수 있다.
     upload: async function (url, formData, method) {
       try {
         var response = await fetch(url, {
@@ -358,7 +293,7 @@
           headers: buildUploadHeaders(),
           body: formData,
         });
-        // await required — see request()'s parseResponse call for why.
+        // request()의 parseResponse 호출과 같은 이유로 await가 필요하다.
         return await parseResponse(response);
       } catch (_networkError) {
         return { ok: false, status: 0, data: null };
@@ -371,12 +306,7 @@
     isAuthenticated: isAuthenticated,
     promptLogin: promptLogin,
 
-    /**
-     * setLoading(button, isLoading) — toggle a button's in-flight state.
-     * Disables the button and adds the .is-loading spinner class while a
-     * request runs, giving immediate click feedback and blocking
-     * double-submits. Safe to call with a null/undefined button.
-     */
+    // 요청이 진행 중인 동안 버튼을 비활성화하고 스피너를 붙여 이중 제출을 막는다.
     setLoading: function (button, isLoading) {
       if (!button) {
         return;
@@ -389,22 +319,11 @@
       }
     },
 
-    /**
-     * commitAndNavigate(button, url) — mark a just-succeeded submit as
-     * committed, then navigate to url. The marker
-     * (data-committed-redirect=url) is plain DOM state, so it survives a
-     * back/forward-cache snapshot the way in-memory JS state cannot — on
-     * restore, the pageshow handler below reads the marker as proof that
-     * the prior submit already succeeded, instead of guessing from the
-     * .is-loading class alone. Order (marker set before navigation
-     * starts) is guaranteed by this helper, not by call-site discipline —
-     * relying on call sites to remember that order already failed in
-     * three files. Uses assign, not replace, because this is the normal
-     * forward navigation after a successful submit and should keep a
-     * normal history entry; only the bfcache restore path below needs
-     * replace. Safe to call with a null/undefined button — navigation
-     * still happens, only the marker is skipped.
-     */
+    // 제출이 성공했다는 표시(data-committed-redirect)를 버튼에 남긴 뒤 이동한다.
+    // 이 표시는 DOM 속성이라 bfcache 스냅샷에도 그대로 남아, 나중에 이 페이지가
+    // 복원됐을 때 "이 제출은 이미 성공했다"는 증거로 쓰인다. 표시를 남기는 순서를
+    // 호출하는 쪽이 아니라 이 함수가 보장한다 — 순서를 각자 지키게 했다가 세 파일에서
+    // 이미 실패한 적이 있다. 일반적인 성공 후 이동이라 방문 기록을 남기는 assign을 쓴다.
     commitAndNavigate: function (button, url) {
       if (button) {
         button.setAttribute("data-committed-redirect", url);
@@ -413,25 +332,16 @@
     },
   };
 
-  // ── bfcache restore ───────────────────────────────────────────────────────
+  // ── bfcache 복원 ───────────────────────────────────────────────────────
 
-  // A back/forward-cache restore (event.persisted) can bring back a page
-  // with a button still frozen in its in-flight state (disabled +
-  // .is-loading) from before the user navigated away — the request that
-  // would have called setLoading(btn, false) never got the chance to run
-  // again. Scoped to .is-loading only, so a button the server rendered
-  // disabled on purpose (e.g. an already-approved draft's 승인 button) is
-  // left untouched. If a .is-loading button carries a
-  // data-committed-redirect marker (set by commitAndNavigate right before
-  // the prior submit navigated away), that prior submit is known to have
-  // succeeded — re-enabling it would let the user resubmit an already-
-  // committed form. Instead force the page forward to that destination
-  // with replace, not assign: assign would let every future restore push
-  // a fresh history entry, leaving a Back → form → forced-forward → Back
-  // → form loop in place, while replace collapses the restored snapshot
-  // in one hop. The first marked button found wins and the loop stops
-  // there — navigation is about to leave the page anyway, so any buttons
-  // re-enabled before it was found are harmless.
+  // bfcache 복원(event.persisted)은 페이지를 떠날 때 버튼이 요청 중이던
+  // 상태(.is-loading) 그대로 되살릴 수 있다 — 그 요청이 끝나 버튼을 다시
+  // 켜줄 기회가 다시는 오지 않는다. .is-loading에만 적용해 서버가 의도적으로
+  // 비활성화한 버튼(이미 승인된 드래프트 등)은 건드리지 않는다.
+  // 그중 data-committed-redirect 표시가 있는 버튼은 직전 제출이 이미
+  // 성공했다는 뜻이라, 다시 켜서 재제출을 허용하는 대신 그 목적지로 강제
+  // 이동시킨다. 이때는 replace를 써서 뒤로가기 때마다 새 기록이 쌓이는
+  // 루프를 막는다.
   window.addEventListener("pageshow", function (evt) {
     if (!evt.persisted) {
       return;

@@ -1,17 +1,12 @@
-"""Pure link-extraction functions for the draft auto-discovery pipeline
-(prompt_plan.md §2-1). No DB access, no network I/O — callers (the future
-`discover_drafts` command, PR-3) are responsible for fetching `content` via
-`drafts.fetching.fetch_html` and persisting anything.
+"""RSS/사이트맵/HTML에서 후보 URL만 뽑는 순수 함수 모음(DB 접근·네트워크 I/O 없음).
+`content`를 실제로 가져오고 저장하는 일은 호출자 몫이다.
 
-XML parsing safety (§2-4): raw RSS/sitemap XML is untrusted input, so it is
-parsed with `defusedxml` rather than `xml.etree.ElementTree` directly —
-`xml.etree.ElementTree` performs unbounded entity expansion ("billion
-laughs"), which a response-size cap alone does not stop (a few KB of markup
-can expand to gigabytes in memory). `fetch_html` also returns an already
-decoded `str`, so an `<?xml ... encoding="...">` declaration in that str
-would raise `ValueError` if handed to `fromstring` unchanged — `_parse_xml`
-neutralizes the declared encoding and re-encodes to UTF-8 bytes before
-parsing to avoid that mismatch.
+XML은 표준 xml.etree 대신 defusedxml로 파싱한다 — 외부에서 받은 RSS/사이트맵 XML은
+신뢰할 수 없는 입력이라, xml.etree로 그대로 파싱하면 엔티티 확장("billion laughs") 공격에
+노출되고 응답 크기 제한만으로는 막을 수 없다(몇 KB짜리 마크업이 메모리에서 기가바이트로
+불어날 수 있다). `content`는 이미 디코딩된 문자열이라, 그 안의 `<?xml ... encoding="...">`
+선언을 그대로 두고 fromstring에 넘기면 ValueError가 나므로 `_parse_xml`이 선언을 UTF-8로
+맞춰 재인코딩한 뒤 파싱한다.
 """
 import re
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
@@ -23,13 +18,11 @@ from soupsieve.util import SelectorSyntaxError
 
 
 class DiscoveryParseError(Exception):
-    """Raised when RSS/sitemap XML content cannot be safely parsed —
-    malformed markup or an entity-expansion payload (see module docstring).
-    """
+    """RSS/사이트맵 XML을 안전하게 파싱할 수 없을 때 발생한다 —
+    잘못된 마크업이거나 엔티티 확장 공격 페이로드다."""
 
 
-# SNS domains that are never event sources in their own right (§ PO decision
-# 5): only these exact hosts (+ their www. variant) are enforced by tests.
+# SNS 도메인은 행사 출처가 될 수 없다. www. 변형 포함, 정확히 나열된 호스트만 대상이다.
 _SNS_HOSTNAMES = {
     "x.com",
     "www.x.com",
@@ -42,20 +35,15 @@ _SNS_HOSTNAMES = {
 _IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg")
 
 _XML_ENCODING_DECLARATION = re.compile(r'encoding=["\'][^"\']*["\']')
-# The XML prolog must be the very first thing in a document (a leading BOM
-# is the only thing allowed before it per the XML spec), so anchoring here
-# also keeps the encoding substitution below from ever touching ordinary
-# element/attribute text elsewhere in the document that happens to contain
-# the literal substring `encoding="..."`.
+# XML 프롤로그는 문서 맨 앞(BOM 제외)에만 올 수 있어, 정규식을 앞쪽에 고정하면 본문에
+# 우연히 등장하는 encoding="..." 문자열까지 잘못 치환되는 일이 없다.
 _XML_PROLOG = re.compile(r'\A﻿?<\?xml\b[^>]*\?>')
 
 
 def _parse_xml(content):
-    # Force the declared encoding to match the UTF-8 bytes this function
-    # encodes `content` into — `content` is already a decoded Python str
-    # (fetch_html's return type), so whatever encoding the original response
-    # declared no longer applies to it. Only the prolog itself is rewritten;
-    # a document with no <?xml ... ?> declaration is passed through as-is.
+    # content는 이미 디코딩된 문자열이라 원래 인코딩 선언이 더는 유효하지 않으므로,
+    # UTF-8로 다시 인코딩하기 전에 프롤로그의 선언만 맞춰 고친다. <?xml ...?> 선언이
+    # 없는 문서는 그대로 둔다.
     prolog_match = _XML_PROLOG.match(content)
     if prolog_match:
         prolog = prolog_match.group()
@@ -87,9 +75,8 @@ def _matches_hostname(url, hostname):
 
 
 def _strip_tracking_params(url):
-    # Re-serializing the surviving params via urlencode normalizes encoding
-    # along the way (e.g. a %20-encoded space becomes "+") — both are valid
-    # space encodings in a query string, so this is intended, not a defect.
+    # urlencode로 다시 조립하면 %20이 +로 바뀌는 등 인코딩이 달라질 수 있는데,
+    # 둘 다 유효한 표현이라 의도된 동작이다.
     parts = urlsplit(url)
     kept_params = [
         (key, value)
@@ -100,10 +87,8 @@ def _strip_tracking_params(url):
 
 
 def _matches_base_page(cleaned_url, self_page):
-    # Fragment-only navigation (href="#top") or a bare href="" resolves back
-    # to the listing page itself, never a distinct candidate event page —
-    # compared with the fragment ignored on both sides, after the same
-    # tracking-param stripping applied to `cleaned_url`.
+    # href="#top"처럼 프래그먼트만 있거나 href=""인 링크는 목록 페이지 자신을 가리킬
+    # 뿐 별도 후보가 아니므로, 양쪽 다 프래그먼트를 제거하고 비교한다.
     return urlsplit(cleaned_url)._replace(fragment="") == self_page
 
 
@@ -133,20 +118,10 @@ def _filter_and_dedupe(raw_urls, base_url, *, remove_self_domain):
 
 
 def extract_links_rss(content, base_url):
-    """Extract candidate event-page URLs from a WordPress-style RSS feed
-    (atzip's roundup posts): each <item>'s own <link> plus every <a href>
-    found inside its <description> and <content:encoded> CDATA blocks.
-    Real WordPress feeds (atzip.kr/feed/) put only an excerpt + a
-    self-domain "read more" anchor in <description>; the actual post body
-    HTML — where the outbound official links live — is in
-    <content:encoded> (the http://purl.org/rss/1.0/modules/content/
-    namespace), so both fields must be scanned or the feed yields zero
-    candidates. Matched by local tag name (`_local_tag`, shared with the
-    sitemap extractor) so the xmlns:content prefix binding doesn't need
-    explicit handling. Self-domain links are removed — an RSS roundup links
-    *out* to official sources, so the feed's own permalink is never itself a
-    candidate event page (unlike sitemap/html sources, which point directly
-    at an official site's own pages)."""
+    """WordPress 스타일 RSS(atzip 취합글)에서 후보 URL을 뽑는다: 각 item의 <link>와
+    <description>/<content:encoded> 안의 모든 <a href>. 실제 본문 링크는
+    <content:encoded>에만 있는 경우가 많아 두 필드를 다 봐야 한다. RSS 취합글은 외부
+    공식 링크로 나가는 성격이라 피드 자신의 permalink(자기 도메인)는 후보에서 제외한다."""
     root = _parse_xml(content)
     candidates = []
     channel = root.find("channel")
@@ -174,15 +149,10 @@ def _first_local_child(element, tag_name):
 
 
 def extract_links_sitemap(content, base_url):
-    """Extract every <loc> URL from a sitemap.xml (namespace-agnostic —
-    matched by local tag name so the sitemaps.org xmlns declaration doesn't
-    need explicit handling), one per <url> (or <sitemap>, for a
-    <sitemapindex>) group, alongside that group's own <lastmod> sibling.
-    Entries are returned newest-first by <lastmod> (ISO date strings sort
-    correctly as plain strings); entries with no <lastmod> keep their
-    original document order at the end, since there is nothing to rank them
-    by. Same-domain links are kept: a sitemap points directly at an official
-    site's own pages, unlike an RSS roundup."""
+    """사이트맵 XML에서 <loc> URL을 전부 뽑는다(네임스페이스 무관하게 로컬 태그명으로
+    매칭). <lastmod> 기준 최신순으로 정렬하고, <lastmod>가 없는 항목은 원래 순서
+    그대로 맨 뒤에 둔다. 사이트맵은 공식 사이트 자신의 페이지를 직접 가리키므로 자기
+    도메인 링크도 그대로 남긴다."""
     root = _parse_xml(content)
     entries = []
     for group in root:
@@ -204,15 +174,12 @@ def extract_links_sitemap(content, base_url):
 
 
 def extract_links_html(content, base_url, selector=""):
-    """Extract <a href> URLs from an HTML board/listing page. `selector` is a
-    CSS selector scoping which anchors count (e.g. ".board-list a" for
-    animate); a blank selector matches every anchor in the document.
-    Malformed HTML never raises — BeautifulSoup's html.parser is a lenient
-    parser by design, so worst case is an empty result, not an exception.
-    A malformed `selector` is different: soupsieve raises SelectorSyntaxError
-    for it, which is re-raised as DiscoveryParseError rather than swallowed —
-    a silently empty result here would look identical to "no links today"
-    and hide a permanently broken link_selector from operators."""
+    """HTML 목록/게시판 페이지에서 <a href>를 추출한다. selector는 어떤 앵커를 포함할지
+    좁히는 CSS 선택자이고(예: animate의 ".board-list a"), 비어 있으면 문서의 모든
+    앵커를 본다. BeautifulSoup의 html.parser는 관대해서 마크업이 깨져도 예외 없이 빈
+    결과만 낸다. 다만 selector 자체가 잘못되면 soupsieve가 예외를 내는데, 이를 삼키면
+    "오늘은 링크가 없다"와 구분이 안 되므로 DiscoveryParseError로 다시 던져 운영자가
+    알 수 있게 한다."""
     soup = BeautifulSoup(content, "html.parser")
     try:
         anchors = soup.select(selector) if selector else soup.find_all("a")

@@ -1,9 +1,9 @@
-"""Tests for view-count tracking on event detail pages.
+"""행사 상세 페이지의 조회수 집계를 검증한다.
 
-Covers:
-- New Event has view_count default of 0.
-- GET /events/<id>/ twice increments DB view_count to 2.
-- GET /events/<draft_id>/ returns 404 and does NOT increment view_count.
+다루는 범위:
+- 새 Event의 view_count 기본값은 0이다.
+- GET /events/<id>/를 두 번 호출하면 DB의 view_count가 2로 늘어난다.
+- GET /events/<draft_id>/는 404를 반환하고 view_count를 늘리지 않는다.
 """
 import pytest
 from django.test import Client

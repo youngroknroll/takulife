@@ -1,17 +1,7 @@
 /* ── category color system (archive list chip) ─────────────── */
-/*
- * The .cat-tile color tile and .cat-chip color chip this file once defined
- * are gone (removed dead code); category color today is delivered by
- * templates reading the --cat-<slug>-ink token directly (see tokens.css).
- * What remains in this file is the .event-category chip below.
- * Category hues are desaturated to stay distinct from the four status colors.
- */
-/* ── archive list chip (.event-category) ──────────────────────
- * Archive list/status/interests pages render <span class="event-category">
- * for the category label and <span class="event-category unofficial"> for the
- * private-entry marker. Geometry + default (category) skin here; .unofficial
- * overrides display + colour. Extracted from the per-page sheets, where this
- * was duplicated across three archive pages. */
+/* 카테고리 색은 상태색 4종과 구분되도록 채도를 낮췄다. */
+/* ── archive list chip (.event-category) ──────────────────────── */
+/* .unofficial은 비공식(개인) 기록 표시용이다. */
 .event-category {
   border-radius: var(--radius-chip);
   padding: 0.25rem 0.5625rem;
@@ -21,10 +11,7 @@
   background: var(--brand-soft);
   color: var(--brand-ink);
 }
-/* 공용 디자인 규칙 §1.4-2: color:var(--brand) on --brand-soft는 텍스트
-   아닌 solid-fill 토큰 오용 — 라이트 3.71:1·다크 2.62:1 모두 AA 미달
-   (12파일 15곳 동일 패턴). 베이스를 --brand-ink로 전환해 양 테마
-   4.5:1+ 통과, 다크 전용 오버라이드는 중복이라 제거. */
+/* --brand-soft 배경엔 --brand-ink를 써야 명암비 AA(4.5:1)를 만족한다. */
 .event-category.unofficial {
   display: inline-flex;
   align-items: center;

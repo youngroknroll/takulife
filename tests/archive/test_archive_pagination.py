@@ -1,11 +1,9 @@
-"""Tests for pagination on the three archive SSR list pages.
+"""세 아카이브 SSR 목록 페이지의 페이지네이션 테스트.
 
-Behavior under test:
-- 기록장 (/archive/) paginates 저장한 행사 at 10 per page.
-- 예정 목록 (/archive/statuses/) paginates the same status list at 5 per page,
-  preserving the ?status= filter across page links.
-- 방문 기록 (/archive/visits/) paginates the timeline at 5 per page while the
-  summary cards (누적 방문 / 메모 있음) keep reporting totals across all records.
+검증 대상: 기록장(/archive/)은 저장한 행사를 10건씩, 예정 목록
+(/archive/statuses/)은 같은 상태 목록을 5건씩 ?status= 필터를 유지한 채,
+방문 기록(/archive/visits/)은 타임라인을 5건씩 페이지네이션하며 요약 카드
+(누적 방문/메모 있음)는 전체 레코드 기준을 계속 보고한다.
 """
 import pytest
 
@@ -16,7 +14,7 @@ pytestmark = pytest.mark.web
 
 @pytest.mark.django_db
 class TestArchiveRecordPagination:
-    """기록장 (/archive/) — 저장한 행사, 10 per page."""
+    """기록장 (/archive/) — 저장한 행사, 10건씩."""
 
     def test_전체_보기_첫_페이지는_열_건까지만_보여준다(self, user_client, make_statuses):
         user, client = user_client()
@@ -56,7 +54,7 @@ class TestArchiveRecordPagination:
 
 @pytest.mark.django_db
 class TestArchiveStatusesPagination:
-    """예정 목록 (/archive/statuses/) — 5 per page, filter-preserving."""
+    """예정 목록 (/archive/statuses/) — 5건씩, 필터 유지."""
 
     def test_나의_일정_첫_페이지는_다섯_건까지만_보여준다(self, user_client, make_statuses):
         user, client = user_client()
@@ -86,18 +84,18 @@ class TestArchiveStatusesPagination:
         resp = client.get("/archive/statuses/?status=planned")
 
         assert resp.status_code == 200
-        # The filter tail is exposed for the pager and the windowed page links
-        # carry it so paging never drops the active filter.
+        # 필터 꼬리는 페이저에 노출되고 윈도우 페이지 링크에도 실려서
+        # 페이징 중에 활성 필터가 빠지지 않는다.
         assert resp.context["pager_query"] == "&status=planned"
         assert resp.context["page_obj"].paginator.count == 7
-        # The & in the querystring tail is auto-escaped in the href attribute
-        # (correct HTML; the browser decodes it back to & when navigating).
+        # 쿼리스트링 꼬리의 &는 href 속성에서 자동 이스케이프된다
+        # (올바른 HTML이며, 브라우저는 이동 시 다시 &로 디코딩한다).
         assert b"?page=2&amp;status=planned" in resp.content
 
     def test_나의_일정_상태_필터의_두번째_페이지는_일치하는_행만_보여준다(self, user_client, make_statuses):
         user, client = user_client()
         make_statuses(user, 7, status=UserEventStatus.Status.PLANNED)
-        # Visited rows must not leak into the planned-filtered list/count.
+        # 방문완료 행이 planned 필터 목록·건수에 섞여 들어가면 안 된다.
         make_statuses(user, 3, status=UserEventStatus.Status.VISITED)
 
         resp = client.get("/archive/statuses/?status=planned&page=2")
@@ -109,7 +107,7 @@ class TestArchiveStatusesPagination:
 
 @pytest.mark.django_db
 class TestArchiveVisitsPagination:
-    """방문 기록 (/archive/visits/) — 5 per page; summaries stay totals."""
+    """방문 기록 (/archive/visits/) — 5건씩; 요약은 전체 기준을 유지한다."""
 
     def _make_visits(self, user, make_event, make_visit, count, with_memo=0):
         for i in range(count):
@@ -148,7 +146,7 @@ class TestArchiveVisitsPagination:
 
         resp = client.get("/archive/visits/")
 
-        # Page shows 5 rows, but the summary cards count across all 7 records.
+        # 페이지에는 5행만 보이지만 요약 카드는 전체 7건 기준으로 집계한다.
         assert resp.context["total_count"] == 7
         assert resp.context["memo_count"] == 3
         assert len(resp.context["visit_rows"]) == 5

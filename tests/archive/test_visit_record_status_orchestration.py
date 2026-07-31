@@ -1,8 +1,8 @@
-"""complete_visit_with_record — visit-completion + record-creation
-orchestration (collection domain design plan §3-4, PR-C3, F-02).
+"""complete_visit_with_record — 방문 완료와 기록 생성을 함께 처리하는
+오케스트레이션 (컬렉션 도메인 설계안 §3-4, PR-C3, F-02).
 
-Covers the (a)/(b)/(c)/(d)/(e) contract approved in the plan: a visit record
-can never exist while its status subject disagrees with "visited".
+계획에서 승인된 (a)~(e) 계약을 다룬다: VisitRecord는 상태 대상이 "visited"와
+불일치한 채로는 존재할 수 없다.
 """
 import uuid
 
@@ -16,7 +16,7 @@ pytestmark = pytest.mark.domain
 
 
 # ---------------------------------------------------------------------------
-# CP1 — no existing status row: auto-create visited
+# CP1 — 기존 상태 행이 없으면 visited 상태를 자동 생성한다
 # ---------------------------------------------------------------------------
 
 
@@ -33,7 +33,7 @@ def test_상태_기록이_없는_행사를_방문_완료_처리하면_방문_완
 
 
 # ---------------------------------------------------------------------------
-# CP2 — existing planned row: auto-transition to visited, same row
+# CP2 — 기존 planned 행은 같은 행에서 visited로 자동 전환된다
 # ---------------------------------------------------------------------------
 
 
@@ -51,7 +51,7 @@ def test_참석_예정_상태에서_방문_완료_처리하면_같은_상태_행
 
 
 # ---------------------------------------------------------------------------
-# CP3 — existing missed row: also transitions to visited
+# CP3 — 기존 missed 행도 visited로 전환된다
 # ---------------------------------------------------------------------------
 
 
@@ -68,7 +68,7 @@ def test_불참_상태에서_방문_완료_처리하면_상태가_방문_완료�
 
 
 # ---------------------------------------------------------------------------
-# CP4 — already visited: status untouched, repeat record allowed
+# CP4 — 이미 visited면 상태는 그대로, 기록만 반복 추가된다
 # ---------------------------------------------------------------------------
 
 
@@ -101,7 +101,7 @@ def test_이미_방문_완료된_행사를_다시_방문_완료_처리하면_상
 
 
 # ---------------------------------------------------------------------------
-# CP5 — each starting branch records EVENT_MARKED_VISITED exactly once
+# CP5 — 시작 상태가 무엇이든 EVENT_MARKED_VISITED는 정확히 한 번만 기록된다
 # ---------------------------------------------------------------------------
 
 
@@ -136,13 +136,10 @@ def test_상태_없음_참석_예정_불참_중_어디서_시작해도_방문_�
 
 
 # ---------------------------------------------------------------------------
-# INTG-BE-04 — bfcache duplicate-creation track: complete_visit_with_record
-# needs its own client_token idempotency guard, mirroring create_visit_record
-# and create_collection_item (INTG-BE-01-VR/CI). A replayed "완료 처리" submit
-# (e.g. a bfcache-restored page re-POSTing the same form) must not fire a
-# second status transition or a second VisitRecord/analytics event.
-# complete_visit_with_record does not yet accept client_token, so this call
-# is expected to raise TypeError until the orchestration guard lands.
+# INTG-BE-04 — bfcache 중복 생성 트랙: complete_visit_with_record도
+# create_visit_record/create_collection_item(INTG-BE-01-VR/CI)처럼 자체
+# client_token 멱등성 가드가 필요하다. bfcache로 복원된 페이지가 같은 폼을
+# 재전송해도 상태 전환이나 기록/분석 이벤트가 중복 생성되면 안 된다.
 # ---------------------------------------------------------------------------
 
 
@@ -154,7 +151,7 @@ def test_같은_클라이언트_토큰으로_방문_완료_처리를_두_번_요
     event = make_event()
     token = uuid.uuid4()
 
-    # Given: no status row yet for this (user, event) pair.
+    # Given: 이 (user, event) 쌍에 대한 상태 행이 아직 없다.
     assert not UserEventStatus.objects.filter(user=user, event=event).exists()
 
     complete_visit_with_record(
@@ -165,14 +162,14 @@ def test_같은_클라이언트_토큰으로_방문_완료_처리를_두_번_요
     assert status_row.status == UserEventStatus.Status.VISITED
     original_updated_at = status_row.updated_at
 
-    # When: the same client_token is replayed (e.g. a bfcache-restored page
-    # re-submitting the same "완료 처리" form).
+    # When: 같은 client_token이 재전송된다(예: bfcache로 복원된 페이지가
+    # 같은 "완료 처리" 폼을 다시 제출).
     complete_visit_with_record(
         user=user, event=event, visited_on="2026-07-16", client_token=token
     )
 
-    # Then: the status row is untouched (proves mark_visited did not fire a
-    # second time) and no second VisitRecord or analytics event was created.
+    # Then: 상태 행은 그대로다(mark_visited가 두 번째로 실행되지 않았음을
+    # 증명) — 두 번째 VisitRecord나 분석 이벤트도 생기지 않았다.
     status_row.refresh_from_db()
     assert status_row.status == UserEventStatus.Status.VISITED
     assert status_row.updated_at == original_updated_at
@@ -193,7 +190,7 @@ def test_같은_클라이언트_토큰으로_방문_완료_처리를_두_번_요
 
 
 # ---------------------------------------------------------------------------
-# CP7 — personal_entry (place) subject gets identical treatment (approved)
+# CP7 — personal_entry(장소) 대상도 동일하게 처리된다 (승인됨)
 # ---------------------------------------------------------------------------
 
 
@@ -210,7 +207,7 @@ def test_비공식_장소를_방문_완료_처리하면_해당_장소_기준으�
 
 
 # ---------------------------------------------------------------------------
-# CP8 — atomicity: status write failure rolls back the visit record too
+# CP8 — 원자성: 상태 저장 실패 시 방문 기록 생성도 함께 롤백된다
 # ---------------------------------------------------------------------------
 
 
@@ -236,7 +233,7 @@ def test_상태_저장이_실패하면_방문_기록_생성도_함께_롤백된�
 
 
 # ---------------------------------------------------------------------------
-# CP10 — data migration corrects pre-existing planned/missed drift
+# CP10 — 데이터 마이그레이션이 기존 planned/missed 불일치를 보정한다
 # ---------------------------------------------------------------------------
 
 
@@ -272,9 +269,9 @@ def test_방문_기록이_있는데_상태만_참석_예정으로_남아있으�
 
 
 # ---------------------------------------------------------------------------
-# CP10-bis — 0016 corrects a status row using only *that same user's* own
-# VisitRecord (§6-b Deferred: "0016 크로스 유저 격리 명시 테스트"). Another
-# user's VisitRecord for the same subject must never leak across accounts.
+# CP10-bis — 0016은 오직 *같은 사용자 본인*의 VisitRecord로만 상태 행을
+# 보정한다 (§6-b Deferred: "0016 크로스 유저 격리 명시 테스트"). 같은 대상에
+# 대한 다른 사용자의 VisitRecord가 계정을 넘어 영향을 주면 안 된다.
 # ---------------------------------------------------------------------------
 
 
@@ -306,10 +303,10 @@ def test_다른_사용자의_방문_기록은_마이그레이션_보정_대상�
 
 
 # ---------------------------------------------------------------------------
-# Domain gate CRITICAL fix — analytics persistence failure inside the shared
-# atomic() must not poison the outer transaction (core.analytics record_event
-# needs its own savepoint so a DB error there can't fail subsequent domain
-# writes with TransactionManagementError).
+# 도메인 게이트 CRITICAL 수정 — 공유 atomic() 안에서 분석 이벤트 저장이
+# 실패해도 바깥 트랜잭션을 오염시키면 안 된다 (core.analytics의
+# record_event는 자체 세이브포인트가 있어야 이후 도메인 쓰기가
+# TransactionManagementError로 실패하지 않는다).
 # ---------------------------------------------------------------------------
 
 
@@ -321,12 +318,11 @@ def test_분석_이벤트_기록이_실패해도_방문_완료_상태_전환과_
     event = make_event()
     status_row = make_status(user, event, status=UserEventStatus.Status.PLANNED)
 
-    # A monkeypatch that raises in pure Python (without ever hitting the DB)
-    # never poisons the real PostgreSQL transaction — it doesn't reproduce
-    # the bug. Force a *genuine* DB-level error instead: event_name is a
-    # VARCHAR(32) column, so a 100-char value overflows it at the database,
-    # which is exactly the kind of failure that aborts the ambient PG
-    # transaction if it isn't isolated behind its own savepoint.
+    # 순수 파이썬에서만 예외를 던지는 monkeypatch는 DB를 건드리지 않아 실제
+    # PostgreSQL 트랜잭션을 오염시키지 못해 버그를 재현하지 못한다. 대신 진짜
+    # DB 오류를 강제한다: event_name은 VARCHAR(32)라 100자 값이 DB 단에서
+    # 넘쳐, 세이브포인트로 격리되지 않으면 트랜잭션을 중단시키는 종류의
+    # 실패를 재현한다.
     def raise_real_database_error(**kwargs):
         AnalyticsEvent(
             event_name="x" * 100, user_key="", target_type="", target_id=None, context={}
@@ -336,8 +332,8 @@ def test_분석_이벤트_기록이_실패해도_방문_완료_상태_전환과_
         "core.analytics.AnalyticsEvent.objects.create", raise_real_database_error
     )
 
-    # Must not raise — analytics persistence failure must not break the
-    # domain action it is attached to.
+    # 예외가 나면 안 된다 — 분석 이벤트 저장 실패가 붙어 있는 도메인 동작을
+    # 깨서는 안 된다.
     complete_visit_with_record(user=user, event=event, visited_on="2026-07-15")
 
     status_row.refresh_from_db()

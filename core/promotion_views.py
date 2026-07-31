@@ -1,7 +1,7 @@
-"""API endpoint for 공식 제보 — POST /api/personal-entries/<pk>/promote/.
+"""공식 제보 API 엔드포인트 — POST /api/personal-entries/<pk>/promote/.
 
-Lives in ``core`` (not ``archive``) because promotion bridges archive→drafts,
-which the domain boundary forbids inside the archive app itself.
+승격은 archive→drafts를 연결하는데 도메인 경계상 archive 앱 안에서는
+이게 금지되므로 (``archive``가 아니라) ``core``에 둔다.
 """
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
@@ -26,8 +26,8 @@ class _PromoteSerializer(serializers.Serializer):
 
 class PromotePersonalEntryView(APIView):
     permission_classes = [IsAuthenticated]
-    # Per-user daily cap so the admin review queue can't be flooded with
-    # promoted drafts. Rate lives in settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"].
+    # 관리자 검토 큐가 승격된 드래프트로 폭주하지 않도록 사용자당 일일
+    # 상한을 둔다. 속도는 settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]에 있다.
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "promotion"
 

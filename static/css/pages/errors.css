@@ -1,9 +1,6 @@
-/* ── 404 / 429 / 500 ──────────────────────────────────────────
- * `.page` (base.css) already supplies max-width:1120px and the
- * left/right --page-pad-x edge margin — this file only adds the
- * vertical padding + stacking context the giant background code
- * needs. No new horizontal padding literal here (would drift from
- * every other page's edge). */
+/* ── 404 / 429 / 500 ──────────────────────────────────────────── */
+/* 좌우 여백은 base.css의 .page가 이미 맡고 있어 여기선 상하 패딩만 추가한다.
+   가로 패딩을 새로 넣지 않는 이유는 다른 페이지의 여백과 어긋나지 않기 위해서다. */
 
 .error-page {
   position: relative;
@@ -20,18 +17,12 @@
 }
 
 .error-page-body {
-  position: relative; /* kept even though DOM order already puts the body
-                          after the background span — same stacking context,
-                          so any residual overlap still resolves in favour
-                          of the body text. */
+  position: relative; /* DOM 순서상 배경보다 뒤라 겹쳐도 본문 글자가 위에 오게 보장한다 */
   max-width: 38.75rem;
 }
 
-/* Background status code — decorative only, aria-hidden below 64rem it sits
-   in normal flow (a block above the body); at 64rem+ it is pulled out to
-   the page's top-right corner. The 45rem breakpoint from the mock would
-   overlap the body column at tablet widths (see brief §3) — 64rem is the
-   deliberate, measured exception. */
+/* 배경 상태코드는 장식용(aria-hidden)이다. 시안 기준 45rem에서 꺾으면
+   태블릿 폭에서 본문과 겹쳐, 64rem을 실측으로 확인해 예외로 뒀다. */
 .error-page-bg {
   display: block;
   font-weight: 800;
@@ -83,9 +74,8 @@
   line-height: 1.7;
 }
 
-/* 45rem matches --page-pad-x's tablet tier boundary (tokens.css:341), not
-   .error-page-body's 38.75rem column max-width above — keep this aligned
-   with the edge spacing step, not the body column. */
+/* 이 45rem 기준은 .error-page-body의 38.75rem 컬럼폭이 아니라
+   --page-pad-x의 태블릿 단계 경계(tokens.css)에 맞춘 것이다. */
 @media (min-width: 45rem) {
   .error-page-title {
     font-size: 2.125rem;
@@ -139,9 +129,8 @@
   flex: none;
 }
 
-/* 45rem matches --page-pad-x's tablet tier boundary (tokens.css:341), not
-   .error-page-body's 38.75rem column max-width above — keep this aligned
-   with the edge spacing step, not the body column. */
+/* 이 45rem 기준은 .error-page-body의 38.75rem 컬럼폭이 아니라
+   --page-pad-x의 태블릿 단계 경계(tokens.css)에 맞춘 것이다. */
 @media (min-width: 45rem) {
   .error-page-link {
     padding: 0.875rem 0.125rem;

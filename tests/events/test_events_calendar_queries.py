@@ -1,21 +1,18 @@
-"""Events month-overlap query contract (dual-calendar Test List §단계 3:
-CAL-3-01~02).
+"""행사 월-겹침 조회 계약을 검증한다(이중 달력 테스트 목록 §단계 3: CAL-3-01~02).
 
-events.queries.list_published_events_for_month does not exist yet — the
-whole file is expected to fail at collection with ImportError until it is
-added (mirrors tests/archive/test_activity_log_entry.py's convention).
+events.queries.list_published_events_for_month는 아직 존재하지 않아, 추가되기
+전까지는 이 파일 전체가 수집 단계에서 ImportError로 실패하는 것이 정상이다
+(tests/archive/test_activity_log_entry.py와 같은 관례).
 
-Overlap rule under test (service design §6): a published event is included
-in a queried month when
+겹침 판정 규칙(서비스 설계서 §6): 게시된 행사가 조회 월에 포함되는 조건은
 
     start_date <= 조회 월의 마지막 날
     그리고
     (effective_end := end_date if end_date is not None else start_date)
         >= 조회 월의 첫날
 
-A null start_date always excludes an event from the calendar (it remains
-reachable from the existing plain listing, service design §6). Non-published
-events are always excluded.
+start_date가 없으면 항상 달력에서 제외된다(기존 단순 목록에서는 여전히
+조회 가능하다, 서비스 설계서 §6). 비게시 행사는 항상 제외된다.
 """
 from datetime import date
 

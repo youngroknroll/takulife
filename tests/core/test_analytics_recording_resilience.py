@@ -1,7 +1,5 @@
-"""core.analytics.record_event resilience and privacy guards
-(PR-0e checkpoints B8, B9).
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+"""core.analytics.record_event의 복원력·프라이버시 가드 검증
+(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
 import pytest
 
@@ -19,8 +17,8 @@ def test_분석_이벤트_저장이_실패해도_예외를_전파하지_않는�
 
     monkeypatch.setattr(AnalyticsEvent.objects, "create", _boom)
 
-    # Must not raise — the calling domain action (e.g. creating a visit
-    # record) must succeed even if analytics persistence is broken.
+    # 예외를 던지면 안 된다 — 분석 데이터 저장이 고장나도 호출한 도메인
+    # 동작(예: 방문 기록 생성)은 성공해야 한다.
     record_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, user=user)
 
     assert AnalyticsEvent.objects.count() == 0

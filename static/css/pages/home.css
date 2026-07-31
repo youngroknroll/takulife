@@ -1,43 +1,28 @@
-  /* Home has no mobile-cta, so the global 5rem .page bottom padding is dead
-     space above the footer (which already adds its own 40px margin-top). Trim
-     it; the mobile @media below keeps its own 3rem bottom. */
+  /* 홈에는 mobile-cta가 없어 전역 하단 여백이 푸터 위 빈 공간으로 남는다 —
+     줄인다. */
   .home-page {
     padding-bottom: 1.5rem;
   }
-  /* ── Hero: editorial de-chroming (home-editorial plan §A) ────────────
-     No card box (border/shadow/background/padding) — flat, directly on the
-     page background. `.hero` stays only as a spacing/grid wrapper.
-     The four box properties must be redeclared here explicitly: the shared
-     cards.css `.hero` (same specificity, earlier in load order) sets them,
-     and the cascade only drops a property this later rule actually
-     redeclares (WED post-implementation finding — margin-only override
-     left the card box fully intact). cards.css itself stays untouched
-     (26 other templates share it). */
+  /* ── Hero: 카드 박스 없이 배경에 바로 얹는다. `.hero`는 여백/그리드
+     래퍼로만 쓴다. 네 박스 속성을 여기서 명시적으로 재선언해야 한다 —
+     margin만 덮어쓰면 공유 cards.css의 박스가 그대로 살아남는다. */
   .hero {
-    margin-bottom: 3.25rem; /* ~52px, plan §A's 46–52px section rhythm */
+    margin-bottom: 3.25rem; /* ~52px */
     background: transparent;
     border: none;
     box-shadow: none;
     padding: 0;
   }
-  /* Hero card background (mock parity, 2026-07-21 user instruction): the
-     mock's `data-hero-card` div is both the grid container AND the surface
-     whose background tracks the deck's active poster (deck.js render()) —
-     same element here, no extra wrapper. Base background/radius/padding
-     apply even with JS disabled or an empty deck (--brand-soft fallback);
-     home.html sets the initial inline background from the first
-     popular_rows entry so there's no flash-of-wrong-colour before deck.js's
-     first render(). Background-only transition (no transform), so it needs
-     no prefers-reduced-motion gate (design-rules.md §3.1-1 — colour fades
-     are non-transform feedback, always allowed). */
+  /* 이 요소가 덱의 활성 포스터를 따라가는 배경 표면을 겸한다(deck.js가
+     렌더링). JS 비활성이나 빈 덱에서도 기본 배경이 적용되며, home.html이
+     초기 인라인 배경을 함께 설정해 첫 렌더 전 색 깜빡임을 막는다.
+     배경만 트랜지션이라 모션 감소 설정과 무관하게 항상 허용된다. */
   .hero-inner {
     display: grid;
     grid-template-columns: 3fr 2fr;
     gap: 2.5rem;
-    /* 좌측 컬럼(제목·검색·칩)을 덱 높이에 맞춰 세로 중앙 정렬(2026-07-23
-       사용자 지시: "히어로 블럭 검색 필드 수직 중앙 정렬"). start였을 땐
-       덱이 좌측보다 길어 검색 필드가 블럭 상단에 몰려 있었다. 한 컬럼으로
-       무너지는 ≤64rem에서는 무의미해지지만 해가 없어 그대로 둔다. */
+    /* 좌측 컬럼(제목·검색·칩)을 덱 높이에 맞춰 세로 중앙 정렬한다. start였을
+       땐 덱이 더 길어 검색 필드가 상단에 몰려 있었다. */
     align-items: center;
     background: var(--brand-soft);
     border-radius: 20px;
@@ -51,12 +36,8 @@
     line-height: 1.22;
     letter-spacing: -0.02em;
   }
-  /* Highlight literal (design-rules.md §4-c ①, §1.5 시안 판정 conforms):
-     the proposal's orange gradient is a non-token rgba literal, accepted
-     for this one hero phrase only — dark-mode contrast is a deferred risk
-     (design-rules §5), not re-derived from tokens here. Overrides the
-     shared .hl utility (components/text.css) inside .hero only, so no
-     other .hl usage on the site is touched. */
+  /* 이 오렌지 그라디언트는 토큰이 아닌 시안 리터럴로, 이 히어로 문구
+     하나에만 승인됐다 — 다크모드 대비는 별도 위험으로 남겨둔다. */
   .hero .hl {
     font-weight: 800;
     background: linear-gradient(transparent 60%, rgba(224, 126, 36, 0.92));
@@ -72,12 +53,9 @@
     gap: 0.5rem;
   }
 
-  /* ── Hero stack deck (deck.js) ─────────────────────────────────────
-     Tarot-fan carousel replaced (carousel.js deleted — this was its only
-     consumer). Every card is a real <a href="/events/N/">, so the front
-     card's image area needs no JS at all to "navigate on click" — deck.js
-     only intercepts clicks on *back* cards (bring-to-front instead of
-     following that card's own link immediately). */
+  /* ── Hero stack deck (deck.js) — 각 카드는 실제 <a> 링크라 맨 앞 카드는
+     클릭 시 JS 없이도 이동한다. deck.js는 뒤쪽 카드 클릭만 가로채 맨
+     앞으로 가져온다. */
   .deck-wrap {
     width: 100%;
   }
@@ -112,10 +90,8 @@
       transition: none;
     }
   }
-  /* Pre-init / non-JS depth fallback — deck.js overwrites these via inline
-     style the instant it runs (nth-of-type is lower precedence than an
-     inline style on the same property), so this only covers the brief
-     window before the deferred script executes. */
+  /* deck.js 실행 전(또는 JS 비활성) 임시 겹침 표현 — 실행되면 인라인
+     스타일이 이 값을 덮어쓴다. */
   .deck-card:nth-of-type(1) { z-index: 30; }
   .deck-card:nth-of-type(2) { transform: translateY(12px) scale(0.965); opacity: 0.9; z-index: 29; }
   .deck-card:nth-of-type(3) { transform: translateY(24px) scale(0.93);  opacity: 0.8; z-index: 28; }
@@ -131,13 +107,9 @@
     object-position: center 18%;
     display: block;
   }
-  /* No-poster fallback (design-rules.md §4-c 시안 우선, mock's gradFor()/
-     565~568행): the gradient itself is set inline (per-card category slug,
-     home.html) on `.deck-card` — it's already a full inset:0 box, so no
-     extra sizing modifier is needed here, only the watermark label.
-     color-mix() has no prior use in this codebase (grepped) — accepted as
-     the mock's own formula; a color-mix()-less browser falls back to the
-     gradient's first stop (var(--surface)), a safe flat background. */
+  /* 포스터 없을 때 대체 — 그라디언트는 카드별 인라인 스타일로 이미 채워져
+     있어 여기서는 워터마크 라벨만 필요하다. color-mix()를 지원하지 않는
+     브라우저는 그라디언트 첫 색(var(--surface))으로 자연스럽게 대체된다. */
   .deck-fill-label {
     position: absolute;
     inset: 0;
@@ -177,10 +149,8 @@
     padding: 1.125rem 1.125rem 2rem;
     color: #fff;
   }
-  /* .hero-prefixed: shared cards.css's `.hero p { color: var(--muted) }`
-     (0,1,1) outranks a bare class (0,1,0) — these captions are <p> inside
-     .hero, so without the prefix the white text computes muted grey
-     (user-reported regression, live-verified). */
+  /* `.hero` 접두 필요 — 없으면 공유 `.hero p` 규칙(특이도가 더 높음)이
+     이겨 흰 글자가 회색으로 계산된다. */
   .hero .deck-card-work {
     margin: 0 0 0.25rem;
     font-size: var(--fs-xs);
@@ -229,10 +199,8 @@
     text-overflow: ellipsis;
   }
 
-  /* Dot indicators — visible size 7/18px is the design literal
-     (design-rules.md §4-c); ::before supplies the 44px hit box the visible
-     dot doesn't have room for. Active state (aria-current, deck.js) also
-     drives the width/shape change. */
+  /* 점 인디케이터 — 눈에 보이는 크기(7/18px)는 시안값이고, ::before가
+     터치하기엔 너무 작은 점 대신 44px 히트 박스를 보충한다. */
   .deck-dots {
     position: absolute;
     left: 50%;
@@ -258,8 +226,8 @@
     transition: width 0.2s ease, background 0.2s ease, border-radius 0.2s ease;
   }
   .deck-dot:focus-visible {
-    /* Same explicit ring as .deck-card/.cat-dot/.section-more (BIR Low
-       finding) — UA default alone reads inconsistently next to them. */
+    /* 다른 포커스 요소들과 같은 명시적 링 — 브라우저 기본값만으로는
+       옆 요소들과 일관되지 않는다. */
     outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
@@ -278,7 +246,7 @@
     background: #fff;
   }
 
-  /* Empty state when no popular events */
+  /* 인기 이벤트가 없을 때의 빈 상태 */
   .carousel-empty {
     display: flex;
     align-items: center;
@@ -303,27 +271,16 @@
       margin: 0 auto;
     }
   }
-  /* Fixed 4 columns at every width (2026-07-21 user re-command — "4열로
-     표출되도록 반응형 사이즈 적용", superseding both the earlier flat 2/3
-     shrink AND the slide/hscroll variant it replaced — column *count*
-     stays 4 always, block width/typography respond to viewport instead;
-     see the ≤64rem tier below). */
+  /* 열 개수는 모든 화면 폭에서 4로 고정, 블록 너비·글자 크기만 반응한다
+     (좁은 화면 값은 아래 ≤64rem 블록 참조). */
   .cat-browse {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 0.625rem;
   }
-  /* ── Category chips (.cat-dot, plan §D) — replaces the old icon-tile
-     .cat-browse-link. The .cat-tile component (components/category.css)
-     it once sat alongside is gone; the swatch below reads the
-     `--cat-*-ink` custom properties directly via inline style (home.html),
-     same convention as the poster card's category-tinted style-card
-     fallback. Base rule here
-     is the desktop/wide size (>64rem) — 4 columns leaves at least as much
-     room per chip as the old 5-column layout did, so this is the original
-     pre-2/3-shrink sizing; the ≤64rem tier below is the one that actually
-     needs to shrink, and switches to a vertical (icon-over-label) layout
-     instead of scaling the horizontal one down further. */
+  /* ── Category chips (.cat-dot) — 스와치는 `--cat-*-ink` 커스텀 속성을
+     인라인 스타일로 직접 읽는다. 기본 규칙은 데스크톱(>64rem) 크기고,
+     ≤64rem에서는 가로 배치 대신 세로(아이콘 위·라벨 아래) 배치로 바뀐다. */
   .cat-dot {
     display: flex;
     align-items: center;
@@ -364,17 +321,12 @@
     color: var(--muted);
   }
 
-  /* ── Section chrome (editorial de-boxing, plan §A) ───────────────────
-     No card box — an eyebrow label + h2 + margin replace the border/
-     shadow/background/padding this used to carry. Shared by the snapshot
-     panel below, which gained its own "MY" eyebrow in the 2026-07-23
-     collection-section pass. */
-  /* 섹션 간격(2026-07-23 사용자 지시): 48px 순수 여백만으로 나누니 섹션들이
-     서로 흩어져 보였다. 여백을 20px로 줄이고 그 자리에 헤어라인 구분자를 둔다 —
-     구분은 선이 맡고 여백은 숨 쉴 틈만 남기는 방식이라, 총 간격이 48→41px로
-     줄면서도 경계는 오히려 또렷해진다.
-     `.section + .section`이라 첫 섹션에는 선이 붙지 않고, 비로그인 사용자처럼
-     스냅샷 패널이 통째로 빠지는 경우에도 그다음 섹션이 자동으로 첫 섹션이 된다. */
+  /* ── Section chrome — 카드 박스 없이 eyebrow 라벨 + h2 + 여백으로만
+     구성한다. */
+  /* 여백만으로 나누면 섹션들이 흩어져 보여, 여백을 줄이고 헤어라인
+     구분선을 더했다 — 구분은 선이, 여백은 숨 쉴 틈만 맡는다.
+     `.section + .section`이라 첫 섹션엔 선이 안 붙고, 스냅샷 패널이
+     통째로 빠져도 다음 섹션이 자동으로 첫 섹션이 된다. */
   .section {
     margin-bottom: 1.25rem; /* 20px */
   }
@@ -432,19 +384,12 @@
     border-radius: 4px;
   }
 
-  /* ── collection-first home snapshot panel (H-2) ──────────────────────
-     Shares .section/.section-head/.section h2 above — no changes to those
-     selectors themselves (WED §7-a-6 "격하 없음" requires their computed
-     style stay byte-identical with and without this panel). */
-  /* ── 4-up stat strip (2026-07-23, design source: claude.ai/design
-     "홈 리디자인 (에디토리얼).dc.html" §내 컬렉션 현황) ──────────────
-     One bordered card divided by hairlines, not four separate boxes — which
-     is why this is its own <dl> rather than the shared .summary-grid/
-     .summary-card (components/cards.css): those give every cell its own box,
-     a different structure, and they are consumed unmodified by five archive
-     pages. cards.css is untouched.
-     The value is weight 300 on purpose (mock): a light large numeral against
-     a 600-weight label is the contrast this strip is built on. */
+  /* ── collection-first home snapshot panel — 위 .section/.section-head/
+     .section h2를 공유하며 이 셀렉터들 자체는 건드리지 않는다. */
+  /* ── 4-up stat strip — 헤어라인으로 나눈 하나의 테두리 카드다. 셀마다
+     박스가 따로인 공유 .summary-grid/.summary-card와 구조가 달라 별도
+     <dl>로 둔다(cards.css는 무접촉). 값의 weight 300은 라벨(600)과의
+     대비를 위한 의도적인 선택이다. */
   .snapshot-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -486,10 +431,8 @@
     border-radius: 50%;
     background: var(--muted);
   }
-  /* Each cell's dot borrows an existing status/category ink rather than
-     introducing a new colour: 보유 = the goods category, 구함 = brand,
-     기록 = the "예정/기록" blue already used for archive stats, 위시 = the
-     찜 pink used by every interest control in the app. */
+  /* 각 셀의 점은 새 색을 만들지 않고 기존 상태/카테고리 색을 그대로
+     빌려 쓴다. */
   .snapshot-stat[data-tone="owned"] .snapshot-stat-dot {
     background: var(--cat-goods_reservation-ink);
   }
@@ -525,12 +468,9 @@
     text-decoration: underline;
   }
 
-  /* "기록 대기" rows (2026-07-23) — the horizontal rail became a 3-up grid,
-     per the mock. Only this sublist changed: the other two hold posters and
-     goods cards, which the mock leaves on rails.
-     The category accent is a 3px bar rather than a border-left on the row
-     itself, so the row keeps its full rounded border while the accent still
-     spans the text block's height. */
+  /* "기록 대기" 행 — 가로 레일을 3열 그리드로 바꿨다(다른 두 서브리스트는
+     레일 그대로). 카테고리 강조는 행 자체 border-left가 아니라 3px 바로
+     둬 행의 둥근 테두리를 그대로 유지한다. */
   .snapshot-record-rows {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -574,8 +514,8 @@
     font-weight: 700;
     color: var(--rec-ink);
   }
-  /* Single-line ellipsis per the mock — the row is a pointer to the record
-     form, not the place you read the full title. */
+  /* 1줄 말줄임 — 이 행은 전체 제목을 읽는 곳이 아니라 기록 폼으로 가는
+     길잡이다. */
   .snapshot-record-title {
     margin: 0;
     font-size: 0.9rem;
@@ -591,10 +531,9 @@
     font-size: 0.75rem;
     color: var(--muted);
   }
-  /* 시안의 기록 버튼은 채움이 아니라 아웃라인 알약이다. .record-action-link는
-     아카이브 5개 페이지가 함께 쓰는 공유 컴포넌트(archive.css)라 이 행 안에서만
-     재선언한다 — 배경·글자색·테두리 반경 4속성을 모두 명시해야 원본 상자가
-     살아남지 않는다(홈·활동 단계에서 얻은 교훈). archive.css는 무접촉. */
+  /* .record-action-link는 archive.css의 공유 컴포넌트라 이 행 안에서만
+     재선언한다 — 배경·글자색·테두리 4속성을 모두 명시해야 원본 상자가
+     비치지 않는다. */
   .snapshot-record-row .record-action-link {
     flex: none;
     border-radius: 999px;
@@ -669,13 +608,9 @@
     }
   }
 
-  /* .visit-card / .visit-card-media / .visit-card h3: migrated from the
-     now-deleted archive_visits.css (2026-07-28 CSS sweep). home.html was
-     that file's only remaining loader — 54 of its 58 selectors had zero
-     consumers here, but these 3 base rules are the "최근 등록한 굿즈" tile's
-     plain-block box/media/title styling (see .snapshot-goods-card usage
-     below), so they move here verbatim instead of disappearing with the
-     file. Declarations are unchanged from the source. */
+  /* 삭제된 archive_visits.css에서 옮겨온 규칙 — "최근 등록한 굿즈" 타일의
+     기본 박스/미디어/제목 스타일이라 파일과 함께 사라지지 않게 여기로
+     이식했다. 값은 원본 그대로다. */
   .visit-card {
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -691,16 +626,9 @@
     line-height: 1.35;
     overflow-wrap: anywhere;
   }
-  /* "최근 등록한 굿즈" tile reuses .visit-card's border/background (migrated
-     above) but at this page's 168px hscroll width, not the old archive
-     visits page's 2-column [text|media] grid (which only activated when a
-     .visit-card-body child was present — omitted here on purpose, so this
-     markup falls back to .visit-card's plain block styling and stacks
-     media above title instead). Scoped the same way archive_collection.css
-     scopes its own .visit-card override, via a class unique to this card.
-     Specificity note: this compound selector (0,2,0) still beats the bare
-     .visit-card-media above (0,1,0) regardless of source order within this
-     file, so the override survives the migration unchanged. */
+  /* "최근 등록한 굿즈" 타일은 .visit-card의 테두리/배경을 재사용하되 이
+     페이지의 168px 가로 스크롤 폭에 맞춘다. .visit-card-body가 없어 기존
+     2열 그리드 대신 미디어-위/제목-아래 블록으로 떨어진다. */
   .snapshot-goods-card .visit-card-media {
     width: 100%;
     aspect-ratio: 3 / 4;
@@ -714,11 +642,9 @@
     border-radius: 8px;
     display: block;
   }
-  /* No-image fallback (WED post-implementation finding, 2026-07-17): a
-     centered generic-goods emoji instead of an empty tinted block, matching
-     this page's other no-image fallback (poster card's category emoji).
-     Scoped to .snapshot-goods-card only — /collection/'s own 96px thumbnail
-     use of this same class (archive_collection.css) is untouched. */
+  /* 이미지 없을 때 대체 — 빈 색 블록 대신 가운데 정렬된 굿즈 이모지.
+     .snapshot-goods-card에만 스코프해 컬렉션 페이지의 같은 클래스 사용은
+     건드리지 않는다. */
   .snapshot-goods-card .collection-thumb-placeholder {
     display: flex;
     align-items: center;
@@ -743,13 +669,10 @@
     text-decoration: none;
   }
 
-  /* ── Ticket-stub poster card (shared by ongoing/closing/recent) ──────
-     Image tile (poster or category emoji) + an opaque caption strip below
-     it, separated by a dashed perforation with punch-notch circles
-     (ticket-stub signature #1 — plan §0 / PR-R2's .tk-strip technique).
-     Replaces the old white-on-scrim overlay caption, which did not
-     guarantee contrast on bright posters. Markup:
-     templates/core/partials/_poster_card.html */
+  /* ── Ticket-stub poster card (ongoing/closing/recent 공유) — 이미지
+     타일 + 아래 불투명 캡션 띠를 점선 절취선+펀치홀로 구분한다. 밝은
+     포스터 위에서 대비가 보장 안 되던 기존 오버레이 캡션을 대체한다.
+     마크업: templates/core/partials/_poster_card.html */
   .poster-card {
     position: relative;
     display: flex;
@@ -758,24 +681,18 @@
     overflow: hidden;
     border: 1px solid var(--line);
     background: var(--surface);
-    /* Item-level shadow (plan §C editorial re-style — design literal, not a
-       token; matches the deck card / hscroll-btn precedent of a one-off
-       rgba shadow elsewhere on this page). */
+    /* 카드 단위 그림자 — 토큰이 아닌 시안 리터럴, 이 페이지 다른 곳의
+       일회성 rgba 그림자와 같은 관례다. */
     box-shadow: 0 10px 26px rgba(20, 22, 28, 0.12);
   }
-  /* Image region: badges / 찜 button / glint anchor here (top edge of this
-     box is the card's top edge, so their existing top:8px/left|right:8px
-     rules land in the same pixel spot as before the caption-strip split). */
+  /* 이미지 영역 — 배지/찜 버튼/글린트가 여기 기준으로 배치돼 캡션 띠
+     분리 전과 같은 픽셀 위치를 유지한다. */
   .poster-card-media {
     position: relative;
   }
-  /* 포스터 타일 완충 보더(다크 전용) — 밝은 포스터가 다크 배경 위에서
-     떠 보이는 문제 대응. inset box-shadow 선택 이유: .poster-card-media
-     자체엔 border-radius가 없고 조상 .poster-card의 overflow:hidden +
-     border-radius:12px에 의해 시각적으로 잘려 렌더되므로, 진짜 border를
-     쓰면 반경 불일치로 모서리가 어긋나 보일 위험이 있다 — inset
-     shadow는 사각형이어도 조상의 클리핑을 그대로 따라가 둥근 모서리와
-     자연스럽게 맞물린다. 라이트는 무변경. */
+  /* 다크 전용 완충 보더 — 밝은 포스터가 배경 위에 떠 보이는 문제 대응.
+     이 요소엔 border-radius가 없어 진짜 border 대신 inset shadow를 써야
+     조상의 둥근 클리핑과 자연스럽게 맞물린다. */
   :root[data-theme="dark"] .poster-card-media {
     box-shadow: inset 0 0 0 1px var(--line);
   }
@@ -787,14 +704,9 @@
     object-fit: cover;
     object-position: center top;
   }
-  /* No-poster fallback (design-rules.md §4-c 시안 우선, mock's gradFor()/
-     565~568행): a 105deg gradient through two color-mix() stops (inline
-     style, home/_poster_card.html — per-card category slug) replaces the
-     old flat .cat-tile emoji tile; this modifier only supplies the sizing/
-     centering the image region needs when there's no <img> child to carry
-     it. color-mix() has no prior use in this codebase (grepped) — accepted
-     as the mock's own formula; a color-mix()-less browser falls back to
-     the gradient's first stop (var(--surface)), a safe flat background. */
+  /* 포스터 없을 때 대체 — 그라디언트는 카드별 인라인 스타일로 채워지고,
+     이 모디파이어는 <img>가 없을 때 필요한 크기/중앙 정렬만 제공한다.
+     color-mix() 미지원 브라우저는 그라디언트 첫 색으로 자연스럽게 대체된다. */
   .poster-card-media--fill {
     width: 100%;
     aspect-ratio: 3 / 4;
@@ -811,14 +723,10 @@
     transform: rotate(-5deg);
     white-space: nowrap;
   }
-  /* Punch-notch circles (signature #1): anchored to .poster-card-media's
-     OWN box via top:calc(100% - Npx), so they straddle the media/caption
-     seam regardless of the image's actual rendered height (percentage
-     anchors resolve against this element, not a hardcoded pixel guess).
-     left/right:-5px lets .poster-card's overflow:hidden clip the outer
-     half into a "bite" at the card's edge, matching .event-card's notch
-     technique (event_list.css) — background:var(--bg) (paper) so the
-     visible sliver reads as a punched hole. */
+  /* 펀치홀 원 — 이미지 실제 높이와 무관하게 media/caption 이음매에
+     걸치도록 media 자신의 박스 기준(top: calc(100% - Npx))으로 배치한다.
+     좌우 -5px로 조상의 overflow:hidden이 바깥 절반을 잘라 카드 가장자리에
+     "물린 자국"을 만든다. */
   .poster-card-media::before,
   .poster-card-media::after {
     content: "";
@@ -836,21 +744,15 @@
   .poster-card-media::after {
     right: -5px;
   }
-  /* Glint (signature #2): reuses the shared .glint utility (objects/interaction.css)
-     — explicit markup here since a real <img> can't hold generated content. */
+  /* 글린트 — 공유 .glint 유틸리티를 재사용한다. 실제 <img>는 생성 콘텐츠를
+     가질 수 없어 여기 마크업으로 명시한다. */
   .poster-card-media .glint {
     top: 8px;
     right: 8px;
     z-index: 1;
   }
-  /* Closing cards' 찜 button shares the glint's default top-right corner
-     (34px circle, z-index:2) and fully covers it — measured 100% overlap
-     on hover. .poster-interest ~ .glint (matches only when a button
-     sibling precedes the glint in the DOM, see _poster_card.html's markup
-     order comment) moves just that pairing to bottom-left: clear of the
-     button (top-right desktop / bottom-right mobile) and of the top-left
-     badge in both layouts. Ongoing/recent cards have no button sibling, so
-     this rule never matches them — their glint keeps the default corner. */
+  /* 마감임박 카드는 찜 버튼이 글린트 기본 위치(우상단)와 완전히 겹친다 —
+     버튼이 형제로 있는 조합에서만 글린트를 좌하단으로 옮겨 겹침을 피한다. */
   .poster-interest ~ .glint {
     top: auto;
     bottom: 8px;
@@ -861,48 +763,22 @@
     border-top: 1px dashed var(--line);
     background: var(--surface);
     padding: 0.625rem 0.75rem 0.75rem;
-    /* Pin caption text to ink (--text), not inherited: the no-poster
-       fallback puts a `cat-{{slug}}` modifier on the outer .poster-card
-       (components/category.css: `.cat-* { color: var(--cat-*-ink) }`), and
-       .poster-card-title a uses color:inherit — without this, titles
-       rendered in the category's ink (purple/teal/brown/etc.) instead of
-       body ink. §0's colour-role rule reserves category/brand inks for
-       their own chips/tiles, not body copy. */
+    /* 캡션 글자색을 명시로 고정 — 상속에 맡기면 카테고리 색 모디파이어가
+       제목 색을 카테고리 색(보라/청록 등)으로 물들인다. 카테고리 색은
+       칩·타일 전용이지 본문 글자색이 아니다. */
     color: var(--text);
   }
-  /* Accent bar wrapper (plan §C — editorial caption). This element, NOT
-     .poster-card-caption itself, is position:relative: giving the caption
-     relative would move the title's stretched link (.poster-card-title
-     a::after, `inset:0`) to resolve against the caption box instead of
-     .poster-card and shrink the whole-card click target down to just the
-     caption strip (BIR finding, home-editorial plan §사전 검토). Sized to
-     its own content (title + meta), so the bar spans exactly that
-     height regardless of how many lines the title wraps to. */
-  /* Fixed-height caption (2026-07-21, coordinator instruction — same-track
-     card-height parity): a rail's cards must all be the same height no
-     matter how much a given event's title wraps (1 vs 2 lines) or whether
-     its optional meta line (.poster-card-meta — only when
-     location_name/start_date exist) is present in the DOM at all.
-     Row-stretch (flex/grid on the parent) only
-     equalizes the outer <li>/.poster-card box, not this in-flow content —
-     so instead every optional row gets its own worst-case reserve, and the
-     whole block additionally floors at their sum, deliberately summed
-     without crediting CSS margin-collapse (a same-or-taller floor is
-     harmless; an under-estimate would break the guarantee for the
-     worst-case card):
-       title (2 lines, .poster-card-title's own min-height below) = 2.7em
-         = var(--fs-base)*1.35(line-height)*2                      = 2.565rem
-       + title margin-bottom                                       = 0.1875rem
-       + meta line (1 line, .poster-card-meta's own min-height below)
-         = var(--fs-sm)*1.3(line-height)                            = 1.04rem
-     raw total 3.7925rem, rounded up to the repo's 0.0625rem grain with a
-     small safety margin: 3.875rem. Mobile (≤45rem) recomputes the same sum
-     with the breakpoint's smaller title/meta font-size overrides — see
-     that media query below. */
+  /* 강조 바 래퍼 — position:relative는 .poster-card-caption이 아니라 이
+     요소에 둔다. 캡션에 두면 제목의 확장 링크가 카드 전체가 아니라
+     캡션 띠로만 클릭 영역이 줄어든다. */
+  /* 고정 높이 캡션 — 같은 레일의 카드는 제목이 1줄이든 2줄이든, meta 줄이
+     있든 없든 높이가 같아야 한다. 각 줄의 최악 케이스 높이를 예약해
+     합산한 값을 최소 높이로 둔다(모바일은 아래 미디어쿼리에서 폰트 크기에
+     맞춰 재계산). */
   .poster-card-caption-inner {
-    /* Accent bar as border-left — never position:relative here (stretched
-       link would collapse to the caption; see _poster_card.html comment).
-       border-color comes from the per-category inline style. */
+    /* 강조 바는 border-left로 표현 — 여기 position:relative를 두면 안 된다
+       (확장 링크가 캡션으로 줄어든다). border-color는 카테고리별 인라인
+       스타일에서 온다. */
     border-left: 3px solid var(--brand-ink);
     padding-left: 0.5625rem;
     min-height: 3.875rem;
@@ -912,10 +788,7 @@
     font-size: var(--fs-base);
     font-weight: 700;
     line-height: 1.35;
-    /* 2 lines, em-relative to this element's own font-size so it still
-       holds after the mobile font-size override below — a 1-line title
-       must not shrink the card even before the container floor above is
-       considered. */
+    /* 2줄 예약, em 단위라 모바일 폰트 축소 후에도 비율이 유지된다. */
     min-height: 2.7em;
   }
   .poster-card-title a {
@@ -926,11 +799,9 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  /* Stretched link: the title anchor covers the whole card so the entire
-     poster is clickable. inset:0 resolves against .poster-card (the
-     nearest positioned ancestor) because .poster-card-caption itself is
-     NOT position:relative — see the note on .poster-card-media above. The
-     찜 button sits above it via a higher z-index. */
+  /* 확장 링크 — 제목 앵커가 카드 전체를 덮어 포스터 전체가 클릭된다.
+     .poster-card-caption이 position:relative가 아니므로 inset:0은
+     .poster-card 기준으로 계산된다. 찜 버튼은 더 높은 z-index로 위에 온다. */
   .poster-card-title a::after {
     content: "";
     position: absolute;
@@ -946,22 +817,16 @@
     margin: 0;
     font-size: var(--fs-sm);
     line-height: 1.3;
-    /* 1 line, em-relative — same reasoning as .poster-card-title's
-       min-height above (this element is entirely absent from the DOM when
-       neither location_name nor start_date exist, which the container
-       floor on .poster-card-caption-inner above covers instead). */
+    /* 1줄 예약 — location_name/start_date가 둘 다 없으면 이 요소 자체가
+       DOM에서 빠지는데, 그 경우는 위 컨테이너 최소 높이가 대신 담당한다. */
     min-height: 1.3em;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  /* .poster-badge(s) (top-left badge pill system): hoisted to
-     components/cards.css so event_list.css's mobile D-day/종료 overlay
-     badge can reuse the same visual language. */
-  /* .poster-interest (top-right 찜 button overlay): hoisted to
-     components/cards.css so event_list.css's desktop thumbnail + mobile
-     grid can reuse it too (both pages load cards.css globally). */
+  /* .poster-badge(s)(좌상단 배지)와 .poster-interest(우상단 찜 버튼)는
+     다른 페이지도 재사용할 수 있도록 components/cards.css로 옮겼다. */
   @media (max-width: 45rem) {
     .home-page {
       padding: 1rem var(--page-pad-x) 3rem;
@@ -983,91 +848,47 @@
     }
   }
 
-  /* ── horizontal scroller — home-specific bindings ───────────── */
-  /* Generic component rules live in static/css/hscroll.css */
+  /* ── horizontal scroller — 홈 전용 값. 공통 컴포넌트 규칙은
+     static/css/hscroll.css에 있다. */
 
-  /* Event poster cards (ongoing/closing/recent) — each wrapped in a plain <li> */
+  /* 이벤트 포스터 카드(ongoing/closing/recent) — 각각 평범한 <li>로 감싼다 */
   .hscroll-track li {
     flex: none;
     width: 168px;
   }
 
-  /* Responsive: snap-align for home's scroller items (poster rails get
-     their own snap-align inside the ≤64rem block below, which supersedes
-     this for them at every width it covers — this rule now only matters
-     for any future non-poster, non-category .hscroll-track use on this
-     page; harmless no-op today since the category rail's slide/hscroll
-     variant was removed, see .cat-browse below). */
+  /* 포스터 레일은 아래 ≤64rem 블록의 값이 이 규칙을 대체한다 — 여기는
+     포스터·카테고리 외의 향후 사용을 위한 기본값이다. */
   @media (max-width: 45rem) {
     .hscroll-track li {
       scroll-snap-align: start;
     }
   }
 
-  /* ── Poster rail: single-row 2-up slide + ≈2/3 card scale ────────────
-     2026-07-21 coordinator instruction — "모바일(스마트폰+태블릿)" means
-     phones AND tablets, so this uses a wider ≤64rem(1024px) ceiling than
-     the rest of this file's ≤45rem phone-only tier (desktop >64rem is
-     unchanged). Replaces the old ≤45rem 2-row [2,2] grid entirely — both
-     covered the same rail, and keeping both would fight at phone widths
-     (a later, narrower-window rule doesn't automatically "win"; only
-     removing the old block guarantees phones and tablets get the same
-     result). Scope: `.hscroll-track--posters` is the template modifier
-     (home.html) on the 3 discovery rails + the snapshot panel's own
-     upcoming-planned rail (same class, same partial → automatically
-     included) — NOT the category grid (`.cat-browse`, its own tier is
-     further below; it never had a --posters modifier and its slide/hscroll
-     variant no longer exists in the template at all — see that block). */
+  /* ── Poster rail: 한 줄에 2장씩 보이는 슬라이드 + 약 2/3 카드 축소 —
+     "모바일" 기준을 폰·태블릿 모두 포함해 ≤64rem으로 넓게 잡는다(데스크톱
+     >64rem은 무변경). 스코프는 `.hscroll-track--posters`(발견 레일 3개 +
+     스냅샷 패널 예정 레일) — 카테고리 그리드(`.cat-browse`)는 별도 아래
+     블록에서 다룬다. */
   @media (max-width: 64rem) {
-    /* Single row, 2 cards visible per viewport — li width = half the
-       track's content width minus half the existing 0.625rem gap. Plain
-       flex row (same overflow-x/scroll-snap machinery hscroll.css/
-       hscroll.js already drive on desktop) — no JS change needed. */
+    /* 한 줄에 2장 — li 너비는 트랙 폭의 절반에서 gap 절반을 뺀 값. */
     .hscroll-track--posters li {
       flex: 0 0 calc((100% - 0.625rem) / 2);
       width: auto;
-      min-width: 0; /* content-based floor would fight the fixed flex-basis */
+      min-width: 0; /* 콘텐츠 기준 최소폭은 고정 flex-basis와 충돌한다 */
       scroll-snap-align: start;
     }
 
-    /* The old row-stretch hooks (height:100% on .poster-card, flex:1 0 auto
-       on .poster-card-caption) are gone on purpose, not just superseded:
-       with a single row there's no sibling row to stretch to, and — more
-       importantly — a hard height:100% would clip an appended status.js
-       inline error (.status-inline-error, [data-status-error-container] on
-       .poster-card, which has overflow:hidden) against whatever height the
-       old row-stretch computed. Without that hard height, .poster-card is
-       free to grow for the error message instead. Height parity across the
-       rail still holds — it now comes entirely from
-       .poster-card-caption-inner's min-height floor below, the same
-       mechanism the desktop rail already uses (no row-stretch dependency
-       there either). */
+    /* 옛 행 늘이기(height:100%) 훅은 의도적으로 제거했다 — 한 줄뿐이라
+       늘일 형제 행이 없고, 고정 높이는 뒤에 붙는 상태 오류 메시지를
+       잘라낸다. 높이는 이제 아래 캡션 min-height만으로 맞춘다. */
 
-    /* Card scale reduction (the gate is a manual no-overflow check at
-       320/375, not an exact pixel match). Width is fixed by the 2-up layout
-       above, not a free variable. The 4:3 media ratio remains the lever;
-       typography is already pinned to this file's 12px floor (--fs-xs) on
-       both caption lines.
-       Derivation (375px reference, --page-pad-x 1rem at this width):
-         content width   375 - 2*16                             = 343px
-         li width        (343 - 10) / 2                         ≈ 166.5px
-         [before] media 3:4 portrait   166.5 * 4/3               ≈ 222px
-         [before] caption floor (3.875rem)                        = 62px
-         [before] border 1px*2                                    = 2px
-         [before] total                                          ≈ 286px
-         [after] media 4:3 landscape  166.5 * 3/4                ≈ 125px
-         [after] caption floor (3.125rem)                         = 50px
-         [after] border 1px*2                                    = 2px
-         [after] total                                           ≈ 177px
-       4:3 (landscape) preserves the existing media crop while the smaller
-       caption floor reduces the card height. object-position stays
-       "center top" (.poster-card-img,
-       unchanged) so the crop keeps the poster's top (title/character
-       art) — same precedent as the hero deck's own aspect-ratio choice. */
-    /* Only the elements that actually establish their own height need the
-       override — .poster-card-media (bare, with-poster case) has no width
-       of its own and just shrink-wraps .poster-card-img's rendered height,
-       so an aspect-ratio there would be inert; leaving it off. */
+    /* 카드 축소 — 폭은 2열 배치로 고정, 4:3 미디어 비율과 캡션 최소
+       높이 축소로 카드 세로 길이를 줄인다(320/375px 무오버플로 실측
+       기준). object-position은 "center top" 그대로 유지해 포스터
+       상단(제목·캐릭터)이 잘리지 않는다. */
+    /* 자기 높이를 스스로 갖는 요소만 override한다 — .poster-card-media는
+       포스터가 있을 때 자체 너비가 없어 aspect-ratio가 무의미하다. */
     .poster-card-img,
     .poster-card-media--fill {
       aspect-ratio: 4 / 3;
@@ -1075,46 +896,22 @@
     .poster-card-title {
       font-size: var(--fs-xs);
       line-height: 1.3;
-      min-height: 2.6em; /* 2 lines * 1.3 line-height, em-relative like desktop */
+      min-height: 2.6em; /* 2줄, 데스크톱과 같은 em 단위 */
     }
     .poster-card-meta {
       font-size: var(--fs-xs);
     }
-    /* Container floor recomputed for this tier — both caption lines at
-       --fs-xs now (title was --fs-sm in the old ≤45rem tier):
-       title (2 lines) = var(--fs-xs)*1.3(line-height)*2 = 1.95rem
-         + margin-bottom                                  = 0.1875rem
-         + meta (1 line) = var(--fs-xs)*1.3                  = 0.975rem
-       raw total 3.1125rem, rounded up to the grain: 3.125rem. */
+    /* 이 화면 폭에서는 캡션 두 줄 모두 --fs-xs라 최소 높이를 다시
+       계산했다. */
     .poster-card-caption-inner {
       min-height: 3.125rem;
     }
   }
 
-  /* ── Category chips: fixed 4 columns, vertical stack at narrow widths ──
-     2026-07-21 user re-command — "4열로 표출되도록 반응형 사이즈 적용
-     (블록너비, 폰트사이즈), 슬라이드 기능은 제거": .cat-browse (home.html)
-     is now always the plain grid (the >5-tiles hscroll/slide branch was
-     removed from the template), fixed at repeat(4, 1fr) — column *count*
-     never changes, only each chip's own width (which the grid already
-     handles automatically) and, at this tier, its internal layout/font.
-     Reuses the ≤64rem breakpoint established above for the poster rail
-     (same "phones + tablets" scope this session has used throughout).
-     Horizontal .cat-dot (base rule above) doesn't fit 4-per-row at phone
-     widths — width budget at a 320px reference:
-       content width   320 - 2*16(--page-pad-x)                 = 288px
-       3 gaps * 0.625rem                                          = 30px
-       column width   (288 - 30) / 4                             ≈ 64.5px
-     A swatch-left + 2-line-text-right horizontal chip can't fit a label
-     like "콜라보 카페" in that width, so this tier switches .cat-dot to a
-     vertical stack (swatch on top, centered label/count below) instead of
-     just shrinking the horizontal one further — same shape the original
-     mock used for its own mobile category tile. Labels are allowed to wrap
-     to 2 lines (no white-space:nowrap here) rather than truncate — same
-     "let CJK wrap naturally" precedent as the footer's 4-column mobile
-     tier (site-chrome.css). Font stays at this file's 12px floor
-     (--fs-xs) — same floor already established for the poster caption and
-     the flat-shrink attempt this instruction supersedes. */
+  /* ── Category chips: 열 개수는 4로 고정, 좁은 화면에서는 세로 스택으로 —
+     320px 기준 열 너비가 약 64.5px라 가로 배치(스와치+2줄 텍스트)로는
+     "콜라보 카페" 같은 라벨이 안 들어간다. 세로 스택(스와치 위·라벨
+     아래)으로 바꾸고, 라벨은 잘라내지 않고 2줄까지 자연스럽게 줄바꿈한다. */
   @media (max-width: 64rem) {
     .cat-dot {
       flex-direction: column;

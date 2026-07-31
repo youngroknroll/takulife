@@ -1,8 +1,7 @@
-"""Tests for the archive visits page (core.views.archive_visits).
+"""다녀온 기록 페이지(core.views.archive_visits) 테스트.
 
-Behavior under test: the event dropdown for adding a visit record offers only
-events the user registered as 방문 예정 (raw planned status), not every published
-event.
+방문 기록 추가 드롭다운은 게시된 모든 행사가 아니라 사용자가 방문 예정으로
+등록한 행사만 보여준다.
 """
 import pytest
 from django.test import Client
@@ -17,7 +16,7 @@ class TestArchiveVisitsSelectableEvents:
     def test_방문_기록_추가_드롭다운은_사용자가_방문_예정으로_등록한_행사만_보여준다(self, make_user, make_event, make_status):
         user = make_user()
         planned = make_event(title="Planned event")
-        make_event(title="Other published event")  # published but not planned
+        make_event(title="Other published event")  # 게시됐지만 예정 등록은 안 함
         make_status(user, event=planned, status=UserEventStatus.Status.PLANNED)
 
         client = Client()
@@ -43,9 +42,8 @@ class TestArchiveVisitsSelectableEvents:
         assert titles == ["Planned"]
 
     def test_방문_기록_추가_드롭다운은_직접_등록한_굿즈_항목을_제외한다(self, make_user, make_entry):
-        # GOODS is no longer a valid visit subject (collection domain plan
-        # §3-3) — must never appear in the inline dropdown, even for a legacy
-        # row created before the write path was closed.
+        # 굿즈는 더 이상 유효한 방문 대상이 아니다(컬렉션 도메인 계획 §3-3) — 과거에
+        # 만들어진 기존 행이라도 인라인 드롭다운에 노출되면 안 된다.
         user = make_user()
         place = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="내 장소")
         make_entry(user, kind="goods", title="내 굿즈")
@@ -74,7 +72,7 @@ class TestArchiveVisitsCategoryFilter:
         resp = client.get("/archive/visits/")
 
         assert resp.status_code == 200
-        # first-seen order, deduped (콜라보 카페 appears via both cafe event and entry)
+        # 처음 등장한 순서로 중복 제거(콜라보 카페는 행사와 개인 항목 둘 다에서 나옴)
         assert resp.context["categories"] == ["콜라보 카페", "팝업스토어"]
         assert resp.context["has_unofficial"] is True
 

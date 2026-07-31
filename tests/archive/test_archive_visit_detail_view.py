@@ -1,9 +1,8 @@
-"""Tests for the read-only visit-record detail page (core.views, URL name
-"archive-visit-detail-page").
+"""읽기 전용 방문 기록 상세 페이지(core.views, URL name "archive-visit-detail-page")
+테스트.
 
-The page is owner-scoped: it shows one VisitRecord's subject, date, memo,
-photos, and the CollectionItem rows acquired at that visit
-(CollectionItem.visit_record == the record).
+본인 소유 기록만 접근 가능하며, 대상·날짜·메모·사진과 해당 방문에서 획득한
+CollectionItem 목록(CollectionItem.visit_record == 해당 기록)을 보여준다.
 """
 import pytest
 from django.test import Client

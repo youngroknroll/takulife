@@ -1,9 +1,9 @@
-"""Guard: model changes must ship their migration in the same PR.
+"""가드: 모델 변경은 같은 PR에서 마이그레이션까지 함께 나가야 한다.
 
-`makemigrations --check --dry-run` exits non-zero the moment a model field
-is added/changed without a matching migration file. Running it as a pytest
-assertion turns "forgot to run makemigrations" into a fast-suite failure
-instead of a stale migration nobody notices until deploy.
+`makemigrations --check --dry-run`은 모델 필드가 추가·변경됐는데 대응하는
+마이그레이션 파일이 없으면 즉시 0이 아닌 코드로 종료한다. 이걸 pytest
+단언으로 실행하면 "makemigrations 돌리는 걸 깜빡함"이 배포 때까지 아무도
+못 보는 낡은 마이그레이션이 아니라 빠른 스위트 실패가 된다.
 """
 from io import StringIO
 

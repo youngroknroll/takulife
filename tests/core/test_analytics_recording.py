@@ -1,6 +1,5 @@
-"""core.analytics.record_event (PR-0e checkpoint B4).
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+"""core.analytics.record_event 검증
+(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
 import pytest
 

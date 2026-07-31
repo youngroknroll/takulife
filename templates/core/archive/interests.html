@@ -61,9 +61,9 @@
       <article class="panel">
         <div class="results-head">
           <h2>찜한 이벤트 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
-          {# <details>, not a JS dropdown — visits.html/personal_entries.html 선례 미러 #}
-          {# (native disclosure gives keyboard operation and a no-JS fallback for #}
-          {# free; event_list.js only adds outside-click dismissal on top). #}
+          {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
+          {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
+          {# 생긴다(visits.html/personal_entries.html과 동일한 이유). #}
           <details class="results-sort" data-sort-menu>
             <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
             <ul class="results-sort-menu">
@@ -89,10 +89,8 @@
 {% block extra_js %}
   <script defer src="{% static 'js/pages/archive_search.js' %}"></script>
   <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
-  {# event_list.js now loads on five pages (/events/, /archive/, /archive/    #}
-  {# statuses/, /archive/visits/, /archive/personal/, /archive/interests/)   #}
-  {# for the sort <details> menu's outside-click/Esc/focusout dismissal. Its #}
-  {# .filter-toggle/.filters selectors only exist on the /events/ templates  #}
-  {# so they no-op here (mirrors the sibling tabs' identical note). #}
+  {# event_list.js는 여러 활동 탭 페이지에서 정렬 메뉴의 바깥 클릭/Esc 닫기를 #}
+  {# 위해 쓴다. .filter-toggle/.filters 선택자는 /events/ 템플릿에만 있어 #}
+  {# 이 페이지에서는 그냥 무시된다. #}
   <script defer src="{% static 'js/pages/event_list.js' %}"></script>
 {% endblock %}

@@ -1,13 +1,9 @@
-"""Tests for HomeConfig featured categories and the home view's rendering.
+"""HomeConfig 강조 카테고리와 홈 화면 렌더링을 검증한다.
 
-Covers:
-- HomeConfig.get_solo: singleton semantics (pk=1, idempotent)
-- HomeConfig.featured_category_pairs: fallback (all 6), filtered, ordered
-- home view: category_tiles backward compat and config-aware rendering
-
-staff/home-categories route tests (auth guard, template assets, POST,
-audit log) moved to tests/staff/test_staff_home_categories_view.py
-(2026-07-12) — this file now covers only the home domain.
+다루는 범위:
+- HomeConfig.get_solo: 싱글턴 동작(pk=1, 멱등)
+- HomeConfig.featured_category_pairs: 폴백(전체 6개), 필터링, 순서
+- home view: category_tiles 하위 호환과 설정 반영 렌더링
 """
 import pytest
 from django.test import Client
@@ -15,10 +11,6 @@ from django.test import Client
 from core.models import HomeConfig
 from core.vocab import CATEGORY
 
-
-# ---------------------------------------------------------------------------
-# A. HomeConfig singleton
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 class TestHomeConfigSingleton:
@@ -35,10 +27,6 @@ class TestHomeConfigSingleton:
 
         assert first.pk == second.pk
 
-
-# ---------------------------------------------------------------------------
-# B. featured_category_pairs
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 class TestFeaturedCategoryPairs:
@@ -75,16 +63,12 @@ class TestFeaturedCategoryPairs:
         assert len(slugs) == 1
 
 
-# ---------------------------------------------------------------------------
-# C. home view — category_tiles integration
-# ---------------------------------------------------------------------------
-
 @pytest.mark.django_db
 class TestHomeViewCategoryTilesIntegration:
     pytestmark = pytest.mark.web
 
     def test_HomeConfig_행이_없으면_홈_화면에_전체_6개_카테고리_타일이_어휘_순서대로_노출된다(self):
-        """Backward compat: no HomeConfig row → all 6 categories."""
+        """하위 호환: HomeConfig 행이 없으면 전체 6개 카테고리가 노출된다."""
         resp = Client().get("/")
 
         assert resp.status_code == 200
@@ -122,7 +106,7 @@ class TestHomeViewCategoryTilesIntegration:
         assert tiles["popup_store"]["count"] == 0
 
     def test_카테고리_타일은_slug_label_count_필드를_항상_포함한다(self):
-        """category_tiles always carry {slug, label, count} — template contract."""
+        """category_tiles는 템플릿과의 계약이라 slug/label/count를 항상 포함해야 한다."""
         resp = Client().get("/")
 
         for tile in resp.context["category_tiles"]:

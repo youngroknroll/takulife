@@ -1,10 +1,7 @@
-"""Bulk-approve endpoint for staff: /staff/drafts/bulk-approve/.
+"""드래프트 일괄 승인 엔드포인트(/staff/drafts/bulk-approve/) 검증.
 
-Per-item independent outer-atomic (approve_draft + StaffActionLog), same
-semantics as StaffDraftApproveView repeated per id. Partial success is
-normal — the response is always 200 with {"succeeded": [...], "failed":
-[{"id", "reason"}]}. A 400 is reserved for structural request errors caught
-before the loop starts (empty/non-integer/over-cap draft_ids).
+건별로 성공·실패가 갈려도 응답은 항상 200이며 succeeded/failed로 구분된다.
+400은 반복 처리 전에 걸러지는 요청 구조 오류(빈 값·비정수·상한 초과)에서만 쓴다.
 """
 import logging
 
@@ -23,10 +20,6 @@ pytestmark = pytest.mark.web
 def bulk_approve_url():
     return reverse("staff:draft-bulk-approve")
 
-
-# ---------------------------------------------------------------------------
-# Cases 1-2: auth
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_익명_사용자는_드래프트_일괄_승인을_할_수_없다(client):
@@ -48,10 +41,6 @@ def test_일반_사용자는_드래프트_일괄_승인을_할_수_없다(client
 
     assert response.status_code == 403
 
-
-# ---------------------------------------------------------------------------
-# Cases 3-5: structural validation (400, before the loop starts)
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_draft_ids가_비어있으면_일괄_승인_요청을_거부한다(staff_client):
@@ -120,8 +109,7 @@ def test_draft_ids_개수가_상한을_초과하면_일괄_승인_요청을_거�
 
 @pytest.mark.django_db
 def test_draft_ids에_불리언_값이_섞이면_정수가_아닌_값으로_거부한다(staff_client):
-    """Regression guard: bool is an int subclass in Python — must not sneak past
-    the integer check (True/False are not valid draft ids)."""
+    """파이썬에서 bool은 int의 서브클래스라 정수 검사를 그냥 통과할 수 있어 별도로 막는다."""
     staff, client = staff_client()
 
     response = client.post(
@@ -137,8 +125,6 @@ def test_draft_ids에_불리언_값이_섞이면_정수가_아닌_값으로_거�
 
 @pytest.mark.django_db
 def test_draft_ids가_리스트가_아니면_일괄_승인_요청을_거부한다(staff_client):
-    """Regression guard: a non-list draft_ids value (e.g. a bare string) must be
-    rejected structurally rather than iterated."""
     staff, client = staff_client()
 
     response = client.post(
@@ -151,10 +137,6 @@ def test_draft_ids가_리스트가_아니면_일괄_승인_요청을_거부한�
     assert response.json() == {"draft_ids": ["draft_ids must be a non-empty list."]}
     assert StaffActionLog.objects.count() == 0
 
-
-# ---------------------------------------------------------------------------
-# Case 6: happy path — 2 pending drafts, both approved, one log row each
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_대기중_드래프트_여러_건을_일괄_승인하면_모두_게시되고_건별로_감사_로그가_남는다(staff_client, make_draft):
@@ -191,8 +173,6 @@ def test_대기중_드래프트_여러_건을_일괄_승인하면_모두_게시�
 
 @pytest.mark.django_db
 def test_draft_ids_개수가_정확히_상한이면_전부_승인된다(staff_client, make_draft):
-    """Boundary lock-in: exactly MAX_BULK_APPROVE_DRAFT_IDS pending drafts must
-    pass the cap check and all succeed (over-cap is tested separately)."""
     staff, client = staff_client()
     drafts = [
         make_draft(f"https://example.com/at-cap-{i}", extracted_title=f"At cap {i}")
@@ -216,10 +196,6 @@ def test_draft_ids_개수가_정확히_상한이면_전부_승인된다(staff_cl
     assert StaffActionLog.objects.count() == MAX_BULK_APPROVE_DRAFT_IDS
 
 
-# ---------------------------------------------------------------------------
-# Case 7: unknown draft id is a per-item failure, not a 404
-# ---------------------------------------------------------------------------
-
 @pytest.mark.django_db
 def test_존재하지_않는_draft_id는_전체_요청_실패가_아니라_건별_실패로_보고된다(staff_client):
     staff, client = staff_client()
@@ -237,11 +213,6 @@ def test_존재하지_않는_draft_id는_전체_요청_실패가_아니라_건�
     }
     assert StaffActionLog.objects.count() == 0
 
-
-# ---------------------------------------------------------------------------
-# Case 8: repeated id — 1st pass succeeds, 2nd pass fails naturally
-# (no dedup — this is the documented behavior, not a bug)
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_같은_draft_id를_중복_전달하면_첫_처리만_성공하고_두번째는_이미_처리됨으로_실패한다(staff_client, make_draft):
@@ -263,10 +234,6 @@ def test_같은_draft_id를_중복_전달하면_첫_처리만_성공하고_두�
     assert draft.review_status == EventDraft.ReviewStatus.APPROVED
     assert StaffActionLog.objects.count() == 1
 
-
-# ---------------------------------------------------------------------------
-# Case 9: mixed results — already-approved, ok, duplicate-url, blank-title, ok
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_여러_실패_사유가_섞인_draft_ids를_일괄_승인하면_성공과_실패가_사유와_함께_부분_보고된다(staff_client, make_draft):
@@ -322,12 +289,6 @@ def test_여러_실패_사유가_섞인_draft_ids를_일괄_승인하면_성공�
     assert not Event.objects.filter(official_url="https://example.com/bulk-blank-title").exists()
     assert StaffActionLog.objects.count() == 2
 
-
-# ---------------------------------------------------------------------------
-# Case 10 (must not be skipped): an unclassified exception in one item's
-# StaffActionLog write is caught, that item's own outer-atomic block rolls
-# back, and the batch continues with the remaining items.
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_한_항목의_감사_로그_기록이_예기치_못한_오류로_실패해도_나머지_항목_처리는_계속된다(staff_client, monkeypatch, caplog, make_draft):

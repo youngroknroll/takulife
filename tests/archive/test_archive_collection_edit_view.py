@@ -1,13 +1,13 @@
-"""Tests for the collection-item edit page (core.views.archive_collection_item_edit).
+"""굿즈 수정 페이지(core.views.archive_collection_item_edit) 테스트.
 
-Behavior under test (collection domain design plan §4 PR-C5b-2, CP-E1~E3, and
-the create page's C8/C9 hidden-field guards mirrored here per the coach's
-"create+edit" scope):
-- /archive/collection/<id>/edit/ is owner-scoped: the owner gets a prefilled
-  form, another user's item 404s (get_object_or_404(..., user=request.user)),
-  and an anonymous request redirects to login.
-- `visibility` and any `name="event"` control are never rendered, exactly as
-  on the create page.
+검증 대상 동작(컬렉션 도메인 설계 계획 §4 PR-C5b-2, CP-E1~E3, 그리고
+코치의 "등록+수정" 범위 지침에 따라 등록 페이지의 C8/C9 숨김 필드 가드를
+여기서도 검증):
+- /archive/collection/<id>/edit/ 는 소유자 범위다: 소유자는 값이 채워진
+  폼을 받고, 타인의 항목은 404(get_object_or_404(..., user=request.user)),
+  비로그인은 로그인으로 리다이렉트된다.
+- `visibility`와 `name="event"` 컨트롤은 등록 페이지와 마찬가지로 절대
+  렌더되지 않는다.
 """
 import pytest
 from django.test import Client

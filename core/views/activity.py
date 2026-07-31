@@ -25,15 +25,14 @@ from ._helpers import _adjacent_month, _parse_calendar_date, _parse_calendar_mon
 logger = logging.getLogger(__name__)
 
 
-# 5 user-facing activity groups -> the archive.queries kind constants each
-# one covers (dual-calendar service design §7.2/§7.3; mapping given by the
-# coordinator's message). "interest" also covers the §7.5 legacy-찜
-# fallback, which archive.queries._interest_added_fallback_items already
-# reuses ActivityLogEntry.Kind.INTEREST_ADDED for (no separate kind string).
+# 사용자에게 보이는 5개 활동 그룹 -> 각각이 포괄하는 archive.queries kind
+# 상수. "interest"는 옛 찜 대체 경로도 함께 포괄하는데,
+# archive.queries._interest_added_fallback_items가 별도 kind 문자열 없이
+# ActivityLogEntry.Kind.INTEREST_ADDED를 그대로 재사용한다.
 # "visit"과 "goods"는 상태 테이블(VisitRecord/CollectionItem)만 출처로
 # 삼는다 — 방문·등록·수정 각 행동은 행동 로그에도 흔적을 남기는데, 그
-# 로그까지 함께 세면 같은 활동이 두 번 보인다 (2026-07-31 중복 표시 결함
-# 수정, 사용자 결정: 상태 테이블 우선).
+# 로그까지 함께 세면 같은 활동이 두 번 보인다(중복 표시 결함 수정, 사용자
+# 결정: 상태 테이블 우선).
 _ACTIVITY_TYPE_GROUPS = {
     "schedule": [SCHEDULE_KIND],
     "interest": [ActivityLogEntry.Kind.INTEREST_ADDED, ActivityLogEntry.Kind.INTEREST_REMOVED],
@@ -46,20 +45,19 @@ _KIND_TO_ACTIVITY_TYPE_GROUP = {
     kind: group for group, kinds in _ACTIVITY_TYPE_GROUPS.items() for kind in kinds
 }
 
-# The 4 user-facing groups actually shown in the calendar's legend/cell
-# items/selected-date list/counts (activity-calendar editorial plan §4-a
-# B2 — "status" stays a real, matchable ?type= group for backward-compat
-# bookmarks and _ACTIVITY_TYPE_GROUPS keeps its entry for other possible
-# consumers, but it is never rendered or counted anywhere on this page).
+# 실제로 달력 범례/셀 항목/선택 날짜 목록/카운트에 표시되는 4개 그룹.
+# "status"는 옛 ?type= 북마크 호환을 위해 실재하는 매치 가능 그룹으로
+# 남아 있고 _ACTIVITY_TYPE_GROUPS에도 항목이 있지만, 이 화면 어디에도
+# 렌더링되거나 집계되지 않는다.
 _VISIBLE_ACTIVITY_TYPE_GROUPS = ("schedule", "interest", "visit", "goods")
 
 
 def _visible_activity_group(kind):
-    """Map an activity kind to its display group, or None when that kind
-    should never appear in the calendar's legend/cell items/selected-date
-    list/counts — the single point every one of those four consumers calls
-    through, so they can never quietly disagree (BIR Medium: a status-only
-    day's aria-label count must match its actually-rendered item count)."""
+    """활동 kind를 표시 그룹으로 매핑한다. 그 kind가 달력 범례/셀 항목/선택
+    날짜 목록/카운트 어디에도 절대 나타나면 안 되면 None을 반환한다 — 이
+    네 소비처가 전부 이 한 지점을 거치므로 서로 조용히 어긋날 수 없다
+    (상태만 있는 날의 aria-label 카운트는 실제 렌더링된 항목 수와
+    반드시 일치해야 한다)."""
     group = _KIND_TO_ACTIVITY_TYPE_GROUP.get(kind)
     if group == "status":
         return None
@@ -67,10 +65,9 @@ def _visible_activity_group(kind):
 
 
 def _parse_activity_type_filter(request):
-    """Return the ?type= values that are one of the 5 valid groups, in
-    request order, de-duplicated. An unrecognised value is silently
-    ignored (mirrors event_list's existing unrecognised-filter-value
-    convention) rather than raising."""
+    """5개 유효 그룹 중 하나인 ?type= 값들을 요청 순서대로, 중복 없이
+    반환한다. 알 수 없는 값은 예외를 던지지 않고 조용히 무시한다
+    (event_list의 기존 관행과 동일)."""
     selected = []
     seen = set()
     for raw_value in request.GET.getlist("type"):
@@ -81,9 +78,9 @@ def _parse_activity_type_filter(request):
 
 
 def _activity_extra_query(selected_types):
-    """Return the current (already-validated) type= selections as a
-    '&type=...&type=...' querystring tail — same leading-'&' convention as
-    _calendar_extra_query/_pager.html's extra_query."""
+    """이미 검증된 현재 type= 선택 값들을 '&type=...&type=...' 형태의
+    쿼리스트링 꼬리로 반환한다 — _calendar_extra_query/_pager.html의
+    extra_query와 같은 선행 '&' 관례를 따른다."""
     if not selected_types:
         return ""
     return "&" + urlencode([("type", value) for value in selected_types])
@@ -94,11 +91,10 @@ def _format_month_day(value):
 
 
 def _activity_filter_url(*, year, month, selected_date, types):
-    """Build a full /archive/calendar/ URL preserving the displayed
-    month/date and carrying the given ?type= selections (activity-calendar
-    editorial plan §8-A B-b — every legend link, toggle or reset, goes
-    through this so month/date are never dropped, mirroring the existing
-    hidden-input lesson from the date-jump search form)."""
+    """표시 중인 month/date를 보존하고 주어진 ?type= 선택을 담은 완전한
+    /archive/calendar/ URL을 만든다 — 범례 링크는 토글이든 초기화든
+    전부 이 함수를 거쳐 month/date가 절대 빠지지 않는다(날짜 이동 검색
+    폼에서 얻은 숨은 input 교훈과 같은 이유)."""
     params = [("month", f"{year:04d}-{month:02d}")]
     if selected_date is not None:
         params.append(("date", selected_date.isoformat()))
@@ -107,11 +103,11 @@ def _activity_filter_url(*, year, month, selected_date, types):
 
 
 def _activity_kind_filters(*, year, month, selected_date, selected_types, kind_counts):
-    """Return the 4 visible groups as clickable legend-filter entries
-    (§8-A D2/D3): each is {group, count, is_active, toggle_url}, where
-    toggle_url adds the group to the current selection when inactive and
-    removes it when active. `count` comes from the caller's filter-independent
-    kind_counts (§8-A D1) — never recomputed here from a filtered set."""
+    """보이는 4개 그룹을 클릭 가능한 범례 필터 항목으로 반환한다: 각각
+    {group, count, is_active, toggle_url} 형태이며, toggle_url은 비활성
+    상태면 현재 선택에 그룹을 더하고 활성 상태면 뺀다. `count`는 호출자가
+    넘긴, 필터와 무관한 kind_counts에서 온다 — 여기서 필터링된 집합으로
+    다시 계산하지 않는다."""
     filters = []
     for group in _VISIBLE_ACTIVITY_TYPE_GROUPS:
         is_active = group in selected_types
@@ -133,18 +129,16 @@ def _activity_kind_filters(*, year, month, selected_date, selected_types, kind_c
 
 
 def _build_selected_activity_items(items):
-    """Reshape the selected date's archive.queries.CalendarActivityItem rows
-    into detail-list display dicts: {group, label, url, date_text}.
+    """선택된 날짜의 archive.queries.CalendarActivityItem 행들을 상세
+    목록 표시용 dict({group, label, url, date_text})로 바꾼다.
 
-    `label`/`url` now come straight from CalendarActivityItem (archive/queries.py
-    additive extension — each private helper there fills them from the exact
-    object it already holds, e.g. Event.title/CollectionItem.name/
-    ActivityLogEntry.subject_label for label; event-detail/visit-edit/
-    collection-edit reverse() for url, `None` when a SET_NULL target is
-    gone). `date_text` is assembled here (day-level from `.date`/`.start`/
-    `.end`, plus `.time_text` appended for action-time items — service
-    design §9.3's "7월 19일 14:32" example) since that combined format is a
-    presentation-only concern.
+    `label`/`url`은 CalendarActivityItem에서 그대로 가져온다(archive/
+    queries.py의 각 내부 헬퍼가 이미 들고 있는 객체에서 채운다 — label은
+    Event.title/CollectionItem.name/ActivityLogEntry.subject_label, url은
+    event-detail/visit-edit/collection-edit의 reverse()이며 SET_NULL
+    대상이 사라지면 `None`). `date_text`는 표시 전용 관심사라 여기서
+    조립한다(`.date`/`.start`/`.end`로 날짜 단위 텍스트를 만들고, 시각이
+    있는 항목엔 `.time_text`를 붙인다 — "7월 19일 14:32" 형태).
     """
     display_items = []
     for item in items:
@@ -165,80 +159,69 @@ def _build_selected_activity_items(items):
 
 @login_required
 def activity_calendar(request):
-    """Activity calendar SSR view (dual-calendar plan §단계 5 / PR-D).
+    """활동 달력 SSR 뷰.
 
-    Presentation-only, mirroring event_calendar: month/date parsing reuses
-    the exact same _parse_calendar_month/_parse_calendar_date helpers
-    (service design §11.1 rules identical), and query/grid-build failures
-    degrade the same way (calendar_error="query_failed", never a 500).
-    archive.queries.list_user_activity_for_month owns which activity
-    belongs to which date — this view only buckets its already-computed
-    result by day (grid dot counts/kinds) and reshapes the selected date's
-    rows into display dicts.
+    event_calendar와 마찬가지로 표시 전용이다: month/date 파싱은
+    _parse_calendar_month/_parse_calendar_date 헬퍼를 그대로 재사용하고
+    (규칙 동일), 조회/그리드 생성 실패는 같은 방식으로 완화된다
+    (calendar_error="query_failed", 절대 500이 아니다).
+    archive.queries.list_user_activity_for_month가 어느 활동이 어느
+    날짜에 속하는지를 소유한다 — 이 뷰는 이미 계산된 결과를 날짜별로
+    묶고(그리드 점 카운트/종류) 선택된 날짜의 행들을 표시용 dict로 바꿀
+    뿐이다.
 
-    Context contract (keys fixed, frontend building templates against this
-    in parallel): calendar_error (None|"invalid"|"query_failed"),
-    month_label, weeks (7-cell-per-week list of {date, in_month, today,
-    selected, count, kinds, items, more_count} — count/kinds/items agree with
-    each other and always exclude the "status" group (activity-calendar
-    editorial plan §4-a B1/B2: a status-only day counts/shows as empty
-    everywhere, not just in the cell — see selected_items/kind_counts below
-    too); `items` is the day's first 2 activities as {group, label},
-    `more_count` is however many more remain), selected_date,
-    selected_items (list of {group, label, url, date_text} — sourced from
-    archive.queries.CalendarActivityItem's label/url/time_text fields, see
-    _build_selected_activity_items; "status"-group rows are excluded here
-    too), prev_month/next_month, extra_query (type= only, month/date
-    excluded), selected_types, has_any_items (whole displayed month, under
-    the current type filter — see completion report for why this
-    simplification was chosen over an always-unfiltered second query;
-    derived from items_by_date, so like count/items above it also excludes
-    the "status" group — a status-only month renders the empty-state CTA
-    the same way a genuinely-empty month does, instead of the previous
-    ungated "activity has_any_items but the grid/detail show nothing"
-    contradiction), kind_counts (dict of the 4 visible groups -> count, for the displayed
-    month, **independent of the current ?type= filter** — activity-calendar
-    editorial plan §8-A D1: reuses `items` as-is when no filter narrowed the
-    query, otherwise a second unfiltered list_user_activity_for_month call,
-    so turning a kind's legend link back on always shows its true count
-    rather than the 0 a filtered-source count would leave behind),
-    kind_filters (§8-A D2/D3 — the 4 visible groups as clickable legend
-    filters: list of {group, count, is_active, toggle_url}; count mirrors
-    kind_counts, toggle_url is a full /archive/calendar/ URL that adds the
-    group to the current ?type= selection when inactive and removes it when
-    active, always preserving month/date), reset_filter_url (a full
-    /archive/calendar/ URL with every ?type= cleared, month/date preserved —
-    the "전체 보기" affordance for undoing a multi-toggle selection),
-    status_counts (archive.queries.user_status_counts(user) verbatim — the
-    masthead's whole-history 예정/방문 완료/놓침 totals, independent of the
-    displayed month; deliberately a *different* context key from
-    kind_counts so the two aggregates never collapse into one binding), q
-    (the current ?q= search term, always present even when blank),
-    search_no_match (True only when a non-blank q was submitted and matched
-    nothing — the search input's value and this flag are what let a
-    template render an inline no-match notice without resetting month/date;
-    see _search_activity_date_jump below for the redirect-on-match half of
-    this contract).
+    컨텍스트 계약(프론트가 이 키들을 기준으로 템플릿을 병행 개발한다):
+    calendar_error(None|"invalid"|"query_failed"), month_label, weeks(주당
+    7칸 리스트, 각 칸은 {date, in_month, today, selected, count, kinds,
+    items, more_count} — count/kinds/items는 서로 일치하며 항상 "status"
+    그룹을 제외한다. 상태만 있는 날은 셀뿐 아니라 어디서든 빈 것처럼
+    카운트/표시된다(아래 selected_items/kind_counts도 마찬가지). `items`는
+    그날의 활동 앞 2개를 {group, label}로, `more_count`는 남은 개수),
+    selected_date, selected_items(list of {group, label, url, date_text}
+    — archive.queries.CalendarActivityItem의 label/url/time_text에서
+    가져온다, _build_selected_activity_items 참고. 여기도 "status" 그룹
+    행은 제외), prev_month/next_month, extra_query(type=만 포함, month/date
+    제외), selected_types, has_any_items(현재 type 필터 기준, 표시 중인
+    달 전체 — items_by_date에서 유도하므로 위 count/items처럼 "status"
+    그룹도 제외한다. 상태만 있는 달은 진짜 빈 달과 똑같이 빈 상태 CTA를
+    보여준다), kind_counts(보이는 4개 그룹 -> 카운트 dict, 표시 중인 달
+    기준, **현재 ?type= 필터와 무관**하다 — 필터가 조회를 좁히지 않았으면
+    `items`를 그대로 재사용하고, 필터가 있으면 필터 없는
+    list_user_activity_for_month를 한 번 더 호출한다. 그래야 범례에서
+    kind를 다시 켰을 때 필터링된 값의 0이 아니라 실제 카운트가 보인다),
+    kind_filters(보이는 4개 그룹을 클릭 가능한 범례 필터로:
+    list of {group, count, is_active, toggle_url}. count는 kind_counts와
+    같고, toggle_url은 비활성이면 현재 ?type= 선택에 그룹을 더하고
+    활성이면 빼는 완전한 /archive/calendar/ URL이며 항상 month/date를
+    보존한다), reset_filter_url(?type=을 전부 지우고 month/date는 보존한
+    완전한 /archive/calendar/ URL — 여러 개를 토글한 선택을 되돌리는
+    "전체 보기" 기능), status_counts(archive.queries.user_status_counts
+    (user)를 그대로 — 마스트헤드의 전체 기간 예정/방문 완료/놓침 합계로
+    표시 중인 달과 무관하다. 두 집계가 하나로 뒤섞이지 않도록 일부러
+    kind_counts와 다른 컨텍스트 키로 둔다), q(현재 ?q= 검색어, 비어
+    있어도 항상 존재), search_no_match(빈 값이 아닌 q가 제출됐는데
+    아무것도 매치되지 않았을 때만 True — 검색창 값과 이 플래그로
+    템플릿이 month/date를 재설정하지 않고 인라인 무매치 안내를 보여줄 수
+    있다. 매치됐을 때의 리다이렉트 쪽은 아래 _search_activity_date_jump
+    참고).
 
-    active_filter_count (the filter-disclosure panel's "N개 선택됨" affordance)
-    is deliberately *not* in this context: §8-A D8 removed the disclosure
-    panel in favor of the kind_filters legend above, for this view only —
-    event_calendar's own active_filter_count context key is untouched.
+    active_filter_count(필터 패널의 "N개 선택됨" 표시)는 일부러 이
+    컨텍스트에 없다: 이 화면에서는 범례 방식의 kind_filters로 대체하며
+    필터 패널을 없앴다 — event_calendar 자체의 active_filter_count
+    컨텍스트 키는 그대로 유지된다.
 
-    "status" stays a real, matchable ?type= group (_ACTIVITY_TYPE_GROUPS is
-    unchanged) purely for ?type=status bookmark backward-compatibility
-    (§4-a B5) — every rendering/counting consumer above filters it out via
-    _visible_activity_group, so such a bookmark now reliably renders a
-    genuinely-empty (never crashing, never falsely-nonzero) day instead of
-    the previous ungated count.
+    "status"는 ?type=status 북마크 하위 호환만을 위해 실재하는 매치
+    가능 그룹으로 남아 있다(_ACTIVITY_TYPE_GROUPS는 그대로) — 위의 모든
+    렌더링/집계 소비처가 _visible_activity_group으로 걸러내므로, 그런
+    북마크는 이제 (예전의 걸러지지 않은 카운트 대신) 크래시 없이 진짜로
+    빈 날을 안정적으로 보여준다.
 
-    Sub-nav active-state note: existing archive/* templates
-    (templates/core/archive/*.html) hardcode
-    `{% include "core/partials/_archive_nav.html" with active="..." %}"`
-    directly in the template, not from a view context key — there is no
-    existing "archive_nav_active"-style context convention to mirror, so
-    none is added here (confirmed by reading _archive_nav.html and every
-    template that includes it).
+    하위 내비게이션 활성 상태 참고: 기존 archive/* 템플릿
+    (templates/core/archive/*.html)은
+    `{% include "core/partials/_archive_nav.html" with active="..." %}`를
+    뷰 컨텍스트 키가 아니라 템플릿에 직접 하드코딩한다 — 따를 만한
+    기존 "archive_nav_active" 류 컨텍스트 관례가 없어 여기서도 추가하지
+    않았다(_archive_nav.html과 그것을 포함하는 모든 템플릿을 확인함).
     """
     today = timezone.localdate()
 
@@ -279,12 +262,11 @@ def activity_calendar(request):
         if calendar_error is None:
             calendar_error = "query_failed"
 
-    # kind_counts must stay filter-independent (activity-calendar editorial
-    # plan §8-A D1 / WED-BIR 독립 합의): deriving it from the already-filtered
-    # `items` would zero out every currently-hidden kind, breaking the
-    # legend's "what to turn back on" map. Reuse `items` as-is when no
-    # ?type= filter narrowed the query (kinds is None); only re-query
-    # unfiltered when a filter is active.
+    # kind_counts는 반드시 필터와 무관하게 유지해야 한다: 이미 필터링된
+    # `items`에서 유도하면 현재 숨겨진 모든 kind가 0이 되어 범례의 "다시
+    # 켜면 몇 개" 안내가 깨진다. ?type= 필터가 조회를 좁히지 않았으면
+    # (kinds가 None) `items`를 그대로 재사용하고, 필터가 있을 때만
+    # 필터 없이 다시 조회한다.
     if kinds is None:
         all_kind_items = items
     else:
@@ -323,9 +305,9 @@ def activity_calendar(request):
     try:
         grid = month_grid(year, month)
     except Exception:
-        # Same known core.calendar_grid.month_grid gap flagged in
-        # event_calendar (year=1/9999 boundary filler cells) — degraded
-        # here rather than fixed at the source, out of this change's scope.
+        # event_calendar에도 있는 core.calendar_grid.month_grid의 알려진
+        # 한계(year=1/9999 경계 채움 셀)와 동일하다 — 근본 수정은 이번
+        # 변경 범위 밖이라 여기서도 완화만 한다.
         logger.exception(
             "Failed to build activity calendar grid for year=%s month=%s", year, month
         )
@@ -390,20 +372,17 @@ def activity_calendar(request):
 
 
 def _search_activity_date_jump(request, *, q, selected_types):
-    """Resolve the activity calendar's ?q= date-jump search (editorial plan
-    §4-a-1 / B6): a non-blank `q` searches the user's whole activity history
-    (not just the displayed month) and, on a match, returns a PRG-redirect
-    response to that date; on no match, returns (None, True) so the caller
-    keeps rendering the currently-parsed month/date unchanged (BIR High: the
-    caller must not fall back to today just because the search missed).
+    """활동 달력의 ?q= 날짜 이동 검색을 처리한다: 비어 있지 않은 `q`는
+    표시 중인 달뿐 아니라 사용자의 전체 활동 기록을 검색하고, 매치되면
+    그 날짜로 PRG 리다이렉트 응답을 반환한다. 매치가 없으면 (None,
+    True)를 반환해 호출자가 지금 파싱된 month/date를 그대로 렌더링하게
+    한다(검색이 빗나갔다고 오늘로 되돌아가면 안 된다).
 
-    "status" is always excluded from what a jump can land on (mirrors
-    _visible_activity_group) even when the caller passed no explicit
-    selected_types — landing on a date whose only match is a hidden status
-    change would show a selected-date section with nothing in it. An active
-    type= filter narrows the search the same way it narrows the grid, so a
-    jump never surfaces a kind currently hidden by the user's own filter
-    (§4-a-1 "필터 상호작용").
+    호출자가 selected_types를 명시하지 않았어도 "status"는 이동 대상에서
+    항상 제외된다(_visible_activity_group과 동일) — 매치가 숨겨진 상태
+    변경뿐인 날짜로 이동하면 선택 날짜 영역이 텅 비어 보인다. 활성
+    type= 필터는 그리드를 좁히는 것과 같은 방식으로 검색도 좁혀서,
+    이동이 사용자 본인의 필터로 숨긴 kind를 드러내는 일이 없다.
     """
     search_group_names = [
         group

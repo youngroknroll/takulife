@@ -1,12 +1,6 @@
-/*
- * photo-upload.css — shared "+ 박스" photo/poster upload trigger.
- *
- * Used on 3 pages: archive visit create/edit (multi-photo) and the staff
- * event-detail poster upload (single file). The native <input type="file">
- * stays in the DOM (functionality + JS contracts unchanged) but is visually
- * hidden with .photo-upload-native-input; this button is the visible,
- * keyboard-accessible trigger that calls input.click().
- */
+/* 다녀온 기록 작성/수정과 스태프 포스터 업로드가 공유하는 "+ 박스" 트리거다.
+   진짜 <input type="file">는 DOM에 남지만 .photo-upload-native-input으로
+   시각적으로만 숨기고, 이 버튼이 클릭 시 input.click()을 호출해 대신한다. */
 .photo-upload-native-input {
   position: absolute;
   width: 1px;

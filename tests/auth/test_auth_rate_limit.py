@@ -1,19 +1,18 @@
-"""Rate-limit protection on authentication endpoints (allauth).
+"""인증 엔드포인트의 요청 한도 보호(allauth).
 
-allauth ships ACCOUNT_RATE_LIMITS with sensible defaults already active; these
-tests lock that behavior in so a future settings change cannot silently disable
-brute-force / signup-flood protection. allauth's rate-limit counters live in
-the shared DatabaseCache, and — like any cache write made inside a
-``@pytest.mark.django_db`` test — are rolled back with that test's own
-transaction (``clear_cache`` is no longer autouse; see tests/conftest.py's
-``clear_cache`` docstring), so this file does not need to request it
-explicitly.
+allauth는 이미 합리적인 기본값으로 ACCOUNT_RATE_LIMITS를 켠 채로 나온다.
+이 테스트들은 그 동작을 고정해, 나중에 설정이 바뀌어도 무차별 대입/가입
+폭주 방어가 조용히 꺼지지 않게 한다. allauth의 요청 한도 카운터는 공유
+DatabaseCache에 있고, ``@pytest.mark.django_db`` 테스트 안의 다른 캐시
+쓰기와 마찬가지로 그 테스트의 트랜잭션과 함께 롤백된다(``clear_cache``는
+더이상 autouse가 아니다, tests/conftest.py의 ``clear_cache`` 독스트링
+참고) — 그래서 이 파일이 따로 요청할 필요가 없다.
 
-Two distinct enforcement shapes are exercised, matching allauth's design:
-- login_failed -> the login form refuses further authentication (even with the
-  correct password) once the per-account window is exhausted (HTTP 200 + a
-  localized non-field error, NOT a 429).
-- signup / reset_password -> the view raises a 429 rendered via ``429.html``.
+allauth의 설계를 따라 서로 다른 두 가지 강제 방식을 검증한다:
+- login_failed -> 계정별 창이 소진되면 로그인 폼이 (맞는 비밀번호로도)
+  더이상 인증을 허용하지 않는다(HTTP 200 + 지역화된 필드 무관 오류, 429가
+  아니다).
+- signup / reset_password -> 뷰가 ``429.html``로 렌더되는 429를 던진다.
 """
 import pytest
 from django.test import override_settings
@@ -22,7 +21,8 @@ pytestmark = pytest.mark.slow
 
 
 def _is_authenticated(client):
-    """A protected page returns 200 when logged in, 302 (to login) otherwise."""
+    """보호된 페이지는 로그인 상태면 200, 아니면 (로그인으로) 302를
+    돌려준다."""
     return client.get("/archive/").status_code == 200
 
 
@@ -31,12 +31,12 @@ def _is_authenticated(client):
 def test_로그인_실패_횟수가_한도를_초과하면_올바른_비밀번호로도_로그인이_차단된다(
     client, make_verified_user, valid_password
 ):
-    """After the per-account failure window is exhausted, the login form refuses
-    to authenticate — even the correct password is rejected — which is what
-    actually stops an online brute-force attack."""
+    """계정별 실패 창이 소진되면 로그인 폼은 (맞는 비밀번호여도) 더이상
+    인증을 허용하지 않는다 — 이게 실제로 온라인 무차별 대입 공격을
+    막는다."""
     make_verified_user("victim@example.com")
 
-    # Exhaust the 2/m/key window with wrong passwords.
+    # 틀린 비밀번호로 2/m/key 창을 소진한다.
     for _ in range(2):
         resp = client.post(
             "/accounts/login/",
@@ -44,7 +44,7 @@ def test_로그인_실패_횟수가_한도를_초과하면_올바른_비밀번�
         )
         assert resp.status_code == 200, resp.status_code
 
-    # The correct password is now refused: still on the form, not logged in.
+    # 이제 맞는 비밀번호도 거부된다: 여전히 폼에 머물고 로그인되지 않는다.
     blocked = client.post(
         "/accounts/login/",
         {"login": "victim@example.com", "password": valid_password},
@@ -58,7 +58,7 @@ def test_로그인_실패_횟수가_한도를_초과하면_올바른_비밀번�
 @pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"signup": "2/m/ip"})
 def test_회원가입_요청이_동일_ip에서_한도를_초과하면_429로_차단된다(client, valid_password):
-    """Repeated signups from one IP are throttled with a 429 once exceeded."""
+    """같은 IP에서 반복되는 가입은 한도를 넘으면 429로 스로틀된다."""
     for i in range(2):
         resp = client.post(
             "/accounts/signup/",
@@ -86,7 +86,7 @@ def test_회원가입_요청이_동일_ip에서_한도를_초과하면_429로_�
 @pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"reset_password": "2/m/ip"})
 def test_비밀번호_재설정_요청이_동일_ip에서_한도를_초과하면_429로_차단된다(client, make_verified_user):
-    """Repeated password-reset requests from one IP are throttled with a 429."""
+    """같은 IP에서 반복되는 비밀번호 재설정 요청은 429로 스로틀된다."""
     make_verified_user("reset@example.com")
 
     for _ in range(2):
@@ -102,8 +102,8 @@ def test_비밀번호_재설정_요청이_동일_ip에서_한도를_초과하면
 @pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"signup": "1/m/ip"})
 def test_요청이_한도를_초과해_차단되면_한글_429_페이지가_렌더링된다(client, valid_password):
-    """The 429 is served through the project's Korean ``429.html`` template,
-    not allauth's bare English fallback."""
+    """429는 allauth의 밋밋한 영어 폴백이 아니라 프로젝트의 한글
+    ``429.html`` 템플릿으로 렌더된다."""
     client.post(
         "/accounts/signup/",
         {

@@ -60,7 +60,7 @@ class TestStaffEventCreateVocabErrors:
         assert resp.context["form_values"]["category"] == "카페/팝업"
 
     def test_새로_추가된_지역_슬러그는_정상_생성된다(self, staff_client):
-        """2026-07-23 어휘 확장(대구·대전·광주)이 실제 등록 경로까지 닿는지."""
+        """확장된 지역 어휘가 실제 등록 경로까지 정상 동작하는지 확인한다."""
         _staff, client = staff_client()
 
         resp = client.post(CREATE_URL, _payload(region="daegu"))

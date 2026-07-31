@@ -1,13 +1,10 @@
-"""LLM-backed event field extraction.
+"""LLM 기반 행사 필드 추출.
 
-Anti-corruption layer around core.llm: this module owns the tool schema, the
-system prompt, and the mapping from raw LLM output back to the same field
-shape drafts.extraction.extract_event_fields_heuristic returns. All model
-output is server-side revalidated (vocab membership, date parsing, length
-limits, response shape) and grounded against the exact text the model saw
-(anti-hallucination) before it is trusted. Any LLM failure or malformed
-response falls back to the heuristic extractor, unified onto the same
-keyset the happy path returns (extraction_method distinguishes the source).
+core.llm을 감싸는 anti-corruption 계층으로, 도구 스키마·시스템 프롬프트·휴리스틱
+추출과 동일한 필드 형태로의 매핑을 담당한다. 모델 출력은 그대로 믿지 않고 서버에서
+다시 검증하며(어휘 소속, 날짜 파싱, 길이 제한, 응답 형태), 모델이 실제로 본 텍스트에
+근거(grounding)했는지도 확인해 환각을 걸러낸다. LLM 실패나 형식 오류는 휴리스틱
+추출로 대체하고, extraction_method로 출처를 구분한다.
 """
 import logging
 from datetime import date
@@ -49,8 +46,8 @@ UNTRUSTED_TITLE_CLOSE = "</untrusted_page_title>"
 UNTRUSTED_TEXT_OPEN = "<untrusted_page_content>"
 UNTRUSTED_TEXT_CLOSE = "</untrusted_page_content>"
 
-# Stripped from raw_title/raw_text before embedding so a scraped page cannot
-# forge its own delimiter boundary and inject fake "instructions" outside it.
+# 프롬프트에 넣기 전에 raw_title/raw_text에서 지운다 — 그렇지 않으면 긁어온 페이지가
+# 구분자를 위조해 가짜 지시문을 주입할 수 있다.
 DELIMITER_LITERALS = (
     UNTRUSTED_TITLE_OPEN,
     UNTRUSTED_TITLE_CLOSE,
@@ -112,9 +109,8 @@ def _strip_delimiter_literals(text):
 
 
 def _scoped_text(raw_text):
-    """The exact (cleaned + truncated) text the model is shown — grounding
-    checks must use this, not the untruncated raw_text, or a fabricated value
-    that only happens to appear past the truncation point would pass."""
+    """모델에게 실제로 보여준(정리+절단된) 텍스트다. 근거 확인은 반드시 이 값을 써야
+    한다 — 원본 raw_text를 쓰면 절단된 부분 이후에 우연히 등장하는 값도 통과해버린다."""
     return _strip_delimiter_literals(raw_text)[:MAX_INPUT_CHARS]
 
 
@@ -202,10 +198,9 @@ def _call_llm(raw_title, raw_text, model=None):
 
 
 def _grounding_scope(raw_title, raw_text):
-    """The exact blocks the model was shown (title + text), concatenated —
-    grounding must check both, since title/OG-only fields (dates, work_title,
-    location_name) are otherwise wrongly demoted even when the model read them
-    correctly from the title block."""
+    """모델에게 보여준 제목+본문 블록을 그대로 이어붙인 값이다. 둘 다 봐야 한다 —
+    제목에만 있는 날짜·work_title·location_name까지 모델이 올바르게 읽었는데도 근거
+    없음으로 잘못 판정되는 걸 막기 위해서다."""
     return f"{_scoped_title(raw_title)}\n{_scoped_text(raw_text)}"
 
 
@@ -248,7 +243,7 @@ def extract_event_fields_llm(raw_title, raw_text):
             response = _call_llm(raw_title, raw_text, model=settings.LLM_ESCALATION_MODEL)
         return _map_response(response, raw_title, raw_text)
     except (LLMError, TypeError, AttributeError, ValueError):
-        # exc_info only — never log raw_title/raw_text (may contain scraped
-        # third-party page content).
+        # exc_info만 남긴다 — raw_title/raw_text는 로그에 남기지 않는다(외부 사이트에서
+        # 긁은 내용이 섞여 있을 수 있다).
         logger.warning("LLM extraction failed, falling back to heuristic", exc_info=True)
         return _fallback_result(raw_title, raw_text)

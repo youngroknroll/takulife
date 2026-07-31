@@ -1,9 +1,5 @@
 /* ── archive user-status classes (canonical slug keys) ──────── */
-/*
- * Canonical classes: interested / planned / visited / missed
- * These replace the old wish/plan/done/miss classes from home and
- * event_list templates (G10 vocab unification).
- */
+/* 표준 슬러그: interested / planned / visited / missed. 예전 wish/plan/done/miss는 쓰지 않는다. */
 .status-btn,
 .status {
   border: 1px solid var(--line);
@@ -22,10 +18,8 @@
   color: var(--pink-ink);
 }
 
-/* v3 사후 결함 수정 D: planned(예정)는 배지·버튼 모두 up(파랑)으로 통일 —
-   `archive.css`(예정=up)·`archive_statuses.css`의 `.user-status.planned`와
-   색을 맞춘다(이전엔 여기만 앰버로 남아 `/archive/*` 형제 페이지 사이에서
-   갈렸다). visited=민트, missed=end와 함께 상태별 색 일관. */
+/* planned(예정)는 `archive.css`·`archive_statuses.css`의 `.user-status.planned`와
+   같은 up(파랑) 계열로 맞춰야 `/archive/*` 형제 페이지끼리 색이 갈리지 않는다. */
 .status-btn.planned,
 .status.planned {
   background: var(--up-soft);
@@ -47,9 +41,7 @@
   color: var(--end-ink);
 }
 
-/* Active (user's current status) — status-coloured inset ring + check mark.
-   Keeps the per-status hue while making the selected state unmistakable.
-   `.active` is the class the status JS toggles, so server and client agree. */
+/* `.active`는 status.js가 토글하는 클래스로, 서버 렌더링과 클라이언트 상태를 일치시킨다. */
 .status-btn.active {
   font-weight: 700;
   box-shadow: inset 0 0 0 2px currentColor;
@@ -59,23 +51,18 @@
   content: "✓ ";
 }
 
-/* Disabled — sibling lock while another status-btn's request is in flight
-   (status.js), or a server-rendered unavailable option (e.g. ended-event
-   방문 예정). Excludes .active: "이미 추가됨" (setButtonAlreadyAdded) is a
-   permanent confirmed end state, not an unavailable one, and dimming it
-   would read as "still loading" instead of "done". */
+/* 다른 status-btn 요청이 진행 중이거나(status.js) 서버가 선택 불가로 내려준
+   경우에 흐리게 처리한다. .active("이미 추가됨")는 제외 — 확정된 완료 상태를
+   "로딩 중"처럼 보이게 하면 안 되기 때문이다. */
 .status-btn:disabled:not(.active) {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* ── interest button (찜 toggle — independent from .status-btn) ─ */
-/*
- * Intentionally NOT inheriting .status-btn so that .status-btn.active::before
- * {content:"✓ "} never applies here. The glyph (♡/♥) is the state signal.
- */
-/* 찜 버튼은 앱 전역에서 옆 상태 버튼(.status-btn — 예정/방문 등)과 같은
-   알약 모양·높이로 통일한다. (예전 44px·8px 사각형 → 27px·999px) */
+/* .status-btn을 상속하지 않는다 — 상속하면 .status-btn.active::before의
+   체크 글자가 여기에도 붙는다. 상태 표시는 ♡/♥ 하트 글자로만 한다. */
+/* 찜 버튼은 옆 상태 버튼(.status-btn — 예정/방문 등)과 같은 알약 모양·높이로 통일한다. */
 .interest-btn {
   border: 1px solid var(--pink-border);
   border-radius: var(--radius-chip);
@@ -127,12 +114,7 @@
 }
 
 /* ── search bar (shared: home + event_list) ─────────────────── */
-/*
- * Reconciled from home.css + event_list.css. Trivial per-page diffs were
- * unified to the most common value (tokens.css precedent): input font-size
- * 0.95rem (home), input color/background (home), button border var(--brand) (home).
- * home keeps its own `.hero .search { max-width: 540px }` override.
- */
+/* home.css는 `.hero .search { max-width: 540px }`로 별도 오버라이드를 둔다. */
 .search {
   display: flex;
   gap: 0.5rem;
@@ -149,12 +131,10 @@
   color: var(--text);
   background: var(--surface);
 }
-/* Brand-red is the site-wide default (2026-07-23 user decision superseding
-   the earlier "ink, not brand-red" reservation below); only 내 활동
-   (`.archive-search-row button[type="submit"]`, search.css:37-42) stays
-   teal. Next to .collection-add-btn on the collection page, the two brand-red
-   fills read apart by SIZE (34px here vs 44px there) and row position, not
-   colour — do not grow this button's height or add extra emphasis later. */
+/* 검색 버튼은 브랜드레드가 기본이다(내 활동 페이지의
+   `.archive-search-row button[type="submit"]`만 예외로 teal 유지).
+   컬렉션 페이지의 .collection-add-btn과는 색이 아닌 크기(34px vs 44px)로
+   구분하므로 이 버튼 높이를 키우지 마라. */
 .search button {
   border: 1px solid var(--brand);
   background: var(--brand);

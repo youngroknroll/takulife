@@ -1,7 +1,7 @@
-"""core/models.py — Home page configuration model.
+"""core/models.py — 홈 화면 설정 모델.
 
-Singleton HomeConfig stores staff-curated category display settings.
-Business rules (fallback, vocab validation, ordering) live here, not in views.
+싱글턴 HomeConfig가 스태프가 큐레이션한 카테고리 노출 설정을 저장한다.
+비즈니스 규칙(대체값, 어휘 검증, 정렬)은 뷰가 아니라 여기 둔다.
 """
 from django.db import models
 
@@ -9,10 +9,10 @@ from core.vocab import CATEGORY, CATEGORY_LABELS
 
 
 class HomeConfig(models.Model):
-    """Singleton configuration for home page category display.
+    """홈 화면 카테고리 노출을 위한 싱글턴 설정.
 
-    featured_categories: ordered list of category slugs selected by staff.
-    Empty list = show all vocab categories in vocab order (backward-compat fallback).
+    featured_categories: 스태프가 선택한 카테고리 슬러그의 순서 있는 목록.
+    빈 리스트면 어휘 순서대로 모든 카테고리를 보여준다(하위 호환 대체값).
     """
 
     featured_categories = models.JSONField(default=list)
@@ -22,16 +22,16 @@ class HomeConfig(models.Model):
 
     @classmethod
     def get_solo(cls):
-        """Return the singleton instance (pk=1), creating it if needed."""
+        """싱글턴 인스턴스(pk=1)를 반환한다. 없으면 생성한다."""
         instance, _ = cls.objects.get_or_create(pk=1)
         return instance
 
     def featured_category_pairs(self):
-        """Return (slug, label) pairs for the featured categories.
+        """노출 카테고리의 (slug, label) 쌍을 반환한다.
 
-        - Empty featured_categories → full CATEGORY vocab in vocab order (fallback).
-        - Non-empty → stored slugs in stored order; slugs absent from vocab are
-          silently dropped (validation guard).
+        - featured_categories가 비어 있으면 어휘 순서대로 전체 CATEGORY를 반환(대체값).
+        - 비어 있지 않으면 저장된 순서대로 반환하되, 어휘에 없는 슬러그는
+          조용히 제외한다(검증 가드).
         """
         if not self.featured_categories:
             return list(CATEGORY)
@@ -45,19 +45,18 @@ class HomeConfig(models.Model):
 
 
 class AnalyticsEvent(models.Model):
-    """A single recorded behavioral analytics event (PR-0e, G16/F-07).
+    """기록된 행동 분석 이벤트 하나.
 
-    Lives in core (a leaf app every domain already depends on) rather than a
-    new app, per the approved design decision — recording is a cross-domain
-    concern (events, archive) and core is the existing shared-dependency
-    leaf.
+    새 앱이 아니라 core(모든 도메인이 이미 의존하는 공용 앱)에 둔다 —
+    기록은 도메인을 가로지르는 관심사(events, archive)이고 core가 그
+    공유 지점이기 때문이다.
 
-    Privacy: user is stored only as a pseudonymous, non-reversible
-    ``user_key`` (see core.analytics.pseudonymous_user_key), never a direct
-    FK to the user — this table intentionally cannot be joined back to
-    accounts.User. ``context`` must never carry free text, contact info, or
-    media URLs (enforced by core.analytics.record_event's forbidden-key
-    guard, not by this model).
+    프라이버시: 사용자는 가명이며 복원 불가능한 ``user_key``로만
+    저장하고(core.analytics.pseudonymous_user_key 참고), 사용자를 직접
+    가리키는 FK는 두지 않는다 — 이 테이블은 accounts.User로 조인해
+    되돌아갈 수 없도록 의도적으로 설계됐다. ``context``에는 자유
+    텍스트, 연락처, 미디어 URL이 절대 들어가면 안 되며(이 모델이 아니라
+    core.analytics.record_event의 금지 키 가드가 강제한다).
     """
 
     class EventName(models.TextChoices):
@@ -85,10 +84,10 @@ class AnalyticsEvent(models.Model):
         )
 
     event_name = models.CharField(max_length=32, choices=EventName.choices)
-    # Pseudonymous per-user cohort key (see core.analytics), "" for an
-    # anonymous/unauthenticated request — never a direct user reference.
+    # 가명 사용자별 코호트 키(core.analytics 참고). 익명/미인증 요청은 "".
+    # 사용자를 직접 가리키지 않는다.
     user_key = models.CharField(max_length=64, blank=True)
-    # "" when the event has no single target (e.g. a list view).
+    # 이벤트에 단일 대상이 없으면(예: 목록 조회) "".
     target_type = models.CharField(max_length=32, blank=True)
     target_id = models.BigIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

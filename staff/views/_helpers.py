@@ -1,15 +1,13 @@
-"""Shared helpers for staff/views/ submodules.
+"""staff/views/ 하위 모듈이 공유하는 헬퍼.
 
-Only value-preparation logic lives here — the `StaffActionLog.objects.create()`
-call itself stays in each caller's own `transaction.atomic()` block (a log
-write failure must roll back the action it is auditing, so the create() call
-cannot be hidden behind an indirection that obscures that invariant).
+값을 준비하는 로직만 여기 둔다. `StaffActionLog.objects.create()` 호출
+자체는 각 호출부의 `transaction.atomic()` 블록 안에 남겨야 한다 — 로그
+기록이 실패하면 그 행동 자체도 롤백돼야 하기 때문이다.
 """
 from core.ip import get_client_ip
 
 
 def _staff_action_metadata(request):
-    """Extract actor/ip/user-agent for a StaffActionLog entry from the request."""
     return {
         "actor": request.user,
         "ip_address": get_client_ip(request),
@@ -18,21 +16,12 @@ def _staff_action_metadata(request):
 
 
 def _action_log_kwargs(metadata, action, *, target_draft=None, target_event=None):
-    """Assemble StaffActionLog.objects.create() kwargs from `metadata` + `action`.
+    """`request`가 아닌 이미 추출된 `metadata` 딕셔너리를 받는다.
 
-    `metadata` is a dict from `_staff_action_metadata(request)`. Taking the
-    already-extracted dict (instead of `request` itself) lets callers that
-    already compute `metadata` once per request/loop reuse it without a
-    second extraction — e.g. StaffDraftBulkApproveView._approve_one, a
-    per-item static helper that only receives `metadata`, not `request`.
-
-    Usage: ``StaffActionLog.objects.create(**_action_log_kwargs(metadata,
-    StaffActionLog.Action.APPROVE, target_draft=draft))`` inside the
-    caller's own transaction.atomic() block.
-
-    StaffActionLog has no generic metadata field (only target_draft and
-    target_event) — every call site passes at most one of the two target_*
-    kwargs, the other stays at its None default.
+    반복문 안에서 항목마다 호출되는 StaffDraftBulkApproveView._approve_one
+    처럼 request 없이 metadata만 갖고 있는 호출부가 재추출 없이 재사용할
+    수 있게 하기 위해서다. target_draft/target_event는 둘 중 하나만
+    채워지고 나머지는 None으로 남는다.
     """
     return {
         "action": action,

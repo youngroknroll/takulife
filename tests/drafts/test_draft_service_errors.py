@@ -1,10 +1,6 @@
-"""Tests for the draft-creation error mapping in services.
-
-create_draft_from_url translates fetch/extract failures into typed
-DraftCreation* errors, exercised here with fetch_html stubbed so no network
-is touched. The admin create endpoint's HTTP-response mapping for these same
-errors lives in tests/drafts/test_drafts_api.py (that endpoint's home).
-"""
+"""services의 드래프트 생성 오류 매핑 테스트. create_draft_from_url이 fetch/추출
+실패를 DraftCreation* 타입 오류로 바꾸는 것을 fetch_html 스텁으로 검증한다.
+같은 오류의 관리자 API 응답 매핑은 tests/drafts/test_drafts_api.py에 있다."""
 import logging
 
 import pytest
@@ -62,13 +58,12 @@ class TestCreateDraftErrorMapping:
             create_draft_from_url(source_url="https://ok.example.com/")
 
     def test_추출_결과가_비어있으면_DraftCreationEmptyExtractionError로_변환된다(self, monkeypatch):
-        # Real extraction on contentless HTML raises EmptyExtractionError.
+        # 내용 없는 HTML은 실제 추출 로직에서 EmptyExtractionError가 난다.
         monkeypatch.setattr(services, "fetch_html", lambda url: "<html></html>")
         with pytest.raises(DraftCreationEmptyExtractionError):
             create_draft_from_url(source_url="https://ok.example.com/")
 
     def test_허용되지_않은_url_스킴으로_호출하면_ValueError가_발생한다(self):
-        """(moved from tests/core/test_coverage_supplements.py)"""
         with pytest.raises(ValueError):
             create_draft_from_url(source_url="ftp://not-allowed/")
 

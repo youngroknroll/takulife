@@ -1,7 +1,5 @@
-"""Archive service-layer analytics event recording
-(PR-0e checkpoints B5, B6, B7).
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+"""아카이브 서비스 계층의 분석 이벤트 기록 테스트(PR-0e 체크포인트 B5, B6, B7).
+근거: .docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e
 """
 import uuid
 
@@ -94,12 +92,11 @@ def test_방문_기록을_생성하면_VISIT_RECORD_CREATED_이벤트가_기록�
 def test_같은_클라이언트_토큰으로_방문_기록_생성을_재요청해도_VISIT_RECORD_CREATED_이벤트는_한_번만_기록된다(
     make_user, make_event
 ):
-    """bfcache duplicate-creation track (INTG-BE-06-VR, DAR ②): a replayed
-    create with the same (user, client_token) must be exactly-once for the
-    VISIT_RECORD_CREATED analytics event, not just the row — the replay
-    branch returns the existing row *before* create_visit_record's analytics
-    call runs, so a second call must not double-count. Mirrors the
-    CollectionItem analytics idempotency test (INTG-BE-06-CI) above."""
+    """bfcache 중복 생성 트랙(INTG-BE-06-VR, DAR ②): 같은 (user, client_token)으로
+    재요청해도 VISIT_RECORD_CREATED 분석 이벤트는 정확히 한 번만 기록돼야 한다 —
+    재전송 분기가 create_visit_record의 분석 이벤트 호출 전에 기존 행을 반환하므로,
+    두 번째 호출이 이벤트를 중복 기록해선 안 된다. 위 CollectionItem 분석 멱등성
+    테스트(INTG-BE-06-CI)와 대응된다."""
     user = make_user()
     event = make_event()
     token = uuid.uuid4()
@@ -134,13 +131,11 @@ def test_방문_기록에_사진을_추가하면_VISIT_PHOTO_ADDED_분석_이벤
 def test_같은_클라이언트_토큰으로_방문기록_사진_생성을_재요청해도_VISIT_PHOTO_ADDED_이벤트는_한_번만_기록된다(
     make_user, make_event, make_visit, png_bytes
 ):
-    """bfcache duplicate-creation track (INTG-BE-06-VRP, DAR ②): a replayed
-    photo upload with the same (visit_record, client_token) must be
-    exactly-once for the VISIT_PHOTO_ADDED analytics event, not just the row
-    — the replay branch returns the existing row *before*
-    create_visit_record_photo's analytics call runs, so a second call must
-    not double-count. Mirrors the VisitRecord/CollectionItem analytics
-    idempotency tests (INTG-BE-06-VR/CI) above."""
+    """bfcache 중복 생성 트랙(INTG-BE-06-VRP, DAR ②): 같은 (visit_record, client_token)으로
+    재요청해도 VISIT_PHOTO_ADDED 분석 이벤트는 정확히 한 번만 기록돼야 한다 —
+    재전송 분기가 create_visit_record_photo의 분석 이벤트 호출 전에 기존 행을
+    반환하므로, 두 번째 호출이 이벤트를 중복 기록해선 안 된다. 위
+    VisitRecord/CollectionItem 분석 멱등성 테스트(INTG-BE-06-VR/CI)와 대응된다."""
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
@@ -179,11 +174,10 @@ def test_수집_항목을_생성하면_COLLECTION_ITEM_CREATED_분석_이벤트�
 
 @pytest.mark.django_db
 def test_같은_클라이언트_토큰으로_컬렉션_항목_생성을_재요청해도_COLLECTION_ITEM_CREATED_이벤트는_한_번만_기록된다(make_user):
-    """bfcache duplicate-creation track (INTG-BE-06-CI, DAR ②): a replayed
-    create with the same (user, client_token) must be exactly-once for the
-    COLLECTION_ITEM_CREATED analytics event, not just the row — the replay
-    branch returns the existing row *before* create_collection_item's
-    analytics call runs, so a second call must not double-count."""
+    """bfcache 중복 생성 트랙(INTG-BE-06-CI, DAR ②): 같은 (user, client_token)으로
+    재요청해도 COLLECTION_ITEM_CREATED 분석 이벤트는 정확히 한 번만 기록돼야 한다 —
+    재전송 분기가 create_collection_item의 분석 이벤트 호출 전에 기존 행을
+    반환하므로, 두 번째 호출이 이벤트를 중복 기록해선 안 된다."""
     user = make_user()
     token = uuid.uuid4()
 
@@ -227,7 +221,7 @@ def test_연결이_없던_수집_항목에_방문_기록을_새로_연결하면_
     make_user, make_collection_item, make_event, make_visit
 ):
     user = make_user()
-    item = make_collection_item(user)  # visit_record=None default
+    item = make_collection_item(user)  # 기본값 visit_record=None
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
 
@@ -245,7 +239,7 @@ def test_이미_연결된_수집_항목의_무관한_필드를_수정해도_COLL
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
-    item = make_collection_item(user, visit_record=record, event=event)  # already linked
+    item = make_collection_item(user, visit_record=record, event=event)  # 이미 연결됨
 
     update_collection_item(item=item, memo="무관한 수정")
 
@@ -261,9 +255,9 @@ def test_동일한_방문_기록_값을_재전송해도_COLLECTION_ITEM_LINKED_T
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
-    item = make_collection_item(user, visit_record=record, event=event)  # already linked
+    item = make_collection_item(user, visit_record=record, event=event)  # 이미 연결됨
 
-    update_collection_item(item=item, visit_record=record)  # explicit resend of same value
+    update_collection_item(item=item, visit_record=record)  # 같은 값 재전송
 
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT
@@ -300,7 +294,7 @@ def test_이미_원하는_항목인_수집_항목의_무관한_필드를_수정�
     make_user, make_collection_item
 ):
     user = make_user()
-    item = make_collection_item(user, is_wanted=True)  # already wanted
+    item = make_collection_item(user, is_wanted=True)  # 이미 원하는 상태
 
     update_collection_item(item=item, memo="무관한 수정")
 
@@ -314,9 +308,9 @@ def test_이미_True인_is_wanted_값을_재전송해도_COLLECTION_ITEM_MARKED_
     make_user, make_collection_item
 ):
     user = make_user()
-    item = make_collection_item(user, is_wanted=True)  # already wanted
+    item = make_collection_item(user, is_wanted=True)  # 이미 원하는 상태
 
-    update_collection_item(item=item, is_wanted=True)  # explicit resend of same value
+    update_collection_item(item=item, is_wanted=True)  # 같은 값 재전송
 
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED
@@ -353,7 +347,7 @@ def test_이미_교환_가능한_수집_항목의_무관한_필드를_수정해�
     make_user, make_collection_item
 ):
     user = make_user()
-    item = make_collection_item(user, quantity=2, tradeable_quantity=1)  # already tradeable
+    item = make_collection_item(user, quantity=2, tradeable_quantity=1)  # 이미 교환 가능 상태
 
     update_collection_item(item=item, memo="무관한 수정")
 
@@ -367,9 +361,9 @@ def test_교환_가능_수량이_양수에서_양수로_바뀌면_경계_교차�
     make_user, make_collection_item
 ):
     user = make_user()
-    item = make_collection_item(user, quantity=3, tradeable_quantity=1)  # already positive
+    item = make_collection_item(user, quantity=3, tradeable_quantity=1)  # 이미 양수
 
-    update_collection_item(item=item, tradeable_quantity=2)  # positive to positive, not a crossing
+    update_collection_item(item=item, tradeable_quantity=2)  # 양수→양수, 경계 교차 아님
 
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
@@ -381,9 +375,9 @@ def test_동일한_교환_가능_수량_값을_재전송해도_COLLECTION_ITEM_M
     make_user, make_collection_item
 ):
     user = make_user()
-    item = make_collection_item(user, quantity=2, tradeable_quantity=1)  # already positive
+    item = make_collection_item(user, quantity=2, tradeable_quantity=1)  # 이미 양수
 
-    update_collection_item(item=item, tradeable_quantity=1)  # explicit resend of same value
+    update_collection_item(item=item, tradeable_quantity=1)  # 같은 값 재전송
 
     assert AnalyticsEvent.objects.filter(
         event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE
@@ -433,7 +427,7 @@ def test_방문_기록_연결과_원하는_항목_전환을_함께_수정하면_
     make_user, make_collection_item, make_event, make_visit
 ):
     user = make_user()
-    item = make_collection_item(user)  # visit_record=None, is_wanted=False defaults
+    item = make_collection_item(user)  # 기본값 visit_record=None, is_wanted=False
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
 

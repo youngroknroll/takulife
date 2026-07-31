@@ -9,10 +9,9 @@ if (filterToggle && filterPanel) {
   });
 }
 
-// Sort menu (results head): a native <details>, so open/close, keyboard
-// operation, and the no-JS fallback all come from the element itself. The only
-// thing <details> lacks for a dropdown is dismissal when attention moves
-// elsewhere — that is all this block adds.
+// 정렬 메뉴는 <details> 요소라 열고 닫기, 키보드 조작, JS 없이도 동작하는 것까지
+// 브라우저가 기본 제공한다. 여기서는 포커스가 다른 곳으로 이동했을 때 닫는
+// 동작만 추가한다.
 const sortMenu = document.querySelector("[data-sort-menu]");
 if (sortMenu) {
   const closeSortMenu = () => sortMenu.removeAttribute("open");
@@ -25,12 +24,11 @@ if (sortMenu) {
   sortMenu.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && sortMenu.hasAttribute("open")) {
       closeSortMenu();
-      // Return focus to the control that opened the panel; without this the
-      // keyboard user is left on a removed subtree and falls back to <body>.
+      // 이 처리가 없으면 키보드 사용자의 포커스가 사라진 요소에 남아 body로 밀려난다.
       sortMenu.querySelector("summary").focus();
     }
   });
-  // Focus leaving the panel entirely (Tab past the last option) closes it too.
+  // Tab으로 마지막 항목을 지나 포커스가 패널을 완전히 벗어나도 닫는다.
   sortMenu.addEventListener("focusout", (event) => {
     if (!sortMenu.contains(event.relatedTarget)) {
       closeSortMenu();

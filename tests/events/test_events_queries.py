@@ -1,20 +1,15 @@
-"""Tests for events/queries.py: listing parameters, published-event listing.
+"""events/queries.py를 검증한다: 목록 파라미터, 게시 행사 목록.
 
-Covers:
-- parse_public_listing_params: filtering, validation, blank-string handling
-- list_published_events: ordering and status filtering with a fixed today
-- PUBLIC_LISTING_PAGE_SIZE: page size constant
+다루는 범위:
+- parse_public_listing_params: 필터링, 검증, 빈 문자열 처리
+- list_published_events: 고정 today 기준 정렬과 상태 필터링
+- PUBLIC_LISTING_PAGE_SIZE: 페이지 크기 상수
 """
 import pytest
 from datetime import date, timedelta
 
 from events.models import Event
 
-
-
-# ---------------------------------------------------------------------------
-# parse_public_listing_params
-# ---------------------------------------------------------------------------
 
 @pytest.mark.unit
 class TestParsePublicListingParams:
@@ -32,7 +27,7 @@ class TestParsePublicListingParams:
         }
         result = parse_public_listing_params(raw)
         assert result["q"] == "popup"
-        # region/category are multi-value: a single value normalises to a 1-list
+        # region/category는 다중값 필드라 단일 값도 원소 1개짜리 리스트로 정규화된다.
         assert result["region"] == ["seoul"]
         assert result["category"] == ["popup_store"]
         assert result["work_title"] == "Gundam"
@@ -119,9 +114,9 @@ class TestParsePublicListingParams:
         from events.queries import parse_public_listing_params
 
         result = parse_public_listing_params({"q": ""})
-        # blank strings are accepted as valid (allow_blank=True) but the queryset
-        # layer does not filter on them — validated_data will contain the key with ""
-        # The querysets.py filter_for_public_listing skips blank values via truthiness check.
+        # 빈 문자열은 유효한 값으로 받아들여지지만(allow_blank=True) 쿼리셋 계층에서는
+        # 걸러지지 않는다 — events/querysets.py의 filter_for_public_listing이
+        # truthiness 검사로 빈 값을 건너뛴다.
         assert result.get("q", "") == ""
 
     def test_지역_빈_문자열은_유효한_값으로_받아들인다(self):
@@ -149,7 +144,7 @@ class TestParsePublicListingParams:
         assert result == {}
 
     def test_DRF_QueryDict이_아닌_일반_딕셔너리도_받아들인다(self):
-        """Should accept any Mapping, not just DRF QueryDict."""
+        """QueryDict뿐 아니라 임의의 Mapping도 받아들여야 한다."""
         from events.queries import parse_public_listing_params
 
         raw = {"q": "test"}
@@ -170,10 +165,6 @@ class TestParsePublicListingParams:
             parse_public_listing_params({"sort": "not_a_real_sort"})
         assert "sort" in str(exc_info.value.detail)
 
-
-# ---------------------------------------------------------------------------
-# list_published_events
-# ---------------------------------------------------------------------------
 
 @pytest.mark.domain
 @pytest.mark.django_db
@@ -255,7 +246,7 @@ class TestListPublishedEvents:
         assert ids.index(upcoming.id) < ids.index(ended.id)
 
     def test_기준일을_생략해도_결과를_반환한다(self, make_event):
-        """When today is omitted, the function still returns a queryset."""
+        """today를 생략해도 쿼리셋을 반환한다."""
         from events.queries import list_published_events
 
         make_event(title="Any event")
@@ -263,10 +254,10 @@ class TestListPublishedEvents:
         assert qs.count() == 1
 
     def test_마감임박_정렬은_종료되지_않은_행사를_종료일_오름차순으로_먼저_배치하고_날짜_없는_행사는_그_뒤에_둔다(self, make_event):
-        """Closing-soon sort ranks not-yet-ended events (end_date null or >= today)
-        first, soonest-ending first (nulls last). Already-ended events are pushed
-        to the back — see test_마감임박_정렬에서_이미_종료된_행사는_진행중_행사보다_앞에_오지_않는다
-        for the regression this guards against."""
+        """마감임박 정렬은 아직 종료되지 않은 행사(end_date가 null이거나 오늘 이후)를
+        종료 빠른 순으로 먼저 두고 null은 맨 뒤에 둔다. 이미 종료된 행사는 그
+        뒤로 밀린다 — 이 회귀를 막는 테스트는
+        test_마감임박_정렬에서_이미_종료된_행사는_진행중_행사보다_앞에_오지_않는다다."""
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -292,8 +283,8 @@ class TestListPublishedEvents:
         assert ids == [ongoing.id, upcoming.id, no_end.id, ended.id]
 
     def test_마감임박_정렬에서_이미_종료된_행사는_진행중_행사보다_앞에_오지_않는다(self, make_event):
-        """Regression guard: an event that ended long ago (smallest end_date)
-        must never rank above a currently-ongoing event under closing_soon sort."""
+        """회귀 가드: 오래전 종료된 행사(end_date가 가장 작음)가 closing_soon
+        정렬에서 현재 진행중인 행사보다 앞서면 안 된다."""
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -314,7 +305,7 @@ class TestListPublishedEvents:
         assert ids.index(ongoing.id) < ids.index(long_ended.id)
 
     def test_마감임박_정렬의_종료된_그룹_안에서는_최근_종료된_행사가_먼저_온다(self, make_event):
-        """Within the already-ended group, most-recently-ended sorts first."""
+        """이미 종료된 그룹 안에서는 가장 최근에 종료된 행사가 먼저 온다."""
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -346,9 +337,9 @@ class TestListPublishedEvents:
         assert ids.index(first.id) < ids.index(second.id)
 
     def test_시작일_오름차순_정렬은_상태와_무관하게_시작일_순으로만_배치한다(self, make_event):
-        """start_asc sort must order purely by start_date, ignoring the default
-        ongoing/upcoming/ended state ranking (ended has the earliest start_date
-        here but ranks last under the default order_for_public_listing)."""
+        """start_asc 정렬은 기본 진행중/예정/종료 상태 순위를 무시하고 순수하게
+        start_date로만 정렬해야 한다(여기서 종료 행사가 가장 이른 start_date를
+        가지지만 기본 order_for_public_listing에서는 맨 뒤로 밀린다)."""
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -396,7 +387,7 @@ class TestListPublishedEvents:
         assert ids == [second.id, first.id]
 
     def test_정렬_파라미터를_생략하면_기본_정렬을_유지한다(self, make_event):
-        """Regression guard: omitting sort must not change the existing default order."""
+        """회귀 가드: sort를 생략해도 기존 기본 정렬이 바뀌면 안 된다."""
         from events.queries import list_published_events
 
         today = date(2026, 6, 24)
@@ -426,18 +417,16 @@ class TestListPublishedEvents:
         assert ids.index(upcoming.id) < ids.index(ended.id)
 
     def test_상태값_all은_종료된_행사도_포함한다(self, make_event):
-        """status="all" behaves like no filter — ended events are included.
+        """status="all"은 필터 없음과 같이 동작한다 — 종료 행사도 포함된다.
 
-        Deliberately routes the raw params through parse_public_listing_params
-        instead of passing a raw dict straight to list_published_events (the
-        sibling tests' convention). with_public_status has no explicit "all"
-        arm; any unrecognised string falls through the same catch-all
-        (`return self`) as an unfiltered status. So passing a raw
-        {"status": "all"} dict directly would pass whether or not the
-        serializer accepts "all" as valid, making the assertion vacuous. This
-        test's entire point is to prove "all" survives the
-        EventQuerySerializer.STATUS_CHOICES validation layer used by the API,
-        so it must exercise that layer.
+        다른 테스트들의 관례(raw dict를 바로 list_published_events에 넘기는 것)와
+        달리 일부러 parse_public_listing_params를 거친다. with_public_status는
+        "all" 전용 분기가 없어 인식 못한 문자열은 무필터와 동일하게
+        `return self`로 빠지므로, raw dict를 바로 넘기면 serializer가 "all"을
+        유효한 값으로 받아들이든 아니든 통과해버려 검증 의미가 없어진다. 이
+        테스트의 목적은 "all"이 API가 쓰는
+        EventQuerySerializer.STATUS_CHOICES 검증 계층을 실제로 통과하는지
+        확인하는 것이다.
         """
         from events.queries import list_published_events, parse_public_listing_params
 
@@ -460,21 +449,12 @@ class TestListPublishedEvents:
         assert ongoing.id in ids
 
 
-# ---------------------------------------------------------------------------
-# PUBLIC_LISTING_PAGE_SIZE constant
-# ---------------------------------------------------------------------------
-
 @pytest.mark.unit
 class TestPublicListingPageSize:
     def test_공개_목록_페이지_크기는_10건이다(self):
         from events.queries import PUBLIC_LISTING_PAGE_SIZE
 
         assert PUBLIC_LISTING_PAGE_SIZE == 10
-
-
-# ---------------------------------------------------------------------------
-# with_public_status queryset arms (moved from tests/core/test_coverage_supplements.py)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.domain
@@ -517,17 +497,17 @@ class TestWithPublicStatus:
             start_date=today + timedelta(days=10),
             end_date=today + timedelta(days=12),
         )
-        # Off-by-one guard: end_date == today must still count as "not ended
-        # yet". Without this fixture, mutating `end_date__lt` to `end_date__lte`
-        # in the exclude clause would not be caught by any assertion here.
+        # 경계값 가드: end_date == today는 여전히 "아직 종료 안 됨"으로 쳐야 한다.
+        # 이 픽스처가 없으면 exclude절의 end_date__lt를 end_date__lte로
+        # 되돌리는 뮤테이션을 어떤 단언도 잡지 못한다.
         ends_today = make_event(
             title="오늘 종료 행사",
             start_date=today - timedelta(days=3),
             end_date=today,
         )
-        # Deliberate: end_date=None is the case under test, not a null trap.
-        # Part A's "active" predicate treats a missing end date as "not
-        # ended", asymmetric with Part B's dataset-carryover predicate.
+        # 의도적: end_date=None이 이 테스트가 검증하는 케이스다(널 함정이 아니다).
+        # "active" 판정은 종료일 없음을 "아직 종료 안 됨"으로 취급하며, 이는
+        # 다른 판정 로직과 비대칭이다.
         no_end_date = make_event(
             title="종료일 없는 행사",
             start_date=today - timedelta(days=30),
@@ -547,5 +527,5 @@ class TestWithPublicStatus:
         make_event(title="아무 행사")
         qs = Event.objects.published()
 
-        # Unrecognised status falls through every arm to `return self`.
+        # 인식하지 못하는 상태값은 모든 분기를 거쳐 `return self`로 빠진다.
         assert list(qs.with_public_status("nonsense", today=today)) == list(qs)

@@ -33,9 +33,8 @@ class ResponseTooLargeError(Exception):
 
 
 def _build_user_agent():
-    # Read the setting at call time (not module import time) so
-    # override_settings takes effect and a deployment can set contact info
-    # without a code change.
+    # 설정을 임포트 시점이 아니라 호출 시점에 읽어야 override_settings가 먹히고,
+    # 배포 시 코드 수정 없이 연락처를 바꿀 수 있다.
     contact = settings.DRAFT_FETCH_CONTACT.strip()
     if contact:
         return f"{USER_AGENT} (+{contact})"
@@ -43,21 +42,18 @@ def _build_user_agent():
 
 
 def fetch_html(url, *, allowed_content_types=None):
-    """Fetch `url` and return its decoded body, enforcing the SSRF guard,
-    a redirect cap, a response-size cap, and a content-type allowlist.
+    """url을 가져와 디코딩된 본문을 반환한다. SSRF 방지, 리다이렉트 횟수 제한, 응답 크기
+    제한, content-type 허용 목록을 모두 강제한다.
 
-    `allowed_content_types` replaces the default HTML_CONTENT_TYPES entirely
-    (it does not merge with it) — pass an explicit tuple to opt into a
-    different content type (e.g. robots.txt's text/plain). An empty tuple
-    rejects every response, since no prefix will ever match.
+    allowed_content_types는 기본값 HTML_CONTENT_TYPES를 병합이 아니라 통째로
+    대체한다 — robots.txt의 text/plain처럼 다른 타입을 허용하려면 명시적으로 튜플을
+    넘겨라. 빈 튜플을 넘기면 어떤 접두어와도 매치되지 않아 모든 응답이 거부된다.
     """
     content_types = allowed_content_types if allowed_content_types is not None else HTML_CONTENT_TYPES
-    # Validate the initial URL before any client/connection resources are
-    # created — a known-unsafe candidate (private IP, unsupported scheme)
-    # must not reach httpx.Client at all. The per-hop revalidation inside
-    # the loop below still runs for every hop, including this first one;
-    # that is the authoritative SSRF gate for redirect targets and must not
-    # be removed (see tests/test_draft_fetching_redirect_revalidation.py).
+    # 클라이언트를 만들기 전에 최초 URL부터 검증한다 — 사설 IP나 지원하지 않는
+    # 스킴처럼 이미 위험한 주소는 httpx.Client에 닿아서도 안 된다. 아래 루프의 매 홉
+    # 재검증이 리다이렉트 대상에 대한 실질적 SSRF 방어선이므로 지우면 안 된다
+    # (tests/test_draft_fetching_redirect_revalidation.py 참고).
     validate_fetch_url(url, resolver=socket.getaddrinfo)
     try:
         with httpx.Client(

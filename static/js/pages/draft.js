@@ -1,60 +1,15 @@
 /**
- * draft.js — Admin draft management actions for takulife
- *
- * Binds create / edit / approve / reject controls via data attributes.
- * All API writes go through window.TakuAPI (api.js) — no CSRF duplication.
- * Error formatting uses TakuAPI.formatError (no local formatError copy).
- *
- * Data attributes expected by each control:
- *
- *   Create form  (#draft-create-form)
- *     - no extra attributes; reads #draft-url and #draft-source-name inputs
- *
- *   Edit form (#draft-edit-form)
- *     - data-draft-id  — numeric draft PK
- *
- *   Approve button (#draft-approve-btn)
- *     - data-draft-id  — numeric draft PK
- *     - reads data-list-url off its closest [data-list-url] ancestor (the
- *       action-stack container, server-rendered with the ?status= the
- *       operator arrived with) for the post-success "목록으로 돌아가기" link
- *
- *   Reject button (#draft-reject-btn)
- *     - data-draft-id  — numeric draft PK
- *     - reads #draft-reject-reason's value (optional) as rejection_reason
- *     - reads data-list-url the same way as the approve button, to navigate
- *       back to the list on success (see [data-list-url] above)
- *
- *   Raw text toggle (#raw-text-toggle)
- *     - server double-renders #raw-text-truncated (visible) and
- *       #raw-text-full (hidden) — this button only flips native `hidden`
- *       on each and syncs data-expanded/label text. It never reads or
- *       writes raw_text itself (no innerHTML, no textContent assignment
- *       of user content) — the XSS surface stays at 0.
- *
- * Error containers (textContent only, no innerHTML):
- *   #draft-create-error  — shown inline on create failure
- *   #draft-edit-error    — shown inline on edit failure
- *   #draft-action-error  — shown inline on approve/reject failure
- *
- * Success:
- *   Create  → TakuAPI.commitAndNavigate(현재 URL — reload 등가)
- *   Edit    → TakuAPI.commitAndNavigate(현재 URL — reload 등가)
- *   Approve → show event_id link + "목록으로 돌아가기" link in
- *             #draft-approve-success (stays visible, no reload); both
- *             review buttons are disabled to block resubmission
- *   Reject  → navigate to data-list-url (see above) — no reload
- *
- * 403 contract:
- *   Any 403 on these staff-only pages indicates a lost session or CSRF failure.
- *   Show the error message in the relevant container and do NOT redirect to login
- *   (the user is already on an @staff_member_required page).
+ * 스태프의 드래프트 등록·수정·승인·반려 동작.
+ * 원문 보기 토글은 hidden 속성만 바꿀 뿐 raw_text 내용을 직접 읽거나
+ * 쓰지 않아 XSS 위험이 없다.
+ * 스태프 전용 페이지의 403은 세션 만료나 보안 토큰 오류를 뜻하므로
+ * 로그인 페이지로 보내지 않고 오류 메시지만 보여준다.
  */
 
 (function () {
   "use strict";
 
-  /* ── helpers ──────────────────────────────────────────────────────────── */
+  /* ── 헬퍼 ──────────────────────────────────────────────────────────── */
 
   function showError(container, message) {
     if (!container) {
@@ -73,9 +28,7 @@
     container.hidden = true;
   }
 
-  // Styled confirm modal (confirm-modal.js) with a native window.confirm
-  // fallback if that script didn't load — same pattern as status.js/visit.js/
-  // visit_edit.js/personal_entries.js/draft_bulk.js's askCancel.
+  // 공용 모달이 없으면 기본 confirm으로 대체한다.
   function askConfirm(message) {
     if (typeof window.TakuConfirm === "function") {
       return window.TakuConfirm(message);
@@ -83,13 +36,13 @@
     return Promise.resolve(window.confirm(message));
   }
 
-  /* ── 403 message (lost session / CSRF) ──────────────────────────────── */
+  /* ── 403 메시지(세션 만료/CSRF) ──────────────────────────────── */
 
   var CSRF_OR_SESSION_MSG =
     "403 오류: 세션이 만료되었거나 보안 토큰이 유효하지 않습니다. " +
     "페이지를 새로고침한 뒤 다시 시도해 주세요.";
 
-  /* ── create form ──────────────────────────────────────────────────────── */
+  /* ── 등록 폼 ──────────────────────────────────────────────────────── */
 
   function bindCreateForm() {
     var form = document.getElementById("draft-create-form");
@@ -120,12 +73,9 @@
         source_name: sourceName,
       }).then(function (result) {
         if (result.ok) {
-          // Reload-equivalent: destination is the current URL (WED §5-2
-          // boundary ③ — same fidelity as the reload it replaces).
-          // submitBtn is deliberately left in-flight (.is-loading intact)
-          // instead of setLoading(false) here — it must still be found by
-          // api.js's pageshow marker scan on a bfcache restore for the
-          // forced-forward branch to fire.
+          // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
+          // submitBtn을 일부러 진행 중 상태(.is-loading)로 남겨둔다 —
+          // bfcache 복원 시 api.js가 이 표시를 찾아야 강제 이동 처리가 동작한다.
           window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
           return;
         }
@@ -139,7 +89,7 @@
     });
   }
 
-  /* ── edit form ────────────────────────────────────────────────────────── */
+  /* ── 수정 폼 ────────────────────────────────────────────────────────── */
 
   function bindEditForm() {
     var form = document.getElementById("draft-edit-form");
@@ -206,12 +156,9 @@
       window.TakuAPI.patch("/api/event-drafts/" + draftId + "/", payload).then(
         function (result) {
           if (result.ok) {
-            // Reload-equivalent: destination is the current URL (WED §5-2
-            // boundary ③ — same fidelity as the reload it replaces).
-            // submitBtn is deliberately left in-flight (.is-loading intact)
-            // instead of setLoading(false) here — it must still be found by
-            // api.js's pageshow marker scan on a bfcache restore for the
-            // forced-forward branch to fire.
+            // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
+            // submitBtn을 일부러 진행 중 상태(.is-loading)로 남겨둔다 —
+            // bfcache 복원 시 api.js가 이 표시를 찾아야 강제 이동 처리가 동작한다.
             window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
             return;
           }
@@ -226,7 +173,7 @@
     });
   }
 
-  /* ── approve button ───────────────────────────────────────────────────── */
+  /* ── 승인 버튼 ───────────────────────────────────────────────────── */
 
   function bindApproveButton() {
     var btn = document.getElementById("draft-approve-btn");
@@ -271,13 +218,12 @@
             listLink.textContent = "목록으로 돌아가기";
             successEl.appendChild(listLink);
             successEl.hidden = false;
-            // Move focus here before disabling btn below — a disabled
-            // element that holds focus drops it to <body> with no
-            // announcement (tabindex=-1 keeps this <p> out of Tab order).
+            // 아래에서 버튼을 비활성화하기 전에 여기로 포커스를 옮긴다 —
+            // 포커스를 가진 요소가 비활성화되면 알림 없이 body로 밀려난다.
             successEl.focus();
           }
-          // No reload on success (see success panel above) — disable both
-          // review buttons so an already-approved draft can't be resubmitted.
+          // 성공 시 새로고침하지 않으므로, 이미 승인된 드래프트가 다시
+          // 제출되지 않도록 두 검토 버튼을 모두 비활성화한다.
           btn.disabled = true;
           if (rejectBtn) {
             rejectBtn.disabled = true;
@@ -293,7 +239,7 @@
     });
   }
 
-  /* ── reject button ────────────────────────────────────────────────────── */
+  /* ── 반려 버튼 ────────────────────────────────────────────────────── */
 
   function bindRejectButton() {
     var btn = document.getElementById("draft-reject-btn");
@@ -323,10 +269,8 @@
         { rejection_reason: rejectionReason }
       ).then(function (result) {
         if (result.ok) {
-          // btn is deliberately left in-flight (.is-loading intact) instead
-          // of setLoading(false) here — it must still be found by api.js's
-          // pageshow marker scan on a bfcache restore for the forced-forward
-          // branch to fire.
+          // btn을 일부러 진행 중 상태(.is-loading)로 남겨둔다 — bfcache
+          // 복원 시 api.js가 이 표시를 찾아야 강제 이동 처리가 동작한다.
           window.TakuAPI.commitAndNavigate(btn, listUrl);
           return;
         }
@@ -340,7 +284,7 @@
     });
   }
 
-  /* ── raw text toggle ─────────────────────────────────────────────────── */
+  /* ── 원문 보기 토글 ─────────────────────────────────────────────────── */
 
   function bindRawTextToggle() {
     var btn = document.getElementById("raw-text-toggle");
@@ -357,7 +301,7 @@
       var isExpanded = btn.getAttribute("data-expanded") === "true";
       var expand = !isExpanded;
 
-      // Native `hidden` swap only — JS never touches raw_text content.
+      // hidden 속성만 바꾼다 — JS는 raw_text 내용을 건드리지 않는다.
       truncatedEl.hidden = expand;
       fullEl.hidden = !expand;
 
@@ -367,7 +311,7 @@
     });
   }
 
-  /* ── init ─────────────────────────────────────────────────────────────── */
+  /* ── 초기화 ─────────────────────────────────────────────────────────── */
 
   document.addEventListener("DOMContentLoaded", function () {
     bindCreateForm();

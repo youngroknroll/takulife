@@ -1,8 +1,4 @@
-"""Tests for the staff-only draft HTML views (event_drafts / event_draft_detail).
-
-Existing tests only exercised the staff *guard* (redirect / not-found). These
-cover the populated paths: the list row loop and the detail label rendering.
-"""
+"""스태프 전용 드래프트 HTML 뷰(목록/상세) 검증."""
 import pytest
 
 from drafts.models import EventDraft
@@ -32,7 +28,7 @@ def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, star
 
 @pytest.mark.django_db
 class TestEventDraftsListFilterPagination:
-    """/staff/drafts/ status filter + pagination (shared pager, list_drafts)."""
+    """/staff/drafts/ 상태 필터 + 페이지네이션."""
 
     def test_드래프트_목록_첫_페이지는_페이지_크기만큼만_보여주고_페이저를_포함한다(self, staff_client, make_draft):
         from drafts.queries import DRAFT_LISTING_PAGE_SIZE
@@ -174,8 +170,6 @@ class TestEventDraftsListFilterPagination:
         assert "등록된 드래프트가 없습니다" not in body
 
     def test_상태_필터가_있어도_DB가_완전히_비어있으면_등록_안내_빈_상태를_보여준다(self, staff_client):
-        """Pin: ?status=pending with zero drafts anywhere shows empty-state A
-        (creation prompt), not the "no matching status" empty-state B."""
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=pending")
 
@@ -185,10 +179,8 @@ class TestEventDraftsListFilterPagination:
 
 @pytest.mark.django_db
 class TestEventDraftsListBulkToolbarLabelContract:
-    """draft_bulk.js reads #bulk-toolbar's data-approved-label to render the
-    post-approval chip text; without it the JS falls back to the raw enum
-    string "approved" (see static/js/pages/draft_bulk.js). Pin the rendered
-    attribute so that regression is caught in the fast suite, not manually."""
+    """static/js/pages/draft_bulk.js가 #bulk-toolbar의 data-approved-label을 읽어
+    승인 후 칩 문구를 렌더링한다. 없으면 원시 enum 문자열로 대체된다."""
 
     def test_대기_상태_필터_목록은_승인_라벨_데이터_속성을_렌더링한다(self, staff_client, make_draft):
         make_draft("https://example.com/pending-label", review_status=EventDraft.ReviewStatus.PENDING)
@@ -211,7 +203,6 @@ class TestEventDraftDetailView:
         assert resp.status_code == 200
         assert resp.context["draft"] == draft
         assert resp.context["is_pending"] is True
-        # Slugs resolved to human labels.
         assert resp.context["category_label"] == "팝업스토어"
         assert resp.context["region_label"] == "서울"
 
@@ -221,15 +212,6 @@ class TestEventDraftDetailView:
 
         assert resp.status_code == 200
         assert resp.context["draft_not_found"] is True
-
-
-# ---------------------------------------------------------------------------
-# Anonymous access — redirects to login (moved from tests/drafts/test_drafts_stats.py;
-# the non-staff-403 and staff-200 guard cases already existed as
-# test_non_staff_blocked_from_new_staff_paths and test_staff_can_access_new_drafts_list_url
-# / test_staff_can_access_new_draft_detail_url in tests/staff/test_staff_console.py,
-# so those duplicates were merged away rather than moved here.)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db

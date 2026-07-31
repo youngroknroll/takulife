@@ -1,6 +1,6 @@
-"""Thin adapter around the anthropic SDK: client construction + a single
-tool-forced call helper. Domain-agnostic — callers (e.g. drafts/) own prompt
-content and schema; this module only normalizes transport/config concerns.
+"""anthropic SDK를 감싸는 얇은 어댑터: 클라이언트 생성 + 도구 강제 호출
+도우미 하나. 도메인과 무관하다 — 호출자(예: drafts/)가 프롬프트 내용과
+스키마를 소유하고, 이 모듈은 전송/설정 관련 사항만 정리한다.
 """
 import anthropic
 from django.conf import settings
@@ -10,8 +10,8 @@ from core.llm.exceptions import LLMRequestError, LLMResponseError, LLMTimeoutErr
 
 
 def get_client():
-    # max_retries=0: the SDK default (2) would multiply LLM_TIMEOUT_SECONDS per
-    # attempt, silently breaking the documented 10s call-site upper bound.
+    # max_retries=0: SDK 기본값(2)을 쓰면 시도마다 LLM_TIMEOUT_SECONDS가
+    # 곱해져서, 호출부에 명시한 10초 상한이 조용히 깨진다.
     return anthropic.Anthropic(
         api_key=get_api_key(), timeout=settings.LLM_TIMEOUT_SECONDS, max_retries=0
     )
@@ -35,9 +35,9 @@ def call_tool(*, system_prompt, user_content, tool_name, tool_schema, model=None
     except anthropic.APIError as error:
         raise LLMRequestError("LLM request failed.") from error
 
-    # The SDK does not treat hitting the max_tokens cap as an error — a
-    # truncated tool_use.input can still look like valid JSON. Reject it
-    # explicitly so callers never receive silently incomplete data.
+    # SDK는 max_tokens 상한에 도달한 것을 오류로 취급하지 않는다 — 잘린
+    # tool_use.input도 겉으로는 유효한 JSON처럼 보일 수 있다. 호출자가
+    # 조용히 불완전한 데이터를 받지 않도록 여기서 명시적으로 거부한다.
     if getattr(response, "stop_reason", None) == "max_tokens":
         raise LLMResponseError("LLM output truncated (max_tokens); tool input may be incomplete.")
 

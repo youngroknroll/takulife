@@ -1,37 +1,30 @@
-"""Personal activity month-query contract (dual-calendar Test List §단계 3:
-CAL-3-03~11).
+"""개인 활동 월간 조회 계약 (이중 달력 Test List §단계 3: CAL-3-03~11).
 
-archive.queries.list_user_activity_for_month does not exist yet — the whole
-file is expected to fail at collection with ImportError until it is added
-(mirrors tests/archive/test_activity_log_entry.py's convention).
+list_user_activity_for_month은 아직 구현되지 않아 이 파일 전체가 수집 단계에서
+ImportError로 실패하는 것이 정상이다 (test_activity_log_entry.py와 같은 관례).
 
-Assumed return shape — fixed here only to the extent needed to assert
-*observable* results (which kind appears on which date), per the task's
-explicit "관찰 가능한 결과만 검증, 과도하게 핀하지 말 것" instruction. The
-concrete container type (dataclass/NamedTuple/etc.) is the implementer's
-choice; this file only relies on attribute access:
+반환 형태는 "관찰 가능한 결과만 검증, 과도하게 핀하지 말 것" 지침에 따라 검증에
+필요한 만큼만 가정한다. 구체 컨테이너 타입은 구현자 재량이고, 이 파일은 속성
+접근에만 의존한다:
 
-- ``list_user_activity_for_month(user, *, year, month, kinds=None)`` returns
-  an iterable of items.
-- Every item exposes ``.kind`` (str).
-- A single-fact-date item (방문 / 굿즈 획득 / 행동성 활동) exposes ``.date``
-  (date) and leaves ``.start``/``.end`` as None.
-- A period item (일정) exposes ``.start``/``.end`` (date, inclusive) and
-  leaves ``.date`` as None.
-- kind values used below: ``"schedule"`` (일정 — derived from a planned
-  UserEventStatus's linked event period, not an ActivityLogEntry.Kind),
-  ``"visit"`` (방문 — VisitRecord.visited_on), ``"goods_acquired"`` (굿즈
-  획득 — CollectionItem.acquired_on 우선, 없으면 created_at의 로컬 날짜).
-  Every other kind is passed through as the matching ActivityLogEntry.Kind
-  value, dated by occurred_at's local date — including the §7.5 잔존 찜
-  fallback, which reuses ``ActivityLogEntry.Kind.INTEREST_ADDED`` dated by
-  EventInterest.created_at's local date when no log row exists.
-- ``kinds`` narrows the result to the given subset of the kind strings above.
+- ``list_user_activity_for_month(user, *, year, month, kinds=None)``은 아이템의
+  이터러블을 반환한다.
+- 모든 아이템은 ``.kind``(str)를 갖는다.
+- 단일 날짜형 아이템(방문 / 굿즈 획득 / 행동성 활동)은 ``.date``를 갖고
+  ``.start``/``.end``는 None이다.
+- 기간형 아이템(일정)은 ``.start``/``.end``(포함)를 갖고 ``.date``는 None이다.
+- kind 값: ``"schedule"``(일정 — 예정 UserEventStatus에 연결된 행사 기간에서
+  파생, ActivityLogEntry 아님), ``"visit"``(방문 — VisitRecord.visited_on),
+  ``"goods_acquired"``(굿즈 획득 — CollectionItem.acquired_on 우선, 없으면
+  created_at의 로컬 날짜). 그 외 종류는 occurred_at의 로컬 날짜로 표시되는
+  ActivityLogEntry.Kind 값 그대로 전달된다 — 로그 행이 없을 때
+  ``ActivityLogEntry.Kind.INTEREST_ADDED``를 EventInterest.created_at의 로컬
+  날짜로 대체 표시하는 §7.5 잔존 찜 케이스도 포함한다.
+- ``kinds``는 위 kind 문자열의 부분집합으로 결과를 좁힌다.
 
-These scenarios deliberately build state directly on the models (not via
-archive.services), since §단계 2's write-orchestration contract is already
-covered in tests/archive/test_activity_log_orchestration.py — this file's
-job is the read-side month-window/date-derivation contract only.
+§단계 2의 쓰기 오케스트레이션 계약은 test_activity_log_orchestration.py에서
+이미 검증됐으므로, 이 시나리오들은 archive.services를 거치지 않고 모델에 직접
+상태를 만든다 — 이 파일은 읽기 쪽 월 범위·날짜 파생 계약만 다룬다.
 """
 from datetime import date, datetime, timedelta
 from datetime import timezone as _dt_timezone
@@ -44,8 +37,8 @@ from archive.queries import list_user_activity_for_month
 
 
 def _kind_dates(items):
-    """Flatten items into a {(kind, date), ...} set, expanding a period item
-    (일정) into every date in its inclusive [start, end] range."""
+    """아이템을 {(kind, date), ...} 집합으로 펼친다. 기간형 아이템(일정)은
+    [start, end] 범위의 모든 날짜로 확장한다."""
     pairs = set()
     for item in items:
         if item.date is not None:
@@ -63,7 +56,7 @@ def _aware(*args):
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-03 — own-user scoping
+# CAL-3-03 — 본인 활동만 조회된다
 # ---------------------------------------------------------------------------
 
 
@@ -86,7 +79,7 @@ def test_활동_월_조회_결과에는_본인_활동만_포함된다(make_user,
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-04 — planned schedule spans the whole event run
+# CAL-3-04 — 예정 일정은 행사 전체 기간에 표시된다
 # ---------------------------------------------------------------------------
 
 
@@ -114,7 +107,7 @@ def test_방문_예정_행사는_행사_기간의_모든_날짜에_일정으로_
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-05 — an actual visit shows only on visited_on
+# CAL-3-05 — 실제 방문은 visited_on 날짜에만 표시된다
 # ---------------------------------------------------------------------------
 
 
@@ -131,7 +124,7 @@ def test_실제_방문은_visited_on_날짜에만_표시된다(make_user, make_e
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-06 — goods date prefers acquired_on, falls back to created_at
+# CAL-3-06 — 굿즈 날짜는 acquired_on 우선, 없으면 created_at
 # ---------------------------------------------------------------------------
 
 
@@ -159,7 +152,7 @@ def test_굿즈_날짜는_획득일을_우선하고_없으면_등록일을_사�
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-07 — behavioral activity kinds are dated by occurred_at's local date
+# CAL-3-07 — 행동성 활동은 occurred_at의 로컬 날짜로 표시된다
 # ---------------------------------------------------------------------------
 
 
@@ -191,7 +184,7 @@ def test_행동성_활동은_occurred_at의_로컬_날짜에_표시된다(make_u
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-08 — UTC midnight boundary resolves by KST (Asia/Seoul) localdate
+# CAL-3-08 — UTC 자정 경계는 KST(Asia/Seoul) 로컬 날짜 기준으로 처리된다
 # ---------------------------------------------------------------------------
 
 
@@ -200,7 +193,7 @@ def test_행동성_활동은_occurred_at의_로컬_날짜에_표시된다(make_u
 @pytest.mark.parametrize(
     "occurred_at_utc, expected_date",
     [
-        # 2026-07-19T14:59:59Z = KST(+09:00) 2026-07-19 23:59:59
+        # 2026-07-19T14:59:59Z는 KST(+09:00) 기준 2026-07-19 23:59:59다
         # (python3 -c datetime 계산 확인, config/settings.py TIME_ZONE="Asia/Seoul")
         (
             datetime(2026, 7, 19, 14, 59, 59, tzinfo=_dt_timezone.utc),
@@ -231,7 +224,7 @@ def test_occurred_at의_UTC_자정_경계에서도_로컬_날짜_기준으로_�
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-09 — planned/visited/recorded dates never merge
+# CAL-3-09 — 예정·방문·기록 날짜는 서로 합쳐지지 않는다
 # ---------------------------------------------------------------------------
 
 
@@ -269,7 +262,7 @@ def test_방문_예정일과_실제_방문일과_기록_작성일이_다르면_�
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-10 — kinds filter narrows the result
+# CAL-3-10 — kinds 필터로 결과가 좁혀진다
 # ---------------------------------------------------------------------------
 
 
@@ -299,8 +292,8 @@ def test_활동_종류_필터를_지정하면_해당_종류만_반환된다(make
 
 
 # ---------------------------------------------------------------------------
-# CAL-3-11 — no-backfill: pre-existing data still shows by its own fact-date
-# rule, with zero ActivityLogEntry rows involved
+# CAL-3-11 — 무백필: 로그 행이 하나도 없어도 기존 데이터는 각자의 사실 날짜
+# 규칙으로 표시된다
 # ---------------------------------------------------------------------------
 
 

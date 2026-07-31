@@ -1,17 +1,7 @@
-"""Tests for the discover_drafts management command (prompt_plan.md §2-1/2/5,
-scratchpad pr3-test-design.md).
-
-Mocks are patched at the command's import location
-(drafts.management.commands.discover_drafts.{fetch_html, extract_candidate_urls,
-create_draft_from_url, RobotsChecker}), never the underlying submodules —
-except test 12b (real create_draft_from_url, drafts.services.fetch_html
-stubbed) and test 15 (real RobotsChecker, drafts.robots.fetch_html patched),
-which are deliberate exceptions documented inline.
-
-DRAFT_DISCOVERY_ENABLED defaults to True for every test via the autouse
-`_discovery_enabled` fixture below; tests that need the flag off set it back
-to False explicitly (via the `settings` fixture) in the test body.
-"""
+"""discover_drafts 관리 명령어 테스트. 모킹은 원칙적으로 명령어의 import 지점에서
+하며, 실제 하위 모듈을 그대로 쓰는 예외 두 곳(중복 생성 경로, robots 캐시 검증)은
+해당 테스트 안에 이유를 적어 둔다. DRAFT_DISCOVERY_ENABLED는 아래 autouse fixture로
+기본 True다."""
 import pytest
 from django.core.management import CommandError, call_command
 
@@ -32,19 +22,14 @@ def _discovery_enabled(settings):
 
 @pytest.fixture(autouse=True)
 def _no_inter_request_delay(monkeypatch):
-    # The command's per-source etiquette pause (INTER_REQUEST_DELAY_SECONDS)
-    # is not itself under test anywhere in this file (out of scope per
-    # pr3-test-design.md) — multi-source tests would otherwise pay a real
-    # 1s sleep per extra source.
+    # 소스별 예의 지연(INTER_REQUEST_DELAY_SECONDS)은 이 파일의 검증 대상이
+    # 아니다. 꺼두지 않으면 소스가 늘 때마다 실제로 1초씩 대기하게 된다.
     monkeypatch.setattr("drafts.management.commands.discover_drafts.time.sleep", lambda seconds: None)
 
 
 class _FakeRobotsChecker:
-    """Stand-in for drafts.robots.RobotsChecker, patched at the command's
-    import location (`RobotsChecker`, the class itself, replaced by a
-    zero-arg factory returning one shared instance) — every test that cares
-    about robots outcomes configures this instead of hitting the network.
-    """
+    """drafts.robots.RobotsChecker 대역. 실제 네트워크 대신 이걸로 robots 결과를
+    직접 지정한다."""
 
     def __init__(self, outcomes=None, default=RobotsCheckResult(True, None), crawl_delay_value=None):
         self.outcomes = outcomes or {}
@@ -85,8 +70,7 @@ class TestFlagGating:
 
         call_command("discover_drafts")
 
-        # The message must name the actual setting an operator needs to
-        # flip, not just say "disabled" in the abstract.
+        # 운영자가 어느 설정을 바꿔야 하는지 이름까지 안내해야 한다.
         output = capsys.readouterr().out
         assert "DRAFT_DISCOVERY_ENABLED" in output
 
@@ -105,8 +89,7 @@ class TestFlagGating:
 
         call_command("discover_drafts")
 
-        # A bare "0" would also match an unrelated count in the summary —
-        # the message must specifically say there is no active source.
+        # 요약문의 다른 숫자 "0"과 혼동되지 않도록 활성 소스 없음을 명시해야 한다.
         output = capsys.readouterr().out
         assert "활성 소스가 없습니다" in output
 
@@ -212,11 +195,9 @@ class TestListingLevel:
         assert EventDraft.objects.filter(source_url="https://b.example.com/event-1").exists()
 
     def test_손상된_source_type을_가진_소스는_자신에게만_실패가_격리된다(self, monkeypatch, make_draft, make_source):
-        """A source_type outside DraftSource.SourceType.choices can still
-        reach the DB — Model.objects.create() does not validate choices, so
-        a stale/typo'd source_type is a real (if rare) production state, not
-        just a test artifact. It must fail only that source, not crash the
-        whole run before source B is ever processed."""
+        """choices에 없는 source_type도 objects.create()는 검증 없이 저장하므로
+        실제 운영 데이터에서 있을 수 있는 상태다. 그 소스만 실패해야 하고 B 소스
+        처리 전에 전체가 죽으면 안 된다."""
         source_a = make_source(
             name="A", url="https://a.example.com/feed.xml", source_type="atom"
         )
@@ -286,9 +267,8 @@ class TestCandidateLevel:
 
         call_command("discover_drafts")
 
-        # The listing URL itself is robots-checked, but the deduped
-        # candidate must never reach a robots check at all — dedup runs
-        # first.
+        # 리스팅 URL 자체는 robots 점검을 받지만, 중복 제거된 후보는 아예
+        # robots 점검까지 가면 안 된다(중복 제거가 먼저 실행됨).
         assert candidate_url not in checker.calls
 
     @pytest.mark.parametrize(
@@ -311,8 +291,7 @@ class TestCandidateLevel:
 
         call_command("discover_drafts")
 
-        # Confirms the skip lands in its own reason bucket in the summary,
-        # not merely that the run didn't raise.
+        # 실행이 죽지 않았다는 것만이 아니라 사유별 건너뜀 집계까지 확인한다.
         output = capsys.readouterr().out
         assert report_substring in output
 
@@ -364,24 +343,20 @@ class TestCandidateLevel:
             call_command("discover_drafts")
 
         assert EventDraft.objects.filter(source_url=succeeding_url).exists()
-        # A candidate-level failure must never touch the source's own
-        # last_error — that field reflects only the listing-level outcome
-        # (PO decision 3, module docstring).
+        # 후보 단위 실패는 소스의 last_error를 건드리면 안 된다. 그 필드는
+        # 리스팅 단계 결과만 반영한다.
         source.refresh_from_db()
         assert source.last_error == ""
-        # The failure must be diagnosable (URL + exception class) without
-        # leaking the exception's message body, which could carry secrets.
+        # 예외 메시지 본문은 민감정보를 담을 수 있어 URL과 예외 클래스명만으로
+        # 진단할 수 있어야 한다.
         stderr_output = capsys.readouterr().err
         assert failing_url in stderr_output
         assert "DraftCreationFetchError" in stderr_output
 
     def test_같은_실행에서_서로_다른_소스가_같은_URL을_후보로_내면_한_건만_생성되고_나머지는_건너뛴다(self, monkeypatch, make_source):
-        """Sociable exception (pr3-test-design.md 12b): real
-        create_draft_from_url, only drafts.services.fetch_html stubbed — this
-        is the one test that exercises the actual IntegrityError ->
-        DraftCreationDuplicateError path inside create_draft_from_url, which
-        a same-source dedup-only test could never reach (see module
-        docstring's phase-2 rationale)."""
+        """실제 create_draft_from_url을 그대로 쓰고 fetch_html만 스텁한다.
+        같은 소스 내 중복 제거만으로는 닿지 않는 실제 IntegrityError →
+        DraftCreationDuplicateError 경로를 검증하는 유일한 테스트다."""
         shared_url = "https://target.example.com/event-1"
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
         source_b = make_source(name="B", url="https://b.example.com/feed.xml")
@@ -422,11 +397,9 @@ class TestCaps:
 
         assert EventDraft.objects.filter(source_url=url1).exists()
         assert not EventDraft.objects.filter(source_url=url2).exists()
-        # Etiquette: once the creation cap is reached, the held-back
-        # candidate must not even get a robots check.
+        # 예의상 생성 상한에 도달하면 보류된 후보는 robots 점검조차 받지 않는다.
         assert url2 not in checker.calls
-        # A bare "1" would also match "생성 1건" or an unrelated count — the
-        # message must specifically attribute the held-back count.
+        # "1"이 "생성 1건" 등과 혼동되지 않도록 보류 건수임을 명시해야 한다.
         output = capsys.readouterr().out
         assert "1건 보류" in output
 
@@ -447,19 +420,17 @@ class TestCaps:
 
         call_command("discover_drafts")
 
-        # The dup candidate consumed no fetch budget, so new_url1 (the first
-        # genuinely new candidate) still gets the source's one fetch slot;
-        # new_url2 is held back by the now-exhausted per-source budget even
-        # though the creation cap (default 10) is nowhere near reached.
+        # 중복 후보는 페치 예산을 쓰지 않으므로 new_url1은 여전히 소스의 페치
+        # 슬롯 하나를 받는다. new_url2는 생성 상한(기본 10)과 무관하게 소스별
+        # 페치 예산이 소진돼 보류된다.
         assert EventDraft.objects.filter(source_url=new_url1).exists()
         assert not EventDraft.objects.filter(source_url=new_url2).exists()
         assert new_url2 not in checker.calls
 
     def test_생성_상한은_소스별이_아니라_실행_전체에서_공유된다(self, monkeypatch, settings, make_draft, make_source):
-        """If DRAFT_DISCOVERY_MAX_PER_RUN were (incorrectly) applied
-        per-source instead of once for the whole run, both sources' single
-        candidate would be created here — this pins the total-across-the-run
-        semantics (prompt_plan.md §2-5)."""
+        """DRAFT_DISCOVERY_MAX_PER_RUN이 소스별이 아니라 실행 전체 1회로
+        적용됨을 고정한다. 소스별로 잘못 적용되면 두 소스 후보가 모두
+        생성돼 버린다."""
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
         source_b = make_source(name="B", url="https://b.example.com/feed.xml")
@@ -488,10 +459,8 @@ class TestCaps:
         assert not EventDraft.objects.filter(source_url=url_b).exists()
 
     def test_소스별_페치_상한은_다른_소스의_예산을_굶기지_않는다(self, monkeypatch, settings, make_draft, make_source):
-        """If the per-source fetch budget were (incorrectly) shared globally
-        instead of tracked per source, source B's candidate would also be
-        held back once source A exhausts the shared budget — this pins the
-        per-source independence (prompt_plan.md §2-5)."""
+        """소스별 페치 예산이 전역으로 공유되면 A가 예산을 다 쓴 순간 B의
+        후보도 덩달아 보류된다. 이 테스트는 소스별 독립성을 고정한다."""
         settings.DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 1
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
         source_b = make_source(name="B", url="https://b.example.com/feed.xml")
@@ -513,9 +482,8 @@ class TestCaps:
 
         def fake_create(source_url, source_name=""):
             if source_url in (url_a1, url_a2):
-                # Both of source A's candidates consume A's one fetch slot
-                # via an empty-extraction skip, exhausting it before A's
-                # second candidate can be attempted.
+                # A의 두 후보 모두 빈 추출 실패로 A의 페치 슬롯 하나를
+                # 소비해, A의 두 번째 후보가 시도되기 전에 예산이 소진된다.
                 raise DraftCreationEmptyExtractionError()
             return make_draft(source_url, source_name=source_name)
 
@@ -531,11 +499,9 @@ class TestCaps:
 
 class TestCandidatePacing:
     def test_페치_예산을_소비한_후보마다_한_번씩_일시정지한다(self, monkeypatch, make_draft, make_source):
-        """Etiquette pacing after every candidate that actually consumed
-        network fetch budget (a robots check, at minimum) — behavior only;
-        exact seconds are out of scope (pr3-test-design.md), so this checks
-        that the pause happens the right number of times and consults the
-        checker's Crawl-delay, not any particular duration."""
+        """네트워크 페치 예산을 실제로 쓴 후보마다(최소 robots 점검) 예의상
+        일시정지한다. 정확한 대기 시간이 아니라 정지 횟수와 Crawl-delay
+        참조 여부만 검증한다."""
         make_source()
         url1 = "https://target.example.com/event-1"
         url2 = "https://target.example.com/event-2"
@@ -577,21 +543,17 @@ class TestCandidatePacing:
 
         call_command("discover_drafts")
 
-        # url2 is held back by the creation cap before it ever reaches a
-        # robots check, so it never consumes fetch budget and must not pace.
+        # url2는 robots 점검에 닿기 전에 생성 상한으로 보류돼 페치 예산을
+        # 쓰지 않으므로 일시정지도 하면 안 된다.
         assert len(sleep_calls) == 1
         assert checker.crawl_delay_calls == [url1]
 
 
 class TestRobotsCache:
     def test_robots_txt는_전체_실행에서_호스트당_최대_한_번만_페치된다(self, monkeypatch, make_draft, make_source):
-        """Exception to the module's general mocking rule: uses the real
-        RobotsChecker (not patched at the command import location), with
-        only drafts.robots.fetch_html patched to count calls — this is what
-        actually proves the run shares one RobotsChecker cache across
-        sources and candidates on the same host, not merely that a fake
-        object recorded calls (instance-count assertions are out of scope,
-        pr3-test-design.md — this checks behavior, not implementation)."""
+        """실제 RobotsChecker를 쓰고 drafts.robots.fetch_html만 패치해 호출
+        횟수를 센다. 같은 호스트의 소스·후보가 실행 전체에서 캐시 하나를
+        공유한다는 것을 동작으로 증명한다."""
         source_a = make_source(name="A", url="https://shared.example.com/feedA.xml")
         make_source(name="B", url="https://shared.example.com/feedB.xml")
 

@@ -1,13 +1,9 @@
-"""Tests for pagination and search on /archive/personal/ (비공식 personal entries).
+"""/archive/personal/(비공식 직접 등록)의 페이지네이션·검색 테스트.
 
-Behavior under test:
-- 7 entries are paginated at 5 per page; page_obj is in the context.
-- Summary card counts (total/place/goods) reflect ALL entries, never the filtered subset.
-- ?q=<term> filters the displayed entry_rows server-side.
-- has_entries reflects whether the user owns any personal entries at all;
-  a zero-hit search with q still shows has_entries=True when entries exist.
-- has_query in context distinguishes "user typed something" from "no search".
-- pager_query carries ?q=... so page links preserve the active search.
+검증 대상: 7건은 5건씩 페이지네이션되고, 요약 카드 건수는 검색으로 좁혀도
+전체 기준을 유지하며, q 파라미터는 entry_rows를 서버에서 필터링하고,
+has_entries는 검색 결과가 0건이어도 보유 기록이 있으면 True이며,
+pager_query는 활성 검색어를 페이지 링크에 그대로 실어 나른다.
 """
 import pytest
 
@@ -17,13 +13,13 @@ pytestmark = pytest.mark.web
 
 
 # ---------------------------------------------------------------------------
-# Basic pagination
+# 기본 페이지네이션
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestArchiveItemsPagination:
-    """7 items paginate at 5/page; page_obj is in the template context."""
+    """7건은 5건씩 페이지네이션되고, page_obj는 템플릿 컨텍스트에 담긴다."""
 
     def test_개인_기록_7건을_등록하면_첫_페이지에_5건이_표시된다(self, user_client, make_entries):
         user, client = user_client()
@@ -58,13 +54,13 @@ class TestArchiveItemsPagination:
 
 
 # ---------------------------------------------------------------------------
-# Summary counts from ALL entries (not filtered/paginated subset)
+# 요약 건수는 (검색·페이지로 좁힌 부분집합이 아니라) 전체 기록 기준
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestArchiveItemsSummaryCounts:
-    """Summary card counts are always unfiltered totals."""
+    """요약 카드 건수는 항상 필터링 이전의 전체 기준이다."""
 
     def test_요약_카운트는_개인_기록_전체_건수를_집계한다(self, user_client, make_entries):
         user, client = user_client()
@@ -77,14 +73,14 @@ class TestArchiveItemsSummaryCounts:
         assert "goods_count" not in resp.context
 
     def test_검색어로_목록을_좁혀도_요약_전체_건수는_변하지_않는다(self, user_client, make_entries):
-        """total_count does not shrink when q narrows entry_rows."""
+        """q로 entry_rows를 좁혀도 total_count는 줄어들지 않는다."""
         user, client = user_client()
         make_entries(user, 7, kind=PersonalEntry.Kind.PLACE, title_prefix="항목")
 
-        # q="00" would match only "항목 00"
+        # q="00"은 "항목 00"만 매칭된다
         resp = client.get("/archive/personal/?q=00")
 
-        # Summary must still report 7, not the filtered count
+        # 요약은 필터링 결과가 아닌 7을 그대로 보고해야 한다
         assert resp.context["total_count"] == 7
 
     def test_검색_결과가_0건이어도_기록_보유_여부는_true로_유지된다(self, user_client, make_entry):
@@ -94,17 +90,17 @@ class TestArchiveItemsSummaryCounts:
         resp = client.get("/archive/personal/?q=없는검색어XYZ")
 
         assert resp.status_code == 200
-        assert resp.context["has_entries"] is True  # 1 entry exists regardless
+        assert resp.context["has_entries"] is True  # 기록이 1건 있으므로 검색 결과와 무관하게 True
 
 
 # ---------------------------------------------------------------------------
-# q search on /archive/personal/
+# /archive/personal/의 q 검색
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestArchiveItemsSearch:
-    """?q= filters entry_rows on /archive/personal/."""
+    """?q=는 /archive/personal/의 entry_rows를 필터링한다."""
 
     def test_검색어로_필터링하면_제목이_일치하는_기록만_표시된다(self, user_client, make_entry):
         user, client = user_client()
@@ -118,7 +114,7 @@ class TestArchiveItemsSearch:
         assert "다른 항목" not in titles
 
     def test_검색어로_필터링하면_페이지네이터_건수도_검색_결과_기준으로_줄어든다(self, user_client, make_entry):
-        """page_obj.paginator.count reflects the filtered (q-narrowed) count."""
+        """page_obj.paginator.count는 q로 좁혀진 필터링 결과 건수를 따른다."""
         user, client = user_client()
         for i in range(3):
             make_entry(user, kind=PersonalEntry.Kind.PLACE, title=f"매칭{i}")
@@ -140,13 +136,13 @@ class TestArchiveItemsSearch:
 
 
 # ---------------------------------------------------------------------------
-# Context keys: q, has_query, pager_query
+# 컨텍스트 키: q, has_query, pager_query
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestArchiveItemsContextKeys:
-    """page_obj, q, has_query, pager_query must all be present in the context."""
+    """page_obj, q, has_query, pager_query가 모두 컨텍스트에 담겨야 한다."""
 
     def test_검색어를_보내면_컨텍스트에_검색어와_검색_여부가_담긴다(self, user_client):
         _, client = user_client()
@@ -166,7 +162,7 @@ class TestArchiveItemsContextKeys:
 
     def test_페이저_쿼리_문자열은_검색어를_포함한다(self, user_client, make_entries):
         user, client = user_client()
-        make_entries(user, 7)  # 2 pages
+        make_entries(user, 7)  # 2페이지 분량
 
         resp = client.get("/archive/personal/?q=항목")
 
@@ -201,7 +197,7 @@ class TestArchiveItemsContextKeys:
 
 
 # ---------------------------------------------------------------------------
-# visit_linked_count + sort context (직접 등록 에디토리얼 plan Part 1 §5, PC)
+# visit_linked_count와 정렬 컨텍스트 (직접 등록 에디토리얼 plan Part 1 §5, PC)
 # ---------------------------------------------------------------------------
 
 
@@ -223,7 +219,7 @@ class TestArchiveItemsVisitLinkedCountAndSort:
         self, user_client, make_entries
     ):
         user, client = user_client()
-        make_entries(user, 7)  # 2 pages
+        make_entries(user, 7)  # 2페이지 분량
 
         resp = client.get("/archive/personal/?sort=oldest")
 

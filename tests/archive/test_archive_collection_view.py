@@ -1,19 +1,18 @@
-"""Tests for the collection list page (core.views.archive_collection_items).
+"""컬렉션 목록 페이지(core.views.archive_collection_items) 테스트.
 
-Behavior under test (collection domain design plan §4 PR-C5b-2, CP-L1~L22):
-- /collection/ is login-gated, owner-scoped, and paginated at 10.
-- q / is_wanted / work_title / character_name / item_type filter server-side,
-  reusing list_user_collection_items / user_collection_item_filter_values /
-  user_collection_item_summary_counts unchanged.
-- Three query-string helpers carry different axis subsets (PO's cross-
-  preservation warning): chip_query_suffix (q + 3 filters, is_wanted
-  excluded), pager_query (all 5 axes), clear_query_suffix (is_wanted + 3
-  filters, q excluded).
-- Filter/search controls (chips, select form, search form) are hidden when
-  the user owns zero items at all, but stay visible when a filter or search
-  narrows an existing collection to zero results (PO decision 2026-07-16).
-- ?partial=1 renders only the results fragment, gated by the same login
-  requirement as the full page.
+검증 대상 동작(컬렉션 도메인 설계 계획 §4 PR-C5b-2, CP-L1~L22):
+- /collection/ 은 로그인 필수, 소유자 범위, 10개 단위 페이지네이션.
+- q / is_wanted / work_title / character_name / item_type 는 서버에서
+  필터링하며 list_user_collection_items / user_collection_item_filter_values
+  / user_collection_item_summary_counts 를 그대로 재사용한다.
+- 쿼리스트링 헬퍼 3종은 서로 다른 축 부분집합을 담는다(PO의 교차 보존
+  경고): chip_query_suffix(q + 필터 3종, is_wanted 제외), pager_query
+  (5축 전부), clear_query_suffix(is_wanted + 필터 3종, q 제외).
+- 필터/검색 컨트롤(칩, 셀렉트 폼, 검색 폼)은 사용자가 항목을 하나도
+  보유하지 않을 때만 숨겨지고, 필터·검색이 결과를 0건으로 좁혀도 계속
+  표시된다(PO 결정 2026-07-16).
+- ?partial=1 은 결과 프래그먼트만 렌더하며 전체 페이지와 동일한 로그인
+  요구를 따른다.
 """
 import pytest
 
@@ -114,15 +113,14 @@ class TestArchiveCollectionIsWantedFilter:
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["구함템"]
 
-    # test_구함_필터를_false로_지정하면_보유한_항목만_표시된다 removed
-    # (2026-07-28): ?is_wanted=false now 302-redirects to ?owned=true (user
-    # decision, legacy bookmark compat — see TestArchiveCollectionOwnedRedirect
-    # below), so a direct GET to /collection/?is_wanted=false no longer
-    # renders a 200 filtered page on the web. The underlying
-    # list_user_collection_items(user, is_wanted=False) filter behavior is
-    # still guarded at the query layer
+    # test_구함_필터를_false로_지정하면_보유한_항목만_표시된다 삭제됨
+    # (2026-07-28): ?is_wanted=false는 이제 ?owned=true로 302 리다이렉트되어
+    # (레거시 북마크 호환, 아래 TestArchiveCollectionOwnedRedirect 참고)
+    # /collection/?is_wanted=false 직접 GET은 더 이상 200 필터링 페이지를
+    # 렌더하지 않는다. list_user_collection_items(user, is_wanted=False)의
+    # 필터 동작 자체는 쿼리 계층에서 여전히 가드된다
     # (test_archive_queries.py::test_구함_필터_False는_구함이_아닌_항목만_반환한다)
-    # and the DRF API boundary
+    # DRF API 경계도 마찬가지다
     # (test_collection_items_api.py::test_구함_필터를_false로_보내면_API에서는_리다이렉트_없이_보유_항목만_반환된다).
 
     @pytest.mark.parametrize(
@@ -205,19 +203,17 @@ class TestArchiveCollectionOwnedFilter:
 
 @pytest.mark.django_db
 class TestArchiveCollectionOwnedRedirect:
-    """Legacy bookmark compat: `?is_wanted=false` used to BE the owned tab's
-    URL; now that owned is its own axis (Cycle 2-B), a bookmarked
-    `?is_wanted=false` link must forward to `?owned=true` so it stops
-    under-counting (owned-and-wanted rows used to be excluded) and the
-    correct sub-tab shows active. Web page only — the DRF API
-    (/api/collection-items/?is_wanted=false) keeps is_wanted's original
-    meaning and is untouched by this redirect.
+    """레거시 북마크 호환: `?is_wanted=false`가 예전엔 보유 탭 URL 자체였다.
+    이제 보유(owned)가 독립 축이 되어(Cycle 2-B), 북마크된
+    `?is_wanted=false` 링크는 `?owned=true`로 전달되어야 과소 집계
+    (보유+구함 동시 행이 예전엔 빠졌다)를 멈추고 올바른 서브탭이 활성화된다.
+    웹 페이지 한정 — DRF API(/api/collection-items/?is_wanted=false)는
+    is_wanted 원래 의미를 유지하며 이 리다이렉트의 영향을 받지 않는다.
 
-    Policy for `?is_wanted=false&owned=...` (unreachable via any in-app
-    link, only by hand-composing the URL): the redirect is skipped when
-    `owned` is already present in the query string — an explicit `owned`
-    value means the caller already made a deliberate choice on the new axis,
-    so this legacy-compat shim must not overwrite it.
+    `?is_wanted=false&owned=...` 정책(앱 내 링크로는 도달 불가, URL을 직접
+    조합해야만 발생): 쿼리스트링에 `owned`가 이미 있으면 리다이렉트를
+    건너뛴다 — 명시적 `owned` 값은 호출자가 새 축에서 이미 의도적으로
+    선택했다는 뜻이므로, 이 레거시 호환 장치가 그 값을 덮어써서는 안 된다.
     """
 
     def test_구_보유_탭_URL은_새_보유_필터로_리다이렉트된다(self, user_client):
@@ -282,7 +278,7 @@ class TestArchiveCollectionExactMatchFilters:
         make_collection_item(
             user, name="일치", work_title="WorkA", character_name="CharB", item_type="keyring"
         )
-        # Non-matching rows on each axis must never leak through.
+        # 각 축에서 불일치하는 행이 새어 나오면 안 된다.
         make_collection_item(
             user, name="다른작품", work_title="WorkX", character_name="CharB", item_type="keyring"
         )
@@ -303,15 +299,14 @@ class TestArchiveCollectionExactMatchFilters:
 
 @pytest.mark.django_db
 class TestArchiveCollectionQueryStringHelpers:
-    """CP-L11~L15: all 5 axes set simultaneously so a single-axis leak or
-    omission cannot accidentally pass (verified via context, mirroring
-    TestVisitsPagerQuery's substring-membership style — never parses hrefs)."""
+    """CP-L11~L15: 5개 축을 동시에 설정해 단일 축 누락/누출이 우연히
+    통과하지 않도록 한다(컨텍스트로 검증, TestVisitsPagerQuery의 부분
+    문자열 포함 방식을 따름 — href를 파싱하지 않는다)."""
 
     def _get_all_axes(self, user, client, extra=""):
-        # has_items must be True for the filter/search controls to render at
-        # all (PO decision: an empty collection hides them entirely) — this
-        # item deliberately does NOT match the filters below, only its mere
-        # existence matters here.
+        # has_items가 True여야 필터/검색 컨트롤이 렌더된다(PO 결정: 컬렉션이
+        # 비어 있으면 전부 숨김) — 이 아이템은 의도적으로 아래 필터와
+        # 불일치하며, 존재 자체만 의미가 있다.
         CollectionItem.objects.create(user=user, name="배경 아이템")
         return client.get(
             "/collection/"
@@ -332,10 +327,9 @@ class TestArchiveCollectionQueryStringHelpers:
         assert "is_wanted" not in chip_query_suffix
 
     def test_검색_폼의_숨김_필드는_목록_보기모드를_담는다(self, user_client):
-        """The 3-select filter form that used to carry these axes is gone
-        (2026-07-23 에디토리얼 리빌드); the search form is now the only form on
-        the page, so it must carry view= itself — otherwise searching from the
-        목록 뷰 silently drops the user back to 갤러리."""
+        """이 축들을 담당하던 3-select 필터 폼은 사라졌다(2026-07-23 에디토리얼
+        리빌드) — 이제 검색 폼이 페이지의 유일한 폼이므로 view=를 직접 담아야
+        한다. 그러지 않으면 목록 뷰에서 검색할 때 조용히 갤러리로 되돌아간다."""
         user, client = user_client()
 
         resp = self._get_all_axes(user, client, extra="&view=list")
@@ -453,10 +447,9 @@ class TestArchiveCollectionEmptyStates:
     def test_어느_축에도_속하지_않는_등록_항목만_있어도_검색_필터_컨트롤은_유지된다(
         self, user_client, make_collection_item
     ):
-        """A registered row that is off all three axes (quantity=0,
-        is_wanted=False, tradeable_quantity=0) still means the user has an
-        item on record — has_items must stay True so the search/filter
-        controls are not wrongly hidden."""
+        """세 축(quantity=0, is_wanted=False, tradeable_quantity=0) 모두에서
+        벗어난 등록 행이라도 사용자가 등록한 항목은 있는 것이다 — has_items는
+        True로 유지되어야 검색/필터 컨트롤이 잘못 숨겨지지 않는다."""
         user, client = user_client()
         make_collection_item(
             user, name="미분류행", quantity=0, is_wanted=False, tradeable_quantity=0
@@ -471,30 +464,25 @@ class TestArchiveCollectionEmptyStates:
 
 @pytest.mark.django_db
 class TestArchiveCollectionCardBadges:
-    """quantity_label/tradeable_label assertions read resp.context — the
-    view assembles those label strings itself (the fixture only sets the
-    numeric quantity/tradeable_quantity, never the string), so this is not
-    tautological for them.
+    """quantity_label/tradeable_label 단언은 resp.context를 읽는다 — 뷰가 이
+    라벨 문자열을 직접 조립하므로(픽스처는 숫자 quantity/tradeable_quantity만
+    설정, 문자열은 안 줌) 이 부분은 동어반복이 아니다.
 
-    The is_wanted "구함" badge needs a different check. The literal text
-    "구함" ALSO appears in the page's summary card label and in the
-    is_wanted filter chip (both in collection.html, independent of any one
-    item's own flag) — a raw full-page content search for "구함" would pass
-    even if the item card itself never rendered a badge, and checking
-    resp.context["item_rows"][...]["is_wanted"] only proves the fixture's
-    own value round-trips through the view, not that the template renders
-    anything with it. This was caught in review: an earlier version of this
-    test used the context check and stayed green even when the badge's
-    {% if %} in _archive_results_collection.html was hard-disabled
-    (verified via a manual mutation round-trip).
+    is_wanted "구함" 배지는 다른 방식으로 검증해야 한다. "구함" 문자열은
+    요약 카드 라벨과 is_wanted 필터 칩에도 등장하므로(둘 다 collection.html,
+    개별 아이템 플래그와 무관) 전체 페이지에서 "구함"을 찾는 단언은 배지가
+    아예 렌더되지 않아도 통과해버린다. context의 is_wanted 값 확인도 픽스처
+    값이 뷰를 통과했다는 것만 증명할 뿐 템플릿이 실제로 그걸 렌더했다는
+    증거는 아니다 — 검토 중 실제로 이 문제가 발견됐다: 이전 버전은 context
+    검사만 했는데 _archive_results_collection.html의 배지 `{% if %}`를
+    강제로 꺼도(수동 뮤테이션으로 실측) 계속 초록이었다.
 
-    The fix: ?partial=1 renders ONLY _archive_results_collection.html
-    (CP-L16/L17) — no summary card, no filter chips — so within that
-    fragment "구함" can only come from the item badge itself, making the
-    check a real rendering assertion. Do not revert this to a full-page
-    request "for consistency" with the other assertions in this class —
-    the collision is real and full-page content checks for "구함" are
-    unreliable regardless of what fixture data is present.
+    해결책: ?partial=1은 _archive_results_collection.html만 렌더하므로
+    (CP-L16/L17, 요약 카드·필터 칩 없음) 이 프래그먼트 안의 "구함"은 오직
+    아이템 배지에서만 나올 수 있어 실제 렌더링 검증이 된다. 이 클래스의 다른
+    단언과 "일관성"을 맞춘다고 전체 페이지 요청으로 되돌리지 말 것 —
+    충돌은 실제로 존재하며, 어떤 픽스처든 전체 페이지 "구함" 검색은
+    신뢰할 수 없다.
     """
 
     def test_보유_항목_카드에는_수량_교환가능_구함_배지가_표시된다(
@@ -561,13 +549,12 @@ class TestArchiveCollectionCardBadges:
 
 @pytest.mark.django_db
 class TestArchiveCollectionNav:
-    """Target IA plan D1/§7-a-2 (.docs/plans/2026-07-16-target-ia-plan.md):
-    the collection page is now a top-level destination, not an Activity
-    sub-page — it must never render the Activity sub-nav tab bar (that
-    structure's own contents, an always-visible tab bar since the 2026-07-21
-    리디자인 ④단계 §B markup swap, are locked separately in
-    tests/archive/test_archive_nav.py, exercised via an archive page that
-    still includes it)."""
+    """Target IA 계획 D1/§7-a-2(.docs/plans/2026-07-16-target-ia-plan.md):
+    컬렉션 페이지는 이제 최상위 목적지이지 활동 하위 페이지가 아니다 —
+    활동 서브내비 탭바를 절대 렌더하지 않아야 한다(그 구조 자체는
+    2026-07-21 리디자인 ④단계 §B 마크업 교체 이후 상시 노출 탭바이며,
+    여전히 그걸 포함하는 아카이브 페이지를 통해 tests/archive/test_archive_nav.py
+    에서 별도로 고정된다)."""
 
     def test_컬렉션_페이지에는_아카이브_내비게이션_탭바가_렌더링되지_않는다(self, user_client):
         _, client = user_client()
@@ -583,9 +570,9 @@ class TestArchiveCollectionNav:
 
 @pytest.mark.django_db
 class TestArchiveCollectionDuplicateFilter:
-    """?duplicate=true/false narrows on quantity, mirroring the existing
-    is_wanted fallback discipline (unrecognised/missing value = no filter,
-    never a 500)."""
+    """?duplicate=true/false 는 수량 기준으로 좁힌다. 기존 is_wanted의
+    폴백 규율을 그대로 따른다(인식 못 하거나 없는 값 = 필터 미적용, 500
+    금지)."""
 
     def test_중복_필터를_true로_지정하면_수량_2개_이상인_항목만_표시된다(
         self, user_client, make_collection_item
@@ -675,19 +662,19 @@ class TestArchiveCollectionViewMode:
 
 @pytest.mark.django_db
 class TestArchiveCollectionQueryStringHelpersV2:
-    """Extends TestArchiveCollectionQueryStringHelpers for the collection
-    리디자인's new axes: view/duplicate/tradeable.
+    """컬렉션 리디자인의 새 축(view/duplicate/tradeable)에 대해
+    TestArchiveCollectionQueryStringHelpers를 확장한다.
 
-    is_wanted/duplicate/tradeable are mutually-exclusive 서브탭 axes (a
-    single active sub-tab swaps between them), so all three must be
-    EXCLUDED from chip_query_suffix (chips only ever add work_title/
-    character_name/item_type/q/view on top of whichever sub-tab is
-    already active) but INCLUDED in pager_query and clear_query_suffix.
+    is_wanted/duplicate/tradeable는 상호 배타적인 서브탭 축이다(활성
+    서브탭 하나가 이들 사이를 전환) — 따라서 셋 다 chip_query_suffix에서는
+    제외되어야 하고(칩은 이미 활성화된 서브탭 위에 work_title/
+    character_name/item_type/q/view만 얹는다) pager_query와
+    clear_query_suffix에는 포함되어야 한다.
     """
 
     def _get_all_axes(self, user, client):
-        # has_items must be True for the filter/search controls to render at
-        # all (PO decision: an empty collection hides them entirely).
+        # has_items가 True여야 필터/검색 컨트롤이 렌더된다(PO 결정: 컬렉션이
+        # 비어 있으면 전부 숨김).
         CollectionItem.objects.create(user=user, name="배경 아이템")
         return client.get(
             "/collection/"
@@ -764,9 +751,9 @@ class TestArchiveCollectionWorkTitleAndTradeableCounts:
         resp = client.get("/collection/")
 
         assert resp.context["tradeable_count"] == 1
-        # The view carries the card's own series_ink_class onto each facet so
-        # the sidebar dot matches the cards it filters to. Only one work_title
-        # is registered, so it gets the first slot in registration order.
+        # 뷰는 카드 자체의 series_ink_class를 각 facet에도 실어 사이드바
+        # 점이 필터되는 카드와 일치하게 한다. work_title이 하나만 등록돼
+        # 등록 순번의 첫 슬롯을 받는다.
         assert resp.context["work_title_counts"] == [
             {"title": "작품 A", "count": 2, "series_ink_class": "gi-1"}
         ]
@@ -774,11 +761,10 @@ class TestArchiveCollectionWorkTitleAndTradeableCounts:
 
 @pytest.mark.django_db
 class TestCollectionItemRowSeriesInkClass:
-    """_collection_item_row()'s new series_ink_class assigns an accent-color
-    bucket ("gi-1".."gi-12") per work_title based on FIRST-REGISTRATION ORDER
-    (not a hash), via a caller-supplied {work_title: class} map from
-    _series_ink_classes() — "gi-0" is the explicit no-series bucket for a
-    blank work_title."""
+    """_collection_item_row()의 새 series_ink_class는 work_title별 강조색
+    버킷("gi-1"~"gi-12")을 해시가 아니라 최초 등록 순번으로 배정한다.
+    호출자가 _series_ink_classes()로 만든 {work_title: class} 맵을 넘긴다
+    — "gi-0"은 work_title이 빈 경우를 위한 명시적 무작품 버킷이다."""
 
     def test_작품명이_같은_항목은_항상_같은_series_ink_class를_받는다(
         self, make_user, make_collection_item
@@ -807,10 +793,10 @@ class TestCollectionItemRowSeriesInkClass:
 
 @pytest.mark.django_db
 class TestSeriesInkClassesRegistrationOrder:
-    """_series_ink_classes() assigns colors by FIRST-REGISTRATION ORDER, not
-    a hash — this is the whole point of the fix: with only 6 hash buckets,
-    작품이 4개만 되어도 충돌이 났다 (달빛 카페 / 굿즈 페스타가 실제로 같은 색을
-    받았다). 순번 배정은 12개 버킷을 다 쓸 때까지 충돌이 없다."""
+    """_series_ink_classes()는 색을 해시가 아니라 최초 등록 순번으로 배정한다
+    — 이게 이 수정의 핵심이다: 해시 버킷이 6개뿐이라 작품이 4개만 되어도
+    충돌이 났다(달빛 카페 / 굿즈 페스타가 실제로 같은 색을 받았다). 순번
+    배정은 12개 버킷을 다 쓸 때까지 충돌이 없다."""
 
     def test_서로_다른_작품_12개는_전부_다른_series_ink_class를_받는다(
         self, user_client, make_collection_item
@@ -1019,9 +1005,9 @@ class TestSeriesInkClassesWholeCollectionPalette:
 
 @pytest.mark.django_db
 class TestArchiveCollectionCardLinksToDetail:
-    """CD-16 (컬렉션 상세 페이지 트랙): the list card's name and thumbnail must
-    link to the not-yet-existing detail route `/collection/<id>/` — a wiring
-    regression guard for prompt_plan.md's 컬렉션 상세 페이지 addition."""
+    """CD-16 (컬렉션 상세 페이지 트랙): 목록 카드의 이름과 썸네일은 아직
+    존재하지 않는 상세 라우트 `/collection/<id>/`로 연결되어야 한다 —
+    prompt_plan.md의 컬렉션 상세 페이지 추가 항목에 대한 배선 회귀 가드다."""
 
     @pytest.mark.parametrize("view_mode", ["리스트", "갤러리"])
     def test_목록_카드의_이름과_이미지는_상세_페이지로_연결된다(

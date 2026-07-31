@@ -1,10 +1,6 @@
 /* ── /mypage/ ──────────────────────────────────────────────── */
-/* Page-scoped editorial skin. archive.css is not loaded here — the
-   account rows below are a different two/three-column grid than
-   .record-row (74px date column + photo mosaic + status pill), and the
-   index rows are a link-per-row pattern with no archive.css counterpart.
-   See collection-detail-editorial-track for the same "new page, new
-   scoped file" decision. */
+/* archive.css는 이 페이지에 안 쓴다 — 계정 행·인덱스 행 모두 archive.css의
+   .record-row와 다른 그리드 구조라 이 페이지 전용 스타일로 둔다. */
 
 .mypage-page {
   max-width: 55rem;
@@ -21,9 +17,7 @@
   border-bottom: 2px solid var(--text);
 }
 
-/* Decorative initial avatar only — h1 + email already carry identity for
-   assistive tech, so the glyph itself is hidden from the a11y tree
-   (BIR C3). */
+/* 이니셜 아바타는 장식일 뿐이다 — h1과 이메일이 이미 신원을 전달하므로 스크린리더 트리에서는 숨긴다. */
 .mypage-avatar {
   display: flex;
   align-items: center;
@@ -107,9 +101,8 @@
   text-decoration: underline;
 }
 
-/* Domain-ink binding: each row rebinds --row-ink to the ink the view sent
-   (must match "brand" / "teal" / "pink" exactly — a typo here silently
-   drops the row's colour). */
+/* --row-ink는 뷰가 내려준 "brand"/"teal"/"pink" 값과 정확히 일치해야 한다 —
+   철자가 틀리면 그 행의 색이 조용히 사라진다. */
 .mypage-index-row.is-brand {
   --row-ink: var(--brand-ink);
 }
@@ -192,10 +185,8 @@
   letter-spacing: 0.02em;
 }
 
-/* Account rows are not full-row links (only .mypage-account-action is
-   interactive) — no cursor/hover treatment on the row container itself,
-   so this pattern reads as visually distinct from the index rows above,
-   which are whole-row links (BIR H2). */
+/* 계정 행은 위 인덱스 행과 달리 행 전체가 링크가 아니라 .mypage-account-action만
+   클릭 가능하다. 그래서 행 컨테이너엔 hover 효과를 주지 않아 둘을 구분한다. */
 .mypage-account-row {
   display: grid;
   grid-template-columns: 9.375rem 1fr auto;
@@ -205,9 +196,8 @@
   border-bottom: 1px solid var(--line);
 }
 
-/* Destructive row gets a non-colour cue on top of the rose action colour
-   (BIR H1): an extra top divider sets it apart as its own group, matching
-   the settings page's hr.panel-divider precedent. */
+/* 파괴적 행은 색상만이 아니라 위쪽 구분선으로도 별도 그룹임을 표시한다
+   (설정 페이지 hr.panel-divider와 같은 관례). */
 .mypage-account-row-danger {
   margin-top: 0.875rem;
   border-top: 2px solid var(--line);

@@ -1,11 +1,10 @@
-"""Custom 404 / 500 error templates (templates/404.html, templates/500.html).
+"""커스텀 404 / 500 오류 템플릿(templates/404.html, templates/500.html).
 
-Django's test environment forces ``settings.DEBUG = False`` for the whole
-session (django.test.utils.setup_test_environment), so an unresolved URL and
-an unhandled view exception exercise the real handler404 / handler500
-codepath and the project's branded templates — not Django's DEBUG=True
-tracebacks. Mirrors the 429.html coverage in
-tests/auth/test_auth_rate_limit.py::test_rate_limited_response_renders_localized_page.
+Django 테스트 환경은 세션 전체에서 ``settings.DEBUG = False``를 강제하므로
+(django.test.utils.setup_test_environment), 해석되지 않는 URL과 처리되지
+않은 뷰 예외는 Django의 DEBUG=True 트레이스백이 아니라 실제
+handler404/handler500 경로와 프로젝트 브랜드 템플릿을 탄다.
+tests/auth/test_auth_rate_limit.py의 429.html 검증과 같은 방식이다.
 """
 import pytest
 
@@ -24,13 +23,13 @@ def test_존재하지_않는_경로에_접근하면_커스텀_404_페이지가_�
 
 
 def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스텀_500_페이지가_렌더링된다(client, monkeypatch, db):
-    """Django's default 500 handler (django/views/defaults.py::server_error)
-    renders templates/500.html via ``template.render()`` with NO context and
-    NO request — context processors never run for this page. Simulate an
-    unhandled view exception on "/" to exercise that exact codepath and
-    confirm 500.html still renders (rather than raising a template error).
-    Without the ``db`` fixture, DB access is blocked before the monkeypatch
-    can even take effect, producing a 500 for the wrong reason."""
+    """Django 기본 500 핸들러(django/views/defaults.py::server_error)는
+    context도 request도 없이 ``template.render()``로 templates/500.html을
+    렌더한다 — 이 페이지에서는 context processor가 전혀 실행되지 않는다.
+    "/"에서 처리되지 않은 뷰 예외를 흉내내 그 정확한 경로를 타면서
+    500.html이 템플릿 오류 없이 여전히 렌더되는지 확인한다. ``db`` 픽스처가
+    없으면 monkeypatch가 걸리기도 전에 DB 접근이 막혀 엉뚱한 이유로 500이
+    난다."""
 
     def _boom(*args, **kwargs):
         raise RuntimeError("simulated view failure")
@@ -49,9 +48,9 @@ def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스�
 
 
 def test_정상_홈_페이지_렌더링에서는_푸터가_실제_문의_메일_링크를_유지한다(client, settings, db):
-    """Regression guard for the 500-page fix above: normal page renders
-    (where core.context_processors.support_email does run) must keep the
-    real mailto contact link in the footer."""
+    """위 500 페이지 수정에 대한 회귀 가드: core.context_processors.support_email이
+    실행되는 정상 페이지 렌더에서는 실제 mailto 문의 링크가 그대로
+    유지돼야 한다."""
 
     resp = client.get("/")
 

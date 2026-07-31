@@ -1,11 +1,6 @@
 /**
- * visit_detail.js — Visit-record detail page (archive_visit_detail).
- *
- * Only responsibility: record delete.
- *   DELETE /api/visit-records/<id>/
- *
- * Mirrors visit_edit.js's deleteBtn handler (askConfirm/handle403 helpers
- * included) — see visit_edit.js:35-49,365-393.
+ * 방문 기록 상세 페이지(archive_visit_detail). 기록 삭제만 담당한다.
+ * 삭제 버튼 처리는 visit_edit.js의 deleteBtn 핸들러와 동일한 방식이다.
  */
 
 (function () {

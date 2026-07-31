@@ -1,19 +1,10 @@
 /**
- * toast.js — lightweight success toast for takulife
- *
- * Exposes: window.TakuToast.show(message)
- *   textContent only (XSS-safe), auto-dismiss after ~3.5s. DOM: built once,
- *   unconditionally, at script load (singleton) — role="status" must be
- *   present in the a11y tree before the first show().
- *
- * Reload bridge: pages that reload after a successful action (status.js
- * data-reload-on-success) stash the message in sessionStorage under
- * "taku:toast" before reloading; this file reads and clears it on
- * DOMContentLoaded so the toast survives the full page reload without
- * re-firing on a later visit.
- *
- * Reduced motion: the enter/exit transition is skipped via CSS
- * (@media prefers-reduced-motion: reduce); the auto-dismiss timer still runs.
+ * 성공 알림을 잠깐 보여주는 토스트. window.TakuToast.show(message)로 호출한다.
+ * textContent만 사용해 XSS 위험이 없고, 약 3.5초 뒤 자동으로 사라진다.
+ * 페이지를 새로고침한 뒤에도 메시지를 이어 보여줘야 하는 화면(status.js의
+ * data-reload-on-success)은 새로고침 전 sessionStorage에 메시지를 저장해두고,
+ * 이 파일이 로드 시 그 값을 읽어 지운 뒤 보여준다.
+ * 동작 최소화 설정에서는 CSS로 전환 효과만 생략하고 자동 소멸 타이머는 그대로 돈다.
  */
 (function () {
   "use strict";
@@ -37,13 +28,11 @@
       hideTimer = null;
     }
 
-    // Empty first so a repeat of the same message is still a detectable
-    // mutation for assistive tech.
+    // 같은 메시지를 다시 보여줄 때도 스크린리더가 변화를 감지하도록 일단 비운다.
     toastEl.textContent = "";
     toastEl.classList.remove("is-visible");
 
-    // rAF lets the browser paint the hidden state first so the CSS
-    // opacity/transform transition actually fires (mirrors confirm-modal.js).
+    // 숨김 상태를 먼저 한 번 그리게 해야 CSS 전환 효과가 실제로 재생된다.
     requestAnimationFrame(function () {
       toastEl.textContent = message;
       toastEl.classList.add("is-visible");
@@ -64,11 +53,10 @@
       if (!pending) {
         return;
       }
-      // Clear before showing so a reload during the toast's own lifetime
-      // (or a later visit) never re-fires the same message.
+      // 보여주기 전에 지워야 토스트가 떠 있는 중이나 다음 방문에서 같은 메시지가 다시 뜨지 않는다.
       window.sessionStorage.removeItem(STORAGE_KEY);
     } catch (e) {
-      // Storage blocked — nothing to bridge, skip the toast silently.
+      // 스토리지를 쓸 수 없으면 조용히 건너뛴다.
       return;
     }
     show(pending);

@@ -1,28 +1,21 @@
 {% comment %}
-나의 일정(archive_statuses) 결과 영역 — 라이브 검색 swap 대상.
-풀 페이지(statuses.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
+나의 일정(archive_statuses) 결과 영역 — 라이브 검색 swap 대상. 풀 페이지
+(statuses.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: has_statuses, status_rows, has_any, has_query, q, selected_status, page_obj, pager_query, request
 
-2026-07-24 나의 일정 에디토리얼 통일: `_archive_results_record.html`의
-`.record-row` 시스템(날짜 열/카테고리·장소/제목/리뷰 인용/상태 필)을 그대로
-재사용하고, 이 페이지 고유의 상태 전환 버튼(visited/missed/planned)을
-`.record-row-end` 안에 보존한다.
+_archive_results_record.html과 같은 .record-row 시스템을 재사용하고, 이
+페이지 고유의 상태 전환 버튼(방문 완료/놓침/예정으로)을 .record-row-end
+안에 둔다.
 
-"삭제" 버튼은 #archive-results 안(라이브 검색이 innerHTML로 통째 교체하는
-영역)에 있으므로 data-remove-on-cancel(낙관적 DOM 스플라이스)을 쓰지 않는다
-— 삭제 인플라이트 중 검색 스왑이 겹치면 서버가 이미 지운 행이 새로 렌더돼
-유령 행으로 남는다. 대신 status.js:296의 data-reload-on-success 분기를 태워
-204 확인 후 전체 리로드한다 — 이 분기가 data-remove-on-cancel보다 먼저
-검사되므로(status.js:296 vs 312) 유령 행 경로 자체에 도달하지 않는다.
-`.record-row-actions`에 data-status-error-container를 명시 부착 —
-`.record-row`에 상태 전환 버튼 2개 + 삭제 버튼까지 최대 3개 형제가 생기므로
-sibling-lock가 parentElement 폴백에 의존하면 안 된다.
+"삭제" 버튼은 data-remove-on-cancel 대신 data-reload-on-success를 쓴다 —
+이 행은 라이브 검색이 통째로 교체하는 영역 안에 있어서, 삭제 진행 중에
+검색 스왑이 겹치면 서버가 이미 지운 행이 새로 렌더돼 유령 행으로 남기
+때문이다. .record-row-actions에는 data-status-error-container를 직접
+붙인다 — 형제가 최대 3개(상태 버튼 2개 + 삭제)라 부모 요소로의 폴백에
+기댈 수 없다.
 
-2026-07-31 백로그 D1: visited 분기에 `_archive_results_record.html`의
-기록 CTA 3분기(＋기록/수정/생략)를 그대로 이식했다. 형제와 다른 점은
-이 파셜엔 "예정으로" 되돌리기 버튼이 있어 CTA 뒤에 보존한다는 것뿐 —
-CSS margin-right:auto가 첫 자식에만 걸리므로 DOM 순서는 [CTA] →
-[예정으로] → [삭제]를 유지해야 한다.
+CTA 순서는 [기록 CTA] → [예정으로] → [삭제]를 유지해야 한다 — CSS
+margin-right:auto가 첫 자식에만 걸리기 때문이다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if has_statuses %}

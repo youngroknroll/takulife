@@ -1,16 +1,7 @@
-"""Management command: seed_demo_events
+"""데모 이벤트 21개를 게시 상태로 멱등하게 생성한다.
 
-Creates 21 published demo events idempotently, using distinct categories and
-varied view_count values so the popular-events deck ordering is visible.
-
-After seeding:
-- ongoing (start_date <= today, end_date > today+5): >= 7 events
-- closing (start_date <= today, end_date in [today, today+5]): >= 4 events
-  (boundary events at D+1, D+2, D+3, and D+5)
-- fan_meeting category: 1 published event
-
-Idempotency key: official_url (unique field on Event). A second run leaves
-existing rows untouched and creates no new rows.
+카테고리와 view_count를 다양하게 둬서 인기 이벤트 정렬이 눈에 보이게 한다.
+멱등 키는 official_url이라 재실행해도 기존 행은 그대로 두고 새로 만들지 않는다.
 """
 from datetime import date, timedelta
 
@@ -24,7 +15,7 @@ _TODAY = date.today
 def _demo_events():
     today = _TODAY()
     return [
-        # --- original 5 events ---
+        # --- 기본 5개 이벤트 ---
         {
             "official_url": "https://demo.takulife.example/popup-1",
             "title": "[데모] 봄 팝업스토어",
@@ -80,7 +71,7 @@ def _demo_events():
             "view_count": 10,
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
-        # --- ongoing events (end_date > today+5, not in closing window) ---
+        # --- 진행중 이벤트(종료일이 today+5 이후, 마감임박 아님) ---
         {
             "official_url": "https://demo.takulife.example/popup-2",
             "title": "[데모] 여름 팝업스토어",
@@ -158,7 +149,7 @@ def _demo_events():
             "view_count": 55,
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
-        # --- closing events (start_date <= today, end_date in [today+1, today+5]) ---
+        # --- 마감임박 이벤트(종료일이 today+1~today+5 사이) ---
         {
             "official_url": "https://demo.takulife.example/closing-d1",
             "title": "[데모] 마감 임박 D+1 전시",
@@ -203,7 +194,7 @@ def _demo_events():
             "view_count": 48,
             "publish_status": Event.PublishStatus.PUBLISHED,
         },
-        # --- fan_meeting category (1 published, ongoing) ---
+        # --- fan_meeting 카테고리(게시 1건, 진행중) ---
         {
             "official_url": "https://demo.takulife.example/fan-meeting-1",
             "title": "[데모] 아이돌 팬미팅",

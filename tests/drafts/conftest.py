@@ -1,6 +1,4 @@
-"""Drafts-domain fixtures: httpx transport/resolver stand-ins and sample
-content builders shared across the fetching/robots/discovery/LLM test files.
-"""
+"""drafts 도메인 테스트가 공유하는 fixture 모음: httpx 통신 대역과 샘플 콘텐츠 생성기."""
 import socket
 
 import httpx
@@ -11,14 +9,8 @@ import drafts.fetching as fetching
 
 @pytest.fixture
 def install_mock_transport():
-    """Route drafts.fetching's httpx.Client through an in-process handler —
-    no real network I/O.
-
-    Pass `stub_validate_fetch_url=True` for tests that only care about fetch
-    mechanics (redirect cap, content-type/size limits, decode) and want the
-    real SSRF gate out of the way; leave it False (default) for tests that
-    deliberately exercise validate_fetch_url's own logic.
-    """
+    """drafts.fetching의 httpx.Client를 실제 네트워크 없이 인프로세스 핸들러로 대체한다.
+    `stub_validate_fetch_url=True`면 SSRF 검사를 우회하고 fetch 동작 자체만 검증한다."""
     def _install(monkeypatch, handler, *, stub_validate_fetch_url=False):
         if stub_validate_fetch_url:
             monkeypatch.setattr(fetching, "validate_fetch_url", lambda *a, **k: None)
@@ -36,12 +28,8 @@ def install_mock_transport():
 
 @pytest.fixture
 def fake_resolver():
-    """Build a fake getaddrinfo-style resolver.
-
-    Pass a single IP string to resolve any queried host to that one address,
-    or a dict mapping hostname -> IP when different hosts (e.g. a redirect
-    target) must resolve differently within the same test.
-    """
+    """getaddrinfo 형태의 가짜 리졸버를 만든다. 문자열이면 모든 호스트를 그 IP로,
+    dict면 호스트별로 다른 IP로 해석한다(리다이렉트 대상 등)."""
     def _make(ip_or_by_host, port=443):
         def _resolve(host, _port, *, type=None):
             ip = ip_or_by_host[host] if isinstance(ip_or_by_host, dict) else ip_or_by_host
@@ -54,16 +42,9 @@ def fake_resolver():
 
 @pytest.fixture
 def rss_xml():
-    """Build a minimal single-item WordPress-style RSS feed. `link` is the
-    item's own <link> text; `description_anchors` is a list of raw href
-    strings embedded as <a href="..."> markup inside the <description>
-    CDATA block, matching how atzip's roundup posts link out.
-    `content_encoded_anchors`, when given, additionally embeds a
-    <content:encoded> CDATA block (WordPress's full-post-HTML field) and
-    declares the feed's real xmlns:content namespace on <rss> — matching
-    atzip.kr/feed/'s actual structure, where <description> holds only an
-    excerpt + a self-domain "read more" anchor and the real body HTML (with
-    outbound official links) lives in <content:encoded>."""
+    """워드프레스 스타일 RSS 피드 1건을 만든다. atzip.kr/feed/의 실제 구조를 본떠
+    <description>은 발췌만, 외부 공식 링크는 <content:encoded>(워드프레스 본문 HTML
+    필드)에 담기게 한다."""
     def _make(*, link=None, description_anchors=None, content_encoded_anchors=None):
         link_xml = f"<link>{link}</link>" if link else ""
         anchors_html = "".join(f'<a href="{href}">link</a>' for href in (description_anchors or []))
@@ -91,10 +72,8 @@ def rss_xml():
 
 @pytest.fixture
 def sitemap_xml():
-    """Build a minimal sitemap.xml, including the sitemaps.org xmlns
-    declaration real sitemaps (aniplustv) ship with. Each positional arg is
-    either a bare loc string, or a (loc, lastmod-or-None) tuple — real
-    sitemaps do not guarantee every <url> carries a <lastmod> sibling."""
+    """최소 sitemap.xml을 만든다. 실제 사이트맵(aniplustv 등)처럼 모든 <url>이
+    <lastmod>을 갖지는 않으므로 (loc, lastmod-or-None) 형태도 받는다."""
     def _make(*locs):
         def _url_xml(entry):
             loc, lastmod = entry if isinstance(entry, tuple) else (entry, None)
@@ -110,7 +89,7 @@ def sitemap_xml():
 
 @pytest.fixture
 def sample_extraction():
-    """A raw_title/raw_text pair shared by the LLM-extraction test files."""
+    """LLM 추출 테스트들이 공유하는 raw_title/raw_text 샘플."""
     return {
         "raw_title": "IVE Popup Store",
         "raw_text": "서울 홍대 2026-07-01 부터 2026-07-20 까지 IVE 팝업 스토어 진행",

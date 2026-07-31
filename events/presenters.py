@@ -1,22 +1,7 @@
-"""Per-event display derivation for the events domain.
+"""이벤트 한 건의 상태·D-day를 날짜 필드만으로 계산한다.
 
-derive_event_display() computes status and D-day purely from an Event's
-date fields, using the same thresholds as EventQuerySet.with_public_status().
-
-Status classification (matches querysets.py exactly):
-  upcoming     : start_date > today
-  closing_soon : start_date <= today AND end_date >= today AND end_date <= today + CLOSING_SOON_DAYS
-  ongoing      : start_date <= today AND end_date >= today (and NOT closing_soon)
-  ended        : end_date < today
-
-D-day convention:
-  upcoming  -> days until start_date  (positive integer)
-  ongoing / closing_soon -> days until end_date  (non-negative integer)
-  ended     -> None
-
-NULL safety: if either start_date or end_date is None, returns status=None, dday=None.
-
-This module MUST NOT import from `core` (one-way dependency: core -> events).
+상태 판정 기준은 EventQuerySet.with_public_status()와 반드시 동일하게 맞춘다.
+이 모듈은 core를 임포트하면 안 된다(core -> events 단방향 의존 유지).
 """
 from datetime import timedelta
 
@@ -24,17 +9,12 @@ from django.utils import timezone
 
 from .querysets import CLOSING_SOON_DAYS
 
-# An event is flagged "NEW" while fewer than this many days have passed since
-# it was registered (created_at). Day 0..9 = NEW; day 10 = no longer new.
+# 등록(created_at) 후 이 일수 미만이면 "새 등록"으로 표시한다. 0~9일차=NEW, 10일차부터 해제.
 NEW_WINDOW_DAYS = 10
 
 
 def is_recently_added(event, *, today=None, window_days=NEW_WINDOW_DAYS):
-    """Whether ``event`` was registered within the last ``window_days`` days.
-
-    Returns False when the event has no ``created_at`` (cannot be judged new).
-    Uses date subtraction — never manual date arithmetic.
-    """
+    """event가 최근 window_days일 안에 등록됐는지 여부. created_at이 없으면 False."""
     if today is None:
         today = timezone.localdate()
     created = getattr(event, "created_at", None)
@@ -44,11 +24,7 @@ def is_recently_added(event, *, today=None, window_days=NEW_WINDOW_DAYS):
 
 
 def derive_event_display(event, *, today=None):
-    """Return a dict with 'status' and 'dday' for a single Event instance.
-
-    Both values are None when either date is missing.
-    Status slugs are the same canonical values used in the API status= filter.
-    """
+    """이벤트 하나의 status·dday를 담은 dict를 반환한다. 날짜가 없으면 둘 다 None."""
     if today is None:
         today = timezone.localdate()
 
@@ -65,7 +41,6 @@ def derive_event_display(event, *, today=None):
     if end < today:
         return {"status": "ended", "dday": None}
 
-    # start_date <= today AND end_date >= today  (ongoing or closing_soon)
     dday = (end - today).days
     if end <= today + timedelta(days=CLOSING_SOON_DAYS):
         return {"status": "closing_soon", "dday": dday}

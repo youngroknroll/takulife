@@ -13,10 +13,9 @@ DATE_PATTERN = re.compile(r"(20\d{2})[./-](\d{1,2})[./-](\d{1,2})")
 
 
 def normalize_whitespace(text):
-    """NFKC-normalize, collapse whitespace, and lowercase ``text``.
+    """text를 NFKC 정규화하고 공백을 하나로 줄인 뒤 소문자로 바꾼다.
 
-    Shared by drafts.llm_extraction (grounding checks) and drafts.eval (golden-
-    set comparison) so both compare text the same way.
+    drafts.llm_extraction과 drafts.eval이 같은 방식으로 비교하도록 공유한다.
     """
     normalized = unicodedata.normalize("NFKC", text or "")
     return re.sub(r"\s+", " ", normalized).strip().lower()

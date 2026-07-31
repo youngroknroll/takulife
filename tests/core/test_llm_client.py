@@ -1,7 +1,7 @@
-"""Tests for core.llm.client — all mocked/faked, no real API calls.
+"""core.llm.client 검증 — 전부 모킹/페이크며 실제 API 호출은 없다.
 
-Style follows tests/test_draft_fetching.py: dependency injection / monkeypatch
-of the anthropic SDK surface, never a live network call.
+tests/test_draft_fetching.py와 같은 방식을 따른다: 실제 네트워크 호출
+없이 anthropic SDK 표면을 의존성 주입/monkeypatch한다.
 """
 from types import SimpleNamespace
 
@@ -144,9 +144,9 @@ def test_call_tool은_설정된_LLM_MAX_TOKENS를_요청에_사용한다():
 
 @pytest.mark.contract
 def test_call_tool은_클라이언트가_주입되면_get_api_key를_호출하지_않는다(monkeypatch):
-    """Client injection must skip get_api_key entirely — the caller already
-    owns the client's credentials. This pins the contract independently of
-    whether a local .env happens to have ANTHROPIC_API_KEY set."""
+    """클라이언트를 주입하면 get_api_key를 아예 건너뛰어야 한다 — 호출자가
+    이미 클라이언트의 자격증명을 갖고 있다. 로컬 .env에 ANTHROPIC_API_KEY가
+    설정돼 있든 아니든 이 계약을 독립적으로 고정한다."""
     from core.llm import client as client_module
 
     def _unexpected_get_api_key():
@@ -225,9 +225,9 @@ def test_get_client는_설정된_타임아웃과_api_키로_anthropic_클라이�
 
 
 def test_call_tool은_max_tokens로_잘린_응답을_받으면_응답_오류를_일으킨다():
-    """SDK does not treat hitting max_tokens as an error — tool_use.input can
-    be a partial/incomplete dict in that case. A truncated response must not
-    be returned to the caller as if it were complete."""
+    """SDK는 max_tokens에 도달한 것 자체를 오류로 취급하지 않는다 — 그
+    경우 tool_use.input이 일부만 채워진 불완전한 dict일 수 있다. 잘린
+    응답을 완전한 것처럼 호출자에게 돌려주면 안 된다."""
     from core.llm.client import call_tool
 
     truncated_response = _tool_use_response({"is_event": True}, stop_reason="max_tokens")

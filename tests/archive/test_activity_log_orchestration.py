@@ -1,13 +1,12 @@
-"""Write-side ActivityLogEntry orchestration (dual-calendar Test List §단계 2:
-CAL-2-01~02, 2-04~12; CAL-2-03/2-13 live in the EventInterest/UserEventStatus
-API test files instead — see that plan for the full 13-scenario map).
+"""쓰기 쪽 ActivityLogEntry 오케스트레이션 (이중 달력 Test List §단계 2:
+CAL-2-01~02, 2-04~12; CAL-2-03/2-13은 EventInterest/UserEventStatus API 테스트
+파일에 있다 — 전체 13개 시나리오 지도는 그 계획서 참조).
 
-archive.services.remove_event_interest does not exist yet — CAL-2-02 is
-expected to fail at collection/call time with ImportError/AttributeError
-until it lands. The other scenarios call already-existing service functions
-that do not yet write ActivityLogEntry rows, so they are expected to fail
-with AssertionError (0 rows instead of 1) until the write orchestration is
-added to each service.
+archive.services.remove_event_interest는 아직 없어 CAL-2-02는 수집/호출
+시점에 ImportError/AttributeError로 실패하는 것이 정상이다. 나머지 시나리오는
+이미 존재하는 서비스 함수를 호출하지만 아직 ActivityLogEntry를 쓰지 않으므로,
+각 서비스에 쓰기 오케스트레이션이 추가되기 전까지 AssertionError(0건이어야
+할 자리에 1건 없음)로 실패하는 것이 정상이다.
 """
 import uuid
 
@@ -31,7 +30,7 @@ from archive.services import (
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-01 — create_event_interest writes interest_added
+# CAL-2-01 — create_event_interest는 interest_added를 기록한다
 # ---------------------------------------------------------------------------
 
 
@@ -53,8 +52,8 @@ def test_찜을_추가하면_interest_added_활동_이력이_기록된다(make_u
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-02 — (신규) remove_event_interest writes interest_removed and deletes
-# the row
+# CAL-2-02 — (신규) remove_event_interest는 interest_removed를 기록하고 행을
+# 삭제한다
 # ---------------------------------------------------------------------------
 
 
@@ -81,7 +80,7 @@ def test_찜을_해제하면_interest_removed_활동_이력이_기록되고_찜_
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-04 — first status creation writes status_changed with {"to": ...}
+# CAL-2-04 — 상태를 처음 생성하면 status_changed에 {"to": ...}가 기록된다
 # ---------------------------------------------------------------------------
 
 
@@ -103,8 +102,8 @@ def test_상태를_처음_생성하면_status_changed_활동_이력이_기록된
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-05 — status transition functions write status_changed with
-# {"from": ..., "to": ...}
+# CAL-2-05 — 상태 전환 함수는 status_changed에 {"from": ..., "to": ...}를
+# 기록한다
 # ---------------------------------------------------------------------------
 
 
@@ -155,8 +154,8 @@ def test_상태_전환_함수를_호출하면_status_changed_활동_이력이_�
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-06 — a no-op transition (already visited -> mark_visited again)
-# writes nothing
+# CAL-2-06 — 이미 방문완료 상태에 mark_visited를 다시 호출해도(무동작 전환)
+# 아무것도 기록되지 않는다
 # ---------------------------------------------------------------------------
 
 
@@ -180,7 +179,7 @@ def test_이미_방문완료인_상태에_방문완료_전환을_다시_요청�
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-07 — create_collection_item writes collection_item_created
+# CAL-2-07 — create_collection_item은 collection_item_created를 기록한다
 # ---------------------------------------------------------------------------
 
 
@@ -201,8 +200,8 @@ def test_컬렉션_아이템을_생성하면_collection_item_created_활동_이�
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-08 — an actual organize-field change writes collection_item_organized
-# with only the changed allowed field in change_summary
+# CAL-2-08 — 정리 대상 필드가 실제로 바뀌면 collection_item_organized가
+# 바뀐 필드만 change_summary에 담아 기록된다
 # ---------------------------------------------------------------------------
 
 
@@ -230,14 +229,14 @@ def test_정리_대상_필드를_실제로_수정하면_collection_item_organize
     assert entries.count() == 1
     entry = entries.get()
     assert entry.collection_item_id == item.id
-    # Core-key check only (§ no over-pinning) — the changed allowed field is
-    # the only key present, whatever its serialized value type turns out to be.
+    # 과도한 핀 금지 원칙에 따라 키만 확인한다 — 직렬화된 값 타입과 무관하게
+    # 바뀐 필드 하나만 존재하면 된다.
     assert set(entry.change_summary) == {field_name}
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-09 — a non-organize field change, or a same-value save, writes
-# nothing
+# CAL-2-09 — 정리 대상이 아닌 필드 수정이나 값이 같은 저장은 아무것도
+# 기록하지 않는다
 # ---------------------------------------------------------------------------
 
 
@@ -265,7 +264,7 @@ def test_정리_이력이_생성되지_않는_수정_요청을_보내도_collect
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-10 — complete_visit_with_record writes visit_record_created
+# CAL-2-10 — complete_visit_with_record는 visit_record_created를 기록한다
 # ---------------------------------------------------------------------------
 
 
@@ -285,9 +284,9 @@ def test_방문_기록을_생성하면_visit_record_created_활동_이력이_기
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-11 — a status-save failure rolls back the visit record *and* the
-# activity log entry together (CP8 failure-injection technique, mirrored
-# from tests/archive/test_visit_record_status_orchestration.py)
+# CAL-2-11 — 상태 저장 실패 시 방문 기록과 활동 이력이 함께 롤백된다
+# (CP8 실패 주입 기법, tests/archive/test_visit_record_status_orchestration.py
+# 에서 그대로 가져옴)
 # ---------------------------------------------------------------------------
 
 
@@ -313,8 +312,8 @@ def test_상태_저장이_실패하면_방문_기록과_활동_이력_모두_함
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-12 — a replayed client_token create is exactly-once for the activity
-# log entry too, and operation_key carries the client_token value
+# CAL-2-12 — client_token을 재전송한 생성 요청도 활동 이력이 정확히 한 번만
+# 기록되고, operation_key에 client_token 값이 그대로 담긴다
 # ---------------------------------------------------------------------------
 
 

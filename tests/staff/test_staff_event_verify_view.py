@@ -1,9 +1,7 @@
-"""staff.views — Part B (event verification "confirm complete" action).
+"""행사 검증 완료 액션(/staff/events/<pk>/verify/) 검증.
 
-Covers /staff/events/<pk>/verify/, the guarded server-rendered action that
-records verified_at on a published event and writes a StaffActionLog entry.
-Reached from the edit page's own form, never a JSON API (see
-prompt_plan.md's 13단계).
+게시된 행사에 verified_at을 기록하고 StaffActionLog를 남기는 서버 렌더 액션이며,
+수정 페이지 폼에서만 오는 것으로 JSON API가 아니다.
 """
 import pytest
 

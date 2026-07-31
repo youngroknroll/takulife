@@ -1,24 +1,22 @@
-"""AST contract guards for the error-handling/logging policy.
+"""오류 처리·로깅 정책을 강제하는 AST 계약 가드.
 
-`AGENTS.md`'s Error Handling And Logging section documents the live rules this
-file enforces mechanically: no bare `except:`, every catch-all handler is
-explicit about why it swallows the exception (log, re-raise, or a
-`# except-ok: <reason>` marker), no stray `print()` in production code,
-module loggers are English-ASCII with lazy `%`-style first arguments, and
-`logging.getLogger` is only ever called with `__name__`. These six functions
-implement one deterministic contract each (EHL-01..EHL-06).
+`AGENTS.md`의 Error Handling And Logging 절이 정한 규칙을 이 파일이 기계적으로
+검사한다 — 맨 `except:` 금지, catch-all 핸들러는 예외를 삼키는 이유를 반드시
+드러낼 것(로깅, 재발생, `# except-ok: <이유>` 마커 중 하나), 프로덕션 코드에
+떠돌이 `print()` 금지, 모듈 로거는 영어 ASCII·지연 평가되는 `%` 형식의 첫
+인자를 쓸 것, `logging.getLogger`는 항상 `__name__`으로만 호출할 것. 아래
+6개 함수가 각각 하나의 결정적 규칙(EHL-01~06)을 구현한다.
 
-Scan scope mirrors `test_test_authoring_policy.py`'s file-walk style: every
-`*.py` under the production packages, `migrations/` excluded (generated,
-not hand-authored).
+스캔 범위는 `test_test_authoring_policy.py`의 파일 순회 방식과 같다 —
+프로덕션 패키지 아래 모든 `*.py`, `migrations/`는 제외(자동 생성이라
+사람이 직접 쓴 코드가 아님).
 
-Two of the checks below (message ASCII / first-arg-is-constant) must first
-resolve which names are actually loggers — a bare method-name match (e.g.
-`.error(...)`) would also catch `messages.error(request, "...")` calls,
-which are user-facing Korean text explicitly out of this policy's scope.
-`_logger_target_names` does a first AST pass
-per file collecting `X = logging.getLogger(...)` assignment targets; only
-calls on those names count as logger calls.
+아래 검사 중 두 개(메시지 ASCII 여부 / 첫 인자가 상수인지)는 먼저 어떤
+이름이 실제 로거인지 가려내야 한다 — 메서드명만 보고 매칭하면(예:
+`.error(...)`) 사용자에게 보이는 한국어 텍스트인 `messages.error(request,
+"...")` 호출까지 걸려 이 정책의 대상 밖을 침범한다. `_logger_target_names`가
+파일마다 먼저 AST를 훑어 `X = logging.getLogger(...)` 대입 대상을 모으고,
+그 이름에 대한 호출만 로거 호출로 센다.
 """
 import ast
 import re
@@ -90,9 +88,9 @@ def _handler_has_except_ok_marker(source_lines, handler):
 
 
 def _logger_target_names(tree):
-    """Names assigned `logging.getLogger(...)` at any point in the module —
-    the receiver set that makes a later `<name>.error(...)` a logger call
-    rather than, say, `messages.error(...)`."""
+    """모듈 어디선가 `logging.getLogger(...)`가 대입된 이름들 — 이 집합에
+    있어야 나중의 `<name>.error(...)`가 `messages.error(...)`가 아니라
+    로거 호출로 인정된다."""
     names = set()
     for node in ast.walk(tree):
         if not isinstance(node, ast.Assign):

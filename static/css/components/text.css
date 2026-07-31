@@ -1,5 +1,4 @@
-/* Shared content-text helpers (skin) used across event/archive list & card layouts.
-   Hoisted from per-page sheets to a single source of truth. */
+/* 이벤트/아카이브 목록·카드가 공유하는 텍스트 스타일 모음이다. */
 .meta {
   margin: 0;
   color: var(--muted);
@@ -11,49 +10,39 @@
   font-size: var(--fs-md);
 }
 
-/* ── monospace numerals (plan §0: "숫자·날짜·D-day는 시스템 모노") ──
- * System monospace stack + tabular-nums for date ranges / counters, so
- * digits align instead of wobbling in the variable-width UI font. Applied
- * first to the poster card caption's date range (PR-R3); other date/D-day
- * spots keep their current font pending a dedicated pass (see changelog). */
+/* ── monospace numerals ──────────────────────────────────────────── */
+/* 숫자가 가변폭 글꼴에서 흔들리지 않도록 모노스페이스 + tabular-nums를 쓴다. */
 .mono-num {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
 }
 
-/* ── highlighter (ticket-stub signature #4 in plan §0's numbering, "형광펜") ──
- * Reserved for the home hero's "한눈에" only (plan §0/§3: lime background is
- * a text-highlight-only utility — one or two uses per page, never expanded
- * to cards/buttons/backgrounds). box-decoration-break lets the highlight
- * wrap cleanly if the phrase breaks across a line. */
+/* ── highlighter ("형광펜") ──────────────────────────────────────── */
+/* 홈 히어로의 "한눈에" 문구 전용이다. 카드·버튼 배경으로는 확장하지 않는다.
+   box-decoration-break는 줄바꿈이 생겨도 형광펜 표시가 자연스럽게 이어지게 한다. */
 .hl {
   background: var(--hl);
-  /* Fixed ink, not var(--text): --hl keeps a bright chartreuse tone in both
-     themes (tokens.css), but --text flips from dark-on-light to
-     light-on-dark — pairing it here would invert to light-text-on-bright-
-     background (near-illegible) once dark mode applies. --hl-ink is
-     theme-agnostic by design for exactly this pairing. */
+  /* var(--text) 대신 --hl-ink를 쓴다: --text는 다크모드에서 밝은색으로
+     뒤집혀 밝은 형광펜 배경과 겹치면 거의 안 보이게 된다. --hl-ink는
+     테마와 무관하게 고정된 값이라 이 조합에서만 쓴다. */
   color: var(--hl-ink);
   padding: 0 0.22em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 
-/* ── shared inline error line ──
- * One source of truth for the ad-hoc error line under a control (archive
- * live-search, status buttons). Token-based like auth.css's .field-error —
- * replaces the hardcoded #b91c1c/0.82rem/4px copies. */
+/* ── shared inline error line ────────────────────────────────────── */
+/* 컨트롤 아래 오류 한 줄을 표시하는 공용 스타일이다. auth.css의 .field-error와 같은 토큰을 쓴다. */
 .inline-error {
   color: var(--rose-ink);
   font-size: var(--fs-xs);
   margin: 0.25rem 0 0;
 }
 
-/* ── live search result summary (screen-reader only) ──
- * The results fragment swap (archive_search.js) has no visible count
- * indicator by design; this region announces it to assistive tech only.
- * Clip technique matches photo-upload.css's .photo-upload-native-input. */
+/* ── live search result summary (screen-reader only) ─────────────── */
+/* 검색 결과 개수는 화면에는 안 보이고 스크린리더에만 알린다(archive_search.js).
+   숨김 기법은 photo-upload.css의 .photo-upload-native-input과 같다. */
 .archive-search-status {
   position: absolute;
   width: 1px;

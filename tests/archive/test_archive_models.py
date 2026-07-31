@@ -1,4 +1,4 @@
-"""Archive model tests — field defaults and constraints, no HTTP."""
+"""아카이브 모델 테스트 — HTTP 없이 필드 기본값과 제약 조건만 검증한다."""
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -9,7 +9,7 @@ pytestmark = pytest.mark.domain
 
 
 # ---------------------------------------------------------------------------
-# __str__ (moved from tests/core/test_coverage_supplements.py)
+# __str__ (tests/core/test_coverage_supplements.py에서 이동)
 # ---------------------------------------------------------------------------
 
 
@@ -49,7 +49,7 @@ def test_수량이_음수인_컬렉션_아이템을_생성하면_제약_위반�
 
 @pytest.mark.django_db
 def test_수량이_0인_컬렉션_아이템_생성이_허용된다(make_user):
-    """D1: quantity=0 represents a wanted-only (not-yet-owned) item."""
+    """D1: quantity=0은 아직 보유하지 않은 '구함' 전용 항목을 뜻한다."""
     user = make_user(username="ci-zero-qty")
 
     item = CollectionItem.objects.create(user=user, name="구함", quantity=0)

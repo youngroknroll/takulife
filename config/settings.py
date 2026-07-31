@@ -25,11 +25,10 @@ def _get_env(name, default=""):
 
 
 def load_secret_key(debug):
-    """Return SECRET_KEY from env/.env, or Django's documented insecure dev
-    fallback when DEBUG is True. When DEBUG is False and no SECRET_KEY is
-    configured, refuse to start: silently falling back to the hardcoded key
-    below in a production deployment would mean every deployment shares (and
-    leaks, since it's committed source) the same signing key.
+    """SECRET_KEY를 env/.env에서 읽거나, DEBUG일 때만 Django 기본 개발용
+    키로 대체한다. DEBUG=false인데 SECRET_KEY가 없으면 실행을 막는다 —
+    조용히 아래 하드코딩 키로 넘어가면 배포마다 같은 서명 키를 공유하고,
+    그 키는 소스에 커밋돼 있어 이미 노출된 것이나 다름없다.
     """
     secret_key = _get_env("SECRET_KEY")
     if secret_key:
@@ -46,12 +45,11 @@ def load_anthropic_api_key():
 
 
 def load_database_config():
-    """Build the Django DATABASES["default"] entry from DATABASE_URL.
+    """DATABASE_URL로 Django DATABASES["default"] 값을 만든다.
 
-    Falls back to the existing sqlite file when DATABASE_URL is unset or
-    empty, so local/CI runs that never set it are unaffected. Parsing is
-    delegated to dj-database-url so query-string options (e.g. sslmode)
-    land in OPTIONS automatically.
+    DATABASE_URL이 비어 있으면 기존 sqlite 파일로 대체해 로컬/CI가 영향받지
+    않는다. 파싱은 dj-database-url에 맡겨 sslmode 같은 쿼리스트링 옵션이
+    자동으로 OPTIONS에 들어가게 한다.
     """
     database_url = _get_env("DATABASE_URL")
     if not database_url:
@@ -69,30 +67,27 @@ def load_database_config():
 
 
 def load_debug():
-    # Local dev default is True (matches historical behavior); explicit
-    # DEBUG=false is required to disable it (e.g. deployment envs).
+    # 로컬 개발 기본값은 True. 배포 환경처럼 끄려면 DEBUG=false를 명시해야 한다.
     return _get_env("DEBUG", "true").lower() in ("1", "true", "yes")
 
 
 def load_allowed_hosts():
-    """Parse comma-separated ALLOWED_HOSTS env into a list. Unset keeps the
-    historical empty list — Django's Host-header validation still accepts
-    localhost/127.0.0.1/[::1] in that case as long as DEBUG=True (its own
-    built-in dev allowlist, not "any Host header"); a DEBUG=False deployment
-    must set this explicitly (enforced by guard_debug_allowed_hosts below).
+    """콤마로 구분된 ALLOWED_HOSTS env를 리스트로 만든다. 비어 있으면 기존과
+    같이 빈 리스트를 쓰는데, DEBUG=True인 동안은 Django가 자체적으로
+    localhost/127.0.0.1/[::1]만 허용하므로 문제없다("모든 Host 허용"이
+    아니다). DEBUG=False 배포는 이 값을 반드시 직접 설정해야 하고, 그건
+    아래 guard_debug_allowed_hosts가 강제한다.
     """
     raw = _get_env("ALLOWED_HOSTS", "")
     return [host.strip() for host in raw.split(",") if host.strip()]
 
 
 def guard_debug_allowed_hosts(debug, allowed_hosts):
-    """Fail-open defense (security review H1, 2026-07-14): forgetting to set
-    DEBUG=false in a deployment would otherwise silently bypass
-    load_secret_key's hard fail too, and the app would serve the real domain
-    configured in ALLOWED_HOSTS with debug pages and the insecure dev
-    SECRET_KEY. Local dev never has a reason to set ALLOWED_HOSTS, so treat
-    a non-empty value as an unambiguous production signal and refuse to
-    start if DEBUG is still true.
+    """배포에서 DEBUG=false 설정을 깜빡하면 load_secret_key의 강제 실패도
+    조용히 우회되고, 실제 도메인이 디버그 페이지와 안전하지 않은 개발용
+    SECRET_KEY로 서비스될 수 있다. 로컬 개발은 ALLOWED_HOSTS를 설정할
+    이유가 없으므로, 값이 채워져 있는데 DEBUG가 여전히 true면 확실한 설정
+    실수로 보고 실행을 막는다.
     """
     if allowed_hosts and debug:
         raise ImproperlyConfigured(
@@ -102,28 +97,26 @@ def guard_debug_allowed_hosts(debug, allowed_hosts):
 
 
 def load_csrf_trusted_origins():
-    """Parse comma-separated CSRF_TRUSTED_ORIGINS env into a list. Unset
-    keeps Django's own default (no extra trusted origins)."""
+    """콤마로 구분된 CSRF_TRUSTED_ORIGINS env를 리스트로 만든다. 비어 있으면
+    Django 기본값(추가 신뢰 출처 없음)을 그대로 쓴다."""
     raw = _get_env("CSRF_TRUSTED_ORIGINS", "")
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
 def load_secure_ssl():
-    # Same env-parsing convention as load_debug() above; default "" (off) so
-    # local dev/tests are unaffected unless the deployment opts in.
+    # 위 load_debug()와 같은 env 파싱 방식. 기본값은 꺼짐이라 배포가 직접
+    # 켜지 않는 한 로컬 개발·테스트는 영향받지 않는다.
     return _get_env("SECURE_SSL", "").lower() in ("1", "true", "yes")
 
 
 def load_trusted_proxy_count():
-    """Number of trusted reverse-proxy hops in front of this app, or None
-    when unset (historical behavior: REMOTE_ADDR is trusted as-is, no
-    X-Forwarded-For parsing). A non-integer value fails hard instead of
-    silently disabling proxy-aware IP resolution. A negative value also
-    fails hard: resolve_client_ip's hops[-trusted_proxy_count] would turn
-    into a positive index, trusting the attacker-controlled left end of
-    X-Forwarded-For instead of the right end — defeating the spoofing
-    defense (0 stays allowed; it is falsy and keeps the safe REMOTE_ADDR
-    path)."""
+    """이 앱 앞단의 신뢰할 수 있는 리버스 프록시 홉 수. 비어 있으면 None을
+    반환해 기존처럼 REMOTE_ADDR을 그대로 신뢰한다(X-Forwarded-For 파싱
+    없음). 정수가 아니면 조용히 무시하지 않고 실행을 막는다. 음수도 막는데,
+    resolve_client_ip의 hops[-trusted_proxy_count] 인덱스가 양수로 뒤집혀
+    공격자가 조작 가능한 X-Forwarded-For의 왼쪽 끝을 신뢰하게 되어 스푸핑
+    방어가 무력화되기 때문이다(0은 falsy라 안전한 REMOTE_ADDR 경로를
+    유지하므로 허용된다)."""
     raw = _get_env("TRUSTED_PROXY_COUNT", "")
     if not raw:
         return None
@@ -142,25 +135,21 @@ def load_trusted_proxy_count():
 
 
 def build_axes_client_ip_callable(trusted_proxy_count):
-    """AXES_CLIENT_IP_CALLABLE dotted path, or None to keep axes' own
-    REMOTE_ADDR-based default. Only opt into core.ip.get_client_ip when a
-    trusted proxy hop count is configured; otherwise the historical
-    REMOTE_ADDR behavior is unchanged."""
+    """AXES_CLIENT_IP_CALLABLE 경로를 반환하거나, axes 기본
+    REMOTE_ADDR 방식을 유지하려면 None을 반환한다. 신뢰 프록시 홉 수가
+    설정된 경우에만 core.ip.get_client_ip를 쓰고, 그 외엔 기존 동작 그대로."""
     return "core.ip.get_client_ip" if trusted_proxy_count else None
 
 
 def load_staticfiles_storage(debug):
-    """Static files storage backend for STORAGES["staticfiles"].
+    """STORAGES["staticfiles"]에 쓸 정적 파일 저장 백엔드.
 
-    CompressedManifestStaticFilesStorage requires a manifest
-    (staticfiles.json) written by `collectstatic`, which local dev and the
-    test suite never run — resolving {% static %} against it there raises
-    ValueError. DEBUG=true (dev and every test run: DEBUG defaults to true,
-    see load_debug()) keeps the plain filesystem storage so behavior is
-    unchanged from before whitenoise; only a DEBUG=false deployment (which
-    runs collectstatic before serving, see PR-0b — verified locally: 210
-    copied, 610 post-processed, manifest generated) gets the compressed/
-    manifest/whitenoise backend.
+    CompressedManifestStaticFilesStorage는 `collectstatic`이 생성하는
+    매니페스트(staticfiles.json)가 필요한데, 로컬 개발과 테스트는
+    collectstatic을 돌리지 않아 {% static %} 해석 시 ValueError가 난다.
+    DEBUG=true(개발·모든 테스트 실행의 기본값)에서는 기존 방식인 일반
+    파일시스템 저장소를 유지하고, collectstatic을 먼저 실행하는
+    DEBUG=false 배포에서만 압축/매니페스트 whitenoise 백엔드를 쓴다.
     """
     if debug:
         return "django.contrib.staticfiles.storage.StaticFilesStorage"
@@ -168,10 +157,10 @@ def load_staticfiles_storage(debug):
 
 
 def load_media_storage_config():
-    """Media storage backend for STORAGES["default"].
+    """STORAGES["default"]에 쓸 미디어 저장 백엔드.
 
-    Unset MEDIA_STORAGE_BUCKET keeps the existing local-disk FileSystemStorage
-    (dev/CI/PaaS-less deployments unaffected).
+    MEDIA_STORAGE_BUCKET이 비어 있으면 기존 로컬 디스크
+    FileSystemStorage를 유지해 개발/CI/PaaS 미사용 배포는 영향받지 않는다.
     """
     bucket = _get_env("MEDIA_STORAGE_BUCKET")
     if not bucket:
@@ -180,8 +169,8 @@ def load_media_storage_config():
     access_key = _get_env("MEDIA_STORAGE_ACCESS_KEY_ID")
     secret_key = _get_env("MEDIA_STORAGE_SECRET_ACCESS_KEY")
     endpoint_url = _get_env("MEDIA_STORAGE_ENDPOINT_URL")
-    # REGION is excluded from this check: it has a real default ("auto",
-    # below), so an unset value is a valid configuration, not a mistake.
+    # REGION은 이 검사에서 제외한다 — 아래에 실제 기본값("auto")이 있어
+    # 비어 있어도 정상 설정이지 실수가 아니다.
     required = {
         "MEDIA_STORAGE_ACCESS_KEY_ID": access_key,
         "MEDIA_STORAGE_SECRET_ACCESS_KEY": secret_key,
@@ -205,20 +194,19 @@ def load_media_storage_config():
             "access_key": access_key,
             "secret_key": secret_key,
             "endpoint_url": endpoint_url,
-            # "auto" is Cloudflare R2's documented region value for its S3
-            # API (R2/B2 don't use AWS regions); harmless default when the
-            # deployment doesn't set MEDIA_STORAGE_REGION explicitly.
+            # "auto"는 Cloudflare R2 S3 API의 공식 리전 값이다(R2/B2는
+            # AWS 리전 개념이 없음). MEDIA_STORAGE_REGION 미설정 시 무해한 기본값.
             "region_name": _get_env("MEDIA_STORAGE_REGION", "auto"),
         },
     }
 
 
 def build_secure_ssl_settings(secure_ssl):
-    """Extra settings applied when running behind a TLS-terminating reverse
-    proxy (PaaS router). Empty dict when secure_ssl is False, so nothing here
-    is set and Django's own (all off/zero) defaults apply — local dev/tests
-    are unaffected. Only enable when the proxy is guaranteed to set (and
-    strip any client-supplied) X-Forwarded-Proto — see .env.example.
+    """TLS를 종료하는 리버스 프록시(PaaS 라우터) 뒤에서 실행할 때 추가로
+    적용할 설정. secure_ssl이 False면 빈 dict를 반환해 Django 기본값(전부
+    꺼짐)을 유지하므로 로컬 개발·테스트는 영향받지 않는다. 프록시가
+    X-Forwarded-Proto를 확실히 설정(및 클라이언트가 보낸 값은 제거)하는
+    경우에만 켜야 한다 — .env.example 참고.
     """
     if not secure_ssl:
         return {}
@@ -227,9 +215,8 @@ def build_secure_ssl_settings(secure_ssl):
         "SECURE_SSL_REDIRECT": True,
         "SECURE_HSTS_SECONDS": 31536000,
         "SECURE_HSTS_INCLUDE_SUBDOMAINS": True,
-        # Preload requires submitting the domain to browser HSTS preload
-        # lists, which is hard to reverse — stay conservative until that's a
-        # deliberate, separate decision.
+        # Preload는 브라우저 HSTS 프리로드 목록에 도메인을 등록해야 하고
+        # 되돌리기 어렵다 — 별도로 신중히 결정하기 전까지는 꺼둔다.
         "SECURE_HSTS_PRELOAD": False,
     }
 
@@ -238,27 +225,26 @@ ANTHROPIC_API_KEY = load_anthropic_api_key()
 LLM_MODEL = "claude-haiku-4-5-20251001"
 LLM_TIMEOUT_SECONDS = 10
 LLM_MAX_TOKENS = 1024
-# Escalation tier when heuristic/LLM field confidence is low (drafts/llm_extraction.py).
+# 휴리스틱/LLM 필드 신뢰도가 낮을 때 올라가는 상위 모델(drafts/llm_extraction.py).
 LLM_ESCALATION_MODEL = "claude-sonnet-5"
 LLM_ESCALATION_CONFIDENCE_THRESHOLD = 0.6
-# Wiring flag (PR-C connects create_draft_from_url to extract_event_fields_llm).
+# create_draft_from_url과 extract_event_fields_llm을 연결하는 스위치.
 DRAFT_LLM_EXTRACTION_ENABLED = False
-# Contact URL appended to the crawl User-Agent (drafts/fetching.py) so a site
-# operator can reach us about the bot; blank keeps the current bare UA.
+# 크롤링 User-Agent(drafts/fetching.py)에 붙는 연락처 URL — 사이트 운영자가
+# 봇에 대해 문의할 수 있게 한다. 비워두면 기존처럼 UA만 나간다.
 DRAFT_FETCH_CONTACT = ""
-# Gate for the discover_drafts management command (prompt_plan.md §2-5) — off
-# by default so no crawling happens until an operator opts in.
+# discover_drafts 관리 명령의 게이트. 운영자가 켜기 전까지는 크롤링하지 않는다.
 DRAFT_DISCOVERY_ENABLED = False
-# Caps a single discover_drafts run: total new drafts created across every
-# source, independent of the per-source fetch cap below.
+# discover_drafts 한 번 실행에서 모든 소스를 합쳐 생성할 수 있는 최대
+# 신규 드래프트 수. 아래 소스별 조회 상한과는 별개다.
 DRAFT_DISCOVERY_MAX_PER_RUN = 10
-# Caps per-source fetch *attempts* (robots checks + create_draft_from_url
-# calls) so a source yielding mostly empty/duplicate candidates cannot be
-# re-hit indefinitely while chasing the creation cap above.
+# 소스별 조회 *시도* 상한(robots 확인 + create_draft_from_url 호출). 빈
+# 결과나 중복만 나오는 소스가 위 생성 상한을 채우려 끝없이 재시도하는
+# 것을 막는다.
 DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 20
-# Staff dashboard freshness threshold: an enabled DraftSource whose
-# last_checked_at is older than this (or still None) is flagged "stale" —
-# 48h covers a couple of missed daily runs before it reads as a problem.
+# 스태프 대시보드 신선도 기준: last_checked_at이 이보다 오래됐거나 아직
+# None인 활성 DraftSource는 "정체"로 표시한다. 48시간이면 하루치 실행을
+# 몇 번 놓쳐도 바로 문제로 보이지 않을 여유를 준다.
 DRAFT_SOURCE_STALE_HOURS = 48
 DEBUG = load_debug()
 SECRET_KEY = load_secret_key(DEBUG)
@@ -290,9 +276,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    # Serves collected static files directly from the app process — no
-    # separate static-file server/CDN needed for the initial deployment.
-    # Must sit right after SecurityMiddleware (whitenoise docs).
+    # 수집된 정적 파일을 앱 프로세스에서 바로 서빙한다 — 초기 배포에서 별도
+    # 정적 파일 서버/CDN이 필요 없다. whitenoise 문서 권장대로
+    # SecurityMiddleware 바로 다음에 둬야 한다.
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -301,8 +287,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # AxesMiddleware must come last so it can render the lockout response after
-    # authentication has run.
+    # AxesMiddleware는 인증이 끝난 뒤 잠금 응답을 렌더링해야 하므로 맨 마지막에 둔다.
     "axes.middleware.AxesMiddleware",
 ]
 
@@ -330,14 +315,13 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {"default": load_database_config()}
 
-# Shared cache (G11): gunicorn runs multiple worker processes, and the default
-# LocMemCache is per-process — rate limits (allauth ACCOUNT_RATE_LIMITS,
-# accounts.views delete-attempt lockout) would silently reset per worker and
-# on every redeploy. DatabaseCache reuses the already-provisioned Postgres
-# (no new service) and is shared across all workers/redeploys. Applied
-# unconditionally (no env gate) so dev/test and production share the same
-# backend and the "django_cache" table (created by the core migration below)
-# is always exercised.
+# gunicorn은 워커 프로세스를 여러 개 띄우는데, 기본 LocMemCache는 프로세스별로
+# 따로 있어 레이트리밋(allauth ACCOUNT_RATE_LIMITS, accounts.views 삭제
+# 시도 잠금)이 워커마다, 재배포마다 조용히 초기화된다. DatabaseCache는
+# 이미 있는 Postgres를 그대로 써서(새 서비스 불필요) 모든 워커·재배포가
+# 공유한다. env 게이트 없이 항상 적용해 개발/테스트와 운영이 같은
+# 백엔드를 쓰고 "django_cache" 테이블(core 마이그레이션이 생성)이 항상
+# 실제로 사용되게 한다.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
@@ -372,8 +356,8 @@ AUTH_USER_MODEL = "accounts.User"
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
-    # AxesStandaloneBackend must be first: it short-circuits authentication with
-    # PermissionDenied once an IP is locked out, without itself validating creds.
+    # AxesStandaloneBackend는 반드시 첫 번째여야 한다 — 자격 증명 검증 없이
+    # IP가 잠긴 경우 PermissionDenied로 인증을 즉시 중단시킨다.
     "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
@@ -383,9 +367,9 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/collection/"
 LOGOUT_REDIRECT_URL = "/"
 
-# django-allauth: email-only identifier, mandatory verification before login.
-# ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION replaces the old auto-login-on-register
-# policy — the session is only granted once the confirmation link is clicked.
+# django-allauth: 이메일만을 식별자로 쓰고, 로그인 전 인증 메일 확인을 필수로 한다.
+# ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION은 기존 "가입 즉시 자동 로그인" 정책을
+# 대체한다 — 세션은 확인 링크를 클릭해야만 발급된다.
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
@@ -393,22 +377,22 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
-# 다중 이메일 UI 대신 단일 이메일 교체 흐름을 쓴다(계정 설정 에디토리얼
-# 계획서) — allauth가 account/email_change.html을 찾게 된다.
+# 다중 이메일 UI 대신 단일 이메일 교체 흐름을 쓴다 — allauth가
+# account/email_change.html을 찾게 된다.
 ACCOUNT_CHANGE_EMAIL = True
-# Custom signup form adds the mandatory terms/privacy-policy agreement
-# checkbox (accounts/forms.py) on top of allauth's default email/password
-# fields. add_email은 현재 비밀번호 재확인을 추가한 EmailChangeForm으로 교체.
+# 커스텀 가입 폼(accounts/forms.py)이 allauth 기본 이메일/비밀번호 필드에
+# 약관·개인정보 동의 체크박스를 추가한다. add_email은 현재 비밀번호
+# 재확인을 추가한 EmailChangeForm으로 교체.
 ACCOUNT_FORMS = {
     "signup": "accounts.forms.SignupForm",
     "add_email": "accounts.forms.EmailChangeForm",
 }
 
-# django-allauth socialaccount: Google sign-in. Credentials come from env
-# (never committed); register the OAuth client in Google Cloud Console with the
-# redirect URI /accounts/google/login/callback/ (localhost for dev, the real
-# host for prod). Blank env hides the button (see
-# core.context_processors.google_oauth_configured) until credentials are set.
+# django-allauth socialaccount: 구글 로그인. 자격 증명은 env로만 받고(절대
+# 커밋 금지), Google Cloud Console의 OAuth 클라이언트에 리디렉션 URI
+# /accounts/google/login/callback/를 등록한다(개발은 localhost, 운영은
+# 실제 호스트). env가 비어 있으면 자격 증명이 설정될 때까지 버튼이
+# 숨겨진다(core.context_processors.google_oauth_configured 참고).
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APPS": [
@@ -422,25 +406,25 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {"access_type": "online"},
     }
 }
-# Google verifies email ownership, so trust it: a Google login whose verified
-# email matches an existing local account logs into that account and connects
-# the Google account to it. SAFE ONLY because Google is a fully-trusted
-# provider — revisit this if another (less-trusted) provider is ever added.
+# 구글은 이메일 소유권을 검증하므로 신뢰할 수 있다: 검증된 구글 이메일이
+# 기존 로컬 계정과 일치하면 그 계정으로 로그인시키고 구글 계정을 연결한다.
+# 이게 안전한 건 구글이 완전히 신뢰되는 제공자이기 때문이다 — 신뢰도가
+# 낮은 다른 제공자를 추가한다면 이 판단을 다시 검토해야 한다.
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
-# Rate limits on the auth endpoints (brute-force / signup-flood defense).
-# allauth ships sane defaults that are already active; this dict is MERGED over
-# those defaults (allauth: `ret.update(rls)`), so unlisted actions keep their
-# allauth default. We pin the security-relevant actions here for auditability
-# and tighten `signup` for public deployment. Format: "<count>/<duration>/<scope>",
-# scope is ip|key|user, comma-combines multiple windows (all must pass).
-#   - signup: burst 5/min + sustained 30/hour per IP (default is a looser 20/m/ip)
-#   - login_failed: 10/min per IP + 5 per 5min per account; once the per-account
-#     window is spent the login form refuses further auth (even the correct
-#     password) until it cools off. Durable IP lockout is a follow-up (B1b: axes).
-#   - reset_password: throttles password-reset email requests (allauth default).
-# Rate-limit hits render templates/429.html.
+# 인증 엔드포인트 속도 제한(무차별 대입·가입 폭주 방어). allauth는 이미
+# 합리적인 기본값을 쓰고 있고 이 dict는 그 기본값 위에 병합된다(allauth:
+# `ret.update(rls)`). 즉 여기 없는 동작은 allauth 기본값을 그대로 쓴다.
+# 감사 가능하도록 보안상 중요한 항목만 명시하고, 공개 배포를 위해
+# `signup`은 더 좁혔다. 형식은 "<횟수>/<기간>/<범위>"이며 범위는
+# ip|key|user, 콤마로 여러 창을 연결하면 전부 통과해야 한다.
+#   - signup: IP당 분당 5회 버스트 + 시간당 30회 지속(기본값은 더 느슨한 20/m/ip)
+#   - login_failed: IP당 분당 10회 + 계정당 5분에 5회. 계정별 한도를 다
+#     쓰면 쿨다운이 끝날 때까지 올바른 비밀번호로도 로그인 폼이 막힌다.
+#     지속적인 IP 잠금은 axes가 별도로 담당한다.
+#   - reset_password: 비밀번호 재설정 메일 요청 속도 제한(allauth 기본값).
+# 속도 제한에 걸리면 templates/429.html이 렌더링된다.
 #   - manage_email: 이메일 변경(/accounts/email/)에 현재 비밀번호 재확인이
 #     새로 생겨 allauth 기본 10/m/user(느슨한 롤링 제한)보다 좁게 고정한다.
 ACCOUNT_RATE_LIMITS = {
@@ -450,41 +434,40 @@ ACCOUNT_RATE_LIMITS = {
     "manage_email": "5/m/user,20/h/user",
 }
 
-# django-axes: durable brute-force lockout on top of allauth's per-window
-# throttle. allauth refuses further auth within a rolling window; axes adds a
-# hard lockout with a cool-off so repeated attackers are shut out and visible
-# in the admin (AccessAttempt/AccessLog). Lock by IP only — locking by username
-# would let an attacker lock a victim out (DoS); the per-account dimension is
-# already covered by allauth's login_failed `key` limit.
+# django-axes: allauth의 창 단위 속도 제한 위에 지속적인 무차별 대입 잠금을
+# 더한다. allauth는 롤링 윈도 안에서만 인증을 막지만, axes는 쿨다운이 있는
+# 하드 잠금을 추가해 반복 공격자를 완전히 차단하고 관리자
+# 화면(AccessAttempt/AccessLog)에서 볼 수 있게 한다. IP로만 잠그는 이유는
+# 사용자명으로 잠그면 공격자가 피해자를 잠글 수 있기 때문이며(DoS),
+# 계정 단위 방어는 이미 allauth의 login_failed `key` 제한이 맡고 있다.
 AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1  # hours
+AXES_COOLOFF_TIME = 1  # 시간
 AXES_LOCKOUT_PARAMETERS = ["ip_address"]
 AXES_RESET_ON_SUCCESS = True
 AXES_HTTP_RESPONSE_CODE = 429
 AXES_LOCKOUT_TEMPLATE = "account/lockout.html"
-# allauth posts the identifier under the form field named "login"; axes must
-# read the same field to record attempts against the right credential.
+# allauth는 식별자를 "login"이라는 폼 필드로 보낸다. axes도 같은 필드를
+# 읽어야 올바른 자격 증명에 시도 기록을 남긴다.
 AXES_USERNAME_FORM_FIELD = "login"
-# NOTE (deployment): behind a reverse proxy, set the TRUSTED_PROXY_COUNT env
-# var to the real number of proxy hops so axes locks out the real attacker
-# IP instead of the proxy IP (which would lock out everyone). This wires
-# AXES_CLIENT_IP_CALLABLE to core.ip.get_client_ip; unset TRUSTED_PROXY_COUNT
-# keeps axes' own REMOTE_ADDR-based default (see core/ip.py for why
-# django-axes' AXES_IPWARE_* settings are not used here — this project does
-# not depend on django-ipware).
+# 배포 시 주의: 리버스 프록시 뒤라면 TRUSTED_PROXY_COUNT env를 실제 프록시
+# 홉 수로 설정해야 axes가 프록시 IP가 아닌 진짜 공격자 IP를 잠근다(안
+# 하면 모든 사용자가 잠길 수 있다). 이 값이 AXES_CLIENT_IP_CALLABLE을
+# core.ip.get_client_ip로 연결한다. TRUSTED_PROXY_COUNT가 없으면 axes 자체
+# REMOTE_ADDR 기본값을 유지한다(django-axes의 AXES_IPWARE_* 설정을 여기서
+# 쓰지 않는 이유는 core/ip.py 참고 — 이 프로젝트는 django-ipware에 의존하지 않는다).
 TRUSTED_PROXY_COUNT = load_trusted_proxy_count()
 AXES_CLIENT_IP_CALLABLE = build_axes_client_ip_callable(TRUSTED_PROXY_COUNT)
 
-# Secure cookies: disabled in development (http), enabled when SECURE_COOKIES env is set.
+# 보안 쿠키: 개발(http)에서는 꺼져 있고, SECURE_COOKIES env를 설정하면 켜진다.
 _secure_cookies = os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
 SESSION_COOKIE_SECURE = _secure_cookies
 CSRF_COOKIE_SECURE = _secure_cookies
-# Keep CSRF_COOKIE_HTTPONLY False so the JS layer can read the csrftoken cookie.
+# JS 레이어가 csrftoken 쿠키를 읽어야 하므로 CSRF_COOKIE_HTTPONLY는 False로 둔다.
 CSRF_COOKIE_HTTPONLY = False
 
-# Proxy/HTTPS security headers: opt-in via SECURE_SSL env (deployment behind a
-# TLS-terminating reverse proxy). Independent of SECURE_COOKIES above — kept
-# as a separate flag rather than reusing it (G4).
+# 프록시/HTTPS 보안 헤더: TLS 종료 리버스 프록시 뒤에 배포할 때 SECURE_SSL
+# env로 선택적으로 켠다. 위 SECURE_COOKIES와는 독립적이라 재사용하지 않고
+# 별도 플래그로 둔다.
 SECURE_SSL = load_secure_ssl()
 _secure_ssl_settings = build_secure_ssl_settings(SECURE_SSL)
 if _secure_ssl_settings:
@@ -494,8 +477,8 @@ if _secure_ssl_settings:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = _secure_ssl_settings["SECURE_HSTS_INCLUDE_SUBDOMAINS"]
     SECURE_HSTS_PRELOAD = _secure_ssl_settings["SECURE_HSTS_PRELOAD"]
 
-# Email (django-allauth verification / password reset). Blank EMAIL_HOST falls
-# back to the console backend so local dev never needs real SMTP credentials.
+# 이메일(django-allauth 인증/비밀번호 재설정용). EMAIL_HOST가 비어 있으면
+# 콘솔 백엔드로 대체돼 로컬 개발에서 실제 SMTP 자격 증명이 필요 없다.
 EMAIL_HOST = _get_env("EMAIL_HOST")
 EMAIL_BACKEND = (
     "django.core.mail.backends.smtp.EmailBackend"
@@ -507,23 +490,23 @@ EMAIL_HOST_USER = _get_env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = _get_env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = _get_env("EMAIL_USE_TLS", "true").lower() in ("1", "true", "yes")
 DEFAULT_FROM_EMAIL = _get_env("DEFAULT_FROM_EMAIL", "no-reply@takulife.example")
-# Contact address shown on the legal pages / footer for user inquiries and
-# data-rights requests. Placeholder domain until the real support inbox is
-# provisioned (see .docs/plans/2026-07-10-legal-pages-plan.md §3-2) — swap
-# via env only, no code change needed once the real address exists.
+# 법적 고지 페이지/푸터에 표시하는 문의·개인정보 권리 요청 연락처. 실제
+# 지원 메일함이 준비되기 전까지의 임시 도메인이다 — 실제 주소가 생기면
+# 코드 변경 없이 env만 바꾸면 된다.
 SUPPORT_EMAIL = _get_env("SUPPORT_EMAIL", "support@takulife.example")
 
-# DRF: rate-limit 공식 제보 (promotion) so an authenticated user cannot flood the
-# admin review queue with promoted PersonalEntry drafts. Scoped throttle only —
-# applied per-view (PromotePersonalEntryView), so other endpoints are unaffected.
-# collection_item_create / visit_record_create: a manual form can never reach
-# 30/minute — the cap only stops bfcache-style duplicate-submit bursts and
-# spam floods, not normal use.
+# DRF: 공식 제보(promotion) 속도를 제한해 인증된 사용자가 승격된
+# PersonalEntry 드래프트로 관리자 검토 큐를 채우지 못하게 한다.
+# 뷰 단위(PromotePersonalEntryView)로만 적용돼 다른 엔드포인트는
+# 영향받지 않는다. collection_item_create / visit_record_create는 수동
+# 폼으로는 분당 30회에 절대 도달할 수 없다 — 이 상한은 정상 사용이
+# 아니라 bfcache식 중복 제출 폭주와 스팸을 막기 위한 것이다.
 REST_FRAMEWORK = {
-    # Session auth only — the app is browser/session based. Dropping the DRF
-    # default BasicAuthentication closes a CSRF-bypass hole: Basic-authenticated
-    # requests skip CSRF, which would let a staff credential mutate via forged
-    # cross-site requests. SessionAuthentication enforces CSRF on unsafe methods.
+    # 세션 인증만 쓴다 — 이 앱은 브라우저/세션 기반이다. DRF 기본
+    # BasicAuthentication을 빼는 이유는 CSRF 우회 구멍을 막기 위해서다:
+    # Basic 인증 요청은 CSRF 검사를 건너뛰므로, 위조된 크로스사이트
+    # 요청으로 스태프 자격 증명이 데이터를 변경할 수 있다.
+    # SessionAuthentication은 안전하지 않은 메서드에 CSRF를 강제한다.
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
     ],
@@ -534,11 +517,11 @@ REST_FRAMEWORK = {
     },
 }
 
-# Console logging (stdout), matching a PaaS deployment where the platform
-# collects stdout — no file handlers, no external log service (G8). django
-# and root default to INFO; django.request is raised to ERROR so unhandled
-# 5xx exceptions print with a stack trace, without also emitting Django's own
-# per-request INFO/WARNING noise (404s, etc.) at every request.
+# 콘솔(stdout) 로깅. PaaS 플랫폼이 stdout을 수집하는 배포 방식에 맞춘
+# 것으로 파일 핸들러도, 외부 로그 서비스도 두지 않는다. django와 root는
+# 기본 INFO, django.request만 ERROR로 올려서 처리되지 않은 5xx 예외는
+# 스택 트레이스와 함께 출력하되 요청마다 나오는 Django 자체 INFO/WARNING
+# 잡음(404 등)은 찍히지 않게 한다.
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

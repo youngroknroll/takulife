@@ -1,6 +1,5 @@
-"""core.analytics.pseudonymous_user_key (PR-0e checkpoint B2).
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+"""core.analytics.pseudonymous_user_key 검증
+(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
 import pytest
 
@@ -17,10 +16,9 @@ def test_동일_사용자에게_의사식별자_키는_항상_같은_값을_반�
 
 
 def test_의사식별자_키에는_원본_pk_값이_포함되지_않는다():
-    # A distinctive, non-coincidental pk value (unlike a small sequential DB
-    # pk such as 1 or 2, which could trivially appear as a hex-digest
-    # substring by chance) — pseudonymous_user_key only reads `.pk`, so a
-    # lightweight stand-in is sufficient and avoids a DB dependency here.
+    # 1이나 2 같은 작은 순차 DB pk와 달리 우연히 hex 다이제스트 부분
+    # 문자열로 나타날 리 없는 뚜렷한 pk 값을 쓴다 — pseudonymous_user_key는
+    # `.pk`만 읽으므로 가벼운 대역만으로 충분하고 DB 의존도 피할 수 있다.
     from types import SimpleNamespace
 
     user = SimpleNamespace(pk=918273645918273)

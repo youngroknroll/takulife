@@ -1,8 +1,8 @@
-"""Pager windowing rules (core/pagination.py).
+"""페이저 창(윈도) 규칙(core/pagination.py).
 
-Pure arithmetic, no DB — the window is what decides whether a user can tell
-where they are in a long list, and every boundary case here was a judgement
-call worth pinning.
+순수 산술, DB 불필요 — 이 창이 긴 목록에서 사용자가 자기 위치를 알 수
+있는지를 결정하므로, 여기 나오는 경계 사례 하나하나가 고정해 둘 가치가
+있는 판단이었다.
 """
 
 import pytest

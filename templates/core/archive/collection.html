@@ -106,18 +106,14 @@
     {% endif %}
 
     <div class="layout">
-      {# DOM order IS the narrow-width order: 유형 → 작품별 → 결과. Both facet #}
-      {# groups are separate <aside> siblings of #archive-results rather than #}
-      {# one wrapper, so desktop's left column is built with grid placement   #}
-      {# (below) instead of CSS `order`. Deliberate: `order` would repaint    #}
-      {# 작품별 under the results while leaving it BEFORE them in tab order    #}
-      {# (WCAG 2.4.3), and a `display:contents` wrapper would drop its        #}
-      {# landmark from the a11y tree. This way visual and tab order match at  #}
-      {# every width and both landmarks survive.                             #}
+      {# 좁은 폭 순서(유형 → 작품별 → 결과)를 DOM 순서 그대로 쓴다. 두 필터군을 #}
+      {# 한 래퍼로 묶지 않고 각각 독립된 <aside> 형제로 둬야, CSS order로       #}
+      {# 시각 순서만 바꾸지 않고도 데스크톱 좌측 열 배치를 grid로 만들 수 있고 #}
+      {# 탭 순서(WCAG 2.4.3)와 접근성 랜드마크가 모두 그대로 유지된다.        #}
 
-      {# Guarded on the real type values, not has_items: with no types the #}
-      {# group is just a "유형" heading over a lone 전체 chip that filters   #}
-      {# nothing — dead chrome beside the empty state.                     #}
+      {# has_items가 아니라 실제 유형 값 존재 여부로 가드한다 — 유형이 하나도 #}
+      {# 없으면 "전체" 칩 하나만 남는 껍데기 "유형" 제목이 될 뿐이라, 아무것도 #}
+      {# 걸러주지 못하는 빈 장식을 렌더하지 않는다.                          #}
       {% if filter_values.item_type %}
         <aside class="collection-facet-group collection-facet-group--type" aria-label="유형 필터">
           <h2>유형</h2>

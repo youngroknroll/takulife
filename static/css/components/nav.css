@@ -35,11 +35,9 @@
   border-color: var(--brand);
 }
 
-/* ── archive tab bar (always-visible sub-nav, shared by 5 archive pages) ──
-   Replaces the former <details> accordion (2026-07-21 리디자인 ④단계 §B) —
-   same aria-label/href set, now rendered as a persistent row of links with
-   an underline active-state (site-nav's `.active::after` convention
-   reused, plan §B). */
+/* ── archive tab bar (always-visible sub-nav, shared by 5 archive pages) ── */
+/* 예전엔 아코디언(<details>)이었지만 지금은 항상 펼쳐진 탭 줄이고, 현재
+   탭은 밑줄로 표시한다(site-nav의 `.active::after` 방식을 재사용). */
 .archive-nav-wrap {
   display: flex;
   flex-wrap: wrap;
@@ -82,21 +80,18 @@
   position: absolute;
   left: 0.625rem;
   right: 0.625rem;
-  bottom: -1px;                   /* flush with .archive-nav-wrap's hairline */
+  bottom: -1px;                   /* 부모 밑줄과 딱 맞춘다 */
   height: 2px;
   border-radius: 2px;
   background: var(--teal);
 }
 
-/* 서브탭 짧은 라벨(내 활동 셸 폴리시 v2 §3, 2026-07-27) — 각 탭 앵커가
-   `.tab-label-full`/`.tab-label-short` 두 span을 함께 렌더하고, 브레이크
-   포인트별로 CSS만으로 하나를 고른다(JS 0). `_archive_nav.html`은 8개
-   include 사이트에 쓰이는데 그중 절반(items/interests/visit_edit/
-   visit_create)은 `pages/archive.css`를 로드하지 않는다 — 이 규칙을
-   페이지 스코프 스타일시트에 두면 위 `.activity-view-toggle`과 똑같이
-   "한쪽은 완전 무스타일"이 될 자리라, 전역 로드되는 이 컴포넌트 파일에
-   둔다(a11y 트리에 정확히 하나의 라벨만 남기는 것이 핵심이라 `display:none`
-   사용, opacity/clip 금지 — 그러면 스크린리더가 "전체 보기전체"를 읽는다). */
+/* 서브탭 짧은 라벨 — 각 탭 앵커가 `.tab-label-full`/`.tab-label-short` 두
+   span을 함께 렌더하고 브레이크포인트별로 CSS만으로 하나를 고른다(JS 없음).
+   `_archive_nav.html`을 로드하지 않는 페이지도 있어 이 규칙은 페이지별
+   스타일시트가 아니라 전역 로드되는 이 컴포넌트 파일에 둔다. a11y 트리에
+   라벨이 하나만 남아야 해서 `display:none`을 쓴다 — opacity/clip을 쓰면
+   스크린리더가 라벨을 두 번 읽는다. */
 .tab-label-short {
   display: none;
 }
@@ -110,7 +105,7 @@
   }
 }
 
-/* 찜 목록 — standalone pink pill (현행 유지), right-aligned */
+/* 찜 목록 — 독립된 핑크 필 모양, 오른쪽 정렬 */
 .archive-nav-wrap .nav-interest {
   margin-left: auto;
   display: inline-flex;
@@ -139,30 +134,21 @@
   border-color: var(--pink-border);
 }
 
-/* Shared phone breakpoint: left-align the archive/draft topbar nav.
-   (The horizontal component of the matching per-page `.page{}` overrides
-   — previously a hardcoded 14px that only some pages carried — is now
-   token-driven (tokens.css --page-pad-x) and unified across every page
-   regardless of which of these per-page blocks happens to also override
-   top/bottom padding at its own breakpoint; see the token's own comment.) */
+/* 모바일에서는 archive/draft 상단 탭바를 왼쪽 정렬한다. */
 @media (max-width: 45rem) {
   .nav-links {
     justify-content: start;
   }
 }
 
-/* ── activity view toggle: 목록 | 달력 (moved from pages/archive.css,
-   2026-07-23 사후 결함 수정 A) ──────────────────────────────────
-   컴포넌트 자체 모양은 여기서 전역 로드로 관리한다 — `/archive/`와
-   `/archive/calendar/`가 서로 다른 페이지 스타일시트만 로드하는데
-   토글은 두 페이지 모두에 렌더되므로, 페이지 CSS에 두면 한쪽(전형적으로
-   `/archive/calendar/` — `archive_calendar.css`만 로드)이 완전
-   무스타일로 렌더된다. 컬렉션 `.collection-view-toggle`
-   (archive_collection.css:140-180)의 시각 어휘를 그대로 따르되 활성색만
-   청록. 라우트 간 이동(같은 필터 어휘를 공유하지 않음)이라 role="group"은
-   BIR 판단에 따라 붙이지 않는다. 그리드 안에서의 위치(justify-self)는
-   `/archive/`에만 해당하는 레이아웃 관심사라 archive.css에
-   `.hero-activity .activity-view-toggle`로 남겨 둔다. */
+/* ── activity view toggle: 목록 | 달력 ─────────────────────────── */
+/* `/archive/`와 `/archive/calendar/`가 서로 다른 페이지 스타일시트만
+   불러오는데 이 토글은 두 페이지 모두에 있어, 전역 로드되는 이 컴포넌트
+   파일에 모양을 둔다(페이지 CSS에 두면 한쪽이 무스타일로 렌더된다).
+   컬렉션의 `.collection-view-toggle`과 같은 시각 어휘를 쓰되 활성색만
+   청록으로 다르다. 그리드 안 위치(justify-self)는 `/archive/`에만
+   해당하는 레이아웃 문제라 archive.css의 `.hero-activity
+   .activity-view-toggle`에 남겨 뒀다. */
 .activity-view-toggle {
   display: flex;
   gap: 1rem;
@@ -198,19 +184,13 @@
   }
 }
 
-/* ── activity-series teal accent (moved/added, 2026-07-23 사후 결함
-   수정 B) ─────────────────────────────────────────────────────
-   내 활동 계열(`/archive/`·`/statuses/`·`/visits/`·`/items/`·
-   `/interests/`·`/calendar/`)은 각자 자기 페이지 CSS만 로드해,
-   `pages/archive.css`에 있던 무스코프 `.chip.active`/`.pager-page.
-   is-current` 재선언이 `/archive/`에만 적용되고 나머지 페이지는
-   `archive_statuses.css:19-23`의 하드코딩 브랜드 레드나
-   `controls.css`/`pager.css` 기본값(둘 다 브랜드 레드)으로 남는
-   결함이 있었다. `.activity-page`(특이도 (0,3,0))로 스코프해
-   `archive_statuses.css`/`controls.css`의 무스코프 규칙(둘 다
-   (0,2,0))을 로드 순서와 무관하게 이긴다. `controls.css`·`pager.css`·
-   `archive_statuses.css` 원본은 무접촉. `/collection/`은 `.activity-page`
-   클래스가 없어 브랜드 레드 유지. */
+/* ── activity-series teal accent ───────────────────────────────── */
+/* 내 활동 계열 페이지들은 각자 자기 페이지 CSS만 불러와, 예전에는 일부
+   페이지만 청록으로 바뀌고 나머지는 기본 브랜드 레드로 남는 결함이
+   있었다. `.activity-page`로 스코프해 특이도로 `controls.css`/
+   `pager.css`의 무스코프 기본 규칙을 로드 순서와 무관하게 이긴다.
+   `/collection/`은 `.activity-page` 클래스가 없어 브랜드 레드를
+   그대로 쓴다. */
 .activity-page .chip.active {
   background: var(--teal);
   border-color: var(--teal);

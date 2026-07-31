@@ -1,27 +1,14 @@
-/* ── /events/calendar/ page skin ─────────────────────────────────
- * Editorial v2 rebuild (design source: claude.ai/design "행사 달력 페이지 v2
- * (에디토리얼).dc.html", plan .docs/plans/2026-07-23-events-calendar-v2-plan.md).
+/* ── /events/calendar/ page skin ───────────────────────────────── */
+/* 디자인 출처: claude.ai/design "행사 달력 페이지 v2 (에디토리얼).dc.html".
  *
- * This is the ONLY file allowed to change how the calendar grid/cell looks.
- * The skeleton (.month-grid/.day-cell/data-in-month/data-today/data-selected
- * wiring) still lives in components/calendar.css, shared with the Activity
- * calendar (templates/core/archive/calendar.html) — that file is never
- * touched. Every look change here is a targeted override layered on top of
- * it, scoped so it never leaks to the Activity page (that page never loads
- * this stylesheet).
+ * 달력 그리드/셀 모양을 바꾸는 건 이 파일뿐이다. 뼈대(.month-grid/.day-cell
+ * 등)는 components/calendar.css에 그대로 있고 활동 달력과 공유한다 — 그
+ * 파일은 건드리지 않는다. 이 파일의 규칙은 그 위에 얹는 재정의이고,
+ * 활동 달력 페이지는 이 스타일시트를 로드하지 않으니 영향이 없다.
  *
- * This page now shares templates/core/events/list.html's shell
- * (.events-page/.events-head/.events-tabs/.events-search/.quick-row/.layout/
- * .filters/.filter-toggle/.filter-body/.filter-group/.applied-filters — all
- * from event_list.css, unchanged here) instead of its own full-width
- * search-row/disclosure-panel markup. That collapses this page down to two
- * breakpoints instead of one:
- *   - 56.25rem: the shared `.layout` two-column → one-column collapse
- *     (event_list.css's own breakpoint, unmodified here).
- *   - 45rem: this page's own cell/typography collapse, matching
- *     components/calendar.css's existing mobile boundary.
- * ("45rem only" is no longer accurate for this page as a whole — only for
- * the grid/agenda rules below.)
+ * 이 페이지는 event_list.html의 셸(.events-page/.events-head/.layout 등)을
+ * 그대로 공유한다. 그래서 브레이크포인트가 두 개다 — 56.25rem은 공유
+ * `.layout`의 접힘, 45rem은 이 페이지 자체 그리드/아젠다 접힘이다.
  */
 
 /* ── month nav: 1fr auto 1fr, "YYYY · M월" left, prev/today/next centered */
@@ -33,15 +20,13 @@
   margin-bottom: 0.875rem;
 }
 
-/* `.events-page` prefix is load-bearing, not decoration: this <h2> now sits
-   inside `.panel.results`, and components/cards.css's `.panel h2 { font-size:
-   1rem }` is (0,1,1) — it silently beat the bare class and pinned the month
-   label at 16px (caught by measurement, not by reading). Same trap
-   event_list.css documents for .results-title/.event-row-title. */
+/* `.events-page` 접두사가 없으면 components/cards.css의
+   `.panel h2 { font-size: 1rem }`(특이도 (0,1,1))가 이겨 월 라벨이
+   16px로 고정된다. */
 .events-page .calendar-month-label {
   margin: 0;
   min-width: 0;
-  font-size: 1.6875rem; /* bespoke page value — not --fs-xl (home hero only) */
+  font-size: 1.6875rem; /* 이 페이지 전용 값(--fs-xl은 홈 히어로 전용) */
   font-weight: 300;
   letter-spacing: -0.01em;
 }
@@ -96,15 +81,10 @@
   text-decoration: underline;
 }
 
-/* ── month grid: seamless 1px hairline grid, radius 12, no per-cell border
-   (WED reselection checklist — these 5 are new additions on top of the
-   shared skeleton). */
-/* The header has to reproduce the body's column geometry exactly, not just
-   its column count: it keeps the shared 6px gap otherwise, while the body
-   below runs at 1px, and the two column tracks drift apart cumulatively
-   (measured: Saturday's label landed 5px right of its own column). `gap`
-   matches the body's, and the 1px inline padding stands in for the body's
-   1px outer border, which shrinks its content box by the same amount. */
+/* ── month grid: seamless 1px hairline grid, radius 12, no per-cell border ── */
+/* 헤더도 본문과 같은 gap(1px)을 써야 한다 — 안 그러면 본문(1px)과
+   헤더(공용 6px)의 열이 누적으로 어긋난다. 1px 안쪽 여백은 본문의
+   1px 테두리만큼 좁아진 콘텐츠 박스를 맞추기 위함이다. */
 .month-grid-head {
   gap: 1px;
   padding-inline: 1px;
@@ -127,8 +107,8 @@
   gap: 0.375rem;
 }
 
-/* Attribute selector (0,2,0) always beats the bare class (0,1,0) — the
-   shared 2px brand border must be killed explicitly, not assumed gone. */
+/* 속성 셀렉터(특이도 (0,2,0))가 일반 클래스((0,1,0))를 항상 이겨서
+   공용 2px 테두리는 여기서 명시적으로 지워야 한다. */
 .day-cell[data-today="true"] {
   border: none;
 }
@@ -138,9 +118,8 @@
   box-shadow: inset 0 -3px 0 var(--brand);
 }
 
-/* [data-in-month="false"] background is intentionally left untouched — the
-   shared rule already wins here and re-declaring it would only create a
-   second source of truth. */
+/* [data-in-month="false"] 배경은 일부러 그대로 둔다 — 공용 규칙이 이미
+   적용되고 있어 다시 선언하면 값이 두 곳에 따로 존재하게 된다. */
 
 .day-num {
   text-align: right;
@@ -149,7 +128,7 @@
   font-weight: 300;
 }
 
-/* Today: brand-filled circular date pill, no cell border. */
+/* 오늘: brand 색 원형 배지로 표시하고 셀 테두리는 없앤다. */
 .day-cell[data-today="true"] .day-num {
   display: inline-flex;
   align-items: center;
@@ -162,8 +141,7 @@
   font-weight: 600;
 }
 
-/* Weekday header: left-aligned, bold caps tracking; Sunday/Saturday tint
-   reuses the existing nth-child convention (7 flat children per row). */
+/* 요일 헤더는 왼쪽 정렬, 굵게. 일/토 색은 기존 nth-child 방식을 그대로 쓴다. */
 .month-grid-weekday {
   text-align: left;
   padding: 0 0.375rem;
@@ -188,25 +166,20 @@
   color: var(--up-ink);
 }
 
-/* Focus ring compensation: the grid's own overflow:hidden would otherwise
-   crop an outline drawn on the first row/column's cells (BIR criterion 1) —
-   drawing it 2px inset keeps it entirely inside the cell box instead of
-   relying on a bigger grid gap. Color/width still inherit base.css's global
-   a:focus rule. */
+/* 그리드의 overflow:hidden이 첫 행/열 셀의 포커스 링을 잘라내므로
+   2px 안쪽으로 그려 셀 박스 안에 완전히 들어오게 한다. */
 .day-cell:focus,
 .day-cell:focus-visible {
   outline-offset: -2px;
 }
 
-/* Hover feedback replacement: cells no longer carry a border to swap color
-   on, so hover now tints the surface instead. Excluded for the selected/void
-   states, which already carry their own background. */
+/* 셀에 테두리가 없어 hover는 배경색을 바꾸는 방식으로 대신한다.
+   선택/공백 상태는 이미 자기 배경이 있어 제외한다. */
 .day-cell:not([data-selected="true"]):not([data-void]):hover {
   background: var(--bg-soft);
 }
 
-/* ── date items: 3px category bar + 1-line title, "외 N개" overflow (D-1:
-   Korean copy kept, not the mock's "+N more"). */
+/* ── date items: 3px category bar + 1-line title, "외 N개" overflow ──── */
 .day-item-cat[data-category="popup_store"],
 .day-mobile-dot[data-category="popup_store"] {
   background: var(--cat-popup_store-ink);
@@ -237,9 +210,8 @@
   background: var(--cat-fan_meeting-ink);
 }
 
-/* The bar/title pair only works inside a flex context: without this the
-   3px bar is an inline box, `width` does not apply, and the category swatch
-   disappears entirely while still reporting the right background colour. */
+/* flex 컨텍스트가 없으면 3px 막대는 인라인 박스라 width가 적용 안 돼
+   색은 맞는데 너비가 0으로 사라진다. */
 .day-item {
   display: flex;
   align-items: center;
@@ -263,9 +235,8 @@
   white-space: nowrap;
 }
 
-/* Same trap as .day-item above: the dots are inline <span>s, so without a
-   flex/inline-flex parent their `width` is ignored and they render at 0px
-   while still reporting the correct 6px computed width. */
+/* .day-item과 같은 함정이다 — inline <span>이라 flex 부모가 없으면
+   width가 무시돼 0px로 그려진다. */
 .day-mobile-cats {
   display: inline-flex;
   gap: 3px;
@@ -355,10 +326,8 @@
   background: var(--row-cat-ink);
 }
 
-/* status.js appends .status-inline-error via
-   .closest("[data-status-error-container]"), which is .agenda-row itself —
-   without this it would land in the 3rd (auto) column instead of spanning
-   the row (BIR criterion 4). */
+/* status.js가 .agenda-row 자체에 .status-inline-error를 붙인다. 이
+   규칙이 없으면 오류가 3번째(auto) 열에만 갇혀 행 전체를 못 덮는다. */
 .agenda-row > .status-inline-error {
   grid-column: 1 / -1;
 }
@@ -419,8 +388,8 @@
   gap: 0.625rem;
 }
 
-/* Mirrors home.css's .section-more: the agenda's detail action is a compact
-   brand link, not the shared archive side-action button. */
+/* home.css의 .section-more와 같은 방식으로, 공용 archive 버튼이 아니라
+   작은 brand 텍스트 링크다. */
 .agenda-more {
   position: relative;
   font-size: var(--fs-sm);
@@ -450,18 +419,14 @@
 }
 
 @media (max-width: 45rem) {
-  /* Restore everything the desktop block killed above. `gap` has to be
-     restated here too: the desktop `gap: 1px` above sits outside any media
-     query and is declared later in the cascade than components/calendar.css's
-     own `@media (max-width: 45rem) { gap: 2px }`, so it would otherwise win
-     on mobile and quietly replace the 320px 7-column arithmetic that file
-     already validated. */
+  /* 위 데스크톱 블록이 없앤 것들을 여기서 되돌린다. `gap`도 다시 선언해야
+     한다 — 데스크톱 `gap: 1px`이 캐스케이드상 나중이라 안 그러면
+     모바일에서도 그 값이 이겨버린다. */
   .month-grid {
     gap: 2px;
   }
 
-  /* The body loses its border here, so the header's border compensation goes
-     with it; gap follows the mobile 2px like everything else. */
+  /* 본문이 테두리를 잃으니 헤더의 테두리 보정값도 함께 없앤다. */
   .month-grid-head {
     gap: 2px;
     padding-inline: 0;
@@ -518,14 +483,9 @@
   }
 }
 
-/* ── agenda row action links (자세히 / 로그인하고 찜하기) hover ─────────
-   `.side-action-link` is a SHARED component (components/cards.css) that the
-   archive calendar, 찜 목록, and 나의 일정 pages also render, so this hover is
-   scoped to `.events-page .agenda-end` — styling the bare class here would
-   silently restyle those three pages too.
-
-   Same hover language as the collection page's chips: brand border, a
-   background shift, and brand ink. */
+/* ── agenda row action links (자세히 / 로그인하고 찜하기) hover ───────── */
+/* `.side-action-link`은 다른 페이지도 쓰는 공용 컴포넌트라 여기서는
+   `.events-page .agenda-end`로 좁혀 다른 페이지에 영향이 없게 한다. */
 .events-page .agenda-end .side-action-link {
   transition: background-color 0.15s ease, border-color 0.15s ease,
     color 0.15s ease;

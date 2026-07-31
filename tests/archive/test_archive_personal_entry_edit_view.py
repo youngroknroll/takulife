@@ -1,10 +1,9 @@
-"""Tests for the personal-entry (unofficial place) edit page.
+"""비공식 장소(PersonalEntry) 수정 페이지 테스트.
 
-Split into its own file rather than folded into
-test_archive_personal_entry_detail_view.py, mirroring how the sibling
-collection domain keeps detail and edit in separate files
-(test_archive_collection_detail_view.py / test_archive_collection_edit_view.py)
-even though both target the same aggregate.
+test_archive_personal_entry_detail_view.py에 합치지 않고 별도 파일로 둔 것은,
+같은 아그리게이트를 다루면서도 상세/수정 파일을 나누는 컬렉션 도메인의 관례
+(test_archive_collection_detail_view.py / test_archive_collection_edit_view.py)를
+따른 것이다.
 """
 import pytest
 from django.test import Client

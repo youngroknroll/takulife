@@ -1,15 +1,10 @@
 {% comment %}
-_site_header.html — global site header rendered once from base.html on every page.
+전체 사이트 헤더 — base.html에서 모든 페이지에 한 번만 렌더한다. 브랜드 링크,
+주 내비게이션(홈/이벤트/컬렉션/내 활동), 로그인 상태 내비(_topbar.html)를
+담는다.
 
-Provides the persistent site frame the per-page topbars never did:
-  - brand (home link)
-  - primary navigation (홈 / 이벤트 / 컬렉션 / 내 활동), current section highlighted
-  - auth nav (login state) via _topbar.html
-
-Active section is derived from request.path (request context processor is
-already enabled — _topbar.html relies on request.user). The four sections
-never overlap: "/" is home only, "/events/", "/collection/", and "/archive/"
-are exclusive prefixes.
+활성 구획은 request.path로 판단한다. 네 구획은 절대 겹치지 않는다 — "/"는
+홈 전용이고 "/events/", "/collection/", "/archive/"는 서로 배타적인 접두사다.
 {% endcomment %}
 <header class="site-header">
   <div class="site-header-inner">

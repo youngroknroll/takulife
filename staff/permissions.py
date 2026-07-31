@@ -1,8 +1,4 @@
-"""Access gate for the Staff Console (/staff/).
-
-`staff` is a namespaced view module, not a Django app — this is intentionally
-plain and dependency-free (no models, no RBAC/Groups).
-"""
+"""스태프 콘솔(/staff/) 접근 관문."""
 from functools import wraps
 
 from django.conf import settings
@@ -11,16 +7,11 @@ from django.core.exceptions import PermissionDenied
 
 
 def staff_console_required(view_func):
-    """Gate a view to staff users only.
+    """스태프만 통과시키는 뷰 관문.
 
-    Mirrors Django's `AccessMixin.handle_no_permission` semantics rather than
-    `user_passes_test`: an anonymous user is redirected to the standard site
-    login (settings.LOGIN_URL, NOT the Django admin login — the Staff Console
-    is a first-class app surface, not an admin-only tool), preserving `next`.
-    An authenticated but non-staff user gets a 403 (PermissionDenied) instead
-    of being bounced back to login — redirecting them to LOGIN_URL would
-    trigger allauth's authenticated-redirect and loop forever, since they are
-    already logged in.
+    미인증 사용자는 next를 유지한 채 사이트 로그인으로 보낸다. 인증은
+    됐지만 스태프가 아니면 403을 준다 — 로그인 화면으로 다시 보내면 이미
+    로그인된 상태라 allauth가 리다이렉트를 무한히 반복시키기 때문이다.
     """
 
     @wraps(view_func)

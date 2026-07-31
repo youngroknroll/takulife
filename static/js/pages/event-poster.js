@@ -1,22 +1,13 @@
 /**
- * event-poster.js — Staff poster upload/delete for takulife event detail page
- *
- * Handles:
- *   - File input change → immediate URL.createObjectURL preview (prevents
- *     wrong-file upload by showing what will be uploaded before confirming)
- *   - Upload button → TakuAPI.upload to POST /api/events/<id>/poster/ with
- *     multipart FormData; 200 → reload; 400 → inline error; 403 → inline error
- *   - Delete button → confirm dialog → TakuAPI.del to DELETE
- *     /api/events/<id>/poster/; 204 → reload
- *
- * Relies on window.TakuAPI (api.js) for all requests.
- * All DOM writes use textContent only (no innerHTML with API data).
+ * 이벤트 상세 페이지의 스태프용 포스터 업로드·삭제.
+ * 파일 선택 즉시 미리보기를 보여줘 잘못된 파일을 올리는 실수를 막는다.
+ * 화면 갱신은 항상 textContent만 사용해 API 응답으로 HTML을 만들지 않는다.
  */
 
 (function () {
   "use strict";
 
-  // ── DOM helpers ─────────────────────────────────────────────────────────
+  // ── DOM 헬퍼 ─────────────────────────────────────────────────────────
 
   function setError(el, message) {
     if (!el) { return; }
@@ -28,9 +19,7 @@
     el.textContent = "";
   }
 
-  // Styled confirm modal (confirm-modal.js) with a native window.confirm
-  // fallback if that script didn't load — same pattern as status.js/visit.js/
-  // draft.js's askConfirm.
+  // 공용 모달이 로드되지 않았으면 기본 confirm으로 대체한다.
   function askConfirm(message) {
     if (typeof window.TakuConfirm === "function") {
       return window.TakuConfirm(message);
@@ -38,7 +27,7 @@
     return Promise.resolve(window.confirm(message));
   }
 
-  // ── file-select trigger (visually-hidden input + "+" tile button) ─────────
+  // ── 파일 선택 트리거(숨긴 input + "+" 버튼) ─────────
 
   function bindTrigger(triggerBtn, fileInput) {
     if (!triggerBtn || !fileInput) { return; }
@@ -48,14 +37,12 @@
     });
   }
 
-  // ── preview ──────────────────────────────────────────────────────────────
+  // ── 미리보기 ──────────────────────────────────────────────────────────────
 
   function bindFilePreview(fileInput, previewImg) {
     if (!fileInput || !previewImg) { return; }
 
-    // Re-selecting a file (or clearing the input) after an earlier preview
-    // used to leak the previous blob URL — nothing ever revoked it, unlike
-    // the same pattern in visit_create.js/visit_edit.js.
+    // 이전 미리보기의 blob URL을 해제하지 않으면 다시 선택할 때마다 메모리가 샌다.
     var currentObjectUrl = null;
 
     fileInput.addEventListener("change", function () {
@@ -74,7 +61,7 @@
     });
   }
 
-  // ── upload ────────────────────────────────────────────────────────────────
+  // ── 업로드 ────────────────────────────────────────────────────────────────
 
   function bindUpload(uploadBtn, fileInput, errorEl) {
     if (!uploadBtn || !fileInput) { return; }
@@ -104,8 +91,7 @@
       );
 
       if (result.status === 200) {
-        // Reload-equivalent: destination is the current URL (WED §5-2
-        // boundary ③ — same fidelity as the reload it replaces).
+        // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
         window.TakuAPI.commitAndNavigate(uploadBtn, window.location.href);
         return;
       }
@@ -136,7 +122,7 @@
     });
   }
 
-  // ── delete ────────────────────────────────────────────────────────────────
+  // ── 삭제 ────────────────────────────────────────────────────────────────
 
   function bindDelete(deleteBtn, errorEl) {
     if (!deleteBtn) { return; }
@@ -160,8 +146,7 @@
       );
 
       if (result.status === 204) {
-        // Reload-equivalent: destination is the current URL (WED §5-2
-        // boundary ③ — same fidelity as the reload it replaces).
+        // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
         window.TakuAPI.commitAndNavigate(deleteBtn, window.location.href);
         return;
       }
@@ -187,7 +172,7 @@
     });
   }
 
-  // ── init ──────────────────────────────────────────────────────────────────
+  // ── 초기화 ──────────────────────────────────────────────────────────────────
 
   function init() {
     var fileInput = document.getElementById("poster-file-input");
@@ -198,7 +183,7 @@
     var errorEl = document.getElementById("poster-error");
 
     if (!fileInput && !uploadBtn && !deleteBtn) {
-      // Staff block not present (non-staff user or not event detail page)
+      // 스태프용 블록이 없으면(비스태프 사용자 또는 다른 페이지) 아무 것도 하지 않는다
       return;
     }
 

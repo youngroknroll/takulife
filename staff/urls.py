@@ -1,8 +1,7 @@
-"""Staff Console URL routing (/staff/).
+"""스태프 콘솔(/staff/) URL 라우팅.
 
-`path("staff/", include("staff.urls"))` consumes the entire `/staff/` prefix
-in config/urls.py — every `/staff/...` route must live here, or it will
-404 (no fallback to the top-level urlconf for this prefix).
+config/urls.py의 `include("staff.urls")`가 `/staff/` 전체를 이 파일에
+넘긴다. 여기 없는 `/staff/...` 경로는 404가 된다.
 """
 from django.urls import path
 from django.views.generic import RedirectView

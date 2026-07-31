@@ -23,14 +23,12 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventQuerySerializer(serializers.Serializer):
-    # "all" has no branch in with_public_status; it falls through to the
-    # catch-all and behaves the same as an unset status (no filtering).
+    # "all"은 with_public_status에 별도 분기가 없어 필터 없음과 동일하게 동작한다.
     STATUS_CHOICES = ("upcoming", "ongoing", "closing_soon", "ended", "all")
     SORT_CHOICES = ("closing_soon", "start_asc", "newest")
 
     q = serializers.CharField(required=False, allow_blank=True)
-    # region/category are multi-value: ?region=seoul&region=gyeonggi → OR filter.
-    # The parser normalises a single value into a 1-element list before validation.
+    # region/category는 다중값이다: ?region=seoul&region=gyeonggi → OR 필터.
     region = serializers.ListField(child=serializers.CharField(), required=False)
     category = serializers.ListField(child=serializers.CharField(), required=False)
     work_title = serializers.CharField(required=False, allow_blank=True)

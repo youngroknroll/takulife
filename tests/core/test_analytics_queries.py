@@ -1,6 +1,5 @@
-"""core.analytics aggregate read queries (PR-0e checkpoint B13).
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+"""core.analytics 집계 조회 쿼리 검증
+(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
 import datetime
 

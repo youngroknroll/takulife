@@ -1,8 +1,6 @@
 /**
- * staff-shell.js — on load, scroll the active console tab into view inside
- * the horizontally scrolling tab row (static/css/components/staff-shell.css
- * .staff-shell-tabs) so it's never hidden off-screen on narrow viewports.
- * No animation — jumps straight to position.
+ * 좁은 화면의 가로 스크롤 탭 목록에서 현재 활성 탭이 화면 밖에 가려지지
+ * 않도록 로드 시 즉시 스크롤해 보여준다. 애니메이션 없이 바로 이동한다.
  */
 (function () {
   "use strict";

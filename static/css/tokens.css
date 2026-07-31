@@ -1,18 +1,4 @@
-/*
- * tokens.css — design token single source of truth
- *
- * PR-R1 (UI refresh, plan of record: prompt_plan.md §0) replaced the palette
- * values below with the confirmed "티켓 스텁" design system values. Token
- * NAMES were kept identical to their pre-refresh names so every existing
- * consumer (components/objects/pages CSS) picks up the new palette without
- * further edits. Historical value provenance (pre-refresh, for reference):
- *
- * --bg:          #f4f7fb  (5/8 pages; event_list/detail used #f3f6fb)
- * --text:        #15243a  (5/8 pages; home/list/detail used #142034)
- * --muted:       #607389  (5/8 pages; home/list/detail used #617286)
- * --brand-soft:  #e8f0ff  (5/8 pages; home/list used #e7efff)
- * --shadow:      0 18px 38px ... (5/8 pages; list/detail used 0 16px 36px)
- */
+/* tokens.css — 디자인 토큰 단일 출처. 여기 값을 바꾸면 전체 화면에 반영된다. */
 :root {
   color-scheme: light;
 
@@ -25,26 +11,18 @@
   --muted: #5b6472;
   --brand: #d8432a;
   --brand-soft: #fbe7e2;
-  /* --brand as TEXT directly on white/--surface measures 4.42:1 — just
-     under the 4.5:1 AA threshold for normal-size text (verified via
-     PR-R3's contrast spot-check). --brand itself is left untouched (it is
-     overwhelmingly used as a solid background under white text, or as a
-     border/soft-bg pairing, both of which pass) — this darker ink (the
-     same #C13A22 plan §0 already names as --brand's hover shade, 5.39:1
-     on white) is for the few small-text-on-white spots specifically. */
+  /* --brand를 흰 배경 위 글자색으로 쓰면 대비 4.42:1로 AA 4.5:1에 살짝
+     못 미친다. 이 잉크색(5.39:1)은 작은 글자에 쓸 때만 쓴다. */
   --brand-ink: #c13a22;
   --hl: #d8ff3d;
-  /* Fixed ink for text sitting on --hl (text.css .hl) — --hl itself gets a
-     dark-mode remap, but text.css's original var(--text) pairing would
-     invert to a light-on-light failure once --text flips light-on-dark
-     (2026-07-13 다크모드 계획 §"var(--text) 역전 함정"). Theme-agnostic by
-     design, so it lives in base :root, not the dark override block below. */
+  /* --hl 위에 놓일 글자색은 고정값으로 둔다 — --text를 그대로 쓰면
+     다크모드에서 --text 색이 반전될 때 밝은 배경에 밝은 글자가 겹쳐
+     안 보이게 된다. */
   --hl-ink: #1c222e;
   --focus: #8a94a6;
 
-  /* Status pairs — soft/ink. mint = 진행중, amber = 종료임박, pink = 찜/관심
-     (tone-adjusted to sit with the new red accent), rose = 에러(기존 유지),
-     up = 예정 (신규). */
+  /* 상태 색상 쌍(배경/잉크): mint=진행중, amber=종료임박, pink=찜·관심,
+     rose=에러, up=예정. */
   --pink-soft: #fce7ee;
   --pink-ink: #b01e52;
   --mint-soft: #dff3e6;
@@ -55,105 +33,68 @@
   --rose-ink: #be123c;
   --up-soft: #e4eafb;
   --up-ink: #33488f;
-  /* teal = 내 활동(archive) 계열 전용 액센트(2026-07-23 에디토리얼 v2).
-     칩·서브탭 밑줄·페이저 current에 쓰인다. 시안의 `--sat`은 별도 토큰을
-     만들지 않는다 — 라이트 #33488f/다크 #8897c8가 위 --up-ink와 정확히
-     동일해 var(--up-ink)를 직접 매핑한다. */
+  /* teal = 내 활동(archive) 전용 액센트. 라이트/다크 값이 위 --up-ink와
+     같아 별도 색상 체계 없이 그대로 맞춰 정의했다. */
   --teal: #0e7490;
   --teal-soft: #d3edf2;
   --teal-ink: #0e7490;
-  /* end = 종료 (event lifecycle's 4th state). Also reused for the archive
-     "missed" status button (PR-R3), which was a stray grey literal
-     (#f4f5f7/#d9dde4/#5d6673) before this token existed.
-     Ink is a minor AA fix off plan §0's literal #6B6F76: that value is
-     4.28:1 on --end-soft (fails the 4.5:1 text threshold — verified via
-     PR-R3's contrast spot-check), so it's darkened slightly to #64686e
-     (4.75:1), same hue/weight, imperceptibly darker. */
+  /* end = 종료 상태(찾아온 기록의 4번째 상태). 잉크색은 대비 4.28:1로
+     AA 기준에 못 미쳐 4.75:1로 살짝 어둡게 보정했다. */
   --end-soft: #ececef;
   --end-ink: #64686e;
-  /* muted-soft = neutral/"비공식" marker background, paired with --muted as
-     its ink (PR-R3: was a literal #eef0f3 duplicated in category.css and
-     archive_visits.css). */
+  /* muted-soft = 중립·"비공식" 마커 배경, 잉크는 --muted. */
   --muted-soft: #eef0f3;
 
-  /* Narrow accent borders for archive calendar day/legend swatches
-     (PR-R3: were literal hex values, unnamed, duplicated across .day.* and
-     .legend-dot.*). Values preserved as-is — a touch darker than their
-     matching -soft background so the swatch border reads against --bg-card. */
+  /* 활동 달력 날짜/범례용 얇은 테두리 색. 각 -soft 배경보다 살짝 어둡게
+     둬 --bg-card 위에서도 테두리가 구분되게 했다. */
   --rose-border: #f8b7c3;
-  /* Wraps the literal #f8bfd8 used by .interest-btn / .nav-interest
-     (PR-R3) — a pastel pink border lighter than --pink-ink, kept as its
-     own token rather than aliased to an existing one since no exact match
-     exists in the palette. */
+  /* 찜 버튼 테두리 전용 색. 팔레트에 딱 맞는 기존 값이 없어 별도로 뒀다. */
   --pink-border: #f8bfd8;
 
   --shadow: 0 18px 38px rgba(17, 31, 55, 0.08);
 
-  /* ── translucent chrome (다크모드 계획 PR-2 §3) — token pairs instead of
-     scattered [data-theme] selector overrides, per-token dark value lives
-     in the :root[data-theme="dark"] block below. */
-  /* Sticky site header (site-chrome.css .site-header). */
+  /* ── translucent chrome ─────────────────────────────────────── */
+  /* 반투명 크롬 색상들. 다크모드 값은 각각 아래 :root[data-theme="dark"]
+     블록에 짝으로 정의돼 있다. */
+  /* 상단 고정 헤더(site-chrome.css .site-header)용. */
   --chrome-glass: rgba(255, 255, 255, 0.9);
-  /* Mobile fixed CTA bars (event_detail.css / archive.css .mobile-cta) —
-     a slightly higher alpha than --chrome-glass, its own token. */
+  /* 모바일 고정 CTA 바(.mobile-cta)용. --chrome-glass보다 불투명도가 조금 높다. */
   --chrome-glass-cta: rgba(255, 255, 255, 0.96);
   --shadow-cta: 0 -8px 24px rgba(17, 31, 55, 0.1);
-  /* Floating dropdown panels (site-chrome.css .account-menu-panel,
-     event_list.css .region-select-menu — identical value, shared token). */
+  /* 드롭다운 패널(.account-menu-panel, .region-select-menu 등)용. 값이
+     같아 토큰 하나로 공유한다. */
   --shadow-dropdown: 0 8px 24px rgba(17, 31, 55, 0.14);
-  /* Modal/confirm backdrop (modal.css .auth-modal-overlay, confirm-
-     modal.css .confirm-overlay — identical value, shared token). */
+  /* 모달·확인창 배경 오버레이용. 값이 같아 토큰 하나로 공유한다. */
   --backdrop: rgba(17, 31, 55, 0.45);
 
-  /* Shape tokens (PR-R2 consumes these for component signatures). */
   --radius-card: 10px;
   --radius-control: 8px;
-  /* Chips, badges, and pill-shaped status/action controls (plan §0).
-     The former "ticket tab" signature (one rounded end + one clipped end,
-     evoking a torn ticket stub) is retired: user-confirmed global switch
-     to fully circular pills to match the editorial v3 mock, which draws
-     status pills and filter chips as pure 999px capsules
-     (.docs/plans/2026-07-23-activity-editorial-v3-plan.md, 확정 #1 —
-     user decision, not agent judgement). The mock only specifies status
-     pills/filter chips; poster badges, favorite buttons, and category
-     chips also consume this token and change together as a side effect,
-     though the mock never addressed them — flag for backlog review if
-     that turns out unwanted. Consumers as of 2026-07-23 (`rg -l
-     "radius-chip" static/css/`): pages/archive_statuses.css,
-     pages/archive_visits.css, pages/archive.css, pages/event_detail.css,
-     components/cards.css, components/controls.css,
-     components/category.css. */
+  /* 칩·배지·필 형태 라운드 값. 예전의 "티켓 스텁" 모양(한쪽만 둥근 형태)은
+     폐기하고 완전한 캡슐형으로 통일했다(사용자 확정 사안). */
   --radius-chip: 999px;
 
-  /* Type scale (§0 6-step scale). Applied across pages/*.css by PR-R3
-     (this PR) for the 0.74–0.95rem band; --fs-xl is reserved for the single
-     most hero-like heading per page (currently only the home hero h1) so
-     the scale doesn't flatten the existing heading hierarchy. */
+  /* 6단계 글자 크기 체계. --fs-xl은 페이지당 가장 강조되는 제목 한 곳에만
+     쓴다(현재는 홈 히어로 h1뿐) — 그래야 기존 제목 위계가 흐트러지지
+     않는다. */
   --fs-xs: 0.75rem;
   --fs-sm: 0.8rem;
   --fs-md: 0.875rem;
   --fs-base: 0.95rem;
   --fs-lg: 1.125rem;
   --fs-xl: 1.75rem;
-  /* Mobile companion for --fs-xl (§0: "1.75(모바일 1.375)rem"). */
+  /* --fs-xl의 모바일용 크기. */
   --fs-xl-mobile: 1.375rem;
 
-  /* Soft neutral surfaces (PR-R1 follow-up: re-toned off the old blue tint
-     to sit with the new palette — border-soft a touch lighter than --line,
-     bg-soft/bg-card a neutral wash between --bg(paper) and --surface). */
+  /* 중성 배경 톤. border-soft는 --line보다 살짝 밝고, bg-soft/bg-card는
+     --bg와 --surface 사이 중간 톤이다. */
   --border-soft: #e6e9ef;
   --bg-soft: #f7f8fa;
   --bg-card: #fbfbfc;
 
-  /* Category palette — low-saturation tones, kept distinct from the four
-     status hues (pink/brand/mint/grey) so category and status never clash.
-     -ink is read via inline `var(--cat-{{ category_slug }}-ink, var(--brand-ink))`
-     in templates (home.html, events/detail.html, poster/status/visit
-     partials), and event_list.css / event_calendar.css / home.css also
-     reference the six -ink names literally by category slug.
-     -soft (12 defs: 6 light-mode above + 6 dark-mode override below) has no
-     literal consumer anywhere — kept anyway to preserve the soft/ink pair
-     structure per category; do not delete for "unused" without re-checking. */
+  /* 카테고리 배색 — 상태 색상(핑크/브랜드/민트/회색)과 겹치지 않게 채도를
+     낮췄다. -ink는 템플릿에서 카테고리 slug로 직접 참조한다. -soft는
+     지금 당장 참조하는 곳이 없어 보여도 지우지 마라 — 카테고리마다
+     soft/ink 쌍 구조를 유지하려고 남겨둔 것이다. */
   --cat-popup_store-soft: #f3e8ff;
   --cat-popup_store-ink: #7e22ce;
   --cat-collaboration_cafe-soft: #f5ecdf;
@@ -167,23 +108,13 @@
   --cat-fan_meeting-soft: #fce7f3;
   --cat-fan_meeting-ink: #9d174d;
 
-  /* Series (work_title) accent palette — a different axis from --cat-*
-     above. --cat-* colors an event's fixed category enum; --series-N-ink
-     colors a free-text work_title bucketed by first-registration order
-     (see core/views.py _series_ink_classes, SERIES_INK_COUNT=12). Do not
-     mix the two axes.
-     Generated as 12 OKLCH hues at 30° steps. Lightness alternates odd/even
-     (light L=0.50/0.40, dark L=0.70/0.80) but only in the contrast-safe
-     direction — light buckets go darker only, dark buckets go lighter
-     only. Swinging both directions measured AA down to 4.21:1; this
-     one-directional alternation keeps every pairing at AA. The odd/even
-     split itself exists so colorblind users can still separate adjacent
-     hues by lightness. Verified: 3 light backgrounds × 3 dark backgrounds
-     (72 pairings), 0 below AA 4.5:1, worst case 4.91:1. Colorblindness
-     simulation: alternating lightness dropped confusable pairs from 11→5
-     (tritanopia, light) and 12→4 (tritanopia, dark).
-     No -soft companion by design — series color marks text/dots/bars
-     only, never a fill background. Add one only if that need appears. */
+  /* work_title(시리즈)별 배색 — 카테고리(--cat-*)와는 별개 축이다
+     (core/views.py의 _series_ink_classes 참고, 둘을 섞지 말 것).
+     OKLCH 30도 간격으로 12색을 만들고 홀짝 명도를 다르게 둬 라이트/다크
+     모두 대비 AA를 지킨다(72개 배경 조합 실측, 최저 4.91:1). 홀짝을
+     나눈 이유는 색약자도 인접 색을 명도 차이로 구분하게 하려는 것이다.
+     배경 채우기용 -soft 짝은 의도적으로 두지 않았다 — 필요해지면 그때
+     추가한다. */
   --series-1-ink: #a6373f;
   --series-2-ink: #743200;
   --series-3-ink: #825b00;
@@ -198,12 +129,10 @@
   --series-12-ink: #7c1852;
 }
 
-/* ── dark mode token overrides ──────────────────────────────────
- * Values are the confirmed palette in .docs/plans/2026-07-13-dark-mode-
- * palette.md (designer proposal → PO WCAG spot-check, 4 inks raised for
- * contrast, brand-ink margin widened) — implemented as-is, not re-derived
- * here. Single override block per plan §1 (no duplicate light/dark rule
- * sets elsewhere); static/js/shared/theme.js sets data-theme on <html>.
+/* ── dark mode token overrides ────────────────────────────────── */
+/* 다크모드 확정 팔레트를 그대로 반영했다. 다크/라이트 오버라이드는 이
+ * 블록 하나로 모아 뒀고, static/js/shared/theme.js가 <html>에
+ * data-theme를 설정한다.
  */
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -220,13 +149,9 @@
   --focus: #969fb0;
 
   --brand: #c63d24;
-  /* PR-4 대비 감사 발견: 원안(#D98272)이 --bg-card 다크 위에서 4.4985:1로
-     AA 4.5:1에 0.03%(0.0015) 못 미침(.side-list a — 기록장/방문 기록/
-     예정 목록/찜 목록/스태프 대시보드 바로가기 공유 컴포넌트 — 실측
-     발견). HSL L을 64.9%→65.4%로 미세 상향해 #DA8474로 보정: bg-card
-     4.588:1(통과) / surface 5.637:1(기존 5.53에서 개선) / brand-soft
-     4.827:1(기존 4.73에서 개선) — 이미 통과하던 다른 페어링도 전부
-     같이 개선되고 역행 없음. */
+  /* 원안 색이 --bg-card 다크 배경 위에서 대비 4.4985:1로 AA 기준에
+     근소하게 못 미쳐 값을 미세 조정했다(4.588:1로 통과, 다른 배경
+     페어링도 함께 개선됨). */
   --brand-ink: #da8474;
   --brand-soft: #422824;
   --hl: #c1e52e;
@@ -244,11 +169,9 @@
   --cat-fan_meeting-soft: #412530;
   --cat-fan_meeting-ink: #da769e;
 
-  /* All 12 series buckets need a dark override here — a missing entry
-     falls back silently to var(--series-ink, var(--muted)) with no
-     error or console warning, turning that bucket flat grey in dark
-     mode. This project has hit that exact silent-fallback failure
-     mode twice already; keep the count at 12. */
+  /* 시리즈 색 12개는 전부 다크값을 채워야 한다 — 하나라도 빠지면 아무
+     오류 없이 조용히 회색으로 대체된다(이 프로젝트에서 실제로 두 번
+     발생한 실패 유형). */
   --series-1-ink: #da8282;
   --series-2-ink: #f7a97c;
   --series-3-ink: #c29647;
@@ -270,30 +193,23 @@
   --amber-ink: #dba466;
   --rose-soft: #43232b;
   --rose-ink: #e0718c;
-  /* --rose-border had no dark override — the light block's rule (78-82행:
-     "a touch darker than -soft so the swatch reads against --bg-card")
-     inverts in dark mode, where a border must be lighter than the
-     background to read (as --line/--border-soft already are), so the
-     light #f8b7c3 leaked straight through and rendered too bright on
-     delete buttons / error banners. #c46278 verified 4.01:1 on --surface
-     and 3.54:1 on --rose-soft, both above the 3:1 non-text threshold
-     (WED value, contrast independently checked). */
+  /* 라이트 모드는 테두리를 배경보다 어둡게 잡지만, 다크에서는 반대로
+     배경보다 밝아야 눈에 띈다. 다크값이 없어 라이트 값이 그대로 새어
+     나와 삭제 버튼·오류 배너가 지나치게 밝게 보이던 결함을 고쳤다
+     (--surface 대비 4.01:1, --rose-soft 대비 3.54:1로 확인). */
   --rose-border: #c46278;
   --up-soft: #242a3d;
   --up-ink: #8897c8;
-  /* 시안 원안 --teal #2f9bad는 흰 텍스트 대비 3.27:1로 AA 4.5:1 미달
-     (오케스트레이터 실측) — #17707f로 보정해 5.74:1 확보(사용자 확정).
-     --teal-ink는 시안 원안(#5ac9d4) 그대로 유지. */
+  /* 원안 색은 흰 글자 대비 3.27:1로 AA 4.5:1에 못 미쳐 5.74:1로
+     보정했다(사용자 확정). --teal-ink는 원안 값을 그대로 유지했다. */
   --teal: #17707f;
   --teal-soft: #173b42;
   --teal-ink: #5ac9d4;
   --end-soft: #2d3239;
   --end-ink: #a5acb6;
-  /* PR-4 대비 감사 발견: --muted-soft에 다크값이 없어(PR-1 매핑 누락)
-     category.css/staff_events.css/archive_visits.css의 "비공식" 마커
-     칩이 다크에서도 라이트 배경(#eef0f3)에 다크 잉크(--muted #A2A9B9)
-     텍스트가 얹혀 2.06:1로 렌더되던 실결함. --surface-alt 다크값을
-     그대로 재사용(동일한 "중성 대체 표면" 역할, muted-ink 대비 6.01:1). */
+  /* --muted-soft에 다크값이 없어 "비공식" 마커 칩이 다크모드에서도 밝은
+     배경 위에 어두운 글자가 얹혀 대비 2.06:1로 렌더되던 결함을 고쳤다.
+     --surface-alt 다크값을 그대로 재사용했다(대비 6.01:1). */
   --muted-soft: #272b35;
 
   --shadow: 0 18px 38px rgba(255, 255, 255, 0.04);
@@ -305,40 +221,23 @@
   --backdrop: rgba(0, 0, 0, 0.6);
 }
 
-/* ── --page-pad-x: page/header/footer edge-margin token ───────
- * User-confirmed tiers: mobile <=45rem(720px) 16px / tablet 45-64rem 24px /
- * desktop >64rem(1024px) 32px. 64rem is a new breakpoint (the existing
- * 60rem/900px was proposed and rejected in favor of the user's explicit
- * 1024px choice) — the other 8 breakpoints already in the codebase
- * (see base.css's own comment) are untouched; this token only reuses
- * 45rem for its mobile tier.
- *
- * Before this token, base .page sat at a fixed 20px horizontal padding
- * above 700-720px, while roughly half the per-page mobile overrides used
- * 12px and the other half 14px (two different ad-hoc mobile breakpoints).
- * Consumers: .page/.site-messages (base.css), .site-header-inner/
- * .site-footer-inner/.site-footer-base-inner (site-chrome.css),
- * .staff-shell-topbar/.staff-shell-tabrow (staff-shell.css), and
- * .auth-panel-form's mobile-only override (auth.css — the fixed-width form
- * panel; only at mobile does the left panel drop and this one become the
- * whole page, so only there does it need the page edge margin).
- * Each consumer keeps its own top/bottom padding and any of its own
- * *other* breakpoints (mobile-cta clearance, layout reflow, header/staff
- * -shell restructuring) untouched — only the horizontal value is
- * token-driven now, so it stays correct regardless of which rule wins
- * that file's own cascade. */
+/* ── --page-pad-x: 페이지 좌우 여백 토큰 ───────────────────────── */
+/* 모바일(45rem 이하) 16px / 태블릿(45~64rem) 24px / 데스크톱(64rem 초과)
+ * 32px 3단계로 통일했다(사용자 확정). 각 소비 파일은 자기 상하 여백과
+ * 다른 브레이크포인트는 그대로 두고, 좌우 값만 이 토큰을 따른다.
+ */
 :root {
-  --page-pad-x: 2rem; /* 32px, desktop default (>64rem) */
+  --page-pad-x: 2rem; /* 32px, 데스크톱 기본값(>64rem) */
 }
 
 @media (max-width: 64rem) {
   :root {
-    --page-pad-x: 1.5rem; /* 24px, tablet */
+    --page-pad-x: 1.5rem; /* 24px, 태블릿 */
   }
 }
 
 @media (max-width: 45rem) {
   :root {
-    --page-pad-x: 1rem; /* 16px, mobile */
+    --page-pad-x: 1rem; /* 16px, 모바일 */
   }
 }

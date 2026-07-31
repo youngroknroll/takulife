@@ -11,15 +11,9 @@
 {% block content %}
   <main class="page activity-page" id="content">
     {% comment %}
-    Masthead — activity-calendar-editorial plan §8-A R-1/D9: identical class
-    structure to templates/core/archive/index.html's own hero (`.hero
-    .hero-activity` / `.hero-lead` / `.summary-grid` / `.activity-view-toggle`
-    / `.hero-action`), all styled by the now-shared pages/archive.css (WED
-    §8-A-1 pre-spec item 1 — the earlier "duplicate, don't link archive.css"
-    call is superseded for this track: archive.css's rules are already
-    scoped to `.hero-activity`/`.activity-toolbar`, not the bare `.hero` that
-    caused the historical home.html leak, so a second scoped consumer can't
-    reproduce that leak mechanism).
+    히어로는 index.html과 같은 클래스 구조를 써서 archive.css를 그대로 재사용한다.
+    `.hero-activity`로 범위가 좁혀져 있어 과거 home.html에서 있었던 스타일 누출이
+    재현되지 않는다.
     {% endcomment %}
     <section class="hero hero-activity">
       <div class="hero-lead">
@@ -49,26 +43,10 @@
     </section>
 
     {% comment %}
-    Sub-nav / search / 찜 목록 rail — same 3-column `.activity-toolbar` grid
-    as index.html (archive.css), with 찜 목록 rendered as index.html's own
-    literal anchor outside `_archive_nav.html`'s `<nav>` (hide_interest=True).
-    tests/archive/test_archive_interest_placement.py currently asserts the
-    opposite ("찜 stays inside <nav>" for /archive/calendar/) — that guard
-    needs the same "moved outside" generalization index.html already has
-    (plan §8-A D7); left to the Backend & Integration Engineer, out of this
-    role's file scope (templates/CSS only).
-
-    Search stays a page-local plain GET form (`.calendar-search`, not
-    _archive_search.html — that partial ships archive_search.js's live-region
-    pair, which this full-PRG-reload page must not carry, plan §7-3
-    constraint 5/7 / §8-A-1 item 5). Its only archive.css-shared behavior is
-    landing in the toolbar grid's middle (1fr) track by DOM order; a single
-    mirror rule below (`.activity-toolbar .calendar-search`) matches
-    `.archive-search`'s width/centering so R-2's vertical/horizontal
-    alignment is inherited, not duplicated (WED §8-A-1 item 1 condition ①).
-    Hidden month/date/type[] preserve the displayed month so a no-match
-    search never bounces the user to today's month (events/calendar.html:
-    27-31 precedent; BIR High).
+    검색은 실시간 검색 파셜이 아니라 페이지 자체의 일반 GET 폼이다 — 이 페이지는
+    전체 새로고침 방식이라 실시간 검색용 스크립트를 함께 들고 다니면 안 된다.
+    월/날짜/유형 숨은 필드는 검색 결과가 없을 때도 보던 달을 유지해 오늘 달로
+    튕기지 않게 한다.
     {% endcomment %}
     <div class="activity-toolbar">
       {% include "core/partials/_archive_nav.html" with active="calendar" hide_interest=True %}
@@ -92,30 +70,19 @@
     <div class="activity-layout">
       <aside class="activity-aside" aria-label="활동 종류 범례 및 빠른 이동">
         {% comment %}
-        Legend rows doubled as clickable filters (plan §8-A R-5/D2-D4/D10):
-        each is a GET link to kind_filters[].toggle_url (multi-toggle,
-        preserves month/date), `aria-current="true"` (not aria-pressed — BIR
-        §8-A-2 High: anchors have no valid pressed state) when active, and
-        the accessible name already carries the "N건" unit via its own
-        visible text (no separate aria-label needed). Active state is a
-        --teal-soft row fill + bold, never color/opacity alone (D10) — the
-        swatch ink stays the kind identity signal, not a state signal.
+        범례 행은 곧 필터 링크다. 앵커에는 유효한 pressed 상태가 없어 aria-pressed
+        대신 aria-current를 쓰고, 활성 상태는 색상만이 아니라 배경 채움과 굵게로도
+        함께 표시한다.
         {% endcomment %}
         <div class="legend-caption-row">
           <h2 class="aside-label legend-caption">종류</h2>
           <a class="legend-reset" href="{{ reset_filter_url }}">전체 보기</a>
         </div>
         {% comment %}
-        Active-state accessible name (2026-07-24 사후 검토 수정, WED/BIR
-        AX-tree 실측): Chromium doesn't expose `aria-current` in the a11y
-        tree (same gap this page's today-cell `aria-current="date"` already
-        has), so a screen-reader user hears every legend link as plain
-        "…N건" with no way to tell active from inactive. `aria-current`
-        itself stays (future browser support hook + visual CSS hook) but an
-        active link also gets an explicit `aria-label` that repeats its own
-        visible text plus an "적용됨" suffix (WCAG 2.5.3 Label in Name — the
-        label must still contain the visible string verbatim). Inactive
-        links keep their default text-concatenation name unchanged.
+        Chromium은 aria-current를 접근성 트리에 노출하지 않아 스크린리더가 활성과
+        비활성 항목을 구분하지 못한다. 그래서 활성 링크에는 보이는 글자 그대로에
+        "적용됨"을 덧붙인 aria-label을 따로 붙인다(WCAG 2.5.3에 따라 원문 글자는
+        유지).
         {% endcomment %}
         <ul class="calendar-legend">
           {% for f in kind_filters %}
@@ -141,22 +108,10 @@
 
       <div class="activity-calendar-col">
         {% comment %}
-        Month label assembled from `selected_date` (not the backend's Korean
-        `month_label`) so the mock's "2026 · 7월" literal — a muted middle
-        dot between plain year and month — can be built without touching
-        core/views.py. `selected_date` is always inside the displayed
-        (year, month) (core/views.py's _parse_calendar_date guarantee), so
-        this is equivalent to the displayed month, not a different value.
-
-        `‹ 이번달 ›` (plan §8-A R-3/R-4/D6): month name on its own heading
-        line above, the trio centered on a line below via
-        `justify-content:center` (no `position:absolute`, no CSS `order` —
-        DOM order is physically `‹`, 이번달, `›`). "이번달" keeps its visible
-        text but gets a disambiguated accessible name
-        (`aria-label="오늘로 이동"`) since the visible word alone is ambiguous
-        while viewing a non-current month. Always a plain, always-enabled
-        `<a>` (no `disabled`, which is invalid on anchors anyway) — jumping
-        to today when already there is an idempotent no-op GET.
+        월 표시는 항상 화면에 보여주는 달(selected_date) 기준이다. "이번달" 링크는
+        다른 달을 보고 있을 때 글자만으로는 뜻이 모호해 aria-label="오늘로 이동"을
+        따로 붙였고, 이미 오늘 달이어도 눌러서 손해가 없는 동작이라 항상 활성 상태로
+        둔다.
         {% endcomment %}
         <nav class="calendar-month-nav" aria-label="월 이동">
           <h2 class="calendar-month-label">{{ selected_date|date:"Y" }} <span class="calendar-month-sep">·</span> {{ selected_date|date:"n" }}월</h2>

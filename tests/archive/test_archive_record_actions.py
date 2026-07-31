@@ -1,10 +1,10 @@
-"""Tests for the 내 아카이브 record-action wiring on the SSR pages.
+"""SSR 페이지에서 내 아카이브 기록 액션 연결을 검증하는 테스트.
 
-Behavior under test:
-- 기록장 (/archive/) drops the 정리 체크리스트, exposes a working 기록 추가 link,
-  and shows a per-row 기록 shortcut only on 방문 완료 (visited) rows.
-- 방문 기록 (/archive/visits/) no longer carries the 기록 안내 panel; that guidance
-  now lives on the write page (/archive/visits/new/).
+검증 대상:
+- 기록장 (/archive/)에는 정리 체크리스트가 없고, 기록 추가 링크가 실제로
+  동작하며, 방문 완료 행에만 행별 기록 바로가기가 보인다.
+- 방문 기록 (/archive/visits/)에는 더 이상 기록 안내 패널이 없다 — 그 안내는
+  이제 작성 페이지(/archive/visits/new/)에 있다.
 """
 import pytest
 
@@ -27,7 +27,7 @@ class TestArchiveRecordPageActions:
 
         resp = client.get("/archive/")
 
-        # The disabled "(준비 중)" button is gone; a real link to the write page is in.
+        # "(준비 중)" 비활성 버튼은 사라지고 작성 페이지로 가는 실제 링크가 들어왔다.
         body = resp.content.decode()
         assert "준비 중" not in body
         assert 'href="/archive/visits/new/"' in body
@@ -48,7 +48,7 @@ class TestArchiveRecordPageActions:
 
         resp = client.get("/archive/")
 
-        # The per-row 기록 shortcut carries ?subject=; the generic 기록 추가 link does not.
+        # 행별 기록 바로가기는 ?subject=를 갖지만 일반 기록 추가 링크는 갖지 않는다.
         assert b"/archive/visits/new/?subject=" not in resp.content
 
 

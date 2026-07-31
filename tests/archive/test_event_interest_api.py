@@ -1,10 +1,9 @@
-"""Behavior tests for the EventInterest API endpoints.
+"""EventInterest API 엔드포인트 동작 테스트.
 
-Endpoint coverage:
-  POST   /api/event-interests/         → 201 or 409
-  GET    /api/event-interests/         → paginated list (user-scoped)
-  GET    /api/event-interests/<id>/    → 200 or 404
-  DELETE /api/event-interests/<id>/    → 204 or 404
+  POST   /api/event-interests/         → 201 또는 409
+  GET    /api/event-interests/         → 페이지네이션 목록(사용자 범위 한정)
+  GET    /api/event-interests/<id>/    → 200 또는 404
+  DELETE /api/event-interests/<id>/    → 204 또는 404
 """
 
 import pytest
@@ -15,7 +14,7 @@ pytestmark = pytest.mark.web
 
 
 # ---------------------------------------------------------------------------
-# CREATE — 201
+# 생성 — 201
 # ---------------------------------------------------------------------------
 
 
@@ -39,7 +38,7 @@ def test_행사_찜을_등록하면_201을_응답한다(client, make_user, make_
 
 
 # ---------------------------------------------------------------------------
-# CREATE — duplicate → 409
+# 생성 — 중복 시 409
 # ---------------------------------------------------------------------------
 
 
@@ -68,7 +67,7 @@ def test_이미_찜한_행사를_다시_등록하면_409를_응답한다(client,
 
 
 # ---------------------------------------------------------------------------
-# CREATE — unpublished event → 400
+# 생성 — 미공개 행사 → 400
 # ---------------------------------------------------------------------------
 
 
@@ -89,7 +88,7 @@ def test_미공개_행사를_찜하면_400을_응답한다(client, make_user, ma
 
 
 # ---------------------------------------------------------------------------
-# LIST — user-scoped
+# 목록 — 사용자 범위 한정
 # ---------------------------------------------------------------------------
 
 
@@ -114,7 +113,7 @@ def test_찜_목록_조회는_본인_소유로만_한정된다(client, make_user
 
 
 # ---------------------------------------------------------------------------
-# LIST — newest-first ordering
+# 목록 — 최신순 정렬
 # ---------------------------------------------------------------------------
 
 
@@ -137,7 +136,7 @@ def test_찜_목록은_최신_등록순으로_정렬된다(client, make_user, ma
 
 
 # ---------------------------------------------------------------------------
-# DELETE — 204 then 404
+# 삭제 — 204 이후 404
 # ---------------------------------------------------------------------------
 
 
@@ -163,9 +162,8 @@ def test_찜을_삭제하면_204이고_이후_조회는_404가_된다(client, ma
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-03 — DELETE must go through remove_event_interest so an
-# interest_removed ActivityLogEntry is recorded (perform_destroy wiring
-# regression guard, dual-calendar Test List §단계 2)
+# CAL-2-03 — 삭제는 remove_event_interest를 거쳐야 interest_removed 활동
+# 이력이 남는다(perform_destroy 배선 회귀 가드, 이중 달력 Test List §단계 2)
 # ---------------------------------------------------------------------------
 
 
@@ -194,7 +192,7 @@ def test_찜_해제_API를_호출하면_interest_removed_활동_이력이_기록
 
 
 # ---------------------------------------------------------------------------
-# IDOR — cross-user delete → 404 + row survives
+# IDOR — 다른 사용자가 삭제하면 404, 행은 보존
 # ---------------------------------------------------------------------------
 
 
@@ -214,14 +212,12 @@ def test_다른_사용자의_찜을_삭제하면_404이고_행이_보존된다(c
 
 
 # ---------------------------------------------------------------------------
-# Coexistence — interest + planned on same event
+# 공존 — 같은 행사에 찜과 참석예정 상태가 동시에 존재
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 def test_같은_행사에_찜과_참석예정_상태가_동시에_존재할_수_있다(client, make_user, make_event, make_interest):
-    """A user can hold both an EventInterest and a planned UserEventStatus
-    for the same event simultaneously. Both must be independently retrievable."""
     from archive.models import UserEventStatus
 
     user = make_user(username="interest-coexist-user")
@@ -250,7 +246,7 @@ def test_같은_행사에_찜과_참석예정_상태가_동시에_존재할_수_
 
 
 # ---------------------------------------------------------------------------
-# Unauthenticated → 403
+# 비로그인 → 403
 # ---------------------------------------------------------------------------
 
 

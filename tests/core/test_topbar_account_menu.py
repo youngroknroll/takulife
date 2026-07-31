@@ -1,11 +1,11 @@
-"""core/partials/_topbar.html — the header account-menu's role-conditional
-items. Rendered on every page; checked against the home page here since it
-carries no auth/role logic of its own to confound the assertion.
+"""core/partials/_topbar.html — 헤더 계정 메뉴의 역할별 조건부 항목. 모든
+페이지에서 렌더되며, 여기서는 홈 페이지로 검증한다 — 홈은 인증/역할 로직이
+없어 단언을 흐리지 않는다.
 
-The one invariant this whole track is built around — a staff account never
-has a self-deletion path anywhere in the UI (accounts.views.delete_account
-enforces this server-side too, see tests/auth/test_account_deletion.py) —
-is asserted for all three roles below, not just the regular-member case.
+이 트랙 전체가 지키려는 단 하나의 불변 조건 — 스태프 계정은 UI 어디에도
+자기 탈퇴 경로가 없다(accounts.views.delete_account가 서버 쪽에서도
+강제한다, tests/auth/test_account_deletion.py 참고) — 를 일반 회원뿐 아니라
+아래 세 역할 모두에 대해 검증한다.
 """
 import pytest
 
@@ -34,9 +34,10 @@ def test_일반_회원은_마이페이지만_보이고_스태프_콘솔은_보�
 
 @pytest.mark.django_db
 def test_스태프_회원은_스태프_콘솔과_설정만_보이고_마이페이지는_보이지_않는다(client, make_user):
-    """Staff has no mypage (no personal archive summary), so 설정 is the
-    only click-reachable path to change email/password — without it staff
-    could never reach account_change_password/account_email from the UI."""
+    """스태프는 마이페이지(개인 아카이브 요약)가 없으므로 이메일/비밀번호를
+    바꾸려면 설정이 클릭으로 닿을 수 있는 유일한 경로다 — 이게 없으면
+    스태프는 UI로 account_change_password/account_email에 절대 못
+    닿는다."""
     staff = make_user(is_staff=True)
     client.force_login(staff)
 

@@ -1,33 +1,20 @@
-"""Calendar grid pure functions (dual-calendar Test List §단계 4: CAL-4-01~07).
+"""달력 격자 순수 함수(이중 달력 테스트 목록 §단계 4: CAL-4-01~07).
 
-core.calendar_grid does not exist yet:
-- CAL-4-01~05 import month_grid/default_selected_date directly, so the whole
-  file is expected to fail at collection with ImportError until the module
-  is added (mirrors tests/archive/test_activity_log_entry.py's convention).
-- CAL-4-06 additionally reads core/calendar_grid.py's source text directly
-  (AST import-boundary guard, mirroring tests/core/test_architecture_boundaries.py's
-  _imported_modules technique) — before the module exists this specific
-  assertion would instead fail at read time with FileNotFoundError, which is
-  also an expected Red for a not-yet-created file, not a false-positive pass.
-- CAL-4-07 (added after CAL-5 web-layer work surfaced a real gap in the
-  already-merged month_grid): the current implementation raises
-  ``ValueError`` for year=1/month=1 and year=9999/month=12, because the
-  leading/trailing filler week needs a real ``date()`` one day into
-  "year 0" or "year 10000" — outside datetime's representable range
-  (MINYEAR=1/MAXYEAR=9999). This test is expected to fail with that
-  uncaught ValueError, not an assertion mismatch, until month_grid is fixed
-  at the source (next message).
+계약(단위 테스트, DB 불필요):
+- ``month_grid(year, month)``는 주 목록을 돌려준다. 각 주는 정확히 7개의
+  날짜 셀이며 일요일부터 시작한다. 각 셀은 ``.in_month``(질의한
+  (year, month) 안이면 True)와 ``.date``를 갖는다 — 월 안의 셀과 datetime이
+  표현 가능한 채움 셀은 실제 ``date``를, 1~9999년 범위 밖으로 나가는
+  채움 셀은 ``None``을 갖는다(CAL-4-07에서 확장된 셀 계약이며 항상
+  ``in_month is False``와 짝을 이룬다).
+- ``default_selected_date(year, month, today)``는 평범한 ``date``를
+  돌려준다: (year, month)가 오늘이 속한 달이면 ``today`` 자신을, 아니면
+  1일을 돌려준다.
 
-Assumed shape (unit-tested, no DB):
-- ``month_grid(year, month)`` returns a list of weeks; each week is a list
-  of exactly 7 day cells, Sunday first. Each cell exposes ``.in_month``
-  (bool, True iff the cell falls within the queried (year, month)) and
-  ``.date``: a real ``date`` for every in-month cell and every filler cell
-  that datetime can represent, but ``None`` (cell contract extended by
-  CAL-4-07) for a filler cell whose calendar date would fall outside
-  year 1..9999 — always paired with ``in_month is False``.
-- ``default_selected_date(year, month, today)`` returns a plain ``date``:
-  ``today`` itself when (year, month) is today's month, otherwise the 1st.
+CAL-4-07: year=1/month=1, year=9999/month=12에서는 앞뒤 채움 주가 "0년"이나
+"10000년" 쪽으로 하루 들어간 실제 ``date()``를 필요로 하는데, 이는
+datetime이 표현 가능한 범위(MINYEAR=1/MAXYEAR=9999)를 벗어난다 — 그래서
+그런 채움 셀만 date=None으로 표현한다.
 """
 import ast
 import calendar
@@ -42,7 +29,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 # ---------------------------------------------------------------------------
-# CAL-4-01 — Sunday-first, 7-column weekly grid
+# CAL-4-01 — 일요일부터 시작하는 7열 주간 격자
 # ---------------------------------------------------------------------------
 
 
@@ -53,18 +40,20 @@ def test_월_격자를_생성하면_일요일부터_토요일까지_7열로_구�
     assert weeks
     for week in weeks:
         assert len(week) == 7
-        assert week[0].date.weekday() == 6  # Sunday (Python: Monday=0..Sunday=6)
-        assert week[6].date.weekday() == 5  # Saturday
+        # 일요일(Python 기준 월=0..일=6)
+        assert week[0].date.weekday() == 6
+        # 토요일
+        assert week[6].date.weekday() == 5
 
 
 # ---------------------------------------------------------------------------
-# CAL-4-02 — leading days from the previous month are marked out-of-month
+# CAL-4-02 — 이전 달의 앞쪽 날짜는 다른 월로 표시된다
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit
 def test_이전_달_날짜가_포함되면_다른_월로_표시된다():
-    # 2026-07-01 is a Wednesday, so the first week carries 2026-06-28~30
+    # 2026-07-01은 수요일이라 첫 주가 2026-06-28~30을 담는다
     # (python3 -c calendar.Calendar(firstweekday=6).monthdatescalendar 확인).
     weeks = month_grid(2026, 7)
     first_week = weeks[0]
@@ -79,13 +68,13 @@ def test_이전_달_날짜가_포함되면_다른_월로_표시된다():
 
 
 # ---------------------------------------------------------------------------
-# CAL-4-03 — trailing days from the next month are marked out-of-month
+# CAL-4-03 — 다음 달의 뒤쪽 날짜는 다른 월로 표시된다
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit
 def test_다음_달_날짜가_포함되면_다른_월로_표시된다():
-    # 2026-07-31 is a Friday, so the last week carries 2026-08-01.
+    # 2026-07-31은 금요일이라 마지막 주가 2026-08-01을 담는다.
     weeks = month_grid(2026, 7)
     last_week = weeks[-1]
 
@@ -99,7 +88,7 @@ def test_다음_달_날짜가_포함되면_다른_월로_표시된다():
 
 
 # ---------------------------------------------------------------------------
-# CAL-4-04 — current month defaults the selected date to today
+# CAL-4-04 — 조회 월이 이번 달이면 기본 선택 날짜는 오늘이다
 # ---------------------------------------------------------------------------
 
 
@@ -111,7 +100,7 @@ def test_조회_월이_이번_달이면_기본_선택_날짜는_오늘이다():
 
 
 # ---------------------------------------------------------------------------
-# CAL-4-05 — any other month defaults the selected date to the 1st
+# CAL-4-05 — 조회 월이 다른 달이면 기본 선택 날짜는 1일이다
 # ---------------------------------------------------------------------------
 
 
@@ -123,7 +112,7 @@ def test_조회_월이_다른_달이면_기본_선택_날짜는_1일이다():
 
 
 # ---------------------------------------------------------------------------
-# CAL-4-06 — the grid module stays free of events/archive imports
+# CAL-4-06 — 격자 모듈은 events/archive 임포트에서 자유롭다
 # ---------------------------------------------------------------------------
 
 
@@ -147,9 +136,8 @@ def test_달력_격자_모듈은_이벤트_아카이브_모듈을_임포트하�
 
 
 # ---------------------------------------------------------------------------
-# CAL-4-07 — datetime-range boundary months (year 1 / year 9999) build a
-# grid without raising, representing any out-of-range filler cell as
-# date=None/in_month=False instead of crashing
+# CAL-4-07 — datetime 표현 범위 경계 달(1년/9999년)도 예외 없이 격자를
+# 만든다. 범위 밖 채움 셀은 크래시 대신 date=None/in_month=False로 표현한다
 # ---------------------------------------------------------------------------
 
 
