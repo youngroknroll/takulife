@@ -1,8 +1,8 @@
-"""core.context_processors — google_oauth_configured, support_email.
+"""core.context_processors — google_oauth_configured, support_email 검증.
 
-Google OAuth credentials are optional in this project (see
-config/settings.py SOCIALACCOUNT_PROVIDERS): a blank client_id must hide the
-Google button on the auth pages rather than show a non-functional one.
+이 프로젝트에서 Google OAuth 자격증명은 선택 사항이다(config/settings.py
+SOCIALACCOUNT_PROVIDERS 참고) — client_id가 비어 있으면 인증 페이지에서
+동작하지 않는 구글 버튼을 보여주는 대신 아예 숨겨야 한다.
 """
 import pytest
 
@@ -42,8 +42,8 @@ def test_support_email은_설정된_값을_그대로_반환한다(settings):
 
 
 def test_support_email은_미설정_시_기본_플레이스홀더_주소로_대체된다(settings):
-    # config/settings.py's SUPPORT_EMAIL default (env unset / placeholder
-    # domain reserved until the real support inbox is provisioned).
+    # config/settings.py의 SUPPORT_EMAIL 기본값(env 미설정, 실제 지원 메일함이
+    # 준비될 때까지 예약된 플레이스홀더 도메인).
     settings.SUPPORT_EMAIL = "support@takulife.example"
 
     assert support_email(None) == {"support_email": "support@takulife.example"}

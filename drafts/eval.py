@@ -1,18 +1,14 @@
-"""Pure field-accuracy evaluation for draft extraction.
+"""드래프트 추출 필드 정확도를 평가하는 순수 함수 모음.
 
-Compares a golden set (human-approved draft fields) against a fresh
-extract_fn run over the same raw_title/raw_text, to calibrate LLM vs
-heuristic extraction before any auto-approve gate is trusted (Phase 2).
-
-No DB access here — drafts/management/commands/eval_extraction.py is the
-thin, DB-aware caller that builds golden_rows and picks extract_fn.
+사람이 승인한 골든셋과 extract_fn 결과를 비교해, 자동 승인 게이트를 신뢰하기 전에
+LLM과 휴리스틱 추출을 검증한다. DB 접근은 하지 않으며,
+drafts/management/commands/eval_extraction.py가 DB를 다루는 얇은 호출부다.
 """
 from .extraction import normalize_whitespace
 
-# category/region/start_date/end_date compare exact (no normalization —
-# these are vocab slugs / ISO dates, and forgiving whitespace/case here would
-# hide real extraction mismatches). work_title/location_name are free text
-# scraped from third-party pages, so they compare after normalize_whitespace.
+# category/region/start_date/end_date는 어휘 슬러그·ISO 날짜라 정규화 없이 정확히
+# 비교한다 — 느슨하게 봐주면 실제 추출 오류를 놓친다. work_title/location_name은
+# 외부 사이트에서 긁은 자유 텍스트라 공백 정규화 후 비교한다.
 EVAL_FIELDS = (
     "category",
     "region",
@@ -38,25 +34,16 @@ def _is_empty(value):
 
 
 def build_field_accuracy_report(golden_rows, extract_fn):
-    """golden_rows: iterable of (raw_title, raw_text, expected_fields).
+    """golden_rows: (raw_title, raw_text, expected_fields) 이터러블.
 
-    expected_fields keys match EVAL_FIELDS (unprefixed); extract_fn's return
-    dict uses the extracted_* prefix (extract_event_fields_heuristic /
-    extract_event_fields_llm shape).
-
-    Returns {"fields": [...], "errors": n, "fallback": n}.
-    - "fields" is a list of {"field", "correct", "total", "accuracy",
-      "both_empty"} dicts, one per EVAL_FIELDS entry, in EVAL_FIELDS order.
-    - A row whose extract_fn(raw_title, raw_text) call raises is skipped
-      entirely (no field counts, no fallback count) and increments "errors" —
-      one bad row must not abort the whole batch.
-    - A field where both the golden and extracted values are empty (None or
-      "") is excluded from that field's correct/total and increments that
-      field's "both_empty" — an uncorrected golden row must not inflate
-      accuracy by "agreeing" on missing data.
-    - A successfully-evaluated row whose result dict has
-      extraction_method == "heuristic" increments "fallback", surfacing
-      LLM-mode calibration data silently contaminated by heuristic fallback.
+    반환값 {"fields": [...], "errors": n, "fallback": n}.
+    - extract_fn 호출이 예외를 내면 그 행은 통째로 건너뛰고 errors만 늘린다 — 행 하나의
+      오류가 전체 배치를 중단시키면 안 된다.
+    - 골든값과 추출값이 둘 다 비어 있는 필드는 그 필드의 정확도 집계에서 빼고
+      both_empty만 늘린다 — 누락 데이터끼리 "일치"한 것으로 쳐서 정확도를 부풀리면
+      안 된다.
+    - 결과의 extraction_method가 "heuristic"이면 fallback을 늘린다 — LLM 모드 보정
+      데이터가 휴리스틱 폴백으로 조용히 섞이는 걸 드러내기 위해서다.
     """
     correct_counts = {field: 0 for field in EVAL_FIELDS}
     total_counts = {field: 0 for field in EVAL_FIELDS}
@@ -68,7 +55,7 @@ def build_field_accuracy_report(golden_rows, extract_fn):
         try:
             actual_fields = extract_fn(raw_title, raw_text)
         except Exception:
-            # except-ok: extraction failures are counted and reported in the eval summary
+            # except-ok: 추출 실패는 개수를 세어 평가 요약에 보고하므로 예외를 삼켜도 된다
             errors += 1
             continue
 

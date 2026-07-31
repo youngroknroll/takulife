@@ -1,8 +1,8 @@
-"""Tests for events.queries quality-warning counters (staff dashboard PR-1b).
+"""events.queries의 품질경고 카운터(스태프 대시보드)를 검증한다.
 
-All counters are scoped to Event.objects.published() only. Each predicate is
-an independent per-column check (one event can trip multiple warnings), so
-there is no if/elif classification anywhere here or in the implementation.
+모든 카운터는 Event.objects.published()만을 대상으로 한다. 각 판정은
+컬럼별 독립 검사라(한 행사가 여러 경고에 걸릴 수 있다) 여기에도
+구현에도 if/elif 식 분류는 없다.
 """
 from datetime import date, datetime, timedelta
 
@@ -21,11 +21,6 @@ from events.queries import (
 )
 
 pytestmark = pytest.mark.domain
-
-
-# ---------------------------------------------------------------------------
-# count_published_missing_official_url
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -60,20 +55,13 @@ class TestCountPublishedMissingOfficialUrl:
         assert count_published_missing_official_url() == 1
 
     def test_공식_url이_없는_행사가_두_건이면_누락_건수는_2다(self, make_event):
-        # Guards against a .count() -> .exists() regression: bool is a
-        # subclass of int, so an exists()-based count would still pass the
-        # 0/1 assertions above but silently break on N>=2.
-        # official_url is unique, so use NULL for both (NULLs don't collide;
-        # two "" would raise a UNIQUE IntegrityError).
+        # count() 대신 exists()로 되돌리는 뮤테이션은 0/1 케이스는 통과하지만
+        # 2건부터는 걸러내지 못해, 이 테스트로 잡는다. official_url은 유니크
+        # 제약이라 둘 다 NULL로 둔다("" 두 개는 제약 위반이 난다).
         make_event(official_url=None)
         make_event(official_url=None)
 
         assert count_published_missing_official_url() == 2
-
-
-# ---------------------------------------------------------------------------
-# count_published_ended_still_published
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -121,18 +109,13 @@ class TestCountPublishedEndedStillPublished:
         assert isinstance(result, int)
 
     def test_종료일이_지난_행사가_두_건이면_종료후_게시_건수는_2다(self, make_event):
-        # Guards against a .count() -> .exists() regression (bool is a
-        # subclass of int; an exists()-based count would still pass 0/1).
+        # count() 대신 exists()로 되돌리는 뮤테이션은 0/1 케이스는 통과하지만
+        # 2건부터는 걸러내지 못해, 이 테스트로 잡는다.
         today = date(2020, 6, 15)
         make_event(end_date=today - timedelta(days=1))
         make_event(end_date=today - timedelta(days=2))
 
         assert count_published_ended_still_published(today=today) == 2
-
-
-# ---------------------------------------------------------------------------
-# count_published_missing_poster
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -161,17 +144,12 @@ class TestCountPublishedMissingPoster:
         assert count_published_missing_poster() == 0
 
     def test_포스터가_없는_행사가_두_건이면_누락_건수는_2다(self, make_event):
-        # Guards against a .count() -> .exists() regression (bool is a
-        # subclass of int; an exists()-based count would still pass 0/1).
+        # count() 대신 exists()로 되돌리는 뮤테이션은 0/1 케이스는 통과하지만
+        # 2건부터는 걸러내지 못해, 이 테스트로 잡는다.
         make_event(official_url=None)
         make_event(official_url="https://example.com/other")
 
         assert count_published_missing_poster() == 2
-
-
-# ---------------------------------------------------------------------------
-# count_published_missing_dates
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -204,19 +182,14 @@ class TestCountPublishedMissingDates:
         assert count_published_missing_dates() == 0
 
     def test_날짜가_누락된_행사가_두_건이면_날짜_누락_건수는_2다(self, make_event):
-        # Guards against a .count() -> .exists() regression (bool is a
-        # subclass of int; an exists()-based count would still pass 0/1).
+        # count() 대신 exists()로 되돌리는 뮤테이션은 0/1 케이스는 통과하지만
+        # 2건부터는 걸러내지 못해, 이 테스트로 잡는다.
         make_event(official_url=None, start_date=None, end_date=date(2020, 1, 1))
         make_event(
             official_url="https://example.com/other", start_date=None, end_date=None
         )
 
         assert count_published_missing_dates() == 2
-
-
-# ---------------------------------------------------------------------------
-# count_published_missing_region
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -232,9 +205,9 @@ class TestCountPublishedMissingRegion:
         assert count_published_missing_region() == 0
 
     def test_지역이_공백만_있으면_정규화_없이_지역_누락_건수에서_제외된다(self, make_event):
-        # Conscious v1 decision: no strip/normalization. A whitespace-only
-        # region is technically "blank" to a human, but this counter only
-        # checks region == "" exactly, so it is NOT counted.
+        # v1의 의도적 결정: 공백 트림·정규화를 하지 않는다. 사람 눈엔 공백만
+        # 있는 지역도 "빈 값"처럼 보이지만, 이 카운터는 region == ""만 판정하므로
+        # 여기서는 집계되지 않는다.
         make_event(official_url=None, region=" ")
 
         assert count_published_missing_region() == 0
@@ -245,17 +218,12 @@ class TestCountPublishedMissingRegion:
         assert count_published_missing_region() == 0
 
     def test_지역이_없는_행사가_두_건이면_누락_건수는_2다(self, make_event):
-        # Guards against a .count() -> .exists() regression (bool is a
-        # subclass of int; an exists()-based count would still pass 0/1).
+        # count() 대신 exists()로 되돌리는 뮤테이션은 0/1 케이스는 통과하지만
+        # 2건부터는 걸러내지 못해, 이 테스트로 잡는다.
         make_event(official_url=None, region="")
         make_event(official_url="https://example.com/other", region="")
 
         assert count_published_missing_region() == 2
-
-
-# ---------------------------------------------------------------------------
-# published_quality_warnings (composite)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -291,9 +259,8 @@ class TestPublishedQualityWarnings:
     def test_한_행사가_두_조건에_걸리면_총합에_2가_반영된다(
         self, make_event, png_bytes, settings, tmp_path
     ):
-        # official_url and region both missing on the same event, with every
-        # other predicate deliberately kept clean: this is a sum-of-flags
-        # total, not a distinct-event count, so it contributes exactly 2.
+        # 한 행사에서 공식 url과 지역이 동시에 누락되고 다른 조건은 모두
+        # 통과시켰다. total은 행사 수가 아니라 깃발의 합이므로 정확히 2가 된다.
         settings.MEDIA_ROOT = str(tmp_path)
         today = date(2020, 6, 15)
         event = make_event(
@@ -323,17 +290,13 @@ class TestPublishedQualityWarnings:
             event.save()
             return event
 
-        # Each event trips exactly one predicate; every other predicate on it
-        # is deliberately kept "clean" so the 6 counts stay independent.
-        #
-        # The official-url/poster/region events below all share
-        # start_date=2020-01-01 and an unended future end_date, which also
-        # puts them inside the needs_reverification D-7 window. Without an
-        # explicit verified_at, they would additionally trip
-        # needs_reverification and break the "exactly one predicate" premise
-        # this test is named after, so verified_at is set to a moment after
-        # their reverify_deadline (2019-12-25) to mark them as already
-        # verified and keep needs_reverification at 0 for this test.
+        # 각 행사는 정확히 한 조건에만 걸리도록 나머지 조건은 모두 깨끗하게
+        # 둔다. 아래 공식url/포스터/지역 행사들은 start_date=2020-01-01과
+        # 아직 끝나지 않은 미래 end_date를 공유해 D-7 재확인 창 안에도
+        # 들어간다. verified_at을 명시하지 않으면 이들도 needs_reverification에
+        # 함께 걸려 "정확히 한 조건"이라는 전제가 깨지므로, reverify_deadline
+        # (2019-12-25) 이후 시각으로 verified_at을 설정해 이미 검증된 상태로
+        # 만든다.
         _with_poster(
             make_event(
                 official_url=None,
@@ -357,7 +320,7 @@ class TestPublishedQualityWarnings:
             start_date=date(2020, 1, 1),
             end_date=future_end,
             verified_at=timezone.make_aware(datetime(2020, 6, 1)),
-        )  # left without a poster on purpose
+        )  # 포스터 없이 의도적으로 둔다
         _with_poster(
             make_event(
                 official_url="https://example.com/dates",
@@ -391,13 +354,12 @@ class TestPublishedQualityWarnings:
     def test_재확인_대상_행사가_있어도_총합에는_반영되지_않고_재확인_대상_건수에는_실제_값이_반영된다(
         self, make_event
     ):
-        # poster_image is deliberately left empty. Making the other five
-        # predicates clean would require an actual PNG fixture + MEDIA_ROOT
-        # (as the 313-line test above does); since this test asserts the
-        # *whole* result dict, missing_poster tripping alongside it does not
-        # blur which counter caught what -- it's the cheaper setup. And
-        # verified_at is deliberately left unset (NULL): an unverified event
-        # is the Given for this scenario.
+        # poster_image는 비워 둔다. 나머지 다섯 조건까지 깨끗하게 만들려면
+        # 실제 PNG 픽스처와 MEDIA_ROOT가 필요한데(위 테스트처럼), 이 테스트는
+        # 결과 딕셔너리 전체를 검증하므로 missing_poster가 함께 걸려도 어느
+        # 카운터가 무엇을 잡았는지 헷갈리지 않는다 — 더 저렴한 준비다.
+        # verified_at도 의도적으로 비워 둔다(NULL): 미검증 행사가 이 시나리오의
+        # 전제다.
         today = date(2020, 6, 15)
         make_event(
             official_url="https://example.com/reverify",
@@ -408,9 +370,9 @@ class TestPublishedQualityWarnings:
 
         result = published_quality_warnings(today=today)
 
-        # The load-bearing line is total == 1: needs_reverification is 1,
-        # but total only counts poster here. This locks in the user decision
-        # that the 6th key (needs_reverification) is excluded from total.
+        # 핵심 단언은 total == 1: needs_reverification은 1이지만 total은
+        # poster만 센다. total 계산에서 6번째 항목(needs_reverification)이
+        # 빠진다는 결정을 여기서 고정한다.
         assert result == {
             "missing_official_url": 0,
             "ended_still_published": 0,
@@ -456,17 +418,12 @@ class TestPublishedQualityWarnings:
             official_url="https://example.com/x",
             region="서울",
             start_date=date(2019, 1, 1),
-            end_date=date(2019, 12, 31),  # ended relative to fixed_today only
+            end_date=date(2019, 12, 31),  # fixed_today 기준으로만 종료된 상태다
         )
 
         result = published_quality_warnings(today=fixed_today)
 
         assert result["ended_still_published"] == 1
-
-
-# ---------------------------------------------------------------------------
-# Event.verified_at (D-7 재확인 정책, B1)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
@@ -477,11 +434,6 @@ class TestEventVerifiedAt:
         event.refresh_from_db()
 
         assert event.verified_at is None
-
-
-# ---------------------------------------------------------------------------
-# count_published_needs_reverification
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db

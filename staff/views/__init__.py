@@ -1,10 +1,7 @@
-"""Staff Console views.
+"""스태프 콘솔 뷰.
 
-PR-2 sub-step D: the 3 draft/home-category SSR views (previously routed
-through core.views for a smaller PR-1a diff) now live here permanently,
-alongside the draft approve/reject action endpoints. staff -> core is an
-allowed presentation-only import (label maps/vocab); core must never import
-staff back (see tests/test_architecture_boundaries.py).
+staff가 core를 임포트하는 것(라벨 맵/어휘 등 표시용)은 허용되지만,
+core가 staff를 거꾸로 임포트해서는 안 된다(tests/test_architecture_boundaries.py).
 """
 import datetime
 import logging
@@ -78,11 +75,8 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-# Korean labels for every StaffActionLog.Action value, keyed by the raw
-# action string (mirrors QUALITY_WARNING_LABELS below). get_action_display()
-# is intentionally not used here — it would surface the model's English
-# choice labels, and this dict keeps the audit trail's display language
-# separate from the model definition (see StaffActionLog.Action).
+# get_action_display()를 쓰지 않는다 — 모델의 영어 choice 라벨이 그대로
+# 노출되므로, 화면에 보일 한국어 라벨은 모델 정의와 분리해 여기서 관리한다.
 ACTION_LABELS = {
     "approve": "승인",
     "reject": "반려",
@@ -97,13 +91,8 @@ ACTION_LABELS = {
 
 
 def _build_action_rows(actions):
-    """Attach a Korean action_label to each StaffActionLog row for the
-    dashboard's "최근 처리 내역" table.
-
-    Mirrors _build_draft_rows/_build_event_rows: nests the log object under
-    "log" plus a derived display-only field, rather than mutating the log
-    object itself.
-    """
+    """로그 객체를 직접 바꾸지 않고 "log" 키 아래에 감싼 뒤 표시용
+    action_label을 덧붙인다."""
     return [
         {"log": action, "action_label": ACTION_LABELS.get(action.action, action.action)}
         for action in actions
@@ -111,21 +100,13 @@ def _build_action_rows(actions):
 
 
 def _build_source_rows(sources):
-    """Attach derived freshness state to each DraftSource row for the
-    dashboard's "수집 소스 상태" table.
+    """소스별 신선도 상태를 계산해 붙인다.
 
-    has_error is a plain last_error truthiness check. is_stale only applies
-    to enabled sources (a disabled source is not expected to be collecting,
-    so a stale last_checked_at there is not a problem) — never checked
-    (last_checked_at is None) and older than DRAFT_SOURCE_STALE_HOURS both
-    count as stale.
-
-    status_level derives from has_error/is_stale (not a separate check)
-    so the status dot can never disagree with the badges rendered next to
-    it. Priority when several are true at once: disabled > error > stale >
-    ok — a disabled source is never miscolored as erroring, and an actively
-    failing source is flagged over a merely-stale one (see PR-D1 item 3:
-    never-checked + last_error can both be true simultaneously).
+    is_stale는 활성화된 소스에만 적용한다 — 비활성 소스는 원래 수집을
+    안 하므로 오래된 last_checked_at이 문제가 아니다. 여러 조건이 동시에
+    참일 때 우선순위는 disabled > error > stale > ok다 — 비활성 소스가
+    오류로 잘못 표시되지 않게 하고, 실제로 실패 중인 소스를 단순 정체보다
+    먼저 알리기 위해서다.
     """
     cutoff = timezone.now() - datetime.timedelta(hours=settings.DRAFT_SOURCE_STALE_HOURS)
     rows = []
@@ -154,15 +135,10 @@ def _build_source_rows(sources):
 
 
 def _build_quality_warning_rows(warnings):
-    """Attach display rows to the quality_warnings dict for the dashboard's
-    "품질 경고" bar list, sorted count descending.
+    """건수 내림차순으로 정렬한다.
 
-    Ties are broken by QUALITY_WARNING_LABELS' definition order rather than
-    left to sort() to decide arbitrarily: enumerate() captures each row's
-    original position before sorting, and that position becomes the
-    secondary sort key (the worst warning must
-    always be first, and tied warnings must render in a stable order across
-    requests).
+    건수가 같으면 QUALITY_WARNING_LABELS에 정의된 순서를 따르게 해 요청마다
+    순서가 흔들리지 않도록 한다.
     """
     rows = [
         {"key": key, "label": label, "count": warnings[key]}
@@ -173,17 +149,11 @@ def _build_quality_warning_rows(warnings):
 
 
 def _build_activity_columns(per_day):
-    """Attach chart-ready fields to each staff_actions_per_day() row for the
-    dashboard's "최근 14일 활동" column chart.
+    """막대 그래프용 필드를 붙인다.
 
-    height_pct is computed here (not in the template) against the window's
-    own max count, so a day with the most activity always renders at 100%
-    and every other day scales relative to it; if every day is 0 (e.g. no
-    logs at all), every height_pct is 0 rather than dividing by zero.
-    is_today marks the last row via an explicit date comparison — per_day's
-    ordering already guarantees the last row *is* today, but comparing
-    against timezone.localdate() here keeps that guarantee from being a
-    silent assumption baked only into staff_actions_per_day's contract.
+    height_pct는 구간 내 최댓값 대비 비율이라 가장 활발한 날이 항상 100%가
+    되고, 로그가 전혀 없으면 0으로 나누는 대신 전부 0이 된다. is_today는
+    정렬 순서에만 기대지 않고 오늘 날짜와 직접 비교해 정한다.
     """
     max_count = max((row["count"] for row in per_day), default=0)
     today = timezone.localdate()
@@ -201,13 +171,11 @@ def _build_activity_columns(per_day):
 
 
 def _last_discovery_run_at():
-    """Return the most recent DRAFT_DISCOVER StaffActionLog's created_at, or
-    None if discovery has never been run.
+    """가장 최근 수집 실행 시각을 반환한다. 실행 이력이 없으면 None이다.
 
-    Reads StaffActionLog directly (not DraftSource.last_checked_at max) so
-    the "마지막 실행" summary is accurate even when a run touched zero
-    sources (e.g. all sources disabled) — the log entry is written on every
-    non-flag-off run regardless of outcome (see staff_draft_discovery_run).
+    DraftSource.last_checked_at 대신 StaffActionLog를 직접 읽는다 —
+    소스를 하나도 건드리지 못한 실행(예: 전부 비활성)에서도 로그는
+    남기 때문에 "마지막 실행" 표시가 어긋나지 않는다.
     """
     log = (
         StaffActionLog.objects.filter(action=StaffActionLog.Action.DRAFT_DISCOVER)
@@ -219,7 +187,7 @@ def _last_discovery_run_at():
 
 @staff_console_required
 def dashboard(request):
-    """Staff console landing page."""
+    """스태프 콘솔 첫 화면."""
     stats = draft_review_stats()
     recent_actions = recent_staff_actions()
     draft_sources = list_draft_sources()
@@ -248,9 +216,8 @@ def dashboard(request):
             "weekly_event_count": sum(event_name_counts_since(days=7).values()),
             "activity_columns": activity_columns,
             "activity_total_14d": sum(col["count"] for col in activity_columns),
-            # Explicit key rather than `{{ activity_columns|last }}.count` in
-            # the template — Django's `|last.count` filter/attribute chaining
-            # isn't valid template syntax.
+            # 템플릿에서 `|last.count` 같은 필터+속성 체이닝은 문법상
+            # 안 되므로 별도 키로 미리 계산해 넘긴다.
             "activity_today_count": (
                 activity_columns[-1]["count"] if activity_columns else 0
             ),
@@ -260,28 +227,15 @@ def dashboard(request):
 
 @staff_console_required
 def staff_draft_discovery_run(request):
-    """Staff console: run `discover_drafts` synchronously from the dashboard's
-    "수집 소스 상태" panel ("지금 수집" button — prompt_plan.md's 콘솔 수집
-    실행 버튼).
+    """대시보드 "지금 수집" 버튼에서 `discover_drafts`를 동기로 실행한다.
 
-    GET is redirected to the dashboard rather than @require_POST's 405: a
-    session that expires mid-click bounces the browser through
-    accounts/login?next=<this URL>, and login's own redirect issues a GET —
-    turning what should be a re-auth prompt into a dead-end 405 page. This
-    mirrors the flag-off short-circuit below (also just an info redirect,
-    no command execution).
-
-    `DRAFT_DISCOVERY_ENABLED=False` and a zero-enabled-source DraftSource
-    table are both short-circuited here, before the command even runs (the
-    command itself already no-ops in either case — see discover_drafts.py's
-    own module docstring — but the view pre-empts it so the intent is
-    explicit) and neither writes an audit log entry, since nothing actually
-    executed. Every path that *does* invoke the command (success, a
-    partial-failure CommandError, or an unclassified exception) is
-    audit-logged, because from an operator's point of view a run was
-    attempted regardless of its outcome. Runs synchronously and can take
-    tens of seconds depending on source/candidate count (see "하지 말 것":
-    no celery/threads/subprocess/lock/progress UI for this button).
+    GET은 405 대신 대시보드로 돌려보낸다 — 클릭 중 세션이 만료되면
+    로그인 리다이렉트가 GET으로 돌아오는데, 그때 405 막다른 페이지가
+    뜨지 않게 하기 위해서다. 기능 꺼짐이나 활성 소스 없음일 때도 명령을
+    돌리지 않고 여기서 먼저 걸러내며, 이 경우엔 실제로 아무것도 실행되지
+    않았으므로 감사 로그를 남기지 않는다. 반면 명령이 실제로 실행된
+    모든 경로(성공/부분 실패/예외)는 결과와 무관하게 감사 로그를 남긴다.
+    소스·후보 개수에 따라 수십 초 걸릴 수 있는 동기 실행이다.
     """
     if request.method != "POST":
         return redirect("staff:dashboard")
@@ -322,8 +276,7 @@ def staff_draft_discovery_run(request):
 
 
 def _summarize_command_output(out):
-    """Collapse discover_drafts' multi-line stdout into one message-friendly
-    line (django.contrib.messages renders as plain text — no <br>, so
-    newlines would otherwise just run together)."""
+    """여러 줄 stdout을 한 줄로 합친다 — messages는 순수 텍스트로만 렌더링돼
+    줄바꿈이 그대로는 이어 붙어 버린다."""
     lines = [line for line in out.getvalue().splitlines() if line.strip()]
     return " · ".join(lines)

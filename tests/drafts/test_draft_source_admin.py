@@ -1,8 +1,5 @@
-"""Tests for the drafts DraftSource admin registration (PR-2 of the
-auto-discovery plan, prompt_plan.md §2-1). Registration-only: this proves the
-model exists and is reachable through the admin changelist, not any custom
-admin behavior (list_display, filters, etc. are not enforced here).
-"""
+"""drafts DraftSource의 admin 등록 테스트. 모델이 존재하고 admin 목록에서
+접근 가능한지만 확인하며, list_display 등 커스텀 admin 동작은 검증하지 않는다."""
 import pytest
 
 pytestmark = pytest.mark.web

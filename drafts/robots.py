@@ -1,17 +1,14 @@
-"""robots.txt fetch + Disallow evaluation for draft discovery (crawl etiquette).
+"""드래프트 수집의 robots.txt 크롤링 예절 처리.
 
-robots.txt must never be fetched via RobotFileParser.read()/set_url() — that
-path is a timeout-less urllib fetch that can hang the process indefinitely
-and bypasses the SSRF guard entirely (see prompt_plan.md §2-2). Instead this
-module fetches the raw text through the guarded fetch_html core (per-hop SSRF
-revalidation, size cap, timeout) and feeds the decoded lines into
-RobotFileParser.parse(), which performs no I/O of its own.
+robots.txt는 RobotFileParser.read()/set_url()로 절대 받아오면 안 된다 — 그 경로는
+타임아웃이 없는 urllib 요청이라 무한정 멈출 수 있고 SSRF 방어도 완전히 우회한다.
+대신 이 모듈은 SSRF 재검증·크기 제한·타임아웃이 걸린 fetch_html로 원문을 가져온 뒤
+RobotFileParser.parse()에 줄 단위로 넘긴다(parse 자체는 I/O를 하지 않는다).
 
-Failure policy is fail-closed except for one case: a 404 on robots.txt means
-"no rules published" (fail-open, standard robots.txt convention). Every other
-failure — 5xx, timeout, connection error, oversized body, SSRF rejection,
-unexpected content-type — treats the candidate URL as disallowed so a
-transient error can never look like permission to crawl.
+기본은 실패 시 차단(fail-closed)이지만 예외가 하나 있다: robots.txt가 404면
+"규칙 없음"으로 보고 허용한다(표준 관례). 그 외 모든 실패(5xx, 타임아웃, 연결 오류,
+크기 초과, SSRF 거부, 예상 밖 content-type)는 후보 URL을 차단 처리한다 — 일시 오류가
+크롤링 허가로 오인되면 안 된다.
 """
 from dataclasses import dataclass
 from urllib.parse import urlsplit, urlunsplit
@@ -31,19 +28,16 @@ from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 ROBOTS_DISALLOWED = "robots_disallowed"
 ROBOTS_FETCH_FAILED = "robots_fetch_failed"
 
-# robots.txt is conventionally served as text/plain; fetch_html's default
-# HTML_CONTENT_TYPES would reject it (replace, not merge — see fetch_html's
-# allowed_content_types parameter), so this opts into the narrower type
-# instead. Anything else (e.g. an HTML error page) fails closed below.
+# robots.txt는 관례상 text/plain으로 오므로 fetch_html 기본 HTML_CONTENT_TYPES로는
+# 거부된다 — allowed_content_types는 병합이 아니라 대체이므로 이 타입만 따로
+# 허용한다. 그 외(예: HTML 오류 페이지)는 아래에서 차단된다.
 ROBOTS_TXT_CONTENT_TYPES = ("text/plain",)
 
-# Every fetch failure other than a 404 fails closed (see module docstring).
-# OSError covers DNS resolution failures (socket.gaierror) raised by the
-# resolver inside validate_fetch_url — without it, a candidate host that
-# simply doesn't resolve would crash the caller instead of being treated as
-# an ordinary fetch failure. InvalidFetchUrlError covers a candidate URL
-# validate_fetch_url rejects outright (unsupported scheme, missing host),
-# which fetch_html raises before any network attempt.
+# 404 이외의 모든 실패는 차단 처리한다(모듈 설명 참고). OSError는
+# validate_fetch_url 내부 리졸버가 내는 DNS 조회 실패(socket.gaierror)까지
+# 포함한다 — 없으면 이름이 안 풀리는 호스트가 호출자를 그대로 죽여버린다.
+# InvalidFetchUrlError는 validate_fetch_url이 애초에 거부하는 URL(지원하지 않는
+# 스킴, 호스트 없음)이며 fetch_html이 네트워크 시도 전에 던진다.
 _ROBOTS_FETCH_FAILURES = (
     FetchError,
     UnsupportedContentTypeError,
@@ -61,12 +55,11 @@ class RobotsCheckResult:
 
 
 class RobotsChecker:
-    """Per-host cached robots.txt checker.
+    """호스트별로 robots.txt를 캐시하는 체커.
 
-    The cache lives on the instance (self._cache), not the module — a
-    module-level cache would leak across unrelated call sites (tests,
-    concurrent discovery runs) and never expire. Callers that want caching
-    across a run should keep one RobotsChecker instance for that run.
+    캐시는 모듈이 아니라 인스턴스(self._cache)에 둔다 — 모듈 전역 캐시는 테스트나
+    동시 수집 실행 사이에 서로 새어나가고 절대 만료되지 않는다. 실행 한 번 동안
+    캐시를 쓰려면 호출자가 RobotsChecker 인스턴스 하나를 계속 들고 있어야 한다.
     """
 
     def __init__(self):
@@ -89,13 +82,11 @@ class RobotsChecker:
         return self.check(url).allowed
 
     def crawl_delay(self, url):
-        """Crawl-delay (seconds) declared for `url`'s host, from the cached
-        parser only — a pure cache read, never a fetch of its own. Returns
-        None when the host has not been checked yet (nothing cached), when
-        its robots.txt fetch failed (cached as None, see `check()`), or when
-        the fetched robots.txt simply did not declare a Crawl-delay for
-        USER_AGENT. Callers that want a real value must call `check()` (or
-        `is_allowed()`) for the same URL first so the parser is cached."""
+        """url의 호스트에 대해 캐시된 파서에서만 Crawl-delay(초)를 읽는다 — 직접
+        fetch하지 않는 순수 캐시 조회다. 아직 확인 전(캐시 없음), robots.txt fetch
+        실패(check()에서 None으로 캐시됨), 또는 robots.txt에 USER_AGENT용
+        Crawl-delay가 없는 경우 모두 None을 반환한다. 실제 값을 받으려면 먼저 같은
+        URL로 check()나 is_allowed()를 호출해 파서를 캐시해둬야 한다."""
         parsed = urlsplit(url)
         host_key = (parsed.scheme, parsed.netloc)
         parser = self._cache.get(host_key)
@@ -120,10 +111,10 @@ class RobotsChecker:
 
 
 def _empty_ruleset():
-    """A parser with no rules at all — robots.txt 404 means "allow everything".
+    """규칙이 하나도 없는 파서 — robots.txt가 404면 "전부 허용"으로 취급한다.
 
-    parse() (not read()) also sets last_checked, which can_fetch requires
-    before it will return True for an unmatched agent.
+    read()가 아니라 parse()를 써야 last_checked도 같이 설정되는데, can_fetch가
+    매치되지 않는 에이전트에 True를 돌려주려면 이 값이 필요하다.
     """
     parser = RobotFileParser()
     parser.parse([])

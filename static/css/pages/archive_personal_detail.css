@@ -1,7 +1,7 @@
 /* archive_personal_detail.css — /archive/personal/<id>/ 읽기 전용 상세.
-   Design source: docs/FE/personal-place-detail-edit.md (WED+BIR 사전 산출물,
-   2026-07-30). Mirrors archive_collection_detail.css's 2-col grid / gallery
-   column / ≤45rem single-column + fixed CTA bar structure and tokens.
+   설계 근거는 docs/FE/personal-place-detail-edit.md 참고. 2단 그리드/갤러리
+   칼럼/≤45rem 1열+고정 CTA 바 구조와 토큰을 archive_collection_detail.css와
+   맞춘다.
 
    This page does NOT load archive.css (personal_entries.html의 페이지 전용
    시트) — 그 파일의 최상위 미스코프 클래스(.promote-btn, .record-row-*,

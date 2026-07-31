@@ -21,37 +21,34 @@ from core.vocab import COLLECTION_ITEM_TYPE
 from ._helpers import _archive_query, _render_archive_list, _subject_view
 
 SERIES_INK_COUNT = 12
-# Must stay coprime with SERIES_INK_COUNT — a shared factor would visit only
-# part of the palette and reintroduce collisions well before 12 works.
+# SERIES_INK_COUNT와 서로소여야 한다 — 공약수가 있으면 팔레트 일부만
+# 순회해 12개 작품보다 훨씬 전에 충돌이 다시 생긴다.
 SERIES_INK_STRIDE = 5
 
 
 def _series_ink_classes(titles_in_registration_order) -> dict[str, str]:
-    """Assign an accent-color bucket ("gi-1".."gi-{SERIES_INK_COUNT}") to
-    each work_title by FIRST-REGISTRATION ORDER, not a hash.
+    """각 work_title에 해시가 아니라 최초 등록 순서로 강조색 버킷
+    ("gi-1".."gi-{SERIES_INK_COUNT}")을 배정한다.
 
-    A hash-of-the-string scheme (the previous approach) still collides even
-    after growing the bucket count, by the birthday paradox — with
-    SERIES_INK_COUNT=12 buckets, just 5 distinct work_titles already have
-    roughly a 62% chance that two of them land in the same bucket. Assigning
-    by position instead makes collisions mathematically impossible as long
-    as the number of distinct work_titles stays within SERIES_INK_COUNT.
+    이전 방식인 문자열 해시 기반은 버킷 수를 늘려도 생일 역설 때문에
+    여전히 충돌한다 — SERIES_INK_COUNT=12 버킷이면 서로 다른 work_title
+    5개만 있어도 둘이 같은 버킷에 떨어질 확률이 약 62%다. 대신 위치로
+    배정하면 서로 다른 work_title 수가 SERIES_INK_COUNT 이내인 한
+    충돌이 수학적으로 불가능하다.
 
-    The order must be REGISTRATION order (earliest-first_id first), not
-    count-descending display order: sorting by count would make a
-    work_title's color shift whenever any item is added anywhere in the
-    collection, since that can change the count ranking. Sorting by first
-    registration keeps a work_title's color stable for its whole lifetime.
+    순서는 반드시 등록 순서(먼저 등록된 first_id가 앞)여야지, 개수 내림차순
+    표시 순서면 안 된다: 개수로 정렬하면 컬렉션 어디에 항목이 추가되든
+    개수 순위가 바뀌면서 work_title의 색이 흔들린다. 최초 등록순으로
+    정렬해야 work_title의 색이 평생 안정적으로 유지된다.
 
-    Consecutive registrations are spread around the hue wheel by
-    SERIES_INK_STRIDE rather than taking adjacent buckets. The palette walks
-    the hue wheel in order, so bucket N and N+1 are the 30°-apart pair that is
-    hardest to tell apart at an 8px dot — and back-to-back registrations are
-    exactly the common case. Striding by 5 puts a user's first two works 150°
-    apart instead of 30°. The stride is coprime with SERIES_INK_COUNT, so the
-    mapping is still a bijection and the no-collision guarantee is untouched.
+    연속 등록은 인접 버킷이 아니라 SERIES_INK_STRIDE만큼 색상환에서
+    퍼뜨려 배정한다. 팔레트가 색상환을 순서대로 훑기 때문에 버킷 N과
+    N+1은 8px 점에서 가장 구분하기 어려운 30° 차이 쌍인데, 연속 등록이
+    바로 흔한 경우다. 5칸씩 건너뛰면 사용자의 첫 두 작품이 30°가 아니라
+    150° 떨어진다. 이 보폭은 SERIES_INK_COUNT와 서로소라 매핑이 여전히
+    전단사이고 무충돌 보장도 그대로 유지된다.
 
-    Titles beyond SERIES_INK_COUNT wrap back around to "gi-1".
+    SERIES_INK_COUNT를 넘는 제목은 다시 "gi-1"부터 순환한다.
     """
     return {
         title: f"gi-{index * SERIES_INK_STRIDE % SERIES_INK_COUNT + 1}"
@@ -60,25 +57,24 @@ def _series_ink_classes(titles_in_registration_order) -> dict[str, str]:
 
 
 def _collection_item_row(item, series_ink_classes):
-    """Display row for one CollectionItem card.
+    """CollectionItem 카드 하나의 표시 행.
 
-    ``quantity_label``/``tradeable_label`` are "" (no badge) whenever the
-    respective count is 0 — a wanted-only item with quantity=0 (D1) renders
-    with no numeric badge instead of "수량 0개".
+    해당 개수가 0이면 ``quantity_label``/``tradeable_label``은 ""(배지
+    없음)이다 — quantity=0인 구함 전용 항목은 "수량 0개"가 아니라
+    숫자 배지 없이 렌더링된다.
 
-    ``series_ink_classes`` is the {work_title: class} map from
-    _series_ink_classes(). A blank work_title is never a key in that map
-    (the facet query excludes it), so .get(..., "gi-0") falls through to the
-    no-series bucket without a separate blank-check branch here.
+    ``series_ink_classes``는 _series_ink_classes()가 만든 {work_title:
+    class} 맵이다. 빈 work_title은 그 맵의 키가 될 수 없어(facet 쿼리가
+    제외한다) .get(..., "gi-0")가 별도 빈 값 검사 없이 시리즈 없음
+    버킷으로 자연스럽게 빠진다.
 
-    ``badges`` is the fixed-order (owned -> wanted -> tradeable) badge list
-    consumed by templates/core/partials/_collection_badges.html. Computed
-    once here so the four template consumers never each re-derive
-    ``item.quantity > 0`` themselves (that duplication is what hid the
-    original owned/wanted axis bug). ``tradeable=True`` implies
-    ``owned=True`` at the DB level (tradeable_quantity <= quantity), so the
-    "owned False, tradeable True" branch is unreachable and intentionally
-    has no code path here.
+    ``badges``는 templates/core/partials/_collection_badges.html이
+    쓰는 고정 순서(보유 -> 구함 -> 교환) 배지 목록이다. 네 곳의 템플릿
+    소비처가 각자 ``item.quantity > 0``을 다시 계산하지 않도록 여기서
+    한 번만 계산한다(그 중복이 원래 보유/구함 축 버그를 숨겼었다).
+    DB 수준에서 ``tradeable=True``는 항상 ``owned=True``를 함의하므로
+    (tradeable_quantity <= quantity) "보유 안 함, 교환 가능" 분기는
+    도달 불가능하며 여기 일부러 코드 경로를 두지 않았다.
     """
     owned = item.quantity > 0
     wanted = item.is_wanted
@@ -109,14 +105,13 @@ def _collection_item_row(item, series_ink_classes):
 @login_required
 @ensure_csrf_cookie
 def archive_collection_items(request):
-    # Legacy bookmark compat (2026-07-28): ?is_wanted=false used to BE the
-    # owned tab's URL; now that owned is its own axis, a bookmarked
-    # ?is_wanted=false link must forward to ?owned=true so it stops
-    # under-counting (owned-and-wanted rows used to be excluded). Skipped
-    # when owned is already present — an explicit owned value means the
-    # caller already made a deliberate choice on the new axis, and this
-    # shim must not overwrite it. Placed before any query work since a
-    # redirected request has no reason to hit the database.
+    # 옛 북마크 호환: ?is_wanted=false가 예전엔 보유 탭의 URL 그 자체였다.
+    # 이제 보유가 독립된 축이 됐으므로, 북마크된 ?is_wanted=false 링크는
+    # ?owned=true로 넘겨야 과소 집계(보유+구함 행이 예전엔 제외됐다)를
+    # 멈춘다. owned가 이미 있으면 건너뛴다 — 명시적 owned 값은 호출자가
+    # 이미 새 축에서 의도적으로 선택했다는 뜻이라 이 보정이 덮어쓰면 안
+    # 된다. 리다이렉트되는 요청은 DB를 건드릴 이유가 없으므로 조회 작업
+    # 전에 배치한다.
     if request.GET.get("is_wanted") == "false" and "owned" not in request.GET:
         redirect_params = request.GET.copy()
         del redirect_params["is_wanted"]
@@ -128,8 +123,8 @@ def archive_collection_items(request):
     work_title = request.GET.get("work_title", "")
     character_name = request.GET.get("character_name", "")
     item_type = request.GET.get("item_type", "")
-    # Unrecognised values (including absence) mean "no filter" — mirrors the
-    # visits/personal-entries filter fallback discipline (500 prevention).
+    # 알 수 없는 값(값이 없는 경우 포함)은 "필터 없음"을 뜻한다 —
+    # visits/personal-entries의 필터 대체 규칙과 동일(500 방지).
     is_wanted = {"true": True, "false": False}.get(request.GET.get("is_wanted", ""))
     is_wanted_value = {True: "true", False: "false"}.get(is_wanted, "")
     duplicate = {"true": True, "false": False}.get(request.GET.get("duplicate", ""))
@@ -138,8 +133,8 @@ def archive_collection_items(request):
     tradeable_value = {True: "true", False: "false"}.get(tradeable, "")
     owned = {"true": True, "false": False}.get(request.GET.get("owned", ""))
     owned_value = {True: "true", False: "false"}.get(owned, "")
-    # Only "list" is recognised; absence or any other value falls back to the
-    # default gallery view (same 500-prevention fallback discipline as above).
+    # "list"만 인식한다. 값이 없거나 다른 값이면 기본 갤러리 뷰로
+    # 대체한다(위와 같은 500 방지 규칙).
     view_mode = "list" if request.GET.get("view") == "list" else "gallery"
 
     summary_counts = user_collection_item_summary_counts(user)
@@ -159,10 +154,10 @@ def archive_collection_items(request):
     paginator = Paginator(filtered_qs, ARCHIVE_COLLECTION_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    # One facet query for the WHOLE collection (not the filtered/paged
-    # subset) drives both the sidebar counts and the per-series color
-    # palette, so the same work_title always gets the same color no matter
-    # which page, filter, or search narrowed the current view.
+    # 필터·페이지로 좁혀진 부분집합이 아니라 컬렉션 전체에 대한 facet
+    # 조회 하나가 사이드바 카운트와 시리즈별 색상 팔레트를 모두
+    # 만든다 — 그래야 어떤 페이지·필터·검색으로 보든 같은 work_title이
+    # 항상 같은 색을 가진다.
     work_title_facets = user_collection_item_work_title_facets(user)
     palette_titles = [
         facet["work_title"]
@@ -172,16 +167,16 @@ def archive_collection_items(request):
 
     item_rows = [_collection_item_row(item, series_ink_classes) for item in page_obj.object_list]
 
-    # --- Query-string helpers ----------------------------------------------
-    # Four DIFFERENT axis subsets, easy to confuse:
-    #   chip_query_suffix  — q + 3 filters + view; is_wanted/duplicate/tradeable
-    #                        EXCLUDED (they are one exclusive sub-tab axis that
-    #                        chips switch between, so a chip must never carry
-    #                        the sub-tab that's already active)
-    #   pager_query        — all 3 filters + q + view + all 3 sub-tab values
-    #                        (paging changes nothing about the active filters)
-    #   clear_query_suffix — 3 filters + view + all 3 sub-tab values, q
-    #                        EXCLUDED (clear removes only the search term)
+    # --- 쿼리스트링 도우미 --------------------------------------------------
+    # 서로 다른 네 가지 축 부분집합이라 헷갈리기 쉽다:
+    #   chip_query_suffix  — q + 필터 3개 + view. is_wanted/duplicate/
+    #                        tradeable/owned는 제외(이들은 칩이 서로
+    #                        전환하는 하나의 배타적 서브탭 축이라, 칩이
+    #                        이미 활성인 서브탭을 함께 실어 보내면 안 된다)
+    #   pager_query        — 필터 3개 + q + view + 서브탭 값 전부(페이징은
+    #                        활성 필터에 아무 영향도 주지 않는다)
+    #   clear_query_suffix — 필터 3개 + view + 서브탭 값 전부, q는 제외
+    #                        (초기화는 검색어만 지운다)
     filter_parts = []
     if work_title:
         filter_parts.append(("work_title", work_title))
@@ -228,12 +223,12 @@ def archive_collection_items(request):
             "owned_count": summary_counts["owned_count"],
             "wanted_count": summary_counts["wanted_count"],
             "tradeable_count": summary_counts["tradeable_count"],
-            # Same series_ink_classes map the cards use (built once above from
-            # the whole collection), so a sidebar dot and the cards it
-            # filters to structurally always share one color — the whole
-            # point of the per-series coding. work_title_facets is already
-            # sorted count-descending by the query layer, so this just
-            # relabels it with the display color; no re-sort here.
+            # 카드가 쓰는 것과 같은 series_ink_classes 맵(위에서 컬렉션
+            # 전체로 한 번만 만든 것)을 쓰므로, 사이드바 점과 그것이
+            # 필터링하는 카드가 구조적으로 항상 같은 색을 갖는다 — 그게
+            # 시리즈별 색상 부여의 핵심이다. work_title_facets는 쿼리
+            # 레이어가 이미 개수 내림차순으로 정렬해뒀으므로 여기서는
+            # 표시 색만 붙이고 다시 정렬하지 않는다.
             "work_title_counts": [
                 {
                     "title": facet["work_title"],
@@ -261,26 +256,25 @@ def archive_collection_items(request):
 
 
 def _visit_record_option(record):
-    """Display option for one selectable/preselected visit record.
+    """선택 가능하거나 미리 선택된 방문 기록 하나의 표시 옵션.
 
-    ``label`` combines the visit's subject title and date so the create
-    form's dropdown/locked display reads unambiguously even when the same
-    subject was visited more than once (collection domain design plan §3-4
-    (c): repeat visits are allowed, so titles alone can collide).
+    ``label``은 방문 대상의 제목과 날짜를 함께 붙여서, 같은 대상을 두 번
+    이상 방문한 경우에도(재방문은 허용되므로 제목만으로는 겹칠 수 있다)
+    작성 폼의 드롭다운/잠긴 표시가 명확히 읽히게 한다.
     """
     subject = _subject_view(record)
     return {"id": record.pk, "label": f"{subject['title']} · {record.visited_on}"}
 
 
 def _parse_collection_visit_preselect(request):
-    """Resolve an optional ?visit_record=<id> into a locked visit record for
-    the collection-item create form.
+    """컬렉션 항목 작성 폼을 위해, 선택적인 ?visit_record=<id>를 잠긴
+    방문 기록으로 해석한다.
 
-    Mirrors _parse_visit_preselect's ASCII/digit/length guard against a
-    crafted id turning into a 500, but scopes the lookup to VisitRecord rows
-    owned by the requester — an id that exists but belongs to another user
-    must not lock in their record. Returns None for any invalid, missing, or
-    foreign id, so the create form falls back to the selectable dropdown.
+    조작된 id가 500으로 이어지는 것을 막는 ASCII/숫자/길이 가드는
+    _parse_visit_preselect와 동일하지만, 조회 범위를 요청자가 소유한
+    VisitRecord 행으로 한정한다 — id는 존재해도 다른 사용자 소유라면
+    그 기록을 잠가서는 안 된다. 유효하지 않거나 없거나 남의 id면 모두
+    None을 반환해 작성 폼이 선택 드롭다운으로 대체된다.
     """
     ident = request.GET.get("visit_record", "")
     if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
@@ -299,14 +293,14 @@ def _parse_collection_visit_preselect(request):
 @login_required
 @ensure_csrf_cookie
 def archive_collection_item_create(request):
-    """Read-only render: the form posts to the existing collection-item JSON
-    API (archive.collection_urls) from a future collection JS module. Event
-    is never a user-facing control here — create_collection_item always
-    syncs it from visit_record server-side (§3-1 FK-pair invariant), so this
-    page must never render a name="event" input.
+    """렌더링만 하는 뷰다: 폼은 컬렉션 JS 모듈에서 기존 컬렉션 항목 JSON
+    API(archive.collection_urls)로 제출된다. event는 여기서 사용자가
+    직접 다루는 컨트롤이 아니다 — create_collection_item이 항상 서버
+    쪽에서 visit_record로부터 동기화하므로(FK 쌍 불변식), 이 페이지는
+    name="event" input을 절대 렌더링하면 안 된다.
     """
-    # Issued once per form render into a hidden input so the token survives
-    # a bfcache DOM snapshot and serves as the replay idempotency key (plan §4-1).
+    # 폼을 렌더링할 때마다 한 번씩 발급해 숨은 input에 담는다 — 이 토큰이
+    # bfcache DOM 스냅샷에서도 살아남아 재전송 방지용 멱등 키로 쓰인다.
     return render(
         request,
         "core/archive/collection_create.html",
@@ -322,10 +316,10 @@ def archive_collection_item_create(request):
 @login_required
 @ensure_csrf_cookie
 def archive_collection_item_edit(request, item_id):
-    """Owner-scoped edit page (404 for another user's item). Mirrors
-    archive_collection_item_create: no name="event" control (event stays
-    server-synced from visit_record) and no visibility control (§3-1,
-    reserved for the future trade opt-in gate).
+    """소유자 한정 수정 페이지(다른 사용자의 항목이면 404).
+    archive_collection_item_create와 동일하게 name="event" 컨트롤이
+    없고(event는 계속 서버가 visit_record로 동기화한다) 공개 범위
+    컨트롤도 없다(향후 교환 옵트인 게이트를 위해 남겨둔 자리).
     """
     item = get_object_or_404(CollectionItem, pk=item_id, user=request.user)
     return render(
@@ -339,13 +333,13 @@ def archive_collection_item_edit(request, item_id):
 
 
 def _collection_item_meta_rows(item):
-    """Derived meta headline rows for the read-only detail page.
+    """읽기 전용 상세 페이지용 파생 메타 정보 행들.
 
-    Each row is omitted whenever its backing field is empty — the caller
-    template renders the whole ``<dl>`` conditionally on this list being
-    non-empty (CD-15). The linked-visit row's title prefers the visit's
-    Event title, falling back to the PersonalEntry title when the visit has
-    no Event, mirroring collection_edit.html:115's existing branch.
+    각 행은 뒷받침하는 필드가 비어 있으면 생략된다 — 호출하는 템플릿은
+    이 리스트가 비어 있지 않을 때만 전체 ``<dl>``을 렌더링한다. 연결된
+    방문 행의 제목은 방문의 Event 제목을 우선하고, 방문에 Event가 없으면
+    PersonalEntry 제목으로 대체한다(collection_edit.html:115의 기존
+    분기와 동일).
     """
     rows = []
     if item.quantity > 0:
@@ -396,13 +390,13 @@ def _collection_item_meta_rows(item):
 @login_required
 @ensure_csrf_cookie
 def archive_collection_item_detail(request, item_id):
-    """Read-only detail page for one CollectionItem (owner-scoped).
+    """CollectionItem 하나의 읽기 전용 상세 페이지(소유자 한정).
 
-    Shares the whole-collection color palette with archive_collection_items
-    (built from user_collection_item_work_title_facets, sorted by
-    first_id) rather than computing a single-item palette — a work_title's
-    color bucket must be identical whether the user is viewing the list or
-    one item's detail page (CD-14).
+    항목 하나만을 위한 팔레트를 따로 계산하지 않고
+    archive_collection_items와 컬렉션 전체 색상 팔레트를 공유한다
+    (user_collection_item_work_title_facets를 first_id로 정렬해 구성) —
+    사용자가 목록을 보든 항목 하나의 상세를 보든 work_title의 색 버킷은
+    반드시 같아야 한다.
     """
     item = get_object_or_404(
         CollectionItem.objects.select_related(

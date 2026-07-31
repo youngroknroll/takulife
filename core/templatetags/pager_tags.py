@@ -1,9 +1,9 @@
-"""Template tag for the shared pagination component.
+"""공용 페이지네이션 컴포넌트의 템플릿 태그.
 
-Exists because ``Paginator.get_elided_page_range`` (and any equivalent
-windowing) needs the current page number as an argument, and Django templates
-cannot call a method with arguments. The arithmetic itself lives in
-``core.pagination`` so it is unit-testable without a template.
+``Paginator.get_elided_page_range``(및 그와 동등한 창 계산)는 현재 페이지
+번호를 인자로 받아야 하는데 Django 템플릿은 인자를 받는 메서드를 호출할
+수 없어서 존재한다. 계산 자체는 ``core.pagination``에 있어 템플릿 없이도
+단위 테스트가 가능하다.
 """
 
 from django import template
@@ -15,5 +15,5 @@ register = template.Library()
 
 @register.simple_tag
 def pager_data(page_obj):
-    """Return the pager view-model for ``page_obj`` (see core.pagination)."""
+    """``page_obj``의 페이저 뷰모델을 반환한다(core.pagination 참고)."""
     return pager_context(page_obj)

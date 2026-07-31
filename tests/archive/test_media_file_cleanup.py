@@ -1,10 +1,9 @@
-"""Media file cleanup on delete.
+"""삭제 시 미디어 파일 정리 테스트.
 
-Deleting a VisitRecordPhoto (directly or via VisitRecord CASCADE) or a
-PersonalEntry with an image must also remove the underlying file from
-storage. Cleanup must only happen once the deleting transaction actually
-commits (best-effort, via transaction.on_commit) so a rolled-back delete
-never loses a file that a caller expected to still be there.
+VisitRecordPhoto를 삭제(직접 또는 VisitRecord CASCADE로)하거나 이미지가 있는
+PersonalEntry를 삭제하면 스토리지의 실제 파일도 함께 지워야 한다. 정리는 삭제
+트랜잭션이 실제로 커밋된 뒤에만 일어나야 하므로(transaction.on_commit,
+best-effort), 롤백된 삭제가 아직 남아 있어야 할 파일을 지우는 일은 없어야 한다.
 """
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -55,8 +54,8 @@ def test_방문_기록을_삭제하면_연쇄로_사진_파일도_제거된다(m
 
 @pytest.mark.django_db
 def test_사진_삭제_트랜잭션이_롤백되면_파일이_보존된다(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
-    """If the deleting transaction rolls back, the on_commit hook must never
-    fire, so the file must remain in storage."""
+    """삭제 트랜잭션이 롤백되면 on_commit 훅이 절대 실행되지 않아야 하므로
+    파일이 스토리지에 그대로 남아 있어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -99,9 +98,9 @@ def test_개인_항목을_삭제하면_이미지_파일도_제거된다(make_use
 def test_컬렉션_아이템을_삭제하면_이미지_파일도_제거된다(
     make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_collection_item
 ):
-    """§6-b Deferred (C4 gate M4): CollectionItem had no post_delete image
-    cleanup receiver — this gap only became reachable once C5 added a
-    delete API/application path for CollectionItem."""
+    """§6-b 유예 사항(C4 게이트 M4): CollectionItem에는 post_delete 이미지 정리
+    리시버가 없었다 — C5가 CollectionItem 삭제 API/애플리케이션 경로를 추가하면서
+    이 공백이 비로소 드러났다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     item = make_collection_item(

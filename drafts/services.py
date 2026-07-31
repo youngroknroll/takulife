@@ -33,10 +33,10 @@ class DraftImmutableFieldError(Exception):
 
 
 class DraftVocabError(Exception):
-    """A draft edit tried to set extracted_category/extracted_region to a value
-    outside core.vocab. Raised at edit time rather than at approval: the staff
-    operator who typed it should hear about it immediately, and a bad value
-    must never sit in the review queue looking legitimate."""
+    """드래프트 수정에서 extracted_category/extracted_region을 core.vocab에 없는
+    값으로 바꾸려 할 때 발생한다. 승인 시점이 아니라 수정 시점에 바로 막는다 —
+    입력한 담당자가 즉시 알아야 하고, 잘못된 값이 정상처럼 보이며 검수 대기열에
+    남아 있으면 안 된다."""
 
     pass
 
@@ -171,13 +171,12 @@ def create_draft_from_fields(
     region="",
     summary="",
 ):
-    """Create a PENDING draft directly from caller-supplied fields (no fetch).
-
-    Used to seed the admin review pipeline from data the caller already has (e.g.
-    a user's unofficial item being 공식 제보'd). ``source_url`` is the official URL
-    — unique here, and on approval it becomes the published event's official_url.
-    The fields land in the same ``extracted_*`` slots the admin reviews/edits, so
-    free-text category/region can be corrected before publication.
+    """fetch 없이 호출자가 준 필드로 바로 PENDING 드래프트를 만든다. 사용자가 비공식
+    으로 등록한 항목을 공식 제보하는 등, 이미 가진 데이터로 검수 파이프라인에 넣을
+    때 쓴다. source_url은 공식 URL이며 여기서 유일해야 하고, 승인되면 게시된
+    이벤트의 official_url이 된다. 필드는 관리자가 검수·수정하는 것과 같은
+    extracted_* 자리에 들어가므로 게시 전에 자유 텍스트 category/region을 고칠 수
+    있다.
     """
     try:
         with transaction.atomic():
@@ -223,12 +222,10 @@ def update_draft(*, draft_id, updates):
     if not set(updates).issubset(mutable_fields):
         raise DraftImmutableFieldError
 
-    # Field-name validation above says *which* fields may change; this says
-    # *what* they may change to. Without it a hand-edited draft carried free
-    # text through approve_draft into a published event unchallenged.
-    # Checked before the atomic block so a rejected value writes nothing at
-    # all — a partial save would leave the operator's screen disagreeing with
-    # the DB.
+    # 위에서는 어떤 필드를 바꿀 수 있는지 검사했고, 여기서는 그 값이 유효한지
+    # 검사한다. 이게 없으면 수기로 고친 자유 텍스트가 검증 없이 approve_draft를
+    # 거쳐 게시된 이벤트까지 들어간다. atomic 블록 전에 검사해야 거부된 값이
+    # 아무것도 저장되지 않는다 — 부분 저장되면 화면과 DB가 어긋난다.
     if "extracted_category" in updates and not is_valid_category(
         updates["extracted_category"] or ""
     ):

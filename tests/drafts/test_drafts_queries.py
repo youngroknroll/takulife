@@ -1,27 +1,11 @@
-"""Tests for drafts/queries.py: list_drafts() and DRAFT_LISTING_PAGE_SIZE.
-
-Covers:
-- list_drafts() default (no status) returns all drafts ordered by -id
-- list_drafts(status=...) filters correctly per review_status
-- Filtered results preserve -id ordering
-- Unknown status value returns an empty queryset (function-level contract)
-- Counts are asserted with N>=2 per status to avoid false-confidence
-  regressions (filter vs exists)
-- DRAFT_LISTING_PAGE_SIZE constant equals 10
-- list_draft_sources() (PR-5b staff dashboard freshness): ordered by
-  -enabled, name — the staff/views.py dashboard() view must call this
-  helper rather than querying DraftSource itself (prompt_plan.md §3-1-5).
-"""
+"""drafts/queries.py 테스트: list_drafts()와 DRAFT_LISTING_PAGE_SIZE.
+list_draft_sources()는 -enabled, name 순 정렬을 검증하며, staff 대시보드는
+DraftSource를 직접 조회하지 않고 이 헬퍼를 거쳐야 한다."""
 import pytest
 
 from drafts.models import DraftSource, EventDraft
 
 pytestmark = pytest.mark.domain
-
-
-# ---------------------------------------------------------------------------
-# draft_review_stats() unit tests (moved from tests/drafts/test_drafts_stats.py)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db

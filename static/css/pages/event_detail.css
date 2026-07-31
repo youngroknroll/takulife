@@ -1,12 +1,10 @@
-/* event_detail.css — /events/<id>/ editorial reskin.
-   Design source: 행사 상세 리빌드 track (design-review-queue.md item 22
-   migration note, 2026-07-23). Mirrors archive_visit_detail.css's structure:
-   328px poster column + flexible content column collapsing to one column at
-   ≤60rem, a hairline meta <dl>, and a fixed mobile CTA bar. Entirely scoped
-   under `.event-detail-page` (this page's <main> root class) — does not
-   edit any shared file; page-scoped copies of the poster no-image gradient
-   (_poster_card.html) and the [data-tone] status-color mechanism
-   (event_list.css) are ported here instead. */
+/* event_detail.css — /events/<id>/ 에디토리얼 리스킨. archive_visit_
+   detail.css의 구조(328px 포스터 칼럼 + 유동 콘텐츠 칼럼, ≤60rem에서
+   1칼럼으로 접힘, 헤어라인 메타 <dl>, 고정 모바일 CTA 바)를 그대로
+   따른다. `.event-detail-page` 스코프에서만 동작하며 공용 파일은
+   수정하지 않는다 — 포스터 이미지 없음 그라디언트(_poster_card.html)와
+   [data-tone] 상태색 메커니즘(event_list.css)을 여기 페이지 스코프로
+   복제해서 쓴다. */
 
 .event-detail-page {
   padding-bottom: 6rem;
@@ -42,11 +40,11 @@
   grid-column: 2;
 }
 
-/* Ticket-stub signature ("공식 확인" stamp), ported from the previous
-   .official-stamp — same condition (event.official_url), same audited
-   colors. Anchored to .event-detail-grid (the re-established positioning
-   context) so it overlays the top-right corner of the whole grid area
-   rather than just the poster or just the content column. */
+/* 티켓 스텁 서명("공식 확인" 스탬프), 이전 .official-stamp에서 이식
+   (조건도 event.official_url로 동일, 감사된 색상도 동일).
+   .event-detail-grid(포지셔닝 컨텍스트)를 기준으로 배치해 포스터나
+   콘텐츠 칼럼 한쪽이 아니라 그리드 영역 전체의 우상단에 겹치도록
+   한다. */
 .event-detail-page .event-detail-stamp {
   position: absolute;
   top: 0;
@@ -92,9 +90,9 @@
   object-fit: cover;
   display: block;
 }
-/* No-poster fallback: page-scoped port of _poster_card.html's gradient +
-   rotated category watermark. --cat-ink/--cat-soft are set inline on this
-   element per-category (falls back to --brand-ink/--brand-soft). */
+/* 포스터 없음 대체: _poster_card.html의 그라디언트 + 회전된 카테고리
+   워터마크를 페이지 스코프로 이식. --cat-ink/--cat-soft는 카테고리별로
+   인라인 지정되며 없으면 --brand-ink/--brand-soft로 대체된다. */
 .event-detail-page .event-detail-poster-frame.no-poster {
   display: flex;
   align-items: center;
@@ -117,10 +115,11 @@
   opacity: 0.9;
 }
 
-/* Status pill, overlaid top-left of the frame. Non-interactive (span,
-   pointer-events:none, aria-hidden) — decorative reflection of status_slug,
-   not a control. Tone colors ported page-scoped from event_list.css's
-   [data-tone] mechanism; also used below on the related-events tone pill. */
+/* 상태 배지, 프레임 좌상단에 겹쳐 표시. 비상호작용(span,
+   pointer-events:none, aria-hidden) — status_slug를 반영하는
+   장식일 뿐 컨트롤이 아니다. 톤 색상은 event_list.css의 [data-tone]
+   메커니즘을 페이지 스코프로 이식했으며, 아래 관련 행사 톤 배지에도
+   쓰인다. */
 .event-detail-page .event-detail-status-pill {
   position: absolute;
   top: 0.75rem;
@@ -391,8 +390,8 @@
 .event-detail-page .event-detail-location-link:hover {
   text-decoration: underline;
 }
-/* Neutral bordered placeholder, not a fake map graphic — a real embed is a
-   backend/frontend follow-up (see TODO comment in the template). */
+/* 실제 지도 그래픽이 아닌 중립적인 테두리 플레이스홀더 — 실제 임베드는
+   백엔드/프론트엔드 후속 작업이다(템플릿의 TODO 주석 참고). */
 .event-detail-page .event-detail-map {
   margin-top: 0.875rem;
   min-height: 8rem;

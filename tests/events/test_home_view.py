@@ -1,11 +1,11 @@
-"""Tests for the home page view context (core.views.home).
+"""홈 화면 뷰 컨텍스트(core.views.home)를 검증한다.
 
-Covers:
-- "카테고리로 둘러보기" tiles: one tile per vocab category, in vocab order,
-  each carrying the count of *published* events in that category.
-- Context key caps (ongoing/closing/recent limited to 15).
-- D-5 closing window (home-only selection concern).
-- Guard: D+5 events in closing_rows still have status_slug == "ongoing".
+다루는 범위:
+- "카테고리로 둘러보기" 타일: 어휘 순서대로 카테고리마다 타일 1개, 각각
+  해당 카테고리의 게시 행사 건수를 담는다.
+- 컨텍스트 키 상한(ongoing/closing/recent는 15건 제한).
+- D-5 마감임박 창(홈 화면만의 선정 기준).
+- 가드: closing_rows의 D+5 행사도 status_slug == "ongoing"이어야 한다.
 """
 import pytest
 from datetime import date, timedelta
@@ -38,7 +38,6 @@ class TestHomeCategoryTiles:
         make_event(category="popup_store")
         make_event(category="popup_store")
         make_event(category="exhibition")
-        # a draft in popup_store must NOT be counted
         make_event(category="popup_store", publish_status=Event.PublishStatus.DRAFT)
 
         resp = Client().get("/")
@@ -59,7 +58,7 @@ class TestHomeCategoryTiles:
 
 @pytest.mark.django_db
 class TestHomeContextCaps:
-    """Home view limits each section to 15 items even when more exist."""
+    """홈 화면은 더 많은 항목이 있어도 각 섹션을 15건까지만 노출한다."""
 
     def _make_ongoing(self, make_event, today, n):
         for i in range(n):
@@ -78,7 +77,7 @@ class TestHomeContextCaps:
             make_event(
                 title=f"Closing {i}",
                 start_date=today - timedelta(days=1),
-                end_date=today + timedelta(days=i % 5 + 1),  # D+1 to D+5
+                end_date=today + timedelta(days=i % 5 + 1),
             )
 
     def test_진행중_행사가_15건을_넘으면_홈_화면에_15건까지만_노출된다(self, make_event):
@@ -113,7 +112,7 @@ class TestHomeContextCaps:
 
 @pytest.mark.django_db
 class TestHomeClosingWindow:
-    """Home view uses a D-5 closing window (not the global D-4 window)."""
+    """홈 화면은 D-5 마감임박 창을 쓴다(전역 D-4 창이 아니다)."""
 
     def test_종료일이_오늘로부터_5일_후인_행사는_마감_임박_목록에_포함된다(self, make_event):
         today = date(2026, 6, 26)
@@ -142,7 +141,7 @@ class TestHomeClosingWindow:
 
 @pytest.mark.django_db
 class TestHomeSlidersDropEndedEvents:
-    """Sliders hide events whose period has passed (end_date < today)."""
+    """슬라이더는 기간이 지난 행사(end_date < 오늘)를 숨긴다."""
 
     def test_종료일이_지난_행사는_신규_행사_목록에서_제외되고_진행중인_행사는_유지된다(self, make_event):
         today = date(2026, 6, 26)
@@ -173,14 +172,13 @@ class TestHomeSlidersDropEndedEvents:
 
 @pytest.mark.django_db
 class TestHomePosterSectionsAlwaysRenderSlider:
-    """The 3 poster sections (이번 주/곧 종료/새 이벤트) used to branch on row
-    count — a section at or below its threshold (ongoing<=6, closing<=3,
-    recent<=6) rendered a static .poster-card-grid instead of the
-    hscroll-wrap slider the other sections used, producing a visibly
-    different layout (no arrows, left-aligned static grid) whenever a
-    section happened to have few rows. All 3 sections now always render the
-    hscroll-wrap markup regardless of row count; hscroll.js hides the arrows
-    via visibility when there's nothing to scroll."""
+    """포스터 3섹션(이번 주/곧 종료/새 이벤트)은 예전엔 행 수로 분기했다 —
+    임계값 이하(ongoing<=6, closing<=3, recent<=6)면 다른 섹션이 쓰는
+    hscroll-wrap 슬라이더 대신 정적 .poster-card-grid를 렌더링해, 행이 적을
+    때마다 눈에 띄게 다른 레이아웃(화살표 없음, 좌측 정렬 정적 그리드)이
+    나왔다. 이제 3섹션 모두 행 수와 무관하게 항상 hscroll-wrap 마크업을
+    렌더링하며, 스크롤할 게 없으면 hscroll.js가 visibility로 화살표를
+    숨긴다."""
 
     def test_마감_임박_섹션은_행이_적어도_정적_그리드_대신_hscroll_슬라이더로_렌더링된다(self, make_event):
         today = date(2026, 6, 26)
@@ -201,15 +199,14 @@ class TestHomePosterSectionsAlwaysRenderSlider:
 
 @pytest.mark.django_db
 class TestHomeClosingStatusDivergence:
-    """Guard: a D+5 event selected into closing_rows is still status_slug=="ongoing".
+    """가드: closing_rows에 뽑힌 D+5 행사도 status_slug는 여전히 "ongoing"이다.
 
-    This documents the intentional divergence between:
-    - Home selection: ending_within_days(5) — selects D+5 events.
-    - Status classification: derive_event_display uses CLOSING_SOON_DAYS==4, so
-      a D+5 event is still "ongoing" from a status perspective.
+    다음 두 기준이 의도적으로 다르다는 것을 기록해 둔다:
+    - 홈 선정 기준: ending_within_days(5) — D+5 행사까지 뽑는다.
+    - 상태 분류 기준: derive_event_display는 CLOSING_SOON_DAYS==4를 쓰므로
+      D+5 행사는 상태상 여전히 "ongoing"이다.
 
-    If CLOSING_SOON_DAYS is ever changed to 5, this test will catch the
-    accidental coupling.
+    CLOSING_SOON_DAYS가 5로 바뀌면 이 테스트가 의도치 않은 결합을 잡아낸다.
     """
 
     def test_마감_임박_목록에_포함된_D플러스5_행사도_상태_슬러그는_진행중이다(self, make_event):
@@ -229,12 +226,12 @@ class TestHomeClosingStatusDivergence:
 
 @pytest.mark.django_db
 class TestHomeCollectionSnapshotContext:
-    """Collection-first home (H-1 행위 C): a logged-in user's personalized
-    snapshot — collection_summary/recent_goods/unrecorded/upcoming_planned/
-    snapshot_active. archive.models is imported inside each test function
-    (not at module top) since only this class needs it and tests/events/
-    carries no archive factory fixtures (make_status/make_collection_item
-    live in tests/archive/conftest.py, out of scope here)."""
+    """컬렉션-퍼스트 홈: 로그인 사용자의 개인화 스냅샷 —
+    collection_summary/recent_goods/unrecorded/upcoming_planned/snapshot_active.
+    archive.models은 모듈 상단이 아니라 각 테스트 함수 안에서 임포트한다.
+    이 클래스만 필요하고, tests/events/에는 archive 팩토리 픽스처가 없기
+    때문이다(make_status/make_collection_item은 tests/archive/conftest.py에
+    있어 여기서는 범위 밖이다)."""
 
     SNAPSHOT_KEYS = (
         "collection_summary",
@@ -285,11 +282,10 @@ class TestHomeCollectionSnapshotContext:
             assert key not in resp.context
 
     def test_비로그인_사용자의_홈_응답에는_컬렉션_스냅샷_마크업이_전혀_포함되지_않는다(self):
-        """§7-b-1: the template gates the whole panel behind {% if
-        request.user.is_authenticated %} as a second, template-level
-        defence beyond the context-key check above — an anonymous response
-        must carry zero bytes of the panel's markup, not just miss its
-        context keys."""
+        """§7-b-1: 템플릿은 위 컨텍스트 키 검사와 별개로 {% if
+        request.user.is_authenticated %}로 패널 전체를 한 번 더 막는다 —
+        비로그인 응답은 컨텍스트 키만 빠지는 게 아니라 패널 마크업이
+        한 바이트도 없어야 한다."""
         resp = Client().get("/")
 
         assert b"snapshot-panel" not in resp.content
@@ -315,8 +311,7 @@ class TestHomeCollectionSnapshotContext:
             user=user, event=upcoming_event, status=UserEventStatus.Status.PLANNED
         )
 
-        # other user seeded identically on all 3 axes — must never leak into
-        # this user's snapshot.
+        # 다른 유저도 동일한 3축 데이터를 갖지만, 이 유저의 스냅샷에 섞이면 안 된다.
         CollectionItem.objects.create(user=other, name="타 유저 보유 아이템")
         other_visited_event = make_event(title="타 유저 다녀온 행사")
         UserEventStatus.objects.create(
@@ -394,10 +389,9 @@ class TestHomeCollectionSnapshotContext:
         assert len(resp.context["upcoming_planned"]) == 4
 
     def test_보유는_없고_구하는_아이템만_있어도_컬렉션_스냅샷이_활성화된다(self, make_user):
-        """snapshot_active is owned+wanted (H4) — deliberately different from
-        mypage's collection_count, which counts every registered row
-        (total_count) regardless of axis membership. A wanted-only
-        collection (owned 0) must still activate the snapshot."""
+        """snapshot_active는 보유+구함 기준이다 — 축과 무관하게 등록된 모든
+        행을 세는(total_count) 마이페이지의 collection_count와는 일부러
+        다르다. 구함만 있는 컬렉션(보유 0)도 스냅샷을 활성화해야 한다."""
         from archive.models import CollectionItem
 
         user = make_user()

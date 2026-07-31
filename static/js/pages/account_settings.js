@@ -1,12 +1,6 @@
 /**
- * account_settings.js — on load, scroll the active account-settings index
- * tab into view inside its horizontally scrolling mobile track
- * (static/css/pages/account_settings.css .account-settings-index-tabs), so
- * it's never hidden off-screen on narrow viewports. Same pattern as
- * static/js/components/staff-shell.js's revealActiveTab, ported here
- * page-scoped instead of reused directly — that file's own selector is
- * hardcoded to .staff-shell-tabs and this page is not part of the staff
- * shell. No animation — jumps straight to position.
+ * 좁은 화면의 가로 스크롤 탭 목록에서 현재 활성 탭이 화면 밖에 가려지지
+ * 않도록 로드 시 즉시 스크롤해 보여준다. 애니메이션 없이 바로 이동한다.
  */
 (function () {
   "use strict";

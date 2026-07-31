@@ -1,10 +1,10 @@
-"""core.views.mypage — /mypage/ SSR page: login gate + 4-count summary context.
+"""core.views.mypage — /mypage/ SSR 페이지: 로그인 게이트 + 4개 카운트 요약
+컨텍스트.
 
-The 4 counts reuse archive.queries' existing aggregate functions (see
-core/views.py's archive_* views for the same pattern) — this file arranges
-raw archive.models rows and asserts on the rendered context/response only,
-never the query layer itself (test-layer purity guard, see
-tests/core/test_architecture_boundaries.py).
+4개 카운트는 archive.queries의 기존 집계 함수를 재사용한다(core/views.py의
+archive_* 뷰와 같은 패턴) — 이 파일은 archive.models 원본 행만 준비하고
+렌더된 컨텍스트/응답만 검증하며, 쿼리 계층 자체는 절대 건드리지 않는다
+(테스트 계층 순수성 가드, tests/core/test_architecture_boundaries.py 참고).
 """
 import datetime as dt
 
@@ -49,7 +49,7 @@ def test_마이페이지_카운트는_사용자_소유_아카이브_데이터만
     event1 = make_event(title="Event 1")
     event2 = make_event(title="Event 2")
 
-    # 저장한 행사 = UserEventStatus row count (across all statuses)
+    # 저장한 행사 = UserEventStatus 행 수(모든 상태 포함)
     UserEventStatus.objects.create(
         user=user, event=event1, status=UserEventStatus.Status.PLANNED
     )
@@ -66,15 +66,15 @@ def test_마이페이지_카운트는_사용자_소유_아카이브_데이터만
     EventInterest.objects.create(user=user, event=event1)
     EventInterest.objects.create(user=user, event=event2)
 
-    # user_status_counts/user_interest_count carry no event__isnull filter —
-    # a status/interest on a personal_entry (unofficial item) must count
-    # toward 저장한 행사/찜 목록 too, same as an event-backed row.
+    # user_status_counts/user_interest_count는 event__isnull 필터가 없다 —
+    # personal_entry(비공식 항목) 위의 상태/찜도 event 기반 행과 마찬가지로
+    # 저장한 행사/찜 목록에 집계돼야 한다.
     UserEventStatus.objects.create(
         user=user, personal_entry=entry, status=UserEventStatus.Status.PLANNED
     )
     EventInterest.objects.create(user=user, personal_entry=entry)
 
-    # another user's rows must never leak into this user's counts
+    # 다른 사용자의 행이 이 사용자의 카운트로 새면 안 된다
     UserEventStatus.objects.create(
         user=other_user, event=event1, status=UserEventStatus.Status.PLANNED
     )
@@ -111,12 +111,12 @@ def test_아카이브_데이터가_없는_사용자의_마이페이지_카운트
 def test_컬렉션_카운트는_원함_전용_항목과_축_없는_항목도_포함해_전체_등록_수를_세고_다른_사용자_항목만_제외한다(
     client, make_user
 ):
-    """collection_count is mypage's "모은 굿즈" figure (index row title "내
-    컬렉션") — every item the user has registered, not merely the ones
-    currently in stock. A wanted-only row (quantity=0) and a row off all
-    three axes (quantity=0, is_wanted=False, tradeable_quantity=0) both
-    still count, since both are registered CollectionItem rows; only another
-    user's rows must be excluded (owner scope)."""
+    """collection_count는 마이페이지의 "모은 굿즈" 수치다(인덱스 행 제목
+    "내 컬렉션") — 현재 보유 중인 것만이 아니라 사용자가 등록한 항목
+    전부를 센다. 원함 전용 행(quantity=0)도, 3축 모두 꺼진 행(quantity=0,
+    is_wanted=False, tradeable_quantity=0)도 등록된 CollectionItem 행이므로
+    둘 다 카운트된다 — 제외해야 할 것은 다른 사용자의 행뿐이다(소유자
+    범위)."""
     user = make_user()
     other_user = make_user()
     CollectionItem.objects.create(user=user, name="보유1", is_wanted=False)

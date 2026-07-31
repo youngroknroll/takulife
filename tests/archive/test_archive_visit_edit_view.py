@@ -1,7 +1,8 @@
-"""Tests for the visit-record edit page (core.views.archive_visit_edit).
+"""방문 기록 수정 페이지(core.views.archive_visit_edit) 테스트.
 
-The page is owner-scoped and pre-fills the record's editable fields. The subject
-is shown read-only; editing happens via the PATCH/photo APIs from visit_edit.js.
+본인 소유 기록만 접근 가능하며 수정 가능한 필드를 미리 채운다. 대상은 읽기
+전용으로 표시되고, 실제 수정은 visit_edit.js가 호출하는 PATCH/사진 API로
+이뤄진다.
 """
 import pytest
 from django.test import Client

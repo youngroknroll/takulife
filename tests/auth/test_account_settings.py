@@ -1,8 +1,8 @@
-"""accounts settings page (/accounts/settings/) — login gate + role-conditional
-account-deletion link. Staff never sees the deletion link here, matching the
-server-side 403 guard on accounts.views.delete_account itself (see
-tests/auth/test_account_deletion.py) — UI hiding alone would not be enough,
-but the two together keep the page consistent with what the view allows.
+"""계정 설정 페이지(/accounts/settings/) — 로그인 게이트 + 역할별 조건부
+계정 삭제 링크. 스태프는 여기서 삭제 링크를 절대 못 보는데, 이는
+accounts.views.delete_account 자체의 서버 쪽 403 가드와 일치한다
+(tests/auth/test_account_deletion.py 참고) — UI에서 숨기는 것만으로는
+부족하지만, 둘을 합치면 페이지가 뷰가 허용하는 범위와 일관되게 유지된다.
 """
 import datetime as dt
 

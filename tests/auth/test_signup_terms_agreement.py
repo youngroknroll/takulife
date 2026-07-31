@@ -1,5 +1,5 @@
-"""Signup requires explicit terms/privacy-policy agreement
-(accounts.forms.SignupForm, ACCOUNT_FORMS)."""
+"""회원가입은 이용약관/개인정보처리방침 명시적 동의를 요구한다
+(accounts.forms.SignupForm, ACCOUNT_FORMS 참고)."""
 from django.urls import reverse
 from django.utils import timezone
 
@@ -21,8 +21,8 @@ def test_약관_동의_없이_회원가입하면_가입이_거부되고_사용�
         },
     )
 
-    # Re-rendered with a form error, not redirected to the "check your
-    # email" page.
+    # "이메일을 확인하세요" 페이지로 리다이렉트되지 않고, 폼 오류와 함께
+    # 다시 렌더된다.
     assert response.status_code == 200
     assert not django_user_model.objects.filter(email="noagreement@example.com").exists()
 
@@ -60,9 +60,9 @@ def test_회원가입_페이지는_약관_동의_체크박스를_렌더링한다
 
 @pytest.mark.django_db
 def test_약관_동의_라벨은_이용약관과_개인정보처리방침_페이지로_연결된다(client):
-    """The label's hrefs are derived from reverse_lazy (accounts/forms.py),
-    not hardcoded strings — this guards against a future /legal/ route
-    rename silently leaving a dead link on the signup page."""
+    """라벨의 href는 하드코딩된 문자열이 아니라 reverse_lazy(accounts/forms.py)로
+    만들어진다 — 나중에 /legal/ 라우트 이름이 바뀌어도 가입 페이지에 죽은
+    링크가 조용히 남지 않도록 지킨다."""
     response = client.get(SIGNUP_URL)
 
     body = response.content.decode("utf-8", "ignore")

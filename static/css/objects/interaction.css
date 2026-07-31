@@ -1,12 +1,6 @@
 /* ── interaction feedback: hover lift + loading spinner ──────── */
-/*
- * Cursor/touch legibility. .hover-lift raises a clickable card block on hover
- * (and presses it back on :active for touch), so the pointer position is always
- * visible. .is-loading turns any button into a disabled spinner while its
- * request is in flight — toggled from JS via TakuAPI.setLoading. The spinner
- * borrows the button's own text colour (currentColor) so it reads on both light
- * and brand-filled buttons. Transform-based motion respects reduced-motion.
- */
+/* .is-loading은 요청이 진행 중일 때 TakuAPI.setLoading이 붙였다 떼는 클래스로,
+   버튼을 비활성 스피너로 바꾼다. */
 .hover-lift {
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
@@ -48,15 +42,9 @@
   border-color: var(--brand);
 }
 
-/* ── glint (ticket-stub signature #2: ✦ sparkle on card hover/focus) ────
- * prompt_plan.md §0. Generic utility for explicit markup use, e.g.
- * `<span class="glint">✦</span>` placed inside a
- * position:relative element that also carries .hover-lift. Hidden by
- * default; revealed only while the nearest .hover-lift ancestor is
- * hovered or has focus-within. No current template uses this class
- * (the template-free .cat-tile::after variant that once mirrored this in
- * pages/event_list.css was removed along with .cat-tile).
- */
+/* ── glint (카드 호버/포커스 시 반짝이는 ✦ 표시) ──────────────────── */
+/* `<span class="glint">✦</span>`를 .hover-lift가 붙은 요소 안에 두면
+   호버·포커스 시에만 나타난다. */
 .glint {
   position: absolute;
   opacity: 0;

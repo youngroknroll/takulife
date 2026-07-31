@@ -1,25 +1,22 @@
 {% comment %}
-Archive search form partial — used on all four archive list pages.
+아카이브 검색 폼 파셜 — 활동 목록 페이지 네 곳에서 공용으로 쓴다.
 
-Include with:
+사용법:
   {% include "core/partials/_archive_search.html" with q=q has_query=has_query %}
   {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
   {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="filter" hidden_value=selected_filter %}
 
-Args:
-  q            — current search term (raw string, never |safe)
-  has_query    — True when q is non-empty
-  hidden_name  — optional: name attr of a hidden input to preserve the active filter
-  hidden_value — optional: value attr; hidden input is skipped when this is empty
+인자:
+  q            — 현재 검색어(원문 문자열, |safe 아님)
+  has_query    — q가 비어 있지 않으면 True
+  hidden_name  — 활성 필터를 유지할 hidden input의 name(선택)
+  hidden_value — hidden input의 값(선택, 비어 있으면 필드 자체를 생략)
 
-2026-07-23 §H (user-confirmed): the decorative ⌕ glyph moved from a standalone
-`.archive-search-icon` span into the input's own placeholder text. The user
-explicitly accepted that the glyph disappears once typing starts (placeholder
-text is replaced by input value) — no absolute-positioned overlay replaces it.
-Trade-off recorded per BIR: the old span carried `aria-hidden="true"`, keeping
-the glyph out of assistive-tech announcements; some AT may read placeholder
-text aloud, so this glyph is no longer guaranteed hidden from screen readers.
-`aria-label="아카이브 검색"` is kept as the field's accessible name regardless.
+⌕ 장식 글리프는 별도 span이 아니라 입력창 placeholder 텍스트로 넣었다 —
+입력을 시작하면 글리프가 사라지지만(placeholder는 값으로 대체됨) 이 정도
+트레이드오프는 승인됐다. 예전 span은 aria-hidden이라 보조기술이 전혀
+읽지 않았지만, placeholder는 일부 보조기술이 소리 내 읽을 수 있다.
+aria-label="아카이브 검색"은 그대로 접근 가능한 이름으로 유지한다.
 {% endcomment %}
 <form method="get" class="archive-search">
   {% if hidden_name and hidden_value %}

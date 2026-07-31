@@ -1,19 +1,16 @@
-"""End-to-end privacy guard across all 8 stage-0 analytics events
-(PR-0e checkpoint B12).
+"""0단계 분석 이벤트 8종 전체에 걸친 종단 프라이버시 가드
+(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+AnalyticsEvent를 기록하는 모든 실제 코드 경로(archive 서비스 + events API)를
+실행한 뒤, 어디에도 개인정보가 실리지 않았는지 검증한다: 금지된 context
+키, 유출된 자유 텍스트(short_review), 유출된 이메일, user_key에 남은
+원본 pk 전부 없어야 한다.
 
-Exercises every real code path that records an AnalyticsEvent (archive
-services + events API), then asserts no row anywhere ever carries personal
-data: no forbidden context key, no leaked free text (short_review), no
-leaked email, and no raw user pk in user_key.
-
-Uses `django.test.Client()` instantiated directly (not the `client`
-fixture) so this file is not subject to the API/view layer-purity guard
-(tests/core/test_architecture_boundaries.py) that would otherwise forbid
-importing archive.services here — this file intentionally spans the
-service and HTTP/API boundaries to prove the privacy guarantee holds
-end-to-end, not at one layer only.
+`client` 픽스처 대신 `django.test.Client()`를 직접 생성해 쓴다 — 그래야
+이 파일이 archive.services 임포트를 막는 API/뷰 계층 순수성 가드
+(tests/core/test_architecture_boundaries.py) 대상에서 빠진다. 이 파일은
+한 계층만이 아니라 서비스와 HTTP/API 경계를 모두 가로질러야 프라이버시
+보장이 종단으로 성립함을 증명할 수 있어서 일부러 그렇게 한다.
 """
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -95,9 +92,9 @@ def test_전_분석_이벤트_기록_경로를_실행해도_개인정보가_전�
         AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED,
         AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE,
     }
-    # event_marked_visited fires twice (create + mark_visited); the
-    # collection path below adds 6 more (created 1, linked_to_visit 1,
-    # updated 2x, marked_wanted 1, marked_tradeable 1).
+    # event_marked_visited는 두 번(생성 + mark_visited) 발생하고, 아래
+    # 컬렉션 경로가 6건을 더한다(생성 1, linked_to_visit 1, 수정 2회,
+    # marked_wanted 1, marked_tradeable 1).
     assert len(events) >= 15
 
     expected_user_key = pseudonymous_user_key(user)
@@ -109,8 +106,8 @@ def test_전_분석_이벤트_기록_경로를_실행해도_개인정보가_전�
         assert LEAK_PROBE_NAME not in serialized_context
         assert LEAK_PROBE_MEMO not in serialized_context
         if event.user_key:
-            # Equality against the known-non-reversible pseudonymous key
-            # (see tests/core/test_analytics_pseudonymization.py) rather
-            # than a raw-pk substring check, which is unreliable for a
-            # small, single-digit pk value.
+            # 원본 pk 부분 문자열 검사는 한 자릿수 pk처럼 작은 값에서는
+            # 신뢰할 수 없다 — 대신 되돌릴 수 없다고 알려진 가명 키
+            # (tests/core/test_analytics_pseudonymization.py 참고)와 등가
+            # 비교한다.
             assert event.user_key == expected_user_key

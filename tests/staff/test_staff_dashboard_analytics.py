@@ -1,7 +1,4 @@
-"""Staff dashboard weekly analytics summary (PR-0e checkpoint B14).
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
-"""
+"""스태프 대시보드 주간 분석 요약 검증."""
 import pytest
 
 from core.models import AnalyticsEvent

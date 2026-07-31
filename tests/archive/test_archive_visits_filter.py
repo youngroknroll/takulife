@@ -1,16 +1,15 @@
-"""Tests for server-side filter/search/pagination on /archive/visits/.
+"""/archive/visits/ 서버 사이드 필터/검색/페이지네이션 테스트.
 
-Behavior under test:
-- filter=unofficial narrows results to personal-entry visits only.
-  Official rows must not leak; summary cards (total_count/memo_count) report
-  TOTAL across ALL records, not just the filtered subset.
-- filter=cat:<label> OR-matches official records (by category code) and
-  unofficial records (by raw category label stored on PersonalEntry).
-- Unrecognised filter values (unknown slug, "cat:", "cat:<unknown label>")
-  fall back to no filter; response is always 200 (no 500).
-- categories and has_unofficial are derived from ALL visit records, not just
-  the current page — a filter chip must never disappear due to pagination.
-- pager_query simultaneously preserves filter and q across page links.
+- filter=unofficial 은 직접 등록 항목 방문만 남긴다. 공식 행 유출은 금지되며,
+  요약 카드(total_count/memo_count)는 필터와 무관하게 전체 기록 기준으로
+  집계된다.
+- filter=cat:<라벨> 은 공식 기록(카테고리 코드)과 비공식 기록(PersonalEntry에
+  저장된 원시 라벨)을 OR로 매칭한다.
+- 알 수 없는 필터 값("cat:", "cat:<미등록 라벨>" 포함)은 필터 없음으로
+  대체되고, 응답은 항상 200(500 금지)이다.
+- categories 와 has_unofficial 은 현재 페이지가 아니라 전체 기록에서 도출된다
+  — 페이지네이션 때문에 필터 칩이 사라지면 안 된다.
+- pager_query 는 페이지 링크에 filter 와 q 를 동시에 유지한다.
 """
 import pytest
 
@@ -32,13 +31,13 @@ def _make_unofficial_visits(user, make_entry, make_visit, count, *, category="�
 
 
 # ---------------------------------------------------------------------------
-# filter=unofficial
+# filter=unofficial 케이스
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestUnofficialFilter:
-    """filter=unofficial keeps only 비공식 (personal_entry) records."""
+    """filter=unofficial 은 비공식(personal_entry) 기록만 남긴다."""
 
     def test_비공식_필터를_적용하면_첫_페이지에_다섯_건까지_표시된다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
@@ -76,7 +75,7 @@ class TestUnofficialFilter:
             assert row["subject"]["is_official"] is False
 
     def test_비공식_필터가_적용되어도_요약_건수는_전체_기록_기준으로_집계된다(self, user_client, make_event, make_visit, make_entry):
-        """total_count and memo_count always count ALL records, not just filtered."""
+        """total_count 와 memo_count 는 필터와 무관하게 항상 전체 기록을 집계한다."""
         user, client = user_client()
         _make_unofficial_visits(user, make_entry, make_visit, 7, with_memo=True)
         _make_official_visits(user, make_event, make_visit, 3, with_memo=True)
@@ -102,21 +101,21 @@ class TestUnofficialFilter:
 
 
 # ---------------------------------------------------------------------------
-# filter=cat:<label>
+# filter=cat:<라벨> 케이스
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestCategoryFilter:
-    """filter=cat:<label> OR-matches official (by code) and unofficial (by label)."""
+    """filter=cat:<라벨> 은 공식(코드 기준)과 비공식(라벨 기준)을 OR로 매칭한다."""
 
     def test_카테고리_필터는_같은_라벨의_공식_행사와_비공식_기록을_모두_포함한다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
-        # 2 official events with popup_store → CATEGORY_LABELS["popup_store"] = "팝업스토어"
+        # popup_store 공식 행사 2건 → CATEGORY_LABELS["popup_store"] = "팝업스토어"
         _make_official_visits(user, make_event, make_visit, 2, category="popup_store")
-        # 2 unofficial with same label "팝업스토어"
+        # 같은 라벨("팝업스토어")의 비공식 기록 2건
         _make_unofficial_visits(user, make_entry, make_visit, 2, category="팝업스토어")
-        # 1 other category — must not appear
+        # 다른 카테고리 1건 — 결과에 포함되면 안 됨
         other_ev = make_event(title="콜라보 행사", category="collaboration_cafe")
         make_visit(user, event=other_ev, visited_on="2026-03-01")
 
@@ -149,13 +148,13 @@ class TestCategoryFilter:
 
 
 # ---------------------------------------------------------------------------
-# Bad filter values → fallback (200, no filter)
+# 잘못된 필터 값 → 대체 처리(200, 필터 없음)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestBadFilterFallback:
-    """Unrecognised filter values never raise 500 and silently fall back."""
+    """알 수 없는 필터 값은 500을 내지 않고 조용히 필터 없음으로 대체된다."""
 
     def test_알_수_없는_필터_값으로_조회하면_필터_없이_전체가_표시된다(self, user_client, make_event, make_visit):
         user, client = user_client()
@@ -178,7 +177,7 @@ class TestBadFilterFallback:
         assert resp.context["page_obj"].paginator.count == 2
 
     def test_존재하지_않는_카테고리_라벨로_필터링하면_필터가_무시된다(self, user_client, make_event, make_visit):
-        """A cat: label not in the whitelist derived from user's own data falls back."""
+        """사용자 본인 데이터에서 도출된 화이트리스트에 없는 cat: 라벨은 필터가 무시된다."""
         user, client = user_client()
         ev = make_event(title="팝업", category="popup_store")
         make_visit(user, event=ev, visited_on="2026-06-01")
@@ -191,21 +190,21 @@ class TestBadFilterFallback:
 
 
 # ---------------------------------------------------------------------------
-# categories and has_unofficial from FULL data (not just current page)
+# categories 와 has_unofficial 은 현재 페이지가 아니라 전체 데이터에서 도출
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestCategoriesFromFullData:
-    """categories chip list and has_unofficial must reflect ALL records."""
+    """categories 칩 목록과 has_unofficial 은 전체 기록을 반영해야 한다."""
 
     def test_두_번째_페이지에만_있는_카테고리도_카테고리_목록에_표시된다(self, user_client, make_event, make_visit):
         user, client = user_client()
-        # 5 popup records (newer) — fill page 1
+        # 팝업 기록 5건(최신) — 1페이지를 채움
         for i in range(5):
             ev = make_event(title=f"팝업{i}", category="popup_store")
             make_visit(user, event=ev, visited_on=f"2026-06-{i + 1:02d}")
-        # 1 collab_cafe record (older) — lands on page 2
+        # 콜라보 카페 기록 1건(과거) — 2페이지에 위치
         ev2 = make_event(title="콜라보 행사", category="collaboration_cafe")
         make_visit(user, event=ev2, visited_on="2026-05-01")
 
@@ -213,15 +212,15 @@ class TestCategoriesFromFullData:
 
         categories = resp.context["categories"]
         assert "팝업스토어" in categories
-        assert "콜라보 카페" in categories  # would be missing under old per-page logic
+        assert "콜라보 카페" in categories  # 이전 페이지별 로직이었다면 누락됐을 항목
 
     def test_비공식_기록이_두_번째_페이지에_있어도_비공식_보유_여부는_참으로_표시된다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
-        # 5 official records (newer) → fill page 1
+        # 공식 기록 5건(최신) → 1페이지를 채움
         for i in range(5):
             ev = make_event(title=f"공식{i}", category="popup_store")
             make_visit(user, event=ev, visited_on=f"2026-06-{i + 1:02d}")
-        # 1 unofficial record (older) → lands on page 2
+        # 비공식 기록 1건(과거) → 2페이지에 위치
         entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="비공식 카페", category="카페")
         make_visit(user, personal_entry=entry, visited_on="2026-05-01")
 
@@ -249,13 +248,13 @@ class TestCategoriesFromFullData:
 
 
 # ---------------------------------------------------------------------------
-# pager_query preserves filter and q together
+# pager_query 는 filter 와 q 를 함께 유지한다
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 class TestVisitsPagerQuery:
-    """pager_query carries filter and q params so paging never drops them."""
+    """pager_query 는 filter 와 q 값을 실어 페이지네이션에서 유실되지 않게 한다."""
 
     def test_비공식_필터_적용_중_페이지네이션_링크에_필터_값이_유지된다(self, user_client, make_visit, make_entry):
         user, client = user_client()
@@ -265,7 +264,7 @@ class TestVisitsPagerQuery:
 
         pager_query = resp.context["pager_query"]
         assert "filter=unofficial" in pager_query
-        assert b"page=2" in resp.content  # pager renders a page-2 link
+        assert b"page=2" in resp.content  # 페이저가 2페이지 링크를 렌더링함
 
     def test_필터와_검색어를_함께_적용하면_페이지네이션_링크에_둘_다_유지된다(self, user_client, make_visit, make_entry):
         user, client = user_client()
@@ -304,7 +303,7 @@ class TestVisitsPagerQuery:
         assert resp.status_code == 200
         pager_query = resp.context["pager_query"]
         assert "sort=oldest" in pager_query
-        assert b"page=2" in resp.content  # pager renders a page-2 link
+        assert b"page=2" in resp.content  # 페이저가 2페이지 링크를 렌더링함
 
     def test_필터와_오래된순_정렬을_함께_적용하면_필터_링크에도_정렬_값이_유지된다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()

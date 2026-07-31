@@ -1,4 +1,4 @@
-"""Unit tests for the archive read layer (archive/queries.py)."""
+"""아카이브 읽기 계층(archive/queries.py) 단위 테스트."""
 
 from datetime import date, datetime, timedelta
 
@@ -39,7 +39,6 @@ pytestmark = pytest.mark.domain
 
 @pytest.mark.django_db
 def test_상태_기록이_없는_사용자의_상태별_집계는_모든_슬러그가_0으로_채워진다(make_user):
-    """A user with no statuses gets every canonical slug present and zero."""
     user = make_user(username="counts-empty")
 
     counts = user_status_counts(user)
@@ -50,7 +49,6 @@ def test_상태_기록이_없는_사용자의_상태별_집계는_모든_슬러�
 
 @pytest.mark.django_db
 def test_상태별_집계는_본인의_상태만_세고_다른_사용자의_기록은_제외한다(make_user, make_event, make_status):
-    """Counts reflect the user's rows and ignore other users' rows."""
     user = make_user(username="counts-user")
     other = make_user(username="counts-other")
     e1 = make_event(title="E1")
@@ -268,11 +266,10 @@ def test_방문완료_상태에_방문기록이_이미_있으면_미기록_방�
 def test_이벤트_주체와_마찬가지로_개인항목_주체의_방문완료_상태도_방문기록이_생기면_미기록_방문완료_목록에서_제외된다(
     make_user, make_entry, make_status, make_visit
 ):
-    """Regression guard for the Exists subquery's OR (not AND) composition:
-    ANDing the event/personal_entry matches would compare OuterRef("event")
-    against NULL for a personal_entry-subject row and always evaluate false,
-    silently keeping this row "unrecorded" forever even after a visit record
-    exists."""
+    """Exists 서브쿼리가 event/personal_entry 매치를 OR로(AND가 아니라) 합성하는지
+    지키는 회귀 가드다: AND로 합치면 personal_entry 주체 행에서 OuterRef("event")를
+    NULL과 비교하게 되어 항상 거짓이 되고, 방문 기록이 생겨도 이 행이 영영
+    "미기록"으로 남아버린다."""
     user = make_user(username="unrecorded-personal")
     entry = make_entry(user, title="비공식 방문지")
     status = make_status(user, personal_entry=entry, status="visited")
@@ -375,8 +372,6 @@ def test_정렬_파라미터가_알수없는_값이면_기본_정렬로_폴백�
 
 @pytest.mark.django_db
 def test_공식_행사만_필터링하면_비공식_개인항목에_연결된_방문기록은_제외된다(make_event, make_user):
-    """official=True excludes visits attached to a private PersonalEntry
-    (moved from tests/core/test_coverage_supplements.py)."""
     user = make_user()
     event = make_event(title="공식 방문")
     entry = PersonalEntry.objects.create(
@@ -415,9 +410,8 @@ def test_해당_방문에_연결된_굿즈만_등록순으로_반환한다(
 def test_한_장소에_연결된_방문_기록만_최신순으로_반환한다(
     make_user, make_entry, make_event, make_visit
 ):
-    """Scenario PD-9a: only visits attached to the target PersonalEntry are
-    returned, newest visited_on first (matches list_user_visit_records'
-    default -visited_on, -id ordering)."""
+    """PD-9a: 대상 PersonalEntry에 연결된 방문만 반환하며, 최신 visited_on 순으로
+    정렬한다(list_user_visit_records 기본 정렬 -visited_on, -id와 동일)."""
     user = make_user()
     entry = make_entry(user, title="대상 장소")
     other_entry = make_entry(user, title="다른 장소")
@@ -432,7 +426,7 @@ def test_한_장소에_연결된_방문_기록만_최신순으로_반환한다(
 
 
 # ---------------------------------------------------------------------------
-# ARCHIVE_STATUS_SLUGS no longer contains "interested"
+# ARCHIVE_STATUS_SLUGS에는 더 이상 "interested"가 없다
 # ---------------------------------------------------------------------------
 
 
@@ -445,20 +439,19 @@ def test_아카이브_상태_슬러그_목록에는_찜_상태가_포함되지_�
 
 
 # ---------------------------------------------------------------------------
-# user_status_counts — interested not counted even if row exists at DB level
+# user_status_counts — DB에 행이 있어도 interested는 집계에서 제외
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 def test_상태별_집계_결과에는_찜_키가_포함되지_않는다(make_user):
-    """user_status_counts must not include 'interested' as a key."""
     user = make_user(username="counts-no-interested")
     counts = user_status_counts(user)
     assert "interested" not in counts
 
 
 # ---------------------------------------------------------------------------
-# list_user_interests — scoped to user, select_related event, newest-first
+# list_user_interests — 사용자로 범위를 좁히고 event를 select_related, 최신순 정렬
 # ---------------------------------------------------------------------------
 
 
@@ -489,7 +482,7 @@ def test_찜_목록_조회는_사용자로_범위를_좁히고_최신_등록_순
 
 @pytest.mark.django_db
 def test_찜_검색어가_공식_행사_제목에_일치하면_결과에_포함된다(make_user, make_event, make_interest):
-    """Q1: q matches an official event's title."""
+    """Q1: 공식 행사 제목에 일치."""
     user = make_user(username="interest-q-title-user")
     matched = make_event(title="벚꽃 축제 특전 판매")
     other = make_event(title="전혀 다른 행사")
@@ -503,7 +496,7 @@ def test_찜_검색어가_공식_행사_제목에_일치하면_결과에_포함�
 
 @pytest.mark.django_db
 def test_찜_검색어가_공식_행사_장소에_일치하면_결과에_포함된다(make_user, make_event, make_interest):
-    """Q2: q matches an official event's location_name."""
+    """Q2: 공식 행사 장소명(location_name)에 일치."""
     user = make_user(username="interest-q-location-user")
     matched = make_event(title="행사 A", location_name="코엑스 전시홀")
     other = make_event(title="행사 B", location_name="킨텍스 전시장")
@@ -517,7 +510,7 @@ def test_찜_검색어가_공식_행사_장소에_일치하면_결과에_포함�
 
 @pytest.mark.django_db
 def test_찜_검색어가_비공식_항목_제목에_일치하면_결과에_포함된다(make_user, make_entry, make_interest):
-    """Q3: q matches an unofficial PersonalEntry's title."""
+    """Q3: 비공식 항목(PersonalEntry) 제목에 일치."""
     user = make_user(username="interest-q-personal-title-user")
     matched = make_entry(user, title="한정판 굿즈 판매점")
     other = make_entry(user, title="다른 장소")
@@ -531,7 +524,7 @@ def test_찜_검색어가_비공식_항목_제목에_일치하면_결과에_포�
 
 @pytest.mark.django_db
 def test_찜_검색어가_비공식_항목_장소에_일치하면_결과에_포함된다(make_user, make_entry, make_interest):
-    """Q4: q matches an unofficial PersonalEntry's location_name."""
+    """Q4: 비공식 항목(PersonalEntry) 장소명(location_name)에 일치."""
     user = make_user(username="interest-q-personal-location-user")
     matched = make_entry(user, title="장소 A", location_name="홍대 골목상점")
     other = make_entry(user, title="장소 B", location_name="강남 골목상점")
@@ -545,7 +538,7 @@ def test_찜_검색어가_비공식_항목_장소에_일치하면_결과에_포�
 
 @pytest.mark.django_db
 def test_찜_정렬_파라미터가_알수없는_값이면_최신_찜순으로_폴백한다(make_user, make_event, make_interest):
-    """Q5: unrecognised sort falls back to the default -id (newest-first)."""
+    """Q5: 알 수 없는 정렬값은 기본값(-id, 최신순)으로 폴백한다."""
     user = make_user(username="interest-q-sort-fallback-user")
     e1 = make_event(title="정렬 폴백 E1")
     e2 = make_event(title="정렬 폴백 E2")
@@ -559,7 +552,7 @@ def test_찜_정렬_파라미터가_알수없는_값이면_최신_찜순으로_�
 
 @pytest.mark.django_db
 def test_찜_정렬_파라미터가_오래된순이면_오래된_찜부터_정렬된다(make_user, make_event, make_interest):
-    """Q6: sort="oldest" orders by ascending id (oldest 찜 first)."""
+    """Q6: sort="oldest"는 id 오름차순(오래된 찜부터)으로 정렬한다."""
     user = make_user(username="interest-q-sort-oldest-user")
     e1 = make_event(title="오래된순 E1")
     e2 = make_event(title="오래된순 E2")
@@ -580,9 +573,9 @@ def test_찜_정렬_파라미터가_오래된순이면_오래된_찜부터_정�
 def test_진행중_찜_통계는_시작일_종료일_양끝과_종료임박_구간을_모두_포함한다(
     make_user, make_event, make_interest
 ):
-    """Q7: ongoing_count includes both boundary days (start==today,
-    end==today) and the closing_soon window (end within CLOSING_SOON_DAYS),
-    per D2 — the row status filter shows all three as "진행 중"."""
+    """Q7: ongoing_count는 경계일(시작==오늘, 종료==오늘)과 종료임박 구간(종료가
+    CLOSING_SOON_DAYS 이내)을 모두 포함한다(D2 — 행 상태 필터가 셋 다 "진행 중"으로
+    표시한다)."""
     user = make_user(username="interest-q7-user")
     starts_today = make_event(
         title="오늘 시작", start_date=TODAY, end_date=TODAY + timedelta(days=10)
@@ -606,8 +599,7 @@ def test_진행중_찜_통계는_시작일_종료일_양끝과_종료임박_구�
 
 @pytest.mark.django_db
 def test_진행중_찜_통계는_예정_찜과_종료된_찜을_제외한다(make_user, make_event, make_interest):
-    """Q8: ongoing_count excludes upcoming (start > today) and ended
-    (end < today) 찜."""
+    """Q8: ongoing_count는 예정(시작>오늘)과 종료(종료<오늘) 찜을 제외한다."""
     user = make_user(username="interest-q8-user")
     upcoming = make_event(
         title="예정 행사", start_date=TODAY + timedelta(days=5), end_date=TODAY + timedelta(days=6)
@@ -625,8 +617,8 @@ def test_진행중_찜_통계는_예정_찜과_종료된_찜을_제외한다(mak
 
 @pytest.mark.django_db
 def test_진행중_찜_통계는_비공식_찜을_제외한다(make_user, make_entry, make_interest):
-    """Q9: ongoing_count never counts unofficial (personal_entry) 찜 —
-    they have no run period at all."""
+    """Q9: ongoing_count는 비공식(personal_entry) 찜을 절대 세지 않는다 — 애초에
+    진행 기간이 없다."""
     user = make_user(username="interest-q9-user")
     place = make_entry(user, title="비공식 장소")
     make_interest(user, personal_entry=place)
@@ -640,8 +632,8 @@ def test_진행중_찜_통계는_비공식_찜을_제외한다(make_user, make_e
 def test_방문예정_겹침_찜_통계는_파생_상태가_예정인_것만_센다(
     make_user, make_event, make_interest, make_status
 ):
-    """Q10: planned_overlap_count counts 찜 whose linked event's *derived*
-    status (with_derived_status) is planned."""
+    """Q10: planned_overlap_count는 연결된 행사의 파생 상태(with_derived_status)가
+    planned인 찜만 센다."""
     user = make_user(username="interest-q10-user")
     event = make_event(
         title="방문예정 겹침", start_date=TODAY + timedelta(days=5), end_date=TODAY + timedelta(days=6)
@@ -658,10 +650,10 @@ def test_방문예정_겹침_찜_통계는_파생_상태가_예정인_것만_센
 def test_방문예정_겹침_찜_통계는_자동_놓침으로_파생된_찜은_제외한다(
     make_user, make_event, make_interest, make_status
 ):
-    """Q11: a raw status="planned" row whose event run has already ended
-    (no visit record, not overridden) auto-derives to "missed"
-    (archive/querysets.py with_derived_status) and must NOT count toward
-    planned_overlap_count even though the stored status is still "planned"."""
+    """Q11: 저장된 status가 "planned"라도, 행사 기간이 이미 끝났고(방문기록 없음,
+    오버라이드 없음) 파생 상태가 "missed"로 자동 전환된다면
+    (archive/querysets.py with_derived_status) planned_overlap_count에 포함되면
+    안 된다."""
     user = make_user(username="interest-q11-user")
     ended_event = make_event(
         title="자동_놓침_행사",
@@ -685,8 +677,8 @@ def test_방문예정_겹침_찜_통계는_자동_놓침으로_파생된_찜은_
 def test_방문예정_겹침_찜_통계는_비공식_찜의_예정_상태를_제외한다(
     make_user, make_entry, make_interest, make_status
 ):
-    """Q12: planned_overlap_count excludes unofficial (personal_entry) 찜
-    even when the linked PersonalEntry has a raw status="planned" row."""
+    """Q12: 연결된 PersonalEntry에 status="planned" 행이 있어도 비공식
+    (personal_entry) 찜은 planned_overlap_count에서 제외된다."""
     user = make_user(username="interest-q12-user")
     place = make_entry(user, title="비공식 예정 장소")
     make_interest(user, personal_entry=place)
@@ -701,8 +693,8 @@ def test_방문예정_겹침_찜_통계는_비공식_찜의_예정_상태를_제
 def test_찜_요약_통계_3종은_모두_타인의_찜과_상태를_제외한다(
     make_user, make_event, make_interest, make_status
 ):
-    """Q13: ongoing_count and planned_overlap_count are scoped to the given
-    user only — another user's ongoing/planned-overlapping 찜 never leaks in."""
+    """Q13: ongoing_count와 planned_overlap_count는 해당 사용자로만 범위가
+    좁혀진다 — 다른 사용자의 값이 섞여 들어오지 않는다."""
     user = make_user(username="interest-q13-user")
     other = make_user(username="interest-q13-other")
     other_ongoing = make_event(
@@ -722,7 +714,7 @@ def test_찜_요약_통계_3종은_모두_타인의_찜과_상태를_제외한�
 
 
 # ---------------------------------------------------------------------------
-# user_interest_event_ids — returns {event_id: interest_id} bounded by ids
+# user_interest_event_ids — event_id로 범위를 제한한 {event_id: interest_id} 반환
 # ---------------------------------------------------------------------------
 
 
@@ -778,7 +770,7 @@ def test_찜_총_개수는_본인의_찜만_세고_다른_사용자의_찜은_�
 
 
 # ---------------------------------------------------------------------------
-# list_user_planned_events (selectable set when adding a visit record)
+# list_user_planned_events (방문 기록 추가 시 선택 가능한 행사 집합)
 # ---------------------------------------------------------------------------
 
 
@@ -801,10 +793,10 @@ def test_방문예정_행사_목록은_본인이_예정_등록한_게시된_행�
     events = list(list_user_planned_events(user))
 
     assert planned in events
-    assert visited not in events  # different status
-    assert missed not in events  # different status
-    assert others_planned not in events  # different user
-    assert draft_planned not in events  # not published
+    assert visited not in events
+    assert missed not in events
+    assert others_planned not in events
+    assert draft_planned not in events
 
 
 # ---------------------------------------------------------------------------
@@ -834,10 +826,10 @@ def test_다가오는_예정_행사_목록은_본인이_예정_등록한_게시�
     events = list(list_user_upcoming_planned_events(user, today=TODAY))
 
     assert planned in events
-    assert visited not in events  # different status
-    assert missed not in events  # different status
-    assert others_planned not in events  # different user
-    assert draft_planned not in events  # not published
+    assert visited not in events
+    assert missed not in events
+    assert others_planned not in events
+    assert draft_planned not in events
 
 
 @pytest.mark.django_db
@@ -856,7 +848,7 @@ def test_다가오는_예정_행사_목록은_오늘과_지난_시작일을_제�
     events = list(list_user_upcoming_planned_events(user, today=TODAY))
 
     assert yesterday_event not in events
-    assert today_event not in events  # exactly today is excluded (gt, not gte)
+    assert today_event not in events  # 오늘은 제외됨(gt이지 gte가 아님)
     assert tomorrow_event in events
 
 
@@ -894,7 +886,7 @@ def test_비공식_항목_목록_조회는_사용자로_범위를_좁히고_kind
     all_entries = list(list_user_personal_entries(user))
     assert place in all_entries
     assert goods in all_entries
-    assert len(all_entries) == 2  # other user's entry excluded
+    assert len(all_entries) == 2
 
     only_goods = list(list_user_personal_entries(user, kind="goods"))
     assert only_goods == [goods]
@@ -937,7 +929,7 @@ def test_비공식_항목_목록_미인식_정렬은_기본_최근_등록순으�
 
 
 # ---------------------------------------------------------------------------
-# user_visit_record_counts (archive/visits/ summary cards)
+# user_visit_record_counts (archive/visits/ 요약 카드)
 # ---------------------------------------------------------------------------
 
 
@@ -970,7 +962,7 @@ def test_방문기록이_없는_사용자의_방문기록_집계는_0이다(make
 
 
 # ---------------------------------------------------------------------------
-# user_personal_entry_counts (archive/personal/ summary cards)
+# user_personal_entry_counts (archive/personal/ 요약 카드)
 # ---------------------------------------------------------------------------
 
 
@@ -1003,7 +995,7 @@ def test_방문_기록이_연결된_개인_항목_수만_visit_linked_count로_�
     user = make_user(username="entry-counts-visit-linked")
     linked_1 = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P1")
     linked_2 = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P2")
-    make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P3")  # no visit
+    make_entry(user, kind=PersonalEntry.Kind.PLACE, title="P3")
     make_visit(user, personal_entry=linked_1, visited_on="2026-01-01")
     make_visit(user, personal_entry=linked_2, visited_on="2026-01-02")
 
@@ -1058,9 +1050,9 @@ def test_컬렉션_아이템_목록_조회는_소유자로_범위를_좁힌다(m
 
 
 # ---------------------------------------------------------------------------
-# list_user_collection_items filters (PR-C5, CP16~22). `duplicate`/
-# `tradeable` are *derived* from quantity/tradeable_quantity — CollectionItem
-# has no separate duplicate_count or tradeable flag field (§3-1).
+# list_user_collection_items 필터 (PR-C5, CP16~22). `duplicate`/`tradeable`은
+# quantity/tradeable_quantity에서 파생된 값이다 — CollectionItem에는 별도의
+# duplicate_count나 tradeable 플래그 필드가 없다(§3-1).
 # ---------------------------------------------------------------------------
 
 
@@ -1077,8 +1069,8 @@ def test_작품명_필터는_완전_일치하는_항목만_반환한다(make_use
 
 @pytest.mark.django_db
 def test_중복_필터는_별도_필드_없이_수량_2개_이상_여부로_판정된다(make_user):
-    """`duplicate=True` must select quantity >= 2 rows — there is no
-    duplicate_count field to filter on directly (§3-1)."""
+    """`duplicate=True`는 quantity >= 2인 행을 선택한다 — 별도의 duplicate_count
+    필드는 없다(§3-1)."""
     user = make_user(username="ci-query-duplicate")
     two = CollectionItem.objects.create(user=user, name="둘", quantity=2)
     one = CollectionItem.objects.create(user=user, name="하나", quantity=1)
@@ -1092,8 +1084,8 @@ def test_중복_필터는_별도_필드_없이_수량_2개_이상_여부로_판�
 def test_교환가능_필터는_별도_필드_없이_교환가능_수량_1개_이상_여부로_판정된다(
     make_user,
 ):
-    """`tradeable=True` must select tradeable_quantity > 0 rows — there is
-    no separate tradeable flag field (§3-1)."""
+    """`tradeable=True`는 tradeable_quantity > 0인 행을 선택한다 — 별도의
+    플래그 필드는 없다(§3-1)."""
     user = make_user(username="ci-query-tradeable")
     tradeable = CollectionItem.objects.create(
         user=user, name="교환 가능", quantity=3, tradeable_quantity=1
@@ -1108,9 +1100,8 @@ def test_교환가능_필터는_별도_필드_없이_교환가능_수량_1개_�
 
 @pytest.mark.django_db
 def test_보유_필터는_별도_필드_없이_수량_1개_이상_여부로_판정된다(make_user):
-    """`owned=True` must select quantity > 0 rows — there is no separate
-    owned flag field, matching the duplicate/tradeable derived-filter
-    pattern (§3-1)."""
+    """`owned=True`는 quantity > 0인 행을 선택한다 — duplicate/tradeable과
+    같은 파생 필터 패턴으로, 별도의 owned 플래그 필드는 없다(§3-1)."""
     user = make_user(username="ci-query-owned")
     held = CollectionItem.objects.create(user=user, name="가진 것", quantity=3)
     not_held = CollectionItem.objects.create(user=user, name="안 가진 것", quantity=0)
@@ -1121,14 +1112,13 @@ def test_보유_필터는_별도_필드_없이_수량_1개_이상_여부로_판�
 
 @pytest.mark.django_db
 def test_구함_필터_False는_구함이_아닌_항목만_반환한다(make_user):
-    """`is_wanted=False` selects is_wanted-is-False rows regardless of
-    quantity — it is NOT "owned" (owned/wanted are independent axes,
-    collection domain design plan §D1). A quantity>0 & is_wanted=True row
-    must be excluded from is_wanted=False results even though it is also
-    "owned"; this is the query-layer guard for a behavior that used to be
-    reachable at /collection/?is_wanted=false on the web (now redirected to
-    ?owned=true for legacy bookmarks — API callers still use is_wanted=false
-    directly via /api/collection-items/)."""
+    """`is_wanted=False`는 quantity와 무관하게 is_wanted가 False인 행을 선택한다
+    — "보유"와는 다르다(보유/구함은 독립된 축, 계획서 §D1). quantity>0이면서
+    is_wanted=True인 행은 "보유"이기도 하지만 is_wanted=False 결과에서는
+    제외돼야 한다. 이는 예전에 웹 /collection/?is_wanted=false로 접근하던
+    동작(지금은 레거시 북마크 호환을 위해 ?owned=true로 리다이렉트)의 쿼리
+    계층 가드다 — API 호출자는 /api/collection-items/에서 여전히
+    is_wanted=false를 그대로 쓴다."""
     user = make_user(username="ci-query-is-wanted-false")
     not_wanted = CollectionItem.objects.create(user=user, name="보유", quantity=3, is_wanted=False)
     owned_and_wanted = CollectionItem.objects.create(
@@ -1143,9 +1133,9 @@ def test_구함_필터_False는_구함이_아닌_항목만_반환한다(make_use
 def test_통합검색어는_이름_작품명_캐릭터명_메모에서_일치하되_상품유형은_대상에서_제외한다(
     make_user,
 ):
-    """`q` narrows to name/work_title/character_name/memo (icontains), mirroring
-    list_user_personal_entries' q pattern. item_type is deliberately NOT a q
-    target field — a decoy row matching only on item_type must be excluded."""
+    """`q`는 name/work_title/character_name/memo를 icontains로 좁힌다 —
+    list_user_personal_entries의 q 패턴과 동일. item_type은 의도적으로 검색
+    대상이 아니며, item_type에만 일치하는 미끼 행은 제외돼야 한다."""
     user = make_user(username="ci-query-q")
     other = make_user(username="ci-query-q-other")
     by_name = CollectionItem.objects.create(user=user, name="레어 스탬프")
@@ -1170,20 +1160,18 @@ def test_통합검색어는_이름_작품명_캐릭터명_메모에서_일치하
 
 @pytest.mark.django_db
 def test_빈_통합검색어는_아무_항목도_걸러내지_않는다(make_user):
-    """An empty `q` must not filter anything out.
+    """빈 `q`는 아무것도 걸러내면 안 된다.
 
-    `if q:` is a query optimization, not a correctness guard: Django renders
-    `Q(field__icontains="")` as `field LIKE '%%'`, which always matches every
-    row regardless of the field's value, so `if q is not None:` would be a
-    behaviorally equivalent refactor here and must still pass this test —
-    the guard exists only to skip four no-op icontains clauses, not to
-    prevent an empty string from over-filtering.
+    `if q:`는 정확성 가드가 아니라 쿼리 최적화다: Django는
+    `Q(field__icontains="")`를 `field LIKE '%%'`로 렌더링해 필드값과 무관하게
+    모든 행에 매치되므로, `if q is not None:`으로 바꿔도 동작은 동일하고 이
+    테스트도 여전히 통과해야 한다 — 이 가드는 빈 문자열의 과잉 필터링을 막는
+    게 아니라 no-op인 icontains 절 4개를 건너뛰기 위한 것이다.
 
-    All four searchable fields are populated with distinct, non-blank values
-    (rather than left at their blank default) so a genuinely broken lookup —
-    e.g. `icontains` swapped for `exact` with the guard removed, which would
-    only coincidentally match rows whose fields happen to be blank — cannot
-    slip through and still pass by accident.
+    검색 대상 네 필드 모두를 빈 기본값이 아닌 서로 다른 값으로 채운 이유는,
+    진짜로 깨진 조회(예: 가드를 없앤 채 `icontains`를 `exact`로 바꾼 경우)가
+    필드가 우연히 비어 있는 행에서만 우연히 일치해 통과해버리는 일을 막기
+    위해서다.
     """
     user = make_user(username="ci-query-q-empty")
     first = CollectionItem.objects.create(
@@ -1207,12 +1195,11 @@ def test_빈_통합검색어는_아무_항목도_걸러내지_않는다(make_use
 
 
 # ---------------------------------------------------------------------------
-# user_collection_item_filter_values (PR-C5b-1). Unlike
-# user_visit_category_values (whose caller dedupes after resolving
-# core.vocab labels, keeping archive/queries.py free of a core.vocab import),
-# work_title/character_name/item_type are stored as free text with no vocab
-# resolution step — so dedup and blank exclusion happen directly in the
-# query layer here instead of being deferred to the view.
+# user_collection_item_filter_values (PR-C5b-1). user_visit_category_values는
+# 호출자가 core.vocab 라벨을 해석한 뒤 중복 제거하지만(archive/queries.py는
+# core.vocab을 임포트하지 않는다), work_title/character_name/item_type은
+# vocab 해석 단계가 없는 자유 텍스트라서 중복 제거와 공백 제외를 뷰가 아니라
+# 이 쿼리 계층에서 직접 처리한다.
 # ---------------------------------------------------------------------------
 
 
@@ -1241,22 +1228,19 @@ def test_필터_선택지_조회는_소유자로_범위를_좁히고_중복값�
 
 @pytest.mark.django_db
 def test_필터_선택지_목록은_정렬된_순서로_반환된다(make_user):
-    """Each list must be sorted — C5b-2 renders these directly as <select>
-    options.
+    """각 목록은 정렬돼 있어야 한다 — C5b-2가 이 값을 그대로 <select> 옵션으로
+    렌더한다.
 
-    This test documents the contract; it does not guard the regression.
-    Migration 0019's (user, work_title)-style composite index makes
-    Postgres's planner return already-sorted rows for this table's size even
-    without `.order_by()`, so removing `.order_by()` here would NOT make
-    this test fail — verified by actually removing it and rerunning. The
-    correctness argument for `.order_by()` is that DISTINCT without ORDER BY
-    has undefined ordering in general (e.g. a HashAggregate plan the
-    planner could choose at a different row count or once statistics
-    change) — confirmed by forcing the planner off its index-derived plan
-    (`SET enable_indexscan/enable_sort = off`, etc.) and observing genuinely
-    unsorted output. That forced-planner check is not repeated here as an
-    automated test, since it would test Postgres's planner rather than this
-    codebase; see the change log for the reproduction.
+    이 테스트는 계약을 문서화할 뿐 회귀를 막지는 못한다. 마이그레이션 0019의
+    (user, work_title) 복합 인덱스 덕분에 이 테이블 크기에서는 `.order_by()`를
+    지워도 Postgres 플래너가 이미 정렬된 행을 돌려줘 테스트가 실패하지 않는다
+    (실제로 지우고 재실행해 확인함). `.order_by()`가 필요한 근거는 ORDER BY
+    없는 DISTINCT의 순서가 일반적으로 미정의라는 데 있다(예: 행 수나 통계가
+    바뀌면 플래너가 다른 HashAggregate 계획을 고를 수 있음) — 플래너를
+    인덱스 기반 계획에서 강제로 벗어나게 해(`SET enable_indexscan/enable_sort
+    = off` 등) 실제로 정렬되지 않은 출력을 확인해 검증했다. 이 강제 플래너
+    확인은 이 저장소가 아니라 Postgres 플래너를 테스트하는 셈이라 자동
+    테스트로는 반복하지 않는다.
     """
     user = make_user(username="ci-filter-values-order")
     CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 C")
@@ -1270,8 +1254,6 @@ def test_필터_선택지_목록은_정렬된_순서로_반환된다(make_user):
 
 @pytest.mark.django_db
 def test_값이_비어있는_필드는_필터_선택지_목록에_포함되지_않는다(make_user):
-    """A row with no work_title/character_name/item_type set must not
-    contribute an empty-string entry to any of the three lists."""
     user = make_user(username="ci-filter-values-blank")
     CollectionItem.objects.create(
         user=user,
@@ -1280,7 +1262,7 @@ def test_값이_비어있는_필드는_필터_선택지_목록에_포함되지_�
         character_name="캐릭터 B",
         item_type="피규어",
     )
-    CollectionItem.objects.create(user=user, name="굿즈 2")  # all three fields blank
+    CollectionItem.objects.create(user=user, name="굿즈 2")
 
     values = user_collection_item_filter_values(user)
 
@@ -1301,24 +1283,19 @@ def test_컬렉션_아이템이_없는_사용자의_필터_선택지는_모두_�
 
 
 # ---------------------------------------------------------------------------
-# user_collection_item_summary_counts (PR-C5b-1, revised by the collection
-# 3축 독립화 track, 2026-07-28). owned/wanted/tradeable are THREE
-# INDEPENDENT axes, not a partition (collection domain design plan §D1,
-# .docs/plans/2026-07-15-collection-domain-design-plan.md:55, "wanted와
-# 보유 공존 허용") — a single row can be owned and wanted at once, so
-# owned_count + wanted_count is NOT the full count. total_count exists
-# separately for that reason. On the web, the 구함 chip still uses
-# ?is_wanted=true, but the former 보유 chip URL ?is_wanted=false now
-# 302-redirects to ?owned=true (legacy bookmark compat) — the DRF API keeps
-# ?is_wanted=false in its original, unredirected meaning.
+# user_collection_item_summary_counts (PR-C5b-1, 컬렉션 3축 독립화 트랙에서
+# 개정, 2026-07-28). owned/wanted/tradeable은 분할이 아니라 서로 독립된
+# 세 축이다(계획서 §D1, .docs/plans/2026-07-15-collection-domain-design-plan.md:55,
+# "wanted와 보유 공존 허용") — 한 행이 owned이면서 동시에 wanted일 수 있어
+# owned_count + wanted_count가 전체 개수가 아니다. total_count가 따로
+# 존재하는 이유다. 웹의 구함 칩은 여전히 ?is_wanted=true를 쓰지만, 옛 보유
+# 칩 URL(?is_wanted=false)은 이제 ?owned=true로 302 리다이렉트된다(레거시
+# 북마크 호환). DRF API는 ?is_wanted=false를 원래 의미 그대로 유지한다.
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 def test_보유_구함_집계는_수량_합계가_아니라_행_개수를_센다(make_user):
-    """owned_count/wanted_count must be row counts split by is_wanted, not a
-    Sum(quantity) — a single owned row with quantity=5 must count as 1, not
-    5."""
     user = make_user(username="ci-summary-counts-user")
     other = make_user(username="ci-summary-counts-other")
     CollectionItem.objects.create(user=user, name="보유 굿즈", quantity=5, is_wanted=False)
@@ -1352,11 +1329,10 @@ def test_컬렉션_아이템이_없는_사용자의_보유_구함_집계는_0이
 
 @pytest.mark.django_db
 def test_보유_구함_교환희망_세_축은_서로_독립적으로_집계된다(make_user):
-    """owned/wanted/tradeable are three independent axes (collection domain
-    design plan §D1, .docs/plans/2026-07-15-collection-domain-design-plan.md:55,
-    "wanted와 보유 공존 허용" — quantity>0, is_wanted=True, tradeable_quantity>0
-    may combine in any way on a single row), not a mutually exclusive
-    partition. A row can count toward more than one axis at once."""
+    """owned/wanted/tradeable은 상호 배타적 분할이 아니라 서로 독립된 세 축이다
+    (계획서 §D1, .docs/plans/2026-07-15-collection-domain-design-plan.md:55,
+    "wanted와 보유 공존 허용" — quantity>0, is_wanted=True, tradeable_quantity>0이
+    한 행에서 임의로 조합될 수 있다). 한 행이 여러 축에 동시에 집계될 수 있다."""
     user = make_user(username="ci-summary-counts-axes")
     CollectionItem.objects.create(
         user=user, name="품목1", quantity=3, is_wanted=False, tradeable_quantity=0
@@ -1383,12 +1359,11 @@ def test_보유_구함_교환희망_세_축은_서로_독립적으로_집계된�
 
 @pytest.mark.django_db
 def test_전체_집계는_보유_구함_카운트의_단순_합과_다르다(make_user):
-    """total_count counts every row the user owns (existence, regardless of
-    axis membership), and must NOT be derivable by summing owned_count +
-    wanted_count — collection domain design plan §D1
+    """total_count는 축 소속과 무관하게 사용자가 가진 모든 행(존재 자체)을
+    센다. owned_count + wanted_count로 유도할 수 없다 — 계획서 §D1
     (.docs/plans/2026-07-15-collection-domain-design-plan.md:55, "wanted와
-    보유 공존 허용") means a row can be double-counted across axes, so the
-    axis counts cannot stand in for a full inventory total."""
+    보유 공존 허용")에 따라 한 행이 여러 축에 중복 집계될 수 있으므로, 축별
+    카운트로는 전체 재고 총량을 대신할 수 없다."""
     user = make_user(username="ci-summary-counts-total")
     other = make_user(username="ci-summary-counts-total-other")
     CollectionItem.objects.create(
@@ -1410,10 +1385,10 @@ def test_전체_집계는_보유_구함_카운트의_단순_합과_다르다(mak
 
 
 # ---------------------------------------------------------------------------
-# user_personal_interest_ids / user_personal_statuses — exclude goods rows
-# (defensive filter against pre-C4 transitional data; goods can no longer be
-# created as an interest/status subject, but ORM-created rows simulate a
-# leftover from before the gate existed — collection domain design plan §3-3)
+# user_personal_interest_ids / user_personal_statuses — 굿즈 행 제외
+# (C4 이전 과도기 데이터에 대한 방어적 필터. 이제 굿즈는 찜·상태 대상으로
+# 생성할 수 없지만, 이 테스트는 ORM으로 직접 만들어 게이트 도입 이전에 남은
+# 데이터를 흉내낸다 — 계획서 §3-3)
 # ---------------------------------------------------------------------------
 
 
@@ -1448,10 +1423,10 @@ def test_비공식_상태_조회는_굿즈_kind_개인항목을_제외한다(mak
 
 
 # ---------------------------------------------------------------------------
-# user_collection_item_summary_counts — tradeable_count (collection 리디자인
-# 백엔드). tradeable_count is a DERIVED, OVERLAPPING axis, not a third
-# partition alongside owned/wanted — an owned item with tradeable_quantity>0
-# must be counted in BOTH owned_count and tradeable_count simultaneously.
+# user_collection_item_summary_counts — tradeable_count (컬렉션 리디자인
+# 백엔드). tradeable_count는 owned/wanted 옆의 세 번째 분할이 아니라 겹치는
+# 파생 축이다 — tradeable_quantity>0인 보유 아이템은 owned_count와
+# tradeable_count 양쪽에 동시에 집계돼야 한다.
 # ---------------------------------------------------------------------------
 
 
@@ -1475,10 +1450,10 @@ def test_요약_집계는_교환가능_수량이_1개_이상인_항목_개수를
 
 @pytest.mark.django_db
 def test_교환가능_집계는_보유_구함_분할과_겹치는_축이라_보유_항목이_교환가능이면_양쪽_모두_집계된다(make_user):
-    """tradeable_count is not a third mutually-exclusive partition — an
-    owned (is_wanted=False) item with tradeable_quantity>0 must be counted
-    in owned_count AND tradeable_count at the same time (they overlap by
-    design, unlike owned_count/wanted_count which partition is_wanted)."""
+    """tradeable_count는 상호 배타 분할이 아니다 — is_wanted=False인 보유
+    아이템도 tradeable_quantity>0이면 owned_count와 tradeable_count 양쪽에
+    동시에 집계된다(owned/wanted처럼 배타적으로 나뉘지 않고 의도적으로
+    겹친다)."""
     user = make_user(username="ci-summary-tradeable-overlap")
     CollectionItem.objects.create(
         user=user,
@@ -1495,9 +1470,10 @@ def test_교환가능_집계는_보유_구함_분할과_겹치는_축이라_보�
 
 
 # ---------------------------------------------------------------------------
-# user_collection_item_work_title_facets (collection 리디자인 백엔드,
-# 작품별 색상 인덱스/필터 근거 집계). blank work_title excluded, sorted by
-# count desc then work_title asc for tie-break determinism, owner-scoped.
+# user_collection_item_work_title_facets (컬렉션 리디자인 백엔드,
+# 작품별 색상 인덱스/필터 근거 집계). work_title이 비어있는 행은 제외하고,
+# count 내림차순·동수는 work_title 오름차순으로 정렬하며 소유자로 범위를
+# 좁힌다.
 # 각 facet 은 {"work_title", "count", "first_id"} dict 이며 first_id 는
 # 그 작품의 최초 등록(가장 작은 id) 아이템의 id 다 — 순번 기반 색 배정의
 # 근거가 되는 필드라 해시 대체(색 배정을 순번으로 바꾸는 이번 변경)의 핵심.
@@ -1508,7 +1484,7 @@ def test_교환가능_집계는_보유_구함_분할과_겹치는_축이라_보�
 def test_작품명별_항목_facet_집계는_작품명이_비어있는_항목을_제외한다(make_user):
     user = make_user(username="ci-work-title-counts-blank")
     item = CollectionItem.objects.create(user=user, name="굿즈 1", work_title="작품 A")
-    CollectionItem.objects.create(user=user, name="굿즈 2")  # work_title 비어있음
+    CollectionItem.objects.create(user=user, name="굿즈 2")
 
     facets = user_collection_item_work_title_facets(user)
 

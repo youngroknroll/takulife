@@ -1,15 +1,8 @@
 /**
- * visit_edit.js — Visit-record edit page (archive_visit_edit).
- *
- * Edits one existing record:
- *   - PATCH /api/visit-records/<id>/  (visited_on, short_review)
- *   - existing photos: DELETE /api/visit-records/<id>/photos/<photoId>/  (immediate)
- *   - new photos: Instagram-style preview, uploaded on save via
- *     POST /api/visit-records/<id>/photos/  (sequential)
- *   - record delete: DELETE /api/visit-records/<id>/
- *
- * 대표(cover) = the first photo overall: first existing photo if any, else the
- * first newly-added preview. Recomputed whenever photos change.
+ * 방문 기록 수정 페이지. 날짜·후기 저장, 기존 사진의 즉시 삭제, 새 사진의
+ * 미리보기+저장 시 순차 업로드, 기록 삭제를 담당한다.
+ * 대표 사진은 항상 첫 번째 사진이다 — 기존 사진이 있으면 그중 첫 장,
+ * 없으면 새로 추가한 미리보기 중 첫 장. 사진이 바뀔 때마다 다시 계산한다.
  */
 
 (function () {
@@ -20,12 +13,10 @@
   var ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
   var VISITS_URL = "/archive/visits/";
 
-  var pendingItems = []; // [{ file, url }] — new photos queued for upload
-  // True while uploadNewPhotos() is sending a request. Read by renderNewGrid
-  // so remove buttons redrawn mid-upload (via discardPending) are born
-  // disabled too — otherwise a click during the await could splice out
-  // whatever item now sits at index 0, which is not necessarily the one
-  // actually in flight (QA: succeeded/pendingItems desync).
+  var pendingItems = []; // [{ file, url }] — 업로드 대기 중인 새 사진
+  // uploadNewPhotos가 요청을 보내는 동안 true. 이 값을 renderNewGrid가
+  // 읽어, 업로드 중 다시 그려진 삭제 버튼도 비활성화 상태로 태어나게 한다
+  // — 그렇지 않으면 진행 중이 아닌 항목이 잘못 삭제될 수 있다.
   var uploadLocked = false;
 
   function setText(el, message) {
@@ -61,7 +52,7 @@
     }
   }
 
-  // ── cover badge across both grids ──────────────────────────────────────────
+  // ── 두 그리드에 걸친 대표 배지 ──────────────────────────────────────────
 
   function clearCovers() {
     var tiles = document.querySelectorAll(".photo-preview-tile");
@@ -94,7 +85,7 @@
     markCover(firstNew);
   }
 
-  // ── new-photo preview grid ─────────────────────────────────────────────────
+  // ── 새 사진 미리보기 그리드 ─────────────────────────────────────────────────
 
   function renderNewGrid(grid) {
     grid.textContent = "";
@@ -130,10 +121,7 @@
     refreshCover();
   }
 
-  // Locks/unlocks every control that can mutate pendingItems mid-upload:
-  // the trigger, the raw file input, and (via uploadLocked, read by
-  // renderNewGrid above) every remove button — including ones redrawn
-  // while locked.
+  // 업로드 중 pendingItems를 바꿀 수 있는 모든 컨트롤을 한꺼번에 잠그거나 푼다.
   function setUploadLock(locked, grid) {
     uploadLocked = locked;
     var trigger = document.getElementById("visit-photos-trigger");
@@ -195,13 +183,10 @@
       }
       if (isDuplicate(file)) { continue; }
       var item = { file: file, url: URL.createObjectURL(file) };
-      // Issued once here (not per upload attempt) so a retry after a
-      // lost-response duplicate resends the same token — the server can
-      // recognize the replay and return the original row instead of
-      // creating a second one. Feature-detected: crypto.randomUUID is not
-      // a security boundary here, just a dedup key, so unsupported
-      // browsers simply fall back to the pre-existing (no-token) behavior
-      // instead of throwing or using a weaker substitute.
+      // 재시도 시에도 같은 토큰을 다시 보내도록 파일 선택 시점에 한 번만
+      // 발급한다 — 응답 유실 후 재전송돼도 서버가 같은 요청으로 인식해
+      // 사진이 중복 생성되지 않는다. 지원하지 않는 브라우저는 그냥
+      // 토큰 없이 기존 방식대로 동작한다.
       if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
         item.clientToken = crypto.randomUUID();
       }
@@ -214,7 +199,7 @@
     renderNewGrid(grid);
   }
 
-  // ── existing-photo delete (immediate) ──────────────────────────────────────
+  // ── 기존 사진 즉시 삭제 ──────────────────────────────────────────
 
   function bindExistingDeletes(recordId, errorEl) {
     var grid = document.getElementById("existing-photo-grid");
@@ -261,7 +246,7 @@
     });
   }
 
-  // ── sequential upload of new photos ────────────────────────────────────────
+  // ── 새 사진 순차 업로드 ────────────────────────────────────────
 
   async function uploadNewPhotos(recordId, statusEl, grid) {
     var total = pendingItems.length;
@@ -271,8 +256,8 @@
       setText(statusEl, "사진 업로드 중 (" + (succeeded + 1) + "/" + total + ")...");
       var formData = new FormData();
       formData.append("image", pendingItems[0].file);
-      // Omit entirely when unset — an empty string fails the serializer's
-      // UUIDField parsing (400 for the whole request), not just a no-op.
+      // 값이 없으면 아예 보내지 않는다 — 빈 문자열은 서버 UUIDField
+      // 검증에서 요청 전체를 400으로 실패시킨다.
       if (pendingItems[0].clientToken) {
         formData.append("client_token", pendingItems[0].clientToken);
       }
@@ -281,11 +266,11 @@
         formData
       );
       if (result.status !== 201) {
-        setUploadLock(false, grid); // allow the grid to be edited again for a retry
+        setUploadLock(false, grid); // 재시도할 수 있도록 그리드를 다시 편집 가능하게 한다
         return { succeeded: succeeded, total: total };
       }
-      // Drop the uploaded item so a retry (partial-failure resubmit) picks up
-      // where this attempt left off instead of re-sending it.
+      // 업로드된 항목은 지워, 재시도할 때 이미 성공한 것부터 이어서
+      // 다시 보내지 않게 한다.
       discardPending(0, grid);
       succeeded++;
     }
@@ -293,7 +278,7 @@
     return { succeeded: succeeded, total: total };
   }
 
-  // ── save (PATCH + new photos) and record delete ────────────────────────────
+  // ── 저장(PATCH + 새 사진) 및 기록 삭제 ────────────────────────────
 
   function bindForm() {
     var form = document.getElementById("visit-edit-form");

@@ -1,10 +1,9 @@
 """
-Active visit-record API tests for the archive app.
+archive 앱의 방문 기록 API 테스트 모음.
 
-All paths are under /api/visit-records/ and /api/visit-records/<pk>/photos/.
-Photo upload security: real Pillow-backed ImageField validation, extension
-allowlist (jpg/jpeg/png/webp only), 5 MB max, decompression-bomb guard, and
-per-record photo cap of 5.
+경로는 모두 /api/visit-records/ 와 /api/visit-records/<pk>/photos/ 아래에 있다.
+사진 업로드 보안: 실제 Pillow 기반 ImageField 검증, 확장자 허용목록
+(jpg/jpeg/png/webp만), 5MB 상한, 압축폭탄 가드, 기록당 사진 5장 상한.
 """
 
 import io
@@ -21,7 +20,7 @@ pytestmark = pytest.mark.web
 
 
 # ---------------------------------------------------------------------------
-# VisitRecord create (POST /api/visit-records/)
+# VisitRecord 생성 (POST /api/visit-records/)
 # ---------------------------------------------------------------------------
 
 
@@ -92,7 +91,7 @@ def test_비로그인_사용자가_방문_기록_생성을_요청하면_거부�
 
 
 # ---------------------------------------------------------------------------
-# Create auto-transitions the status subject to visited (PR-C3 orchestration)
+# 생성 시 상태 대상이 visited로 자동 전환된다 (PR-C3 오케스트레이션)
 # ---------------------------------------------------------------------------
 
 
@@ -118,7 +117,7 @@ def test_참석_예정_행사에_방문_기록을_생성하면_상태가_방문_
 
 
 # ---------------------------------------------------------------------------
-# Multiple visits per event are allowed (no unique constraint)
+# 한 행사에 여러 방문 기록이 허용된다 (unique 제약 없음)
 # ---------------------------------------------------------------------------
 
 
@@ -145,9 +144,9 @@ def test_같은_행사에_방문_기록을_여러_번_생성하면_모두_저장
 
 
 # ---------------------------------------------------------------------------
-# INTG-BE-01-VR-WEB (bfcache duplicate-creation plan §6) — the HTTP boundary
-# contract for client_token idempotency on VisitRecord create, mirroring
-# INTG-BE-01-CI-WEB in tests/archive/test_collection_items_api.py.
+# INTG-BE-01-VR-WEB (bfcache 중복 생성 계획 §6) — VisitRecord 생성의
+# client_token 멱등성에 대한 HTTP 경계 계약. tests/archive/test_collection_items_api.py의
+# INTG-BE-01-CI-WEB와 대응한다.
 # ---------------------------------------------------------------------------
 
 
@@ -194,14 +193,12 @@ def test_같은_클라이언트_토큰으로_방문_기록_생성_POST를_두_�
 
 
 # ---------------------------------------------------------------------------
-# INTG-BE-05-VR (bfcache duplicate-creation plan §6, verification boundary
-# "web/slow") — mirrors INTG-BE-05-CI in
-# tests/archive/test_collection_items_api.py: the create endpoint must cap
-# flood-style repeated POSTs with a 30/minute scoped throttle, distinct from
-# the client_token idempotency guard above. Reuses one event across all 30
-# creates (multiple visits per event are allowed, proven above) so the
-# throttle — not a business-rule rejection — is what stops the 31st request.
-# GET (list) must stay unaffected.
+# INTG-BE-05-VR (bfcache 중복 생성 계획 §6, 검증 경계 "web/slow") —
+# tests/archive/test_collection_items_api.py의 INTG-BE-05-CI와 대응: 생성
+# 엔드포인트는 위의 client_token 멱등성 가드와 별개로 반복 POST 폭주를
+# 분당 30회 스로틀로 막아야 한다. 같은 행사를 30번 재사용해(위에서 증명했듯
+# 한 행사에 여러 방문 허용) 31번째 요청을 막는 것이 비즈니스 규칙 거부가
+# 아니라 스로틀임을 보인다. GET(목록)은 영향받지 않아야 한다.
 # ---------------------------------------------------------------------------
 
 
@@ -212,7 +209,7 @@ def test_방문_기록_생성_요청이_설정된_한도를_초과하면_429로_
     event = make_event()
     client.force_login(user)
 
-    # 30/minute budget: 30 creates succeed, the 31st is throttled.
+    # 분당 30회 한도: 30번은 성공하고 31번째는 스로틀된다.
     for i in range(30):
         response = client.post(
             "/api/visit-records/",
@@ -235,7 +232,7 @@ def test_방문_기록_생성_요청이_설정된_한도를_초과하면_429로_
 
 
 # ---------------------------------------------------------------------------
-# VisitRecord list (GET /api/visit-records/)
+# VisitRecord 목록 (GET /api/visit-records/)
 # ---------------------------------------------------------------------------
 
 
@@ -275,7 +272,7 @@ def test_방문_기록이_페이지_크기를_초과하면_목록이_페이지�
 
 
 # ---------------------------------------------------------------------------
-# VisitRecord detail (GET /api/visit-records/<pk>/)
+# VisitRecord 상세 (GET /api/visit-records/<pk>/)
 # ---------------------------------------------------------------------------
 
 
@@ -306,7 +303,7 @@ def test_타인의_방문_기록을_상세_조회하면_404가_반환된다(clie
 
 
 # ---------------------------------------------------------------------------
-# VisitRecord delete (DELETE /api/visit-records/<pk>/)
+# VisitRecord 삭제 (DELETE /api/visit-records/<pk>/)
 # ---------------------------------------------------------------------------
 
 
@@ -338,7 +335,7 @@ def test_타인의_방문_기록_삭제를_시도하면_404가_반환되고_기�
 
 
 # ---------------------------------------------------------------------------
-# VisitRecord update (PATCH /api/visit-records/<pk>/)
+# VisitRecord 수정 (PATCH /api/visit-records/<pk>/)
 # ---------------------------------------------------------------------------
 
 
@@ -377,7 +374,7 @@ def test_방문_기록_수정_요청에_대상_변경을_포함해도_대상은_
 
     assert response.status_code == 200
     record.refresh_from_db()
-    # subject stays pinned to the original event; only short_review changed.
+    # 대상은 원래 event로 고정되고 short_review만 바뀐다.
     assert record.event_id == event.id
     assert record.short_review == "memo"
 
@@ -417,7 +414,7 @@ def test_비로그인_사용자가_방문_기록_수정을_요청하면_거부�
 
 
 # ---------------------------------------------------------------------------
-# Photo upload (POST /api/visit-records/<record_id>/photos/)
+# 사진 업로드 (POST /api/visit-records/<record_id>/photos/)
 # ---------------------------------------------------------------------------
 
 
@@ -475,7 +472,7 @@ def test_이미지_없이_사진_업로드를_요청하면_400이_반환된다(c
 
 @pytest.mark.django_db
 def test_이미지가_아닌_바이트를_사진으로_업로드하면_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
-    """Fake bytes labeled as .jpg must be rejected by Pillow content inspection."""
+    """.jpg로 위장한 가짜 바이트는 Pillow 내용 검사로 거부되어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -493,7 +490,6 @@ def test_이미지가_아닌_바이트를_사진으로_업로드하면_거부된
 
 @pytest.mark.django_db
 def test_5MB를_초과하는_사진을_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
-    """Files larger than 5 MB must be rejected with 400."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -514,7 +510,7 @@ def test_5MB를_초과하는_사진을_업로드하면_거부된다(client, make
 
 @pytest.mark.django_db
 def test_허용되지_않는_확장자인_SVG_파일을_업로드하면_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
-    """SVG files must be rejected even if Pillow might accept them."""
+    """SVG는 Pillow가 허용할 수 있더라도 거부되어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -533,10 +529,10 @@ def test_허용되지_않는_확장자인_SVG_파일을_업로드하면_거부�
 
 @pytest.mark.django_db
 def test_PNG로_위장한_BMP_파일을_업로드하면_실제_포맷_기준으로_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
-    """A valid BMP renamed with a .png extension must be rejected.
+    """.png로 확장자만 바꾼 정상 BMP 파일은 거부되어야 한다.
 
-    The extension allowlist alone is attacker-controlled; the real decoded
-    Pillow format must be authoritative (S1).
+    확장자 허용목록만으로는 공격자가 조작할 수 있으므로, Pillow가 실제로
+    디코딩한 포맷을 기준으로 판단해야 한다 (S1).
     """
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
@@ -560,11 +556,10 @@ def test_PNG로_위장한_BMP_파일을_업로드하면_실제_포맷_기준으�
 
 @pytest.mark.django_db
 def test_픽셀_면적_상한을_초과하는_이미지를_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
-    """An image within the per-axis cap but over the total pixel-area cap must be rejected.
+    """축별 상한 안에 있어도 전체 픽셀 면적 상한을 넘으면 거부되어야 한다.
 
-    Proves the area guard is independent of both the 5 MB byte cap and the
-    per-axis dimension cap (S2). The limit is monkeypatched small to avoid
-    allocating a real decompression bomb in CI.
+    면적 가드가 5MB 바이트 상한, 축별 크기 상한과 독립적임을 증명한다
+    (S2). CI에서 실제 압축폭탄을 만들지 않도록 상한을 작게 monkeypatch한다.
     """
     settings.MEDIA_ROOT = str(tmp_path)
     monkeypatch.setattr("events.image_validation.MAX_IMAGE_PIXELS_LIMIT", 50)
@@ -572,8 +567,8 @@ def test_픽셀_면적_상한을_초과하는_이미지를_업로드하면_거�
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
 
-    # 10x10 = 100 px > 50 limit, but each axis (10) is well under MAX_IMAGE_DIMENSION_PX
-    # and the byte size is a few hundred bytes.
+    # 10x10=100px는 상한 50을 넘지만, 각 축(10)은 MAX_IMAGE_DIMENSION_PX보다
+    # 훨씬 작고 바이트 크기도 수백 바이트에 불과하다.
     png_data = png_bytes(10, 10)
 
     client.force_login(user)
@@ -589,7 +584,6 @@ def test_픽셀_면적_상한을_초과하는_이미지를_업로드하면_거�
 
 @pytest.mark.django_db
 def test_방문_기록에_사진이_5장_있을_때_추가_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo):
-    """The 6th photo for a single record must be rejected (cap is 5)."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -612,12 +606,12 @@ def test_방문_기록에_사진이_5장_있을_때_추가_업로드하면_거�
 
 @pytest.mark.django_db
 def test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반환된다(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
-    """If the VisitRecord is deleted between the existence check and the
-    service call (TOCTOU race), the view must return 404, not 500.
+    """존재 확인과 서비스 호출 사이에 VisitRecord가 삭제되면(TOCTOU 경쟁),
+    뷰는 500이 아니라 404를 반환해야 한다.
 
-    Stays at the view layer (rather than a pure service test) because the
-    race is simulated by monkeypatching archive.views' own imported
-    create_visit_record_photo reference — that patch point only exists here.
+    순수 서비스 테스트가 아니라 뷰 레이어에 두는 이유: 경쟁 상태를
+    archive.views가 임포트한 create_visit_record_photo 참조를 monkeypatch해서
+    재현하는데, 그 패치 지점이 여기에만 있기 때문이다.
     """
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
@@ -629,8 +623,8 @@ def test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반
     original_create_visit_record_photo = archive_views.create_visit_record_photo
 
     def racing_create_visit_record_photo(*, visit_record, image):
-        # Simulate a concurrent delete landing between the view's existence
-        # check and the service's select_for_update().get(...).
+        # 뷰의 존재 확인과 서비스의 select_for_update().get(...) 사이에
+        # 동시 삭제가 끼어드는 상황을 재현한다.
         VisitRecord.objects.filter(pk=visit_record.pk).delete()
         return original_create_visit_record_photo(visit_record=visit_record, image=image)
 
@@ -649,12 +643,11 @@ def test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반
 
 
 # ---------------------------------------------------------------------------
-# INTG-BE-01-VRP-WEB / INTG-BE-04-VRP-WEB (bfcache duplicate-creation plan
-# §6) — the HTTP boundary contract for client_token idempotency on photo
-# upload, mirroring INTG-BE-01-VR-WEB above. Photo dedup is scoped by
-# (visit_record, client_token), not (user, client_token) — see
-# VisitRecordPhoto's UniqueConstraint and create_visit_record_photo's
-# docstring for why.
+# INTG-BE-01-VRP-WEB / INTG-BE-04-VRP-WEB (bfcache 중복 생성 계획 §6) — 사진
+# 업로드의 client_token 멱등성에 대한 HTTP 경계 계약. 위 INTG-BE-01-VR-WEB와
+# 대응한다. 사진 중복 방지 범위는 (user, client_token)이 아니라
+# (visit_record, client_token)이다 — 이유는 VisitRecordPhoto의
+# UniqueConstraint와 create_visit_record_photo의 독스트링 참조.
 # ---------------------------------------------------------------------------
 
 
@@ -662,10 +655,10 @@ def test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반
 def test_같은_클라이언트_토큰으로_사진_업로드_POST를_두_번_보내면_두_응답_모두_201이고_동일한_id를_반환하며_DB에는_사진이_하나만_생성된다(
     client, make_user, make_event, png_bytes, settings, tmp_path, make_visit
 ):
-    """INTG-BE-01-VRP-WEB: below the cap, a replayed photo upload with the
-    same client_token (e.g. a bfcache-restored page re-submitting a stale
-    form) must not create a second row — both responses succeed with the
-    same id, and only one row exists."""
+    """INTG-BE-01-VRP-WEB: 상한 이하에서 같은 client_token으로 사진 업로드가
+    재전송되면(bfcache로 복원된 페이지가 오래된 폼을 재제출하는 경우 등)
+    두 번째 행이 생기면 안 된다 — 두 응답 모두 같은 id로 성공하고 행은
+    하나만 존재해야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -698,20 +691,19 @@ def test_같은_클라이언트_토큰으로_사진_업로드_POST를_두_번_�
 def test_상한을_채운_마지막_사진과_같은_클라이언트_토큰으로_사진_업로드_POST를_재전송하면_201이고_동일한_id가_반환된다(
     client, make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo
 ):
-    """INTG-BE-04-VRP-WEB: the actual dropped-response-then-retry scenario —
-    the client never saw the 201 for the photo that filled
-    MAX_PHOTOS_PER_RECORD and resubmits the same client_token. This must
-    still be a 201 idempotent replay, not the 400 photo_limit_exceeded a
-    caller with a genuinely new photo would get at the cap."""
+    """INTG-BE-04-VRP-WEB: 응답 유실 후 재시도 시나리오 — 클라이언트가
+    MAX_PHOTOS_PER_RECORD를 채운 사진의 201 응답을 받지 못해 같은
+    client_token으로 재전송한다. 이때도 상한에서 정말 새 사진을 올린 경우의
+    400 photo_limit_exceeded가 아니라 201 멱등 재생이어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
     client_token = str(uuid.uuid4())
 
-    # Given: the cap is filled — every photo before the last is untokened,
-    # and only the cap-filling photo itself is created (via this same
-    # endpoint) with the token under test.
+    # Given: 상한이 이미 찼고, 마지막 직전까지의 사진에는 토큰이 없으며,
+    # 상한을 채우는 마지막 사진만 (같은 엔드포인트로) 검증 대상 토큰을 갖고
+    # 생성됐다.
     for i in range(MAX_PHOTOS_PER_RECORD - 1):
         make_visit_photo(record, filename=f"photo-{i}.png")
 
@@ -726,8 +718,8 @@ def test_상한을_채운_마지막_사진과_같은_클라이언트_토큰으�
     assert first_response.status_code == 201
     assert VisitRecordPhoto.objects.filter(visit_record=record).count() == MAX_PHOTOS_PER_RECORD
 
-    # When: the client never saw the response for `first_response` and
-    # retries the exact same request (same token).
+    # When: 클라이언트가 `first_response` 응답을 받지 못해 같은 요청을(같은
+    # 토큰으로) 그대로 재시도한다.
     retried_response = client.post(
         f"/api/visit-records/{record.id}/photos/",
         {
@@ -736,15 +728,15 @@ def test_상한을_채운_마지막_사진과_같은_클라이언트_토큰으�
         },
     )
 
-    # Then: 201, same id, no growth past the cap — not the 400
-    # photo_limit_exceeded a real 6th photo would get.
+    # Then: 201, 같은 id, 상한을 넘는 증가 없음 — 진짜 6번째 사진이었다면
+    # 받았을 400 photo_limit_exceeded가 아니다.
     assert retried_response.status_code == 201
     assert retried_response.json()["id"] == first_response.json()["id"]
     assert VisitRecordPhoto.objects.filter(visit_record=record).count() == MAX_PHOTOS_PER_RECORD
 
 
 # ---------------------------------------------------------------------------
-# Photo delete (DELETE /api/visit-records/<record_id>/photos/<photo_id>/)
+# 사진 삭제 (DELETE /api/visit-records/<record_id>/photos/<photo_id>/)
 # ---------------------------------------------------------------------------
 
 
@@ -780,7 +772,7 @@ def test_타인의_방문_기록_사진_삭제를_시도하면_404가_반환되�
 
 
 # ---------------------------------------------------------------------------
-# Legacy / deferred paths remain inactive
+# 레거시 / 보류된 경로는 비활성 상태로 유지된다
 # ---------------------------------------------------------------------------
 
 

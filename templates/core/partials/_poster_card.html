@@ -1,56 +1,33 @@
 {% comment %}
-_poster_card.html — ticket-stub poster card (image tile + caption strip)
+티켓 반쪽 스타일 포스터 카드(이미지 타일 + 캡션 띠)다. 이벤트 하나를 세로
+포스터 형태로 렌더한다. 제목 + 위치·기간 줄은 이미지 아래 캡션 띠에
+점선 절취선으로 나뉘어 놓인다.
 
-Renders one event as a portrait poster tile. Image (poster or a category-
-gradient watermark fallback) sits in `.poster-card-media`; the title + combined location/period
-line sit below it in an opaque `.poster-card-caption` strip, separated by a
-dashed perforation with punch-notch circles (ticket-stub signature #1 —
-prompt_plan.md §0 / PR-R2's `.tk-strip` technique). This replaces the old
-white-on-scrim caption overlay, which did not guarantee contrast on bright
-posters.
+.poster-card-media는 이 카드에 허용된 유일한 마크업 추가다 — 펀치 노치가
+기준으로 삼을 상자를 주고, .poster-card-caption에는 position:relative를
+주지 않아 제목의 스트레치 링크(::after)가 카드 전체(.poster-card)를
+기준으로 펼쳐지게 한다. 그래야 캡션 띠만이 아니라 카드 전체가 클릭된다.
 
-`.poster-card-media` is a deliberate, minimal markup addition (the one
-markup change PR-R3's contract allows for the poster card): it gives the
-punch-notch pseudo-elements a box whose own bottom edge IS the seam
-(`top: 100%` on the notch, regardless of the image's actual rendered height),
-and — just as importantly — keeps `.poster-card-caption` free of `position:
-relative`, so the title's stretched-link (`.poster-card-title a::after`)
-still resolves against the outer `.poster-card` (its nearest positioned
-ancestor) and keeps the WHOLE card clickable, not just the caption strip.
+뱃지/찜 버튼은 여전히 절대 위치(top/right 8px)지만 이제 .poster-card-media를
+기준으로 앵커링된다 — 미디어가 카드 상단에 딱 붙어 있어 픽셀 위치는 그대로다.
 
-Badges / 찜 button keep their existing position:absolute rule (top/right
-8px) — now anchored to `.poster-card-media` instead of `.poster-card`, which
-is the same pixel position (media sits flush at the card's top edge) so
-their placement is unchanged.
+제목만이 유일한 링크이며 CSS(::after)로 카드 전체에 펼쳐진다. 찜 버튼은
+모든 카드에 있고(히어로 덱은 별도 컴포넌트라 버튼이 없음) z-index로 이
+스트레치 링크 위에 독립적으로 떠 있다.
 
-The title is the ONLY link, stretched over the whole card via CSS (::after),
-so the entire poster is clickable. The 찜 (interest) button sits on every
-card (2026-07-21: expanded from closing-only — hero deck is a separate
-component and stays button-free) above that stretched link with its own
-z-index, staying an independent control.
-
-Params:
-  row      — display dict from _attach_display (core/views.py): event, dday,
-             category_slug, category_label, user_interested, user_interest_id
-  variant  — "ongoing" | "closing" | "recent" | "planned" (selects badge only
-             — 찜 button now renders for every variant)
-
-Context consumed: request.user (via the calling page) is not needed here.
+인자:
+  row      — _attach_display(core/views.py)가 만드는 표시용 딕셔너리: event,
+             dday, category_slug, category_label, user_interested,
+             user_interest_id
+  variant  — "ongoing" | "closing" | "recent" | "planned"(뱃지만 결정 — 찜
+             버튼은 모든 variant에서 렌더)
 {% endcomment %}
 {% with ev=row.event %}
 <article class="poster-card hover-lift" data-status-error-container>
-  {% comment %} No-poster fallback (design-rules.md §4-c 시안 우선, mock's
-     gradFor()/565~568행): a 105deg gradient through two color-mix() stops
-     replaces the old flat .cat-tile emoji tile, with a large rotated
-     category-label watermark instead of an emoji glyph (decorative — the
-     title below carries the actual information). `style-card`/`cat-{{slug}}`
-     on the article itself are dropped here: grep confirmed no CSS selector
-     in this codebase reads `.poster-card.style-card` or `.poster-card.cat-*`
-     — they were dead modifiers left over from the pre-editorial emoji tile.
-     color-mix() has no prior use in this codebase (grepped) — accepted as
-     the mock's own formula (modern-browser baseline); a browser without
-     color-mix() support falls back to the gradient's first colour stop
-     (var(--surface)), a safe flat background, not a crash. {% endcomment %}
+  {% comment %} 포스터가 없을 때는 두 색을 섞은 105도 그라디언트 배경에 회전된
+     카테고리 라벨 워터마크를 놓는다(장식일 뿐 — 실제 정보는 아래 제목이
+     담당). color-mix()를 지원하지 않는 브라우저는 그라디언트 첫 색상
+     (var(--surface))으로 안전하게 대체된다. {% endcomment %}
   <div class="poster-card-media{% if not ev.poster_image %} poster-card-media--fill{% endif %}"{% if not ev.poster_image %} style="background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft))) 100%);"{% endif %}>
     {% if ev.poster_image %}
       <img class="poster-card-img" src="{{ ev.poster_image.url }}" alt="{{ ev.title }} 포스터" loading="lazy">
@@ -58,13 +35,11 @@ Context consumed: request.user (via the calling page) is not needed here.
       <span class="poster-fill-label" style="color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));" aria-hidden="true">{{ row.category_label }}</span>
     {% endif %}
 
-    {% comment %} Ongoing(이번 주 눈여겨 볼 이벤트): no countdown badge — already visitable.
-       Recent(새 이벤트): "오픈까지 N일"(upcoming) and/or "NEW"(등록 10일 이내) — both may show.
-       Closing: descriptive "종료까지 N일" instead of D-day notation; "종료"(ended)
-       gets the neutral --end grey instead of the amber closing-soon colour.
-       Planned(다가오는 일정, home snapshot): no badge either — same fallthrough
-       as ongoing (H-2 §7-a-2: a countdown on an event the user already
-       planned themselves would read as unwanted urgency-nudging). {% endcomment %}
+    {% comment %} 진행 중 카드는 이미 방문 가능이라 카운트다운 뱃지가 없다. 최근
+       등록 카드는 "오픈까지 N일"과/또는 "NEW"를 함께 보여줄 수 있다. 종료 임박
+       카드는 D-day 대신 "종료까지 N일" 문구를 쓰고, 종료된 카드는 중립 회색을
+       쓴다. 다가오는 일정 카드(홈 스냅샷)도 뱃지가 없다 — 사용자가 이미 계획한
+       일정에 카운트다운을 붙이면 불필요한 재촉으로 읽힌다. {% endcomment %}
     {% if variant == "recent" %}
       {% if row.status_slug == "upcoming" or row.is_new %}
         <div class="poster-badges">
@@ -76,15 +51,10 @@ Context consumed: request.user (via the calling page) is not needed here.
       <span class="poster-badge {% if row.dday is None %}poster-badge-ended{% else %}poster-badge-closing{% endif %}">{% if row.dday is None %}종료{% elif row.status_slug == "upcoming" %}{% if row.dday == 0 %}오늘 오픈{% else %}오픈까지 {{ row.dday }}일{% endif %}{% else %}{% if row.dday == 0 %}오늘 종료{% else %}종료까지 {{ row.dday }}일{% endif %}{% endif %}</span>
     {% endif %}
 
-    {% comment %} 찜 button (2026-07-21: every card, not just closing —
-       coordinator instruction, hero deck excluded since it's a separate
-       component/template). Markup order matters: .glint comes AFTER the
-       button so home.css's `.poster-interest ~ .glint` sibling selector can
-       nudge the glint out from behind the button (which fully covers it at
-       their shared default top-right position) without a :has() selector.
-       Both are position:absolute, so this reorder has no visual/tab-order
-       effect beyond that repositioning — now applies uniformly since every
-       card has the button sibling. {% endcomment %}
+    {% comment %} 찜 버튼은 모든 카드에 있다(히어로 덱은 별도 컴포넌트라 제외).
+       .glint는 버튼 뒤에 오도록 마크업 순서를 버튼 다음에 둔다 — 그래야
+       :has() 없이도 형제 선택자로 반짝임을 버튼 뒤에서 살짝 밀어낼 수 있다.
+       {% endcomment %}
     <button class="interest-btn poster-interest{% if row.user_interested %} active{% endif %}" type="button"
       data-interest-toggle
       data-toast
@@ -98,21 +68,15 @@ Context consumed: request.user (via the calling page) is not needed here.
   </div>
 
   <div class="poster-card-caption">
-    {% comment %} Accent bar (editorial redesign, 2026-07-21): rendered as a
-       border-left on this wrapper, NOT as an absolutely-positioned child —
-       any `position: relative` between the title and `.poster-card` would
-       make the title's stretched link (.poster-card-title a::after,
-       `inset:0`) resolve against that box instead of the card and shrink
-       the clickable area to just the caption (BIR finding; a first
-       relative-wrapper attempt reproduced exactly that, caught by click
-       measurement). border-left needs no positioning context at all, so
-       the whole card stays clickable. {% endcomment %}
+    {% comment %} 강조 막대는 절대 위치 자식이 아니라 이 래퍼의 border-left로
+       그린다 — 제목과 .poster-card 사이에 position:relative가 하나라도 끼면
+       제목의 스트레치 링크가 그 상자 기준으로 줄어들어 캡션 띠만 클릭되는
+       버그가 생긴다(실측으로 확인). border-left는 위치 기준이 필요 없어 카드
+       전체가 계속 클릭 가능하다. {% endcomment %}
     <div class="poster-card-caption-inner" style="border-color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));">
       <h3 class="poster-card-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
-      {% comment %} Location + period collapsed into one meta line (designer
-         guidance: a title + location + period 3-line stack reads heavy on a
-         narrow card — condense to title + one period-centred meta line,
-         matching PR-R2's .tk-strip reference). {% endcomment %}
+      {% comment %} 위치와 기간을 한 줄로 합친다 — 제목+위치+기간 3줄은 좁은
+         카드에서 무겁게 읽혀 한 줄로 압축했다. {% endcomment %}
       {% if ev.location_name or ev.start_date %}
         <p class="poster-card-meta">{% if ev.location_name %}{{ ev.location_name }}{% if ev.start_date %} · {% endif %}{% endif %}{% if ev.start_date and ev.end_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} - {% if ev.start_date|date:"Y" == ev.end_date|date:"Y" %}{{ ev.end_date|date:"m/d" }}{% else %}{{ ev.end_date|date:"Y/m/d" }}{% endif %}</span>{% elif ev.start_date %}<span class="mono-num">{{ ev.start_date|date:"Y/m/d" }} -</span>{% endif %}</p>
       {% endif %}

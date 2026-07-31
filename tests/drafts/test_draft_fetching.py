@@ -1,9 +1,6 @@
-"""Tests for drafts.fetching.fetch_html using an httpx MockTransport.
-
-Covers the redirect cap, content-type rejection, response-size cap, and the
-successful decode path without hitting the network. validate_fetch_url is
-stubbed here (it has its own dedicated tests) so these focus on fetch behavior.
-"""
+"""drafts.fetching.fetch_html을 httpx MockTransport로 검증한다. 리다이렉트 상한,
+content-type 거부, 응답 크기 상한, 정상 디코딩을 다루며, validate_fetch_url은
+전용 테스트가 따로 있어 여기서는 스텁 처리한다."""
 import httpx
 import pytest
 from django.test import override_settings
@@ -145,8 +142,7 @@ def test_연락처_설정이_있으면_User_Agent에_연락처를_덧붙인다(m
 
 @override_settings(DRAFT_FETCH_CONTACT="https://example.com/about\n")
 def test_연락처_설정_끝의_공백은_User_Agent에서_제거된다(monkeypatch, install_mock_transport):
-    # Defends against a trailing newline left in a .env value (a common
-    # copy/paste mistake) leaking into the User-Agent header.
+    # .env 값 끝에 실수로 남은 개행이 User-Agent 헤더로 새어 나가는 것을 막는다.
     captured = {}
 
     def handler(request):

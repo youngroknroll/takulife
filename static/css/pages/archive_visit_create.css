@@ -1,20 +1,14 @@
 /* archive_visit_create.css — /archive/visits/new/ 전용 작성 페이지.
-   Design source: dannyeoon-girok-editorial-track 후속, 다녀온 기록 작성 mock.
+   `.visit-create-page` 스코프에서만 동작하며 archive_visits.css /
+   photo-upload.css는 수정하지 않는다(두 파일은 목록/상세/수정, 스태프
+   포스터 업로드 등 다른 페이지와 공유되므로) — 필요한 조각을
+   teal 테마로 페이지 스코프 복제해서 쓴다(half-swap 시 폼이 조용히
+   스타일을 잃는 함정 회피).
 
-   Entirely scoped under `.visit-create-page` (this page's `<main>` root
-   class). Does NOT edit archive_visits.css / photo-upload.css in place —
-   both are shared across other pages (visit list/detail/edit, staff poster
-   upload). This file ports fresh, page-scoped, teal-themed copies of the
-   pieces it needs from archive_visits.css instead
-   (goods-create-editorial-track's "half-swap silently unstyles the form"
-   lesson).
-
-   TOKEN NOTE: `--border-strong` does not exist in tokens.css (verified by
-   grep before writing this file, same trap WED flagged on prior tracks).
-   `--muted` is used for the dashed dropzone/add-tile border instead.
-
-   ACCENT NOTE: "teal" role maps to this repo's `--teal`/`--teal-soft`/
-   `--teal-ink` tokens (no separate `--accent*` family exists). */
+   TOKEN NOTE: `--border-strong`은 tokens.css에 없어(사전 grep 확인)
+   드롭존/추가 타일 점선 테두리에 `--muted`를 대신 쓴다.
+   ACCENT NOTE: "teal" 역할은 `--teal`/`--teal-soft`/`--teal-ink`
+   토큰에 매핑한다(별도 --accent* 계열 없음). */
 
 .visit-create-page {
   max-width: 51.25rem;
@@ -109,14 +103,14 @@
 .visit-create-page .photo-add-tile:focus-visible {
   outline-color: var(--teal);
 }
-/* Empty state: no photos yet — big dashed dropzone spanning the full row. */
+/* 빈 상태: 사진이 아직 없을 때 — 점선 드롭존이 행 전체를 차지한다. */
 .visit-create-page .visit-create-photo-row:has(#photo-preview-grid[hidden]) #visit-photos-trigger {
   grid-column: 1 / -1;
   width: auto;
   height: auto;
   aspect-ratio: 4 / 3;
 }
-/* Non-empty state: small square add-tile fills a single grid cell. */
+/* 사진이 있을 때: 작은 정사각형 추가 타일이 그리드 한 칸을 채운다. */
 .visit-create-page .visit-create-photo-row:has(#photo-preview-grid:not([hidden])) #visit-photos-trigger {
   width: auto;
   height: auto;
@@ -128,9 +122,9 @@
   font-size: 0.72rem;
 }
 
-/* Preview tiles ported + re-themed from archive_visits.css (page-scoped
-   copy, not an edit of the shared file). Sized to fill their grid cell
-   instead of the shared page's fixed 80px. */
+/* archive_visits.css에서 이식 + 재테마한 미리보기 타일(공용 파일을
+   수정하지 않고 페이지 스코프로 복제) — 공용 페이지의 고정 80px 대신
+   그리드 칸을 꽉 채우도록 크기를 맞춘다. */
 .visit-create-page .photo-preview-tile {
   position: relative;
   width: 100%;
@@ -209,9 +203,9 @@
   color: var(--text);
 }
 
-/* Locked subject shown when the write page is opened for a specific item
-   (e.g. a 방문 완료 이벤트's 기록 button) instead of the selectable dropdown.
-   Ported + page-scoped from archive_visits.css. */
+/* 특정 항목(예: 방문 완료 이벤트의 기록 버튼)에서 작성 페이지를 열었을
+   때 선택형 드롭다운 대신 보여주는 잠긴 대상 표시. archive_visits.css
+   에서 이식 + 페이지 스코프로 복제. */
 .visit-create-page .locked-subject {
   margin: 0;
   border: 1px solid var(--border-soft);
@@ -267,9 +261,9 @@
   height: 1px;
   background: var(--line);
 }
-/* Bullet layout + brand-red marker now come from the shared .rule-list base
-   (objects/layout.css). Only reset the base's top margin here — the head row
-   above already provides the gap. */
+/* 불릿 레이아웃과 브랜드레드 마커는 공용 .rule-list 베이스에서 온다
+   (objects/layout.css). 여기서는 베이스의 상단 마진만 0으로 되돌린다 —
+   위 헤드 행이 이미 간격을 제공하기 때문. */
 .visit-create-page .visit-create-rules .rule-list {
   margin: 0;
 }
@@ -344,9 +338,9 @@
   text-underline-offset: 0.2em;
 }
 
-/* JS-appended "방문 기록 목록으로 이동" continue link on partial photo-upload
-   failure (visit_create.js:revealContinueLink). Ported + teal-themed from
-   archive_visits.css's .record-cta. */
+/* 사진 업로드 일부 실패 시 JS가 붙이는 "방문 기록 목록으로 이동" 계속
+   링크(visit_create.js:revealContinueLink). archive_visits.css의
+   .record-cta를 이식 + teal 테마로 변경. */
 .visit-create-page .record-cta {
   display: block;
   grid-column: 1 / -1;
@@ -366,9 +360,9 @@
   opacity: 0.9;
 }
 
-/* Screen-reader-only helper text (this page's own scoped copy — no shared
-   `.sr-only` utility exists repo-wide; clip technique matches
-   personal_create-track's equivalent). */
+/* 스크린리더 전용 보조 텍스트(이 페이지 자체 복제본 — 저장소 전역
+   `.sr-only` 유틸리티가 없다; clip 기법은 personal_create 트랙과
+   동일). */
 .visit-create-page .sr-only {
   position: absolute;
   width: 1px;

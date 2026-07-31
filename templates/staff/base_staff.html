@@ -1,11 +1,8 @@
 {% extends "base.html" %}
 {% comment %}
-staff/base_staff.html — independent staff console shell.
-
-Extends the shared base.html but swaps the public site chrome for the
-console shell (topbar + tabs) and drops the public footer entirely (see
-prompt_plan.md "스태프 독립 콘솔 셸" PR-C1). Views/URLs/permissions unchanged —
-this only replaces layout blocks.
+스태프 콘솔 전용 셸이다. 공용 base.html을 확장하되 공개 사이트 크롬을
+콘솔 셸(상단바+탭)로 바꾸고 공개 바닥글은 아예 뺀다. 뷰/URL/권한은 그대로고
+레이아웃 블록만 교체한다.
 {% endcomment %}
 {% load static %}
 
@@ -14,20 +11,18 @@ this only replaces layout blocks.
 {% endblock %}
 
 {% comment %}
-Loaded once for every staff page here (not per-template extra_js) so the
-double-submit guard (static/js/shared/staff_submit_guard.js) covers create/
-edit/delete/discovery forms without editing each template's own extra_js
-block — see prompt_plan.md D3. Opt-in via data-submit-guard on each form;
-this script never assumes which forms exist on the current page.
+모든 스태프 페이지에서 여기 한 번만 로드한다 — 중복 제출 방지 스크립트가
+각 템플릿의 extra_js를 따로 건드리지 않고도 생성/수정/삭제/발견 폼 전부를
+커버한다. 각 폼이 data-submit-guard로 옵트인해야 적용된다.
 {% endcomment %}
 {% block shell_js %}
 <script defer src="{% static 'js/shared/staff_submit_guard.js' %}"></script>
 {% endblock %}
 
 {% comment %}
-The public skip link (base.html) targets #content, which staff pages don't
-have (they use #staff-main) — suppressed here since _console_shell.html
-already ships its own skip link pointed at the right target.
+공개 사이트의 스킵 링크(base.html)는 #content를 가리키는데 스태프 페이지는
+#staff-main을 쓴다 — 그래서 여기서는 끄고, _console_shell.html이 올바른
+대상을 가리키는 자체 스킵 링크를 넣는다.
 {% endcomment %}
 {% block skip_link %}{% endblock %}
 

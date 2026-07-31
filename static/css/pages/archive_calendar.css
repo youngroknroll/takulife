@@ -1,36 +1,18 @@
-/* ── /archive/calendar/ page skin (2026-07-24 editorial rebuild,
- * §8-A R-1..R-5 top/filter rework) ───────────────────────────────────────
- * Grid/cell/dot/error-panel base look lives in components/calendar.css
- * (shared with the Events calendar). Masthead/toolbar look now comes from
- * the shared pages/archive.css (§8-A D9/D5 — loaded ahead of this file;
- * WED §8-A-1 item 1 supersedes the earlier "duplicate, don't link
- * archive.css" call: archive.css's rules are scoped to
- * `.hero-activity`/`.activity-toolbar`, not the bare `.hero` that caused
- * the historical home.html leak, so a second scoped consumer can't
- * reproduce that leak). This file layers the editorial-only differences
- * onto the shared calendar skeleton via `.activity-page`-scoped overrides
- * (plan §4-b, WED pre-spec §3 — the sibling `.activity-page .aside-label`
- * precedent in pages/archive.css:313 is the model this file follows
- * throughout) plus this page's own month-nav/legend/aside/detail rules
- * that have no shared-file counterpart at all.
+/* ── /archive/calendar/ page skin ─────────────────────────────────────────
+ * 그리드/셀/점/오류패널 기본 모습은 components/calendar.css(이벤트 달력과
+ * 공유)에서 온다. 헤더·툴바 모습은 pages/archive.css를 그대로 쓰고, 이
+ * 파일은 `.activity-page` 스코프로 에디토리얼 차이만 얹는다.
  *
- * Breakpoints: this file's own layout (aside/grid/legend/detail) commits to
- * 45rem only (§A-3 carried over from the pre-editorial file — no foreign
- * 53.75/56.25/60rem boundaries borrowed from other pages). The
- * masthead/toolbar now stack at archive.css's own 53.75rem instead — two
- * independently-scoped breakpoints coexisting on one page, not a conflict
- * (plan §8-A D5 / WED §8-A-1 item 1: "두 독립 경계").
+ * 이 파일 자체 레이아웃(aside/grid/legend/detail)은 45rem 하나만 쓰고,
+ * 헤더·툴바는 archive.css의 53.75rem에서 따로 접힌다 — 두 경계가 독립적으로
+ * 공존하는 것이지 충돌이 아니다.
  */
 
 /* ── sub-nav / search / 찜 목록 rail ──────────────────────────────────── */
-/* Page-local plain GET search (not _archive_search.html — that partial
-   ships archive_search.js's live-region pair, which this full-PRG-reload
-   page must not carry, plan §7-3 constraint 5/7). Everything else about the
-   toolbar row (grid/columns/sub-nav/nav-interest look) now comes from the
-   shared `.activity-toolbar` rules in pages/archive.css — this is the one
-   mirror rule §8-A-1 item 1 condition ① calls for, matching
-   `.archive-search`'s width/centering so `.calendar-search` lands the same
-   way in the toolbar grid's middle (1fr) track. */
+/* 이 페이지 전용 순수 GET 검색이다 — _archive_search.html 파셜은
+   archive_search.js의 라이브 리전을 함께 로드하는데, 이 페이지는
+   전체 새로고침(PRG) 방식이라 그걸 쓰면 안 된다. 나머지 툴바 모습은
+   pages/archive.css의 공용 `.activity-toolbar` 규칙을 그대로 따른다. */
 .activity-toolbar .calendar-search {
   display: flex;
   align-items: center;
@@ -41,12 +23,8 @@
   margin: 0;
 }
 
-/* archive.css's own `.activity-toolbar` grid stacks to a single column at
-   its 53.75rem breakpoint (plan §8-A D5 — the toolbar's own sanctioned
-   second boundary, not a foreign one borrowed for this file's 45rem-scoped
-   layout below); the fixed-width search must give up that width there too
-   or it overflows the collapsed single-column row (BIR §8-A-2 AC8). Mirrors
-   archive.css's own `.archive-search` reset at the same breakpoint. */
+/* archive.css의 `.activity-toolbar`는 53.75rem에서 한 열로 접힌다. 검색창의
+   고정 너비도 그 지점에서 풀어줘야 접힌 한 열 행을 넘치지 않는다. */
 @media (max-width: 53.75rem) {
   .activity-toolbar .calendar-search {
     width: auto;
@@ -104,11 +82,8 @@
   color: var(--muted);
 }
 
-/* F6 fix (post-implementation BIR): the legend's own caption ("종류") uses
-   a smaller, heavier, tracked typographic treatment than the shared
-   .aside-label default — scoped to this one heading only (a modifier
-   class, not a redefinition of .aside-label) since "빠른 이동" below was
-   not flagged and keeps its existing look. */
+/* 범례 캡션("종류")만 .aside-label 기본보다 작고 굵게 만든 별도 수정자
+   클래스다. 아래 "빠른 이동"은 대상이 아니라 기존 모습 그대로다. */
 .legend-caption-row {
   display: flex;
   align-items: baseline;
@@ -124,8 +99,7 @@
   letter-spacing: 0.07em;
 }
 
-/* "전체 보기" reset link (plan §8-A R-5/D3) — undoes a multi-toggle legend
-   selection in one click, mirroring index.html's "전체" chip affordance. */
+/* "전체 보기"는 다중 선택된 범례를 한 번에 되돌리는 링크다. */
 .legend-reset {
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -133,16 +107,10 @@
   text-decoration: underline;
 }
 
-/* ── legend — now doubles as a clickable multi-toggle filter (plan §8-A
-   R-5/D2/D10): each row is a GET `<a>` to kind_filters[].toggle_url. Active
-   state is a --teal-soft row fill + bold text, never color/opacity alone —
-   the swatch ink stays the kind's identity color, not a state signal (WED
-   §8-A-1 item 3 / BIR §8-A-2 High "aria-current, not aria-pressed"). Aside
-   top, solid-ink square swatch, not the shared circular .day-dot (WED
-   pre-spec §1/§6). Reuses the .calendar-legend/.legend-item class names
-   from components/calendar.css (Activity-only there) but restructures
-   their layout for this page only, matching the file-header trade-off
-   note. */
+/* ── legend — 클릭 가능한 다중 토글 필터를 겸한다 ─────────────────────── */
+/* 각 행은 kind_filters[].toggle_url로 가는 GET 링크다. 활성 상태는
+   색만이 아니라 배경 채움 + 굵은 글자로 함께 표시한다 — 스와치 색은
+   종류 식별용이지 상태 신호가 아니기 때문이다. */
 .calendar-legend {
   display: grid;
   gap: 0.375rem;
@@ -187,10 +155,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Legend swatch — dedicated class (not .day-dot): the mockup's 9x9 rounded
-   square is a different shape from the shared 6px circle geometry that the
-   Events calendar's bare `.day-dot` inherits (calendar.css:134-140 must stay
-   untouched, WED pre-spec §1). */
+/* 범례 스와치는 .day-dot이 아닌 별도 클래스다 — 이벤트 달력이 쓰는 공용
+   6px 원과 모양이 달라서(9x9 각진 사각형) 공유 클래스를 그대로 못 쓴다. */
 .legend-swatch {
   display: inline-block;
   flex: none;
@@ -247,10 +213,9 @@
   min-width: 0;
 }
 
-/* §8-A R-3/R-4/D6 rework: month name heading on its own line, the
-   `‹ 이번달 ›` trio centered on the line below via `justify-content:center`
-   (no `position:absolute`, no CSS `order` — DOM order already physically
-   `‹`, 이번달, `›` in the template). */
+/* 월 제목은 한 줄, `‹ 이번달 ›`은 그 아래 줄에 justify-content:center로
+   가운데 정렬한다. DOM 순서가 이미 `‹`, 이번달, `›`라 position/order 없이도
+   된다. */
 .calendar-month-nav {
   display: flex;
   flex-direction: column;
@@ -265,8 +230,8 @@
   color: var(--text);
 }
 
-/* F5 fix: "2026 · 7월" — only the middle dot is muted/regular weight; the
-   year and month numerals stay --text/300 (already the parent's rule). */
+/* "2026 · 7월"에서 가운데 점만 muted/regular이고 연·월 숫자는 부모의
+   --text/300을 그대로 이어받는다. */
 .calendar-month-sep {
   color: var(--muted);
   font-weight: 400;
@@ -298,11 +263,9 @@
   font-weight: 600;
 }
 
-/* ── grid editorial skin — everything that differs from the shared
-   .month-grid/.day-cell skeleton (calendar.css:22-97) layered on here per
-   `.activity-page` scope (WED pre-spec §3): hairline-boxed grid (gap 1px on
-   a --line fill, 1px border, 12px radius, clipped), 112px cells, right-
-   aligned date, teal today pill, teal selected inset. ─────────────────── */
+/* ── grid editorial skin ──────────────────────────────────────────────── */
+/* 공용 .month-grid/.day-cell 뼈대(calendar.css)에서 다른 부분만
+   `.activity-page` 스코프로 얹는다. */
 .activity-page .month-grid-body {
   gap: 1px;
   background: var(--line);
@@ -343,9 +306,8 @@
   align-self: flex-end;
 }
 
-/* Shared calendar.css's hover affordance is a border-color swap
-   (calendar.css:53-55); with per-cell borders removed above for the
-   hairline-boxed grid, this page needs its own hover feedback instead. */
+/* 공용 calendar.css의 hover는 테두리 색을 바꾸는 방식인데, 이 페이지는
+   셀 테두리 자체를 없앴으니 배경색으로 대신 hover를 표시한다. */
 .activity-page .day-cell:hover {
   background: var(--bg-soft);
 }
@@ -376,16 +338,12 @@
   font-weight: 700;
 }
 
-/* Cell item title row (up to 2 titles + a 3px color bar each, plus a
-   "+N" overflow marker) — geometry only; color-per-kind is on
-   .day-item-bar[data-kind] below (dedicated class, not .day-dot — WED
-   pre-spec §1's "새 바 형태는 .day-dot에 얹지 말 것"). */
-/* Overrides components/calendar.css's `.day-item` (a plain nowrap-ellipsis
-   text span for the Events calendar) — this page reuses the class name for
-   a flex row (bar + title) instead, so `overflow`/`white-space` are reset
-   here to avoid clipping the .day-item-bar against the Events rule's
-   `overflow: hidden` (cascade merges unset properties across same-specificity
-   rules; ellipsis truncation now lives on .day-item-title alone). */
+/* 셀 안 항목 줄(제목마다 3px 색 막대 + "+N" 넘침 표시)의 형태만 여기서
+   정하고, 종류별 색은 아래 .day-item-bar[data-kind]가 맡는다.
+   components/calendar.css의 `.day-item`(이벤트 달력용 단순 말줄임 텍스트)을
+   재사용하되 이 페이지는 막대+제목이 있는 flex 행이라 overflow/white-space를
+   여기서 다시 풀어준다 — 안 그러면 이벤트 쪽 `overflow: hidden`이 막대를
+   가린다. 말줄임은 .day-item-title에서만 처리한다. */
 .day-item {
   display: flex;
   align-items: center;
@@ -447,11 +405,8 @@
 }
 
 .date-detail-section:focus {
-  outline: none; /* PRG date-jump focus target (plan §7-3-b constraint 4) —
-    no visible focus ring needed since this is a programmatic-navigation
-    landing point, not a keyboard-tabbed control; base.html's global
-    a:focus rule doesn't apply here (not a link) and the section has no
-    click affordance of its own. */
+  outline: none; /* 날짜 이동 후 포커스가 오는 지점일 뿐, 키보드로 직접
+    탭하는 컨트롤이 아니라 포커스 링이 필요 없다. */
 }
 
 .date-detail-head {
@@ -515,17 +470,11 @@
   font-size: var(--fs-xs);
 }
 
-/* F2 fix (post-implementation BIR): the mock's action link is a plain teal
-   text link, not the shared .side-action-link box (components/cards.css) —
-   override every box property here (border/background/border-radius/
-   padding/min-height), scoped to this row only, matching the 12px/600/
-   nowrap mock spec. `.activity-page` is prefixed (0,3,0) specifically to
-   out-rank components/cards.css's own
-   `:root[data-theme="dark"] .side-action-link` dark-mode color override
-   (also (0,3,0) — :root pseudo-class + attribute + class) — a bare
-   `.calendar-item-row .side-action-link` ((0,2,0)) loses that fight in
-   dark mode regardless of stylesheet load order, which is exactly why the
-   first pass still rendered muted in dark mode (F2 follow-up). */
+/* 이 링크는 공용 .side-action-link 박스가 아니라 단순 텍스트 링크라
+   박스 속성을 전부 여기서 지운다. `.activity-page` 접두사는 특이도를
+   (0,3,0)으로 올려 components/cards.css의 다크모드 색 재정의(같은
+   특이도)를 이기기 위해 꼭 필요하다 — 없으면 로드 순서와 무관하게
+   다크모드에서 색이 다시 muted로 바뀐다. */
 .activity-page .calendar-item-row .side-action-link {
   margin-left: auto;
   display: inline;
@@ -573,18 +522,13 @@
     font-weight: 600;
   }
 
-  /* M1 fix (post-implementation BIR re-check): the mock's selected-date
-     inset is -2px on mobile, not the desktop -3px value carried down
-     unchanged. Re-declared here, scoped to <=45rem only. */
+  /* 모바일에서는 선택 날짜 밑줄 두께가 데스크톱 -3px이 아니라 -2px다. */
   .activity-page .day-cell[data-selected="true"] {
     box-shadow: inset 0 -2px 0 var(--teal);
   }
 
-  /* M2 fix (post-implementation BIR re-check): the mock's mobile kind dot
-     is 5x5, not the shared 6x6 .day-dot geometry (calendar.css:134-140)
-     that Events' bare, attribute-less dot also inherits — that shared rule
-     stays untouched. Scoped narrowly to the mobile-only dot row so Events
-     is structurally unreachable (it never renders .day-mobile-dots). */
+  /* 모바일 종류 점은 공용 .day-dot의 6x6이 아니라 5x5다. .day-mobile-dots는
+     이 페이지만 렌더링해 이벤트 달력에는 영향이 없다. */
   .day-mobile-dots .day-dot {
     width: 5px;
     height: 5px;

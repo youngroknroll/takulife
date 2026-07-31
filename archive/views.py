@@ -56,12 +56,11 @@ from .services import (
 
 
 def _translate_domain_validation_error(exc):
-    """Re-raise a service-layer django ValidationError as a DRF
-    ValidationError, so archive.services invariant violations (e.g.
-    CollectionItem quantity/FK-pair guards) surface as 400 responses
-    instead of an unhandled 500 (collection domain design plan §4 PR-C5
-    CP12/CP13 — DRF's exception handler does not translate
-    django.core.exceptions.ValidationError on its own).
+    """서비스 계층의 django ValidationError를 DRF ValidationError로
+    다시 던진다. DRF의 예외 처리기는 django.core.exceptions.ValidationError를
+    스스로 변환해 주지 않으므로, 그대로 두면 archive.services의 불변식
+    위반(예: CollectionItem 수량/FK 짝 검사)이 처리되지 않은 500으로
+    새어 나간다. 이 함수를 거쳐야 400 응답으로 나간다.
     """
     if hasattr(exc, "error_dict"):
         raise ValidationError(exc.message_dict)
@@ -81,7 +80,7 @@ class PersonalEntryListCreateView(ListCreateAPIView):
         return list_user_personal_entries(self.request.user)
 
     def perform_create(self, serializer):
-        # owner is the requester, never the payload
+        # 소유자는 요청자 정보로 정하며 요청 본문 값은 쓰지 않는다
         serializer.instance = create_personal_entry(
             user=self.request.user, **serializer.validated_data
         )
@@ -198,9 +197,10 @@ class UserEventStatusDetailView(RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete", "head", "options"]
     permission_classes = [IsAuthenticated]
 
-    # Each target status owns a distinct transition (visited/missed leave the
-    # opt-out flag; planned pins it). Routing here keeps the state-transition
-    # rule in the service layer instead of a blind serializer.save().
+    # 목표 상태마다 별도의 전환 규칙이 있다(방문/놓침은 옵트아웃 플래그를
+    # 그대로 두고, 예정은 다시 고정한다). 이렇게 라우팅해야 상태 전환
+    # 규칙이 서비스 계층에 남고, 무조건적인 serializer.save()로 흘러가지
+    # 않는다.
     _TRANSITIONS = {
         UserEventStatus.Status.VISITED: mark_visited,
         UserEventStatus.Status.MISSED: mark_missed,
@@ -243,9 +243,8 @@ class VisitRecordListCreateView(ListCreateAPIView):
     throttle_scope = "visit_record_create"
 
     def get_throttles(self):
-        # ScopedRateThrottle applies to the whole view, so scope it to the
-        # write path only — a creation flood guard must not also throttle
-        # the list (GET) path.
+        # ScopedRateThrottle은 뷰 전체에 적용되므로 쓰기 경로에만 걸리게
+        # 한다 — 생성 폭주 방지가 목록 조회(GET)까지 막으면 안 된다.
         if self.request.method == "POST":
             return [ScopedRateThrottle()]
         return []
@@ -314,10 +313,9 @@ class VisitRecordPhotoCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except VisitRecord.DoesNotExist:
-            # The record existed at the ownership check above but was deleted
-            # (e.g. by a concurrent request) before the service's
-            # select_for_update().get(...) ran. Surface it as a normal 404
-            # instead of a 500.
+            # 위 소유권 확인 시점엔 기록이 있었지만, 서비스의
+            # select_for_update().get(...)이 실행되기 전에(예: 동시
+            # 요청으로) 삭제된 경우다. 500이 아니라 평범한 404로 보여준다.
             raise Http404
         return Response({"id": photo.id, "visit_record": record.id}, status=status.HTTP_201_CREATED)
 
@@ -347,19 +345,18 @@ class CollectionItemListCreateView(ListCreateAPIView):
     throttle_scope = "collection_item_create"
 
     def get_throttles(self):
-        # ScopedRateThrottle applies to the whole view, so scope it to the
-        # write path only — a creation flood guard must not also throttle
-        # the list (GET) path.
+        # ScopedRateThrottle은 뷰 전체에 적용되므로 쓰기 경로에만 걸리게
+        # 한다 — 생성 폭주 방지가 목록 조회(GET)까지 막으면 안 된다.
         if self.request.method == "POST":
             return [ScopedRateThrottle()]
         return []
 
     def _validated_query_params(self):
-        # .dict() so DRF's BooleanField doesn't mistake the QueryDict for an
-        # HTML form submission — for MultiValueDict-like inputs, an absent
-        # optional BooleanField silently defaults to False instead of being
-        # skipped (DRF's html.is_html_input heuristic), which would make an
-        # un-set is_wanted/duplicate/tradeable filter wrongly narrow results.
+        # .dict()로 변환하는 이유: QueryDict을 그대로 넘기면 DRF의
+        # BooleanField가 HTML 폼 제출로 오인해, 값이 없는 선택적
+        # BooleanField를 건너뛰지 않고 조용히 False로 취급한다. 그러면
+        # 지정하지 않은 is_wanted/duplicate/tradeable 필터가 결과를
+        # 잘못 좁혀버린다.
         serializer = CollectionItemQuerySerializer(data=self.request.query_params.dict())
         serializer.is_valid(raise_exception=True)
         return serializer.validated_data
@@ -368,7 +365,7 @@ class CollectionItemListCreateView(ListCreateAPIView):
         return list_user_collection_items(self.request.user, **self._validated_query_params())
 
     def perform_create(self, serializer):
-        # owner is the requester, never the payload
+        # 소유자는 요청자 정보로 정하며 요청 본문 값은 쓰지 않는다
         try:
             serializer.instance = create_collection_item(
                 user=self.request.user, **serializer.validated_data
@@ -390,10 +387,10 @@ class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
         return CollectionItemSerializer
 
     def perform_update(self, serializer):
-        # update_collection_item re-fetches its own row under
-        # select_for_update() (security gate M2) and returns that fresh
-        # instance rather than mutating serializer.instance in place — the
-        # response must be built from the returned object.
+        # update_collection_item은 select_for_update()로 자기 행을
+        # 다시 조회해서 그 최신 인스턴스를 반환하며, serializer.instance를
+        # 직접 수정하지 않는다 — 응답은 반드시 이 반환값으로 구성해야
+        # 한다.
         try:
             serializer.instance = update_collection_item(
                 item=serializer.instance, **serializer.validated_data
@@ -401,10 +398,9 @@ class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
         except DjangoValidationError as exc:
             _translate_domain_validation_error(exc)
         except CollectionItem.DoesNotExist:
-            # The item existed at this view's get_object() check above but
-            # was deleted (e.g. by a concurrent request) before the
-            # service's select_for_update().get(...) ran (security gate
-            # follow-up, 2026-07-16 — the same TOCTOU window
-            # VisitRecordPhotoCreateView already guards for VisitRecord).
-            # Surface it as a normal 404 instead of a 500.
+            # 이 뷰의 get_object() 확인 시점엔 항목이 있었지만, 서비스의
+            # select_for_update().get(...)이 실행되기 전에(예: 동시 요청
+            # 으로) 삭제된 경우다 — VisitRecordPhotoCreateView가
+            # VisitRecord에 대해 이미 막고 있는 것과 같은 TOCTOU 틈이다.
+            # 500이 아니라 평범한 404로 보여준다.
             raise Http404

@@ -1,13 +1,7 @@
-"""Draft approve/reject action endpoints, relocated to the staff app.
+"""드래프트 승인/반려 엔드포인트 검증.
 
-PR-2 sub-step D: same request/response contract as the removed
-`drafts.views.AdminEventDraftApproveView`/`RejectView`, but the view boundary
-now writes a `StaffActionLog` audit row inside an OUTER `transaction.atomic()`
-that wraps the service call's own (inner) atomic block.
-
-PR-D2 item 11: draft.js now posts an optional `rejection_reason` field
-alongside a reject request. The empty-body case (Case 5 below) still asserts
-the stored value defaults to "" — that contract must not change.
+감사 로그 기록은 승인/반려 서비스 호출을 감싸는 바깥쪽 트랜잭션에서 이뤄져,
+로그 기록이 실패하면 승인/반려 자체도 함께 롤백된다.
 """
 import pytest
 from django.db import IntegrityError
@@ -27,10 +21,6 @@ def draft_approve_url(draft_id):
 def draft_reject_url(draft_id):
     return reverse("staff:draft-reject", kwargs={"draft_id": draft_id})
 
-
-# ---------------------------------------------------------------------------
-# Cases 1-3: auth
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_스태프는_대기중_드래프트를_승인할_수_있다(staff_client, make_draft):
@@ -64,8 +54,6 @@ def test_일반_사용자는_드래프트를_승인할_수_없다(client, make_u
 
 @pytest.mark.django_db
 def test_익명_사용자는_드래프트를_반려할_수_없다(client, make_draft):
-    """StaffDraftRejectView shares the approve view's IsAdminUser gate —
-    same 403 (not a redirect) for an unauthenticated request."""
     draft = make_draft("https://example.com/event")
 
     response = client.post(draft_reject_url(draft.id))
@@ -83,10 +71,6 @@ def test_일반_사용자는_드래프트를_반려할_수_없다(client, make_u
 
     assert response.status_code == 403
 
-
-# ---------------------------------------------------------------------------
-# Case 4: happy approve — review fields, published Event, exactly one log row
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_드래프트를_승인하면_이벤트가_게시되고_감사_로그가_한_건_남는다(staff_client, make_draft):
@@ -135,10 +119,6 @@ def test_드래프트를_승인하면_이벤트가_게시되고_감사_로그가
     assert entry.user_agent == "pytest-agent/1.0"
 
 
-# ---------------------------------------------------------------------------
-# Case 5: happy reject
-# ---------------------------------------------------------------------------
-
 @pytest.mark.django_db
 def test_드래프트를_반려하면_상태가_반려로_바뀌고_감사_로그가_한_건_남는다(staff_client, make_draft):
     staff, client = staff_client()
@@ -175,8 +155,6 @@ def test_드래프트를_반려하면_상태가_반려로_바뀌고_감사_로�
 
 @pytest.mark.django_db
 def test_반려_사유를_함께_보내면_드래프트에_반려_사유가_저장된다(staff_client, make_draft):
-    """PR-D2 item 11: a non-empty rejection_reason in the request body is
-    passed through to reject_draft and stored on the draft."""
     staff, client = staff_client()
     draft = make_draft("https://example.com/rejected-with-reason", extracted_title="Rejected with reason")
 
@@ -191,11 +169,6 @@ def test_반려_사유를_함께_보내면_드래프트에_반려_사유가_저�
     assert draft.review_status == EventDraft.ReviewStatus.REJECTED
     assert draft.rejection_reason == "공식 URL이 만료됨"
 
-
-# ---------------------------------------------------------------------------
-# Case 6: v1 "logs success only" — every non-pending / not-found / publish-
-# failure path leaves review fields untouched and writes zero log rows.
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_공식_url이_중복된_드래프트는_승인이_거부되고_로그도_남지_않는다(staff_client, make_draft):
@@ -366,11 +339,6 @@ def test_이벤트_생성이_실패하면_승인은_제어된_오류로_응답�
     assert StaffActionLog.objects.count() == 0
 
 
-# ---------------------------------------------------------------------------
-# Case 7: the outer transaction.atomic() rolls back the whole approval
-# (service call + log write) when the audit log write itself fails.
-# ---------------------------------------------------------------------------
-
 @pytest.mark.django_db
 def test_감사_로그_기록이_실패하면_승인_전체가_롤백된다(staff_client, monkeypatch, make_draft):
     staff, client = staff_client()
@@ -392,10 +360,6 @@ def test_감사_로그_기록이_실패하면_승인_전체가_롤백된다(staf
     assert not Event.objects.filter(official_url="https://example.com/rollback-event").exists()
     assert StaffActionLog.objects.count() == 0
 
-
-# ---------------------------------------------------------------------------
-# Old /api/event-drafts/<id>/approve|reject/ routes are gone — no redirect.
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_예전_드래프트_승인_반려_api_경로는_더_이상_지원되지_않는다(staff_client, make_draft):

@@ -1,18 +1,10 @@
-"""staff.views — POST /staff/draft-discovery/run/ (prompt_plan.md "콘솔 수집
-실행 버튼").
+"""수집 실행(POST /staff/draft-discovery/run/) 뷰 검증.
 
-Synchronously calls the existing discover_drafts management command
-(stdout captured via StringIO) and surfaces its outcome as a Django message,
-PRG-redirecting back to the dashboard. The view itself only decides: flag-off
-short-circuit (no command execution, no audit log — see module docstring in
-discover_drafts.py, "being off is an intended state") vs. an actual run
-(success / CommandError partial-failure / unclassified exception), each of
-which is audit-logged.
-
-`call_command` is monkeypatched at this module's import location
-(staff.views.call_command) for the run-outcome tests below — discover_drafts'
-own internal behaviour (robots, dedup, fetch, etc.) is already covered by
-tests/test_discover_drafts_command.py and is out of scope here.
+discover_drafts 관리 명령을 동기 호출해 결과를 메시지로 보여주고 대시보드로
+리다이렉트한다. 플래그가 꺼져 있거나 활성 소스가 없을 때는 명령을 실행하지
+않고 감사 로그도 남기지 않는다(의도된 무동작). 실제 실행(성공/부분실패/예외)은
+전부 감사 로그로 남긴다. discover_drafts 자체 동작은
+tests/test_discover_drafts_command.py에서 다루므로 여기서는 다루지 않는다.
 """
 import pytest
 from django.core.management import CommandError
@@ -45,9 +37,6 @@ def test_스태프가_아닌_사용자가_수집_실행을_요청하면_403을_�
 
 @pytest.mark.django_db
 def test_수집_실행_경로에_GET으로_접근하면_405_대신_대시보드로_리다이렉트된다(staff_client):
-    """PR-D1 item 2: a GET (e.g. a session-expired POST bounced through
-    login's `next=` redirect) must not dead-end on a 405 — it redirects back
-    to the dashboard instead, same as the flag-off short-circuit."""
     staff, client = staff_client()
 
     resp = client.get(RUN_URL)
@@ -73,9 +62,6 @@ def test_수집_기능_플래그가_꺼져_있으면_안내_메시지만_보여�
 
 @pytest.mark.django_db
 def test_활성_수집_소스가_없으면_안내_메시지만_보여주고_명령을_실행하지_않는다(staff_client, settings, monkeypatch, make_source, fail_if_called):
-    """PR-D1 item 6: flag on, but zero enabled DraftSource rows — the same
-    "no-op is an intended state" treatment as the flag-off case: an info
-    message, no command execution, no audit log entry."""
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="disabled-source", url="https://example.com/disabled-feed/", enabled=False)

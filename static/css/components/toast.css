@@ -1,11 +1,6 @@
-/**
- * toast.css — success toast (§6.4)
- *
- * position: fixed so it never joins document flow (must not widen
- * body.scrollWidth at 320/375). z-index sits
- * above the fixed CTA bar (event_detail.css .mobile-cta: 20) and below the
- * confirm modal (confirm-modal.css .confirm-overlay: 1000).
- */
+/* position:fixed로 둬 문서 흐름에 끼지 않게 한다(좁은 화면 가로 스크롤 방지).
+   z-index는 event_detail.css의 .mobile-cta(20)보다 위, confirm-modal.css의
+   .confirm-overlay(1000)보다 아래로 둔다. */
 
 .taku-toast {
   position: fixed;
@@ -17,12 +12,9 @@
   padding: 0.625rem 1rem;
   border-radius: 999px;
   background: var(--text);
-  /* var(--bg), not a literal white: --text/--bg are a matched high-contrast
-     pair in both themes (dark-on-light body text vs near-white page in
-     light mode, light-on-dark vs near-black page in dark mode), so pairing
-     them here — background:var(--text) already, color:var(--bg) — auto-
-     inverts the pill correctly instead of needing a separate dark override.
-     Light mode: near-identical to the old literal (#f5f6f8 vs #fff). */
+  /* 흰색 리터럴 대신 var(--bg)를 쓴다: --text/--bg는 테마별로 짝을 이루는
+     고대비 쌍이라, 배경을 --text로 채운 이 토스트가 다크모드에서도
+     별도 오버라이드 없이 자동으로 뒤집힌다. */
   color: var(--bg);
   font-size: var(--fs-md);
   font-weight: 600;

@@ -1,18 +1,14 @@
-/* archive_visit_edit.css — /archive/visits/<id>/edit/ 전용 수정 페이지.
-   Design source: dannyeoon-girok-editorial-track 후속, MERGED 형제 페이지
-   archive_visit_create.css를 그대로 미러링(구조/토큰/모바일 바).
+/* archive_visit_edit.css — /archive/visits/<id>/edit/ 전용 수정
+   페이지. 형제 페이지 archive_visit_create.css를 구조/토큰/모바일
+   바까지 그대로 미러링한다. `.visit-edit-page` 스코프에서만 동작하며
+   archive_visits.css / photo-upload.css는 수정하지 않는다(목록/상세/
+   작성, 스태프 포스터 업로드 등과 공유되므로) — 필요한 조각을 teal
+   테마로 페이지 스코프 복제해서 쓴다(half-swap 시 폼이 조용히
+   스타일을 잃는 함정 회피).
 
-   Entirely scoped under `.visit-edit-page` (this page's `<main>` root
-   class). Does NOT edit archive_visits.css / photo-upload.css in place —
-   both are shared across other pages (visit list/detail/create, staff
-   poster upload). This file ports fresh, page-scoped, teal-themed copies
-   of the pieces it needs from archive_visits.css instead
-   (goods-create-editorial-track's "half-swap silently unstyles the form"
-   lesson).
-
-   TOKEN NOTE: `--border-strong` and `--danger-*`/`--accent*` do not exist
-   in tokens.css (verified by grep before writing this file). `--muted` is
-   used for the dashed dropzone/add-tile border; `--rose-*` for danger. */
+   TOKEN NOTE: `--border-strong`, `--danger-*`/`--accent*`는
+   tokens.css에 없다(사전 grep 확인). 점선 드롭존/추가 타일 테두리엔
+   `--muted`, 위험 표시엔 `--rose-*`를 쓴다. */
 
 .visit-edit-page {
   max-width: 51.25rem;
@@ -115,15 +111,15 @@
 .visit-edit-page .photo-add-tile:focus-visible {
   outline-color: var(--teal);
 }
-/* Empty state: no existing photos AND no new previews — big dashed
-   dropzone spanning the full row. */
+/* 빈 상태: 기존 사진도 새 미리보기도 없을 때 — 점선 드롭존이 행
+   전체를 차지한다. */
 .visit-edit-page .visit-edit-photo-row:has(#existing-photo-grid[hidden]):has(#photo-preview-grid[hidden]) #visit-photos-trigger {
   grid-column: 1 / -1;
   width: auto;
   height: auto;
   aspect-ratio: 4 / 3;
 }
-/* Non-empty state: small square add-tile fills a single grid cell. */
+/* 사진이 있을 때: 작은 정사각형 추가 타일이 그리드 한 칸을 채운다. */
 .visit-edit-page .visit-edit-photo-row:has(#existing-photo-grid:not([hidden])) #visit-photos-trigger,
 .visit-edit-page .visit-edit-photo-row:has(#photo-preview-grid:not([hidden])) #visit-photos-trigger {
   width: auto;
@@ -131,11 +127,11 @@
   aspect-ratio: 1;
 }
 
-/* Preview tiles ported + re-themed from archive_visits.css (page-scoped
-   copy, not an edit of the shared file). Sized to fill their grid cell
-   instead of the shared page's fixed 80px. Applies to both the existing
-   photo grid and the new-preview grid — a single shared cover rule marks
-   whichever tile JS designates as 대표 (refreshCover() in visit_edit.js). */
+/* archive_visits.css에서 이식 + 재테마한 미리보기 타일(공용 파일을
+   수정하지 않고 페이지 스코프로 복제) — 공용 페이지의 고정 80px 대신
+   그리드 칸을 꽉 채운다. 기존 사진 그리드와 새 미리보기 그리드 모두에
+   적용되며, JS가 대표로 지정한 타일 하나에만 공용 커버 규칙이
+   붙는다(visit_edit.js의 refreshCover()). */
 .visit-edit-page .photo-preview-tile {
   position: relative;
   width: 100%;
@@ -201,14 +197,14 @@
 .visit-edit-page .photo-preview-remove:hover {
   background: rgba(180, 0, 0, 0.75);
 }
-/* The shared .is-loading spinner (objects/interaction.css) assumes a
-   button with visible text before it — margin-left spaces the spinner
-   away from that text. .photo-preview-remove is a 22px icon-only circle
-   (bare "×" text node, existing-photo delete calls TakuAPI.setLoading on
-   it), so glyph + spinner rendered side by side and spilled past the
-   circle. Hide the glyph and center the spinner instead — same fix shape
-   as cards.css's .poster-interest.is-loading precedent, adapted for a
-   bare text node (no wrapping glyph span to target). */
+/* 공용 .is-loading 스피너(objects/interaction.css)는 버튼 앞에 보이는
+   텍스트가 있다고 가정해 margin-left로 스피너를 텍스트와 띄운다.
+   .photo-preview-remove는 22px 아이콘 전용 원(맨 텍스트 "×", 기존
+   사진 삭제 시 TakuAPI.setLoading이 걸림)이라 글리프와 스피너가
+   나란히 렌더돼 원 밖으로 삐져나갔다. 글리프를 숨기고 스피너를
+   가운데로 배치한다 — cards.css의 .poster-interest.is-loading과 같은
+   수정 방식을, 감쌀 글리프 span이 없는 순수 텍스트 노드에 맞게
+   적용. */
 .visit-edit-page .photo-preview-remove.is-loading {
   color: transparent;
 }
@@ -243,10 +239,10 @@
   font-size: 0.8125rem;
 }
 
-/* Read-only subject box — the edit page cannot change what a record is
-   linked to. Ported + page-scoped from archive_visits.css's
-   .subject-readonly/.subject-title, teal-themed page but chip semantics
-   stay brand/muted (content categorisation, not the page accent). */
+/* 읽기 전용 대상 박스 — 수정 페이지에서는 기록이 연결된 대상을 바꿀
+   수 없다. archive_visits.css의 .subject-readonly/.subject-title에서
+   이식 + 페이지 스코프. 페이지는 teal 테마지만 칩 의미는 brand/muted
+   그대로 유지한다(콘텐츠 분류이지 페이지 강조색이 아니므로). */
 .visit-edit-page .subject-readonly {
   display: flex;
   flex-wrap: wrap;
@@ -369,7 +365,7 @@
   text-underline-offset: 0.2em;
 }
 
-/* Danger delete — sits at the far end of the actions row. */
+/* 위험 삭제 버튼 — 액션 행의 맨 끝에 위치한다. */
 .visit-edit-page .visit-edit-delete-btn {
   display: inline-flex;
   align-items: center;
@@ -394,9 +390,8 @@
   display: none;
 }
 
-/* Screen-reader-only helper text (this page's own scoped copy — no shared
-   `.sr-only` utility exists repo-wide; clip technique matches the
-   create-page sibling's equivalent). */
+/* 스크린리더 전용 보조 텍스트(이 페이지 자체 복제본 — 저장소 전역
+   `.sr-only` 유틸리티가 없다; clip 기법은 작성 페이지와 동일). */
 .visit-edit-page .sr-only {
   position: absolute;
   width: 1px;
@@ -456,14 +451,14 @@
     display: inline;
     font-size: 1.1rem;
   }
-  /* Mobile-only: .visit-edit-delete-btn is icon-only here (🗑, text hidden
-     above), so the shared .is-loading::after spinner (interaction.css,
-     margin-left assumes trailing text) rendered next to the glyph instead
-     of replacing it — same case as .photo-preview-remove.is-loading above,
-     same fix: hide the glyph (color:transparent) and give the ::after
-     spinner its own explicit visible colour + centered position. Desktop
-     is untouched — there the "기록 삭제" text stays visible with a
-     trailing spinner, which is fine. */
+  /* 모바일 전용: .visit-edit-delete-btn은 여기서 아이콘 전용(🗑,
+     텍스트는 위에서 숨김)이라 공용 .is-loading::after 스피너
+     (interaction.css, margin-left가 뒤 텍스트를 가정)가 글리프를
+     대체하지 못하고 옆에 나란히 렌더된다 — 위 .photo-preview-remove.
+     is-loading과 같은 사례, 같은 수정: 글리프를 숨기고(color:
+     transparent) ::after 스피너에 직접 보이는 색과 중앙 배치를 준다.
+     데스크톱은 그대로 둔다 — "기록 삭제" 텍스트가 보이는 채로 뒤에
+     스피너가 붙어도 문제없다. */
   .visit-edit-page .visit-edit-delete-btn.is-loading {
     color: transparent;
   }

@@ -1,26 +1,24 @@
 {% load pager_tags %}{% comment %}
-Shared pagination nav — used by all seven paginated lists (컬렉션 / 다녀온 기록 /
+공용 페이지네이션 nav — 페이지가 나뉘는 목록 7곳에서 쓴다(컬렉션 / 다녀온 기록 /
 나의 일정 / 직접 등록 / 전체 보기 / 드래프트 목록 / 스태프 이벤트 목록).
 
-Windowing is computed in core/pagination.py and reached through the pager_data
-tag — templates cannot call Paginator methods that take arguments, and
-expressing the boundary cases as {% if %} chains here would be untestable.
-The window is the 5-page block the current page falls in, followed by the
-last page (rendered as "… {last}", collapsing to just "{last}" when it is
-adjacent to the block).
+페이지 윈도우 계산은 core/pagination.py의 pager_data 태그가 담당한다 —
+템플릿은 인자를 받는 Paginator 메서드를 호출할 수 없고, 경계 케이스를
+{% if %} 체인으로 표현하면 테스트하기 어렵기 때문이다. 창은 현재 페이지가
+속한 5페이지 블록과 마지막 페이지("… {마지막}", 블록에 붙어 있으면
+"{마지막}"만)로 구성된다.
 
-« » jump 5 pages at a time (jump_back / jump_forward); ‹ › step one page.
-At the first block the left arrows (« ‹) are omitted entirely, and at the
-last block the right arrows (› ») are omitted entirely — not disabled, just
-absent. `.pager` is centered (justify-content: center) so the row stays
-centered even though its width legitimately varies by block.
+« »는 5페이지씩, ‹ ›는 1페이지씩 이동한다. 첫 블록에서는 왼쪽 화살표(« ‹)를,
+마지막 블록에서는 오른쪽 화살표(› »)를 아예 렌더하지 않는다(비활성화가
+아니라 없음). .pager는 가운데 정렬이라 블록마다 너비가 달라져도 행은 항상
+중앙에 있다.
 
-Include with:
+사용법:
   {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
-  page_obj     a Django Page (from Paginator.get_page)
-  extra_query  optional querystring tail preserving filters, e.g. "&status=planned".
-               Must begin with & (page is always the first param). Omit if none.
-Styling: static/css/components/pager.css (loaded globally from base.html).
+  page_obj     — Django Page(Paginator.get_page의 결과)
+  extra_query  — 필터를 유지하는 쿼리스트링 꼬리(예: "&status=planned").
+                 &로 시작해야 한다(page는 항상 첫 파라미터). 없으면 생략.
+스타일: static/css/components/pager.css(base.html에서 전역 로드).
 {% endcomment %}
 {% if page_obj.has_other_pages %}
   {% pager_data page_obj as pg %}

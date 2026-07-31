@@ -1,39 +1,27 @@
 /*
- * base.css — global base layer: reset, document defaults, page wrapper,
- * and focus outline. Objects/components split out.
+ * base.css — 전역 기본 레이어: 리셋, 문서 기본값, 페이지 래퍼, 포커스
+ * 아웃라인. 컴포넌트·오브젝트는 별도 파일로 분리돼 있다.
  *
- * ── Unit convention (fully applied) ───────────────────────────
- *   rem  = ALL spacing: font-size, padding, margin, gap, sticky top,
- *          @media breakpoints. Every font-size is rem (root-relative),
- *          so rem spacing scales with the user's font setting — which is
- *          exactly the responsive/a11y goal em would serve. em is NOT
- *          used: with no local px/em font-size, rem already tracks the
- *          font, with cleaner values and pixel-identity at default zoom.
- *   px   = fixed values only: border-width, box-shadow, border-radius,
- *          min-height tap targets (44px), pill radius (999px),
- *          absolute-position corner offsets (badges/carousel insets),
- *          calc() safe-area offsets, the .photo-upload-native-input -1px
- *          clip (photo-upload.css), and the fan deck-card centering margin
- *          (tied to fixed px card dims).
+ * 단위 규칙: 간격류(font-size/padding/margin/gap/sticky top/@media
+ * 브레이크포인트)는 전부 rem을 쓴다 — 사용자가 브라우저 글자 크기를
+ * 키우면 간격도 함께 커지게 하려는 것이다. 고정값(테두리 두께, 그림자,
+ * 모서리 반경, 44px 탭 타깃, 999px 필 반경, 절대위치 코너 오프셋,
+ * safe-area calc(), 사진 업로드 인풋 -1px 클립, 팬 덱 카드 중앙 정렬
+ * 여백)만 px를 쓴다.
  *
- *   Root is the browser default (16px) — no html{font-size} override — so
- *   rem tracks the user's font setting. Conversion was faithful /16
- *   (pixel-identical at default zoom). px↔rem mapping (16px base):
- *     4px .25rem · 8px .5rem · 12px .75rem · 16px 1rem · 20px 1.25rem · 24px 1.5rem
- *   @media breakpoints in rem (CSS vars can't be used in @media):
- *     38.75rem(620) 45rem(720) 47.5rem(760)
- *     53.75rem(860) 56.25rem(900) 57.5rem(920) 60rem(960)
- *   64rem(1024) is an 8th, deliberate exception — the --page-pad-x edge-
- *   margin token's tablet/desktop boundary (tokens.css) is a user-confirmed
- *   value, not reused from the set above (900px/56.25rem was proposed and
- *   rejected in favor of the explicit 1024px choice).
+ * html에 font-size 재정의가 없어 rem 기준은 브라우저 기본값(16px)이고,
+ * 기존 px 값은 /16으로 변환해 기본 배율에서는 픽셀 단위로 동일하다.
+ * @media 브레이크포인트(rem, CSS 변수를 @media 조건에 못 써서 리터럴
+ * 값 사용): 38.75(620px) 45(720px) 47.5(760px) 53.75(860px) 56.25(900px)
+ * 57.5(920px) 60(960px)rem. 64rem(1024px)만 예외로 --page-pad-x
+ * 토큰(tokens.css) 전용이며, 위 목록의 900px이 아니라 사용자가 명시적으로
+ * 확정한 1024px 값을 쓴다.
  */
 
 /* ── web font: Pretendard (self-hosted) ──────────────────────
- * Pretendard Variable — SIL Open Font License 1.1, © 2021 orioncactus.
- * Source: https://github.com/orioncactus/pretendard (v1.3.9, woff2 variable).
- * Self-hosted at static/fonts/PretendardVariable.woff2 — no external CDN
- * request, no additional licensing cost (OFL permits redistribution).
+ * Pretendard Variable, SIL Open Font License 1.1(재배포 허용) —
+ * static/fonts/PretendardVariable.woff2로 직접 서빙해 외부 CDN 요청과
+ * 추가 라이선스 비용이 없다.
  */
 @font-face {
   font-family: "Pretendard";
@@ -48,7 +36,7 @@
   box-sizing: border-box;
 }
 
-/* Links are never underlined — colour and context carry the affordance. */
+/* 링크에 밑줄을 넣지 않는다 — 색과 문맥만으로 링크임을 알 수 있게 한다. */
 a {
   text-decoration: none;
 }

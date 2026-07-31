@@ -1,17 +1,7 @@
 /**
- * personal_entries.js — "직접 등록" (PersonalEntry) list-page actions for
- * takulife
- *
- * Handles:
- *   - Delete personal entry via [data-delete-entry-id]
- *   - Promote to official-review via [data-promote-toggle]/[data-promote-form]
- *
- * Create moved to a dedicated write page (/archive/personal/new/,
- * personal_create.html + personal_create.js) on 2026-07-27 — this file no
- * longer binds a create form on the list page.
- *
- * Relies on window.TakuAPI (api.js) for requests, 403 disambiguation and error
- * formatting. All DOM writes use textContent only.
+ * "직접 등록" 목록 페이지의 동작. 항목 삭제와 공식 검토 제보 처리를 담당한다.
+ * 등록(작성)은 별도 페이지(personal_create.js)가 맡아 이 파일은 다루지 않는다.
+ * 화면 갱신은 항상 textContent만 사용한다.
  */
 
 (function () {
@@ -35,8 +25,7 @@
     }
   }
 
-  // Confirm before a destructive, unrecoverable action. Uses the shared modal
-  // (confirm-modal.js, loaded in base.html) with a native confirm() fallback.
+  // 되돌릴 수 없는 동작이라 확인을 거친다. 공용 모달이 없으면 기본 confirm으로 대체한다.
   function askConfirm(message) {
     if (typeof window.TakuConfirm === "function") {
       return window.TakuConfirm(message);
@@ -69,8 +58,7 @@
           );
 
           if (result.status === 204) {
-            // Reload-equivalent: destination is the current URL (WED §5-2
-            // boundary ③ — same fidelity as the reload it replaces).
+            // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
             window.TakuAPI.commitAndNavigate(btn, window.location.href);
             return;
           }
@@ -98,10 +86,10 @@
     }
   }
 
-  // ── 공식 제보 (promote a private item into the review pipeline) ──
+  // ── 공식 제보 ──
 
   function bindPromote() {
-    // Reveal the per-card official-URL form on demand.
+    // 버튼을 누르면 카드별 공식 URL 입력 폼을 펼친다.
     var toggles = document.querySelectorAll("[data-promote-toggle]");
     for (var t = 0; t < toggles.length; t++) {
       (function (btn) {
@@ -150,8 +138,7 @@
           );
 
           if (result.status === 201) {
-            // Reload-equivalent: destination is the current URL (WED §5-2
-            // boundary ③ — same fidelity as the reload it replaces).
+            // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
             window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
             return;
           }
@@ -190,10 +177,8 @@
     init();
   }
 
-  // Live search swaps the results fragment: re-wire the new cards' delete and
-  // promote controls. The per-element guards keep this idempotent.
-  // (Status/interest buttons in the swapped cards are re-wired by status.js's
-  // own listener.)
+  // 실시간 검색이 결과 목록을 통째로 교체하므로 새 카드의 삭제·제보 컨트롤을
+  // 다시 연결한다. 요소별 가드가 있어 중복 연결돼도 문제없다.
   document.addEventListener("archive:listswapped", function () {
     bindEntryDeletes();
     bindPromote();

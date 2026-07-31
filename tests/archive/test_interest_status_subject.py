@@ -1,9 +1,9 @@
-"""Phase 3: EventInterest (찜) and UserEventStatus (방문예정) can point at an
-Event (official) OR a PersonalEntry (unofficial) — exactly one.
+"""Phase 3: EventInterest(찜)와 UserEventStatus(방문예정)는 Event(공식) 또는
+PersonalEntry(비공식) 중 정확히 하나만을 가리킬 수 있다.
 
-Covers the model constraints (exactly-one + conditional uniqueness) and the API
-either/or validation, including owner-scoping of personal_entry and event
-back-compat. Mirrors test_visit_record_subject.py (Phase 2).
+모델 제약(정확히 하나 + 조건부 유일성)과 API의 이벤트/개인항목 양자택일 검증을
+다루며, personal_entry의 소유자 범위 한정과 event 하위호환도 포함한다.
+test_visit_record_subject.py(Phase 2)와 대응된다.
 """
 import pytest
 from django.db import IntegrityError, transaction
@@ -12,7 +12,7 @@ from archive.models import EventInterest, PersonalEntry, UserEventStatus
 
 
 # ---------------------------------------------------------------------------
-# EventInterest — model constraints
+# EventInterest — 모델 제약
 # ---------------------------------------------------------------------------
 
 
@@ -75,7 +75,7 @@ def test_같은_개인항목에_대한_찜을_중복_생성하면_무결성_오�
 
 
 # ---------------------------------------------------------------------------
-# UserEventStatus — model constraints
+# UserEventStatus — 모델 제약
 # ---------------------------------------------------------------------------
 
 
@@ -144,7 +144,7 @@ def test_같은_개인항목에_대한_상태를_중복_생성하면_무결성_�
 
 
 # ---------------------------------------------------------------------------
-# EventInterest API — either/or
+# EventInterest API — 이벤트/개인항목 양자택일
 # ---------------------------------------------------------------------------
 
 
@@ -239,7 +239,7 @@ def test_이미_찜한_개인항목에_다시_찜_생성을_요청하면_409로_
 
 
 # ---------------------------------------------------------------------------
-# UserEventStatus API — either/or
+# UserEventStatus API — 이벤트/개인항목 양자택일
 # ---------------------------------------------------------------------------
 
 
@@ -316,8 +316,8 @@ def test_타인_소유_개인항목으로_상태_생성을_요청하면_400으�
 @pytest.mark.web
 @pytest.mark.django_db
 def test_굿즈_kind_개인항목으로_찜_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
-    """GOODS is no longer a valid archive-action subject (collection domain
-    plan §3-3) — only PLACE personal entries may be favourited."""
+    """GOODS는 더 이상 아카이브 행동의 대상이 아니다(컬렉션 도메인 설계안 §3-3) —
+    PLACE 개인항목만 찜할 수 있다."""
     user = make_user(username="ei-api-goods")
     entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
 
@@ -356,8 +356,8 @@ def test_이미_상태가_있는_개인항목에_다시_상태_생성을_요청�
 @pytest.mark.web
 @pytest.mark.django_db
 def test_굿즈_kind_개인항목으로_상태_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
-    """GOODS is no longer a valid archive-action subject (collection domain
-    plan §3-3) — only PLACE personal entries may carry a status."""
+    """GOODS는 더 이상 아카이브 행동의 대상이 아니다(컬렉션 도메인 설계안 §3-3) —
+    PLACE 개인항목만 상태를 가질 수 있다."""
     user = make_user(username="ues-api-goods")
     entry = PersonalEntry.objects.create(user=user, kind="goods", title="굿즈")
 

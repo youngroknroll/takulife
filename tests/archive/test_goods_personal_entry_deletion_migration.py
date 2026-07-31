@@ -1,15 +1,13 @@
-"""GOODS PersonalEntry row deletion data migration (collection domain design
-plan §3-5 M2, PR-C4 stage E, gate follow-up M2).
+"""GOODS PersonalEntry 행 삭제 마이그레이션 테스트(컬렉션 도메인 설계안 §3-5 M2,
+PR-C4 단계 E, 게이트 후속 M2).
 
-Migration 0018 (archive/migrations/0018_remove_goods_personal_entries.py)
-deletes the now-redundant original GOODS rows once 0017 has copied them into
-CollectionItem, and narrows PersonalEntry.kind's choices. Its module
-docstring claims "PLACE rows are never touched" — this file is the missing
-test that actually proves that claim (backend-tdd-coach CP13), following the
-same repository precedent as CP10
-(tests/archive/test_visit_record_status_orchestration.py): import the
-migration module and call its function directly against
-``django.apps.apps`` (not the frozen historical registry).
+0018 마이그레이션(archive/migrations/0018_remove_goods_personal_entries.py)은
+0017이 CollectionItem으로 복사해 둔 GOODS 행을 지우고 PersonalEntry.kind 선택지를
+좁힌다. 그 모듈 독스트링의 "PLACE 행은 건드리지 않는다" 주장을 실제로 검증하는
+누락된 테스트다(backend-tdd-coach CP13). CP10
+(tests/archive/test_visit_record_status_orchestration.py)과 같은 방식으로
+마이그레이션 모듈을 임포트해 ``django.apps.apps``(고정된 과거 레지스트리가 아님)로
+직접 호출한다.
 """
 import importlib
 
@@ -69,10 +67,9 @@ def test_삭제_마이그레이션은_사용자별로_GOODS_행만_제거하고_
 def test_이관_마이그레이션_이후_삭제_마이그레이션을_실행해도_이관된_이미지는_보존된다(
     make_user, png_bytes, settings, tmp_path
 ):
-    """CP13's original intent: the CollectionItem image copy 0017 creates
-    must still be readable from storage after 0018 deletes the source GOODS
-    row — the two migrations never share a storage key (0017's CP-Image
-    guarantee), so deleting the source can never take the copy down with it."""
+    """CP13의 본래 의도: 0017이 만든 CollectionItem 이미지 복사본은 0018이 원본
+    GOODS 행을 지운 뒤에도 스토리지에서 읽혀야 한다 — 두 마이그레이션은 저장 키를
+    공유하지 않으므로(0017의 CP-Image 보증), 원본 삭제가 복사본을 함께 지울 수 없다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     PersonalEntry.objects.create(

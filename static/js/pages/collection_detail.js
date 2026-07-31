@@ -1,18 +1,7 @@
 /**
- * collection_detail.js — CollectionItem read-only detail page
- * (archive_collection_detail).
- *
- * Only responsibility: item delete.
- *   DELETE /api/collection-items/<id>/
- *
- * Branch set mirrors collection.js's bindItemDeletes() (BIR requirement —
- * this page must not diverge from the list/edit pages' delete semantics),
- * with one addition: on a 404 ("already gone") this page also locks the
- * 수정 link, because unlike the list card (which just reloads the same
- * list) or the edit page (whose only remaining affordance is its own
- * submit), this page still shows a live-looking 수정 link that would lead
- * straight into collection_edit.html's own 404 dead end. Locking it here
- * avoids that second dead end.
+ * 굿즈 상세 페이지(archive_collection_detail). 항목 삭제만 담당한다.
+ * 삭제 성공(204) 후 404가 오면 이미 삭제된 것이므로, 화면에 남아 있는
+ * 수정 링크를 눌러도 또 다른 404로 이어지지 않도록 함께 잠근다.
  */
 
 (function () {
@@ -40,13 +29,8 @@
     }
   }
 
-  // Locks the 수정 link once the delete request has proven the item is
-  // gone (404) — a settled fact, not an interrupted in-flight request, so
-  // this deliberately does NOT use the .is-loading class (api.js's own
-  // global pageshow handler re-enables anything still carrying .is-loading
-  // on a bfcache restore; collection.js's lockForm()/.is-item-gone-locked
-  // is the same distinction ported here for a single link instead of a
-  // whole form).
+  // 항목이 이미 삭제됐다는 확정된 사실이라 .is-loading 클래스는 쓰지 않는다.
+  // 그 클래스는 api.js가 bfcache 복원 시 자동으로 되돌리므로 여기서는 맞지 않다.
   function lockEditLink(editLink) {
     if (!editLink) { return; }
     editLink.removeAttribute("href");
@@ -70,9 +54,8 @@
         return;
       }
       setText(globalErrorEl, "");
-      // Synchronous disable before the first await — a second click
-      // arriving while the request is in flight finds the button already
-      // disabled (TakuAPI.setLoading sets button.disabled directly).
+      // 첫 await 전에 동기적으로 버튼을 비활성화해, 요청이 진행되는 동안
+      // 다시 클릭해도 이미 막힌 상태를 보게 한다.
       window.TakuAPI.setLoading(deleteBtn, true);
 
       var result = await window.TakuAPI.del("/api/collection-items/" + itemId + "/");

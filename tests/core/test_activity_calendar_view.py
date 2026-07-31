@@ -1,53 +1,33 @@
-"""Activity calendar SSR view (dual-calendar Test List §단계 5, Activity 분):
-CAL-5-01 + newly-discovered CAL-5-12~16 (recorded in
-.docs/plans/2026-07-19-dual-calendar-test-list.md per its own "신규 발견
-시나리오는 이 문서에 추가한다" convention).
+"""활동 달력 SSR 뷰(이중 달력 테스트 목록 §단계 5, Activity 분) — CAL-5-01과
+새로 발견된 CAL-5-12~16 시나리오(.docs/plans/2026-07-19-dual-calendar-test-list.md에
+기록).
 
-`GET /archive/calendar/` does not exist yet (config/urls.py has no
-`archive-calendar-page` route) — every test below is expected to fail with
-a 404 at the very first status-code assertion, before the view/route is
-added. This includes CAL-5-01 (anonymous access): URL resolution happens
-before `login_required` ever runs, so an anonymous request to a
-not-yet-registered path also 404s rather than 302s — the assertion
-`resp.status_code == 302` will fail against an actual 404, which is still a
-correct Red for a route that doesn't exist (mirrors PR-C's
-test_events_calendar_view.py's documented Red shape).
-
-Assumed web-layer contract for the Activity calendar (proposed here per
-the coordinator's message; confirmed/adjusted with the Backend TDD Coach at
-Green time, same as PR-C's provisional-then-confirmed contract):
+웹 계층 계약:
 - `GET /archive/calendar/`, name="archive-calendar-page", `@login_required`
-  (mirrors every other `archive/*` view in core/views.py).
-- Query params: `month=YYYY-MM`/`date=YYYY-MM-DD` — identical parsing rules
-  to the Events calendar (service design §11.1: absent vs blank-but-present
-  distinction, invalid → `calendar_error="invalid"`). `type=` is a repeated
-  param selecting a subset of 5 groups: `schedule`/`interest`/`status`/
-  `visit`/`goods`, each mapping to the archive.queries kind constants
-  (schedule→SCHEDULE_KIND, interest→INTEREST_ADDED/REMOVED + the §7.5
-  legacy-찜 fallback, status→STATUS_CHANGED/REMOVED, visit→VISIT_KIND +
-  VISIT_RECORD_CREATED, goods→GOODS_ACQUIRED_KIND +
-  COLLECTION_ITEM_CREATED/ORGANIZED).
-- Selected-date detail section: `id="selected-date"` (same convention as
-  Events calendar.html), sliced via `_selected_date_section` below — the
-  month grid also renders each day's item labels in its own cell
-  (PR-C's day-cell title-collision lesson applies identically here), so
-  every presence/absence assertion below is scoped to this section, never
-  the raw whole-body text.
-- Month-nav links: `<nav class="calendar-month-nav">` (same class as
-  Events calendar.html), preserving `type=` the same way Events preserves
-  region/category/status/q via `extra_query`.
-- Empty state when the whole displayed month has zero activity: the
-  existing dual-CTA pattern already used elsewhere in this exact codebase
-  (templates/core/partials/_home_collection_snapshot.html's
+  (core/views.py의 다른 `archive/*` 뷰와 동일한 규약).
+- 쿼리 파라미터 `month=YYYY-MM`/`date=YYYY-MM-DD`는 Events 달력과 같은 파싱
+  규칙을 쓴다(서비스 설계 §11.1: 파라미터 부재와 "빈 값이지만 존재"를
+  구분, 무효값 → `calendar_error="invalid"`). `type=`은 반복 파라미터로
+  5개 그룹(schedule/interest/status/visit/goods) 중 일부를 고르며, 각각
+  archive.queries의 kind 상수로 매핑된다(schedule→SCHEDULE_KIND,
+  interest→INTEREST_ADDED/REMOVED + §7.5 레거시 찜 폴백,
+  status→STATUS_CHANGED/REMOVED, visit→VISIT_KIND + VISIT_RECORD_CREATED,
+  goods→GOODS_ACQUIRED_KIND + COLLECTION_ITEM_CREATED/ORGANIZED).
+- 선택일 상세 섹션은 `id="selected-date"`(Events calendar.html과 같은
+  규약)이며 아래 `_selected_date_section`으로 잘라낸다 — 월 그리드도 각
+  날짜 셀에 항목 라벨을 그리므로(달력 셀 제목 충돌 교훈이 여기도 그대로
+  적용된다), 모든 존재/부재 검사는 본문 전체가 아니라 이 섹션으로 범위를
+  좁힌다.
+- 월 이동 링크는 `<nav class="calendar-month-nav">`(Events calendar.html과
+  같은 클래스)이며, Events가 `extra_query`로 region/category/status/q를
+  보존하듯 `type=`을 보존한다.
+- 표시 월 전체에 활동이 0건이면 이 저장소에서 이미 쓰는 이중 CTA 빈 상태
+  패턴을 그대로 재사용한다(templates/core/partials/_home_collection_snapshot.html의
   `<div class="empty-actions"><a href="/events/">행사 찾기</a>
-  <a href="/collection/new/">굿즈 등록</a></div>`, service design §9.4) —
-  assumed reused verbatim rather than a new pattern. Copy text itself is
-  not yet confirmed by WED (per the coordinator's note), so only the two
-  hrefs are asserted, not the link text.
-- Invalid-month error panel: identical copy to the Events calendar
-  (frontend pre-review §A-13) — "요청한 날짜를 확인할 수 없어요" title,
-  "이번 달 보기" recovery link — since both pages are expected to reuse the
-  same parsing helpers and error-panel markup per the coordinator's note.
+  <a href="/collection/new/">굿즈 등록</a></div>`, 서비스 설계 §9.4) — 링크
+  문구는 아직 확정 전이라 href 두 개만 검증하고 문구는 검증하지 않는다.
+- 무효한 month 오류 패널은 Events 달력과 동일한 문구다(프런트 사전검토
+  §A-13) — "요청한 날짜를 확인할 수 없어요" 제목, "이번 달 보기" 복구 링크.
 """
 import html
 import re
@@ -72,11 +52,10 @@ def _extract_href(body, link_text):
 
 
 def _extract_block(body, *, tag, class_prefix):
-    """Return the inner HTML of the first <{tag} class="{class_prefix}...">
-    ... </{tag}> block — scopes extraction to a specific container instead
-    of the whole page (PR-C's test_events_calendar_view.py established this
-    pattern after discovering an unscoped page-wide search can match an
-    unrelated link, e.g. the global site header's own /events/ link)."""
+    """<{tag} class="{class_prefix}...">...</{tag}> 블록의 내부 HTML을
+    돌려준다 — 페이지 전체가 아니라 특정 컨테이너로 범위를 좁힌다. 범위를
+    좁히지 않으면 전역 사이트 헤더의 /events/ 링크처럼 무관한 링크까지
+    걸릴 수 있다."""
     match = re.search(
         rf'<{tag}[^>]*class="{re.escape(class_prefix)}[^"]*"[^>]*>(.*?)</{tag}>',
         body,
@@ -109,10 +88,9 @@ def _find_cell(weeks, target_date):
 
 
 def _selected_date_section(body):
-    """Return the response body from `id="selected-date"` onward — scopes
-    item presence/absence checks to the selected-date detail section, since
-    the month grid also renders each day's item labels in its own cell
-    (see module docstring)."""
+    """`id="selected-date"` 이후의 응답 본문을 돌려준다 — 월 그리드도 각
+    날짜 셀에 항목 라벨을 그리므로, 존재/부재 검사는 선택일 상세 섹션으로
+    범위를 좁혀야 한다(모듈 독스트링 참고)."""
     marker = 'id="selected-date"'
     index = body.find(marker)
     assert index != -1, f"{marker!r} 섹션을 찾을 수 없음"
@@ -120,8 +98,8 @@ def _selected_date_section(body):
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-01 — anonymous access redirects to login with next= preserving the
-# full requested URL (including querystring)
+# CAL-5-01 — 비로그인 접근은 요청 URL 전체(쿼리스트링 포함)를 next=에 담아
+# 로그인으로 리다이렉트한다
 # ---------------------------------------------------------------------------
 
 
@@ -138,8 +116,8 @@ def test_비로그인_사용자가_활동_달력에_접근하면_로그인으로
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-12 — only the logged-in user's own activity renders, never another
-# user's
+# CAL-5-12 — 로그인한 본인의 활동만 렌더되고, 다른 사용자의 활동은 절대
+# 렌더되지 않는다
 # ---------------------------------------------------------------------------
 
 
@@ -156,16 +134,15 @@ def test_활동_달력에는_본인_활동만_렌더된다(user_client, make_use
 
     assert resp.status_code == 200
     body = resp.content.decode()
-    # Privacy leak check spans the *whole* body, not just the detail
-    # section — another user's activity must never appear anywhere on the
-    # page, not merely be excluded from the selected-date list.
+    # 프라이버시 유출 검사는 상세 섹션이 아니라 본문 전체를 본다 — 다른
+    # 사용자의 활동은 선택일 목록에서만 빠지는 게 아니라 페이지 어디에도
+    # 나타나면 안 된다.
     assert "타인전용달력방문행사" not in body
     assert "본인전용달력방문행사" in _selected_date_section(body)
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-13 — a type= filter narrows what renders and is preserved across
-# month navigation
+# CAL-5-13 — type= 필터가 렌더 범위를 좁히고, 월 이동에도 그대로 보존된다
 # ---------------------------------------------------------------------------
 
 
@@ -204,7 +181,7 @@ def test_활동_종류_필터가_렌더에_적용되고_월_이동_링크에_보
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-14 — a month with zero activity renders the dual-CTA empty state
+# CAL-5-14 — 활동이 0건인 달은 이중 CTA 빈 상태를 렌더한다
 # ---------------------------------------------------------------------------
 
 
@@ -222,7 +199,7 @@ def test_기록이_전혀_없는_달은_이중_CTA_빈_상태를_렌더한다(us
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-15 — invalid month → 200 + inline error panel + recovery link
+# CAL-5-15 — 무효한 month → 200과 함께 인라인 오류 패널 + 복구 링크
 # (Events와 동일한 파싱 헬퍼 재사용 확인 — 대표 1케이스만)
 # ---------------------------------------------------------------------------
 
@@ -240,9 +217,9 @@ def test_무효한_month_파라미터는_200과_함께_오류_패널로_처리�
 
 
 # ---------------------------------------------------------------------------
-# CAL-5-16 — the selected date's detail list includes only that date's
-# items: an actual visit (visited_on match) and a planned event whose run
-# overlaps the date, but excludes an item on a different date
+# CAL-5-16 — 선택일 상세 목록에는 그 날짜의 항목만 담긴다: 실제 방문
+# (visited_on 일치)과 기간이 그 날짜를 포함하는 예정 행사는 포함하고, 다른
+# 날짜의 항목은 제외한다
 # ---------------------------------------------------------------------------
 
 
@@ -274,9 +251,9 @@ def test_선택_날짜_상세에는_그_날짜_항목만_방문_및_일정_겹�
 
 
 # ---------------------------------------------------------------------------
-# D8 (activity-calendar-editorial plan §8-A) — the filter disclosure panel is
-# gone, so active_filter_count (its "N개 선택됨" affordance) is dead context
-# on this view. Supersedes the CALFIX-2 test, which asserted the opposite.
+# D8(활동 달력 에디토리얼 계획 §8-A) — 필터 접이식 패널이 사라져서 그
+# "N개 선택됨" 표시에 쓰던 active_filter_count는 이제 이 뷰에 없는
+# 컨텍스트다. 반대를 검증하던 이전 CALFIX-2 테스트를 대체한다.
 # ---------------------------------------------------------------------------
 
 
@@ -291,8 +268,8 @@ def test_활동_달력_컨텍스트에는_더이상_active_filter_count가_없�
 
 
 # ---------------------------------------------------------------------------
-# B1 — a day's weeks cell exposes up to 2 item summaries plus an overflow
-# count (활동 달력 에디토리얼 계획 §4-a B1)
+# B1 — 하루 셀에는 항목 요약을 최대 2개까지만 노출하고 나머지는 초과분
+# 카운트로 담는다(활동 달력 에디토리얼 계획 §4-a B1)
 # ---------------------------------------------------------------------------
 
 
@@ -315,7 +292,7 @@ def test_같은_날_아이템이_3건이면_셀에는_2건만_담기고_초과�
 
 
 # ---------------------------------------------------------------------------
-# B2 — a day with only "status" activity counts/shows as empty everywhere
+# B2 — "status" 활동만 있는 날은 어디서나 빈 것으로 집계/표시된다
 # (셀 count, items, aria-label이 쓰는 수, 선택일 목록이 전부 0/빈 리스트로
 # 일치해야 한다 — PO 결정 2 / BIR Medium)
 # ---------------------------------------------------------------------------
@@ -345,9 +322,9 @@ def test_상태_변경만_있는_날은_셀_카운트와_아이템과_선택일_
 
 
 # ---------------------------------------------------------------------------
-# B5 — ?type=status stays parseable (backward-compat bookmark) and, combined
-# with B2, still renders a genuinely-zero day rather than crashing or lying
-# in the count (BIR Medium ties this to the same fix)
+# B5 — ?type=status는 여전히 파싱 가능해야 하고(하위 호환 북마크), B2와
+# 결합해도 진짜 0건인 날을 크래시나 거짓 카운트 없이 그대로 렌더해야 한다
+# (BIR Medium이 같은 수정으로 묶은 항목)
 # ---------------------------------------------------------------------------
 
 
@@ -373,8 +350,8 @@ def test_type가_status인_북마크는_500이나_거짓_카운트_없이_0건�
 
 
 # ---------------------------------------------------------------------------
-# B3 — legend counts reflect the displayed month's per-kind counts (4 groups
-# only — no "status" key), reusing the same items the view already fetched
+# B3 — 범례 카운트는 표시 월의 종류별 건수를 반영한다(4개 그룹만 — "status"
+# 키는 없음). 뷰가 이미 가져온 항목을 그대로 재사용한다
 # ---------------------------------------------------------------------------
 
 
@@ -413,9 +390,9 @@ def test_범례_카운트가_표시_월의_종류별_건수_4종을_반영한다
 
 
 # ---------------------------------------------------------------------------
-# B4 — masthead stats (status_counts) are the whole-history totals from the
-# existing user_status_counts helper, independent of the displayed month —
-# bound to a *different* context key than kind_counts (WED 구속 기준)
+# B4 — 머스트헤드 통계(status_counts)는 기존 user_status_counts 헬퍼가 주는
+# 전체 기간 합계이며 표시 월과 무관하다 — kind_counts와는 다른 컨텍스트
+# 키에 담긴다(WED 구속 기준)
 # ---------------------------------------------------------------------------
 
 
@@ -424,14 +401,13 @@ def test_머스트헤드_통계는_표시_월과_무관하게_전체_기간_상�
     user_client, make_event
 ):
     user, client = user_client()
-    # Deliberately a *future* month, not just a different one: user_status_counts
-    # (archive/queries.py) counts the *derived* status (auto-miss overlay) — a
-    # PLANNED status whose event run has already ended is derived as "missed",
-    # not "planned" (see its docstring). A past other-month date would silently
-    # flip this fixture's own status out from under the assertion below, so
-    # this has to stay in the future relative to whatever "today" the test
-    # suite runs under to keep asserting "planned" while still proving the
-    # count spans months outside the displayed one.
+    # 그냥 다른 달이 아니라 일부러 미래 달로 잡는다: user_status_counts
+    # (archive/queries.py)는 파생 상태(자동 놓침 반영)를 센다 — 행사 기간이
+    # 이미 끝난 PLANNED 상태는 "planned"가 아니라 "missed"로 파생된다(해당
+    # 함수 독스트링 참고). 과거의 다른 달로 잡으면 이 픽스처의 상태 자체가
+    # 아래 단언 밑에서 조용히 뒤바뀌므로, 테스트 스위트가 실행되는 "오늘"이
+    # 언제든 미래에 있어야 "planned"를 계속 검증하면서 동시에 카운트가
+    # 표시 월 밖의 달까지 걸친다는 것도 증명할 수 있다.
     other_month_event = make_event(
         title="통계전체기간확인행사", start_date=date(2026, 12, 1), end_date=date(2026, 12, 1)
     )
@@ -442,19 +418,19 @@ def test_머스트헤드_통계는_표시_월과_무관하게_전체_기간_상�
     resp = client.get("/archive/calendar/", {"month": "2026-07"})
 
     assert resp.status_code == 200
-    # Literal expectation (not a call to archive.queries.user_status_counts):
-    # the user has exactly one status row, so this is the full derived-status
-    # breakdown, not just a wiring check that would pass even if the helper
-    # and the view were both wrong the same way. Also proves the count spans
-    # a month (December) outside the displayed one (July).
+    # archive.queries.user_status_counts를 호출하지 않고 리터럴 값으로
+    # 기대한다: 사용자에게 상태 행이 정확히 1건이므로 이것이 파생 상태의
+    # 전체 내역이다 — 헬퍼와 뷰가 같은 방식으로 둘 다 틀려도 통과해버리는
+    # 배선 확인이 아니다. 카운트가 표시 월(7월) 밖의 달(12월)까지 걸친다는
+    # 것도 함께 증명한다.
     assert resp.context["status_counts"] == {"planned": 1, "visited": 0, "missed": 0}
     assert resp.context["status_counts"] is not resp.context["kind_counts"]
 
 
 # ---------------------------------------------------------------------------
-# B6 — date-jump search (신규 계약, §4-a-1). GET ?q=... redirects (PRG) to
-# the matching activity's date; no match keeps the currently-displayed month
-# and preserves q instead of falling back to today.
+# B6 — 날짜 점프 검색(신규 계약, §4-a-1). GET ?q=...는 일치하는 활동의
+# 날짜로 PRG 리다이렉트한다. 일치가 없으면 오늘로 되돌아가지 않고 현재
+# 표시 월을 유지하며 q를 보존한다.
 # ---------------------------------------------------------------------------
 
 
@@ -562,10 +538,10 @@ def test_활성_종류_필터가_검색에도_적용되어_필터_밖_일치는_
 
 
 # ---------------------------------------------------------------------------
-# D1 (activity-calendar-editorial plan §8-A) — kind_counts stays the whole
-# displayed-month tally for all 4 visible groups regardless of the active
-# ?type= filter, so switching a kind back on always has a truthful count to
-# show (WED/BIR 독립 합의: 필터셋에서 파생하면 방금 끈 종류가 0으로 보임).
+# D1(활동 달력 에디토리얼 계획 §8-A) — kind_counts는 활성 ?type= 필터와
+# 무관하게 보이는 4개 그룹 전체의 표시 월 합계를 유지한다 — 그래야 종류를
+# 다시 켰을 때 항상 정확한 카운트가 보인다(WED/BIR 독립 합의: 필터셋에서
+# 파생하면 방금 끈 종류가 0으로 보임).
 # ---------------------------------------------------------------------------
 
 
@@ -612,10 +588,10 @@ def test_type_필터가_있어도_kind_counts는_필터와_무관하게_표시_�
 
 
 # ---------------------------------------------------------------------------
-# D2/D3 (activity-calendar-editorial plan §8-A) — the legend is a clickable
-# multi-toggle filter: each kind's link adds itself when inactive, removes
-# itself when active, and a separate reset link clears every type= while
-# still preserving month/date (§9-1의 hidden-input 교훈과 같은 이유).
+# D2/D3(활동 달력 에디토리얼 계획 §8-A) — 범례는 클릭 가능한 다중 토글
+# 필터다: 각 종류의 링크는 비활성일 때 자신을 추가하고 활성일 때 자신을
+# 제거하며, 별도의 리셋 링크는 month/date는 유지한 채 모든 type=을 지운다
+# (§9-1의 hidden-input 교훈과 같은 이유).
 # ---------------------------------------------------------------------------
 
 

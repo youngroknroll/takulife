@@ -1,17 +1,12 @@
-/* account_settings.css — 6 account screens (계정 설정 에디토리얼).
+/* account_settings.css — 계정 설정 6개 화면(에디토리얼) 전용 스타일.
    templates/account/{settings,email_change,password_change,delete_account,
-   email_confirm,delete_done}.html. Replaces auth.css on these 5 templates
-   (auth.css itself is untouched — it still backs 12 other templates, see
-   .docs/FE/account-settings-editorial.md).
+   email_confirm,delete_done}.html에서 auth.css 대신 사용한다(auth.css는
+   다른 12개 템플릿이 계속 사용하므로 그대로 둔다). 상세 근거는
+   .docs/FE/account-settings-editorial.md 참고.
 
-   Color decision (user-confirmed, overrides the mock's blanket brand-red):
-   brand/brand-ink for kicker, active index tick, danger-panel border/head,
-   warning badges ("미인증"/"인증 대기"), step-1 number, in-copy action
-   links; rose for every error (banner + field) and the final destructive
-   action (탈퇴 button, step-3 number); mint for step-2 number and the
-   "인증됨" badge. No new hex literals — #fff below is only ever text on a
-   solid brand/rose button background, same convention as
-   archive_collection_detail.css's edit button. */
+   색상 결정(사용자 확정, 시안의 일괄 브랜드레드 대신): 위험 영역
+   경계/배지/1단계 숫자/본문 액션 링크는 brand, 모든 오류와 탈퇴
+   버튼·3단계 숫자는 rose, 2단계 숫자와 "인증됨" 배지는 mint. */
 
 .account-settings-page {
   max-width: 56rem;
@@ -499,8 +494,8 @@
   text-decoration: underline;
 }
 
-/* 탈퇴 완료 화면: 복구 수단(다시 로그인)이 주 버튼, 홈으로는 보조 링크
-   (Web Experience Designer E4 — 시안대로 두 버튼을 나란히 둔다). */
+/* 탈퇴 완료 화면: 복구 수단(다시 로그인)이 주 버튼, 홈으로는 보조
+   링크로 나란히 둔다. */
 .account-settings-done-actions {
   display: flex;
   align-items: center;
@@ -514,19 +509,18 @@
   text-decoration: underline;
 }
 
-/* ── narrow (≤45rem): index becomes a horizontal chip strip, single
-   column stacking follows DOM order as-is — no `order`/`grid-column`
-   swap needed, the collapse to 1fr already keeps index-before-panel
-   (IC2, this repo's 3rd-time-confirmed rule). ─────────────────────── */
+/* ── narrow (≤45rem) ─────────────────────────────────────────────── */
+/* `order`나 `grid-column`을 쓰지 않는다 — 1열로 쌓여도 DOM 순서 그대로
+   인덱스가 패널보다 먼저 오므로 탭 순서가 화면 순서와 어긋나지 않는다. */
 @media (max-width: 45rem) {
   .account-settings-shell {
     grid-template-columns: minmax(0, 1fr);
     gap: 1.25rem;
   }
 
-  /* Horizontal scroll is isolated to the tab track only (IC9) — the page
-     itself never gains a horizontal scrollbar. Same JS-less
-     nowrap+overflow-x pattern as .staff-shell-tabs. */
+  /* 가로 스크롤은 탭 트랙에만 적용된다 — 페이지 전체는 가로
+     스크롤바가 생기지 않는다. .staff-shell-tabs와 동일한 JS 없는
+     nowrap+overflow-x 패턴. */
   .account-settings-index-tabs {
     flex-direction: row;
     flex-wrap: nowrap;

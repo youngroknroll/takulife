@@ -1,18 +1,15 @@
-"""Date-jump search read layer (활동 달력 에디토리얼 계획 §4-a-1/B6).
+"""날짜 점프 검색 읽기 계층 (활동 달력 에디토리얼 계획 §4-a-1/B6).
 
-archive.queries.find_latest_activity_date_for_query does not exist yet — the
-whole file is expected to fail at collection with ImportError until it is
-added (mirrors test_activity_calendar_queries.py's own documented convention
-for a not-yet-existing query function).
+archive.queries.find_latest_activity_date_for_query가 아직 없어 이 파일은
+ImportError로 수집 실패하는 게 정상이다(test_activity_calendar_queries.py와
+동일한 관례).
 
-Scope: this file covers only the read-side matching/date-selection contract
-(the pure query function). The view-level PRG-redirect/no-match/month-
-preservation contract lives in tests/core/test_activity_calendar_view.py,
-which is this function's only caller.
+범위: 이 파일은 읽기 쪽 매칭/날짜 선택 계약(순수 쿼리 함수)만 다룬다.
+뷰 레벨 PRG 리다이렉트/무매칭/월 유지 계약은 이 함수의 유일한 호출자인
+tests/core/test_activity_calendar_view.py에 있다.
 
-These scenarios build state directly on the models (not via archive.services)
-— the same convention test_activity_calendar_queries.py already documents for
-this read layer.
+이 시나리오들은 archive.services를 거치지 않고 모델에 직접 상태를 만든다
+— test_activity_calendar_queries.py가 이미 문서화한 이 읽기 계층의 관례와 같다.
 """
 from datetime import date
 

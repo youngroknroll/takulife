@@ -1,13 +1,14 @@
-"""Model-contract test: EventInterest/UserEventStatus/VisitRecord must share
-one related_name naming convention across their user/event/personal_entry FKs.
+"""모델 계약 테스트: EventInterest/UserEventStatus/VisitRecord는
+user/event/personal_entry FK 전체에 걸쳐 하나의 related_name 명명 규칙을
+공유해야 한다.
 
-Owner-role (user FK): related_name starts with "archive_" and is distinct
-from the subject-role name. Subject-role (event AND personal_entry FKs,
-deliberately sharing one name because they are mutually exclusive — see the
-"subject = exactly one of ..." comment on each model): both FKs share the
-identical related_name, and that shared name starts with "archive_user_".
+소유자 역할(user FK): related_name은 "archive_"로 시작하고 대상 역할 이름과
+달라야 한다. 대상 역할(event와 personal_entry FK — 두 필드는 상호 배타적이라
+의도적으로 이름을 공유한다. 각 모델의 "subject = exactly one of ..." 주석
+참고): 두 FK가 동일한 related_name을 공유하며, 그 이름은 "archive_user_"로
+시작해야 한다.
 
-No django_db mark — this only introspects model _meta, no database access.
+django_db 마커 없음 — 모델 _meta만 조회하고 DB 접근은 없다.
 """
 import pytest
 

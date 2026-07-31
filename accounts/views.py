@@ -9,9 +9,9 @@ from . import services
 
 @login_required
 def account_settings(request):
-    """Account settings hub: links to allauth's email/password management
-    and, for a regular member only, the deletion flow — a staff member has
-    no self-deletion path anywhere in the UI."""
+    """계정 설정 허브: allauth의 이메일/비밀번호 관리로 연결하고, 일반
+    회원에게만 탈퇴 흐름을 보여준다 — 스태프는 UI 어디에도 자율 탈퇴
+    경로가 없다."""
     user = request.user
     email_verified = EmailAddress.objects.filter(user=user, verified=True).exists()
     return render(

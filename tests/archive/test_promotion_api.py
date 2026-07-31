@@ -1,9 +1,9 @@
 """API — POST /api/personal-entries/<id>/promote/
 
-Promotes a private PersonalEntry into the admin draft review pipeline (see
-core.promotion.promote_personal_entry for the orchestration itself, tested
-directly in tests/archive/test_promotion_service.py). The item stays private
-until an admin approves the seeded draft into a published Event.
+비공개 PersonalEntry를 관리자 드래프트 검수 파이프라인으로 승격한다(오케스트레이션
+자체는 core.promotion.promote_personal_entry 참고, tests/archive/
+test_promotion_service.py에서 직접 테스트됨). 관리자가 시드된 드래프트를 승인해
+공개 Event로 만들기 전까지 항목은 비공개로 유지된다.
 """
 import pytest
 
@@ -103,9 +103,9 @@ def test_사설_IP_공식_URL로_승격을_요청하면_400으로_거부된다(c
 @pytest.mark.django_db
 @pytest.mark.web
 def test_굿즈_항목을_승격_요청하면_400으로_거부되고_제출됨으로_바뀌지_않는다(client, make_user, make_entry):
-    """A goods entry is not promotable (collection domain plan §3-3) — the
-    view must translate PromotionKindNotAllowedError into a controlled 400,
-    not let it bubble up as an unhandled 500."""
+    """goods 항목은 승격할 수 없다(컬렉션 도메인 설계안 §3-3) — 뷰는
+    PromotionKindNotAllowedError를 처리되지 않은 500이 아니라 제어된 400으로
+    변환해야 한다."""
     user = make_user(username="api-promo-goods")
     entry = make_entry(user, kind="goods", title="굿즈")
 
@@ -163,10 +163,9 @@ def test_이미_제출된_항목을_다시_승격_요청하면_409_중복_오류
 @pytest.mark.django_db
 @pytest.mark.web
 def test_이미_존재하는_드래프트와_동일한_공식_URL로_승격_요청하면_필드_오류로_거부된다(client, make_user, make_entry, make_draft):
-    """(moved from tests/core/test_coverage_supplements.py)"""
     user = make_user()
     entry = make_entry(user, kind="place", title="제보 대상")
-    # A draft already owns this official URL → promotion is a duplicate.
+    # 이미 이 공식 URL을 가진 드래프트가 있다 → 승격은 중복으로 처리된다
     make_draft(source_url="https://dup.example.com/")
 
     client.force_login(user)
@@ -196,18 +195,18 @@ def test_인증되지_않은_요청으로_승격을_시도하면_401_또는_403�
 
 
 # ---------------------------------------------------------------------------
-# Rate limiting — the review queue can't be flooded
+# 속도 제한 — 검수 큐가 플러딩되지 않도록 한다
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 @pytest.mark.slow
 def test_일일_승격_한도를_초과하면_429로_제한된다(client, make_user, make_entry):
-    """After the daily promotion cap, further promotes are throttled (429)."""
+    """일일 승격 한도를 넘으면 이후 승격 요청은 429로 제한된다."""
     user = make_user(username="api-promo-flood")
     client.force_login(user)
 
-    # 20/day budget: 20 distinct promotes succeed, the 21st is throttled.
+    # 일일 한도 20건: 20번째까지는 성공하고 21번째부터 제한된다
     for i in range(20):
         entry = make_entry(user, kind="place", title=f"비공식 {i}")
         response = client.post(

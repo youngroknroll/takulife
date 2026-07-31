@@ -11,15 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 def set_event_poster(*, event, image):
-    """Assign a new poster image to an event.
+    """이벤트에 새 포스터 이미지를 지정한다.
 
-    Saves the new image, then best-effort deletes the old file from storage.
-    Cleanup failure is logged but never propagated — the upload always wins.
-    The file path is determined by the field/storage, never by user input.
-
-    Captures the old file name as a plain string before overwriting so that
-    FieldFile.delete() side-effects on the model instance do not clobber the
-    newly saved value on the event object.
+    새 이미지를 먼저 저장하고, 옛 파일 삭제는 최선노력으로만 시도한다. 삭제가
+    실패해도 업로드 자체는 성공으로 남긴다(로그만 남김). 옛 파일명을 미리 문자열로
+    떼어두는 이유는, FieldFile.delete()가 모델 인스턴스에 부작용을 일으켜 방금
+    저장한 새 값을 덮어쓰는 것을 막기 위해서다.
     """
     old_name = event.poster_image.name if event.poster_image else None
     old_storage = event.poster_image.storage if event.poster_image else None
@@ -33,7 +30,7 @@ def set_event_poster(*, event, image):
 
 
 def clear_event_poster(*, event):
-    """Remove the poster image from an event and delete the file from storage."""
+    """이벤트의 포스터 이미지를 제거하고 저장소 파일도 함께 지운다."""
     event.poster_image.delete(save=True)
 
 
@@ -68,14 +65,10 @@ class PublishEventRegionError(PublishEventError):
 def _validate_publish_fields(
     *, title, official_url, start_date, end_date, category, region, existing_queryset
 ):
-    """Shared invariant checks for create_published_event and update_published_event.
+    """create_published_event와 update_published_event가 공유하는 불변식 검사.
 
-    `existing_queryset` scopes the official_url uniqueness check: the full
-    Event queryset for create, or Event.objects.exclude(pk=event.pk) for
-    update (so keeping the same URL on save is not a self-conflict).
-
-    Returns (normalized_title, normalized_official_url); raises the domain
-    errors documented on the two public functions above.
+    existing_queryset으로 official_url 중복 검사 범위를 정한다. 수정 시에는 자기 자신을
+    제외해야, 같은 URL을 그대로 저장해도 자기 자신과 충돌 처리되지 않는다.
     """
     normalized_official_url = (official_url or "").strip()
     if not normalized_official_url:
@@ -94,10 +87,9 @@ def _validate_publish_fields(
     if start_date is not None and end_date is not None and start_date > end_date:
         raise InvalidEventPeriodError
 
-    # Vocabulary membership (2026-07-23). Neither field has `choices`, so this
-    # is the only thing standing between a hand-made staff POST and free text
-    # in the DB — the staff console's <select> is a client-side hint, not a
-    # constraint. "" stays valid on both (미분류 / 지역 미상).
+    # category/region은 모델에 choices가 없어, 여기 어휘 검사만이 임의로 만든 POST 요청이
+    # DB에 자유 문자열을 넣는 것을 막는 유일한 장치다(스태프 콘솔 select는 힌트일 뿐).
+    # 빈 문자열은 둘 다 허용(미분류 / 지역 미상).
     if not is_valid_category(category or ""):
         raise PublishEventCategoryError
     if not is_valid_region(region or ""):
@@ -165,14 +157,10 @@ def update_published_event(
     source_name="",
     summary="",
 ):
-    """Update an existing event's editable fields in place.
+    """기존 이벤트의 수정 가능 필드를 갱신한다.
 
-    Reuses create_published_event's invariants via _validate_publish_fields,
-    scoping the official_url uniqueness check to exclude `event` itself so
-    re-saving with the same URL is not treated as a conflict. Does not touch
-    publish_status or poster_image — those are out of this service's scope
-    (see events/services.py's set_event_poster/clear_event_poster and the
-    PR-E3 publish-status toggle).
+    publish_status와 poster_image는 여기서 건드리지 않는다(각각 별도 함수 책임:
+    set_event_poster/clear_event_poster, 게시 상태 전환 함수들).
     """
     _normalized_title, normalized_official_url = _validate_publish_fields(
         title=title,
@@ -221,11 +209,10 @@ def update_published_event(
 
 
 def unpublish_event(*, event):
-    """Move a published (or draft) event to draft ("take down" a listing).
+    """이벤트를 draft 상태로 내린다(게시 중단).
 
-    No invariant checks needed — draft is always a valid state to be in,
-    unlike republish_event below, which re-enters the published set and so
-    must re-validate the title/official_url invariants.
+    draft는 항상 유효한 상태라 별도 검증이 필요 없다. 반대로 아래 republish_event는
+    다시 게시 집합에 들어가므로 title/official_url 불변식을 재검증한다.
     """
     event.publish_status = Event.PublishStatus.DRAFT
     event.save(update_fields=["publish_status"])
@@ -233,22 +220,16 @@ def unpublish_event(*, event):
 
 
 def republish_event(*, event):
-    """Move a draft event back to published.
+    """draft 이벤트를 다시 게시 상태로 되돌린다.
 
-    Re-runs the same title/official_url/period invariants create_published_event
-    and update_published_event share, scoped to exclude `event` itself from the
-    official_url uniqueness check — this closes the gap where an event could be
-    unpublished, edited into an invalid state some other way, then republished
-    without ever passing through update_published_event's checks.
+    create/update_published_event와 같은 불변식을 재검사한다. 게시 중단 상태에서
+    다른 경로로 잘못된 값이 들어간 뒤 검증 없이 재게시되는 구멍을 막기 위해서다.
     """
     _validate_publish_fields(
         title=event.title,
         official_url=event.official_url,
         start_date=event.start_date,
         end_date=event.end_date,
-        # Vocabulary is checked here too, for the reason this function exists:
-        # a row that reached an invalid state by some other path must not slip
-        # back into the published set without passing the same gate.
         category=event.category,
         region=event.region,
         existing_queryset=Event.objects.exclude(pk=event.pk),
@@ -259,24 +240,18 @@ def republish_event(*, event):
 
 
 def mark_event_verified(*, event):
-    """Record that an event has been manually verified, right now.
-
-    `verified_at` stays null until the first verification; null means "never
-    verified".
-    """
+    """이벤트를 지금 시각으로 수동 검증 완료 처리한다. verified_at이 null이면 미검증 상태다."""
     event.verified_at = timezone.now()
     event.save(update_fields=["verified_at"])
     return event
 
 
 def hard_delete_event(*, event):
-    """Permanently delete an event, cleaning up its poster file first.
+    """이벤트를 영구 삭제한다. 포스터 파일도 먼저 정리한다.
 
-    This is a pure primitive with no knowledge of archive models — events must
-    never import archive (architecture boundary, see
-    tests/test_architecture_boundaries.py). Callers are responsible for
-    confirming it is safe to hard-delete (e.g. staff/services.py's
-    delete_event, which checks archive references before calling this).
+    events는 archive 모델을 알면 안 된다(경계 규칙, tests/test_architecture_boundaries.py
+    참고). 삭제해도 안전한지 확인하는 책임은 호출부에 있다(예: staff/services.py의
+    delete_event가 archive 참조 여부를 먼저 확인).
     """
     if event.poster_image:
         clear_event_poster(event=event)

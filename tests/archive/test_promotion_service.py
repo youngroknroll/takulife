@@ -1,9 +1,9 @@
-"""core.promotion.promote_personal_entry — orchestration tests, no HTTP.
+"""core.promotion.promote_personal_entry — 오케스트레이션 테스트, HTTP 없음.
 
-Boundary-aware: archive must not import drafts, so the orchestration lives in a
-neutral layer (core.promotion). A promotion seeds a PENDING EventDraft from the
-user's private item + a required official URL; the item is then marked submitted.
-The item stays private until an admin approves the draft into a published Event.
+경계 인식: archive는 drafts를 임포트하면 안 되므로 오케스트레이션은 중립 계층
+(core.promotion)에 둔다. 승격은 사용자의 비공개 항목과 필수 공식 URL로 PENDING
+EventDraft를 시드하고, 항목을 제출됨으로 표시한다. 관리자가 드래프트를 승인해
+공개 Event로 만들기 전까지 항목은 비공개로 유지된다.
 """
 import logging
 
@@ -56,8 +56,8 @@ def test_다른_사용자의_항목을_승격하려_하면_PromotionNotFoundErro
 @pytest.mark.django_db
 @pytest.mark.domain
 def test_굿즈_항목을_승격하려_하면_PromotionKindNotAllowedError가_발생하고_상태가_변하지_않는다(make_user, make_entry):
-    """GOODS entries are no longer promotable (collection domain plan §3-3) —
-    only place entries can be seeded into the official review pipeline."""
+    """GOODS 항목은 더 이상 승격할 수 없다(컬렉션 도메인 설계안 §3-3) — place
+    항목만 공식 검수 파이프라인으로 시드될 수 있다."""
     user = make_user(username="promo-goods")
     entry = make_entry(user, kind="goods", title="굿즈")
 
@@ -161,7 +161,7 @@ def test_이미_사용중인_공식_URL로_승격하려_하면_PromotionDuplicat
 @pytest.mark.django_db
 @pytest.mark.contract
 def test_중복_URL_승격_실패는_트랜잭션이_롤백되어_항목이_제출됨으로_바뀌지_않는다(make_user, make_entry):
-    """A duplicate-url failure must roll back; the entry stays promotable."""
+    """중복 URL 실패는 롤백되어야 하며 항목은 계속 승격 가능한 상태로 남는다."""
     user = make_user(username="promo-rollback")
     first = make_entry(user, kind="place", title="E1")
     promote_personal_entry(
@@ -179,10 +179,9 @@ def test_중복_URL_승격_실패는_트랜잭션이_롤백되어_항목이_제�
 
 
 # ---------------------------------------------------------------------------
-# End-to-end: promote → admin approve → published Event (privacy preserved)
-# (moved from tests/archive/test_promotion_api.py — PR-9 carried this test into
-# the API file, but it never calls the HTTP endpoint; both promote_personal_entry
-# and approve_draft are called directly, so it belongs here.)
+# End-to-end — 승격 → 관리자 승인 → 공개 Event(비공개 유지). HTTP 엔드포인트를
+# 거치지 않고 promote_personal_entry와 approve_draft를 직접 호출하므로 API
+# 파일이 아닌 여기 속한다.
 # ---------------------------------------------------------------------------
 
 
@@ -195,9 +194,9 @@ def test_승격된_항목은_관리자가_드래프트를_승인하기_전까지
         user=user, personal_entry_id=entry.id, official_url="https://priv.example.com/c"
     )
 
-    # Not published yet — absent from the public catalog.
+    # 아직 공개되지 않음 — 공개 카탈로그에는 없다
     assert not Event.objects.published().filter(title="숨은 카페").exists()
 
-    # Admin approves the seeded draft → it becomes a published Event.
+    # 관리자가 시드된 드래프트를 승인 → 공개 Event가 된다
     approve_draft(draft_id=result.draft_id, actor=user)
     assert Event.objects.published().filter(official_url="https://priv.example.com/c").exists()

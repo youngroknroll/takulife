@@ -1,17 +1,14 @@
-"""Management command: eval_extraction
+"""관리 명령어: eval_extraction
 
-Reports per-field extraction accuracy against a golden set built from
-already-approved drafts (human-verified extracted_* fields), by re-running
-extraction over each draft's stored raw_title/raw_text and comparing.
+이미 승인된 드래프트(사람이 검증한 extracted_* 필드)로 골든셋을 만들어, 저장된
+raw_title/raw_text로 추출을 다시 돌려 비교한 뒤 필드별 정확도를 보고한다.
 
-Golden set membership: review_status=APPROVED and raw_text present. Approved
-drafts with no raw_text (e.g. created via create_draft_from_fields, which has
-no fetch/extraction step) have nothing to re-run extraction against and are
-excluded.
+골든셋 조건: review_status=APPROVED이고 raw_text가 있어야 한다. raw_text가 없는
+승인 드래프트(예: fetch/추출 단계가 없는 create_draft_from_fields로 만든 것)는
+다시 돌릴 대상이 없어 제외한다.
 
-Feeds the confidence-threshold calibration for the Phase 2 auto-approve gate
-(see prompt_plan.md DEFERRED #1) — this command only reports, it does not
-gate or change any draft.
+Phase 2 자동 승인 게이트의 신뢰도 임계값을 정하는 데 쓰인다 — 이 명령은 보고만
+하고 어떤 드래프트도 바꾸거나 게이트하지 않는다.
 """
 from django.core.management.base import BaseCommand
 
@@ -25,11 +22,9 @@ DEFAULT_LIMIT = 100
 
 
 def _golden_rows(limit):
-    """limit: max rows to evaluate (most recent first), 0 = unlimited.
-
-    LLM calls cost money per row (SEC guard) — this bounds an accidental
-    unbounded eval run against a large approved-draft table.
-    """
+    """limit: 평가할 최대 행 수(최신순), 0이면 무제한. 행마다 LLM 호출 비용이
+    들어가므로 승인 드래프트 테이블이 커도 실수로 무제한 평가가 돌아가지 않게
+    막는다."""
     qs = EventDraft.objects.filter(review_status=EventDraft.ReviewStatus.APPROVED).exclude(
         raw_text=""
     ).order_by("-id")

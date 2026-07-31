@@ -1,52 +1,11 @@
 /**
- * draft_bulk.js — Multi-select + bulk approve for the draft list
- * (templates/core/drafts/list.html only; split out of draft.js because the
- * selection/DOM-patching logic below is a self-contained slice).
- *
- * Endpoint: POST /staff/drafts/bulk-approve/ {"draft_ids":[...]} →
- *   200 {"succeeded": [...ids], "failed": [{"id", "reason"}]}
- * (see staff/views.py::StaffDraftBulkApproveView). A 400 only happens for a
- * structurally invalid request (empty/non-integer/over-cap draft_ids), which
- * cannot occur from this UI since selection always yields a non-empty list
- * of real numeric ids capped by the page size (10).
- *
- * Markup contract (server-rendered, see list.html):
- *   #bulk-toolbar            — hidden by default; this script un-hides it
- *                              only when at least one pending checkbox
- *                              ([data-draft-select]) exists on the page.
- *   #draft-select-all        — page-level select-all checkbox.
- *   [data-draft-select]      — one per pending draft card, data-draft-id
- *                              carries the numeric pk. data-missing-title
- *                              ("true") marks drafts with no title — these
- *                              are excluded from select-all (still
- *                              individually selectable, per PO decision).
- *   #bulk-selected-count     — "N건 선택됨" live count.
- *   #bulk-approve-btn        — disabled while selection is empty.
- *   #bulk-approve-result     — the completion summary text (per-item
- *                              failures are static text, shown separately).
- *   #bulk-approve-error      — hidden by default. Reserved for genuine
- *                              request-level exceptions (403/lost session,
- *                              network, 5xx) that prevent any result from
- *                              coming back at all — mirrors the existing
- *                              #draft-action-error convention (draft.js).
- *   .draft-list[data-selected-status] — current status filter ("" = all,
- *                              "pending", "approved", "rejected"). Drives
- *                              whether a succeeded card is removed outright
- *                              (pending filter) or just re-chipped
- *                              (any other filter, including "all").
- *   [data-draft-status-chip] — the review-status chip inside each card;
- *                              swapped to "approved" on success.
- *   [data-bulk-fail-reason]  — empty <p> per card (no role — static visual
- *                              text only, not a live announcement; the
- *                              routine "N/M 성공" summary above is the only
- *                              thing that speaks). textContent only, never
- *                              innerHTML (server pre-renders it empty, this
- *                              script only fills plain text, and resets it
- *                              back to empty/hidden when a card that
- *                              previously failed succeeds on retry).
- *
- * Security: no HTML is ever constructed from server data — all writes are
- * textContent or className toggles against a fixed, known string set.
+ * 드래프트 목록의 다중 선택 + 일괄 승인 기능.
+ * POST /staff/drafts/bulk-approve/ {"draft_ids":[...]} →
+ *   200 {"succeeded": [...ids], "failed": [{"id","reason"}]}
+ * 제목이 없는 드래프트(data-missing-title)는 전체선택 대상에서 빠지지만
+ * 개별 선택은 그대로 가능하다.
+ * 보안: 서버에서 받은 값으로 HTML을 조립하지 않는다 — 화면 갱신은 모두
+ * textContent나 className 교체만 사용해 스크립트 삽입 위험을 없앤다.
  */
 
 (function () {
@@ -56,9 +15,7 @@
     "403 오류: 세션이 만료되었거나 보안 토큰이 유효하지 않습니다. " +
     "페이지를 새로고침한 뒤 다시 시도해 주세요.";
 
-  // Confirm before a destructive, unrecoverable action. Uses the shared modal
-  // (confirm-modal.js, loaded in base.html) with a native confirm() fallback
-  // — same pattern as visit.js / personal_entries.js.
+  // 되돌릴 수 없는 동작이라 확인을 거친다. 공용 모달이 없으면 기본 confirm으로 대체한다.
   function askConfirm(message) {
     if (typeof window.TakuConfirm === "function") {
       return window.TakuConfirm(message);
@@ -66,7 +23,7 @@
     return Promise.resolve(window.confirm(message));
   }
 
-  /* ── selection helpers ────────────────────────────────────────────────── */
+  /* ── 선택 상태 헬퍼 ────────────────────────────────────────────────── */
 
   function getAllCheckboxes() {
     return Array.prototype.slice.call(
@@ -86,7 +43,7 @@
     });
   }
 
-  /* ── toolbar state (count, button disabled, select-all indeterminate) ──── */
+  /* ── 툴바 상태(개수, 버튼 비활성, 전체선택 중간 상태) ──── */
 
   function updateSelectAllState() {
     var selectAll = document.getElementById("draft-select-all");
@@ -132,7 +89,7 @@
     updateSelectAllState();
   }
 
-  /* ── bindings ─────────────────────────────────────────────────────────── */
+  /* ── 이벤트 바인딩 ─────────────────────────────────────────────────────────── */
 
   function bindIndividualCheckboxes() {
     getAllCheckboxes().forEach(function (cb) {
@@ -154,7 +111,7 @@
     });
   }
 
-  /* ── applying the bulk-approve response to the DOM ──────────────────────── */
+  /* ── 승인 응답을 화면에 반영 ──────────────────────── */
 
   function adjustCount(id, delta) {
     var el = document.getElementById(id);
@@ -249,7 +206,7 @@
     }
   }
 
-  /* ── approve button ───────────────────────────────────────────────────── */
+  /* ── 승인 버튼 ───────────────────────────────────────────────────── */
 
   function bindBulkApproveButton() {
     var btn = document.getElementById("bulk-approve-btn");
@@ -310,7 +267,7 @@
     });
   }
 
-  /* ── init ─────────────────────────────────────────────────────────────── */
+  /* ── 초기화 ─────────────────────────────────────────────────────────── */
 
   function initBulkToolbar() {
     var toolbar = document.getElementById("bulk-toolbar");
@@ -318,7 +275,7 @@
       return;
     }
     if (getAllCheckboxes().length === 0) {
-      return; // no pending drafts on this page — stays hidden
+      return; // 이 페이지에 대기 중인 드래프트가 없으면 숨긴 채로 둔다
     }
 
     toolbar.hidden = false;

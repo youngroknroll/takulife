@@ -1,20 +1,15 @@
-"""Archive-domain fixtures: loosely-coupled record factories.
+"""archive 도메인 픽스처: 느슨하게 결합된 레코드 팩토리 모음.
 
-Mirrors the root conftest's factory pattern (callable-returning fixtures, kwargs
-overrides) for the four archive models plus visit-record photos. Each factory
-takes the owning user (and, where relevant, the event/personal_entry subject)
-explicitly so call sites keep full control over exactly-one-subject wiring.
+루트 conftest의 팩토리 패턴(호출 가능 객체를 반환하는 픽스처, kwargs로 덮어쓰기)을
+archive의 네 모델과 방문 사진에 맞춰 따른다. 각 팩토리는 소유 user를(관련 있으면
+event/personal_entry 대상도) 명시적으로 받아, 호출부가 '대상은 정확히 하나'
+규칙을 직접 통제하게 한다.
 
-Signature asymmetry between the factories is intentional, not an oversight:
-make_status/make_interest take `event` as a plain positional-or-keyword
-argument because UserEventStatus/EventInterest are event-only models — there
-is only one possible subject, so positional use reads naturally. make_visit
-takes `event`/`personal_entry` as keyword-only (after `*`) because VisitRecord
-is either-or on its subject, and keyword-only forces the caller to name which
-one they mean instead of relying on position. make_entry's keyword-only
-`kind`/`title` are keyword-only for a different reason — PersonalEntry has no
-event/personal_entry choice at all, they are just its own config fields with
-defaults, kept keyword-only for readability at the call site.
+팩토리 간 시그니처가 다른 것은 의도된 설계다: make_status/make_interest는
+event 전용 모델이라 `event`를 위치/키워드 겸용으로 받고, make_visit은
+VisitRecord가 event/personal_entry 둘 중 하나이므로 `*` 뒤 키워드 전용으로
+받아 호출자가 어느 쪽인지 명시하게 강제한다. make_entry의 `kind`/`title`는
+선택할 대상이 없는 자체 설정값이라 가독성을 위해 키워드 전용으로 뒀다.
 """
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -82,7 +77,7 @@ def make_visit_photo(db, png_bytes):
 
 @pytest.fixture
 def make_entries(make_entry):
-    """N PersonalEntry rows titled "<title_prefix> 00", "<title_prefix> 01", ..."""
+    """"<title_prefix> 00", "<title_prefix> 01", ... 형태 제목의 PersonalEntry N개."""
     def _make(user, count, *, title_prefix="항목", **kwargs):
         return [make_entry(user, title=f"{title_prefix} {i:02d}", **kwargs) for i in range(count)]
 
@@ -91,7 +86,7 @@ def make_entries(make_entry):
 
 @pytest.fixture
 def make_statuses(make_status, make_event):
-    """N UserEventStatus rows, one per freshly-made Event titled "<title_prefix> 00", ..."""
+    """"<title_prefix> 00", ... 제목으로 새로 만든 Event마다 하나씩, UserEventStatus N개."""
     def _make(user, count, *, title_prefix="Event", **kwargs):
         return [
             make_status(user, make_event(title=f"{title_prefix} {i:02d}"), **kwargs)
@@ -103,7 +98,7 @@ def make_statuses(make_status, make_event):
 
 @pytest.fixture
 def make_visits(make_visit, make_event):
-    """N VisitRecord rows, one per freshly-made Event titled "<title_prefix> 00", ..."""
+    """"<title_prefix> 00", ... 제목으로 새로 만든 Event마다 하나씩, VisitRecord N개."""
     def _make(user, count, *, title_prefix="Visit", **kwargs):
         kwargs.setdefault("visited_on", "2026-01-01")
         return [

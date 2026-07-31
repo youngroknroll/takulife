@@ -187,20 +187,17 @@ def test_인증된_사용자가_행사_상태를_수정하면_새_상태로_반�
 
 @pytest.mark.django_db
 def test_지난_행사에서_계획으로_되돌리면_missed_overridden이_고정되어_계획_상태를_유지한다(client, make_user, make_event, make_status):
-    """Reverting an auto-missed (past planned) row to planned must stick.
-
-    Without the override flag the read-time derivation would immediately show
-    'missed' again. The PATCH must persist missed_overridden so the user's
-    'keep planned' choice wins. (The derived-status queryset assertion for
-    this same scenario lives in test_archive_missed_status.py, reconstructed
-    via ORM — this test only covers the HTTP/DB-state contract of the PATCH.)
+    """자동 '놓침' 처리된 행을 다시 '계획'으로 되돌릴 때, missed_overridden 플래그가
+    없으면 조회 시점에 곧바로 다시 '놓침'으로 파생되어 버린다. 이 PATCH는 그
+    플래그를 저장해 사용자의 선택을 유지해야 한다. (같은 시나리오의 파생 상태
+    쿼리셋 검증은 test_archive_missed_status.py에 있다.)
     """
     user = make_user(email="revert-user@example.com", username="revert-user")
     event = make_event(
         title="Long-past event",
         publish_status=Event.PublishStatus.PUBLISHED,
         start_date=date(2020, 1, 1),
-        end_date=date(2020, 1, 2),  # firmly in the past relative to any real today
+        end_date=date(2020, 1, 2),  # 확실히 과거인 날짜
     )
     status = make_status(user, event, status="planned")
     status_id = status.id
@@ -259,9 +256,8 @@ def test_인증된_사용자가_행사_상태를_삭제하면_이후_조회에�
 
 
 # ---------------------------------------------------------------------------
-# CAL-2-13 — (신설) DELETE must go through remove_user_event_status so a
-# status_removed ActivityLogEntry is recorded (perform_destroy wiring
-# regression guard, dual-calendar Test List §단계 2)
+# CAL-2-13 — DELETE는 remove_user_event_status를 거쳐 status_removed
+# ActivityLogEntry가 기록되어야 한다 (perform_destroy 배선 회귀 가드)
 # ---------------------------------------------------------------------------
 
 
@@ -288,7 +284,6 @@ def test_상태_삭제_API를_호출하면_status_removed_활동_이력이_기�
 
 @pytest.mark.django_db
 def test_status_필드_없이_PATCH하면_상태_전환_없이_저장된다(client, make_event, make_user):
-    """(moved from tests/core/test_coverage_supplements.py)"""
     user = make_user()
     event = make_event(title="상태 전환")
     status_obj = UserEventStatus.objects.create(
@@ -296,8 +291,7 @@ def test_status_필드_없이_PATCH하면_상태_전환_없이_저장된다(clie
     )
 
     client.force_login(user)
-    # No status in the payload → validated status is None → the plain save()
-    # arm (no transition) runs.
+    # status 필드가 없으면 검증된 status는 None이 되어 전환 없이 그냥 저장만 된다.
     resp = client.patch(
         f"/api/user-event-statuses/{status_obj.id}/",
         data={},
@@ -311,7 +305,7 @@ def test_status_필드_없이_PATCH하면_상태_전환_없이_저장된다(clie
 
 @pytest.mark.django_db
 def test_interested를_status로_등록하려_하면_400으로_거부된다(client, make_user, make_event):
-    """After removing 'interested' from UserEventStatus choices, the API must reject it."""
+    """UserEventStatus의 choices에서 'interested'를 제거한 뒤 API도 이를 거부해야 한다."""
     user = make_user(email="status-interested-reject@example.com", username="status-interested-reject")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -327,10 +321,9 @@ def test_interested를_status로_등록하려_하면_400으로_거부된다(clie
 
 
 # ---------------------------------------------------------------------------
-# §6-b Deferred: a status-only PATCH must not recreate the drift 0016
-# corrected — a subject with an existing VisitRecord can't be reverted to
-# planned or marked missed via this endpoint (collection domain design plan
-# §5 acceptance criterion 5).
+# §6-b Deferred: status만 바꾸는 PATCH가 마이그레이션 0016이 고친 불일치를
+# 재현하면 안 된다 — VisitRecord가 있는 대상은 이 엔드포인트로 계획/놓침으로
+# 되돌릴 수 없다 (컬렉션 도메인 설계안 §5 수용 기준 5).
 # ---------------------------------------------------------------------------
 
 
@@ -383,9 +376,8 @@ def test_방문_기록이_있는_상태에서_놓침으로_변경하려_하면_4
 def test_방문_기록을_삭제한_뒤에는_계획으로_되돌리기가_허용된다(
     client, make_user, make_event, make_status, make_visit
 ):
-    """The mis-recorded-data recovery path (delete the record, then revert to
-    planned) must stay open — the guard only blocks while a VisitRecord still
-    exists for the subject."""
+    """잘못 기록된 데이터를 복구하는 경로(기록 삭제 후 계획으로 되돌리기)는
+    열려 있어야 한다 — 가드는 VisitRecord가 남아 있는 동안만 막는다."""
     user = make_user(email="recovery-path@example.com", username="recovery-path")
     event = make_event(title="Visited event", publish_status=Event.PublishStatus.PUBLISHED)
     status = make_status(user, event, status="visited")
@@ -406,11 +398,10 @@ def test_방문_기록을_삭제한_뒤에는_계획으로_되돌리기가_허�
 
 
 # ---------------------------------------------------------------------------
-# The VisitRecord invariant above only closed the PATCH path. DELETE is not
-# guarded (§6-b Deferred, product decision pending) and creates a fresh row,
-# so DELETE followed by a POST could still recreate the exact drift 0016
-# corrected: a `planned`/`missed` status row coexisting with a VisitRecord.
-# create_user_event_status needs the same _has_visit_record guard.
+# 위의 VisitRecord 불변조건은 PATCH 경로만 막았다. DELETE는 가드되지 않아
+# (§6-b Deferred, 제품 결정 보류) 새 행을 만들 수 있으므로, DELETE 후 POST가
+# 0016이 고친 불일치(`planned`/`missed` 상태와 VisitRecord 공존)를 재현할 수
+# 있다. create_user_event_status에도 같은 _has_visit_record 가드가 필요하다.
 # ---------------------------------------------------------------------------
 
 
@@ -418,9 +409,8 @@ def test_방문_기록을_삭제한_뒤에는_계획으로_되돌리기가_허�
 def test_방문_기록이_남아있는_상태에서_계획_상태를_새로_생성하려_하면_400으로_거부된다(
     client, make_user, make_event, make_status, make_visit
 ):
-    """Reproduces the delete-then-recreate drift: a visited status row is
-    deleted, then a fresh 'planned' creation for the same subject must be
-    rejected because its VisitRecord still exists."""
+    """삭제 후 재생성 불일치를 재현한다: visited 상태 행을 삭제한 뒤 같은
+    대상으로 'planned'를 새로 만들면, VisitRecord가 남아 있으므로 거부되어야 한다."""
     user = make_user(email="create-blocked@example.com", username="create-blocked")
     event = make_event(title="Visited event", publish_status=Event.PublishStatus.PUBLISHED)
     status = make_status(user, event, status="visited")
@@ -466,8 +456,8 @@ def test_방문_기록이_남아있는_상태에서_놓침_상태를_새로_생�
 
 @pytest.mark.django_db
 def test_방문_기록과_일치하는_방문완료_상태를_새로_생성하면_허용된다(client, make_user, make_event, make_visit):
-    """A fresh 'visited' creation matching an existing VisitRecord is not
-    drift — it agrees with the record instead of contradicting it."""
+    """기존 VisitRecord와 일치하는 'visited' 신규 생성은 불일치가 아니다 —
+    기록과 모순되지 않고 일치하기 때문이다."""
     user = make_user(email="create-visited-ok@example.com", username="create-visited-ok")
     event = make_event(title="Visited event", publish_status=Event.PublishStatus.PUBLISHED)
     make_visit(user, event=event, visited_on="2026-07-15")
@@ -485,8 +475,8 @@ def test_방문_기록과_일치하는_방문완료_상태를_새로_생성하�
 
 @pytest.mark.django_db
 def test_방문_기록이_없으면_계획_상태_생성이_영향받지_않는다(client, make_user, make_event):
-    """No-regression baseline: creating 'planned' with no VisitRecord at all
-    stays unaffected by the new guard."""
+    """회귀 없음 기준선: VisitRecord가 전혀 없을 때 'planned' 생성은 새 가드의
+    영향을 받지 않아야 한다."""
     user = make_user(email="create-planned-ok@example.com", username="create-planned-ok")
     event = make_event(title="Fresh event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -504,8 +494,8 @@ def test_방문_기록이_없으면_계획_상태_생성이_영향받지_않는�
 def test_개인_장소의_방문_기록이_있는_상태에서_계획_상태를_생성하려_하면_400으로_거부된다(
     client, make_user, make_entry, make_visit
 ):
-    """_has_visit_record covers both subjects (event and personal_entry) —
-    the create guard must reject on the personal_entry subject too."""
+    """_has_visit_record는 event와 personal_entry 두 대상 모두를 다룬다 —
+    생성 가드도 personal_entry 대상에서 동일하게 거부해야 한다."""
     user = make_user(email="create-entry-blocked@example.com", username="create-entry-blocked")
     entry = make_entry(user, title="개인 장소")
     make_visit(user, personal_entry=entry, visited_on="2026-07-15")
@@ -523,8 +513,8 @@ def test_개인_장소의_방문_기록이_있는_상태에서_계획_상태를_
 
 @pytest.mark.django_db
 def test_다른_사용자의_방문_기록은_내_계획_상태_생성을_막지_않는다(client, make_user, make_event, make_visit):
-    """Cross-user isolation: another user's VisitRecord for the same event
-    must not block this user's own fresh 'planned' creation."""
+    """사용자 간 격리: 같은 행사에 대한 다른 사용자의 VisitRecord가 이 사용자의
+    'planned' 신규 생성을 막아서는 안 된다."""
     owner = make_user(email="cross-owner@example.com", username="cross-owner")
     other = make_user(email="cross-other@example.com", username="cross-other")
     event = make_event(title="Shared event", publish_status=Event.PublishStatus.PUBLISHED)

@@ -1,15 +1,8 @@
 /**
- * disclosure.js — generic collapse/expand toggle.
- *
- * DOM contract:
- *   [data-disclosure]        — the collapsible container; its
- *                               data-expanded attribute ("true"/"false")
- *                               drives the CSS (see calendar filter panels).
- *   [data-disclosure-toggle] — a button inside a [data-disclosure] ancestor;
- *                               clicking it flips that ancestor's
- *                               data-expanded value.
- *
- * Multiple independent instances are supported per page.
+ * 범용 접기/펼치기 토글. [data-disclosure] 컨테이너의 data-expanded
+ * 속성값(true/false)을 CSS가 그대로 읽어 보이기·숨기기를 결정한다.
+ * [data-disclosure-toggle] 버튼을 누르면 조상 컨테이너의 값이 뒤집힌다.
+ * 한 페이지에 여러 개를 독립적으로 둘 수 있다.
  */
 (function () {
   "use strict";

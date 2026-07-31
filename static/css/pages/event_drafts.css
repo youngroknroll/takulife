@@ -1,18 +1,15 @@
   .page {
     max-width: 1160px;
   }
-  /* ── console density pass (PR-C2): shave panel/hero padding one step
-     and move literal body font-sizes onto the --fs-md/--fs-sm/--fs-xs
-     scale. Tokens only, no new colors. Button/link min-height untouched. */
+  /* 패널·히어로 패딩을 한 단계 줄이고 본문 글자 크기를 토큰(--fs-md 등)으로
+     옮긴다. 버튼·링크의 최소 높이는 그대로 둔다. */
   .panel {
     padding: 0.75rem;
   }
   .hero {
     padding: 0.875rem;
   }
-  /* "URL로 드래프트 생성" disclosure: a plain-text <summary> gave no
-     clickable affordance, so style it as an interactive control with a
-     rotating chevron and hover state (user request). */
+  /* 기본 <summary>는 클릭 가능해 보이지 않아, 회전 화살표와 호버 상태를 넣어 인터랙티브 컨트롤처럼 보이게 했다. */
   details > summary {
     cursor: pointer;
     list-style: none;
@@ -44,8 +41,7 @@
   details[open] > summary {
     margin-bottom: 0.5rem;
   }
-  /* Closed disclosure sat flush against the filter chips row below it —
-     give the element itself panel-rhythm spacing (not just [open]). */
+  /* 닫힌 상태에서 아래 필터 칩 줄에 딱 붙어 보이지 않도록 여백을 준다. */
   .panel > details {
     margin-bottom: 0.75rem;
   }
@@ -90,11 +86,8 @@
     display: grid;
     gap: 0.625rem;
   }
-  /* Compact selection header, left-aligned above the checkbox column it
-     controls (Gmail-style select-all, user request) — rendered only on
-     the 검토대기 filter (template-gated: bulk approval only applies to
-     pending drafts), so width: fit-content keeps it from spanning the
-     full list width. */
+  /* 검토대기 필터에서만 렌더링되는 일괄 선택 도구줄(지메일식 전체선택)이라
+     width: fit-content로 전체 목록 너비까지 늘어나지 않게 한다. */
   .bulk-toolbar {
     display: flex;
     align-items: center;
@@ -107,16 +100,14 @@
     margin-bottom: 0.625rem;
     width: fit-content;
   }
-  /* Deliberately below the site's usual 44px tap-target minimum — explicit
-     user request to shrink this button now that the toolbar itself is a
-     compact, right-aligned box rather than a full-width bar. */
+  /* 44px 터치 타깃 기준보다 작다 — 도구줄이 전체 폭 막대가 아니라 작은
+     박스로 바뀌어 사용자 요청으로 버튼도 함께 줄인 승인된 예외다. */
   .bulk-toolbar #bulk-approve-btn {
     min-height: 34px;
     padding: 0.375rem 0.625rem;
     font-size: var(--fs-sm);
   }
-  /* Scoped to the toolbar only — the per-card .draft-select checkbox
-     column below keeps its fixed 2.75rem width for row alignment. */
+  /* 이 도구줄에만 적용한다 — 카드별 .draft-select는 줄 정렬을 위해 2.75rem 고정폭을 유지한다. */
   .bulk-toolbar .draft-select {
     width: auto;
   }

@@ -1,8 +1,4 @@
-"""Public events API analytics event recording
-(PR-0e checkpoints B10, B11).
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
-"""
+"""공개 행사 API의 분석 이벤트 기록을 검증한다."""
 import pytest
 
 from core.models import AnalyticsEvent

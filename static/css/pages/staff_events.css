@@ -57,8 +57,7 @@
     background: var(--amber-soft);
     color: var(--amber-ink);
   }
-  /* ── PR-E2 edit form (staff/events/edit.html shares this file with
-     list.html per plan — no new CSS file for the edit page). ── */
+  /* staff/events/edit.html은 list.html과 이 파일을 함께 쓴다(수정 페이지 전용 CSS 없음). */
   .detail-topline {
     margin: 0 0 0.75rem;
   }
@@ -79,9 +78,7 @@
     font-size: 0.8rem;
     font-weight: 700;
   }
-  /* 잉크 리터럴 개별 다크 오버라이드 — 신규 토큰 통합 없이 --muted 다크값과
-     동일한 #A2A9B9로 직접 대응(다크모드 팔레트 문서 "크롬·그림자·잉크
-     리터럴", 계획상 Deferred). */
+  /* 이 글자색은 토큰화 대신 --muted의 다크값(#A2A9B9)을 그대로 리터럴로 맞춰둔 것이다. */
   :root[data-theme="dark"] .field label {
     color: #a2a9b9;
   }
@@ -125,7 +122,7 @@
     padding: 0.625rem 0.75rem;
     min-height: 44px;
   }
-  /* ── PR-E3 publish-toggle/delete sections (edit.html) ── */
+  /* 게시 전환/삭제 섹션(edit.html)용 */
   .action-button.secondary {
     border-color: var(--line);
     background: var(--bg-card);

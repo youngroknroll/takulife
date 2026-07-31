@@ -1,8 +1,7 @@
-"""StaffActionLog (staff-owned audit model) — PR-2 sub-step C.
+"""StaffActionLog(스태프 감사 로그) 검증.
 
-Append-only audit trail for draft approve/reject actions. Read access is
-restricted to superusers via the Django admin; staff (is_staff, non-super)
-must not be able to view or manage log entries there.
+승인·거부 등 행위 기록은 추가만 되고 지워지지 않는다. 어드민 조회는
+슈퍼유저만 가능하며 일반 스태프는 열람·관리할 수 없다.
 """
 import pytest
 from django.contrib import admin
@@ -159,10 +158,7 @@ def test_슈퍼유저도_액션_로그_어드민에서_추가_수정_삭제는_�
 
 @pytest.mark.django_db
 def test_이벤트_crud_액션_값은_필드_길이_제한_안에서_정상_저장된다(make_event):
-    """PR-E3: create/unpublish/republish/delete actions all fit the existing
-    max_length=16 Action field — a value that overflowed it would raise a
-    DataError (Postgres) rather than silently truncating.
-    """
+    """행사 CRUD 액션 값이 Action 필드 max_length=16을 넘으면 저장 시 DataError가 나야 한다."""
     event = make_event(official_url="https://example.com/crud-actions")
 
     for action in (

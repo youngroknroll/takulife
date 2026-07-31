@@ -1,57 +1,37 @@
-"""Management command: discover_drafts
+"""관리 명령어: discover_drafts
 
-Walks enabled DraftSource rows, fetches each source's listing (RSS/sitemap/
-HTML), extracts candidate event-page URLs (drafts.discovery), and creates a
-PENDING EventDraft for every candidate that is not already known and is not
-disallowed by robots.txt (drafts.robots) — see prompt_plan.md §2-1/§2-2/§2-5
-and scratchpad pr3-test-design.md for the full design rationale.
+활성화된 DraftSource를 순회하며 목록(RSS/사이트맵/HTML)을 가져오고, 후보 행사 URL을
+추출한 뒤(drafts.discovery), 아직 모르는 URL이면서 robots.txt가 막지 않은 것만
+(drafts.robots) PENDING EventDraft로 만든다.
 
-Flag gate: DRAFT_DISCOVERY_ENABLED defaults to False (§2-5) — until an
-operator turns it on this command is a no-op with a clean exit (never a
-CommandError; being off is an intended, not a failure, state).
+플래그: DRAFT_DISCOVERY_ENABLED는 기본 False다. 운영자가 켜기 전까지 이 명령은
+조용히 종료하며(CommandError 아님) — 꺼진 상태는 실패가 아니라 의도된 상태다.
 
-Two phases per run:
-1. Listing phase (per source, isolated by try/except): robots-check the
-   listing URL itself, fetch it, extract raw candidate URLs. This is also
-   where `last_checked_at`/`last_error` are decided — that field reflects
-   only this listing-level outcome (PO decision 3, pr3-test-design.md),
-   never a later per-candidate result. A listing fetch/parse failure is a
-   "real" error (counted, reported, isolated to this source) but a robots
-   outcome at this level is always a normal skip. Each source's result is
-   captured as an immutable `_ListingOutcome` rather than mutating a shared
-   counter, so `handle()` never hands its running totals to code it does not
-   control.
-2. Candidate phase: every candidate collected across *all* sources in phase
-   1 is deduped against EventDraft.objects (state-agnostic — a REJECTED
-   draft's source_url still counts as known) in a single batch query, before
-   any of them is created. Doing this as one batch (rather than re-querying
-   per source) is what makes a same-run collision between two different
-   sources' candidates for the same URL exercise create_draft_from_url's
-   real IntegrityError -> DraftCreationDuplicateError path, instead of the
-   second source's own dedup query silently absorbing it. Each surviving
-   candidate then gets its own robots.txt can_fetch check (candidate paths
-   are not covered by the listing URL's robots outcome) before
-   create_draft_from_url is attempted, bounded by two independent budgets:
-   DRAFT_DISCOVERY_MAX_PER_RUN (total creations, across every source) and
-   DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE (fetch attempts — robots checks +
-   create_draft_from_url calls — per source, so a source that yields mostly
-   empty/duplicate candidates cannot be re-hit indefinitely while chasing
-   the creation cap). A candidate removed by the dedup batch above never
-   touches either budget. The per-source fetch budget and running creation
-   count are inherently sequential bookkeeping (each decision depends on
-   every earlier one in the same run) and stay local to `_process_candidates`;
-   the per-candidate decision itself (`_decide_and_create_candidate`) takes
-   that state as plain values and returns an immutable `_CandidateOutcome`
-   rather than mutating anything it was handed.
+한 번 실행에 두 단계를 거친다.
+1단계(소스별): 목록 URL 자체를 robots 확인 → fetch → 후보 URL 추출. 이 단계의
+   성공/실패만 source의 last_checked_at/last_error에 반영한다(이후 후보 단계 결과는
+   반영하지 않는다). 목록 fetch·파싱 실패는 "진짜" 에러로 집계하지만, robots 결과는
+   항상 평범한 스킵으로 취급한다. 각 소스 결과는 공유 카운터를 바꾸는 대신 불변
+   _ListingOutcome으로 담는다.
+2단계(후보, 전체 소스 합산): 1단계에서 모인 모든 후보를 한 번에 배치 쿼리로
+   EventDraft.objects와 대조해 중복을 거른다(상태 무관 — REJECTED여도 이미 아는
+   URL로 친다). 소스별로 따로 조회하지 않고 한 배치로 처리해야, 같은 실행 안에서
+   서로 다른 소스가 같은 URL을 후보로 올렸을 때 실제 IntegrityError ->
+   DraftCreationDuplicateError 경로를 타게 된다(두 번째 소스의 자체 dedup이
+   조용히 삼키지 않는다). 살아남은 후보마다 다시 robots.txt can_fetch를 확인하고
+   (목록 URL의 robots 결과는 개별 후보 경로를 대신하지 않는다), 두 가지 독립된
+   상한 안에서 생성한다: DRAFT_DISCOVERY_MAX_PER_RUN(전체 생성 수)과
+   DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE(소스별 fetch 시도 수 — robots 확인 +
+   create_draft_from_url 호출 — 빈 결과·중복만 내는 소스가 생성 상한을 노리며
+   끝없이 재시도하지 못하게 막는다). dedup에서 걸러진 후보는 두 예산 중 어느
+   것도 소비하지 않는다.
 
-Fatal vs skip (PO decision 2): a source's own listing fetch/parse failure,
-and any candidate creation failure other than DraftCreationDuplicateError or
-DraftCreationEmptyExtractionError, are the only "real" errors. They never
-abort the run (isolated per source/candidate) but are collected and raised
-as a single CommandError at the end, so a partial failure is visible to
-whoever runs (or schedules) this command. robots.txt outcomes — disallowed
-or fetch-failed, at either the listing or the candidate level — are always a
-normal skip, never fatal.
+에러 분류: 소스의 목록 fetch/파싱 실패, 그리고 DraftCreationDuplicateError·
+DraftCreationEmptyExtractionError를 제외한 후보 생성 실패만 "진짜" 에러다. 이런
+에러는 실행을 중단시키지 않고(소스/후보 단위로만 격리) 모아서 마지막에
+CommandError 하나로 올려, 실행자(또는 스케줄러)가 부분 실패를 알 수 있게 한다.
+robots.txt 결과(불허·fetch 실패, 목록/후보 어느 단계든)는 항상 평범한 스킵이며
+절대 치명적이지 않다.
 """
 import time
 from dataclasses import dataclass
@@ -71,16 +51,14 @@ from drafts.services import (
 )
 
 
-# Small pause between per-source listing requests so a run does not hammer
-# several source hosts back-to-back — a module constant (not a settings
-# entry) so tests can monkeypatch time.sleep directly without needing an
-# override_settings just to make the suite instant.
+# 여러 소스를 연달아 두드리지 않도록 소스별 목록 요청 사이에 짧게 쉰다. 설정값이
+# 아니라 모듈 상수로 둬야 테스트가 override_settings 없이 time.sleep만 몽키패치해
+# 순식간에 돌릴 수 있다.
 INTER_REQUEST_DELAY_SECONDS = 1
 
-# rss/sitemap listings are XML, not HTML — fetch_html's default content-type
-# allowlist would reject them (`allowed_content_types` *replaces* the
-# default, it does not merge with it — see fetch_html's docstring). html
-# listings keep fetch_html's own default by passing None through.
+# rss/sitemap 목록은 HTML이 아니라 XML이라 fetch_html 기본 content-type
+# 허용목록으로는 거부된다(allowed_content_types는 병합이 아니라 대체 — fetch_html
+# 설명 참고). html 목록은 None을 넘겨 fetch_html 기본값을 그대로 쓴다.
 _XML_LISTING_CONTENT_TYPES = (
     "application/xml",
     "text/xml",
@@ -169,12 +147,11 @@ def _mark_source_checked(source, *, error):
 
 
 def _process_listing(source, robots_checker):
-    """Phase 1 for one source: robots-check + fetch + extract the listing.
+    """소스 하나에 대한 1단계: robots 확인 + fetch + 목록 추출.
 
-    Persists `last_checked_at`/`last_error` as its one intentional side
-    effect (that write *is* this function's contract — see module
-    docstring), then returns an immutable `_ListingOutcome` describing what
-    happened, rather than mutating a counter the caller owns.
+    last_checked_at/last_error를 갱신하는 것이 이 함수의 유일하고 의도된
+    부작용이며(모듈 설명 참고), 결과는 호출자의 카운터를 바꾸지 않고 불변
+    _ListingOutcome으로 돌려준다.
     """
     listing_result = robots_checker.check(source.url)
     if not listing_result.allowed:
@@ -186,7 +163,7 @@ def _process_listing(source, robots_checker):
         content_types = _LISTING_CONTENT_TYPES_BY_SOURCE_TYPE[source.source_type]
         content = fetch_html(source.url, allowed_content_types=content_types)
     except Exception as exc:
-        # except-ok: failure is recorded on source.error and shown in the staff console
+        # except-ok: 실패는 source.error에 기록되고 스태프 콘솔에 표시된다
         _mark_source_checked(source, error=f"목록 fetch 실패: {exc}")
         return _ListingOutcome(errored=True)
 
@@ -197,7 +174,7 @@ def _process_listing(source, robots_checker):
             )
         )
     except Exception as exc:
-        # except-ok: failure is recorded on source.error and shown in the staff console
+        # except-ok: 실패는 source.error에 기록되고 스태프 콘솔에 표시된다
         _mark_source_checked(source, error=f"목록 파싱 실패: {exc}")
         return _ListingOutcome(errored=True)
 
@@ -206,15 +183,13 @@ def _process_listing(source, robots_checker):
 
 
 def _process_candidates(candidates_by_source, robots_checker, stderr):
-    """Phase 2, across every source's candidates at once (see module
-    docstring for why this must be one batch dedup rather than per source).
+    """모든 소스의 후보를 한 번에 처리하는 2단계다(소스별이 아니라 한 배치여야
+    하는 이유는 모듈 설명 참고).
 
-    The per-source fetch budget and the running creation count are
-    inherently sequential (each candidate's decision depends on every
-    earlier one in this same run), so they stay as ordinary local
-    bookkeeping in this one function; `_decide_and_create_candidate` itself
-    receives that state as plain values and returns a new `_CandidateOutcome`
-    rather than mutating anything passed in.
+    소스별 fetch 예산과 누적 생성 수는 본질적으로 순차적이라(각 후보의 판단이
+    이 실행 안의 앞선 판단에 의존한다) 이 함수 안 지역 변수로만 관리하고,
+    _decide_and_create_candidate는 그 상태를 값으로만 받아 새 _CandidateOutcome을
+    돌려줄 뿐 아무것도 직접 바꾸지 않는다.
     """
     all_urls = [url for _source, urls in candidates_by_source for url in urls]
     if not all_urls:
@@ -243,10 +218,9 @@ def _process_candidates(candidates_by_source, robots_checker, stderr):
             )
             if outcome.consumed_fetch_budget:
                 fetch_budgets[source.pk] -= 1
-                # Etiquette pause after every candidate that actually hit
-                # the network (a robots check, at minimum) — the flat floor
-                # or the host's own published Crawl-delay, whichever is
-                # larger. A held-back/deduped candidate never reaches here.
+                # 네트워크를 실제로 두드린 후보마다(최소 robots 확인은 함) 예의상
+                # 쉰다 — 기본 최소값과 호스트가 공표한 Crawl-delay 중 더 큰 쪽을
+                # 쓴다. 보류되거나 중복 제거된 후보는 여기 오지 않는다.
                 time.sleep(max(INTER_REQUEST_DELAY_SECONDS, robots_checker.crawl_delay(url) or 0))
             if outcome.created:
                 created_count += 1
@@ -275,9 +249,9 @@ def _decide_and_create_candidate(
     except DraftCreationEmptyExtractionError:
         return _CandidateOutcome(consumed_fetch_budget=True, skip_key="empty")
     except Exception as exc:
-        # Only the URL and the exception's class name — never str(exc),
-        # which could echo back response bodies or other fetched content.
-        # except-ok: reported to stderr with the exception class name only
+        # URL과 예외 클래스 이름만 남긴다 — str(exc)는 응답 본문 등 가져온 내용을
+        # 그대로 노출할 수 있어 쓰지 않는다.
+        # except-ok: 예외 클래스 이름만 stderr에 남긴다
         stderr.write(f"후보 생성 실패 {url}: {type(exc).__name__}")
         return _CandidateOutcome(consumed_fetch_budget=True, errored=True)
 
@@ -285,9 +259,8 @@ def _decide_and_create_candidate(
 
 
 def _summarize(listing_outcomes, candidate_outcomes):
-    """Pure aggregation: builds one fresh stats dict from the immutable
-    outcome lists collected above — nothing here mutates an accumulator
-    that was passed in from outside."""
+    """순수 집계 함수: 위에서 모은 불변 결과 목록으로 새 통계 dict를 만든다.
+    외부에서 받은 누산기를 바꾸는 일은 없다."""
     listing = [outcome for _source, outcome in listing_outcomes]
     all_outcomes = listing + candidate_outcomes
     skip_keys = [outcome.skip_key for outcome in all_outcomes if outcome.skip_key]

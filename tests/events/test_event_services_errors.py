@@ -1,9 +1,9 @@
-"""Tests for the defensive error branches in events.services.
+"""events.services의 방어적 오류 처리 분기를 검증한다.
 
-- create_published_event maps a unique-constraint IntegrityError (the TOCTOU
-  race past the pre-check) onto DuplicateOfficialUrlError.
-- set_event_poster swallows-and-logs a storage cleanup failure instead of
-  propagating it (the upload always wins).
+- create_published_event: 사전 검사를 통과한 뒤에도 경합으로 발생하는
+  무결성 오류(TOCTOU)를 DuplicateOfficialUrlError로 변환한다.
+- set_event_poster: 기존 파일 정리가 실패해도 예외를 전파하지 않고
+  로그만 남긴 뒤 업로드를 그대로 진행한다.
 """
 import pytest
 from django.core.files.base import ContentFile
@@ -24,8 +24,8 @@ pytestmark = pytest.mark.domain
 @pytest.mark.django_db
 class TestCreatePublishedEventRace:
     def test_생성_경합으로_무결성_오류가_발생하면_공식_URL_중복_예외로_변환된다(self, monkeypatch):
-        # Pre-check passes (no existing row), but the INSERT races and fails with
-        # IntegrityError → mapped to DuplicateOfficialUrlError.
+        # 사전 검사는 통과하지만 실제 INSERT가 경합으로 실패해
+        # DuplicateOfficialUrlError로 변환되는지 확인한다.
         def boom(*args, **kwargs):
             raise IntegrityError("duplicate key")
 
@@ -43,14 +43,13 @@ class TestSetEventPosterCleanupFailure:
         event = make_event(title="포스터 교체")
         event.poster_image.save("old.png", ContentFile(png_bytes()), save=True)
 
-        # Make the old-file cleanup raise; set_event_poster must log and continue.
+        # 기존 파일 정리가 실패하도록 만든다; set_event_poster는 로그만 남기고 계속돼야 한다.
         def raising_delete(self, name):
             raise OSError("storage delete failed")
 
         monkeypatch.setattr(FileSystemStorage, "delete", raising_delete)
 
-        # Should NOT raise despite the cleanup failure.
         set_event_poster(event=event, image=ContentFile(png_bytes(), name="new.png"))
 
         event.refresh_from_db()
-        assert event.poster_image  # new poster assigned, upload won
+        assert event.poster_image

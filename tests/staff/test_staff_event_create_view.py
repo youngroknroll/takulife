@@ -1,10 +1,7 @@
-"""staff.views.staff_event_create — PR-E3 C (/staff/events/new/ SSR form).
+"""이벤트 생성 페이지(/staff/events/new/) 검증.
 
-Mirrors test_staff_event_edit_views.py conventions: staff_console_required
-gate, GET renders a blank form, POST-PRG creates via create_published_event
-(the shared publish choke-point — no alternate creation path), invariant
-violations map to field errors with the POSTed values preserved, and a
-success writes a StaffActionLog(event_create).
+생성은 반드시 create_published_event를 거치는 유일한 경로이며, 규칙 위반은
+필드 오류로 매핑되고 성공 시 StaffActionLog(event_create)를 남긴다.
 """
 import pytest
 

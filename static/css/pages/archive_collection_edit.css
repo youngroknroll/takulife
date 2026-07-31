@@ -1,21 +1,13 @@
-/* archive_collection_edit.css — /collection/<id>/edit/ editorial rebuild.
-   Design source: "굿즈 수정 페이지 (에디토리얼).dc.html" (2026-07-28).
+/* /collection/<id>/edit/ 페이지 전용 CSS. 디자인 출처: "굿즈 수정 페이지 (에디토리얼).dc.html".
 
-   Loaded alongside archive_collection.css, which already supplies every
-   `.collection-form-*` class this page reuses verbatim (head, subtitle,
-   legend, grid, image/fields columns, group, row--even, input skin, type
-   chips, error banner, dropzone). This file only adds the edit-only pieces
-   the create page has no equivalent for: the back-link (create page's
-   equivalent, `.collection-detail-back-link`, belongs to
-   archive_collection_detail.css and is not loaded here), the is_wanted
-   segmented toggle, the flat "상세 정보" divider replacing <details>, the
-   read-only visit-record box, and the cover column + actions row layout
-   that differs from the create page's single dropzone/actions block.
+   archive_collection.css와 함께 로드돼 `.collection-form-*` 클래스는 전부
+   그대로 재사용한다. 이 파일은 수정 페이지에만 있는 부분(뒤로가기 링크,
+   보유/구함 토글, "상세 정보" 구분선, 읽기전용 방문기록 박스, 커버 열 +
+   액션 행)만 더한다.
 
-   Scope: everything below is qualified by `.collection-edit-page`, the
-   page-root class this template's <main> carries in addition to
-   `.collection-page` (required for the archive_collection.css classes to
-   apply at all — see that file's own scoping note). */
+   전부 `.collection-edit-page` 스코프다 — 이 템플릿의 <main>이
+   `.collection-page`와 함께 갖는 페이지 루트 클래스로, archive_collection.css
+   클래스가 적용되려면 반드시 필요하다. */
 
 .collection-edit-page .collection-edit-back-link {
   display: inline-block;
@@ -31,14 +23,8 @@
 }
 
 /* ── subtitle: name + registered date, both 1-line ellipsis ──────────── */
-/* `display: flex` block-ifies the two child spans, which collapses the
-   literal leading space the template puts at the start of
-   `.collection-edit-subtitle-date`'s text node (" · {{ date }} 등록") —
-   the same reason `<div> text</div>` shows no gap before "text". `gap`
-   restores that one space's worth of visual separation without touching
-   the template. Only two flex items exist on desktop, so this reads as a
-   single inter-item gap; on mobile the date span is `display: none` (see
-   the @media block below), leaving one item and no gap to render. */
+/* flex로 만들면 템플릿이 넣은 " · {{ date }} 등록" 앞 공백이 사라져서
+   `gap`으로 그 간격을 다시 만들어준다. */
 .collection-edit-page .collection-edit-subtitle-text {
   display: flex;
   gap: 0.25em;
@@ -58,6 +44,8 @@
 
 /* ── static group labels — no <label for>, since the control below isn't
    single-target (the toggle, the read-only visit box) ───────────────── */
+/* 아래 컨트롤이 토글이나 읽기전용 박스처럼 단일 대상이 아니라
+   <label for>를 쓰지 않는다. */
 .collection-edit-page .collection-form-group-label-static {
   margin: 0;
   font-size: 0.8125rem;
@@ -66,11 +54,9 @@
 }
 
 /* ── status segmented toggle over a single checkbox ───────────────────
-   Both labels point at the same input — `<label for>` toggles on click
-   from either side, so the ACTIVE side is given `pointer-events: none`
-   (C3 guard): only the inactive label stays clickable, restoring "click
-   the other one to switch" semantics. Keyboard Space still toggles the
-   checkbox directly and is unaffected by pointer-events. */
+   양쪽 라벨이 같은 체크박스를 가리켜 아무 쪽이나 눌러도 토글된다.
+   그래서 활성 쪽엔 pointer-events: none을 줘 비활성 쪽만 눌리게 한다.
+   키보드 스페이스는 이 속성과 무관하게 그대로 동작한다. */
 .collection-edit-page .collection-edit-toggle {
   position: relative;
   display: inline-flex;
@@ -103,7 +89,7 @@
   font-weight: 600;
   cursor: pointer;
 }
-/* Not-checked → 보유 중 is active. */
+/* 체크 안 됨 → 보유 중이 활성. */
 .collection-edit-page .collection-edit-toggle-input:not(:checked) ~ .collection-edit-toggle-option--owned {
   background: var(--surface);
   color: var(--brand-ink);
@@ -111,7 +97,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   pointer-events: none;
 }
-/* Checked → 구하는 중 is active. */
+/* 체크됨 → 구하는 중이 활성. */
 .collection-edit-page .collection-edit-toggle-input:checked ~ .collection-edit-toggle-option--wanted {
   background: var(--surface);
   color: var(--brand-ink);
@@ -124,9 +110,8 @@
   box-shadow: 0 0 0 3px var(--brand-soft);
 }
 
-/* ── flat "상세 정보 · 선택" divider — replaces the <details> summary
-   the create page still uses; this page's detail block is a plain <div>
-   (values are prefilled and always relevant on edit). ─────────────────── */
+/* ── flat "상세 정보 · 선택" divider ─────────────────────────────────── */
+/* 등록 페이지의 <details> 대신 여기선 값이 이미 채워져 있어 그냥 <div>다. */
 .collection-edit-page .collection-edit-divider {
   display: flex;
   align-items: center;
@@ -186,11 +171,10 @@
   white-space: nowrap;
 }
 
-/* ── cover column — the create page's dropzone is the whole left column;
-   this page adds a label above it and a replace-button row below. The
-   dropzone/img/input rules themselves come unchanged from
-   archive_collection.css's `.collection-form-dropzone` family (C4: the
-   cover box, not the small button, carries that class). ─────────────── */
+/* ── cover column ──────────────────────────────────────────────────── */
+/* 등록 페이지는 드롭존이 왼쪽 열 전체지만, 여기는 위에 라벨과 아래에
+   교체 버튼 행을 더한다. 드롭존 자체 규칙은 archive_collection.css의
+   `.collection-form-dropzone`을 그대로 쓴다. */
 .collection-edit-page .collection-edit-photo-label {
   margin: 0 0 0.4375rem;
   font-size: 0.8125rem;
@@ -200,9 +184,9 @@
 .collection-edit-page .collection-edit-cover {
   margin: 0;
 }
-/* Static — NOT relative — so the reused `input[type=file]{position:absolute}`
-   keeps the cover label (`.collection-form-dropzone`) as its containing
-   block, not this row. */
+/* position을 relative가 아닌 static으로 둬야 재사용된
+   `input[type=file]{position:absolute}`가 이 행이 아닌 드롭존을
+   기준으로 위치를 잡는다. */
 .collection-edit-page .collection-edit-image-row {
   display: flex;
   align-items: center;
@@ -231,8 +215,9 @@
   font-size: 0.75rem;
 }
 
-/* ── actions row: 저장 · 취소 · (spacer) · 굿즈 삭제, DOM order preserved
-   at every breakpoint (no `order`, no row-reverse — WCAG 2.4.3). ─────── */
+/* ── actions row: 저장 · 취소 · (spacer) · 굿즈 삭제 ────────────────── */
+/* 어느 너비에서도 DOM 순서를 그대로 둔다(order·row-reverse 미사용,
+   WCAG 2.4.3). */
 .collection-edit-page .collection-edit-actions-row {
   display: flex;
   align-items: center;
@@ -283,32 +268,19 @@
   border-color: var(--brand);
   color: var(--text);
 }
-/* .collection-form-submit already ships 44px from archive_collection.css;
-   this page's design calls for 46px to match cancel/delete exactly. */
+/* archive_collection.css의 .collection-form-submit은 44px인데, 이 페이지는
+   취소/삭제 버튼과 높이를 맞추려고 46px로 올린다. */
 .collection-edit-page .collection-form-submit {
   height: 46px;
 }
 
-/* ── 404 "item already gone" lock state (BIR MEDIUM) ───────────────────
-   collection.js's lockForm() (collection.js:312-318) disables every
-   `input, select, textarea, button` on a 404 (item already deleted from
-   another tab/device) and stamps them `.is-item-gone-locked`, but two
-   things left the page looking fully alive anyway:
-     1. archive_collection.css's shared input skin (its own
-        "shared input skin" block) unconditionally sets `background`/
-        `color`, which paints over the browser's native disabled dimming.
-     2. The status toggle option labels and the "이미지 교체" label are
-        <label> elements — lockForm's selector list never matches a
-        <label>, so `disabled` (and `.is-item-gone-locked`) never lands on
-        them; only their paired <input> flips.
-   Every rule below is read off the paired <input>'s own `:disabled` state
-   (general sibling / `:has()`), not off `.is-item-gone-locked` directly —
-   so this also degrades gracefully if a control is ever disabled for a
-   different reason. All selectors are scoped under `.collection-edit-page`
-   and only ever match this page's own edit-only classes or elements
-   nested inside `.collection-form` here; archive_collection.css's
-   create-page markup (`/collection/new/`) is a different template and is
-   never in the DOM this stylesheet runs against. */
+/* ── 404 "item already gone" lock state ─────────────────────────────── */
+/* collection.js의 lockForm()이 다른 탭/기기에서 이미 삭제된 항목이면
+   input/select/textarea/button을 disabled로 만든다. 하지만 공용 입력
+   스킨이 background/color를 강제로 정해 브라우저 기본 흐림 효과를
+   가리고, <label> 요소는 애초에 disabled를 못 받는다. 그래서 아래
+   규칙들은 짝을 이루는 <input>의 :disabled 상태를 읽어 라벨 쪽 모습도
+   함께 흐리게 만든다. */
 .collection-edit-page .collection-form input:disabled,
 .collection-edit-page .collection-form select:disabled,
 .collection-edit-page .collection-form textarea:disabled {
@@ -321,47 +293,38 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-/* 취소 is an <a>, so it never receives the `disabled` attribute at all —
-   read the lock off 저장's sibling `.is-item-gone-locked` class instead
-   (DOM order: 저장 then 취소, both children of `.collection-edit-actions`).
-   `pointer-events: none` is load-bearing here, not decorative: unlike a
-   disabled form control, a plain <a href> keeps navigating on click no
-   matter how dim it looks. */
+/* 취소는 <a>라 disabled 속성을 받을 수 없어, 형제인 저장의
+   `.is-item-gone-locked` 클래스로 잠김 여부를 읽는다. `pointer-events: none`은
+   장식이 아니라 실제로 클릭 이동을 막는 역할이다 — 흐리게만 해서는
+   <a href>가 여전히 눌린다. */
 .collection-edit-page .collection-form-submit.is-item-gone-locked ~ .collection-edit-cancel {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
 }
-/* Status segmented toggle: both option labels target the same checkbox
-   via `for`, so `disabled` never reaches them directly — read it off the
-   input via general sibling combinator (input precedes both labels in
-   the DOM, see the template). A disabled checkbox's own paired <label>
-   already stops toggling it natively; this only fixes the look + cursor. */
+/* 상태 토글도 라벨이 아닌 체크박스의 disabled를 형제 결합자로 읽어
+   흐림/커서만 바꾼다. */
 .collection-edit-page .collection-edit-toggle-input:disabled ~ .collection-edit-toggle-option {
   opacity: 0.5;
   cursor: not-allowed;
 }
-/* "이미지 교체" label: its paired file input lives *inside* the preceding
-   `.collection-edit-cover` dropzone box, not as this label's direct
-   sibling, so a sibling combinator alone can't bridge from input to
-   label — `:has()` reads the input's disabled state on the dropzone
-   ancestor first, then a plain descendant selector reaches the label. */
+/* "이미지 교체" 라벨의 파일 입력은 이 라벨의 형제가 아니라 앞선
+   드롭존 박스 안에 있어 형제 결합자만으로는 못 잇는다. 그래서
+   `:has()`로 드롭존의 disabled 여부를 먼저 읽는다. */
 .collection-edit-page .collection-edit-cover:has(input:disabled) ~ .collection-edit-image-row .collection-edit-replace-btn {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 @media (max-width: 45rem) {
-  /* Reserve space for the fixed bottom bar so the delete button and error
-     banner are never occluded when scrolled to the bottom — sized off the
-     actual bar height + safe-area, not the mock's flat 64px constant. */
+  /* 하단 고정 바 높이만큼 여백을 남겨 삭제 버튼과 오류 배너가
+     끝까지 스크롤해도 가려지지 않게 한다. */
   .collection-edit-page {
     padding-bottom: 6rem;
   }
 
-  /* 3-class specificity beats archive_collection.css's
-     `.collection-page .collection-form-image` (2 classes) regardless of
-     stylesheet <link> order. */
+  /* 클래스 3개짜리 특이도라 archive_collection.css의 2클래스 규칙을
+     로드 순서와 무관하게 이긴다. */
   .collection-edit-page .collection-form-image.collection-edit-cover-col {
     display: flex;
     align-items: flex-end;
@@ -392,18 +355,15 @@
     font-size: 0.78125rem;
   }
 
-  /* Only 저장/취소 become the fixed bar — 굿즈 삭제 stays an in-flow,
-     full-width block above it (C1: still a descendant of
-     #collection-edit-form, just placed above the bar by DOM order). */
+  /* 고정 바가 되는 건 저장/취소뿐이다 — 굿즈 삭제는 그 위에 흐름대로
+     놓인 전체 너비 블록으로 남는다. */
   .collection-edit-page .collection-edit-actions-row {
     display: block;
     margin-top: 0;
     padding-top: 0;
     border-top: 0;
   }
-  /* Wrapper hairline + spacing ahead of the delete button, kept separate
-     from the button's own full rose-bordered box (mock: a divider line
-     above the button, not a shared edge). */
+  /* 삭제 버튼 위에 구분선을 따로 그린다 — 버튼 자체 테두리와는 별개다. */
   .collection-edit-page .collection-edit-actions-row::before {
     content: "";
     display: block;

@@ -1,15 +1,14 @@
-"""core/partials/_site_header.html — the global 4-tab primary nav (Home /
-Events / Collection / Activity, target IA plan D1-D3, .docs/plans/2026-07-16-
-target-ia-plan.md §7-a-8). Exactly one of the 4 anchors carries class="active"
-on any given page, matching the section the current path belongs to; the
-other 3 render without it (the four sections are documented as mutually
-exclusive prefixes in the partial itself).
+"""core/partials/_site_header.html — 전역 4탭 기본 내비(홈/이벤트/컬렉션/
+내 활동, 목표 IA 계획 D1-D3, .docs/plans/2026-07-16-target-ia-plan.md
+§7-a-8). 어느 페이지든 4개 앵커 중 현재 경로가 속한 섹션 하나만
+class="active"를 갖고 나머지 3개는 없어야 한다(네 섹션은 파셜 자체에서
+서로 겹치지 않는 경로 접두어로 문서화돼 있다).
 """
 import pytest
 
 pytestmark = pytest.mark.web
 
-# (label, href) for each of the 4 sections, in header order.
+# 헤더 순서대로, 4개 섹션 각각의 (라벨, href).
 _SECTIONS = [
     ("홈", "/"),
     ("이벤트", "/events/"),

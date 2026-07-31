@@ -1,12 +1,12 @@
-"""templates/base.html — "본문으로 건너뛰기" skip link (a11y).
+"""templates/base.html — "본문으로 건너뛰기" skip link(접근성).
 
-The public shell had no skip link (only the staff console did), so keyboard
-users had to tab through the whole header/nav on every page. base.html now
-renders one pointed at #content, which every non-staff page template's
-<main> carries. Staff pages keep their own (targets #staff-main, from
-_console_shell.html) and suppress the public one via the skip_link block —
-this is a smoke test that both shells end up with exactly one, pointed at
-a target that actually exists.
+공개 셸에는 원래 skip link가 없어서(스태프 콘솔에만 있었다) 키보드
+사용자는 페이지마다 헤더/내비 전체를 탭으로 넘어가야 했다. base.html이
+이제 #content를 가리키는 skip link를 렌더하는데, 이건 스태프가 아닌
+모든 페이지 템플릿의 <main>이 갖고 있는 id다. 스태프 페이지는 자기 것
+(_console_shell.html의 #staff-main 대상)을 유지하고 skip_link 블록으로
+공용 것을 억제한다 — 두 셸 모두 실제로 존재하는 대상을 가리키는 skip
+link를 정확히 하나만 갖는지 확인하는 스모크 테스트다.
 """
 import pytest
 
@@ -42,8 +42,8 @@ def test_스태프_대시보드는_자신의_skip_link만_유지하고_공용_sk
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    # The staff console's own skip link (targets #staff-main) is present…
+    # 스태프 콘솔 자체의 skip link(#staff-main 대상)는 있고…
     assert '<a class="skip-link" href="#staff-main">본문으로 건너뛰기</a>' in content
-    # …and the public one (#content, which staff pages don't have) is not
-    # duplicated in — exactly one .skip-link on the page.
+    # …공용 것(#content, 스태프 페이지에는 없는 id)은 중복돼 들어가지
+    # 않아서 페이지에 .skip-link가 정확히 하나뿐이다.
     assert content.count('class="skip-link"') == 1

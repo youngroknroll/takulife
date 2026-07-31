@@ -1,25 +1,18 @@
 {% comment %}
-Archive sub-nav — always-visible tab bar (replaces the former <details>
-accordion, 2026-07-21 리디자인 ④단계 §B: 시안 미감 보존 + JS 0, 순수 <a>
-나열이라 <details> 키보드 계약을 재구현할 필요가 없다).
-2026-07-23 v2 에디토리얼: `활동 달력` 탭 제거(6→5링크). 달력은 이제
-`/archive/`와 `/archive/calendar/`가 서로 왕복하는 `.activity-view-toggle`
-(목록|달력)이 전담한다. 이 서브탭과 그 토글은 중복 진입로가 아니다.
-Include with:  {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
-  active        one of: record | statuses | visits | items | interests
-  active_label  kept for call-site compatibility (unused by this markup)
-  hide_interest optional: pass True to suppress the in-nav 찜 목록 link when the
-                call site renders its own 찜 목록 anchor elsewhere (2026-07-23
-                §H toolbar re-layout on /archive/; 2026-07-24 §8-A extends the
-                same 3-column toolbar to /archive/calendar/). A negative flag is
-                used on purpose: Django treats an unpassed variable as falsy, so
-                the default (unpassed → falsy → not-hidden) keeps 찜 목록 visible
-                on every other include site without their needing to opt in. A
-                positive `show_interest` flag would invert this and silently
-                drop 찜 목록 from the archive pages that never pass it.
-찜 목록 stays a standalone pink pill (현행 유지) on every page except /archive/
-and /archive/calendar/, which render their own 찜 목록 anchor outside this <nav>
-(§H / §8-A 3-column toolbar).
+활동 하위 탭 바다. 항상 보이는 순수 <a> 나열이라 <details> 아코디언의 키보드
+계약을 따로 구현할 필요가 없다. 달력 이동은 이 탭이 아니라 `.activity-view-toggle`
+(목록|달력)이 전담하므로 서로 중복 진입로가 아니다.
+
+사용법: {% include "core/partials/_archive_nav.html" with active="visits" active_label="다녀온 기록" %}
+  active        — record | statuses | visits | items | interests 중 하나
+  active_label  — 호출부 호환용으로 남아 있을 뿐 이 마크업에서는 쓰지 않는다
+  hide_interest — True를 넘기면 nav 안의 찜 목록 링크를 감춘다(호출부가 직접
+                  찜 목록 앵커를 다른 곳에 렌더할 때). 값을 넘기지 않으면
+                  Django가 falsy로 취급해 기본은 "숨기지 않음"이 된다 — 반대로
+                  show_interest처럼 양성 플래그였다면 값을 안 넘긴 페이지에서
+                  찜 목록이 조용히 사라졌을 것이다.
+찜 목록은 /archive/와 /archive/calendar/를 제외한 모든 페이지에서 독립된
+분홍 알약 형태로 남고, 이 두 페이지는 이 <nav> 밖에 자체 찜 목록 앵커를 둔다.
 {% endcomment %}
 <div class="sub-nav">
   <nav class="archive-nav-wrap" aria-label="내 활동 하위 메뉴">

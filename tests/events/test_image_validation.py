@@ -1,8 +1,8 @@
-"""Unit tests for events.image_validation.validate_uploaded_image.
+"""events.image_validation.validate_uploaded_image에 대한 단위 테스트.
 
-Covers the reject branches (size, extension allowlist, undecodable content,
-spoofed format, oversized dimensions) that the upload-API tests don't reach,
-plus the EXIF-stripping re-encode step on the accept path.
+업로드 API 테스트가 닿지 않는 거부 분기(크기, 확장자 허용목록, 디코드
+불가 내용, 위장 형식, 초과 치수)와, 통과 시의 EXIF 제거 재인코딩 단계를
+다룬다.
 """
 import io
 
@@ -28,8 +28,8 @@ def _img_bytes(fmt="PNG", size=(10, 10), color=(255, 0, 0)):
 
 
 def _jpeg_bytes_with_gps_exif(size=(30, 10), color=(255, 0, 0), orientation=6):
-    """A JPEG carrying GPS EXIF and an orientation tag, built with Pillow
-    alone (no piexif dependency) via Image.getexif()."""
+    """GPS EXIF와 방향 태그를 담은 JPEG을 piexif 없이 Pillow의
+    Image.getexif()만으로 만든다."""
     img = PIL.Image.new("RGB", size, color=color)
     exif = img.getexif()
     exif[ExifTags.Base.GPSInfo] = {1: "N", 2: (37.0, 33.0, 2.5), 3: "E", 4: (127.0, 0.0, 4.2)}
@@ -45,9 +45,8 @@ def _upload(content, name="photo.png", content_type="image/png"):
 
 class TestValidImage:
     def test_유효한_PNG는_형식과_크기를_유지한_채_통과한다(self):
-        # The accept path now re-encodes to strip metadata, so the returned
-        # file is a new object — assert it decodes back to the same format/
-        # size rather than asserting object identity.
+        # 통과 경로는 메타데이터 제거를 위해 재인코딩하므로 반환 파일은 새
+        # 객체다 — 객체 동일성이 아니라 디코드했을 때 형식/크기가 같은지로 검증한다.
         value = _upload(_img_bytes("PNG", size=(10, 10)), name="ok.png")
 
         result = validate_uploaded_image(value)
@@ -72,9 +71,8 @@ class TestExifStripping:
         assert not result_exif.get_ifd(ExifTags.IFD.GPSInfo)
 
     def test_EXIF_방향_태그는_픽셀_회전으로_반영되고_태그_자체는_남지_않는다(self):
-        # orientation=6 ("rotate 90") on a 30x10 source must land as a
-        # 10x30 image with no orientation tag left for a naive viewer to
-        # apply a second time.
+        # orientation=6("90도 회전")을 가진 30x10 원본은 10x30 이미지로
+        # 바뀌어야 하고, 방향 태그가 남아 다른 뷰어가 다시 회전시키면 안 된다.
         value = _upload(
             _jpeg_bytes_with_gps_exif(size=(30, 10), orientation=6),
             name="portrait.jpg",
@@ -112,22 +110,22 @@ class TestRejections:
             validate_uploaded_image(value)
 
     def test_허용된_확장자로_위장한_다른_형식_이미지는_업로드가_거부된다(self):
-        # Real GIF bytes behind a .png name: extension passes, decoded format
-        # (GIF) is not in the allowlist → rejected.
+        # .png 이름 뒤에 실제 GIF 바이트가 있는 경우: 확장자는 통과하지만
+        # 디코드된 형식(GIF)이 허용목록에 없어 거부된다.
         value = _upload(_img_bytes("GIF"), name="spoof.png")
         with pytest.raises(serializers.ValidationError):
             validate_uploaded_image(value)
 
     def test_한_축_크기가_최대_치수를_초과한_이미지는_업로드가_거부된다(self):
-        # Over the per-axis cap but well under the pixel-bomb limit so it decodes.
+        # 축별 상한은 넘지만 픽셀-폭탄 한도보다는 훨씬 작아 디코드는 된다.
         wide = _img_bytes("PNG", size=(MAX_IMAGE_DIMENSION_PX + 1, 10))
         value = _upload(wide, name="wide.png")
         with pytest.raises(serializers.ValidationError):
             validate_uploaded_image(value)
 
     def test_두번째_이미지_열기가_실패하면_치수_오류로_거부된다(self, monkeypatch):
-        # The image passes verify() but the second open (to read dimensions)
-        # fails — a corruption/TOCTOU guard. Simulate by failing the 2nd open.
+        # verify()는 통과하지만 치수를 읽기 위한 두 번째 open이 실패하는
+        # 경우다 — 손상/TOCTOU 가드. 두 번째 open만 실패하도록 흉내낸다.
         import unittest.mock
 
         calls = {"n": 0}
@@ -146,5 +144,5 @@ class TestRejections:
 
         with pytest.raises(serializers.ValidationError):
             validate_uploaded_image(value)
-        assert calls["n"] == 2  # confirms the second-open path was taken
-        assert real_open is not PIL.Image.open  # monkeypatch active
+        assert calls["n"] == 2
+        assert real_open is not PIL.Image.open

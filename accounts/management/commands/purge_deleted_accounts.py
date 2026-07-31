@@ -1,10 +1,9 @@
-"""Management command: purge_deleted_accounts
+"""관리 명령: purge_deleted_accounts
 
-Thin shell around accounts.services.execute_pending_deletions — no business
-logic here (the 10-day grace period, the per-row transaction/locking, and
-the cancel-race guard all live in the service; see
-.docs/plans/2026-07-20-deletion-grace-period-plan.md). Regular scheduling
-(cron/etc.) is a deployment/runbook concern, not this command.
+accounts.services.execute_pending_deletions를 감싸는 얇은 껍데기 —
+10일 유예 기간, 행 단위 트랜잭션/잠금, 취소 경쟁 방지는 전부 서비스
+쪽에 있고 여기엔 비즈니스 로직이 없다. 정기 실행(cron 등)은 이 명령이
+아니라 배포/운영 문서가 다룰 몫이다.
 """
 from django.core.management.base import BaseCommand, CommandError
 

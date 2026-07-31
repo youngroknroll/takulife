@@ -1,9 +1,5 @@
-/**
- * confirm-modal.css — Custom 예/아니오 confirmation dialog for takulife
- *
- * Coordinate with confirm-modal.js: overlay is hidden via [hidden] attribute,
- * shown by removing [hidden] and adding .is-open for transition.
- */
+/* confirm-modal.js와 짝을 이룬다: [hidden] 속성으로 숨기고, 열 때 [hidden]을
+   제거하며 .is-open을 붙여 전환 애니메이션을 튼다. */
 
 .confirm-overlay {
   position: fixed;
@@ -21,15 +17,13 @@
   display: none;
 }
 
-/* Applied to <html> while the modal is open (confirm-modal.js) — mobile-first
-   fix, no scrollbar-width compensation (desktop accepts a ~1px content
-   shift when the scrollbar disappears). */
+/* 모달이 열려 있는 동안 confirm-modal.js가 <html>에 붙인다. 스크롤바 폭
+   보정은 하지 않아 데스크톱에서 1px 내외 밀림은 감수한다. */
 .confirm-scroll-lock {
   overflow: hidden;
 }
 
-/* Safety net: a not-open overlay must never absorb clicks, even if some
-   failure path leaves [hidden] unrestored. */
+/* 안전장치: [hidden]이 복구되지 않는 오류가 나도 닫힌 오버레이가 클릭을 가로채면 안 된다. */
 .confirm-overlay:not(.is-open) {
   pointer-events: none;
 }

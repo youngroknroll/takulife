@@ -1,43 +1,23 @@
 {% comment %}
-Shared month calendar grid (Events calendar today; Activity calendar is a
-future consumer of the same contract). Single flat CSS grid — weekday header
-cells and day cells are plain siblings (no <table>, no nesting). Styling:
-static/css/components/calendar.css.
+이벤트 달력(향후 활동 달력도 같은 계약을 쓸 예정) 공용 월 그리드다. <table>
+없이 요일 머리글과 날짜 셀을 같은 CSS grid의 형제로 둔다.
+스타일: static/css/components/calendar.css.
 
-Include with:
+사용법:
   {% include "core/partials/_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
-  weeks        list of week rows; each week is a list of exactly 7 day cell
-               dicts: {date, in_month, today, selected, items, more_count, count}
-               date        a real date, or None for an out-of-range filler
-                           cell at the year 1 / year 9999 boundary (render as
-                           a link-less void cell — no number, no navigation).
-               items       list of up to 2 {title, url, category_slug} dicts
-                           (url is not consumed here — the whole cell is the
-                           single link target, per the no-nested-<a>
-                           constraint; category_slug drives the
-                           [data-category] swatch bar/dot, event_calendar.css
-                           only — falls back to a plain --brand mark if
-                           absent/blank).
-               more_count  events beyond the first 2 (desktop "외 N개").
-               count       total events that day (mobile dot + number).
-  extra_query  querystring tail carrying the active q/region/category/status
-               filters, already formatted with its own leading '&' (or "" if
-               none) — see core.views._calendar_extra_query. Append directly
-               after '?month=...&date=...', no extra '&' needed.
-aria-label/aria-current were introduced 2026-07-19 (policy reversal, see
-.docs/plans/2026-07-19-calendar-review-fixes-plan.md); state wiring stays
-data-in-month/data-today/data-selected only, since that remains a CSS/JS
-contract rather than an accessible-name concern.
-{% endcomment %}
-{% comment %}
-2026-07-23: the weekday header and the day cells are two sibling .month-grid
-containers rather than one flat list. The editorial v2 skin draws a single
-hairline-separated box around the day cells only (rounded, clipped), and the
-weekday labels have to sit outside that box — which is impossible while they
-are the box's own first row. Both keep the .month-grid class, so the shared
-7-column geometry in components/calendar.css still applies to each, and the
-:nth-child(7n+1)/(7n) Sunday/Saturday tints still land on the same columns
-(day cells simply start at position 1 now instead of 8).
+  weeks       — 7일씩 담은 주 목록. 각 날짜는 {date, in_month, today, selected,
+                items, more_count, count} 딕셔너리(date가 없으면 범위 밖 빈
+                칸, 링크 없이 렌더).
+  items       — 최대 2개의 {title, url, category_slug} — 셀 전체가 이미 하나의
+                링크라 url은 여기서 쓰지 않는다(<a> 중첩 금지).
+  more_count  — 처음 2개를 넘는 나머지 이벤트 수("외 N개").
+  count       — 그날 전체 이벤트 수(모바일 점/숫자용).
+  extra_query — 활성 q/region/category/status 필터를 담은 쿼리스트링 꼬리.
+
+요일 머리글과 날짜 셀을 하나가 아니라 두 개의 형제 .month-grid 컨테이너로
+나눈 이유는, 에디토리얼 스킨이 날짜 셀만 감싸는 헤어라인 박스를 그리기
+때문이다 — 두 컨테이너 모두 같은 .month-grid 클래스를 유지해 7열 CSS
+그리드와 토/일 강조 색이 그대로 적용된다.
 {% endcomment %}
 <div class="month-grid month-grid-head">
   <span class="month-grid-weekday">일</span>

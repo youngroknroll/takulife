@@ -1,9 +1,6 @@
-"""Tests for drafts.llm_extraction — LLM-backed event field extraction.
-
-Mocks drafts.llm_extraction.call_tool (never anthropic directly — call_tool is
-the correct seam; core.llm is a domain-agnostic adapter drafts owns the
-mapping around).
-"""
+"""drafts.llm_extraction(LLM 기반 행사 필드 추출) 테스트. anthropic을 직접 모킹하지
+않고 drafts.llm_extraction.call_tool을 모킹한다 — core.llm은 도메인 비특정
+어댑터이고 drafts가 그 위의 매핑을 소유하기 때문이다."""
 import logging
 from datetime import date
 
@@ -52,7 +49,7 @@ def _response(**overrides):
 
 
 def _fake_call_tool(responses):
-    """Returns (fake_call_tool, calls). responses: list consumed in order."""
+    """(fake_call_tool, calls) 쌍을 반환한다. responses는 순서대로 소비된다."""
     calls = []
     remaining = list(responses)
 
@@ -284,9 +281,9 @@ class TestConfidenceEscalation:
 
 
 def _fallback_contract(raw_title, raw_text):
-    """The unified fallback contract (PO re-decision): fallback returns the
-    same keyset as the happy path — heuristic keys + confidence: None +
-    is_event: True + extraction_method: 'heuristic'."""
+    """대체(fallback) 경로도 정상 경로와 같은 키 집합을 반환해야 한다는 통일된
+    계약: 휴리스틱 키 + confidence: None + is_event: True + extraction_method:
+    'heuristic'."""
     return {
         **extract_event_fields_heuristic(raw_title, raw_text),
         "confidence": None,
@@ -322,9 +319,8 @@ class TestLLMErrorFallback:
 
 class TestGroundingScope:
     def test_8000자_절단_이후의_내용은_그라운딩_대상에서_제외된다(self, monkeypatch):
-        # Uses a title that shares no substring with the truncated-out values
-        # below, so this only exercises the raw_text truncation boundary
-        # (grounding also scopes raw_title — see TestGroundingIncludesTitle).
+        # 아래 잘려나간 값들과 겹치는 부분 문자열이 없는 제목을 써서, raw_text
+        # 절단 경계만 검증한다(raw_title 그라운딩은 TestGroundingIncludesTitle).
         untitled_raw_title = "행사 안내 페이지"
         padding = "가" * 8000
         raw_text = padding + " 2026-07-01 IVE 팝업"
@@ -342,9 +338,9 @@ class TestGroundingScope:
 
 class TestResponseShapeDefense:
     def test_필드_신뢰도_값이_None이어도_크래시_없이_에스컬레이션한다(self, monkeypatch, sample_extraction):
-        # A None confidence value coerces to 0.0, which is itself below the
-        # escalation threshold — the second (escalation) call must still
-        # happen and complete without crashing on the malformed value.
+        # None인 confidence는 0.0으로 강제 변환돼 에스컬레이션 임계값 아래로
+        # 떨어진다. 이 잘못된 값에서도 두 번째(에스컬레이션) 호출이 크래시 없이
+        # 이루어져야 한다.
         low_confidence = dict(HIGH_CONFIDENCE, category=None)
         fake, calls = _fake_call_tool([_response(field_confidence=low_confidence), _response()])
         monkeypatch.setattr("drafts.llm_extraction.call_tool", fake)

@@ -1,28 +1,19 @@
 {% comment %}
-찜 목록(archive_interests) 결과 영역 — 라이브 검색 swap 대상.
-풀 페이지(interests.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
+찜 목록(archive_interests) 결과 영역 — 라이브 검색 swap 대상. 풀 페이지
+(interests.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: interest_rows, has_interests, has_query, q, page_obj, pager_query, request
 
-2026-07-28 찜 목록 에디토리얼: visits/statuses/personal과 같은 `.record-row`
-시스템으로 재작성한다(`.record-row--interest` 모디파이어, 첫 열은 D-day).
-공식(이벤트) 찜만 상태 필·D-day·(can_plan일 때만) 방문 예정 추가 버튼을
-렌더한다 — 비공식(직접 등록) 찜은 날짜가 없어 파생이 불가능하므로(D-day
-칸은 `.record-row-date-empty` "–") "직접 등록" 배지 + ♥만 렌더한다
-(오케스트레이터 확정 #1, `interests-mock-2026-07-28.md` 참조). `detail_url`이
-빈 문자열인 비공식 행에는 "상세 보기" 링크를 렌더하지 않는다(빈 href 금지).
+공식(이벤트) 찜만 상태·D-day·방문 예정 추가 버튼을 렌더한다. 비공식(직접
+등록) 찜은 날짜가 없어 D-day를 계산할 수 없으므로 "직접 등록" 배지만 붙인다.
 
-♥ 버튼은 `data-reload-on-success`를 부착한다(`data-remove-on-cancel`은 제거) —
-찜 행이 이 라이브 검색 swap 영역 안에 들어오면서, 삭제 in-flight 중 검색
-스왑이 겹치면 서버가 이미 지운 행이 새로 렌더돼 유령 행으로 남는 결함
-(`_archive_results_statuses.html`/`_archive_results_record.html`이 이미 두
-번 고친 결함과 동일 유형)이 생기기 때문이다. status.js의 handleInterestClick
-에 handleClick(:296-310)과 동일한 조기 분기를 복제해 두었다(2026-07-28).
-리로드가 통계 3종·"N건"도 함께 서버에서 재계산한다.
+♥ 버튼은 data-remove-on-cancel 대신 data-reload-on-success를 쓴다 — 삭제
+진행 중에 검색 스왑이 겹치면 서버가 이미 지운 행이 새로 렌더돼 유령 행으로
+남는 결함을 피하기 위해서다(_archive_results_statuses.html/_record.html과
+동일한 이유).
 
-방문 예정 추가 버튼은 `row.can_plan`(뷰가 `user_status == ""`일 때만 True로
-계산 — 이미 다른 상태가 걸린 행에서 이 버튼이 그 기록을 지우는 사고를
-차단)일 때만 렌더한다. 항상 신규 등록(discovery register) 경로만 타므로
-`data-status-id`는 붙이지 않는다.
+방문 예정 추가 버튼은 row.can_plan(사용자 상태가 비어 있을 때만 True)일
+때만 렌더한다 — 이미 다른 상태가 걸린 행에서 이 버튼이 그 기록을 지우는
+사고를 막는다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if interest_rows %}

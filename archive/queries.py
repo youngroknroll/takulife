@@ -1,16 +1,15 @@
-"""Read layer for the archive domain.
+"""archive 도메인의 읽기 계층.
 
-Reusable query logic for user event statuses, event interests, and visit records.
-Query/aggregate logic lives here, not in the view layer — mirrors
-drafts/queries.py.
+사용자 상태·관심·방문 기록을 위한 재사용 가능한 조회 로직. 조회·집계
+로직은 뷰 계층이 아니라 여기 둔다(drafts/queries.py와 같은 방식).
 """
 import calendar
 from dataclasses import dataclass
-# Aliased (not `from datetime import date`): a dataclass field below is also
-# named `date`, and for `field: T = default` Python binds the default value
-# to the field name *before* evaluating the annotation `T` at class-body
-# scope — an unaliased same-named import would already be rebound to `None`
-# by the time its own annotation tried to reference it.
+# 별칭을 쓰는 이유(`from datetime import date`가 아님): 아래 dataclass
+# 필드 중 하나도 이름이 `date`라서, `field: T = default` 형태는 클래스
+# 본문 스코프에서 어노테이션 `T`를 평가하기 *전에* 기본값을 필드 이름에
+# 먼저 바인딩한다. 별칭 없이 같은 이름으로 임포트하면 그 시점엔 이미
+# `None`으로 재바인딩된 뒤라 자기 어노테이션이 자신을 참조하지 못한다.
 from datetime import date as _date
 
 from django.db.models import Count, Exists, Max, Min, OuterRef, Q, Subquery
@@ -29,12 +28,13 @@ from .models import (
     VisitRecordPhoto,
 )
 
-# Canonical archive status slugs, sourced from the model's own choices so the
-# set has a single source of truth. Excludes "interested" (now EventInterest).
+# archive 상태 슬러그의 정본. 모델 자신의 choices에서 가져와 단일 출처를
+# 유지한다. "interested"는 이제 EventInterest로 분리되어 제외된다.
 ARCHIVE_STATUS_SLUGS: tuple[str, ...] = tuple(UserEventStatus.Status.values)
 
-# Page sizes for the archive SSR list pages (rendered by core.views). Kept here
-# beside the list queries they bound, mirroring events.queries.PUBLIC_LISTING_PAGE_SIZE.
+# archive SSR 목록 페이지(core.views가 렌더링)의 페이지 크기. 이 값이
+# 제한하는 목록 쿼리 옆에 둔다(events.queries.PUBLIC_LISTING_PAGE_SIZE와
+# 같은 방식).
 ARCHIVE_RECORD_PAGE_SIZE = 10  # 기록장 (/archive/) — 저장한 이벤트
 ARCHIVE_STATUS_PAGE_SIZE = 5  # 예정 목록 (/archive/statuses/)
 ARCHIVE_VISIT_PAGE_SIZE = 5  # 방문 기록 (/archive/visits/)
@@ -42,40 +42,37 @@ ARCHIVE_PERSONAL_PAGE_SIZE = 5  # 비공식 목록 (/archive/personal/)
 ARCHIVE_COLLECTION_PAGE_SIZE = 10  # 컬렉션 목록 (/collection/)
 ARCHIVE_INTEREST_PAGE_SIZE = 10  # 찜 목록 (/archive/interests/)
 
-# Sort slugs for list_user_interests, mapped to their order_by field. "" (the
-# default) is the pre-existing -id ordering (최근 찜순), listed explicitly here
-# so .get(sort, ARCHIVE_INTEREST_SORT_ORDERING[""]) has a single source for the
-# default instead of a duplicated literal — mirrors ARCHIVE_VISIT_SORT_ORDERING.
+# list_user_interests용 정렬 슬러그 -> order_by 필드. ""(기본값)는 기존
+# -id 정렬(최근 찜순)이며, .get(sort, ARCHIVE_INTEREST_SORT_ORDERING[""])
+# 이 기본값의 단일 출처가 되도록 여기 명시적으로 넣어둔다(값을 중복
+# 리터럴로 두지 않기 위해 — ARCHIVE_VISIT_SORT_ORDERING과 같은 방식).
 ARCHIVE_INTEREST_SORT_ORDERING: dict[str, str] = {
     "": "-id",
     "oldest": "id",
 }
 
-# Sort slugs for list_user_statuses, mapped to their order_by field. "" (the
-# default) is the pre-existing -updated_at ordering, kept unlisted here so an
-# unknown/missing slug falls back to it via .get(sort, default) with no
-# explicit "" entry needed. Only axes with a plain column on UserEventStatus
-# are offered — cross-table axes (e.g. event.start_date) would need an
-# annotate and are out of scope.
+# list_user_statuses용 정렬 슬러그 -> order_by 필드. ""(기본값)는 기존
+# -updated_at 정렬이며, 여기엔 일부러 "" 항목을 넣지 않았다 — 알 수 없는
+# 슬러그는 .get(sort, default)의 기본값 인자만으로 자연히 떨어진다.
+# UserEventStatus에 실제 컬럼이 있는 축만 제공한다 — event.start_date
+# 같은 테이블을 넘나드는 축은 annotate가 필요해 범위 밖이다.
 ARCHIVE_STATUS_SORT_ORDERING: dict[str, str] = {
     "created_at": "-created_at",
 }
 
-# Sort slugs for list_user_visit_records, mapped to their order_by tuple.
-# "" (the default) is the pre-existing -visited_on, -id ordering, listed
-# explicitly here (unlike ARCHIVE_STATUS_SORT_ORDERING above) so
-# .get(sort, ARCHIVE_VISIT_SORT_ORDERING[""]) has a single source for the
-# default instead of a duplicated literal.
+# list_user_visit_records용 정렬 슬러그 -> order_by 튜플. ""(기본값)는
+# 기존 -visited_on, -id 정렬이며, 위 ARCHIVE_STATUS_SORT_ORDERING과
+# 달리 여기엔 명시적으로 넣어서 .get(sort, ARCHIVE_VISIT_SORT_ORDERING[""])
+# 이 기본값의 단일 출처가 되게 한다(값을 중복 리터럴로 두지 않기 위해).
 ARCHIVE_VISIT_SORT_ORDERING: dict[str, tuple[str, str]] = {
     "": ("-visited_on", "-id"),
     "oldest": ("visited_on", "id"),
 }
 
-# Sort slugs for list_user_personal_entries, mapped to their order_by tuple.
-# Mirrors ARCHIVE_VISIT_SORT_ORDERING's shape exactly: "" (the default) is
-# the pre-existing -created_at, -id ordering, listed explicitly so
-# .get(sort, ARCHIVE_PERSONAL_SORT_ORDERING[""]) has a single source for the
-# default instead of a duplicated literal.
+# list_user_personal_entries용 정렬 슬러그 -> order_by 튜플.
+# ARCHIVE_VISIT_SORT_ORDERING과 완전히 같은 형태다: ""(기본값)는 기존
+# -created_at, -id 정렬이며, .get(sort, ARCHIVE_PERSONAL_SORT_ORDERING[""])
+# 이 기본값의 단일 출처가 되도록 명시적으로 넣어둔다.
 ARCHIVE_PERSONAL_SORT_ORDERING: dict[str, tuple[str, str]] = {
     "": ("-created_at", "-id"),
     "oldest": ("created_at", "id"),
@@ -83,11 +80,11 @@ ARCHIVE_PERSONAL_SORT_ORDERING: dict[str, tuple[str, str]] = {
 
 
 def user_status_counts(user, *, today=None) -> dict:
-    """Return per-status counts for a user's archive statuses.
+    """사용자의 archive 상태별 개수를 반환한다.
 
-    Counts use the *derived* status (auto-miss overlay), so a planned event
-    whose run has ended counts under 'missed', not 'planned'. Single aggregate
-    query. Every canonical status slug is always present, even at zero.
+    자동 놓침 계산을 반영한 *파생* 상태 기준으로 센다. 그래서 진행이
+    끝난 예정 행은 'planned'가 아니라 'missed'로 집계된다. 단일 집계
+    쿼리이며, 개수가 0이어도 모든 정본 상태 슬러그가 결과에 포함된다.
     """
     if today is None:
         today = timezone.localdate()
@@ -102,28 +99,31 @@ def user_status_counts(user, *, today=None) -> dict:
 
 
 def list_user_statuses(user, status: str = "", *, q: str = "", sort: str = "", today=None):
-    """Return a user's archive statuses, newest first, optionally filtered.
+    """사용자의 archive 상태를 최신순으로 반환한다(선택적 필터 적용).
 
-    Filtering and the rows' effective status use the *derived* status overlay,
-    so the 놓침 filter includes auto-missed rows and 방문 예정 excludes them.
-    The event is selected together to avoid per-row queries during rendering.
+    필터링과 행의 실효 상태 모두 *파생* 상태 계산을 사용한다. 그래서
+    놓침 필터는 자동 놓침 행을 포함하고, 방문 예정 필터는 그것들을
+    제외한다. 렌더링 중 행별 추가 쿼리가 나가지 않도록 event를 함께
+    조회한다.
 
-    ``q`` narrows results to rows whose event or personal_entry title/location
-    matches the search term (case-insensitive contains). The user filter is
-    always applied first so no cross-user leakage is possible.
+    ``q``는 event나 personal_entry의 제목/장소가 검색어를 포함하는
+    행으로 결과를 좁힌다(대소문자 무시). 사용자 필터를 항상 먼저 적용해
+    다른 사용자 데이터가 섞이지 않는다.
 
-    ``sort`` selects the ordering via ARCHIVE_STATUS_SORT_ORDERING; an unknown
-    or empty value falls back to the default -updated_at ordering rather than
-    raising or returning an empty result.
+    ``sort``는 ARCHIVE_STATUS_SORT_ORDERING으로 정렬을 고른다. 알 수
+    없거나 빈 값이면 오류를 내거나 빈 결과를 주지 않고 기본 -updated_at
+    정렬로 떨어진다.
     """
     if today is None:
         today = timezone.localdate()
     ordering = ARCHIVE_STATUS_SORT_ORDERING.get(sort, "-updated_at")
-    # OR (not AND): a status row's subject is exactly one of event/personal_entry
-    # (the other is always NULL) — mirrors list_user_unrecorded_visited_statuses'
-    # same_subject Exists filter above, which hit the same NULL=NULL trap with AND.
-    # Ordering matches list_user_visit_records' canonical -visited_on, -id so the
-    # "latest visit" picked here is the same row that list would surface first.
+    # AND가 아니라 OR인 이유: 상태 행의 대상은 event/personal_entry 중
+    # 정확히 하나뿐이고 나머지는 항상 NULL이다(아래
+    # list_user_unrecorded_visited_statuses의 same_subject Exists 필터도
+    # 같은 NULL=NULL 함정을 AND로 겪었다). 정렬은
+    # list_user_visit_records의 정본 -visited_on, -id와 같게 둬서,
+    # 여기서 고른 "최근 방문"이 그 목록이 맨 위에 보여줄 행과 같아지게
+    # 한다.
     latest_visit = VisitRecord.objects.filter(
         Q(event=OuterRef("event")) | Q(personal_entry=OuterRef("personal_entry")),
         user=OuterRef("user"),
@@ -151,16 +151,17 @@ def list_user_statuses(user, status: str = "", *, q: str = "", sort: str = "", t
 
 
 def list_user_unrecorded_visited_statuses(user):
-    """Return a user's visited status rows whose subject has no visit record
-    yet — the collection-first home's "미완성 기록" surface.
+    """방문 처리는 됐지만 아직 방문 기록이 없는 사용자의 상태 행을
+    반환한다 — 컬렉션 우선 홈의 "미완성 기록" 영역용이다.
 
-    Uses the raw stored status (not with_derived_status) since visited is
-    never a derived overlay value. The Exists subquery must OR the event and
-    personal_entry matches, not AND them: a status row's subject is exactly
-    one of the two (the other is always NULL), so ANDing would compare
-    OuterRef("event") or OuterRef("personal_entry") against NULL on every
-    row and always evaluate false — silently treating every personal_entry
-    subject as permanently unrecorded even after a visit record exists.
+    visited는 파생 계산 값이 아니므로 저장된 원본 상태를 그대로 쓴다
+    (with_derived_status 미사용). Exists 서브쿼리는 event와
+    personal_entry 매칭을 AND가 아니라 OR로 묶어야 한다: 상태 행의
+    대상은 둘 중 정확히 하나뿐이고 나머지는 항상 NULL이라, AND로
+    묶으면 모든 행에서 OuterRef("event") 또는
+    OuterRef("personal_entry")를 NULL과 비교하게 되어 항상 거짓이
+    나온다 — 그러면 방문 기록이 이미 있어도 personal_entry 대상은
+    영원히 미기록으로 조용히 취급돼 버린다.
     """
     same_subject = VisitRecord.objects.filter(
         Q(event=OuterRef("event")) | Q(personal_entry=OuterRef("personal_entry")),
@@ -176,17 +177,16 @@ def list_user_unrecorded_visited_statuses(user):
 
 
 def list_user_interests(user, *, q: str = "", sort: str = ""):
-    """Return a user's event interests, with event/personal_entry selected.
+    """사용자의 관심(찜) 목록을 event/personal_entry와 함께 반환한다.
 
-    The subject is selected together to avoid per-row queries during rendering.
+    렌더링 중 행별 추가 쿼리가 나가지 않도록 대상을 함께 조회한다.
 
-    ``q`` narrows results to rows whose event or personal_entry title/location
-    matches the search term (case-insensitive contains) — mirrors
-    list_user_statuses' same OR-across-both-subjects pattern.
+    ``q``는 event나 personal_entry의 제목/장소가 검색어를 포함하는
+    행으로 결과를 좁힌다(대소문자 무시, list_user_statuses와 같은 방식).
 
-    ``sort`` selects the ordering via ARCHIVE_INTEREST_SORT_ORDERING; an
-    unknown or empty value falls back to the default -id (최근 찜순) ordering
-    rather than raising or returning an empty result.
+    ``sort``는 ARCHIVE_INTEREST_SORT_ORDERING으로 정렬을 고른다. 알 수
+    없거나 빈 값이면 오류를 내거나 빈 결과를 주지 않고 기본 -id(최근
+    찜순) 정렬로 떨어진다.
     """
     queryset = (
         EventInterest.objects.filter(user=user)
@@ -206,26 +206,26 @@ def list_user_interests(user, *, q: str = "", sort: str = ""):
 
 
 def user_interest_summary_counts(user, *, today=None) -> dict:
-    """Return summary counts for the 찜 목록 page's header cards.
+    """찜 목록 페이지 상단 카드용 요약 개수를 반환한다.
 
-    ``interest_count`` — total 찜 rows (official + unofficial).
+    ``interest_count`` — 전체 찜 행 수(공식+비공식).
 
-    ``ongoing_count`` — official (event-linked) 찜 whose event run is
-    currently active, inclusive of both boundary days AND the closing_soon
-    window (start_date <= today <= end_date). This matches the row status
-    filter shown on screen (events/presenters.derive_event_display's
-    ongoing/closing_soon states both render as "진행 중" there), so the
-    header number and the row status pills never disagree (§1 D2).
+    ``ongoing_count`` — 행사 기간이 현재 진행 중인 공식(event 연결) 찜
+    수다. 양 끝 날짜와 마감임박 구간을 모두 포함한다(start_date <=
+    today <= end_date). 화면에 보이는 행 상태 필터와 일치시킨 것이다
+    (events/presenters.derive_event_display의 ongoing/closing_soon 상태
+    모두 화면엔 "진행 중"으로 표시되므로, 상단 숫자와 행별 상태 배지가
+    어긋나지 않는다).
 
-    ``planned_overlap_count`` — official 찜 whose linked event has a
-    UserEventStatus row for this user whose *derived* status
-    (archive/querysets.with_derived_status) is "planned". Using the derived
-    status (not the raw stored value) excludes rows that have auto-derived
-    to "missed" (an ended, non-overridden, visit-less planned row) even
-    though the stored column still literally says "planned" (§1 D3).
+    ``planned_overlap_count`` — 연결된 event에 대해 이 사용자의
+    UserEventStatus *파생* 상태(archive/querysets.with_derived_status)가
+    "planned"인 공식 찜 수다. 저장된 원본 값이 아니라 파생 상태를 쓰는
+    이유는, 저장 컬럼은 여전히 "planned"라고 적혀 있어도 실제로는
+    종료됐고 되돌리지 않았고 방문 기록도 없어 자동으로 "missed"가 된
+    행을 제외하기 위해서다.
 
-    Both event-scoped counts exclude unofficial (personal_entry-linked) 찜 —
-    a PersonalEntry has no run period and is never a status subject target.
+    두 event 기준 개수 모두 비공식(personal_entry 연결) 찜은 제외한다 —
+    PersonalEntry는 진행 기간이 없고 상태 대상이 될 수도 없다.
     """
     if today is None:
         today = timezone.localdate()
@@ -257,10 +257,10 @@ def user_interest_summary_counts(user, *, today=None) -> dict:
 
 
 def user_interest_event_ids(user, event_ids=None) -> dict:
-    """Return a dict of {event_id: interest_id} for the given user.
+    """주어진 사용자에 대해 {event_id: interest_id} 딕셔너리를 반환한다.
 
-    When ``event_ids`` is provided the result is bounded to that id list
-    (avoids full-table scans when called from a paginated listing page).
+    ``event_ids``가 주어지면 그 id 목록으로 결과를 한정한다(페이지네이션
+    목록 페이지에서 호출할 때 전체 테이블 스캔을 피하기 위해서다).
     """
     queryset = EventInterest.objects.filter(user=user)
     if event_ids is not None:
@@ -269,17 +269,18 @@ def user_interest_event_ids(user, event_ids=None) -> dict:
 
 
 def user_interest_count(user) -> int:
-    """Return the total number of event interests for the given user."""
+    """주어진 사용자의 전체 이벤트 관심(찜) 수를 반환한다."""
     return EventInterest.objects.filter(user=user).count()
 
 
 def list_user_planned_events(user):
-    """Return published events the user registered as 방문 예정 (raw planned).
+    """사용자가 방문 예정으로 등록한(저장된 원본 'planned') 게시 행사를
+    반환한다.
 
-    This is the selectable set when adding a visit record — you record a visit
-    for something you planned to go to. Uses the raw 'planned' status (not the
-    auto-miss derived overlay) so an event whose run has ended is still
-    selectable for a late visit record. Ordered by title.
+    방문 기록을 추가할 때 선택 가능한 대상 목록이다 — 가려고 했던
+    행사에 방문을 기록하는 것이니까. 자동 놓침 파생 계산이 아니라 저장된
+    원본 'planned' 상태를 쓰므로, 기간이 이미 끝난 행사도 뒤늦은 방문
+    기록을 위해 여전히 선택할 수 있다. 제목순으로 정렬한다.
     """
     return (
         Event.objects.published()
@@ -292,14 +293,14 @@ def list_user_planned_events(user):
 
 
 def list_user_upcoming_planned_events(user, *, today=None):
-    """Return published events the user planned to attend that haven't
-    started yet, soonest first.
+    """사용자가 방문 예정으로 등록했지만 아직 시작하지 않은 게시 행사를
+    가까운 순으로 반환한다.
 
-    Differs from list_user_planned_events in two ways: filtered to
-    start_date strictly after today (a planned event starting today or
-    earlier is not "upcoming"), and ordered by start_date (not title) so
-    the nearest event leads — this is the collection-first home's "다가오는
-    예정 이벤트" surface, not the visit-record selectable set.
+    list_user_planned_events와 두 가지가 다르다: start_date가 오늘보다
+    엄격히 이후인 것만 필터링하고(오늘이나 그 이전에 시작하는 예정
+    행사는 "다가오는" 것이 아니다), 제목이 아니라 start_date로 정렬해
+    가장 가까운 행사가 먼저 나온다 — 이건 방문 기록 선택 목록이 아니라
+    컬렉션 우선 홈의 "다가오는 예정 이벤트" 영역용이다.
     """
     if today is None:
         today = timezone.localdate()
@@ -315,14 +316,15 @@ def list_user_upcoming_planned_events(user, *, today=None):
 
 
 def list_user_personal_entries(user, kind=None, *, q: str = "", sort: str = ""):
-    """Return a user's private unofficial items, newest first, optional kind filter.
+    """사용자 소유의 비공식 항목을 최신순으로 반환한다(kind로 선택
+    필터링 가능).
 
-    ``q`` narrows results to rows whose title, category, location_name,
-    work_title, or memo matches the search term (case-insensitive contains).
+    ``q``는 title/category/location_name/work_title/memo 중 하나가
+    검색어를 포함하는 행으로 결과를 좁힌다(대소문자 무시).
 
-    ``sort`` selects the ordering via ARCHIVE_PERSONAL_SORT_ORDERING; an
-    unknown or empty value falls back to the default -created_at, -id
-    ordering rather than raising or returning an empty result.
+    ``sort``는 ARCHIVE_PERSONAL_SORT_ORDERING으로 정렬을 고른다. 알 수
+    없거나 빈 값이면 오류를 내거나 빈 결과를 주지 않고 기본
+    -created_at, -id 정렬로 떨어진다.
     """
     queryset = PersonalEntry.objects.filter(user=user).order_by(
         *ARCHIVE_PERSONAL_SORT_ORDERING.get(sort, ARCHIVE_PERSONAL_SORT_ORDERING[""])
@@ -341,15 +343,15 @@ def list_user_personal_entries(user, kind=None, *, q: str = "", sort: str = ""):
 
 
 def user_personal_entry_counts(user) -> dict:
-    """Return summary counts for a user's unofficial (personal) entries.
+    """사용자의 비공식(personal) 항목 요약 개수를 반환한다.
 
-    Used by the archive/personal/ page's summary card and mypage's collection
-    count.
+    archive/personal/ 페이지 요약 카드와 마이페이지 컬렉션 개수에서
+    쓴다.
 
-    ``visit_linked_count`` is the number of the user's PersonalEntry rows that
-    have at least one linked VisitRecord (distinct — a single entry with
-    multiple visit records still counts once). An official Event visit never
-    touches this count since it filters through the personal_entry FK only.
+    ``visit_linked_count``는 방문 기록이 하나라도 연결된 PersonalEntry
+    행 수다(distinct — 방문 기록이 여러 개인 항목도 한 번만 센다).
+    personal_entry FK로만 필터링하므로 공식 Event 방문은 이 수에
+    전혀 영향을 주지 않는다.
     """
     queryset = PersonalEntry.objects.filter(user=user)
     return {
@@ -363,10 +365,11 @@ def user_personal_entry_counts(user) -> dict:
 
 
 def user_personal_interest_ids(user) -> dict:
-    """Return {personal_entry_id: interest_id} for the user's unofficial 찜.
+    """사용자의 비공식 찜에 대해 {personal_entry_id: interest_id}를
+    반환한다.
 
-    Drives the 찜 toggle state on the 비공식 page so each card knows whether it is
-    already favourited (and the interest id to delete on un-favourite).
+    비공식 페이지의 찜 토글 상태를 결정한다 — 각 카드가 이미 찜했는지,
+    찜을 해제할 때 지울 interest id가 무엇인지 알 수 있다.
     """
     return {
         row["personal_entry_id"]: row["id"]
@@ -379,10 +382,11 @@ def user_personal_interest_ids(user) -> dict:
 
 
 def user_personal_statuses(user) -> dict:
-    """Return {personal_entry_id: (status_slug, status_id)} for unofficial 상태.
+    """비공식 상태에 대해 {personal_entry_id: (status_slug, status_id)}를
+    반환한다.
 
-    Uses the raw stored status — personal entries have no run period, so the
-    auto-miss overlay never applies to them.
+    저장된 원본 상태를 그대로 쓴다 — 비공식 항목은 진행 기간이 없어서
+    자동 놓침 계산이 애초에 적용되지 않는다.
     """
     return {
         row["personal_entry_id"]: (row["status"], row["id"])
@@ -395,12 +399,12 @@ def user_personal_statuses(user) -> dict:
 
 
 def user_visit_record_counts(user) -> dict:
-    """Return summary counts for a user's visit records.
+    """사용자의 방문 기록 요약 개수를 반환한다.
 
-    Always counts the user's FULL visit history (not a filtered subset), so
-    the archive/visits/ page's summary cards report a stable total independent
-    of any active filter/search. ``memo_count`` is the subset with a non-empty
-    short_review.
+    필터링된 부분집합이 아니라 항상 사용자의 전체 방문 이력을 센다.
+    그래야 archive/visits/ 페이지 요약 카드가 활성 필터/검색과 무관하게
+    안정된 총계를 보여준다. ``memo_count``는 short_review가 비어있지
+    않은 것만의 부분집합이다.
     """
     queryset = VisitRecord.objects.filter(user=user)
     return {
@@ -410,9 +414,10 @@ def user_visit_record_counts(user) -> dict:
 
 
 def user_visit_record_photo_count(user) -> int:
-    """Return the total number of visit-record photos owned by the given user
-    (used by the account-deletion 삭제 대상 요약, not folded into
-    user_visit_record_counts to keep that function's single queryset focus)."""
+    """주어진 사용자가 소유한 방문 기록 사진의 총 개수를 반환한다
+    (계정 탈퇴 삭제 대상 요약에서 쓴다. user_visit_record_counts에
+    합치지 않고 따로 둔 이유는 그 함수가 쿼리셋 하나에 집중하게 하기
+    위해서다)."""
     return VisitRecordPhoto.objects.filter(visit_record__user=user).count()
 
 
@@ -425,26 +430,27 @@ def list_user_visit_records(
     q: str = "",
     sort: str = "",
 ):
-    """Return a user's visit records, newest first, with related data prefetched.
+    """사용자의 방문 기록을 최신순으로, 연관 데이터를 미리 로드해
+    반환한다.
 
-    Shares the canonical ordering and prefetching so the SSR page and the API
-    stay consistent (avoids N+1 on event and photos).
+    정본 정렬과 prefetch를 공유해 SSR 페이지와 API가 일관되게 유지된다
+    (event·photos에서 N+1 쿼리를 피한다).
 
-    ``official`` — True: only event-linked records; False: only personal-entry
-    records; None: no restriction.
+    ``official`` — True면 event 연결 기록만, False면 personal_entry
+    기록만, None이면 제한 없음.
 
-    ``category_codes`` / ``category_label`` — when ``category_label`` is truthy
-    the queryset is narrowed to rows whose event.category is in category_codes
-    OR whose personal_entry.category equals category_label (OR logic). The label
-    is checked raw (no lookup) so unofficial entries stored with a free-text
-    label match directly.
+    ``category_codes`` / ``category_label`` — ``category_label``이 있으면
+    event.category가 category_codes에 있거나 personal_entry.category가
+    category_label과 같은 행으로 좁힌다(OR). label은 별도 조회 없이
+    원본 그대로 비교하므로, 자유 텍스트 라벨로 저장된 비공식 항목도
+    바로 매칭된다.
 
-    ``q`` — case-insensitive contains search across title, location_name (both
-    FK sides) and short_review.
+    ``q`` — title, location_name(양쪽 FK 모두), short_review에 대해
+    대소문자 무시 포함 검색.
 
-    ``sort`` selects the ordering via ARCHIVE_VISIT_SORT_ORDERING; an unknown
-    or empty value falls back to the default -visited_on, -id ordering rather
-    than raising or returning an empty result.
+    ``sort``는 ARCHIVE_VISIT_SORT_ORDERING으로 정렬을 고른다. 알 수
+    없거나 빈 값이면 오류를 내거나 빈 결과를 주지 않고 기본
+    -visited_on, -id 정렬로 떨어진다.
     """
     queryset = (
         VisitRecord.objects.filter(user=user)
@@ -484,19 +490,18 @@ def list_user_collection_items(
     owned=None,
     q: str = "",
 ):
-    """Return a user's collection items, newest first, owner-scoped, with
-    optional filters (collection domain design plan §4 PR-C5 CP16~22).
+    """사용자 소유 컬렉션 항목을 최신순으로 반환한다(선택적 필터 적용).
 
-    `work_title`/`character_name`/`item_type` are exact-match category
-    filters. `duplicate`, `tradeable`, and `owned` are *derived* filters, not
-    stored fields — "duplicate" means quantity >= 2, "tradeable" means
-    tradeable_quantity > 0, and "owned" means quantity > 0 (the plan
-    deliberately removed a separate duplicate_count field, §3-1).
+    `work_title`/`character_name`/`item_type`은 정확히 일치하는 값으로
+    거르는 필터다. `duplicate`, `tradeable`, `owned`는 저장된 필드가
+    아니라 *파생* 필터다 — "duplicate"는 수량>=2, "tradeable"은
+    교환가능수량>0, "owned"는 수량>0을 뜻한다(별도 duplicate_count
+    필드는 의도적으로 두지 않았다).
 
-    ``q`` narrows results to rows whose name, work_title, character_name, or
-    memo matches the search term (case-insensitive contains), mirroring
-    list_user_personal_entries' q pattern. item_type is deliberately not a
-    q target field.
+    ``q``는 name/work_title/character_name/memo 중 하나가 검색어를
+    포함하는 행으로 결과를 좁힌다(대소문자 무시,
+    list_user_personal_entries의 q와 같은 방식). item_type은 의도적으로
+    q 검색 대상에서 뺐다.
     """
     queryset = CollectionItem.objects.filter(user=user).order_by("-id")
     if work_title:
@@ -533,19 +538,18 @@ def list_user_collection_items(
 
 
 def user_collection_item_filter_values(user) -> dict:
-    """Return the distinct work_title/character_name/item_type values used by
-    a user's collection items, for populating filter widget options.
+    """사용자의 컬렉션 항목에서 쓰인 work_title/character_name/item_type
+    값을 중복 없이 반환한다. 필터 위젯 옵션을 채우는 데 쓴다.
 
-    Unlike user_visit_category_values (below) — whose caller dedupes only
-    after resolving core.vocab labels, keeping this module free of a
-    core.vocab import — work_title/character_name/item_type are stored as
-    free text with no vocab resolution step, so dedup and blank exclusion are
-    done directly here in the query layer rather than deferred to the view.
+    아래 user_visit_category_values와 달리(그쪽은 호출자가
+    core.vocab 라벨을 해석한 뒤에야 중복을 제거한다) work_title/
+    character_name/item_type은 자유 텍스트로 저장되고 별도 어휘 해석
+    단계가 없으므로, 중복 제거와 빈 값 제외를 뷰가 아니라 이 쿼리
+    계층에서 바로 처리한다.
 
-    Each list is explicitly ordered — the caller renders these directly as
-    <select> options, and DISTINCT without ORDER BY has undefined row order
-    (e.g. the planner may choose a HashAggregate plan instead of an
-    index-derived Sort).
+    각 목록을 명시적으로 정렬한다 — 호출자가 이 값을 그대로
+    <select> 옵션으로 렌더링하는데, ORDER BY 없는 DISTINCT는 행 순서가
+    정해져 있지 않기 때문이다.
     """
     fields = ("work_title", "character_name", "item_type")
     return {
@@ -561,31 +565,27 @@ def user_collection_item_filter_values(user) -> dict:
 
 
 def user_collection_item_summary_counts(user) -> dict:
-    """Return summary counts for a user's collection items (the /collection/
-    summary cards).
+    """사용자 컬렉션 항목 요약 개수를 반환한다(/collection/ 요약 카드용).
 
-    owned, wanted, and tradeable are THREE INDEPENDENT axes, not a
-    partition — collection domain design plan §D1
-    (.docs/plans/2026-07-15-collection-domain-design-plan.md:55, "wanted와
-    보유 공존 허용") approves a row being owned and wanted at once (e.g. a
-    duplicate someone still wants more of), and tradeable_quantity > 0 can
-    combine with either. A single row can be counted in more than one of
-    owned_count / wanted_count / tradeable_count at the same time, so their
-    sum is NOT the user's full item count — do not add them together as a
-    total. total_count exists precisely because that sum is unreliable: it
-    counts every row the user owns regardless of axis membership (a row can
-    be off all three axes, e.g. quantity=0/is_wanted=False/
-    tradeable_quantity=0, and still be a registered item), so it is the only
-    reliable "does this user have any collection items at all" figure.
+    owned, wanted, tradeable은 서로 독립된 세 축이지 하나를 셋으로
+    나눈 게 아니다 — 한 행이 보유(owned)이면서 동시에 구함(wanted)일
+    수 있고(예: 이미 있지만 하나 더 구하는 중인 중복 아이템),
+    tradeable_quantity > 0은 둘 중 어느 쪽과도 결합할 수 있다. 한 행이
+    owned_count / wanted_count / tradeable_count 여러 개에 동시에
+    잡힐 수 있으므로 이 셋을 더한 값은 사용자의 전체 항목 수가 아니다
+    — 절대 셋을 합산해 총계로 쓰지 말 것. total_count가 따로 있는
+    이유가 바로 이거다: 세 축 어디에도 속하지 않아도(수량=0,
+    구함=False, 교환가능수량=0이어도 등록된 항목이라면) 무조건 세는
+    유일하게 믿을 수 있는 "이 사용자가 컬렉션 항목을 가지고 있는가"
+    수치다.
 
-    - owned_count: quantity > 0 rows (physically held), regardless of
-      is_wanted or tradeable_quantity.
-    - wanted_count: is_wanted = True rows, regardless of quantity or
-      tradeable_quantity.
-    - tradeable_count: tradeable_quantity > 0 rows, regardless of quantity or
-      is_wanted.
-    - total_count: every row belonging to the user, independent of all three
-      axes.
+    - owned_count: 수량>0인 행(실제로 보유 중)이며 is_wanted나
+      tradeable_quantity와 무관하다.
+    - wanted_count: is_wanted=True인 행이며 수량이나
+      tradeable_quantity와 무관하다.
+    - tradeable_count: tradeable_quantity>0인 행이며 수량이나
+      is_wanted와 무관하다.
+    - total_count: 세 축과 무관하게 사용자 소유 전체 행 수.
     """
     queryset = CollectionItem.objects.filter(user=user)
     return {
@@ -597,25 +597,22 @@ def user_collection_item_summary_counts(user) -> dict:
 
 
 def user_collection_item_work_title_facets(user) -> list:
-    """Return {"work_title", "count", "first_id"} facets for a user's
-    collection items, excluding blank work_title, owner-scoped.
+    """사용자 컬렉션 항목의 {"work_title", "count", "first_id"} 집계를
+    반환한다(빈 work_title 제외, 소유자 한정).
 
-    Sorted by count descending, then work_title ascending as a tie-break —
-    same reasoning as user_collection_item_filter_values' explicit
-    .order_by(): GROUP BY without ORDER BY has undefined row order (the
-    planner may choose a HashAggregate plan instead of an index-derived
-    Sort), so the tie-break must be requested explicitly rather than relied
-    on implicitly.
+    개수 내림차순, 동점이면 work_title 오름차순으로 정렬한다 —
+    user_collection_item_filter_values와 같은 이유로 명시적
+    .order_by()를 쓴다: ORDER BY 없는 GROUP BY는 행 순서가 정해져
+    있지 않으므로 동점 처리 기준을 암묵적으로 기대하지 않고 명시적으로
+    요청해야 한다.
 
-    first_id is the id of the work_title's earliest-registered item
-    (Min("id")). The caller uses it to re-sort facets into REGISTRATION
-    order and derive a per-series color palette from that order — display
-    order (count descending) and palette order (first-registered) are
-    deliberately different. Assigning colors by count order would make an
-    existing work_title's color shift every time any item is added, since
-    adding one item can change the count ranking; assigning by
-    first-registration order keeps a work_title's color stable for its
-    whole lifetime.
+    first_id는 그 work_title에서 가장 먼저 등록된 항목의 id다
+    (Min("id")). 호출자는 이 값으로 집계를 등록순으로 다시 정렬해
+    시리즈별 색상 팔레트를 정한다 — 화면 표시 순서(개수 내림차순)와
+    팔레트 순서(먼저 등록된 순)는 의도적으로 다르다. 개수 순서로
+    색을 정하면 항목이 하나 추가될 때마다 순위가 바뀌어 기존
+    work_title의 색이 계속 흔들리지만, 최초 등록 순서로 정하면 한
+    work_title의 색이 평생 안정적으로 유지된다.
     """
     return list(
         CollectionItem.objects.filter(user=user)
@@ -628,36 +625,37 @@ def user_collection_item_work_title_facets(user) -> list:
 
 
 def list_items_acquired_at_visit(visit):
-    """Return the CollectionItems linked to one VisitRecord, in registration
-    order — the visit-record detail page's "이 방문에서 얻은 굿즈" section.
+    """하나의 VisitRecord에 연결된 CollectionItem을 등록순으로 반환한다
+    — 방문 기록 상세 페이지 "이 방문에서 얻은 굿즈" 영역용이다.
 
-    Uses the reverse FK (CollectionItem.visit_record), so this is an
-    intra-archive query with no new cross-domain coupling.
+    역방향 FK(CollectionItem.visit_record)를 쓰므로 archive 내부
+    쿼리이며 새로운 도메인 간 결합이 생기지 않는다.
     """
     return list(visit.archive_collection_items.all().order_by("id"))
 
 
 def list_visit_records_for_personal_entry(entry):
-    """Return the VisitRecords attached to one PersonalEntry, newest first —
-    the personal-place detail page's "이 장소의 방문 기록" section.
+    """하나의 PersonalEntry에 연결된 VisitRecord를 최신순으로 반환한다
+    — 비공식 장소 상세 페이지 "이 장소의 방문 기록" 영역용이다.
 
-    A dedicated function rather than an extra list_user_visit_records
-    argument: that function already has two consumers, and adding a
-    parameter for a single detail page would affect both. No `user` filter
-    is applied here (matches list_items_acquired_at_visit's precedent) —
-    the caller's get_object_or_404(..., user=request.user) already scopes
-    `entry` to its owner, and no write path can attach another user's visit
-    to it.
+    list_user_visit_records에 인자를 추가하는 대신 전용 함수로 분리했다:
+    그 함수는 이미 소비자가 둘이라, 상세 페이지 하나만을 위한 매개변수를
+    더하면 둘 다 영향을 받는다. 여기엔 `user` 필터를 따로 걸지 않는다
+    (list_items_acquired_at_visit와 같은 방식) — 호출자의
+    get_object_or_404(..., user=request.user)가 이미 `entry`를 소유자로
+    한정했고, 어떤 쓰기 경로도 다른 사용자의 방문을 여기에 붙일 수
+    없다.
     """
     return list(entry.archive_user_visit_records.all().order_by("-visited_on", "-id"))
 
 
 def user_visit_category_values(user):
-    """Return (event__category, personal_entry__category) pairs for a user's visits.
+    """사용자 방문 기록의 (event__category, personal_entry__category) 쌍을
+    반환한다.
 
-    Ordered newest-first to match the visit timeline. The view uses these pairs
-    to derive the full set of category chips without loading full model instances
-    or limiting to the current page.
+    방문 타임라인과 맞춰 최신순으로 정렬한다. 뷰는 이 쌍들로 전체 모델
+    인스턴스를 로드하거나 현재 페이지로 제한하지 않고 카테고리 칩
+    전체 집합을 뽑아낸다.
     """
     return (
         VisitRecord.objects.filter(user=user)
@@ -667,28 +665,27 @@ def user_visit_category_values(user):
 
 
 # ---------------------------------------------------------------------------
-# Personal activity calendar month query (dual-calendar plan §단계 3,
-# CAL-3-03~11). Combines 5 read sources into one flat list of calendar items,
-# always scoped to the given user first:
+# 개인 활동 달력 월별 조회. 5개의 읽기 소스를 하나의 평평한 달력 항목
+# 목록으로 합치며, 언제나 사용자로 먼저 한정한다:
 #
-#   schedule ("일정")       — planned UserEventStatus rows, the linked
-#                             event's full run (start..end, inclusive)
+#   schedule ("일정")       — 예정 상태인 UserEventStatus 행. 연결된
+#                             event의 전체 기간(start..end, 양끝 포함)
 #   visit ("방문")           — VisitRecord.visited_on
-#   goods_acquired ("굿즈")  — CollectionItem.acquired_on, falling back to
-#                             created_at's local date when unset
-#   <ActivityLogEntry.Kind> — the append-only action trail, dated by
-#                             occurred_at's local date
-#   <ActivityLogEntry.Kind.INTEREST_ADDED> fallback — a still-existing
-#                             EventInterest with no matching log row (legacy
-#                             pre-launch 찜, §7.5 "no backfill" — the fallback
-#                             is only used when no log row already covers it,
-#                             so the two never double-count the same 찜)
+#   goods_acquired ("굿즈")  — CollectionItem.acquired_on, 없으면
+#                             created_at의 로컬 날짜로 대체
+#   <ActivityLogEntry.Kind> — 추가만 되는 행동 이력. occurred_at의
+#                             로컬 날짜로 표시
+#   <ActivityLogEntry.Kind.INTEREST_ADDED> 대체 경로 — 대응하는 로그
+#                             행이 없는, 아직 남아있는 EventInterest
+#                             (서비스 출시 전 만들어진 옛 찜이라 소급
+#                             기록을 하지 않는다 — 이 대체 경로는 로그
+#                             행이 이미 그 찜을 포함하지 않을 때만
+#                             쓰여, 둘이 같은 찜을 중복으로 세지 않는다)
 #
-# Each source is a single query; date-derivation and month-window filtering
-# for the two "fact date with a fallback" sources (goods, 찜) happens in
-# Python since the fallback can't be expressed as one simple field lookup —
-# acceptable at today's per-user row counts (no aggregation table, service
-# design §14).
+# 소스마다 쿼리 하나씩이다. "대체 값이 있는 사실 날짜" 소스 둘(굿즈,
+# 찜)의 날짜 계산과 월 구간 필터링은 파이썬에서 처리한다. 대체 로직을
+# 필드 조회 하나로 표현할 수 없기 때문이다 — 현재 사용자당 행 수
+# 규모에서는 별도 집계 테이블 없이도 괜찮다.
 # ---------------------------------------------------------------------------
 
 SCHEDULE_KIND = "schedule"
@@ -698,27 +695,24 @@ GOODS_ACQUIRED_KIND = "goods_acquired"
 
 @dataclass(frozen=True)
 class CalendarActivityItem:
-    """One calendar-displayable activity row (dual-calendar service design
-    §7.3). A single-fact-date item (방문/굿즈 획득/행동성 활동) sets `date`
-    and leaves `start`/`end` None; a period item (일정) sets `start`/`end`
-    (inclusive) and leaves `date` None.
+    """달력에 표시할 활동 한 행. 단일 사실-날짜 항목(방문/굿즈 획득/
+    행동성 활동)은 `date`를 채우고 `start`/`end`는 None으로 둔다. 기간
+    항목(일정)은 `start`/`end`(양끝 포함)를 채우고 `date`는 None으로
+    둔다.
 
-    `label`/`url`/`time_text` (additive — web-layer display fields, not new
-    business rules; each private helper below fills them from the exact
-    object it already holds at construction time):
-    - `label`: the subject's display name (event title / CollectionItem.name
-      / ActivityLogEntry.subject_label — the durable snapshot that survives
-      the source row's own deletion).
-    - `url`: the linked edit/detail screen (event detail, visit-record edit,
-      collection-item edit), or `None` when the underlying row is a
-      SET_NULL ActivityLogEntry whose target has since been deleted (only
-      `subject_label` survives that case — there is nothing left to link
-      to).
-    - `time_text`: localtime "HH:MM" for action-time items sourced from
-      ActivityLogEntry.occurred_at only (§7.3-3 "행동성 활동"); every other
-      source has no time-of-day to show (VisitRecord.visited_on and
-      CollectionItem's date fields are plain dates, and a period item is a
-      date range) and leaves this "".
+    `label`/`url`/`time_text`는 웹 화면 표시용 필드다(새 비즈니스
+    규칙이 아니다. 아래 각 비공개 헬퍼가 생성 시점에 이미 갖고 있는
+    원본 객체에서 값을 채운다):
+    - `label`: 대상의 표시 이름(event 제목 / CollectionItem.name /
+      ActivityLogEntry.subject_label — 원본 행이 삭제돼도 남는 스냅샷).
+    - `url`: 연결된 수정/상세 화면(event 상세, 방문 기록 수정, 컬렉션
+      항목 수정)이며, 대상이 이미 삭제된 SET_NULL ActivityLogEntry인
+      경우엔 `None`이다(그 경우 `subject_label`만 남고 연결할 대상이
+      없다).
+    - `time_text`: ActivityLogEntry.occurred_at에서만 나오는 행동
+      시각의 로컬 "HH:MM"이다. 다른 소스는 시각을 보여줄 게 없어서
+      (VisitRecord.visited_on과 CollectionItem의 날짜 필드는 단순
+      날짜이고, 기간 항목은 날짜 범위다) 이 값을 ""로 둔다.
     """
 
     kind: str
@@ -737,9 +731,10 @@ def _calendar_month_bounds(year, month):
 
 
 def _schedule_items(user, month_start, month_end):
-    """Planned-status rows whose linked event run overlaps the month —
-    mirrors events.querysets.EventQuerySet.overlapping_month's boundary rule,
-    applied through the event FK instead of Event.objects directly."""
+    """연결된 event의 진행 기간이 이 달과 겹치는 예정 상태 행을
+    반환한다 — events.querysets.EventQuerySet.overlapping_month의 경계
+    규칙을, Event.objects를 직접 쓰는 대신 event FK를 통해 적용한
+    것이다."""
     statuses = (
         UserEventStatus.objects.filter(
             user=user,
@@ -798,11 +793,11 @@ def _goods_acquired_items(user, month_start, month_end):
 
 
 def _log_entry_items(user, month_start, month_end):
-    """ActivityLogEntry rows carry a durable `subject_label` snapshot
-    precisely so this source still has a label after its target row is
-    gone (event/visit_record/collection_item are all SET_NULL on the
-    target's own deletion, archive/models.py) — `url` degrades to `None`
-    in that case since there is nothing left to link to."""
+    """ActivityLogEntry는 대상 행이 사라진 뒤에도 이 소스가 라벨을
+    유지할 수 있도록 durable한 `subject_label` 스냅샷을 갖고 있다
+    (event/visit_record/collection_item은 대상이 삭제되면 모두
+    SET_NULL된다, archive/models.py). 그 경우 연결할 대상이 없으므로
+    `url`은 `None`으로 낮아진다."""
     entries = ActivityLogEntry.objects.filter(
         user=user,
         occurred_at__date__gte=month_start,
@@ -818,11 +813,11 @@ def _log_entry_items(user, month_start, month_end):
             url = reverse("collection-edit-page", args=[entry.collection_item_id])
         else:
             url = None
-        # timezone.localdate(entry.occurred_at) == timezone.localtime(entry.occurred_at).date()
-        # for an aware datetime (USE_TZ=True here) — same displayed date as
-        # before this field addition, just derived from the same localtime
-        # value that also yields time_text, so CAL-3's (kind, date)
-        # observations are unchanged.
+        # aware datetime에서(여기선 USE_TZ=True)
+        # timezone.localdate(entry.occurred_at)는
+        # timezone.localtime(entry.occurred_at).date()와 같은 값이다 —
+        # time_text도 만들어내는 같은 localtime 값에서 뽑아낸 것일
+        # 뿐이라 표시되는 날짜 자체는 이 필드를 추가하기 전과 동일하다.
         local_dt = timezone.localtime(entry.occurred_at)
         items.append(
             CalendarActivityItem(
@@ -837,10 +832,10 @@ def _log_entry_items(user, month_start, month_end):
 
 
 def _interest_added_fallback_items(user, month_start, month_end):
-    """§7.5 no-backfill fallback: a still-existing EventInterest with no
-    matching interest_added log row (legacy data from before ActivityLogEntry
-    existed). Excludes any event already covered by a real log row so a
-    post-launch 찜 is never counted twice."""
+    """소급 기록을 하지 않기로 한 대체 경로: 대응하는 interest_added
+    로그 행이 없는, 아직 남아있는 EventInterest다(ActivityLogEntry가
+    생기기 전의 옛 데이터). 이미 실제 로그 행이 있는 event는 제외해,
+    서비스 출시 이후 찜이 중복으로 세지 않는다."""
     logged_event_ids = set(
         ActivityLogEntry.objects.filter(
             user=user,
@@ -867,12 +862,12 @@ def _interest_added_fallback_items(user, month_start, month_end):
 
 
 def list_user_activity_for_month(user, *, year, month, kinds=None):
-    """Return the user's calendar-displayable activity for one month as a
-    flat list of CalendarActivityItem, always scoped to `user` first.
+    """사용자의 한 달치 달력 표시용 활동을 CalendarActivityItem의 평평한
+    목록으로 반환한다. 언제나 `user`로 먼저 한정한다.
 
-    `kinds`, when given, narrows the result to that subset of kind strings
-    (SCHEDULE_KIND, VISIT_KIND, GOODS_ACQUIRED_KIND, or an
-    ActivityLogEntry.Kind value).
+    `kinds`가 주어지면 그 kind 문자열 부분집합(SCHEDULE_KIND,
+    VISIT_KIND, GOODS_ACQUIRED_KIND 또는 ActivityLogEntry.Kind 값)으로
+    결과를 좁힌다.
     """
     month_start, month_end = _calendar_month_bounds(year, month)
 
@@ -892,9 +887,9 @@ def list_user_activity_for_month(user, *, year, month, kinds=None):
 
 
 def _latest_schedule_match_date(user, q, kinds):
-    """Latest .start among PLANNED statuses whose event title matches `q` —
-    mirrors _schedule_items' (kind, label, date) rules but filters by title
-    in the DB instead of building every row and comparing in Python."""
+    """event 제목이 `q`와 일치하는 PLANNED 상태 중 가장 늦은 .start —
+    _schedule_items의 (kind, label, date) 규칙을 그대로 따르되, 파이썬
+    으로 모든 행을 만들어 비교하지 않고 DB에서 제목으로 필터링한다."""
     if kinds is not None and SCHEDULE_KIND not in kinds:
         return None
     return UserEventStatus.objects.filter(
@@ -906,9 +901,9 @@ def _latest_schedule_match_date(user, q, kinds):
 
 
 def _latest_visit_match_date(user, q, kinds):
-    """Latest visited_on among visits whose event or personal_entry title
-    matches `q` — mirrors _visit_items' label sourcing (event title if
-    linked, else personal_entry title)."""
+    """event 또는 personal_entry 제목이 `q`와 일치하는 방문 중 가장
+    늦은 visited_on — _visit_items가 라벨을 정하는 방식(연결됐으면
+    event 제목, 아니면 personal_entry 제목)을 그대로 따른다."""
     if kinds is not None and VISIT_KIND not in kinds:
         return None
     return (
@@ -919,12 +914,12 @@ def _latest_visit_match_date(user, q, kinds):
 
 
 def _latest_goods_match_date(user, q, kinds):
-    """Latest derived display date (acquired_on or created_at's local date)
-    among CollectionItems whose name matches `q`. The display date is a
-    derived value, not a plain column, so it cannot be aggregated in the DB —
-    but the row set itself is already narrowed by name__icontains, so only
-    the small set of actual matches (not the user's whole collection) is
-    pulled into Python to pick the max."""
+    """name이 `q`와 일치하는 CollectionItem 중 가장 늦은 파생 표시
+    날짜(acquired_on 또는 created_at의 로컬 날짜). 표시 날짜는 단순
+    컬럼이 아니라 파생 값이라 DB에서 집계할 수 없다 — 다만 행 집합
+    자체는 이미 name__icontains로 좁혀져 있어서, 사용자의 전체
+    컬렉션이 아니라 실제로 일치하는 작은 집합만 파이썬으로 가져와
+    최댓값을 고른다."""
     if kinds is not None and GOODS_ACQUIRED_KIND not in kinds:
         return None
     match_dates = [
@@ -935,12 +930,12 @@ def _latest_goods_match_date(user, q, kinds):
 
 
 def _latest_log_entry_match_date(user, q, kinds):
-    """Latest local display date among ActivityLogEntry rows whose
-    subject_label matches `q`, optionally narrowed to `kinds` first (a
-    kind__in filter in the DB, same effect as list_user_activity_for_month's
-    Python-side kind filter). occurred_at -> local date is a derived value
-    (timezone.localtime(...).date(), same as _log_entry_items), so it is
-    computed in Python only over the already-matched rows."""
+    """subject_label이 `q`와 일치하는 ActivityLogEntry 중 가장 늦은
+    로컬 표시 날짜. `kinds`가 있으면 먼저 그걸로 좁힌다(DB의
+    kind__in 필터로, list_user_activity_for_month의 파이썬 쪽 kind
+    필터와 같은 효과). occurred_at -> 로컬 날짜는 파생 값이라
+    (timezone.localtime(...).date(), _log_entry_items와 동일) 이미
+    일치한 행에 대해서만 파이썬에서 계산한다."""
     entries = ActivityLogEntry.objects.filter(user=user, subject_label__icontains=q)
     if kinds is not None:
         entries = entries.filter(kind__in=kinds)
@@ -952,11 +947,11 @@ def _latest_log_entry_match_date(user, q, kinds):
 
 
 def _latest_interest_fallback_match_date(user, q, kinds):
-    """Latest derived display date (created_at's local date) among the §7.5
-    no-backfill fallback's still-existing EventInterests whose event title
-    matches `q`, excluding any event already covered by a real
-    interest_added log row — mirrors _interest_added_fallback_items exactly,
-    just narrowed by title in the DB first."""
+    """소급 기록을 하지 않는 대체 경로에서, event 제목이 `q`와 일치하는
+    아직 남아있는 EventInterest 중 가장 늦은 파생 표시 날짜
+    (created_at의 로컬 날짜). 이미 실제 interest_added 로그 행이 있는
+    event는 제외한다 — _interest_added_fallback_items와 완전히 같은
+    로직이며, DB에서 제목으로 먼저 좁힌다는 점만 다르다."""
     if kinds is not None and ActivityLogEntry.Kind.INTEREST_ADDED not in kinds:
         return None
     logged_event_ids = set(
@@ -976,29 +971,28 @@ def _latest_interest_fallback_match_date(user, q, kinds):
 
 
 def find_latest_activity_date_for_query(user, q, *, kinds=None):
-    """Return the most recent calendar date where one of `user`'s activity
-    items' label contains `q` (case-insensitive), or None with no match —
-    the read side of the activity calendar's date-jump search (dual-calendar
-    editorial plan §4-a-1). Blank/whitespace-only `q` always returns None
-    without querying.
+    """`user`의 활동 항목 중 라벨이 `q`를 포함하는(대소문자 무시) 가장
+    최근 달력 날짜를 반환한다. 일치하는 게 없으면 None이다 — 활동
+    달력의 날짜 이동 검색 기능의 읽기 쪽이다. `q`가 비어있거나 공백뿐
+    이면 쿼리 없이 항상 None을 반환한다.
 
-    Unlike list_user_activity_for_month (bounded to one month, so its
-    per-source Python loops stay small), this function's date range is
-    unbounded — the whole activity history — so the `q`-vs-label comparison
-    is pushed into each source's own DB query (name/title/subject_label
-    __icontains=q) instead of building every row across the user's entire
-    history and filtering in Python. Each per-source helper above mirrors
-    the exact (kind, label, date) rules its list_user_activity_for_month
-    counterpart uses, just narrowed by `q` (and `kinds`) in the DB first.
+    한 달로 범위가 제한돼 소스별 파이썬 루프가 작게 유지되는
+    list_user_activity_for_month와 달리, 이 함수의 날짜 범위는
+    제한이 없다(전체 활동 이력) — 그래서 `q`와 라벨 비교를 사용자의
+    전체 이력을 파이썬으로 만들어 거르는 대신 각 소스 자신의 DB
+    쿼리로 밀어 넣는다(name/title/subject_label __icontains=q). 위 각
+    소스별 헬퍼는 대응하는 list_user_activity_for_month 쪽 헬퍼와
+    똑같은 (kind, label, date) 규칙을 따르며, `q`(와 `kinds`)로 DB에서
+    먼저 좁힌다는 점만 다르다.
 
-    This function's only caller (core.views.activity_calendar) passes it the
-    currently active type= filter's kinds, so a jump never lands on a date
-    whose only match is a kind currently hidden from view.
+    이 함수의 유일한 호출자(core.views.activity_calendar)는 현재
+    활성화된 type= 필터의 kinds를 그대로 넘긴다. 그래서 화면에서
+    숨겨진 kind만 일치하는 날짜로는 이동하지 않는다.
 
-    A period item (schedule) is matched by its whole displayed range, but
-    the date returned for it is `.start` — the first day the month grid
-    would actually show it (mirrors list_user_activity_for_month's own
-    day-by-day bucketing of period items).
+    기간 항목(일정)은 화면에 표시되는 전체 범위로 일치 여부를
+    판정하지만, 반환하는 날짜는 `.start`다 — 월 달력 그리드가 실제로
+    그것을 처음 보여주는 날이다(list_user_activity_for_month가 기간
+    항목을 날짜별로 나누는 방식과 같다).
     """
     q = q.strip()
     if not q:

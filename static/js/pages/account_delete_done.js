@@ -1,21 +1,8 @@
 /**
- * account_delete_done.js — /accounts/delete/done/ only.
- *
- * IC8: the deletion-request POST calls logout() before redirecting here, so
- * this page only ever renders for a session that has just been logged out.
- * A back/forward-cache restore (event.persisted) can bring this exact page
- * back from memory without a fresh request — harmless on its own (the view
- * itself is @never_cache, so a *fresh* load never shows stale state), but
- * if the user then navigates further back into a bfcache'd *pre-deletion*
- * page, that earlier snapshot can still read as "logged in" (its DOM was
- * captured before logout()). Forcing a reload right here, the one page this
- * flow guarantees the user lands on right after logout(), is the cheapest
- * point to break that chain: a reload re-requests every bfcache'd page the
- * user later returns to only after it, off a fresh (logged-out) session.
- *
- * Same event contract as api.js/theme.js's own pageshow handlers (this file
- * doesn't reuse them — they solve unrelated problems: api.js re-arms
- * frozen submit buttons, theme.js has no pageshow listener at all).
+ * 탈퇴 요청 처리는 로그아웃 후 이 페이지로 이동한다. 뒤로가기로 bfcache에
+ * 저장된 탈퇴 이전 화면을 다시 열면 로그인 상태로 보일 수 있어, 이 페이지에
+ * bfcache로 복원됐을 때(event.persisted) 강제로 새로고침해 그 뒤에 여는
+ * 모든 캐시 페이지가 로그아웃된 최신 상태로 다시 요청되게 한다.
  */
 (function () {
   "use strict";

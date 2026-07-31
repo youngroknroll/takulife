@@ -1,23 +1,16 @@
-"""목록 | 달력 view toggle on /archive/ and /archive/calendar/.
+"""/archive/와 /archive/calendar/의 목록 | 달력 뷰 토글 테스트.
 
-2026-07-23 v2 plan §C (.docs/plans/2026-07-23-activity-editorial-v2-plan.md,
-사용자 확정 #3): the "활동 달력" sub-nav tab is replaced by a same-route-family
-view toggle on the two pages it connects. Unlike the collection view toggle
-(a same-route query-param switch that preserves filters), this toggle crosses
-routes to a page that reads neither `status` nor `q`
-(templates/core/archive/calendar.html:31-58,70-73) — so its `달력` href must
-never carry a dead query string. Both directions of the round trip are
-covered so a regression on either page is caught.
+2026-07-23 v2 계획 §C(.docs/plans/2026-07-23-activity-editorial-v2-plan.md):
+"활동 달력" 탭이 두 페이지를 잇는 같은 라우트 계열 뷰 토글로 바뀐다. 컬렉션 뷰
+토글(필터를 보존하는 같은 라우트 쿼리 전환)과 달리 이 토글은 status/q를 읽지
+않는 페이지로 라우트를 넘나들므로(templates/core/archive/calendar.html:31-58,70-73)
+`달력` href에 죽은 쿼리 문자열이 실려선 안 된다. 왕복 양방향을 모두 검증한다.
 
-2026-07-27 내 활동 셸 폴리시 v2 (.docs/plans/2026-07-27-activity-shell-v2-plan.md):
-the same 목록/달력 toggle is extended to /archive/statuses/ and
-/archive/visits/, both of which have an honest current URL to mark
-aria-current on (unlike the plain-tab-bar days). The new tests below scope
-their assertions to the `.activity-view-toggle` block itself — on both pages
-a status/filter "전체" chip elsewhere on the page can render a plain
-`href="/archive/statuses/"` or `href="/archive/visits/"` with no query
-string when the page has no active search/filter, which would make an
-unscoped substring check pass even without the toggle existing.
+2026-07-27 내 활동 셸 폴리시 v2(.docs/plans/2026-07-27-activity-shell-v2-plan.md):
+같은 토글이 /archive/statuses/, /archive/visits/에도 확장된다. 아래 테스트는
+검증 범위를 `.activity-view-toggle` 블록 자체로 좁힌다 — 페이지의 다른 위치에
+있는 필터 "전체" 칩이 쿼리 없는 같은 href를 렌더할 수 있어, 범위를 좁히지 않으면
+토글이 없어도 검사가 통과해버린다.
 """
 import pytest
 

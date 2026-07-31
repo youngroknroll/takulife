@@ -62,14 +62,12 @@ def mypage(request):
     interest_count = user_interest_count(user)
     collection_count = user_collection_item_summary_counts(user)["total_count"]
 
-    # index_rows drives mypage.html's index list; row order and ink values
-    # are fixed by the mypage brief (§1). Each row is rendered as a single
-    # <a> spanning the whole row, so its accessible name concatenates
-    # title + badge + description + count. Whenever the title already
-    # contains the badge label, keep domain_label empty below so the
-    # template's "{% if row.domain_label %}" skips a badge that would
-    # otherwise repeat the title for screen readers (BIR M3; exact-match
-    # "내 활동"/"내 활동" is just the special case of this rule).
+    # index_rows가 mypage.html의 목록을 그린다. 각 행은 전체가 하나의
+    # <a>로 렌더링돼 접근성 이름이 제목+배지+설명+개수를 이어붙인 값이
+    # 된다. 제목에 이미 배지 라벨이 들어 있으면 아래에서 domain_label을
+    # 비워, 템플릿의 "{% if row.domain_label %}"가 스크린리더에 제목을
+    # 중복해서 읽어주는 배지를 건너뛰게 한다("내 활동"/"내 활동"처럼
+    # 완전히 같은 경우도 이 규칙의 한 사례다).
     index_rows = [
         {
             "title": "내 컬렉션",
@@ -145,33 +143,28 @@ def mypage(request):
 
 @login_required
 def delete_account(request):
-    """Password-reconfirmed account deletion request (10-day grace period).
+    """비밀번호 재확인이 있는 계정 탈퇴 신청(10일 유예 기간).
 
-    Moved here from accounts.views by the account-settings-editorial plan
-    B5: GET must read archive counts for the 삭제 대상 요약, and accounts is
-    not allowed to import archive (see
-    tests/core/test_architecture_boundaries.py) — core/views/ is the one
-    domain-composition seam the boundary guard allows. The password-lockout
-    security rule itself stays owned by accounts.services
+    accounts.views에서 이곳으로 옮겨왔다: GET이 삭제 대상 요약을 위해
+    archive 카운트를 읽어야 하는데 accounts는 archive를 임포트할 수 없어서
+    (tests/core/test_architecture_boundaries.py 참고) — core/views/가 경계
+    가드가 허용하는 유일한 도메인 조합 지점이다. 비밀번호 잠금 보안
+    규칙 자체는 여전히 accounts.services가 소유한다
     (is_delete_locked / register_failed_delete_attempt).
 
-    GET renders the confirmation form plus delete_targets (6 counts). POST
-    verifies the current password then records the deletion request via
-    accounts.services.request_deletion (see
-    .docs/plans/2026-07-20-deletion-grace-period-plan.md) — the account
-    itself is not deleted here; it survives for a 10-day grace period, purged
-    later by accounts.management.commands.purge_deleted_accounts unless the
-    user logs back in and cancels it. The session is flushed right after the
-    request is recorded so the browser's existing cookie stops authenticating
-    for the rest of this visit; the 완료 안내 payload is written to the
-    session *after* logout() (logout() flushes the session, so writing
-    before it would be lost).
+    GET은 확인 폼과 delete_targets(6개 카운트)를 렌더링한다. POST는 현재
+    비밀번호를 확인한 뒤 accounts.services.request_deletion으로 탈퇴
+    신청을 기록한다 — 계정 자체는 여기서 삭제되지 않고 10일 유예
+    기간 동안 살아 있다가, 사용자가 다시 로그인해 취소하지 않으면
+    accounts.management.commands.purge_deleted_accounts가 나중에 지운다.
+    신청 기록 직후 세션을 비워 브라우저의 기존 쿠키가 이번 방문 나머지
+    동안 인증되지 않게 한다. 완료 안내 데이터는 logout() *이후*에
+    세션에 쓴다(logout()이 세션을 비우므로 그 전에 쓰면 사라진다).
 
-    Staff accounts are blocked from self-deletion on both GET and POST
-    (403) — the header no longer links here for a staff user (account_menu
-    dropdown / settings page), but the UI hiding it is not itself a
-    guarantee, so the view enforces it directly. Staff removal is a Django
-    admin action only (superuser judgment call).
+    스태프 계정은 GET/POST 모두 자율 탈퇴가 막혀 있다(403) — 스태프에게는
+    헤더가 더 이상 이 경로로 링크하지 않지만, UI를 숨기는 것만으로는
+    보장이 안 되므로 뷰가 직접 강제한다. 스태프 제거는 Django 관리자
+    작업으로만 이뤄진다(슈퍼유저 판단).
     """
     if request.user.is_staff:
         raise PermissionDenied

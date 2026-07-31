@@ -1,9 +1,8 @@
-"""staff.services — PR-E3 (hard-delete guard against archive references).
+"""아카이브 참조를 지키는 하드 삭제 가드 검증.
 
-`events/services.py` must never import `archive` (architecture boundary),
-so the "does this event have archive references?" question and the guarded
-delete orchestration live in staff/services.py instead — staff is the layer
-allowed to depend on both events and archive.
+`events/services.py`는 `archive`를 임포트하면 안 되는 아키텍처 경계가 있어,
+참조 여부 판단과 삭제 가드 로직은 events와 archive 양쪽에 의존해도 되는
+staff/services.py에 둔다.
 """
 import datetime
 

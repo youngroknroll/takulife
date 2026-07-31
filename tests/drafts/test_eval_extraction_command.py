@@ -1,10 +1,7 @@
-"""Tests for the eval_extraction management command.
-
-Golden set = approved drafts with non-empty raw_text (drafts created before
-raw_text was captured, or manually-reported drafts via create_draft_from_fields,
-have no raw_text to re-run extraction against — excluded). Mocks the extractor
-functions at the command's import location, never real LLM/anthropic calls.
-"""
+"""eval_extraction 관리 명령어 테스트. 골든 세트는 raw_text가 있는 승인된
+드래프트만 포함한다(raw_text 도입 전에 만들어졌거나 수동 등록된 드래프트는
+재추출할 원문이 없어 제외). 실제 LLM/anthropic 호출 없이 추출기 함수를
+명령어의 import 지점에서 모킹한다."""
 import pytest
 from django.core.management import call_command
 

@@ -1,7 +1,5 @@
-"""core.ip: proxy-aware client IP resolution.
-
-(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0d,
-TDD Coach checkpoints CP-7..CP-11)
+"""core.ip: 프록시를 고려한 클라이언트 IP 판정
+(.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
 
 import pytest

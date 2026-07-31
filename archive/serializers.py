@@ -14,8 +14,8 @@ from .models import (
 
 
 class PersonalEntrySerializer(serializers.ModelSerializer):
-    # Client-supplied idempotency key (bfcache duplicate-creation plan §4-1).
-    # write_only so a replayed create's token is never echoed back.
+    # 클라이언트가 발급하는 멱등 키. 재생된 생성 요청의 토큰이 응답에
+    # 그대로 노출되지 않도록 write_only로 둔다.
     client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
 
     class Meta:
@@ -34,23 +34,22 @@ class PersonalEntrySerializer(serializers.ModelSerializer):
             "client_token",
             "created_at",
         ]
-        # owner is taken from the request, never the payload
+        # 소유자는 요청자 정보로 정하며 요청 본문 값은 쓰지 않는다.
         read_only_fields = ["id", "created_at"]
 
     def validate_image(self, value):
-        # Route the optional image through the shared guard (size, extension,
-        # real format, per-axis dimension, and total pixel-area decompression
-        # -bomb caps) — the same protection visit photos already get. DRF's
-        # default ImageField only confirms it decodes, not that it is safe.
+        # 방문 사진과 같은 공용 검증기로 보낸다(크기·확장자·실제 포맷·
+        # 축별 치수·압축 폭탄 방지용 총 픽셀 상한). DRF 기본 ImageField는
+        # 디코딩 가능 여부만 볼 뿐 안전한지는 보지 않는다.
         if value in (None, ""):
             return value
         return validate_uploaded_image(value)
 
 
 class PersonalEntryUpdateSerializer(PersonalEntrySerializer):
-    """PATCH serializer: identical to `PersonalEntrySerializer` except
-    `client_token` is structurally excluded — a create-time idempotency key
-    must never be re-read or overwritten on update.
+    """`PersonalEntrySerializer`와 같되 `client_token`만 구조적으로
+    뺀 PATCH용 시리얼라이저. 생성 시점 멱등 키는 수정 시 다시 읽거나
+    덮어써서는 안 된다.
     """
 
     client_token = None
@@ -60,12 +59,12 @@ class PersonalEntryUpdateSerializer(PersonalEntrySerializer):
 
 
 class _SubjectScopedPersonalEntryMixin:
-    """Scopes the ``personal_entry`` field to the requester and enforces that
-    exactly one subject (event or personal_entry) is supplied.
+    """``personal_entry`` 필드를 요청자 소유로 한정하고, event/personal_entry
+    중 정확히 하나만 지정되도록 강제한다.
 
-    Shared by the interest/status serializers so an archive action can point at
-    an official Event OR the user's own unofficial PersonalEntry — never both,
-    never neither, and never another user's private item.
+    관심/상태 시리얼라이저가 공유해서 사용한다. 이렇게 해야 공식 Event나
+    사용자 본인의 비공식 PersonalEntry 중 하나만 가리킬 수 있고, 다른
+    사용자의 비공개 항목은 절대 가리킬 수 없다.
     """
 
     def __init__(self, *args, **kwargs):
@@ -91,7 +90,7 @@ class _SubjectScopedPersonalEntryMixin:
 
 
 class EventInterestSerializer(_SubjectScopedPersonalEntryMixin, serializers.ModelSerializer):
-    # subject = exactly one of event (published) or personal_entry (own).
+    # 대상은 게시된 event와 본인 소유 personal_entry 중 정확히 하나여야 한다.
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(), required=False, allow_null=True
     )
@@ -106,7 +105,7 @@ class EventInterestSerializer(_SubjectScopedPersonalEntryMixin, serializers.Mode
 
 
 class UserEventStatusSerializer(_SubjectScopedPersonalEntryMixin, serializers.ModelSerializer):
-    # subject = exactly one of event (published) or personal_entry (own).
+    # 대상은 게시된 event와 본인 소유 personal_entry 중 정확히 하나여야 한다.
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(), required=False, allow_null=True
     )
@@ -133,15 +132,15 @@ class UserEventStatusQuerySerializer(serializers.Serializer):
 
 
 class VisitRecordSerializer(serializers.ModelSerializer):
-    # subject = exactly one of event (published) or personal_entry (own).
+    # 대상은 게시된 event와 본인 소유 personal_entry 중 정확히 하나여야 한다.
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(), required=False, allow_null=True
     )
     personal_entry = serializers.PrimaryKeyRelatedField(
         queryset=PersonalEntry.objects.none(), required=False, allow_null=True
     )
-    # Client-supplied idempotency key (bfcache duplicate-creation plan §4-1).
-    # write_only so a replayed create's token is never echoed back.
+    # 클라이언트가 발급하는 멱등 키. 재생된 생성 요청의 토큰이 응답에
+    # 그대로 노출되지 않도록 write_only로 둔다.
     client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
 
     class Meta:
@@ -158,8 +157,8 @@ class VisitRecordSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Scope personal_entry to the requester so you can't attach to someone
-        # else's private item.
+        # personal_entry를 요청자 소유로 한정해 다른 사람의 비공개 항목에
+        # 연결하지 못하게 한다.
         request = self.context.get("request")
         if request is not None and request.user.is_authenticated:
             self.fields["personal_entry"].queryset = PersonalEntry.objects.filter(
@@ -181,8 +180,8 @@ class VisitRecordSerializer(serializers.ModelSerializer):
 
 
 class VisitRecordUpdateSerializer(serializers.ModelSerializer):
-    """PATCH serializer: only visited_on / short_review are editable; the
-    subject (event / personal_entry) stays pinned to the original record."""
+    """PATCH용: visited_on / short_review만 수정 가능하고, 대상
+    (event / personal_entry)은 원본 기록에 고정된 채 바뀌지 않는다."""
 
     class Meta:
         model = VisitRecord
@@ -192,41 +191,39 @@ class VisitRecordUpdateSerializer(serializers.ModelSerializer):
 
 class VisitRecordPhotoUploadSerializer(serializers.Serializer):
     image = serializers.ImageField(required=True)
-    # Client-supplied idempotency key (bfcache duplicate-creation plan §4-1),
-    # scoped by (visit_record, client_token) — see VisitRecordPhoto's
-    # UniqueConstraint. write_only so a replayed create's token is never
-    # echoed back.
+    # 클라이언트가 발급하는 멱등 키. (visit_record, client_token) 단위로
+    # 스코프한다(VisitRecordPhoto의 UniqueConstraint 참고). 재생된 생성
+    # 요청의 토큰이 응답에 그대로 노출되지 않도록 write_only로 둔다.
     client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
 
     def validate_image(self, value):
-        # Delegate to the shared validator (size, extension, real format, per-axis
-        # dimension, and total pixel-area decompression-bomb guards).
+        # 공용 검증기로 위임한다(크기·확장자·실제 포맷·축별 치수·압축
+        # 폭탄 방지용 총 픽셀 상한).
         return validate_uploaded_image(value)
 
 
 class CollectionItemSerializer(serializers.ModelSerializer):
-    """Owner is always taken from the request, never the payload.
-    `visibility` is deliberately absent from `fields` (not read_only) —
-    reserved for the future trade opt-in gate, no exposure until Stage 4
-    (collection domain design plan §3-1, PO decision 2026-07-16). Create-only
-    (see `CollectionItemUpdateSerializer` for PATCH): `client_token` is a
-    create-time idempotency key and must not leak into the update path
-    (bfcache duplicate-creation plan, DAR mandatory fix ③). No fields are
-    pinned read-only besides id/created_at/updated_at because, unlike
-    VisitRecord/UserEventStatus, a CollectionItem's event/visit_record links
-    are themselves user-editable after creation.
+    """소유자는 항상 요청자 정보로 정하며 요청 본문 값은 쓰지 않는다.
+    `visibility`는 `fields`에서 의도적으로 뺐다(read_only도 아님) — 추후
+    교환 옵트인 게이트를 위해 남겨둔 것이고 그 단계가 승인되기 전까지는
+    노출하지 않는다. 생성 전용(PATCH는 `CollectionItemUpdateSerializer`
+    참고): `client_token`은 생성 시점 멱등 키라 수정 경로로 새어 들어가면
+    안 된다. id/created_at/updated_at 외에는 읽기 전용으로 고정하지
+    않는데, VisitRecord/UserEventStatus와 달리 CollectionItem의
+    event/visit_record 링크는 생성 후에도 사용자가 직접 수정할 수 있기
+    때문이다.
     """
 
-    # event is scoped to published events only (same guard as
-    # VisitRecordSerializer/UserEventStatusSerializer).
+    # event는 게시된 event로만 한정한다(VisitRecordSerializer/
+    # UserEventStatusSerializer와 같은 보호 장치).
     event = serializers.PrimaryKeyRelatedField(
         queryset=Event.objects.published(), required=False, allow_null=True
     )
     visit_record = serializers.PrimaryKeyRelatedField(
         queryset=VisitRecord.objects.all(), required=False, allow_null=True
     )
-    # Client-supplied idempotency key (bfcache duplicate-creation plan §4-1).
-    # write_only so a replayed create's token is never echoed back.
+    # 클라이언트가 발급하는 멱등 키. 재생된 생성 요청의 토큰이 응답에
+    # 그대로 노출되지 않도록 write_only로 둔다.
     client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
 
     class Meta:
@@ -254,15 +251,14 @@ class CollectionItemSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Scope visit_record to the requester (mirrors
-        # _SubjectScopedPersonalEntryMixin/VisitRecordSerializer's
-        # personal_entry scoping). Without this, a cross-user visit_record id
-        # reaches create_collection_item/update_collection_item's ownership
-        # guard, whose distinct error message makes the field an existence
-        # oracle for VisitRecord ids system-wide (security gate M1,
-        # 2026-07-16) — attachment could never succeed either way, but the
-        # two failure messages were distinguishable. The service-level
-        # ownership guard stays in place as defense in depth.
+        # visit_record를 요청자 소유로 한정한다(personal_entry를 한정하는
+        # _SubjectScopedPersonalEntryMixin/VisitRecordSerializer와 같은
+        # 방식). 이게 없으면 다른 사용자의 visit_record id가
+        # create_collection_item/update_collection_item의 소유권 검사까지
+        # 도달하는데, 그 검사의 오류 메시지가 필드 값과 달라서 어떤
+        # VisitRecord id가 실제로 존재하는지 알아낼 수 있는 통로가 된다.
+        # 연결 자체는 어느 쪽이든 성공할 수 없지만 두 실패 메시지가
+        # 구별됐다. 서비스 단 소유권 검사는 2차 방어로 그대로 둔다.
         request = self.context.get("request")
         if request is not None and request.user.is_authenticated:
             self.fields["visit_record"].queryset = VisitRecord.objects.filter(
@@ -270,18 +266,18 @@ class CollectionItemSerializer(serializers.ModelSerializer):
             )
 
     def validate_image(self, value):
-        # Route the optional image through the shared guard, mirroring
-        # PersonalEntrySerializer.validate_image.
+        # PersonalEntrySerializer.validate_image와 같은 방식으로 공용
+        # 검증기로 보낸다.
         if value in (None, ""):
             return value
         return validate_uploaded_image(value)
 
 
 class CollectionItemUpdateSerializer(CollectionItemSerializer):
-    """PATCH serializer: identical to `CollectionItemSerializer` except
-    `client_token` is structurally excluded — a create-time idempotency key
-    must never be re-read or overwritten on update (DAR mandatory fix ③).
-    Inherits visit_record scoping (__init__) and validate_image unchanged.
+    """`CollectionItemSerializer`와 같되 `client_token`만 구조적으로
+    뺀 PATCH용 시리얼라이저. 생성 시점 멱등 키는 수정 시 다시 읽거나
+    덮어써서는 안 된다. visit_record 한정(__init__)과 validate_image는
+    그대로 물려받는다.
     """
 
     client_token = None
@@ -291,20 +287,18 @@ class CollectionItemUpdateSerializer(CollectionItemSerializer):
 
 
 class CollectionItemQuerySerializer(serializers.Serializer):
-    """Validates CollectionItem list query params before they reach
-    list_user_collection_items (mirrors UserEventStatusQuerySerializer).
+    """CollectionItem 목록 조회 파라미터를 list_user_collection_items에
+    닿기 전에 검증한다(UserEventStatusQuerySerializer와 같은 방식).
 
-    `duplicate`/`tradeable`/`owned` are booleans selecting the *derived*
-    condition (quantity >= 2 / tradeable_quantity > 0 / quantity > 0) — the
-    query layer owns the actual filter logic, this serializer only validates
-    shape.
+    `duplicate`/`tradeable`/`owned`는 파생 조건(수량>=2 / 교환가능수량>0 /
+    수량>0)을 고르는 불리언이다 — 실제 필터 로직은 쿼리 계층이 갖고,
+    이 시리얼라이저는 형태만 검증한다.
 
-    Empty-value contract (domain gate finding, 2026-07-16): an *absent*
-    param and an *empty* param (`?work_title=`) both mean "no filter" —
-    uniform across all six filters so a client can naively serialize a form
-    without per-field blank-stripping. `max_length` mirrors the model's own
-    CharField caps (security gate L4). Genuinely invalid values (e.g.
-    `?is_wanted=ture`) still 400 — only emptiness is tolerated.
+    파라미터가 아예 없는 경우와 빈 값(`?work_title=`)을 모두 "필터 없음"
+    으로 취급한다. 여섯 필터 전부 동일하게 처리해야 클라이언트가 필드별
+    공백 제거 없이 폼을 그대로 직렬화해 보낼 수 있다. `max_length`는
+    모델 CharField의 최대 길이와 맞춘다. 값이 진짜로 잘못된 경우
+    (예: `?is_wanted=ture`)는 여전히 400이며, 빈 값만 허용한다.
     """
 
     work_title = serializers.CharField(required=False, allow_blank=True, max_length=255)

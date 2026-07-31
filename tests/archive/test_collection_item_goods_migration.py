@@ -1,15 +1,14 @@
-"""GOODS PersonalEntry -> CollectionItem data migration (collection domain
-design plan §3-5, PR-C4 stage C).
+"""GOODS PersonalEntry -> CollectionItem 데이터 마이그레이션 테스트
+(컬렉션 도메인 설계 계획 §3-5, PR-C4 stage C).
 
-Follows the CP10 repository precedent
-(tests/archive/test_visit_record_status_orchestration.py) for testing a
-RunPython data migration: import the migration module and call its function
-directly against ``django.apps.apps`` (not the frozen historical registry),
-so the test exercises the exact function ``manage.py migrate`` would run.
+RunPython 데이터 마이그레이션 테스트는 CP10 선례(test_visit_record_status_
+orchestration.py)를 따른다: 마이그레이션 모듈을 임포트해 그 함수를 고정된
+과거 레지스트리가 아니라 ``django.apps.apps`` 대상으로 직접 호출함으로써,
+``manage.py migrate`` 가 실행할 것과 동일한 함수를 검증한다.
 
-Deliberately builds test rows with the literal string "goods" instead of
-``PersonalEntry.Kind.GOODS`` — the enum member is removed in a later commit
-of this same track (§3-5 M2) and this file must not need to change then.
+테스트 행은 일부러 ``PersonalEntry.Kind.GOODS`` 대신 리터럴 문자열 "goods"로
+만든다 — 이 enum 멤버는 같은 트랙의 이후 커밋(§3-5 M2)에서 제거되므로, 그때
+이 파일을 고칠 필요가 없게 하기 위함이다.
 """
 import importlib
 
@@ -33,7 +32,7 @@ def _make_goods(user, **kwargs):
 
 
 # ---------------------------------------------------------------------------
-# Field mapping
+# 필드 매핑
 # ---------------------------------------------------------------------------
 
 
@@ -108,7 +107,7 @@ def test_분류가_비어있으면_굿즈_종류가_기타로_매핑된다(make_
 
 
 # ---------------------------------------------------------------------------
-# Defensive failure — abort the entire run, no partial commit
+# 방어적 실패 — 전체 실행을 중단하고 부분 커밋을 허용하지 않는다
 # ---------------------------------------------------------------------------
 
 
@@ -127,9 +126,9 @@ def test_방문_기록이_참조하는_굿즈가_있으면_전체_이관이_중�
     message = str(exc_info.value)
     assert f"PersonalEntry(id={blocked.id})" in message
     assert f"VisitRecord(id={visit.id})" in message or str(visit.id) in message
-    # All-or-nothing: the otherwise-valid "clean" row must not be migrated either.
+    # 전부 아니면 전무: 그 자체로 유효한 "clean" 행도 이관되면 안 된다.
     assert CollectionItem.objects.count() == 0
-    assert clean.id is not None  # sanity: clean row is untouched, still present
+    assert clean.id is not None  # 확인용: clean 행은 그대로 존재함
 
 
 @pytest.mark.django_db
@@ -209,9 +208,9 @@ def test_공식_등록_검토가_제출된_굿즈가_있으면_전체_이관이_
 
 
 # ---------------------------------------------------------------------------
-# CP-Image — the migrated CollectionItem gets its own physically independent
-# file, so PersonalEntry's post_delete storage cleanup can never silently
-# wipe the migrated copy (archive/signals.py).
+# CP-Image — 이관된 CollectionItem은 물리적으로 독립된 파일을 갖는다. 그래야
+# PersonalEntry의 post_delete 스토리지 정리(archive/signals.py)가 이관된
+# 사본을 조용히 지워버리는 일이 없다.
 # ---------------------------------------------------------------------------
 
 
@@ -235,18 +234,18 @@ def test_이미지가_있는_굿즈를_이관하면_원본과_물리적으로_�
 
     item = CollectionItem.objects.get(user=user)
 
-    # (1) distinct storage key — never the same physical file as the source.
+    # (1) 원본과 다른 저장 키 — 물리적으로 같은 파일을 절대 공유하지 않는다.
     assert item.image.name != original_name
 
-    # (2)+(3) force the PersonalEntry post_delete signal to actually fire by
-    # deleting the *real* (non-historical) row, then prove the signal really
-    # ran by asserting the original file is gone.
+    # (2)+(3) 실제(과거 이력이 아닌) 행을 삭제해 PersonalEntry의 post_delete
+    # 시그널을 실제로 발생시키고, 원본 파일이 사라졌는지로 시그널이 정말
+    # 실행됐음을 증명한다.
     real_entry = PersonalEntry.objects.get(pk=entry.pk)
     with django_capture_on_commit_callbacks(execute=True):
         real_entry.delete()
     assert storage.exists(original_name) is False
 
-    # (4) the migrated copy survives the source row's deletion untouched.
+    # (4) 이관된 사본은 원본 행이 삭제돼도 영향받지 않고 남는다.
     item.refresh_from_db()
     assert storage.exists(item.image.name) is True
 
@@ -265,7 +264,7 @@ def test_이미지가_없는_굿즈도_오류_없이_이관된다(make_user):
 
 
 # ---------------------------------------------------------------------------
-# Multi-user / multi-row reconciliation
+# 여러 사용자 / 여러 행에 대한 처리 검증
 # ---------------------------------------------------------------------------
 
 
@@ -290,8 +289,8 @@ def test_여러_사용자의_굿즈를_이관하면_각자_소유로_분리된_�
 
 
 # ---------------------------------------------------------------------------
-# Reverse — deletes only this migration's copies; unrelated rows and the
-# original PersonalEntry (this migration never deletes originals) survive.
+# 역방향 — 이 마이그레이션이 만든 사본만 삭제한다. 관련 없는 행과 원본
+# PersonalEntry(이 마이그레이션은 원본을 삭제하지 않음)는 그대로 남는다.
 # ---------------------------------------------------------------------------
 
 
@@ -313,6 +312,6 @@ def test_역방향_마이그레이션은_이관된_사본만_삭제하고_원본
 
     assert CollectionItem.objects.count() == 1
     assert CollectionItem.objects.filter(pk=pre_existing.pk).exists()
-    # The original GOODS row itself is untouched — this migration never
-    # deletes it (that is a separate, later migration's job).
+    # 원본 GOODS 행 자체는 그대로다 — 이 마이그레이션은 이를 삭제하지 않는다
+    # (그것은 별도의 이후 마이그레이션이 할 일이다).
     assert PersonalEntry.objects.filter(pk=entry.pk).exists()

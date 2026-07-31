@@ -1,16 +1,16 @@
-"""Account deletion request (core.views.account.delete_account — moved here
-from accounts.views by the account-settings-editorial plan B5, since the GET
-context now reads archive counts and accounts must not import archive; the
-password-lockout security rule itself stays owned by accounts.services).
+"""계정 삭제 요청(core.views.account.delete_account — 계정설정 에디토리얼
+계획 B5에 따라 accounts.views에서 이곳으로 옮겼다. GET 컨텍스트가 이제
+archive 카운트를 읽는데 accounts는 archive를 임포트하면 안 되기 때문이다.
+비밀번호 잠금 보안 규칙 자체는 여전히 accounts.services가 소유한다).
 
-GET /accounts/delete/ renders a password-reconfirm form (login required).
-POST verifies the current password, then records a 10-day grace-period
-deletion request via accounts.services.request_deletion (see
-.docs/plans/2026-07-20-deletion-grace-period-plan.md) — the account itself
-is not deleted here. The eventual hard delete, and the archive data/media
-cascade it triggers (see archive/models.py, archive/signals.py), happen in
-accounts.services.execute_pending_deletions and are verified in
-tests/auth/test_account_deletion_purge.py, not this file.
+GET /accounts/delete/는 비밀번호 재확인 폼을 렌더한다(로그인 필요). POST는
+현재 비밀번호를 검증한 뒤 accounts.services.request_deletion으로 10일
+유예기간 삭제 요청을 기록한다(.docs/plans/2026-07-20-deletion-grace-period-plan.md
+참고) — 여기서 계정을 바로 지우지는 않는다. 실제 하드 삭제와 그것이
+유발하는 archive 데이터·미디어 연쇄 삭제(archive/models.py,
+archive/signals.py 참고)는 accounts.services.execute_pending_deletions에서
+일어나며, 이 파일이 아니라 tests/auth/test_account_deletion_purge.py에서
+검증한다.
 """
 import logging
 import time as real_time
@@ -43,12 +43,11 @@ DELETE_URL = "/accounts/delete/"
 
 
 class _FakeClock:
-    """A controllable stand-in for the `time` module.
+    """`time` 모듈을 대신하는, 제어 가능한 가짜 시계.
 
-    Swapped into the two cache-backend modules only (not the process-wide
-    `time` module, which sessions/logging/etc. also rely on) so fast-forwarding
-    the lockout window cannot leak into anything else the request cycle
-    depends on.
+    캐시 백엔드 모듈 두 곳에만 주입한다(세션·로깅 등이 함께 쓰는 프로세스
+    전역 `time` 모듈은 건드리지 않는다) — 잠금 창을 빨리 감아도 요청
+    사이클이 의존하는 다른 어떤 것에도 새어 나가지 않도록 하기 위해서다.
     """
 
     def __init__(self, start):
@@ -63,28 +62,25 @@ class _FakeClock:
 
 @pytest.fixture
 def cache_clock(monkeypatch):
-    """Lets a test fast-forward the cache backend's notion of "now" without
-    sleeping.
+    """테스트가 잠들지 않고도 캐시 백엔드가 아는 "지금"을 빨리 감을 수 있게
+    한다.
 
-    PR-0e switched the default cache backend from LocMemCache to
-    DatabaseCache (config/settings.py CACHES), which reads "now" from two
-    independent places: `BaseCache.get_backend_timeout` (base.py) computes
-    the expiry as a raw `time.time() + timeout` epoch offset, while
-    `DatabaseCache.get`/`_base_set` (db.py) compares that expiry against
-    `django.utils.timezone.now()` — imported there as `from
-    django.utils.timezone import now as tz_now`, which binds the function
-    object into db.py's own namespace at import time. Patching
-    `django.utils.timezone.now` itself would not reach db.py's already-bound
-    `tz_now` reference, so both the `base.py` `time` module reference and
-    db.py's `tz_now` name are patched here, each to read off the same fake
-    clock, so expiry-setting and expiry-checking stay consistent under a
-    fast-forward.
+    기본 캐시 백엔드가 LocMemCache에서 DatabaseCache로 바뀌면서
+    (config/settings.py CACHES) "지금"을 두 군데에서 따로 읽는다:
+    `BaseCache.get_backend_timeout`(base.py)은 만료 시각을 원시
+    `time.time() + timeout` epoch 값으로 계산하고, `DatabaseCache.get`/
+    `_base_set`(db.py)은 그 만료 시각을 `django.utils.timezone.now()`와
+    비교한다 — db.py는 이걸 `from django.utils.timezone import now as
+    tz_now`로 임포트해서, import 시점에 함수 객체를 자기 네임스페이스에
+    바인딩해 둔다. `django.utils.timezone.now` 자체를 패치해도 db.py에
+    이미 바인딩된 `tz_now` 참조에는 닿지 않으므로, `base.py`의 `time` 모듈
+    참조와 db.py의 `tz_now` 이름을 둘 다 여기서 같은 가짜 시계로 패치해야
+    빨리 감기 아래에서도 만료 설정과 만료 확인이 서로 어긋나지 않는다.
 
-    accounts.services's own fixed-window lockout (is_delete_locked /
-    register_failed_delete_attempt) also reads `time.time()` directly (it
-    stores its own deadline rather than trusting the cache backend's TTL —
-    see accounts/services.py), so that module's `time` reference is patched
-    too.
+    accounts.services 자신의 고정 창 잠금(is_delete_locked /
+    register_failed_delete_attempt)도 `time.time()`을 직접 읽는다(캐시
+    백엔드의 TTL을 믿지 않고 자체 마감 시각을 저장한다 — accounts/services.py
+    참고), 그래서 그 모듈의 `time` 참조도 함께 패치한다.
     """
     clock = _FakeClock(real_time.time())
     monkeypatch.setattr(cache_base, "time", clock)
@@ -111,9 +107,9 @@ def test_비로그인_사용자가_계정_삭제_페이지에_접근하면_로�
 @pytest.mark.django_db
 @pytest.mark.web
 def test_스태프가_계정_삭제_페이지에_접근하면_403으로_거부된다(client, make_user, valid_password):
-    """Self-deletion is UI-hidden for staff (no header link, per §account
-    menu spec), but the view must also enforce it server-side — a staff
-    account is removed via Django admin only, never self-service."""
+    """스태프는 자기 탈퇴가 화면에서 숨겨져 있지만(헤더 링크 없음, §계정
+    메뉴 명세) 뷰도 서버 쪽에서 이를 강제해야 한다 — 스태프 계정은 항상
+    Django 관리자로만 지우고, 셀프서비스로는 지울 수 없다."""
     staff = make_user(password=valid_password, is_staff=True)
     client.force_login(staff)
 
@@ -139,11 +135,10 @@ def test_스태프의_계정_삭제_요청은_403으로_거부되고_계정이_�
 def test_스태프의_잘못된_비밀번호_요청은_잠금_카운터를_증가시키지_않는다(
     client, make_user, valid_password
 ):
-    """Regression guard for check ordering: the is_staff guard must run
-    *before* the lockout counter, or a staff account (already blocked by
-    role) would still burn through _register_failed_delete_attempt on every
-    repeated POST — a pointless side effect for a request that was always
-    going to be rejected."""
+    """검사 순서 회귀 가드: is_staff 검사는 잠금 카운터보다 먼저 실행돼야
+    한다 — 안 그러면 (역할만으로 이미 막힌) 스태프 계정도 반복 POST마다
+    _register_failed_delete_attempt를 계속 태워, 어차피 거부될 요청에
+    쓸데없는 부작용을 남긴다."""
     staff = make_user(password=valid_password, is_staff=True)
     client.force_login(staff)
 
@@ -182,9 +177,9 @@ def test_잘못된_비밀번호로_계정_삭제를_요청하면_계정이_삭�
 def test_다섯_번_잘못된_비밀번호_시도_후에는_올바른_비밀번호도_잠긴다(
     client, make_user, valid_password
 ):
-    """A session-riding attacker cannot brute-force the password check
-    indefinitely: after 5 failures, the 6th POST is rejected without even
-    checking the (correct) password, and the account survives."""
+    """세션을 탈취한 공격자도 비밀번호 검사를 무한정 무차별 대입할 수 없다:
+    5번 실패하면 6번째 POST는 (맞는) 비밀번호조차 검사하지 않고 거부되고,
+    계정은 살아남는다."""
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -203,13 +198,11 @@ def test_다섯_번_잘못된_비밀번호_시도_후에는_올바른_비밀번�
 def test_다섯_번_잘못된_비밀번호_시도_시_잠금_경고가_사용자와_횟수를_포함해_정확히_1회_기록된다(
     client, make_user, valid_password, caplog
 ):
-    """The lockout WARNING is the only observable signal a hijacked-session
-    brute-force attempt leaves behind (LOG-01/LOG-02,
-    .docs/plans/2026-07-19-logging-coverage-plan.md §4): it must fire exactly
-    once at the moment the budget is exhausted, carry the user's pk and the
-    attempt count, and never leak the password, session key, or client IP —
-    further failed attempts while already locked must not add more
-    warnings."""
+    """잠금 WARNING은 세션 탈취 무차별 대입 시도가 남기는 유일하게 관측
+    가능한 신호다(LOG-01/LOG-02, .docs/plans/2026-07-19-logging-coverage-plan.md
+    §4): 시도 예산이 소진되는 순간 정확히 1회만 발생해야 하고, 사용자 pk와
+    시도 횟수를 담아야 하며, 비밀번호·세션 키·클라이언트 IP는 절대 새면 안
+    된다 — 이미 잠긴 뒤의 추가 실패는 경고를 더 추가하면 안 된다."""
     caplog.set_level(logging.WARNING, logger="accounts.services")
     user = make_user(password=valid_password)
     client.force_login(user)
@@ -259,9 +252,9 @@ def test_잠금_상태에서_요청하면_잠시_후_다시_시도하라는_오�
 def test_잠금_후_15분이_지나면_올바른_비밀번호로_다시_탈퇴를_예약할_수_있다(
     client, make_user, valid_password, cache_clock
 ):
-    """The lockout is a *fixed* 15-minute window, not a permanent block —
-    once it elapses, the correct password reserves the deletion again (see
-    .docs/plans/2026-07-20-deletion-grace-period-plan.md DEL-10)."""
+    """잠금은 영구 차단이 아니라 정확히 15분짜리 고정 창이다 — 지나면 맞는
+    비밀번호로 다시 탈퇴를 예약할 수 있다(.docs/plans/2026-07-20-deletion-grace-period-plan.md
+    DEL-10 참고)."""
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -271,7 +264,8 @@ def test_잠금_후_15분이_지나면_올바른_비밀번호로_다시_탈퇴�
     assert still_locked.status_code == 200
     assert User.objects.filter(pk=user.pk).exists()
 
-    cache_clock.advance(60 * 15 + 1)  # just past the 15-minute window
+    # 15분 창을 막 지난 시점
+    cache_clock.advance(60 * 15 + 1)
 
     response = client.post(DELETE_URL, {"password": valid_password})
 
@@ -286,31 +280,32 @@ def test_잠금_후_15분이_지나면_올바른_비밀번호로_다시_탈퇴�
 def test_잠금_창은_이후_실패로_연장되지_않고_최초_실패_시점_기준으로_고정된다(
     client, make_user, valid_password, cache_clock
 ):
-    """Regression guard for the fixed-window design: if `cache.add` +
-    `incr` were ever swapped for a `cache.get`/`cache.set` pattern that
-    refreshes the TTL on every write, each new failure would push the
-    lockout window out again and repeated failures could keep the account
-    locked indefinitely.
+    """고정 창 설계에 대한 회귀 가드: `cache.add` + `incr`가 언젠가 매 쓰기마다
+    TTL을 새로고침하는 `cache.get`/`cache.set` 패턴으로 바뀌면, 실패가 생길
+    때마다 잠금 창이 계속 밀려나 반복 실패로 계정이 무기한 잠길 수 있다.
 
-    Spreads 5 failures so the last 4 land near the end of the *original*
-    window, then jumps just past that original window's end (before any
-    TTL-refreshed window would have expired) and confirms the correct
-    password already works — proving later failures did not extend the
-    window set by the first one.
+    5번의 실패를 나눠서 마지막 4번이 *원래* 창의 끝 근처에 떨어지게 한 뒤,
+    (TTL이 새로고침됐다면 아직 안 끝났을) 원래 창 끝을 막 지나서 맞는
+    비밀번호가 이미 통하는지 확인한다 — 나중 실패들이 첫 실패가 세운
+    창을 연장하지 않았음을 증명한다.
     """
     user = make_user(password=valid_password)
     client.force_login(user)
 
-    client.post(DELETE_URL, {"password": "definitely-wrong"})  # failure 1, t=0
+    # 실패 1, t=0
+    client.post(DELETE_URL, {"password": "definitely-wrong"})
 
-    cache_clock.advance(60 * 14 + 50)  # near the end of the original window
-    for _ in range(4):  # failures 2-5; a sliding window would refresh here
+    # 원래 창 끝 근처
+    cache_clock.advance(60 * 14 + 50)
+    # 실패 2~5; 슬라이딩 창이라면 여기서 새로고침될 것
+    for _ in range(4):
         client.post(DELETE_URL, {"password": "definitely-wrong"})
     still_locked = client.post(DELETE_URL, {"password": valid_password})
     assert still_locked.status_code == 200
     assert User.objects.filter(pk=user.pk).exists()
 
-    cache_clock.advance(20)  # now just past the *original* 15-minute window
+    # 이제 *원래* 15분 창을 막 지난 시점
+    cache_clock.advance(20)
 
     response = client.post(DELETE_URL, {"password": valid_password})
 
@@ -325,9 +320,9 @@ def test_잠금_창은_이후_실패로_연장되지_않고_최초_실패_시점
 def test_다섯_번_미만_실패_후_올바른_비밀번호는_탈퇴를_예약한다(
     client, make_user, valid_password
 ):
-    """Below the lockout threshold, a subsequent correct password still
-    works — the failure counter must not accumulate across separate
-    deletion sessions once the password check succeeds."""
+    """잠금 문턱 아래에서는 이후의 맞는 비밀번호가 여전히 통해야 한다 —
+    비밀번호 검사가 성공하고 나면 실패 카운터가 다음 탈퇴 세션으로 넘어가
+    누적되면 안 된다."""
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -346,7 +341,7 @@ def test_다섯_번_미만_실패_후_올바른_비밀번호는_탈퇴를_예약
 @pytest.mark.django_db
 @pytest.mark.slow
 def test_한_사용자의_잠금은_다른_사용자의_계정_탈퇴_예약을_막지_않는다(client, make_user, valid_password):
-    """One user's exhausted attempt budget must not lock out another user."""
+    """한 사용자의 시도 예산 소진이 다른 사용자를 잠그면 안 된다."""
     attacker = make_user(password=valid_password)
     victim = make_user(password=valid_password)
 
@@ -374,8 +369,8 @@ def test_계정_삭제_직후_기존_세션으로는_보호된_페이지에_접�
 
     client.post(DELETE_URL, {"password": valid_password})
 
-    # The browser still holds the old session cookie, but the session was
-    # flushed server-side — a protected page must bounce to login.
+    # 브라우저는 여전히 옛 세션 쿠키를 갖고 있지만 서버 쪽 세션은 이미
+    # 비워졌다 — 보호된 페이지는 로그인으로 튕겨야 한다.
     response = client.get("/archive/")
     assert response.status_code == 302
     assert "/accounts/login/" in response["Location"]
@@ -384,12 +379,11 @@ def test_계정_삭제_직후_기존_세션으로는_보호된_페이지에_접�
 @pytest.mark.django_db
 @pytest.mark.web
 def test_삭제된_계정으로는_다시_로그인할_수_없다(client, make_user, valid_password):
-    """DEL-11: the deletion-request POST alone no longer removes the
-    account (10-day grace period) — this test now drives the account past
-    the grace period via execute_pending_deletions before attempting the
-    login, so the originally-protected "a purged account cannot log back
-    in" behavior stays covered under the new policy (see
-    .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    """DEL-11: 삭제 요청 POST 하나만으로는 더이상 계정이 지워지지 않는다
+    (10일 유예기간) — 그래서 이 테스트는 로그인을 시도하기 전에
+    execute_pending_deletions로 유예기간을 지나게 만들어, 기존에 지키던
+    "삭제된 계정은 다시 로그인할 수 없다" 동작이 새 정책에서도 여전히
+    검증되도록 한다(.docs/plans/2026-07-20-deletion-grace-period-plan.md 참고)."""
     user = make_user(email="leaving@example.com", password=valid_password)
     client.force_login(user)
     client.post(DELETE_URL, {"password": valid_password})
@@ -403,7 +397,8 @@ def test_삭제된_계정으로는_다시_로그인할_수_없다(client, make_u
         {"login": "leaving@example.com", "password": valid_password},
     )
 
-    assert login_response.status_code == 200  # form re-rendered, not authenticated
+    # 인증되지 않고 폼이 다시 렌더됨
+    assert login_response.status_code == 200
     archive_response = client.get("/archive/")
     assert archive_response.status_code == 302
     assert "/accounts/login/" in archive_response["Location"]
@@ -414,10 +409,10 @@ def test_삭제된_계정으로는_다시_로그인할_수_없다(client, make_u
 def test_올바른_비밀번호로_탈퇴를_요청하면_계정은_유지되고_삭제_예약_시각이_기록된다(
     client, make_user, valid_password
 ):
-    """DEL-01 (10-day grace period): a correct-password deletion request no
-    longer hard-deletes the account immediately — it must survive, and the
-    request is recorded as a pending deletion via `deletion_requested_at`
-    (see .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    """DEL-01(10일 유예기간): 맞는 비밀번호로 삭제를 요청해도 더이상 계정이
+    즉시 하드 삭제되지 않는다 — 계정은 살아남아야 하고, 요청은
+    `deletion_requested_at`으로 대기 중 삭제로 기록된다
+    (.docs/plans/2026-07-20-deletion-grace-period-plan.md 참고)."""
     user = make_user(password=valid_password)
     client.force_login(user)
 
@@ -432,11 +427,10 @@ def test_올바른_비밀번호로_탈퇴를_요청하면_계정은_유지되고
 @pytest.mark.django_db
 @pytest.mark.web
 def test_탈퇴를_요청하면_다른_기기의_세션도_함께_종료된다(client, make_user, valid_password):
-    """DEL-02 (10-day grace period): a hijacked or simply forgotten second
-    device's session must not survive the owner's deletion request for the
-    remaining 10 days — every session belonging to the user is invalidated,
-    not just the one that submitted the request (see
-    .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    """DEL-02(10일 유예기간): 탈취됐거나 그냥 로그아웃을 깜빡한 다른 기기의
+    세션도 남은 10일 동안 살아남으면 안 된다 — 요청을 보낸 세션만이 아니라
+    그 사용자의 모든 세션이 무효화된다(.docs/plans/2026-07-20-deletion-grace-period-plan.md
+    참고)."""
     user = make_user(password=valid_password)
     client_a = client
     client_b = Client()
@@ -457,13 +451,12 @@ def test_탈퇴를_요청하면_다른_기기의_세션도_함께_종료된다(c
 def test_유예_기간_중_다시_로그인하면_탈퇴_예약이_취소되고_안내_메시지가_표시된다(
     client, make_verified_user, valid_password
 ):
-    """DEL-03: logging back in during the 10-day grace period is itself the
-    cancellation — no extra confirmation step is needed, because a
-    successful login is already re-authentication (see
-    .docs/plans/2026-07-20-deletion-grace-period-plan.md). The pending
-    request is set up explicitly here via accounts.services.request_deletion
-    rather than hidden behind a dedicated fixture, so the precondition stays
-    visible in the test body."""
+    """DEL-03: 10일 유예기간 중 다시 로그인하는 것 자체가 취소다 — 로그인
+    성공이 이미 재인증이므로 별도 확인 단계가 필요 없다
+    (.docs/plans/2026-07-20-deletion-grace-period-plan.md 참고). 전용
+    픽스처 뒤에 숨기지 않고 accounts.services.request_deletion을 직접
+    호출해 대기 중 요청을 준비하므로, 전제 조건이 테스트 본문에 그대로
+    드러난다."""
     user = make_verified_user()
     services.request_deletion(user)
     assert user.deletion_requested_at is not None
@@ -486,10 +479,10 @@ def test_유예_기간_중_다시_로그인하면_탈퇴_예약이_취소되고_
 def test_삭제_예약이_없는_사용자가_로그인하면_아무_안내도_표시되지_않는다(
     client, make_verified_user, valid_password
 ):
-    """DEL-04: an ordinary login (no pending deletion) must stay a no-op —
-    `cancel_deletion`'s rowcount is 0, so the login-cancels-deletion signal
-    must not surface a cancellation message that never happened (see
-    .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    """DEL-04: 대기 중 삭제가 없는 평범한 로그인은 아무 일도 없어야 한다 —
+    `cancel_deletion`의 rowcount가 0이면, 로그인-취소-삭제 시그널이 실제로
+    일어나지 않은 취소 메시지를 보여주면 안 된다
+    (.docs/plans/2026-07-20-deletion-grace-period-plan.md 참고)."""
     user = make_verified_user()
     assert user.deletion_requested_at is None
 
@@ -509,16 +502,15 @@ def test_삭제_예약이_없는_사용자가_로그인하면_아무_안내도_�
 @pytest.mark.django_db
 @pytest.mark.web
 def test_로그인_시그널이_발화하면_로그인_경로와_무관하게_탈퇴_예약이_취소된다(make_verified_user):
-    """DEL-05: the receiver's own contract is path-independent and
-    request-optional cancellation, exercised here by calling
-    `cancel_pending_deletion_on_login` directly instead of sending
-    `user_logged_in` (django-axes' own receiver on that signal requires a
-    real `request` and raises AttributeError on `request=None` — an
-    environment quirk unrelated to our receiver, not something under test
-    here). The signal *wiring* itself is already proven by DEL-03's web
-    login path. `request=None` exercises the no-request guard: no messages
-    backend is available, so the receiver must skip the notification rather
-    than raise (see .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    """DEL-05: 이 리시버 자체의 계약은 경로 독립적이고 request가 없어도
+    되는 취소다. `user_logged_in`을 보내지 않고 `cancel_pending_deletion_on_login`을
+    직접 호출해 검증한다(같은 시그널의 django-axes 자체 리시버는 진짜
+    `request`가 필요해 `request=None`이면 AttributeError를 던지는데, 이건
+    이 리시버와 무관한 환경 특성이라 여기서 검증할 대상이 아니다). 시그널
+    자체의 배선은 이미 DEL-03의 웹 로그인 경로가 증명한다. `request=None`은
+    request가 없을 때의 가드를 검증한다: messages 백엔드를 쓸 수 없으므로
+    리시버는 예외를 던지지 말고 알림을 건너뛰어야 한다
+    (.docs/plans/2026-07-20-deletion-grace-period-plan.md 참고)."""
     user = make_verified_user()
     services.request_deletion(user)
     assert user.deletion_requested_at is not None

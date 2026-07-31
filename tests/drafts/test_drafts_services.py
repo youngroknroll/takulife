@@ -255,12 +255,11 @@ def test_동시_생성으로_인한_무결성_오류는_중복_드래프트_오�
 
 @pytest.mark.django_db
 def test_URL_드래프트_생성의_중복_처리는_세이브포인트_안에서_실행된다(monkeypatch):
-    """The EventDraft.objects.create() call must run inside its own nested
-    atomic block (a savepoint), so that when it is invoked from within an
-    outer transaction.atomic() (e.g. core.promotion.promote_personal_entry),
-    an IntegrityError caught here does not leave the surrounding transaction
-    unusable for the caller's subsequent queries (Postgres aborts the whole
-    transaction on a statement error unless it ran under a savepoint)."""
+    """EventDraft.objects.create()는 자신만의 중첩 atomic 블록(세이브포인트)
+    안에서 실행돼야 한다. 그래야 core.promotion.promote_personal_entry처럼
+    바깥 transaction.atomic() 안에서 호출될 때 여기서 잡은 IntegrityError가
+    호출자의 이후 쿼리까지 막지 않는다(Postgres는 세이브포인트 없이는 문장
+    오류 시 트랜잭션 전체를 중단시킨다)."""
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<title>Event</title>")
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
@@ -282,9 +281,9 @@ def test_URL_드래프트_생성의_중복_처리는_세이브포인트_안에�
 
 @pytest.mark.django_db
 def test_직접_등록_드래프트_생성의_중복_처리도_세이브포인트_안에서_실행된다(monkeypatch):
-    """Same savepoint guarantee as create_draft_from_url, for the direct
-    (no-fetch) creation path used by core.promotion.promote_personal_entry,
-    which calls this function from inside its own outer transaction.atomic()."""
+    """create_draft_from_url과 같은 세이브포인트 보장을, fetch 없이 직접
+    생성하는 경로(core.promotion.promote_personal_entry가 자신의 바깥
+    transaction.atomic() 안에서 호출)에도 동일하게 적용한다."""
 
     def raise_integrity_error(**kwargs):
         raise IntegrityError("duplicate")
@@ -305,13 +304,6 @@ def test_불변_필드는_서비스_계층에서도_직접_수정이_거부된�
 
     with pytest.raises(DraftImmutableFieldError):
         update_draft(draft_id=draft.id, updates={"review_status": EventDraft.ReviewStatus.APPROVED})
-
-
-# ---------------------------------------------------------------------------
-# create_draft_from_fields — direct (no fetch) draft creation
-# (moved from tests/archive/test_promotion.py — this path is also used by
-# core.promotion.promote_personal_entry, but the function itself belongs here)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db

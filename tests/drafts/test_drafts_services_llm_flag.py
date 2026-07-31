@@ -1,10 +1,7 @@
-"""Tests for the DRAFT_LLM_EXTRACTION_ENABLED wiring in
-drafts.services.create_draft_from_url.
-
-Mocks drafts.services.extract_event_fields_llm — never core.llm/anthropic
-directly — services owns the flag branch, not the LLM call itself (that
-contract is covered by tests/test_draft_llm_extraction.py).
-"""
+"""drafts.services.create_draft_from_url의 DRAFT_LLM_EXTRACTION_ENABLED 배선
+테스트. core.llm/anthropic이 아니라 drafts.services.extract_event_fields_llm을
+모킹한다 — services는 플래그 분기만 책임지고, LLM 호출 자체는
+tests/test_draft_llm_extraction.py가 검증한다."""
 import pytest
 from django.test import override_settings
 

@@ -162,11 +162,6 @@ def test_제목이_공식_url과_대소문자만_다르면_행사_게시를_허�
     assert event.official_url == "https://example.com/case-title"
 
 
-# ---------------------------------------------------------------------------
-# update_published_event — PR-E2 (reuses create_published_event's invariants)
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.django_db
 def test_행사_수정을_요청하면_전달한_필드가_모두_갱신된다():
     event = create_published_event(title="Original", official_url="https://example.com/original")
@@ -197,7 +192,7 @@ def test_행사_수정을_요청하면_전달한_필드가_모두_갱신된다()
     assert updated.official_url == "https://example.com/original"
     assert updated.source_name == "Official site"
     assert updated.summary == "Updated summary"
-    # publish_status is out of this service's scope (PR-E3 owns it)
+    # publish_status는 이 서비스의 책임 범위 밖이다.
     assert updated.publish_status == Event.PublishStatus.PUBLISHED
 
 
@@ -280,11 +275,6 @@ def test_수정_중_예상치_못한_오류는_PublishEventError로_변환된다
         update_published_event(event=event, title="Event renamed", official_url="https://example.com/unexpected")
 
 
-# ---------------------------------------------------------------------------
-# unpublish_event / republish_event — PR-E3 (publish-status toggle)
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.django_db
 def test_게시_취소를_요청하면_행사가_초안_상태로_전환된다():
     event = create_published_event(title="Event", official_url="https://example.com/unpublish-me")
@@ -335,15 +325,8 @@ def test_공식_url이_없는_초안_행사는_재게시를_거부하고_초안_
     assert event.publish_status == Event.PublishStatus.DRAFT
 
 
-# ---------------------------------------------------------------------------
-# hard_delete_event — PR-E3 (pure deletion primitive, no archive knowledge —
-# callers must confirm zero archive references first, see staff/services.py)
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# mark_event_verified — B12 (persists verification timestamp to the DB)
-# ---------------------------------------------------------------------------
+# hard_delete_event는 순수 삭제만 수행하며 archive를 알지 못한다 — 호출자가
+# archive 참조가 0건임을 먼저 확인해야 한다(staff/services.py 참고).
 
 
 @pytest.mark.django_db
@@ -354,11 +337,10 @@ def test_검증을_요청하면_검증_시각이_DB에_영속된다():
     mark_event_verified(event=event)
     after = timezone.now()
 
-    # refresh_from_db() is required: asserting against the in-memory `event`
-    # instance would pass even if mark_event_verified() forgot to call
-    # save(), since the in-memory attribute may already be mutated without
-    # ever reaching the database. Re-reading from the DB is what actually
-    # proves persistence. Do not remove this re-fetch.
+    # refresh_from_db()가 꼭 필요하다: 메모리상 event 인스턴스만 단언하면
+    # mark_event_verified()가 save()를 호출하지 않아도 통과할 수 있다(메모리
+    # 속성만 바뀌고 DB에는 반영되지 않은 채로). DB에서 다시 읽어야 실제
+    # 영속화를 증명한다. 이 재조회는 지우지 마라.
     event.refresh_from_db()
 
     assert event.verified_at is not None

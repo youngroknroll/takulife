@@ -1,17 +1,10 @@
 /**
- * account_menu.js — header account dropdown for takulife
- *
- * Toggles the .account-menu-panel disclosure next to the authenticated
- * user's initial-avatar button (see core/partials/_topbar.html). Ported
- * from the region-select dropdown pattern (static/js/pages/event_list.js):
- * click toggle, close on outside click, Escape closes and returns focus to
- * the trigger. No focus trap and no forced focus on open (same as
- * region-select) — every item is a page navigation (or the logout POST),
- * so there is nothing left to manage inside the panel after a click.
- *
- * Runs on every page (global script, see base.html) — no-ops for an
- * anonymous visitor, since _topbar.html only renders [data-account-menu]
- * for an authenticated user.
+ * 헤더의 계정 드롭다운. 바깥을 클릭하거나 Escape를 누르면 닫히고,
+ * Escape로 닫으면 포커스가 다시 토글 버튼으로 돌아간다. 항목이 전부
+ * 페이지 이동(또는 로그아웃 POST)이라 열림 상태에서 포커스를 강제로
+ * 가두거나 옮길 필요는 없다.
+ * 모든 페이지에서 로드되지만(base.html), 비로그인 방문자는
+ * _topbar.html이 [data-account-menu] 자체를 렌더링하지 않아 아무 동작도 하지 않는다.
  */
 (function () {
   "use strict";

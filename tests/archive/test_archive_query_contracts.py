@@ -1,10 +1,10 @@
-"""Query-count contracts for archive/queries.py.
+"""archive/queries.py의 쿼리 수 계약 테스트.
 
-Kept out of test_archive_queries.py: that module sets a file-wide
-``pytestmark = pytest.mark.domain``, which would swallow the ``contract``
-marker on tests placed here. Precedent: tests/staff/test_staff_queries.py and
-tests/core/test_analytics_recording_resilience.py both use a bare
-``@pytest.mark.contract`` on individual tests instead of a module-wide marker.
+test_archive_queries.py에 두지 않은 이유: 그 모듈은 파일 전체에
+``pytestmark = pytest.mark.domain``을 설정하므로, 여기 둔 테스트의 ``contract``
+마커가 묻혀버린다. tests/staff/test_staff_queries.py,
+tests/core/test_analytics_recording_resilience.py도 같은 이유로 모듈 전체
+마커 대신 개별 테스트에 ``@pytest.mark.contract``를 붙인다.
 """
 import pytest
 
@@ -16,35 +16,30 @@ from archive.queries import list_user_statuses
 def test_상태_목록_조회는_리뷰_주석이_추가돼도_쿼리_수가_늘지_않는다(
     make_user, make_event, make_entry, make_status, make_visit, django_assert_num_queries
 ):
-    """Regression guard, not a Red→Green cycle — list_user_statuses' review
-    annotation (visit_record_id / review_text via a correlated Subquery) and
-    its select_related("event", "personal_entry") are already implemented,
-    so this test is expected to pass immediately.
+    """Red→Green이 아니라 회귀 가드다 — list_user_statuses의 리뷰 주석
+    (Subquery 기반 visit_record_id / review_text)과
+    select_related("event", "personal_entry")는 이미 구현되어 있어 이 테스트는
+    작성 시점에 곧바로 통과한다.
 
-    This contract covers *two* things a mutation test must both catch:
-    1. The correlated visit-record Subquery must not re-execute per row.
-    2. Reading the row's subject (event.title / personal_entry.title —
-       exactly what the real _subject_view template path reads) must not
-       cost a query per row either (the select_related guard).
+    뮤테이션 테스트가 둘 다 잡아내야 하는 두 가지를 함께 검증한다:
+    1. 상관 서브쿼리(visit-record Subquery)가 행마다 재실행되지 않아야 한다.
+    2. 각 행의 대상(event.title / personal_entry.title — 실제
+       _subject_view 템플릿이 읽는 값과 동일)을 읽는 것도 행마다 쿼리를
+       추가로 쓰지 않아야 한다(select_related 가드).
 
-    An earlier version of this test only accessed the annotated scalars
-    (review_text, visit_record_id) and never dereferenced row.event or
-    row.personal_entry — removing select_related("event", "personal_entry")
-    from the implementation still passed, because annotated scalars don't
-    traverse the FK. This version was hardened after that mutation-test gap
-    was found: the loop below now also reads event.title /
-    personal_entry.title so a removed select_related is caught (N+1).
+    이전 버전은 주석된 스칼라(review_text, visit_record_id)만 접근하고
+    row.event/row.personal_entry를 역참조하지 않아, select_related를
+    제거해도 통과했다(스칼라 주석은 FK를 타지 않으므로). 이 간극을 뮤테이션
+    테스트로 발견한 뒤, 아래 루프에서 event.title / personal_entry.title도
+    읽도록 강화해 select_related 제거(N+1)를 잡아내게 했다.
 
-    N=1 was measured on the current implementation before this test was
-    written (not picked arbitrarily first, then to make the implementation
-    fit): select_related covers both subject FKs and both Subquery
-    annotations are inlined into the same SELECT, so listing 3 rows — one
-    event subject with a reviewed visit, one event subject with an
-    unreviewed visit, one personal_entry subject with no visit at all —
-    still costs exactly one query, whether or not a row has a visit record.
-    If this ever grows past 1, either the correlated visit-record subquery
-    started re-executing per row, or a subject FK started being fetched
-    lazily per row instead of via select_related.
+    N=1은 이 테스트를 쓰기 전에 현재 구현으로 실측한 값이다(구현에 맞춰
+    임의로 정한 게 아니다): select_related가 두 대상 FK를 모두 커버하고
+    두 Subquery 주석이 같은 SELECT에 인라인되므로, 리뷰 있는 방문·리뷰
+    없는 방문·방문 기록 없음 세 행을 나열해도 방문 기록 유무와 무관하게
+    쿼리 1회로 끝난다. 이 값이 1을 넘으면 상관 서브쿼리가 행마다
+    재실행되기 시작했거나, 대상 FK가 select_related 없이 지연 로딩되기
+    시작한 것이다.
     """
     user = make_user()
     event_with_review = make_event(title="리뷰 있음")

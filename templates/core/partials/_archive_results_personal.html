@@ -3,17 +3,10 @@
 풀 페이지(personal_entries.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: entry_rows, has_entries, has_query, q, page_obj, pager_query, request
 
-2026-07-27 직접 등록 에디토리얼 통일: visits/statuses와 같은 `.record-row`
-시스템으로 재작성한다(`.record-row--personal` 모디파이어). 사진/글리프
-셀(3.625rem, 58px 사진 or 📍 글리프 타일) + 본문(카테고리·작품 메타 →
-제목 → 장소·지역 메타 → 메모) + `.record-row-end`에 5액션 2행(1행 찜/일정,
-2행 ＋기록/공식제보/삭제). 공식제보 확장 폼은 `grid-column:1/-1`로 행 그리드
-바깥에 전폭 배치한다.
-
-전역 에러 표시 노드(#entry-global-error)는 이 fragment 밖(personal_entries
-.html)에 있다 — 삭제 in-flight 중 검색 스왑이 겹쳐도 closure된 참조가
-살아있도록. 찜/일정 버튼과 삭제/공식제보 버튼의 data-attr은 기존 기능
-보존을 위해 수정 없이 이식한다(status.js/personal_entries.js 재바인딩 유지).
+전역 에러 표시 노드(#entry-global-error)는 이 fragment 밖(personal_entries.html)에
+있다 — 삭제 진행 중에 검색 스왑이 겹쳐도 클로저가 참조하는 노드가 사라지지
+않게 하기 위해서다. 찜/일정/삭제/공식제보 버튼의 data 속성은 기존
+status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이식했다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if entry_rows %}

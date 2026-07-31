@@ -1,16 +1,5 @@
 /**
- * personal_create.js — /archive/personal/new/ write page
- *
- * Handles:
- *   - category quick-pick chips → #personal-category free-input (goods
- *     create's bindTypeChips pattern, mirrored 1:1 for this page's own
- *     `.personal-form-category-chip` class)
- *   - image dropzone preview (blob URL, revoked on replacement)
- *   - form submit → POST /api/personal-entries/ (existing API, no new
- *     endpoint), 201 → navigate to /archive/personal/
- *
- * Relies on window.TakuAPI (api.js) for requests, 403 disambiguation and error
- * formatting. All DOM writes use textContent only.
+ * 비공식 장소 등록 페이지. 종류 빠른 선택 칩, 이미지 미리보기, 폼 제출을 담당한다.
  */
 
 (function () {
@@ -32,9 +21,7 @@
     }
   }
 
-  // Client-side mirror of the server's image guard — fast feedback for the
-  // common case; the server remains authoritative (collection.js's
-  // validateImageFile precedent).
+  // 서버의 이미지 검증을 클라이언트에서도 미리 흉내내 빠른 피드백을 준다.
   function validateImageFile(file, errorEl) {
     if (ALLOWED_TYPES.indexOf(file.type) === -1) {
       setText(errorEl, "JPEG · PNG · WebP 형식만 첨부할 수 있습니다.");
@@ -47,14 +34,9 @@
     return true;
   }
 
-  // ── category chips ──────────────────────────────────────────────────────
-  // Chips only ever write to the #personal-category free-input — never a
-  // separate hidden field — so the single form.elements["category"] read in
-  // the submit handler below stays the one source of truth whether the user
-  // clicked a chip or typed a custom value. Mirrors collection.js's
-  // bindTypeChips (goods-create-editorial-track), with its own class name so
-  // this page's chips never collide with the list page's (nonexistent here)
-  // filter chips or the goods form's item-type chips.
+  // ── 종류 선택 칩 ──────────────────────────────────────────────────────
+  // 칩은 항상 #personal-category 자유 입력 필드에만 값을 쓴다. 칩을
+  // 클릭했든 직접 입력했든 읽는 곳은 제출 핸들러의 category 읽기 하나뿐이다.
   function bindCategoryChips() {
     var group = document.querySelector(".personal-form-category-chips");
     if (!group || group.dataset.chipsBound) { return; }
@@ -83,12 +65,11 @@
     }
     input.addEventListener("input", syncFromValue);
 
-    // One sync pass against whatever the input already holds (a server
-    // re-render after a validation error would repopulate this).
+    // 입력값이 이미 채워져 있으면(검증 오류 후 재렌더링 등) 한 번 동기화한다.
     syncFromValue();
   }
 
-  // ── image dropzone preview ──────────────────────────────────────────────
+  // ── 이미지 드롭존 미리보기 ──────────────────────────────────────────────
 
   function bindImagePreview() {
     var input = document.getElementById("personal-image");
@@ -122,7 +103,7 @@
     });
   }
 
-  // ── submit ───────────────────────────────────────────────────────────────
+  // ── 제출 ───────────────────────────────────────────────────────────────
 
   function bindCreateForm() {
     var form = document.getElementById("personal-create-form");
@@ -158,16 +139,9 @@
         memo: form.elements["memo"].value.trim(),
       };
 
-      // client_token: SSR-issued uuid4 hidden input (personal_create.html,
-      // DAR §5-1) for create-side idempotency replay. Existence guard
-      // mirrors visit_create.js's precedent — this page has no edit-form
-      // twin, but the guard keeps the payload safe if the hidden input is
-      // ever removed from the template. Also require a non-empty value: an
-      // empty string would still pass an existence-only guard and serialize
-      // as client_token: "", which the serializer's UUIDField rejects with
-      // 400 — turning a missing/stale template context into a hard create
-      // failure instead of a silent fallback. Empty value → send no token
-      // (degrades to pre-token behavior, avoids the 400).
+      // client_token은 서버가 발급한 숨김 필드(중복 제출 방지용)다. 값이
+      // 있을 때만 보낸다 — 빈 문자열을 보내면 서버 UUIDField 검증에서
+      // 400으로 거부되기 때문이다.
       var clientTokenEl = form.elements["client_token"];
       if (clientTokenEl && clientTokenEl.value) { fields.client_token = clientTokenEl.value; }
 

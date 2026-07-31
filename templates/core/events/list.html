@@ -114,9 +114,9 @@
         {% if page_obj %}
           <header class="results-head">
             <h2 class="results-title">검색 결과 <span class="results-count">{{ total_count }}</span>개</h2>
-            {# <details>, not a JS dropdown: the options are plain GET links, so #}
-            {# native disclosure gives keyboard operation and a no-JS fallback   #}
-            {# for free. event_list.js only adds outside-click dismissal on top. #}
+            {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
+            {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
+            {# 생긴다. event_list.js는 바깥 클릭 시 닫는 동작만 더한다. #}
             <details class="results-sort" data-sort-menu>
               <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
               <ul class="results-sort-menu">
@@ -151,12 +151,9 @@
                 </a>
                 <div class="event-row-body">
                   {% comment %}
-                  Django `and`/`or` precedence (no parens in templates) parses this as
-                  `category_label OR (status_label AND 표시가능 status_slug)` — i.e. this
-                  wrapper renders <p class="event-row-meta"> only when it will end up with
-                  at least one child span. Today category_label is effectively always truthy
-                  so the OR branch never fires alone, but keep both operands if this
-                  condition is ever edited.
+                  Django 템플릿은 괄호를 못 써서 and/or 우선순위대로 해석된다 — 이
+                  래퍼는 안에 span이 하나라도 생길 때만 렌더돼야 하므로, 이 조건을
+                  고칠 때는 두 피연산자를 함께 유지해야 한다.
                   {% endcomment %}
                   {% if row.category_label or row.status_label and row.status_slug != 'ongoing' and row.status_slug != 'ended' %}
                   <p class="event-row-meta">

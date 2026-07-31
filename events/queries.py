@@ -1,9 +1,5 @@
-"""Public read layer for events.
-
-Provides reusable filter/order logic that both the JSON API (events/views.py)
-and the upcoming SSR views (core/views.py) can call without duplicating
-validation or query construction.
-"""
+"""이벤트 조회 공용 레이어. JSON API(events/views.py)와 SSR 화면(core/views.py)이
+필터·정렬 로직을 중복 구현하지 않고 함께 쓴다."""
 from datetime import timedelta
 
 from django.db import models
@@ -14,15 +10,15 @@ from .serializers import EventQuerySerializer
 
 PUBLIC_LISTING_PAGE_SIZE = 10
 
-# Filters that accept repeated values (?region=a&region=b) and OR them together.
+# 같은 키를 여러 번 넣으면(?region=a&region=b) OR로 묶어 필터링하는 항목.
 MULTI_VALUE_FIELDS = ("region", "category")
 
 
 def _collect_values(raw_params, key):
-    """Return non-blank values for key as a list.
+    """key에 해당하는 빈 값 아닌 값들을 리스트로 반환한다.
 
-    Uses getlist() when available (DRF query_params / Django QueryDict) so
-    repeated params are preserved; falls back to a single value for plain dicts.
+    getlist()가 있으면(DRF query_params / QueryDict) 반복 파라미터를 모두 살리고,
+    없으면 단일 값으로 처리한다.
     """
     getlist = getattr(raw_params, "getlist", None)
     values = getlist(key) if callable(getlist) else [raw_params.get(key)]
@@ -30,15 +26,10 @@ def _collect_values(raw_params, key):
 
 
 def parse_public_listing_params(raw_params):
-    """Parse and validate public listing query parameters from any Mapping.
+    """공개 목록 쿼리 파라미터를 파싱·검증한다. DRF query_params와 Django GET 둘 다 받는다.
 
-    Accepts DRF request.query_params or Django request.GET.
-    Drops unknown keys (including 'page') and validates via EventQuerySerializer.
-    region/category collect repeated values into a list; other fields take a
-    single value. Blank values are dropped so an empty filter (e.g. the "전체"
-    status radio / default sort the browse form always submits) means "no
-    filter" rather than failing ChoiceField/DateField validation.
-    Returns validated_data dict on success, raises ValidationError on failure.
+    "전체" 같은 빈 값 필터는 여기서 걸러내야, 브라우즈 폼이 항상 submit하는
+    빈 선택지가 ChoiceField/DateField 검증에서 오류로 튀지 않고 "필터 없음"으로 처리된다.
     """
     allowed_fields = EventQuerySerializer().fields
     data = {}
@@ -58,11 +49,7 @@ def parse_public_listing_params(raw_params):
 
 
 def list_published_events(params, *, today=None):
-    """Return an ordered QuerySet of published events filtered by params.
-
-    params: validated_data dict from parse_public_listing_params (or equivalent).
-    today: date override for testing; defaults to timezone.localdate().
-    """
+    """params로 필터링한 게시된 이벤트를 정렬해 반환한다. today는 테스트용 날짜 오버라이드."""
     if today is None:
         today = timezone.localdate()
     return (
@@ -73,14 +60,8 @@ def list_published_events(params, *, today=None):
 
 
 def list_published_events_for_month(params, *, year, month, today=None):
-    """Return an ordered QuerySet of published events for the Events calendar
-    (dual-calendar service design §6): published, overlapping the given
-    (year, month), combined with the same params-driven filters/ordering
-    list_published_events already applies — no filter logic is duplicated
-    here, only the month-overlap queryset method is added to the chain.
-
-    params: same validated_data shape as list_published_events.
-    today: date override for testing; defaults to timezone.localdate().
+    """이벤트 달력(이중 달력 설계 §6)용: 해당 (year, month)와 겹치는 게시 이벤트를,
+    list_published_events와 같은 필터·정렬에 월 겹침 조건만 추가해 반환한다.
     """
     if today is None:
         today = timezone.localdate()
@@ -92,15 +73,9 @@ def list_published_events_for_month(params, *, year, month, today=None):
     )
 
 
-# ---------------------------------------------------------------------------
-# Staff dashboard quality-warning counters (PR-1b) + drilldown (PR-E1)
-#
-# Each _*_qs() helper is the single source of truth for one warning's
-# predicate over Event.objects.published(). count_published_* wraps it in
-# .count() (dashboard summary); list_staff_events() (below) reuses the same
-# queryset for the drilldown list, so the two are guaranteed to agree on
-# population by construction — no duplicated predicate logic.
-# ---------------------------------------------------------------------------
+# 각 _*_qs() 헬퍼가 경고 하나의 조건을 담는 단일 소스다. count_published_*는 여기에
+# count()만 씌우고, list_staff_events()도 같은 쿼리셋을 재사용해 대시보드 집계 수와
+# 드릴다운 목록이 항상 같은 집합을 가리키게 한다.
 
 
 def _missing_official_url_qs():
@@ -122,26 +97,16 @@ def _missing_dates_qs():
 
 
 def _missing_region_qs():
-    """Published events with region == "" exactly.
-
-    Conscious v1 decision: no strip/normalization, so a whitespace-only
-    region (e.g. " ") is NOT counted here.
-    """
+    """region이 정확히 빈 문자열인 게시 이벤트. 공백만 있는 값(" ")은 일부러 정규화하지 않아 여기 안 걸린다."""
     return Event.objects.published().filter(region="")
 
 
 def _needs_reverification_qs(*, today=None):
-    """Published events starting soon (or already underway, not yet ended)
-    that have never been verified, or were last verified before the D-7
-    cutoff (start_date - 7 days).
+    """시작 임박 또는 진행 중이면서 한 번도 검증되지 않았거나, D-7 기준(시작일-7일)보다
+    먼저 마지막 검증된 게시 이벤트.
 
-    today: date override for testing; defaults to timezone.localdate().
-    Conscious v1 decision (matches _missing_dates_qs' ownership of the gap):
-    events missing start_date or end_date never match here — the arithmetic
-    comparisons against a NULL date return NULL in SQL, so they are
-    naturally excluded rather than explicitly isnull-filtered. That absence
-    is missing_dates' responsibility; counting it here too would double it
-    across two warning totals for one root cause.
+    시작일·종료일이 없는 이벤트는 SQL에서 NULL 비교가 자동으로 걸러줘서, 그 결손은
+    missing_dates 경고 하나에서만 세고 여기서 중복 집계하지 않는다.
     """
     if today is None:
         today = timezone.localdate()
@@ -161,70 +126,41 @@ def _needs_reverification_qs(*, today=None):
 
 
 def count_published_missing_official_url() -> int:
-    """Count published events with no official_url (NULL or blank)."""
+    """official_url이 없는(NULL 또는 빈 값) 게시 이벤트 수."""
     return _missing_official_url_qs().count()
 
 
 def count_published_ended_still_published(*, today=None) -> int:
-    """Count published events whose end_date is strictly before today.
-
-    today: date override for testing; defaults to timezone.localdate().
-    Events with a null end_date never match (open-ended events are not
-    considered "ended").
-    """
+    """종료일이 오늘보다 지난 게시 이벤트 수. 종료일 없는 이벤트는 "종료"로 안 친다."""
     return _ended_still_published_qs(today=today).count()
 
 
 def count_published_missing_poster() -> int:
-    """Count published events with no poster_image (blank and/or null)."""
+    """포스터 이미지가 없는 게시 이벤트 수."""
     return _missing_poster_qs().count()
 
 
 def count_published_missing_dates() -> int:
-    """Count published events missing start_date and/or end_date.
-
-    Counted once even when both are null (OR, not a sum of two conditions).
-    """
+    """시작일 또는 종료일이 없는 게시 이벤트 수(둘 다 없어도 한 번만 센다)."""
     return _missing_dates_qs().count()
 
 
 def count_published_missing_region() -> int:
-    """Count published events with region == "" exactly.
-
-    Conscious v1 decision: no strip/normalization, so a whitespace-only
-    region (e.g. " ") is NOT counted here.
-    """
+    """region이 정확히 빈 문자열인 게시 이벤트 수."""
     return _missing_region_qs().count()
 
 
 def count_published_needs_reverification(*, today=None) -> int:
-    """Count published events needing D-7 reverification.
-
-    today: date override for testing; defaults to timezone.localdate().
-    See _needs_reverification_qs for the full predicate and its NULL-date
-    exclusion decision.
-    """
+    """D-7 재검증이 필요한 게시 이벤트 수. 조건은 _needs_reverification_qs 참고."""
     return _needs_reverification_qs(today=today).count()
 
 
 def published_quality_warnings(*, today=None) -> dict:
-    """Return quality-warning counts for the staff dashboard as a dict.
+    """스태프 대시보드용 품질 경고 집계를 dict로 반환한다.
 
-    All 5 per-predicate keys plus "needs_reverification" are always present,
-    even when a given warning has zero matches. today is forwarded to both
-    the ended-still-published check and the needs-reverification check.
-
-    "total" is the SUM of only the original 5 warning counts above (flags
-    tripped), not a count of distinct events, and it deliberately excludes
-    "needs_reverification". This keeps it consistent with the dashboard's
-    visible 5-row breakdown (total == row sum): an event tripping 2 of the
-    5 predicates contributes 2 to total. The dashboard table
-    (QUALITY_WARNING_LABELS in staff/views/events.py) still renders only
-    those 5 rows, so folding needs_reverification into total would break the
-    "table sum == total" invariant. Whether needs_reverification should join
-    total is decided together with adding its dashboard row, not here. It is
-    computed from the 5 values already gathered here, so no extra query is
-    run for total itself.
+    "total"은 needs_reverification을 뺀 5개 경고 카운트의 합이다. 대시보드 표가
+    그 5행만 보여주므로 "표의 합 == total"이 유지되도록 일부러 뺐다. 이벤트 하나가
+    5개 중 2개에 걸리면 total에 2로 반영된다(중복 이벤트 수가 아니라 경고 트립 수).
     """
     missing_official_url = count_published_missing_official_url()
     ended_still_published = count_published_ended_still_published(today=today)
@@ -249,10 +185,6 @@ def published_quality_warnings(*, today=None) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Staff events console listing (PR-E1)
-# ---------------------------------------------------------------------------
-
 QUALITY_WARNING_KEYS = (
     "missing_official_url",
     "ended_still_published",
@@ -273,23 +205,10 @@ _NON_DATED_WARNING_QUERYSETS = {
 
 
 def list_staff_events(*, warning=None, publish_status=None, today=None):
-    """Return Events for the staff events console, newest (created_at) first.
+    """스태프 이벤트 콘솔용 목록을 created_at 최신순으로 반환한다.
 
-    warning: one of QUALITY_WARNING_KEYS scopes the result to the exact same
-      published-only queryset the matching count_published_* function counts
-      (drilldown parity — see the block comment above those helpers). Any
-      other value (None, "", or an unrecognised key) is silently ignored —
-      no warning filter is applied — mirroring the existing
-      selected_status/selected_warning normalisation pattern used by staff
-      views rather than raising for a bad querystring value.
-    publish_status: an Event.PublishStatus value restricts the result to
-      that status. Any other value (None, "", unrecognised) is ignored (all
-      statuses included). Note a warning filter is already published-only by
-      construction, so pairing it with publish_status=draft yields an empty
-      queryset rather than an error.
-    today: date override forwarded to the ended_still_published and
-      needs_reverification warnings (see _ended_still_published_qs and
-      _needs_reverification_qs); ignored otherwise.
+    warning은 count_published_*가 세는 것과 같은 쿼리셋으로 좁힌다(드릴다운 일치).
+    알 수 없는 warning/publish_status 값은 querystring 오류로 보지 않고 조용히 무시한다.
     """
     if warning == "ended_still_published":
         queryset = _ended_still_published_qs(today=today)

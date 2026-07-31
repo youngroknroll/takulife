@@ -1,4 +1,4 @@
-"""staff/queries.py::recent_staff_actions — PR-2 sub-step F (backend)."""
+"""staff/queries.py::recent_staff_actions 등 스태프 액션 조회·집계 쿼리 검증."""
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 
@@ -66,8 +66,7 @@ def test_최근_스태프_액션은_행위자와_대상_드래프트_정보를_�
 def test_최근_스태프_액션_조회는_대상_이벤트를_추가_쿼리_없이_함께_가져온다(
     make_user, django_assert_num_queries
 ):
-    """PR-D1 item 1: select_related must cover target_event too, so reading
-    target_event off each row costs no extra query (N+1 guard)."""
+    """select_related가 target_event까지 포함해야 N+1 쿼리가 발생하지 않는다."""
     actor = make_user(is_staff=True)
     event = Event.objects.create(
         title="최근 이벤트", publish_status=Event.PublishStatus.PUBLISHED

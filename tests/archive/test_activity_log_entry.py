@@ -1,9 +1,9 @@
-"""ActivityLogEntry schema and invariants.
+"""ActivityLogEntry 스키마와 불변식.
 
 (.docs/plans/2026-07-19-dual-calendar-test-list.md 단계 1: CAL-1-01~07)
 
-archive.models.ActivityLogEntry does not exist yet — the whole file is
-expected to fail at collection with ImportError until the model is added.
+archive.models.ActivityLogEntry는 아직 없어 이 파일 전체가 모델이 추가되기
+전까지 수집 단계에서 ImportError로 실패하는 것이 정상이다.
 """
 import uuid
 

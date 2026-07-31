@@ -1,28 +1,13 @@
 /**
- * visit.js — Visit record actions for takulife
- *
- * Handles:
- *   - Delete visit record via [data-delete-record-id]
- *   - Navigate per-card photo carousels ([data-carousel], loop)
- *
- * Category filter chips are now server-side anchor links (GET ?filter=...).
- * Client-side chip filtering has been removed.
- *
- * Photo add/delete lives on the edit page (visit_edit.js); cards are view-only.
- *
- * Relies on window.TakuAPI (api.js) for all requests:
- *   - JSON actions: TakuAPI.post / TakuAPI.del
- *   - Multipart photo upload: TakuAPI.upload (does NOT set Content-Type)
- *   - 403 disambiguation: TakuAPI.classify → 'auth' → TakuAPI.redirectToLogin()
- *   - Error messages: TakuAPI.formatError
- *
- * All DOM writes use textContent only (no innerHTML with API data).
+ * 방문 기록 목록 화면의 동작: 기록 삭제, 카드별 사진 캐러셀(순환) 이동.
+ * 사진 추가·삭제는 수정 페이지(visit_edit.js)가 맡고 이 카드들은 보기 전용이다.
+ * 화면 갱신은 항상 textContent만 사용해 API 응답으로 HTML을 만들지 않는다.
  */
 
 (function () {
   "use strict";
 
-  // ── DOM helpers ──────────────────────────────────────────────────────────
+  // ── DOM 헬퍼 ──────────────────────────────────────────────────────────
 
   function setError(el, message) {
     if (!el) { return; }
@@ -34,7 +19,7 @@
     el.textContent = "";
   }
 
-  // ── 403 handler ──────────────────────────────────────────────────────────
+  // ── 403 처리 ──────────────────────────────────────────────────────────
 
   function handle403(result, errorEl) {
     var kind = window.TakuAPI.classify(result);
@@ -45,8 +30,7 @@
     }
   }
 
-  // Confirm before a destructive, unrecoverable action. Uses the shared modal
-  // (confirm-modal.js, loaded in base.html) with a native confirm() fallback.
+  // 되돌릴 수 없는 동작이라 확인을 거친다. 공용 모달이 없으면 기본 confirm으로 대체한다.
   function askConfirm(message) {
     if (typeof window.TakuConfirm === "function") {
       return window.TakuConfirm(message);
@@ -54,7 +38,7 @@
     return Promise.resolve(window.confirm(message));
   }
 
-  // ── create visit record ──────────────────────────────────────────────────
+  // ── 방문 기록 등록 ──────────────────────────────────────────────────────
 
   function bindCreateForm() {
     var form = document.getElementById("visit-create-form");
@@ -66,7 +50,7 @@
       evt.preventDefault();
       clearError(errorEl);
 
-      // subject value is "event:<id>" (official) or "personal:<id>" (unofficial)
+      // subject 값은 "event:<id>"(공식) 또는 "personal:<id>"(비공식)
       var subjectValue = form.elements["subject"].value;
       var visitedOn = form.elements["visited_on"].value;
       var shortReview = form.elements["short_review"].value;
@@ -92,8 +76,7 @@
       var result = await window.TakuAPI.post("/api/visit-records/", payload);
 
       if (result.status === 201) {
-        // Reload-equivalent: destination is the current URL (WED §5-2
-        // boundary ③ — same fidelity as the reload it replaces).
+        // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
         window.TakuAPI.commitAndNavigate(submitBtn, window.location.href);
         return;
       }
@@ -114,7 +97,7 @@
     });
   }
 
-  // ── per-card photo carousel (view-only, loops) ───────────────────────────
+  // ── 카드별 사진 캐러셀(보기 전용, 순환) ───────────────────────────
 
   function bindPhotoCarousels() {
     var carousels = document.querySelectorAll("[data-carousel]");
@@ -149,7 +132,7 @@
     }
   }
 
-  // ── record delete buttons ────────────────────────────────────────────────
+  // ── 기록 삭제 버튼 ────────────────────────────────────────────────
 
   function bindRecordDeletes() {
     var deleteBtns = document.querySelectorAll("[data-delete-record-id]");
@@ -176,8 +159,7 @@
           );
 
           if (result.status === 204) {
-            // Reload-equivalent: destination is the current URL (WED §5-2
-            // boundary ③ — same fidelity as the reload it replaces).
+            // 새로고침과 같은 효과를 내도록 현재 URL로 다시 이동한다.
             window.TakuAPI.commitAndNavigate(btn, window.location.href);
             return;
           }
@@ -205,7 +187,7 @@
     }
   }
 
-  // ── init ─────────────────────────────────────────────────────────────────
+  // ── 초기화 ─────────────────────────────────────────────────────────────────
 
   function init() {
     bindCreateForm();
@@ -219,9 +201,8 @@
     init();
   }
 
-  // Live search swaps the results fragment: re-wire the new cards' photo
-  // carousels and delete buttons. The create form lives outside the swap
-  // region, so it is left alone; the per-element guards keep this idempotent.
+  // 실시간 검색이 결과 목록을 교체한 뒤 새 카드의 캐러셀과 삭제 버튼을
+  // 다시 연결한다. 등록 폼은 교체 영역 밖에 있어 그대로 둔다.
   document.addEventListener("archive:listswapped", function () {
     bindPhotoCarousels();
     bindRecordDeletes();

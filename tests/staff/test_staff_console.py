@@ -1,4 +1,4 @@
-"""Staff Console (/staff/) — PR-1a: auth pin, console gate, dashboard, redirects."""
+"""스태프 콘솔(/staff/) 인증·게이트·대시보드·리다이렉트 검증."""
 import base64
 import datetime
 import re
@@ -17,7 +17,7 @@ pytestmark = pytest.mark.web
 
 
 def _password():
-    """Runtime password with guaranteed complexity, no literal in source."""
+    """소스 코드에 비밀번호 문자열을 남기지 않으려고 실행 시점에 생성한다."""
     return (
         secrets.choice(string.ascii_uppercase)
         + secrets.choice(string.ascii_lowercase)
@@ -33,9 +33,7 @@ def _basic_auth(email, password):
 
 @pytest.mark.django_db
 def test_http_basic_인증으로는_스태프_api에_인증할_수_없다(client, make_user):
-    """HTTP Basic auth must NOT authenticate against staff DRF endpoints — Basic
-    bypasses CSRF, so only SessionAuthentication is accepted. A valid staff
-    credential sent via Basic is treated as unauthenticated (403)."""
+    """Basic 인증은 CSRF를 우회하므로 세션 인증만 허용한다. 올바른 자격 증명이어도 미인증으로 처리된다."""
     password = _password()
     staff = make_user(password=password, is_staff=True)
 
@@ -46,10 +44,6 @@ def test_http_basic_인증으로는_스태프_api에_인증할_수_없다(client
 
     assert resp.status_code == 403, resp.status_code
 
-
-# ---------------------------------------------------------------------------
-# Console gate (staff_console_required)
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_익명_사용자가_대시보드에_접근하면_로그인_페이지로_리다이렉트된다(client):
@@ -135,8 +129,8 @@ def test_행위자와_대상_드래프트가_없는_최근_활동은_빈_값으�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "<td>-</td>" in content  # actor.email default fallback
-    assert re.search(r"<td>\s*-\s*</td>", content)  # target_draft else branch
+    assert "<td>-</td>" in content
+    assert re.search(r"<td>\s*-\s*</td>", content)
 
 
 @pytest.mark.django_db
@@ -156,8 +150,6 @@ def test_홈_카테고리_변경_액션은_대시보드에_전용_한글_라벨�
 
 @pytest.mark.django_db
 def test_드래프트_수집_실행_액션은_대시보드에_전용_한글_라벨로_표시된다(staff_client):
-    """PR-D1 item 1: draft_discover must render its own Korean label, not
-    fall through to the "홈 카테고리 변경" catch-all."""
     staff, client = staff_client()
     StaffActionLog.objects.create(
         actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER
@@ -172,8 +164,6 @@ def test_드래프트_수집_실행_액션은_대시보드에_전용_한글_라�
 
 @pytest.mark.django_db
 def test_이벤트_수정_액션은_전용_라벨과_대상_이벤트_수정_페이지_링크를_함께_표시한다(staff_client):
-    """PR-D1 item 1: event_* actions get their own Korean label and the
-    target column links to the event's staff edit page (not "-")."""
     staff, client = staff_client()
     event = Event.objects.create(
         title="이벤트 A", publish_status=Event.PublishStatus.PUBLISHED
@@ -193,8 +183,6 @@ def test_이벤트_수정_액션은_전용_라벨과_대상_이벤트_수정_페
 
 @pytest.mark.django_db
 def test_대시보드_드래프트_소스_목록은_비활성_우선_이름순으로_정렬된다(staff_client):
-    """PR-5b: dashboard() must pass draft_sources via drafts.queries.list_draft_sources()
-    (-enabled, name ordering), not a raw DraftSource query in the view."""
     staff, client = staff_client()
     disabled = DraftSource.objects.create(
         name="disabled-source",
@@ -218,8 +206,6 @@ def test_대시보드_드래프트_소스_목록은_비활성_우선_이름순�
 
 @pytest.mark.django_db
 def test_최근_오류가_있는_소스는_대시보드에_오류_배지와_오류_요약을_보여준다(staff_client):
-    """PR-D1 item 3: a source with a non-empty last_error gets an error
-    badge plus a (truncated) summary of the error text."""
     staff, client = staff_client()
     DraftSource.objects.create(
         name="에러 소스",
@@ -239,8 +225,6 @@ def test_최근_오류가_있는_소스는_대시보드에_오류_배지와_오�
 
 @pytest.mark.django_db
 def test_한번도_수집되지_않은_활성_소스는_대시보드에_지연_배지를_보여준다(staff_client):
-    """PR-D1 item 3: an enabled source that has never been checked
-    (last_checked_at is None) is stale."""
     staff, client = staff_client()
     DraftSource.objects.create(
         name="미수집 소스",
@@ -258,8 +242,6 @@ def test_한번도_수집되지_않은_활성_소스는_대시보드에_지연_�
 
 @pytest.mark.django_db
 def test_지연_임계_시간을_넘겨_수집된_활성_소스는_대시보드에_지연_배지를_보여준다(staff_client, settings):
-    """PR-D1 item 3: an enabled source checked longer ago than
-    DRAFT_SOURCE_STALE_HOURS is stale."""
     settings.DRAFT_SOURCE_STALE_HOURS = 48
     staff, client = staff_client()
     DraftSource.objects.create(
@@ -296,8 +278,6 @@ def test_지연_임계_시간_이내에_수집된_활성_소스는_지연_배지
 
 @pytest.mark.django_db
 def test_비활성_소스는_한번도_수집되지_않았어도_지연_배지를_보여주지_않는다(staff_client):
-    """PR-D1 item 3: a disabled source is excluded from the stale check
-    regardless of last_checked_at (it is not expected to be collecting)."""
     staff, client = staff_client()
     DraftSource.objects.create(
         name="비활성 소스",
@@ -315,8 +295,6 @@ def test_비활성_소스는_한번도_수집되지_않았어도_지연_배지�
 
 @pytest.mark.django_db
 def test_드래프트_수집_실행_로그가_전혀_없으면_대시보드는_실행_이력_없음을_보여준다(staff_client):
-    """PR-D1 item 4: with no DRAFT_DISCOVER log at all, the dashboard shows
-    "실행 이력 없음" rather than a blank/misleading timestamp."""
     staff, client = staff_client()
 
     resp = client.get("/staff/dashboard/")
@@ -328,8 +306,6 @@ def test_드래프트_수집_실행_로그가_전혀_없으면_대시보드는_�
 
 @pytest.mark.django_db
 def test_수집_실행이_아닌_액션_로그만_있으면_대시보드는_실행_이력_없음을_보여준다(staff_client):
-    """PR-D1 item 4: a non-DRAFT_DISCOVER log entry must not be mistaken for
-    a discovery run."""
     staff, client = staff_client()
     StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
 
@@ -342,8 +318,6 @@ def test_수집_실행이_아닌_액션_로그만_있으면_대시보드는_실�
 
 @pytest.mark.django_db
 def test_대시보드는_가장_최근_드래프트_수집_실행_시각을_보여준다(staff_client):
-    """PR-D1 item 4: the most recent DRAFT_DISCOVER log's created_at is
-    surfaced as last_discovery_run_at and rendered near the run button."""
     staff, client = staff_client()
     log = StaffActionLog.objects.create(
         actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER
@@ -377,10 +351,6 @@ def test_스태프_루트_경로는_대시보드로_리다이렉트된다(staff_
     assert resp.status_code == 302
     assert resp.url == "/staff/dashboard/"
 
-
-# ---------------------------------------------------------------------------
-# Relocation + backward-compat redirects
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_예전_드래프트_목록_url은_새_스태프_경로로_리다이렉트된다(client):
@@ -436,9 +406,6 @@ def test_스태프는_홈_카테고리_관리_경로에_접근할_수_있다(sta
 
 @pytest.mark.django_db
 def test_익명_사용자가_홈_카테고리_관리_경로에_접근하면_로그인_페이지로_리다이렉트된다(client):
-    """staff_console_required's anonymous branch (redirect, not 403) — the
-    non-staff 403 case for this path is already covered by
-    test_non_staff_blocked_from_new_staff_paths below."""
     resp = client.get("/staff/home-categories/")
 
     assert resp.status_code == 302
@@ -465,14 +432,8 @@ def test_일반_사용자는_새_스태프_경로_전부에서_403으로_차단�
     assert resp.status_code == 403
 
 
-# ---------------------------------------------------------------------------
-# Hero summary-grid: 최근 7일 처리 카운트 + 검토 대기 카드 링크 (Phase 2)
-# ---------------------------------------------------------------------------
-
 @pytest.mark.django_db
 def test_최근_7일_처리_건수는_최근_활동_목록_표시_제한과_무관하게_실제_건수를_반영한다(staff_client):
-    """recent_actions_7d_count must reflect the true 7-day count, not the
-    recent_actions list's limit=10 cap (regression guard)."""
     staff, client = staff_client()
     for _ in range(12):
         StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
@@ -513,16 +474,8 @@ def test_대기중_건수_요약_카드는_대기중_드래프트_목록으로_�
     assert '<a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">' in content
 
 
-# ---------------------------------------------------------------------------
-# 품질 경고 바 리스트 (Phase 3)
-# ---------------------------------------------------------------------------
-
 def _clean_quality_event_kwargs(index):
-    """Field values for a published Event that trips none of the 5 quality
-    warnings (unique official_url, both dates set with end_date in the
-    future, non-blank region). poster_image is deliberately NOT included
-    here — callers that want a fully clean event must also attach an
-    uploaded poster_image and save() (see events/queries.py predicates)."""
+    """품질 경고 5종 중 아무것도 걸리지 않는 이벤트 필드값. poster_image는 별도로 붙여야 한다."""
     today = timezone.localdate()
     return {
         "official_url": f"https://example.com/quality-warning-{index}",
@@ -543,7 +496,7 @@ def _attach_poster(event, png_bytes, index):
 @pytest.mark.django_db
 def test_품질_경고_5종은_각각_필터_링크가_달린_막대로_렌더링된다(staff_client, make_event):
     staff, client = staff_client()
-    make_event()  # bare event trips several warnings at once
+    make_event()
 
     resp = client.get("/staff/dashboard/")
 
@@ -563,10 +516,8 @@ def test_품질_경고_5종은_각각_필터_링크가_달린_막대로_렌더�
 @pytest.mark.django_db
 def test_품질_경고_막대는_건수_내림차순으로_정렬된다(staff_client, make_event, png_bytes):
     staff, client = staff_client()
-    # 3 events trip only missing_poster (poster left unset).
     for i in range(3):
         make_event(**_clean_quality_event_kwargs(i))
-    # 1 event trips only missing_official_url (official_url left unset).
     kwargs = _clean_quality_event_kwargs(100)
     kwargs.pop("official_url")
     event = make_event(**kwargs)
@@ -581,17 +532,10 @@ def test_품질_경고_막대는_건수_내림차순으로_정렬된다(staff_cl
 
 @pytest.mark.django_db
 def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는다(staff_client, make_event, png_bytes):
-    """Only missing_region trips (count=1); the other 4 warnings (plus
-    needs_reverification) stay at 0 and must not render a
-    .warning-bar-fill span."""
     staff, client = staff_client()
     kwargs = _clean_quality_event_kwargs(0)
     kwargs.pop("region")
-    # _clean_quality_event_kwargs' start_date=today/end_date=today+30 also
-    # falls inside the needs_reverification D-7 window; without an explicit
-    # verified_at this event would additionally trip needs_reverification
-    # and the fill count would be 2, not 1 (see test_event_quality_warnings.py
-    # for the same technique).
+    # start_date/end_date가 D-7 재확인 창에도 걸리므로 verified_at을 명시해 needs_reverification까지 함께 트립되는 것을 막는다.
     kwargs["verified_at"] = timezone.now()
     event = make_event(**kwargs)
     _attach_poster(event, png_bytes, 0)
@@ -605,12 +549,8 @@ def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는
 
 @pytest.mark.django_db
 def test_품질_경고_표는_시작_임박_미확인_행을_렌더링한다(staff_client, make_event):
-    """PR-E1 §12: the needs_reverification row's label and drilldown link
-    must reach the rendered HTML, not just the quality_warnings context
-    dict (already covered by
-    test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_6종을_컨텍스트로_제공한다)."""
     staff, client = staff_client()
-    make_event(**_clean_quality_event_kwargs(0))  # in D-7 window, never verified
+    make_event(**_clean_quality_event_kwargs(0))
 
     resp = client.get("/staff/dashboard/")
 
@@ -636,14 +576,9 @@ def test_품질_경고가_하나도_없으면_대시보드는_경고_없음_안�
 def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_보여주지_않고_히어로_카드에_실제_값을_보여준다(
     staff_client, make_event, png_bytes
 ):
-    """total excludes needs_reverification (6th warning), so an event that
-    trips only needs_reverification leaves total == 0 while the table still
-    has a non-zero row to show. The "no warnings" notice must not hide the
-    table in that case."""
+    """total은 needs_reverification(6번째 경고)을 빼고 세므로, 이것만 걸리면 total==0이어도 표는 남아야 한다."""
     staff, client = staff_client()
-    # Clean on the first 5 warnings (official_url, dates, region, poster all
-    # set); verified_at deliberately left unset so needs_reverification (the
-    # 6th, excluded from total) still trips via the D-7 window.
+    # 앞 5개 경고는 모두 정상값으로 채우고 verified_at만 비워서 needs_reverification만 D-7 창에서 트립되게 한다.
     kwargs = _clean_quality_event_kwargs(0)
     event = make_event(**kwargs)
     _attach_poster(event, png_bytes, 0)
@@ -654,8 +589,6 @@ def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_�
     content = resp.content.decode()
     assert "warning-bars" in content
     assert "현재 품질 경고가 없습니다" not in content
-    # Guards against a constant-0 regression in needs_reverification: the
-    # count "1" must actually appear, not just the "총계 외" phrasing.
     assert "<p class=\"summary-value\">0건</p>" in content
     assert "총계 외 · 시작 임박, 미확인 1건" in content
 
@@ -664,14 +597,9 @@ def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_�
 def test_건수가_동률인_품질_경고는_라벨_정의_순서대로_렌더링된다(
     staff_client, make_event, png_bytes
 ):
-    """Regression guard for _build_quality_warning_rows' tie-break: two
-    warnings tied at count=1 must render in QUALITY_WARNING_LABELS'
-    definition order (missing_official_url before missing_poster), not in
-    whatever order sort() happens to leave them."""
+    """건수가 같으면 sort() 결과 순서가 아니라 QUALITY_WARNING_LABELS 정의 순서로 렌더링돼야 한다."""
     staff, client = staff_client()
-    # Trips only missing_poster (poster left unset).
     make_event(**_clean_quality_event_kwargs(0))
-    # Trips only missing_official_url (official_url left unset).
     kwargs = _clean_quality_event_kwargs(1)
     kwargs.pop("official_url")
     event = make_event(**kwargs)
@@ -683,10 +611,6 @@ def test_건수가_동률인_품질_경고는_라벨_정의_순서대로_렌더�
     content = resp.content.decode()
     assert content.index("공식 URL 없음") < content.index("포스터 없음")
 
-
-# ---------------------------------------------------------------------------
-# 최근 14일 활동 미니 컬럼 차트 (Phase 4)
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_최근_활동_차트는_항상_14개_열을_렌더링한다(staff_client):
@@ -744,10 +668,6 @@ def test_액션_로그가_없으면_최근_활동_차트_대신_안내_문구를
     assert "최근 14일 처리 내역이 없습니다" in content
     assert "activity-columns" not in content
 
-
-# ---------------------------------------------------------------------------
-# 수집 소스 상태 점 (Phase 5)
-# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_최근_수집된_활성_소스는_정상_상태_점으로_표시된다(staff_client):
@@ -823,9 +743,7 @@ def test_한번도_수집되지_않은_활성_소스는_지연_상태_점으로_
 
 @pytest.mark.django_db
 def test_오류와_지연이_동시에_성립하면_상태_점은_지연보다_오류를_우선한다(staff_client):
-    """PR-D1 item 3 established error+stale can both be true simultaneously
-    (never-checked + last_error set) — status_level must pick error, not
-    stale, so the dot doesn't disagree with the "오류" badge next to it."""
+    """미수집+오류가 동시에 성립할 수 있어, 상태 점이 옆 "오류" 배지와 어긋나지 않도록 오류를 우선한다."""
     staff, client = staff_client()
     DraftSource.objects.create(
         name="에러+지연 소스",

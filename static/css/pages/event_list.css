@@ -1,29 +1,17 @@
-/* ── /events/ page skin ──────────────────────────────────────────
+/* ── /events/ page skin ────────────────────────────────────────── */
+/* 디자인 출처: claude.ai/design "행사 목록 페이지 (에디토리얼).dc.html".
+ * 카드 그리드 대신 3/4 카테고리 타일 + 텍스트 열 + 우측 상태 배지/찜
+ * 원형 버튼으로 된 매거진식 행 목록이다.
  *
- * 2026-07-22 editorial rebuild (design source: claude.ai/design
- * "행사 목록 페이지 (에디토리얼).dc.html"). The boxed ticket-stub card grid
- * is replaced by a magazine-index row list: a 3/4 category tile, a text
- * column, and a right-aligned tone pill + 찜 circle, separated by hairlines
- * instead of borders and shadows.
- *
- * SCOPING (important): this stylesheet is also loaded by
- * templates/core/events/calendar.html (2026-07-23 editorial v2 rebuild),
- * which now shares the exact same shell markup as this page — `.events-page`
- * on <main>, `.events-head`/`.events-tabs`, `.events-search`, `.quick-row`,
- * `.layout`/`.filters`/`.filter-toggle`/`.filter-body`, and
- * `.filter-group`/`.filter-check`/`.filter-list`/`.filter-actions`/
- * `.applied-filters`. Every rule that restyles one of those shared class
- * names is scoped under `.events-page` so it can never leak into any other
- * page that might reuse the same class name in a different shell. The old
- * LEGACY block (boxed `.filter-group`, `.region-select*`, `.event-card`,
- * `.event-list`, `.dday`) has been deleted — its only consumer was the
- * calendar page's pre-2026-07-23 markup, which no longer exists.
+ * 이 파일은 templates/core/events/calendar.html도 함께 로드한다 — 두
+ * 페이지가 `.events-page`/`.events-head`/`.layout`/`.filters` 등 같은
+ * 셸 마크업을 공유하기 때문이다. 그 공유 클래스를 다시 꾸미는 규칙은
+ * 모두 `.events-page`로 스코프해 다른 셸을 쓰는 페이지로 새지 않게 한다.
  */
 
-/* ── page head: title left, 목록/달력 tabs centered ─────────────
-   `1fr auto 1fr` rather than absolute centering: the tabs stay optically
-   centered while the title column keeps a real min-content floor, so the
-   two can never overlap at 320px (absolute positioning has no such floor). */
+/* ── page head: title left, 목록/달력 tabs centered ───────────── */
+/* `1fr auto 1fr`로 짜서 탭은 시각적으로 중앙에 있으면서도 제목 칸이
+   최소 너비를 확보해 320px에서 겹치지 않는다. */
   .events-head {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -40,9 +28,8 @@
     display: flex;
     gap: 1.5rem;
   }
-  /* Underline active-state, reusing the .archive-nav-tabs convention
-     (components/nav.css) rather than nav.css's filled pill — this page's
-     switcher is a section tab, not a navigation chip. */
+  /* 채운 필 대신 밑줄로 활성 상태를 표시한다 — 내비게이션 칩이 아니라
+     섹션 탭이라서다. */
   .events-tabs a {
     position: relative;
     display: inline-flex;
@@ -73,11 +60,10 @@
     background: var(--brand);
   }
 
-/* ── search row ─────────────────────────────────────────────────
-   Own classes rather than an override of the shared `.search`
-   (components/controls.css), which the calendar page and home also use:
-   this page's field is 44px tall with a leading ⌕ glyph and a brand-filled
-   submit, none of which should reach those pages. */
+/* ── search row ───────────────────────────────────────────────── */
+/* 다른 페이지도 쓰는 공용 `.search`를 덮어쓰지 않고 이 페이지 전용
+   클래스를 둔다 — 44px 필드에 ⌕ 아이콘, brand 채움 버튼이라 다른
+   페이지엔 영향을 주면 안 된다. */
   .events-search {
     gap: 0.5rem;
     margin: 0 0 1rem;
@@ -118,11 +104,9 @@
     filter: brightness(0.95);
   }
 
-/* ── quick chips ────────────────────────────────────────────────
-   Scoped to .quick-row so the shared `.chip` signature (ticket-stub radius,
-   solid-brand active fill — components/controls.css) survives everywhere
-   else. Here the active state is the softer brand-soft/brand-ink pairing
-   the design uses for filter state. */
+/* ── quick chips ──────────────────────────────────────────────── */
+/* .quick-row로 스코프해 다른 곳의 공용 `.chip` 모습은 그대로 둔다.
+   여기서는 활성 상태를 더 부드러운 brand-soft/brand-ink 조합으로 쓴다. */
   .quick-row {
     display: flex;
     flex-wrap: wrap;
@@ -147,20 +131,17 @@
     font-weight: 600;
   }
 
-/* ── two-column layout ──────────────────────────────────────────
-   .layout is also used by the calendar page (2026-07-23 rebuild — see this
-   file's header comment), so these rules need no .events-page prefix; the
-   shared shape is identical on both pages. */
+/* ── two-column layout ────────────────────────────────────────── */
+/* .layout은 달력 페이지도 같이 쓰지만 두 페이지 모양이 동일해
+   .events-page 접두사 없이 그대로 둔다. */
   .layout {
     display: grid;
     grid-template-columns: minmax(180px, 232px) minmax(0, 1fr);
     gap: 1.75rem;
     align-items: start;
   }
-  /* Shared .panel box (components/cards.css) flattened for both columns —
-     all four box properties re-declared, not just padding, per the home/
-     activity stage lesson that a partial re-declaration lets the original
-     box survive. cards.css itself is untouched. */
+  /* 공용 .panel 박스를 이 두 열에서만 평평하게 만든다 — padding만 지우면
+     원래 박스 스타일이 일부 남으므로 4개 속성을 전부 다시 선언한다. */
   .layout .panel {
     background: none;
     border: none;
@@ -173,11 +154,10 @@
     top: calc(var(--site-header-h) + 1rem);
   }
 
-/* ── sidebar filter sections (list page only) ───────────────────
-   `.filter-group + .filter-group` rather than `:first-child` for the
-   hairline: the form's first child is a conditional hidden `q` input, so a
-   first-child rule would silently target the wrong element whenever a search
-   term is active. */
+/* ── sidebar filter sections (list page only) ─────────────────── */
+/* `:first-child` 대신 `.filter-group + .filter-group`로 구분선을 준다 —
+   폼의 첫 자식이 조건부 숨김 `q` 입력일 수 있어 first-child는 검색어가
+   있을 때 잘못된 요소를 가리킨다. */
   .events-page .filter-group {
     margin: 0;
     padding: 0;
@@ -222,9 +202,8 @@
     margin: 0;
     accent-color: var(--brand);
   }
-  /* Checked rows darken and bolden, matching the design's two-weight list.
-     Progressive enhancement: browsers without :has() simply keep every row
-     at the unchecked weight — the checkbox itself still shows the state. */
+  /* 체크된 행은 진하고 굵게 표시한다. :has()를 지원 안 하는 브라우저는
+     이 효과만 빠지고 체크박스 자체는 정상 표시된다. */
   .events-page .filter-check:has(input:checked) {
     color: var(--text);
     font-weight: 600;
@@ -240,11 +219,9 @@
     gap: 0.625rem;
     margin-bottom: 0.75rem;
   }
-  /* `.events-page` prefix is load-bearing on every h2 rule in this file, not
-     decoration: components/cards.css's `.panel h2 { font-size: 1rem }` is
-     (0,1,1) and silently beat the bare class selectors, pinning both the
-     results heading and every row title at 16px (caught by measurement, not
-     by reading). Same trap archive.css sidesteps with `.results-head h2`. */
+  /* `.events-page` 접두사가 없으면 components/cards.css의
+     `.panel h2 { font-size: 1rem }`(특이도 (0,1,1))가 이겨 제목이
+     16px로 고정된다. */
   .events-page .results-title {
     margin: 0;
     font-size: 0.94rem;
@@ -253,9 +230,7 @@
   .results-count {
     color: var(--brand-ink);
   }
-/* Sort control — a <details> disclosure anchored to the results head's right
-   edge. The panel is absolutely positioned so opening it never reflows the
-   row list underneath. */
+/* 정렬 패널은 절대 위치라 열려도 아래 행 목록이 밀리지 않는다. */
   .results-sort {
     position: relative;
     flex: none;
@@ -269,11 +244,10 @@
     font-size: 0.78rem;
     color: var(--muted);
     cursor: pointer;
-    list-style: none;          /* Firefox */
+    list-style: none;          /* Firefox 기본 마커 제거 */
     white-space: nowrap;
   }
-  /* Safari/Chrome still paint the default triangle without this, and it sits
-     on the wrong side of the label for a right-aligned control. */
+  /* Safari/Chrome는 이게 없으면 기본 삼각형을 라벨 반대쪽에 그린다. */
   .results-sort-toggle::-webkit-details-marker {
     display: none;
   }
@@ -323,8 +297,8 @@
   .results-sort-menu a:hover {
     background: var(--bg-soft);
   }
-  /* aria-current is the state carrier here, so the selected row styles off
-     the attribute itself — no parallel class to keep in sync. */
+  /* 상태는 aria-current 속성 하나로만 관리한다 — 별도 클래스와
+     동기화할 필요가 없다. */
   .results-sort-menu a[aria-current="true"] {
     background: var(--brand-soft);
     color: var(--brand-ink);
@@ -336,10 +310,9 @@
     }
   }
 
-/* ── editorial event rows ───────────────────────────────────────
-   Per-row category and tone inks are published as custom properties on the
-   row itself so the tile, the category label, and the D-day pill all read
-   the same value without repeating six category selectors three times. */
+/* ── editorial event rows ─────────────────────────────────────── */
+/* 카테고리·상태 색을 행 자체의 커스텀 속성으로 발행해 타일·라벨·D-day
+   배지가 같은 값을 셀렉터 반복 없이 공유한다. */
   .event-rows {
     display: flex;
     flex-direction: column;
@@ -389,18 +362,15 @@
     --row-tone-ink: var(--end-ink);
     --row-tone-soft: var(--end-soft);
   }
-  /* status.js appends .status-inline-error via
-     .closest("[data-status-error-container]"), which is .event-row itself —
-     without this it would land in the 3rd (auto) column instead of spanning
-     the row. Same guard the legacy .event-card carries below. */
+  /* status.js가 .event-row 자체에 .status-inline-error를 붙인다. 이
+     규칙이 없으면 오류가 3번째(auto) 열에만 갇혀 행 전체를 못 덮는다. */
   .event-row > .status-inline-error {
     grid-column: 1 / -1;
   }
 
-/* Poster/category tile. The category ink at 14% over --surface tints in
-   both themes from one declaration (both inputs are themed tokens), so no
-   dark-mode override is needed. The flat --bg-soft line before it is the
-   fallback for engines without color-mix(). */
+/* 카테고리 색을 --surface 위에 14%만 섞어 두 테마 모두 별도 다크모드
+   재정의 없이 자연스럽게 물든다. 앞의 --bg-soft 한 줄은 color-mix()를
+   지원하지 않는 엔진을 위한 대체값이다. */
   .event-row-tile {
     display: flex;
     align-items: center;
@@ -498,10 +468,9 @@
     background: var(--row-tone-soft);
     color: var(--row-tone-ink);
   }
-  /* 찜 moves off the poster overlay (.poster-interest) and into the row's
-     end column as an outlined circle — it no longer sits on an arbitrary
-     image, so it takes themed border/surface tokens instead of the
-     translucent-black treatment the overlay needed. */
+  /* 찜 버튼은 포스터 오버레이가 아니라 행 끝 열의 테두리 원형으로
+     옮겨졌다 — 더 이상 이미지 위에 있지 않아 반투명 검정 대신
+     테마 토큰을 그대로 쓴다. */
   .event-row-interest {
     flex: none;
     width: 30px;
@@ -530,10 +499,8 @@
     color: var(--pink-ink);
     font-weight: 700;
   }
-  /* The shared .is-loading spinner (objects/interaction.css) assumes text
-     before it. This button has only the glyph, so the two rendered side by
-     side and spilled past the 30px circle — same fix .poster-interest
-     carries in components/cards.css. */
+  /* 공용 .is-loading 스피너는 앞에 텍스트가 있다고 가정한다. 이 버튼은
+     아이콘만 있어 그대로 두면 나란히 표시돼 30px 원을 벗어난다. */
   .event-row-interest.is-loading [data-interest-glyph] {
     display: none;
   }
@@ -541,14 +508,10 @@
     margin-left: 0;
   }
 
-/* ── filter disclosure (tablet and below) ───────────────────────
-   Shared by both pages since 2026-07-23: the calendar page used to run its
-   own data-disclosure panel at a different breakpoint, which meant two
-   mechanisms were live between 45rem and 56.25rem. It now renders the same
-   .filter-toggle/.filter-body markup driven by the same event_list.js
-   handler, so this is the single collapse point for both — change it here
-   and verify both pages. (data-disclosure/disclosure.js still exist, but
-   only for templates/core/archive/calendar.html.) */
+/* ── filter disclosure (tablet and below) ─────────────────────── */
+/* 목록·달력 두 페이지가 같은 event_list.js 핸들러로 .filter-toggle/
+   .filter-body를 여닫는 단일 접힘 지점이다 — 여기 고치면 두 페이지 다
+   확인해야 한다. */
   .filter-toggle {
     display: none;
   }
@@ -618,9 +581,8 @@
       padding: 0.3125rem 0.6875rem;
       white-space: nowrap;
     }
-    /* The results heading has to sit below the row titles it introduces —
-       at the desktop 0.94rem it outweighed the 0.85rem mobile title and
-       inverted the hierarchy (measured on the 375px capture). */
+    /* 결과 제목은 아래 행 제목보다 작아야 한다 — 데스크톱 크기를 그대로
+       쓰면 모바일 행 제목보다 커져 위계가 뒤집힌다. */
     .events-page .results-title {
       font-size: 0.78rem;
       font-weight: 600;
@@ -645,11 +607,8 @@
       font-size: 0.63rem;
       margin-bottom: 0.1875rem;
     }
-    /* The design truncates the mobile title to one ellipsised line. Clamped
-       to two lines instead: at 320px the text column is ~164px, which cuts a
-       Korean title at roughly 12 characters — too aggressive for a listing
-       whose only job is letting you recognise the event. Two lines keep the
-       compact row rhythm without destroying the title. */
+    /* 디자인은 한 줄 말줄임이지만, 320px에서는 한글 12자 정도에서
+       잘려 너무 짧아 두 줄로 늘렸다. */
     .events-page .event-row-title {
       font-size: 0.85rem;
       margin-bottom: 0.1875rem;

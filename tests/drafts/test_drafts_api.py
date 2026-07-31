@@ -297,11 +297,6 @@ def test_이벤트_드래프트는_삭제할_수_없다(admin_client, make_draft
     assert EventDraft.objects.filter(id=draft.id).exists()
 
 
-# ---------------------------------------------------------------------------
-# GET /api/event-drafts/stats/ (moved from tests/drafts/test_drafts_stats.py)
-# ---------------------------------------------------------------------------
-
-
 def stats_url():
     return reverse("event-draft-stats")
 
@@ -348,11 +343,6 @@ def test_비로그인_사용자는_드래프트_통계를_조회할_수_없다(c
     assert response.status_code == 403
 
 
-# ---------------------------------------------------------------------------
-# Route ordering: stats/ vs <int:pk>/ (moved from tests/drafts/test_drafts_stats.py)
-# ---------------------------------------------------------------------------
-
-
 class TestRouteOrdering:
     def test_stats_경로는_통계_뷰로_해석된다(self):
         match = resolve("/api/event-drafts/stats/")
@@ -361,13 +351,6 @@ class TestRouteOrdering:
     def test_숫자_pk_경로는_상세_뷰로_해석된다(self):
         match = resolve("/api/event-drafts/1/")
         assert match.url_name == "event-draft-detail"
-
-
-# ---------------------------------------------------------------------------
-# POST /api/event-drafts/ error-mapping HTTP responses
-# (moved from tests/drafts/test_draft_service_errors.py — same endpoint's home;
-# the service-layer mapping tests stay there as TestCreateDraftErrorMapping.)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db

@@ -1,4 +1,4 @@
-"""Staff Console view: select and order the home page category tiles."""
+"""스태프 콘솔 화면: 홈 카테고리 타일을 고르고 순서를 정한다."""
 from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import redirect, render
@@ -15,11 +15,7 @@ from ._helpers import _action_log_kwargs, _staff_action_metadata
 @staff_console_required
 @ensure_csrf_cookie
 def staff_home_categories(request):
-    """Staff page: select and order the home page category tiles.
-
-    GET  — render a form with current HomeConfig state.
-    POST — parse checked/order fields, validate against vocab, save, redirect (PRG).
-    """
+    """GET은 현재 설정으로 폼을 그리고, POST는 저장 후 리다이렉트한다(PRG)."""
     config = HomeConfig.get_solo()
 
     if request.method == "POST":
@@ -29,7 +25,7 @@ def staff_home_categories(request):
                 try:
                     order = int(request.POST.get(f"order_{slug}", "0"))
                 except (ValueError, TypeError):
-                    order = 9999  # Safe fallback: append to end
+                    order = 9999  # 값이 이상하면 맨 뒤로 보낸다
                 checked.append((slug, order))
 
         checked.sort(key=lambda pair: pair[1])
@@ -46,7 +42,6 @@ def staff_home_categories(request):
         messages.success(request, "카테고리 설정이 저장되었습니다.")
         return redirect("staff:home-categories")
 
-    # GET: build form rows — one per vocab category, with current state
     featured_set = set(config.featured_categories)
     featured_order = {slug: idx + 1 for idx, slug in enumerate(config.featured_categories)}
 

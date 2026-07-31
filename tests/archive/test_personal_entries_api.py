@@ -1,10 +1,10 @@
-"""Tests for the PersonalEntry API — user-owned, private, unofficial archive
-items, owner-scoped. PersonalEntry is never part of the public catalog.
+"""PersonalEntry API 테스트 — 사용자 소유의 비공개 비공식 아카이브 항목, 소유자
+범위 한정. PersonalEntry는 공개 카탈로그에 절대 포함되지 않는다.
 
-  POST   /api/personal-entries/        → 201 (owner = request.user)
-  GET    /api/personal-entries/        → paginated list (user-scoped)
-  GET    /api/personal-entries/<id>/   → 200 or 404
-  DELETE /api/personal-entries/<id>/   → 204 or 404
+  POST   /api/personal-entries/        → 201 (소유자 = request.user)
+  GET    /api/personal-entries/        → 페이지네이션 목록(사용자 범위 한정)
+  GET    /api/personal-entries/<id>/   → 200 또는 404
+  DELETE /api/personal-entries/<id>/   → 204 또는 404
 """
 import uuid
 
@@ -31,7 +31,7 @@ def test_개인_항목을_등록하면_요청자를_소유자로_저장하고_20
     assert data["title"] == "내가 발견한 장소"
     assert data["kind"] == "place"
     entry = PersonalEntry.objects.get(id=data["id"])
-    assert entry.user == user  # owner taken from the request, not the payload
+    assert entry.user == user  # 소유자는 요청에서 가져오며 payload에서 가져오지 않는다
 
 
 @pytest.mark.web
@@ -60,8 +60,8 @@ def test_비로그인_사용자가_개인_항목_목록을_조회하면_인증_�
 @pytest.mark.web
 @pytest.mark.django_db
 def test_개인_항목은_공개_행사_API_카탈로그에_노출되지_않는다(client, make_user, make_entry):
-    """A private item must not leak into the public Event catalog API (SSR
-    half split to tests/events/test_event_list_view.py)."""
+    """비공개 항목은 공개 Event 카탈로그 API에 노출되면 안 된다(SSR 쪽 테스트는
+    tests/events/test_event_list_view.py로 분리됨)."""
     user = make_user(username="pe-leak")
     make_entry(user, kind="place", title="PRIVATE_LEAK_CANARY")
 
@@ -103,7 +103,7 @@ def test_본인_개인_항목의_장소명을_PATCH로_수정하면_200이고_DB
     assert response.json()["location_name"] == "고친 이름"
     entry.refresh_from_db()
     assert entry.location_name == "고친 이름"
-    assert entry.title == "원래 제목"  # partial update — other fields must survive
+    assert entry.title == "원래 제목"  # 부분 수정 — 다른 필드는 그대로 남아야 한다
 
 
 @pytest.mark.web
@@ -111,9 +111,9 @@ def test_본인_개인_항목의_장소명을_PATCH로_수정하면_200이고_DB
 def test_개인_항목을_PATCH할_때_client_token을_같이_보내도_저장된_멱등_키는_바뀌지_않는다(
     client, make_user, make_entry
 ):
-    """A create-time idempotency key must never be re-read or overwritten on
-    update (DAR mandatory fix ③), mirroring CollectionItemUpdateSerializer's
-    existing guard in archive/serializers.py."""
+    """생성 시점의 멱등 키는 수정에서 다시 읽히거나 덮어써지면 안 된다(DAR 필수
+    수정 ③), archive/serializers.py의 CollectionItemUpdateSerializer 기존
+    가드와 동일하다."""
     user = make_user(username="pe-patch-token")
     original_token = uuid.UUID("11111111-1111-1111-1111-111111111111")
     replay_token = uuid.UUID("22222222-2222-2222-2222-222222222222")
@@ -135,8 +135,8 @@ def test_개인_항목을_PATCH할_때_client_token을_같이_보내도_저장�
 @pytest.mark.web
 @pytest.mark.django_db
 def test_굿즈_종류로_개인_항목을_등록하면_거부된다(client, make_user):
-    """GOODS is no longer creatable via PersonalEntry (collection domain plan
-    §3-3) — goods live in the dedicated CollectionItem domain instead."""
+    """GOODS는 더 이상 PersonalEntry로 생성할 수 없다(컬렉션 도메인 설계안
+    §3-3) — 굿즈는 전용 CollectionItem 도메인에 속한다."""
     user = make_user(username="pe-goods-blocked")
 
     client.force_login(user)
@@ -153,18 +153,18 @@ def test_굿즈_종류로_개인_항목을_등록하면_거부된다(client, mak
 @pytest.mark.domain
 @pytest.mark.django_db
 def test_개인_항목_시리얼라이저의_종류_선택지에_굿즈가_없다():
-    """goods is gone from the model's Kind enum (collection domain plan §3-5
-    M2) — the serializer's auto-generated kind ChoiceField must reflect that,
-    not just the (now-unreachable) validate_kind guard."""
+    """goods는 모델의 Kind enum에서 제거됐다(컬렉션 도메인 설계안 §3-5 M2) —
+    시리얼라이저가 자동 생성하는 kind ChoiceField도 이를 반영해야 하며, 이미
+    도달 불가능해진 validate_kind 가드만으로는 부족하다."""
     from archive.serializers import PersonalEntrySerializer
 
     assert "goods" not in dict(PersonalEntrySerializer().fields["kind"].choices)
 
 
 # ---------------------------------------------------------------------------
-# INTG-BE-01-PE-WEB (bfcache duplicate-creation plan §6) — the HTTP boundary
-# contract for client_token idempotency on PersonalEntry create, mirroring
-# INTG-BE-01-VR-WEB in tests/archive/test_visit_records_api.py:153-192.
+# INTG-BE-01-PE-WEB (bfcache 중복 생성 방지 계획 §6) — PersonalEntry 생성 시
+# client_token 멱등성의 HTTP 경계 계약. tests/archive/test_visit_records_api.py:153-192의
+# INTG-BE-01-VR-WEB과 대응된다.
 # ---------------------------------------------------------------------------
 
 
@@ -209,14 +209,14 @@ def test_같은_클라이언트_토큰으로_개인_항목_생성_POST를_두_�
 
 
 # ---------------------------------------------------------------------------
-# image upload — must share the hardened guard with visit photos
+# 이미지 업로드 — 방문 사진과 동일한 강화된 가드를 공유해야 한다
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.web
 @pytest.mark.django_db
 def test_이미지가_아닌_바이트를_이미지로_업로드하면_거부된다(client, make_user, settings, tmp_path):
-    """Fake bytes labeled as .jpg must be rejected by Pillow content inspection."""
+    """.jpg로 위장한 가짜 바이트는 Pillow 내용 검사에서 거부되어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(username="pe-img-fake")
 
@@ -240,7 +240,7 @@ def test_이미지가_아닌_바이트를_이미지로_업로드하면_거부된
 @pytest.mark.web
 @pytest.mark.django_db
 def test_5MB를_초과하는_이미지를_업로드하면_거부된다(client, make_user, png_bytes, settings, tmp_path):
-    """Images larger than 5 MB must be rejected with 400 (decompression-bomb guard)."""
+    """5MB를 초과하는 이미지는 400으로 거부되어야 한다(압축 폭탄 방지 가드)."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(username="pe-img-big")
 
@@ -264,7 +264,7 @@ def test_5MB를_초과하는_이미지를_업로드하면_거부된다(client, m
 @pytest.mark.web
 @pytest.mark.django_db
 def test_SVG_파일을_이미지로_업로드하면_거부된다(client, make_user, settings, tmp_path):
-    """SVG files must be rejected even if Pillow might accept them."""
+    """SVG 파일은 Pillow가 허용하더라도 거부되어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(username="pe-img-svg")
     svg_content = b"<svg xmlns='http://www.w3.org/2000/svg'><circle r='5'/></svg>"

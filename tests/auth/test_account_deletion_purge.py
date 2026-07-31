@@ -1,5 +1,6 @@
-"""accounts.services deletion-grace-period internals: cancel/purge race
-safety and the purge boundary (no HTTP — see .docs/plans/2026-07-20-deletion-grace-period-plan.md).
+"""accounts.services 삭제 유예기간 내부 로직: 취소/purge 레이스 안전성과
+purge 경계(HTTP 없음 — .docs/plans/2026-07-20-deletion-grace-period-plan.md
+참고).
 """
 from datetime import timedelta
 
@@ -18,15 +19,17 @@ pytestmark = pytest.mark.domain
 
 @pytest.mark.django_db
 def test_이미_취소된_탈퇴_예약에_cancel_deletion을_다시_호출하면_아무_효과가_없다(make_user):
-    """DEL-12: a concurrent cancel_deletion race (e.g. two logins landing at
-    once, or a cancel racing the purge command) must not silently report a
-    second success — the rowcount is what the login signal uses to decide
-    whether to show a cancellation message, and what execute_pending_deletions
-    will use to detect a cancel-vs-purge interleave (DEL-08)."""
+    """DEL-12: 동시에 일어난 cancel_deletion 레이스(예: 로그인 두 건이
+    동시에 들어오거나, 취소가 purge 명령과 경쟁하는 경우)는 두 번째 성공을
+    조용히 보고하면 안 된다 — 이 rowcount로 로그인 시그널이 취소 메시지를
+    보여줄지 판단하고, execute_pending_deletions도 이걸로 취소-대-purge
+    인터리브(DEL-08)를 감지한다."""
     user = make_user()
     services.request_deletion(user)
-    stale_user = User.objects.get(pk=user.pk)  # a second caller's fetch
-    User.objects.filter(pk=user.pk).update(deletion_requested_at=None)  # already cancelled elsewhere
+    # 두 번째 호출자의 조회
+    stale_user = User.objects.get(pk=user.pk)
+    # 다른 곳에서 이미 취소됨
+    User.objects.filter(pk=user.pk).update(deletion_requested_at=None)
 
     rowcount = services.cancel_deletion(stale_user)
 
@@ -35,9 +38,9 @@ def test_이미_취소된_탈퇴_예약에_cancel_deletion을_다시_호출하�
 
 @pytest.mark.django_db
 def test_삭제_예약_후_9일23시간이_지난_계정은_purge_대상이_아니다(make_user):
-    """DEL-07 boundary: one hour short of the 10-day grace period must not
-    be purged yet — pinned ahead of execute_pending_deletions existing, so
-    the boundary is fixed before the sweep logic is written."""
+    """DEL-07 경계: 10일 유예기간에서 1시간 모자란 계정은 아직 purge되면
+    안 된다 — execute_pending_deletions가 생기기 전에 먼저 고정해 두는
+    경계라, 소거 로직을 쓰기 전에 경계값부터 확정한다."""
     user = make_user()
     services.request_deletion(user)
     User.objects.filter(pk=user.pk).update(
@@ -53,9 +56,8 @@ def test_삭제_예약_후_9일23시간이_지난_계정은_purge_대상이_아�
 
 @pytest.mark.django_db
 def test_삭제_예약_후_10일이_지난_계정은_purge_실행_시_삭제된다(make_user):
-    """DEL-06 (base): once the grace period has fully elapsed, the account
-    is actually removed — the counterpart to the 9d23h boundary test
-    above."""
+    """DEL-06(기본): 유예기간이 완전히 지나면 계정이 실제로 삭제된다 — 위
+    9일 23시간 경계 테스트의 짝이다."""
     user = make_user()
     services.request_deletion(user)
     User.objects.filter(pk=user.pk).update(
@@ -71,14 +73,10 @@ def test_삭제_예약_후_10일이_지난_계정은_purge_실행_시_삭제된�
 def test_purge_실행으로_계정이_삭제되면_소유한_직접_등록_항목과_이미지_파일도_함께_삭제된다(
     make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
 ):
-    """Migrated from tests/auth/test_account_deletion.py's
-    test_올바른_비밀번호로_계정을_삭제하면_소유한_직접_등록_항목과_이미지_파일도_함께_삭제된다 (Scenario
-    DEL-06, Test Authoring Policy — restoring the protected behavior under the
-    new trigger): the trigger is no longer the delete_account view's
-    immediate hard delete — it is now execute_pending_deletions, once the
-    grace period has elapsed — but the CASCADE + archive.signals file-cleanup
-    contract this test protects is unchanged (see
-    .docs/plans/2026-07-20-deletion-grace-period-plan.md)."""
+    """DEL-06 시나리오: 지금은 delete_account 뷰의 즉시 하드 삭제가 아니라
+    유예기간이 지난 뒤 execute_pending_deletions가 방아쇠지만, 이 테스트가
+    지키는 CASCADE + archive.signals 파일 정리 계약 자체는 그대로다
+    (.docs/plans/2026-07-20-deletion-grace-period-plan.md 참고)."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     entry = PersonalEntry.objects.create(
@@ -107,13 +105,10 @@ def test_purge_실행으로_계정이_삭제되면_소유한_직접_등록_항�
 def test_purge_실행으로_계정이_삭제되면_방문_기록의_사진도_2차_연쇄로_삭제된다(
     make_user, make_event, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks
 ):
-    """Migrated from tests/auth/test_account_deletion.py's
-    test_올바른_비밀번호로_계정을_삭제하면_방문_기록의_사진도_2차_연쇄로_삭제된다 (Scenario DEL-06, Test
-    Authoring Policy): User -> VisitRecord (1st-degree CASCADE) ->
-    VisitRecordPhoto (2nd-degree CASCADE) must still fire archive.signals'
-    post_delete file cleanup when the delete comes from
-    execute_pending_deletions rather than the delete_account view's former
-    immediate hard delete."""
+    """DEL-06 시나리오: User -> VisitRecord(1차 CASCADE) ->
+    VisitRecordPhoto(2차 CASCADE)는, 삭제가 delete_account 뷰의 옛 즉시
+    하드 삭제가 아니라 execute_pending_deletions에서 와도 여전히
+    archive.signals의 post_delete 파일 정리를 발화해야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -139,11 +134,11 @@ def test_purge_실행으로_계정이_삭제되면_방문_기록의_사진도_2�
 
 @pytest.mark.django_db
 def test_purge_실행_중_한_계정이_실패해도_나머지_계정은_삭제되고_실패_건수가_요약된다(make_user, monkeypatch):
-    """DEL-09: one row's delete failure must not stop the sweep — the
-    surviving candidate is still purged, and the failure is surfaced through
-    execute_pending_deletions' return value (`{"deleted": [...], "failed":
-    [(pk, str(exc)), ...]}`, mirroring discover_drafts.py's per-item
-    isolation) rather than swallowed silently."""
+    """DEL-09: 한 행의 삭제 실패가 전체 소거를 멈추면 안 된다 — 살아남은
+    후보는 그대로 purge되고, 실패는 조용히 삼켜지지 않고
+    execute_pending_deletions의 반환값(`{"deleted": [...], "failed":
+    [(pk, str(exc)), ...]}`, discover_drafts.py의 항목별 격리와 같은
+    방식)으로 드러난다."""
     failing_user = make_user()
     surviving_user = make_user()
     services.request_deletion(failing_user)
@@ -176,19 +171,18 @@ def test_purge_실행_중_한_계정이_실패해도_나머지_계정은_삭제�
 @pytest.mark.contract
 @pytest.mark.django_db
 def test_purge_처리_도중_취소가_들어오면_해당_계정은_삭제되지_않는다(make_user, monkeypatch):
-    """DEL-08: a cancellation that lands in the gap between the initial
-    candidate scan and the per-row select_for_update re-check must win —
-    the account survives and is not counted as deleted. This reproduces
-    that gap by wrapping `User.objects.select_for_update` so the first call
-    triggers `cancel_deletion` for this user *before* delegating to the
-    real `select_for_update`, simulating another process's cancel landing
-    right before the lock is taken.
+    """DEL-08: 최초 후보 스캔과 행 단위 select_for_update 재확인 사이의
+    틈에 들어온 취소가 이겨야 한다 — 계정은 살아남고 삭제됐다고 집계되지
+    않는다. 이 틈을 재현하려고 `User.objects.select_for_update`를 감싸,
+    첫 호출이 실제 `select_for_update`에 위임하기 *전에* 이 사용자에 대해
+    `cancel_deletion`을 먼저 발동시켜 다른 프로세스의 취소가 락을 잡기
+    직전에 도착한 상황을 흉내낸다.
 
-    Confirmatory, not a genuine Red: execute_pending_deletions' per-row
-    re-verification (`filter(..., deletion_requested_at__lte=cutoff)` after
-    `select_for_update`, added in C7) already satisfies this without any
-    further change — recorded here as the scenario's coverage, not as a
-    manufactured failure."""
+    확인용이지 실제 Red는 아니다: execute_pending_deletions의 행 단위
+    재검증(`select_for_update` 뒤의 `filter(...,
+    deletion_requested_at__lte=cutoff)`, C7에서 추가됨)이 추가 수정 없이
+    이미 이걸 만족한다 — 억지로 만든 실패가 아니라 이 시나리오의 커버리지로
+    기록해 둔다."""
     user = make_user()
     services.request_deletion(user)
     User.objects.filter(pk=user.pk).update(
@@ -214,10 +208,10 @@ def test_purge_처리_도중_취소가_들어오면_해당_계정은_삭제되�
 @pytest.mark.contract
 @pytest.mark.django_db
 def test_purge_명령어는_실패가_있으면_CommandError를_발생시킨다(make_user, monkeypatch):
-    """Thin command-level check: purge_deleted_accounts is a shell around
-    execute_pending_deletions, so a row failure must surface as a
-    CommandError (never swallowed) — reuses the same flaky-delete mocking
-    technique as the service-level failure test above."""
+    """얇은 명령어 수준 확인: purge_deleted_accounts는
+    execute_pending_deletions를 감싼 껍데기라, 행 실패는 삼켜지지 않고
+    CommandError로 드러나야 한다 — 위 서비스 수준 실패 테스트와 같은
+    불안정 삭제 모킹 기법을 재사용한다."""
     failing_user = make_user()
     services.request_deletion(failing_user)
     User.objects.filter(pk=failing_user.pk).update(

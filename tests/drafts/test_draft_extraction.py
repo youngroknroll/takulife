@@ -1,9 +1,4 @@
-"""Unit tests for drafts.extraction — HTML → event-field extraction.
-
-Pure logic (no DB), previously only exercised indirectly through the draft
-service flow, leaving the title/text fallbacks, date parsing, and category/
-region detection branches uncovered.
-"""
+"""drafts.extraction(HTML → 행사 필드 추출) 단위 테스트. DB 없는 순수 로직."""
 from datetime import date
 
 import pytest
@@ -78,8 +73,8 @@ class TestDateParsing:
         assert result["extracted_end_date"] == date(2026, 7, 20)
 
     def test_잘못된_달력_날짜는_건너뛰고_다음_유효한_날짜를_시작일로_사용한다(self):
-        # 2026-13-40 matches the pattern but is not a real date → skipped, the
-        # following valid date becomes the start.
+        # 2026-13-40은 패턴엔 맞지만 실존 날짜가 아니라 건너뛰고, 다음 유효
+        # 날짜가 시작일이 된다.
         result = self._extract("2026-13-40 잘못된 날짜 그리고 2026-08-15")
         assert result["extracted_start_date"] == date(2026, 8, 15)
 

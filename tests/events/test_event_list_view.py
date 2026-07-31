@@ -1,9 +1,9 @@
-"""Tests for the public browse page view (core.views.event_list).
+"""공개 목록 화면 뷰(core.views.event_list)를 검증한다.
 
-Behavior under test: an invalid or unmatched filter value renders the empty
-state ("행사 없음"), never a hard error screen. The JSON API keeps rejecting the
-same input with 400 (covered in test_events_api.py) — only the browse page
-degrades gracefully.
+검증 대상 동작: 유효하지 않거나 일치하지 않는 필터 값은 빈 상태
+("행사 없음")로 렌더링되며, 오류 화면으로 이어지지 않는다. JSON API는
+같은 입력을 여전히 400으로 거부한다(test_events_api.py에서 다룬다) —
+목록 화면만 우아하게 대응한다.
 """
 import re
 from datetime import timedelta
@@ -63,15 +63,14 @@ class TestEventListInvalidFilters:
         assert "Busan one" not in body
 
     def test_사이드바_폼의_빈_상태_값은_오류_없이_다른_필터와_함께_정상_동작한다(self, make_event):
-        """The sidebar form always submits status="" (전체) and sort="";
-        a blank status must not raise ValidationError / degrade to the empty
-        state — it must still combine with other filters (region here).
+        """사이드바 폼은 항상 status=""(전체)와 sort=""를 제출한다; 빈
+        status가 ValidationError나 빈 상태로 이어지면 안 되고, 다른 필터(여기선
+        region)와도 여전히 함께 동작해야 한다.
 
-        Split off A5 (core/views.py::event_list now defaults an absent/blank
-        status to "active"): a blank status no longer means "no status
-        filter" — see test_사이드바_폼의_빈_상태_값도_기본적으로_진행_예정만_남긴다 below
-        for that new contract. This test only guards the still-true half:
-        blank must not error."""
+        core/views.py::event_list는 비어있는 status를 "active"로 기본
+        처리한다 — 빈 status가 더는 "필터 없음"을 뜻하지 않는다는 계약은
+        아래 test_사이드바_폼의_빈_상태_값도_기본적으로_진행_예정만_남긴다가 검증한다.
+        이 테스트는 "빈 값이 오류를 내지 않는다"는 부분만 지킨다."""
         make_event(title="Seoul match", region="seoul")
 
         resp = Client().get(
@@ -84,11 +83,11 @@ class TestEventListInvalidFilters:
         assert "Seoul match" in body
 
     def test_사이드바_폼의_빈_상태_값도_기본적으로_진행_예정만_남긴다(self, make_event):
-        """New contract since A5: an explicitly blank status="" is treated
-        the same as an absent status param, so it now also defaults to
-        "active" and excludes closed events — the matching fixture needs a
-        real past end_date, or this proves nothing (a NULL end_date event
-        would survive regardless of the default)."""
+        """현재 계약: 명시적으로 빈 status=""는 status 파라미터가 없는 것과
+        동일하게 취급돼 "active"로 기본 처리되고 종료된 행사는 제외된다 —
+        검증용 픽스처는 실제 과거 end_date를 가져야 한다. end_date가 NULL인
+        행사는 기본값과 무관하게 살아남으므로 이 값이 아니면 아무것도
+        증명하지 못한다."""
         today = timezone.localdate()
         make_event(
             title="Seoul closed",
@@ -107,8 +106,8 @@ class TestEventListInvalidFilters:
 
 @pytest.mark.django_db
 class TestEventListAuthenticatedRows:
-    """A logged-in viewer's own status/interest is attached to browse cards
-    (core.views._attach_display authenticated branch)."""
+    """로그인한 사용자 본인의 상태/찜 여부가 목록 카드에 반영된다
+    (core.views._attach_display의 인증 분기)."""
 
     def test_로그인_사용자가_행사_목록을_보면_카드에_본인_상태와_찜_여부가_반영된다(
         self, make_event, make_user
@@ -132,7 +131,7 @@ class TestEventListAuthenticatedRows:
 
 @pytest.mark.django_db
 class TestEventListRegionLabel:
-    """Each row carries a Korean region_label for the card's place line
+    """각 행은 카드의 장소 표시줄용 한글 region_label을 담는다
     (§6.2: 지역 라벨 + location_name 합성 표기)."""
 
     def test_지역이_설정된_행사는_목록_카드에_한글_지역_라벨을_담는다(self, make_event):
@@ -163,10 +162,10 @@ class TestEventListActiveFilterChips:
         assert "검색: 공연" in resp.context["active_filter_chips"]
 
     def test_상태를_전체로_필터링하면_활성_필터_칩에_전체가_표시된다(self, make_event):
-        """status='all' must not leak as a raw 'all' chip (EVENT_STATUS_LABELS
-        has no 'all' entry — it's the sidebar's "전체" override, never a member
-        of EVENT_STATUS itself, see calendar's dedicated value="" all-status
-        radio for why it can't just be added there)."""
+        """status='all'이 그대로 'all' 칩으로 새어나가면 안 된다
+        (EVENT_STATUS_LABELS에는 'all' 항목이 없다 — 사이드바의 "전체" 오버라이드일
+        뿐 EVENT_STATUS의 일원은 아니다. 달력의 전용 value="" 전체상태 라디오와
+        같은 이유로 그냥 추가할 수 없다)."""
         make_event(title="전체상태칩행사")
 
         resp = Client().get("/events/", {"status": "all"})
@@ -178,21 +177,18 @@ class TestEventListActiveFilterChips:
 
 @pytest.mark.django_db
 class TestEventListPagerQEncoding:
-    """The pager's ?q= link must URL-encode the search term, so a value
-    containing '#' isn't truncated into a URL fragment on click, losing the
-    rest of the query string.
+    """페이저의 ?q= 링크는 검색어를 URL 인코딩해야 한다. 그러지 않으면 '#'이
+    들어간 값이 클릭 시 URL 프래그먼트로 잘려 나머지 쿼리스트링을 잃는다.
 
-    /events/ now renders pagination through the shared pager partial
-    (templates/core/partials/_pager.html), whose extra_query is built with
-    urllib.parse.urlencode (quote_plus-style) — the same encoding the other
-    seven paginated lists already use (core/views.py:857). The old inline
-    pager this replaced used Django's `|urlencode` template filter
-    (urllib.parse.quote-style), which escaped '+'/space as %2B/%20 instead of
-    +. Both styles round-trip to the identical original string with no data
-    loss, so the '+'/space case below asserts the round-trip outcome (decoded
-    q equals the original search term) rather than pinning one literal
-    encoding — only the '#' case, whose whole point is avoiding a URL
-    fragment, still asserts the specific escaped literal."""
+    /events/의 페이지네이션은 공용 페이저 파셜(templates/core/partials/_pager.html)이
+    렌더링하며, 그 extra_query는 urllib.parse.urlencode(quote_plus 방식)로
+    만들어진다 — 다른 7개 페이지네이션 목록과 같은 인코딩이다(core/views.py:857).
+    이전에 대체된 인라인 페이저는 Django `|urlencode` 템플릿 필터(quote 방식)를
+    썼는데, '+'/공백을 +가 아니라 %2B/%20으로 이스케이프했다. 두 방식 모두
+    원본 문자열로 손실 없이 왕복되므로, 아래 '+'/공백 케이스는 특정 인코딩
+    리터럴이 아니라 왕복 결과(디코드한 q가 원래 검색어와 같음)를 검증한다 —
+    URL 프래그먼트 회피가 핵심인 '#' 케이스만 구체적인 이스케이프 리터럴을
+    단언한다."""
 
     def test_검색어에_해시_기호가_있으면_페이저_링크의_q_값이_URL_인코딩되어_잘리지_않는다(self, make_event):
         for i in range(11):
@@ -206,10 +202,10 @@ class TestEventListPagerQEncoding:
         assert "&q=#" not in body
 
     def test_검색어에_더하기와_공백이_있으면_페이저_링크의_q_값이_원래_검색어로_보존된다(self, make_event):
-        """'+'/space must never reach the href unescaped (raw form-encoding
-        chars in a query value are ambiguous), and the pager link must decode
-        back to the exact original search term 'a+b c' — regardless of
-        whether the encoder chose %2B/%20 or %2B/+ to represent it."""
+        """'+'/공백이 href에 이스케이프되지 않은 채 남으면 안 되고(쿼리 값 안의
+        원문 폼인코딩 문자는 의미가 모호하다), 인코더가 %2B/%20을 쓰든 %2B/+를
+        쓰든 페이저 링크는 디코드하면 원래 검색어 'a+b c'로 정확히 돌아와야
+        한다."""
         for i in range(11):
             make_event(title=f"a+b c 행사 {i}")
 
@@ -228,9 +224,9 @@ class TestEventListPagerQEncoding:
         assert query.get("q") == ["a+b c"]
 
     def test_지역_값에_특수문자가_있으면_페이저_링크에_추가_쿼리_파라미터로_주입되지_않도록_URL_인코딩된다(self, make_event):
-        """selected_region is echoed into the pager from an unvalidated
-        request.GET.getlist('region') — a value containing raw '&'/'=' must
-        not be re-injected into the href as extra query parameters."""
+        """selected_region은 검증되지 않은 request.GET.getlist('region')에서
+        그대로 페이저에 반영된다 — 원문 '&'/'='가 담긴 값이 href에 추가
+        쿼리 파라미터로 재주입되면 안 된다."""
         for i in range(11):
             make_event(title=f"서울 행사 {i}", region="seoul")
         malicious_region = "a&status=closed"
@@ -323,10 +319,10 @@ class TestEventListDefaultExcludesClosed:
 
 @pytest.mark.django_db
 class TestEventListExplicitStatusGuard:
-    """core/views.py::event_list injects status="active" only when the
-    request omits/blanks the status param (A5). These two tests guard the
-    injection's if-guard itself: an explicit status value the sidebar/chip
-    UI sends must pass through untouched, not get silently overwritten."""
+    """core/views.py::event_list는 요청에 status 파라미터가 없거나 빈 경우에만
+    status="active"를 주입한다. 이 두 테스트는 그 if-가드 자체를 지킨다:
+    사이드바/칩 UI가 보낸 명시적인 status 값은 그대로 통과해야 하고 조용히
+    덮어써지면 안 된다."""
 
     def test_상태를_종료로_지정하면_종료된_행사만_보인다(self, make_event):
         today = timezone.localdate()
@@ -414,13 +410,14 @@ class TestEventListGenuinelyEmptyState:
 
 @pytest.mark.django_db
 def test_비공개_직접_등록_항목은_공개_행사_목록_페이지에_노출되지_않는다(client, make_user):
-    """A private PersonalEntry item must not leak into the public browse page
-    HTML (split from archive's test_personal_entry_never_appears_in_public_catalog
-    — the API half stays in tests/archive/test_personal_entries_api.py).
+    """비공개 PersonalEntry 항목이 공개 목록 HTML에 노출되면 안 된다. API 쪽
+    검증은 tests/archive/test_personal_entries_api.py가 맡고, 이 테스트는
+    HTML 렌더링만 다룬다(archive의
+    test_personal_entry_never_appears_in_public_catalog와 짝을 이룬다).
 
-    Uses PersonalEntry.objects.create directly rather than archive's make_entry
-    fixture: that fixture lives in tests/archive/conftest.py, which pytest's
-    per-directory conftest scoping does not expose here in tests/events/.
+    archive의 make_entry 픽스처 대신 PersonalEntry.objects.create를 직접
+    쓴다: 그 픽스처는 tests/archive/conftest.py에 있는데, pytest의
+    디렉터리별 conftest 범위 규칙상 tests/events/에서는 보이지 않는다.
     """
     from archive.models import PersonalEntry
 

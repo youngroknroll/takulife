@@ -1,9 +1,4 @@
-"""staff.views.staff_events — PR-E1 (/staff/events/ list + quality drilldown).
-
-Covers the staff_console_required gate (auth pin, mirrors test_staff_console.py
-conventions) and the warning/publish_status filtering + pagination the view
-delegates to events.queries.list_staff_events.
-"""
+"""스태프 행사 목록(/staff/events/) 인증 게이트와 경고/게시상태 필터링, 페이지네이션 검증."""
 from datetime import date, timedelta
 
 import pytest

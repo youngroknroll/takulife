@@ -554,18 +554,49 @@ is separately approved.
 This policy applies to ordinary code comments and docstrings. The test-specific
 Given-When-Then guidance in the Test Authoring Policy remains separate.
 
-- Write a comment only when it explains an intent, constraint, trade-off, or
-  exception that the code itself cannot make clear. Do not translate a name,
-  condition, loop, or other self-evident statement into prose.
+**Code comes before comments.** Code that needs a comment to be understood is
+code to rewrite, not code to annotate. Reach for a clearer name, a smaller
+function, or a better structure first. The best outcome for most comments is
+deletion.
+
+A comment is still warranted in four cases:
+
+- the code is unavoidably complex;
+- a detail is needed for precision;
+- the context lives outside the code (another repository, package, or external
+  specification);
+- ambiguity has to be removed.
+
+When one is warranted:
+
+- **Write it in Korean. There is no exception.** An English comment is a defect
+  regardless of how good its content is; rewrite it in Korean or delete it.
+  Code identifiers, paths, and `file:line` references stay verbatim — it is the
+  surrounding explanation that must be Korean.
 - Use short, plain Korean that a non-developer can understand. If a technical
   term is unavoidable, explain its meaning in the surrounding words.
 - Keep one comment to one or two lines. Put longer design rationale in the
-  approved canonical technical document instead.
+  approved canonical technical document under `docs/` instead.
+- Do not translate a name, condition, loop, or other self-evident statement
+  into prose.
 - Preserve the reason behind non-obvious security, privacy, data-preservation,
   external-integration, performance, and temporary-compatibility decisions
-  when that reason would otherwise be lost.
-- Do not use comments as a change history or a substitute for clear naming and
-  small functions. Update or remove a comment whenever its related code changes.
+  when that reason would otherwise be lost. Code cannot carry these.
+- Do not use a comment as a change history, and do not use one to excuse
+  unclear or wrong code — rewrite the code. Update or remove a comment
+  whenever its related code changes.
+
+### TODO Markers
+
+- `TODO(<scope>):` marks **a place, not a task**: "this is where X attaches".
+  It belongs in the code because its whole value is the location.
+- Anything carrying scope, priority, or a schedule is a work item and belongs
+  in `docs/backlog.md`. Do not grow a second backlog inside the code.
+- Do not copy TODO locations into any document. A `file:line` list goes stale
+  on the next edit above it — backlog F2 was exactly that failure, and it was
+  resolved by deleting the line numbers. Find them with `rg "TODO\("` instead.
+- **Do not use `FIXME`.** Knowing code is wrong and leaving a marker is the
+  excuse this policy forbids. Fix it, or open a backlog item.
 
 Example — avoid a code translation:
 

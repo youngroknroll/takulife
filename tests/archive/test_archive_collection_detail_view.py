@@ -1,12 +1,10 @@
-"""Tests for the read-only collection-item detail page (core.views,
-`archive_collection_item_detail`, URL name "collection-detail-page",
-route `/collection/<int:item_id>/`).
+"""읽기 전용 굿즈 상세 페이지(core.views, `archive_collection_item_detail`,
+URL 이름 "collection-detail-page", 라우트 `/collection/<int:item_id>/`) 테스트.
 
-The page is owner-scoped: a non-owner request 404s and an anonymous request
-redirects to login. It shows one CollectionItem's name, image, and a derived
-meta headline block (quantity / tradeable quantity / acquired date /
-acquisition source / linked visit record), each row conditionally rendered —
-omitted whenever its backing field is empty.
+이 페이지는 소유자 범위다: 소유자가 아니면 404, 비로그인이면 로그인으로
+리다이렉트된다. CollectionItem 하나의 이름·이미지와 파생 메타 헤드라인
+블록(수량/교환 가능 수량/획득일/획득 경로/연결된 방문 기록)을 보여주며,
+각 행은 값이 비어 있으면 조건부로 생략된다.
 """
 import pytest
 from django.test import Client
@@ -157,12 +155,11 @@ class TestArchiveCollectionDetailAcquisitionSourceRow:
 
 @pytest.mark.django_db
 class TestArchiveCollectionDetailVisitRecordRow:
-    """CD-12: the linked-visit row's title prefers the visit's Event title,
-    falling back to the PersonalEntry title when the visit has no Event —
-    mirrors collection_edit.html:115's existing branch. Both subjects are
-    built through the normal creation path (make_visit/make_event/make_entry)
-    so the visit_record FK is a real same-owner link, never a hand-wired
-    cross-owner fixture."""
+    """CD-12: 연결된 방문 행의 제목은 방문의 Event 제목을 우선하고, Event가
+    없으면 PersonalEntry 제목으로 대체한다 — collection_edit.html:115의 기존
+    분기와 동일하다. 두 대상 모두 정상 생성 경로(make_visit/make_event/make_entry)
+    로 만들어, visit_record FK가 실제 동일 소유자 링크이며 수작업으로 연결한
+    타인 소유 픽스처가 아니게 한다."""
 
     @pytest.mark.parametrize(
         "subject_kind",
@@ -206,10 +203,9 @@ class TestArchiveCollectionDetailSeriesInkConsistency:
     def test_같은_작품의_색_버킷은_목록과_상세에서_동일하다(
         self, user_client, make_collection_item
     ):
-        # CD-14: two DISTINCT work_titles, registered in order, so a
-        # detail page that recomputed its own single-item palette (instead
-        # of sharing the whole-collection palette with the list view) could
-        # not accidentally pass by having only one bucket to pick from.
+        # CD-14: 서로 다른 work_title 두 개를 순서대로 등록한다 — 상세 페이지가
+        # (목록과 컬렉션 전체 팔레트를 공유하지 않고) 자체 단일 아이템 팔레트를
+        # 다시 계산해도 버킷이 하나뿐이라 우연히 통과하는 일이 없도록 하기 위함.
         user, client = user_client()
         first = make_collection_item(user, name="A1", work_title="작품 A")
         second = make_collection_item(user, name="B1", work_title="작품 B")

@@ -1,7 +1,4 @@
-"""Tests for EventDraft field-level behavior — extraction_method/confidence
-(added for LLM prefill, PR-B). Kept in a dedicated file: no existing
-drafts-model-focused test module owns EventDraft field defaults/validation.
-"""
+"""EventDraft의 extraction_method/confidence 필드 동작 테스트(LLM 사전입력용)."""
 import pytest
 from django.core.exceptions import ValidationError
 
@@ -46,10 +43,6 @@ class TestConfidenceField:
 
         assert draft.confidence == pytest.approx(0.87)
 
-
-# ---------------------------------------------------------------------------
-# __str__ (moved from tests/core/test_coverage_supplements.py)
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.django_db

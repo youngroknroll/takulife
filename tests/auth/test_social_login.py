@@ -1,13 +1,14 @@
-"""Google social login (allauth socialaccount).
+"""구글 소셜 로그인(allauth socialaccount).
 
-The full OAuth round-trip against Google cannot run in CI (external service,
-real credentials), so these tests cover what is testable without it:
-- the Google provider is registered and its button renders on the auth pages,
-- our account-linking policy (a Google login whose provider-verified email
-  matches an existing local account logs into that account) works, driven
-  through allauth's ``complete_social_login`` with a mocked ``SocialLogin``.
+구글을 상대로 한 완전한 OAuth 왕복은 CI에서 돌릴 수 없다(외부 서비스,
+실제 자격증명 필요) — 그래서 이 테스트들은 그것 없이도 검증 가능한 것만
+다룬다:
+- 구글 provider가 등록돼 있고 인증 페이지에 버튼이 렌더되는지,
+- 계정 연결 정책(공급자가 인증한 이메일이 기존 로컬 계정과 일치하는 구글
+  로그인은 그 계정으로 로그인된다)이, 모킹한 ``SocialLogin``으로 allauth의
+  ``complete_social_login``을 구동해 실제로 동작하는지.
 
-The live Google round-trip is verified manually on localhost.
+실제 구글 왕복은 localhost에서 수동으로 검증한다.
 """
 import pytest
 
@@ -33,7 +34,7 @@ _UNCONFIGURED_GOOGLE_PROVIDER = {
 @pytest.mark.web
 @pytest.mark.django_db
 def test_구글_로그인이_설정되어_있으면_로그인_페이지에_구글_버튼이_노출된다(client, settings):
-    """The login page links to the Google login flow once credentials exist."""
+    """자격증명이 있으면 로그인 페이지가 구글 로그인 흐름으로 연결된다."""
     settings.SOCIALACCOUNT_PROVIDERS = _CONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/login/")
     assert response.status_code == 200
@@ -43,7 +44,7 @@ def test_구글_로그인이_설정되어_있으면_로그인_페이지에_구�
 @pytest.mark.web
 @pytest.mark.django_db
 def test_구글_로그인이_설정되어_있으면_회원가입_페이지에_구글_버튼이_노출된다(client, settings):
-    """The signup page also offers Google once credentials exist."""
+    """자격증명이 있으면 회원가입 페이지도 구글을 제공한다."""
     settings.SOCIALACCOUNT_PROVIDERS = _CONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/signup/")
     assert response.status_code == 200
@@ -53,7 +54,7 @@ def test_구글_로그인이_설정되어_있으면_회원가입_페이지에_�
 @pytest.mark.web
 @pytest.mark.django_db
 def test_구글_로그인이_미설정이면_로그인_페이지에_구글_버튼이_노출되지_않는다(client, settings):
-    """A blank client_id hides the button instead of showing a dead link."""
+    """client_id가 비어 있으면 죽은 링크를 보여주는 대신 버튼을 숨긴다."""
     settings.SOCIALACCOUNT_PROVIDERS = _UNCONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/login/")
     assert response.status_code == 200
@@ -63,7 +64,7 @@ def test_구글_로그인이_미설정이면_로그인_페이지에_구글_버�
 @pytest.mark.web
 @pytest.mark.django_db
 def test_구글_로그인이_미설정이면_회원가입_페이지에_구글_버튼이_노출되지_않는다(client, settings):
-    """A blank client_id hides the button instead of showing a dead link."""
+    """client_id가 비어 있으면 죽은 링크를 보여주는 대신 버튼을 숨긴다."""
     settings.SOCIALACCOUNT_PROVIDERS = _UNCONFIGURED_GOOGLE_PROVIDER
     response = client.get("/accounts/signup/")
     assert response.status_code == 200
@@ -72,21 +73,21 @@ def test_구글_로그인이_미설정이면_회원가입_페이지에_구글_�
 
 @pytest.mark.contract
 def test_구글_provider_설정은_email_scope를_요청한다(settings):
-    """Google is configured to request the email scope — without it allauth
-    cannot obtain the verified address the linking policy relies on."""
+    """구글은 email scope를 요청하도록 설정돼 있다 — 이게 없으면 allauth가
+    연결 정책이 의존하는 인증된 주소를 얻을 수 없다."""
     google = settings.SOCIALACCOUNT_PROVIDERS["google"]
     assert "email" in google["SCOPE"]
 
 
 @pytest.mark.contract
 def test_구글_이메일_인증_계정연결_정책_설정이_활성화되어_있다(settings):
-    """A Google login whose provider-verified email matches an existing local
-    account must log into (and connect to) that account — the approved policy.
-    Guarded here so it can't be silently disabled. Safe only because Google is
-    a fully-trusted provider; revisit if another provider is added.
+    """공급자가 인증한 이메일이 기존 로컬 계정과 일치하는 구글 로그인은 그
+    계정으로 로그인(및 연결)돼야 한다 — 승인된 정책이다. 조용히 꺼지지
+    않도록 여기서 가드한다. 구글이 전적으로 신뢰하는 공급자이기 때문에만
+    안전한 정책이며, 다른 공급자를 추가하면 다시 검토해야 한다.
 
-    (The end-to-end OAuth round-trip, auto-link and verified-email-skip are
-    verified manually on localhost — allauth owns that flow and reconstructing
-    it in-process couples brittly to internals.)"""
+    (종단 OAuth 왕복, 자동 연결, 인증된 이메일 건너뛰기는 localhost에서
+    수동으로 검증한다 — 그 흐름은 allauth가 소유하고 있어 프로세스 내에서
+    재구성하면 내부 구현에 취약하게 결합된다.)"""
     assert settings.SOCIALACCOUNT_EMAIL_AUTHENTICATION is True
     assert settings.SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT is True

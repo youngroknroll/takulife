@@ -1,24 +1,18 @@
 {% comment %}
-방문 기록(archive_visits) 결과 영역 — 라이브 검색 swap 대상.
-풀 페이지(visits.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
+방문 기록(archive_visits) 결과 영역 — 라이브 검색 swap 대상. 풀 페이지
+(visits.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: visit_rows, has_visits, has_query, q, page_obj, pager_query, request
 
-2026-07-27 다녀온 기록 에디토리얼 통일: `_archive_results_record.html`/
-`_archive_results_statuses.html`과 같은 `.record-row` 시스템으로 재작성한다.
-행별 방문완료 필은 생략(전 행이 방문 완료라 무정보 반복). 카테고리/장소
-배치는 statuses와 동일하게 제목 위(`.record-row-meta`) — 신규 CSS 0으로
-통일 우선.
+_archive_results_record.html/_archive_results_statuses.html과 같은
+.record-row 시스템을 쓴다. 모든 행이 방문 완료라 상태 필은 생략한다.
 
-신규 `.record-row-photos`(최대 3장 정적 썸네일 + "+N" 더보기)가 캐러셀
-(`.photo-carousel`/`[data-carousel]`)을 대체한다 — WED 결정: 4번째+ 사진
-열람 상실은 의도적 트레이드오프, 수정 페이지에서 여전히 접근 가능. 타일은
-비인터랙티브 그리드가 아니라 edit 링크 앵커라 키보드 포커스 가능.
+.record-row-photos는 최대 3장 정적 썸네일 + "+N"으로 캐러셀을 대체한다 —
+4번째 이후 사진은 수정 페이지에서만 볼 수 있는 의도된 트레이드오프다.
+타일은 그리드가 아니라 edit 링크 앵커라 키보드로도 포커스할 수 있다.
 
-"삭제" 버튼은 #archive-results 안(라이브 검색이 innerHTML로 통째 교체하는
-영역)에 있으므로 `<button data-delete-record-id>`로 유지 — visit.js가
-전체 리로드 방식으로 삭제를 처리해(계획 참조) 유령 행 경로를 만들지 않는다.
 전역 에러 표시 노드(#visit-global-error)는 이 fragment 밖(visits.html)에
-있다 — 삭제 in-flight 중 검색 스왑이 겹쳐도 closure된 참조가 살아있도록.
+있다 — 삭제 진행 중에 검색 스왑이 겹쳐도 클로저가 참조하는 노드가 사라지지
+않게 하기 위해서다.
 {% endcomment %}
 <p hidden data-result-count="{{ page_obj.paginator.count }}"></p>
 {% if visit_rows %}

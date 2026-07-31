@@ -1,8 +1,4 @@
-"""Public read layer for event drafts.
-
-Provides reusable aggregate query logic for the drafts domain.
-Business logic lives here, not in the view layer.
-"""
+"""드래프트 도메인의 공개 조회 계층. 집계 로직은 여기 두고 뷰에는 두지 않는다."""
 from django.db.models import Count
 
 from .models import DraftSource, EventDraft
@@ -15,11 +11,8 @@ _ALL_STATUSES = (
 
 
 def draft_review_stats() -> dict:
-    """Return review status counts as a dict with keys pending/approved/rejected.
-
-    Uses a single aggregate query. All three keys are always present,
-    even when a given status has zero records.
-    """
+    """리뷰 상태별 개수를 pending/approved/rejected 키로 반환한다. 레코드가 0건이어도
+    세 키 모두 채워진다."""
     rows = (
         EventDraft.objects.values("review_status")
         .annotate(count=Count("id"))
@@ -32,11 +25,8 @@ DRAFT_LISTING_PAGE_SIZE = 10
 
 
 def list_drafts(status: str = ""):
-    """Return drafts ordered by -id, optionally filtered by review_status.
-
-    status="" (default) returns all. An unknown status yields an empty
-    queryset — the view is responsible for normalizing unknown values to "".
-    """
+    """review_status로 필터링할 수 있다(기본은 전체). 알 수 없는 status 값은 빈
+    쿼리셋을 반환하며, 값 정규화는 뷰의 책임이다."""
     qs = EventDraft.objects.order_by("-id")
     if status:
         qs = qs.filter(review_status=status)
@@ -44,22 +34,13 @@ def list_drafts(status: str = ""):
 
 
 def list_draft_sources():
-    """Return all DraftSource rows ordered by -enabled, then name.
-
-    Enabled sources surface first (they are the ones actually collecting),
-    then alphabetical within each enabled state. Used by the staff dashboard
-    freshness panel (prompt_plan.md §3-1-5) — the view calls this helper
-    rather than querying DraftSource directly.
-    """
+    """enabled=True인 소스가 먼저 오고(실제로 수집 중인 것들), 그다음 이름순으로
+    정렬한다."""
     return DraftSource.objects.order_by("-enabled", "name")
 
 
 def enabled_draft_sources_exist() -> bool:
-    """Return whether at least one DraftSource has enabled=True.
-
-    Used by staff_draft_discovery_run's precheck (prompt_plan.md PR-D1 §6)
-    to short-circuit before invoking discover_drafts when there is nothing
-    for it to collect from — the same "no-op is an intended state" treatment
-    already given to the DRAFT_DISCOVERY_ENABLED flag-off case.
-    """
+    """활성화된 소스가 하나도 없으면 discover_drafts를 굳이 실행하지 않기 위한 사전
+    확인용이다 — DRAFT_DISCOVERY_ENABLED 꺼짐 상태와 마찬가지로 '할 일 없음'도 정상
+    상태로 취급한다."""
     return DraftSource.objects.filter(enabled=True).exists()

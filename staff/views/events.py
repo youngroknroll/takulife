@@ -1,4 +1,4 @@
-"""Staff Console views: published+draft event CRUD and quality drilldown."""
+"""스태프 콘솔 뷰: 게시/초안 이벤트 CRUD와 품질 문제 드릴다운."""
 import datetime
 from urllib.parse import urlencode
 
@@ -45,10 +45,8 @@ from ..services import (
 )
 from ._helpers import _action_log_kwargs, _staff_action_metadata
 
-# Korean labels for the 5 QUALITY_WARNING_KEYS, shared by the filter chips
-# and the per-row quality badges below. Mirrors the strings already used in
-# staff/dashboard.html's warning table (kept in sync manually — both are
-# small, static, single-consumer label sets).
+# staff/dashboard.html의 경고 표에 쓰는 문구와 같은 내용이다. 자동 동기화가
+# 아니라 손으로 맞춰야 하니, 라벨을 바꾸면 그쪽도 같이 고쳐야 한다.
 QUALITY_WARNING_LABELS = {
     "missing_official_url": "공식 URL 없음",
     "ended_still_published": "종료됐지만 게시 중",
@@ -60,12 +58,10 @@ QUALITY_WARNING_LABELS = {
 
 
 def _event_quality_badges(event, *, today):
-    """Return the Korean warning labels this event trips, or [] if none.
+    """이 이벤트가 걸린 품질 경고 라벨 목록을 반환한다.
 
-    Mirrors the 5 predicates in events.queries exactly. Only called for
-    published events in _build_event_rows — the predicates (and the
-    dashboard counts they mirror) are published-scoped, so a draft event
-    always gets an empty badge list rather than a misleading one.
+    게시된 이벤트에만 호출한다 — 이 판정 기준이 게시 상태 이벤트를
+    전제하므로, 초안 이벤트에 적용하면 잘못된 배지가 나온다.
     """
     badges = []
     if not event.official_url:
@@ -82,7 +78,7 @@ def _event_quality_badges(event, *, today):
 
 
 def _build_event_rows(events):
-    """Attach display labels + quality badges to each event for the template."""
+    """템플릿용으로 각 이벤트에 표시 라벨과 품질 배지를 붙인다."""
     today = timezone.localdate()
     rows = []
     for event in events:
@@ -101,12 +97,10 @@ def _build_event_rows(events):
 
 
 def _selected_event_filters(get_params):
-    """Validate ?warning=/?publish_status= against their whitelists.
+    """?warning=/?publish_status= 값을 허용 목록과 대조해 검증한다.
 
-    Shared by staff_events (list) and staff_event_edit (filter-preserving
-    "back to list" link) so both normalise unknown/blank values the same way
-    — unknown values fall back to "no filter" (mirrors event_drafts'
-    selected_status normalisation).
+    목록 화면과 수정 화면(목록으로 돌아가기 링크)이 함께 쓰므로, 모르는
+    값은 항상 "필터 없음"으로 통일해 처리한다.
     """
     selected_warning = get_params.get("warning", "")
     if selected_warning not in QUALITY_WARNING_KEYS:
@@ -131,14 +125,7 @@ def _event_filter_query_pairs(get_params):
 
 @staff_console_required
 def staff_events(request):
-    """Staff console: published+draft event listing with quality-warning drilldown.
-
-    ?warning= is validated against QUALITY_WARNING_KEYS (unknown/blank values
-    fall back to "no filter", mirroring event_drafts' selected_status
-    normalisation) and links directly from the dashboard's 5 warning rows.
-    ?publish_status= is validated against Event.PublishStatus.values the same
-    way. Pagination mirrors event_drafts' Paginator usage.
-    """
+    """게시+초안 이벤트 목록과 품질 경고 드릴다운."""
     selected_warning, selected_publish_status = _selected_event_filters(request.GET)
 
     events = list_staff_events(
@@ -189,11 +176,11 @@ EVENT_CREATE_BLANK_FORM_VALUES = {
 
 
 def _parse_optional_date(raw):
-    """Parse an ISO date string from a <input type="date">, or None if blank.
+    """ISO 날짜 문자열을 파싱한다. 비어 있으면 None.
 
-    Malformed input (a tampered request, not a normal browser submission)
-    is treated as blank rather than raising — the service-level period check
-    that follows only ever sees None or a real date.
+    형식이 잘못된 입력(정상적인 브라우저 제출이 아닌 조작된 요청)도 예외
+    없이 None으로 처리한다 — 뒤이은 서비스 계층의 기간 검사는 항상 None
+    아니면 유효한 날짜만 받게 된다.
     """
     raw = (raw or "").strip()
     if not raw:
@@ -228,14 +215,12 @@ def _event_edit_form_values_from_post(post_data):
 
 @staff_console_required
 def staff_event_create(request):
-    """Staff console: create a new published event (GET blank form / POST-PRG).
+    """새 게시 이벤트를 만든다(GET 빈 폼 / POST-PRG).
 
-    Reuses create_published_event — the shared publish choke-point already
-    used by drafts.services.approve_draft — so a staff-created event has the
-    exact same title/official_url/period invariants and unique constraint as
-    an approved draft. No poster field here: a poster can only be attached
-    to a saved event, so the operator is redirected straight to the edit
-    page (which already owns poster upload) on success.
+    create_published_event를 재사용해 초안 승인 때와 똑같은 제목/공식URL/
+    기간 검증 규칙을 적용한다. 포스터는 저장된 이벤트에만 붙일 수 있어
+    여기엔 필드가 없고, 생성 성공 시 포스터 업로드를 담당하는 수정 화면으로
+    바로 이동시킨다.
     """
     if request.method == "POST":
         form_values = _event_edit_form_values_from_post(request.POST)
@@ -307,19 +292,12 @@ def staff_event_create(request):
 
 @staff_console_required
 def staff_event_edit(request, pk):
-    """Staff console: edit a single event's fields (GET form / POST-PRG save).
+    """이벤트 필드를 수정한다(GET 폼 / POST-PRG 저장).
 
-    Delegates the title/official_url/period invariants to
-    events.services.update_published_event and maps its domain errors to
-    field-level messages, re-rendering the page with the operator's POSTed
-    values (not the stale DB values) so a rejected save never looks like
-    silent data loss. Poster upload/removal reuses the existing
-    set_event_poster/clear_event_poster services and their shared image
-    validation. The publish-status toggle and hard delete are separate POST
-    forms/views (staff_event_toggle_publish / staff_event_delete) — this view
-    only computes the archive reference counts so the template can show the
-    delete button (0 references) or a static "N건 연결되어 삭제할 수 없습니다"
-    notice (1+) in their place.
+    검증 실패 시 DB에 남은 값이 아니라 방금 제출한 값으로 폼을 다시
+    그려서, 저장이 거부된 게 데이터 유실처럼 보이지 않게 한다. 게시 상태
+    전환과 완전 삭제는 별도 뷰이며, 여기서는 삭제 버튼을 보여줄지 판단할
+    수 있도록 archive 참조 개수만 함께 계산해 넘긴다.
     """
     event = get_object_or_404(Event, pk=pk)
     list_query = urlencode(_event_filter_query_pairs(request.GET))
@@ -431,13 +409,11 @@ def _reference_block_message(counts):
 @staff_console_required
 @require_POST
 def staff_event_toggle_publish(request, pk):
-    """Staff console: flip a published event to draft ("게시 내리기") or a
-    draft event back to published ("다시 게시"). Reversible either way — no
-    confirmation step, unlike the delete view below.
+    """게시 상태를 뒤집는다. 양방향 모두 되돌릴 수 있어 삭제와 달리 확인
+    단계가 없다.
 
-    Republishing re-validates the title/official_url invariants (see
-    events.services.republish_event) so an event that was left in a broken
-    state while unpublished cannot silently re-enter the published set.
+    다시 게시할 때는 제목/공식URL 검증을 다시 거친다 — 내려간 동안 상태가
+    깨진 이벤트가 검증 없이 조용히 다시 게시되는 것을 막는다.
     """
     event = get_object_or_404(Event, pk=pk)
     list_query = urlencode(_event_filter_query_pairs(request.GET))
@@ -483,15 +459,11 @@ def staff_event_toggle_publish(request, pk):
 @staff_console_required
 @require_POST
 def staff_event_verify(request, pk):
-    """Staff console: confirm an event's official details have been re-checked.
+    """이벤트 정보를 재확인했음을 `verified_at`에 기록한다.
 
-    Records the check as `verified_at` (see events.services.mark_event_verified
-    and the D-7 reverification gate in events.queries) and writes a
-    StaffActionLog entry in the same transaction — a log-write failure must
-    roll back the verification it is auditing, same invariant as every other
-    action view in this module (see _helpers.py's module docstring).
-    mark_event_verified never raises a domain exception, so unlike
-    staff_event_toggle_publish above there is no except branch here.
+    감사 로그도 같은 트랜잭션에서 기록해 로그 실패 시 검증 자체도
+    롤백된다. mark_event_verified는 도메인 예외를 던지지 않으므로 except
+    분기가 없다.
     """
     event = get_object_or_404(Event, pk=pk)
     list_query = urlencode(_event_filter_query_pairs(request.GET))
@@ -516,21 +488,17 @@ def staff_event_verify(request, pk):
 @staff_console_required
 @require_POST
 def staff_event_delete(request, pk):
-    """Staff console: hard-delete an event, guarded by archive references.
+    """이벤트를 완전히 삭제한다. archive 참조가 있으면 막는다.
 
-    A 2-step server-rendered confirmation (no new JS file — see
-    prompt_plan.md's "하지 말 것"): the edit page's delete form POSTs here
-    without `confirmed`, this view re-renders a dedicated confirmation page,
-    and that page's own form POSTs back here with `confirmed=yes` to finish
-    the delete. Archive references are checked before the confirmation page
-    is even shown, so an operator is never invited to confirm a delete that
-    is going to be rejected anyway.
+    서버 렌더링 2단계 확인 절차다: 수정 화면의 삭제 폼이 `confirmed` 없이
+    먼저 여기로 오면 확인 화면을 보여주고, 확인 화면의 폼이 다시
+    `confirmed=yes`로 요청해야 실제로 지운다. archive 참조 검사는 확인
+    화면을 띄우기 전에 먼저 하므로, 어차피 막힐 삭제를 확인하라고 보여주는
+    일은 없다.
 
-    The audit log is written with target_event=event *before* delete_event()
-    runs, inside the same transaction — Event's on_delete=SET_NULL then nulls
-    this same row out as part of the delete collector's own work, leaving an
-    action+actor-only record (no title snapshot field exists on
-    StaffActionLog, and this PR does not add one).
+    감사 로그는 delete_event() 실행 전에, 같은 트랜잭션 안에서
+    target_event=event로 기록한다. 삭제가 끝나면 SET_NULL로 이 값도
+    비워지므로, 로그를 먼저 남겨야 어떤 이벤트였는지 흔적이 남는다.
     """
     event = get_object_or_404(Event, pk=pk)
     list_query = urlencode(_event_filter_query_pairs(request.GET))

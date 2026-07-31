@@ -1,22 +1,14 @@
-"""Tests for drafts.robots — robots.txt fetch + Disallow evaluation.
+"""drafts.robots(robots.txt 페치 + Disallow 판정) 테스트. robots.txt는
+RobotFileParser.read()/set_url()로 절대 가져오면 안 된다 — 그 경로는 타임아웃이
+없는 urllib 페치라 프로세스가 멈출 수 있고 SSRF 방어를 완전히 우회한다. 대신
+drafts.robots는 방어된 fetch_html로 원문을 가져와 I/O 없는
+RobotFileParser.parse()에 넘긴다.
 
-robots.txt must never be fetched via RobotFileParser.read()/set_url(); that
-path is a timeout-less urllib fetch that can hang the process and bypasses
-the SSRF guard entirely. Instead drafts.robots fetches the raw text through
-the guarded fetch_html core (which re-validates every hop, caps the response
-size, and times out) and feeds the decoded lines into
-RobotFileParser.parse(), which performs no I/O of its own.
-
-Two mocking styles are used deliberately:
-- D group (TestDecisionLogic) mocks drafts.robots.fetch_html directly, to pin
-  the pure allow/disallow/404/failure decision logic without touching the
-  network layer at all.
-- E group (TestGuardInheritance) leaves fetch_html real and instead patches
-  the fetching-layer choke points (httpx.Client / validate_fetch_url /
-  socket.getaddrinfo) — this is what proves the guard is actually inherited
-  rather than bypassed: an implementation using RobotFileParser.read()/urllib
-  would not be affected by these patches and would fail these tests.
-"""
+TestDecisionLogic은 fetch_html을 직접 모킹해 순수 판정 로직만 검증하고,
+TestGuardInheritance는 fetch_html을 실제로 두고 그 아래 계층(httpx.Client,
+validate_fetch_url, socket.getaddrinfo)만 패치한다 — SSRF 방어가 실제로
+상속되는지(RobotFileParser/urllib을 썼다면 이 패치들이 안 먹혀 테스트가
+실패했을 것) 증명하기 위해서다."""
 import socket
 
 import httpx
@@ -133,11 +125,10 @@ class TestDecisionLogic:
 
 class TestGuardInheritance:
     def test_후보_호스트가_비공개_IP면_네트워크_시도_없이_차단한다(self, monkeypatch):
-        # No mocking of the decision path itself: a literal private-IP
-        # candidate must be rejected before any network attempt
-        # (fetch_html/validate_fetch_url are real). httpx.Client is patched
-        # to blow up if it is ever constructed, so the assertion covers not
-        # just the return value but the "no network attempted" guarantee.
+        # 판정 로직 자체는 모킹하지 않는다(fetch_html/validate_fetch_url이
+        # 실제로 동작). 리터럴 사설 IP는 네트워크 시도 전에 거부돼야 하므로,
+        # httpx.Client가 생성되면 바로 실패하게 패치해 "네트워크 미시도"까지
+        # 검증한다.
         def _raise_if_called(*args, **kwargs):
             raise AssertionError("network attempted")
 
@@ -148,9 +139,9 @@ class TestGuardInheritance:
         assert result == RobotsCheckResult(False, ROBOTS_FETCH_FAILED)
 
     def test_지원하지_않는_URL_스킴은_예외_없이_차단으로_처리된다(self):
-        # No mocking at all: validate_fetch_url rejects an unsupported
-        # scheme (InvalidFetchUrlError) before any network attempt, so this
-        # must fail closed rather than raise out of check().
+        # 아무것도 모킹하지 않는다: validate_fetch_url이 네트워크 시도 전에
+        # 지원하지 않는 스킴을 거부하므로, check()는 예외 대신 차단으로
+        # 안전하게 처리해야 한다.
         checker = RobotsChecker()
         result = checker.check("ftp://example.com/x")
         assert result == RobotsCheckResult(False, ROBOTS_FETCH_FAILED)
@@ -235,10 +226,9 @@ class TestPerInstanceCache:
         assert len(calls) == 2
 
     def test_가져오기_실패도_캐시되어_재요청하지_않는다(self, monkeypatch):
-        # A host whose robots.txt fetch failed is still cached (as a failure)
-        # so re-checking it within the same run does not retry the fetch —
-        # a fetch_html failure is not "no rules published" and must not
-        # trigger a fresh network attempt on every candidate URL.
+        # robots.txt 페치가 실패한 호스트도 실패로 캐시되어 같은 실행 안에서
+        # 재조회 시 재요청하지 않는다. 페치 실패는 "규칙 없음"과 달라 후보
+        # URL마다 매번 새로 네트워크를 시도하면 안 된다.
         calls = []
 
         def _fetch(url, **kwargs):
@@ -254,9 +244,9 @@ class TestPerInstanceCache:
 
 
 class TestCrawlDelay:
-    """crawl_delay() lets the caller (discover_drafts) pace per-host requests
-    beyond the flat INTER_REQUEST_DELAY_SECONDS floor when a site publishes
-    its own Crawl-delay directive — a pure cache read, never its own fetch."""
+    """crawl_delay()는 사이트가 자체 Crawl-delay를 공개했을 때 호출자(discover_drafts)가
+    기본 INTER_REQUEST_DELAY_SECONDS보다 느리게 조절할 수 있게 한다. 순수 캐시
+    읽기이며 자체 페치는 하지 않는다."""
 
     def test_robots_txt에_crawl_delay가_설정되어_있으면_그_값을_반환한다(self, monkeypatch):
         monkeypatch.setattr(
@@ -278,9 +268,9 @@ class TestCrawlDelay:
         assert checker.crawl_delay("https://example.com/page") is None
 
     def test_아직_확인하지_않은_호스트는_새_요청_없이_None을_반환한다(self):
-        # No fetch_html patch at all: a real network attempt would blow up
-        # this test, so the only way it can pass is a pure cache read that
-        # never fetches on a cache miss.
+        # fetch_html을 전혀 패치하지 않는다: 실제 네트워크 시도가 있으면 이
+        # 테스트는 실패한다. 캐시 미스에도 페치하지 않는 순수 캐시 읽기여야
+        # 통과한다.
         checker = RobotsChecker()
         assert checker.crawl_delay("https://example.com/page") is None
 

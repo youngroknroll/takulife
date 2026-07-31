@@ -1,9 +1,6 @@
 /* ── archive-search (GET search form, archive list pages) ──────────── */
-/*
- * Used on /archive/, /archive/statuses/, /archive/visits/, /archive/items/.
- * Markup: templates/core/partials/_archive_search.html
- * Unit convention: rem spacing, px for border/radius/shadow only.
- */
+/* /archive/, /archive/statuses/, /archive/visits/, /archive/items/에서 쓴다.
+   마크업: templates/core/partials/_archive_search.html */
 
 .archive-search {
   margin-bottom: 0.75rem;
@@ -15,13 +12,9 @@
   gap: 0.375rem;
 }
 
-/* 2026-07-23 §H (user-confirmed): the standalone `.archive-search-icon` span
-   is gone — the ⌕ glyph now ships as the leading character of the input's
-   own placeholder (see _archive_search.html). `.archive-search-row` no
-   longer needs to lay out a separate flex child for it, and the input's own
-   left padding is nudged from 0.75rem to 0.875rem so the placeholder glyph
-   doesn't read as flush against the field's border now that nothing
-   precedes it in the row. */
+/* ⌕ 글자는 별도 요소가 아니라 input의 placeholder 첫 글자로 들어간다
+   (_archive_search.html). 왼쪽 패딩을 0.875rem으로 넉넉히 둬 그 글자가
+   테두리에 붙어 보이지 않게 한다. */
 .archive-search-row input[type="search"] {
   flex: 1;
   min-width: 0;
@@ -35,9 +28,7 @@
 }
 
 .archive-search-row button[type="submit"] {
-  /* 재취득 시안(2026-07-23)은 청록 채움 버튼 — 저장소 대응 토큰 --teal(흰
-     텍스트, tokens.css 라이트 5.36:1 / 다크 5.74:1 AA 확보, activity-editorial
-     v2 트랙 실측). 4개 아카이브 페이지 공유 컴포넌트라 공통 적용. */
+  /* --teal + 흰 텍스트 조합은 명암비 AA(라이트 5.36:1 / 다크 5.74:1)를 충족한다. */
   border: 1px solid var(--teal);
   background: var(--teal);
   color: #fff;
@@ -71,15 +62,11 @@
   text-decoration: underline;
 }
 
-/* ── live-search swap target ───────────────────────────────────────
-   Wraps the results region (list + empty states + pager) so live search
-   can replace its innerHTML. Kept as a plain block with no border/padding/
-   margin: the preceding .archive-search form owns the gap (margin-bottom)
-   and the list has no top margin, so block flow and spacing stay identical
-   to the pre-wrap markup — no visual regression. */
+/* ── live-search swap target ───────────────────────────────────────── */
+/* archive_search.js가 innerHTML을 통째로 교체하는 대상이라 border/padding/margin을
+   따로 두지 않는다 — 감싸기 전과 레이아웃이 달라지지 않게 하기 위해서다. */
 #archive-results.is-loading {
-  /* Dim the results while a live-search request is in flight. The class is
-     toggled by archive_search.js; absent without JS, so no effect there. */
+  /* 검색 요청이 진행 중일 때만 흐리게 표시한다(archive_search.js가 토글). JS 없으면 이 클래스도 안 붙는다. */
   opacity: 0.55;
   transition: opacity 0.12s ease;
 }

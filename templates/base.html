@@ -2,13 +2,10 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <!-- Inline (not defer) and placed before every stylesheet on purpose:
-       this must set data-theme before the browser paints anything, or the
-       page flashes the wrong theme for one frame (FOUC) — a deliberate
-       exception to this repo's defer convention. Minimal duplicate of
-       static/js/shared/theme.js's read-only resolution (localStorage ->
-       matchMedia -> light); that file owns writes/toggle/the live
-       system-theme listener, this snippet only ever reads. -->
+  <!-- 브라우저가 뭔가 그리기 전에 테마를 정해야 한 프레임이라도 잘못된 테마가
+       번쩍이지 않는다. 그래서 이 스크립트만 defer 없이 모든 스타일시트보다
+       앞에 둔다. theme.js의 읽기 로직만 최소로 복제한 것이며, 쓰기/토글/시스템
+       테마 감지는 theme.js가 담당한다. -->
   <script>
     (function () {
       "use strict";
@@ -57,16 +54,10 @@
   {% block site_header %}{% include "core/partials/_site_header.html" %}{% endblock %}
   {% block site_banner %}
     {% comment %}
-    Notice marquee — sibling of <header>, not part of it (design-rules.md
-    §4: "공지 배너(마퀴) 라인은 헤더 소속이 아니다" — 2026-07-20 사용자
-    결정). Non-sticky, --site-header-h excludes it (3 sticky consumers
-    unaffected). No landmark, no aria-live: the second .marquee-set is a
-    full duplicate for the seamless CSS loop and is aria-hidden so a
-    screen reader never hears the notice repeated; the visible set is
-    plain flow text, not a live region (design-rules.md §3.1-3's
-    "aria-live 부여 금지"). Visible pause/replay toggle intentionally
-    omitted — design-rules.md §4-b user-approved exception to §3.1-3
-    (reduced-motion:none below is the only stop mechanism shipped).
+    공지 배너는 헤더에 속하지 않고 형제 요소다. 두 번째 .marquee-set은 무한
+    스크롤 애니메이션을 매끄럽게 잇기 위한 완전한 복제본이라 aria-hidden으로
+    감춰 스크린리더가 공지를 두 번 읽지 않게 한다. 눈에 보이는 세트는 일반
+    텍스트일 뿐 실시간 영역(aria-live)이 아니다.
     {% endcomment %}
     <div class="site-banner">
       <div class="site-banner-inner">

@@ -1,10 +1,9 @@
-"""Account deletion state machine (10-day grace period).
+"""계정 탈퇴 상태 기계(10일 유예 기간).
 
-See .docs/plans/2026-07-20-deletion-grace-period-plan.md. No code path other
-than accounts.management.commands.purge_deleted_accounts may call
-`User.delete()` for a self-service deletion request — every other entry point
-(the delete_account view, and later the login-cancels-deletion signal) only
-reads or writes `deletion_requested_at` through the functions below.
+accounts.management.commands.purge_deleted_accounts 외의 어떤 코드 경로도
+자율 탈퇴 신청에 대해 `User.delete()`를 호출해서는 안 된다 — 그 외 모든
+진입점(delete_account 뷰, 로그인 시 취소 신호)은 아래 함수들을 통해서만
+`deletion_requested_at`을 읽거나 쓴다.
 """
 import logging
 import time
@@ -19,9 +18,7 @@ from .models import User
 
 logger = logging.getLogger(__name__)
 
-# The grace period between a deletion request and eligibility for
-# execute_pending_deletions' purge (see
-# .docs/plans/2026-07-20-deletion-grace-period-plan.md).
+# 탈퇴 신청과 execute_pending_deletions의 실제 삭제 대상이 되는 시점 사이의 유예 기간.
 DELETION_GRACE_PERIOD = timedelta(days=10)
 
 # 탈퇴 완료 안내(accounts.views.delete_account_done) 전용 세션 키. 신청 시각·
@@ -31,14 +28,12 @@ DELETION_GRACE_PERIOD = timedelta(days=10)
 # 키가 없으면(직접 URL 접근) 홈으로 보내 노출을 막기 위해서다.
 DELETE_DONE_SESSION_KEY = "account_delete_done"
 
-# Password re-check on the deletion view has no throttle of its own
-# otherwise: axes only hooks the login backend, and allauth's
-# ACCOUNT_RATE_LIMITS does not cover this custom view, so a hijacked session
-# could brute-force the password indefinitely without this counter.
-# Promoted here (from accounts/views.py) by the account-settings-editorial
-# plan B5 — the deletion view itself moved to core/views/account.py (it needs
-# to read archive counts, and accounts must not import archive), but the
-# lockout security rule stays owned by accounts.
+# 탈퇴 화면의 비밀번호 재확인은 이게 없으면 속도 제한이 전혀 없다: axes는
+# 로그인 백엔드에만 걸리고 allauth의 ACCOUNT_RATE_LIMITS도 이 커스텀 뷰를
+# 커버하지 않으므로, 탈취된 세션이 이 카운터 없이는 무한히 비밀번호를
+# 무차별 대입할 수 있다. 탈퇴 뷰 자체는 core/views/account.py로
+# 옮겨졌지만(archive 카운트를 읽어야 하는데 accounts는 archive를 임포트할
+# 수 없어서) 잠금 보안 규칙은 계속 accounts가 소유한다.
 MAX_DELETE_PASSWORD_ATTEMPTS = 5
 DELETE_PASSWORD_LOCKOUT_SECONDS = 60 * 15
 DELETE_LOCKOUT_MESSAGE = "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해 주세요."
@@ -49,20 +44,17 @@ def delete_attempts_cache_key(user):
 
 
 def is_delete_locked(user):
-    """True once `user` has exhausted the failure budget for this window.
+    """`user`가 이 시간 창에서 실패 허용 횟수를 다 썼으면 True.
 
-    The window's deadline is stored explicitly in the cached record (rather
-    than relied on implicitly via the cache entry's own physical TTL): the
-    shared cache backend is DatabaseCache (config/settings.py CACHES, PR-0e),
-    and unlike LocMemCache.incr(), DatabaseCache has no incr() override —
-    BaseCache.incr() falls back to a plain `self.set(key, new_value)` call
-    with no timeout argument, which resets the entry's physical TTL to the
-    cache's default TIMEOUT on every failed attempt. If the fixed 15-minute
-    window were represented only by that physical TTL, each new failure
-    would silently shrink and refresh it, turning the intended fixed window
-    into an effectively sliding, shorter one. Storing our own deadline and
-    comparing it explicitly keeps the window fixed to the first failure
-    regardless of what the cache backend does to the physical TTL.
+    창의 마감 시각을 캐시 항목의 물리적 TTL에 암묵적으로 맡기지 않고
+    레코드 안에 직접 저장한다: 공유 캐시 백엔드가 DatabaseCache인데,
+    LocMemCache.incr()와 달리 DatabaseCache는 incr()를 오버라이드하지
+    않아서 BaseCache.incr()가 timeout 없는 `self.set(key, new_value)`로
+    대체 실행되고, 이 때문에 실패할 때마다 항목의 물리적 TTL이 캐시 기본
+    TIMEOUT으로 초기화된다. 고정 15분 창을 물리적 TTL만으로 표현하면 실패가
+    거듭될수록 창이 조용히 줄어들고 갱신되어 의도한 고정 창이 사실상 더
+    짧은 슬라이딩 창이 돼버린다. 마감 시각을 직접 저장하고 비교하면 캐시
+    백엔드가 물리적 TTL을 어떻게 다루든 첫 실패 시점 기준으로 창이 고정된다.
     """
     record = cache.get(delete_attempts_cache_key(user))
     if not record or record["deadline"] <= time.time():
@@ -83,9 +75,9 @@ def register_failed_delete_attempt(user):
             user.pk,
             record["count"],
         )
-    # The cache entry's own TTL only needs to outlive the stored deadline —
-    # it is no longer the source of truth for the window (see
-    # is_delete_locked above), so refreshing it on every write is safe.
+    # 캐시 항목 자체의 TTL은 저장된 마감 시각보다만 오래 살아 있으면 된다 —
+    # 창의 기준은 더 이상 이 TTL이 아니므로(위 is_delete_locked 참고)
+    # 쓸 때마다 갱신해도 안전하다.
     cache.set(key, record, timeout=DELETE_PASSWORD_LOCKOUT_SECONDS)
 
 
@@ -103,13 +95,11 @@ def format_password_changed_display(password_changed_at):
 
 
 def request_deletion(user):
-    """Record `user` as pending deletion; the account itself is untouched.
+    """`user`를 탈퇴 대기 상태로 기록한다. 계정 자체는 아직 그대로다.
 
-    Every session belonging to `user` is invalidated here, not just the one
-    that submitted the request — a panic deletion has to end an attacker's
-    (or simply another device's) session too, or that session would keep
-    working for the whole 10-day grace period (Security review, see
-    .docs/plans/2026-07-20-deletion-grace-period-plan.md).
+    신청을 제출한 세션 하나뿐 아니라 `user`의 모든 세션을 여기서 무효화한다
+    — 공격자(혹은 그냥 다른 기기)의 세션도 함께 끝내야, 그 세션이 10일
+    유예 기간 내내 계속 살아 있는 일을 막을 수 있다(보안 검토 결과).
     """
     user.deletion_requested_at = timezone.now()
     user.save(update_fields=["deletion_requested_at"])
@@ -119,14 +109,12 @@ def request_deletion(user):
 
 
 def cancel_deletion(user):
-    """Clear a pending deletion request; return the number of rows updated.
+    """대기 중인 탈퇴 신청을 지운다. 갱신된 행 수를 반환한다.
 
-    The conditional `deletion_requested_at__isnull=False` update (rather than
-    an unconditional save) makes the rowcount a reliable signal of whether a
-    request actually existed and was cleared here — the caller (the
-    login-cancels-deletion signal, and later the purge command's concurrency
-    guard) can tell a real cancellation apart from a no-op without a second
-    query.
+    무조건 save() 대신 `deletion_requested_at__isnull=False` 조건부 update를
+    쓰는 이유는, 반환된 행 수만으로 실제 신청이 있었고 지금 지워졌는지를
+    호출자(로그인 시 취소 신호, 삭제 명령의 동시성 가드)가 추가 쿼리 없이
+    판단할 수 있게 하기 위해서다.
     """
     return User.objects.filter(pk=user.pk, deletion_requested_at__isnull=False).update(
         deletion_requested_at=None
@@ -134,33 +122,31 @@ def cancel_deletion(user):
 
 
 def record_password_change(user):
-    """Stamp `user.password_changed_at` with now; the sole write path for
-    that field. Called from accounts.signals' allauth password-lifecycle
-    receivers (password_changed, password_set, password_reset) — never
-    written directly from a signal handler (see .docs mypage brief).
+    """`user.password_changed_at`을 현재 시각으로 찍는다. 이 필드에 쓰는
+    유일한 경로다. accounts.signals의 allauth 비밀번호 관련 수신자
+    (password_changed, password_set, password_reset)에서 호출되며, 신호
+    핸들러가 직접 쓰는 일은 없다.
     """
     user.password_changed_at = timezone.now()
     user.save(update_fields=["password_changed_at"])
 
 
 def execute_pending_deletions(now=None):
-    """Purge every account whose grace period has fully elapsed.
+    """유예 기간이 완전히 끝난 모든 계정을 삭제한다.
 
-    Each candidate is re-verified and deleted in its own transaction (never
-    the whole batch in one transaction) so one row's outcome cannot block or
-    roll back any other row. `select_for_update` re-reads under a lock
-    immediately before deleting, so a `cancel_deletion` landing in the gap
-    between the initial candidate scan and this transaction is respected
-    (DEL-08) instead of being purged anyway. `user.delete()` here is the only
-    place a self-service deletion request may hard-delete a row (plan
-    invariant — every other path only reads/writes `deletion_requested_at`).
+    각 후보는 각자의 트랜잭션에서 다시 검증하고 삭제한다(전체를 한
+    트랜잭션으로 묶지 않는다) — 한 행의 결과가 다른 행을 막거나 되돌리지
+    않게 하기 위해서다. `select_for_update`가 삭제 직전에 잠금 상태로 다시
+    읽으므로, 최초 후보 조회와 이 트랜잭션 사이에 `cancel_deletion`이
+    들어오면 그대로 존중되고 삭제되지 않는다. 여기 `user.delete()`가
+    자율 탈퇴 신청이 실제로 행을 삭제하는 유일한 지점이다(그 외 경로는
+    전부 `deletion_requested_at`만 읽거나 쓴다).
 
-    A single row's failure (e.g. a CASCADE/signal error on one account) is
-    isolated to that row and logged, not left to abort the whole sweep —
-    this mirrors discover_drafts.py's per-item isolation. Returns a summary
-    dict with `deleted` (pks actually removed) and `failed` (`(pk, str(exc))`
-    pairs) so the caller (purge_deleted_accounts) can report and, if
-    non-empty, raise.
+    한 행의 실패(예: 한 계정의 CASCADE/신호 오류)는 그 행에만 격리되어
+    로깅되고 전체 처리를 중단시키지 않는다. `deleted`(실제로 지워진
+    pk)와 `failed`(`(pk, str(exc))` 쌍)를 담은 요약 dict를 반환해
+    호출자(purge_deleted_accounts)가 보고하고, 실패가 있으면 예외를
+    던질 수 있게 한다.
     """
     now = now or timezone.now()
     cutoff = now - DELETION_GRACE_PERIOD
@@ -181,7 +167,7 @@ def execute_pending_deletions(now=None):
                     user.delete()
                     deleted_pks.append(pk)
         except Exception as exc:
-            # except-ok: isolated per-row so one failure cannot block the rest
+            # except-ok: 한 건이 실패해도 나머지 파기는 계속돼야 하므로 행마다 격리한다
             logger.exception("Failed to purge pending-deletion user pk=%s", pk)
             failed.append((pk, str(exc)))
     return {"deleted": deleted_pks, "failed": failed}

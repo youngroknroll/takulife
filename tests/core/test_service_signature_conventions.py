@@ -1,19 +1,17 @@
-"""Guard: public service-layer functions take keyword-only arguments.
+"""가드: 공개 서비스 계층 함수는 키워드 전용 인자만 받는다.
 
-events/services.py and archive/services.py already enforce this convention on
-every public function (see their `*, ...` signatures). This guard protects
-that convention from eroding as drafts/services.py, staff/services.py, and
-core/promotion.py join it — a positional parameter on a public service
-function is exactly the kind of drift this test exists to catch.
+events/services.py와 archive/services.py는 이미 모든 공개 함수에 이 관례를
+지킨다(`*, ...` 시그니처 참고). drafts/services.py, staff/services.py,
+core/promotion.py가 합류하면서 이 관례가 무너지지 않도록 지키는 가드다 —
+공개 서비스 함수의 위치 인자가 바로 이 테스트가 잡으려는 이탈이다.
 
-Private helpers (name starting with "_") are out of scope: they are an
-internal implementation detail of their module, not a boundary other modules
-call across, so this guard does not constrain their parameter style.
+비공개 헬퍼(이름이 "_"로 시작)는 대상 밖이다 — 다른 모듈이 넘어 다니는
+경계가 아니라 해당 모듈 내부 구현 세부이므로 이 가드가 인자 스타일을
+강제하지 않는다.
 
-accounts.services is deliberately left out of SERVICE_MODULES: every caller of
-its public functions lives inside the accounts app itself, so it never forms
-the cross-domain boundary this guard protects, and its positional arguments
-are not a violation of this convention.
+accounts.services는 SERVICE_MODULES에서 일부러 뺐다 — 공개 함수의 모든
+호출자가 accounts 앱 내부에 있어 이 가드가 지키는 도메인 간 경계를 형성하지
+않으므로, 위치 인자를 써도 이 관례 위반이 아니다.
 """
 import importlib
 import inspect

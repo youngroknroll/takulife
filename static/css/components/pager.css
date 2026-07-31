@@ -1,14 +1,5 @@
-/* Pagination control — shared by every paginated list (컬렉션 / 다녀온 기록 /
-   나의 일정 / 직접 등록 / 전체 보기 / 드래프트 목록 / 스태프 이벤트 목록).
-   Deliberately one component so every page paginates identically; markup is
-   templates/core/partials/_pager.html.
-
-   Colours now come from --text / --muted / --brand instead of the ink literals
-   this file used to carry, which removes the dark-theme override block
-   entirely. That block previously needed a `span:not(.current)` guard: without
-   it, the grey override (specificity 0,3,1) beat `.pager .current` (0,2,0) and
-   left grey text on the brand-red current page — a real 2.18:1 defect. Token
-   colours have no such conflict, so the hack is gone with it. */
+/* 모든 페이지가 같은 방식으로 페이지를 넘기도록 공용 컴포넌트로 뒀다.
+   마크업은 templates/core/partials/_pager.html. */
 .pager {
   display: flex;
   flex-wrap: wrap;
@@ -19,8 +10,7 @@
   font-size: 0.8125rem;
 }
 
-/* One cell shape for arrows, numbers, and gaps: a fixed 32px box keeps the row
-   from reflowing as the window slides and the digit count changes. */
+/* 화살표·숫자·생략 칸을 모두 32px 고정 박스로 통일해 페이지 창이 움직여도 행이 흔들리지 않는다. */
 .pager-arrow,
 .pager-page,
 .pager-gap {
@@ -58,7 +48,7 @@ a.pager-page:hover {
   color: var(--brand-ink);
 }
 
-/* Current page is a <span>, not a link — there is nowhere to navigate to. */
+/* 현재 페이지는 이동할 곳이 없어 <span>이지 링크가 아니다. */
 .pager-page.is-current {
   background: var(--brand);
   color: #fff;

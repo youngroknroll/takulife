@@ -1,17 +1,9 @@
 /**
- * visit_create.js — Dedicated visit-record write page (archive_visit_create).
- *
- * Flow (Option A — no backend change, reuses existing APIs):
- *   1. Select photos → client-side preview grid (URL.createObjectURL),
- *      remove-before-submit, first photo = 대표 (cover).
- *   2. Submit → POST /api/visit-records/ (JSON) → read new record id.
- *   3. Sequentially upload each queued photo to
- *      POST /api/visit-records/<id>/photos/ (multipart).
- *   4. All photos OK → redirect to /archive/visits/. Partial failure leaves
- *      the saved record + successful photos; user finishes per-card on the list.
- *
- * Client guards mirror the server (JPEG/PNG/WebP, 5MB each, max 10) for fast
- * feedback; the server remains the source of truth.
+ * 방문 기록 작성 페이지. 사진을 먼저 미리보기로 골라두고(첫 장이 대표),
+ * 기록을 먼저 POST로 만든 뒤 사진을 한 장씩 순서대로 업로드한다.
+ * 모두 성공하면 목록으로 이동하고, 일부만 실패하면 기록과 성공한 사진은
+ * 그대로 저장된 채 사용자가 목록에서 나머지를 마저 추가할 수 있게 안내한다.
+ * 형식·용량 검사는 서버와 동일하게 클라이언트에서도 미리 해 빠른 피드백을 준다.
  */
 
 (function () {
@@ -22,16 +14,15 @@
   var ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
   var VISITS_URL = "/archive/visits/";
 
-  // pendingItems: [{ file, url }] — single source of truth for the queue.
+  // pendingItems: 업로드 대기열의 단일 진실 공급원 [{ file, url }]
   var pendingItems = [];
-  // True while uploadAll() is sending a request. Read by renderGrid so
-  // remove buttons redrawn mid-upload are born disabled too — otherwise
-  // removing an item ahead of the in-flight index shifts pendingItems under
-  // the loop's fixed index, silently skipping a later, still-pending item
-  // (no retry exists on this page, so it would be lost outright).
+  // uploadAll이 요청을 보내는 동안 true. 업로드 중에 그리드가 다시
+  // 그려져도 삭제 버튼이 비활성화 상태로 태어나게 한다 — 그렇지 않으면
+  // 진행 중인 인덱스보다 앞의 항목을 삭제했을 때 배열이 밀려, 재시도
+  // 없이 뒤에 남은 항목을 조용히 건너뛸 수 있다.
   var uploadLocked = false;
 
-  // ── DOM helpers ────────────────────────────────────────────────────────────
+  // ── DOM 헬퍼 ────────────────────────────────────────────────────────────
 
   function setText(el, message) {
     if (el) { el.textContent = message; }
@@ -46,7 +37,7 @@
     }
   }
 
-  // ── preview grid ───────────────────────────────────────────────────────────
+  // ── 미리보기 그리드 ───────────────────────────────────────────────────────────
 
   function updateTrigger() {
     var trigger = document.getElementById("visit-photos-trigger");
@@ -54,7 +45,7 @@
   }
 
   function renderGrid(grid) {
-    // Clear existing tiles and revoke nothing here (urls persist in pendingItems).
+    // 기존 타일만 지우고 URL은 해제하지 않는다(pendingItems에 그대로 남아 있다).
     grid.textContent = "";
     updateTrigger();
 
@@ -94,10 +85,8 @@
     });
   }
 
-  // Locks/unlocks every control that can mutate pendingItems mid-upload:
-  // the trigger, the raw file input, and (via uploadLocked, read by
-  // renderGrid above) every remove button — including ones redrawn while
-  // locked.
+  // 업로드 중 pendingItems를 바꿀 수 있는 모든 컨트롤(추가 버튼, 파일
+  // 입력, 삭제 버튼)을 한꺼번에 잠그거나 푼다.
   function setUploadLock(locked, grid) {
     uploadLocked = locked;
     var trigger = document.getElementById("visit-photos-trigger");
@@ -117,7 +106,7 @@
     if (removed) { URL.revokeObjectURL(removed.url); }
     renderGrid(grid);
 
-    // Move focus to a sensible neighbor rather than letting it fall to <body>.
+    // 포커스가 body로 떨어지지 않도록 근처의 다른 컨트롤로 옮긴다.
     var buttons = grid.querySelectorAll(".photo-preview-remove");
     if (buttons.length > 0) {
       var next = buttons[Math.min(index, buttons.length - 1)];
@@ -167,7 +156,7 @@
     renderGrid(grid);
   }
 
-  // ── sequential photo upload ────────────────────────────────────────────────
+  // ── 사진 순차 업로드 ────────────────────────────────────────────────
 
   async function uploadOne(recordId, file) {
     var formData = new FormData();
@@ -197,7 +186,7 @@
     return { succeeded: succeeded, total: total, failedAt: -1 };
   }
 
-  // ── create + orchestrate ───────────────────────────────────────────────────
+  // ── 등록 + 전체 흐름 조율 ───────────────────────────────────────────────────────
 
   function bindForm() {
     var form = document.getElementById("visit-create-form");
@@ -213,7 +202,7 @@
     if (fileInput && grid) {
       fileInput.addEventListener("change", function () {
         addFiles(fileInput.files, grid, errorEl);
-        // Reset so re-selecting the same file (or adding more) fires change again.
+        // 값을 비워둬야 같은 파일을 다시 선택해도 change 이벤트가 또 발생한다.
         fileInput.value = "";
       });
     }
@@ -248,25 +237,14 @@
       } else {
         payload.event = subjectId;
       }
-      // client_token: SSR-issued uuid4 hidden input (visit_create.html,
-      // DAR §5-1) for create-side idempotency replay. Existence guard
-      // mirrors collection.js's collectSharedFields — this page has no
-      // edit-form twin, but the guard keeps the payload safe if the
-      // hidden input is ever removed from the template. Also require a
-      // non-empty value: an empty string would still pass an
-      // existence-only guard and serialize as client_token: "", which
-      // the serializer's UUIDField rejects with 400 — turning a
-      // missing/stale template context into a hard create failure
-      // instead of a silent fallback. Empty value → send no token
-      // (degrades to pre-token behavior, avoids the 400).
+      // client_token은 서버가 발급한 숨김 필드(중복 제출 방지용)다. 값이
+      // 있을 때만 보낸다 — 빈 문자열을 보내면 서버 UUIDField 검증에서
+      // 400으로 거부되기 때문이다.
       var clientTokenEl = form.elements["client_token"];
       if (clientTokenEl && clientTokenEl.value) { payload.client_token = clientTokenEl.value; }
 
-      // Note: pendingItems below intentionally carry no client_token (unlike
-      // visit_edit.js's per-photo tokens). On this create page a failed photo
-      // upload leaves the user on the visit-records list, not on this form —
-      // there is no retry channel that would resend the same File object, so
-      // there is nothing for a photo-level token to protect against.
+      // 사진별 client_token은 두지 않는다 — 이 페이지는 사진 업로드가
+      // 실패해도 같은 폼으로 돌아가 재시도하는 경로가 없어 보호할 대상이 없다.
 
       window.TakuAPI.setLoading(submitBtn, true);
       setText(statusEl, "기록 저장 중...");
@@ -286,7 +264,7 @@
         return;
       }
 
-      // Record created — never resubmit (would duplicate). Keep button locked.
+      // 기록이 이미 만들어졌으니 다시 제출하면 중복이 생긴다. 버튼은 잠근 채로 둔다.
       var recordId = result.data && result.data.id;
 
       if (pendingItems.length === 0 || !recordId) {
@@ -302,8 +280,8 @@
         return;
       }
 
-      // Partial success: record + successful photos are saved. Don't redirect
-      // silently — let the user read the result, then continue on the list.
+      // 부분 성공: 기록과 성공한 사진은 저장됐다. 조용히 이동시키지 않고
+      // 결과를 보여준 뒤 사용자가 직접 계속하게 한다.
       setText(
         statusEl,
         "기록은 저장됐고 사진 " + outcome.succeeded + "/" + outcome.total +

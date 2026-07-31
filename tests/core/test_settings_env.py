@@ -68,8 +68,8 @@ def test_DATABASE_URL에_포트가_없으면_빈_문자열로_남는다(monkeypa
 
     config = settings_module.load_database_config()
 
-    # dj-database-url leaves PORT empty when the URL omits it; Django/psycopg
-    # then fall back to Postgres's own default port (5432).
+    # URL에 포트가 없으면 dj-database-url은 PORT를 빈 채로 둔다. 이후
+    # Django/psycopg가 Postgres 자체 기본 포트(5432)로 대체한다.
     assert config["PORT"] == ""
 
 
@@ -124,14 +124,14 @@ def test_DEBUG_환경변수가_false이면_False로_해석한다(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# PR-0a: settings production hardening
-# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0a)
+# 설정값 프로덕션 강화
+# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8)
 # ---------------------------------------------------------------------------
 
 
 def test_DEBUG_False에서_SECRET_KEY가_없으면_예외를_발생시킨다(monkeypatch):
-    # Empty string (not delenv) short-circuits _get_env's .env-file fallback
-    # so this test is independent of whatever the developer's real .env has.
+    # 빈 문자열(delenv가 아니라)을 써야 _get_env의 .env 파일 폴백을 끊어서,
+    # 개발자의 실제 .env 내용과 무관하게 이 테스트가 독립적으로 동작한다.
     monkeypatch.setenv("SECRET_KEY", "")
 
     settings_module = importlib.import_module("config.settings")
@@ -248,11 +248,11 @@ def test_설정_모듈은_STATIC_ROOT를_BASE_DIR_하위_staticfiles로_정의�
 
 
 def test_DEBUG_모드에서는_일반_정적파일_스토리지를_사용한다():
-    """DEBUG=true (local dev / test settings) must not use whitenoise's
-    manifest storage — that backend requires collectstatic to have run first
-    (staticfiles.json), which local dev/test never does. Using the plain
-    filesystem storage in DEBUG keeps {% static %} resolvable without a
-    build step, matching current (pre-whitenoise) behavior exactly."""
+    """DEBUG=true(로컬 개발/테스트 설정)는 whitenoise의 매니페스트 스토리지를
+    쓰면 안 된다 — 그 백엔드는 collectstatic이 먼저 실행돼(staticfiles.json)
+    있어야 하는데, 로컬 개발/테스트는 그걸 절대 하지 않는다. DEBUG에서
+    일반 파일시스템 스토리지를 쓰면 빌드 단계 없이도 {% static %}이 그대로
+    풀린다 — whitenoise 도입 전 동작과 정확히 같다."""
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.DEBUG is True
@@ -282,15 +282,15 @@ def test_설정_모듈은_콘솔_로깅_핸들러를_정의한다():
 
 
 # ---------------------------------------------------------------------------
-# Security gate follow-up (2026-07-14): DEBUG fail-open defense (H1)
+# 보안 게이트 후속 조치: DEBUG fail-open 방어(H1)
 # ---------------------------------------------------------------------------
 
 
 def test_DEBUG_True에서_ALLOWED_HOSTS가_설정되어_있으면_예외를_발생시킨다():
-    """H1: forgetting DEBUG=false alone must not silently bypass the
-    SECRET_KEY hard fail and serve a real domain with debug pages + the
-    insecure dev key. ALLOWED_HOSTS set is an unambiguous production signal —
-    local dev never has a reason to set it."""
+    """H1: DEBUG=false를 깜빡한 것만으로 SECRET_KEY 하드 실패를 조용히
+    우회해서 실제 도메인에 디버그 페이지와 안전하지 않은 개발용 키를 그대로
+    노출하면 안 된다. ALLOWED_HOSTS가 설정돼 있다는 것 자체가 명백한
+    프로덕션 신호다 — 로컬 개발에서는 그걸 설정할 이유가 없다."""
     settings_module = importlib.import_module("config.settings")
 
     with pytest.raises(ImproperlyConfigured):
@@ -302,14 +302,14 @@ def test_DEBUG_True에서_ALLOWED_HOSTS가_설정되어_있으면_예외를_발�
 def test_DEBUG_True이고_ALLOWED_HOSTS가_비어있으면_통과한다():
     settings_module = importlib.import_module("config.settings")
 
-    # Must not raise — this is the local dev default.
+    # 예외를 던지면 안 된다 — 이것이 로컬 개발 기본값이다.
     settings_module.guard_debug_allowed_hosts(debug=True, allowed_hosts=[])
 
 
 def test_DEBUG_False이고_ALLOWED_HOSTS가_설정되어_있으면_통과한다():
     settings_module = importlib.import_module("config.settings")
 
-    # Must not raise — this is the intended production configuration.
+    # 예외를 던지면 안 된다 — 이것이 의도된 프로덕션 설정이다.
     settings_module.guard_debug_allowed_hosts(
         debug=False, allowed_hosts=["takulife.kr"]
     )
@@ -331,8 +331,8 @@ def test_설정_모듈의_CSRF_TRUSTED_ORIGINS_속성은_load_csrf_trusted_origi
 
 
 # ---------------------------------------------------------------------------
-# Code review follow-up (2026-07-14): extract STORAGES.staticfiles branch
-# into a testable pure function, matching the load_* function pattern.
+# STORAGES.staticfiles 분기를 다른 load_* 함수들과 같은 패턴으로 테스트
+# 가능한 순수 함수로 뽑아낸 부분
 # ---------------------------------------------------------------------------
 
 
@@ -355,7 +355,7 @@ def test_DEBUG_False이면_whitenoise_매니페스트_스토리지_경로를_반
 
 
 # ---------------------------------------------------------------------------
-# PR-0b checkpoint 2/3: media storage backend env gate (object storage)
+# 미디어 스토리지 백엔드 env 게이트(오브젝트 스토리지)
 # ---------------------------------------------------------------------------
 
 
@@ -400,8 +400,8 @@ def test_MEDIA_STORAGE_BUCKET은_있는데_SECRET_ACCESS_KEY가_없으면_예외
 ):
     monkeypatch.setenv("MEDIA_STORAGE_BUCKET", "takulife-media")
     monkeypatch.setenv("MEDIA_STORAGE_ACCESS_KEY_ID", "key-id")
-    # Empty string (not delenv) short-circuits _get_env's .env-file fallback,
-    # matching the load_secret_key hard-fail test pattern above.
+    # 빈 문자열(delenv가 아니라)을 써야 _get_env의 .env 파일 폴백을 끊는다 —
+    # 위 load_secret_key 하드 실패 테스트와 같은 패턴이다.
     monkeypatch.setenv("MEDIA_STORAGE_SECRET_ACCESS_KEY", "")
     monkeypatch.setenv(
         "MEDIA_STORAGE_ENDPOINT_URL", "https://example.r2.cloudflarestorage.com"
@@ -414,8 +414,8 @@ def test_MEDIA_STORAGE_BUCKET은_있는데_SECRET_ACCESS_KEY가_없으면_예외
 
 
 # ---------------------------------------------------------------------------
-# PR-0d: proxy-aware client IP (TDD Coach checkpoints CP-1..CP-3)
-# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0d)
+# 프록시를 고려한 클라이언트 IP 판정
+# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8)
 # ---------------------------------------------------------------------------
 
 
@@ -446,10 +446,10 @@ def test_TRUSTED_PROXY_COUNT가_정수가_아니면_예외를_발생시킨다(mo
 
 
 def test_TRUSTED_PROXY_COUNT가_음수이면_예외를_발생시킨다(monkeypatch):
-    """Security follow-up (2026-07-14): a negative count would make
-    resolve_client_ip's hops[-trusted_proxy_count] a positive index,
-    trusting the attacker-controlled left end of X-Forwarded-For instead
-    of the right end — defeating the spoofing defense entirely."""
+    """음수 개수를 허용하면 resolve_client_ip의
+    hops[-trusted_proxy_count]가 양수 인덱스가 되어, X-Forwarded-For의
+    신뢰할 수 있는 오른쪽 끝 대신 공격자가 조작 가능한 왼쪽 끝을 신뢰하게
+    된다 — 스푸핑 방어가 완전히 무력화된다."""
     monkeypatch.setenv("TRUSTED_PROXY_COUNT", "-1")
 
     settings_module = importlib.import_module("config.settings")
@@ -484,8 +484,8 @@ def test_설정_모듈의_AXES_CLIENT_IP_CALLABLE_속성은_build_axes_client_ip
 
 
 # ---------------------------------------------------------------------------
-# PR-0e checkpoint A1: shared cache backend (G11)
-# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8 PR-0e)
+# 공유 캐시 백엔드(G11)
+# (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8)
 # ---------------------------------------------------------------------------
 
 

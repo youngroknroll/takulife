@@ -1,29 +1,11 @@
 /**
- * theme.js — dark/light theme resolution + toggle for takulife
- *
- * Resolution order: localStorage('takulife-theme') → matchMedia
- * ('prefers-color-scheme: dark') → light. Applies the winning value as
- * <html data-theme="light|dark">, which tokens.css's :root[data-theme=
- * "dark"] block consumes (2026-07-13 다크모드 계획 §1, A안).
- *
- * base.html's inline <head> snippet (FOUC guard) duplicates the minimal
- * read-only half of this same resolution so the theme applies before
- * first paint, before any deferred script (including this one) can run.
- * This file is the deferred, full version: it re-applies the identical
- * result (harmless no-op re-application, a safety net against the two
- * copies ever drifting) and additionally owns writes (the stored-value
- * mutation), the public toggle API, and the live system-theme listener.
- *
- * Exposes: window.TakuTheme.toggle() — flips the theme, stores the
- * explicit choice, and applies it immediately. The header's
- * [data-theme-toggle] button (core/partials/_site_header.html) is wired to
- * it below; the icon swap itself is pure CSS (site-chrome.css reads the
- * same data-theme attribute), so no DOM update is needed here beyond the
- * attribute toggle already done by toggle().
- *
- * localStorage is this repo's first use of it — every access goes through
- * try/catch, since private-browsing/storage-blocked contexts can throw on
- * read or write, not just silently return null.
+ * 다크/라이트 테마 결정과 전환. 우선순위는 localStorage 저장값 →
+ * 시스템 설정(prefers-color-scheme) → 라이트 순이다.
+ * base.html의 인라인 스니펫이 첫 페인트 전에 같은 로직의 읽기 전용 버전을
+ * 먼저 실행해 깜빡임을 막고, 이 파일은 저장·전환 API·시스템 설정 변경 감지까지
+ * 맡는 완전판이라 다시 적용해도 결과가 같으면 아무 영향이 없다.
+ * localStorage는 이 저장소에서 처음 쓰는 API라, 프라이빗 브라우징 등에서
+ * 접근이 예외를 던질 수 있어 모든 호출을 try/catch로 감싼다.
  */
 (function () {
   "use strict";
@@ -44,8 +26,7 @@
     try {
       window.localStorage.setItem(STORAGE_KEY, theme);
     } catch (e) {
-      // Storage blocked — the theme still applies for this page load via
-      // applyTheme(), it just won't persist across reloads.
+      // 저장이 막혀도 이번 페이지에는 테마가 적용된다. 새로고침 뒤에만 유지되지 않는다.
     }
   }
 
@@ -68,9 +49,7 @@
     applyTheme(next);
   }
 
-  // Keep following the system setting live, but only while the visitor
-  // hasn't made an explicit choice yet (no stored value) — the confirmed
-  // two-tier behavior: system-follow until a click pins an explicit theme.
+  // 방문자가 아직 명시적으로 테마를 고르지 않은 동안에만 시스템 설정 변경을 계속 따라간다.
   mediaQuery.addEventListener("change", function () {
     if (!readStoredTheme()) {
       applyTheme(mediaQuery.matches ? "dark" : "light");
@@ -92,15 +71,8 @@
     bindToggleButtons();
   }
 
-  // A bfcache restore (event.persisted) can bring back a page frozen in
-  // whatever data-theme it had at the moment the visitor navigated away —
-  // if the theme changed since then (another tab's toggle, or the stored
-  // value expiring), the restored page never re-runs this file's own
-  // applyTheme(resolveTheme()) call above to pick that up. Re-applying is a
-  // no-op when the stored value hasn't changed, so this is safe to run on
-  // every bfcache restore. api.js's/status.js's own pageshow listeners
-  // recover their own unrelated frozen-state concerns; this file owns
-  // recovering its own (stale theme).
+  // bfcache 복원은 떠날 때의 테마를 그대로 얼려서 가져오므로, 그사이 다른 탭에서
+  // 테마가 바뀌었다면 여기서 다시 적용해 최신 상태로 맞춘다.
   window.addEventListener("pageshow", function (evt) {
     if (!evt.persisted) {
       return;

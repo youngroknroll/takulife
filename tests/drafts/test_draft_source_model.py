@@ -1,7 +1,4 @@
-"""Tests for drafts.models.DraftSource — the discovery-source registry model
-(PR-2 of the auto-discovery plan, prompt_plan.md §2-1). Kept in a dedicated
-file, mirroring tests/test_draft_models.py's per-field class layout.
-"""
+"""drafts.models.DraftSource(발견 소스 레지스트리 모델) 테스트."""
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -27,9 +24,8 @@ class TestDraftSourceCreation:
         assert source.source_type == DraftSource.SourceType.RSS
 
     def test_동일한_url로_드래프트_소스를_중복_생성하면_무결성_오류가_난다(self):
-        """Two DraftSource rows pointing at the same feed/sitemap/board URL
-        would make discover_drafts (PR-3) check and fetch it twice every
-        run — the registry itself must reject the duplicate."""
+        """같은 URL을 가리키는 소스가 두 개면 discover_drafts가 실행마다 같은
+        URL을 두 번 점검·페치하게 된다. 레지스트리 자체가 중복을 막아야 한다."""
         DraftSource.objects.create(
             name="atzip",
             url="https://atzip.kr/feed/",
@@ -143,11 +139,9 @@ class TestLastErrorField:
         assert source.last_error == ""
 
     def test_last_error는_긴_오류_메시지도_잘림_없이_저장한다(self):
-        """A CharField would either truncate silently or raise a Postgres
-        DataError for a long exception string — this must go through
-        .objects.create() directly (not full_clean(), which would just
-        validate max_length rather than exercise the actual DB write path)
-        so a CharField regression here is actually caught."""
+        """CharField였다면 긴 예외 문자열이 조용히 잘리거나 Postgres
+        DataError가 났을 것이다. full_clean()이 아니라 .objects.create()로
+        직접 써야 실제 DB 쓰기 경로에서 이 회귀를 잡을 수 있다."""
         long_error = "x" * 5000
 
         source = DraftSource.objects.create(

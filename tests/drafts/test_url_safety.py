@@ -1,8 +1,5 @@
-"""Unit tests for drafts.url_safety — SSRF guard on draft-fetch URLs.
-
-Covers the scheme/hostname rejections, literal-IP private-range blocking, and
-the DNS-resolver path (a public hostname that resolves to a private address).
-"""
+"""drafts.url_safety(드래프트 fetch URL의 SSRF 방어) 단위 테스트. 스킴·호스트명
+거부, 리터럴 IP 사설망 차단, DNS 리졸버 경로를 다룬다."""
 import pytest
 
 from drafts.url_safety import (
@@ -40,7 +37,7 @@ class TestLiteralIp:
             "http://127.0.0.1/",
             "http://10.0.0.5/",
             "http://192.168.1.1/",
-            "http://169.254.169.254/latest/meta-data/",  # cloud metadata
+            "http://169.254.169.254/latest/meta-data/",  # 클라우드 메타데이터 주소
             "http://[::1]/",
             "http://0.0.0.0/",
         ],
@@ -58,7 +55,7 @@ class TestLiteralIp:
             validate_fetch_url(url)
 
     def test_공인_리터럴_IP는_허용된다(self):
-        # Returns None (no raise) for a public literal IP.
+        # 공인 리터럴 IP는 예외 없이 None을 반환한다.
         assert validate_fetch_url("http://8.8.8.8/") is None
 
 
@@ -80,7 +77,7 @@ class TestResolverPath:
         )
 
     def test_리졸버를_전달하지_않으면_DNS_기반_검증을_건너뛴다(self):
-        # With no resolver the DNS path is skipped (caller opts in to resolution).
+        # resolver가 없으면 DNS 검증 경로 자체를 건너뛴다(호출자가 옵트인해야 함).
         assert validate_fetch_url("https://unresolved.example.com/") is None
 
     def test_호스트명이_루프백_주소로_해석되면_URL_검증이_거부한다(self):

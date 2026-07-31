@@ -1,18 +1,15 @@
 {% comment %}
-_account_settings_panel_head.html — kicker + h1 + description + an optional
-top-of-panel error banner (role="alert", IC4). Shared across all 6 account
-screens (including the two standalone ones, email_confirm/delete_done).
-
-Usage:
+계정 설정 6개 화면이 공유하는 상단부(작은 라벨 + 제목 + 설명 + 선택적 오류
+배너)다.
+사용법:
   {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 변경" description="..." errors=form.non_field_errors %}
   {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 확인" error_text="이 이메일은 이미 다른 계정에서 확인되었습니다." %}
-Args:
-  kicker       — small red-ink label above the title
-  title        — <h1> text
-  description  — optional paragraph under the title
-  errors       — optional iterable of error strings (e.g. form.non_field_errors)
-  error_text   — optional single error string (for views with no bound form,
-                 e.g. allauth's ConfirmEmailView) — takes priority over `errors`
+인자:
+  kicker       — 제목 위 작은 라벨
+  title        — <h1> 텍스트
+  description  — 제목 아래 선택적 설명
+  errors       — 오류 문자열 목록 (예: form.non_field_errors)
+  error_text   — 폼이 없는 화면용 단일 오류 문자열, errors보다 우선
 {% endcomment %}
 <p class="account-settings-kicker">{{ kicker }}</p>
 <h1 class="account-settings-title">{{ title }}</h1>

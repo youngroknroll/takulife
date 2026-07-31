@@ -1,13 +1,6 @@
-/* ── .btn — canonical generic button component ──────────────────
- * Base = skeleton only (layout, sizing, radius, transition). No color.
- * Skins (.btn-primary / .btn-secondary) own all color/border.
- * Size/width modifiers (.btn-sm / .btn-block) override padding/font only —
- * min-height:44px is not among the overridden properties, so .btn-sm
- * keeps the same 44px touch target as every other variant; only its
- * visual size (padding/font) shrinks.
- * Focus outline is inherited from the global a:focus/button:focus rule
- * in base.css — do not redeclare it here.
- */
+/* ── .btn — canonical generic button component ──────────────────── */
+/* 포커스 아웃라인은 base.css의 전역 a:focus/button:focus 규칙을 그대로
+   물려받으므로 여기서 다시 선언하지 않는다. */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -53,8 +46,7 @@
   border-color: var(--brand);
 }
 
-/* Destructive actions (e.g. account deletion) — same rose pairing as the
-   staff console's .action-button.danger skin. */
+/* 탈퇴 등 파괴적 동작용 배색. staff console의 .action-button.danger와 톤을 맞췄다. */
 .btn-danger {
   border-color: var(--rose-ink);
   background: var(--rose-soft);

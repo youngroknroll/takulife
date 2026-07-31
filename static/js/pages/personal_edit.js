@@ -1,30 +1,12 @@
 /**
- * personal_edit.js — /archive/personal/<id>/edit/ render-only edit page.
- *
- * Handles:
- *   - category quick-pick chips (personal_create.js's bindCategoryChips,
- *     mirrored 1:1 — same `.personal-form-category-chips` class, same
- *     single source-of-truth read from #personal-category)
- *   - image dropzone preview for a newly picked replacement file
- *   - image delete → immediate PATCH { image: null } (JSON), separate from
- *     the main form submit (BIR: never merge into the multipart PATCH —
- *     every other single-click destructive action here is immediate+
- *     confirm, so folding this into a deferred save would break that
- *     expectation)
- *   - form submit → PATCH /api/personal-entries/<id>/ (existing API, no new
- *     endpoint; multipart only when a replacement image file is attached)
- *   - entry delete → DELETE /api/personal-entries/<id>/ (same confirm copy
- *     as the list and detail screens)
- *   - 404 lock cascade: unlike personal_detail.js (which only needs to
- *     .focus() its already-alive back-link), this page's own back-link AND
- *     취소 link both point at /archive/personal/<id>/, which 404s too once
- *     the entry is gone — so both must be neutralized and a brand-new
- *     "목록으로 돌아가기" link appended instead (collection.js's
- *     revealBackLink precedent, not personal_detail.js's).
- *
- * Relies on window.TakuAPI (api.js) for requests, 403 disambiguation and
- * error formatting, and window.TakuConfirm (confirm-modal.js) for the
- * destructive-action confirm dialog. All DOM writes use textContent only.
+ * 비공식 장소 수정 페이지. 종류 빠른 선택 칩, 이미지 교체 미리보기·즉시
+ * 삭제, 폼 저장(PATCH), 항목 삭제를 담당한다.
+ * 이미지 삭제는 확인 후 바로 반영되는 다른 삭제 동작들과 통일하기 위해
+ * 본 폼 제출과 분리해 즉시 PATCH { image: null }로 처리한다.
+ * 삭제로 항목이 사라지면(404) 이 페이지의 뒤로가기·취소 링크도 같은
+ * 항목을 가리켜 함께 404가 나므로, 그 링크들을 무효화하고 새 "목록으로
+ * 돌아가기" 링크를 추가한다(personal_detail.js처럼 기존 링크에 포커스만
+ * 옮기는 방식은 여기선 쓸 수 없다).
  */
 
 (function () {
@@ -34,7 +16,7 @@
   var MAX_BYTES = 5 * 1024 * 1024;
   var ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-  var goneLocked = false; // guards against double-appending the back-to-list link
+  var goneLocked = false; // 목록 링크가 중복 추가되지 않도록 막는 가드
 
   function setText(el, message) {
     if (el) { el.textContent = message; }
@@ -55,9 +37,7 @@
     }
   }
 
-  // Client-side mirror of the server's image guard — fast feedback for the
-  // common case; the server remains authoritative (personal_create.js's
-  // validateImageFile precedent).
+  // 서버의 이미지 검증을 클라이언트에서도 미리 흉내내 빠른 피드백을 준다.
   function validateImageFile(file, errorEl) {
     if (ALLOWED_TYPES.indexOf(file.type) === -1) {
       setText(errorEl, "JPEG · PNG · WebP 형식만 첨부할 수 있습니다.");
@@ -80,8 +60,7 @@
     link.addEventListener("click", function (evt) { evt.preventDefault(); });
   }
 
-  // Disables every control in the form — no field the user still edits can
-  // produce another doomed submit (collection.js's lockForm precedent).
+  // 폼의 모든 컨트롤을 비활성화해, 어떤 필드를 고쳐도 실패할 제출로 이어지지 않게 한다.
   function lockForm(form) {
     var controls = form.querySelectorAll("input, select, textarea, button");
     for (var i = 0; i < controls.length; i++) {
@@ -90,10 +69,8 @@
     }
   }
 
-  // The top back-link and 취소 link both target /archive/personal/<id>/,
-  // which is gone too — this page (unlike personal_detail.js) needs a
-  // brand-new surviving link, not a .focus() on an already-dead one
-  // (collection.js's revealBackLink precedent).
+  // 상단 뒤로가기·취소 링크도 같은 사라진 항목을 가리키므로, 살아 있는
+  // 링크에 포커스만 옮기는 대신 새 링크를 만들어야 한다.
   function revealBackLink(form) {
     if (document.getElementById("personal-edit-back-to-list")) { return; }
     var link = document.createElement("a");
@@ -115,7 +92,7 @@
     revealBackLink(form);
   }
 
-  // ── category chips (personal_create.js's bindCategoryChips, mirrored) ──
+  // ── 종류 선택 칩(personal_create.js와 동일 로직) ──
 
   function bindCategoryChips() {
     var group = document.querySelector(".personal-form-category-chips");
@@ -145,11 +122,11 @@
     }
     input.addEventListener("input", syncFromValue);
 
-    // One sync pass against the server-rendered prefill value.
+    // 서버가 미리 채워둔 값에 맞춰 한 번 동기화한다.
     syncFromValue();
   }
 
-  // ── image: replacement preview + immediate delete ──────────────────────
+  // ── 이미지: 교체 미리보기 + 즉시 삭제 ──────────────────────
 
   function bindImage(form, entryId) {
     var input = document.getElementById("personal-image");
@@ -191,8 +168,7 @@
       }
       var globalErrorEl = document.getElementById("personal-edit-global-error");
       setText(globalErrorEl, "");
-      // Synchronous disable before the first await, mirroring every other
-      // destructive control on this page.
+      // 이 페이지의 다른 삭제 동작과 마찬가지로 첫 await 전에 동기적으로 비활성화한다.
       window.TakuAPI.setLoading(removeBtn, true);
 
       var result = await window.TakuAPI.patch("/api/personal-entries/" + entryId + "/", { image: null });
@@ -233,7 +209,7 @@
     });
   }
 
-  // ── save ─────────────────────────────────────────────────────────────
+  // ── 저장 ─────────────────────────────────────────────────────────────
 
   function bindForm() {
     var form = document.getElementById("personal-edit-form");
@@ -302,9 +278,8 @@
         return;
       }
 
-      // Unconditional, before any 404 branch — see lockForm's callers for
-      // why: a .is-loading button left disabled-but-not-marked would be
-      // silently re-enabled by api.js's own bfcache pageshow handler.
+      // 404 분기보다 먼저 무조건 실행한다 — .is-loading이 남은 채면
+      // bfcache 복원 시 api.js가 그 버튼만 조용히 다시 켜버린다.
       window.TakuAPI.setLoading(submitBtn, false);
 
       if (result.status === 404) {
@@ -325,7 +300,7 @@
     bindDelete(form, entryId);
   }
 
-  // ── entry delete ─────────────────────────────────────────────────────
+  // ── 항목 삭제 ─────────────────────────────────────────────────────
 
   function bindDelete(form, entryId) {
     var deleteBtn = document.querySelector("[data-delete-entry-id]");

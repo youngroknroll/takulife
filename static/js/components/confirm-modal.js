@@ -1,21 +1,15 @@
 /**
- * confirm-modal.js — Custom 예/아니오 confirmation dialog for takulife
- *
- * Exposes: window.TakuConfirm(message) → Promise<boolean>
- *   Resolves true  → 예 (proceed)
- *   Resolves false → 아니오 / ESC / backdrop click (abort)
- *
- * DOM: lazily built once on first use (singleton overlay).
- * XSS-safe: message written with textContent only.
- * Focus: opens on 아니오 (safer default for destructive confirm), restores on close.
- * Focus trap: Tab cycles between the two buttons only.
- * Reduced-motion: CSS handles it via @media (prefers-reduced-motion: reduce).
+ * 예/아니오 확인 모달. window.TakuConfirm(message)로 호출하며 예=true,
+ * 아니오·ESC·바깥 클릭=false로 해결되는 Promise를 반환한다.
+ * 처음 쓸 때 한 번만 만들어 재사용한다(싱글턴). 메시지는 textContent만
+ * 써서 XSS 위험이 없다. 되돌릴 수 없는 동작의 확인이라 기본 포커스는
+ * 더 안전한 "아니오"에 놓고, Tab은 두 버튼 사이에서만 순환한다.
  */
 
 (function () {
   "use strict";
 
-  // ── singleton refs ────────────────────────────────────────────────────────
+  // ── 싱글턴 참조 ────────────────────────────────────────────────────────
 
   var overlay = null;
   var dialog = null;
@@ -46,7 +40,7 @@
     return max;
   }
 
-  // ── DOM builder (first use only) ──────────────────────────────────────────
+  // ── DOM 생성(첫 사용 시 한 번만) ──────────────────────────────────────────
 
   function buildDOM() {
     overlay = document.createElement("div");
@@ -76,7 +70,7 @@
     yesBtn.className = "confirm-yes";
     yesBtn.textContent = "예";
 
-    // 아니오 first (left), 예 second (right)
+    // 아니오가 왼쪽, 예가 오른쪽
     actions.appendChild(noBtn);
     actions.appendChild(yesBtn);
 
@@ -85,7 +79,7 @@
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
 
-    // ── event bindings ─────────────────────────────────────────────────────
+    // ── 이벤트 바인딩 ─────────────────────────────────────────────────────
 
     yesBtn.addEventListener("click", function () {
       resolve(true);
@@ -95,31 +89,31 @@
       resolve(false);
     });
 
-    // Backdrop click — only when the click target is the overlay itself
+    // 배경(오버레이 자체) 클릭일 때만 닫는다
     overlay.addEventListener("click", function (evt) {
       if (evt.target === overlay) {
         resolve(false);
       }
     });
 
-    // ESC key
+    // ESC 키
     overlay.addEventListener("keydown", function (evt) {
       if (evt.key === "Escape") {
         evt.preventDefault();
         resolve(false);
       }
 
-      // Focus trap: Tab cycles between noBtn and yesBtn only
+      // 포커스 가두기: Tab이 두 버튼 사이에서만 순환한다
       if (evt.key === "Tab") {
         var focused = document.activeElement;
         if (evt.shiftKey) {
-          // Shift+Tab: if on noBtn, wrap to yesBtn
+          // Shift+Tab: 아니오에 있으면 예로 넘어간다
           if (focused === noBtn) {
             evt.preventDefault();
             yesBtn.focus();
           }
         } else {
-          // Tab: if on yesBtn, wrap to noBtn
+          // Tab: 예에 있으면 아니오로 넘어간다
           if (focused === yesBtn) {
             evt.preventDefault();
             noBtn.focus();
@@ -129,7 +123,7 @@
     });
   }
 
-  // ── open / close ──────────────────────────────────────────────────────────
+  // ── 열기 / 닫기 ──────────────────────────────────────────────────────────
 
   function open(message) {
     if (!overlay) {
@@ -144,8 +138,7 @@
     overlay.removeAttribute("hidden");
     document.documentElement.classList.add("confirm-scroll-lock");
 
-    // rAF lets the browser paint the initial state before adding .is-open,
-    // so the CSS opacity/transform transition actually fires
+    // 초기 상태를 먼저 한 번 그리게 해야 CSS 전환 효과가 실제로 재생된다
     requestAnimationFrame(function () {
       overlay.classList.add("is-open");
       noBtn.focus();
@@ -153,20 +146,16 @@
   }
 
   function close() {
-    // First statement so every close path (backdrop/ESC/예/아니오, all of
-    // which route through resolve() → close()) unlocks scroll immediately,
-    // without waiting on the fade-out transition or its fallback timer.
+    // 어떤 닫힘 경로든(배경/ESC/예/아니오) 여기부터 시작해, 사라지는
+    // 애니메이션을 기다리지 않고 스크롤 잠금을 바로 푼다.
     document.documentElement.classList.remove("confirm-scroll-lock");
 
     cancelPendingClose();
     overlay.classList.remove("is-open");
 
-    // getComputedStyle's transition-duration covers every reason the CSS
-    // transition might not fire — reduced-motion (confirm-modal.css strips
-    // it), a print stylesheet, a global motion toggle, or a backgrounded
-    // tab throttling rAF — not just the reduced-motion media query. A
-    // setTimeout backstop (transition duration + slack) still restores
-    // [hidden] even if transitionend never arrives for some other reason.
+    // CSS 전환이 아예 안 일어날 수 있는 여러 경우(동작 최소화 설정,
+    // 인쇄용 스타일, 백그라운드 탭의 rAF 지연 등)를 모두 대비해, 전환이
+    // 끝나지 않아도 setTimeout으로 반드시 hidden을 복원한다.
     var duration = overlayTransitionMs();
     if (duration === 0) {
       overlay.setAttribute("hidden", "");
@@ -198,10 +187,10 @@
     fn(value);
   }
 
-  // ── public API ────────────────────────────────────────────────────────────
+  // ── 외부 공개 API ────────────────────────────────────────────────────────────
 
   function TakuConfirm(message) {
-    // If already open (shouldn't happen in serial use), resolve false and reopen
+    // 이미 열려 있으면(정상적으로는 일어나지 않아야 함) 기존 것을 false로 닫고 새로 연다
     if (currentResolve !== null) {
       var oldResolve = currentResolve;
       currentResolve = null;

@@ -1,23 +1,13 @@
 /* ── calendar.css — shared month-grid component ─────────────────
- * Consumed by templates/core/partials/_calendar_grid.html (Events calendar)
- * and templates/core/partials/_archive_calendar_grid.html (Activity
- * calendar) — both include the same .month-grid/.day-cell skeleton and
- * data-in-month/data-today/data-selected state wiring; only the cell
- * *contents* differ per partial (Events: item titles; Activity: kind
- * dots). Flat CSS grid only (no <table>) — see plan
- * .docs/plans/2026-07-19-dual-calendar-frontend-pre-review.md §A-1.
- * Breakpoints: 45rem only (§A-3 — no foreign 53.75/56.25/60rem boundaries
- * borrowed from other pages). State is expressed purely via
- * data-in-month/data-today/data-selected + color swaps (§A-7 — opacity is
- * banned for state, per an earlier low-contrast finding elsewhere).
+ * templates/core/partials/_calendar_grid.html(행사 달력)과
+ * _archive_calendar_grid.html(내 활동 달력)이 같은 .month-grid/.day-cell
+ * 뼈대를 공유하고, 칸 내용만 다르다(행사=제목, 활동=종류별 점).
+ * <table> 없이 순수 CSS grid만 쓴다.
  *
- * Legend/multi-kind dot colors (§A-8: 일정=--up-*, 찜=--pink-*, 상태 변경=
- * --brand-*, 방문=--mint-*, 굿즈=--amber-*, --rose-* reserved for the error
- * panel only, never a kind marker) are scoped to `.day-dot[data-kind]` —
- * Events never sets a data-kind attribute on its single dot, so its plain
- * solid --brand circle (the bare `.day-dot` rule below) is unaffected by
- * the kind-colored swatch rules added for the Activity calendar, their
- * actual first consumer.
+ * 범례 점 색(일정=--up-*, 찜=--pink-*, 상태 변경=--brand-*, 방문=--mint-*,
+ * 굿즈=--amber-*, --rose-*는 오류 패널 전용이라 종류 표시에는 절대 안
+ * 씀)은 `.day-dot[data-kind]`에만 적용된다 — 행사 달력은 data-kind
+ * 속성을 안 넣으므로 아래 `.day-dot` 기본(브랜드색 원)에는 영향이 없다.
  */
 .month-grid {
   display: grid;
@@ -33,14 +23,13 @@
   color: var(--muted);
 }
 
-/* Base cell — both the real (<a>) and void (<span data-void>, year 1/9999
-   boundary filler with no representable date) share this box so the grid
-   never reflows a hole. */
+/* 실제 날짜 칸(<a>)과 연도 경계를 메우는 빈 칸(<span data-void>)이 같은
+   박스 스타일을 공유해, 빈 칸 때문에 그리드에 구멍이 생기지 않는다. */
 .day-cell {
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
-  min-height: 6.5rem; /* desktop/tablet — §A-4 */
+  min-height: 6.5rem; /* 데스크톱/태블릿 */
   padding: 0.375rem 0.3125rem;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -54,8 +43,8 @@
   border-color: var(--brand);
 }
 
-/* Focus outline is inherited from base.css's global a:focus rule — not
-   redefined here (§A-17). */
+/* 포커스 아웃라인은 base.css의 전역 a:focus 규칙을 그대로 쓴다(여기서
+   다시 정의하지 않음). */
 
 .day-cell[data-void] {
   border-color: transparent;
@@ -84,9 +73,8 @@
   color: var(--muted);
 }
 
-/* Adjacent-month item titles read at the same strength as the current
-   month's, so the current month didn't stand out (browser QA finding) —
-   muted to match the already-muted .day-num/.day-more for that cell. */
+/* 다른 달 칸의 일정 제목도 흐리게 처리해 .day-num/.day-more와 톤을
+   맞춘다 — 안 그러면 이번 달과 글자 진하기가 같아 눈에 안 띈다. */
 .day-cell[data-in-month="false"] .day-item {
   color: var(--muted);
 }
@@ -96,8 +84,8 @@
   font-weight: 600;
 }
 
-/* Desktop: up to 2 event titles (1-line ellipsis, not line-clamp — §A-5)
-   plus an "외 N개" overflow marker. Hidden on mobile below. */
+/* 데스크톱: 일정 제목 최대 2개(한 줄 말줄임)와 "외 N개" 표시. 모바일에서는
+   아래 미디어쿼리로 숨긴다. */
 .day-items {
   display: flex;
   flex-direction: column;
@@ -119,8 +107,8 @@
   color: var(--muted);
 }
 
-/* Mobile: dot + total count only, no title text (§A-5). Hidden on desktop
-   by default; the 45rem block below is the only place it's shown. */
+/* 모바일: 제목 없이 점과 총 개수만 표시. 기본은 숨김이고, 아래 45rem
+   미디어쿼리에서만 보인다. */
 .day-mobile-meta {
   display: none;
   align-items: center;
@@ -128,9 +116,9 @@
   margin-top: auto;
 }
 
-/* Events has a single kind — one solid --brand dot (§A-8). Bare rule (no
-   data-kind attribute), so the [data-kind] swatch overrides below never
-   touch it. */
+/* 행사 달력은 종류가 하나뿐이라 --brand 색 점 하나만 쓴다. data-kind
+   속성이 없는 기본 규칙이라 아래 [data-kind] 색상 재정의의 영향을
+   받지 않는다. */
 .day-dot {
   display: inline-block;
   width: 6px;
@@ -139,17 +127,9 @@
   background: var(--brand);
 }
 
-/* Activity calendar's 4 visible kinds — solid ink swatch (2026-07-24
-   editorial rebuild, activity-calendar-editorial plan §4-b / WED pre-spec
-   §1: soft background + border → solid ink, in place). This block is
-   already Activity-only within a shared file (§ comment above this rule
-   group) and Events never sets a data-kind attribute, so this edit cannot
-   leak onto the Events calendar's bare `.day-dot` (§A-8 unaffected).
-   "status" no longer renders a data-kind="status" swatch anywhere in the
-   live templates (the group is display-filtered server-side and its
-   filter checkbox was removed, plan §4-a B4) — no dedicated rule for it
-   below; a stray occurrence would simply fall through to this bare
-   [data-kind] rule (dormant, not a reused live color). */
+/* 내 활동 달력에 보이는 4개 종류의 점 색. "상태 변경(status)"은 서버에서
+   걸러져 실제로는 어느 화면에도 렌더되지 않으므로 전용 규칙을 따로 두지
+   않았다 — 혹시 나타나도 이 기본 [data-kind] 규칙으로만 떨어진다. */
 .day-dot[data-kind] {
   border: none;
 }
@@ -170,11 +150,9 @@
   background: var(--amber-ink);
 }
 
-/* Activity's mobile-only kind dot row (deduplicated, up to 3 per cell —
-   template caps with |slice:":3"). Renamed from .day-kind-dots (2026-07-24
-   editorial rebuild): the new desktop cell shows item titles instead, so
-   this row is mobile-exclusive now, hidden by default and shown in the
-   45rem block below (mirrors Events' .day-mobile-meta same-file pattern). */
+/* 내 활동 달력의 모바일 전용 종류 점 줄(칸당 최대 3개, 템플릿에서
+   |slice:":3"으로 제한). 데스크톱 칸은 대신 제목을 보여주므로 이 줄은
+   모바일에서만 쓰고, 기본은 숨김이며 아래 45rem 미디어쿼리에서 보인다. */
 .day-mobile-dots {
   display: none;
   flex-wrap: wrap;
@@ -204,9 +182,9 @@
   gap: 0.3125rem;
 }
 
-/* ── error panel (.empty-state shape + rose tokens, §A-13) ──────
-   Reserves --rose-* strictly for this panel — never a kind marker
-   (§A-8). */
+/* ── error panel ──────────────────────────────────────────────
+   --rose-*는 이 오류 패널 전용이다 — 종류 표시 점 색으로는 절대 쓰지
+   않는다. */
 .calendar-error-panel {
   border-color: var(--rose-border);
   background: var(--rose-soft);
@@ -216,9 +194,9 @@
   .month-grid {
     gap: 2px;
   }
-  /* 320px arithmetic (§A-4): 288px content width / 7 columns ≈ 39-41px —
-     44px-wide cells are not arithmetically possible here (a documented,
-     pre-existing mobile exception). The vertical 44px minimum stays. */
+  /* 320px 화면에서는 내용 너비 288px를 7칸으로 나누면 칸당 39~41px라
+     44px 너비를 지킬 수 없다(계산상 불가능, 알려진 예외). 세로
+     44px 최소 높이는 유지한다. */
   .day-cell {
     min-height: 44px;
     padding: 0.25rem 0.125rem;

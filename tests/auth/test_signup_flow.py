@@ -1,5 +1,4 @@
-"""Signup → email confirmation → redirect (SSR) flow, no JSON API
-(moved from tests/core/test_coverage_supplements.py)."""
+"""회원가입 → 이메일 인증 → 리다이렉트로 이어지는 SSR 흐름, JSON API 아님."""
 import re
 
 import pytest
@@ -18,9 +17,8 @@ def test_회원가입_후_이메일_인증을_완료하면_처음_요청한_next
             "terms_agreed": "on",
         },
     )
-    # Signup itself only lands on the "check your email" page — the
-    # session isn't granted until the confirmation link is clicked
-    # (ACCOUNT_EMAIL_VERIFICATION=mandatory).
+    # 가입 자체는 "이메일을 확인하세요" 페이지에만 도착한다 — 인증 링크를
+    # 클릭하기 전까지 세션은 부여되지 않는다(ACCOUNT_EMAIL_VERIFICATION=mandatory).
     assert resp.status_code == 302
     assert resp["Location"] == "/accounts/confirm-email/"
 

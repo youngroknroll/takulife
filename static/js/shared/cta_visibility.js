@@ -1,16 +1,9 @@
 /**
- * cta_visibility.js — show a fixed mobile CTA bar only when its primary CTA
- * has scrolled out of view, so mobile users never see the same call to
- * action twice on screen at once (event detail + archive).
- *
- * DOM contract:
- *   [data-cta-watch] — the primary, in-flow CTA to observe.
- *   [data-cta-fixed] — the fixed bottom bar; starts with the `hidden`
- *                       attribute in markup so there is no flash before this
- *                       script decides whether to show it.
- *
- * No IntersectionObserver support: fall back to always showing the fixed
- * bar (the previous unconditional behaviour).
+ * 원래 위치의 CTA가 화면 밖으로 스크롤됐을 때만 하단 고정 CTA 바를 보여준다.
+ * 모바일에서 같은 행동 유도 버튼이 화면에 두 번 겹쳐 보이지 않게 하기 위해서다.
+ * [data-cta-fixed]는 마크업에 hidden 속성으로 시작해 이 스크립트가 판단하기
+ * 전에 잠깐 나타났다 사라지는 깜빡임이 없다.
+ * IntersectionObserver를 지원하지 않는 브라우저는 항상 고정 바를 보여준다.
  */
 (function () {
   "use strict";
