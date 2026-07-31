@@ -693,7 +693,7 @@ if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
 
 | # | 항목 | 근거 | 비고 |
 |---|---|---|---|
-| F1 | worktree 2개 삭제 | `git log main..<branch>` 각각 **0 커밋** | 611MB 즉시 회수, 안전 |
+| F1 | ~~worktree 2개 삭제~~ (해소됨) | `[실측 2026-08-01]` `git worktree list` → 작업 트리 1개뿐. 언젠가 정리됐다 | 해소 |
 | F2 | ~~런북 줄번호 드리프트~~ (해소됨) | `docs/deploy-runbook.md:58`이 참조하던 `core/views.py:728-735`는 PR #251의 `core/views/` 패키지 분할로 파일 자체가 사라져 드리프트가 더 악화됐었음. 참조를 `core/urls.py`, `core/views/system.py`의 `health()`로 줄번호 없이 재작성해 파일 이동·리팩터에도 무효화되지 않게 함 | 해소 |
 | F3 | CI 컨테이너 기동 스모크 부재 | `.github/workflows/ci.yml:94-101`이 `docker build`만 실행 | entrypoint 회귀를 첫 배포에야 발견 |
 | F4 | `project-status.md` 2334줄 / 사실과 다른 7곳 | 머지된 PR #250을 "열림, 머지 승인 대기"로 기재 등 | 자기 규약("concise index") 위반 |
