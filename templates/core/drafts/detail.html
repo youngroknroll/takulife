@@ -1,5 +1,6 @@
 {% extends "staff/base_staff.html" %}
 {% load static %}
+{% load draft_labels %}
 {% block title %}{{ project_name }} | 드래프트 검토 #{{ draft.id }}{% endblock %}
 
 {% block extra_css %}
@@ -25,7 +26,7 @@
         <a class="staff-cta" href="/staff/drafts/">← 큐로</a>
       {% endif %}
       <span class="mono review-topbar-id">드래프트 #{{ draft.id }}</span>
-      <span class="queue-status-chip review-status-{{ draft.review_status }}">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% else %}반려됨{% endif %}</span>
+      <span class="queue-status-chip review-status-{{ draft.review_status }}">{{ draft.review_status|review_status_label }}</span>
       <span class="mono review-topbar-meta">
         {% if draft.source_name %}출처 {{ draft.source_name }} · {% endif %}
         {% if draft.extraction_method == "heuristic" %}휴리스틱 추출{% else %}LLM 추출{% endif %}
@@ -35,7 +36,7 @@
 
     {% if not is_pending %}
       <p class="notice">
-        이 드래프트는 <strong>{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% else %}반려됨{% endif %}</strong> 상태입니다. 수정, 승인, 반려는 검토 대기 상태에서만 가능합니다.
+        이 드래프트는 <strong>{{ draft.review_status|review_status_label }}</strong> 상태입니다. 수정, 승인, 반려는 검토 대기 상태에서만 가능합니다.
       </p>
       <p class="meta">
         검토자: {{ draft.reviewed_by.email|default:"-" }}
@@ -162,7 +163,7 @@
 
             <p class="review-judge-note">승인 시 <strong>published Event</strong>가 생성되어 공개 목록에 즉시 노출됩니다. 공식 URL이 없는 항목은 게시할 수 없습니다.</p>
           {% else %}
-            <p class="notice">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% else %}반려됨{% endif %} 상태입니다. 승인/반려는 검토 대기 상태에서만 가능합니다.</p>
+            <p class="notice">{{ draft.review_status|review_status_label }} 상태입니다. 승인/반려는 검토 대기 상태에서만 가능합니다.</p>
           {% endif %}
         </div>
       </section>

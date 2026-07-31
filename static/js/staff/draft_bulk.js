@@ -311,7 +311,22 @@
 
   /* ── 일괄 판정 응답을 화면에 반영 ──────────────────────── */
 
-  var STATUS_STATE_LABEL = { approved: "승인됨", rejected: "반려됨" };
+  // 서버가 list.html에 내려주는 라벨 맵을 읽는다(json_script). 이 스크립트는
+  // 큐 화면 밖에서도 로드될 수 있으니, 블록이 없거나 파싱에 실패해도 빈
+  // 객체로 조용히 물러선다 — 아래 소비부의 `|| targetLabel` 폴백이 대신한다.
+  function readStatusStateLabels() {
+    var el = document.getElementById("draft-status-labels");
+    if (!el) {
+      return {};
+    }
+    try {
+      return JSON.parse(el.textContent) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  var STATUS_STATE_LABEL = readStatusStateLabels();
 
   function applySucceededDraft(draftId, selectedStatus, targetStatus, targetLabel) {
     var checkbox = document.querySelector(

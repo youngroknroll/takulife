@@ -20,6 +20,7 @@ from core.vocab import (
     is_valid_category,
     is_valid_region,
 )
+from drafts.labels import REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
 from drafts.queries import DRAFT_LISTING_PAGE_SIZE, draft_review_stats, list_drafts
 from drafts.serializers import EventDraftSerializer
@@ -147,6 +148,7 @@ def event_drafts(request):
             "selected_status": selected_status,
             "pager_query": pager_query,
             "search": search,
+            "review_status_labels": REVIEW_STATUS_LABELS,
         },
     )
 
