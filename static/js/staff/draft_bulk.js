@@ -180,6 +180,15 @@
     live.textContent = "#" + row.dataset.draftId + " " + title + " 선택됨";
   }
 
+  // 판정 결과를 "선택됨"과 구분해 알린다. 같은 문구를 재사용하면 방금 반려한
+  // 사용자가 "선택됨"만 듣고 성공 여부를 알 수 없다.
+  function announceOutcome(draftId, stateLabel) {
+    var live = document.getElementById("queue-inspector-live");
+    if (live) {
+      live.textContent = "#" + draftId + " " + stateLabel;
+    }
+  }
+
   // focus가 필요한 이유: J/K로 옮긴 뒤 A/R을 누르면 바로 그 행이 대상이어야
   // 하고, 스크린리더 사용자도 어느 행이 현재인지 포커스로 알 수 있어야 한다.
   function setCurrentRow(draftId, options) {
@@ -343,7 +352,20 @@
       if (actionScope) {
         actionScope.remove();
       }
+      // 판정을 누른 버튼은 확인 대화상자가 닫히는 시점에 이미 사라졌거나
+      // 포커스를 잃는다. 여기서 되돌려 놓지 않으면 body에 남아 키보드
+      // 사용자가 위치를 잃는다(실측: 반려 후 activeElement === body).
+      if (document.activeElement === document.body) {
+        var panelHead = panel.querySelector(".queue-inspector-head");
+        if (panelHead) {
+          panelHead.setAttribute("tabindex", "-1");
+          panelHead.focus();
+        }
+      }
     }
+
+    // 행 이동 없이 배지 글자만 바뀌므로, 알리지 않으면 결과가 조용히 끝난다.
+    announceOutcome(draftId, stateLabel);
   }
 
   function applyFailedDraft(item) {

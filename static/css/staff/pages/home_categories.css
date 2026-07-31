@@ -35,6 +35,8 @@
 }
 
 .home-cats-panel-title {
+  /* h2로 바꾸면서 UA 기본 margin이 따라붙는다 */
+  margin: 0;
   font-size: 0.78125rem;
   font-weight: 700;
 }
@@ -137,6 +139,8 @@
 }
 
 .home-cats-rail-card-title {
+  /* h2로 바꾸면서 UA 기본 margin이 따라붙는다 */
+  margin: 0;
   font-size: 0.75rem;
   font-weight: 700;
 }

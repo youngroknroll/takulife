@@ -165,3 +165,11 @@ select:focus {
 [hidden] {
   display: none !important;
 }
+
+/* 요청 대기 중. api.js가 이 클래스를 붙이는데 스태프 화면 대부분에 규칙이
+ * 없어, 이미 판정이 끝나 영구히 못 누르는 버튼(:disabled)과 구분되지 않았다.
+ */
+.is-loading {
+  opacity: 0.75;
+  cursor: progress;
+}

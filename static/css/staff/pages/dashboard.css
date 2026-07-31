@@ -394,3 +394,12 @@
   line-height: 1.55;
   margin: 0;
 }
+
+/* 데스크톱 게이트를 막 통과한 1024~1199px에서는 380px 고정 레일을 빼면
+ * 본문에 남는 폭이 모자라 카드 글자가 줄줄이 감긴다. 레일을 아래로 내린다.
+ */
+@media (max-width: 74.9375rem) {
+  .dash-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -163,3 +163,29 @@ def test_감사_로그_첫_페이지는_페이지_크기만큼만_보여준다(s
     page_obj = resp.context["page_obj"]
     assert page_obj.paginator.count == STAFF_ACTION_LOG_PAGE_SIZE + 1
     assert len(page_obj.object_list) == STAFF_ACTION_LOG_PAGE_SIZE
+
+
+@pytest.mark.django_db
+def test_대시보드_최근_처리_내역에도_ip_주소나_user_agent가_없다(staff_client, make_draft):
+    """대시보드는 감사 로그와 달리 StaffActionLog 모델 인스턴스를 그대로 넘긴다.
+
+    지금 안 새는 근거가 "템플릿이 그 필드를 안 썼다"뿐이라, 한 줄만 늘어도
+    운영자 전원에게 다른 스태프의 접속 IP가 보인다.
+    """
+    staff, client = staff_client()
+    draft = _make_approvable_draft(
+        make_draft, "https://example.com/dashboard-privacy", extracted_title="대시보드 확인용"
+    )
+    _approve_draft(
+        client,
+        draft.id,
+        REMOTE_ADDR="203.0.113.77",
+        HTTP_USER_AGENT="pytest-dashboard-agent/1.0",
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "203.0.113.77" not in body
+    assert "pytest-dashboard-agent/1.0" not in body

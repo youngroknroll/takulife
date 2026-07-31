@@ -768,3 +768,22 @@ a.pager-page:hover {
   color: var(--c-faint);
   line-height: 1.55;
 }
+
+/* 1024px에서 452px 인스펙터를 빼면 목록에 327px밖에 안 남아 표가 잘렸다
+ * (실측: .queue-list-pane scrollWidth 456 > clientWidth 327). 인스펙터와
+ * 검토 3단을 이 구간에서는 세로로 쌓는다.
+ */
+@media (max-width: 74.9375rem) {
+  .queue-split {
+    grid-template-columns: 1fr;
+  }
+
+  .queue-list-pane {
+    border-right: 0;
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  .review-columns {
+    grid-template-columns: 1fr;
+  }
+}

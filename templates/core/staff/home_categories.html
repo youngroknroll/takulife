@@ -12,7 +12,7 @@
       <form class="home-cats-panel" method="post" action="/staff/home-categories/">
         {% csrf_token %}
         <div class="home-cats-panel-head">
-          <span class="home-cats-panel-title">홈 카테고리 구성</span>
+          <h2 class="home-cats-panel-title">홈 카테고리 구성</h2>
           <span class="mono home-cats-panel-note">노출 순서 = 홈 섹션 순서</span>
           <a class="staff-cta home-cats-preview-link" href="/" target="_blank" rel="noopener">홈 미리보기 ↗</a>
           <button class="events-save-cta" type="submit">변경 저장</button>
@@ -60,7 +60,7 @@
       <div class="home-cats-rail">
         <div class="home-cats-rail-card">
           <div class="home-cats-rail-card-head">
-            <span class="home-cats-rail-card-title">홈 미리보기</span>
+            <h2 class="home-cats-rail-card-title">홈 미리보기</h2>
           </div>
           <div class="home-cats-rail-card-body">
             {% with visible_rows=category_rows|dictsort:"order" %}

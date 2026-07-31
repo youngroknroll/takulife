@@ -31,7 +31,7 @@
       <form class="events-form-panel" method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" enctype="multipart/form-data" novalidate data-submit-guard>
         {% csrf_token %}
         <div class="events-form-panel-head">
-          <span class="events-form-panel-title">필드 편집</span>
+          <h2 class="events-form-panel-title">필드 편집</h2>
           <span class="mono events-form-panel-note">events.Event</span>
         </div>
         <div class="events-field-grid">
@@ -122,7 +122,7 @@
       <div class="events-rail">
         <div class="events-rail-card">
           <div class="events-rail-card-head">
-            <span class="events-rail-card-title">검증</span>
+            <h2 class="events-rail-card-title">검증</h2>
           </div>
           <div class="events-rail-card-body">
             <p class="events-rail-note">
@@ -145,7 +145,7 @@
 
         <div class="events-rail-card">
           <div class="events-rail-card-head">
-            <span class="events-rail-card-title">게시 상태</span>
+            <h2 class="events-rail-card-title">게시 상태</h2>
           </div>
           <div class="events-rail-card-body">
             <p class="events-rail-note">
