@@ -168,13 +168,9 @@
   color: var(--muted);
 }
 /* In-copy prose link (e.g. "지우기" / "방문 기록 작성하러 가기") — same
- * brand-ink + underline pattern as .auth-links-label (auth.css, since
- * 2026-07-31's editorial rewrite retired .auth-container p a), since this
- * is a link inside a sentence, not a standalone nav item or button. Defined
- * here (shared component), not per page, because .empty-note is reused
- * across archive (index/statuses/interests/visits/personal_entries
- * results partials) and events/list.html, each loading a different
- * page-specific stylesheet — no single page file was the right home. */
+ * brand-ink + underline pattern as .auth-links-label (auth.css). Defined
+ * here (shared component), not per page, since .empty-note is reused
+ * across several pages, each loading a different page-specific stylesheet. */
 .empty-note a {
   color: var(--brand-ink);
   text-decoration: underline;

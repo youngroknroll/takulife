@@ -1,17 +1,10 @@
-/* auth.css — 12 auth screens (인증 화면 에디토리얼), 2026-07-31 전면 재작성.
-   templates/account/{login,signup,password_reset,password_reset_done,
-   password_reset_from_key,password_reset_from_key_done,verification_sent,
-   lockout,password_set}.html + templates/socialaccount/{login,signup,
-   authentication_error}.html. Same visual family as account_settings.css
-   (OOCSS+BEM, rem units, brand/rose/mint 3색) but no shared class names —
-   the two sheets never load together (see .docs/FE/auth-editorial.md). */
+/* auth.css — 12개 인증 화면 공용 스타일. account_settings.css와 같은
+   시각 언어를 쓰지만 클래스명은 공유하지 않는다(두 시트는 같이 로드되지
+   않음). 가드레일은 docs/FE/auth-editorial.md 참조. */
 
 /* ── shell: declare panel (left, brand context) + form panel (right) ────
-   Mock: `main { grid-template-columns: 1fr 468px }` — left panel fluid,
-   right (form) panel fixed at 468px/29.25rem. First implementation had
-   this inverted (fixed left / fluid right), stretching the form panel
-   unreadably wide on large screens — corrected 2026-07-31 after the mock
-   was made available (coordinator review). */
+   왼쪽(브랜드 안내)은 화면 폭에 맞춰 늘어나고, 오른쪽(입력 폼)은 29.25rem로
+   고정한다 — 반대로 하면 폼이 큰 화면에서 지나치게 넓어진다. */
 .auth-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 29.25rem;
@@ -20,8 +13,8 @@
   align-items: stretch;
 }
 
-/* D2: password_set and the authenticated branch of password_reset render
-   no declare panel — single centered column instead. */
+/* 이미 로그인한 채로 여는 화면에는 브랜드 소개 패널을 띄우지 않는다 —
+   가운데 한 칸으로만 보여준다. */
 .auth-shell.is-standalone {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -82,21 +75,17 @@
   color: var(--text);
 }
 
-/* 태블릿 구간에서 선언 패널이 좁아지면(폼 패널은 468px 고정이라 줄어드는 쪽은
-   여기다) 40px 글자로는 「덕질 라이프를」이 한 줄에 안 들어간다. 64rem은
-   --page-pad-x가 이미 쓰는 경계라 새 브레이크포인트를 만들지 않는다. */
+/* 폼 패널이 폭 고정이라 화면이 좁아지면 선언 패널만 줄어든다 — 40px 글자가
+   안 들어가 여기서 한 단계 줄인다. 64rem은 기존에 쓰던 경계값 재사용. */
 @media (max-width: 64rem) {
   .auth-panel-declare h2 {
     font-size: 1.75rem;
   }
 }
 
-/* Large corner decoration (mock: 190px/11.875rem, bottom-right, requires
-   the panel's own `overflow:hidden` above so it never widens the panel's
-   scrollable box). Never content — aria-hidden in the template, and
-   pointer-events/user-select neutralize it as a click/selection target
-   (BIR 인터랙션 기준 7). Panel is removed wholesale on mobile (D3), which
-   removes this glyph with it — no separate mobile rule needed. */
+/* 장식용 글자(✦)라 패널 경계를 넘어가는데, 패널의 overflow:hidden(위)이
+   잘라내 준다 — 그 속성을 지우면 가로 스크롤이 생긴다(docs/FE/auth-editorial.md A9).
+   클릭·선택 대상도 아니게 막아둔다. */
 .auth-glyph {
   position: absolute;
   right: -1.125rem;
@@ -109,10 +98,8 @@
   user-select: none;
 }
 
-/* D6: rule line is an integer 2px, not the mock's 1.5px (rounds to 1px at
-   render time and reads as an ordinary hairline — PR #244 확정). Width
-   64px/4rem per mock; used under both the declare-panel h2 and the
-   form-panel h1. */
+/* 1.5px는 화면에서 1px로 내려가 평범한 구분선과 같아진다 — 정수 2px로 간다
+   (docs/FE/auth-editorial.md A10). */
 .auth-rule {
   position: relative;
   z-index: 1;
@@ -122,11 +109,8 @@
   width: 4rem;
 }
 
-/* ── declare-panel domain rows (mock: dedicated structure, NOT .rule-list
-   — D7's .rule-list reuse is for the notes/안내 불릿 slot only. This is a
-   separate object: border-top on the list, border-bottom per row, a real
-   tick <span> bar instead of a ::before bullet. .rule-list itself (shared
-   object, static/css/objects/layout.css) is untouched. ────────────────── */
+/* ── declare-panel domain rows: 공용 .rule-list와는 다른 별개 컴포넌트다
+   (안내 불릿용 .rule-list는 건드리지 않는다). ───────────────────────────── */
 .auth-panel-domains {
   position: relative;
   z-index: 1;
@@ -143,9 +127,7 @@
   gap: 0.8125rem;
   padding: 0.8125rem 0.125rem;
   border-bottom: 1px solid var(--line);
-  /* Korean line-breaking defaults to per-character (CJK rule), which
-     split "행사"/"전시" mid-word inside this narrow column — verified via
-     browser render, not from the mock. */
+  /* 좁은 칸에서 "행사"/"전시"가 글자 단위로 끊기는 것을 막는다. */
   word-break: keep-all;
 }
 
@@ -190,9 +172,8 @@
   color: var(--muted);
 }
 
-/* D5: every error banner (fixed login copy, shared non-field partial, and
-   the 3 previously-inconsistent inline spots) shares this one recipe —
-   identical to account_settings.css's .account-settings-error-banner. */
+/* 모든 오류 배너가 이 레시피 하나를 공유한다 —
+   account_settings.css의 오류 배너와 동일. */
 .auth-error-banner {
   margin: 0 0 1.25rem;
   padding: 0.75rem 1rem;
@@ -229,10 +210,8 @@
   color: var(--brand-ink);
 }
 
-/* Mock 6절: --border-soft (lighter than the repo's default --line on
-   inputs elsewhere) is the deliberate choice here, not an accidental
-   substitute — --border-soft/#e6e9ef and --line/#dde1e8 are different
-   tokens in this repo's light palette (coordinator confirmed 2026-07-31). */
+/* 다른 화면의 입력창보다 옅은 테두리(--border-soft)를 의도적으로 쓴다 —
+   실수로 다른 값을 넣은 것이 아니다. */
 .auth-field input {
   width: 100%;
   min-height: 2.75rem;
@@ -244,12 +223,8 @@
   font-size: 0.9rem;
 }
 
-/* :focus-visible only (never plain :focus) so mouse/touch clicks don't
-   also trigger this ring — matches the repo-wide focus-visible
-   convention. The mock's brand ring layers ON TOP of base.css:117-124's
-   global a/button/input outline; it is never removed or overridden here
-   (BIR 인터랙션 기준 13 — verified live: both rings render simultaneously
-   on Tab-focus, light and dark, 2026-07-31). */
+/* 마우스 클릭엔 안 뜨고 키보드 이동에만 뜨는 포커스 링이다.
+   기본 아웃라인 위에 겹쳐 그릴 뿐 지우지 않는다. */
 .auth-field input:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 1px;
@@ -257,9 +232,6 @@
   box-shadow: 0 0 0 3px var(--brand-soft);
 }
 
-/* Retained class name (D1: "field-error(유지)") — was already the field
-   error list class before this rewrite, only the markup that feeds it
-   changed (_auth_field.html now wires aria-describedby to this id). */
 .field-error {
   margin: 0.375rem 0 0;
   padding: 0;
@@ -327,13 +299,12 @@
   outline-offset: 2px;
 }
 
-/* D5: consent error stays rose, same as every other error state. */
+/* 동의 오류도 다른 오류와 같은 rose 색을 쓴다. */
 .auth-consent.is-error input[type="checkbox"] {
   border-color: var(--rose-ink);
 }
 
-/* Mock 6절: full pill (999px) at 48px height is this mock's visual
-   signature for the primary action — reproduced as specified. */
+/* 완전한 알약 모양(999px)이 이 시안의 기본 버튼 형태다. */
 .auth-submit {
   display: inline-flex;
   align-items: center;
@@ -395,9 +366,8 @@
   background: var(--bg-card);
 }
 
-/* ── link rows (D8): each row is a single <a> wrapping label+hint+arrow,
-   one tab stop and one focus ring per row — never a bare label link with
-   the rest of the row visually-but-not-functionally clickable. ───────── */
+/* ── link rows: 행 전체를 <a> 하나로 감싼다 — 라벨만 링크고 나머지는
+   눌러도 반응 없는 상태를 만들지 않기 위해서다. ─────────────────────── */
 .auth-links {
   margin: 1.25rem 0 0;
   padding: 0;
@@ -446,9 +416,8 @@
   color: var(--muted);
 }
 
-/* ── socialaccount/signup.html's {{ form.as_p }} fallback (이월: field
-   set depends on adapter config, not statically known — CSS-only styling,
-   no per-field include rewrite). ─────────────────────────────────────── */
+/* ── socialaccount/signup.html의 {{ form.as_p }} 폴백 — 필드 구성이
+   외부 로그인 설정에 따라 달라져 개별 include로 바꾸지 않았다. ───────── */
 .auth-panel-form form p {
   margin: 0 0 1rem;
 }
@@ -474,10 +443,8 @@
   font-size: 0.9rem;
 }
 
-/* ── mobile (D3): declare panel fully removed via display:none, never
-   `order`/`grid-column` — DOM is already declare-then-form, so removing
-   the first block leaves the form as both the structural and visual
-   first element (WCAG 1.3.2, this repo's repeated guardrail). ──────── */
+/* ── mobile: 선언 패널을 display:none으로 통째로 지운다. order로
+   순서를 바꾸지 않는다 — 탭 순서와 화면 순서가 어긋난다. ──────────── */
 @media (max-width: 45rem) {
   .auth-shell {
     display: block;

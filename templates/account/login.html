@@ -38,16 +38,10 @@
     <p class="auth-kicker">계정</p>
     <h1 class="auth-title">로그인</h1>
     {% if form.non_field_errors %}
-      {% comment %}Fixed generic copy on purpose — allauth's actual invalid_login text is
-         untranslated (no ko locale) and revealing which of login/password was
-         wrong is its own minor info leak. Field-level errors (blank input)
-         render next to their own field below instead.
-
-         Placement: mock puts the rule line right after h1 and the error
-         banner after the description; this repo's D9 (오류 배너를 h1 직후
-         DOM 순서에 배치) takes precedence over the mock ordering here —
-         accessibility guardrail wins the conflict (coordinator decision
-         2026-07-31). {% endcomment %}
+      {% comment %}
+      고정 문구를 일부러 쓴다 — 이메일과 비밀번호 중 어느 쪽이 틀렸는지
+      알려주지 않기 위한 보안 결정이다(docs/FE/auth-editorial.md A6).
+      {% endcomment %}
       <p class="auth-error-banner">이메일 또는 비밀번호가 올바르지 않습니다.</p>
     {% endif %}
     <hr class="auth-rule">

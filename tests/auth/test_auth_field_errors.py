@@ -1,7 +1,5 @@
-"""Auth form field errors render next to their own input. Reuses the
-existing signup-rejection POST from test_signup_terms_agreement.py to
-actually trigger a field error rather than asserting against static markup.
-"""
+"""필드 오류가 실제 요소 옆에 뜨는지 검증한다. 정적 마크업이 아니라
+실제 가입 거부 요청으로 오류를 발생시켜 확인한다."""
 import pytest
 
 pytestmark = pytest.mark.web
@@ -40,18 +38,15 @@ def test_비밀번호_확인이_일치하지_않으면_password2_필드에만_�
 
     assert response.status_code == 200
     body = response.content.decode()
-    # The mismatch error belongs to password2 — password1 itself is valid
-    # and must not get an error list of its own.
+    # 불일치 오류는 password2 소관이다. password1 자체는 유효하므로 오류 목록이 없어야 한다.
     assert 'id="id_password2-error"' in body
     assert 'id="id_password1-error"' not in body
 
 
 @pytest.mark.django_db
 def test_로그인_필드를_비워둔_채_제출하면_일반_오류_대신_필드별_오류가_표시된다(client):
-    """Blank login/password used to trigger the same generic "wrong
-    credentials" copy as an actual failed login — misleading, since nothing
-    was even attempted yet. Field-level required errors should show
-    instead, and the generic alert should not."""
+    """빈 로그인/비밀번호가 실제 로그인 실패와 같은 일반 오류 문구를 띄우던 문제였다.
+    아무 시도도 없었으므로 필드별 필수 오류만 떠야 한다."""
     response = client.post(LOGIN_URL, {"login": "", "password": ""})
 
     assert response.status_code == 200
@@ -71,10 +66,9 @@ def test_로그인_자격_증명이_틀리면_필드별_오류_없이_일반_오
 
     assert response.status_code == 200
     body = response.content.decode()
-    # Asserts the copy, not the element that carries it: the container class
-    # is presentation and has already been renamed once by a re-skin.
+    # 문구만 검사하고 담는 요소(클래스명)는 고정하지 않는다. 리스킨으로 이미 한 번
+    # 이름이 바뀌었다 (docs/FE/auth-editorial.md A13).
     assert "이메일 또는 비밀번호가 올바르지 않습니다." in body
-    # Neither field is individually invalid here (this is a non-field
-    # error), so neither should get its own error list.
+    # 필드별 오류가 아니라 전체 오류이므로 개별 필드 오류 목록은 없어야 한다.
     assert 'id="id_login-error"' not in body
     assert 'id="id_password-error"' not in body
