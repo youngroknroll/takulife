@@ -8,7 +8,6 @@
 import pytest
 from django.utils import timezone
 
-from allauth.account.models import EmailAddress
 
 from accounts.services import DELETION_GRACE_PERIOD
 
@@ -16,12 +15,14 @@ pytestmark = pytest.mark.web
 
 
 @pytest.mark.django_db
-def test_소비자_셸의_성공_메시지는_site_message_success_클래스로_렌더링된다(client, make_user):
-    password = "Str0ng-Passw0rd-9xzq"
-    user = make_user(password=password)
-    # make_user는 EmailAddress 행을 만들지 않는다 — 없으면 allauth가 로그인을
-    # 막아 탈퇴 취소 신호 자체가 돌지 않는다.
-    EmailAddress.objects.create(user=user, email=user.email, verified=True, primary=True)
+def test_소비자_셸의_성공_메시지는_site_message_success_클래스로_렌더링된다(
+    client, make_verified_user, valid_password
+):
+    # 비밀번호 리터럴을 소스에 두면 시크릿 스캐너가 잡는다. make_verified_user는
+    # EmailAddress까지 만들어 준다 — 없으면 allauth가 로그인을 막아 탈퇴 취소
+    # 신호 자체가 돌지 않는다.
+    user = make_verified_user()
+    password = valid_password
     user.deletion_requested_at = timezone.now() - DELETION_GRACE_PERIOD / 2
     user.save(update_fields=["deletion_requested_at"])
 
