@@ -128,10 +128,17 @@
 
 ## 이월 (별도 트랙)
 
-`templates/core/partials/_auth_field.html`은 오류 필드에 `aria-describedby`/
-`aria-invalid`를 걸지 않는다. `[실측]` 이 파셜을 쓰는 템플릿은 범위 밖
-**12개**(login/signup/password_reset* 등)라 이번에 건드리지 않았다. 인증 화면
-리스킨 트랙에서 파셜 자체를 고치는 것이 옳다.
+⚠️ **이 진단은 틀렸다** (2026-07-31 정정, PR #266). Django 5.2가 두 속성을 자동으로
+붙이고 있었고, 실제 결함은 그 `aria-describedby`가 **문서에 없는 id를 가리켰다**는
+것이었다(Django는 `id_x_error`, 파셜은 `id_x-error`). 근거는
+`docs/FE/auth-editorial.md` A2. 아래는 정정 전 원문이다.
+
+~~`templates/core/partials/_auth_field.html`은 오류 필드에 `aria-describedby`/
+`aria-invalid`를 걸지 않는다.~~ `[실측]` 이 파셜을 쓰는 템플릿은 범위 밖
+**5개 템플릿 / 10개 include 사이트**(login/signup/password_reset* 등. 정정
+2026-07-31: 당초 「12개」는 `auth.css`를 로드하는 템플릿 수였고 단위가
+뒤바뀐 것이었다 — `.docs/FE/auth-editorial.md` M4)라 이번에 건드리지
+않았다. 인증 화면 리스킨 트랙에서 파셜 자체를 고치는 것이 옳다.
 
 ## 검증 증거 (2026-07-31)
 

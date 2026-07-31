@@ -1,15 +1,30 @@
 {% comment %}
-Auth form field — label + input + the error list itself (only rendered
-when this specific field has errors).
+Auth form field — label + input + conditional field-error, wired for
+aria-invalid/aria-describedby only on the errored render (BIR 인터랙션
+기준 1). Renders the <input> manually instead of `{{ field }}` so the
+conditional aria attrs can attach — the same approach as
+_account_settings_field.html. widget.attrs is echoed verbatim so allauth's
+existing placeholder/autocomplete/maxlength survive the manual render
+(M2: they already exist on all 10 fields this partial serves — losing them
+would be a regression, not an improvement). Password inputs never echo
+back field.value, matching Django's own PasswordInput render_value=False.
 
 Usage: {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
 Args:
   field — bound form field (e.g. form.email)
   label — visible label text
 {% endcomment %}
-<div class="form-group">
-  <label for="{{ field.id_for_label }}">{{ label }}</label>
-  {{ field }}
+<div class="auth-field">
+  <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="auth-required" aria-hidden="true">*</span>{% endif %}</label>
+  <input
+    type="{{ field.field.widget.input_type }}"
+    name="{{ field.html_name }}"
+    id="{{ field.id_for_label }}"
+    {% if field.field.widget.input_type != "password" and field.value %}value="{{ field.value }}"{% endif %}
+    {% if field.field.required %}required{% endif %}
+    {% for attr_name, attr_value in field.field.widget.attrs.items %}{{ attr_name }}="{{ attr_value }}" {% endfor %}
+    {% if field.errors %}aria-describedby="{{ field.id_for_label }}-error" aria-invalid="true"{% endif %}
+  >
   {% if field.errors %}
     <ul class="field-error" id="{{ field.id_for_label }}-error">
       {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}

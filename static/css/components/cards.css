@@ -168,8 +168,9 @@
   color: var(--muted);
 }
 /* In-copy prose link (e.g. "지우기" / "방문 기록 작성하러 가기") — same
- * pattern as .auth-container p a: brand-ink + underline, since this is a
- * link inside a sentence, not a standalone nav item or button. Defined
+ * brand-ink + underline pattern as .auth-links-label (auth.css, since
+ * 2026-07-31's editorial rewrite retired .auth-container p a), since this
+ * is a link inside a sentence, not a standalone nav item or button. Defined
  * here (shared component), not per page, because .empty-note is reused
  * across archive (index/statuses/interests/visits/personal_entries
  * results partials) and events/list.html, each loading a different

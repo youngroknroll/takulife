@@ -8,10 +8,46 @@
 {% endblock %}
 
 {% block content %}
-<main class="auth-container" id="content">
-  <h1>이메일을 확인해주세요</h1>
-  <p>가입하신 이메일 주소로 인증 링크를 보냈습니다. 메일의 링크를 클릭하면 로그인됩니다.</p>
-  <p>메일이 보이지 않으면 스팸함을 확인해주세요.</p>
-  <p><a href="{% url 'account_login' %}">로그인 페이지로 돌아가기</a></p>
+<main class="auth-shell" id="content">
+  <aside class="auth-panel-declare">
+    <span class="auth-glyph" aria-hidden="true">✦</span>
+    <p class="auth-kicker">TAKULIFE ACCOUNT</p>
+    <h2>그대들의<br>덕질 라이프를<br>위하여</h2>
+    <hr class="auth-rule">
+    <ul class="auth-panel-domains">
+      <li>
+        <span class="auth-panel-domain-tick" aria-hidden="true"></span>
+        <span class="auth-panel-domain-name">행사</span>
+        <span class="auth-panel-domain-desc">공식 URL 기준으로 큐레이션한 팝업·전시</span>
+      </li>
+      <li>
+        <span class="auth-panel-domain-tick" aria-hidden="true"></span>
+        <span class="auth-panel-domain-name">컬렉션</span>
+        <span class="auth-panel-domain-desc">굿즈와 소장품을 내 손안의 목록으로</span>
+      </li>
+      <li>
+        <span class="auth-panel-domain-tick is-mint" aria-hidden="true"></span>
+        <span class="auth-panel-domain-name">내 활동</span>
+        <span class="auth-panel-domain-desc">다녀온 기록과 앞으로의 일정까지</span>
+      </li>
+    </ul>
+  </aside>
+  <div class="auth-panel-form">
+    <p class="auth-kicker">계정</p>
+    <h1 class="auth-title">이메일을 확인해주세요</h1>
+    <hr class="auth-rule">
+    <p class="auth-description">가입하신 이메일 주소로 인증 링크를 보냈습니다. 메일의 링크를 클릭하면 로그인됩니다.</p>
+    <ul class="rule-list">
+      <li>메일이 보이지 않으면 스팸함을 확인해주세요.</li>
+    </ul>
+    <ul class="auth-links">
+      <li class="auth-links-row">
+        <a href="{% url 'account_login' %}">
+          <span class="auth-links-label">로그인 페이지로 돌아가기</span>
+          <span class="auth-links-arrow" aria-hidden="true">→</span>
+        </a>
+      </li>
+    </ul>
+  </div>
 </main>
 {% endblock %}

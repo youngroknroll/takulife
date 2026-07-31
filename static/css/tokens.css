@@ -319,10 +319,11 @@
  * Consumers: .page/.site-messages (base.css), .site-header-inner/
  * .site-footer-inner/.site-footer-base-inner (site-chrome.css),
  * .staff-shell-topbar/.staff-shell-tabrow (staff-shell.css), and
- * .auth-container's mobile-only override (auth.css — a narrow 420px
- * centered card, not part of the 1120px page family, so it keeps its own
- * fixed desktop/tablet padding and only picks up the token at mobile,
- * where the card has no room left to stay narrower than the viewport).
+ * .auth-panel-form's mobile-only override (auth.css — the right half of an
+ * edge-to-edge 2-column split, not part of the 1120px page family, so it
+ * keeps its own panel padding on desktop/tablet and only picks up the token
+ * at mobile, where the left panel is dropped and this panel becomes the
+ * whole page, making its padding the page edge margin).
  * Each consumer keeps its own top/bottom padding and any of its own
  * *other* breakpoints (mobile-cta clearance, layout reflow, header/staff
  * -shell restructuring) untouched — only the horizontal value is
