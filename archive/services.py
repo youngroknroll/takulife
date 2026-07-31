@@ -138,7 +138,7 @@ def create_event_interest(*, user, event=None, personal_entry=None):
         )
     target_type, target_id = _subject_target(event=event, personal_entry=personal_entry)
     record_event(
-        AnalyticsEvent.EventName.EVENT_INTERESTED,
+        event_name=AnalyticsEvent.EventName.EVENT_INTERESTED,
         user=user,
         target_type=target_type,
         target_id=target_id,
@@ -200,7 +200,7 @@ def create_user_event_status(*, user, event=None, personal_entry=None, status):
     event_name = _STATUS_ANALYTICS_EVENT_NAME.get(status)
     if event_name is not None:
         target_type, target_id = _subject_target(event=event, personal_entry=personal_entry)
-        record_event(event_name, user=user, target_type=target_type, target_id=target_id)
+        record_event(event_name=event_name, user=user, target_type=target_type, target_id=target_id)
     return created
 
 
@@ -223,7 +223,7 @@ def mark_visited(*, user_event_status):
         event=user_event_status.event, personal_entry=user_event_status.personal_entry
     )
     record_event(
-        AnalyticsEvent.EventName.EVENT_MARKED_VISITED,
+        event_name=AnalyticsEvent.EventName.EVENT_MARKED_VISITED,
         user=user_event_status.user,
         target_type=target_type,
         target_id=target_id,
@@ -385,28 +385,28 @@ def create_collection_item(*, user, name, visit_record=None, event=None, client_
             raise
         return CollectionItem.objects.get(user=user, client_token=client_token)
     record_event(
-        AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED,
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_CREATED,
         user=user,
         target_type="collection_item",
         target_id=item.id,
     )
     if visit_record is not None:
         record_event(
-            AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT,
+            event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT,
             user=user,
             target_type="collection_item",
             target_id=item.id,
         )
     if fields.get("is_wanted"):
         record_event(
-            AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED,
+            event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED,
             user=user,
             target_type="collection_item",
             target_id=item.id,
         )
     if fields.get("tradeable_quantity", 0) > 0:
         record_event(
-            AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE,
+            event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE,
             user=user,
             target_type="collection_item",
             target_id=item.id,
@@ -532,28 +532,28 @@ def update_collection_item(*, item, **fields):
         _delete_file_best_effort(old_image)
 
     record_event(
-        AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED,
+        event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_UPDATED,
         user=item.user,
         target_type="collection_item",
         target_id=item.id,
     )
     if item.visit_record_id is not None and previous_visit_record_id is None:
         record_event(
-            AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT,
+            event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_LINKED_TO_VISIT,
             user=item.user,
             target_type="collection_item",
             target_id=item.id,
         )
     if item.is_wanted and not previous_is_wanted:
         record_event(
-            AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED,
+            event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_WANTED,
             user=item.user,
             target_type="collection_item",
             target_id=item.id,
         )
     if item.tradeable_quantity > 0 and previous_tradeable_quantity == 0:
         record_event(
-            AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE,
+            event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE,
             user=item.user,
             target_type="collection_item",
             target_id=item.id,
@@ -606,7 +606,7 @@ def create_visit_record(
     # short_review는 사용자가 자유롭게 입력한 텍스트라 개인정보로 취급해
     # 의도적으로 context에서 뺀다(record_event의 금지된 context 키 중 하나).
     record_event(
-        AnalyticsEvent.EventName.VISIT_RECORD_CREATED,
+        event_name=AnalyticsEvent.EventName.VISIT_RECORD_CREATED,
         user=user,
         target_type=target_type,
         target_id=target_id,
@@ -707,7 +707,7 @@ def create_visit_record_photo(*, visit_record, image, client_token=None):
             raise
         return VisitRecordPhoto.objects.get(visit_record=visit_record, client_token=client_token)
     record_event(
-        AnalyticsEvent.EventName.VISIT_PHOTO_ADDED,
+        event_name=AnalyticsEvent.EventName.VISIT_PHOTO_ADDED,
         user=locked_record.user,
         target_type="visit_record_photo",
         target_id=photo.id,

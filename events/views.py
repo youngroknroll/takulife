@@ -32,7 +32,7 @@ class PublicEventListView(ListAPIView):
             if params.get("q")
             else AnalyticsEvent.EventName.EVENT_LIST_VIEWED
         )
-        record_event(event_name, user=self.request.user)
+        record_event(event_name=event_name, user=self.request.user)
         return list_published_events(params)
 
 
@@ -45,7 +45,7 @@ class PublicEventDetailView(RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         response = super().retrieve(request, *args, **kwargs)
         record_event(
-            AnalyticsEvent.EventName.EVENT_DETAIL_VIEWED,
+            event_name=AnalyticsEvent.EventName.EVENT_DETAIL_VIEWED,
             user=request.user,
             target_type="event",
             target_id=response.data["id"],

@@ -35,7 +35,7 @@ FORBIDDEN_CONTEXT_KEYS = frozenset(
 )
 
 
-def pseudonymous_user_key(user):
+def pseudonymous_user_key(*, user):
     """결정적이면서 되돌릴 수 없는 사용자별 코호트 키를 반환한다.
 
     HMAC-SHA256(SECRET_KEY, str(user.pk))를 32자 16진수로 자른 값이다.
@@ -65,7 +65,7 @@ def pseudonymous_user_key(user):
     return digest[:32]
 
 
-def record_event(event_name, *, user, target_type="", target_id=None, context=None):
+def record_event(*, event_name, user, target_type="", target_id=None, context=None):
     """AnalyticsEvent 한 행을 기록한다. 절대 예외를 던지지 않는다.
 
     금지된 컨텍스트 키(FORBIDDEN_CONTEXT_KEYS)는 저장 시도 전에 즉시
@@ -94,7 +94,7 @@ def record_event(event_name, *, user, target_type="", target_id=None, context=No
         with transaction.atomic():
             AnalyticsEvent.objects.create(
                 event_name=event_name,
-                user_key=pseudonymous_user_key(user),
+                user_key=pseudonymous_user_key(user=user),
                 target_type=target_type,
                 target_id=target_id,
                 context=context,
@@ -103,7 +103,7 @@ def record_event(event_name, *, user, target_type="", target_id=None, context=No
         logger.exception("Failed to record analytics event %r", event_name)
 
 
-def distinct_user_key_count_since(days=7, offset=0):
+def distinct_user_key_count_since(*, days=7, offset=0):
     """지난 구간에서 기록된, 비어 있지 않은(식별된) user_key의 고유 개수.
 
     구간은 [now-(offset+days), now-offset) 반열림 구간이다
@@ -122,7 +122,7 @@ def distinct_user_key_count_since(days=7, offset=0):
     )
 
 
-def event_name_counts_since(days=7, offset=0):
+def event_name_counts_since(*, days=7, offset=0):
     """지난 구간에서 기록된 이벤트를 {event_name: count}로 반환한다.
 
     구간 규약은 distinct_user_key_count_since와 같다. 창 안에 행이 0개인

@@ -97,7 +97,7 @@ def test_전_분석_이벤트_기록_경로를_실행해도_개인정보가_전�
     # marked_wanted 1, marked_tradeable 1).
     assert len(events) >= 15
 
-    expected_user_key = pseudonymous_user_key(user)
+    expected_user_key = pseudonymous_user_key(user=user)
     for event in events:
         assert not FORBIDDEN_CONTEXT_KEYS & event.context.keys()
         serialized_context = str(event.context)
