@@ -1,10 +1,6 @@
 {% comment %}
-Non-field ("top of form") errors — ValidationErrors not tied to any one
-input. Field-level errors render next to their own field instead (see
-_auth_field.html); this covers only what's left over. Placed directly
-after <h1> in every consuming template (D9 — no aria-live, these screens
-are all full SSR re-renders, so DOM position next to the heading is the
-only signal a screen reader gets for free).
+특정 입력칸에 속하지 않은 오류만 담는다(칸별 오류는 _auth_field.html이
+표시). h1 바로 다음에 두어 화면읽기 프로그램이 놓치지 않게 한다.
 
 Usage: {% include "core/partials/_auth_form_errors.html" with errors=form.non_field_errors %}
 {% endcomment %}

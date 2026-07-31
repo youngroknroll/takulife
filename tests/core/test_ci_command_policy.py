@@ -11,9 +11,8 @@ def test_CI_배포_검증이_Python을_실행하면_uv_run을_사용한다():
 
 
 def test_운영_문서가_Django_명령을_안내하면_예외_표식_없는_한_uv_run을_사용한다():
-    # 런타임 이미지엔 uv가 없어(Dockerfile:3-4) 컨테이너 안에서 도는 명령은
-    # uv run을 쓰면 오히려 깨진다. `<!-- uv-run-exempt: ... -->` 표식이 명령
-    # 바로 앞(80자 이내)에 붙어 있을 때만 그 명령의 uv run 누락을 허용한다.
+    # 런타임 이미지엔 uv가 없어(Dockerfile:3-4) 컨테이너 안 명령엔 uv run을 쓰면 깨진다.
+    # `<!-- uv-run-exempt: ... -->` 표식이 명령 앞(80자 이내)에 있을 때만 예외를 허용한다.
     project_root = Path(__file__).resolve().parents[2]
     runbook_paths = [
         project_root / "docs/deploy-runbook.md",

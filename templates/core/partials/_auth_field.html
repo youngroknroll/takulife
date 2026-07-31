@@ -1,18 +1,10 @@
 {% comment %}
-Auth form field — label + input + conditional field-error, wired for
-aria-invalid/aria-describedby only on the errored render (BIR 인터랙션
-기준 1). Renders the <input> manually instead of `{{ field }}` so the
-conditional aria attrs can attach — the same approach as
-_account_settings_field.html. widget.attrs is echoed verbatim so allauth's
-existing placeholder/autocomplete/maxlength survive the manual render
-(M2: they already exist on all 10 fields this partial serves — losing them
-would be a regression, not an improvement). Password inputs never echo
-back field.value, matching Django's own PasswordInput render_value=False.
+input을 직접 그린다 — Django 자동 렌더와 다른 id로 오류 요소를 만들기
+때문에, {{ field }}로 되돌리면 화면읽기 프로그램이 못 찾는 끊긴 참조가
+생긴다. widget.attrs를 그대로 옮겨야 자리표시글이 사라지지 않는다.
+비밀번호 입력창은 값을 다시 채우지 않는다.
 
 Usage: {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
-Args:
-  field — bound form field (e.g. form.email)
-  label — visible label text
 {% endcomment %}
 <div class="auth-field">
   <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="auth-required" aria-hidden="true">*</span>{% endif %}</label>
