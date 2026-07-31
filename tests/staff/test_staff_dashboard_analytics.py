@@ -66,7 +66,17 @@ def test_분석_이벤트가_없으면_대시보드는_0명_0건으로_표시한
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "주간 활성 사용자" in content
-    assert "주간 이벤트 기록" in content
-    assert "0명" in content
-    assert "0건" in content
+    # "0건"을 본문 전체에서 찾으면 검토 대기·품질 경고 카드의 0에도 걸린다.
+    # 해당 카드 안으로 좁혀야 이 카드가 0을 보여준다는 증거가 된다.
+    assert resp.context["weekly_active_user_count"] == 0
+    assert resp.context["weekly_event_count"] == 0
+    for label, unit in (("주간 활성 사용자", "명"), ("주간 이벤트 기록", "건")):
+        card = re.search(
+            rf'<p class="dash-metric-label">{label}</p>.*?</article>', content, re.S
+        )
+        assert card, label
+        assert re.search(
+            r'<span class="mono dash-metric-value">0</span>\s*'
+            rf'<span class="dash-metric-unit">{unit}</span>',
+            card.group(),
+        ), label
