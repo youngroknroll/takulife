@@ -103,3 +103,34 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
   3곳과 `static/js/staff/draft_bulk.js`의 `STATUS_STATE_LABEL`에 각각 하드코딩돼 있다.
   현재 값은 서로 어긋나지 않는다. 모델 `ReviewStatus`의 라벨은 영문이라 그대로는 못 쓰고,
   `choices=` 변경은 이 저장소가 AlterField 실측으로 이미 기각한 방식이다.
+
+## 사후 검토 판정과 처분
+
+네 역할이 독립으로 검토했다. 판정을 남기지 않으면 다음 게이트가 읽을 것이 없다.
+
+| 역할 | 판정 | 처분 |
+|---|---|---|
+| Web Experience Designer | Conforms with concerns | 헤딩 위계 통일(h2), 1024~1199px 방어 규칙, 이탈 항목 구분선 — 전부 반영 |
+| Browser Interaction Reviewer | **Deviates** | High 2건·Medium 3건 반영. 아래 참조 |
+| Security & Resilience Reviewer | D9 **조건부 승인** | 조건(대시보드 회귀 테스트) 충족 |
+| Quality Verification Lead | 조건부 가능 | 판정 기록(이 절) + 검색창 결정이 조건 |
+
+### BIR이 잡은 것 중 자동 테스트로는 못 잡는 것
+
+- **Enter 전역 가로채기**: `evt.preventDefault()`가 포커스된 요소를 보지 않아,
+  「새로고침」 링크에 포커스를 두고 Enter를 눌러도 전체 검토 화면으로 갔다.
+  `[실측]` 재현됨. 이제 큐 밖에서는 손대지 않고, Enter는 행에서만 가로챈다.
+- **확인 대화상자 중 포커스 탈취**: 대화상자가 열린 채 J/K를 누르면 갇혀 있어야
+  할 포커스가 밖으로 나가고 판정 대상이 바뀌었다. `.confirm-overlay:not([hidden])`
+  로 열림을 감지해 무효화한다.
+- **판정 후 포커스 유실**: 「전체」 탭에서 반려하면 `activeElement === body`가 됐다.
+  ⚠️ 첫 수정은 **틀린 시점을 겨냥했다** — 버튼을 지우는 순간을 막았으나, 실측해
+  보니 포커스는 그 전에 확인 대화상자가 닫히면서 이미 사라진다. 코드를 읽어
+  세운 가설이 실행에서 뒤집힌 사례다.
+
+### 검토자 둘이 같은 것을 짚었다
+
+커맨드바 검색창(`_console_shell.html`)이 무동작이다. `q`를 읽는 뷰가 없고
+(`rg` 0건) 바인딩하는 JS도 없다. 더 나쁜 것은 `action="{{ request.path }}"`라
+제출하면 기존 질의문자열이 통째로 날아간다 — `/staff/drafts/?status=pending`
+에서 검색하면 `status`가 사라진다. 7화면 공용 셸에 상시 노출된다.
