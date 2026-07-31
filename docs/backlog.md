@@ -259,6 +259,25 @@ main 대비 +2199/−2)가 상세 라우트 `/archive/personal/<int:entry_id>/`�
 게이트 사후 verdict 4건, 전부 `Conforms`). 검증: `uv run pytest -q` →
 **2045 passed**, Django check 0 issues, 마이그레이션 드리프트 없음.
 
+### B2 [실측] 소셜 가입 경로에는 약관 동의 필드가 아예 없다 — **OAuth 활성화 차단 항목**
+
+- 근거: `config/settings.py`에 `ACCOUNT_FORMS["signup"]`은 있으나
+  **`SOCIALACCOUNT_FORMS`는 설정되어 있지 않다**(`rg "SOCIALACCOUNT_FORMS"
+  config/` → 0건). 그래서 일반 가입은 `accounts.forms.SignupForm`을 타고
+  `terms_agreed` 필수 체크 + `terms_agreed_at` 기록을 받지만,
+  소셜 가입은 allauth 기본 폼을 타고 **`terms_agreed` 필드가 존재하지 않는다.**
+  `templates/socialaccount/signup.html:44`가 그 폼을 `{{ form.as_p }}`로 렌더한다.
+- 영향: Google 로그인을 켜는 순간 **약관·개인정보처리방침 동의 없이 계정이
+  생성되는 경로가 열린다.** `terms_agreed_at`이 비어 동의 증적도 남지 않는다.
+  동의 기록은 법적 성격이 있어 제품 판단이 필요하다.
+- 현재 노출: **0.** `client_id` 미설정으로 소셜 경로 자체가 도달 불가다
+  (`core/context_processors.py:12-18`). 즉 지금 터진 결함이 아니라
+  **OAuth를 켜기 전에 반드시 닫아야 하는 선행 조건**이다.
+- 발견 경위: 인증 화면 리스킨(PR #266) 보안 검토 중. 리스킨이 만든 것이
+  아니라 선재 갭이다.
+- 함께 볼 것: 같은 화면이 `_auth_field.html`을 거치지 않아 시각적으로도
+  나머지 11화면과 다르다 — `docs/FE/auth-editorial.md` A11.
+
 ---
 
 ## C. 제품 다음 단계

@@ -77,12 +77,29 @@ help_text 행을 렌더하지 않는다 → 또 하나의 끊긴 참조.
 ⚠️ 착수 전 조사가 "플레이스홀더가 존재하지 않는다"고 잘못 판단했다. **위젯을 실제로
 덤프해서 확인하라** — allauth 폼 소스를 읽는 것만으로는 틀린다.
 
-### 남은 갭: 비밀번호 규칙이 사용자에게 보이지 않는다
+### 수동 렌더가 재현하지 못하는 것: `disabled`
 
-`[실측]` `password1.help_text`에 Django 비밀번호 검증 규칙 4줄이 한국어로 들어 있다
-(「최소 8자 이상」 등). 어느 인증 화면도 이것을 렌더하지 않는다. 변경 전에는 끊긴
-`aria-describedby`로 남아 있었고 지금은 그냥 없다 — 회귀는 아니지만,
-**사용자가 제출 전에 비밀번호 요건을 알 수 없다.** 별도 트랙에서 다룰 것.
+`[실측]` `disabled=True` 필드를 두 방식으로 렌더한 결과 — `{{ field }}`는
+`disabled`를 내보내고 **수동 렌더는 빠뜨린다**. `widget.attrs` 루프에 없기 때문이다.
+
+현재 인증 폼에 `disabled` 필드는 없어 발현되지 않는다. 하지만 생기면 **입력은
+편집 가능한데 Django는 제출값을 무시하고 `initial`을 쓰는** 조용한 불일치가 된다.
+그런 필드를 추가하려면 파셜에 `{% if field.field.disabled %}disabled{% endif %}`를
+먼저 넣어라.
+
+### 남은 갭: 비밀번호 규칙이 사용자에게 보이지 않는다 (3화면)
+
+`[실측]` help_text를 **바운드 인스턴스에서** 재면 4개 폼에 있다. 그중 실제 비밀번호
+규칙(「최소 8자 이상」 등 4줄)은 **signup · password_reset_from_key · password_set
+3화면**이다. `login`의 것은 「비밀번호를 잊으셨나요?」 링크라 우리가 이미 별도 링크
+행으로 제공하므로 렌더하지 않는 것이 맞다.
+
+어느 화면도 규칙을 렌더하지 않는다. 변경 전에는 끊긴 `aria-describedby`로 남아
+있었고 지금은 그냥 없다 — 회귀는 아니지만 **사용자가 제출 전에 비밀번호 요건을 알 수
+없다.** 별도 트랙에서 다룰 것.
+
+⚠️ **`base_fields`로 세지 마라.** 클래스 레벨은 2건만 보이고 allauth가 인스턴스
+생성 시점에 붙이는 2건을 놓친다. 이 문서도 처음에 그렇게 틀렸다.
 
 ## A3 `--accent`는 이 저장소에 없다 (시안이 쓴 세 번째 없는 토큰)
 
@@ -179,8 +196,24 @@ password_set 2 = **10 사이트 / 5 템플릿**.
 - socialaccount 3화면 — Google `client_id` 미설정으로 도달 불가. **OAuth를 켜는
   작업자는 이 3화면을 먼저 브라우저로 확인하라**
 
-이 화면들은 전부 이미 실측된 공통 선택자(`.auth-panel-form`, `.auth-field input`)를
-상속하고 화면 고유 규칙은 `.auth-shell.is-standalone` 하나뿐이라 위험은 낮지만 0이 아니다.
+standalone 2화면과 `socialaccount/{login,authentication_error}`은 이미 실측된 공통
+선택자(`.auth-panel-form`, `.auth-field input`)를 상속하고 화면 고유 규칙이
+`.auth-shell.is-standalone` 하나뿐이라 위험이 낮다.
+
+⚠️ **`socialaccount/signup.html`은 예외다 — 위 문장을 이 화면에 적용하지 마라.**
+`[실측]` 이 화면만 `{{ form.as_p }}`를 쓴다(`:44`). `_auth_field.html`을 거치지 않으므로
+`.auth-field input`을 **상속하지 않고**, `auth.css`의 별도 폴백 블록
+(`.auth-panel-form form p`)으로 스타일된다. 그 결과 나머지 11화면과 다음이 다르다:
+
+| | 나머지 11화면 | `socialaccount/signup.html` |
+|---|---|---|
+| 필드 스타일 | `.auth-field input` | `.auth-panel-form form p` 폴백 |
+| 오류 마크업 | 커스텀 `.field-error` + `id_x-error` | Django 기본 `errorlist` |
+| aria 연결 | 파셜이 직접 부여 | Django 자동(`id_x_error`) |
+| 필수 표시 `*` | 있음 | 없음 |
+
+필드 집합이 어댑터 설정에 달려 정적으로 알 수 없어 개별 include로 재작성하지 않았다.
+**OAuth를 켤 때 이 화면은 별도로 육안 검수하라.**
 
 ## A12 잠금 화면은 **임계를 넘는 그 요청에만** 나온다
 
