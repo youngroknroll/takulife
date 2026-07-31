@@ -71,15 +71,15 @@ def _collection_item_row(item, series_ink_classes):
 
     ``badges``는 templates/core/partials/_collection_badges.html이
     쓰는 고정 순서(보유 -> 구함 -> 교환) 배지 목록이다. 네 곳의 템플릿
-    소비처가 각자 ``item.quantity > 0``을 다시 계산하지 않도록 여기서
+    소비처가 각자 ``item.is_owned``를 다시 계산하지 않도록 여기서
     한 번만 계산한다(그 중복이 원래 보유/구함 축 버그를 숨겼었다).
     DB 수준에서 ``tradeable=True``는 항상 ``owned=True``를 함의하므로
     (tradeable_quantity <= quantity) "보유 안 함, 교환 가능" 분기는
     도달 불가능하며 여기 일부러 코드 경로를 두지 않았다.
     """
-    owned = item.quantity > 0
+    owned = item.is_owned
     wanted = item.is_wanted
-    tradeable = item.tradeable_quantity > 0
+    tradeable = item.is_tradeable
     if owned or wanted or tradeable:
         badges = []
         if owned:
@@ -93,9 +93,9 @@ def _collection_item_row(item, series_ink_classes):
 
     return {
         "item": item,
-        "quantity_label": f"수량 {item.quantity}개" if item.quantity > 0 else "",
+        "quantity_label": f"수량 {item.quantity}개" if item.is_owned else "",
         "tradeable_label": (
-            f"교환 가능 {item.tradeable_quantity}개" if item.tradeable_quantity > 0 else ""
+            f"교환 가능 {item.tradeable_quantity}개" if item.is_tradeable else ""
         ),
         "is_wanted": item.is_wanted,
         "badges": badges,
@@ -346,11 +346,11 @@ def _collection_item_meta_rows(item):
     분기와 동일).
     """
     rows = []
-    if item.quantity > 0:
+    if item.is_owned:
         rows.append(
             {"label": "수량", "value": f"{item.quantity}개", "url": None, "lock_hint": False}
         )
-    if item.tradeable_quantity > 0:
+    if item.is_tradeable:
         rows.append(
             {
                 "label": "교환 가능",

@@ -178,6 +178,31 @@ check 0 issues, 드리프트 없음. **뮤테이션 왕복 4종 전부 Red** —
   `core/views.py`를 크게 여는 [E1] 분할과 같은 트랙에서 처리하는 편이
   충돌이 적다.
 
+#### 이관분도 완료 (2026-08-01, PR #277)
+
+E1 분할이 끝나(PR #251) 충돌 우려가 사라져 착수했다. `archive/querysets.py`에
+`CollectionItemQuerySet`(`owned`/`not_owned`/`tradeable`/`not_tradeable`)를 두고
+모델에 `is_owned`/`is_tradeable` 프로퍼티를 붙여 **호출처 11곳을 전부 교체**했다.
+저장소가 이미 쓰는 패턴이다(`UserEventStatusQuerySet`, `EventQuerySet`).
+
+검증: `uv run pytest -q` → **2146 passed**, check 0 issues, **마이그레이션 드리프트
+없음**(매니저 추가는 스키마를 건드리지 않는다). 뮤테이션 **7종 전부 Red**.
+
+⚠️ **백로그가 세지 않은 11번째 지점이 있었다** — `archive/services.py:554`
+(교환 축이 0→양수로 바뀔 때 이벤트를 남기는 자리). A3의 전수 뮤테이션 조사가
+10곳이라고 적은 것은 **뷰·쿼리 계층만 훑었기 때문**이고 서비스 계층을 안 봤다.
+근거 목록에 `file:line`이 붙어 있어도 그 목록을 만든 검색 범위 자체가 좁으면
+개수는 여전히 틀린다.
+
+★ **Django에서 파이썬 술어와 ORM 필터는 하나로 합칠 수 없다.** 정의가 2벌 남으니
+구조만으로는 원래 결함(중복이 축 버그를 숨김)을 못 막는다. 그래서 두 정의가
+같은 집합을 고르는지 보는 **일치 가드**를 함께 넣었고, 그게 이 작업의 값 절반이다.
+
+★ **그 가드가 예상보다 강했다.** 양쪽을 같은 방향으로 동시에 망가뜨리면 서로
+일치해 통과할 줄 알았는데 **Red였다** — 긍정형과 함께 **부정형 짝**
+(`not_owned`/`not_tradeable`)을 단언하기 때문이다. 한쪽만 망가지면 부정형에서
+갈라진다. 일치 가드를 쓸 때는 **부정형을 반드시 함께 단언하라.**
+
 ### A4 [실측] 마크업 리터럴 단언 — **실제 위험은 41곳이 아니라 1곳이었다**
 
 **완료(2026-07-30).** 착수 전 서술("13개 파일에 41회")이 **부풀려져 있었다.**
@@ -668,7 +693,7 @@ if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
 
 | # | 항목 | 근거 | 비고 |
 |---|---|---|---|
-| F1 | worktree 2개 삭제 | `git log main..<branch>` 각각 **0 커밋** | 611MB 즉시 회수, 안전 |
+| F1 | ~~worktree 2개 삭제~~ (해소됨) | `[실측 2026-08-01]` `git worktree list` → 작업 트리 1개뿐. 언젠가 정리됐다 | 해소 |
 | F2 | ~~런북 줄번호 드리프트~~ (해소됨) | `docs/deploy-runbook.md:58`이 참조하던 `core/views.py:728-735`는 PR #251의 `core/views/` 패키지 분할로 파일 자체가 사라져 드리프트가 더 악화됐었음. 참조를 `core/urls.py`, `core/views/system.py`의 `health()`로 줄번호 없이 재작성해 파일 이동·리팩터에도 무효화되지 않게 함 | 해소 |
 | F3 | CI 컨테이너 기동 스모크 부재 | `.github/workflows/ci.yml:94-101`이 `docker build`만 실행 | entrypoint 회귀를 첫 배포에야 발견 |
 | F4 | `project-status.md` 2334줄 / 사실과 다른 7곳 | 머지된 PR #250을 "열림, 머지 승인 대기"로 기재 등 | 자기 규약("concise index") 위반 |

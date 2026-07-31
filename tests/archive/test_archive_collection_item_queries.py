@@ -480,3 +480,43 @@ def test_작품명별_항목_facet_집계의_first_id는_그_작품의_최초_�
     facets = user_collection_item_work_title_facets(user)
 
     assert facets == [{"work_title": "작품 A", "count": 3, "first_id": first.id}]
+
+
+# ---------------------------------------------------------------------------
+# CollectionItemQuerySet 일치 가드 (보유/교환 축 술어 단일화). is_owned/
+# is_tradeable 프로퍼티와 owned()/not_owned()/tradeable()/not_tradeable()
+# 쿼리셋 메서드는 Django에서 하나로 합칠 수 없어 정의가 둘로 남는다 — 이
+# 가드는 두 정의가 갈라지지 않는지 확인한다. quantity/tradeable_quantity
+# 경계값(0, 1, 2)과 tradeable_quantity == quantity(전량 교환 가능) 조합을
+# 포함해, quantity >= tradeable_quantity DB 제약을 위반하지 않게 구성했다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_보유_교환_쿼리셋_메서드는_프로퍼티와_같은_집합을_고른다(make_user):
+    user = make_user(username="ci-query-axis-consistency")
+    items = [
+        CollectionItem.objects.create(
+            user=user, name="수량0-교환0", quantity=0, tradeable_quantity=0
+        ),
+        CollectionItem.objects.create(
+            user=user, name="수량1-교환0", quantity=1, tradeable_quantity=0
+        ),
+        CollectionItem.objects.create(
+            user=user, name="수량1-교환1", quantity=1, tradeable_quantity=1
+        ),
+        CollectionItem.objects.create(
+            user=user, name="수량2-교환1", quantity=2, tradeable_quantity=1
+        ),
+        CollectionItem.objects.create(
+            user=user, name="수량2-교환2", quantity=2, tradeable_quantity=2
+        ),
+    ]
+    queryset = CollectionItem.objects.filter(user=user)
+
+    assert set(queryset.owned()) == {item for item in items if item.is_owned}
+    assert set(queryset.not_owned()) == {item for item in items if not item.is_owned}
+    assert set(queryset.tradeable()) == {item for item in items if item.is_tradeable}
+    assert set(queryset.not_tradeable()) == {
+        item for item in items if not item.is_tradeable
+    }
