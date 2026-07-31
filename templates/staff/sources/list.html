@@ -1,0 +1,58 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 수집 소스{% endblock %}
+
+{% comment %}
+새 화면(N1, .docs/FE/staff-console-redesign.md). 시안에는 이 화면의 보드가
+없어 대시보드의 「수집 소스 상태」 패널(/tmp/staff_mock.html:125-149)의 표
+문법을 전체 페이지로 확장한다 — 열을 이름/유형/상태/마지막 확인/최근
+오류로 넓힌 것 외에는 같은 표 시맨틱을 쓴다.
+{% endcomment %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/pages/sources.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <section class="src-panel">
+      {% if draft_source_rows %}
+        <table class="src-table">
+          <colgroup>
+            <col style="width: auto;">
+            <col style="width: 8rem;">
+            <col style="width: 6.75rem;">
+            <col style="width: 8.5rem;">
+            <col style="width: auto;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">이름</th>
+              <th scope="col">유형</th>
+              <th scope="col">상태</th>
+              <th scope="col">마지막 확인</th>
+              <th scope="col">최근 오류</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in draft_source_rows %}
+              <tr>
+                <td class="src-cell-name">{{ row.source.name }}</td>
+                <td class="src-cell-dim">{{ row.source.get_source_type_display }}</td>
+                <td>
+                  <span class="src-status-badge src-status-badge--{{ row.status_level }}">
+                    <span class="src-status-dot" aria-hidden="true"></span>
+                    {% if row.status_level == "disabled" %}비활성{% elif row.status_level == "error" %}오류{% elif row.status_level == "stale" %}지연{% else %}활성{% endif %}
+                  </span>
+                </td>
+                <td class="mono src-cell-dim">{% if row.source.last_checked_at %}{{ row.source.last_checked_at|timesince }} 전{% else %}수집 안 함{% endif %}</td>
+                <td class="mono src-cell-error">{{ row.source.last_error|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="src-empty">등록된 수집 소스가 없습니다.</p>
+      {% endif %}
+    </section>
+  </main>
+{% endblock %}

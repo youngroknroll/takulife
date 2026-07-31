@@ -1,0 +1,171 @@
+/*
+ * audit_log.css (스태프 콘솔 전용) — 감사 로그 전체 목록(N2,
+ * templates/staff/audit_log/list.html). 표 문법은 dashboard.css의
+ * .dash-table 계열과 동형이다(대시보드 「최근 처리 내역」 패널 확장).
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ── 행동 종류 필터 칩 ─────────────────────────────────────────── */
+.audit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.audit-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.75rem;
+  padding: 0 0.625rem;
+  border: 1px solid var(--c-line);
+  border-radius: 0.9375rem;
+  background: var(--c-panel);
+  color: var(--c-dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.audit-chip:hover {
+  background: var(--c-head);
+}
+
+.audit-chip.is-active {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+}
+
+/* ── 표 ─────────────────────────────────────────────────────────── */
+.audit-panel {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.audit-table thead th {
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--c-dim);
+  background: var(--c-head);
+  border-bottom: 1px solid var(--c-line);
+  padding: 0.4375rem 0.75rem;
+}
+
+.audit-table tbody td {
+  padding: 0.375rem 0.75rem;
+  border-bottom: 1px solid var(--c-line-soft);
+  font-size: 0.78125rem;
+  color: var(--c-text);
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.audit-cell-dim {
+  color: var(--c-dim);
+}
+
+.audit-cell-faint {
+  color: var(--c-faint);
+}
+
+.audit-cell-target {
+  color: var(--c-text);
+}
+
+.audit-action-badge {
+  display: inline-flex;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.1875rem;
+  background: var(--c-track);
+  color: var(--c-faint);
+}
+
+.audit-action-badge--approve {
+  background: var(--c-accent-soft);
+  color: var(--c-ok);
+}
+
+.audit-action-badge--reject {
+  background: var(--c-warn-bg);
+  color: var(--c-danger);
+}
+
+.audit-action-badge--event_republish,
+.audit-action-badge--event_create,
+.audit-action-badge--event_verify {
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+}
+
+.audit-empty {
+  padding: 0.875rem 0.75rem;
+  font-size: 0.78125rem;
+  color: var(--c-dim);
+  margin: 0;
+}
+
+/* ── 페이지네이션 ──────────────────────────────────────────────── */
+.audit-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.audit-pager-arrow,
+.audit-pager-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--c-line);
+  border-radius: 0.25rem;
+  background: var(--c-panel);
+  color: var(--c-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.audit-pager-arrow:hover,
+.audit-pager-page:hover {
+  background: var(--c-head);
+}
+
+.audit-pager-page.is-current {
+  border-color: var(--c-accent);
+  background: var(--c-accent);
+  color: #fff;
+}
+
+.audit-pager-gap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  color: var(--c-faint);
+  font-size: 0.75rem;
+}

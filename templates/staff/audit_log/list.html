@@ -1,0 +1,87 @@
+{% extends "staff/base_staff.html" %}
+{% load static pager_tags %}
+{% block title %}{{ project_name }} | 감사 로그{% endblock %}
+
+{% comment %}
+새 화면(N2, .docs/FE/staff-console-redesign.md). 시안 대시보드의 「최근
+처리 내역」 표 문법(/tmp/staff_mock.html:151-167)을 페이지네이션·필터가
+붙은 전체 목록으로 확장한다.
+
+D9(⚠️): StaffActionLog.__doc__이 정한 접근 제한 — 운영자 화면은 행위자/
+행동/대상/시각 요약만 보인다. ip_address·user_agent는 여기서 렌더하지
+않는다. 실제로 렌더 불가능하기도 하다 — list_staff_action_log()가
+staff/queries.py에서 애초에 그 두 필드를 select하지 않아 log_rows
+컨텍스트에 값 자체가 없다(grep으로 확인, 아래 보고 참고).
+{% endcomment %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/pages/audit_log.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <div class="audit-chips" role="group" aria-label="행동 종류 필터">
+      <a class="audit-chip{% if not selected_action %} is-active{% endif %}" href="{% url 'staff:audit-log' %}">전체</a>
+      {% for chip in action_chips %}
+        <a class="audit-chip{% if chip.key == selected_action %} is-active{% endif %}" href="?action={{ chip.key }}">{{ chip.label }}</a>
+      {% endfor %}
+    </div>
+
+    <section class="audit-panel">
+      {% if log_rows %}
+        <table class="audit-table">
+          <colgroup>
+            <col style="width: 8.5rem;">
+            <col style="width: 7.5rem;">
+            <col style="width: auto;">
+            <col style="width: 11rem;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">시각</th>
+              <th scope="col">행동</th>
+              <th scope="col">대상</th>
+              <th scope="col">행위자</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in log_rows %}
+              <tr>
+                <td class="mono audit-cell-dim">{{ row.created_at|date:"y.m.d H:i" }}</td>
+                <td><span class="audit-action-badge audit-action-badge--{{ row.action }}">{{ row.action_label }}</span></td>
+                <td class="audit-cell-target">{{ row.target_label }}</td>
+                <td class="mono audit-cell-faint">{{ row.actor_email }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="audit-empty">기록된 감사 로그가 없습니다.</p>
+      {% endif %}
+    </section>
+
+    {% if page_obj.has_other_pages %}
+      {% pager_data page_obj as pg %}
+      <nav class="audit-pager" aria-label="감사 로그 페이지">
+        {% if pg.show_back %}
+          <a class="audit-pager-arrow" href="?page={{ pg.jump_back }}{{ pager_query }}" aria-label="5페이지 뒤로">«</a>
+          <a class="audit-pager-arrow" href="?page={{ pg.previous }}{{ pager_query }}" aria-label="이전 페이지">‹</a>
+        {% endif %}
+
+        {% for num in pg.pages %}
+          {% if num == pg.ellipsis %}
+            <span class="audit-pager-gap" aria-hidden="true">{{ pg.ellipsis }}</span>
+          {% elif num == pg.current %}
+            <span class="audit-pager-page is-current" aria-current="page">{{ num }}</span>
+          {% else %}
+            <a class="audit-pager-page" href="?page={{ num }}{{ pager_query }}">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+
+        {% if pg.show_forward %}
+          <a class="audit-pager-arrow" href="?page={{ pg.next }}{{ pager_query }}" aria-label="다음 페이지">›</a>
+          <a class="audit-pager-arrow" href="?page={{ pg.jump_forward }}{{ pager_query }}" aria-label="5페이지 앞으로">»</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </main>
+{% endblock %}
