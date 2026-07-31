@@ -1,159 +1,228 @@
 {% extends "staff/base_staff.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 드래프트 관리{% endblock %}
+{% block title %}{{ project_name }} | 드래프트 큐{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/event_drafts.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/pages/drafts.css' %}">
 {% endblock %}
+
+{% comment %}
+검수 큐: 표(목록) + 인스펙터(현재 행 상세) 2단 구성이다(D5). 인스펙터 필드는
+새 조회가 아니라 draft_rows에 이미 담긴 값을 페이지당(최대 14행) 전부
+서버에서 미리 렌더링해 두고, JS(queue_shortcuts.js/draft_bulk.js)가 hidden
+속성만 토글해 보여준다 — AJAX 왕복 없이 J/K 이동이 즉시 반응한다.
+전체 검토 화면(/staff/drafts/<id>/)은 그대로 남아 원문 대조·편집을 맡는다.
+{% endcomment %}
 
 {% block content %}
   <main class="page" id="staff-main">
-    <section class="hero">
-      <h1>드래프트 관리</h1>
+    <div class="queue-toolbar">
+      <nav class="queue-tabs" aria-label="드래프트 상태 필터">
+        <a class="queue-tab{% if not selected_status %} is-active{% endif %}" href="/staff/drafts/">전체 <span class="mono">{{ stats_total }}</span></a>
+        <a class="queue-tab{% if selected_status == "pending" %} is-active{% endif %}" href="/staff/drafts/?status=pending">검토 대기 <span class="mono" id="chip-count-pending">{{ stats.pending }}</span></a>
+        <a class="queue-tab{% if selected_status == "approved" %} is-active{% endif %}" href="/staff/drafts/?status=approved">승인됨 <span class="mono" id="chip-count-approved">{{ stats.approved }}</span></a>
+        <a class="queue-tab{% if selected_status == "rejected" %} is-active{% endif %}" href="/staff/drafts/?status=rejected">반려됨 <span class="mono" id="chip-count-rejected">{{ stats.rejected }}</span></a>
+      </nav>
 
-      <div class="summary-grid" style="--summary-cols: 3;">
-        <article class="summary-card">
-          <p class="summary-label">검토 대기</p>
-          <p class="summary-value"><span id="stat-pending">{{ stats.pending }}</span>건</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">승인됨</p>
-          <p class="summary-value"><span id="stat-approved">{{ stats.approved }}</span>건</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">반려됨</p>
-          <p class="summary-value">{{ stats.rejected }}건</p>
-        </article>
-      </div>
-    </section>
+      <details class="queue-create">
+        <summary class="staff-cta">＋ URL로 생성</summary>
+        <div class="queue-create-box">
+          <p class="queue-create-note">공식 URL과 출처명을 입력하면 본문을 가져와 이벤트 후보를 자동 추출합니다.</p>
+          <form id="draft-create-form" novalidate>
+            <div class="queue-create-fields">
+              <label class="sr-only" for="draft-url">공식 URL</label>
+              <input class="cin" id="draft-url" type="url" placeholder="https://official.example/events/..." autocomplete="off">
+              <label class="sr-only" for="draft-source-name">출처명</label>
+              <input class="cin" id="draft-source-name" type="text" placeholder="출처명 (선택)">
+              <button class="staff-cta staff-cta-accent" type="submit">드래프트 생성</button>
+            </div>
+          </form>
+          <p id="draft-create-error" class="queue-inline-error" tabindex="-1" hidden></p>
+        </div>
+      </details>
+    </div>
 
-    <section class="layout">
-      <article class="panel">
-        <details>
-          <summary>URL로 드래프트 생성</summary>
-          <p class="panel-note">공식 URL과 출처명을 입력하면 본문을 가져와 이벤트 후보를 자동 추출합니다.</p>
+    {% if draft_rows %}
+      {% if selected_status == "pending" %}
+        <div class="queue-bulkbar" id="bulk-toolbar" hidden>
+          <label class="queue-select-all" for="draft-select-all">
+            <input type="checkbox" id="draft-select-all">
+            <span class="sr-only">전체 선택</span>
+          </label>
+          <span class="mono" id="bulk-selected-count">0건 선택</span>
+          <button type="button" id="bulk-approve-btn" class="staff-cta staff-cta-ok" disabled>일괄 승인</button>
+          <button type="button" id="bulk-reject-btn" class="staff-cta staff-cta-danger" disabled>일괄 반려</button>
+          <p id="bulk-approve-result" class="mono queue-bulk-result" tabindex="-1"></p>
+          <p id="bulk-approve-error" class="queue-inline-error" tabindex="-1" hidden></p>
+        </div>
+      {% endif %}
 
-          <div class="create-box">
-            <form id="draft-create-form" novalidate>
-              <div class="create-form">
-                <input
-                  id="draft-url"
-                  type="url"
-                  placeholder="https://official.example/events/..."
-                  autocomplete="off"
-                  aria-label="공식 URL"
-                >
-                <input
-                  id="draft-source-name"
-                  type="text"
-                  placeholder="출처명 (선택)"
-                  aria-label="출처명"
-                >
-                <button type="submit">드래프트 생성</button>
-              </div>
-            </form>
-            <p
-              id="draft-create-error"
-              class="notice"
-              tabindex="-1"
-              hidden
-            ></p>
-          </div>
-        </details>
+      <div class="queue-split">
+        <div class="queue-list-pane">
+          <table class="queue-table" data-selected-status="{{ selected_status }}">
+            <colgroup>
+              <col style="width:2rem">
+              <col style="width:3.5rem">
+              <col>
+              <col style="width:8rem">
+              <col style="width:6rem">
+              <col style="width:9rem">
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col"><span class="sr-only">선택</span></th>
+                <th scope="col">ID</th>
+                <th scope="col">제목 / 출처</th>
+                <th scope="col">기간</th>
+                <th scope="col">추출</th>
+                <th scope="col">경고</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in draft_rows %}
+                {% with title=row.draft.extracted_title|default:row.draft.raw_title %}
+                <tr class="queue-row{% if forloop.first %} is-current{% endif %}" data-queue-row data-draft-id="{{ row.draft.id }}">
+                  <td>
+                    {% if selected_status == "pending" and row.draft.review_status == "pending" %}
+                      <label class="sr-only" for="draft-select-{{ row.draft.id }}">{{ title|default:"(제목 없음)" }} 선택</label>
+                      <input type="checkbox" id="draft-select-{{ row.draft.id }}" class="draft-select-checkbox"
+                             data-draft-select data-draft-id="{{ row.draft.id }}"
+                             {% if not title %}data-missing-title="true"{% endif %}>
+                    {% endif %}
+                  </td>
+                  <td class="mono queue-id-cell">{{ row.draft.id }}</td>
+                  <td class="queue-title-cell">
+                    <button type="button" class="queue-row-open" data-queue-row-open data-draft-id="{{ row.draft.id }}"
+                            aria-controls="queue-inspector-panel-{{ row.draft.id }}"
+                            {% if forloop.first %}aria-current="true"{% endif %}>
+                      <span class="queue-title">{{ title|default:"(제목 없음)" }}</span>
+                      <span class="queue-source mono">{{ row.draft.source_name|default:row.draft.source_url }}</span>
+                      {% if not selected_status %}
+                        <span class="queue-status-chip review-status-{{ row.draft.review_status }}" data-draft-status-chip>{% if row.draft.review_status == "pending" %}검토 대기{% elif row.draft.review_status == "approved" %}승인됨{% else %}반려됨{% endif %}</span>
+                      {% endif %}
+                    </button>
+                  </td>
+                  <td class="mono queue-dates-cell">
+                    {% if row.draft.extracted_start_date %}{{ row.draft.extracted_start_date|date:"y.m.d" }}{% if row.draft.extracted_end_date %}–{{ row.draft.extracted_end_date|date:"y.m.d" }}{% endif %}{% else %}-{% endif %}
+                  </td>
+                  <td>
+                    {% if row.draft.confidence is not None %}
+                      <span class="queue-conf-badge{% if row.draft.confidence >= 0.8 %} is-high{% elif row.draft.confidence >= 0.5 %} is-mid{% else %} is-low{% endif %} mono">{% widthratio row.draft.confidence 1 100 %}%</span>
+                    {% else %}
+                      <span class="mono queue-conf-badge">-</span>
+                    {% endif %}
+                  </td>
+                  <td class="queue-warn-cell" data-bulk-fail-reason-host>
+                    {% for badge in row.warning_badges %}
+                      <span class="queue-warn-badge">{{ badge }}</span>
+                    {% endfor %}
+                    <p class="queue-inline-error" data-bulk-fail-reason hidden></p>
+                  </td>
+                </tr>
+                {% endwith %}
+              {% endfor %}
+            </tbody>
+          </table>
 
-        <div class="chips">
-          <a class="chip{% if not selected_status %} active{% endif %}" href="/staff/drafts/">전체 {{ stats_total }}</a>
-          <a class="chip{% if selected_status == "pending" %} active{% endif %}" href="/staff/drafts/?status=pending">검토 대기 <span id="chip-count-pending">{{ stats.pending }}</span></a>
-          <a class="chip{% if selected_status == "approved" %} active{% endif %}" href="/staff/drafts/?status=approved">승인됨 <span id="chip-count-approved">{{ stats.approved }}</span></a>
-          <a class="chip{% if selected_status == "rejected" %} active{% endif %}" href="/staff/drafts/?status=rejected">반려됨 {{ stats.rejected }}</a>
+          {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
         </div>
 
-        {% if draft_rows %}
-          {% if selected_status == "pending" %}
-            <div class="bulk-toolbar" id="bulk-toolbar" data-approved-label="승인됨" hidden>
-              <label class="draft-select" for="draft-select-all">
-                <input type="checkbox" id="draft-select-all">
-              </label>
-              <span id="bulk-selected-count">0건 선택됨</span>
-              <button type="button" id="bulk-approve-btn" class="action-button" disabled>선택 일괄 승인</button>
-              <p id="bulk-approve-result" tabindex="-1"></p>
-              <p id="bulk-approve-error" class="notice" tabindex="-1" hidden></p>
-            </div>
-          {% endif %}
+        <div class="queue-inspector" data-queue-inspector>
+          <div id="queue-inspector-live" class="sr-only" aria-live="polite"></div>
+          <div id="queue-inspector-empty" class="queue-inspector-empty" tabindex="-1" hidden>이 페이지의 드래프트를 모두 처리했습니다. 새로고침하면 갱신된 목록을 볼 수 있습니다.</div>
 
-          <div class="draft-list" data-selected-status="{{ selected_status }}">
-            {% for row in draft_rows %}
-              {% with title=row.draft.extracted_title|default:row.draft.raw_title %}
-              <article class="draft-card hover-lift">
-                {% if selected_status == "pending" and row.draft.review_status == "pending" %}
-                  <label class="draft-select" for="draft-select-{{ row.draft.id }}">
-                    <input type="checkbox" id="draft-select-{{ row.draft.id }}" class="draft-select-checkbox"
-                           data-draft-select data-draft-id="{{ row.draft.id }}"
-                           {% if not title %}data-missing-title="true"{% endif %}>
-                  </label>
-                {% else %}
-                  <span class="draft-select-spacer"></span>
-                {% endif %}
-                <div>
-                  <div class="draft-top">
-                    <span class="draft-chip {{ row.draft.review_status }} review-status-{{ row.draft.review_status }}" data-draft-status-chip>{% if row.draft.review_status == "pending" %}검토 대기{% elif row.draft.review_status == "approved" %}승인됨{% elif row.draft.review_status == "rejected" %}반려됨{% else %}{{ row.draft.review_status }}{% endif %}</span>
-                    {% if row.category_label %}
-                      <span class="draft-chip category">{{ row.category_label }}</span>
-                    {% endif %}
-                    {% if row.draft.review_status == "pending" and not title %}
-                      <span class="draft-chip warning">⚠ 제목 없음</span>
-                    {% endif %}
-                  </div>
-                  <h3>{{ title|default:"(제목 없음)" }}</h3>
-                  {% if row.draft.extracted_work_title or row.region_label or row.draft.extracted_start_date %}
-                    <p class="meta">
-                      {% if row.draft.extracted_work_title %}{{ row.draft.extracted_work_title }}{% endif %}
-                      {% if row.draft.extracted_work_title and row.region_label %} · {% endif %}
-                      {% if row.region_label %}{{ row.region_label }}{% endif %}
-                      {% if row.draft.extracted_start_date %} · {{ row.draft.extracted_start_date }}{% endif %}
-                    </p>
+          {% for row in draft_rows %}
+            {% with title=row.draft.extracted_title|default:row.draft.raw_title %}
+            <div class="queue-inspector-panel{% if forloop.first %} is-current{% endif %}"
+                 id="queue-inspector-panel-{{ row.draft.id }}"
+                 data-inspector-panel data-draft-id="{{ row.draft.id }}"
+                 {% if not forloop.first %}hidden{% endif %}>
+              <div class="queue-inspector-head">
+                <span class="mono queue-inspector-id">#{{ row.draft.id }}</span>
+                <span class="queue-status-chip review-status-{{ row.draft.review_status }}">{% if row.draft.review_status == "pending" %}검토 대기{% elif row.draft.review_status == "approved" %}승인됨{% else %}반려됨{% endif %}</span>
+                <div class="queue-inspector-actions">
+                  {% if row.draft.review_status == "pending" %}
+                    <span data-draft-action-scope>
+                      <button type="button" class="staff-cta staff-cta-ok" data-draft-approve data-draft-id="{{ row.draft.id }}">승인 <span class="mono queue-key-hint">A</span></button>
+                      <button type="button" class="staff-cta staff-cta-danger-outline" data-draft-reject data-draft-id="{{ row.draft.id }}">반려 <span class="mono queue-key-hint">R</span></button>
+                    </span>
                   {% endif %}
-                  <p class="source">
-                    <a href="{{ row.draft.source_url }}" target="_blank" rel="noopener">
-                      {{ row.draft.source_url }} ↗
-                    </a>
-                  </p>
-                  <p class="bulk-fail-reason" data-bulk-fail-reason hidden></p>
-                  <p class="meta">
-                    <a class="btn btn-secondary btn-sm" href="/staff/drafts/{{ row.draft.id }}/{% if selected_status %}?status={{ selected_status }}{% endif %}">
-                      {% if row.draft.review_status == "pending" %}검토하기{% else %}상세 보기{% endif %}
-                    </a>
-                  </p>
+                  <a class="staff-cta" data-queue-full-review href="/staff/drafts/{{ row.draft.id }}/{% if selected_status %}?status={{ selected_status }}{% endif %}">전체 검토 화면 ↗</a>
                 </div>
-              </article>
-              {% endwith %}
-            {% endfor %}
-          </div>
-          {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
-        {% elif selected_status and stats_total %}
-          <p class="notice">해당 상태의 드래프트가 없습니다. <a href="/staff/drafts/">전체 보기</a></p>
-        {% else %}
-          <p class="notice">등록된 드래프트가 없습니다. URL을 입력해 첫 드래프트를 생성해 보세요.</p>
-        {% endif %}
-      </article>
+              </div>
 
-      <aside class="side-stack">
-        <section class="panel">
-          <h2>검토 원칙</h2>
-          <p class="panel-note">승인 전까지 공개 이벤트 목록에는 노출하지 않습니다.</p>
-          <ul class="rule-list">
-            <li>공식 URL이 없는 이벤트는 게시하지 않음</li>
-            <li>추출값은 후보이며 관리자가 최종 확인</li>
-            <li>검토 대기 상태에서만 추출 필드 수정 가능</li>
-            <li>승인 시 published Event 생성</li>
-          </ul>
-        </section>
-      </aside>
-    </section>
+              {% if row.draft.review_status == "pending" %}
+                <p class="queue-inline-error" data-role="draft-action-error" tabindex="-1" hidden></p>
+              {% endif %}
+
+              <div class="queue-inspector-body">
+                <div class="queue-field-table">
+                  <div class="queue-field-row">
+                    <span class="queue-field-key">제목</span>
+                    <div class="queue-field-val">
+                      <div>{{ title|default:"(제목 없음)" }}</div>
+                      {% if row.draft.raw_title and row.draft.raw_title != title %}<div class="mono queue-field-raw">원문: {{ row.draft.raw_title }}</div>{% endif %}
+                    </div>
+                  </div>
+                  <div class="queue-field-row">
+                    <span class="queue-field-key">카테고리</span>
+                    <div class="queue-field-val">{{ row.category_label|default:"-" }}</div>
+                  </div>
+                  <div class="queue-field-row">
+                    <span class="queue-field-key">작품명</span>
+                    <div class="queue-field-val">{{ row.draft.extracted_work_title|default:"-" }}</div>
+                  </div>
+                  <div class="queue-field-row">
+                    <span class="queue-field-key">장소</span>
+                    <div class="queue-field-val">{{ row.draft.extracted_location_name|default:"-" }}</div>
+                  </div>
+                  <div class="queue-field-row">
+                    <span class="queue-field-key">지역</span>
+                    <div class="queue-field-val">{{ row.region_label|default:"-" }}</div>
+                  </div>
+                  <div class="queue-field-row">
+                    <span class="queue-field-key">기간</span>
+                    <div class="queue-field-val mono">
+                      {% if row.draft.extracted_start_date %}{{ row.draft.extracted_start_date|date:"Y.m.d" }} – {{ row.draft.extracted_end_date|default:"?"|date:"Y.m.d" }}{% else %}-{% endif %}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="queue-field-block">
+                  <div class="queue-field-label mono">공식 URL</div>
+                  <div class="mono queue-url-box"><a href="{{ row.draft.source_url }}" target="_blank" rel="noopener">{{ row.draft.source_url }} ↗</a></div>
+                </div>
+
+                {% if row.draft.raw_text %}
+                  <div class="queue-field-block">
+                    <div class="queue-field-label mono">원본 본문 발췌</div>
+                    <div class="queue-raw-excerpt">{{ row.draft.raw_text|truncatechars:220 }}</div>
+                  </div>
+                {% endif %}
+
+                {% for badge in row.warning_badges %}
+                  <div class="queue-warn-callout">
+                    <span class="mono queue-warn-callout-label">⚠ {{ badge }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+
+              <div class="queue-inspector-foot mono">J/K 이동 · A 승인 · R 반려 · X 선택 · Enter 전체 화면</div>
+            </div>
+            {% endwith %}
+          {% endfor %}
+        </div>
+      </div>
+    {% elif selected_status and stats_total %}
+      <p class="notice">해당 상태의 드래프트가 없습니다. <a href="/staff/drafts/">전체 보기</a></p>
+    {% else %}
+      <p class="notice">등록된 드래프트가 없습니다. URL을 입력해 첫 드래프트를 생성해 보세요.</p>
+    {% endif %}
   </main>
 {% endblock %}
 
 {% block extra_js %}
-  <script defer src="{% static 'js/pages/draft.js' %}"></script>
-  <script defer src="{% static 'js/pages/draft_bulk.js' %}"></script>
+  <script defer src="{% static 'js/staff/draft.js' %}"></script>
+  <script defer src="{% static 'js/staff/draft_bulk.js' %}"></script>
+  <script defer src="{% static 'js/staff/queue_shortcuts.js' %}"></script>
 {% endblock %}

@@ -178,18 +178,29 @@ class TestEventDraftsListFilterPagination:
 
 
 @pytest.mark.django_db
-class TestEventDraftsListBulkToolbarLabelContract:
-    """static/js/pages/draft_bulk.js가 #bulk-toolbar의 data-approved-label을 읽어
-    승인 후 칩 문구를 렌더링한다. 없으면 원시 enum 문자열로 대체된다."""
+class TestEventDraftsListStatusChipLabel:
+    """목록의 상태 칩은 저장된 enum이 아니라 한국어 문구로 보여야 한다.
 
-    def test_대기_상태_필터_목록은_승인_라벨_데이터_속성을_렌더링한다(self, staff_client, make_draft):
-        make_draft("https://example.com/pending-label", review_status=EventDraft.ReviewStatus.PENDING)
+    판정 직후 칩을 갱신하는 쪽은 draft_bulk.js이고 그건 브라우저에서만
+    도는 코드다 — 여기서는 서버가 처음 그리는 문구만 고정한다.
+    """
+
+    def test_판정된_드래프트의_상태_칩은_원시_enum이_아니라_한국어로_보인다(
+        self, staff_client, make_draft
+    ):
+        make_draft(
+            "https://example.com/approved-chip",
+            review_status=EventDraft.ReviewStatus.APPROVED,
+        )
 
         _, client = staff_client()
-        resp = client.get("/staff/drafts/?status=pending")
+        resp = client.get("/staff/drafts/")
 
         assert resp.status_code == 200
-        assert 'data-approved-label="승인됨"' in resp.content.decode()
+        body = resp.content.decode()
+        assert "승인됨" in body
+        # 칩 자리에 enum 문자열이 그대로 노출되면 안 된다.
+        assert ">approved<" not in body
 
 
 @pytest.mark.django_db
@@ -336,3 +347,32 @@ def test_비로그인_사용자의_드래프트_상세_접근은_로그인_페�
 
     assert response.status_code == 302
     assert response.url.startswith("/accounts/login/")
+
+
+@pytest.mark.django_db
+class TestDraftConfidenceDisplay:
+    """confidence는 0~1로 저장된다(LLM_ESCALATION_CONFIDENCE_THRESHOLD=0.6이 같은 척도).
+
+    화면이 이를 0~100으로 읽으면 0.83이 "1%"로 나오고 색 등급도 늘 최하로 떨어진다.
+    """
+
+    def test_목록의_신뢰도_배지는_백분율과_등급을_함께_보여준다(self, staff_client, make_draft):
+        make_draft("https://example.com/hi", extracted_title="높은 신뢰도", confidence=0.83)
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "83%" in body
+        assert "1%" not in body
+        assert "queue-conf-badge is-high" in body
+
+    def test_상세의_신뢰도도_백분율로_보여준다(self, staff_client, make_draft):
+        draft = make_draft("https://example.com/lo", extracted_title="낮은 신뢰도", confidence=0.42)
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        assert resp.status_code == 200
+        assert "신뢰도 42%" in resp.content.decode()
