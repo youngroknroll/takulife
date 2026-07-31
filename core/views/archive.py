@@ -31,6 +31,7 @@ from archive.queries import (
     user_visit_category_values,
     user_visit_record_counts,
 )
+from core.query_params import is_safe_pk_string
 from core.vocab import (
     ARCHIVE_INTEREST_SORT,
     ARCHIVE_INTEREST_SORT_LABELS,
@@ -356,10 +357,7 @@ def _parse_visit_preselect(request):
     검증하므로 템플릿은 이를 신뢰된 잠금 필드로 렌더링할 수 있다.
     """
     kind, _, ident = request.GET.get("subject", "").partition(":")
-    # 비ASCII "숫자"(int()가 거부한다)와 지나치게 큰 id(DB 정수 범위를
-    # 넘는 pk는 ORM 조회에서 예외를 던진다)를 막는다 — 둘 다 조작된
-    # ?subject=이 500 오류로 이어지는 걸 막기 위한 것이다.
-    if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
+    if not is_safe_pk_string(ident):
         return None
     pk = int(ident)
     if kind == "event":

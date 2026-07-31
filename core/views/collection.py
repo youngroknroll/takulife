@@ -16,6 +16,7 @@ from archive.queries import (
     user_collection_item_summary_counts,
     user_collection_item_work_title_facets,
 )
+from core.query_params import is_safe_pk_string
 from core.vocab import COLLECTION_ITEM_TYPE
 
 from ._helpers import _archive_query, _render_archive_list, _subject_view
@@ -270,14 +271,13 @@ def _parse_collection_visit_preselect(request):
     """컬렉션 항목 작성 폼을 위해, 선택적인 ?visit_record=<id>를 잠긴
     방문 기록으로 해석한다.
 
-    조작된 id가 500으로 이어지는 것을 막는 ASCII/숫자/길이 가드는
-    _parse_visit_preselect와 동일하지만, 조회 범위를 요청자가 소유한
-    VisitRecord 행으로 한정한다 — id는 존재해도 다른 사용자 소유라면
-    그 기록을 잠가서는 안 된다. 유효하지 않거나 없거나 남의 id면 모두
-    None을 반환해 작성 폼이 선택 드롭다운으로 대체된다.
+    id가 안전한 pk 문자열인지 거르는 것은 _parse_visit_preselect와 동일하지만,
+    조회 범위를 요청자가 소유한 VisitRecord 행으로 한정한다 — id는 존재해도
+    다른 사용자 소유라면 그 기록을 잠가서는 안 된다. 유효하지 않거나 없거나
+    남의 id면 모두 None을 반환해 작성 폼이 선택 드롭다운으로 대체된다.
     """
     ident = request.GET.get("visit_record", "")
-    if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
+    if not is_safe_pk_string(ident):
         return None
     pk = int(ident)
     record = (
