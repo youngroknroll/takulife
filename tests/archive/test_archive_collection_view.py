@@ -119,7 +119,7 @@ class TestArchiveCollectionIsWantedFilter:
     # /collection/?is_wanted=false 직접 GET은 더 이상 200 필터링 페이지를
     # 렌더하지 않는다. list_user_collection_items(user, is_wanted=False)의
     # 필터 동작 자체는 쿼리 계층에서 여전히 가드된다
-    # (test_archive_queries.py::test_구함_필터_False는_구함이_아닌_항목만_반환한다)
+    # (test_archive_collection_item_queries.py::test_구함_필터_False는_구함이_아닌_항목만_반환한다)
     # DRF API 경계도 마찬가지다
     # (test_collection_items_api.py::test_구함_필터를_false로_보내면_API에서는_리다이렉트_없이_보유_항목만_반환된다).
 

@@ -169,10 +169,14 @@ def _iter_scanned_files(root):
         check=True,
     )
     tracked_paths = [line for line in result.stdout.splitlines() if line]
+    # `git ls-files`는 인덱스를 보므로 아직 스테이지되지 않은 삭제 파일도
+    # 계속 나열한다. 파일을 지우는 작업 중에 가드가 죽지 않도록 건너뛴다.
     files = [
         root / rel_path
         for rel_path in tracked_paths
-        if rel_path.endswith(SCANNED_EXTENSIONS) and "/migrations/" not in rel_path
+        if rel_path.endswith(SCANNED_EXTENSIONS)
+        and "/migrations/" not in rel_path
+        and (root / rel_path).is_file()
     ]
     assert files, "git ls-files 스캔 대상이 0개다 — 가드가 죽은 채로 통과하면 안 된다"
     return sorted(files)

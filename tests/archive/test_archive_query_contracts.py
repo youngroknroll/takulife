@@ -1,6 +1,6 @@
 """archive/queries.py의 쿼리 수 계약 테스트.
 
-test_archive_queries.py에 두지 않은 이유: 그 모듈은 파일 전체에
+tests/archive/test_archive_*_queries.py에 두지 않은 이유: 그 모듈들은 파일 전체에
 ``pytestmark = pytest.mark.domain``을 설정하므로, 여기 둔 테스트의 ``contract``
 마커가 묻혀버린다. tests/staff/test_staff_queries.py,
 tests/core/test_analytics_recording_resilience.py도 같은 이유로 모듈 전체

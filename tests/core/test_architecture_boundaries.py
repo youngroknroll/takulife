@@ -581,7 +581,7 @@ def test_core_뷰는_더이상_스태프_모듈을_임포트하지_않는다():
 # 무너지지 않도록 지킨다 — *_api.py / *_view(s).py 테스트가 services/queries
 # 모듈을 임포트한다면 HTTP/SSR 경계를 넘어 직접 상태를 조립했다는 신호이며,
 # 그런 테스트는 대응하는 *_services.py / *_queries.py 파일로 옮겨야 한다
-# (tests/archive/test_archive_services.py, tests/archive/test_archive_queries.py 참고).
+# (tests/archive/test_archive_services.py, tests/archive/test_archive_*_queries.py 참고).
 # ---------------------------------------------------------------------------
 
 API_OR_VIEW_TEST_GLOBS = ("test_*_api.py", "test_*_view.py", "test_*_views.py")

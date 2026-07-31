@@ -9,15 +9,15 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from archive.models import ActivityLogEntry
-from archive.queries import (
+from archive.activity_calendar_queries import (
     GOODS_ACQUIRED_KIND,
     SCHEDULE_KIND,
     VISIT_KIND,
     find_latest_activity_date_for_query,
     list_user_activity_for_month,
-    user_status_counts,
 )
+from archive.models import ActivityLogEntry
+from archive.queries import user_status_counts
 from core.calendar_grid import month_grid
 
 from ._helpers import _adjacent_month, _parse_calendar_date, _parse_calendar_month
@@ -25,9 +25,10 @@ from ._helpers import _adjacent_month, _parse_calendar_date, _parse_calendar_mon
 logger = logging.getLogger(__name__)
 
 
-# 사용자에게 보이는 5개 활동 그룹 -> 각각이 포괄하는 archive.queries kind
-# 상수. "interest"는 옛 찜 대체 경로도 함께 포괄하는데,
-# archive.queries._interest_added_fallback_items가 별도 kind 문자열 없이
+# 사용자에게 보이는 5개 활동 그룹 -> 각각이 포괄하는
+# archive.activity_calendar_queries kind 상수. "interest"는 옛 찜 대체 경로도
+# 함께 포괄하는데,
+# archive.activity_calendar_queries._interest_added_fallback_items가 별도 kind 문자열 없이
 # ActivityLogEntry.Kind.INTEREST_ADDED를 그대로 재사용한다.
 # "visit"과 "goods"는 상태 테이블(VisitRecord/CollectionItem)만 출처로
 # 삼는다 — 방문·등록·수정 각 행동은 행동 로그에도 흔적을 남기는데, 그
@@ -129,11 +130,12 @@ def _activity_kind_filters(*, year, month, selected_date, selected_types, kind_c
 
 
 def _build_selected_activity_items(items):
-    """선택된 날짜의 archive.queries.CalendarActivityItem 행들을 상세
-    목록 표시용 dict({group, label, url, date_text})로 바꾼다.
+    """선택된 날짜의 archive.activity_calendar_queries.CalendarActivityItem
+    행들을 상세 목록 표시용 dict({group, label, url, date_text})로 바꾼다.
 
-    `label`/`url`은 CalendarActivityItem에서 그대로 가져온다(archive/
-    queries.py의 각 내부 헬퍼가 이미 들고 있는 객체에서 채운다 — label은
+    `label`/`url`은 CalendarActivityItem에서 그대로 가져온다
+    (archive/activity_calendar_queries.py의 각 내부 헬퍼가 이미 들고 있는
+    객체에서 채운다 — label은
     Event.title/CollectionItem.name/ActivityLogEntry.subject_label, url은
     event-detail/visit-edit/collection-edit의 reverse()이며 SET_NULL
     대상이 사라지면 `None`). `date_text`는 표시 전용 관심사라 여기서
@@ -165,7 +167,7 @@ def activity_calendar(request):
     _parse_calendar_month/_parse_calendar_date 헬퍼를 그대로 재사용하고
     (규칙 동일), 조회/그리드 생성 실패는 같은 방식으로 완화된다
     (calendar_error="query_failed", 절대 500이 아니다).
-    archive.queries.list_user_activity_for_month가 어느 활동이 어느
+    archive.activity_calendar_queries.list_user_activity_for_month가 어느 활동이 어느
     날짜에 속하는지를 소유한다 — 이 뷰는 이미 계산된 결과를 날짜별로
     묶고(그리드 점 카운트/종류) 선택된 날짜의 행들을 표시용 dict로 바꿀
     뿐이다.
@@ -178,7 +180,7 @@ def activity_calendar(request):
     카운트/표시된다(아래 selected_items/kind_counts도 마찬가지). `items`는
     그날의 활동 앞 2개를 {group, label}로, `more_count`는 남은 개수),
     selected_date, selected_items({group, label, url, date_text} 목록
-    — archive.queries.CalendarActivityItem의 label/url/time_text에서
+    — archive.activity_calendar_queries.CalendarActivityItem의 label/url/time_text에서
     가져온다, _build_selected_activity_items 참고. 여기도 "status" 그룹
     행은 제외), prev_month/next_month, extra_query(type=만 포함, month/date
     제외), selected_types, has_any_items(현재 type 필터 기준, 표시 중인

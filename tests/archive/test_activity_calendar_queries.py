@@ -32,8 +32,8 @@ from datetime import timezone as _dt_timezone
 import pytest
 from django.utils import timezone
 
+from archive.activity_calendar_queries import list_user_activity_for_month
 from archive.models import ActivityLogEntry, CollectionItem, EventInterest
-from archive.queries import list_user_activity_for_month
 
 
 def _kind_dates(items):
