@@ -16,6 +16,7 @@ from archive.queries import (
     user_collection_item_summary_counts,
     user_collection_item_work_title_facets,
 )
+from core.query_params import is_safe_pk_string
 from core.vocab import COLLECTION_ITEM_TYPE
 
 from ._helpers import _archive_query, _render_archive_list, _subject_view
@@ -102,17 +103,21 @@ def _collection_item_row(item, series_ink_classes):
     }
 
 
+def _is_legacy_is_wanted_false_bookmark(get_params) -> bool:
+    """옛 ?is_wanted=false 북마크(예전 보유 탭 URL)면 True.
+
+    owned가 이미 명시된 요청은 호출자가 새 축에서 의도적으로 선택한
+    것이므로 이 판정에서 제외한다.
+    """
+    return get_params.get("is_wanted") == "false" and "owned" not in get_params
+
+
 @login_required
 @ensure_csrf_cookie
 def archive_collection_items(request):
-    # 옛 북마크 호환: ?is_wanted=false가 예전엔 보유 탭의 URL 그 자체였다.
-    # 이제 보유가 독립된 축이 됐으므로, 북마크된 ?is_wanted=false 링크는
-    # ?owned=true로 넘겨야 과소 집계(보유+구함 행이 예전엔 제외됐다)를
-    # 멈춘다. owned가 이미 있으면 건너뛴다 — 명시적 owned 값은 호출자가
-    # 이미 새 축에서 의도적으로 선택했다는 뜻이라 이 보정이 덮어쓰면 안
-    # 된다. 리다이렉트되는 요청은 DB를 건드릴 이유가 없으므로 조회 작업
-    # 전에 배치한다.
-    if request.GET.get("is_wanted") == "false" and "owned" not in request.GET:
+    # 리다이렉트되는 요청은 DB를 건드릴 이유가 없으므로 조회 작업 전에
+    # 배치한다.
+    if _is_legacy_is_wanted_false_bookmark(request.GET):
         redirect_params = request.GET.copy()
         del redirect_params["is_wanted"]
         redirect_params["owned"] = "true"
@@ -270,14 +275,13 @@ def _parse_collection_visit_preselect(request):
     """컬렉션 항목 작성 폼을 위해, 선택적인 ?visit_record=<id>를 잠긴
     방문 기록으로 해석한다.
 
-    조작된 id가 500으로 이어지는 것을 막는 ASCII/숫자/길이 가드는
-    _parse_visit_preselect와 동일하지만, 조회 범위를 요청자가 소유한
-    VisitRecord 행으로 한정한다 — id는 존재해도 다른 사용자 소유라면
-    그 기록을 잠가서는 안 된다. 유효하지 않거나 없거나 남의 id면 모두
-    None을 반환해 작성 폼이 선택 드롭다운으로 대체된다.
+    id가 안전한 pk 문자열인지 거르는 것은 _parse_visit_preselect와 동일하지만,
+    조회 범위를 요청자가 소유한 VisitRecord 행으로 한정한다 — id는 존재해도
+    다른 사용자 소유라면 그 기록을 잠가서는 안 된다. 유효하지 않거나 없거나
+    남의 id면 모두 None을 반환해 작성 폼이 선택 드롭다운으로 대체된다.
     """
     ident = request.GET.get("visit_record", "")
-    if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
+    if not is_safe_pk_string(ident):
         return None
     pk = int(ident)
     record = (

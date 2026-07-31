@@ -414,6 +414,12 @@ def create_collection_item(*, user, name, visit_record=None, event=None, client_
     return item
 
 
+def _event_alone_targets_existing_visit_record(item, fields) -> bool:
+    """이번 PATCH가 visit_record는 건드리지 않았지만 event는 있고, 항목엔 이미
+    visit_record가 연결돼 있으면 True."""
+    return item.visit_record_id is not None and "event" in fields
+
+
 def update_collection_item(*, item, **fields):
     """기존 CollectionItem의 수정 가능한 필드를 갱신한다.
 
@@ -477,10 +483,8 @@ def update_collection_item(*, item, **fields):
             # else: visit_record를 명시적으로 비운 경우 — event는 페이로드
             # 값이든 기존 값이든 자유롭게 둔다. visit_record가 사라지면
             # FK 짝 불변식도 더 이상 적용되지 않는다.
-        elif item.visit_record_id is not None and "event" in fields:
-            # 이번 PATCH가 visit_record를 건드리지 않았지만 항목에는 이미
-            # visit_record가 있는 경우 — 병합된 event가 여전히 그것과
-            # 일치해야 한다.
+        elif _event_alone_targets_existing_visit_record(item, fields):
+            # 병합된 event가 여전히 visit_record.event와 일치해야 한다.
             if fields["event"] != item.visit_record.event:
                 raise ValidationError(
                     {

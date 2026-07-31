@@ -20,13 +20,18 @@ WINDOW = 5
 JUMP = 5
 
 
+def _is_last_block_a_lone_page(block_start: int, total: int) -> bool:
+    """마지막 블록이 total 하나뿐이면(total ≡ 1 mod WINDOW) True.
+
+    이 경우 마지막 페이지가 외따로 보이지 않도록 이전 블록에 합친다.
+    """
+    return block_start == total and block_start > 1
+
+
 def _block_bounds(current: int, total: int) -> tuple:
     block_start = ((current - 1) // WINDOW) * WINDOW + 1
     block_end = min(block_start + WINDOW - 1, total)
-    # 마지막 블록이 페이지 하나뿐이면(total ≡ 1 mod 5 → 블록이 [total]
-    # 하나) 마지막 페이지가 외따로 보이지 않도록 이전 블록에 합친다.
-    # 시작점을 한 창만큼 앞으로 당긴다.
-    if block_start == total and block_start > 1:
+    if _is_last_block_a_lone_page(block_start, total):
         block_start -= WINDOW
     return block_start, block_end
 
