@@ -1,0 +1,167 @@
+/*
+ * base.css (스태프 콘솔 전용) — 리셋, 폰트, 문서 기본값, 포커스 아웃라인,
+ * 글자 크기 스케일. 소비자 base.css를 복사하지 않고 스태프 문법에 맞게
+ * 새로 짰다(D1/D3). 셸(사이드바·커맨드바) 레이아웃은 shell.css가 맡는다.
+ *
+ * 단위 규칙은 소비자 CSS와 동일하게 간격류는 rem, 테두리·그림자·고정
+ * 픽셀 값만 px를 쓴다.
+ */
+
+/* ── web font: Pretendard (self-hosted) ─────────────────────────
+ * 시안은 jsdelivr CDN 링크를 썼지만 그건 데모 산출물이다. 저장소가 이미
+ * 자체 호스팅 중인 폰트 파일을 그대로 재사용한다(static/base.css:26-32와
+ * 동일한 @font-face — 별도 라이선스 문제 없음).
+ */
+@font-face {
+  font-family: "Pretendard";
+  src: url("../../fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: var(--c-fs-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* 6단계 글자 크기 체계. 소비자 --fs-*와 이름이 겹치지 않게 --c- 접두사를
+   붙인다(D2). */
+:root {
+  --c-fs-xs: 0.6875rem; /* 11px */
+  --c-fs-sm: 0.75rem; /* 12px */
+  --c-fs-md: 0.8125rem; /* 13px */
+  --c-fs-base: 0.875rem; /* 14px */
+  --c-fs-lg: 1rem; /* 16px */
+  --c-fs-xl: 1.6875rem; /* 27px, 콘솔 문서 제목 전용 */
+}
+
+/* ── 표준 모노스페이스 유틸. 수치·시각·ID는 표에서 자리수가 흔들리면
+   스캔이 느려지므로 tabular-nums로 고정한다. */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ── skip link ─────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  background: var(--c-panel);
+  color: var(--c-text);
+  border: 1px solid var(--c-line);
+  border-radius: 0 0 0.375rem 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ── focus outline (global) ───────────────────────────────────── */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+/* ── 안내·오류 메시지(Django messages) ────────────────────────────
+ * 소비자 site-messages와 같은 문법을 스태프 색으로 다시 쓴 것이다(D1).
+ * 시안에 전역 배너가 없어 폼 오류 박스 문법(/tmp/staff_mock.html:499-501)을
+ * 그대로 가져왔다.
+ */
+.staff-messages {
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem 0.875rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.staff-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  padding: 0.5625rem 0.75rem;
+  border-radius: 0.3125rem;
+  font-size: var(--c-fs-base);
+  line-height: 1.5;
+}
+
+.staff-message-error {
+  border: 1px solid var(--c-danger);
+  background: var(--c-warn-bg);
+  color: var(--c-danger);
+}
+
+.staff-message-success {
+  border: 1px solid var(--c-ok);
+  background: var(--c-accent-soft);
+  color: var(--c-ok);
+}
+
+.staff-message-info {
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  color: var(--c-text);
+}
+
+/* ── 데스크톱 전용 게이트(D10) ─────────────────────────────────────
+ * 시안이 최소 폭 1024px를 스스로 선언하고 모바일 보드를 그리지 않았다.
+ * 1023px 이하에서는 기능 레이아웃 대신 이 정적 안내만 보인다.
+ * ⚠️ .staff-shell을 숨기는 규칙은 shell.css 쪽(이 파일 뒤에 로드됨)에
+ * 둔다 — 여기 두면 캐스케이드 순서상 shell.css의 무조건부 `display:grid`가
+ * 나중에 실행돼 미디어쿼리를 조용히 덮어써 버린다(같은 특이도, 나중 규칙
+ * 승리). 실측: base.css에 뒀을 때 1023px에서도 getComputedStyle이
+ * "grid"를 반환했다.
+ */
+.staff-desktop-gate {
+  display: none;
+}
+
+/* ── 화면 본문 래퍼 ────────────────────────────────────────────────
+ * 여백을 여기 한 곳에서만 준다. 화면별 CSS에 흩어 두면 새 화면이
+ * 규칙을 빠뜨려도 티가 나지 않는다 — 실제로 drafts 두 화면이 그렇게
+ * 여백 0으로 렌더링되고 있었다. 세로 배치·간격은 화면마다 달라서 남긴다.
+ */
+.page {
+  padding: 0.875rem;
+}
+
+/* hidden 속성의 UA 기본값은 display:none 하나뿐이라 컴포넌트의 display
+ * 선언에 조용히 진다. 실제로 인스펙터 패널 3장이 그렇게 살아남아 문서
+ * 높이를 882px에서 1893px로 늘렸다.
+ */
+[hidden] {
+  display: none !important;
+}

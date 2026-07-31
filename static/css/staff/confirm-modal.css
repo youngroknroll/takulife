@@ -1,0 +1,108 @@
+/*
+ * confirm-modal.css (스태프 콘솔 전용) — components/confirm-modal.js가
+ * 그대로 재사용하는 DOM 구조(.confirm-overlay/.confirm-dialog/...)에
+ * 스태프 토큰(--c-*)을 입힌 버전이다. 소비자 confirm-modal.css는
+ * var(--brand)에 묶여 있어 스태프 페이지에서 그대로 못 쓴다(D1).
+ * 승인/반려 판정 확인에 쓴다(D6).
+ */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-scrim);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.confirm-overlay[hidden] {
+  display: none;
+}
+
+/* 모달이 열려 있는 동안 confirm-modal.js가 <html>에 붙인다. */
+.confirm-scroll-lock {
+  overflow: hidden;
+}
+
+/* 안전장치: [hidden]이 복구되지 않는 오류가 나도 닫힌 오버레이가 클릭을
+   가로채면 안 된다. */
+.confirm-overlay:not(.is-open) {
+  pointer-events: none;
+}
+
+.confirm-overlay.is-open {
+  opacity: 1;
+}
+
+.confirm-dialog {
+  background: var(--c-panel);
+  border: 1px solid var(--c-line);
+  border-radius: 0.5rem;
+  box-shadow: 0 1.25rem 3rem rgba(16, 18, 24, 0.22);
+  padding: 1.25rem;
+  max-width: 22.5rem;
+  width: calc(100% - 32px);
+  transform: translateY(6px);
+  transition: transform 0.15s ease;
+}
+
+.confirm-overlay.is-open .confirm-dialog {
+  transform: translateY(0);
+}
+
+.confirm-message {
+  font-size: 0.8125rem;
+  color: var(--c-text);
+  margin: 0 0 1.125rem;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.625rem;
+  justify-content: flex-end;
+}
+
+.confirm-no,
+.confirm-yes {
+  border-radius: 0.3125rem;
+  padding: 0.5rem 1rem;
+  min-height: 2.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-family: inherit;
+}
+
+.confirm-no {
+  background: var(--c-panel);
+  color: var(--c-text);
+  border: 1px solid var(--c-line);
+}
+
+/* 조작 확인은 승인·반려 공통이라 의미색 중 "조작"에 해당하는 accent를
+   쓴다(원안의 단일 --brand와 같은 자리, 판정 결과별 색은 목록/인스펙터
+   쪽 배지가 이미 맡는다). */
+.confirm-yes {
+  background: var(--c-accent);
+  color: #fff;
+  border: 1px solid var(--c-accent);
+}
+
+.confirm-no:hover {
+  background: var(--c-head);
+}
+
+.confirm-yes:hover {
+  filter: brightness(0.93);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-overlay,
+  .confirm-dialog {
+    transition: none;
+  }
+}

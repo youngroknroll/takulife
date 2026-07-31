@@ -1,0 +1,79 @@
+/* tokens.css (스태프 콘솔 전용) — 소비자 tokens.css와 완전히 분리된 토큰
+ * 집합이다. 이름은 겹치지 않게 전부 `--c-` 접두사를 쓴다. 절대 소비자
+ * tokens.css와 같은 페이지에서 함께 로드하지 말 것 — 두 집합이 캐스케이드에
+ * 공존하면 클래스 누락이 조용히 소비자 색으로 새어 들어온다.
+ * 값 출처: /tmp/staff_mock.html:653-654 (시안 build() 라이트/다크 팔레트).
+ */
+:root {
+  color-scheme: light;
+
+  --c-bg: #eef0f4;
+  --c-panel: #ffffff;
+  --c-head: #f5f6f9;
+  --c-inspect: #fafbfc;
+  --c-line: #d8dce4;
+  --c-line-soft: #e8eaf0;
+  --c-text: #171a20;
+  --c-dim: #5a6474;
+  --c-faint: #8b93a2;
+  --c-track: #e4e7ed;
+
+  --c-side: #1b1f27;
+  --c-side-line: #2c323d;
+  --c-side-text: #a9b1bf;
+  --c-side-text-hi: #eceef2;
+  --c-side-faint: #6e7787;
+  --c-side-tile: #2c323d;
+
+  --c-accent: #1f6feb;
+  --c-accent-soft: #e5efff;
+  --c-ok: #15803d;
+  --c-danger: #b42318;
+  --c-warn-ink: #8a5300;
+  --c-warn-bg: #fdf6e6;
+  --c-warn-line: #eddcb4;
+  --c-amber-bg: #fdf3df;
+
+  --c-env-bg: #3a2a1c;
+  --c-env-ink: #e8b163;
+  --c-env-line: #5c4327;
+
+  --c-scrim: rgba(23, 26, 32, 0.52);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-bg: #0f1116;
+  --c-panel: #171a21;
+  --c-head: #1c2029;
+  --c-inspect: #13161c;
+  --c-line: #2b313c;
+  --c-line-soft: #232831;
+  --c-text: #e5e7ec;
+  --c-dim: #9aa3b2;
+  --c-faint: #6d7684;
+  --c-track: #252b35;
+
+  --c-side: #0b0d11;
+  --c-side-line: #1e222b;
+  --c-side-text: #98a1b0;
+  --c-side-text-hi: #e5e7ec;
+  --c-side-faint: #5f6875;
+  --c-side-tile: #1e222b;
+
+  --c-accent: #4b8ef5;
+  --c-accent-soft: #152540;
+  --c-ok: #2f9e5c;
+  --c-danger: #e05c4c;
+  --c-warn-ink: #e0b063;
+  --c-warn-bg: #2a2317;
+  --c-warn-line: #463a22;
+  --c-amber-bg: #2a2317;
+
+  --c-env-bg: #3a2a1c;
+  --c-env-ink: #e8b163;
+  --c-env-line: #5c4327;
+
+  --c-scrim: rgba(6, 8, 11, 0.62);
+}

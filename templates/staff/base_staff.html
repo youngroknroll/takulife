@@ -1,35 +1,83 @@
-{% extends "base.html" %}
-{% comment %}
-스태프 콘솔 전용 셸이다. 공용 base.html을 확장하되 공개 사이트 크롬을
-콘솔 셸(상단바+탭)로 바꾸고 공개 바닥글은 아예 뺀다. 뷰/URL/권한은 그대로고
-레이아웃 블록만 교체한다.
-{% endcomment %}
-{% load static %}
+{% load static %}<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  {% comment %}
+  base.html:9-25와 같은 페인트 전 테마 스크립트를 그대로 복제했다(D1). 스태프
+  콘솔도 다크 3보드가 시안에 있어 다크 사용자가 매 로드마다 흰 화면 깜빡임을
+  보지 않게 해야 한다. theme.js의 읽기 로직만 최소로 복제한 것이며, 쓰기/
+  토글/시스템 테마 감지는 theme.js(아래 script 태그)가 담당한다.
+  {% endcomment %}
+  <script>
+    (function () {
+      "use strict";
+      var theme = "light";
+      try {
+        var stored = window.localStorage.getItem("takulife-theme");
+        if (stored === "light" || stored === "dark") {
+          theme = stored;
+        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          theme = "dark";
+        }
+      } catch (e) {
+        // Storage or matchMedia blocked — theme keeps its "light" default.
+      }
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}스태프 콘솔 | takulife{% endblock %}</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  {% comment %}
+  소비자 tokens.css/base.css 등 16개 스타일시트를 상속하지 않는다(D1/D2/D3).
+  스태프 전용 토큰·베이스·셸 CSS만 로드한다 — 두 토큰 집합이 같은 캐스케이드에
+  공존하면 클래스 누락이 조용히 소비자 색으로 새어 들어온다.
+  {% endcomment %}
+  <link rel="stylesheet" href="{% static 'css/staff/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/staff/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/staff/shell.css' %}">
+  <link rel="stylesheet" href="{% static 'css/staff/confirm-modal.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
+  <a class="skip-link" href="#staff-main">본문으로 건너뛰기</a>
 
-{% block shell_css %}
-<link rel="stylesheet" href="{% static 'css/components/staff-shell.css' %}">
-{% endblock %}
+  <div class="staff-desktop-gate">
+    <div class="staff-desktop-gate-box">
+      <h1>데스크톱에서 열어주세요</h1>
+      <p>스태프 콘솔은 검수·표 스캔·일괄 처리 중심 도구라 1024px 이상 화면에서만 제공됩니다.</p>
+    </div>
+  </div>
 
-{% comment %}
-모든 스태프 페이지에서 여기 한 번만 로드한다 — 중복 제출 방지 스크립트가
-각 템플릿의 extra_js를 따로 건드리지 않고도 생성/수정/삭제/발견 폼 전부를
-커버한다. 각 폼이 data-submit-guard로 옵트인해야 적용된다.
-{% endcomment %}
-{% block shell_js %}
-<script defer src="{% static 'js/shared/staff_submit_guard.js' %}"></script>
-{% endblock %}
+  <div class="staff-shell">
+    {% include "staff/_console_shell.html" %}
 
-{% comment %}
-공개 사이트의 스킵 링크(base.html)는 #content를 가리키는데 스태프 페이지는
-#staff-main을 쓴다 — 그래서 여기서는 끄고, _console_shell.html이 올바른
-대상을 가리키는 자체 스킵 링크를 넣는다.
-{% endcomment %}
-{% block skip_link %}{% endblock %}
+    <div class="staff-shell-content">
+      {% if messages %}
+        <ul class="staff-messages">
+          {% for message in messages %}
+            <li class="staff-message staff-message-{% if message.tags == 'error' or message.tags == 'warning' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
 
-{% block site_header %}
-{% include "staff/_console_shell.html" %}
-{% endblock %}
-
-{% block site_banner %}{% endblock %}
-
-{% block site_footer %}{% endblock %}
+  <script defer src="{% static 'js/shared/theme.js' %}"></script>
+  {% comment %}
+  window.TakuAPI는 하드 의존이다 — draft.js·draft_bulk.js·staff_event_edit.js가
+  전부 쓴다. 여기서 빠뜨리면 승인·반려·수정이 첫 클릭에 조용히 죽는다(D1).
+  {% endcomment %}
+  <script defer src="{% static 'js/shared/api.js' %}"></script>
+  <script defer src="{% static 'js/components/confirm-modal.js' %}"></script>
+  {% comment %}
+  모든 스태프 페이지에서 여기 한 번만 로드한다 — 중복 제출 방지 스크립트가
+  각 템플릿의 extra_js를 따로 건드리지 않고도 생성/수정/삭제/발견 폼 전부를
+  커버한다. 각 폼이 data-submit-guard로 옵트인해야 적용된다.
+  {% endcomment %}
+  <script defer src="{% static 'js/shared/staff_submit_guard.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
