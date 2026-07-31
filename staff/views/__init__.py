@@ -170,7 +170,9 @@ def dashboard(request):
             "recent_actions_7d_count": staff_actions_count_since(days=7),
             "recent_actions_prev_7d_count": staff_actions_count_since(days=7, offset=7),
             "weekly_active_user_count": distinct_user_key_count_since(days=7),
+            "weekly_active_user_prev_count": distinct_user_key_count_since(days=7, offset=7),
             "weekly_event_count": sum(event_name_counts_since(days=7).values()),
+            "weekly_event_prev_count": sum(event_name_counts_since(days=7, offset=7).values()),
             "activity_columns": activity_columns,
             "activity_total_14d": sum(col["count"] for col in activity_columns),
             # 템플릿에서 `|last.count` 같은 필터+속성 체이닝은 문법상

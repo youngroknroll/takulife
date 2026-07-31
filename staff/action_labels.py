@@ -15,5 +15,6 @@ ACTION_LABELS = {
     "event_unpublish": "게시 내리기",
     "event_republish": "재게시",
     "event_delete": "이벤트 삭제",
+    "event_verify": "검증 완료",
     "draft_discover": "드래프트 수집 실행",
 }
