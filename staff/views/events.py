@@ -37,6 +37,7 @@ from events.services import (
 )
 
 from ..models import StaffActionLog
+from ..search import search_term
 from ..permissions import staff_console_required
 from ..services import (
     EventHasArchiveReferencesError,
@@ -128,15 +129,19 @@ def staff_events(request):
     """게시+초안 이벤트 목록과 품질 경고 드릴다운."""
     selected_warning, selected_publish_status = _selected_event_filters(request.GET)
 
+    search = search_term(request)
     events = list_staff_events(
         warning=selected_warning or None,
         publish_status=selected_publish_status or None,
+        search=search,
     )
     paginator = Paginator(events, STAFF_EVENT_LISTING_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
     event_rows = _build_event_rows(page_obj.object_list)
 
-    query_pairs = _event_filter_query_pairs(request.GET)
+    query_pairs = list(_event_filter_query_pairs(request.GET))
+    if search:
+        query_pairs.append(("q", search))
     pager_query = "&" + urlencode(query_pairs) if query_pairs else ""
 
     warning_chips = [
@@ -153,6 +158,7 @@ def staff_events(request):
             "selected_publish_status": selected_publish_status,
             "pager_query": pager_query,
             "warning_chips": warning_chips,
+            "search": search,
         },
     )
 
@@ -518,6 +524,7 @@ def staff_event_delete(request, pk):
             {
                 "event": event,
                 "list_query": list_query,
+                "reference_counts": reference_counts,
             },
         )
 

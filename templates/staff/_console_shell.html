@@ -1,25 +1,111 @@
 {% comment %}
-스태프 콘솔 전용 헤더다. /staff/* 페이지에서 공개 사이트 헤더 대신 이걸
-쓴다(staff/base_staff.html이 교체).
+스태프 콘솔 전용 셸이다. 사이드바(운영 도구 내비게이션)와 커맨드바(현재
+위치+제목, 오른쪽에 검색·새로고침·시각)를 렌더링한다. base_staff.html의
+.staff-shell 그리드 안에서 두 형제 요소로 배치된다 — 본문(content 블록)은
+별도로 base_staff.html이 감싼다.
 
-2단 상단바: 1단은 브랜드만, 2단은 콘솔 탭(대시보드/드래프트/이벤트/홈
-카테고리)과 오른쪽 "사이트로 돌아가기" 링크다. 사이드바·접기 토글·아이콘·
-배지는 의도적으로 없다.
+시안(/tmp/staff_mock.html:55~106)은 <span>/<div>로 그린 시각 목업이지만,
+사이드바는 실제 <nav aria-label> + <a>로, 배지 수는 하드코딩하지 않고
+staff.context_processors.sidebar_badge_counts가 넣어주는
+sidebar_pending_draft_count를 그대로 쓴다(D4).
 {% endcomment %}
 {% load static %}
-<a class="skip-link" href="#staff-main">본문으로 건너뛰기</a>
-<header class="staff-shell-header">
-  <div class="staff-shell-topbar">
-    <span class="staff-shell-brand">takulife 스태프 콘솔</span>
+{% with url_name=request.resolver_match.url_name %}
+<aside class="staff-sidebar" aria-label="스태프 콘솔 브랜드">
+  <div class="staff-sidebar-brand">
+    <span class="staff-sidebar-tile" aria-hidden="true">t</span>
+    <span class="staff-sidebar-name">스태프 콘솔</span>
   </div>
-  <div class="staff-shell-tabrow">
-    <nav class="staff-shell-tabs nav-links" aria-label="스태프 콘솔 메뉴">
-      <a href="/staff/dashboard/"{% if request.resolver_match.url_name == 'dashboard' %} class="active"{% endif %}>스태프 콘솔</a>
-      <a href="/staff/drafts/"{% if request.resolver_match.url_name == 'draft-list' or request.resolver_match.url_name == 'draft-detail' %} class="active"{% endif %}>드래프트 관리</a>
-      <a href="/staff/events/"{% if request.resolver_match.url_name == 'event-list' or request.resolver_match.url_name == 'event-edit' %} class="active"{% endif %}>이벤트 관리</a>
-      <a href="/staff/home-categories/"{% if request.resolver_match.url_name == 'home-categories' %} class="active"{% endif %}>홈 카테고리</a>
-    </nav>
-    <a class="staff-shell-exit" href="/">사이트로 돌아가기 ↗</a>
+
+  <nav class="staff-sidebar-nav" aria-label="스태프 콘솔 메뉴">
+    <p class="staff-nav-group mono">운영</p>
+    <a class="staff-nav-item{% if url_name == 'dashboard' %} is-active{% endif %}" href="{% url 'staff:dashboard' %}">
+      <span class="staff-nav-icon mono" aria-hidden="true">D</span>
+      <span class="staff-nav-label">대시보드</span>
+    </a>
+
+    <p class="staff-nav-group mono">검수</p>
+    <a class="staff-nav-item{% if url_name == 'draft-list' or url_name == 'draft-detail' %} is-active{% endif %}" href="{% url 'staff:draft-list' %}">
+      <span class="staff-nav-icon mono" aria-hidden="true">Q</span>
+      <span class="staff-nav-label">드래프트 큐</span>
+      {% if sidebar_pending_draft_count %}
+        <span class="staff-nav-count mono">{{ sidebar_pending_draft_count }}</span>
+      {% endif %}
+    </a>
+    <a class="staff-nav-item{% if url_name == 'draft-source-list' %} is-active{% endif %}" href="{% url 'staff:draft-source-list' %}">
+      <span class="staff-nav-icon mono" aria-hidden="true">S</span>
+      <span class="staff-nav-label">수집 소스</span>
+    </a>
+
+    <p class="staff-nav-group mono">카탈로그</p>
+    <a class="staff-nav-item{% if url_name == 'event-list' or url_name == 'event-create' or url_name == 'event-edit' %} is-active{% endif %}" href="{% url 'staff:event-list' %}">
+      <span class="staff-nav-icon mono" aria-hidden="true">E</span>
+      <span class="staff-nav-label">이벤트</span>
+    </a>
+    <a class="staff-nav-item{% if url_name == 'home-categories' %} is-active{% endif %}" href="{% url 'staff:home-categories' %}">
+      <span class="staff-nav-icon mono" aria-hidden="true">C</span>
+      <span class="staff-nav-label">홈 카테고리</span>
+    </a>
+
+    <p class="staff-nav-group mono">기록</p>
+    <a class="staff-nav-item{% if url_name == 'audit-log' %} is-active{% endif %}" href="{% url 'staff:audit-log' %}">
+      <span class="staff-nav-icon mono" aria-hidden="true">L</span>
+      <span class="staff-nav-label">감사 로그</span>
+    </a>
+
+    <a class="staff-nav-item staff-nav-exit" href="/">
+      <span class="staff-nav-icon mono" aria-hidden="true">↗</span>
+      <span class="staff-nav-label">사이트로 돌아가기</span>
+    </a>
+  </nav>
+
+  <div class="staff-sidebar-footer">
+    <div class="staff-sidebar-user">
+      <span class="staff-sidebar-user-tile mono" aria-hidden="true">{{ request.user.email|slice:":2"|upper }}</span>
+      <div class="staff-sidebar-user-info">
+        <p class="mono staff-sidebar-user-email">{{ request.user.email }}</p>
+        <p class="staff-sidebar-user-role">{% if request.user.is_superuser %}스태프 · 전체 권한{% else %}스태프 · 검수 권한{% endif %}</p>
+      </div>
+    </div>
   </div>
-</header>
-<script defer src="{% static 'js/components/staff-shell.js' %}"></script>
+</aside>
+
+<div class="staff-commandbar">
+  <span class="mono staff-commandbar-crumb">
+    {% if url_name == 'dashboard' %}운영 /
+    {% elif url_name == 'draft-list' %}검수 /
+    {% elif url_name == 'draft-detail' %}검수 / 드래프트 큐 /
+    {% elif url_name == 'draft-source-list' %}검수 /
+    {% elif url_name == 'event-list' or url_name == 'event-create' or url_name == 'event-edit' %}카탈로그 /
+    {% elif url_name == 'home-categories' %}카탈로그 /
+    {% elif url_name == 'audit-log' %}기록 /
+    {% endif %}
+  </span>
+  <h1 class="staff-commandbar-title">
+    {% if url_name == 'dashboard' %}대시보드
+    {% elif url_name == 'draft-list' %}드래프트 큐
+    {% elif url_name == 'draft-detail' %}드래프트 검토
+    {% elif url_name == 'draft-source-list' %}수집 소스
+    {% elif url_name == 'event-list' %}이벤트
+    {% elif url_name == 'event-create' %}이벤트 생성
+    {% elif url_name == 'event-edit' %}이벤트 수정
+    {% elif url_name == 'home-categories' %}홈 카테고리
+    {% elif url_name == 'audit-log' %}감사 로그
+    {% endif %}
+  </h1>
+
+  {% if staff_search_enabled %}
+    <form class="staff-commandbar-search" method="get" action="{{ request.path }}" role="search">
+      {# 보고 있던 필터를 그대로 다시 보낸다. 없으면 검색 한 번에 상태 필터가 풀린다. #}
+      {% for param in staff_search_hidden_params %}
+        <input type="hidden" name="{{ param.key }}" value="{{ param.value }}">
+      {% endfor %}
+      <label class="sr-only" for="staff-commandbar-q">이 화면에서 검색</label>
+      <input class="staff-commandbar-search-input" id="staff-commandbar-q" type="search" name="q" value="{{ staff_search_query }}" placeholder="이 화면에서 검색" maxlength="100">
+    </form>
+  {% endif %}
+  <a class="staff-cta" href="{{ request.get_full_path }}">↻ 새로고침</a>
+  <span class="staff-commandbar-divider" aria-hidden="true"></span>
+  <time class="mono staff-commandbar-stamp" datetime="{% now 'c' %}">{% now 'y.m.d H:i' %} 기준</time>
+</div>
+{% endwith %}

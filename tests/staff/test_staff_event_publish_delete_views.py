@@ -5,6 +5,7 @@
 폼에서만 오는 POST 전용 SSR 액션이며 JSON API가 아니다.
 """
 import datetime
+import re
 
 import pytest
 
@@ -146,6 +147,25 @@ def test_삭제_첫_POST는_삭제하지_않고_확인_화면을_보여준다(st
 
 
 @pytest.mark.django_db
+def test_삭제_확인_화면은_이미_계산한_참조_건수를_컨텍스트로_받는다(staff_client, make_event):
+    """B5: reference_counts는 참조 검사에서 이미 계산되는데 예전엔 템플릿에
+    안 넘겼다. 여기 도달했다는 것 자체가 참조가 0건이라는 뜻이라 값은
+    항상 0이지만, 컨텍스트에 실려 있어야 화면이 표시할 수 있다."""
+    staff, client = staff_client()
+    event = make_event(title="삭제 대상", official_url="https://example.com/delete-confirm-counts")
+
+    resp = client.post(_delete_url(event))
+
+    assert resp.status_code == 200
+    assert resp.context["reference_counts"] == {
+        "interest": 0,
+        "status": 0,
+        "visit": 0,
+        "collection_item": 0,
+    }
+
+
+@pytest.mark.django_db
 def test_삭제_확인_POST는_이벤트를_삭제하고_감사_로그를_남긴_뒤_목록으로_리다이렉트된다(staff_client, make_event):
     staff, client = staff_client()
     event = make_event(title="삭제 대상", official_url="https://example.com/delete-confirmed")
@@ -198,7 +218,8 @@ def test_참조가_있는_이벤트의_수정_페이지는_삭제_버튼_대신_
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "찜 1" in content
+    # 라벨(찜)과 값(1)이 서로 다른 <span>에 있어 문자열이 붙어 있지 않다.
+    assert re.search(r'<span>찜</span>\s*<span class="mono">1</span>', content)
     assert f'action="/staff/events/{event.pk}/delete/"' not in content
 
 
@@ -228,7 +249,7 @@ def test_컬렉션_항목이_참조하는_이벤트의_수정_페이지는_삭�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "컬렉션 1" in content
+    assert re.search(r'<span>컬렉션</span>\s*<span class="mono">1</span>', content)
     assert f'action="/staff/events/{event.pk}/delete/"' not in content
 
 
@@ -248,3 +269,18 @@ def test_컬렉션_참조로_삭제가_차단되면_안내_메시지에_컬렉�
     assert Event.objects.filter(pk=event.pk).exists()
     messages_text = " ".join(str(m) for m in resp.context["messages"])
     assert "컬렉션 1" in messages_text
+
+
+@pytest.mark.django_db
+def test_선택된_게시_상태_탭만_적용됨으로_노출된다(staff_client, make_event):
+    make_event()
+
+    _, client = staff_client()
+    resp = client.get("/staff/events/?publish_status=published")
+
+    assert resp.status_code == 200
+    tabs = re.findall(r'<a class="events-tab[^"]*"[^>]*>', resp.content.decode())
+    assert len(tabs) == 3, tabs
+    current = [t for t in tabs if 'aria-current="true"' in t]
+    assert len(current) == 1, tabs
+    assert "적용됨" in current[0]

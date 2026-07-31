@@ -433,7 +433,7 @@ opt-in `data-submit-guard` 방식 — 전역 `form` 셀렉터를 쓰지 않는�
 
 ### D3 착수 전 기록 — 스태프 콘솔 POST 폼 7개 중 1개만 연타 가드가 있다
 
-- 근거: 가드 있음 — `static/js/pages/staff_event_edit.js`(검증 완료 폼).
+- 근거: 가드 있음 — `static/js/staff/staff_event_edit.js`(검증 완료 폼).
   가드 없음 — `templates/staff/events/edit.html`(4개),
   `events/create.html`, `events/delete_confirm.html`, `dashboard.html`.
 - 영향: "게시 내리기" 연타 시 상태 역전 가능, "삭제 확정" 연타 시 두 번째

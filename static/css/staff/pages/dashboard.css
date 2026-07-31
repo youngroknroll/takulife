@@ -1,0 +1,405 @@
+/*
+ * dashboard.css (스태프 콘솔 전용) — 대시보드 화면(templates/staff/dashboard.html).
+ * 시안 대시보드 보드(/tmp/staff_mock.html:106-210)를 따른다. 색은 전부
+ * tokens.css의 --c-* 토큰만 쓴다.
+ */
+
+/* ── 콘텐츠 컨테이너 ───────────────────────────────────────────────
+ * shell.css는 사이드바·커맨드바만 정의하고 .page 여백은 화면별
+ * CSS가 채운다(2단계 명명 규약). 값은 시안 보드 본문 패딩과 같다
+ * (/tmp/staff_mock.html:106, padding:14px, gap:14px).
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+/* ── 지표 카드 5장 ─────────────────────────────────────────────── */
+.dash-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--c-line);
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.dash-metric {
+  background: var(--c-panel);
+  padding: 0.6875rem 0.8125rem 0.75rem;
+  display: block;
+}
+
+.dash-metric-link:hover {
+  background: var(--c-head);
+}
+
+.dash-metric-label {
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+  margin: 0 0 0.375rem;
+}
+
+.dash-metric-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+.dash-metric-value {
+  font-size: 1.4375rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--c-text);
+}
+
+.dash-metric-unit {
+  font-size: 0.6875rem;
+  color: var(--c-dim);
+}
+
+.dash-metric-delta {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--c-dim);
+}
+
+.dash-metric-delta--up {
+  color: var(--c-ok);
+}
+
+.dash-metric-delta--down {
+  color: var(--c-danger);
+}
+
+.dash-metric-note {
+  font-size: 0.65625rem;
+  color: var(--c-faint);
+  margin: 0.3125rem 0 0;
+}
+
+/* ── 2단 레이아웃 ─────────────────────────────────────────────── */
+.dash-layout {
+  display: grid;
+  grid-template-columns: 1fr 23.75rem; /* 380px */
+  gap: 0.875rem;
+  align-items: start;
+}
+
+.dash-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+/* ── 패널 공통 ─────────────────────────────────────────────────── */
+.dash-panel {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+.dash-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-head);
+}
+
+.dash-panel-head-title {
+  font-size: 0.78125rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.dash-panel-head-meta {
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+  white-space: nowrap;
+}
+
+.dash-panel-head-meta--end {
+  margin-left: auto;
+}
+
+.dash-panel-head-action {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.dash-panel-head-link {
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: var(--c-accent);
+  white-space: nowrap;
+}
+
+.dash-cta-accent {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+
+.dash-empty {
+  padding: 0.875rem 0.75rem;
+  font-size: 0.78125rem;
+  color: var(--c-dim);
+  margin: 0;
+}
+
+/* ── 표 밀도(D8): table-layout:fixed + <col> 폭으로 시맨틱을
+   유지한 채 34px 안팎 행 높이를 낸다. ── */
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.dash-table thead th {
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--c-dim);
+  background: var(--c-head);
+  border-bottom: 1px solid var(--c-line);
+  padding: 0.4375rem 0.75rem;
+}
+
+.dash-table tbody td {
+  padding: 0.375rem 0.75rem;
+  border-bottom: 1px solid var(--c-line-soft);
+  font-size: 0.78125rem;
+  color: var(--c-text);
+  vertical-align: middle;
+}
+
+.dash-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dash-source-name {
+  font-weight: 600;
+  font-size: 0.78125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-source-error {
+  font-size: 0.65625rem;
+  color: var(--c-danger);
+  margin-top: 0.125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 0.1875rem;
+}
+
+.dash-status-dot {
+  width: 0.3125rem;
+  height: 0.3125rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.dash-status-badge--ok {
+  background: var(--c-accent-soft);
+  color: var(--c-ok);
+}
+
+.dash-status-badge--stale {
+  background: var(--c-warn-bg);
+  color: var(--c-warn-ink);
+}
+
+.dash-status-badge--error {
+  background: var(--c-warn-bg);
+  color: var(--c-danger);
+}
+
+.dash-status-badge--disabled {
+  background: var(--c-track);
+  color: var(--c-faint);
+}
+
+.dash-cell-dim {
+  color: var(--c-dim);
+  white-space: nowrap;
+}
+
+.dash-cell-faint {
+  color: var(--c-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-cell-target {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-cell-target a {
+  color: var(--c-accent);
+  font-weight: 600;
+}
+
+.dash-action-badge {
+  display: inline-flex;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.1875rem;
+  background: var(--c-track);
+  color: var(--c-faint);
+}
+
+.dash-action-badge--approve {
+  background: var(--c-accent-soft);
+  color: var(--c-ok);
+}
+
+.dash-action-badge--reject {
+  background: var(--c-warn-bg);
+  color: var(--c-danger);
+}
+
+.dash-action-badge--event_republish,
+.dash-action-badge--event_create,
+.dash-action-badge--event_verify {
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+}
+
+/* ── 품질 경고 막대 ────────────────────────────────────────────── */
+.dash-warning-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0.75rem 0;
+}
+
+.dash-warning-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.dash-warning-list li:last-child .dash-warning-row {
+  border-bottom: none;
+}
+
+.dash-warning-label {
+  font-size: 0.75rem;
+  color: var(--c-text);
+  flex: none;
+  min-width: 6.5rem;
+}
+
+.dash-warning-track {
+  flex: 1;
+  height: 0.375rem;
+  border-radius: 0.125rem;
+  background: var(--c-track);
+  overflow: hidden;
+}
+
+.dash-warning-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0.125rem;
+  background: var(--c-warn-ink);
+  width: var(--bar-w);
+}
+
+.dash-warning-count {
+  font-size: 0.71875rem;
+  font-weight: 700;
+  flex: none;
+  min-width: 1.625rem;
+  text-align: right;
+  color: var(--c-text);
+}
+
+.dash-panel-foot {
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+  margin: 0.5625rem 0.75rem 0.625rem;
+}
+
+/* ── 최근 14일 활동 막대그래프 ─────────────────────────────────── */
+.dash-activity {
+  padding: 0.875rem 0.75rem 0.625rem;
+}
+
+.dash-activity-columns {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  height: 4.625rem;
+}
+
+.dash-activity-col {
+  flex: 1;
+  border-radius: 0.125rem 0.125rem 0 0;
+  background: var(--c-track);
+  height: var(--col-h);
+  min-height: 2px;
+}
+
+.dash-activity-col--today {
+  background: var(--c-accent);
+}
+
+/* ── 시작 임박 경고 콜아웃 ─────────────────────────────────────── */
+.dash-callout {
+  border: 1px solid var(--c-warn-line);
+  border-radius: 0.375rem;
+  background: var(--c-warn-bg);
+  padding: 0.75rem 0.8125rem;
+}
+
+.dash-callout-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-warn-ink);
+  margin: 0 0 0.3125rem;
+}
+
+.dash-callout-body {
+  font-size: 0.71875rem;
+  color: var(--c-warn-ink);
+  opacity: 0.9;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* 데스크톱 게이트를 막 통과한 1024~1199px에서는 380px 고정 레일을 빼면
+ * 본문에 남는 폭이 모자라 카드 글자가 줄줄이 감긴다. 레일을 아래로 내린다.
+ */
+@media (max-width: 74.9375rem) {
+  .dash-layout {
+    grid-template-columns: 1fr;
+  }
+}

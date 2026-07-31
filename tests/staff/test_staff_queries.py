@@ -8,6 +8,7 @@ from django.utils import timezone
 from events.models import Event
 from staff.models import StaffActionLog
 from staff.queries import (
+    list_staff_action_log,
     recent_staff_actions,
     staff_actions_count_since,
     staff_actions_per_day,
@@ -181,3 +182,84 @@ def test_일별_집계는_UTC가_아닌_KST_달력_날짜_기준으로_버킷팅
     by_date = {row["date"]: row["count"] for row in result}
     assert by_date[today - timedelta(days=1)] == 1
     assert by_date[today - timedelta(days=2)] == 0
+
+
+@pytest.mark.domain
+@pytest.mark.django_db
+class TestStaffActionLogSearch:
+    """커맨드바 검색이 넘기는 q를 처리한다."""
+
+    def test_행위자_이메일의_일부로_찾는다(self, make_user):
+        hit_actor = make_user(email="reviewer-kim@example.com", is_staff=True)
+        other = make_user(email="someone-else@example.com", is_staff=True)
+        StaffActionLog.objects.create(actor=hit_actor, action="approve")
+        StaffActionLog.objects.create(actor=other, action="approve")
+
+        rows = list(list_staff_action_log(search="reviewer-kim"))
+
+        assert [row["actor__email"] for row in rows] == [hit_actor.email]
+
+    def test_대상_드래프트의_출처_url로_찾는다(self, make_user, make_draft):
+        actor = make_user(is_staff=True)
+        hit = make_draft("https://findme.example.com/a")
+        other = make_draft("https://other.example.com/b")
+        StaffActionLog.objects.create(actor=actor, action="approve", target_draft=hit)
+        StaffActionLog.objects.create(actor=actor, action="approve", target_draft=other)
+
+        rows = list(list_staff_action_log(search="findme"))
+
+        assert [row["target_draft_id"] for row in rows] == [hit.id]
+
+    def test_대상_이벤트의_제목으로도_찾는다(self, make_user, make_event):
+        actor = make_user(is_staff=True)
+        hit = make_event(title="여름 팝업스토어")
+        other = make_event(title="겨울 전시")
+        StaffActionLog.objects.create(actor=actor, action="unpublish", target_event=hit)
+        StaffActionLog.objects.create(actor=actor, action="unpublish", target_event=other)
+
+        rows = list(list_staff_action_log(search="팝업"))
+
+        assert [row["target_event_id"] for row in rows] == [hit.id]
+
+    def test_검색_결과에도_ip_주소와_user_agent가_없다(self, make_user):
+        """D9: 검색이 열린다고 노출 범위가 넓어지면 안 된다."""
+        actor = make_user(email="privacy@example.com", is_staff=True)
+        StaffActionLog.objects.create(
+            actor=actor,
+            action="approve",
+            ip_address="203.0.113.99",
+            user_agent="pytest-search/1.0",
+        )
+
+        row = list(list_staff_action_log(search="privacy"))[0]
+
+        assert "ip_address" not in row
+        assert "user_agent" not in row
+
+    def test_ip_주소로는_검색되지_않는다(self, make_user):
+        """값을 안 보여줘도 검색이 걸리면 존재 여부를 되물어 알아낼 수 있다."""
+        actor = make_user(is_staff=True)
+        StaffActionLog.objects.create(
+            actor=actor, action="approve", ip_address="203.0.113.99"
+        )
+
+        assert list(list_staff_action_log(search="203.0.113.99")) == []
+
+    def test_검색어와_action_필터는_함께_적용된다(self, make_user, make_draft):
+        actor = make_user(email="both@example.com", is_staff=True)
+        draft = make_draft("https://both.example.com/a")
+        hit = StaffActionLog.objects.create(
+            actor=actor, action="approve", target_draft=draft
+        )
+        StaffActionLog.objects.create(actor=actor, action="reject", target_draft=draft)
+
+        rows = list(list_staff_action_log(action="approve", search="both.example"))
+
+        assert [row["id"] for row in rows] == [hit.id]
+
+    def test_빈_검색어는_아무것도_거르지_않는다(self, make_user):
+        actor = make_user(is_staff=True)
+        StaffActionLog.objects.create(actor=actor, action="approve")
+        StaffActionLog.objects.create(actor=actor, action="reject")
+
+        assert len(list(list_staff_action_log(search="  "))) == 2

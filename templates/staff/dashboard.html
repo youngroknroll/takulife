@@ -3,195 +3,242 @@
 {% block title %}{{ project_name }} | 스태프 콘솔{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/staff_console.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/pages/dashboard.css' %}">
 {% endblock %}
 
+{% comment %}
+시안 대시보드 보드(/tmp/staff_mock.html:108-210)를 따른다. 시안의 5장 지표
+카드는 전부 예시 증감을 그렸지만, 실제로 이전 구간 값이 있는 카드는 셋뿐이다
+— 최근 7일 처리(recent_actions_prev_7d_count), 주간 활성 사용자
+(weekly_active_user_prev_count), 주간 이벤트 기록(weekly_event_prev_count).
+검토 대기·품질 경고는 과거 스냅샷 자체가 없어 여전히 증감을 표시하지
+않는다 — 지어내지 않는다(사용자 결정 6, .docs/FE/
+staff-console-redesign.md M5).
+{% endcomment %}
 {% block content %}
   <main class="page" id="staff-main">
-    <section class="hero">
-      <h1>스태프 콘솔</h1>
+    <div class="dash-metrics">
+      <a class="dash-metric dash-metric-link" href="/staff/drafts/?status=pending">
+        <p class="dash-metric-label">검토 대기</p>
+        <p class="dash-metric-value-row">
+          <span class="mono dash-metric-value">{{ pending_count }}</span>
+          <span class="dash-metric-unit">건</span>
+        </p>
+      </a>
 
-      <div class="summary-grid">
-        <a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">
-          <p class="summary-label">검토 대기 드래프트</p>
-          <p class="summary-value">{{ pending_count }}건</p>
-        </a>
-        <article class="summary-card">
-          <p class="summary-label">품질 경고</p>
-          <p class="summary-value">{{ quality_warnings.total }}건</p>
-          <p class="summary-context">총계 외 · 시작 임박, 미확인 {{ quality_warnings.needs_reverification }}건</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">최근 7일 처리</p>
-          <p class="summary-value">{{ recent_actions_7d_count }}건</p>
-          <p class="summary-context">지난주 {{ recent_actions_prev_7d_count }}건</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">주간 활성 사용자</p>
-          <p class="summary-value">{{ weekly_active_user_count }}명</p>
-        </article>
-        <article class="summary-card">
-          <p class="summary-label">주간 이벤트 기록</p>
-          <p class="summary-value">{{ weekly_event_count }}건</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="layout">
-      <article class="panel">
-        <h2>검토 큐</h2>
-        {% if pending_count > 0 %}
-          <p class="panel-note">검토 대기 중인 드래프트가 {{ pending_count }}건 있습니다.</p>
-        {% else %}
-          <p class="panel-note">검토 대기 중인 드래프트가 없습니다.</p>
-        {% endif %}
-        <a class="queue-link" href="/staff/drafts/?status=pending">검토 큐로 이동 →</a>
-
-        <hr class="panel-divider">
-
-        <h3>수집 소스 상태</h3>
-        <form method="post" action="{% url 'staff:draft-discovery-run' %}" data-submit-guard>
-          {% csrf_token %}
-          {% if draft_discovery_enabled %}
-            <button class="action-button" type="submit">지금 수집</button>
-            <p class="panel-note">소스 수에 따라 응답까지 수십 초가 걸릴 수 있습니다.</p>
-          {% else %}
-            <button class="action-button" type="submit" disabled>지금 수집</button>
-            <p class="panel-note">설정에서 DRAFT_DISCOVERY_ENABLED 활성화 필요.</p>
-          {% endif %}
-          <p class="panel-note">마지막 실행: {% if last_discovery_run_at %}{{ last_discovery_run_at|timesince }} 전{% else %}실행 이력 없음{% endif %}</p>
-        </form>
-        {% if draft_sources %}
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th scope="col">소스</th>
-                <th scope="col">상태</th>
-                <th scope="col">마지막 수집</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in draft_source_rows %}
-                <tr>
-                  <td>{{ row.source.name }}</td>
-                  <td>
-                    <span class="status-dot status-dot--{{ row.status_level }}"></span>
-                    {% if row.source.enabled %}활성{% else %}<span class="badge-soon">비활성</span>{% endif %}
-                    {% if row.is_stale %}<span class="badge-stale">지연</span>{% endif %}
-                    {% if row.has_error %}<span class="badge-error">오류</span>{% endif %}
-                  </td>
-                  <td>
-                    {% if row.source.last_checked_at %}{{ row.source.last_checked_at|timesince }} 전{% else %}아직 수집되지 않음{% endif %}
-                    {% if row.has_error %}<br><span class="panel-note">{{ row.source.last_error|truncatechars:80 }}</span>{% endif %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        {% else %}
-          <p class="notice">등록된 수집 소스가 없습니다.</p>
-        {% endif %}
-        <p class="panel-note">이 정보는 수집 커맨드가 실행된 시점 기준입니다.</p>
-
-        <hr class="panel-divider">
-
-        <h3>품질 경고</h3>
-        <p class="panel-note">게시(공개) 중인 이벤트를 대상으로 자동 점검한 결과입니다.</p>
-        {% if quality_warning_max == 0 %}
-          <p class="notice">현재 품질 경고가 없습니다 ✓</p>
-        {% else %}
-          <ul class="warning-bars">
-            {% for row in quality_warning_rows %}
-              <li>
-                <a class="warning-bar-row{% if row.count == 0 %} warning-bar-row--zero{% endif %}" href="/staff/events/?warning={{ row.key }}">
-                  <span class="warning-bar-label">{{ row.label }}</span>
-                  <span class="warning-bar-visual">
-                    {% if row.count > 0 %}
-                      <span class="warning-bar-track"><span class="warning-bar-fill" style="--bar-w: {% widthratio row.count quality_warning_max 100 %}%"></span></span>
-                    {% endif %}
-                    <span class="warning-bar-count">{{ row.count }}건</span>
-                  </span>
-                </a>
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-
-        <h3>최근 14일 활동</h3>
-        {% if activity_total_14d == 0 %}
-          <p class="notice">최근 14일 처리 내역이 없습니다</p>
-        {% else %}
-          <div class="activity-chart">
-            <div class="activity-columns" role="img"
-                 aria-label="최근 14일 활동: 총 {{ activity_total_14d }}건, 오늘 {{ activity_today_count }}건">
-              {% for col in activity_columns %}
-                <span class="activity-col{% if col.is_today %} activity-col--today{% endif %}" title="{{ col.date|date:'n/j' }} {{ col.count }}건" style="--col-h: {{ col.height_pct }}%"></span>
-              {% endfor %}
-            </div>
-          </div>
-        {% endif %}
-
-        <h3>최근 처리 내역 (최근 10건)</h3>
-        {% if recent_actions %}
-          <table class="data-table recent-actions-table">
-            <thead>
-              <tr>
-                <th scope="col">시각</th>
-                <th scope="col">작업</th>
-                <th scope="col">대상</th>
-                <th scope="col">담당</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for a in recent_action_rows %}
-                <tr>
-                  <td>{{ a.log.created_at|date:"y.m.d H:i" }}</td>
-                  <td>{{ a.action_label }}</td>
-                  <td>
-                    {% if a.log.target_draft %}
-                      <a href="/staff/drafts/{{ a.log.target_draft.id }}/">{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:"(제목 없음)" }}</a>
-                    {% elif a.log.target_event %}
-                      <a href="/staff/events/{{ a.log.target_event.id }}/edit/">{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}</a>
-                    {% else %}
-                      -
-                    {% endif %}
-                  </td>
-                  <td>{{ a.log.actor.email|default:"-" }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-
-          <ul class="recent-actions-cards">
-            {% for a in recent_action_rows %}
-              <li class="recent-actions-card">
-                <p class="recent-actions-card-top">{{ a.action_label }} · {{ a.log.created_at|date:"y.m.d H:i" }}</p>
-                <p class="recent-actions-card-target">
-                  {% if a.log.target_draft %}
-                    <a href="/staff/drafts/{{ a.log.target_draft.id }}/">{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:"(제목 없음)" }}</a>
-                  {% elif a.log.target_event %}
-                    <a href="/staff/events/{{ a.log.target_event.id }}/edit/">{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}</a>
-                  {% else %}
-                    -
-                  {% endif %}
-                </p>
-                <p class="recent-actions-card-actor">담당 {{ a.log.actor.email|default:"-" }}</p>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="notice">아직 처리 내역이 없습니다.</p>
-        {% endif %}
+      <article class="dash-metric">
+        <p class="dash-metric-label">품질 경고</p>
+        <p class="dash-metric-value-row">
+          <span class="mono dash-metric-value">{{ quality_warnings.total }}</span>
+          <span class="dash-metric-unit">건</span>
+        </p>
+        <p class="dash-metric-note">시작 임박·미확인 {{ quality_warnings.needs_reverification }}건은 이 합계에 없음</p>
       </article>
 
-      <aside class="side-stack">
-        <section class="panel">
-          <h2>바로가기</h2>
-          <ul class="side-list">
-            <li><a href="/staff/home-categories/">홈 카테고리 설정</a></li>
-          </ul>
+      {% comment %}
+      델타 = 이번 주 - 지난주. Django에는 뺄셈 필터가 없어 widthratio로
+      지난주 값을 음수로 뒤집은 뒤 add 필터로 더한다(정수 문자열은
+      add 필터가 int로 캐스팅해 더한다).
+      {% endcomment %}
+      {% widthratio recent_actions_prev_7d_count 1 -1 as neg_prev_7d %}
+      {% with delta_7d=recent_actions_7d_count|add:neg_prev_7d %}
+        <article class="dash-metric">
+          <p class="dash-metric-label">최근 7일 처리</p>
+          <p class="dash-metric-value-row">
+            <span class="mono dash-metric-value">{{ recent_actions_7d_count }}</span>
+            <span class="dash-metric-unit">건</span>
+            <span class="mono dash-metric-delta{% if delta_7d > 0 %} dash-metric-delta--up{% elif delta_7d < 0 %} dash-metric-delta--down{% endif %}">
+              {% if delta_7d > 0 %}+{% endif %}{{ delta_7d }}
+            </span>
+          </p>
+          <p class="dash-metric-note">지난주 {{ recent_actions_prev_7d_count }}건</p>
+        </article>
+      {% endwith %}
+
+      {% widthratio weekly_active_user_prev_count 1 -1 as neg_prev_wau %}
+      {% with delta_wau=weekly_active_user_count|add:neg_prev_wau %}
+        <article class="dash-metric">
+          <p class="dash-metric-label">주간 활성 사용자</p>
+          <p class="dash-metric-value-row">
+            <span class="mono dash-metric-value">{{ weekly_active_user_count }}</span>
+            <span class="dash-metric-unit">명</span>
+            <span class="mono dash-metric-delta{% if delta_wau > 0 %} dash-metric-delta--up{% elif delta_wau < 0 %} dash-metric-delta--down{% endif %}">
+              {% if delta_wau > 0 %}+{% endif %}{{ delta_wau }}
+            </span>
+          </p>
+          <p class="dash-metric-note">WAU · 지난주 {{ weekly_active_user_prev_count }}명</p>
+        </article>
+      {% endwith %}
+
+      {% widthratio weekly_event_prev_count 1 -1 as neg_prev_event %}
+      {% with delta_event=weekly_event_count|add:neg_prev_event %}
+        <article class="dash-metric">
+          <p class="dash-metric-label">주간 이벤트 기록</p>
+          <p class="dash-metric-value-row">
+            <span class="mono dash-metric-value">{{ weekly_event_count }}</span>
+            <span class="dash-metric-unit">건</span>
+            <span class="mono dash-metric-delta{% if delta_event > 0 %} dash-metric-delta--up{% elif delta_event < 0 %} dash-metric-delta--down{% endif %}">
+              {% if delta_event > 0 %}+{% endif %}{{ delta_event }}
+            </span>
+          </p>
+          <p class="dash-metric-note">방문 기록 기준 · 지난주 {{ weekly_event_prev_count }}건</p>
+        </article>
+      {% endwith %}
+    </div>
+
+    <div class="dash-layout">
+      <div class="dash-col">
+        <section class="dash-panel">
+          <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">수집 소스 상태</h2>
+            <span class="mono dash-panel-head-meta">마지막 실행: {% if last_discovery_run_at %}{{ last_discovery_run_at|timesince }} 전{% else %}실행 이력 없음{% endif %}</span>
+            <form class="dash-panel-head-action" method="post" action="{% url 'staff:draft-discovery-run' %}" data-submit-guard>
+              {% csrf_token %}
+              {% if draft_discovery_enabled %}
+                <button class="staff-cta dash-cta-accent" type="submit">▶ 지금 수집</button>
+              {% else %}
+                <button class="staff-cta" type="submit" disabled title="설정에서 DRAFT_DISCOVERY_ENABLED 활성화 필요">▶ 지금 수집</button>
+              {% endif %}
+            </form>
+          </div>
+
+          {% if draft_source_rows %}
+            <table class="dash-table">
+              <colgroup>
+                <col style="width: auto;">
+                <col style="width: 6.75rem;">
+                <col style="width: 7.5rem;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">소스</th>
+                  <th scope="col">상태</th>
+                  <th scope="col">마지막 수집</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in draft_source_rows|slice:":6" %}
+                  <tr>
+                    <td>
+                      <div class="dash-source-name">{{ row.source.name }}</div>
+                      {% if row.has_error %}<div class="mono dash-source-error">{{ row.source.last_error|truncatechars:60 }}</div>{% endif %}
+                    </td>
+                    <td>
+                      <span class="dash-status-badge dash-status-badge--{{ row.status_level }}">
+                        <span class="dash-status-dot" aria-hidden="true"></span>
+                        {% if row.status_level == "disabled" %}비활성{% elif row.status_level == "error" %}오류{% elif row.status_level == "stale" %}지연{% else %}활성{% endif %}
+                      </span>
+                    </td>
+                    <td class="mono dash-cell-dim">{% if row.source.last_checked_at %}{{ row.source.last_checked_at|timesince }} 전{% else %}수집 안 함{% endif %}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="dash-empty">등록된 수집 소스가 없습니다.</p>
+          {% endif %}
         </section>
-      </aside>
-    </section>
+
+        <section class="dash-panel">
+          <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">최근 처리 내역</h2>
+            <span class="mono dash-panel-head-meta">최근 10건</span>
+            <a class="dash-panel-head-action dash-panel-head-link" href="{% url 'staff:audit-log' %}">전체 감사 로그 →</a>
+          </div>
+
+          {% if recent_action_rows %}
+            <table class="dash-table">
+              <colgroup>
+                <col style="width: 8.5rem;">
+                <col style="width: 6rem;">
+                <col style="width: auto;">
+                <col style="width: 9.375rem;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">시각</th>
+                  <th scope="col">작업</th>
+                  <th scope="col">대상</th>
+                  <th scope="col">담당</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in recent_action_rows %}
+                  <tr>
+                    <td class="mono dash-cell-dim">{{ a.log.created_at|date:"y.m.d H:i" }}</td>
+                    <td><span class="dash-action-badge dash-action-badge--{{ a.log.action }}">{{ a.action_label }}</span></td>
+                    <td class="dash-cell-target">
+                      {% if a.log.target_draft %}
+                        <a href="/staff/drafts/{{ a.log.target_draft.id }}/">{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:"(제목 없음)" }}</a>
+                      {% elif a.log.target_event %}
+                        <a href="/staff/events/{{ a.log.target_event.id }}/edit/">{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}</a>
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                    <td class="mono dash-cell-faint">{{ a.log.actor.email|default:"-" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="dash-empty">아직 처리 내역이 없습니다.</p>
+          {% endif %}
+        </section>
+      </div>
+
+      <div class="dash-col dash-col--side">
+        <section class="dash-panel">
+          <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">품질 경고</h2>
+            <span class="mono dash-panel-head-meta dash-panel-head-meta--end">게시 중 이벤트 대상</span>
+          </div>
+          {% if quality_warning_max == 0 %}
+            <p class="dash-empty">현재 품질 경고가 없습니다 ✓</p>
+          {% else %}
+            <ul class="dash-warning-list">
+              {% for row in quality_warning_rows %}
+                <li>
+                  <a class="dash-warning-row" href="/staff/events/?warning={{ row.key }}">
+                    <span class="dash-warning-label">{{ row.label }}</span>
+                    <span class="dash-warning-track">
+                      {% if row.count > 0 %}<span class="dash-warning-fill" style="--bar-w: {% widthratio row.count quality_warning_max 100 %}%"></span>{% endif %}
+                    </span>
+                    <span class="mono dash-warning-count">{{ row.count }}</span>
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+            <p class="dash-panel-foot">행을 클릭하면 해당 경고로 필터된 이벤트 목록으로 이동합니다.</p>
+          {% endif %}
+        </section>
+
+        <section class="dash-panel">
+          <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">최근 14일 처리량</h2>
+            <span class="mono dash-panel-head-meta dash-panel-head-meta--end">총 {{ activity_total_14d }}건</span>
+          </div>
+          {% if activity_total_14d == 0 %}
+            <p class="dash-empty">최근 14일 처리 내역이 없습니다.</p>
+          {% else %}
+            <div class="dash-activity">
+              <div class="dash-activity-columns" role="img"
+                   aria-label="최근 14일 활동: 총 {{ activity_total_14d }}건, 오늘 {{ activity_today_count }}건">
+                {% for col in activity_columns %}
+                  <span class="dash-activity-col{% if col.is_today %} dash-activity-col--today{% endif %}" title="{{ col.date|date:'n/j' }} {{ col.count }}건" style="--col-h: {{ col.height_pct }}%"></span>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        </section>
+
+        {% if quality_warnings.needs_reverification > 0 %}
+          <div class="dash-callout">
+            <p class="dash-callout-title">⚠ 시작 임박 · 미확인 {{ quality_warnings.needs_reverification }}건</p>
+            <p class="dash-callout-body">7일 내 시작하는데 재확인이 되지 않은 게시 이벤트입니다. 목록에서 확인 처리하세요.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
   </main>
 {% endblock %}

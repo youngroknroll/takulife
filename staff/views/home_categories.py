@@ -1,11 +1,13 @@
 """스태프 콘솔 화면: 홈 카테고리 타일을 고르고 순서를 정한다."""
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Count
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from core.models import HomeConfig
 from core.vocab import CATEGORY
+from events.models import Event
 
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
@@ -45,12 +47,20 @@ def staff_home_categories(request):
     featured_set = set(config.featured_categories)
     featured_order = {slug: idx + 1 for idx, slug in enumerate(config.featured_categories)}
 
+    # 게시된 이벤트 수 집계 패턴은 core/views/events.py의 홈 카테고리 타일과 같다(B6).
+    # 강조 카테고리를 고를 때 실제로 얼마나 채워져 있는지 보여준다.
+    event_counts = {
+        row["category"]: row["count"]
+        for row in Event.objects.published().values("category").annotate(count=Count("id"))
+    }
+
     category_rows = [
         {
             "slug": slug,
             "label": label,
             "checked": slug in featured_set,
             "order": featured_order.get(slug, vocab_idx + 1),
+            "event_count": event_counts.get(slug, 0),
         }
         for vocab_idx, (slug, label) in enumerate(CATEGORY)
     ]

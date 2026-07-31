@@ -3,34 +3,39 @@
 {% block title %}{{ project_name }} | 드래프트 검토 #{{ draft.id }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/event_draft_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/pages/drafts.css' %}">
 {% endblock %}
+
+{% comment %}
+전체 검토 화면(D5). 인스펙터(큐 화면)가 부분집합이라면 이 화면이 원문
+대조·편집·승인 전 체크를 전부 소유한다. 3열: 원문(불변) / 추출 후보 편집 /
+검수 판정. JS 동작(draft.js)은 기존 id를 그대로 유지해 재사용한다.
+{% endcomment %}
 
 {% block content %}
   <main class="page" id="staff-main">
-    <div class="detail-topline">
-      {% if request.GET.status == "pending" or request.GET.status == "approved" or request.GET.status == "rejected" %}
-        <a class="top-action" href="/staff/drafts/?status={{ request.GET.status }}">목록으로</a>
-      {% else %}
-        <a class="top-action" href="/staff/drafts/">목록으로</a>
-      {% endif %}
-    </div>
-
     {% if draft_not_found %}
       <p class="notice">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="/staff/drafts/">목록으로 돌아가기</a></p>
     {% else %}
 
-    <section class="hero">
-      <div>
-        <h1>드래프트 검토 #{{ draft.id }}</h1>
-        {% if draft.source_name %}<p>출처: {{ draft.source_name }}</p>{% endif %}
-      </div>
-      <span class="status-chip {{ draft.review_status }} review-status-{{ draft.review_status }}">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %}</span>
-    </section>
+    <div class="review-topbar">
+      {% if request.GET.status == "pending" or request.GET.status == "approved" or request.GET.status == "rejected" %}
+        <a class="staff-cta" href="/staff/drafts/?status={{ request.GET.status }}">← 큐로</a>
+      {% else %}
+        <a class="staff-cta" href="/staff/drafts/">← 큐로</a>
+      {% endif %}
+      <span class="mono review-topbar-id">드래프트 #{{ draft.id }}</span>
+      <span class="queue-status-chip review-status-{{ draft.review_status }}">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% else %}반려됨{% endif %}</span>
+      <span class="mono review-topbar-meta">
+        {% if draft.source_name %}출처 {{ draft.source_name }} · {% endif %}
+        {% if draft.extraction_method == "heuristic" %}휴리스틱 추출{% else %}LLM 추출{% endif %}
+        {% if draft.confidence is not None %} · 신뢰도 {% widthratio draft.confidence 1 100 %}%{% endif %}
+      </span>
+    </div>
 
     {% if not is_pending %}
       <p class="notice">
-        이 드래프트는 <strong>{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %}</strong> 상태입니다. 수정, 승인, 반려는 검토 대기 상태에서만 가능합니다.
+        이 드래프트는 <strong>{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% else %}반려됨{% endif %}</strong> 상태입니다. 수정, 승인, 반려는 검토 대기 상태에서만 가능합니다.
       </p>
       <p class="meta">
         검토자: {{ draft.reviewed_by.email|default:"-" }}
@@ -43,217 +48,129 @@
       </p>
     {% endif %}
 
-    <section class="layout">
-      <article class="panel">
-        <h2>추출 후보 편집</h2>
-        <p class="panel-note">공식 URL, 원본 제목, 원본 본문은 수정할 수 없습니다. 검토 대기 상태에서만 추출 필드를 수정할 수 있습니다.</p>
+    <div class="review-columns">
+      <section class="review-col review-col-raw">
+        <h2 class="review-col-head">원문 (불변) <span class="mono review-col-tag">읽기 전용</span></h2>
+        <div class="review-col-body">
+          <div class="review-field-block">
+            <div class="queue-field-label mono">공식 URL</div>
+            <div class="mono queue-url-box"><a href="{{ draft.source_url }}" target="_blank" rel="noopener">{{ draft.source_url }} ↗</a></div>
+          </div>
+          <div class="review-field-block">
+            <div class="queue-field-label mono">원본 제목</div>
+            <div>{{ draft.raw_title|default:"(없음)" }}</div>
+          </div>
+          <div class="review-field-block">
+            <div class="queue-field-label mono">원본 본문</div>
+            <div class="queue-raw-excerpt" id="raw-text-truncated">{{ draft.raw_text|truncatechars:300|default:"(없음)" }}</div>
+            {% if draft.raw_text|length > 300 %}
+              <p id="raw-text-full" class="queue-raw-excerpt" hidden>{{ draft.raw_text }}</p>
+              <button type="button" id="raw-text-toggle" class="link-button mono"
+                      data-expanded="false" data-controls="raw-text-full"
+                      aria-expanded="false" aria-controls="raw-text-full">전체 보기 ▾</button>
+            {% endif %}
+          </div>
+        </div>
+      </section>
 
-        <form
-          id="draft-edit-form"
-          data-draft-id="{{ draft.id }}"
-          novalidate
-        >
-          <div class="field-grid">
-            <div class="field">
+      <section class="review-col review-col-edit">
+        <h2 class="review-col-head">추출 후보 편집 <span class="mono review-col-tag">검토 대기에서만 수정 가능</span></h2>
+        <div class="review-col-body">
+          <form id="draft-edit-form" data-draft-id="{{ draft.id }}" novalidate>
+            <div class="review-field">
               <label for="edit-source-name">출처명</label>
-              <input
-                id="edit-source-name"
-                name="source_name"
-                type="text"
-                value="{{ draft.source_name }}"
-                {% if not is_pending %}disabled{% endif %}
-              >
+              <input class="cin cin-lg" id="edit-source-name" name="source_name" type="text" value="{{ draft.source_name }}" {% if not is_pending %}disabled{% endif %}>
             </div>
-            <div class="field full">
+            <div class="review-field">
               <label for="edit-title">추출 제목</label>
-              <input
-                id="edit-title"
-                name="extracted_title"
-                type="text"
-                value="{{ draft.extracted_title }}"
-                {% if not is_pending %}disabled{% endif %}
-              >
+              <input class="cin cin-lg" id="edit-title" name="extracted_title" type="text" value="{{ draft.extracted_title }}" {% if not is_pending %}disabled{% endif %}>
             </div>
-            <div class="field">
+            <div class="review-field">
               <label for="edit-category">추출 카테고리</label>
-              <select
-                id="edit-category"
-                name="extracted_category"
-                {% if not is_pending %}disabled{% endif %}
-              >
+              <select class="cin cin-lg" id="edit-category" name="extracted_category" {% if not is_pending %}disabled{% endif %}>
                 <option value="">— 선택 —</option>
                 {% for slug, label in CATEGORY %}
                   <option value="{{ slug }}"{% if draft.extracted_category == slug %} selected{% endif %}>{{ label }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="field">
+            <div class="review-field">
               <label for="edit-work">추출 작품명</label>
-              <input
-                id="edit-work"
-                name="extracted_work_title"
-                type="text"
-                value="{{ draft.extracted_work_title }}"
-                {% if not is_pending %}disabled{% endif %}
-              >
+              <input class="cin cin-lg" id="edit-work" name="extracted_work_title" type="text" value="{{ draft.extracted_work_title }}" {% if not is_pending %}disabled{% endif %}>
             </div>
-            <div class="field">
+            <div class="review-field">
               <label for="edit-location">추출 장소명</label>
-              <input
-                id="edit-location"
-                name="extracted_location_name"
-                type="text"
-                value="{{ draft.extracted_location_name }}"
-                {% if not is_pending %}disabled{% endif %}
-              >
+              <input class="cin cin-lg" id="edit-location" name="extracted_location_name" type="text" value="{{ draft.extracted_location_name }}" {% if not is_pending %}disabled{% endif %}>
             </div>
-            <div class="field">
+            <div class="review-field">
               <label for="edit-region">추출 지역</label>
-              <select
-                id="edit-region"
-                name="extracted_region"
-                {% if not is_pending %}disabled{% endif %}
-              >
+              <select class="cin cin-lg" id="edit-region" name="extracted_region" {% if not is_pending %}disabled{% endif %}>
                 <option value="">— 선택 —</option>
                 {% for slug, label in REGION %}
                   <option value="{{ slug }}"{% if draft.extracted_region == slug %} selected{% endif %}>{{ label }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="field">
-              <label for="edit-start">추출 시작일</label>
-              <input
-                id="edit-start"
-                name="extracted_start_date"
-                type="date"
-                value="{{ draft.extracted_start_date|date:'Y-m-d' }}"
-                {% if not is_pending %}disabled{% endif %}
-              >
+            <div class="review-field-pair">
+              <div class="review-field">
+                <label for="edit-start">추출 시작일</label>
+                <input class="cin cin-lg" id="edit-start" name="extracted_start_date" type="date" value="{{ draft.extracted_start_date|date:'Y-m-d' }}" {% if not is_pending %}disabled{% endif %}>
+              </div>
+              <div class="review-field">
+                <label for="edit-end">추출 종료일</label>
+                <input class="cin cin-lg" id="edit-end" name="extracted_end_date" type="date" value="{{ draft.extracted_end_date|date:'Y-m-d' }}" {% if not is_pending %}disabled{% endif %}>
+              </div>
             </div>
-            <div class="field">
-              <label for="edit-end">추출 종료일</label>
-              <input
-                id="edit-end"
-                name="extracted_end_date"
-                type="date"
-                value="{{ draft.extracted_end_date|date:'Y-m-d' }}"
-                {% if not is_pending %}disabled{% endif %}
-              >
-            </div>
-            <div class="field full">
+            <div class="review-field">
               <label for="edit-summary">추출 요약</label>
-              <textarea
-                id="edit-summary"
-                name="extracted_summary"
-                {% if not is_pending %}disabled{% endif %}
-              >{{ draft.extracted_summary }}</textarea>
+              <textarea class="cin review-textarea" id="edit-summary" name="extracted_summary" {% if not is_pending %}disabled{% endif %}>{{ draft.extracted_summary }}</textarea>
             </div>
-          </div>
 
-          {% if is_pending %}
-            <div style="margin-top:12px;">
-              <button class="action-button secondary" type="submit">수정 저장</button>
-            </div>
-          {% endif %}
-        </form>
-
-        <p
-          id="draft-edit-error"
-          class="notice"
-          tabindex="-1"
-          hidden
-          style="margin-top:10px;"
-        ></p>
-      </article>
-
-      <aside class="action-stack">
-        <section class="panel">
-          <h2>원문 정보</h2>
-          <p class="panel-note">원본 필드는 원본 보존 대상입니다.</p>
-          <div class="raw-box">
-            <h3>공식 URL</h3>
-            <p>
-              <a href="{{ draft.source_url }}" target="_blank" rel="noopener">
-                {{ draft.source_url }} ↗
-              </a>
-            </p>
-          </div>
-          <div class="raw-box">
-            <h3>원본 제목</h3>
-            <p>{{ draft.raw_title|default:"(없음)" }}</p>
-          </div>
-          <div class="raw-box">
-            <p class="panel-note">추출 방식: {% if draft.extraction_method == "heuristic" %}휴리스틱{% else %}LLM{% endif %}{% if draft.confidence is not None %} · 신뢰도 {{ draft.confidence|floatformat:0 }}%{% endif %}</p>
-            <h3>원본 본문</h3>
-            <p id="raw-text-truncated">{{ draft.raw_text|truncatechars:300|default:"(없음)" }}</p>
-            {% if draft.raw_text|length > 300 %}
-              <p id="raw-text-full" hidden>{{ draft.raw_text }}</p>
-              <button type="button" id="raw-text-toggle" class="link-button"
-                      data-expanded="false" data-controls="raw-text-full"
-                      aria-expanded="false" aria-controls="raw-text-full">전체 보기</button>
+            {% if is_pending %}
+              <button class="staff-cta" type="submit">수정 저장</button>
             {% endif %}
-          </div>
-        </section>
+          </form>
+          <p id="draft-edit-error" class="queue-inline-error" tabindex="-1" hidden></p>
+        </div>
+      </section>
 
-        <section class="panel">
-          <h2>검토 액션</h2>
+      <section class="review-col review-col-judge">
+        <h2 class="review-col-head">검수 판정</h2>
+        <div class="review-col-body">
           {% if is_pending %}
-            <p class="panel-note">승인하면 공개 이벤트 목록에 즉시 노출됩니다.</p>
-            <div class="field full">
-              <label for="draft-reject-reason">반려 사유 (선택)</label>
-              <textarea id="draft-reject-reason" placeholder="반려 사유를 입력하세요 (선택)"></textarea>
+            <div class="review-checks">
+              <div class="mono review-checks-title">승인 전 체크</div>
+              {% for check in preapproval_checks %}
+                <div class="review-check-row">
+                  <span class="mono review-check-mark{% if check.passed %} is-pass{% else %} is-fail{% endif %}">{% if check.passed %}✓{% else %}✕{% endif %}</span>
+                  <span>{{ check.label }}</span>
+                </div>
+              {% endfor %}
             </div>
-            <div
-              class="action-stack"
-              data-list-url="{% if request.GET.status == 'pending' or request.GET.status == 'approved' or request.GET.status == 'rejected' %}/staff/drafts/?status={{ request.GET.status }}{% else %}/staff/drafts/{% endif %}"
-            >
-              <button
-                id="draft-approve-btn"
-                class="action-button"
-                type="button"
-                data-draft-id="{{ draft.id }}"
-              >승인하고 게시</button>
-              <button
-                id="draft-reject-btn"
-                class="action-button danger"
-                type="button"
-                data-draft-id="{{ draft.id }}"
-              >반려</button>
-            </div>
-            <p
-              id="draft-approve-success"
-              class="approve-success"
-              tabindex="-1"
-              hidden
-              style="margin-top:8px;"
-            ></p>
-            <p
-              id="draft-action-error"
-              class="notice"
-              tabindex="-1"
-              hidden
-              style="margin-top:8px;"
-            ></p>
-          {% else %}
-            <p class="notice">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% elif draft.review_status == "rejected" %}반려됨{% else %}{{ draft.review_status }}{% endif %} 상태입니다. 승인/반려는 검토 대기 상태에서만 가능합니다.</p>
-          {% endif %}
-        </section>
 
-        <section class="panel">
-          <h2>필드 규칙</h2>
-          <ul class="rule-list">
-            <li>검토 대기 상태에서만 추출 필드 수정</li>
-            <li>공식 URL, 원본 제목, 원본 본문은 불변</li>
-            <li>승인 후 공개 Event 생성</li>
-            <li>반려한 드래프트는 공개 페이지에 노출하지 않음</li>
-          </ul>
-        </section>
-      </aside>
-    </section>
+            <div class="review-field">
+              <label for="draft-reject-reason">반려 사유 <span class="review-field-hint">(반려 시 필수 아님)</span></label>
+              <textarea class="cin review-textarea" id="draft-reject-reason" placeholder="사유를 입력하세요"></textarea>
+            </div>
+
+            <div class="review-judge-actions" data-list-url="{% if request.GET.status == 'pending' or request.GET.status == 'approved' or request.GET.status == 'rejected' %}/staff/drafts/?status={{ request.GET.status }}{% else %}/staff/drafts/{% endif %}">
+              <button id="draft-approve-btn" class="staff-cta staff-cta-ok staff-cta-block" type="button" data-draft-id="{{ draft.id }}">승인하고 게시</button>
+              <button id="draft-reject-btn" class="staff-cta staff-cta-danger-outline staff-cta-block" type="button" data-draft-id="{{ draft.id }}">반려</button>
+            </div>
+            <p id="draft-approve-success" class="approve-success" tabindex="-1" hidden></p>
+            <p id="draft-action-error" class="queue-inline-error" tabindex="-1" hidden></p>
+
+            <p class="review-judge-note">승인 시 <strong>published Event</strong>가 생성되어 공개 목록에 즉시 노출됩니다. 공식 URL이 없는 항목은 게시할 수 없습니다.</p>
+          {% else %}
+            <p class="notice">{% if draft.review_status == "pending" %}검토 대기{% elif draft.review_status == "approved" %}승인됨{% else %}반려됨{% endif %} 상태입니다. 승인/반려는 검토 대기 상태에서만 가능합니다.</p>
+          {% endif %}
+        </div>
+      </section>
+    </div>
     {% endif %}
   </main>
 {% endblock %}
 
 {% block extra_js %}
-  <script defer src="{% static 'js/pages/draft.js' %}"></script>
+  <script defer src="{% static 'js/staff/draft.js' %}"></script>
 {% endblock %}

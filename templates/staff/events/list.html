@@ -1,61 +1,83 @@
 {% extends "staff/base_staff.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 이벤트 관리{% endblock %}
+{% block title %}{{ project_name }} | 이벤트{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/pages/events.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="staff-main">
-    <section class="hero">
-      <div>
-        <h1>이벤트 관리</h1>
+  <div class="events-page" id="staff-main">
+    <div class="events-toolbar">
+      <div class="events-tabgroup" role="group" aria-label="게시 상태 필터">
+        <a class="events-tab{% if not selected_publish_status %} is-active{% endif %}" href="/staff/events/{% if selected_warning %}?warning={{ selected_warning }}{% endif %}"{% if not selected_publish_status %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체</a>
+        <a class="events-tab{% if selected_publish_status == 'published' %} is-active{% endif %}" href="/staff/events/?publish_status=published{% if selected_warning %}&warning={{ selected_warning }}{% endif %}"{% if selected_publish_status == 'published' %} aria-current="true" aria-label="게시, 적용됨"{% endif %}>게시</a>
+        <a class="events-tab{% if selected_publish_status == 'draft' %} is-active{% endif %}" href="/staff/events/?publish_status=draft{% if selected_warning %}&warning={{ selected_warning }}{% endif %}"{% if selected_publish_status == 'draft' %} aria-current="true" aria-label="비공개, 적용됨"{% endif %}>비공개</a>
       </div>
-      <a class="top-action" href="/staff/events/new/">+ 새 이벤트</a>
-    </section>
 
-    <section class="layout">
-      <article class="panel">
-        <h2>품질 경고 필터</h2>
-        <div class="chips">
-          <a class="chip{% if not selected_warning %} active{% endif %}" href="/staff/events/">전체</a>
-          {% for chip in warning_chips %}
-            <a class="chip{% if selected_warning == chip.key %} active{% endif %}" href="/staff/events/?warning={{ chip.key }}">{{ chip.label }}</a>
-          {% endfor %}
-        </div>
+      <div class="events-chipgroup" role="group" aria-label="품질 경고 필터">
+        <span class="mono events-chipgroup-label">경고</span>
+        <a class="events-chip{% if not selected_warning %} is-active{% endif %}" href="/staff/events/{% if selected_publish_status %}?publish_status={{ selected_publish_status }}{% endif %}">전체</a>
+        {% for chip in warning_chips %}
+          <a class="events-chip{% if selected_warning == chip.key %} is-active{% endif %}" href="/staff/events/?warning={{ chip.key }}{% if selected_publish_status %}&publish_status={{ selected_publish_status }}{% endif %}">{{ chip.label }}</a>
+        {% endfor %}
+      </div>
 
-        {% if event_rows %}
-          <div class="event-list">
+      <a class="staff-cta events-new-cta" href="{% url 'staff:event-create' %}">＋ 새 이벤트</a>
+    </div>
+
+    {% if event_rows %}
+      <div class="events-table-wrap">
+        <table class="events-table">
+          <colgroup>
+            <col style="width:4.375rem">
+            <col>
+            <col style="width:9.375rem">
+            <col style="width:6.25rem">
+            <col style="width:7.5rem">
+            <col style="width:5.625rem">
+            <col style="width:13rem">
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">제목</th>
+              <th scope="col">기간</th>
+              <th scope="col">지역</th>
+              <th scope="col">카테고리</th>
+              <th scope="col">상태</th>
+              <th scope="col">경고 / 작업</th>
+            </tr>
+          </thead>
+          <tbody>
             {% for row in event_rows %}
-              <article class="event-row-card hover-lift">
-                <div class="event-row-top">
-                  <span class="draft-chip {{ row.event.publish_status }}">{% if row.event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
-                  {% if row.category_label %}
-                    <span class="draft-chip category">{{ row.category_label }}</span>
-                  {% endif %}
+              <tr>
+                <td class="mono events-id-cell">{{ row.event.id }}</td>
+                <td class="events-title-cell">{{ row.event.title|default:"(제목 없음)" }}</td>
+                <td class="mono events-dates-cell">{{ row.event.start_date|default:"?" }} ~ {{ row.event.end_date|default:"?" }}</td>
+                <td class="events-region-cell">{{ row.region_label|default:"-" }}</td>
+                <td class="events-category-cell">{{ row.category_label|default:"-" }}</td>
+                <td>
+                  <span class="events-status-badge events-status-badge--{{ row.event.publish_status }}">{% if row.event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
+                </td>
+                <td class="events-tail-cell">
                   {% for badge in row.quality_badges %}
-                    <span class="draft-chip warning">⚠ {{ badge }}</span>
+                    <span class="events-warn-badge">⚠ {{ badge }}</span>
                   {% endfor %}
-                </div>
-                <h3>{{ row.event.title|default:"(제목 없음)" }}</h3>
-                {% if row.region_label or row.event.start_date or row.event.end_date %}
-                  <p class="meta">
-                    {% if row.region_label %}{{ row.region_label }}{% endif %}
-                    {% if row.event.start_date or row.event.end_date %} · {{ row.event.start_date|default:"?" }} ~ {{ row.event.end_date|default:"?" }}{% endif %}
-                  </p>
-                {% endif %}
-                <p class="meta">
-                  <a class="btn btn-secondary btn-sm" href="/staff/events/{{ row.event.pk }}/edit/{% if pager_query %}?{{ pager_query|slice:'1:' }}{% endif %}">수정</a>
-                </p>
-              </article>
+                  <a class="events-edit-link" href="/staff/events/{{ row.event.pk }}/edit/{% if pager_query %}?{{ pager_query|slice:'1:' }}{% endif %}">수정</a>
+                </td>
+              </tr>
             {% endfor %}
-          </div>
+          </tbody>
+        </table>
+
+        <div class="events-table-foot">
+          <span class="mono events-table-foot-range">{{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ page_obj.paginator.count }}</span>
           {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
-        {% else %}
-          <p class="notice">해당 조건의 이벤트가 없습니다.</p>
-        {% endif %}
-      </article>
-    </section>
-  </main>
+        </div>
+      </div>
+    {% else %}
+      <p class="events-empty">해당 조건의 이벤트가 없습니다.</p>
+    {% endif %}
+  </div>
 {% endblock %}

@@ -1,4 +1,6 @@
 """스태프 전용 드래프트 HTML 뷰(목록/상세) 검증."""
+import re
+
 import pytest
 
 from drafts.models import EventDraft
@@ -178,18 +180,89 @@ class TestEventDraftsListFilterPagination:
 
 
 @pytest.mark.django_db
-class TestEventDraftsListBulkToolbarLabelContract:
-    """static/js/pages/draft_bulk.js가 #bulk-toolbar의 data-approved-label을 읽어
-    승인 후 칩 문구를 렌더링한다. 없으면 원시 enum 문자열로 대체된다."""
+class TestEventDraftsListStatusChipLabel:
+    """목록의 상태 칩은 저장된 enum이 아니라 한국어 문구로 보여야 한다.
 
-    def test_대기_상태_필터_목록은_승인_라벨_데이터_속성을_렌더링한다(self, staff_client, make_draft):
-        make_draft("https://example.com/pending-label", review_status=EventDraft.ReviewStatus.PENDING)
+    판정 직후 칩을 갱신하는 쪽은 draft_bulk.js이고 그건 브라우저에서만
+    도는 코드다 — 여기서는 서버가 처음 그리는 문구만 고정한다.
+    """
+
+    def test_판정된_드래프트의_상태_칩은_원시_enum이_아니라_한국어로_보인다(
+        self, staff_client, make_draft
+    ):
+        make_draft(
+            "https://example.com/approved-chip",
+            review_status=EventDraft.ReviewStatus.APPROVED,
+        )
 
         _, client = staff_client()
-        resp = client.get("/staff/drafts/?status=pending")
+        resp = client.get("/staff/drafts/")
 
         assert resp.status_code == 200
-        assert 'data-approved-label="승인됨"' in resp.content.decode()
+        body = resp.content.decode()
+        assert "승인됨" in body
+        # 칩 자리에 enum 문자열이 그대로 노출되면 안 된다.
+        assert ">approved<" not in body
+
+
+@pytest.mark.django_db
+class TestEventDraftListWarningBadges:
+    """B1: 제목·지역·기간이 빠진 드래프트는 목록 행에 경고 태그가 붙는다.
+
+    이미 가져온 필드(extracted_title/raw_title/extracted_region/
+    extracted_start_date/extracted_end_date)만으로 파생하며 별도 조회가
+    없다.
+    """
+
+    def test_제목_지역_기간이_모두_있으면_경고_태그가_없다(self, staff_client, make_draft):
+        make_draft(
+            "https://example.com/complete",
+            extracted_title="완전한 드래프트",
+            extracted_region="seoul",
+            extracted_start_date="2026-08-01",
+            extracted_end_date="2026-08-10",
+        )
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert resp.context["draft_rows"][0]["warning_badges"] == []
+
+    def test_제목이_없으면_제목_없음_경고가_붙는다(self, staff_client, make_draft):
+        make_draft("https://example.com/no-title")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert "제목 없음" in resp.context["draft_rows"][0]["warning_badges"]
+
+    def test_raw_title만_있어도_제목_없음_경고가_붙지_않는다(self, staff_client, make_draft):
+        make_draft("https://example.com/raw-title-only", raw_title="원문 제목")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert "제목 없음" not in resp.context["draft_rows"][0]["warning_badges"]
+
+    def test_지역이_없으면_지역_없음_경고가_붙는다(self, staff_client, make_draft):
+        make_draft("https://example.com/no-region", extracted_title="지역 없는 드래프트")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert "지역 없음" in resp.context["draft_rows"][0]["warning_badges"]
+
+    def test_시작일이나_종료일이_없으면_기간_없음_경고가_붙는다(self, staff_client, make_draft):
+        make_draft(
+            "https://example.com/no-period",
+            extracted_title="기간 없는 드래프트",
+            extracted_start_date="2026-08-01",
+        )
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert "기간 없음" in resp.context["draft_rows"][0]["warning_badges"]
 
 
 @pytest.mark.django_db
@@ -215,6 +288,54 @@ class TestEventDraftDetailView:
 
 
 @pytest.mark.django_db
+class TestEventDraftPreapprovalChecks:
+    """B2: 승인 전 체크 — EventDraft 전용 규칙. Event의 _event_quality_badges와는
+    다른 규칙 집합이다(드래프트엔 poster_image가 없다).
+    """
+
+    def test_모든_체크를_통과하면_전부_통과로_표시된다(self, staff_client, make_draft):
+        draft = make_draft(
+            "https://example.com/preapproval-ok",
+            extracted_title="완전한 드래프트",
+            extracted_category="popup_store",
+            extracted_region="seoul",
+        )
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
+        assert checks == {
+            "title": True,
+            "official_url": True,
+            "official_url_unique": True,
+            "category": True,
+            "region": True,
+        }
+
+    def test_제목이_없으면_제목_체크가_실패로_표시된다(self, staff_client, make_draft):
+        draft = make_draft("https://example.com/preapproval-no-title")
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
+        assert checks["title"] is False
+
+    def test_공식_url이_이미_게시된_이벤트와_중복되면_중복_체크가_실패로_표시된다(self, staff_client, make_draft, make_event):
+        make_event(official_url="https://example.com/preapproval-dup")
+        draft = make_draft(
+            "https://example.com/preapproval-dup", extracted_title="중복 드래프트"
+        )
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
+        assert checks["official_url_unique"] is False
+
+
+@pytest.mark.django_db
 def test_비로그인_사용자의_드래프트_목록_접근은_로그인_페이지로_리다이렉트된다(client):
     response = client.get("/staff/drafts/")
 
@@ -228,3 +349,116 @@ def test_비로그인_사용자의_드래프트_상세_접근은_로그인_페�
 
     assert response.status_code == 302
     assert response.url.startswith("/accounts/login/")
+
+
+@pytest.mark.django_db
+class TestDraftConfidenceDisplay:
+    """confidence는 0~1로 저장된다(LLM_ESCALATION_CONFIDENCE_THRESHOLD=0.6이 같은 척도).
+
+    화면이 이를 0~100으로 읽으면 0.83이 "1%"로 나오고 색 등급도 늘 최하로 떨어진다.
+    """
+
+    def test_목록의_신뢰도_배지는_백분율과_등급을_함께_보여준다(self, staff_client, make_draft):
+        make_draft("https://example.com/hi", extracted_title="높은 신뢰도", confidence=0.83)
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "83%" in body
+        assert "1%" not in body
+        assert "queue-conf-badge is-high" in body
+
+    def test_상세의_신뢰도도_백분율로_보여준다(self, staff_client, make_draft):
+        draft = make_draft("https://example.com/lo", extracted_title="낮은 신뢰도", confidence=0.42)
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        assert resp.status_code == 200
+        assert "신뢰도 42%" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_선택된_드래프트_상태_탭만_적용됨으로_노출된다(staff_client, make_draft):
+    """클래스 is-active는 보조기술에 아무것도 전달하지 않는다."""
+    make_draft("https://example.com/t", extracted_title="탭 확인용")
+
+    _, client = staff_client()
+    resp = client.get("/staff/drafts/?status=pending")
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    tabs = re.findall(r'<a class="queue-tab[^"]*"[^>]*>', body)
+    assert len(tabs) == 4, tabs
+    current = [t for t in tabs if 'aria-current="true"' in t]
+    assert len(current) == 1, tabs
+    assert "적용됨" in current[0]
+
+
+@pytest.mark.django_db
+class TestDraftQueueSearchBox:
+    def test_q로_목록이_좁혀진다(self, staff_client, make_draft):
+        make_draft("https://example.com/s1", extracted_title="여름 팝업스토어")
+        make_draft("https://example.com/s2", extracted_title="겨울 전시")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?q=팝업")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "여름 팝업스토어" in body
+        assert "겨울 전시" not in body
+
+    def test_검색_폼이_보고_있던_상태_필터를_숨은_입력으로_이어받는다(self, staff_client, make_draft):
+        """폼이 q만 보내면 검색 한 번에 status가 풀린다."""
+        make_draft("https://example.com/s3", extracted_title="유지 확인")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?status=pending")
+
+        assert resp.status_code == 200
+        assert '<input type="hidden" name="status" value="pending">' in resp.content.decode()
+
+    def test_페이저_링크가_검색어를_유지한다(self, staff_client, make_draft):
+        """페이저가 q를 빼면 2쪽으로 넘기는 순간 검색이 풀린다."""
+        # _seed_drafts는 source_url에 status를 넣는다 — 그 값으로 검색해야 걸린다.
+        _seed_drafts(make_draft, 20)
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?q=pending")
+
+        assert resp.status_code == 200
+        # 본문 전체에서 찾으면 「새로고침」 링크의 get_full_path에도 걸린다.
+        pager = re.search(r'<nav class="pager".*?</nav>', resp.content.decode(), re.S)
+        assert pager, "페이저가 렌더링되지 않았다"
+        assert "page=2" in pager.group()
+        assert "q=pending" in pager.group()
+
+
+@pytest.mark.django_db
+class TestSearchEmptyState:
+    """0건일 때 원인을 상태 필터로 오인시키면 안 된다."""
+
+    def test_검색_결과가_없으면_검색어_때문임을_알린다(self, staff_client, make_draft):
+        make_draft("https://example.com/e1", extracted_title="여름 팝업")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?q=없는검색어")
+
+        assert resp.status_code == 200
+        # 본문 전체에서 찾으면 검색창 입력값에 걸려 늘 통과한다.
+        notice = re.search(r'<p class="notice">.*?</p>', resp.content.decode(), re.S)
+        assert notice, "빈 상태 안내가 없다"
+        assert "없는검색어" in notice.group()
+
+    def test_감사_로그도_검색_결과_없음을_따로_알린다(self, staff_client):
+        _, client = staff_client()
+
+        resp = client.get("/staff/audit-log/?q=없는검색어")
+
+        assert resp.status_code == 200
+        empty = re.search(r'<p class="audit-empty">.*?</p>', resp.content.decode(), re.S)
+        assert empty, "빈 상태 안내가 없다"
+        assert "없는검색어" in empty.group()

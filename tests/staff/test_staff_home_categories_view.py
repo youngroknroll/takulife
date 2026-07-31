@@ -35,24 +35,27 @@ class TestStaffHomeCategoriesAuth:
 
 @pytest.mark.django_db
 class TestStaffHomeCategoriesTemplateAssets:
-    """staff_console.css를 로드하지 않으면 체크박스·순서 입력의 터치 타깃이 브라우저 기본 크기로 작게 렌더링된다."""
+    """전용 스태프 CSS가 빠지면 체크박스·순서 입력의 터치 타깃이 브라우저 기본 크기로 작아진다."""
 
     pytestmark = pytest.mark.web
 
-    def test_홈_카테고리_설정_화면은_staff_console_css를_로드한다(self, staff_client):
+    def test_홈_카테고리_설정_화면은_전용_staff_css를_로드한다(self, staff_client):
+        """스태프 콘솔 재설계(D2·D3)로 소비자 CSS 의존이 끊기고 페이지 전용
+        스태프 CSS(`css/staff/pages/home_categories.css`)로 대체됐다 — 터치
+        타깃 크기는 이제 이 파일이 책임진다."""
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
 
-        assert b"css/pages/staff_console.css" in resp.content
+        assert b"css/staff/pages/home_categories.css" in resp.content
 
     def test_홈_카테고리_설정_화면의_체크박스는_터치_타깃_라벨로_감싸져_있다(self, staff_client):
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
 
-        assert b'class="home-cat-select"' in resp.content
-        assert b'class="home-cat-checkbox"' in resp.content
+        assert b'class="home-cats-toggle"' in resp.content
+        assert b'class="home-cats-checkbox"' in resp.content
 
     def test_홈_카테고리_설정_화면의_순서_입력_필드는_인라인_스타일을_갖지_않는다(self, staff_client):
         _, client = staff_client()
@@ -61,14 +64,54 @@ class TestStaffHomeCategoriesTemplateAssets:
 
         assert b'style="width: 4rem;"' not in resp.content
 
-    def test_홈_카테고리_설정_화면은_단일_컬럼_레이아웃_변형을_사용한다(self, staff_client):
-        """staff_console.css가 데스크톱 2단 레이아웃도 함께 불러오는데, 이 화면은 패널이 하나뿐이라
-        layout--single로 강제 단일 컬럼 처리하지 않으면 넓은 화면에서 빈 컬럼이 생긴다."""
+    def test_홈_카테고리_설정_화면은_미리보기_레일이_있는_2단_레이아웃을_쓴다(self, staff_client):
+        """재설계 전에는 패널이 하나뿐이라 2단 그리드를 쓰면 빈 컬럼이 남았고,
+        그래서 layout--single로 강제 단일 컬럼 처리했다. 새 화면은 두 번째
+        컬럼에 실제 콘텐츠(홈 미리보기 레일)를 채워 빈 컬럼 문제 자체가
+        구조적으로 없다 — 전용 grid(home-cats-grid)가 항상 두 패널을 보여준다."""
         _, client = staff_client()
 
         resp = client.get("/staff/home-categories/")
+        content = resp.content.decode()
 
-        assert b'class="layout layout--single"' in resp.content
+        assert 'class="home-cats-grid"' in content
+        assert 'class="home-cats-panel"' in content
+        assert 'class="home-cats-rail"' in content
+
+
+@pytest.mark.django_db
+class TestStaffHomeCategoriesEventCounts:
+    """B6: 카테고리별 게시된 이벤트 수를 함께 보여준다."""
+
+    pytestmark = pytest.mark.web
+
+    def test_카테고리별_행에_게시된_이벤트_수가_붙는다(self, staff_client, make_event):
+        make_event(category="exhibition", official_url="https://example.com/home-cat-1")
+        make_event(category="exhibition", official_url="https://example.com/home-cat-2")
+        make_event(category="popup_store", official_url="https://example.com/home-cat-3")
+
+        _, client = staff_client()
+        resp = client.get("/staff/home-categories/")
+
+        rows_by_slug = {row["slug"]: row for row in resp.context["category_rows"]}
+        assert rows_by_slug["exhibition"]["event_count"] == 2
+        assert rows_by_slug["popup_store"]["event_count"] == 1
+
+    def test_이벤트가_없는_카테고리는_0건으로_표시된다(self, staff_client):
+        _, client = staff_client()
+        resp = client.get("/staff/home-categories/")
+
+        rows_by_slug = {row["slug"]: row for row in resp.context["category_rows"]}
+        assert rows_by_slug["exhibition"]["event_count"] == 0
+
+    def test_게시되지_않은_초안_이벤트는_카테고리_건수에_포함되지_않는다(self, staff_client, make_draft_event):
+        make_draft_event(category="exhibition", official_url="https://example.com/home-cat-draft")
+
+        _, client = staff_client()
+        resp = client.get("/staff/home-categories/")
+
+        rows_by_slug = {row["slug"]: row for row in resp.context["category_rows"]}
+        assert rows_by_slug["exhibition"]["event_count"] == 0
 
 
 @pytest.mark.django_db

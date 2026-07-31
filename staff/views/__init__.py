@@ -3,7 +3,6 @@
 staff가 core를 임포트하는 것(라벨 맵/어휘 등 표시용)은 허용되지만,
 core가 staff를 거꾸로 임포트해서는 안 된다(tests/test_architecture_boundaries.py).
 """
-import datetime
 import logging
 from io import StringIO
 
@@ -21,6 +20,7 @@ from drafts.queries import (
 )
 from events.queries import published_quality_warnings
 
+from ..action_labels import ACTION_LABELS
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
 from ..queries import (
@@ -28,11 +28,12 @@ from ..queries import (
     staff_actions_count_since,
     staff_actions_per_day,
 )
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from ._helpers import _action_log_kwargs, _build_source_rows, _staff_action_metadata
 from .drafts import (
     MAX_BULK_APPROVE_DRAFT_IDS,
     StaffDraftApproveView,
     StaffDraftBulkApproveView,
+    StaffDraftBulkRejectView,
     StaffDraftRejectView,
     event_draft_detail,
     event_drafts,
@@ -48,7 +49,9 @@ from .events import (
     staff_event_verify,
     staff_events,
 )
+from .audit_log import STAFF_ACTION_LOG_PAGE_SIZE, staff_audit_log
 from .home_categories import staff_home_categories
+from .sources import staff_draft_sources
 
 __all__ = [
     "ACTION_LABELS",
@@ -66,28 +69,17 @@ __all__ = [
     "MAX_BULK_APPROVE_DRAFT_IDS",
     "StaffDraftApproveView",
     "StaffDraftBulkApproveView",
+    "StaffDraftBulkRejectView",
     "StaffDraftRejectView",
     "event_draft_detail",
     "event_drafts",
     "staff_home_categories",
+    "staff_draft_sources",
+    "STAFF_ACTION_LOG_PAGE_SIZE",
+    "staff_audit_log",
 ]
 
 logger = logging.getLogger(__name__)
-
-
-# get_action_display()를 쓰지 않는다 — 모델의 영어 choice 라벨이 그대로
-# 노출되므로, 화면에 보일 한국어 라벨은 모델 정의와 분리해 여기서 관리한다.
-ACTION_LABELS = {
-    "approve": "승인",
-    "reject": "반려",
-    "home_categories": "홈 카테고리 변경",
-    "event_update": "이벤트 수정",
-    "event_create": "이벤트 생성",
-    "event_unpublish": "게시 내리기",
-    "event_republish": "재게시",
-    "event_delete": "이벤트 삭제",
-    "draft_discover": "드래프트 수집 실행",
-}
 
 
 def _build_action_rows(actions):
@@ -97,41 +89,6 @@ def _build_action_rows(actions):
         {"log": action, "action_label": ACTION_LABELS.get(action.action, action.action)}
         for action in actions
     ]
-
-
-def _build_source_rows(sources):
-    """소스별 신선도 상태를 계산해 붙인다.
-
-    is_stale는 활성화된 소스에만 적용한다 — 비활성 소스는 원래 수집을
-    안 하므로 오래된 last_checked_at이 문제가 아니다. 여러 조건이 동시에
-    참일 때 우선순위는 disabled > error > stale > ok다 — 비활성 소스가
-    오류로 잘못 표시되지 않게 하고, 실제로 실패 중인 소스를 단순 정체보다
-    먼저 알리기 위해서다.
-    """
-    cutoff = timezone.now() - datetime.timedelta(hours=settings.DRAFT_SOURCE_STALE_HOURS)
-    rows = []
-    for source in sources:
-        has_error = bool(source.last_error)
-        is_stale = source.enabled and (
-            source.last_checked_at is None or source.last_checked_at < cutoff
-        )
-        if not source.enabled:
-            status_level = "disabled"
-        elif has_error:
-            status_level = "error"
-        elif is_stale:
-            status_level = "stale"
-        else:
-            status_level = "ok"
-        rows.append(
-            {
-                "source": source,
-                "has_error": has_error,
-                "is_stale": is_stale,
-                "status_level": status_level,
-            }
-        )
-    return rows
 
 
 def _build_quality_warning_rows(warnings):
@@ -213,7 +170,9 @@ def dashboard(request):
             "recent_actions_7d_count": staff_actions_count_since(days=7),
             "recent_actions_prev_7d_count": staff_actions_count_since(days=7, offset=7),
             "weekly_active_user_count": distinct_user_key_count_since(days=7),
+            "weekly_active_user_prev_count": distinct_user_key_count_since(days=7, offset=7),
             "weekly_event_count": sum(event_name_counts_since(days=7).values()),
+            "weekly_event_prev_count": sum(event_name_counts_since(days=7, offset=7).values()),
             "activity_columns": activity_columns,
             "activity_total_14d": sum(col["count"] for col in activity_columns),
             # 템플릿에서 `|last.count` 같은 필터+속성 체이닝은 문법상

@@ -3,28 +3,62 @@
 {% block title %}{{ project_name }} | 이벤트 삭제 확인{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/pages/events.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="staff-main">
-    <div class="detail-topline">
-      <a class="top-action" href="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}">취소</a>
+  {% comment %}
+  이 화면은 목록 위에 뜬 모달로 보이도록 시안을 따랐다(스크림+대화상자). 다만
+  이 뷰는 event_rows를 컨텍스트로 넘기지 않아, 시안처럼 실제 목록 행을 배경에
+  그릴 데이터가 없다 — 가짜 행을 채우지 않고 빈 배경 패널만 둔다.
+  {% endcomment %}
+  <div class="events-page" id="staff-main">
+    <div class="events-delete-backdrop" aria-hidden="true"></div>
+
+    <div class="events-delete-scrim">
+      <div class="events-delete-dialog" role="alertdialog" aria-labelledby="events-delete-title">
+        <div class="events-delete-dialog-head">
+          <span class="events-delete-dialog-title" id="events-delete-title">이벤트 영구 삭제</span>
+          <span class="mono events-delete-dialog-id">#{{ event.id }}</span>
+        </div>
+        <div class="events-delete-dialog-body">
+          <p class="events-delete-message"><strong>{{ event.title|default:"(제목 없음)" }}</strong>이(가) 영구 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+
+          <div class="events-delete-refs">
+            <div class="mono events-delete-refs-head">아카이브 참조 검사</div>
+            <div class="events-delete-refs-row">
+              <span>찜</span>
+              <span class="mono">{{ reference_counts.interest }}</span>
+            </div>
+            <div class="events-delete-refs-row">
+              <span>상태</span>
+              <span class="mono">{{ reference_counts.status }}</span>
+            </div>
+            <div class="events-delete-refs-row">
+              <span>방문기록</span>
+              <span class="mono">{{ reference_counts.visit }}</span>
+            </div>
+            <div class="events-delete-refs-row">
+              <span>컬렉션</span>
+              <span class="mono">{{ reference_counts.collection_item }}</span>
+            </div>
+          </div>
+
+          <div class="events-delete-ok">
+            <span class="mono events-delete-ok-tag">OK</span>
+            <span>참조 0건 — 하드 삭제 가능합니다.</span>
+          </div>
+
+          <div class="events-delete-actions">
+            <a class="staff-cta events-delete-cancel" href="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}">취소</a>
+            <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}" data-submit-guard>
+              {% csrf_token %}
+              <input type="hidden" name="confirmed" value="yes">
+              <button class="events-delete-confirm-btn" type="submit">삭제 확정</button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <section class="hero">
-      <h1>정말 삭제하시겠습니까?</h1>
-      <p>"{{ event.title|default:"(제목 없음)" }}"이(가) 영구 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</p>
-    </section>
-
-    <section class="layout">
-      <article class="panel">
-        <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}" data-submit-guard>
-          {% csrf_token %}
-          <input type="hidden" name="confirmed" value="yes">
-          <button class="action-button danger" type="submit">삭제 확정</button>
-        </form>
-      </article>
-    </section>
-  </main>
+  </div>
 {% endblock %}

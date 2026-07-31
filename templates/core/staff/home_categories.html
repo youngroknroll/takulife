@@ -1,81 +1,83 @@
 {% extends "staff/base_staff.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 홈 카테고리 설정{% endblock %}
+{% block title %}{{ project_name }} | 홈 카테고리{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/staff_console.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/pages/home_categories.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="staff-main">
-    <section class="hero">
-      <h1>홈 카테고리 설정</h1>
-      <p>홈 화면 '카테고리로 둘러보기'에 노출할 카테고리를 선택하고 표시 순서를 지정하세요.<br>
-         선택하지 않으면 모든 카테고리가 기본 순서로 노출됩니다.</p>
-    </section>
+  <div class="home-cats-page" id="staff-main">
+    <div class="home-cats-grid">
+      <form class="home-cats-panel" method="post" action="/staff/home-categories/">
+        {% csrf_token %}
+        <div class="home-cats-panel-head">
+          <h2 class="home-cats-panel-title">홈 카테고리 구성</h2>
+          <span class="mono home-cats-panel-note">노출 순서 = 홈 섹션 순서</span>
+          <a class="staff-cta home-cats-preview-link" href="/" target="_blank" rel="noopener">홈 미리보기 ↗</a>
+          <button class="events-save-cta" type="submit">변경 저장</button>
+        </div>
 
-    {% if messages %}
-      <div class="messages">
-        {% for message in messages %}
-          <p class="message message--{{ message.tags }}">{{ message }}</p>
-        {% endfor %}
-      </div>
-    {% endif %}
-
-    <section class="layout layout--single">
-      <article class="panel">
-        <h2>노출 카테고리</h2>
-        <p class="panel-note">체크된 카테고리만 홈에 표시됩니다. 순서 번호가 낮을수록 먼저 표시됩니다.</p>
-
-        <form method="post" action="/staff/home-categories/">
-          {% csrf_token %}
-          <table class="data-table">
-            <thead>
+        <table class="home-cats-table">
+          <colgroup>
+            <col style="width:4.25rem">
+            <col>
+            <col style="width:7.25rem">
+            <col style="width:5.5rem">
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">순서</th>
+              <th scope="col">카테고리</th>
+              <th scope="col">연결 이벤트</th>
+              <th scope="col">노출</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in category_rows %}
               <tr>
-                <th scope="col">노출</th>
-                <th scope="col">카테고리</th>
-                <th scope="col">표시 순서</th>
+                <td>
+                  <label class="sr-only" for="order_{{ row.slug }}">{{ row.label }} 표시 순서</label>
+                  <input class="home-cats-order-input" type="number" id="order_{{ row.slug }}" name="order_{{ row.slug }}" value="{{ row.order }}" min="1" max="99">
+                </td>
+                <td class="home-cats-label-cell">
+                  <div class="home-cats-label">{{ row.label }}</div>
+                  <div class="mono home-cats-slug">{{ row.slug }}</div>
+                </td>
+                <td class="mono home-cats-count-cell">{{ row.event_count }}건</td>
+                <td>
+                  <label class="home-cats-toggle">
+                    <input type="checkbox" id="feature_{{ row.slug }}" name="feature_{{ row.slug }}" value="on" class="home-cats-checkbox" {% if row.checked %}checked{% endif %}>
+                    <span class="sr-only">{{ row.label }} 홈 노출</span>
+                  </label>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {% for row in category_rows %}
-                <tr>
-                  <td>
-                    <label class="home-cat-select">
-                      <input
-                        type="checkbox"
-                        id="feature_{{ row.slug }}"
-                        name="feature_{{ row.slug }}"
-                        value="on"
-                        class="home-cat-checkbox"
-                        {% if row.checked %}checked{% endif %}
-                      >
-                    </label>
-                  </td>
-                  <td>
-                    <label for="feature_{{ row.slug }}">{{ row.label }}</label>
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      name="order_{{ row.slug }}"
-                      value="{{ row.order }}"
-                      min="1"
-                      max="99"
-                      class="home-cat-order"
-                    >
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+            {% endfor %}
+          </tbody>
+        </table>
+      </form>
 
-          <div class="form-actions" style="margin-top: 1rem;">
-            <button type="submit" class="btn btn-primary">저장</button>
-            <a href="/" class="btn btn-secondary" style="margin-left: 0.5rem;">홈 미리보기</a>
+      <div class="home-cats-rail">
+        <div class="home-cats-rail-card">
+          <div class="home-cats-rail-card-head">
+            <h2 class="home-cats-rail-card-title">홈 미리보기</h2>
           </div>
-        </form>
-      </article>
-    </section>
-  </main>
+          <div class="home-cats-rail-card-body">
+            {% with visible_rows=category_rows|dictsort:"order" %}
+              {% for row in visible_rows %}
+                {% if row.checked %}
+                  <div class="home-cats-preview-row">
+                    <span class="mono home-cats-preview-order">{{ row.order }}</span>
+                    <span class="home-cats-preview-label">{{ row.label }}</span>
+                    <span class="mono home-cats-preview-count">{{ row.event_count }}건</span>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            {% endwith %}
+            <p class="home-cats-rail-note">비노출 카테고리는 홈에서 섹션 자체가 렌더되지 않습니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

@@ -194,7 +194,7 @@ QUALITY_WARNING_KEYS = (
     "needs_reverification",
 )
 
-STAFF_EVENT_LISTING_PAGE_SIZE = 10
+STAFF_EVENT_LISTING_PAGE_SIZE = 15
 
 _NON_DATED_WARNING_QUERYSETS = {
     "missing_official_url": _missing_official_url_qs,
@@ -204,11 +204,12 @@ _NON_DATED_WARNING_QUERYSETS = {
 }
 
 
-def list_staff_events(*, warning=None, publish_status=None, today=None):
+def list_staff_events(*, warning=None, publish_status=None, today=None, search=""):
     """스태프 이벤트 콘솔용 목록을 created_at 최신순으로 반환한다.
 
     warning은 count_published_*가 세는 것과 같은 쿼리셋으로 좁힌다(드릴다운 일치).
     알 수 없는 warning/publish_status 값은 querystring 오류로 보지 않고 조용히 무시한다.
+    search는 표에 보이는 세 열(행사명·작품명·장소)을 함께 본다.
     """
     if warning == "ended_still_published":
         queryset = _ended_still_published_qs(today=today)
@@ -221,5 +222,13 @@ def list_staff_events(*, warning=None, publish_status=None, today=None):
 
     if publish_status in Event.PublishStatus.values:
         queryset = queryset.filter(publish_status=publish_status)
+
+    term = search.strip()
+    if term:
+        queryset = queryset.filter(
+            models.Q(title__icontains=term)
+            | models.Q(work_title__icontains=term)
+            | models.Q(location_name__icontains=term)
+        )
 
     return queryset.order_by("-created_at")
