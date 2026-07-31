@@ -569,6 +569,10 @@ A comment is still warranted in four cases:
 
 When one is warranted:
 
+- **Write it in Korean. There is no exception.** An English comment is a defect
+  regardless of how good its content is; rewrite it in Korean or delete it.
+  Code identifiers, paths, and `file:line` references stay verbatim — it is the
+  surrounding explanation that must be Korean.
 - Use short, plain Korean that a non-developer can understand. If a technical
   term is unavoidable, explain its meaning in the surrounding words.
 - Keep one comment to one or two lines. Put longer design rationale in the
