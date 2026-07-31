@@ -29,9 +29,12 @@ def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스�
     "/"에서 처리되지 않은 뷰 예외를 흉내내 그 정확한 경로를 타면서
     500.html이 템플릿 오류 없이 여전히 렌더되는지 확인한다. ``db`` 픽스처가
     없으면 monkeypatch가 걸리기도 전에 DB 접근이 막혀 엉뚱한 이유로 500이
-    난다."""
+    난다. 아래 호출 기록 단언이 그 경고를 실제로 강제한다."""
+
+    calls = []
 
     def _boom(*args, **kwargs):
+        calls.append(1)
         raise RuntimeError("simulated view failure")
 
     monkeypatch.setattr("core.views.events.list_published_events", _boom)
@@ -39,6 +42,7 @@ def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스�
 
     resp = client.get("/")
 
+    assert calls, "몽키패치한 뷰가 실행되지 않았다 — 500이 다른 이유로 났다"
     assert resp.status_code == 500
     assert "500.html" in [t.name for t in resp.templates if t.name]
     body = resp.content.decode("utf-8", "ignore")
