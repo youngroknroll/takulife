@@ -29,11 +29,38 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 `["그대들의", "덕질 라이프를", "위하여"]`. 브레이크포인트는 `--page-pad-x`가 이미 쓰는
 `64rem`을 재사용했고 새 브레이크포인트를 만들지 않았다.
 
-## A2 ⚠️ `{{ field }}`를 수동 렌더로 바꾸면 `widget.attrs`가 조용히 사라진다
+## A2 ⚠️ aria 속성은 누락된 적이 없다 — **참조가 끊겨 있었다**
 
-`_auth_field.html`에 `aria-invalid`/`aria-describedby`를 붙이려면 `{{ field }}`
-(이미 렌더된 위젯 문자열)를 수동 `<input>` 렌더로 바꿔야 한다. 그때
-**allauth가 이미 넣어둔 속성을 verbatim echo하지 않으면 전부 날아간다.**
+`[실측 2026-07-31, Django 5.2.14]` 착수 시점의 진단이 틀렸다. 계획서·검토자 산출물·
+직전 트랙 기록이 모두 「`_auth_field.html`에 `aria-describedby`/`aria-invalid`가
+없다」고 적었으나, **Django 5.2의 `BoundField`가 이미 자동으로 붙이고 있었다.**
+
+변경 전 `{{ field }}`가 실제로 낸 것(오류 상태):
+
+```html
+<input ... required aria-invalid="true" aria-describedby="id_password2_error" id="id_password2">
+<ul class="field-error" id="id_password2-error">...</ul>
+```
+
+`aria-describedby`는 `id_password2_error`(밑줄)를 가리키는데 템플릿이 만든 것은
+`id_password2-error`(하이픈)다. **참조 대상이 문서에 존재하지 않았다.**
+누락보다 나쁘다 — 마크업은 올바르게 보이는데 스크린리더가 따라가면 아무것도 없다.
+
+같은 문제가 **정상 상태에도** 있었다. `password1`에는 help_text(비밀번호 규칙 4줄)가
+있어 `{{ field }}`가 `aria-describedby="id_password1_helptext"`를 냈는데, 파셜은
+help_text 행을 렌더하지 않는다 → 또 하나의 끊긴 참조.
+
+**그래서 수동 렌더가 옳다.** Django가 못 해서가 아니라, 우리가 **Django와 다른 id로
+자체 오류 요소를 렌더하기 때문**이다. `[실측]` 수정 후: 정상 필드는 참조 자체가 없고
+오류 필드의 참조는 유효하다(dangling 0건).
+
+⚠️ `{{ field }}`로 되돌리려면 **Django의 id 형식(`id_x_error`)을 맞추고 help_text도
+렌더**해야 한다. 하나만 하면 끊긴 참조가 되살아난다.
+
+### 그때 `widget.attrs`가 조용히 사라진다
+
+수동 렌더로 바꾸면 **allauth가 이미 넣어둔 속성을 verbatim echo하지 않는 한 전부
+날아간다.**
 
 `[실측]` allauth가 5개 폼 10개 필드에 넣어둔 것:
 
@@ -49,6 +76,13 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 
 ⚠️ 착수 전 조사가 "플레이스홀더가 존재하지 않는다"고 잘못 판단했다. **위젯을 실제로
 덤프해서 확인하라** — allauth 폼 소스를 읽는 것만으로는 틀린다.
+
+### 남은 갭: 비밀번호 규칙이 사용자에게 보이지 않는다
+
+`[실측]` `password1.help_text`에 Django 비밀번호 검증 규칙 4줄이 한국어로 들어 있다
+(「최소 8자 이상」 등). 어느 인증 화면도 이것을 렌더하지 않는다. 변경 전에는 끊긴
+`aria-describedby`로 남아 있었고 지금은 그냥 없다 — 회귀는 아니지만,
+**사용자가 제출 전에 비밀번호 요건을 알 수 없다.** 별도 트랙에서 다룰 것.
 
 ## A3 `--accent`는 이 저장소에 없다 (시안이 쓴 세 번째 없는 토큰)
 

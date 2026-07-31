@@ -2,11 +2,15 @@
 _account_settings_field.html — label(+*) + input + field error, wired for
 IC4 (id="{id}-error", aria-describedby only when this field has an error).
 
-Renders the <input> manually instead of `{{ field }}` — the only way to
-attach a conditional aria-describedby without a Python-side widget change
-(_auth_field.html's own version of this gap was deliberately deferred
-elsewhere, out of scope: 5 templates / 10 include sites outside this plan
-— see .docs/FE/auth-editorial.md M4 for the 「12개」 unit correction).
+Renders the <input> manually instead of `{{ field }}`. NOT because Django
+can't do this — Django 5.2's BoundField already emits aria-invalid and
+aria-describedby on its own. It points them at *its* ids
+(`id_x_error`, `id_x_helptext`), and this partial renders its own error
+element as `id_x-error` and no help_text row at all, so `{{ field }}`
+here would emit references to elements that don't exist. Rendering
+manually is what keeps every reference resolvable. If you ever switch
+back to `{{ field }}`, match Django's id format and render help_text, or
+you reintroduce the dangling references. See docs/FE/auth-editorial.md A2.
 Preserves any
 attrs the form field's widget already sets (autocomplete, maxlength, ...)
 by echoing widget.attrs verbatim. Password inputs never echo back
