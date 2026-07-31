@@ -1,12 +1,17 @@
 {% comment %}
 Non-field ("top of form") errors — ValidationErrors not tied to any one
 input. Field-level errors render next to their own field instead (see
-_auth_field.html); this covers only what's left over.
+_auth_field.html); this covers only what's left over. Placed directly
+after <h1> in every consuming template (D9 — no aria-live, these screens
+are all full SSR re-renders, so DOM position next to the heading is the
+only signal a screen reader gets for free).
 
 Usage: {% include "core/partials/_auth_form_errors.html" with errors=form.non_field_errors %}
 {% endcomment %}
 {% if errors %}
-  <ul class="auth-error">
-    {% for error in errors %}<li>{{ error }}</li>{% endfor %}
-  </ul>
+  <div class="auth-error-banner">
+    <ul>
+      {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  </div>
 {% endif %}

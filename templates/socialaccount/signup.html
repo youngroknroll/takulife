@@ -8,19 +8,43 @@
 {% endblock %}
 
 {% block content %}
-<main class="auth-container" id="content">
-  <h1>회원가입 마무리</h1>
-  <p>{{ account.get_provider.name }} 계정으로 로그인합니다. 아래 정보를 확인해 가입을 완료해 주세요.</p>
-  {% if form.non_field_errors %}
-    <ul class="auth-error">
-      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+<main class="auth-shell" id="content">
+  <aside class="auth-panel-declare">
+    <span class="auth-glyph" aria-hidden="true">✦</span>
+    <p class="auth-kicker">TAKULIFE ACCOUNT</p>
+    <h2>그대들의<br>덕질 라이프를<br>위하여</h2>
+    <hr class="auth-rule">
+    <ul class="auth-panel-domains">
+      <li>
+        <span class="auth-panel-domain-tick" aria-hidden="true"></span>
+        <span class="auth-panel-domain-name">행사</span>
+        <span class="auth-panel-domain-desc">공식 URL 기준으로 큐레이션한 팝업·전시</span>
+      </li>
+      <li>
+        <span class="auth-panel-domain-tick" aria-hidden="true"></span>
+        <span class="auth-panel-domain-name">컬렉션</span>
+        <span class="auth-panel-domain-desc">굿즈와 소장품을 내 손안의 목록으로</span>
+      </li>
+      <li>
+        <span class="auth-panel-domain-tick is-mint" aria-hidden="true"></span>
+        <span class="auth-panel-domain-name">내 활동</span>
+        <span class="auth-panel-domain-desc">다녀온 기록과 앞으로의 일정까지</span>
+      </li>
     </ul>
-  {% endif %}
-  <form method="post" action="{% url 'socialaccount_signup' %}">
-    {% csrf_token %}
-    {{ form.as_p }}
-    {{ redirect_field }}
-    <button type="submit" class="btn-primary">가입 완료</button>
-  </form>
+  </aside>
+  <div class="auth-panel-form">
+    <p class="auth-kicker">계정</p>
+    <h1 class="auth-title">회원가입 마무리</h1>
+    {% comment %}D9 우선 — coordinator 결정 2026-07-31.{% endcomment %}
+    {% include "core/partials/_auth_form_errors.html" with errors=form.non_field_errors %}
+    <hr class="auth-rule">
+    <p class="auth-description">{{ account.get_provider.name }} 계정으로 로그인합니다. 아래 정보를 확인해 가입을 완료해 주세요.</p>
+    <form method="post" action="{% url 'socialaccount_signup' %}" class="auth-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+      {{ redirect_field }}
+      <button type="submit" class="auth-submit">가입 완료</button>
+    </form>
+  </div>
 </main>
 {% endblock %}
