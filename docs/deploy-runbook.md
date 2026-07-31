@@ -108,7 +108,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     카운터를 저장한다. DB 백업/복구 시 이 테이블도 함께 복원되므로, 복구
     직후 rate limit·락아웃 카운터가 백업 시점 상태로 되돌아간다는 점을
     인지한다(예: 복구 직전 잠긴 IP가 복구 후에도 잠긴 채로 복원될 수 있음).
-11. **탈퇴 파기 정기 실행 등록**: `python manage.py purge_deleted_accounts`
+11. **탈퇴 파기 정기 실행 등록**: <!-- uv-run-exempt: 런타임 이미지엔 uv가 없다(Dockerfile:3-4) — PaaS 스케줄러가 컨테이너 안에서 이 명령을 직접 실행한다 --> `python manage.py purge_deleted_accounts`
     (`accounts/management/commands/purge_deleted_accounts.py`)를 선정 PaaS의
     스케줄러(크론/스케줄드 잡 등, 플랫폼별 명칭 상이)에 등록하고, **수동 1회
     실행으로 파기 요약 출력을 확인한다.** 두 가지를 반드시 지킨다:

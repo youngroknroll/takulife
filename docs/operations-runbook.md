@@ -200,6 +200,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 
 ### 7.1 탈퇴 계정 파기 — `purge_deleted_accounts`
 
+<!-- uv-run-exempt: 런타임 이미지엔 uv가 없다(Dockerfile:3-4) — PaaS 스케줄러가 컨테이너 안에서 이 명령을 직접 실행한다 -->
 ```bash
 python manage.py purge_deleted_accounts
 ```
@@ -208,7 +209,7 @@ python manage.py purge_deleted_accounts
 PaaS 스케줄러가 실행**하는 명령이다. 런타임 이미지에는 `uv`가 없다(`Dockerfile:3-4`
 — builder 스테이지에서만 `uv`로 의존성을 설치하고, 최종 런타임 이미지는 `uv`를
 가져가지 않는다). `docker/entrypoint.sh:5,9`의 `migrate`/`collectstatic`도 같은
-이유로 `uv run` 없이 `python manage.py ...` 형식을 쓴다. (이 절 §1의
+이유로 `uv run` 없이 <!-- uv-run-exempt: entrypoint.sh도 런타임 이미지 안에서 실행돼 uv가 없다(Dockerfile:3-4) --> `python manage.py ...` 형식을 쓴다. (이 절 §1의
 `axes_reset_ip` 등은 운영자가 로컬 체크아웃에서 손으로 치는 명령이라 맥락이
 다르며 `uv run`을 그대로 쓴다 — 혼동하지 않는다.)
 
