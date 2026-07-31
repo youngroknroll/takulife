@@ -71,7 +71,9 @@ def test_로그인_자격_증명이_틀리면_필드별_오류_없이_일반_오
 
     assert response.status_code == 200
     body = response.content.decode()
-    assert '<p class="auth-error">이메일 또는 비밀번호가 올바르지 않습니다.</p>' in body
+    # Asserts the copy, not the element that carries it: the container class
+    # is presentation and has already been renamed once by a re-skin.
+    assert "이메일 또는 비밀번호가 올바르지 않습니다." in body
     # Neither field is individually invalid here (this is a non-field
     # error), so neither should get its own error list.
     assert 'id="id_login-error"' not in body
