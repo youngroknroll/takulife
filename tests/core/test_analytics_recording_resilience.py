@@ -19,7 +19,7 @@ def test_분석_이벤트_저장이_실패해도_예외를_전파하지_않는�
 
     # 예외를 던지면 안 된다 — 분석 데이터 저장이 고장나도 호출한 도메인
     # 동작(예: 방문 기록 생성)은 성공해야 한다.
-    record_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, user=user)
+    record_event(event_name=AnalyticsEvent.EventName.EVENT_LIST_VIEWED, user=user)
 
     assert AnalyticsEvent.objects.count() == 0
 
@@ -36,7 +36,7 @@ def test_금지된_컨텍스트_키가_있으면_분석_이벤트_기록이_예�
 
     with pytest.raises(ValueError):
         record_event(
-            AnalyticsEvent.EventName.VISIT_RECORD_CREATED,
+            event_name=AnalyticsEvent.EventName.VISIT_RECORD_CREATED,
             user=user,
             context={forbidden_key: "should never be stored"},
         )

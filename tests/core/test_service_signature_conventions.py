@@ -2,8 +2,9 @@
 
 events/services.py와 archive/services.py는 이미 모든 공개 함수에 이 관례를
 지킨다(`*, ...` 시그니처 참고). drafts/services.py, staff/services.py,
-core/promotion.py가 합류하면서 이 관례가 무너지지 않도록 지키는 가드다 —
-공개 서비스 함수의 위치 인자가 바로 이 테스트가 잡으려는 이탈이다.
+core/promotion.py, core/analytics.py가 합류하면서 이 관례가 무너지지 않도록
+지키는 가드다 — 공개 서비스 함수의 위치 인자가 바로 이 테스트가 잡으려는
+이탈이다.
 
 비공개 헬퍼(이름이 "_"로 시작)는 대상 밖이다 — 다른 모듈이 넘어 다니는
 경계가 아니라 해당 모듈 내부 구현 세부이므로 이 가드가 인자 스타일을
@@ -25,6 +26,7 @@ SERVICE_MODULES = [
     "drafts.services",
     "staff.services",
     "core.promotion",
+    "core.analytics",
 ]
 
 
@@ -53,7 +55,7 @@ pytestmark = pytest.mark.contract
 @pytest.mark.parametrize(
     "module_name",
     SERVICE_MODULES,
-    ids=["events_서비스", "archive_서비스", "drafts_서비스", "staff_서비스", "core_promotion"],
+    ids=["events_서비스", "archive_서비스", "drafts_서비스", "staff_서비스", "core_promotion", "core_analytics"],
 )
 def test_공개_서비스_함수는_키워드_전용_인자만_받는다(module_name):
     violations = {

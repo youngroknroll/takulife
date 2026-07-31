@@ -12,7 +12,7 @@ pytestmark = pytest.mark.contract
 def test_동일_사용자에게_의사식별자_키는_항상_같은_값을_반환한다(make_user):
     user = make_user()
 
-    assert pseudonymous_user_key(user) == pseudonymous_user_key(user)
+    assert pseudonymous_user_key(user=user) == pseudonymous_user_key(user=user)
 
 
 def test_의사식별자_키에는_원본_pk_값이_포함되지_않는다():
@@ -23,7 +23,7 @@ def test_의사식별자_키에는_원본_pk_값이_포함되지_않는다():
 
     user = SimpleNamespace(pk=918273645918273)
 
-    key = pseudonymous_user_key(user)
+    key = pseudonymous_user_key(user=user)
 
     assert str(user.pk) not in key
 
@@ -33,10 +33,10 @@ def test_서로_다른_사용자의_의사식별자_키는_서로_다르다(make
     first = make_user(email="first@example.com", username="first")
     second = make_user(email="second@example.com", username="second")
 
-    assert pseudonymous_user_key(first) != pseudonymous_user_key(second)
+    assert pseudonymous_user_key(user=first) != pseudonymous_user_key(user=second)
 
 
 def test_익명_사용자의_의사식별자_키는_빈_문자열이다():
     from django.contrib.auth.models import AnonymousUser
 
-    assert pseudonymous_user_key(AnonymousUser()) == ""
+    assert pseudonymous_user_key(user=AnonymousUser()) == ""
