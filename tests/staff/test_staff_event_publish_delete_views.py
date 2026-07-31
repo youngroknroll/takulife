@@ -146,6 +146,25 @@ def test_삭제_첫_POST는_삭제하지_않고_확인_화면을_보여준다(st
 
 
 @pytest.mark.django_db
+def test_삭제_확인_화면은_이미_계산한_참조_건수를_컨텍스트로_받는다(staff_client, make_event):
+    """B5: reference_counts는 참조 검사에서 이미 계산되는데 예전엔 템플릿에
+    안 넘겼다. 여기 도달했다는 것 자체가 참조가 0건이라는 뜻이라 값은
+    항상 0이지만, 컨텍스트에 실려 있어야 화면이 표시할 수 있다."""
+    staff, client = staff_client()
+    event = make_event(title="삭제 대상", official_url="https://example.com/delete-confirm-counts")
+
+    resp = client.post(_delete_url(event))
+
+    assert resp.status_code == 200
+    assert resp.context["reference_counts"] == {
+        "interest": 0,
+        "status": 0,
+        "visit": 0,
+        "collection_item": 0,
+    }
+
+
+@pytest.mark.django_db
 def test_삭제_확인_POST는_이벤트를_삭제하고_감사_로그를_남긴_뒤_목록으로_리다이렉트된다(staff_client, make_event):
     staff, client = staff_client()
     event = make_event(title="삭제 대상", official_url="https://example.com/delete-confirmed")

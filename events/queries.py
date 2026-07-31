@@ -194,7 +194,7 @@ QUALITY_WARNING_KEYS = (
     "needs_reverification",
 )
 
-STAFF_EVENT_LISTING_PAGE_SIZE = 10
+STAFF_EVENT_LISTING_PAGE_SIZE = 15
 
 _NON_DATED_WARNING_QUERYSETS = {
     "missing_official_url": _missing_official_url_qs,

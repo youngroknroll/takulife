@@ -103,13 +103,18 @@ def record_event(event_name, *, user, target_type="", target_id=None, context=No
         logger.exception("Failed to record analytics event %r", event_name)
 
 
-def distinct_user_key_count_since(days=7):
-    """최근 `days`일 동안 기록된, 비어 있지 않은(식별된) user_key의 고유
-    개수. ""(익명, pseudonymous_user_key 참고)는 하나의 공유 코호트가
+def distinct_user_key_count_since(days=7, offset=0):
+    """지난 구간에서 기록된, 비어 있지 않은(식별된) user_key의 고유 개수.
+
+    구간은 [now-(offset+days), now-offset) 반열림 구간이다
+    (staff.queries.staff_actions_count_since와 같은 규약) — 경계에 걸친
+    행이 두 번 세이지 않는다. offset을 늘리면 더 과거 구간과 비교할 수
+    있다. ""(익명, pseudonymous_user_key 참고)는 하나의 공유 코호트가
     아니므로 제외한다."""
-    window_start = timezone.now() - timedelta(days=days)
+    window_end = timezone.now() - timedelta(days=offset)
+    window_start = window_end - timedelta(days=days)
     return (
-        AnalyticsEvent.objects.filter(created_at__gte=window_start)
+        AnalyticsEvent.objects.filter(created_at__gte=window_start, created_at__lt=window_end)
         .exclude(user_key="")
         .values("user_key")
         .distinct()
@@ -117,12 +122,15 @@ def distinct_user_key_count_since(days=7):
     )
 
 
-def event_name_counts_since(days=7):
-    """최근 `days`일 동안 기록된 이벤트를 {event_name: count}로 반환한다.
-    창 안에 행이 0개인 event_name은 반환 dict에 아예 없다."""
-    window_start = timezone.now() - timedelta(days=days)
+def event_name_counts_since(days=7, offset=0):
+    """지난 구간에서 기록된 이벤트를 {event_name: count}로 반환한다.
+
+    구간 규약은 distinct_user_key_count_since와 같다. 창 안에 행이 0개인
+    event_name은 반환 dict에 아예 없다."""
+    window_end = timezone.now() - timedelta(days=offset)
+    window_start = window_end - timedelta(days=days)
     rows = (
-        AnalyticsEvent.objects.filter(created_at__gte=window_start)
+        AnalyticsEvent.objects.filter(created_at__gte=window_start, created_at__lt=window_end)
         .values("event_name")
         .annotate(count=Count("id"))
     )

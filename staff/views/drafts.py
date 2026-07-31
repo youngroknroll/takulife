@@ -12,7 +12,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.errors import error_response, field_error_response
-from core.vocab import CATEGORY, CATEGORY_LABELS, REGION, REGION_LABELS
+from core.vocab import (
+    CATEGORY,
+    CATEGORY_LABELS,
+    REGION,
+    REGION_LABELS,
+    is_valid_category,
+    is_valid_region,
+)
 from drafts.models import EventDraft
 from drafts.queries import DRAFT_LISTING_PAGE_SIZE, draft_review_stats, list_drafts
 from drafts.serializers import EventDraftSerializer
@@ -26,12 +33,67 @@ from drafts.services import (
     approve_draft,
     reject_draft,
 )
+from events.models import Event
 
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
 from ._helpers import _action_log_kwargs, _staff_action_metadata
 
 logger = logging.getLogger(__name__)
+
+
+def _draft_warning_badges(draft):
+    """이미 가져온 필드(제목/지역/기간)만으로 파생하는 경고 태그 목록(B1).
+
+    _event_quality_badges(staff/views/events.py)와 별개다 — 대상이 되는
+    모델이 다르고(EventDraft에는 poster_image가 없다) 판정 시점도 다르다
+    (게시 전 대기 목록용).
+    """
+    badges = []
+    if not (draft.extracted_title or draft.raw_title):
+        badges.append("제목 없음")
+    if draft.extracted_region == "":
+        badges.append("지역 없음")
+    if draft.extracted_start_date is None or draft.extracted_end_date is None:
+        badges.append("기간 없음")
+    return badges
+
+
+def _draft_preapproval_checks(draft):
+    """승인 전 체크(B2): approve_draft가 실제로 검사하는 불변식을 미리
+    보여준다 — 승인 버튼을 눌러 보기 전에 실패 사유를 인스펙터에서 알 수
+    있게 한다. key 순서는 approve_draft/create_published_event가 검사하는
+    순서를 따른다.
+    """
+    title_present = bool(draft.extracted_title or draft.raw_title)
+    official_url_present = bool(draft.source_url)
+    official_url_unique = (
+        official_url_present
+        and not Event.objects.filter(official_url=draft.source_url).exists()
+    )
+    return [
+        {"key": "title", "label": "제목이 있어야 합니다", "passed": title_present},
+        {
+            "key": "official_url",
+            "label": "공식 URL이 있어야 합니다",
+            "passed": official_url_present,
+        },
+        {
+            "key": "official_url_unique",
+            "label": "공식 URL이 다른 게시 이벤트와 중복되지 않아야 합니다",
+            "passed": official_url_unique,
+        },
+        {
+            "key": "category",
+            "label": "카테고리가 목록에 있는 값이어야 합니다",
+            "passed": is_valid_category(draft.extracted_category or ""),
+        },
+        {
+            "key": "region",
+            "label": "지역이 목록에 있는 값이어야 합니다",
+            "passed": is_valid_region(draft.extracted_region or ""),
+        },
+    ]
 
 
 def _build_draft_rows(drafts):
@@ -47,6 +109,7 @@ def _build_draft_rows(drafts):
                 "region_label": REGION_LABELS.get(
                     draft.extracted_region, draft.extracted_region
                 ),
+                "warning_badges": _draft_warning_badges(draft),
             }
         )
     return rows
@@ -115,6 +178,7 @@ def event_draft_detail(request, draft_id):
             "region_label": region_label,
             "CATEGORY": CATEGORY,
             "REGION": REGION,
+            "preapproval_checks": _draft_preapproval_checks(draft),
         },
     )
 
@@ -279,3 +343,66 @@ class StaffDraftRejectView(APIView):
             return error_response("Only pending drafts can be rejected.", 400)
 
         return Response(EventDraftSerializer(draft).data, status=status.HTTP_200_OK)
+
+
+class StaffDraftBulkRejectView(APIView):
+    """한 요청으로 여러 초안을 반려한다(B3). 상한·구조 검증은
+    StaffDraftBulkApproveView와 같은 _validate_bulk_draft_ids를 그대로
+    쓴다 — 승인과 반려 둘 다 같은 자원(EventDraft)에 대한 같은 크기의
+    일괄 쓰기라 상한을 따로 둘 이유가 없다. rejection_reason은 요청
+    전체에 하나만 받아 모든 대상에 동일하게 적용한다(단건 반려의
+    ``rejection_reason``과 같은 선택 필드, 기본값 "").
+    """
+
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        body = request.data if isinstance(request.data, dict) else {}
+        draft_ids = body.get("draft_ids")
+        validation_error = _validate_bulk_draft_ids(draft_ids)
+        if validation_error is not None:
+            return field_error_response("draft_ids", validation_error)
+
+        rejection_reason = body.get("rejection_reason", "")
+        metadata = _staff_action_metadata(request)
+        succeeded = []
+        failed = []
+
+        for draft_id in draft_ids:
+            reason = self._reject_one(draft_id, metadata, rejection_reason)
+            if reason is None:
+                succeeded.append(draft_id)
+            else:
+                failed.append({"id": draft_id, "reason": reason})
+
+        return Response({"succeeded": succeeded, "failed": failed}, status=status.HTTP_200_OK)
+
+    @staticmethod
+    def _reject_one(draft_id, metadata, rejection_reason):
+        """단건 반려. 성공하면 None, 실패하면 사유 문자열을 반환한다.
+
+        분류되지 않은 실패도 배치 나머지를 막지 않는다 —
+        StaffDraftBulkApproveView._approve_one과 같은 정책이다.
+        """
+        try:
+            with transaction.atomic():
+                draft = reject_draft(
+                    draft_id=draft_id,
+                    actor=metadata["actor"],
+                    rejection_reason=rejection_reason,
+                )
+                StaffActionLog.objects.create(
+                    **_action_log_kwargs(
+                        metadata, StaffActionLog.Action.REJECT, target_draft=draft
+                    )
+                )
+        except DraftNotFoundError:
+            return "Not found."
+        except DraftStateError:
+            return "Only pending drafts can be rejected."
+        except Exception:
+            logger.exception(
+                "bulk reject: unexpected error for draft_id=%s", draft_id
+            )
+            return "Unexpected error."
+        return None

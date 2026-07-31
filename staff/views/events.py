@@ -518,6 +518,7 @@ def staff_event_delete(request, pk):
             {
                 "event": event,
                 "list_query": list_query,
+                "reference_counts": reference_counts,
             },
         )
 

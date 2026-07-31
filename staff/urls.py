@@ -24,6 +24,11 @@ urlpatterns = [
         staff_views.StaffDraftBulkApproveView.as_view(),
         name="draft-bulk-approve",
     ),
+    path(
+        "drafts/bulk-reject/",
+        staff_views.StaffDraftBulkRejectView.as_view(),
+        name="draft-bulk-reject",
+    ),
     path("drafts/<int:draft_id>/", staff_views.event_draft_detail, name="draft-detail"),
     path(
         "drafts/<int:draft_id>/approve/",
@@ -36,6 +41,8 @@ urlpatterns = [
         name="draft-reject",
     ),
     path("home-categories/", staff_views.staff_home_categories, name="home-categories"),
+    path("sources/", staff_views.staff_draft_sources, name="draft-source-list"),
+    path("audit-log/", staff_views.staff_audit_log, name="audit-log"),
     path("events/", staff_views.staff_events, name="event-list"),
     path("events/new/", staff_views.staff_event_create, name="event-create"),
     path("events/<int:pk>/edit/", staff_views.staff_event_edit, name="event-edit"),

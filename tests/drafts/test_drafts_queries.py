@@ -116,10 +116,11 @@ class TestListDrafts:
         assert list_drafts(status=EventDraft.ReviewStatus.REJECTED).count() == 2
 
 
-def test_드래프트_목록_페이지_크기_상수는_10이다():
+def test_드래프트_목록_페이지_크기_상수는_14이다():
+    """스태프 콘솔 개편(D8)으로 밀도가 10→14로 바뀐 값을 그대로 반영한다."""
     from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
-    assert DRAFT_LISTING_PAGE_SIZE == 10
+    assert DRAFT_LISTING_PAGE_SIZE == 14
 
 
 @pytest.mark.django_db

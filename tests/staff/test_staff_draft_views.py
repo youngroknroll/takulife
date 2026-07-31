@@ -193,6 +193,66 @@ class TestEventDraftsListBulkToolbarLabelContract:
 
 
 @pytest.mark.django_db
+class TestEventDraftListWarningBadges:
+    """B1: 제목·지역·기간이 빠진 드래프트는 목록 행에 경고 태그가 붙는다.
+
+    이미 가져온 필드(extracted_title/raw_title/extracted_region/
+    extracted_start_date/extracted_end_date)만으로 파생하며 별도 조회가
+    없다.
+    """
+
+    def test_제목_지역_기간이_모두_있으면_경고_태그가_없다(self, staff_client, make_draft):
+        make_draft(
+            "https://example.com/complete",
+            extracted_title="완전한 드래프트",
+            extracted_region="seoul",
+            extracted_start_date="2026-08-01",
+            extracted_end_date="2026-08-10",
+        )
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert resp.context["draft_rows"][0]["warning_badges"] == []
+
+    def test_제목이_없으면_제목_없음_경고가_붙는다(self, staff_client, make_draft):
+        make_draft("https://example.com/no-title")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert "제목 없음" in resp.context["draft_rows"][0]["warning_badges"]
+
+    def test_raw_title만_있어도_제목_없음_경고가_붙지_않는다(self, staff_client, make_draft):
+        make_draft("https://example.com/raw-title-only", raw_title="원문 제목")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert "제목 없음" not in resp.context["draft_rows"][0]["warning_badges"]
+
+    def test_지역이_없으면_지역_없음_경고가_붙는다(self, staff_client, make_draft):
+        make_draft("https://example.com/no-region", extracted_title="지역 없는 드래프트")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert "지역 없음" in resp.context["draft_rows"][0]["warning_badges"]
+
+    def test_시작일이나_종료일이_없으면_기간_없음_경고가_붙는다(self, staff_client, make_draft):
+        make_draft(
+            "https://example.com/no-period",
+            extracted_title="기간 없는 드래프트",
+            extracted_start_date="2026-08-01",
+        )
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert "기간 없음" in resp.context["draft_rows"][0]["warning_badges"]
+
+
+@pytest.mark.django_db
 class TestEventDraftDetailView:
     def test_존재하는_드래프트_상세는_카테고리_지역_라벨을_사람이_읽을_수_있게_보여준다(self, staff_client, make_draft):
         draft = make_draft("https://example.com/c", extracted_title="상세 드래프트", extracted_category="popup_store", extracted_region="seoul")
@@ -212,6 +272,54 @@ class TestEventDraftDetailView:
 
         assert resp.status_code == 200
         assert resp.context["draft_not_found"] is True
+
+
+@pytest.mark.django_db
+class TestEventDraftPreapprovalChecks:
+    """B2: 승인 전 체크 — EventDraft 전용 규칙. Event의 _event_quality_badges와는
+    다른 규칙 집합이다(드래프트엔 poster_image가 없다).
+    """
+
+    def test_모든_체크를_통과하면_전부_통과로_표시된다(self, staff_client, make_draft):
+        draft = make_draft(
+            "https://example.com/preapproval-ok",
+            extracted_title="완전한 드래프트",
+            extracted_category="popup_store",
+            extracted_region="seoul",
+        )
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
+        assert checks == {
+            "title": True,
+            "official_url": True,
+            "official_url_unique": True,
+            "category": True,
+            "region": True,
+        }
+
+    def test_제목이_없으면_제목_체크가_실패로_표시된다(self, staff_client, make_draft):
+        draft = make_draft("https://example.com/preapproval-no-title")
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
+        assert checks["title"] is False
+
+    def test_공식_url이_이미_게시된_이벤트와_중복되면_중복_체크가_실패로_표시된다(self, staff_client, make_draft, make_event):
+        make_event(official_url="https://example.com/preapproval-dup")
+        draft = make_draft(
+            "https://example.com/preapproval-dup", extracted_title="중복 드래프트"
+        )
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
+        assert checks["official_url_unique"] is False
 
 
 @pytest.mark.django_db

@@ -50,3 +50,23 @@ def test_최근_N일_창_안에서_이벤트명별_발생_건수를_센다():
 
     assert counts[AnalyticsEvent.EventName.EVENT_LIST_VIEWED] == 2
     assert counts[AnalyticsEvent.EventName.EVENT_SEARCHED] == 1
+
+
+@pytest.mark.django_db
+def test_offset을_주면_그만큼_더_과거_구간의_고유_사용자_키_수를_센다():
+    """구간은 [now-(offset+days), now-offset) 반열림이라 지난주 구간에는
+    이번 주(0~6일 전) 이벤트가 섞이지 않아야 한다."""
+    _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-this-week", days_ago=1)
+    _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-last-week", days_ago=10)
+
+    assert distinct_user_key_count_since(days=7, offset=7) == 1
+
+
+@pytest.mark.django_db
+def test_offset을_주면_그만큼_더_과거_구간의_이벤트명별_건수를_센다():
+    _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-this-week", days_ago=1)
+    _create_event(AnalyticsEvent.EventName.EVENT_LIST_VIEWED, "user-last-week", days_ago=10)
+
+    counts = event_name_counts_since(days=7, offset=7)
+
+    assert counts[AnalyticsEvent.EventName.EVENT_LIST_VIEWED] == 1

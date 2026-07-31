@@ -72,6 +72,41 @@ class TestStaffHomeCategoriesTemplateAssets:
 
 
 @pytest.mark.django_db
+class TestStaffHomeCategoriesEventCounts:
+    """B6: 카테고리별 게시된 이벤트 수를 함께 보여준다."""
+
+    pytestmark = pytest.mark.web
+
+    def test_카테고리별_행에_게시된_이벤트_수가_붙는다(self, staff_client, make_event):
+        make_event(category="exhibition", official_url="https://example.com/home-cat-1")
+        make_event(category="exhibition", official_url="https://example.com/home-cat-2")
+        make_event(category="popup_store", official_url="https://example.com/home-cat-3")
+
+        _, client = staff_client()
+        resp = client.get("/staff/home-categories/")
+
+        rows_by_slug = {row["slug"]: row for row in resp.context["category_rows"]}
+        assert rows_by_slug["exhibition"]["event_count"] == 2
+        assert rows_by_slug["popup_store"]["event_count"] == 1
+
+    def test_이벤트가_없는_카테고리는_0건으로_표시된다(self, staff_client):
+        _, client = staff_client()
+        resp = client.get("/staff/home-categories/")
+
+        rows_by_slug = {row["slug"]: row for row in resp.context["category_rows"]}
+        assert rows_by_slug["exhibition"]["event_count"] == 0
+
+    def test_게시되지_않은_초안_이벤트는_카테고리_건수에_포함되지_않는다(self, staff_client, make_draft_event):
+        make_draft_event(category="exhibition", official_url="https://example.com/home-cat-draft")
+
+        _, client = staff_client()
+        resp = client.get("/staff/home-categories/")
+
+        rows_by_slug = {row["slug"]: row for row in resp.context["category_rows"]}
+        assert rows_by_slug["exhibition"]["event_count"] == 0
+
+
+@pytest.mark.django_db
 class TestStaffHomeCategoriesPost:
     pytestmark = pytest.mark.web
 

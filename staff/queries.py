@@ -39,6 +39,34 @@ def staff_actions_count_since(days=7, offset=0):
     ).count()
 
 
+# 시안에 감사 로그 표가 없어 근거로 삼을 값이 없다 — 임의로 정했다
+# (큐 14, 이벤트 15는 시안에서 온 값이다).
+STAFF_ACTION_LOG_PAGE_SIZE = 20
+
+
+def list_staff_action_log(*, action=""):
+    """감사 로그 화면용 요약 목록을 최신순으로 반환한다.
+
+    운영자 화면이라 ip_address·user_agent를 아예 select하지 않는다 —
+    StaffActionLog 모델 독스트링이 정한 제한이고, 그 두 필드는 슈퍼유저
+    전용(staff/admin.py)이다. 페이지네이션은 호출부가 감싼다.
+    """
+    qs = StaffActionLog.objects.all()
+    if action:
+        qs = qs.filter(action=action)
+    return qs.order_by("-created_at").values(
+        "id",
+        "action",
+        "created_at",
+        "actor_id",
+        "actor__email",
+        "target_draft_id",
+        "target_draft__source_url",
+        "target_event_id",
+        "target_event__title",
+    )
+
+
 def staff_actions_per_day(days=14):
     """최근 `days`일간 하루 단위 StaffActionLog 건수를 반환한다.
 
