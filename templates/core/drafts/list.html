@@ -18,10 +18,10 @@
   <main class="page" id="staff-main">
     <div class="queue-toolbar">
       <nav class="queue-tabs" aria-label="드래프트 상태 필터">
-        <a class="queue-tab{% if not selected_status %} is-active{% endif %}" href="/staff/drafts/">전체 <span class="mono">{{ stats_total }}</span></a>
-        <a class="queue-tab{% if selected_status == "pending" %} is-active{% endif %}" href="/staff/drafts/?status=pending">검토 대기 <span class="mono" id="chip-count-pending">{{ stats.pending }}</span></a>
-        <a class="queue-tab{% if selected_status == "approved" %} is-active{% endif %}" href="/staff/drafts/?status=approved">승인됨 <span class="mono" id="chip-count-approved">{{ stats.approved }}</span></a>
-        <a class="queue-tab{% if selected_status == "rejected" %} is-active{% endif %}" href="/staff/drafts/?status=rejected">반려됨 <span class="mono" id="chip-count-rejected">{{ stats.rejected }}</span></a>
+        <a class="queue-tab{% if not selected_status %} is-active{% endif %}" href="/staff/drafts/"{% if not selected_status %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체 <span class="mono">{{ stats_total }}</span></a>
+        <a class="queue-tab{% if selected_status == "pending" %} is-active{% endif %}" href="/staff/drafts/?status=pending"{% if selected_status == "pending" %} aria-current="true" aria-label="검토 대기, 적용됨"{% endif %}>검토 대기 <span class="mono" id="chip-count-pending">{{ stats.pending }}</span></a>
+        <a class="queue-tab{% if selected_status == "approved" %} is-active{% endif %}" href="/staff/drafts/?status=approved"{% if selected_status == "approved" %} aria-current="true" aria-label="승인됨, 적용됨"{% endif %}>승인됨 <span class="mono" id="chip-count-approved">{{ stats.approved }}</span></a>
+        <a class="queue-tab{% if selected_status == "rejected" %} is-active{% endif %}" href="/staff/drafts/?status=rejected"{% if selected_status == "rejected" %} aria-current="true" aria-label="반려됨, 적용됨"{% endif %}>반려됨 <span class="mono" id="chip-count-rejected">{{ stats.rejected }}</span></a>
       </nav>
 
       <details class="queue-create">

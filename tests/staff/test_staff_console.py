@@ -789,3 +789,19 @@ def test_오류와_지연이_동시에_성립하면_상태_배지는_지연보�
     content = resp.content.decode()
     assert "dash-status-badge--error" in content
     assert "dash-status-badge--stale" not in content
+
+
+@pytest.mark.django_db
+def test_지금_수집_폼은_연타_가드를_옵트인한다(staff_client):
+    """속성 하나가 가드의 전부라 대시보드를 다시 생성하면 조용히 사라진다."""
+    _, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    form = re.search(
+        r'<form[^>]*action="[^"]*draft-discovery[^"]*"[^>]*>',
+        resp.content.decode(),
+    ) or re.search(r'<form[^>]*dash-panel-head-action[^>]*>', resp.content.decode())
+    assert form, "지금 수집 폼을 찾지 못했다"
+    assert "data-submit-guard" in form.group()

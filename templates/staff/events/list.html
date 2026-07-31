@@ -10,9 +10,9 @@
   <div class="events-page" id="staff-main">
     <div class="events-toolbar">
       <div class="events-tabgroup" role="group" aria-label="게시 상태 필터">
-        <a class="events-tab{% if not selected_publish_status %} is-active{% endif %}" href="/staff/events/{% if selected_warning %}?warning={{ selected_warning }}{% endif %}">전체</a>
-        <a class="events-tab{% if selected_publish_status == 'published' %} is-active{% endif %}" href="/staff/events/?publish_status=published{% if selected_warning %}&warning={{ selected_warning }}{% endif %}">게시</a>
-        <a class="events-tab{% if selected_publish_status == 'draft' %} is-active{% endif %}" href="/staff/events/?publish_status=draft{% if selected_warning %}&warning={{ selected_warning }}{% endif %}">비공개</a>
+        <a class="events-tab{% if not selected_publish_status %} is-active{% endif %}" href="/staff/events/{% if selected_warning %}?warning={{ selected_warning }}{% endif %}"{% if not selected_publish_status %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체</a>
+        <a class="events-tab{% if selected_publish_status == 'published' %} is-active{% endif %}" href="/staff/events/?publish_status=published{% if selected_warning %}&warning={{ selected_warning }}{% endif %}"{% if selected_publish_status == 'published' %} aria-current="true" aria-label="게시, 적용됨"{% endif %}>게시</a>
+        <a class="events-tab{% if selected_publish_status == 'draft' %} is-active{% endif %}" href="/staff/events/?publish_status=draft{% if selected_warning %}&warning={{ selected_warning }}{% endif %}"{% if selected_publish_status == 'draft' %} aria-current="true" aria-label="비공개, 적용됨"{% endif %}>비공개</a>
       </div>
 
       <div class="events-chipgroup" role="group" aria-label="품질 경고 필터">

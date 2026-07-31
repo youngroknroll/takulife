@@ -1,4 +1,6 @@
 """스태프 전용 드래프트 HTML 뷰(목록/상세) 검증."""
+import re
+
 import pytest
 
 from drafts.models import EventDraft
@@ -376,3 +378,20 @@ class TestDraftConfidenceDisplay:
 
         assert resp.status_code == 200
         assert "신뢰도 42%" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_선택된_드래프트_상태_탭만_적용됨으로_노출된다(staff_client, make_draft):
+    """클래스 is-active는 보조기술에 아무것도 전달하지 않는다."""
+    make_draft("https://example.com/t", extracted_title="탭 확인용")
+
+    _, client = staff_client()
+    resp = client.get("/staff/drafts/?status=pending")
+
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    tabs = re.findall(r'<a class="queue-tab[^"]*"[^>]*>', body)
+    assert len(tabs) == 4, tabs
+    current = [t for t in tabs if 'aria-current="true"' in t]
+    assert len(current) == 1, tabs
+    assert "적용됨" in current[0]

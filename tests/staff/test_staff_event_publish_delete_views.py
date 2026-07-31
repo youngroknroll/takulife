@@ -269,3 +269,18 @@ def test_컬렉션_참조로_삭제가_차단되면_안내_메시지에_컬렉�
     assert Event.objects.filter(pk=event.pk).exists()
     messages_text = " ".join(str(m) for m in resp.context["messages"])
     assert "컬렉션 1" in messages_text
+
+
+@pytest.mark.django_db
+def test_선택된_게시_상태_탭만_적용됨으로_노출된다(staff_client, make_event):
+    make_event()
+
+    _, client = staff_client()
+    resp = client.get("/staff/events/?publish_status=published")
+
+    assert resp.status_code == 200
+    tabs = re.findall(r'<a class="events-tab[^"]*"[^>]*>', resp.content.decode())
+    assert len(tabs) == 3, tabs
+    current = [t for t in tabs if 'aria-current="true"' in t]
+    assert len(current) == 1, tabs
+    assert "적용됨" in current[0]
