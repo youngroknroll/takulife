@@ -207,6 +207,20 @@ def _get_pending_draft_for_update(draft_id):
     return draft
 
 
+def _category_update_invalid(updates) -> bool:
+    """updates에 extracted_category가 있는데 유효하지 않은 값이면 True."""
+    return "extracted_category" in updates and not is_valid_category(
+        updates["extracted_category"] or ""
+    )
+
+
+def _region_update_invalid(updates) -> bool:
+    """updates에 extracted_region이 있는데 유효하지 않은 값이면 True."""
+    return "extracted_region" in updates and not is_valid_region(
+        updates["extracted_region"] or ""
+    )
+
+
 def update_draft(*, draft_id, updates):
     mutable_fields = {
         "source_name",
@@ -226,13 +240,9 @@ def update_draft(*, draft_id, updates):
     # 검사한다. 이게 없으면 수기로 고친 자유 텍스트가 검증 없이 approve_draft를
     # 거쳐 게시된 이벤트까지 들어간다. atomic 블록 전에 검사해야 거부된 값이
     # 아무것도 저장되지 않는다 — 부분 저장되면 화면과 DB가 어긋난다.
-    if "extracted_category" in updates and not is_valid_category(
-        updates["extracted_category"] or ""
-    ):
+    if _category_update_invalid(updates):
         raise DraftVocabError
-    if "extracted_region" in updates and not is_valid_region(
-        updates["extracted_region"] or ""
-    ):
+    if _region_update_invalid(updates):
         raise DraftVocabError
 
     with transaction.atomic():

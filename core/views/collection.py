@@ -103,17 +103,21 @@ def _collection_item_row(item, series_ink_classes):
     }
 
 
+def _is_legacy_is_wanted_false_bookmark(get_params) -> bool:
+    """옛 ?is_wanted=false 북마크(예전 보유 탭 URL)면 True.
+
+    owned가 이미 명시된 요청은 호출자가 새 축에서 의도적으로 선택한
+    것이므로 이 판정에서 제외한다.
+    """
+    return get_params.get("is_wanted") == "false" and "owned" not in get_params
+
+
 @login_required
 @ensure_csrf_cookie
 def archive_collection_items(request):
-    # 옛 북마크 호환: ?is_wanted=false가 예전엔 보유 탭의 URL 그 자체였다.
-    # 이제 보유가 독립된 축이 됐으므로, 북마크된 ?is_wanted=false 링크는
-    # ?owned=true로 넘겨야 과소 집계(보유+구함 행이 예전엔 제외됐다)를
-    # 멈춘다. owned가 이미 있으면 건너뛴다 — 명시적 owned 값은 호출자가
-    # 이미 새 축에서 의도적으로 선택했다는 뜻이라 이 보정이 덮어쓰면 안
-    # 된다. 리다이렉트되는 요청은 DB를 건드릴 이유가 없으므로 조회 작업
-    # 전에 배치한다.
-    if request.GET.get("is_wanted") == "false" and "owned" not in request.GET:
+    # 리다이렉트되는 요청은 DB를 건드릴 이유가 없으므로 조회 작업 전에
+    # 배치한다.
+    if _is_legacy_is_wanted_false_bookmark(request.GET):
         redirect_params = request.GET.copy()
         del redirect_params["is_wanted"]
         redirect_params["owned"] = "true"

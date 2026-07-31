@@ -321,14 +321,18 @@ class CollectionItem(models.Model):
         # visit_record는 다른 테이블을 참조하므로 DB CheckConstraint로는
         # 강제할 수 없다. create_collection_item의 서비스 단 동기화에 더해
         # 여기서 2차로 방어한다.
-        if (
-            self.visit_record_id is not None
-            and self.event_id is not None
-            and self.visit_record.event_id != self.event_id
-        ):
+        if self._event_conflicts_with_visit_record():
             raise ValidationError(
                 "event must match visit_record.event when both are set."
             )
+
+    def _event_conflicts_with_visit_record(self) -> bool:
+        """event와 visit_record가 둘 다 있는데 서로 다른 event를 가리키면 True."""
+        return (
+            self.visit_record_id is not None
+            and self.event_id is not None
+            and self.visit_record.event_id != self.event_id
+        )
 
 
 class ActivityLogEntry(models.Model):
