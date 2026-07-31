@@ -514,15 +514,9 @@ def list_user_collection_items(
         else:
             queryset = queryset.filter(quantity__lt=2)
     if tradeable is not None:
-        if tradeable:
-            queryset = queryset.filter(tradeable_quantity__gt=0)
-        else:
-            queryset = queryset.filter(tradeable_quantity=0)
+        queryset = queryset.tradeable() if tradeable else queryset.not_tradeable()
     if owned is not None:
-        if owned:
-            queryset = queryset.filter(quantity__gt=0)
-        else:
-            queryset = queryset.filter(quantity=0)
+        queryset = queryset.owned() if owned else queryset.not_owned()
     return queryset
 
 
@@ -568,19 +562,19 @@ def user_collection_item_summary_counts(user) -> dict:
     유일하게 믿을 수 있는 "이 사용자가 컬렉션 항목을 가지고 있는가"
     수치다.
 
-    - owned_count: 수량>0인 행(실제로 보유 중)이며 is_wanted나
-      tradeable_quantity와 무관하다.
-    - wanted_count: is_wanted=True인 행이며 수량이나
-      tradeable_quantity와 무관하다.
-    - tradeable_count: tradeable_quantity>0인 행이며 수량이나
+    - owned_count: is_owned인 행(실제로 보유 중)이며 is_wanted나
+      is_tradeable과 무관하다.
+    - wanted_count: is_wanted=True인 행이며 is_owned나
+      is_tradeable과 무관하다.
+    - tradeable_count: is_tradeable인 행이며 is_owned나
       is_wanted와 무관하다.
     - total_count: 세 축과 무관하게 사용자 소유 전체 행 수.
     """
     queryset = CollectionItem.objects.filter(user=user)
     return {
-        "owned_count": queryset.filter(quantity__gt=0).count(),
+        "owned_count": queryset.owned().count(),
         "wanted_count": queryset.filter(is_wanted=True).count(),
-        "tradeable_count": queryset.filter(tradeable_quantity__gt=0).count(),
+        "tradeable_count": queryset.tradeable().count(),
         "total_count": queryset.count(),
     }
 

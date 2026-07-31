@@ -551,7 +551,7 @@ def update_collection_item(*, item, **fields):
             target_type="collection_item",
             target_id=item.id,
         )
-    if item.tradeable_quantity > 0 and previous_tradeable_quantity == 0:
+    if item.is_tradeable and previous_tradeable_quantity == 0:
         record_event(
             event_name=AnalyticsEvent.EventName.COLLECTION_ITEM_MARKED_TRADEABLE,
             user=item.user,
