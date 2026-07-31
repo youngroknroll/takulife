@@ -4,8 +4,10 @@ IC4 (id="{id}-error", aria-describedby only when this field has an error).
 
 Renders the <input> manually instead of `{{ field }}` — the only way to
 attach a conditional aria-describedby without a Python-side widget change
-(_auth_field.html's own version of this gap is deliberately deferred
-elsewhere, out of scope: 12 templates outside this plan). Preserves any
+(_auth_field.html's own version of this gap was deliberately deferred
+elsewhere, out of scope: 5 templates / 10 include sites outside this plan
+— see .docs/FE/auth-editorial.md M4 for the 「12개」 unit correction).
+Preserves any
 attrs the form field's widget already sets (autocomplete, maxlength, ...)
 by echoing widget.attrs verbatim. Password inputs never echo back
 `field.value` — Django's own PasswordInput renders empty for the same

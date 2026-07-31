@@ -1,0 +1,183 @@
+# 인증 화면 12개 (에디토리얼) — 기술 기록
+
+기준일: 2026-07-31 · 브랜치 `design/auth-editorial`
+대상: `templates/account/{login,signup,password_reset,password_reset_done,
+password_reset_from_key,password_reset_from_key_done,verification_sent,lockout,
+password_set}.html`, `templates/socialaccount/{login,signup,authentication_error}.html`,
+`templates/core/partials/{_auth_field,_auth_form_errors}.html`,
+`static/css/pages/auth.css`
+
+이 문서는 **가드레일만** 담는다. 계획서는 `.docs/FE/auth-editorial.md`에 있고
+git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 같은 실수를 반복할 것들이다.
+
+## A1 ⚠️ 한국어 제목은 `word-break: keep-all` 없이는 조사가 고아가 된다
+
+**현상**: 768px에서 좌패널 h2가 「덕질 라이프 / 를」로 끊겨 조사 "를"이 홀로 떨어졌다.
+`[실측]` 브라우저 스크린샷으로만 드러났고, 마크업을 아무리 읽어도 보이지 않는다.
+
+**원인 두 겹**:
+1. `word-break: keep-all`이 `.auth-panel-domains li`에만 있고 h2에 없었다. CSS 기본
+   `word-break: normal`은 한국어를 **글자 단위**로 끊는다.
+2. 폼 패널이 `468px` 고정이라 화면이 좁아질 때 줄어드는 쪽은 **선언 패널**이다.
+   태블릿 구간 글자 크기 조정이 없어 40px 글자가 285px 패널에 들어가지 못했다.
+
+**가드레일**: 이 저장소의 한국어 제목·문장 블록에는 `word-break: keep-all`을 건다.
+그리고 **고정폭 열이 있는 그리드에서는 유동 열이 얼마나 좁아지는지 실측**하라 —
+`grid-template-columns: 1fr 468px`은 좁은 화면에서 1fr 쪽을 무자비하게 압축한다.
+
+`[실측]` 수정 후 Range API로 시각적 줄을 측정: 753px/28px과 1025px/40px 양쪽 모두
+`["그대들의", "덕질 라이프를", "위하여"]`. 브레이크포인트는 `--page-pad-x`가 이미 쓰는
+`64rem`을 재사용했고 새 브레이크포인트를 만들지 않았다.
+
+## A2 ⚠️ `{{ field }}`를 수동 렌더로 바꾸면 `widget.attrs`가 조용히 사라진다
+
+`_auth_field.html`에 `aria-invalid`/`aria-describedby`를 붙이려면 `{{ field }}`
+(이미 렌더된 위젯 문자열)를 수동 `<input>` 렌더로 바꿔야 한다. 그때
+**allauth가 이미 넣어둔 속성을 verbatim echo하지 않으면 전부 날아간다.**
+
+`[실측]` allauth가 5개 폼 10개 필드에 넣어둔 것:
+
+| 필드 | placeholder | autocomplete | maxlength |
+|---|---|---|---|
+| login / email | 이메일 주소 | email | 320 |
+| password | 비밀번호 | current-password | — |
+| password1 | 비밀번호 / 새 비밀번호 | new-password | — |
+| password2 | 비밀번호 (확인) / 새 비밀번호 (확인) | new-password | — |
+
+`_account_settings_field.html:25`의 attrs 루프를 그대로 쓴다. 비밀번호 필드는
+`value`를 되돌려 쓰지 않는다(Django `PasswordInput`의 `render_value=False`와 같은 이유).
+
+⚠️ 착수 전 조사가 "플레이스홀더가 존재하지 않는다"고 잘못 판단했다. **위젯을 실제로
+덤프해서 확인하라** — allauth 폼 소스를 읽는 것만으로는 틀린다.
+
+## A3 `--accent`는 이 저장소에 없다 (시안이 쓴 세 번째 없는 토큰)
+
+`[실측]` `rg "var\(--accent" static/ templates/` → **0건**. 시안은 보드 안에서 자체
+정의했을 뿐이다. 직전 트랙 기록(`account-settings-editorial.md` G4)은 `--border-strong`과
+bare `--mint` 2종만 잡아뒀다.
+
+이 저장소의 3색 팔레트는 **brand / rose / mint**뿐이다. 시안의 `--accent`(「내 활동」
+tick)는 `--mint-ink`로 간다.
+
+## A4 G1(제출 가드가 버튼 `name`을 먹는 결함)은 이 12화면에서 성립하지 않는다
+
+직전 트랙에서 이메일 폼 3개를 조용히 죽인 사슬이다. **성립 조건이 두 개**인데
+여기서는 둘 다 없다:
+
+1. `[코드]` allauth `LoginView.form_valid`/`SignupView`/`PasswordResetView`/
+   `PasswordResetFromKeyView`는 전부 `form.is_valid()`로만 분기한다. 버튼 `name`으로
+   분기하는 것은 `EmailView`(범위 밖) 하나뿐이다.
+2. 이 12화면의 제출 버튼에는 `name` 속성이 없다.
+
+**가드레일**: 이 폼들의 제출 버튼에 **`name`을 붙이지 마라.** 두 개의 제출 동작을
+구분해야 하면 `<input type="hidden">`으로 보낸다(`email_change.html` 선례).
+
+`[실측]` 실제 브라우저에서 로그인·회원가입 폼을 버튼 클릭으로 제출해 서버 오류가
+렌더되는 것을 확인했다. 조용한 302 무동작 없음.
+
+## A5 `_auth_field.html` 사용처는 5개 템플릿 / 10개 include 사이트
+
+```
+rg -n '\{%\s*include\s*"core/partials/_auth_field\.html"' templates/
+```
+
+`[실측]` login 2 · signup 3 · password_reset 1 · password_reset_from_key 2 ·
+password_set 2 = **10 사이트 / 5 템플릿**.
+
+⚠️ 직전 트랙 문서 2곳이 **「12개」**라고 적었다. 12는 `auth.css`를 로드하는 템플릿
+수이며 **단위가 뒤바뀐 것**이다. 이번 트랙에서 두 곳을 정정했다
+(`docs/FE/account-settings-editorial.md`, `_account_settings_field.html` 주석).
+
+## A6 오류는 rose, 정체성은 brand — 시안의 blanket 브랜드-레드를 쓰지 않는다
+
+직전 트랙(PR #264)에서 사용자가 확정한 G4를 승계한다. `.auth-error-banner`는
+`account_settings.css`의 `.account-settings-error-banner`와 같은 레시피
+(`--rose-border` 테두리 + `--rose-soft` 배경 + `--rose-ink` 글자)다. 시안의 위아래
+테두리만 있는 밴드와 `✦` 마커는 채택하지 않았다 — 계정 영역 오류 문법을 하나로 유지한다.
+
+⚠️ **`login.html`의 고정 오류 문구를 보존하라.** allauth 원문 대신 「이메일 또는
+비밀번호가 올바르지 않습니다.」를 쓰는 것은 **어느 쪽이 틀렸는지 알려주지 않기 위한
+결정**이다. 디자인 작업이 뒤집을 사안이 아니다.
+
+## A7 kicker에 URL을 넣지 않는다
+
+시안은 `/accounts/login/` 같은 라우트를 kicker로 그렸으나 그것은 **디자인 문서용
+라벨**이다. 12화면 전부 상수 `"계정"`을 쓴다. 직전 트랙 선례와 같다
+(`_account_settings_panel_head.html` 6개 호출부가 전부 `kicker="계정 설정"`).
+
+## A8 좌패널은 미인증 화면에만
+
+인증 상태로 열리는 화면(`password_set`은 `@login_required`, `password_reset`의
+`user.is_authenticated` 분기)에 「그대들의 덕질 라이프를 위하여」를 띄우는 것은 맥락
+이탈이다. 그 2화면은 `.auth-shell.is-standalone`(단일 열 + 중앙 정렬)로 간다.
+
+모바일(`≤45rem`)에서는 좌패널을 `display:none`으로 **완전 제거**한다.
+⚠️ `order`/`grid-column` 재배치를 쓰지 마라 — DOM이 이미 좌→우 순서라 첫 블록을
+숨기면 두 번째가 구조·시각 모두 첫 번째가 된다. 이 저장소는 모바일 `order` 역전으로
+탭 순서를 깨뜨린 전례가 있다(WCAG 1.3.2).
+
+## A9 장식 글리프는 패널의 `overflow:hidden`에 의존한다
+
+좌패널 우하단 `✦`는 `position:absolute`에 11.875rem(190px)이라 **패널 경계를 넘는다**.
+`[실측]` 753px에서 글리프 우변 302px vs 패널 우변 285px — 17px 초과.
+`.auth-panel-declare { overflow: hidden }`가 잘라내므로 페이지 가로 스크롤은 0px다.
+
+**그 `overflow:hidden`을 제거하지 마라.** 제거하면 태블릿 구간에서 가로 스크롤이 생긴다.
+
+## A10 시안 대비 의도적 차이 (px → rem 변환의 결과)
+
+입력 padding 14px(시안 13px) · 링크 라벨 14px(13.5px) · 힌트 12.5px(12px).
+저장소 CSS 단위 규약(`rem` 기준, px는 border·shadow·radius만)이 시안의 raw px 리터럴과
+정확히 일치할 수 없어서 생긴다. **결함이 아니라 규약 우선 적용이다.**
+
+규칙선·체크박스 테두리의 `1.5px`는 **2px**로 올렸다 — 소수점 px는 계산값 단계에서
+1px로 내려가 평범한 구분선과 구별되지 않는다(PR #244 실측).
+
+## A11 검증 한계 (다음 작업자가 알아야 할 것)
+
+`[실측 2026-07-31]` 브라우저로 확인한 것: 로그인·회원가입·재설정·재설정 발송 화면,
+오류 상태 2종, 320/768/1040/1280 뷰포트, 라이트·다크.
+
+**확인하지 못한 것**:
+- `password_set`, `password_reset` 인증 분기 — standalone 카드 2화면. 브라우저 도달에
+  각각 사용 불가 비밀번호 계정 / 로그인 상태가 필요하다
+- `password_reset_from_key`의 비밀번호 2필드 — 서명된 재설정 키 필요
+- socialaccount 3화면 — Google `client_id` 미설정으로 도달 불가. **OAuth를 켜는
+  작업자는 이 3화면을 먼저 브라우저로 확인하라**
+
+이 화면들은 전부 이미 실측된 공통 선택자(`.auth-panel-form`, `.auth-field input`)를
+상속하고 화면 고유 규칙은 `.auth-shell.is-standalone` 하나뿐이라 위험은 낮지만 0이 아니다.
+
+## A12 잠금 화면은 **임계를 넘는 그 요청에만** 나온다
+
+`[실측]` `AXES_FAILURE_LIMIT = 5` 기준으로 실제 5회 실패를 유발한 결과:
+
+| 시도 | 응답 | 화면 |
+|---|---|---|
+| 1~4 | 200 | 로그인 (오류 배너) |
+| **5** | **429** | **`로그인 일시 차단` — `lockout.html`** |
+| 이후 | 200 | 로그인 (일반 오류 배너) |
+
+즉 **재시도를 계속하면 잠금 안내가 다시 보이지 않는다.** 임계를 넘는 순간의 응답만
+axes가 가로채고, 이후에는 인증 백엔드가 거부한 것을 allauth가 일반 폼 오류로 번역한다.
+`AccessAttempt.failures_since_start`는 5에서 더 오르지 않는다.
+
+이것은 **선재 동작**(axes + allauth 상호작용)이며 이번 트랙이 만든 것이 아니다.
+다만 사용자가 잠금 사실을 한 번만 안내받는다는 뜻이므로, 인증 UX를 다시 볼 때
+고려할 사항으로 남긴다.
+
+`[실측]` 잠금 상태에서 회복 경로는 살아 있다 — `/accounts/password/reset/`가 200이고
+제출 버튼이 존재한다. 429 응답 본문에 새 콘텐츠(h1·오류 배너·N4 안내문
+「차단은 일정 시간이 지나면 자동으로 해제됩니다」·재설정 링크·좌패널)가 전부 있다.
+검증 중 생긴 axes 기록은 `axes_reset`으로 정리했다.
+
+## A13 자동 테스트는 이 변경을 거의 잡지 못한다
+
+`[실측]` 프론트 전용이라 신규 테스트 0건, 회귀 2044 passed(착수 시점과 동일).
+
+깨진 테스트는 단 1건이었고 **동작이 아니라 CSS 클래스명을 못 박고 있었다**
+(`tests/auth/test_auth_field_errors.py`가 `<p class="auth-error">` 마크업 전체를 단언).
+문구만 검사하도록 느슨하게 고치고 뮤테이션 왕복으로 실효를 확인했다.
+
+**교훈: 테스트에 프레젠테이션 클래스명을 넣지 마라.** 리스킨 때마다 깨지면서 정작
+동작 회귀는 못 잡는다. `[실측]` 전수 검색 결과 이런 고정은 저장소에 그 1건뿐이었다.
