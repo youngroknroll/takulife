@@ -577,6 +577,10 @@ When one is warranted:
   term is unavoidable, explain its meaning in the surrounding words.
 - Keep one comment to one or two lines. Put longer design rationale in the
   approved canonical technical document under `docs/` instead.
+- If a comment genuinely needs more than two lines — a reason plus its
+  explanation — write it as a bulleted outline (개조식) rather than prose, and
+  reach for the common idiom over the precise long phrase. Length is a signal
+  that the wording is loose, not that the content is large.
 - Do not translate a name, condition, loop, or other self-evident statement
   into prose.
 - Preserve the reason behind non-obvious security, privacy, data-preservation,

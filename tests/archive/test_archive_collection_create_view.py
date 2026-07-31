@@ -89,8 +89,8 @@ class TestArchiveCollectionCreatePreselect:
         [
             "garbage",
             "abc",
-            "²",  # superscript two — isdigit() True, int() raises
-            "9" * 30,  # past the DB integer range
+            "²",  # 위첨자 2 — isdigit()는 True인데 int()는 실패한다
+            "9" * 30,  # DB 정수 범위를 넘는다
             "",
         ],
         ids=[

@@ -1,8 +1,7 @@
-"""Shared pytest fixtures: loosely-coupled object factories.
+"""공용 pytest 픽스처 — 객체를 만들어 주는 팩토리들.
 
-Each factory is a callable returned by a fixture, so call sites pass their own
-overrides (title, username, password, …) and keep their exact inputs — no rigid
-shared object that would change what a test exercises.
+픽스처가 객체가 아니라 함수를 돌려주므로 각 테스트가 필요한 값만 직접 넘긴다.
+고정된 공용 객체를 쓰면 테스트가 무엇을 검증하는지 픽스처가 몰래 바꾼다.
 """
 import io
 import secrets
@@ -19,27 +18,19 @@ from events.models import Event
 
 @pytest.fixture
 def clear_cache(db):
-    """Isolate DRF throttle / rate-limit state between tests — request it
-    explicitly in tests that read or assert on cache-backed counters.
+    """호출 횟수 제한 상태를 테스트 사이에서 끊는다. 캐시에 쌓인 횟수를 직접
+    읽거나 단언하는 테스트만 이 픽스처를 요청하면 된다.
 
-    Not autouse (2026-07-17 speed track): the cache backend is DatabaseCache
-    (config/settings.py CACHES), and a `@pytest.mark.django_db` test's own
-    transaction already rolls back any cache writes it makes — so most
-    cache/throttle tests are isolated for free and never needed an explicit
-    clear. Request this fixture only when a test's own setup (not the
-    previous test's teardown) needs a guaranteed-empty cache, e.g. because it
-    reads a cache key before writing to it.
+    모든 테스트에 자동 적용하지 않는 이유는, 캐시가 DB에 저장돼 있어
+    `django_db` 테스트의 트랜잭션이 캐시 쓰기까지 되돌려 주기 때문이다.
+    대부분은 그냥 두어도 서로 간섭하지 않는다.
 
-    Depends on the `db` fixture: cache.clear() itself needs a DB
-    connection/transaction, since the cache table lives in Postgres.
+    `db` 픽스처에 의존하는 것은 캐시 비우기 자체가 DB 연결을 쓰기 때문이다.
 
-    The teardown clear is wrapped: a test that intentionally simulates a DB
-    outage (e.g. tests/core/test_api_bootstrap.py's
-    test_health_endpoint_returns_503_when_database_unreachable, which
-    monkeypatches connection.ensure_connection to always raise) leaves that
-    monkeypatch in effect for this fixture's post-yield teardown too — clear
-    is best-effort cache hygiene, not the behavior under test, so a DB error
-    here must not turn an intentional-outage test into a spurious failure.
+    마무리 단계의 비우기를 예외로 감싼 이유: DB 장애를 일부러 흉내 내는
+    테스트가 그 흉내를 끝까지 유지한 채 이 픽스처의 마무리로 들어온다.
+    캐시 정리는 검증 대상이 아니므로, 여기서 난 DB 오류가 그 테스트를
+    엉뚱하게 실패시키면 안 된다.
     """
     cache.clear()
     yield
@@ -70,11 +61,9 @@ def make_draft_event(make_event):
 def make_user(db, django_user_model):
     def _make(email=None, password=None, **kwargs):
         email = email or f"user_{secrets.token_hex(4)}@example.com"
-        # No password requested: create_user(password=None) makes an
-        # unusable-password user (Django's make_password(None) contract) —
-        # cheaper than a real hash and correct for tests that never log the
-        # user in with a password (e.g. force_login). Callers that do need a
-        # working password (login/registration paths) pass their own.
+        # 비밀번호를 안 넘기면 로그인 불가 상태로 만든다 — 해시 계산이 없어
+        # 빠르고, 대부분의 테스트는 비밀번호로 로그인하지 않는다. 실제 로그인이
+        # 필요한 테스트만 자기 비밀번호를 넘긴다.
         return django_user_model.objects.create_user(
             email=email, password=password, **kwargs
         )
@@ -116,8 +105,8 @@ def png_bytes():
 @pytest.fixture
 def make_draft(db):
     def _make(source_url=None, **kwargs):
-        # source_url is unique — synthesize one so bare calls never collide.
-        # `is None` (not truthy-check) so an intentional "" is preserved.
+        # source_url은 유일해야 해서 값을 안 주면 만들어 넣는다.
+        # 빈 문자열을 일부러 넘긴 경우는 그대로 두려고 None만 검사한다.
         if source_url is None:
             source_url = f"https://example.com/{secrets.token_hex(4)}"
         return EventDraft.objects.create(source_url=source_url, **kwargs)
@@ -141,8 +130,8 @@ def make_source(db):
 
 @pytest.fixture
 def fail_if_called():
-    """A collaborator stand-in that fails the test if it's ever invoked —
-    for asserting a code path is skipped entirely (monkeypatch target)."""
+    """불리면 테스트를 실패시키는 대역. 어떤 경로가 아예 실행되지 않음을
+    확인할 때 그 자리에 끼워 넣는다."""
     def _fn(*args, **kwargs):
         raise AssertionError("this collaborator must not be called")
 

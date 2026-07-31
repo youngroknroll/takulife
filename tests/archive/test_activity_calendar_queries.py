@@ -94,7 +94,7 @@ def test_방문_예정_행사는_행사_기간의_모든_날짜에_일정으로_
         start_date=date(2026, 7, 5),
         end_date=date(2026, 7, 8),
     )
-    make_status(user, event)  # default status=PLANNED
+    make_status(user, event)  # 기본값 status=PLANNED
 
     items = list(list_user_activity_for_month(user, year=2026, month=7))
 

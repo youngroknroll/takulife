@@ -10,12 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 def _delete_file_best_effort(field_file):
-    """Best-effort delete a FieldFile's storage object once the deleting
-    transaction actually commits.
+    """DB 삭제가 실제로 커밋된 뒤에 저장소의 파일을 지운다.
 
-    Deferred via transaction.on_commit so a rolled-back delete never loses a
-    file the DB row still points at. Storage errors are logged, never
-    propagated (mirrors events/services.py's poster cleanup pattern).
+    커밋 이후로 미루는 것은, 삭제가 되돌려졌는데 파일만 사라져 남은 행이
+    빈 곳을 가리키는 상황을 막기 위해서다. 저장소 오류는 기록만 하고 위로
+    올리지 않는다 — 파일 정리 실패가 삭제 자체를 되돌리면 안 된다.
     """
     if not field_file:
         return

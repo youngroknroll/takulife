@@ -31,7 +31,7 @@ class TestArchiveVisitCreateView:
     def test_방문_기록_작성_페이지는_본인이_참석_예정으로_등록한_행사만_선택_목록에_표시한다(self, make_user, make_event, make_status):
         user = make_user()
         planned = make_event(title="Planned")
-        make_event(title="Other published")  # published, not planned
+        make_event(title="Other published")  # 게시됐지만 예정 상태는 아니다
         make_status(user, event=planned, status=UserEventStatus.Status.PLANNED)
 
         client = Client()

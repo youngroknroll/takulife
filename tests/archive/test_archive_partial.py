@@ -138,7 +138,7 @@ class TestArchivePartialBranch:
         # 그 링크는 partial=을 절대 실으면 안 된다(그러면 클릭 시 크롬 없는
         # 조각으로 이동해버린다). /archive/statuses/는 5건씩 페이지네이션된다.
         user, client = user_client()
-        for i in range(7):  # > ARCHIVE_STATUS_PAGE_SIZE (5) → 2 pages
+        for i in range(7):  # ARCHIVE_STATUS_PAGE_SIZE(5)를 넘겨 2쪽이 되게 한다
             ev = make_event(title=f"행사 {i}")
             make_status(user, event=ev, status="planned")
 

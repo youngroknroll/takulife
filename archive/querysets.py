@@ -1,16 +1,14 @@
-"""Read layer querysets for the archive domain.
+"""archive 도메인의 읽기 계층 쿼리셋.
 
-Keeps reusable query intent (the derived 'missed' overlay) in the queryset,
-mirroring events/querysets.py. Status values are string literals so this module
-does not import its own model back (avoids a model<->queryset import cycle);
-VisitRecord is imported lazily inside the method for the same reason.
+상태 값을 모델 상수가 아닌 문자열로 쓰고 VisitRecord를 메서드 안에서 늦게
+임포트하는 것은, 모델과 쿼리셋이 서로를 임포트해 순환하는 것을 피하기 위해서다.
 
-Derivation contract (see .docs/plans/2026-06-26-archive-missed-status-design.md):
+놓침(missed) 판정 규칙:
     visited                                            -> visited
-    missed (stored)                                    -> missed
-    planned, not overridden, end_date < today,
-        end_date not null, no visit record             -> missed (auto)
-    otherwise                                          -> planned
+    missed (저장된 값)                                  -> missed
+    planned, 사용자가 덮어쓰지 않음, 종료일이 있고 지났음,
+        방문 기록 없음                                  -> missed (자동)
+    그 밖                                               -> planned
 """
 from django.db import models
 from django.db.models import Case, CharField, Exists, F, OuterRef, Value, When
@@ -18,10 +16,10 @@ from django.db.models import Case, CharField, Exists, F, OuterRef, Value, When
 
 class UserEventStatusQuerySet(models.QuerySet):
     def with_derived_status(self, *, today):
-        """Annotate ``derived_status`` — the effective status shown to the user.
+        """사용자에게 실제로 보이는 상태를 ``derived_status``로 붙인다.
 
-        ``today`` is passed in (caller uses ``timezone.localdate()``) so the
-        overlay is deterministic and testable, exactly like EventQuerySet.
+        ``today``를 밖에서 받는 것은 판정을 호출 시점에 고정해 테스트 가능하게
+        하려는 것이다.
         """
         from .models import VisitRecord
 
