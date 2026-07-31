@@ -322,7 +322,6 @@ def test_추적_파일의_주석과_독스트링에_한글_없는_영어_산문�
         "4px 11px",
         "~248px",
         "WCAG 2.4.3).",
-        "min-height: 44px added repo-wide (BIR IA-2 finding, applies to every",
     ],
     ids=[
         "django_include_with_속성",
@@ -334,7 +333,6 @@ def test_추적_파일의_주석과_독스트링에_한글_없는_영어_산문�
         "px_값_두개",
         "물결_px_값",
         "wcag_기준_번호",
-        "css_속성과_영단어_혼재",
     ],
 )
 def test_예외로_통과해야_하는_코드_표기_실물은_위반이_아니다(text):
@@ -348,12 +346,14 @@ def test_예외로_통과해야_하는_코드_표기_실물은_위반이_아니�
         "Validation is delegated to events.image_validation.validate_uploaded_image",
         "# except-ok: isolated per-row so one failure cannot block the rest",
         "Deferred via transaction.on_commit so a rolled-back delete never loses a",
+        "min-height: 44px added repo-wide (BIR IA-2 finding, applies to every",
     ],
     ids=[
         "식별자_호출_표기가_섞인_영어_산문",
         "긴_점_표기_경로가_섞인_영어_산문",
         "except_ok_마커_뒤_영어_사유",
         "코드_식별자와_영어_접속사가_섞인_산문",
+        "css_속성_뒤에_붙은_영어_산문",
     ],
 )
 def test_오라클에서_가져온_실제_영어_산문_표본은_위반으로_잡힌다(text):
