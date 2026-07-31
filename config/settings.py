@@ -307,6 +307,7 @@ TEMPLATES = [
                 "core.context_processors.google_oauth_configured",
                 "core.context_processors.support_email",
                 "staff.context_processors.sidebar_badge_counts",
+                "staff.context_processors.staff_search_box",
             ],
         },
     },

@@ -213,6 +213,8 @@
           {% endfor %}
         </div>
       </div>
+    {% elif search %}
+      <p class="notice">「{{ search }}」 검색 결과가 없습니다. <a href="/staff/drafts/{% if selected_status %}?status={{ selected_status }}{% endif %}">검색 지우기</a></p>
     {% elif selected_status and stats_total %}
       <p class="notice">해당 상태의 드래프트가 없습니다. <a href="/staff/drafts/">전체 보기</a></p>
     {% else %}

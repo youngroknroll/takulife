@@ -1,5 +1,5 @@
 """드래프트 도메인의 공개 조회 계층. 집계 로직은 여기 두고 뷰에는 두지 않는다."""
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from .models import DraftSource, EventDraft
 
@@ -24,12 +24,25 @@ def draft_review_stats() -> dict:
 DRAFT_LISTING_PAGE_SIZE = 14
 
 
-def list_drafts(status: str = ""):
+def list_drafts(status: str = "", search: str = ""):
     """review_status로 필터링할 수 있다(기본은 전체). 알 수 없는 status 값은 빈
-    쿼리셋을 반환하며, 값 정규화는 뷰의 책임이다."""
+    쿼리셋을 반환하며, 값 정규화는 뷰의 책임이다.
+
+    search는 제목과 출처를 함께 본다 — 검수자가 기억하는 단서가 둘 중 어느
+    쪽인지 미리 알 수 없다. extracted_title이 비어 있는 드래프트는 화면이
+    raw_title을 대신 보여주므로 그쪽도 대상에 넣는다.
+    """
     qs = EventDraft.objects.order_by("-id")
     if status:
         qs = qs.filter(review_status=status)
+    term = search.strip()
+    if term:
+        qs = qs.filter(
+            Q(extracted_title__icontains=term)
+            | Q(raw_title__icontains=term)
+            | Q(source_name__icontains=term)
+            | Q(source_url__icontains=term)
+        )
     return qs
 
 

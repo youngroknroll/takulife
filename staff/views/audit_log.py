@@ -13,6 +13,7 @@ from django.shortcuts import render
 from ..action_labels import ACTION_LABELS
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
+from ..search import search_term
 from ..queries import STAFF_ACTION_LOG_PAGE_SIZE, list_staff_action_log
 
 
@@ -45,12 +46,16 @@ def staff_audit_log(request):
     if selected_action not in StaffActionLog.Action.values:
         selected_action = ""
 
-    rows = list_staff_action_log(action=selected_action)
+    search = search_term(request)
+    rows = list_staff_action_log(action=selected_action, search=search)
     paginator = Paginator(rows, STAFF_ACTION_LOG_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
     log_rows = _build_audit_log_rows(page_obj.object_list)
 
-    pager_query = "&" + urlencode([("action", selected_action)]) if selected_action else ""
+    pager_pairs = [("action", selected_action)] if selected_action else []
+    if search:
+        pager_pairs.append(("q", search))
+    pager_query = "&" + urlencode(pager_pairs) if pager_pairs else ""
     action_chips = [
         {"key": key, "label": ACTION_LABELS.get(key, key)} for key in StaffActionLog.Action.values
     ]
@@ -64,5 +69,6 @@ def staff_audit_log(request):
             "selected_action": selected_action,
             "pager_query": pager_query,
             "action_chips": action_chips,
+            "search": search,
         },
     )

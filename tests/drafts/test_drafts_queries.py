@@ -203,3 +203,73 @@ class TestEnabledDraftSourcesExist:
         )
 
         assert enabled_draft_sources_exist() is True
+
+
+@pytest.mark.django_db
+class TestDraftSearch:
+    """커맨드바 검색이 넘기는 q를 처리한다. 검수자가 기억하는 단서는 제목이거나
+    출처라, 둘 중 어느 쪽으로 쳐도 찾혀야 한다."""
+
+    def _make(self, **kwargs):
+        base = {
+            "source_url": f"https://example.com/{kwargs.get('source_name', 'x')}",
+            "source_name": "기본 소스",
+            "raw_title": "원본 제목",
+            "raw_text": "본문",
+        }
+        return EventDraft.objects.create(**{**base, **kwargs})
+
+    def test_추출된_제목의_일부로_찾는다(self):
+        from drafts.queries import list_drafts
+
+        hit = self._make(source_url="https://a.test/1", extracted_title="여름 애니 팝업스토어")
+        self._make(source_url="https://a.test/2", extracted_title="겨울 전시")
+
+        assert list(list_drafts(search="팝업")) == [hit]
+
+    def test_추출_제목이_비어_있으면_원본_제목으로도_찾는다(self):
+        from drafts.queries import list_drafts
+
+        hit = self._make(source_url="https://b.test/1", raw_title="한정 굿즈 예약")
+        self._make(source_url="https://b.test/2", raw_title="다른 것")
+
+        assert list(list_drafts(search="굿즈")) == [hit]
+
+    def test_출처_이름으로도_찾는다(self):
+        from drafts.queries import list_drafts
+
+        hit = self._make(source_url="https://c.test/1", source_name="트위터 공식")
+        self._make(source_url="https://c.test/2", source_name="블로그")
+
+        assert list(list_drafts(search="트위터")) == [hit]
+
+    def test_대소문자를_구분하지_않는다(self):
+        from drafts.queries import list_drafts
+
+        hit = self._make(source_url="https://d.test/1", extracted_title="Anime Popup")
+
+        assert list(list_drafts(search="anime popup")) == [hit]
+
+    def test_검색어와_상태_필터는_함께_적용된다(self):
+        from drafts.queries import list_drafts
+
+        hit = self._make(
+            source_url="https://e.test/1",
+            extracted_title="굿즈 예약",
+            review_status=EventDraft.ReviewStatus.PENDING,
+        )
+        self._make(
+            source_url="https://e.test/2",
+            extracted_title="굿즈 예약",
+            review_status=EventDraft.ReviewStatus.APPROVED,
+        )
+
+        assert list(list_drafts(status="pending", search="굿즈")) == [hit]
+
+    def test_빈_검색어는_아무것도_거르지_않는다(self):
+        from drafts.queries import list_drafts
+
+        self._make(source_url="https://f.test/1")
+        self._make(source_url="https://f.test/2")
+
+        assert list_drafts(search="   ").count() == 2

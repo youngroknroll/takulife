@@ -529,3 +529,50 @@ class TestWithPublicStatus:
 
         # 인식하지 못하는 상태값은 모든 분기를 거쳐 `return self`로 빠진다.
         assert list(qs.with_public_status("nonsense", today=today)) == list(qs)
+
+@pytest.mark.django_db
+class TestStaffEventSearch:
+    """커맨드바 검색이 넘기는 q를 처리한다. 스태프가 기억하는 단서는 행사명일
+    수도, 작품명이나 장소일 수도 있다."""
+
+    def test_행사명의_일부로_찾는다(self, make_event):
+        from events.queries import list_staff_events
+
+        hit = make_event(title="여름 애니 팝업스토어")
+        make_event(title="겨울 전시")
+
+        assert list(list_staff_events(search="팝업")) == [hit]
+
+    def test_작품명으로도_찾는다(self, make_event):
+        from events.queries import list_staff_events
+
+        hit = make_event(title="행사 A", work_title="주술회전")
+        make_event(title="행사 B", work_title="다른 작품")
+
+        assert list(list_staff_events(search="주술")) == [hit]
+
+    def test_장소명으로도_찾는다(self, make_event):
+        from events.queries import list_staff_events
+
+        hit = make_event(title="행사 C", location_name="홍대 어딘가")
+        make_event(title="행사 D", location_name="강남 어딘가")
+
+        assert list(list_staff_events(search="홍대")) == [hit]
+
+    def test_검색어와_게시_상태_필터는_함께_적용된다(self, make_event, make_draft_event):
+        from events.queries import list_staff_events
+
+        hit = make_event(title="굿즈 예약 행사")
+        make_draft_event(title="굿즈 예약 행사")
+
+        result = list(list_staff_events(publish_status="published", search="굿즈"))
+
+        assert result == [hit]
+
+    def test_빈_검색어는_아무것도_거르지_않는다(self, make_event):
+        from events.queries import list_staff_events
+
+        make_event(title="하나")
+        make_event(title="둘")
+
+        assert list_staff_events(search="  ").count() == 2

@@ -189,3 +189,4 @@ def test_대시보드_최근_처리_내역에도_ip_주소나_user_agent가_없�
     body = resp.content.decode()
     assert "203.0.113.77" not in body
     assert "pytest-dashboard-agent/1.0" not in body
+

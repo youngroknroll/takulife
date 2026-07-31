@@ -6,6 +6,22 @@
 """
 from drafts.queries import draft_review_stats
 
+from .search import SEARCHABLE_URL_NAMES, search_form_hidden_params, search_term
+
+
+def staff_search_box(request):
+    """커맨드바 검색 폼이 필요한 값. 검색을 지원하는 화면에서만 채운다."""
+    resolver_match = getattr(request, "resolver_match", None)
+    if resolver_match is None or resolver_match.app_name != "staff":
+        return {}
+    if resolver_match.url_name not in SEARCHABLE_URL_NAMES:
+        return {"staff_search_enabled": False}
+    return {
+        "staff_search_enabled": True,
+        "staff_search_query": search_term(request),
+        "staff_search_hidden_params": search_form_hidden_params(request),
+    }
+
 
 def sidebar_badge_counts(request):
     """사이드바 배지에 쓸 대기 드래프트 건수를 담는다.

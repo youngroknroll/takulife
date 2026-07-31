@@ -94,10 +94,16 @@ sidebar_pending_draft_count를 그대로 쓴다(D4).
     {% endif %}
   </h1>
 
-  <form class="staff-commandbar-search" method="get" action="{{ request.path }}" role="search">
-    <label class="sr-only" for="staff-commandbar-q">드래프트 · 이벤트 검색</label>
-    <input class="staff-commandbar-search-input" id="staff-commandbar-q" type="text" name="q" value="{{ request.GET.q }}" placeholder="드래프트 · 이벤트 검색">
-  </form>
+  {% if staff_search_enabled %}
+    <form class="staff-commandbar-search" method="get" action="{{ request.path }}" role="search">
+      {# 보고 있던 필터를 그대로 다시 보낸다. 없으면 검색 한 번에 상태 필터가 풀린다. #}
+      {% for param in staff_search_hidden_params %}
+        <input type="hidden" name="{{ param.key }}" value="{{ param.value }}">
+      {% endfor %}
+      <label class="sr-only" for="staff-commandbar-q">이 화면에서 검색</label>
+      <input class="staff-commandbar-search-input" id="staff-commandbar-q" type="search" name="q" value="{{ staff_search_query }}" placeholder="이 화면에서 검색" maxlength="100">
+    </form>
+  {% endif %}
   <a class="staff-cta" href="{{ request.get_full_path }}">↻ 새로고침</a>
   <span class="staff-commandbar-divider" aria-hidden="true"></span>
   <time class="mono staff-commandbar-stamp" datetime="{% now 'c' %}">{% now 'y.m.d H:i' %} 기준</time>

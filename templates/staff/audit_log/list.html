@@ -55,7 +55,11 @@ staff/queries.py에서 애초에 그 두 필드를 select하지 않아 log_rows
           </tbody>
         </table>
       {% else %}
-        <p class="audit-empty">기록된 감사 로그가 없습니다.</p>
+        {% if search %}
+          <p class="audit-empty">「{{ search }}」 검색 결과가 없습니다. <a href="/staff/audit-log/{% if selected_action %}?action={{ selected_action }}{% endif %}">검색 지우기</a></p>
+        {% else %}
+          <p class="audit-empty">기록된 감사 로그가 없습니다.</p>
+        {% endif %}
       {% endif %}
     </section>
 

@@ -805,3 +805,24 @@ def test_지금_수집_폼은_연타_가드를_옵트인한다(staff_client):
     ) or re.search(r'<form[^>]*dash-panel-head-action[^>]*>', resp.content.decode())
     assert form, "지금 수집 폼을 찾지 못했다"
     assert "data-submit-guard" in form.group()
+
+
+@pytest.mark.django_db
+def test_검색을_지원하지_않는_화면에는_검색창이_없다(staff_client):
+    """대시보드에 검색창을 띄우면 눌러도 아무 일이 없다."""
+    _, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert 'id="staff-commandbar-q"' not in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_검색을_지원하는_화면에는_검색창이_있다(staff_client):
+    _, client = staff_client()
+
+    resp = client.get("/staff/audit-log/")
+
+    assert resp.status_code == 200
+    assert 'id="staff-commandbar-q"' in resp.content.decode()

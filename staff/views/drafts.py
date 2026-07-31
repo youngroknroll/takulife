@@ -36,6 +36,7 @@ from drafts.services import (
 from events.models import Event
 
 from ..models import StaffActionLog
+from ..search import search_term
 from ..permissions import staff_console_required
 from ._helpers import _action_log_kwargs, _staff_action_metadata
 
@@ -124,12 +125,16 @@ def event_drafts(request):
 
     stats = draft_review_stats()
     stats_total = stats["pending"] + stats["approved"] + stats["rejected"]
-    drafts = list_drafts(selected_status)
+    search = search_term(request)
+    drafts = list_drafts(selected_status, search=search)
     paginator = Paginator(drafts, DRAFT_LISTING_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
     draft_rows = _build_draft_rows(page_obj.object_list)
 
-    pager_query = "&" + urlencode([("status", selected_status)]) if selected_status else ""
+    pager_pairs = [("status", selected_status)] if selected_status else []
+    if search:
+        pager_pairs.append(("q", search))
+    pager_query = "&" + urlencode(pager_pairs) if pager_pairs else ""
 
     return render(
         request,
@@ -141,6 +146,7 @@ def event_drafts(request):
             "page_obj": page_obj,
             "selected_status": selected_status,
             "pager_query": pager_query,
+            "search": search,
         },
     )
 

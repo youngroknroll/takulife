@@ -395,3 +395,70 @@ def test_선택된_드래프트_상태_탭만_적용됨으로_노출된다(staff
     current = [t for t in tabs if 'aria-current="true"' in t]
     assert len(current) == 1, tabs
     assert "적용됨" in current[0]
+
+
+@pytest.mark.django_db
+class TestDraftQueueSearchBox:
+    def test_q로_목록이_좁혀진다(self, staff_client, make_draft):
+        make_draft("https://example.com/s1", extracted_title="여름 팝업스토어")
+        make_draft("https://example.com/s2", extracted_title="겨울 전시")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?q=팝업")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        assert "여름 팝업스토어" in body
+        assert "겨울 전시" not in body
+
+    def test_검색_폼이_보고_있던_상태_필터를_숨은_입력으로_이어받는다(self, staff_client, make_draft):
+        """폼이 q만 보내면 검색 한 번에 status가 풀린다."""
+        make_draft("https://example.com/s3", extracted_title="유지 확인")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?status=pending")
+
+        assert resp.status_code == 200
+        assert '<input type="hidden" name="status" value="pending">' in resp.content.decode()
+
+    def test_페이저_링크가_검색어를_유지한다(self, staff_client, make_draft):
+        """페이저가 q를 빼면 2쪽으로 넘기는 순간 검색이 풀린다."""
+        # _seed_drafts는 source_url에 status를 넣는다 — 그 값으로 검색해야 걸린다.
+        _seed_drafts(make_draft, 20)
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?q=pending")
+
+        assert resp.status_code == 200
+        # 본문 전체에서 찾으면 「새로고침」 링크의 get_full_path에도 걸린다.
+        pager = re.search(r'<nav class="pager".*?</nav>', resp.content.decode(), re.S)
+        assert pager, "페이저가 렌더링되지 않았다"
+        assert "page=2" in pager.group()
+        assert "q=pending" in pager.group()
+
+
+@pytest.mark.django_db
+class TestSearchEmptyState:
+    """0건일 때 원인을 상태 필터로 오인시키면 안 된다."""
+
+    def test_검색_결과가_없으면_검색어_때문임을_알린다(self, staff_client, make_draft):
+        make_draft("https://example.com/e1", extracted_title="여름 팝업")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/?q=없는검색어")
+
+        assert resp.status_code == 200
+        # 본문 전체에서 찾으면 검색창 입력값에 걸려 늘 통과한다.
+        notice = re.search(r'<p class="notice">.*?</p>', resp.content.decode(), re.S)
+        assert notice, "빈 상태 안내가 없다"
+        assert "없는검색어" in notice.group()
+
+    def test_감사_로그도_검색_결과_없음을_따로_알린다(self, staff_client):
+        _, client = staff_client()
+
+        resp = client.get("/staff/audit-log/?q=없는검색어")
+
+        assert resp.status_code == 200
+        empty = re.search(r'<p class="audit-empty">.*?</p>', resp.content.decode(), re.S)
+        assert empty, "빈 상태 안내가 없다"
+        assert "없는검색어" in empty.group()
