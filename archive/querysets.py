@@ -14,6 +14,20 @@ from django.db import models
 from django.db.models import Case, CharField, Exists, F, OuterRef, Value, When
 
 
+class CollectionItemQuerySet(models.QuerySet):
+    def owned(self):
+        return self.filter(quantity__gt=0)
+
+    def not_owned(self):
+        return self.filter(quantity=0)
+
+    def tradeable(self):
+        return self.filter(tradeable_quantity__gt=0)
+
+    def not_tradeable(self):
+        return self.filter(tradeable_quantity=0)
+
+
 class UserEventStatusQuerySet(models.QuerySet):
     def with_derived_status(self, *, today):
         """사용자에게 실제로 보이는 상태를 ``derived_status``로 붙인다.

@@ -4,7 +4,7 @@ from django.db import models
 
 from events.models import Event
 
-from .querysets import UserEventStatusQuerySet
+from .querysets import CollectionItemQuerySet, UserEventStatusQuerySet
 
 
 class EventInterest(models.Model):
@@ -288,6 +288,8 @@ class CollectionItem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = CollectionItemQuerySet.as_manager()
+
     class Meta:
         constraints = [
             models.CheckConstraint(
@@ -315,6 +317,14 @@ class CollectionItem(models.Model):
             models.Index(fields=["user", "character_name"], name="collectionitem_user_char_idx"),
             models.Index(fields=["user", "item_type"], name="collectionitem_user_type_idx"),
         ]
+
+    @property
+    def is_owned(self):
+        return self.quantity > 0
+
+    @property
+    def is_tradeable(self):
+        return self.tradeable_quantity > 0
 
     def clean(self):
         super().clean()
