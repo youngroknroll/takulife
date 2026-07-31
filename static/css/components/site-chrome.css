@@ -1,7 +1,5 @@
 /* 스킵 링크. 포커스 전엔 화면 밖에 숨어 있다가 포커스되면 좌상단에
-   나타난다. staff-shell.css의 같은 컴포넌트와 값이 같아 두 스타일시트가
-   같이 로드돼도(스태프 페이지) 순서와 무관하게 동일하게 보인다.
-   z-index 100은 아래 .site-header의 50보다 위다. */
+   나타난다. z-index 100은 아래 .site-header의 50보다 위다. */
 .skip-link {
   position: absolute;
   left: -999px;

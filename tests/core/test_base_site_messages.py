@@ -1,19 +1,46 @@
-"""base.html — 사이트 전역 django.contrib.messages 렌더링.
+"""django.contrib.messages가 두 셸 각각에서 렌더링되는지 본다.
 
-성공 메시지는 "error/warning -> error, 그 외 -> info"의 2분기 일반 규칙에
-빠지지 않고 자기 전용 site-message-success 클래스로 렌더돼야 한다. 이건
-공용 셸 변경(templates/base.html + static/css/base.css)이라 스태프
-콘솔뿐 아니라 django.contrib.messages를 쓰는 모든 페이지에 영향을 준다 —
-여기서 스태프 홈카테고리 POST를 쓰는 건 그게 구동하기 가장 간단한 기존
-messages.success() 호출이기 때문일 뿐이다.
+성공 메시지는 "error/warning -> error, 그 외 -> info"의 2분기에 빠지지 않고
+자기 전용 클래스로 나와야 한다. 스태프 콘솔이 base.html에서 떨어져 나가면서
+셸이 둘이 됐고 각자 자기 클래스를 쓴다 — 한쪽만 검사하면 다른 쪽이 조용히
+메시지를 잃어도 통과한다.
 """
 import pytest
+from django.utils import timezone
+
+from allauth.account.models import EmailAddress
+
+from accounts.services import DELETION_GRACE_PERIOD
 
 pytestmark = pytest.mark.web
 
 
 @pytest.mark.django_db
-def test_성공_메시지는_site_message_success_클래스로_렌더링된다(client, make_user):
+def test_소비자_셸의_성공_메시지는_site_message_success_클래스로_렌더링된다(client, make_user):
+    password = "Str0ng-Passw0rd-9xzq"
+    user = make_user(password=password)
+    # make_user는 EmailAddress 행을 만들지 않는다 — 없으면 allauth가 로그인을
+    # 막아 탈퇴 취소 신호 자체가 돌지 않는다.
+    EmailAddress.objects.create(user=user, email=user.email, verified=True, primary=True)
+    user.deletion_requested_at = timezone.now() - DELETION_GRACE_PERIOD / 2
+    user.save(update_fields=["deletion_requested_at"])
+
+    resp = client.post(
+        "/accounts/login/",
+        data={"login": user.email, "password": password},
+        follow=True,
+    )
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "site-message-success" in content
+    assert "탈퇴 예약이 취소되었습니다." in content
+
+
+@pytest.mark.django_db
+def test_스태프_셸의_성공_메시지는_staff_message_success_클래스로_렌더링된다(
+    client, make_user
+):
     staff = make_user(is_staff=True)
     client.force_login(staff)
 
@@ -25,5 +52,5 @@ def test_성공_메시지는_site_message_success_클래스로_렌더링된다(c
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "site-message-success" in content
+    assert "staff-message-success" in content
     assert "카테고리 설정이 저장되었습니다." in content
