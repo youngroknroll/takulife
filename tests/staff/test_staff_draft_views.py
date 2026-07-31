@@ -1,8 +1,10 @@
 """스태프 전용 드래프트 HTML 뷰(목록/상세) 검증."""
+import json
 import re
 
 import pytest
 
+from drafts.labels import REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
 
 pytestmark = pytest.mark.web
@@ -21,6 +23,23 @@ class TestEventDraftsListView:
         body = resp.content.decode()
         assert "드래프트 A" in body
         assert "드래프트 B" in body
+
+    def test_드래프트_목록_페이지는_상태_라벨_맵을_JSON으로_내려보낸다(self, staff_client, make_draft):
+        # JS(draft_bulk.js)가 낙관적 갱신에 쓰는 라벨이 서버 렌더와 갈라지지
+        # 않도록, 실제로 내려간 JSON이 REVIEW_STATUS_LABELS 상수와 같은지 본다.
+        make_draft("https://example.com/a")
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert resp.status_code == 200
+        match = re.search(
+            r'<script id="draft-status-labels" type="application/json">(.*?)</script>',
+            resp.content.decode(),
+            re.DOTALL,
+        )
+        assert match, "상태 라벨 JSON 스크립트 블록을 찾을 수 없다"
+        assert json.loads(match.group(1)) == REVIEW_STATUS_LABELS
 
 
 def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, start=0):
@@ -204,6 +223,45 @@ class TestEventDraftsListStatusChipLabel:
         # 칩 자리에 enum 문자열이 그대로 노출되면 안 된다.
         assert ">approved<" not in body
 
+    def test_목록_행_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(self, staff_client, make_draft):
+        # 탭 라벨("검토 대기", "승인됨")도 같은 문구를 쓰므로, body 전체 포함
+        # 검사는 칩이 깨져도 우연히 통과한다 — data-draft-status-chip이 붙은
+        # 요소로만 앵커를 좁힌다.
+        make_draft("https://example.com/chip-row-pending", review_status=EventDraft.ReviewStatus.PENDING)
+        make_draft("https://example.com/chip-row-approved", review_status=EventDraft.ReviewStatus.APPROVED)
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        for status in ("pending", "approved"):
+            match = re.search(
+                r'class="queue-status-chip review-status-' + status + r'" data-draft-status-chip>([^<]*)<',
+                body,
+            )
+            assert match, f"{status} 행 칩을 찾을 수 없다"
+            assert match.group(1) == REVIEW_STATUS_LABELS[status]
+
+    def test_인스펙터_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(self, staff_client, make_draft):
+        make_draft("https://example.com/chip-panel-pending", review_status=EventDraft.ReviewStatus.PENDING)
+        make_draft("https://example.com/chip-panel-approved", review_status=EventDraft.ReviewStatus.APPROVED)
+
+        _, client = staff_client()
+        resp = client.get("/staff/drafts/")
+
+        assert resp.status_code == 200
+        body = resp.content.decode()
+        for status in ("pending", "approved"):
+            # 인스펙터 칩은 data-draft-status-chip 속성이 없어 행 칩과
+            # class 속성 바로 뒤 `>`로 구분된다.
+            match = re.search(
+                r'class="queue-status-chip review-status-' + status + r'">([^<]*)<',
+                body,
+            )
+            assert match, f"{status} 인스펙터 칩을 찾을 수 없다"
+            assert match.group(1) == REVIEW_STATUS_LABELS[status]
+
 
 @pytest.mark.django_db
 class TestEventDraftListWarningBadges:
@@ -285,6 +343,22 @@ class TestEventDraftDetailView:
 
         assert resp.status_code == 200
         assert resp.context["draft_not_found"] is True
+
+    def test_상세_상단바_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(self, staff_client, make_draft):
+        for status in ("pending", "approved"):
+            draft = make_draft(f"https://example.com/detail-chip-{status}", review_status=status)
+
+            _, client = staff_client()
+            resp = client.get(f"/staff/drafts/{draft.id}/")
+
+            assert resp.status_code == 200
+            body = resp.content.decode()
+            match = re.search(
+                r'class="queue-status-chip review-status-' + status + r'">([^<]*)<',
+                body,
+            )
+            assert match, f"{status} 상세 칩을 찾을 수 없다"
+            assert match.group(1) == REVIEW_STATUS_LABELS[status]
 
 
 @pytest.mark.django_db
