@@ -3,92 +3,104 @@
 {% block title %}{{ project_name }} | 이벤트 생성{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/pages/events.css' %}">
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="staff-main">
-    <div class="detail-topline">
-      <a class="top-action" href="/staff/events/">목록으로</a>
+  <div class="events-page" id="staff-main">
+    <div class="events-form-topbar">
+      <a class="staff-cta" href="{% url 'staff:event-list' %}">← 목록으로</a>
     </div>
 
-    <section class="hero">
-      <h1>이벤트 생성</h1>
-      <p>새 이벤트는 저장 즉시 게시됩니다. 포스터는 저장 후 수정 화면에서 추가하세요.</p>
-    </section>
-
     {% if field_errors.non_field %}
-      <p class="notice">{{ field_errors.non_field }}</p>
+      <div class="events-form-error">
+        <span class="mono events-form-error-tag">오류</span>
+        <span>{{ field_errors.non_field }}</span>
+      </div>
     {% endif %}
 
-    <section class="layout">
-      <article class="panel">
-        <h2>필드 입력</h2>
-
-        <form method="post" action="/staff/events/new/" novalidate data-submit-guard>
-          {% csrf_token %}
-          <div class="field-grid">
-            <div class="field full">
-              <label for="create-title">제목</label>
-              <input id="create-title" name="title" type="text" value="{{ form_values.title }}">
-              {% if field_errors.title %}<p class="field-error">{{ field_errors.title }}</p>{% endif %}
-            </div>
-            <div class="field">
-              <label for="create-category">카테고리</label>
-              <select id="create-category" name="category">
-                <option value="">— 선택 —</option>
-                {% for slug, label in CATEGORY %}
-                  <option value="{{ slug }}"{% if form_values.category == slug %} selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="field">
-              <label for="create-work-title">작품명</label>
-              <input id="create-work-title" name="work_title" type="text" value="{{ form_values.work_title }}">
-            </div>
-            <div class="field">
-              <label for="create-location-name">장소명</label>
-              <input id="create-location-name" name="location_name" type="text" value="{{ form_values.location_name }}">
-            </div>
-            <div class="field">
-              <label for="create-region">지역</label>
-              <select id="create-region" name="region">
-                <option value="">— 선택 —</option>
-                {% for slug, label in REGION %}
-                  <option value="{{ slug }}"{% if form_values.region == slug %} selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="field">
-              <label for="create-start-date">시작일</label>
-              <input id="create-start-date" name="start_date" type="date" value="{{ form_values.start_date }}">
-              {% if field_errors.start_date %}<p class="field-error">{{ field_errors.start_date }}</p>{% endif %}
-            </div>
-            <div class="field">
-              <label for="create-end-date">종료일</label>
-              <input id="create-end-date" name="end_date" type="date" value="{{ form_values.end_date }}">
-              {% if field_errors.end_date %}<p class="field-error">{{ field_errors.end_date }}</p>{% endif %}
-            </div>
-            <div class="field full">
-              <label for="create-official-url">공식 URL</label>
-              <input id="create-official-url" name="official_url" type="text" value="{{ form_values.official_url }}">
-              {% if field_errors.official_url %}<p class="field-error">{{ field_errors.official_url }}</p>{% endif %}
-            </div>
-            <div class="field">
-              <label for="create-source-name">출처명</label>
-              <input id="create-source-name" name="source_name" type="text" value="{{ form_values.source_name }}">
-            </div>
-            <div class="field full">
-              <label for="create-summary">요약</label>
-              <textarea id="create-summary" name="summary">{{ form_values.summary }}</textarea>
-            </div>
+    <div class="events-form-grid">
+      <form class="events-form-panel" method="post" action="/staff/events/new/" enctype="multipart/form-data" novalidate data-submit-guard>
+        {% csrf_token %}
+        <div class="events-form-panel-head">
+          <span class="events-form-panel-title">필드 입력</span>
+          <span class="mono events-form-panel-note">events.Event</span>
+        </div>
+        <div class="events-field-grid">
+          <div class="events-field events-field--full">
+            <label for="create-title">제목<span class="mono events-field-name">title</span></label>
+            <input class="events-input" id="create-title" name="title" type="text" value="{{ form_values.title }}">
+            {% if field_errors.title %}<p class="events-field-error">{{ field_errors.title }}</p>{% endif %}
           </div>
-
-          <div style="margin-top:12px;">
-            <button class="action-button" type="submit">생성</button>
+          <div class="events-field">
+            <label for="create-category">카테고리<span class="mono events-field-name">category</span></label>
+            <select class="events-select" id="create-category" name="category">
+              <option value="">— 선택 —</option>
+              {% for slug, label in CATEGORY %}
+                <option value="{{ slug }}"{% if form_values.category == slug %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if field_errors.category %}<p class="events-field-error">{{ field_errors.category }}</p>{% endif %}
           </div>
-        </form>
-      </article>
-    </section>
-  </main>
+          <div class="events-field">
+            <label for="create-work-title">작품명<span class="mono events-field-name">work_title</span></label>
+            <input class="events-input" id="create-work-title" name="work_title" type="text" value="{{ form_values.work_title }}">
+          </div>
+          <div class="events-field">
+            <label for="create-location-name">장소명<span class="mono events-field-name">location_name</span></label>
+            <input class="events-input" id="create-location-name" name="location_name" type="text" value="{{ form_values.location_name }}">
+          </div>
+          <div class="events-field">
+            <label for="create-region">지역<span class="mono events-field-name">region</span></label>
+            <select class="events-select" id="create-region" name="region">
+              <option value="">— 선택 —</option>
+              {% for slug, label in REGION %}
+                <option value="{{ slug }}"{% if form_values.region == slug %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if field_errors.region %}<p class="events-field-error">{{ field_errors.region }}</p>{% endif %}
+          </div>
+          <div class="events-field">
+            <label for="create-start-date">시작일<span class="mono events-field-name">start_date</span></label>
+            <input class="events-input" id="create-start-date" name="start_date" type="date" value="{{ form_values.start_date }}">
+            {% if field_errors.start_date %}<p class="events-field-error">{{ field_errors.start_date }}</p>{% endif %}
+          </div>
+          <div class="events-field">
+            <label for="create-end-date">종료일<span class="mono events-field-name">end_date</span></label>
+            <input class="events-input" id="create-end-date" name="end_date" type="date" value="{{ form_values.end_date }}">
+            {% if field_errors.end_date %}<p class="events-field-error">{{ field_errors.end_date }}</p>{% endif %}
+          </div>
+          <div class="events-field events-field--full">
+            <label for="create-official-url">공식 URL<span class="mono events-field-name">official_url</span></label>
+            <input class="events-input" id="create-official-url" name="official_url" type="text" value="{{ form_values.official_url }}">
+            {% if field_errors.official_url %}<p class="events-field-error">{{ field_errors.official_url }}</p>{% endif %}
+          </div>
+          <div class="events-field">
+            <label for="create-source-name">출처명<span class="mono events-field-name">source_name</span></label>
+            <input class="events-input" id="create-source-name" name="source_name" type="text" value="{{ form_values.source_name }}">
+          </div>
+          <div class="events-field events-field--full">
+            <label for="create-summary">요약<span class="mono events-field-name">summary</span></label>
+            <textarea class="events-textarea" id="create-summary" name="summary">{{ form_values.summary }}</textarea>
+          </div>
+        </div>
+        <div class="events-form-panel-foot">
+          <a class="staff-cta" href="{% url 'staff:event-list' %}">취소</a>
+          <button class="events-save-cta" type="submit">생성</button>
+        </div>
+      </form>
+
+      <div class="events-rail">
+        <div class="events-rail-card">
+          <div class="events-rail-card-head">
+            <span class="events-rail-card-title">게시 안내</span>
+          </div>
+          <div class="events-rail-card-body">
+            <p class="events-rail-note">새 이벤트는 저장 즉시 게시됩니다. 공식 URL이 없는 항목은 게시할 수 없습니다.</p>
+            <p class="events-rail-note">포스터는 저장 후 수정 화면에서 추가할 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

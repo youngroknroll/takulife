@@ -3,169 +3,206 @@
 {% block title %}{{ project_name }} | 이벤트 수정 #{{ event.id }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/staff_events.css' %}">
+<link rel="stylesheet" href="{% static 'css/staff/pages/events.css' %}">
 {% endblock %}
 
 {% block extra_js %}
-<script defer src="{% static 'js/pages/staff_event_edit.js' %}"></script>
+<script defer src="{% static 'js/staff/staff_event_edit.js' %}"></script>
 {% endblock %}
 
 {% block content %}
-  <main class="page" id="staff-main">
-    <div class="detail-topline">
-      <a class="top-action" href="/staff/events/{% if list_query %}?{{ list_query }}{% endif %}">목록으로</a>
+  <div class="events-page" id="staff-main">
+    <div class="events-form-topbar">
+      <a class="staff-cta" href="/staff/events/{% if list_query %}?{{ list_query }}{% endif %}">← 목록으로</a>
+      <span class="mono events-form-topbar-id">#{{ event.id }}</span>
+      <span class="events-status-badge events-status-badge--{{ event.publish_status }}">{% if event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
     </div>
 
-    <section class="hero">
-      <div>
-        <h1>이벤트 수정 #{{ event.id }}</h1>
-      </div>
-      <span class="draft-chip {{ event.publish_status }}">{% if event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
-    </section>
-
     {% if field_errors.non_field %}
-      <p class="notice">{{ field_errors.non_field }}</p>
+      <div class="events-form-error">
+        <span class="mono events-form-error-tag">오류</span>
+        <span>{{ field_errors.non_field }}</span>
+      </div>
     {% endif %}
 
-    <section class="layout">
-      <article class="panel">
-        <h2>필드 편집</h2>
-
-        {% comment %}action은 화이트리스트 기반 list_query를 보존 — POST 후 PRG 리다이렉트가
-           목록 필터(?warning=/?publish_status=)를 유지하려면 POST URL 자체에 실려야 함{% endcomment %}
-        <form method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" enctype="multipart/form-data" novalidate data-submit-guard>
-          {% csrf_token %}
-          <div class="field-grid">
-            <div class="field full">
-              <label for="edit-title">제목</label>
-              <input id="edit-title" name="title" type="text" value="{{ form_values.title }}">
-              {% if field_errors.title %}<p class="field-error">{{ field_errors.title }}</p>{% endif %}
-            </div>
-            <div class="field">
-              <label for="edit-category">카테고리</label>
-              <select id="edit-category" name="category">
-                <option value="">— 선택 —</option>
-                {% for slug, label in CATEGORY %}
-                  <option value="{{ slug }}"{% if form_values.category == slug %} selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="field">
-              <label for="edit-work-title">작품명</label>
-              <input id="edit-work-title" name="work_title" type="text" value="{{ form_values.work_title }}">
-            </div>
-            <div class="field">
-              <label for="edit-location-name">장소명</label>
-              <input id="edit-location-name" name="location_name" type="text" value="{{ form_values.location_name }}">
-            </div>
-            <div class="field">
-              <label for="edit-region">지역</label>
-              <select id="edit-region" name="region">
-                <option value="">— 선택 —</option>
-                {% for slug, label in REGION %}
-                  <option value="{{ slug }}"{% if form_values.region == slug %} selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="field">
-              <label for="edit-start-date">시작일</label>
-              <input id="edit-start-date" name="start_date" type="date" value="{{ form_values.start_date }}">
-              {% if field_errors.start_date %}<p class="field-error">{{ field_errors.start_date }}</p>{% endif %}
-            </div>
-            <div class="field">
-              <label for="edit-end-date">종료일</label>
-              <input id="edit-end-date" name="end_date" type="date" value="{{ form_values.end_date }}">
-              {% if field_errors.end_date %}<p class="field-error">{{ field_errors.end_date }}</p>{% endif %}
-            </div>
-            <div class="field full">
-              <label for="edit-official-url">공식 URL</label>
-              <input id="edit-official-url" name="official_url" type="text" value="{{ form_values.official_url }}">
-              {% if field_errors.official_url %}<p class="field-error">{{ field_errors.official_url }}</p>{% endif %}
-            </div>
-            <div class="field">
-              <label for="edit-source-name">출처명</label>
-              <input id="edit-source-name" name="source_name" type="text" value="{{ form_values.source_name }}">
-            </div>
-            <div class="field full">
-              <label for="edit-summary">요약</label>
-              <textarea id="edit-summary" name="summary">{{ form_values.summary }}</textarea>
-            </div>
-            <div class="field full">
-              <label for="edit-poster">포스터 이미지</label>
-              {% if event.poster_image %}
-                <p class="panel-note">현재 포스터: <a href="{{ event.poster_image.url }}" target="_blank" rel="noopener">보기 ↗</a></p>
-              {% endif %}
-              <input id="edit-poster" name="poster" type="file" accept="image/png,image/jpeg,image/webp">
-              {% if field_errors.poster %}<p class="field-error">{{ field_errors.poster }}</p>{% endif %}
-              {% if event.poster_image %}
-                <label class="field-checkbox">
-                  <input type="checkbox" name="clear_poster">
-                  포스터 제거
-                </label>
-              {% endif %}
+    <div class="events-form-grid">
+      {% comment %}action은 화이트리스트 기반 list_query를 보존 — POST 후 PRG 리다이렉트가
+         목록 필터(?warning=/?publish_status=)를 유지하려면 POST URL 자체에 실려야 함{% endcomment %}
+      <form class="events-form-panel" method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" enctype="multipart/form-data" novalidate data-submit-guard>
+        {% csrf_token %}
+        <div class="events-form-panel-head">
+          <span class="events-form-panel-title">필드 편집</span>
+          <span class="mono events-form-panel-note">events.Event</span>
+        </div>
+        <div class="events-field-grid">
+          <div class="events-field events-field--full">
+            <label for="edit-title">제목<span class="mono events-field-name">title</span></label>
+            <input class="events-input" id="edit-title" name="title" type="text" value="{{ form_values.title }}">
+            {% if field_errors.title %}<p class="events-field-error">{{ field_errors.title }}</p>{% endif %}
+          </div>
+          <div class="events-field">
+            <label for="edit-category">카테고리<span class="mono events-field-name">category</span></label>
+            <select class="events-select" id="edit-category" name="category">
+              <option value="">— 선택 —</option>
+              {% for slug, label in CATEGORY %}
+                <option value="{{ slug }}"{% if form_values.category == slug %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if field_errors.category %}<p class="events-field-error">{{ field_errors.category }}</p>{% endif %}
+          </div>
+          <div class="events-field">
+            <label for="edit-work-title">작품명<span class="mono events-field-name">work_title</span></label>
+            <input class="events-input" id="edit-work-title" name="work_title" type="text" value="{{ form_values.work_title }}">
+          </div>
+          <div class="events-field">
+            <label for="edit-location-name">장소명<span class="mono events-field-name">location_name</span></label>
+            <input class="events-input" id="edit-location-name" name="location_name" type="text" value="{{ form_values.location_name }}">
+          </div>
+          <div class="events-field">
+            <label for="edit-region">지역<span class="mono events-field-name">region</span></label>
+            <select class="events-select" id="edit-region" name="region">
+              <option value="">— 선택 —</option>
+              {% for slug, label in REGION %}
+                <option value="{{ slug }}"{% if form_values.region == slug %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if field_errors.region %}<p class="events-field-error">{{ field_errors.region }}</p>{% endif %}
+          </div>
+          <div class="events-field">
+            <label for="edit-start-date">시작일<span class="mono events-field-name">start_date</span></label>
+            <input class="events-input" id="edit-start-date" name="start_date" type="date" value="{{ form_values.start_date }}">
+            {% if field_errors.start_date %}<p class="events-field-error">{{ field_errors.start_date }}</p>{% endif %}
+          </div>
+          <div class="events-field">
+            <label for="edit-end-date">종료일<span class="mono events-field-name">end_date</span></label>
+            <input class="events-input" id="edit-end-date" name="end_date" type="date" value="{{ form_values.end_date }}">
+            {% if field_errors.end_date %}<p class="events-field-error">{{ field_errors.end_date }}</p>{% endif %}
+          </div>
+          <div class="events-field events-field--full">
+            <label for="edit-official-url">공식 URL<span class="mono events-field-name">official_url</span></label>
+            <input class="events-input" id="edit-official-url" name="official_url" type="text" value="{{ form_values.official_url }}">
+            {% if field_errors.official_url %}<p class="events-field-error">{{ field_errors.official_url }}</p>{% endif %}
+          </div>
+          <div class="events-field">
+            <label for="edit-source-name">출처명<span class="mono events-field-name">source_name</span></label>
+            <input class="events-input" id="edit-source-name" name="source_name" type="text" value="{{ form_values.source_name }}">
+          </div>
+          <div class="events-field events-field--full">
+            <label for="edit-summary">요약<span class="mono events-field-name">summary</span></label>
+            <textarea class="events-textarea" id="edit-summary" name="summary">{{ form_values.summary }}</textarea>
+          </div>
+          <div class="events-field events-field--full">
+            <label for="edit-poster">포스터 이미지<span class="mono events-field-name">poster</span></label>
+            <div class="events-poster-field">
+              <span class="events-poster-thumb" aria-hidden="true">{% if event.poster_image %}IMG{% else %}없음{% endif %}</span>
+              <div class="events-poster-controls">
+                <div class="events-poster-buttons">
+                  <input class="events-file-input" id="edit-poster" name="poster" type="file" accept="image/png,image/jpeg,image/webp">
+                  {% if event.poster_image %}
+                    <a class="staff-cta" href="{{ event.poster_image.url }}" target="_blank" rel="noopener">보기 ↗</a>
+                  {% endif %}
+                </div>
+                {% if field_errors.poster %}<p class="events-field-error">{{ field_errors.poster }}</p>{% endif %}
+                {% if event.poster_image %}
+                  <label class="events-checkbox-label">
+                    <input type="checkbox" name="clear_poster">
+                    포스터 제거 <span class="mono events-field-name">clear_poster</span>
+                  </label>
+                {% endif %}
+              </div>
             </div>
           </div>
+        </div>
+        <div class="events-form-panel-foot">
+          <a class="staff-cta" href="/staff/events/{% if list_query %}?{{ list_query }}{% endif %}">취소</a>
+          <button class="events-save-cta" type="submit">저장</button>
+        </div>
+      </form>
 
-          <div style="margin-top:12px;">
-            <button class="action-button" type="submit">저장</button>
+      <div class="events-rail">
+        <div class="events-rail-card">
+          <div class="events-rail-card-head">
+            <span class="events-rail-card-title">검증</span>
           </div>
-        </form>
-      </article>
-
-      <article class="panel">
-        <h2>검증</h2>
-        <p class="panel-note">
-          {% if event.verified_at %}
-            마지막 검증: {{ event.verified_at|timesince }} 전
-          {% else %}
-            검증 이력 없음
-          {% endif %}
-        </p>
-        <form method="post" action="/staff/events/{{ event.id }}/verify/{% if list_query %}?{{ list_query }}{% endif %}" id="staff-event-verify-form">
-          {% csrf_token %}
-          {% if event.verified_at %}
-            <button class="action-button secondary" type="submit">다시 검증</button>
-          {% else %}
-            <button class="action-button" type="submit">검증 완료</button>
-          {% endif %}
-        </form>
-      </article>
-
-      <article class="panel">
-        <h2>게시 상태</h2>
-        <p class="panel-note">
-          {% if event.publish_status == "published" %}
-            현재 게시 중입니다. 내리면 공개 사이트에서 즉시 숨겨집니다(재게시 가능).
-          {% else %}
-            현재 비공개(초안)입니다. 다시 게시하면 공개 사이트에 노출됩니다.
-          {% endif %}
-        </p>
-        <form method="post" action="/staff/events/{{ event.id }}/toggle-publish/{% if list_query %}?{{ list_query }}{% endif %}" data-submit-guard>
-          {% csrf_token %}
-          {% if event.publish_status == "published" %}
-            <button class="action-button secondary" type="submit">게시 내리기</button>
-          {% else %}
-            <button class="action-button" type="submit">다시 게시</button>
-          {% endif %}
-        </form>
-      </article>
-
-      <article class="panel">
-        <h2>삭제</h2>
-        {% with total=archive_reference_counts.interest|add:archive_reference_counts.status|add:archive_reference_counts.visit|add:archive_reference_counts.collection_item %}
-          {% if total > 0 %}
-            <p class="notice">
-              찜 {{ archive_reference_counts.interest }}·상태 {{ archive_reference_counts.status }}·방문기록 {{ archive_reference_counts.visit }}·컬렉션 {{ archive_reference_counts.collection_item }}건이 연결되어 삭제할 수 없습니다.
+          <div class="events-rail-card-body">
+            <p class="events-rail-note">
+              {% if event.verified_at %}
+                마지막 검증: {{ event.verified_at|timesince }} 전
+              {% else %}
+                검증 이력 없음
+              {% endif %}
             </p>
-          {% else %}
-            <p class="panel-note">아카이브 참조가 없어 하드 삭제가 가능합니다. 삭제는 되돌릴 수 없습니다.</p>
-            <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}">
+            <form method="post" action="/staff/events/{{ event.id }}/verify/{% if list_query %}?{{ list_query }}{% endif %}" id="staff-event-verify-form">
               {% csrf_token %}
-              <button class="action-button danger" type="submit">삭제</button>
+              {% if event.verified_at %}
+                <button class="events-rail-btn events-rail-btn--neutral" type="submit">다시 검증</button>
+              {% else %}
+                <button class="events-rail-btn events-rail-btn--accent" type="submit">검증 완료</button>
+              {% endif %}
             </form>
-          {% endif %}
+          </div>
+        </div>
+
+        <div class="events-rail-card">
+          <div class="events-rail-card-head">
+            <span class="events-rail-card-title">게시 상태</span>
+          </div>
+          <div class="events-rail-card-body">
+            <p class="events-rail-note">
+              {% if event.publish_status == "published" %}
+                현재 게시 중입니다. 내리면 공개 사이트에서 즉시 숨겨집니다(재게시 가능).
+              {% else %}
+                현재 비공개(초안)입니다. 다시 게시하면 공개 사이트에 노출됩니다.
+              {% endif %}
+            </p>
+            <form method="post" action="/staff/events/{{ event.id }}/toggle-publish/{% if list_query %}?{{ list_query }}{% endif %}" data-submit-guard>
+              {% csrf_token %}
+              {% if event.publish_status == "published" %}
+                <button class="events-rail-btn events-rail-btn--neutral" type="submit">게시 내리기</button>
+              {% else %}
+                <button class="events-rail-btn events-rail-btn--accent" type="submit">다시 게시</button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+
+        {% with total=archive_reference_counts.interest|add:archive_reference_counts.status|add:archive_reference_counts.visit|add:archive_reference_counts.collection_item %}
+          <div class="events-rail-card{% if total > 0 %} events-rail-card--danger{% endif %}">
+            <div class="events-rail-card-head">
+              <span class="events-rail-card-title{% if total > 0 %} events-rail-card-title--danger{% endif %}">삭제</span>
+            </div>
+            <div class="events-rail-card-body">
+              <div class="events-rail-refs">
+                <div class="events-rail-refs-row">
+                  <span>찜</span>
+                  <span class="mono">{{ archive_reference_counts.interest }}</span>
+                </div>
+                <div class="events-rail-refs-row">
+                  <span>상태</span>
+                  <span class="mono">{{ archive_reference_counts.status }}</span>
+                </div>
+                <div class="events-rail-refs-row">
+                  <span>방문기록</span>
+                  <span class="mono">{{ archive_reference_counts.visit }}</span>
+                </div>
+                <div class="events-rail-refs-row">
+                  <span>컬렉션</span>
+                  <span class="mono">{{ archive_reference_counts.collection_item }}</span>
+                </div>
+              </div>
+              {% if total > 0 %}
+                <p class="events-rail-note">아카이브 참조가 남아 있어 삭제할 수 없습니다.</p>
+              {% else %}
+                <p class="events-rail-note">아카이브 참조가 없어 하드 삭제가 가능합니다. 삭제는 되돌릴 수 없습니다.</p>
+                <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}">
+                  {% csrf_token %}
+                  <button class="events-rail-btn events-rail-btn--danger" type="submit">삭제</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
         {% endwith %}
-      </article>
-    </section>
-  </main>
+      </div>
+    </div>
+  </div>
 {% endblock %}

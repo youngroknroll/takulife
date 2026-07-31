@@ -1,0 +1,738 @@
+/*
+ * events.css (스태프 콘솔 전용) — 이벤트 목록/생성/수정/삭제 확인 4화면 공용.
+ * 시안 /tmp/staff_mock.html:390~631을 참고했으나 표는 실제 <table>로,
+ * 체크박스·모달은 실제 폼 요소로 다시 짰다(D4). 색은 --c-* 토큰만 쓴다.
+ */
+
+.events-page {
+  position: relative;
+  padding: 0.875rem 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+/* ── 목록 툴바 ─────────────────────────────────────────────────── */
+.events-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.events-tabgroup {
+  display: flex;
+  border: 1px solid var(--c-line);
+  border-radius: 0.3125rem;
+  overflow: hidden;
+  background: var(--c-panel);
+}
+
+.events-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 1.75rem;
+  padding: 0 0.75rem;
+  border-right: 1px solid var(--c-line);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-dim);
+}
+
+.events-tab:last-child {
+  border-right: none;
+}
+
+.events-tab.is-active {
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+}
+
+.events-chipgroup {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.events-chipgroup-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--c-faint);
+  letter-spacing: 0.06em;
+}
+
+.events-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.625rem;
+  padding: 0 0.625rem;
+  border-radius: 0.25rem;
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: var(--c-dim);
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+}
+
+.events-chip.is-active {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+}
+
+.events-new-cta {
+  margin-left: auto;
+  border-color: var(--c-accent);
+  background: var(--c-accent);
+  color: #fff;
+}
+
+.events-new-cta:hover {
+  background: var(--c-accent);
+  filter: brightness(0.94);
+}
+
+/* ── 목록 표 ───────────────────────────────────────────────────── */
+.events-table-wrap {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+.events-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.events-table th,
+.events-table td {
+  padding: 0 0.5rem;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.events-table thead th {
+  height: 1.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--c-dim);
+  background: var(--c-head);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.events-table tbody tr {
+  height: 2.125rem; /* 34px 밀도 */
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.events-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.events-id-cell {
+  color: var(--c-faint);
+  font-size: 0.6875rem;
+}
+
+.events-title-cell {
+  font-size: 0.78125rem;
+  font-weight: 600;
+}
+
+.events-dates-cell,
+.events-region-cell,
+.events-category-cell {
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+}
+
+.events-status-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 0.1875rem;
+  font-size: 0.65625rem;
+  font-weight: 700;
+}
+
+.events-status-badge--published {
+  background: var(--c-accent-soft);
+  color: var(--c-ok);
+}
+
+.events-status-badge--draft {
+  background: var(--c-track);
+  color: var(--c-dim);
+}
+
+/* `.events-table td`(0,1,1)보다 특이도를 높여야 white-space/overflow가
+   실제로 적용된다 — `.events-tail-cell`(0,1,0) 단독으로는 위 규칙에 진다. */
+.events-table td.events-tail-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.events-warn-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.125rem;
+  padding: 0 0.375rem;
+  border-radius: 0.1875rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--c-warn-ink);
+  background: var(--c-warn-bg);
+  border: 1px solid var(--c-warn-line);
+  white-space: nowrap;
+}
+
+.events-edit-link {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.71875rem;
+  font-weight: 700;
+  color: var(--c-accent);
+}
+
+.events-table-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 2.125rem;
+  padding: 0 0.75rem;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-head);
+}
+
+.events-table-foot-range {
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+}
+
+.events-table-foot .pager {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.events-table-foot .pager-arrow,
+.events-table-foot .pager-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--c-dim);
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+}
+
+.events-table-foot .pager-page.is-current {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+}
+
+.events-table-foot .pager-gap {
+  color: var(--c-faint);
+  font-size: 0.6875rem;
+  padding: 0 0.125rem;
+}
+
+.events-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--c-faint);
+  font-size: 0.8125rem;
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+}
+
+/* ── 생성/수정 폼 공용 ─────────────────────────────────────────── */
+.events-form-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+}
+
+.events-form-topbar-id {
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+}
+
+.events-form-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  padding: 0.5625rem 0.75rem;
+  border: 1px solid var(--c-danger);
+  border-radius: 0.3125rem;
+  background: var(--c-warn-bg);
+  color: var(--c-danger);
+  font-size: 0.75rem;
+}
+
+.events-form-error-tag {
+  font-weight: 700;
+  flex: none;
+}
+
+.events-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 19.75rem;
+  gap: 0.875rem;
+  align-items: start;
+}
+
+.events-form-panel {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+.events-form-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-head);
+}
+
+.events-form-panel-title {
+  font-size: 0.78125rem;
+  font-weight: 700;
+}
+
+.events-form-panel-note {
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+}
+
+.events-field-grid {
+  padding: 0.875rem 0.875rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8125rem 0.875rem;
+}
+
+.events-field--full {
+  grid-column: 1 / -1;
+}
+
+.events-field label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--c-dim);
+  margin-bottom: 0.3125rem;
+}
+
+.events-field-name {
+  color: var(--c-faint);
+  font-weight: 600;
+}
+
+.events-input,
+.events-select,
+.events-textarea {
+  width: 100%;
+  border: 1px solid var(--c-line);
+  border-radius: 0.25rem;
+  background: var(--c-panel);
+  color: var(--c-text);
+  font-size: 0.78125rem;
+  font-family: inherit;
+  padding: 0 0.5625rem;
+  height: 2rem;
+}
+
+.events-textarea {
+  height: auto;
+  min-height: 4.5rem;
+  padding: 0.5rem 0.5625rem;
+  resize: vertical;
+}
+
+.events-field-error {
+  margin: 0.25rem 0 0;
+  font-size: 0.65625rem;
+  color: var(--c-danger);
+}
+
+.events-poster-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+}
+
+.events-poster-thumb {
+  width: 3.25rem;
+  height: 3.25rem;
+  flex: none;
+  border-radius: 0.25rem;
+  border: 1px solid var(--c-line);
+  background: var(--c-inspect);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  color: var(--c-faint);
+}
+
+.events-poster-controls {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+}
+
+.events-poster-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.events-file-input {
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+}
+
+.events-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  color: var(--c-dim);
+}
+
+.events-form-panel-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-head);
+  justify-content: flex-end;
+}
+
+.events-save-cta {
+  border: 1px solid var(--c-accent);
+  border-radius: 0.25rem;
+  background: var(--c-accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  height: 1.75rem;
+  padding: 0 0.75rem;
+  cursor: pointer;
+}
+
+.events-save-cta:hover {
+  filter: brightness(0.94);
+}
+
+.events-save-cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── 우측 레일 ─────────────────────────────────────────────────── */
+.events-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.events-rail-card {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+.events-rail-card--danger {
+  border-color: var(--c-danger);
+}
+
+.events-rail-card-head {
+  display: flex;
+  align-items: center;
+  height: 2.0625rem;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-head);
+}
+
+.events-rail-card-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.events-rail-card-title--danger {
+  color: var(--c-danger);
+}
+
+.events-rail-card-body {
+  padding: 0.6875rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5625rem;
+}
+
+.events-rail-note {
+  margin: 0;
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+  line-height: 1.6;
+}
+
+.events-rail-refs {
+  border: 1px solid var(--c-line);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.events-rail-refs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5625rem;
+  padding: 0.3125rem 0.5625rem;
+  font-size: 0.71875rem;
+  color: var(--c-text);
+  background: var(--c-inspect);
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.events-rail-refs-row:last-child {
+  border-bottom: none;
+}
+
+.events-rail-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.875rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.events-rail-btn--accent {
+  border: 1px solid var(--c-accent);
+  background: var(--c-accent);
+  color: #fff;
+}
+
+.events-rail-btn--neutral {
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  color: var(--c-text);
+}
+
+.events-rail-btn--danger {
+  border: 1px solid var(--c-danger);
+  background: var(--c-danger);
+  color: #fff;
+}
+
+.events-rail-btn:hover {
+  filter: brightness(0.96);
+}
+
+.events-rail-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.events-rail-btn.is-loading {
+  opacity: 0.75;
+}
+
+/* ── 삭제 확인(모달형) ─────────────────────────────────────────── */
+.events-delete-backdrop {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  min-height: 20rem;
+  flex: 1;
+}
+
+.events-delete-scrim {
+  position: absolute;
+  inset: 0.875rem 1rem 1.25rem;
+  border-radius: 0.375rem;
+  background: var(--c-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.events-delete-dialog {
+  width: 28.25rem;
+  max-width: calc(100% - 2rem);
+  border: 1px solid var(--c-line);
+  border-radius: 0.4375rem;
+  background: var(--c-panel);
+  box-shadow: 0 1.125rem 2.75rem rgba(8, 10, 14, 0.32);
+  overflow: hidden;
+}
+
+.events-delete-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  height: 2.25rem;
+  padding: 0 0.8125rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-head);
+}
+
+.events-delete-dialog-title {
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--c-danger);
+}
+
+.events-delete-dialog-id {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+}
+
+.events-delete-dialog-body {
+  padding: 0.875rem 0.9375rem 0.9375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.events-delete-message {
+  margin: 0;
+  font-size: 0.78125rem;
+  color: var(--c-text);
+  line-height: 1.6;
+}
+
+.events-delete-refs {
+  border: 1px solid var(--c-line);
+  border-radius: 0.3125rem;
+  overflow: hidden;
+}
+
+.events-delete-refs-head {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--c-faint);
+  padding: 0.4375rem 0.625rem;
+  background: var(--c-head);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.events-delete-refs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5625rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.71875rem;
+  color: var(--c-text);
+  background: var(--c-inspect);
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.events-delete-refs-row:last-child {
+  border-bottom: none;
+}
+
+.events-delete-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5625rem 0.6875rem;
+  border: 1px solid var(--c-ok);
+  border-radius: 0.3125rem;
+  background: var(--c-accent-soft);
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+}
+
+.events-delete-ok-tag {
+  font-weight: 700;
+  color: var(--c-ok);
+  flex: none;
+}
+
+.events-delete-actions {
+  display: flex;
+  gap: 0.4375rem;
+  padding-top: 0.125rem;
+}
+
+.events-delete-cancel {
+  flex: 1;
+  justify-content: center;
+  height: 2rem;
+}
+
+.events-delete-actions form {
+  flex: 1;
+}
+
+.events-delete-confirm-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--c-danger);
+  background: var(--c-danger);
+  color: #fff;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.events-delete-confirm-btn:hover {
+  filter: brightness(0.94);
+}
+
+.events-delete-confirm-btn:disabled,
+.events-delete-confirm-btn.is-loading {
+  opacity: 0.65;
+  cursor: default;
+}
+
+@media (max-width: 74.9375rem) {
+  .events-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -5,6 +5,7 @@
 폼에서만 오는 POST 전용 SSR 액션이며 JSON API가 아니다.
 """
 import datetime
+import re
 
 import pytest
 
@@ -217,7 +218,8 @@ def test_참조가_있는_이벤트의_수정_페이지는_삭제_버튼_대신_
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "찜 1" in content
+    # 라벨(찜)과 값(1)이 서로 다른 <span>에 있어 문자열이 붙어 있지 않다.
+    assert re.search(r'<span>찜</span>\s*<span class="mono">1</span>', content)
     assert f'action="/staff/events/{event.pk}/delete/"' not in content
 
 
@@ -247,7 +249,7 @@ def test_컬렉션_항목이_참조하는_이벤트의_수정_페이지는_삭�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "컬렉션 1" in content
+    assert re.search(r'<span>컬렉션</span>\s*<span class="mono">1</span>', content)
     assert f'action="/staff/events/{event.pk}/delete/"' not in content
 
 
