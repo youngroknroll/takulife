@@ -129,8 +129,9 @@ def test_행위자와_대상_드래프트가_없는_최근_활동은_빈_값으�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "<td>-</td>" in content
-    assert re.search(r"<td>\s*-\s*</td>", content)
+    # 대상 열(dash-cell-target)과 담당 열(dash-cell-faint) 둘 다 "-"로 표시돼야 한다.
+    assert re.search(r'<td class="dash-cell-target">\s*-\s*</td>', content)
+    assert re.search(r'<td class="mono dash-cell-faint">\s*-\s*</td>', content)
 
 
 @pytest.mark.django_db
@@ -219,7 +220,7 @@ def test_최근_오류가_있는_소스는_대시보드에_오류_배지와_오�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "badge-error" in content
+    assert "dash-status-badge--error" in content
     assert "Connection timed out" in content
 
 
@@ -237,7 +238,7 @@ def test_한번도_수집되지_않은_활성_소스는_대시보드에_지연_�
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 200
-    assert "badge-stale" in resp.content.decode()
+    assert "dash-status-badge--stale" in resp.content.decode()
 
 
 @pytest.mark.django_db
@@ -255,7 +256,7 @@ def test_지연_임계_시간을_넘겨_수집된_활성_소스는_대시보드�
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 200
-    assert "badge-stale" in resp.content.decode()
+    assert "dash-status-badge--stale" in resp.content.decode()
 
 
 @pytest.mark.django_db
@@ -273,7 +274,7 @@ def test_지연_임계_시간_이내에_수집된_활성_소스는_지연_배지
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 200
-    assert "badge-stale" not in resp.content.decode()
+    assert "dash-status-badge--stale" not in resp.content.decode()
 
 
 @pytest.mark.django_db
@@ -290,7 +291,7 @@ def test_비활성_소스는_한번도_수집되지_않았어도_지연_배지�
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 200
-    assert "badge-stale" not in resp.content.decode()
+    assert "dash-status-badge--stale" not in resp.content.decode()
 
 
 @pytest.mark.django_db
@@ -471,7 +472,7 @@ def test_대기중_건수_요약_카드는_대기중_드래프트_목록으로_�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<a class="summary-card summary-card-link" href="/staff/drafts/?status=pending">' in content
+    assert '<a class="dash-metric dash-metric-link" href="/staff/drafts/?status=pending">' in content
 
 
 def _clean_quality_event_kwargs(index):
@@ -502,7 +503,7 @@ def test_품질_경고_5종은_각각_필터_링크가_달린_막대로_렌더�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "warning-bars" in content
+    assert "dash-warning-list" in content
     for key in (
         "missing_official_url",
         "ended_still_published",
@@ -544,7 +545,7 @@ def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert content.count("warning-bar-fill") == 1
+    assert content.count("dash-warning-fill") == 1
 
 
 @pytest.mark.django_db
@@ -569,7 +570,7 @@ def test_품질_경고가_하나도_없으면_대시보드는_경고_없음_안�
     assert resp.status_code == 200
     content = resp.content.decode()
     assert "현재 품질 경고가 없습니다" in content
-    assert "warning-bars" not in content
+    assert "dash-warning-list" not in content
 
 
 @pytest.mark.django_db
@@ -587,10 +588,21 @@ def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert "warning-bars" in content
+    assert "dash-warning-list" in content
     assert "현재 품질 경고가 없습니다" not in content
-    assert "<p class=\"summary-value\">0건</p>" in content
-    assert "총계 외 · 시작 임박, 미확인 1건" in content
+    # 품질 경고 히어로 카드(total)는 0건이어도 값 자체는 계속 렌더링돼야 한다.
+    quality_card = re.search(
+        r'<p class="dash-metric-label">품질 경고</p>.*?</article>', content, re.S
+    )
+    assert quality_card
+    assert re.search(
+        r'<span class="mono dash-metric-value">0</span>\s*'
+        r'<span class="dash-metric-unit">건</span>',
+        quality_card.group(),
+    )
+    # total은 needs_reverification을 빼고 센다(events/queries.py의
+    # published_quality_warnings). 문구가 "포함"이라고 말하면 사실과 반대다.
+    assert "시작 임박·미확인 1건은 이 합계에 없음" in quality_card.group()
 
 
 @pytest.mark.django_db
@@ -621,7 +633,7 @@ def test_최근_활동_차트는_항상_14개_열을_렌더링한다(staff_clien
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    columns = re.findall(r'<span class="activity-col[^"]*"', content)
+    columns = re.findall(r'<span class="dash-activity-col[^"]*"', content)
     assert len(columns) == 14
 
 
@@ -634,9 +646,9 @@ def test_최근_활동_차트는_마지막_열_하나만_오늘로_표시한다(
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    columns = re.findall(r'<span class="activity-col[^"]*"', content)
-    assert sum(1 for col in columns if "activity-col--today" in col) == 1
-    assert "activity-col--today" in columns[-1]
+    columns = re.findall(r'<span class="dash-activity-col[^"]*"', content)
+    assert sum(1 for col in columns if "dash-activity-col--today" in col) == 1
+    assert "dash-activity-col--today" in columns[-1]
 
 
 @pytest.mark.django_db
@@ -666,11 +678,11 @@ def test_액션_로그가_없으면_최근_활동_차트_대신_안내_문구를
     assert resp.status_code == 200
     content = resp.content.decode()
     assert "최근 14일 처리 내역이 없습니다" in content
-    assert "activity-columns" not in content
+    assert "dash-activity-columns" not in content
 
 
 @pytest.mark.django_db
-def test_최근_수집된_활성_소스는_정상_상태_점으로_표시된다(staff_client):
+def test_최근_수집된_활성_소스는_정상_상태_배지로_표시된다(staff_client):
     staff, client = staff_client()
     DraftSource.objects.create(
         name="정상 소스",
@@ -684,11 +696,16 @@ def test_최근_수집된_활성_소스는_정상_상태_점으로_표시된다(
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--ok"></span>' in content
+    # 새 디자인은 상태별 색을 점(span) 자체가 아니라 감싸는 배지 수식자 클래스가 진다.
+    assert re.search(
+        r'<span class="dash-status-badge dash-status-badge--ok">\s*'
+        r'<span class="dash-status-dot" aria-hidden="true"></span>\s*활성',
+        content,
+    )
 
 
 @pytest.mark.django_db
-def test_비활성_소스는_비활성_상태_점으로_표시된다(staff_client):
+def test_비활성_소스는_비활성_상태_배지로_표시된다(staff_client):
     staff, client = staff_client()
     DraftSource.objects.create(
         name="비활성 소스",
@@ -701,11 +718,15 @@ def test_비활성_소스는_비활성_상태_점으로_표시된다(staff_clien
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--disabled"></span>' in content
+    assert re.search(
+        r'<span class="dash-status-badge dash-status-badge--disabled">\s*'
+        r'<span class="dash-status-dot" aria-hidden="true"></span>\s*비활성',
+        content,
+    )
 
 
 @pytest.mark.django_db
-def test_최근_오류가_있는_활성_소스는_오류_상태_점으로_표시된다(staff_client):
+def test_최근_오류가_있는_활성_소스는_오류_상태_배지로_표시된다(staff_client):
     staff, client = staff_client()
     DraftSource.objects.create(
         name="에러 소스",
@@ -720,11 +741,15 @@ def test_최근_오류가_있는_활성_소스는_오류_상태_점으로_표시
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--error"></span>' in content
+    assert re.search(
+        r'<span class="dash-status-badge dash-status-badge--error">\s*'
+        r'<span class="dash-status-dot" aria-hidden="true"></span>\s*오류',
+        content,
+    )
 
 
 @pytest.mark.django_db
-def test_한번도_수집되지_않은_활성_소스는_지연_상태_점으로_표시된다(staff_client):
+def test_한번도_수집되지_않은_활성_소스는_지연_상태_배지로_표시된다(staff_client):
     staff, client = staff_client()
     DraftSource.objects.create(
         name="미수집 소스",
@@ -738,12 +763,16 @@ def test_한번도_수집되지_않은_활성_소스는_지연_상태_점으로_
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--stale"></span>' in content
+    assert re.search(
+        r'<span class="dash-status-badge dash-status-badge--stale">\s*'
+        r'<span class="dash-status-dot" aria-hidden="true"></span>\s*지연',
+        content,
+    )
 
 
 @pytest.mark.django_db
-def test_오류와_지연이_동시에_성립하면_상태_점은_지연보다_오류를_우선한다(staff_client):
-    """미수집+오류가 동시에 성립할 수 있어, 상태 점이 옆 "오류" 배지와 어긋나지 않도록 오류를 우선한다."""
+def test_오류와_지연이_동시에_성립하면_상태_배지는_지연보다_오류를_우선한다(staff_client):
+    """미수집+오류가 동시에 성립할 수 있어, 상태 배지가 소스 이름 옆 오류 요약과 어긋나지 않도록 오류를 우선한다."""
     staff, client = staff_client()
     DraftSource.objects.create(
         name="에러+지연 소스",
@@ -758,5 +787,5 @@ def test_오류와_지연이_동시에_성립하면_상태_점은_지연보다_�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<span class="status-dot status-dot--error"></span>' in content
-    assert "status-dot--stale" not in content
+    assert "dash-status-badge--error" in content
+    assert "dash-status-badge--stale" not in content
