@@ -207,7 +207,7 @@ def test_month_파라미터가_없으면_오류_없이_당월이_표시된다(ma
     fixed_today = date(2026, 7, 19)
     make_event(title="당월기본표시행사", start_date=fixed_today, end_date=fixed_today)
 
-    with patch("core.views.events.timezone.localdate", return_value=fixed_today):
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
         resp = Client().get("/events/calendar/")
 
     assert resp.status_code == 200
@@ -289,7 +289,7 @@ def test_월_조회가_실패하면_500대신_오류_패널과_재시도_안내�
     def _raise(*args, **kwargs):
         raise RuntimeError("월 조회 실패 주입")
 
-    monkeypatch.setattr("core.views.events.list_published_events_for_month", _raise)
+    monkeypatch.setattr("web.views.events.list_published_events_for_month", _raise)
 
     resp = Client().get("/events/calendar/")
 

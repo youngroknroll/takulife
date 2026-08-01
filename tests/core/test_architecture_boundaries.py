@@ -90,32 +90,12 @@ def _forbidden_imports_in_file(path, forbidden_apps):
 
 
 # ---------------------------------------------------------------------------
-# core 공용 모듈 도메인 임포트 가드 — 기본 거부(default-deny) + 허용 목록.
-# 손유지 목록이 아니라 core/**/*.py 전부를 스캔하고, 정당한 예외 두 건만
-# 허용 목록에 근거와 함께 등록한다(.docs/BE/boundary-guard-glob-plan.md 승인
-# 범위 4). 심볼 단위가 아니라 모듈/디렉터리 단위다 — 471행 아래
-# ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS는 테스트 계층 순수성을
-# 지키는 다른 가드의 표이며, 그 심볼 단위 입도를 여기로 가져오면 core/views가
-# 새 함수를 하나 쓸 때마다 표를 고쳐야 해서 손유지 목록으로 회귀한다.
+# core 공용 모듈 도메인 임포트 가드 — 예외 없는 기본 거부(default-deny).
+# 프레젠테이션 뷰가 web/views/로 전부 옮겨간 뒤로는 core/**/*.py가 도메인 앱을
+# 임포트할 정당한 이유가 하나도 남지 않는다 — core는 커널이고, 화면 조립은
+# web이 한다. 그래서 허용 목록 자체를 없앤다: core가 archive/events/drafts를
+# 임포트하면 그건 예외가 아니라 항상 위반이다.
 # ---------------------------------------------------------------------------
-
-
-def _is_core_domain_import_allowlisted(path, root):
-    """path(core/ 하위 실제 파일)가 도메인 임포트 허용 목록에 해당하면 True.
-    root를 인자로 받아야 한다 — PROJECT_ROOT를 하드코딩하면 합성 tmp_path
-    트리에서 relative_to가 ValueError를 던지거나 항상 허용/거부로 고정된다.
-    경로 비교는 세그먼트 완전 일치다 — `"views" in str(path)` 같은 부분
-    문자열 비교는 core/views_extra.py(디렉터리 밖, 이름만 유사) 같은
-    실재하는 파일을 조용히 새게 한다."""
-    relative_parts = path.relative_to(root / "core").parts
-    if relative_parts[:1] == ("views",):
-        # core/views/ 디렉터리 전체 — 프레젠테이션 합성 계층. 쓰기 호출 0건
-        # (유일한 `.update(`는 딕셔너리 `context.update(...)`), 쓰기는 기존
-        # DRF API로 간다. 패키지 전체 예외이며, 개별 파일이 실제로 도메인을
-        # 임포트하는지는 별개다 — system.py/__init__.py처럼 도메인 임포트가
-        # 0건인 파일도 이 예외에 포함된다.
-        return True
-    return False
 
 
 def _local_domain_apps(root):
@@ -160,48 +140,37 @@ def test_금지_앱_파생_대상이_없는_root는_공허하게_통과하지_�
         _local_domain_apps(tmp_path)
 
 
-def test_core_views_패키지_전체의_실제_도메인_임포트는_허용_목록으로_통과한다():
-    # system.py/__init__.py는 일부러 뺀다 — 도메인 임포트가 0건이라 "허용
-    # 목록 덕분에 통과"인지 "애초에 안 잡히는 것"인지 구분되지 않는다.
-    view_module_names = ("_helpers.py", "account.py", "activity.py", "archive.py", "collection.py", "events.py")
-    view_module_paths = [PROJECT_ROOT / "core" / "views" / name for name in view_module_names]
-
-    for path in view_module_paths:
-        forbidden = _forbidden_imports_in_file(path, CORE_FORBIDDEN_DOMAIN_APPS)
-        assert forbidden, f"{path.name}가 도메인 모듈을 임포트하지 않는다 — 이 시나리오의 전제가 깨졌다"
-        assert _is_core_domain_import_allowlisted(path, PROJECT_ROOT), path
-
-
-def test_core_views_디렉터리에_새로_생기는_파일도_등록_없이_허용된다(tmp_path):
-    (tmp_path / "core" / "views").mkdir(parents=True)
-    new_module = tmp_path / "core" / "views" / "new_module.py"
-    new_module.write_text("import archive.models\n")
-
-    assert _is_core_domain_import_allowlisted(new_module, tmp_path)
-
-
-def test_core_views_디렉터리_밖의_이름만_유사한_파일은_허용되지_않는다(tmp_path):
-    (tmp_path / "core" / "views").mkdir(parents=True)
-    lookalike = tmp_path / "core" / "views_extra.py"
-    lookalike.write_text("import archive.models\n")
-    control = tmp_path / "core" / "views" / "actual.py"
-    control.write_text("import archive.models\n")
-
-    assert not _is_core_domain_import_allowlisted(lookalike, tmp_path)
-    assert _is_core_domain_import_allowlisted(control, tmp_path)
-
-
-def test_core_공용_모듈은_허용_목록_밖에서_도메인_앱_모듈을_임포트하지_않는다():
+def test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다():
     files = _domain_source_files(PROJECT_ROOT, ["core"])
 
     violations = {
         path.relative_to(PROJECT_ROOT): forbidden
         for path in files
-        if not _is_core_domain_import_allowlisted(path, PROJECT_ROOT)
-        and (forbidden := _forbidden_imports_in_file(path, CORE_FORBIDDEN_DOMAIN_APPS))
+        if (forbidden := _forbidden_imports_in_file(path, CORE_FORBIDDEN_DOMAIN_APPS))
     }
 
     assert not violations, violations
+
+
+def test_core_스캔_경로에서_도메인_임포트가_있으면_R1이_실제로_잡는다(tmp_path):
+    """허용 목록이 사라지면 R1 위반 목록은 항상 빈 채로 통과한다 — 그 빈
+    결과가 "스캐너가 살아서 못 찾은 것"인지 "스캐너가 죽어서 빈 것"인지, 위
+    Green 하나만으로는 구분할 수 없다. R1 본문과 같은 표현식을 합성
+    core/anything.py = "import archive.models" 트리에 돌려, 스캐너가 여전히
+    위반을 잡아낸다는 양성 대조를 남긴다."""
+    (tmp_path / "core").mkdir()
+    (tmp_path / "core" / "anything.py").write_text("import archive.models\n")
+    (tmp_path / "archive").mkdir()
+    (tmp_path / "archive" / "models.py").write_text("")
+
+    files = _domain_source_files(tmp_path, ["core"])
+    violations = {
+        path.relative_to(tmp_path): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"archive"}))
+    }
+
+    assert violations, violations
 
 
 def test_스캔_대상이_없는_root는_공허하게_통과하지_않고_실패한다(tmp_path):
@@ -531,23 +500,66 @@ def test_구_드래프트_액션_라우트는_더이상_해석되지_않는다(p
         resolve(path)
 
 
-def test_core_뷰는_더이상_스태프_모듈을_임포트하지_않는다():
+def test_web_모듈은_스태프_모듈을_임포트하지_않는다():
     """드래프트·홈카테고리 SSR 뷰 3개가 staff.views로 옮겨가 core.views는
-    더이상 staff에 의존하면 안 된다. core.views가 패키지(core/views/)이므로
-    그 아래 모든 모듈 파일을 스캔한다."""
-    view_module_paths = sorted((PROJECT_ROOT / "core" / "views").rglob("*.py"))
-    assert view_module_paths, "core/views 아래 스캔할 .py 파일이 없다"
+    더이상 staff에 의존하면 안 됐던 옛 규칙(R7)을 대체한다 — 그 뷰들이
+    web/views/로 옮겨간 지금은 core→staff가 R1(모든 도메인 앱 금지)로
+    자동으로 덮이므로, core 쪽 이 규칙은 R1과 완전히 중복이다. staff는
+    화면+감사 인프라라 web(다른 프레젠테이션 계층)이 staff를 임포트해도
+    같은 문제가 재발하므로 방향을 web으로 옮겨 지킨다."""
+    files = _domain_source_files(PROJECT_ROOT, ["web"])
 
-    for module_path in view_module_paths:
-        relative_path = module_path.relative_to(PROJECT_ROOT)
-        imported_modules = _imported_modules(str(relative_path))
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"staff"}))
+    }
 
-        violating_modules = {
-            module
-            for module in imported_modules
-            if module == "staff" or module.startswith("staff.")
-        }
-        assert not violating_modules, f"{relative_path}가 staff 모듈을 임포트한다: {violating_modules}"
+    assert not violations, violations
+
+
+# ---------------------------------------------------------------------------
+# web은 리프다 — 어떤 앱도 web을 임포트하면 안 된다. web은 최종 프레젠테이션
+# 조립 계층이라 도메인 앱·core·staff 어느 쪽도 web에 의존할 이유가 없다.
+# 스캔 대상은 리터럴 목록이 아니라 앱 레지스트리에서 파생한다 — 손유지
+# 목록으로 쓰면 새 로컬 앱이 생겨도 이 가드가 자동으로 따라가지 못한다.
+# web 자신은 스캔 대상에서 빼야 한다 — web 내부의 절대 임포트(같은 web 패키지
+# 안의 다른 모듈을 부르는 것)가 자기 자신을 위반으로 잘못 잡을 수 있다.
+# ---------------------------------------------------------------------------
+
+WEB_LEAF_SCAN_APPS = sorted((_local_domain_apps(PROJECT_ROOT) - {"web"}) | {"core"})
+
+
+@pytest.mark.parametrize("app_name", WEB_LEAF_SCAN_APPS)
+def test_web은_리프다_어떤_앱도_web을_임포트하지_않는다(app_name):
+    files = _domain_source_files(PROJECT_ROOT, [app_name])
+
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"web"}))
+    }
+
+    assert not violations, violations
+
+
+def test_web_디렉터리_아래_모듈은_import_별표를_쓰지_않는다():
+    """`import *`는 조용한 무효화를 부른다 — 몽키패치가 실제로는 안 닿는
+    이름을 패치해도 테스트가 통과해버리는 사고를 이번 이동에서 12건의
+    `patch("...views.events.timezone.localdate")` 형태가 실제로 노출했다.
+    지금까지는 이 규약이 문서 산문일 뿐 강제 테스트가 0건이었다."""
+    files = _domain_source_files(PROJECT_ROOT, ["web"])
+
+    violations = []
+    for path in files:
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and any(
+                alias.name == "*" for alias in node.names
+            ):
+                violations.append(path.relative_to(PROJECT_ROOT))
+
+    assert not violations, violations
 
 
 # ---------------------------------------------------------------------------
