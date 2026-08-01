@@ -1,0 +1,195 @@
+# PR 로그
+
+## 이 문서에 대하여
+
+머지된 PR을 시간순으로 기록하는 **롤링 이력 문서**다. 다음 세 문서와 역할이 다르다.
+
+- `docs/backlog.md` = 지금 무엇이 남았는지, 다음에 뭘 해야 하는지 — 살아있는 현재 상태
+- `docs/BE/`·`docs/FE/`(·`DB/`) = 특정 주제가 지키는 가드레일을 말하는 기술 기록
+- 이 문서 = **과거에 무엇이 언제 머지됐는지**의 시간순 목록. 교훈·회고는 담지 않는다
+  (그 정본은 에이전트 메모리이며, 여기 옮겨 적지 않는다)
+
+**형식은 롤링이다.** 가장 최근 머지된 PR 한 건만 상세히 적고(무엇을·왜 바꿨는지, 검증
+결과), 그 이전 PR은 번호와 실제 PR 제목만 남긴다. 새 PR이 머지되면 방금 "최신"이었던
+항목을 한 줄로 줄이고, 새 PR을 상세 항목으로 올린다(`AGENTS.md` "Document post-work
+state" 절 참고).
+
+한 줄 요약은 손으로 다시 쓰지 않는다. `gh pr list --state merged --limit 300 --json
+number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
+`feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
+
+이 문서는 200줄을 넘기지 않는다. 머지된 PR은 (문서 작성 시점 기준) 273건이라 전부는
+들어가지 않으므로 최신 PR부터 채우고 줄 수 예산에 닿는 지점에서 끊는다 — 컷오프는
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 한 줄 요약 목록은 PR #278부터
+PR #125까지를 담았다. 그보다 오래된 PR은 `gh pr list --state merged --limit 300
+--json number,title` 으로 언제든 다시 조회할 수 있다.
+
+---
+
+## 최신 PR
+
+### PR #279 — 백로그 현재 상태를 main `b43957c` 기준으로 갱신
+
+**무엇을 바꿨나**: `docs/backlog.md`의 기준 커밋 표기를 `4ddae6e`에서 `b43957c`로,
+백엔드 회귀 수치를 "2144 passed"에서 "2150 passed"로 갱신했다. PR #276~#278에서 추가된
+가드 테스트 6건이 반영된 수치다.
+
+**왜**: 백로그 F4(문서 최신화) 항목의 일부로, 직전 세 PR(분석 키워드 전용화, 컬렉션
+축 프레디케이트 리팩터, 무동작 방지 가드)이 머지된 뒤 백로그의 기준 커밋·수치가
+낡아 있었다.
+
+**검증**: 문서 전용 변경(`docs/backlog.md` 2줄 diff)이라 코드 검증 대상 없음. 인용한
+"2150 passed" 수치는 PR #278 머지 시점의 실측을 그대로 옮겨 적은 것이다.
+
+---
+
+## 이전 PR (번호 — 실제 PR 제목)
+
+- #278 — fix: 조용히 깨질 자리 두 곳을 닫는다 (백로그 A5 잔여 + F8)
+- #277 — refactor: 보유·교환 축 술어를 CollectionItem으로 모은다 (백로그 A3 이관분)
+- #276 — refactor: core.analytics를 서명 규약 가드에 넣는다 (백로그 A2)
+- #275 — feat(staff): 스태프 콘솔을 소비자 셸에서 분리하고 재설계한다
+- #274 — refactor: Split archive queries and their tests by domain (E2 + E3)
+- #273 — docs: Close E4, E5, and E1 in the backlog
+- #272 — refactor: Name the conditions that comments were explaining (E5)
+- #271 — style: Close the comment-policy track — missed files and a guard
+- #270 — style: Sweep every comment under the rewritten policy
+- #269 — style: Bring auth-track comments under the comment policy, and register E4
+- #268 — docs: Refresh the status table against the merged tree
+- #267 — docs: Fix three claims the post-merge auth review measured wrong
+- #266 — design(accounts): Rebuild 12 auth screens as an editorial two-panel layout
+- #265 — docs: 탈퇴 계정 파기 정기 실행을 런북 요구사항으로 등록
+- #264 — 계정 설정 영역 에디토리얼 리디자인 + 이메일 단일 변경 흐름
+- #263 — fix: 활동 달력의 방문·굿즈 중복 표시와 삭제 잔존 제거
+- #261 — feat: Close the D group's user-flow gaps (staff console deferred)
+- #260 — docs: Defer C1 until there are real users, but settle its definitions
+- #259 — test(core): Guard every core module by default, not the six we listed
+- #258 — docs: Close A5, and stop entries from going stale the moment they are fixed
+- #257 — docs: Make a number in a document say what it counts
+- #256 — test(core): Make the domain boundary guards find their own targets
+- #255 — feat(archive): Let an unofficial place be opened and corrected
+- #254 — Promote the technical records to the tree that survives
+- #253 — Replace markup assertions that could not fail
+- #252 — Make the 500 test fail for the reason it names, and unbreak the runbook pointer
+- #251 — Repair the governance docs, rebuild the backlog, and act on what it measured
+- #250 — feat(staff): Add the verify button to the event edit page
+- #249 — feat(events): Give readers a way back to ended events
+- #248 — feat(events): Default the public listing to ongoing and upcoming
+- #247 — feat(events): Flag published events that need re-verification
+- #246 — fix(archive): Give photo uploads and place entries an idempotency key
+- #245 — fix(collection): Make owned, wanted and tradeable independent axes
+- #244 — refactor(css): CSS optimization and accessibility sweep
+- #243 — design(errors): Reskin 404/429/500 as editorial
+- #242 — feat(core): 마이페이지 에디토리얼 + 비밀번호 변경 시각 추적
+- #241 — feat(archive): 찜 목록 에디토리얼 — 내 활동 5탭 이관 완결
+- #240 — design(collection): 굿즈 수정 페이지 에디토리얼 + --rose-border 다크 값
+- #239 — feat(collection): 컬렉션 상세 페이지 신설
+- #238 — 행사 상세 페이지 에디토리얼 리스킨 + 관련 행사
+- #237 — design(ui): 안내 문구 블록효과 제거 → 브랜드-레드 불릿 통일
+- #236 — feat(archive): 방문 상세 페이지 신설 (/archive/visits/<id>/)
+- #235 — design(archive): 다녀온 기록 수정 페이지 에디토리얼 리스킨
+- #234 — design(archive): 다녀온 기록 작성 페이지 에디토리얼 리스킨
+- #233 — feat(archive): 직접 등록 에디토리얼 — 목록 리스킨 + 전용 작성 페이지 신설
+- #232 — feat(archive): 내 활동 shell v2 — visits sort, 목록/달력 toggle, mobile layout
+- #231 — feat(collection): Rebuild 굿즈 직접 등록 form editorial
+- #230 — feat(archive): Unify 다녀온 기록 onto the editorial shell
+- #229 — feat(pager): 공용 페이저 블록 창 + 5칸 점프 화살표
+- #228 — design(archive): 나의 일정 페이지 에디토리얼 셸 통일
+- #227 — fix(archive): 활동 달력 백로그 2건 근본 해결 (has_any_items·검색 DB 하향)
+- #226 — design(archive): 활동 달력 에디토리얼 리빌드 + 상단·필터 목록 통일
+- #225 — design(queue): 검토 큐 사용자 판정 반영 — 덱 타이밍·메타줄 중복·검색 버튼·토글 정렬·카드 날짜
+- #224 — design(archive): Rebuild the activity page for the editorial mock, and unify the pager
+- #223 — fix(web): 컬렉션 작품별 색 충돌 제거 + 패싯 컨트롤
+- #222 — design(web): 이벤트 달력 아젠다 액션 hover 추가
+- #221 — feat(web): 공용 페이지네이션 재구축 — 창 축약 + 점프 화살표
+- #220 — design(web): 컬렉션 페이지 에디토리얼 리디자인
+- #219 — design(calendar): Align detail actions
+- #218 — design(web): Rebuild the events calendar in the editorial v2 style
+- #217 — design(home): Tune hero deck timing
+- #216 — copy(web): Rename 행사 to 이벤트 across the product
+- #215 — design(web): Rebuild the home collection section, center the hero, divide sections
+- #214 — design(cards): Remove official badges
+- #213 — copy(web): Reword the home hero headline
+- #212 — feat: Guard event category/region against out-of-vocabulary values (B1)
+- #211 — feat(web): Move sorting from the sidebar to a results-head toggle menu
+- #210 — design(web): Rebuild the events list page in the editorial style
+- #209 — chore: Scope automated tests to backend logic and delete the e2e suite
+- #208 — 리디자인 ④내 활동 · ⑤행사 달력 (로드맵 완결)
+- #207 — design(web): Home editorial redesign — stack deck, de-chromed sections, category dots
+- #206 — feat(web): Shared shell — notice banner, mobile hamburger, four-column footer
+- #205 — design(web): Fix light-mode brand contrast to AA (design-rules §1.4)
+- #204 — feat(web): D8 live search result summary live region
+- #203 — feat(web): ARIA restoration stage 6 — staff chart text alternative
+- #202 — feat: 10-day grace period for account deletion
+- #201 — feat: ARIA restoration stage 5 — structural cleanup
+- #200 — feat: ARIA restoration stage 4 — carousel and input labels
+- #199 — feat: ARIA restoration stage 3 — disclosure expanded/controls sync
+- #198 — feat: ARIA restoration stage 2 — toggle state, focus-based feedback
+- #197 — feat: ARIA restoration stage 1 — modals, toast, shell labeling
+- #196 — feat: Calendar accessible names, search box, mobile filter fold
+- #195 — Logging coverage: observability for irreversible and security-relevant actions
+- #194 — feat: Dual calendar (events + activity) with activity history
+- #193 — Error handling and logging policy: guards and retro fixes
+- #192 — fix: Close bfcache duplicate-creation gap (client_token + commit markers)
+- #191 — docs(agents): Add commit-per-feature, PR-per-stage cadence
+- #190 — test: Stage 4·5 authoring guards + dedup + TS-INF-04
+- #189 — test: Korean behavior-scenario test suite + execution speed infra (stages 1-3)
+- #188 — feat: Collection-first home snapshot (H-1/H-2)
+- #187 — feat: Restructure top navigation to target IA (Target IA-2)
+- #186 — feat: Promote collection routes to top level (Target IA-1)
+- #185 — feat(archive): Record collection item analytics events
+- #184 — feat(archive): Add collection page (list, create, edit, delete)
+- #183 — feat(archive): Add collection SSR query layer
+- #182 — feat(archive): Add CollectionItem CRUD API
+- #181 — fix(archive): Guard status creation against visit record drift
+- #180 — feat(archive): Retire the GOODS kind into CollectionItem (PR-C4)
+- #179 — feat: Collection track C3 — visit completion orchestration
+- #178 — feat: Collection track C2 — goods boundary enforcement
+- #177 — feat: Collection track C1 — CollectionItem model and invariants
+- #176 — docs: Stage-0 T7/T8 — deploy runbook and event operations criteria
+- #175 — feat: Stage-0 PR-0e — shared cache and analytics events
+- #174 — feat: Stage-0 PR-0d — proxy-aware client IP resolution
+- #173 — ci: Stage-0 PR-0c — GitHub Actions pipeline
+- #172 — feat: Stage-0 PR-0b — runtime artifacts (Docker, gunicorn, media storage, health)
+- #171 — feat(config): 0단계 배포 기반 PR-0a — settings 프로덕션 하드닝
+- #170 — fix: 다크모드 4/4 — 대비 전수 감사(1152 조합) + 실결함 4건 보정
+- #169 — feat: 다크모드 3/3 — 페이지별 스윕 + 게이트 수정
+- #168 — feat: 다크모드 2/3 — 공용 컴포넌트 스윕 + 헤더 토글
+- #167 — feat: 다크모드 1/3 — 토큰 다크 매핑 + 테마 인프라
+- #166 — chore: FE 부채 스윕 + 허브 라벨 체계 정리 + 모바일 D-day 포스터 배지
+- #165 — feat: 홈 슬라이더 모바일 [2,2] + 행사 둘러보기 포스터 그리드
+- #164 — fix(archive): 찜 목록 빠른 이동을 3열 1행 관례로 통일
+- #163 — fix(archive): 빠른 이동 라벨 축소를 세로형 side-list에도 적용
+- #162 — fix(status-btn): 모바일 상태 버튼 40→32px + 폰트 축소
+- #161 — fix(staff,archive): 모바일 시각 QA 후속 — 요약 카드 접힘·빠른 이동 라벨 축소
+- #160 — design: 가장자리 여백 --page-pad-x 토큰 통일 (모바일 16 / 태블릿 24 / 데스크톱 32px)
+- #159 — feat(accounts,core): 계정 드롭다운 + 마이페이지 + 설정 페이지 + 스태프 자가탈퇴 차단
+- #158 — design: 모든 페이지 안내문구(소개·마케팅 카피) 전면 삭제
+- #157 — fix(archive): 모바일 320px 아카이브 3페이지 수평 오버플로 수정
+- #156 — fix(home): 포스터 섹션 슬라이더 레이아웃 통일 + 비오버플로 상태 정리
+- #155 — fix: WebKit(Safari) 아카이브 허브 375px 오버플로우 + e2e 엔진 관례 스킵 2건
+- #154 — fix: FE 백로그 스윕 — 포커스·모달 스크롤 잠금·bfcache·터치 타깃 44px + 구조 정리
+- #153 — fix: 여러 줄 {# #} 템플릿 주석 누출 3건 수정 + 재발 방지 가드
+- #152 — fix: 모바일 재점검 5건 수정 (320px 오버플로우·제목 clamp·터치 타깃)
+- #151 — refactor: 스크린리더(ARIA) 지원 마크업 전면 제거
+- #150 — fix: 서비스 플로우 이상현상 배치 1 — 검색어 보존·편집 재시도·지우기 필터·승인 발표
+- #149 — feat(staff): 대시보드 시각화 개선 — CSS-only 바 리스트·활동 차트·상태 점
+- #148 — fix(frontend): FE 인터랙션 코드 리뷰 후속 수정 4건 (제안 1~4)
+- #147 — fix(frontend): 인터랙션 층위 결함 수정 트랙 (재검수 후속)
+- #141 — fix(core): 500 페이지 푸터의 빈 mailto 링크 강하 처리
+- #140 — refactor: StaffActionLog 헬퍼 추출 + personal entry 집계 통합 + docstring 정정
+- #139 — feat(core): 공개 페이지 페이지별 og:title 오버라이드
+- #138 — refactor(staff): views.py(1092줄) 기능별 패키지 분할
+- #137 — feat(accounts): 회원 탈퇴 비밀번호 재확인 시도 제한 (5회/15분)
+- #136 — chore: 전수 검토 후속 — e2e 가드 확장·집계 헬퍼 이동·docstring 정정
+- #135 — feat(core): 파비콘 + meta description/OG 텍스트 태그 추가
+- #134 — feat(core): 커스텀 404/500 에러 페이지 추가
+- #133 — fix(css): 흰 배경 소형 텍스트 --brand → --brand-ink 교체 (WCAG AA)
+- #132 — design(core): 푸터 구조 개편 — 법적 링크 하단 바 이동·안내 열 모바일 풀폭
+- #131 — feat(legal): 개인정보처리방침·이용약관·문의 채널 + 탈퇴·EXIF 제거·가입 동의
+- #130 — feat(mobile): 모바일 우선 상용 디자인 3단계 — 기록과 운영
+- #129 — feat(mobile): 모바일 우선 상용 디자인 2단계 — 핵심 여정
+- #128 — test: 1단계 후속 재발 방지 가드 3건(마이그레이션 정합·라벨 계약·모바일 넘침 스모크)
+- #127 — fix(mobile): 모바일 우선 상용 디자인 1단계 — 출시 차단 문제 6건
+- #126 — refactor(naming): 서비스 kwarg-only·컨텍스트 키 컨벤션 통일
+- #125 — refactor(archive): VisitRecord related_name을 형제 모델 컨벤션으로 통일

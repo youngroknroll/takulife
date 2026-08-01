@@ -25,6 +25,7 @@ Version-controlled (`docs/`). These survive a clone, a reset, and a working-copy
 cleanup. Anything that must not be lost belongs here.
 
 - Current backlog: `docs/backlog.md`
+- Rolling merged-PR history: `docs/pr-log.md`
 - Deployment runbook: `docs/deploy-runbook.md`
 - Operations runbook: `docs/operations-runbook.md`
 - Event operations criteria: `docs/event-operations-criteria.md`
@@ -37,7 +38,6 @@ and must never be reported as an accident or recreated on a guess. Never leave a
 rule, an approved decision, or a live backlog here alone — promote it to `docs/`.
 
 - Current backlog and next-action index: `docs/backlog.md`
-- Optional local continuity notes: `.docs/project-status.md`
 - Product direction: `.docs/proposal/2026-07-13-takulife-product-direction-redefinition.html`
 - Backend plans and technical records: `.docs/BE/`
 - Database, schema, and migration records: `.docs/DB/`
@@ -537,7 +537,9 @@ is separately approved.
      mistake: a user decision, non-obvious rationale, contract boundary,
      unresolved risk, verification limitation, or other durable constraint.
    - Update the existing technical document for the affected subject. Do not
-     create a routine work log. Create a new subject document only when no
+     create a routine work log there: a subject document under `docs/BE/`,
+     `docs/DB/`, or `docs/FE/` states guardrails and durable facts, not a diary
+     of what was done in what order. Create a new subject document only when no
      relevant canonical document exists; it then becomes the update target.
    - Keep each handoff record compact. Include only applicable fields:
      `Current fact`, `Decision`, `Guardrail`, `Known gap`, and `Evidence`.
@@ -546,6 +548,12 @@ is separately approved.
    - Put major changes, decisions, and unresolved problems in the related
      subject document under `docs/`; local `.docs/` notes may supplement a
      handoff but are not the only copy of a durable fact.
+   - At every PR merge, add or update the entry in `docs/pr-log.md`: promote the
+     previously "latest" entry down to a one-line, number-plus-summary record,
+     and write the newly merged PR as the one detailed entry. This log is a
+     time-ordered PR history, not a subject document, so the "no routine work
+     log" rule above does not exempt it — the rolling entry is the required
+     record for this file specifically.
    - Review-only tasks do not edit files. They report findings in chat or in a
      separately approved review artifact.
 
