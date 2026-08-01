@@ -18,33 +18,44 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR은 (문서 작성 시점 기준) 273건이라 전부는
-들어가지 않으므로 최신 PR부터 채우고 줄 수 예산에 닿는 지점에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 한 줄 요약 목록은 PR #278부터
-PR #125까지를 담았다. 그보다 오래된 PR은 `gh pr list --state merged --limit 300
---json number,title` 으로 언제든 다시 조회할 수 있다.
+이 문서는 200줄을 넘기지 않는다. 머지된 PR은 273건을 넘는데 전부는 들어가지 않으므로
+최신 PR부터 채우고 줄 수 예산에 닿는 지점에서 끊는다 — 컷오프는 "재구성 불가"가 아니라
+순수히 **줄 수 예산** 문제다. 아래 한 줄 요약 목록은 PR #279부터 PR #137까지를 담았다.
+그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
+언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #279 — 백로그 현재 상태를 main `b43957c` 기준으로 갱신
+### PR #280 — chore: 운영·위생 백로그 4건을 닫는다 (F3·F4·F5·F9)
 
-**무엇을 바꿨나**: `docs/backlog.md`의 기준 커밋 표기를 `4ddae6e`에서 `b43957c`로,
-백엔드 회귀 수치를 "2144 passed"에서 "2150 passed"로 갱신했다. PR #276~#278에서 추가된
-가드 테스트 6건이 반영된 수치다.
+**무엇을 바꿨나**: CI `docker` 잡에 컨테이너 기동 스모크(postgres 서비스 연결 +
+`/health/` 200 폴링)를 추가해 `migrate` → `collectstatic` → gunicorn 배포 경로를
+실제로 태웠다(F3). PR 이력을 git이 추적하는 `docs/pr-log.md`로 옮기고 `AGENTS.md`·
+`CLAUDE.md`의 기록 규약을 갱신했다(F4 — 이 문서 자체가 그 산출물이다). 생성
+엔드포인트 4개(`personal_entry_create` 30/min, `event_interest_create`·
+`user_event_status_create` 각 60/min, `visit_record_photo_create` 30/min)에
+스로틀을 추가했다(F5). 게시 토글을 `select_for_update()`로 원자화하고
+`redirect_url`이 사전에 읽은 값 대신 `pk` 인자를 받게 해 경쟁 조건이 구조적으로
+재발할 수 없게 했다(F9).
 
-**왜**: 백로그 F4(문서 최신화) 항목의 일부로, 직전 세 PR(분석 키워드 전용화, 컬렉션
-축 프레디케이트 리팩터, 무동작 방지 가드)이 머지된 뒤 백로그의 기준 커밋·수치가
-낡아 있었다.
+**왜**: 백로그에서 "지금 착수 가능"으로 분류된 나머지 항목을 모두 처리해, 트리거
+대기 3건(B2·F6·F7)만 남기기 위해서다.
 
-**검증**: 문서 전용 변경(`docs/backlog.md` 2줄 diff)이라 코드 검증 대상 없음. 인용한
-"2150 passed" 수치는 PR #278 머지 시점의 실측을 그대로 옮겨 적은 것이다.
+**검증**: `uv run pytest -q` → 2155 passed(F5 +4, F9 +1). `manage.py check` 0
+issues. `makemigrations --check --dry-run` no changes. 뮤테이션: F5 신규 레이트
+4개 제거 → RED(39건 실패), F9 `select_for_update()` 제거 → RED(1건). F3은 이 PR의
+`docker` 잡 결과가 유일한 증거이며 로컬 Docker 부재로 재현하지 못했다.
+
+**이 항목의 상태**: 이 갱신은 PR #280 자체에 포함되어 있다. PR이 머지되면 이 로그도
+그 시점에 main에 함께 반영된다 — 별도로 "머지됨"을 단정하지 않는다.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #279 — docs: 백로그 현재 상태를 main b43957c 기준으로 갱신
 - #278 — fix: 조용히 깨질 자리 두 곳을 닫는다 (백로그 A5 잔여 + F8)
 - #277 — refactor: 보유·교환 축 술어를 CollectionItem으로 모은다 (백로그 A3 이관분)
 - #276 — refactor: core.analytics를 서명 규약 가드에 넣는다 (백로그 A2)
@@ -181,15 +192,3 @@ PR #125까지를 담았다. 그보다 오래된 PR은 `gh pr list --state merged
 - #139 — feat(core): 공개 페이지 페이지별 og:title 오버라이드
 - #138 — refactor(staff): views.py(1092줄) 기능별 패키지 분할
 - #137 — feat(accounts): 회원 탈퇴 비밀번호 재확인 시도 제한 (5회/15분)
-- #136 — chore: 전수 검토 후속 — e2e 가드 확장·집계 헬퍼 이동·docstring 정정
-- #135 — feat(core): 파비콘 + meta description/OG 텍스트 태그 추가
-- #134 — feat(core): 커스텀 404/500 에러 페이지 추가
-- #133 — fix(css): 흰 배경 소형 텍스트 --brand → --brand-ink 교체 (WCAG AA)
-- #132 — design(core): 푸터 구조 개편 — 법적 링크 하단 바 이동·안내 열 모바일 풀폭
-- #131 — feat(legal): 개인정보처리방침·이용약관·문의 채널 + 탈퇴·EXIF 제거·가입 동의
-- #130 — feat(mobile): 모바일 우선 상용 디자인 3단계 — 기록과 운영
-- #129 — feat(mobile): 모바일 우선 상용 디자인 2단계 — 핵심 여정
-- #128 — test: 1단계 후속 재발 방지 가드 3건(마이그레이션 정합·라벨 계약·모바일 넘침 스모크)
-- #127 — fix(mobile): 모바일 우선 상용 디자인 1단계 — 출시 차단 문제 6건
-- #126 — refactor(naming): 서비스 kwarg-only·컨텍스트 키 컨벤션 통일
-- #125 — refactor(archive): VisitRecord related_name을 형제 모델 컨벤션으로 통일
