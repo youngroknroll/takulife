@@ -708,7 +708,11 @@ if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
 따른다. **A3에서 E군으로 이관된 3축 술어 문제와 같은 트랙에서 처리하는 편이
 충돌이 적다** — 둘 다 `core/views.py` 계열을 연다.
 
-### E6 [실측] `core/views/` → `web/views/` 프레젠테이션 계층 분리 — **해결됨(C4, 2026-08-02)**
+### E6 [실측] `core/views/` → `web/views/` 프레젠테이션 계층 분리 — **머지 대기(PR #281, 2026-08-02)**
+
+> 코드·문서 변경과 검증은 끝났고 **PR #281이 열려 있다.** 머지되면 이 제목을
+> 다른 E항목과 같은 `해결됨(2026-08-0N, PR #281)` 형식으로 바꾸고
+> `docs/pr-log.md`에 롤링 규약대로 올린다. 그 전까지 main에는 이 변경이 없다.
 
 `core`에서 프레젠테이션 합성 계층 전체를 새 앱 `web`으로 떼어냈다. 새 앱
 `web/views/{__init__,_helpers,account,activity,archive,collection,events,legal}.py`
