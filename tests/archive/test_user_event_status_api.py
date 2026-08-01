@@ -528,3 +528,39 @@ def test_다른_사용자의_방문_기록은_내_계획_상태_생성을_막지
     )
 
     assert response.status_code == 201
+
+
+# ---------------------------------------------------------------------------
+# 생성 스로틀 — 목록에서 여러 행사를 빠르게 연달아 등록할 수 있어 분당 60건.
+# GET(목록)은 스로틀 대상이 아님을 함께 확인한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_상태_생성_요청이_설정된_한도를_초과하면_429로_제한된다(client, make_user, make_event):
+    user = make_user(email="status-create-flood@example.com", username="status-create-flood")
+    client.force_login(user)
+
+    # 분당 60건 한도: 서로 다른 행사 60개로 채우고 61번째를 확인한다.
+    for i in range(60):
+        event = make_event(title=f"한도 확인 행사 {i}")
+        response = client.post(
+            "/api/user-event-statuses/",
+            {"event": event.id, "status": "planned"},
+            content_type="application/json",
+        )
+        assert response.status_code == 201, f"create {i} should succeed"
+
+    over_limit_event = make_event(title="한도 초과 행사")
+    throttled = client.post(
+        "/api/user-event-statuses/",
+        {"event": over_limit_event.id, "status": "planned"},
+        content_type="application/json",
+    )
+
+    assert throttled.status_code == 429
+    assert UserEventStatus.objects.count() == 60
+
+    listed = client.get("/api/user-event-statuses/")
+    assert listed.status_code == 200

@@ -500,9 +500,13 @@ SUPPORT_EMAIL = _get_env("SUPPORT_EMAIL", "support@takulife.example")
 # DRF: 공식 제보(promotion) 속도를 제한해 인증된 사용자가 승격된
 # PersonalEntry 드래프트로 관리자 검토 큐를 채우지 못하게 한다.
 # 뷰 단위(PromotePersonalEntryView)로만 적용돼 다른 엔드포인트는
-# 영향받지 않는다. collection_item_create / visit_record_create는 수동
-# 폼으로는 분당 30회에 절대 도달할 수 없다 — 이 상한은 정상 사용이
-# 아니라 bfcache식 중복 제출 폭주와 스팸을 막기 위한 것이다.
+# 영향받지 않는다. collection_item_create / visit_record_create /
+# personal_entry_create는 수동 폼으로는 분당 30회에 절대 도달할 수
+# 없다 — 이 상한은 정상 사용이 아니라 bfcache식 중복 제출 폭주와
+# 스팸을 막기 위한 것이다. event_interest_create / user_event_status_create는
+# 목록에서 여러 행사를 빠르게 연달아 누를 수 있어 분당 60회로 더 넉넉히
+# 잡았다. visit_record_photo_create는 기록당 사진 5장 상한이 이미 있어
+# 30/minute으로도 여러 기록에 걸친 정상 업로드를 막지 않는다.
 REST_FRAMEWORK = {
     # 세션 인증만 쓴다 — 이 앱은 브라우저/세션 기반이다. DRF 기본
     # BasicAuthentication을 빼는 이유는 CSRF 우회 구멍을 막기 위해서다:
@@ -516,6 +520,10 @@ REST_FRAMEWORK = {
         "promotion": "20/day",
         "collection_item_create": "30/minute",
         "visit_record_create": "30/minute",
+        "personal_entry_create": "30/minute",
+        "event_interest_create": "60/minute",
+        "user_event_status_create": "60/minute",
+        "visit_record_photo_create": "30/minute",
     },
 }
 

@@ -267,3 +267,39 @@ def test_비로그인_사용자가_찜을_등록하면_인증_오류가_된다(c
 def test_비로그인_사용자가_찜_목록을_조회하면_인증_오류가_된다(client):
     response = client.get("/api/event-interests/")
     assert response.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
+# 생성 스로틀 — 목록에서 여러 행사를 빠르게 연달아 찜할 수 있어 분당 60건.
+# GET(목록)은 스로틀 대상이 아님을 함께 확인한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_찜_생성_요청이_설정된_한도를_초과하면_429로_제한된다(client, make_user, make_event):
+    user = make_user(username="interest-create-flood")
+    client.force_login(user)
+
+    # 분당 60건 한도: 서로 다른 행사 60개로 채우고 61번째를 확인한다.
+    for i in range(60):
+        event = make_event(title=f"한도 확인 행사 {i}")
+        response = client.post(
+            "/api/event-interests/",
+            {"event": event.id},
+            content_type="application/json",
+        )
+        assert response.status_code == 201, f"create {i} should succeed"
+
+    over_limit_event = make_event(title="한도 초과 행사")
+    throttled = client.post(
+        "/api/event-interests/",
+        {"event": over_limit_event.id},
+        content_type="application/json",
+    )
+
+    assert throttled.status_code == 429
+    assert EventInterest.objects.count() == 60
+
+    listed = client.get("/api/event-interests/")
+    assert listed.status_code == 200

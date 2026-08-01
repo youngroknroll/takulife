@@ -75,6 +75,14 @@ class PersonalEntryListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PersonalEntrySerializer
     pagination_class = PersonalEntryPagination
+    throttle_scope = "personal_entry_create"
+
+    def get_throttles(self):
+        # ScopedRateThrottle은 뷰 전체에 적용되므로 쓰기 경로에만 걸리게
+        # 한다 — 생성 폭주 방지가 목록 조회(GET)까지 막으면 안 된다.
+        if self.request.method == "POST":
+            return [ScopedRateThrottle()]
+        return []
 
     def get_queryset(self):
         return list_user_personal_entries(self.request.user)
@@ -108,6 +116,14 @@ class EventInterestListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EventInterestSerializer
     pagination_class = EventInterestPagination
+    throttle_scope = "event_interest_create"
+
+    def get_throttles(self):
+        # ScopedRateThrottle은 뷰 전체에 적용되므로 쓰기 경로에만 걸리게
+        # 한다 — 생성 폭주 방지가 목록 조회(GET)까지 막으면 안 된다.
+        if self.request.method == "POST":
+            return [ScopedRateThrottle()]
+        return []
 
     def get_queryset(self):
         return EventInterest.objects.filter(user=self.request.user).order_by("-id")
@@ -152,6 +168,14 @@ class UserEventStatusListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserEventStatusSerializer
     pagination_class = UserEventStatusPagination
+    throttle_scope = "user_event_status_create"
+
+    def get_throttles(self):
+        # ScopedRateThrottle은 뷰 전체에 적용되므로 쓰기 경로에만 걸리게
+        # 한다 — 생성 폭주 방지가 목록 조회(GET)까지 막으면 안 된다.
+        if self.request.method == "POST":
+            return [ScopedRateThrottle()]
+        return []
 
     def _validated_query_params(self):
         serializer = UserEventStatusQuerySerializer(data=self.request.query_params)
@@ -295,6 +319,10 @@ class VisitRecordDetailView(RetrieveUpdateDestroyAPIView):
 
 class VisitRecordPhotoCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    # 이 뷰는 POST만 구현하므로(GET 없음) 메서드로 분기할 필요 없이
+    # 스로틀을 그냥 붙인다.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "visit_record_photo_create"
 
     def post(self, request, record_id):
         record = get_object_or_404(VisitRecord, pk=record_id, user=request.user)
