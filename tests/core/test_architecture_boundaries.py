@@ -156,6 +156,7 @@ def test_금지_앱_집합은_로컬_도메인_앱을_담고_서드파티와_cor
     forbidden = _local_domain_apps(PROJECT_ROOT)
 
     assert "archive" in forbidden
+    assert "web" in forbidden
     assert "rest_framework" not in forbidden
     assert "core" not in forbidden
 

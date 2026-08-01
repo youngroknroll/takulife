@@ -28,7 +28,7 @@ pytestmark = pytest.mark.contract
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-_SCAN_PACKAGES = ("accounts", "archive", "config", "core", "drafts", "events", "staff")
+_SCAN_PACKAGES = ("accounts", "archive", "config", "core", "drafts", "events", "staff", "web")
 
 _LOGGER_METHODS = {"debug", "info", "warning", "error", "exception", "critical"}
 
