@@ -736,6 +736,44 @@ def test_상한을_채운_마지막_사진과_같은_클라이언트_토큰으�
 
 
 # ---------------------------------------------------------------------------
+# 사진 업로드 스로틀 — 기록당 사진 상한(5장)이 있어 여러 기록에 나눠
+# 30장을 채우고 31번째를 확인한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_사진_업로드_요청이_설정된_한도를_초과하면_429로_제한된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, make_visit
+):
+    settings.MEDIA_ROOT = str(tmp_path)
+    user = make_user()
+    client.force_login(user)
+
+    # 분당 30건 한도: 기록당 5장 상한이라 기록 6개에 5장씩 채운다.
+    records = [
+        make_visit(user, event=make_event(title=f"사진 한도 행사 {i}"), visited_on="2026-05-26")
+        for i in range(6)
+    ]
+    for i in range(30):
+        record = records[i // MAX_PHOTOS_PER_RECORD]
+        response = client.post(
+            f"/api/visit-records/{record.id}/photos/",
+            {"image": SimpleUploadedFile(f"photo-{i}.png", png_bytes(), content_type="image/png")},
+        )
+        assert response.status_code == 201, f"upload {i} should succeed"
+
+    over_limit_record = make_visit(user, event=make_event(title="사진 한도 초과 행사"), visited_on="2026-05-26")
+    throttled = client.post(
+        f"/api/visit-records/{over_limit_record.id}/photos/",
+        {"image": SimpleUploadedFile("over-limit.png", png_bytes(), content_type="image/png")},
+    )
+
+    assert throttled.status_code == 429
+    assert VisitRecordPhoto.objects.count() == 30
+
+
+# ---------------------------------------------------------------------------
 # 사진 삭제 (DELETE /api/visit-records/<record_id>/photos/<photo_id>/)
 # ---------------------------------------------------------------------------
 

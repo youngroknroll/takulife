@@ -281,3 +281,39 @@ def test_SVG_파일을_이미지로_업로드하면_거부된다(client, make_us
 
     assert response.status_code == 400
     assert "image" in response.json()
+
+
+# ---------------------------------------------------------------------------
+# 생성 스로틀 — collection_item_create / visit_record_create와 같은
+# bfcache식 중복 제출 폭주 방지 목적으로 분당 30건. GET(목록)은 스로틀
+# 대상이 아님을 함께 확인한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_개인_항목_생성_요청이_설정된_한도를_초과하면_429로_제한된다(client, make_user):
+    user = make_user(username="pe-create-flood")
+    client.force_login(user)
+
+    # 분당 30건 한도: 30번은 성공하고 31번째부터 스로틀에 걸린다.
+    for i in range(30):
+        response = client.post(
+            "/api/personal-entries/",
+            {"kind": "place", "title": f"한도 확인 항목 {i}"},
+            content_type="application/json",
+        )
+        assert response.status_code == 201, f"create {i} should succeed"
+
+    throttled = client.post(
+        "/api/personal-entries/",
+        {"kind": "place", "title": "한도 초과 항목"},
+        content_type="application/json",
+    )
+
+    assert throttled.status_code == 429
+    assert PersonalEntry.objects.count() == 30
+
+    listed = client.get("/api/personal-entries/")
+    assert listed.status_code == 200

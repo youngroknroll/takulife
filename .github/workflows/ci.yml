@@ -94,8 +94,91 @@ jobs:
   docker:
     name: Docker build (no push)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: taku
+          POSTGRES_USER: taku
+          POSTGRES_PASSWORD: taku
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taku -d taku"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
       - name: Build image
         run: docker build -t takulife:ci .
+
+      # Actually boot the built image against the postgres service instead of
+      # only proving `docker build` succeeds — this exercises the real deploy
+      # path (entrypoint.sh: migrate -> collectstatic -> gunicorn) so entrypoint
+      # regressions (permissions, paths, migrate/collectstatic failures,
+      # gunicorn not starting) surface here instead of on first deploy.
+      # --network host puts the container on the runner host's network so it
+      # can reach the postgres service container, which GitHub Actions
+      # publishes onto localhost:5432 of the runner (not a separate Docker
+      # network the built image would otherwise share).
+      - name: Boot container and wait for /api/health/
+        run: |
+          set -o pipefail
+
+          # Throwaway, structurally-valid-but-obviously-fake SECRET_KEY (same
+          # low-entropy repeating pattern as the deploy checklist step above)
+          # so a secret scanner doesn't mistake it for a real credential.
+          SECRET_KEY="docker-smoke-$(printf '0123456789abcdef%.0s' 1 2 3 4)"
+
+          docker run -d --name takulife-smoke \
+            --network host \
+            -e DATABASE_URL="postgresql://taku:taku@localhost:5432/taku" \
+            -e SECRET_KEY="$SECRET_KEY" \
+            -e ALLOWED_HOSTS="localhost" \
+            -e DEBUG="false" \
+            takulife:ci
+
+          status=0
+          for attempt in $(seq 1 30); do
+            if curl -fsS "http://localhost:8000/api/health/" > /dev/null 2>&1; then
+              echo "Health check passed on attempt ${attempt}"
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "::error::/api/health/ did not return 200 within the timeout"
+              status=1
+            fi
+            sleep 2
+          done
+
+          # On failure, replay the request without swallowing anything so the
+          # next run tells us *why* instead of just *that* it failed: a
+          # non-zero curl exit means the connection itself was refused/reset
+          # (port not listening, container dead), while a zero exit with a
+          # non-200 http_code means gunicorn answered but Django rejected/
+          # errored the request (response body may carry the reason, e.g. a
+          # DisallowedHost or 500 error page).
+          if [ "$status" -ne 0 ]; then
+            echo "---- diagnostics: container still running? ----"
+            docker ps -a --filter name=takulife-smoke
+
+            echo "---- diagnostics: is anything listening on :8000? ----"
+            ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null || echo "neither ss nor netstat is available"
+
+            echo "---- diagnostics: one more request, nothing discarded ----"
+            http_code=$(curl -sS -o /tmp/health-body.txt -w '%{http_code}' "http://localhost:8000/api/health/")
+            echo "curl exit code: $?"
+            echo "HTTP status code: ${http_code}"
+            echo "---- response headers ----"
+            curl -sS -D - -o /dev/null "http://localhost:8000/api/health/" 2>&1 || true
+            echo "---- response body ----"
+            cat /tmp/health-body.txt 2>/dev/null || echo "(no body captured)"
+          fi
+
+          echo "---- container logs (takulife-smoke) ----"
+          docker logs takulife-smoke
+          docker rm -f takulife-smoke
+
+          exit "$status"

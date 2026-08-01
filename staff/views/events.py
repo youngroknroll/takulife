@@ -421,14 +421,16 @@ def staff_event_toggle_publish(request, pk):
     다시 게시할 때는 제목/공식URL 검증을 다시 거친다 — 내려간 동안 상태가
     깨진 이벤트가 검증 없이 조용히 다시 게시되는 것을 막는다.
     """
-    event = get_object_or_404(Event, pk=pk)
     list_query = urlencode(_event_filter_query_pairs(request.GET))
-    redirect_url = reverse("staff:event-edit", args=[event.pk])
+    redirect_url = reverse("staff:event-edit", args=[pk])
     if list_query:
         redirect_url = f"{redirect_url}?{list_query}"
 
     try:
         with transaction.atomic():
+            # 토글은 읽은 값을 뒤집는 연산이라, 잠그지 않으면 동시 요청이
+            # 같은 상태를 읽고 경쟁한다.
+            event = get_object_or_404(Event.objects.select_for_update(), pk=pk)
             if event.publish_status == Event.PublishStatus.PUBLISHED:
                 unpublish_event(event=event)
                 action = StaffActionLog.Action.EVENT_UNPUBLISH

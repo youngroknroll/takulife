@@ -39,9 +39,9 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
 - Do not preload every plan, report, or governance document.
 - Before planning, role routing, or editing, read `AGENTS.md`.
 - Read only the current plan, relevant `docs/backlog.md` or runbook, code, and
-  domain sources. Read a local continuity note only when it is directly relevant.
-- Treat `.docs/project-status.md` as optional local history, never as current
-  source code or durable project state.
+  domain sources. Read `docs/pr-log.md` only when merged-PR history is directly
+  relevant; it is a rolling log, never current source code or durable project
+  state.
 - Verify repository facts from code and configuration before relying on prose.
 - Local role adapters live in `.claude/agents/` and load only when activated.
 - Do not duplicate detailed role contracts or import all of `AGENTS.md` here.
@@ -69,11 +69,11 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
   `core/urls.py`, `core/views.py`
 - Frontend: `templates/base.html`, `templates/core/`, `templates/staff/`,
   `static/css/`, `static/js/`
-- Backlog, runbooks, technical records (version-controlled): `docs/backlog.md`,
-  `docs/deploy-runbook.md`, `docs/operations-runbook.md`,
-  `docs/event-operations-criteria.md`, `docs/BE/`
-- Tests and optional local working notes: `tests/<domain>/`,
-  `.docs/project-status.md`, `.docs/BE/`, `.docs/DB/`, `.docs/FE/`
+- Backlog, PR history, runbooks, technical records (version-controlled):
+  `docs/backlog.md`, `docs/pr-log.md`, `docs/deploy-runbook.md`,
+  `docs/operations-runbook.md`, `docs/event-operations-criteria.md`, `docs/BE/`
+- Tests and optional local working notes: `tests/<domain>/`, `.docs/BE/`,
+  `.docs/DB/`, `.docs/FE/`
 
 Start with these stable paths. Use `rg` when the exact location is still unknown
 or the task requires a repository-wide repeated-pattern check.
@@ -128,8 +128,9 @@ During Red-Green, run the targeted test before broad regression.
 - `CLAUDE.md`: facts and gates needed in almost every session
 - `AGENTS.md`: detailed product constraints, workflow, roles, and review gates
 - `.claude/agents/`: local role adapters
-- `docs/`: the only durable document tree — backlog, runbooks, and any technical
-  record stating a guardrail (`docs/BE/`, and `DB/`/`FE/` when needed)
+- `docs/`: the only durable document tree — backlog, the rolling merged-PR log
+  (`docs/pr-log.md`), runbooks, and any technical record stating a guardrail
+  (`docs/BE/`, and `DB/`/`FE/` when needed)
 - `.docs/BE/`, `.docs/DB/`, `.docs/FE/`: drafts and working measurements.
   **`.docs/` is git-ignored**; a missing file there is housekeeping, not a loss
 - Deterministic restrictions belong in settings or hooks, not advisory prose.

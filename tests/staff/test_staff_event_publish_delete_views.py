@@ -8,6 +8,8 @@ import datetime
 import re
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from archive.models import CollectionItem, EventInterest
 from events.models import Event
@@ -100,6 +102,21 @@ def test_제목이_없는_초안_이벤트는_재게시_토글이_거부되고_�
     event.refresh_from_db()
     assert event.publish_status == Event.PublishStatus.DRAFT
     assert not StaffActionLog.objects.filter(target_event=event).exists()
+
+
+@pytest.mark.django_db
+def test_게시_토글은_대상_행을_잠그고_읽는다(staff_client, make_event):
+    """토글은 읽은 값을 뒤집는 연산이라 동시 요청 경쟁에 취약하다(F9).
+    select_for_update로 잠근 뒤 다시 읽는지를 실행된 쿼리로 확인한다."""
+    staff, client = staff_client()
+    event = make_event(official_url="https://example.com/toggle-lock")
+
+    with CaptureQueriesContext(connection) as ctx:
+        resp = client.post(_toggle_url(event))
+
+    assert resp.status_code == 302
+    locking_queries = [q for q in ctx.captured_queries if "FOR UPDATE" in q["sql"].upper()]
+    assert locking_queries, ctx.captured_queries
 
 
 @pytest.mark.django_db
