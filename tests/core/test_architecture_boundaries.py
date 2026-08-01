@@ -105,8 +105,7 @@ def _is_core_domain_import_allowlisted(path, root):
     root를 인자로 받아야 한다 — PROJECT_ROOT를 하드코딩하면 합성 tmp_path
     트리에서 relative_to가 ValueError를 던지거나 항상 허용/거부로 고정된다.
     경로 비교는 세그먼트 완전 일치다 — `"views" in str(path)` 같은 부분
-    문자열 비교는 core/promotion_views.py(이름이 promotion으로 시작하고
-    views를 포함)나 core/views_extra.py(디렉터리 밖, 이름만 유사) 같은
+    문자열 비교는 core/views_extra.py(디렉터리 밖, 이름만 유사) 같은
     실재하는 파일을 조용히 새게 한다."""
     relative_parts = path.relative_to(root / "core").parts
     if relative_parts[:1] == ("views",):
@@ -115,11 +114,6 @@ def _is_core_domain_import_allowlisted(path, root):
         # DRF API로 간다. 패키지 전체 예외이며, 개별 파일이 실제로 도메인을
         # 임포트하는지는 별개다 — system.py/__init__.py처럼 도메인 임포트가
         # 0건인 파일도 이 예외에 포함된다.
-        return True
-    if relative_parts == ("promotion.py",):
-        # 유일한 교차 도메인 쓰기 오케스트레이터 — transaction.atomic()과
-        # select_for_update()를 소유해 core/views/와 성격이 달라 별도 파일
-        # 엔트리로 등록한다(디렉터리로 묶지 않는다).
         return True
     return False
 
@@ -166,14 +160,6 @@ def test_금지_앱_파생_대상이_없는_root는_공허하게_통과하지_�
         _local_domain_apps(tmp_path)
 
 
-def test_core_promotion_모듈의_실제_도메인_임포트는_허용_목록으로_통과한다():
-    path = PROJECT_ROOT / "core" / "promotion.py"
-
-    forbidden = _forbidden_imports_in_file(path, CORE_FORBIDDEN_DOMAIN_APPS)
-    assert forbidden, "promotion.py가 도메인 모듈을 임포트하지 않는다 — 이 시나리오의 전제가 깨졌다"
-    assert _is_core_domain_import_allowlisted(path, PROJECT_ROOT)
-
-
 def test_core_views_패키지_전체의_실제_도메인_임포트는_허용_목록으로_통과한다():
     # system.py/__init__.py는 일부러 뺀다 — 도메인 임포트가 0건이라 "허용
     # 목록 덕분에 통과"인지 "애초에 안 잡히는 것"인지 구분되지 않는다.
@@ -199,17 +185,6 @@ def test_core_views_디렉터리_밖의_이름만_유사한_파일은_허용되�
     lookalike = tmp_path / "core" / "views_extra.py"
     lookalike.write_text("import archive.models\n")
     control = tmp_path / "core" / "views" / "actual.py"
-    control.write_text("import archive.models\n")
-
-    assert not _is_core_domain_import_allowlisted(lookalike, tmp_path)
-    assert _is_core_domain_import_allowlisted(control, tmp_path)
-
-
-def test_promotion_py와_파일명_접두만_같은_새_파일은_허용되지_않는다(tmp_path):
-    (tmp_path / "core").mkdir()
-    lookalike = tmp_path / "core" / "promotion_extra.py"
-    lookalike.write_text("import archive.models\n")
-    control = tmp_path / "core" / "promotion.py"
     control.write_text("import archive.models\n")
 
     assert not _is_core_domain_import_allowlisted(lookalike, tmp_path)

@@ -6,7 +6,7 @@ from django.views.generic import RedirectView
 
 from accounts import views as accounts_views
 from core import views as core_views
-from core.promotion_views import PromotePersonalEntryView
+from web.promotion_views import PromotePersonalEntryView
 
 
 urlpatterns = [

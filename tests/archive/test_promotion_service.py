@@ -1,7 +1,7 @@
-"""core.promotion.promote_personal_entry — 오케스트레이션 테스트, HTTP 없음.
+"""web.promotion.promote_personal_entry — 오케스트레이션 테스트, HTTP 없음.
 
 경계 인식: archive는 drafts를 임포트하면 안 되므로 오케스트레이션은 중립 계층
-(core.promotion)에 둔다. 승격은 사용자의 비공개 항목과 필수 공식 URL로 PENDING
+(web.promotion)에 둔다. 승격은 사용자의 비공개 항목과 필수 공식 URL로 PENDING
 EventDraft를 시드하고, 항목을 제출됨으로 표시한다. 관리자가 드래프트를 승인해
 공개 Event로 만들기 전까지 항목은 비공개로 유지된다.
 """
@@ -12,7 +12,7 @@ import pytest
 from archive.models import PersonalEntry
 from drafts.models import EventDraft
 from drafts.services import approve_draft
-from core.promotion import (
+from web.promotion import (
     PromotionAlreadySubmittedError,
     PromotionDuplicateError,
     PromotionKindNotAllowedError,
@@ -125,7 +125,7 @@ def test_승격에서_안전하지_않은_url이_거부되어도_경고_로그�
     warnings = [
         record
         for record in caplog.records
-        if record.levelno >= logging.WARNING and record.name.startswith("core")
+        if record.levelno >= logging.WARNING and record.name.startswith("web")
     ]
     assert warnings == []
 

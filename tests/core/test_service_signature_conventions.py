@@ -2,7 +2,7 @@
 
 events/services.py와 archive/services.py는 이미 모든 공개 함수에 이 관례를
 지킨다(`*, ...` 시그니처 참고). drafts/services.py, staff/services.py,
-core/promotion.py, core/analytics.py가 합류하면서 이 관례가 무너지지 않도록
+web/promotion.py, core/analytics.py가 합류하면서 이 관례가 무너지지 않도록
 지키는 가드다 — 공개 서비스 함수의 위치 인자가 바로 이 테스트가 잡으려는
 이탈이다.
 
@@ -25,7 +25,7 @@ SERVICE_MODULES = [
     "archive.services",
     "drafts.services",
     "staff.services",
-    "core.promotion",
+    "web.promotion",
     "core.analytics",
 ]
 
@@ -55,7 +55,7 @@ pytestmark = pytest.mark.contract
 @pytest.mark.parametrize(
     "module_name",
     SERVICE_MODULES,
-    ids=["events_서비스", "archive_서비스", "drafts_서비스", "staff_서비스", "core_promotion", "core_analytics"],
+    ids=["events_서비스", "archive_서비스", "drafts_서비스", "staff_서비스", "web_promotion", "core_analytics"],
 )
 def test_공개_서비스_함수는_키워드_전용_인자만_받는다(module_name):
     violations = {
