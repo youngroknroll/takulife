@@ -153,6 +153,30 @@ jobs:
             sleep 2
           done
 
+          # On failure, replay the request without swallowing anything so the
+          # next run tells us *why* instead of just *that* it failed: a
+          # non-zero curl exit means the connection itself was refused/reset
+          # (port not listening, container dead), while a zero exit with a
+          # non-200 http_code means gunicorn answered but Django rejected/
+          # errored the request (response body may carry the reason, e.g. a
+          # DisallowedHost or 500 error page).
+          if [ "$status" -ne 0 ]; then
+            echo "---- diagnostics: container still running? ----"
+            docker ps -a --filter name=takulife-smoke
+
+            echo "---- diagnostics: is anything listening on :8000? ----"
+            ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null || echo "neither ss nor netstat is available"
+
+            echo "---- diagnostics: one more request, nothing discarded ----"
+            http_code=$(curl -sS -o /tmp/health-body.txt -w '%{http_code}' "http://localhost:8000/health/")
+            echo "curl exit code: $?"
+            echo "HTTP status code: ${http_code}"
+            echo "---- response headers ----"
+            curl -sS -D - -o /dev/null "http://localhost:8000/health/" 2>&1 || true
+            echo "---- response body ----"
+            cat /tmp/health-body.txt 2>/dev/null || echo "(no body captured)"
+          fi
+
           echo "---- container logs (takulife-smoke) ----"
           docker logs takulife-smoke
           docker rm -f takulife-smoke
