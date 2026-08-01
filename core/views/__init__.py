@@ -21,7 +21,8 @@ from .collection import (
     archive_collection_items,
 )
 from .events import event_calendar, event_detail, event_list, home
-from .system import api_root, health, legal_privacy, legal_terms
+from .legal import legal_privacy, legal_terms
+from .system import api_root, health
 
 __all__ = [
     "home",
