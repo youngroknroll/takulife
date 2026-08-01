@@ -256,7 +256,7 @@ def test_동시_생성으로_인한_무결성_오류는_중복_드래프트_오�
 @pytest.mark.django_db
 def test_URL_드래프트_생성의_중복_처리는_세이브포인트_안에서_실행된다(monkeypatch):
     """EventDraft.objects.create()는 자신만의 중첩 atomic 블록(세이브포인트)
-    안에서 실행돼야 한다. 그래야 core.promotion.promote_personal_entry처럼
+    안에서 실행돼야 한다. 그래야 web.promotion.promote_personal_entry처럼
     바깥 transaction.atomic() 안에서 호출될 때 여기서 잡은 IntegrityError가
     호출자의 이후 쿼리까지 막지 않는다(Postgres는 세이브포인트 없이는 문장
     오류 시 트랜잭션 전체를 중단시킨다)."""
@@ -282,7 +282,7 @@ def test_URL_드래프트_생성의_중복_처리는_세이브포인트_안에�
 @pytest.mark.django_db
 def test_직접_등록_드래프트_생성의_중복_처리도_세이브포인트_안에서_실행된다(monkeypatch):
     """create_draft_from_url과 같은 세이브포인트 보장을, fetch 없이 직접
-    생성하는 경로(core.promotion.promote_personal_entry가 자신의 바깥
+    생성하는 경로(web.promotion.promote_personal_entry가 자신의 바깥
     transaction.atomic() 안에서 호출)에도 동일하게 적용한다."""
 
     def raise_integrity_error(**kwargs):

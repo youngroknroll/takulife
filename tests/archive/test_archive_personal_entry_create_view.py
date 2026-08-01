@@ -1,4 +1,4 @@
-"""비공식 장소 등록 페이지(core.views.archive_personal_entry_create) 테스트.
+"""비공식 장소 등록 페이지(web.views.archive_personal_entry_create) 테스트.
 
 검증 대상 (직접 등록 에디토리얼 plan Part 1 §3, PV-1/PV-2): /archive/personal/new/는
 로그인 게이트가 걸려 있고(archive_collection_item_create와 동일한 패턴),
@@ -35,7 +35,7 @@ class TestArchivePersonalEntryCreateViewAuth:
     ):
         """bfcache 중복 생성 트랙(INTG-BE-05-PE-SSR): archive_visit_create /
         archive_collection_item_create의 렌더마다 client_token 발급 패턴
-        (core/views.py:1409-1421, :1761-1772)을 그대로 따라, 폼이 bfcache DOM
+        (web/views/archive.py:387, :531)을 그대로 따라, 폼이 bfcache DOM
         스냅샷에서도 살아남고 재전송된 제출을 중복 제거할 수 있게 한다(plan §4-1)."""
         _, client = user_client()
 

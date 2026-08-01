@@ -708,6 +708,91 @@ if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
 따른다. **A3에서 E군으로 이관된 3축 술어 문제와 같은 트랙에서 처리하는 편이
 충돌이 적다** — 둘 다 `core/views.py` 계열을 연다.
 
+### E6 [실측] `core/views/` → `web/views/` 프레젠테이션 계층 분리 — **해결됨(C4, 2026-08-02)**
+
+`core`에서 프레젠테이션 합성 계층 전체를 새 앱 `web`으로 떼어냈다. 새 앱
+`web/views/{__init__,_helpers,account,activity,archive,collection,events,legal}.py`
++ `web/promotion.py` + `web/promotion_views.py`. `core`에는 커널만 남았다
+(`vocab`·`pagination`·`calendar_grid`·`ip`·`errors`·`query_params`·`analytics`·
+`models`·`llm/`·`templatetags/`·`context_processors`·`auth_views`·
+`views.py`의 `api_root`·`health`). `core/views/` 패키지·`core/promotion.py`·
+`core/promotion_views.py`는 더 이상 없다.
+
+**경계 가드가 예외 0건으로 강화됐다.** `core` 공용 모듈 가드는 2026-07-31의
+"기본 거부 + 허용 목록 2개"(`core/views/`, `core/promotion.py`)를 폐지하고
+예외 없는 기본 거부가 됐다 — 허용할 대상 자체가 `web/`로 옮겨져 사라졌기
+때문이다. 새 규칙 4개: R1 양성 대조(합성 트리로 스캐너가 살아 있음을 확인),
+`web`은 리프(어떤 앱도 `web`을 임포트하지 않음 — `accounts`·`archive`·`drafts`·
+`events`·`staff` 5개 + `core` = 6개 스캔 대상 `[실측]`), `web → staff` 금지,
+`web/**` 안에서 `import *` 금지(자동 테스트).
+상세는 `docs/BE/web-views-package.md`, `docs/BE/contract-guards.md`.
+
+검증: `core` 팬아웃(도메인 임포트 수) **21 → 0** `[실측]`, 앱 간 순환 임포트
+쌍 **3 → 0**(완전 DAG) `[실측]`. 전체 회귀 **2155 → 2158 passed** `[실측]`
+(허용 목록 메타 테스트 3건 삭제 + 중복 R7 1건 삭제, 새 가드 9건 추가). 뷰
+7파일 **R100**(바이트 단위 동일) `[실측]`, 심볼 51개 문자 단위 일치 `[실측]`,
+라우트 **175건** 순회 순서까지 무변경 `[실측]`, `templates/` diff **0바이트**
+`[실측]`. 뮤테이션 **M1~M11 전부 Red** `[실측]`.
+
+**이관 과정에서 발견해 범위 밖으로 미룬 항목 4건 (Deferred Refactoring Note):**
+
+1. **`templates/core/` → `templates/web/` 리네임**
+   - 주제: 뷰가 `web/`로 옮겨간 뒤에도 템플릿 디렉터리 이름은 여전히 `core`다.
+   - 범위 밖인 이유: 옮길 템플릿 **파일 48개** `[실측, find templates/core -type f]`,
+     그것을 가리키는 `core/....html` 경로 문자열 **등장 163회**가 **파일 74개**에
+     흩어져 있다 `[실측 2026-08-02, rg -o "core/[A-Za-z0-9_/.-]+\.html" --glob '*.py'
+     --glob '*.html', .venv·docs/ 제외]`. 게다가 `staff`·`drafts`가 같은 템플릿을
+     공유한다(`templates/core/staff/home_categories.html`,
+     `templates/core/drafts/list.html`) — 뷰 이동과 별개로 훨씬 큰 리네임이다.
+   - ⚠️ 이 수를 다시 쓰기 전에 반드시 재측정하라. 이 항목을 적는 동안 세 번
+     측정해 146·169·163이 나왔는데, 전부 **무엇을 세는지가 달랐기** 때문이다
+     (따옴표 붙은 `core/` 접두 / 정규식 범위 / docs 포함 여부). 파일 수와
+     등장 횟수는 다른 수다.
+   - 나중에 필요한 이유: 디렉터리명과 소유 앱 이름이 어긋나 있으면 다음
+     사람이 템플릿을 어디서 찾을지 헷갈린다.
+   - 트리거 조건: 템플릿 트리를 다른 이유로(구조 개편 등) 손댈 때 함께 처리.
+   - 예상 변경 위치: `templates/core/**`, 각 뷰의 `render()` 호출, 공유
+     템플릿을 참조하는 `staff/`·`drafts/` 뷰.
+   - 관련 테스트: 템플릿 경로를 리터럴로 단언하는 뷰 테스트 전반.
+
+2. **`web/views/archive.py → collection.py` 단방향, `_helpers.py` 리프 — 기계 가드 없음**
+   - 주제: 두 가드레일이 코드로는 지켜지고 있지만 이를 강제하는 자동 테스트가 0건이다.
+   - 범위 밖인 이유: 이번 트랙은 순수 이동(behavior-preserving)이라 새 가드
+     신설은 별도 승인 대상이다.
+   - 나중에 필요한 이유: 문서(`docs/BE/web-views-package.md`)의 경고만으로는
+     다음 사람이 역방향 임포트를 넣어도 아무것도 Red가 되지 않는다.
+   - 트리거 조건: `web/views/` 안에서 순환 임포트 회귀가 실제로 한 번 발생하거나,
+     경계 가드를 다시 손대는 트랙이 열릴 때.
+   - 예상 변경 위치: `tests/core/test_architecture_boundaries.py`에 `web/views/`
+     내부 파일 단위 방향 가드 추가.
+   - 관련 테스트: 위와 동일 파일, `docs/BE/web-views-package.md`의 Guardrail 3.
+
+3. **`tests/core/test_error_logging_policy.py`의 `_production_python_files`에 공허 통과 방지 `assert` 추가**
+   - 주제: `_domain_source_files`(경계 가드)와 달리 이 함수는 스캔 결과가
+     0개여도 조용히 통과한다. 앱 이름 오탈자를 넣어도 안 잡힌다.
+   - 범위 밖인 이유: C4 트랙은 뷰 이동에 한정됐고, 이 함수는 이번에 손댄
+     대상이 아니다.
+   - 나중에 필요한 이유: `web` 같은 새 로컬 앱이 이 함수의 스캔 대상 목록에
+     빠진 채로 방치돼도 감지되지 않는다 — R1의 "오탈자도 실패" 관례와 어긋난다.
+   - 트리거 조건: 이 가드를 다시 손대는 트랙, 또는 새 로컬 앱을 추가할 때.
+   - 예상 변경 위치: `tests/core/test_error_logging_policy.py`의
+     `_production_python_files`.
+   - 관련 테스트: `tests/core/test_architecture_boundaries.py`의
+     `test_스캔_대상이_없는_root는_공허하게_통과하지_않고_실패한다` 계열을 참고 패턴으로.
+
+4. **`tests/` 디렉터리 재배치(`tests/web/`)**
+   - 주제: 뷰가 `web/`로 옮겨갔지만 관련 테스트는 여전히 `tests/core/`·
+     `tests/events/`·`tests/archive/` 등에 흩어져 있다.
+   - 범위 밖인 이유: `pytest.ini`에 이미 `web` 마커가 있어, 디렉터리 이동을
+     섣불리 하면 `-m web`(마커)과 `tests/web/`(경로)의 의미가 갈라진다 —
+     둘의 관계를 먼저 정의해야 한다.
+   - 나중에 필요한 이유: "파일명 = 검증 계층" 관례(E3)를 프레젠테이션 계층
+     테스트에도 적용하려면 위치가 뷰의 새 소유 앱과 맞아야 한다.
+   - 트리거 조건: `pytest.ini`의 `web` 마커 의미를 먼저 확정하는 결정이 나올 때.
+   - 예상 변경 위치: `tests/core/test_*view*.py` 등 `web/views/`를 검증하는
+     파일들의 위치, `pytest.ini`.
+   - 관련 테스트: 해당 파일들 자체 — 이동은 `git mv`로 이력을 보존해야 한다.
+
 ---
 
 ## F. 운영·위생

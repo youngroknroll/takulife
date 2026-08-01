@@ -1,4 +1,4 @@
-"""방문 기록 수정 페이지(core.views.archive_visit_edit) 테스트.
+"""방문 기록 수정 페이지(web.views.archive_visit_edit) 테스트.
 
 본인 소유 기록만 접근 가능하며 수정 가능한 필드를 미리 채운다. 대상은 읽기
 전용으로 표시되고, 실제 수정은 visit_edit.js가 호출하는 PATCH/사진 API로

@@ -147,8 +147,8 @@ def delete_account(request):
 
     accounts.views에서 이곳으로 옮겨왔다: GET이 삭제 대상 요약을 위해
     archive 카운트를 읽어야 하는데 accounts는 archive를 임포트할 수 없어서
-    (tests/core/test_architecture_boundaries.py 참고) — core/views/가 경계
-    가드가 허용하는 유일한 도메인 조합 지점이다. 비밀번호 잠금 보안
+    (tests/core/test_architecture_boundaries.py 참고) — web/views/가 프레젠테이션
+    조립을 위해 도메인 앱을 임포트할 수 있는 계층이다. 비밀번호 잠금 보안
     규칙 자체는 여전히 accounts.services가 소유한다
     (is_delete_locked / register_failed_delete_attempt).
 

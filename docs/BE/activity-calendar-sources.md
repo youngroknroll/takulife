@@ -7,7 +7,7 @@
 
 ## Decision — 상태 테이블 우선 (사용자 결정, 2026-07-31, A안)
 
-`core/views/activity.py`의 `_ACTIVITY_TYPE_GROUPS`에서 `"visit"`와 `"goods"`
+`web/views/activity.py`의 `_ACTIVITY_TYPE_GROUPS`에서 `"visit"`와 `"goods"`
 그룹은 각각 `VISIT_KIND`, `GOODS_ACQUIRED_KIND`만 가리킨다. 대응하는 행동
 로그 kind(`VISIT_RECORD_CREATED`, `COLLECTION_ITEM_CREATED`,
 `COLLECTION_ITEM_ORGANIZED`)는 이 딕셔너리에 없다.
@@ -18,7 +18,7 @@
 
 ## Guardrail — 계층 경계
 
-이 규칙은 웹 계층(`core/views/activity.py`)에 있다. `archive/queries.py`의
+이 규칙은 웹 계층(`web/views/activity.py`)에 있다. `archive/queries.py`의
 `list_user_activity_for_month`는 손대지 않았고, 계약대로 5개 출처 원자료를
 그대로 반환한다("달력 표시 가능한 원자료 전체"). 어떤 kind를 실제로 그릴지는
 웹 계층 책임이다.

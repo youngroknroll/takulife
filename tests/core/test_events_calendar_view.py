@@ -2,9 +2,9 @@
 CAL-5-01(Activity 전용, 다음 회차)을 뺀 CAL-5-02~5-11.
 
 웹 계층 계약:
-- 쿼리 파라미터 `month=YYYY-MM`(부재 시 오늘의 달, core.views.home/event_list와
+- 쿼리 파라미터 `month=YYYY-MM`(부재 시 오늘의 달, web.views.home/event_list와
   같은 방식으로 `timezone.localdate()`를 읽는다 — tests/events/test_home_view.py의
-  `patch("core.views.events.timezone.localdate", ...)` 관례를 재사용),
+  `patch("web.views.events.timezone.localdate", ...)` 관례를 재사용),
   `date=YYYY-MM-DD`(부재 시 CAL-4-04/05 기본 선택 규칙), 그리고 기존
   q/region/category/status 필터(`/events/`와 같은 파라미터명).
 - 무효한 month/date(파싱 실패, 범위 밖, 존재하지 않는 날짜, 표시 월 밖 날짜)

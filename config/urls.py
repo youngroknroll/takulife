@@ -132,7 +132,7 @@ urlpatterns = [
     # allauth include보다 먼저 등록해 이 명시적 경로들이 항상 먼저 매치되게
     # 한다(현재 allauth 자체 urlconf엔 "delete/"/"settings/" 패턴이 없지만,
     # 나중에 조용히 충돌하는 일을 막아둔다). delete_account는 accounts.views가
-    # 아니라 core.views에 있다 — GET이 archive 카운트가 필요한데 accounts는
+    # 아니라 web.views에 있다 — GET이 archive 카운트가 필요한데 accounts는
     # archive를 임포트할 수 없기 때문(경계 가드).
     path("accounts/delete/", web_views.delete_account, name="account-delete-page"),
     path(

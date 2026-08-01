@@ -1,9 +1,8 @@
 """드래프트 검토 상태 라벨을 템플릿에서 쓰기 위한 필터.
 
 core/templatetags/에 두지 않는 이유: core 공용 모듈 경계 가드가 core/를
-기본 거부로 두고 허용 목록 두 건(core/views/, core/promotion.py)만 도메인
-임포트를 허용한다 — drafts.labels를 끌어오는 필터는 그 목록 밖이라 여기
-drafts/templatetags/에 둔다.
+예외 없는 기본 거부로 둔다 — drafts.labels를 끌어오는 필터가 도메인 앱을
+임포트하므로 core/에 두면 항상 위반이라 drafts/templatetags/에 둔다.
 """
 
 from django import template

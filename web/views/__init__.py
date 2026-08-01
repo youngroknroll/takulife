@@ -1,4 +1,4 @@
-"""core 뷰 패키지. 도메인별 서브모듈을 순수 재노출만 한다."""
+"""web 뷰 패키지. 도메인별 서브모듈을 순수 재노출만 한다."""
 from .account import delete_account, mypage
 from .activity import activity_calendar
 from .archive import (

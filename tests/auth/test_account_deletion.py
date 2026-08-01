@@ -1,4 +1,4 @@
-"""계정 삭제 요청(core.views.account.delete_account — 계정설정 에디토리얼
+"""계정 삭제 요청(web.views.account.delete_account — 계정설정 에디토리얼
 계획 B5에 따라 accounts.views에서 이곳으로 옮겼다. GET 컨텍스트가 이제
 archive 카운트를 읽는데 accounts는 archive를 임포트하면 안 되기 때문이다.
 비밀번호 잠금 보안 규칙 자체는 여전히 accounts.services가 소유한다).

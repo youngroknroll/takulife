@@ -1,7 +1,7 @@
-"""core.views.mypage — /mypage/ SSR 페이지: 로그인 게이트 + 4개 카운트 요약
+"""web.views.mypage — /mypage/ SSR 페이지: 로그인 게이트 + 4개 카운트 요약
 컨텍스트.
 
-4개 카운트는 archive.queries의 기존 집계 함수를 재사용한다(core/views.py의
+4개 카운트는 archive.queries의 기존 집계 함수를 재사용한다(web/views/archive.py의
 archive_* 뷰와 같은 패턴) — 이 파일은 archive.models 원본 행만 준비하고
 렌더된 컨텍스트/응답만 검증하며, 쿼리 계층 자체는 절대 건드리지 않는다
 (테스트 계층 순수성 가드, tests/core/test_architecture_boundaries.py 참고).

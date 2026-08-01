@@ -339,7 +339,7 @@ def find_latest_activity_date_for_query(user, q, *, kinds=None):
     똑같은 (kind, label, date) 규칙을 따르며, `q`(와 `kinds`)로 DB에서
     먼저 좁힌다는 점만 다르다.
 
-    이 함수의 유일한 호출자(core.views.activity_calendar)는 현재
+    이 함수의 유일한 호출자(web.views.activity_calendar)는 현재
     활성화된 type= 필터의 kinds를 그대로 넘긴다. 그래서 화면에서
     숨겨진 kind만 일치하는 날짜로는 이동하지 않는다.
 

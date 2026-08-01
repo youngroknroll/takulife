@@ -12,7 +12,7 @@ from django.utils import timezone
 
 pytestmark = pytest.mark.web
 
-# 실제 "오늘"(django.utils.timezone.localdate())에 고정한다 — core.views.
+# 실제 "오늘"(django.utils.timezone.localdate())에 고정한다 — web.views.
 # archive_interests가 명시적 today 없이 내부에서 쓰는 함수와 동일하다.
 # 날짜를 하드코딩하면 테스트가 다른 날 실행될 때 derive_event_display의
 # 상태/디데이 기준(events/presenters.py)과 어긋나 진행중/예정 픽스처가

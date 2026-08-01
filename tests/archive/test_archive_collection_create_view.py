@@ -1,4 +1,4 @@
-"""굿즈 등록 페이지(core.views.archive_collection_item_create) 테스트.
+"""굿즈 등록 페이지(web.views.archive_collection_item_create) 테스트.
 
 검증 대상 동작(컬렉션 도메인 설계 계획 §4 PR-C5b-2, CP-C1~C9):
 - /collection/new/ 는 로그인 필수.

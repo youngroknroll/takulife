@@ -47,7 +47,7 @@ def staff_home_categories(request):
     featured_set = set(config.featured_categories)
     featured_order = {slug: idx + 1 for idx, slug in enumerate(config.featured_categories)}
 
-    # 게시된 이벤트 수 집계 패턴은 core/views/events.py의 홈 카테고리 타일과 같다(B6).
+    # 게시된 이벤트 수 집계 패턴은 web/views/events.py의 홈 카테고리 타일과 같다(B6).
     # 강조 카테고리를 고를 때 실제로 얼마나 채워져 있는지 보여준다.
     event_counts = {
         row["category"]: row["count"]

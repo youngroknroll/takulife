@@ -1,4 +1,4 @@
-"""굿즈 수정 페이지(core.views.archive_collection_item_edit) 테스트.
+"""굿즈 수정 페이지(web.views.archive_collection_item_edit) 테스트.
 
 검증 대상 동작(컬렉션 도메인 설계 계획 §4 PR-C5b-2, CP-E1~E3, 그리고
 코치의 "등록+수정" 범위 지침에 따라 등록 페이지의 C8/C9 숨김 필드 가드를
