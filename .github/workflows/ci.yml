@@ -123,7 +123,7 @@ jobs:
       # can reach the postgres service container, which GitHub Actions
       # publishes onto localhost:5432 of the runner (not a separate Docker
       # network the built image would otherwise share).
-      - name: Boot container and wait for /health/
+      - name: Boot container and wait for /api/health/
         run: |
           set -o pipefail
 
@@ -142,12 +142,12 @@ jobs:
 
           status=0
           for attempt in $(seq 1 30); do
-            if curl -fsS "http://localhost:8000/health/" > /dev/null 2>&1; then
+            if curl -fsS "http://localhost:8000/api/health/" > /dev/null 2>&1; then
               echo "Health check passed on attempt ${attempt}"
               break
             fi
             if [ "$attempt" -eq 30 ]; then
-              echo "::error::/health/ did not return 200 within the timeout"
+              echo "::error::/api/health/ did not return 200 within the timeout"
               status=1
             fi
             sleep 2
@@ -168,11 +168,11 @@ jobs:
             ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null || echo "neither ss nor netstat is available"
 
             echo "---- diagnostics: one more request, nothing discarded ----"
-            http_code=$(curl -sS -o /tmp/health-body.txt -w '%{http_code}' "http://localhost:8000/health/")
+            http_code=$(curl -sS -o /tmp/health-body.txt -w '%{http_code}' "http://localhost:8000/api/health/")
             echo "curl exit code: $?"
             echo "HTTP status code: ${http_code}"
             echo "---- response headers ----"
-            curl -sS -D - -o /dev/null "http://localhost:8000/health/" 2>&1 || true
+            curl -sS -D - -o /dev/null "http://localhost:8000/api/health/" 2>&1 || true
             echo "---- response body ----"
             cat /tmp/health-body.txt 2>/dev/null || echo "(no body captured)"
           fi
