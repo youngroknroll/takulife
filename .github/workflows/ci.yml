@@ -94,8 +94,67 @@ jobs:
   docker:
     name: Docker build (no push)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: taku
+          POSTGRES_USER: taku
+          POSTGRES_PASSWORD: taku
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taku -d taku"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
       - name: Build image
         run: docker build -t takulife:ci .
+
+      # Actually boot the built image against the postgres service instead of
+      # only proving `docker build` succeeds — this exercises the real deploy
+      # path (entrypoint.sh: migrate -> collectstatic -> gunicorn) so entrypoint
+      # regressions (permissions, paths, migrate/collectstatic failures,
+      # gunicorn not starting) surface here instead of on first deploy.
+      # --network host puts the container on the runner host's network so it
+      # can reach the postgres service container, which GitHub Actions
+      # publishes onto localhost:5432 of the runner (not a separate Docker
+      # network the built image would otherwise share).
+      - name: Boot container and wait for /health/
+        run: |
+          set -o pipefail
+
+          # Throwaway, structurally-valid-but-obviously-fake SECRET_KEY (same
+          # low-entropy repeating pattern as the deploy checklist step above)
+          # so a secret scanner doesn't mistake it for a real credential.
+          SECRET_KEY="docker-smoke-$(printf '0123456789abcdef%.0s' 1 2 3 4)"
+
+          docker run -d --name takulife-smoke \
+            --network host \
+            -e DATABASE_URL="postgresql://taku:taku@localhost:5432/taku" \
+            -e SECRET_KEY="$SECRET_KEY" \
+            -e ALLOWED_HOSTS="localhost" \
+            -e DEBUG="false" \
+            takulife:ci
+
+          status=0
+          for attempt in $(seq 1 30); do
+            if curl -fsS "http://localhost:8000/health/" > /dev/null 2>&1; then
+              echo "Health check passed on attempt ${attempt}"
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "::error::/health/ did not return 200 within the timeout"
+              status=1
+            fi
+            sleep 2
+          done
+
+          echo "---- container logs (takulife-smoke) ----"
+          docker logs takulife-smoke
+          docker rm -f takulife-smoke
+
+          exit "$status"
