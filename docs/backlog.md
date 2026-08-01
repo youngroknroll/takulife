@@ -1,6 +1,6 @@
 # takulife 백로그
 
-기준일: 2026-08-01 · 기준 커밋: main `b43957c`
+기준일: 2026-08-01 · 기준 커밋: main `1d68451`
 
 ## 이 문서에 대하여
 
@@ -19,7 +19,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `[실측 2026-08-01 · main b43957c]` `uv run pytest -q` → **2150 passed**. PR #276~#278의 가드가 6건을 더했다 |
+| 백엔드 회귀 | `[실측 2026-08-01 · 브랜치 chore/ops-hygiene-sweep]` `uv run pytest -q` → **2155 passed**. F5 스로틀 4건과 F9 잠금 1건이 늘었다 |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건** (보안·운영 검토 모두) |
@@ -716,13 +716,51 @@ if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
 |---|---|---|---|
 | F1 | ~~worktree 2개 삭제~~ (해소됨) | `[실측 2026-08-01]` `git worktree list` → 작업 트리 1개뿐. 언젠가 정리됐다 | 해소 |
 | F2 | ~~런북 줄번호 드리프트~~ (해소됨) | `docs/deploy-runbook.md:58`이 참조하던 `core/views.py:728-735`는 PR #251의 `core/views/` 패키지 분할로 파일 자체가 사라져 드리프트가 더 악화됐었음. 참조를 `core/urls.py`, `core/views/system.py`의 `health()`로 줄번호 없이 재작성해 파일 이동·리팩터에도 무효화되지 않게 함 | 해소 |
-| F3 | CI 컨테이너 기동 스모크 부재 | `.github/workflows/ci.yml:94-101`이 `docker build`만 실행 | entrypoint 회귀를 첫 배포에야 발견 |
-| F4 | `project-status.md` 2334줄 / 사실과 다른 7곳 | 머지된 PR #250을 "열림, 머지 승인 대기"로 기재 등 | 자기 규약("concise index") 위반 |
-| F5 | 스로틀 미적용 엔드포인트 4개 | `archive/views.py:74,101,145,290` vs `config/settings.py:521-525` | 배포 후 개선 |
+| F3 | ~~CI 컨테이너 기동 스모크 부재~~ (**해결됨 2026-08-01**) | `docker` 잡이 postgres 서비스를 붙이고 이미지를 실제로 띄워 `/health/` 200을 폴링한다. `migrate`를 건너뛰지 않아 실제 배포 경로를 탄다 | 아래 주석 참고 |
+| F4 | ~~`project-status.md` 2334줄 / 사실과 다른 7곳~~ (**해결됨 2026-08-01**) | `docs/pr-log.md`(추적됨)로 이관하고 `.docs/project-status.md`는 삭제했다. `AGENTS.md`·`CLAUDE.md`에 갱신 의무를 명문화 | 아래 주석 참고 |
+| F5 | ~~스로틀 미적용 엔드포인트 4개~~ (**해결됨 2026-08-01**) | 생성 엔드포인트 4개에 `ScopedRateThrottle` 적용(POST 한정). 레이트는 `config/settings.py`의 `DEFAULT_THROTTLE_RATES` | 아래 주석 참고 |
 | F6 | SSRF DNS 리바인딩 TOCTOU | `drafts/fetching.py:61,70-71` | **수집 플래그를 켜기 전** 반드시 |
 | F7 | 실사용 데이터 이후 스키마 변경 가이드 부재 | `archive/migrations/0011~0013,0019` 비-concurrent | 두 번째 배포부터 유효 |
 | F8 | ~~드래프트 상태 라벨 하드코딩~~ (**해결됨 2026-08-01, PR #278**) | 정본은 `drafts/labels.py`의 `REVIEW_STATUS_LABELS`. 템플릿은 `drafts/templatetags/draft_labels.py` 필터로, JS는 `json_script`로 서버가 내려준 값을 읽는다 | 해결. 아래 주석 참고 |
-| F9 | `staff_event_toggle_publish`에 `select_for_update` 없음 | `staff/views/events.py:417` | 보안 검토 Low. D3 연타 가드가 브라우저 쪽을 막고 있어 노출은 낮다 (PR #275 이월) |
+| F9 | ~~`staff_event_toggle_publish`에 `select_for_update` 없음~~ (**해결됨 2026-08-01**) | `atomic()` 안에서 잠그고 다시 읽어 분기한다. `redirect_url`이 함수 인자 `pk`를 쓰게 해 사전 읽기 자체를 없앴다 | 아래 주석 참고 |
+| F10 | `staff_event_edit`의 lost-update 여지 | `staff/views/events.py`의 수정 저장 경로 | `[코드]` **토글 패턴은 아니다** — 제출된 폼 값으로 절대 덮어쓴다. 동시 편집 시 마지막 쓰기가 이기는 것뿐이라 F9보다 위험도가 낮다. F9 작업 중 발견(2026-08-01) |
+
+**F3 주석 — 이 항목의 실검증은 CI뿐이다.** 로컬에 Docker가 없어 스모크를 재현할 수
+없었다. **머지 전 PR의 `docker` 잡 결과를 반드시 확인해야 한다.**
+
+★ **기존 가드가 내 변경을 잡았다.** `docker` 잡에는 `uv sync`가 없어 처음엔 `python3 -c`로
+`SECRET_KEY`를 만들었는데, `tests/core/test_ci_command_policy.py`가 **`Deployment
+checklist` 스텝 이후 전체 텍스트**에서 `python3 -c`를 금지한다. 가드 범위가 스텝 단위가
+아니라 생긴 충돌이다. **가드를 고치지 않고** 셸 `printf '...%.0s'`로 바꿔 python 호출
+자체를 없앴다.
+
+**F4 주석 — 왜 방치됐는지가 핵심이었다.** 파일이 낡은 게 아니라 **규약이 갱신을
+금지하고 있었다**: `AGENTS.md:40`이 "Optional", `:540`이 "Do not create a routine work
+log", `CLAUDE.md:43`이 "never as durable project state". PR마다 갱신하는 것은 규약이
+명시적으로 금지한 work log였다. **파일만 손댔으면 다음 세션이 또 안 썼다.**
+
+사용자 결정(2026-08-01): ①PR 이력을 `docs/`로 올려 git이 추적한다 ②형식은 롤링
+(최신 1건만 상세, 이전은 번호+제목) ③**교훈 정본은 계속 메모리** — pr-log에 회고를
+옮겨 적지 않는다.
+
+⚠️ `AGENTS.md`에서 "no routine work log"와 새 pr-log 의무가 **충돌해 보이지 않도록
+갈라 썼다** — 전자는 `docs/BE`·`DB`·`FE` 주제 문서에 적용되고, pr-log는 시간순 이력이라
+예외라고 명시했다.
+
+★ **초안의 한 줄 요약이 브랜치명 추측이라 틀렸다.** #277을 "보유/**구함**/교환 축"이라
+적었는데 `is_wanted`는 그 작업의 **명시적 범위 밖**이었다. `gh pr list --state merged
+--json number,title`이 실제 제목을 주므로 추측할 이유가 없다. 148항목을 실제 제목으로
+교체하고 **스크립트로 전수 대조해 불일치 0건**을 확인했다.
+
+**F5 주석 — 레이트 근거.** 찜(`event_interest_create`)과 상태(`user_event_status_create`)는
+목록에서 연달아 누르는 동작이라 **60/minute**, 폼 기반인 직접등록·사진은 기존과 같은
+**30/minute**. 기존 주석이 밝힌 기준("정상 사용이 아니라 bfcache식 중복 제출 폭주와
+스팸을 막는 것")을 그대로 따랐다. 읽기(GET)는 제한하지 않는다 — 기존 두 뷰의
+`get_throttles()` 관용이다.
+
+**F9 주석 — 테스트 방식.** 진짜 스레드 동시성은 깜빡이기 쉬워 만들지 않았다. 대신
+`CaptureQueriesContext`로 **실행된 SQL에 `FOR UPDATE`가 있는지** 단언했다 —
+결정적이고 빠르다. 뮤테이션 왕복 확인(잠금 제거 → 1건 Red).
 
 **F8 주석 — 실측 지점 수가 서술보다 많았다.** 「템플릿 3곳」이 아니라 같은 3분기
 블록이 **5곳**이었다(`list.html` 2 + `detail.html` 3). JS까지 6곳.
