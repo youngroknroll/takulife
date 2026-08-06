@@ -123,7 +123,7 @@ class PersonalEntry(models.Model):
     class PromotionStatus(models.TextChoices):
         # ""=공식 검수에 제출된 적 없음, "submitted"=검수용 초안이 생성됨.
         # archive는 drafts에 의존하면 안 되므로 drafts를 향한 FK가 아니라
-        # 중립적인 core.promotion 조정자가 이 값을 설정한다.
+        # 중립적인 web.promotion 조정자가 이 값을 설정한다.
         NONE = "", "None"
         SUBMITTED = "submitted", "Submitted"
 

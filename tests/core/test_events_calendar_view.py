@@ -2,9 +2,9 @@
 CAL-5-01(Activity 전용, 다음 회차)을 뺀 CAL-5-02~5-11.
 
 웹 계층 계약:
-- 쿼리 파라미터 `month=YYYY-MM`(부재 시 오늘의 달, core.views.home/event_list와
+- 쿼리 파라미터 `month=YYYY-MM`(부재 시 오늘의 달, web.views.home/event_list와
   같은 방식으로 `timezone.localdate()`를 읽는다 — tests/events/test_home_view.py의
-  `patch("core.views.events.timezone.localdate", ...)` 관례를 재사용),
+  `patch("web.views.events.timezone.localdate", ...)` 관례를 재사용),
   `date=YYYY-MM-DD`(부재 시 CAL-4-04/05 기본 선택 규칙), 그리고 기존
   q/region/category/status 필터(`/events/`와 같은 파라미터명).
 - 무효한 month/date(파싱 실패, 범위 밖, 존재하지 않는 날짜, 표시 월 밖 날짜)
@@ -207,7 +207,7 @@ def test_month_파라미터가_없으면_오류_없이_당월이_표시된다(ma
     fixed_today = date(2026, 7, 19)
     make_event(title="당월기본표시행사", start_date=fixed_today, end_date=fixed_today)
 
-    with patch("core.views.events.timezone.localdate", return_value=fixed_today):
+    with patch("web.views.events.timezone.localdate", return_value=fixed_today):
         resp = Client().get("/events/calendar/")
 
     assert resp.status_code == 200
@@ -289,7 +289,7 @@ def test_월_조회가_실패하면_500대신_오류_패널과_재시도_안내�
     def _raise(*args, **kwargs):
         raise RuntimeError("월 조회 실패 주입")
 
-    monkeypatch.setattr("core.views.events.list_published_events_for_month", _raise)
+    monkeypatch.setattr("web.views.events.list_published_events_for_month", _raise)
 
     resp = Client().get("/events/calendar/")
 

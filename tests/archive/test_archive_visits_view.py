@@ -1,4 +1,4 @@
-"""다녀온 기록 페이지(core.views.archive_visits) 테스트.
+"""다녀온 기록 페이지(web.views.archive_visits) 테스트.
 
 방문 기록 추가 드롭다운은 게시된 모든 행사가 아니라 사용자가 방문 예정으로
 등록한 행사만 보여준다.

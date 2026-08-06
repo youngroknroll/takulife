@@ -1,4 +1,4 @@
-"""core 뷰 패키지. 도메인별 서브모듈을 순수 재노출만 한다."""
+"""web 뷰 패키지. 도메인별 서브모듈을 순수 재노출만 한다."""
 from .account import delete_account, mypage
 from .activity import activity_calendar
 from .archive import (
@@ -21,7 +21,7 @@ from .collection import (
     archive_collection_items,
 )
 from .events import event_calendar, event_detail, event_list, home
-from .system import api_root, health, legal_privacy, legal_terms
+from .legal import legal_privacy, legal_terms
 
 __all__ = [
     "home",
@@ -48,6 +48,4 @@ __all__ = [
     "delete_account",
     "legal_privacy",
     "legal_terms",
-    "api_root",
-    "health",
 ]

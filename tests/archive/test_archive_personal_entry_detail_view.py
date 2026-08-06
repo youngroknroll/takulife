@@ -1,5 +1,5 @@
 """비공식 장소(PersonalEntry) 읽기 전용 상세 페이지 테스트
-(core.views, URL 이름 "archive-personal-entry-detail-page").
+(web.views, URL 이름 "archive-personal-entry-detail-page").
 
 이 페이지는 PersonalEntry의 제목과, 별도로 `resp.context["is_submitted"]`를 통해
 현재 공식 제보 상태를 보여준다. 소유자 범위로 제한되어 타인의 요청은 404, 비로그인
@@ -253,7 +253,7 @@ class TestArchivePersonalEntryDetailVisitRecords:
 class TestArchivePersonalEntryDetailStatusLabel:
     """PD-12: 목록 뷰(archive_personal_entries)는 이미 어휘 정본
     archive_status_label()로 status_label/planned_label을 계산해 넘긴다
-    (core/views/archive.py:492-493). 상세 뷰가 같은 문구를 템플릿 안에
+    (web/views/archive.py:487-488). 상세 뷰가 같은 문구를 템플릿 안에
     if/elif로 하드코딩하면, vocab을 고칠 때 목록은 따라가고 상세는
     안 따라가는 드리프트가 생긴다. 두 케이스의 Given 차이는 상태 유무뿐이므로
     파라미터화한다.

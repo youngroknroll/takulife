@@ -1,4 +1,4 @@
-"""공개 목록 화면 뷰(core.views.event_list)를 검증한다.
+"""공개 목록 화면 뷰(web.views.event_list)를 검증한다.
 
 검증 대상 동작: 유효하지 않거나 일치하지 않는 필터 값은 빈 상태
 ("행사 없음")로 렌더링되며, 오류 화면으로 이어지지 않는다. JSON API는
@@ -67,7 +67,7 @@ class TestEventListInvalidFilters:
         status가 ValidationError나 빈 상태로 이어지면 안 되고, 다른 필터(여기선
         region)와도 여전히 함께 동작해야 한다.
 
-        core/views.py::event_list는 비어있는 status를 "active"로 기본
+        web/views/events.py::event_list는 비어있는 status를 "active"로 기본
         처리한다 — 빈 status가 더는 "필터 없음"을 뜻하지 않는다는 계약은
         아래 test_사이드바_폼의_빈_상태_값도_기본적으로_진행_예정만_남긴다가 검증한다.
         이 테스트는 "빈 값이 오류를 내지 않는다"는 부분만 지킨다."""
@@ -107,7 +107,7 @@ class TestEventListInvalidFilters:
 @pytest.mark.django_db
 class TestEventListAuthenticatedRows:
     """로그인한 사용자 본인의 상태/찜 여부가 목록 카드에 반영된다
-    (core.views._attach_display의 인증 분기)."""
+    (web.views.events._attach_display의 인증 분기)."""
 
     def test_로그인_사용자가_행사_목록을_보면_카드에_본인_상태와_찜_여부가_반영된다(
         self, make_event, make_user
@@ -182,7 +182,7 @@ class TestEventListPagerQEncoding:
 
     /events/의 페이지네이션은 공용 페이저 파셜(templates/core/partials/_pager.html)이
     렌더링하며, 그 extra_query는 urllib.parse.urlencode(quote_plus 방식)로
-    만들어진다 — 다른 7개 페이지네이션 목록과 같은 인코딩이다(core/views.py:857).
+    만들어진다 — 다른 7개 페이지네이션 목록과 같은 인코딩이다(web/views/events.py:248).
     이전에 대체된 인라인 페이저는 Django `|urlencode` 템플릿 필터(quote 방식)를
     썼는데, '+'/공백을 +가 아니라 %2B/%20으로 이스케이프했다. 두 방식 모두
     원본 문자열로 손실 없이 왕복되므로, 아래 '+'/공백 케이스는 특정 인코딩
@@ -319,7 +319,7 @@ class TestEventListDefaultExcludesClosed:
 
 @pytest.mark.django_db
 class TestEventListExplicitStatusGuard:
-    """core/views.py::event_list는 요청에 status 파라미터가 없거나 빈 경우에만
+    """web/views/events.py::event_list는 요청에 status 파라미터가 없거나 빈 경우에만
     status="active"를 주입한다. 이 두 테스트는 그 if-가드 자체를 지킨다:
     사이드바/칩 UI가 보낸 명시적인 status 값은 그대로 통과해야 하고 조용히
     덮어써지면 안 된다."""

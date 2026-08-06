@@ -30,7 +30,7 @@ def account_settings(request):
 
 @never_cache
 def delete_account_done(request):
-    """탈퇴 완료 안내. core.views.account.delete_account가 logout() 이후
+    """탈퇴 완료 안내. web.views.account.delete_account가 logout() 이후
     세션에 적재한 신청 시각·삭제 예정일을 pop해서 보여준다 — 세션 키가
     없으면(직접 URL 접근) 홈으로 보낸다. 세션은 JSON 직렬화라 datetime을 그대로
     왕복시키지 못하므로 ISO 문자열로 저장했다가 여기서 다시 파싱한다.

@@ -1,4 +1,4 @@
-"""core.views.legal_privacy / legal_terms — 법적 안내 페이지 두 개(/legal/privacy/,
+"""web.views.legal_privacy / legal_terms — 법적 안내 페이지 두 개(/legal/privacy/,
 /legal/terms/)에 대한 스모크 검증.
 
 인증이 필요 없는 렌더 전용 뷰다. 일부러 전체 내용을 단언하지 않고 200과

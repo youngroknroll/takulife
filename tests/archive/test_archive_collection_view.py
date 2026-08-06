@@ -1,4 +1,4 @@
-"""컬렉션 목록 페이지(core.views.archive_collection_items) 테스트.
+"""컬렉션 목록 페이지(web.views.archive_collection_items) 테스트.
 
 검증 대상 동작(컬렉션 도메인 설계 계획 §4 PR-C5b-2, CP-L1~L22):
 - /collection/ 은 로그인 필수, 소유자 범위, 10개 단위 페이지네이션.
@@ -18,7 +18,7 @@ import pytest
 
 from archive.models import CollectionItem
 from archive.queries import ARCHIVE_COLLECTION_PAGE_SIZE
-from core.views.collection import _collection_item_row, _series_ink_classes
+from web.views.collection import _collection_item_row, _series_ink_classes
 
 pytestmark = pytest.mark.web
 

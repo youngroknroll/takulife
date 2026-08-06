@@ -1,4 +1,4 @@
-"""홈 화면 뷰 컨텍스트(core.views.home)를 검증한다.
+"""홈 화면 뷰 컨텍스트(web.views.home)를 검증한다.
 
 다루는 범위:
 - "카테고리로 둘러보기" 타일: 어휘 순서대로 카테고리마다 타일 1개, 각각
@@ -83,21 +83,21 @@ class TestHomeContextCaps:
     def test_진행중_행사가_15건을_넘으면_홈_화면에_15건까지만_노출된다(self, make_event):
         today = date(2026, 6, 26)
         self._make_ongoing(make_event, today, 16)
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["ongoing_rows"]) == 15
 
     def test_신규_행사가_15건을_넘으면_홈_화면에_15건까지만_노출된다(self, make_event):
         today = date(2026, 6, 26)
         self._make_recent(make_event, 16)
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["recent_rows"]) == 15
 
     def test_마감_임박_행사가_15건을_넘으면_홈_화면에_15건까지만_노출된다(self, make_event):
         today = date(2026, 6, 26)
         self._make_closing(make_event, today, 16)
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
         assert len(resp.context["closing_rows"]) == 15
 
@@ -121,7 +121,7 @@ class TestHomeClosingWindow:
             start_date=today - timedelta(days=1),
             end_date=today + timedelta(days=5),
         )
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
         closing_ids = [row["event"].id for row in resp.context["closing_rows"]]
         assert event.id in closing_ids
@@ -133,7 +133,7 @@ class TestHomeClosingWindow:
             start_date=today - timedelta(days=1),
             end_date=today + timedelta(days=6),
         )
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
         closing_ids = [row["event"].id for row in resp.context["closing_rows"]]
         assert event.id not in closing_ids
@@ -155,7 +155,7 @@ class TestHomeSlidersDropEndedEvents:
             start_date=today - timedelta(days=1),
             end_date=today + timedelta(days=3),
         )
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
         recent_ids = [row["event"].id for row in resp.context["recent_rows"]]
         assert ended.id not in recent_ids
@@ -164,7 +164,7 @@ class TestHomeSlidersDropEndedEvents:
     def test_종료일이_없는_행사는_신규_행사_목록에서_계속_유지된다(self, make_event):
         today = date(2026, 6, 26)
         no_dates = make_event(title="No dates")
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
         recent_ids = [row["event"].id for row in resp.context["recent_rows"]]
         assert no_dates.id in recent_ids
@@ -188,7 +188,7 @@ class TestHomePosterSectionsAlwaysRenderSlider:
                 start_date=today - timedelta(days=1),
                 end_date=today + timedelta(days=i % 5 + 1),
             )
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
 
         assert len(resp.context["closing_rows"]) == 3
@@ -216,7 +216,7 @@ class TestHomeClosingStatusDivergence:
             start_date=today - timedelta(days=1),
             end_date=today + timedelta(days=5),
         )
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
         closing_rows = resp.context["closing_rows"]
         d5_rows = [r for r in closing_rows if r["event"].title == "D+5 boundary"]
@@ -324,7 +324,7 @@ class TestHomeCollectionSnapshotContext:
 
         client = Client()
         client.force_login(user)
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = client.get("/")
 
         assert resp.context["collection_summary"] == {
@@ -383,7 +383,7 @@ class TestHomeCollectionSnapshotContext:
 
         client = Client()
         client.force_login(user)
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             resp = client.get("/")
 
         assert len(resp.context["upcoming_planned"]) == 4
@@ -427,7 +427,7 @@ class TestHomeCollectionSnapshotContext:
 
         client = Client()
         client.force_login(user)
-        with patch("core.views.events.timezone.localdate", return_value=today):
+        with patch("web.views.events.timezone.localdate", return_value=today):
             client.get("/")
             client.get("/")
 

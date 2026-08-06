@@ -37,7 +37,7 @@ def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스�
         calls.append(1)
         raise RuntimeError("simulated view failure")
 
-    monkeypatch.setattr("core.views.events.list_published_events", _boom)
+    monkeypatch.setattr("web.views.events.list_published_events", _boom)
     client.raise_request_exception = False
 
     resp = client.get("/")

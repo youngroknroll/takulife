@@ -48,6 +48,6 @@ PATCH를 여는 순간 **멱등 키가 함께 열렸다.** `client_token`은 모
 
 ## 공식 제보와의 관계 — 제약 없음
 
-제보(`core/promotion.py`)는 제출 시점에 `title`·`category`·`work_title`·
+제보(`web/promotion.py`)는 제출 시점에 `title`·`category`·`work_title`·
 `location_name`·`region`·`memo`를 **드래프트로 복사한다.** 따라서 제보 후 항목을
 수정해도 검수 중인 드래프트와 어긋나지 않는다. 이 방향으로 PATCH를 제한할 이유가 없다.

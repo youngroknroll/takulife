@@ -272,6 +272,7 @@ INSTALLED_APPS = [
     "archive",
     "core",
     "staff",
+    "web",
 ]
 
 MIDDLEWARE = [

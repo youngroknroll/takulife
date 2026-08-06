@@ -1,4 +1,4 @@
-"""읽기 전용 굿즈 상세 페이지(core.views, `archive_collection_item_detail`,
+"""읽기 전용 굿즈 상세 페이지(web.views, `archive_collection_item_detail`,
 URL 이름 "collection-detail-page", 라우트 `/collection/<int:item_id>/`) 테스트.
 
 이 페이지는 소유자 범위다: 소유자가 아니면 404, 비로그인이면 로그인으로

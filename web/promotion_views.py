@@ -1,7 +1,8 @@
 """공식 제보 API 엔드포인트 — POST /api/personal-entries/<pk>/promote/.
 
 승격은 archive→drafts를 연결하는데 도메인 경계상 archive 앱 안에서는
-이게 금지되므로 (``archive``가 아니라) ``core``에 둔다.
+이게 금지된다. archive/drafts 양쪽을 모두 볼 수 있는 프레젠테이션·교차도메인
+계층인 ``web``이 이 오케스트레이션의 자리다.
 """
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +11,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from core.errors import error_response, field_error_response
-from core.promotion import (
+from web.promotion import (
     PromotionAlreadySubmittedError,
     PromotionDuplicateError,
     PromotionKindNotAllowedError,

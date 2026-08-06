@@ -1,4 +1,4 @@
-"""방문 기록 작성 전용 페이지(core.views.archive_visit_create) 테스트.
+"""방문 기록 작성 전용 페이지(web.views.archive_visit_create) 테스트.
 
 /archive/visits/new/ 는 기존 인라인 폼과 같은 대상 선택지(본인 참석예정 행사 +
 본인 직접 등록 항목)를 보여주며 로그인이 필요하다.

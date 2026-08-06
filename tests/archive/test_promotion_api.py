@@ -1,7 +1,7 @@
 """API — POST /api/personal-entries/<id>/promote/
 
 비공개 PersonalEntry를 관리자 드래프트 검수 파이프라인으로 승격한다(오케스트레이션
-자체는 core.promotion.promote_personal_entry 참고, tests/archive/
+자체는 web.promotion.promote_personal_entry 참고, tests/archive/
 test_promotion_service.py에서 직접 테스트됨). 관리자가 시드된 드래프트를 승인해
 공개 Event로 만들기 전까지 항목은 비공개로 유지된다.
 """

@@ -1,4 +1,4 @@
-"""읽기 전용 방문 기록 상세 페이지(core.views, URL name "archive-visit-detail-page")
+"""읽기 전용 방문 기록 상세 페이지(web.views, URL name "archive-visit-detail-page")
 테스트.
 
 본인 소유 기록만 접근 가능하며, 대상·날짜·메모·사진과 해당 방문에서 획득한

@@ -21,7 +21,7 @@ from .models import (
 # 유지한다. "interested"는 이제 EventInterest로 분리되어 제외된다.
 ARCHIVE_STATUS_SLUGS: tuple[str, ...] = tuple(UserEventStatus.Status.values)
 
-# archive SSR 목록 페이지(core.views가 렌더링)의 페이지 크기. 이 값이
+# archive SSR 목록 페이지(web.views가 렌더링)의 페이지 크기. 이 값이
 # 제한하는 목록 쿼리 옆에 둔다(events.queries.PUBLIC_LISTING_PAGE_SIZE와
 # 같은 방식).
 ARCHIVE_RECORD_PAGE_SIZE = 10  # 기록장 (/archive/) — 저장한 이벤트

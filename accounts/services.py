@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 DELETION_GRACE_PERIOD = timedelta(days=10)
 
 # 탈퇴 완료 안내(accounts.views.delete_account_done) 전용 세션 키. 신청 시각·
-# 삭제 예정일을 담는 쪽(core.views.account.delete_account)과 읽는 쪽
+# 삭제 예정일을 담는 쪽(web.views.account.delete_account)과 읽는 쪽
 # (accounts.views) 둘 다 이 이름을 공유해야 하므로 양쪽이 이미 임포트하는
 # accounts.services에 둔다. 메시지 프레임워크 대신 전용 키를 쓰는 이유는
 # 키가 없으면(직접 URL 접근) 홈으로 보내 노출을 막기 위해서다.
@@ -31,7 +31,7 @@ DELETE_DONE_SESSION_KEY = "account_delete_done"
 # 탈퇴 화면의 비밀번호 재확인은 이게 없으면 속도 제한이 전혀 없다: axes는
 # 로그인 백엔드에만 걸리고 allauth의 ACCOUNT_RATE_LIMITS도 이 커스텀 뷰를
 # 커버하지 않으므로, 탈취된 세션이 이 카운터 없이는 무한히 비밀번호를
-# 무차별 대입할 수 있다. 탈퇴 뷰 자체는 core/views/account.py로
+# 무차별 대입할 수 있다. 탈퇴 뷰 자체는 web/views/account.py로
 # 옮겨졌지만(archive 카운트를 읽어야 하는데 accounts는 archive를 임포트할
 # 수 없어서) 잠금 보안 규칙은 계속 accounts가 소유한다.
 MAX_DELETE_PASSWORD_ATTEMPTS = 5
