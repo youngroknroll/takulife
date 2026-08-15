@@ -11,11 +11,7 @@
 {% block content %}
   <main class="page home-page" id="content">
     <section class="hero">
-      {% comment %} deck.js가 data-hero-card 조상 요소를 찾아 카드가 넘어갈 때마다
-         배경을 바꾼다. 초기 배경은 popular_rows 첫 항목의 카테고리로 미리 채워
-         deck.js가 처음 그리기 전에 색이 잘못 반짝이지 않게 한다. popular_rows가
-         비어 있으면 CSS 기본값(--brand-soft)이 대신 적용된다. {% endcomment %}
-      <div class="hero-inner" data-hero-card{% if popular_rows %} style="background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ popular_rows.0.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ popular_rows.0.category_slug|slugify }}-soft, var(--brand-soft))) 100%);"{% endif %}>
+      <div class="hero-inner">
         <div class="hero-left">
           <h1>내가 원하는 이벤트를 <span class="hl">한눈에</span></h1>
           <form class="search" action="/events/" method="get">
@@ -33,60 +29,33 @@
           </div>
         </div>
 
-        {% if popular_rows %}
-          <div class="deck-wrap">
-            <div class="deck" data-deck>
-              {% for row in popular_rows %}
-                <a
-                  class="deck-card"
-                  data-deck-card
-                  data-deck-index="{{ forloop.counter0 }}"
-                  data-cardbg="linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft))) 100%)"
-                  href="/events/{{ row.event.id }}/"
-                  tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
-                  style="{% if not row.event.poster_image %}background: linear-gradient(105deg, var(--surface) 12%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft)) 95%, var(--surface)) 40%, color-mix(in srgb, var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink)) 34%, var(--cat-{{ row.category_slug|slugify }}-soft, var(--brand-soft))) 100%);{% endif %}"
-                >
-                  {% if row.event.poster_image %}
-                    <img
-                      class="deck-card-img"
-                      src="{{ row.event.poster_image.url }}"
-                      alt="{{ row.event.title }} 포스터"
-                      loading="lazy"
-                    >
-                  {% else %}
-                    <span class="deck-fill-label" style="color: var(--cat-{{ row.category_slug|slugify }}-ink, var(--brand-ink));" aria-hidden="true">{{ row.category_label }}</span>
-                  {% endif %}
-                  <div class="deck-card-scrim"></div>
-                  <span class="deck-card-eyebrow">이번 주 주목</span>
-                  <div class="deck-card-caption">
-                    {% if row.event.work_title %}<p class="deck-card-work">{{ row.event.work_title }}</p>{% endif %}
-                    <div class="deck-card-caption-row">
-                      <p class="deck-card-title">{{ row.event.title }}</p>
-                      {% if row.dday is not None %}<span class="deck-card-dday">D-{{ row.dday }}</span>{% endif %}
-                    </div>
-                    {% if row.event.start_date and row.event.end_date %}<p class="deck-card-period">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</p>{% elif row.event.start_date %}<p class="deck-card-period">{{ row.event.start_date|date:"Y/m/d" }} -</p>{% endif %}
-                  </div>
-                </a>
-              {% endfor %}
-              {% if popular_rows|length > 1 %}
-                <div class="deck-dots" data-deck-dots>
-                  {% for row in popular_rows %}
-                    <button
-                      type="button"
-                      class="deck-dot{% if forloop.first %} active{% endif %}"
-                      data-deck-dot
-                      data-deck-index="{{ forloop.counter0 }}"
-                      aria-label="{{ forloop.counter }}번 포스터"
-                      aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
-                    ></button>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
+        {% if featured_event_row %}
+          {% with ev=featured_event_row.event %}
+          <div class="hero-featured">
+            <span class="hero-featured-eyebrow">진행 중 · 예정 행사</span>
+            {% if ev.work_title %}<p class="hero-featured-work">{{ ev.work_title }}</p>{% endif %}
+            <h2 class="hero-featured-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
+            <p class="hero-featured-meta">
+              {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}일정 미정{% endif %}
+              <span aria-hidden="true"> · </span>
+              {% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}
+            </p>
+            {% if featured_event_row.status_slug == "ended" %}
+              <p class="hero-featured-status">종료</p>
+            {% elif featured_event_row.status_slug == "closing_soon" %}
+              <p class="hero-featured-status">{% if featured_event_row.dday == 0 %}오늘 종료{% else %}D-{{ featured_event_row.dday }}{% endif %}</p>
+            {% elif featured_event_row.status_slug == "upcoming" %}
+              <p class="hero-featured-status">{% if featured_event_row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ featured_event_row.dday }}{% endif %}</p>
+            {% elif featured_event_row.status_label %}
+              <p class="hero-featured-status">{{ featured_event_row.status_label }}</p>
+            {% endif %}
+            <a class="hero-featured-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
           </div>
+          {% endwith %}
         {% else %}
-          <div class="carousel-empty">
-            <p>표시할 인기 이벤트가 없습니다</p>
+          <div class="hero-featured-empty">
+            <p>새 행사를 준비하고 있어요</p>
+            <a href="/events/">이벤트 둘러보기 ›</a>
           </div>
         {% endif %}
       </div>
@@ -103,15 +72,11 @@
         <a class="section-more" href="/events/?status=ongoing">더보기 ›</a>
       </div>
       {% if ongoing_rows %}
-        <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-ongoing" aria-label="이번 주 눈여겨 볼 이벤트, 이전">&#8249;</button>
-          <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-ongoing" tabindex="0">
-            {% for row in ongoing_rows %}
-              <li>{% include "core/partials/_poster_card.html" with row=row variant="ongoing" %}</li>
-            {% endfor %}
-          </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-ongoing" aria-label="이번 주 눈여겨 볼 이벤트, 다음">&#8250;</button>
-        </div>
+        <ul class="event-compact-list">
+          {% for row in ongoing_rows %}
+            {% include "core/partials/_event_compact_row.html" with row=row heading_level="h3" show_interest=True %}
+          {% endfor %}
+        </ul>
       {% else %}
         <p class="notice">현재 진행 중인 이벤트가 없습니다.</p>
       {% endif %}
@@ -126,15 +91,11 @@
         <a class="section-more" href="/events/?status=closing_soon">더보기 ›</a>
       </div>
       {% if closing_rows %}
-        <div class="hscroll-wrap" data-hscroll data-hscroll-auto>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-closing" aria-label="곧 종료돼요, 이전">&#8249;</button>
-          <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-closing" tabindex="0">
-            {% for row in closing_rows %}
-              <li>{% include "core/partials/_poster_card.html" with row=row variant="closing" %}</li>
-            {% endfor %}
-          </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-closing" aria-label="곧 종료돼요, 다음">&#8250;</button>
-        </div>
+        <ul class="event-compact-list">
+          {% for row in closing_rows %}
+            {% include "core/partials/_event_compact_row.html" with row=row heading_level="h3" show_interest=True %}
+          {% endfor %}
+        </ul>
       {% else %}
         <p class="notice">종료 임박 이벤트가 없습니다.</p>
       {% endif %}
@@ -169,15 +130,11 @@
         <a class="section-more" href="/events/?sort=newest">더보기 ›</a>
       </div>
       {% if recent_rows %}
-        <div class="hscroll-wrap" data-hscroll>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-recent" aria-label="새 이벤트, 이전">&#8249;</button>
-          <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-recent" tabindex="0">
-            {% for row in recent_rows %}
-              <li>{% include "core/partials/_poster_card.html" with row=row variant="recent" %}</li>
-            {% endfor %}
-          </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-recent" aria-label="새 이벤트, 다음">&#8250;</button>
-        </div>
+        <ul class="event-compact-list">
+          {% for row in recent_rows %}
+            {% include "core/partials/_event_compact_row.html" with row=row heading_level="h3" show_interest=True %}
+          {% endfor %}
+        </ul>
       {% else %}
         <p class="notice">등록된 이벤트가 없습니다.</p>
       {% endif %}
@@ -186,6 +143,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script defer src="{% static 'js/components/deck.js' %}"></script>
 <script defer src="{% static 'js/components/hscroll.js' %}"></script>
 {% endblock %}

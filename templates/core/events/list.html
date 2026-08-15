@@ -140,59 +140,53 @@
 
           <div class="event-rows">
             {% for row in event_rows %}
-              <article class="event-row" data-status-error-container
+              <article class="event-index-row" data-status-error-container
                        data-cat="{{ row.category_slug }}" data-tone="{{ row.status_slug }}">
-                <a class="event-row-tile" href="/events/{{ row.event.id }}/" tabindex="-1">
-                  {% if row.event.poster_image %}
-                    <img class="event-row-img" src="{{ row.event.poster_image.url }}" alt="{{ row.event.title }} 포스터" loading="lazy">
+                <div class="event-index-date">
+                  {% if row.event.start_date %}
+                    <time class="event-index-date-value mono-num" datetime="{{ row.event.start_date|date:"Y-m-d" }}">
+                      <span class="event-index-month">{{ row.event.start_date|date:"n월" }}</span>
+                      <span class="event-index-day">{{ row.event.start_date|date:"d" }}</span>
+                    </time>
+                    {% if row.event.end_date and row.event.end_date != row.event.start_date %}
+                      <time class="event-index-date-end mono-num" datetime="{{ row.event.end_date|date:"Y-m-d" }}">– {{ row.event.end_date|date:"n.d" }}</time>
+                    {% endif %}
                   {% else %}
-                    <span class="event-row-initial" aria-hidden="true">{{ row.event.title|slice:":2" }}</span>
-                  {% endif %}
-                </a>
-                <div class="event-row-body">
-                  {% comment %}
-                  Django 템플릿은 괄호를 못 써서 and/or 우선순위대로 해석된다 — 이
-                  래퍼는 안에 span이 하나라도 생길 때만 렌더돼야 하므로, 이 조건을
-                  고칠 때는 두 피연산자를 함께 유지해야 한다.
-                  {% endcomment %}
-                  {% if row.category_label or row.status_label and row.status_slug != 'ongoing' and row.status_slug != 'ended' %}
-                  <p class="event-row-meta">
-                    {% if row.category_label %}
-                      <span class="event-row-cat">{{ row.category_label }}</span>
-                    {% endif %}
-                    {% if row.category_label and row.status_label and row.status_slug != 'ongoing' and row.status_slug != 'ended' %}
-                      <span class="event-row-dot" aria-hidden="true"></span>
-                    {% endif %}
-                    {% if row.status_label and row.status_slug != 'ongoing' and row.status_slug != 'ended' %}
-                      <span class="event-row-tone">{{ row.status_label }}</span>
-                    {% endif %}
-                  </p>
-                  {% endif %}
-                  <h2 class="event-row-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
-                  {% if row.region_label and row.event.location_name %}
-                    <p class="event-row-place">{{ row.region_label }} · {{ row.event.location_name }}</p>
-                  {% elif row.region_label %}
-                    <p class="event-row-place">{{ row.region_label }}</p>
-                  {% elif row.event.location_name %}
-                    <p class="event-row-place">{{ row.event.location_name }}</p>
-                  {% endif %}
-                  {% if row.event.start_date and row.event.end_date %}
-                    <p class="event-row-period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} - {% if row.event.start_date|date:"Y" == row.event.end_date|date:"Y" %}{{ row.event.end_date|date:"m/d" }}{% else %}{{ row.event.end_date|date:"Y/m/d" }}{% endif %}</span></p>
-                  {% elif row.event.start_date %}
-                    <p class="event-row-period"><span class="mono-num">{{ row.event.start_date|date:"Y/m/d" }} -</span></p>
+                    <span class="event-index-date-empty">일정 미정</span>
                   {% endif %}
                 </div>
-                <div class="event-row-end">
-                  {% if row.status_slug == 'ended' %}
-                    <span class="event-row-dday">종료</span>
-                  {% elif row.status_slug == 'closing_soon' %}
-                    <span class="event-row-dday">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</span>
-                  {% elif row.status_slug == 'upcoming' %}
-                    <span class="event-row-dday">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</span>
-                  {% elif row.status_label %}
-                    <span class="event-row-dday">{{ row.status_label }}</span>
+                <div class="event-index-main">
+                  {% if row.event.work_title %}
+                    <p class="event-index-work">{{ row.event.work_title }}</p>
                   {% endif %}
-                  <button class="interest-btn event-row-interest{% if row.user_interested %} active{% endif %}" type="button"
+                  <h2 class="event-index-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
+                  <p class="event-index-meta">
+                    {% if row.category_label %}
+                      <span class="event-index-cat">{{ row.category_label }}</span>
+                      <span class="event-index-dot" aria-hidden="true"></span>
+                    {% endif %}
+                    {% if row.region_label and row.event.location_name %}
+                      <span class="event-index-place">{{ row.region_label }} · {{ row.event.location_name }}</span>
+                    {% elif row.region_label %}
+                      <span class="event-index-place">{{ row.region_label }}</span>
+                    {% elif row.event.location_name %}
+                      <span class="event-index-place">{{ row.event.location_name }}</span>
+                    {% else %}
+                      <span class="event-index-place">장소 미정</span>
+                    {% endif %}
+                  </p>
+                </div>
+                <div class="event-index-actions">
+                  {% if row.status_slug == 'ended' %}
+                    <span class="event-index-dday">종료</span>
+                  {% elif row.status_slug == 'closing_soon' %}
+                    <span class="event-index-dday">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</span>
+                  {% elif row.status_slug == 'upcoming' %}
+                    <span class="event-index-dday">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</span>
+                  {% elif row.status_label %}
+                    <span class="event-index-dday">{{ row.status_label }}</span>
+                  {% endif %}
+                  <button class="interest-btn event-index-interest{% if row.user_interested %} active{% endif %}" type="button"
                     data-interest-toggle
                     data-toast
                     data-event-id="{{ row.event.id }}"

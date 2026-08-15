@@ -245,104 +245,137 @@
   color: var(--rose-ink);
 }
 
-/* ── 포스터 좌상단 배지 (홈 포스터 카드 + 행사 목록 모바일 카드 공용) ── */
-.poster-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 2;
-  border-radius: var(--radius-chip);
-  padding: 0.1875rem 0.5625rem;
+/* ── event compact row (홈 레일 3개 + 로그인 홈 다가오는 일정 공용) ──
+   _event_compact_row.html이 렌더한다. 포스터 카드를 대신하는 텍스트 전용
+   세로 목록 행 — 이미지·뱃지·카드 테두리 없이 여백과 헤어라인만으로
+   행을 구분한다. */
+.event-compact-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.event-compact-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem;
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--line);
+}
+.event-compact-list > .event-compact-row:first-child {
+  border-top: none;
+}
+.event-compact-date {
+  padding-top: 0.125rem;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.event-compact-date time {
+  font-variant-numeric: tabular-nums;
+}
+.event-compact-main {
+  min-width: 0;
+}
+.event-compact-work {
+  margin: 0 0 0.1875rem;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.event-compact-title {
+  margin: 0 0 0.1875rem;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+.event-compact-title a {
+  color: inherit;
+  text-decoration: none;
+}
+.event-compact-title a:hover {
+  text-decoration: underline;
+}
+.event-compact-title a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.event-compact-place {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.event-compact-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.event-compact-status {
   font-size: var(--fs-xs);
   font-weight: 700;
-  line-height: 1;
+  color: var(--muted);
+  white-space: nowrap;
 }
-/* 배지가 두 개 이상 겹칠 때(예: 오픈까지 + NEW)의 래퍼 */
-.poster-badges {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-.poster-badges .poster-badge {
-  position: static;
-}
-.poster-badge-new {
-  background: var(--brand);
-  color: #fff;
-}
-.poster-badge-open {
-  background: var(--mint-soft);
-  color: var(--mint-ink);
-}
-.poster-badge-closing {
-  background: var(--amber-soft);
-  color: var(--amber-ink);
-}
-/* 종료(ended) — 종료임박(amber)과 색을 분리해 이미 끝난 행사가 아직
-   급한 것처럼 보이지 않게 한다. */
-.poster-badge-ended {
-  background: var(--end-soft);
-  color: var(--end-ink);
-}
-
-/* ── 포스터 위 찜 버튼(홈 포스터 카드 + 행사 목록 카드 공용) ──
-   포스터 이미지 우상단에 반투명 검은 원으로 올린다. 44px 탭 타깃을
-   채우면 이미지를 너무 가려서 34px로 뒀다 — WCAG 2.5.8 예외 기준
-   (24px 이상 + 주변 여백 확보)은 지키며, 사용자 승인을 받은 예외다. */
-.poster-interest {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
+/* 24px 이상 + 주변 여백 확보(WCAG 2.5.8 예외 기준)로 34px 원을 유지한다
+   — event_list.css의 .event-row-interest와 같은 크기다. */
+.event-compact-interest {
   width: 34px;
   height: 34px;
   min-height: 0;
   padding: 0;
   gap: 0;
   border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  font-size: 1rem;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.875rem;
   line-height: 1;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.poster-interest:hover,
-.poster-interest.active:hover {
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
+.event-compact-interest:hover {
+  border-color: var(--pink-ink);
+  background: var(--pink-soft);
+  color: var(--pink-ink);
 }
-.poster-interest.active {
-  background: rgba(0, 0, 0, 0.45);
-  /* 어두운 반투명 원 위에 올라가므로 밝은 산호색을 쓴다 — 어두운
-     --pink-ink는 이 배경에서 잘 안 보인다. 맞는 밝은 핑크 토큰이 없어
-     리터럴 값을 그대로 둔다. */
-  color: #ff6b81;
+.event-compact-interest.active {
+  border-color: var(--pink-border);
+  background: var(--pink-soft);
+  color: var(--pink-ink);
+  font-weight: 700;
 }
-/* 공용 로딩 스피너(objects/interaction.css)는 앞에 텍스트가 있는
-   버튼을 전제로 여백을 둔다. 이 버튼은 텍스트 없이 아이콘뿐이라 그대로
-   두면 아이콘+스피너가 34px 원을 벗어나므로, 로딩 중엔 아이콘을 숨기고
-   여백을 없애 스피너만 가운데 보이게 한다. */
-.poster-interest.is-loading [data-interest-glyph] {
+/* 공용 .is-loading 스피너(objects/interaction.css)는 앞에 텍스트가 있는
+   버튼을 전제로 여백을 둔다. 아이콘 전용 버튼마다 이 오버라이드를
+   다시 넣어야 한다 — 상속되지 않는다(event_list.css:502-509와 같은
+   패턴, 이 저장소가 두 번 겪은 결함). */
+.event-compact-interest.is-loading [data-interest-glyph] {
   display: none;
 }
-.poster-interest.is-loading::after {
+.event-compact-interest.is-loading::after {
   margin-left: 0;
 }
-/* 모바일에서는 찜 버튼을 우상단 대신 우하단으로 옮긴다. 320px 화면에서는
-   우상단 배지("종료까지 N일" 등)가 버튼과 겹칠 만큼 넓어질 수 있어서다
-   (실측: 320px에서 -8px 겹침, 360px 이상에서는 안 겹침). */
+
+/* 모바일: 날짜/본문/행동이 DOM 순서 그대로 세로로 쌓인다(order 미사용).
+   date가 항상 title보다 앞이라 자연히 제목 위 eyebrow처럼 보인다. */
 @media (max-width: 45rem) {
-  .poster-interest {
-    top: auto;
-    bottom: 8px;
-    right: 8px;
+  .event-compact-row {
+    grid-template-columns: 1fr;
+    gap: 0.375rem;
+  }
+  .event-compact-date {
+    padding-top: 0;
+    font-size: var(--fs-xs);
+  }
+  .event-compact-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
   }
 }

@@ -1,6 +1,6 @@
 """데모 이벤트 21개를 게시 상태로 멱등하게 생성한다.
 
-카테고리와 view_count를 다양하게 둬서 인기 이벤트 정렬이 눈에 보이게 한다.
+카테고리와 view_count를 다양하게 둔다.
 멱등 키는 official_url이라 재실행해도 기존 행은 그대로 두고 새로 만들지 않는다.
 """
 from datetime import date, timedelta

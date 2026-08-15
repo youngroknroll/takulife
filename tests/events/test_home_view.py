@@ -107,7 +107,7 @@ class TestHomeContextCaps:
         assert resp.context["closing_rows"] == []
         assert resp.context["recent_rows"] == []
         assert resp.context["category_tiles"] is not None
-        assert resp.context["popular_rows"] == []
+        assert resp.context["featured_event_row"] is None
 
 
 @pytest.mark.django_db
@@ -171,33 +171,6 @@ class TestHomeSlidersDropEndedEvents:
 
 
 @pytest.mark.django_db
-class TestHomePosterSectionsAlwaysRenderSlider:
-    """포스터 3섹션(이번 주/곧 종료/새 이벤트)은 예전엔 행 수로 분기했다 —
-    임계값 이하(ongoing<=6, closing<=3, recent<=6)면 다른 섹션이 쓰는
-    hscroll-wrap 슬라이더 대신 정적 .poster-card-grid를 렌더링해, 행이 적을
-    때마다 눈에 띄게 다른 레이아웃(화살표 없음, 좌측 정렬 정적 그리드)이
-    나왔다. 이제 3섹션 모두 행 수와 무관하게 항상 hscroll-wrap 마크업을
-    렌더링하며, 스크롤할 게 없으면 hscroll.js가 visibility로 화살표를
-    숨긴다."""
-
-    def test_마감_임박_섹션은_행이_적어도_정적_그리드_대신_hscroll_슬라이더로_렌더링된다(self, make_event):
-        today = date(2026, 6, 26)
-        for i in range(3):
-            make_event(
-                title=f"Closing {i}",
-                start_date=today - timedelta(days=1),
-                end_date=today + timedelta(days=i % 5 + 1),
-            )
-        with patch("web.views.events.timezone.localdate", return_value=today):
-            resp = Client().get("/")
-
-        assert len(resp.context["closing_rows"]) == 3
-        body = resp.content.decode()
-        assert 'id="hscroll-closing"' in body
-        assert "poster-card-grid" not in body
-
-
-@pytest.mark.django_db
 class TestHomeClosingStatusDivergence:
     """가드: closing_rows에 뽑힌 D+5 행사도 status_slug는 여전히 "ongoing"이다.
 
@@ -222,6 +195,66 @@ class TestHomeClosingStatusDivergence:
         d5_rows = [r for r in closing_rows if r["event"].title == "D+5 boundary"]
         assert len(d5_rows) == 1
         assert d5_rows[0]["status_slug"] == "ongoing"
+
+
+@pytest.mark.django_db
+class TestHomeFeaturedEvent:
+    """홈 대표 행사는 조회수 인기 슬라이더가 아니라
+    list_published_events 기본 우선순위(진행중 우선 -> 예정 -> 종료, "active"는
+    종료 행사를 제외)의 첫 행사 한 건이다."""
+
+    def test_홈_대표_행사는_종료되지_않은_공개_행사_우선순위의_첫_행사다(
+        self, make_event, make_draft_event
+    ):
+        today = date(2026, 6, 26)
+        make_event(
+            title="종료된 행사",
+            start_date=today - timedelta(days=20),
+            end_date=today - timedelta(days=1),
+        )
+        ongoing = make_event(
+            title="진행 중 행사",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=3),
+        )
+        make_event(
+            title="예정 행사",
+            start_date=today + timedelta(days=10),
+        )
+        make_draft_event(
+            title="조회수 높은 초안",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=30),
+            view_count=9999,
+        )
+
+        with patch("web.views.events.timezone.localdate", return_value=today):
+            resp = Client().get("/")
+
+        assert resp.context["featured_event_row"]["event"].id == ongoing.id
+
+    def test_공개중인_행사가_없으면_홈_대표_행사는_없다(self):
+        resp = Client().get("/")
+
+        assert resp.context["featured_event_row"] is None
+
+    def test_종료된_행사만_있으면_홈_대표_행사는_없다(self, make_event):
+        today = date(2026, 6, 26)
+        make_event(
+            title="종료된 행사 1",
+            start_date=today - timedelta(days=20),
+            end_date=today - timedelta(days=10),
+        )
+        make_event(
+            title="종료된 행사 2",
+            start_date=today - timedelta(days=15),
+            end_date=today - timedelta(days=1),
+        )
+
+        with patch("web.views.events.timezone.localdate", return_value=today):
+            resp = Client().get("/")
+
+        assert resp.context["featured_event_row"] is None
 
 
 @pytest.mark.django_db

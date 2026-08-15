@@ -4,7 +4,6 @@
 {% block og_title %}{{ project_name }} | {{ event.title }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/components/photo-upload.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/event_detail.css' %}">
 {% endblock %}
 
@@ -15,85 +14,6 @@
     </nav>
 
     <div class="event-detail-grid">
-      {% if event.official_url %}
-        <span class="event-detail-stamp" aria-hidden="true">공식<br>확인</span>
-      {% endif %}
-
-      <div class="event-detail-gallery">
-        <div class="event-detail-poster-frame{% if not event.poster_image %} no-poster{% endif %}"{% if not event.poster_image %} style="--cat-ink: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink)); --cat-soft: var(--cat-{{ event.category|slugify }}-soft, var(--brand-soft));"{% endif %}>
-          <span class="event-detail-status-pill" data-tone="{{ status_slug }}" aria-hidden="true">{{ status_label }}</span>
-          {% if event.poster_image %}
-            <img src="{{ event.poster_image.url }}" alt="{{ event.title }} 포스터">
-          {% else %}
-            <span class="event-detail-poster-watermark" aria-hidden="true">{{ category_label }}</span>
-          {% endif %}
-        </div>
-        {% if request.user.is_staff %}
-          <p class="event-detail-poster-caption">이미지 영역을 클릭하거나 드롭하여 포스터를 등록하세요</p>
-        {% elif event.poster_image %}
-          <p class="event-detail-poster-caption">공식 포스터</p>
-        {% endif %}
-
-        {% if request.user.is_staff %}
-        <div class="event-detail-poster-upload">
-          {% if event.poster_image %}
-            <img
-              src="{{ event.poster_image.url }}"
-              alt="{{ event.title }} 포스터 미리보기"
-              class="event-detail-poster-upload-preview"
-            >
-          {% endif %}
-
-          <img
-            id="poster-preview"
-            alt="선택한 포스터 미리보기"
-            class="event-detail-poster-upload-preview"
-            style="display:none;"
-          >
-
-          <div class="action-list">
-            <input
-              id="poster-file-input"
-              class="photo-upload-native-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              data-event-id="{{ event.id }}"
-              tabindex="-1"
-            >
-            <button type="button" id="poster-file-trigger" class="photo-add-tile">
-              <span>+</span>
-            </button>
-
-            <button
-              id="poster-upload-btn"
-              class="action-link{% if event.poster_image %} ghost{% else %} primary{% endif %}"
-              type="button"
-              data-event-id="{{ event.id }}"
-            >{% if event.poster_image %}교체{% else %}업로드{% endif %}</button>
-
-            {% if event.poster_image %}
-              <p class="panel-note" style="margin:4px 0 6px;">기존 포스터를 교체합니다</p>
-              <button
-                id="poster-delete-btn"
-                class="action-link ghost"
-                type="button"
-                data-event-id="{{ event.id }}"
-              >삭제</button>
-            {% endif %}
-          </div>
-
-          <p id="poster-file-hint" class="panel-note" style="margin-top:8px;">허용 형식: JPEG, PNG, WebP · 최대 5MB</p>
-
-          <p
-            id="poster-error"
-            class="panel-note"
-            data-status-error-container
-            style="color:var(--rose-ink); margin-top:6px;"
-          ></p>
-        </div>
-        {% endif %}
-      </div>
-
       <div class="event-detail-main">
         {% if category_label %}
           <div class="event-detail-cat-row">
@@ -101,27 +21,37 @@
             <span class="event-detail-cat-label" style="color: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));">{{ category_label }}</span>
           </div>
         {% endif %}
+        {% if event.work_title %}
+          <p class="event-detail-work">{{ event.work_title }}</p>
+        {% endif %}
         <h1 class="event-detail-title">{{ event.title }}</h1>
         {% if event.source_name %}
           <p class="event-detail-subtitle">{{ event.source_name }} 제공</p>
         {% endif %}
+
+        <p class="event-detail-status-line">
+          <span class="event-detail-status-chip"{% if status_slug %} data-tone="{{ status_slug }}"{% endif %}>{% if status_slug %}{{ status_label }}{% else %}일정 미정{% endif %}</span>
+          {% if event.official_url %}
+            <span class="applied-chip event-detail-official-chip">공식 확인</span>
+          {% endif %}
+        </p>
 
         <dl class="event-detail-meta">
           <div class="event-detail-meta-row">
             <dt>기간</dt>
             <dd>
               {% if event.start_date and event.end_date %}
-                {{ event.start_date }} ~ {{ event.end_date }}
+                <time datetime="{{ event.start_date|date:'Y-m-d' }}">{{ event.start_date }}</time> ~ <time datetime="{{ event.end_date|date:'Y-m-d' }}">{{ event.end_date }}</time>
               {% elif event.start_date %}
-                {{ event.start_date }} ~
+                <time datetime="{{ event.start_date|date:'Y-m-d' }}">{{ event.start_date }}</time> ~
               {% else %}
-                —
+                일정 미정
               {% endif %}
             </dd>
           </div>
           <div class="event-detail-meta-row">
             <dt>장소</dt>
-            <dd>{% if event.location_name %}{{ event.location_name }}{% else %}—{% endif %}</dd>
+            <dd>{% if event.location_name %}{{ event.location_name }}{% else %}장소 미정{% endif %}</dd>
           </div>
           {% if region_label %}
             <div class="event-detail-meta-row">
@@ -133,12 +63,6 @@
             <dt>카테고리</dt>
             <dd>{% if category_label %}{{ category_label }}{% else %}—{% endif %}</dd>
           </div>
-          {% if event.work_title %}
-            <div class="event-detail-meta-row">
-              <dt>원작명</dt>
-              <dd>{{ event.work_title }}</dd>
-            </div>
-          {% endif %}
         </dl>
 
         <div class="event-detail-actions">
@@ -235,11 +159,11 @@
         </div>
         <div class="event-detail-related-rows">
           {% for r in related_events %}
-            <a class="event-detail-related-row" href="/events/{{ r.event.id }}/">
-              <span class="event-detail-related-tile" aria-hidden="true" style="background: var(--cat-{{ r.category_slug|slugify }}-ink, var(--brand-ink));"></span>
+            <a class="event-detail-related-row" href="/events/{{ r.event.id }}/" style="border-left-color: var(--cat-{{ r.category_slug|slugify }}-ink, var(--brand-ink));">
               <span class="event-detail-related-body">
+                {% if r.event.work_title %}<span class="event-detail-related-work">{{ r.event.work_title }}</span>{% endif %}
                 <span class="event-detail-related-title">{{ r.event.title }}</span>
-                <span class="event-detail-related-meta">{{ r.category_label }}{% if r.event.location_name %} · {{ r.event.location_name }}{% endif %}{% if r.event.start_date %} · <span class="mono-num">{% if r.event.end_date %}{{ r.event.start_date|date:"Y/m/d" }} - {% if r.event.start_date|date:"Y" == r.event.end_date|date:"Y" %}{{ r.event.end_date|date:"m/d" }}{% else %}{{ r.event.end_date|date:"Y/m/d" }}{% endif %}{% else %}{{ r.event.start_date|date:"Y/m/d" }} -{% endif %}</span>{% endif %}</span>
+                <span class="event-detail-related-meta">{{ r.category_label }} · {% if r.event.location_name %}{{ r.event.location_name }}{% else %}장소 미정{% endif %} · {% if r.event.start_date %}<span class="mono-num">{% if r.event.end_date %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> - <time datetime="{{ r.event.end_date|date:'Y-m-d' }}">{% if r.event.start_date|date:"Y" == r.event.end_date|date:"Y" %}{{ r.event.end_date|date:"m/d" }}{% else %}{{ r.event.end_date|date:"Y/m/d" }}{% endif %}</time>{% else %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> -{% endif %}</span>{% else %}일정 미정{% endif %}</span>
               </span>
               <span class="event-detail-related-tone" data-tone="{{ r.status_slug }}">{{ r.status_label }}</span>
             </a>
@@ -263,8 +187,5 @@
 {% block extra_js %}
 {% if event.official_url or user_status == 'visited' %}
 <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
-{% endif %}
-{% if request.user.is_staff %}
-<script defer src="{% static 'js/pages/event-poster.js' %}"></script>
 {% endif %}
 {% endblock %}

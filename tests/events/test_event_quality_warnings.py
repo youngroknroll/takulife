@@ -7,14 +7,12 @@
 from datetime import date, datetime, timedelta
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 from events.queries import (
     count_published_ended_still_published,
     count_published_missing_dates,
     count_published_missing_official_url,
-    count_published_missing_poster,
     count_published_missing_region,
     count_published_needs_reverification,
     published_quality_warnings,
@@ -119,40 +117,6 @@ class TestCountPublishedEndedStillPublished:
 
 
 @pytest.mark.django_db
-class TestCountPublishedMissingPoster:
-    def test_포스터_이미지가_없으면_누락_건수에_포함된다(self, make_event):
-        make_event(official_url=None)
-
-        assert count_published_missing_poster() == 1
-
-    def test_포스터_이미지가_있으면_누락_건수에서_제외된다(self, make_event, png_bytes, settings, tmp_path):
-        settings.MEDIA_ROOT = str(tmp_path)
-        event = make_event(official_url=None)
-        event.poster_image = SimpleUploadedFile(
-            "poster.png", png_bytes(), content_type="image/png"
-        )
-        event.save()
-
-        assert count_published_missing_poster() == 0
-
-    def test_미게시_행사는_포스터_누락_집계에서_제외된다(self, make_draft_event):
-        make_draft_event(official_url=None)
-
-        assert count_published_missing_poster() == 0
-
-    def test_행사가_없으면_포스터_누락_건수는_0이다(self):
-        assert count_published_missing_poster() == 0
-
-    def test_포스터가_없는_행사가_두_건이면_누락_건수는_2다(self, make_event):
-        # count() 대신 exists()로 되돌리는 뮤테이션은 0/1 케이스는 통과하지만
-        # 2건부터는 걸러내지 못해, 이 테스트로 잡는다.
-        make_event(official_url=None)
-        make_event(official_url="https://example.com/other")
-
-        assert count_published_missing_poster() == 2
-
-
-@pytest.mark.django_db
 class TestCountPublishedMissingDates:
     def test_시작일이_없으면_날짜_누락_건수에_포함된다(self, make_event):
         make_event(official_url=None, start_date=None, end_date=date(2020, 1, 1))
@@ -228,13 +192,12 @@ class TestCountPublishedMissingRegion:
 
 @pytest.mark.django_db
 class TestPublishedQualityWarnings:
-    def test_행사가_없으면_품질_경고_여섯_항목이_모두_0으로_반환된다(self):
+    def test_행사가_없으면_품질_경고_다섯_항목이_모두_0으로_반환된다(self):
         result = published_quality_warnings()
 
         assert result == {
             "missing_official_url": 0,
             "ended_still_published": 0,
-            "missing_poster": 0,
             "missing_dates": 0,
             "missing_region": 0,
             "needs_reverification": 0,
@@ -243,7 +206,7 @@ class TestPublishedQualityWarnings:
         for value in result.values():
             assert isinstance(value, int)
 
-    def test_품질_경고_총합은_다섯_항목_건수의_합과_같다(self, make_event):
+    def test_품질_경고_총합은_네_항목_건수의_합과_같다(self, make_event):
         make_event(official_url=None, region="")
 
         result = published_quality_warnings()
@@ -251,92 +214,61 @@ class TestPublishedQualityWarnings:
         assert result["total"] == (
             result["missing_official_url"]
             + result["ended_still_published"]
-            + result["missing_poster"]
             + result["missing_dates"]
             + result["missing_region"]
         )
 
-    def test_한_행사가_두_조건에_걸리면_총합에_2가_반영된다(
-        self, make_event, png_bytes, settings, tmp_path
-    ):
+    def test_한_행사가_두_조건에_걸리면_총합에_2가_반영된다(self, make_event):
         # 한 행사에서 공식 url과 지역이 동시에 누락되고 다른 조건은 모두
         # 통과시켰다. total은 행사 수가 아니라 깃발의 합이므로 정확히 2가 된다.
-        settings.MEDIA_ROOT = str(tmp_path)
         today = date(2020, 6, 15)
-        event = make_event(
+        make_event(
             official_url=None,
             region="",
             start_date=date(2020, 1, 1),
             end_date=today + timedelta(days=30),
         )
-        event.poster_image = SimpleUploadedFile(
-            "poster.png", png_bytes(), content_type="image/png"
-        )
-        event.save()
 
         result = published_quality_warnings(today=today)
 
         assert result["total"] == 2
 
-    def test_각_행사가_서로_다른_조건에_걸리면_해당_항목에만_독립적으로_집계된다(self, make_event, png_bytes, settings, tmp_path):
-        settings.MEDIA_ROOT = str(tmp_path)
+    def test_각_행사가_서로_다른_조건에_걸리면_해당_항목에만_독립적으로_집계된다(self, make_event):
         today = date(2020, 6, 15)
         future_end = today + timedelta(days=30)
 
-        def _with_poster(event):
-            event.poster_image = SimpleUploadedFile(
-                "poster.png", png_bytes(), content_type="image/png"
-            )
-            event.save()
-            return event
-
         # 각 행사는 정확히 한 조건에만 걸리도록 나머지 조건은 모두 깨끗하게
-        # 둔다. 아래 공식url/포스터/지역 행사들은 start_date=2020-01-01과
-        # 아직 끝나지 않은 미래 end_date를 공유해 D-7 재확인 창 안에도
-        # 들어간다. verified_at을 명시하지 않으면 이들도 needs_reverification에
-        # 함께 걸려 "정확히 한 조건"이라는 전제가 깨지므로, reverify_deadline
+        # 둔다. 아래 공식url/지역 행사들은 start_date=2020-01-01과 아직
+        # 끝나지 않은 미래 end_date를 공유해 D-7 재확인 창 안에도 들어간다.
+        # verified_at을 명시하지 않으면 이들도 needs_reverification에 함께
+        # 걸려 "정확히 한 조건"이라는 전제가 깨지므로, reverify_deadline
         # (2019-12-25) 이후 시각으로 verified_at을 설정해 이미 검증된 상태로
         # 만든다.
-        _with_poster(
-            make_event(
-                official_url=None,
-                region="서울",
-                start_date=date(2020, 1, 1),
-                end_date=future_end,
-                verified_at=timezone.make_aware(datetime(2020, 6, 1)),
-            )
-        )
-        _with_poster(
-            make_event(
-                official_url="https://example.com/ended",
-                region="서울",
-                start_date=date(2020, 1, 1),
-                end_date=today - timedelta(days=1),
-            )
-        )
         make_event(
-            official_url="https://example.com/poster",
+            official_url=None,
             region="서울",
             start_date=date(2020, 1, 1),
             end_date=future_end,
             verified_at=timezone.make_aware(datetime(2020, 6, 1)),
-        )  # 포스터 없이 의도적으로 둔다
-        _with_poster(
-            make_event(
-                official_url="https://example.com/dates",
-                region="서울",
-                start_date=None,
-                end_date=future_end,
-            )
         )
-        _with_poster(
-            make_event(
-                official_url="https://example.com/region",
-                region="",
-                start_date=date(2020, 1, 1),
-                end_date=future_end,
-                verified_at=timezone.make_aware(datetime(2020, 6, 1)),
-            )
+        make_event(
+            official_url="https://example.com/ended",
+            region="서울",
+            start_date=date(2020, 1, 1),
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            official_url="https://example.com/dates",
+            region="서울",
+            start_date=None,
+            end_date=future_end,
+        )
+        make_event(
+            official_url="https://example.com/region",
+            region="",
+            start_date=date(2020, 1, 1),
+            end_date=future_end,
+            verified_at=timezone.make_aware(datetime(2020, 6, 1)),
         )
 
         result = published_quality_warnings(today=today)
@@ -344,22 +276,19 @@ class TestPublishedQualityWarnings:
         assert result == {
             "missing_official_url": 1,
             "ended_still_published": 1,
-            "missing_poster": 1,
             "missing_dates": 1,
             "missing_region": 1,
             "needs_reverification": 0,
-            "total": 5,
+            "total": 4,
         }
 
     def test_재확인_대상_행사가_있어도_총합에는_반영되지_않고_재확인_대상_건수에는_실제_값이_반영된다(
         self, make_event
     ):
-        # poster_image는 비워 둔다. 나머지 다섯 조건까지 깨끗하게 만들려면
-        # 실제 PNG 픽스처와 MEDIA_ROOT가 필요한데(위 테스트처럼), 이 테스트는
-        # 결과 딕셔너리 전체를 검증하므로 missing_poster가 함께 걸려도 어느
-        # 카운터가 무엇을 잡았는지 헷갈리지 않는다 — 더 저렴한 준비다.
-        # verified_at도 의도적으로 비워 둔다(NULL): 미검증 행사가 이 시나리오의
-        # 전제다.
+        # 나머지 네 조건(공식url·종료·날짜·지역)은 모두 깨끗하게 채우고,
+        # start_date를 오늘로 잡아 D-7 재확인 창 안에 들어오게 한다.
+        # verified_at은 의도적으로 비워 둔다(NULL): 미검증 행사가 이
+        # 시나리오의 전제다.
         today = date(2020, 6, 15)
         make_event(
             official_url="https://example.com/reverify",
@@ -370,17 +299,16 @@ class TestPublishedQualityWarnings:
 
         result = published_quality_warnings(today=today)
 
-        # 핵심 단언은 total == 1: needs_reverification은 1이지만 total은
-        # poster만 센다. total 계산에서 6번째 항목(needs_reverification)이
+        # 핵심 단언은 total == 0: needs_reverification은 1이지만 total은
+        # 그것을 세지 않는다. total 계산에서 5번째 항목(needs_reverification)이
         # 빠진다는 결정을 여기서 고정한다.
         assert result == {
             "missing_official_url": 0,
             "ended_still_published": 0,
-            "missing_poster": 1,
             "missing_dates": 0,
             "missing_region": 0,
             "needs_reverification": 1,
-            "total": 1,
+            "total": 0,
         }
 
     def test_한_행사가_두_조건에_걸리면_해당_두_항목_각각에_1씩_집계된다(self, make_event):
@@ -405,7 +333,31 @@ class TestPublishedQualityWarnings:
         assert result == {
             "missing_official_url": 0,
             "ended_still_published": 0,
-            "missing_poster": 0,
+            "missing_dates": 0,
+            "missing_region": 0,
+            "needs_reverification": 0,
+            "total": 0,
+        }
+
+    def test_행사_품질_요약은_포스터_경고_없이_네_표시_항목만_합산한다(self, make_event):
+        # 공식url·지역을 채우고, 날짜는 시작이 today+30(=D-7 재확인 창 밖)이라
+        # needs_reverification에도 안 걸리도록 명시적으로 "깨끗한" 행사를
+        # 만든다. verified_at은 굳이 채우지 않아도 D-7 창 자체가 안 열린다.
+        today = date(2020, 6, 15)
+        make_event(
+            official_url="https://example.com/clean",
+            region="서울",
+            start_date=today + timedelta(days=30),
+            end_date=today + timedelta(days=40),
+        )
+
+        result = published_quality_warnings(today=today)
+
+        # missing_poster 키가 이제 없다는 것 자체가 이 단언의 핵심이다: 포스터
+        # 필드가 품질 조건에서 완전히 빠진 반환 계약을 고정한다.
+        assert result == {
+            "missing_official_url": 0,
+            "ended_still_published": 0,
             "missing_dates": 0,
             "missing_region": 0,
             "needs_reverification": 0,

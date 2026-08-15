@@ -88,10 +88,6 @@ def _ended_still_published_qs(*, today=None):
     return Event.objects.published().filter(end_date__lt=today)
 
 
-def _missing_poster_qs():
-    return Event.objects.published().filter(models.Q(poster_image__isnull=True) | models.Q(poster_image=""))
-
-
 def _missing_dates_qs():
     return Event.objects.published().filter(models.Q(start_date__isnull=True) | models.Q(end_date__isnull=True))
 
@@ -135,11 +131,6 @@ def count_published_ended_still_published(*, today=None) -> int:
     return _ended_still_published_qs(today=today).count()
 
 
-def count_published_missing_poster() -> int:
-    """포스터 이미지가 없는 게시 이벤트 수."""
-    return _missing_poster_qs().count()
-
-
 def count_published_missing_dates() -> int:
     """시작일 또는 종료일이 없는 게시 이벤트 수(둘 다 없어도 한 번만 센다)."""
     return _missing_dates_qs().count()
@@ -158,27 +149,24 @@ def count_published_needs_reverification(*, today=None) -> int:
 def published_quality_warnings(*, today=None) -> dict:
     """스태프 대시보드용 품질 경고 집계를 dict로 반환한다.
 
-    "total"은 needs_reverification을 뺀 5개 경고 카운트의 합이다. 대시보드 표가
-    그 5행만 보여주므로 "표의 합 == total"이 유지되도록 일부러 뺐다. 이벤트 하나가
-    5개 중 2개에 걸리면 total에 2로 반영된다(중복 이벤트 수가 아니라 경고 트립 수).
+    "total"은 needs_reverification을 뺀 4개 경고 카운트의 합이다. 대시보드 표가
+    그 4행만 보여주므로 "표의 합 == total"이 유지되도록 일부러 뺐다. 이벤트 하나가
+    4개 중 2개에 걸리면 total에 2로 반영된다(중복 이벤트 수가 아니라 경고 트립 수).
     """
     missing_official_url = count_published_missing_official_url()
     ended_still_published = count_published_ended_still_published(today=today)
-    missing_poster = count_published_missing_poster()
     missing_dates = count_published_missing_dates()
     missing_region = count_published_missing_region()
     needs_reverification = count_published_needs_reverification(today=today)
     return {
         "missing_official_url": missing_official_url,
         "ended_still_published": ended_still_published,
-        "missing_poster": missing_poster,
         "missing_dates": missing_dates,
         "missing_region": missing_region,
         "needs_reverification": needs_reverification,
         "total": (
             missing_official_url
             + ended_still_published
-            + missing_poster
             + missing_dates
             + missing_region
         ),
@@ -188,7 +176,6 @@ def published_quality_warnings(*, today=None) -> dict:
 QUALITY_WARNING_KEYS = (
     "missing_official_url",
     "ended_still_published",
-    "missing_poster",
     "missing_dates",
     "missing_region",
     "needs_reverification",
@@ -198,7 +185,6 @@ STAFF_EVENT_LISTING_PAGE_SIZE = 15
 
 _NON_DATED_WARNING_QUERYSETS = {
     "missing_official_url": _missing_official_url_qs,
-    "missing_poster": _missing_poster_qs,
     "missing_dates": _missing_dates_qs,
     "missing_region": _missing_region_qs,
 }

@@ -57,7 +57,7 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 
 ## S4 대시보드 품질 경고 합계는 `needs_reverification`을 뺀 값이다
 
-`events/queries.py`의 `published_quality_warnings`는 표가 보여주는 5행의 합만 `total`로
+`events/queries.py`의 `published_quality_warnings`는 표가 보여주는 4행의 합만 `total`로
 낸다. 「표의 합 == total」을 유지하려고 일부러 뺐다. 시안 문구는 「미확인 N건 **포함**」
 이었으나 사실과 반대라 쓰지 않았고, 「이 합계에 **없음**」으로 적었다.
 `tests/staff/test_staff_console.py`가 문구를 단언한다.

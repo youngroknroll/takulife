@@ -6,7 +6,6 @@ import secrets
 import string
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
 from drafts.models import DraftSource, EventDraft
@@ -75,7 +74,7 @@ def test_로그인한_일반_사용자의_대시보드_요청은_리다이렉트
 
 
 @pytest.mark.django_db
-def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_6종을_컨텍스트로_제공한다(staff_client, make_draft):
+def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5종을_컨텍스트로_제공한다(staff_client, make_draft):
     staff, client = staff_client()
     make_draft("https://example.com/a", extracted_title="드래프트 A", review_status=EventDraft.ReviewStatus.PENDING)
     make_draft("https://example.com/b", extracted_title="드래프트 B", review_status=EventDraft.ReviewStatus.APPROVED)
@@ -89,7 +88,6 @@ def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_6
     assert set(quality_warnings.keys()) == {
         "missing_official_url",
         "ended_still_published",
-        "missing_poster",
         "missing_dates",
         "missing_region",
         "needs_reverification",
@@ -476,7 +474,7 @@ def test_대기중_건수_요약_카드는_대기중_드래프트_목록으로_�
 
 
 def _clean_quality_event_kwargs(index):
-    """품질 경고 5종 중 아무것도 걸리지 않는 이벤트 필드값. poster_image는 별도로 붙여야 한다."""
+    """품질 경고 4종 중 아무것도 걸리지 않는 이벤트 필드값."""
     today = timezone.localdate()
     return {
         "official_url": f"https://example.com/quality-warning-{index}",
@@ -486,16 +484,8 @@ def _clean_quality_event_kwargs(index):
     }
 
 
-def _attach_poster(event, png_bytes, index):
-    event.poster_image = SimpleUploadedFile(
-        f"quality-warning-poster-{index}.png", png_bytes(), content_type="image/png"
-    )
-    event.save()
-    return event
-
-
 @pytest.mark.django_db
-def test_품질_경고_5종은_각각_필터_링크가_달린_막대로_렌더링된다(staff_client, make_event):
+def test_품질_경고_4종은_각각_필터_링크가_달린_막대로_렌더링된다(staff_client, make_event):
     staff, client = staff_client()
     make_event()
 
@@ -507,7 +497,6 @@ def test_품질_경고_5종은_각각_필터_링크가_달린_막대로_렌더�
     for key in (
         "missing_official_url",
         "ended_still_published",
-        "missing_poster",
         "missing_dates",
         "missing_region",
     ):
@@ -515,31 +504,31 @@ def test_품질_경고_5종은_각각_필터_링크가_달린_막대로_렌더�
 
 
 @pytest.mark.django_db
-def test_품질_경고_막대는_건수_내림차순으로_정렬된다(staff_client, make_event, png_bytes):
+def test_품질_경고_막대는_건수_내림차순으로_정렬된다(staff_client, make_event):
     staff, client = staff_client()
     for i in range(3):
-        make_event(**_clean_quality_event_kwargs(i))
+        kwargs = _clean_quality_event_kwargs(i)
+        kwargs.pop("region")
+        make_event(**kwargs)
     kwargs = _clean_quality_event_kwargs(100)
     kwargs.pop("official_url")
-    event = make_event(**kwargs)
-    _attach_poster(event, png_bytes, 100)
+    make_event(**kwargs)
 
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert content.index("포스터 없음") < content.index("공식 URL 없음")
+    assert content.index("지역 정보 없음") < content.index("공식 URL 없음")
 
 
 @pytest.mark.django_db
-def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는다(staff_client, make_event, png_bytes):
+def test_건수가_0인_품질_경고는_막대_채움을_렌더링하지_않는다(staff_client, make_event):
     staff, client = staff_client()
     kwargs = _clean_quality_event_kwargs(0)
     kwargs.pop("region")
     # start_date/end_date가 D-7 재확인 창에도 걸리므로 verified_at을 명시해 needs_reverification까지 함께 트립되는 것을 막는다.
     kwargs["verified_at"] = timezone.now()
-    event = make_event(**kwargs)
-    _attach_poster(event, png_bytes, 0)
+    make_event(**kwargs)
 
     resp = client.get("/staff/dashboard/")
 
@@ -575,14 +564,13 @@ def test_품질_경고가_하나도_없으면_대시보드는_경고_없음_안�
 
 @pytest.mark.django_db
 def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_보여주지_않고_히어로_카드에_실제_값을_보여준다(
-    staff_client, make_event, png_bytes
+    staff_client, make_event
 ):
-    """total은 needs_reverification(6번째 경고)을 빼고 세므로, 이것만 걸리면 total==0이어도 표는 남아야 한다."""
+    """total은 needs_reverification(5번째 경고)을 빼고 세므로, 이것만 걸리면 total==0이어도 표는 남아야 한다."""
     staff, client = staff_client()
-    # 앞 5개 경고는 모두 정상값으로 채우고 verified_at만 비워서 needs_reverification만 D-7 창에서 트립되게 한다.
+    # 앞 4개 경고는 모두 정상값으로 채우고 verified_at만 비워서 needs_reverification만 D-7 창에서 트립되게 한다.
     kwargs = _clean_quality_event_kwargs(0)
-    event = make_event(**kwargs)
-    _attach_poster(event, png_bytes, 0)
+    make_event(**kwargs)
 
     resp = client.get("/staff/dashboard/")
 
@@ -607,21 +595,23 @@ def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_�
 
 @pytest.mark.django_db
 def test_건수가_동률인_품질_경고는_라벨_정의_순서대로_렌더링된다(
-    staff_client, make_event, png_bytes
+    staff_client, make_event
 ):
     """건수가 같으면 sort() 결과 순서가 아니라 QUALITY_WARNING_LABELS 정의 순서로 렌더링돼야 한다."""
     staff, client = staff_client()
-    make_event(**_clean_quality_event_kwargs(0))
-    kwargs = _clean_quality_event_kwargs(1)
-    kwargs.pop("official_url")
-    event = make_event(**kwargs)
-    _attach_poster(event, png_bytes, 1)
+    kwargs0 = _clean_quality_event_kwargs(0)
+    kwargs0.pop("official_url")
+    make_event(**kwargs0)
+    kwargs1 = _clean_quality_event_kwargs(1)
+    kwargs1["start_date"] = None
+    kwargs1["end_date"] = None
+    make_event(**kwargs1)
 
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert content.index("공식 URL 없음") < content.index("포스터 없음")
+    assert content.index("공식 URL 없음") < content.index("날짜 정보 누락")
 
 
 @pytest.mark.django_db

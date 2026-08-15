@@ -74,9 +74,6 @@ class EventQuerySet(models.QuerySet):
             end_date__lte=today + timedelta(days=days),
         ).order_by("end_date", "id")
 
-    def most_viewed(self, limit=5):
-        return self.order_by("-view_count", "-id")[:limit]
-
     def related_to(self, event, *, today, limit=3):
         """상세 페이지의 관련 이벤트: 같은 카테고리, 자기 자신 제외, 공개 목록과 같은 상태
         순위(진행중→예정→종료)로 정렬해 limit개까지. category가 빈 값이면 결과 없음.

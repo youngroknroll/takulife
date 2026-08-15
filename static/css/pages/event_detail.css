@@ -1,10 +1,8 @@
-/* event_detail.css — /events/<id>/ 에디토리얼 리스킨. archive_visit_
-   detail.css의 구조(328px 포스터 칼럼 + 유동 콘텐츠 칼럼, ≤60rem에서
-   1칼럼으로 접힘, 헤어라인 메타 <dl>, 고정 모바일 CTA 바)를 그대로
-   따른다. `.event-detail-page` 스코프에서만 동작하며 공용 파일은
-   수정하지 않는다 — 포스터 이미지 없음 그라디언트(_poster_card.html)와
-   [data-tone] 상태색 메커니즘(event_list.css)을 여기 페이지 스코프로
-   복제해서 쓴다. */
+/* event_detail.css — /events/<id>/ 단일 칼럼 에디토리얼 상세. 이미지 열을
+   없애고 본문 하나만 남긴다(`docs/FE/event-typography-editorial.md`).
+   `.event-detail-page` 스코프에서만 동작하며 공용 파일은 수정하지 않는다.
+   상태 톤 색은 event_list.css의 [data-tone] 메커니즘을 페이지 스코프로
+   복제해 관련 행사 톤 배지와 상단 상태 칩이 함께 쓴다. */
 
 .event-detail-page {
   padding-bottom: 6rem;
@@ -25,184 +23,19 @@
   text-decoration: underline;
 }
 
-/* ── two-column grid: 328px poster column, flexible content column ─────── */
+/* ── single content column ──────────────────────────────────────────────
+   옛 이미지 칼럼이 하던 폭 제한을 대신한다. `.event-detail-page`가 확장하는
+   `.page`(base.css:57)는 이미 1120px로 캡되므로, 그 안에서 본문 가독폭을
+   한 번 더 좁힌다. 근거: 이 저장소에서 갤러리 없이 단일 칼럼 본문만 쓰는
+   형제 페이지(archive_visit_detail.css:11-14, archive_visit_edit.css:14,
+   archive_visit_create.css:14)가 전부 동일한 51.25rem(820px)을 쓰고 있어
+   그 관례를 그대로 재사용한다. */
 .event-detail-page .event-detail-grid {
-  position: relative;
-  display: grid;
-  grid-template-columns: 328px minmax(0, 1fr);
-  gap: 2.25rem;
-  align-items: start;
-}
-.event-detail-page .event-detail-gallery {
-  grid-column: 1;
-}
-.event-detail-page .event-detail-main {
-  grid-column: 2;
+  max-width: 51.25rem;
+  margin: 0 auto;
 }
 
-/* 티켓 스텁 서명("공식 확인" 스탬프), 이전 .official-stamp에서 이식
-   (조건도 event.official_url로 동일, 감사된 색상도 동일).
-   .event-detail-grid(포지셔닝 컨텍스트)를 기준으로 배치해 포스터나
-   콘텐츠 칼럼 한쪽이 아니라 그리드 영역 전체의 우상단에 겹치도록
-   한다. */
-.event-detail-page .event-detail-stamp {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 4.5rem;
-  height: 4.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border: 2px solid var(--brand);
-  border-radius: 50%;
-  /* 공용 디자인 규칙 §1.4-1 / PR-4 대비 감사 발견 (원본 event_detail.css
-     주석 이식): opacity:0.85가 텍스트 색을 배경과 15% 블렌딩해 실제 렌더
-     대비가 declared color 기준 산출값보다 낮다. var(--brand-ink)를 그대로
-     쓰면 라이트/다크 모두 블렌딩 후 AA 미달이라, 이 스팟 전용으로 개별
-     보정된 색을 유지한다(다른 전 사용처는 opacity 없이 이미 통과). */
-  color: #b33620;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  line-height: 1.3;
-  transform: rotate(-9deg);
-  opacity: 0.85;
-  pointer-events: none;
-}
-:root[data-theme="dark"] .event-detail-page .event-detail-stamp {
-  color: #d19084;
-}
-
-/* ── poster frame ────────────────────────────────────────────────────── */
-.event-detail-page .event-detail-poster-frame {
-  position: relative;
-  aspect-ratio: 3 / 4;
-  border-radius: var(--radius-card);
-  border: 1px solid var(--line);
-  background: var(--bg-soft);
-  overflow: hidden;
-}
-.event-detail-page .event-detail-poster-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-/* 포스터 없음 대체: _poster_card.html의 그라디언트 + 회전된 카테고리
-   워터마크를 페이지 스코프로 이식. --cat-ink/--cat-soft는 카테고리별로
-   인라인 지정되며 없으면 --brand-ink/--brand-soft로 대체된다. */
-.event-detail-page .event-detail-poster-frame.no-poster {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(
-    105deg,
-    var(--surface) 12%,
-    color-mix(in srgb, var(--cat-soft, var(--brand-soft)) 95%, var(--surface)) 40%,
-    color-mix(in srgb, var(--cat-ink, var(--brand-ink)) 34%, var(--cat-soft, var(--brand-soft))) 100%
-  );
-}
-.event-detail-page .event-detail-poster-watermark {
-  color: var(--cat-ink, var(--brand-ink));
-  font-size: 1.375rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-align: center;
-  padding: 0 1.25rem;
-  transform: rotate(-8deg);
-  opacity: 0.9;
-}
-
-/* 상태 배지, 프레임 좌상단에 겹쳐 표시. 비상호작용(span,
-   pointer-events:none, aria-hidden) — status_slug를 반영하는
-   장식일 뿐 컨트롤이 아니다. 톤 색상은 event_list.css의 [data-tone]
-   메커니즘을 페이지 스코프로 이식했으며, 아래 관련 행사 톤 배지에도
-   쓰인다. */
-.event-detail-page .event-detail-status-pill {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  display: inline-block;
-  padding: 0.25rem 0.625rem;
-  border-radius: var(--radius-chip);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  pointer-events: none;
-  color: var(--muted);
-  background: var(--muted-soft);
-}
-.event-detail-page [data-tone="ongoing"] {
-  color: var(--mint-ink);
-  background: var(--mint-soft);
-}
-.event-detail-page [data-tone="closing_soon"] {
-  color: var(--amber-ink);
-  background: var(--amber-soft);
-}
-.event-detail-page [data-tone="upcoming"] {
-  color: var(--up-ink);
-  background: var(--up-soft);
-}
-.event-detail-page [data-tone="ended"] {
-  color: var(--end-ink);
-  background: var(--end-soft);
-}
-
-.event-detail-page .event-detail-poster-caption {
-  margin: 0.5625rem 0 0;
-  color: var(--muted);
-  font-size: 0.8125rem;
-}
-
-/* ── staff-only poster upload block ─────────────────────────────────── */
-.event-detail-page .event-detail-poster-upload {
-  margin-top: 0.875rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-card);
-  padding: 0.75rem;
-}
-.event-detail-page .event-detail-poster-upload-preview {
-  max-height: 160px;
-  width: 100%;
-  object-fit: contain;
-  display: block;
-  border-radius: 6px;
-  border: 1px solid var(--line);
-  margin-bottom: 10px;
-}
-.event-detail-page .event-detail-poster-upload .action-list {
-  display: grid;
-  gap: 0.5rem;
-}
-.event-detail-page .event-detail-poster-upload .action-link {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 44px;
-  padding: 0.5625rem 0.625rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: var(--fs-md);
-  font-weight: 600;
-  border: 1px solid var(--border-soft);
-  color: var(--text);
-  background: var(--bg-soft);
-}
-.event-detail-page .event-detail-poster-upload .action-link.primary {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-}
-.event-detail-page .event-detail-poster-upload .action-link.ghost {
-  border-color: var(--line);
-  background: var(--surface);
-  color: var(--muted);
-}
-
-/* ── content column: category, title, meta ──────────────────────────── */
+/* ── kicker: 카테고리 표식 + 작품명 ──────────────────────────────────── */
 .event-detail-page .event-detail-cat-row {
   display: flex;
   align-items: center;
@@ -218,12 +51,20 @@
   font-size: 0.8125rem;
   font-weight: 700;
 }
+.event-detail-page .event-detail-work {
+  margin: 0 0 0.375rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  word-break: keep-all;
+}
 .event-detail-page .event-detail-title {
   margin: 0 0 0.375rem;
   font-size: var(--fs-xl);
   font-weight: 800;
   line-height: 1.3;
   color: var(--text);
+  word-break: keep-all;
 }
 .event-detail-page .event-detail-subtitle {
   margin: 0 0 1rem;
@@ -231,6 +72,44 @@
   font-size: var(--fs-base);
 }
 
+/* ── status line: 텍스트 상태 칩 + 공식 확인 칩 ───────────────────────
+   옛 회전 원형 스탬프(2열 그리드에 절대배치)는 단일 칼럼에서 성립하지
+   않아 인라인 칩으로 바꿨다. 공식 확인 칩은 새 토큰 없이 .applied-chip
+   레시피를 그대로 재사용한다(cards.css:119-128). */
+.event-detail-page .event-detail-status-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 0 1rem;
+}
+.event-detail-page .event-detail-status-chip {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-chip);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--muted-soft);
+}
+.event-detail-page .event-detail-status-chip[data-tone="ongoing"] {
+  color: var(--mint-ink);
+  background: var(--mint-soft);
+}
+.event-detail-page .event-detail-status-chip[data-tone="closing_soon"] {
+  color: var(--amber-ink);
+  background: var(--amber-soft);
+}
+.event-detail-page .event-detail-status-chip[data-tone="upcoming"] {
+  color: var(--up-ink);
+  background: var(--up-soft);
+}
+.event-detail-page .event-detail-status-chip[data-tone="ended"] {
+  color: var(--end-ink);
+  background: var(--end-soft);
+}
+
+/* ── metadata dl ───────────────────────────────────────────────────────── */
 .event-detail-page .event-detail-meta {
   margin: 1rem 0 1.25rem;
   border-top: 2px solid var(--text);
@@ -358,9 +237,10 @@
   line-height: 1.7;
 }
 
-/* ── 위치 section (full width) ──────────────────────────────────────── */
+/* ── 위치 section (본문 칼럼 폭에 맞춤) ─────────────────────────────── */
 .event-detail-page .event-detail-location {
-  margin-top: 1.5rem;
+  max-width: 51.25rem;
+  margin: 1.5rem auto 0;
   padding-top: 1.5rem;
   border-top: 1px solid var(--line);
 }
@@ -400,9 +280,10 @@
   background: var(--bg-soft);
 }
 
-/* ── 이런 행사도 있어요 (full width) ────────────────────────────────── */
+/* ── 이런 행사도 있어요 (본문 칼럼 폭에 맞춤) ──────────────────────── */
 .event-detail-page .event-detail-related {
-  margin-top: 1.5rem;
+  max-width: 51.25rem;
+  margin: 1.5rem auto 0;
   padding-top: 1.5rem;
   border-top: 1px solid var(--line);
 }
@@ -431,14 +312,17 @@
   display: flex;
   flex-direction: column;
 }
+/* 얇은 카테고리 바(옛 52×52 단색 타일 대체): 행 왼쪽 테두리에 카테고리
+   색을 얇게 물려 색면 없이 표식만 남긴다. */
 .event-detail-page .event-detail-related-row {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.875rem;
   min-height: 44px;
-  padding: 0.75rem 0;
+  padding: 0.75rem 0 0.75rem 0.75rem;
   border-bottom: 1px solid var(--line);
+  border-left: 3px solid transparent;
   color: inherit;
   text-decoration: none;
 }
@@ -450,32 +334,28 @@
   outline-offset: 2px;
   border-radius: 6px;
 }
-.event-detail-page .event-detail-related-tile {
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
 .event-detail-page .event-detail-related-body {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.1875rem;
 }
+.event-detail-page .event-detail-related-work {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  word-break: keep-all;
+}
 .event-detail-page .event-detail-related-title {
   font-weight: 700;
   font-size: 0.9375rem;
   color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: keep-all;
 }
 .event-detail-page .event-detail-related-meta {
   color: var(--muted);
   font-size: 0.75rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: keep-all;
 }
 .event-detail-page .event-detail-related-tone {
   justify-self: end;
@@ -492,13 +372,6 @@
 }
 
 @media (max-width: 60rem) {
-  .event-detail-page .event-detail-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .event-detail-page .event-detail-gallery,
-  .event-detail-page .event-detail-main {
-    grid-column: 1;
-  }
   .event-detail-page {
     padding-bottom: 6rem;
   }

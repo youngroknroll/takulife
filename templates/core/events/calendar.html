@@ -171,18 +171,32 @@
                         <span class="status {{ row.user_status }}">{{ row.user_status_label }}</span>
                       {% endif %}
                     </p>
+                    {% if row.event.work_title %}
+                      <p class="agenda-work">{{ row.event.work_title }}</p>
+                    {% endif %}
                     <h3 class="agenda-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
+                    {% if not row.event.start_date %}
+                      <p class="agenda-date">일정 미정</p>
+                    {% elif row.event.end_date and row.event.end_date != row.event.start_date %}
+                      <p class="agenda-date">
+                        <time class="mono-num" datetime="{{ row.event.start_date|date:"Y-m-d" }}">{{ row.event.start_date|date:"n.d" }}</time>
+                        <span aria-hidden="true">–</span>
+                        <time class="mono-num" datetime="{{ row.event.end_date|date:"Y-m-d" }}">{{ row.event.end_date|date:"n.d" }}</time>
+                      </p>
+                    {% endif %}
                     {% if row.region_label and row.event.location_name %}
                       <p class="agenda-place">{{ row.region_label }} · {{ row.event.location_name }}</p>
                     {% elif row.region_label %}
                       <p class="agenda-place">{{ row.region_label }}</p>
                     {% elif row.event.location_name %}
                       <p class="agenda-place">{{ row.event.location_name }}</p>
+                    {% else %}
+                      <p class="agenda-place">장소 미정</p>
                     {% endif %}
                   </div>
                   <div class="agenda-end">
                     {% if request.user.is_authenticated %}
-                      <button class="interest-btn event-row-interest{% if row.user_interested %} active{% endif %}" type="button"
+                      <button class="interest-btn event-index-interest{% if row.user_interested %} active{% endif %}" type="button"
                         data-interest-toggle
                         data-toast
                         data-event-id="{{ row.event.id }}"

@@ -1,19 +1,12 @@
-from rest_framework.authentication import SessionAuthentication
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAdminUser
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from django.shortcuts import get_object_or_404
 
 from core.analytics import record_event
 from core.models import AnalyticsEvent
 
 from .models import Event
 from .queries import PUBLIC_LISTING_PAGE_SIZE, list_published_events, parse_public_listing_params
-from .serializers import EventPosterUploadSerializer, EventSerializer
-from .services import clear_event_poster, set_event_poster
+from .serializers import EventSerializer
 
 
 class EventPagination(PageNumberPagination):
@@ -51,27 +44,3 @@ class PublicEventDetailView(RetrieveAPIView):
             target_id=response.data["id"],
         )
         return response
-
-
-class EventPosterView(APIView):
-    """스태프 전용: 이벤트 포스터 이미지를 업로드/삭제한다.
-
-    인증을 SessionAuthentication으로 못박아 BasicAuth가 CSRF 보호를 우회하지 못하게 한다.
-    전역 DRF 설정(config/settings.py)이 이미 같은 값을 쓰지만, 관리자 전용 엔드포인트가
-    전역 설정 변경에 조용히 휩쓸리지 않도록 여기서도 명시적으로 고정한다.
-    """
-
-    authentication_classes = [SessionAuthentication]
-    permission_classes = [IsAdminUser]
-
-    def post(self, request, pk):
-        event = get_object_or_404(Event.objects.published(), pk=pk)
-        serializer = EventPosterUploadSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        set_event_poster(event=event, image=serializer.validated_data["image"])
-        return Response({"poster_url": event.poster_image.url})
-
-    def delete(self, request, pk):
-        event = get_object_or_404(Event.objects.published(), pk=pk)
-        clear_event_poster(event=event)
-        return Response(status=204)

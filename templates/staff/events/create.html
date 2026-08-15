@@ -20,7 +20,7 @@
     {% endif %}
 
     <div class="events-form-grid">
-      <form class="events-form-panel" method="post" action="/staff/events/new/" enctype="multipart/form-data" novalidate data-submit-guard>
+      <form class="events-form-panel" method="post" action="/staff/events/new/" novalidate data-submit-guard>
         {% csrf_token %}
         <div class="events-form-panel-head">
           <h2 class="events-form-panel-title">필드 입력</h2>
@@ -97,7 +97,6 @@
           </div>
           <div class="events-rail-card-body">
             <p class="events-rail-note">새 이벤트는 저장 즉시 게시됩니다. 공식 URL이 없는 항목은 게시할 수 없습니다.</p>
-            <p class="events-rail-note">포스터는 저장 후 수정 화면에서 추가할 수 있습니다.</p>
           </div>
         </div>
       </div>
