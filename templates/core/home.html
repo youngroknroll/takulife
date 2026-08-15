@@ -32,7 +32,7 @@
         {% if featured_event_row %}
           {% with ev=featured_event_row.event %}
           <div class="hero-featured">
-            <span class="hero-featured-eyebrow">공식 확인 이벤트</span>
+            <span class="hero-featured-eyebrow">진행 중 · 예정 행사</span>
             {% if ev.work_title %}<p class="hero-featured-work">{{ ev.work_title }}</p>{% endif %}
             <h2 class="hero-featured-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
             <p class="hero-featured-meta">
