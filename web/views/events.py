@@ -76,14 +76,20 @@ def home(request):
         for slug, label in HomeConfig.get_solo().featured_category_pairs()
     ]
 
-    popular_qs = Event.objects.published().exclude(end_date__lt=today).most_viewed(5)
+    # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
+    # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 첫 한 건.
+    featured = _attach_display(
+        list_published_events({"status": "active"}, today=today)[:1],
+        today=today,
+        user=request.user,
+    )
 
     context = {
         "ongoing_rows": _attach_display(ongoing_qs[:15], today=today, user=request.user),
         "closing_rows": _attach_display(closing_qs[:15], today=today, user=request.user),
         "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
         "category_tiles": category_tiles,
-        "popular_rows": _attach_display(popular_qs, today=today, user=request.user),
+        "featured_event_row": featured[0] if featured else None,
     }
 
     if request.user.is_authenticated:

@@ -3,7 +3,7 @@
 
 다루는 범위:
 - derive_event_display: 상태 분류, closing_soon 경계, dday, null 날짜
-- most_viewed / ending_within_days: EventQuerySet 정렬·필터 메서드
+- ending_within_days: EventQuerySet 정렬·필터 메서드
 - list_staff_events: 스태프 품질경고 드릴다운 목록
 """
 import pytest
@@ -126,49 +126,6 @@ class TestDeriveEventDisplay:
 
         assert "status" in result
         assert "dday" in result
-
-
-@pytest.mark.domain
-@pytest.mark.django_db
-class TestMostViewed:
-    def test_조회수_내림차순으로_행사를_정렬해_반환한다(self, make_event):
-        low = make_event(title="Low")
-        high = make_event(title="High")
-        mid = make_event(title="Mid")
-
-        Event.objects.filter(pk=low.pk).update(view_count=10)
-        Event.objects.filter(pk=mid.pk).update(view_count=30)
-        Event.objects.filter(pk=high.pk).update(view_count=50)
-
-        result = list(Event.objects.published().most_viewed(5))
-        ids = [e.id for e in result]
-        assert ids.index(high.id) < ids.index(mid.id)
-        assert ids.index(mid.id) < ids.index(low.id)
-
-    def test_지정한_limit_개수를_넘지_않게_반환한다(self, make_event):
-        for i in range(7):
-            make_event(title=f"Event {i}")
-
-        result = list(Event.objects.published().most_viewed(5))
-        assert len(result) <= 5
-
-    def test_조회수가_높아도_초안_행사는_제외한다(self, make_event):
-        published = make_event(title="Published")
-        draft = make_event(title="Draft", publish_status=Event.PublishStatus.DRAFT)
-        Event.objects.filter(pk=draft.pk).update(view_count=999)
-
-        result = list(Event.objects.published().most_viewed(5))
-        ids = [e.id for e in result]
-        assert draft.id not in ids
-        assert published.id in ids
-
-    def test_조회수가_같으면_id_내림차순으로_정렬한다(self, make_event):
-        first = make_event(title="First")
-        second = make_event(title="Second")
-
-        result = list(Event.objects.published().most_viewed(5))
-        ids = [e.id for e in result]
-        assert ids.index(second.id) < ids.index(first.id)
 
 
 @pytest.mark.domain
