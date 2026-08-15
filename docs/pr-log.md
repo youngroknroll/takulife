@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR은 273건을 넘는데 전부는 들어가지 않으므로
 최신 PR부터 채우고 줄 수 예산에 닿는 지점에서 끊는다 — 컷오프는 "재구성 불가"가 아니라
-순수히 **줄 수 예산** 문제다. 아래 한 줄 요약 목록은 PR #279부터 PR #137까지를 담았다.
+순수히 **줄 수 예산** 문제다. 아래 한 줄 요약 목록은 PR #280부터 PR #149까지를 담았다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,45 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #281 — refactor: 프레젠테이션 계층을 web 앱으로 분리해 앱 순환을 없앤다
+### PR #282 — feat: 공식 포스터를 걷어내고 행사 화면을 타이포그래피 에디토리얼로 바꾼다
 
-**무엇을 바꿨나**: `core`에서 프레젠테이션 합성 계층 전체(뷰 7파일, 승격
-오케스트레이터)를 새 앱 `web`(`web/views/{__init__,_helpers,account,activity,
-archive,collection,events,legal}.py` + `web/promotion.py` + `web/promotion_views.py`)
-으로 옮겼다. `core`에는 커널만 남았다(`vocab`·`pagination`·`calendar_grid`·`ip`·
-`errors`·`query_params`·`analytics`·`models`·`llm/`·`templatetags/`·
-`context_processors`·`auth_views`·`views.py`의 `api_root`·`health`).
-`core` 공용 모듈 경계 가드를 "기본 거부 + 허용 목록 2개"에서 예외 없는 기본
-거부로 강화하고, `web`이 리프(어떤 앱도 `web`을 임포트하지 않음)인지·
-`web → staff` 금지·`web/**` 안 `import *` 금지를 검사하는 가드를 새로 추가했다.
+**무엇을 바꿨나**: `Event.poster_image` 필드와 마이그레이션
+`events/migrations/0007_remove_event_poster_image.py`로 제거했다.
+`EventPosterView`, `EventPosterUploadSerializer`, `set_event_poster`,
+`clear_event_poster`, 스태프 폼 포스터 필드, `static/js/pages/event-poster.js`,
+`templates/core/partials/_poster_card.html`, `static/js/components/deck.js`를
+폐기했다. 옛 경로 `/api/events/<pk>/poster/`는 스텁 없이 URL 등록을 없애
+Django 404가 나게 했다. 품질 경고에서 `missing_poster`를 제거했다(`total`은
+표시 4종 합, `needs_reverification`은 기존대로 별도). 목록은 날짜 열·정보
+열·행동 열의 에디토리얼 행으로, 홈은 인기 포스터 덱 대신 대표 행사 1건
+마스트헤드 + 세로 목록으로, 상세는 단일 콘텐츠 칼럼으로 바꿨다. 원래
+렌더되지 않던 작품명(`work_title`)을 표제로 노출하고, 누락 날짜·장소는
+`일정 미정`·`장소 미정`으로 명시했으며 제목 말줄임을 없앴다. 승인된
+목이미지 `media/event-posters/` 2,869개(14M)를 백업 없이 영구 삭제했다.
 
-**왜**: 프레젠테이션 계층이 `core`에 얹혀 있어 앱 간 임포트가 순환하고 있었다
-(tidy first 1단계). 도메인 앱과 프레젠테이션 계층을 분리해 완전한 DAG를
-만들기 위해서다.
+**왜**: 행사 발견은 최종 목적지가 아니라 방문 기록·컬렉션 기여로 이어지는
+진입점이므로, 포스터의 시각적 풍부함보다 공식 정보의 신뢰도와 제목·날짜
+비교 능력이 우선한다는 2026-08-14 사용자 결정.
 
-**검증**: `core` 팬아웃(도메인 임포트 수) 21 → 0 `[실측]`. 앱 간 양방향(순환)
-임포트 쌍 3 → 0, 완전 DAG `[실측]`. `uv run pytest -q` → 2158 passed `[실측]`.
-`manage.py check` 0 issues, `makemigrations --check --dry-run` no changes
-`[실측]`. 옮긴 뷰 7파일 R100(바이트 단위 동일) `[실측]`, 심볼 51개 문자 단위
-일치 `[실측]`, 라우트 175건 순회 순서까지 무변경 `[실측]`, `templates/` diff
-0바이트 `[실측]`.
+**검증**: 전체 회귀 2158 → 2144 passed `[실측]`(노드 ID 집합 연산으로 폐기
+21건 / 신규 7건 / 개명 4건 확인, 2158 − 21 + 7 = 2144). `manage.py check`
+0 issues, 마이그레이션 드리프트 없음 `[실측]`. 신규 시나리오
+EVT-TYPO-01·02·03·04·05·05b·06 전부 Red 확인 후 Green. 뮤테이션:
+`{"status": "active"}` 필터 제거가 아무 테스트도 빨갛게 못 하는 것을
+발견해 가드를 추가했고, 같은 뮤테이션이 해당 1건만 Red `[실측]`. FE 이중
+게이트 사후 판정: Web Experience Designer `Conforms`, Browser Interaction
+Reviewer `Conforms`. 브라우저 실측(Chromium 320·768·1440 × 라이트·다크):
+네 화면 `img` 0개, 오버플로 0, 콘솔 오류 0, 찜 실패 복구(잠금 해제·행 안
+오류·포커스 이동·재시도 성공). CI 3건(Test suite / Docker build /
+GitGuardian) 전부 SUCCESS.
 
-**병합**: 2026-08-06, main `e86ea98`.
+**병합**: 2026-08-15, main `b194a2b`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #281 — refactor: 프레젠테이션 계층을 web 앱으로 분리해 앱 순환을 없앤다
 - #280 — chore: 운영·위생 백로그 4건을 닫는다 (F3·F4·F5·F9)
 - #279 — docs: 백로그 현재 상태를 main b43957c 기준으로 갱신
 - #278 — fix: 조용히 깨질 자리 두 곳을 닫는다 (백로그 A5 잔여 + F8)
@@ -188,10 +198,3 @@ archive,collection,events,legal}.py` + `web/promotion.py` + `web/promotion_views
 - #151 — refactor: 스크린리더(ARIA) 지원 마크업 전면 제거
 - #150 — fix: 서비스 플로우 이상현상 배치 1 — 검색어 보존·편집 재시도·지우기 필터·승인 발표
 - #149 — feat(staff): 대시보드 시각화 개선 — CSS-only 바 리스트·활동 차트·상태 점
-- #148 — fix(frontend): FE 인터랙션 코드 리뷰 후속 수정 4건 (제안 1~4)
-- #147 — fix(frontend): 인터랙션 층위 결함 수정 트랙 (재검수 후속)
-- #141 — fix(core): 500 페이지 푸터의 빈 mailto 링크 강하 처리
-- #140 — refactor: StaffActionLog 헬퍼 추출 + personal entry 집계 통합 + docstring 정정
-- #139 — feat(core): 공개 페이지 페이지별 og:title 오버라이드
-- #138 — refactor(staff): views.py(1092줄) 기능별 패키지 분할
-- #137 — feat(accounts): 회원 탈퇴 비밀번호 재확인 시도 제한 (5회/15분)
