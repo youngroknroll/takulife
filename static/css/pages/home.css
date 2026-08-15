@@ -13,21 +13,16 @@
     box-shadow: none;
     padding: 0;
   }
-  /* 이 요소가 덱의 활성 포스터를 따라가는 배경 표면을 겸한다(deck.js가
-     렌더링). JS 비활성이나 빈 덱에서도 기본 배경이 적용되며, home.html이
-     초기 인라인 배경을 함께 설정해 첫 렌더 전 색 깜빡임을 막는다.
-     배경만 트랜지션이라 모션 감소 설정과 무관하게 항상 허용된다. */
   .hero-inner {
     display: grid;
     grid-template-columns: 3fr 2fr;
     gap: 2.5rem;
-    /* 좌측 컬럼(제목·검색·칩)을 덱 높이에 맞춰 세로 중앙 정렬한다. start였을
-       땐 덱이 더 길어 검색 필드가 상단에 몰려 있었다. */
+    /* 좌측 컬럼(제목·검색·칩)을 우측 마스트헤드 높이에 맞춰 세로
+       중앙 정렬한다. */
     align-items: center;
     background: var(--brand-soft);
     border-radius: 20px;
     padding: 2.125rem;
-    transition: background 0.6s ease;
   }
   .hero h1 {
     margin: 0 0 1.5rem;
@@ -53,222 +48,103 @@
     gap: 0.5rem;
   }
 
-  /* ── Hero stack deck (deck.js) — 각 카드는 실제 <a> 링크라 맨 앞 카드는
-     클릭 시 JS 없이도 이동한다. deck.js는 뒤쪽 카드 클릭만 가로채 맨
-     앞으로 가져온다. */
-  .deck-wrap {
-    width: 100%;
-  }
-  .deck {
-    position: relative;
-    aspect-ratio: 4 / 5;
-    width: 100%;
-  }
-  .deck-card {
-    position: absolute;
-    inset: 0;
-    display: block;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    box-shadow: 0 14px 34px rgba(20, 22, 28, 0.22);
-    color: inherit;
-    text-decoration: none;
-    background: var(--surface);
-    transform-origin: top center;
-    will-change: transform, opacity;
-    transition:
-      transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1),
-      opacity   0.5s ease;
-  }
-  .deck-card:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 3px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .deck-card {
-      transition: none;
-    }
-  }
-  /* deck.js 실행 전(또는 JS 비활성) 임시 겹침 표현 — 실행되면 인라인
-     스타일이 이 값을 덮어쓴다. */
-  .deck-card:nth-of-type(1) { z-index: 30; }
-  .deck-card:nth-of-type(2) { transform: translateY(12px) scale(0.965); opacity: 0.9; z-index: 29; }
-  .deck-card:nth-of-type(3) { transform: translateY(24px) scale(0.93);  opacity: 0.8; z-index: 28; }
-  .deck-card:nth-of-type(4) { transform: translateY(36px) scale(0.895); opacity: 0.7; z-index: 27; }
-  .deck-card:nth-of-type(n+5) { opacity: 0; pointer-events: none; z-index: 1; }
-
-  .deck-card-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center 18%;
-    display: block;
-  }
-  /* 포스터 없을 때 대체 — 그라디언트는 카드별 인라인 스타일로 이미 채워져
-     있어 여기서는 워터마크 라벨만 필요하다. color-mix()를 지원하지 않는
-     브라우저는 그라디언트 첫 색(var(--surface))으로 자연스럽게 대체된다. */
-  .deck-fill-label {
-    position: absolute;
-    inset: 0;
+  /* ── Hero featured masthead — 대표 행사 한 건의 표제. 덱·다중 카드
+     대신 하나의 큰 제목과 날짜/장소를 세로로 쌓는다. */
+  .hero-featured {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.625rem;
-    font-weight: 800;
-    letter-spacing: 0.03em;
-    opacity: 0.14;
-    transform: rotate(-5deg);
-    white-space: nowrap;
-    pointer-events: none;
+    flex-direction: column;
+    gap: 0.5rem;
   }
-  .deck-card-scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.15) 45%, transparent 72%);
-    pointer-events: none;
-  }
-  .deck-card-eyebrow {
-    position: absolute;
-    top: 0.875rem;
-    left: 0.875rem;
+  .hero-featured-eyebrow {
     font-size: 0.6875rem;
-    font-weight: 700;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 999px;
-    padding: 0.25rem 0.75rem;
-  }
-  .deck-card-caption {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 1.125rem 1.125rem 2rem;
-    color: #fff;
-  }
-  /* `.hero` 접두 필요 — 없으면 공유 `.hero p` 규칙(특이도가 더 높음)이
-     이겨 흰 글자가 회색으로 계산된다. */
-  .hero .deck-card-work {
-    margin: 0 0 0.25rem;
-    font-size: var(--fs-xs);
-    color: rgba(255, 255, 255, 0.82);
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .deck-card-caption-row {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 0.625rem;
-  }
-  .hero .deck-card-title {
-    margin: 0;
-    font-size: 1.3125rem;
     font-weight: 800;
-    line-height: 1.25;
-    color: #fff;
-    flex: 1;
-    min-width: 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    letter-spacing: 0.1em;
+    color: var(--brand-ink);
   }
-  .deck-card-dday {
-    background: var(--brand);
-    color: #fff;
-    border-radius: 999px;
-    padding: 0.1875rem 0.6875rem;
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    white-space: nowrap;
-    flex: none;
-  }
-  .hero .deck-card-period {
-    margin: 0.375rem 0 0;
+  .hero-featured-work {
+    margin: 0;
     font-size: var(--fs-sm);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.92);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--muted);
+    word-break: keep-all;
   }
-
-  /* 점 인디케이터 — 눈에 보이는 크기(7/18px)는 시안값이고, ::before가
-     터치하기엔 너무 작은 점 대신 44px 히트 박스를 보충한다. */
-  .deck-dots {
-    position: absolute;
-    left: 50%;
-    bottom: 0.6875rem;
-    transform: translateX(-50%);
-    z-index: 40;
-    display: flex;
-    align-items: center;
-    gap: calc(0.375rem + 1px);
-    background: rgba(0, 0, 0, 0.32);
-    padding: 0.375rem 0.5625rem;
-    border-radius: 999px;
+  .hero-featured-title {
+    margin: 0;
+    font-size: 1.875rem;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    word-break: keep-all;
   }
-  .deck-dot {
-    position: relative;
-    height: 7px;
-    width: 7px;
-    border: none;
-    padding: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    transition: width 0.2s ease, background 0.2s ease, border-radius 0.2s ease;
+  .hero-featured-title a {
+    color: inherit;
+    text-decoration: none;
   }
-  .deck-dot:focus-visible {
-    /* 다른 포커스 요소들과 같은 명시적 링 — 브라우저 기본값만으로는
-       옆 요소들과 일관되지 않는다. */
+  .hero-featured-title a:hover {
+    text-decoration: underline;
+  }
+  .hero-featured-title a:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  .hero-featured-meta {
+    margin: 0;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text);
+  }
+  .hero-featured-status {
+    margin: 0;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--brand-ink);
+  }
+  .hero-featured-link {
+    align-self: flex-start;
+    margin-top: 0.25rem;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--brand-ink);
+    text-decoration: none;
+  }
+  .hero-featured-link:hover {
+    text-decoration: underline;
+  }
+  .hero-featured-link:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
-  }
-  .deck-dot::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-  }
-  .deck-dot.active {
-    width: 18px;
     border-radius: 4px;
-    background: #fff;
   }
 
-  /* 인기 이벤트가 없을 때의 빈 상태 */
-  .carousel-empty {
+  /* 대표 행사가 없을 때 — 장식용 빈 카드 대신 안내 문구 + 회복 링크 하나. */
+  .hero-featured-empty {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
     justify-content: center;
-    min-height: 240px;
-    border-radius: 12px;
-    border: 1px dashed var(--line);
-    background: var(--brand-soft);
+    min-height: 120px;
+  }
+  .hero-featured-empty p {
+    margin: 0;
     color: var(--muted);
     font-size: var(--fs-md);
-    text-align: center;
-    padding: 1.25rem;
+  }
+  .hero-featured-empty a {
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--brand-ink);
+    text-decoration: none;
+  }
+  .hero-featured-empty a:hover {
+    text-decoration: underline;
   }
 
   /* ── Responsive: collapse to 1-column at 860px ────────────── */
   @media (max-width: 53.75rem) {
     .hero-inner {
       grid-template-columns: 1fr;
-    }
-    .deck-wrap {
-      max-width: 480px;
-      margin: 0 auto;
     }
   }
   /* 열 개수는 모든 화면 폭에서 4로 고정, 블록 너비·글자 크기만 반응한다
@@ -669,164 +545,6 @@
     text-decoration: none;
   }
 
-  /* ── Ticket-stub poster card (ongoing/closing/recent 공유) — 이미지
-     타일 + 아래 불투명 캡션 띠를 점선 절취선+펀치홀로 구분한다. 밝은
-     포스터 위에서 대비가 보장 안 되던 기존 오버레이 캡션을 대체한다.
-     마크업: templates/core/partials/_poster_card.html */
-  .poster-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    background: var(--surface);
-    /* 카드 단위 그림자 — 토큰이 아닌 시안 리터럴, 이 페이지 다른 곳의
-       일회성 rgba 그림자와 같은 관례다. */
-    box-shadow: 0 10px 26px rgba(20, 22, 28, 0.12);
-  }
-  /* 이미지 영역 — 배지/찜 버튼/글린트가 여기 기준으로 배치돼 캡션 띠
-     분리 전과 같은 픽셀 위치를 유지한다. */
-  .poster-card-media {
-    position: relative;
-  }
-  /* 다크 전용 완충 보더 — 밝은 포스터가 배경 위에 떠 보이는 문제 대응.
-     이 요소엔 border-radius가 없어 진짜 border 대신 inset shadow를 써야
-     조상의 둥근 클리핑과 자연스럽게 맞물린다. */
-  :root[data-theme="dark"] .poster-card-media {
-    box-shadow: inset 0 0 0 1px var(--line);
-  }
-  .poster-card-img {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 3 / 4;
-    object-fit: cover;
-    object-position: center top;
-  }
-  /* 포스터 없을 때 대체 — 그라디언트는 카드별 인라인 스타일로 채워지고,
-     이 모디파이어는 <img>가 없을 때 필요한 크기/중앙 정렬만 제공한다.
-     color-mix() 미지원 브라우저는 그라디언트 첫 색으로 자연스럽게 대체된다. */
-  .poster-card-media--fill {
-    width: 100%;
-    aspect-ratio: 3 / 4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-  .poster-fill-label {
-    font-size: 1.125rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    opacity: 0.14;
-    transform: rotate(-5deg);
-    white-space: nowrap;
-  }
-  /* 펀치홀 원 — 이미지 실제 높이와 무관하게 media/caption 이음매에
-     걸치도록 media 자신의 박스 기준(top: calc(100% - Npx))으로 배치한다.
-     좌우 -5px로 조상의 overflow:hidden이 바깥 절반을 잘라 카드 가장자리에
-     "물린 자국"을 만든다. */
-  .poster-card-media::before,
-  .poster-card-media::after {
-    content: "";
-    position: absolute;
-    top: calc(100% - 5px);
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--bg);
-    border: 1px solid var(--line);
-  }
-  .poster-card-media::before {
-    left: -5px;
-  }
-  .poster-card-media::after {
-    right: -5px;
-  }
-  /* 글린트 — 공유 .glint 유틸리티를 재사용한다. 실제 <img>는 생성 콘텐츠를
-     가질 수 없어 여기 마크업으로 명시한다. */
-  .poster-card-media .glint {
-    top: 8px;
-    right: 8px;
-    z-index: 1;
-  }
-  /* 마감임박 카드는 찜 버튼이 글린트 기본 위치(우상단)와 완전히 겹친다 —
-     버튼이 형제로 있는 조합에서만 글린트를 좌하단으로 옮겨 겹침을 피한다. */
-  .poster-interest ~ .glint {
-    top: auto;
-    bottom: 8px;
-    left: 8px;
-    right: auto;
-  }
-  .poster-card-caption {
-    border-top: 1px dashed var(--line);
-    background: var(--surface);
-    padding: 0.625rem 0.75rem 0.75rem;
-    /* 캡션 글자색을 명시로 고정 — 상속에 맡기면 카테고리 색 모디파이어가
-       제목 색을 카테고리 색(보라/청록 등)으로 물들인다. 카테고리 색은
-       칩·타일 전용이지 본문 글자색이 아니다. */
-    color: var(--text);
-  }
-  /* 강조 바 래퍼 — position:relative는 .poster-card-caption이 아니라 이
-     요소에 둔다. 캡션에 두면 제목의 확장 링크가 카드 전체가 아니라
-     캡션 띠로만 클릭 영역이 줄어든다. */
-  /* 고정 높이 캡션 — 같은 레일의 카드는 제목이 1줄이든 2줄이든, meta 줄이
-     있든 없든 높이가 같아야 한다. 각 줄의 최악 케이스 높이를 예약해
-     합산한 값을 최소 높이로 둔다(모바일은 아래 미디어쿼리에서 폰트 크기에
-     맞춰 재계산). */
-  .poster-card-caption-inner {
-    /* 강조 바는 border-left로 표현 — 여기 position:relative를 두면 안 된다
-       (확장 링크가 캡션으로 줄어든다). border-color는 카테고리별 인라인
-       스타일에서 온다. */
-    border-left: 3px solid var(--brand-ink);
-    padding-left: 0.5625rem;
-    min-height: 3.875rem;
-  }
-  .poster-card-title {
-    margin: 0 0 0.1875rem;
-    font-size: var(--fs-base);
-    font-weight: 700;
-    line-height: 1.35;
-    /* 2줄 예약, em 단위라 모바일 폰트 축소 후에도 비율이 유지된다. */
-    min-height: 2.7em;
-  }
-  .poster-card-title a {
-    color: inherit;
-    text-decoration: none;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  /* 확장 링크 — 제목 앵커가 카드 전체를 덮어 포스터 전체가 클릭된다.
-     .poster-card-caption이 position:relative가 아니므로 inset:0은
-     .poster-card 기준으로 계산된다. 찜 버튼은 더 높은 z-index로 위에 온다. */
-  .poster-card-title a::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-  }
-  .poster-card-title a:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  .poster-card-meta {
-    margin: 0;
-    font-size: var(--fs-sm);
-    line-height: 1.3;
-    /* 1줄 예약 — location_name/start_date가 둘 다 없으면 이 요소 자체가
-       DOM에서 빠지는데, 그 경우는 위 컨테이너 최소 높이가 대신 담당한다. */
-    min-height: 1.3em;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  /* .poster-badge(s)(좌상단 배지)와 .poster-interest(우상단 찜 버튼)는
-     다른 페이지도 재사용할 수 있도록 components/cards.css로 옮겼다. */
   @media (max-width: 45rem) {
     .home-page {
       padding: 1rem var(--page-pad-x) 3rem;
@@ -841,6 +559,9 @@
     .hero h1 {
       font-size: 1.625rem;
     }
+    .hero-featured-title {
+      font-size: 1.5rem;
+    }
     .section-head {
       align-items: flex-start;
       flex-direction: column;
@@ -849,62 +570,17 @@
   }
 
   /* ── horizontal scroller — 홈 전용 값. 공통 컴포넌트 규칙은
-     static/css/hscroll.css에 있다. */
-
-  /* 이벤트 포스터 카드(ongoing/closing/recent) — 각각 평범한 <li>로 감싼다 */
+     static/css/hscroll.css에 있다. 남은 사용처는 "최근 등록한 굿즈"
+     레일 하나뿐이다(발견 레일 3개와 다가오는 일정은 세로 목록으로
+     전환했다). */
   .hscroll-track li {
     flex: none;
     width: 168px;
   }
 
-  /* 포스터 레일은 아래 ≤64rem 블록의 값이 이 규칙을 대체한다 — 여기는
-     포스터·카테고리 외의 향후 사용을 위한 기본값이다. */
   @media (max-width: 45rem) {
     .hscroll-track li {
       scroll-snap-align: start;
-    }
-  }
-
-  /* ── Poster rail: 한 줄에 2장씩 보이는 슬라이드 + 약 2/3 카드 축소 —
-     "모바일" 기준을 폰·태블릿 모두 포함해 ≤64rem으로 넓게 잡는다(데스크톱
-     >64rem은 무변경). 스코프는 `.hscroll-track--posters`(발견 레일 3개 +
-     스냅샷 패널 예정 레일) — 카테고리 그리드(`.cat-browse`)는 별도 아래
-     블록에서 다룬다. */
-  @media (max-width: 64rem) {
-    /* 한 줄에 2장 — li 너비는 트랙 폭의 절반에서 gap 절반을 뺀 값. */
-    .hscroll-track--posters li {
-      flex: 0 0 calc((100% - 0.625rem) / 2);
-      width: auto;
-      min-width: 0; /* 콘텐츠 기준 최소폭은 고정 flex-basis와 충돌한다 */
-      scroll-snap-align: start;
-    }
-
-    /* 옛 행 늘이기(height:100%) 훅은 의도적으로 제거했다 — 한 줄뿐이라
-       늘일 형제 행이 없고, 고정 높이는 뒤에 붙는 상태 오류 메시지를
-       잘라낸다. 높이는 이제 아래 캡션 min-height만으로 맞춘다. */
-
-    /* 카드 축소 — 폭은 2열 배치로 고정, 4:3 미디어 비율과 캡션 최소
-       높이 축소로 카드 세로 길이를 줄인다(320/375px 무오버플로 실측
-       기준). object-position은 "center top" 그대로 유지해 포스터
-       상단(제목·캐릭터)이 잘리지 않는다. */
-    /* 자기 높이를 스스로 갖는 요소만 override한다 — .poster-card-media는
-       포스터가 있을 때 자체 너비가 없어 aspect-ratio가 무의미하다. */
-    .poster-card-img,
-    .poster-card-media--fill {
-      aspect-ratio: 4 / 3;
-    }
-    .poster-card-title {
-      font-size: var(--fs-xs);
-      line-height: 1.3;
-      min-height: 2.6em; /* 2줄, 데스크톱과 같은 em 단위 */
-    }
-    .poster-card-meta {
-      font-size: var(--fs-xs);
-    }
-    /* 이 화면 폭에서는 캡션 두 줄 모두 --fs-xs라 최소 높이를 다시
-       계산했다. */
-    .poster-card-caption-inner {
-      min-height: 3.125rem;
     }
   }
 

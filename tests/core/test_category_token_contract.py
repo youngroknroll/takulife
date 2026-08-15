@@ -20,10 +20,10 @@ def test_tokens_css는_모든_카테고리_슬러그에_대해_soft_ink_토큰�
     슬러그에 대해 --cat-{slug}-soft와 --cat-{slug}-ink를 정의해야 한다 —
     "슬러그 = CSS 이름" 원칙(G10)을 커스텀 프로퍼티 계층까지 확장한 것이다.
 
-    templates/core/home.html의 포스터 없음 폴백은 전체 슬러그를 그대로
-    보간한다: var(--cat-{{ row.category_slug }}-soft, --brand-soft). 슬러그를
-    줄인 토큰 이름(예: popup_store에 --cat-popup-soft)은 절대 매칭되지
-    않아, var()가 카테고리 색상 대신 조용히 --brand-soft로 폴백해버린다.
+    templates/core/home.html의 카테고리 둘러보기 타일은 전체 슬러그를 그대로
+    보간한다: var(--cat-{{ tile.slug }}-ink)(폴백 없음). 슬러그를 줄인 토큰
+    이름(예: popup_store에 --cat-popup-ink)은 절대 매칭되지 않아, var()가
+    무효화되어 스와치 배경이 조용히 사라진다.
     """
     defined = _defined_custom_properties(TOKENS_CSS.read_text())
 

@@ -1,0 +1,65 @@
+{% comment %}
+행사 하나를 텍스트 위주 세로 목록 행으로 그리는 공용 축약 파셜이다.
+옛 포스터 레일 파셜(삭제됨)을 대신해 홈 레일 3개와 로그인
+홈의 다가오는 일정 목록이 함께 쓴다. 인터페이스는 정확히 3개
+row · heading_level("h3"|"h4") · show_interest(bool)뿐이다 — variant 같은
+표시 설정 매개변수는 다시 만들지 않는다(공용 파셜에 설정 플래그를 늘리는
+대신 필요하면 상세 관련 행사처럼 자체 마크업을 둔다).
+
+날짜 열은 항상 DOM에서 제목보다 앞서 온다. 모바일에서 날짜가 제목 위
+가로 표시로 보이는 것은 CSS order가 아니라 이 DOM 순서를 그대로 세로로
+쌓기 때문이다.
+
+인자:
+  row            — _attach_display(web/views/_helpers.py)가 만드는 표시용
+                   딕셔너리: event, dday, status_slug, status_label,
+                   category_slug, category_label, user_interested,
+                   user_interest_id
+  heading_level  — "h3"|"h4". Django 템플릿은 <{{ var }}>로 태그명을
+                   보간할 수 없어 분기로 처리한다. 호출부 섹션 제목 아래
+                   위계에 맞춘다(홈 레일=h3, 스냅샷 패널의 다가오는
+                   일정=h4).
+  show_interest  — 찜 버튼 렌더 여부
+{% endcomment %}
+{% with ev=row.event %}
+<li class="event-compact-row" data-status-error-container>
+  <div class="event-compact-date">
+    {% if ev.start_date %}
+      <time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>
+    {% else %}
+      <span>일정 미정</span>
+    {% endif %}
+  </div>
+  <div class="event-compact-main">
+    {% if ev.work_title %}<p class="event-compact-work">{{ ev.work_title }}</p>{% endif %}
+    {% if heading_level == "h4" %}
+      <h4 class="event-compact-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h4>
+    {% else %}
+      <h3 class="event-compact-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
+    {% endif %}
+    <p class="event-compact-place">{% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}</p>
+  </div>
+  <div class="event-compact-actions">
+    {% if row.status_slug == "ended" %}
+      <span class="event-compact-status">종료</span>
+    {% elif row.status_slug == "closing_soon" %}
+      <span class="event-compact-status">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</span>
+    {% elif row.status_slug == "upcoming" %}
+      <span class="event-compact-status">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</span>
+    {% elif row.status_label %}
+      <span class="event-compact-status">{{ row.status_label }}</span>
+    {% endif %}
+    {% if show_interest %}
+      <button class="interest-btn event-compact-interest{% if row.user_interested %} active{% endif %}" type="button"
+        data-interest-toggle
+        data-toast
+        data-event-id="{{ ev.id }}"
+        aria-label="찜"
+        aria-pressed="{% if row.user_interested %}true{% else %}false{% endif %}"
+        {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
+        <span data-interest-glyph aria-hidden="true">{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
+      </button>
+    {% endif %}
+  </div>
+</li>
+{% endwith %}

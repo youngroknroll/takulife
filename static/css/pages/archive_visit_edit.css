@@ -202,8 +202,8 @@
    .photo-preview-remove는 22px 아이콘 전용 원(맨 텍스트 "×", 기존
    사진 삭제 시 TakuAPI.setLoading이 걸림)이라 글리프와 스피너가
    나란히 렌더돼 원 밖으로 삐져나갔다. 글리프를 숨기고 스피너를
-   가운데로 배치한다 — cards.css의 .poster-interest.is-loading과 같은
-   수정 방식을, 감쌀 글리프 span이 없는 순수 텍스트 노드에 맞게
+   가운데로 배치한다 — cards.css의 .event-compact-interest.is-loading과
+   같은 수정 방식을, 감쌀 글리프 span이 없는 순수 텍스트 노드에 맞게
    적용. */
 .visit-edit-page .photo-preview-remove.is-loading {
   color: transparent;

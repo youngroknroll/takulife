@@ -3,9 +3,10 @@
 분기 밖에 있어 비로그인 응답에는 이 마크업이 전혀 포함되지 않는다(뷰도 같은
 조건으로 컨텍스트를 이미 한 번 막아 이중 방어다).
 
-snapshot_active 분기 두 가지: 활성 상태는 요약 칩 + 최대 3개 가로 스크롤
-서브리스트(각자 목록이 비면 제목까지 통째로 숨김), 초기 상태는 두 버튼
-복구 CTA가 있는 빈 상태다.
+snapshot_active 분기 두 가지: 활성 상태는 요약 칩 + 최대 3개 서브리스트
+(기록 대기=그리드, 최근 등록한 굿즈=가로 스크롤 레일, 다가오는 일정=세로
+목록. 각자 목록이 비면 제목까지 통째로 숨김), 초기 상태는 두 버튼 복구
+CTA가 있는 빈 상태다.
 
 컨텍스트: collection_summary{owned_count,wanted_count}, recent_goods(최대 5),
 unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
@@ -115,15 +116,14 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
           <h3>다가오는 일정</h3>
           <a class="snapshot-more" href="/archive/statuses/?status=planned">더보기 ›</a>
         </div>
-        <div class="hscroll-wrap" data-hscroll>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-planned" aria-label="다가오는 일정, 이전">&#8249;</button>
-          <ul class="hscroll-track hscroll-track--posters" data-hscroll-track id="hscroll-snap-planned" tabindex="0">
-            {% for row in upcoming_planned %}
-              <li>{% include "core/partials/_poster_card.html" with row=row variant="planned" %}</li>
-            {% endfor %}
-          </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-snap-planned" aria-label="다가오는 일정, 다음">&#8250;</button>
-        </div>
+        {% comment %} 가로 스크롤 레일(포스터 카드) → 세로 목록. 넘치지 않는
+           목록에는 hscroll-wrap과 prev/next 버튼을 두지 않는다 — 남겨두면
+           아무 트랙에도 바인딩되지 않는 죽은 화살표만 남는다. {% endcomment %}
+        <ul class="event-compact-list">
+          {% for row in upcoming_planned %}
+            {% include "core/partials/_event_compact_row.html" with row=row heading_level="h4" show_interest=True %}
+          {% endfor %}
+        </ul>
       </div>
     {% endif %}
   {% else %}
