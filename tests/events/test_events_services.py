@@ -355,20 +355,3 @@ def test_영구_삭제를_요청하면_행사_행이_삭제된다():
     hard_delete_event(event=event)
 
     assert not Event.objects.filter(pk=pk).exists()
-
-
-@pytest.mark.django_db
-def test_영구_삭제를_요청하면_포스터_파일도_함께_삭제된다(tmp_path, settings):
-    from django.core.files.uploadedfile import SimpleUploadedFile
-
-    settings.MEDIA_ROOT = tmp_path
-    event = create_published_event(title="Event", official_url="https://example.com/delete-with-poster")
-    event.poster_image = SimpleUploadedFile("poster.png", b"fake-image-bytes", content_type="image/png")
-    event.save(update_fields=["poster_image"])
-    poster_storage = event.poster_image.storage
-    poster_name = event.poster_image.name
-    assert poster_storage.exists(poster_name)
-
-    hard_delete_event(event=event)
-
-    assert not poster_storage.exists(poster_name)

@@ -9,10 +9,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from rest_framework import serializers
 
 from core.vocab import CATEGORY, CATEGORY_LABELS, REGION, REGION_LABELS
-from events.image_validation import validate_uploaded_image
 from events.models import Event
 from events.queries import (
     QUALITY_WARNING_KEYS,
@@ -27,11 +25,9 @@ from events.services import (
     PublishEventError,
     PublishEventRegionError,
     PublishEventTitleError,
-    clear_event_poster,
     create_published_event,
     mark_event_verified,
     republish_event,
-    set_event_poster,
     unpublish_event,
     update_published_event,
 )
@@ -224,9 +220,7 @@ def staff_event_create(request):
     """새 게시 이벤트를 만든다(GET 빈 폼 / POST-PRG).
 
     create_published_event를 재사용해 초안 승인 때와 똑같은 제목/공식URL/
-    기간 검증 규칙을 적용한다. 포스터는 저장된 이벤트에만 붙일 수 있어
-    여기엔 필드가 없고, 생성 성공 시 포스터 업로드를 담당하는 수정 화면으로
-    바로 이동시킨다.
+    기간 검증 규칙을 적용한다. 생성 성공 시 수정 화면으로 바로 이동시킨다.
     """
     if request.method == "POST":
         form_values = _event_edit_form_values_from_post(request.POST)
@@ -313,53 +307,42 @@ def staff_event_edit(request, pk):
         form_values = _event_edit_form_values_from_post(request.POST)
         field_errors = {}
 
-        poster_file = request.FILES.get("poster")
-        clear_poster = request.POST.get("clear_poster") == "on"
-        validated_poster = None
-        if poster_file is not None:
-            try:
-                validated_poster = validate_uploaded_image(poster_file)
-            except serializers.ValidationError as exc:
-                detail = exc.detail
-                field_errors["poster"] = str(detail[0] if isinstance(detail, list) else detail)
-
-        if not field_errors:
-            try:
-                with transaction.atomic():
-                    update_published_event(
-                        event=event,
-                        title=form_values["title"],
-                        category=form_values["category"],
-                        work_title=form_values["work_title"],
-                        location_name=form_values["location_name"],
-                        region=form_values["region"],
-                        start_date=_parse_optional_date(form_values["start_date"]),
-                        end_date=_parse_optional_date(form_values["end_date"]),
-                        official_url=form_values["official_url"],
-                        source_name=form_values["source_name"],
-                        summary=form_values["summary"],
+        try:
+            with transaction.atomic():
+                update_published_event(
+                    event=event,
+                    title=form_values["title"],
+                    category=form_values["category"],
+                    work_title=form_values["work_title"],
+                    location_name=form_values["location_name"],
+                    region=form_values["region"],
+                    start_date=_parse_optional_date(form_values["start_date"]),
+                    end_date=_parse_optional_date(form_values["end_date"]),
+                    official_url=form_values["official_url"],
+                    source_name=form_values["source_name"],
+                    summary=form_values["summary"],
+                )
+                StaffActionLog.objects.create(
+                    **_action_log_kwargs(
+                        _staff_action_metadata(request),
+                        StaffActionLog.Action.EVENT_UPDATE,
+                        target_event=event,
                     )
-                    StaffActionLog.objects.create(
-                        **_action_log_kwargs(
-                            _staff_action_metadata(request),
-                            StaffActionLog.Action.EVENT_UPDATE,
-                            target_event=event,
-                        )
-                    )
-            except MissingOfficialUrlError:
-                field_errors["official_url"] = "공식 URL을 입력해야 합니다."
-            except PublishEventTitleError:
-                field_errors["title"] = "제목을 입력해야 합니다. (공식 URL과 동일할 수 없습니다.)"
-            except DuplicateOfficialUrlError:
-                field_errors["official_url"] = "이미 다른 이벤트가 사용 중인 공식 URL입니다."
-            except InvalidEventPeriodError:
-                field_errors["end_date"] = "종료일은 시작일 이후여야 합니다."
-            except PublishEventCategoryError:
-                field_errors["category"] = "목록에 없는 카테고리입니다. 다시 선택하세요."
-            except PublishEventRegionError:
-                field_errors["region"] = "목록에 없는 지역입니다. 다시 선택하세요."
-            except PublishEventError:
-                field_errors["non_field"] = "저장 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
+                )
+        except MissingOfficialUrlError:
+            field_errors["official_url"] = "공식 URL을 입력해야 합니다."
+        except PublishEventTitleError:
+            field_errors["title"] = "제목을 입력해야 합니다. (공식 URL과 동일할 수 없습니다.)"
+        except DuplicateOfficialUrlError:
+            field_errors["official_url"] = "이미 다른 이벤트가 사용 중인 공식 URL입니다."
+        except InvalidEventPeriodError:
+            field_errors["end_date"] = "종료일은 시작일 이후여야 합니다."
+        except PublishEventCategoryError:
+            field_errors["category"] = "목록에 없는 카테고리입니다. 다시 선택하세요."
+        except PublishEventRegionError:
+            field_errors["region"] = "목록에 없는 지역입니다. 다시 선택하세요."
+        except PublishEventError:
+            field_errors["non_field"] = "저장 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
 
         if field_errors:
             return render(
@@ -376,11 +359,6 @@ def staff_event_edit(request, pk):
                 },
                 status=400,
             )
-
-        if clear_poster:
-            clear_event_poster(event=event)
-        elif validated_poster is not None:
-            set_event_poster(event=event, image=validated_poster)
 
         messages.success(request, "저장되었습니다.")
         redirect_url = reverse("staff:event-edit", args=[event.pk])

@@ -4,7 +4,6 @@
 {% block og_title %}{{ project_name }} | {{ event.title }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/components/photo-upload.css' %}">
 <link rel="stylesheet" href="{% static 'css/pages/event_detail.css' %}">
 {% endblock %}
 
@@ -18,81 +17,6 @@
       {% if event.official_url %}
         <span class="event-detail-stamp" aria-hidden="true">공식<br>확인</span>
       {% endif %}
-
-      <div class="event-detail-gallery">
-        <div class="event-detail-poster-frame{% if not event.poster_image %} no-poster{% endif %}"{% if not event.poster_image %} style="--cat-ink: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink)); --cat-soft: var(--cat-{{ event.category|slugify }}-soft, var(--brand-soft));"{% endif %}>
-          <span class="event-detail-status-pill" data-tone="{{ status_slug }}" aria-hidden="true">{{ status_label }}</span>
-          {% if event.poster_image %}
-            <img src="{{ event.poster_image.url }}" alt="{{ event.title }} 포스터">
-          {% else %}
-            <span class="event-detail-poster-watermark" aria-hidden="true">{{ category_label }}</span>
-          {% endif %}
-        </div>
-        {% if request.user.is_staff %}
-          <p class="event-detail-poster-caption">이미지 영역을 클릭하거나 드롭하여 포스터를 등록하세요</p>
-        {% elif event.poster_image %}
-          <p class="event-detail-poster-caption">공식 포스터</p>
-        {% endif %}
-
-        {% if request.user.is_staff %}
-        <div class="event-detail-poster-upload">
-          {% if event.poster_image %}
-            <img
-              src="{{ event.poster_image.url }}"
-              alt="{{ event.title }} 포스터 미리보기"
-              class="event-detail-poster-upload-preview"
-            >
-          {% endif %}
-
-          <img
-            id="poster-preview"
-            alt="선택한 포스터 미리보기"
-            class="event-detail-poster-upload-preview"
-            style="display:none;"
-          >
-
-          <div class="action-list">
-            <input
-              id="poster-file-input"
-              class="photo-upload-native-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              data-event-id="{{ event.id }}"
-              tabindex="-1"
-            >
-            <button type="button" id="poster-file-trigger" class="photo-add-tile">
-              <span>+</span>
-            </button>
-
-            <button
-              id="poster-upload-btn"
-              class="action-link{% if event.poster_image %} ghost{% else %} primary{% endif %}"
-              type="button"
-              data-event-id="{{ event.id }}"
-            >{% if event.poster_image %}교체{% else %}업로드{% endif %}</button>
-
-            {% if event.poster_image %}
-              <p class="panel-note" style="margin:4px 0 6px;">기존 포스터를 교체합니다</p>
-              <button
-                id="poster-delete-btn"
-                class="action-link ghost"
-                type="button"
-                data-event-id="{{ event.id }}"
-              >삭제</button>
-            {% endif %}
-          </div>
-
-          <p id="poster-file-hint" class="panel-note" style="margin-top:8px;">허용 형식: JPEG, PNG, WebP · 최대 5MB</p>
-
-          <p
-            id="poster-error"
-            class="panel-note"
-            data-status-error-container
-            style="color:var(--rose-ink); margin-top:6px;"
-          ></p>
-        </div>
-        {% endif %}
-      </div>
 
       <div class="event-detail-main">
         {% if category_label %}
@@ -263,8 +187,5 @@
 {% block extra_js %}
 {% if event.official_url or user_status == 'visited' %}
 <script defer src="{% static 'js/shared/cta_visibility.js' %}"></script>
-{% endif %}
-{% if request.user.is_staff %}
-<script defer src="{% static 'js/pages/event-poster.js' %}"></script>
 {% endif %}
 {% endblock %}

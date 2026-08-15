@@ -28,7 +28,7 @@
     <div class="events-form-grid">
       {% comment %}action은 화이트리스트 기반 list_query를 보존 — POST 후 PRG 리다이렉트가
          목록 필터(?warning=/?publish_status=)를 유지하려면 POST URL 자체에 실려야 함{% endcomment %}
-      <form class="events-form-panel" method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" enctype="multipart/form-data" novalidate data-submit-guard>
+      <form class="events-form-panel" method="post" action="/staff/events/{{ event.id }}/edit/{% if list_query %}?{{ list_query }}{% endif %}" novalidate data-submit-guard>
         {% csrf_token %}
         <div class="events-form-panel-head">
           <h2 class="events-form-panel-title">필드 편집</h2>
@@ -90,27 +90,6 @@
           <div class="events-field events-field--full">
             <label for="edit-summary">요약<span class="mono events-field-name">summary</span></label>
             <textarea class="events-textarea" id="edit-summary" name="summary">{{ form_values.summary }}</textarea>
-          </div>
-          <div class="events-field events-field--full">
-            <label for="edit-poster">포스터 이미지<span class="mono events-field-name">poster</span></label>
-            <div class="events-poster-field">
-              <span class="events-poster-thumb" aria-hidden="true">{% if event.poster_image %}IMG{% else %}없음{% endif %}</span>
-              <div class="events-poster-controls">
-                <div class="events-poster-buttons">
-                  <input class="events-file-input" id="edit-poster" name="poster" type="file" accept="image/png,image/jpeg,image/webp">
-                  {% if event.poster_image %}
-                    <a class="staff-cta" href="{{ event.poster_image.url }}" target="_blank" rel="noopener">보기 ↗</a>
-                  {% endif %}
-                </div>
-                {% if field_errors.poster %}<p class="events-field-error">{{ field_errors.poster }}</p>{% endif %}
-                {% if event.poster_image %}
-                  <label class="events-checkbox-label">
-                    <input type="checkbox" name="clear_poster">
-                    포스터 제거 <span class="mono events-field-name">clear_poster</span>
-                  </label>
-                {% endif %}
-              </div>
-            </div>
           </div>
         </div>
         <div class="events-form-panel-foot">

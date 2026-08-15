@@ -10,30 +10,6 @@ from .models import Event
 logger = logging.getLogger(__name__)
 
 
-def set_event_poster(*, event, image):
-    """이벤트에 새 포스터 이미지를 지정한다.
-
-    새 이미지를 먼저 저장하고, 옛 파일 삭제는 최선노력으로만 시도한다. 삭제가
-    실패해도 업로드 자체는 성공으로 남긴다(로그만 남김). 옛 파일명을 미리 문자열로
-    떼어두는 이유는, FieldFile.delete()가 모델 인스턴스에 부작용을 일으켜 방금
-    저장한 새 값을 덮어쓰는 것을 막기 위해서다.
-    """
-    old_name = event.poster_image.name if event.poster_image else None
-    old_storage = event.poster_image.storage if event.poster_image else None
-    event.poster_image = image
-    event.save(update_fields=["poster_image"])
-    if old_name and old_storage:
-        try:
-            old_storage.delete(old_name)
-        except Exception:
-            logger.exception("Failed to delete old poster image for event pk=%s", event.pk)
-
-
-def clear_event_poster(*, event):
-    """이벤트의 포스터 이미지를 제거하고 저장소 파일도 함께 지운다."""
-    event.poster_image.delete(save=True)
-
-
 class DuplicateOfficialUrlError(Exception):
     pass
 
@@ -159,8 +135,7 @@ def update_published_event(
 ):
     """기존 이벤트의 수정 가능 필드를 갱신한다.
 
-    publish_status와 poster_image는 여기서 건드리지 않는다(각각 별도 함수 책임:
-    set_event_poster/clear_event_poster, 게시 상태 전환 함수들).
+    publish_status는 여기서 건드리지 않는다(게시 상태 전환 함수들의 책임).
     """
     _normalized_title, normalized_official_url = _validate_publish_fields(
         title=title,
@@ -247,12 +222,10 @@ def mark_event_verified(*, event):
 
 
 def hard_delete_event(*, event):
-    """이벤트를 영구 삭제한다. 포스터 파일도 먼저 정리한다.
+    """이벤트를 영구 삭제한다.
 
     events는 archive 모델을 알면 안 된다(경계 규칙, tests/test_architecture_boundaries.py
     참고). 삭제해도 안전한지 확인하는 책임은 호출부에 있다(예: staff/services.py의
     delete_event가 archive 참조 여부를 먼저 확인).
     """
-    if event.poster_image:
-        clear_event_poster(event=event)
     event.delete()
