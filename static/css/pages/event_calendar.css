@@ -359,10 +359,19 @@
   color: var(--muted);
 }
 
+.agenda-work {
+  margin: 0 0 0.125rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--row-cat-ink);
+  word-break: keep-all;
+}
+
 .agenda-title {
   margin: 0 0 0.1875rem;
   font-size: 0.97rem;
   font-weight: 600;
+  word-break: keep-all;
 }
 
 .agenda-title a {
@@ -374,6 +383,14 @@
   outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* 여러 날 걸치는 행사에만 표시한다 — 단일일 행사는 섹션 제목이 이미
+   그 날짜를 말하므로 중복이다. */
+.agenda-date {
+  margin: 0 0 0.1875rem;
+  font-size: 0.72rem;
+  color: var(--muted);
 }
 
 .agenda-place {
