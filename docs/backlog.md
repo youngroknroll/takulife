@@ -817,7 +817,7 @@ if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
 | F3 | ~~CI 컨테이너 기동 스모크 부재~~ (**해결됨 2026-08-01**) | `docker` 잡이 postgres 서비스를 붙이고 이미지를 실제로 띄워 `/health/` 200을 폴링한다. `migrate`를 건너뛰지 않아 실제 배포 경로를 탄다 | 아래 주석 참고 |
 | F4 | ~~`project-status.md` 2334줄 / 사실과 다른 7곳~~ (**해결됨 2026-08-01**) | `docs/pr-log.md`(추적됨)로 이관하고 `.docs/project-status.md`는 삭제했다. `AGENTS.md`·`CLAUDE.md`에 갱신 의무를 명문화 | 아래 주석 참고 |
 | F5 | ~~스로틀 미적용 엔드포인트 4개~~ (**해결됨 2026-08-01**) | 생성 엔드포인트 4개에 `ScopedRateThrottle` 적용(POST 한정). 레이트는 `config/settings.py`의 `DEFAULT_THROTTLE_RATES` | 아래 주석 참고 |
-| F6 | SSRF DNS 리바인딩 TOCTOU | `drafts/fetching.py:61,70-71` | **수집 플래그를 켜기 전** 반드시 |
+| F6 | SSRF DNS 리바인딩 TOCTOU | `drafts/fetching.py:61,70-71` | 2026-08-15 검토에서 스태프 수동 생성 API(`POST /api/event-drafts/`)가 플래그 확인 없이 외부 fetch를 실행하던 사실이 드러났다. 이번 수정으로 그 엔드포인트도 같은 플래그로 게이트돼 "플래그 off = fetch 경로 휴면"이 실제로 참이 됐다. TOCTOU 근본 수정(resolved IP 고정 연결)은 **여전히 플래그를 켜기 전** 필수 |
 | F7 | 실사용 데이터 이후 스키마 변경 가이드 부재 | `archive/migrations/0011~0013,0019` 비-concurrent | 두 번째 배포부터 유효 |
 | F8 | ~~드래프트 상태 라벨 하드코딩~~ (**해결됨 2026-08-01, PR #278**) | 정본은 `drafts/labels.py`의 `REVIEW_STATUS_LABELS`. 템플릿은 `drafts/templatetags/draft_labels.py` 필터로, JS는 `json_script`로 서버가 내려준 값을 읽는다 | 해결. 아래 주석 참고 |
 | F9 | ~~`staff_event_toggle_publish`에 `select_for_update` 없음~~ (**해결됨 2026-08-01**) | `atomic()` 안에서 잠그고 다시 읽어 분기한다. `redirect_url`이 함수 인자 `pk`를 쓰게 해 사전 읽기 자체를 없앴다 | 아래 주석 참고 |

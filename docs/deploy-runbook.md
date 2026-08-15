@@ -20,25 +20,25 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 | 변수 | 필수 여부 | 배선 근거 | 비고 |
 |---|---|---|---|
-| `SECRET_KEY` | 필수 | config/settings.py:26-40 (`load_secret_key`) | `DEBUG=false`에서 미설정이면 기동 자체가 하드 페일 |
-| `DEBUG` | 필수(`false`로 명시) | config/settings.py:57-60 | 미설정 시 기본값 `true` — 프로덕션에서 반드시 명시적으로 `false` |
-| `ALLOWED_HOSTS` | 필수 | config/settings.py:78-99 (`load_allowed_hosts`, `guard_debug_allowed_hosts`) | 쉼표 구분 호스트명. `*` 금지(Host 헤더 검사 무력화) |
-| `CSRF_TRUSTED_ORIGINS` | 필수 | config/settings.py:105-108 | `https://` 스킴 포함 필수, 맨 호스트명은 매치되지 않음 |
-| `SECURE_SSL` | 필수(`true`) — ③④와 함께 | config/settings.py:114, 476-483 | X-Forwarded-Proto 신뢰 전제(§2·아래 체크리스트 ③) |
-| `SECURE_COOKIES` | 필수(`true`) — `SECURE_SSL`과 동시 | config/settings.py:470-475 | `SECURE_SSL`과 독립 변수지만 프로덕션에선 항상 동시 설정 |
-| `DATABASE_URL` | 필수 | config/settings.py:49-66 | `postgresql://` 스킴만 허용(비-Postgres 스킴 거부), 관리형 PG는 `?sslmode=require` 권장 |
-| `MEDIA_STORAGE_BUCKET` | 필수(PaaS 배포 시) | config/settings.py:173-211 | 5종 all-or-nothing(아래) — PaaS 파일시스템은 휘발성이라 미설정 시 미디어 유실 |
+| `SECRET_KEY` | 필수 | config/settings.py `load_secret_key` | `DEBUG=false`에서 미설정이면 기동 자체가 하드 페일 |
+| `DEBUG` | 필수(`false`로 명시) | config/settings.py `load_debug` | 미설정 시 기본값 `true` — 프로덕션에서 반드시 명시적으로 `false` |
+| `ALLOWED_HOSTS` | 필수 | config/settings.py `load_allowed_hosts`, `guard_debug_allowed_hosts` | 쉼표 구분 호스트명. `*` 금지(Host 헤더 검사 무력화) |
+| `CSRF_TRUSTED_ORIGINS` | 필수 | config/settings.py `load_csrf_trusted_origins` | `https://` 스킴 포함 필수, 맨 호스트명은 매치되지 않음 |
+| `SECURE_SSL` | 필수(`true`) — ③④와 함께 | config/settings.py `load_secure_ssl`, `build_secure_ssl_settings` | X-Forwarded-Proto 신뢰 전제(§2·아래 체크리스트 ③) |
+| `SECURE_COOKIES` | 필수(`true`) — `SECURE_SSL`과 동시 | config/settings.py `_secure_cookies` 대입부 | `SECURE_SSL`과 독립 변수지만 프로덕션에선 항상 동시 설정 |
+| `DATABASE_URL` | 필수 | config/settings.py `load_database_config` | `postgresql://` 스킴만 허용(비-Postgres 스킴 거부), 관리형 PG는 `?sslmode=require` 권장 |
+| `MEDIA_STORAGE_BUCKET` | 필수(PaaS 배포 시) | config/settings.py `load_media_storage_config` | 5종 all-or-nothing(아래) — PaaS 파일시스템은 휘발성이라 미설정 시 미디어 유실 |
 | `MEDIA_STORAGE_ACCESS_KEY_ID` | 필수(위와 세트) | 〃 | |
 | `MEDIA_STORAGE_SECRET_ACCESS_KEY` | 필수(위와 세트) | 〃 | |
 | `MEDIA_STORAGE_ENDPOINT_URL` | 필수(위와 세트) | 〃 | R2: `https://<account-id>.r2.cloudflarestorage.com` |
 | `MEDIA_STORAGE_REGION` | 선택 | 〃 | 미설정 시 기본값 `auto`(R2 관례) |
-| `TRUSTED_PROXY_COUNT` | 필수(PaaS 배포 시) | config/settings.py:127-138, 466-467 | 실제 프록시 홉 수. 상세 위험은 `docs/operations-runbook.md` §4 참조 |
+| `TRUSTED_PROXY_COUNT` | 필수(PaaS 배포 시) | config/settings.py `load_trusted_proxy_count`, `build_axes_client_ip_callable` | 실제 프록시 홉 수. 상세 위험은 `docs/operations-runbook.md` §4 참조 |
 | `RUN_DB_MIGRATIONS` | 조건부 | docker/entrypoint.sh:4-9, `.env.example` | 단일 인스턴스=`true`(기본값). 2+ 레플리카/롤링 배포=`false` |
-| `EMAIL_HOST` 등 5종 | **보류(0단계 계획서 §3·§6)** | config/settings.py:488-500 | 미설정 유지 → 콘솔 백엔드로 우선 배포. 신규 가입 이메일 인증·비밀번호 재설정이 실제로 동작하지 않음(가입 mandatory 이메일 인증 특성상). SMTP 재결정 전까지 실사용자 유입 금지 |
-| `SUPPORT_EMAIL` | 필수(T5, launch 전) | config/settings.py:505 | `*.example` placeholder를 실주소로 교체 |
-| `DEFAULT_FROM_EMAIL` | 필수(T5, launch 전) | config/settings.py:500 | 〃 |
-| `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` | 선택 | `.env.example` | 빈 값이면 "Google로 계속하기" 버튼이 숨김 처리(비활성 아님) |
-| `ANTHROPIC_API_KEY` | 사용 안 함 | `.env.example` | LLM 초안 자동화는 비용 정책상 OFF 유지(`DRAFT_LLM_EXTRACTION_ENABLED = False`, config/settings.py:245). 설정하지 않는다 |
+| `EMAIL_HOST` 등 5종 | **보류(0단계 계획서 §3·§6)** | config/settings.py `EMAIL_HOST` 대입부 | 미설정 유지 → 콘솔 백엔드로 우선 배포. 신규 가입 이메일 인증·비밀번호 재설정이 실제로 동작하지 않음(가입 mandatory 이메일 인증 특성상). SMTP 재결정 전까지 실사용자 유입 금지 |
+| `SUPPORT_EMAIL` | 필수(T5, launch 전) | config/settings.py `SUPPORT_EMAIL` 대입부 | `*.example` placeholder를 실주소로 교체 |
+| `DEFAULT_FROM_EMAIL` | 필수(T5, launch 전) | config/settings.py `DEFAULT_FROM_EMAIL` 대입부 | 〃 |
+| `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` | 선택 | `.env.example` | 빈 값이면 "Google로 계속하기" 버튼이 숨김 처리(비활성 아님). **`docs/backlog.md` B2(소셜 가입 경로에 약관 동의 필드 없음)가 해결되기 전까지 이 값을 설정하지 않는다** — 채우는 순간 약관 동의 없는 가입 경로가 열린다 |
+| `ANTHROPIC_API_KEY` | 사용 안 함 | config/settings.py `DRAFT_LLM_EXTRACTION_ENABLED` 대입부 | LLM 초안 자동화는 비용 정책상 OFF 유지. 설정하지 않는다 |
 
 ## 2. 첫 배포 절차
 
@@ -64,7 +64,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 ## 3. 필수 pre-launch 체크리스트 (0단계 계획서 T7 행, PR-0a/0b/0d/0e 게이트 승계)
 
-첫 트래픽을 받기 **전** 반드시 아래 11개 항목을 순서대로 확인한다. 하나라도
+첫 트래픽을 받기 **전** 반드시 아래 12개 항목을 순서대로 확인한다. 하나라도
 미확인 상태로 첫 배포를 진행하지 않는다.
 
 1. **DEBUG 독립 확인**: `DEBUG=false`가 다른 env 설정과 무관하게 실제로
@@ -135,6 +135,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     종료 코드로 끝나므로(`CommandError`, 실패 건수와 함께), 스케줄러에
     **실패 알림(0이 아닌 종료 코드 감지)을 반드시 연결**한다. 실행 주기 권고와
     상세 절차는 `docs/operations-runbook.md` §7 참조.
+12. **robots.txt 크롤링 차단 해제**: `/robots.txt`는 SMTP 보류로 실사용자
+    유입을 막는 동안의 기술적 담보로 전체 크롤링 차단(`Disallow: /`) 상태로
+    배포된다. 실사용자를 받는 런치 시점에 이를 풀지 않으면 사이트가 검색에
+    잡히지 않는다. 코드 수정이 필요하다 — `core/views.py`의 robots 뷰에서
+    `Disallow` 값을 해제한다.
 
 ## 4. 백업·복구 (T6)
 

@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import IsAdminUser
@@ -36,6 +37,12 @@ class AdminEventDraftListCreateView(ListCreateAPIView):
     queryset = EventDraft.objects.order_by("-id")
 
     def create(self, request, *args, **kwargs):
+        # 수동 생성도 fetch_html을 타는 SSRF 가능 경로라 자동 수집과 같은
+        # 플래그로 잠근다. 입력 검증보다 먼저 막아야 꺼진 기능이 기존
+        # 드래프트 존재 여부를 400으로 누설하지 않는다.
+        if not settings.DRAFT_DISCOVERY_ENABLED:
+            return error_response("Draft creation is disabled.", 403)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         source_url = serializer.validated_data["source_url"]

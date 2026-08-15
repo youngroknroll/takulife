@@ -163,6 +163,7 @@
   font-size: var(--fs-xl);
   font-weight: 800;
   color: var(--text);
+  word-break: keep-all;
 }
 
 .auth-description {
