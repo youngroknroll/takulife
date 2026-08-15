@@ -28,33 +28,36 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #280 — chore: 운영·위생 백로그 4건을 닫는다 (F3·F4·F5·F9)
+### PR #281 — refactor: 프레젠테이션 계층을 web 앱으로 분리해 앱 순환을 없앤다
 
-**무엇을 바꿨나**: CI `docker` 잡에 컨테이너 기동 스모크(postgres 서비스 연결 +
-`/health/` 200 폴링)를 추가해 `migrate` → `collectstatic` → gunicorn 배포 경로를
-실제로 태웠다(F3). PR 이력을 git이 추적하는 `docs/pr-log.md`로 옮기고 `AGENTS.md`·
-`CLAUDE.md`의 기록 규약을 갱신했다(F4 — 이 문서 자체가 그 산출물이다). 생성
-엔드포인트 4개(`personal_entry_create` 30/min, `event_interest_create`·
-`user_event_status_create` 각 60/min, `visit_record_photo_create` 30/min)에
-스로틀을 추가했다(F5). 게시 토글을 `select_for_update()`로 원자화하고
-`redirect_url`이 사전에 읽은 값 대신 `pk` 인자를 받게 해 경쟁 조건이 구조적으로
-재발할 수 없게 했다(F9).
+**무엇을 바꿨나**: `core`에서 프레젠테이션 합성 계층 전체(뷰 7파일, 승격
+오케스트레이터)를 새 앱 `web`(`web/views/{__init__,_helpers,account,activity,
+archive,collection,events,legal}.py` + `web/promotion.py` + `web/promotion_views.py`)
+으로 옮겼다. `core`에는 커널만 남았다(`vocab`·`pagination`·`calendar_grid`·`ip`·
+`errors`·`query_params`·`analytics`·`models`·`llm/`·`templatetags/`·
+`context_processors`·`auth_views`·`views.py`의 `api_root`·`health`).
+`core` 공용 모듈 경계 가드를 "기본 거부 + 허용 목록 2개"에서 예외 없는 기본
+거부로 강화하고, `web`이 리프(어떤 앱도 `web`을 임포트하지 않음)인지·
+`web → staff` 금지·`web/**` 안 `import *` 금지를 검사하는 가드를 새로 추가했다.
 
-**왜**: 백로그에서 "지금 착수 가능"으로 분류된 나머지 항목을 모두 처리해, 트리거
-대기 3건(B2·F6·F7)만 남기기 위해서다.
+**왜**: 프레젠테이션 계층이 `core`에 얹혀 있어 앱 간 임포트가 순환하고 있었다
+(tidy first 1단계). 도메인 앱과 프레젠테이션 계층을 분리해 완전한 DAG를
+만들기 위해서다.
 
-**검증**: `uv run pytest -q` → 2155 passed(F5 +4, F9 +1). `manage.py check` 0
-issues. `makemigrations --check --dry-run` no changes. 뮤테이션: F5 신규 레이트
-4개 제거 → RED(39건 실패), F9 `select_for_update()` 제거 → RED(1건). F3은 이 PR의
-`docker` 잡 결과가 유일한 증거이며 로컬 Docker 부재로 재현하지 못했다.
+**검증**: `core` 팬아웃(도메인 임포트 수) 21 → 0 `[실측]`. 앱 간 양방향(순환)
+임포트 쌍 3 → 0, 완전 DAG `[실측]`. `uv run pytest -q` → 2158 passed `[실측]`.
+`manage.py check` 0 issues, `makemigrations --check --dry-run` no changes
+`[실측]`. 옮긴 뷰 7파일 R100(바이트 단위 동일) `[실측]`, 심볼 51개 문자 단위
+일치 `[실측]`, 라우트 175건 순회 순서까지 무변경 `[실측]`, `templates/` diff
+0바이트 `[실측]`.
 
-**이 항목의 상태**: 이 갱신은 PR #280 자체에 포함되어 있다. PR이 머지되면 이 로그도
-그 시점에 main에 함께 반영된다 — 별도로 "머지됨"을 단정하지 않는다.
+**병합**: 2026-08-06, main `e86ea98`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #280 — chore: 운영·위생 백로그 4건을 닫는다 (F3·F4·F5·F9)
 - #279 — docs: 백로그 현재 상태를 main b43957c 기준으로 갱신
 - #278 — fix: 조용히 깨질 자리 두 곳을 닫는다 (백로그 A5 잔여 + F8)
 - #277 — refactor: 보유·교환 축 술어를 CollectionItem으로 모은다 (백로그 A3 이관분)
