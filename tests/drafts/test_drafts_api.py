@@ -1,5 +1,6 @@
 import pytest
 from django.db import IntegrityError
+from django.test import override_settings
 from django.urls import resolve, reverse
 
 import drafts.views as draft_views
@@ -30,6 +31,7 @@ def event_draft_detail_url(draft_id):
 
 
 @pytest.mark.django_db
+@override_settings(DRAFT_DISCOVERY_ENABLED=True)
 def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_필드와_함께_저장된다(admin_client, monkeypatch):
     def fake_fetch(url):
         return "<html><title>Sample Event</title><meta name='description' content='Short summary'></html>"
@@ -56,6 +58,7 @@ def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_�
 
 
 @pytest.mark.django_db
+@override_settings(DRAFT_DISCOVERY_ENABLED=True)
 def test_관리자가_안전하지_않은_url로_생성을_요청하면_400과_함께_거부된다(admin_client):
     response = admin_client.post(event_drafts_url(), {"source_url": "http://127.0.0.1/event"})
 
@@ -65,6 +68,7 @@ def test_관리자가_안전하지_않은_url로_생성을_요청하면_400과_�
 
 
 @pytest.mark.django_db
+@override_settings(DRAFT_DISCOVERY_ENABLED=True)
 def test_url_가져오기가_실패하면_503으로_응답하고_드래프트를_생성하지_않는다(admin_client, monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: (_ for _ in ()).throw(RuntimeError("timeout")))
     admin_client.raise_request_exception = False
@@ -244,6 +248,7 @@ def test_일반_사용자는_이벤트_드래프트_검토_기능에_접근할_�
 
 
 @pytest.mark.django_db
+@override_settings(DRAFT_DISCOVERY_ENABLED=True)
 def test_이미_존재하는_source_url로_생성을_요청하면_거부된다(admin_client, make_draft):
     make_draft("https://example.com/event")
 
@@ -254,6 +259,7 @@ def test_이미_존재하는_source_url로_생성을_요청하면_거부된다(a
 
 
 @pytest.mark.django_db
+@override_settings(DRAFT_DISCOVERY_ENABLED=True)
 def test_생성_시점의_동시성_경쟁으로_인한_중복도_source_url_필드_오류로_응답한다(admin_client, monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<title>Event</title>")
     monkeypatch.setattr(
@@ -273,11 +279,29 @@ def test_생성_시점의_동시성_경쟁으로_인한_중복도_source_url_필
 
 
 @pytest.mark.django_db
+@override_settings(DRAFT_DISCOVERY_ENABLED=True)
 def test_http가_아닌_스킴의_url로_생성을_요청하면_거부된다(admin_client):
     response = admin_client.post(event_drafts_url(), {"source_url": "ftp://example.com/event"})
 
     assert response.status_code == 400
     assert "source_url" in response.json()
+
+
+@pytest.mark.django_db
+def test_수집이_비활성화되어_있으면_관리자의_수동_드래프트_생성도_거부된다(admin_client, monkeypatch):
+    # settings.DRAFT_DISCOVERY_ENABLED는 기본 False(config/settings.py). 관리자
+    # 권한과 무관하게 이 게이트가 fetch 시도 자체를 막아야 한다 — fetch_html이
+    # 실제로 불리면 SSRF 방어가 우회될 수 있으므로, 여기서는 fetch_html을
+    # 호출되면 즉시 실패하는 대역으로 바꿔 미시도임을 증명한다.
+    def _must_not_fetch(url):
+        raise AssertionError("DRAFT_DISCOVERY_ENABLED가 False일 때 fetch_html이 호출되면 안 된다")
+
+    monkeypatch.setattr("drafts.services.fetch_html", _must_not_fetch)
+
+    response = admin_client.post(event_drafts_url(), {"source_url": "https://example.com/gated"})
+
+    assert response.status_code == 403
+    assert not EventDraft.objects.filter(source_url="https://example.com/gated").exists()
 
 
 @pytest.mark.django_db
@@ -362,6 +386,7 @@ class TestAdminCreateEndpointErrorResponses:
             content_type="application/json",
         )
 
+    @override_settings(DRAFT_DISCOVERY_ENABLED=True)
     def test_지원하지_않는_콘텐츠_오류는_400으로_응답한다(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
@@ -371,6 +396,7 @@ class TestAdminCreateEndpointErrorResponses:
         resp = self._post(client)
         assert resp.status_code == 400
 
+    @override_settings(DRAFT_DISCOVERY_ENABLED=True)
     def test_응답_크기_초과_오류는_400으로_응답한다(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
@@ -380,6 +406,7 @@ class TestAdminCreateEndpointErrorResponses:
         resp = self._post(client)
         assert resp.status_code == 400
 
+    @override_settings(DRAFT_DISCOVERY_ENABLED=True)
     def test_추출_결과_없음_오류는_400으로_응답한다(self, staff_client, monkeypatch):
         monkeypatch.setattr(
             draft_views, "create_draft_from_url",
