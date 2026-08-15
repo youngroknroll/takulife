@@ -6,7 +6,11 @@ SOCIALACCOUNT_PROVIDERS 참고) — client_id가 비어 있으면 인증 페이�
 """
 import pytest
 
-from core.context_processors import google_oauth_configured, support_email
+from core.context_processors import (
+    email_delivery_enabled,
+    google_oauth_configured,
+    support_email,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -47,3 +51,17 @@ def test_support_email은_미설정_시_기본_플레이스홀더_주소로_대�
     settings.SUPPORT_EMAIL = "support@takulife.example"
 
     assert support_email(None) == {"support_email": "support@takulife.example"}
+
+
+def test_콘솔_메일_백엔드에서는_메일_발송_가능_플래그가_꺼진다(settings):
+    # 콘솔 백엔드는 메일을 터미널에만 찍는다 — 실제 수신함에 도달하지 않으므로
+    # "인증 메일을 보냈습니다" 같은 문구를 템플릿이 그대로 보여주면 거짓이 된다.
+    settings.EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+    assert email_delivery_enabled(None) == {"email_delivery_enabled": False}
+
+
+def test_smtp_메일_백엔드에서는_메일_발송_가능_플래그가_켜진다(settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+    assert email_delivery_enabled(None) == {"email_delivery_enabled": True}

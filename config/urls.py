@@ -5,11 +5,13 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from accounts import views as accounts_views
+from core import views as core_views
 from web import views as web_views
 from web.promotion_views import PromotePersonalEntryView
 
 
 urlpatterns = [
+    path("robots.txt", core_views.robots_txt, name="robots-txt"),
     path("", web_views.home, name="home"),
     path("events/", web_views.event_list, name="event-list-page"),
     path("events/calendar/", web_views.event_calendar, name="event-calendar-page"),

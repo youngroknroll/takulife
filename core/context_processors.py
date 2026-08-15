@@ -23,3 +23,14 @@ def support_email(request):
     각 뷰가 ``"support_email"``을 따로 하드코딩하지 않게 한다.
     """
     return {"support_email": settings.SUPPORT_EMAIL}
+
+
+def email_delivery_enabled(request):
+    """메일이 실제로 발송되는 백엔드인지 여부. 콘솔 백엔드(SMTP 미설정)에서
+    템플릿이 '인증 메일을 보냈습니다' 같은 거짓 약속을 하지 않게 한다.
+    """
+    return {
+        "email_delivery_enabled": not settings.EMAIL_BACKEND.endswith(
+            "console.EmailBackend"
+        )
+    }
