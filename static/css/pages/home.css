@@ -30,6 +30,7 @@
     font-weight: 300;
     line-height: 1.22;
     letter-spacing: -0.02em;
+    word-break: keep-all;
   }
   /* 이 오렌지 그라디언트는 토큰이 아닌 시안 리터럴로, 이 히어로 문구
      하나에만 승인됐다 — 다크모드 대비는 별도 위험으로 남겨둔다. */

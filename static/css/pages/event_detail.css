@@ -131,6 +131,7 @@
   margin: 0;
   color: var(--text);
   font-size: 0.875rem;
+  word-break: keep-all;
 }
 
 /* ── actions row: 찜 + 공식 페이지 pills ────────────────────────────── */
