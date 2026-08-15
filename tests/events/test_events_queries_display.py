@@ -349,26 +349,22 @@ class TestListStaffEvents:
         assert matching.id in ids
         assert clean.id not in ids
 
-    def test_포스터_누락_경고_필터는_포스터_없는_행사만_포함하고_있는_행사는_제외한다(
-        self, make_event, png_bytes, settings, tmp_path
+    def test_폐기된_포스터_경고는_행사_목록을_좁히지_않는다(
+        self, make_event, make_draft_event
     ):
-        from django.core.files.uploadedfile import SimpleUploadedFile
-
+        # 포스터 필드와 경고가 서비스 전체에서 폐기됐으므로, "missing_poster"는
+        # 더 이상 알려진 경고 키가 아니다. 알 수 없는 경고 키를 넘기면
+        # list_staff_events가 필터 없이 게시·초안 행사를 모두 반환하는
+        # 기존 계약(알_수_없는_경고_필터_테스트와 동일한 형태)을 그대로 따른다.
         from events.queries import list_staff_events
 
-        settings.MEDIA_ROOT = str(tmp_path)
-        matching = make_event(official_url="https://example.com/poster-missing")
-        clean = make_event(official_url="https://example.com/poster-present")
-        clean.poster_image = SimpleUploadedFile(
-            "poster.png", png_bytes(), content_type="image/png"
-        )
-        clean.save()
+        published = make_event(official_url="https://example.com/a")
+        draft = make_draft_event(official_url="https://example.com/b")
 
         result = list_staff_events(warning="missing_poster")
 
         ids = {e.id for e in result}
-        assert matching.id in ids
-        assert clean.id not in ids
+        assert ids == {published.id, draft.id}
 
     def test_종료됐지만_게시중_경고_필터는_기준일_인자_기준으로_판정한다(self, make_event):
         from events.queries import list_staff_events

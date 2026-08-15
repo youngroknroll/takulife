@@ -47,7 +47,6 @@ from ._helpers import _action_log_kwargs, _staff_action_metadata
 QUALITY_WARNING_LABELS = {
     "missing_official_url": "공식 URL 없음",
     "ended_still_published": "종료됐지만 게시 중",
-    "missing_poster": "포스터 없음",
     "missing_dates": "날짜 정보 누락",
     "missing_region": "지역 정보 없음",
     "needs_reverification": "시작 임박, 미확인",
@@ -65,8 +64,6 @@ def _event_quality_badges(event, *, today):
         badges.append(QUALITY_WARNING_LABELS["missing_official_url"])
     if event.end_date and event.end_date < today:
         badges.append(QUALITY_WARNING_LABELS["ended_still_published"])
-    if not event.poster_image:
-        badges.append(QUALITY_WARNING_LABELS["missing_poster"])
     if event.start_date is None or event.end_date is None:
         badges.append(QUALITY_WARNING_LABELS["missing_dates"])
     if event.region == "":

@@ -364,7 +364,7 @@ class TestEventDraftDetailView:
 @pytest.mark.django_db
 class TestEventDraftPreapprovalChecks:
     """B2: 승인 전 체크 — EventDraft 전용 규칙. Event의 _event_quality_badges와는
-    다른 규칙 집합이다(드래프트엔 poster_image가 없다).
+    판정 시점과 기준이 다른 별개 규칙 집합이다(게시 전 대기 목록용).
     """
 
     def test_모든_체크를_통과하면_전부_통과로_표시된다(self, staff_client, make_draft):

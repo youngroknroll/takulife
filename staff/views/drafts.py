@@ -47,9 +47,8 @@ logger = logging.getLogger(__name__)
 def _draft_warning_badges(draft):
     """이미 가져온 필드(제목/지역/기간)만으로 파생하는 경고 태그 목록(B1).
 
-    _event_quality_badges(staff/views/events.py)와 별개다 — 대상이 되는
-    모델이 다르고(EventDraft에는 poster_image가 없다) 판정 시점도 다르다
-    (게시 전 대기 목록용).
+    _event_quality_badges(staff/views/events.py)와 별개다 — 이쪽은 아직
+    게시하지 않은 초안 대기 목록용이라 판정 시점과 기준이 다르다.
     """
     badges = []
     if not (draft.extracted_title or draft.raw_title):
