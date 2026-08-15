@@ -71,6 +71,11 @@
   사용자 사진 보존 정책으로 일반화하지 않는다.
 - 동적 공유 이미지 생성, 새 폰트 의존성, 행사 추천 로직 변경과 정보 모델 확장은
   이번 범위 밖이다.
+- 삭제된 목이미지 2,869개(14M) `[실측 2026-08-15]`는 백업이 없어 복구할 수 없다.
+  포스터 없음을 메우려는 어떤 대체 장식(이니셜 타일·그라디언트·워터마크 등)도
+  재도입하지 않는다.
+- `Event.poster_image`를 되살리는 결정은 이 문서가 아니라 새 제품·저작권·운영
+  승인과 별도 마이그레이션을 요구한다. 이번 삭제를 근거로 조용히 되돌리지 않는다.
 
 ## Domain boundary and dependency direction
 
@@ -91,8 +96,25 @@
   키보드 이동, 콘솔 오류와 가로 오버플로를 포함한다.
 - 전체 백엔드 회귀, Django 검사와 마이그레이션 드리프트 검사를 새로 실행한다.
 
+## Evidence
+
+- `Event.poster_image` 필드와 마이그레이션(`events/migrations/0007_remove_event_poster_image.py`)
+  으로 제거. `EventPosterView`, `EventPosterUploadSerializer`,
+  `set_event_poster`, `clear_event_poster`, 스태프 포스터 필드,
+  `static/js/pages/event-poster.js`, `templates/core/partials/_poster_card.html`,
+  `static/js/components/deck.js` 폐기. 옛 경로 `/api/events/<pk>/poster/`는
+  URL 등록을 없애 Django 404. 품질 경고 집계에서 `missing_poster` 제거.
+- 목이미지 `media/event-posters/` 2,869개(14M) `[실측 2026-08-15]` 영구 삭제,
+  백업 없음. 사용자 사진 무손상: `visit-record-photos/` 3,100개,
+  `personal-entries/` 2개, `collection-items/` 0개 `[실측]`.
+- 전체 백엔드 회귀 2144 passed `[실측]`(`uv run pytest -q`), `manage.py check`
+  0 issues, 마이그레이션 드리프트 없음 `[실측]`.
+- Web Experience Designer `Conforms`, Browser Interaction Reviewer `Conforms`
+  (사후 판정). 브라우저 실측: Chromium 320·768·1440px × 라이트·다크에서 네
+  화면 `img` 0개, 오버플로 0, 콘솔 오류 0, 찜 실패 복구(잠금 해제·행 안
+  오류·포커스 이동·재시도 성공) 확인.
+
 ## Known gap
 
-이 문서는 승인된 목표 계약이다. 현재 코드는 아직 포스터 필드와 화면을 사용한다.
-구현 순서와 정확한 파일 범위는 `.docs/FE/event-typography-editorial-plan.md`가
-소유한다.
+스크린리더 실재생(VoiceOver/NVDA) 검증은 이번에도 실시하지 않았다. 이 트랙이
+만든 회귀가 아니라 저장소 전체가 아직 갖지 못한 검증 범위다.
