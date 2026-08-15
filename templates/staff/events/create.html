@@ -20,7 +20,7 @@
     {% endif %}
 
     <div class="events-form-grid">
-      <form class="events-form-panel" method="post" action="/staff/events/new/" enctype="multipart/form-data" novalidate data-submit-guard>
+      <form class="events-form-panel" method="post" action="/staff/events/new/" novalidate data-submit-guard>
         {% csrf_token %}
         <div class="events-form-panel-head">
           <h2 class="events-form-panel-title">필드 입력</h2>
