@@ -822,6 +822,8 @@ if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
 | F8 | ~~드래프트 상태 라벨 하드코딩~~ (**해결됨 2026-08-01, PR #278**) | 정본은 `drafts/labels.py`의 `REVIEW_STATUS_LABELS`. 템플릿은 `drafts/templatetags/draft_labels.py` 필터로, JS는 `json_script`로 서버가 내려준 값을 읽는다 | 해결. 아래 주석 참고 |
 | F9 | ~~`staff_event_toggle_publish`에 `select_for_update` 없음~~ (**해결됨 2026-08-01**) | `atomic()` 안에서 잠그고 다시 읽어 분기한다. `redirect_url`이 함수 인자 `pk`를 쓰게 해 사전 읽기 자체를 없앴다 | 아래 주석 참고 |
 | F10 | `staff_event_edit`의 lost-update 여지 | `staff/views/events.py`의 수정 저장 경로 | `[코드]` **토글 패턴은 아니다** — 제출된 폼 값으로 절대 덮어쓴다. 동시 편집 시 마지막 쓰기가 이기는 것뿐이라 F9보다 위험도가 낮다. F9 작업 중 발견(2026-08-01) |
+| F11 | ~~OpenAPI 스키마·문서 엔드포인트 부재~~ (**해결됨 2026-08-16**) | `/api/schema/`·`/api/docs/`(drf-spectacular + Swagger UI sidecar). 계약 테스트 6건 `tests/core/test_openapi_schema.py`. 상세는 `docs/BE/openapi-schema.md` | 아래 주석 참고 |
+| F12 | `/api/schema/` 스로틀·캐시 없음 + CI 스모크가 `/api/docs/`를 안 본다 | `docs/BE/openapi-schema.md` "미적용(의도)" | 실트래픽 개시 전 유보. 트리거 시 ①`/api/schema/`에 캐시 또는 스로틀 적용 ②CI 도커 스모크(F3)에 `/api/docs/` curl 200 확인 추가 |
 
 **F3 주석 — 이 항목의 실검증은 CI뿐이다.** 로컬에 Docker가 없어 스모크를 재현할 수
 없었다. **머지 전 PR의 `docker` 잡 결과를 반드시 확인해야 한다.**
@@ -876,6 +878,13 @@ log", `CLAUDE.md:43`이 "never as durable project state". PR마다 갱신하는 
 리팩터가 만든 회귀가 아니다. 칩 3곳(목록 행·인스펙터·상세)에 가드를 넣었고,
 **앵커를 `queue-status-chip` 클래스 안쪽으로 좁혔다** — 탭 라벨에 같은 문자열이
 있어 본문 전체 검색으로는 칩이 깨져도 통과한다.
+
+**F11 주석 — `extend_schema_view` 키 오기입이 조용히 무시됐다.** ViewSet
+액션명(`list`/`create`/`retrieve`/`partial_update`/`destroy`)을 썼는데 이
+저장소 뷰는 전부 `GenericAPIView` 계열이라 실제로는 `get`/`post`/`patch`/
+`delete` 키가 필요했다 — 28곳 전부가 조용히 무시된 채 `spectacular --validate`도
+경고하지 않았고, 브라우저 실측(Swagger UI에 URL 파생 태그로 남음)에서만 드러났다.
+상세·회귀 가드는 `docs/BE/openapi-schema.md`.
 
 ---
 
