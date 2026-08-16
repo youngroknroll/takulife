@@ -261,6 +261,8 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     "axes",
     "allauth",
     "allauth.account",
@@ -518,6 +520,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_RATES": {
         "promotion": "20/day",
         "collection_item_create": "30/minute",
@@ -527,6 +530,16 @@ REST_FRAMEWORK = {
         "user_event_status_create": "60/minute",
         "visit_record_photo_create": "30/minute",
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "takulife API",
+    "DESCRIPTION": "서브컬처 팬을 위한 개인 굿즈 컬렉션 서비스 takulife의 세션 인증 기반 API.",
+    "VERSION": "0.1.0",
+    # 외부 CDN 대신 로컬 정적 파일로 Swagger UI 자산을 서빙한다(비용·오프라인 규약).
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 # 콘솔(stdout) 로깅. PaaS 플랫폼이 stdout을 수집하는 배포 방식에 맞춘

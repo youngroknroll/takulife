@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from accounts import views as accounts_views
 from core import views as core_views
@@ -149,6 +150,12 @@ urlpatterns = [
     ),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="api-schema"),
+        name="api-docs",
+    ),
     path("api/", include("core.urls")),
     path("api/events/", include("events.urls")),
     path("api/event-drafts/", include("drafts.urls")),
