@@ -92,3 +92,19 @@ def test_공개_스키마의_모든_경로는_api_프리픽스로_시작한다()
     non_api_paths = {path for path in schema["paths"] if not path.startswith("/api/")}
 
     assert not non_api_paths, non_api_paths
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+def test_스키마_생성은_분석_이벤트를_기록하지_않는다():
+    """django_db가 꼭 필요하다 — record_event의 best-effort except가 커밋
+    검증 없이는 차단 예외를 삼켜, 부작용이 실제로 일어났는지 이 테스트가
+    가릴 수 없게 만든다."""
+    from drf_spectacular.generators import SchemaGenerator
+
+    from core.models import AnalyticsEvent
+
+    generator = SchemaGenerator()
+    generator.get_schema(request=None, public=True)
+
+    assert AnalyticsEvent.objects.count() == 0

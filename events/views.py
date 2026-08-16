@@ -25,7 +25,10 @@ class PublicEventListView(ListAPIView):
             if params.get("q")
             else AnalyticsEvent.EventName.EVENT_LIST_VIEWED
         )
-        record_event(event_name=event_name, user=self.request.user)
+        # swagger_fake_view: drf-spectacular가 스키마 생성 시 내성 검사용으로
+        # 뷰에 세팅하는 속성이다 — 그 동안은 실제 요청이 아니므로 분석 기록을 건너뛴다.
+        if not getattr(self, "swagger_fake_view", False):
+            record_event(event_name=event_name, user=self.request.user)
         return list_published_events(params)
 
 
