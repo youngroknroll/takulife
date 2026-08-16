@@ -114,11 +114,39 @@
   화면 `img` 0개, 오버플로 0, 콘솔 오류 0, 찜 실패 복구(잠금 해제·행 안
   오류·포커스 이동·재시도 성공) 확인.
 
-## 홈 히어로 로테이터 (2026-08-16 확장)
+## 홈 히어로 로테이터 (2026-08-16 확장, 같은 날 티켓 스텁으로 개편)
 
 홈 히어로 대표 행사가 단건 정적 표제에서 최대 5건 타이포 자동 슬라이드로
 확장됐다. 컨텍스트 계약은 `featured_event_rows`(리스트, 최대 5건, 진행중→예정
 우선순위)이고 단수 키 `featured_event_row`는 더 이상 존재하지 않는다.
+
+### 티켓 스텁 개편 (2026-08-16, claude.ai/design 보드 2c 채택안)
+
+히어로가 `.hero-ticket` 카드(surface + 테두리 + 그림자, `minmax(0,1fr) 340px`
+그리드)로 바뀌었다. 좌측 `.hero-ticket-main`은 eyebrow·h1·검색·칩, 우측
+`.hero-ticket-stub`은 brand-soft 배경의 티켓 반쪽 — 점선 절취선(2px dashed)과
+`--bg` 색 notch 2개(펀치홀 흉내, aria-hidden)로 분리된다. 슬라이드 내용은
+admit(`<span lang="en">ADMIT ONE</span> · 상태라벨`) → 작품 → 제목(h2) →
+날짜/장소(`<br>` 두 줄) → 대형 D-day → 바코드(장식) → 자세히 보기.
+
+- 로테이터 계약은 그대로다: 다건 분기에서만 `.hero-ticket-stub`에
+  `hero-rotator-wrap`을 **이중 클래스**로 얹는다(JS는
+  `closest(".hero-rotator-wrap")`만 본다). JS 파일은 무변경.
+- 대형 D-day 분기: ended=「종료」 / closing_soon·ongoing=「종료 D-n」·오늘
+  종료 / upcoming=「오픈 D-n」·오늘 오픈 / dday None(날짜 미정)=요소 생략.
+  `{% if row.dday is not None %}` 가드를 쓴다(Django if는 `is not`·None
+  리터럴 지원). **접두어는 필수다** — `dday`가 upcoming은 시작 기준,
+  ongoing·closing_soon은 종료 기준으로 뜻이 달라, 맨 `D-n`은 두 의미가
+  라벨 없이 섞인다(사용자 지적으로 2026-08-16 「종료」 접두어 확정).
+- **함정: 공유 cards.css의 `.hero p`(특이도 0,1,1)가 단일 클래스 p 규칙
+  (0,1,0)의 color·margin을 이긴다.** 그래서 eyebrow·admit·work·meta·dday
+  규칙은 `.hero-ticket` 하위로 스코프해 (0,2,0)으로 올렸다. 45rem의 dday
+  재선언도 같은 특이도로 맞춰야 모바일 축소가 캐스케이드에서 안 죽는다.
+  이 스코프를 "불필요한 중첩"으로 풀면 색·여백이 조용히 무너진다(실측으로
+  확인된 결함이었다). 옛 마스트헤드는 span·flex-gap 구조라 이 함정을 우연히
+  피해갔고 상태 문구 색만 조용히 눌려 있었다.
+- 슬라이드별 바코드 중복은 승인된 구조다(장식 aria-hidden, inert가 비활성
+  슬라이드를 통째로 배제) — 중복 정리 리팩터 금지.
 
 - 0건은 기존 빈 상태, 1건은 컨트롤 없는 정적 표제, 2건 이상만 로테이터가 된다.
   도트·정지 버튼은 `static/js/pages/home_hero_rotator.js`가 주입한다 — no-JS에서
