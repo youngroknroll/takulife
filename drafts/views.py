@@ -53,12 +53,12 @@ class AdminEventDraftStatsView(APIView):
 
 
 @extend_schema_view(
-    list=extend_schema(
+    get=extend_schema(
         tags=["drafts"],
         summary="검토 대기 행사 드래프트 목록을 조회한다",
         responses={200: EventDraftSerializer, 403: OpenApiResponse(description="관리자 권한이 없다.")},
     ),
-    create=extend_schema(
+    post=extend_schema(
         tags=["drafts"],
         summary="URL로부터 새 행사 드래프트를 생성한다",
         responses={
@@ -113,7 +113,7 @@ class AdminEventDraftListCreateView(ListCreateAPIView):
 
 
 @extend_schema_view(
-    retrieve=extend_schema(
+    get=extend_schema(
         tags=["drafts"],
         summary="행사 드래프트 상세를 조회한다",
         responses={
@@ -122,7 +122,7 @@ class AdminEventDraftListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않는 드래프트."),
         },
     ),
-    partial_update=extend_schema(
+    patch=extend_schema(
         tags=["drafts"],
         summary="대기 중인 행사 드래프트를 수정한다",
         responses={

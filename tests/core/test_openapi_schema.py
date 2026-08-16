@@ -2,7 +2,11 @@
 import re
 
 import pytest
+from django.conf import settings
 from django.urls import URLResolver, get_resolver
+
+
+_HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options", "trace"}
 
 
 def _collect_api_path_templates():
@@ -108,3 +112,28 @@ def test_스키마_생성은_분석_이벤트를_기록하지_않는다():
     generator.get_schema(request=None, public=True)
 
     assert AnalyticsEvent.objects.count() == 0
+
+
+@pytest.mark.contract
+def test_공개_스키마의_모든_operation은_선언된_태그만_사용한다():
+    """@extend_schema_view 키 오기입(예: list/create가 아니라 get/post여야
+    하는데 무시되는 경우) 등으로 명시 태그가 조용히 적용되지 않으면
+    drf-spectacular가 URL에서 파생한 태그로 조용히 떨어진다 — 그 회귀를 잡는다."""
+    from drf_spectacular.generators import SchemaGenerator
+
+    declared_tags = {tag["name"] for tag in settings.SPECTACULAR_SETTINGS["TAGS"]}
+    assert declared_tags, "SPECTACULAR_SETTINGS['TAGS']가 비어 있다"
+
+    generator = SchemaGenerator()
+    schema = generator.get_schema(request=None, public=True)
+
+    violations = []
+    for path, operations in schema["paths"].items():
+        for method, operation in operations.items():
+            if method.lower() not in _HTTP_METHODS:
+                continue
+            for tag in operation.get("tags", []):
+                if tag not in declared_tags:
+                    violations.append((path, method, tag))
+
+    assert not violations, violations

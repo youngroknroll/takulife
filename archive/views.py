@@ -78,12 +78,12 @@ class PersonalEntryPagination(PageNumberPagination):
 
 
 @extend_schema_view(
-    list=extend_schema(
+    get=extend_schema(
         tags=["collection"],
         summary="내 비공식 기록 목록을 조회한다",
         responses={200: PersonalEntrySerializer, 403: OpenApiResponse(description="인증되지 않은 요청.")},
     ),
-    create=extend_schema(
+    post=extend_schema(
         tags=["collection"],
         summary="새 비공식 기록을 생성한다",
         responses={
@@ -117,7 +117,7 @@ class PersonalEntryListCreateView(ListCreateAPIView):
 
 
 @extend_schema_view(
-    retrieve=extend_schema(
+    get=extend_schema(
         tags=["collection"],
         summary="비공식 기록 상세를 조회한다",
         responses={
@@ -126,7 +126,7 @@ class PersonalEntryListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 기록."),
         },
     ),
-    partial_update=extend_schema(
+    patch=extend_schema(
         tags=["collection"],
         summary="비공식 기록을 수정한다",
         responses={
@@ -136,7 +136,7 @@ class PersonalEntryListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 기록."),
         },
     ),
-    destroy=extend_schema(
+    delete=extend_schema(
         tags=["collection"],
         summary="비공식 기록을 삭제한다",
         responses={
@@ -165,12 +165,12 @@ class EventInterestPagination(PageNumberPagination):
 
 
 @extend_schema_view(
-    list=extend_schema(
+    get=extend_schema(
         tags=["archive"],
         summary="내 관심 행사 목록을 조회한다",
         responses={200: EventInterestSerializer, 403: OpenApiResponse(description="인증되지 않은 요청.")},
     ),
-    create=extend_schema(
+    post=extend_schema(
         tags=["archive"],
         summary="행사를 관심으로 등록한다",
         responses={
@@ -219,7 +219,7 @@ class EventInterestListCreateView(ListCreateAPIView):
 
 
 @extend_schema_view(
-    retrieve=extend_schema(
+    get=extend_schema(
         tags=["archive"],
         summary="관심 행사 상세를 조회한다",
         responses={
@@ -228,7 +228,7 @@ class EventInterestListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 관심 행사."),
         },
     ),
-    destroy=extend_schema(
+    delete=extend_schema(
         tags=["archive"],
         summary="관심 행사를 해제한다",
         responses={
@@ -254,7 +254,7 @@ class UserEventStatusPagination(PageNumberPagination):
 
 
 @extend_schema_view(
-    list=extend_schema(
+    get=extend_schema(
         tags=["archive"],
         summary="내 행사 상태 목록을 조회한다",
         responses={
@@ -263,7 +263,7 @@ class UserEventStatusPagination(PageNumberPagination):
             403: OpenApiResponse(description="인증되지 않은 요청."),
         },
     ),
-    create=extend_schema(
+    post=extend_schema(
         tags=["archive"],
         summary="행사 상태를 등록한다",
         responses={
@@ -328,7 +328,7 @@ class UserEventStatusListCreateView(ListCreateAPIView):
 
 
 @extend_schema_view(
-    retrieve=extend_schema(
+    get=extend_schema(
         tags=["archive"],
         summary="행사 상태 상세를 조회한다",
         responses={
@@ -337,7 +337,7 @@ class UserEventStatusListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 행사 상태."),
         },
     ),
-    partial_update=extend_schema(
+    patch=extend_schema(
         tags=["archive"],
         summary="행사 상태를 전환한다",
         responses={
@@ -347,7 +347,7 @@ class UserEventStatusListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 행사 상태."),
         },
     ),
-    destroy=extend_schema(
+    delete=extend_schema(
         tags=["archive"],
         summary="행사 상태를 삭제한다",
         responses={
@@ -401,12 +401,12 @@ class VisitRecordPagination(PageNumberPagination):
 
 
 @extend_schema_view(
-    list=extend_schema(
+    get=extend_schema(
         tags=["archive"],
         summary="내 다녀온 기록 목록을 조회한다",
         responses={200: VisitRecordSerializer, 403: OpenApiResponse(description="인증되지 않은 요청.")},
     ),
-    create=extend_schema(
+    post=extend_schema(
         tags=["archive"],
         summary="다녀온 기록을 생성한다",
         responses={
@@ -451,7 +451,7 @@ class VisitRecordListCreateView(ListCreateAPIView):
 
 
 @extend_schema_view(
-    retrieve=extend_schema(
+    get=extend_schema(
         tags=["archive"],
         summary="다녀온 기록 상세를 조회한다",
         responses={
@@ -460,7 +460,7 @@ class VisitRecordListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 기록."),
         },
     ),
-    partial_update=extend_schema(
+    patch=extend_schema(
         tags=["archive"],
         summary="다녀온 기록을 수정한다",
         responses={
@@ -470,7 +470,7 @@ class VisitRecordListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 기록."),
         },
     ),
-    destroy=extend_schema(
+    delete=extend_schema(
         tags=["archive"],
         summary="다녀온 기록을 삭제한다",
         responses={
@@ -581,7 +581,7 @@ class CollectionItemPagination(PageNumberPagination):
 
 
 @extend_schema_view(
-    list=extend_schema(
+    get=extend_schema(
         tags=["collection"],
         summary="내 굿즈 컬렉션 목록을 조회한다",
         responses={
@@ -590,7 +590,7 @@ class CollectionItemPagination(PageNumberPagination):
             403: OpenApiResponse(description="인증되지 않은 요청."),
         },
     ),
-    create=extend_schema(
+    post=extend_schema(
         tags=["collection"],
         summary="굿즈 컬렉션 항목을 생성한다",
         responses={
@@ -637,7 +637,7 @@ class CollectionItemListCreateView(ListCreateAPIView):
 
 
 @extend_schema_view(
-    retrieve=extend_schema(
+    get=extend_schema(
         tags=["collection"],
         summary="굿즈 컬렉션 항목 상세를 조회한다",
         responses={
@@ -646,7 +646,7 @@ class CollectionItemListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 항목."),
         },
     ),
-    partial_update=extend_schema(
+    patch=extend_schema(
         tags=["collection"],
         summary="굿즈 컬렉션 항목을 수정한다",
         responses={
@@ -656,7 +656,7 @@ class CollectionItemListCreateView(ListCreateAPIView):
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 항목."),
         },
     ),
-    destroy=extend_schema(
+    delete=extend_schema(
         tags=["collection"],
         summary="굿즈 컬렉션 항목을 삭제한다",
         responses={
