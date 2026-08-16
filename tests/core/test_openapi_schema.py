@@ -78,3 +78,17 @@ def test_스키마_생성시_등록된_API_경로가_모두_포함된다():
     schema = generator.get_schema(request=None, public=True)
 
     assert urlconf_paths <= set(schema["paths"]), urlconf_paths - set(schema["paths"])
+
+
+@pytest.mark.contract
+def test_공개_스키마의_모든_경로는_api_프리픽스로_시작한다():
+    """스키마는 공개 API 문서다 — /staff/ 콘솔 전용 DRF 뷰가 섞여 들어오면
+    운영 내부 엔드포인트가 공개 계약처럼 노출된다."""
+    from drf_spectacular.generators import SchemaGenerator
+
+    generator = SchemaGenerator()
+    schema = generator.get_schema(request=None, public=True)
+
+    non_api_paths = {path for path in schema["paths"] if not path.startswith("/api/")}
+
+    assert not non_api_paths, non_api_paths

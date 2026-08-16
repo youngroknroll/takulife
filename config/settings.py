@@ -540,6 +540,7 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "SERVE_INCLUDE_SCHEMA": False,
+    "PREPROCESSING_HOOKS": ["config.openapi.preprocess_exclude_non_api_paths"],
 }
 
 # 콘솔(stdout) 로깅. PaaS 플랫폼이 stdout을 수집하는 배포 방식에 맞춘
