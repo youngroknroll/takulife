@@ -1,5 +1,11 @@
 from django.conf import settings
-from rest_framework import status
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+)
+from rest_framework import serializers, status
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -27,10 +33,45 @@ from .services import (
 class AdminEventDraftStatsView(APIView):
     permission_classes = [IsAdminUser]
 
+    @extend_schema(
+        tags=["drafts"],
+        summary="드래프트 검토 상태별 개수를 조회한다",
+        responses={
+            200: inline_serializer(
+                "AdminEventDraftStatsResponse",
+                {
+                    "pending": serializers.IntegerField(),
+                    "approved": serializers.IntegerField(),
+                    "rejected": serializers.IntegerField(),
+                },
+            ),
+            403: OpenApiResponse(description="관리자 권한이 없다."),
+        },
+    )
     def get(self, request):
         return Response(draft_review_stats())
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["drafts"],
+        summary="검토 대기 행사 드래프트 목록을 조회한다",
+        responses={200: EventDraftSerializer, 403: OpenApiResponse(description="관리자 권한이 없다.")},
+    ),
+    create=extend_schema(
+        tags=["drafts"],
+        summary="URL로부터 새 행사 드래프트를 생성한다",
+        responses={
+            201: EventDraftSerializer,
+            400: OpenApiResponse(
+                description="중복 URL, 안전하지 않은 URL, 지원하지 않는 콘텐츠, "
+                "응답 초과, 또는 의미 있는 내용 추출 실패."
+            ),
+            403: OpenApiResponse(description="관리자 권한이 없거나 드래프트 생성 기능이 꺼져 있다."),
+            503: OpenApiResponse(description="원본 URL을 가져오지 못했다."),
+        },
+    ),
+)
 class AdminEventDraftListCreateView(ListCreateAPIView):
     permission_classes = [IsAdminUser]
     serializer_class = EventDraftSerializer
@@ -71,6 +112,27 @@ class AdminEventDraftListCreateView(ListCreateAPIView):
         return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
 
+@extend_schema_view(
+    retrieve=extend_schema(
+        tags=["drafts"],
+        summary="행사 드래프트 상세를 조회한다",
+        responses={
+            200: EventDraftSerializer,
+            403: OpenApiResponse(description="관리자 권한이 없다."),
+            404: OpenApiResponse(description="존재하지 않는 드래프트."),
+        },
+    ),
+    partial_update=extend_schema(
+        tags=["drafts"],
+        summary="대기 중인 행사 드래프트를 수정한다",
+        responses={
+            200: EventDraftSerializer,
+            400: OpenApiResponse(description="대기 상태가 아니거나 category/region이 알 수 없는 어휘값이다."),
+            403: OpenApiResponse(description="관리자 권한이 없다."),
+            404: OpenApiResponse(description="존재하지 않는 드래프트."),
+        },
+    ),
+)
 class AdminEventDraftDetailView(RetrieveUpdateAPIView):
     permission_classes = [IsAdminUser]
     serializer_class = EventDraftSerializer

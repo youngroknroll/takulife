@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.pagination import PageNumberPagination
 
@@ -13,6 +14,14 @@ class EventPagination(PageNumberPagination):
     page_size = PUBLIC_LISTING_PAGE_SIZE
 
 
+@extend_schema(
+    tags=["events"],
+    summary="공개된 행사 목록을 조회한다",
+    responses={
+        200: EventSerializer,
+        400: OpenApiResponse(description="쿼리 파라미터가 유효하지 않다."),
+    },
+)
 class PublicEventListView(ListAPIView):
     serializer_class = EventSerializer
     pagination_class = EventPagination
@@ -32,6 +41,14 @@ class PublicEventListView(ListAPIView):
         return list_published_events(params)
 
 
+@extend_schema(
+    tags=["events"],
+    summary="공개된 행사 상세를 조회한다",
+    responses={
+        200: EventSerializer,
+        404: OpenApiResponse(description="존재하지 않거나 비공개인 행사."),
+    },
+)
 class PublicEventDetailView(RetrieveAPIView):
     serializer_class = EventSerializer
 

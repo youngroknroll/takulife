@@ -541,6 +541,13 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "SERVE_INCLUDE_SCHEMA": False,
     "PREPROCESSING_HOOKS": ["config.openapi.preprocess_exclude_non_api_paths"],
+    "TAGS": [
+        {"name": "core", "description": "상태 확인·인증 세션"},
+        {"name": "events", "description": "공개 행사 카탈로그"},
+        {"name": "drafts", "description": "스태프 전용 행사 드래프트 수집·검토"},
+        {"name": "archive", "description": "행사 상태·다녀온 기록·관심"},
+        {"name": "collection", "description": "굿즈 컬렉션·비공식 기록"},
+    ],
 }
 
 # 콘솔(stdout) 로깅. PaaS 플랫폼이 stdout을 수집하는 배포 방식에 맞춘
