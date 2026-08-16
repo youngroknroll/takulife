@@ -29,8 +29,8 @@
           </div>
         </div>
 
-        {% if featured_event_row %}
-          {% with ev=featured_event_row.event %}
+        {% if featured_event_rows|length == 1 %}
+          {% with ev=featured_event_rows.0.event row=featured_event_rows.0 %}
           <div class="hero-featured">
             <span class="hero-featured-eyebrow">진행 중 · 예정 행사</span>
             {% if ev.work_title %}<p class="hero-featured-work">{{ ev.work_title }}</p>{% endif %}
@@ -40,18 +40,47 @@
               <span aria-hidden="true"> · </span>
               {% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}
             </p>
-            {% if featured_event_row.status_slug == "ended" %}
+            {% if row.status_slug == "ended" %}
               <p class="hero-featured-status">종료</p>
-            {% elif featured_event_row.status_slug == "closing_soon" %}
-              <p class="hero-featured-status">{% if featured_event_row.dday == 0 %}오늘 종료{% else %}D-{{ featured_event_row.dday }}{% endif %}</p>
-            {% elif featured_event_row.status_slug == "upcoming" %}
-              <p class="hero-featured-status">{% if featured_event_row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ featured_event_row.dday }}{% endif %}</p>
-            {% elif featured_event_row.status_label %}
-              <p class="hero-featured-status">{{ featured_event_row.status_label }}</p>
+            {% elif row.status_slug == "closing_soon" %}
+              <p class="hero-featured-status">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</p>
+            {% elif row.status_slug == "upcoming" %}
+              <p class="hero-featured-status">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</p>
+            {% elif row.status_label %}
+              <p class="hero-featured-status">{{ row.status_label }}</p>
             {% endif %}
             <a class="hero-featured-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
           </div>
           {% endwith %}
+        {% elif featured_event_rows %}
+          <div class="hero-rotator-wrap">
+            <span class="hero-featured-eyebrow">진행 중 · 예정 행사</span>
+            <div class="hero-rotator" data-hero-rotator>
+              {% for row in featured_event_rows %}
+                {% with ev=row.event %}
+                <div class="hero-featured hero-rotator-slide{% if forloop.first %} is-active{% endif %}" data-hero-slide>
+                  {% if ev.work_title %}<p class="hero-featured-work">{{ ev.work_title }}</p>{% endif %}
+                  <h2 class="hero-featured-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
+                  <p class="hero-featured-meta">
+                    {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}일정 미정{% endif %}
+                    <span aria-hidden="true"> · </span>
+                    {% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}
+                  </p>
+                  {% if row.status_slug == "ended" %}
+                    <p class="hero-featured-status">종료</p>
+                  {% elif row.status_slug == "closing_soon" %}
+                    <p class="hero-featured-status">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</p>
+                  {% elif row.status_slug == "upcoming" %}
+                    <p class="hero-featured-status">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</p>
+                  {% elif row.status_label %}
+                    <p class="hero-featured-status">{{ row.status_label }}</p>
+                  {% endif %}
+                  <a class="hero-featured-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
+                </div>
+                {% endwith %}
+              {% endfor %}
+            </div>
+          </div>
         {% else %}
           <div class="hero-featured-empty">
             <p>새 행사를 준비하고 있어요</p>
@@ -144,4 +173,7 @@
 
 {% block extra_js %}
 <script defer src="{% static 'js/components/hscroll.js' %}"></script>
+{% if featured_event_rows|length > 1 %}
+<script defer src="{% static 'js/pages/home_hero_rotator.js' %}"></script>
+{% endif %}
 {% endblock %}
