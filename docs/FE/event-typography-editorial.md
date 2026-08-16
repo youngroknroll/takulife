@@ -132,9 +132,12 @@ admit(`<span lang="en">ADMIT ONE</span> · 상태라벨`) → 작품 → 제목(
 - 로테이터 계약은 그대로다: 다건 분기에서만 `.hero-ticket-stub`에
   `hero-rotator-wrap`을 **이중 클래스**로 얹는다(JS는
   `closest(".hero-rotator-wrap")`만 본다). JS 파일은 무변경.
-- 대형 D-day 분기: ended=「종료」 / closing_soon·ongoing=D-n·오늘 종료 /
-  upcoming=오픈 D-n·오늘 오픈 / dday None(날짜 미정)=요소 생략. `{% if
-  row.dday is not None %}` 가드를 쓴다(Django if는 `is not`·None 리터럴 지원).
+- 대형 D-day 분기: ended=「종료」 / closing_soon·ongoing=「종료 D-n」·오늘
+  종료 / upcoming=「오픈 D-n」·오늘 오픈 / dday None(날짜 미정)=요소 생략.
+  `{% if row.dday is not None %}` 가드를 쓴다(Django if는 `is not`·None
+  리터럴 지원). **접두어는 필수다** — `dday`가 upcoming은 시작 기준,
+  ongoing·closing_soon은 종료 기준으로 뜻이 달라, 맨 `D-n`은 두 의미가
+  라벨 없이 섞인다(사용자 지적으로 2026-08-16 「종료」 접두어 확정).
 - **함정: 공유 cards.css의 `.hero p`(특이도 0,1,1)가 단일 클래스 p 규칙
   (0,1,0)의 color·margin을 이긴다.** 그래서 eyebrow·admit·work·meta·dday
   규칙은 `.hero-ticket` 하위로 스코프해 (0,2,0)으로 올렸다. 45rem의 dday
