@@ -107,7 +107,7 @@ class TestHomeContextCaps:
         assert resp.context["closing_rows"] == []
         assert resp.context["recent_rows"] == []
         assert resp.context["category_tiles"] is not None
-        assert resp.context["featured_event_row"] is None
+        assert resp.context["featured_event_rows"] == []
 
 
 @pytest.mark.django_db
@@ -201,7 +201,7 @@ class TestHomeClosingStatusDivergence:
 class TestHomeFeaturedEvent:
     """홈 대표 행사는 조회수 인기 슬라이더가 아니라
     list_published_events 기본 우선순위(진행중 우선 -> 예정 -> 종료, "active"는
-    종료 행사를 제외)의 첫 행사 한 건이다."""
+    종료 행사를 제외)를 따르는 최대 5건의 로테이터 목록이다."""
 
     def test_홈_대표_행사는_종료되지_않은_공개_행사_우선순위의_첫_행사다(
         self, make_event, make_draft_event
@@ -231,12 +231,12 @@ class TestHomeFeaturedEvent:
         with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
 
-        assert resp.context["featured_event_row"]["event"].id == ongoing.id
+        assert resp.context["featured_event_rows"][0]["event"].id == ongoing.id
 
     def test_공개중인_행사가_없으면_홈_대표_행사는_없다(self):
         resp = Client().get("/")
 
-        assert resp.context["featured_event_row"] is None
+        assert resp.context["featured_event_rows"] == []
 
     def test_종료된_행사만_있으면_홈_대표_행사는_없다(self, make_event):
         today = date(2026, 6, 26)
@@ -254,7 +254,44 @@ class TestHomeFeaturedEvent:
         with patch("web.views.events.timezone.localdate", return_value=today):
             resp = Client().get("/")
 
-        assert resp.context["featured_event_row"] is None
+        assert resp.context["featured_event_rows"] == []
+
+    def test_공개_행사가_6건_이상이면_홈_대표_행사는_최대_5건이고_진행중이_예정보다_앞선다(
+        self, make_event
+    ):
+        today = date(2026, 6, 26)
+        ongoing_events = [
+            make_event(
+                title=f"진행 중 행사{i}",
+                start_date=today - timedelta(days=1),
+                end_date=today + timedelta(days=3),
+            )
+            for i in range(3)
+        ]
+        upcoming_events = [
+            make_event(
+                title=f"예정 행사{i}",
+                start_date=today + timedelta(days=10 + i),
+            )
+            for i in range(4)
+        ]
+
+        with patch("web.views.events.timezone.localdate", return_value=today):
+            resp = Client().get("/")
+
+        rows = resp.context["featured_event_rows"]
+        assert len(rows) == 5
+        row_ids = [row["event"].id for row in rows]
+        ongoing_ids = {e.id for e in ongoing_events}
+        upcoming_ids = {e.id for e in upcoming_events}
+        last_ongoing_index = max(
+            i for i, event_id in enumerate(row_ids) if event_id in ongoing_ids
+        )
+        first_upcoming_index = min(
+            (i for i, event_id in enumerate(row_ids) if event_id in upcoming_ids),
+            default=len(row_ids),
+        )
+        assert last_ongoing_index < first_upcoming_index
 
 
 @pytest.mark.django_db

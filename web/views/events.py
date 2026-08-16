@@ -77,9 +77,10 @@ def home(request):
     ]
 
     # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
-    # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 첫 한 건.
-    featured = _attach_display(
-        list_published_events({"status": "active"}, today=today)[:1],
+    # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
+    # 로테이터로 노출한다.
+    featured_event_rows = _attach_display(
+        list_published_events({"status": "active"}, today=today)[:5],
         today=today,
         user=request.user,
     )
@@ -89,7 +90,7 @@ def home(request):
         "closing_rows": _attach_display(closing_qs[:15], today=today, user=request.user),
         "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
         "category_tiles": category_tiles,
-        "featured_event_row": featured[0] if featured else None,
+        "featured_event_rows": featured_event_rows,
     }
 
     if request.user.is_authenticated:

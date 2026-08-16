@@ -118,6 +118,112 @@
     border-radius: 4px;
   }
 
+  /* ── Hero rotator — 대표 행사 2건 이상일 때 grid 겹침 스택으로 크로스페이드.
+     모든 슬라이드가 같은 grid-area를 공유해 컨테이너 높이가 가장 긴
+     슬라이드에 고정되고, 전환 중 레이아웃 점프가 없다. */
+  .hero-rotator-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .hero-rotator {
+    display: grid;
+  }
+  .hero-rotator-slide {
+    grid-area: 1 / 1;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.35s ease, visibility 0s 0.35s;
+  }
+  .hero-rotator-slide.is-active {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.35s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-rotator-slide,
+    .hero-rotator-slide.is-active {
+      transition: none;
+    }
+  }
+
+  /* 도트·정지 버튼은 JS가 주입한다(no-JS 안전). 히트 타깃 44x44,
+     활성 도트는 색과 폭을 동시에 바꿔 색만으로 상태를 전달하지 않는다. */
+  .hero-rotator-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+  .hero-rotator-dots {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+  }
+  .hero-rotator-dot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .hero-rotator-dot::before {
+    content: "";
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--muted);
+    transition: background-color 0.2s ease, width 0.2s ease, border-radius 0.2s ease;
+  }
+  .hero-rotator-dot[aria-current="true"]::before {
+    width: 20px;
+    border-radius: 4px;
+    background: var(--brand-ink);
+  }
+  .hero-rotator-dot:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .hero-rotator-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .hero-rotator-toggle::before {
+    content: "";
+    display: block;
+    width: 3px;
+    height: 12px;
+    background: var(--brand-ink);
+    box-shadow: 6px 0 0 var(--brand-ink);
+  }
+  .hero-rotator-toggle[aria-pressed="true"]::before {
+    width: 0;
+    height: 0;
+    background: transparent;
+    box-shadow: none;
+    border-style: solid;
+    border-width: 6px 0 6px 10px;
+    border-color: transparent transparent transparent var(--brand-ink);
+  }
+  .hero-rotator-toggle:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
   /* 대표 행사가 없을 때 — 장식용 빈 카드 대신 안내 문구 + 회복 링크 하나. */
   .hero-featured-empty {
     display: flex;
