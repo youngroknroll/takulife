@@ -4,6 +4,7 @@
 이게 금지된다. archive/drafts 양쪽을 모두 볼 수 있는 프레젠테이션·교차도메인
 계층인 ``web``이 이 오케스트레이션의 자리다.
 """
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -32,6 +33,28 @@ class PromotePersonalEntryView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "promotion"
 
+    @extend_schema(
+        tags=["collection"],
+        summary="비공식 기록을 공식 행사 후보로 제보한다",
+        request=_PromoteSerializer,
+        responses={
+            201: inline_serializer(
+                "PromotePersonalEntryResponse",
+                {
+                    "draft_id": serializers.IntegerField(),
+                    "promotion_status": serializers.CharField(),
+                },
+            ),
+            400: OpenApiResponse(
+                description="이 항목은 제보할 수 없거나, official_url이 허용되지 않거나 "
+                "이미 존재하는 드래프트의 URL과 같다."
+            ),
+            403: OpenApiResponse(description="인증되지 않은 요청."),
+            404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 비공식 기록."),
+            409: OpenApiResponse(description="이미 검토 제출된 항목."),
+            429: OpenApiResponse(description="일일 제보 상한 초과."),
+        },
+    )
     def post(self, request, pk):
         serializer = _PromoteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
