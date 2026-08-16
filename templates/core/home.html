@@ -46,7 +46,7 @@
               <p class="hero-ticket-dday">종료</p>
             {% elif row.status_slug == "closing_soon" or row.status_slug == "ongoing" %}
               {% if row.dday is not None %}
-                <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</p>
+                <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 종료{% else %}종료 D-{{ row.dday }}{% endif %}</p>
               {% endif %}
             {% elif row.status_slug == "upcoming" %}
               {% if row.dday is not None %}
@@ -76,7 +76,7 @@
                     <p class="hero-ticket-dday">종료</p>
                   {% elif row.status_slug == "closing_soon" or row.status_slug == "ongoing" %}
                     {% if row.dday is not None %}
-                      <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</p>
+                      <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 종료{% else %}종료 D-{{ row.dday }}{% endif %}</p>
                     {% endif %}
                   {% elif row.status_slug == "upcoming" %}
                     {% if row.dday is not None %}
