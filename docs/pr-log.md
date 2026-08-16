@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR은 273건을 넘는데 전부는 들어가지 않으므로
 최신 PR부터 채우고 줄 수 예산에 닿는 지점에서 끊는다 — 컷오프는 "재구성 불가"가 아니라
-순수히 **줄 수 예산** 문제다. 아래 한 줄 요약 목록은 PR #287부터 PR #152까지를 담았다.
+순수히 **줄 수 예산** 문제다. 아래 한 줄 요약 목록은 PR #289부터 PR #152까지를 담았다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,39 +28,41 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #288 — design(home): 홈 히어로를 티켓 스텁 카드로 전환
+### PR #290 — feat(api): OpenAPI 문서화 도입 (drf-spectacular + Swagger UI)
 
-**무엇을 바꿨나**: claude.ai/design 목업(보드 2c 채택안)대로 홈 히어로를
-티켓 스텁 카드로 전환. 좌측 `.hero-ticket-main`(신규 eyebrow + h1 + 검색 +
-퀵필터, 기능 무변경) + 우측 `.hero-ticket-stub`(점선 절취선, `--bg` 펀치홀
-notch, `ADMIT ONE · 상태`, 작품/제목/일정·장소, 대형 D-day, 바코드 장식,
-자세히 보기). 자동 슬라이드는 스텁에 `hero-rotator-wrap` 이중 클래스만 얹어
-JS 무변경으로 보존. 대형 D-day는 상태별 분기 — ended=「종료」,
-closing_soon·ongoing=「종료 D-n」(0=오늘 종료), upcoming=「오픈 D-n」
-(0=오늘 오픈), 날짜 미정=생략. 종료 기준 접두어는 머지 전 사용자 지적으로
-추가(같은 숫자 필드가 상태별로 시작/종료 기준이 달라 맨 `D-n`은 의미가
-섞였다). 옛 `.hero-inner`/`.hero-featured-*` 마크업·CSS 전수 제거. 구현 중
-공유 cards.css `.hero p`(0,1,1)가 신규 p 규칙(0,1,0)의 색·여백을 덮는
-특이도 결함을 브라우저 실측으로 발견, `.hero-ticket` 하위 스코프(0,2,0)로
-해소(상세는 `docs/FE/event-typography-editorial.md`).
+**무엇을 바꿨나**: `/api/schema/`(OpenAPI 3)·`/api/docs/`(Swagger UI,
+sidecar 자체 서빙·외부 CDN 요청 0) 전체 공개(사용자 결정). 도메인 태그
+5종(`core`/`events`/`drafts`/`archive`/`collection`) + 37개 operation
+한국어 `summary` + serializer가 없던 뷰 7개의 요청·응답을 실코드 기준으로
+명시(스키마 생성 오류 27건→0건). 구현 중 실결함 3건을 발견·수정했다 —
+①스태프 콘솔 4경로가 공개 스키마에 노출 → `/api/` 프리픽스 전처리 훅으로
+제외, ②스키마 생성이 뷰의 `get_queryset()`을 실행해 분석 이벤트가 실제로
+커밋됨 → `swagger_fake_view` 가드 추가, ③`extend_schema_view` 키 28곳이
+ViewSet 액션명(`list`/`create`/`retrieve`/`partial_update`/`destroy`)으로
+잘못 쓰여 조용히 무시됨(이 저장소 뷰는 전부 `GenericAPIView` 계열) →
+HTTP 핸들러명(`get`/`post`/`patch`/`delete`)으로 교체. 계약 테스트 6건
+신설(`tests/core/test_openapi_schema.py`). 가드레일 정본
+`docs/BE/openapi-schema.md` 신설, 백로그 F11(해결)·F12(유보) 등록, 배포
+런북 체크리스트 13번 항목(`/api/docs/` 정적 자산 실서빙 확인) 추가.
 
-**왜**: 2026-08-16 사용자 요청 — 히어로를 티켓스텁 디자인으로, 자동
-슬라이드 유지.
+**왜**: 2026-08-16 사용자 요청 — 개발자 취업 대비 API 문서화 실무 경험과
+프론트엔드 협업 기반 마련. 노출 범위(전체 공개)와 심도(자동 생성+핵심
+보강)는 사용자 결정.
 
-**검증**: 전체 회귀 2149 passed `[실측]`, check 0 issues, 콘솔 에러 0.
-FE 이중 게이트 — WED·BIR 사전 산출물 + 사후 판정 둘 다 `Conforms`
-(D-day 접두어 수정분 포함 2회), QVL 완료 판정. Chromium 실측: 회전 주기
-6999ms, 320/720상당/860/950/1200px × 라이트/다크 오버플로 0, inert 동틱,
-reduced-motion 왕복, AX 트리(notch·바코드 미노출), 탭 순서 전수,
-0/1/N건 분기 렌더 프로브. bfcache는 JS 무변경으로 코드 검토 갈음
-(기존 Known gap).
+**검증**: 전체 회귀 `uv run pytest -q` → **2155 passed**(2149+6) `[실측]`,
+Django check 0 issues, 마이그레이션 드리프트 0,
+`manage.py spectacular --validate --fail-on-warn` 통과. 브라우저 실측 —
+37개 operation 전부 선언된 5태그 소속, Swagger UI 콘솔 오류 0, 외부
+네트워크 요청 0. CI 3잡(테스트·Docker·GitGuardian) 전부 pass.
 
-**병합**: 2026-08-16, main `012bd9c`.
+**병합**: 2026-08-16, main `99d2950`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #289 — docs: PR #287·#288 머지를 로그에 롤링 반영
+- #288 — design(home): 홈 히어로를 티켓 스텁 카드로 전환
 - #287 — docs: PR #285·#286 머지를 로그에 롤링 반영
 - #286 — feat(web): 홈 히어로 타이포 자동 슬라이드 로테이터
 - #285 — fix(web): 브라우저 검토 후속 — 어휘 잔재 1건과 keep-all 누락 2건
