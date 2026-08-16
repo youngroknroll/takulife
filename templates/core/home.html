@@ -11,8 +11,9 @@
 {% block content %}
   <main class="page home-page" id="content">
     <section class="hero">
-      <div class="hero-inner">
-        <div class="hero-left">
+      <div class="hero-ticket">
+        <div class="hero-ticket-main">
+          <p class="hero-ticket-eyebrow">서브컬처 이벤트 티켓부스</p>
           <h1>내가 원하는 이벤트를 <span class="hl">한눈에</span></h1>
           <form class="search" action="/events/" method="get">
             <input id="q" name="q" type="text" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
@@ -31,60 +32,72 @@
 
         {% if featured_event_rows|length == 1 %}
           {% with ev=featured_event_rows.0.event row=featured_event_rows.0 %}
-          <div class="hero-featured">
-            <span class="hero-featured-eyebrow">진행 중 · 예정 행사</span>
-            {% if ev.work_title %}<p class="hero-featured-work">{{ ev.work_title }}</p>{% endif %}
-            <h2 class="hero-featured-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
-            <p class="hero-featured-meta">
-              {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}일정 미정{% endif %}
-              <span aria-hidden="true"> · </span>
+          <div class="hero-ticket-stub">
+            <span class="hero-ticket-notch hero-ticket-notch--a" aria-hidden="true"></span>
+            <span class="hero-ticket-notch hero-ticket-notch--b" aria-hidden="true"></span>
+            <p class="hero-ticket-admit"><span lang="en">ADMIT ONE</span>{% if row.status_label %} · {{ row.status_label }}{% endif %}</p>
+            {% if ev.work_title %}<p class="hero-ticket-work">{{ ev.work_title }}</p>{% endif %}
+            <h2 class="hero-ticket-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
+            <p class="hero-ticket-meta">
+              {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}일정 미정{% endif %}<br>
               {% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}
             </p>
             {% if row.status_slug == "ended" %}
-              <p class="hero-featured-status">종료</p>
-            {% elif row.status_slug == "closing_soon" %}
-              <p class="hero-featured-status">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</p>
+              <p class="hero-ticket-dday">종료</p>
+            {% elif row.status_slug == "closing_soon" or row.status_slug == "ongoing" %}
+              {% if row.dday is not None %}
+                <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</p>
+              {% endif %}
             {% elif row.status_slug == "upcoming" %}
-              <p class="hero-featured-status">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</p>
-            {% elif row.status_label %}
-              <p class="hero-featured-status">{{ row.status_label }}</p>
+              {% if row.dday is not None %}
+                <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</p>
+              {% endif %}
             {% endif %}
-            <a class="hero-featured-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
+            <div class="hero-ticket-code" aria-hidden="true"></div>
+            <a class="hero-ticket-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
           </div>
           {% endwith %}
         {% elif featured_event_rows %}
-          <div class="hero-rotator-wrap">
-            <span class="hero-featured-eyebrow">진행 중 · 예정 행사</span>
+          <div class="hero-ticket-stub hero-rotator-wrap">
+            <span class="hero-ticket-notch hero-ticket-notch--a" aria-hidden="true"></span>
+            <span class="hero-ticket-notch hero-ticket-notch--b" aria-hidden="true"></span>
             <div class="hero-rotator" data-hero-rotator>
               {% for row in featured_event_rows %}
                 {% with ev=row.event %}
-                <div class="hero-featured hero-rotator-slide{% if forloop.first %} is-active{% endif %}" data-hero-slide>
-                  {% if ev.work_title %}<p class="hero-featured-work">{{ ev.work_title }}</p>{% endif %}
-                  <h2 class="hero-featured-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
-                  <p class="hero-featured-meta">
-                    {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}일정 미정{% endif %}
-                    <span aria-hidden="true"> · </span>
+                <div class="hero-rotator-slide{% if forloop.first %} is-active{% endif %}" data-hero-slide>
+                  <p class="hero-ticket-admit"><span lang="en">ADMIT ONE</span>{% if row.status_label %} · {{ row.status_label }}{% endif %}</p>
+                  {% if ev.work_title %}<p class="hero-ticket-work">{{ ev.work_title }}</p>{% endif %}
+                  <h2 class="hero-ticket-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
+                  <p class="hero-ticket-meta">
+                    {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}일정 미정{% endif %}<br>
                     {% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}
                   </p>
                   {% if row.status_slug == "ended" %}
-                    <p class="hero-featured-status">종료</p>
-                  {% elif row.status_slug == "closing_soon" %}
-                    <p class="hero-featured-status">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</p>
+                    <p class="hero-ticket-dday">종료</p>
+                  {% elif row.status_slug == "closing_soon" or row.status_slug == "ongoing" %}
+                    {% if row.dday is not None %}
+                      <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</p>
+                    {% endif %}
                   {% elif row.status_slug == "upcoming" %}
-                    <p class="hero-featured-status">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</p>
-                  {% elif row.status_label %}
-                    <p class="hero-featured-status">{{ row.status_label }}</p>
+                    {% if row.dday is not None %}
+                      <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</p>
+                    {% endif %}
                   {% endif %}
-                  <a class="hero-featured-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
+                  <div class="hero-ticket-code" aria-hidden="true"></div>
+                  <a class="hero-ticket-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
                 </div>
                 {% endwith %}
               {% endfor %}
             </div>
           </div>
         {% else %}
-          <div class="hero-featured-empty">
-            <p>새 행사를 준비하고 있어요</p>
-            <a href="/events/">이벤트 둘러보기 ›</a>
+          <div class="hero-ticket-stub">
+            <span class="hero-ticket-notch hero-ticket-notch--a" aria-hidden="true"></span>
+            <span class="hero-ticket-notch hero-ticket-notch--b" aria-hidden="true"></span>
+            <div class="hero-featured-empty">
+              <p>새 행사를 준비하고 있어요</p>
+              <a href="/events/">이벤트 둘러보기 ›</a>
+            </div>
           </div>
         {% endif %}
       </div>
