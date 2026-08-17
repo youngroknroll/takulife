@@ -2,6 +2,17 @@
    시각 언어를 쓰지만 클래스명은 공유하지 않는다(두 시트는 같이 로드되지
    않음). 가드레일은 docs/FE/auth-editorial.md 참조. */
 
+/* 카드 위아래 여백을 같게 만든다 — 아래만 120px이라 카드가 붕 떠 보였다.
+   .page의 기본 아래 여백(5rem)과 푸터의 위 여백(2.5rem)은 전역 규칙이라
+   여기서 이 화면들에만 덮어쓴다. */
+.auth-page {
+  padding-bottom: 1.625rem;
+}
+
+.auth-page + .site-footer {
+  margin-top: 0;
+}
+
 /* ── shell: declare panel (left, brand context) + form panel (right) ────
    왼쪽(브랜드 안내)은 화면 폭에 맞춰 늘어나고, 오른쪽(입력 폼)은 29.25rem로
    고정한다 — 반대로 하면 폼이 큰 화면에서 지나치게 넓어진다. */
@@ -9,8 +20,12 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 29.25rem;
   gap: 0;
-  min-height: calc(100vh - var(--site-header-h));
   align-items: stretch;
+  /* .page가 이미 폭·상하 여백을 잡아준다 — 카드 자체는 다른 화면과 같은
+     테두리·둥근 모서리를 갖는 패널로만 존재한다. */
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
 }
 
 /* 이미 로그인한 채로 여는 화면에는 브랜드 소개 패널을 띄우지 않는다 —
@@ -78,6 +93,13 @@
 /* 폼 패널이 폭 고정이라 화면이 좁아지면 선언 패널만 줄어든다 — 40px 글자가
    안 들어가 여기서 한 단계 줄인다. 64rem은 기존에 쓰던 경계값 재사용. */
 @media (max-width: 64rem) {
+  /* 카드 폭이 줄어드는 구간에서 폼 열까지 468px로 붙잡아 두면 줄어드는 몫을
+     왼쪽 소개 패널이 전부 떠안아 제목과 설명이 잘게 끊긴다. 반대로 폼을
+     너무 좁히면 링크 힌트가 어절 중간에서 끊긴다 — 양쪽이 같이 줄어들게 한다. */
+  .auth-shell {
+    grid-template-columns: minmax(0, 1fr) clamp(22rem, 50%, 29.25rem);
+  }
+
   .auth-panel-declare h2 {
     font-size: 1.75rem;
   }
@@ -444,12 +466,19 @@
   font-size: 0.9rem;
 }
 
+/* 힌트는 라벨을 보조하는 문구다. 폭이 좁아지면 「이메일 / 만 있으 / 면 시작」처럼
+   어절 중간에서 끊겨 오히려 읽기 어려워지므로 그 구간에서는 감춘다. */
+@media (max-width: 56.25rem) {
+  .auth-links-hint {
+    display: none;
+  }
+}
+
 /* ── mobile: 선언 패널을 display:none으로 통째로 지운다. order로
    순서를 바꾸지 않는다 — 탭 순서와 화면 순서가 어긋난다. ──────────── */
 @media (max-width: 45rem) {
   .auth-shell {
     display: block;
-    min-height: 0;
   }
 
   .auth-panel-declare {
@@ -458,7 +487,10 @@
 
   .auth-panel-form {
     max-width: none;
-    padding: 1.75rem var(--page-pad-x);
+    /* .page가 이미 모바일 바깥 여백(1rem)을 주므로, 여기는 카드 안쪽
+       여백을 리터럴 1rem으로 고정한다 — overflow:hidden인 카드에서
+       포커스 링이 잘리지 않도록 여유를 남긴다. */
+    padding: 1.75rem 1rem;
   }
 
   .auth-shell.is-standalone .auth-panel-form {
@@ -468,9 +500,5 @@
 
   .auth-title {
     font-size: var(--fs-xl-mobile);
-  }
-
-  .auth-links-hint {
-    display: none;
   }
 }

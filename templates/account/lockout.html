@@ -8,48 +8,50 @@
 {% endblock %}
 
 {% block content %}
-<main class="auth-shell" id="content">
-  <aside class="auth-panel-declare">
-    <span class="auth-glyph" aria-hidden="true">✦</span>
-    <p class="auth-kicker">TAKULIFE ACCOUNT</p>
-    <h2>그대들의<br>덕질 라이프를<br>위하여</h2>
-    <hr class="auth-rule">
-    <ul class="auth-panel-domains">
-      <li>
-        <span class="auth-panel-domain-tick" aria-hidden="true"></span>
-        <span class="auth-panel-domain-name">행사</span>
-        <span class="auth-panel-domain-desc">공식 URL 기준으로 큐레이션한 팝업·전시</span>
-      </li>
-      <li>
-        <span class="auth-panel-domain-tick" aria-hidden="true"></span>
-        <span class="auth-panel-domain-name">컬렉션</span>
-        <span class="auth-panel-domain-desc">굿즈와 소장품을 내 손안의 목록으로</span>
-      </li>
-      <li>
-        <span class="auth-panel-domain-tick is-mint" aria-hidden="true"></span>
-        <span class="auth-panel-domain-name">내 활동</span>
-        <span class="auth-panel-domain-desc">다녀온 기록과 앞으로의 일정까지</span>
-      </li>
-    </ul>
-  </aside>
-  <div class="auth-panel-form">
-    <p class="auth-kicker">계정</p>
-    <h1 class="auth-title">로그인 시도가 너무 많습니다</h1>
-    <p class="auth-error-banner">잠시 후 다시 시도해 주세요.</p>
-    <hr class="auth-rule">
-    <p class="auth-description">로그인 실패가 반복되어 접근이 일시적으로 차단되었습니다.</p>
-    <ul class="rule-list">
-      <li>차단은 일정 시간이 지나면 자동으로 해제됩니다.</li>
-    </ul>
-    <ul class="auth-links">
-      <li class="auth-links-row">
-        <a href="{% url 'account_reset_password' %}">
-          <span class="auth-links-label">비밀번호를 잊으셨나요?</span>
-          <span class="auth-links-hint">메일로 재설정 링크 발송</span>
-          <span class="auth-links-arrow" aria-hidden="true">→</span>
-        </a>
-      </li>
-    </ul>
+<main class="page auth-page" id="content">
+  <div class="auth-shell">
+    <aside class="auth-panel-declare">
+      <span class="auth-glyph" aria-hidden="true">✦</span>
+      <p class="auth-kicker">TAKULIFE ACCOUNT</p>
+      <h2>그대들의<br>덕질 라이프를<br>위하여</h2>
+      <hr class="auth-rule">
+      <ul class="auth-panel-domains">
+        <li>
+          <span class="auth-panel-domain-tick" aria-hidden="true"></span>
+          <span class="auth-panel-domain-name">행사</span>
+          <span class="auth-panel-domain-desc">공식 URL 기준으로 큐레이션한 팝업·전시</span>
+        </li>
+        <li>
+          <span class="auth-panel-domain-tick" aria-hidden="true"></span>
+          <span class="auth-panel-domain-name">컬렉션</span>
+          <span class="auth-panel-domain-desc">굿즈와 소장품을 내 손안의 목록으로</span>
+        </li>
+        <li>
+          <span class="auth-panel-domain-tick is-mint" aria-hidden="true"></span>
+          <span class="auth-panel-domain-name">내 활동</span>
+          <span class="auth-panel-domain-desc">다녀온 기록과 앞으로의 일정까지</span>
+        </li>
+      </ul>
+    </aside>
+    <div class="auth-panel-form">
+      <p class="auth-kicker">계정</p>
+      <h1 class="auth-title">로그인 시도가 너무 많습니다</h1>
+      <p class="auth-error-banner">잠시 후 다시 시도해 주세요.</p>
+      <hr class="auth-rule">
+      <p class="auth-description">로그인 실패가 반복되어 접근이 일시적으로 차단되었습니다.</p>
+      <ul class="rule-list">
+        <li>차단은 일정 시간이 지나면 자동으로 해제됩니다.</li>
+      </ul>
+      <ul class="auth-links">
+        <li class="auth-links-row">
+          <a href="{% url 'account_reset_password' %}">
+            <span class="auth-links-label">비밀번호를 잊으셨나요?</span>
+            <span class="auth-links-hint">메일로 재설정 링크 발송</span>
+            <span class="auth-links-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+      </ul>
+    </div>
   </div>
 </main>
 {% endblock %}
