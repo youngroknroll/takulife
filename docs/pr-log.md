@@ -18,9 +18,9 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 287건(`gh pr list --state merged`, 2026-08-17
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #292부터 #160까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #294부터 #165까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,44 +28,49 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #293 — chore: .claude 역할 어댑터·훅·프로젝트 설정을 버전 관리에 편입
+### PR #295 — feat(harness): 파괴적 git과 계획서 덮어쓰기를 PreToolUse에서 막는다
 
-**무엇을 바꿨나**: `.gitignore`의 `.claude/` 한 줄 때문에 역할 어댑터
-11개가 저장소에 한 파일도 없었다(`git ls-files .claude/` 0건 `[실측]`).
-`AGENTS.md`·`CLAUDE.md`가 존재를 전제하는 실행 자산이 클론·새 머신·CI에서
-사라지는 상태였다. deny-by-default로 전환한다 — `.claude/*`로 전부 제외한
-뒤 `!.claude/agents/`·`!.claude/hooks/`·`!.claude/settings.json` 셋만
-되살린다. 머신 로컬 설정(`settings.local.json`)과 세션 산출물
-(`RESUME.md`·`scheduled_tasks.lock`·`web-checklist-state.json`·
-`worktrees/`)은 계속 제외되고, 앞으로 생기는 `.claude/` 산출물도 기본
-제외다. `.gitignore`에 디렉터리를 통째로 쓰면 git이 그 안으로 내려가지
-않아 negation이 통하지 않는다 — `.claude/*`처럼 별표로 써야 한다.
+**무엇을 바꿨나**: 산문 지시로만 있던 규칙 두 건을 실행 계층으로 내린다.
+PR #293의 `uv-only-guard.sh`에 이은 두 번째 이관이며, 이로써 프로젝트 훅은
+3개가 됐다.
 
-함께 편입되는 `.claude/hooks/uv-only-guard.sh`(PreToolUse, matcher
-`Bash`)는 `AGENTS.md` "Package And Command Policy (uv-only)"를 실행
-단계에서 강제한다. 맨 `pytest`·`pip`/`pip3`·`python -m pip`·
-`python|python3 manage.py`를 차단하고, `uv`로 시작하는 명령과 일회성
-`python3 -c '...'`(날짜·JSON 유틸리티)는 통과시킨다. `;`·`|`·`&&`·`||`로
-세그먼트를 분할해 각 세그먼트의 첫 토큰만 검사하므로 `cd x && pytest`는
-잡히고 `grep -rn pytest tests/`는 통과한다.
+`.claude/hooks/git-destructive-guard.sh`(PreToolUse, matcher `Bash`)는
+**작업 트리가 더티일 때만** `reset --hard`·`clean -f/-d/-x`·
+`checkout -- <path>`·`checkout .`·`restore <path>`를 차단하고,
+`stash clear`는 트리 상태와 무관하게 차단한다. `restore --staged`(언스테이징일
+뿐)·`checkout -b`·브랜치 전환·`stash push`는 통과한다. 트리가 깨끗하면 이
+명령들이 파괴할 미커밋 작업이 없으므로 통과시킨다 — 조건을 좁혀야 실제로
+지켜진다.
 
-**왜**: 2026-08-17 사용자 결정 — 산문 지시는 긴 세션에서 지켜지지 않을 수
-있으므로 결정론적으로 판정 가능한 규칙은 훅·권한 계층으로 내린다. 훅을 더
-쌓기 전에 그 자산이 버전 관리 위에 있어야 한다는 순서 판단이 함께 있었다.
+`.claude/hooks/plan-overwrite-guard.sh`(PreToolUse, matcher `Write`)는
+`prompt_plan.md` 전체 교체를 차단한다. `Edit`은 막지 않으므로 배정된 계획서
+수정은 그대로 동작한다 — 규칙이 말하는 대상이 "overwrite"이므로 Write/Edit
+구분이 예외 조항("unless assigned")을 대신한다.
 
-**검증**: `git check-ignore` **7/7** 기대 일치(추적 3·제외 4) `[실측]`,
-훅 판정 **12/12** 정확(차단 6·통과 6) `[실측]`, 배선 후 라이브로
-`pytest --version` 차단·`uv run pytest --version` 통과 확인. 추적 대상
-전수 시크릿 스캔 0건·절대경로 0건, 훅 파일 모드 `100755` 유지.
-`manage.py check` 0 issues, 전체 회귀 `uv run pytest -q` →
-**2155 passed**(25.79s). CI 3잡(테스트·Docker·GitGuardian) 전부 pass.
+초안 git 가드는 `echo "git reset --hard is dangerous"`를 차단하는 오탐을
+냈다. 따옴표 안의 텍스트를 명령으로 오인한 것이며, uv 가드와 같은 방식으로
+고쳤다 — 세그먼트 분할 후 각 세그먼트의 **첫 토큰만** 프로그램으로 본다.
 
-**병합**: 2026-08-17, main `7a1c5bd`.
+**왜**: 2026-08-17 사용자 결정 — "절대 하지 마라"는 지시만으로는 긴 세션에서
+지켜지지 않는다. 이 두 규칙은 각각 실제 사고에서 나왔다(미커밋 작업 유실 2건,
+계획서 무단 덮어쓰기 금지).
+
+**검증**: 판정 **27/27** 정확 `[실측]` — git 가드 16건(차단 7·통과 9),
+plan 가드 6건(차단 2·통과 4), 깨끗한 트리 대조 5건. 조건 분기는 통제된 임시
+저장소에서 대조했다 — 같은 `git reset --hard`가 깨끗한 트리에서 통과, 같은
+저장소를 더티로 만든 뒤 차단. 배선 후 라이브로 `git checkout -- prompt_plan.md`
+차단·`prompt_plan.md` 대상 Write 차단을 확인했고, 차단 뒤 파일 첫 줄이 원본
+그대로임을 확인했다. `manage.py check` 0 issues, 전체 회귀
+`uv run pytest -q` → **2155 passed**(27.65s). CI 3잡 전부 pass.
+
+**병합**: 2026-08-17, main `90ced2e`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #294 — docs: PR #291~#293 머지를 로그에 롤링 반영
+- #293 — chore: .claude 역할 어댑터·훅·프로젝트 설정을 버전 관리에 편입
 - #292 — fix(FE): 인증 12화면 셸을 헤더·푸터와 같은 1120px 컨테이너로 정렬
 - #291 — docs: PR #289·#290 머지를 로그에 롤링 반영
 - #290 — feat(api): OpenAPI 문서화 도입 (drf-spectacular + Swagger UI)
@@ -193,8 +198,3 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 - #167 — feat: 다크모드 1/3 — 토큰 다크 매핑 + 테마 인프라
 - #166 — chore: FE 부채 스윕 + 허브 라벨 체계 정리 + 모바일 D-day 포스터 배지
 - #165 — feat: 홈 슬라이더 모바일 [2,2] + 행사 둘러보기 포스터 그리드
-- #164 — fix(archive): 찜 목록 빠른 이동을 3열 1행 관례로 통일
-- #163 — fix(archive): 빠른 이동 라벨 축소를 세로형 side-list에도 적용
-- #162 — fix(status-btn): 모바일 상태 버튼 40→32px + 폰트 축소
-- #161 — fix(staff,archive): 모바일 시각 QA 후속 — 요약 카드 접힘·빠른 이동 라벨 축소
-- #160 — design: 가장자리 여백 --page-pad-x 토큰 통일 (모바일 16 / 태블릿 24 / 데스크톱 32px)
