@@ -18,9 +18,9 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR은 273건을 넘는데 전부는 들어가지 않으므로
-최신 PR부터 채우고 줄 수 예산에 닿는 지점에서 끊는다 — 컷오프는 "재구성 불가"가 아니라
-순수히 **줄 수 예산** 문제다. 아래 한 줄 요약 목록은 PR #289부터 PR #152까지를 담았다.
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 287건(`gh pr list --state merged`, 2026-08-17
+`[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #292부터 #160까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,39 +28,47 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #290 — feat(api): OpenAPI 문서화 도입 (drf-spectacular + Swagger UI)
+### PR #293 — chore: .claude 역할 어댑터·훅·프로젝트 설정을 버전 관리에 편입
 
-**무엇을 바꿨나**: `/api/schema/`(OpenAPI 3)·`/api/docs/`(Swagger UI,
-sidecar 자체 서빙·외부 CDN 요청 0) 전체 공개(사용자 결정). 도메인 태그
-5종(`core`/`events`/`drafts`/`archive`/`collection`) + 37개 operation
-한국어 `summary` + serializer가 없던 뷰 7개의 요청·응답을 실코드 기준으로
-명시(스키마 생성 오류 27건→0건). 구현 중 실결함 3건을 발견·수정했다 —
-①스태프 콘솔 4경로가 공개 스키마에 노출 → `/api/` 프리픽스 전처리 훅으로
-제외, ②스키마 생성이 뷰의 `get_queryset()`을 실행해 분석 이벤트가 실제로
-커밋됨 → `swagger_fake_view` 가드 추가, ③`extend_schema_view` 키 28곳이
-ViewSet 액션명(`list`/`create`/`retrieve`/`partial_update`/`destroy`)으로
-잘못 쓰여 조용히 무시됨(이 저장소 뷰는 전부 `GenericAPIView` 계열) →
-HTTP 핸들러명(`get`/`post`/`patch`/`delete`)으로 교체. 계약 테스트 6건
-신설(`tests/core/test_openapi_schema.py`). 가드레일 정본
-`docs/BE/openapi-schema.md` 신설, 백로그 F11(해결)·F12(유보) 등록, 배포
-런북 체크리스트 13번 항목(`/api/docs/` 정적 자산 실서빙 확인) 추가.
+**무엇을 바꿨나**: `.gitignore`의 `.claude/` 한 줄 때문에 역할 어댑터
+11개가 저장소에 한 파일도 없었다(`git ls-files .claude/` 0건 `[실측]`).
+`AGENTS.md`·`CLAUDE.md`가 존재를 전제하는 실행 자산이 클론·새 머신·CI에서
+사라지는 상태였다. deny-by-default로 전환한다 — `.claude/*`로 전부 제외한
+뒤 `!.claude/agents/`·`!.claude/hooks/`·`!.claude/settings.json` 셋만
+되살린다. 머신 로컬 설정(`settings.local.json`)과 세션 산출물
+(`RESUME.md`·`scheduled_tasks.lock`·`web-checklist-state.json`·
+`worktrees/`)은 계속 제외되고, 앞으로 생기는 `.claude/` 산출물도 기본
+제외다. `.gitignore`에 디렉터리를 통째로 쓰면 git이 그 안으로 내려가지
+않아 negation이 통하지 않는다 — `.claude/*`처럼 별표로 써야 한다.
 
-**왜**: 2026-08-16 사용자 요청 — 개발자 취업 대비 API 문서화 실무 경험과
-프론트엔드 협업 기반 마련. 노출 범위(전체 공개)와 심도(자동 생성+핵심
-보강)는 사용자 결정.
+함께 편입되는 `.claude/hooks/uv-only-guard.sh`(PreToolUse, matcher
+`Bash`)는 `AGENTS.md` "Package And Command Policy (uv-only)"를 실행
+단계에서 강제한다. 맨 `pytest`·`pip`/`pip3`·`python -m pip`·
+`python|python3 manage.py`를 차단하고, `uv`로 시작하는 명령과 일회성
+`python3 -c '...'`(날짜·JSON 유틸리티)는 통과시킨다. `;`·`|`·`&&`·`||`로
+세그먼트를 분할해 각 세그먼트의 첫 토큰만 검사하므로 `cd x && pytest`는
+잡히고 `grep -rn pytest tests/`는 통과한다.
 
-**검증**: 전체 회귀 `uv run pytest -q` → **2155 passed**(2149+6) `[실측]`,
-Django check 0 issues, 마이그레이션 드리프트 0,
-`manage.py spectacular --validate --fail-on-warn` 통과. 브라우저 실측 —
-37개 operation 전부 선언된 5태그 소속, Swagger UI 콘솔 오류 0, 외부
-네트워크 요청 0. CI 3잡(테스트·Docker·GitGuardian) 전부 pass.
+**왜**: 2026-08-17 사용자 결정 — 산문 지시는 긴 세션에서 지켜지지 않을 수
+있으므로 결정론적으로 판정 가능한 규칙은 훅·권한 계층으로 내린다. 훅을 더
+쌓기 전에 그 자산이 버전 관리 위에 있어야 한다는 순서 판단이 함께 있었다.
 
-**병합**: 2026-08-16, main `99d2950`.
+**검증**: `git check-ignore` **7/7** 기대 일치(추적 3·제외 4) `[실측]`,
+훅 판정 **12/12** 정확(차단 6·통과 6) `[실측]`, 배선 후 라이브로
+`pytest --version` 차단·`uv run pytest --version` 통과 확인. 추적 대상
+전수 시크릿 스캔 0건·절대경로 0건, 훅 파일 모드 `100755` 유지.
+`manage.py check` 0 issues, 전체 회귀 `uv run pytest -q` →
+**2155 passed**(25.79s). CI 3잡(테스트·Docker·GitGuardian) 전부 pass.
+
+**병합**: 2026-08-17, main `7a1c5bd`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #292 — fix(FE): 인증 12화면 셸을 헤더·푸터와 같은 1120px 컨테이너로 정렬
+- #291 — docs: PR #289·#290 머지를 로그에 롤링 반영
+- #290 — feat(api): OpenAPI 문서화 도입 (drf-spectacular + Swagger UI)
 - #289 — docs: PR #287·#288 머지를 로그에 롤링 반영
 - #288 — design(home): 홈 히어로를 티켓 스텁 카드로 전환
 - #287 — docs: PR #285·#286 머지를 로그에 롤링 반영
@@ -190,11 +198,3 @@ Django check 0 issues, 마이그레이션 드리프트 0,
 - #162 — fix(status-btn): 모바일 상태 버튼 40→32px + 폰트 축소
 - #161 — fix(staff,archive): 모바일 시각 QA 후속 — 요약 카드 접힘·빠른 이동 라벨 축소
 - #160 — design: 가장자리 여백 --page-pad-x 토큰 통일 (모바일 16 / 태블릿 24 / 데스크톱 32px)
-- #159 — feat(accounts,core): 계정 드롭다운 + 마이페이지 + 설정 페이지 + 스태프 자가탈퇴 차단
-- #158 — design: 모든 페이지 안내문구(소개·마케팅 카피) 전면 삭제
-- #157 — fix(archive): 모바일 320px 아카이브 3페이지 수평 오버플로 수정
-- #156 — fix(home): 포스터 섹션 슬라이더 레이아웃 통일 + 비오버플로 상태 정리
-- #155 — fix: WebKit(Safari) 아카이브 허브 375px 오버플로우 + e2e 엔진 관례 스킵 2건
-- #154 — fix: FE 백로그 스윕 — 포커스·모달 스크롤 잠금·bfcache·터치 타깃 44px + 구조 정리
-- #153 — fix: 여러 줄 {# #} 템플릿 주석 누출 3건 수정 + 재발 방지 가드
-- #152 — fix: 모바일 재점검 5건 수정 (320px 오버플로우·제목 clamp·터치 타깃)
