@@ -8,7 +8,12 @@ db.sqlite3
 !.env.example
 .lazyweb/
 .worktrees/
-.claude/
+# Claude Code: share the role adapters, hooks, and project settings the
+# governance in AGENTS.md depends on; keep machine-local and session artifacts out.
+.claude/*
+!.claude/agents/
+!.claude/hooks/
+!.claude/settings.json
 .docs/
 media/
 staticfiles/
