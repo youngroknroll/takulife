@@ -8,6 +8,21 @@
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/uv-only-guard.sh",
             "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/git-destructive-guard.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/plan-overwrite-guard.sh",
+            "timeout": 5000
           }
         ]
       }
