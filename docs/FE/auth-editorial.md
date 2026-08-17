@@ -312,3 +312,33 @@ h2가 `그대들의 / 덕질 / 라이프를 / 위하여` 4줄로 깨지고(A1이
 힌트는 행 전체를 감싼 `<a>` 안의 `<span>`이라 **탭 정지 수가 변하지 않는다** — 링크
 이름이 짧아질 뿐이고 라벨만으로 의미가 선다. 실제로 힌트를 렌더하는 템플릿은
 `[코드]` `login.html`(2개)과 `lockout.html`(1개) 둘뿐이라 나머지 10화면에는 무동작이다.
+
+### 상하 여백은 `.auth-page`가 대칭으로 잡는다
+
+`[실측]` `.page`의 기본값만 쓰면 위 26px(`padding-top: 1.625rem`) / 아래 120px
+(`padding-bottom: 5rem` 80 + `.site-footer{margin-top: 2.5rem}` 40)로 비대칭이라
+카드가 넓은 빈 들판에 떠 있는 섬처럼 보였다(사용자 지적, 2026-08-17).
+
+12화면은 `<main class="page auth-page" id="content">`이고 `auth.css`가 덮는다:
+
+```css
+.auth-page { padding-bottom: 1.625rem; }
+.auth-page + .site-footer { margin-top: 0; }
+```
+
+⚠️ **`page` 클래스를 지우고 `auth-page`만 남기지 마라.** `page`가
+`max-width: 1120px`와 가로 `--page-pad-x`를 담당한다 — 빼면 풀블리드 결함이 되살아난다.
+
+⚠️ **`static/css/base.css`의 `.page`나 `site-chrome.css`의 `.site-footer{margin-top}`을
+직접 고쳐 이 문제를 풀지 마라.** `[코드]` `.page`는 19개 템플릿(인증 12 + 스태프 3 +
+드래프트 2 + 법적 2)이, `.site-footer`는 전 페이지가 공유한다.
+
+인접 형제(`+`)가 성립하는 근거: `base.html`에서 `{% block content %}` 바로 다음이
+`{% block site_footer %}`이고, `{% if messages %}`는 content **앞**에 오며,
+`[코드]` 두 블록을 재정의하는 템플릿은 저장소에 없다. 이 전제가 깨지면 선택자는
+**조용히 매치되지 않고** 여백이 120px로 돌아간다 — 오류도 경고도 나지 않는다.
+확인법은 `.site-footer`의 computed `margin-top`이 `0px`인지 보는 것이다(전역값은 40px).
+
+여백 측정 기준은 `.site-banner` 바깥 아래 모서리 → 카드 바깥 위 모서리, 카드 바깥 아래
+모서리 → **`.site-footer` 바깥 위 모서리**다. `.site-footer-inner`로 재면 푸터 안쪽
+패딩 32px이 섞여 26px이 58px로 잘못 나온다.
