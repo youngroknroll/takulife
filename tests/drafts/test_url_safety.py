@@ -40,6 +40,9 @@ class TestLiteralIp:
             "http://169.254.169.254/latest/meta-data/",  # 클라우드 메타데이터 주소
             "http://[::1]/",
             "http://0.0.0.0/",
+            "http://[::ffff:127.0.0.1]/",
+            "http://[::ffff:169.254.169.254]/",
+            "http://0.1.2.3/",
         ],
         ids=[
             "루프백_127",
@@ -48,15 +51,17 @@ class TestLiteralIp:
             "클라우드_메타데이터_주소",
             "IPv6_루프백",
             "모든_주소_0000",
+            "IPv4_매핑_루프백",
+            "IPv4_매핑_클라우드_메타데이터_주소",
+            "0_0_0_0_8_하위_주소",
         ],
     )
     def test_사설_또는_특수_리터럴_IP는_거부된다(self, url):
         with pytest.raises(UnsafeFetchUrlError):
             validate_fetch_url(url)
 
-    def test_공인_리터럴_IP는_허용된다(self):
-        # 공인 리터럴 IP는 예외 없이 None을 반환한다.
-        assert validate_fetch_url("http://8.8.8.8/") is None
+    def test_공인_리터럴_IP는_그_IP_문자열을_반환한다(self):
+        assert validate_fetch_url("http://8.8.8.8/") == "8.8.8.8"
 
 
 class TestResolverPath:
@@ -67,13 +72,20 @@ class TestResolverPath:
                 resolver=fake_resolver("10.1.2.3"),
             )
 
-    def test_공인_IP로_해석되는_호스트명은_허용된다(self, fake_resolver):
+    def test_공인_IP로_해석되는_호스트명은_검증된_IP를_반환한다(self):
+        def resolve_multiple(_hostname, _port, type):
+            return [
+                (2, type, 6, "", ("93.184.216.34", 0)),
+                (2, type, 6, "", ("1.1.1.1", 0)),
+            ]
+
+        # 여러 주소가 해석돼도 실제로 연결에 쓰일 첫 번째 주소를 반환해야 한다.
         assert (
             validate_fetch_url(
                 "https://good.example.com/",
-                resolver=fake_resolver("93.184.216.34"),
+                resolver=resolve_multiple,
             )
-            is None
+            == "93.184.216.34"
         )
 
     def test_리졸버를_전달하지_않으면_DNS_기반_검증을_건너뛴다(self):
@@ -86,3 +98,10 @@ class TestResolverPath:
 
         with pytest.raises(UnsafeFetchUrlError):
             validate_fetch_url("https://public.example/event", resolver=resolve_loopback)
+
+    def test_호스트명이_IPv4_매핑_루프백_주소로_해석되면_거부된다(self):
+        def resolve_mapped_loopback(_hostname, _port, type):
+            return [(10, type, 6, "", ("::ffff:127.0.0.1", 0, 0, 0))]
+
+        with pytest.raises(UnsafeFetchUrlError):
+            validate_fetch_url("https://public.example/event", resolver=resolve_mapped_loopback)
