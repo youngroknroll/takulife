@@ -44,7 +44,7 @@ def _clean_provider(data):
     provider = data.get("provider")
     if not isinstance(provider, str):
         provider = ""
-    return sanitize_text(provider)[:50]
+    return sanitize_text(value=provider)[:50]
 
 
 class RunnerHeartbeatView(_RunnerAPIView):

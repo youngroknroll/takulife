@@ -258,6 +258,20 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   (gaierror) 격리 → complete FAILED) 및 `claude -p` 봉투 파싱 확인. CLI에
   --max-turns 없음(OS 타임아웃 600초)
 
+### 검토 게이트 기록
+
+- 보안 사후 판정(2026-08-20): Conforms — 사전 블로커 5건 닫힘 확인: 빈 토큰
+  사전 거부(runner_views의 IsDiscoveryRunner), failure_reason 원문
+  비보간(_save_failed_candidate + V12 뮤테이션), 후보 상한 서버
+  강제(submit_candidate), create_draft_from_fields 미사용(경계 가드), 저장
+  직전 재잠금·lease 재검증(locked_run_with_valid_lease + V11). 관찰(정보):
+  단일 후보 제출 요청의 최악 지연이 fetch 예산에 따라 수십 초까지 가능 —
+  배포 시 워커 타임아웃 튜닝으로 흡수.
+- FE 이중 게이트(2026-08-20): WED·BIR 모두 Conforms(1차 BIR Medium — URL·
+  사유 절단 접근 불가 — 수정 후 재판정).
+- QVL(2026-08-20): 수용 기준 15항 전부 충족, 조건부 완료의 조건 2건(이
+  소절과 SERVICE_MODULES 등록)은 같은 커밋에서 이행.
+
 ## Known gap
 
 - 실행·후보 모델의 정확한 필드와 마이그레이션, lease·heartbeat·재시도 시간,

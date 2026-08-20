@@ -51,9 +51,9 @@ def _patch_allow_all_robots(monkeypatch):
 
 
 def test_note와_name의_제어문자는_저장_전에_제거된다():
-    assert sanitize_text("이름\x00주입") == "이름주입"
-    assert sanitize_text("경고\x1b[31m문구") == "경고[31m문구"
-    assert sanitize_text("첫줄\n둘째줄") == "첫줄둘째줄"
+    assert sanitize_text(value="이름\x00주입") == "이름주입"
+    assert sanitize_text(value="경고\x1b[31m문구") == "경고[31m문구"
+    assert sanitize_text(value="첫줄\n둘째줄") == "첫줄둘째줄"
 
 
 def _make_claimed_run():

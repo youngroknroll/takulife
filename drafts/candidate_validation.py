@@ -52,11 +52,11 @@ class CandidateLimitExceededError(Exception):
     pass
 
 
-def sanitize_text(value):
+def sanitize_text(*, value):
     return "".join(char for char in value if unicodedata.category(char) != "Cc")
 
 
-def validate_payload(payload):
+def validate_payload(*, payload):
     valid = all(key in payload for key in _REQUIRED_KEYS)
 
     def _string_field(key):
@@ -89,13 +89,13 @@ def validate_payload(payload):
             valid = False
 
     cleaned = {
-        "name": sanitize_text(name)[: _MAX_LENGTHS["name"]],
-        "url": sanitize_text(url)[: _MAX_LENGTHS["url"]],
+        "name": sanitize_text(value=name)[: _MAX_LENGTHS["name"]],
+        "url": sanitize_text(value=url)[: _MAX_LENGTHS["url"]],
         "source_type": source_type,
-        "link_selector": sanitize_text(link_selector)[: _MAX_LENGTHS["link_selector"]],
-        "sample_url": sanitize_text(sample_url)[: _MAX_LENGTHS["sample_url"]],
-        "official_basis": sanitize_text(official_basis)[: _MAX_LENGTHS["official_basis"]],
-        "note": sanitize_text(note)[: _MAX_LENGTHS["note"]],
+        "link_selector": sanitize_text(value=link_selector)[: _MAX_LENGTHS["link_selector"]],
+        "sample_url": sanitize_text(value=sample_url)[: _MAX_LENGTHS["sample_url"]],
+        "official_basis": sanitize_text(value=official_basis)[: _MAX_LENGTHS["official_basis"]],
+        "note": sanitize_text(value=note)[: _MAX_LENGTHS["note"]],
     }
 
     return cleaned, (None if valid else "schema")
@@ -135,7 +135,7 @@ def _save_failed_candidate(*, run_id, lease_token, cleaned, stage, exc=None):
 
 def submit_candidate(*, run_id, lease_token, payload):
     url_value = payload.get("url")
-    candidate_url = sanitize_text(url_value)[: _MAX_LENGTHS["url"]] if isinstance(url_value, str) else ""
+    candidate_url = sanitize_text(value=url_value)[: _MAX_LENGTHS["url"]] if isinstance(url_value, str) else ""
 
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
@@ -145,7 +145,7 @@ def submit_candidate(*, run_id, lease_token, payload):
         if run.candidates.count() >= MAX_CANDIDATES_PER_RUN:
             raise CandidateLimitExceededError
 
-    cleaned, stage = validate_payload(payload)
+    cleaned, stage = validate_payload(payload=payload)
 
     if stage == "schema":
         return _save_failed_candidate(
