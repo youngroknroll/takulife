@@ -166,12 +166,16 @@ def submit_candidate(*, run_id, lease_token, payload):
     try:
         for url in (cleaned["url"], cleaned["sample_url"]):
             validate_fetch_url(url, resolver=socket.getaddrinfo)
-    except (InvalidFetchUrlError, UnsafeFetchUrlError):
+    except (InvalidFetchUrlError, UnsafeFetchUrlError, OSError) as exc:
+        # 리졸버의 DNS 조회 실패(socket.gaierror)도 안전하지 않은 URL과 같은
+        # 단계로 격리한다 — drafts/robots.py의 _ROBOTS_FETCH_FAILURES가
+        # OSError를 포섭하는 것과 같은 근거.
         return _save_failed_candidate(
             run_id=run_id,
             lease_token=lease_token,
             cleaned=cleaned,
             stage=SourceCandidate.FailureStage.URL_SAFETY,
+            exc=exc,
         )
 
     # 이후 단계(초기 드래프트 생성)에서도 재사용할 수 있도록 인스턴스 하나만 만든다.

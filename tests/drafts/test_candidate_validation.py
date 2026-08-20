@@ -1,4 +1,5 @@
 """drafts.candidate_validation 순수 함수·domain 테스트."""
+import socket
 from datetime import timedelta
 
 import pytest
@@ -167,6 +168,29 @@ def test_수집처_또는_표본_URL이_사설_IP로_해석되면_url_safety_단
 
     assert candidate.status == SourceCandidate.Status.FAILED
     assert candidate.failure_stage == SourceCandidate.FailureStage.URL_SAFETY
+    assert DraftSource.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_호스트명을_해석할_수_없는_URL은_url_safety_단계_실패다(monkeypatch):
+    payload = _valid_payload()
+    run = _make_claimed_run()
+
+    def _fake_validate_fetch_url(url, *, resolver=None):
+        if url == payload["url"]:
+            raise socket.gaierror("Name or service not known")
+        return "1.1.1.1"
+
+    monkeypatch.setattr(
+        "drafts.candidate_validation.validate_fetch_url", _fake_validate_fetch_url
+    )
+
+    candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert candidate.status == SourceCandidate.Status.FAILED
+    assert candidate.failure_stage == SourceCandidate.FailureStage.URL_SAFETY
+    assert "gaierror" in candidate.failure_reason
     assert DraftSource.objects.count() == 0
 
 
