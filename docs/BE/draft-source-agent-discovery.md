@@ -1,6 +1,6 @@
 # 로컬 에이전트 기반 수집처 탐색
 
-상태: **목표 계약 승인, 구현 전**
+상태: **서버 경계·로컬 러너 구현됨(2026-08-20)** — 정기 실행·자동 시작은 미구현
 사용자 결정: 2026-08-20
 
 ## Current fact
@@ -236,14 +236,38 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 - 개인 맥으로 향하는 인바운드 포트와 브라우저의 localhost 직접 호출
 - Codex·Claude Code를 동시에 지원하기 위한 선제적 공통 프레임워크
 
+## 구현 확정 사항(2026-08-20)
+
+- 상수(모듈 상수, `drafts/discovery_runs.py`·`drafts/candidate_validation.py`):
+  HEARTBEAT_FRESH_SECONDS=120 / LEASE_SECONDS=900 / MAX_LEASES=2 /
+  MAX_CANDIDATES_PER_RUN=10 / INITIAL_DRAFTS_PER_PROMOTED_SOURCE=5
+- 실행 상태 enum: pending/claimed/succeeded/partially_failed/failed/expired.
+  후보 실패 단계 7종: schema/duplicate/url_safety/robots/fetch/
+  listing_extraction/sample_canary
+- 러너 인증: env `DRAFT_DISCOVERY_RUNNER_TOKEN` + 헤더 `X-Runner-Token`,
+  **빈 설정은 비교 전 명시 거부**(`constant_time_compare`가 빈 문자열 쌍을
+  참으로 보는 함정 — 가드레일), 스로틀 `discovery_runner` 60/minute, 공개
+  OpenAPI 문서에서 의도 제외
+- 트랜잭션 가드레일: 네트워크 검증은 트랜잭션 밖, 저장은 run
+  `select_for_update` 재잠금 + lease 재검증 뒤 짧은 atomic. **SQLite는
+  `select_for_update`를 무시하므로 잠금 계약은 Postgres 기준**
+- failure_reason·error_summary는 서버 정의 문구+예외 클래스명만(원문
+  비보간), 초기 드래프트는 공유 candidate_intake 재사용으로 후보 URL별
+  robots 재검증 유지, 전량 수집은 기존 「지금 수집」이 담당
+- 러너 실기동 실측(2026-08-20): 왕복(403/204 → claim → duplicate·url_safety
+  (gaierror) 격리 → complete FAILED) 및 `claude -p` 봉투 파싱 확인. CLI에
+  --max-turns 없음(OS 타임아웃 600초)
+
 ## Known gap
 
+- 실행·후보 모델의 정확한 필드와 마이그레이션, lease·heartbeat·재시도 시간,
+  스로틀 값은 구현 계획의 Test List 전에 승인해야 한다. → **해소**(위
+  "구현 확정 사항" 절, 2026-08-20).
 - 최초 러너 공급자와 구체적인 비대화형 실행 방식은 미결정이다. 서버 후보 계약은
   공급자 중립으로 유지하되, 첫 구현은 하나의 어댑터만 만든다.
 - 공식성의 완전 자동 판정은 불가능하다. 현재 안전 근거는 게시 전 관리자 검수다.
-- 실행·후보 모델의 정확한 필드와 마이그레이션, lease·heartbeat·재시도 시간,
-  스로틀 값은 구현 계획의 Test List 전에 승인해야 한다.
-- 로컬 러너 설치·업데이트·자동 시작·토큰 폐기 절차는 아직 없다.
+- 로컬 러너 설치·업데이트·자동 시작(launchd)·토큰 회전 절차·정기 실행 스케줄러는
+  아직 없다.
 
 ## Evidence
 

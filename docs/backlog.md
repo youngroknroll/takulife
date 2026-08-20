@@ -824,6 +824,7 @@ if not ident.isascii() or not ident.isdigit() or len(ident) > 18:
 | F10 | `staff_event_edit`의 lost-update 여지 | `staff/views/events.py`의 수정 저장 경로 | `[코드]` **토글 패턴은 아니다** — 제출된 폼 값으로 절대 덮어쓴다. 동시 편집 시 마지막 쓰기가 이기는 것뿐이라 F9보다 위험도가 낮다. F9 작업 중 발견(2026-08-01) |
 | F11 | ~~OpenAPI 스키마·문서 엔드포인트 부재~~ (**해결됨 2026-08-16**) | `/api/schema/`·`/api/docs/`(drf-spectacular + Swagger UI sidecar). 계약 테스트 6건 `tests/core/test_openapi_schema.py`. 상세는 `docs/BE/openapi-schema.md` | 아래 주석 참고 |
 | F12 | `/api/schema/` 스로틀·캐시 없음 + CI 스모크가 `/api/docs/`를 안 본다 | `docs/BE/openapi-schema.md` "미적용(의도)" | 실트래픽 개시 전 유보. 트리거 시 ①`/api/schema/`에 캐시 또는 스로틀 적용 ②CI 도커 스모크(F3)에 `/api/docs/` curl 200 확인 추가 |
+| F13 | 대시보드 표 저강조 색 위계 미실현 | `.dash-table tbody td`(`static/css/staff/pages/dashboard.css:177`, 특이도 0,1,2)의 `color: var(--c-text)`가 `.dash-cell-dim`·`.dash-cell-faint`·`.dash-cell-wrap`(전부 0,1,0)의 `color`를 항상 이겨 7개 셀이 기본 잉크색으로 렌더 `[실측 2026-08-20]`. PR #275 이전부터의 선재 갭 | 수정 방향 후보: `td` 규칙에서 `color` 제거 후 각 클래스에 위임 |
 
 **F3 주석 — 이 항목의 실검증은 CI뿐이다.** 로컬에 Docker가 없어 스모크를 재현할 수
 없었다. **머지 전 PR의 `docker` 잡 결과를 반드시 확인해야 한다.**
@@ -886,6 +887,12 @@ log", `CLAUDE.md:43`이 "never as durable project state". PR마다 갱신하는 
 경고하지 않았고, 브라우저 실측(Swagger UI에 URL 파생 태그로 남음)에서만 드러났다.
 상세·회귀 가드는 `docs/BE/openapi-schema.md`.
 
+**로컬 에이전트 수집처 탐색 — 구현됨(2026-08-20, 브랜치
+`feat/agent-source-discovery`).** 서버 경계(모델 3종·러너 API·결정론
+검증·승격)와 `local_runner/` 어댑터를 구현했다. 정본은
+`docs/BE/draft-source-agent-discovery.md`. 잔여는 정기 실행·자동 시작·토큰
+회전 절차.
+
 ---
 
 ## 착수하지 않는 것
@@ -897,10 +904,6 @@ log", `CLAUDE.md:43`이 "never as durable project state". PR마다 갱신하는 
   승인 전까지 설계도 착수 금지.
 - **서버 행사 필드 LLM 추출 재활성화** — 비용 정책상 불허.
   `DRAFT_LLM_EXTRACTION_ENABLED`는 계속 off이며 PaaS에 LLM API 키를 두지 않는다.
-- **로컬 에이전트 수집처 탐색 구현** — 설계 승인, 구현 미착수(2026-08-20).
-  개인 맥이 켜진 동안에만 LLM이 새 수집처와 표본 행사 URL을 제안하고, 서버가
-  결정론적으로 검증한 뒤 기존 규칙 기반 파이프라인으로 `EventDraft(PENDING)`을
-  만든다. 정본: `docs/BE/draft-source-agent-discovery.md`.
 - **폐기된 시안 기반 시각 작업** — 과거 시안에서 나온 항목은 계속 착수하지 않는다.
   새 행사 에디토리얼 방향은 D4와 `docs/FE/event-typography-editorial.md`만 따른다.
 - **데이터 내보내기(CSV/JSON)** — 어떤 구속 결정에도 없다. 요구가 생기면 그때.
