@@ -21,6 +21,7 @@ class StaffActionLog(models.Model):
         EVENT_DELETE = "event_delete", "Event delete"
         EVENT_VERIFY = "event_verify", "Event verify"
         DRAFT_DISCOVER = "draft_discover", "Draft discover"
+        SOURCE_DISCOVER = "source_discover", "Source discover"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
