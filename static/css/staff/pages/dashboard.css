@@ -203,6 +203,16 @@
   white-space: nowrap;
 }
 
+/* URL 자체는 위험 신호가 아니라 danger 색 대신 faint 톤을 쓴다.
+   확인 필요 후보 패널의 목적은 운영자 확인이라 URL을 자르지 않고
+   줄바꿈으로 전부 보여준다. */
+.dash-source-sub {
+  font-size: 0.65625rem;
+  color: var(--c-faint);
+  margin-top: 0.125rem;
+  overflow-wrap: anywhere;
+}
+
 .dash-status-badge {
   display: inline-flex;
   align-items: center;
@@ -251,6 +261,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* dash-cell-faint의 nowrap+ellipsis는 값을 자른다 — 확인 필요 후보의
+   실패 사유는 운영자 확인이 목적이라 자르지 않고 줄바꿈으로 전부 보여준다.
+   dash-source-sub는 폰트 크기·margin-top이 달라 이 셀에 그대로 못 쓴다. */
+.dash-cell-wrap {
+  color: var(--c-faint);
+  overflow-wrap: anywhere;
 }
 
 .dash-cell-target {
