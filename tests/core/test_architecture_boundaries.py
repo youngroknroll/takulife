@@ -400,6 +400,23 @@ def test_드래프트_수집_명령은_이벤트_모듈을_임포트하지_않�
     }
 
 
+@pytest.mark.parametrize(
+    "module_path",
+    ["drafts/management/commands/discover_drafts.py", "drafts/candidate_intake.py"],
+    ids=["discover_drafts_명령", "candidate_intake"],
+)
+def test_지금_수집_경로는_탐색_실행_모듈에_의존하지_않는다(module_path):
+    # 수용 기준 1항 — 기본 「지금 수집」은 로컬 러너나 새 모델을 호출하지 않는다.
+    imported_modules = _imported_modules(module_path)
+    forbidden = {"drafts.discovery_runs", "drafts.candidate_validation", "local_runner"}
+
+    assert not {
+        module
+        for module in imported_modules
+        if any(module == mod or module.startswith(f"{mod}.") for mod in forbidden)
+    }
+
+
 def test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는다():
     """LLM 추출은 플래그로 켜고 끄는 별도 관심사(drafts/llm_extraction.py)다
     — discovery.py의 결정적 필터링 로직은 core.llm을 끌어오면 안 된다."""
