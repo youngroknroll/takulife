@@ -159,6 +159,7 @@ urlpatterns = [
     path("api/", include("core.urls")),
     path("api/events/", include("events.urls")),
     path("api/event-drafts/", include("drafts.urls")),
+    path("api/discovery/runner/", include("drafts.runner_urls")),
     path("api/user-event-statuses/", include("archive.urls")),
     path("api/visit-records/", include("archive.visit_urls")),
     path("api/event-interests/", include("archive.interest_urls")),

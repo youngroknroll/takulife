@@ -31,6 +31,8 @@ _SNS_HOSTNAMES = {
     "instagram.com",
     "www.instagram.com",
 }
+# 러너 API가 제외 호스트 목록을 노출할 때 쓰는 공개 별칭 — 사설 이름을 밖에서 직접 임포트하지 않게 한다.
+SNS_HOSTNAMES = _SNS_HOSTNAMES
 
 _IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg")
 

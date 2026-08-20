@@ -48,6 +48,16 @@ def _is_documentation_endpoint(path):
     return path.startswith("/api/schema") or path.startswith("/api/docs")
 
 
+# 러너 경계는 비밀 토큰 기반 기계 간 API라 공개 문서에서 의도적으로 뺐다
+# (drafts/runner_views.py의 @extend_schema(exclude=True)와 짝을 이루는 결정 —
+# 완전성 가드가 이를 누락으로 오판하지 않도록 여기서도 명시한다).
+_INTENTIONALLY_UNDOCUMENTED_PREFIXES = ("/api/discovery/runner/",)
+
+
+def _is_intentionally_undocumented(path):
+    return path.startswith(_INTENTIONALLY_UNDOCUMENTED_PREFIXES)
+
+
 @pytest.mark.web
 def test_익명_사용자가_스키마를_요청하면_OpenAPI_문서를_받는다(client):
     response = client.get("/api/schema/", {"format": "json"})
@@ -74,7 +84,7 @@ def test_스키마_생성시_등록된_API_경로가_모두_포함된다():
     urlconf_paths = {
         _normalize_path(path)
         for path in _collect_api_path_templates()
-        if not _is_documentation_endpoint(path)
+        if not _is_documentation_endpoint(path) and not _is_intentionally_undocumented(path)
     }
     assert urlconf_paths, "urlconf에서 파생된 /api/ 경로가 비어 있다 — 스캔이 잘못됐다"
 

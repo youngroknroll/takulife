@@ -252,6 +252,8 @@ DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 20
 # None인 활성 DraftSource는 "정체"로 표시한다. 48시간이면 하루치 실행을
 # 몇 번 놓쳐도 바로 문제로 보이지 않을 여유를 준다.
 DRAFT_SOURCE_STALE_HOURS = 48
+# 러너 API 인증 토큰. 기본 빈 값 = 러너 경계 비활성(IsDiscoveryRunner가 빈 값이면 명시 거부).
+DRAFT_DISCOVERY_RUNNER_TOKEN = _get_env("DRAFT_DISCOVERY_RUNNER_TOKEN")
 DEBUG = load_debug()
 SECRET_KEY = load_secret_key(DEBUG)
 ALLOWED_HOSTS = load_allowed_hosts()
@@ -535,6 +537,7 @@ REST_FRAMEWORK = {
         "event_interest_create": "60/minute",
         "user_event_status_create": "60/minute",
         "visit_record_photo_create": "30/minute",
+        "discovery_runner": "60/minute",
     },
 }
 
