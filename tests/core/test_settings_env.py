@@ -496,3 +496,25 @@ def test_설정_모듈은_DatabaseCache_백엔드를_기본_캐시로_사용한�
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "django_cache",
     }
+
+
+# ---------------------------------------------------------------------------
+# 드래프트 자동 수집 기능 플래그(F6)
+# ---------------------------------------------------------------------------
+
+
+def test_DRAFT_DISCOVERY_ENABLED가_미설정이면_기본값_False를_사용한다(monkeypatch, tmp_path):
+    monkeypatch.delenv("DRAFT_DISCOVERY_ENABLED", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_draft_discovery_enabled() is False
+
+
+def test_DRAFT_DISCOVERY_ENABLED_환경변수가_true이면_True로_해석한다(monkeypatch):
+    monkeypatch.setenv("DRAFT_DISCOVERY_ENABLED", "true")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_draft_discovery_enabled() is True

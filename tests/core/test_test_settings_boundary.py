@@ -94,3 +94,16 @@ def test_비밀번호가_필요없는_사용자는_실해시를_만들지_않는
 
     # Then: unusable password이므로 실제 password hasher 비용이 들지 않는다.
     assert 비밀번호_미지정_사용자.has_usable_password() is False
+
+
+@pytest.mark.contract
+def test_테스트_설정의_DRAFT_DISCOVERY_ENABLED_오버라이드는_wildcard_import_뒤에_있다():
+    # Given: config/settings_test.py의 소스 텍스트.
+    source = (PROJECT_ROOT / "config" / "settings_test.py").read_text(encoding="utf-8")
+
+    wildcard_import_index = source.index("from config.settings import *")
+    override_index = source.index("DRAFT_DISCOVERY_ENABLED = False")
+
+    # Then: 오버라이드 줄이 wildcard import 뒤에 있어야 값이 덮이지 않는다
+    # (앞에 있으면 wildcard import가 다시 덮어써 무효가 된다).
+    assert override_index > wildcard_import_index
