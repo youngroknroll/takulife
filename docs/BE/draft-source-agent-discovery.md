@@ -15,8 +15,9 @@
 - 스태프 대시보드의 「지금 수집」 버튼은 위 관리 명령을 동기로 실행한다.
 - 서버의 행사 필드 LLM 추출은 `DRAFT_LLM_EXTRACTION_ENABLED=False`로 꺼져
   있다. 유료 API를 쓰지 않는다는 결정은 유지된다.
-- 로컬 러너, 에이전트 탐색 실행, 후보 검증 이력, 러너 heartbeat와 전용 인증
-  경계는 아직 구현되지 않았다.
+- 로컬 러너(`local_runner/`, Claude Code 어댑터), 에이전트 탐색 실행, 후보
+  검증, 러너 heartbeat와 전용 인증 경계는 2026-08-20 구현됐다(상세는
+  "구현 확정 사항" 절).
 
 ## Decision
 
@@ -187,7 +188,8 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 
 - 개인 맥이 켜져 있지 않으면 에이전트 탐색을 사용할 수 없다는 제약을 정상 운영
   상태로 취급한다. 가용성 장애로 PaaS 앱을 실패시키지 않는다.
-- 러너 자동 시작 방식, 최초 공급자, 토큰 저장·회전 절차는 구현 전에 확정한다.
+- 최초 공급자는 Claude Code로 확정됐다(`local_runner/claude_code_adapter.py`).
+  러너 자동 시작 방식과 토큰 저장·회전 절차는 아직 미결이다.
 - 기본 소스 수집은 서버 기능 플래그와 활성 `DraftSource`만으로 계속 동작한다.
 - PaaS 배포에는 LLM API 키나 에이전트 런타임을 추가하지 않는다.
 - 운영 화면은 러너 최근 heartbeat, 탐색 실행 상태, 후보별 실패 단계, 승격된 소스와
@@ -239,8 +241,9 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 ## 구현 확정 사항(2026-08-20)
 
 - 상수(모듈 상수, `drafts/discovery_runs.py`·`drafts/candidate_validation.py`):
-  HEARTBEAT_FRESH_SECONDS=120 / LEASE_SECONDS=900 / MAX_LEASES=2 /
-  MAX_CANDIDATES_PER_RUN=10 / INITIAL_DRAFTS_PER_PROMOTED_SOURCE=5
+  HEARTBEAT_FRESH_SECONDS=120 / LEASE_SECONDS=1800(최초 900에서 상향, 아래
+  참고) / MAX_LEASES=2 / MAX_CANDIDATES_PER_RUN=10 /
+  INITIAL_DRAFTS_PER_PROMOTED_SOURCE=5
 - 실행 상태 enum: pending/claimed/succeeded/partially_failed/failed/expired.
   후보 실패 단계 7종: schema/duplicate/url_safety/robots/fetch/
   listing_extraction/sample_canary
@@ -257,6 +260,27 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 - 러너 실기동 실측(2026-08-20): 왕복(403/204 → claim → duplicate·url_safety
   (gaierror) 격리 → complete FAILED) 및 `claude -p` 봉투 파싱 확인. CLI에
   --max-turns 없음(OS 타임아웃 600초)
+- 표본-목록 연관성 검사(sample_mismatch 단계 신설) — 무관한 사이트의 정상
+  행사 URL을 표본으로 붙여 목록 검증을 우회해 승격을 통과시키던 경로를
+  차단한다(사용자 검토 발견, 2026-08-20)
+- `create_run`은 heartbeat 단일 행(pk=1)을 `select_for_update`로 잠근 뒤
+  활성 실행 검사와 생성을 같은 트랜잭션에서 수행한다 — 동시 탐색 요청
+  2건이 모두 통과해 pending을 중복 생성하는 경쟁을 차단한다
+- `LEASE_SECONDS` 900→1800 + 유효 제출마다 임대 갱신(`renew_lease`) +
+  에이전트 실행 중 백그라운드 heartbeat 스레드 — 긴 검증 도중 임대가
+  만료돼 제출이 거부되는 경로와, 에이전트 실행 중 대시보드가 러너를
+  오프라인으로 오표시하는 문제를 함께 막는다
+- 러너 폴링 경계(`_safe_poll`)는 HTTP 오류를 격리하고 지수 backoff로
+  재시도한다. 후보 제출 중 409(임대 상실)를 받으면 그 실행의 제출을
+  즉시 중단하고 `complete` 보고를 생략한다(다음 폴에서 서버가 재대기·만료
+  처리)
+
+**격리 권고(미결).** `--permission-mode bypassPermissions`는 Anthropic
+권한 문서([iam](https://docs.anthropic.com/ko/docs/claude-code/iam))가
+격리된 환경에서만 쓰도록 권고한다. 현재는 `--tools`로 웹 탐색 2종
+(WebSearch·WebFetch)만 허용해 파일·셸 도구가 없지만, 장기 상시 운영으로
+전환하기 전에는 러너를 별도 실행 계정 또는 컨테이너 등 격리 환경에서
+돌리는 구성을 권장한다.
 
 ### 검토 게이트 기록
 
@@ -277,11 +301,16 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 - 실행·후보 모델의 정확한 필드와 마이그레이션, lease·heartbeat·재시도 시간,
   스로틀 값은 구현 계획의 Test List 전에 승인해야 한다. → **해소**(위
   "구현 확정 사항" 절, 2026-08-20).
-- 최초 러너 공급자와 구체적인 비대화형 실행 방식은 미결정이다. 서버 후보 계약은
-  공급자 중립으로 유지하되, 첫 구현은 하나의 어댑터만 만든다.
+- 최초 러너 공급자와 구체적인 비대화형 실행 방식 → **해소**: Claude Code
+  어댑터로 확정됐다(`claude -p --output-format json --tools
+  "WebSearch,WebFetch" --permission-mode bypassPermissions`). 서버 후보
+  계약은 계속 공급자 중립으로 유지한다.
 - 공식성의 완전 자동 판정은 불가능하다. 현재 안전 근거는 게시 전 관리자 검수다.
 - 로컬 러너 설치·업데이트·자동 시작(launchd)·토큰 회전 절차·정기 실행 스케줄러는
   아직 없다.
+- `--permission-mode bypassPermissions` 격리 권고 미이행: 현재 `--tools`로
+  웹 탐색 2종만 허용해 파일·셸 도구는 없지만, 장기 상시 운영 전에는 별도
+  실행 계정 또는 격리 환경 구성이 필요하다(아래 격리 권고 참고).
 
 ## Evidence
 
