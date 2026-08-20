@@ -11,7 +11,7 @@ from drafts.candidate_intake import (
     decide_and_create_candidate,
 )
 from drafts.discovery import DiscoveryParseError, extract_candidate_urls
-from drafts.discovery_runs import LeaseInvalidError, locked_run_with_valid_lease
+from drafts.discovery_runs import LeaseInvalidError, locked_run_with_valid_lease, renew_lease
 from drafts.extraction import EmptyExtractionError, extract_event_fields
 from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft, SourceCandidate
@@ -45,6 +45,7 @@ FAILURE_MESSAGES = {
     "fetch": "목록 페이지를 가져오지 못했다",
     "listing_extraction": "선언된 유형과 선택자로 후보 URL을 추출하지 못했다",
     "sample_canary": "표본 페이지에서 규칙 기반 추출이 빈 결과를 냈다",
+    "sample_mismatch": "표본 URL이 목록에서 추출된 후보가 아니다",
 }
 
 
@@ -118,6 +119,7 @@ def _save_failed_candidate(*, run_id, lease_token, cleaned, stage, exc=None):
 
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
+        renew_lease(run=run)
         return SourceCandidate.objects.create(
             run=run,
             name=cleaned["name"],
@@ -230,6 +232,16 @@ def submit_candidate(*, run_id, lease_token, payload):
             stage=SourceCandidate.FailureStage.LISTING_EXTRACTION,
         )
 
+    # 아무 목록에나 남의 사이트 정상 행사 URL을 표본으로 붙여 승격을 통과시키는
+    # 경로를 막는다 — 표본은 반드시 이 목록이 추출한 후보 URL이어야 한다.
+    if cleaned["sample_url"] not in candidate_urls:
+        return _save_failed_candidate(
+            run_id=run_id,
+            lease_token=lease_token,
+            cleaned=cleaned,
+            stage=SourceCandidate.FailureStage.SAMPLE_MISMATCH,
+        )
+
     try:
         sample_content = fetch_html(cleaned["sample_url"])
     except Exception as exc:
@@ -265,6 +277,7 @@ def submit_candidate(*, run_id, lease_token, payload):
 
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
+        renew_lease(run=run)
         try:
             with transaction.atomic():
                 source = DraftSource.objects.create(

@@ -7,6 +7,7 @@ from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from drafts.discovery_runs import (
+    LEASE_SECONDS,
     DiscoveryRunActiveError,
     LeaseInvalidError,
     RunnerOfflineError,
@@ -113,8 +114,8 @@ def test_claim은_가장_오래된_대기_실행을_임대하고_토큰과_만�
     assert claimed.lease_count == 1
     assert claimed.provider == "claude-code"
     assert claimed.started_at is not None
-    assert claimed.lease_expires_at > timezone.now() + timedelta(seconds=890)
-    assert claimed.lease_expires_at < timezone.now() + timedelta(seconds=910)
+    assert claimed.lease_expires_at > timezone.now() + timedelta(seconds=LEASE_SECONDS - 10)
+    assert claimed.lease_expires_at < timezone.now() + timedelta(seconds=LEASE_SECONDS + 10)
 
 
 def test_대기_실행이_없으면_claim은_임대_없음을_반환한다():
@@ -168,6 +169,20 @@ def test_claim의_임대는_FOR_UPDATE_잠금_아래에서_일어난다(make_use
         claim(provider="claude-code")
 
     assert any("FOR UPDATE" in query["sql"].upper() for query in ctx.captured_queries)
+
+
+def test_실행_생성은_heartbeat_행_잠금_아래에서_검사와_생성을_수행한다(make_user):
+    record_heartbeat(provider="claude-code")
+    user = make_user()
+
+    with CaptureQueriesContext(connection) as ctx:
+        create_run(requested_by=user)
+
+    # 단일 행 잠금이 활성 검사~생성을 직렬화한다는 계약(C5·F9와 같은 방식).
+    assert any(
+        "discoveryrunnerstatus" in query["sql"].lower() and "FOR UPDATE" in query["sql"].upper()
+        for query in ctx.captured_queries
+    )
 
 
 def _make_claimed_run():

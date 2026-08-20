@@ -286,6 +286,9 @@ def test_표본_URL의_규칙_추출_결과가_비면_sample_canary_단계_실�
     _patch_safe_fetch_url(monkeypatch)
     _patch_allow_all_robots(monkeypatch)
     payload = _valid_payload()
+    # 표본은 목록이 실제로 낸 후보 URL이어야 sample_mismatch에 걸리지 않고
+    # canary 단계까지 도달한다.
+    payload["sample_url"] = "https://example.com/notice/1"
     run = _make_claimed_run()
 
     listing_html = (
@@ -303,6 +306,44 @@ def test_표본_URL의_규칙_추출_결과가_비면_sample_canary_단계_실�
 
     assert candidate.status == SourceCandidate.Status.FAILED
     assert candidate.failure_stage == SourceCandidate.FailureStage.SAMPLE_CANARY
+    assert DraftSource.objects.count() == 0
+    assert EventDraft.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_표본_URL이_목록에서_추출된_후보가_아니면_sample_mismatch_단계_실패다(monkeypatch):
+    _patch_safe_fetch_url(monkeypatch)
+    _patch_allow_all_robots(monkeypatch)
+    payload = _valid_payload()
+    # 목록에는 없는, 다른 사이트의 실제 정상 행사 URL을 표본으로 붙인다 —
+    # canary만으로는 "추출 가능한 페이지인가"만 보고 "이 목록이 실제로 낸
+    # 후보인가"는 못 잡는다는 결함을 재현한다.
+    payload["sample_url"] = "https://unrelated.example.org/event/1"
+    run = _make_claimed_run()
+
+    listing_url_1 = "https://example.com/notice/1"
+    listing_url_2 = "https://example.com/notice/2"
+    listing_html = (
+        '<html><body>'
+        f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
+        f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
+        "</body></html>"
+    )
+    sample_html = (
+        "<html><head><title>코믹월드 행사</title></head>"
+        "<body><p>2026-09-01 서울 코엑스</p></body></html>"
+    )
+
+    def _fake_fetch_html(url, **kwargs):
+        return sample_html if url == payload["sample_url"] else listing_html
+
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", _fake_fetch_html)
+
+    candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert candidate.status == SourceCandidate.Status.FAILED
+    assert candidate.failure_stage == SourceCandidate.FailureStage.SAMPLE_MISMATCH
     assert DraftSource.objects.count() == 0
     assert EventDraft.objects.count() == 0
 
@@ -369,13 +410,13 @@ def test_전_단계를_통과한_후보는_DraftSource로_승격되고_초기_�
 def test_초기_드래프트_생성도_후보_URL별_robots_불허를_건너뛴다(monkeypatch):
     _patch_safe_fetch_url(monkeypatch)
     payload = _valid_payload()
-    # sample_url이 목록 후보 URL과 겹치면 표본 robots 검사가 먼저 걸려
-    # 이 테스트가 검증하려는 후보별 robots 단계에 닿지 못한다.
-    payload["sample_url"] = "https://example.com/notice/sample"
     run = _make_claimed_run()
 
     listing_url_1 = "https://example.com/notice/1"
     listing_url_2 = "https://example.com/notice/2"
+    # 표본은 목록이 실제로 낸 후보 URL이어야 sample_mismatch에 걸리지 않는다
+    # — /notice/1은 아래에서 robots 불허로 두므로 그와 겹치지 않는 /notice/2를 쓴다.
+    payload["sample_url"] = listing_url_2
     listing_html = (
         '<html><body>'
         f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
@@ -603,7 +644,10 @@ def test_부분_실패_실행에서_통과_후보는_승격되고_실패_후보�
 
     promotable_payload = _valid_payload()
     promotable_payload["url"] = "https://another.example.com/notice"
-    promotable_payload["sample_url"] = "https://another.example.com/notice/sample"
+    # _install_promotable_fakes의 목록 후보는 도메인과 무관하게 항상
+    # example.com/notice/1·2다 — 표본은 그중 하나여야 sample_mismatch를
+    # 피한다(기본값이 이미 /notice/1이지만 의도를 명시한다).
+    promotable_payload["sample_url"] = "https://example.com/notice/1"
     _install_promotable_fakes(monkeypatch, promotable_payload)
 
     failed_candidate = submit_candidate(
@@ -622,3 +666,21 @@ def test_부분_실패_실행에서_통과_후보는_승격되고_실패_후보�
 
     run.refresh_from_db()
     assert run.status == SourceDiscoveryRun.Status.CLAIMED
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_유효한_후보_제출은_임대를_연장한다():
+    run = SourceDiscoveryRun.objects.create(
+        status=SourceDiscoveryRun.Status.CLAIMED,
+        lease_token="tok",
+        # 곧 만료될 임대 — 제출이 성공하면 연장돼야 한다.
+        lease_expires_at=timezone.now() + timedelta(seconds=60),
+        lease_count=1,
+    )
+    payload = _payload_이름_누락()
+
+    submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    run.refresh_from_db()
+    assert run.lease_expires_at > timezone.now() + timedelta(seconds=1700)

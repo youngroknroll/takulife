@@ -120,6 +120,7 @@ class SourceCandidate(models.Model):
         FETCH = "fetch", "Fetch"
         LISTING_EXTRACTION = "listing_extraction", "Listing extraction"
         SAMPLE_CANARY = "sample_canary", "Sample canary"
+        SAMPLE_MISMATCH = "sample_mismatch", "Sample mismatch"
 
     run = models.ForeignKey(
         SourceDiscoveryRun, on_delete=models.CASCADE, related_name="candidates"

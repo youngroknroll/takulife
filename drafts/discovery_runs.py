@@ -11,8 +11,9 @@ from drafts.models import DiscoveryRunnerStatus, SourceCandidate, SourceDiscover
 # 러너 폴링 주기에 여유를 둔 신선도 기준(초).
 HEARTBEAT_FRESH_SECONDS = 120
 
-# 에이전트 웹 탐색이 몇 분 걸릴 수 있어 여유를 둔 임대 시간(초).
-LEASE_SECONDS = 900
+# 에이전트 최악 실행(600초×2) + 첫 제출 검증까지 덮는 값. 이후 제출은 매번
+# renew_lease로 갱신되므로 이 값은 최초 에이전트 국면 기준이다.
+LEASE_SECONDS = 1800
 
 # 최초 1회 + 재시도 1회까지만 재임대(정본 재시도 상한 결정).
 MAX_LEASES = 2
@@ -49,17 +50,21 @@ def record_heartbeat(*, provider):
 
 
 def create_run(*, requested_by):
-    status = DiscoveryRunnerStatus.objects.filter(pk=1).first()
-    if status is None or status.last_heartbeat_at < timezone.now() - timedelta(
-        seconds=HEARTBEAT_FRESH_SECONDS
-    ):
-        raise RunnerOfflineError
+    # 동시 요청 2건이 활성 검사~생성 사이에 끼어들어 pending 두 건을 만드는
+    # 경쟁을 막는다 — heartbeat 단일 행(pk=1)을 잠가 자연스러운 직렬화
+    # 지점으로 삼는다.
+    with transaction.atomic():
+        status = DiscoveryRunnerStatus.objects.select_for_update().filter(pk=1).first()
+        if status is None or status.last_heartbeat_at < timezone.now() - timedelta(
+            seconds=HEARTBEAT_FRESH_SECONDS
+        ):
+            raise RunnerOfflineError
 
-    active_statuses = [SourceDiscoveryRun.Status.PENDING, SourceDiscoveryRun.Status.CLAIMED]
-    if SourceDiscoveryRun.objects.filter(status__in=active_statuses).exists():
-        raise DiscoveryRunActiveError
+        active_statuses = [SourceDiscoveryRun.Status.PENDING, SourceDiscoveryRun.Status.CLAIMED]
+        if SourceDiscoveryRun.objects.filter(status__in=active_statuses).exists():
+            raise DiscoveryRunActiveError
 
-    return SourceDiscoveryRun.objects.create(requested_by=requested_by)
+        return SourceDiscoveryRun.objects.create(requested_by=requested_by)
 
 
 def claim(*, provider):
@@ -118,6 +123,12 @@ def locked_run_with_valid_lease(*, run_id, lease_token):
     if run.lease_expires_at is None or run.lease_expires_at <= timezone.now():
         raise LeaseInvalidError
     return run
+
+
+def renew_lease(*, run):
+    # 유효 제출마다 호출돼 긴 검증 중 임대 만료로 제출이 거부되는 경로를 막는다.
+    run.lease_expires_at = timezone.now() + timedelta(seconds=LEASE_SECONDS)
+    run.save(update_fields=["lease_expires_at"])
 
 
 def complete_run(*, run_id, lease_token, runner_status, failure_kind=""):
