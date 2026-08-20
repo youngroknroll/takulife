@@ -24,6 +24,7 @@ SERVICE_MODULES = [
     "events.services",
     "archive.services",
     "drafts.services",
+    "drafts.discovery_runs",
     "staff.services",
     "web.promotion",
     "core.analytics",
@@ -55,7 +56,15 @@ pytestmark = pytest.mark.contract
 @pytest.mark.parametrize(
     "module_name",
     SERVICE_MODULES,
-    ids=["events_서비스", "archive_서비스", "drafts_서비스", "staff_서비스", "web_promotion", "core_analytics"],
+    ids=[
+        "events_서비스",
+        "archive_서비스",
+        "drafts_서비스",
+        "drafts_discovery_runs",
+        "staff_서비스",
+        "web_promotion",
+        "core_analytics",
+    ],
 )
 def test_공개_서비스_함수는_키워드_전용_인자만_받는다(module_name):
     violations = {
