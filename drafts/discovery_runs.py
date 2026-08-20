@@ -33,6 +33,15 @@ class LeaseInvalidError(Exception):
     pass
 
 
+def runner_is_online(*, status_row):
+    """DiscoveryRunnerStatus 행(없으면 None)을 받아 신선도 판정을 소유한다."""
+    if status_row is None:
+        return False
+    return status_row.last_heartbeat_at >= timezone.now() - timedelta(
+        seconds=HEARTBEAT_FRESH_SECONDS
+    )
+
+
 def record_heartbeat(*, provider):
     DiscoveryRunnerStatus.objects.update_or_create(
         pk=1, defaults={"last_heartbeat_at": timezone.now(), "provider": provider}

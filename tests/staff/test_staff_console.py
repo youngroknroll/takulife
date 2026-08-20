@@ -8,7 +8,14 @@ import string
 import pytest
 from django.utils import timezone
 
-from drafts.models import DraftSource, EventDraft
+from drafts.discovery_runs import record_heartbeat
+from drafts.models import (
+    DiscoveryRunnerStatus,
+    DraftSource,
+    EventDraft,
+    SourceCandidate,
+    SourceDiscoveryRun,
+)
 from events.models import Event
 from staff.models import StaffActionLog
 
@@ -816,3 +823,92 @@ def test_검색을_지원하는_화면에는_검색창이_있다(staff_client):
 
     assert resp.status_code == 200
     assert 'id="staff-commandbar-q"' in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_대시보드는_러너_온라인_여부와_최근_탐색_실행을_노출한다(staff_client):
+    _, client = staff_client()
+    record_heartbeat(provider="claude-code")
+
+    succeeded_run = SourceDiscoveryRun.objects.create(
+        status=SourceDiscoveryRun.Status.SUCCEEDED
+    )
+    SourceCandidate.objects.create(
+        run=succeeded_run,
+        name="후보1",
+        url="https://example.com/n1",
+        source_type="html",
+        sample_url="https://example.com/n1/sample",
+        status=SourceCandidate.Status.PROMOTED,
+    )
+    SourceCandidate.objects.create(
+        run=succeeded_run,
+        name="후보2",
+        url="https://example.com/n2",
+        source_type="html",
+        sample_url="https://example.com/n2/sample",
+        status=SourceCandidate.Status.FAILED,
+    )
+    pending_run = SourceDiscoveryRun.objects.create(
+        status=SourceDiscoveryRun.Status.PENDING
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert resp.context["discovery_runner_online"] is True
+    assert resp.context["discovery_runner_last_heartbeat_at"] is not None
+
+    recent_runs = resp.context["recent_discovery_runs"]
+    run_ids_in_order = [row["run"].pk for row in recent_runs]
+    assert run_ids_in_order == [pending_run.pk, succeeded_run.pk]
+
+    succeeded_row = next(row for row in recent_runs if row["run"].pk == succeeded_run.pk)
+    assert succeeded_row["promoted_count"] == 1
+    assert succeeded_row["failed_count"] == 1
+
+    DiscoveryRunnerStatus.objects.update(
+        last_heartbeat_at=timezone.now() - datetime.timedelta(seconds=121)
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert resp.context["discovery_runner_online"] is False
+
+
+@pytest.mark.django_db
+def test_대시보드는_실패한_후보만_확인_큐로_노출한다(staff_client):
+    _, client = staff_client()
+    run = SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.SUCCEEDED)
+    failed_1 = SourceCandidate.objects.create(
+        run=run,
+        name="실패1",
+        url="https://example.com/f1",
+        source_type="html",
+        sample_url="https://example.com/f1/sample",
+        status=SourceCandidate.Status.FAILED,
+    )
+    failed_2 = SourceCandidate.objects.create(
+        run=run,
+        name="실패2",
+        url="https://example.com/f2",
+        source_type="html",
+        sample_url="https://example.com/f2/sample",
+        status=SourceCandidate.Status.FAILED,
+    )
+    SourceCandidate.objects.create(
+        run=run,
+        name="성공",
+        url="https://example.com/p1",
+        source_type="html",
+        sample_url="https://example.com/p1/sample",
+        status=SourceCandidate.Status.PROMOTED,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    failed_candidates = resp.context["failed_source_candidates"]
+    assert [candidate.pk for candidate in failed_candidates] == [failed_2.pk, failed_1.pk]
+    assert all(candidate.status == SourceCandidate.Status.FAILED for candidate in failed_candidates)
