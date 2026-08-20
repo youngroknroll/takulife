@@ -3,12 +3,28 @@
 # 해서 명령 모듈 밖으로 뺐다.
 from dataclasses import dataclass
 
+from drafts.models import DraftSource
 from drafts.robots import ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED
 from drafts.services import DraftCreationDuplicateError, DraftCreationEmptyExtractionError
 
 ROBOTS_REASON_TO_SKIP_KEY = {
     ROBOTS_DISALLOWED: "robots_disallowed",
     ROBOTS_FETCH_FAILED: "robots_fetch_failed",
+}
+
+# rss/sitemap 목록은 HTML이 아니라 XML이라 fetch_html 기본 content-type
+# 허용목록으로는 거부된다(allowed_content_types는 병합이 아니라 대체 — fetch_html
+# 설명 참고). html 목록은 None을 넘겨 fetch_html 기본값을 그대로 쓴다.
+XML_LISTING_CONTENT_TYPES = (
+    "application/xml",
+    "text/xml",
+    "application/rss+xml",
+    "application/atom+xml",
+)
+LISTING_CONTENT_TYPES_BY_SOURCE_TYPE = {
+    DraftSource.SourceType.RSS: XML_LISTING_CONTENT_TYPES,
+    DraftSource.SourceType.SITEMAP: XML_LISTING_CONTENT_TYPES,
+    DraftSource.SourceType.HTML: None,
 }
 
 

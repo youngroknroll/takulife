@@ -8,12 +8,14 @@ from django.utils import timezone
 
 from drafts.discovery_runs import (
     DiscoveryRunActiveError,
+    LeaseInvalidError,
     RunnerOfflineError,
     claim,
+    complete_run,
     create_run,
     record_heartbeat,
 )
-from drafts.models import DiscoveryRunnerStatus, SourceDiscoveryRun
+from drafts.models import DiscoveryRunnerStatus, SourceCandidate, SourceDiscoveryRun
 
 
 pytestmark = [pytest.mark.django_db, pytest.mark.domain]
@@ -166,3 +168,84 @@ def test_claim의_임대는_FOR_UPDATE_잠금_아래에서_일어난다(make_use
         claim(provider="claude-code")
 
     assert any("FOR UPDATE" in query["sql"].upper() for query in ctx.captured_queries)
+
+
+def _make_claimed_run():
+    return SourceDiscoveryRun.objects.create(
+        status=SourceDiscoveryRun.Status.CLAIMED,
+        lease_token="tok",
+        lease_expires_at=timezone.now() + timedelta(seconds=900),
+        lease_count=1,
+    )
+
+
+def _make_candidate(run, *, status, url):
+    return SourceCandidate.objects.create(
+        run=run,
+        name="후보",
+        url=url,
+        source_type="html",
+        sample_url=f"{url}/sample",
+        status=status,
+    )
+
+
+def _setup_전_승격(run):
+    _make_candidate(run, status=SourceCandidate.Status.PROMOTED, url="https://example.com/n1")
+    _make_candidate(run, status=SourceCandidate.Status.PROMOTED, url="https://example.com/n2")
+    return {"runner_status": "succeeded"}
+
+
+def _setup_혼합(run):
+    _make_candidate(run, status=SourceCandidate.Status.PROMOTED, url="https://example.com/n1")
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n2")
+    return {"runner_status": "succeeded"}
+
+
+def _setup_전_실패(run):
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n1")
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n2")
+    return {"runner_status": "succeeded"}
+
+
+def _setup_후보_없음_성공(run):
+    return {"runner_status": "succeeded"}
+
+
+def _setup_러너_실패_보고(run):
+    return {"runner_status": "failed", "failure_kind": "agent_timeout"}
+
+
+@pytest.mark.parametrize(
+    "setup, expected_status",
+    [
+        (_setup_전_승격, SourceDiscoveryRun.Status.SUCCEEDED),
+        (_setup_혼합, SourceDiscoveryRun.Status.PARTIALLY_FAILED),
+        (_setup_전_실패, SourceDiscoveryRun.Status.FAILED),
+        (_setup_후보_없음_성공, SourceDiscoveryRun.Status.SUCCEEDED),
+        (_setup_러너_실패_보고, SourceDiscoveryRun.Status.FAILED),
+    ],
+    ids=["전_승격", "혼합", "전_실패", "후보_없음_성공", "러너_실패_보고"],
+)
+def test_run_complete는_후보_상태_조합에_따라_최종_상태를_산출한다(setup, expected_status):
+    run = _make_claimed_run()
+    kwargs = setup(run)
+
+    result = complete_run(run_id=run.pk, lease_token="tok", **kwargs)
+
+    assert result.status == expected_status
+    assert result.finished_at is not None
+    if kwargs.get("runner_status") == "failed":
+        assert result.error_summary
+        assert result.error_summary == "러너가 실행 실패를 보고했다 (agent_timeout)"
+
+
+def test_잘못된_lease로는_complete가_거부된다():
+    run = _make_claimed_run()
+
+    with pytest.raises(LeaseInvalidError):
+        complete_run(run_id=run.pk, lease_token="wrong", runner_status="succeeded")
+
+    run.refresh_from_db()
+    assert run.status == SourceDiscoveryRun.Status.CLAIMED
+    assert run.finished_at is None

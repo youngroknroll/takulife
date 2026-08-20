@@ -42,6 +42,7 @@ from django.utils import timezone
 
 from drafts.candidate_intake import (
     CandidateOutcome,
+    LISTING_CONTENT_TYPES_BY_SOURCE_TYPE,
     ROBOTS_REASON_TO_SKIP_KEY,
     decide_and_create_candidate,
 )
@@ -56,21 +57,6 @@ from drafts.services import create_draft_from_url
 # 아니라 모듈 상수로 둬야 테스트가 override_settings 없이 time.sleep만 몽키패치해
 # 순식간에 돌릴 수 있다.
 INTER_REQUEST_DELAY_SECONDS = 1
-
-# rss/sitemap 목록은 HTML이 아니라 XML이라 fetch_html 기본 content-type
-# 허용목록으로는 거부된다(allowed_content_types는 병합이 아니라 대체 — fetch_html
-# 설명 참고). html 목록은 None을 넘겨 fetch_html 기본값을 그대로 쓴다.
-_XML_LISTING_CONTENT_TYPES = (
-    "application/xml",
-    "text/xml",
-    "application/rss+xml",
-    "application/atom+xml",
-)
-_LISTING_CONTENT_TYPES_BY_SOURCE_TYPE = {
-    DraftSource.SourceType.RSS: _XML_LISTING_CONTENT_TYPES,
-    DraftSource.SourceType.SITEMAP: _XML_LISTING_CONTENT_TYPES,
-    DraftSource.SourceType.HTML: None,
-}
 
 
 @dataclass(frozen=True)
@@ -147,7 +133,7 @@ def _process_listing(source, robots_checker):
         return _ListingOutcome(skip_key=skip_key)
 
     try:
-        content_types = _LISTING_CONTENT_TYPES_BY_SOURCE_TYPE[source.source_type]
+        content_types = LISTING_CONTENT_TYPES_BY_SOURCE_TYPE[source.source_type]
         content = fetch_html(source.url, allowed_content_types=content_types)
     except Exception as exc:
         # except-ok: 실패는 source.error에 기록되고 스태프 콘솔에 표시된다
