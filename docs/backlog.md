@@ -895,7 +895,12 @@ log", `CLAUDE.md:43`이 "never as durable project state". PR마다 갱신하는 
   신규 가입 이메일 인증이 동작하지 않는다는 사실만 기록해 둔다.
 - **교환(trade) 매칭** — 밀도·신원·프라이버시·신고·차단·중재·운영 게이트
   승인 전까지 설계도 착수 금지.
-- **LLM 자동 수집 재활성화** — 비용 정책상 불허. 현재 플래그 off.
+- **서버 행사 필드 LLM 추출 재활성화** — 비용 정책상 불허.
+  `DRAFT_LLM_EXTRACTION_ENABLED`는 계속 off이며 PaaS에 LLM API 키를 두지 않는다.
+- **로컬 에이전트 수집처 탐색 구현** — 설계 승인, 구현 미착수(2026-08-20).
+  개인 맥이 켜진 동안에만 LLM이 새 수집처와 표본 행사 URL을 제안하고, 서버가
+  결정론적으로 검증한 뒤 기존 규칙 기반 파이프라인으로 `EventDraft(PENDING)`을
+  만든다. 정본: `docs/BE/draft-source-agent-discovery.md`.
 - **폐기된 시안 기반 시각 작업** — 과거 시안에서 나온 항목은 계속 착수하지 않는다.
   새 행사 에디토리얼 방향은 D4와 `docs/FE/event-typography-editorial.md`만 따른다.
 - **데이터 내보내기(CSV/JSON)** — 어떤 구속 결정에도 없다. 요구가 생기면 그때.
