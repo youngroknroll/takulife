@@ -1,7 +1,13 @@
 """드래프트 도메인의 공개 조회 계층. 집계 로직은 여기 두고 뷰에는 두지 않는다."""
 from django.db.models import Count, Q
 
-from .models import DraftSource, EventDraft
+from .models import (
+    DiscoveryRunnerStatus,
+    DraftSource,
+    EventDraft,
+    SourceCandidate,
+    SourceDiscoveryRun,
+)
 
 _ALL_STATUSES = (
     EventDraft.ReviewStatus.PENDING,
@@ -57,3 +63,33 @@ def enabled_draft_sources_exist() -> bool:
     확인용이다 — DRAFT_DISCOVERY_ENABLED 꺼짐 상태와 마찬가지로 '할 일 없음'도 정상
     상태로 취급한다."""
     return DraftSource.objects.filter(enabled=True).exists()
+
+
+def runner_status():
+    """단일 행(pk=1) DiscoveryRunnerStatus를 돌려주거나, 아직 heartbeat가 없으면
+    None을 돌려준다."""
+    return DiscoveryRunnerStatus.objects.filter(pk=1).first()
+
+
+def recent_discovery_runs(*, limit=5):
+    """최근 탐색 실행을 최신순으로, 후보 승격/실패 개수를 함께 annotate해
+    행 dict 리스트로 돌려준다(뷰가 아니라 여기서 집계한다)."""
+    runs = SourceDiscoveryRun.objects.order_by("-created_at").annotate(
+        promoted_count=Count(
+            "candidates", filter=Q(candidates__status=SourceCandidate.Status.PROMOTED)
+        ),
+        failed_count=Count(
+            "candidates", filter=Q(candidates__status=SourceCandidate.Status.FAILED)
+        ),
+    )[:limit]
+    return [
+        {"run": run, "promoted_count": run.promoted_count, "failed_count": run.failed_count}
+        for run in runs
+    ]
+
+
+def failed_source_candidates(*, limit=10):
+    """최근 실패한 후보를 최신순으로 돌려준다(스태프 확인 큐)."""
+    return SourceCandidate.objects.filter(
+        status=SourceCandidate.Status.FAILED
+    ).order_by("-created_at")[:limit]

@@ -40,15 +40,17 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
+from drafts.candidate_intake import (
+    CandidateOutcome,
+    LISTING_CONTENT_TYPES_BY_SOURCE_TYPE,
+    ROBOTS_REASON_TO_SKIP_KEY,
+    decide_and_create_candidate,
+)
 from drafts.discovery import extract_candidate_urls
 from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft
-from drafts.robots import ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED, RobotsChecker
-from drafts.services import (
-    DraftCreationDuplicateError,
-    DraftCreationEmptyExtractionError,
-    create_draft_from_url,
-)
+from drafts.robots import RobotsChecker
+from drafts.services import create_draft_from_url
 
 
 # 여러 소스를 연달아 두드리지 않도록 소스별 목록 요청 사이에 짧게 쉰다. 설정값이
@@ -56,41 +58,12 @@ from drafts.services import (
 # 순식간에 돌릴 수 있다.
 INTER_REQUEST_DELAY_SECONDS = 1
 
-# rss/sitemap 목록은 HTML이 아니라 XML이라 fetch_html 기본 content-type
-# 허용목록으로는 거부된다(allowed_content_types는 병합이 아니라 대체 — fetch_html
-# 설명 참고). html 목록은 None을 넘겨 fetch_html 기본값을 그대로 쓴다.
-_XML_LISTING_CONTENT_TYPES = (
-    "application/xml",
-    "text/xml",
-    "application/rss+xml",
-    "application/atom+xml",
-)
-_LISTING_CONTENT_TYPES_BY_SOURCE_TYPE = {
-    DraftSource.SourceType.RSS: _XML_LISTING_CONTENT_TYPES,
-    DraftSource.SourceType.SITEMAP: _XML_LISTING_CONTENT_TYPES,
-    DraftSource.SourceType.HTML: None,
-}
-
-_ROBOTS_REASON_TO_SKIP_KEY = {
-    ROBOTS_DISALLOWED: "robots_disallowed",
-    ROBOTS_FETCH_FAILED: "robots_fetch_failed",
-}
-
 
 @dataclass(frozen=True)
 class _ListingOutcome:
     candidate_urls: tuple = ()
     found: int = 0
     errored: bool = False
-    skip_key: str = None
-
-
-@dataclass(frozen=True)
-class _CandidateOutcome:
-    created: bool = False
-    held_back: bool = False
-    errored: bool = False
-    consumed_fetch_budget: bool = False
     skip_key: str = None
 
 
@@ -155,12 +128,12 @@ def _process_listing(source, robots_checker):
     """
     listing_result = robots_checker.check(source.url)
     if not listing_result.allowed:
-        skip_key = _ROBOTS_REASON_TO_SKIP_KEY[listing_result.reason]
+        skip_key = ROBOTS_REASON_TO_SKIP_KEY[listing_result.reason]
         _mark_source_checked(source, error=f"목록 접근 불가: {listing_result.reason}")
         return _ListingOutcome(skip_key=skip_key)
 
     try:
-        content_types = _LISTING_CONTENT_TYPES_BY_SOURCE_TYPE[source.source_type]
+        content_types = LISTING_CONTENT_TYPES_BY_SOURCE_TYPE[source.source_type]
         content = fetch_html(source.url, allowed_content_types=content_types)
     except Exception as exc:
         # except-ok: 실패는 source.error에 기록되고 스태프 콘솔에 표시된다
@@ -188,7 +161,7 @@ def _process_candidates(candidates_by_source, robots_checker, stderr):
 
     소스별 fetch 예산과 누적 생성 수는 본질적으로 순차적이라(각 후보의 판단이
     이 실행 안의 앞선 판단에 의존한다) 이 함수 안 지역 변수로만 관리하고,
-    _decide_and_create_candidate는 그 상태를 값으로만 받아 새 _CandidateOutcome을
+    decide_and_create_candidate는 그 상태를 값으로만 받아 새 CandidateOutcome을
     돌려줄 뿐 아무것도 직접 바꾸지 않는다.
     """
     all_urls = [url for _source, urls in candidates_by_source for url in urls]
@@ -207,7 +180,7 @@ def _process_candidates(candidates_by_source, robots_checker, stderr):
 
     for source, urls in candidates_by_source:
         for url in urls:
-            outcome = _decide_and_create_candidate(
+            outcome = decide_and_create_candidate(
                 source,
                 url,
                 already_exists=url in existing_urls,
@@ -215,6 +188,7 @@ def _process_candidates(candidates_by_source, robots_checker, stderr):
                 at_creation_cap=created_count >= settings.DRAFT_DISCOVERY_MAX_PER_RUN,
                 robots_checker=robots_checker,
                 stderr=stderr,
+                create_draft=create_draft_from_url,
             )
             if outcome.consumed_fetch_budget:
                 fetch_budgets[source.pk] -= 1
@@ -227,35 +201,6 @@ def _process_candidates(candidates_by_source, robots_checker, stderr):
             outcomes.append(outcome)
 
     return outcomes
-
-
-def _decide_and_create_candidate(
-    source, url, *, already_exists, budget_available, at_creation_cap, robots_checker, stderr
-):
-    if already_exists:
-        return _CandidateOutcome(skip_key="duplicate")
-    if at_creation_cap or not budget_available:
-        return _CandidateOutcome(held_back=True)
-
-    candidate_result = robots_checker.check(url)
-    if not candidate_result.allowed:
-        skip_key = _ROBOTS_REASON_TO_SKIP_KEY[candidate_result.reason]
-        return _CandidateOutcome(consumed_fetch_budget=True, skip_key=skip_key)
-
-    try:
-        create_draft_from_url(source_url=url, source_name=source.name)
-    except DraftCreationDuplicateError:
-        return _CandidateOutcome(consumed_fetch_budget=True, skip_key="duplicate")
-    except DraftCreationEmptyExtractionError:
-        return _CandidateOutcome(consumed_fetch_budget=True, skip_key="empty")
-    except Exception as exc:
-        # URL과 예외 클래스 이름만 남긴다 — str(exc)는 응답 본문 등 가져온 내용을
-        # 그대로 노출할 수 있어 쓰지 않는다.
-        # except-ok: 예외 클래스 이름만 stderr에 남긴다
-        stderr.write(f"후보 생성 실패 {url}: {type(exc).__name__}")
-        return _CandidateOutcome(consumed_fetch_budget=True, errored=True)
-
-    return _CandidateOutcome(consumed_fetch_budget=True, created=True)
 
 
 def _summarize(listing_outcomes, candidate_outcomes):

@@ -400,6 +400,23 @@ def test_드래프트_수집_명령은_이벤트_모듈을_임포트하지_않�
     }
 
 
+@pytest.mark.parametrize(
+    "module_path",
+    ["drafts/management/commands/discover_drafts.py", "drafts/candidate_intake.py"],
+    ids=["discover_drafts_명령", "candidate_intake"],
+)
+def test_지금_수집_경로는_탐색_실행_모듈에_의존하지_않는다(module_path):
+    # 수용 기준 1항 — 기본 「지금 수집」은 로컬 러너나 새 모델을 호출하지 않는다.
+    imported_modules = _imported_modules(module_path)
+    forbidden = {"drafts.discovery_runs", "drafts.candidate_validation", "local_runner"}
+
+    assert not {
+        module
+        for module in imported_modules
+        if any(module == mod or module.startswith(f"{mod}.") for mod in forbidden)
+    }
+
+
 def test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는다():
     """LLM 추출은 플래그로 켜고 끄는 별도 관심사(drafts/llm_extraction.py)다
     — discovery.py의 결정적 필터링 로직은 core.llm을 끌어오면 안 된다."""
@@ -409,6 +426,39 @@ def test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는
         module
         for module in imported_modules
         if module == "core.llm" or module.startswith("core.llm.")
+    }
+
+
+def test_후보_검증_모듈은_필드_직접_저장_함수를_쓰지_않는다():
+    """에이전트가 제안한 필드가 검증 없이 드래프트로 직행하는 경로를 막는
+    보안 계약 — 임포트 형태(from x import y as z)까지 우회를 막기 위해
+    소스 텍스트에 함수명 문자열 자체가 등장하지 않음을 단언한다."""
+    source_text = (PROJECT_ROOT / "drafts/candidate_validation.py").read_text()
+
+    assert "create_draft_from_fields" not in source_text
+
+
+@pytest.mark.parametrize(
+    "module_path",
+    [
+        "drafts/discovery_runs.py",
+        "drafts/candidate_validation.py",
+        "drafts/candidate_intake.py",
+    ],
+    ids=["discovery_runs", "candidate_validation", "candidate_intake"],
+)
+def test_드래프트_탐색_신규_모듈은_이벤트와_LLM_모듈을_직접_임포트하지_않는다(module_path):
+    """drafts.services를 경유한 간접 승격 경로는 허용되는 설계다 — 여기서
+    막는 건 신규 모듈이 events·core.llm을 직접 임포트하는 경로뿐이다."""
+    imported_modules = _imported_modules(module_path)
+
+    assert not {
+        module
+        for module in imported_modules
+        if module == "events"
+        or module.startswith("events.")
+        or module == "core.llm"
+        or module.startswith("core.llm.")
     }
 
 

@@ -141,6 +141,105 @@ staff-console-redesign.md M5).
 
         <section class="dash-panel">
           <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">새 수집처 탐색</h2>
+            {% if discovery_runner_online %}
+              <span class="dash-status-badge dash-status-badge--ok">
+                <span class="dash-status-dot" aria-hidden="true"></span>
+                러너 온라인
+              </span>
+              <span class="mono dash-panel-head-meta">heartbeat {{ discovery_runner_last_heartbeat_at|timesince }} 전</span>
+              <form class="dash-panel-head-action" method="post" action="{% url 'staff:source-discovery-request' %}" data-submit-guard>
+                {% csrf_token %}
+                <button class="staff-cta dash-cta-accent" type="submit">▶ 새 소스 탐색</button>
+              </form>
+            {% else %}
+              <span class="dash-status-badge dash-status-badge--disabled">
+                <span class="dash-status-dot" aria-hidden="true"></span>
+                러너 오프라인
+              </span>
+              <span class="mono dash-panel-head-meta">{% if discovery_runner_last_heartbeat_at %}마지막 heartbeat {{ discovery_runner_last_heartbeat_at|timesince }} 전{% else %}heartbeat 없음{% endif %}</span>
+              <form class="dash-panel-head-action" method="post" action="{% url 'staff:source-discovery-request' %}" data-submit-guard>
+                {% csrf_token %}
+                <button class="staff-cta" type="submit" disabled title="로컬 러너 오프라인 — 개인 맥에서 러너 실행 필요">▶ 새 소스 탐색</button>
+              </form>
+            {% endif %}
+          </div>
+
+          {% if recent_discovery_runs %}
+            <table class="dash-table">
+              <colgroup>
+                <col style="width: 8.5rem;">
+                <col style="width: 6.5rem;">
+                <col style="width: 4rem;">
+                <col style="width: 4rem;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">시각</th>
+                  <th scope="col">상태</th>
+                  <th scope="col">승격</th>
+                  <th scope="col">실패</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in recent_discovery_runs %}
+                  <tr>
+                    <td class="mono dash-cell-dim">{{ row.run.created_at|date:"y.m.d H:i" }}</td>
+                    <td>{% if row.run.status == "pending" %}<span class="dash-status-badge dash-status-badge--disabled">대기</span>{% elif row.run.status == "claimed" %}<span class="dash-status-badge dash-status-badge--stale">러너 진행 중</span>{% elif row.run.status == "succeeded" %}<span class="dash-status-badge dash-status-badge--ok">성공</span>{% elif row.run.status == "partially_failed" %}<span class="dash-status-badge dash-status-badge--stale">부분 실패</span>{% elif row.run.status == "failed" %}<span class="dash-status-badge dash-status-badge--error">실패</span>{% elif row.run.status == "expired" %}<span class="dash-status-badge dash-status-badge--error">임대 만료</span>{% endif %}{% if row.run.error_summary %}<div class="mono dash-source-error">{{ row.run.error_summary|truncatechars:60 }}</div>{% endif %}</td>
+                    <td class="mono">{{ row.promoted_count }}</td>
+                    <td class="mono">{{ row.failed_count }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="dash-empty">아직 탐색 실행 이력이 없습니다.</p>
+          {% endif %}
+        </section>
+
+        <section class="dash-panel">
+          <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">확인 필요 후보</h2>
+            <span class="mono dash-panel-head-meta">최근 10건</span>
+          </div>
+
+          {% if failed_source_candidates %}
+            <table class="dash-table">
+              <colgroup>
+                <col style="width: auto;">
+                <col style="width: 6rem;">
+                <col style="width: 11.25rem;">
+                <col style="width: 5.5rem;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">이름</th>
+                  <th scope="col">단계</th>
+                  <th scope="col">사유</th>
+                  <th scope="col">시각</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in failed_source_candidates %}
+                  <tr>
+                    <td>
+                      <div class="dash-source-name">{{ c.name }}</div>
+                      <div class="mono dash-source-sub">{{ c.url }}</div>
+                    </td>
+                    <td class="mono dash-cell-dim">{% if c.failure_stage == "schema" %}형식 위반{% elif c.failure_stage == "duplicate" %}중복 소스{% elif c.failure_stage == "url_safety" %}URL 안전성{% elif c.failure_stage == "robots" %}robots 불허{% elif c.failure_stage == "fetch" %}가져오기 실패{% elif c.failure_stage == "listing_extraction" %}목록 추출 실패{% elif c.failure_stage == "sample_canary" %}표본 추출 실패{% endif %}</td>
+                    <td class="mono dash-cell-wrap">{{ c.failure_reason|default:"-" }}</td>
+                    <td class="mono dash-cell-dim">{{ c.created_at|timesince }} 전</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="dash-empty">확인이 필요한 실패 후보가 없습니다 ✓</p>
+          {% endif %}
+        </section>
+
+        <section class="dash-panel">
+          <div class="dash-panel-head">
             <h2 class="dash-panel-head-title">최근 처리 내역</h2>
             <span class="mono dash-panel-head-meta">최근 10건</span>
             <a class="dash-panel-head-action dash-panel-head-link" href="{% url 'staff:audit-log' %}">전체 감사 로그 →</a>

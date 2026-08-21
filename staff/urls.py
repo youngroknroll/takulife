@@ -18,6 +18,11 @@ urlpatterns = [
         staff_views.staff_draft_discovery_run,
         name="draft-discovery-run",
     ),
+    path(
+        "source-discovery/request/",
+        staff_views.staff_source_discovery_request,
+        name="source-discovery-request",
+    ),
     path("drafts/", staff_views.event_drafts, name="draft-list"),
     path(
         "drafts/bulk-approve/",

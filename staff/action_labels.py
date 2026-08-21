@@ -17,4 +17,5 @@ ACTION_LABELS = {
     "event_delete": "이벤트 삭제",
     "event_verify": "검증 완료",
     "draft_discover": "드래프트 수집 실행",
+    "source_discover": "수집처 탐색",
 }

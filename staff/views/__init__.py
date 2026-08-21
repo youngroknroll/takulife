@@ -13,10 +13,14 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from core.analytics import distinct_user_key_count_since, event_name_counts_since
+from drafts.discovery_runs import runner_is_online
 from drafts.queries import (
     draft_review_stats,
     enabled_draft_sources_exist,
+    failed_source_candidates,
     list_draft_sources,
+    recent_discovery_runs,
+    runner_status,
 )
 from events.queries import published_quality_warnings
 
@@ -50,6 +54,7 @@ from .events import (
     staff_events,
 )
 from .audit_log import STAFF_ACTION_LOG_PAGE_SIZE, staff_audit_log
+from .discovery import staff_source_discovery_request
 from .home_categories import staff_home_categories
 from .sources import staff_draft_sources
 
@@ -57,6 +62,7 @@ __all__ = [
     "ACTION_LABELS",
     "dashboard",
     "staff_draft_discovery_run",
+    "staff_source_discovery_request",
     "EVENT_CREATE_BLANK_FORM_VALUES",
     "EVENT_EDIT_TEXT_FIELDS",
     "QUALITY_WARNING_LABELS",
@@ -151,11 +157,18 @@ def dashboard(request):
     quality_warnings = published_quality_warnings()
     quality_warning_rows = _build_quality_warning_rows(quality_warnings)
     activity_columns = _build_activity_columns(staff_actions_per_day(days=14))
+    discovery_runner_status = runner_status()
     return render(
         request,
         "staff/dashboard.html",
         {
             "pending_count": stats["pending"],
+            "discovery_runner_online": runner_is_online(status_row=discovery_runner_status),
+            "discovery_runner_last_heartbeat_at": (
+                discovery_runner_status.last_heartbeat_at if discovery_runner_status else None
+            ),
+            "recent_discovery_runs": recent_discovery_runs(),
+            "failed_source_candidates": failed_source_candidates(),
             "quality_warnings": quality_warnings,
             "quality_warning_rows": quality_warning_rows,
             "quality_warning_max": max(
