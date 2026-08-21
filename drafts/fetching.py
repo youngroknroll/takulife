@@ -63,8 +63,28 @@ def fetch_html(url, *, allowed_content_types=None):
         ) as client:
             current_url = url
             for redirect_count in range(MAX_REDIRECTS + 1):
-                validate_fetch_url(current_url, resolver=socket.getaddrinfo)
-                with client.stream("GET", current_url) as response:
+                pinned_ip = validate_fetch_url(current_url, resolver=socket.getaddrinfo)
+                connect_url = current_url
+                headers = None
+                extensions = None
+                if pinned_ip:
+                    # 검증에 쓴 IP로 직접 연결해, 검증과 연결 사이에 DNS가 다시 풀려
+                    # 다른 주소로 바뀌는 TOCTOU를 막는다. Host 헤더는 원래 호스트명으로
+                    # 명시해 가상호스팅 라우팅이 깨지지 않게 한다.
+                    parsed_current = httpx.URL(current_url)
+                    connect_url = parsed_current.copy_with(host=pinned_ip)
+                    host_header = (
+                        parsed_current.host
+                        if parsed_current.port is None
+                        else f"{parsed_current.host}:{parsed_current.port}"
+                    )
+                    headers = {"host": host_header}
+                    if parsed_current.scheme == "https":
+                        # TLS 인증서 검증도 원래 호스트명 기준으로 이뤄지게 SNI를 명시한다.
+                        extensions = {"sni_hostname": parsed_current.host}
+                with client.stream(
+                    "GET", connect_url, headers=headers, extensions=extensions
+                ) as response:
                     if response.is_redirect:
                         location = response.headers.get("location")
                         if not location or redirect_count == MAX_REDIRECTS:

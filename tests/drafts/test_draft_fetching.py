@@ -24,7 +24,10 @@ def _install(monkeypatch, install_mock_transport, handler):
 
 
 def test_정상_응답은_디코딩된_HTML을_반환한다(monkeypatch, install_mock_transport):
+    calls = []
+
     def handler(request):
+        calls.append(request)
         return httpx.Response(
             200, headers={"content-type": "text/html; charset=utf-8"},
             content="<html>본문</html>".encode("utf-8"),
@@ -32,6 +35,8 @@ def test_정상_응답은_디코딩된_HTML을_반환한다(monkeypatch, install
 
     _install(monkeypatch, install_mock_transport, handler)
     assert "본문" in fetch_html("https://example.com/")
+    # 검증이 스텁돼 IP가 없으면(None) 치환 없이 원래 호스트로 연결해야 한다.
+    assert calls[0].url.host == "example.com"
 
 
 def test_HTML이_아닌_content_type은_거부된다(monkeypatch, install_mock_transport):

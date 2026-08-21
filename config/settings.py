@@ -71,6 +71,12 @@ def load_debug():
     return _get_env("DEBUG", "true").lower() in ("1", "true", "yes")
 
 
+def load_draft_discovery_enabled():
+    # 기본값은 꺼짐 — 실수로 자동 크롤링이 켜져 외부 사이트를 무단으로
+    # 긁지 않도록 명시적 옵트인(DRAFT_DISCOVERY_ENABLED=true)을 요구한다.
+    return _get_env("DRAFT_DISCOVERY_ENABLED", "false").lower() in ("1", "true", "yes")
+
+
 def load_allowed_hosts():
     """콤마로 구분된 ALLOWED_HOSTS env를 리스트로 만든다. 비어 있으면 기존과
     같이 빈 리스트를 쓰는데, DEBUG=True인 동안은 Django가 자체적으로
@@ -234,7 +240,7 @@ DRAFT_LLM_EXTRACTION_ENABLED = False
 # 봇에 대해 문의할 수 있게 한다. 비워두면 기존처럼 UA만 나간다.
 DRAFT_FETCH_CONTACT = ""
 # discover_drafts 관리 명령의 게이트. 운영자가 켜기 전까지는 크롤링하지 않는다.
-DRAFT_DISCOVERY_ENABLED = False
+DRAFT_DISCOVERY_ENABLED = load_draft_discovery_enabled()
 # discover_drafts 한 번 실행에서 모든 소스를 합쳐 생성할 수 있는 최대
 # 신규 드래프트 수. 아래 소스별 조회 상한과는 별개다.
 DRAFT_DISCOVERY_MAX_PER_RUN = 10

@@ -252,3 +252,19 @@ one-off command" 등 이 컨테이너의 기본 ENTRYPOINT를 우회하고 지�
   기간 경과 후 계정이 파기된다고 명시적으로 안내한다. 이 명령이 정기 실행되지
   않으면 그 안내가 지켜지지 않고, 유예 기간이 지난 사용자의 개인정보가 예정일을
   넘겨 DB에 계속 남는다.
+
+## 8. 드래프트 수집 활성화
+
+- **선행 확인**: 배포된 이미지가 F6 SSRF TOCTOU 수정(`drafts/fetching.py`의 IP
+  핀닝 — `validate_fetch_url`이 반환한 검증 IP로 직접 연결)을 포함한 버전인지
+  확인한다. 포함하지 않은 버전에서 켜면 DNS 리바인딩에 의한 SSRF 위험이 남는다.
+- **활성화**: PaaS 시크릿에 `DRAFT_DISCOVERY_ENABLED=true`를 등록하고
+  **컨테이너를 재기동**한다. `config/settings.py`의 `DRAFT_DISCOVERY_ENABLED =
+  load_draft_discovery_enabled()`는 모듈 임포트 시점(프로세스 기동 시) 1회만
+  평가되므로, 시크릿만 바꾸고 재기동하지 않으면 반영되지 않는다.
+- **권장 설정**: `DRAFT_FETCH_CONTACT`도 함께 설정하는 것을 권장한다 — 크롤링
+  User-Agent에 문의 연락처 URL이 노출돼, 대상 사이트 운영자가 봇 트래픽에 대해
+  문의할 수 있다.
+- **실행 경로**: 스태프 대시보드의 수집 버튼 또는 `discover_drafts` 관리
+  명령으로 수동 실행한다. 정기(스케줄러) 자동 실행은 아직 도입하지 않았다 —
+  §7의 정기 실행 작업 목록에 포함되지 않는다.

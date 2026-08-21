@@ -39,6 +39,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `DEFAULT_FROM_EMAIL` | 필수(T5, launch 전) | config/settings.py `DEFAULT_FROM_EMAIL` 대입부 | 〃 |
 | `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` | 선택 | `.env.example` | 빈 값이면 "Google로 계속하기" 버튼이 숨김 처리(비활성 아님). **`docs/backlog.md` B2(소셜 가입 경로에 약관 동의 필드 없음)가 해결되기 전까지 이 값을 설정하지 않는다** — 채우는 순간 약관 동의 없는 가입 경로가 열린다 |
 | `ANTHROPIC_API_KEY` | 사용 안 함 | config/settings.py `DRAFT_LLM_EXTRACTION_ENABLED` 대입부 | LLM 초안 자동화는 비용 정책상 OFF 유지. 설정하지 않는다 |
+| `DRAFT_DISCOVERY_ENABLED` | 선택(기본값 유지) | config/settings.py `load_draft_discovery_enabled` 대입부 | 기본값 `false`(수집 꺼짐) 유지, 수집을 켤 때만 `true`로 설정. env 변경은 모듈 임포트 시점에 1회만 평가되므로 **프로세스 재시작 후에만 반영**된다 |
 
 ## 2. 첫 배포 절차
 
