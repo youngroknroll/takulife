@@ -245,8 +245,8 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   참고) / MAX_LEASES=2 / MAX_CANDIDATES_PER_RUN=10 /
   INITIAL_DRAFTS_PER_PROMOTED_SOURCE=5
 - 실행 상태 enum: pending/claimed/succeeded/partially_failed/failed/expired.
-  후보 실패 단계 7종: schema/duplicate/url_safety/robots/fetch/
-  listing_extraction/sample_canary
+  후보 실패 단계 8종: schema/duplicate/url_safety/robots/fetch/
+  listing_extraction/sample_canary/sample_mismatch
 - 러너 인증: env `DRAFT_DISCOVERY_RUNNER_TOKEN` + 헤더 `X-Runner-Token`,
   **빈 설정은 비교 전 명시 거부**(`constant_time_compare`가 빈 문자열 쌍을
   참으로 보는 함정 — 가드레일), 스로틀 `discovery_runner` 60/minute, 공개
@@ -295,6 +295,10 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   사유 절단 접근 불가 — 수정 후 재판정).
 - QVL(2026-08-20): 수용 기준 15항 전부 충족, 조건부 완료의 조건 2건(이
   소절과 SERVICE_MODULES 등록)은 같은 커밋에서 이행.
+- 사후 수정분 재검토(2026-08-21, 보안·운영·QVL 3역할): 머지 차단 결함 0건.
+  사용자 검토 5건은 전부 닫힘 확인(sample_mismatch 양경로·renew_lease 연장·
+  409 시 complete 생략·시그니처 게이트는 테스트 증거 존재). 잔여 위험은
+  아래 Known gap에 기록하고 사용자 승인 아래 머지.
 
 ## Known gap
 
@@ -311,6 +315,22 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 - `--permission-mode bypassPermissions` 격리 권고 미이행: 현재 `--tools`로
   웹 탐색 2종만 허용해 파일·셸 도구는 없지만, 장기 상시 운영 전에는 별도
   실행 계정 또는 격리 환경 구성이 필요하다(아래 격리 권고 참고).
+- sample_mismatch 비교는 정규화 비대칭 오탐이 가능하다: 목록 추출 URL은
+  `_strip_tracking_params`로 정규화(utm 제거·query 재인코딩)되지만
+  `sample_url`은 원문 그대로 완전일치 비교라, 표기 차이(`%20` vs `+`,
+  utm 포함)만으로 정당한 표본이 결정론적으로 거부될 수 있다. 거부
+  방향(fail-safe)이라 보안 우회는 없다. 에이전트 프롬프트(`build_prompt`)에
+  "표본은 목록에서 추출된 URL이어야 한다"는 지시도 아직 없다.
+- heartbeat 스레드는 에이전트 탐색 국면만 덮는다: `ticker.stop()`이
+  `_process_run`(후보 제출 루프) 이전에 실행되고 제출 API는
+  `record_heartbeat`를 호출하지 않아, 제출 국면이 120초를 넘으면 러너
+  오프라인 오표시가 재발한다(`create_run`이 오프라인 검사를 활성 실행
+  검사보다 먼저 해 오진 메시지도 유발).
+- 러너 5xx 지수 backoff와 `_HeartbeatTicker`는 자동 테스트 0건이다(409
+  경로만 테스트 존재). 회귀가 나도 현재 스위트는 잡지 못한다.
+- `create_run`의 동시 요청 직렬화는 FOR UPDATE SQL 발생 단언으로만 대리
+  검증된다 — 실제 경쟁 재현은 자동 테스트로 불가하고(SQLite는
+  select_for_update 무시), 실효성 검증은 Postgres 코드 리뷰뿐이다.
 
 ## Evidence
 
