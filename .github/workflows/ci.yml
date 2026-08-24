@@ -91,6 +91,30 @@ jobs:
             exit 1
           fi
 
+  audit:
+    name: Dependency vulnerability audit (PR gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      # Exported straight from uv.lock (no `uv sync`/install needed) so the
+      # audit covers the dev group too (pytest, playwright, etc.), matching
+      # the scope of the OSV scan this job is meant to keep enforcing.
+      - name: Export locked requirements
+        run: uv export --format requirements.txt --frozen --no-emit-project --no-hashes -o requirements-audit.txt
+
+      - name: Audit dependencies for known vulnerabilities
+        run: uvx pip-audit==2.9.0 -r requirements-audit.txt --no-deps --strict
+
   docker:
     name: Docker build (no push)
     runs-on: ubuntu-latest
