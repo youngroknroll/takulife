@@ -518,3 +518,30 @@ def test_DRAFT_DISCOVERY_ENABLED_환경변수가_true이면_True로_해석한다
     settings_module = importlib.import_module("config.settings")
 
     assert settings_module.load_draft_discovery_enabled() is True
+
+
+# ---------------------------------------------------------------------------
+# 드래프트 자동 수집 연락처(DRAFT_FETCH_CONTACT)
+# ---------------------------------------------------------------------------
+
+
+def test_DRAFT_FETCH_CONTACT_환경변수가_설정되면_그_값을_읽어온다(monkeypatch):
+    monkeypatch.setenv("DRAFT_FETCH_CONTACT", "https://example.com/about")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert (
+        settings_module.load_draft_fetch_contact()
+        == "https://example.com/about"
+    )
+
+
+def test_설정_모듈의_DRAFT_FETCH_CONTACT_속성은_load_draft_fetch_contact_결과와_일치한다():
+    # env 미설정 환경에서는 양쪽 다 ""로 우연히 같아질 수 있어 이 테스트만으로는
+    # 결함을 못 잡을 수 있다 — 주 증거는 위 env 주입 테스트다.
+    settings_module = importlib.import_module("config.settings")
+
+    assert (
+        settings_module.DRAFT_FETCH_CONTACT
+        == settings_module.load_draft_fetch_contact()
+    )
