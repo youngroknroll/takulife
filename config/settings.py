@@ -44,6 +44,11 @@ def load_anthropic_api_key():
     return _get_env("ANTHROPIC_API_KEY")
 
 
+def load_draft_fetch_contact():
+    # 크롤링 UA에 붙는 연락처를 운영자가 env로 지정한다.
+    return _get_env("DRAFT_FETCH_CONTACT", "")
+
+
 def load_database_config():
     """DATABASE_URL로 Django DATABASES["default"] 값을 만든다.
 
@@ -238,7 +243,7 @@ LLM_ESCALATION_CONFIDENCE_THRESHOLD = 0.6
 DRAFT_LLM_EXTRACTION_ENABLED = False
 # 크롤링 User-Agent(drafts/fetching.py)에 붙는 연락처 URL — 사이트 운영자가
 # 봇에 대해 문의할 수 있게 한다. 비워두면 기존처럼 UA만 나간다.
-DRAFT_FETCH_CONTACT = ""
+DRAFT_FETCH_CONTACT = load_draft_fetch_contact()
 # discover_drafts 관리 명령의 게이트. 운영자가 켜기 전까지는 크롤링하지 않는다.
 DRAFT_DISCOVERY_ENABLED = load_draft_discovery_enabled()
 # discover_drafts 한 번 실행에서 모든 소스를 합쳐 생성할 수 있는 최대
