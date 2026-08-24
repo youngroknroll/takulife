@@ -140,7 +140,12 @@ def complete_run(*, run_id, lease_token, runner_status, failure_kind=""):
             # 허용 목록 밖 값은 무시한다 — 러너가 보낸 원문을 그대로 보간하지 않는다.
             if failure_kind in _ALLOWED_FAILURE_KINDS:
                 error_summary = f"{error_summary} ({failure_kind})"
-            run.status = SourceDiscoveryRun.Status.FAILED
+            # 러너가 실행 실패를 보고해도 그 전에 이미 승격된 후보는 실재하는
+            # 성과다 — 스태프가 놓치지 않도록 실패가 아닌 부분 실패로 남긴다.
+            if run.candidates.filter(status=SourceCandidate.Status.PROMOTED).exists():
+                run.status = SourceDiscoveryRun.Status.PARTIALLY_FAILED
+            else:
+                run.status = SourceDiscoveryRun.Status.FAILED
             run.error_summary = error_summary
         else:
             candidate_statuses = list(run.candidates.values_list("status", flat=True))

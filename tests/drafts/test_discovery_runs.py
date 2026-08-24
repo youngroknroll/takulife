@@ -238,9 +238,8 @@ def _setup_러너_실패_보고(run):
         (_setup_혼합, SourceDiscoveryRun.Status.PARTIALLY_FAILED),
         (_setup_전_실패, SourceDiscoveryRun.Status.FAILED),
         (_setup_후보_없음_성공, SourceDiscoveryRun.Status.SUCCEEDED),
-        (_setup_러너_실패_보고, SourceDiscoveryRun.Status.FAILED),
     ],
-    ids=["전_승격", "혼합", "전_실패", "후보_없음_성공", "러너_실패_보고"],
+    ids=["전_승격", "혼합", "전_실패", "후보_없음_성공"],
 )
 def test_run_complete는_후보_상태_조합에_따라_최종_상태를_산출한다(setup, expected_status):
     run = _make_claimed_run()
@@ -253,6 +252,45 @@ def test_run_complete는_후보_상태_조합에_따라_최종_상태를_산출�
     if kwargs.get("runner_status") == "failed":
         assert result.error_summary
         assert result.error_summary == "러너가 실행 실패를 보고했다 (agent_timeout)"
+
+
+# ---------------------------------------------------------------------------
+# K1 — 러너 실패 보고 → FAILED (승격 후보 없음). 위 파라미터 목록에서 분리한
+# 기존 계약(문구·단언 완전 동일 이식, 약화 없음) — S2가 "승격 후보가 있으면
+# PARTIALLY_FAILED"를 추가해도 이 보호 행위는 그대로 지켜져야 한다.
+# ---------------------------------------------------------------------------
+
+
+def test_러너가_실패를_보고하고_승격된_후보가_없으면_run_상태는_FAILED로_유지된다():
+    run = _make_claimed_run()
+    kwargs = _setup_러너_실패_보고(run)
+
+    result = complete_run(run_id=run.pk, lease_token="tok", **kwargs)
+
+    assert result.status == SourceDiscoveryRun.Status.FAILED
+    assert result.finished_at is not None
+    assert result.error_summary
+    assert result.error_summary == "러너가 실행 실패를 보고했다 (agent_timeout)"
+
+
+# ---------------------------------------------------------------------------
+# S2-1 — 러너가 failed를 보고해도 그 실행에서 PROMOTED 후보가 있으면
+# 상태를 PARTIALLY_FAILED로 산출한다(오염 출력 사실은 error_summary로 유지).
+# ---------------------------------------------------------------------------
+
+
+def test_러너가_실패를_보고해도_승격된_후보가_있으면_run_상태는_PARTIALLY_FAILED로_산출된다():
+    run = _make_claimed_run()
+    _make_candidate(run, status=SourceCandidate.Status.PROMOTED, url="https://example.com/n1")
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n2")
+
+    result = complete_run(
+        run_id=run.pk, lease_token="tok", runner_status="failed", failure_kind="agent_error"
+    )
+
+    assert result.status == SourceDiscoveryRun.Status.PARTIALLY_FAILED
+    assert result.finished_at is not None
+    assert result.error_summary == "러너가 실행 실패를 보고했다 (agent_error)"
 
 
 def test_잘못된_lease로는_complete가_거부된다():
