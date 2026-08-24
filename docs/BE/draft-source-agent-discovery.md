@@ -274,6 +274,18 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   재시도한다. 후보 제출 중 409(임대 상실)를 받으면 그 실행의 제출을
   즉시 중단하고 `complete` 보고를 생략한다(다음 폴에서 서버가 재대기·만료
   처리)
+- 러너는 에이전트 출력에 dict가 아닌 항목이 있었거나 유효 후보가 0개면
+  `complete`를 `failed(invalid_output)`로 보고한다(빈 결과도 성공으로
+  기록하지 않는다) — 사용자 검토 2라운드 발견(2026-08-21)
+- heartbeat 티커 범위를 후보 제출·완료 보고까지 확장(`_run_once` 외곽
+  try/finally) — 제출 국면 오프라인 오표시 재발 경로 폐쇄(2026-08-21)
+- 러너 로깅은 모듈 logger로 전환(print 금지 게이트 `_SCAN_PACKAGES`에
+  `local_runner` 편입), 티커는 `httpx.HTTPError`만 기록 후 지속·그 외
+  예외는 전파, `main()`이 타임스탬프 포함 `logging.basicConfig` 설정
+  (2026-08-21)
+- 스태프 대시보드 실패 단계 라벨에 sample_mismatch("표본 불일치") 분기
+  추가(WED·BIR 게이트 통과, 미지 단계 폴백은 overflow 안전장치 조건부로
+  이연, 2026-08-21)
 
 **격리 권고(미결).** `--permission-mode bypassPermissions`는 Anthropic
 권한 문서([iam](https://docs.anthropic.com/ko/docs/claude-code/iam))가
@@ -299,6 +311,9 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   사용자 검토 5건은 전부 닫힘 확인(sample_mismatch 양경로·renew_lease 연장·
   409 시 complete 생략·시그니처 게이트는 테스트 증거 존재). 잔여 위험은
   아래 Known gap에 기록하고 사용자 승인 아래 머지.
+- 사용자 검토 2라운드(2026-08-21) 4건 반영: R1~R6 Red-Green(이미-초록 3건은
+  뮤테이션 왕복으로 실증), FE 게이트 BIR Conforms/WED는 폴백 이연을 관리된
+  범위 축소로 판정, 실기동 왕복(유효 토큰 204/200·오탈 토큰 403 격리) 실측.
 
 ## Known gap
 
@@ -321,13 +336,11 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   utm 포함)만으로 정당한 표본이 결정론적으로 거부될 수 있다. 거부
   방향(fail-safe)이라 보안 우회는 없다. 에이전트 프롬프트(`build_prompt`)에
   "표본은 목록에서 추출된 URL이어야 한다"는 지시도 아직 없다.
-- heartbeat 스레드는 에이전트 탐색 국면만 덮는다: `ticker.stop()`이
-  `_process_run`(후보 제출 루프) 이전에 실행되고 제출 API는
-  `record_heartbeat`를 호출하지 않아, 제출 국면이 120초를 넘으면 러너
-  오프라인 오표시가 재발한다(`create_run`이 오프라인 검사를 활성 실행
-  검사보다 먼저 해 오진 메시지도 유발).
-- 러너 5xx 지수 backoff와 `_HeartbeatTicker`는 자동 테스트 0건이다(409
-  경로만 테스트 존재). 회귀가 나도 현재 스위트는 잡지 못한다.
+- heartbeat 스레드가 에이전트 탐색 국면만 덮던 문제 → **해소**(2026-08-21):
+  티커 범위를 후보 제출·완료 보고까지 확장(`_run_once` 외곽 try/finally),
+  제출 국면 120초 초과로 인한 러너 오프라인 오표시 재발 경로를 닫았다.
+- `_HeartbeatTicker`는 테스트를 확보했다(2026-08-21, HTTPError 지속·비HTTP
+  전파·정지 순서). **러너 5xx 지수 backoff 산식은 여전히 테스트 0건**이다.
 - `create_run`의 동시 요청 직렬화는 FOR UPDATE SQL 발생 단언으로만 대리
   검증된다 — 실제 경쟁 재현은 자동 테스트로 불가하고(SQLite는
   select_for_update 무시), 실효성 검증은 Postgres 코드 리뷰뿐이다.

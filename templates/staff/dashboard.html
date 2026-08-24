@@ -226,7 +226,7 @@ staff-console-redesign.md M5).
                       <div class="dash-source-name">{{ c.name }}</div>
                       <div class="mono dash-source-sub">{{ c.url }}</div>
                     </td>
-                    <td class="mono dash-cell-dim">{% if c.failure_stage == "schema" %}형식 위반{% elif c.failure_stage == "duplicate" %}중복 소스{% elif c.failure_stage == "url_safety" %}URL 안전성{% elif c.failure_stage == "robots" %}robots 불허{% elif c.failure_stage == "fetch" %}가져오기 실패{% elif c.failure_stage == "listing_extraction" %}목록 추출 실패{% elif c.failure_stage == "sample_canary" %}표본 추출 실패{% endif %}</td>
+                    <td class="mono dash-cell-dim">{% if c.failure_stage == "schema" %}형식 위반{% elif c.failure_stage == "duplicate" %}중복 소스{% elif c.failure_stage == "url_safety" %}URL 안전성{% elif c.failure_stage == "robots" %}robots 불허{% elif c.failure_stage == "fetch" %}가져오기 실패{% elif c.failure_stage == "listing_extraction" %}목록 추출 실패{% elif c.failure_stage == "sample_canary" %}표본 추출 실패{% elif c.failure_stage == "sample_mismatch" %}표본 불일치{% endif %}</td>
                     <td class="mono dash-cell-wrap">{{ c.failure_reason|default:"-" }}</td>
                     <td class="mono dash-cell-dim">{{ c.created_at|timesince }} 전</td>
                   </tr>
