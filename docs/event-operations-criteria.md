@@ -72,9 +72,11 @@
 
 ### 4.2 로컬 에이전트 수집처 탐색
 
-- 2026-08-20 승인된 목표 계약이다. **현재 코드에는 아직 구현되지 않았다.**
-- 개인 맥이 켜져 있을 때만 로컬 Codex 또는 Claude Code 러너가 새 수집처와
-  표본 행사 URL을 제안한다. 행사 제목·날짜·장소·요약은 모델이 채우지 않는다.
+- 2026-08-20 승인된 목표 계약이며, `local_runner/` 패키지와 서버 러너 경계가
+  PR #299·#301로 머지됐다(2026-08-24 main 기준 구현 완료).
+- 개인 맥이 켜져 있을 때만 로컬 Claude Code 러너가 새 수집처와 표본 행사
+  URL을 제안한다(현재 구현은 Claude Code 어댑터 1개). 행사 제목·날짜·장소·
+  요약은 모델이 채우지 않는다.
 - 서버가 후보를 URL 안전성, `robots.txt`, 콘텐츠 유형·크기, 목록 파싱과 규칙
   기반 canary로 다시 검증한다. 통과한 소스만 활성화하고 기존
   `discover_drafts`가 `EventDraft(PENDING)`을 만든다.
@@ -89,9 +91,8 @@
 
 - **행동 이벤트**: PR-0e(0단계 계획서 §8)가 도입한 `core.analytics`가
   `event_list_viewed`, `event_searched`, `event_detail_viewed`,
-  `event_interested`, `event_planned`, `event_marked_visited`,
-  `visit_record_created`, `visit_photo_added` 8종을 기록한다
-  (`core/models.py`의 `AnalyticsEvent.EventName`). 행사 공급이 실제 발견·
+  `event_interested`, `event_planned`, `event_marked_visited` 등 13종을
+  기록한다(`core/models.py`의 `AnalyticsEvent.EventName`). 행사 공급이 실제 발견·
   관심으로 이어지는지는 이 이벤트들(특히 `event_list_viewed`,
   `event_detail_viewed`, `event_interested`)의 주간 추이로 판단한다.
 - **스태프 대시보드 집계**: `staff/views/__init__.py`의 `dashboard` 뷰가
