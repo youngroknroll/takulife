@@ -1,5 +1,5 @@
 /**
- * 방문 기록 목록 화면의 동작: 기록 삭제, 카드별 사진 캐러셀(순환) 이동.
+ * 방문 기록 목록 화면의 동작: 기록 삭제.
  * 사진 추가·삭제는 수정 페이지(visit_edit.js)가 맡고 이 카드들은 보기 전용이다.
  * 화면 갱신은 항상 textContent만 사용해 API 응답으로 HTML을 만들지 않는다.
  */
@@ -97,41 +97,6 @@
     });
   }
 
-  // ── 카드별 사진 캐러셀(보기 전용, 순환) ───────────────────────────
-
-  function bindPhotoCarousels() {
-    var carousels = document.querySelectorAll("[data-carousel]");
-    for (var i = 0; i < carousels.length; i++) {
-      (function (carousel) {
-        if (carousel.dataset.carouselBound) { return; }
-        carousel.dataset.carouselBound = "1";
-        var track = carousel.querySelector(".photo-track");
-        var slides = carousel.querySelectorAll(".photo-slide");
-        var prev = carousel.querySelector(".carousel-prev");
-        var next = carousel.querySelector(".carousel-next");
-        var indexEl = carousel.querySelector(".carousel-index");
-        if (!track || slides.length < 2 || !prev || !next) { return; }
-
-        var count = slides.length;
-        var index = 0;
-
-        function render() {
-          track.style.transform = "translateX(-" + (index * 100) + "%)";
-          if (indexEl) { indexEl.textContent = String(index + 1); }
-        }
-
-        prev.addEventListener("click", function () {
-          index = (index - 1 + count) % count;
-          render();
-        });
-        next.addEventListener("click", function () {
-          index = (index + 1) % count;
-          render();
-        });
-      })(carousels[i]);
-    }
-  }
-
   // ── 기록 삭제 버튼 ────────────────────────────────────────────────
 
   function bindRecordDeletes() {
@@ -191,7 +156,6 @@
 
   function init() {
     bindCreateForm();
-    bindPhotoCarousels();
     bindRecordDeletes();
   }
 
@@ -201,10 +165,8 @@
     init();
   }
 
-  // 실시간 검색이 결과 목록을 교체한 뒤 새 카드의 캐러셀과 삭제 버튼을
-  // 다시 연결한다. 등록 폼은 교체 영역 밖에 있어 그대로 둔다.
+  // 새 카드의 삭제 버튼을 다시 연결한다.
   document.addEventListener("archive:listswapped", function () {
-    bindPhotoCarousels();
     bindRecordDeletes();
   });
 })();
