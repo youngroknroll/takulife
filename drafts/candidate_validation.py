@@ -120,6 +120,11 @@ def _save_failed_candidate(*, run_id, lease_token, cleaned, stage, exc=None):
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
         renew_lease(run=run)
+        # 조기 검사(:147) 이후 네트워크 검증(fetch·robots 등)이 진행되는 동안
+        # 동시 제출들이 함께 조기 검사를 통과할 수 있어, 잠긴 run 아래에서
+        # 저장 직전 한 번 더 같은 기준으로 재검사한다.
+        if run.candidates.count() >= MAX_CANDIDATES_PER_RUN:
+            raise CandidateLimitExceededError
         return SourceCandidate.objects.create(
             run=run,
             name=cleaned["name"],
@@ -278,6 +283,11 @@ def submit_candidate(*, run_id, lease_token, payload):
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
         renew_lease(run=run)
+        # 실패 저장 경로(:126)와 같은 이유로, 잠긴 run 아래에서 저장 직전 한 번
+        # 더 재검사한다 — 통과시켜도 결국 여기서 막히니 DraftSource 생성 시도를
+        # 먼저 하지 않는다.
+        if run.candidates.count() >= MAX_CANDIDATES_PER_RUN:
+            raise CandidateLimitExceededError
         try:
             with transaction.atomic():
                 source = DraftSource.objects.create(
