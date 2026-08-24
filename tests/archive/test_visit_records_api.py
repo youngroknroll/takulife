@@ -825,3 +825,40 @@ def test_사용되지_않는_레거시_방문_기록_경로에_접근하면_404�
     client.force_login(user)
     response = client.get(path)
     assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# RACE-03 — 방문 완료 처리 중 중복 상태 오류의 뷰 레벨 번역. 서비스 내부의
+# 경쟁 복구 로직 자체는 RACE-02가 도메인 경계에서 이미 검증했으므로, 여기서는
+# archive.views.complete_visit_with_record가 던진 DuplicateUserEventStatusError를
+# 뷰가 500이 아니라 409로 번역하는 책임만 monkeypatch로 격리해 확인한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_방문_완료_처리_중_중복_상태_오류가_발생하면_500이_아닌_409로_응답된다(
+    client, make_user, make_event, monkeypatch
+):
+    # 계층 규약 유지를 위해 서비스 모듈을 직접 임포트하지 않고, views가
+    # 모듈 레벨에서 이미 임포트해 둔 예외를 뷰 네임스페이스로 참조한다.
+    from archive import views as archive_views
+
+    user = make_user()
+    event = make_event()
+
+    def raising_complete_visit_with_record(**kwargs):
+        raise archive_views.DuplicateUserEventStatusError()
+
+    monkeypatch.setattr(
+        archive_views, "complete_visit_with_record", raising_complete_visit_with_record
+    )
+
+    client.force_login(user)
+    response = client.post(
+        "/api/visit-records/",
+        {"event": event.id, "visited_on": "2026-05-26"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "duplicate_user_event_status"

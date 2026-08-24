@@ -624,7 +624,9 @@ def complete_visit_with_record(
     호출을 재전송해도 상태 쪽은 자연히 아무 일도 일어나지 않는데,
     재전송이 도착할 즈음엔 첫 호출로 이미 status_row가 VISITED가
     되어 있어 생성/mark_visited 어느 분기도 다시 실행되지 않기
-    때문이다.
+    때문이다. 동시 요청이 먼저 행을 만들어 버린 경우(경쟁 삽입)에는
+    재조회로 그 행을 이어받아 완료를 이어가고, 재조회에도 없으면
+    예측 밖 상태라 예외를 그대로 전파한다(무한 재시도 금지).
     """
     with transaction.atomic():
         existing = UserEventStatus.objects.filter(user=user)
@@ -632,15 +634,31 @@ def complete_visit_with_record(
             existing = existing.filter(event=event)
         else:
             existing = existing.filter(personal_entry=personal_entry)
-        status_row = existing.first()
+        # 동시 완료 요청을 직렬화해 planned 이중 전환과 활동·분석 중복을 막는다.
+        status_row = existing.select_for_update().first()
 
         if status_row is None:
-            create_user_event_status(
-                user=user,
-                event=event,
-                personal_entry=personal_entry,
-                status=UserEventStatus.Status.VISITED,
-            )
+            try:
+                create_user_event_status(
+                    user=user,
+                    event=event,
+                    personal_entry=personal_entry,
+                    status=UserEventStatus.Status.VISITED,
+                )
+            except DuplicateUserEventStatusError:
+                # 경쟁 삽입에 진 쪽: 이긴 쪽이 커밋한 행을 재조회해 이어받는다.
+                # 재조회 후에도 없으면(예측 밖 상태) 재생성 두 번째 예외를
+                # 그대로 전파한다 — 재시도는 정확히 1회로 제한한다.
+                status_row = existing.select_for_update().first()
+                if status_row is None:
+                    create_user_event_status(
+                        user=user,
+                        event=event,
+                        personal_entry=personal_entry,
+                        status=UserEventStatus.Status.VISITED,
+                    )
+                elif status_row.status != UserEventStatus.Status.VISITED:
+                    mark_visited(user_event_status=status_row)
         elif status_row.status != UserEventStatus.Status.VISITED:
             mark_visited(user_event_status=status_row)
 

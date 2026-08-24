@@ -413,6 +413,7 @@ class VisitRecordPagination(PageNumberPagination):
             201: VisitRecordSerializer,
             400: OpenApiResponse(description="입력값 검증 실패."),
             403: OpenApiResponse(description="인증되지 않은 요청."),
+            409: OpenApiResponse(description="이미 등록된 행사 상태."),
         },
     ),
 )
@@ -438,14 +439,25 @@ class VisitRecordListCreateView(ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        record = complete_visit_with_record(
-            user=request.user,
-            event=serializer.validated_data.get("event"),
-            personal_entry=serializer.validated_data.get("personal_entry"),
-            visited_on=serializer.validated_data["visited_on"],
-            short_review=serializer.validated_data.get("short_review", ""),
-            client_token=serializer.validated_data.get("client_token"),
-        )
+        try:
+            record = complete_visit_with_record(
+                user=request.user,
+                event=serializer.validated_data.get("event"),
+                personal_entry=serializer.validated_data.get("personal_entry"),
+                visited_on=serializer.validated_data["visited_on"],
+                short_review=serializer.validated_data.get("short_review", ""),
+                client_token=serializer.validated_data.get("client_token"),
+            )
+        except DuplicateUserEventStatusError:
+            # 서비스가 1회만 복구를 시도하는 두 번째 방어선 — 복구 실패 시
+            # 여기서 받아 UserEventStatusListCreateView와 동일한 409로 응답한다.
+            return Response(
+                {
+                    "code": "duplicate_user_event_status",
+                    "detail": "User event status already exists for this event.",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
         response_serializer = self.get_serializer(record)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 

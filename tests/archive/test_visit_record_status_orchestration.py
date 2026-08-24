@@ -7,8 +7,10 @@
 import uuid
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
-from archive.models import PersonalEntry, UserEventStatus, VisitRecord
+from archive.models import ActivityLogEntry, PersonalEntry, UserEventStatus, VisitRecord
 from archive.services import complete_visit_with_record
 from core.models import AnalyticsEvent
 
@@ -30,6 +32,137 @@ def test_상태_기록이_없는_행사를_방문_완료_처리하면_방문_완
     status_row = UserEventStatus.objects.get(user=user, event=event)
     assert status_row.status == UserEventStatus.Status.VISITED
     assert VisitRecord.objects.filter(user=user, event=event).count() == 1
+
+
+# ---------------------------------------------------------------------------
+# RACE-02 — 상태 행 생성이 동시 삽입과 충돌해도(별도 커넥션에서 경쟁 행을
+# 실제로 커밋한 뒤 재호출로 진짜 유니크 제약 IntegrityError 유발) 기존
+# 행을 재조회해 방문 완료 처리를 정상 완료한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db(transaction=True)
+def test_상태_행_생성이_동시_삽입과_충돌하면_기존_행을_재조회해_방문_완료_처리를_정상_완료한다(
+    monkeypatch, make_user, make_event
+):
+    # 단일 커넥션 안에서 원본 create를 두 번 호출하는 방식은 전부 같은
+    # 트랜잭션의 세이브포인트 안에서 일어난다. create_user_event_status가
+    # IntegrityError를 잡아 세이브포인트를 롤백하면, 그 세이브포인트 안에서
+    # 만든 "경쟁" 행도 함께 사라져 재조회가 아무것도 찾지 못한다 — 재조회-
+    # 발견 경로 자체를 검증할 수 없다. 실제 동시 요청처럼 경쟁 행이 메인
+    # 트랜잭션과 무관하게 이미 커밋되어 살아 있어야 하므로, 별도 스레드의
+    # 별도 DB 커넥션으로 경쟁 행을 즉시 커밋시킨다. 이 때문에
+    # transaction=True로 실제 트랜잭션 커밋/격리를 켜야 한다(기본
+    # django_db는 테스트 전체를 하나의 롤백용 트랜잭션으로 감싸 다른
+    # 커넥션이 그 미커밋 상태를 볼 수 없다).
+    import threading
+
+    from django.db import connection
+
+    user = make_user()
+    event = make_event()
+
+    original_create = UserEventStatus.objects.create
+    call_state = {"fired": False}
+
+    def create_competing_row_on_separate_connection():
+        try:
+            UserEventStatus.objects.create(
+                user=user, event=event, status=UserEventStatus.Status.VISITED
+            )
+        finally:
+            # 스레드가 열어둔 커넥션은 자동으로 정리되지 않으므로 직접 닫는다.
+            connection.close()
+
+    def create_with_simulated_race(**kwargs):
+        if not call_state["fired"]:
+            call_state["fired"] = True
+            thread = threading.Thread(target=create_competing_row_on_separate_connection)
+            thread.start()
+            thread.join()
+            # 경쟁 행이 이미 커밋된 상태에서 같은 인자로 다시 INSERT를
+            # 시도해, DB가 실제로 발생시키는 유니크 제약 IntegrityError를
+            # 유발한다.
+            return original_create(**kwargs)
+        return original_create(**kwargs)
+
+    monkeypatch.setattr(
+        "archive.services.UserEventStatus.objects.create", create_with_simulated_race
+    )
+
+    complete_visit_with_record(user=user, event=event, visited_on="2026-07-15")
+
+    assert UserEventStatus.objects.filter(user=user, event=event).count() == 1
+    status_row = UserEventStatus.objects.get(user=user, event=event)
+    assert status_row.status == UserEventStatus.Status.VISITED
+    assert VisitRecord.objects.filter(user=user, event=event).count() == 1
+    # 경쟁 행은 스레드가 UserEventStatus.objects.create로 직접 만들었고
+    # create_user_event_status/mark_visited를 거치지 않았으므로 그 자체로는
+    # STATUS_CHANGED 활동이나 EVENT_MARKED_VISITED 분석 이벤트를 남기지
+    # 않는다. 메인 호출은 재조회로 이미 VISITED인 행을 발견해
+    # mark_visited를 건너뛰므로, 이 프로세스 안에서는 두 이벤트 모두
+    # 0회가 맞는 기대값이다(승자 쪽 이벤트는 이 테스트 밖의 다른 요청
+    # 프로세스에서 이미 기록됐을 상황을 모사한 것일 뿐, 이 테스트
+    # 안에서는 재현하지 않는다).
+    assert (
+        ActivityLogEntry.objects.filter(kind=ActivityLogEntry.Kind.STATUS_CHANGED).count() == 0
+    )
+    assert (
+        ActivityLogEntry.objects.filter(
+            kind=ActivityLogEntry.Kind.VISIT_RECORD_CREATED
+        ).count()
+        == 1
+    )
+    assert (
+        AnalyticsEvent.objects.filter(
+            event_name=AnalyticsEvent.EventName.EVENT_MARKED_VISITED
+        ).count()
+        == 0
+    )
+    assert (
+        AnalyticsEvent.objects.filter(
+            event_name=AnalyticsEvent.EventName.VISIT_RECORD_CREATED
+        ).count()
+        == 1
+    )
+
+
+# ---------------------------------------------------------------------------
+# RACE-01 — 초기 상태 행 조회는 FOR UPDATE 잠금 아래에서 실행되어야 한다.
+# 단일 커넥션 테스트로는 실제 병렬 경쟁을 재현할 수 없으므로(위 RACE-02
+# 주석과 같은 한계), 캡처된 SQL에 FOR UPDATE가 실제로 발생하는지 보는
+# 대리 계약으로 검증한다(tests/drafts/test_discovery_runs.py의
+# claim FOR UPDATE 계약과 같은 선례 패턴).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "existing_status",
+    [None, UserEventStatus.Status.PLANNED],
+    ids=["상태_행_없음", "참석_예정_상태_존재"],
+)
+def test_방문_완료_처리_시_상태_행_조회는_FOR_UPDATE_잠금_아래에서_실행된다(
+    existing_status, make_user, make_event, make_status
+):
+    user = make_user()
+    event = make_event()
+    if existing_status is not None:
+        make_status(user, event, status=existing_status)
+
+    table_name = UserEventStatus._meta.db_table
+
+    with CaptureQueriesContext(connection) as ctx:
+        complete_visit_with_record(user=user, event=event, visited_on="2026-07-15")
+
+    status_select_queries = [
+        query
+        for query in ctx.captured_queries
+        if "SELECT" in query["sql"].upper() and table_name.upper() in query["sql"].upper()
+    ]
+    assert status_select_queries, "상태 테이블을 조회하는 SELECT 쿼리가 존재해야 한다"
+    assert any("FOR UPDATE" in query["sql"].upper() for query in status_select_queries)
 
 
 # ---------------------------------------------------------------------------
