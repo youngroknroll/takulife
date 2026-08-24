@@ -47,6 +47,7 @@
       {% endif %}
       <hr class="auth-rule">
       <p class="auth-description">takulife 계정으로 기록과 컬렉션을 이어서 관리하세요.</p>
+      <p class="auth-required-legend">＊ 표시는 필수</p>
       <form method="post" action="{% url 'account_login' %}" class="auth-form">
         {% csrf_token %}
         {{ redirect_field }}

@@ -7,7 +7,7 @@ input을 직접 그린다 — Django 자동 렌더와 다른 id로 오류 요소
 Usage: {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
 {% endcomment %}
 <div class="auth-field">
-  <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="auth-required" aria-hidden="true">*</span>{% endif %}</label>
+  <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="auth-required" aria-hidden="true">*</span><span class="sr-only">(필수)</span>{% endif %}</label>
   <input
     type="{{ field.field.widget.input_type }}"
     name="{{ field.html_name }}"

@@ -43,6 +43,7 @@
       {% include "core/partials/_auth_form_errors.html" with errors=form.non_field_errors %}
       <hr class="auth-rule">
       <p class="auth-description">이메일 주소 하나로 시작합니다. 가입 후 인증 메일이 발송됩니다.</p>
+      <p class="auth-required-legend">＊ 표시는 필수</p>
       <form method="post" action="{% url 'account_signup' %}" class="auth-form">
         {% csrf_token %}
         {{ redirect_field }}
