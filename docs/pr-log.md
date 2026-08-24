@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #298부터 #165까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #300부터 #165까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,41 +28,38 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #299 — feat: 로컬 에이전트 수집처 탐색 (서버 경계 + 로컬 러너)
+### PR #301 — fix: 에이전트 수집처 탐색 사용자 검토 2라운드 4건 반영
 
-**무엇을 바꿨나**: `docs/BE/draft-source-agent-discovery.md` 승인 계약의 구현.
-서버에 drafts 소유 모델 3종(SourceDiscoveryRun·SourceCandidate·
-DiscoveryRunnerStatus), 실행 수명주기(`discovery_runs`: heartbeat 신선도
-120초·임대 1800초·재임대 상한 2회·FOR UPDATE claim), 후보 결정론 검증
-8단계(`candidate_validation`: 네트워크는 트랜잭션 밖, 저장은 재잠금+임대
-재검증), X-Runner-Token 러너 API(빈 토큰 사전 거부, 스로틀 60/분, 공개
-OpenAPI 제외), 스태프 탐색 요청 경로와 대시보드 패널 2개를 추가했다.
-로컬에는 Django 무의존 `local_runner/`(폴링 루프 + Claude Code 어댑터,
-`claude -p --output-format json --tools "WebSearch,WebFetch"`)를 추가했다.
+**무엇을 바꿨나**: 머지된 PR #299에 대한 사용자 검토 2라운드 발견 5건 중
+4건을 반영했다(5번 "docs 7종" 오기는 main `82d60bb`에서 기해결 확인).
+①러너 `_process_run`이 에이전트 출력에 dict 아닌 항목이 있었거나 유효
+후보가 0개면 `complete`를 `failed(invalid_output)`로 보고 — 빈/오염 출력의
+성공 위장 차단. ②스태프 대시보드 실패 단계 라벨에 sample_mismatch("표본
+불일치") 분기 추가(빈 셀 해소). ③heartbeat 티커 범위를 후보 제출·완료
+보고까지 확장(외곽 try/finally) — 제출 국면 오프라인 오표시 재발 경로
+폐쇄. ④print 3곳을 모듈 logger로 전환(`main()`에 타임스탬프 basicConfig),
+티커는 `httpx.HTTPError`만 기록 후 지속·그 외 예외는 전파, AST 가드
+`_SCAN_PACKAGES`에 `local_runner`를 편입해 정책을 게이트가 강제한다.
+WED가 권고한 미지 단계 폴백은 BIR 사후 판정(승인 범위 밖 + overflow
+위험)으로 반려·이연했다.
 
-머지 전 사용자 검토 5건 반영: 표본-목록 연관성 검사(sample_mismatch 단계
-신설), 임대 900→1800초 + 유효 제출마다 갱신 + 에이전트 실행 중 heartbeat
-스레드, 러너 5xx 지수 backoff·409 시 제출 중단과 complete 생략, 시그니처
-게이트에 candidate_validation 등록, 문서 정정. 머지 직전 3역할(보안·운영·
-QVL) 사후 재검토는 차단 0건이었고, 잔여 위험 4건(표본 URL 정규화 오탐,
-제출 국면 heartbeat 미커버, backoff·ticker 테스트 부재, create_run 직렬화
-자동검증 한계)은 `docs/BE` Known gap에 기록한 뒤 사용자 승인으로 머지했다.
+**왜**: 게이트 통과 후에도 사용자 검토가 실결함을 잡았고, 특히 빈 출력이
+성공으로 기록되면 운영자가 러너 이상을 인지할 수 없다.
 
-**왜**: 새 수집처 발굴을 서버 LLM API 비용 없이 개인 맥의 로컬 에이전트로
-수행하고, 서버는 에이전트 보고를 신뢰하지 않고 결정론 재검증만 믿는다.
+**검증**: TDD R1~R6 Red-Green(이미-초록 3건은 뮤테이션 왕복 Red/Green
+실증) `[실측]`, 전체 회귀 `uv run pytest -q` → **2259 passed**(28.51초)
+`[실측]`, `manage.py check` 0 issues, 드리프트 0건, 브라우저 실측(라벨
+셀 96px 내 글자 60.8px·overflow 없음), 러너 실기동(유효 토큰 204/200·오탈
+토큰 403 격리) `[실측]`, QVL 최종 대조 failed 0. CI 3잡 전부 pass.
 
-**검증**: 전체 회귀 `uv run pytest -q` → **2253 passed**(26.03초) `[실측]`,
-`manage.py check` 0 issues, 마이그레이션 드리프트 0건, 뮤테이션 왕복 6종
-전부 Red, 러너 실기동 왕복(403/204 → claim → 실패 격리 → complete) 실측,
-FE 이중 게이트 WED·BIR 모두 Conforms. CI 3잡 전부 pass.
-
-**병합**: 2026-08-21, main `cbdf9c5`. PR #298 위 스택이라 #298을 먼저
-머지한 뒤 base를 main으로 바꿔 순차 머지했다.
+**병합**: 2026-08-24, main `a24effa`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #300 — docs: PR #296~#299 머지를 로그에 롤링 반영
+- #299 — feat: 로컬 에이전트 수집처 탐색 (서버 경계 + 로컬 러너)
 - #298 — feat: 드래프트 수집 자동화 활성화 (F6 SSRF 근본 수정 + 플래그 env 전환 + 소스 큐레이션)
 - #297 — docs: README를 포트폴리오형으로 전면 재구성
 - #296 — docs: PR #294·#295 머지를 로그에 롤링 반영
