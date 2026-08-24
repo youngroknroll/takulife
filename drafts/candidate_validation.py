@@ -125,19 +125,28 @@ def _save_failed_candidate(*, run_id, lease_token, cleaned, stage, exc=None):
         # 저장 직전 한 번 더 같은 기준으로 재검사한다.
         if run.candidates.count() >= MAX_CANDIDATES_PER_RUN:
             raise CandidateLimitExceededError
-        return SourceCandidate.objects.create(
-            run=run,
-            name=cleaned["name"],
-            url=cleaned["url"],
-            source_type=cleaned["source_type"],
-            link_selector=cleaned["link_selector"],
-            sample_url=cleaned["sample_url"],
-            official_basis=cleaned["official_basis"],
-            note=cleaned["note"],
-            status=SourceCandidate.Status.FAILED,
-            failure_stage=stage,
-            failure_reason=failure_reason,
-        )
+        try:
+            with transaction.atomic():
+                return SourceCandidate.objects.create(
+                    run=run,
+                    name=cleaned["name"],
+                    url=cleaned["url"],
+                    source_type=cleaned["source_type"],
+                    link_selector=cleaned["link_selector"],
+                    sample_url=cleaned["sample_url"],
+                    official_basis=cleaned["official_basis"],
+                    note=cleaned["note"],
+                    status=SourceCandidate.Status.FAILED,
+                    failure_stage=stage,
+                    failure_reason=failure_reason,
+                )
+        except IntegrityError:
+            # 동시 재제출이 같은 URL로 먼저 실패 후보를 만들었을 때도
+            # submit_candidate의 조기 단락(:150)과 같은 의미론으로 그
+            # 기존 행을 반환한다. 세이브포인트 없이 예외를 잡으면 바깥
+            # atomic 전체가 중단 상태로 남아 이 복구 조회조차 실패하므로,
+            # create()만 내부 atomic으로 감싸 세이브포인트를 확보한다.
+            return run.candidates.filter(url=cleaned["url"]).first()
 
 
 def submit_candidate(*, run_id, lease_token, payload):

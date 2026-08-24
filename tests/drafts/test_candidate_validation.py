@@ -800,3 +800,49 @@ def test_승격_저장_트랜잭션이_잠금_아래_재검사로_상한_초과_
         ).count()
         == 0
     )
+
+
+# ---------------------------------------------------------------------------
+# S4-1 — 실패 후보 저장 직전 동일 (run,url) 경쟁 삽입은 IntegrityError 대신
+# 기존 행을 반환해야 한다. submit_candidate의 조기 존재-확인 트랜잭션
+# (:147-153, `run.candidates.filter(url=candidate_url).first()`)이 먼저
+# 끝나고 릴리스된 뒤에야 validate_fetch_url이 호출된다(:173-175, 별도
+# 트랜잭션 밖) — 그 사이에 경쟁 제출이 같은 (run,url)로 FAILED 행을 먼저
+# 저장하면, 조기 확인은 이미 통과했으므로 _save_failed_candidate의 저장
+# 트랜잭션(:120-140)에서 SourceCandidate.objects.create가 유니크 제약
+# (run,url)에 부딪힌다. 상한 재검사 경쟁(:706-799)과 같은 "네트워크 검증
+# 구간에 부작용으로 DB를 먼저 바꾸는" 재현 관용구를 재사용한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_실패_후보_저장_직전_동일_URL_경쟁_삽입은_IntegrityError_대신_기존_행을_반환한다(monkeypatch):
+    payload = _valid_payload()
+    run = _make_claimed_run()
+    competing = {"row": None}
+
+    def _fake_validate_fetch_url(url, *, resolver=None):
+        # 이 시점이 조기 존재-확인 트랜잭션 이후라는 근거는 위 블록 주석의
+        # 코드 확인 결과다 — 그래서 여기서 경쟁 행을 심어야 재현이 된다.
+        if competing["row"] is None:
+            competing["row"] = SourceCandidate.objects.create(
+                run=run,
+                name="경쟁제출",
+                url=payload["url"],
+                source_type="html",
+                sample_url=payload["sample_url"],
+                status=SourceCandidate.Status.FAILED,
+                failure_stage=SourceCandidate.FailureStage.URL_SAFETY,
+                failure_reason="경쟁 삽입",
+            )
+        raise UnsafeFetchUrlError
+
+    monkeypatch.setattr(
+        "drafts.candidate_validation.validate_fetch_url", _fake_validate_fetch_url
+    )
+
+    candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert candidate.pk == competing["row"].pk
+    assert SourceCandidate.objects.filter(run=run, url=payload["url"]).count() == 1
