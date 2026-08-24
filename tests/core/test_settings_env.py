@@ -545,3 +545,37 @@ def test_설정_모듈의_DRAFT_FETCH_CONTACT_속성은_load_draft_fetch_contact
         settings_module.DRAFT_FETCH_CONTACT
         == settings_module.load_draft_fetch_contact()
     )
+
+
+# ---------------------------------------------------------------------------
+# EMAIL_PORT 정수 캐스팅 가드(S3)
+# ---------------------------------------------------------------------------
+
+
+def test_EMAIL_PORT가_미설정이면_기본값_587을_반환한다(monkeypatch, tmp_path):
+    monkeypatch.delenv("EMAIL_PORT", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_email_port() == 587
+
+
+def test_EMAIL_PORT_환경변수를_정수로_파싱한다(monkeypatch):
+    monkeypatch.setenv("EMAIL_PORT", "25000")
+
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.load_email_port() == 25000
+
+
+def test_EMAIL_PORT가_숫자가_아니면_ImproperlyConfigured를_발생시킨다(monkeypatch):
+    monkeypatch.setenv("EMAIL_PORT", "abc")
+
+    settings_module = importlib.import_module("config.settings")
+
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        settings_module.load_email_port()
+
+    assert "EMAIL_PORT" in str(exc_info.value)
+    assert "abc" in str(exc_info.value)
