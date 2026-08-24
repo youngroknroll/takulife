@@ -51,10 +51,11 @@
         </div>
       {% endif %}
 
+      <p class="account-settings-required-legend">＊ 표시는 필수</p>
       <form method="post" action="{% url 'account-delete-page' %}" class="account-settings-form" data-submit-guard>
         {% csrf_token %}
         <div class="account-settings-field">
-          <label for="id_password">현재 비밀번호로 확인 <span class="account-settings-required" aria-hidden="true">*</span></label>
+          <label for="id_password">현재 비밀번호로 확인 <span class="account-settings-required" aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
           <input
             type="password"
             name="password"

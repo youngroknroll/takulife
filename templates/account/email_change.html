@@ -64,6 +64,7 @@
       제출 가드가 버튼을 disable하면 버튼 name은 전송에서 빠진다. allauth는
       이 이름으로 분기하므로 hidden으로 보낸다.
       {% endcomment %}
+      <p class="account-settings-required-legend">＊ 표시는 필수</p>
       <form method="post" action="{% url 'account_email' %}" class="account-settings-form" data-submit-guard>
         {% csrf_token %}
         {% include "core/partials/_account_settings_field.html" with field=form.email label="새 이메일" %}

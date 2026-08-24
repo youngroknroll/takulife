@@ -3,6 +3,36 @@
 
 {% block title %}서버 오류가 발생했어요 — takulife{% endblock %}
 
+{% comment %}
+500 응답은 request 컨텍스트 없이 렌더되어 로그인 상태를 알 수 없다.
+_site_header.html을 그대로 include하면 _topbar.html이 세션 정보를 요구해
+깨지므로, 로그인 상태 내비 없이 중립 헤더를 여기서 직접 그린다.
+{% endcomment %}
+{% block site_header %}
+<header class="site-header">
+  <div class="site-header-inner">
+    <button type="button" class="nav-menu-toggle" data-nav-menu-toggle
+            data-expanded="false" aria-expanded="false" aria-controls="primary-nav"
+            aria-label="주 메뉴">
+      <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
+    </button>
+    <a class="brand" href="/">takulife</a>
+    <button type="button" class="theme-toggle" data-theme-toggle aria-label="다크모드 전환">
+      <span class="theme-toggle-mark">
+        <span class="theme-toggle-icon theme-toggle-icon-light">&#9728;&#65038;</span>
+        <span class="theme-toggle-icon theme-toggle-icon-dark">&#9790;&#65038;</span>
+      </span>
+    </button>
+    <nav id="primary-nav" class="site-nav" data-expanded="false" aria-label="주 메뉴">
+      <a href="/">홈</a>
+      <a href="/events/">이벤트</a>
+      <a href="/collection/">컬렉션</a>
+      <a href="/archive/">내 활동</a>
+    </nav>
+  </div>
+</header>
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/errors.css' %}">
 {% endblock %}

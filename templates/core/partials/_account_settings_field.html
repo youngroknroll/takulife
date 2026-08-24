@@ -8,7 +8,7 @@ widget.attrs를 그대로 옮겨야 자리표시글 등이 사라지지 않는�
 Usage: {% include "core/partials/_account_settings_field.html" with field=form.email label="이메일" %}
 {% endcomment %}
 <div class="account-settings-field">
-  <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="account-settings-required" aria-hidden="true">*</span>{% endif %}</label>
+  <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="account-settings-required" aria-hidden="true">*</span><span class="sr-only">(필수)</span>{% endif %}</label>
   <input
     type="{{ field.field.widget.input_type }}"
     name="{{ field.html_name }}"
