@@ -145,6 +145,16 @@ def load_trusted_proxy_count():
     return value
 
 
+def load_email_port():
+    """EMAIL_PORT env를 정수로 캐스팅한다. 정수가 아니면 조용히 무시하지
+    않고 실행을 막는다(load_trusted_proxy_count와 같은 방어 관용구)."""
+    raw = _get_env("EMAIL_PORT", "587")
+    try:
+        return int(raw)
+    except ValueError:
+        raise ImproperlyConfigured(f"EMAIL_PORT must be an integer, got {raw!r}.")
+
+
 def build_axes_client_ip_callable(trusted_proxy_count):
     """AXES_CLIENT_IP_CALLABLE 경로를 반환하거나, axes 기본
     REMOTE_ADDR 방식을 유지하려면 None을 반환한다. 신뢰 프록시 홉 수가
@@ -504,7 +514,7 @@ EMAIL_BACKEND = (
     if EMAIL_HOST
     else "django.core.mail.backends.console.EmailBackend"
 )
-EMAIL_PORT = int(_get_env("EMAIL_PORT", "587"))
+EMAIL_PORT = load_email_port()
 EMAIL_HOST_USER = _get_env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = _get_env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = _get_env("EMAIL_USE_TLS", "true").lower() in ("1", "true", "yes")
