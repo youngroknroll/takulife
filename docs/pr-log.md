@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #300부터 #165까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #305부터 #165까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,36 +28,39 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #301 — fix: 에이전트 수집처 탐색 사용자 검토 2라운드 4건 반영
+### PR #306 — fix: 전수 검토 확정 결함 2건 반영 (수집처 상한 재검사 + 러너 URL 검증)
 
-**무엇을 바꿨나**: 머지된 PR #299에 대한 사용자 검토 2라운드 발견 5건 중
-4건을 반영했다(5번 "docs 7종" 오기는 main `82d60bb`에서 기해결 확인).
-①러너 `_process_run`이 에이전트 출력에 dict 아닌 항목이 있었거나 유효
-후보가 0개면 `complete`를 `failed(invalid_output)`로 보고 — 빈/오염 출력의
-성공 위장 차단. ②스태프 대시보드 실패 단계 라벨에 sample_mismatch("표본
-불일치") 분기 추가(빈 셀 해소). ③heartbeat 티커 범위를 후보 제출·완료
-보고까지 확장(외곽 try/finally) — 제출 국면 오프라인 오표시 재발 경로
-폐쇄. ④print 3곳을 모듈 logger로 전환(`main()`에 타임스탬프 basicConfig),
-티커는 `httpx.HTTPError`만 기록 후 지속·그 외 예외는 전파, AST 가드
-`_SCAN_PACKAGES`에 `local_runner`를 편입해 정책을 게이트가 강제한다.
-WED가 권고한 미지 단계 폴백은 BIR 사후 판정(승인 범위 밖 + overflow
-위험)으로 반려·이연했다.
+**무엇을 바꿨나**: ①수집처 후보 상한(MAX_CANDIDATES_PER_RUN=10) 재검사를
+저장 트랜잭션 2곳(승격 경로·실패 저장 경로)의 run FOR UPDATE 잠금 아래에
+추가 — 네트워크 검증 구간 동안의 동시 제출이 조기 검사를 같이 통과해
+상한을 초과 저장하는 구멍을 폐쇄했다. 조기 검사는 fast-fail로 유지.
+②local_runner의 `load_config`가 서버 URL을 검증한다 — https는 항상
+허용, http는 루프백(ipaddress.is_loopback + localhost 리터럴, DNS 해석
+없음)만 허용하고 그 외는 RuntimeError로 기동을 거부한다(비루프백 http로
+X-Runner-Token 평문 전송 사고 방지).
 
-**왜**: 게이트 통과 후에도 사용자 검토가 실결함을 잡았고, 특히 빈 출력이
-성공으로 기록되면 운영자가 러너 이상을 인지할 수 없다.
+**왜**: 2026-08-24 전수 검토가 확정한 결함 2건(후속 4트랙 중 마지막)이자
+보안 검토 사전 조건부 승인의 구현 지시 5건 반영.
 
-**검증**: TDD R1~R6 Red-Green(이미-초록 3건은 뮤테이션 왕복 Red/Green
-실증) `[실측]`, 전체 회귀 `uv run pytest -q` → **2259 passed**(28.51초)
-`[실측]`, `manage.py check` 0 issues, 드리프트 0건, 브라우저 실측(라벨
-셀 96px 내 글자 60.8px·overflow 없음), 러너 실기동(유효 토큰 204/200·오탈
-토큰 403 격리) `[실측]`, QVL 최종 대조 failed 0. CI 3잡 전부 pass.
+**검증**: TDD Red→Green(A1 Green 상태에서 A2 Red 유지로 두 저장 경로의
+독립 필요성을 실행으로 증명), 뮤테이션 왕복 3종(각 재검사 제거 시 해당
+테스트만 Red / 루프백 판정을 startswith 문자열 검사로 치환 시 호스트
+스푸핑·IPv6 케이스 Red), 신설 `tests/local_runner/test_config.py` 15케이스
+(거부 7 Red 확인, 허용 8 이미-초록 기록), 전체 회귀 `uv run pytest -q` →
+**2276 passed**(27.28초) `[실측]`, `manage.py check` 0 issues, 드리프트
+0건, CI 3잡 전부 pass.
 
-**병합**: 2026-08-24, main `a24effa`.
+**병합**: 2026-08-24, main `a90a74a`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #305 — fix(config): 운영 드리프트 정리 — DRAFT_FETCH_CONTACT 배선 + 운영 문서 정정
+- #304 — fix(archive): 방문 완료 동시성 직렬화
+- #303 — build: 의존성 보안 업그레이드 + CI 취약점 감사 게이트
+- #302 — docs: PR #300·#301 머지를 로그에 롤링 반영
+- #301 — fix: 에이전트 수집처 탐색 사용자 검토 2라운드 4건 반영
 - #300 — docs: PR #296~#299 머지를 로그에 롤링 반영
 - #299 — feat: 로컬 에이전트 수집처 탐색 (서버 경계 + 로컬 러너)
 - #298 — feat: 드래프트 수집 자동화 활성화 (F6 SSRF 근본 수정 + 플래그 env 전환 + 소스 큐레이션)
