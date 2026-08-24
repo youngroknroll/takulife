@@ -684,3 +684,119 @@ def test_유효한_후보_제출은_임대를_연장한다():
 
     run.refresh_from_db()
     assert run.lease_expires_at > timezone.now() + timedelta(seconds=1700)
+
+
+def _bulk_create_실패_후보_9건(run):
+    SourceCandidate.objects.bulk_create(
+        [
+            SourceCandidate(
+                run=run,
+                name=f"후보{i}",
+                url=f"https://example.com/n{i}",
+                source_type="html",
+                sample_url=f"https://example.com/n{i}/sample",
+                status=SourceCandidate.Status.FAILED,
+                failure_stage=SourceCandidate.FailureStage.SCHEMA,
+            )
+            for i in range(1, 10)
+        ]
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_실패_저장_직전_잠금_아래_재검사가_상한_초과_후보의_저장을_거부한다(monkeypatch):
+    _patch_safe_fetch_url(monkeypatch)
+    _patch_allow_all_robots(monkeypatch)
+    run = _make_claimed_run()
+    _bulk_create_실패_후보_9건(run)
+    payload = _valid_payload()
+    payload["url"] = "https://tenth-submission.example.com/notice"
+    payload["sample_url"] = "https://tenth-submission.example.com/notice/sample"
+
+    def _fake_fetch_html(url, **kwargs):
+        # 실제 동시 스레드 없이, fetch가 네트워크에 나가 있는(=최종 저장
+        # 트랜잭션 이전) 그 순간에 다른 제출이 먼저 10번째 후보를 저장해
+        # 상한에 도달한 상황을 재현한다.
+        SourceCandidate.objects.create(
+            run=run,
+            name="동시제출",
+            url="https://concurrent.example.com/notice",
+            source_type="html",
+            sample_url="https://concurrent.example.com/notice/sample",
+            status=SourceCandidate.Status.FAILED,
+            failure_stage=SourceCandidate.FailureStage.SCHEMA,
+        )
+        raise FetchError
+
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", _fake_fetch_html)
+
+    with pytest.raises(CandidateLimitExceededError):
+        submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert SourceCandidate.objects.filter(run=run).count() == 10
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_승격_저장_트랜잭션이_잠금_아래_재검사로_상한_초과_승격을_거부한다(monkeypatch):
+    _patch_safe_fetch_url(monkeypatch)
+    _patch_allow_all_robots(monkeypatch)
+    run = _make_claimed_run()
+    _bulk_create_실패_후보_9건(run)
+    payload = _valid_payload()
+    payload["url"] = "https://eleventh-submission.example.com/notice"
+    payload["sample_url"] = "https://example.com/notice/1"
+
+    listing_url_1 = "https://example.com/notice/1"
+    listing_url_2 = "https://example.com/notice/2"
+    listing_html = (
+        '<html><body>'
+        f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
+        f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
+        "</body></html>"
+    )
+    sample_html = (
+        "<html><head><title>코믹월드 행사</title></head>"
+        "<body><p>2026-09-01 서울 코엑스</p></body></html>"
+    )
+    inserted = {"done": False}
+
+    def _fake_fetch_html(url, **kwargs):
+        if not inserted["done"]:
+            inserted["done"] = True
+            # 승격 저장 직전(최종 트랜잭션 이전) 구간에서 다른 제출이 먼저
+            # 10번째 후보를 저장해 상한에 도달한 상황을, 실제 동시 스레드
+            # 없이 fetch 호출 시점의 DB 상태 조작만으로 재현한다.
+            SourceCandidate.objects.create(
+                run=run,
+                name="동시제출",
+                url="https://concurrent.example.com/notice",
+                source_type="html",
+                sample_url="https://concurrent.example.com/notice/sample",
+                status=SourceCandidate.Status.FAILED,
+                failure_stage=SourceCandidate.FailureStage.SCHEMA,
+            )
+        return sample_html if url == payload["sample_url"] else listing_html
+
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", _fake_fetch_html)
+
+    def _fake_create_draft_from_url(source_url, source_name=""):
+        EventDraft.objects.create(
+            source_url=source_url, source_name=source_name, raw_title="스텁"
+        )
+
+    monkeypatch.setattr(
+        "drafts.candidate_validation.create_draft_from_url", _fake_create_draft_from_url
+    )
+
+    with pytest.raises(CandidateLimitExceededError):
+        submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert DraftSource.objects.count() == 0
+    assert (
+        SourceCandidate.objects.filter(
+            run=run, status=SourceCandidate.Status.PROMOTED
+        ).count()
+        == 0
+    )
