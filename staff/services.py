@@ -8,6 +8,9 @@ events/services.py가 아닌 여기 있다.
 """
 import logging
 
+from django.db import transaction
+
+from events.models import Event
 from events.services import hard_delete_event
 
 logger = logging.getLogger(__name__)
@@ -50,13 +53,18 @@ def delete_event(*, event):
     낸다 — 그대로 지우면 사용자의 관심/상태/방문 기록이 CASCADE로 함께
     사라지기 때문이다.
     """
-    counts = event_archive_reference_counts(event=event)
-    if sum(counts.values()) > 0:
-        raise EventHasArchiveReferencesError(
-            interest_count=counts["interest"],
-            status_count=counts["status"],
-            visit_count=counts["visit"],
-            collection_item_count=counts["collection_item"],
-        )
-    logger.info("Hard-deleting event pk=%s", event.pk)
-    hard_delete_event(event=event)
+    with transaction.atomic():
+        # 판정과 삭제 사이 창에 새로 생긴 참조가 CASCADE로 함께 지워지는
+        # 것을 막기 위해 잠긴 인스턴스로 재조회한 뒤 카운트·삭제 둘 다 그
+        # 인스턴스로 수행한다.
+        locked_event = Event.objects.select_for_update().get(pk=event.pk)
+        counts = event_archive_reference_counts(event=locked_event)
+        if sum(counts.values()) > 0:
+            raise EventHasArchiveReferencesError(
+                interest_count=counts["interest"],
+                status_count=counts["status"],
+                visit_count=counts["visit"],
+                collection_item_count=counts["collection_item"],
+            )
+        logger.info("Hard-deleting event pk=%s", locked_event.pk)
+        hard_delete_event(event=locked_event)

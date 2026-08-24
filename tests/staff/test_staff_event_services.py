@@ -7,6 +7,8 @@ staff/services.py에 둔다.
 import datetime
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from archive.models import CollectionItem, EventInterest, UserEventStatus, VisitRecord
 from events.models import Event
@@ -104,3 +106,29 @@ def test_컬렉션_항목_참조가_있는_행사를_삭제하면_거부되고_�
 
     assert exc_info.value.collection_item_count == 1
     assert Event.objects.filter(pk=event.pk).exists()
+
+
+# ---------------------------------------------------------------------------
+# S1-1 — 참조 판정과 삭제 사이 창에서 새 archive 참조가 생기는 경쟁을 막기
+# 위해, 이벤트 행 조회는 FOR UPDATE 잠금 아래 실행돼야 한다(대리 계약 —
+# tests/archive/test_visit_record_status_orchestration.py RACE-01과 같은
+# 테이블 한정 SELECT 캡처 방식).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+def test_이벤트_삭제는_이벤트_행을_FOR_UPDATE로_잠근_뒤_참조_판정과_삭제를_한_트랜잭션으로_실행한다(make_event):
+    event = make_event(official_url="https://example.com/for-update-lock")
+    table_name = Event._meta.db_table
+
+    with CaptureQueriesContext(connection) as ctx:
+        delete_event(event=event)
+
+    event_select_queries = [
+        query
+        for query in ctx.captured_queries
+        if "SELECT" in query["sql"].upper() and table_name.upper() in query["sql"].upper()
+    ]
+    assert event_select_queries, "이벤트 테이블을 조회하는 SELECT 쿼리가 존재해야 한다"
+    assert any("FOR UPDATE" in query["sql"].upper() for query in event_select_queries)
