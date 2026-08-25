@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #310부터 #167까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #312부터 #173까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,30 +28,38 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #311 — docs: backlog.md 재작성 (927→316줄, 2026-08-24 실측 기준 갱신)
+### PR #313 — fix: 미디어 덮어쓰기·캐시 컬링 해소 + 저위험 스윕 (G1·F10·F13·G4·G5)
 
-**무엇을 바꿨나**: `docs/backlog.md` 재작성(927→316줄). 현황표를
-2026-08-24 실측값으로 갱신(머지 main `25d93c7` 기준 회귀 2288 passed,
-행사 카탈로그 게시 169건 중 종료 146건 86%), 해결 항목 23개를 PR
-번호·핵심 검증 보존 1~2줄로 압축(이력 정본은 pr-log·docs/BE·메모리),
-미해결 6항목(B2·C1·F7·F10·F12·F13) 무수정 보존, G절 신설(전수 검토
-잔여 G1~G5) — G1 미디어 스토리지 프라이버시를 배포 차단으로 승격
-(현황표 "배포 차단 0건" 정정).
+**무엇을 바꿨나**: 외부 발견 2건 재검증(둘 다 정확) 후 배포 차단 G1을
+덮어쓰기 축 중심으로 확장 해결 — `upload_to` UUID 콜러블 3필드(+마이그
+레이션 0025, DB no-op), storage OPTIONS `file_overwrite: False`·
+`default_acl: None`(R2 ACL 미지원)·`querystring_auth: True` 명시,
+`CACHES` `MAX_ENTRIES: 10000`(레이트리밋 카운터 컬링 소멸 방지), 런북
+§3 버킷 확인 절차(⑦-2)·⑨·⑩ 보강. 저위험 스윕: F10(`staff_event_edit`
+`select_for_update` 직렬화), G4(탐색 요청 60초/10회 캐시 스로틀 —
+`cache.incr()` 미사용, 마감시각 레코드 패턴), F13(대시보드 표 색 상속
+전환), G5(visit_edit 필수 범례). 사용자 지시로 BIR 발견 동일 패턴
+2건(`sources.css` 위험색 소실·`audit_log.css`)도 백로그 미등재로 같은
+트랙에서 즉시 해소. CLAUDE.md에 "같은 유형·소규모 발견은 트랙 내 즉시
+수정" 상시 규칙 명문화.
 
-**왜**: 현황표가 2026-08-01에 정지된 채 PR 약 20건 미반영 — 낡은 표
-기반 오판(과거 A1류 사고 유형) 방지. 사용자 지시 "문서 업데이트
-최적화".
+**왜**: 실사용자 배포 전 필수 차단(사용자 간 사진 무단 대체 + 레이트
+리밋 실효성 상실)이었고, 저위험 항목은 사용자 지시("낮은 위험 항목까지
+구현, 작업 증식 지양")로 함께 소진.
 
-**검증**: 대조 grep(미해결 6항목 잔존·G1~G5 등재·수치 일치·PR 번호
-12개 보존) `[실측]`, `uv run pytest -q` 2288 passed(문서 전용 불변)
-`[실측]`. CI pass.
+**검증**: `uv run pytest -q` 2294 passed(기준 2288+6) `[실측, 머지
+main 재실행]`, check 0·드리프트 0, TDD 시나리오 5건 Red→Green + 뮤테
+이션 4종 표적 Red, FE 이중 게이트 WED·BIR `Conforms`(F13·G5·F14 확장
+분 각각), 브라우저 실측 라이트·다크 computed color 전부 토큰 일치.
 
-**병합**: 2026-08-24, main `5874645`.
+**병합**: 2026-08-25, main `4255540`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #312 — docs: PR #310·#311 머지를 로그에 롤링 반영
+- #311 — docs: 백로그 재작성 — 2026-08-24 실측 기준 최적화
 - #310 — docs: PR #307~#309 머지를 로그에 롤링 반영
 - #309 — fix: 전수 검토 잔여 프론트 3건 반영 (500 헤더 착시·필수 표시 통일·죽은 캐러셀 제거)
 - #308 — fix: 백엔드 잔여 정리 스윕 — 삭제 잠금·부분승격 라벨·EMAIL_PORT·동시 저장 멱등
@@ -189,9 +197,3 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 - #175 — feat: Stage-0 PR-0e — shared cache and analytics events
 - #174 — feat: Stage-0 PR-0d — proxy-aware client IP resolution
 - #173 — ci: Stage-0 PR-0c — GitHub Actions pipeline
-- #172 — feat: Stage-0 PR-0b — runtime artifacts (Docker, gunicorn, media storage, health)
-- #171 — feat(config): 0단계 배포 기반 PR-0a — settings 프로덕션 하드닝
-- #170 — fix: 다크모드 4/4 — 대비 전수 감사(1152 조합) + 실결함 4건 보정
-- #169 — feat: 다크모드 3/3 — 페이지별 스윕 + 게이트 수정
-- #168 — feat: 다크모드 2/3 — 공용 컴포넌트 스윕 + 헤더 토글
-- #167 — feat: 다크모드 1/3 — 토큰 다크 매핑 + 테마 인프라
