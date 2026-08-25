@@ -165,6 +165,8 @@
   border-collapse: collapse;
   table-layout: fixed;
   color: var(--c-text);
+  /* 가장 넓은 표(최근 활동)의 고정 열 합 28.5rem + 대상 최소 15rem. */
+  min-width: 43.5rem;
 }
 
 .dash-table thead th {

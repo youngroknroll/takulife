@@ -28,15 +28,16 @@
 
     {% if event_rows %}
       <div class="events-table-wrap">
+        <div class="staff-table-scroll">
         <table class="events-table">
           <colgroup>
             <col style="width:4.375rem">
             <col>
-            <col style="width:9.375rem">
+            <col style="width:14rem">
             <col style="width:6.25rem">
             <col style="width:7.5rem">
             <col style="width:5.625rem">
-            <col style="width:13rem">
+            <col style="width:15rem">
           </colgroup>
           <thead>
             <tr>
@@ -70,6 +71,7 @@
             {% endfor %}
           </tbody>
         </table>
+        </div>
 
         <div class="events-table-foot">
           <span class="mono events-table-foot-range">{{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ page_obj.paginator.count }}</span>

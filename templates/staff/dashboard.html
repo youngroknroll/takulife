@@ -103,6 +103,7 @@ staff-console-redesign.md M5).
           </div>
 
           {% if draft_source_rows %}
+            <div class="staff-table-scroll">
             <table class="dash-table">
               <colgroup>
                 <col style="width: auto;">
@@ -134,6 +135,7 @@ staff-console-redesign.md M5).
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           {% else %}
             <p class="dash-empty">등록된 수집 소스가 없습니다.</p>
           {% endif %}
@@ -166,6 +168,7 @@ staff-console-redesign.md M5).
           </div>
 
           {% if recent_discovery_runs %}
+            <div class="staff-table-scroll">
             <table class="dash-table">
               <colgroup>
                 <col style="width: 8.5rem;">
@@ -192,6 +195,7 @@ staff-console-redesign.md M5).
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           {% else %}
             <p class="dash-empty">아직 탐색 실행 이력이 없습니다.</p>
           {% endif %}
@@ -204,12 +208,13 @@ staff-console-redesign.md M5).
           </div>
 
           {% if failed_source_candidates %}
+            <div class="staff-table-scroll">
             <table class="dash-table">
               <colgroup>
                 <col style="width: auto;">
                 <col style="width: 6rem;">
                 <col style="width: 11.25rem;">
-                <col style="width: 5.5rem;">
+                <col style="width: 6.5rem;">
               </colgroup>
               <thead>
                 <tr>
@@ -233,6 +238,7 @@ staff-console-redesign.md M5).
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           {% else %}
             <p class="dash-empty">확인이 필요한 실패 후보가 없습니다 ✓</p>
           {% endif %}
@@ -246,12 +252,13 @@ staff-console-redesign.md M5).
           </div>
 
           {% if recent_action_rows %}
+            <div class="staff-table-scroll">
             <table class="dash-table">
               <colgroup>
                 <col style="width: 8.5rem;">
                 <col style="width: 6rem;">
                 <col style="width: auto;">
-                <col style="width: 9.375rem;">
+                <col style="width: 14rem;">
               </colgroup>
               <thead>
                 <tr>
@@ -280,6 +287,7 @@ staff-console-redesign.md M5).
                 {% endfor %}
               </tbody>
             </table>
+            </div>
           {% else %}
             <p class="dash-empty">아직 처리 내역이 없습니다.</p>
           {% endif %}

@@ -105,6 +105,9 @@
 .events-table {
   table-layout: fixed;
   width: 100%;
+  /* 고정 열 합(52.75rem) + 제목 최소 18rem. 이 아래로 좁아지면 열을 더
+     찌그러뜨리지 말고 .staff-table-scroll이 가로로 밀게 둔다. */
+  min-width: 70.75rem;
 }
 
 .events-table th,
