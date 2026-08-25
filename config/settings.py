@@ -218,6 +218,15 @@ def load_media_storage_config():
             # "auto"는 Cloudflare R2 S3 API의 공식 리전 값이다(R2/B2는
             # AWS 리전 개념이 없음). MEDIA_STORAGE_REGION 미설정 시 무해한 기본값.
             "region_name": _get_env("MEDIA_STORAGE_REGION", "auto"),
+            # 같은 파일명 업로드가 타인 사진을 소리 없이 덮어쓰는 것을
+            # 막는 방어선(파일명 자체는 업로드 경로에서 UUID로 생성).
+            "file_overwrite": False,
+            # R2는 x-amz-acl 헤더를 지원하지 않아 어떤 문자열 값이든
+            # 업로드가 실패한다. None은 헤더를 아예 보내지 않는다는 뜻이고,
+            # 실제 비공개는 버킷 설정이 보증한다(런북 체크리스트).
+            "default_acl": None,
+            # 서명 URL(만료 있음)로만 접근되게 하는 계약을 명시 고정한다.
+            "querystring_auth": True,
         },
     }
 
@@ -351,10 +360,14 @@ DATABASES = {"default": load_database_config()}
 # 공유한다. env 게이트 없이 항상 적용해 개발/테스트와 운영이 같은
 # 백엔드를 쓰고 "django_cache" 테이블(core 마이그레이션이 생성)이 항상
 # 실제로 사용되게 한다.
+# allauth 레이트리밋 4종 + DRF 스로틀 8스코프 + 계정 삭제 잠금 카운터가
+# 이 캐시 하나를 공유한다. 기본 MAX_ENTRIES(300)면 컬링(알파벳순 1/3 삭제)이
+# 자주 일어나 살아 있는 카운터가 조기 소멸한다.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "django_cache",
+        "OPTIONS": {"MAX_ENTRIES": 10000},
     }
 }
 

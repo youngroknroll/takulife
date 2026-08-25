@@ -19,3 +19,9 @@ def test_공유_캐시는_저장한_값을_그대로_조회할_수_있다():
     cache.set("pr-0e-shared-cache-key", "shared-value", timeout=60)
 
     assert cache.get("pr-0e-shared-cache-key") == "shared-value"
+
+
+def test_공유_캐시의_실효_max_entries가_10000이다():
+    # 이 캐시는 allauth 레이트리밋·DRF 스로틀 카운터가 함께 쓴다.
+    # 기본값 300이면 컬링이 자주 일어나 카운터가 조기 소멸한다.
+    assert cache._max_entries == 10000

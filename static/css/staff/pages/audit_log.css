@@ -48,10 +48,13 @@
   overflow: hidden;
 }
 
+/* 기본 색은 표 차원에서 상속으로 내려 .audit-cell-dim 등(0,1,0)이
+   td 직접 지정(0,1,2)에 지지 않게 한다. */
 .audit-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  color: var(--c-text);
 }
 
 .audit-table thead th {
@@ -68,7 +71,6 @@
   padding: 0.375rem 0.75rem;
   border-bottom: 1px solid var(--c-line-soft);
   font-size: 0.78125rem;
-  color: var(--c-text);
   vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;

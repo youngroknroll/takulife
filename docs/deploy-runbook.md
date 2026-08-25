@@ -93,6 +93,16 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 7. **R2 실왕복 확인**: object storage로 실제 파일을 업로드하고 다시 다운로드해
    왕복 동작을 확인한다(0단계 계획서 §9-b/미검증 항목, PR-0b에서 로컬 스모크만
    수행됨 — 실제 R2 엔드포인트 왕복은 첫 배포에서 최초 검증).
+   - **⑦-2. 버킷 퍼블릭 액세스 차단 확인**: R2 대시보드에서 해당 버킷의
+     "Public access"가 기본값(비활성)인지 확인하고, r2.dev 서브도메인이나
+     커스텀 도메인이 서명 없이 연결돼 있지 않은지 점검한다.
+     `querystring_auth`가 이미 `True`로 고정돼(config/settings.py
+     `load_media_storage_config`) 애플리케이션이 생성하는 URL은 서명 만료
+     전까지만 유효하지만, 이 확인은 "서명 없이도 접근 가능한 별도 경로"가
+     열려 있지 않은지를 보는 것이다. 실행 가능한 검증: 실제 업로드된
+     오브젝트 키로 `curl -I "https://<account-id>.r2.cloudflarestorage.com/<bucket>/<key>"`
+     (서명 쿼리스트링 없이)를 호출해 200이 아니라 403/AccessDenied가
+     반환되는지 확인한다. 200이 반환되면 버킷이 의도치 않게 공개 상태다.
 8. **TRUSTED_PROXY_COUNT 홉 실측**: 선정 PaaS의 실제 프록시 홉 수를 확인한 후
    `TRUSTED_PROXY_COUNT`를 설정하고, 스테이징에서 위조 `X-Forwarded-For`가
    무영향임을 검증한다. **과대설정은 과소설정보다 위험하다** — 과대설정(또는
@@ -104,11 +114,20 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    (`docs/operations-runbook.md` §2)가 워커 간 실제로 공유되는지 확인한다.
    `CACHES`가 `DatabaseCache`(config/settings.py:336-344)로 배선돼 구조적으로는
    공유되지만, 통합 환경에서의 실측은 아직 없다(0단계 계획서 §9-b).
+   **컬링으로 인한 카운터 조기 소멸도 별도로 확인한다**: `DatabaseCache`는
+   `MAX_ENTRIES`(현재 10000 — config/settings.py `CACHES`)를 넘으면 만료 전
+   항목까지 `cache_key` 알파벳 순으로 최대 1/3을 강제 삭제한다(LRU·FIFO가
+   아니다 — Django `db.py` `_cull`). 실측 시 `SELECT COUNT(*) FROM
+   django_cache;`로 실제 행 수가 예상 사용자 규모에서 10000에 근접하지
+   않는지 함께 확인하고, 근접한다면 카운터가 TTL 만료 전에 조기 삭제돼
+   레이트리밋·계정 삭제 잠금이 의도보다 일찍 풀릴 수 있음을 인지한다.
 10. **DB 백업에 django_cache 포함 인지**: `DatabaseCache`는 `django_cache`
     테이블(config/settings.py:344, core 마이그레이션으로 생성)에 rate limit
     카운터를 저장한다. DB 백업/복구 시 이 테이블도 함께 복원되므로, 복구
     직후 rate limit·락아웃 카운터가 백업 시점 상태로 되돌아간다는 점을
     인지한다(예: 복구 직전 잠긴 IP가 복구 후에도 잠긴 채로 복원될 수 있음).
+    `MAX_ENTRIES=10000`으로 행 수 상한이 고정돼 있어 이 테이블이 백업
+    시간·용량에 미치는 영향은 무시할 수 있다.
 11. **탈퇴 파기 정기 실행 등록**: <!-- uv-run-exempt: 런타임 이미지엔 uv가 없다(Dockerfile:3-4) — PaaS 스케줄러가 컨테이너 안에서 이 명령을 직접 실행한다 --> `python manage.py purge_deleted_accounts`
     (`accounts/management/commands/purge_deleted_accounts.py`)를 선정 PaaS의
     스케줄러(크론/스케줄드 잡 등, 플랫폼별 명칭 상이)에 등록하고, **수동 1회

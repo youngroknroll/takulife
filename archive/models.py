@@ -1,3 +1,6 @@
+import uuid
+from pathlib import Path
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -5,6 +8,24 @@ from django.db import models
 from events.models import Event
 
 from .querysets import CollectionItemQuerySet, UserEventStatusQuerySet
+
+
+def _uuid_image_name(directory, filename):
+    # 원본 파일명은 키에 싣지 않는다 — 같은 이름 업로드가 타인 파일을
+    # 덮어쓰는 것과 파일명 자체의 개인정보 노출을 함께 막는다.
+    return f"{directory}/{uuid.uuid4().hex}{Path(filename).suffix.lower()}"
+
+
+def personal_entry_image_upload_to(instance, filename):
+    return _uuid_image_name("personal-entries", filename)
+
+
+def visit_record_photo_image_upload_to(instance, filename):
+    return _uuid_image_name("visit-record-photos", filename)
+
+
+def collection_item_image_upload_to(instance, filename):
+    return _uuid_image_name("collection-items", filename)
 
 
 class EventInterest(models.Model):
@@ -141,7 +162,9 @@ class PersonalEntry(models.Model):
     # 사용자가 남기는 참고 링크(트윗/블로그/샵)로, 유일값도 공식 출처도 아니다.
     url = models.URLField(blank=True)
     memo = models.TextField(blank=True)
-    image = models.ImageField(upload_to="personal-entries/", blank=True, null=True)
+    image = models.ImageField(
+        upload_to=personal_entry_image_upload_to, blank=True, null=True
+    )
     promotion_status = models.CharField(
         max_length=20,
         choices=PromotionStatus.choices,
@@ -219,7 +242,7 @@ class VisitRecordPhoto(models.Model):
         on_delete=models.CASCADE,
         related_name="photos",
     )
-    image = models.ImageField(upload_to="visit-record-photos/")
+    image = models.ImageField(upload_to=visit_record_photo_image_upload_to)
     # 멱등 키를 (user, client_token)이 아니라 (visit_record, client_token)로
     # 잡는다. 사진은 사용자 소유 최상위 대상이 아니라 한 방문 기록의
     # 하위 항목이고, 한 사용자가 여러 기록에 걸쳐 많은 사진을 올리므로
@@ -274,7 +297,9 @@ class CollectionItem(models.Model):
         null=True,
         blank=True,
     )
-    image = models.ImageField(upload_to="collection-items/", blank=True, null=True)
+    image = models.ImageField(
+        upload_to=collection_item_image_upload_to, blank=True, null=True
+    )
     memo = models.TextField(blank=True)
     is_wanted = models.BooleanField(default=False)
     tradeable_quantity = models.IntegerField(default=0)

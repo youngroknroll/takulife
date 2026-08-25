@@ -1,6 +1,6 @@
 # takulife 백로그
 
-기준일: 2026-08-24 · 기준 커밋: main `25d93c7`
+기준일: 2026-08-25 · 기준 브랜치: `fix/media-overwrite-lowrisk-sweep`(main `e3d3448`에서 분기)
 
 ## 이 문서에 대하여
 
@@ -22,10 +22,10 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `[실측 2026-08-24 · 머지된 main]` `uv run pytest -q` → **2288 passed** |
+| 백엔드 회귀 | `[실측 2026-08-25]` `uv run pytest -q` → **2294 passed** |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
-| 배포 차단 | **1건** — G1 미디어 스토리지 프라이버시 미보증(아래 G절) |
+| 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
 | 실행 순서 | 2·3·4단계 완료 / **5단계는 배포 이후로 연기**(C1, 실코호트 없음 — "미착수"가 아니라 사용자 결정이다) / 6단계 정상 미착수 / 1단계 인프라 대기 |
 | 행사 카탈로그 | `[실측 2026-08-24]` 게시 169건 중 **146건 종료(86%)**, 진행·예정 23건, 검증 완료 0건 |
 | OAuth 활성화 | **차단**(B2 — 소셜 가입에 약관 동의 필드 없음) |
@@ -239,10 +239,10 @@ M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web
 | F7 | 실사용 데이터 이후 스키마 변경 가이드 부재 | `archive/migrations/0011~0013,0019` 비-concurrent | 두 번째 배포부터 유효 |
 | F8 | ~~드래프트 상태 라벨 하드코딩~~ (**해결됨 2026-08-01, PR #278**) | 정본 `drafts/labels.py`의 `REVIEW_STATUS_LABELS`, 템플릿/JS 모두 서버값 참조(표시 6곳) | 해결 |
 | F9 | ~~`staff_event_toggle_publish`에 `select_for_update` 없음~~ (**해결됨 2026-08-01**) | `atomic()` 안에서 잠그고 재조회, `CaptureQueriesContext`로 `FOR UPDATE` 단언 | 해결 |
-| F10 | `staff_event_edit`의 lost-update 여지 | `staff/views/events.py`의 수정 저장 경로 | `[코드]` 토글 패턴 아님 — 제출 폼 값으로 절대 덮어씀. 동시 편집 시 마지막 쓰기 우선, F9보다 위험도 낮음 |
+| F10 | ~~`staff_event_edit`의 lost-update 여지~~ (**해결됨 2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`**) | POST 저장 경로가 `atomic()` 안에서 `get_object_or_404(Event.objects.select_for_update(), pk=pk)`로 재조회(F9와 동일 패턴), `CaptureQueriesContext`로 `FOR UPDATE` 계약 테스트 + `select_for_update` 제거 뮤테이션 Red 확인 | 해결. lost-update 완전 해법(폼 버전 스탬프)은 이연 — 트리거: 스태프 동시 편집 실관측 |
 | F11 | ~~OpenAPI 스키마·문서 엔드포인트 부재~~ (**해결됨 2026-08-16**) | `/api/schema/`·`/api/docs/`(drf-spectacular + Swagger UI sidecar), 계약 테스트 6건. `extend_schema_view` 키 오기입 28곳 회귀 가드 포함 | 정본 `docs/BE/openapi-schema.md` |
 | F12 | `/api/schema/` 스로틀·캐시 없음 + CI 스모크가 `/api/docs/`를 안 본다 | `docs/BE/openapi-schema.md` "미적용(의도)" | 실트래픽 개시 전 유보. 트리거 시 ①캐시/스로틀 적용 ②CI 도커 스모크(F3)에 `/api/docs/` curl 200 추가 |
-| F13 | 대시보드 표 저강조 색 위계 미실현 | `.dash-table tbody td`(`static/css/staff/pages/dashboard.css:177`, 특이도 0,1,2)의 `color`가 `.dash-cell-dim`·`.dash-cell-faint`·`.dash-cell-wrap`(전부 0,1,0)을 항상 이겨 7개 셀이 기본 잉크색 `[실측 2026-08-20]`. PR #275 이전부터의 선재 갭 | 수정 방향 후보: `td` 규칙에서 `color` 제거 후 각 클래스에 위임 |
+| F13 | ~~대시보드 표 저강조 색 위계 미실현~~ (**해결됨 2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`**) | `.dash-table`로 색 상속 전환(`static/css/staff/pages/dashboard.css`), 라이트·다크 모두 computed 실측으로 `.dash-cell-dim`·`-faint`·`-wrap` 전부 토큰 일치 확인, WED·BIR `Conforms`×2. BIR 전수 확인이 찾은 동일 패턴 2건(`sources.css` `.src-cell-error` 위험색 소실 포함, `audit_log.css` dim/faint)도 같은 트랙에서 같은 방식으로 즉시 해소 — 라이트·다크 computed 실측 일치. `static/css/staff/` 내 이 패턴은 전수 재확인 결과 소멸(무해 판정: drafts·events·home_categories는 td color 미지정) | 해결 |
 
 **로컬 에이전트 수집처 탐색 — 구현됨(2026-08-20~24, PR #299·#301).** 서버
 경계(모델 3종·러너 API·8단계 결정론 검증·승격) + `local_runner/` 어댑터 완비.
@@ -253,13 +253,23 @@ M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web
 
 ## G. 전수 검토 잔여 (2026-08-24)
 
-### G1 [코드] 미디어 스토리지 저장소 계층 프라이버시 미보증 — **배포 차단**
+### G1 [코드] 미디어 스토리지 저장소 계층 프라이버시 미보증 — **해결됨(2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`)**
 
-`config/settings.py`의 `load_media_storage_config`가 `default_acl`·
-`querystring_auth`를 지정하지 않고, `archive/models.py`의 `upload_to`가 원본
-파일명을 보존한다. 버킷이 퍼블릭이면 개인 사진이 URL만으로 노출돼 "기본
-비공개" 계약을 위반한다. **실사용자 배포 전 필수.** 완화: 설정 2옵션 명시 +
-배포 런북에 버킷 확인 절차 추가 + (종심) 파일명 UUID화.
+외부 발견 재검증으로 **덮어쓰기 축이 본선이었음을 정정**한다: `file_overwrite`
+기본값 `True` + `upload_to`가 원본 파일명을 보존 = 사용자 간 사진 무단 대체
+`[실측: S3Storage 인스턴스화]`. 조치: `archive/models.py`의 `upload_to`를
+UUID 콜러블 3필드(`personal_entry_image_upload_to`·
+`visit_record_photo_image_upload_to`·`collection_item_image_upload_to`)로
+교체(+ 마이그레이션 0025, DB no-op) + `load_media_storage_config`의
+`OPTIONS`에 `file_overwrite: False`·`default_acl: None`(R2 ACL 미지원 —
+`None`=헤더 미전송)·`querystring_auth: True`를 명시 + 런북 버킷 확인 절차
+추가(`docs/deploy-runbook.md` §3 체크리스트 ⑦-2). 함께 발견된 **캐시 컬링
+결함**(`DatabaseCache` 기본 `MAX_ENTRIES=300`에 allauth 레이트리밋 4종 + DRF
+스로틀 8스코프 + 계정 삭제 잠금 카운터가 공유 `[실측]`)은 `MAX_ENTRIES=10000`
+명시로 해소(`config/settings.py` `CACHES`). 검증: `uv run pytest -q` →
+2294 passed, 뮤테이션 4종(`file_overwrite`·`MAX_ENTRIES`·`select_for_update`·
+스로틀 가드 제거) 전부 표적 Red. 배포 시점 버킷 퍼블릭 액세스 확인은
+`docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관됐다.
 
 ### G2 [코드] gunicorn 워커 타임아웃 미설정
 
@@ -272,15 +282,19 @@ M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web
 현재 보증은 코드 경로 부재 + 단위 모킹 2겹뿐. `pytest-socket` 등 신규 dev
 패키지가 필요해 **uv 정책상 사용자 명시 승인 대기.**
 
-### G4 [코드] 스태프 탐색 요청 뷰 스로틀 부재 — 낮음
+### G4 [코드] 스태프 탐색 요청 뷰 스로틀 부재 — **해결됨(2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`)**
 
-`staff/views/discovery.py`는 DRF 밖이라 기존 스로틀 재사용 불가. 동시 활성
-1건 제한(`DiscoveryRunActiveError`)이 실효 방어.
+`staff/views/discovery.py`에 사용자당 60초 고정 창 10회 캐시 스로틀을
+추가했다(`_discovery_request_throttled`). `cache.incr()`는 쓰지 않는다 —
+`DatabaseCache`가 `incr()`를 오버라이드하지 않아 창이 계속 연장되는 결함을
+피하려 `accounts/services.py`의 마감 시각-in-레코드 패턴을 그대로 따랐다.
+검증: web 테스트(`test_사용자당_분당_10회를_초과한_탐색_요청은_거부되고_새_실행이_생성되지_않는다`)
++ 스로틀 가드 제거 뮤테이션 Red 확인.
 
-### G5 [실측 2026-08-24] `templates/core/archive/visit_edit.html` 필수 범례 누락 — 낮음
+### G5 [실측 2026-08-24] `templates/core/archive/visit_edit.html` 필수 범례 누락 — **해결됨(2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`)**
 
-archive 폼 중 유일하게 필수 범례가 없다(트랙 6에서 인증·계정설정 화면은
-통일 완료).
+`visit_create` 패턴을 그대로 미러링한 범례를 추가했다. 320px·1120px 실측으로
+겹침 없음을 확인했고, WED·BIR 모두 `Conforms`.
 
 ---
 

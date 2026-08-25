@@ -306,6 +306,8 @@ def staff_event_edit(request, pk):
 
         try:
             with transaction.atomic():
+                # 동시 수정이 서로 덮어쓰지 않게 저장 경로를 직렬화한다.
+                event = get_object_or_404(Event.objects.select_for_update(), pk=pk)
                 update_published_event(
                     event=event,
                     title=form_values["title"],

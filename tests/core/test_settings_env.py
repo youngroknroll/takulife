@@ -372,7 +372,9 @@ def test_MEDIA_STORAGE_BUCKET이_미설정이면_파일시스템_스토리지로
     }
 
 
-def test_MEDIA_STORAGE_BUCKET이_설정되면_S3_백엔드_설정을_반환한다(monkeypatch):
+def test_MEDIA_STORAGE_BUCKET이_설정되면_파일_겹쳐쓰기_방지와_서명URL_계약을_포함한_S3_설정을_반환한다(
+    monkeypatch,
+):
     monkeypatch.setenv("MEDIA_STORAGE_BUCKET", "takulife-media")
     monkeypatch.setenv("MEDIA_STORAGE_ACCESS_KEY_ID", "key-id")
     monkeypatch.setenv("MEDIA_STORAGE_SECRET_ACCESS_KEY", "secret")
@@ -391,6 +393,9 @@ def test_MEDIA_STORAGE_BUCKET이_설정되면_S3_백엔드_설정을_반환한�
             "secret_key": "secret",
             "endpoint_url": "https://example.r2.cloudflarestorage.com",
             "region_name": "auto",
+            "file_overwrite": False,
+            "default_acl": None,
+            "querystring_auth": True,
         },
     }
 
@@ -495,6 +500,7 @@ def test_설정_모듈은_DatabaseCache_백엔드를_기본_캐시로_사용한�
     assert settings_module.CACHES["default"] == {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "django_cache",
+        "OPTIONS": {"MAX_ENTRIES": 10000},
     }
 
 

@@ -118,6 +118,12 @@ During Red-Green, run the targeted test before broad regression.
 - After planned verification, commit, push, and PR creation are automatic.
   Merge needs per-PR user approval unless an expressly recorded standing
   automatic-merge approval applies. `AGENTS.md` owns the detailed contract.
+- Small defects of the same kind found mid-track are not deferred to the
+  backlog: report the finding, then fix it inside the same track (and the same
+  PR) before merge. Open a backlog item only when the finding is a different
+  kind of work or exceeds the track's scale. Standing user decision
+  (2026-08-25) — avoiding work accumulation outranks strict scope minimalism
+  here, and the report-first step keeps this compatible with the surgical rule.
 - Report failed and unverified checks directly; confidence is not evidence.
 - Every number written into a document must name its unit and say whether it
   was measured or read, and must be re-measured before it sizes any work.

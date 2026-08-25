@@ -6,6 +6,8 @@
 from datetime import date
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from events.models import Event
 from staff.models import StaffActionLog
@@ -82,6 +84,24 @@ def test_이벤트_수정_폼_제출은_이벤트를_갱신하고_감사_로그�
     log = StaffActionLog.objects.get(target_event=event)
     assert log.actor_id == staff.id
     assert log.action == StaffActionLog.Action.EVENT_UPDATE
+
+
+@pytest.mark.django_db
+def test_이벤트_수정_저장은_대상_행을_잠그고_읽는다(staff_client, make_event, staff_event_payload):
+    """수정 저장도 읽은 값을 갱신하는 연산이라 동시 요청 경쟁에 취약하다(F9).
+    select_for_update로 잠근 뒤 다시 읽는지를 실행된 쿼리로 확인한다."""
+    staff, client = staff_client()
+    event = make_event(title="변경 전", official_url="https://example.com/edit-lock")
+
+    with CaptureQueriesContext(connection) as ctx:
+        resp = client.post(
+            _edit_url(event),
+            staff_event_payload(title="잠금 확인", official_url="https://example.com/edit-lock"),
+        )
+
+    assert resp.status_code == 302
+    locking_queries = [q for q in ctx.captured_queries if "FOR UPDATE" in q["sql"].upper()]
+    assert locking_queries, ctx.captured_queries
 
 
 @pytest.mark.django_db

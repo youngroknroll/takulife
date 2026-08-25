@@ -33,11 +33,22 @@
   margin-bottom: 1.5rem;
   border-bottom: 2px solid var(--text);
 }
+.visit-edit-page .visit-edit-head-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
 .visit-edit-page .visit-edit-head h1 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 800;
   color: var(--text);
+}
+.visit-edit-page .visit-edit-legend {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 .visit-edit-page .visit-edit-subtitle {
   margin: 0.5rem 0 0;
@@ -419,6 +430,11 @@
   .visit-edit-page .visit-edit-fields {
     grid-column: 1;
     grid-row: 2;
+  }
+  .visit-edit-page .visit-edit-head-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
   }
   .visit-edit-page .visit-edit-actions {
     position: fixed;
