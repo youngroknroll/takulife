@@ -209,3 +209,31 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | 선정 PaaS의 실제 프록시 홉 수 | 미확정(T2 플랫폼 미선정) | T2 확정 후, 첫 배포 전(§3 체크리스트 ⑧) |
 | 멀티워커 환경에서 rate limit 공유 실측 | 미검증(구조 논증만 존재) | 첫 배포 직후(§3 체크리스트 ⑨) |
 | 탈퇴 파기(`purge_deleted_accounts`) 정기 실행 등록 | 미확정(T2 플랫폼 미선정 — 스케줄러 방식이 플랫폼별로 다름) | T2 확정 후, 첫 배포 전(§3 체크리스트 ⑪) |
+
+## 7. 배포 브랜치와 deploy PR 흐름
+
+호스팅 플랫폼은 Render로 확정했다(위 §1 서두의 "미확정" 서술은 T2 결정 당시
+기준이며, 이후 Render로 확정 — production 브랜치 추종 전환이 이 확정을
+전제로 한다).
+
+- **흐름**: main에 PR 머지 → CI 성공 → `.github/workflows/deploy-pr.yml`이
+  main→production PR을 자동 생성 → 사람이 그 PR을 머지 → Render가 추종하는
+  production 브랜치가 갱신되며 배포가 시작된다.
+- **최초 전환 순서**: ① 워크플로 파일과 저장소 Actions 설정(아래 참조)을
+  main에 머지 ② `gh api repos/<repo>/actions/permissions/workflow`로 설정이
+  실제로 반영됐는지 재확인 ③ main→production 왕복을 1회 실증(머지 후 deploy
+  PR이 자동 생성되고 정상 머지되는지 확인) ④ Render 대시보드
+  (Settings → Build & Deploy → Branch)에서 추종 브랜치를 production으로
+  전환.
+- **자동 생성 실패 시 수동 fallback**: `gh pr create --base production --head
+  main`으로 직접 생성한다.
+- **deploy PR에 CI 체크가 없는 것은 정상**이다 — GITHUB_TOKEN으로 생성한 PR은
+  워크플로를 트리거하지 않는다(GitHub의 의도된 무한루프 방지 동작). 검증
+  근거는 이 PR에 포함된 main 커밋들이 이미 CI를 통과했다는 사실이다.
+- **`can_approve_pull_request_reviews=true`**는 이 워크플로가 PR을 생성할 수
+  있도록 저장소 전역에서 켠 설정이며, deploy-pr.yml 한정이 아니다. 향후
+  main/production에 필수 승인 브랜치 보호를 도입하는 시점에 이 설정을
+  재검토한다.
+- **production에는 직접 push하지 않는다** — 항상 deploy PR을 경유한다.
+  실패 감시는 GitHub Actions 탭의 워크플로 실행 이력과 실패 시 GitHub이
+  보내는 알림 메일로 한다.

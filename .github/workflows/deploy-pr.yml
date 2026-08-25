@@ -1,0 +1,50 @@
+name: Deploy PR
+
+# CI 워크플로가 main에서 성공한 이후에만 실행된다 — 이 게이트가 "CI 초록을
+# 통과한 main"에서만 deploy PR이 생기는 것을 보장한다.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: deploy-pr
+  cancel-in-progress: false
+
+jobs:
+  open-deploy-pr:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    steps:
+      - name: Open or skip main -> production PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          existing="$(gh pr list --repo "$GITHUB_REPOSITORY" --base production --head main --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "이미 열려 있는 deploy PR #$existing — 이번 머지가 기존 PR을 갱신"
+            exit 0
+          fi
+
+          ahead="$(gh api "repos/$GITHUB_REPOSITORY/compare/production...main" --jq '.ahead_by')"
+          if [ "$ahead" = "0" ]; then
+            echo "production에 반영할 커밋 없음"
+            exit 0
+          fi
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base production \
+            --head main \
+            --title "deploy: main → production" \
+            --body "main이 production보다 ${ahead}개 커밋 앞서 있습니다. 이 PR을 머지하면 Render가 production을 배포합니다. 이 PR에는 CI 체크가 붙지 않는 것이 정상입니다 — GITHUB_TOKEN으로 생성한 PR은 워크플로를 트리거하지 않으며, 포함된 커밋들은 main CI를 이미 통과했습니다."
