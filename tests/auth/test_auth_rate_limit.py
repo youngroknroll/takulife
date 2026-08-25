@@ -84,6 +84,21 @@ def test_회원가입_요청이_동일_ip에서_한도를_초과하면_429로_�
 
 
 @pytest.mark.django_db
+@override_settings(ACCOUNT_RATE_LIMITS={"signup": "2/m/ip"})
+def test_소셜_가입_요청이_동일_ip에서_한도를_초과하면_429로_차단된다(client):
+    """소셜 가입도 signup 창을 공유한다. allauth는 GET을 한도 계산에서
+    제외하므로(allauth core/internal/ratelimit.py:186의 limit_get) POST로
+    소비를 재현한다 — 폼 유효성과 무관하게 한도 판정은 dispatch 진입 전에
+    끝나므로 본문은 빈 값이어도 된다."""
+    for _ in range(2):
+        resp = client.post("/accounts/3rdparty/signup/", {})
+        assert resp.status_code != 429, resp.status_code
+
+    throttled = client.post("/accounts/3rdparty/signup/", {})
+    assert throttled.status_code == 429, throttled.status_code
+
+
+@pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"reset_password": "2/m/ip"})
 def test_비밀번호_재설정_요청이_동일_ip에서_한도를_초과하면_429로_차단된다(client, make_verified_user):
     """같은 IP에서 반복되는 비밀번호 재설정 요청은 429로 스로틀된다."""

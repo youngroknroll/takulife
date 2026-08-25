@@ -1,10 +1,20 @@
 from allauth.account.models import EmailAddress
+from allauth.decorators import rate_limit
+from allauth.socialaccount.views import SignupView as AllauthSocialSignupView
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.utils.decorators import method_decorator
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.cache import never_cache
 
 from . import services
+
+
+@method_decorator(rate_limit(action="signup"), name="dispatch")
+class SocialSignupView(AllauthSocialSignupView):
+    """allauth 소셜 가입 뷰는 로컬 가입 뷰(allauth account/views.py의
+    SignupView)와 달리 자체 레이트리밋이 없어, 같은 signup 한도를 여기서
+    선등록으로 건다(config/urls.py)."""
 
 
 @login_required
