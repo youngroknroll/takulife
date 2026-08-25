@@ -91,3 +91,11 @@ def test_구글_이메일_인증_계정연결_정책_설정이_활성화되어_�
     재구성하면 내부 구현에 취약하게 결합된다.)"""
     assert settings.SOCIALACCOUNT_EMAIL_AUTHENTICATION is True
     assert settings.SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT is True
+
+
+@pytest.mark.contract
+def test_SOCIALACCOUNT_FORMS는_SocialSignupForm을_가리키고_AUTO_SIGNUP은_비활성화되어_있다(settings):
+    """둘 중 하나만 풀려도 약관 동의 없는 소셜 가입 경로가 다시 열린다(B2) —
+    조용히 꺼지지 않도록 여기서 가드한다."""
+    assert settings.SOCIALACCOUNT_FORMS["signup"] == "accounts.forms.SocialSignupForm"
+    assert settings.SOCIALACCOUNT_AUTO_SIGNUP is False

@@ -42,8 +42,23 @@
       <p class="auth-description">{{ account.get_provider.name }} 계정으로 로그인합니다. 아래 정보를 확인해 가입을 완료해 주세요.</p>
       <form method="post" action="{% url 'socialaccount_signup' %}" class="auth-form">
         {% csrf_token %}
-        {{ form.as_p }}
         {{ redirect_field }}
+        {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
+        <div class="auth-consent{% if form.terms_agreed.errors %} is-error{% endif %}">
+          <input
+            type="checkbox"
+            name="terms_agreed"
+            id="id_terms_agreed"
+            {% if form.terms_agreed.value %}checked{% endif %}
+            {% if form.terms_agreed.errors %}aria-describedby="id_terms_agreed-error" aria-invalid="true"{% endif %}
+          >
+          <label for="id_terms_agreed">{{ form.terms_agreed.label }}</label>
+          {% if form.terms_agreed.errors %}
+            <ul class="field-error" id="id_terms_agreed-error">
+              {% for error in form.terms_agreed.errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        </div>
         <button type="submit" class="auth-submit">가입 완료</button>
       </form>
     </div>

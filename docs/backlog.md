@@ -28,7 +28,7 @@
 | 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
 | 실행 순서 | 2·3·4단계 완료 / **5단계는 배포 이후로 연기**(C1, 실코호트 없음 — "미착수"가 아니라 사용자 결정이다) / 6단계 정상 미착수 / 1단계 인프라 대기 |
 | 행사 카탈로그 | `[실측 2026-08-24]` 게시 169건 중 **146건 종료(86%)**, 진행·예정 23건, 검증 완료 0건 |
-| OAuth 활성화 | **차단**(B2 — 소셜 가입에 약관 동의 필드 없음) |
+| OAuth 활성화 | **활성화 완료**(B2 코드 해소=트랙 11, GCP 클라이언트·env 설정 및 실 OAuth 왕복 검증=사용자, 2026-08-26) |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -79,24 +79,32 @@ not_tradeable) + 모델 프로퍼티로 호출처 11곳 통합, 긍정·부정�
 `client_token` 구조적 배제, 상세·수정 라우트 신설. 검증: `uv run pytest -q` →
 2045 passed. 정본: `docs/FE/personal-place-detail-edit.md`.
 
-### B2 [실측] 소셜 가입 경로에는 약관 동의 필드가 아예 없다 — **OAuth 활성화 차단 항목**
+### B2 [실측] 소셜 가입 경로에는 약관 동의 필드가 아예 없다 — **해결됨(트랙 11)**
 
-- 근거: `config/settings.py`에 `ACCOUNT_FORMS["signup"]`은 있으나
-  **`SOCIALACCOUNT_FORMS`는 설정되어 있지 않다**(`rg "SOCIALACCOUNT_FORMS"
-  config/` → 0건). 그래서 일반 가입은 `accounts.forms.SignupForm`을 타고
-  `terms_agreed` 필수 체크 + `terms_agreed_at` 기록을 받지만,
-  소셜 가입은 allauth 기본 폼을 타고 **`terms_agreed` 필드가 존재하지 않는다.**
-  `templates/socialaccount/signup.html:44`가 그 폼을 `{{ form.as_p }}`로 렌더한다.
-- 영향: Google 로그인을 켜는 순간 **약관·개인정보처리방침 동의 없이 계정이
-  생성되는 경로가 열린다.** `terms_agreed_at`이 비어 동의 증적도 남지 않는다.
-  동의 기록은 법적 성격이 있어 제품 판단이 필요하다.
-- 현재 노출: **0.** `client_id` 미설정으로 소셜 경로 자체가 도달 불가다
-  (`core/context_processors.py:12-18`). 즉 지금 터진 결함이 아니라
-  **OAuth를 켜기 전에 반드시 닫아야 하는 선행 조건**이다.
+- 해소: `accounts/forms.py`에 `TermsAgreementFormMixin`(필드·오류 메시지·
+  `custom_signup`의 `terms_agreed_at` 기록 공용화)을 신설하고 `SignupForm`·
+  `SocialSignupForm` 둘 다 이를 물려받는다. `config/settings.py`에
+  `SOCIALACCOUNT_FORMS = {"signup": "accounts.forms.SocialSignupForm"}` +
+  `SOCIALACCOUNT_AUTO_SIGNUP = False`를 등록해 신규 소셜 유저가 동의 폼을
+  건너뛰지 못하게 막았다. `templates/socialaccount/signup.html`에 일반
+  가입과 동일한 동의 체크박스 블록을 추가했다(더는 `{{ form.as_p }}` 단독
+  렌더가 아니다). 계약·도메인 테스트 4개(`tests/auth/
+  test_social_signup_terms_agreement.py` 2개, `tests/auth/
+  test_social_login.py`의 `SOCIALACCOUNT_FORMS`/`AUTO_SIGNUP` 가드,
+  `tests/auth/test_auth_rate_limit.py`의 소셜 가입 429 가드)가 회귀를 지킨다.
+  검증: `[실측]` `uv run pytest -q` → **2308 passed**.
+- 트랙 중 발견·즉시 수정: 소셜 가입 엔드포인트(`/accounts/3rdparty/signup/`)에
+  allauth 기본 레이트리밋이 없었다(로컬 가입 뷰와 달리 `rate_limit`
+  데코레이터 미적용). `accounts/views.py`에 `SocialSignupView`(같은 `signup`
+  한도를 거는 서브클래스)를 신설하고 `config/urls.py`에서 allauth include
+  이전에 선등록(`url name`은 `socialaccount_signup` 유지)했다. Red(302)→
+  Green(429) 왕복으로 검증.
+- 활성화 완료(2026-08-26): 사용자가 Google Cloud Console OAuth 클라이언트
+  생성 + Render 환경변수(`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) 설정을
+  마쳤고, 실 OAuth 왕복 수동 검증도 정상 동작을 확인했다(사용자 보고).
+  B2는 코드·운영 모두 종결.
 - 발견 경위: 인증 화면 리스킨(PR #266) 보안 검토 중. 리스킨이 만든 것이
-  아니라 선재 갭이다.
-- 함께 볼 것: 같은 화면이 `_auth_field.html`을 거치지 않아 시각적으로도
-  나머지 11화면과 다르다 — `docs/FE/auth-editorial.md` A11.
+  아니라 선재 갭이었다.
 
 ---
 

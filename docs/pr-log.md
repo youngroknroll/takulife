@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #312부터 #173까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #319부터 #177까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,36 +28,41 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #313 — fix: 미디어 덮어쓰기·캐시 컬링 해소 + 저위험 스윕 (G1·F10·F13·G4·G5)
+### PR #320 — feat: 소셜 가입 약관 동의(B2) + 헤더 인증 버튼 폰트 정렬
 
-**무엇을 바꿨나**: 외부 발견 2건 재검증(둘 다 정확) 후 배포 차단 G1을
-덮어쓰기 축 중심으로 확장 해결 — `upload_to` UUID 콜러블 3필드(+마이그
-레이션 0025, DB no-op), storage OPTIONS `file_overwrite: False`·
-`default_acl: None`(R2 ACL 미지원)·`querystring_auth: True` 명시,
-`CACHES` `MAX_ENTRIES: 10000`(레이트리밋 카운터 컬링 소멸 방지), 런북
-§3 버킷 확인 절차(⑦-2)·⑨·⑩ 보강. 저위험 스윕: F10(`staff_event_edit`
-`select_for_update` 직렬화), G4(탐색 요청 60초/10회 캐시 스로틀 —
-`cache.incr()` 미사용, 마감시각 레코드 패턴), F13(대시보드 표 색 상속
-전환), G5(visit_edit 필수 범례). 사용자 지시로 BIR 발견 동일 패턴
-2건(`sources.css` 위험색 소실·`audit_log.css`)도 백로그 미등재로 같은
-트랙에서 즉시 해소. CLAUDE.md에 "같은 유형·소규모 발견은 트랙 내 즉시
-수정" 상시 규칙 명문화.
+**무엇을 바꿨나**: 소셜 가입 경로에 약관·개인정보처리방침 동의를 강제 —
+`accounts/forms.py`에 `TermsAgreementFormMixin`을 신설해 일반·소셜 가입
+폼이 동의 필드와 `terms_agreed_at` 증적 기록을 공유하고,
+`SOCIALACCOUNT_FORMS` 등록 + `SOCIALACCOUNT_AUTO_SIGNUP=False`(allauth
+기본값 true면 신규 소셜 유저가 가입 폼을 건너뜀)를 계약 테스트로 고정.
+트랙 중 발견한 소셜 가입 엔드포인트 레이트리밋 부재(보안 F1)도 같은
+트랙에서 해소 — `config/urls.py` 선등록 `SocialSignupView`(url name
+`socialaccount_signup` 유지). 프론트는 소셜 가입 화면 `form.as_p`를
+명시적 필드 렌더로 교체(전역 input 규칙이 체크박스를 깨뜨림), 두 가입
+화면 동의 블록 동일화 + 에러 시 aria 연결 추가, 헤더 로그인/회원가입
+버튼을 주 메뉴와 동일한 0.92rem·44px로 통일.
 
-**왜**: 실사용자 배포 전 필수 차단(사용자 간 사진 무단 대체 + 레이트
-리밋 실효성 상실)이었고, 저위험 항목은 사용자 지시("낮은 위험 항목까지
-구현, 작업 증식 지양")로 함께 소진.
+**왜**: 백로그 B2(OAuth 활성화 차단 항목) 해소. Google 로그인을 켜기 전
+동의 없는 가입 경로와 무제한 제출 경로를 함께 닫아야 활성화가 안전하다.
 
-**검증**: `uv run pytest -q` 2294 passed(기준 2288+6) `[실측, 머지
-main 재실행]`, check 0·드리프트 0, TDD 시나리오 5건 Red→Green + 뮤테
-이션 4종 표적 Red, FE 이중 게이트 WED·BIR `Conforms`(F13·G5·F14 확장
-분 각각), 브라우저 실측 라이트·다크 computed color 전부 토큰 일치.
+**검증**: TDD 4 시나리오 전부 기대 사유 Red→Green(레이트리밋은 stash
+왕복으로 실효성 재확인), 전체 회귀 2308 passed `[실측]`, 헤더
+69px==토큰(721~1440px 1줄)·에러 aria·라벨 링크 비토글 브라우저 실측,
+WXD·BIR 이중 리뷰 모두 Conforms. 실 Google OAuth 왕복 1회는 크리덴셜
+설정 후 수동 검증으로 남음(backlog B2 잔여).
 
-**병합**: 2026-08-25, main `4255540`.
+**병합**: 2026-08-26, main `25635af`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #319 — docs: 배포 runbook DB를 Supabase 무료 티어로 전환
+- #317 — docs: PR #315·#316 머지를 로그에 롤링 반영
+- #316 — test: 테스트 시크릿 리터럴 제거 + 스캐너 가드 신설
+- #315 — ci: CI 성공 후 main→production deploy PR 자동 생성
+- #314 — docs: PR #313 머지를 로그에 롤링 반영
+- #313 — fix: 미디어 덮어쓰기·캐시 컬링 해소 + 저위험 스윕 (G1·F10·F13·G4·G5)
 - #312 — docs: PR #310·#311 머지를 로그에 롤링 반영
 - #311 — docs: 백로그 재작성 — 2026-08-24 실측 기준 최적화
 - #310 — docs: PR #307~#309 머지를 로그에 롤링 반영
@@ -193,7 +198,3 @@ main 재실행]`, check 0·드리프트 0, TDD 시나리오 5건 Red→Green + �
 - #179 — feat: Collection track C3 — visit completion orchestration
 - #178 — feat: Collection track C2 — goods boundary enforcement
 - #177 — feat: Collection track C1 — CollectionItem model and invariants
-- #176 — docs: Stage-0 T7/T8 — deploy runbook and event operations criteria
-- #175 — feat: Stage-0 PR-0e — shared cache and analytics events
-- #174 — feat: Stage-0 PR-0d — proxy-aware client IP resolution
-- #173 — ci: Stage-0 PR-0c — GitHub Actions pipeline

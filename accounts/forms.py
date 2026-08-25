@@ -1,5 +1,6 @@
 from allauth.account.forms import AddEmailForm
 from allauth.account.forms import SignupForm as AllauthSignupForm
+from allauth.socialaccount.forms import SignupForm as AllauthSocialSignupForm
 from django import forms
 from django.forms import BooleanField, CharField, PasswordInput
 from django.urls import reverse_lazy
@@ -21,9 +22,9 @@ _TERMS_AGREEMENT_LABEL = mark_safe(
 )
 
 
-class SignupForm(AllauthSignupForm):
-    """allauth 가입 폼에 필수 약관/개인정보처리방침 동의 체크박스를
-    추가한다(settings.ACCOUNT_FORMS로 등록)."""
+class TermsAgreementFormMixin(forms.Form):
+    """이메일 가입/소셜 가입 두 폼이 같은 약관 동의 필드·오류 메시지·기록
+    로직을 쓰도록 공용화한다(규칙 중복 시 두 곳이 어긋나는 것을 막는다)."""
 
     terms_agreed = BooleanField(
         required=True,
@@ -39,6 +40,17 @@ class SignupForm(AllauthSignupForm):
         super().custom_signup(request, user)
         user.terms_agreed_at = timezone.now()
         user.save(update_fields=["terms_agreed_at"])
+
+
+class SignupForm(TermsAgreementFormMixin, AllauthSignupForm):
+    """allauth 가입 폼에 필수 약관/개인정보처리방침 동의 체크박스를
+    추가한다(settings.ACCOUNT_FORMS로 등록)."""
+
+
+class SocialSignupForm(TermsAgreementFormMixin, AllauthSocialSignupForm):
+    """소셜 가입 폼에도 동일한 약관 동의 체크박스와 동의 시각 기록을
+    요구한다(config/settings.py의 settings.SOCIALACCOUNT_FORMS =
+    {"signup": ...}로 등록됨)."""
 
 
 class EmailChangeForm(AddEmailForm):

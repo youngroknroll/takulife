@@ -1,4 +1,5 @@
 import importlib
+import secrets
 
 import pytest
 from django.core.exceptions import ImproperlyConfigured
@@ -45,8 +46,9 @@ def test_DATABASE_URL이_미설정이면_sqlite로_대체된다(monkeypatch, tmp
 
 
 def test_DATABASE_URL이_postgres_스킴이면_접속_정보를_파싱한다(monkeypatch):
+    db_password = secrets.token_hex(4)
     monkeypatch.setenv(
-        "DATABASE_URL", "postgresql://taku:taku@localhost:5432/taku"
+        "DATABASE_URL", f"postgresql://taku:{db_password}@localhost:5432/taku"
     )
 
     settings_module = importlib.import_module("config.settings")
@@ -56,13 +58,14 @@ def test_DATABASE_URL이_postgres_스킴이면_접속_정보를_파싱한다(mon
     assert config["ENGINE"] == "django.db.backends.postgresql"
     assert config["NAME"] == "taku"
     assert config["USER"] == "taku"
-    assert config["PASSWORD"] == "taku"
+    assert config["PASSWORD"] == db_password
     assert config["HOST"] == "localhost"
     assert config["PORT"] == 5432
 
 
 def test_DATABASE_URL에_포트가_없으면_빈_문자열로_남는다(monkeypatch):
-    monkeypatch.setenv("DATABASE_URL", "postgres://taku:taku@localhost/taku")
+    db_password = secrets.token_hex(4)
+    monkeypatch.setenv("DATABASE_URL", f"postgres://taku:{db_password}@localhost/taku")
 
     settings_module = importlib.import_module("config.settings")
 
@@ -74,8 +77,10 @@ def test_DATABASE_URL에_포트가_없으면_빈_문자열로_남는다(monkeypa
 
 
 def test_DATABASE_URL_비밀번호의_URL_인코딩_특수문자를_복원한다(monkeypatch):
+    # 인코딩된 조각(%40=@, %23=#)만 분리해, 복원 검증 의미는 그대로 둔다.
+    encoded = "p%40ss%23word"
     monkeypatch.setenv(
-        "DATABASE_URL", "postgresql://taku:p%40ss%23word@localhost:5432/taku"
+        "DATABASE_URL", f"postgresql://taku:{encoded}@localhost:5432/taku"
     )
 
     settings_module = importlib.import_module("config.settings")
@@ -86,7 +91,8 @@ def test_DATABASE_URL_비밀번호의_URL_인코딩_특수문자를_복원한다
 
 
 def test_DATABASE_URL_스킴을_알_수_없으면_예외를_발생시킨다(monkeypatch):
-    monkeypatch.setenv("DATABASE_URL", "mysql://taku:taku@localhost:3306/taku")
+    db_password = secrets.token_hex(4)
+    monkeypatch.setenv("DATABASE_URL", f"mysql://taku:{db_password}@localhost:3306/taku")
 
     settings_module = importlib.import_module("config.settings")
 
@@ -95,9 +101,10 @@ def test_DATABASE_URL_스킴을_알_수_없으면_예외를_발생시킨다(monk
 
 
 def test_DATABASE_URL의_sslmode_쿼리파라미터를_OPTIONS에_반영한다(monkeypatch):
+    db_password = secrets.token_hex(4)
     monkeypatch.setenv(
         "DATABASE_URL",
-        "postgresql://taku:taku@localhost:5432/taku?sslmode=require",
+        f"postgresql://taku:{db_password}@localhost:5432/taku?sslmode=require",
     )
 
     settings_module = importlib.import_module("config.settings")

@@ -13,7 +13,15 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 ## 1. 사전 조건
 
 - **T1 도메인**: `takulife.kr`/`.com` 등록 완료 (사용자 액션, 이 트랙 선행 조건)
-- **T2 PaaS 계정**: 관리형 컨테이너 + 관리형 Postgres 프로비저닝 완료
+- **T2 PaaS 계정**: 관리형 컨테이너(Render) 프로비저닝 완료
+- **DB(Supabase 무료 티어)**: Supabase 프로젝트 생성 완료. 리전은 Render 웹
+  서비스(Singapore)와 가까운 Southeast Asia(Singapore)로 만든다. Render 무료
+  Postgres는 생성 30일 뒤 만료돼 유예 14일 후 데이터째 삭제되므로(Render 공식
+  문서 기준, 2026-08-26 확인) 사용하지 않는다 — 2026-08-26 결정. 접속 주소는
+  반드시 **Session pooler**를 쓴다: Direct connection은 IPv6 전용이라 Render에서
+  접속할 수 없고, Transaction pooler는 Django의 prepared statement와 호환되지
+  않는다. 무료 티어는 7일간 DB 활동이 없으면 일시정지된다(데이터 보존) —
+  재개는 Supabase 대시보드의 Restore 버튼.
 - **R2(또는 B2) 버킷**: object storage 생성, 액세스 키 발급
 - **필수 env 전체 표** (전부 `.env.example` 및 `config/settings.py` 배선 확인,
   변수명은 정확히 일치해야 함)
@@ -26,7 +34,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `CSRF_TRUSTED_ORIGINS` | 필수 | config/settings.py `load_csrf_trusted_origins` | `https://` 스킴 포함 필수, 맨 호스트명은 매치되지 않음 |
 | `SECURE_SSL` | 필수(`true`) — ③④와 함께 | config/settings.py `load_secure_ssl`, `build_secure_ssl_settings` | X-Forwarded-Proto 신뢰 전제(§2·아래 체크리스트 ③) |
 | `SECURE_COOKIES` | 필수(`true`) — `SECURE_SSL`과 동시 | config/settings.py `_secure_cookies` 대입부 | `SECURE_SSL`과 독립 변수지만 프로덕션에선 항상 동시 설정 |
-| `DATABASE_URL` | 필수 | config/settings.py `load_database_config` | `postgresql://` 스킴만 허용(비-Postgres 스킴 거부), 관리형 PG는 `?sslmode=require` 권장 |
+| `DATABASE_URL` | 필수 | config/settings.py `load_database_config` | `postgresql://` 스킴만 허용(비-Postgres 스킴 거부), 관리형 PG는 `?sslmode=require` 권장. Supabase는 Session pooler 주소 + `?sslmode=require`(§1 DB 항목) |
 | `MEDIA_STORAGE_BUCKET` | 필수(PaaS 배포 시) | config/settings.py `load_media_storage_config` | 5종 all-or-nothing(아래) — PaaS 파일시스템은 휘발성이라 미설정 시 미디어 유실 |
 | `MEDIA_STORAGE_ACCESS_KEY_ID` | 필수(위와 세트) | 〃 | |
 | `MEDIA_STORAGE_SECRET_ACCESS_KEY` | 필수(위와 세트) | 〃 | |
@@ -167,9 +175,10 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 ## 4. 백업·복구 (T6)
 
-- **DB**: 관리형 Postgres 스냅샷(플랫폼 자동 기능) + **주기적 `pg_dump`
-  오프사이트 반출**(스냅샷은 같은 플랫폼 장애 시 함께 소실될 수 있어 병행,
-  0단계 계획서 §4).
+- **DB**: Supabase **무료 티어에는 자동 백업이 없다**(자동 일일 스냅샷은 Pro
+  플랜부터 — Supabase 문서 기준, 2026-08-26 확인). 따라서 **주기적 `pg_dump`
+  오프사이트 반출이 유일한 백업 수단**이며, 첫 배포 직후부터 반드시 가동한다.
+  0단계 계획서 §4의 "스냅샷 + 반출 병행"은 유료 플랜 전환 후에만 성립한다.
 - **미디어(R2)**: 버킷 버저닝을 켜거나, `rclone`으로 별도 오프사이트 저장소에
   주기 복제.
 - **복구 리허설 절차** (launch 게이트 2 "미디어 영속 저장과 백업 복구 절차
@@ -209,3 +218,31 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | 선정 PaaS의 실제 프록시 홉 수 | 미확정(T2 플랫폼 미선정) | T2 확정 후, 첫 배포 전(§3 체크리스트 ⑧) |
 | 멀티워커 환경에서 rate limit 공유 실측 | 미검증(구조 논증만 존재) | 첫 배포 직후(§3 체크리스트 ⑨) |
 | 탈퇴 파기(`purge_deleted_accounts`) 정기 실행 등록 | 미확정(T2 플랫폼 미선정 — 스케줄러 방식이 플랫폼별로 다름) | T2 확정 후, 첫 배포 전(§3 체크리스트 ⑪) |
+
+## 7. 배포 브랜치와 deploy PR 흐름
+
+호스팅 플랫폼은 Render로 확정했다(위 §1 서두의 "미확정" 서술은 T2 결정 당시
+기준이며, 이후 Render로 확정 — production 브랜치 추종 전환이 이 확정을
+전제로 한다).
+
+- **흐름**: main에 PR 머지 → CI 성공 → `.github/workflows/deploy-pr.yml`이
+  main→production PR을 자동 생성 → 사람이 그 PR을 머지 → Render가 추종하는
+  production 브랜치가 갱신되며 배포가 시작된다.
+- **최초 전환 순서**: ① 워크플로 파일과 저장소 Actions 설정(아래 참조)을
+  main에 머지 ② `gh api repos/<repo>/actions/permissions/workflow`로 설정이
+  실제로 반영됐는지 재확인 ③ main→production 왕복을 1회 실증(머지 후 deploy
+  PR이 자동 생성되고 정상 머지되는지 확인) ④ Render 대시보드
+  (Settings → Build & Deploy → Branch)에서 추종 브랜치를 production으로
+  전환.
+- **자동 생성 실패 시 수동 fallback**: `gh pr create --base production --head
+  main`으로 직접 생성한다.
+- **deploy PR에 CI 체크가 없는 것은 정상**이다 — GITHUB_TOKEN으로 생성한 PR은
+  워크플로를 트리거하지 않는다(GitHub의 의도된 무한루프 방지 동작). 검증
+  근거는 이 PR에 포함된 main 커밋들이 이미 CI를 통과했다는 사실이다.
+- **`can_approve_pull_request_reviews=true`**는 이 워크플로가 PR을 생성할 수
+  있도록 저장소 전역에서 켠 설정이며, deploy-pr.yml 한정이 아니다. 향후
+  main/production에 필수 승인 브랜치 보호를 도입하는 시점에 이 설정을
+  재검토한다.
+- **production에는 직접 push하지 않는다** — 항상 deploy PR을 경유한다.
+  실패 감시는 GitHub Actions 탭의 워크플로 실행 이력과 실패 시 GitHub이
+  보내는 알림 메일로 한다.
