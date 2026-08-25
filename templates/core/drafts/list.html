@@ -12,7 +12,9 @@
 새 조회가 아니라 draft_rows에 이미 담긴 값을 페이지당(최대 14행) 전부
 서버에서 미리 렌더링해 두고, JS(queue_shortcuts.js/draft_bulk.js)가 hidden
 속성만 토글해 보여준다 — AJAX 왕복 없이 J/K 이동이 즉시 반응한다.
-전체 검토 화면(/staff/drafts/<id>/)은 그대로 남아 원문 대조·편집을 맡는다.
+행 제목 클릭은 인스펙터가 아니라 전체 검토 화면(/staff/drafts/<id>/)으로 바로
+이동한다(인스펙터 전환은 J/K 전용, 사용자 결정 2026-08-26). 링크에 detail_query를
+붙여야 상세의 「← 큐로」가 같은 탭·검색어·쪽으로 돌아온다.
 {% endcomment %}
 
 {% block content %}
@@ -93,15 +95,15 @@
                   </td>
                   <td class="mono queue-id-cell">{{ row.draft.id }}</td>
                   <td class="queue-title-cell">
-                    <button type="button" class="queue-row-open" data-queue-row-open data-draft-id="{{ row.draft.id }}"
-                            aria-controls="queue-inspector-panel-{{ row.draft.id }}"
-                            {% if forloop.first %}aria-current="true"{% endif %}>
+                    <a class="queue-row-open" data-queue-row-open data-draft-id="{{ row.draft.id }}"
+                       href="/staff/drafts/{{ row.draft.id }}/{{ detail_query }}"
+                       {% if forloop.first %}aria-current="true"{% endif %}>
                       <span class="queue-title">{{ title|default:"(제목 없음)" }}</span>
                       <span class="queue-source mono">{{ row.draft.source_name|default:row.draft.source_url }}</span>
                       {% if not selected_status %}
                         <span class="queue-status-chip review-status-{{ row.draft.review_status }}" data-draft-status-chip>{{ row.draft.review_status|review_status_label }}</span>
                       {% endif %}
-                    </button>
+                    </a>
                   </td>
                   <td class="mono queue-dates-cell">
                     {% if row.draft.extracted_start_date %}{{ row.draft.extracted_start_date|date:"y.m.d" }}{% if row.draft.extracted_end_date %}–{{ row.draft.extracted_end_date|date:"y.m.d" }}{% endif %}{% else %}-{% endif %}
@@ -135,7 +137,6 @@
           {% for row in draft_rows %}
             {% with title=row.draft.extracted_title|default:row.draft.raw_title %}
             <div class="queue-inspector-panel{% if forloop.first %} is-current{% endif %}"
-                 id="queue-inspector-panel-{{ row.draft.id }}"
                  data-inspector-panel data-draft-id="{{ row.draft.id }}"
                  {% if not forloop.first %}hidden{% endif %}>
               <div class="queue-inspector-head">
@@ -148,7 +149,7 @@
                       <button type="button" class="staff-cta staff-cta-danger-outline" data-draft-reject data-draft-id="{{ row.draft.id }}">반려 <span class="mono queue-key-hint">R</span></button>
                     </span>
                   {% endif %}
-                  <a class="staff-cta" data-queue-full-review href="/staff/drafts/{{ row.draft.id }}/{% if selected_status %}?status={{ selected_status }}{% endif %}">전체 검토 화면 ↗</a>
+                  <a class="staff-cta" data-queue-full-review href="/staff/drafts/{{ row.draft.id }}/{{ detail_query }}">전체 검토 화면 ↗</a>
                 </div>
               </div>
 

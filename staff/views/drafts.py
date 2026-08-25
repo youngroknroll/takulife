@@ -116,6 +116,20 @@ def _build_draft_rows(drafts):
     return rows
 
 
+def _queue_return_query(status_value, search_value, page_number):
+    """큐로 돌아올 때 필요한 쿼리스트링. 상태만 넘기면 검색어와 쪽 번호가
+    사라져, 2쪽에서 연 드래프트를 판정하고 1쪽 처음으로 튕긴다."""
+    pairs = []
+    if status_value:
+        pairs.append(("status", status_value))
+    if search_value:
+        pairs.append(("q", search_value))
+    page_text = str(page_number or "")
+    if page_text.isdigit() and int(page_text) > 1:
+        pairs.append(("page", page_text))
+    return "?" + urlencode(pairs) if pairs else ""
+
+
 @staff_console_required
 @ensure_csrf_cookie
 def event_drafts(request):
@@ -135,12 +149,14 @@ def event_drafts(request):
     if search:
         pager_pairs.append(("q", search))
     pager_query = "&" + urlencode(pager_pairs) if pager_pairs else ""
+    detail_query = _queue_return_query(selected_status, search, page_obj.number)
 
     return render(
         request,
         "core/drafts/list.html",
         {
             "draft_rows": draft_rows,
+            "detail_query": detail_query,
             "stats": stats,
             "stats_total": stats_total,
             "page_obj": page_obj,
@@ -155,6 +171,13 @@ def event_drafts(request):
 @staff_console_required
 @ensure_csrf_cookie
 def event_draft_detail(request, draft_id):
+    queue_return_url = "/staff/drafts/" + _queue_return_query(
+        request.GET.get("status", "")
+        if request.GET.get("status", "") in EventDraft.ReviewStatus.values
+        else "",
+        search_term(request),
+        request.GET.get("page", ""),
+    )
     # get_object_or_404 대신 filter().first()를 써서, draft가 없어도
     # 404를 던지지 않고 템플릿이 "찾을 수 없음" 안내를 보여주게 한다.
     draft = EventDraft.objects.filter(pk=draft_id).first()
@@ -166,6 +189,7 @@ def event_draft_detail(request, draft_id):
                 "draft": None,
                 "draft_not_found": True,
                 "draft_id": draft_id,
+                "queue_return_url": queue_return_url,
                 "CATEGORY": CATEGORY,
                 "REGION": REGION,
             },
@@ -181,6 +205,7 @@ def event_draft_detail(request, draft_id):
         {
             "draft": draft,
             "is_pending": is_pending,
+            "queue_return_url": queue_return_url,
             "category_label": category_label,
             "region_label": region_label,
             "CATEGORY": CATEGORY,

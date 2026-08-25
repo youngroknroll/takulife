@@ -16,15 +16,12 @@
 {% block content %}
   <main class="page" id="staff-main">
     {% if draft_not_found %}
-      <p class="notice">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="/staff/drafts/">목록으로 돌아가기</a></p>
+      <p class="notice">드래프트 #{{ draft_id }}를 찾을 수 없습니다. <a href="{{ queue_return_url }}">목록으로 돌아가기</a></p>
     {% else %}
 
     <div class="review-topbar">
-      {% if request.GET.status == "pending" or request.GET.status == "approved" or request.GET.status == "rejected" %}
-        <a class="staff-cta" href="/staff/drafts/?status={{ request.GET.status }}">← 큐로</a>
-      {% else %}
-        <a class="staff-cta" href="/staff/drafts/">← 큐로</a>
-      {% endif %}
+      {# 큐 왕복: 상태·검색어·쪽을 staff.views.drafts가 한 줄로 만들어 넘긴다. #}
+      <a class="staff-cta" href="{{ queue_return_url }}">← 큐로</a>
       <span class="mono review-topbar-id">드래프트 #{{ draft.id }}</span>
       <span class="queue-status-chip review-status-{{ draft.review_status }}">{{ draft.review_status|review_status_label }}</span>
       <span class="mono review-topbar-meta">
@@ -154,7 +151,7 @@
               <textarea class="cin review-textarea" id="draft-reject-reason" placeholder="사유를 입력하세요"></textarea>
             </div>
 
-            <div class="review-judge-actions" data-list-url="{% if request.GET.status == 'pending' or request.GET.status == 'approved' or request.GET.status == 'rejected' %}/staff/drafts/?status={{ request.GET.status }}{% else %}/staff/drafts/{% endif %}">
+            <div class="review-judge-actions" data-list-url="{{ queue_return_url }}">
               <button id="draft-approve-btn" class="staff-cta staff-cta-ok staff-cta-block" type="button" data-draft-id="{{ draft.id }}">승인하고 게시</button>
               <button id="draft-reject-btn" class="staff-cta staff-cta-danger-outline staff-cta-block" type="button" data-draft-id="{{ draft.id }}">반려</button>
             </div>
