@@ -7,8 +7,9 @@ pytestmark = pytest.mark.web
 
 @pytest.mark.django_db
 def test_슈퍼유저는_드래프트_소스_관리자_목록_페이지에_접근할_수_있다(client, django_user_model):
+    # force_login이라 로그인 가능한 비밀번호가 불필요하다.
     superuser = django_user_model.objects.create_superuser(
-        email="admin@example.com", password="Aa1!strongpassword"
+        email="admin@example.com", password=None
     )
     client.force_login(superuser)
 
