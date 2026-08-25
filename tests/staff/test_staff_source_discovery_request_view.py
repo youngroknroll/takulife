@@ -85,3 +85,28 @@ def test_온라인이면_탐색_실행이_생성되고_감사로그가_남는다
 
     log = StaffActionLog.objects.get(action=StaffActionLog.Action.SOURCE_DISCOVER)
     assert log.actor_id == staff.id
+
+
+@pytest.mark.django_db
+def test_사용자당_분당_10회를_초과한_탐색_요청은_거부되고_새_실행이_생성되지_않는다(staff_client):
+    record_heartbeat(provider="claude-code")
+    staff, client = staff_client()
+
+    for _ in range(10):
+        resp = client.post(_request_url(), follow=True)
+        assert resp.status_code == 200
+        # 활성 실행 차단이 스로틀 검증을 가리지 않도록, 방금 만든 실행을
+        # 바로 종료 상태로 돌려 다음 요청이 "활성 실행 있음"이 아니라
+        # 스로틀 자체에 걸리게 한다.
+        run = SourceDiscoveryRun.objects.latest("id")
+        run.status = SourceDiscoveryRun.Status.SUCCEEDED
+        run.save(update_fields=["status"])
+
+    resp = client.post(_request_url(), follow=True)
+
+    assert resp.status_code == 200
+    assert resp.redirect_chain[-1][0] == "/staff/dashboard/"
+    messages = [str(m) for m in resp.context["messages"]]
+    assert messages
+    assert SourceDiscoveryRun.objects.count() == 10
+    assert StaffActionLog.objects.filter(action=StaffActionLog.Action.SOURCE_DISCOVER).count() == 10
