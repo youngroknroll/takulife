@@ -13,7 +13,15 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 ## 1. 사전 조건
 
 - **T1 도메인**: `takulife.kr`/`.com` 등록 완료 (사용자 액션, 이 트랙 선행 조건)
-- **T2 PaaS 계정**: 관리형 컨테이너 + 관리형 Postgres 프로비저닝 완료
+- **T2 PaaS 계정**: 관리형 컨테이너(Render) 프로비저닝 완료
+- **DB(Supabase 무료 티어)**: Supabase 프로젝트 생성 완료. 리전은 Render 웹
+  서비스(Singapore)와 가까운 Southeast Asia(Singapore)로 만든다. Render 무료
+  Postgres는 생성 30일 뒤 만료돼 유예 14일 후 데이터째 삭제되므로(Render 공식
+  문서 기준, 2026-08-26 확인) 사용하지 않는다 — 2026-08-26 결정. 접속 주소는
+  반드시 **Session pooler**를 쓴다: Direct connection은 IPv6 전용이라 Render에서
+  접속할 수 없고, Transaction pooler는 Django의 prepared statement와 호환되지
+  않는다. 무료 티어는 7일간 DB 활동이 없으면 일시정지된다(데이터 보존) —
+  재개는 Supabase 대시보드의 Restore 버튼.
 - **R2(또는 B2) 버킷**: object storage 생성, 액세스 키 발급
 - **필수 env 전체 표** (전부 `.env.example` 및 `config/settings.py` 배선 확인,
   변수명은 정확히 일치해야 함)
@@ -26,7 +34,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `CSRF_TRUSTED_ORIGINS` | 필수 | config/settings.py `load_csrf_trusted_origins` | `https://` 스킴 포함 필수, 맨 호스트명은 매치되지 않음 |
 | `SECURE_SSL` | 필수(`true`) — ③④와 함께 | config/settings.py `load_secure_ssl`, `build_secure_ssl_settings` | X-Forwarded-Proto 신뢰 전제(§2·아래 체크리스트 ③) |
 | `SECURE_COOKIES` | 필수(`true`) — `SECURE_SSL`과 동시 | config/settings.py `_secure_cookies` 대입부 | `SECURE_SSL`과 독립 변수지만 프로덕션에선 항상 동시 설정 |
-| `DATABASE_URL` | 필수 | config/settings.py `load_database_config` | `postgresql://` 스킴만 허용(비-Postgres 스킴 거부), 관리형 PG는 `?sslmode=require` 권장 |
+| `DATABASE_URL` | 필수 | config/settings.py `load_database_config` | `postgresql://` 스킴만 허용(비-Postgres 스킴 거부), 관리형 PG는 `?sslmode=require` 권장. Supabase는 Session pooler 주소 + `?sslmode=require`(§1 DB 항목) |
 | `MEDIA_STORAGE_BUCKET` | 필수(PaaS 배포 시) | config/settings.py `load_media_storage_config` | 5종 all-or-nothing(아래) — PaaS 파일시스템은 휘발성이라 미설정 시 미디어 유실 |
 | `MEDIA_STORAGE_ACCESS_KEY_ID` | 필수(위와 세트) | 〃 | |
 | `MEDIA_STORAGE_SECRET_ACCESS_KEY` | 필수(위와 세트) | 〃 | |
@@ -167,9 +175,10 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 ## 4. 백업·복구 (T6)
 
-- **DB**: 관리형 Postgres 스냅샷(플랫폼 자동 기능) + **주기적 `pg_dump`
-  오프사이트 반출**(스냅샷은 같은 플랫폼 장애 시 함께 소실될 수 있어 병행,
-  0단계 계획서 §4).
+- **DB**: Supabase **무료 티어에는 자동 백업이 없다**(자동 일일 스냅샷은 Pro
+  플랜부터 — Supabase 문서 기준, 2026-08-26 확인). 따라서 **주기적 `pg_dump`
+  오프사이트 반출이 유일한 백업 수단**이며, 첫 배포 직후부터 반드시 가동한다.
+  0단계 계획서 §4의 "스냅샷 + 반출 병행"은 유료 플랜 전환 후에만 성립한다.
 - **미디어(R2)**: 버킷 버저닝을 켜거나, `rclone`으로 별도 오프사이트 저장소에
   주기 복제.
 - **복구 리허설 절차** (launch 게이트 2 "미디어 영속 저장과 백업 복구 절차
