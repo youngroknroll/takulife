@@ -51,7 +51,13 @@
         {% include "core/partials/_auth_field.html" with field=form.password1 label="비밀번호" %}
         {% include "core/partials/_auth_field.html" with field=form.password2 label="비밀번호 확인" %}
         <div class="auth-consent{% if form.terms_agreed.errors %} is-error{% endif %}">
-          {{ form.terms_agreed }}
+          <input
+            type="checkbox"
+            name="terms_agreed"
+            id="id_terms_agreed"
+            {% if form.terms_agreed.value %}checked{% endif %}
+            {% if form.terms_agreed.errors %}aria-describedby="id_terms_agreed-error" aria-invalid="true"{% endif %}
+          >
           <label for="id_terms_agreed">{{ form.terms_agreed.label }}</label>
           {% if form.terms_agreed.errors %}
             <ul class="field-error" id="id_terms_agreed-error">
