@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #310부터 #167까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #312부터 #173까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -60,7 +60,6 @@ main 재실행]`, check 0·드리프트 0, TDD 시나리오 5건 Red→Green + �
 
 - #312 — docs: PR #310·#311 머지를 로그에 롤링 반영
 - #311 — docs: 백로그 재작성 — 2026-08-24 실측 기준 최적화
-
 - #310 — docs: PR #307~#309 머지를 로그에 롤링 반영
 - #309 — fix: 전수 검토 잔여 프론트 3건 반영 (500 헤더 착시·필수 표시 통일·죽은 캐러셀 제거)
 - #308 — fix: 백엔드 잔여 정리 스윕 — 삭제 잠금·부분승격 라벨·EMAIL_PORT·동시 저장 멱등
@@ -198,9 +197,3 @@ main 재실행]`, check 0·드리프트 0, TDD 시나리오 5건 Red→Green + �
 - #175 — feat: Stage-0 PR-0e — shared cache and analytics events
 - #174 — feat: Stage-0 PR-0d — proxy-aware client IP resolution
 - #173 — ci: Stage-0 PR-0c — GitHub Actions pipeline
-- #172 — feat: Stage-0 PR-0b — runtime artifacts (Docker, gunicorn, media storage, health)
-- #171 — feat(config): 0단계 배포 기반 PR-0a — settings 프로덕션 하드닝
-- #170 — fix: 다크모드 4/4 — 대비 전수 감사(1152 조합) + 실결함 4건 보정
-- #169 — feat: 다크모드 3/3 — 페이지별 스윕 + 게이트 수정
-- #168 — feat: 다크모드 2/3 — 공용 컴포넌트 스윕 + 헤더 토글
-- #167 — feat: 다크모드 1/3 — 토큰 다크 매핑 + 테마 인프라
