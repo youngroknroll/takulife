@@ -351,10 +351,14 @@ DATABASES = {"default": load_database_config()}
 # 공유한다. env 게이트 없이 항상 적용해 개발/테스트와 운영이 같은
 # 백엔드를 쓰고 "django_cache" 테이블(core 마이그레이션이 생성)이 항상
 # 실제로 사용되게 한다.
+# allauth 레이트리밋 4종 + DRF 스로틀 8스코프 + 계정 삭제 잠금 카운터가
+# 이 캐시 하나를 공유한다. 기본 MAX_ENTRIES(300)면 컬링(알파벳순 1/3 삭제)이
+# 자주 일어나 살아 있는 카운터가 조기 소멸한다.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "django_cache",
+        "OPTIONS": {"MAX_ENTRIES": 10000},
     }
 }
 

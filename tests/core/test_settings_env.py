@@ -495,6 +495,7 @@ def test_설정_모듈은_DatabaseCache_백엔드를_기본_캐시로_사용한�
     assert settings_module.CACHES["default"] == {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "django_cache",
+        "OPTIONS": {"MAX_ENTRIES": 10000},
     }
 
 
