@@ -28,12 +28,13 @@ staff/queries.py에서 애초에 그 두 필드를 select하지 않아 log_rows
 
     <section class="audit-panel">
       {% if log_rows %}
+        <div class="staff-table-scroll">
         <table class="audit-table">
           <colgroup>
             <col style="width: 8.5rem;">
             <col style="width: 7.5rem;">
             <col style="width: auto;">
-            <col style="width: 11rem;">
+            <col style="width: 14rem;">
           </colgroup>
           <thead>
             <tr>
@@ -54,6 +55,7 @@ staff/queries.py에서 애초에 그 두 필드를 select하지 않아 log_rows
             {% endfor %}
           </tbody>
         </table>
+        </div>
       {% else %}
         {% if search %}
           <p class="audit-empty">「{{ search }}」 검색 결과가 없습니다. <a href="/staff/audit-log/{% if selected_action %}?action={{ selected_action }}{% endif %}">검색 지우기</a></p>
