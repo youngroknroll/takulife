@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #312부터 #173까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #315부터 #173까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,36 +28,36 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #313 — fix: 미디어 덮어쓰기·캐시 컬링 해소 + 저위험 스윕 (G1·F10·F13·G4·G5)
+### PR #316 — test: 테스트 시크릿 리터럴 제거 + 스캐너 가드 신설
 
-**무엇을 바꿨나**: 외부 발견 2건 재검증(둘 다 정확) 후 배포 차단 G1을
-덮어쓰기 축 중심으로 확장 해결 — `upload_to` UUID 콜러블 3필드(+마이그
-레이션 0025, DB no-op), storage OPTIONS `file_overwrite: False`·
-`default_acl: None`(R2 ACL 미지원)·`querystring_auth: True` 명시,
-`CACHES` `MAX_ENTRIES: 10000`(레이트리밋 카운터 컬링 소멸 방지), 런북
-§3 버킷 확인 절차(⑦-2)·⑨·⑩ 보강. 저위험 스윕: F10(`staff_event_edit`
-`select_for_update` 직렬화), G4(탐색 요청 60초/10회 캐시 스로틀 —
-`cache.incr()` 미사용, 마감시각 레코드 패턴), F13(대시보드 표 색 상속
-전환), G5(visit_edit 필수 범례). 사용자 지시로 BIR 발견 동일 패턴
-2건(`sources.css` 위험색 소실·`audit_log.css`)도 백로그 미등재로 같은
-트랙에서 즉시 해소. CLAUDE.md에 "같은 유형·소규모 발견은 트랙 내 즉시
-수정" 상시 규칙 명문화.
+**무엇을 바꿨나**: 테스트 트리 잔존 시크릿 리터럴 6건 제거 —
+`test_settings_env.py` 자격증명 URI 5건은 `secrets.token_hex` +
+f-string 런타임 조립로(단언·시나리오 불변), `test_draft_source_admin.py`
+password kwarg는 force_login 전용이라 `password=None`으로. 재발 차단으로
+`tests/core/test_secret_literal_guard.py` 가드 신설: tests/ 전수 AST
+스캔으로 ①이름에 password 포함(대소문자 무시) kwarg/할당 + 4자 이상
+문자열 상수(URL 경로 값 예외) ②자격증명 포함 URI 상수를 금지. tmp_path
+캐너리 양성 대조·공허 통과 방지 포함. `docs/BE/contract-guards.md`에
+규약 항목 기재.
 
-**왜**: 실사용자 배포 전 필수 차단(사용자 간 사진 무단 대체 + 레이트
-리밋 실효성 상실)이었고, 저위험 항목은 사용자 지시("낮은 위험 항목까지
-구현, 작업 증식 지양")로 함께 소진.
+**왜**: GitGuardian이 테스트 리터럴로 PR 체크를 실패시킨 사례(PR #275)
+재발 방지. 기존 `valid_password` 규약이 조언 산문뿐이라 어겨졌으므로
+가드로 강제. 가드 기준(이름 포함·4자·경로 예외)은 이 PR 1차 푸시가
+GitGuardian에 재탐지되며 실측된 탐지 지형을 그대로 따른 것.
 
-**검증**: `uv run pytest -q` 2294 passed(기준 2288+6) `[실측, 머지
-main 재실행]`, check 0·드리프트 0, TDD 시나리오 5건 Red→Green + 뮤테
-이션 4종 표적 Red, FE 이중 게이트 WED·BIR `Conforms`(F13·G5·F14 확장
-분 각각), 브라우저 실측 라이트·다크 computed color 전부 토큰 일치.
+**검증**: 가드가 수정 전 트리에서 정확히 6건 Red → 수정 후 Green,
+전체 회귀 2304 passed(기준 2294+가드 10) `[실측]`, GitGuardian 포함
+4체크 전부 pass(커밋별 패치를 스캔하므로 히스토리 클린 재작성 후 통과).
 
-**병합**: 2026-08-25, main `4255540`.
+**병합**: 2026-08-26, main `dce50e2`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #315 — ci: CI 성공 후 main→production deploy PR 자동 생성
+- #314 — docs: PR #313 머지를 로그에 롤링 반영
+- #313 — fix: 미디어 덮어쓰기·캐시 컬링 해소 + 저위험 스윕 (G1·F10·F13·G4·G5)
 - #312 — docs: PR #310·#311 머지를 로그에 롤링 반영
 - #311 — docs: 백로그 재작성 — 2026-08-24 실측 기준 최적화
 - #310 — docs: PR #307~#309 머지를 로그에 롤링 반영
