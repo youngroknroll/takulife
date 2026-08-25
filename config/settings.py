@@ -218,6 +218,15 @@ def load_media_storage_config():
             # "auto"는 Cloudflare R2 S3 API의 공식 리전 값이다(R2/B2는
             # AWS 리전 개념이 없음). MEDIA_STORAGE_REGION 미설정 시 무해한 기본값.
             "region_name": _get_env("MEDIA_STORAGE_REGION", "auto"),
+            # 같은 파일명 업로드가 타인 사진을 소리 없이 덮어쓰는 것을
+            # 막는 방어선(파일명 자체는 업로드 경로에서 UUID로 생성).
+            "file_overwrite": False,
+            # R2는 x-amz-acl 헤더를 지원하지 않아 어떤 문자열 값이든
+            # 업로드가 실패한다. None은 헤더를 아예 보내지 않는다는 뜻이고,
+            # 실제 비공개는 버킷 설정이 보증한다(런북 체크리스트).
+            "default_acl": None,
+            # 서명 URL(만료 있음)로만 접근되게 하는 계약을 명시 고정한다.
+            "querystring_auth": True,
         },
     }
 
