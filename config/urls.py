@@ -148,6 +148,14 @@ urlpatterns = [
         accounts_views.account_settings,
         name="account-settings-page",
     ),
+    # allauth 소셜 가입 뷰는 자체 레이트리밋이 없어, 같은 signup 한도를 건
+    # accounts.views.SocialSignupView로 선등록한다(url name은 allauth
+    # 내부 reverse가 참조하므로 socialaccount_signup을 그대로 유지).
+    path(
+        "accounts/3rdparty/signup/",
+        accounts_views.SocialSignupView.as_view(),
+        name="socialaccount_signup",
+    ),
     path("accounts/", include("allauth.urls")),
     path("admin/", admin.site.urls),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),

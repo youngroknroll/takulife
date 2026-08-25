@@ -455,6 +455,12 @@ SOCIALACCOUNT_PROVIDERS = {
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
+# 소셜 가입도 일반 가입과 같은 약관 동의를 강제한다(accounts/forms.py의
+# SocialSignupForm). AUTO_SIGNUP 기본값(true)이면 신규 소셜 유저가 가입
+# 폼을 건너뛰어 동의 없는 계정이 생기므로 반드시 False로 둔다(B2).
+SOCIALACCOUNT_FORMS = {"signup": "accounts.forms.SocialSignupForm"}
+SOCIALACCOUNT_AUTO_SIGNUP = False
+
 # 인증 엔드포인트 속도 제한(무차별 대입·가입 폭주 방어). allauth는 이미
 # 합리적인 기본값을 쓰고 있고 이 dict는 그 기본값 위에 병합된다(allauth:
 # `ret.update(rls)`). 즉 여기 없는 동작은 allauth 기본값을 그대로 쓴다.
