@@ -55,6 +55,8 @@
   border-collapse: collapse;
   table-layout: fixed;
   color: var(--c-text);
+  /* 고정 열 합(30rem) + 대상 최소 25rem. */
+  min-width: 55rem;
 }
 
 .audit-table thead th {

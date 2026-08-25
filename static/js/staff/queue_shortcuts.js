@@ -54,12 +54,17 @@
 
   // Enter는 행에서 눌렀을 때만 가로챈다. 인스펙터의 승인·반려 버튼이나 링크에
   // 포커스가 있으면 그 버튼이 눌려야 한다.
+  function isRowLinkFocused() {
+    var active = document.activeElement;
+    return !!active && !!active.matches && active.matches("[data-queue-row-open]");
+  }
+
   function enterShouldNavigate() {
     var active = document.activeElement;
     if (!active || active === document.body) {
       return true;
     }
-    return active.matches("[data-queue-row-open]");
+    return isRowLinkFocused();
   }
 
   function handleKeydown(evt) {
@@ -115,6 +120,11 @@
       }
       case "Enter": {
         if (!enterShouldNavigate()) {
+          break;
+        }
+        // 행 링크에 포커스가 있으면 그 링크가 목적지다. 여기서 가로채면
+        // Tab으로 옮겨 둔 행이 아니라 J/K가 정한 "현재 행"으로 잘못 이동한다.
+        if (isRowLinkFocused()) {
           break;
         }
         var link = window.TakuQueue.getCurrentFullReviewLink();
