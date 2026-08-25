@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #315부터 #173까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #319부터 #177까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,33 +28,38 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #316 — test: 테스트 시크릿 리터럴 제거 + 스캐너 가드 신설
+### PR #320 — feat: 소셜 가입 약관 동의(B2) + 헤더 인증 버튼 폰트 정렬
 
-**무엇을 바꿨나**: 테스트 트리 잔존 시크릿 리터럴 6건 제거 —
-`test_settings_env.py` 자격증명 URI 5건은 `secrets.token_hex` +
-f-string 런타임 조립로(단언·시나리오 불변), `test_draft_source_admin.py`
-password kwarg는 force_login 전용이라 `password=None`으로. 재발 차단으로
-`tests/core/test_secret_literal_guard.py` 가드 신설: tests/ 전수 AST
-스캔으로 ①이름에 password 포함(대소문자 무시) kwarg/할당 + 4자 이상
-문자열 상수(URL 경로 값 예외) ②자격증명 포함 URI 상수를 금지. tmp_path
-캐너리 양성 대조·공허 통과 방지 포함. `docs/BE/contract-guards.md`에
-규약 항목 기재.
+**무엇을 바꿨나**: 소셜 가입 경로에 약관·개인정보처리방침 동의를 강제 —
+`accounts/forms.py`에 `TermsAgreementFormMixin`을 신설해 일반·소셜 가입
+폼이 동의 필드와 `terms_agreed_at` 증적 기록을 공유하고,
+`SOCIALACCOUNT_FORMS` 등록 + `SOCIALACCOUNT_AUTO_SIGNUP=False`(allauth
+기본값 true면 신규 소셜 유저가 가입 폼을 건너뜀)를 계약 테스트로 고정.
+트랙 중 발견한 소셜 가입 엔드포인트 레이트리밋 부재(보안 F1)도 같은
+트랙에서 해소 — `config/urls.py` 선등록 `SocialSignupView`(url name
+`socialaccount_signup` 유지). 프론트는 소셜 가입 화면 `form.as_p`를
+명시적 필드 렌더로 교체(전역 input 규칙이 체크박스를 깨뜨림), 두 가입
+화면 동의 블록 동일화 + 에러 시 aria 연결 추가, 헤더 로그인/회원가입
+버튼을 주 메뉴와 동일한 0.92rem·44px로 통일.
 
-**왜**: GitGuardian이 테스트 리터럴로 PR 체크를 실패시킨 사례(PR #275)
-재발 방지. 기존 `valid_password` 규약이 조언 산문뿐이라 어겨졌으므로
-가드로 강제. 가드 기준(이름 포함·4자·경로 예외)은 이 PR 1차 푸시가
-GitGuardian에 재탐지되며 실측된 탐지 지형을 그대로 따른 것.
+**왜**: 백로그 B2(OAuth 활성화 차단 항목) 해소. Google 로그인을 켜기 전
+동의 없는 가입 경로와 무제한 제출 경로를 함께 닫아야 활성화가 안전하다.
 
-**검증**: 가드가 수정 전 트리에서 정확히 6건 Red → 수정 후 Green,
-전체 회귀 2304 passed(기준 2294+가드 10) `[실측]`, GitGuardian 포함
-4체크 전부 pass(커밋별 패치를 스캔하므로 히스토리 클린 재작성 후 통과).
+**검증**: TDD 4 시나리오 전부 기대 사유 Red→Green(레이트리밋은 stash
+왕복으로 실효성 재확인), 전체 회귀 2308 passed `[실측]`, 헤더
+69px==토큰(721~1440px 1줄)·에러 aria·라벨 링크 비토글 브라우저 실측,
+WXD·BIR 이중 리뷰 모두 Conforms. 실 Google OAuth 왕복 1회는 크리덴셜
+설정 후 수동 검증으로 남음(backlog B2 잔여).
 
-**병합**: 2026-08-26, main `dce50e2`.
+**병합**: 2026-08-26, main `25635af`.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #319 — docs: 배포 runbook DB를 Supabase 무료 티어로 전환
+- #317 — docs: PR #315·#316 머지를 로그에 롤링 반영
+- #316 — test: 테스트 시크릿 리터럴 제거 + 스캐너 가드 신설
 - #315 — ci: CI 성공 후 main→production deploy PR 자동 생성
 - #314 — docs: PR #313 머지를 로그에 롤링 반영
 - #313 — fix: 미디어 덮어쓰기·캐시 컬링 해소 + 저위험 스윕 (G1·F10·F13·G4·G5)
@@ -193,7 +198,3 @@ GitGuardian에 재탐지되며 실측된 탐지 지형을 그대로 따른 것.
 - #179 — feat: Collection track C3 — visit completion orchestration
 - #178 — feat: Collection track C2 — goods boundary enforcement
 - #177 — feat: Collection track C1 — CollectionItem model and invariants
-- #176 — docs: Stage-0 T7/T8 — deploy runbook and event operations criteria
-- #175 — feat: Stage-0 PR-0e — shared cache and analytics events
-- #174 — feat: Stage-0 PR-0d — proxy-aware client IP resolution
-- #173 — ci: Stage-0 PR-0c — GitHub Actions pipeline
