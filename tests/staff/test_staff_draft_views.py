@@ -24,6 +24,54 @@ class TestEventDraftsListView:
         assert "드래프트 A" in body
         assert "드래프트 B" in body
 
+    def test_드래프트_목록_행_제목은_상세로_가는_링크다(self, staff_client, make_draft):
+        # 태그가 a인지까지 본다 — 클래스만 확인하면 클릭 핸들러 없는 button으로
+        # 되돌아가도 통과해서, 실제로 났던 "클릭 무반응" 결함을 못 잡는다.
+        draft = make_draft("https://example.com/a", extracted_title="드래프트 A")
+
+        _, client = staff_client()
+        body = client.get("/staff/drafts/").content.decode()
+
+        assert re.search(
+            r'<a\s[^>]*class="queue-row-open"[^>]*href="/staff/drafts/%d/"' % draft.id,
+            body,
+        )
+
+    def test_드래프트_목록_행_링크는_상태_검색어_쪽을_그대로_넘긴다(
+        self, staff_client, make_draft
+    ):
+        # 이 쿼리가 빠지면 상세의 「← 큐로」가 1쪽 무필터로 튕긴다.
+        draft = make_draft(
+            "https://example.com/a",
+            extracted_title="드래프트 A",
+            review_status=EventDraft.ReviewStatus.PENDING,
+        )
+
+        _, client = staff_client()
+        body = client.get("/staff/drafts/?status=pending&q=드래프트").content.decode()
+
+        # 인스펙터의 「전체 검토 화면」 링크도 같은 URL을 쓰므로, 행 링크에
+        # 고정해서 본다 — 안 그러면 행 href가 비어도 통과한다.
+        assert re.search(
+            r'<a\s[^>]*class="queue-row-open"[^>]*'
+            r'href="/staff/drafts/%d/\?status=pending&amp;q=%s"'
+            % (draft.id, "%EB%93%9C%EB%9E%98%ED%94%84%ED%8A%B8"),
+            body,
+        )
+
+    def test_드래프트_목록_행_링크는_잘못된_쪽_번호를_버린다(
+        self, staff_client, make_draft
+    ):
+        draft = make_draft("https://example.com/a", extracted_title="드래프트 A")
+
+        _, client = staff_client()
+        body = client.get("/staff/drafts/?page=abc").content.decode()
+
+        assert re.search(
+            r'<a\s[^>]*class="queue-row-open"[^>]*href="/staff/drafts/%d/"' % draft.id,
+            body,
+        )
+
     def test_드래프트_목록_페이지는_상태_라벨_맵을_JSON으로_내려보낸다(self, staff_client, make_draft):
         # JS(draft_bulk.js)가 낙관적 갱신에 쓰는 라벨이 서버 렌더와 갈라지지
         # 않도록, 실제로 내려간 JSON이 REVIEW_STATUS_LABELS 상수와 같은지 본다.
@@ -336,6 +384,33 @@ class TestEventDraftDetailView:
         assert resp.context["is_pending"] is True
         assert resp.context["category_label"] == "팝업스토어"
         assert resp.context["region_label"] == "서울"
+
+    def test_상세의_큐로_링크는_상태_검색어_쪽을_그대로_되돌려준다(
+        self, staff_client, make_draft
+    ):
+        draft = make_draft("https://example.com/c", extracted_title="상세 드래프트")
+
+        _, client = staff_client()
+        body = client.get(
+            f"/staff/drafts/{draft.id}/?status=pending&q=상세&page=2"
+        ).content.decode()
+
+        assert (
+            'href="/staff/drafts/?status=pending&amp;q=%s&amp;page=2"'
+            % "%EC%83%81%EC%84%B8"
+            in body
+        )
+
+    def test_상세의_큐로_링크는_잘못된_상태_값을_버린다(self, staff_client, make_draft):
+        draft = make_draft("https://example.com/c", extracted_title="상세 드래프트")
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/?status=bogus").content.decode()
+
+        # 커맨드바 「새로고침」은 현재 URL을 그대로 되쏘므로 본문 전체에는
+        # bogus가 남는다 — 큐 복귀 링크에만 안 붙었는지 본다.
+        assert 'href="/staff/drafts/"' in body
+        assert 'href="/staff/drafts/?status=bogus"' not in body
 
     def test_존재하지_않는_드래프트_상세는_찾을_수_없음_안내를_보여준다(self, staff_client):
         _, client = staff_client()
