@@ -283,24 +283,27 @@ def test_상태_삭제_API를_호출하면_status_removed_활동_이력이_기�
 
 
 @pytest.mark.django_db
-def test_status_필드_없이_PATCH하면_상태_전환_없이_저장된다(client, make_event, make_user):
+def test_status_필드_없이_PATCH하면_400으로_거부되고_아무것도_기록되지_않는다(client, make_event, make_user):
     user = make_user()
     event = make_event(title="상태 전환")
     status_obj = UserEventStatus.objects.create(
         user=user, event=event, status="planned"
     )
+    before_updated_at = status_obj.updated_at
+    before_activity_count = ActivityLogEntry.objects.count()
 
     client.force_login(user)
-    # status 필드가 없으면 검증된 status는 None이 되어 전환 없이 그냥 저장만 된다.
     resp = client.patch(
         f"/api/user-event-statuses/{status_obj.id}/",
         data={},
         content_type="application/json",
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 400
+    assert "status" in resp.json()
     status_obj.refresh_from_db()
-    assert status_obj.status == "planned"
+    assert status_obj.updated_at == before_updated_at
+    assert ActivityLogEntry.objects.count() == before_activity_count
 
 
 @pytest.mark.django_db

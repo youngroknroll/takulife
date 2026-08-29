@@ -32,6 +32,23 @@ class ResponseTooLargeError(Exception):
     pass
 
 
+def _read_capped_response(response, content_types):
+    """content-type 허용 목록 검사 후 응답 본문을 상한 안에서 누적해 디코딩한다."""
+    content_type = (response.headers.get("content-type") or "").lower()
+    if not any(content_type.startswith(prefix) for prefix in content_types):
+        raise UnsupportedContentTypeError
+
+    chunks = []
+    content_length = 0
+    for chunk in response.iter_bytes():
+        content_length += len(chunk)
+        if content_length > MAX_RESPONSE_BYTES:
+            raise ResponseTooLargeError
+        chunks.append(chunk)
+
+    return b"".join(chunks).decode(response.encoding or "utf-8", errors="replace")
+
+
 def _build_user_agent():
     # 설정을 임포트 시점이 아니라 호출 시점에 읽어야 override_settings가 먹히고,
     # 배포 시 코드 수정 없이 연락처를 바꿀 수 있다.
@@ -97,18 +114,6 @@ def fetch_html(url, *, allowed_content_types=None):
                     except httpx.HTTPStatusError as exc:
                         raise FetchHttpStatusError(exc.response.status_code) from exc
 
-                    content_type = (response.headers.get("content-type") or "").lower()
-                    if not any(content_type.startswith(prefix) for prefix in content_types):
-                        raise UnsupportedContentTypeError
-
-                    chunks = []
-                    content_length = 0
-                    for chunk in response.iter_bytes():
-                        content_length += len(chunk)
-                        if content_length > MAX_RESPONSE_BYTES:
-                            raise ResponseTooLargeError
-                        chunks.append(chunk)
-
-                    return b"".join(chunks).decode(response.encoding or "utf-8", errors="replace")
+                    return _read_capped_response(response, content_types)
     except httpx.HTTPError as exc:
         raise FetchError from exc

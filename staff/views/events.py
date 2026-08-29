@@ -212,6 +212,24 @@ def _event_edit_form_values_from_post(post_data):
     return values
 
 
+def _publish_event_field_errors(exc, *, generic_message):
+    """create/update의 예외 → field_errors 매핑 공통 규칙. 마지막 일반
+    PublishEventError 문구만 호출부(생성/수정)가 각자의 표현으로 정한다."""
+    if isinstance(exc, MissingOfficialUrlError):
+        return {"official_url": "공식 URL을 입력해야 합니다."}
+    if isinstance(exc, PublishEventTitleError):
+        return {"title": "제목을 입력해야 합니다. (공식 URL과 동일할 수 없습니다.)"}
+    if isinstance(exc, DuplicateOfficialUrlError):
+        return {"official_url": "이미 다른 이벤트가 사용 중인 공식 URL입니다."}
+    if isinstance(exc, InvalidEventPeriodError):
+        return {"end_date": "종료일은 시작일 이후여야 합니다."}
+    if isinstance(exc, PublishEventCategoryError):
+        return {"category": "목록에 없는 카테고리입니다. 다시 선택하세요."}
+    if isinstance(exc, PublishEventRegionError):
+        return {"region": "목록에 없는 지역입니다. 다시 선택하세요."}
+    return {"non_field": generic_message}
+
+
 @staff_console_required
 def staff_event_create(request):
     """새 게시 이벤트를 만든다(GET 빈 폼 / POST-PRG).
@@ -244,20 +262,12 @@ def staff_event_create(request):
                         target_event=event,
                     )
                 )
-        except MissingOfficialUrlError:
-            field_errors["official_url"] = "공식 URL을 입력해야 합니다."
-        except PublishEventTitleError:
-            field_errors["title"] = "제목을 입력해야 합니다. (공식 URL과 동일할 수 없습니다.)"
-        except DuplicateOfficialUrlError:
-            field_errors["official_url"] = "이미 다른 이벤트가 사용 중인 공식 URL입니다."
-        except InvalidEventPeriodError:
-            field_errors["end_date"] = "종료일은 시작일 이후여야 합니다."
-        except PublishEventCategoryError:
-            field_errors["category"] = "목록에 없는 카테고리입니다. 다시 선택하세요."
-        except PublishEventRegionError:
-            field_errors["region"] = "목록에 없는 지역입니다. 다시 선택하세요."
-        except PublishEventError:
-            field_errors["non_field"] = "생성 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
+        except (MissingOfficialUrlError, DuplicateOfficialUrlError, PublishEventError) as exc:
+            field_errors.update(
+                _publish_event_field_errors(
+                    exc, generic_message="생성 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
+                )
+            )
 
         if field_errors:
             return render(
@@ -328,20 +338,12 @@ def staff_event_edit(request, pk):
                         target_event=event,
                     )
                 )
-        except MissingOfficialUrlError:
-            field_errors["official_url"] = "공식 URL을 입력해야 합니다."
-        except PublishEventTitleError:
-            field_errors["title"] = "제목을 입력해야 합니다. (공식 URL과 동일할 수 없습니다.)"
-        except DuplicateOfficialUrlError:
-            field_errors["official_url"] = "이미 다른 이벤트가 사용 중인 공식 URL입니다."
-        except InvalidEventPeriodError:
-            field_errors["end_date"] = "종료일은 시작일 이후여야 합니다."
-        except PublishEventCategoryError:
-            field_errors["category"] = "목록에 없는 카테고리입니다. 다시 선택하세요."
-        except PublishEventRegionError:
-            field_errors["region"] = "목록에 없는 지역입니다. 다시 선택하세요."
-        except PublishEventError:
-            field_errors["non_field"] = "저장 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
+        except (MissingOfficialUrlError, DuplicateOfficialUrlError, PublishEventError) as exc:
+            field_errors.update(
+                _publish_event_field_errors(
+                    exc, generic_message="저장 중 오류가 발생했습니다. 잠시 후 다시 시도하세요."
+                )
+            )
 
         if field_errors:
             return render(

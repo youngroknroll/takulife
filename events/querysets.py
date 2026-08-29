@@ -86,42 +86,37 @@ class EventQuerySet(models.QuerySet):
             .order_for_public_listing(today=today)[:limit]
         )
 
-    def order_for_public_listing(self, *, today, sort=None):
-        """게시 이벤트를 공개 목록 순서로 정렬한다. sort 미지정 시 진행중/예정/종료 순위로 정렬한다."""
-        if sort == "closing_soon":
-            # 아직 종료 안 된 이벤트(종료일 없음 또는 오늘 이후)를 종료 임박순으로 먼저,
-            # 이미 종료된 이벤트는 뒤로 밀어 최근 종료순으로 배치한다.
-            return self.annotate(
-                _closing_rank=Case(
-                    When(
-                        models.Q(end_date__isnull=True) | models.Q(end_date__gte=today),
-                        then=Value(0),
-                    ),
-                    default=Value(1),
-                    output_field=IntegerField(),
+    def _ordered_by_closing_soon(self, *, today):
+        # 아직 종료 안 된 이벤트(종료일 없음 또는 오늘 이후)를 종료 임박순으로 먼저,
+        # 이미 종료된 이벤트는 뒤로 밀어 최근 종료순으로 배치한다.
+        return self.annotate(
+            _closing_rank=Case(
+                When(
+                    models.Q(end_date__isnull=True) | models.Q(end_date__gte=today),
+                    then=Value(0),
                 ),
-                _closing_active_sort=Case(
-                    When(
-                        models.Q(end_date__isnull=True) | models.Q(end_date__gte=today),
-                        then=F("end_date"),
-                    ),
-                    output_field=DateField(),
+                default=Value(1),
+                output_field=IntegerField(),
+            ),
+            _closing_active_sort=Case(
+                When(
+                    models.Q(end_date__isnull=True) | models.Q(end_date__gte=today),
+                    then=F("end_date"),
                 ),
-                _closing_ended_sort=Case(
-                    When(end_date__lt=today, then=F("end_date")),
-                    output_field=DateField(),
-                ),
-            ).order_by(
-                "_closing_rank",
-                F("_closing_active_sort").asc(nulls_last=True),
-                F("_closing_ended_sort").desc(),
-                "id",
-            )
-        if sort == "start_asc":
-            return self.order_by("start_date", "id")
-        if sort == "newest":
-            return self.order_by("-id")
+                output_field=DateField(),
+            ),
+            _closing_ended_sort=Case(
+                When(end_date__lt=today, then=F("end_date")),
+                output_field=DateField(),
+            ),
+        ).order_by(
+            "_closing_rank",
+            F("_closing_active_sort").asc(nulls_last=True),
+            F("_closing_ended_sort").desc(),
+            "id",
+        )
 
+    def _ordered_by_default_state(self, *, today):
         return self.annotate(
             _state_rank=Case(
                 When(start_date__lte=today, end_date__gte=today, then=Value(0)),
@@ -149,3 +144,14 @@ class EventQuerySet(models.QuerySet):
             F("_ended_sort").desc(),
             "id",
         )
+
+    def order_for_public_listing(self, *, today, sort=None):
+        """게시 이벤트를 공개 목록 순서로 정렬한다. sort 미지정 시 진행중/예정/종료 순위로 정렬한다."""
+        if sort == "closing_soon":
+            return self._ordered_by_closing_soon(today=today)
+        if sort == "start_asc":
+            return self.order_by("start_date", "id")
+        if sort == "newest":
+            return self.order_by("-id")
+
+        return self._ordered_by_default_state(today=today)
