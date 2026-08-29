@@ -38,19 +38,20 @@ and must never be reported as an accident or recreated on a guess. Never leave a
 rule, an approved decision, or a live backlog here alone — promote it to `docs/`.
 
 - Current backlog and next-action index: `docs/backlog.md`
-- Product direction: `.docs/proposal/2026-07-13-takulife-product-direction-redefinition.html`
+- Product direction: the Binding Product Decisions section in `CLAUDE.md`
 - Backend plans and technical records: `.docs/BE/`
 - Database, schema, and migration records: `.docs/DB/`
 - Frontend plans and technical records: `.docs/FE/`
-- Historical archive, read-only: `.docs/plans/`, `.docs/refactoring/`
 
 New plans and technical records go under `BE/`, `DB/`, or `FE/` by owning area.
 The same three names exist under both trees and the choice between them is what
 the document does, not what it is about: a draft, a scratch measurement, or a
 note only this week needs goes to `.docs/`; a record that states a guardrail a
 later worker could break goes to `docs/`, because that is the tree that survives.
-Do not add new files to `.docs/plans/` or `.docs/refactoring/`; those hold prior
-work and are kept for background only.
+The legacy history trees (`.docs/plans/`, `.docs/refactoring/`, `.docs/erd/`,
+`.docs/proposal/`, `.docs/reviews/`) were deleted in the 2026-08-29 docs
+cleanup; per-file summaries live in `.docs/archive-2026-08-29.md`. Do not
+recreate those trees.
 
 ### Reference Loading Order
 
@@ -61,9 +62,10 @@ Read only the smallest set that owns the task:
    runbook only for deployment, operations, or event-operations work.
 3. Read the active area plan or technical record in `.docs/BE/`, `.docs/DB/`,
    or `.docs/FE/` only when it exists and directly covers the workstream.
-4. Read `.docs/plans/` or `.docs/refactoring/` only to understand history.
-   They never override this guide or provide a current command, test boundary,
-   approval requirement, or acceptance criterion.
+4. For history, read `.docs/archive-2026-08-29.md` (summaries of the deleted
+   legacy plan/work-log trees). It never overrides this guide or provides a
+   current command, test boundary, approval requirement, or acceptance
+   criterion.
 
 Do not load every document by default. A missing local note is normal; verify
 the current code and this guide instead of recreating it or inferring a rule.
