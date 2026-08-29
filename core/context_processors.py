@@ -1,5 +1,23 @@
 from django.conf import settings
 
+# 공개 3페이지(홈/행사 목록/행사 상세)가 실제로 쓰는 유니코드 범위의 교집합
+# 청크 13개 — 임의 확장 금지. docs/FE/font-delivery.md F5 참고.
+FONT_PRELOAD_CHUNKS = (
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.78.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.79.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.81.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.82.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.83.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.84.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.85.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.86.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.87.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.88.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.89.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.90.woff2",
+    "fonts/pretendard/woff2-dynamic-subset/PretendardVariable.subset.91.woff2",
+)
+
 
 def project_name(request):
     """모든 템플릿 컨텍스트에 제품 이름을 넣는다.
@@ -34,3 +52,15 @@ def email_delivery_enabled(request):
             "console.EmailBackend"
         )
     }
+
+
+def shell_css_bundled(request):
+    """운영에서만 셸 CSS를 병합해 쓰도록, 템플릿이 DEBUG를 직접 보지 않고
+    이 플래그만 보면 되게 한다.
+    """
+    return {"shell_css_bundled": not settings.DEBUG}
+
+
+def font_preload_chunks(request):
+    """상수를 그대로 노출해 템플릿이 for 루프로 preload 링크를 반복 렌더하게 한다."""
+    return {"font_preload_chunks": FONT_PRELOAD_CHUNKS}

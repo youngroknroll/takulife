@@ -9,9 +9,12 @@
 
 Pretendard v1.3.9 공식 dynamic-subset을 자체 호스팅한다.
 `static/fonts/pretendard/`에 폰트 CSS 1개 + woff2 청크 92개가 있고, 청크는
-`unicode-range`로 지연 로드된다. 두 셸(`templates/base.html`,
-`templates/staff/base_staff.html`) 모두 tokens → 폰트 CSS → base 순으로
-같은 파일을 로드한다.
+`unicode-range`로 지연 로드된다. 스태프 셸(`templates/staff/base_staff.html`)은
+tokens → 폰트 CSS → base 순으로 그대로다. 공개 셸(`templates/base.html`)은
+트랙 14(셸 CSS 번들, `docs/FE/css-delivery.md`)에서 폰트 CSS 링크가 셸
+스타일 분기(`{% if shell_css_bundled %}...{% endif %}`) **뒤**로 이동했다 —
+폰트 CSS는 `@font-face`만 담아 다른 셀렉터를 참조하지 않으므로 로드 순서가
+바뀌어도 적용 결과는 무관하다`[코드]`.
 
 `[실측]` 첫 방문 전송량 343,780B / 13청크(실제 쓰이는 문자 범위만). 종전
 단일 woff2 방식은 2,057,688B 전량 전송이었다.
@@ -49,6 +52,25 @@ whitenoise 매니페스트가 해시를 붙여 재작성한다. 경로를 절대
 `crossorigin` 속성이 필수다(same-origin이어도 스펙상 요구됨). 빠뜨리면
 브라우저가 캐시를 공유하지 못해 같은 리소스를 이중 요청한다.
 
+## F5 공개 셸 preload 13청크 — 3페이지 교집합, 임의 확장 금지
+
+공개 셸(`templates/base.html`)이 preload하는 청크 목록의 정본은
+`core/context_processors.py`의 `FONT_PRELOAD_CHUNKS` 상수이며, 템플릿은
+이 상수를 `{% for %}` 루프로 반복해 `<link rel="preload">`를 렌더한다.
+현재 subset.78·79·81~91 총 13개다`[실측 2026-08-29]`. 이 목록은 공개
+3페이지(홈/행사 목록/행사 상세)가 실제로 쓰는 유니코드 범위의
+**교집합**이며, 행사 상세에서만 쓰이는 subset.70은 의도적으로 제외했다 —
+상세 전용 문자를 모든 페이지에서 preload하면 홈·목록에서는 쓰이지 않는
+청크를 매번 선제 다운로드하게 된다. F4의 `crossorigin`·`as="font"`·
+`type="font/woff2"` 3속성은 이 상수를 렌더하는 템플릿 루프 안에서 13개
+각각에 그대로 적용해야 한다.
+
+**가드레일**: 목록 갱신은 `FONT_PRELOAD_CHUNKS` 상수 한 곳만 고치면
+된다(템플릿은 손댈 필요 없음). 페이지 문자 구성이 크게 바뀌면(새 언어
+추가, 대량 텍스트 개편 등) 교집합을 다시 측정하고 이 상수를 갱신해야
+한다. 브라우저 콘솔에 "The resource ... was preloaded but not used"
+경고가 뜨면 목록이 낡았다는 신호다.
+
 ## 이월
 
 - 데스크탑 콜드 로드 CLS 0.02(`[실측]`)는 `font-display: swap`의 리플로
@@ -60,3 +82,9 @@ whitenoise 매니페스트가 해시를 붙여 재작성한다. 경로를 절대
 
 전체 회귀 2311 passed. 스태프 콘솔에서 폰트 청크 13/13 요청이 200으로
 응답함을 네트워크 패널로 확인(`[실측]`).
+
+트랙 14(셸 CSS 번들 + F5 preload 목록 확정) 이후 재측정: 모바일(Slow 4G ·
+CPU 4x 스로틀) 콜드 로드 FCP·LCP 중앙값이 3,100ms → 2,672ms(3회 측정
+`[실측 2026-08-29]`)로, 종속 요청 체인 중 가장 긴 체인이 1,192ms → 638ms로
+줄었다. woff2 청크가 CSS를 거치지 않고 문서에서 직접 `<link rel="preload">`로
+로드되도록 체인 한 단계가 줄어든 결과다.

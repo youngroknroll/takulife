@@ -6,6 +6,8 @@ if [ "${RUN_DB_MIGRATIONS:-true}" = "true" ]; then
 else
     echo "RUN_DB_MIGRATIONS=false — skipping migrate (run it once via the PaaS release phase instead)"
 fi
+# collectstatic이 매니페스트에 담기 전에 셸 CSS 번들을 먼저 만들어 둔다.
+python manage.py bundle_shell_css --output static/css/dist/shell.css
 python manage.py collectstatic --noinput
 
 exec gunicorn config.wsgi:application \

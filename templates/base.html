@@ -31,8 +31,16 @@
   <meta property="og:title" content="{% block og_title %}takulife{% endblock %}">
   <meta property="og:description" content="팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.">
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  {# 공개 3페이지(홈·이벤트 목록·상세) 교집합 청크만 preload한다 — 목록 정본은 core.context_processors.FONT_PRELOAD_CHUNKS. #}
+  {% for chunk in font_preload_chunks %}
+  <link rel="preload" as="font" type="font/woff2" href="{% static chunk %}" crossorigin>
+  {% endfor %}
+  {# 셸 스타일 16개는 배포 시 shell.css 하나로 병합돼 렌더 차단 요청을 줄인다. #}
+  {# 폰트 CSS는 @font-face 선언만 담아 순서 무관이라 분기 밖에 그대로 둔다. #}
+  {% if shell_css_bundled %}
+  <link rel="stylesheet" href="{% static 'css/dist/shell.css' %}">
+  {% else %}
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-  <link rel="stylesheet" href="{% static 'fonts/pretendard/pretendardvariable-dynamic-subset.css' %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" href="{% static 'css/objects/interaction.css' %}">
   <link rel="stylesheet" href="{% static 'css/objects/layout.css' %}">
@@ -48,6 +56,8 @@
   <link rel="stylesheet" href="{% static 'css/components/modal.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/confirm-modal.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/toast.css' %}">
+  {% endif %}
+  <link rel="stylesheet" href="{% static 'fonts/pretendard/pretendardvariable-dynamic-subset.css' %}">
   {% block shell_css %}{% endblock %}{% block extra_css %}{% endblock %}
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
