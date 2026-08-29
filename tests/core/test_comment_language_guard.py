@@ -17,7 +17,8 @@ git 호출이 실패하거나 대상이 0개면 `subprocess.run(..., check=True)
 빈 목록 assert로 시끄럽게 실패시킨다 — 스캔 대상 0개를 조용히 통과시키면
 가드가 죽은 채로 방치된다.
 
-대상 확장자: `.py .css .js .html`. `migrations/`는 역사적 스냅샷이라 제외.
+대상 확장자: `.py .css .js .html`. `migrations/`는 역사적 스냅샷이라, `static/fonts/`는
+벤더 폰트 배포 산출물이며 라이선스 고지 유지 의무가 있어 각각 제외.
 
 주석·독스트링 추출 방식:
 - `.py`: `tokenize`로 `#` 주석을, `ast`로 모듈·클래스·함수의 첫 문장이
@@ -161,7 +162,7 @@ def _is_violation_line(text):
 
 
 def _iter_scanned_files(root):
-    """`git ls-files`로 추적 파일 목록을 얻어 확장자 필터링 + migrations/ 제외만 적용한다."""
+    """`git ls-files`로 추적 파일 목록을 얻어 확장자 필터링 + migrations/, static/fonts/ 제외만 적용한다."""
     result = subprocess.run(
         ["git", "-C", str(root), "ls-files"],
         capture_output=True,
@@ -176,6 +177,9 @@ def _iter_scanned_files(root):
         for rel_path in tracked_paths
         if rel_path.endswith(SCANNED_EXTENSIONS)
         and "/migrations/" not in rel_path
+        # 벤더 폰트 배포 산출물이며 OFL 라이선스 고지는 유지 의무라 사람
+        # 주석 가드 대상이 아니다.
+        and "static/fonts/" not in rel_path
         and (root / rel_path).is_file()
     ]
     assert files, "git ls-files 스캔 대상이 0개다 — 가드가 죽은 채로 통과하면 안 된다"
