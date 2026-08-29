@@ -18,19 +18,6 @@
  * 확정한 1024px 값을 쓴다.
  */
 
-/* ── web font: Pretendard (self-hosted) ──────────────────────
- * Pretendard Variable, SIL Open Font License 1.1(재배포 허용) —
- * static/fonts/PretendardVariable.woff2로 직접 서빙해 외부 CDN 요청과
- * 추가 라이선스 비용이 없다.
- */
-@font-face {
-  font-family: "Pretendard";
-  src: url("../fonts/PretendardVariable.woff2") format("woff2-variations");
-  font-weight: 45 920;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* ── reset ─────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;

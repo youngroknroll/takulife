@@ -1,7 +1,8 @@
 # Deploy Runbook
 
-takulife 프로덕션 배포 절차. `.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md`(이하
-"0단계 계획서") §3~§8 결정과 PR-0a~0e를 코드로 확인하며 작성. 운영 중 장애
+takulife 프로덕션 배포 절차. 2026-07-14 0단계 배포 기반 계획서(이하
+"0단계 계획서" — 원문서는 2026-08-29 문서 정리로 삭제, 요약은
+`.docs/archive-2026-08-29.md`) §3~§8 결정과 PR-0a~0e를 코드로 확인하며 작성. 운영 중 장애
 대응·잠금 해제 등 일상 운영 절차는 중복 기술하지 않고
 `docs/operations-runbook.md`를 참조한다.
 
@@ -73,7 +74,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 ## 3. 필수 pre-launch 체크리스트 (0단계 계획서 T7 행, PR-0a/0b/0d/0e 게이트 승계)
 
-첫 트래픽을 받기 **전** 반드시 아래 13개 항목을 순서대로 확인한다. 하나라도
+첫 트래픽을 받기 **전** 반드시 아래 14개 항목을 순서대로 확인한다. 하나라도
 미확인 상태로 첫 배포를 진행하지 않는다.
 
 1. **DEBUG 독립 확인**: `DEBUG=false`가 다른 env 설정과 무관하게 실제로
@@ -172,6 +173,13 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     후 `/api/docs/`를 브라우저로 열어 Swagger UI 렌더와 sidecar 정적 자산
     (`swagger-ui-bundle.js` 등) 200 응답을 확인한다. `collectstatic` 성공은
     참조 파일의 존재만 보장하고 실서빙 내용까지 보장하지 않는다.
+14. **정적 자산 브로틀리 프록시 전달 확인**: 첫 배포 후
+    `curl -H "Accept-Encoding: br" -I "https://<host>/static/css/<해시>.css"`로
+    Render 프록시가 `br`을 전달해 `Content-Encoding: br`이 오는지 확인하고
+    결과를 이 문서에 기록한다(트랙 13-C에서 brotli 사전압축으로 `.br` 파일
+    488개를 생성해뒀지만, 2026-08-29 시점 Render의 `Accept-Encoding` 전달
+    여부는 미검증). `br`이 오지 않고 `gzip`만 와도 장애는 아니다 — whitenoise가
+    가진 것 중 최선을 고르므로 무해하게 무용할 뿐이다.
 
 ## 4. 백업·복구 (T6)
 
