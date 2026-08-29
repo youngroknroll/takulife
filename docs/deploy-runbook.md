@@ -63,8 +63,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
      `RUN_DB_MIGRATIONS=false`를 설정해 동시 DDL 충돌을 피하고, 대신 PaaS의
      release-phase(배포 전 1회 실행되는 훅, 플랫폼별 명칭 상이)에서
      `uv run python manage.py migrate` 를 한 번만 실행한다.
-4. **collectstatic**: entrypoint가 migrate 직후 `manage.py collectstatic --noinput`을
-   자동 실행(docker/entrypoint.sh:11) — 별도 수동 절차 불필요.
+4. **collectstatic**: entrypoint가 migrate 직후 `manage.py bundle_shell_css --output
+   static/css/dist/shell.css`(셸 CSS 16개 병합, 트랙 14)를 실행하고 이어서
+   `manage.py collectstatic --noinput`을 자동 실행(docker/entrypoint.sh:9-11) —
+   별도 수동 절차 불필요. `set -e`라 번들 실패는 기동을 그대로 중단시킨다
+   (`docs/FE/css-delivery.md` C2·C3 참고).
 5. **헬스체크 연결**: `/api/health/`(`core/urls.py`, `core/views.py`의 `health()`)는
    무인증 200을 반환하되 **`connection.ensure_connection()`으로 DB 접속을
    확인**하고, 실패 시 503을 반환한다. PaaS의 **liveness**(실패 시 컨테이너

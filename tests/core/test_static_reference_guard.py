@@ -11,6 +11,9 @@ import pytest
 from django.conf import settings
 from django.contrib.staticfiles import finders
 
+from core.context_processors import FONT_PRELOAD_CHUNKS
+from core.management.commands.bundle_shell_css import BUNDLE_RELATIVE_PATH
+
 pytestmark = pytest.mark.unit
 
 # {% static 'a/b.css' %} 형태의 리터럴만 본다. 변수로 조립한 경로는 정적으로 알 수 없다.
@@ -36,6 +39,8 @@ def test_템플릿이_참조하는_정적_파일은_모두_존재한다():
         text = template.read_text(encoding="utf-8")
         for match in STATIC_LITERAL.finditer(text):
             ref = match.group("path")
+            if ref == BUNDLE_RELATIVE_PATH:
+                continue  # 배포 시점(entrypoint)에 bundle_shell_css가 생성 — docs/FE/css-delivery.md 가드레일
             if finders.find(ref) is None:
                 rel = template.relative_to(settings.BASE_DIR)
                 missing.append(f"{rel}: {ref}")
@@ -53,3 +58,9 @@ def test_가드가_실제로_찾을_수_있는_경로를_검사하고_있다():
 
     assert len(refs) > 20, len(refs)
     assert finders.find(refs[0]) is not None
+
+
+def test_폰트_preload_상수의_경로가_모두_정적_파일로_존재한다():
+    missing = [chunk for chunk in FONT_PRELOAD_CHUNKS if finders.find(chunk) is None]
+
+    assert missing == [], missing
