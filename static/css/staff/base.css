@@ -7,19 +7,6 @@
  * 픽셀 값만 px를 쓴다.
  */
 
-/* ── web font: Pretendard (self-hosted) ─────────────────────────
- * 시안은 jsdelivr CDN 링크를 썼지만 그건 데모 산출물이다. 저장소가 이미
- * 자체 호스팅 중인 폰트 파일을 그대로 재사용한다(static/base.css:26-32와
- * 동일한 @font-face — 별도 라이선스 문제 없음).
- */
-@font-face {
-  font-family: "Pretendard";
-  src: url("../../fonts/PretendardVariable.woff2") format("woff2-variations");
-  font-weight: 45 920;
-  font-style: normal;
-  font-display: swap;
-}
-
 * {
   box-sizing: border-box;
 }
