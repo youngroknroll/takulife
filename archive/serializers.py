@@ -125,6 +125,13 @@ class UserEventStatusUpdateSerializer(serializers.ModelSerializer):
         fields = ["id", "event", "personal_entry", "status"]
         read_only_fields = ["id", "event", "personal_entry"]
 
+    def validate(self, attrs):
+        # status는 read_only가 아니지만 부분 PATCH라 required=True만으로는
+        # 누락을 걸러낼 수 없다(부분 업데이트는 필드별 required를 건너뛴다).
+        if "status" not in attrs:
+            raise serializers.ValidationError({"status": "상태를 지정해야 합니다."})
+        return attrs
+
 
 class UserEventStatusQuerySerializer(serializers.Serializer):
     event = serializers.IntegerField(required=False)
