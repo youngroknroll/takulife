@@ -318,6 +318,19 @@ def remove_user_event_status(*, user_event_status):
         )
 
 
+def _validate_collection_item_quantities(quantity, tradeable_quantity):
+    """quantity >= 0, 0 <= tradeable_quantity <= quantity 불변식을 검사한다."""
+    errors = {}
+    if quantity < 0:
+        errors["quantity"] = "quantity는 0 이상이어야 합니다."
+    if tradeable_quantity < 0:
+        errors["tradeable_quantity"] = "tradeable_quantity는 0 이상이어야 합니다."
+    elif tradeable_quantity > quantity:
+        errors["tradeable_quantity"] = "tradeable_quantity는 quantity 이하여야 합니다."
+    if errors:
+        raise ValidationError(errors)
+
+
 def create_collection_item(*, user, name, visit_record=None, event=None, client_token=None, **fields):
     """사용자 소유의 굿즈 컬렉션 항목을 생성한다.
 
@@ -346,15 +359,7 @@ def create_collection_item(*, user, name, visit_record=None, event=None, client_
     tradeable_quantity = fields.get(
         "tradeable_quantity", CollectionItem._meta.get_field("tradeable_quantity").default
     )
-    errors = {}
-    if quantity < 0:
-        errors["quantity"] = "quantity는 0 이상이어야 합니다."
-    if tradeable_quantity < 0:
-        errors["tradeable_quantity"] = "tradeable_quantity는 0 이상이어야 합니다."
-    elif tradeable_quantity > quantity:
-        errors["tradeable_quantity"] = "tradeable_quantity는 quantity 이하여야 합니다."
-    if errors:
-        raise ValidationError(errors)
+    _validate_collection_item_quantities(quantity, tradeable_quantity)
 
     if visit_record is not None:
         if visit_record.user_id != user.id:
@@ -462,15 +467,7 @@ def update_collection_item(*, item, **fields):
 
         quantity = fields.get("quantity", item.quantity)
         tradeable_quantity = fields.get("tradeable_quantity", item.tradeable_quantity)
-        errors = {}
-        if quantity < 0:
-            errors["quantity"] = "quantity는 0 이상이어야 합니다."
-        if tradeable_quantity < 0:
-            errors["tradeable_quantity"] = "tradeable_quantity는 0 이상이어야 합니다."
-        elif tradeable_quantity > quantity:
-            errors["tradeable_quantity"] = "tradeable_quantity는 quantity 이하여야 합니다."
-        if errors:
-            raise ValidationError(errors)
+        _validate_collection_item_quantities(quantity, tradeable_quantity)
 
         if "visit_record" in fields:
             visit_record = fields["visit_record"]
