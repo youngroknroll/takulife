@@ -1,7 +1,8 @@
 # Deploy Runbook
 
-takulife 프로덕션 배포 절차. `.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md`(이하
-"0단계 계획서") §3~§8 결정과 PR-0a~0e를 코드로 확인하며 작성. 운영 중 장애
+takulife 프로덕션 배포 절차. 2026-07-14 0단계 배포 기반 계획서(이하
+"0단계 계획서" — 원문서는 2026-08-29 문서 정리로 삭제, 요약은
+`.docs/archive-2026-08-29.md`) §3~§8 결정과 PR-0a~0e를 코드로 확인하며 작성. 운영 중 장애
 대응·잠금 해제 등 일상 운영 절차는 중복 기술하지 않고
 `docs/operations-runbook.md`를 참조한다.
 
