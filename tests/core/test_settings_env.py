@@ -269,13 +269,13 @@ def test_DEBUG_모드에서는_일반_정적파일_스토리지를_사용한다(
     )
 
 
-def test_whitenoise_미들웨어는_SecurityMiddleware_바로_다음에_등록된다():
+def test_whitenoise_미들웨어는_GZip_미들웨어_바로_다음에_등록된다():
     settings_module = importlib.import_module("config.settings")
 
     middleware = settings_module.MIDDLEWARE
-    security_index = middleware.index("django.middleware.security.SecurityMiddleware")
+    gzip_index = middleware.index("django.middleware.gzip.GZipMiddleware")
 
-    assert middleware[security_index + 1] == "whitenoise.middleware.WhiteNoiseMiddleware"
+    assert middleware[gzip_index + 1] == "whitenoise.middleware.WhiteNoiseMiddleware"
 
 
 def test_설정_모듈은_콘솔_로깅_핸들러를_정의한다():
