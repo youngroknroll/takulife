@@ -7,7 +7,9 @@ SOCIALACCOUNT_PROVIDERS 참고) — client_id가 비어 있으면 인증 페이�
 import pytest
 
 from core.context_processors import (
+    FONT_PRELOAD_CHUNKS,
     email_delivery_enabled,
+    font_preload_chunks,
     google_oauth_configured,
     shell_css_bundled,
     support_email,
@@ -78,3 +80,7 @@ def test_DEBUG가_켜지면_shell_css_bundled가_거짓을_반환한다(settings
     settings.DEBUG = True
 
     assert shell_css_bundled(None) == {"shell_css_bundled": False}
+
+
+def test_font_preload_chunks는_상수를_그대로_컨텍스트에_노출한다():
+    assert font_preload_chunks(None) == {"font_preload_chunks": FONT_PRELOAD_CHUNKS}
