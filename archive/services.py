@@ -611,6 +611,38 @@ def create_visit_record(
     return record
 
 
+def _ensure_visited_status(*, user, event, personal_entry, existing):
+    """VISITED 상태 행을 경쟁 삽입 1회 재시도로 보장한다. 새 atomic을 열지
+    않으므로 반드시 호출부의 atomic 블록 안에서 실행해야 한다."""
+    # 동시 완료 요청을 직렬화해 planned 이중 전환과 활동·분석 중복을 막는다.
+    status_row = existing.select_for_update().first()
+
+    if status_row is None:
+        try:
+            create_user_event_status(
+                user=user,
+                event=event,
+                personal_entry=personal_entry,
+                status=UserEventStatus.Status.VISITED,
+            )
+        except DuplicateUserEventStatusError:
+            # 경쟁 삽입에 진 쪽: 이긴 쪽이 커밋한 행을 재조회해 이어받는다.
+            # 재조회 후에도 없으면(예측 밖 상태) 재생성 두 번째 예외를
+            # 그대로 전파한다 — 재시도는 정확히 1회로 제한한다.
+            status_row = existing.select_for_update().first()
+            if status_row is None:
+                create_user_event_status(
+                    user=user,
+                    event=event,
+                    personal_entry=personal_entry,
+                    status=UserEventStatus.Status.VISITED,
+                )
+            elif status_row.status != UserEventStatus.Status.VISITED:
+                mark_visited(user_event_status=status_row)
+    elif status_row.status != UserEventStatus.Status.VISITED:
+        mark_visited(user_event_status=status_row)
+
+
 def complete_visit_with_record(
     *, user, event=None, personal_entry=None, visited_on, short_review="", client_token=None
 ):
@@ -631,33 +663,9 @@ def complete_visit_with_record(
             existing = existing.filter(event=event)
         else:
             existing = existing.filter(personal_entry=personal_entry)
-        # 동시 완료 요청을 직렬화해 planned 이중 전환과 활동·분석 중복을 막는다.
-        status_row = existing.select_for_update().first()
-
-        if status_row is None:
-            try:
-                create_user_event_status(
-                    user=user,
-                    event=event,
-                    personal_entry=personal_entry,
-                    status=UserEventStatus.Status.VISITED,
-                )
-            except DuplicateUserEventStatusError:
-                # 경쟁 삽입에 진 쪽: 이긴 쪽이 커밋한 행을 재조회해 이어받는다.
-                # 재조회 후에도 없으면(예측 밖 상태) 재생성 두 번째 예외를
-                # 그대로 전파한다 — 재시도는 정확히 1회로 제한한다.
-                status_row = existing.select_for_update().first()
-                if status_row is None:
-                    create_user_event_status(
-                        user=user,
-                        event=event,
-                        personal_entry=personal_entry,
-                        status=UserEventStatus.Status.VISITED,
-                    )
-                elif status_row.status != UserEventStatus.Status.VISITED:
-                    mark_visited(user_event_status=status_row)
-        elif status_row.status != UserEventStatus.Status.VISITED:
-            mark_visited(user_event_status=status_row)
+        _ensure_visited_status(
+            user=user, event=event, personal_entry=personal_entry, existing=existing
+        )
 
         return create_visit_record(
             user=user,
