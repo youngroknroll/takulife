@@ -163,21 +163,16 @@ def submit_candidate(*, run_id, lease_token, payload):
 
     cleaned, stage = validate_payload(payload=payload)
 
-    if stage == "schema":
+    def _fail(stage, exc=None):
         return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.SCHEMA,
+            run_id=run_id, lease_token=lease_token, cleaned=cleaned, stage=stage, exc=exc
         )
 
+    if stage == "schema":
+        return _fail(SourceCandidate.FailureStage.SCHEMA)
+
     if DraftSource.objects.filter(url=cleaned["url"]).exists():
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.DUPLICATE,
-        )
+        return _fail(SourceCandidate.FailureStage.DUPLICATE)
 
     try:
         for url in (cleaned["url"], cleaned["sample_url"]):
@@ -186,24 +181,13 @@ def submit_candidate(*, run_id, lease_token, payload):
         # 리졸버의 DNS 조회 실패(socket.gaierror)도 안전하지 않은 URL과 같은
         # 단계로 격리한다 — drafts/robots.py의 _ROBOTS_FETCH_FAILURES가
         # OSError를 포섭하는 것과 같은 근거.
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.URL_SAFETY,
-            exc=exc,
-        )
+        return _fail(SourceCandidate.FailureStage.URL_SAFETY, exc=exc)
 
     # 이후 단계(초기 드래프트 생성)에서도 재사용할 수 있도록 인스턴스 하나만 만든다.
     robots_checker = RobotsChecker()
     for url in (cleaned["url"], cleaned["sample_url"]):
         if not robots_checker.check(url).allowed:
-            return _save_failed_candidate(
-                run_id=run_id,
-                lease_token=lease_token,
-                cleaned=cleaned,
-                stage=SourceCandidate.FailureStage.ROBOTS,
-            )
+            return _fail(SourceCandidate.FailureStage.ROBOTS)
 
     try:
         listing_content = fetch_html(
@@ -212,13 +196,7 @@ def submit_candidate(*, run_id, lease_token, payload):
         )
     except Exception as exc:
         # except-ok: 목록 fetch 실패는 원인을 가리지 않고 전부 fetch 단계 실패다.
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.FETCH,
-            exc=exc,
-        )
+        return _fail(SourceCandidate.FailureStage.FETCH, exc=exc)
 
     try:
         candidate_urls = list(
@@ -230,64 +208,31 @@ def submit_candidate(*, run_id, lease_token, payload):
             )
         )
     except DiscoveryParseError as exc:
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.LISTING_EXTRACTION,
-            exc=exc,
-        )
+        return _fail(SourceCandidate.FailureStage.LISTING_EXTRACTION, exc=exc)
 
     if not candidate_urls:
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.LISTING_EXTRACTION,
-        )
+        return _fail(SourceCandidate.FailureStage.LISTING_EXTRACTION)
 
     # 아무 목록에나 남의 사이트 정상 행사 URL을 표본으로 붙여 승격을 통과시키는
     # 경로를 막는다 — 표본은 반드시 이 목록이 추출한 후보 URL이어야 한다.
     if cleaned["sample_url"] not in candidate_urls:
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.SAMPLE_MISMATCH,
-        )
+        return _fail(SourceCandidate.FailureStage.SAMPLE_MISMATCH)
 
     try:
         sample_content = fetch_html(cleaned["sample_url"])
     except Exception as exc:
         # except-ok: 표본 fetch 실패도 목록 fetch와 같은 fetch 단계 실패다.
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.FETCH,
-            exc=exc,
-        )
+        return _fail(SourceCandidate.FailureStage.FETCH, exc=exc)
 
     # canary는 추출 가능성만 확인하고 드래프트를 만들지 않는다 — 결과는 검사만
     # 하고 버린다.
     try:
         sample_fields = extract_event_fields(sample_content)
     except EmptyExtractionError as exc:
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.SAMPLE_CANARY,
-            exc=exc,
-        )
+        return _fail(SourceCandidate.FailureStage.SAMPLE_CANARY, exc=exc)
 
     if not sample_fields["raw_title"] and not sample_fields["raw_text"]:
-        return _save_failed_candidate(
-            run_id=run_id,
-            lease_token=lease_token,
-            cleaned=cleaned,
-            stage=SourceCandidate.FailureStage.SAMPLE_CANARY,
-        )
+        return _fail(SourceCandidate.FailureStage.SAMPLE_CANARY)
 
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
@@ -307,12 +252,7 @@ def submit_candidate(*, run_id, lease_token, payload):
                     enabled=True,
                 )
         except IntegrityError:
-            return _save_failed_candidate(
-                run_id=run_id,
-                lease_token=lease_token,
-                cleaned=cleaned,
-                stage=SourceCandidate.FailureStage.DUPLICATE,
-            )
+            return _fail(SourceCandidate.FailureStage.DUPLICATE)
 
         candidate = SourceCandidate.objects.create(
             run=run,
