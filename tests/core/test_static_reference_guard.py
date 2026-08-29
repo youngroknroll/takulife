@@ -11,6 +11,8 @@ import pytest
 from django.conf import settings
 from django.contrib.staticfiles import finders
 
+from core.management.commands.bundle_shell_css import BUNDLE_RELATIVE_PATH
+
 pytestmark = pytest.mark.unit
 
 # {% static 'a/b.css' %} 형태의 리터럴만 본다. 변수로 조립한 경로는 정적으로 알 수 없다.
@@ -36,6 +38,8 @@ def test_템플릿이_참조하는_정적_파일은_모두_존재한다():
         text = template.read_text(encoding="utf-8")
         for match in STATIC_LITERAL.finditer(text):
             ref = match.group("path")
+            if ref == BUNDLE_RELATIVE_PATH:
+                continue  # 배포 시점(entrypoint)에 bundle_shell_css가 생성 — docs/FE/css-delivery.md 가드레일
             if finders.find(ref) is None:
                 rel = template.relative_to(settings.BASE_DIR)
                 missing.append(f"{rel}: {ref}")

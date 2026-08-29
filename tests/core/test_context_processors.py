@@ -9,6 +9,7 @@ import pytest
 from core.context_processors import (
     email_delivery_enabled,
     google_oauth_configured,
+    shell_css_bundled,
     support_email,
 )
 
@@ -65,3 +66,15 @@ def test_smtp_메일_백엔드에서는_메일_발송_가능_플래그가_켜진
     settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
     assert email_delivery_enabled(None) == {"email_delivery_enabled": True}
+
+
+def test_DEBUG가_꺼지면_shell_css_bundled가_참을_반환한다(settings):
+    settings.DEBUG = False
+
+    assert shell_css_bundled(None) == {"shell_css_bundled": True}
+
+
+def test_DEBUG가_켜지면_shell_css_bundled가_거짓을_반환한다(settings):
+    settings.DEBUG = True
+
+    assert shell_css_bundled(None) == {"shell_css_bundled": False}

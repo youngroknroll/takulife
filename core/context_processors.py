@@ -34,3 +34,10 @@ def email_delivery_enabled(request):
             "console.EmailBackend"
         )
     }
+
+
+def shell_css_bundled(request):
+    """운영에서만 셸 CSS를 병합해 쓰도록, 템플릿이 DEBUG를 직접 보지 않고
+    이 플래그만 보면 되게 한다.
+    """
+    return {"shell_css_bundled": not settings.DEBUG}

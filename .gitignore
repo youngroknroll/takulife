@@ -17,6 +17,7 @@ db.sqlite3
 .docs/
 media/
 staticfiles/
+static/css/dist/
 
 # screenshot diff scratch (local visual verification)
 .shots/
