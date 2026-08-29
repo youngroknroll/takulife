@@ -311,9 +311,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
     # 수집된 정적 파일을 앱 프로세스에서 바로 서빙한다 — 초기 배포에서 별도
     # 정적 파일 서버/CDN이 필요 없다. whitenoise 문서 권장대로
-    # SecurityMiddleware 바로 다음에 둬야 한다.
+    # SecurityMiddleware 바로 다음(GZipMiddleware 바로 뒤)에 둬야 한다.
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
