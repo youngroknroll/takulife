@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #319부터 #177까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #331부터 #187까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,45 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #320 — feat: 소셜 가입 약관 동의(B2) + 헤더 인증 버튼 폰트 정렬
+### PR #330 — feat: SEO 최적화 — robots 해제·sitemap·페이지별 메타·JSON-LD·noindex (트랙 16)
 
-**무엇을 바꿨나**: 소셜 가입 경로에 약관·개인정보처리방침 동의를 강제 —
-`accounts/forms.py`에 `TermsAgreementFormMixin`을 신설해 일반·소셜 가입
-폼이 동의 필드와 `terms_agreed_at` 증적 기록을 공유하고,
-`SOCIALACCOUNT_FORMS` 등록 + `SOCIALACCOUNT_AUTO_SIGNUP=False`(allauth
-기본값 true면 신규 소셜 유저가 가입 폼을 건너뜀)를 계약 테스트로 고정.
-트랙 중 발견한 소셜 가입 엔드포인트 레이트리밋 부재(보안 F1)도 같은
-트랙에서 해소 — `config/urls.py` 선등록 `SocialSignupView`(url name
-`socialaccount_signup` 유지). 프론트는 소셜 가입 화면 `form.as_p`를
-명시적 필드 렌더로 교체(전역 input 규칙이 체크박스를 깨뜨림), 두 가입
-화면 동의 블록 동일화 + 에러 시 aria 연결 추가, 헤더 로그인/회원가입
-버튼을 주 메뉴와 동일한 0.92rem·44px로 통일.
+**무엇을 바꿨나**: robots.txt를 크롤링 허용으로 전환(비제품 4경로
+`/admin/`·`/api/`·`/accounts/`·`/staff/`만 차단 + Sitemap 위치 안내),
+`web/sitemaps.py` 신설로 정적 공개 페이지와 공개 행사 상세를
+sitemap.xml에 노출 — contrib sitemap 뷰의 DB `Site` 의존은 래퍼가
+`RequestSite`를 직접 주입해 우회하므로 도메인이 요청 Host를 따른다.
+페이지별 메타 제목·설명·canonical 조립을 배선하고, 행사 상세에 Event
+JSON-LD(presenters 순수 함수 + 필드 화이트리스트 + `\uXXXX` 이스케이프)를
+실어 meta_description 단일 소스가 메타·og·JSON-LD 세 표면을 공급한다.
+비공개 페이지는 noindex 기본값(fail-closed)으로 차단하고 공개 6페이지만
+해제 — 기본 블록과 해제를 한 커밋으로 묶어 배포 가능한 중간 상태를 없앴다.
 
-**왜**: 백로그 B2(OAuth 활성화 차단 항목) 해소. Google 로그인을 켜기 전
-동의 없는 가입 경로와 무제한 제출 경로를 함께 닫아야 활성화가 안전하다.
+**왜**: 검색 유입 기반 조성. robots 해제는 SMTP 게이트와 분리한다는
+2026-08-29 사용자 결정 반영(검색 유입 방문자의 가입 미완은 수용된 상태,
+배포 후 확인 절차는 deploy-runbook §3-12).
 
-**검증**: TDD 4 시나리오 전부 기대 사유 Red→Green(레이트리밋은 stash
-왕복으로 실효성 재확인), 전체 회귀 2308 passed `[실측]`, 헤더
-69px==토큰(721~1440px 1줄)·에러 aria·라벨 링크 비토글 브라우저 실측,
-WXD·BIR 이중 리뷰 모두 Conforms. 실 Google OAuth 왕복 1회는 크리덴셜
-설정 후 수동 검증으로 남음(backlog B2 잔여).
+**검증**: 커밋 7개, 전체 회귀 2364 passed `[실측]`(기준 2325 + 신규 39),
+WED·BIR 사후 리뷰 Conforms ×2, QVL 완료 판정 7/7 Passed. 슬라이스 전부
+Green인 상태에서 브라우저 라이브 소스 대조가 JSON-LD description 분기
+결함을 찾아 트랙 내 즉시 수정(J1u3·J1c).
 
-**병합**: 2026-08-26, main `25635af`.
+**병합**: 2026-08-30, main `ad37d68`. production 반영은 #331 deploy PR.
 
 ---
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #331 — deploy: main → production
+- #329 — deploy: main → production
+- #328 — refactor: Tidy First 백엔드 구조 정리 6건 + 빈 PATCH 400 거부 (트랙 15)
+- #327 — perf: 렌더 차단 요청·네트워크 종속 트리 개선 — 셸 CSS 번들 + 폰트 preload (트랙 14)
+- #326 — deploy: main → production
+- #325 — perf: Lighthouse 성능 최적화 3건 — 폰트 다이어트·HTML gzip·brotli (트랙 13)
+- #324 — docs: 레거시 문서 트리 정리 반영 + 가드레일 기록 승격
+- #323 — deploy: main → production
+- #322 — fix(staff): 검수 큐 행 클릭 무반응과 표 가로 잘림을 고친다
+- #321 — docs: PR #319·#320 머지를 로그에 롤링 반영
+- #320 — feat: 소셜 가입 약관 동의(B2) + 헤더 인증 버튼 폰트 정렬
 - #319 — docs: 배포 runbook DB를 Supabase 무료 티어로 전환
 - #317 — docs: PR #315·#316 머지를 로그에 롤링 반영
 - #316 — test: 테스트 시크릿 리터럴 제거 + 스캐너 가드 신설
@@ -188,13 +198,3 @@ WXD·BIR 이중 리뷰 모두 Conforms. 실 Google OAuth 왕복 1회는 크리�
 - #189 — test: Korean behavior-scenario test suite + execution speed infra (stages 1-3)
 - #188 — feat: Collection-first home snapshot (H-1/H-2)
 - #187 — feat: Restructure top navigation to target IA (Target IA-2)
-- #186 — feat: Promote collection routes to top level (Target IA-1)
-- #185 — feat(archive): Record collection item analytics events
-- #184 — feat(archive): Add collection page (list, create, edit, delete)
-- #183 — feat(archive): Add collection SSR query layer
-- #182 — feat(archive): Add CollectionItem CRUD API
-- #181 — fix(archive): Guard status creation against visit record drift
-- #180 — feat(archive): Retire the GOODS kind into CollectionItem (PR-C4)
-- #179 — feat: Collection track C3 — visit completion orchestration
-- #178 — feat: Collection track C2 — goods boundary enforcement
-- #177 — feat: Collection track C1 — CollectionItem model and invariants
