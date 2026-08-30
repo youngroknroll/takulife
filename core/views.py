@@ -18,9 +18,17 @@ def api_root(request):
 
 
 def robots_txt(request):
-    # 베타 준비 중 실사용자 유입을 막는 기술적 담보. 정식 런치 때 해제해야
-    # 한다(docs/deploy-runbook.md §3 체크리스트 12번).
-    return HttpResponse("User-agent: *\nDisallow: /\n", content_type="text/plain")
+    # 비제품 경로만 차단하고 나머지 전체 크롤링은 허용한다.
+    sitemap_url = request.build_absolute_uri("/sitemap.xml")
+    return HttpResponse(
+        "User-agent: *\n"
+        "Disallow: /admin/\n"
+        "Disallow: /api/\n"
+        "Disallow: /accounts/\n"
+        "Disallow: /staff/\n"
+        f"Sitemap: {sitemap_url}\n",
+        content_type="text/plain",
+    )
 
 
 @extend_schema(
