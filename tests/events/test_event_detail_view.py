@@ -133,3 +133,25 @@ class TestEventDetailView:
         assert match is not None
         payload = json.loads(match.group(1))
         assert payload["name"] == "타쿠 </script> 전시"
+
+    def test_행사_상세_페이지의_JSON_LD_description은_메타_description과_같다(self, make_event):
+        event = make_event(
+            title="공개 행사",
+            summary="",
+            category="popup_store",
+            location_name="코엑스",
+            start_date=date(2026, 3, 1),
+            end_date=date(2026, 3, 3),
+        )
+
+        resp = Client().get(f"/events/{event.id}/")
+
+        content = resp.content.decode()
+        meta_match = re.search(r'<meta name="description" content="(.*?)">', content)
+        script_match = re.search(
+            r'<script type="application/ld\+json">(.*?)</script>', content, re.DOTALL
+        )
+        assert meta_match is not None
+        assert script_match is not None
+        payload = json.loads(script_match.group(1))
+        assert payload["description"] == meta_match.group(1)

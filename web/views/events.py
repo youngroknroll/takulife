@@ -490,7 +490,10 @@ def event_detail(request, event_id):
 
     region_label = REGION_LABELS.get(event.region, "") if event.region else ""
     category_label = CATEGORY_LABELS.get(event.category, event.category)
-    json_ld_payload = build_event_json_ld(event, region_label=region_label)
+    meta_description = _build_event_meta_description(event, category_label)
+    json_ld_payload = build_event_json_ld(
+        event, region_label=region_label, description=meta_description
+    )
     if json_ld_payload is not None:
         json_ld_payload = {
             **json_ld_payload,
@@ -512,6 +515,6 @@ def event_detail(request, event_id):
         "related_events": related_events,
         "json_ld_script": _json_ld_script(json_ld_payload),
         "meta_title": _build_event_meta_title(event),
-        "meta_description": _build_event_meta_description(event, category_label),
+        "meta_description": meta_description,
     }
     return render(request, "core/events/detail.html", context)

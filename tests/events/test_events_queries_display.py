@@ -132,7 +132,7 @@ class TestDeriveEventDisplay:
 @pytest.mark.unit
 class TestBuildEventJsonLd:
     @pytest.mark.parametrize(
-        "kwargs, region_label, expected_location",
+        "kwargs, region_label, description, expected_location",
         [
             (
                 dict(
@@ -144,6 +144,7 @@ class TestBuildEventJsonLd:
                     summary="굿즈 판매 부스 운영",
                 ),
                 "서울",
+                None,
                 {
                     "@type": "Place",
                     "name": "코엑스",
@@ -161,6 +162,7 @@ class TestBuildEventJsonLd:
                 ),
                 "서울",
                 None,
+                None,
             ),
             (
                 dict(
@@ -173,6 +175,7 @@ class TestBuildEventJsonLd:
                 ),
                 "서울",
                 None,
+                None,
             ),
             (
                 dict(
@@ -184,7 +187,25 @@ class TestBuildEventJsonLd:
                     summary="굿즈 판매 부스 운영",
                 ),
                 None,
+                None,
                 {"@type": "Place", "name": "코엑스"},
+            ),
+            (
+                dict(
+                    pk=4,
+                    title="타쿠 페스티벌",
+                    start_date=date(2026, 3, 1),
+                    end_date=date(2026, 3, 3),
+                    location_name="코엑스",
+                    summary="",
+                ),
+                "서울",
+                "조립된 메타 설명 문구",
+                {
+                    "@type": "Place",
+                    "name": "코엑스",
+                    "address": {"@type": "PostalAddress", "addressRegion": "서울"},
+                },
             ),
         ],
         ids=[
@@ -192,15 +213,18 @@ class TestBuildEventJsonLd:
             "시작일이_없으면_None을_반환한다",
             "장소명이_없으면_None을_반환한다",
             "지역_라벨이_없으면_주소_필드를_생략한다",
+            "description을_명시하면_요약_대신_그_값을_쓴다",
         ],
     )
     def test_행사_JSON_LD_페이로드는_행사_핵심_필드를_담는다(
-        self, kwargs, region_label, expected_location
+        self, kwargs, region_label, description, expected_location
     ):
         from events.presenters import build_event_json_ld
 
         event = Event(**kwargs)
-        result = build_event_json_ld(event, region_label=region_label)
+        result = build_event_json_ld(
+            event, region_label=region_label, description=description
+        )
 
         if expected_location is None:
             assert result is None
@@ -213,7 +237,7 @@ class TestBuildEventJsonLd:
                 "endDate": "2026-03-03",
                 "location": expected_location,
                 "url": "/events/4/",
-                "description": "굿즈 판매 부스 운영",
+                "description": description or "굿즈 판매 부스 운영",
             }
 
 

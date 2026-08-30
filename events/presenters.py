@@ -49,7 +49,7 @@ def derive_event_display(event, *, today=None):
     return {"status": "ongoing", "dday": dday}
 
 
-def build_event_json_ld(event, *, region_label=None):
+def build_event_json_ld(event, *, region_label=None, description=None):
     """구글 Event 필수 필드(시작일·장소명)가 없으면 통째로 생략한다(fail-closed)."""
     if not event.start_date or not event.location_name:
         return None
@@ -65,7 +65,7 @@ def build_event_json_ld(event, *, region_label=None):
         "startDate": event.start_date.isoformat(),
         "location": location,
         "url": reverse("event-detail-page", args=[event.pk]),
-        "description": event.summary,
+        "description": description if description is not None else event.summary,
     }
     if event.end_date:
         payload["endDate"] = event.end_date.isoformat()
