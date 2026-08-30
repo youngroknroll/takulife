@@ -6,8 +6,9 @@
 - ending_within_days: EventQuerySet 정렬·필터 메서드
 - list_staff_events: 스태프 품질경고 드릴다운 목록
 """
+import json
 import pytest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from events.models import Event
 
@@ -126,6 +127,122 @@ class TestDeriveEventDisplay:
 
         assert "status" in result
         assert "dday" in result
+
+
+@pytest.mark.unit
+class TestBuildEventJsonLd:
+    @pytest.mark.parametrize(
+        "kwargs, region_label, expected_location",
+        [
+            (
+                dict(
+                    pk=4,
+                    title="타쿠 페스티벌",
+                    start_date=date(2026, 3, 1),
+                    end_date=date(2026, 3, 3),
+                    location_name="코엑스",
+                    summary="굿즈 판매 부스 운영",
+                ),
+                "서울",
+                {
+                    "@type": "Place",
+                    "name": "코엑스",
+                    "address": {"@type": "PostalAddress", "addressRegion": "서울"},
+                },
+            ),
+            (
+                dict(
+                    pk=4,
+                    title="타쿠 페스티벌",
+                    start_date=None,
+                    end_date=date(2026, 3, 3),
+                    location_name="코엑스",
+                    summary="굿즈 판매 부스 운영",
+                ),
+                "서울",
+                None,
+            ),
+            (
+                dict(
+                    pk=4,
+                    title="타쿠 페스티벌",
+                    start_date=date(2026, 3, 1),
+                    end_date=date(2026, 3, 3),
+                    location_name="",
+                    summary="굿즈 판매 부스 운영",
+                ),
+                "서울",
+                None,
+            ),
+            (
+                dict(
+                    pk=4,
+                    title="타쿠 페스티벌",
+                    start_date=date(2026, 3, 1),
+                    end_date=date(2026, 3, 3),
+                    location_name="코엑스",
+                    summary="굿즈 판매 부스 운영",
+                ),
+                None,
+                {"@type": "Place", "name": "코엑스"},
+            ),
+        ],
+        ids=[
+            "핵심_필드가_모두_있으면_스키마_필드를_담은_딕셔너리를_반환한다",
+            "시작일이_없으면_None을_반환한다",
+            "장소명이_없으면_None을_반환한다",
+            "지역_라벨이_없으면_주소_필드를_생략한다",
+        ],
+    )
+    def test_행사_JSON_LD_페이로드는_행사_핵심_필드를_담는다(
+        self, kwargs, region_label, expected_location
+    ):
+        from events.presenters import build_event_json_ld
+
+        event = Event(**kwargs)
+        result = build_event_json_ld(event, region_label=region_label)
+
+        if expected_location is None:
+            assert result is None
+        else:
+            assert result == {
+                "@context": "https://schema.org",
+                "@type": "Event",
+                "name": "타쿠 페스티벌",
+                "startDate": "2026-03-01",
+                "endDate": "2026-03-03",
+                "location": expected_location,
+                "url": "/events/4/",
+                "description": "굿즈 판매 부스 운영",
+            }
+
+
+@pytest.mark.contract
+def test_JSON_LD는_내부_운영_필드를_노출하지_않는다():
+    from events.presenters import build_event_json_ld
+
+    event = Event(
+        pk=4,
+        title="타쿠 페스티벌",
+        start_date=date(2026, 3, 1),
+        end_date=date(2026, 3, 3),
+        location_name="코엑스",
+        summary="굿즈 판매 부스 운영",
+        view_count=999999,
+        source_name="SENTINEL_SOURCE_NAME_공식출처아님",
+        publish_status="SENTINEL_PUBLISH_STATUS",
+        created_at=datetime(2099, 1, 1),
+        verified_at=datetime(2099, 12, 31),
+    )
+
+    result = build_event_json_ld(event, region_label="서울")
+
+    serialized = json.dumps(result, default=str)
+    assert "999999" not in serialized
+    assert "SENTINEL_SOURCE_NAME_공식출처아님" not in serialized
+    assert "SENTINEL_PUBLISH_STATUS" not in serialized
+    assert "2099-01-01" not in serialized
+    assert "2099-12-31" not in serialized
 
 
 @pytest.mark.domain

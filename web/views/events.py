@@ -1,5 +1,6 @@
 """홈, 행사 목록/캘린더/상세 — 공개 행사 열람 뷰 그룹."""
 
+import json
 import logging
 from collections import defaultdict
 from datetime import timedelta
@@ -36,7 +37,7 @@ from core.vocab import (
     REGION_LABELS,
 )
 from events.models import Event
-from events.presenters import derive_event_display
+from events.presenters import build_event_json_ld, derive_event_display
 from events.queries import (
     PUBLIC_LISTING_PAGE_SIZE,
     list_published_events,
@@ -417,6 +418,16 @@ def event_calendar(request):
     return render(request, "core/events/calendar.html", context)
 
 
+# </script>가 포함된 제목이 스크립트 블록을 조기 종료시키지 못하게 이스케이프한다.
+_JSON_LD_ESCAPES = str.maketrans({"<": "\\u003c", ">": "\\u003e", "&": "\\u0026"})
+
+
+def _json_ld_script(payload):
+    if payload is None:
+        return None
+    return json.dumps(payload, ensure_ascii=False).translate(_JSON_LD_ESCAPES)
+
+
 def event_detail(request, event_id):
     event = get_object_or_404(Event.objects.published(), pk=event_id)
     Event.objects.increment_view_count(event.pk)
@@ -446,12 +457,20 @@ def event_detail(request, event_id):
         today=today,
     )
 
+    region_label = REGION_LABELS.get(event.region, "") if event.region else ""
+    json_ld_payload = build_event_json_ld(event, region_label=region_label)
+    if json_ld_payload is not None:
+        json_ld_payload = {
+            **json_ld_payload,
+            "url": request.build_absolute_uri(json_ld_payload["url"]),
+        }
+
     context = {
         "event": event,
         "status_slug": status_slug,
         "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
         "category_label": CATEGORY_LABELS.get(event.category, event.category),
-        "region_label": REGION_LABELS.get(event.region, "") if event.region else "",
+        "region_label": region_label,
         "dday": display["dday"],
         "user_status": user_status,
         "user_status_id": user_status_id,
@@ -459,5 +478,6 @@ def event_detail(request, event_id):
         "user_interested": user_interested,
         "user_interest_id": user_interest_id,
         "related_events": related_events,
+        "json_ld_script": _json_ld_script(json_ld_payload),
     }
     return render(request, "core/events/detail.html", context)

@@ -59,6 +59,7 @@
   {% endif %}
   <link rel="stylesheet" href="{% static 'fonts/pretendard/pretendardvariable-dynamic-subset.css' %}">
   {% block shell_css %}{% endblock %}{% block extra_css %}{% endblock %}
+  {% block structured_data %}{% endblock %}
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
   {% block skip_link %}<a class="skip-link" href="#content">본문으로 건너뛰기</a>{% endblock %}

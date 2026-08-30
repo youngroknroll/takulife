@@ -5,6 +5,7 @@
 """
 from datetime import timedelta
 
+from django.urls import reverse
 from django.utils import timezone
 
 from .querysets import CLOSING_SOON_DAYS
@@ -46,3 +47,26 @@ def derive_event_display(event, *, today=None):
         return {"status": "closing_soon", "dday": dday}
 
     return {"status": "ongoing", "dday": dday}
+
+
+def build_event_json_ld(event, *, region_label=None):
+    """구글 Event 필수 필드(시작일·장소명)가 없으면 통째로 생략한다(fail-closed)."""
+    if not event.start_date or not event.location_name:
+        return None
+
+    location = {"@type": "Place", "name": event.location_name}
+    if region_label:
+        location["address"] = {"@type": "PostalAddress", "addressRegion": region_label}
+
+    payload = {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": event.title,
+        "startDate": event.start_date.isoformat(),
+        "location": location,
+        "url": reverse("event-detail-page", args=[event.pk]),
+        "description": event.summary,
+    }
+    if event.end_date:
+        payload["endDate"] = event.end_date.isoformat()
+    return payload

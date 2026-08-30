@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="{% static 'css/pages/event_detail.css' %}">
 {% endblock %}
 
+{% block structured_data %}{% if json_ld_script %}<script type="application/ld+json">{{ json_ld_script|safe }}</script>{% endif %}{% endblock %}
+
 {% block content %}
   <main class="page event-detail-page" id="content">
     <nav class="event-detail-breadcrumb" aria-label="이동 경로">
