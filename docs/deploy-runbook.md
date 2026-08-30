@@ -167,11 +167,17 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     종료 코드로 끝나므로(`CommandError`, 실패 건수와 함께), 스케줄러에
     **실패 알림(0이 아닌 종료 코드 감지)을 반드시 연결**한다. 실행 주기 권고와
     상세 절차는 `docs/operations-runbook.md` §7 참조.
-12. **robots.txt 크롤링 차단 해제**: `/robots.txt`는 SMTP 보류로 실사용자
-    유입을 막는 동안의 기술적 담보로 전체 크롤링 차단(`Disallow: /`) 상태로
-    배포된다. 실사용자를 받는 런치 시점에 이를 풀지 않으면 사이트가 검색에
-    잡히지 않는다. 코드 수정이 필요하다 — `core/views.py`의 robots 뷰에서
-    `Disallow` 값을 해제한다.
+12. **robots.txt 크롤링 허용 확인**: robots 해제(SEO 트랙 16)는 **SMTP
+    게이트와 분리**됐다(2026-08-29 사용자 결정) — SMTP 미설정 상태로도
+    크롤링 허용이 배포된다. 코드 수정은 이미 완료됐다(`core/views.py`의
+    robots 뷰가 비제품 4경로(`/admin/`, `/api/`, `/accounts/`, `/staff/`)만
+    차단하고 Sitemap 위치를 안내한다). **알려진 상태**: 검색으로 유입된
+    방문자는 가입 인증 메일 미동작(SMTP 보류) 동안 가입을 완료할 수
+    없다 — 이는 수용된 상태이며 SMTP 활성화(별도 항목)가 해소 조건이다.
+    배포 후 확인 항목: `curl https://<host>/robots.txt`로 `Disallow` 4경로와
+    `Sitemap:` 라인을 확인하고, `curl https://<host>/sitemap.xml`이 200을
+    반환하는지 확인한다(도메인은 요청 Host를 따르므로 별도 설정 불필요 —
+    `RequestSite`).
 13. **API 문서 정적 자산 실서빙 확인**: `DEBUG=false` + `collectstatic` 완료
     후 `/api/docs/`를 브라우저로 열어 Swagger UI 렌더와 sidecar 정적 자산
     (`swagger-ui-bundle.js` 등) 200 응답을 확인한다. `collectstatic` 성공은
