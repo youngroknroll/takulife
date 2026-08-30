@@ -15,7 +15,7 @@
       <div class="hero-ticket">
         <div class="hero-ticket-main">
           <p class="hero-ticket-eyebrow">서브컬처 이벤트 티켓부스</p>
-          <h1>내가 원하는 이벤트를 <span class="hl">한눈에</span></h1>
+          <h1>내가 원하는 이벤트를 <span class="hl">찾아봐요!</span></h1>
           <form class="search" action="/events/" method="get">
             <input id="q" name="q" type="text" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
             <button type="submit">검색</button>
@@ -109,6 +109,26 @@
     <section class="section">
       <div class="section-head">
         <div>
+          <span class="section-eyebrow">카테고리</span>
+          <h2>카테고리로 둘러보기</h2>
+        </div>
+      </div>
+      <div class="cat-browse">
+        {% for tile in category_tiles %}
+          <a class="cat-dot" href="/events/?category={{ tile.slug }}">
+            <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink);" aria-hidden="true"></span>
+            <span class="cat-dot-info">
+              <span class="cat-name">{{ tile.label }}</span>
+              <span class="cat-count">{{ tile.count }}개</span>
+            </span>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
           <span class="section-eyebrow">이번 주</span>
           <h2>이번 주 눈여겨 볼 이벤트</h2>
         </div>
@@ -142,26 +162,6 @@
       {% else %}
         <p class="notice">종료 임박 이벤트가 없습니다.</p>
       {% endif %}
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <div>
-          <span class="section-eyebrow">카테고리</span>
-          <h2>카테고리로 둘러보기</h2>
-        </div>
-      </div>
-      <div class="cat-browse">
-        {% for tile in category_tiles %}
-          <a class="cat-dot" href="/events/?category={{ tile.slug }}">
-            <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink);" aria-hidden="true"></span>
-            <span class="cat-dot-info">
-              <span class="cat-name">{{ tile.label }}</span>
-              <span class="cat-count">{{ tile.count }}개</span>
-            </span>
-          </a>
-        {% endfor %}
-      </div>
     </section>
 
     <section class="section">
