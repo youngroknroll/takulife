@@ -9,10 +9,18 @@ from accounts import views as accounts_views
 from core import views as core_views
 from web import views as web_views
 from web.promotion_views import PromotePersonalEntryView
+from web.sitemaps import EventSitemap, StaticPageSitemap
+from web.sitemaps import sitemap as sitemap_view
 
 
 urlpatterns = [
     path("robots.txt", core_views.robots_txt, name="robots-txt"),
+    path(
+        "sitemap.xml",
+        sitemap_view,
+        {"sitemaps": {"events": EventSitemap, "static": StaticPageSitemap}},
+        name="sitemap-xml",
+    ),
     path("", web_views.home, name="home"),
     path("events/", web_views.event_list, name="event-list-page"),
     path("events/calendar/", web_views.event_calendar, name="event-calendar-page"),

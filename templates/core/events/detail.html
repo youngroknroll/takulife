@@ -1,11 +1,16 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | {{ event.title }}{% endblock %}
-{% block og_title %}{{ project_name }} | {{ event.title }}{% endblock %}
+{% block title %}{{ meta_title }}{% endblock %}
+{% block og_title %}{{ meta_title }}{% endblock %}
+{% block description %}{{ meta_description }}{% endblock %}
+{% block og_description %}{{ meta_description }}{% endblock %}
+{% block robots_meta %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/event_detail.css' %}">
 {% endblock %}
+
+{% block structured_data %}{% if json_ld_script %}<script type="application/ld+json">{{ json_ld_script|safe }}</script>{% endif %}{% endblock %}
 
 {% block content %}
   <main class="page event-detail-page" id="content">

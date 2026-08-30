@@ -25,11 +25,14 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}takulife{% endblock %}</title>
-  <meta name="description" content="팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.">
+  {% block robots_meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+  <meta name="description" content="{% block description %}팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.{% endblock %}">
   <meta property="og:site_name" content="takulife">
   <meta property="og:type" content="website">
   <meta property="og:title" content="{% block og_title %}takulife{% endblock %}">
-  <meta property="og:description" content="팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.">
+  <meta property="og:description" content="{% block og_description %}팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.{% endblock %}">
+  <link rel="canonical" href="{{ canonical_url }}">
+  <meta property="og:url" content="{{ canonical_url }}">
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
   {# 공개 3페이지(홈·이벤트 목록·상세) 교집합 청크만 preload한다 — 목록 정본은 core.context_processors.FONT_PRELOAD_CHUNKS. #}
   {% for chunk in font_preload_chunks %}
@@ -59,6 +62,7 @@
   {% endif %}
   <link rel="stylesheet" href="{% static 'fonts/pretendard/pretendardvariable-dynamic-subset.css' %}">
   {% block shell_css %}{% endblock %}{% block extra_css %}{% endblock %}
+  {% block structured_data %}{% endblock %}
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
   {% block skip_link %}<a class="skip-link" href="#content">본문으로 건너뛰기</a>{% endblock %}
