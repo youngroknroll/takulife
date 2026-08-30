@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | {{ event.title }}{% endblock %}
-{% block og_title %}{{ project_name }} | {{ event.title }}{% endblock %}
+{% block title %}{{ meta_title }}{% endblock %}
+{% block og_title %}{{ meta_title }}{% endblock %}
+{% block description %}{{ meta_description }}{% endblock %}
+{% block og_description %}{{ meta_description }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/event_detail.css' %}">

@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
+from django.template.defaultfilters import truncatechars
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -428,6 +429,36 @@ def _json_ld_script(payload):
     return json.dumps(payload, ensure_ascii=False).translate(_JSON_LD_ESCAPES)
 
 
+def _build_event_meta_title(event):
+    segment = f"{event.work_title} · {event.title}" if event.work_title else event.title
+    return f"{truncatechars(segment, 20)} — takulife"
+
+
+_DEFAULT_EVENT_META_DESCRIPTION = (
+    "팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · "
+    "전시를 검색하고, 방문 상태와 기록을 보관하세요."
+)
+
+
+def _build_event_meta_description(event, category_label):
+    summary = event.summary.strip()
+    if summary:
+        return truncatechars(summary, 100)
+
+    if event.end_date and event.start_date and event.end_date != event.start_date:
+        period = f"{event.start_date} ~ {event.end_date}"
+    elif event.start_date:
+        period = str(event.start_date)
+    else:
+        period = ""
+
+    parts = [part for part in (category_label, event.location_name, period) if part]
+    if parts:
+        return truncatechars(" · ".join(parts), 100)
+
+    return truncatechars(_DEFAULT_EVENT_META_DESCRIPTION, 100)
+
+
 def event_detail(request, event_id):
     event = get_object_or_404(Event.objects.published(), pk=event_id)
     Event.objects.increment_view_count(event.pk)
@@ -458,6 +489,7 @@ def event_detail(request, event_id):
     )
 
     region_label = REGION_LABELS.get(event.region, "") if event.region else ""
+    category_label = CATEGORY_LABELS.get(event.category, event.category)
     json_ld_payload = build_event_json_ld(event, region_label=region_label)
     if json_ld_payload is not None:
         json_ld_payload = {
@@ -469,7 +501,7 @@ def event_detail(request, event_id):
         "event": event,
         "status_slug": status_slug,
         "status_label": EVENT_STATUS_LABELS.get(status_slug, ""),
-        "category_label": CATEGORY_LABELS.get(event.category, event.category),
+        "category_label": category_label,
         "region_label": region_label,
         "dday": display["dday"],
         "user_status": user_status,
@@ -479,5 +511,7 @@ def event_detail(request, event_id):
         "user_interest_id": user_interest_id,
         "related_events": related_events,
         "json_ld_script": _json_ld_script(json_ld_payload),
+        "meta_title": _build_event_meta_title(event),
+        "meta_description": _build_event_meta_description(event, category_label),
     }
     return render(request, "core/events/detail.html", context)

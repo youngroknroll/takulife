@@ -346,6 +346,7 @@ TEMPLATES = [
                 "core.context_processors.email_delivery_enabled",
                 "core.context_processors.shell_css_bundled",
                 "core.context_processors.font_preload_chunks",
+                "core.context_processors.canonical_url",
                 "staff.context_processors.sidebar_badge_counts",
                 "staff.context_processors.staff_search_box",
             ],

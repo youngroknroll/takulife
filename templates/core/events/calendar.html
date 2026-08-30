@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 이벤트 달력{% endblock %}
-{% block og_title %}{{ project_name }} | 이벤트 달력{% endblock %}
+{% block title %}이벤트 달력 — {{ project_name }}{% endblock %}
+{% block og_title %}이벤트 달력 — {{ project_name }}{% endblock %}
+{% block description %}날짜별로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사 일정을 달력에서 한눈에 확인하세요.{% endblock %}
+{% block og_description %}날짜별로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사 일정을 달력에서 한눈에 확인하세요.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/event_list.css' %}">

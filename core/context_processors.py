@@ -64,3 +64,8 @@ def shell_css_bundled(request):
 def font_preload_chunks(request):
     """상수를 그대로 노출해 템플릿이 for 루프로 preload 링크를 반복 렌더하게 한다."""
     return {"font_preload_chunks": FONT_PRELOAD_CHUNKS}
+
+
+def canonical_url(request):
+    """request.path는 쿼리스트링을 포함하지 않아 검색·필터 파라미터가 정본 URL에서 자동 제외된다."""
+    return {"canonical_url": request.build_absolute_uri(request.path)}

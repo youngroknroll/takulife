@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 이벤트 목록{% endblock %}
-{% block og_title %}{{ project_name }} | 이벤트 목록{% endblock %}
+{% block title %}이벤트 목록 — {{ project_name }}{% endblock %}
+{% block og_title %}이벤트 목록 — {{ project_name }}{% endblock %}
+{% block description %}서울·경기·인천 등 지역과 카테고리로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사를 검색하고 필터링하세요.{% endblock %}
+{% block og_description %}서울·경기·인천 등 지역과 카테고리로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사를 검색하고 필터링하세요.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/event_list.css' %}">
