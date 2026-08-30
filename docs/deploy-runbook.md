@@ -189,6 +189,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     488개를 생성해뒀지만, 2026-08-29 시점 Render의 `Accept-Encoding` 전달
     여부는 미검증). `br`이 오지 않고 `gzip`만 와도 장애는 아니다 — whitenoise가
     가진 것 중 최선을 고르므로 무해하게 무용할 뿐이다.
+    **확인 결과 `[실측 2026-08-31]`**: `https://takulife.kr/static/css/dist/shell.763817b51953.css`에
+    `Accept-Encoding: br` 요청 시 `HTTP/2 200` + `content-encoding: br` 응답 —
+    Render 프록시가 br을 전달한다. 같은 날 §3-12 배포 후 확인도 완료:
+    robots.txt 200(Disallow 4경로 + `Sitemap: https://takulife.kr/sitemap.xml`),
+    sitemap.xml 200(공개 행사 미존재 상태라 정적 5페이지만 수록 — 정합).
 
 ## 4. 백업·복구 (T6)
 
