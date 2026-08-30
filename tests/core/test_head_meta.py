@@ -205,3 +205,54 @@ def test_페이지_응답은_og_image_태그를_포함하지_않는다(client):
     content = resp.content.decode()
     assert resp.status_code == 200
     assert 'property="og:image"' not in content
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "path, user_kwargs",
+    [
+        ("/archive/", {}),
+        ("/mypage/", {}),
+        ("/archive/visits/", {}),
+        ("/archive/calendar/", {}),
+        ("/staff/dashboard/", {"is_staff": True}),
+    ],
+    ids=["아카이브_홈", "마이페이지", "다녀온_기록_목록", "활동_달력", "스태프_대시보드"],
+)
+def test_비공개_페이지_응답은_noindex_로봇_지시를_포함한다(client, make_user, path, user_kwargs):
+    user = make_user(**user_kwargs)
+    client.force_login(user)
+
+    resp = client.get(path)
+
+    content = resp.content.decode()
+    assert resp.status_code == 200
+    assert 'name="robots" content="noindex, nofollow"' in content
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "path",
+    ["/", "/events/", "/events/calendar/", "/legal/privacy/", "/legal/terms/"],
+    ids=["홈", "이벤트_목록", "이벤트_달력", "개인정보처리방침", "이용약관"],
+)
+def test_공개_페이지_응답은_noindex_로봇_지시를_포함하지_않는다(client, path):
+    resp = client.get(path)
+
+    content = resp.content.decode()
+    assert resp.status_code == 200
+    assert 'name="robots"' not in content
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_행사_상세_페이지_응답은_noindex_로봇_지시를_포함하지_않는다(client, make_event):
+    event = make_event(title="공개 행사")
+
+    resp = client.get(f"/events/{event.id}/")
+
+    content = resp.content.decode()
+    assert resp.status_code == 200
+    assert 'name="robots"' not in content
