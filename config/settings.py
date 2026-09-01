@@ -347,6 +347,8 @@ TEMPLATES = [
                 "core.context_processors.shell_css_bundled",
                 "core.context_processors.font_preload_chunks",
                 "core.context_processors.canonical_url",
+                "core.context_processors.google_site_verification",
+                "core.context_processors.ga_measurement_id",
                 "staff.context_processors.sidebar_badge_counts",
                 "staff.context_processors.staff_search_box",
             ],
@@ -547,6 +549,11 @@ DEFAULT_FROM_EMAIL = _get_env("DEFAULT_FROM_EMAIL", "no-reply@takulife.example")
 # 지원 메일함이 준비되기 전까지의 임시 도메인이다 — 실제 주소가 생기면
 # 코드 변경 없이 env만 바꾸면 된다.
 SUPPORT_EMAIL = _get_env("SUPPORT_EMAIL", "support@takulife.example")
+
+# 구글 서치 콘솔 소유 확인 토큰과 GA4 측정 ID(G-로 시작). 비어 있으면
+# 해당 태그가 아예 렌더되지 않아 로컬·미설정 환경에는 추적이 없다.
+GOOGLE_SITE_VERIFICATION = _get_env("GOOGLE_SITE_VERIFICATION")
+GA_MEASUREMENT_ID = _get_env("GA_MEASUREMENT_ID")
 
 # DRF: 공식 제보(promotion) 속도를 제한해 인증된 사용자가 승격된
 # PersonalEntry 드래프트로 관리자 검토 큐를 채우지 못하게 한다.
