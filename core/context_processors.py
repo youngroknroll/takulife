@@ -69,3 +69,13 @@ def font_preload_chunks(request):
 def canonical_url(request):
     """request.path는 쿼리스트링을 포함하지 않아 검색·필터 파라미터가 정본 URL에서 자동 제외된다."""
     return {"canonical_url": request.build_absolute_uri(request.path)}
+
+
+def google_site_verification(request):
+    """서치 콘솔 소유 확인 토큰. 비어 있으면 템플릿이 메타태그를 렌더하지 않는다."""
+    return {"google_site_verification": settings.GOOGLE_SITE_VERIFICATION}
+
+
+def ga_measurement_id(request):
+    """GA4 측정 ID. 비어 있으면 gtag 스크립트가 빠져 로컬은 추적되지 않는다."""
+    return {"ga_measurement_id": settings.GA_MEASUREMENT_ID}
