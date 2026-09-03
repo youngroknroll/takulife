@@ -253,6 +253,7 @@ M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web
 | F13 | ~~대시보드 표 저강조 색 위계 미실현~~ (**해결됨 2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`**) | `.dash-table`로 색 상속 전환(`static/css/staff/pages/dashboard.css`), 라이트·다크 모두 computed 실측으로 `.dash-cell-dim`·`-faint`·`-wrap` 전부 토큰 일치 확인, WED·BIR `Conforms`×2. BIR 전수 확인이 찾은 동일 패턴 2건(`sources.css` `.src-cell-error` 위험색 소실 포함, `audit_log.css` dim/faint)도 같은 트랙에서 같은 방식으로 즉시 해소 — 라이트·다크 computed 실측 일치. `static/css/staff/` 내 이 패턴은 전수 재확인 결과 소멸(무해 판정: drafts·events·home_categories는 td color 미지정) | 해결 |
 | F14 | 폰트 폴백 메트릭 튜닝(size-adjust 계열) | 트랙 13에서 데스크탑 콜드 CLS 0.02(Good) 수용, 0.01 이하로 낮추려면 폴백 서체 메트릭 오버라이드+시각 회귀 필요(2026-08-29) | 이연 |
 | F15 | og:image 브랜드 카드(1200×630 PNG) 제작·발행 | 트랙 16(2026-08-30)이 og:image를 의도적으로 미발행(래스터 자산 부재, favicon.svg 유용 금지, `test_페이지_응답은_og_image_태그를_포함하지_않는다` 핀) | 이연. 자산 제작 시 M4 핀 교체와 함께 발행 |
+| F16 | `.dockerignore`가 `.claude/`를 제외하지 않아 런타임 이미지에 하네스 파일(훅·에이전트 정의·settings)이 들어간다 | `[코드]` `Dockerfile:22` `COPY . .`, `.dockerignore` 제외 목록에 `.claude` 0건(트랙 18 DOR 발견, 2026-09-03) | 무해(실행 경로 없음)하나 위생 항목. 다음 배포 트랙에서 `.claude/` 1줄 추가 |
 
 **로컬 에이전트 수집처 탐색 — 구현됨(2026-08-20~24, PR #299·#301).** 서버
 경계(모델 3종·러너 API·8단계 결정론 검증·승격) + `local_runner/` 어댑터 완비.
