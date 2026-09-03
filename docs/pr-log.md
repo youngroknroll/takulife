@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #331부터 #187까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #335부터 #192까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,40 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #330 — feat: SEO 최적화 — robots 해제·sitemap·페이지별 메타·JSON-LD·noindex (트랙 16)
+### PR #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
 
-**무엇을 바꿨나**: robots.txt를 크롤링 허용으로 전환(비제품 4경로
-`/admin/`·`/api/`·`/accounts/`·`/staff/`만 차단 + Sitemap 위치 안내),
-`web/sitemaps.py` 신설로 정적 공개 페이지와 공개 행사 상세를
-sitemap.xml에 노출 — contrib sitemap 뷰의 DB `Site` 의존은 래퍼가
-`RequestSite`를 직접 주입해 우회하므로 도메인이 요청 Host를 따른다.
-페이지별 메타 제목·설명·canonical 조립을 배선하고, 행사 상세에 Event
-JSON-LD(presenters 순수 함수 + 필드 화이트리스트 + `\uXXXX` 이스케이프)를
-실어 meta_description 단일 소스가 메타·og·JSON-LD 세 표면을 공급한다.
-비공개 페이지는 noindex 기본값(fail-closed)으로 차단하고 공개 6페이지만
-해제 — 기본 블록과 해제를 한 커밋으로 묶어 배포 가능한 중간 상태를 없앴다.
+**무엇을 바꿨나**: `AGENTS.md`에 `## Orchestrator Contract`(규칙 7개 — 부정
+주장은 전수 `rg` 근거, 채팅·브리프 숫자도 단위+출처 태그, 산술은 도구,
+경로는 존재 확인, 권고 전 사용자 보류 기록 검색, 서브에이전트 주장 채택 전
+재확인, 리뷰 선행 보고)를 신설하고 "Numbers In Documents"가 채팅 보고·
+브리프에도 적용됨을 명시, `CLAUDE.md` Working Method에 참조 1줄. 어댑터
+11개는 AGENTS.md 전체 읽기를 역할별 필요 절 목록으로 바꾸고 반복 브리프
+지시를 `Standing instructions`로 이관, 2.1.259에 없는 `MultiEdit` 제거.
+훅 4개째 `plan-number-tag-guard.sh`(PreToolUse `Edit|Write`,
+`prompt_plan.md`만): 단락에 2 이상 정수+수량 단위가 있고
+`[실측]/[코드]/[계산]/[문서]/[대시보드]` 태그가 없으면 차단. 같은 PR에
+PR 게이트 pip-audit이 잡은 `djangorestframework` 3.17.1→3.17.2 잠금 상향
+(GHSA-2m8g-3cmr-wg3w·GHSA-g47c-3xmw-q6m2, medium) 포함. 백로그 F16
+(`.dockerignore`의 `.claude/` 미제외) 신규.
 
-**왜**: 검색 유입 기반 조성. robots 해제는 SMTP 게이트와 분리한다는
-2026-08-29 사용자 결정 반영(검색 유입 방문자의 가입 미완은 수용된 상태,
-배포 후 확인 절차는 deploy-runbook §3-12).
+**왜**: 같은 세션 검토에서 오케스트레이터 1차 산출물 오류 8건이 리뷰어에게
+잡혔고(원인: 확인 가능한 사실을 확인하지 않고 서술), 하네스에 11개 역할
+계약만 있고 오케스트레이터 계약이 없었다. 사용자 결정으로 제안 1·2·3·5
+적용, 4(역할별 `memory: project`)는 미승인.
 
-**검증**: 커밋 7개, 전체 회귀 2364 passed `[실측]`(기준 2325 + 신규 39),
-WED·BIR 사후 리뷰 Conforms ×2, QVL 완료 판정 7/7 Passed. 슬라이스 전부
-Green인 상태에서 브라우저 라이브 소스 대조가 JSON-LD description 분기
-결함을 찾아 트랙 내 즉시 수정(J1u3·J1c).
-
-**병합**: 2026-08-30, main `ad37d68`. production 반영은 #331 deploy PR.
-
----
+**검증**: 훅 페이로드 10케이스 exit 코드 기대 일치 + 실사용 차단 1회·통과
+2회 `[실측]`, 정비 어댑터 스폰 2회(Standing instructions 로드, 검토 역할
+도구 Read·Grep·Glob) `[실측]`, `uv run pytest -q` 2364 passed `[실측]`,
+CI 4체크 통과(pip-audit는 DRF 상향 후 통과) `[실측]`. 리뷰: DOR 블로커
+없음, QVL 조건부 완료 → 실행 증거 3건 확보로 충족.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #334 — deploy: main → production
+- #333 — deploy: main → production
+- #332 — docs: 머지 로그·런북 실측 기록 + design(home): 히어로 문구·카테고리 섹션 이동
 - #331 — deploy: main → production
+- #330 — feat: SEO 최적화 — robots 해제·sitemap·페이지별 메타·JSON-LD·noindex (트랙 16)
 - #329 — deploy: main → production
 - #328 — refactor: Tidy First 백엔드 구조 정리 6건 + 빈 PATCH 400 거부 (트랙 15)
 - #327 — perf: 렌더 차단 요청·네트워크 종속 트리 개선 — 셸 CSS 번들 + 폰트 preload (트랙 14)
@@ -193,8 +198,3 @@ Green인 상태에서 브라우저 라이브 소스 대조가 JSON-LD descriptio
 - #194 — feat: Dual calendar (events + activity) with activity history
 - #193 — Error handling and logging policy: guards and retro fixes
 - #192 — fix: Close bfcache duplicate-creation gap (client_token + commit markers)
-- #191 — docs(agents): Add commit-per-feature, PR-per-stage cadence
-- #190 — test: Stage 4·5 authoring guards + dedup + TS-INF-04
-- #189 — test: Korean behavior-scenario test suite + execution speed infra (stages 1-3)
-- #188 — feat: Collection-first home snapshot (H-1/H-2)
-- #187 — feat: Restructure top navigation to target IA (Target IA-2)
