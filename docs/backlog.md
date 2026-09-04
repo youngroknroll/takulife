@@ -288,6 +288,8 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 동기 네트워크 최대 6회(각 5초) → 최악 ~30초로 기본 타임아웃과 충돌 가능.
 **트리거: 서버에서 `DRAFT_DISCOVERY_ENABLED=true` 전환 전.**
 
+동일 근본 원인 `[계산 2026-09-05]`: 대시보드 「지금 수집」도 동기 실행(`staff/views/__init__.py:200-245`)이라 활성 소스 3개가 모두 느린 최악 시 `3×(5+5)+2×1 = 32초`(요청 타임아웃 5초 `drafts/fetching.py:10`, 소스 간 대기 1초 `drafts/management/commands/discover_drafts.py:59`)로 기본 30초를 넘길 수 있고, 워커 SIGKILL 시 `finally`의 감사 로그(`staff/views/__init__.py:242-245`)가 남지 않는다. `docker/entrypoint.sh`에 `--timeout` 0건 `[실측 2026-09-05]`. 프로덕션 활성 소스 수는 미실측. 사용자 보류·트리거는 그대로다.
+
 ### G3 [코드] LLM 아웃바운드 네트워크 수준 계약 테스트 부재
 
 현재 보증은 코드 경로 부재 + 단위 모킹 2겹뿐. `pytest-socket` 등 신규 dev
@@ -306,6 +308,49 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 
 `visit_create` 패턴을 그대로 미러링한 범례를 추가했다. 320px·1120px 실측으로
 겹침 없음을 확인했고, WED·BIR 모두 `Conforms`.
+
+---
+
+## H. 스태프 백오피스 현업 적합성 검토 (2026-09-05)
+
+검토 경로: 코드·문서 판독 뒤 PSO·WED·SRR·DOR 4역할 병렬 검토, 인용된 file:line은
+오케스트레이터가 전부 재확인. 현재 있는 것 `[코드]`: `staff/urls.py` 라우트 19개,
+대시보드 지표 카드 5장, 드래프트 큐(상태 탭·검색·인스펙터·일괄 승인/반려 상한
+20건 `MAX_BULK_APPROVE_DRAFT_IDS`), 이벤트 목록·생성·수정·게시 토글·검증·삭제,
+수집 소스 읽기 전용 표, 홈 카테고리, 감사 로그(행동 11종). 스태프 테스트 함수
+295개 `[실측 2026-09-05]` `rg -c 'def test_' tests/staff/*.py` 합계.
+
+P0는 "shell 없이는 운영자가 일을 못 하는 것"으로 한정했다(PSO). PSO(P0=H1)와
+WED(P0=H2)의 우선순위 충돌은 AGENTS.md 배타 책임에 따라 PSO 판정으로 조정했다.
+
+| # | 우선순위 | 항목 | 근거 | 분류·판정 |
+|---|---|---|---|---|
+| H1 | **P0** | 계정 운영 화면(`is_staff` 부여/해제·`is_active` 전환·탈퇴 유예 확인) | `[실측 2026-09-05]` `accounts.User` admin 미등록(`admin.site._registry` 11종, `accounts/admin.py` 없음), `staff/` 내 User 참조 0건(rg). 유일 경로 `manage.py shell`. 런북 §5 정정 완료 | 결함. User 전체 admin 등록은 SRR 기각(superuser 세션 탈취 시 전 계정 노출, 소셜 자동연결 `config/settings.py:462-463` 전제). 권고 = 두 플래그만 다루는 좁은 화면 + `StaffActionLog` 액션 추가. 인접: prompt_plan.md 트랙 12(비밀번호 set 경로, 계획 승인·미착수) |
+| H2 | P1 | 이벤트 일괄 선택·일괄 게시 내리기, 목록 인라인 토글/검증, 정렬·기간·카테고리 필터 | 만료 1건 내리기 = 목록→수정→토글 3화면 `[코드]` `staff/views/events.py:404-443`·`templates/staff/events/edit.html:137-144`; 목록 checkbox 0건 `[실측 rg templates/staff/events/list.html]`; 운영 기준 주 1회 정리 `docs/event-operations-criteria.md:50-51`; 선례 `templates/core/drafts/list.html:50-60` bulkbar | 제품 권고. 종료 게시 건수는 착수 전 재측정(위 현재 상태 표 146/169건은 2026-08-24 값) |
+| H3 | P1 | 사용자 제보 드래프트 구분 표시 + 제보 폼 인라인 고지 | `web/promotion.py:74-82` `source_name` 미전달, `EventDraft`에 origin 필드 없음(`drafts/models.py`). 제보 폼 `templates/core/archive/personal_detail.html:115`에 메모 공개 전환 안내 없음 | 제품 권고. 고지 자체는 개인정보처리방침 §3(`templates/core/legal/privacy.html:53-56`)·약관(`templates/core/legal/terms.html:76`)에 있어 SRR Medium을 Low(문구 권고)로 정정 |
+| H4 | P1 | 검수 SLA 지표(최장 대기·평균 처리·반려율·사유 분포) | 대시보드는 pending 건수만 `staff/views/__init__.py:152-186` | 제품 권고 |
+| H5 | P1 | 반려 드래프트 재오픈 | 승인·반려 모두 pending 전용 `drafts/services.py:198-207`, `source_url` unique `drafts/models.py:15` → 반려는 영구 폐기, 복구는 shell | 결함(빈도 낮음) |
+| H6 | P1 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:225`, `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제) |
+| H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **결정 필요**: SRR Medium(승인 직전 필드 조작 추적 불가) / PSO 이연 |
+| H8 | P1 | 알림(대기 누적·소스 전부 오류·러너 오프라인) | `send_mail`·`EmailMessage`·`mail_admins` 0건 `[실측 rg staff/ drafts/]` | 이연. DOR: 비용 정책 안 대안 없음(무료 웹훅은 외부 계정 액션 = 인프라 최후순위) |
+| H9 | P2 | 소스별 수집 이력·실패율, 실패 후보 재시도/무시 액션 | `DraftSource` 상태 필드 2개뿐 `drafts/models.py:56-66` | 제품 권고 |
+| H10 | P2 | 중복 경고(같은 행사 다른 URL), 반려 사유 큐 노출·템플릿 | 중복 판정은 URL 완전일치만 | 제품 권고 |
+| H11 | P2 | 이벤트 검색에 공식 URL·ID, 변경 이력, 수정 화면 소비자 링크·반응 지표, 검증 만료 예고 | 검색 3열 `events/queries.py:213-217`, `Event.updated_at` 0건 `[실측 rg events/models.py]` | 제품 권고 |
+| H12 | P2 | 수집 진행 표시, 감사 로그 보존 정책 | `staff/management/` 없음 `[실측 ls]` | 권고. 진행 표시는 G2와 동일 원인 |
+| H13 | P2 | 대시보드 소스 패널 「전체 보기」 링크, 이벤트 읽기 전용 미리보기 | `templates/staff/dashboard.html:91-103`(감사 패널은 251행에 링크 있음) | 제품 권고 |
+| H14 | P2 | 계정 정지 UI | H1 의존. 승격 스로틀 `20/day` `config/settings.py:579`는 분산 계정 남용은 못 막는다 | 제품 권고 |
+
+**보류·이연(기록된 사용자 결정, 재제안 아님)**: RBAC(2026-07-03 보류, 트리거는
+첫 비-superuser 스태프), 취소·연기 상태(prompt_plan.md Deferred), 일괄
+가져오기·내보내기(아래 「착수하지 않는 것」), 북극성·이벤트별 분해(C1), 신고·차단·
+중재(교환 게이트), 모바일 차단(D10), 정기 수집 스케줄러(인프라 최후순위),
+대시보드 증감 미표시 2장(M5).
+
+**기각(과설계)**: 담당자 배정·검수 락(`select_for_update`로 이미 안전), 전역
+검색(검색 화면 3개), User 전체 admin 등록(SRR).
+
+**미실측(착수 전 재측정)**: 프로덕션 활성 소스 수, `StaffActionLog` 행 수, 종료
+게시 이벤트 수.
 
 ---
 
