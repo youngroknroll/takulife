@@ -187,7 +187,14 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 - `staff/permissions.py`의 `staff_console_required` 데코레이터가 모든 `/staff/` 뷰를 게이트한다.
 - **익명 사용자** → `settings.LOGIN_URL`(`/accounts/login/`)로 리다이렉트(`next` 파라미터 보존).
 - **로그인했지만 스태프가 아닌 사용자** → `403 PermissionDenied`(로그인 페이지로 되돌리지 않는다 — 이미 로그인된 상태에서 LOGIN_URL로 보내면 allauth의 인증됨 리다이렉트와 충돌해 무한 루프가 될 수 있기 때문).
-- Django 기본 관리자 페이지(`/admin/`)는 슈퍼유저용 백업 경로로 계속 유지된다 — Staff Console 접근에 문제가 생기면 슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다.
+- Django 기본 관리자 페이지(`/admin/`)는 슈퍼유저용 백업 경로로 계속 유지되지만, **`accounts.User`는 admin에 등록돼 있지 않다.** `accounts/admin.py`가 없고, `[실측 2026-09-05]` `uv run python manage.py shell -c "from django.contrib import admin; print(sorted(f'{m._meta.app_label}.{m.__name__}' for m in admin.site._registry))"` 결과 11종(account.EmailAddress, auth.Group, axes.AccessAttempt·AccessFailureLog·AccessLog, drafts.DraftSource, sites.Site, socialaccount.SocialAccount·SocialApp·SocialToken, staff.StaffActionLog)에 User가 없다. 따라서 스태프 권한 부여/해제(`is_staff`)와 계정 비활성화(`is_active`)는 `/admin/`에서 할 수 없고, 아래처럼 shell로 직접 다룬다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 명령이라 `uv run`을 쓴다):
+
+  ```bash
+  uv run python manage.py shell -c "from accounts.models import User; u = User.objects.get(email='<email>'); u.is_staff = False; u.save(update_fields=['is_staff'])"
+  ```
+
+  `is_active=False`로 바꾸면 다음 요청부터 그 계정의 세션이 무효화된다(`[실측 2026-09-05]` Django `ModelBackend.get_user`가 `user_can_authenticate` 실패 시 None을 반환하고, allauth 인증 백엔드는 `get_user`를 오버라이드하지 않는다). 계정 운영 UI 자체가 없는 문제는 `docs/backlog.md` H1이 추적한다.
+- 정정 전 기록(2026-09-05 이전 문안): "Staff Console 접근에 문제가 생기면 슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다" — 실측으로 사실과 다름이 확인돼 위와 같이 바꿨다.
 
 ## 6. Migration Rollback — `archive` 0022 (`ActivityLogEntry`) 역적용 금지
 
@@ -258,6 +265,7 @@ one-off command" 등 이 컨테이너의 기본 ENTRYPOINT를 우회하고 지�
 - **선행 확인**: 배포된 이미지가 F6 SSRF TOCTOU 수정(`drafts/fetching.py`의 IP
   핀닝 — `validate_fetch_url`이 반환한 검증 IP로 직접 연결)을 포함한 버전인지
   확인한다. 포함하지 않은 버전에서 켜면 DNS 리바인딩에 의한 SSRF 위험이 남는다.
+- **선행 확인(타임아웃)**: 대시보드 「지금 수집」은 요청 안에서 동기 실행되며(`staff/views/__init__.py`의 `staff_draft_discovery_run`), `docker/entrypoint.sh`의 gunicorn에 `--timeout`이 없어 기본 30초가 적용된다. 활성 소스가 많거나 응답이 느리면 워커가 강제 종료돼 수집이 부분 실행되고 감사 로그가 남지 않을 수 있다. 수치와 보류 상태는 `docs/backlog.md` G2 참조.
 - **활성화**: PaaS 시크릿에 `DRAFT_DISCOVERY_ENABLED=true`를 등록하고
   **컨테이너를 재기동**한다. `config/settings.py`의 `DRAFT_DISCOVERY_ENABLED =
   load_draft_discovery_enabled()`는 모듈 임포트 시점(프로세스 기동 시) 1회만
