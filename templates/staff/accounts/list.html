@@ -15,18 +15,18 @@
           <colgroup>
             <col>
             <col style="width:9rem">
+            <col style="width:7.5rem">
+            <col style="width:7.5rem">
             <col style="width:9rem">
-            <col style="width:7.5rem">
-            <col style="width:7.5rem">
             <col style="width:5rem">
           </colgroup>
           <thead>
             <tr>
               <th scope="col">이메일</th>
               <th scope="col">가입일</th>
-              <th scope="col">마지막 로그인</th>
               <th scope="col">상태</th>
               <th scope="col">권한</th>
+              <th scope="col">마지막 로그인</th>
               <th scope="col">상세</th>
             </tr>
           </thead>
@@ -35,13 +35,13 @@
               <tr>
                 <td class="accounts-email-cell">{{ row.email }}</td>
                 <td class="mono accounts-date-cell">{{ row.date_joined|date:"y.m.d" }}</td>
-                <td class="mono accounts-date-cell">{{ row.last_login|date:"y.m.d H:i"|default:"-" }}</td>
                 <td>
                   <span class="accounts-status-badge accounts-status-badge--{{ row.status_key }}">{% if row.status_key == "active" %}활성{% elif row.status_key == "inactive" %}비활성{% else %}탈퇴 유예{% endif %}</span>
                 </td>
                 <td>
                   <span class="accounts-role-badge accounts-role-badge--{{ row.role_key }}">{% if row.role_key == "superuser" %}전체 권한{% elif row.role_key == "staff" %}검수 권한{% else %}일반{% endif %}</span>
                 </td>
+                <td class="mono accounts-date-cell">{{ row.last_login|date:"y.m.d H:i"|default:"-" }}</td>
                 <td>
                   <a class="accounts-detail-link" href="{% url 'staff:account-detail' row.id %}">상세</a>
                 </td>
