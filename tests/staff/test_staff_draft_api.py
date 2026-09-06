@@ -71,7 +71,7 @@ def test_관리자가_안전하지_않은_url로_생성을_요청하면_400과_�
 
 @pytest.mark.django_db
 @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-def test_url_가져오기가_실패하면_503으로_응답하고_드래프트를_생성하지_않는다(admin_client, monkeypatch):
+def test_url_가져오기가_실패하면_503으로_응답하고_드래프트를_생성하지_않는다_로그도_남지_않는다(admin_client, monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: (_ for _ in ()).throw(RuntimeError("timeout")))
     admin_client.raise_request_exception = False
 
@@ -80,6 +80,7 @@ def test_url_가져오기가_실패하면_503으로_응답하고_드래프트를
     assert response.status_code == 503
     assert response.json() == {"detail": "Failed to fetch source URL."}
     assert not EventDraft.objects.filter(source_url="https://example.com/event").exists()
+    assert StaffActionLog.objects.count() == 0
 
 
 @pytest.mark.django_db
