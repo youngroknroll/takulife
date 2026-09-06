@@ -8,7 +8,9 @@
 `/api/schema/`·`/api/docs/`는 전체 공개(무인증·무스로틀)로 배선했다 —
 2026-08-16 사용자 결정. 스태프 전용 drafts API(`AdminEventDraft*`)의 존재·경로
 구조가 스키마에 드러나는 것은 **수용된 잔여 위험**이다 — 실제 데이터는 여전히
-`IsAdminUser` 뒤에 있고, 노출되는 건 엔드포인트 형태뿐이다.
+`IsAdminUser` 뒤에 있고, 노출되는 건 엔드포인트 형태뿐이다. 이 뷰는 트랙 20
+이후 `drafts/views.py`가 아니라 `staff/views/draft_api.py`에 있다(마운트는
+`staff/api_urls.py`, 경로 `/api/event-drafts/` 불변).
 
 ## 가드레일 1 — `extend_schema_view` 키는 HTTP 핸들러명이다
 
