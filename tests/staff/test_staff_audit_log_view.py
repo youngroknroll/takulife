@@ -263,3 +263,27 @@ def test_대시보드_최근_처리_내역의_계정_행동_행에_대상_이메
     assert resp.status_code == 200
     assert target.email not in resp.content.decode()
 
+
+@pytest.mark.django_db
+def test_감사_로그_화면에_드래프트_생성_수정_행동이_한국어_라벨과_드래프트_대상으로_보인다(staff_client, make_draft):
+    staff, client = staff_client()
+    created_draft = make_draft("https://example.com/audit-draft-create")
+    updated_draft = make_draft("https://example.com/audit-draft-update")
+    StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.DRAFT_CREATE, target_draft=created_draft
+    )
+    StaffActionLog.objects.create(
+        actor=staff, action=StaffActionLog.Action.DRAFT_UPDATE, target_draft=updated_draft
+    )
+
+    resp = client.get(audit_log_url())
+
+    assert resp.status_code == 200
+    rows_by_action = {row["action"]: row for row in resp.context["log_rows"]}
+    create_row = rows_by_action[StaffActionLog.Action.DRAFT_CREATE]
+    update_row = rows_by_action[StaffActionLog.Action.DRAFT_UPDATE]
+    assert create_row["action_label"] == "드래프트 생성"
+    assert create_row["target_label"] == "https://example.com/audit-draft-create"
+    assert update_row["action_label"] == "드래프트 수정"
+    assert update_row["target_label"] == "https://example.com/audit-draft-update"
+

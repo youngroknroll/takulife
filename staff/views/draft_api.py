@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db import transaction
 from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
@@ -25,9 +26,13 @@ from drafts.services import (
     DraftCreationUnsafeUrlError,
     DraftStateError,
     DraftVocabError,
-    create_draft_from_url,
+    persist_prepared_draft,
+    prepare_draft_from_url,
     update_draft,
 )
+
+from ..models import StaffActionLog
+from ._helpers import _action_log_kwargs, _staff_action_metadata
 
 
 class AdminEventDraftStatsView(APIView):
@@ -90,12 +95,7 @@ class AdminEventDraftListCreateView(ListCreateAPIView):
         source_name = serializer.validated_data.get("source_name", "")
 
         try:
-            draft = create_draft_from_url(source_url=source_url, source_name=source_name)
-        except DraftCreationDuplicateError:
-            return field_error_response(
-                "source_url",
-                "Event draft with this source URL already exists.",
-            )
+            payload = prepare_draft_from_url(source_url=source_url)
         except DraftCreationUnsafeUrlError:
             return error_response("Unsafe URL is not allowed.", 400)
         except DraftCreationUnsupportedContentError:
@@ -106,6 +106,22 @@ class AdminEventDraftListCreateView(ListCreateAPIView):
             return error_response("Could not extract meaningful event content.", 400)
         except DraftCreationFetchError:
             return error_response("Failed to fetch source URL.", 503)
+
+        try:
+            with transaction.atomic():
+                draft = persist_prepared_draft(payload=payload, source_name=source_name)
+                StaffActionLog.objects.create(
+                    **_action_log_kwargs(
+                        _staff_action_metadata(request),
+                        StaffActionLog.Action.DRAFT_CREATE,
+                        target_draft=draft,
+                    )
+                )
+        except DraftCreationDuplicateError:
+            return field_error_response(
+                "source_url",
+                "Event draft with this source URL already exists.",
+            )
 
         response_data = EventDraftSerializer(draft).data
         headers = self.get_success_headers(response_data)
@@ -150,7 +166,15 @@ class AdminEventDraftDetailView(RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            updated_draft = update_draft(draft_id=draft.id, updates=serializer.validated_data)
+            with transaction.atomic():
+                updated_draft = update_draft(draft_id=draft.id, updates=serializer.validated_data)
+                StaffActionLog.objects.create(
+                    **_action_log_kwargs(
+                        _staff_action_metadata(request),
+                        StaffActionLog.Action.DRAFT_UPDATE,
+                        target_draft=updated_draft,
+                    )
+                )
         except DraftStateError:
             return error_response("Only pending drafts can be updated.", 400)
         except DraftVocabError:
