@@ -13,10 +13,10 @@ from rest_framework.views import APIView
 
 from core.errors import error_response, field_error_response
 
-from .models import EventDraft
-from .queries import draft_review_stats
-from .serializers import EventDraftSerializer, EventDraftUpdateSerializer
-from .services import (
+from drafts.models import EventDraft
+from drafts.queries import draft_review_stats
+from drafts.serializers import EventDraftSerializer, EventDraftUpdateSerializer
+from drafts.services import (
     DraftCreationEmptyExtractionError,
     DraftCreationDuplicateError,
     DraftCreationFetchError,

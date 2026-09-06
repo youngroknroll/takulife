@@ -3,7 +3,7 @@ from django.db import IntegrityError
 from django.test import override_settings
 from django.urls import resolve, reverse
 
-import drafts.views as draft_views
+import staff.views.draft_api as draft_views
 from drafts.models import EventDraft
 from drafts.services import (
     DraftCreationEmptyExtractionError,
@@ -11,6 +11,7 @@ from drafts.services import (
     DraftCreationUnsupportedContentError,
 )
 from events.models import Event
+from staff.models import StaffActionLog
 
 pytestmark = pytest.mark.web
 
@@ -32,7 +33,7 @@ def event_draft_detail_url(draft_id):
 
 @pytest.mark.django_db
 @override_settings(DRAFT_DISCOVERY_ENABLED=True)
-def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_필드와_함께_저장된다(admin_client, monkeypatch):
+def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_필드와_함께_저장되고_로그도_남지_않는다(admin_client, monkeypatch):
     def fake_fetch(url):
         return "<html><title>Sample Event</title><meta name='description' content='Short summary'></html>"
 
@@ -55,6 +56,7 @@ def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_�
     assert created.extracted_title == "Sample Event"
     assert created.extracted_category == "popup_store"
     assert created.review_status == EventDraft.ReviewStatus.PENDING
+    assert StaffActionLog.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -102,7 +104,7 @@ def test_이벤트_드래프트_상세_응답은_extraction_method와_confidence
 
 
 @pytest.mark.django_db
-def test_관리자는_검토_대기중인_드래프트의_추출_필드를_수정할_수_있다(admin_client, make_draft):
+def test_관리자는_검토_대기중인_드래프트의_추출_필드를_수정할_수_있고_로그도_남지_않는다(admin_client, make_draft):
     draft = make_draft("https://example.com/event")
 
     response = admin_client.patch(
@@ -115,6 +117,7 @@ def test_관리자는_검토_대기중인_드래프트의_추출_필드를_수�
     draft.refresh_from_db()
     assert draft.extracted_title == "Updated title"
     assert draft.extracted_region == "seoul"
+    assert StaffActionLog.objects.count() == 0
 
 
 @pytest.mark.django_db
