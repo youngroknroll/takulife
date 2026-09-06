@@ -22,6 +22,10 @@ class StaffActionLog(models.Model):
         EVENT_VERIFY = "event_verify", "Event verify"
         DRAFT_DISCOVER = "draft_discover", "Draft discover"
         SOURCE_DISCOVER = "source_discover", "Source discover"
+        STAFF_GRANT = "staff_grant", "Staff grant"
+        STAFF_REVOKE = "staff_revoke", "Staff revoke"
+        USER_DEACTIVATE = "user_deactivate", "User deactivate"
+        USER_REACTIVATE = "user_reactivate", "User reactivate"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -39,6 +43,12 @@ class StaffActionLog(models.Model):
         null=True,
         on_delete=models.SET_NULL,
     )
+    target_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -47,7 +57,13 @@ class StaffActionLog(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        target_id = self.target_draft_id if self.target_draft_id is not None else self.target_event_id
+        target_id = (
+            self.target_draft_id
+            if self.target_draft_id is not None
+            else self.target_event_id
+            if self.target_event_id is not None
+            else self.target_user_id
+        )
         if target_id is None:
             return f"{self.action} by {self.actor_id}"
         return f"{self.action} #{target_id} by {self.actor_id}"

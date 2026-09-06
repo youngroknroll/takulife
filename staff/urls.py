@@ -62,4 +62,16 @@ urlpatterns = [
         staff_views.staff_event_verify,
         name="event-verify",
     ),
+    path("accounts/", staff_views.staff_accounts, name="account-list"),
+    path("accounts/<int:pk>/", staff_views.staff_account_detail, name="account-detail"),
+    path(
+        "accounts/<int:pk>/staff/",
+        staff_views.staff_account_set_staff,
+        name="account-set-staff",
+    ),
+    path(
+        "accounts/<int:pk>/active/",
+        staff_views.staff_account_set_active,
+        name="account-set-active",
+    ),
 ]

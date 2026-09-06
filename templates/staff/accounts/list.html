@@ -1,0 +1,67 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 계정{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/pages/accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    {% if account_rows %}
+      <div class="accounts-table-wrap">
+        <div class="staff-table-scroll">
+        <table class="accounts-table">
+          <colgroup>
+            <col>
+            <col style="width:9rem">
+            <col style="width:9rem">
+            <col style="width:7.5rem">
+            <col style="width:7.5rem">
+            <col style="width:5rem">
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">이메일</th>
+              <th scope="col">가입일</th>
+              <th scope="col">마지막 로그인</th>
+              <th scope="col">상태</th>
+              <th scope="col">권한</th>
+              <th scope="col">상세</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in account_rows %}
+              <tr>
+                <td class="accounts-email-cell">{{ row.email }}</td>
+                <td class="mono accounts-date-cell">{{ row.date_joined|date:"y.m.d" }}</td>
+                <td class="mono accounts-date-cell">{{ row.last_login|date:"y.m.d H:i"|default:"-" }}</td>
+                <td>
+                  <span class="accounts-status-badge accounts-status-badge--{{ row.status_key }}">{% if row.status_key == "active" %}활성{% elif row.status_key == "inactive" %}비활성{% else %}탈퇴 유예{% endif %}</span>
+                </td>
+                <td>
+                  <span class="accounts-role-badge accounts-role-badge--{{ row.role_key }}">{% if row.role_key == "superuser" %}전체 권한{% elif row.role_key == "staff" %}검수 권한{% else %}일반{% endif %}</span>
+                </td>
+                <td>
+                  <a class="accounts-detail-link" href="{% url 'staff:account-detail' row.id %}">상세</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </div>
+
+        <div class="accounts-table-foot">
+          <span class="mono accounts-table-foot-range">{{ page_obj.start_index }}–{{ page_obj.end_index }} / {{ page_obj.paginator.count }}</span>
+          {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
+        </div>
+      </div>
+    {% else %}
+      {% if search %}
+        <p class="accounts-empty">「{{ search }}」 검색 결과가 없습니다. <a href="{% url 'staff:account-list' %}">검색 지우기</a></p>
+      {% else %}
+        <p class="accounts-empty">등록된 계정이 없습니다.</p>
+      {% endif %}
+    {% endif %}
+  </main>
+{% endblock %}

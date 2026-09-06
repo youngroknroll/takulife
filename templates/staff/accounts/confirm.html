@@ -1,0 +1,36 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 계정 상태 변경 확인{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/pages/accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <div class="accounts-confirm-backdrop" aria-hidden="true"></div>
+
+    <div class="accounts-confirm-scrim">
+      <div class="accounts-confirm-dialog" role="alertdialog" aria-labelledby="accounts-confirm-title">
+        <div class="accounts-confirm-dialog-head">
+          <span class="accounts-confirm-dialog-title" id="accounts-confirm-title">{{ action_label }} 확인</span>
+          <span class="mono accounts-confirm-dialog-id">#{{ account.id }}</span>
+        </div>
+        <div class="accounts-confirm-dialog-body">
+          <p class="accounts-confirm-message"><strong>{{ account.email }}</strong> 계정에 「{{ action_label }}」을(를) 적용합니다.</p>
+          <p class="accounts-confirm-description">{{ description }}</p>
+
+          <div class="accounts-confirm-actions">
+            <a class="staff-cta accounts-confirm-cancel" href="{% url 'staff:account-detail' account.id %}">취소</a>
+            <form method="post" action="{{ post_url }}" data-submit-guard>
+              {% csrf_token %}
+              <input type="hidden" name="confirmed" value="yes">
+              <input type="hidden" name="enabled" value="{{ enabled|yesno:'1,0' }}">
+              <button class="accounts-confirm-confirm-btn" type="submit">{{ action_label }} 확정</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}
