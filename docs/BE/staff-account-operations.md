@@ -113,3 +113,30 @@ superuser 경계를 감사 로그 화면이 우회해 노출하기 때문이다.
 호출부 관례로만 지켜지고, `CheckConstraint`는 없다
 (`[코드] rg CheckConstraint staff/` 결과 0건). 트랙 19에서 DB 제약 추가는
 스코프 밖으로 이연했다.
+
+## (i) PRG 확인 화면은 `data-committed-redirect`를 쓰지 않는다 — 재제출 안전은 목표 상태 지정 + 서비스 멱등이 담당
+
+확인 화면(`confirm.html`)은 순수 폼 POST(PRG) 흐름이라 fetch 기반 화면이
+쓰는 `commitAndNavigate`/`data-committed-redirect` 표시
+(`static/js/shared/api.js:327-330`)와 그 표시를 읽는 `pageshow` 핸들러
+(`static/js/shared/api.js:345-359`)를 쓸 수 없다. 여기 로드된
+`staff_submit_guard.js`는 제출 시 버튼에 `.is-loading` + `disabled`만
+건다(`static/js/shared/staff_submit_guard.js:22-30`). 뒤로가기로 확인
+화면이 bfcache 복원되면(`pageshow`의 `evt.persisted`) 버튼은 다시
+활성화되고, 같은 `confirmed=yes`·`enabled` POST가 재전송될 수 있다.
+
+이 재전송이 무해한 이유는 페이지 안전장치가 아니라 서버 쪽 멱등이다.
+`set_staff_flag`/`set_active_flag`는 대상이 이미 목표 상태면 저장 없이
+`False`를 반환하고(`accounts/services.py:146-147`, `:158-159`), 뷰는
+이 경우 `messages.info`만 내고 감사 로그를 남기지 않는다
+(`staff/views/accounts.py:143-146`).
+
+실측 [2026-09-07, Chrome DevTools MCP]: 검수 권한 해제 확정 → 상세
+리다이렉트 → 뒤로가기(`back_forward`, 버튼 `disabled=false`로 복원) →
+확정 재클릭 → "이미 해당 상태라 변경하지 않았습니다." 표시, DB
+`StaffActionLog` 대상 84행은 `staff_grant`·`staff_revoke` 2건뿐(중복
+없음).
+
+새 PRG 확인 화면을 만들 때는 토글이 아니라 목표 상태 지정으로 설계하고
+서비스 멱등을 테스트로 고정하라(T9-S2
+`이미_목표_상태인_대상에_확인_상태_변경_POST를_보내면_변경없이_안내_메시지를_보여주고_로그를_남기지_않는다`).
