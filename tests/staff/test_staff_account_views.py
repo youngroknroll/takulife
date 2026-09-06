@@ -108,6 +108,40 @@ def test_계정_목록은_페이지당_STAFF_ACCOUNT_LISTING_PAGE_SIZE건으로_
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "target_kwargs, deletion_pending, expected_status_key, expected_role_key",
+    [
+        pytest.param({}, False, "active", "member", id="활성_일반_회원"),
+        pytest.param({"is_active": False}, False, "inactive", "member", id="비활성"),
+        pytest.param({}, True, "deletion_pending", "member", id="탈퇴_유예"),
+        pytest.param({"is_staff": True}, False, "active", "staff", id="스태프"),
+        pytest.param(
+            {"is_staff": True, "is_superuser": True},
+            False,
+            "active",
+            "superuser",
+            id="슈퍼유저",
+        ),
+    ],
+)
+def test_계정_목록_행의_status_key와_role_key는_계정_상태와_권한을_반영한다(
+    staff_client, make_user, target_kwargs, deletion_pending, expected_status_key, expected_role_key
+):
+    target = make_user(**target_kwargs)
+    if deletion_pending:
+        services.request_deletion(target)
+        target.refresh_from_db()
+    _, client = staff_client(is_superuser=True)
+
+    resp = client.get(_list_url())
+
+    assert resp.status_code == 200
+    row = next(row for row in resp.context["account_rows"] if row["id"] == target.pk)
+    assert row["status_key"] == expected_status_key
+    assert row["role_key"] == expected_role_key
+
+
+@pytest.mark.django_db
 def test_계정_목록_페이저_쿼리는_검색어를_URL_인코딩한다(staff_client):
     _, client = staff_client(is_superuser=True)
 
@@ -118,6 +152,16 @@ def test_계정_목록_페이저_쿼리는_검색어를_URL_인코딩한다(staf
 
 
 # T3 상세 -----------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_익명_사용자가_계정_상세에_접근하면_로그인_페이지로_리다이렉트된다(client, make_user):
+    target = make_user()
+
+    resp = client.get(_detail_url(target))
+
+    assert resp.status_code == 302
+    assert resp.url == f"/accounts/login/?next={_detail_url(target)}"
 
 
 @pytest.mark.django_db
