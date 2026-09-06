@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #335부터 #192까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #338부터 #192까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,34 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
+### PR #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
 
-**무엇을 바꿨나**: `AGENTS.md`에 `## Orchestrator Contract`(규칙 7개 — 부정
-주장은 전수 `rg` 근거, 채팅·브리프 숫자도 단위+출처 태그, 산술은 도구,
-경로는 존재 확인, 권고 전 사용자 보류 기록 검색, 서브에이전트 주장 채택 전
-재확인, 리뷰 선행 보고)를 신설하고 "Numbers In Documents"가 채팅 보고·
-브리프에도 적용됨을 명시, `CLAUDE.md` Working Method에 참조 1줄. 어댑터
-11개는 AGENTS.md 전체 읽기를 역할별 필요 절 목록으로 바꾸고 반복 브리프
-지시를 `Standing instructions`로 이관, 2.1.259에 없는 `MultiEdit` 제거.
-훅 4개째 `plan-number-tag-guard.sh`(PreToolUse `Edit|Write`,
-`prompt_plan.md`만): 단락에 2 이상 정수+수량 단위가 있고
-`[실측]/[코드]/[계산]/[문서]/[대시보드]` 태그가 없으면 차단. 같은 PR에
-PR 게이트 pip-audit이 잡은 `djangorestframework` 3.17.1→3.17.2 잠금 상향
-(GHSA-2m8g-3cmr-wg3w·GHSA-g47c-3xmw-q6m2, medium) 포함. 백로그 F16
-(`.dockerignore`의 `.claude/` 미제외) 신규.
+**무엇을 바꿨나**: 코드 변경 없음. `docs/operations-runbook.md` §5의
+"슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다"를 실측대로
+정정(`accounts.User`는 admin 미등록 — `admin.site._registry` 11종
+`[실측 2026-09-05]`, shell 경로와 `is_active=False`의 세션 무효화 동작
+기록), §8에 수집 활성화 선행 확인(gunicorn 기본 30초·동기 수집) 추가.
+`docs/backlog.md` G2 보강(「지금 수집」 최악 32초 `[계산]`, SIGKILL 시
+finally 감사 로그 미기록), H절 신설(H1~H14, P0=H1 계정 운영 화면). 머지
+전 외부 검토 6건을 코드 실측으로 반영(H1 착수 전 계약 3건·User admin
+기각 근거 정정·H2 멱등 계약·H3 source_name 금지·H6 P2·H12 분리·H14→H1
+흡수)하고, WED·BIR 사전 검토를 통합한 "프론트 필요 기능" 단락과 H9
+인용 줄 정정(56-66→67-68)을 추가.
 
-**왜**: 같은 세션 검토에서 오케스트레이터 1차 산출물 오류 8건이 리뷰어에게
-잡혔고(원인: 확인 가능한 사실을 확인하지 않고 서술), 하네스에 11개 역할
-계약만 있고 오케스트레이터 계약이 없었다. 사용자 결정으로 제안 1·2·3·5
-적용, 4(역할별 `memory: project`)는 미승인.
+**왜**: 스태프 대시보드를 현업에 맞게 쓰기 위한 부족 기능 검토 결과를
+정본에 남기고, 사실과 다른 런북 문안을 바로잡기 위해서다. 후속 트랙
+19(H1 계정 운영 화면)의 착수 근거가 된다.
 
-**검증**: 훅 페이로드 10케이스 exit 코드 기대 일치 + 실사용 차단 1회·통과
-2회 `[실측]`, 정비 어댑터 스폰 2회(Standing instructions 로드, 검토 역할
-도구 Read·Grep·Glob) `[실측]`, `uv run pytest -q` 2364 passed `[실측]`,
-CI 4체크 통과(pip-audit는 DRF 상향 후 통과) `[실측]`. 리뷰: DOR 블로커
-없음, QVL 조건부 완료 → 실행 증거 3건 확보로 충족.
+**검증**: 인용 file:line 전수 확인(오케스트레이터 + BIE 이중 확인, 범위
+오기 2건 커밋 전 정정) `[실측]`, `uv run pytest -q tests/core/test_ci_command_policy.py`
+2 passed `[실측]`, allauth 65.18.0 admin 편집 필드 Django shell 실측
+`[실측 2026-09-06]`, 삭제 폼 2단계 확인 실측으로 BIR 결함 주장 1건 기각
+`[실측]`. 머지 후 `uv run pytest -q` 2364 passed / 72.34초 `[실측 2026-09-06]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #337 — docs: PR #332~#335 머지를 로그에 롤링 반영
+- #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
 - #334 — deploy: main → production
 - #333 — deploy: main → production
 - #332 — docs: 머지 로그·런북 실측 기록 + design(home): 히어로 문구·카테고리 섹션 이동
