@@ -22,7 +22,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `[실측 2026-09-06]` `uv run pytest -q` → **2364 passed**(72.34초) |
+| 백엔드 회귀 | `[실측 2026-09-07]` `uv run pytest -q` → **2428 passed**(67.01초, PR #340 머지 후 main) |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
@@ -327,13 +327,13 @@ H6도 같은 규칙으로 PSO P2를 따른다(2026-09-06 정정). 2026-09-06 외
 
 | # | 우선순위 | 항목 | 근거 | 분류·판정 |
 |---|---|---|---|---|
-| H1 | **P0** | 계정 운영 화면(`is_staff` 부여/해제·`is_active` 전환·탈퇴 유예 확인). H14(계정 정지)를 흡수 | `[실측 2026-09-05]` `accounts.User` admin 미등록(`admin.site._registry` 11종, `accounts/admin.py` 없음), `staff/` 내 User 참조 0건(rg). 유일 경로 `manage.py shell`. 런북 §5 정정 완료 | 결함. 권고 = 두 플래그만 다루는 좁은 화면 + 감사 기록. **착수 전 계약 3건 확정 필요(2026-09-06 외부 검토 반영)**: ① 조작 주체 — `staff_console_required`는 `is_staff`만 검사(`staff/permissions.py:21`)라 그대로 재사용하면 검수 권한 스태프도 타 계정의 권한을 바꾸고 정지시킬 수 있다(`templates/staff/_console_shell.html:67`의 "전체 권한/검수 권한"은 표시일 뿐). superuser 한정 또는 별도 관문, 자기 계정·마지막 관리자 보호를 정한다. ② 감사 대상 — `StaffActionLog`는 `target_draft`·`target_event`만 가진다(`staff/models.py:32-41`). 액션 이름만 추가하면 변경된 계정을 추적 못 하므로 계정 대상 필드와 변경·기록의 원자성이 필요. ③ 이 화면으로 첫 비-superuser 스태프가 생기면 RBAC 보류(아래)의 재검토 트리거가 켜진다. User 전체 admin 등록은 계속 기각하되 근거 정정: `[실측 2026-09-06]` allauth 65.18.0 admin은 이미 `EmailAddress`(user·email·verified·primary)·`SocialAccount`(user·provider·uid·extra_data)를 편집 노출하므로 "피해 반경 1개→전체 확대"는 성립하지 않는다. 근거 = 업무에 불필요한 계정 편집 기능의 추가 노출 최소화. 인접: prompt_plan.md 트랙 12(비밀번호 set 경로, 계획 승인·미착수). **구현 완료(2026-09-07, 트랙 19, PR 번호는 머지 시 기입)** — superuser 전용 `/staff/accounts/`. 정본 `docs/BE/staff-account-operations.md`. ★2 사용자 확인 대기. ★3 액션 빈도 제한 결정 대기(SRR 재검토) |
+| H1 | **P0** | 계정 운영 화면(`is_staff` 부여/해제·`is_active` 전환·탈퇴 유예 확인). H14(계정 정지)를 흡수 | `[실측 2026-09-05]` `accounts.User` admin 미등록(`admin.site._registry` 11종, `accounts/admin.py` 없음), `staff/` 내 User 참조 0건(rg). 유일 경로 `manage.py shell`. 런북 §5 정정 완료 | 결함. 권고 = 두 플래그만 다루는 좁은 화면 + 감사 기록. **착수 전 계약 3건 확정 필요(2026-09-06 외부 검토 반영)**: ① 조작 주체 — `staff_console_required`는 `is_staff`만 검사(`staff/permissions.py:21`)라 그대로 재사용하면 검수 권한 스태프도 타 계정의 권한을 바꾸고 정지시킬 수 있다(`templates/staff/_console_shell.html:67`의 "전체 권한/검수 권한"은 표시일 뿐). superuser 한정 또는 별도 관문, 자기 계정·마지막 관리자 보호를 정한다. ② 감사 대상 — `StaffActionLog`는 `target_draft`·`target_event`만 가진다(`staff/models.py:32-41`). 액션 이름만 추가하면 변경된 계정을 추적 못 하므로 계정 대상 필드와 변경·기록의 원자성이 필요. ③ 이 화면으로 첫 비-superuser 스태프가 생기면 RBAC 보류(아래)의 재검토 트리거가 켜진다. User 전체 admin 등록은 계속 기각하되 근거 정정: `[실측 2026-09-06]` allauth 65.18.0 admin은 이미 `EmailAddress`(user·email·verified·primary)·`SocialAccount`(user·provider·uid·extra_data)를 편집 노출하므로 "피해 반경 1개→전체 확대"는 성립하지 않는다. 근거 = 업무에 불필요한 계정 편집 기능의 추가 노출 최소화. 인접: prompt_plan.md 트랙 12(비밀번호 set 경로, 계획 승인·미착수). **구현 완료(2026-09-07, 트랙 19, PR #340 머지)** — superuser 전용 `/staff/accounts/`. 정본 `docs/BE/staff-account-operations.md`. 사용자 결정(2026-09-07): ★3 액션 빈도 제한·step-up은 미구현 유지 수용(이연). ★2 확정(2026-09-07): superuser는 shell로만 생성·변경, 콘솔 제외 유지 |
 | H2 | P1 | 이벤트 일괄 선택·일괄 게시 내리기, 목록 인라인 토글/검증, 정렬·기간·카테고리 필터 | 만료 1건 내리기 = 목록→수정→토글 3화면 `[코드]` `staff/views/events.py:404-443`·`templates/staff/events/edit.html:137-144`; 목록 checkbox 0건 `[실측 rg templates/staff/events/list.html]`; 운영 기준 주 1회 정리 `docs/event-operations-criteria.md:50-51`; 선례 `templates/core/drafts/list.html:50-60` bulkbar | 제품 권고. 계약(2026-09-06 반영): 일괄 내리기는 "비공개로 설정"이지 토글이 아니다 — 현재 토글은 읽은 상태를 반전하므로(`staff/views/events.py:413-418`) 내리기 성공 뒤 응답만 유실되면 재시도가 다시 게시한다. 부분 실패·재시도 대상·선택 범위(페이지네이션 `templates/staff/events/list.html:77-78`, 필터 `staff/views/events.py:110` 변경 시 선택 유지 여부)를 설계에서 명시. 종료 게시 건수는 착수 전 재측정(위 현재 상태 표 146/169건은 2026-08-24 값) |
 | H3 | P1 | 사용자 제보 드래프트 구분 표시 + 제보 폼 인라인 고지 | `web/promotion.py:74-82` `source_name` 미전달, `EventDraft`에 origin 필드 없음(`drafts/models.py`). 제보 폼 `templates/core/archive/personal_detail.html:115`에 메모 공개 전환 안내 없음 | 제품 권고. 구분 표시에 `source_name`을 쓰지 않는다(2026-09-06 반영): 승인 시 이벤트로 복사되고(`drafts/services.py:273`) 소비자 상세에 "N 제공"으로 노출된다(`templates/core/events/detail.html:33-34`). 스태프 수집분은 `DraftSource.name`이 들어가고(`drafts/candidate_intake.py:62`) 제보분은 빈 값이라, 운영용 유입 경로 필드를 따로 둔다. 고지 문안은 메모가 `summary`로 매핑돼(`web/promotion.py:81`) 검수 후 공개 요약에 쓰인다는 내용. 고지 자체는 개인정보처리방침 §3(`templates/core/legal/privacy.html:53-56`)·약관(`templates/core/legal/terms.html:76`)에 있어 SRR Medium을 Low(문구 권고)로 정정 |
 | H4 | P1 | 검수 SLA 지표(최장 대기·평균 처리·반려율·사유 분포) | 대시보드는 pending 건수만 `staff/views/__init__.py:152-186` | 제품 권고 |
 | H5 | P1 | 반려 드래프트 재오픈 | 승인·반려 모두 pending 전용 `drafts/services.py:198-207`, `source_url` unique `drafts/models.py:15` → 반려는 영구 폐기, 복구는 shell | 결함(빈도 낮음) |
-| H6 | P2 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:225`, `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제). 2026-09-06 정정: 이전 표기 P1은 WED 의견으로 상향한 것이라 "우선순위는 PSO 판정" 규칙과 충돌해 PSO P2로 되돌림. WED 이견은 기록만, 사용자가 P1을 원하면 조정 |
-| H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **결정 필요**: SRR Medium(승인 직전 필드 조작 추적 불가) / PSO 이연 |
+| H6 | P2 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:237`(트랙 19 import 추가로 225→237, 2026-09-07 재확인), `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제). 2026-09-06 정정: 이전 표기 P1은 WED 의견으로 상향한 것이라 "우선순위는 PSO 판정" 규칙과 충돌해 PSO P2로 되돌림. WED 이견은 기록만. **사용자 결정(2026-09-07): P2 유지** — 운영자가 소스를 주 1회 이상 만진다는 사실이 확인되면 올리고, 착수 시 `superuser_console_required` 재사용(admin은 superuser 전용인데 콘솔 소스 화면은 is_staff 전체가 보므로) |
+| H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **사용자 결정(2026-09-07): 선택지 2 승인** — 액션 2종(`draft_create`·`draft_update`) 사실 기록, 전후 스냅샷은 H12(b) 보존 정책 결정까지 보류. 트랙 20으로 착수(SRR Medium / PSO 이연 이견은 기록) |
 | H8 | P1 | 알림(대기 누적·소스 전부 오류·러너 오프라인) | `send_mail`·`EmailMessage`·`mail_admins` 0건 `[실측 rg staff/ drafts/]` | 이연. DOR: 비용 정책 안 대안 없음(무료 웹훅은 외부 계정 액션 = 인프라 최후순위) |
 | H9 | P2 | 소스별 수집 이력·실패율, 실패 후보 재시도/무시 액션 | `DraftSource` 상태 필드 2개뿐 `drafts/models.py:67-68`(정정 전 표기 56-66은 필드 줄을 빗나감, 2026-09-06 재측정) | 제품 권고 |
 | H10 | P2 | 중복 경고(같은 행사 다른 URL), 반려 사유 큐 노출·템플릿 | 중복 판정은 URL 완전일치만 | 제품 권고 |
@@ -405,7 +405,7 @@ dash-metric 카드 재사용(집계만 백엔드). 두 역할 원문과 검증 �
   `successEl.focus()` 223) 재사용. 서버 pending 전용 가드로 멱등.
 - H6 — `templates/staff/sources/list.html`(`<form` 0건 `[실측 grep -c]`)에 생성 폼·
   행별 수정·토글, 폼은 `events/edit.html:31-99` 패턴. 토글은 양방향이라 확인
-  불필요(`events.py:397-398` 선례). 완료 시 admin 이탈 문구(`staff/views/__init__.py:225`) 제거.
+  불필요(`events.py:397-398` 선례). 완료 시 admin 이탈 문구(`staff/views/__init__.py:237`) 제거.
 - H9 — 이력 표는 백엔드 저장 구조 선행(`DraftSource` 상태 필드는 `drafts/models.py:67-68`
   2개). 재시도는 확인 불필요, "무시"가 영구 폐기면 확인 필요(설계 시 결정).
 - H10 — 사유 템플릿은 단건 textarea(`core/drafts/detail.html:150-151`)에만 붙는다.

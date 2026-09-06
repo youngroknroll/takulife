@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #338부터 #192까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #340부터 #192까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,32 +28,38 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
+### PR #340 — feat(staff): superuser 전용 계정 운영 화면 — is_staff·is_active 목표 상태 지정 + 2단계 확인 + 감사 target_user (트랙 19 H1)
 
-**무엇을 바꿨나**: 코드 변경 없음. `docs/operations-runbook.md` §5의
-"슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다"를 실측대로
-정정(`accounts.User`는 admin 미등록 — `admin.site._registry` 11종
-`[실측 2026-09-05]`, shell 경로와 `is_active=False`의 세션 무효화 동작
-기록), §8에 수집 활성화 선행 확인(gunicorn 기본 30초·동기 수집) 추가.
-`docs/backlog.md` G2 보강(「지금 수집」 최악 32초 `[계산]`, SIGKILL 시
-finally 감사 로그 미기록), H절 신설(H1~H14, P0=H1 계정 운영 화면). 머지
-전 외부 검토 6건을 코드 실측으로 반영(H1 착수 전 계약 3건·User admin
-기각 근거 정정·H2 멱등 계약·H3 source_name 금지·H6 P2·H12 분리·H14→H1
-흡수)하고, WED·BIR 사전 검토를 통합한 "프론트 필요 기능" 단락과 H9
-인용 줄 정정(56-66→67-68)을 추가.
+**무엇을 바꿨나**: 백로그 H1(P0)의 계정 운영 화면. `superuser_console_required`
+(기존 `staff_console_required` 위에 합성)로 게이트한 `/staff/accounts/`
+목록(이메일 검색·페이지 20건)·상세·상태 변경 POST 2개. `accounts/services.py`의
+`set_staff_flag`·`set_active_flag`는 목표 상태 지정(`enabled` "1"/"0"만, 그 외
+400)·멱등(이미 목표 상태면 무변경·로그 없음)·superuser 대상 보호
+(`ProtectedAccountError`, 자기 계정 포함). `confirmed=yes` 서버 렌더 2단계
+확인, `atomic` + `select_for_update` + 감사 로그 같은 트랜잭션.
+`StaffActionLog.target_user` FK + Action 4종(마이그레이션 0008), 운영자
+화면·검색에는 대상 이메일 대신 `계정 #id`만(superuser에게만 상세 링크).
+템플릿 3개·CSS·사이드바 "계정" 그룹(superuser만 렌더). 문서:
+`docs/BE/staff-account-operations.md` 신설(가드레일 a~j), 런북 §5 정정,
+백로그 H1 완료·H14 종결.
 
-**왜**: 스태프 대시보드를 현업에 맞게 쓰기 위한 부족 기능 검토 결과를
-정본에 남기고, 사실과 다른 런북 문안을 바로잡기 위해서다. 후속 트랙
-19(H1 계정 운영 화면)의 착수 근거가 된다.
+**왜**: `accounts.User`가 admin 미등록이라 `is_staff`·`is_active` 변경이
+shell뿐이었다(런북 §5 정정 근거). 계획서 v2(PSO·DAR·SRR·TDD 코치 검토)와
+WED·BIR 사전·사후 검토, 사용자 지시 "재검토"에 따른 신규 컨텍스트
+DAR·TDD·SRR·DOR 재검토까지 반영했다.
 
-**검증**: 인용 file:line 전수 확인(오케스트레이터 + BIE 이중 확인, 범위
-오기 2건 커밋 전 정정) `[실측]`, `uv run pytest -q tests/core/test_ci_command_policy.py`
-2 passed `[실측]`, allauth 65.18.0 admin 편집 필드 Django shell 실측
-`[실측 2026-09-06]`, 삭제 폼 2단계 확인 실측으로 BIR 결함 주장 1건 기각
-`[실측]`. 머지 후 `uv run pytest -q` 2364 passed / 72.34초 `[실측 2026-09-06]`.
+**검증**: 테스트 선작성 Red → Green, 뮤테이션 핀 8건 Red 확인, 커밋 격리
+503 passed, 브라우저 실측(Chrome DevTools MCP — superuser 흐름 전부,
+비-superuser 403·링크·이메일 0건, 뒤로가기 재클릭 멱등), WED·BIR
+Conforms, QVL 완료, CI 4체크 pass. 머지 직전 `uv run pytest -q` 2428
+passed / 64.89초 `[실측 2026-09-07]`; 머지 후 main 2428 passed / 67.01초
+`[실측 2026-09-07]`. 사용자 결정: ★2 superuser 콘솔 제외 유지·★3 액션 빈도
+제한 미구현 수용(이연).
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #339 — docs: PR #338 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
 - #337 — docs: PR #332~#335 머지를 로그에 롤링 반영
 - #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
 - #334 — deploy: main → production
@@ -192,8 +198,3 @@ finally 감사 로그 미기록), H절 신설(H1~H14, P0=H1 계정 운영 화면
 - #199 — feat: ARIA restoration stage 3 — disclosure expanded/controls sync
 - #198 — feat: ARIA restoration stage 2 — toggle state, focus-based feedback
 - #197 — feat: ARIA restoration stage 1 — modals, toast, shell labeling
-- #196 — feat: Calendar accessible names, search box, mobile filter fold
-- #195 — Logging coverage: observability for irreversible and security-relevant actions
-- #194 — feat: Dual calendar (events + activity) with activity history
-- #193 — Error handling and logging policy: guards and retro fixes
-- #192 — fix: Close bfcache duplicate-creation gap (client_token + commit markers)
