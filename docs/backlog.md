@@ -288,6 +288,8 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 동기 네트워크 최대 6회(각 5초) → 최악 ~30초로 기본 타임아웃과 충돌 가능.
 **트리거: 서버에서 `DRAFT_DISCOVERY_ENABLED=true` 전환 전.**
 
+동일 근본 원인 `[계산 2026-09-05]`: 대시보드 「지금 수집」도 동기 실행(`staff/views/__init__.py:200-245`)이라 활성 소스 3개가 모두 느린 최악 시 `3×(5+5)+2×1 = 32초`(요청 타임아웃 5초 `drafts/fetching.py:10`, 소스 간 대기 1초 `drafts/management/commands/discover_drafts.py:59`)로 기본 30초를 넘길 수 있고, 워커 SIGKILL 시 `finally`의 감사 로그(`staff/views/__init__.py:242-245`)가 남지 않는다. `docker/entrypoint.sh`에 `--timeout` 0건 `[실측 2026-09-05]`. 프로덕션 활성 소스 수는 미실측. 사용자 보류·트리거는 그대로다.
+
 ### G3 [코드] LLM 아웃바운드 네트워크 수준 계약 테스트 부재
 
 현재 보증은 코드 경로 부재 + 단위 모킹 2겹뿐. `pytest-socket` 등 신규 dev
@@ -306,6 +308,122 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 
 `visit_create` 패턴을 그대로 미러링한 범례를 추가했다. 320px·1120px 실측으로
 겹침 없음을 확인했고, WED·BIR 모두 `Conforms`.
+
+---
+
+## H. 스태프 백오피스 현업 적합성 검토 (2026-09-05)
+
+검토 경로: 코드·문서 판독 뒤 PSO·WED·SRR·DOR 4역할 병렬 검토, 인용된 file:line은
+오케스트레이터가 전부 재확인. 현재 있는 것 `[코드]`: `staff/urls.py` 라우트 19개,
+대시보드 지표 카드 5장, 드래프트 큐(상태 탭·검색·인스펙터·일괄 승인/반려 상한
+20건 `MAX_BULK_APPROVE_DRAFT_IDS`), 이벤트 목록·생성·수정·게시 토글·검증·삭제,
+수집 소스 읽기 전용 표, 홈 카테고리, 감사 로그(행동 11종). 스태프 테스트 함수
+295개 `[실측 2026-09-05]` `rg -c 'def test_' tests/staff/*.py` 합계.
+
+P0는 "shell 없이는 운영자가 일을 못 하는 것"으로 한정했다(PSO). PSO(P0=H1)와
+WED(P0=H2)의 우선순위 충돌은 AGENTS.md 배타 책임에 따라 PSO 판정으로 조정했다.
+H6도 같은 규칙으로 PSO P2를 따른다(2026-09-06 정정). 2026-09-06 외부 검토를
+반영했고 정정 위치는 각 행에 날짜로 표기했다.
+
+| # | 우선순위 | 항목 | 근거 | 분류·판정 |
+|---|---|---|---|---|
+| H1 | **P0** | 계정 운영 화면(`is_staff` 부여/해제·`is_active` 전환·탈퇴 유예 확인). H14(계정 정지)를 흡수 | `[실측 2026-09-05]` `accounts.User` admin 미등록(`admin.site._registry` 11종, `accounts/admin.py` 없음), `staff/` 내 User 참조 0건(rg). 유일 경로 `manage.py shell`. 런북 §5 정정 완료 | 결함. 권고 = 두 플래그만 다루는 좁은 화면 + 감사 기록. **착수 전 계약 3건 확정 필요(2026-09-06 외부 검토 반영)**: ① 조작 주체 — `staff_console_required`는 `is_staff`만 검사(`staff/permissions.py:21`)라 그대로 재사용하면 검수 권한 스태프도 타 계정의 권한을 바꾸고 정지시킬 수 있다(`templates/staff/_console_shell.html:67`의 "전체 권한/검수 권한"은 표시일 뿐). superuser 한정 또는 별도 관문, 자기 계정·마지막 관리자 보호를 정한다. ② 감사 대상 — `StaffActionLog`는 `target_draft`·`target_event`만 가진다(`staff/models.py:32-41`). 액션 이름만 추가하면 변경된 계정을 추적 못 하므로 계정 대상 필드와 변경·기록의 원자성이 필요. ③ 이 화면으로 첫 비-superuser 스태프가 생기면 RBAC 보류(아래)의 재검토 트리거가 켜진다. User 전체 admin 등록은 계속 기각하되 근거 정정: `[실측 2026-09-06]` allauth 65.18.0 admin은 이미 `EmailAddress`(user·email·verified·primary)·`SocialAccount`(user·provider·uid·extra_data)를 편집 노출하므로 "피해 반경 1개→전체 확대"는 성립하지 않는다. 근거 = 업무에 불필요한 계정 편집 기능의 추가 노출 최소화. 인접: prompt_plan.md 트랙 12(비밀번호 set 경로, 계획 승인·미착수) |
+| H2 | P1 | 이벤트 일괄 선택·일괄 게시 내리기, 목록 인라인 토글/검증, 정렬·기간·카테고리 필터 | 만료 1건 내리기 = 목록→수정→토글 3화면 `[코드]` `staff/views/events.py:404-443`·`templates/staff/events/edit.html:137-144`; 목록 checkbox 0건 `[실측 rg templates/staff/events/list.html]`; 운영 기준 주 1회 정리 `docs/event-operations-criteria.md:50-51`; 선례 `templates/core/drafts/list.html:50-60` bulkbar | 제품 권고. 계약(2026-09-06 반영): 일괄 내리기는 "비공개로 설정"이지 토글이 아니다 — 현재 토글은 읽은 상태를 반전하므로(`staff/views/events.py:413-418`) 내리기 성공 뒤 응답만 유실되면 재시도가 다시 게시한다. 부분 실패·재시도 대상·선택 범위(페이지네이션 `templates/staff/events/list.html:77-78`, 필터 `staff/views/events.py:110` 변경 시 선택 유지 여부)를 설계에서 명시. 종료 게시 건수는 착수 전 재측정(위 현재 상태 표 146/169건은 2026-08-24 값) |
+| H3 | P1 | 사용자 제보 드래프트 구분 표시 + 제보 폼 인라인 고지 | `web/promotion.py:74-82` `source_name` 미전달, `EventDraft`에 origin 필드 없음(`drafts/models.py`). 제보 폼 `templates/core/archive/personal_detail.html:115`에 메모 공개 전환 안내 없음 | 제품 권고. 구분 표시에 `source_name`을 쓰지 않는다(2026-09-06 반영): 승인 시 이벤트로 복사되고(`drafts/services.py:273`) 소비자 상세에 "N 제공"으로 노출된다(`templates/core/events/detail.html:33-34`). 스태프 수집분은 `DraftSource.name`이 들어가고(`drafts/candidate_intake.py:62`) 제보분은 빈 값이라, 운영용 유입 경로 필드를 따로 둔다. 고지 문안은 메모가 `summary`로 매핑돼(`web/promotion.py:81`) 검수 후 공개 요약에 쓰인다는 내용. 고지 자체는 개인정보처리방침 §3(`templates/core/legal/privacy.html:53-56`)·약관(`templates/core/legal/terms.html:76`)에 있어 SRR Medium을 Low(문구 권고)로 정정 |
+| H4 | P1 | 검수 SLA 지표(최장 대기·평균 처리·반려율·사유 분포) | 대시보드는 pending 건수만 `staff/views/__init__.py:152-186` | 제품 권고 |
+| H5 | P1 | 반려 드래프트 재오픈 | 승인·반려 모두 pending 전용 `drafts/services.py:198-207`, `source_url` unique `drafts/models.py:15` → 반려는 영구 폐기, 복구는 shell | 결함(빈도 낮음) |
+| H6 | P2 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:225`, `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제). 2026-09-06 정정: 이전 표기 P1은 WED 의견으로 상향한 것이라 "우선순위는 PSO 판정" 규칙과 충돌해 PSO P2로 되돌림. WED 이견은 기록만, 사용자가 P1을 원하면 조정 |
+| H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **결정 필요**: SRR Medium(승인 직전 필드 조작 추적 불가) / PSO 이연 |
+| H8 | P1 | 알림(대기 누적·소스 전부 오류·러너 오프라인) | `send_mail`·`EmailMessage`·`mail_admins` 0건 `[실측 rg staff/ drafts/]` | 이연. DOR: 비용 정책 안 대안 없음(무료 웹훅은 외부 계정 액션 = 인프라 최후순위) |
+| H9 | P2 | 소스별 수집 이력·실패율, 실패 후보 재시도/무시 액션 | `DraftSource` 상태 필드 2개뿐 `drafts/models.py:67-68`(정정 전 표기 56-66은 필드 줄을 빗나감, 2026-09-06 재측정) | 제품 권고 |
+| H10 | P2 | 중복 경고(같은 행사 다른 URL), 반려 사유 큐 노출·템플릿 | 중복 판정은 URL 완전일치만 | 제품 권고 |
+| H11 | P2 | 이벤트 검색에 공식 URL·ID, 변경 이력, 수정 화면 소비자 링크·반응 지표, 검증 만료 예고 | 검색 3열 `events/queries.py:213-217`, `Event.updated_at` 0건 `[실측 rg events/models.py]` | 제품 권고 |
+| H12 | P2 | 수집 진행 표시, 감사 로그 보존 정책 | `staff/management/` 없음 `[실측 ls]`. 진행 표시는 현재도 제출 가드가 버튼 비활성+`.is-loading`을 적용(`templates/staff/dashboard.html:95` `data-submit-guard`, `static/js/shared/staff_submit_guard.js:29-30`) | 권고. 2026-09-06 분리: (a) 진행 표시 — 요구가 대기 문구인지 실제 실행 상태 조회인지 설계 시 확정. G2 타임아웃 조정은 원인을 공유할 뿐 진행 표시를 해결하지 않는다. (b) 감사 보존 정책 — 독립 과제. 운영 설정 보류(G2)는 유지 |
+| H13 | P2 | 대시보드 소스 패널 「전체 보기」 링크, 이벤트 읽기 전용 미리보기 | `templates/staff/dashboard.html:91-103`(감사 패널은 251행에 링크 있음) | 제품 권고 |
+| H14 | — | 계정 정지 UI → **H1에 흡수**(2026-09-06, `is_active` 전환과 같은 범위) | 승격 스로틀 `20/day` `config/settings.py:579`는 분산 계정 남용은 못 막는다 | H1 설계에서 다룬다. 별도 항목 아님 |
+
+**보류·이연(기록된 사용자 결정, 재제안 아님)**: RBAC(2026-07-03 보류, 트리거는
+첫 비-superuser 스태프), 취소·연기 상태(prompt_plan.md Deferred), 일괄
+가져오기·내보내기(아래 「착수하지 않는 것」), 북극성·이벤트별 분해(C1), 신고·차단·
+중재(교환 게이트), 모바일 차단(D10), 정기 수집 스케줄러(인프라 최후순위),
+대시보드 증감 미표시 2장(M5).
+
+**기각(과설계)**: 담당자 배정·검수 락(`select_for_update`로 이미 안전), 전역
+검색(검색 화면 3개), User 전체 admin 등록(SRR).
+
+**미실측(착수 전 재측정)**: 프로덕션 활성 소스 수, `StaffActionLog` 행 수, 종료
+게시 이벤트 수.
+
+**설계 시 확정(2026-09-06 외부 검토 반영)**: H4·H5 — 재오픈 후 대기 시간의 기산점과
+반려율 계산 기준. H10 — 반려 사유 입력 경로는 단건 반려의 textarea뿐
+(`templates/core/drafts/detail.html:150-151`), 일괄 반려는 사유 없이 id만 보낸다
+(`static/js/staff/draft_bulk.js:7`). H13 — 비공개·미저장 이벤트 미리보기 범위.
+
+**프론트 필요 기능(2026-09-06, WED·BIR 사전 검토 통합 — 인용 file:line은
+오케스트레이터가 전수 재확인)**: 전제 = 스태프 콘솔은 소비자 CSS·JS를 로드하지
+않는 독립 셸(`docs/FE/staff-console-redesign.md` S6)이고 1024px 미만은 데스크톱
+게이트(S7)라 항목별 추가 반응형 요구는 없다. 프론트 작업 없음: H7·H12(b)는
+백엔드, H8 이연, H14는 H1, H4는 `templates/staff/dashboard.html:29-36`
+dash-metric 카드 재사용(집계만 백엔드). 두 역할 원문과 검증 기록은
+`.docs/FE/2026-09-06-staff-backoffice-frontend-review.md`(git-ignored).
+
+- H1 — 사이드바 "계정" 그룹을 기록 그룹 뒤(`templates/staff/_console_shell.html:50-59`)에
+  superuser에게만 렌더(링크 숨김은 UX일 뿐 경계가 아님, 계약①). 목록 = 검색
+  (`staff/search.py:15` `SEARCHABLE_URL_NAMES` 추가)·표(`templates/staff/events/list.html:32-73`)·
+  페이저(`templates/core/partials/_pager.html`)·빈 상태 2분기(`templates/staff/audit_log/list.html:60-64`).
+  상세 = rail-card 토글 폼 2개(`templates/staff/events/edit.html:125-146`); 자기 계정·
+  마지막 관리자는 버튼 disabled + 사유 문단(`edit.html:172-175` 패턴), 판정 불리언은
+  뷰가 계산. 탈퇴 유예 배지는 읽기 전용 — 재로그인만 취소(`accounts/models.py:15-18`),
+  유예 10일(`accounts/services.py:22`), 종료 시각은 뷰가 계산. 확인 단계는 삭제와
+  같은 서버 렌더 2단계(`confirmed=yes`, `staff/views/events.py:480-483`·`501-510`,
+  `templates/staff/events/delete_confirm.html:54`)를 우선 권고 — 기존 PRG+messages
+  (`templates/staff/base_staff.html:58-64`)와 맞고 JSON 엔드포인트가 필요 없다.
+  JS 모달을 택하면 `static/js/components/confirm-modal.js`(Escape 101·Tab 107·기본
+  포커스 아니오 144·포커스 복귀 174-177) 재사용, 서버 거부 문구는
+  `error_response(detail)`(`core/errors.py:4-5`)로 내려야 `static/js/shared/api.js:106-144`
+  formatError가 "알 수 없는 오류"로 뭉개지 않는다. 프론트 파일 `[코드 추정]` 5개
+  (templates 2·css 1·js 1·`_console_shell.html` 수정).
+- H2 — 체크박스 열 + bulkbar(`templates/core/drafts/list.html:50-61`) + 행별 실패
+  사유(`:118-123` `data-bulk-fail-reason`) + 카테고리 칩(`events/list.html:18-24` 패턴)
+  + 기간 `<form method="get">`(숨은 파라미터 `_console_shell.html:100-102` 패턴).
+  선택 범위: 두 목록 모두 서버 페이지네이션(`events/list.html:77-78`, 페이지 15건
+  `events/queries.py:184` `[코드]`)이라 선택은 현재 페이지·필터에서만 유효, 전환 시
+  초기화(드래프트 큐와 같은 제약). 응답 반영은 `static/js/staff/draft_bulk.js:396-430`
+  applyBulkResult(succeeded/failed 배열) 이식, 재시도는 목표 상태 지정 API에만 허용.
+  인라인 토글: 현재 토글 뷰는 redirect 반환(`staff/views/events.py:443`)이라 fetch가
+  JSON을 못 받는다 → JSON 분기 또는 별도 엔드포인트가 백엔드 계약. 정렬·기간
+  파라미터는 `_event_filter_query_pairs`(`events.py:110-117`, warning·publish_status만)
+  확장 필수 — 빠지면 수정 후 목록 복귀 시 새 필터가 소실되고 `list.html`·`edit.html`·
+  `delete_confirm.html` 3곳이 `list_query`를 공유한다. 이벤트 목록엔 JS가 없어
+  (`[실측]` `grep -c "<script\|shell_js\|page_js" templates/staff/events/list.html` = 0)
+  단축키를 넣으려면 `static/js/staff/queue_shortcuts.js:23-53` 가드를 이식.
+- H3 — 큐 제목 셀 안 인라인 배지(`core/drafts/list.html:97-106`; colgroup 6열
+  `:66-73` 고정폭이라 열 추가 금지), 고지는 `templates/core/archive/personal_detail.html:115`
+  promote-note에 1줄(신규 안내 카드 금지). JS 없음.
+- H5 — `templates/core/drafts/detail.html:154-159` judge-actions에 재오픈 버튼,
+  `static/js/staff/draft.js:178` bindApproveButton 구조(askConfirm→setLoading→post→
+  `successEl.focus()` 223) 재사용. 서버 pending 전용 가드로 멱등.
+- H6 — `templates/staff/sources/list.html`(`<form` 0건 `[실측 grep -c]`)에 생성 폼·
+  행별 수정·토글, 폼은 `events/edit.html:31-99` 패턴. 토글은 양방향이라 확인
+  불필요(`events.py:397-398` 선례). 완료 시 admin 이탈 문구(`staff/views/__init__.py:225`) 제거.
+- H9 — 이력 표는 백엔드 저장 구조 선행(`DraftSource` 상태 필드는 `drafts/models.py:67-68`
+  2개). 재시도는 확인 불필요, "무시"가 영구 폐기면 확인 필요(설계 시 결정).
+- H10 — 사유 템플릿은 단건 textarea(`core/drafts/detail.html:150-151`)에만 붙는다.
+  일괄 반려는 `draft_bulk.js:468`이 `draft_ids`만 보내므로 사유 추가는 백엔드 변경 동반.
+- H11 — 이력 패널은 `Event.updated_at` 부재로 백엔드 선행. 소비자 링크·만료 배지는
+  `events/edit.html:101-183` rail-card.
+- H12(a) — 「지금 수집」은 순수 폼 POST라 `api.js` 오류 분기가 관여하지 않고 프록시
+  타임아웃 시 브라우저 오류 화면만 보인다(`staff/views/__init__.py:210`·`232`·`242`).
+  대기 문구면 기존 가드로 충분, 실행 상태 조회면 백그라운드 잡 + 폴링(신규 아키텍처).
+- H13 — 링크는 `dashboard.html:251` 패턴. 미리보기는 confirm-modal(예/아니오 전용)
+  확장 금지, 콘텐츠 모달을 따로 설계.
+- 공통 가드레일 — 신규 CSS는 `static/css/staff/tokens.css`의 `--c-*`만,
+  `<main class="page" id="staff-main">` 래퍼 유지(S6). 위험 액션 폼에 `data-submit-guard`
+  누락 금지(`[실측]` `rg -l data-submit-guard templates/` = 8파일).
+- 검토 정정 기록 — BIR가 `events/edit.html:176-179` 삭제 폼을 "확인 없음"
+  Medium-High 결함으로 보고했으나, 삭제 뷰는 서버 렌더 2단계 확인(`staff/views/events.py:480-483`,
+  `confirmed=yes` 없으면 확인 화면만 렌더)이라 결함이 아니다. 첫 폼의 더블클릭은
+  확인 화면을 두 번 열 뿐이다.
 
 ---
 
