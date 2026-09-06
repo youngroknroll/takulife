@@ -192,6 +192,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 
   ```bash
   uv run python manage.py shell -c "from accounts.models import User; u = User.objects.get(email='<email>'); u.is_staff = False; u.save(update_fields=['is_staff'])"
+  uv run python manage.py shell -c "from accounts.models import User; u = User.objects.get(email='<email>'); u.is_active = False; u.save(update_fields=['is_active'])"
   ```
 
   `is_active=False`로 바꾸면 다음 요청부터 그 계정의 세션이 무효화된다(`[실측 2026-09-05]` Django `ModelBackend.get_user`가 `user_can_authenticate` 실패 시 None을 반환하고, allauth 인증 백엔드는 `get_user`를 오버라이드하지 않는다).

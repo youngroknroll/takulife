@@ -32,6 +32,15 @@ superuser 계정에 대해서는 영구 예외로 남는다는 뜻이라, 승인
 판단 없이는 이연 상태를 바꾸지 않는다. 승인되면 "마지막 관리자 1명만 보호"
 같은 카운트 기반 보호로 좁히는 안이 이연 항목으로 대기 중이다.
 
+★3 결정 대기(SRR 재검토): 상태 변경 POST(`staff_account_set_staff`·
+`staff_account_set_active`)에는 액션 빈도 제한도 스텝업 재인증도 없다.
+superuser 세션이 탈취되면 HTTP 요청만으로 비-superuser 계정을 순차
+정지시키거나 검수 권한을 회수할 수 있다 — superuser 대상은 (b)의
+`ProtectedAccountError`로 보호되므로 피해는 정지·권한 회수로 상한선이
+있다. 완화 후보는 `staff/views/discovery.py:31-36`의 캐시 기반 스로틀
+패턴 재사용, 또는 비밀번호 재확인이다. 사용자·PSO 결정 전에는
+미구현이다.
+
 ## (c) 상태 변경은 토글이 아니라 목표 상태 지정 — `enabled`는 `"1"`/`"0"`만
 
 폼은 항상 `enabled` 값을 명시해 보낸다(현재 상태의 반대값을 서버가 계산하지
@@ -140,3 +149,19 @@ superuser 경계를 감사 로그 화면이 우회해 노출하기 때문이다.
 새 PRG 확인 화면을 만들 때는 토글이 아니라 목표 상태 지정으로 설계하고
 서비스 멱등을 테스트로 고정하라(T9-S2
 `이미_목표_상태인_대상에_확인_상태_변경_POST를_보내면_변경없이_안내_메시지를_보여주고_로그를_남기지_않는다`).
+
+## (j) `target_user` 추가 마이그레이션(0008)은 컬럼 추가 + 비-CONCURRENTLY 인덱스 생성
+
+`[실측 2026-09-07]` `uv run python manage.py sqlmigrate staff 0008`은
+`ALTER TABLE "staff_staffactionlog" ADD COLUMN "target_user_id" bigint NULL …
+REFERENCES "accounts_user"("id")`와 `CREATE INDEX
+"staff_staffactionlog_target_user_id_ad4f7e49" ON "staff_staffactionlog"
+("target_user_id")`(비-CONCURRENTLY라 생성 중 해당 테이블 쓰기가 잠깐
+차단된다) 두 문을 낸다. 같은 마이그레이션에 묶인 `action` 필드
+`AlterField`는 SQL을 내지 않는다(choices는 Python 쪽 메타데이터일 뿐
+DB 제약이 아니다).
+
+롤백은 코드만 되돌리는 쪽이 안전하다 — 되돌린 구코드는 `target_user`
+컬럼을 참조하지 않으므로 컬럼이 남아 있어도 무해하다. `migrate staff
+0007`로 역적용하면 이미 쌓인 `target_user` 값이 소실된다. `archive` 0003
+(`target_event` 추가)과 같은 패턴의 선례다.
