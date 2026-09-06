@@ -57,13 +57,12 @@ class StaffActionLog(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        target_id = (
-            self.target_draft_id
-            if self.target_draft_id is not None
-            else self.target_event_id
-            if self.target_event_id is not None
-            else self.target_user_id
-        )
+        if self.target_draft_id is not None:
+            target_id = self.target_draft_id
+        elif self.target_event_id is not None:
+            target_id = self.target_event_id
+        else:
+            target_id = self.target_user_id
         if target_id is None:
             return f"{self.action} by {self.actor_id}"
         return f"{self.action} #{target_id} by {self.actor_id}"

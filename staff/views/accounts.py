@@ -141,7 +141,7 @@ def _apply_flag_change(request, pk, *, field, service, action_map, labels):
         return redirect(detail_url)
 
     if changed:
-        messages.success(request, f"{action_label}이(가) 적용되었습니다.")
+        messages.success(request, f"{action_label}가 적용되었습니다.")
     else:
         messages.info(request, "이미 해당 상태라 변경하지 않았습니다.")
     return redirect(detail_url)

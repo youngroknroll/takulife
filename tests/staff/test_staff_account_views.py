@@ -11,10 +11,12 @@ from urllib.parse import urlencode
 from django.db import IntegrityError, connection
 from django.test import Client
 from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
+from django.utils import timezone
 
 import pytest
 
-from accounts import services
+from accounts.services import DELETION_GRACE_PERIOD
 from staff.models import StaffActionLog
 from staff.views.accounts import STAFF_ACCOUNT_LISTING_PAGE_SIZE
 
@@ -129,8 +131,8 @@ def test_계정_목록_행의_status_key와_role_key는_계정_상태와_권한�
 ):
     target = make_user(**target_kwargs)
     if deletion_pending:
-        services.request_deletion(target)
-        target.refresh_from_db()
+        target.deletion_requested_at = timezone.now()
+        target.save(update_fields=["deletion_requested_at"])
     _, client = staff_client(is_superuser=True)
 
     resp = client.get(_list_url())
@@ -188,15 +190,15 @@ def test_탈퇴_신청이_없는_대상의_상세_컨텍스트에는_유예_예�
 @pytest.mark.django_db
 def test_탈퇴_유예_중인_대상의_상세_컨텍스트_유예_예정일은_신청_시각에_10일을_더한_값이다(staff_client, make_user):
     target = make_user()
-    services.request_deletion(target)
-    target.refresh_from_db()
+    target.deletion_requested_at = timezone.now()
+    target.save(update_fields=["deletion_requested_at"])
     _, client = staff_client(is_superuser=True)
 
     resp = client.get(_detail_url(target))
 
     assert resp.status_code == 200
     assert resp.context["deletion_scheduled_for"] == (
-        target.deletion_requested_at + services.DELETION_GRACE_PERIOD
+        target.deletion_requested_at + DELETION_GRACE_PERIOD
     )
 
 
@@ -211,6 +213,15 @@ def test_is_protected는_대상이_슈퍼유저면_참이고_아니면_거짓이
 
     assert protected_resp.context["is_protected"] is True
     assert normal_resp.context["is_protected"] is False
+
+
+@pytest.mark.django_db
+def test_존재하지_않는_계정_상세를_요청하면_404를_응답한다(staff_client):
+    _, client = staff_client(is_superuser=True)
+
+    resp = client.get("/staff/accounts/999999/")
+
+    assert resp.status_code == 404
 
 
 # T6 상태 변경 관문 ----------------------------------------------------------
@@ -281,6 +292,27 @@ def test_상태_변경_경로에_GET으로_접근하면_405를_응답하고_대�
     assert getattr(target, flag_attr) == before
 
 
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "url_fn",
+    [
+        pytest.param(_set_staff_url, id="staff"),
+        pytest.param(_set_active_url, id="active"),
+    ],
+)
+def test_존재하지_않는_계정에_상태_변경_POST하면_404를_응답하고_로그를_남기지_않는다(
+    staff_client, make_user, url_fn
+):
+    target = make_user()
+    missing_url = url_fn(target).replace(str(target.pk), "999999")
+    _, client = staff_client(is_superuser=True)
+
+    resp = client.post(missing_url, {"enabled": "1", "confirmed": "yes"})
+
+    assert resp.status_code == 404
+    assert StaffActionLog.objects.count() == 0
+
+
 # T7 확인 화면 --------------------------------------------------------------
 
 
@@ -305,6 +337,31 @@ def test_confirmed_없이_상태_변경_POST하면_확인_화면을_보여주고
     target.refresh_from_db()
     assert getattr(target, flag_attr) == before
     assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "url_fn, field, action_label, description",
+    [
+        pytest.param(_set_staff_url, "staff", "검수 권한 부여", "이 계정에 검수 권한을 부여해 스태프 콘솔에 접근할 수 있게 합니다.", id="staff"),
+        pytest.param(_set_active_url, "active", "계정 재활성화", "이 계정을 다시 활성화해 로그인할 수 있게 합니다.", id="active"),
+    ],
+)
+def test_confirmed_없는_상태_변경_POST의_확인_화면_컨텍스트는_계약대로_채워진다(
+    staff_client, make_user, url_fn, field, action_label, description
+):
+    target = make_user(is_staff=False, is_active=True)
+    _, client = staff_client(is_superuser=True)
+
+    resp = client.post(url_fn(target), {"enabled": "1"})
+
+    assert resp.status_code == 200
+    assert resp.context["field"] == field
+    assert resp.context["enabled"] is True
+    assert resp.context["action_label"] == action_label
+    assert resp.context["description"] == description
+    assert resp.context["post_url"] == reverse(f"staff:account-set-{field}", args=[target.pk])
+    assert resp.context["account"].id == target.pk
 
 
 @pytest.mark.django_db
@@ -388,7 +445,7 @@ def test_confirmed_yes로_상태_변경_POST하면_대상이_바뀌고_감사_�
     assert log.action == expected_action
     assert log.actor_id == staff.id
     messages_text = " ".join(str(m) for m in resp.context["messages"])
-    assert messages_text
+    assert "적용되었습니다" in messages_text
 
 
 @pytest.mark.contract
@@ -444,7 +501,7 @@ def test_타인_슈퍼유저_대상에_확인_상태_변경_POST를_보내면_�
     assert target.is_staff is True
     assert StaffActionLog.objects.count() == 0
     messages_text = " ".join(str(m) for m in resp.context["messages"])
-    assert messages_text
+    assert "변경할 수 없습니다" in messages_text
 
 
 @pytest.mark.django_db
@@ -458,7 +515,7 @@ def test_본인_계정에_확인_상태_변경_POST를_보내면_변경없이_�
     assert staff.is_staff is True
     assert StaffActionLog.objects.count() == 0
     messages_text = " ".join(str(m) for m in resp.context["messages"])
-    assert messages_text
+    assert "변경할 수 없습니다" in messages_text
 
 
 @pytest.mark.django_db
@@ -475,7 +532,7 @@ def test_이미_목표_상태인_대상에_확인_상태_변경_POST를_보내�
     assert target.is_staff is True
     assert StaffActionLog.objects.count() == 0
     messages_text = " ".join(str(m) for m in resp.context["messages"])
-    assert messages_text
+    assert "변경하지 않았습니다" in messages_text
 
 
 # T10 세션 무효 -------------------------------------------------------------
