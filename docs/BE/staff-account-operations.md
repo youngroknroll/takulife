@@ -16,7 +16,7 @@
 경계는 이 데코레이터다 — 링크를 숨기지 않아도 비-superuser 스태프는 URL을
 직접 두드려도 403을 받는다.
 
-## (b) 보호 계정 — `is_superuser` 대상은 `ProtectedAccountError`(★ 사용자 확인 대기)
+## (b) 보호 계정 — `is_superuser` 대상은 `ProtectedAccountError`(★2 사용자 확정 2026-09-07: superuser는 shell로만 만들고 바꾼다)
 
 `set_staff_flag`·`set_active_flag`(`accounts/services.py:138-150`,
 `:153-162`)는 대상 `user.is_superuser`가 참이면 저장 없이
@@ -26,11 +26,14 @@
 superuser 계정은 여전히 `manage.py shell`로만 다룬다
 (`docs/operations-runbook.md` §5).
 
-★ 이 "superuser 전체 제외" 범위는 트랙 19 계획서(prompt_plan.md) ★2에서
-**사용자 확인 대기** 상태로 남아 있다. H1이 원래 목표한 "shell 없이"가
-superuser 계정에 대해서는 영구 예외로 남는다는 뜻이라, 승인 시점의
-판단 없이는 이연 상태를 바꾸지 않는다. 승인되면 "마지막 관리자 1명만 보호"
-같은 카운트 기반 보호로 좁히는 안이 이연 항목으로 대기 중이다.
+★2 사용자 결정(2026-09-07): **superuser는 shell(`createsuperuser`·`manage.py shell`)로만
+만들고 바꾼다.** 콘솔에는 `is_superuser`를 부여·해제하는 경로를 두지 않으며,
+superuser 계정 전체를 이 화면의 변경 대상에서 제외하는 규칙은 확정이다.
+이유: 조작 주체가 superuser뿐이라 자기 잠금 방지와 마지막 관리자 보호가 한
+규칙으로 해결되고, 카운트 기반 보호의 동시성 문제를 피하며, 탈취된 superuser
+세션이 다른 superuser를 강등·승격할 수 없다. 카운트 기반 보호는 이연 항목에서
+제거한다. 이 결정은 계약 테스트(콘솔·서비스 소스에 `is_superuser` 대입 경로 0건)로
+고정한다(후속 PR).
 
 ★3 사용자 결정(2026-09-07): 기본값(미구현) 수용 — 아래 위험은 이연 항목으로 유지한다. 원문(SRR 재검토): 상태 변경 POST(`staff_account_set_staff`·
 `staff_account_set_active`)에는 액션 빈도 제한도 스텝업 재인증도 없다.
