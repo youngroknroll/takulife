@@ -1,0 +1,413 @@
+/*
+ * accounts.css (스태프 콘솔 전용) — 계정 목록/상세/상태 변경 확인 3화면
+ * 공용. events.css·audit_log.css의 표/rail-card/삭제 확인 규칙을 참고했지만
+ * import는 하지 않고 accounts- 접두사로 독립 정의한다. 색은 --c-* 토큰만.
+ */
+
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ── 목록 표 ───────────────────────────────────────────────────── */
+.accounts-table-wrap {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+.accounts-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 48rem;
+}
+
+.accounts-table th,
+.accounts-table td {
+  padding: 0 0.5rem;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accounts-table thead th {
+  height: 1.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--c-dim);
+  background: var(--c-head);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.accounts-table tbody tr {
+  height: 2.125rem;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.accounts-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.accounts-email-cell {
+  font-size: 0.78125rem;
+  font-weight: 600;
+}
+
+.accounts-date-cell {
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+}
+
+.accounts-status-badge,
+.accounts-role-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 0.1875rem;
+  font-size: 0.65625rem;
+  font-weight: 700;
+}
+
+.accounts-status-badge--active {
+  background: var(--c-accent-soft);
+  color: var(--c-ok);
+}
+
+.accounts-status-badge--inactive {
+  background: var(--c-track);
+  color: var(--c-dim);
+}
+
+.accounts-status-badge--deletion_pending {
+  background: var(--c-warn-bg);
+  color: var(--c-warn-ink);
+  border: 1px solid var(--c-warn-line);
+}
+
+.accounts-role-badge--superuser {
+  background: var(--c-warn-bg);
+  color: var(--c-warn-ink);
+}
+
+.accounts-role-badge--staff {
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+}
+
+.accounts-role-badge--member {
+  background: var(--c-track);
+  color: var(--c-dim);
+}
+
+.accounts-detail-link {
+  font-size: 0.71875rem;
+  font-weight: 700;
+  color: var(--c-accent);
+}
+
+.accounts-table-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 2.125rem;
+  padding: 0 0.75rem;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-head);
+}
+
+.accounts-table-foot-range {
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+}
+
+.accounts-table-foot .pager {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.accounts-table-foot .pager-arrow,
+.accounts-table-foot .pager-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--c-dim);
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+}
+
+.accounts-table-foot .pager-page.is-current {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+}
+
+.accounts-table-foot .pager-gap {
+  color: var(--c-faint);
+  font-size: 0.6875rem;
+  padding: 0 0.125rem;
+}
+
+.accounts-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--c-faint);
+  font-size: 0.8125rem;
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+}
+
+/* ── 상세 헤더 ─────────────────────────────────────────────────── */
+.accounts-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+}
+
+.accounts-detail-head-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.accounts-detail-email {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.accounts-detail-id {
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+}
+
+.accounts-detail-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+}
+
+/* ── 우측 레일(권한·상태 카드) ─────────────────────────────────── */
+.accounts-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  max-width: 28rem;
+}
+
+.accounts-rail-card {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+.accounts-rail-card-head {
+  display: flex;
+  align-items: center;
+  height: 2.0625rem;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-head);
+}
+
+.accounts-rail-card-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.accounts-rail-card-body {
+  padding: 0.6875rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5625rem;
+}
+
+.accounts-rail-note {
+  margin: 0;
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+  line-height: 1.6;
+}
+
+.accounts-rail-note--warn {
+  color: var(--c-warn-ink);
+}
+
+.accounts-rail-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.875rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.accounts-rail-btn--accent {
+  border: 1px solid var(--c-accent);
+  background: var(--c-accent);
+  color: #fff;
+}
+
+.accounts-rail-btn--neutral {
+  border: 1px solid var(--c-line);
+  background: var(--c-panel);
+  color: var(--c-text);
+}
+
+.accounts-rail-btn--danger {
+  border: 1px solid var(--c-danger);
+  background: var(--c-danger);
+  color: #fff;
+}
+
+.accounts-rail-btn:hover {
+  filter: brightness(0.96);
+}
+
+.accounts-rail-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.accounts-rail-btn.is-loading {
+  opacity: 0.75;
+}
+
+/* ── 상태 변경 확인(모달형) ────────────────────────────────────── */
+.accounts-confirm-backdrop {
+  border: 1px solid var(--c-line);
+  border-radius: 0.375rem;
+  background: var(--c-panel);
+  min-height: 20rem;
+  flex: 1;
+}
+
+.accounts-confirm-scrim {
+  position: absolute;
+  inset: 0.875rem 1rem 1.25rem;
+  border-radius: 0.375rem;
+  background: var(--c-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accounts-confirm-dialog {
+  width: 26rem;
+  max-width: calc(100% - 2rem);
+  border: 1px solid var(--c-line);
+  border-radius: 0.4375rem;
+  background: var(--c-panel);
+  box-shadow: 0 1.125rem 2.75rem rgba(8, 10, 14, 0.32);
+  overflow: hidden;
+}
+
+.accounts-confirm-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  height: 2.25rem;
+  padding: 0 0.8125rem;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-head);
+}
+
+.accounts-confirm-dialog-title {
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.accounts-confirm-dialog-id {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+}
+
+.accounts-confirm-dialog-body {
+  padding: 0.875rem 0.9375rem 0.9375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.accounts-confirm-message {
+  margin: 0;
+  font-size: 0.78125rem;
+  color: var(--c-text);
+  line-height: 1.6;
+}
+
+.accounts-confirm-description {
+  margin: 0;
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+  line-height: 1.6;
+}
+
+.accounts-confirm-actions {
+  display: flex;
+  gap: 0.4375rem;
+  padding-top: 0.125rem;
+}
+
+.accounts-confirm-cancel {
+  flex: 1;
+  justify-content: center;
+  height: 2rem;
+}
+
+.accounts-confirm-actions form {
+  flex: 1;
+}
+
+.accounts-confirm-confirm-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--c-accent);
+  background: var(--c-accent);
+  color: #fff;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.accounts-confirm-confirm-btn:hover {
+  filter: brightness(0.94);
+}
+
+.accounts-confirm-confirm-btn:disabled,
+.accounts-confirm-confirm-btn.is-loading {
+  opacity: 0.65;
+  cursor: default;
+}

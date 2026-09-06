@@ -259,6 +259,40 @@ sales, payment, shipping, escrow, or marketplace guarantees.
      request. The only exception is an expressly granted standing automatic-
      merge approval; its scope and duration must be recorded before use.
 
+## Orchestrator Contract
+
+The orchestrator (the main session) is not one of the 11 roles: it produces
+the first-pass judgment, the plan, subagent briefs, and the integrated report
+that reaches the user. The review gates elsewhere in this guide only catch
+that output after the fact, so the rules below are the pre-gate that applies
+before any of it is written or spoken.
+
+1. Negative claims ("no X exists", "nothing calls Y") require a repository-
+   wide `rg` whose output is quoted or summarized with the command; a partial
+   search supports no negative claim.
+2. Every number in a chat report, plan, or subagent brief follows "Numbers In
+   Documents": unit, source tag (`[실측]` measured / `[코드]` read from
+   source / `[계산]` derived / `[문서]` read from a document), and the
+   reproducing command when short. Chat is not exempt.
+3. Arithmetic (sums, differences, ratios, dates) is computed with a tool
+   (`python3 -c`, `date`), never in prose.
+4. Paths, file names, test locations, and section numbers are written only
+   after an existence check (`ls`, `rg`, `sed -n`).
+5. Before recommending a change, search `prompt_plan.md` Deferred sections and
+   the memory index for a recorded user hold on that subject; a recorded hold
+   is not re-raised as a recommendation without the user's re-approval.
+6. A subagent's factual claim (file:line, count, "X is absent") is unverified
+   until the orchestrator re-checks it against source; conflicting reviewer
+   claims are settled by measurement, not by picking one.
+7. Review before report: a judgment or plan that the routing table says needs
+   review roles goes to those roles first, and the user receives only the
+   integrated result with corrections already applied. A first-pass judgment
+   is not reported to the user on its own.
+
+A violation of these rules that a reviewer catches is recorded as a defect
+(a correction record), never treated as "the review caught it, so it was
+harmless."
+
 ## Role Catalog
 
 | Role | Type | May edit | Activate when | Primary output |
@@ -1063,6 +1097,9 @@ elsewhere is not protection.
 - **When measurement contradicts the document, correct it in the same commit**
   and keep the original text marked as the pre-measurement record. The gap
   between the two is what makes the next reader check instead of trust.
+- **Chat reports and subagent briefs are documents for this rule.** A count
+  spoken in chat misdirects work exactly as one written in a file; see
+  Orchestrator Contract rule 2.
 
 Prefer a set operation over a hand count: `git show <ref>:<file>` parsed with
 `ast`, then compared against the live set, settles in seconds what an estimate

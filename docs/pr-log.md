@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #331부터 #187까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #338부터 #192까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,39 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #330 — feat: SEO 최적화 — robots 해제·sitemap·페이지별 메타·JSON-LD·noindex (트랙 16)
+### PR #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
 
-**무엇을 바꿨나**: robots.txt를 크롤링 허용으로 전환(비제품 4경로
-`/admin/`·`/api/`·`/accounts/`·`/staff/`만 차단 + Sitemap 위치 안내),
-`web/sitemaps.py` 신설로 정적 공개 페이지와 공개 행사 상세를
-sitemap.xml에 노출 — contrib sitemap 뷰의 DB `Site` 의존은 래퍼가
-`RequestSite`를 직접 주입해 우회하므로 도메인이 요청 Host를 따른다.
-페이지별 메타 제목·설명·canonical 조립을 배선하고, 행사 상세에 Event
-JSON-LD(presenters 순수 함수 + 필드 화이트리스트 + `\uXXXX` 이스케이프)를
-실어 meta_description 단일 소스가 메타·og·JSON-LD 세 표면을 공급한다.
-비공개 페이지는 noindex 기본값(fail-closed)으로 차단하고 공개 6페이지만
-해제 — 기본 블록과 해제를 한 커밋으로 묶어 배포 가능한 중간 상태를 없앴다.
+**무엇을 바꿨나**: 코드 변경 없음. `docs/operations-runbook.md` §5의
+"슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다"를 실측대로
+정정(`accounts.User`는 admin 미등록 — `admin.site._registry` 11종
+`[실측 2026-09-05]`, shell 경로와 `is_active=False`의 세션 무효화 동작
+기록), §8에 수집 활성화 선행 확인(gunicorn 기본 30초·동기 수집) 추가.
+`docs/backlog.md` G2 보강(「지금 수집」 최악 32초 `[계산]`, SIGKILL 시
+finally 감사 로그 미기록), H절 신설(H1~H14, P0=H1 계정 운영 화면). 머지
+전 외부 검토 6건을 코드 실측으로 반영(H1 착수 전 계약 3건·User admin
+기각 근거 정정·H2 멱등 계약·H3 source_name 금지·H6 P2·H12 분리·H14→H1
+흡수)하고, WED·BIR 사전 검토를 통합한 "프론트 필요 기능" 단락과 H9
+인용 줄 정정(56-66→67-68)을 추가.
 
-**왜**: 검색 유입 기반 조성. robots 해제는 SMTP 게이트와 분리한다는
-2026-08-29 사용자 결정 반영(검색 유입 방문자의 가입 미완은 수용된 상태,
-배포 후 확인 절차는 deploy-runbook §3-12).
+**왜**: 스태프 대시보드를 현업에 맞게 쓰기 위한 부족 기능 검토 결과를
+정본에 남기고, 사실과 다른 런북 문안을 바로잡기 위해서다. 후속 트랙
+19(H1 계정 운영 화면)의 착수 근거가 된다.
 
-**검증**: 커밋 7개, 전체 회귀 2364 passed `[실측]`(기준 2325 + 신규 39),
-WED·BIR 사후 리뷰 Conforms ×2, QVL 완료 판정 7/7 Passed. 슬라이스 전부
-Green인 상태에서 브라우저 라이브 소스 대조가 JSON-LD description 분기
-결함을 찾아 트랙 내 즉시 수정(J1u3·J1c).
-
-**병합**: 2026-08-30, main `ad37d68`. production 반영은 #331 deploy PR.
-
----
+**검증**: 인용 file:line 전수 확인(오케스트레이터 + BIE 이중 확인, 범위
+오기 2건 커밋 전 정정) `[실측]`, `uv run pytest -q tests/core/test_ci_command_policy.py`
+2 passed `[실측]`, allauth 65.18.0 admin 편집 필드 Django shell 실측
+`[실측 2026-09-06]`, 삭제 폼 2단계 확인 실측으로 BIR 결함 주장 1건 기각
+`[실측]`. 머지 후 `uv run pytest -q` 2364 passed / 72.34초 `[실측 2026-09-06]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #337 — docs: PR #332~#335 머지를 로그에 롤링 반영
+- #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
+- #334 — deploy: main → production
+- #333 — deploy: main → production
+- #332 — docs: 머지 로그·런북 실측 기록 + design(home): 히어로 문구·카테고리 섹션 이동
 - #331 — deploy: main → production
+- #330 — feat: SEO 최적화 — robots 해제·sitemap·페이지별 메타·JSON-LD·noindex (트랙 16)
 - #329 — deploy: main → production
 - #328 — refactor: Tidy First 백엔드 구조 정리 6건 + 빈 PATCH 400 거부 (트랙 15)
 - #327 — perf: 렌더 차단 요청·네트워크 종속 트리 개선 — 셸 CSS 번들 + 폰트 preload (트랙 14)
@@ -193,8 +197,3 @@ Green인 상태에서 브라우저 라이브 소스 대조가 JSON-LD descriptio
 - #194 — feat: Dual calendar (events + activity) with activity history
 - #193 — Error handling and logging policy: guards and retro fixes
 - #192 — fix: Close bfcache duplicate-creation gap (client_token + commit markers)
-- #191 — docs(agents): Add commit-per-feature, PR-per-stage cadence
-- #190 — test: Stage 4·5 authoring guards + dedup + TS-INF-04
-- #189 — test: Korean behavior-scenario test suite + execution speed infra (stages 1-3)
-- #188 — feat: Collection-first home snapshot (H-1/H-2)
-- #187 — feat: Restructure top navigation to target IA (Target IA-2)

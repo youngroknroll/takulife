@@ -18,4 +18,8 @@ ACTION_LABELS = {
     "event_verify": "검증 완료",
     "draft_discover": "드래프트 수집 실행",
     "source_discover": "수집처 탐색",
+    "staff_grant": "검수 권한 부여",
+    "staff_revoke": "검수 권한 해제",
+    "user_deactivate": "계정 비활성화",
+    "user_reactivate": "계정 재활성화",
 }

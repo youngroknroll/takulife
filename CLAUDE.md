@@ -97,13 +97,15 @@ During Red-Green, run the targeted test before broad regression.
 1. Inspect `git status` and preserve existing user changes.
 2. Read `AGENTS.md` before planning, task classification, or role routing.
 3. Classify task shape and risk, then activate the smallest sufficient role set.
-4. Read the approved plan before editing.
-5. Backend behavior follows the Backend TDD Coach's one-test-at-a-time Kent Beck
+4. Orchestrator claims follow `AGENTS.md` "Orchestrator Contract": verify
+   before stating, review before reporting.
+5. Read the approved plan before editing.
+6. Backend behavior follows the Backend TDD Coach's one-test-at-a-time Kent Beck
    Red-Green-Refactor contract.
-6. Frontend changes require both frontend reviewers' pre-implementation outputs
+7. Frontend changes require both frontend reviewers' pre-implementation outputs
    and post-implementation verdicts; listing the roles alone is not evidence.
-7. Implement only approved scope; record larger ideas as deferred work.
-8. Run fresh verification and read complete output before claiming completion.
+8. Implement only approved scope; record larger ideas as deferred work.
+9. Run fresh verification and read complete output before claiming completion.
 
 ## Engineering Guardrails
 - Prefer current repository patterns and framework-native Django/DRF APIs.
