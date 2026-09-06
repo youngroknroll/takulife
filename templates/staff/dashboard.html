@@ -278,6 +278,12 @@ staff-console-redesign.md M5).
                         <a href="/staff/drafts/{{ a.log.target_draft.id }}/">{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:"(제목 없음)" }}</a>
                       {% elif a.log.target_event %}
                         <a href="/staff/events/{{ a.log.target_event.id }}/edit/">{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}</a>
+                      {% elif a.log.target_user_id %}
+                        {% if request.user.is_superuser %}
+                          <a href="{% url 'staff:account-detail' a.log.target_user_id %}">계정 #{{ a.log.target_user_id }}</a>
+                        {% else %}
+                          계정 #{{ a.log.target_user_id }}
+                        {% endif %}
                       {% else %}
                         -
                       {% endif %}

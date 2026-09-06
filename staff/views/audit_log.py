@@ -25,6 +25,9 @@ def _build_audit_log_rows(rows):
             target_label = row["target_draft__source_url"] or f"드래프트 #{row['target_draft_id']}"
         elif row["target_event_id"] is not None:
             target_label = row["target_event__title"] or f"이벤트 #{row['target_event_id']}"
+        elif row["target_user_id"] is not None:
+            # 이 화면은 is_staff 전체가 보므로 대상 이메일 대신 번호만 노출한다(D9 확장).
+            target_label = f"계정 #{row['target_user_id']}"
         else:
             target_label = "-"
         built.append(
@@ -35,6 +38,7 @@ def _build_audit_log_rows(rows):
                 "action_label": ACTION_LABELS.get(row["action"], row["action"]),
                 "actor_email": row["actor__email"] or "(탈퇴한 사용자)",
                 "target_label": target_label,
+                "target_user_id": row["target_user_id"],
             }
         )
     return built

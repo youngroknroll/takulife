@@ -131,6 +131,37 @@ def record_password_change(user):
     user.save(update_fields=["password_changed_at"])
 
 
+class ProtectedAccountError(Exception):
+    """슈퍼유저 대상 플래그 변경을 막을 때 던진다."""
+
+
+def set_staff_flag(user, *, enabled):
+    """`user.is_staff`를 목표 상태(`enabled`)로 맞춘다.
+
+    슈퍼유저는 조작 주체도 슈퍼유저 한정이라 자기 자신을 포함해 대상에서
+    제외한다. 이미 목표 상태면 저장 없이 False, 바뀌면 True를 반환한다.
+    """
+    if user.is_superuser:
+        raise ProtectedAccountError
+    if user.is_staff == enabled:
+        return False
+    user.is_staff = enabled
+    user.save(update_fields=["is_staff"])
+    return True
+
+
+def set_active_flag(user, *, enabled):
+    """`user.is_active`를 목표 상태(`enabled`)로 맞춘다. 계약은
+    `set_staff_flag`와 같다."""
+    if user.is_superuser:
+        raise ProtectedAccountError
+    if user.is_active == enabled:
+        return False
+    user.is_active = enabled
+    user.save(update_fields=["is_active"])
+    return True
+
+
 def execute_pending_deletions(now=None):
     """유예 기간이 완전히 끝난 모든 계정을 삭제한다.
 
