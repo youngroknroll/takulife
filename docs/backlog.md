@@ -333,7 +333,7 @@ H6도 같은 규칙으로 PSO P2를 따른다(2026-09-06 정정). 2026-09-06 외
 | H4 | P1 | 검수 SLA 지표(최장 대기·평균 처리·반려율·사유 분포) | 대시보드는 pending 건수만 `staff/views/__init__.py:152-186` | 제품 권고 |
 | H5 | P1 | 반려 드래프트 재오픈 | 승인·반려 모두 pending 전용 `drafts/services.py:198-207`, `source_url` unique `drafts/models.py:15` → 반려는 영구 폐기, 복구는 shell | 결함(빈도 낮음) |
 | H6 | P2 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:225`, `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제). 2026-09-06 정정: 이전 표기 P1은 WED 의견으로 상향한 것이라 "우선순위는 PSO 판정" 규칙과 충돌해 PSO P2로 되돌림. WED 이견은 기록만, 사용자가 P1을 원하면 조정 |
-| H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **결정 필요**: SRR Medium(승인 직전 필드 조작 추적 불가) / PSO 이연 |
+| H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **결정 필요**: SRR Medium(승인 직전 필드 조작 추적 불가) / PSO 이연 — **구현 완료(2026-09-07, 트랙 20, PR 번호는 머지 시 기입)** — 정본 `docs/BE/staff-audit-log.md` |
 | H8 | P1 | 알림(대기 누적·소스 전부 오류·러너 오프라인) | `send_mail`·`EmailMessage`·`mail_admins` 0건 `[실측 rg staff/ drafts/]` | 이연. DOR: 비용 정책 안 대안 없음(무료 웹훅은 외부 계정 액션 = 인프라 최후순위) |
 | H9 | P2 | 소스별 수집 이력·실패율, 실패 후보 재시도/무시 액션 | `DraftSource` 상태 필드 2개뿐 `drafts/models.py:67-68`(정정 전 표기 56-66은 필드 줄을 빗나감, 2026-09-06 재측정) | 제품 권고 |
 | H10 | P2 | 중복 경고(같은 행사 다른 URL), 반려 사유 큐 노출·템플릿 | 중복 판정은 URL 완전일치만 | 제품 권고 |

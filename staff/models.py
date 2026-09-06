@@ -26,6 +26,8 @@ class StaffActionLog(models.Model):
         STAFF_REVOKE = "staff_revoke", "Staff revoke"
         USER_DEACTIVATE = "user_deactivate", "User deactivate"
         USER_REACTIVATE = "user_reactivate", "User reactivate"
+        DRAFT_CREATE = "draft_create", "Draft create"
+        DRAFT_UPDATE = "draft_update", "Draft update"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
