@@ -332,7 +332,7 @@ H6도 같은 규칙으로 PSO P2를 따른다(2026-09-06 정정). 2026-09-06 외
 | H3 | P1 | 사용자 제보 드래프트 구분 표시 + 제보 폼 인라인 고지 | `web/promotion.py:74-82` `source_name` 미전달, `EventDraft`에 origin 필드 없음(`drafts/models.py`). 제보 폼 `templates/core/archive/personal_detail.html:115`에 메모 공개 전환 안내 없음 | 제품 권고. 구분 표시에 `source_name`을 쓰지 않는다(2026-09-06 반영): 승인 시 이벤트로 복사되고(`drafts/services.py:273`) 소비자 상세에 "N 제공"으로 노출된다(`templates/core/events/detail.html:33-34`). 스태프 수집분은 `DraftSource.name`이 들어가고(`drafts/candidate_intake.py:62`) 제보분은 빈 값이라, 운영용 유입 경로 필드를 따로 둔다. 고지 문안은 메모가 `summary`로 매핑돼(`web/promotion.py:81`) 검수 후 공개 요약에 쓰인다는 내용. 고지 자체는 개인정보처리방침 §3(`templates/core/legal/privacy.html:53-56`)·약관(`templates/core/legal/terms.html:76`)에 있어 SRR Medium을 Low(문구 권고)로 정정 |
 | H4 | P1 | 검수 SLA 지표(최장 대기·평균 처리·반려율·사유 분포) | 대시보드는 pending 건수만 `staff/views/__init__.py:152-186` | 제품 권고 |
 | H5 | P1 | 반려 드래프트 재오픈 | 승인·반려 모두 pending 전용 `drafts/services.py:198-207`, `source_url` unique `drafts/models.py:15` → 반려는 영구 폐기, 복구는 shell | 결함(빈도 낮음) |
-| H6 | P2 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:225`, `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제). 2026-09-06 정정: 이전 표기 P1은 WED 의견으로 상향한 것이라 "우선순위는 PSO 판정" 규칙과 충돌해 PSO P2로 되돌림. WED 이견은 기록만, 사용자가 P1을 원하면 조정 |
+| H6 | P2 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:237`(트랙 19 import 추가로 225→237, 2026-09-07 재확인), `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제). 2026-09-06 정정: 이전 표기 P1은 WED 의견으로 상향한 것이라 "우선순위는 PSO 판정" 규칙과 충돌해 PSO P2로 되돌림. WED 이견은 기록만, 사용자가 P1을 원하면 조정 |
 | H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **결정 필요**: SRR Medium(승인 직전 필드 조작 추적 불가) / PSO 이연 |
 | H8 | P1 | 알림(대기 누적·소스 전부 오류·러너 오프라인) | `send_mail`·`EmailMessage`·`mail_admins` 0건 `[실측 rg staff/ drafts/]` | 이연. DOR: 비용 정책 안 대안 없음(무료 웹훅은 외부 계정 액션 = 인프라 최후순위) |
 | H9 | P2 | 소스별 수집 이력·실패율, 실패 후보 재시도/무시 액션 | `DraftSource` 상태 필드 2개뿐 `drafts/models.py:67-68`(정정 전 표기 56-66은 필드 줄을 빗나감, 2026-09-06 재측정) | 제품 권고 |
@@ -405,7 +405,7 @@ dash-metric 카드 재사용(집계만 백엔드). 두 역할 원문과 검증 �
   `successEl.focus()` 223) 재사용. 서버 pending 전용 가드로 멱등.
 - H6 — `templates/staff/sources/list.html`(`<form` 0건 `[실측 grep -c]`)에 생성 폼·
   행별 수정·토글, 폼은 `events/edit.html:31-99` 패턴. 토글은 양방향이라 확인
-  불필요(`events.py:397-398` 선례). 완료 시 admin 이탈 문구(`staff/views/__init__.py:225`) 제거.
+  불필요(`events.py:397-398` 선례). 완료 시 admin 이탈 문구(`staff/views/__init__.py:237`) 제거.
 - H9 — 이력 표는 백엔드 저장 구조 선행(`DraftSource` 상태 필드는 `drafts/models.py:67-68`
   2개). 재시도는 확인 불필요, "무시"가 영구 폐기면 확인 필요(설계 시 결정).
 - H10 — 사유 템플릿은 단건 textarea(`core/drafts/detail.html:150-151`)에만 붙는다.
