@@ -190,3 +190,76 @@ def test_대시보드_최근_처리_내역에도_ip_주소나_user_agent가_없�
     assert "203.0.113.77" not in body
     assert "pytest-dashboard-agent/1.0" not in body
 
+
+# 트랙 19 H1: 계정 운영 행동(target_user)의 감사 표시 비식별화(T11, SRR
+# Medium). 이 화면은 staff_console_required(is_staff 전체)라, 계정 운영
+# 관문(superuser 한정)의 대상 이메일을 그대로 보여주면 권한 경계를
+# 우회해 노출된다 — 대상 라벨은 계정 번호로만 렌더하고 검색도 매칭하지
+# 않는다.
+
+
+@pytest.mark.django_db
+def test_계정_행동_로그_행의_대상_라벨은_계정_번호이고_본문에_대상_이메일이_없다(staff_client, make_user):
+    staff, client = staff_client()  # 슈퍼유저 아닌 운영자
+    target = make_user(email="account-log-target@example.com")
+    StaffActionLog.objects.create(
+        actor=staff,
+        action=StaffActionLog.Action.STAFF_GRANT,
+        target_user=target,
+    )
+
+    resp = client.get(audit_log_url())
+
+    assert resp.status_code == 200
+    row = resp.context["log_rows"][0]
+    assert row["target_label"] == f"계정 #{target.pk}"
+    assert target.email not in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_슈퍼유저의_감사_로그_계정_행에는_계정_상세_링크가_있다(staff_client, make_user):
+    staff, client = staff_client(is_superuser=True)
+    target = make_user(email="account-log-link-target@example.com")
+    StaffActionLog.objects.create(
+        actor=staff,
+        action=StaffActionLog.Action.STAFF_GRANT,
+        target_user=target,
+    )
+
+    resp = client.get(audit_log_url())
+
+    assert resp.status_code == 200
+    assert f"/staff/accounts/{target.pk}/" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_감사_로그_q_검색어는_대상_계정_이메일과_매칭하지_않는다(staff_client, make_user):
+    staff, client = staff_client()
+    target = make_user(email="search-target-account@example.com")
+    StaffActionLog.objects.create(
+        actor=staff,
+        action=StaffActionLog.Action.STAFF_GRANT,
+        target_user=target,
+    )
+
+    resp = client.get(f"{audit_log_url()}?q=search-target-account")
+
+    assert resp.status_code == 200
+    assert resp.context["log_rows"] == []
+
+
+@pytest.mark.django_db
+def test_대시보드_최근_처리_내역의_계정_행동_행에_대상_이메일이_없다(staff_client, make_user):
+    staff, client = staff_client()
+    target = make_user(email="dashboard-target-account@example.com")
+    StaffActionLog.objects.create(
+        actor=staff,
+        action=StaffActionLog.Action.STAFF_GRANT,
+        target_user=target,
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert target.email not in resp.content.decode()
+
