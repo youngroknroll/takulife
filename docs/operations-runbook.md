@@ -188,7 +188,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 - **익명 사용자** → `settings.LOGIN_URL`(`/accounts/login/`)로 리다이렉트(`next` 파라미터 보존).
 - **로그인했지만 스태프가 아닌 사용자** → `403 PermissionDenied`(로그인 페이지로 되돌리지 않는다 — 이미 로그인된 상태에서 LOGIN_URL로 보내면 allauth의 인증됨 리다이렉트와 충돌해 무한 루프가 될 수 있기 때문).
 - Django 기본 관리자 페이지(`/admin/`)는 슈퍼유저용 백업 경로로 계속 유지되지만, `accounts.User`는 여전히 admin에 등록돼 있지 않다(`accounts/admin.py` 없음). 계정 운영(`is_staff` 부여/해제, `is_active` 전환)은 이제 admin이나 shell이 아니라 `/staff/accounts/`(트랙 19, H1)에서 한다: `superuser_console_required`(`staff/permissions.py`)로 조작 주체를 superuser로 한정하고, 목표 상태 지정(`enabled="1"`/`"0"`, 토글 아님) + `confirmed=yes` 2단계 확인을 거쳐 `accounts/services.py`의 `set_staff_flag`·`set_active_flag`를 호출한다. 상세 가드레일(멱등, 보호 계정, 감사 기록 형태)은 `docs/BE/staff-account-operations.md`가 정본이다.
-- **예외 — superuser 계정 자체(자기 계정 포함)는 콘솔 대상에서 제외**된다: `set_staff_flag`·`set_active_flag`가 `user.is_superuser`면 `ProtectedAccountError`를 던져 뷰가 무변경으로 되돌린다(`accounts/services.py:144-150`, `:156-162`). superuser 계정을 다뤄야 하면 지금도 아래처럼 shell로 직접 조작한다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 비상용 명령이라 `uv run`을 쓴다):
+- **예외 — superuser 계정 자체(자기 계정 포함)는 콘솔 대상에서 제외**된다(사용자 확정 2026-09-07: superuser는 `createsuperuser`·shell로만 만들고 바꾼다): `set_staff_flag`·`set_active_flag`가 `user.is_superuser`면 `ProtectedAccountError`를 던져 뷰가 무변경으로 되돌린다(`accounts/services.py:144-150`, `:156-162`). superuser 계정을 다뤄야 하면 지금도 아래처럼 shell로 직접 조작한다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 비상용 명령이라 `uv run`을 쓴다):
 
   ```bash
   uv run python manage.py shell -c "from accounts.models import User; u = User.objects.get(email='<email>'); u.is_staff = False; u.save(update_fields=['is_staff'])"
