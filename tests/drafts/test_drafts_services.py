@@ -327,3 +327,63 @@ def test_같은_URL로_직접_등록을_두_번_하면_중복_오류가_발생�
     create_draft_from_fields(source_url="https://dup.example.com/a", title="A")
     with pytest.raises(DraftCreationDuplicateError):
         create_draft_from_fields(source_url="https://dup.example.com/a", title="B")
+
+
+@pytest.mark.django_db
+def test_prepare_draft_from_url은_중복_source_url이어도_예외_없이_페이로드를_돌려준다(monkeypatch):
+    """트랙 20 2차(서비스 분할) 전까지는 prepare_draft_from_url이 없어
+    ImportError로 Red가 정상이다."""
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Dup</title></html>")
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields",
+        lambda html: {"raw_title": "Dup", "raw_text": "Dup summary"},
+    )
+    create_draft_from_fields(source_url="https://dup.example.com/prepare", title="Existing")
+
+    from drafts.services import prepare_draft_from_url
+
+    payload = prepare_draft_from_url(source_url="https://dup.example.com/prepare")
+
+    assert payload is not None
+
+
+@pytest.mark.django_db
+def test_persist_prepared_draft는_중복_source_url에_DraftCreationDuplicateError를_낸다(monkeypatch):
+    """분할 전까지는 persist_prepared_draft가 없어 ImportError로 Red가 정상이다."""
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Dup</title></html>")
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields",
+        lambda html: {"raw_title": "Dup", "raw_text": "Dup summary"},
+    )
+    create_draft_from_fields(source_url="https://dup.example.com/persist", title="Existing")
+
+    from drafts.services import persist_prepared_draft, prepare_draft_from_url
+
+    payload = prepare_draft_from_url(source_url="https://dup.example.com/persist")
+
+    with pytest.raises(DraftCreationDuplicateError):
+        persist_prepared_draft(payload=payload)
+
+
+@pytest.mark.django_db
+def test_create_draft_from_url은_분할_전과_같은_드래프트를_만든다(monkeypatch):
+    """분할 후 create_draft_from_url(합성 함수)의 겉보기 동작이 그대로인지 지키는
+    회귀 핀이라 지금은 Green이 정상이다(기존 test_URL로_드래프트를_생성하면...과 같은
+    함수를 다른 각도로 고정)."""
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Split check</title></html>")
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields",
+        lambda html: {
+            "raw_title": "Split check",
+            "raw_text": "Split summary",
+            "extracted_title": "Split check",
+            "extracted_category": "popup_store",
+        },
+    )
+
+    draft = create_draft_from_url(source_url="https://example.com/split-check")
+
+    assert draft.source_url == "https://example.com/split-check"
+    assert draft.extracted_title == "Split check"
+    assert draft.extracted_category == "popup_store"
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING

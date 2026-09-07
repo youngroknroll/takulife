@@ -1,6 +1,6 @@
 """services의 드래프트 생성 오류 매핑 테스트. create_draft_from_url이 fetch/추출
 실패를 DraftCreation* 타입 오류로 바꾸는 것을 fetch_html 스텁으로 검증한다.
-같은 오류의 관리자 API 응답 매핑은 tests/drafts/test_drafts_api.py에 있다."""
+같은 오류의 관리자 API 응답 매핑은 tests/staff/test_staff_draft_api.py에 있다."""
 import logging
 
 import pytest

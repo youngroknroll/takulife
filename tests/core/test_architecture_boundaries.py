@@ -275,12 +275,6 @@ def test_실제_저장소_스캔_대상에_이벤트_모델이_포함된다():
     assert any(path.relative_to(PROJECT_ROOT) == Path("events/models.py") for path in files)
 
 
-def test_드래프트_뷰는_이벤트_모듈을_임포트하지_않는다():
-    imported_modules = _imported_modules("drafts/views.py")
-
-    assert not {module for module in imported_modules if module == "events" or module.startswith("events.")}
-
-
 def test_동적_임포트로_다른_도메인을_불러오면_경계_스캐너가_탐지한다(tmp_path):
     fixture = tmp_path / "dynamic_import_fixture.py"
     fixture.write_text(
@@ -637,7 +631,7 @@ ALLOWED_SERVICE_OR_QUERY_IMPORTS_IN_API_OR_VIEW_TESTS = {
     # monkeypatch 대상인 'drafts.services.fetch_html' 같은 문자열 경로는
     # monkeypatch.setattr에 넘기는 값이라 이 AST 검사로는 보이지 않고,
     # 애초에 임포트도 아니다.)
-    ("tests/drafts/test_drafts_api.py", "drafts.services"): frozenset(
+    ("tests/staff/test_staff_draft_api.py", "drafts.services"): frozenset(
         {
             "DraftCreationEmptyExtractionError",
             "DraftCreationResponseTooLargeError",

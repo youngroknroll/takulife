@@ -61,6 +61,11 @@ from .accounts import (
     staff_accounts,
 )
 from .audit_log import STAFF_ACTION_LOG_PAGE_SIZE, staff_audit_log
+from .draft_api import (
+    AdminEventDraftDetailView,
+    AdminEventDraftListCreateView,
+    AdminEventDraftStatsView,
+)
 from .discovery import staff_source_discovery_request
 from .home_categories import staff_home_categories
 from .sources import staff_draft_sources
@@ -95,6 +100,9 @@ __all__ = [
     "staff_account_detail",
     "staff_account_set_staff",
     "staff_account_set_active",
+    "AdminEventDraftDetailView",
+    "AdminEventDraftListCreateView",
+    "AdminEventDraftStatsView",
 ]
 
 logger = logging.getLogger(__name__)
