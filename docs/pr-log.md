@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #340부터 #192까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #343부터 #192까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,36 +28,33 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #340 — feat(staff): superuser 전용 계정 운영 화면 — is_staff·is_active 목표 상태 지정 + 2단계 확인 + 감사 target_user (트랙 19 H1)
+### PR #343 — feat(staff): 드래프트 admin API 생성·수정 감사 기록 — draft_create·draft_update (트랙 20 H7)
 
-**무엇을 바꿨나**: 백로그 H1(P0)의 계정 운영 화면. `superuser_console_required`
-(기존 `staff_console_required` 위에 합성)로 게이트한 `/staff/accounts/`
-목록(이메일 검색·페이지 20건)·상세·상태 변경 POST 2개. `accounts/services.py`의
-`set_staff_flag`·`set_active_flag`는 목표 상태 지정(`enabled` "1"/"0"만, 그 외
-400)·멱등(이미 목표 상태면 무변경·로그 없음)·superuser 대상 보호
-(`ProtectedAccountError`, 자기 계정 포함). `confirmed=yes` 서버 렌더 2단계
-확인, `atomic` + `select_for_update` + 감사 로그 같은 트랜잭션.
-`StaffActionLog.target_user` FK + Action 4종(마이그레이션 0008), 운영자
-화면·검색에는 대상 이메일 대신 `계정 #id`만(superuser에게만 상세 링크).
-템플릿 3개·CSS·사이드바 "계정" 그룹(superuser만 렌더). 문서:
-`docs/BE/staff-account-operations.md` 신설(가드레일 a~j), 런북 §5 정정,
-백로그 H1 완료·H14 종결.
+**무엇을 바꿨나**: 백로그 H7(사용자 결정 2026-09-07, 선택지 2). admin API 뷰
+3개를 `drafts/views.py`에서 `staff/views/draft_api.py`로 옮기고(`staff/api_urls.py`,
+URL·응답 불변 — 도메인 앱은 staff를 임포트할 수 없어 감사 로그를 같은
+트랜잭션에 넣으려면 staff가 소유해야 한다, DAR), `create_draft_from_url`을
+`prepare_draft_from_url`(네트워크·추출)과 `persist_prepared_draft`(저장)로 나눠
+원본 fetch가 DB 트랜잭션 밖에서 실행되게 했다(SRR). 생성·PATCH 성공 시
+`StaffActionLog`에 `draft_create`·`draft_update`(마이그레이션 0009, choices만)를
+대상 드래프트와 함께 남기고 실패 경로는 무로그, 로그 실패 시 롤백. 문서:
+`docs/BE/staff-audit-log.md` 신설(가드레일 a~e), OpenAPI 위치 서술, 백로그 H7 완료.
 
-**왜**: `accounts.User`가 admin 미등록이라 `is_staff`·`is_active` 변경이
-shell뿐이었다(런북 §5 정정 근거). 계획서 v2(PSO·DAR·SRR·TDD 코치 검토)와
-WED·BIR 사전·사후 검토, 사용자 지시 "재검토"에 따른 신규 컨텍스트
-DAR·TDD·SRR·DOR 재검토까지 반영했다.
+**왜**: 검수 화면에서 필드를 고친 뒤 승인하면 "승인"만 남아 승인 직전 필드
+조작을 추적할 수 없었다(SRR Medium). 전후 스냅샷은 H12(b) 보존 정책까지 보류.
 
-**검증**: 테스트 선작성 Red → Green, 뮤테이션 핀 8건 Red 확인, 커밋 격리
-503 passed, 브라우저 실측(Chrome DevTools MCP — superuser 흐름 전부,
-비-superuser 403·링크·이메일 0건, 뒤로가기 재클릭 멱등), WED·BIR
-Conforms, QVL 완료, CI 4체크 pass. 머지 직전 `uv run pytest -q` 2428
-passed / 64.89초 `[실측 2026-09-07]`; 머지 후 main 2428 passed / 67.01초
-`[실측 2026-09-07]`. 사용자 결정: ★2 superuser 콘솔 제외 유지·★3 액션 빈도
-제한 미구현 수용(이연).
+**검증**: 이동 커밋 단독 103 passed, 구현 전 감사 테스트 Red 10건, 뮤테이션
+3건(로그 제거·prepare atomic·update atomic 제거) Red, QVL 완료(fetch-503 무로그
+단언 보강). 병합 직전 2437 passed `[실측 2026-09-07]`, main 병합 충돌
+(H7 행) 해소 후 2440 passed / 73.85초 `[실측]`, 머지 후 main 2440 passed /
+72.49초 `[실측 2026-09-07]`. 같은 날 #341(문서·★2 확정·H6/H7 결정)·#342
+(superuser shell 전용 계약 가드) 선행 머지.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #342 — test(core): superuser는 shell로만 만든다 — is_superuser 대입 경로 0건 계약 가드
+- #341 — docs: PR #339·#340 머지를 로그에 롤링 반영 + 백로그 H1 종결·★3 수용 기록
+- #340 — feat(staff): superuser 전용 계정 운영 화면 — is_staff·is_active 목표 상태 지정 + 2단계 확인 + 감사 target_user (트랙 19 H1)
 - #339 — docs: PR #338 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
 - #337 — docs: PR #332~#335 머지를 로그에 롤링 반영
