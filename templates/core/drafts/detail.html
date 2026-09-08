@@ -11,6 +11,8 @@
 전체 검토 화면(D5). 인스펙터(큐 화면)가 부분집합이라면 이 화면이 원문
 대조·편집·승인 전 체크를 전부 소유한다. 3열: 원문(불변) / 추출 후보 편집 /
 검수 판정. JS 동작(draft.js)은 기존 id를 그대로 유지해 재사용한다.
+검수 판정 칼럼은 대기/반려/승인 세 분기이며, 재오픈된 대기 상태는
+이전 반려 기록 문단을 대기 분기 맨 앞에 덧붙여 보여준다.
 {% endcomment %}
 
 {% block content %}
@@ -136,6 +138,14 @@
         <h2 class="review-col-head">검수 판정</h2>
         <div class="review-col-body">
           {% if is_pending %}
+            {% if was_reopened %}
+              <p class="notice">이 드래프트는 반려에서 재오픈되었습니다. 이전 반려 기록은 아래와 같습니다.</p>
+              <p class="meta">
+                검토자: {{ draft.reviewed_by.email|default:"-" }}
+                · 반려 시각: {{ draft.rejected_at|date:"Y.m.d H:i" }}
+                · 반려 사유: {{ draft.rejection_reason|default:"(사유 없음)" }}
+              </p>
+            {% endif %}
             <div class="review-checks">
               <div class="mono review-checks-title">승인 전 체크</div>
               {% for check in preapproval_checks %}
@@ -156,12 +166,18 @@
               <button id="draft-reject-btn" class="staff-cta staff-cta-danger-outline staff-cta-block" type="button" data-draft-id="{{ draft.id }}">반려</button>
             </div>
             <p id="draft-approve-success" class="approve-success" tabindex="-1" hidden></p>
-            <p id="draft-action-error" class="queue-inline-error" tabindex="-1" hidden></p>
 
             <p class="review-judge-note">승인 시 <strong>published Event</strong>가 생성되어 공개 목록에 즉시 노출됩니다. 공식 URL이 없는 항목은 게시할 수 없습니다.</p>
+          {% elif draft.review_status == "rejected" %}
+            <p class="notice">{{ draft.review_status|review_status_label }} 상태입니다. 승인/반려는 검토 대기 상태에서만 가능합니다.</p>
+            <div class="review-judge-actions">
+              <button id="draft-reopen-btn" class="staff-cta staff-cta-block" type="button" data-draft-id="{{ draft.id }}">반려 재오픈</button>
+            </div>
+            <p class="review-judge-note">공식 URL은 중복 등록이 불가능해 반려된 드래프트는 새로 만들 수 없습니다. 재오픈하면 검토 대기로 돌아가 이 화면에서 수정·승인·반려를 다시 진행할 수 있습니다.</p>
           {% else %}
             <p class="notice">{{ draft.review_status|review_status_label }} 상태입니다. 승인/반려는 검토 대기 상태에서만 가능합니다.</p>
           {% endif %}
+          <p id="draft-action-error" class="queue-inline-error" tabindex="-1" hidden></p>
         </div>
       </section>
     </div>

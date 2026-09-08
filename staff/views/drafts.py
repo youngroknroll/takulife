@@ -196,6 +196,8 @@ def event_draft_detail(request, draft_id):
             },
         )
     is_pending = draft.review_status == EventDraft.ReviewStatus.PENDING
+    # 재오픈된 드래프트는 검수 판정 칼럼에 이전 반려 기록을 보여준다.
+    was_reopened = draft.reopened_at is not None
     category_label = CATEGORY_LABELS.get(
         draft.extracted_category, draft.extracted_category
     )
@@ -206,6 +208,7 @@ def event_draft_detail(request, draft_id):
         {
             "draft": draft,
             "is_pending": is_pending,
+            "was_reopened": was_reopened,
             "queue_return_url": queue_return_url,
             "category_label": category_label,
             "region_label": region_label,
