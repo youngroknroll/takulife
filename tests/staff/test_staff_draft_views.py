@@ -90,12 +90,13 @@ class TestEventDraftsListView:
         assert match, "상태 라벨 JSON 스크립트 블록을 찾을 수 없다"
         assert json.loads(match.group(1)) == REVIEW_STATUS_LABELS
 
-    def test_사용자_제보_드래프트만_목록_행에_배지가_붙는다(self, staff_client, make_draft):
+    @pytest.mark.parametrize("query", ["", "?status=pending"], ids=["전체_보기", "대기_필터"])
+    def test_사용자_제보_드래프트만_목록_행에_배지가_붙는다(self, staff_client, make_draft, query):
         reported = make_draft("https://example.com/reported", extracted_title="제보 드래프트", origin=EventDraft.Origin.USER_REPORT)
         collected = make_draft("https://example.com/collected", extracted_title="수집 드래프트", origin=EventDraft.Origin.COLLECTED)
 
         _, client = staff_client()
-        body = client.get("/staff/drafts/").content.decode()
+        body = client.get("/staff/drafts/" + query).content.decode()
 
         reported_row = re.search(r'data-draft-id="%d"[\s\S]*?</tr>' % reported.id, body)
         collected_row = re.search(r'data-draft-id="%d"[\s\S]*?</tr>' % collected.id, body)

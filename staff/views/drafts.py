@@ -111,7 +111,6 @@ def _build_draft_rows(drafts):
                 "region_label": REGION_LABELS.get(
                     draft.extracted_region, draft.extracted_region
                 ),
-                "origin_label": ORIGIN_LABELS.get(draft.origin, draft.origin),
                 "warning_badges": _draft_warning_badges(draft),
             }
         )
