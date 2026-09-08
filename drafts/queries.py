@@ -1,5 +1,9 @@
 """드래프트 도메인의 공개 조회 계층. 집계 로직은 여기 두고 뷰에는 두지 않는다."""
-from django.db.models import Count, Q
+from datetime import timedelta
+
+from django.db.models import Avg, Case, Count, DurationField, ExpressionWrapper, F, Min, Q, When
+from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 from .models import (
     DiscoveryRunnerStatus,
@@ -25,6 +29,40 @@ def draft_review_stats() -> dict:
     )
     counts = {row["review_status"]: row["count"] for row in rows}
     return {status: counts.get(status, 0) for status in _ALL_STATUSES}
+
+
+def draft_review_sla(*, days=7, now=None) -> dict:
+    """검수 SLA 세 값을 돌려준다. 기산점은 재오픈 시각이 있으면 그 값, 없으면 생성 시각이다.
+    결정 시각이 없는 옛 승인·반려 건은 창 안에 못 들어오므로 자동으로 빠진다."""
+    now = now or timezone.now()
+    window_start = now - timedelta(days=days)
+    started_at = Coalesce("reopened_at", "created_at")
+    pending = EventDraft.objects.filter(review_status=EventDraft.ReviewStatus.PENDING).aggregate(
+        oldest=Min(started_at), count=Count("id"))
+    decided = (
+        EventDraft.objects.annotate(
+            started_at=started_at,
+            decided_at=Case(
+                When(review_status=EventDraft.ReviewStatus.APPROVED, then=F("approved_at")),
+                When(review_status=EventDraft.ReviewStatus.REJECTED, then=F("rejected_at")),
+            ),
+        )
+        .filter(decided_at__gte=window_start, decided_at__lt=now)
+        .aggregate(
+            avg_handling=Avg(ExpressionWrapper(F("decided_at") - F("started_at"), output_field=DurationField())),
+            count=Count("id"),
+            rejected=Count("id", filter=Q(review_status=EventDraft.ReviewStatus.REJECTED)),
+        )
+    )
+    decided_count = decided["count"]
+    return {
+        "longest_wait": (now - pending["oldest"]) if pending["oldest"] else None,
+        "avg_handling": decided["avg_handling"],
+        "rejection_rate": (decided["rejected"] / decided_count) if decided_count else None,
+        "pending_count": pending["count"],
+        "decided_count": decided_count,
+        "rejected_count": decided["rejected"],
+    }
 
 
 DRAFT_LISTING_PAGE_SIZE = 14

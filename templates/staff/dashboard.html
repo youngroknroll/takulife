@@ -13,7 +13,8 @@
 (weekly_active_user_prev_count), 주간 이벤트 기록(weekly_event_prev_count).
 검토 대기·품질 경고는 과거 스냅샷 자체가 없어 여전히 증감을 표시하지
 않는다 — 지어내지 않는다(사용자 결정 6, .docs/FE/
-staff-console-redesign.md M5).
+staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시하지
+않는다(★2, 주당 결정 건수가 적어 비율 증감이 노이즈).
 {% endcomment %}
 {% block content %}
   <main class="page" id="staff-main">
@@ -88,6 +89,25 @@ staff-console-redesign.md M5).
 
     <div class="dash-layout">
       <div class="dash-col">
+        <section class="dash-panel">
+          <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">검수 SLA</h2>
+            <span class="mono dash-panel-head-meta dash-panel-head-meta--end">최근 7일 결정 기준</span>
+          </div>
+          <div class="dash-metrics dash-metrics--3">
+            {% for card in review_sla_cards %}
+              {% if card.href %}<a class="dash-metric dash-metric-link" href="{{ card.href }}">{% else %}<article class="dash-metric">{% endif %}
+                <p class="dash-metric-label">{{ card.label }}</p>
+                <p class="dash-metric-value-row">
+                  <span class="mono dash-metric-value">{% if card.value is not None %}{{ card.value }}{% else %}-{% endif %}</span>
+                  {% if card.value is not None %}<span class="dash-metric-unit">{{ card.unit }}</span>{% endif %}
+                </p>
+                <p class="dash-metric-note">{{ card.note }}</p>
+              {% if card.href %}</a>{% else %}</article>{% endif %}
+            {% endfor %}
+          </div>
+        </section>
+
         <section class="dash-panel">
           <div class="dash-panel-head">
             <h2 class="dash-panel-head-title">수집 소스 상태</h2>

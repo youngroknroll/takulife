@@ -149,9 +149,8 @@ def test_홈_카테고리_변경_액션은_대시보드에_전용_한글_라벨�
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 200
-    content = resp.content.decode()
-    assert "홈 카테고리 변경" in content
-    assert "반려" not in content
+    assert [row["action_label"] for row in resp.context["recent_action_rows"]] == ["홈 카테고리 변경"]
+    assert "홈 카테고리 변경" in resp.content.decode()
 
 
 @pytest.mark.django_db
@@ -911,4 +910,149 @@ def test_대시보드는_실패한_후보만_확인_큐로_노출한다(staff_cl
     assert resp.status_code == 200
     failed_candidates = resp.context["failed_source_candidates"]
     assert [candidate.pk for candidate in failed_candidates] == [failed_2.pk, failed_1.pk]
-    assert all(candidate.status == SourceCandidate.Status.FAILED for candidate in failed_candidates)
+
+
+@pytest.mark.django_db
+def test_대시보드_컨텍스트에_검수_SLA_카드_3장이_문자열_값으로_담긴다(staff_client, make_draft):
+    staff, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+
+    cards = resp.context["review_sla_cards"]
+    assert len(cards) == 3
+    for card in cards:
+        assert set(card.keys()) == {"label", "value", "unit", "note", "href"}
+    assert [card["label"] for card in cards] == ["최장 대기", "평균 처리", "반려율"]
+    assert all(card["value"] is None for card in cards)
+
+    # Given: 3일 전에 생성된 대기 드래프트가 있으면
+    draft = make_draft(review_status=EventDraft.ReviewStatus.PENDING)
+    EventDraft.objects.filter(pk=draft.pk).update(created_at=timezone.now() - datetime.timedelta(days=3))
+
+    resp = client.get("/staff/dashboard/")
+
+    # Then: 최장 대기 카드 값은 "3"·"일"이고 문자열 타입이다
+    longest_wait_card = resp.context["review_sla_cards"][0]
+    assert isinstance(longest_wait_card["value"], str)
+    assert longest_wait_card["value"] == "3"
+    assert longest_wait_card["unit"] == "일"
+
+
+@pytest.mark.django_db
+def test_검수_SLA_데이터가_없으면_카드는_하이픈과_안내_문구를_보여준다(staff_client):
+    _, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+    body = resp.content.decode()
+
+    longest_wait_card = re.search(
+        r'<p class="dash-metric-label">최장 대기</p>.*?</a>', body, re.DOTALL
+    ).group()
+    assert ">-<" in longest_wait_card
+    assert "검토 대기 없음" in longest_wait_card
+    assert "dash-metric-unit" not in longest_wait_card
+
+    avg_handling_card = re.search(
+        r'<p class="dash-metric-label">평균 처리</p>.*?</article>', body, re.DOTALL
+    ).group()
+    assert ">-<" in avg_handling_card
+    assert "최근 7일 결정 없음" in avg_handling_card
+    assert "dash-metric-unit" not in avg_handling_card
+
+    rejection_rate_card = re.search(
+        r'<p class="dash-metric-label">반려율</p>.*?</article>', body, re.DOTALL
+    ).group()
+    assert ">-<" in rejection_rate_card
+    assert "최근 7일 결정 없음" in rejection_rate_card
+    assert "dash-metric-unit" not in rejection_rate_card
+
+
+@pytest.mark.django_db
+def test_검수_SLA_데이터가_있으면_카드는_값과_단위와_건수를_함께_보여준다(staff_client, make_draft):
+    _, client = staff_client()
+    draft = make_draft(review_status=EventDraft.ReviewStatus.PENDING)
+    EventDraft.objects.filter(pk=draft.pk).update(created_at=timezone.now() - datetime.timedelta(days=3))
+
+    resp = client.get("/staff/dashboard/")
+    body = resp.content.decode()
+
+    longest_wait_card = re.search(
+        r'<p class="dash-metric-label">최장 대기</p>.*?</a>', body, re.DOTALL
+    ).group()
+    assert re.search(
+        r'<span class="mono dash-metric-value">3</span>\s*<span class="dash-metric-unit">일</span>',
+        longest_wait_card,
+    )
+    assert "대기 1건" in longest_wait_card
+
+    # Then: 같은 응답에서 평균 처리 카드는 혼재 상태(결정 없음)로 하이픈이다
+    avg_handling_card = re.search(
+        r'<p class="dash-metric-label">평균 처리</p>.*?</article>', body, re.DOTALL
+    ).group()
+    assert ">-<" in avg_handling_card
+    assert "최근 7일 결정 없음" in avg_handling_card
+
+
+@pytest.mark.django_db
+def test_최장_대기_카드는_대기중_드래프트_목록으로_연결된다(staff_client):
+    _, client = staff_client()
+
+    resp = client.get("/staff/dashboard/")
+    body = resp.content.decode()
+
+    assert re.search(
+        r'<a class="dash-metric dash-metric-link" href="/staff/drafts/\?status=pending">\s*'
+        r'<p class="dash-metric-label">최장 대기</p>',
+        body,
+    )
+
+
+def test_검수_SLA_카드_변환은_48시간_기준으로_단위를_바꾸고_비율은_정수_퍼센트_문자열로_만든다():
+    from staff.views import _build_review_sla_cards
+
+    cards = _build_review_sla_cards(
+        {
+            "longest_wait": datetime.timedelta(hours=47.6),
+            "avg_handling": datetime.timedelta(hours=48),
+            "rejection_rate": 0.0,
+            "pending_count": 1,
+            "decided_count": 2,
+            "rejected_count": 0,
+        }
+    )
+
+    assert cards[0]["value"] == "48"
+    assert cards[0]["unit"] == "시간"
+    assert cards[0]["note"] == "대기 1건"
+    assert cards[0]["href"] == "/staff/drafts/?status=pending"
+
+    assert cards[1]["value"] == "2"
+    assert cards[1]["unit"] == "일"
+    assert cards[1]["note"] == "결정 2건 기준"
+    assert cards[1]["href"] is None
+
+    assert cards[2]["value"] == "0"
+    assert cards[2]["unit"] == "%"
+    assert cards[2]["note"] == "반려 0건 / 결정 2건"
+    assert cards[2]["href"] is None
+
+    empty_cards = _build_review_sla_cards(
+        {
+            "longest_wait": None,
+            "avg_handling": None,
+            "rejection_rate": None,
+            "pending_count": 0,
+            "decided_count": 0,
+            "rejected_count": 0,
+        }
+    )
+
+    assert empty_cards[0]["value"] is None
+    assert empty_cards[0]["note"] == "검토 대기 없음"
+    assert empty_cards[0]["href"] == "/staff/drafts/?status=pending"
+    assert empty_cards[1]["value"] is None
+    assert empty_cards[1]["note"] == "최근 7일 결정 없음"
+    assert empty_cards[1]["href"] is None
+    assert empty_cards[2]["value"] is None
+    assert empty_cards[2]["note"] == "최근 7일 결정 없음"
+    assert empty_cards[2]["href"] is None

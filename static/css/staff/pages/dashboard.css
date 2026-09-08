@@ -82,6 +82,19 @@
   margin: 0.3125rem 0 0;
 }
 
+/* 패널 안 SLA 카드 3칸: 패널이 테두리를 이미 그리므로 바깥선·둥근 모서리만 뺀다. */
+.dash-metrics--3 {
+  grid-template-columns: repeat(3, 1fr);
+  border: none;
+  border-radius: 0;
+}
+
+/* 카드 그리드는 overflow: hidden이라 바깥으로 그리는 전역 포커스 링이 잘린다.
+   링크 카드만 링을 안쪽으로 그려 네 변이 다 보이게 한다. */
+.dash-metrics .dash-metric-link:focus {
+  outline-offset: -2px;
+}
+
 /* ── 2단 레이아웃 ─────────────────────────────────────────────── */
 .dash-layout {
   display: grid;
