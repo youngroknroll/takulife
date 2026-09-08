@@ -1,5 +1,5 @@
 /**
- * 스태프의 드래프트 등록·수정·승인·반려 동작.
+ * 스태프의 드래프트 등록·수정·승인·반려·재오픈 동작.
  * 원문 보기 토글은 hidden 속성만 바꿀 뿐 raw_text 내용을 직접 읽거나
  * 쓰지 않아 XSS 위험이 없다.
  * 스태프 전용 페이지의 403은 세션 만료나 보안 토큰 오류를 뜻하므로
@@ -284,6 +284,46 @@
     });
   }
 
+  /* ── 반려 재오픈 버튼 ─────────────────────────────────────────────── */
+
+  function bindReopenButton() {
+    var btn = document.getElementById("draft-reopen-btn");
+    if (!btn) {
+      return;
+    }
+    var errorEl = document.getElementById("draft-action-error");
+    var draftId = btn.dataset.draftId;
+
+    btn.addEventListener("click", async function () {
+      var confirmed = await askConfirm(
+        "반려를 취소하고 검토 대기로 되돌릴까요? 재검수에서 다시 반려할 수 있습니다."
+      );
+      if (!confirmed) {
+        return;
+      }
+      hideError(errorEl);
+      window.TakuAPI.setLoading(btn, true);
+
+      window.TakuAPI.post(
+        "/staff/drafts/" + draftId + "/reopen/",
+        {}
+      ).then(function (result) {
+        if (result.ok) {
+          // btn을 일부러 진행 중 상태(.is-loading)로 남겨둔다 — bfcache
+          // 복원 시 api.js가 이 표시를 찾아야 강제 이동 처리가 동작한다.
+          window.TakuAPI.commitAndNavigate(btn, window.location.href);
+          return;
+        }
+        window.TakuAPI.setLoading(btn, false);
+        if (result.status === 403) {
+          showError(errorEl, CSRF_OR_SESSION_MSG);
+          return;
+        }
+        showError(errorEl, window.TakuAPI.formatError(result));
+      });
+    });
+  }
+
   /* ── 원문 보기 토글 ─────────────────────────────────────────────────── */
 
   function bindRawTextToggle() {
@@ -318,6 +358,7 @@
     bindEditForm();
     bindApproveButton();
     bindRejectButton();
+    bindReopenButton();
     bindRawTextToggle();
   });
 })();

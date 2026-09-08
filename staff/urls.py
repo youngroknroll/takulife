@@ -45,6 +45,11 @@ urlpatterns = [
         staff_views.StaffDraftRejectView.as_view(),
         name="draft-reject",
     ),
+    path(
+        "drafts/<int:draft_id>/reopen/",
+        staff_views.StaffDraftReopenView.as_view(),
+        name="draft-reopen",
+    ),
     path("home-categories/", staff_views.staff_home_categories, name="home-categories"),
     path("sources/", staff_views.staff_draft_sources, name="draft-source-list"),
     path("audit-log/", staff_views.staff_audit_log, name="audit-log"),

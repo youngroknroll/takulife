@@ -3,6 +3,7 @@ import json
 import re
 
 import pytest
+from django.utils import timezone
 
 from drafts.labels import REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
@@ -434,6 +435,75 @@ class TestEventDraftDetailView:
             )
             assert match, f"{status} 상세 칩을 찾을 수 없다"
             assert match.group(1) == REVIEW_STATUS_LABELS[status]
+
+    def test_반려_상세에는_재오픈_버튼이_보인다(self, staff_client, make_draft):
+        draft = make_draft(
+            "https://example.com/reopen-btn", review_status=EventDraft.ReviewStatus.REJECTED
+        )
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/").content.decode()
+
+        assert 'id="draft-reopen-btn"' in body
+
+    @pytest.mark.parametrize(
+        "review_status",
+        [EventDraft.ReviewStatus.PENDING, EventDraft.ReviewStatus.APPROVED],
+        ids=["대기_상태", "승인_상태"],
+    )
+    def test_대기나_승인_상태의_상세에는_재오픈_버튼이_보이지_않는다(
+        self, staff_client, make_draft, review_status
+    ):
+        draft = make_draft("https://example.com/no-reopen-btn", review_status=review_status)
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/").content.decode()
+
+        assert 'id="draft-reopen-btn"' not in body
+
+    def test_재오픈된_대기_상세에는_이전_반려_사유가_보인다(self, staff_client, make_draft):
+        staff, client = staff_client()
+        reopened_draft = make_draft(
+            "https://example.com/reopened-with-reason",
+            review_status=EventDraft.ReviewStatus.PENDING,
+            reviewed_by=staff,
+            rejected_at=timezone.now(),
+            rejection_reason="이전 반려 사유 고유문자열 XQ7",
+            reopened_at=timezone.now(),
+        )
+
+        resp = client.get(f"/staff/drafts/{reopened_draft.id}/")
+        body = resp.content.decode()
+
+        assert "이전 반려 사유 고유문자열 XQ7" in body
+        assert resp.context["was_reopened"] is True
+
+        # 대조: 반려 기록은 있지만 재오픈되지 않은 대기 드래프트에는 사유가 안 보인다
+        never_reopened_draft = make_draft(
+            "https://example.com/never-reopened",
+            review_status=EventDraft.ReviewStatus.PENDING,
+            reviewed_by=staff,
+            rejected_at=timezone.now(),
+            rejection_reason="이전 반려 사유 고유문자열 XQ7",
+            reopened_at=None,
+        )
+
+        control_resp = client.get(f"/staff/drafts/{never_reopened_draft.id}/")
+        control_body = control_resp.content.decode()
+
+        assert "이전 반려 사유 고유문자열 XQ7" not in control_body
+        assert control_resp.context["was_reopened"] is False
+
+    def test_반려_상세에도_판정_오류_문단이_렌더된다(self, staff_client, make_draft):
+        draft = make_draft(
+            "https://example.com/reject-error-paragraph",
+            review_status=EventDraft.ReviewStatus.REJECTED,
+        )
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/").content.decode()
+
+        assert 'id="draft-action-error"' in body
 
 
 @pytest.mark.django_db

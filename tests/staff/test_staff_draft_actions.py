@@ -6,6 +6,7 @@
 import pytest
 from django.db import IntegrityError
 from django.urls import reverse
+from django.utils import timezone
 
 from drafts.models import EventDraft
 from events.models import Event
@@ -20,6 +21,10 @@ def draft_approve_url(draft_id):
 
 def draft_reject_url(draft_id):
     return reverse("staff:draft-reject", kwargs={"draft_id": draft_id})
+
+
+def draft_reopen_url(draft_id):
+    return reverse("staff:draft-reopen", kwargs={"draft_id": draft_id})
 
 
 @pytest.mark.django_db
@@ -371,3 +376,128 @@ def test_예전_드래프트_승인_반려_api_경로는_더_이상_지원되지
 
     assert approve_response.status_code == 404
     assert reject_response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_반려된_드래프트를_재오픈하면_대기_상태로_바뀌고_감사_로그가_한_건_남는다(staff_client, make_draft):
+    staff, client = staff_client()
+    draft = make_draft(
+        "https://example.com/reopen-target",
+        review_status=EventDraft.ReviewStatus.REJECTED,
+        reviewed_by=staff,
+        rejected_at=timezone.now(),
+        rejection_reason="공식 URL이 만료됨",
+    )
+
+    response = client.post(
+        draft_reopen_url(draft.id),
+        REMOTE_ADDR="198.51.100.9",
+        HTTP_USER_AGENT="pytest-agent/3.0",
+    )
+
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["review_status"] == EventDraft.ReviewStatus.PENDING
+    assert response_data["reopened_at"] is not None
+    assert "event_id" not in response_data
+
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert draft.reopened_at is not None
+    assert draft.reviewed_by_id == staff.id
+    assert draft.rejection_reason == "공식 URL이 만료됨"
+
+    assert StaffActionLog.objects.count() == 1
+    entry = StaffActionLog.objects.get()
+    assert entry.actor_id == staff.id
+    assert entry.action == StaffActionLog.Action.DRAFT_REOPEN
+    assert entry.target_draft_id == draft.id
+    assert entry.ip_address == "198.51.100.9"
+    assert entry.user_agent == "pytest-agent/3.0"
+
+
+@pytest.mark.django_db
+def test_익명_사용자는_드래프트를_재오픈할_수_없다(client, make_draft):
+    draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.REJECTED)
+
+    response = client.post(draft_reopen_url(draft.id))
+
+    assert response.status_code == 403
+    assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_일반_사용자는_드래프트를_재오픈할_수_없다(client, make_user, make_draft):
+    user = make_user()
+    client.force_login(user)
+    draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.REJECTED)
+
+    response = client.post(draft_reopen_url(draft.id))
+
+    assert response.status_code == 403
+    assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "review_status",
+    [EventDraft.ReviewStatus.PENDING, EventDraft.ReviewStatus.APPROVED],
+    ids=["대기_상태", "승인_상태"],
+)
+def test_대기나_승인_상태의_드래프트는_재오픈이_거부되고_로그도_남지_않는다(staff_client, make_draft, review_status):
+    staff, client = staff_client()
+    draft = make_draft("https://example.com/event", review_status=review_status)
+
+    response = client.post(draft_reopen_url(draft.id))
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Only rejected drafts can be reopened."}
+    draft.refresh_from_db()
+    assert draft.review_status == review_status
+    assert draft.reopened_at is None
+    assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_존재하지_않는_드래프트는_재오픈할_수_없고_로그도_남지_않는다(staff_client):
+    staff, client = staff_client()
+
+    response = client.post(draft_reopen_url(999999))
+
+    assert response.status_code == 404
+    assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_감사_로그_기록이_실패하면_재오픈_전체가_롤백된다(staff_client, monkeypatch, make_draft):
+    staff, client = staff_client()
+    draft = make_draft(
+        "https://example.com/reopen-rollback",
+        review_status=EventDraft.ReviewStatus.REJECTED,
+        rejection_reason="공식 URL이 만료됨",
+    )
+
+    def fail_log_create(*args, **kwargs):
+        raise IntegrityError("simulated log write failure")
+
+    monkeypatch.setattr("staff.views.StaffActionLog.objects.create", fail_log_create)
+    client.raise_request_exception = False
+
+    response = client.post(draft_reopen_url(draft.id))
+
+    assert response.status_code == 500
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.REJECTED
+    assert draft.reopened_at is None
+    assert draft.rejection_reason == "공식 URL이 만료됨"
+    assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_재오픈_엔드포인트는_GET을_허용하지_않는다(staff_client, make_draft):
+    staff, client = staff_client()
+    draft = make_draft("https://example.com/event", review_status=EventDraft.ReviewStatus.REJECTED)
+
+    response = client.get(draft_reopen_url(draft.id))
+
+    assert response.status_code == 405

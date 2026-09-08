@@ -239,13 +239,13 @@ def create_draft_from_fields(
         raise DraftCreationDuplicateError from exc
 
 
-def _get_pending_draft_for_update(draft_id):
+def _get_draft_for_update(draft_id, *, expected_status):
     try:
         draft = EventDraft.objects.select_for_update().get(pk=draft_id)
     except EventDraft.DoesNotExist as exc:
         raise DraftNotFoundError from exc
 
-    if draft.review_status != EventDraft.ReviewStatus.PENDING:
+    if draft.review_status != expected_status:
         raise DraftStateError
 
     return draft
@@ -290,7 +290,7 @@ def update_draft(*, draft_id, updates):
         raise DraftVocabError
 
     with transaction.atomic():
-        draft = _get_pending_draft_for_update(draft_id)
+        draft = _get_draft_for_update(draft_id, expected_status=EventDraft.ReviewStatus.PENDING)
 
         for field, value in updates.items():
             setattr(draft, field, value)
@@ -302,7 +302,7 @@ def update_draft(*, draft_id, updates):
 
 def approve_draft(*, draft_id, actor):
     with transaction.atomic():
-        draft = _get_pending_draft_for_update(draft_id)
+        draft = _get_draft_for_update(draft_id, expected_status=EventDraft.ReviewStatus.PENDING)
 
         try:
             event = create_published_event(
@@ -335,7 +335,7 @@ def approve_draft(*, draft_id, actor):
 
 def reject_draft(*, draft_id, actor, rejection_reason=""):
     with transaction.atomic():
-        draft = _get_pending_draft_for_update(draft_id)
+        draft = _get_draft_for_update(draft_id, expected_status=EventDraft.ReviewStatus.PENDING)
         draft.review_status = EventDraft.ReviewStatus.REJECTED
         draft.reviewed_by = actor
         draft.rejected_at = timezone.now()
@@ -349,4 +349,15 @@ def reject_draft(*, draft_id, actor, rejection_reason=""):
                 "updated_at",
             ]
         )
+        return draft
+
+
+def reopen_draft(*, draft_id):
+    # 이전 반려 기록(반려자·반려 시각·반려 사유)은 지우지 않는다 — 재검수자가
+    # 왜 반려됐는지 봐야 하기 때문이다.
+    with transaction.atomic():
+        draft = _get_draft_for_update(draft_id, expected_status=EventDraft.ReviewStatus.REJECTED)
+        draft.review_status = EventDraft.ReviewStatus.PENDING
+        draft.reopened_at = timezone.now()
+        draft.save(update_fields=["review_status", "reopened_at", "updated_at"])
         return draft

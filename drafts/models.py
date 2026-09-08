@@ -48,6 +48,7 @@ class EventDraft(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
     rejected_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True, default="")
+    reopened_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.source_url
