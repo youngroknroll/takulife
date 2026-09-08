@@ -1,7 +1,8 @@
 # 드래프트 admin API 감사 로그(`draft_create`·`draft_update`) 가드레일
 
 트랙 20(H7 선택지 2)으로 `/api/event-drafts/`(POST·PATCH)에 붙인 감사 기록이
-지키는 경계만 남긴다. 작업 일지가 아니다.
+지키는 경계만 남긴다. 작업 일지가 아니다. 트랙 21의 `draft_reopen`도 같은
+무로그·원자성 규칙을 따른다(`docs/BE/draft-review-lifecycle.md` (d)).
 
 ## (a) 감사 로그는 staff 소유 — admin API도 staff로 이동했다
 

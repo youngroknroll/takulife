@@ -69,7 +69,9 @@
 - LLM이 켜지더라도 **후보(초안) 생성까지만** 수행한다. 승인(`approve_draft`)은
   항상 스태프의 명시적 조작이며, 자동 승인 경로는 존재하지 않는다 —
   `EventDraft.ReviewStatus`는 `pending`/`approved`/`rejected` 3상태이고
-  전이는 스태프 액션(`drafts/services.py`의 승인/반려 함수)으로만 발생한다.
+  전이는 스태프 액션(`drafts/services.py`의 승인/반려/재오픈 함수)으로만
+  발생한다. 반려된 초안은 재오픈(`reopen_draft`)으로 검토 대기 상태로
+  되돌릴 수 있다(`docs/BE/draft-review-lifecycle.md`).
 
 ### 4.2 로컬 에이전트 수집처 탐색
 
