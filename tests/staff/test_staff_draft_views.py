@@ -90,6 +90,36 @@ class TestEventDraftsListView:
         assert match, "상태 라벨 JSON 스크립트 블록을 찾을 수 없다"
         assert json.loads(match.group(1)) == REVIEW_STATUS_LABELS
 
+    def test_사용자_제보_드래프트만_목록_행에_배지가_붙는다(self, staff_client, make_draft):
+        reported = make_draft("https://example.com/reported", extracted_title="제보 드래프트", origin=EventDraft.Origin.USER_REPORT)
+        collected = make_draft("https://example.com/collected", extracted_title="수집 드래프트", origin=EventDraft.Origin.COLLECTED)
+
+        _, client = staff_client()
+        body = client.get("/staff/drafts/").content.decode()
+
+        reported_row = re.search(r'data-draft-id="%d"[\s\S]*?</tr>' % reported.id, body)
+        collected_row = re.search(r'data-draft-id="%d"[\s\S]*?</tr>' % collected.id, body)
+        assert reported_row and '<span class="queue-origin-badge">제보</span>' in reported_row.group()
+        assert collected_row and '<span class="queue-origin-badge">제보</span>' not in collected_row.group()
+
+    def test_사용자_제보_드래프트만_인스펙터_헤드에_배지가_붙는다(self, staff_client, make_draft):
+        reported = make_draft("https://example.com/reported-panel", extracted_title="제보 드래프트", origin=EventDraft.Origin.USER_REPORT)
+        collected = make_draft("https://example.com/collected-panel", extracted_title="수집 드래프트", origin=EventDraft.Origin.COLLECTED)
+
+        _, client = staff_client()
+        body = client.get("/staff/drafts/").content.decode()
+
+        reported_panel = re.search(
+            r'data-inspector-panel data-draft-id="%d"[\s\S]*?(?=data-inspector-panel data-draft-id=|</main>)' % reported.id,
+            body,
+        )
+        collected_panel = re.search(
+            r'data-inspector-panel data-draft-id="%d"[\s\S]*?(?=data-inspector-panel data-draft-id=|</main>)' % collected.id,
+            body,
+        )
+        assert reported_panel and '<span class="queue-origin-badge">제보</span>' in reported_panel.group()
+        assert collected_panel and '<span class="queue-origin-badge">제보</span>' not in collected_panel.group()
+
 
 def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, start=0):
     for i in range(start, start + count):
@@ -385,6 +415,21 @@ class TestEventDraftDetailView:
         assert resp.context["is_pending"] is True
         assert resp.context["category_label"] == "팝업스토어"
         assert resp.context["region_label"] == "서울"
+
+    @pytest.mark.parametrize(
+        "origin, expects_prefix",
+        [("user_report", True), ("collected", False)],
+        ids=["user_report", "collected"],
+    )
+    def test_상세_상단바는_공식_제보_드래프트에만_공식_제보_접두를_보여준다(
+        self, staff_client, make_draft, origin, expects_prefix
+    ):
+        draft = make_draft("https://example.com/c", extracted_title="상세 드래프트", origin=origin)
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/").content.decode()
+
+        assert ("공식 제보 · " in body) is expects_prefix
 
     def test_상세의_큐로_링크는_상태_검색어_쪽을_그대로_되돌려준다(
         self, staff_client, make_draft
