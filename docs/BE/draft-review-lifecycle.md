@@ -1,6 +1,7 @@
 # 드래프트 검수 생애주기와 재오픈(`reopen_draft`) 가드레일
 
 트랙 21(H5)로 붙인 반려 드래프트 재오픈이 지키는 경계만 남긴다. 작업 일지가 아니다.
+트랙 22(H4 검수 SLA 지표)의 (i)~(k)도 담는다.
 
 ## (a) 상태값은 그대로다 — 재오픈은 신규 상태가 아니라 PENDING 복귀다
 
@@ -67,3 +68,39 @@ staff 0010은 `Action` choices만 바꾸는 `AlterField`라 실행 SQL이 없다
 `staff/views/draft_api.py`가 500으로 응답한다. 이 계약은
 `tests/staff/test_staff_draft_api.py`의
 `test_수정_요청_본문의_reopened_at은_무시되고_500이_나지_않는다`가 고정한다.
+
+## (i) 검수 SLA 지표는 드래프트 필드로만 집계한다 — 반려율·평균 처리 정의
+
+`drafts/queries.py`의 `draft_review_sla(*, days=7, now=None)`(`:34`)
+[실측 `grep -n`]: 최장 대기 = 검토 대기 중 기산점(`reopened_at` or
+`created_at`) 최솟값 기준 `now − 기산점`. 평균 처리·반려율 = 창
+`[now − 7일, now)`에 결정된 드래프트(현재 상태가 approved면 `approved_at`,
+rejected면 `rejected_at`)의 `결정 시각 − 기산점` 평균과 반려 비율.
+사용자 미확인 기본값(PSO 수용, 2026-09-08): ★1 집계 원천은 감사 로그가
+아니라 드래프트 필드다 — 반려 → 재오픈 → 승인은 승인 1건으로만 센다
+(과거 반려 기록이 남아 있어도 `review_status`가 approved이기 때문이다,
+위 (f) 참조). ★2 창은 7일이고 직전 창 대비 증감은 넣지 않는다. ★3 반려
+사유 분포는 이 지표에서 빠지고 H10(사유 템플릿) 뒤로 이연한다.
+
+## (j) 결정 시각이 없는 옛 승인·반려 건은 SLA 창에 들어오지 않는다
+
+0002 마이그레이션이 `approved_at`·`rejected_at`을 데이터 이관 없이
+추가해서 그 이전에 결정된 건은 두 필드가 모두 None이다. `draft_review_sla`의
+`Case` 결정 시각 표현식이 이 경우 NULL이 되므로 창 필터
+(`decided_at__gte`/`decided_at__lt`)에서 자동으로 빠진다 — 로컬 DB에서는
+승인 4건·반려 4건 전부 이 경로였다 [실측 2026-09-08 shell]. 핀 테스트는
+`tests/drafts/test_drafts_queries.py::TestDraftReviewSla::test_결정_시각이_없는_레거시_승인_반려_건은_창_집계에서_제외된다`
+(`:201`) [실측 `grep -n`].
+
+## (k) 표시 규칙 — 값 없음은 하이픈, 단위는 48시간 기준
+
+`staff/views/__init__.py`의 `_build_review_sla_cards`(`:170`)와
+`_format_duration`(`:162`) [실측 `grep -n`]: `value`는 표시용 문자열이거나
+None이다 — 정수 0을 그대로 넘기면 템플릿의 `is not None` 분기가 아니라
+진위값 분기로 오판할 위험이 있어 문자열로만 넘긴다. 시간 단위는
+`total_seconds()/3600`이 48 미만이면 "시간", 이상이면 "일"로 바꾸고,
+반려율은 정수 %로 반올림한다. 값이 없으면 카드는 `-`를 보여준다(콘솔
+전역 `default:"-"` 관례를 따른다). 값 없음 노트는 카드 컨테이너 안
+자식이라 스크린리더 접근 가능 이름에 포함된다. `decided_at`의 `Case`
+필터는 인덱스를 타지 못한다 — 건수가 수만 규모에 이르면 부분 인덱스를
+검토한다(이연).

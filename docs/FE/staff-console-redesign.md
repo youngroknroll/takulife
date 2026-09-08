@@ -67,6 +67,9 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 대시보드에는 「검토 대기 0건」·「품질 경고 0건」·「지난주 0건」이 함께 있다. 특정 카드가
 0을 보여주는지 보려면 `<p class="dash-metric-label">라벨</p>...</article>` 범위로 좁혀야
 한다. `[실측]` 값을 `"-"`로 만드는 뮤테이션에서 옛 단언은 **3건 모두 통과**했다.
+검수 SLA 카드도 같은 함정이 있다 — 값 없음을 `-`와 노트 문구로 구분해 렌더하고,
+테스트는 라벨 `<p>`부터 카드 닫는 태그까지 범위를 좁혀 단언한다
+(`tests/staff/test_staff_console.py:942`·`:971` [실측 `grep -n`]).
 
 ## S6 스태프 콘솔은 소비자 CSS·JS를 로드하지 않는다
 
@@ -154,3 +157,11 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 ⚠️ **검색 관련 단언은 반드시 범위를 좁혀라.** 검색창 입력값(`value="{{ q }}"`)과
 「새로고침」 링크(`request.get_full_path`)에 검색어가 그대로 들어 있어, 본문
 전체에서 찾으면 결함이 있어도 통과한다 — 실제로 이 트랙에서 두 번 그랬다.
+
+## S10 카드 그리드 안 링크 카드의 포커스 링은 안쪽에 그린다
+
+카드 그리드(`.dash-metrics`)는 `overflow: hidden`(`static/css/staff/pages/dashboard.css:26`
+[실측 `grep -n`])이라 링크 카드의 전역 포커스 링이 잘려
+`.dash-metrics .dash-metric-link:focus { outline-offset: -2px }`
+(`static/css/staff/pages/dashboard.css:94-95` [실측 `grep -n`])로 안쪽에 그린다
+(트랙 22 실측: 기존 「검토 대기」 카드 3변·SLA 카드 2변 클리핑).
