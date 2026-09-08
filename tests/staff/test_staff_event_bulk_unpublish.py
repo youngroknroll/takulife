@@ -177,6 +177,29 @@ def test_같은_이벤트_ID_목록으로_두_번_요청해도_두_번째_요청
 
 
 @pytest.mark.django_db
+def test_같은_이벤트_id가_중복된_목록은_두_번째_항목을_멱등_분기로_처리한다(
+    staff_client, make_event
+):
+    """한 요청 안에서 같은 id가 중복돼도(첫 항목이 이미 비공개로 만든 뒤라)
+    두 번째 항목은 멱등 분기를 타 succeeded로 보고되지만 로그는 남기지 않는다."""
+    staff, client = staff_client()
+    event = make_event(official_url="https://example.com/bulk-duplicate-in-request")
+
+    response = client.post(
+        bulk_unpublish_url(),
+        data={"event_ids": [event.id, event.id]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"succeeded": [event.id, event.id], "failed": []}
+
+    event.refresh_from_db()
+    assert event.publish_status == Event.PublishStatus.DRAFT
+    assert StaffActionLog.objects.count() == 1
+
+
+@pytest.mark.django_db
 def test_존재하지_않는_이벤트_id는_전체_요청을_실패시키지_않고_건별_실패로_보고된다(
     staff_client, make_event
 ):
