@@ -139,6 +139,12 @@ def staff_events(request):
     paginator = Paginator(events, STAFF_EVENT_LISTING_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
     event_rows = _build_event_rows(page_obj.object_list)
+    # 일괄 선택 바는 필터와 무관하게 "이 페이지에 게시 행이 있는가"만 본다 —
+    # 비공개 탭이 아니어도 우연히 이 페이지에 게시 행이 없으면 숨겨야 한다.
+    has_published_rows = any(
+        row["event"].publish_status == Event.PublishStatus.PUBLISHED
+        for row in event_rows
+    )
 
     query_pairs = list(_event_filter_query_pairs(request.GET))
     if search:
@@ -160,6 +166,7 @@ def staff_events(request):
             "pager_query": pager_query,
             "warning_chips": warning_chips,
             "search": search,
+            "has_published_rows": has_published_rows,
         },
     )
 

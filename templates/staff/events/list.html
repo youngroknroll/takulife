@@ -27,10 +27,27 @@
     </div>
 
     {% if event_rows %}
+      {% comment %}
+      게시 행이 없는 페이지에는 일괄 선택 바 마커 자체를 렌더하지 않는다 —
+      hidden만으로는 마커가 응답에 남는다.
+      {% endcomment %}
+      {% if has_published_rows %}
+        <div class="events-bulkbar" id="event-bulk-toolbar" hidden>
+          <label class="events-select-all" for="event-select-all">
+            <input type="checkbox" id="event-select-all">
+            <span class="sr-only">전체 선택</span>
+          </label>
+          <span class="mono" id="event-bulk-selected-count">0건 선택</span>
+          <button type="button" id="event-bulk-unpublish-btn" class="staff-cta" disabled>선택 항목 비공개로 설정</button>
+          <p id="event-bulk-result" class="mono events-bulk-result" tabindex="-1"></p>
+          <p id="event-bulk-error" class="events-inline-error" tabindex="-1" hidden></p>
+        </div>
+      {% endif %}
       <div class="events-table-wrap">
         <div class="staff-table-scroll">
-        <table class="events-table">
+        <table class="events-table" data-selected-publish-status="{{ selected_publish_status }}" data-selected-warning="{{ selected_warning }}">
           <colgroup>
+            <col style="width:2rem">
             <col style="width:4.375rem">
             <col>
             <col style="width:14rem">
@@ -41,6 +58,7 @@
           </colgroup>
           <thead>
             <tr>
+              <th scope="col"><span class="sr-only">선택</span></th>
               <th scope="col">ID</th>
               <th scope="col">제목</th>
               <th scope="col">기간</th>
@@ -52,7 +70,13 @@
           </thead>
           <tbody>
             {% for row in event_rows %}
-              <tr>
+              <tr data-event-row="{{ row.event.id }}">
+                <td>
+                  {% if row.event.publish_status == "published" %}
+                    <label class="sr-only" for="event-select-{{ row.event.id }}">{{ row.event.title|default:"(제목 없음)" }} 선택</label>
+                    <input type="checkbox" id="event-select-{{ row.event.id }}" class="event-select-checkbox" data-event-select data-event-id="{{ row.event.id }}">
+                  {% endif %}
+                </td>
                 <td class="mono events-id-cell">{{ row.event.id }}</td>
                 <td class="events-title-cell">{{ row.event.title|default:"(제목 없음)" }}</td>
                 <td class="mono events-dates-cell">{{ row.event.start_date|default:"?" }} ~ {{ row.event.end_date|default:"?" }}</td>
@@ -61,11 +85,12 @@
                 <td>
                   <span class="events-status-badge events-status-badge--{{ row.event.publish_status }}">{% if row.event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
                 </td>
-                <td class="events-tail-cell">
+                <td class="events-tail-cell" data-bulk-fail-reason-host>
                   {% for badge in row.quality_badges %}
                     <span class="events-warn-badge">⚠ {{ badge }}</span>
                   {% endfor %}
                   <a class="events-edit-link" href="/staff/events/{{ row.event.pk }}/edit/{% if pager_query %}?{{ pager_query|slice:'1:' }}{% endif %}">수정</a>
+                  <p class="events-inline-error" data-bulk-fail-reason hidden></p>
                 </td>
               </tr>
             {% endfor %}
@@ -78,8 +103,15 @@
           {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
         </div>
       </div>
+      {% if has_published_rows %}
+        <p class="events-empty" id="event-bulk-empty" tabindex="-1" hidden>이 페이지의 이벤트를 모두 처리했습니다. 새로고침하면 갱신된 목록을 볼 수 있습니다.</p>
+      {% endif %}
     {% else %}
       <p class="events-empty">해당 조건의 이벤트가 없습니다.</p>
     {% endif %}
   </div>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="{% static 'js/staff/event_bulk.js' %}"></script>
 {% endblock %}
