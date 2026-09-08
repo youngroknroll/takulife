@@ -214,13 +214,14 @@ def create_draft_from_fields(
     location_name="",
     region="",
     summary="",
+    origin=EventDraft.Origin.COLLECTED,
 ):
     """fetch 없이 호출자가 준 필드로 바로 PENDING 드래프트를 만든다. 사용자가 비공식
     으로 등록한 항목을 공식 제보하는 등, 이미 가진 데이터로 검수 파이프라인에 넣을
     때 쓴다. source_url은 공식 URL이며 여기서 유일해야 하고, 승인되면 게시된
     이벤트의 official_url이 된다. 필드는 관리자가 검수·수정하는 것과 같은
     extracted_* 자리에 들어가므로 게시 전에 자유 텍스트 category/region을 고칠 수
-    있다.
+    있다. origin은 호출자가 지정한다(제보 경로만 user_report).
     """
     try:
         with transaction.atomic():
@@ -234,6 +235,7 @@ def create_draft_from_fields(
                 extracted_region=region,
                 extracted_summary=summary,
                 review_status=EventDraft.ReviewStatus.PENDING,
+                origin=origin,
             )
     except IntegrityError as exc:
         raise DraftCreationDuplicateError from exc
