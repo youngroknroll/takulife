@@ -1,7 +1,8 @@
 # 드래프트 검수 생애주기와 재오픈(`reopen_draft`) 가드레일
 
 트랙 21(H5)로 붙인 반려 드래프트 재오픈이 지키는 경계만 남긴다. 작업 일지가 아니다.
-트랙 22(H4 검수 SLA 지표)의 (i)~(k)도 담는다.
+트랙 22(H4 검수 SLA 지표)의 (i)~(k)도 담는다. 트랙 23(H3 유입 경로)의
+(l)도 담는다.
 
 ## (a) 상태값은 그대로다 — 재오픈은 신규 상태가 아니라 PENDING 복귀다
 
@@ -60,6 +61,13 @@ staff 0010은 `Action` choices만 바꾸는 `AlterField`라 실행 SQL이 없다
 (`-- (no-op)`) [실측 `manage.py sqlmigrate staff 0010`]. 롤백은 코드 우선
 정책을 따른다 — 컬럼이 남아 있어도 구코드가 참조하지 않으므로 무해하다.
 
+예외 — 0008(`origin`)은 NOT NULL이고 정방향 마이그레이션이 DB 기본값을
+제거하므로(sqlmigrate: `ADD COLUMN "origin" varchar(20) DEFAULT 'collected'
+NOT NULL;` 뒤 `ALTER COLUMN "origin" DROP DEFAULT;` [실측 `manage.py
+sqlmigrate drafts 0008`]) 코드만 되돌리면 구코드의 드래프트 INSERT가 NOT
+NULL 위반으로 실패한다 — 롤백은 `manage.py migrate drafts 0007`(DROP
+COLUMN) 역방향을 코드 롤백과 함께 실행한다(DOR).
+
 ## (h) `EventDraftUpdateSerializer`는 `reopened_at`을 읽기 전용으로 막는다
 
 `EventDraftUpdateSerializer.Meta.read_only_fields`(`drafts/serializers.py`)에
@@ -104,3 +112,29 @@ None이다 — 정수 0을 그대로 넘기면 템플릿의 `is not None` 분기
 자식이라 스크린리더 접근 가능 이름에 포함된다. `decided_at`의 `Case`
 필터는 인덱스를 타지 못한다 — 건수가 수만 규모에 이르면 부분 인덱스를
 검토한다(이연).
+
+## (l) 유입 경로 origin — 사용자 제보만 user_report, source_name과 다른 축
+
+`EventDraft.Origin`(`drafts/models.py`, `collected`/`user_report`, 기본값
+`collected`)은 드래프트가 어떻게 만들어졌는지만 구분한다. 값을 정하는 곳은
+`create_draft_from_fields(origin=...)` 호출자뿐이며, 제보 경로
+`web/promotion.py`의 `promote_personal_entry`(`:83`)만 `origin=user_report`를
+넘기고 [실측 `grep -n`], 자동 수집(`create_draft_from_url`)과 스태프의 URL
+직접 생성(admin API)은 인자를 생략해 기본값 `collected`를 그대로 쓴다.
+`source_name`은 승인 시 이벤트로 복사돼 소비자에게 "N 제공"으로 노출되는
+출처 이름이라 `origin`과는 다른 축이고, 유입 경로 구분 표시에 쓰지 않는다.
+
+제보는 드래프트 id를 `PersonalEntry`에 남기지 않아 과거 제보 드래프트를
+역추적할 수 없으므로 백필하지 않았다. 따라서 0008 이전 행은 실제 유입
+경로와 무관하게 전부 collected로 표시되며, 이는 알려진 오표시다.
+
+표시: 큐 표·인스펙터 배지 "제보"(`queue-origin-badge`, 상태 칩과 별도
+클래스 — `draft_bulk.js`가 상태 칩을 클래스·`data-draft-status-chip`으로
+갱신하므로 셀렉터가 겹치면 안 된다), 상세 상단바 "공식 제보 · " 접두. API는
+읽기 전용(`EventDraftSerializer`·`EventDraftUpdateSerializer` 양쪽
+`read_only_fields` — 트랙 21 `reopened_at` 선례). 라벨 계약은
+`tests/drafts/test_draft_labels.py`가 `drafts/labels.py`의
+`ORIGIN_LABELS` 키와 `EventDraft.Origin.values`를 맞춰 고정한다.
+
+사용자 미확인 기본값(PSO 수용 2026-09-09): 값은 둘만 두고(세분화 없음),
+유입 경로 필터·통계는 만들지 않으며, 기존 드래프트 백필도 하지 않는다.

@@ -185,6 +185,17 @@ Frontend Review Evidence이며, 이것 없이 다시 구현하면 게이트를 �
 
 ---
 
+## 트랙 23(H3) — 제보 폼 공개 고지
+
+제보 폼 `.promote-note`에 공개 고지 문장("제보가 승인되면 이 항목의 메모가
+공개 이벤트의 요약으로 함께 공개됩니다.")을 개인 기록 상세
+(`personal_detail.html`)와 목록 partial(`_archive_results_personal.html`)
+두 곳에 이어 붙였고, 문단 `id="promote-note-<id>"`와 입력
+`aria-describedby`로 연결했다(토글 뒤 `input.focus()`라 문단이 자동으로
+읽히지 않는다 — BIR). 방침 §3과 뜻이 같다(SRR).
+
+---
+
 ## 잔여 위험 / 후속 후보
 
 - `prefetch_related("photos")` Deferred Note — 방문 기록 섹션이 사진 썸네일을
