@@ -46,6 +46,14 @@ class TestConfidenceField:
 
 
 @pytest.mark.django_db
+class TestOriginField:
+    def test_origin을_지정하지_않으면_기본값_collected로_저장된다(self, make_draft):
+        draft = make_draft("https://example.com/event")
+
+        assert draft.origin == EventDraft.Origin.COLLECTED
+
+
+@pytest.mark.django_db
 def test_이벤트_드래프트를_문자열로_표현하면_출처_url이_된다():
     draft = EventDraft(source_url="https://example.com/x")
     assert str(draft) == "https://example.com/x"

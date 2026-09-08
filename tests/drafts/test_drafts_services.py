@@ -330,6 +330,18 @@ def test_같은_URL로_직접_등록을_두_번_하면_중복_오류가_발생�
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "origin_kwargs, expected",
+    [({}, "collected"), ({"origin": "user_report"}, "user_report")],
+    ids=["인자_생략", "user_report_전달"],
+)
+def test_create_draft_from_fields는_origin_인자를_받아_그대로_저장하고_생략하면_collected다(origin_kwargs, expected):
+    draft = create_draft_from_fields(source_url="https://example.com/origin-arg", title="t", **origin_kwargs)
+
+    assert draft.origin == expected
+
+
+@pytest.mark.django_db
 def test_prepare_draft_from_url은_중복_source_url이어도_예외_없이_페이로드를_돌려준다(monkeypatch):
     """트랙 20 2차(서비스 분할) 전까지는 prepare_draft_from_url이 없어
     ImportError로 Red가 정상이다."""

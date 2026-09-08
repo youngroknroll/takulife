@@ -20,7 +20,7 @@ from core.vocab import (
     is_valid_category,
     is_valid_region,
 )
-from drafts.labels import REVIEW_STATUS_LABELS
+from drafts.labels import ORIGIN_LABELS, REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
 from drafts.queries import DRAFT_LISTING_PAGE_SIZE, draft_review_stats, list_drafts
 from drafts.serializers import EventDraftSerializer
@@ -208,6 +208,8 @@ def event_draft_detail(request, draft_id):
         {
             "draft": draft,
             "is_pending": is_pending,
+            # 유입 경로 라벨 — 템플릿 분기는 draft.origin 값으로, 라벨은 표시용
+            "origin_label": ORIGIN_LABELS.get(draft.origin, draft.origin),
             "was_reopened": was_reopened,
             "queue_return_url": queue_return_url,
             "category_label": category_label,

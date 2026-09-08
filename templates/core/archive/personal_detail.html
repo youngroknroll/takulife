@@ -112,10 +112,10 @@
             aria-expanded="false"
           >공식 제보</button>
           <form class="promote-form personal-detail-promote-form" id="promote-form-{{ entry.id }}" data-promote-form="{{ entry.id }}" hidden novalidate>
-            <p class="promote-note">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다.</p>
+            <p class="promote-note" id="promote-note-{{ entry.id }}">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다. 제보가 승인되면 이 항목의 메모가 공개 이벤트의 요약으로 함께 공개됩니다.</p>
             <div class="form-group">
               <label for="promote-url-{{ entry.id }}">공식 URL</label>
-              <input id="promote-url-{{ entry.id }}" type="url" name="official_url" placeholder="https://" required>
+              <input id="promote-url-{{ entry.id }}" type="url" name="official_url" placeholder="https://" required aria-describedby="promote-note-{{ entry.id }}">
             </div>
             <p class="form-error" data-promote-error="{{ entry.id }}"></p>
             <button class="form-submit-btn" type="submit">제보하기</button>

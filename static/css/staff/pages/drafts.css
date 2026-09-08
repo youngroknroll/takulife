@@ -365,6 +365,22 @@ select.cin-lg {
   margin-top: 0.125rem;
 }
 
+/* 유입 경로 배지(공식 제보). 상태 칩과 다른 축이라 별도 클래스, 경고색은 쓰지 않는다. */
+.queue-origin-badge {
+  display: inline-flex;
+  font-size: 0.65625rem;
+  font-weight: 700;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 0.1875rem;
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  white-space: nowrap;
+}
+
+.queue-row-open .queue-origin-badge {
+  margin-top: 0.125rem;
+}
+
 .queue-dates-cell {
   color: var(--c-dim);
   white-space: nowrap;

@@ -27,6 +27,7 @@
       <span class="mono review-topbar-id">드래프트 #{{ draft.id }}</span>
       <span class="queue-status-chip review-status-{{ draft.review_status }}">{{ draft.review_status|review_status_label }}</span>
       <span class="mono review-topbar-meta">
+        {% if draft.origin == "user_report" %}{{ origin_label }} · {% endif %}
         {% if draft.source_name %}출처 {{ draft.source_name }} · {% endif %}
         {% if draft.extraction_method == "heuristic" %}휴리스틱 추출{% else %}LLM 추출{% endif %}
         {% if draft.confidence is not None %} · 신뢰도 {% widthratio draft.confidence 1 100 %}%{% endif %}

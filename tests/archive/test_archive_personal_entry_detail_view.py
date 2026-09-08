@@ -32,6 +32,19 @@ class TestArchivePersonalEntryDetailView:
         assert resp.status_code == 200
         assert "숨겨진 골목 소품샵".encode() in resp.content
 
+    def test_미제출_비공식_장소_상세를_열면_제보_고지_문장과_입력_설명_연결이_보인다(
+        self, user_client, make_entry
+    ):
+        user, client = user_client()
+        entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="제보 고지 확인용 장소")
+
+        resp = client.get(reverse("archive-personal-entry-detail-page", args=[entry.pk]))
+        body = resp.content.decode()
+
+        assert "제보가 승인되면 이 항목의 메모가 공개 이벤트의 요약으로 함께 공개됩니다." in body
+        assert 'id="promote-note-%d"' % entry.id in body
+        assert 'aria-describedby="promote-note-%d"' % entry.id in body
+
     def test_타인_소유_비공식_장소의_상세_페이지에_접근하면_404가_반환된다(
         self, make_user, user_client, make_entry
     ):

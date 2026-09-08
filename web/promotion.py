@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from archive.models import PersonalEntry
+from drafts.models import EventDraft
 from drafts.services import DraftCreationDuplicateError, create_draft_from_fields
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
@@ -79,6 +80,7 @@ def promote_personal_entry(*, user, personal_entry_id, official_url):
                 location_name=entry.location_name,
                 region=entry.region,
                 summary=entry.memo,
+                origin=EventDraft.Origin.USER_REPORT,
             )
         except DraftCreationDuplicateError as exc:
             raise PromotionDuplicateError from exc

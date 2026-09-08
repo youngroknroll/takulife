@@ -103,6 +103,7 @@
                       {% if not selected_status %}
                         <span class="queue-status-chip review-status-{{ row.draft.review_status }}" data-draft-status-chip>{{ row.draft.review_status|review_status_label }}</span>
                       {% endif %}
+                      {% if row.draft.origin == "user_report" %}<span class="queue-origin-badge">제보</span>{% endif %}
                     </a>
                   </td>
                   <td class="mono queue-dates-cell">
@@ -142,6 +143,7 @@
               <div class="queue-inspector-head">
                 <span class="mono queue-inspector-id">#{{ row.draft.id }}</span>
                 <span class="queue-status-chip review-status-{{ row.draft.review_status }}">{{ row.draft.review_status|review_status_label }}</span>
+                {% if row.draft.origin == "user_report" %}<span class="queue-origin-badge">제보</span>{% endif %}
                 <div class="queue-inspector-actions">
                   {% if row.draft.review_status == "pending" %}
                     <span data-draft-action-scope>

@@ -30,6 +30,7 @@ class EventDraftSerializer(serializers.ModelSerializer):
             "rejected_at",
             "rejection_reason",
             "reopened_at",
+            "origin",
         ]
         read_only_fields = [
             "extraction_method",
@@ -42,6 +43,7 @@ class EventDraftSerializer(serializers.ModelSerializer):
             "rejected_at",
             "rejection_reason",
             "reopened_at",
+            "origin",
         ]
 
     def validate_source_url(self, value):
@@ -76,6 +78,7 @@ class EventDraftUpdateSerializer(EventDraftSerializer):
             "rejected_at",
             "rejection_reason",
             "reopened_at",
+            "origin",
         ]
 
     def validate(self, attrs):
