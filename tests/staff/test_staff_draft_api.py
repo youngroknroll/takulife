@@ -56,6 +56,7 @@ def test_관리자가_url로_이벤트_드래프트를_생성하면_추출된_�
     assert created.extracted_title == "Sample Event"
     assert created.extracted_category == "popup_store"
     assert created.review_status == EventDraft.ReviewStatus.PENDING
+    assert created.origin == EventDraft.Origin.COLLECTED
 
 
 @pytest.mark.django_db
@@ -102,6 +103,15 @@ def test_이벤트_드래프트_상세_응답은_extraction_method와_confidence
     response_data = response.json()
     assert response_data["extraction_method"] == "llm"
     assert response_data["confidence"] == pytest.approx(0.87)
+
+
+@pytest.mark.django_db
+def test_이벤트_드래프트_상세_응답은_origin을_포함한다(admin_client, make_draft):
+    draft = make_draft("https://example.com/event", origin=EventDraft.Origin.USER_REPORT)
+
+    response = admin_client.get(event_draft_detail_url(draft.id))
+
+    assert response.json()["origin"] == "user_report"
 
 
 @pytest.mark.django_db
@@ -191,6 +201,22 @@ def test_수정_요청_본문의_reopened_at은_무시되고_500이_나지_않�
     draft.refresh_from_db()
     assert draft.extracted_title == "제목 수정"
     assert draft.reopened_at is None
+
+
+@pytest.mark.django_db
+def test_수정_요청_본문의_origin은_무시되고_500이_나지_않는다(admin_client, make_draft):
+    draft = make_draft("https://example.com/event")
+
+    response = admin_client.patch(
+        event_draft_detail_url(draft.id),
+        {"extracted_title": "제목 수정", "origin": "user_report"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    draft.refresh_from_db()
+    assert draft.extracted_title == "제목 수정"
+    assert draft.origin == EventDraft.Origin.COLLECTED
 
 
 @pytest.mark.django_db
