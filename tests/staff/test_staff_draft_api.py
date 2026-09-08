@@ -178,6 +178,22 @@ def test_source_url과_원본_필드는_수정할_수_없다(admin_client, make_
 
 
 @pytest.mark.django_db
+def test_수정_요청_본문의_reopened_at은_무시되고_500이_나지_않는다(admin_client, make_draft):
+    draft = make_draft("https://example.com/event")
+
+    response = admin_client.patch(
+        event_draft_detail_url(draft.id),
+        {"extracted_title": "제목 수정", "reopened_at": "2026-01-01T00:00:00Z"},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    draft.refresh_from_db()
+    assert draft.extracted_title == "제목 수정"
+    assert draft.reopened_at is None
+
+
+@pytest.mark.django_db
 def test_review_status는_patch로_직접_변경할_수_없다(admin_client, make_draft):
     draft = make_draft("https://example.com/event", extracted_title="Original title")
 

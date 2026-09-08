@@ -24,4 +24,5 @@ ACTION_LABELS = {
     "user_reactivate": "계정 재활성화",
     "draft_create": "드래프트 생성",
     "draft_update": "드래프트 수정",
+    "draft_reopen": "반려 재오픈",
 }

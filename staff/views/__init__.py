@@ -39,6 +39,7 @@ from .drafts import (
     StaffDraftBulkApproveView,
     StaffDraftBulkRejectView,
     StaffDraftRejectView,
+    StaffDraftReopenView,
     event_draft_detail,
     event_drafts,
 )
@@ -89,6 +90,7 @@ __all__ = [
     "StaffDraftBulkApproveView",
     "StaffDraftBulkRejectView",
     "StaffDraftRejectView",
+    "StaffDraftReopenView",
     "event_draft_detail",
     "event_drafts",
     "staff_home_categories",

@@ -28,6 +28,7 @@ class StaffActionLog(models.Model):
         USER_REACTIVATE = "user_reactivate", "User reactivate"
         DRAFT_CREATE = "draft_create", "Draft create"
         DRAFT_UPDATE = "draft_update", "Draft update"
+        DRAFT_REOPEN = "draft_reopen", "Draft reopen"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,

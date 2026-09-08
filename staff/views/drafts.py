@@ -1,4 +1,4 @@
-"""스태프 콘솔 뷰: 초안 목록/상세 화면과 승인/반려(단건+일괄) 엔드포인트."""
+"""스태프 콘솔 뷰: 초안 목록/상세 화면과 승인/반려/재오픈(단건+일괄) 엔드포인트."""
 import logging
 from urllib.parse import urlencode
 
@@ -33,6 +33,7 @@ from drafts.services import (
     DraftStateError,
     approve_draft,
     reject_draft,
+    reopen_draft,
 )
 from events.models import Event
 
@@ -373,6 +374,31 @@ class StaffDraftRejectView(APIView):
             return error_response("Not found.", 404)
         except DraftStateError:
             return error_response("Only pending drafts can be rejected.", 400)
+
+        return Response(EventDraftSerializer(draft).data, status=status.HTTP_200_OK)
+
+
+class StaffDraftReopenView(APIView):
+    """반려된 초안을 검토 대기로 되돌린다. 감사 로그의 트랜잭션 구조는
+    StaffDraftRejectView와 같다."""
+
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, draft_id):
+        metadata = _staff_action_metadata(request)
+
+        try:
+            with transaction.atomic():
+                draft = reopen_draft(draft_id=draft_id)
+                StaffActionLog.objects.create(
+                    **_action_log_kwargs(
+                        metadata, StaffActionLog.Action.DRAFT_REOPEN, target_draft=draft
+                    )
+                )
+        except DraftNotFoundError:
+            return error_response("Not found.", 404)
+        except DraftStateError:
+            return error_response("Only rejected drafts can be reopened.", 400)
 
         return Response(EventDraftSerializer(draft).data, status=status.HTTP_200_OK)
 
