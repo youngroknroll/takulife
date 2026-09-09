@@ -37,6 +37,21 @@ def _action_log_kwargs(metadata, action, *, target_draft=None, target_event=None
     }
 
 
+def _validate_bulk_ids(ids, *, field_name, max_items):
+    """일괄 처리 엔드포인트가 공유하는 구조 검사. 각 id가 실제로 존재하고
+    처리 가능한 상태인지는 호출부의 반복문에서 항목별로 판단한다."""
+    if not isinstance(ids, list) or not ids:
+        return f"{field_name} must be a non-empty list."
+    # 개수 상한 검사를 먼저 해서, 과도하게 큰 payload는 전체를 훑기 전에 걸러낸다.
+    if len(ids) > max_items:
+        return f"{field_name} must contain at most {max_items} ids."
+    if not all(
+        isinstance(item, int) and not isinstance(item, bool) for item in ids
+    ):
+        return f"{field_name} must contain only integers."
+    return None
+
+
 def _build_source_rows(sources):
     """소스별 신선도 상태를 계산해 붙인다. 대시보드와 수집 소스 화면(N1)이
     함께 쓴다.

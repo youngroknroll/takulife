@@ -55,6 +55,11 @@ urlpatterns = [
     path("audit-log/", staff_views.staff_audit_log, name="audit-log"),
     path("events/", staff_views.staff_events, name="event-list"),
     path("events/new/", staff_views.staff_event_create, name="event-create"),
+    path(
+        "events/bulk-unpublish/",
+        staff_views.StaffEventBulkUnpublishView.as_view(),
+        name="event-bulk-unpublish",
+    ),
     path("events/<int:pk>/edit/", staff_views.staff_event_edit, name="event-edit"),
     path(
         "events/<int:pk>/toggle-publish/",

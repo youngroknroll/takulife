@@ -1,4 +1,5 @@
 """스태프 행사 목록(/staff/events/) 인증 게이트와 경고/게시상태 필터링, 페이지네이션 검증."""
+import re
 from datetime import date, timedelta
 
 import pytest
@@ -155,3 +156,67 @@ def test_재확인_필요_경고_필터를_적용하면_해당_경고에_해당�
     assert "시작임박미확인행사" in content
     assert "여유있는행사" not in content
     assert resp.context["selected_warning"] == "needs_reverification"
+
+
+def _row_slice(content, event_id):
+    idx = content.index(f'events-id-cell">{event_id}</td>')
+    start = content.rfind("<tr", 0, idx)
+    end = content.find("</tr>", idx)
+    return content[start:end]
+
+
+@pytest.mark.django_db
+def test_게시_행에만_일괄_선택_체크박스가_있고_비공개_행에는_없다(staff_client, make_event, make_draft_event):
+    staff, client = staff_client()
+    published = make_event(official_url="https://example.com/bulk-select-published")
+    draft = make_draft_event(official_url="https://example.com/bulk-select-draft")
+
+    resp = client.get("/staff/events/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    published_row = _row_slice(content, published.id)
+    draft_row = _row_slice(content, draft.id)
+    assert "data-event-select" in published_row
+    assert "data-event-select" not in draft_row
+    assert len(re.findall(r"<col[\s>]", content)) == 8
+
+
+@pytest.mark.django_db
+def test_게시_행이_있으면_일괄_선택_바와_실패_사유_표시_영역이_있다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(official_url="https://example.com/bulk-toolbar-present")
+
+    resp = client.get("/staff/events/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert 'id="event-bulk-toolbar"' in content
+    assert "data-selected-publish-status=" in content
+    assert "data-bulk-fail-reason-host" in content
+    assert 'id="event-bulk-empty"' in content
+
+
+@pytest.mark.django_db
+def test_게시_행이_없는_페이지에는_일괄_선택_바가_없다(staff_client, make_draft_event):
+    staff, client = staff_client()
+    make_draft_event(official_url="https://example.com/bulk-toolbar-absent")
+
+    resp = client.get("/staff/events/?publish_status=draft")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert 'id="event-bulk-toolbar"' not in content
+
+
+@pytest.mark.django_db
+def test_필터_없이도_게시_행이_없는_페이지에는_일괄_선택_바가_없다(staff_client, make_draft_event):
+    staff, client = staff_client()
+    make_draft_event(official_url="https://example.com/bulk-toolbar-absent-no-filter")
+
+    resp = client.get("/staff/events/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert 'id="event-bulk-toolbar"' not in content
+    assert 'id="event-bulk-empty"' not in content

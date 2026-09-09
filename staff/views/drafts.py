@@ -40,7 +40,7 @@ from events.models import Event
 from ..models import StaffActionLog
 from ..search import search_term
 from ..permissions import staff_console_required
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from ._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
 
 logger = logging.getLogger(__name__)
 
@@ -267,19 +267,11 @@ MAX_BULK_APPROVE_DRAFT_IDS = 20
 
 
 def _validate_bulk_draft_ids(draft_ids):
-    """구조만 검사한다. 각 id가 실제 존재/대기 상태인지는 뷰의 반복문에서
-    항목별로 판단한다."""
-    if not isinstance(draft_ids, list) or not draft_ids:
-        return "draft_ids must be a non-empty list."
-    # 개수 상한 검사를 먼저 해서, 과도하게 큰 payload는 전체를 훑기 전에 걸러낸다.
-    if len(draft_ids) > MAX_BULK_APPROVE_DRAFT_IDS:
-        return f"draft_ids must contain at most {MAX_BULK_APPROVE_DRAFT_IDS} ids."
-    if not all(
-        isinstance(draft_id, int) and not isinstance(draft_id, bool)
-        for draft_id in draft_ids
-    ):
-        return "draft_ids must contain only integers."
-    return None
+    """공용 구조 검사(_validate_bulk_ids)에 위임한다 — 메시지 문자열은
+    기존 그대로다(기존 일괄 승인·반려 테스트가 회귀를 보증)."""
+    return _validate_bulk_ids(
+        draft_ids, field_name="draft_ids", max_items=MAX_BULK_APPROVE_DRAFT_IDS
+    )
 
 
 class StaffDraftBulkApproveView(APIView):

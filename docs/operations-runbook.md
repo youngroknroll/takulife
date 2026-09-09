@@ -199,6 +199,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 - 계정 상태 변경은 `StaffActionLog.target_user`로 기록된다(`staff/models.py:46-51`). 운영자(is_staff) 화면에는 대상 회원 이메일을 노출하지 않고 `계정 #<id>`로만 표시한다(`staff/views/audit_log.py:29-30`).
 - 정정 전 기록(2026-09-05 이전 문안): "Staff Console 접근에 문제가 생기면 슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다" — 실측으로 사실과 다름이 확인돼 위와 같이 바꿨다.
 - 정정 전 기록(2026-09-07 이전 문안): "accounts.User는 admin 미등록이라 스태프 권한 부여/해제(`is_staff`)와 계정 비활성화(`is_active`)는 `/admin/`에서 할 수 없고, shell로 직접 다룬다" — 트랙 19로 `/staff/accounts/` 화면이 생겨 superuser 대상이 아닌 계정은 더 이상 shell이 유일한 경로가 아니다.
+- **만료 행사 일괄 비공개 처리(트랙 24, H2)**: `/staff/events/`에서 경고 필터 "종료됐지만 게시 중"을 걸고 체크박스로 대상을 선택한 뒤 "선택 항목 비공개로 설정"을 누르면 한 번에 최대 20건[코드]까지 처리된다(`POST /staff/events/bulk-unpublish/`, 상세 가드레일은 `docs/BE/staff-event-bulk-unpublish.md`가 정본). 부분 실패 시 처리되지 않은 행에는 사유가 표시되며, 서버가 멱등이라 같은 선택으로 재시도해도 이미 처리된 항목이 다시 바뀌지 않는다.
 
 ## 6. Migration Rollback — `archive` 0022 (`ActivityLogEntry`) 역적용 금지
 
