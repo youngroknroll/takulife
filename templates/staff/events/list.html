@@ -28,21 +28,20 @@
 
     {% if event_rows %}
       {% comment %}
-      게시 행이 없는 페이지에는 일괄 선택 바 마커 자체를 렌더하지 않는다 —
-      hidden만으로는 마커가 응답에 남는다.
+      일괄 선택 바 마커는 게시 행이 없는 페이지에도 항상 hidden으로 렌더한다 —
+      재게시로 생긴 체크박스를 담을 그릇이 필요해 JS가 노출 여부를 판단한다.
       {% endcomment %}
-      {% if has_published_rows %}
-        <div class="events-bulkbar" id="event-bulk-toolbar" hidden>
-          <label class="events-select-all" for="event-select-all">
-            <input type="checkbox" id="event-select-all">
-            <span class="sr-only">전체 선택</span>
-          </label>
-          <span class="mono" id="event-bulk-selected-count">0건 선택</span>
-          <button type="button" id="event-bulk-unpublish-btn" class="staff-cta" disabled>선택 항목 비공개로 설정</button>
-          <p id="event-bulk-result" class="mono events-bulk-result" tabindex="-1"></p>
-          <p id="event-bulk-error" class="events-inline-error" tabindex="-1" hidden></p>
-        </div>
-      {% endif %}
+      <p id="event-live" class="sr-only" aria-live="polite"></p>
+      <div class="events-bulkbar" id="event-bulk-toolbar" hidden>
+        <label class="events-select-all" for="event-select-all">
+          <input type="checkbox" id="event-select-all">
+          <span class="sr-only">전체 선택</span>
+        </label>
+        <span class="mono" id="event-bulk-selected-count">0건 선택</span>
+        <button type="button" id="event-bulk-unpublish-btn" class="staff-cta" disabled>선택 항목 비공개로 설정</button>
+        <p id="event-bulk-result" class="mono events-bulk-result" tabindex="-1"></p>
+        <p id="event-bulk-error" class="events-inline-error" tabindex="-1" hidden></p>
+      </div>
       <div class="events-table-wrap">
         <div class="staff-table-scroll">
         <table class="events-table" data-selected-publish-status="{{ selected_publish_status }}" data-selected-warning="{{ selected_warning }}">
@@ -70,7 +69,7 @@
           </thead>
           <tbody>
             {% for row in event_rows %}
-              <tr data-event-row="{{ row.event.id }}">
+              <tr data-event-row="{{ row.event.id }}" data-verified="{% if row.event.verified_at %}1{% else %}0{% endif %}">
                 <td>
                   {% if row.event.publish_status == "published" %}
                     <label class="sr-only" for="event-select-{{ row.event.id }}">{{ row.event.title|default:"(제목 없음)" }} 선택</label>
@@ -85,12 +84,15 @@
                 <td>
                   <span class="events-status-badge events-status-badge--{{ row.event.publish_status }}">{% if row.event.publish_status == "published" %}게시{% else %}비공개{% endif %}</span>
                 </td>
-                <td class="events-tail-cell" data-bulk-fail-reason-host>
+                <td class="events-tail-cell" data-row-error-host>
                   {% for badge in row.quality_badges %}
                     <span class="events-warn-badge">⚠ {{ badge }}</span>
                   {% endfor %}
+                  <button type="button" class="events-row-btn" data-row-action="verify" data-event-id="{{ row.event.id }}"{% if row.event.publish_status != "published" %} hidden{% endif %}>{% if row.event.verified_at %}다시 검증{% else %}검증 완료{% endif %}</button>
+                  <button type="button" class="events-row-btn" data-row-action="unpublish" data-event-id="{{ row.event.id }}"{% if row.event.publish_status != "published" %} hidden{% endif %}>비공개</button>
+                  <button type="button" class="events-row-btn events-row-btn--accent" data-row-action="republish" data-event-id="{{ row.event.id }}"{% if row.event.publish_status == "published" %} hidden{% endif %}>다시 게시</button>
                   <a class="events-edit-link" href="/staff/events/{{ row.event.pk }}/edit/{% if pager_query %}?{{ pager_query|slice:'1:' }}{% endif %}">수정</a>
-                  <p class="events-inline-error" data-bulk-fail-reason hidden></p>
+                  <p class="events-inline-error" data-row-error tabindex="-1" hidden></p>
                 </td>
               </tr>
             {% endfor %}
@@ -103,9 +105,7 @@
           {% include "core/partials/_pager.html" with page_obj=page_obj extra_query=pager_query %}
         </div>
       </div>
-      {% if has_published_rows %}
-        <p class="events-empty" id="event-bulk-empty" tabindex="-1" hidden>이 페이지의 이벤트를 모두 처리했습니다. 새로고침하면 갱신된 목록을 볼 수 있습니다.</p>
-      {% endif %}
+      <p class="events-empty" id="event-bulk-empty" tabindex="-1" hidden>이 페이지의 이벤트를 모두 처리했습니다. 새로고침하면 갱신된 목록을 볼 수 있습니다.</p>
     {% else %}
       <p class="events-empty">해당 조건의 이벤트가 없습니다.</p>
     {% endif %}
@@ -114,4 +114,5 @@
 
 {% block extra_js %}
 <script defer src="{% static 'js/staff/event_bulk.js' %}"></script>
+<script defer src="{% static 'js/staff/event_row_actions.js' %}"></script>
 {% endblock %}
