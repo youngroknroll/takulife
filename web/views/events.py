@@ -26,6 +26,7 @@ from archive.queries import (
 )
 from core.calendar_grid import month_grid
 from core.models import HomeConfig
+from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
     CATEGORY,
@@ -93,6 +94,9 @@ def home(request):
         "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
         "category_tiles": category_tiles,
         "featured_event_rows": featured_event_rows,
+        "json_ld_script": _json_ld_script(
+            build_website_json_ld(request.build_absolute_uri("/"))
+        ),
     }
 
     if request.user.is_authenticated:

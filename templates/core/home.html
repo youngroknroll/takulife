@@ -3,6 +3,7 @@
 {% block title %}{{ brand_name_ko }} {{ project_name }} — 굿즈 컬렉션·서브컬처 이벤트 기록{% endblock %}
 {% block og_title %}{{ brand_name_ko }} {{ project_name }} — 굿즈 컬렉션·서브컬처 이벤트 기록{% endblock %}
 {% block robots_meta %}{% endblock %}
+{% block structured_data %}{% if json_ld_script %}<script type="application/ld+json">{{ json_ld_script|safe }}</script>{% endif %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/hscroll.css' %}">
