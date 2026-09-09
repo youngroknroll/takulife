@@ -397,3 +397,32 @@ def test_스태프가_재확인_대상_이벤트를_검증_완료_처리하면_�
 
     log = StaffActionLog.objects.get(target_event=event)
     assert log.action == StaffActionLog.Action.EVENT_VERIFY
+
+
+@pytest.mark.django_db
+def test_비공개_이벤트를_검증_완료_처리하면_기록은_남지만_품질_배지는_빈_목록이다(
+    staff_client, make_draft_event
+):
+    staff, client = staff_client()
+    # 게시 상태였다면 "종료됐지만 게시 중" 배지가 붙을 기간이지만, 비공개라
+    # 배지 계산 자체를 건너뛴다는 것이 이 테스트의 유일한 관심사다.
+    event = make_draft_event(
+        official_url="https://example.com/inline-verify-draft-ended",
+        start_date=date.today() - timedelta(days=30),
+        end_date=date.today() - timedelta(days=10),
+        region="seoul",
+        verified_at=None,
+    )
+
+    response = client.post(verified_url(event.id), content_type="application/json")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert isinstance(body["verified_at"], str) and body["verified_at"]
+    assert body["quality_badges"] == []
+
+    event.refresh_from_db()
+    assert event.verified_at is not None
+
+    log = StaffActionLog.objects.get(target_event=event)
+    assert log.action == StaffActionLog.Action.EVENT_VERIFY
