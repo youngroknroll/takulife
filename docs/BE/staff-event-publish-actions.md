@@ -199,7 +199,15 @@ test_event_quality_warnings.py` E1)가 경계 픽스처로 고정한다 — 웹
 게시 탭이거나 경고 필터가 걸려 있으면 행 제거, 그 외는 배지만 갱신;
 **재게시**는 비공개 탭이면 행 제거; **검증**은 경고 필터가
 `needs_reverification`이면 행 제거. 요청 중에는 같은 행의 체크박스와
-다른 버튼을 잠근다. 개별 체크박스 `change`는 표(`.events-table`)에
+다른 버튼을 잠근다. **BIR 사후 판정 반영**: 잠긴 행에는 `is-row-locked`
+표식(class)을 두고, `event_row_actions.js`의 `pageshow`(`event.
+persisted`) 리스너가 bfcache 복귀 시 이 표식이 붙은 행만 찾아 풀어준다
+— `api.js`의 공용 pageshow 핸들러는 `.is-loading` 버튼만 복구해,
+plain `disabled`로 잠근 체크박스·형제 버튼까지는 못 풀어주기 때문이다
+(안 풀면 뒤로 가기로 돌아온 행이 영구히 잠긴다). live region(`#event-
+live`) 기록은 포커스 이동과 같은 틱을 피하려고 100ms 뒤로 미뤄
+쓴다(`window.setTimeout`) — 같은 틱에 쓰면 스크린리더가 갱신을 놓칠
+수 있다. 개별 체크박스 `change`는 표(`.events-table`)에
 이벤트 위임으로 붙이고(리스너 재부착 없음), 재게시로 체크박스가 새로
 생기면 `window.TakuEventBulk.refreshToolbar()`(`static/js/staff/
 event_bulk.js` [실측 grep], 재계산 전용·인자·반환 없음·툴바 부재
