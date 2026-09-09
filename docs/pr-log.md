@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #346부터 #199까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #348부터 #200까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,31 +28,32 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #346 — feat(staff): 대시보드 검수 SLA 지표 — H4 (트랙 22)
+### PR #348 — feat: 사용자 제보 드래프트 구분 표시와 제보 폼 공개 고지 — H3 (트랙 23)
 
-**무엇을 바꿨나**: 백로그 H4. 대시보드 왼쪽 열 맨 위에 「검수 SLA」 패널(최장
-대기·평균 처리·반려율 카드 3장)을 넣었다. 조회 `draft_review_sla(*, days=7,
-now=None)`(`drafts/queries.py`)는 기산점을 `reopened_at` 없으면 `created_at`으로
-잡고(트랙 21 ★2), 창 7일 안에 결정된 드래프트를 현재 상태의 `approved_at`/
-`rejected_at`으로 세며, 결정 시각이 없는 레거시 건은 자동 제외한다. 값 없음은
-하이픈과 노트 문구로 구분하고 단위는 48시간 미만 "시간"·이상 "일". 브라우저
-실측에서 카드 그리드의 `overflow: hidden`이 링크 카드 포커스 링을 잘라내는 기존
-결함을 발견해 `.dash-metrics .dash-metric-link:focus { outline-offset: -2px }`로
-함께 고쳤다. 문서: `docs/BE/draft-review-lifecycle.md` (i)~(k), `docs/FE/
-staff-console-redesign.md` S10, 백로그 H4 완료.
+**무엇을 바꿨나**: 백로그 H3. `EventDraft.origin`(`collected` 기본 / `user_report`,
+마이그레이션 0008)을 추가하고 사용자 제보 경로(`web/promotion.py`)만
+`user_report`를 지정한다 — `source_name`은 승인 시 이벤트로 복사돼 소비자에게
+노출되는 출처 이름이라 구분 표시에 쓰지 않는다. 스태프 큐 표·인스펙터에
+제보 드래프트만 「제보」 배지(`queue-origin-badge`), 상세 상단바에 「공식
+제보 · 」 접두. 제보 폼 안내 문단에 메모 공개 고지 문장을 개인 기록 상세와
+목록 partial 두 진입점에 이어 붙이고 입력과 `aria-describedby`로 연결했다.
+API는 `origin` 읽기 전용(두 serializer). 문서:
+`docs/BE/draft-review-lifecycle.md` (l)·(g) 롤백 예외, 백로그 H3 완료.
 
-**왜**: 대시보드가 검토 대기 건수만 보여줘 지연·처리 속도·반려 비율을 알 수
-없었다(H4 P1). 사용자 미확인 기본값(PSO 수용): 집계 원천은 드래프트 필드(반려
-→ 재오픈 → 승인은 승인만), 증감 없음, 사유 분포는 H10 뒤로 이연.
+**왜**: 운영자가 큐에서 사용자 제보를 구분할 수 없었고, 제보 폼이 메모의
+공개 전환을 알리지 않았다(방침 §3에만 있음). 0008은 NOT NULL 컬럼이라
+롤백 시 `migrate drafts 0007` 역방향을 코드 롤백과 함께 실행해야 한다.
 
-**검증**: 조회 Q1~Q8·뷰 V1~V5 Red → Green, 뮤테이션 4건(반려 판정·기산점·레거시
-NULL·버튼 조건) Red 확인, WED·BIR 사후 Conforms, QVL 완료. 브랜치 2474 passed /
-84.07초 `[실측 2026-09-08]`. #345(트랙 21 반려 재오픈) 위 스택으로 열어 #345
-머지 뒤 base를 main으로 재지정, CI 4체크 pass 후 머지. 머지 후 main 2474
-passed / 73.21초 `[실측 2026-09-09]`. 같은 날 #344(pr-log 롤링)·#345 선행 머지.
+**검증**: Red 14케이스 → Green, 뮤테이션 5건 Red, WED·BIR 사후 Conforms,
+QVL 조건부 판정의 잔여 2건(필터 탭 케이스·미사용 컨텍스트)을 같은 PR에서
+해소 후 완료. 브랜치 2488 passed / 87.77초 `[실측 2026-09-09]`, CI 4체크
+pass. 머지 후 main 2488 passed / 88.79초 `[실측 2026-09-09]`. 같은 날
+#347(pr-log 롤링) 선행 머지.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #347 — docs: PR #344·#345·#346 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #346 — feat(staff): 대시보드 검수 SLA 지표 — H4 (트랙 22)
 - #345 — feat(staff): 반려 드래프트 재오픈 — H5 (트랙 21)
 - #344 — docs: PR #341·#342·#343 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #343 — feat(staff): 드래프트 admin API 생성·수정 감사 기록 — draft_create·draft_update (트랙 20 H7)
@@ -196,4 +197,3 @@ passed / 73.21초 `[실측 2026-09-09]`. 같은 날 #344(pr-log 롤링)·#345 �
 - #202 — feat: 10-day grace period for account deletion
 - #201 — feat: ARIA restoration stage 5 — structural cleanup
 - #200 — feat: ARIA restoration stage 4 — carousel and input labels
-- #199 — feat: ARIA restoration stage 3 — disclosure expanded/controls sync
