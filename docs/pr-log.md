@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #348부터 #200까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #351부터 #204까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,30 +28,34 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #348 — feat: 사용자 제보 드래프트 구분 표시와 제보 폼 공개 고지 — H3 (트랙 23)
+### PR #351 — docs(readme): 아키텍처 설계 문서 형식으로 재구성하고 코드와 대조해 정정
 
-**무엇을 바꿨나**: 백로그 H3. `EventDraft.origin`(`collected` 기본 / `user_report`,
-마이그레이션 0008)을 추가하고 사용자 제보 경로(`web/promotion.py`)만
-`user_report`를 지정한다 — `source_name`은 승인 시 이벤트로 복사돼 소비자에게
-노출되는 출처 이름이라 구분 표시에 쓰지 않는다. 스태프 큐 표·인스펙터에
-제보 드래프트만 「제보」 배지(`queue-origin-badge`), 상세 상단바에 「공식
-제보 · 」 접두. 제보 폼 안내 문단에 메모 공개 고지 문장을 개인 기록 상세와
-목록 partial 두 진입점에 이어 붙이고 입력과 `aria-describedby`로 연결했다.
-API는 `origin` 읽기 전용(두 serializer). 문서:
-`docs/BE/draft-review-lifecycle.md` (l)·(g) 롤백 예외, 백로그 H3 완료.
+**무엇을 바꿨나**: README를 요구사항 → 요청 흐름 → 책임 분리 → 데이터 설계 →
+정합성·비동기 → 배포·운영 6절 구조로 재편하고(기존 스택·트러블슈팅·규모·로컬
+실행은 7~10절), 문체를 높임말로 통일했다. 코드·운영 문서와 대조해 "미배포"
+→ 2026-08-31부터 `takulife.kr` 운영 중, "Google OAuth 미활성" → 2026-08-26
+활성화 완료, CI "2-job" → `test`·`audit`·`docker` 3-job + `main → production`
+PR 자동 생성 워크플로, "Django 앱 8개" → 앱 7개 + `config` + `local_runner`
+패키지, marker "6계층" → 5개로 정정했다. 규모 수치는 main(6e4ccce) 재측정값:
+커밋 1,380 / 머지 PR 341 / 테스트 2,488개·88.79초 / 테스트 파일 193 /
+`transaction.atomic` 51곳·`select_for_update` 9파일 / 제약·인덱스 선언 21건.
+SMTP 미설정·백업 실행 기록 없음·러너 자동 시작 미구현은 운영 상태에 사실대로
+남겼다.
 
-**왜**: 운영자가 큐에서 사용자 제보를 구분할 수 없었고, 제보 폼이 메모의
-공개 전환을 알리지 않았다(방침 §3에만 있음). 0008은 NOT NULL 컬럼이라
-롤백 시 `migrate drafts 0007` 역방향을 코드 롤백과 함께 실행해야 한다.
+**왜**: 사용자가 제공한 아키텍처 설계 초안 형식으로 README를 맞추되, 초안과
+기존 README 모두 코드와 어긋난 서술(배포 상태·OAuth·CI 구성·수치)이 있어
+근거 파일을 grep으로 재확인해 고쳤다.
 
-**검증**: Red 14케이스 → Green, 뮤테이션 5건 Red, WED·BIR 사후 Conforms,
-QVL 조건부 판정의 잔여 2건(필터 탭 케이스·미사용 컨텍스트)을 같은 PR에서
-해소 후 완료. 브랜치 2488 passed / 87.77초 `[실측 2026-09-09]`, CI 4체크
-pass. 머지 후 main 2488 passed / 88.79초 `[실측 2026-09-09]`. 같은 날
-#347(pr-log 롤링) 선행 머지.
+**검증**: 상대 링크 대상 12개 파일 존재 확인, 인용 설정값 전부 grep 재확인
+`[실측 2026-09-09]`. 같은 날 #349(pr-log 롤링)·#350(트랙 24 이벤트 일괄 비공개
+설정, 2506 passed / 69.79초·브라우저 AC7 9항목·CI 4체크 pass) 선행 머지.
+머지 후 main(73a7539) 2506 passed / 76.22초 `[실측 2026-09-09]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #350 — feat(staff): 이벤트 일괄 비공개 설정 — H2 분할 1/3 (트랙 24)
+- #349 — docs: PR #347·#348 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #348 — feat: 사용자 제보 드래프트 구분 표시와 제보 폼 공개 고지 — H3 (트랙 23)
 - #347 — docs: PR #344·#345·#346 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #346 — feat(staff): 대시보드 검수 SLA 지표 — H4 (트랙 22)
 - #345 — feat(staff): 반려 드래프트 재오픈 — H5 (트랙 21)
@@ -193,7 +197,3 @@ pass. 머지 후 main 2488 passed / 88.79초 `[실측 2026-09-09]`. 같은 날
 - #206 — feat(web): Shared shell — notice banner, mobile hamburger, four-column footer
 - #205 — design(web): Fix light-mode brand contrast to AA (design-rules §1.4)
 - #204 — feat(web): D8 live search result summary live region
-- #203 — feat(web): ARIA restoration stage 6 — staff chart text alternative
-- #202 — feat: 10-day grace period for account deletion
-- #201 — feat: ARIA restoration stage 5 — structural cleanup
-- #200 — feat: ARIA restoration stage 4 — carousel and input labels
