@@ -12,6 +12,10 @@ class EventDraft(models.Model):
         HEURISTIC = "heuristic", "Heuristic"
         LLM = "llm", "LLM"
 
+    class Origin(models.TextChoices):
+        COLLECTED = "collected", "Collected"
+        USER_REPORT = "user_report", "User report"
+
     source_url = models.URLField(unique=True)
     source_name = models.CharField(max_length=100, blank=True)
     raw_title = models.CharField(max_length=255, blank=True)
@@ -36,6 +40,13 @@ class EventDraft(models.Model):
         default=ReviewStatus.PENDING,
         db_index=True,
     )
+    # 어떻게 들어온 드래프트인지 — 사용자가 낸 공식 제보만 user_report, 나머지
+    # (스태프 등록·자동 수집)는 collected. 출처 이름 source_name과는 다른 축.
+    origin = models.CharField(
+        max_length=20,
+        choices=Origin.choices,
+        default=Origin.COLLECTED,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     reviewed_by = models.ForeignKey(
@@ -48,6 +59,7 @@ class EventDraft(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
     rejected_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True, default="")
+    reopened_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.source_url

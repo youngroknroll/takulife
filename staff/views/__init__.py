@@ -15,6 +15,7 @@ from django.utils import timezone
 from core.analytics import distinct_user_key_count_since, event_name_counts_since
 from drafts.discovery_runs import runner_is_online
 from drafts.queries import (
+    draft_review_sla,
     draft_review_stats,
     enabled_draft_sources_exist,
     failed_source_candidates,
@@ -39,13 +40,16 @@ from .drafts import (
     StaffDraftBulkApproveView,
     StaffDraftBulkRejectView,
     StaffDraftRejectView,
+    StaffDraftReopenView,
     event_draft_detail,
     event_drafts,
 )
 from .events import (
     EVENT_CREATE_BLANK_FORM_VALUES,
     EVENT_EDIT_TEXT_FIELDS,
+    MAX_BULK_EVENT_IDS,
     QUALITY_WARNING_LABELS,
+    StaffEventBulkUnpublishView,
     staff_event_create,
     staff_event_delete,
     staff_event_edit,
@@ -53,7 +57,20 @@ from .events import (
     staff_event_verify,
     staff_events,
 )
+from .events_actions import StaffEventPublishStatusView, StaffEventVerifiedView
+from .accounts import (
+    STAFF_ACCOUNT_LISTING_PAGE_SIZE,
+    staff_account_detail,
+    staff_account_set_active,
+    staff_account_set_staff,
+    staff_accounts,
+)
 from .audit_log import STAFF_ACTION_LOG_PAGE_SIZE, staff_audit_log
+from .draft_api import (
+    AdminEventDraftDetailView,
+    AdminEventDraftListCreateView,
+    AdminEventDraftStatsView,
+)
 from .discovery import staff_source_discovery_request
 from .home_categories import staff_home_categories
 from .sources import staff_draft_sources
@@ -65,7 +82,11 @@ __all__ = [
     "staff_source_discovery_request",
     "EVENT_CREATE_BLANK_FORM_VALUES",
     "EVENT_EDIT_TEXT_FIELDS",
+    "MAX_BULK_EVENT_IDS",
     "QUALITY_WARNING_LABELS",
+    "StaffEventBulkUnpublishView",
+    "StaffEventPublishStatusView",
+    "StaffEventVerifiedView",
     "staff_event_create",
     "staff_event_delete",
     "staff_event_edit",
@@ -77,12 +98,21 @@ __all__ = [
     "StaffDraftBulkApproveView",
     "StaffDraftBulkRejectView",
     "StaffDraftRejectView",
+    "StaffDraftReopenView",
     "event_draft_detail",
     "event_drafts",
     "staff_home_categories",
     "staff_draft_sources",
     "STAFF_ACTION_LOG_PAGE_SIZE",
     "staff_audit_log",
+    "STAFF_ACCOUNT_LISTING_PAGE_SIZE",
+    "staff_accounts",
+    "staff_account_detail",
+    "staff_account_set_staff",
+    "staff_account_set_active",
+    "AdminEventDraftDetailView",
+    "AdminEventDraftListCreateView",
+    "AdminEventDraftStatsView",
 ]
 
 logger = logging.getLogger(__name__)
@@ -133,6 +163,54 @@ def _build_activity_columns(per_day):
     ]
 
 
+REVIEW_SLA_PENDING_URL = "/staff/drafts/?status=pending"
+
+
+def _format_duration(delta):
+    """timedelta를 (값 문자열, 단위)로 바꾼다. 이틀 미만은 시간, 그 이상은 일로 보여준다."""
+    hours = delta.total_seconds() / 3600
+    if hours < 48:
+        return str(round(hours)), "시간"
+    return str(round(hours / 24)), "일"
+
+
+def _build_review_sla_cards(sla):
+    """대시보드 검수 SLA 카드 3장. value는 표시용 문자열이거나 None(데이터 없음)이다 —
+    정수 0을 그대로 넘기면 템플릿 분기가 거짓으로 오판하므로 문자열로만 넘긴다."""
+    longest = sla["longest_wait"]
+    handling = sla["avg_handling"]
+    rate = sla["rejection_rate"]
+    longest_value, longest_unit = _format_duration(longest) if longest is not None else (None, None)
+    handling_value, handling_unit = _format_duration(handling) if handling is not None else (None, None)
+    return [
+        {
+            "label": "최장 대기",
+            "value": longest_value,
+            "unit": longest_unit,
+            "note": f"대기 {sla['pending_count']}건" if longest_value is not None else "검토 대기 없음",
+            "href": REVIEW_SLA_PENDING_URL,
+        },
+        {
+            "label": "평균 처리",
+            "value": handling_value,
+            "unit": handling_unit,
+            "note": f"결정 {sla['decided_count']}건 기준" if handling_value is not None else "최근 7일 결정 없음",
+            "href": None,
+        },
+        {
+            "label": "반려율",
+            "value": str(round(rate * 100)) if rate is not None else None,
+            "unit": "%" if rate is not None else None,
+            "note": (
+                f"반려 {sla['rejected_count']}건 / 결정 {sla['decided_count']}건"
+                if rate is not None
+                else "최근 7일 결정 없음"
+            ),
+            "href": None,
+        },
+    ]
+
+
 def _last_discovery_run_at():
     """가장 최근 수집 실행 시각을 반환한다. 실행 이력이 없으면 None이다.
 
@@ -152,6 +230,7 @@ def _last_discovery_run_at():
 def dashboard(request):
     """스태프 콘솔 첫 화면."""
     stats = draft_review_stats()
+    review_sla_cards = _build_review_sla_cards(draft_review_sla())
     recent_actions = recent_staff_actions()
     draft_sources = list_draft_sources()
     quality_warnings = published_quality_warnings()
@@ -163,6 +242,7 @@ def dashboard(request):
         "staff/dashboard.html",
         {
             "pending_count": stats["pending"],
+            "review_sla_cards": review_sla_cards,
             "discovery_runner_online": runner_is_online(status_row=discovery_runner_status),
             "discovery_runner_last_heartbeat_at": (
                 discovery_runner_status.last_heartbeat_at if discovery_runner_status else None

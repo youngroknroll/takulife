@@ -327,3 +327,187 @@ def test_같은_URL로_직접_등록을_두_번_하면_중복_오류가_발생�
     create_draft_from_fields(source_url="https://dup.example.com/a", title="A")
     with pytest.raises(DraftCreationDuplicateError):
         create_draft_from_fields(source_url="https://dup.example.com/a", title="B")
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "origin_kwargs, expected",
+    [({}, "collected"), ({"origin": "user_report"}, "user_report")],
+    ids=["인자_생략", "user_report_전달"],
+)
+def test_create_draft_from_fields는_origin_인자를_받아_그대로_저장하고_생략하면_collected다(origin_kwargs, expected):
+    draft = create_draft_from_fields(source_url="https://example.com/origin-arg", title="t", **origin_kwargs)
+
+    assert draft.origin == expected
+
+
+@pytest.mark.django_db
+def test_prepare_draft_from_url은_중복_source_url이어도_예외_없이_페이로드를_돌려준다(monkeypatch):
+    """트랙 20 2차(서비스 분할) 전까지는 prepare_draft_from_url이 없어
+    ImportError로 Red가 정상이다."""
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Dup</title></html>")
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields",
+        lambda html: {"raw_title": "Dup", "raw_text": "Dup summary"},
+    )
+    create_draft_from_fields(source_url="https://dup.example.com/prepare", title="Existing")
+
+    from drafts.services import prepare_draft_from_url
+
+    payload = prepare_draft_from_url(source_url="https://dup.example.com/prepare")
+
+    assert payload is not None
+
+
+@pytest.mark.django_db
+def test_persist_prepared_draft는_중복_source_url에_DraftCreationDuplicateError를_낸다(monkeypatch):
+    """분할 전까지는 persist_prepared_draft가 없어 ImportError로 Red가 정상이다."""
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Dup</title></html>")
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields",
+        lambda html: {"raw_title": "Dup", "raw_text": "Dup summary"},
+    )
+    create_draft_from_fields(source_url="https://dup.example.com/persist", title="Existing")
+
+    from drafts.services import persist_prepared_draft, prepare_draft_from_url
+
+    payload = prepare_draft_from_url(source_url="https://dup.example.com/persist")
+
+    with pytest.raises(DraftCreationDuplicateError):
+        persist_prepared_draft(payload=payload)
+
+
+@pytest.mark.django_db
+def test_create_draft_from_url은_분할_전과_같은_드래프트를_만든다(monkeypatch):
+    """분할 후 create_draft_from_url(합성 함수)의 겉보기 동작이 그대로인지 지키는
+    회귀 핀이라 지금은 Green이 정상이다(기존 test_URL로_드래프트를_생성하면...과 같은
+    함수를 다른 각도로 고정)."""
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Split check</title></html>")
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields",
+        lambda html: {
+            "raw_title": "Split check",
+            "raw_text": "Split summary",
+            "extracted_title": "Split check",
+            "extracted_category": "popup_store",
+        },
+    )
+
+    draft = create_draft_from_url(source_url="https://example.com/split-check")
+
+    assert draft.source_url == "https://example.com/split-check"
+    assert draft.extracted_title == "Split check"
+    assert draft.extracted_category == "popup_store"
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_반려된_드래프트를_재오픈하면_대기_상태로_바뀌고_이전_반려_기록은_유지된다(make_user, make_draft):
+    from drafts.services import reopen_draft
+
+    # Given: 반려된 드래프트
+    actor = make_user()
+    draft = make_draft("https://example.com/reopen-target")
+    reject_draft(draft_id=draft.id, actor=actor, rejection_reason="공식 URL이 만료됨")
+    draft.refresh_from_db()
+    rejected_at_before = draft.rejected_at
+
+    # When: 재오픈한다
+    reopen_draft(draft_id=draft.id)
+
+    # Then: 대기 상태로 돌아가고 반려 기록은 그대로 남는다
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert draft.reopened_at is not None
+    assert draft.reviewed_by_id == actor.id
+    assert draft.rejected_at == rejected_at_before
+    assert draft.rejection_reason == "공식 URL이 만료됨"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "review_status",
+    [EventDraft.ReviewStatus.PENDING, EventDraft.ReviewStatus.APPROVED],
+    ids=["대기_상태", "승인_상태"],
+)
+def test_대기나_승인_상태의_드래프트는_재오픈할_수_없다(make_draft, review_status):
+    from drafts.services import reopen_draft
+
+    # Given: 대기 또는 승인 상태의 드래프트
+    draft = make_draft("https://example.com/not-reopenable", review_status=review_status)
+
+    # When/Then: 재오픈하면 상태 오류가 나고 상태는 그대로다
+    with pytest.raises(DraftStateError):
+        reopen_draft(draft_id=draft.id)
+
+    draft.refresh_from_db()
+    assert draft.review_status == review_status
+
+
+@pytest.mark.django_db
+def test_존재하지_않는_드래프트는_재오픈할_수_없다():
+    from drafts.services import DraftNotFoundError, reopen_draft
+
+    # When/Then: 없는 id로 재오픈하면 not-found 오류가 난다
+    with pytest.raises(DraftNotFoundError):
+        reopen_draft(draft_id=999999)
+
+
+@pytest.mark.django_db
+def test_재반려_후_다시_재오픈하면_재오픈_시각이_갱신된다(make_user, make_draft):
+    from drafts.services import reopen_draft
+
+    # Given: 반려 후 한 번 재오픈한 드래프트
+    actor = make_user()
+    draft = make_draft("https://example.com/reopen-again")
+    reject_draft(draft_id=draft.id, actor=actor, rejection_reason="첫 반려")
+    reopen_draft(draft_id=draft.id)
+    draft.refresh_from_db()
+    first_reopened_at = draft.reopened_at
+
+    # When: 다시 반려하고 다시 재오픈한다
+    reject_draft(draft_id=draft.id, actor=actor, rejection_reason="두 번째 반려")
+    reopen_draft(draft_id=draft.id)
+
+    # Then: 재오픈 시각이 새 값으로 갱신된다
+    draft.refresh_from_db()
+    second_reopened_at = draft.reopened_at
+    assert second_reopened_at != first_reopened_at
+    assert second_reopened_at > first_reopened_at
+
+
+@pytest.mark.django_db
+def test_재오픈된_드래프트는_update_draft로_수정할_수_있다(make_user, make_draft):
+    from drafts.services import reopen_draft
+
+    # Given: 반려 후 재오픈한 드래프트
+    actor = make_user()
+    draft = make_draft("https://example.com/reopen-then-update")
+    reject_draft(draft_id=draft.id, actor=actor)
+    reopen_draft(draft_id=draft.id)
+
+    # When: 재오픈된 드래프트를 수정한다
+    update_draft(draft_id=draft.id, updates={"extracted_title": "재검수 제목"})
+
+    # Then: 수정 내용이 저장된다
+    draft.refresh_from_db()
+    assert draft.extracted_title == "재검수 제목"
+
+
+@pytest.mark.django_db
+def test_재오픈된_드래프트는_approve_draft로_승인할_수_있다(make_user, make_draft):
+    from drafts.services import reopen_draft
+
+    # Given: 승인 가능한 필드로 만든 뒤 반려하고 재오픈한 드래프트
+    actor = make_user()
+    draft = make_draft("https://example.com/reopen-then-approve", source_name="Official", extracted_title="Reopened event", extracted_category="popup_store", extracted_region="seoul")
+    reject_draft(draft_id=draft.id, actor=actor)
+    reopen_draft(draft_id=draft.id)
+
+    # When: 재오픈된 드래프트를 승인한다
+    result = approve_draft(draft_id=draft.id, actor=actor)
+
+    # Then: 승인 상태가 되고 이벤트가 생성된다
+    draft.refresh_from_db()
+    assert draft.review_status == EventDraft.ReviewStatus.APPROVED
+    assert result.event_id is not None

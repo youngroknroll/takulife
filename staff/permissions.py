@@ -23,3 +23,17 @@ def staff_console_required(view_func):
         return view_func(request, *args, **kwargs)
 
     return _wrapped
+
+
+def superuser_console_required(view_func):
+    """계정 운영 화면 전용 관문. `staff_console_required` 위에 슈퍼유저
+    검사를 더한다 — 계정 플래그 조작 주체는 슈퍼유저로 한정한다."""
+
+    @staff_console_required
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped

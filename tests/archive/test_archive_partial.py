@@ -217,3 +217,14 @@ class TestArchivePartialBranch:
         # CollectionItem으로 이관되기 전(C4) 과도기 동안 굿즈 행도 스스로
         # 삭제할 수단은 남아 있어야 한다.
         assert f'data-delete-entry-id="{goods_id}"'.encode() in content
+
+    def test_개인_기록_목록의_제보_폼에도_고지_문장과_입력_설명_연결이_보인다(self, user_client, make_entry):
+        user, client = user_client()
+        entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="목록 제보 고지 확인용 장소")
+
+        resp = client.get("/archive/personal/")
+        body = resp.content.decode()
+
+        assert "제보가 승인되면 이 항목의 메모가 공개 이벤트의 요약으로 함께 공개됩니다." in body
+        assert 'id="promote-note-%d"' % entry.id in body
+        assert 'aria-describedby="promote-note-%d"' % entry.id in body

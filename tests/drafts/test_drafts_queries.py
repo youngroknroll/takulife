@@ -1,7 +1,10 @@
 """drafts/queries.py 테스트: list_drafts()와 DRAFT_LISTING_PAGE_SIZE.
 list_draft_sources()는 -enabled, name 순 정렬을 검증하며, staff 대시보드는
 DraftSource를 직접 조회하지 않고 이 헬퍼를 거쳐야 한다."""
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 
 from drafts.models import DraftSource, EventDraft
 
@@ -55,6 +58,171 @@ class TestDraftReviewStats:
         assert result["pending"] == 0
         assert result["approved"] == 1
         assert result["rejected"] == 0
+
+
+@pytest.mark.django_db
+class TestDraftReviewSla:
+    def test_드래프트가_전혀_없으면_최장_대기와_평균_처리와_반려율이_모두_None이고_카운트는_0이다(self):
+        from drafts.queries import draft_review_sla
+
+        now = timezone.now()
+
+        result = draft_review_sla(now=now)
+
+        assert result["longest_wait"] is None
+        assert result["avg_handling"] is None
+        assert result["rejection_rate"] is None
+        assert result["pending_count"] == 0
+        assert result["decided_count"] == 0
+        assert result["rejected_count"] == 0
+
+    def test_검토_대기_중인_드래프트가_여러_건이면_최장_대기는_가장_오래된_생성_시각_기준이다(self, make_draft):
+        from drafts.queries import draft_review_sla
+
+        now = timezone.now()
+        # Given: 대기 드래프트 2건, 생성 시각이 다르다
+        newer = make_draft()
+        EventDraft.objects.filter(pk=newer.pk).update(created_at=now - timedelta(days=2))
+        older = make_draft()
+        EventDraft.objects.filter(pk=older.pk).update(created_at=now - timedelta(days=5))
+
+        # When: SLA를 조회하면
+        result = draft_review_sla(now=now)
+
+        # Then: 최장 대기는 더 오래된 생성 시각 기준이다
+        assert result["longest_wait"] == timedelta(days=5)
+        assert result["pending_count"] == 2
+
+    def test_재오픈된_대기_드래프트의_최장_대기는_재오픈_시각_기준이다(self, make_draft):
+        from drafts.queries import draft_review_sla
+
+        now = timezone.now()
+        # Given: 아주 오래전 생성됐지만 최근 재오픈된 대기 드래프트
+        draft = make_draft(reopened_at=now - timedelta(days=1))
+        EventDraft.objects.filter(pk=draft.pk).update(created_at=now - timedelta(days=30))
+
+        # When: SLA를 조회하면
+        result = draft_review_sla(now=now)
+
+        # Then: 최장 대기는 재오픈 시각 기준이다
+        assert result["longest_wait"] == timedelta(days=1)
+
+    def test_평균_처리와_반려율은_창_안에서_결정된_드래프트만_반영하고_창_밖_결정은_제외한다(self, make_draft):
+        from drafts.queries import draft_review_sla
+
+        now = timezone.now()
+        # Given: 창 안에서 결정된 승인 1건과 창 밖에서 결정된 승인 1건
+        in_window = make_draft(
+            review_status=EventDraft.ReviewStatus.APPROVED,
+            approved_at=now - timedelta(days=1),
+        )
+        EventDraft.objects.filter(pk=in_window.pk).update(created_at=now - timedelta(days=3))
+        out_of_window = make_draft(
+            review_status=EventDraft.ReviewStatus.APPROVED,
+            approved_at=now - timedelta(days=10),
+        )
+        EventDraft.objects.filter(pk=out_of_window.pk).update(created_at=now - timedelta(days=20))
+
+        # When: SLA를 조회하면
+        result = draft_review_sla(now=now)
+
+        # Then: 창 밖 결정은 제외되고 창 안 1건만 반영된다
+        assert result["decided_count"] == 1
+        assert result["avg_handling"] == timedelta(days=2)
+        assert result["rejection_rate"] == 0.0
+
+    def test_반려율은_창_안_결정_중_반려_비율로_계산된다(self, make_draft):
+        from drafts.queries import draft_review_sla
+
+        now = timezone.now()
+        # Given: 창 안 반려 1건과 승인 3건
+        rejected = make_draft(
+            review_status=EventDraft.ReviewStatus.REJECTED,
+            rejected_at=now - timedelta(days=1),
+        )
+        EventDraft.objects.filter(pk=rejected.pk).update(created_at=now - timedelta(days=2))
+        for _ in range(3):
+            approved = make_draft(
+                review_status=EventDraft.ReviewStatus.APPROVED,
+                approved_at=now - timedelta(days=1),
+            )
+            EventDraft.objects.filter(pk=approved.pk).update(created_at=now - timedelta(days=2))
+
+        # When: SLA를 조회하면
+        result = draft_review_sla(now=now)
+
+        # Then: 반려율은 반려 1건 / 결정 4건이다
+        assert result["rejection_rate"] == 0.25
+        assert result["rejected_count"] == 1
+        assert result["decided_count"] == 4
+
+    def test_반려_후_재오픈되어_승인된_드래프트는_승인으로만_집계된다(self, make_draft):
+        from drafts.queries import draft_review_sla
+
+        now = timezone.now()
+        # Given: 과거에 반려됐다가 재오픈되어 승인된 드래프트
+        draft = make_draft(
+            review_status=EventDraft.ReviewStatus.APPROVED,
+            rejected_at=now - timedelta(days=4),
+            rejection_reason="과거 반려",
+            reopened_at=now - timedelta(days=3),
+            approved_at=now - timedelta(days=1),
+        )
+        EventDraft.objects.filter(pk=draft.pk).update(created_at=now - timedelta(days=6))
+
+        # When: SLA를 조회하면
+        result = draft_review_sla(now=now)
+
+        # Then: 승인으로만 집계되고 반려는 0건이다
+        assert result["rejected_count"] == 0
+        assert result["decided_count"] == 1
+        assert result["rejection_rate"] == 0.0
+
+    def test_재오픈_후_결정된_드래프트의_처리_시간은_재오픈_시각부터_계산한다(self, make_draft):
+        from drafts.queries import draft_review_sla
+
+        now = timezone.now()
+        # Given: 재오픈 후 승인된 드래프트(재오픈 시각과 승인 시각의 차이는 2일)
+        draft = make_draft(
+            review_status=EventDraft.ReviewStatus.APPROVED,
+            rejected_at=now - timedelta(days=4),
+            rejection_reason="과거 반려",
+            reopened_at=now - timedelta(days=3),
+            approved_at=now - timedelta(days=1),
+        )
+        EventDraft.objects.filter(pk=draft.pk).update(created_at=now - timedelta(days=6))
+
+        # When: SLA를 조회하면
+        result = draft_review_sla(now=now)
+
+        # Then: 처리 시간은 생성 시각이 아니라 재오픈 시각부터 계산된다
+        assert result["avg_handling"] == timedelta(days=2)
+
+    def test_결정_시각이_없는_레거시_승인_반려_건은_창_집계에서_제외된다(self, make_draft):
+        from drafts.queries import draft_review_sla
+
+        now = timezone.now()
+        # Given: 결정 시각이 없는 레거시 승인 건과 반려 건
+        legacy_approved = make_draft(
+            review_status=EventDraft.ReviewStatus.APPROVED,
+            approved_at=None,
+        )
+        EventDraft.objects.filter(pk=legacy_approved.pk).update(created_at=now - timedelta(days=1))
+        legacy_rejected = make_draft(
+            review_status=EventDraft.ReviewStatus.REJECTED,
+            rejected_at=None,
+        )
+        EventDraft.objects.filter(pk=legacy_rejected.pk).update(created_at=now - timedelta(days=1))
+
+        # When: SLA를 조회하면
+        result = draft_review_sla(now=now)
+
+        # Then: 결정 시각이 없는 건은 창 집계에서 제외되고 대기 건도 아니다
+        assert result["decided_count"] == 0
+        assert result["rejected_count"] == 0
+        assert result["avg_handling"] is None
+        assert result["rejection_rate"] is None
+        assert result["pending_count"] == 0
 
 
 @pytest.mark.django_db

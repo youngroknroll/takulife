@@ -49,7 +49,13 @@ staff/queries.py에서 애초에 그 두 필드를 select하지 않아 log_rows
               <tr>
                 <td class="mono audit-cell-dim">{{ row.created_at|date:"y.m.d H:i" }}</td>
                 <td><span class="audit-action-badge audit-action-badge--{{ row.action }}">{{ row.action_label }}</span></td>
-                <td class="audit-cell-target">{{ row.target_label }}</td>
+                <td class="audit-cell-target">
+                  {% if row.target_user_id and request.user.is_superuser %}
+                    <a href="{% url 'staff:account-detail' row.target_user_id %}">{{ row.target_label }}</a>
+                  {% else %}
+                    {{ row.target_label }}
+                  {% endif %}
+                </td>
                 <td class="mono audit-cell-faint">{{ row.actor_email }}</td>
               </tr>
             {% endfor %}

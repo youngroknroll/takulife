@@ -53,6 +53,14 @@ sidebar_pending_draft_count를 그대로 쓴다(D4).
       <span class="staff-nav-label">감사 로그</span>
     </a>
 
+    {% if request.user.is_superuser %}
+      <p class="staff-nav-group mono">계정</p>
+      <a class="staff-nav-item{% if url_name == 'account-list' or url_name == 'account-detail' or url_name == 'account-set-staff' or url_name == 'account-set-active' %} is-active{% endif %}" href="{% url 'staff:account-list' %}">
+        <span class="staff-nav-icon mono" aria-hidden="true">A</span>
+        <span class="staff-nav-label">계정</span>
+      </a>
+    {% endif %}
+
     <a class="staff-nav-item staff-nav-exit" href="/">
       <span class="staff-nav-icon mono" aria-hidden="true">↗</span>
       <span class="staff-nav-label">사이트로 돌아가기</span>
@@ -79,6 +87,8 @@ sidebar_pending_draft_count를 그대로 쓴다(D4).
     {% elif url_name == 'event-list' or url_name == 'event-create' or url_name == 'event-edit' %}카탈로그 /
     {% elif url_name == 'home-categories' %}카탈로그 /
     {% elif url_name == 'audit-log' %}기록 /
+    {% elif url_name == 'account-list' %}계정 /
+    {% elif url_name == 'account-detail' or url_name == 'account-set-staff' or url_name == 'account-set-active' %}계정 / 계정 목록 /
     {% endif %}
   </span>
   <h1 class="staff-commandbar-title">
@@ -91,6 +101,9 @@ sidebar_pending_draft_count를 그대로 쓴다(D4).
     {% elif url_name == 'event-edit' %}이벤트 수정
     {% elif url_name == 'home-categories' %}홈 카테고리
     {% elif url_name == 'audit-log' %}감사 로그
+    {% elif url_name == 'account-list' %}계정
+    {% elif url_name == 'account-detail' %}계정 상세
+    {% elif url_name == 'account-set-staff' or url_name == 'account-set-active' %}계정 상태 변경
     {% endif %}
   </h1>
 

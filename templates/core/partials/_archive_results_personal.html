@@ -112,10 +112,10 @@ status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이
 
         {% if row.is_place and not row.is_submitted %}
           <form class="promote-form" id="promote-form-{{ row.entry.id }}" data-promote-form="{{ row.entry.id }}" hidden novalidate>
-            <p class="promote-note">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다.</p>
+            <p class="promote-note" id="promote-note-{{ row.entry.id }}">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다. 제보가 승인되면 이 항목의 메모가 공개 이벤트의 요약으로 함께 공개됩니다.</p>
             <div class="form-group">
               <label for="promote-url-{{ row.entry.id }}">공식 URL</label>
-              <input id="promote-url-{{ row.entry.id }}" type="url" name="official_url" placeholder="https://" required>
+              <input id="promote-url-{{ row.entry.id }}" type="url" name="official_url" placeholder="https://" required aria-describedby="promote-note-{{ row.entry.id }}">
             </div>
             <p class="form-error" data-promote-error="{{ row.entry.id }}"></p>
             <button class="form-submit-btn" type="submit">제보하기</button>

@@ -1,4 +1,4 @@
-"""스태프 콘솔 뷰: 초안 목록/상세 화면과 승인/반려(단건+일괄) 엔드포인트."""
+"""스태프 콘솔 뷰: 초안 목록/상세 화면과 승인/반려/재오픈(단건+일괄) 엔드포인트."""
 import logging
 from urllib.parse import urlencode
 
@@ -20,7 +20,7 @@ from core.vocab import (
     is_valid_category,
     is_valid_region,
 )
-from drafts.labels import REVIEW_STATUS_LABELS
+from drafts.labels import ORIGIN_LABELS, REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
 from drafts.queries import DRAFT_LISTING_PAGE_SIZE, draft_review_stats, list_drafts
 from drafts.serializers import EventDraftSerializer
@@ -33,13 +33,14 @@ from drafts.services import (
     DraftStateError,
     approve_draft,
     reject_draft,
+    reopen_draft,
 )
 from events.models import Event
 
 from ..models import StaffActionLog
 from ..search import search_term
 from ..permissions import staff_console_required
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from ._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +196,8 @@ def event_draft_detail(request, draft_id):
             },
         )
     is_pending = draft.review_status == EventDraft.ReviewStatus.PENDING
+    # 재오픈된 드래프트는 검수 판정 칼럼에 이전 반려 기록을 보여준다.
+    was_reopened = draft.reopened_at is not None
     category_label = CATEGORY_LABELS.get(
         draft.extracted_category, draft.extracted_category
     )
@@ -205,6 +208,9 @@ def event_draft_detail(request, draft_id):
         {
             "draft": draft,
             "is_pending": is_pending,
+            # 유입 경로 라벨 — 템플릿 분기는 draft.origin 값으로, 라벨은 표시용
+            "origin_label": ORIGIN_LABELS.get(draft.origin, draft.origin),
+            "was_reopened": was_reopened,
             "queue_return_url": queue_return_url,
             "category_label": category_label,
             "region_label": region_label,
@@ -261,19 +267,11 @@ MAX_BULK_APPROVE_DRAFT_IDS = 20
 
 
 def _validate_bulk_draft_ids(draft_ids):
-    """구조만 검사한다. 각 id가 실제 존재/대기 상태인지는 뷰의 반복문에서
-    항목별로 판단한다."""
-    if not isinstance(draft_ids, list) or not draft_ids:
-        return "draft_ids must be a non-empty list."
-    # 개수 상한 검사를 먼저 해서, 과도하게 큰 payload는 전체를 훑기 전에 걸러낸다.
-    if len(draft_ids) > MAX_BULK_APPROVE_DRAFT_IDS:
-        return f"draft_ids must contain at most {MAX_BULK_APPROVE_DRAFT_IDS} ids."
-    if not all(
-        isinstance(draft_id, int) and not isinstance(draft_id, bool)
-        for draft_id in draft_ids
-    ):
-        return "draft_ids must contain only integers."
-    return None
+    """공용 구조 검사(_validate_bulk_ids)에 위임한다 — 메시지 문자열은
+    기존 그대로다(기존 일괄 승인·반려 테스트가 회귀를 보증)."""
+    return _validate_bulk_ids(
+        draft_ids, field_name="draft_ids", max_items=MAX_BULK_APPROVE_DRAFT_IDS
+    )
 
 
 class StaffDraftBulkApproveView(APIView):
@@ -373,6 +371,31 @@ class StaffDraftRejectView(APIView):
             return error_response("Not found.", 404)
         except DraftStateError:
             return error_response("Only pending drafts can be rejected.", 400)
+
+        return Response(EventDraftSerializer(draft).data, status=status.HTTP_200_OK)
+
+
+class StaffDraftReopenView(APIView):
+    """반려된 초안을 검토 대기로 되돌린다. 감사 로그의 트랜잭션 구조는
+    StaffDraftRejectView와 같다."""
+
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, draft_id):
+        metadata = _staff_action_metadata(request)
+
+        try:
+            with transaction.atomic():
+                draft = reopen_draft(draft_id=draft_id)
+                StaffActionLog.objects.create(
+                    **_action_log_kwargs(
+                        metadata, StaffActionLog.Action.DRAFT_REOPEN, target_draft=draft
+                    )
+                )
+        except DraftNotFoundError:
+            return error_response("Not found.", 404)
+        except DraftStateError:
+            return error_response("Only rejected drafts can be reopened.", 400)
 
         return Response(EventDraftSerializer(draft).data, status=status.HTTP_200_OK)
 

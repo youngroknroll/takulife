@@ -45,12 +45,32 @@ urlpatterns = [
         staff_views.StaffDraftRejectView.as_view(),
         name="draft-reject",
     ),
+    path(
+        "drafts/<int:draft_id>/reopen/",
+        staff_views.StaffDraftReopenView.as_view(),
+        name="draft-reopen",
+    ),
     path("home-categories/", staff_views.staff_home_categories, name="home-categories"),
     path("sources/", staff_views.staff_draft_sources, name="draft-source-list"),
     path("audit-log/", staff_views.staff_audit_log, name="audit-log"),
     path("events/", staff_views.staff_events, name="event-list"),
     path("events/new/", staff_views.staff_event_create, name="event-create"),
+    path(
+        "events/bulk-unpublish/",
+        staff_views.StaffEventBulkUnpublishView.as_view(),
+        name="event-bulk-unpublish",
+    ),
     path("events/<int:pk>/edit/", staff_views.staff_event_edit, name="event-edit"),
+    path(
+        "events/<int:pk>/publish-status/",
+        staff_views.StaffEventPublishStatusView.as_view(),
+        name="event-publish-status",
+    ),
+    path(
+        "events/<int:pk>/verified/",
+        staff_views.StaffEventVerifiedView.as_view(),
+        name="event-verified",
+    ),
     path(
         "events/<int:pk>/toggle-publish/",
         staff_views.staff_event_toggle_publish,
@@ -61,5 +81,17 @@ urlpatterns = [
         "events/<int:pk>/verify/",
         staff_views.staff_event_verify,
         name="event-verify",
+    ),
+    path("accounts/", staff_views.staff_accounts, name="account-list"),
+    path("accounts/<int:pk>/", staff_views.staff_account_detail, name="account-detail"),
+    path(
+        "accounts/<int:pk>/staff/",
+        staff_views.staff_account_set_staff,
+        name="account-set-staff",
+    ),
+    path(
+        "accounts/<int:pk>/active/",
+        staff_views.staff_account_set_active,
+        name="account-set-active",
     ),
 ]

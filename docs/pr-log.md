@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #331부터 #187까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #351부터 #204까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,51 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #330 — feat: SEO 최적화 — robots 해제·sitemap·페이지별 메타·JSON-LD·noindex (트랙 16)
+### PR #351 — docs(readme): 아키텍처 설계 문서 형식으로 재구성하고 코드와 대조해 정정
 
-**무엇을 바꿨나**: robots.txt를 크롤링 허용으로 전환(비제품 4경로
-`/admin/`·`/api/`·`/accounts/`·`/staff/`만 차단 + Sitemap 위치 안내),
-`web/sitemaps.py` 신설로 정적 공개 페이지와 공개 행사 상세를
-sitemap.xml에 노출 — contrib sitemap 뷰의 DB `Site` 의존은 래퍼가
-`RequestSite`를 직접 주입해 우회하므로 도메인이 요청 Host를 따른다.
-페이지별 메타 제목·설명·canonical 조립을 배선하고, 행사 상세에 Event
-JSON-LD(presenters 순수 함수 + 필드 화이트리스트 + `\uXXXX` 이스케이프)를
-실어 meta_description 단일 소스가 메타·og·JSON-LD 세 표면을 공급한다.
-비공개 페이지는 noindex 기본값(fail-closed)으로 차단하고 공개 6페이지만
-해제 — 기본 블록과 해제를 한 커밋으로 묶어 배포 가능한 중간 상태를 없앴다.
+**무엇을 바꿨나**: README를 요구사항 → 요청 흐름 → 책임 분리 → 데이터 설계 →
+정합성·비동기 → 배포·운영 6절 구조로 재편하고(기존 스택·트러블슈팅·규모·로컬
+실행은 7~10절), 문체를 높임말로 통일했다. 코드·운영 문서와 대조해 "미배포"
+→ 2026-08-31부터 `takulife.kr` 운영 중, "Google OAuth 미활성" → 2026-08-26
+활성화 완료, CI "2-job" → `test`·`audit`·`docker` 3-job + `main → production`
+PR 자동 생성 워크플로, "Django 앱 8개" → 앱 7개 + `config` + `local_runner`
+패키지, marker "6계층" → 5개로 정정했다. 규모 수치는 main(6e4ccce) 재측정값:
+커밋 1,380 / 머지 PR 341 / 테스트 2,488개·88.79초 / 테스트 파일 193 /
+`transaction.atomic` 51곳·`select_for_update` 9파일 / 제약·인덱스 선언 21건.
+SMTP 미설정·백업 실행 기록 없음·러너 자동 시작 미구현은 운영 상태에 사실대로
+남겼다.
 
-**왜**: 검색 유입 기반 조성. robots 해제는 SMTP 게이트와 분리한다는
-2026-08-29 사용자 결정 반영(검색 유입 방문자의 가입 미완은 수용된 상태,
-배포 후 확인 절차는 deploy-runbook §3-12).
+**왜**: 사용자가 제공한 아키텍처 설계 초안 형식으로 README를 맞추되, 초안과
+기존 README 모두 코드와 어긋난 서술(배포 상태·OAuth·CI 구성·수치)이 있어
+근거 파일을 grep으로 재확인해 고쳤다.
 
-**검증**: 커밋 7개, 전체 회귀 2364 passed `[실측]`(기준 2325 + 신규 39),
-WED·BIR 사후 리뷰 Conforms ×2, QVL 완료 판정 7/7 Passed. 슬라이스 전부
-Green인 상태에서 브라우저 라이브 소스 대조가 JSON-LD description 분기
-결함을 찾아 트랙 내 즉시 수정(J1u3·J1c).
-
-**병합**: 2026-08-30, main `ad37d68`. production 반영은 #331 deploy PR.
-
----
+**검증**: 상대 링크 대상 12개 파일 존재 확인, 인용 설정값 전부 grep 재확인
+`[실측 2026-09-09]`. 같은 날 #349(pr-log 롤링)·#350(트랙 24 이벤트 일괄 비공개
+설정, 2506 passed / 69.79초·브라우저 AC7 9항목·CI 4체크 pass) 선행 머지.
+머지 후 main(73a7539) 2506 passed / 76.22초 `[실측 2026-09-09]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #350 — feat(staff): 이벤트 일괄 비공개 설정 — H2 분할 1/3 (트랙 24)
+- #349 — docs: PR #347·#348 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #348 — feat: 사용자 제보 드래프트 구분 표시와 제보 폼 공개 고지 — H3 (트랙 23)
+- #347 — docs: PR #344·#345·#346 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #346 — feat(staff): 대시보드 검수 SLA 지표 — H4 (트랙 22)
+- #345 — feat(staff): 반려 드래프트 재오픈 — H5 (트랙 21)
+- #344 — docs: PR #341·#342·#343 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #343 — feat(staff): 드래프트 admin API 생성·수정 감사 기록 — draft_create·draft_update (트랙 20 H7)
+- #342 — test(core): superuser는 shell로만 만든다 — is_superuser 대입 경로 0건 계약 가드
+- #341 — docs: PR #339·#340 머지를 로그에 롤링 반영 + 백로그 H1 종결·★3 수용 기록
+- #340 — feat(staff): superuser 전용 계정 운영 화면 — is_staff·is_active 목표 상태 지정 + 2단계 확인 + 감사 target_user (트랙 19 H1)
+- #339 — docs: PR #338 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
+- #337 — docs: PR #332~#335 머지를 로그에 롤링 반영
+- #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
+- #334 — deploy: main → production
+- #333 — deploy: main → production
+- #332 — docs: 머지 로그·런북 실측 기록 + design(home): 히어로 문구·카테고리 섹션 이동
 - #331 — deploy: main → production
+- #330 — feat: SEO 최적화 — robots 해제·sitemap·페이지별 메타·JSON-LD·noindex (트랙 16)
 - #329 — deploy: main → production
 - #328 — refactor: Tidy First 백엔드 구조 정리 6건 + 빈 PATCH 400 거부 (트랙 15)
 - #327 — perf: 렌더 차단 요청·네트워크 종속 트리 개선 — 셸 CSS 번들 + 폰트 preload (트랙 14)
@@ -181,20 +197,3 @@ Green인 상태에서 브라우저 라이브 소스 대조가 JSON-LD descriptio
 - #206 — feat(web): Shared shell — notice banner, mobile hamburger, four-column footer
 - #205 — design(web): Fix light-mode brand contrast to AA (design-rules §1.4)
 - #204 — feat(web): D8 live search result summary live region
-- #203 — feat(web): ARIA restoration stage 6 — staff chart text alternative
-- #202 — feat: 10-day grace period for account deletion
-- #201 — feat: ARIA restoration stage 5 — structural cleanup
-- #200 — feat: ARIA restoration stage 4 — carousel and input labels
-- #199 — feat: ARIA restoration stage 3 — disclosure expanded/controls sync
-- #198 — feat: ARIA restoration stage 2 — toggle state, focus-based feedback
-- #197 — feat: ARIA restoration stage 1 — modals, toast, shell labeling
-- #196 — feat: Calendar accessible names, search box, mobile filter fold
-- #195 — Logging coverage: observability for irreversible and security-relevant actions
-- #194 — feat: Dual calendar (events + activity) with activity history
-- #193 — Error handling and logging policy: guards and retro fixes
-- #192 — fix: Close bfcache duplicate-creation gap (client_token + commit markers)
-- #191 — docs(agents): Add commit-per-feature, PR-per-stage cadence
-- #190 — test: Stage 4·5 authoring guards + dedup + TS-INF-04
-- #189 — test: Korean behavior-scenario test suite + execution speed infra (stages 1-3)
-- #188 — feat: Collection-first home snapshot (H-1/H-2)
-- #187 — feat: Restructure top navigation to target IA (Target IA-2)

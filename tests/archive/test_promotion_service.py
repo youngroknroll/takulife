@@ -42,6 +42,20 @@ def test_비공식_항목을_공식_URL과_함께_승격하면_드래프트가_�
 
 @pytest.mark.django_db
 @pytest.mark.domain
+def test_비공식_항목을_공식_URL과_함께_승격하면_생성된_드래프트의_origin이_user_report다(make_user, make_entry):
+    user = make_user(username="promo-origin")
+    entry = make_entry(user, kind="place", title="비공식 카페", location_name="연남동", memo="좋음")
+
+    result = promote_personal_entry(
+        user=user, personal_entry_id=entry.id, official_url="https://off.example.com/cafe-origin"
+    )
+
+    draft = EventDraft.objects.get(pk=result.draft_id)
+    assert draft.origin == "user_report"
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
 def test_다른_사용자의_항목을_승격하려_하면_PromotionNotFoundError가_발생한다(make_user, make_entry):
     owner = make_user(username="promo-owner")
     other = make_user(username="promo-other")

@@ -3,6 +3,7 @@ import json
 import re
 
 import pytest
+from django.utils import timezone
 
 from drafts.labels import REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
@@ -88,6 +89,37 @@ class TestEventDraftsListView:
         )
         assert match, "상태 라벨 JSON 스크립트 블록을 찾을 수 없다"
         assert json.loads(match.group(1)) == REVIEW_STATUS_LABELS
+
+    @pytest.mark.parametrize("query", ["", "?status=pending"], ids=["전체_보기", "대기_필터"])
+    def test_사용자_제보_드래프트만_목록_행에_배지가_붙는다(self, staff_client, make_draft, query):
+        reported = make_draft("https://example.com/reported", extracted_title="제보 드래프트", origin=EventDraft.Origin.USER_REPORT)
+        collected = make_draft("https://example.com/collected", extracted_title="수집 드래프트", origin=EventDraft.Origin.COLLECTED)
+
+        _, client = staff_client()
+        body = client.get("/staff/drafts/" + query).content.decode()
+
+        reported_row = re.search(r'data-draft-id="%d"[\s\S]*?</tr>' % reported.id, body)
+        collected_row = re.search(r'data-draft-id="%d"[\s\S]*?</tr>' % collected.id, body)
+        assert reported_row and '<span class="queue-origin-badge">제보</span>' in reported_row.group()
+        assert collected_row and '<span class="queue-origin-badge">제보</span>' not in collected_row.group()
+
+    def test_사용자_제보_드래프트만_인스펙터_헤드에_배지가_붙는다(self, staff_client, make_draft):
+        reported = make_draft("https://example.com/reported-panel", extracted_title="제보 드래프트", origin=EventDraft.Origin.USER_REPORT)
+        collected = make_draft("https://example.com/collected-panel", extracted_title="수집 드래프트", origin=EventDraft.Origin.COLLECTED)
+
+        _, client = staff_client()
+        body = client.get("/staff/drafts/").content.decode()
+
+        reported_panel = re.search(
+            r'data-inspector-panel data-draft-id="%d"[\s\S]*?(?=data-inspector-panel data-draft-id=|</main>)' % reported.id,
+            body,
+        )
+        collected_panel = re.search(
+            r'data-inspector-panel data-draft-id="%d"[\s\S]*?(?=data-inspector-panel data-draft-id=|</main>)' % collected.id,
+            body,
+        )
+        assert reported_panel and '<span class="queue-origin-badge">제보</span>' in reported_panel.group()
+        assert collected_panel and '<span class="queue-origin-badge">제보</span>' not in collected_panel.group()
 
 
 def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, start=0):
@@ -385,6 +417,21 @@ class TestEventDraftDetailView:
         assert resp.context["category_label"] == "팝업스토어"
         assert resp.context["region_label"] == "서울"
 
+    @pytest.mark.parametrize(
+        "origin, expects_prefix",
+        [("user_report", True), ("collected", False)],
+        ids=["user_report", "collected"],
+    )
+    def test_상세_상단바는_공식_제보_드래프트에만_공식_제보_접두를_보여준다(
+        self, staff_client, make_draft, origin, expects_prefix
+    ):
+        draft = make_draft("https://example.com/c", extracted_title="상세 드래프트", origin=origin)
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/").content.decode()
+
+        assert ("공식 제보 · " in body) is expects_prefix
+
     def test_상세의_큐로_링크는_상태_검색어_쪽을_그대로_되돌려준다(
         self, staff_client, make_draft
     ):
@@ -434,6 +481,75 @@ class TestEventDraftDetailView:
             )
             assert match, f"{status} 상세 칩을 찾을 수 없다"
             assert match.group(1) == REVIEW_STATUS_LABELS[status]
+
+    def test_반려_상세에는_재오픈_버튼이_보인다(self, staff_client, make_draft):
+        draft = make_draft(
+            "https://example.com/reopen-btn", review_status=EventDraft.ReviewStatus.REJECTED
+        )
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/").content.decode()
+
+        assert 'id="draft-reopen-btn"' in body
+
+    @pytest.mark.parametrize(
+        "review_status",
+        [EventDraft.ReviewStatus.PENDING, EventDraft.ReviewStatus.APPROVED],
+        ids=["대기_상태", "승인_상태"],
+    )
+    def test_대기나_승인_상태의_상세에는_재오픈_버튼이_보이지_않는다(
+        self, staff_client, make_draft, review_status
+    ):
+        draft = make_draft("https://example.com/no-reopen-btn", review_status=review_status)
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/").content.decode()
+
+        assert 'id="draft-reopen-btn"' not in body
+
+    def test_재오픈된_대기_상세에는_이전_반려_사유가_보인다(self, staff_client, make_draft):
+        staff, client = staff_client()
+        reopened_draft = make_draft(
+            "https://example.com/reopened-with-reason",
+            review_status=EventDraft.ReviewStatus.PENDING,
+            reviewed_by=staff,
+            rejected_at=timezone.now(),
+            rejection_reason="이전 반려 사유 고유문자열 XQ7",
+            reopened_at=timezone.now(),
+        )
+
+        resp = client.get(f"/staff/drafts/{reopened_draft.id}/")
+        body = resp.content.decode()
+
+        assert "이전 반려 사유 고유문자열 XQ7" in body
+        assert resp.context["was_reopened"] is True
+
+        # 대조: 반려 기록은 있지만 재오픈되지 않은 대기 드래프트에는 사유가 안 보인다
+        never_reopened_draft = make_draft(
+            "https://example.com/never-reopened",
+            review_status=EventDraft.ReviewStatus.PENDING,
+            reviewed_by=staff,
+            rejected_at=timezone.now(),
+            rejection_reason="이전 반려 사유 고유문자열 XQ7",
+            reopened_at=None,
+        )
+
+        control_resp = client.get(f"/staff/drafts/{never_reopened_draft.id}/")
+        control_body = control_resp.content.decode()
+
+        assert "이전 반려 사유 고유문자열 XQ7" not in control_body
+        assert control_resp.context["was_reopened"] is False
+
+    def test_반려_상세에도_판정_오류_문단이_렌더된다(self, staff_client, make_draft):
+        draft = make_draft(
+            "https://example.com/reject-error-paragraph",
+            review_status=EventDraft.ReviewStatus.REJECTED,
+        )
+
+        _, client = staff_client()
+        body = client.get(f"/staff/drafts/{draft.id}/").content.decode()
+
+        assert 'id="draft-action-error"' in body
 
 
 @pytest.mark.django_db

@@ -91,7 +91,26 @@ class DraftApprovalResult:
     event_id: int
 
 
-def create_draft_from_url(*, source_url, source_name=""):
+@dataclass(frozen=True)
+class DraftPayload:
+    source_url: str
+    raw_title: str
+    raw_text: str
+    extracted_title: str
+    extracted_category: str
+    extracted_work_title: str
+    extracted_location_name: str
+    extracted_region: str
+    extracted_start_date: object
+    extracted_end_date: object
+    extracted_summary: str
+    confidence: object
+    extraction_method: str
+
+
+def prepare_draft_from_url(*, source_url):
+    """원본 URL을 가져와 필드를 추출한다. DB 접근이 없다 — fetch_html의
+    타임아웃(최대 4홉)이 DB 트랜잭션 안에 들어가지 않게 하기 위해서다."""
     try:
         validate_fetch_url(source_url)
     except InvalidFetchUrlError as exc:
@@ -135,29 +154,54 @@ def create_draft_from_url(*, source_url, source_name=""):
     if not extracted.get("raw_title") and not extracted.get("raw_text"):
         raise DraftCreationEmptyExtractionError
 
+    return DraftPayload(
+        source_url=source_url,
+        raw_title=extracted.get("raw_title", ""),
+        raw_text=extracted.get("raw_text", ""),
+        extracted_title=extracted.get("extracted_title", ""),
+        extracted_category=extracted.get("extracted_category", ""),
+        extracted_work_title=extracted.get("extracted_work_title", ""),
+        extracted_location_name=extracted.get("extracted_location_name", ""),
+        extracted_region=extracted.get("extracted_region", ""),
+        extracted_start_date=extracted.get("extracted_start_date"),
+        extracted_end_date=extracted.get("extracted_end_date"),
+        extracted_summary=extracted.get("extracted_summary", ""),
+        confidence=extracted.get("confidence"),
+        extraction_method=extracted.get(
+            "extraction_method", EventDraft.ExtractionMethod.HEURISTIC
+        ),
+    )
+
+
+def persist_prepared_draft(*, payload, source_name=""):
+    """준비된 페이로드를 저장한다. 중복 source_url은 여기서만 DraftCreationDuplicateError로
+    바뀐다 — prepare_draft_from_url은 DB를 보지 않으므로 중복을 낼 수 없다."""
     try:
         with transaction.atomic():
             return EventDraft.objects.create(
-                source_url=source_url,
+                source_url=payload.source_url,
                 source_name=source_name,
-                raw_title=extracted.get("raw_title", ""),
-                raw_text=extracted.get("raw_text", ""),
-                extracted_title=extracted.get("extracted_title", ""),
-                extracted_category=extracted.get("extracted_category", ""),
-                extracted_work_title=extracted.get("extracted_work_title", ""),
-                extracted_location_name=extracted.get("extracted_location_name", ""),
-                extracted_region=extracted.get("extracted_region", ""),
-                extracted_start_date=extracted.get("extracted_start_date"),
-                extracted_end_date=extracted.get("extracted_end_date"),
-                extracted_summary=extracted.get("extracted_summary", ""),
-                confidence=extracted.get("confidence"),
-                extraction_method=extracted.get(
-                    "extraction_method", EventDraft.ExtractionMethod.HEURISTIC
-                ),
+                raw_title=payload.raw_title,
+                raw_text=payload.raw_text,
+                extracted_title=payload.extracted_title,
+                extracted_category=payload.extracted_category,
+                extracted_work_title=payload.extracted_work_title,
+                extracted_location_name=payload.extracted_location_name,
+                extracted_region=payload.extracted_region,
+                extracted_start_date=payload.extracted_start_date,
+                extracted_end_date=payload.extracted_end_date,
+                extracted_summary=payload.extracted_summary,
+                confidence=payload.confidence,
+                extraction_method=payload.extraction_method,
                 review_status=EventDraft.ReviewStatus.PENDING,
             )
     except IntegrityError as exc:
         raise DraftCreationDuplicateError from exc
+
+
+def create_draft_from_url(*, source_url, source_name=""):
+    payload = prepare_draft_from_url(source_url=source_url)
+    return persist_prepared_draft(payload=payload, source_name=source_name)
 
 
 def create_draft_from_fields(
@@ -170,13 +214,14 @@ def create_draft_from_fields(
     location_name="",
     region="",
     summary="",
+    origin=EventDraft.Origin.COLLECTED,
 ):
     """fetch 없이 호출자가 준 필드로 바로 PENDING 드래프트를 만든다. 사용자가 비공식
     으로 등록한 항목을 공식 제보하는 등, 이미 가진 데이터로 검수 파이프라인에 넣을
     때 쓴다. source_url은 공식 URL이며 여기서 유일해야 하고, 승인되면 게시된
     이벤트의 official_url이 된다. 필드는 관리자가 검수·수정하는 것과 같은
     extracted_* 자리에 들어가므로 게시 전에 자유 텍스트 category/region을 고칠 수
-    있다.
+    있다. origin은 호출자가 지정한다(제보 경로만 user_report).
     """
     try:
         with transaction.atomic():
@@ -190,18 +235,19 @@ def create_draft_from_fields(
                 extracted_region=region,
                 extracted_summary=summary,
                 review_status=EventDraft.ReviewStatus.PENDING,
+                origin=origin,
             )
     except IntegrityError as exc:
         raise DraftCreationDuplicateError from exc
 
 
-def _get_pending_draft_for_update(draft_id):
+def _get_draft_for_update(draft_id, *, expected_status):
     try:
         draft = EventDraft.objects.select_for_update().get(pk=draft_id)
     except EventDraft.DoesNotExist as exc:
         raise DraftNotFoundError from exc
 
-    if draft.review_status != EventDraft.ReviewStatus.PENDING:
+    if draft.review_status != expected_status:
         raise DraftStateError
 
     return draft
@@ -246,7 +292,7 @@ def update_draft(*, draft_id, updates):
         raise DraftVocabError
 
     with transaction.atomic():
-        draft = _get_pending_draft_for_update(draft_id)
+        draft = _get_draft_for_update(draft_id, expected_status=EventDraft.ReviewStatus.PENDING)
 
         for field, value in updates.items():
             setattr(draft, field, value)
@@ -258,7 +304,7 @@ def update_draft(*, draft_id, updates):
 
 def approve_draft(*, draft_id, actor):
     with transaction.atomic():
-        draft = _get_pending_draft_for_update(draft_id)
+        draft = _get_draft_for_update(draft_id, expected_status=EventDraft.ReviewStatus.PENDING)
 
         try:
             event = create_published_event(
@@ -291,7 +337,7 @@ def approve_draft(*, draft_id, actor):
 
 def reject_draft(*, draft_id, actor, rejection_reason=""):
     with transaction.atomic():
-        draft = _get_pending_draft_for_update(draft_id)
+        draft = _get_draft_for_update(draft_id, expected_status=EventDraft.ReviewStatus.PENDING)
         draft.review_status = EventDraft.ReviewStatus.REJECTED
         draft.reviewed_by = actor
         draft.rejected_at = timezone.now()
@@ -305,4 +351,15 @@ def reject_draft(*, draft_id, actor, rejection_reason=""):
                 "updated_at",
             ]
         )
+        return draft
+
+
+def reopen_draft(*, draft_id):
+    # 이전 반려 기록(반려자·반려 시각·반려 사유)은 지우지 않는다 — 재검수자가
+    # 왜 반려됐는지 봐야 하기 때문이다.
+    with transaction.atomic():
+        draft = _get_draft_for_update(draft_id, expected_status=EventDraft.ReviewStatus.REJECTED)
+        draft.review_status = EventDraft.ReviewStatus.PENDING
+        draft.reopened_at = timezone.now()
+        draft.save(update_fields=["review_status", "reopened_at", "updated_at"])
         return draft

@@ -12,7 +12,7 @@ MAX_SEARCH_LENGTH = 100
 # page는 결과 집합이 바뀌므로 1쪽부터 다시 봐야 한다.
 _EXCLUDED_FROM_FORM = ("q", "page")
 
-SEARCHABLE_URL_NAMES = ("draft-list", "event-list", "audit-log")
+SEARCHABLE_URL_NAMES = ("draft-list", "event-list", "audit-log", "account-list")
 
 
 def search_term(request):

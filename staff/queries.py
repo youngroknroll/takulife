@@ -20,7 +20,7 @@ def recent_staff_actions(limit=10):
     """
     return list(
         StaffActionLog.objects.select_related(
-            "actor", "target_draft", "target_event"
+            "actor", "target_draft", "target_event", "target_user"
         ).all()[:limit]
     )
 
@@ -76,6 +76,7 @@ def list_staff_action_log(*, action="", search=""):
         "target_draft__source_url",
         "target_event_id",
         "target_event__title",
+        "target_user_id",
     )
 
 
