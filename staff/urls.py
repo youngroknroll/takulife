@@ -62,6 +62,16 @@ urlpatterns = [
     ),
     path("events/<int:pk>/edit/", staff_views.staff_event_edit, name="event-edit"),
     path(
+        "events/<int:pk>/publish-status/",
+        staff_views.StaffEventPublishStatusView.as_view(),
+        name="event-publish-status",
+    ),
+    path(
+        "events/<int:pk>/verified/",
+        staff_views.StaffEventVerifiedView.as_view(),
+        name="event-verified",
+    ),
+    path(
         "events/<int:pk>/toggle-publish/",
         staff_views.staff_event_toggle_publish,
         name="event-toggle-publish",

@@ -72,6 +72,8 @@ def _event_quality_badges(event, *, today):
         badges.append(QUALITY_WARNING_LABELS["missing_official_url"])
     if event.end_date and event.end_date < today:
         badges.append(QUALITY_WARNING_LABELS["ended_still_published"])
+    if event.needs_reverification(today=today):
+        badges.append(QUALITY_WARNING_LABELS["needs_reverification"])
     if event.start_date is None or event.end_date is None:
         badges.append(QUALITY_WARNING_LABELS["missing_dates"])
     if event.region == "":
@@ -139,12 +141,6 @@ def staff_events(request):
     paginator = Paginator(events, STAFF_EVENT_LISTING_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
     event_rows = _build_event_rows(page_obj.object_list)
-    # 일괄 선택 바는 필터와 무관하게 "이 페이지에 게시 행이 있는가"만 본다 —
-    # 비공개 탭이 아니어도 우연히 이 페이지에 게시 행이 없으면 숨겨야 한다.
-    has_published_rows = any(
-        row["event"].publish_status == Event.PublishStatus.PUBLISHED
-        for row in event_rows
-    )
 
     query_pairs = list(_event_filter_query_pairs(request.GET))
     if search:
@@ -166,7 +162,6 @@ def staff_events(request):
             "pager_query": pager_query,
             "warning_chips": warning_chips,
             "search": search,
-            "has_published_rows": has_published_rows,
         },
     )
 
@@ -406,6 +401,29 @@ def _reference_block_message(counts):
     )
 
 
+# 재게시 검증 예외 → 문구. PRG 토글 뷰와 인라인 JSON 뷰(events_actions.py)가
+# 같은 표를 공유한다. 순서 튜플 + isinstance 순회인 이유: dict + type(exc)는
+# PublishEventError 하위에 나중에 새 예외가 추가돼도 부모로 폴백하지 못한다.
+# 부모 PublishEventError는 반드시 마지막에 둔다.
+REPUBLISH_ERROR_MESSAGES = (
+    (MissingOfficialUrlError, "공식 URL이 없어 다시 게시할 수 없습니다."),
+    (PublishEventTitleError, "제목이 없어 다시 게시할 수 없습니다."),
+    (DuplicateOfficialUrlError, "다른 이벤트가 이미 이 공식 URL을 사용 중입니다."),
+    (InvalidEventPeriodError, "종료일이 시작일보다 빨라 다시 게시할 수 없습니다."),
+    (PublishEventCategoryError, "카테고리가 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요."),
+    (PublishEventRegionError, "지역이 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요."),
+    (PublishEventError, "게시 상태를 변경하는 중 오류가 발생했습니다."),
+)
+
+
+def _republish_error_message(exc):
+    """재게시 예외를 REPUBLISH_ERROR_MESSAGES 순서대로 훑어 문구를 고른다."""
+    for exc_class, message in REPUBLISH_ERROR_MESSAGES:
+        if isinstance(exc, exc_class):
+            return message
+    raise exc
+
+
 @staff_console_required
 @require_POST
 def staff_event_toggle_publish(request, pk):
@@ -438,20 +456,10 @@ def staff_event_toggle_publish(request, pk):
                     _staff_action_metadata(request), action, target_event=event
                 )
             )
-    except MissingOfficialUrlError:
-        messages.error(request, "공식 URL이 없어 다시 게시할 수 없습니다.")
-    except PublishEventTitleError:
-        messages.error(request, "제목이 없어 다시 게시할 수 없습니다.")
-    except DuplicateOfficialUrlError:
-        messages.error(request, "다른 이벤트가 이미 이 공식 URL을 사용 중입니다.")
-    except InvalidEventPeriodError:
-        messages.error(request, "종료일이 시작일보다 빨라 다시 게시할 수 없습니다.")
-    except PublishEventCategoryError:
-        messages.error(request, "카테고리가 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요.")
-    except PublishEventRegionError:
-        messages.error(request, "지역이 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요.")
-    except PublishEventError:
-        messages.error(request, "게시 상태를 변경하는 중 오류가 발생했습니다.")
+    except (MissingOfficialUrlError, DuplicateOfficialUrlError, PublishEventError) as exc:
+        # MissingOfficialUrlError·DuplicateOfficialUrlError는 PublishEventError의
+        # 하위가 아니라서 따로 잡아야 문구 표(REPUBLISH_ERROR_MESSAGES)에 닿는다.
+        messages.error(request, _republish_error_message(exc))
     else:
         messages.success(request, success_message)
 

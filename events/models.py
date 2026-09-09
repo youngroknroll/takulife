@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 
 from .querysets import EventQuerySet
 
@@ -31,3 +34,19 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+
+    def needs_reverification(self, *, today):
+        """D-7 재확인 대상인지 쿼리 없이 판정한다(목록 행마다 재조회 금지).
+
+        events/queries.py의 _needs_reverification_qs와 같은 규칙: 시작일·종료일이
+        모두 있고 시작일-7일 <= today <= 종료일이며, 한 번도 검증되지 않았거나
+        마지막 검증일이 그 D-7 기준일보다 이전이면 True.
+        """
+        if self.start_date is None or self.end_date is None:
+            return False
+        reverify_deadline = self.start_date - timedelta(days=7)
+        if not (self.end_date >= today and reverify_deadline <= today):
+            return False
+        if self.verified_at is None:
+            return True
+        return timezone.localtime(self.verified_at).date() < reverify_deadline

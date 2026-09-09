@@ -57,6 +57,7 @@ from .events import (
     staff_event_verify,
     staff_events,
 )
+from .events_actions import StaffEventPublishStatusView, StaffEventVerifiedView
 from .accounts import (
     STAFF_ACCOUNT_LISTING_PAGE_SIZE,
     staff_account_detail,
@@ -84,6 +85,8 @@ __all__ = [
     "MAX_BULK_EVENT_IDS",
     "QUALITY_WARNING_LABELS",
     "StaffEventBulkUnpublishView",
+    "StaffEventPublishStatusView",
+    "StaffEventVerifiedView",
     "staff_event_create",
     "staff_event_delete",
     "staff_event_edit",

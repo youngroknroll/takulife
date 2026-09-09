@@ -10,6 +10,7 @@ import pytest
 from django.utils import timezone
 
 from events.queries import (
+    _needs_reverification_qs,
     count_published_ended_still_published,
     count_published_missing_dates,
     count_published_missing_official_url,
@@ -518,3 +519,70 @@ class TestCountPublishedNeedsReverification:
         )
 
         assert count_published_needs_reverification(today=today) == 1
+
+
+@pytest.mark.django_db
+class TestEventNeedsReverificationMethodMatchesQueryset:
+    """Event.needs_reverification 모델 메서드는 목록 행마다 쿼리를 다시 돌리지
+    않으려고 만든 것이라, _needs_reverification_qs와 같은 판정을 내려야 한다.
+    같은 경계 픽스처(위 D-7/종료/신선도 경계 테스트)로 둘을 나란히 비교한다."""
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            pytest.param(
+                {
+                    "start_date": date(2020, 6, 15) + timedelta(days=7),
+                    "end_date": date(2020, 6, 15) + timedelta(days=30),
+                },
+                id="D7_창_경계_포함",
+            ),
+            pytest.param(
+                {"start_date": date(2020, 6, 15), "end_date": None}, id="종료일_없음_제외"
+            ),
+            pytest.param(
+                {
+                    "start_date": date(2020, 6, 15) - timedelta(days=90),
+                    "end_date": date(2020, 6, 15) - timedelta(days=60),
+                },
+                id="이미_종료_제외",
+            ),
+            pytest.param(
+                {"start_date": date(2020, 6, 15), "end_date": date(2020, 6, 15)},
+                id="종료일_오늘_포함",
+            ),
+            pytest.param(
+                {
+                    "start_date": date(2020, 6, 15) + timedelta(days=7),
+                    "end_date": date(2020, 6, 15) + timedelta(days=30),
+                    "verified_at": timezone.make_aware(datetime(2020, 6, 15, 9, 0)),
+                },
+                id="검증시각_기한일과_같음_제외",
+            ),
+            pytest.param(
+                {
+                    "start_date": date(2020, 6, 15) - timedelta(days=5),
+                    "end_date": date(2020, 6, 15) + timedelta(days=30),
+                    "verified_at": timezone.make_aware(datetime(2020, 5, 29, 10, 0)),
+                },
+                id="검증시각_기한일보다_이전_포함",
+            ),
+            pytest.param(
+                {
+                    "start_date": date(2020, 6, 15) + timedelta(days=30),
+                    "end_date": date(2020, 6, 15) + timedelta(days=40),
+                },
+                id="명백한_음성_여유있는_행사",
+            ),
+        ],
+    )
+    def test_needs_reverification_메서드는_재확인_대상_쿼리셋과_같은_판정을_한다(
+        self, make_event, kwargs
+    ):
+        today = date(2020, 6, 15)
+        event = make_event(official_url=None, **kwargs)
+
+        method_result = event.needs_reverification(today=today)
+        queryset_result = _needs_reverification_qs(today=today).filter(pk=event.pk).exists()
+
+        assert method_result == queryset_result
