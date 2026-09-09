@@ -4,17 +4,15 @@ import re
 
 from playwright.sync_api import expect
 
-from tests.e2e.conftest import E2E_PASSWORD
-
 
 def test_로그인한_사용자가_로그아웃하면_보호_페이지가_다시_로그인을_요구한다(
-    page, base_url, verified_user, clear_cache_e2e
+    page, base_url, verified_user, clear_cache_e2e, valid_password
 ):
-    user = verified_user(password=E2E_PASSWORD)
+    user = verified_user(password=valid_password)
 
     page.goto(f"{base_url}/accounts/login/?next=/archive/")
     page.get_by_label("이메일").fill(user.email)
-    page.get_by_label("비밀번호").fill(E2E_PASSWORD)
+    page.get_by_label("비밀번호").fill(valid_password)
     page.get_by_role("button", name="로그인").click()
 
     expect(page).to_have_url(f"{base_url}/archive/")

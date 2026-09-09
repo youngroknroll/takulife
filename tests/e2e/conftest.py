@@ -5,6 +5,9 @@
 `RequestFactory` + `django.contrib.auth.login()`을 쓰는 이유는 로그인
 뷰(레이트리밋 대상)를 거치지 않으면서도 `user_logged_in` 시그널은 실제
 로그인과 같게 발화시키기 위해서다.
+
+비밀번호는 루트 conftest의 `valid_password` 픽스처를 쓴다(소스에 비밀번호
+리터럴 금지 — 시크릿 스캐너 가드).
 """
 import secrets
 from importlib import import_module
@@ -15,12 +18,11 @@ from django.conf import settings
 from django.contrib.auth import login
 from django.core.cache import cache
 from django.db.utils import Error as DjangoDatabaseError
+from django.middleware.csrf import get_token
 from django.test import RequestFactory
 
 from drafts.models import EventDraft
 from events.models import Event
-
-E2E_PASSWORD = "e2e-Pass-12345!"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -79,19 +81,28 @@ def login_as(live_server, context):
     login()`을 실제로 호출해 그 시그널을 발화시킨다. 주의: axes의 수신자가
     `request.META`를 읽으므로 `RequestFactory` 기본 META(REMOTE_ADDR=
     127.0.0.1)로 충분해야 한다 — 실제 실행은 오케스트레이터가 확인한다.
+
+    로그인 폼을 거친 브라우저처럼 csrftoken 쿠키도 같이 심는다(스태프
+    셸은 폼이 없어 쿠키를 새로 주지 않는다).
     """
     def _login(user):
         request = RequestFactory().get("/")
         request.session = import_module(settings.SESSION_ENGINE).SessionStore()
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         request.session.save()
+        get_token(request)
         context.add_cookies(
             [
                 {
                     "name": settings.SESSION_COOKIE_NAME,
                     "value": request.session.session_key,
                     "url": live_server.url,
-                }
+                },
+                {
+                    "name": settings.CSRF_COOKIE_NAME,
+                    "value": request.META["CSRF_COOKIE"],
+                    "url": live_server.url,
+                },
             ]
         )
 
