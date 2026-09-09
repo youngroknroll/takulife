@@ -665,27 +665,53 @@ if item.owner_id == request.user.id:
 This policy binds every backend test. Historical test-policy records may explain
 past measurements, but this section is the current test boundary and workflow.
 
-### Automated Tests Cover Backend Logic Only (2026-07-22 user decision)
+### Automated Tests Cover Backend Logic, Plus Journey E2E (2026-07-22 decision, partially withdrawn 2026-09-09)
 
 Automated tests exist for backend logic: domain rules, services, persistence,
 HTTP request/response behavior, authorization, and settings or migration
-contracts. Nothing else is a test target.
+contracts. Journey-level browser e2e under `tests/e2e/` is allowed again,
+bound by six admission criteria; nothing else is a test target.
 
-- Do not write browser or end-to-end tests. The `e2e` marker, `tests/e2e/`,
-  the `pytest-playwright` plugin, and the CI e2e job were deleted on
-  2026-07-22.
+- **Journey e2e admission criteria (binding, 2026-09-09).** A test under
+  `tests/e2e/` is admitted only when all of the following hold:
+  1. It is a journey: the final assertion is DB state or the content of the
+     next page. Geometry, CSS class, animation, reduced-motion, bfcache,
+     focus position, and touch-target assertions remain forbidden.
+  2. It proves only what the Django test client cannot: a browser JS fetch
+     flow or a session flow that spans multiple pages.
+  3. Selectors are `get_by_role`/`get_by_label`/`get_by_text`/
+     `get_by_placeholder` only; stable server-rendered id containers (for
+     example `#archive-results`, `#draft-approve-success`,
+     `#event-bulk-result`) may be used only to scope an assertion, never as
+     the assertion itself.
+  4. Assertions use Playwright's auto-waiting `expect` only —
+     `wait_for_timeout`, `wait_for_load_state("networkidle")`, and
+     `go_back` are forbidden.
+  5. A test that covers already-working behavior is Green on first run; it
+     still needs mutation evidence — one temporary production-code change
+     that proves Red, then a restore back to Green — and the mutation is
+     never committed.
+  6. The suite started with 8 journeys; a new journey is admitted only when
+     a real defect that satisfies criteria 1-2 needs it.
 - Do not test templates, CSS, browser JavaScript, layout, spacing, sizing,
-  visual state, transition, animation, or touch-target geometry.
-- Browser behavior is verified by driving a real browser and reported as
-  evidence in the handoff or technical record, never encoded as a regression
-  test.
-- **Playwright remains installed as a verification tool, not a test
-  framework.** Reviewers drive Chromium with it - ad-hoc scripts against the
-  local dev server, or the Chrome DevTools MCP tools - to measure geometry,
-  overflow, focus, and interaction state. What is forbidden is committing that
-  measurement as a test; running it to produce evidence is expected.
+  visual state, transition, animation, or touch-target geometry as a browser
+  or end-to-end test.
+- Browser behavior that does not meet the admission criteria above is still
+  verified by driving a real browser and reported as evidence in the handoff
+  or technical record, never encoded as a regression test.
+- **Playwright remains installed as a verification tool for that manual
+  work, in addition to backing the journey e2e suite.** Reviewers drive
+  Chromium with it - ad-hoc scripts against the local dev server, or the
+  Chrome DevTools MCP tools - to measure geometry, overflow, focus, and
+  interaction state. What is forbidden is committing that measurement as a
+  test; running it to produce evidence is expected.
 - When a defect is browser-observable but caused by backend logic, descend to
   the owning backend layer and test it there.
+- A temporary `-m <expr>` run replaces `addopts`' `-m "not e2e"` entirely;
+  write `-m "<expr> and not e2e"` to keep e2e excluded from an ad-hoc run.
+- `pytest-playwright` (the pytest plugin) and `playwright` (the library) both
+  live in the `dev` dependency group. Never `uv remove` the plugin alone — it
+  drags the library out with it.
 
 ### Test List Is The Starting Point
 
@@ -801,9 +827,11 @@ Prove a behavior at the lowest, fastest boundary that can prove it.
 | `web` | HTTP request/response, auth, permission, and error translation | Django/DRF test client |
 | `contract` | Architecture, settings, migration, and performance | Minimum resources per contract |
 | `slow` | Security lockouts, real files, and abnormal-recovery scenarios | Explicit opt-in |
+| `e2e` | Browser journeys: JS fetch flows and multi-page session flows, run as `-m e2e tests/e2e` | Real Chromium + Django live_server + transactional DB |
 
-There is no browser layer. `web` is the highest boundary; behavior that only a
-real browser could observe is verified manually, not by an automated test.
+`e2e` is the highest boundary and is excluded from the default run. Anything a
+real browser could observe but that does not meet the e2e admission criteria
+above is still verified manually and recorded as evidence, not as a test.
 
 Do not repeat the same business rule across layers:
 
@@ -869,11 +897,12 @@ wiring are exempt from the backend TDD cycle.
 - Verify frontend work with HTTP render checks, browser screenshots at agreed
   viewports, interaction click-through, and console inspection appropriate to
   scope. Drive the browser with Playwright or the Chrome DevTools MCP tools and
-  report the measurements as evidence; the run itself is the verification, and
-  its output is never committed as a test.
-- Do not write browser or end-to-end tests. The e2e suite was deleted on
-  2026-07-22 by user decision; overflow budgets, touch-target sizes, line-clamp
-  heights, and focus targets are measured on demand, not enforced by a gate.
+  report the measurements as evidence; its measurements are never committed
+  as a test.
+- Browser tests are limited to the journey e2e layer (see Test Authoring
+  Policy); overflow budgets, touch-target sizes, line-clamp heights, and
+  focus targets are still measured on demand, never enforced by a gate or
+  encoded as a test.
 - Any backend endpoint, validation, persistence, or business rule introduced for
   frontend work still follows the Backend TDD Cycle.
 - Every frontend review includes both the Web Experience Designer and Browser

@@ -91,6 +91,71 @@ jobs:
             exit 1
           fi
 
+  e2e:
+    # Observation period: this job does not gate merges yet. Promote it to a
+    # required gate once main has a streak of non-flaky green runs (rule
+    # recorded in docs/backlog.md).
+    name: E2E journey suite (observation, non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: taku
+          POSTGRES_USER: taku
+          POSTGRES_PASSWORD: taku
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taku -d taku"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # No DEBUG env here: STORAGES["staticfiles"] is decided from env DEBUG
+      # at import time, so DEBUG=false would make it require a manifest that
+      # this job never builds, failing every static asset lookup.
+      - name: Cache Playwright browser binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('uv.lock') }}
+
+      - name: Install Playwright Chromium
+        run: uv run playwright install --with-deps chromium
+
+      # -m e2e overrides pytest.ini addopts' "-m not e2e", so this is the only
+      # place the journey suite runs; `uv run pytest -q` elsewhere stays backend-only.
+      - name: Run e2e journey suite
+        run: uv run pytest -q -m e2e tests/e2e --tracing retain-on-failure --output e2e-artifacts
+
+      # Traces can carry test session cookies and test passwords (never
+      # production secrets), so keep the retention window short.
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: e2e-artifacts/
+          retention-days: 7
+
+      # Rollback: add `if: false` to this job to pause it while keeping the suite in the repo.
+
   audit:
     name: Dependency vulnerability audit (PR gate)
     runs-on: ubuntu-latest
