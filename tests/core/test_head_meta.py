@@ -54,6 +54,20 @@ def test_홈_페이지_title은_한글_브랜드명으로_시작하고_og_title�
 
 
 @pytest.mark.django_db
+def test_홈_페이지_description은_한글_브랜드명으로_시작한다(client):
+    resp = client.get("/")
+
+    content = resp.content.decode()
+    expected = (
+        "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · "
+        "굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
+    )
+    assert resp.status_code == 200
+    assert f'<meta name="description" content="{expected}">' in content
+    assert f'<meta property="og:description" content="{expected}">' in content
+
+
+@pytest.mark.django_db
 def test_행사_상세_페이지의_og_title은_행사_제목을_포함한다(client, make_event):
     event = make_event(title="공개 행사 오픈")
     resp = client.get(f"/events/{event.id}/")
@@ -148,8 +162,8 @@ def test_행사_상세_페이지는_행사명이_들어간_메타_제목을_조�
         (
             dict(summary="", category="", location_name="", start_date=None, end_date=None),
             lambda: (
-                "팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · "
-                "전시를 검색하고, 방문 상태와 기록을 보관하세요."
+                "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · "
+                "굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
             ),
         ),
     ],

@@ -435,8 +435,8 @@ def _build_event_meta_title(event):
 
 
 _DEFAULT_EVENT_META_DESCRIPTION = (
-    "팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · "
-    "전시를 검색하고, 방문 상태와 기록을 보관하세요."
+    "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · "
+    "굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
 )
 
 
