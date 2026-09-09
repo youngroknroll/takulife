@@ -43,6 +43,17 @@ def test_홈_페이지는_오픈그래프_태그를_포함한다(client):
 
 
 @pytest.mark.django_db
+def test_홈_페이지_title은_한글_브랜드명으로_시작하고_og_title과_같다(client):
+    resp = client.get("/")
+
+    content = resp.content.decode()
+    expected = "타쿠라이프 takulife — 굿즈 컬렉션·서브컬처 이벤트 기록"
+    assert resp.status_code == 200
+    assert f"<title>{expected}</title>" in content
+    assert f'<meta property="og:title" content="{expected}">' in content
+
+
+@pytest.mark.django_db
 def test_행사_상세_페이지의_og_title은_행사_제목을_포함한다(client, make_event):
     event = make_event(title="공개 행사 오픈")
     resp = client.get(f"/events/{event.id}/")
