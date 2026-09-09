@@ -103,6 +103,12 @@ def test_제목이_없는_초안_이벤트는_재게시_토글이_거부되고_�
     assert event.publish_status == Event.PublishStatus.DRAFT
     assert not StaffActionLog.objects.filter(target_event=event).exists()
 
+    # 인라인 JSON 엔드포인트가 같은 문구 표를 재사용하므로, 이 문구가
+    # 드리프트하지 않게 여기서도 고정해 둔다(P1).
+    followed = client.post(_toggle_url(event), follow=True)
+    messages_text = " ".join(str(m) for m in followed.context["messages"])
+    assert "제목이 없어 다시 게시할 수 없습니다." in messages_text
+
 
 @pytest.mark.django_db
 def test_게시_토글은_대상_행을_잠그고_읽는다(staff_client, make_event):

@@ -80,9 +80,15 @@
 
   /* ── 이벤트 바인딩 ─────────────────────────────────────────────────── */
 
-  function bindIndividualCheckboxes() {
-    getAllCheckboxes().forEach(function (cb) {
-      cb.addEventListener("change", updateToolbarState);
+  function bindCheckboxChangeDelegation() {
+    var table = document.querySelector(".events-table");
+    if (!table) {
+      return;
+    }
+    table.addEventListener("change", function (event) {
+      if (event.target.matches("[data-event-select]")) {
+        updateToolbarState();
+      }
     });
   }
 
@@ -131,6 +137,19 @@
     row.querySelectorAll(".events-warn-badge").forEach(function (warnBadge) {
       warnBadge.remove();
     });
+    // 비공개로 전환됐으니 인라인 액션 버튼도 그 상태에 맞춰 토글한다.
+    var verifyBtn = row.querySelector('[data-row-action="verify"]');
+    if (verifyBtn) {
+      verifyBtn.hidden = true;
+    }
+    var unpublishBtn = row.querySelector('[data-row-action="unpublish"]');
+    if (unpublishBtn) {
+      unpublishBtn.hidden = true;
+    }
+    var republishBtn = row.querySelector('[data-row-action="republish"]');
+    if (republishBtn) {
+      republishBtn.hidden = false;
+    }
     var checkbox = row.querySelector("[data-event-select]");
     if (checkbox) {
       var cell = checkbox.closest("td");
@@ -148,7 +167,7 @@
     if (!row) {
       return;
     }
-    var failEl = row.querySelector("[data-bulk-fail-reason]");
+    var failEl = row.querySelector("[data-row-error]");
     if (failEl) {
       failEl.textContent = item.reason;
       failEl.hidden = false;
@@ -172,13 +191,18 @@
     var resultEl = document.getElementById("event-bulk-result");
     if (resultEl) {
       var total = succeeded.length + failed.length;
-      resultEl.textContent =
+      var resultText =
         failed.length === 0
           ? succeeded.length + "건 모두 비공개 완료."
           : succeeded.length +
             "/" +
             total +
             "건 비공개 완료. 처리되지 않은 항목은 행에서 사유를 확인하세요.";
+      resultEl.textContent = resultText;
+      var liveEl = document.getElementById("event-live");
+      if (liveEl) {
+        liveEl.textContent = resultText;
+      }
       if (removedAny) {
         resultEl.appendChild(document.createTextNode(" "));
         var link = document.createElement("a");
@@ -264,23 +288,33 @@
     });
   }
 
-  /* ── 초기화 ────────────────────────────────────────────────────────── */
+  /* ── 초기화 / 재계산 ──────────────────────────────────────────────── */
+
+  // 리스너를 다시 붙이지 않고 노출 여부와 카운터만 재계산한다. 재게시로
+  // 체크박스가 새로 생겼을 때 event_row_actions.js가 이 함수만 부른다.
+  function refreshToolbar() {
+    var toolbar = document.getElementById("event-bulk-toolbar");
+    if (!toolbar) {
+      return;
+    }
+    if (getAllCheckboxes().length > 0) {
+      toolbar.hidden = false;
+    }
+    updateToolbarState();
+  }
 
   function initBulkToolbar() {
     var toolbar = document.getElementById("event-bulk-toolbar");
     if (!toolbar) {
       return;
     }
-    if (getAllCheckboxes().length === 0) {
-      return; // 이 페이지에 선택 가능한 게시 이벤트가 없으면 숨긴 채로 둔다
-    }
-
-    toolbar.hidden = false;
-    bindIndividualCheckboxes();
+    bindCheckboxChangeDelegation();
     bindSelectAllCheckbox();
     bindBulkUnpublishButton();
-    updateToolbarState();
+    refreshToolbar();
   }
+
+  window.TakuEventBulk = { refreshToolbar: refreshToolbar };
 
   document.addEventListener("DOMContentLoaded", function () {
     initBulkToolbar();
