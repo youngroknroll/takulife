@@ -42,6 +42,9 @@
         buttons[key].disabled = locked;
       }
     });
+    // api.js의 pageshow 핸들러는 ".is-loading" 버튼만 복구해 체크박스·형제
+    // 버튼의 plain disabled는 못 풀어준다 — 행 표식을 따로 남겨 아래에서 복구한다.
+    row.classList.toggle("is-row-locked", locked);
   }
 
   function getErrorEl(row) {
@@ -67,9 +70,13 @@
 
   function announce(message) {
     var live = document.getElementById("event-live");
-    if (live) {
-      live.textContent = message;
+    if (!live) {
+      return;
     }
+    // 포커스 이동과 같은 틱에 쓰면 스크린리더가 live region 갱신을 놓칠 수 있어 한 박자 늦춘다.
+    window.setTimeout(function () {
+      live.textContent = message;
+    }, 100);
   }
 
   function getRowTitle(row) {
@@ -299,11 +306,6 @@
       return;
     }
     if (result.status === 404) {
-      var errorEl = getErrorEl(row);
-      if (errorEl) {
-        errorEl.textContent = "이미 삭제된 이벤트입니다.";
-        errorEl.hidden = false;
-      }
       row.remove();
       showResult("1건은 이미 삭제된 이벤트였습니다.");
       handleRowRemoval();
@@ -383,5 +385,14 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     bindRowActionDelegation();
+  });
+
+  window.addEventListener("pageshow", function (event) {
+    if (!event.persisted) {
+      return;
+    }
+    document.querySelectorAll("[data-event-row].is-row-locked").forEach(function (row) {
+      setRowLocked(row, false);
+    });
   });
 })();
