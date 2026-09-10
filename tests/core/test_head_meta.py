@@ -70,6 +70,15 @@ def test_홈_페이지_description은_한글_브랜드명으로_시작한다(cli
 
 
 @pytest.mark.django_db
+def test_페이지_og_site_name은_한글과_영문_브랜드명을_함께_담는다(client):
+    resp = client.get("/")
+
+    content = resp.content.decode()
+    assert resp.status_code == 200
+    assert '<meta property="og:site_name" content="타쿠라이프|takulife">' in content
+
+
+@pytest.mark.django_db
 def test_홈_페이지는_WebSite_구조화_데이터를_요청_호스트_URL로_렌더한다(client):
     resp = client.get("/")
 
