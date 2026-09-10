@@ -80,11 +80,36 @@ lazy 객체가 **즉시 평가**돼, `accounts/views.py`가 모듈 수준에서
 피한다 — forms.py에 새 URL 참조 라벨을 추가할 때 이 함정을 다시 만들지
 않는다.
 
-## (g) 알려진 한계 — 가입 경쟁 창의 `IntegrityError`는 폼 오류로 번역되지 않는다
+## (g) 가입 경쟁 창의 `IntegrityError`는 nickname 필드 오류로 번역된다
 
 폼의 `iexact` 사전 중복 검사와 실제 INSERT 사이에는 창이 있다 — 두 요청이
 거의 동시에 같은 닉네임으로 가입하면 사전 검사를 둘 다 통과하고 DB
-`UniqueConstraint`가 최후 방어로 작동해 뒤 요청은 `IntegrityError`로
-500을 받는다(폼 오류로 예쁘게 보여주지 않음). `docs/backlog.md` "I. 닉네임
-후속(이연)"으로 이연 — 발생 빈도가 낮고(동시 요청 필요) 최후 방어(제약)는
-살아 있어 데이터 무결성 자체는 지켜진다.
+`UniqueConstraint`가 최후 방어로 작동한다. `accounts/views.py`의
+`NicknameConflictFormMixin.form_valid`가 allauth `form_valid`를
+`transaction.atomic()`으로 감싸고, `accounts/services.py`의
+`is_nickname_conflict(exc)`(`exc.__cause__.diag.constraint_name`이
+`accounts_user_nickname_ci_unique`인지 판별)로 nickname 제약 위반만 골라
+`form.add_error("nickname", NICKNAME_DUPLICATE_MESSAGE)`로 200 재렌더한다
+— 다른 제약(이메일 등) 위반은 그대로 재전파해 500이 유지된다.
+
+Current fact: 가입 뷰의 atomic 블록은 allauth `form_valid` 전체
+(`complete_signup`의 인증 메일 발송 포함)를 감싸므로, 닉네임 충돌과 무관한
+예외(예: SMTP 실패)에서도 계정 생성이 롤백된다 — 이전(`ATOMIC_REQUESTS`
+미설정, 자동커밋)과 달라진 실패 의미이며 재가입 재시도로 복구된다.
+
+가입 뷰 `accounts.views.SignupView`(`NicknameConflictFormMixin` +
+allauth `SignupView`)는 `config/urls.py`에서 `include("allauth.urls")`보다
+먼저 선등록한다(url name `account_signup` 유지). allauth
+`SignupView.dispatch`가 이미 자체 `rate_limit`을 걸므로 이 뷰에는 별도
+데코레이터를 추가하지 않는다(`SocialSignupView`는 자체 레이트리밋이 없어
+계속 필요).
+
+닉네임 변경 뷰(`accounts.views.nickname_change`)도 같은 방식으로 감싸되,
+실패 시 `request.user.refresh_from_db(fields=["nickname"])`로 메모리
+상의 `request.user.nickname`(실패한 저장 시도로 이미 바뀐 값)을 DB의
+원래 값으로 되돌린 뒤 재렌더한다 — 그러지 않으면 헤더·메뉴 패널이 실패한
+닉네임을 잠깐 보여준다.
+
+Evidence: `tests/auth/test_nickname_signup.py`의 NICK-21, `tests/auth/test_account_nickname_change.py`의
+NICK-20 — 둘 다 폼의 `clean_nickname`을 `monkeypatch`로 우회해 사전 검사를
+건너뛴 경쟁 창을 재현한다.
