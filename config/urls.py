@@ -156,6 +156,11 @@ urlpatterns = [
         accounts_views.account_settings,
         name="account-settings-page",
     ),
+    path(
+        "accounts/settings/nickname/",
+        accounts_views.nickname_change,
+        name="account-nickname-page",
+    ),
     # allauth 소셜 가입 뷰는 자체 레이트리밋이 없어, 같은 signup 한도를 건
     # accounts.views.SocialSignupView로 선등록한다(url name은 allauth
     # 내부 reverse가 참조하므로 socialaccount_signup을 그대로 유지).

@@ -85,6 +85,34 @@ def reset_delete_attempts(user):
     cache.delete(delete_attempts_cache_key(user))
 
 
+# allauth ACCOUNT_RATE_LIMITS는 이 커스텀 뷰(accounts.views.nickname_change)를
+# 덮지 않으므로 delete_attempts와 같은 방식으로 직접 센다.
+NICKNAME_CHANGE_LIMIT = 5
+NICKNAME_CHANGE_WINDOW_SECONDS = 3600
+NICKNAME_CHANGE_THROTTLE_MESSAGE = "닉네임 변경이 너무 잦습니다. 잠시 후 다시 시도해 주세요."
+
+
+def nickname_change_cache_key(user):
+    return f"nickname-change:{user.pk}"
+
+
+def is_nickname_change_throttled(user):
+    record = cache.get(nickname_change_cache_key(user))
+    if not record or record["deadline"] <= time.time():
+        return False
+    return record["count"] >= NICKNAME_CHANGE_LIMIT
+
+
+def register_nickname_change(user):
+    key = nickname_change_cache_key(user)
+    now = time.time()
+    record = cache.get(key)
+    if not record or record["deadline"] <= now:
+        record = {"count": 0, "deadline": now + NICKNAME_CHANGE_WINDOW_SECONDS}
+    record["count"] += 1
+    cache.set(key, record, timeout=NICKNAME_CHANGE_WINDOW_SECONDS)
+
+
 def format_password_changed_display(password_changed_at):
     """password_changed_at(UTC aware datetime|None)을 화면 표시용 로컬
     타임존 날짜 문자열로 바꾼다. 마이페이지와 계정 설정 화면이 같은 사실을

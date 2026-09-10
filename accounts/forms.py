@@ -7,6 +7,7 @@ from django.forms import BooleanField, CharField, PasswordInput, TextInput
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.text import format_lazy
 
 from .validators import LENGTH_ERROR, normalize_nickname, validate_nickname
 
@@ -15,14 +16,32 @@ from .validators import LENGTH_ERROR, normalize_nickname, validate_nickname
 # 이미 있으므로 하드코딩 경로 대신 이름으로 참조한다 — 나중에 경로가
 # 바뀌어도 여기 링크가 조용히 죽지 않는다. reverse()가 아니라 reverse_lazy를
 # 쓰는 이유는 URLconf가 아직 해석되기 전에 이 모듈이 임포트될 수 있기
-# 때문이다(예: ACCOUNT_FORMS의 import_string).
+# 때문이다(예: ACCOUNT_FORMS의 import_string). format_lazy도 같은 이유로
+# 쓴다 — .format()은 lazy 객체를 즉시 평가해 같은 순환 임포트를 일으킨다.
 _TERMS_AGREEMENT_LABEL = mark_safe(
-    '<a href="{terms}" target="_blank" rel="noopener">이용약관</a> 및 '
-    '<a href="{privacy}" target="_blank" rel="noopener">개인정보처리방침</a>에 동의합니다.'.format(
+    format_lazy(
+        '<a href="{terms}" target="_blank" rel="noopener">이용약관</a> 및 '
+        '<a href="{privacy}" target="_blank" rel="noopener">개인정보처리방침</a>에 동의합니다.',
         terms=reverse_lazy("legal-terms-page"),
         privacy=reverse_lazy("legal-privacy-page"),
     )
 )
+
+
+def _nickname_field():
+    # 가입 믹스인과 변경 폼이 같은 CharField 정의를 쓰도록 공용화한다
+    # (규칙 중복 시 두 곳이 어긋나는 것을 막는다).
+    return CharField(
+        min_length=2,
+        max_length=20,
+        label="닉네임",
+        widget=TextInput(attrs={"autocomplete": "nickname", "placeholder": "닉네임"}),
+        error_messages={
+            "required": "닉네임을 입력해 주세요.",
+            "min_length": LENGTH_ERROR,
+            "max_length": LENGTH_ERROR,
+        },
+    )
 
 
 class TermsAgreementFormMixin(forms.Form):
@@ -36,17 +55,7 @@ class TermsAgreementFormMixin(forms.Form):
             "required": "이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다."
         },
     )
-    nickname = CharField(
-        min_length=2,
-        max_length=20,
-        label="닉네임",
-        widget=TextInput(attrs={"autocomplete": "nickname", "placeholder": "닉네임"}),
-        error_messages={
-            "required": "닉네임을 입력해 주세요.",
-            "min_length": LENGTH_ERROR,
-            "max_length": LENGTH_ERROR,
-        },
-    )
+    nickname = _nickname_field()
 
     def clean_nickname(self):
         value = normalize_nickname(self.cleaned_data["nickname"])
@@ -92,3 +101,23 @@ class EmailChangeForm(AddEmailForm):
         if not self.user.check_password(current_password):
             raise forms.ValidationError("비밀번호가 올바르지 않습니다.")
         return current_password
+
+
+class NicknameChangeForm(forms.Form):
+    """계정 설정의 닉네임 변경 폼(accounts/views.py의 nickname_change).
+    유일성 검사는 자기 자신을 제외해야 현재 값 그대로 재제출도 통과한다."""
+
+    nickname = _nickname_field()
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+        self.initial["nickname"] = user.nickname
+
+    def clean_nickname(self):
+        value = normalize_nickname(self.cleaned_data["nickname"])
+        validate_nickname(value)
+        User = get_user_model()
+        if User.objects.filter(nickname__iexact=value).exclude(pk=self.user.pk).exists():
+            raise forms.ValidationError("이미 사용 중인 닉네임입니다.")
+        return value

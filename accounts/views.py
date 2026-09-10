@@ -1,6 +1,7 @@
 from allauth.account.models import EmailAddress
 from allauth.decorators import rate_limit
 from allauth.socialaccount.views import SignupView as AllauthSocialSignupView
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
@@ -8,6 +9,7 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.cache import never_cache
 
 from . import services
+from .forms import NicknameChangeForm
 
 
 @method_decorator(rate_limit(action="signup"), name="dispatch")
@@ -36,6 +38,24 @@ def account_settings(request):
             "date_joined": user.date_joined,
         },
     )
+
+
+@login_required
+def nickname_change(request):
+    """계정 설정의 닉네임 변경 화면."""
+    if request.method == "POST":
+        form = NicknameChangeForm(request.user, request.POST)
+        if services.is_nickname_change_throttled(request.user):
+            form.add_error(None, services.NICKNAME_CHANGE_THROTTLE_MESSAGE)
+        elif form.is_valid():
+            request.user.nickname = form.cleaned_data["nickname"]
+            request.user.save(update_fields=["nickname"])
+            services.register_nickname_change(request.user)
+            messages.success(request, "닉네임이 변경되었습니다.")
+            return redirect("account-nickname-page")
+    else:
+        form = NicknameChangeForm(request.user)
+    return render(request, "account/nickname_change.html", {"form": form})
 
 
 @never_cache
