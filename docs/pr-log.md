@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #351부터 #204까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #356부터 #211까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,31 +28,39 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #351 — docs(readme): 아키텍처 설계 문서 형식으로 재구성하고 코드와 대조해 정정
+### PR #356 — feat(seo): Make the Korean brand name searchable (트랙 28)
 
-**무엇을 바꿨나**: README를 요구사항 → 요청 흐름 → 책임 분리 → 데이터 설계 →
-정합성·비동기 → 배포·운영 6절 구조로 재편하고(기존 스택·트러블슈팅·규모·로컬
-실행은 7~10절), 문체를 높임말로 통일했다. 코드·운영 문서와 대조해 "미배포"
-→ 2026-08-31부터 `takulife.kr` 운영 중, "Google OAuth 미활성" → 2026-08-26
-활성화 완료, CI "2-job" → `test`·`audit`·`docker` 3-job + `main → production`
-PR 자동 생성 워크플로, "Django 앱 8개" → 앱 7개 + `config` + `local_runner`
-패키지, marker "6계층" → 5개로 정정했다. 규모 수치는 main(6e4ccce) 재측정값:
-커밋 1,380 / 머지 PR 341 / 테스트 2,488개·88.79초 / 테스트 파일 193 /
-`transaction.atomic` 51곳·`select_for_update` 9파일 / 제약·인덱스 선언 21건.
-SMTP 미설정·백업 실행 기록 없음·러너 자동 시작 미구현은 운영 상태에 사실대로
-남겼다.
+**무엇을 바꿨나**: 리포 전체에 '타쿠라이프' 0건이던 상태에서 홈 `<title>`/og:title을
+`타쿠라이프 takulife — 굿즈 컬렉션·서브컬처 이벤트 기록`으로, 기본 meta description
+3곳(base.html 2곳·행사 상세 폴백 상수)을 `타쿠라이프(takulife)에서 …`로,
+og:site_name을 `타쿠라이프|takulife`로 바꿨다. `core/presenters.py` 신설
+(`build_website_json_ld`, `core.context_processors`의 `PROJECT_NAME`·
+`BRAND_NAME_KO` 상수 단일 소스)로 홈에만 WebSite JSON-LD(alternateName
+타쿠라이프)를 발행한다. 푸터 태그라인 1행 `타쿠라이프 — …`. 런북 §3-12 curl
+확인 항목, 백로그 C2(소개 페이지 별도 트랙 승인·미착수). 커밋 7개(ebfd39a·
+82dbd06·8a149d5·d6116cb·91e584f·2ca348e·4dcdbc3), merge commit b8e96c1.
 
-**왜**: 사용자가 제공한 아키텍처 설계 초안 형식으로 README를 맞추되, 초안과
-기존 README 모두 코드와 어긋난 서술(배포 상태·OAuth·CI 구성·수치)이 있어
-근거 파일을 grep으로 재확인해 고쳤다.
+**왜**: 구글은 페이지에 적힌 텍스트·title·구조화 데이터로 검색어를 매칭하므로
+한글 브랜드명 신호가 없으면 '타쿠라이프' 검색에 잡힐 근거가 없다. 트랙 16
+(robots·sitemap·canonical·noindex·Event JSON-LD) 위에 브랜드명 신호만
+얹었다. 어순(컬렉션 → 이벤트)은 CLAUDE.md 우선순위(PSO 판정), og:site_name
+파이프 형식과 소개 페이지 별도 트랙은 사용자 결정(2026-09-10).
 
-**검증**: 상대 링크 대상 12개 파일 존재 확인, 인용 설정값 전부 grep 재확인
-`[실측 2026-09-09]`. 같은 날 #349(pr-log 롤링)·#350(트랙 24 이벤트 일괄 비공개
-설정, 2506 passed / 69.79초·브라우저 AC7 9항목·CI 4체크 pass) 선행 머지.
-머지 후 main(73a7539) 2506 passed / 76.22초 `[실측 2026-09-09]`.
+**검증**: 기준 2541 passed·10 deselected·82.12초 → 2547 passed·10
+deselected·111.67초(신규 T1~T6, T7 리터럴 교체), T6는 base.html:66 뮤테이션으로
+Red 등가 확인; `check` 0 issues, `makemigrations --check` 무변경; 브라우저
+(DevTools MCP+curl) 헤드 순서·JSON.parse 키 5개·`/events/` 0건·콘솔 0건·
+태그라인 320/390/1280px 2행 무오버플로; WED·BIR 사후 Conforms(C3 포함),
+QVL 완료; CI 5개 잡 pass(test·audit·docker·e2e 관측·GitGuardian). 같은 날
+선행 머지 #352(docs 롤링)·#353(트랙 25)·#354(트랙 27 e2e). **머지 후
+main(b8e96c1) 재측정: (기입 예정)**
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #354 — test: Reintroduce a journey-based e2e suite (pytest-playwright + live_server)
+- #353 — feat(staff): 이벤트 목록 인라인 비공개·재게시·검증 — H2 분할 2/3 (트랙 25)
+- #352 — docs: PR #349·#350·#351 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #351 — docs(readme): 아키텍처 설계 문서 형식으로 재구성하고 코드와 대조해 정정
 - #350 — feat(staff): 이벤트 일괄 비공개 설정 — H2 분할 1/3 (트랙 24)
 - #349 — docs: PR #347·#348 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #348 — feat: 사용자 제보 드래프트 구분 표시와 제보 폼 공개 고지 — H3 (트랙 23)
@@ -190,10 +198,3 @@ SMTP 미설정·백업 실행 기록 없음·러너 자동 시작 미구현은 �
 - #213 — copy(web): Reword the home hero headline
 - #212 — feat: Guard event category/region against out-of-vocabulary values (B1)
 - #211 — feat(web): Move sorting from the sidebar to a results-head toggle menu
-- #210 — design(web): Rebuild the events list page in the editorial style
-- #209 — chore: Scope automated tests to backend logic and delete the e2e suite
-- #208 — 리디자인 ④내 활동 · ⑤행사 달력 (로드맵 완결)
-- #207 — design(web): Home editorial redesign — stack deck, de-chromed sections, category dots
-- #206 — feat(web): Shared shell — notice banner, mobile hamburger, four-column footer
-- #205 — design(web): Fix light-mode brand contrast to AA (design-rules §1.4)
-- #204 — feat(web): D8 live search result summary live region
