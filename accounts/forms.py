@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.text import format_lazy
 
+from .services import NICKNAME_DUPLICATE_MESSAGE
 from .validators import LENGTH_ERROR, normalize_nickname, validate_nickname
 
 
@@ -62,7 +63,7 @@ class TermsAgreementFormMixin(forms.Form):
         validate_nickname(value)
         User = get_user_model()
         if User.objects.filter(nickname__iexact=value).exists():
-            raise forms.ValidationError("이미 사용 중인 닉네임입니다.")
+            raise forms.ValidationError(NICKNAME_DUPLICATE_MESSAGE)
         return value
 
     def custom_signup(self, request, user):
@@ -119,5 +120,5 @@ class NicknameChangeForm(forms.Form):
         validate_nickname(value)
         User = get_user_model()
         if User.objects.filter(nickname__iexact=value).exclude(pk=self.user.pk).exists():
-            raise forms.ValidationError("이미 사용 중인 닉네임입니다.")
+            raise forms.ValidationError(NICKNAME_DUPLICATE_MESSAGE)
         return value

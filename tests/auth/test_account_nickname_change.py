@@ -4,6 +4,9 @@ from django.core.cache import cache
 
 import pytest
 
+from accounts.forms import NicknameChangeForm
+from accounts.validators import normalize_nickname
+
 pytestmark = pytest.mark.web
 
 NICKNAME_URL = "/accounts/settings/nickname/"
@@ -81,3 +84,25 @@ def test_한_시간_한도를_넘는_닉네임_변경은_DB_변경_없이_거부
     assert "닉네임 변경이 너무 잦습니다. 잠시 후 다시 시도해 주세요." in throttled.content.decode()
     user.refresh_from_db()
     assert user.nickname == "다섯번째"
+
+
+@pytest.mark.django_db
+def test_사전_중복_검사를_통과한_뒤_DB_제약에_걸리면_중복_오류로_안내된다(user_client, make_user, monkeypatch):
+    # 폼의 iexact 사전 검사를 건너뛰어 두 요청이 거의 동시에 도착한
+    # 경쟁 창을 재현한다 — 최후 방어는 DB UniqueConstraint다.
+    monkeypatch.setattr(
+        NicknameChangeForm,
+        "clean_nickname",
+        lambda self: normalize_nickname(self.cleaned_data["nickname"]),
+    )
+    make_user(nickname="Taku")
+    user, client = user_client(nickname="원래닉")
+
+    response = client.post(NICKNAME_URL, {"nickname": "taku"})
+
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "이미 사용 중인 닉네임입니다." in body
+    assert '<p class="account-menu-nickname">원래닉</p>' in body
+    user.refresh_from_db()
+    assert user.nickname == "원래닉"

@@ -113,6 +113,17 @@ def register_nickname_change(user):
     cache.set(key, record, timeout=NICKNAME_CHANGE_WINDOW_SECONDS)
 
 
+NICKNAME_DUPLICATE_MESSAGE = "이미 사용 중인 닉네임입니다."
+
+
+def is_nickname_conflict(exc):
+    """사전 iexact 검사를 통과한 뒤 경쟁 창에서 DB UniqueConstraint에 걸린
+    경우만 True — 이메일 등 다른 제약 위반은 그대로 재전파해야 한다."""
+    cause = exc.__cause__
+    diag = getattr(cause, "diag", None)
+    return getattr(diag, "constraint_name", None) == "accounts_user_nickname_ci_unique"
+
+
 def format_password_changed_display(password_changed_at):
     """password_changed_at(UTC aware datetime|None)을 화면 표시용 로컬
     타임존 날짜 문자열로 바꾼다. 마이페이지와 계정 설정 화면이 같은 사실을
