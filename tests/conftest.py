@@ -63,6 +63,7 @@ def make_draft_event(make_event):
 def make_user(db, django_user_model):
     def _make(email=None, password=None, **kwargs):
         email = email or f"user_{secrets.token_hex(4)}@example.com"
+        kwargs.setdefault("nickname", f"user_{secrets.token_hex(4)}")
         # 비밀번호를 안 넘기면 로그인 불가 상태로 만든다 — 해시 계산이 없어
         # 빠르고, 대부분의 테스트는 비밀번호로 로그인하지 않는다. 실제 로그인이
         # 필요한 테스트만 자기 비밀번호를 넘긴다.
@@ -166,8 +167,18 @@ def make_verified_user(db, django_user_model, valid_password):
     def _make(email=None, password=None, **kwargs):
         email = email or f"user_{secrets.token_hex(4)}@example.com"
         password = password or valid_password
+        kwargs.setdefault("nickname", f"user_{secrets.token_hex(4)}")
         user = django_user_model.objects.create_user(email=email, password=password, **kwargs)
         EmailAddress.objects.create(user=user, email=email, verified=True, primary=True)
         return user
 
     return _make
+
+
+@pytest.fixture
+def admin_user(db, django_user_model):
+    # pytest-django 내장 admin_user는 닉네임을 모르고 create_superuser를
+    # 부르므로 여기서 같은 이름으로 덮어써 nickname을 채워 준다.
+    return django_user_model.objects.create_superuser(
+        email="admin@example.com", password=None, nickname="admin_fixture"
+    )

@@ -16,6 +16,7 @@ def test_약관_동의_없이_회원가입하면_가입이_거부되고_사용�
         SIGNUP_URL,
         {
             "email": "noagreement@example.com",
+            "nickname": "noagreement닉",
             "password1": valid_password,
             "password2": valid_password,
         },
@@ -37,6 +38,7 @@ def test_약관에_동의하고_회원가입하면_사용자가_생성되고_동
         SIGNUP_URL,
         {
             "email": "agreed@example.com",
+            "nickname": "agreed닉",
             "password1": valid_password,
             "password2": valid_password,
             "terms_agreed": "on",

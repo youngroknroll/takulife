@@ -14,6 +14,7 @@ def test_약관_동의_없이_가입하면_해당_필드에_오류가_표시된�
         SIGNUP_URL,
         {
             "email": "noagreement2@example.com",
+            "nickname": "noagreement2닉",
             "password1": valid_password,
             "password2": valid_password,
         },
@@ -31,6 +32,7 @@ def test_비밀번호_확인이_일치하지_않으면_password2_필드에만_�
         SIGNUP_URL,
         {
             "email": "mismatch@example.com",
+            "nickname": "mismatch닉",
             "password1": valid_password,
             "password2": valid_password + "x",
         },

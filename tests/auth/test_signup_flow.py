@@ -12,6 +12,7 @@ def test_회원가입_후_이메일_인증을_완료하면_처음_요청한_next
         "/accounts/signup/?next=/archive/visits/",
         data={
             "email": "newcomer@example.com",
+            "nickname": "newcomer닉",
             "password1": valid_password,
             "password2": valid_password,
             "terms_agreed": "on",

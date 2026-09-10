@@ -198,6 +198,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     Render 프록시가 br을 전달한다. 같은 날 §3-12 배포 후 확인도 완료:
     robots.txt 200(Disallow 4경로 + `Sitemap: https://takulife.kr/sitemap.xml`),
     sitemap.xml 200(공개 행사 미존재 상태라 정적 5페이지만 수록 — 정합).
+15. **닉네임 배포 확인(트랙 29)**: `curl -s https://<host>/accounts/signup/ | grep -c 'name="nickname"'`
+    → `1`(가입 폼에 닉네임 입력칸이 렌더되는지). `psql "$DATABASE_URL" -c
+    "SELECT count(*) FROM accounts_user WHERE nickname IS NULL;"` → `0`(0006
+    백필+NOT NULL 전환이 전 회원에 적용됐는지, `docs/BE/account-identity.md`
+    (d) 참고).
 
 ## 4. 백업·복구 (T6)
 
@@ -235,6 +240,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 - **장애 시 점검 순서**: 헬스(`/api/health/` 응답 상태) → 애플리케이션 로그
   (`LOGGING`, config/settings.py 콘솔 구조화 로그) → DB(연결·쿼리 지연) →
   스토리지(R2 접근 가능 여부).
+- **닉네임 마이그레이션(`accounts.0006_user_nickname`) 실패 시**: entrypoint의
+  `set -e`가 신규 컨테이너 기동 자체를 막으므로 구 컨테이너가 그대로
+  서비스를 계속한다(`docker/entrypoint.sh`). **`migrate accounts 0005`로
+  역적용하지 않는다** — 백필된 `nickname` 값이 소실된다. 실패 원인을 코드로
+  고친 뒤 재배포한다.
 
 ## 6. 미검증 항목 (첫 배포에서 채울 것)
 

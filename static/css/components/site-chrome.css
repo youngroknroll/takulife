@@ -534,6 +534,14 @@
   display: none;
 }
 
+.account-menu-nickname {
+  margin: 0.25rem 0.75rem 0;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  overflow-wrap: break-word;
+}
+
 .account-menu-email {
   margin: 0.25rem 0.75rem 0.5rem;
   color: var(--muted);

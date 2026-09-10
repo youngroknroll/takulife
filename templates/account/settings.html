@@ -16,6 +16,13 @@
 
       <dl class="account-settings-overview">
         <div class="account-settings-overview-row">
+          <dt>닉네임</dt>
+          <dd>
+            <span class="account-settings-overview-value">{{ request.user.nickname }}</span>
+            <a class="account-settings-overview-action" href="{% url 'account-nickname-page' %}">변경 &rarr;</a>
+          </dd>
+        </div>
+        <div class="account-settings-overview-row">
           <dt>이메일</dt>
           <dd>
             <span class="account-settings-overview-value" title="{{ account_email }}">{{ account_email }}</span>

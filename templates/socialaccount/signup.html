@@ -44,6 +44,7 @@
         {% csrf_token %}
         {{ redirect_field }}
         {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
+        {% include "core/partials/_auth_field.html" with field=form.nickname label="닉네임" hint="2~20자, 한글·영문·숫자·_ 사용 가능" %}
         <div class="auth-consent{% if form.terms_agreed.errors %} is-error{% endif %}">
           <input
             type="checkbox"
