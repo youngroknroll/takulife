@@ -196,6 +196,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
   ```
 
   `is_active=False`로 바꾸면 다음 요청부터 그 계정의 세션이 무효화된다(`[실측 2026-09-05]` Django `ModelBackend.get_user`가 `user_can_authenticate` 실패 시 None을 반환하고, allauth 인증 백엔드는 `get_user`를 오버라이드하지 않는다).
+  `createsuperuser`는 트랙 29부터 닉네임 프롬프트가 추가됐다(`accounts.models.User.REQUIRED_FIELDS`에 `nickname` 포함).
 - 계정 상태 변경은 `StaffActionLog.target_user`로 기록된다(`staff/models.py:46-51`). 운영자(is_staff) 화면에는 대상 회원 이메일을 노출하지 않고 `계정 #<id>`로만 표시한다(`staff/views/audit_log.py:29-30`).
 - 정정 전 기록(2026-09-05 이전 문안): "Staff Console 접근에 문제가 생기면 슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다" — 실측으로 사실과 다름이 확인돼 위와 같이 바꿨다.
 - 정정 전 기록(2026-09-07 이전 문안): "accounts.User는 admin 미등록이라 스태프 권한 부여/해제(`is_staff`)와 계정 비활성화(`is_active`)는 `/admin/`에서 할 수 없고, shell로 직접 다룬다" — 트랙 19로 `/staff/accounts/` 화면이 생겨 superuser 대상이 아닌 계정은 더 이상 shell이 유일한 경로가 아니다.

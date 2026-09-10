@@ -221,6 +221,7 @@ def test_회원가입_직후에는_이메일_인증_전이라_로그인_상태�
         "/accounts/signup/",
         {
             "email": "newuser@example.com",
+            "nickname": "newuser닉",
             "password1": valid_password,
             "password2": valid_password,
             "terms_agreed": "on",
@@ -242,6 +243,7 @@ def test_이메일_인증_링크를_클릭하면_로그인_상태가_된다(clie
         "/accounts/signup/",
         {
             "email": "confirmme@example.com",
+            "nickname": "confirmme닉",
             "password1": valid_password,
             "password2": valid_password,
             "terms_agreed": "on",
@@ -265,6 +267,7 @@ def test_취약한_비밀번호로_가입하면_거부되고_계정이_생성되
         "/accounts/signup/",
         {
             "email": "weakpwduser@example.com",
+            "nickname": "weakpwd닉",
             "password1": "12345678",
             "password2": "12345678",
             "terms_agreed": "on",
@@ -282,12 +285,15 @@ def test_이미_가입된_이메일로_다시_가입해도_중복_계정이_생�
     알아낼 수 없도록) — 대신 새 계정을 만들지 않고 기존 계정에 메일로
     알린다.
     """
-    django_user_model.objects.create_user(email="existinguser@example.com", password=valid_password)
+    django_user_model.objects.create_user(
+        email="existinguser@example.com", password=valid_password, nickname="existinguser닉2"
+    )
 
     response = client.post(
         "/accounts/signup/",
         {
             "email": "existinguser@example.com",
+            "nickname": "existing닉",
             "password1": valid_password,
             "password2": valid_password,
             "terms_agreed": "on",

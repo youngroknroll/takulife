@@ -5,6 +5,7 @@ input을 직접 그린다 — Django 자동 렌더와 다른 id로 오류 요소
 비밀번호 입력창은 값을 다시 채우지 않는다.
 
 Usage: {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
+  hint(선택) — 입력창 아래 보조 문구
 {% endcomment %}
 <div class="auth-field">
   <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="auth-required" aria-hidden="true">*</span><span class="sr-only">(필수)</span>{% endif %}</label>
@@ -22,4 +23,5 @@ Usage: {% include "core/partials/_auth_field.html" with field=form.email label="
       {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
     </ul>
   {% endif %}
+  {% if hint %}<p class="auth-field-hint">{{ hint }}</p>{% endif %}
 </div>

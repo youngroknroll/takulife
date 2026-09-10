@@ -9,8 +9,9 @@
 {% block content %}
   <main class="page mypage-page" id="content">
     <header class="mypage-header">
-      <span class="mypage-avatar" aria-hidden="true">{{ request.user.email|first|upper }}</span>
+      <span class="mypage-avatar" aria-hidden="true">{{ request.user.nickname|first|upper }}</span>
       <div class="mypage-header-body">
+        <p class="mypage-nickname">{{ request.user.nickname }}</p>
         <h1>마이페이지</h1>
         <p class="mypage-email" title="{{ request.user.email }}">{{ request.user.email }}</p>
       </div>
@@ -44,6 +45,14 @@
 
     <section class="mypage-account">
       <h2>계정</h2>
+
+      <div class="mypage-account-row">
+        <span class="mypage-account-field">
+          <span class="mypage-account-key">닉네임</span>
+          <span class="mypage-account-value">{{ request.user.nickname }}</span>
+        </span>
+        <a class="mypage-account-action is-teal" href="{% url 'account-nickname-page' %}">변경</a>
+      </div>
 
       <div class="mypage-account-row">
         <span class="mypage-account-field">

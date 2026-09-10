@@ -1,5 +1,7 @@
 from django.contrib.auth.base_user import BaseUserManager
 
+from .validators import normalize_nickname, validate_nickname
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -10,6 +12,13 @@ class UserManager(BaseUserManager):
         # 소문자 변환을 거치지 않는다) 이메일이 신뢰할 수 있는 고유 식별자로
         # 남도록 주소 전체를 소문자로 바꾼다.
         email = self.normalize_email(email.lower())
+        # 매니저 경로(createsuperuser, 직접 호출)는 폼을 거치지 않으므로
+        # 여기서도 같은 정규화·검증 규칙을 적용한다.
+        if extra_fields.get("nickname") is None:
+            raise ValueError("닉네임은 필수입니다.")
+        nickname = normalize_nickname(extra_fields["nickname"])
+        validate_nickname(nickname)
+        extra_fields["nickname"] = nickname
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

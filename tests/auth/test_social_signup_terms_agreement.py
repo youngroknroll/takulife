@@ -16,7 +16,10 @@ def test_소셜_가입_폼에_약관_동의_없이_제출하면_폼이_거부되
     user = django_user_model(email="social-reject@example.com")
     sociallogin = SocialLogin(user=user)
 
-    form = SocialSignupForm(data={"email": "social-reject@example.com"}, sociallogin=sociallogin)
+    form = SocialSignupForm(
+        data={"email": "social-reject@example.com", "nickname": "socialreject닉"},
+        sociallogin=sociallogin,
+    )
 
     assert form.is_valid() is False
     assert "이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다." in form.errors["terms_agreed"]
@@ -29,10 +32,16 @@ def test_소셜_가입_폼이_동의와_함께_처리되면_사용자의_동의_
     내부 계약이라(tests/auth/test_password_changed_at.py의 A3과 같은 판단),
     여기서는 우리 폼의 custom_signup 훅이 동의 시각을 기록하는지만 직접
     확인한다."""
-    user = django_user_model.objects.create_user(email="social-agree@example.com", password=None)
+    user = django_user_model.objects.create_user(
+        email="social-agree@example.com", password=None, nickname="socialagree닉before"
+    )
     sociallogin = SocialLogin(user=user)
     form = SocialSignupForm(
-        data={"email": "social-agree@example.com", "terms_agreed": "on"},
+        data={
+            "email": "social-agree@example.com",
+            "nickname": "socialagree닉",
+            "terms_agreed": "on",
+        },
         sociallogin=sociallogin,
     )
     assert form.is_valid() is True

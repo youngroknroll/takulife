@@ -64,6 +64,7 @@ def test_회원가입_요청이_동일_ip에서_한도를_초과하면_429로_�
             "/accounts/signup/",
             {
                 "email": f"newuser{i}@example.com",
+                "nickname": f"ratelimit{i}닉",
                 "password1": valid_password,
                 "password2": valid_password,
                 "terms_agreed": "on",
@@ -75,6 +76,7 @@ def test_회원가입_요청이_동일_ip에서_한도를_초과하면_429로_�
         "/accounts/signup/",
         {
             "email": "newuser99@example.com",
+            "nickname": "newuser99닉",
             "password1": valid_password,
             "password2": valid_password,
             "terms_agreed": "on",
@@ -123,6 +125,7 @@ def test_요청이_한도를_초과해_차단되면_한글_429_페이지가_렌�
         "/accounts/signup/",
         {
             "email": "first@example.com",
+            "nickname": "first닉",
             "password1": valid_password,
             "password2": valid_password,
             "terms_agreed": "on",
@@ -132,6 +135,7 @@ def test_요청이_한도를_초과해_차단되면_한글_429_페이지가_렌�
         "/accounts/signup/",
         {
             "email": "second@example.com",
+            "nickname": "second닉",
             "password1": valid_password,
             "password2": valid_password,
             "terms_agreed": "on",

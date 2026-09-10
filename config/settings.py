@@ -429,6 +429,9 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 # 다중 이메일 UI 대신 단일 이메일 교체 흐름을 쓴다 — allauth가
 # account/email_change.html을 찾게 된다.
 ACCOUNT_CHANGE_EMAIL = True
+# save_user에서 nickname을 유저 저장 전에 실어야 하므로 커스텀 어댑터를 쓴다
+# (소셜 가입도 같은 account adapter를 거치므로 SOCIALACCOUNT_ADAPTER는 불필요).
+ACCOUNT_ADAPTER = "accounts.adapters.AccountAdapter"
 # 커스텀 가입 폼(accounts/forms.py)이 allauth 기본 이메일/비밀번호 필드에
 # 약관·개인정보 동의 체크박스를 추가한다. add_email은 현재 비밀번호
 # 재확인을 추가한 EmailChangeForm으로 교체.
