@@ -52,8 +52,8 @@ Red 등가 확인; `check` 0 issues, `makemigrations --check` 무변경; 브라�
 (DevTools MCP+curl) 헤드 순서·JSON.parse 키 5개·`/events/` 0건·콘솔 0건·
 태그라인 320/390/1280px 2행 무오버플로; WED·BIR 사후 Conforms(C3 포함),
 QVL 완료; CI 5개 잡 pass(test·audit·docker·e2e 관측·GitGuardian). 같은 날
-선행 머지 #352(docs 롤링)·#353(트랙 25)·#354(트랙 27 e2e). **머지 후
-main(b8e96c1) 재측정: (기입 예정)**
+선행 머지 #352(docs 롤링)·#353(트랙 25)·#354(트랙 27 e2e). 머지 후
+main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09-10]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
