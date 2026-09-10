@@ -2,10 +2,13 @@ from allauth.account.forms import AddEmailForm
 from allauth.account.forms import SignupForm as AllauthSignupForm
 from allauth.socialaccount.forms import SignupForm as AllauthSocialSignupForm
 from django import forms
-from django.forms import BooleanField, CharField, PasswordInput
+from django.contrib.auth import get_user_model
+from django.forms import BooleanField, CharField, PasswordInput, TextInput
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+
+from .validators import LENGTH_ERROR, normalize_nickname, validate_nickname
 
 
 # /legal/ 경로(legal-terms-page / legal-privacy-page, core/views.py)가
@@ -33,6 +36,25 @@ class TermsAgreementFormMixin(forms.Form):
             "required": "이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다."
         },
     )
+    nickname = CharField(
+        min_length=2,
+        max_length=20,
+        label="닉네임",
+        widget=TextInput(attrs={"autocomplete": "nickname", "placeholder": "닉네임"}),
+        error_messages={
+            "required": "닉네임을 입력해 주세요.",
+            "min_length": LENGTH_ERROR,
+            "max_length": LENGTH_ERROR,
+        },
+    )
+
+    def clean_nickname(self):
+        value = normalize_nickname(self.cleaned_data["nickname"])
+        validate_nickname(value)
+        User = get_user_model()
+        if User.objects.filter(nickname__iexact=value).exists():
+            raise forms.ValidationError("이미 사용 중인 닉네임입니다.")
+        return value
 
     def custom_signup(self, request, user):
         # 가입 폼의 추가 필드를 새 유저에 저장하는 allauth 훅(adapter.save_user
