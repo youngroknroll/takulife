@@ -19,12 +19,17 @@ FONT_PRELOAD_CHUNKS = (
 )
 
 
-def project_name(request):
-    """모든 템플릿 컨텍스트에 제품 이름을 넣는다.
+# 한글 브랜드 표기는 '타쿠라이프' 하나로만 쓴다 — 다른 파일이 이 값을 다시 적지 않고 여기서 가져다 쓴다.
+PROJECT_NAME = "takulife"
+BRAND_NAME_KO = "타쿠라이프"
 
-    각 뷰가 렌더 컨텍스트에 ``"project_name"``을 따로 하드코딩하지 않게 한다.
+
+def project_name(request):
+    """모든 템플릿 컨텍스트에 제품 이름(영문·한글 표기)을 넣는다.
+
+    각 뷰가 렌더 컨텍스트에 ``"project_name"``·``"brand_name_ko"``를 따로 하드코딩하지 않게 한다.
     """
-    return {"project_name": "takulife"}
+    return {"project_name": PROJECT_NAME, "brand_name_ko": BRAND_NAME_KO}
 
 
 def google_oauth_configured(request):

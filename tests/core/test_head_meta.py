@@ -5,6 +5,8 @@
 페이지가 templates/base.html을 상속해 이 태그들을 자동으로 얻으므로, 홈
 페이지 응답으로 스모크 테스트한다.
 """
+import json
+import re
 from datetime import date
 
 import pytest
@@ -40,6 +42,65 @@ def test_홈_페이지는_오픈그래프_태그를_포함한다(client):
     assert 'property="og:title"' in content
     assert 'property="og:description"' in content
     assert 'property="og:type"' in content
+
+
+@pytest.mark.django_db
+def test_홈_페이지_title은_한글_브랜드명으로_시작하고_og_title과_같다(client):
+    resp = client.get("/")
+
+    content = resp.content.decode()
+    expected = "타쿠라이프 takulife — 굿즈 컬렉션·서브컬처 이벤트 기록"
+    assert resp.status_code == 200
+    assert f"<title>{expected}</title>" in content
+    assert f'<meta property="og:title" content="{expected}">' in content
+
+
+@pytest.mark.django_db
+def test_홈_페이지_description은_한글_브랜드명으로_시작한다(client):
+    resp = client.get("/")
+
+    content = resp.content.decode()
+    expected = (
+        "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · "
+        "굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
+    )
+    assert resp.status_code == 200
+    assert f'<meta name="description" content="{expected}">' in content
+    assert f'<meta property="og:description" content="{expected}">' in content
+
+
+@pytest.mark.django_db
+def test_페이지_og_site_name은_한글과_영문_브랜드명을_함께_담는다(client):
+    resp = client.get("/")
+
+    content = resp.content.decode()
+    assert resp.status_code == 200
+    assert '<meta property="og:site_name" content="타쿠라이프|takulife">' in content
+
+
+@pytest.mark.django_db
+def test_홈_페이지는_WebSite_구조화_데이터를_요청_호스트_URL로_렌더한다(client):
+    resp = client.get("/")
+
+    body = resp.content.decode("utf-8")
+    match = re.search(
+        r'<script type="application/ld\+json">(.*?)</script>', body, re.DOTALL
+    )
+
+    assert match is not None
+    payload = json.loads(match.group(1))
+    assert payload["@type"] == "WebSite"
+    assert payload["alternateName"] == "타쿠라이프"
+    assert payload["url"] == "http://testserver/"
+
+
+@pytest.mark.django_db
+def test_이벤트_목록_페이지는_WebSite_구조화_데이터를_발행하지_않는다(client):
+    resp = client.get("/events/")
+
+    content = resp.content.decode()
+    assert resp.status_code == 200
+    assert "application/ld+json" not in content
 
 
 @pytest.mark.django_db
@@ -137,8 +198,8 @@ def test_행사_상세_페이지는_행사명이_들어간_메타_제목을_조�
         (
             dict(summary="", category="", location_name="", start_date=None, end_date=None),
             lambda: (
-                "팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · "
-                "전시를 검색하고, 방문 상태와 기록을 보관하세요."
+                "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · "
+                "굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
             ),
         ),
     ],
