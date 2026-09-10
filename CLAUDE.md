@@ -85,13 +85,16 @@ or the task requires a repository-wide repeated-pattern check.
 - Migration drift: `uv run python manage.py makemigrations --check --dry-run`
 - Targeted test: `uv run pytest -q <test-path>`
 - Backend regression: `uv run pytest -q`
+- E2E journeys: `uv run pytest -q -m e2e tests/e2e`
 - Local server: `uv run python manage.py runserver`
 
-Automated tests cover backend logic only — there is no browser/e2e suite
-(deleted 2026-07-22). Browser behavior is verified by driving Chromium with
-Playwright or the Chrome DevTools MCP tools against the local dev server;
-Playwright stays installed as a verification tool, never as a test framework.
-During Red-Green, run the targeted test before broad regression.
+Automated tests cover backend logic by default. Journey e2e (`tests/e2e/`,
+pytest-playwright + Django `live_server`) runs only on explicit request via
+`uv run pytest -q -m e2e tests/e2e`; `AGENTS.md` owns the binding admission
+criteria for what may live there. Geometry, layout, and interaction state
+outside those criteria are still measured ad hoc with Playwright or the
+Chrome DevTools MCP tools and reported as evidence, never committed as a
+test. During Red-Green, run the targeted test before broad regression.
 
 ## Working Method
 1. Inspect `git status` and preserve existing user changes.

@@ -177,7 +177,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     배포 후 확인 항목: `curl https://<host>/robots.txt`로 `Disallow` 4경로와
     `Sitemap:` 라인을 확인하고, `curl https://<host>/sitemap.xml`이 200을
     반환하는지 확인한다(도메인은 요청 Host를 따르므로 별도 설정 불필요 —
-    `RequestSite`).
+    `RequestSite`). **한글 브랜드명 확인(트랙 28, 배포 후 실측 기입 예정)**:
+    홈은 SSR이라 curl로 충분 —
+    `curl -s https://<host>/ | grep -o '<title>[^<]*</title>'`가 `타쿠라이프`로
+    시작하고, `curl -s https://<host>/ | grep -c '"@type": "WebSite"'`가 1인지
+    확인한다.
 13. **API 문서 정적 자산 실서빙 확인**: `DEBUG=false` + `collectstatic` 완료
     후 `/api/docs/`를 브라우저로 열어 Swagger UI 렌더와 sidecar 정적 자산
     (`swagger-ui-bundle.js` 등) 200 응답을 확인한다. `collectstatic` 성공은

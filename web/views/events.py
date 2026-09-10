@@ -26,6 +26,7 @@ from archive.queries import (
 )
 from core.calendar_grid import month_grid
 from core.models import HomeConfig
+from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
     CATEGORY,
@@ -93,6 +94,9 @@ def home(request):
         "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
         "category_tiles": category_tiles,
         "featured_event_rows": featured_event_rows,
+        "json_ld_script": _json_ld_script(
+            build_website_json_ld(request.build_absolute_uri("/"))
+        ),
     }
 
     if request.user.is_authenticated:
@@ -435,8 +439,8 @@ def _build_event_meta_title(event):
 
 
 _DEFAULT_EVENT_META_DESCRIPTION = (
-    "팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · "
-    "전시를 검색하고, 방문 상태와 기록을 보관하세요."
+    "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · "
+    "굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
 )
 
 
