@@ -14,10 +14,11 @@ class UserManager(BaseUserManager):
         email = self.normalize_email(email.lower())
         # 매니저 경로(createsuperuser, 직접 호출)는 폼을 거치지 않으므로
         # 여기서도 같은 정규화·검증 규칙을 적용한다.
-        if extra_fields.get("nickname") is not None:
-            nickname = normalize_nickname(extra_fields["nickname"])
-            validate_nickname(nickname)
-            extra_fields["nickname"] = nickname
+        if extra_fields.get("nickname") is None:
+            raise ValueError("닉네임은 필수입니다.")
+        nickname = normalize_nickname(extra_fields["nickname"])
+        validate_nickname(nickname)
+        extra_fields["nickname"] = nickname
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

@@ -32,7 +32,9 @@ def test_소셜_가입_폼이_동의와_함께_처리되면_사용자의_동의_
     내부 계약이라(tests/auth/test_password_changed_at.py의 A3과 같은 판단),
     여기서는 우리 폼의 custom_signup 훅이 동의 시각을 기록하는지만 직접
     확인한다."""
-    user = django_user_model.objects.create_user(email="social-agree@example.com", password=None)
+    user = django_user_model.objects.create_user(
+        email="social-agree@example.com", password=None, nickname="socialagree닉before"
+    )
     sociallogin = SocialLogin(user=user)
     form = SocialSignupForm(
         data={

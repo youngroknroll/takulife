@@ -36,3 +36,9 @@ def test_매니저는_닉네임을_정규화해_저장한다(django_user_model):
     )
 
     assert user.nickname == "abc"
+
+
+@pytest.mark.django_db
+def test_닉네임_없이_매니저로_만들면_거부된다(django_user_model):
+    with pytest.raises(ValueError):
+        django_user_model.objects.create_user(email="e@example.com", password=None)

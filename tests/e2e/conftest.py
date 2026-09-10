@@ -61,10 +61,11 @@ def page(page):
 
 @pytest.fixture
 def verified_user(transactional_db, django_user_model):
-    def _make(email=None, *, password=None, is_staff=False):
+    def _make(email=None, *, password=None, is_staff=False, nickname=None):
         email = email or f"e2e_{secrets.token_hex(4)}@example.com"
+        nickname = nickname or f"e2e_{secrets.token_hex(4)}"
         user = django_user_model.objects.create_user(
-            email=email, password=password, is_staff=is_staff
+            email=email, password=password, is_staff=is_staff, nickname=nickname
         )
         EmailAddress.objects.create(user=user, email=email, verified=True, primary=True)
         return user

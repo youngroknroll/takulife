@@ -11,7 +11,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     # 게시글·헤더 등 공개 표시용 식별자. 대소문자를 구분하지 않고 유일해야
     # 하므로 유일성은 필드 unique가 아니라 Meta.constraints(Lower)로 강제한다.
-    nickname = models.CharField(max_length=20, null=True, validators=[validate_nickname])
+    nickname = models.CharField(max_length=20, validators=[validate_nickname])
     # accounts.forms.SignupForm.custom_signup가 가입 시 한 번만 설정한다 —
     # 이 시각은 가입 당시 약관/개인정보처리방침에 사용자가 명시적으로
     # 동의했다는 증적이다. 이 폼을 거치지 않은 계정(createsuperuser, 기존

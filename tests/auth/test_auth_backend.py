@@ -285,7 +285,9 @@ def test_이미_가입된_이메일로_다시_가입해도_중복_계정이_생�
     알아낼 수 없도록) — 대신 새 계정을 만들지 않고 기존 계정에 메일로
     알린다.
     """
-    django_user_model.objects.create_user(email="existinguser@example.com", password=valid_password)
+    django_user_model.objects.create_user(
+        email="existinguser@example.com", password=valid_password, nickname="existinguser닉2"
+    )
 
     response = client.post(
         "/accounts/signup/",

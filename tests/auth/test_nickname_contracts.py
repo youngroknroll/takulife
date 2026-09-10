@@ -9,3 +9,7 @@ pytestmark = pytest.mark.contract
 
 def test_REQUIRED_FIELDS는_닉네임을_포함한다():
     assert "nickname" in User.REQUIRED_FIELDS
+
+
+def test_닉네임_필드는_NULL을_허용하지_않는다():
+    assert User._meta.get_field("nickname").null is False
