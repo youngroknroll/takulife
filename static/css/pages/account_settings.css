@@ -238,7 +238,8 @@
 
 /* 현재 이메일 블록의 보조 문구 — flex-wrap 행에서 항상 다음 줄 전체 폭을
    차지하도록 flex-basis:100%를 준다. */
-.account-settings-email-hint {
+.account-settings-email-hint,
+.account-settings-nickname-hint {
   flex-basis: 100%;
   margin: 0;
   font-size: 0.78125rem;

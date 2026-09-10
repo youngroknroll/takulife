@@ -268,6 +268,16 @@
   margin: 0;
 }
 
+/* 필드 아래 보조 문구(닉네임 형식 안내 등) — .auth-form의 gap이 있어
+   위 여백은 최소로만 얹는다. 선택자를 .auth-panel-form form .auth-field-hint로
+   올린 이유: 아래 socialaccount 폴백용 `.auth-panel-form form p`(특이도 0,1,2)가
+   `.auth-field-hint`(0,1,0)보다 강해 margin을 덮어썼기 때문이다. */
+.auth-panel-form form .auth-field-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 /* ── terms-agreement checkbox (signup only) ───────────────────────────── */
 .auth-consent {
   display: flex;

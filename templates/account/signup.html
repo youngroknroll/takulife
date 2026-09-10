@@ -48,7 +48,7 @@
         {% csrf_token %}
         {{ redirect_field }}
         {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
-        {% include "core/partials/_auth_field.html" with field=form.nickname label="닉네임" %}
+        {% include "core/partials/_auth_field.html" with field=form.nickname label="닉네임" hint="2~20자, 한글·영문·숫자·_ 사용 가능" %}
         {% include "core/partials/_auth_field.html" with field=form.password1 label="비밀번호" %}
         {% include "core/partials/_auth_field.html" with field=form.password2 label="비밀번호 확인" %}
         <div class="auth-consent{% if form.terms_agreed.errors %} is-error{% endif %}">

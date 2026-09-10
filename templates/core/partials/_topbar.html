@@ -10,17 +10,20 @@
   스태프     — 스태프 콘솔 / 설정 / 로그아웃(마이페이지 없음, 설정이 이메일·
                비밀번호 관리로 가는 유일한 경로)
   +superuser — 위 두 분기 어디든 관리자 링크가 추가된다
+
+닉네임 줄은 모바일에서 헤더 이름이 숨겨질 때 유일한 닉네임 노출이다.
 {% endcomment %}
 <nav class="topbar-auth" aria-label="계정">
   {% if request.user.is_authenticated %}
-    <span class="topbar-username" title="{{ request.user.email }}">{{ request.user.email }}</span>
+    <span class="topbar-username" title="{{ request.user.nickname }}">{{ request.user.nickname }}</span>
     <div class="account-menu" data-account-menu>
       <button type="button" class="account-menu-toggle" data-account-menu-toggle
               data-expanded="false" data-controls="account-menu-panel"
               aria-expanded="false" aria-controls="account-menu-panel" aria-label="계정 메뉴">
-        <span class="account-mark">{{ request.user.email|first|upper }}</span>
+        <span class="account-mark">{{ request.user.nickname|first|upper }}</span>
       </button>
       <div id="account-menu-panel" class="account-menu-panel" data-account-menu-panel hidden>
+        <p class="account-menu-nickname">{{ request.user.nickname }}</p>
         <p class="account-menu-email">{{ request.user.email }}</p>
         <hr class="account-menu-divider">
         {% if request.user.is_staff %}
