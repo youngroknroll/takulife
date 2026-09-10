@@ -455,7 +455,10 @@ SOCIALACCOUNT_PROVIDERS = {
             }
         ],
         "SCOPE": ["profile", "email"],
-        "AUTH_PARAMS": {"access_type": "online"},
+        "AUTH_PARAMS": {
+                        "access_type": "online",
+                        "prompt": "select_account",
+                        },
     }
 }
 # 구글은 이메일 소유권을 검증하므로 신뢰할 수 있다: 검증된 구글 이메일이
