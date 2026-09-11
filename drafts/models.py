@@ -60,6 +60,16 @@ class EventDraft(models.Model):
     rejected_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True, default="")
     reopened_at = models.DateTimeField(null=True, blank=True)
+    # 에이전트가 남기는 판단 근거·미해결 사유 메모. 캡션 원문(raw_text)과 분리한다.
+    intake_note = models.TextField(blank=True, default="")
+    # 어느 탐색 실행에서 나온 드래프트인지. 실행이 지워져도 드래프트는 남는다.
+    discovery_run = models.ForeignKey(
+        "SourceDiscoveryRun",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="events",
+    )
 
     def __str__(self):
         return self.source_url
