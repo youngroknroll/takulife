@@ -15,6 +15,8 @@ from drafts.agent_drafts import (
 )
 from drafts.discovery_runs import LeaseInvalidError, renew_lease
 from drafts.models import EventDraft, SourceDiscoveryRun
+from drafts.robots import RobotsCheckResult
+from drafts.url_safety import UnsafeFetchUrlError
 
 
 pytestmark = pytest.mark.unit
@@ -164,6 +166,24 @@ def test_시작일이_종료일보다_늦으면_두_날짜가_비워지고_메�
     assert "기간 역전" in cleaned["note"]
 
 
+class _AllowAllRobots:
+    def check(self, url):
+        return RobotsCheckResult(True, None)
+
+
+@pytest.fixture
+def _neutralize_server_recheck(monkeypatch):
+    """이 파일의 도메인 테스트(IG-04·IG-05·IG-18)는 서버 재확인(KW-07)을 타지
+    않는다 — 네트워크가 관심사가 아니므로 항상 통과하도록 무력화한다."""
+    monkeypatch.setattr(
+        "drafts.agent_drafts.validate_fetch_url", lambda url, **kwargs: "1.1.1.1"
+    )
+    monkeypatch.setattr("drafts.agent_drafts.RobotsChecker", _AllowAllRobots)
+    monkeypatch.setattr(
+        "drafts.agent_drafts.fetch_html", lambda url, **kwargs: "<html></html>"
+    )
+
+
 def _make_claimed_run():
     return SourceDiscoveryRun.objects.create(
         status=SourceDiscoveryRun.Status.CLAIMED,
@@ -205,7 +225,7 @@ def test_임대가_없거나_만료된_실행으로의_제출은_거부된다(ma
 
 @pytest.mark.django_db
 @pytest.mark.domain
-def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM추출_표시를_가진_검토대기_드래프트가_생성된다():
+def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM추출_표시를_가진_검토대기_드래프트가_생성된다(_neutralize_server_recheck):
     run = _make_claimed_run()
     payload = {
         "source_url": "https://official-site.example.com/event",
@@ -279,7 +299,7 @@ def _valid_payload_for_submit(source_url):
 @pytest.mark.django_db
 @pytest.mark.domain
 @pytest.mark.parametrize("same_run", [True, False], ids=["같은_실행", "다른_실행"])
-def test_같은_이벤트_URL을_다시_제출하면_새_드래프트_없이_기존_id를_돌려준다(same_run):
+def test_같은_이벤트_URL을_다시_제출하면_새_드래프트_없이_기존_id를_돌려준다(same_run, _neutralize_server_recheck):
     run_a = _make_claimed_run()
     source_url = "https://official-site.example.com/event"
     existing_draft, _ = submit_agent_draft(
@@ -314,7 +334,7 @@ def _keep_initial_lease(run):
     [_keep_initial_lease, _renew_lease_before_submit],
     ids=["최초_임대", "재임대_후"],
 )
-def test_실행당_이벤트_상한을_넘는_제출은_거부되고_드래프트가_생성되지_않는다(before_submit):
+def test_실행당_이벤트_상한을_넘는_제출은_거부되고_드래프트가_생성되지_않는다(before_submit, _neutralize_server_recheck):
     run = _make_claimed_run()
     EventDraft.objects.bulk_create(
         [
@@ -336,3 +356,77 @@ def test_실행당_이벤트_상한을_넘는_제출은_거부되고_드래프�
         )
 
     assert EventDraft.objects.filter(discovery_run=run).count() == MAX_EVENTS_PER_RUN
+
+
+def _patch_일반_웹_재확인(monkeypatch, fail_if_called):
+    fetch_calls = []
+
+    def fake_fetch_html(url, **kwargs):
+        fetch_calls.append(url)
+        return "<html></html>"
+
+    monkeypatch.setattr("drafts.agent_drafts.fetch_html", fake_fetch_html)
+    monkeypatch.setattr(
+        "drafts.agent_drafts.validate_fetch_url", lambda url, **kwargs: "1.1.1.1"
+    )
+    monkeypatch.setattr("drafts.agent_drafts.RobotsChecker", _AllowAllRobots)
+    return {
+        "source_url": "https://official-site.example.com/event",
+        "platform": "web",
+        "fetch_calls": fetch_calls,
+        "unsafe": False,
+    }
+
+
+def _patch_인스타_fetch_미호출(monkeypatch, fail_if_called):
+    monkeypatch.setattr("drafts.agent_drafts.fetch_html", fail_if_called)
+    return {
+        "source_url": "https://www.instagram.com/p/Dck7ZVUoG4i/",
+        "platform": "instagram",
+        "fetch_calls": None,
+        "unsafe": False,
+    }
+
+
+def _patch_안전하지_않은_URL_거부(monkeypatch, fail_if_called):
+    def raise_unsafe(url, **kwargs):
+        raise UnsafeFetchUrlError
+
+    monkeypatch.setattr("drafts.agent_drafts.validate_fetch_url", raise_unsafe)
+    return {
+        "source_url": "https://official-site.example.com/event",
+        "platform": "web",
+        "fetch_calls": None,
+        "unsafe": True,
+    }
+
+
+@pytest.mark.django_db
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "setup",
+    [_patch_일반_웹_재확인, _patch_인스타_fetch_미호출, _patch_안전하지_않은_URL_거부],
+    ids=["일반_웹_재확인", "인스타_fetch_미호출", "안전하지_않은_URL_거부"],
+)
+def test_일반_웹_URL_제출은_서버가_존재를_재확인하고_인스타_URL_제출은_fetch를_호출하지_않으며_안전하지_않은_URL은_거부된다(
+    setup, monkeypatch, fail_if_called
+):
+    context = setup(monkeypatch, fail_if_called)
+
+    run = _make_claimed_run()
+    payload = _valid_payload_for_submit(context["source_url"])
+    payload["platform"] = context["platform"]
+
+    if context["unsafe"]:
+        with pytest.raises(UnsafeFetchUrlError):
+            submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+        assert EventDraft.objects.count() == 0
+        return
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert created is True
+    assert EventDraft.objects.count() == 1
+    if context["fetch_calls"] is not None:
+        assert context["fetch_calls"] == [context["source_url"]]
+        assert draft.raw_text != "<html></html>"

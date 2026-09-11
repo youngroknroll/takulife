@@ -3,13 +3,18 @@
 테스트로 고정한다."""
 import unicodedata
 from datetime import date
+from urllib.parse import urlsplit
 
 from django.db import transaction
 
 from core.vocab import is_valid_category, is_valid_region
-from drafts.discovery_runs import locked_run_with_valid_lease
+from drafts.discovery import SNS_HOSTNAMES
+from drafts.discovery_runs import locked_run_with_valid_lease, renew_lease
+from drafts.fetching import fetch_html
 from drafts.models import EventDraft
+from drafts.robots import RobotsChecker
 from drafts.services import create_draft_from_fields
+from drafts.url_safety import validate_fetch_url
 
 _REQUIRED_KEYS = (
     "source_url",
@@ -134,14 +139,25 @@ def parse_agent_draft_payload(*, payload):
 
 
 def submit_agent_draft(*, run_id, lease_token, payload):
-    """앞으로 상한·재확인·메모 조립을 순서대로 붙여 나갈 자리다. 지금은 임대
-    유효성 재확인 → 전역 URL 중복 확인 → 정정된 페이로드로 드래프트 생성까지를
-    한 잠금 블록 안에서 처리한다(중복 검사가 잠금 밖에서 일어나면 의미가 없다)."""
+    """앞으로 judgment 접두·메모 조립을 순서대로 붙여 나갈 자리다. 지금은
+    임대 확인(잠금 A) → 잠금 밖에서 서버 재확인(네트워크, SNS 호스트는 건너뜀)
+    → 임대 재확인·중복·상한 확인·생성(잠금 B) 순서로 처리한다. 재확인이
+    네트워크를 타 오래 걸릴 수 있어 그 동안 실행 행 잠금을 쥐지 않는다."""
     cleaned, stage = parse_agent_draft_payload(payload=payload)
     fields = cleaned["fields"]
 
     with transaction.atomic():
+        locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
+
+    hostname = urlsplit(cleaned["source_url"]).hostname
+    if hostname not in SNS_HOSTNAMES:
+        validate_fetch_url(cleaned["source_url"])
+        RobotsChecker().check(cleaned["source_url"])
+        fetch_html(cleaned["source_url"])
+
+    with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
+        renew_lease(run=run)
 
         existing = EventDraft.objects.filter(source_url=cleaned["source_url"]).first()
         if existing is not None:
