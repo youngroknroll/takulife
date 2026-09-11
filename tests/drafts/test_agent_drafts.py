@@ -2,7 +2,7 @@
 schema 검증 unit 테스트. 페이로드는 §E 계약(계획서 290~292행의 v2 계약 +
 트랙 30 추가 4필드 platform·judgment·official_basis·source_name)을 따른다.
 이 파일은 IG-01부터 순차로 계약을 쌓는다."""
-from datetime import timedelta
+from datetime import date, timedelta
 
 import pytest
 from django.utils import timezone
@@ -159,6 +159,15 @@ def test_시작일이_종료일보다_늦으면_두_날짜가_비워지고_메�
     assert "기간 역전" in cleaned["note"]
 
 
+def _make_claimed_run():
+    return SourceDiscoveryRun.objects.create(
+        status=SourceDiscoveryRun.Status.CLAIMED,
+        lease_token="tok",
+        lease_expires_at=timezone.now() + timedelta(seconds=900),
+        lease_count=1,
+    )
+
+
 def _make_pending_run():
     return SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
 
@@ -187,3 +196,50 @@ def test_임대가_없거나_만료된_실행으로의_제출은_거부된다(ma
         submit_agent_draft(run_id=run.pk, lease_token="아무값", payload=payload)
 
     assert EventDraft.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM추출_표시를_가진_검토대기_드래프트가_생성된다():
+    run = _make_claimed_run()
+    payload = {
+        "source_url": "https://official-site.example.com/event",
+        "raw_title": "무제 팝업 안내",
+        "raw_text": "원문 캡션...",
+        "platform": "web",
+        "judgment": "official",
+        "official_basis": "공식 홈페이지 명시",
+        "source_name": "공식 홈페이지",
+        "fields": {
+            "title": "하츠네 미쿠 팝업스토어",
+            "work_title": "하츠네 미쿠",
+            "category": "popup_store",
+            "region": "seoul",
+            "location_name": "용산 아이파크몰",
+            "start_date": "2026-09-01",
+            "end_date": "2026-09-22",
+            "summary": "요약",
+        },
+        "confidence": 0.9,
+        "note": "",
+    }
+
+    submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert EventDraft.objects.count() == 1
+    draft = EventDraft.objects.get()
+    assert draft.review_status == EventDraft.ReviewStatus.PENDING
+    assert draft.source_name == "공식 홈페이지"
+    assert draft.raw_title == "무제 팝업 안내"
+    assert draft.raw_text == "원문 캡션..."
+    # "승인 가능" 조건: 제목·공식 URL·카테고리·지역·장소명이 비어 있지 않아야 한다.
+    assert draft.extracted_title == "하츠네 미쿠 팝업스토어"
+    assert draft.extracted_category == "popup_store"
+    assert draft.extracted_region == "seoul"
+    assert draft.extracted_location_name == "용산 아이파크몰"
+    assert draft.extracted_start_date == date(2026, 9, 1)
+    assert draft.extracted_end_date == date(2026, 9, 22)
+    assert draft.confidence == 0.9
+    assert draft.extraction_method == EventDraft.ExtractionMethod.LLM
+    assert draft.intake_note == ""
+    assert draft.discovery_run == run

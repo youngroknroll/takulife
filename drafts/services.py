@@ -215,6 +215,14 @@ def create_draft_from_fields(
     region="",
     summary="",
     origin=EventDraft.Origin.COLLECTED,
+    raw_title="",
+    raw_text="",
+    start_date=None,
+    end_date=None,
+    confidence=None,
+    extraction_method=EventDraft.ExtractionMethod.HEURISTIC,
+    intake_note="",
+    discovery_run=None,
 ):
     """fetch 없이 호출자가 준 필드로 바로 PENDING 드래프트를 만든다. 사용자가 비공식
     으로 등록한 항목을 공식 제보하는 등, 이미 가진 데이터로 검수 파이프라인에 넣을
@@ -222,6 +230,9 @@ def create_draft_from_fields(
     이벤트의 official_url이 된다. 필드는 관리자가 검수·수정하는 것과 같은
     extracted_* 자리에 들어가므로 게시 전에 자유 텍스트 category/region을 고칠 수
     있다. origin은 호출자가 지정한다(제보 경로만 user_report).
+    raw_title·raw_text·start_date·end_date·confidence·extraction_method·intake_note·
+    discovery_run은 로컬 러너가 해석한 행사 필드를 그대로 저장하는 경로(키워드 탐색
+    제출)가 생기면서 추가됐다.
     """
     try:
         with transaction.atomic():
@@ -236,6 +247,14 @@ def create_draft_from_fields(
                 extracted_summary=summary,
                 review_status=EventDraft.ReviewStatus.PENDING,
                 origin=origin,
+                raw_title=raw_title,
+                raw_text=raw_text,
+                extracted_start_date=start_date,
+                extracted_end_date=end_date,
+                confidence=confidence,
+                extraction_method=extraction_method,
+                intake_note=intake_note,
+                discovery_run=discovery_run,
             )
     except IntegrityError as exc:
         raise DraftCreationDuplicateError from exc
