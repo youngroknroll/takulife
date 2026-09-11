@@ -106,3 +106,49 @@ def test_어휘_밖_카테고리와_지역은_빈_값으로_바뀌고_메모에_
         assert cleaned["fields"]["region"] == ""
         assert "지역 값 불일치" in cleaned["note"]
         assert "제주" in cleaned["note"]
+
+
+def _payload_confidence_상한_초과():
+    payload = _valid_payload()
+    payload["confidence"] = 1.5
+    return payload
+
+
+def _payload_confidence_하한_미만():
+    payload = _valid_payload()
+    payload["confidence"] = -0.1
+    return payload
+
+
+def _payload_confidence_타입_위반():
+    payload = _valid_payload()
+    payload["confidence"] = "높음"
+    return payload
+
+
+@pytest.mark.parametrize(
+    "make_payload",
+    [_payload_confidence_상한_초과, _payload_confidence_하한_미만, _payload_confidence_타입_위반],
+    ids=["상한_초과", "하한_미만", "타입_위반"],
+)
+def test_범위_밖이거나_숫자가_아닌_confidence는_null로_비워지고_메모에_사유가_남는다(make_payload):
+    payload = make_payload()
+
+    cleaned, stage = parse_agent_draft_payload(payload=payload)
+
+    assert stage is None
+    assert cleaned["confidence"] is None
+    assert "confidence 값 불일치" in cleaned["note"]
+
+
+def test_시작일이_종료일보다_늦으면_두_날짜가_비워지고_메모에_사유가_남는다():
+    payload = _valid_payload()
+    payload["fields"]["start_date"] = "2026-09-20"
+    payload["fields"]["end_date"] = "2026-09-01"
+
+    cleaned, stage = parse_agent_draft_payload(payload=payload)
+
+    assert stage is None
+    assert cleaned["fields"]["start_date"] is None
+    assert cleaned["fields"]["end_date"] is None
+    assert "기간 역전" in cleaned["note"]
