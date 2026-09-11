@@ -4,6 +4,7 @@ import socket
 
 import pytest
 
+import local_runner.page_fetch as page_fetch
 from local_runner.page_fetch import fetch_event_text
 from local_runner.url_safety import UnsafeFetchUrlError
 
@@ -135,3 +136,64 @@ def test_일반_웹_페이지_텍스트는_og_title_title_description_본문_순
     headers = captured["headers"]
     assert headers is not None
     assert "Mozilla" in headers.get("User-Agent", "")
+
+
+def _정상_추출():
+    # 실측 표본(Dck7ZVUoG4i, 2026-09-11)의 형태를 그대로 쓴다. &amp;amp;는
+    # 실제 관측되는 이중 이스케이프를 흉내낸다 — bs4가 속성값을 한 번 풀면
+    # "&amp;"(글자 그대로)가 남고, 캡션 분리 함수가 한 번 더 풀어야 "&"가 된다.
+    og_description_html_source = (
+        '<html><head><meta property="og:description" '
+        'content="1,768 likes, 9 comments - webtoonfriends on August 28, 2026: '
+        "&quot;🥀 〈시든 꽃에 눈물을〉 팝업스토어 &amp;amp; 〈태하의 방〉 D-1\n\n"
+        "드디어 내일, 〈태하의 방〉 팝업스토어 OPEN.\n신상품 MD부터 ... "
+        '#웹툰프렌즈 #시든꽃에눈물을 #태하의방 #네이버웹툰 #팝업스토어&quot;. "></head>'
+        "<body></body></html>"
+    )
+    expected = (
+        "🥀 〈시든 꽃에 눈물을〉 팝업스토어 & 〈태하의 방〉 D-1\n\n"
+        "드디어 내일, 〈태하의 방〉 팝업스토어 OPEN.\n신상품 MD부터 ... "
+        "#웹툰프렌즈 #시든꽃에눈물을 #태하의방 #네이버웹툰 #팝업스토어"
+    )
+    return og_description_html_source, expected
+
+
+def _접두_형태_불일치():
+    html = (
+        '<html><head><meta property="og:description" '
+        'content="이 페이지를 사용할 수 없습니다."></head><body></body></html>'
+    )
+    return html, None
+
+
+@pytest.mark.parametrize(
+    "make_case",
+    [_정상_추출, _접두_형태_불일치],
+    ids=["정상_추출", "접두_형태_불일치"],
+)
+def test_og_description에서_좋아요_댓글_계정_날짜_접두와_닫는_인용부호_접미를_떼고_개행은_보존하며_접두가_안_맞으면_건너뛴다(
+    make_case, monkeypatch
+):
+    html, expected = make_case()
+    captured = {}
+
+    def fake_get(url, **kwargs):
+        captured["headers"] = kwargs.get("headers")
+        return _FakeResponse(html)
+
+    monkeypatch.setattr("local_runner.page_fetch.httpx.get", fake_get)
+
+    result = page_fetch._fetch_instagram_caption(
+        "https://www.instagram.com/p/Dck7ZVUoG4i/"
+    )
+
+    assert result == expected
+
+    headers = captured["headers"]
+    assert headers is not None
+    user_agent = headers.get("User-Agent", "")
+    # 러너 자체 식별 UA를 쓴다 — 데스크톱 브라우저 UA는 이 메타 태그 자체가
+    # 안 나온다(실측). 서버의 자기 식별 관례(drafts/fetching.py의
+    # USER_AGENT = "TakuLifeBot/1.0")와 같은 결로 맞춘다.
+    assert "Mozilla" not in user_agent
+    assert "TakuLife" in user_agent

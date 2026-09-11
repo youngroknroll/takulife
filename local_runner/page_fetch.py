@@ -1,5 +1,7 @@
 """이벤트 URL을 실제로 읽어오는 결정론적 읽기 단계다. 모델을 쓰지 않는다 —
 호스트만 보고 인스타·X 캡션 경로와 일반 웹 경로 중 하나로 그대로 분기한다."""
+import html
+import re
 import socket
 from urllib.parse import urlsplit
 
@@ -30,6 +32,21 @@ _GENERAL_WEB_USER_AGENT = (
     "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 )
 
+# 인스타는 브라우저 UA를 쓰면 og:description 메타 태그 자체가 안 나온다(실측
+# 2026-09-11). 러너 자체 식별 UA를 쓴다 — 서버의 자기 식별 관례
+# (drafts/fetching.py의 USER_AGENT = "TakuLifeBot/1.0")와 같은 결로 맞춘다.
+_CAPTION_USER_AGENT = "TakuLifeRunner/1.0"
+
+# 좋아요·댓글 수(천 단위 쉼표 허용)·계정명·영문 월 날짜 접두. 계정명에는
+# 공백이 있을 수 있어 비탐욕 매치로 " on "까지만 잡는다. 본문에 개행이 있어도
+# 접두 자체(줄바꿈 없는 한 줄)만 매치하면 되므로 DOTALL은 필요 없다.
+_CAPTION_PREFIX_RE = re.compile(
+    r'^[\d,]+\s+likes,\s+[\d,]+\s+comments\s+-\s+.+?\s+on\s+'
+    r'[A-Za-z]+\s+\d{1,2},\s+\d{4}:\s+"'
+)
+# 접미: 닫는 인용부호 + 마침표 + 문자열 끝까지의 공백(있으면).
+_CAPTION_SUFFIX_RE = re.compile(r'"\.\s*$')
+
 
 class ResponseTooLargeError(Exception):
     pass
@@ -40,8 +57,32 @@ class EmptyExtractionError(Exception):
 
 
 def _fetch_instagram_caption(url):
-    # 다음 사이클: 인스타/X 게시물 페이지를 httpx로 가져와 캡션만 분리한다.
-    pass
+    response = httpx.get(
+        url,
+        timeout=_GENERAL_WEB_TIMEOUT_SECONDS,
+        headers={"User-Agent": _CAPTION_USER_AGENT},
+    )
+    soup = BeautifulSoup(response.text, "html.parser")
+    tag = soup.find("meta", attrs={"property": "og:description"})
+    if tag is None:
+        return None
+
+    content = html.unescape(tag.get("content") or "")
+
+    prefix_match = _CAPTION_PREFIX_RE.match(content)
+    if prefix_match is None:
+        # 접두 형태가 안 맞으면 원문을 그대로 넘기지 않는다 — 좋아요 수·게시일이
+        # 캡션 본문과 섞여 해석 단계가 게시일을 행사 시작일로 오인할 수 있다.
+        # 이 게시물만 건너뛰고 다음 실행에서 재시도한다.
+        return None
+
+    body = content[prefix_match.end() :]
+    suffix_match = _CAPTION_SUFFIX_RE.search(body)
+    if suffix_match is not None:
+        body = body[: suffix_match.start()]
+
+    # 개행·공백은 건드리지 않는다 — 해석 단계가 줄 구조를 단서로 쓴다.
+    return body
 
 
 def _parse_raw_fields(html):
