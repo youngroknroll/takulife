@@ -13,6 +13,8 @@ HEARTBEAT_URL = "/api/discovery/runner/heartbeat/"
 CLAIM_URL = "/api/discovery/runner/claim/"
 CANDIDATES_URL = "/api/discovery/runner/runs/1/candidates/"
 COMPLETE_URL = "/api/discovery/runner/runs/1/complete/"
+DRAFTS_URL = "/api/discovery/runner/runs/1/drafts/"
+KNOWN_URL = "/api/discovery/runner/drafts/known/"
 
 _RUNNER_TOKEN = "runner-secret"
 
@@ -31,8 +33,8 @@ def _candidates_url(run_id):
 def _complete_url(run_id):
     return f"/api/discovery/runner/runs/{run_id}/complete/"
 
-_ENDPOINTS = [HEARTBEAT_URL, CLAIM_URL, CANDIDATES_URL, COMPLETE_URL]
-_ENDPOINT_IDS = ["하트비트", "클레임", "후보제출", "완료"]
+_ENDPOINTS = [HEARTBEAT_URL, CLAIM_URL, CANDIDATES_URL, COMPLETE_URL, DRAFTS_URL, KNOWN_URL]
+_ENDPOINT_IDS = ["하트비트", "클레임", "후보제출", "완료", "이벤트제출", "알려진URL필터"]
 
 
 @pytest.mark.parametrize("url", _ENDPOINTS, ids=_ENDPOINT_IDS)
