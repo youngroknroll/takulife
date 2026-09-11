@@ -133,3 +133,28 @@ def test_검색어_없이_탐색을_요청하면_실행이_만들어지지_않�
     assert any("검색어를 입력하세요." in m for m in messages)
     assert SourceDiscoveryRun.objects.count() == 0
     assert not StaffActionLog.objects.filter(action=StaffActionLog.Action.SOURCE_DISCOVER).exists()
+
+
+@pytest.mark.django_db
+def test_검색어를_넣어_요청하면_실행에_검색어가_저장되고_성공_메시지에_이스케이프되어_반영된다(staff_client):
+    record_heartbeat(provider="claude-code")
+    staff, client = staff_client()
+    raw_query = "하츠네 <미쿠>"
+
+    resp = client.post(_request_url(), {"query": raw_query}, follow=True)
+
+    assert resp.status_code == 200
+    assert resp.redirect_chain[-1][0] == "/staff/dashboard/"
+
+    # 저장은 원문 그대로다 — 이스케이프는 화면에 그릴 때 일어나는 일이지
+    # 저장 시점의 일이 아니다.
+    run = SourceDiscoveryRun.objects.get()
+    assert run.query == raw_query
+
+    content = resp.content.decode("utf-8")
+    assert "하츠네 &lt;미쿠&gt;" in content
+    assert raw_query not in content
+
+    # StaffActionLog에는 자유 텍스트 검색어를 담을 필드가 없다(actor·ip·
+    # user_agent·action·target_draft/event/user뿐) — 생성 여부만 확인한다.
+    assert StaffActionLog.objects.filter(action=StaffActionLog.Action.SOURCE_DISCOVER).exists()

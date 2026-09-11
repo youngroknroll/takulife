@@ -61,7 +61,7 @@ def staff_source_discovery_request(request):
         return redirect("staff:dashboard")
 
     try:
-        create_run(requested_by=request.user)
+        create_run(requested_by=request.user, query=query)
     except RunnerOfflineError:
         messages.info(
             request,
@@ -75,6 +75,6 @@ def staff_source_discovery_request(request):
     StaffActionLog.objects.create(
         **_action_log_kwargs(_staff_action_metadata(request), StaffActionLog.Action.SOURCE_DISCOVER)
     )
-    messages.success(request, "새 수집처 탐색 요청을 만들었습니다. 러너가 곧 가져갑니다.")
+    messages.success(request, f"'{query}' 탐색 요청을 만들었습니다. 러너가 곧 가져갑니다.")
 
     return redirect("staff:dashboard")

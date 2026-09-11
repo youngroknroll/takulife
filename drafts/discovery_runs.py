@@ -49,7 +49,7 @@ def record_heartbeat(*, provider):
     )
 
 
-def create_run(*, requested_by):
+def create_run(*, requested_by, query=""):
     # 동시 요청 2건이 활성 검사~생성 사이에 끼어들어 pending 두 건을 만드는
     # 경쟁을 막는다 — heartbeat 단일 행(pk=1)을 잠가 자연스러운 직렬화
     # 지점으로 삼는다.
@@ -64,7 +64,7 @@ def create_run(*, requested_by):
         if SourceDiscoveryRun.objects.filter(status__in=active_statuses).exists():
             raise DiscoveryRunActiveError
 
-        return SourceDiscoveryRun.objects.create(requested_by=requested_by)
+        return SourceDiscoveryRun.objects.create(requested_by=requested_by, query=query)
 
 
 def claim(*, provider):
