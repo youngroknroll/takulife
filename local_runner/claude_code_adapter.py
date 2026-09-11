@@ -77,6 +77,10 @@ JSON 객체 하나만 출력하라: {{"candidates": [...]}}
 def _execute_claude(prompt):
     # --tools로 도구 집합 자체를 웹 탐색 2종으로 제한하고, 대화형 프롬프트
     # 대기가 없도록 권한 모드를 바꾼다. 이 CLI 버전엔 --max-turns가 없다.
+    # --tools만으로는 이 맥에 깔린 MCP 플러그인 도구(브라우저 제어 등)가 그대로
+    # 열려 있어, 확인 절차를 끄는 권한 모드와 겹치면 에이전트가 읽는 페이지에
+    # 심어진 지시문에 그대로 넘어갈 수 있다. --strict-mcp-config로 MCP 도구
+    # 자체를 꺼서 막는다.
     try:
         completed = subprocess.run(
             [
@@ -87,6 +91,7 @@ def _execute_claude(prompt):
                 "json",
                 "--tools",
                 "WebSearch,WebFetch",
+                "--strict-mcp-config",
                 "--permission-mode",
                 "bypassPermissions",
             ],
