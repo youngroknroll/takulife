@@ -3,11 +3,14 @@
 감싸는지 검증한다. 공식 여부 판별은 탐색 프롬프트(build_exploration_prompt)
 에서 빠지고 이 프롬프트로 옮겨왔다 — 탐색은 페이지를 못 열지만 해석은
 읽기 단계가 가져온 본문을 보기 때문이다."""
+import json
+
 import pytest
 
 from local_runner.caption_interpreter import (
     _local_precheck,
     build_interpretation_prompt,
+    run_agent_interpretation,
     should_submit,
 )
 
@@ -108,3 +111,39 @@ def test_is_event가_거짓이거나_제목이_빈_해석_결과는_제출_대�
     interpreted = make_interpreted()
 
     assert should_submit(interpreted=interpreted) is expected
+
+
+class _FakeCompletedProcess:
+    def __init__(self):
+        self.returncode = 0
+        self.stdout = json.dumps(
+            {"result": '{"is_event": false, "fields": {}}', "is_error": False}
+        )
+        self.stderr = ""
+
+
+@pytest.mark.contract
+def test_해석_실행은_대역_없이도_도구를_사실상_끄고_MCP를_전부_끈_채_JSON_출력을_요구한다(
+    monkeypatch,
+):
+    # IG-R9에서 놓쳤던 자리다 — 그때는 실행 함수를 직접 불러 인자를 명시했을
+    # 뿐, 아무도 인자를 안 넘겨도 기본 경로가 그 값을 채우는지는 검증하지
+    # 않았다. execute= 대역을 절대 쓰지 않고 subprocess.run만 잡는다.
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        return _FakeCompletedProcess()
+
+    monkeypatch.setattr(
+        "local_runner.claude_code_adapter.subprocess.run", fake_run
+    )
+
+    run_agent_interpretation("해석해줘")
+
+    argv = captured["argv"]
+    tools_index = argv.index("--tools")
+    assert argv[tools_index + 1] == "TodoWrite,TodoWrite"
+    assert "--strict-mcp-config" in argv
+    output_format_index = argv.index("--output-format")
+    assert argv[output_format_index + 1] == "json"
