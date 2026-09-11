@@ -5,6 +5,7 @@ import pytest
 from django.utils import timezone
 
 from drafts.models import DiscoveryRunnerStatus, DraftSource, SourceCandidate, SourceDiscoveryRun
+from drafts.runner_views import RunnerTokenThrottle
 
 
 pytestmark = [pytest.mark.django_db, pytest.mark.web]
@@ -237,3 +238,38 @@ def test_discovery_runner_스로틀_scope가_등록되어_있다(settings):
     rate = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["discovery_runner"]
 
     assert rate.endswith("/minute")
+
+
+def test_러너_스로틀은_X_Forwarded_For_값과_무관하게_한_버킷으로_센다(client, runner_headers, monkeypatch, clear_cache):
+    # THROTTLE_RATES는 임포트 시점에 고정되는 클래스 속성이라 설정만 바꿔서는
+    # 반영되지 않는다 — 클래스 속성 자체를 직접 덮어쓴다.
+    monkeypatch.setattr(
+        RunnerTokenThrottle, "THROTTLE_RATES", {"discovery_runner": "2/minute"}
+    )
+
+    first_response = client.post(
+        HEARTBEAT_URL,
+        data={},
+        content_type="application/json",
+        HTTP_X_FORWARDED_FOR="1.1.1.1",
+        **runner_headers,
+    )
+    second_response = client.post(
+        HEARTBEAT_URL,
+        data={},
+        content_type="application/json",
+        HTTP_X_FORWARDED_FOR="2.2.2.2",
+        **runner_headers,
+    )
+    third_response = client.post(
+        HEARTBEAT_URL,
+        data={},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert first_response.status_code == 204
+    assert second_response.status_code == 204
+    # 세 요청이 서로 다른 X-Forwarded-For(또는 헤더 없음)를 줬는데도 세 번째가
+    # 막힌다는 것이 한 버킷으로 세고 있다는 증거다.
+    assert third_response.status_code == 429
