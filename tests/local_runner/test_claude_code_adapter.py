@@ -131,7 +131,7 @@ def _capture_argv(monkeypatch):
 def test_탐색_실행_명령은_웹_탐색_도구만_허용하고_MCP를_전부_끈다(monkeypatch):
     captured = _capture_argv(monkeypatch)
 
-    _execute_claude("탐색해줘")
+    _execute_claude("탐색해줘", tools="WebSearch,WebFetch", strict_mcp=True)
 
     argv = captured["argv"]
     assert "--strict-mcp-config" in argv
@@ -145,7 +145,7 @@ def test_탐색_실행_명령은_웹_탐색_도구만_허용하고_MCP를_전부
 def test_확인_절차를_끄는_모드를_쓰면_MCP_차단_플래그도_함께_있다(monkeypatch):
     captured = _capture_argv(monkeypatch)
 
-    _execute_claude("탐색해줘")
+    _execute_claude("탐색해줘", tools="WebSearch,WebFetch", strict_mcp=True)
 
     argv = captured["argv"]
     if "--permission-mode" in argv:
@@ -176,3 +176,38 @@ def test_탐색_프롬프트는_검색어와_판별_기준과_출력_스키마�
         assert key in events_block
     assert "judgment" not in events_block
     assert "official_basis" not in events_block
+
+
+@pytest.mark.contract
+def test_캡션_해석_실행_명령은_도구를_사실상_끄고_MCP를_전부_끈_채_JSON_출력을_요구한다(monkeypatch):
+    """--tools는 쉼표로 구분된 유효한 이름이 둘 이상일 때만 실제로 도구를
+    제한한다(실측) — 빈 문자열이나 단일 값은 조용히 무시되어 셸·파일 쓰기를
+    포함한 기본 도구 전체가 열린다. 그래서 해석 단계는 무해한 도구 이름
+    ("TodoWrite")을 일부러 두 번 적어 제약이 실제로 걸리게 한다. 이 중복은
+    실수가 아니다 — 지우면 안 된다."""
+    captured = _capture_argv(monkeypatch)
+
+    _execute_claude("해석해줘", tools="TodoWrite,TodoWrite", strict_mcp=True)
+
+    argv = captured["argv"]
+    tools_index = argv.index("--tools")
+    assert argv[tools_index + 1] == "TodoWrite,TodoWrite"
+    assert "--strict-mcp-config" in argv
+    output_format_index = argv.index("--output-format")
+    assert argv[output_format_index + 1] == "json"
+
+
+@pytest.mark.contract
+def test_대역_없이_탐색을_돌리면_탐색용_도구_인자가_실제로_넘어간다(monkeypatch):
+    """run_agent_exploration이 execute= 대역 없이 기본 경로(_execute_claude)를
+    탈 때도 tools·strict_mcp가 필수 키워드라 타입 오류 없이 호출돼야 한다.
+    execute 자체를 대역으로 갈아끼우지 않고 그 아래 subprocess.run만 잡아,
+    기본 경로가 실제로 탐색용 인자를 넘기는지 확인한다."""
+    captured = _capture_argv(monkeypatch)
+
+    run_agent_exploration("탐색해줘")
+
+    argv = captured["argv"]
+    tools_index = argv.index("--tools")
+    assert argv[tools_index + 1] == "WebSearch,WebFetch"
+    assert "--strict-mcp-config" in argv
