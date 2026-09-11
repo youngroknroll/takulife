@@ -469,3 +469,33 @@ def test_비공식_판단_이벤트에_원본_메모가_있으면_판단_접두_
     expected_prefix = "탐색 판단: 비공식 — 비공식 팬 계정으로 추정됨"
     assert draft.intake_note.startswith(expected_prefix)
     assert draft.intake_note == expected_prefix + "\n원본 메모"
+
+
+@pytest.mark.parametrize(
+    "source_url, expected_url",
+    [
+        (
+            "https://official-site.example.com/event?utm_source=twitter&fbclid=abc123",
+            "https://official-site.example.com/event",
+        ),
+        (
+            "https://official-site.example.com/event?id=123&utm_campaign=fall",
+            "https://official-site.example.com/event?id=123",
+        ),
+        (
+            "https://official-site.example.com/event?id=123&lang=ko",
+            "https://official-site.example.com/event?id=123&lang=ko",
+        ),
+    ],
+    ids=["추적_파라미터만", "의미_있는_쿼리_혼재", "추적_없음"],
+)
+def test_source_url의_알려진_추적_파라미터만_제거되고_그_외_쿼리스트링과_경로는_보존된다(
+    source_url, expected_url
+):
+    payload = _valid_payload()
+    payload["source_url"] = source_url
+
+    cleaned, stage = parse_agent_draft_payload(payload=payload)
+
+    assert stage is None
+    assert cleaned["source_url"] == expected_url

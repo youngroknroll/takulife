@@ -3,7 +3,7 @@
 테스트로 고정한다."""
 import unicodedata
 from datetime import date
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.db import transaction
 
@@ -30,6 +30,15 @@ _REQUIRED_KEYS = (
 )
 
 _MAX_SOURCE_URL_LENGTH = 200
+
+# utm_* 5종은 분석 표준(선례 drafts/discovery.py:79-88 _strip_tracking_params가
+# utm_* 전체를 제거). fbclid·gclid는 광고 클릭 식별자, igshid는 인스타 공유
+# 식별자, ref·ref_src는 X 공유 리퍼러 — 이 트랙이 두 플랫폼을 직접 다루기
+# 때문에 추가한다.
+_TRACKING_QUERY_PARAMS = frozenset({
+    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+    "fbclid", "gclid", "igshid", "ref", "ref_src",
+})
 
 # note에 인용하는 원값이 메모를 부풀리지 않도록 자르는 상한. 계획서가 캡션
 # 인용 상한으로 쓴 80자를 그대로 따른다(§D evidence≤80자 원문 인용).
@@ -131,6 +140,17 @@ def _build_intake_note(*, cleaned):
     return combined[:_MAX_NOTE_LENGTH]
 
 
+def _strip_tracking_params(url):
+    parts = urlsplit(url)
+    kept_params = [
+        (key, value)
+        for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        if key not in _TRACKING_QUERY_PARAMS
+    ]
+    query = urlencode(kept_params)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, query, parts.fragment))
+
+
 def parse_agent_draft_payload(*, payload):
     valid = all(key in payload for key in _REQUIRED_KEYS)
 
@@ -147,6 +167,7 @@ def parse_agent_draft_payload(*, payload):
         cleaned["fields"] = dict(cleaned["fields"])
 
     if valid:
+        cleaned["source_url"] = _strip_tracking_params(cleaned["source_url"])
         note_additions = []
         fields = cleaned["fields"]
         _check_category(fields=fields, note_additions=note_additions)
