@@ -200,13 +200,12 @@ def _준비_discovery_run(make_draft):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "prepare",
-    [_준비_intake_note, _준비_discovery_run],
+    "field_name, prepare",
+    [("intake_note", _준비_intake_note), ("discovery_run", _준비_discovery_run)],
     ids=["intake_note", "discovery_run"],
 )
-def test_수정_요청_본문의_intake_note와_discovery_run은_400으로_거부되고_값이_바뀌지_않는다(admin_client, make_draft, prepare):
+def test_수정_요청_본문의_intake_note와_discovery_run은_400으로_거부되고_값이_바뀌지_않는다(admin_client, make_draft, field_name, prepare):
     draft, patch_body, attr_name, original_value = prepare(make_draft)
-    field_name = "discovery_run" if "discovery_run" in patch_body else "intake_note"
 
     response = admin_client.patch(
         event_draft_detail_url(draft.id),
