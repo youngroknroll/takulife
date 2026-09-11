@@ -2,9 +2,14 @@
 schema 검증 unit 테스트. 페이로드는 §E 계약(계획서 290~292행의 v2 계약 +
 트랙 30 추가 4필드 platform·judgment·official_basis·source_name)을 따른다.
 이 파일은 IG-01부터 순차로 계약을 쌓는다."""
-import pytest
+from datetime import timedelta
 
-from drafts.agent_drafts import parse_agent_draft_payload
+import pytest
+from django.utils import timezone
+
+from drafts.agent_drafts import parse_agent_draft_payload, submit_agent_draft
+from drafts.discovery_runs import LeaseInvalidError
+from drafts.models import EventDraft, SourceDiscoveryRun
 
 
 pytestmark = pytest.mark.unit
@@ -152,3 +157,33 @@ def test_시작일이_종료일보다_늦으면_두_날짜가_비워지고_메�
     assert cleaned["fields"]["start_date"] is None
     assert cleaned["fields"]["end_date"] is None
     assert "기간 역전" in cleaned["note"]
+
+
+def _make_pending_run():
+    return SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
+
+
+def _make_run_with_expired_lease():
+    return SourceDiscoveryRun.objects.create(
+        status=SourceDiscoveryRun.Status.CLAIMED,
+        lease_token="tok",
+        lease_expires_at=timezone.now() - timedelta(seconds=1),
+        lease_count=1,
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "make_run",
+    [_make_pending_run, _make_run_with_expired_lease],
+    ids=["미클레임", "만료"],
+)
+def test_임대가_없거나_만료된_실행으로의_제출은_거부된다(make_run):
+    run = make_run()
+    payload = _valid_payload()
+
+    with pytest.raises(LeaseInvalidError):
+        submit_agent_draft(run_id=run.pk, lease_token="아무값", payload=payload)
+
+    assert EventDraft.objects.count() == 0

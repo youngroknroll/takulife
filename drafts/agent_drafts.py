@@ -4,7 +4,10 @@
 import unicodedata
 from datetime import date
 
+from django.db import transaction
+
 from core.vocab import is_valid_category, is_valid_region
+from drafts.discovery_runs import locked_run_with_valid_lease
 
 _REQUIRED_KEYS = (
     "source_url",
@@ -119,3 +122,10 @@ def parse_agent_draft_payload(*, payload):
             cleaned["note"] = " ".join([cleaned["note"], *note_additions]).strip()
 
     return cleaned, (None if valid else "schema")
+
+
+def submit_agent_draft(*, run_id, lease_token, payload):
+    """앞으로 파싱·중복·상한·재확인·메모 조립을 순서대로 붙여 나갈 자리다.
+    지금은 임대 유효성만 재확인한다."""
+    with transaction.atomic():
+        locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
