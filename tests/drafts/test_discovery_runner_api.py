@@ -112,6 +112,22 @@ def test_claim은_대기_실행이_없으면_run_None을_반환한다(client, ru
     assert response.json() == {"run": None}
 
 
+def test_claim_응답에_실행에_저장된_검색어가_실린다(client, runner_headers):
+    SourceDiscoveryRun.objects.create(
+        status=SourceDiscoveryRun.Status.PENDING, query="하츠네 미쿠"
+    )
+
+    response = client.post(
+        CLAIM_URL,
+        data={"provider": "claude-code"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["run"]["query"] == "하츠네 미쿠"
+
+
 def _make_claimed_run():
     return SourceDiscoveryRun.objects.create(
         status=SourceDiscoveryRun.Status.CLAIMED,

@@ -129,6 +129,8 @@ class SourceDiscoveryRun(models.Model):
         db_index=True,
     )
     provider = models.CharField(max_length=50, blank=True)
+    # 스태프가 넣은 탐색 검색어. 러너가 claim할 때 받아 그대로 탐색에 쓴다.
+    query = models.CharField(max_length=100, blank=True, default="")
     lease_token = models.CharField(max_length=64, blank=True)
     lease_expires_at = models.DateTimeField(null=True, blank=True)
     lease_count = models.PositiveSmallIntegerField(default=0)

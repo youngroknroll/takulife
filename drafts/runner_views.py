@@ -69,6 +69,7 @@ class RunnerClaimView(_RunnerAPIView):
                     "run_id": run.pk,
                     "lease_token": run.lease_token,
                     "lease_expires_at": run.lease_expires_at.isoformat(),
+                    "query": run.query,
                     "max_candidates": MAX_CANDIDATES_PER_RUN,
                     "existing_source_urls": list(
                         DraftSource.objects.values_list("url", flat=True)
