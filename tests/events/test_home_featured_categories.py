@@ -67,14 +67,14 @@ class TestFeaturedCategoryPairs:
 class TestHomeViewCategoryTilesIntegration:
     pytestmark = pytest.mark.web
 
-    def test_HomeConfig_행이_없으면_홈_화면에_전체_6개_카테고리_타일이_어휘_순서대로_노출된다(self):
-        """하위 호환: HomeConfig 행이 없으면 전체 6개 카테고리가 노출된다."""
+    def test_HomeConfig_행이_없으면_홈_화면에_전체_카테고리_타일이_어휘_순서대로_노출된다(self):
+        """하위 호환: HomeConfig 행이 없으면 어휘 전체 카테고리가 노출된다."""
         resp = Client().get("/")
 
         assert resp.status_code == 200
         slugs = [t["slug"] for t in resp.context["category_tiles"]]
         assert slugs == [s for s, _ in CATEGORY]
-        assert len(slugs) == 6
+        assert len(slugs) == len(CATEGORY)
 
     def test_HomeConfig_행이_없고_행사가_없으면_모든_카테고리_타일의_건수가_0이다(self):
         resp = Client().get("/")
