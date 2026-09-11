@@ -54,6 +54,12 @@ def staff_source_discovery_request(request):
         messages.info(request, DISCOVERY_THROTTLE_MESSAGE)
         return redirect("staff:dashboard")
 
+    # 빈도 제한을 먼저 확인한다 — 잘못된 요청을 반복해도 제한이 걸려야 한다.
+    query = request.POST.get("query", "").strip()
+    if not query:
+        messages.error(request, "검색어를 입력하세요.")
+        return redirect("staff:dashboard")
+
     try:
         create_run(requested_by=request.user)
     except RunnerOfflineError:

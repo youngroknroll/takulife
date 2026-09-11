@@ -16,6 +16,9 @@ from staff.models import StaffActionLog
 pytestmark = pytest.mark.web
 
 
+_VALID_QUERY = {"query": "하츠네 미쿠"}
+
+
 def _request_url():
     return reverse("staff:source-discovery-request")
 
@@ -25,7 +28,7 @@ def test_탐색_요청은_스태프_권한과_POST가_필요하고_GET은_대시
     non_staff = make_user()
     client.force_login(non_staff)
 
-    resp = client.post(_request_url())
+    resp = client.post(_request_url(), _VALID_QUERY)
 
     assert resp.status_code == 403
 
@@ -41,7 +44,7 @@ def test_탐색_요청은_스태프_권한과_POST가_필요하고_GET은_대시
 def test_러너가_오프라인이면_탐색_요청이_거부되고_이유_메시지가_남는다(staff_client):
     staff, client = staff_client()
 
-    resp = client.post(_request_url(), follow=True)
+    resp = client.post(_request_url(), _VALID_QUERY, follow=True)
 
     assert resp.status_code == 200
     assert resp.redirect_chain[-1][0] == "/staff/dashboard/"
@@ -57,7 +60,7 @@ def test_활성_실행이_있으면_탐색_요청이_거부된다(staff_client):
     staff, client = staff_client()
     SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
 
-    resp = client.post(_request_url(), follow=True)
+    resp = client.post(_request_url(), _VALID_QUERY, follow=True)
 
     assert resp.status_code == 200
     assert resp.redirect_chain[-1][0] == "/staff/dashboard/"
@@ -72,7 +75,7 @@ def test_온라인이면_탐색_실행이_생성되고_감사로그가_남는다
     record_heartbeat(provider="claude-code")
     staff, client = staff_client()
 
-    resp = client.post(_request_url(), follow=True)
+    resp = client.post(_request_url(), _VALID_QUERY, follow=True)
 
     assert resp.status_code == 200
     assert resp.redirect_chain[-1][0] == "/staff/dashboard/"
@@ -93,7 +96,7 @@ def test_사용자당_분당_10회를_초과한_탐색_요청은_거부되고_�
     staff, client = staff_client()
 
     for _ in range(10):
-        resp = client.post(_request_url(), follow=True)
+        resp = client.post(_request_url(), _VALID_QUERY, follow=True)
         assert resp.status_code == 200
         # 활성 실행 차단이 스로틀 검증을 가리지 않도록, 방금 만든 실행을
         # 바로 종료 상태로 돌려 다음 요청이 "활성 실행 있음"이 아니라
@@ -102,7 +105,7 @@ def test_사용자당_분당_10회를_초과한_탐색_요청은_거부되고_�
         run.status = SourceDiscoveryRun.Status.SUCCEEDED
         run.save(update_fields=["status"])
 
-    resp = client.post(_request_url(), follow=True)
+    resp = client.post(_request_url(), _VALID_QUERY, follow=True)
 
     assert resp.status_code == 200
     assert resp.redirect_chain[-1][0] == "/staff/dashboard/"
@@ -110,3 +113,23 @@ def test_사용자당_분당_10회를_초과한_탐색_요청은_거부되고_�
     assert messages
     assert SourceDiscoveryRun.objects.count() == 10
     assert StaffActionLog.objects.filter(action=StaffActionLog.Action.SOURCE_DISCOVER).count() == 10
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "post_body",
+    [{}, {"query": "   "}],
+    ids=["키_없음", "공백만"],
+)
+def test_검색어_없이_탐색을_요청하면_실행이_만들어지지_않고_안내_메시지가_뜬다(staff_client, post_body):
+    record_heartbeat(provider="claude-code")
+    staff, client = staff_client()
+
+    resp = client.post(_request_url(), post_body, follow=True)
+
+    assert resp.status_code == 200
+    assert resp.redirect_chain[-1][0] == "/staff/dashboard/"
+    messages = [str(m) for m in resp.context["messages"]]
+    assert any("검색어를 입력하세요." in m for m in messages)
+    assert SourceDiscoveryRun.objects.count() == 0
+    assert not StaffActionLog.objects.filter(action=StaffActionLog.Action.SOURCE_DISCOVER).exists()
