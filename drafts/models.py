@@ -71,6 +71,14 @@ class DraftSource(models.Model):
         SITEMAP = "sitemap", "Sitemap"
         HTML = "html", "HTML"
 
+    # 서버가 직접 목록을 가져와 수집하는 유형. 계정형 소스는 개인 맥 러너만 읽으므로
+    # 여기 들어가지 않는다 — 서버 수집 경로가 계정형을 집어 실패하는 일을 막는다.
+    SERVER_COLLECTED_SOURCE_TYPES = (
+        SourceType.RSS,
+        SourceType.SITEMAP,
+        SourceType.HTML,
+    )
+
     name = models.CharField(max_length=100)
     url = models.URLField(unique=True)
     source_type = models.CharField(max_length=20, choices=SourceType.choices)
