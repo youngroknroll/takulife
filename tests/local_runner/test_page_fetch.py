@@ -64,3 +64,74 @@ def test_사설_루프백_링크로컬_IP로_해석되는_이벤트_URL은_러�
         fetch_event_text(url="https://official-site.example.com/event")
 
     assert get_calls == []
+
+
+class _FakeResponse:
+    def __init__(self, html):
+        self.text = html
+
+    def raise_for_status(self):
+        pass
+
+
+def _safe_getaddrinfo(host, port, type=None):
+    # example.com의 실제 공인 IP — 안전 검사를 통과시키는 용도일 뿐 실제
+    # 네트워크를 타지 않는다(httpx.get 자체를 스텁으로 갈아끼운다).
+    return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))]
+
+
+def _og_title_우선():
+    html = (
+        '<html><head><meta property="og:title" content="OG 제목">'
+        "<title>일반 제목</title></head><body>본문</body></html>"
+    )
+    return html, "OG 제목", None
+
+
+def _title_대체():
+    html = "<html><head><title>일반 제목</title></head><body>본문</body></html>"
+    return html, "일반 제목", None
+
+
+def _description_우선():
+    html = (
+        '<html><head><meta name="description" content="설명 요약"></head>'
+        "<body>본문 내용입니다</body></html>"
+    )
+    return html, None, "설명 요약"
+
+
+def _본문_대체():
+    html = "<html><head></head><body>본문 내용입니다</body></html>"
+    return html, None, "본문 내용입니다"
+
+
+@pytest.mark.parametrize(
+    "make_case",
+    [_og_title_우선, _title_대체, _description_우선, _본문_대체],
+    ids=["og_title_우선", "title_대체", "description_우선", "본문_대체"],
+)
+def test_일반_웹_페이지_텍스트는_og_title_title_description_본문_순으로_추출된다(
+    make_case, monkeypatch
+):
+    html, expected_title, expected_text = make_case()
+    captured = {}
+
+    def fake_get(url, **kwargs):
+        captured["headers"] = kwargs.get("headers")
+        return _FakeResponse(html)
+
+    monkeypatch.setattr("local_runner.page_fetch.socket.getaddrinfo", _safe_getaddrinfo)
+    monkeypatch.setattr("local_runner.page_fetch.httpx.get", fake_get)
+
+    result = fetch_event_text(url="https://official-site.example.com/event")
+
+    if expected_title is not None:
+        assert result["raw_title"] == expected_title
+    if expected_text is not None:
+        assert result["raw_text"] == expected_text
+
+    # 일반 웹은 브라우저 UA를 쓴다 — 인스타 경로만 예외다.
+    headers = captured["headers"]
+    assert headers is not None
+    assert "Mozilla" in headers.get("User-Agent", "")
