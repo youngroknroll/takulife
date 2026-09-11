@@ -16,7 +16,8 @@ from drafts.discovery_runs import (
     create_run,
     record_heartbeat,
 )
-from drafts.models import DiscoveryRunnerStatus, SourceCandidate, SourceDiscoveryRun
+from drafts.agent_drafts import MAX_EVENTS_PER_RUN
+from drafts.models import DiscoveryRunnerStatus, EventDraft, SourceCandidate, SourceDiscoveryRun
 
 
 pytestmark = [pytest.mark.django_db, pytest.mark.domain]
@@ -302,3 +303,56 @@ def test_잘못된_lease로는_complete가_거부된다():
     run.refresh_from_db()
     assert run.status == SourceDiscoveryRun.Status.CLAIMED
     assert run.finished_at is None
+
+
+def _setup_생성_0건(run):
+    kwargs = {"events_attempted": 3, "events_failed": 3}
+    expected = {
+        "status": SourceDiscoveryRun.Status.FAILED,
+        "events_attempted": 3,
+        "events_failed": 3,
+    }
+    return kwargs, expected
+
+
+def _setup_일부_생성(run):
+    EventDraft.objects.bulk_create(
+        [
+            EventDraft(source_url=f"https://example.com/event-{i}", discovery_run=run)
+            for i in range(2)
+        ]
+    )
+    kwargs = {"events_attempted": 3, "events_failed": 1}
+    expected = {
+        "status": SourceDiscoveryRun.Status.PARTIALLY_FAILED,
+        "events_attempted": 3,
+        "events_failed": 1,
+    }
+    return kwargs, expected
+
+
+def _setup_상한_초과_보고(run):
+    kwargs = {"events_attempted": 999, "events_failed": 999}
+    expected = {
+        "status": SourceDiscoveryRun.Status.FAILED,
+        "events_attempted": MAX_EVENTS_PER_RUN,
+        "events_failed": MAX_EVENTS_PER_RUN,
+    }
+    return kwargs, expected
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [_setup_생성_0건, _setup_일부_생성, _setup_상한_초과_보고],
+    ids=["생성_0건", "일부_생성", "상한_초과_보고"],
+)
+def test_소스_후보_없이_이벤트만_시도한_실행은_생성_0건이면_실패로_일부_생성이면_부분_실패로_완료된다(setup):
+    run = _make_claimed_run()
+    kwargs, expected = setup(run)
+
+    result = complete_run(run_id=run.pk, lease_token="tok", runner_status="succeeded", **kwargs)
+
+    assert result.status == expected["status"]
+    assert result.events_attempted == expected["events_attempted"]
+    assert result.events_failed == expected["events_failed"]
+    assert result.events_failed <= result.events_attempted

@@ -134,6 +134,10 @@ class SourceDiscoveryRun(models.Model):
     lease_token = models.CharField(max_length=64, blank=True)
     lease_expires_at = models.DateTimeField(null=True, blank=True)
     lease_count = models.PositiveSmallIntegerField(default=0)
+    # 러너가 보고한 이벤트 시도·실패 수. 생성 수는 events 역참조로 직접 세므로
+    # 따로 받지 않는다 — 러너 보고를 그대로 믿지 않기 위해서다.
+    events_attempted = models.PositiveSmallIntegerField(default=0)
+    events_failed = models.PositiveSmallIntegerField(default=0)
     # 서버가 정의한 안전 문구만 담는다(후보·응답 원문 보간 금지).
     error_summary = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
