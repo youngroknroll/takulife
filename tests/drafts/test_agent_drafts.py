@@ -430,3 +430,42 @@ def test_일반_웹_URL_제출은_서버가_존재를_재확인하고_인스타_
     if context["fetch_calls"] is not None:
         assert context["fetch_calls"] == [context["source_url"]]
         assert draft.raw_text != "<html></html>"
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "judgment, expected_prefix",
+    [
+        ("unofficial", "탐색 판단: 비공식 — 비공식 팬 계정으로 추정됨"),
+        ("unclear", "탐색 판단: 불명 — 비공식 팬 계정으로 추정됨"),
+    ],
+    ids=["비공식", "불명"],
+)
+def test_비공식_판단_이벤트는_메모_앞머리에_판단과_근거가_붙어_저장된다(
+    judgment, expected_prefix, _neutralize_server_recheck
+):
+    run = _make_claimed_run()
+    payload = _valid_payload_for_submit("https://official-site.example.com/event")
+    payload["judgment"] = judgment
+    payload["official_basis"] = "비공식 팬 계정으로 추정됨"
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert draft.intake_note.startswith(expected_prefix)
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_비공식_판단_이벤트에_원본_메모가_있으면_판단_접두_뒤에_원본이_남는다(_neutralize_server_recheck):
+    run = _make_claimed_run()
+    payload = _valid_payload_for_submit("https://official-site.example.com/event")
+    payload["judgment"] = "unofficial"
+    payload["official_basis"] = "비공식 팬 계정으로 추정됨"
+    payload["note"] = "원본 메모"
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    expected_prefix = "탐색 판단: 비공식 — 비공식 팬 계정으로 추정됨"
+    assert draft.intake_note.startswith(expected_prefix)
+    assert draft.intake_note == expected_prefix + "\n원본 메모"

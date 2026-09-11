@@ -43,6 +43,15 @@ _DATE_REVERSED_NOTE = "기간 역전(시작 {start}, 종료 {end})"
 # 오작동하는 러너가 한 실행에서 이벤트를 무한정 밀어넣는 것을 막는 심층 방어.
 MAX_EVENTS_PER_RUN = 20
 
+# 판단값 → 메모 앞머리 표시 문구. official이거나 목록 밖 값이면 접두를 붙이지 않는다.
+_JUDGMENT_NOTE_PREFIXES = {
+    "unofficial": "탐색 판단: 비공식",
+    "unclear": "탐색 판단: 불명",
+}
+
+# 계획서 페이로드 계약의 note 상한(prompt_plan.md:292 note≤1000)을 그대로 따른다.
+_MAX_NOTE_LENGTH = 1000
+
 
 class EventLimitExceededError(Exception):
     pass
@@ -108,6 +117,18 @@ def _check_date_range(*, fields, note_additions):
         )
         fields["start_date"] = None
         fields["end_date"] = None
+
+
+def _build_intake_note(*, cleaned):
+    prefix_label = _JUDGMENT_NOTE_PREFIXES.get(cleaned.get("judgment"))
+    note = cleaned["note"]
+    if prefix_label is None:
+        return note
+
+    official_basis = _strip_control_chars(value=str(cleaned.get("official_basis", "")))
+    prefix = f"{prefix_label} — {official_basis}"
+    combined = f"{prefix}\n{note}" if note else prefix
+    return combined[:_MAX_NOTE_LENGTH]
 
 
 def parse_agent_draft_payload(*, payload):
@@ -181,7 +202,7 @@ def submit_agent_draft(*, run_id, lease_token, payload):
             end_date=fields.get("end_date"),
             confidence=cleaned["confidence"],
             extraction_method=EventDraft.ExtractionMethod.LLM,
-            intake_note=cleaned["note"],
+            intake_note=_build_intake_note(cleaned=cleaned),
             discovery_run=run,
         )
         return draft, True
