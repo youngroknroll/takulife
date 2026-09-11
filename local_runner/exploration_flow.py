@@ -1,5 +1,6 @@
 """탐색 결과를 받아 읽기·해석·제출로 이어주는 흐름이 여기 붙는다. 지금은
 탐색 출력에서 events·sources를 분리하고 상한까지 잘라내는 순수 함수만 있다."""
+from urllib.parse import urlsplit
 
 # 서버의 실행당 이벤트 상한(drafts.agent_drafts.MAX_EVENTS_PER_RUN)과 같은 값이다.
 EXPLORATION_MAX_EVENTS = 20
@@ -59,20 +60,38 @@ def run_exploration_flow(
         interpret = _default_interpret
 
     from local_runner.caption_interpreter import should_submit
+    from local_runner.page_fetch import BlockedResponseError
 
     urls = [event["url"] for event in events]
     unknown_urls = set(client.known_urls(urls=urls))
 
     events_attempted = 0
     events_failed = 0
+    # 차단 응답은 명확한 신호다 — 같은 호스트를 계속 두드릴 이유가 없어
+    # 첫 차단이 나는 즉시 그 호스트를 실행 내내 건너뛴다.
+    blocked_hosts = set()
 
     for event in events:
         url = event["url"]
         if url not in unknown_urls:
             continue
 
+        hostname = urlsplit(url).hostname
+        if hostname in blocked_hosts:
+            # 같은 호스트가 이미 실행 내 차단 목록에 있다 — 읽기 자체를
+            # 부르지 않는다.
+            events_attempted += 1
+            events_failed += 1
+            continue
+
         events_attempted += 1
-        text = fetch_text(url=url)
+        try:
+            text = fetch_text(url=url)
+        except BlockedResponseError:
+            blocked_hosts.add(hostname)
+            events_failed += 1
+            continue
+
         if text is None:
             events_failed += 1
             continue

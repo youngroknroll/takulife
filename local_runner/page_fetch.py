@@ -60,6 +60,12 @@ class EmptyExtractionError(Exception):
     pass
 
 
+class BlockedResponseError(Exception):
+    def __init__(self, status_code):
+        super().__init__(f"HTTP {status_code}")
+        self.status_code = status_code
+
+
 def _fetch_instagram_caption(url):
     response = httpx.get(
         url,
@@ -129,6 +135,9 @@ def _fetch_general_web(url):
         timeout=_GENERAL_WEB_TIMEOUT_SECONDS,
         headers={"User-Agent": _GENERAL_WEB_USER_AGENT},
     )
+    if response.status_code in (403, 429):
+        raise BlockedResponseError(response.status_code)
+
     # httpx의 .text는 응답 인코딩(모르면 자체 추정, 그래도 없으면 UTF-8)으로
     # 이미 디코딩하고 깨진 바이트는 대체 문자로 넘긴다 — 별도 디코딩이 필요 없다.
     html = response.text

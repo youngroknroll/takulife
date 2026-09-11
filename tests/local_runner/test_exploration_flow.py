@@ -8,6 +8,7 @@ from local_runner.exploration_flow import (
     parse_exploration_output,
     run_exploration_flow,
 )
+from local_runner.page_fetch import BlockedResponseError
 
 
 pytestmark = pytest.mark.unit
@@ -132,3 +133,51 @@ def test_탐색_흐름은_known_필터_후_읽기_해석_제출을_순서대로_
 
     # 반환 요약이 완료 보고에 그대로 실리는 시도·실패 수다.
     assert summary == {"events_attempted": 2, "events_failed": 1}
+
+
+def test_일반_웹_응답이_403이나_429면_그_URL만_건너뛰고_같은_호스트_두_번째부터는_호스트를_건너뛴다():
+    events = [
+        {"url": "https://blocked.example.com/event-1", "platform": "web"},
+        {"url": "https://blocked.example.com/event-2", "platform": "web"},
+        {"url": "https://ok.example.com/event-3", "platform": "web"},
+    ]
+
+    fetch_calls = []
+    interpret_calls = []
+
+    def fake_fetch_text(*, url):
+        fetch_calls.append(url)
+        if url == events[0]["url"]:
+            raise BlockedResponseError(403)
+        if url == events[1]["url"]:
+            # 같은 호스트가 이미 차단됐어야 하므로 이 분기는 절대 타면 안 된다.
+            raise BlockedResponseError(429)
+        return "원문 텍스트"
+
+    def fake_interpret(*, text, url, platform):
+        interpret_calls.append((text, url, platform))
+        return {
+            "source_url": url,
+            "platform": platform,
+            "is_event": True,
+            "fields": {"title": "제목"},
+        }
+
+    client = _FakeClient()
+
+    run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    # 첫째 URL만 실제로 읽기가 호출된다 — 같은 호스트의 둘째는 실행 내내
+    # 건너뛰어야 하므로 아예 호출되지 않는다. 셋째는 다른 호스트라 영향이 없다.
+    assert fetch_calls == [events[0]["url"], events[2]["url"]]
+    assert interpret_calls == [("원문 텍스트", events[2]["url"], "web")]
+    assert len(client.submit_event_calls) == 1
+    assert client.submit_event_calls[0]["source_url"] == events[2]["url"]

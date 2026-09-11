@@ -68,8 +68,9 @@ def test_사설_루프백_링크로컬_IP로_해석되는_이벤트_URL은_러�
 
 
 class _FakeResponse:
-    def __init__(self, html):
+    def __init__(self, html, status_code=200):
         self.text = html
+        self.status_code = status_code
 
     def raise_for_status(self):
         pass
