@@ -154,6 +154,17 @@ def test_범위_밖이거나_숫자가_아닌_confidence는_null로_비워지고
     assert "confidence 값 불일치" in cleaned["note"]
 
 
+@pytest.mark.parametrize("confidence_value", [True, False], ids=["True", "False"])
+def test_bool_신뢰도는_숫자로_취급되지_않고_null로_비워진다(confidence_value):
+    payload = _valid_payload()
+    payload["confidence"] = confidence_value
+
+    cleaned, stage = parse_agent_draft_payload(payload=payload)
+
+    assert cleaned["confidence"] is None
+    assert "confidence 값 불일치" in cleaned["note"]
+
+
 def test_시작일이_종료일보다_늦으면_두_날짜가_비워지고_메모에_사유가_남는다():
     payload = _valid_payload()
     payload["fields"]["start_date"] = "2026-09-20"

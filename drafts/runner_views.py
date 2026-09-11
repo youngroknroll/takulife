@@ -13,6 +13,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from core.errors import error_response
+from core.vocab import CATEGORY, REGION
 from drafts.agent_drafts import (
     AgentDraftSchemaError,
     EventLimitExceededError,
@@ -93,6 +94,13 @@ class RunnerClaimView(_RunnerAPIView):
                     "lease_token": run.lease_token,
                     "lease_expires_at": run.lease_expires_at.isoformat(),
                     "query": run.query,
+                    # 러너는 서버 코드를 임포트하지 않는 별도 프로세스라, 어휘를
+                    # 하드코딩하면 서버에 항목이 늘 때(방금 콘서트가 그랬듯) 조용히
+                    # 어긋난다. 그래서 서버가 어휘를 매 claim마다 직접 내려준다.
+                    "vocab": {
+                        "categories": [slug for slug, _ in CATEGORY],
+                        "regions": [slug for slug, _ in REGION],
+                    },
                     "max_candidates": MAX_CANDIDATES_PER_RUN,
                     "existing_source_urls": list(
                         DraftSource.objects.values_list("url", flat=True)

@@ -4,6 +4,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
+from core.vocab import CATEGORY, REGION
 from drafts.models import DiscoveryRunnerStatus, DraftSource, SourceCandidate, SourceDiscoveryRun
 from drafts.runner_views import RunnerTokenThrottle
 
@@ -101,6 +102,24 @@ def test_claim_응답은_임대_정보와_기존_소스와_제외_호스트를_�
     assert "https://old.example.com/feed" in run["existing_source_urls"]
     assert "x.com" in run["excluded_hostnames"]
     assert "instagram.com" in run["excluded_hostnames"]
+
+
+def test_claim_응답은_카테고리와_지역_어휘_목록을_포함한다(client, runner_headers):
+    SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
+
+    response = client.post(
+        CLAIM_URL,
+        data={"provider": "claude-code"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run = response.json()["run"]
+    assert run["vocab"] == {
+        "categories": [slug for slug, _ in CATEGORY],
+        "regions": [slug for slug, _ in REGION],
+    }
 
 
 def test_claim은_대기_실행이_없으면_run_None을_반환한다(client, runner_headers):
