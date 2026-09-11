@@ -11,6 +11,11 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from core.errors import error_response
+from drafts.agent_drafts import (
+    AgentDraftSchemaError,
+    EventLimitExceededError,
+    submit_agent_draft,
+)
 from drafts.candidate_validation import (
     MAX_CANDIDATES_PER_RUN,
     CandidateLimitExceededError,
@@ -21,6 +26,7 @@ from drafts.candidate_validation import (
 from drafts.discovery import SNS_HOSTNAMES
 from drafts.discovery_runs import claim, complete_run, record_heartbeat
 from drafts.models import DraftSource, SourceDiscoveryRun
+from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 
 
 class IsDiscoveryRunner(BasePermission):
@@ -140,7 +146,28 @@ class RunnerEventDraftSubmitView(_RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request, run_id):
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        data = request.data
+        lease_token = data.get("lease_token")
+        event = data.get("event")
+        if not isinstance(lease_token, str) or not isinstance(event, dict):
+            return error_response("invalid event submission payload", status.HTTP_400_BAD_REQUEST)
+
+        try:
+            draft, created = submit_agent_draft(run_id=run_id, lease_token=lease_token, payload=event)
+        except LeaseInvalidError:
+            return error_response("lease is invalid or expired", status.HTTP_409_CONFLICT)
+        except EventLimitExceededError:
+            return error_response("event limit exceeded for this run", status.HTTP_400_BAD_REQUEST)
+        except AgentDraftSchemaError:
+            return error_response("invalid event submission payload", status.HTTP_400_BAD_REQUEST)
+        except (InvalidFetchUrlError, UnsafeFetchUrlError):
+            return error_response("unsafe URL is not allowed", status.HTTP_400_BAD_REQUEST)
+
+        if created:
+            return Response(
+                {"status": "created", "draft_id": draft.pk}, status=status.HTTP_201_CREATED
+            )
+        return Response({"status": "duplicate", "draft_id": draft.pk})
 
 
 class RunnerKnownDraftUrlsView(_RunnerAPIView):
