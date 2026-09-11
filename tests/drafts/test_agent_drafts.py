@@ -449,8 +449,8 @@ def test_일반_웹_URL_제출은_서버가_존재를_재확인하고_인스타_
 @pytest.mark.parametrize(
     "judgment, expected_prefix",
     [
-        ("unofficial", "탐색 판단: 비공식 — 비공식 팬 계정으로 추정됨"),
-        ("unclear", "탐색 판단: 불명 — 비공식 팬 계정으로 추정됨"),
+        ("unofficial", "판단: 비공식 — 비공식 팬 계정으로 추정됨"),
+        ("unclear", "판단: 불명 — 비공식 팬 계정으로 추정됨"),
     ],
     ids=["비공식", "불명"],
 )
@@ -478,7 +478,7 @@ def test_비공식_판단_이벤트에_원본_메모가_있으면_판단_접두_
 
     draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
 
-    expected_prefix = "탐색 판단: 비공식 — 비공식 팬 계정으로 추정됨"
+    expected_prefix = "판단: 비공식 — 비공식 팬 계정으로 추정됨"
     assert draft.intake_note.startswith(expected_prefix)
     assert draft.intake_note == expected_prefix + "\n원본 메모"
 

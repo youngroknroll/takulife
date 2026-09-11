@@ -53,9 +53,10 @@ _DATE_REVERSED_NOTE = "기간 역전(시작 {start}, 종료 {end})"
 MAX_EVENTS_PER_RUN = 20
 
 # 판단값 → 메모 앞머리 표시 문구. official이거나 목록 밖 값이면 접두를 붙이지 않는다.
+# "탐색"을 붙이지 않는다 — 공식 여부 판단은 본문을 보는 해석 단계가 정한다.
 _JUDGMENT_NOTE_PREFIXES = {
-    "unofficial": "탐색 판단: 비공식",
-    "unclear": "탐색 판단: 불명",
+    "unofficial": "판단: 비공식",
+    "unclear": "판단: 불명",
 }
 
 # 계획서 페이로드 계약의 note 상한(prompt_plan.md:292 note≤1000)을 그대로 따른다.
