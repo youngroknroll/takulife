@@ -1,6 +1,7 @@
 """도구 없는 해석 단계다. 읽기 단계가 가져온 텍스트를 데이터로만 넘기고,
 공식 여부 판별과 행사 필드 추출을 모델에 맡긴다. Django·서버 도메인 모듈은
 임포트하지 않는다."""
+from datetime import date
 
 
 def build_interpretation_prompt(*, vocab, today, recent_drafts, text, platform):
@@ -66,3 +67,43 @@ official_basis에는 그 판단의 근거가 된, 본문에 실제로 있는 문
   "note": "<=1000자, 근거 인용·미해결 사유"
 }}
 """
+
+
+def _local_precheck(*, interpreted, source_text, vocab):
+    """서버가 어차피 같은 어휘·기간 검사를 다시 하므로 이 함수는 서버 재검증을
+    대체하지 않는 앞단 필터일 뿐이다. 다만 장소명이 실제로 읽은 원문에 있는지
+    확인하는 원문 대조는 러너만 할 수 있다 — 서버는 원문을 갖고 있지 않아 그
+    값이 왜 나왔는지 재확인할 근거가 없다."""
+    fields = dict(interpreted.get("fields", {}))
+
+    if fields.get("category") not in vocab.get("categories", []):
+        fields["category"] = ""
+    if fields.get("region") not in vocab.get("regions", []):
+        fields["region"] = ""
+
+    start_value = fields.get("start_date")
+    end_value = fields.get("end_date")
+    if start_value and end_value:
+        try:
+            start_ok = date.fromisoformat(start_value) <= date.fromisoformat(end_value)
+        except (TypeError, ValueError):
+            start_ok = True
+        if not start_ok:
+            fields["start_date"] = None
+            fields["end_date"] = None
+
+    location_name = fields.get("location_name") or ""
+    if location_name and location_name not in source_text:
+        fields["location_name"] = ""
+
+    result = dict(interpreted)
+    result["fields"] = fields
+    return result
+
+
+def should_submit(*, interpreted):
+    if not interpreted.get("is_event"):
+        return False
+    # 제목 없는 드래프트는 승인 게이트를 영원히 못 넘고 검수 큐에만 쌓인다.
+    title = interpreted.get("fields", {}).get("title", "")
+    return bool(title.strip())
