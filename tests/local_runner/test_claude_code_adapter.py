@@ -8,6 +8,7 @@ import pytest
 from local_runner.claude_code_adapter import (
     AdapterOutputError,
     _execute_claude,
+    build_exploration_prompt,
     parse_candidates_output,
     parse_json_object,
     run_agent_exploration,
@@ -151,3 +152,27 @@ def test_확인_절차를_끄는_모드를_쓰면_MCP_차단_플래그도_함께
         permission_mode_index = argv.index("--permission-mode")
         if argv[permission_mode_index + 1] == "bypassPermissions":
             assert "--strict-mcp-config" in argv
+
+
+def test_탐색_프롬프트는_검색어와_판별_기준과_출력_스키마를_포함하고_judgment는_해석_단계로_이관되었다():
+    prompt = build_exploration_prompt(query="하츠네 미쿠", max_events=20, max_sources=10)
+
+    assert "<query>하츠네 미쿠</query>" in prompt
+
+    for reason in ["same_name", "fan_made", "ended", "cancelled", "restock_only", "other"]:
+        assert reason in prompt
+
+    # official_basis는 소스 블록(계정형 소스의 공식성 근거)에는 남아 있어야
+    # 하므로 프롬프트 전체가 아니라 이벤트 스키마 설명 블록만 잘라 확인한다.
+    # 계획서 §B 출력 스키마가 `{"events": [...], "sources": [...]}` 순서로
+    # 나열되므로, "events" 표시부터 "sources" 표시 직전까지를 이벤트 블록으로
+    # 본다.
+    events_block_start = prompt.index('"events"')
+    sources_block_start = prompt.index('"sources"')
+    assert events_block_start < sources_block_start
+    events_block = prompt[events_block_start:sources_block_start]
+
+    for key in ["url", "platform", "title_guess", "is_event", "duplicate_urls"]:
+        assert key in events_block
+    assert "judgment" not in events_block
+    assert "official_basis" not in events_block
