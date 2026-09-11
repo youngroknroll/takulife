@@ -66,6 +66,10 @@ class EventLimitExceededError(Exception):
     pass
 
 
+class AgentDraftSchemaError(Exception):
+    pass
+
+
 def _strip_control_chars(*, value):
     return "".join(char for char in value if unicodedata.category(char) != "Cc")
 
@@ -186,6 +190,8 @@ def submit_agent_draft(*, run_id, lease_token, payload):
     → 임대 재확인·중복·상한 확인·생성(잠금 B) 순서로 처리한다. 재확인이
     네트워크를 타 오래 걸릴 수 있어 그 동안 실행 행 잠금을 쥐지 않는다."""
     cleaned, stage = parse_agent_draft_payload(payload=payload)
+    if stage == "schema":
+        raise AgentDraftSchemaError
     fields = cleaned["fields"]
 
     with transaction.atomic():

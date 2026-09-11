@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from drafts.agent_drafts import (
     MAX_EVENTS_PER_RUN,
+    AgentDraftSchemaError,
     EventLimitExceededError,
     parse_agent_draft_payload,
     submit_agent_draft,
@@ -499,3 +500,18 @@ def test_source_url의_알려진_추적_파라미터만_제거되고_그_외_쿼
 
     assert stage is None
     assert cleaned["source_url"] == expected_url
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_스키마_위반_페이로드를_제출하면_AgentDraftSchemaError로_거부되고_아무것도_생성되지_않는다(
+    _neutralize_server_recheck,
+):
+    run = _make_claimed_run()
+    payload = _valid_payload_for_submit("https://official-site.example.com/event")
+    del payload["fields"]
+
+    with pytest.raises(AgentDraftSchemaError):
+        submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert EventDraft.objects.count() == 0
