@@ -79,6 +79,10 @@ class DraftSource(models.Model):
         SourceType.HTML,
     )
 
+    # 계정형: 개인 맥 러너만 읽고 서버는 존재를 알아도 가져오지 않는다. choices에
+    # 아직 없어도 문자열로 먼저 등록해 수집 명령이 조용히 건너뛰게 한다.
+    ACCOUNT_SOURCE_TYPES = ("instagram", "x")
+
     name = models.CharField(max_length=100)
     url = models.URLField(unique=True)
     source_type = models.CharField(max_length=20, choices=SourceType.choices)
