@@ -7,8 +7,13 @@ from datetime import date, timedelta
 import pytest
 from django.utils import timezone
 
-from drafts.agent_drafts import parse_agent_draft_payload, submit_agent_draft
-from drafts.discovery_runs import LeaseInvalidError
+from drafts.agent_drafts import (
+    MAX_EVENTS_PER_RUN,
+    EventLimitExceededError,
+    parse_agent_draft_payload,
+    submit_agent_draft,
+)
+from drafts.discovery_runs import LeaseInvalidError, renew_lease
 from drafts.models import EventDraft, SourceDiscoveryRun
 
 
@@ -292,3 +297,42 @@ def test_같은_이벤트_URL을_다시_제출하면_새_드래프트_없이_기
     assert created is False
     assert draft.pk == existing_draft.pk
     assert EventDraft.objects.count() == 1
+
+
+def _renew_lease_before_submit(run):
+    renew_lease(run=run)
+
+
+def _keep_initial_lease(run):
+    pass
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "before_submit",
+    [_keep_initial_lease, _renew_lease_before_submit],
+    ids=["최초_임대", "재임대_후"],
+)
+def test_실행당_이벤트_상한을_넘는_제출은_거부되고_드래프트가_생성되지_않는다(before_submit):
+    run = _make_claimed_run()
+    EventDraft.objects.bulk_create(
+        [
+            EventDraft(
+                source_url=f"https://existing.example.com/event-{i}",
+                discovery_run=run,
+            )
+            for i in range(MAX_EVENTS_PER_RUN)
+        ]
+    )
+
+    before_submit(run)
+
+    with pytest.raises(EventLimitExceededError):
+        submit_agent_draft(
+            run_id=run.pk,
+            lease_token="tok",
+            payload=_valid_payload_for_submit("https://new.example.com/event"),
+        )
+
+    assert EventDraft.objects.filter(discovery_run=run).count() == MAX_EVENTS_PER_RUN

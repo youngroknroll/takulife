@@ -35,6 +35,13 @@ _REGION_MISMATCH_NOTE = "지역 값 불일치(원값 {value})"
 _CONFIDENCE_MISMATCH_NOTE = "confidence 값 불일치(원값 {value})"
 _DATE_REVERSED_NOTE = "기간 역전(시작 {start}, 종료 {end})"
 
+# 오작동하는 러너가 한 실행에서 이벤트를 무한정 밀어넣는 것을 막는 심층 방어.
+MAX_EVENTS_PER_RUN = 20
+
+
+class EventLimitExceededError(Exception):
+    pass
+
 
 def _strip_control_chars(*, value):
     return "".join(char for char in value if unicodedata.category(char) != "Cc")
@@ -139,6 +146,9 @@ def submit_agent_draft(*, run_id, lease_token, payload):
         existing = EventDraft.objects.filter(source_url=cleaned["source_url"]).first()
         if existing is not None:
             return existing, False
+
+        if run.events.count() >= MAX_EVENTS_PER_RUN:
+            raise EventLimitExceededError
 
         draft = create_draft_from_fields(
             source_url=cleaned["source_url"],
