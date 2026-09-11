@@ -224,8 +224,9 @@ def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM�
         "note": "",
     }
 
-    submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
 
+    assert created is True
     assert EventDraft.objects.count() == 1
     draft = EventDraft.objects.get()
     assert draft.review_status == EventDraft.ReviewStatus.PENDING
@@ -243,3 +244,51 @@ def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM�
     assert draft.extraction_method == EventDraft.ExtractionMethod.LLM
     assert draft.intake_note == ""
     assert draft.discovery_run == run
+
+
+def _valid_payload_for_submit(source_url):
+    payload = {
+        "source_url": source_url,
+        "raw_title": "무제 팝업 안내",
+        "raw_text": "원문 캡션...",
+        "platform": "web",
+        "judgment": "official",
+        "official_basis": "공식 홈페이지 명시",
+        "source_name": "공식 홈페이지",
+        "fields": {
+            "title": "하츠네 미쿠 팝업스토어",
+            "work_title": "하츠네 미쿠",
+            "category": "popup_store",
+            "region": "seoul",
+            "location_name": "용산 아이파크몰",
+            "start_date": "2026-09-01",
+            "end_date": "2026-09-22",
+            "summary": "요약",
+        },
+        "confidence": 0.9,
+        "note": "",
+    }
+    return payload
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize("same_run", [True, False], ids=["같은_실행", "다른_실행"])
+def test_같은_이벤트_URL을_다시_제출하면_새_드래프트_없이_기존_id를_돌려준다(same_run):
+    run_a = _make_claimed_run()
+    source_url = "https://official-site.example.com/event"
+    existing_draft, _ = submit_agent_draft(
+        run_id=run_a.pk, lease_token="tok", payload=_valid_payload_for_submit(source_url)
+    )
+
+    submitting_run = run_a if same_run else _make_claimed_run()
+
+    draft, created = submit_agent_draft(
+        run_id=submitting_run.pk,
+        lease_token="tok",
+        payload=_valid_payload_for_submit(source_url),
+    )
+
+    assert created is False
+    assert draft.pk == existing_draft.pk
+    assert EventDraft.objects.count() == 1

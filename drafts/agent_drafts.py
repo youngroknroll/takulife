@@ -127,29 +127,35 @@ def parse_agent_draft_payload(*, payload):
 
 
 def submit_agent_draft(*, run_id, lease_token, payload):
-    """앞으로 파싱·중복·상한·재확인·메모 조립을 순서대로 붙여 나갈 자리다.
-    지금은 임대 유효성 재확인 후 정정된 페이로드로 드래프트를 생성한다."""
-    with transaction.atomic():
-        run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
-
+    """앞으로 상한·재확인·메모 조립을 순서대로 붙여 나갈 자리다. 지금은 임대
+    유효성 재확인 → 전역 URL 중복 확인 → 정정된 페이로드로 드래프트 생성까지를
+    한 잠금 블록 안에서 처리한다(중복 검사가 잠금 밖에서 일어나면 의미가 없다)."""
     cleaned, stage = parse_agent_draft_payload(payload=payload)
     fields = cleaned["fields"]
 
-    return create_draft_from_fields(
-        source_url=cleaned["source_url"],
-        source_name=cleaned["source_name"],
-        title=fields.get("title", ""),
-        category=fields.get("category", ""),
-        work_title=fields.get("work_title", ""),
-        location_name=fields.get("location_name", ""),
-        region=fields.get("region", ""),
-        summary=fields.get("summary", ""),
-        raw_title=cleaned["raw_title"],
-        raw_text=cleaned["raw_text"],
-        start_date=fields.get("start_date"),
-        end_date=fields.get("end_date"),
-        confidence=cleaned["confidence"],
-        extraction_method=EventDraft.ExtractionMethod.LLM,
-        intake_note=cleaned["note"],
-        discovery_run=run,
-    )
+    with transaction.atomic():
+        run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
+
+        existing = EventDraft.objects.filter(source_url=cleaned["source_url"]).first()
+        if existing is not None:
+            return existing, False
+
+        draft = create_draft_from_fields(
+            source_url=cleaned["source_url"],
+            source_name=cleaned["source_name"],
+            title=fields.get("title", ""),
+            category=fields.get("category", ""),
+            work_title=fields.get("work_title", ""),
+            location_name=fields.get("location_name", ""),
+            region=fields.get("region", ""),
+            summary=fields.get("summary", ""),
+            raw_title=cleaned["raw_title"],
+            raw_text=cleaned["raw_text"],
+            start_date=fields.get("start_date"),
+            end_date=fields.get("end_date"),
+            confidence=cleaned["confidence"],
+            extraction_method=EventDraft.ExtractionMethod.LLM,
+            intake_note=cleaned["note"],
+            discovery_run=run,
+        )
+        return draft, True
