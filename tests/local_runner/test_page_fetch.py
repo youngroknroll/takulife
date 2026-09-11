@@ -5,7 +5,7 @@ import socket
 import pytest
 
 import local_runner.page_fetch as page_fetch
-from local_runner.page_fetch import fetch_event_text
+from local_runner.page_fetch import CAPTION_MAX_LENGTH, fetch_event_text
 from local_runner.url_safety import UnsafeFetchUrlError
 
 
@@ -197,3 +197,25 @@ def test_og_description에서_좋아요_댓글_계정_날짜_접두와_닫는_�
     # USER_AGENT = "TakuLifeBot/1.0")와 같은 결로 맞춘다.
     assert "Mozilla" not in user_agent
     assert "TakuLife" in user_agent
+
+
+def test_상한을_넘는_캡션은_절단되고_절단_표시가_남는다(monkeypatch):
+    long_body = "가" * 6000
+    html_source = (
+        '<html><head><meta property="og:description" '
+        'content="1,000 likes, 2 comments - testaccount on January 1, 2026: &quot;'
+        + long_body
+        + '&quot;. "></head><body></body></html>'
+    )
+
+    def fake_get(url, **kwargs):
+        return _FakeResponse(html_source)
+
+    monkeypatch.setattr("local_runner.page_fetch.httpx.get", fake_get)
+
+    result = page_fetch._fetch_instagram_caption(
+        "https://www.instagram.com/p/Dck7ZVUoG4i/"
+    )
+
+    assert len(result) <= CAPTION_MAX_LENGTH
+    assert result.endswith("…(절단됨)")

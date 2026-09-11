@@ -47,6 +47,10 @@ _CAPTION_PREFIX_RE = re.compile(
 # 접미: 닫는 인용부호 + 마침표 + 문자열 끝까지의 공백(있으면).
 _CAPTION_SUFFIX_RE = re.compile(r'"\.\s*$')
 
+# 계획서가 정한 원문 저장 상한(raw_text≤5,000자)과 같은 값이다.
+CAPTION_MAX_LENGTH = 5000
+_CAPTION_TRUNCATION_MARKER = "…(절단됨)"
+
 
 class ResponseTooLargeError(Exception):
     pass
@@ -80,6 +84,11 @@ def _fetch_instagram_caption(url):
     suffix_match = _CAPTION_SUFFIX_RE.search(body)
     if suffix_match is not None:
         body = body[: suffix_match.start()]
+
+    if len(body) > CAPTION_MAX_LENGTH:
+        # 표시 문구 길이까지 포함해 최종 길이가 상한을 넘지 않게 자른다.
+        cutoff = CAPTION_MAX_LENGTH - len(_CAPTION_TRUNCATION_MARKER)
+        body = body[:cutoff] + _CAPTION_TRUNCATION_MARKER
 
     # 개행·공백은 건드리지 않는다 — 해석 단계가 줄 구조를 단서로 쓴다.
     return body
