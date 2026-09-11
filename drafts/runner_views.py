@@ -25,7 +25,7 @@ from drafts.candidate_validation import (
 )
 from drafts.discovery import SNS_HOSTNAMES
 from drafts.discovery_runs import claim, complete_run, record_heartbeat
-from drafts.models import DraftSource, SourceDiscoveryRun
+from drafts.models import DraftSource, EventDraft, SourceDiscoveryRun
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 
 
@@ -174,4 +174,15 @@ class RunnerKnownDraftUrlsView(_RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request):
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        urls = request.data.get("urls")
+        if not isinstance(urls, list):
+            return error_response("invalid known urls payload", status.HTTP_400_BAD_REQUEST)
+
+        known_urls = set(
+            EventDraft.objects.filter(source_url__in=urls).values_list(
+                "source_url", flat=True
+            )
+        )
+        unknown = [url for url in urls if url not in known_urls]
+
+        return Response({"unknown": unknown})

@@ -25,6 +25,9 @@ def _drafts_url(run_id):
     return f"/api/discovery/runner/runs/{run_id}/drafts/"
 
 
+KNOWN_URL = "/api/discovery/runner/drafts/known/"
+
+
 def _make_claimed_run():
     return SourceDiscoveryRun.objects.create(
         status=SourceDiscoveryRun.Status.CLAIMED,
@@ -167,3 +170,21 @@ def test_이벤트_제출은_생성_중복_스키마_위반_상한_초과_불안
         body = response.json()
         for key, value in expected_body.items():
             assert body[key] == value
+
+
+def test_알려진_URL_필터는_드래프트가_없는_URL만_돌려준다(client, runner_headers, make_draft):
+    url_a = "https://a.example.com/event"
+    url_b = "https://b.example.com/event"
+    url_c = "https://c.example.com/event"
+    make_draft(url_a, review_status=EventDraft.ReviewStatus.PENDING)
+    make_draft(url_b, review_status=EventDraft.ReviewStatus.REJECTED)
+
+    response = client.post(
+        KNOWN_URL,
+        data={"urls": [url_a, url_b, url_c]},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["unknown"] == [url_c]
