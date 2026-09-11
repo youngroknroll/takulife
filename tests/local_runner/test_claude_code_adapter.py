@@ -9,6 +9,7 @@ from local_runner.claude_code_adapter import (
     AdapterOutputError,
     _execute_claude,
     parse_candidates_output,
+    parse_json_object,
     run_agent_exploration,
 )
 
@@ -47,6 +48,34 @@ def test_JSON을_전혀_복구할_수_없으면_실패를_보고한다():
 def test_candidates_키가_없거나_리스트가_아니면_실패를_보고한다():
     with pytest.raises(AdapterOutputError):
         parse_candidates_output('{"candidates": "문자열"}')
+
+
+def _단일_객체_순수_JSON():
+    return '{"is_event": true, "title": "코믹월드"}'
+
+
+def _단일_객체_코드펜스_감싼_JSON():
+    return '앞 설명\n```json\n{"is_event": true, "title": "코믹월드"}\n```\n뒤 설명'
+
+
+def _단일_객체_앞뒤_설명_텍스트():
+    return '이건 결과입니다: {"is_event": true, "title": "코믹월드"} 이상입니다.'
+
+
+@pytest.mark.parametrize(
+    "make_output",
+    [_단일_객체_순수_JSON, _단일_객체_코드펜스_감싼_JSON, _단일_객체_앞뒤_설명_텍스트],
+    ids=["순수_JSON", "코드펜스_감싼_JSON", "앞뒤_설명_텍스트"],
+)
+def test_어댑터_JSON_복구는_후보_목록과_단일_객체_모두에_같은_복구_순서를_적용한다(make_output):
+    result = parse_json_object(make_output())
+
+    assert result == {"is_event": True, "title": "코믹월드"}
+
+
+def test_단일_객체_JSON을_전혀_복구할_수_없으면_실패를_보고한다():
+    with pytest.raises(AdapterOutputError):
+        parse_json_object("JSON 없음 텍스트")
 
 
 def test_어댑터의_보정_재시도는_1회만_일어난다():

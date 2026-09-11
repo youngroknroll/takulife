@@ -23,7 +23,7 @@ def _extract_candidates(data):
     return candidates
 
 
-def parse_candidates_output(text):
+def parse_json_object(text):
     # ①원문 그대로 ②코드펜스 제거 ③첫 "{"부터 마지막 "}"까지, 순서대로 시도한다.
     attempts = [text]
 
@@ -42,9 +42,14 @@ def parse_candidates_output(text):
         except (json.JSONDecodeError, TypeError):
             continue
         if isinstance(data, dict):
-            return _extract_candidates(data)
+            return data
 
     raise AdapterOutputError("could not recover JSON from adapter output")
+
+
+def parse_candidates_output(text):
+    data = parse_json_object(text)
+    return _extract_candidates(data)
 
 
 def build_prompt(*, existing_source_urls, excluded_hostnames, max_candidates):
