@@ -128,6 +128,27 @@ def test_후보_payload의_타입_길이_source_type_위반은_schema_단계_실
 
 @pytest.mark.django_db
 @pytest.mark.domain
+def test_에이전트_소스_후보의_instagram_유형은_schema_단계에서_격리된다(monkeypatch):
+    """이 테스트가 지키는 것은 instagram이 정식 유형이 된 뒤에도 목록형 등록
+    게이트를 넘지 못한다는 것이다. 지금은 DraftSource.SourceType에 instagram이
+    아예 없어 schema 단계에서 이미 거부되므로 통과하지만, 나중에 선택지로
+    추가되는 순간 이 테스트가 실패로 바뀌어 등록 게이트를 다시 막으라고
+    알려준다."""
+    _patch_safe_fetch_url(monkeypatch)
+    _patch_allow_all_robots(monkeypatch)
+    run = _make_claimed_run()
+    payload = _valid_payload()
+    payload["source_type"] = "instagram"
+
+    candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert candidate.status == SourceCandidate.Status.FAILED
+    assert candidate.failure_stage == SourceCandidate.FailureStage.SCHEMA
+    assert DraftSource.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
 def test_기존_DraftSource와_중복된_URL_후보는_duplicate_단계_실패로_격리된다():
     payload = _valid_payload()
     run = _make_claimed_run()

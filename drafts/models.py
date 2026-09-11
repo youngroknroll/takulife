@@ -70,6 +70,8 @@ class DraftSource(models.Model):
         RSS = "rss", "RSS"
         SITEMAP = "sitemap", "Sitemap"
         HTML = "html", "HTML"
+        INSTAGRAM = "instagram", "Instagram"
+        X = "x", "X"
 
     # 서버가 직접 목록을 가져와 수집하는 유형. 계정형 소스는 개인 맥 러너만 읽으므로
     # 여기 들어가지 않는다 — 서버 수집 경로가 계정형을 집어 실패하는 일을 막는다.
@@ -79,9 +81,8 @@ class DraftSource(models.Model):
         SourceType.HTML,
     )
 
-    # 계정형: 개인 맥 러너만 읽고 서버는 존재를 알아도 가져오지 않는다. choices에
-    # 아직 없어도 문자열로 먼저 등록해 수집 명령이 조용히 건너뛰게 한다.
-    ACCOUNT_SOURCE_TYPES = ("instagram", "x")
+    # 계정형: 개인 맥 러너만 읽고 서버는 존재를 알아도 가져오지 않는다.
+    ACCOUNT_SOURCE_TYPES = (SourceType.INSTAGRAM, SourceType.X)
 
     name = models.CharField(max_length=100)
     url = models.URLField(unique=True)

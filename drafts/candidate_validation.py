@@ -77,8 +77,13 @@ def validate_payload(*, payload):
     official_basis = _string_field("official_basis")
     note = _string_field("note")
 
+    # 여기는 새 후보를 등록할지 정하는 사전 승인 게이트라, 서버가 직접
+    # 목록형으로 수집하는 3종 외에는 전부 거부해야 한다.
     source_type = payload.get("source_type", "")
-    if not isinstance(source_type, str) or source_type not in DraftSource.SourceType.values:
+    if (
+        not isinstance(source_type, str)
+        or source_type not in DraftSource.SERVER_COLLECTED_SOURCE_TYPES
+    ):
         valid = False
         source_type = ""
 
