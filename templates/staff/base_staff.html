@@ -56,7 +56,7 @@
 
     <div class="staff-shell-content">
       {% if messages %}
-        <ul class="staff-messages">
+        <ul class="staff-messages" role="status">
           {% for message in messages %}
             <li class="staff-message staff-message-{% if message.tags == 'error' or message.tags == 'warning' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}">{{ message }}</li>
           {% endfor %}

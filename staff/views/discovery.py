@@ -13,10 +13,14 @@ from django.core.cache import cache
 from django.shortcuts import redirect
 
 from drafts.discovery_runs import DiscoveryRunActiveError, RunnerOfflineError, create_run
+from drafts.models import SourceDiscoveryRun
 
 from ..models import StaffActionLog
 from ..permissions import staff_console_required
 from ._helpers import _action_log_kwargs, _staff_action_metadata
+
+# 계획서 권고값 — 너무 짧은 검색어는 탐색 결과가 무의미할 만큼 넓어진다.
+DISCOVERY_QUERY_MIN_LENGTH = 2
 
 # 60초 창당 허용 요청 수. cache.incr()는 쓰지 않는다 — DatabaseCache는
 # incr()를 오버라이드하지 않아 BaseCache.incr()가 TTL 없는 set()으로
@@ -58,6 +62,14 @@ def staff_source_discovery_request(request):
     query = request.POST.get("query", "").strip()
     if not query:
         messages.error(request, "검색어를 입력하세요.")
+        return redirect("staff:dashboard")
+
+    query_max_length = SourceDiscoveryRun._meta.get_field("query").max_length
+    if len(query) < DISCOVERY_QUERY_MIN_LENGTH or len(query) > query_max_length:
+        messages.error(
+            request,
+            f"검색어는 {DISCOVERY_QUERY_MIN_LENGTH}자 이상 {query_max_length}자 이하로 입력하세요.",
+        )
         return redirect("staff:dashboard")
 
     try:

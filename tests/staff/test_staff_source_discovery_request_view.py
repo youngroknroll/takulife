@@ -136,6 +136,25 @@ def test_검색어_없이_탐색을_요청하면_실행이_만들어지지_않�
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "query_value",
+    ["가", "가" * 101],
+    ids=["1자_미만", "101자_초과"],
+)
+def test_검색어_길이가_2자_미만이거나_100자를_넘으면_실행이_만들어지지_않는다(staff_client, query_value):
+    record_heartbeat(provider="claude-code")
+    staff, client = staff_client()
+
+    resp = client.post(_request_url(), {"query": query_value}, follow=True)
+
+    assert resp.status_code == 200
+    assert resp.redirect_chain[-1][0] == "/staff/dashboard/"
+    messages = [str(m) for m in resp.context["messages"]]
+    assert any("검색어는 2자 이상 100자 이하로 입력하세요." in m for m in messages)
+    assert SourceDiscoveryRun.objects.count() == 0
+
+
+@pytest.mark.django_db
 def test_검색어를_넣어_요청하면_실행에_검색어가_저장되고_성공_메시지에_이스케이프되어_반영된다(staff_client):
     record_heartbeat(provider="claude-code")
     staff, client = staff_client()
