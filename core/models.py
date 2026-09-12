@@ -5,7 +5,66 @@
 """
 from django.db import models
 
+from core.validators import validate_category_slug
 from core.vocab import CATEGORY, CATEGORY_LABELS
+
+
+class PaletteSlotsExhaustedError(Exception):
+    """신규 카테고리 생성 시 빈 팔레트 슬롯이 없을 때만 던진다.
+
+    반납 후 재획득(이후 단계) 실패는 이 예외가 아니라 palette_slot=None
+    폴백으로 처리한다 — None이 유효한 이유는 "재획득 실패"이지
+    "생성 실패"가 아니기 때문이다.
+    """
+
+
+class Category(models.Model):
+    """카테고리 어휘 항목 하나(트랙 27 1단계).
+
+    core.vocab.CATEGORY를 DB로 옮기는 첫 산물이며, 이 단계는 스키마만
+    만든다 — core.vocab 조회 전환은 4단계다.
+
+    palette_slot 배정: 신규 생성 시 빈 슬롯을 자동 배정하고, 슬롯이
+    모두 찼으면 PaletteSlotsExhaustedError로 생성 자체를 막는다(관리
+    화면이 잡아 안내할 예정). 슬롯 상한(PALETTE_SLOT_COUNT)은 나중에
+    CSS 팔레트 토큰·계약 테스트가 같은 값을 참조할 단일 출처다.
+    """
+
+    PALETTE_SLOT_COUNT = 12
+
+    slug = models.CharField(
+        max_length=64, unique=True, validators=[validate_category_slug]
+    )
+    # 라벨 유일성은 같은 칩에 서로 다른 카테고리가 합쳐지는 결함을 막는 제약이다.
+    label = models.CharField(max_length=64, unique=True)
+    is_active = models.BooleanField(default=True)
+    # null=True: "미배정"은 정상 상태(재획득 실패 폴백). unique=True로 두 카테고리가
+    # 같은 색을 갖는 경합을 DB 레벨에서도 막는다(NULL은 유일성 검사에서 제외됨).
+    palette_slot = models.PositiveSmallIntegerField(null=True, blank=True, unique=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def save(self, *args, **kwargs):
+        if self.pk is None and self.palette_slot is None:
+            self.palette_slot = self._next_available_slot()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def _next_available_slot(cls):
+        # 동시 요청 경합의 최종 방어선은 palette_slot의 DB 유일 제약이다.
+        # 재시도나 select_for_update 같은 명시적 잠금은 이 모델을 호출하는
+        # 서비스 계층(트랙 27 11단계)에서 필요할 때 추가한다.
+        used_slots = set(
+            cls.objects.exclude(palette_slot=None).values_list(
+                "palette_slot", flat=True
+            )
+        )
+        for slot in range(cls.PALETTE_SLOT_COUNT):
+            if slot not in used_slots:
+                return slot
+        raise PaletteSlotsExhaustedError("사용 가능한 팔레트 슬롯이 없습니다.")
 
 
 class HomeConfig(models.Model):
