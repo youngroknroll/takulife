@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 from django.test import Client
 
+from core.vocab import CATEGORY
 from events.models import Event
 
 pytestmark = pytest.mark.web
@@ -25,14 +26,7 @@ class TestHomeCategoryTiles:
 
         assert resp.status_code == 200
         slugs = [t["slug"] for t in resp.context["category_tiles"]]
-        assert slugs == [
-            "popup_store",
-            "collaboration_cafe",
-            "theater_bonus",
-            "goods_reservation",
-            "exhibition",
-            "fan_meeting",
-        ]
+        assert slugs == [slug for slug, _ in CATEGORY]
 
     def test_카테고리_타일_건수는_게시된_행사만_집계하고_초안은_제외한다(self, make_event):
         make_event(category="popup_store")

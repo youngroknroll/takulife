@@ -25,6 +25,7 @@ CATEGORY: tuple[tuple[str, str], ...] = (
     ("goods_reservation", "굿즈 예약"),
     ("exhibition", "전시"),
     ("fan_meeting", "팬미팅"),
+    ("concert", "콘서트"),
 )
 
 # O(1) 라벨 조회용 편의 딕셔너리.

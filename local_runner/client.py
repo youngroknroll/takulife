@@ -34,13 +34,26 @@ class RunnerClient:
         )
         return response.json()
 
-    def complete(self, *, run_id, lease_token, runner_status, failure_kind=""):
+    def known_urls(self, *, urls):
+        response = self._post("/drafts/known/", {"urls": list(urls)})
+        return response.json()["unknown"]
+
+    def submit_event(self, *, run_id, lease_token, event):
+        response = self._post(
+            f"/runs/{run_id}/drafts/",
+            {"lease_token": lease_token, "event": event},
+        )
+        return response.json()
+
+    def complete(self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0):
         response = self._post(
             f"/runs/{run_id}/complete/",
             {
                 "lease_token": lease_token,
                 "runner_status": runner_status,
                 "failure_kind": failure_kind,
+                "events_attempted": events_attempted,
+                "events_failed": events_failed,
             },
         )
         return response.json()

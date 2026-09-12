@@ -4,7 +4,9 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
+from core.vocab import CATEGORY, REGION
 from drafts.models import DiscoveryRunnerStatus, DraftSource, SourceCandidate, SourceDiscoveryRun
+from drafts.runner_views import RunnerTokenThrottle
 
 
 pytestmark = [pytest.mark.django_db, pytest.mark.web]
@@ -13,6 +15,8 @@ HEARTBEAT_URL = "/api/discovery/runner/heartbeat/"
 CLAIM_URL = "/api/discovery/runner/claim/"
 CANDIDATES_URL = "/api/discovery/runner/runs/1/candidates/"
 COMPLETE_URL = "/api/discovery/runner/runs/1/complete/"
+DRAFTS_URL = "/api/discovery/runner/runs/1/drafts/"
+KNOWN_URL = "/api/discovery/runner/drafts/known/"
 
 _RUNNER_TOKEN = "runner-secret"
 
@@ -31,8 +35,8 @@ def _candidates_url(run_id):
 def _complete_url(run_id):
     return f"/api/discovery/runner/runs/{run_id}/complete/"
 
-_ENDPOINTS = [HEARTBEAT_URL, CLAIM_URL, CANDIDATES_URL, COMPLETE_URL]
-_ENDPOINT_IDS = ["하트비트", "클레임", "후보제출", "완료"]
+_ENDPOINTS = [HEARTBEAT_URL, CLAIM_URL, CANDIDATES_URL, COMPLETE_URL, DRAFTS_URL, KNOWN_URL]
+_ENDPOINT_IDS = ["하트비트", "클레임", "후보제출", "완료", "이벤트제출", "알려진URL필터"]
 
 
 @pytest.mark.parametrize("url", _ENDPOINTS, ids=_ENDPOINT_IDS)
@@ -100,6 +104,24 @@ def test_claim_응답은_임대_정보와_기존_소스와_제외_호스트를_�
     assert "instagram.com" in run["excluded_hostnames"]
 
 
+def test_claim_응답은_카테고리와_지역_어휘_목록을_포함한다(client, runner_headers):
+    SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
+
+    response = client.post(
+        CLAIM_URL,
+        data={"provider": "claude-code"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run = response.json()["run"]
+    assert run["vocab"] == {
+        "categories": [slug for slug, _ in CATEGORY],
+        "regions": [slug for slug, _ in REGION],
+    }
+
+
 def test_claim은_대기_실행이_없으면_run_None을_반환한다(client, runner_headers):
     response = client.post(
         CLAIM_URL,
@@ -110,6 +132,22 @@ def test_claim은_대기_실행이_없으면_run_None을_반환한다(client, ru
 
     assert response.status_code == 200
     assert response.json() == {"run": None}
+
+
+def test_claim_응답에_실행에_저장된_검색어가_실린다(client, runner_headers):
+    SourceDiscoveryRun.objects.create(
+        status=SourceDiscoveryRun.Status.PENDING, query="하츠네 미쿠"
+    )
+
+    response = client.post(
+        CLAIM_URL,
+        data={"provider": "claude-code"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["run"]["query"] == "하츠네 미쿠"
 
 
 def _make_claimed_run():
@@ -219,3 +257,38 @@ def test_discovery_runner_스로틀_scope가_등록되어_있다(settings):
     rate = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["discovery_runner"]
 
     assert rate.endswith("/minute")
+
+
+def test_러너_스로틀은_X_Forwarded_For_값과_무관하게_한_버킷으로_센다(client, runner_headers, monkeypatch, clear_cache):
+    # THROTTLE_RATES는 임포트 시점에 고정되는 클래스 속성이라 설정만 바꿔서는
+    # 반영되지 않는다 — 클래스 속성 자체를 직접 덮어쓴다.
+    monkeypatch.setattr(
+        RunnerTokenThrottle, "THROTTLE_RATES", {"discovery_runner": "2/minute"}
+    )
+
+    first_response = client.post(
+        HEARTBEAT_URL,
+        data={},
+        content_type="application/json",
+        HTTP_X_FORWARDED_FOR="1.1.1.1",
+        **runner_headers,
+    )
+    second_response = client.post(
+        HEARTBEAT_URL,
+        data={},
+        content_type="application/json",
+        HTTP_X_FORWARDED_FOR="2.2.2.2",
+        **runner_headers,
+    )
+    third_response = client.post(
+        HEARTBEAT_URL,
+        data={},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert first_response.status_code == 204
+    assert second_response.status_code == 204
+    # 세 요청이 서로 다른 X-Forwarded-For(또는 헤더 없음)를 줬는데도 세 번째가
+    # 막힌다는 것이 한 버킷으로 세고 있다는 증거다.
+    assert third_response.status_code == 429

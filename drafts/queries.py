@@ -99,8 +99,15 @@ def list_draft_sources():
 def enabled_draft_sources_exist() -> bool:
     """활성화된 소스가 하나도 없으면 discover_drafts를 굳이 실행하지 않기 위한 사전
     확인용이다 — DRAFT_DISCOVERY_ENABLED 꺼짐 상태와 마찬가지로 '할 일 없음'도 정상
-    상태로 취급한다."""
-    return DraftSource.objects.filter(enabled=True).exists()
+    상태로 취급한다. 계정형 소스는 서버가 아닌 개인 맥 러너가 읽으므로 존재 여부에서
+    제외한다. 다만 손상되거나 알 수 없는 유형은 일부러 포함한다 — 여기서 거짓을
+    돌리면 스태프 콘솔이 수집 명령을 아예 실행하지 않아 그 소스의 실패가 영영
+    드러나지 않기 때문이다."""
+    return (
+        DraftSource.objects.filter(enabled=True)
+        .exclude(source_type__in=DraftSource.ACCOUNT_SOURCE_TYPES)
+        .exists()
+    )
 
 
 def runner_status():

@@ -372,6 +372,30 @@ class TestEnabledDraftSourcesExist:
 
         assert enabled_draft_sources_exist() is True
 
+    def test_활성_소스가_인스타뿐이면_서버_수집_대상_존재_여부는_거짓이다(self):
+        from drafts.queries import enabled_draft_sources_exist
+
+        DraftSource.objects.create(
+            name="instagram-source",
+            url="https://example.com/instagram-feed/",
+            source_type="instagram",
+            enabled=True,
+        )
+
+        assert enabled_draft_sources_exist() is False
+
+    def test_손상된_source_type만_활성이어도_서버_수집_대상_존재_여부는_참이다(self):
+        from drafts.queries import enabled_draft_sources_exist
+
+        DraftSource.objects.create(
+            name="corrupted-source",
+            url="https://example.com/atom-feed/",
+            source_type="atom",
+            enabled=True,
+        )
+
+        assert enabled_draft_sources_exist() is True
+
 
 @pytest.mark.django_db
 class TestDraftSearch:

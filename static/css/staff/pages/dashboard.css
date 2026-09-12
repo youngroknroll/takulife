@@ -169,6 +169,51 @@
   margin: 0;
 }
 
+/* ── 탐색 검색어 입력 행: 패널 헤더는 높이 고정이라 별도 행으로 둔다 ── */
+.dash-panel-query-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.dash-panel-query-label {
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: var(--c-dim);
+  flex: none;
+}
+
+.dash-query-input {
+  flex: 1;
+  min-width: 10rem;
+  border: 1px solid var(--c-line);
+  border-radius: 0.25rem;
+  background: var(--c-panel);
+  color: var(--c-text);
+  font-size: 0.78125rem;
+  font-family: inherit;
+  padding: 0 0.5625rem;
+  height: 2rem;
+}
+
+.dash-panel-query-hint {
+  font-size: 0.6875rem;
+  color: var(--c-faint);
+  margin: 0;
+  flex-basis: 100%;
+}
+
+/* shell.css .staff-cta는 disabled 스타일이 없다 — drafts.css에서만
+   정의돼 대시보드처럼 drafts.css를 안 불러오는 화면은 비활성 버튼이
+   활성 버튼과 똑같이 보였다. */
+.staff-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ── 표 밀도(D8): table-layout:fixed + <col> 폭으로 시맨틱을
    유지한 채 34px 안팎 행 높이를 낸다. ── */
 /* 기본 색은 표 차원에서 상속으로 내려 .dash-cell-dim 등(0,1,0)이
