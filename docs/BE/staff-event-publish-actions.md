@@ -1,8 +1,8 @@
 # 이벤트 게시 액션(일괄 비공개·단건 목표 상태·검증) 가드레일
 
 H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목표 상태 설정과
-검증 완료가 공유하는 불변식만 남긴다. 작업 일지가 아니다. 트랙 26(정렬·
-기간·카테고리 필터)은 H2의 남은 한 조각으로 이 문서 범위 밖이다.
+검증 완료, 목록 정렬·기간·카테고리 필터(트랙 26)가 공유하는 불변식만
+남긴다. 작업 일지가 아니다. 트랙 26 항목은 (n)~(r)에 있다.
 
 ## 배경
 
@@ -228,6 +228,55 @@ grep])도 그 행의 검증·비공개 버튼을 `hidden`으로, 다시 게시 �
 노출로 토글한다 — 일괄 처리와 단건 인라인 처리가 같은 버튼 상태
 규칙을 따르게 맞춘 것이다.
 
+## (n) `category`는 3상태다 — `is not None`으로만 판정한다
+
+`?category=`는 필터 없음(`None`)·미분류(`""`)·유효 슬러그 세 값을 가진다
+(`_selected_event_filters`, `staff/views/events.py:129`). `""`는 falsy라
+`if category:`로 쓰면 **미분류 선택이 조용히 "전체"가 된다**.
+`list_staff_events`(`events/queries.py`)의 카테고리 필터 분기와
+`_event_filter_query_pairs`의 querystring 왕복 분기 모두
+`selected_category is not None`으로 판정한다 — 어느 한쪽만 `is not None`을
+빠뜨리면 미분류 칩이 "전체"와 구분되지 않는다.
+
+## (o) 기간 값 검증은 `EVENT_STATUS`로 하고 `EVENT_STATUS_LABELS`를 쓰지 않는다
+
+`core/vocab.py`의 `EVENT_STATUS_LABELS`는 소비자 목록 표시용으로 `"all"`
+키가 나중에 추가돼 있다(`core/vocab.py:173`). 이 dict로 `?period=`
+멤버십을 검사하면 `"all"`이 유효 값으로 통과한다. `staff/views/events.py:115`
+`_STAFF_EVENT_PERIOD_VALUES = {slug for slug, _ in EVENT_STATUS}`처럼
+튜플 자체에서 만든 집합으로 검사해야 한다.
+
+## (p) `today` 기본값은 `_resolve_staff_today` 한 곳에서만 해석한다
+
+`list_staff_events`·`count_staff_events_by_category`(`events/queries.py`)는
+진입부에서 `today = _resolve_staff_today(today)`로 한 번만 해석하고, 그
+값을 필터(`_filtered_staff_events`)·정렬(`closing_soon`)·집계 세 갈래
+모두에 그대로 넘긴다. 도메인 테스트가 전부 `today=`를 명시로 넘기면 이
+기본값 경로가 한 번도 실행되지 않아, 실제로 `?period=ongoing`·
+`?sort=closing_soon`을 웹으로 요청했을 때만 `ValueError: Cannot use None
+as a query value`로 500이 났다(구현 중 두 번 재발).
+
+## (q) 카테고리 칩 합계와 표 하단 건수는 기준이 다른 숫자다
+
+카테고리 "전체" 칩의 `category_chip_total`(`staff/views/events.py:297`)은
+**category를 뺀** 나머지 필터 기준 합계(`count_staff_events_by_category`가
+`_filtered_staff_events`를 category 없이 공유해서 만든 값)다. 표 하단
+"N–M / total"은 `page_obj.paginator.count`로 **category를 포함한** 현재
+목록 건수다. 이 둘을 바꿔 쓰면 category 선택 시 칩 합계가 어긋난다(실제
+결함: `?category=`가 걸린 상태에서 전체 칩이 `paginator.count`를 쓰는
+바람에 전체 3 vs 나머지 합계 171이 났다 — 커밋 `145632a1`). 미분류 칩을
+카테고리 칩 목록에 넣는 이유 자체가 "칩 합계 == 전체 칩 건수"를 어떤 필터
+조합에서도 보장하기 위해서다.
+
+## (r) `_event_filter_query_pairs`는 필터 querystring의 단일 출처다
+
+목록·수정·토글·검증·삭제 5곳(`staff/views/events.py`)이 이 함수를
+공유한다. 정렬·기간·카테고리 축을 추가할 때 이 함수를 확장하지 않으면
+수정 화면에서 목록으로 돌아오거나 게시상태 토글·검증·삭제 후 리다이렉트할
+때 새 필터 3축이 조용히 소실된다. 단, 목록 화면 안의 툴바·칩 링크
+자체는 이 함수를 쓰지 않고 Django `{% querystring %}` 태그로 `request.GET`
+원본을 복사한다 — 두 메커니즘이 한 화면에 공존한다(아래 "이연" 참고).
+
 ## 테스트 대응표
 
 `tests/staff/test_staff_event_bulk_unpublish.py`:
@@ -295,16 +344,45 @@ grep])도 그 행의 검증·비공개 버튼을 `hidden`으로, 다시 게시 �
 그대로 포함되는지 고정 — PRG 뷰와 JSON 뷰가 `REPUBLISH_ERROR_MESSAGES`를
 공유하므로 문구 드리프트를 이 테스트가 잡는다.
 
+`tests/staff/test_staff_events_views.py`(트랙 26 추가분, HTTP만·서비스·
+쿼리 계층 임포트 금지):
+
+| 이름(앞부분) | 검증 |
+|---|---|
+| `test_카테고리_필터를_적용하면_context에_선택된_카테고리가_담기고_목록이_좁혀진다` | category 필터 적용 |
+| `test_허용되지_않은_카테고리_값을_지정하면_필터_없이_전체_행사가_노출된다` | 어휘 밖 값은 필터 없음으로 무시 |
+| `test_기간_필터를_적용하면_context에_선택된_기간이_담기고_목록이_좁혀진다` | period 필터 적용 |
+| `test_허용되지_않은_기간_값을_지정하면_필터_없이_전체_기간이_노출된다` | 어휘 밖 값 무시 |
+| `test_정렬_파라미터를_적용하면_context에_선택된_정렬이_담기고_목록_순서가_바뀐다` | sort 적용 |
+| `test_허용되지_않은_정렬_값을_지정하면_필터_없이_현재_정렬이_유지된다` | 어휘 밖 값 무시 |
+| `test_검색_중_수정_화면으로_이동해도_검색어가_목록_복귀_링크에_남는다` | (r) `_event_filter_query_pairs` 왕복 |
+| `test_목록에서_검색어와_페이지_이동을_함께_하면_검색어가_한_번만_담긴다` | 중복 파라미터 없음 |
+| `test_정렬_기간_카테고리를_지정한_채_수정_화면으로_이동해도_모두_list_query에_남는다` | 3축 동시 보존 |
+| `test_정렬_기간_카테고리를_지정하지_않으면_기존_생성일_내림차순_전체_노출이_유지된다` | 회귀 방지(기본값 불변) |
+| `test_검색_중_게시상태_탭_링크는_검색어를_유지한다` | 탭 링크 검색어 보존 |
+| `test_검색_중_경고_칩_링크는_검색어를_유지한다` | 경고 칩 검색어 보존 |
+| `test_기간_칩_링크는_현재_걸린_다른_축을_모두_이어받는다` | 기간 칩이 sort·category·q 보존 |
+| `test_카테고리가_선택되면_카테고리_접기가_펼쳐진_채_렌더된다` | 접기 UI 상태 |
+| `test_필터가_걸린_채_0건이면_필터_초기화_링크가_노출된다` | 0건 복구 링크(결함 수정) |
+| `test_카테고리_칩_건수의_합은_전체_칩_건수와_같다` | (q), 필터 없음·카테고리 선택·미분류 선택 3상태 parametrize, 렌더된 칩 텍스트로 비교 |
+| `test_매치가_0건인_카테고리_칩도_숨기지_않고_0을_표시한다` | 0건 칩 숨김 금지 |
+| `test_미분류_칩을_선택하면_카테고리가_빈_행사만_노출된다` | (n) 미분류 3상태 판정 |
+
+`tests/events/test_events_queries_display.py`(도메인, `today=` 명시
+picture만으로는 (p) 결함을 잡지 못했다 — 웹 계층 요청으로만 재현됨):
+정렬 슬러그별 순서·기간 경계·카테고리 집계를 검증하는 픽스처가 추가됐다.
+
 ## 이연
 
-트랙 26(정렬·기간·카테고리 필터), 수정 화면 PRG 토글의 목표 상태화
-(**같은 재시도-반전 결함이 수정 화면에 그대로 남아 있다** — 이번
-트랙은 목록 인라인만 목표 상태로 바꿨다), `StaffEventBulkUnpublishView`
-(트랙 24)를 `staff/views/events_actions.py`로 옮기는 순수 이동(다음
-트랙에서 함께 검토), 일괄 재게시, 페이지·필터 간 선택 유지, 단축키,
-`event_bulk.js`/`event_row_actions.js` 선택·판정 로직과
-`draft_bulk.js` 공용 모듈화(두 번째 사용처가 더 생긴 시점에 추출
+수정 화면 PRG 토글의 목표 상태화(**같은 재시도-반전 결함이 수정 화면에
+그대로 남아 있다** — 이번 트랙은 목록 인라인만 목표 상태로 바꿨다),
+`StaffEventBulkUnpublishView`(트랙 24)를 `staff/views/events_actions.py`로
+옮기는 순수 이동(다음 트랙에서 함께 검토), 일괄 재게시, 페이지·필터 간
+선택 유지, 단축키, `event_bulk.js`/`event_row_actions.js` 선택·판정
+로직과 `draft_bulk.js` 공용 모듈화(두 번째 사용처가 더 생긴 시점에 추출
 검토), succeeded의 "실제 전환/이미 그 상태" 구분, `staff/views/
-events.py` 인터페이스별 분리(트리거 약 700줄 [문서 DAR]), **재검증
-("검증 완료") 운영 절차 정의 — `docs/event-operations-criteria.md`에
-아직 없음, 사용자 결정 필요**(백로그에도 기록).
+events.py` 인터페이스별 분리(793줄 [실측 `wc -l`], 800줄 상한에 근접 [문서 DAR]),
+**재검증("검증 완료") 운영 절차 정의 — `docs/event-operations-criteria.md`에
+아직 없음, 사용자 결정 필요**(백로그에도 기록), (r)의 `{% querystring %}`
+무효 값 잔존(BIR 사후 판정 Deviates, Low·비차단 — canonical 리다이렉트
+또는 툴바 링크의 검증값 통일 후보).
