@@ -638,6 +638,51 @@ class TestListStaffEvents:
         assert not_ended.id not in ids
         assert no_end_date.id not in ids
 
+    def test_기간_필터는_today를_생략하면_서버_오늘_날짜로_판정한다(self, make_event):
+        """today를 안 넘기면 None이 with_public_status로 그대로 흘러가 500이
+        나던 결함(D02 회귀) 재현: date.today() 상대 오프셋으로 진행중/예정을
+        나눠, 서버가 자체적으로 오늘 날짜를 채우는지 확인한다."""
+        from events.queries import list_staff_events
+
+        today = date.today()
+        ongoing = make_event(
+            official_url="https://example.com/d02b-ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=1),
+        )
+        upcoming = make_event(
+            official_url="https://example.com/d02b-upcoming",
+            start_date=today + timedelta(days=5),
+            end_date=today + timedelta(days=10),
+        )
+
+        result = list_staff_events(period="ongoing")
+
+        ids = {e.id for e in result}
+        assert ongoing.id in ids
+        assert upcoming.id not in ids
+
+    def test_카테고리_집계는_today를_생략하면_서버_오늘_날짜로_판정한다(self, make_event):
+        """count_staff_events_by_category도 같은 _filtered_staff_events를
+        공유해 같은 결함을 겪는지 확인한다."""
+        from events.queries import count_staff_events_by_category
+
+        today = date.today()
+        make_event(
+            official_url="https://example.com/d02c-ended",
+            category="concert",
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            official_url="https://example.com/d02c-not-ended",
+            category="concert",
+            end_date=today + timedelta(days=1),
+        )
+
+        counts = count_staff_events_by_category(period="ended")
+
+        assert counts.get("concert", 0) == 1
+
     def test_기간_필터와_카테고리_필터를_함께_지정하면_AND로_결합된다(self, make_event):
         from events.queries import list_staff_events
 
@@ -717,6 +762,34 @@ class TestListStaffEvents:
         )
 
         result = list_staff_events(sort="closing_soon", today=today)
+
+        assert [e.id for e in result] == [ending_soon.id, ending_later.id, already_ended.id]
+
+    def test_종료_임박순_정렬은_today를_생략하면_서버_오늘_날짜로_판정한다(self, make_event):
+        """today를 안 넘기면 list_staff_events 자신의 today가 None인 채로
+        _ordered_by_closing_soon에 그대로 흘러가 500이 나던 결함 재현:
+        date.today() 상대 오프셋으로 만든 데이터에서 서버가 자체적으로 오늘
+        날짜를 채워 순서를 매기는지 확인한다."""
+        from events.queries import list_staff_events
+
+        today = date.today()
+        ending_soon = make_event(
+            official_url="https://example.com/d09b-ending-soon",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=2),
+        )
+        ending_later = make_event(
+            official_url="https://example.com/d09b-ending-later",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=10),
+        )
+        already_ended = make_event(
+            official_url="https://example.com/d09b-already-ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=5),
+        )
+
+        result = list_staff_events(sort="closing_soon")
 
         assert [e.id for e in result] == [ending_soon.id, ending_later.id, already_ended.id]
 

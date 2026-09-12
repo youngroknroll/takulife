@@ -201,12 +201,26 @@ STAFF_EVENT_SORT_ORDERING: dict[str, tuple] = {
 }
 
 
-def _filtered_staff_events(*, warning=None, publish_status=None, period=None, today=None, search=""):
+def _resolve_staff_today(today=None):
+    """스태프 조회 진입부(list_staff_events, count_staff_events_by_category)
+    에서 today 기본값을 한 곳에서만 해석한다. 여기서 해석한 값을 필터·정렬·
+    집계 세 갈래 모두에 그대로 넘겨야 한쪽 갈래만 기본값을 놓치는 결함이
+    재발하지 않는다."""
+    if today is None:
+        return timezone.localdate()
+    return today
+
+
+def _filtered_staff_events(*, warning=None, publish_status=None, period=None, today, search=""):
     """list_staff_events와 count_staff_events_by_category가 공유하는 필터 체인.
 
     category만 여기서 빠져 있다 — 목록은 특정 카테고리로 좁히고, 집계는
     카테고리별로 세어야 해서 각자 다르게 쓰기 때문이다. 이 함수를 공유해야
     배지 숫자와 드릴다운 목록의 필터 해석이 어긋나지 않는다.
+
+    today는 호출자(list_staff_events, count_staff_events_by_category)가
+    _resolve_staff_today로 이미 해석해 넘긴다 — 기본값 해석을 여기서 또
+    하지 않는다.
     """
     if warning == "ended_still_published":
         queryset = _ended_still_published_qs(today=today)
@@ -246,6 +260,8 @@ def list_staff_events(
     알 수 없는 warning/publish_status/period/sort 값은 querystring 오류로 보지
     않고 조용히 무시한다. search는 표에 보이는 세 열(행사명·작품명·장소)을 함께 본다.
     """
+    # 진입부 한 곳에서 today를 해석해 필터·정렬 두 갈래 모두에 같은 값을 흘린다.
+    today = _resolve_staff_today(today)
     queryset = _filtered_staff_events(
         warning=warning, publish_status=publish_status, period=period, today=today, search=search
     )
@@ -270,6 +286,8 @@ def count_staff_events_by_category(
     """category를 제외한 나머지 필터를 list_staff_events와 똑같이 적용한 뒤
     카테고리별 건수를 집계한다(GROUP BY 1회). 빈 카테고리는 키 ""로 센다.
     """
+    # 진입부 한 곳에서 today를 해석해 필터·집계 두 갈래 모두에 같은 값을 흘린다.
+    today = _resolve_staff_today(today)
     queryset = _filtered_staff_events(
         warning=warning, publish_status=publish_status, period=period, today=today, search=search
     )

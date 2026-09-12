@@ -10,20 +10,53 @@
   <div class="events-page" id="staff-main">
     <div class="events-toolbar">
       <div class="events-tabgroup" role="group" aria-label="게시 상태 필터">
-        <a class="events-tab{% if not selected_publish_status %} is-active{% endif %}" href="/staff/events/{% if selected_warning %}?warning={{ selected_warning }}{% endif %}"{% if not selected_publish_status %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체</a>
-        <a class="events-tab{% if selected_publish_status == 'published' %} is-active{% endif %}" href="/staff/events/?publish_status=published{% if selected_warning %}&warning={{ selected_warning }}{% endif %}"{% if selected_publish_status == 'published' %} aria-current="true" aria-label="게시, 적용됨"{% endif %}>게시</a>
-        <a class="events-tab{% if selected_publish_status == 'draft' %} is-active{% endif %}" href="/staff/events/?publish_status=draft{% if selected_warning %}&warning={{ selected_warning }}{% endif %}"{% if selected_publish_status == 'draft' %} aria-current="true" aria-label="비공개, 적용됨"{% endif %}>비공개</a>
+        <a class="events-tab{% if not selected_publish_status %} is-active{% endif %}" href="{% querystring publish_status=None page=None %}"{% if not selected_publish_status %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체</a>
+        <a class="events-tab{% if selected_publish_status == 'published' %} is-active{% endif %}" href="{% querystring publish_status='published' page=None %}"{% if selected_publish_status == 'published' %} aria-current="true" aria-label="게시, 적용됨"{% endif %}>게시</a>
+        <a class="events-tab{% if selected_publish_status == 'draft' %} is-active{% endif %}" href="{% querystring publish_status='draft' page=None %}"{% if selected_publish_status == 'draft' %} aria-current="true" aria-label="비공개, 적용됨"{% endif %}>비공개</a>
       </div>
 
-      <div class="events-chipgroup" role="group" aria-label="품질 경고 필터">
-        <span class="mono events-chipgroup-label">경고</span>
-        <a class="events-chip{% if not selected_warning %} is-active{% endif %}" href="/staff/events/{% if selected_publish_status %}?publish_status={{ selected_publish_status }}{% endif %}">전체</a>
-        {% for chip in warning_chips %}
-          <a class="events-chip{% if selected_warning == chip.key %} is-active{% endif %}" href="/staff/events/?warning={{ chip.key }}{% if selected_publish_status %}&publish_status={{ selected_publish_status }}{% endif %}">{{ chip.label }}</a>
+      <div class="events-tabgroup" role="group" aria-label="정렬">
+        {% for sort_value, sort_label in sort_options %}
+          <a class="events-tab{% if selected_sort == sort_value %} is-active{% endif %}" href="{% querystring sort=sort_value page=None %}"{% if selected_sort == sort_value %} aria-current="true" aria-label="{{ sort_label }}, 적용됨"{% endif %}>{{ sort_label }}</a>
         {% endfor %}
       </div>
 
       <a class="staff-cta events-new-cta" href="{% url 'staff:event-create' %}">＋ 새 이벤트</a>
+    </div>
+
+    <div class="events-filterbar">
+      <div class="events-chipgroup" role="group" aria-label="품질 경고 필터">
+        <span class="mono events-chipgroup-label">경고</span>
+        <a class="events-chip{% if not selected_warning %} is-active{% endif %}" href="{% querystring warning=None page=None %}"{% if not selected_warning %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체</a>
+        {% for chip in warning_chips %}
+          <a class="events-chip{% if selected_warning == chip.key %} is-active{% endif %}" href="{% querystring warning=chip.key page=None %}"{% if selected_warning == chip.key %} aria-current="true" aria-label="{{ chip.label }}, 적용됨"{% endif %}>{{ chip.label }}</a>
+        {% endfor %}
+      </div>
+
+      <div class="events-chipgroup" role="group" aria-label="기간 필터">
+        <span class="mono events-chipgroup-label">기간</span>
+        <a class="events-chip{% if not selected_period %} is-active{% endif %}" href="{% querystring period=None page=None %}"{% if not selected_period %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체</a>
+        {% comment %}
+        core/vocab.py EVENT_STATUS(예정/진행 중/종료 임박/종료)를 그대로 옮긴 값이다.
+        뷰 context가 이 축의 옵션 목록을 따로 넘기지 않아 여기서 고정한다.
+        {% endcomment %}
+        <a class="events-chip{% if selected_period == 'upcoming' %} is-active{% endif %}" href="{% querystring period='upcoming' page=None %}"{% if selected_period == 'upcoming' %} aria-current="true" aria-label="예정, 적용됨"{% endif %}>예정</a>
+        <a class="events-chip{% if selected_period == 'ongoing' %} is-active{% endif %}" href="{% querystring period='ongoing' page=None %}"{% if selected_period == 'ongoing' %} aria-current="true" aria-label="진행 중, 적용됨"{% endif %}>진행 중</a>
+        <a class="events-chip{% if selected_period == 'closing_soon' %} is-active{% endif %}" href="{% querystring period='closing_soon' page=None %}"{% if selected_period == 'closing_soon' %} aria-current="true" aria-label="종료 임박, 적용됨"{% endif %}>종료 임박</a>
+        <a class="events-chip{% if selected_period == 'ended' %} is-active{% endif %}" href="{% querystring period='ended' page=None %}"{% if selected_period == 'ended' %} aria-current="true" aria-label="종료, 적용됨"{% endif %}>종료</a>
+      </div>
+
+      <details class="events-filter-disclosure"{% if selected_category != None %} open{% endif %}>
+        <summary class="events-chip events-filter-disclosure-summary{% if selected_category != None %} is-active{% endif %}">
+          카테고리{% if selected_category != None %}{% for chip in category_chips %}{% if chip.key == selected_category %}: {{ chip.label }}{% endif %}{% endfor %}{% endif %}
+        </summary>
+        <div class="events-chipgroup" role="group" aria-label="카테고리 필터">
+          <a class="events-chip{% if selected_category == None %} is-active{% endif %}" href="{% querystring category=None page=None %}"{% if selected_category == None %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체 ({{ page_obj.paginator.count }})</a>
+          {% for chip in category_chips %}
+            <a class="events-chip{% if chip.is_active %} is-active{% endif %}" href="{% querystring category=chip.key page=None %}"{% if chip.is_active %} aria-current="true" aria-label="{{ chip.label }}, 적용됨"{% endif %}>{{ chip.label }} ({{ chip.count }})</a>
+          {% endfor %}
+        </div>
+      </details>
     </div>
 
     {% if event_rows %}
@@ -107,7 +140,7 @@
       </div>
       <p class="events-empty" id="event-bulk-empty" tabindex="-1" hidden>이 페이지의 이벤트를 모두 처리했습니다. 새로고침하면 갱신된 목록을 볼 수 있습니다.</p>
     {% else %}
-      <p class="events-empty">해당 조건의 이벤트가 없습니다.</p>
+      <p class="events-empty">해당 조건의 이벤트가 없습니다.{% if selected_warning or selected_publish_status or selected_sort or selected_period or selected_category != None or search %} <a href="{% url 'staff:event-list' %}">필터 초기화</a>{% endif %}</p>
     {% endif %}
   </div>
 {% endblock %}

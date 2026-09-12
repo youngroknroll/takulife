@@ -13,12 +13,27 @@
   min-height: 0;
 }
 
-/* ── 목록 툴바 ─────────────────────────────────────────────────── */
-.events-toolbar {
+/* ── 목록 툴바(첫째 줄)·필터바(둘째 줄) 공용 flex 규칙(OOCSS) ────── */
+.events-toolbar,
+.events-filterbar {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+/* 카테고리 <details>는 접혔다 펼쳐져도 옆 칩그룹 높이에 늘어붙지 않는다 */
+.events-filter-disclosure {
+  align-self: flex-start;
+}
+
+.events-filter-disclosure-summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.events-filter-disclosure-summary::-webkit-details-marker {
+  display: none;
 }
 
 .events-tabgroup {
