@@ -9,6 +9,7 @@ from drafts.candidate_validation import (
     FAILURE_MESSAGES,
     CandidateLimitExceededError,
     LeaseInvalidError,
+    register_account_source,
     sanitize_text,
     submit_candidate,
 )
@@ -867,3 +868,145 @@ def test_실패_후보_저장_직전_동일_URL_경쟁_삽입은_IntegrityError_
 
     assert candidate.pk == competing["row"].pk
     assert SourceCandidate.objects.filter(run=run, url=payload["url"]).count() == 1
+
+
+# ---------------------------------------------------------------------------
+# KW-06 — 계정형(instagram·x) 소스 후보는 목록형 8단계 검증에 섞이지 않고
+# register_account_source가 fetch·robots 없이 스키마·호스트 allowlist·정규화
+# 후 중복만 확인해 비활성 DraftSource로 등록한다.
+# ---------------------------------------------------------------------------
+
+
+def _account_payload(*, source_type, url, name="하츠네 미쿠 공식"):
+    return {
+        "name": name,
+        "url": url,
+        "source_type": source_type,
+        "official_basis": "공식 계정",
+        "note": "",
+    }
+
+
+def _case_정상_인스타_계정():
+    return {
+        "payload": _account_payload(
+            source_type="instagram",
+            url="https://www.instagram.com/hatsune_miku_official/",
+        ),
+        "existing_url": None,
+        "expected_status": SourceCandidate.Status.PROMOTED,
+        "expected_failure_stage": "",
+        "expected_source_count": 1,
+        "expected_source_url": "https://www.instagram.com/hatsune_miku_official",
+    }
+
+
+def _case_정상_X_계정():
+    return {
+        "payload": _account_payload(
+            source_type="x",
+            url="https://www.x.com/hatsune_miku_official/",
+        ),
+        "existing_url": None,
+        "expected_status": SourceCandidate.Status.PROMOTED,
+        "expected_failure_stage": "",
+        "expected_source_count": 1,
+        "expected_source_url": "https://www.x.com/hatsune_miku_official",
+    }
+
+
+def _case_허용_목록_밖_호스트():
+    return {
+        "payload": _account_payload(
+            source_type="instagram",
+            url="https://example.com/hatsune_miku_official/",
+        ),
+        "existing_url": None,
+        "expected_status": SourceCandidate.Status.FAILED,
+        "expected_failure_stage": SourceCandidate.FailureStage.SCHEMA,
+        "expected_source_count": 0,
+        "expected_source_url": None,
+    }
+
+
+def _case_핸들_형식_위반():
+    return {
+        # 경로가 계정 핸들 하나가 아니라 두 세그먼트라 정규식을 어긴다.
+        "payload": _account_payload(
+            source_type="instagram",
+            url="https://www.instagram.com/hatsune/miku/",
+        ),
+        "existing_url": None,
+        "expected_status": SourceCandidate.Status.FAILED,
+        "expected_failure_stage": SourceCandidate.FailureStage.SCHEMA,
+        "expected_source_count": 0,
+        "expected_source_url": None,
+    }
+
+
+def _case_정규화_후_중복():
+    # 기존 소스는 이미 정규화된 형태(소문자·쿼리 없음·후행 슬래시 없음)로
+    # 등록돼 있다. 신규 제출은 대문자 호스트·추적 쿼리·후행 슬래시가 섞였지만
+    # 정규화하면 완전히 같은 URL이 되어야 한다.
+    return {
+        "payload": _account_payload(
+            source_type="instagram",
+            url="https://WWW.INSTAGRAM.COM/hatsune_miku_official/?igshid=abc123",
+        ),
+        "existing_url": "https://www.instagram.com/hatsune_miku_official",
+        "expected_status": SourceCandidate.Status.FAILED,
+        "expected_failure_stage": SourceCandidate.FailureStage.DUPLICATE,
+        "expected_source_count": 1,
+        "expected_source_url": None,
+    }
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "make_case",
+    [
+        _case_정상_인스타_계정,
+        _case_정상_X_계정,
+        _case_허용_목록_밖_호스트,
+        _case_핸들_형식_위반,
+        _case_정규화_후_중복,
+    ],
+    ids=[
+        "정상_인스타_계정",
+        "정상_X_계정",
+        "허용_목록_밖_호스트",
+        "핸들_형식_위반",
+        "정규화_후_중복",
+    ],
+)
+def test_계정형_소스_후보는_fetch_없이_비활성_소스로_등록되고_비허용_호스트나_정규화_후_중복은_거부된다(
+    make_case, monkeypatch, fail_if_called
+):
+    # 계정형 등록의 핵심 계약 — 성공이든 거부든 가져오기·robots 검사는 한
+    # 번도 불리지 않는다. 불리면 fail_if_called가 즉시 테스트를 실패시킨다.
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", fail_if_called)
+    monkeypatch.setattr("drafts.candidate_validation.RobotsChecker", fail_if_called)
+
+    case = make_case()
+    run = _make_claimed_run()
+    if case["existing_url"]:
+        DraftSource.objects.create(
+            name="기존 계정",
+            url=case["existing_url"],
+            source_type=case["payload"]["source_type"],
+        )
+
+    candidate = register_account_source(
+        run_id=run.pk, lease_token="tok", payload=case["payload"]
+    )
+
+    assert candidate.status == case["expected_status"]
+    assert candidate.failure_stage == case["expected_failure_stage"]
+    assert DraftSource.objects.count() == case["expected_source_count"]
+
+    if case["expected_status"] == SourceCandidate.Status.PROMOTED:
+        source = DraftSource.objects.get()
+        assert source.enabled is False
+        assert source.url == case["expected_source_url"]
+        assert candidate.promoted_source == source

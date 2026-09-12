@@ -1,7 +1,9 @@
 """서버 소유 결정론 후보 검증 — 에이전트 보고를 신뢰하지 않고 전 단계를 재검사한다."""
 import logging
+import re
 import socket
 import unicodedata
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -51,6 +53,17 @@ FAILURE_MESSAGES = {
 
 class CandidateLimitExceededError(Exception):
     pass
+
+
+# 계정형(instagram·x) 소스는 목록형과 달리 가져오기·robots를 타지 않는다 —
+# 계획서 §F가 정한 호스트·핸들 형식만 검증한다.
+_ACCOUNT_SOURCE_ALLOWED_HOSTS = {
+    "instagram.com",
+    "www.instagram.com",
+    "x.com",
+    "www.x.com",
+}
+_ACCOUNT_HANDLE_PATH_RE = re.compile(r"^/[A-Za-z0-9_.]{1,30}/?$")
 
 
 def sanitize_text(*, value):
@@ -297,3 +310,90 @@ def submit_candidate(*, run_id, lease_token, payload):
             created += 1
 
     return candidate
+
+
+def _clean_account_payload(*, payload):
+    def _string_field(key):
+        value = payload.get(key, "")
+        if not isinstance(value, str):
+            return ""
+        return sanitize_text(value=value)[: _MAX_LENGTHS.get(key, len(value))]
+
+    raw_source_type = payload.get("source_type")
+    source_type = (
+        raw_source_type if raw_source_type in DraftSource.ACCOUNT_SOURCE_TYPES else ""
+    )
+
+    return {
+        "name": _string_field("name"),
+        "url": _string_field("url"),
+        "source_type": source_type,
+        "link_selector": "",
+        "sample_url": "",
+        "official_basis": _string_field("official_basis"),
+        "note": _string_field("note"),
+    }
+
+
+def _normalize_account_source_url(*, hostname, path):
+    # 소문자화·후행 슬래시 제거만 한다 — 쿼리는 애초에 정규화 대상 URL 조립에
+    # 넣지 않으므로 별도 처리가 필요 없다.
+    return f"https://{hostname}{path.rstrip('/')}".lower()
+
+
+def register_account_source(*, run_id, lease_token, payload):
+    """계정형(instagram·x) 소스 후보 등록 — 목록형 8단계 검증과 분리된
+    경로다. 가져오기·robots.txt 확인을 전혀 부르지 않고 호스트 allowlist·
+    핸들 형식·정규화 후 중복만 본 뒤 비활성 DraftSource로 승격한다."""
+    cleaned = _clean_account_payload(payload=payload)
+
+    def _fail(stage):
+        return _save_failed_candidate(
+            run_id=run_id, lease_token=lease_token, cleaned=cleaned, stage=stage
+        )
+
+    if not cleaned["source_type"]:
+        return _fail(SourceCandidate.FailureStage.SCHEMA)
+
+    parsed = urlsplit(cleaned["url"])
+    hostname = (parsed.hostname or "").lower()
+    if hostname not in _ACCOUNT_SOURCE_ALLOWED_HOSTS:
+        return _fail(SourceCandidate.FailureStage.SCHEMA)
+
+    if not _ACCOUNT_HANDLE_PATH_RE.fullmatch(parsed.path):
+        return _fail(SourceCandidate.FailureStage.SCHEMA)
+
+    normalized_url = _normalize_account_source_url(hostname=hostname, path=parsed.path)
+    cleaned["url"] = normalized_url
+
+    if DraftSource.objects.filter(url=normalized_url).exists():
+        return _fail(SourceCandidate.FailureStage.DUPLICATE)
+
+    with transaction.atomic():
+        run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
+        renew_lease(run=run)
+        # 실패 저장 경로와 같은 이유로, 잠긴 run 아래에서 저장 직전 한 번 더
+        # 재검사한다.
+        if run.candidates.count() >= MAX_CANDIDATES_PER_RUN:
+            raise CandidateLimitExceededError
+        try:
+            with transaction.atomic():
+                source = DraftSource.objects.create(
+                    name=cleaned["name"],
+                    url=normalized_url,
+                    source_type=cleaned["source_type"],
+                    enabled=False,
+                )
+        except IntegrityError:
+            return _fail(SourceCandidate.FailureStage.DUPLICATE)
+
+        return SourceCandidate.objects.create(
+            run=run,
+            name=cleaned["name"],
+            url=normalized_url,
+            source_type=cleaned["source_type"],
+            official_basis=cleaned["official_basis"],
+            note=cleaned["note"],
+            status=SourceCandidate.Status.PROMOTED,
+            promoted_source=source,
+        )

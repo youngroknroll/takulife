@@ -23,6 +23,7 @@ from drafts.candidate_validation import (
     MAX_CANDIDATES_PER_RUN,
     CandidateLimitExceededError,
     LeaseInvalidError,
+    register_account_source,
     sanitize_text,
     submit_candidate,
 )
@@ -121,8 +122,15 @@ class RunnerCandidateSubmitView(_RunnerAPIView):
         if not isinstance(lease_token, str) or not isinstance(candidate, dict):
             return error_response("invalid candidate submission payload", status.HTTP_400_BAD_REQUEST)
 
+        # 계정형(instagram·x)은 가져오기 없이 검증하는 별도 경로다 — 목록형
+        # 8단계 검증에 섞지 않는다.
+        submit = (
+            register_account_source
+            if candidate.get("source_type") in DraftSource.ACCOUNT_SOURCE_TYPES
+            else submit_candidate
+        )
         try:
-            saved = submit_candidate(run_id=run_id, lease_token=lease_token, payload=candidate)
+            saved = submit(run_id=run_id, lease_token=lease_token, payload=candidate)
         except LeaseInvalidError:
             return error_response("lease is invalid or expired", status.HTTP_409_CONFLICT)
         except CandidateLimitExceededError:
