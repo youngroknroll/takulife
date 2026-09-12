@@ -13,12 +13,27 @@
   min-height: 0;
 }
 
-/* ── 목록 툴바 ─────────────────────────────────────────────────── */
-.events-toolbar {
+/* ── 목록 툴바(첫째 줄)·필터바(둘째 줄) 공용 flex 규칙(OOCSS) ────── */
+.events-toolbar,
+.events-filterbar {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+/* 카테고리 <details>는 접혔다 펼쳐져도 옆 칩그룹 높이에 늘어붙지 않는다 */
+.events-filter-disclosure {
+  align-self: flex-start;
+}
+
+.events-filter-disclosure-summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.events-filter-disclosure-summary::-webkit-details-marker {
+  display: none;
 }
 
 .events-tabgroup {
@@ -266,6 +281,19 @@
   border: 1px solid var(--c-line);
   border-radius: 0.375rem;
   background: var(--c-panel);
+}
+
+.events-empty-title {
+  margin: 0 0 0.5rem;
+}
+
+/* 걸린 필터 요약 목록. 본문(위 제목)보다 한 단계 약하게 보이도록 글자만 줄인다. */
+.events-empty-filters {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--c-faint);
 }
 
 /* ── 일괄 처리 바(drafts.css .queue-bulkbar 계열과 같은 값, 페이지별 분리) ── */
