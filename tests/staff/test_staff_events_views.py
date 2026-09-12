@@ -635,8 +635,27 @@ def test_필터가_걸린_채_0건이면_필터_초기화_링크가_노출된다
     assert "필터 초기화" in content
 
 
+def _category_chip_counts(content, group_label="카테고리 필터"):
+    """content에서 카테고리 필터 그룹 안에 렌더된 칩들의 "(숫자)" 값을 순서대로
+    반환한다. 첫 값이 "전체" 칩이고 나머지가 개별 카테고리 칩이다.
+
+    컨텍스트가 아니라 실제 렌더된 HTML을 읽어야 템플릿이 다른 값을 쓰는
+    결함(전체 칩만 category 포함 총계를 쓰던 버그)을 잡을 수 있다.
+    """
+    label_pos = content.index(f'aria-label="{group_label}"')
+    group_start = content.rfind("<div", 0, label_pos)
+    group_end = content.index("</div>", label_pos)
+    group_html = content[group_start:group_end]
+    return [int(n) for n in re.findall(r"\((\d+)\)", group_html)]
+
+
 @pytest.mark.django_db
-def test_카테고리_칩_건수의_합은_전체_칩_건수와_같다(staff_client, make_event):
+@pytest.mark.parametrize(
+    "query",
+    ["", "?category=concert", "?category="],
+    ids=["필터_없음", "카테고리_선택", "미분류_선택"],
+)
+def test_카테고리_칩_건수의_합은_전체_칩_건수와_같다(staff_client, make_event, query):
     staff, client = staff_client()
     make_event(title="합계칩콘서트행사", category="concert", official_url="https://example.com/chip-sum-concert")
     make_event(
@@ -644,11 +663,12 @@ def test_카테고리_칩_건수의_합은_전체_칩_건수와_같다(staff_cli
     )
     make_event(title="합계칩미분류행사", category="", official_url="https://example.com/chip-sum-blank")
 
-    resp = client.get("/staff/events/")
+    resp = client.get(f"/staff/events/{query}")
 
     assert resp.status_code == 200
-    chip_sum = sum(chip["count"] for chip in resp.context["category_chips"])
-    assert chip_sum == resp.context["page_obj"].paginator.count
+    content = resp.content.decode()
+    all_chip, *category_chips = _category_chip_counts(content)
+    assert sum(category_chips) == all_chip
 
 
 @pytest.mark.django_db

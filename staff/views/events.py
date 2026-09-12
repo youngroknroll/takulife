@@ -292,6 +292,9 @@ def staff_events(request):
             "is_active": selected_category == "",
         }
     )
+    # "전체" 칩은 category를 뺀 나머지 필터 기준으로 세야 다른 칩들과 더했을 때 맞아떨어진다.
+    # page_obj.paginator.count는 category까지 포함한 현재 목록 건수라 기준이 다르다.
+    category_chip_total = sum(chip["count"] for chip in category_chips)
 
     return render(
         request,
@@ -307,6 +310,7 @@ def staff_events(request):
             "pager_query": pager_query,
             "warning_chips": warning_chips,
             "category_chips": category_chips,
+            "category_chip_total": category_chip_total,
             "sort_options": STAFF_EVENT_SORT,
             "period_options": EVENT_STATUS,
             "search": search,
