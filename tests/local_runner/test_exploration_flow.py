@@ -1,10 +1,12 @@
 """local_runner.exploration_flow — 탐색 출력의 events·sources 분리 파싱과
 상한 절단을 검증한다."""
+import httpx
 import pytest
 
 from local_runner.exploration_flow import (
     EXPLORATION_MAX_EVENTS,
     EXPLORATION_MAX_SOURCES,
+    LeaseLostError,
     parse_exploration_output,
     run_exploration_flow,
 )
@@ -56,6 +58,25 @@ def test_탐색_출력의_events와_sources를_분리_파싱하고_상한을_넘
     for event in result["events"]:
         assert "judgment" not in event
         assert "official_basis" not in event
+
+
+def test_탐색_출력의_events와_sources는_dict가_아닌_항목이_제거된_뒤_상한이_적용된다():
+    events = ["문자열", None, 42, *[_make_event(i) for i in range(EXPLORATION_MAX_EVENTS)]]
+    sources = ["문자열", None, 3.14, *[_make_source(i) for i in range(EXPLORATION_MAX_SOURCES)]]
+
+    result = parse_exploration_output(data={"events": events, "sources": sources})
+
+    assert len(result["events"]) == EXPLORATION_MAX_EVENTS
+    assert all(isinstance(event, dict) for event in result["events"])
+    assert [event["url"] for event in result["events"]] == [
+        f"https://example.com/event-{i}" for i in range(EXPLORATION_MAX_EVENTS)
+    ]
+
+    assert len(result["sources"]) == EXPLORATION_MAX_SOURCES
+    assert all(isinstance(source, dict) for source in result["sources"])
+    assert [source["url"] for source in result["sources"]] == [
+        f"https://example.com/source-{i}" for i in range(EXPLORATION_MAX_SOURCES)
+    ]
 
 
 class _FakeClient:
@@ -181,3 +202,160 @@ def test_일반_웹_응답이_403이나_429면_그_URL만_건너뛰고_같은_�
     assert interpret_calls == [("원문 텍스트", events[2]["url"], "web")]
     assert len(client.submit_event_calls) == 1
     assert client.submit_event_calls[0]["source_url"] == events[2]["url"]
+
+
+def _make_http_status_error(status_code):
+    request = httpx.Request("POST", "https://example.com/x")
+    response = httpx.Response(status_code, request=request)
+    return httpx.HTTPStatusError(f"status {status_code}", request=request, response=response)
+
+
+class _LeaseLostAtSubmitClient(_FakeClient):
+    """제출 중 지정한 항목(첫 이벤트 또는 첫 소스)에서만 409를 내는 가짜 클라이언트."""
+
+    def __init__(self, *, fail_at):
+        super().__init__()
+        self._fail_at = fail_at
+
+    def submit_event(self, *, run_id, lease_token, event):
+        self.submit_event_calls.append(event)
+        if self._fail_at == "event" and len(self.submit_event_calls) == 1:
+            raise _make_http_status_error(409)
+        return {"status": "created", "draft_id": 1}
+
+    def submit_candidate(self, *, run_id, lease_token, candidate):
+        self.submit_candidate_calls.append(candidate)
+        if self._fail_at == "source" and len(self.submit_candidate_calls) == 1:
+            raise _make_http_status_error(409)
+        return {"status": "created"}
+
+
+@pytest.mark.parametrize(
+    "fail_at",
+    ["event", "source"],
+    ids=["이벤트_제출_중_409", "소스_제출_중_409"],
+)
+def test_임대_상실_409는_남은_항목_처리를_즉시_멈추고_LeaseLostError를_낸다(fail_at):
+    events = [
+        {"url": "https://example.com/event-1", "platform": "web"},
+        {"url": "https://example.com/event-2", "platform": "web"},
+    ]
+    sources = [
+        {"name": "소스1", "url": "https://example.com/source-1", "source_type": "rss"},
+        {"name": "소스2", "url": "https://example.com/source-2", "source_type": "rss"},
+    ]
+
+    fetch_calls = []
+
+    def fake_fetch_text(*, url):
+        fetch_calls.append(url)
+        return "원문 텍스트"
+
+    def fake_interpret(*, text, url, platform):
+        return {
+            "source_url": url,
+            "platform": platform,
+            "is_event": True,
+            "fields": {"title": "제목"},
+        }
+
+    client = _LeaseLostAtSubmitClient(fail_at=fail_at)
+
+    with pytest.raises(LeaseLostError):
+        run_exploration_flow(
+            client=client,
+            run_id=1,
+            lease_token="tok",
+            events=events,
+            sources=sources,
+            fetch_text=fake_fetch_text,
+            interpret=fake_interpret,
+        )
+
+    if fail_at == "event":
+        # 첫 이벤트 제출에서 409가 났으므로 둘째 이벤트는 읽기조차 시도되지
+        # 않고, 소스 처리는 아예 시작되지 않는다.
+        assert fetch_calls == [events[0]["url"]]
+        assert client.submit_event_calls == [
+            {"source_url": events[0]["url"], "platform": "web", "is_event": True, "fields": {"title": "제목"}}
+        ]
+        assert client.submit_candidate_calls == []
+    else:
+        # 이벤트 둘은 정상 처리되고, 첫 소스 제출에서 409가 나므로 둘째
+        # 소스는 제출 시도조차 되지 않는다.
+        assert fetch_calls == [events[0]["url"], events[1]["url"]]
+        assert len(client.submit_event_calls) == 2
+        assert client.submit_candidate_calls == [sources[0]]
+
+
+class _SkipNonLeaseErrorClient(_FakeClient):
+    """지정한 항목의 첫 제출에서 409가 아닌 HTTP 오류를 내고 이후는 정상
+    처리하는 가짜 클라이언트. 성공한 제출만 submit_*_calls에 남긴다."""
+
+    def __init__(self, *, fail_at):
+        super().__init__()
+        self._fail_at = fail_at
+        self.submit_event_attempts = []
+        self.submit_candidate_attempts = []
+
+    def submit_event(self, *, run_id, lease_token, event):
+        self.submit_event_attempts.append(event)
+        if self._fail_at == "event" and len(self.submit_event_attempts) == 1:
+            raise _make_http_status_error(400)
+        self.submit_event_calls.append(event)
+        return {"status": "created", "draft_id": 1}
+
+    def submit_candidate(self, *, run_id, lease_token, candidate):
+        self.submit_candidate_attempts.append(candidate)
+        if self._fail_at == "source" and len(self.submit_candidate_attempts) == 1:
+            raise _make_http_status_error(400)
+        self.submit_candidate_calls.append(candidate)
+        return {"status": "created"}
+
+
+@pytest.mark.parametrize(
+    "fail_at",
+    ["event", "source"],
+    ids=["이벤트_400", "소스_400"],
+)
+def test_제출_중_409가_아닌_HTTP_오류는_그_항목만_건너뛰고_나머지를_계속_처리한다(fail_at):
+    events = [
+        {"url": "https://example.com/event-1", "platform": "web"},
+        {"url": "https://example.com/event-2", "platform": "web"},
+    ]
+    sources = [
+        {"name": "소스1", "url": "https://example.com/source-1", "source_type": "rss"},
+        {"name": "소스2", "url": "https://example.com/source-2", "source_type": "rss"},
+    ]
+
+    def fake_fetch_text(*, url):
+        return "원문 텍스트"
+
+    def fake_interpret(*, text, url, platform):
+        return {
+            "source_url": url,
+            "platform": platform,
+            "is_event": True,
+            "fields": {"title": "제목"},
+        }
+
+    client = _SkipNonLeaseErrorClient(fail_at=fail_at)
+
+    run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=sources,
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    if fail_at == "event":
+        assert len(client.submit_event_attempts) == 2
+        # 첫 이벤트는 400으로 건너뛰고 둘째만 실제로 제출된다.
+        assert len(client.submit_event_calls) == 1
+        assert client.submit_event_calls[0]["source_url"] == events[1]["url"]
+    else:
+        assert len(client.submit_candidate_attempts) == 2
+        assert client.submit_candidate_calls == [sources[1]]

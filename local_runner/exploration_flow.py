@@ -1,20 +1,35 @@
-"""탐색 결과를 받아 읽기·해석·제출로 이어주는 흐름이 여기 붙는다. 지금은
-탐색 출력에서 events·sources를 분리하고 상한까지 잘라내는 순수 함수만 있다."""
+"""탐색 결과를 받아 읽기·해석·제출로 이어주는 흐름이 여기 붙는다. events·
+sources 분리·상한 절단 순수 함수와, 제출 중 임대 상실(409)을 즉시 위로
+알리는 run_exploration_flow가 있다."""
+import functools
+import logging
 from urllib.parse import urlsplit
+
+import httpx
+
+logger = logging.getLogger(__name__)
 
 # 서버의 실행당 이벤트 상한(drafts.agent_drafts.MAX_EVENTS_PER_RUN)과 같은 값이다.
 EXPLORATION_MAX_EVENTS = 20
 EXPLORATION_MAX_SOURCES = 10
 
 
+class LeaseLostError(Exception):
+    """제출 중 서버가 409를 냈다 — 다른 곳이 이미 이 실행의 임대를 가져갔거나
+    만료돼 다시 대기 중이라는 뜻이다. 통신 오류가 아니라 흔한 경합이므로
+    호출자는 이 실행 처리를 즉시 멈추고 조용히 다음 폴로 넘어가야 한다."""
+
+
 def parse_exploration_output(*, data):
     events = data.get("events")
     if not isinstance(events, list):
         events = []
+    events = [event for event in events if isinstance(event, dict)]
 
     sources = data.get("sources")
     if not isinstance(sources, list):
         sources = []
+    sources = [source for source in sources if isinstance(source, dict)]
 
     return {
         "events": events[:EXPLORATION_MAX_EVENTS],
@@ -28,9 +43,10 @@ def _default_fetch_text(*, url):
     return fetch_event_text(url=url)
 
 
-def _default_interpret(*, text, url, platform):
-    # vocab·recent_drafts 없이 최소 기본값으로 돈다 — 이 흐름 함수 자체는
-    # 아직 그 값을 받는 인자가 없다(다음 사이클이 상위 진입점에서 채운다).
+def _default_interpret(*, text, url, platform, vocab):
+    # recent_drafts는 claim 응답에 실려 오지 않아 빈 목록으로 둔다(보고 대상 —
+    # 지어내지 않는다). vocab만은 호출자가 claim 응답에서 꺼내 반드시 넘긴다 —
+    # 비워 두면 로컬 선검사가 모든 카테고리·지역을 지워 버린다.
     from datetime import date
 
     from local_runner.caption_interpreter import (
@@ -39,25 +55,24 @@ def _default_interpret(*, text, url, platform):
         run_agent_interpretation,
     )
 
-    empty_vocab = {"categories": [], "regions": []}
     prompt = build_interpretation_prompt(
-        vocab=empty_vocab,
+        vocab=vocab,
         today=date.today().isoformat(),
         recent_drafts=[],
         text=text,
         platform=platform,
     )
     interpreted = run_agent_interpretation(prompt)
-    return _local_precheck(interpreted=interpreted, source_text=text, vocab=empty_vocab)
+    return _local_precheck(interpreted=interpreted, source_text=text, vocab=vocab)
 
 
 def run_exploration_flow(
-    *, client, run_id, lease_token, events, sources, fetch_text=None, interpret=None
+    *, client, run_id, lease_token, events, sources, vocab=None, fetch_text=None, interpret=None
 ):
     if fetch_text is None:
         fetch_text = _default_fetch_text
     if interpret is None:
-        interpret = _default_interpret
+        interpret = functools.partial(_default_interpret, vocab=vocab)
 
     from local_runner.caption_interpreter import should_submit
     from local_runner.page_fetch import BlockedResponseError
@@ -104,10 +119,26 @@ def run_exploration_flow(
         # 해석이 이미 낸 값을 그대로 둔다.
         payload = dict(interpreted)
         payload.setdefault("platform", event.get("platform"))
-        client.submit_event(run_id=run_id, lease_token=lease_token, event=payload)
+        try:
+            client.submit_event(run_id=run_id, lease_token=lease_token, event=payload)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 409:
+                raise LeaseLostError("event submit returned 409") from exc
+            # 캡션·페이로드 원문은 로그에 남기지 않는다 — 상태 코드와 URL만 남긴다.
+            logger.warning("event submit failed: status=%s url=%s", exc.response.status_code, url)
+            events_failed += 1
+            continue
 
     for source in sources:
         # 목록형·계정형 구분은 서버 몫이다 — 그대로 넘긴다.
-        client.submit_candidate(run_id=run_id, lease_token=lease_token, candidate=source)
+        try:
+            client.submit_candidate(run_id=run_id, lease_token=lease_token, candidate=source)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 409:
+                raise LeaseLostError("candidate submit returned 409") from exc
+            logger.warning(
+                "candidate submit failed: status=%s url=%s", exc.response.status_code, source.get("url")
+            )
+            continue
 
     return {"events_attempted": events_attempted, "events_failed": events_failed}
