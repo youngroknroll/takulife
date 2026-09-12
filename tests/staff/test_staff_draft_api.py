@@ -4,7 +4,7 @@ from django.test import override_settings
 from django.urls import resolve, reverse
 
 import staff.views.draft_api as draft_views
-from drafts.models import EventDraft
+from drafts.models import EventDraft, SourceDiscoveryRun
 from drafts.services import (
     DraftCreationEmptyExtractionError,
     DraftCreationResponseTooLargeError,
@@ -185,6 +185,38 @@ def test_source_url과_원본_필드는_수정할_수_없다(admin_client, make_
     assert draft.source_url == "https://example.com/event"
     assert draft.raw_title == "Original raw title"
     assert draft.raw_text == "Original raw text"
+
+
+def _준비_intake_note(make_draft):
+    draft = make_draft("https://example.com/event", intake_note="원본 메모")
+    return draft, {"intake_note": "바뀐 메모"}, "intake_note", "원본 메모"
+
+
+def _준비_discovery_run(make_draft):
+    run = SourceDiscoveryRun.objects.create()
+    draft = make_draft("https://example.com/event", discovery_run=run)
+    return draft, {"discovery_run": run.pk}, "discovery_run_id", run.pk
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "field_name, prepare",
+    [("intake_note", _준비_intake_note), ("discovery_run", _준비_discovery_run)],
+    ids=["intake_note", "discovery_run"],
+)
+def test_수정_요청_본문의_intake_note와_discovery_run은_400으로_거부되고_값이_바뀌지_않는다(admin_client, make_draft, field_name, prepare):
+    draft, patch_body, attr_name, original_value = prepare(make_draft)
+
+    response = admin_client.patch(
+        event_draft_detail_url(draft.id),
+        patch_body,
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert field_name in response.json()
+    draft.refresh_from_db()
+    assert getattr(draft, attr_name) == original_value
 
 
 @pytest.mark.django_db

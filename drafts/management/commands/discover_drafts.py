@@ -75,9 +75,14 @@ class Command(BaseCommand):
             self.stdout.write("DRAFT_DISCOVERY_ENABLED=False — 발견을 실행하지 않습니다.")
             return
 
-        sources = list(DraftSource.objects.filter(enabled=True))
+        # 계정형 소스는 개인 맥 러너만 읽으므로 제외한다.
+        sources = list(
+            DraftSource.objects.filter(enabled=True).exclude(
+                source_type__in=DraftSource.ACCOUNT_SOURCE_TYPES
+            )
+        )
         if not sources:
-            self.stdout.write("활성 소스가 없습니다 (enabled=True인 DraftSource: 0건)")
+            self.stdout.write("활성 소스가 없습니다 (서버 수집 대상 DraftSource: 0건)")
             return
 
         robots_checker = RobotsChecker()

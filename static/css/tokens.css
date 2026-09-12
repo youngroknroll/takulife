@@ -107,6 +107,8 @@
   --cat-exhibition-ink: #475569;
   --cat-fan_meeting-soft: #fce7f3;
   --cat-fan_meeting-ink: #9d174d;
+  --cat-concert-soft: #fef3c7;
+  --cat-concert-ink: #b45309;
 
   /* work_title(시리즈)별 배색 — 카테고리(--cat-*)와는 별개 축이다
      (core/views.py의 _series_ink_classes 참고, 둘을 섞지 말 것).
@@ -168,6 +170,8 @@
   --cat-exhibition-ink: #839ec3;
   --cat-fan_meeting-soft: #412530;
   --cat-fan_meeting-ink: #da769e;
+  --cat-concert-soft: #422006;
+  --cat-concert-ink: #fb923c;
 
   /* 시리즈 색 12개는 전부 다크값을 채워야 한다 — 하나라도 빠지면 아무
      오류 없이 조용히 회색으로 대체된다(이 프로젝트에서 실제로 두 번

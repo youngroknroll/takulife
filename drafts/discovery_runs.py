@@ -49,7 +49,7 @@ def record_heartbeat(*, provider):
     )
 
 
-def create_run(*, requested_by):
+def create_run(*, requested_by, query=""):
     # 동시 요청 2건이 활성 검사~생성 사이에 끼어들어 pending 두 건을 만드는
     # 경쟁을 막는다 — heartbeat 단일 행(pk=1)을 잠가 자연스러운 직렬화
     # 지점으로 삼는다.
@@ -64,7 +64,7 @@ def create_run(*, requested_by):
         if SourceDiscoveryRun.objects.filter(status__in=active_statuses).exists():
             raise DiscoveryRunActiveError
 
-        return SourceDiscoveryRun.objects.create(requested_by=requested_by)
+        return SourceDiscoveryRun.objects.create(requested_by=requested_by, query=query)
 
 
 def claim(*, provider):
@@ -131,7 +131,14 @@ def renew_lease(*, run):
     run.save(update_fields=["lease_expires_at"])
 
 
-def complete_run(*, run_id, lease_token, runner_status, failure_kind=""):
+def complete_run(*, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0):
+    # agent_drafts가 모듈 최상단에서 discovery_runs를 임포트하므로, 여기서
+    # 그 반대 방향을 모듈 최상단에 두면 순환 임포트가 된다 — 함수 안에서만 쓴다.
+    from drafts.agent_drafts import MAX_EVENTS_PER_RUN
+
+    cleaned_attempted = max(0, min(events_attempted, MAX_EVENTS_PER_RUN))
+    cleaned_failed = max(0, min(events_failed, cleaned_attempted))
+
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
 
@@ -149,7 +156,17 @@ def complete_run(*, run_id, lease_token, runner_status, failure_kind=""):
             run.error_summary = error_summary
         else:
             candidate_statuses = list(run.candidates.values_list("status", flat=True))
-            if not candidate_statuses or all(
+            if not candidate_statuses:
+                # 소스 후보가 전혀 없어도 이벤트만 시도했을 수 있다 — 그때는
+                # 러너 보고가 아니라 실제 생성 수(run.events)로 성패를 가른다.
+                if cleaned_attempted > 0:
+                    if run.events.count() == 0:
+                        run.status = SourceDiscoveryRun.Status.FAILED
+                    else:
+                        run.status = SourceDiscoveryRun.Status.PARTIALLY_FAILED
+                else:
+                    run.status = SourceDiscoveryRun.Status.SUCCEEDED
+            elif all(
                 status == SourceCandidate.Status.PROMOTED for status in candidate_statuses
             ):
                 run.status = SourceDiscoveryRun.Status.SUCCEEDED
@@ -162,5 +179,16 @@ def complete_run(*, run_id, lease_token, runner_status, failure_kind=""):
 
         run.finished_at = timezone.now()
         run.lease_token = ""
-        run.save(update_fields=["status", "error_summary", "finished_at", "lease_token"])
+        run.events_attempted = cleaned_attempted
+        run.events_failed = cleaned_failed
+        run.save(
+            update_fields=[
+                "status",
+                "error_summary",
+                "finished_at",
+                "lease_token",
+                "events_attempted",
+                "events_failed",
+            ]
+        )
         return run

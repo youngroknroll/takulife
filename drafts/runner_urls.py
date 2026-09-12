@@ -4,7 +4,9 @@ from .runner_views import (
     RunnerCandidateSubmitView,
     RunnerClaimView,
     RunnerCompleteView,
+    RunnerEventDraftSubmitView,
     RunnerHeartbeatView,
+    RunnerKnownDraftUrlsView,
 )
 
 
@@ -20,5 +22,15 @@ urlpatterns = [
         "runs/<int:run_id>/complete/",
         RunnerCompleteView.as_view(),
         name="discovery-runner-complete",
+    ),
+    path(
+        "runs/<int:run_id>/drafts/",
+        RunnerEventDraftSubmitView.as_view(),
+        name="discovery-runner-event-drafts",
+    ),
+    path(
+        "drafts/known/",
+        RunnerKnownDraftUrlsView.as_view(),
+        name="discovery-runner-known-drafts",
     ),
 ]

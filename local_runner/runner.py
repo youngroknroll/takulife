@@ -1,15 +1,30 @@
 """러너 폴링 루프. 매 폴마다 heartbeat를 보내고, 임대가 있으면 에이전트 탐색을
-돌려 후보를 서버에 제출한 뒤 실행을 완료 처리한다. 통신 오류·잘못된 모델
-출력·임대 상실이 러너 프로세스 전체를 죽이지 않도록 각 경계에서 격리한다."""
+돌려 이벤트·소스를 서버에 제출한 뒤 실행을 완료 처리한다. 통신 오류·잘못된
+모델 출력·임대 상실이 러너 프로세스 전체를 죽이지 않도록 각 경계에서
+격리한다."""
+import functools
 import logging
 import threading
 import time
 
 import httpx
 
-from .claude_code_adapter import AdapterOutputError, build_prompt, run_agent_exploration
+from .claude_code_adapter import (
+    AdapterOutputError,
+    _CORRECTION_SUFFIX,
+    _execute_claude,
+    build_exploration_prompt,
+    parse_json_object,
+)
 from .client import RunnerClient
 from .config import POLL_INTERVAL_SECONDS, load_config
+from .exploration_flow import (
+    EXPLORATION_MAX_EVENTS,
+    EXPLORATION_MAX_SOURCES,
+    LeaseLostError,
+    parse_exploration_output,
+    run_exploration_flow,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,37 +45,58 @@ def _filter_candidates(candidates, max_candidates):
     return [candidate for candidate in candidates if isinstance(candidate, dict)][:max_candidates]
 
 
-def _process_run(client, run, candidates):
-    # 원본 후보에 dict가 아닌 항목이 섞였는지는 필터 전에 판정해둔다.
-    had_invalid = any(not isinstance(c, dict) for c in candidates)
-    filtered = _filter_candidates(candidates, run["max_candidates"])
+def _run_exploration_agent(prompt, execute=None):
+    # run_agent_exploration(claude_code_adapter.py)은 후보 목록 스키마
+    # ({"candidates": [...]})용으로 이미 테스트가 고정돼 있어 그대로 재사용할
+    # 수 없다 — 탐색 출력은 이제 {"events": [...], "sources": [...]} 단일
+    # 객체라 parse_json_object로 받아야 한다. 실행·재시도 구조만 그대로 복제한다.
+    if execute is None:
+        execute = functools.partial(_execute_claude, tools="WebSearch,WebFetch", strict_mcp=True)
 
-    for candidate in filtered:
-        try:
-            result = client.submit_candidate(
-                run_id=run["run_id"], lease_token=run["lease_token"], candidate=candidate
-            )
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 409:
-                # 임대를 이미 잃었다 — complete를 생략하면 다음 폴에서 서버가
-                # 이 실행을 재대기시키거나 만료 처리한다.
-                return
-            logger.warning("candidate rejected: %s status=%s", type(exc).__name__, exc.response.status_code)
-            continue
+    output = execute(prompt)
+    try:
+        return parse_json_object(output)
+    except AdapterOutputError:
+        pass
 
-        logger.info("submitted: status=%s failure_stage=%s", result.get("status"), result.get("failure_stage"))
+    corrected_output = execute(f"{prompt}\n\n{_CORRECTION_SUFFIX}")
+    return parse_json_object(corrected_output)
 
-    if had_invalid or not filtered:
+
+def _process_run(client, run, exploration_result):
+    # 얇은 배선이다 — 판단 로직은 run_exploration_flow가 갖고 있다.
+    try:
+        summary = run_exploration_flow(
+            client=client,
+            run_id=run["run_id"],
+            lease_token=run["lease_token"],
+            events=exploration_result["events"],
+            sources=exploration_result["sources"],
+            vocab=run["vocab"],
+        )
+    except LeaseLostError:
+        # 임대 상실은 다른 곳이 이미 이 실행을 가져갔거나 만료돼 다시
+        # 대기 중이라는 뜻이다 — 흔한 경합이지 장애가 아니다. 완료 보고를
+        # 부르지 않고 조용히 돌아온다. 통신 오류로 취급해 다시 던지면
+        # _safe_poll이 실패로 집계해 다음 폴을 불필요하게 늦춘다.
+        return
+    except Exception:
+        # except-ok: 흐름 안에서 예상 못한 예외까지 여기서 잡아 반드시
+        # 완료 보고를 보낸다 — 그러지 않으면 실행이 임대를 쥔 채 만료될
+        # 때까지 다음 탐색이 막힌다(실기동 결함 3).
         client.complete(
             run_id=run["run_id"],
             lease_token=run["lease_token"],
             runner_status="failed",
-            failure_kind="invalid_output",
+            failure_kind="exploration_error",
         )
         return
-
     client.complete(
-        run_id=run["run_id"], lease_token=run["lease_token"], runner_status="succeeded"
+        run_id=run["run_id"],
+        lease_token=run["lease_token"],
+        runner_status="succeeded",
+        events_attempted=summary["events_attempted"],
+        events_failed=summary["events_failed"],
     )
 
 
@@ -93,19 +129,19 @@ def _run_once(client):
     if run is None:
         return
 
-    prompt = build_prompt(
-        existing_source_urls=run["existing_source_urls"],
-        excluded_hostnames=run["excluded_hostnames"],
-        max_candidates=run["max_candidates"],
+    prompt = build_exploration_prompt(
+        query=run["query"],
+        max_events=EXPLORATION_MAX_EVENTS,
+        max_sources=EXPLORATION_MAX_SOURCES,
     )
 
-    # 후보 제출·완료 보고가 끝날 때까지 heartbeat 티커가 살아 있어야 하므로
-    # 티커 범위를 tick 종료 시점(finally)까지 넓게 잡는다.
+    # 이벤트·소스 제출·완료 보고가 끝날 때까지 heartbeat 티커가 살아 있어야
+    # 하므로 티커 범위를 tick 종료 시점(finally)까지 넓게 잡는다.
     ticker = _HeartbeatTicker(client, POLL_INTERVAL_SECONDS)
     ticker.start()
     try:
         try:
-            candidates = run_agent_exploration(prompt)
+            raw_output = _run_exploration_agent(prompt)
         except AdapterOutputError as exc:
             client.complete(
                 run_id=run["run_id"],
@@ -114,7 +150,8 @@ def _run_once(client):
                 failure_kind=_failure_kind_for(exc),
             )
             return
-        _process_run(client, run, candidates)
+        exploration_result = parse_exploration_output(data=raw_output)
+        _process_run(client, run, exploration_result)
     finally:
         ticker.stop()
 

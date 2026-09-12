@@ -93,6 +93,36 @@ class TestFlagGating:
         output = capsys.readouterr().out
         assert "활성 소스가 없습니다" in output
 
+    def test_discover_drafts는_인스타_소스를_건너뛰고_오류를_남기지_않는다(self, monkeypatch, capsys, make_source, fail_if_called):
+        source = make_source(
+            name="instagram-source",
+            url="https://instagram.example.com/account",
+            source_type="instagram",
+            enabled=True,
+        )
+        checker = _FakeRobotsChecker()
+        _patch_robots_checker(monkeypatch, checker)
+        monkeypatch.setattr(
+            "drafts.management.commands.discover_drafts.fetch_html", fail_if_called
+        )
+        monkeypatch.setattr(
+            "drafts.management.commands.discover_drafts.extract_candidate_urls",
+            fail_if_called,
+        )
+        monkeypatch.setattr(
+            "drafts.management.commands.discover_drafts.create_draft_from_url",
+            fail_if_called,
+        )
+
+        call_command("discover_drafts")
+
+        output = capsys.readouterr().out
+        assert "활성 소스가 없습니다" in output
+        assert checker.calls == []
+        source.refresh_from_db()
+        assert source.last_checked_at is None
+        assert source.last_error == ""
+
     def test_비활성_소스는_처리되지_않는다(self, monkeypatch, make_source, fail_if_called):
         make_source(enabled=False)
         monkeypatch.setattr(

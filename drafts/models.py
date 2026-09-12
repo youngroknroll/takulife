@@ -60,6 +60,16 @@ class EventDraft(models.Model):
     rejected_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True, default="")
     reopened_at = models.DateTimeField(null=True, blank=True)
+    # 에이전트가 남기는 판단 근거·미해결 사유 메모. 캡션 원문(raw_text)과 분리한다.
+    intake_note = models.TextField(blank=True, default="")
+    # 어느 탐색 실행에서 나온 드래프트인지. 실행이 지워져도 드래프트는 남는다.
+    discovery_run = models.ForeignKey(
+        "SourceDiscoveryRun",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="events",
+    )
 
     def __str__(self):
         return self.source_url
@@ -70,6 +80,19 @@ class DraftSource(models.Model):
         RSS = "rss", "RSS"
         SITEMAP = "sitemap", "Sitemap"
         HTML = "html", "HTML"
+        INSTAGRAM = "instagram", "Instagram"
+        X = "x", "X"
+
+    # 서버가 직접 목록을 가져와 수집하는 유형. 계정형 소스는 개인 맥 러너만 읽으므로
+    # 여기 들어가지 않는다 — 서버 수집 경로가 계정형을 집어 실패하는 일을 막는다.
+    SERVER_COLLECTED_SOURCE_TYPES = (
+        SourceType.RSS,
+        SourceType.SITEMAP,
+        SourceType.HTML,
+    )
+
+    # 계정형: 개인 맥 러너만 읽고 서버는 존재를 알아도 가져오지 않는다.
+    ACCOUNT_SOURCE_TYPES = (SourceType.INSTAGRAM, SourceType.X)
 
     name = models.CharField(max_length=100)
     url = models.URLField(unique=True)
@@ -106,9 +129,15 @@ class SourceDiscoveryRun(models.Model):
         db_index=True,
     )
     provider = models.CharField(max_length=50, blank=True)
+    # 스태프가 넣은 탐색 검색어. 러너가 claim할 때 받아 그대로 탐색에 쓴다.
+    query = models.CharField(max_length=100, blank=True, default="")
     lease_token = models.CharField(max_length=64, blank=True)
     lease_expires_at = models.DateTimeField(null=True, blank=True)
     lease_count = models.PositiveSmallIntegerField(default=0)
+    # 러너가 보고한 이벤트 시도·실패 수. 생성 수는 events 역참조로 직접 세므로
+    # 따로 받지 않는다 — 러너 보고를 그대로 믿지 않기 위해서다.
+    events_attempted = models.PositiveSmallIntegerField(default=0)
+    events_failed = models.PositiveSmallIntegerField(default=0)
     # 서버가 정의한 안전 문구만 담는다(후보·응답 원문 보간 금지).
     error_summary = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

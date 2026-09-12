@@ -1,7 +1,8 @@
 # 로컬 에이전트 기반 수집처 탐색
 
-상태: **서버 경계·로컬 러너 구현됨(2026-08-20)** — 정기 실행·자동 시작은 미구현
-사용자 결정: 2026-08-20
+상태: **서버 경계·로컬 러너 구현됨(2026-08-20), 트랙 30 키워드 탐색 본체
+구현됨(2026-09-12)** — 정기 실행·자동 시작은 미구현
+사용자 결정: 2026-08-20, 2026-09-11(트랙 30 재편)
 
 ## Current fact
 
@@ -294,6 +295,23 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 전환하기 전에는 러너를 별도 실행 계정 또는 컨테이너 등 격리 환경에서
 돌리는 구성을 권장한다.
 
+**정정(2026-09-11, 측정 후 기록).** 위 문단의 "`--tools`로 웹 탐색 2종만
+허용해 파일·셸 도구가 없다"는 전제가 무효화됐다 — 도구 목록 제한은 이 맥에
+깔린 MCP 플러그인 도구까지는 막지 못했고, 여기에는 브라우저 제어(페이지
+열기·클릭·폼 입력·자바스크립트 실행) 도구가 포함된다. 실제 `claude` CLI를
+같은 인자로 호출해 열린 도구 목록을 직접 물어 확인했다: `--strict-mcp-config`
+없이는 `WebSearch` + 크롬 개발자도구 MCP 도구 전부가 열리고, 붙이면
+`WebSearch` 하나만 남는다 [실측 2026-09-11]. `WebFetch`는 두 경우 모두 열리지
+않는다 — 이 맥의 전역 설정 거부 목록에 있어 하위 설정으로 뒤집을 수 없다
+[실측]. 즉 인자에 남아 있는 `WebFetch`는 현재 죽은 값이다. 고친 내용:
+`local_runner/claude_code_adapter.py`의 `_execute_claude`에
+`--strict-mcp-config` 플래그를 추가하고, argv 계약 테스트 1건과 두 플래그
+(`--permission-mode bypassPermissions`·`--strict-mcp-config`)가 항상 함께
+있어야 한다는 쌍 불변식 회귀 테스트 1건을 신설했다(커밋 `b68e2881`). 남은
+미검증 1건: 그 브라우저 제어 MCP 도구가 사용자의 상시 로그인 브라우저
+프로파일에 붙는지, 격리된 새 프로파일을 쓰는지 확인하지 못했다 — 붙는다면
+위 격리 권고의 우선순위가 올라간다.
+
 ### 검토 게이트 기록
 
 - 보안 사후 판정(2026-08-20): Conforms — 사전 블로커 5건 닫힘 확인: 빈 토큰
@@ -314,6 +332,13 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 - 사용자 검토 2라운드(2026-08-21) 4건 반영: R1~R6 Red-Green(이미-초록 3건은
   뮤테이션 왕복으로 실증), FE 게이트 BIR Conforms/WED는 폴백 이연을 관리된
   범위 축소로 판정, 실기동 왕복(유효 토큰 204/200·오탈 토큰 403 격리) 실측.
+- 정정(2026-09-11, 측정 후 기록): 위 2026-08-20 보안 사후 판정의 "Conforms"는
+  `--tools` 도구 목록 제한만으로 격리가 충분하다고 본 낡은 측정 위에 서
+  있었다. 실제로는 MCP 플러그인 도구(브라우저 제어 포함)가
+  `--strict-mcp-config` 없이 그대로 열려 있었다(위 격리 권고 정정 절 참고,
+  [실측 2026-09-11]). 어댑터 수정과 argv 계약·쌍 불변식 테스트 신설로
+  닫았다(커밋 `b68e2881`). 이 정정은 2026-08-20 판정 자체를 되돌리는 것이
+  아니라, 그 판정이 딛고 섰던 전제가 오늘 실측으로 바뀌었음을 기록한다.
 
 ## Known gap
 
@@ -350,6 +375,145 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   소모할 수 있다는 것이다. 트리거: CLI가 --max-turns를 지원하게 되면
   반영한다.
 
+## 트랙 30(v3.1): 키워드 탐색 본체 도입(2026-09-11~2026-09-12)
+
+기존 절은 "이미 아는 계정을 주기적으로 도는 수집" 전제로 쓰였다. 트랙 30은
+**스태프가 검색어를 입력하면 그 검색어로 새 행사·수집처를 찾는 경로**를
+본체로 새로 얹었다. 계정 정기 수집(트랙 31)은 이 절 밖에서 별도로 다룬다.
+
+### 3단 분리
+
+한 실행 안에서 서로 다른 세 책임이 순서대로 실행되고, 각 단계는 앞 단계가
+낸 것과 다른 것만 받아 다른 것만 낸다.
+
+1. **탐색(exploration)** — 검색만 한다. 입력은 스태프가 낸 검색어
+   하나(`run["query"]`)뿐이고, 출력은 URL과 얕은 판단(`is_event`,
+   `why_excluded`, `platform`, 후보 수집처)뿐이다. 행사 본문을 읽지 않는다
+   `[코드]` `local_runner/claude_code_adapter.py:83-130`
+   (`build_exploration_prompt`) — 프롬프트 자체가 "이 환경에서는 페이지를
+   여는 도구가 막혀 있다"고 명시하고 검색 결과 목록(제목·요약·URL)만으로
+   판단하게 지시한다.
+2. **읽기(read)** — 결정론이다. 모델을 부르지 않고 호스트만 보고 분기한다
+   `[코드]` `local_runner/page_fetch.py:150-154`
+   (`fetch_event_text(*, url)`): 인스타·X 캡션 경로(og:description 메타
+   태그 파싱)와 일반 웹 경로(og:title/title·meta description) 중 하나로만
+   간다.
+3. **해석(interpret)** — 도구 없는 모델 호출이다. 읽기 단계가 낸 텍스트를
+   데이터로만 받아 공식 여부와 행사 필드를 구조화 JSON으로 낸다 `[코드]`
+   `local_runner/caption_interpreter.py:1-3, 15-77`
+   (`build_interpretation_prompt`). 실행 시 `--tools TodoWrite,TodoWrite`로
+   호출해 실질적으로 쓸 수 있는 도구가 없다 `[코드]`
+   `local_runner/exploration_flow.py:120-127`(`_default_interpret`).
+
+### 공식 여부 판단은 해석 단계에 있다
+
+탐색 단계는 이 환경에서 페이지를 열 수 없어(위 프롬프트 명시) 본문 근거를
+낼 수 없다. 그래서 탐색 프롬프트는 "공식 여부는 이 단계에서 판단하지
+않는다. … 행사가 공식인지 비공식인지, 그 근거가 무엇인지는 본문을 직접
+읽는 다음 해석 단계가 정한다"고 명시적으로 금지한다 `[코드]`
+`local_runner/claude_code_adapter.py:107-110`. 판단(`judgment`:
+official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자)는
+해석 단계 프롬프트에서만 요구한다 `[코드]`
+`local_runner/caption_interpreter.py:50-55`. 서버는 이 판단값을 그대로
+믿지 않고, `unofficial`·`unclear`일 때만 검토 메모 앞머리에 판단과 근거를
+붙여 운영자가 보게 한다(그 외에는 접두를 붙이지 않는다) `[코드]`
+`drafts/agent_drafts.py:55-60, 136-145`.
+
+### 서버는 인스타·X를 절대 가져오지 않는다
+
+계정형 후보 URL이 제출돼도 서버는 목록형 8단계 검증(가져오기 포함)을
+타지 않고, `SNS_HOSTNAMES`에 속한 호스트는 존재 재확인 자체를 건너뛴다
+`[코드]` `drafts/agent_drafts.py:200-205`(`submit_agent_draft`) — 일반 웹
+호스트만 `validate_fetch_url`·`RobotsChecker`·`fetch_html`을 탄다. 이
+계약은 호출 여부를 직접 단언하는 테스트로 고정돼 있다 `[코드]`
+`tests/drafts/test_agent_drafts.py:423`
+(`test_일반_웹_URL_제출은_서버가_존재를_재확인하고_인스타_URL_제출은_fetch를_호출하지_않으며_안전하지_않은_URL은_거부된다`).
+
+### 계정형 소스는 비활성으로 등록된다
+
+인스타·X 계정을 새 수집처로 제안하면 호스트 allowlist·핸들 경로 형식·
+중복만 검사하고, 가져오기·robots.txt 확인 없이 `DraftSource(enabled=False)`
+로 만든다 `[코드]` `drafts/candidate_validation.py:344-386`
+(`register_account_source`). 스태프가 대시보드에서 직접 활성화해야 실제
+수집이 시작된다. 목록형·계정형 분기는 러너가 아니라 서버가 결정한다
+`[코드]` `drafts/runner_views.py:125-131`
+(`RunnerCandidateSubmitView.post` — `source_type`이
+`DraftSource.ACCOUNT_SOURCE_TYPES`면 `register_account_source`, 아니면
+기존 `submit_candidate`).
+
+### 공개 함수 시그니처(동결)
+
+다음 트랙이 이 위에 얹는다. 시그니처를 바꾸면 이 문서와 아래 시그니처를
+참조하는 테스트를 함께 갱신해야 한다.
+
+- `drafts/agent_drafts.py`
+  - `parse_agent_draft_payload(*, payload)` — 스키마 검사·정제, `(cleaned,
+    stage)` 튜플 반환(`stage`가 `"schema"`가 아니면 통과)
+  - `submit_agent_draft(*, run_id, lease_token, payload)` — 임대 확인 →
+    서버 재확인(SNS 제외) → 임대 재확인·중복·상한 확인·`EventDraft` 생성,
+    `(draft, created)` 튜플 반환
+- `local_runner/page_fetch.py`
+  - `fetch_event_text(*, url)` — 호스트로 캡션/일반 웹 분기, 텍스트 또는
+    `None`(추출 실패) 반환
+- `local_runner/caption_interpreter.py`
+  - `build_interpretation_prompt(*, vocab, today, recent_drafts, text,
+    platform)` — 해석 프롬프트 문자열 생성
+  - `_local_precheck(*, interpreted, source_text, vocab)` — 어휘·기간·
+    장소명 원문 대조 앞단 필터(서버 재검증을 대체하지 않음)
+  - `should_submit(*, interpreted)` — `is_event`이고 제목이 비어있지 않을
+    때만 `True`
+  - `run_agent_interpretation(prompt, execute=None)` — 실행+JSON 파싱+
+    보정 재시도 1회
+- `drafts/candidate_validation.py`
+  - `register_account_source(*, run_id, lease_token, payload)` — 계정형
+    소스 전용 등록, 목록형 `submit_candidate`와 별도 함수
+
+### 러너 실행 시 조각이 이어지는 흐름
+
+`local_runner/runner.py`의 `_run_once`가 폴마다 heartbeat를 보내고 작업을
+`claim`한 뒤, `build_exploration_prompt`로 탐색 프롬프트를 만들어
+`_run_exploration_agent`로 실행한다(도구 `WebSearch,WebFetch` +
+`--strict-mcp-config`). 결과를 `parse_exploration_output`으로 이벤트·소스
+목록으로 정리한 뒤 `_process_run` → `run_exploration_flow`
+(`local_runner/exploration_flow.py`)에 넘긴다. 이 함수가 이벤트마다
+`fetch_event_text`(읽기) → `_default_interpret`(해석, 내부에서
+`build_interpretation_prompt` + `run_agent_interpretation` + 로컬 사전검사
+호출) → `should_submit` 순서로 걸러 통과한 것만 `client.submit_event`로
+서버에 보낸다. 서버는 `drafts/runner_views.py`의 러너 API를 거쳐
+`submit_agent_draft`(위 SNS 제외 규칙 적용)로 최종 검증·저장한다. 소스
+후보는 별도로 `client.submit_candidate` → `RunnerCandidateSubmitView`가
+목록형/계정형으로 분기해 처리한다. 제출 도중 서버가 409(임대 상실)를
+내면 `LeaseLostError`로 그 실행 처리를 즉시 멈추고 완료 보고를 생략한다.
+
+### 함정과 실측
+
+- **도구 제한 인자의 함정** `[실측 2026-09-11]`: `claude` CLI의 `--tools`는
+  쉼표로 구분된 유효한 이름이 둘 이상일 때만 실제로 제약이 걸린다. 빈
+  문자열이나 단일 값은 조용히 무시돼 셸·파일 쓰기까지 기본 도구 전체가
+  열린다. 그래서 해석 호출은 무해한 도구 이름을 일부러 두 번 적어
+  `"TodoWrite,TodoWrite"`로 넘긴다 `[코드]`
+  `local_runner/exploration_flow.py:122-127`. 이 중복은 실수가 아니다.
+- **호스트마다 사용자 에이전트가 다르다** `[실측 2026-09-11]`: 인스타는
+  브라우저 UA를 쓰면 `og:description` 메타 태그 자체가 안 나와 러너
+  자체 식별 UA(`TakuLifeRunner/1.0`)를 쓰고, 일반 웹은 반대로 브라우저 UA를
+  써야 응답이 온다 `[코드]` `local_runner/page_fetch.py:28-38`.
+- **페이지 열기 도구가 전역 거부 목록에 있다** `[실측]`: `WebFetch`는
+  `--tools`에 남겨 둬도 이 실행 환경의 전역 설정 거부 목록에 걸려 하위
+  설정으로 못 뒤집는다 — 위쪽 "격리 권고" 정정 절 참고. 인자에 남은
+  `WebFetch`는 현재 죽은 값이다.
+- **URL 안전 판정이 서버와 러너에 복제돼 있다.** 러너가 Django·서버 도메인
+  모듈을 임포트할 수 없어서다 `[코드]` `local_runner/url_safety.py:1-4`.
+  두 파일의 실행 로직 줄이 문자 그대로 일치하는지 지키는 가드 테스트가
+  있다 `[코드]` `tests/local_runner/test_url_safety_parity.py`
+  (`test_서버와_러너의_URL_안전_판정_로직이_문자_그대로_일치한다`).
+- **계정형 호스트 목록도 두 곳에 있다.** 같은 이유다 — 서버
+  `drafts/candidate_validation.py:60-65`(`_ACCOUNT_SOURCE_ALLOWED_HOSTS`,
+  instagram·x만)와 러너
+  `local_runner/page_fetch.py:16-23`(`_CAPTION_HOSTNAMES`, twitter.com
+  구형 도메인까지 포함) `[코드]`. url_safety와 달리 **이 두 목록은 문자
+  일치를 강제하는 가드 테스트가 없다** `[실측: 저장소 전수 검색 결과
+  0건]` — 한쪽만 고치면 조용히 갈라진다.
+
 ## Evidence
 
 - 사용자 승인(2026-08-20): 기본 수집은 규칙 기반 추출과 관리자 검수를 유지한다.
@@ -358,3 +522,8 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 - 코드 근거: `drafts/models.py`, `drafts/services.py`,
   `drafts/management/commands/discover_drafts.py`, `staff/views/__init__.py`,
   `config/settings.py`.
+- 트랙 30 코드 근거: `drafts/agent_drafts.py`, `drafts/candidate_validation.py`,
+  `drafts/runner_views.py`, `local_runner/claude_code_adapter.py`,
+  `local_runner/exploration_flow.py`, `local_runner/page_fetch.py`,
+  `local_runner/caption_interpreter.py`, `local_runner/url_safety.py`. 전체
+  회귀 2680건 통과 `[실측]`(오케스트레이터 실행).

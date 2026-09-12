@@ -556,6 +556,22 @@ select.cin-lg {
   background: var(--c-panel);
   max-height: 6rem;
   overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.queue-raw-excerpt--full {
+  max-height: none;
+}
+
+.review-agent-note {
+  font-size: 0.71875rem;
+  color: var(--c-dim);
+  line-height: 1.6;
+  padding: 0.5625rem 0.625rem;
+  border: 1px solid var(--c-line);
+  border-radius: 0.3125rem;
+  background: var(--c-panel);
+  overflow-wrap: anywhere;
 }
 
 .queue-warn-callout {
