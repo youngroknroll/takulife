@@ -3,6 +3,7 @@
 import httpx
 import pytest
 
+from local_runner.claude_code_adapter import AdapterOutputError
 from local_runner.exploration_flow import (
     EXPLORATION_MAX_EVENTS,
     EXPLORATION_MAX_SOURCES,
@@ -274,11 +275,11 @@ def test_임대_상실_409는_남은_항목_처리를_즉시_멈추고_LeaseLost
 
     if fail_at == "event":
         # 첫 이벤트 제출에서 409가 났으므로 둘째 이벤트는 읽기조차 시도되지
-        # 않고, 소스 처리는 아예 시작되지 않는다.
+        # 않고, 소스 처리는 아예 시작되지 않는다. 페이로드 모양 자체는
+        # 결함 1 전용 테스트가 보므로 여기서는 호출 횟수·주소만 본다.
         assert fetch_calls == [events[0]["url"]]
-        assert client.submit_event_calls == [
-            {"source_url": events[0]["url"], "platform": "web", "is_event": True, "fields": {"title": "제목"}}
-        ]
+        assert len(client.submit_event_calls) == 1
+        assert client.submit_event_calls[0]["source_url"] == events[0]["url"]
         assert client.submit_candidate_calls == []
     else:
         # 이벤트 둘은 정상 처리되고, 첫 소스 제출에서 409가 나므로 둘째
@@ -359,3 +360,157 @@ def test_제출_중_409가_아닌_HTTP_오류는_그_항목만_건너뛰고_나�
     else:
         assert len(client.submit_candidate_attempts) == 2
         assert client.submit_candidate_calls == [sources[1]]
+
+
+# ---------------------------------------------------------------------------
+# 실기동 결함 1 — 제출 페이로드에 흐름이 아는 값(주소·원문·출처명)이
+# 빠져 서버가 전부 400으로 거부했다. 해석 모델은 이 값을 모른다 — 흐름이
+# 채워야 한다. page_fetch.fetch_event_text의 반환 모양은 호스트마다
+# 다르다(일반 웹은 {"raw_title", "raw_text"} dict, 인스타 캡션은 문자열
+# 하나) — 흐름이 그 차이를 흡수해 raw_title·raw_text로 분해한다.
+# ---------------------------------------------------------------------------
+
+
+def _interpreted_result():
+    return {
+        "is_event": True,
+        "judgment": "official",
+        "official_basis": "공식 홈페이지 명시",
+        "fields": {
+            "title": "하츠네 미쿠 팝업스토어",
+            "work_title": "하츠네 미쿠",
+            "category": "popup_store",
+            "region": "seoul",
+            "location_name": "",
+            "start_date": None,
+            "end_date": None,
+            "summary": "",
+        },
+        "confidence": 0.9,
+        "note": "",
+    }
+
+
+def _submit_payload_case_일반_웹():
+    return {
+        "platform": "web",
+        "fetched": {"raw_title": "웹 제목", "raw_text": "웹 본문"},
+        "expected_raw_title": "웹 제목",
+        "expected_raw_text": "웹 본문",
+    }
+
+
+def _submit_payload_case_인스타():
+    return {
+        "platform": "instagram",
+        "fetched": "인스타 캡션 원문",
+        "expected_raw_title": "",
+        "expected_raw_text": "인스타 캡션 원문",
+    }
+
+
+@pytest.mark.parametrize(
+    "make_case",
+    [_submit_payload_case_일반_웹, _submit_payload_case_인스타],
+    ids=["일반_웹", "인스타"],
+)
+def test_제출_페이로드에_흐름이_아는_주소_원문_출처명이_채워지고_해석이_낸_값은_보존된다(make_case):
+    case = make_case()
+    event = {"url": "https://example.com/event-1", "platform": case["platform"]}
+    interpreted_result = _interpreted_result()
+
+    def fake_fetch_text(*, url):
+        return case["fetched"]
+
+    def fake_interpret(*, text, url, platform):
+        return interpreted_result
+
+    client = _FakeClient()
+
+    run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=[event],
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert len(client.submit_event_calls) == 1
+    payload = client.submit_event_calls[0]
+
+    required_keys = (
+        "source_url",
+        "raw_title",
+        "raw_text",
+        "fields",
+        "confidence",
+        "note",
+        "platform",
+        "judgment",
+        "official_basis",
+        "source_name",
+    )
+    for key in required_keys:
+        assert key in payload
+
+    # 흐름이 아는 값 — 해석 모델은 낼 수 없다.
+    assert payload["source_url"] == event["url"]
+    assert payload["raw_title"] == case["expected_raw_title"]
+    assert payload["raw_text"] == case["expected_raw_text"]
+    assert payload["source_name"] == ""
+    assert payload["platform"] == case["platform"]
+
+    # 해석이 이미 낸 값은 흐름이 덮어쓰지 않는다.
+    assert payload["judgment"] == interpreted_result["judgment"]
+    assert payload["official_basis"] == interpreted_result["official_basis"]
+    assert payload["fields"] == interpreted_result["fields"]
+    assert payload["confidence"] == interpreted_result["confidence"]
+    assert payload["note"] == interpreted_result["note"]
+
+
+# ---------------------------------------------------------------------------
+# 실기동 결함 2 — 해석이 보정 재시도까지 실패해 AdapterOutputError를 내면
+# 실행 전체가 죽었다. 읽기 실패(BlockedResponseError·text 없음)와 같은
+# 취급으로 그 항목만 건너뛰고 실행은 계속돼야 한다.
+# ---------------------------------------------------------------------------
+
+
+def test_해석이_JSON을_못_내면_그_항목만_건너뛰고_다음_항목을_계속_처리한다():
+    events = [
+        {"url": "https://example.com/event-1", "platform": "web"},
+        {"url": "https://example.com/event-2", "platform": "web"},
+    ]
+
+    fetch_calls = []
+
+    def fake_fetch_text(*, url):
+        fetch_calls.append(url)
+        return {"raw_title": "제목", "raw_text": "본문"}
+
+    interpret_calls = []
+
+    def fake_interpret(*, text, url, platform):
+        interpret_calls.append(url)
+        if url == events[0]["url"]:
+            raise AdapterOutputError("could not recover JSON from adapter output")
+        return _interpreted_result()
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert fetch_calls == [events[0]["url"], events[1]["url"]]
+    assert interpret_calls == [events[0]["url"], events[1]["url"]]
+    assert len(client.submit_event_calls) == 1
+    assert client.submit_event_calls[0]["source_url"] == events[1]["url"]
+    assert summary == {"events_attempted": 2, "events_failed": 1}

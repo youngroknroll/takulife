@@ -80,6 +80,17 @@ def _process_run(client, run, exploration_result):
         # 부르지 않고 조용히 돌아온다. 통신 오류로 취급해 다시 던지면
         # _safe_poll이 실패로 집계해 다음 폴을 불필요하게 늦춘다.
         return
+    except Exception:
+        # except-ok: 흐름 안에서 예상 못한 예외까지 여기서 잡아 반드시
+        # 완료 보고를 보낸다 — 그러지 않으면 실행이 임대를 쥔 채 만료될
+        # 때까지 다음 탐색이 막힌다(실기동 결함 3).
+        client.complete(
+            run_id=run["run_id"],
+            lease_token=run["lease_token"],
+            runner_status="failed",
+            failure_kind="exploration_error",
+        )
+        return
     client.complete(
         run_id=run["run_id"],
         lease_token=run["lease_token"],

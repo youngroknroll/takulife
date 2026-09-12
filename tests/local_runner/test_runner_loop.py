@@ -355,3 +355,41 @@ def test_이벤트도_소스도_없는_탐색_결과는_실패가_아니라_성�
             "events_failed": 0,
         }
     ]
+
+
+def test_흐름에서_예상하지_못한_예외가_나면_실패로_완료_보고를_보내고_임대를_붙들지_않는다(monkeypatch):
+    """실기동 결함 3 — 탐색 흐름이 임대 상실이 아닌 다른 예외로 죽으면
+    완료 보고를 못 보내 실행이 claimed 상태로 남고 임대가 만료될 때까지
+    다음 탐색이 막혔다. 임대 상실(LeaseLostError)만 예외로 조용히 끝내고,
+    그 외 예상 못한 예외는 실패로 완료 보고를 보내 임대를 즉시 반환해야
+    한다."""
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+    client = _CompleteRecordingClient(run)
+
+    def _raise_unexpected(**kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _make_fake_ticker_class([]))
+    monkeypatch.setattr(
+        runner_module,
+        "_run_exploration_agent",
+        lambda prompt: {"events": [], "sources": []},
+    )
+    monkeypatch.setattr(runner_module, "run_exploration_flow", _raise_unexpected)
+
+    runner_module._run_once(client)
+
+    assert client.complete_calls == [
+        {
+            "runner_status": "failed",
+            "failure_kind": "exploration_error",
+            "events_attempted": 0,
+            "events_failed": 0,
+        }
+    ]

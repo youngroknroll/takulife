@@ -75,6 +75,7 @@ def run_exploration_flow(
         interpret = functools.partial(_default_interpret, vocab=vocab)
 
     from local_runner.caption_interpreter import should_submit
+    from local_runner.claude_code_adapter import AdapterOutputError
     from local_runner.page_fetch import BlockedResponseError
 
     urls = [event["url"] for event in events]
@@ -101,17 +102,41 @@ def run_exploration_flow(
 
         events_attempted += 1
         try:
-            text = fetch_text(url=url)
+            fetched = fetch_text(url=url)
         except BlockedResponseError:
             blocked_hosts.add(hostname)
             events_failed += 1
             continue
 
-        if text is None:
+        if fetched is None:
             events_failed += 1
             continue
 
-        interpreted = interpret(text=text, url=url, platform=event.get("platform"))
+        # 읽기 반환 모양이 호스트마다 다르다 — 일반 웹은 {"raw_title",
+        # "raw_text"} dict, 인스타 캡션은 문자열 하나다. 여기서 흡수해
+        # raw_title·raw_text로 갈라 둔다.
+        if isinstance(fetched, dict):
+            raw_title = fetched.get("raw_title", "")
+            raw_text = fetched.get("raw_text", "")
+        else:
+            raw_title = ""
+            raw_text = fetched
+
+        # 해석 모델에는 제목과 본문을 한 텍스트로 합쳐 넘긴다 — 인스타 캡션은
+        # 이미 한 덩어리라 그대로, 일반 웹은 제목이 본문과 분리돼 있어 모델이
+        # 놓치지 않도록 앞에 붙인다.
+        interpretation_text = f"{raw_title}\n{raw_text}" if raw_title else raw_text
+
+        try:
+            interpreted = interpret(
+                text=interpretation_text, url=url, platform=event.get("platform")
+            )
+        except AdapterOutputError:
+            # 읽기 실패와 같은 취급이다 — 이 항목만 건너뛰고 실행 전체를
+            # 죽이지 않는다.
+            events_failed += 1
+            continue
+
         if not should_submit(interpreted=interpreted):
             continue
 
@@ -119,6 +144,14 @@ def run_exploration_flow(
         # 해석이 이미 낸 값을 그대로 둔다.
         payload = dict(interpreted)
         payload.setdefault("platform", event.get("platform"))
+        # 해석 모델은 주소·원문·출처명을 모른다 — 흐름이 아는 값을 채운다.
+        payload.setdefault("source_url", url)
+        payload.setdefault("raw_title", raw_title)
+        payload.setdefault("raw_text", raw_text)
+        # 공식 채널명을 확인할 근거가 없다 — 검색어를 넣지 말라는 계획
+        # 제약과 같은 이유로 지어내는 대신 비워 둔다(검수 화면은 빈
+        # source_name을 이미 정상 상태로 다룬다).
+        payload.setdefault("source_name", "")
         try:
             client.submit_event(run_id=run_id, lease_token=lease_token, event=payload)
         except httpx.HTTPStatusError as exc:
