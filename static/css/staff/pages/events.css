@@ -283,6 +283,19 @@
   background: var(--c-panel);
 }
 
+.events-empty-title {
+  margin: 0 0 0.5rem;
+}
+
+/* 걸린 필터 요약 목록. 본문(위 제목)보다 한 단계 약하게 보이도록 글자만 줄인다. */
+.events-empty-filters {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--c-faint);
+}
+
 /* ── 일괄 처리 바(drafts.css .queue-bulkbar 계열과 같은 값, 페이지별 분리) ── */
 .events-bulkbar {
   display: flex;
