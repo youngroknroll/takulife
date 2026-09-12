@@ -22,7 +22,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `[실측 2026-09-09]` `uv run pytest -q` → **2506 passed**(76.22초, PR #351 머지 후 main 73a7539) |
+| 백엔드 회귀 | `[실측 2026-09-12]` `uv run pytest -q` → **2684 passed**(10 deselected, 76.90초, PR #361 머지 후 main `cfd69d3a`) |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
@@ -30,7 +30,8 @@
 | 행사 카탈로그 | `[실측 2026-08-24]` 게시 169건 중 **146건 종료(86%)**, 진행·예정 23건, 검증 완료 0건 |
 | OAuth 활성화 | **활성화 완료**(B2 코드 해소=트랙 11, GCP 클라이언트·env 설정 및 실 OAuth 왕복 검증=사용자, 2026-08-26) |
 | e2e 여정 스위트 | `[코드] [실측 2026-09-09]` 트랙 27로 재도입, `tests/e2e/` 8파일·10건, 명령 `uv run pytest -q -m e2e tests/e2e`. 기본 `uv run pytest -q`는 `addopts`의 `-m "not e2e"`로 e2e 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) |
-| 회원 닉네임(트랙 29) | `[코드 2026-09-10]` 구현 완료·PR 대기 — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
+| 회원 닉네임(트랙 29) | `[실측 gh]` PR #358 머지 완료(2026-09-10, merge commit `3ca5d184`, 커밋 10개) — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
+| 키워드 탐색(트랙 30) | `[실측 gh]` PR #361 머지 완료(2026-09-12, main `cfd69d3a`) — 검색어 탐색 → 결정론 읽기 → 해석 → 승인 가능한 드래프트·소스 등록 3단 분리. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md`. 이연 항목은 G6 |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -330,8 +331,9 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 ### G6 트랙 30(키워드 탐색) 이연 항목(2026-09-12)
 
 트랙 30(키워드 탐색 → 판별 → 드래프트·소스 등록) 승인 범위 밖으로 이연한
-항목. 가드레일 정본은 `docs/BE/draft-source-agent-discovery.md` "트랙 30"
-절.
+항목. 트랙 30 본체는 PR #361로 머지 완료됐다(2026-09-12, main `cfd69d3a`)
+`[실측 gh]`. 가드레일 정본은 `docs/BE/draft-source-agent-discovery.md`
+"트랙 30" 절.
 
 - `[코드]` `local_runner/page_fetch.py:129-147`(`_fetch_general_web`) 일반
   웹 응답 크기 상한을 응답을 다 내려받은 뒤 `len(html.encode(...))`로
