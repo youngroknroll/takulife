@@ -5,6 +5,7 @@
 """
 from django.db import models
 
+from core.categories import PALETTE
 from core.validators import validate_category_slug
 from core.vocab import CATEGORY, CATEGORY_LABELS
 
@@ -26,11 +27,12 @@ class Category(models.Model):
 
     palette_slot 배정: 신규 생성 시 빈 슬롯을 자동 배정하고, 슬롯이
     모두 찼으면 PaletteSlotsExhaustedError로 생성 자체를 막는다(관리
-    화면이 잡아 안내할 예정). 슬롯 상한(PALETTE_SLOT_COUNT)은 나중에
-    CSS 팔레트 토큰·계약 테스트가 같은 값을 참조할 단일 출처다.
+    화면이 잡아 안내할 예정). 슬롯 상한(PALETTE_SLOT_COUNT)은
+    core.categories.PALETTE 길이에서 파생시켜 CSS 팔레트 토큰·계약
+    테스트와 어긋나지 않게 한다.
     """
 
-    PALETTE_SLOT_COUNT = 12
+    PALETTE_SLOT_COUNT = len(PALETTE)
 
     slug = models.CharField(
         max_length=64, unique=True, validators=[validate_category_slug]
