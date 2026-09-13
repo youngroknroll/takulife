@@ -18,7 +18,7 @@
         <div class="account-settings-overview-row">
           <dt>닉네임</dt>
           <dd>
-            <span class="account-settings-overview-value">{{ request.user.nickname }}</span>
+            <span class="account-settings-overview-value" title="{{ request.user.nickname }}">{{ request.user.nickname }}</span>
             <a class="account-settings-overview-action" href="{% url 'account-nickname-page' %}">변경 &rarr;</a>
           </dd>
         </div>

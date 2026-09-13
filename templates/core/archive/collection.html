@@ -159,6 +159,7 @@
                   <a
                     class="collection-work-link{% if facet.title == work_title %} is-active{% endif %}"
                     href="?work_title={{ facet.title|urlencode }}{% if is_wanted_value %}&is_wanted={{ is_wanted_value }}{% endif %}{% if duplicate_value %}&duplicate={{ duplicate_value }}{% endif %}{% if tradeable_value %}&tradeable={{ tradeable_value }}{% endif %}{% if owned_value %}&owned={{ owned_value }}{% endif %}{% if character_name %}&character_name={{ character_name|urlencode }}{% endif %}{% if item_type %}&item_type={{ item_type|urlencode }}{% endif %}{% if view_mode == "list" %}&view=list{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+                    title="{{ facet.title }}"
                     {% if facet.title == work_title %}aria-current="true"{% endif %}
                   >
                     <span class="series-dot {{ facet.series_ink_class }}" aria-hidden="true"></span>

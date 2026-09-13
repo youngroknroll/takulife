@@ -99,7 +99,7 @@
                        href="/staff/drafts/{{ row.draft.id }}/{{ detail_query }}"
                        {% if forloop.first %}aria-current="true"{% endif %}>
                       <span class="queue-title" title="{{ title|default:'(제목 없음)' }}">{{ title|default:"(제목 없음)" }}</span>
-                      <span class="queue-source mono">{{ row.draft.source_name|default:row.draft.source_url }}</span>
+                      <span class="queue-source mono" title="{{ row.draft.source_name|default:row.draft.source_url }}">{{ row.draft.source_name|default:row.draft.source_url }}</span>
                       {% if not selected_status %}
                         <span class="queue-status-chip review-status-{{ row.draft.review_status }}" data-draft-status-chip>{{ row.draft.review_status|review_status_label }}</span>
                       {% endif %}
@@ -194,7 +194,7 @@
 
                 <div class="queue-field-block">
                   <div class="queue-field-label mono">공식 URL</div>
-                  <div class="mono queue-url-box"><a href="{{ row.draft.source_url }}" target="_blank" rel="noopener">{{ row.draft.source_url }} ↗</a></div>
+                  <div class="mono queue-url-box"><a href="{{ row.draft.source_url }}" title="{{ row.draft.source_url }}" target="_blank" rel="noopener">{{ row.draft.source_url }} ↗</a></div>
                 </div>
 
                 {% if row.draft.raw_text %}

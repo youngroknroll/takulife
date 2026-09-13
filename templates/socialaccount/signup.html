@@ -40,7 +40,7 @@
       {% include "core/partials/_auth_form_errors.html" with errors=form.non_field_errors %}
       <hr class="auth-rule">
       <p class="auth-description">{{ account.get_provider.name }} 계정으로 로그인합니다. 아래 정보를 확인해 가입을 완료해 주세요.</p>
-      <form method="post" action="{% url 'socialaccount_signup' %}" class="auth-form">
+      <form method="post" action="{% url 'socialaccount_signup' %}" class="auth-form" data-submit-guard>
         {% csrf_token %}
         {{ redirect_field }}
         {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
