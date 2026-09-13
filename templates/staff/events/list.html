@@ -109,7 +109,7 @@
                   {% endif %}
                 </td>
                 <td class="mono events-id-cell">{{ row.event.id }}</td>
-                <td class="events-title-cell">{{ row.event.title|default:"(제목 없음)" }}</td>
+                <td class="events-title-cell" title="{{ row.event.title|default:'(제목 없음)' }}">{{ row.event.title|default:"(제목 없음)" }}</td>
                 <td class="mono events-dates-cell">{{ row.event.start_date|default:"?" }} ~ {{ row.event.end_date|default:"?" }}</td>
                 <td class="events-region-cell">{{ row.region_label|default:"-" }}</td>
                 <td class="events-category-cell">{{ row.category_label|default:"-" }}</td>

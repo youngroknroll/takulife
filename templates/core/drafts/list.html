@@ -98,7 +98,7 @@
                     <a class="queue-row-open" data-queue-row-open data-draft-id="{{ row.draft.id }}"
                        href="/staff/drafts/{{ row.draft.id }}/{{ detail_query }}"
                        {% if forloop.first %}aria-current="true"{% endif %}>
-                      <span class="queue-title">{{ title|default:"(제목 없음)" }}</span>
+                      <span class="queue-title" title="{{ title|default:'(제목 없음)' }}">{{ title|default:"(제목 없음)" }}</span>
                       <span class="queue-source mono">{{ row.draft.source_name|default:row.draft.source_url }}</span>
                       {% if not selected_status %}
                         <span class="queue-status-chip review-status-{{ row.draft.review_status }}" data-draft-status-chip>{{ row.draft.review_status|review_status_label }}</span>
