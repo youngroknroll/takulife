@@ -123,6 +123,10 @@
   border-bottom: 1px solid var(--c-line);
 }
 
+.cat-table tbody td {
+  vertical-align: middle;
+}
+
 .cat-table tbody tr {
   height: 2.125rem;
   border-bottom: 1px solid var(--c-line-soft);
@@ -346,6 +350,7 @@
 
 .cat-slug-readonly {
   display: inline-flex;
+  width: 100%;
   align-items: center;
   height: 2rem;
   padding: 0 0.5625rem;
@@ -588,7 +593,58 @@
 }
 
 /* ── 반응형: 좁은 폭에서 표는 가로 스크롤, 폼 그리드는 1열로 ─── */
-@media (max-width: 48rem) {
+/* ── 처리 중 스피너 ────────────────────────────────────────────────
+ * data-submit-guard가 제출 시 .is-loading을 붙인다(클래스명 고정 —
+ * api.js의 pageshow 핸들러가 이 이름으로 bfcache 복원을 되돌린다).
+ * 폭을 바꾸지 않으려고 ::after를 absolute로 띄운다. 행 액션 버튼은
+ * table-layout:fixed의 고정폭 셀 안이라, 텍스트 뒤에 아이콘을 이어붙이면
+ * 셀 경계에서 잘린다.
+ */
+.cat-row-action-btn.is-loading,
+.cat-rail-btn.is-loading,
+.cat-save-cta.is-loading,
+.cat-confirm-confirm-btn.is-loading {
+  position: relative;
+  color: transparent;
+}
+
+.cat-row-action-btn.is-loading::after,
+.cat-rail-btn.is-loading::after,
+.cat-save-cta.is-loading::after,
+.cat-confirm-confirm-btn.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.85em;
+  height: 0.85em;
+  margin: -0.425em 0 0 -0.425em;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: cat-btn-spin 0.6s linear infinite;
+}
+
+@keyframes cat-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 움직임을 줄여 달라고 한 사용자에게는 회전을 멈춘 정지 링만 남긴다.
+ * 소비자 objects/interaction.css는 이 처리를 빠뜨려 스피너가 계속 도는데,
+ * 그 누락을 여기로 복제하지 않는다.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .cat-row-action-btn.is-loading::after,
+  .cat-rail-btn.is-loading::after,
+  .cat-save-cta.is-loading::after,
+  .cat-confirm-confirm-btn.is-loading::after {
+    animation: none;
+  }
+}
+
+@media (max-width: 74.9375rem) {
   .cat-field-grid {
     grid-template-columns: 1fr;
   }

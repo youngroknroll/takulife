@@ -78,7 +78,7 @@
                 현재 비활성 상태입니다. 다시 활성화하면 소비자 필터에 다시 노출됩니다.
               {% endif %}
             </p>
-            <form method="post" action="{% url 'staff:category-set-active' category.id %}">
+            <form method="post" action="{% url 'staff:category-set-active' category.id %}" data-submit-guard>
               {% csrf_token %}
               <input type="hidden" name="enabled" value="{% if category.is_active %}0{% else %}1{% endif %}">
               {% if category.is_active %}
