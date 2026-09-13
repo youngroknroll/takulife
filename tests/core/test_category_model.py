@@ -14,6 +14,15 @@
   accounts.validators.validate_nickname도 필드 validators로 등록돼
   있고, 매니저를 거치지 않는 직접 생성 시엔 호출자가 full_clean()을
   불러야 하는 것과 같은 전제다.
+- ⚠️ core/migrations/0006_seed_categories가 테스트 DB에도 적용된다
+  (Django가 테스트 DB를 만들 때 전체 마이그레이션을 재생하므로). 그
+  결과 이 파일의 모든 테스트는 core.vocab.CATEGORY 어휘 수만큼의
+  Category 행이 이미 존재하는 상태에서 시작하고, 빈 팔레트 슬롯은
+  `Category.PALETTE_SLOT_COUNT - core.vocab.CATEGORY 어휘 수`만큼만
+  남아 있다. 새 테스트에서 슬러그를 고를 때는 core.vocab.CATEGORY와
+  겹치지 않는 슬러그를 쓰고, 슬롯 개수를 셀 때는 시딩된 슬러그 목록을
+  하드코딩하지 말고 DB에서 읽어라(예:
+  `Category.objects.exclude(palette_slot=None).values_list("palette_slot", flat=True)`).
 """
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -57,19 +66,15 @@ def test_슬러그에_허용되지_않은_문자가_있으면_거부된다(slug)
 
 
 def test_카테고리를_생성하면_팔레트_슬롯이_자동_배정된다():
-    existing_slugs = [
-        "popup_store",
-        "collaboration_cafe",
-        "theater_bonus",
-        "goods_reservation",
-        "exhibition",
-        "fan_meeting",
-        "concert",
-    ]
-    used_slots = set()
-    for index, slug in enumerate(existing_slugs):
-        category = Category.objects.create(slug=slug, label=f"기존라벨{index}")
-        used_slots.add(category.palette_slot)
+    # 0006_seed_categories가 테스트 DB에도 적용돼 시딩된 어휘가 이미
+    # 존재한다(모듈 독스트링 참고). 그 슬러그를 다시 만들면
+    # unique=True 충돌이 나므로, 기존에 쓰인 슬롯을 DB에서 읽어 새
+    # 카테고리 하나가 그 슬롯들과 겹치지 않는 슬롯을 받는지만 본다.
+    used_slots = set(
+        Category.objects.exclude(palette_slot=None).values_list(
+            "palette_slot", flat=True
+        )
+    )
 
     new_category = Category.objects.create(slug="new_category", label="새카테고리")
 
