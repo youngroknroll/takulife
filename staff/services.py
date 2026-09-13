@@ -11,7 +11,7 @@ import logging
 from django.db import transaction
 
 from events.models import Event
-from events.services import hard_delete_event
+from events.services import hard_delete_event, reconcile_category_palette_slot
 
 logger = logging.getLogger(__name__)
 
@@ -67,4 +67,6 @@ def delete_event(*, event):
                 collection_item_count=counts["collection_item"],
             )
         logger.info("Hard-deleting event pk=%s", locked_event.pk)
+        category_slug = locked_event.category
         hard_delete_event(event=locked_event)
+        reconcile_category_palette_slot(category_slug=category_slug)

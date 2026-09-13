@@ -4,9 +4,17 @@
 비즈니스 규칙(대체값, 어휘 검증, 정렬)은 뷰가 아니라 여기 둔다.
 """
 from django.db import models
+from django.dispatch import Signal
 
 from core.categories import PALETTE
 from core.validators import validate_category_slug
+
+# 카테고리가 활성→비활성으로 전이됐을 때만 보낸다. core는 events를 임포트할
+# 수 없어(아키텍처 경계 R1) 반납에 필요한 게시 이벤트 수를 직접 셀 수
+# 없다 — 그래서 core는 "무엇이 바뀌었는지"만 신호로 알리고, 실제 반납
+# 판단(core.categories.reconcile_palette_slot 호출)은 이 신호를 구독하는
+# events 쪽(events/signals.py)에서 한다.
+category_deactivated = Signal()
 
 
 class PaletteSlotsExhaustedError(Exception):
@@ -47,10 +55,26 @@ class Category(models.Model):
     class Meta:
         ordering = ["sort_order", "id"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 저장 시점에 활성→비활성 전이를 알아채기 위한 로드 시점 스냅샷.
+        # save()마다 DB를 다시 읽는 대신(추가 쿼리) 인메모리로 비교한다.
+        self._initial_is_active = self.is_active
+
     def save(self, *args, **kwargs):
-        if self.pk is None and self.palette_slot is None:
+        is_new = self.pk is None
+        if is_new and self.palette_slot is None:
             self.palette_slot = self._next_available_slot()
+
+        became_inactive = (
+            not is_new and self._initial_is_active and not self.is_active
+        )
+
         super().save(*args, **kwargs)
+        self._initial_is_active = self.is_active
+
+        if became_inactive:
+            category_deactivated.send(sender=Category, category=self)
 
     @classmethod
     def _next_available_slot(cls):

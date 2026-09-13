@@ -30,6 +30,41 @@ def category_label(slug: str) -> str:
     return label if label is not None else slug
 
 
+def reconcile_palette_slot(*, category_slug: str, published_count: int) -> None:
+    """카테고리 팔레트 슬롯 반납·재획득을 판단·수행한다(트랙 27 6단계).
+
+    규칙: 활성이거나 게시 이벤트가 1건 이상이면 슬롯을 유지/재획득하고,
+    비활성이면서 게시 이벤트가 0건이면 슬롯을 반납한다. "활성이면 게시
+    0건이어도 유지"가 핵심이다 — 그래야 방금 만든 카테고리가 생성 직후
+    자기 슬롯을 스스로 반납하는 결함(BIR Critical)이 재발하지 않는다.
+
+    호출 시점은 게시상태 전이·카테고리 활성 상태 전이뿐이다(호출부가
+    보장). 조회(GET) 경로에서는 절대 호출하면 안 된다.
+    """
+    from django.db import IntegrityError
+
+    from core.models import Category, PaletteSlotsExhaustedError
+
+    try:
+        category = Category.objects.get(slug=category_slug)
+    except Category.DoesNotExist:
+        return
+
+    should_have_slot = category.is_active or published_count > 0
+
+    if should_have_slot and category.palette_slot is None:
+        try:
+            category.palette_slot = Category._next_available_slot()
+            category.save(update_fields=["palette_slot"])
+        except (PaletteSlotsExhaustedError, IntegrityError):
+            # 빈 슬롯이 없거나(고갈) 동시 요청과 경합해 실패했다 — 재획득
+            # 실패는 palette_slot=None 폴백일 뿐, 호출부의 게시를 막지 않는다.
+            pass
+    elif not should_have_slot and category.palette_slot is not None:
+        category.palette_slot = None
+        category.save(update_fields=["palette_slot"])
+
+
 def category_slugs() -> list[str]:
     """활성 카테고리 슬러그 목록(호출 시점 조회). LLM 추출 스키마·재검증이
     비활성 카테고리를 새로 제안하지 않도록 활성만 포함한다."""
