@@ -22,7 +22,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `[실측 2026-09-12]` `uv run pytest -q` → **2721 passed**(10 deselected, 80.70초, 트랙 26, 브랜치 `feat/staff-event-list-filters` HEAD `145632a1`) |
+| 백엔드 회귀 | `[실측 2026-09-13]` `uv run pytest -q` → **2816 passed**(10 deselected, 81.18초, 카테고리 어휘 트랙, 브랜치 `feat/category-vocabulary-crud` HEAD `f51df94a`) |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
@@ -30,6 +30,7 @@
 | 행사 카탈로그 | `[실측 2026-08-24]` 게시 169건 중 **146건 종료(86%)**, 진행·예정 23건, 검증 완료 0건 |
 | OAuth 활성화 | **활성화 완료**(B2 코드 해소=트랙 11, GCP 클라이언트·env 설정 및 실 OAuth 왕복 검증=사용자, 2026-08-26) |
 | e2e 여정 스위트 | `[코드] [실측 2026-09-09]` 트랙 27로 재도입, `tests/e2e/` 8파일·10건, 명령 `uv run pytest -q -m e2e tests/e2e`. 기본 `uv run pytest -q`는 `addopts`의 `-m "not e2e"`로 e2e 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) |
+| 카테고리 어휘 스태프 CRUD | `[코드 2026-09-13]` 구현 완료·PR 대기 — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극**: 소비자 화면이 아직 슬러그 기반 색 토큰을 써서 새 카테고리는 소비자 쪽에서 중립색으로 렌더된다(이관 표면 템플릿 9지점·CSS 25지점 `[실측]`) |
 | 회원 닉네임(트랙 29) | `[코드 2026-09-10]` 구현 완료·PR 대기 — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
