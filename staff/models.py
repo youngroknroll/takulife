@@ -29,6 +29,9 @@ class StaffActionLog(models.Model):
         DRAFT_CREATE = "draft_create", "Draft create"
         DRAFT_UPDATE = "draft_update", "Draft update"
         DRAFT_REOPEN = "draft_reopen", "Draft reopen"
+        CATEGORY_CREATE = "category_create", "Category create"
+        CATEGORY_UPDATE = "category_update", "Category update"
+        CATEGORY_DISABLE = "category_disable", "Category disable"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -52,6 +55,12 @@ class StaffActionLog(models.Model):
         on_delete=models.SET_NULL,
         related_name="+",
     )
+    target_category = models.ForeignKey(
+        "core.Category",
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -64,6 +73,8 @@ class StaffActionLog(models.Model):
             target_id = self.target_draft_id
         elif self.target_event_id is not None:
             target_id = self.target_event_id
+        elif self.target_category_id is not None:
+            target_id = self.target_category_id
         else:
             target_id = self.target_user_id
         if target_id is None:

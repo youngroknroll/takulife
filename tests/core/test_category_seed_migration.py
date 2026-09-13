@@ -13,12 +13,23 @@ core.vocab.CATEGORY를 라이브로 읽지 않고, 마이그레이션이 심어�
 패턴을 그대로 따른다.
 """
 import pytest
+from django.core.management import call_command
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 
 from core.categories import PALETTE
 
 pytestmark = pytest.mark.contract
+
+
+@pytest.fixture(autouse=True)
+def _restore_migrations_to_head():
+    """core를 0006 이전으로 되감으면 Django가 의존 관계상 staff.0011도 같이
+    되감는다. 이 테스트는 core만 0006으로 다시 올리므로 staff는 head보다
+    한 단계 뒤에 남아, 뒤이어 도는 다른 테스트가 없는 컬럼을 만난다. 매 테스트
+    뒤에 전체 앱을 최신으로 다시 이주시켜 이 잔여 상태를 지운다."""
+    yield
+    call_command("migrate", verbosity=0)
 
 # core/migrations/0006_seed_categories.py의 _CATEGORY와 같은 값(2026-09-13
 # 기준)을 독립적으로 하드코딩한다 — core.vocab.CATEGORY를 참조하지 않는다.
