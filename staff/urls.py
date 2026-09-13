@@ -94,4 +94,12 @@ urlpatterns = [
         staff_views.staff_account_set_active,
         name="account-set-active",
     ),
+    path("categories/", staff_views.category_list, name="category-list"),
+    path("categories/create/", staff_views.category_create, name="category-create"),
+    path("categories/<int:pk>/edit/", staff_views.category_edit, name="category-edit"),
+    path(
+        "categories/<int:pk>/active/",
+        staff_views.category_set_active,
+        name="category-set-active",
+    ),
 ]

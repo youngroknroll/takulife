@@ -118,7 +118,7 @@
       <div class="cat-browse">
         {% for tile in category_tiles %}
           <a class="cat-dot" href="/events/?category={{ tile.slug }}">
-            <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink);" aria-hidden="true"></span>
+            <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink, var(--brand-ink));" aria-hidden="true"></span>
             <span class="cat-dot-info">
               <span class="cat-name">{{ tile.label }}</span>
               <span class="cat-count">{{ tile.count }}개</span>

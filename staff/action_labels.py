@@ -28,4 +28,5 @@ ACTION_LABELS = {
     "category_create": "카테고리 생성",
     "category_update": "카테고리 수정",
     "category_disable": "카테고리 비활성화",
+    "category_enable": "카테고리 활성화",
 }

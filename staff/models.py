@@ -32,6 +32,7 @@ class StaffActionLog(models.Model):
         CATEGORY_CREATE = "category_create", "Category create"
         CATEGORY_UPDATE = "category_update", "Category update"
         CATEGORY_DISABLE = "category_disable", "Category disable"
+        CATEGORY_ENABLE = "category_enable", "Category enable"
 
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,

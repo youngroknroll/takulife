@@ -1,0 +1,95 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 카테고리 수정 #{{ category.slug }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/pages/categories.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="cat-page" id="staff-main">
+    <div class="cat-form-topbar">
+      <a class="staff-cta" href="{% url 'staff:category-list' %}">← 목록으로</a>
+      <span class="cat-status-badge{% if category.is_active %} cat-status-badge--active{% else %} cat-status-badge--inactive{% endif %}">{% if category.is_active %}활성{% else %}비활성{% endif %}</span>
+    </div>
+
+    {% if field_errors.non_field %}
+      <div class="cat-form-error">
+        <span class="mono cat-form-error-tag">오류</span>
+        <span>{{ field_errors.non_field }}</span>
+      </div>
+    {% endif %}
+
+    <div class="cat-form-grid">
+      <form class="cat-form-panel" method="post" action="{% url 'staff:category-edit' category.id %}" novalidate data-submit-guard>
+        {% csrf_token %}
+        <div class="cat-form-panel-head">
+          <h2 class="cat-form-panel-title">필드 편집</h2>
+          <span class="mono cat-form-panel-note">core.Category</span>
+        </div>
+        <div class="cat-field-grid">
+          <div class="cat-field">
+            <label for="cat-edit-label">라벨<span class="mono cat-field-name">label</span></label>
+            <input class="cat-input" id="cat-edit-label" name="label" type="text" value="{{ form_values.label }}">
+            {% if field_errors.label %}<p class="cat-field-error">{{ field_errors.label }}</p>{% endif %}
+          </div>
+          <div class="cat-field">
+            <label>슬러그<span class="mono cat-field-name">slug</span></label>
+            <span class="mono cat-slug-readonly">{{ category.slug }} (불변)</span>
+          </div>
+        </div>
+        <div class="cat-form-panel-foot">
+          <a class="staff-cta" href="{% url 'staff:category-list' %}">취소</a>
+          <button class="cat-save-cta" type="submit">저장</button>
+        </div>
+      </form>
+
+      <div class="cat-rail">
+        <div class="cat-rail-card">
+          <div class="cat-rail-card-head">
+            <h2 class="cat-rail-card-title">팔레트</h2>
+          </div>
+          <div class="cat-rail-card-body">
+            {% if category.palette_slot is not None %}
+              <p class="cat-rail-note">슬롯 <span class="mono">{{ category.palette_slot }}</span> 배정됨</p>
+            {% else %}
+              <p class="cat-rail-note cat-rail-note--warn">미배정 — 중립색으로 표시됩니다</p>
+            {% endif %}
+            <div class="cat-palette-preview">
+              <div class="cat-palette-card" style="background:{{ palette_hex.light_soft }};color:{{ palette_hex.light_ink }}">
+                <span class="cat-palette-card-label">라이트</span>
+              </div>
+              <div class="cat-palette-card" style="background:{{ palette_hex.dark_soft }};color:{{ palette_hex.dark_ink }}">
+                <span class="cat-palette-card-label">다크</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cat-rail-card">
+          <div class="cat-rail-card-head">
+            <h2 class="cat-rail-card-title">노출 상태</h2>
+          </div>
+          <div class="cat-rail-card-body">
+            <p class="cat-rail-note">
+              {% if category.is_active %}
+                현재 활성 상태입니다. 비활성화하면 신규 등록 목록에서 제외되고, 게시 이벤트가 0건이 되면 소비자 필터에서도 사라집니다.
+              {% else %}
+                현재 비활성 상태입니다. 다시 활성화하면 소비자 필터에 다시 노출됩니다.
+              {% endif %}
+            </p>
+            <form method="post" action="{% url 'staff:category-set-active' category.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="enabled" value="{% if category.is_active %}0{% else %}1{% endif %}">
+              {% if category.is_active %}
+                <button class="cat-rail-btn cat-rail-btn--danger" type="submit">비활성화</button>
+              {% else %}
+                <button class="cat-rail-btn cat-rail-btn--accent" type="submit">다시 활성화</button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

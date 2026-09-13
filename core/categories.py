@@ -124,3 +124,21 @@ PALETTE: tuple[dict[str, str], ...] = (
     {"light_soft": "#dcfce7", "light_ink": "#166534", "dark_soft": "#14532d", "dark_ink": "#86efac"},  # green
     {"light_soft": "#e0f2fe", "light_ink": "#0369a1", "dark_soft": "#0c4a6e", "dark_ink": "#7dd3fc"},  # sky
 )
+
+# 슬롯 미배정 카테고리를 스태프 화면에서 렌더할 때만 쓰는 중립색(트랙 27 11단계).
+# 소비자 화면은 아직 슬러그 기반 CSS 토큰(--cat-{slug}-*)을 쓰고 이 슬롯
+# 팔레트로 이관되지 않았다 — 그 이관은 이번 트랙 범위 밖이다.
+UNASSIGNED_PALETTE = {
+    "light_soft": "#f1f5f9",
+    "light_ink": "#64748b",
+    "dark_soft": "#1e293b",
+    "dark_ink": "#94a3b8",
+}
+
+
+def palette_hex_for(slot) -> dict:
+    """슬롯 번호 → hex 4종 dict. 범위를 벗어나거나 None이면 중립색 폴백을
+    돌려준다 — 템플릿이 None 분기를 하지 않아도 되게 항상 4키를 보장한다."""
+    if slot is None or not (0 <= slot < len(PALETTE)):
+        return UNASSIGNED_PALETTE
+    return PALETTE[slot]
