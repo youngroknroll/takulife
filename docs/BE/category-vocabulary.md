@@ -128,6 +128,22 @@
 `accounts`에 의존하는 다른 앱의 마이그레이션이 0건이라 무증상이다
 `[실측 2026-09-13]`. 그 앱을 참조하는 FK가 생기면 같은 증상이 나타난다.
 
+### ⚠️ transactional 테스트가 어휘를 비운다
+
+어휘가 상수가 아니라 DB 행이 되면서 새로 생긴 함정이다.
+`transaction=True` 테스트는 끝나며 테이블을 비우는데, 마이그레이션이 심은
+시딩은 **복구되지 않는다.** 그래서 **첫 transactional 테스트만 7건을 보고
+두 번째부터 0건을 본다** `[실측 2026-09-13]`.
+
+순서 의존이라 증상이 "왜 이 테스트만 실패하지"로 보인다. 실제로 e2e 드래프트
+승인 여정이 이렇게 깨졌다 — 게시 시 카테고리 검증이 빈 어휘를 만나 실패했고,
+2816개 테스트는 전부 통과하는 상태였다. 여정 e2e가 잡아낸 결함이다.
+
+`tests/conftest.py`의 autouse 픽스처 `_reseed_category_vocabulary`가 복구한다.
+transactional 여부를 먼저 판정하고 나서만 DB를 조회하므로 `-m unit`은 DB에
+접근하지 않는다. 새로 `transaction=True` 테스트를 쓸 때 어휘가 비어 보이면
+이 픽스처부터 확인하라.
+
 ## 감사 로그
 
 `StaffActionLog.target_category` FK와 액션 4종(`category_create`/`update`/

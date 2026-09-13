@@ -18,6 +18,55 @@ from drafts.models import DraftSource, EventDraft
 from events.models import Event
 
 
+# core/migrations/0006_seed_categories.py의 _CATEGORY와 같은 값이다.
+# 마이그레이션은 동결 스냅샷을 심으므로 여기서 그 파일을 import하지 않는다.
+_SEEDED_CATEGORY = (
+    ("popup_store", "팝업스토어"),
+    ("collaboration_cafe", "콜라보 카페"),
+    ("theater_bonus", "극장 특전"),
+    ("goods_reservation", "굿즈 예약"),
+    ("exhibition", "전시"),
+    ("fan_meeting", "팬미팅"),
+    ("concert", "콘서트"),
+)
+
+
+@pytest.fixture(autouse=True)
+def _reseed_category_vocabulary(request):
+    """transactional 테스트가 비운 카테고리 어휘를 되살린다.
+
+    카테고리는 상수가 아니라 DB 행이라(core/0006이 심는다), transaction=True
+    테스트가 끝나며 테이블을 비우면 마이그레이션 시딩이 복구되지 않는다.
+    그래서 **첫 transactional 테스트만 7건을 보고 두 번째부터 0건을 본다**
+    [실측]. 순서에 따라 결과가 달라지는 함정이라, 어휘에 기대는 테스트가
+    "왜 나만 실패하지"로 보인다 — 실제로 e2e 드래프트 승인 여정이 이렇게
+    깨졌다(게시 시 카테고리 검증 실패).
+
+    non-transactional 테스트는 롤백으로 시딩이 그대로 남으므로 건드리지
+    않는다. DB를 쓰지 않는 테스트(-m unit)에서 DB에 접근하지 않도록
+    transactional 여부를 먼저 판정하고 나서만 조회한다.
+    """
+    marker = request.node.get_closest_marker("django_db")
+    is_transactional = bool(
+        (marker and marker.kwargs.get("transaction"))
+        or "transactional_db" in request.fixturenames
+    )
+    if not is_transactional:
+        yield
+        return
+
+    from core.models import Category
+
+    if not Category.objects.exists():
+        Category.objects.bulk_create(
+            [
+                Category(slug=slug, label=label, palette_slot=index, sort_order=index)
+                for index, (slug, label) in enumerate(_SEEDED_CATEGORY)
+            ]
+        )
+    yield
+
+
 @pytest.fixture
 def clear_cache(db):
     """호출 횟수 제한 상태를 테스트 사이에서 끊는다. 캐시에 쌓인 횟수를 직접
