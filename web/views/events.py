@@ -29,7 +29,6 @@ from core.models import HomeConfig
 from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
-    CATEGORY,
     CATEGORY_LABELS,
     EVENT_SORT,
     EVENT_SORT_LABELS,
@@ -42,6 +41,7 @@ from events.models import Event
 from events.presenters import build_event_json_ld, derive_event_display
 from events.queries import (
     PUBLIC_LISTING_PAGE_SIZE,
+    consumer_category_choices,
     list_published_events,
     list_published_events_for_month,
     parse_public_listing_params,
@@ -217,7 +217,7 @@ def event_list(request):
         "active_filters": active_filters,
         "active_filter_chips": active_filter_chips,
         # 필터 UI용 어휘 튜플
-        "CATEGORY": CATEGORY,
+        "CATEGORY": consumer_category_choices(),
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
         # 정렬이 사이드바 필터 폼에서 결과 상단 토글 메뉴로 옮겨져,
@@ -406,7 +406,7 @@ def event_calendar(request):
         ),
         # 필터 패널 컨텍스트. event_list와 그대로 맞춰 기존 필터 체크
         # 마크업을 그대로 재사용할 수 있게 한다.
-        "CATEGORY": CATEGORY,
+        "CATEGORY": consumer_category_choices(),
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
         "q": q,

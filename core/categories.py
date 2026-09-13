@@ -73,6 +73,14 @@ def category_slugs() -> list[str]:
     return list(Category.objects.filter(is_active=True).values_list("slug", flat=True))
 
 
+def active_category_choices() -> list[tuple[str, str]]:
+    """활성 카테고리의 (slug, label) 쌍. 스태프가 새 이벤트를 등록할 때
+    비활성 카테고리를 고르지 못하게, 등록 폼 선택지에만 쓴다."""
+    from core.models import Category
+
+    return list(Category.objects.filter(is_active=True).values_list("slug", "label"))
+
+
 PALETTE: tuple[dict[str, str], ...] = (
     # 슬롯 0~6: 기존 CATEGORY 7종과 동일한 색(core/vocab.py 순서 그대로).
     {"light_soft": "#f3e8ff", "light_ink": "#7e22ce", "dark_soft": "#342442", "dark_ink": "#b17edc"},  # popup_store

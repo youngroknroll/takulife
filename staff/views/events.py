@@ -15,6 +15,7 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.categories import active_category_choices, category_exists
 from core.errors import field_error_response
 from core.vocab import (
     CATEGORY,
@@ -154,7 +155,7 @@ def _selected_event_filters(get_params):
     raw_category = get_params.get("category", None)
     if raw_category is None:
         selected_category = None
-    elif raw_category == "" or raw_category in CATEGORY_LABELS:
+    elif raw_category == "" or category_exists(raw_category):
         selected_category = raw_category
     else:
         selected_category = None
@@ -446,7 +447,7 @@ def staff_event_create(request):
                 {
                     "form_values": form_values,
                     "field_errors": field_errors,
-                    "CATEGORY": CATEGORY,
+                    "CATEGORY": active_category_choices(),
                     "REGION": REGION,
                 },
                 status=400,
@@ -461,7 +462,7 @@ def staff_event_create(request):
         {
             "form_values": EVENT_CREATE_BLANK_FORM_VALUES,
             "field_errors": {},
-            "CATEGORY": CATEGORY,
+            "CATEGORY": active_category_choices(),
             "REGION": REGION,
         },
     )
