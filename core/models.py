@@ -7,7 +7,6 @@ from django.db import models
 
 from core.categories import PALETTE
 from core.validators import validate_category_slug
-from core.vocab import CATEGORY, CATEGORY_LABELS
 
 
 class PaletteSlotsExhaustedError(Exception):
@@ -90,18 +89,34 @@ class HomeConfig(models.Model):
     def featured_category_pairs(self):
         """노출 카테고리의 (slug, label) 쌍을 반환한다.
 
-        - featured_categories가 비어 있으면 어휘 순서대로 전체 CATEGORY를 반환(대체값).
-        - 비어 있지 않으면 저장된 순서대로 반환하되, 어휘에 없는 슬러그는
-          조용히 제외한다(검증 가드).
+        core.vocab 상수 대신 DB(Category)를 조회한다 — 다음 단계에서
+        core.vocab이 Category를 읽게 되므로, 여기서 core.vocab을 계속
+        참조하면 vocab↔models 순환 임포트가 생기기 때문이다.
+
+        - featured_categories가 비어 있으면 활성 카테고리 전체를
+          sort_order 순으로 반환(대체값).
+        - 비어 있지 않으면 저장된 순서대로 반환하되, DB에 없는 슬러그는
+          조용히 제외하고(검증 가드), 비활성 카테고리도 제외한다 — 이
+          목록은 소비자 필터가 아니라 스태프가 고른 홈 큐레이션 타일이라
+          스태프가 비활성화한 카테고리를 계속 노출할 이유가 없다.
         """
         if not self.featured_categories:
-            return list(CATEGORY)
+            return list(
+                Category.objects.filter(is_active=True).values_list(
+                    "slug", "label"
+                )
+            )
 
-        valid_slugs = set(CATEGORY_LABELS.keys())
+        categories_by_slug = {
+            category.slug: category
+            for category in Category.objects.filter(
+                slug__in=self.featured_categories, is_active=True
+            )
+        }
         return [
-            (slug, CATEGORY_LABELS[slug])
+            (slug, categories_by_slug[slug].label)
             for slug in self.featured_categories
-            if slug in valid_slugs
+            if slug in categories_by_slug
         ]
 
 
