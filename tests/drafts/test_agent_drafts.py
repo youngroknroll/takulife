@@ -7,6 +7,7 @@ from datetime import date, timedelta
 import pytest
 from django.utils import timezone
 
+from core.vocab import CATEGORY
 from drafts.agent_drafts import (
     MAX_EVENTS_PER_RUN,
     AgentDraftSchemaError,
@@ -21,6 +22,20 @@ from drafts.url_safety import UnsafeFetchUrlError
 
 
 pytestmark = pytest.mark.unit
+
+
+# parse_agent_draft_payload는 스키마가 유효한 모든 페이로드에서
+# is_valid_category(core.vocab, 트랙 27 5단계에서 DB(Category) 조회로 바뀜)를
+# 항상 부른다. 이 파일이 보는 건 '어휘 밖 값이 빈 값으로 정규화되는가'라는
+# normalize 로직이지 실제 DB 반영 여부가 아니므로(그 증명은
+# tests/core/test_category_queries.py·test_vocab.py가 domain으로 진다),
+# 고정 어휘로 대체해도 이 파일의 각 테스트가 증명하려는 바는 그대로 유지된다.
+@pytest.fixture(autouse=True)
+def _고정_카테고리_어휘(monkeypatch):
+    monkeypatch.setattr(
+        "drafts.agent_drafts.is_valid_category",
+        lambda value: value == "" or value in dict(CATEGORY),
+    )
 
 
 def _valid_payload():

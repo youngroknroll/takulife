@@ -14,9 +14,22 @@ from core.llm.exceptions import (
     LLMResponseError,
     LLMTimeoutError,
 )
-from core.vocab import CATEGORY, REGION
+from core.vocab import CATEGORY
 from drafts.extraction import extract_event_fields_heuristic
 from drafts.llm_extraction import SYSTEM_PROMPT, extract_event_fields_llm
+
+
+# 카테고리 어휘가 트랙 27 5단계에서 core.categories.category_slugs(DB 조회)로
+# 옮겨간 뒤에도 이 파일은 순수 unit(DB 없음)로 남아야 한다. 이 모듈이 부르는
+# drafts.llm_extraction._tool_schema/_map_response가 매 호출마다 그 함수를
+# 부르므로, 여기서만 기존 core.vocab.CATEGORY 값으로 고정한다 — 실제 DB
+# 반영을 검증하는 시나리오는 tests/drafts/test_draft_llm_extraction_category_vocab.py로 옮겼다.
+@pytest.fixture(autouse=True)
+def _고정_카테고리_어휘(monkeypatch):
+    monkeypatch.setattr(
+        "core.categories.category_slugs",
+        lambda: [slug for slug, _ in CATEGORY],
+    )
 
 
 HIGH_CONFIDENCE = {
@@ -84,20 +97,6 @@ class TestPromptConstruction:
         user_content = calls[0]["user_content"]
         assert long_text not in user_content
         assert ("가" * 8000) in user_content
-
-    def test_도구_스키마는_전체_카테고리와_지역_슬러그를_포함한다(self, monkeypatch, sample_extraction):
-        fake, calls = _fake_call_tool([_response()])
-        monkeypatch.setattr("drafts.llm_extraction.call_tool", fake)
-
-        extract_event_fields_llm(sample_extraction["raw_title"], sample_extraction["raw_text"])
-
-        schema = calls[0]["tool_schema"]
-        category_slugs = [slug for slug, _ in CATEGORY]
-        region_slugs = [slug for slug, _ in REGION]
-        for slug in category_slugs:
-            assert slug in schema["properties"]["category"]["enum"]
-        for slug in region_slugs:
-            assert slug in schema["properties"]["region"]["enum"]
 
     def test_시스템_프롬프트는_인젝션_방어_문구를_포함한다(self):
         assert (

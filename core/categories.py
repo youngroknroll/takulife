@@ -9,6 +9,35 @@ Category.palette_slot(0~PALETTE_SLOT_COUNT-1)이 실제로 어떤 색인지의
 순서를 core.vocab.CATEGORY 튜플 순서와 맞춰야 한다.
 """
 
+def category_exists(slug: str) -> bool:
+    """슬러그가 Category 행으로 존재하면 True(비활성 포함).
+
+    비활성 포함: 확정 결정 "비활성 ≠ 삭제" — 비활성화된 카테고리로 이미
+    저장된 이벤트가 재게시될 때 어휘 검증(core.vocab.is_valid_category)에서
+    거부되면 안 된다.
+    """
+    from core.models import Category
+
+    return Category.objects.filter(slug=slug).exists()
+
+
+def category_label(slug: str) -> str:
+    """슬러그 → 라벨. 없으면 슬러그를 그대로 돌려준다(core.vocab.archive_status_label
+    선례) — 카테고리 행이 지워져도 그 슬러그를 쓰던 기존 이벤트 렌더가 깨지지 않게 한다."""
+    from core.models import Category
+
+    label = Category.objects.filter(slug=slug).values_list("label", flat=True).first()
+    return label if label is not None else slug
+
+
+def category_slugs() -> list[str]:
+    """활성 카테고리 슬러그 목록(호출 시점 조회). LLM 추출 스키마·재검증이
+    비활성 카테고리를 새로 제안하지 않도록 활성만 포함한다."""
+    from core.models import Category
+
+    return list(Category.objects.filter(is_active=True).values_list("slug", flat=True))
+
+
 PALETTE: tuple[dict[str, str], ...] = (
     # 슬롯 0~6: 기존 CATEGORY 7종과 동일한 색(core/vocab.py 순서 그대로).
     {"light_soft": "#f3e8ff", "light_ink": "#7e22ce", "dark_soft": "#342442", "dark_ink": "#b17edc"},  # popup_store
