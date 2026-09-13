@@ -46,6 +46,12 @@ sidebar_pending_draft_count를 그대로 쓴다(D4).
       <span class="staff-nav-icon mono" aria-hidden="true">C</span>
       <span class="staff-nav-label">홈 카테고리</span>
     </a>
+    {% if request.user.is_superuser %}
+      <a class="staff-nav-item{% if url_name == 'category-list' or url_name == 'category-create' or url_name == 'category-edit' or url_name == 'category-set-active' %} is-active{% endif %}" href="{% url 'staff:category-list' %}">
+        <span class="staff-nav-icon mono" aria-hidden="true">K</span>
+        <span class="staff-nav-label">카테고리 어휘</span>
+      </a>
+    {% endif %}
 
     <p class="staff-nav-group mono">기록</p>
     <a class="staff-nav-item{% if url_name == 'audit-log' %} is-active{% endif %}" href="{% url 'staff:audit-log' %}">
@@ -86,6 +92,8 @@ sidebar_pending_draft_count를 그대로 쓴다(D4).
     {% elif url_name == 'draft-source-list' %}검수 /
     {% elif url_name == 'event-list' or url_name == 'event-create' or url_name == 'event-edit' %}카탈로그 /
     {% elif url_name == 'home-categories' %}카탈로그 /
+    {% elif url_name == 'category-list' %}카탈로그 /
+    {% elif url_name == 'category-create' or url_name == 'category-edit' or url_name == 'category-set-active' %}카탈로그 / 카테고리 어휘 /
     {% elif url_name == 'audit-log' %}기록 /
     {% elif url_name == 'account-list' %}계정 /
     {% elif url_name == 'account-detail' or url_name == 'account-set-staff' or url_name == 'account-set-active' %}계정 / 계정 목록 /
@@ -100,6 +108,10 @@ sidebar_pending_draft_count를 그대로 쓴다(D4).
     {% elif url_name == 'event-create' %}이벤트 생성
     {% elif url_name == 'event-edit' %}이벤트 수정
     {% elif url_name == 'home-categories' %}홈 카테고리
+    {% elif url_name == 'category-list' %}카테고리 어휘
+    {% elif url_name == 'category-create' %}카테고리 생성
+    {% elif url_name == 'category-edit' %}카테고리 수정
+    {% elif url_name == 'category-set-active' %}카테고리 상태 변경
     {% elif url_name == 'audit-log' %}감사 로그
     {% elif url_name == 'account-list' %}계정
     {% elif url_name == 'account-detail' %}계정 상세

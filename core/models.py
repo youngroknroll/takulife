@@ -4,8 +4,92 @@
 비즈니스 규칙(대체값, 어휘 검증, 정렬)은 뷰가 아니라 여기 둔다.
 """
 from django.db import models
+from django.dispatch import Signal
 
-from core.vocab import CATEGORY, CATEGORY_LABELS
+from core.categories import PALETTE
+from core.validators import validate_category_slug
+
+# 카테고리가 활성→비활성으로 전이됐을 때만 보낸다. core는 events를 임포트할
+# 수 없어(아키텍처 경계 R1) 반납에 필요한 게시 이벤트 수를 직접 셀 수
+# 없다 — 그래서 core는 "무엇이 바뀌었는지"만 신호로 알리고, 실제 반납
+# 판단(core.categories.reconcile_palette_slot 호출)은 이 신호를 구독하는
+# events 쪽(events/signals.py)에서 한다.
+category_deactivated = Signal()
+
+
+class PaletteSlotsExhaustedError(Exception):
+    """신규 카테고리 생성 시 빈 팔레트 슬롯이 없을 때만 던진다.
+
+    반납 후 재획득(이후 단계) 실패는 이 예외가 아니라 palette_slot=None
+    폴백으로 처리한다 — None이 유효한 이유는 "재획득 실패"이지
+    "생성 실패"가 아니기 때문이다.
+    """
+
+
+class Category(models.Model):
+    """카테고리 어휘 항목 하나(트랙 27 1단계).
+
+    core.vocab.CATEGORY를 DB로 옮기는 첫 산물이며, 이 단계는 스키마만
+    만든다 — core.vocab 조회 전환은 4단계다.
+
+    palette_slot 배정: 신규 생성 시 빈 슬롯을 자동 배정하고, 슬롯이
+    모두 찼으면 PaletteSlotsExhaustedError로 생성 자체를 막는다(관리
+    화면이 잡아 안내할 예정). 슬롯 상한(PALETTE_SLOT_COUNT)은
+    core.categories.PALETTE 길이에서 파생시켜 CSS 팔레트 토큰·계약
+    테스트와 어긋나지 않게 한다.
+    """
+
+    PALETTE_SLOT_COUNT = len(PALETTE)
+
+    slug = models.CharField(
+        max_length=64, unique=True, validators=[validate_category_slug]
+    )
+    # 라벨 유일성은 같은 칩에 서로 다른 카테고리가 합쳐지는 결함을 막는 제약이다.
+    label = models.CharField(max_length=64, unique=True)
+    is_active = models.BooleanField(default=True)
+    # null=True: "미배정"은 정상 상태(재획득 실패 폴백). unique=True로 두 카테고리가
+    # 같은 색을 갖는 경합을 DB 레벨에서도 막는다(NULL은 유일성 검사에서 제외됨).
+    palette_slot = models.PositiveSmallIntegerField(null=True, blank=True, unique=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 저장 시점에 활성→비활성 전이를 알아채기 위한 로드 시점 스냅샷.
+        # save()마다 DB를 다시 읽는 대신(추가 쿼리) 인메모리로 비교한다.
+        self._initial_is_active = self.is_active
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        if is_new and self.palette_slot is None:
+            self.palette_slot = self._next_available_slot()
+
+        became_inactive = (
+            not is_new and self._initial_is_active and not self.is_active
+        )
+
+        super().save(*args, **kwargs)
+        self._initial_is_active = self.is_active
+
+        if became_inactive:
+            category_deactivated.send(sender=Category, category=self)
+
+    @classmethod
+    def _next_available_slot(cls):
+        # 동시 요청 경합의 최종 방어선은 palette_slot의 DB 유일 제약이다.
+        # 재시도나 select_for_update 같은 명시적 잠금은 이 모델을 호출하는
+        # 서비스 계층(트랙 27 11단계)에서 필요할 때 추가한다.
+        used_slots = set(
+            cls.objects.exclude(palette_slot=None).values_list(
+                "palette_slot", flat=True
+            )
+        )
+        for slot in range(cls.PALETTE_SLOT_COUNT):
+            if slot not in used_slots:
+                return slot
+        raise PaletteSlotsExhaustedError("사용 가능한 팔레트 슬롯이 없습니다.")
 
 
 class HomeConfig(models.Model):
@@ -29,18 +113,34 @@ class HomeConfig(models.Model):
     def featured_category_pairs(self):
         """노출 카테고리의 (slug, label) 쌍을 반환한다.
 
-        - featured_categories가 비어 있으면 어휘 순서대로 전체 CATEGORY를 반환(대체값).
-        - 비어 있지 않으면 저장된 순서대로 반환하되, 어휘에 없는 슬러그는
-          조용히 제외한다(검증 가드).
+        core.vocab 상수 대신 DB(Category)를 조회한다 — 다음 단계에서
+        core.vocab이 Category를 읽게 되므로, 여기서 core.vocab을 계속
+        참조하면 vocab↔models 순환 임포트가 생기기 때문이다.
+
+        - featured_categories가 비어 있으면 활성 카테고리 전체를
+          sort_order 순으로 반환(대체값).
+        - 비어 있지 않으면 저장된 순서대로 반환하되, DB에 없는 슬러그는
+          조용히 제외하고(검증 가드), 비활성 카테고리도 제외한다 — 이
+          목록은 소비자 필터가 아니라 스태프가 고른 홈 큐레이션 타일이라
+          스태프가 비활성화한 카테고리를 계속 노출할 이유가 없다.
         """
         if not self.featured_categories:
-            return list(CATEGORY)
+            return list(
+                Category.objects.filter(is_active=True).values_list(
+                    "slug", "label"
+                )
+            )
 
-        valid_slugs = set(CATEGORY_LABELS.keys())
+        categories_by_slug = {
+            category.slug: category
+            for category in Category.objects.filter(
+                slug__in=self.featured_categories, is_active=True
+            )
+        }
         return [
-            (slug, CATEGORY_LABELS[slug])
+            (slug, categories_by_slug[slug].label)
             for slug in self.featured_categories
-            if slug in valid_slugs
+            if slug in categories_by_slug
         ]
 
 

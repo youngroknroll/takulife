@@ -1,9 +1,11 @@
 """홈 카테고리 설정 화면(/staff/home-categories/) 인증 게이트, 템플릿 자산, 저장, 감사 로그 검증."""
+import re
+
 import pytest
 from django.db import IntegrityError
 from django.test import Client, override_settings
 
-from core.models import HomeConfig
+from core.models import Category, HomeConfig
 from staff.models import StaffActionLog
 
 
@@ -112,6 +114,48 @@ class TestStaffHomeCategoriesEventCounts:
 
         rows_by_slug = {row["slug"]: row for row in resp.context["category_rows"]}
         assert rows_by_slug["exhibition"]["event_count"] == 0
+
+
+@pytest.mark.django_db
+class TestStaffHomeCategoriesVocabulary:
+    """이 화면이 비활성 카테고리를 계속 보여줘 해제할 수 있게 해야 하는지,
+    아니면 소비자 홈(featured_category_pairs, 4단계에서 활성만으로 전환)과
+    같은 기준을 따라야 하는지는 PSO 판단이 필요하다 — 여기서는 판단이
+    갈리지 않는 절반만 고정한다: 런타임에 추가한 활성 카테고리는 반드시
+    행으로 나타난다."""
+
+    pytestmark = pytest.mark.web
+
+    def test_강조_카테고리_선택_표는_런타임에_추가한_카테고리를_보여준다(self, staff_client):
+        """지금은 core.vocab.CATEGORY 정적 튜플만 순회해 새 카테고리가
+        행에 나타나지 않는다 — Red 예상."""
+        Category.objects.create(slug="vintage_market_home", label="빈티지 마켓")
+
+        _, client = staff_client()
+        resp = client.get("/staff/home-categories/")
+
+        slugs = {row["slug"] for row in resp.context["category_rows"]}
+        assert "vintage_market_home" in slugs
+
+    def test_이미_강조_설정된_카테고리가_비활성화돼도_표에서_해제_가능하게_남는다(self, staff_client):
+        """활성일 때 먼저 강조 목록에 넣어 "쓰는 중" 상태를 만든 다음
+        비활성화한다. keep_slugs가 무력화되면 이 카테고리 행 자체가 표에서
+        사라져, 스태프가 이미 켠 강조를 체크박스로 해제할 방법이 없어진다."""
+        category = Category.objects.create(slug="retired_featured_home", label="폐지 강조")
+        config = HomeConfig.get_solo()
+        config.featured_categories = [category.slug]
+        config.save()
+        category.is_active = False
+        category.save()
+
+        _, client = staff_client()
+        resp = client.get("/staff/home-categories/")
+
+        content = resp.content.decode()
+        assert 'id="feature_retired_featured_home"' in content
+        assert re.search(
+            r'id="feature_retired_featured_home"[^>]*checked', content
+        )
 
 
 @pytest.mark.django_db

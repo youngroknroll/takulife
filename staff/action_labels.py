@@ -25,4 +25,8 @@ ACTION_LABELS = {
     "draft_create": "드래프트 생성",
     "draft_update": "드래프트 수정",
     "draft_reopen": "반려 재오픈",
+    "category_create": "카테고리 생성",
+    "category_update": "카테고리 수정",
+    "category_disable": "카테고리 비활성화",
+    "category_enable": "카테고리 활성화",
 }

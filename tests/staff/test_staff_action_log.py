@@ -7,6 +7,7 @@ import pytest
 from django.contrib import admin
 from django.test import RequestFactory
 
+from core.models import Category
 from events.models import Event
 from staff.admin import StaffActionLogAdmin
 from staff.models import StaffActionLog
@@ -154,6 +155,64 @@ def test_슈퍼유저도_액션_로그_어드민에서_추가_수정_삭제는_�
     assert log_admin.has_add_permission(request) is False
     assert log_admin.has_change_permission(request) is False
     assert log_admin.has_delete_permission(request) is False
+
+
+@pytest.mark.django_db
+def test_액션_로그에_대상_카테고리를_지정하면_대상_카테고리가_저장된다(make_user):
+    actor = make_user(is_staff=True, is_superuser=True)
+    category = Category.objects.create(slug="k01_slug", label="K01라벨")
+
+    entry = StaffActionLog.objects.create(
+        actor=actor,
+        action=StaffActionLog.Action.CATEGORY_CREATE,
+        target_category=category,
+    )
+
+    entry.refresh_from_db()
+    assert entry.action == "category_create"
+    assert entry.target_category_id == category.id
+
+
+@pytest.mark.django_db
+def test_대상_카테고리를_삭제해도_액션_로그는_남고_대상_참조만_비워진다():
+    category = Category.objects.create(slug="k04_slug", label="K04라벨")
+    entry = StaffActionLog.objects.create(
+        action=StaffActionLog.Action.CATEGORY_DISABLE, target_category=category
+    )
+
+    category.delete()
+    entry.refresh_from_db()
+
+    assert entry.target_category_id is None
+
+
+@pytest.mark.django_db
+def test_대상_카테고리가_있는_로그의_문자열_표현은_카테고리_id를_포함한다(make_user):
+    actor = make_user(is_staff=True, is_superuser=True)
+    category = Category.objects.create(slug="k_str_slug", label="문자열라벨")
+    entry = StaffActionLog.objects.create(
+        actor=actor, action=StaffActionLog.Action.CATEGORY_UPDATE, target_category=category
+    )
+
+    text = str(entry)
+
+    assert text == f"category_update #{category.id} by {actor.id}"
+
+
+@pytest.mark.django_db
+def test_카테고리_crud_액션_값은_필드_길이_제한_안에서_정상_저장된다():
+    """카테고리 CRUD 액션 값이 Action 필드 max_length=16을 넘으면 저장 시 DataError가 나야 한다."""
+    category = Category.objects.create(slug="len_check_slug", label="길이확인")
+
+    for action in (
+        StaffActionLog.Action.CATEGORY_CREATE,
+        StaffActionLog.Action.CATEGORY_UPDATE,
+        StaffActionLog.Action.CATEGORY_DISABLE,
+    ):
+        assert len(action) <= 16
+        entry = StaffActionLog.objects.create(action=action, target_category=category)
+        entry.refresh_from_db()
+        assert entry.action == action
 
 
 @pytest.mark.django_db
