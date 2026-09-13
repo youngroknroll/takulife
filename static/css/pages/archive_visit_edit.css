@@ -208,25 +208,6 @@
 .visit-edit-page .photo-preview-remove:hover {
   background: rgba(180, 0, 0, 0.75);
 }
-/* 공용 .is-loading 스피너(objects/interaction.css)는 버튼 앞에 보이는
-   텍스트가 있다고 가정해 margin-left로 스피너를 텍스트와 띄운다.
-   .photo-preview-remove는 22px 아이콘 전용 원(맨 텍스트 "×", 기존
-   사진 삭제 시 TakuAPI.setLoading이 걸림)이라 글리프와 스피너가
-   나란히 렌더돼 원 밖으로 삐져나갔다. 글리프를 숨기고 스피너를
-   가운데로 배치한다 — cards.css의 .event-compact-interest.is-loading과
-   같은 수정 방식을, 감쌀 글리프 span이 없는 순수 텍스트 노드에 맞게
-   적용. */
-.visit-edit-page .photo-preview-remove.is-loading {
-  color: transparent;
-}
-.visit-edit-page .photo-preview-remove.is-loading::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin-left: 0;
-  transform: translate(-50%, -50%);
-  color: #fff;
-}
 .visit-edit-page .visit-edit-photo-col .field-hint {
   margin: 0.5625rem 0 0;
   color: var(--muted);
@@ -466,24 +447,5 @@
   .visit-edit-page .visit-edit-delete-icon {
     display: inline;
     font-size: 1.1rem;
-  }
-  /* 모바일 전용: .visit-edit-delete-btn은 여기서 아이콘 전용(🗑,
-     텍스트는 위에서 숨김)이라 공용 .is-loading::after 스피너
-     (interaction.css, margin-left가 뒤 텍스트를 가정)가 글리프를
-     대체하지 못하고 옆에 나란히 렌더된다 — 위 .photo-preview-remove.
-     is-loading과 같은 사례, 같은 수정: 글리프를 숨기고(color:
-     transparent) ::after 스피너에 직접 보이는 색과 중앙 배치를 준다.
-     데스크톱은 그대로 둔다 — "기록 삭제" 텍스트가 보이는 채로 뒤에
-     스피너가 붙어도 문제없다. */
-  .visit-edit-page .visit-edit-delete-btn.is-loading {
-    color: transparent;
-  }
-  .visit-edit-page .visit-edit-delete-btn.is-loading::after {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    margin-left: 0;
-    transform: translate(-50%, -50%);
-    color: var(--rose-ink);
   }
 }

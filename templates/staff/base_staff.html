@@ -68,7 +68,7 @@
 
   <script defer src="{% static 'js/shared/theme.js' %}"></script>
   {% comment %}
-  window.TakuAPI는 하드 의존이다 — draft.js·draft_bulk.js·staff_event_edit.js가
+  window.TakuAPI는 하드 의존이다 — draft.js·draft_bulk.js가
   전부 쓴다. 여기서 빠뜨리면 승인·반려·수정이 첫 클릭에 조용히 죽는다(D1).
   {% endcomment %}
   <script defer src="{% static 'js/shared/api.js' %}"></script>
@@ -78,7 +78,7 @@
   각 템플릿의 extra_js를 따로 건드리지 않고도 생성/수정/삭제/발견 폼 전부를
   커버한다. 각 폼이 data-submit-guard로 옵트인해야 적용된다.
   {% endcomment %}
-  <script defer src="{% static 'js/shared/staff_submit_guard.js' %}"></script>
+  <script defer src="{% static 'js/shared/submit_guard.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

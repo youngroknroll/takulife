@@ -15,7 +15,7 @@
       {% if can_confirm %}
         {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 주소 확인" %}
         <p class="account-settings-description">{{ confirmation.email_address.email }}이(가) {{ user_display }}님의 이메일 주소가 맞는지 확인해주세요.</p>
-        <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="account-settings-form">
+        <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="account-settings-form" data-submit-guard>
           {% csrf_token %}
           {{ redirect_field }}
           <button type="submit" class="account-settings-submit-btn">확인</button>

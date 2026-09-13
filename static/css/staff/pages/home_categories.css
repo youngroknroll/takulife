@@ -50,6 +50,30 @@
   margin-left: auto;
 }
 
+/* 저장 CTA. 이 페이지가 events.css의 .events-save-cta를 쓰고 있었는데
+ * 그 파일은 여기서 로드되지 않아 브라우저 기본 버튼으로 렌더됐다.
+ * 페이지 CSS는 자기 클래스를 스스로 정의한다는 규약대로 옮겨 온다. */
+.home-cats-save-cta {
+  border: 1px solid var(--c-accent);
+  border-radius: 0.25rem;
+  background: var(--c-accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  height: 1.75rem;
+  padding: 0 0.75rem;
+  cursor: pointer;
+}
+
+.home-cats-save-cta:hover {
+  filter: brightness(0.94);
+}
+
+.home-cats-save-cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .home-cats-table {
   table-layout: fixed;
   width: 100%;
