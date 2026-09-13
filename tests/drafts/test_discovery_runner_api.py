@@ -4,6 +4,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
+from core.models import Category
 from core.vocab import CATEGORY, REGION
 from drafts.models import DiscoveryRunnerStatus, DraftSource, SourceCandidate, SourceDiscoveryRun
 from drafts.runner_views import RunnerTokenThrottle
@@ -120,6 +121,33 @@ def test_claim_응답은_카테고리와_지역_어휘_목록을_포함한다(cl
         "categories": [slug for slug, _ in CATEGORY],
         "regions": [slug for slug, _ in REGION],
     }
+
+
+def test_claim_응답의_카테고리_어휘는_런타임에_추가한_카테고리를_담고_비활성_카테고리는_뺀다(
+    client, runner_headers
+):
+    """core.categories.category_slugs()는 "LLM 재검증이 비활성 카테고리를
+    새로 제안하지 않도록" 활성만 돌려주게 설계돼 있다(그 함수 docstring) —
+    러너 vocab이 바로 그 설계 의도가 적용돼야 할 자리라 판단 갈림 없이
+    active-only로 고정한다. 지금은 core.vocab.CATEGORY 정적 튜플을 그대로
+    쓰고 있어 새 카테고리도, 비활성화도 반영되지 않는다 — Red 예상."""
+    Category.objects.create(slug="vintage_market_runner", label="빈티지 마켓")
+    concert = Category.objects.get(slug="concert")
+    concert.is_active = False
+    concert.save()
+    SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
+
+    response = client.post(
+        CLAIM_URL,
+        data={"provider": "claude-code"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    categories = response.json()["run"]["vocab"]["categories"]
+    assert "vintage_market_runner" in categories
+    assert "concert" not in categories
 
 
 def test_claim은_대기_실행이_없으면_run_None을_반환한다(client, runner_headers):

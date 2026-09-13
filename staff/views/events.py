@@ -15,10 +15,14 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.categories import active_category_choices, category_exists
+from core.categories import (
+    active_category_choices,
+    all_category_choices,
+    category_choices_for_editing,
+    category_exists,
+)
 from core.errors import field_error_response
 from core.vocab import (
-    CATEGORY,
     CATEGORY_LABELS,
     EVENT_STATUS,
     REGION,
@@ -283,7 +287,7 @@ def staff_events(request):
             "count": category_counts.get(slug, 0),
             "is_active": selected_category == slug,
         }
-        for slug, label in CATEGORY
+        for slug, label in all_category_choices()
     ]
     category_chips.append(
         {
@@ -524,7 +528,7 @@ def staff_event_edit(request, pk):
                     "event": event,
                     "form_values": form_values,
                     "field_errors": field_errors,
-                    "CATEGORY": CATEGORY,
+                    "CATEGORY": category_choices_for_editing(keep_slugs=[event.category]),
                     "REGION": REGION,
                     "list_query": list_query,
                     "archive_reference_counts": archive_reference_counts,
@@ -546,7 +550,7 @@ def staff_event_edit(request, pk):
             "event": event,
             "form_values": form_values,
             "field_errors": {},
-            "CATEGORY": CATEGORY,
+            "CATEGORY": category_choices_for_editing(keep_slugs=[event.category]),
             "REGION": REGION,
             "list_query": list_query,
             "archive_reference_counts": archive_reference_counts,

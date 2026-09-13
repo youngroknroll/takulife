@@ -5,6 +5,7 @@ import re
 import pytest
 from django.utils import timezone
 
+from core.models import Category
 from drafts.labels import REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
 
@@ -416,6 +417,49 @@ class TestEventDraftDetailView:
         assert resp.context["is_pending"] is True
         assert resp.context["category_label"] == "팝업스토어"
         assert resp.context["region_label"] == "서울"
+
+    def test_카테고리_선택지는_런타임에_추가한_카테고리를_담고_비활성_카테고리는_뺀다(self, staff_client, make_draft):
+        """드래프트 승인은 새 게시 이벤트를 만드는 경로라, 신규 등록 폼
+        (`core.categories.active_category_choices`)과 같은 기준(활성만)을
+        잠정 채택해 작성한다 — PSO 확인이 필요한 판단이다. 지금은
+        core.vocab.CATEGORY 정적 튜플을 그대로 렌더링해 새 카테고리도,
+        비활성화도 반영하지 않는다 — Red 예상."""
+        Category.objects.create(slug="vintage_market_draft", label="빈티지 마켓")
+        Category.objects.create(slug="retired_market_draft", label="폐지 마켓", is_active=False)
+        draft = make_draft("https://example.com/cat-select", extracted_title="선택지 드래프트")
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        content = resp.content.decode()
+        match = re.search(r'<select[^>]*id="edit-category"[^>]*>(.*?)</select>', content, re.DOTALL)
+        assert match
+        options = re.findall(r'<option value="([^"]*)"', match.group(1))
+        assert "vintage_market_draft" in options
+        assert "retired_market_draft" not in options
+
+    def test_드래프트가_참조하는_카테고리가_비활성화돼도_선택지에_남는다(self, staff_client, make_draft):
+        """드래프트를 먼저 활성 카테고리로 만든 다음 그 카테고리를
+        비활성화한다 — "비활성인데 현재 쓰는 중" 상태를 만드는 순서다.
+        keep_slugs가 무력화되면 선택지에서 빠져, 검수자가 저장만 눌러도
+        카테고리가 조용히 빈 값으로 바뀐다."""
+        category = Category.objects.create(slug="retired_in_use_draft", label="폐지 사용중 드래프트")
+        draft = make_draft(
+            "https://example.com/cat-retired-in-use",
+            extracted_title="폐지 카테고리 드래프트",
+            extracted_category="retired_in_use_draft",
+        )
+        category.is_active = False
+        category.save()
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        content = resp.content.decode()
+        match = re.search(r'<select[^>]*id="edit-category"[^>]*>(.*?)</select>', content, re.DOTALL)
+        assert match
+        options = re.findall(r'<option value="([^"]*)"', match.group(1))
+        assert "retired_in_use_draft" in options
 
     @pytest.mark.parametrize(
         "origin, expects_prefix",

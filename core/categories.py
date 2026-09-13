@@ -81,6 +81,31 @@ def active_category_choices() -> list[tuple[str, str]]:
     return list(Category.objects.filter(is_active=True).values_list("slug", "label"))
 
 
+def category_choices_for_editing(*, keep_slugs=()) -> list[tuple[str, str]]:
+    """활성 카테고리 + keep_slugs로 넘긴 현재 값(비활성이어도 유지)의
+    (slug, label) 쌍. 이미 저장된 값이 선택지에서 사라지면 단일 값은 저장할
+    때 다른 값으로 조용히 바뀌고, 다중 값(강조 카테고리)은 스태프가 이미 켠
+    값을 해제할 방법이 사라진다 — 그래서 기존 값 편집 화면에는 항상 넣는다."""
+    from django.db.models import Q
+
+    from core.models import Category
+
+    keep = [slug for slug in keep_slugs if slug]
+    condition = Q(is_active=True)
+    if keep:
+        condition |= Q(slug__in=keep)
+    return list(Category.objects.filter(condition).values_list("slug", "label"))
+
+
+def all_category_choices() -> list[tuple[str, str]]:
+    """전체 카테고리(비활성 포함)의 (slug, label) 쌍. 필터 칩은 URL
+    쿼리로 어떤 슬러그든 지정할 수 있어, 칩 목록도 활성 여부로 좁히면
+    URL로는 되는데 칩 클릭으로는 안 되는 불일치가 생긴다."""
+    from core.models import Category
+
+    return list(Category.objects.values_list("slug", "label"))
+
+
 PALETTE: tuple[dict[str, str], ...] = (
     # 슬롯 0~6: 기존 CATEGORY 7종과 동일한 색(core/vocab.py 순서 그대로).
     {"light_soft": "#f3e8ff", "light_ink": "#7e22ce", "dark_soft": "#342442", "dark_ink": "#b17edc"},  # popup_store
