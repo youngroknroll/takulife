@@ -439,20 +439,4 @@
     font-size: 1.1rem;
   }
 
-  /* 아이콘 전용 상태의 스피너 수정 — 이 브레이크포인트에만 적용한다.
-     `color: transparent`를 전역에 걸면 아이콘이 없는 데스크톱
-     텍스트 라벨 버튼까지 함께 지워진다(과거 2회 재발한 회귀).
-     .is-loading 자체는 이미 position: relative를 설정하므로
-     (interaction.css) 별도 포지셔닝 컨텍스트는 필요 없다. */
-  .collection-detail-page .collection-detail-delete-btn.is-loading {
-    color: transparent;
-  }
-  .collection-detail-page .collection-detail-delete-btn.is-loading::after {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    margin-left: 0;
-    transform: translate(-50%, -50%);
-    color: var(--rose-ink);
-  }
 }
