@@ -541,3 +541,33 @@ def test_스키마_위반_페이로드를_제출하면_AgentDraftSchemaError로_
         submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
 
     assert EventDraft.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_경쟁으로_기존_행을_놓친_제출은_예외_대신_기존_드래프트를_반환한다(monkeypatch):
+    run = _make_claimed_run()
+    source_url = "https://www.instagram.com/p/Dck7ZVUoG4i/"
+    existing_draft = EventDraft.objects.create(source_url=source_url, discovery_run=run)
+
+    original_filter = EventDraft.objects.filter
+    call_count = []
+
+    def flaky_filter(*args, **kwargs):
+        call_count.append(1)
+        # 첫 호출(경합으로 기존 행을 놓친 검사)만 빈 결과를 주고, 그 뒤로는
+        # 원래 조회로 돌아가야 재조회 결과가 실제 기존 드래프트를 본다.
+        if len(call_count) == 1:
+            return EventDraft.objects.none()
+        return original_filter(*args, **kwargs)
+
+    monkeypatch.setattr("drafts.agent_drafts.EventDraft.objects.filter", flaky_filter)
+
+    payload = _valid_payload_for_submit(source_url)
+    payload["platform"] = "instagram"
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert draft.pk == existing_draft.pk
+    assert created is False
+    assert EventDraft.objects.filter(source_url=source_url).count() == 1

@@ -13,7 +13,7 @@ from drafts.discovery_runs import locked_run_with_valid_lease, renew_lease
 from drafts.fetching import fetch_html
 from drafts.models import EventDraft
 from drafts.robots import RobotsChecker
-from drafts.services import create_draft_from_fields
+from drafts.services import DraftCreationDuplicateError, create_draft_from_fields
 from drafts.url_safety import validate_fetch_url
 
 _REQUIRED_KEYS = (
@@ -215,22 +215,28 @@ def submit_agent_draft(*, run_id, lease_token, payload):
         if run.events.count() >= MAX_EVENTS_PER_RUN:
             raise EventLimitExceededError
 
-        draft = create_draft_from_fields(
-            source_url=cleaned["source_url"],
-            source_name=cleaned["source_name"],
-            title=fields.get("title", ""),
-            category=fields.get("category", ""),
-            work_title=fields.get("work_title", ""),
-            location_name=fields.get("location_name", ""),
-            region=fields.get("region", ""),
-            summary=fields.get("summary", ""),
-            raw_title=cleaned["raw_title"],
-            raw_text=cleaned["raw_text"],
-            start_date=fields.get("start_date"),
-            end_date=fields.get("end_date"),
-            confidence=cleaned["confidence"],
-            extraction_method=EventDraft.ExtractionMethod.LLM,
-            intake_note=_build_intake_note(cleaned=cleaned),
-            discovery_run=run,
-        )
+        try:
+            draft = create_draft_from_fields(
+                source_url=cleaned["source_url"],
+                source_name=cleaned["source_name"],
+                title=fields.get("title", ""),
+                category=fields.get("category", ""),
+                work_title=fields.get("work_title", ""),
+                location_name=fields.get("location_name", ""),
+                region=fields.get("region", ""),
+                summary=fields.get("summary", ""),
+                raw_title=cleaned["raw_title"],
+                raw_text=cleaned["raw_text"],
+                start_date=fields.get("start_date"),
+                end_date=fields.get("end_date"),
+                confidence=cleaned["confidence"],
+                extraction_method=EventDraft.ExtractionMethod.LLM,
+                intake_note=_build_intake_note(cleaned=cleaned),
+                discovery_run=run,
+            )
+        except DraftCreationDuplicateError:
+            # 위 existing 검사와 생성 사이에 스태프 수동 생성이 커밋되는 경합은
+            # run 락이 막지 못한다 — 여기서도 duplicate를 existing 반환으로 정규화한다.
+            existing = EventDraft.objects.filter(source_url=cleaned["source_url"]).first()
+            return existing, False
         return draft, True
