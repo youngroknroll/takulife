@@ -44,6 +44,13 @@
   재현되지 않는다. `tests/archive/test_visit_record_status_orchestration.py`의
   RACE-02가 별도 스레드 + 별도 DB 커넥션 + `transaction=True`를 쓰는 이유가
   이것이다. 동시성 회귀 테스트를 단일 커넥션 픽스처로 옮기지 마라.
+- `mark_visited`·`mark_missed`·`revert_to_planned`는 상태 저장(`save`)부터
+  `_record_activity` 호출까지를 `transaction.atomic()`으로 감싼다
+  (2026-09-14). 활동 기록 삽입이 실패하면 상태 변경도 함께 롤백된다. 위
+  항목의 "save → 활동 로그 → 분석 이벤트 순서·위치를 옮기지 마라"는 그대로
+  유효하며, 이번 변경은 그 순서를 원자적으로 만들었을 뿐이다. 회귀:
+  `tests/archive/test_activity_log_orchestration.py::test_상태_전환_중_활동_기록_삽입이_실패하면_상태_변경도_함께_롤백된다`
+  (parametrize 3건 `[코드]`).
 
 ## Known gap
 

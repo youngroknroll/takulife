@@ -67,6 +67,15 @@ Event.DoesNotExist`(`:615`) → catch-all `except Exception:`(`:621`
 M4로 실측 확인 — B7이 실패). 트랜잭션이 항목 단위라 한 항목이 실패해도
 그 항목의 변경분만 롤백되고 나머지 항목 처리는 계속된다.
 
+`staff_event_delete`(단건 삭제 확인 POST)도 같은 규율을 따른다 — atomic
+첫 문장에서 `get_object_or_404(Event.objects.select_for_update(), pk=pk)`로
+행을 잠근 뒤 감사 로그 → `delete_event` 순서로 처리한다. 동시에 같은
+이벤트를 삭제하는 요청 중 늦은 쪽은 잠긴 행이 이미 사라졌으므로 404를
+받는다(500이 아니다). 교착은 없다 — 스태프 감사 로그의 FK 5개 전부
+`DEFERRABLE INITIALLY DEFERRED`라 `FOR KEY SHARE`는 커밋 시점에만 걸린다
+`[실측 pg_constraint 2026-09-14]`. 회귀:
+`tests/staff/test_staff_event_publish_delete_views.py::test_삭제_확인_POST_직전에_이벤트가_사라지면_500_대신_404를_응답한다`.
+
 ## (e) 감사: 성공(실제 전환) 항목만 건별 로그, 실패·멱등은 무로그
 
 `unpublish_event`가 실제로 실행된 항목만 `StaffActionLog.objects.create(
