@@ -35,9 +35,12 @@ def staff_home_categories(request):
                 checked.append((slug, order))
 
         checked.sort(key=lambda pair: pair[1])
-        config.featured_categories = [slug for slug, _ in checked]
 
         with transaction.atomic():
+            # 읽고-바꾸는 저장이라 잠그지 않으면 동시 저장이 서로 덮어쓴다
+            # (staff/views/categories.py:241-247과 같은 이유).
+            config = HomeConfig.objects.select_for_update().get(pk=config.pk)
+            config.featured_categories = [slug for slug, _ in checked]
             config.save()
             StaffActionLog.objects.create(
                 **_action_log_kwargs(
