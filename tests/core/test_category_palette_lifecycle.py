@@ -30,11 +30,13 @@ republish_event)를 거쳐 상태를 만든다 — "이벤트를 비공개로 �
 묻지 않는다.
 """
 import pytest
+from django.db import transaction
 
 from core.categories import category_exists, category_label
 from core.models import Category
 from events.models import Event
 from events.services import create_published_event, republish_event, unpublish_event
+from staff.models import StaffActionLog
 
 pytestmark = [pytest.mark.django_db, pytest.mark.domain]
 
@@ -205,6 +207,74 @@ def test_한_번도_쓰이지_않은_카테고리를_비활성화하면_슬롯�
 
     new_category = _create_category(slug="lifecycle_p09_new", label="P09새라벨")
     assert new_category.palette_slot == freed_slot
+
+
+def test_카테고리_슬롯_재획득이_충돌해도_뒤이은_감사로그_기록이_성공한다(admin_user, monkeypatch):
+    category = _create_category(slug="lifecycle_p10", label="P10라벨")
+    # save()가 생성 시 슬롯을 자동 배정하므로, update로 우회해 "반납된"
+    # 상태(슬롯 없음)를 직접 만든다.
+    Category.objects.filter(pk=category.pk).update(palette_slot=None)
+
+    # 슬롯 0은 시드 카테고리 popup_store가 이미 점유 중이다 — 재획득 시도가
+    # 경쟁에 진 것을 흉내 낸다(unique 제약 위반 → IntegrityError).
+    monkeypatch.setattr(Category, "_next_available_slot", classmethod(lambda cls: 0))
+
+    with transaction.atomic():
+        event = create_published_event(
+            title="이벤트_lifecycle_p10",
+            category=category.slug,
+            official_url="https://example.com/p10",
+        )
+        StaffActionLog.objects.create(
+            actor=admin_user,
+            action=StaffActionLog.Action.EVENT_CREATE,
+            target_event=event,
+        )
+
+    assert Event.objects.filter(official_url="https://example.com/p10").exists()
+    assert (
+        StaffActionLog.objects.filter(
+            action=StaffActionLog.Action.EVENT_CREATE, target_event=event
+        ).count()
+        == 1
+    )
+    category.refresh_from_db()
+    assert category.palette_slot is None  # 재획득 실패는 폴백일 뿐 게시를 막지 않는다
+
+
+def test_삭제_경로에서_슬롯_재획득이_충돌해도_이벤트_삭제와_감사로그가_함께_커밋된다(
+    admin_user, monkeypatch
+):
+    from staff.services import delete_event
+
+    category = _create_category(slug="lifecycle_p11", label="P11라벨")
+    Category.objects.filter(pk=category.pk).update(palette_slot=None)
+    event = _create_published_event(
+        category_slug=category.slug, official_url="https://example.com/p11"
+    )
+    # 생성 시 reconcile이 슬롯을 다시 배정해 버리므로, 삭제 경로의 재획득
+    # 경합을 재현하려면 생성 직후 다시 슬롯을 비워야 한다.
+    Category.objects.filter(pk=category.pk).update(palette_slot=None)
+
+    # 슬롯 0은 시드 카테고리 popup_store가 이미 점유 중이다 — 재획득 시도가
+    # 경쟁에 진 것을 흉내 낸다(unique 제약 위반 → IntegrityError).
+    monkeypatch.setattr(Category, "_next_available_slot", classmethod(lambda cls: 0))
+
+    with transaction.atomic():
+        StaffActionLog.objects.create(
+            actor=admin_user,
+            action=StaffActionLog.Action.EVENT_DELETE,
+            target_event=event,
+        )
+        delete_event(event=event)
+
+    assert not Event.objects.filter(pk=event.pk).exists()
+    assert (
+        StaffActionLog.objects.filter(action=StaffActionLog.Action.EVENT_DELETE).count()
+        == 1
+    )
+    category.refresh_from_db()
+    assert category.palette_slot is None
 
 
 def test_목록을_여러_번_조회해도_슬롯_배정이_바뀌지_않는다():
