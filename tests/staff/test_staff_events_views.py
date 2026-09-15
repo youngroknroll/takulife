@@ -1,8 +1,11 @@
 """스태프 행사 목록(/staff/events/) 인증 게이트와 경고/게시상태 필터링, 페이지네이션 검증."""
+import html
 import re
 from datetime import date, timedelta
+from urllib.parse import parse_qs, quote
 
 import pytest
+from django.urls import reverse
 from django.utils import timezone
 
 from events.models import Event
@@ -344,3 +347,366 @@ def test_필터_없이도_게시_행이_없는_페이지에_일괄_선택_바가
     empty_tag = re.search(r'<p[^>]*id="event-bulk-empty"[^>]*>', content)
     assert empty_tag, content
     assert "hidden" in empty_tag.group(0)
+
+
+def _href_in_group(content, group_label, marker):
+    """content에서 aria-label이 group_label인 필터 그룹 안에서 href에 marker를 포함하는
+    첫 앵커의 href 전체 문자열을 반환한다.
+
+    `{% querystring %}`는 현재 걸린 모든 축을 모든 링크에 이어붙이므로, marker
+    문자열만으로 링크를 고르면 다른 그룹의 링크를 잘못 집을 수 있다. 각 필터
+    그룹은 `role="group" aria-label="..."`이 붙은 하나의 평면적인 div이므로
+    (내부에 다른 div가 없다) 그 div 범위 안에서만 찾는다.
+    """
+    label_pos = content.index(f'aria-label="{group_label}"')
+    group_start = content.rfind("<div", 0, label_pos)
+    group_end = content.index("</div>", label_pos)
+    group_html = content[group_start:group_end]
+    match = re.search(rf'href="([^"]*{re.escape(marker)}[^"]*)"', group_html)
+    assert match, group_html
+    return match.group(1)
+
+
+# ---------------------------------------------------------------------------
+# 트랙 26: 정렬·기간·카테고리 필터 (도메인 계층은 이미 구현됨, 뷰·템플릿은 미구현)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_카테고리_필터를_적용하면_context에_선택된_카테고리가_담기고_목록이_좁혀진다(
+    staff_client, make_event
+):
+    staff, client = staff_client()
+    make_event(title="콘서트 행사", category="concert", official_url="https://example.com/category-filter-concert")
+    make_event(
+        title="전시 행사", category="exhibition", official_url="https://example.com/category-filter-exhibition"
+    )
+
+    resp = client.get("/staff/events/?category=concert")
+
+    assert resp.status_code == 200
+    assert resp.context["selected_category"] == "concert"
+    content = resp.content.decode()
+    assert "콘서트 행사" in content
+    assert "전시 행사" not in content
+
+
+@pytest.mark.django_db
+def test_허용되지_않은_카테고리_값을_지정하면_필터_없이_전체_행사가_노출된다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(
+        title="자유카테고리행사",
+        category="not-a-real-category",
+        official_url="https://example.com/category-invalid-free",
+    )
+
+    resp = client.get("/staff/events/?category=not-a-real-category")
+
+    assert resp.status_code == 200
+    assert resp.context["selected_category"] is None
+    assert "자유카테고리행사" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_기간_필터를_적용하면_context에_선택된_기간이_담기고_목록이_좁혀진다(staff_client, make_event):
+    staff, client = staff_client()
+    today = date.today()
+    make_event(
+        title="진행중 행사",
+        official_url="https://example.com/period-ongoing-in",
+        start_date=today - timedelta(days=1),
+        end_date=today + timedelta(days=10),
+    )
+    make_event(
+        title="예정 행사",
+        official_url="https://example.com/period-ongoing-out",
+        start_date=today + timedelta(days=5),
+        end_date=today + timedelta(days=15),
+    )
+
+    resp = client.get("/staff/events/?period=ongoing")
+
+    assert resp.status_code == 200
+    assert resp.context["selected_period"] == "ongoing"
+    content = resp.content.decode()
+    assert "진행중 행사" in content
+    assert "예정 행사" not in content
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "period_value",
+    ["not-a-real-period", "all"],
+    ids=["존재하지_않는_값", "all"],
+)
+def test_허용되지_않은_기간_값을_지정하면_필터_없이_전체_기간이_노출된다(
+    staff_client, make_event, period_value
+):
+    staff, client = staff_client()
+    make_event(
+        title="아무기간행사", official_url=f"https://example.com/period-invalid-{period_value}"
+    )
+
+    resp = client.get(f"/staff/events/?period={period_value}")
+
+    assert resp.status_code == 200
+    assert resp.context["selected_period"] == ""
+    assert "아무기간행사" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_정렬_파라미터를_적용하면_context에_선택된_정렬이_담기고_목록_순서가_바뀐다(
+    staff_client, make_event
+):
+    staff, client = staff_client()
+    today = date.today()
+    make_event(
+        title="늦게시작행사",
+        official_url="https://example.com/sort-start-asc-later",
+        start_date=today + timedelta(days=20),
+    )
+    make_event(
+        title="일찍시작행사",
+        official_url="https://example.com/sort-start-asc-earlier",
+        start_date=today + timedelta(days=1),
+    )
+
+    resp = client.get("/staff/events/?sort=start_asc")
+
+    assert resp.status_code == 200
+    assert resp.context["selected_sort"] == "start_asc"
+    content = resp.content.decode()
+    assert content.index("일찍시작행사") < content.index("늦게시작행사")
+
+
+@pytest.mark.django_db
+def test_허용되지_않은_정렬_값을_지정하면_필터_없이_현재_정렬이_유지된다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(title="먼저생성행사", official_url="https://example.com/sort-invalid-first")
+    make_event(title="나중생성행사", official_url="https://example.com/sort-invalid-second")
+
+    resp = client.get("/staff/events/?sort=not-a-real-sort")
+
+    assert resp.status_code == 200
+    assert resp.context["selected_sort"] == ""
+    content = resp.content.decode()
+    assert content.index("나중생성행사") < content.index("먼저생성행사")
+
+
+@pytest.mark.django_db
+def test_검색_중_수정_화면으로_이동해도_검색어가_목록_복귀_링크에_남는다(staff_client, make_event):
+    staff, client = staff_client()
+    event = make_event(title="검색용행사", official_url="https://example.com/edit-list-query-q")
+
+    resp = client.get(f"/staff/events/{event.id}/edit/?q=검색용")
+
+    assert resp.status_code == 200
+    parsed = parse_qs(resp.context["list_query"])
+    assert parsed.get("q") == ["검색용"]
+
+
+@pytest.mark.django_db
+def test_목록에서_검색어와_페이지_이동을_함께_하면_검색어가_한_번만_담긴다(staff_client, make_event):
+    from events.queries import STAFF_EVENT_LISTING_PAGE_SIZE
+
+    staff, client = staff_client()
+    for i in range(STAFF_EVENT_LISTING_PAGE_SIZE + 1):
+        make_event(title=f"검색행사 {i}", official_url=f"https://example.com/pager-q-once-{i}")
+
+    resp = client.get("/staff/events/?q=검색행사&page=2")
+
+    assert resp.status_code == 200
+    assert resp.context["pager_query"].count("q=") == 1
+
+
+@pytest.mark.django_db
+def test_정렬_기간_카테고리를_지정한_채_수정_화면으로_이동해도_모두_list_query에_남는다(
+    staff_client, make_event
+):
+    staff, client = staff_client()
+    event = make_event(
+        title="목록쿼리보존행사",
+        category="concert",
+        official_url="https://example.com/edit-list-query-all-axes",
+    )
+
+    resp = client.get(f"/staff/events/{event.id}/edit/?sort=start_asc&period=ongoing&category=concert")
+
+    assert resp.status_code == 200
+    parsed = parse_qs(resp.context["list_query"])
+    assert parsed.get("sort") == ["start_asc"]
+    assert parsed.get("period") == ["ongoing"]
+    assert parsed.get("category") == ["concert"]
+
+
+@pytest.mark.django_db
+def test_정렬_기간_카테고리를_지정하지_않으면_기존_생성일_내림차순_전체_노출이_유지된다(
+    staff_client, make_event
+):
+    staff, client = staff_client()
+    make_event(title="먼저생성기본순행사", official_url="https://example.com/default-order-first")
+    make_event(title="나중생성기본순행사", official_url="https://example.com/default-order-second")
+
+    resp = client.get("/staff/events/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert content.index("나중생성기본순행사") < content.index("먼저생성기본순행사")
+
+
+@pytest.mark.django_db
+def test_검색_중_게시상태_탭_링크는_검색어를_유지한다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(title="검색탭유지행사", official_url="https://example.com/tab-link-keeps-q")
+
+    resp = client.get("/staff/events/?q=검색탭유지행사")
+
+    assert resp.status_code == 200
+    content = html.unescape(resp.content.decode())
+    href = _href_in_group(content, "게시 상태 필터", "publish_status=published")
+    assert "q=" + quote("검색탭유지행사") in href
+
+
+@pytest.mark.django_db
+def test_검색_중_경고_칩_링크는_검색어를_유지한다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(title="경고칩검색유지행사", official_url="https://example.com/warning-chip-keeps-q")
+
+    resp = client.get("/staff/events/?q=경고칩검색유지행사&warning=missing_official_url")
+
+    assert resp.status_code == 200
+    content = html.unescape(resp.content.decode())
+    href = _href_in_group(content, "품질 경고 필터", "warning=missing_official_url")
+    assert "q=" + quote("경고칩검색유지행사") in href
+
+
+@pytest.mark.django_db
+def test_기간_칩_링크는_현재_걸린_다른_축을_모두_이어받는다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(
+        title="기간칩이어받기행사",
+        category="concert",
+        official_url="https://example.com/period-chip-inherits-axes",
+    )
+
+    resp = client.get("/staff/events/?category=concert&sort=start_asc&publish_status=published")
+
+    assert resp.status_code == 200
+    content = html.unescape(resp.content.decode())
+    href = _href_in_group(content, "기간 필터", "period=ongoing")
+    assert "category=concert" in href
+    assert "sort=start_asc" in href
+    assert "publish_status=published" in href
+
+
+@pytest.mark.django_db
+def test_카테고리가_선택되면_카테고리_접기가_펼쳐진_채_렌더된다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(
+        title="카테고리접기펼침행사",
+        category="concert",
+        official_url="https://example.com/category-disclosure-opens",
+    )
+
+    resp = client.get("/staff/events/?category=concert")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    details_tag = re.search(r'<details[^>]*class="events-filter-disclosure"[^>]*>', content)
+    assert details_tag, content
+    assert "open" in details_tag.group(0)
+
+
+@pytest.mark.django_db
+def test_필터가_걸린_채_0건이면_필터_초기화_링크가_노출된다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(
+        title="필터초기화대상행사",
+        category="exhibition",
+        official_url="https://example.com/empty-filter-reset-link",
+    )
+
+    resp = client.get("/staff/events/?category=concert")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    reset_href = reverse("staff:event-list")
+    assert f'href="{reset_href}"' in content
+    assert "필터 초기화" in content
+
+
+def _category_chip_counts(content, group_label="카테고리 필터"):
+    """content에서 카테고리 필터 그룹 안에 렌더된 칩들의 "(숫자)" 값을 순서대로
+    반환한다. 첫 값이 "전체" 칩이고 나머지가 개별 카테고리 칩이다.
+
+    컨텍스트가 아니라 실제 렌더된 HTML을 읽어야 템플릿이 다른 값을 쓰는
+    결함(전체 칩만 category 포함 총계를 쓰던 버그)을 잡을 수 있다.
+    """
+    label_pos = content.index(f'aria-label="{group_label}"')
+    group_start = content.rfind("<div", 0, label_pos)
+    group_end = content.index("</div>", label_pos)
+    group_html = content[group_start:group_end]
+    return [int(n) for n in re.findall(r"\((\d+)\)", group_html)]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "query",
+    ["", "?category=concert", "?category="],
+    ids=["필터_없음", "카테고리_선택", "미분류_선택"],
+)
+def test_카테고리_칩_건수의_합은_전체_칩_건수와_같다(staff_client, make_event, query):
+    staff, client = staff_client()
+    make_event(title="합계칩콘서트행사", category="concert", official_url="https://example.com/chip-sum-concert")
+    make_event(
+        title="합계칩전시행사", category="exhibition", official_url="https://example.com/chip-sum-exhibition"
+    )
+    make_event(title="합계칩미분류행사", category="", official_url="https://example.com/chip-sum-blank")
+
+    resp = client.get(f"/staff/events/{query}")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    all_chip, *category_chips = _category_chip_counts(content)
+    assert sum(category_chips) == all_chip
+
+
+@pytest.mark.django_db
+def test_매치가_0건인_카테고리_칩도_숨기지_않고_0을_표시한다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(
+        title="콘서트없음검증행사",
+        category="exhibition",
+        official_url="https://example.com/zero-chip-not-hidden",
+    )
+
+    resp = client.get("/staff/events/")
+
+    assert resp.status_code == 200
+    chips = {chip["key"]: chip for chip in resp.context["category_chips"]}
+    assert chips["concert"]["count"] == 0
+
+    content = resp.content.decode()
+    match = re.search(r'<a[^>]*href="[^"]*category=concert[^"]*"[^>]*>(.*?)</a>', content, re.DOTALL)
+    assert match, content
+    chip_html = match.group(0)
+    assert "hidden" not in chip_html
+    assert "display:none" not in chip_html
+    assert "(0)" in match.group(1)
+
+
+@pytest.mark.django_db
+def test_미분류_칩을_선택하면_카테고리가_빈_행사만_노출된다(staff_client, make_event):
+    staff, client = staff_client()
+    make_event(title="미분류칩행사", category="", official_url="https://example.com/uncategorized-chip-selected")
+    make_event(
+        title="미분류칩콘서트행사", category="concert", official_url="https://example.com/uncategorized-chip-concert"
+    )
+
+    resp = client.get("/staff/events/?category=")
+
+    assert resp.status_code == 200
+    assert resp.context["selected_category"] == ""
+    content = resp.content.decode()
+    assert "미분류칩행사" in content
+    assert "미분류칩콘서트행사" not in content

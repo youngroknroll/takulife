@@ -16,11 +16,20 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.errors import field_error_response
-from core.vocab import CATEGORY, CATEGORY_LABELS, REGION, REGION_LABELS
+from core.vocab import (
+    CATEGORY,
+    CATEGORY_LABELS,
+    EVENT_STATUS,
+    REGION,
+    REGION_LABELS,
+    STAFF_EVENT_SORT,
+    STAFF_EVENT_SORT_LABELS,
+)
 from events.models import Event
 from events.queries import (
     QUALITY_WARNING_KEYS,
     STAFF_EVENT_LISTING_PAGE_SIZE,
+    count_staff_events_by_category,
     list_staff_events,
 )
 from events.services import (
@@ -100,8 +109,26 @@ def _build_event_rows(events):
     return rows
 
 
+# EVENT_STATUS_LABELS가 아니라 이 집합으로 period를 검사한다. 그 dict는
+# "all"이 소비자 표시용으로 나중에 추가돼 있어(core/vocab.py), 그걸 쓰면
+# ?period=all이 유효 값으로 통과해버린다.
+_STAFF_EVENT_PERIOD_VALUES = {slug for slug, _ in EVENT_STATUS}
+
+# period 라벨 조회용. EVENT_STATUS_LABELS(core/vocab.py)는 "all"이 나중에
+# 추가돼 있어 여기서는 쓰지 않고, EVENT_STATUS 튜플에서 직접 만든다.
+_EVENT_STATUS_LABEL_BY_SLUG = dict(EVENT_STATUS)
+
+# Event.PublishStatus 자체 라벨("Draft"/"Published")은 영문이라 목록 화면
+# 표시에는 못 쓴다. 이 화면 전용 한글 라벨이다.
+_PUBLISH_STATUS_LABELS = {
+    Event.PublishStatus.PUBLISHED: "게시",
+    Event.PublishStatus.DRAFT: "비공개",
+}
+
+
 def _selected_event_filters(get_params):
-    """?warning=/?publish_status= 값을 허용 목록과 대조해 검증한다.
+    """?warning=/?publish_status=/?sort=/?period=/?category= 값을 허용
+    목록과 대조해 검증한다.
 
     목록 화면과 수정 화면(목록으로 돌아가기 링크)이 함께 쓰므로, 모르는
     값은 항상 "필터 없음"으로 통일해 처리한다.
@@ -114,42 +141,160 @@ def _selected_event_filters(get_params):
     if selected_publish_status not in Event.PublishStatus.values:
         selected_publish_status = ""
 
-    return selected_warning, selected_publish_status
+    selected_sort = get_params.get("sort", "")
+    if selected_sort not in STAFF_EVENT_SORT_LABELS:
+        selected_sort = ""
+
+    selected_period = get_params.get("period", "")
+    if selected_period not in _STAFF_EVENT_PERIOD_VALUES:
+        selected_period = ""
+
+    # category는 3상태다: 키 자체가 없으면 필터 없음(None), 빈 값이면
+    # 미분류(""), 어휘 밖 값도 필터 없음(None)으로 되돌린다.
+    raw_category = get_params.get("category", None)
+    if raw_category is None:
+        selected_category = None
+    elif raw_category == "" or raw_category in CATEGORY_LABELS:
+        selected_category = raw_category
+    else:
+        selected_category = None
+
+    return (
+        selected_warning,
+        selected_publish_status,
+        selected_sort,
+        selected_period,
+        selected_category,
+    )
 
 
-def _event_filter_query_pairs(get_params):
-    selected_warning, selected_publish_status = _selected_event_filters(get_params)
+def _event_filter_query_pairs(request):
+    """목록·수정·토글·검증·삭제 5곳이 공유하는 필터 querystring 쌍의
+    단일 출처. q 정규화는 staff/search.py의 search_term()을 그대로 써서,
+    링크에 싣는 값과 필터에 실제로 쓰는 값이 어긋나지 않게 한다.
+    """
+    (
+        selected_warning,
+        selected_publish_status,
+        selected_sort,
+        selected_period,
+        selected_category,
+    ) = _selected_event_filters(request.GET)
     pairs = []
     if selected_warning:
         pairs.append(("warning", selected_warning))
     if selected_publish_status:
         pairs.append(("publish_status", selected_publish_status))
+    if selected_sort:
+        pairs.append(("sort", selected_sort))
+    if selected_period:
+        pairs.append(("period", selected_period))
+    # ""(미분류)도 반드시 내보내야 왕복된다 — None일 때만 뺀다.
+    if selected_category is not None:
+        pairs.append(("category", selected_category))
+    search = search_term(request)
+    if search:
+        pairs.append(("q", search))
     return pairs
+
+
+def _active_filter_summary(
+    *,
+    selected_publish_status,
+    selected_warning,
+    selected_period,
+    selected_category,
+    selected_sort,
+    search,
+):
+    """빈 상태 화면에 보여줄 "라벨: 값" 목록. 현재 걸린 축만 담는다.
+
+    검색어(search)는 사용자 입력이라 값을 그대로 담되, 조사를 붙이는 문장은
+    만들지 않는다 — "라벨: 값" 구조만 유지한다.
+    """
+    summary = []
+    if selected_publish_status:
+        summary.append(
+            {
+                "label": "게시 상태",
+                "value": _PUBLISH_STATUS_LABELS[selected_publish_status],
+            }
+        )
+    if selected_warning:
+        summary.append({"label": "경고", "value": QUALITY_WARNING_LABELS[selected_warning]})
+    if selected_period:
+        summary.append({"label": "기간", "value": _EVENT_STATUS_LABEL_BY_SLUG[selected_period]})
+    if selected_category is not None:
+        category_value = (
+            "미분류" if selected_category == "" else CATEGORY_LABELS.get(selected_category, selected_category)
+        )
+        summary.append({"label": "카테고리", "value": category_value})
+    if selected_sort:
+        summary.append({"label": "정렬", "value": STAFF_EVENT_SORT_LABELS[selected_sort]})
+    if search:
+        summary.append({"label": "검색어", "value": search})
+    return summary
 
 
 @staff_console_required
 def staff_events(request):
     """게시+초안 이벤트 목록과 품질 경고 드릴다운."""
-    selected_warning, selected_publish_status = _selected_event_filters(request.GET)
+    (
+        selected_warning,
+        selected_publish_status,
+        selected_sort,
+        selected_period,
+        selected_category,
+    ) = _selected_event_filters(request.GET)
 
     search = search_term(request)
     events = list_staff_events(
         warning=selected_warning or None,
         publish_status=selected_publish_status or None,
         search=search,
+        period=selected_period or None,
+        category=selected_category,
+        sort=selected_sort,
     )
     paginator = Paginator(events, STAFF_EVENT_LISTING_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get("page"))
     event_rows = _build_event_rows(page_obj.object_list)
 
-    query_pairs = list(_event_filter_query_pairs(request.GET))
-    if search:
-        query_pairs.append(("q", search))
+    query_pairs = list(_event_filter_query_pairs(request))
     pager_query = "&" + urlencode(query_pairs) if query_pairs else ""
 
     warning_chips = [
         {"key": key, "label": QUALITY_WARNING_LABELS[key]} for key in QUALITY_WARNING_KEYS
     ]
+
+    # 배지 숫자와 그 칩을 눌렀을 때의 실제 건수가 일치하도록 category만 뺀
+    # 나머지 현재 필터를 그대로 넘긴다.
+    category_counts = count_staff_events_by_category(
+        warning=selected_warning or None,
+        publish_status=selected_publish_status or None,
+        period=selected_period or None,
+        search=search,
+    )
+    category_chips = [
+        {
+            "key": slug,
+            "label": label,
+            "count": category_counts.get(slug, 0),
+            "is_active": selected_category == slug,
+        }
+        for slug, label in CATEGORY
+    ]
+    category_chips.append(
+        {
+            "key": "",
+            "label": "미분류",
+            "count": category_counts.get("", 0),
+            "is_active": selected_category == "",
+        }
+    )
+    # "전체" 칩은 category를 뺀 나머지 필터 기준으로 세야 다른 칩들과 더했을 때 맞아떨어진다.
+    # page_obj.paginator.count는 category까지 포함한 현재 목록 건수라 기준이 다르다.
+    category_chip_total = sum(chip["count"] for chip in category_chips)
 
     return render(
         request,
@@ -159,9 +304,24 @@ def staff_events(request):
             "page_obj": page_obj,
             "selected_warning": selected_warning,
             "selected_publish_status": selected_publish_status,
+            "selected_sort": selected_sort,
+            "selected_period": selected_period,
+            "selected_category": selected_category,
             "pager_query": pager_query,
             "warning_chips": warning_chips,
+            "category_chips": category_chips,
+            "category_chip_total": category_chip_total,
+            "sort_options": STAFF_EVENT_SORT,
+            "period_options": EVENT_STATUS,
             "search": search,
+            "active_filter_summary": _active_filter_summary(
+                selected_publish_status=selected_publish_status,
+                selected_warning=selected_warning,
+                selected_period=selected_period,
+                selected_category=selected_category,
+                selected_sort=selected_sort,
+                search=search,
+            ),
         },
     )
 
@@ -317,7 +477,7 @@ def staff_event_edit(request, pk):
     수 있도록 archive 참조 개수만 함께 계산해 넘긴다.
     """
     event = get_object_or_404(Event, pk=pk)
-    list_query = urlencode(_event_filter_query_pairs(request.GET))
+    list_query = urlencode(_event_filter_query_pairs(request))
     archive_reference_counts = event_archive_reference_counts(event=event)
 
     if request.method == "POST":
@@ -433,7 +593,7 @@ def staff_event_toggle_publish(request, pk):
     다시 게시할 때는 제목/공식URL 검증을 다시 거친다 — 내려간 동안 상태가
     깨진 이벤트가 검증 없이 조용히 다시 게시되는 것을 막는다.
     """
-    list_query = urlencode(_event_filter_query_pairs(request.GET))
+    list_query = urlencode(_event_filter_query_pairs(request))
     redirect_url = reverse("staff:event-edit", args=[pk])
     if list_query:
         redirect_url = f"{redirect_url}?{list_query}"
@@ -476,7 +636,7 @@ def staff_event_verify(request, pk):
     분기가 없다.
     """
     event = get_object_or_404(Event, pk=pk)
-    list_query = urlencode(_event_filter_query_pairs(request.GET))
+    list_query = urlencode(_event_filter_query_pairs(request))
     redirect_url = reverse("staff:event-edit", args=[event.pk])
     if list_query:
         redirect_url = f"{redirect_url}?{list_query}"
@@ -511,7 +671,7 @@ def staff_event_delete(request, pk):
     비워지므로, 로그를 먼저 남겨야 어떤 이벤트였는지 흔적이 남는다.
     """
     event = get_object_or_404(Event, pk=pk)
-    list_query = urlencode(_event_filter_query_pairs(request.GET))
+    list_query = urlencode(_event_filter_query_pairs(request))
     edit_redirect = reverse("staff:event-edit", args=[event.pk])
     if list_query:
         edit_redirect = f"{edit_redirect}?{list_query}"

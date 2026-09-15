@@ -294,6 +294,22 @@ def test_컬렉션_참조로_삭제가_차단되면_안내_메시지에_컬렉�
     assert "컬렉션 1" in messages_text
 
 
+def _tabs_in_group(content, group_label):
+    """content에서 aria-label이 group_label인 필터 그룹 안의 `.events-tab` 앵커만
+    돌려준다.
+
+    트랙 26에서 정렬 필터도 같은 `.events-tab` 클래스를 재사용하게 되어, 문서
+    전체에서 클래스로 세면 다른 그룹의 탭까지 섞여 든다. 게시 상태 그룹은
+    `role="group" aria-label="..."`이 붙은 평면적인 div이므로 그 div 범위
+    안에서만 찾는다.
+    """
+    label_pos = content.index(f'aria-label="{group_label}"')
+    group_start = content.rfind("<div", 0, label_pos)
+    group_end = content.index("</div>", label_pos)
+    group_html = content[group_start:group_end]
+    return re.findall(r'<a class="events-tab[^"]*"[^>]*>', group_html)
+
+
 @pytest.mark.django_db
 def test_선택된_게시_상태_탭만_적용됨으로_노출된다(staff_client, make_event):
     make_event()
@@ -302,7 +318,7 @@ def test_선택된_게시_상태_탭만_적용됨으로_노출된다(staff_clien
     resp = client.get("/staff/events/?publish_status=published")
 
     assert resp.status_code == 200
-    tabs = re.findall(r'<a class="events-tab[^"]*"[^>]*>', resp.content.decode())
+    tabs = _tabs_in_group(resp.content.decode(), "게시 상태 필터")
     assert len(tabs) == 3, tabs
     current = [t for t in tabs if 'aria-current="true"' in t]
     assert len(current) == 1, tabs
