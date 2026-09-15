@@ -91,6 +91,27 @@ def test_온라인이면_탐색_실행이_생성되고_감사로그가_남는다
 
 
 @pytest.mark.django_db
+def test_탐색_요청_감사로그_삽입이_실패하면_실행_생성도_함께_실패한다(staff_client, monkeypatch):
+    record_heartbeat(provider="claude-code")
+    staff, client = staff_client()
+
+    # 뷰가 실제로 참조하는 이름(staff.views.discovery.StaffActionLog)을
+    # 패치해야 뷰 안의 호출이 이 대역을 탄다.
+    def _raise_on_create(*args, **kwargs):
+        raise RuntimeError("audit log insert failed")
+
+    monkeypatch.setattr(
+        "staff.views.discovery.StaffActionLog.objects.create", _raise_on_create
+    )
+
+    with pytest.raises(RuntimeError):
+        client.post(_request_url(), _VALID_QUERY)
+
+    assert SourceDiscoveryRun.objects.count() == 0
+    assert StaffActionLog.objects.count() == 0
+
+
+@pytest.mark.django_db
 def test_사용자당_분당_10회를_초과한_탐색_요청은_거부되고_새_실행이_생성되지_않는다(staff_client):
     record_heartbeat(provider="claude-code")
     staff, client = staff_client()

@@ -217,6 +217,33 @@ def test_삭제_후_리다이렉트는_목록_필터_쿼리를_유지한다(staf
 
 
 @pytest.mark.django_db
+def test_삭제_확인_POST_직전에_이벤트가_사라지면_500_대신_404를_응답한다(
+    staff_client, make_event, monkeypatch
+):
+    import staff.views.events as staff_events_view
+
+    staff, client = staff_client()
+    event = make_event(title="삭제 대상", official_url="https://example.com/delete-vanished")
+
+    # 뷰의 상단 조회(get_object_or_404)는 이미 끝난 뒤, atomic 진입 전에
+    # 딱 한 번 호출되는 지점을 고르려고 참조 카운트 함수를 패치 지점으로
+    # 삼았다 — 다른 동시 요청이 그 사이에 이벤트를 지운 경합을 흉내 낸다.
+    original_event_archive_reference_counts = staff_events_view.event_archive_reference_counts
+
+    def _delete_then_count(*, event):
+        Event.objects.filter(pk=event.pk).delete()
+        return original_event_archive_reference_counts(event=event)
+
+    monkeypatch.setattr(
+        staff_events_view, "event_archive_reference_counts", _delete_then_count
+    )
+
+    resp = client.post(_delete_url(event), {"confirmed": "yes"})
+
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
 def test_아카이브_참조가_있는_이벤트는_삭제가_차단되고_감사_로그를_남기지_않는다(staff_client, make_user, make_event):
     staff, client = staff_client()
     event = make_event(title="찜된 행사", official_url="https://example.com/delete-blocked")

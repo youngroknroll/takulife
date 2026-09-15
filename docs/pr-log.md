@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #356부터 #211까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #367부터 #221까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,45 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #356 — feat(seo): Make the Korean brand name searchable (트랙 28)
+### PR #367 — fix: DB 락·트랜잭션 검수 결함 7건 수정 (트랙 32)
 
-**무엇을 바꿨나**: 리포 전체에 '타쿠라이프' 0건이던 상태에서 홈 `<title>`/og:title을
-`타쿠라이프 takulife — 굿즈 컬렉션·서브컬처 이벤트 기록`으로, 기본 meta description
-3곳(base.html 2곳·행사 상세 폴백 상수)을 `타쿠라이프(takulife)에서 …`로,
-og:site_name을 `타쿠라이프|takulife`로 바꿨다. `core/presenters.py` 신설
-(`build_website_json_ld`, `core.context_processors`의 `PROJECT_NAME`·
-`BRAND_NAME_KO` 상수 단일 소스)로 홈에만 WebSite JSON-LD(alternateName
-타쿠라이프)를 발행한다. 푸터 태그라인 1행 `타쿠라이프 — …`. 런북 §3-12 curl
-확인 항목, 백로그 C2(소개 페이지 별도 트랙 승인·미착수). 커밋 7개(ebfd39a·
-82dbd06·8a149d5·d6116cb·91e584f·2ca348e·4dcdbc3), merge commit b8e96c1.
+**무엇을 바꿨나**: 2026-09-14 DB 락·트랜잭션 검수(검토 전용, DAR·SRR·DOR·QVL +
+재현 테스트 8건)로 확정한 결함 7건을 고쳤다. `core/categories.py` 팔레트 슬롯
+재획득의 IntegrityError를 세이브포인트 안에서 삼키고(전엔 바깥 트랜잭션 오염 →
+생성·재게시·승인은 다음 쿼리 `TransactionManagementError` 500·전체 롤백, 삭제
+경로는 예외 없이 이벤트 잔존 + EVENT_DELETE 로그만 커밋), 이벤트 삭제 뷰가 잠금
+조회 → 로그 → 삭제 순서로 바뀌어 동시 삭제의 늦은 쪽은 404, 상태 전환 3함수의
+저장~활동 기록과 탐색 요청의 실행 생성~감사 로그를 각각 한 트랜잭션으로, 러너
+제출의 중복 경합은 500 대신 duplicate 응답, 홈 카테고리 저장은 HomeConfig 행
+잠금, 컬렉션 항목 PATCH·DELETE에 `collection_item_update` 30/minute 스로틀.
+문서: docs/BE 4문서 가드레일, 백로그 F5·현재 상태, `_helpers.py` docstring,
+README 수치(select_for_update 11개 파일·atomic 62곳 `[실측 2026-09-14]`), CLAUDE.md
+진입 경로 `drafts/runner_urls.py` 정정, AGENTS.md 참조 순서 3항을 `docs/BE/`
+우선으로. 커밋 9개(7721ca12·095c271e·f92055fd·dda9ac1f·0fdece9e·2e7607e3·
+a3cc5a65·8a7e1bab·8af14597) + 문서 커밋. base는 `fix/site-wide-interaction-audit`
+(#366 위 스택 — `core/categories.py`가 main에 없어서).
 
-**왜**: 구글은 페이지에 적힌 텍스트·title·구조화 데이터로 검색어를 매칭하므로
-한글 브랜드명 신호가 없으면 '타쿠라이프' 검색에 잡힐 근거가 없다. 트랙 16
-(robots·sitemap·canonical·noindex·Event JSON-LD) 위에 브랜드명 신호만
-얹었다. 어순(컬렉션 → 이벤트)은 CLAUDE.md 우선순위(PSO 판정), og:site_name
-파이프 형식과 소개 페이지 별도 트랙은 사용자 결정(2026-09-10).
+**왜**: 저장소의 `except IntegrityError` 18곳 중 유일하게 세이브포인트 없는 지점과
+감사 로그 "같은 atomic" 계약 22곳 중 의도되지 않은 이탈 1곳 등, 같은 관용구를
+빠뜨린 구현 누락이었다. 검수 브리프의 "FK 선삽입 → FOR UPDATE 교착" 단언은
+철회했다 — 스태프 감사 로그 FK 5건 전부 `DEFERRABLE INITIALLY DEFERRED`라
+FOR KEY SHARE는 커밋 시점에 잡힌다 `[실측 pg_constraint]`.
 
-**검증**: 기준 2541 passed·10 deselected·82.12초 → 2547 passed·10
-deselected·111.67초(신규 T1~T6, T7 리터럴 교체), T6는 base.html:66 뮤테이션으로
-Red 등가 확인; `check` 0 issues, `makemigrations --check` 무변경; 브라우저
-(DevTools MCP+curl) 헤드 순서·JSON.parse 키 5개·`/events/` 0건·콘솔 0건·
-태그라인 320/390/1280px 2행 무오버플로; WED·BIR 사후 Conforms(C3 포함),
-QVL 완료; CI 5개 잡 pass(test·audit·docker·e2e 관측·GitGuardian). 같은 날
-선행 머지 #352(docs 롤링)·#353(트랙 25)·#354(트랙 27 e2e). 머지 후
-main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09-10]`.
+**검증**: 사이클 8회 전부 Red 사유 확인 → 최소 Green → 관련 스위트, H1은 수정
+되돌리기 뮤테이션(2 failed → 복원 2 passed). 기준선 2816 passed·10 deselected·
+85.40초 → 2826 passed·10 deselected·85.11초(+10 = 신규 테스트 10건) `[실측
+2026-09-14]`; `check` 0 issues, `makemigrations --check` 무변경; CI 5개 잡
+pass(test·audit·docker·e2e 관측·GitGuardian).
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #362 — deploy: main → production
+- #361 — feat: 키워드 탐색 → 판별 → 승인 가능한 드래프트·소스 등록 (트랙 30)
+- #360 — deploy: main → production
+- #359 — deploy: main → production
+- #358 — feat(accounts): 회원 닉네임 도입 — 가입 필수 입력·헤더/마이페이지 표시·백필·변경 화면 (트랙 29)
+- #357 — docs: PR #352·#353·#354·#356 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #356 — feat(seo): Make the Korean brand name searchable (트랙 28)
 - #354 — test: Reintroduce a journey-based e2e suite (pytest-playwright + live_server)
 - #353 — feat(staff): 이벤트 목록 인라인 비공개·재게시·검증 — H2 분할 2/3 (트랙 25)
 - #352 — docs: PR #349·#350·#351 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -188,13 +198,3 @@ main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09
 - #223 — fix(web): 컬렉션 작품별 색 충돌 제거 + 패싯 컨트롤
 - #222 — design(web): 이벤트 달력 아젠다 액션 hover 추가
 - #221 — feat(web): 공용 페이지네이션 재구축 — 창 축약 + 점프 화살표
-- #220 — design(web): 컬렉션 페이지 에디토리얼 리디자인
-- #219 — design(calendar): Align detail actions
-- #218 — design(web): Rebuild the events calendar in the editorial v2 style
-- #217 — design(home): Tune hero deck timing
-- #216 — copy(web): Rename 행사 to 이벤트 across the product
-- #215 — design(web): Rebuild the home collection section, center the hero, divide sections
-- #214 — design(cards): Remove official badges
-- #213 — copy(web): Reword the home hero headline
-- #212 — feat: Guard event category/region against out-of-vocabulary values (B1)
-- #211 — feat(web): Move sorting from the sidebar to a results-head toggle menu

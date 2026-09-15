@@ -60,8 +60,9 @@ Read only the smallest set that owns the task:
 1. Always read this guide.
 2. Read `docs/backlog.md` for current priority; add the matching durable
    runbook only for deployment, operations, or event-operations work.
-3. Read the active area plan or technical record in `.docs/BE/`, `.docs/DB/`,
-   or `.docs/FE/` only when it exists and directly covers the workstream.
+3. Read the technical record in `docs/BE/` (and `docs/DB/`, `docs/FE/` when
+   they exist) that directly covers the workstream; read the local plan or
+   note in `.docs/BE/`, `.docs/DB/`, or `.docs/FE/` only when it exists.
 4. For history, read `.docs/archive-2026-08-29.md` (summaries of the deleted
    legacy plan/work-log trees). It never overrides this guide or provides a
    current command, test boundary, approval requirement, or acceptance

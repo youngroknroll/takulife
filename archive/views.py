@@ -681,6 +681,13 @@ class CollectionItemListCreateView(ListCreateAPIView):
 class CollectionItemDetailView(RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete", "head", "options"]
     permission_classes = [IsAuthenticated]
+    throttle_scope = "collection_item_update"
+
+    def get_throttles(self):
+        # 쓰기 메서드 둘만, GET은 제외.
+        if self.request.method in ("PATCH", "DELETE"):
+            return [ScopedRateThrottle()]
+        return []
 
     def get_queryset(self):
         return CollectionItem.objects.filter(user=self.request.user)

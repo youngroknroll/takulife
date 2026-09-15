@@ -64,7 +64,7 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
 - Published events: `events/models.py`, `events/services.py`,
   `events/queries.py`, `events/serializers.py`, `events/urls.py`
 - Ingestion and review: `drafts/models.py`, `drafts/services.py`,
-  `drafts/queries.py`, `drafts/urls.py`
+  `drafts/queries.py`, `drafts/runner_urls.py`
 - Staff and shared web: `staff/services.py`, `staff/queries.py`, `staff/views/`,
   `core/urls.py`, `core/views.py`
 - Frontend: `templates/base.html`, `templates/core/`, `templates/staff/`,

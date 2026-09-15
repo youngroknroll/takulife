@@ -674,6 +674,9 @@ def staff_event_delete(request, pk):
     감사 로그는 delete_event() 실행 전에, 같은 트랜잭션 안에서
     target_event=event로 기록한다. 삭제가 끝나면 SET_NULL로 이 값도
     비워지므로, 로그를 먼저 남겨야 어떤 이벤트였는지 흔적이 남는다.
+
+    잠금 조회가 로그보다 먼저 온다 — 동시 삭제의 늦은 쪽은 500이 아니라
+    404.
     """
     event = get_object_or_404(Event, pk=pk)
     list_query = urlencode(_event_filter_query_pairs(request))
@@ -699,6 +702,7 @@ def staff_event_delete(request, pk):
 
     try:
         with transaction.atomic():
+            event = get_object_or_404(Event.objects.select_for_update(), pk=pk)
             StaffActionLog.objects.create(
                 **_action_log_kwargs(
                     _staff_action_metadata(request),

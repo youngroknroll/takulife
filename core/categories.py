@@ -41,7 +41,7 @@ def reconcile_palette_slot(*, category_slug: str, published_count: int) -> None:
     호출 시점은 게시상태 전이·카테고리 활성 상태 전이뿐이다(호출부가
     보장). 조회(GET) 경로에서는 절대 호출하면 안 된다.
     """
-    from django.db import IntegrityError
+    from django.db import IntegrityError, transaction
 
     from core.models import Category, PaletteSlotsExhaustedError
 
@@ -54,8 +54,11 @@ def reconcile_palette_slot(*, category_slug: str, published_count: int) -> None:
 
     if should_have_slot and category.palette_slot is None:
         try:
-            category.palette_slot = Category._next_available_slot()
-            category.save(update_fields=["palette_slot"])
+            # 세이브포인트 없이 IntegrityError를 삼키면 바깥 트랜잭션이
+            # 오염돼(needs_rollback) 뒤이은 호출부의 커밋이 실패한다.
+            with transaction.atomic():
+                category.palette_slot = Category._next_available_slot()
+                category.save(update_fields=["palette_slot"])
         except (PaletteSlotsExhaustedError, IntegrityError):
             # 빈 슬롯이 없거나(고갈) 동시 요청과 경합해 실패했다 — 재획득
             # 실패는 palette_slot=None 폴백일 뿐, 호출부의 게시를 막지 않는다.
