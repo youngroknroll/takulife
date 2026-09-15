@@ -36,7 +36,7 @@
           <a class="account-menu-item" href="/admin/">관리자</a>
         {% endif %}
         <hr class="account-menu-divider">
-        <form class="topbar-logout-form" method="post" action="/accounts/logout/">
+        <form class="topbar-logout-form" method="post" action="/accounts/logout/" data-submit-guard>
           {% csrf_token %}
           <button class="account-menu-item topbar-logout-btn" type="submit">로그아웃</button>
         </form>

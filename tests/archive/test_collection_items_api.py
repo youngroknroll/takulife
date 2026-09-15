@@ -994,3 +994,32 @@ def test_컬렉션_항목_생성_요청이_설정된_한도를_초과하면_429�
 
     listed = client.get("/api/collection-items/")
     assert listed.status_code == 200
+
+
+@pytest.mark.web
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_컬렉션_항목_수정_삭제_요청이_설정된_한도를_초과하면_429로_제한된다(
+    client, make_user, make_collection_item
+):
+    user = make_user(username="ci-update-flood")
+    item = make_collection_item(user, name="한도 확인 대상")
+    client.force_login(user)
+
+    # PATCH로 분당 30건 한도를 소진하고 DELETE로 확인한다 — 두 메서드가
+    # 같은 스로틀 스코프(collection_item_update)를 공유함을 한 테스트로 보인다.
+    for i in range(30):
+        response = client.patch(
+            f"/api/collection-items/{item.pk}/",
+            {"name": f"수정 {i}"},
+            content_type="application/json",
+        )
+        assert response.status_code == 200, f"patch {i} should succeed"
+
+    throttled = client.delete(f"/api/collection-items/{item.pk}/")
+
+    assert throttled.status_code == 429
+    assert CollectionItem.objects.filter(pk=item.pk).exists()
+
+    fetched = client.get(f"/api/collection-items/{item.pk}/")
+    assert fetched.status_code == 200

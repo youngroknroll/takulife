@@ -36,7 +36,7 @@
           <tbody>
             {% for row in draft_source_rows %}
               <tr>
-                <td class="src-cell-name">{{ row.source.name }}</td>
+                <td class="src-cell-name" title="{{ row.source.name }}">{{ row.source.name }}</td>
                 <td class="src-cell-dim">{{ row.source.get_source_type_display }}</td>
                 <td>
                   <span class="src-status-badge src-status-badge--{{ row.status_level }}">
@@ -45,7 +45,7 @@
                   </span>
                 </td>
                 <td class="mono src-cell-dim">{% if row.source.last_checked_at %}{{ row.source.last_checked_at|timesince }} 전{% else %}수집 안 함{% endif %}</td>
-                <td class="mono src-cell-error">{{ row.source.last_error|default:"-" }}</td>
+                <td class="mono src-cell-error" title="{{ row.source.last_error|default:'-' }}">{{ row.source.last_error|default:"-" }}</td>
               </tr>
             {% endfor %}
           </tbody>

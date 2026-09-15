@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #361부터 #228까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #367부터 #226까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,45 +28,41 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #361 — feat: 키워드 탐색 → 판별 → 승인 가능한 드래프트·소스 등록 (트랙 30)
+### PR #367 — fix: DB 락·트랜잭션 검수 결함 7건 수정 (트랙 32)
 
-**무엇을 바꿨나**: 스태프가 입력한 검색어로 새 행사·수집처를 찾는 트랙 30
-본체를 얹었다. 한 실행 안에서 탐색(exploration, 검색만·
-`local_runner/claude_code_adapter.py:83-130`의 `build_exploration_prompt`)
-→ 읽기(read, 결정론·`local_runner/page_fetch.py:150-154`의
-`fetch_event_text` — 인스타·X는 og:description 메타 파싱, 일반 웹은
-og:title/title·meta description) → 해석(interpret, 도구 없는 모델 호출·
-`local_runner/caption_interpreter.py:1-3, 15-77`의
-`build_interpretation_prompt`) 3단으로 분리해 공식 여부 판단을 해석
-단계로 옮겼다. 서버는 계정형(SNS) URL 제출 시 존재 재확인·fetch를 절대
-타지 않고(`drafts/agent_drafts.py:200-205`), 계정형 소스는 가져오기·
-robots 확인 없이 `DraftSource(enabled=False)`로만 등록한다
-(`drafts/candidate_validation.py:344-386`의 `register_account_source`).
-실기동이 잡은 통합 결함 3건(제출 400 전량 거부, 해석 실패 시 실행 전체
-중단, 예외 시 임대 미반납)과 보안 수정 2건(러너 MCP 브라우저 제어 도구
-노출 차단 `b68e2881`, `X-Forwarded-For` 헤더 조작으로 러너 스로틀을
-무한 우회하던 경로 차단 `7163c8e6`)도 같은 트랙에서 닫았다. 커밋 50개
-`[실측 gh 2026-09-12]`, merge commit `cfd69d3a`.
+**무엇을 바꿨나**: 2026-09-14 DB 락·트랜잭션 검수(검토 전용, DAR·SRR·DOR·QVL +
+재현 테스트 8건)로 확정한 결함 7건을 고쳤다. `core/categories.py` 팔레트 슬롯
+재획득의 IntegrityError를 세이브포인트 안에서 삼키고(전엔 바깥 트랜잭션 오염 →
+생성·재게시·승인은 다음 쿼리 `TransactionManagementError` 500·전체 롤백, 삭제
+경로는 예외 없이 이벤트 잔존 + EVENT_DELETE 로그만 커밋), 이벤트 삭제 뷰가 잠금
+조회 → 로그 → 삭제 순서로 바뀌어 동시 삭제의 늦은 쪽은 404, 상태 전환 3함수의
+저장~활동 기록과 탐색 요청의 실행 생성~감사 로그를 각각 한 트랜잭션으로, 러너
+제출의 중복 경합은 500 대신 duplicate 응답, 홈 카테고리 저장은 HomeConfig 행
+잠금, 컬렉션 항목 PATCH·DELETE에 `collection_item_update` 30/minute 스로틀.
+문서: docs/BE 4문서 가드레일, 백로그 F5·현재 상태, `_helpers.py` docstring,
+README 수치(select_for_update 11개 파일·atomic 62곳 `[실측 2026-09-14]`), CLAUDE.md
+진입 경로 `drafts/runner_urls.py` 정정, AGENTS.md 참조 순서 3항을 `docs/BE/`
+우선으로. 커밋 9개(7721ca12·095c271e·f92055fd·dda9ac1f·0fdece9e·2e7607e3·
+a3cc5a65·8a7e1bab·8af14597) + 문서 커밋. base는 `fix/site-wide-interaction-audit`
+(#366 위 스택 — `core/categories.py`가 main에 없어서).
 
-**왜**: 기존 가드레일 문서는 '이미 아는 계정을 주기적으로 도는 수집'을
-전제로 쓰여 있었고, 스태프가 검색어로 새 행사·수집처를 직접 찾는 경로가
-없었다. 트랙 30은 이 경로를 본체로 신설하되, LLM은 후보 URL과 얕은
-판단만 내고 저장·소스 활성화·게시 여부는 항상 서버가 결정하는 기존
-로컬 에이전트 탐색 설계 원칙(`docs/BE/draft-source-agent-discovery.md`)을
-그대로 지킨다. 계정형 소스를 서버가 fetch하지 않는 이유는 SNS 호스트의
-봇 차단과 약관 위험을 감당하지 않기 위해서다. 이연 5건은
-`docs/backlog.md` G6에 남겼다.
+**왜**: 저장소의 `except IntegrityError` 18곳 중 유일하게 세이브포인트 없는 지점과
+감사 로그 "같은 atomic" 계약 22곳 중 의도되지 않은 이탈 1곳 등, 같은 관용구를
+빠뜨린 구현 누락이었다. 검수 브리프의 "FK 선삽입 → FOR UPDATE 교착" 단언은
+철회했다 — 스태프 감사 로그 FK 5건 전부 `DEFERRABLE INITIALLY DEFERRED`라
+FOR KEY SHARE는 커밋 시점에 잡힌다 `[실측 pg_constraint]`.
 
-**검증**: 머지 후 main(`cfd69d3a`) 재측정: 2684 passed / 10
-deselected / 76.90초 `[실측 2026-09-12]` — 직전 기준선 2582 passed
-(트랙 29 시점)에서 +102건 `[계산]`. `check` 0 issues
-`[실측 2026-09-12]`, `makemigrations --check --dry-run` 무변경
-`[실측 2026-09-12]`. 실기동(검색어 '하츠네 미쿠 팝업스토어')으로 드래프트
-3건 실제 생성, 전부 승인 전 체크 5항 통과, 계정형 소스 3건이 비활성으로
-등록, 서버 로그의 인스타 요청 0건 `[코드 커밋 e045963e]`.
+**검증**: 사이클 8회 전부 Red 사유 확인 → 최소 Green → 관련 스위트, H1은 수정
+되돌리기 뮤테이션(2 failed → 복원 2 passed). 기준선 2816 passed·10 deselected·
+85.40초 → 2826 passed·10 deselected·85.11초(+10 = 신규 테스트 10건) `[실측
+2026-09-14]`; `check` 0 issues, `makemigrations --check` 무변경; CI 5개 잡
+pass(test·audit·docker·e2e 관측·GitGuardian).
 
 ## 이전 PR (번호 — 실제 PR 제목)
-
+- #364 — feat(staff): 이벤트 목록 정렬·기간·카테고리 필터 — H2 3/3 (트랙 26)
+- #363 — docs: PR #336·#355·#357~#361 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #362 — deploy: main → production
+- #361 — feat: 키워드 탐색 → 판별 → 승인 가능한 드래프트·소스 등록 (트랙 30)
 - #360 — deploy: main → production
 - #359 — deploy: main → production
 - #358 — feat(accounts): 회원 닉네임 도입 — 가입 필수 입력·헤더/마이페이지 표시·백필·변경 화면 (트랙 29)
@@ -109,6 +105,7 @@ deselected / 76.90초 `[실측 2026-09-12]` — 직전 기준선 2582 passed
 - #321 — docs: PR #319·#320 머지를 로그에 롤링 반영
 - #320 — feat: 소셜 가입 약관 동의(B2) + 헤더 인증 버튼 폰트 정렬
 - #319 — docs: 배포 runbook DB를 Supabase 무료 티어로 전환
+- #318 — deploy: main → production
 - #317 — docs: PR #315·#316 머지를 로그에 롤링 반영
 - #316 — test: 테스트 시크릿 리터럴 제거 + 스캐너 가드 신설
 - #315 — ci: CI 성공 후 main→production deploy PR 자동 생성
@@ -117,10 +114,10 @@ deselected / 76.90초 `[실측 2026-09-12]` — 직전 기준선 2582 passed
 - #312 — docs: PR #310·#311 머지를 로그에 롤링 반영
 - #311 — docs: 백로그 재작성 — 2026-08-24 실측 기준 최적화
 - #310 — docs: PR #307~#309 머지를 로그에 롤링 반영
-- #309 — fix: 전수 검토 잔여 프론트 3건 반영 (500 헤더 착시·필수 표시 통일·죽은 캐러셀 제거)
+- #309 — design: 프론트 잔여 정리 스윕 — 500 헤더 중립화·필수표시 통일·죽은 코드 제거
 - #308 — fix: 백엔드 잔여 정리 스윕 — 삭제 잠금·부분승격 라벨·EMAIL_PORT·동시 저장 멱등
 - #307 — docs: PR #303~#306 머지를 로그에 롤링 반영
-- #306 — fix: 전수 검토 확정 결함 2건 반영 (수집처 상한 재검사 + 러너 URL 검증)
+- #306 — fix: 러너 하드닝 — 후보 슬롯 원자 예약 + 비루프백 HTTPS 강제
 - #305 — fix(config): 운영 드리프트 정리 — DRAFT_FETCH_CONTACT 배선 + 운영 문서 정정
 - #304 — fix(archive): 방문 완료 동시성 직렬화
 - #303 — build: 의존성 보안 업그레이드 + CI 취약점 감사 게이트
@@ -198,3 +195,5 @@ deselected / 76.90초 `[실측 2026-09-12]` — 직전 기준선 2582 passed
 - #230 — feat(archive): Unify 다녀온 기록 onto the editorial shell
 - #229 — feat(pager): 공용 페이저 블록 창 + 5칸 점프 화살표
 - #228 — design(archive): 나의 일정 페이지 에디토리얼 셸 통일
+- #227 — fix(archive): 활동 달력 백로그 2건 근본 해결 (has_any_items·검색 DB 하향)
+- #226 — design(archive): 활동 달력 에디토리얼 리빌드 + 상단·필터 목록 통일

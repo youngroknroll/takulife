@@ -74,6 +74,19 @@
 `palette_hex_for(None)`이 항상 4키 dict(중립색)를 돌려주므로 `None` 분기가
 필요 없다.
 
+**가드레일(2026-09-14)** — `reconcile_palette_slot`의 재획득 두 줄(빈 슬롯을
+골라 `palette_slot`에 배정·저장하는 부분)은 반드시 자체 `transaction.atomic()`
+(세이브포인트) 안에서 `IntegrityError`를 삼켜야 한다. 감싸지 않으면
+`Model.save()`가 바깥 트랜잭션에 needs_rollback을 남겨, 생성·재게시·승인
+경로는 뒤이은 감사 로그 기록이 `TransactionManagementError`(500·전체 롤백)로
+막히고, 삭제 경로(`staff/services.py`의 `delete_event`, reconcile이 내부
+atomic의 마지막 문장)는 예외 없이 이벤트만 되돌아가고 EVENT_DELETE 로그만
+커밋된다 `[실측 2026-09-14 재현]`. 회귀:
+`tests/core/test_category_palette_lifecycle.py`의
+`test_카테고리_슬롯_재획득이_충돌해도_뒤이은_감사로그_기록이_성공한다`·
+`test_삭제_경로에서_슬롯_재획득이_충돌해도_이벤트_삭제와_감사로그가_함께_커밋된다`
+(세이브포인트를 되돌리면 2 failed `[실측]`).
+
 ## 아직 닫히지 않은 간극 — 소비자 화면의 색
 
 **소비자 화면은 아직 슬러그 기반 토큰(`--cat-{slug}-*`)을 쓴다.** 슬롯

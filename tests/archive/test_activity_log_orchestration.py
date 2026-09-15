@@ -342,3 +342,42 @@ def test_동일_operation_key로_생성을_재시도해도_활동_이력이_중�
 
     entries = ActivityLogEntry.objects.filter(user=user, kind=kind, operation_key=token)
     assert entries.count() == 1
+
+
+# ---------------------------------------------------------------------------
+# H3 — 상태 전환 중 활동 기록 삽입이 실패하면 상태 변경도 함께 롤백된다
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "starting_status, transition_name",
+    [
+        (UserEventStatus.Status.PLANNED, "mark_visited"),
+        (UserEventStatus.Status.PLANNED, "mark_missed"),
+        (UserEventStatus.Status.MISSED, "revert_to_planned"),
+    ],
+    ids=["방문_전환", "놓침_전환", "예정_복귀_전환"],
+)
+def test_상태_전환_중_활동_기록_삽입이_실패하면_상태_변경도_함께_롤백된다(
+    monkeypatch, make_user, make_event, make_status, starting_status, transition_name
+):
+    user = make_user()
+    event = make_event(title=f"상태 전환 롤백 이벤트 {transition_name}")
+    # VisitRecord가 있으면 mark_missed/revert_to_planned가 상태 저장 전에
+    # VisitRecordExistsError를 먼저 던지므로 만들지 않는다.
+    status_row = make_status(user, event, status=starting_status)
+
+    def raise_runtime_error(**kwargs):
+        raise RuntimeError("activity log insert failed")
+
+    monkeypatch.setattr("archive.services.ActivityLogEntry.objects.create", raise_runtime_error)
+
+    with pytest.raises(RuntimeError):
+        _TRANSITION_FUNCTIONS[transition_name](user_event_status=status_row)
+
+    status_row.refresh_from_db()
+    assert status_row.status == starting_status
+    assert status_row.missed_overridden is False
+    assert ActivityLogEntry.objects.filter(user=user).count() == 0

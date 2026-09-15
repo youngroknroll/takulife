@@ -63,7 +63,7 @@
             <article class="visit-detail-goods-row">
               <div class="visit-detail-goods-tile {{ row.series_ink_class }}"><span class="visit-detail-goods-tile-label">{{ row.item.item_type }}</span></div>
               <div class="visit-detail-goods-text">
-                <p class="visit-detail-goods-name">{{ row.item.name }}</p>
+                <p class="visit-detail-goods-name" title="{{ row.item.name }}">{{ row.item.name }}</p>
                 <p class="visit-detail-goods-sub">{% if row.quantity_label %}{{ row.quantity_label }}{% endif %}{% if row.tradeable_label %}{% if row.quantity_label %} · {% endif %}{{ row.tradeable_label }}{% endif %}</p>
               </div>
               {% include "core/partials/_collection_badges.html" with badges=row.badges wrapper_class="visit-detail-goods-pill" badge_class="visit-detail-goods-pill-tag" %}

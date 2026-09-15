@@ -351,16 +351,6 @@
   color: var(--pink-ink);
   font-weight: 700;
 }
-/* 공용 .is-loading 스피너(objects/interaction.css)는 앞에 텍스트가 있는
-   버튼을 전제로 여백을 둔다. 아이콘 전용 버튼마다 이 오버라이드를
-   다시 넣어야 한다 — 상속되지 않는다(event_list.css:502-509와 같은
-   패턴, 이 저장소가 두 번 겪은 결함). */
-.event-compact-interest.is-loading [data-interest-glyph] {
-  display: none;
-}
-.event-compact-interest.is-loading::after {
-  margin-left: 0;
-}
 
 /* 모바일: 날짜/본문/행동이 DOM 순서 그대로 세로로 쌓인다(order 미사용).
    date가 항상 title보다 앞이라 자연히 제목 위 eyebrow처럼 보인다. */

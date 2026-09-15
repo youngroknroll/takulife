@@ -1,7 +1,8 @@
 /* archive_visit_detail.css — /archive/visits/<id>/ 전용 상세 페이지.
    형제 페이지 archive_visit_edit.css의 구조/토큰/모바일 고정 바
-   패턴(2단 그리드, 20rem 갤러리 칼럼, ≤45rem 단일 칼럼 + 고정 액션바,
-   아이콘 전용 .is-loading 스피너 수정)을 그대로 따른다.
+   패턴(2단 그리드, 20rem 갤러리 칼럼, ≤45rem 단일 칼럼 + 고정 액션바)을
+   그대로 따른다. 아이콘 전용 스피너 보정은 공용 규칙
+   (objects/interaction.css)이 맡으므로 여기서 다시 두지 않는다.
    `.visit-detail-page` 스코프에서만 동작하며 archive_collection.css /
    controls.css 등 공용 파일은 수정하지 않는다 — 필요한 조각(굿즈 타일
    계열색 재바인딩, 위험 버튼 스킨)을 페이지 스코프로 복제한다
@@ -488,21 +489,5 @@
   .visit-detail-page .visit-detail-edit-btn {
     flex: 1;
     justify-content: center;
-  }
-  /* 아이콘 전용 상태의 스피너 수정, archive_visit_edit.css에서 이식
-     (.visit-edit-delete-btn.is-loading 모바일 블록) — 공용
-     .is-loading::after 스피너(interaction.css)는 뒤에 텍스트가 있다고
-     가정해 이 상태에서는 🗑 글리프 옆에 나란히 렌더되어 글리프를
-     대체하지 못한다. */
-  .visit-detail-page .visit-detail-delete-btn.is-loading {
-    color: transparent;
-  }
-  .visit-detail-page .visit-detail-delete-btn.is-loading::after {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    margin-left: 0;
-    transform: translate(-50%, -50%);
-    color: var(--rose-ink);
   }
 }

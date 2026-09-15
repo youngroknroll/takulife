@@ -30,8 +30,10 @@
 | 행사 카탈로그 | `[실측 2026-08-24]` 게시 169건 중 **146건 종료(86%)**, 진행·예정 23건, 검증 완료 0건 |
 | OAuth 활성화 | **활성화 완료**(B2 코드 해소=트랙 11, GCP 클라이언트·env 설정 및 실 OAuth 왕복 검증=사용자, 2026-08-26) |
 | e2e 여정 스위트 | `[코드] [실측 2026-09-09]` 트랙 27로 재도입, `tests/e2e/` 8파일·10건, 명령 `uv run pytest -q -m e2e tests/e2e`. 기본 `uv run pytest -q`는 `addopts`의 `-m "not e2e"`로 e2e 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) |
+| 요청 중 피드백(전역) | `[코드 2026-09-13]` 구현 완료·PR 대기 — POST 폼 34/34에 제출 가드(소비자 셸에 스크립트가 없어 12개가 무방비였다), 스피너를 소비자·스태프 공용 규칙으로 통일, 페이지별 우회 6곳 제거, 말줄임 `title` 84건→0건. 가드레일 정본 `docs/FE/loading-feedback.md` |
 | 카테고리 어휘 스태프 CRUD | `[코드 2026-09-13]` 구현 완료·PR 대기 — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극**: 소비자 화면이 아직 슬러그 기반 색 토큰을 써서 새 카테고리는 소비자 쪽에서 중립색으로 렌더된다(이관 표면 템플릿 9지점·CSS 25지점 `[실측]`) |
 | 회원 닉네임(트랙 29) | `[실측 gh]` PR #358 머지 완료(2026-09-10, merge commit `3ca5d184`, 커밋 10개) — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
+| DB 락·트랜잭션 검수(트랙 32) | `[실측 2026-09-14]` PR #367(`fix/db-lock-transaction-audit`, base `fix/site-wide-interaction-audit` = #366 위 스택), 검수로 확정한 결함 7건(H1·H2'·H3·H4·H7·H8·T1) 수정. 회귀 2826 passed / 10 deselected / 85.11초(기준선 2816 +10 = 신규 테스트 10건), `check` 0 issues, 마이그레이션 무변경. 이연: 락 안 이미지 저장 근본 해법(트리거 S3 지연 실측)·타임아웃 설정·교착 관측 지표 |
 | 키워드 탐색(트랙 30) | `[실측 gh]` PR #361 머지 완료(2026-09-12, main `cfd69d3a`) — 검색어 탐색 → 결정론 읽기 → 해석 → 승인 가능한 드래프트·소스 등록 3단 분리. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md`. 이연 항목은 G6 |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
@@ -259,7 +261,7 @@ M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web
 | F2 | ~~런북 줄번호 드리프트~~ (해소됨) | 참조를 `core/urls.py`, `core/views/system.py`의 `health()`로 줄번호 없이 재작성 | 해소 |
 | F3 | ~~CI 컨테이너 기동 스모크 부재~~ (**해결됨 2026-08-01**) | `docker` 잡이 postgres 서비스를 붙이고 이미지를 실제로 띄워 `/health/` 200 폴링, `migrate` 미스킵 | 실검증은 CI 전용(로컬 Docker 없음) |
 | F4 | ~~`project-status.md` 2334줄 / 사실과 다른 7곳~~ (**해결됨 2026-08-01**) | `docs/pr-log.md`(추적됨)로 이관, `.docs/project-status.md` 삭제, `AGENTS.md`·`CLAUDE.md`에 갱신 의무 명문화 | 해결 |
-| F5 | ~~스로틀 미적용 엔드포인트 4개~~ (**해결됨 2026-08-01**) | 생성 엔드포인트 4개 `ScopedRateThrottle`(목록형 60/min, 폼형 30/min), GET은 무제한 | 해결 |
+| F5 | ~~스로틀 미적용 엔드포인트 4개~~ (**해결됨 2026-08-01**) | 생성 엔드포인트 4개 `ScopedRateThrottle`(목록형 60/min, 폼형 30/min), GET은 무제한. **2026-09-14 추가**: `CollectionItemDetailView`의 PATCH·DELETE(GET 제외)에 `collection_item_update` 30/minute 추가(트랙 32 T1) | 해결 |
 | F6 | ~~SSRF DNS 리바인딩 TOCTOU~~ (**해결됨 2026-08-20**) | `validate_fetch_url`이 검증 IP를 반환하고 `fetch_html`이 그 IP로 직접 연결(IP 핀닝). 실수집 TLS 200 실측 | 해결 |
 | F7 | 실사용 데이터 이후 스키마 변경 가이드 부재 | `archive/migrations/0011~0013,0019` 비-concurrent | 두 번째 배포부터 유효 |
 | F8 | ~~드래프트 상태 라벨 하드코딩~~ (**해결됨 2026-08-01, PR #278**) | 정본 `drafts/labels.py`의 `REVIEW_STATUS_LABELS`, 템플릿/JS 모두 서버값 참조(표시 6곳) | 해결 |

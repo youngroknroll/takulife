@@ -44,7 +44,7 @@
       <hr class="auth-rule">
       <p class="auth-description">이메일 주소 하나로 시작합니다. 가입 후 인증 메일이 발송됩니다.</p>
       <p class="auth-required-legend">＊ 표시는 필수</p>
-      <form method="post" action="{% url 'account_signup' %}" class="auth-form">
+      <form method="post" action="{% url 'account_signup' %}" class="auth-form" data-submit-guard>
         {% csrf_token %}
         {{ redirect_field }}
         {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}

@@ -45,7 +45,7 @@ aria-label은 날짜의 활동 건수를 이미 포함하고 있고, aria-label�
               {% for item in day.items %}
                 <span class="day-item">
                   <span class="day-item-bar" data-kind="{{ item.group }}" aria-hidden="true"></span>
-                  <span class="day-item-title">{{ item.label }}</span>
+                  <span class="day-item-title" title="{{ item.label }}">{{ item.label }}</span>
                 </span>
               {% endfor %}
               {% if day.more_count %}<span class="day-more">+{{ day.more_count }}</span>{% endif %}

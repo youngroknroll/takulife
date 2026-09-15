@@ -11,7 +11,7 @@
     <header class="mypage-header">
       <span class="mypage-avatar" aria-hidden="true">{{ request.user.nickname|first|upper }}</span>
       <div class="mypage-header-body">
-        <p class="mypage-nickname">{{ request.user.nickname }}</p>
+        <p class="mypage-nickname" title="{{ request.user.nickname }}">{{ request.user.nickname }}</p>
         <h1>마이페이지</h1>
         <p class="mypage-email" title="{{ request.user.email }}">{{ request.user.email }}</p>
       </div>

@@ -3,6 +3,8 @@
 값을 준비하는 로직만 여기 둔다. `StaffActionLog.objects.create()` 호출
 자체는 각 호출부의 `transaction.atomic()` 블록 안에 남겨야 한다 — 로그
 기록이 실패하면 그 행동 자체도 롤백돼야 하기 때문이다.
+이 계약의 의도된 예외는 `staff/views/__init__.py`의 수집 실행 뷰 1곳뿐이다
+— `finally`에서 시도 자체를 항상 기록해야 하기 때문이다.
 """
 import datetime
 

@@ -9,13 +9,13 @@
 {% block content %}
   <div class="home-cats-page" id="staff-main">
     <div class="home-cats-grid">
-      <form class="home-cats-panel" method="post" action="/staff/home-categories/">
+      <form class="home-cats-panel" method="post" action="/staff/home-categories/" data-submit-guard>
         {% csrf_token %}
         <div class="home-cats-panel-head">
           <h2 class="home-cats-panel-title">홈 카테고리 구성</h2>
           <span class="mono home-cats-panel-note">노출 순서 = 홈 섹션 순서</span>
           <a class="staff-cta home-cats-preview-link" href="/" target="_blank" rel="noopener">홈 미리보기 ↗</a>
-          <button class="events-save-cta" type="submit">변경 저장</button>
+          <button class="home-cats-save-cta" type="submit">변경 저장</button>
         </div>
 
         <table class="home-cats-table">

@@ -141,7 +141,7 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
                 {% for row in draft_source_rows|slice:":6" %}
                   <tr>
                     <td>
-                      <div class="dash-source-name">{{ row.source.name }}</div>
+                      <div class="dash-source-name" title="{{ row.source.name }}">{{ row.source.name }}</div>
                       {% if row.has_error %}<div class="mono dash-source-error">{{ row.source.last_error|truncatechars:60 }}</div>{% endif %}
                     </td>
                     <td>
@@ -271,7 +271,7 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
                 {% for c in failed_source_candidates %}
                   <tr>
                     <td>
-                      <div class="dash-source-name">{{ c.name }}</div>
+                      <div class="dash-source-name" title="{{ c.name }}">{{ c.name }}</div>
                       <div class="mono dash-source-sub">{{ c.url }}</div>
                     </td>
                     <td class="mono dash-cell-dim">{% if c.failure_stage == "schema" %}형식 위반{% elif c.failure_stage == "duplicate" %}중복 소스{% elif c.failure_stage == "url_safety" %}URL 안전성{% elif c.failure_stage == "robots" %}robots 불허{% elif c.failure_stage == "fetch" %}가져오기 실패{% elif c.failure_stage == "listing_extraction" %}목록 추출 실패{% elif c.failure_stage == "sample_canary" %}표본 추출 실패{% elif c.failure_stage == "sample_mismatch" %}표본 불일치{% endif %}</td>
@@ -318,9 +318,9 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
                     <td><span class="dash-action-badge dash-action-badge--{{ a.log.action }}">{{ a.action_label }}</span></td>
                     <td class="dash-cell-target">
                       {% if a.log.target_draft %}
-                        <a href="/staff/drafts/{{ a.log.target_draft.id }}/">{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:"(제목 없음)" }}</a>
+                        <a href="/staff/drafts/{{ a.log.target_draft.id }}/" title="{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:'(제목 없음)' }}">{{ a.log.target_draft.extracted_title|default:a.log.target_draft.raw_title|default:"(제목 없음)" }}</a>
                       {% elif a.log.target_event %}
-                        <a href="/staff/events/{{ a.log.target_event.id }}/edit/">{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}</a>
+                        <a href="/staff/events/{{ a.log.target_event.id }}/edit/" title="{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}">{% if a.log.target_event.title %}{{ a.log.target_event.title }}{% else %}#{{ a.log.target_event.id }}{% endif %}</a>
                       {% elif a.log.target_user_id %}
                         {% if request.user.is_superuser %}
                           <a href="{% url 'staff:account-detail' a.log.target_user_id %}">계정 #{{ a.log.target_user_id }}</a>
@@ -331,7 +331,7 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
                         -
                       {% endif %}
                     </td>
-                    <td class="mono dash-cell-faint">{{ a.log.actor.email|default:"-" }}</td>
+                    <td class="mono dash-cell-faint" title="{{ a.log.actor.email|default:'-' }}">{{ a.log.actor.email|default:"-" }}</td>
                   </tr>
                 {% endfor %}
               </tbody>

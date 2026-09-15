@@ -205,20 +205,24 @@ def create_user_event_status(*, user, event=None, personal_entry=None, status):
 
 
 def mark_visited(*, user_event_status):
-    """상태 행을 방문(예: '실제로 다녀왔다')으로 바꾼다."""
+    """상태 행을 방문(예: '실제로 다녀왔다')으로 바꾼다.
+
+    상태 저장과 활동 기록은 한 트랜잭션 — 기록 실패 시 상태도 되돌아간다.
+    """
     previous_status = user_event_status.status
-    user_event_status.status = UserEventStatus.Status.VISITED
-    user_event_status.save(update_fields=["status", "updated_at"])
-    if previous_status != UserEventStatus.Status.VISITED:
-        _record_activity(
-            user=user_event_status.user,
-            kind=ActivityLogEntry.Kind.STATUS_CHANGED,
-            event=user_event_status.event,
-            subject_label=_subject_label(
-                event=user_event_status.event, personal_entry=user_event_status.personal_entry
-            ),
-            change_summary={"from": previous_status, "to": UserEventStatus.Status.VISITED},
-        )
+    with transaction.atomic():
+        user_event_status.status = UserEventStatus.Status.VISITED
+        user_event_status.save(update_fields=["status", "updated_at"])
+        if previous_status != UserEventStatus.Status.VISITED:
+            _record_activity(
+                user=user_event_status.user,
+                kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+                event=user_event_status.event,
+                subject_label=_subject_label(
+                    event=user_event_status.event, personal_entry=user_event_status.personal_entry
+                ),
+                change_summary={"from": previous_status, "to": UserEventStatus.Status.VISITED},
+            )
     target_type, target_id = _subject_target(
         event=user_event_status.event, personal_entry=user_event_status.personal_entry
     )
@@ -255,18 +259,20 @@ def mark_missed(*, user_event_status):
     ):
         raise VisitRecordExistsError
     previous_status = user_event_status.status
-    user_event_status.status = UserEventStatus.Status.MISSED
-    user_event_status.save(update_fields=["status", "updated_at"])
-    if previous_status != UserEventStatus.Status.MISSED:
-        _record_activity(
-            user=user_event_status.user,
-            kind=ActivityLogEntry.Kind.STATUS_CHANGED,
-            event=user_event_status.event,
-            subject_label=_subject_label(
-                event=user_event_status.event, personal_entry=user_event_status.personal_entry
-            ),
-            change_summary={"from": previous_status, "to": UserEventStatus.Status.MISSED},
-        )
+    # 상태 저장과 활동 기록은 같은 트랜잭션 계약을 따른다(mark_visited 참고).
+    with transaction.atomic():
+        user_event_status.status = UserEventStatus.Status.MISSED
+        user_event_status.save(update_fields=["status", "updated_at"])
+        if previous_status != UserEventStatus.Status.MISSED:
+            _record_activity(
+                user=user_event_status.user,
+                kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+                event=user_event_status.event,
+                subject_label=_subject_label(
+                    event=user_event_status.event, personal_entry=user_event_status.personal_entry
+                ),
+                change_summary={"from": previous_status, "to": UserEventStatus.Status.MISSED},
+            )
     return user_event_status
 
 
@@ -283,19 +289,21 @@ def revert_to_planned(*, user_event_status):
     ):
         raise VisitRecordExistsError
     previous_status = user_event_status.status
-    user_event_status.status = UserEventStatus.Status.PLANNED
-    user_event_status.missed_overridden = True
-    user_event_status.save(update_fields=["status", "missed_overridden", "updated_at"])
-    if previous_status != UserEventStatus.Status.PLANNED:
-        _record_activity(
-            user=user_event_status.user,
-            kind=ActivityLogEntry.Kind.STATUS_CHANGED,
-            event=user_event_status.event,
-            subject_label=_subject_label(
-                event=user_event_status.event, personal_entry=user_event_status.personal_entry
-            ),
-            change_summary={"from": previous_status, "to": UserEventStatus.Status.PLANNED},
-        )
+    # 상태 저장과 활동 기록은 같은 트랜잭션 계약을 따른다(mark_visited 참고).
+    with transaction.atomic():
+        user_event_status.status = UserEventStatus.Status.PLANNED
+        user_event_status.missed_overridden = True
+        user_event_status.save(update_fields=["status", "missed_overridden", "updated_at"])
+        if previous_status != UserEventStatus.Status.PLANNED:
+            _record_activity(
+                user=user_event_status.user,
+                kind=ActivityLogEntry.Kind.STATUS_CHANGED,
+                event=user_event_status.event,
+                subject_label=_subject_label(
+                    event=user_event_status.event, personal_entry=user_event_status.personal_entry
+                ),
+                change_summary={"from": previous_status, "to": UserEventStatus.Status.PLANNED},
+            )
     return user_event_status
 
 

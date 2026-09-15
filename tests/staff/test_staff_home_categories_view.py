@@ -2,8 +2,9 @@
 import re
 
 import pytest
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.test import Client, override_settings
+from django.test.utils import CaptureQueriesContext
 
 from core.models import Category, HomeConfig
 from staff.models import StaffActionLog
@@ -229,6 +230,32 @@ class TestStaffHomeCategoriesPost:
         assert resp.status_code == 302
         config = HomeConfig.get_solo()
         assert "exhibition" in config.featured_categories
+
+    def test_홈_카테고리_저장_POST는_대상_행을_잠그고_읽는다(self, staff_client):
+        # 단일 커넥션 테스트에서는 동시 경합 자체를 재현할 수 없어, S-10
+        # 선례(test_staff_category_views.py)처럼 SELECT ... FOR UPDATE가
+        # 실제로 실행됐다는 사실만 SQL 문자열로 확인한다.
+        HomeConfig.get_solo()
+        _, client = staff_client()
+
+        with CaptureQueriesContext(connection) as ctx:
+            resp = client.post(
+                "/staff/home-categories/",
+                data={
+                    "feature_exhibition": "on",
+                    "order_exhibition": "1",
+                },
+            )
+
+        assert resp.status_code == 302
+        locking_queries = [
+            q["sql"]
+            for q in ctx.captured_queries
+            if "FOR UPDATE" in q["sql"].upper() and HomeConfig._meta.db_table in q["sql"]
+        ]
+        assert locking_queries, ctx.captured_queries
+        config = HomeConfig.get_solo()
+        assert config.featured_categories == ["exhibition"]
 
 
 @pytest.mark.django_db
