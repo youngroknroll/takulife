@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #356부터 #211까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #361부터 #228까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,51 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #356 — feat(seo): Make the Korean brand name searchable (트랙 28)
+### PR #361 — feat: 키워드 탐색 → 판별 → 승인 가능한 드래프트·소스 등록 (트랙 30)
 
-**무엇을 바꿨나**: 리포 전체에 '타쿠라이프' 0건이던 상태에서 홈 `<title>`/og:title을
-`타쿠라이프 takulife — 굿즈 컬렉션·서브컬처 이벤트 기록`으로, 기본 meta description
-3곳(base.html 2곳·행사 상세 폴백 상수)을 `타쿠라이프(takulife)에서 …`로,
-og:site_name을 `타쿠라이프|takulife`로 바꿨다. `core/presenters.py` 신설
-(`build_website_json_ld`, `core.context_processors`의 `PROJECT_NAME`·
-`BRAND_NAME_KO` 상수 단일 소스)로 홈에만 WebSite JSON-LD(alternateName
-타쿠라이프)를 발행한다. 푸터 태그라인 1행 `타쿠라이프 — …`. 런북 §3-12 curl
-확인 항목, 백로그 C2(소개 페이지 별도 트랙 승인·미착수). 커밋 7개(ebfd39a·
-82dbd06·8a149d5·d6116cb·91e584f·2ca348e·4dcdbc3), merge commit b8e96c1.
+**무엇을 바꿨나**: 스태프가 입력한 검색어로 새 행사·수집처를 찾는 트랙 30
+본체를 얹었다. 한 실행 안에서 탐색(exploration, 검색만·
+`local_runner/claude_code_adapter.py:83-130`의 `build_exploration_prompt`)
+→ 읽기(read, 결정론·`local_runner/page_fetch.py:150-154`의
+`fetch_event_text` — 인스타·X는 og:description 메타 파싱, 일반 웹은
+og:title/title·meta description) → 해석(interpret, 도구 없는 모델 호출·
+`local_runner/caption_interpreter.py:1-3, 15-77`의
+`build_interpretation_prompt`) 3단으로 분리해 공식 여부 판단을 해석
+단계로 옮겼다. 서버는 계정형(SNS) URL 제출 시 존재 재확인·fetch를 절대
+타지 않고(`drafts/agent_drafts.py:200-205`), 계정형 소스는 가져오기·
+robots 확인 없이 `DraftSource(enabled=False)`로만 등록한다
+(`drafts/candidate_validation.py:344-386`의 `register_account_source`).
+실기동이 잡은 통합 결함 3건(제출 400 전량 거부, 해석 실패 시 실행 전체
+중단, 예외 시 임대 미반납)과 보안 수정 2건(러너 MCP 브라우저 제어 도구
+노출 차단 `b68e2881`, `X-Forwarded-For` 헤더 조작으로 러너 스로틀을
+무한 우회하던 경로 차단 `7163c8e6`)도 같은 트랙에서 닫았다. 커밋 50개
+`[실측 gh 2026-09-12]`, merge commit `cfd69d3a`.
 
-**왜**: 구글은 페이지에 적힌 텍스트·title·구조화 데이터로 검색어를 매칭하므로
-한글 브랜드명 신호가 없으면 '타쿠라이프' 검색에 잡힐 근거가 없다. 트랙 16
-(robots·sitemap·canonical·noindex·Event JSON-LD) 위에 브랜드명 신호만
-얹었다. 어순(컬렉션 → 이벤트)은 CLAUDE.md 우선순위(PSO 판정), og:site_name
-파이프 형식과 소개 페이지 별도 트랙은 사용자 결정(2026-09-10).
+**왜**: 기존 가드레일 문서는 '이미 아는 계정을 주기적으로 도는 수집'을
+전제로 쓰여 있었고, 스태프가 검색어로 새 행사·수집처를 직접 찾는 경로가
+없었다. 트랙 30은 이 경로를 본체로 신설하되, LLM은 후보 URL과 얕은
+판단만 내고 저장·소스 활성화·게시 여부는 항상 서버가 결정하는 기존
+로컬 에이전트 탐색 설계 원칙(`docs/BE/draft-source-agent-discovery.md`)을
+그대로 지킨다. 계정형 소스를 서버가 fetch하지 않는 이유는 SNS 호스트의
+봇 차단과 약관 위험을 감당하지 않기 위해서다. 이연 5건은
+`docs/backlog.md` G6에 남겼다.
 
-**검증**: 기준 2541 passed·10 deselected·82.12초 → 2547 passed·10
-deselected·111.67초(신규 T1~T6, T7 리터럴 교체), T6는 base.html:66 뮤테이션으로
-Red 등가 확인; `check` 0 issues, `makemigrations --check` 무변경; 브라우저
-(DevTools MCP+curl) 헤드 순서·JSON.parse 키 5개·`/events/` 0건·콘솔 0건·
-태그라인 320/390/1280px 2행 무오버플로; WED·BIR 사후 Conforms(C3 포함),
-QVL 완료; CI 5개 잡 pass(test·audit·docker·e2e 관측·GitGuardian). 같은 날
-선행 머지 #352(docs 롤링)·#353(트랙 25)·#354(트랙 27 e2e). 머지 후
-main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09-10]`.
+**검증**: 머지 후 main(`cfd69d3a`) 재측정: 2684 passed / 10
+deselected / 76.90초 `[실측 2026-09-12]` — 직전 기준선 2582 passed
+(트랙 29 시점)에서 +102건 `[계산]`. `check` 0 issues
+`[실측 2026-09-12]`, `makemigrations --check --dry-run` 무변경
+`[실측 2026-09-12]`. 실기동(검색어 '하츠네 미쿠 팝업스토어')으로 드래프트
+3건 실제 생성, 전부 승인 전 체크 5항 통과, 계정형 소스 3건이 비활성으로
+등록, 서버 로그의 인스타 요청 0건 `[코드 커밋 e045963e]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
 
+- #360 — deploy: main → production
+- #359 — deploy: main → production
+- #358 — feat(accounts): 회원 닉네임 도입 — 가입 필수 입력·헤더/마이페이지 표시·백필·변경 화면 (트랙 29)
+- #357 — docs: PR #352·#353·#354·#356 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #356 — feat(seo): Make the Korean brand name searchable (트랙 28)
+- #355 — deploy: main → production
 - #354 — test: Reintroduce a journey-based e2e suite (pytest-playwright + live_server)
 - #353 — feat(staff): 이벤트 목록 인라인 비공개·재게시·검증 — H2 분할 2/3 (트랙 25)
 - #352 — docs: PR #349·#350·#351 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -75,6 +91,7 @@ main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09
 - #339 — docs: PR #338 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
 - #337 — docs: PR #332~#335 머지를 로그에 롤링 반영
+- #336 — deploy: main → production
 - #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
 - #334 — deploy: main → production
 - #333 — deploy: main → production
@@ -181,20 +198,3 @@ main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09
 - #230 — feat(archive): Unify 다녀온 기록 onto the editorial shell
 - #229 — feat(pager): 공용 페이저 블록 창 + 5칸 점프 화살표
 - #228 — design(archive): 나의 일정 페이지 에디토리얼 셸 통일
-- #227 — fix(archive): 활동 달력 백로그 2건 근본 해결 (has_any_items·검색 DB 하향)
-- #226 — design(archive): 활동 달력 에디토리얼 리빌드 + 상단·필터 목록 통일
-- #225 — design(queue): 검토 큐 사용자 판정 반영 — 덱 타이밍·메타줄 중복·검색 버튼·토글 정렬·카드 날짜
-- #224 — design(archive): Rebuild the activity page for the editorial mock, and unify the pager
-- #223 — fix(web): 컬렉션 작품별 색 충돌 제거 + 패싯 컨트롤
-- #222 — design(web): 이벤트 달력 아젠다 액션 hover 추가
-- #221 — feat(web): 공용 페이지네이션 재구축 — 창 축약 + 점프 화살표
-- #220 — design(web): 컬렉션 페이지 에디토리얼 리디자인
-- #219 — design(calendar): Align detail actions
-- #218 — design(web): Rebuild the events calendar in the editorial v2 style
-- #217 — design(home): Tune hero deck timing
-- #216 — copy(web): Rename 행사 to 이벤트 across the product
-- #215 — design(web): Rebuild the home collection section, center the hero, divide sections
-- #214 — design(cards): Remove official badges
-- #213 — copy(web): Reword the home hero headline
-- #212 — feat: Guard event category/region against out-of-vocabulary values (B1)
-- #211 — feat(web): Move sorting from the sidebar to a results-head toggle menu

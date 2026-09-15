@@ -31,7 +31,8 @@
 | OAuth 활성화 | **활성화 완료**(B2 코드 해소=트랙 11, GCP 클라이언트·env 설정 및 실 OAuth 왕복 검증=사용자, 2026-08-26) |
 | e2e 여정 스위트 | `[코드] [실측 2026-09-09]` 트랙 27로 재도입, `tests/e2e/` 8파일·10건, 명령 `uv run pytest -q -m e2e tests/e2e`. 기본 `uv run pytest -q`는 `addopts`의 `-m "not e2e"`로 e2e 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) |
 | 카테고리 어휘 스태프 CRUD | `[코드 2026-09-13]` 구현 완료·PR 대기 — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극**: 소비자 화면이 아직 슬러그 기반 색 토큰을 써서 새 카테고리는 소비자 쪽에서 중립색으로 렌더된다(이관 표면 템플릿 9지점·CSS 25지점 `[실측]`) |
-| 회원 닉네임(트랙 29) | `[코드 2026-09-10]` 구현 완료·PR 대기 — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
+| 회원 닉네임(트랙 29) | `[실측 gh]` PR #358 머지 완료(2026-09-10, merge commit `3ca5d184`, 커밋 10개) — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
+| 키워드 탐색(트랙 30) | `[실측 gh]` PR #361 머지 완료(2026-09-12, main `cfd69d3a`) — 검색어 탐색 → 결정론 읽기 → 해석 → 승인 가능한 드래프트·소스 등록 3단 분리. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md`. 이연 항목은 G6 |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -331,8 +332,9 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 ### G6 트랙 30(키워드 탐색) 이연 항목(2026-09-12)
 
 트랙 30(키워드 탐색 → 판별 → 드래프트·소스 등록) 승인 범위 밖으로 이연한
-항목. 가드레일 정본은 `docs/BE/draft-source-agent-discovery.md` "트랙 30"
-절.
+항목. 트랙 30 본체는 PR #361로 머지 완료됐다(2026-09-12, main `cfd69d3a`)
+`[실측 gh]`. 가드레일 정본은 `docs/BE/draft-source-agent-discovery.md`
+"트랙 30" 절.
 
 - `[코드]` `local_runner/page_fetch.py:129-147`(`_fetch_general_web`) 일반
   웹 응답 크기 상한을 응답을 다 내려받은 뒤 `len(html.encode(...))`로
