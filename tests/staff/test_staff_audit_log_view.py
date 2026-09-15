@@ -7,6 +7,7 @@ user_agent는 볼 수 없다(슈퍼유저 전용, staff/admin.py). 이 화면의
 import pytest
 from django.urls import reverse
 
+from core.models import Category
 from staff.models import StaffActionLog
 from staff.views.audit_log import STAFF_ACTION_LOG_PAGE_SIZE
 
@@ -287,3 +288,41 @@ def test_감사_로그_화면에_드래프트_생성_수정_행동이_한국어_
     assert update_row["action_label"] == "드래프트 수정"
     assert update_row["target_label"] == "https://example.com/audit-draft-update"
 
+
+
+@pytest.mark.django_db
+def test_카테고리_행동_로그_행의_대상_라벨은_카테고리_라벨이다(staff_client):
+    """감사 로그가 target_category를 저장만 하고 화면이 못 읽으면 대상이
+    '-'로 비어, 어떤 카테고리를 만들고 지웠는지 감사할 수 없다."""
+    staff, client = staff_client()
+    category = Category.objects.create(slug="audit_cat", label="감사대상카테고리")
+    StaffActionLog.objects.create(
+        actor=staff,
+        action=StaffActionLog.Action.CATEGORY_CREATE,
+        target_category=category,
+    )
+
+    resp = client.get(audit_log_url())
+
+    assert resp.status_code == 200
+    row = resp.context["log_rows"][0]
+    assert row["target_label"] == "감사대상카테고리"
+
+
+@pytest.mark.django_db
+def test_감사_로그_q_검색어는_대상_카테고리_라벨과_매칭한다(staff_client):
+    """대상 라벨이 화면에 보이게 됐으니 검색 대상에도 들어가야 한다 —
+    staff/queries.py가 '화면에 실제로 보이는 것만 검색한다'고 정한 기준."""
+    staff, client = staff_client()
+    category = Category.objects.create(slug="searchable_cat", label="검색대상카테고리")
+    StaffActionLog.objects.create(
+        actor=staff,
+        action=StaffActionLog.Action.CATEGORY_DISABLE,
+        target_category=category,
+    )
+
+    resp = client.get(audit_log_url() + "?q=검색대상카테고리")
+
+    assert resp.status_code == 200
+    assert len(resp.context["log_rows"]) == 1
+    assert resp.context["log_rows"][0]["target_label"] == "검색대상카테고리"

@@ -5,8 +5,8 @@ from django.db.models import Count
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 
+from core.categories import category_choices_for_editing
 from core.models import HomeConfig
-from core.vocab import CATEGORY
 from events.models import Event
 
 from ..models import StaffActionLog
@@ -20,9 +20,13 @@ def staff_home_categories(request):
     """GET은 현재 설정으로 폼을 그리고, POST는 저장 후 리다이렉트한다(PRG)."""
     config = HomeConfig.get_solo()
 
+    # 활성 + 이미 강조 중인 카테고리(비활성이어도) — 여기서 빠지면 스태프가
+    # 이미 켠 강조를 해제할 방법이 없어진다.
+    category_choices = category_choices_for_editing(keep_slugs=config.featured_categories)
+
     if request.method == "POST":
         checked = []
-        for slug, _ in CATEGORY:
+        for slug, _ in category_choices:
             if request.POST.get(f"feature_{slug}") == "on":
                 try:
                     order = int(request.POST.get(f"order_{slug}", "0"))
@@ -62,7 +66,7 @@ def staff_home_categories(request):
             "order": featured_order.get(slug, vocab_idx + 1),
             "event_count": event_counts.get(slug, 0),
         }
-        for vocab_idx, (slug, label) in enumerate(CATEGORY)
+        for vocab_idx, (slug, label) in enumerate(category_choices)
     ]
 
     return render(

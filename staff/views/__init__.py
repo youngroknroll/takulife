@@ -66,6 +66,7 @@ from .accounts import (
     staff_accounts,
 )
 from .audit_log import STAFF_ACTION_LOG_PAGE_SIZE, staff_audit_log
+from .categories import category_create, category_edit, category_list, category_set_active
 from .draft_api import (
     AdminEventDraftDetailView,
     AdminEventDraftListCreateView,
@@ -110,6 +111,10 @@ __all__ = [
     "staff_account_detail",
     "staff_account_set_staff",
     "staff_account_set_active",
+    "category_list",
+    "category_create",
+    "category_edit",
+    "category_set_active",
     "AdminEventDraftDetailView",
     "AdminEventDraftListCreateView",
     "AdminEventDraftStatsView",

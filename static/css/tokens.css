@@ -110,6 +110,37 @@
   --cat-concert-soft: #fef3c7;
   --cat-concert-ink: #b45309;
 
+  /* 팔레트 슬롯 토큰(트랙 27) — 스태프가 만드는 카테고리는 고정 슬러그가
+     없어 슬롯 번호로 색을 고른다. 값은 core/categories.py의 PALETTE와
+     반드시 일치해야 한다(그쪽이 단일 출처). 0~6은 위 슬러그 토큰과 같은
+     색이라 기존 카테고리 색이 바뀌지 않는다. 위 슬러그 토큰은 기존
+     소비처가 아직 슬러그로 참조하고 있어 남겨둔다(공존, 전환은 이후
+     단계). */
+  --cat-slot-0-soft: #f3e8ff;
+  --cat-slot-0-ink: #7e22ce;
+  --cat-slot-1-soft: #f5ecdf;
+  --cat-slot-1-ink: #92633a;
+  --cat-slot-2-soft: #e0e7ff;
+  --cat-slot-2-ink: #3730a3;
+  --cat-slot-3-soft: #d8f3ee;
+  --cat-slot-3-ink: #0f766e;
+  --cat-slot-4-soft: #e2e8f0;
+  --cat-slot-4-ink: #475569;
+  --cat-slot-5-soft: #fce7f3;
+  --cat-slot-5-ink: #9d174d;
+  --cat-slot-6-soft: #fef3c7;
+  --cat-slot-6-ink: #b45309;
+  --cat-slot-7-soft: #fee2e2;
+  --cat-slot-7-ink: #b91c1c;
+  --cat-slot-8-soft: #fef9c3;
+  --cat-slot-8-ink: #854d0e;
+  --cat-slot-9-soft: #ecfccb;
+  --cat-slot-9-ink: #3f6212;
+  --cat-slot-10-soft: #dcfce7;
+  --cat-slot-10-ink: #166534;
+  --cat-slot-11-soft: #e0f2fe;
+  --cat-slot-11-ink: #0369a1;
+
   /* work_title(시리즈)별 배색 — 카테고리(--cat-*)와는 별개 축이다
      (core/views.py의 _series_ink_classes 참고, 둘을 섞지 말 것).
      OKLCH 30도 간격으로 12색을 만들고 홀짝 명도를 다르게 둬 라이트/다크
@@ -172,6 +203,33 @@
   --cat-fan_meeting-ink: #da769e;
   --cat-concert-soft: #422006;
   --cat-concert-ink: #fb923c;
+
+  /* 팔레트 슬롯 토큰(트랙 27) — 라이트 블록 주석 참고. 값은
+     core/categories.py의 PALETTE dark_soft/dark_ink와 일치해야 한다. */
+  --cat-slot-0-soft: #342442;
+  --cat-slot-0-ink: #b17edc;
+  --cat-slot-1-soft: #3d3024;
+  --cat-slot-1-ink: #bf9f82;
+  --cat-slot-2-soft: #272541;
+  --cat-slot-2-ink: #8f8bcf;
+  --cat-slot-3-soft: #20413f;
+  --cat-slot-3-ink: #64d8cf;
+  --cat-slot-4-soft: #23354e;
+  --cat-slot-4-ink: #839ec3;
+  --cat-slot-5-soft: #412530;
+  --cat-slot-5-ink: #da769e;
+  --cat-slot-6-soft: #422006;
+  --cat-slot-6-ink: #fb923c;
+  --cat-slot-7-soft: #7f1d1d;
+  --cat-slot-7-ink: #fca5a5;
+  --cat-slot-8-soft: #713f12;
+  --cat-slot-8-ink: #fde047;
+  --cat-slot-9-soft: #365314;
+  --cat-slot-9-ink: #bef264;
+  --cat-slot-10-soft: #14532d;
+  --cat-slot-10-ink: #86efac;
+  --cat-slot-11-soft: #0c4a6e;
+  --cat-slot-11-ink: #7dd3fc;
 
   /* 시리즈 색 12개는 전부 다크값을 채워야 한다 — 하나라도 빠지면 아무
      오류 없이 조용히 회색으로 대체된다(이 프로젝트에서 실제로 두 번

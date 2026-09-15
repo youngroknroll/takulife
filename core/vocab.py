@@ -227,8 +227,17 @@ def is_valid_category(value: str) -> bool:
 
     빈 값은 일부러 유효하다: Event에서 카테고리는 선택 항목이라, 빈 값을
     거부하면 카테고리 없는 행사를 아예 등록할 수 없게 된다.
+
+    DB(Category)를 본다 — core.models와의 순환 임포트를 피하려고
+    core.categories.category_exists를 경유한다(그 함수가 호출 시점에
+    core.models를 임포트한다). 비활성 카테고리도 유효 취급한다(비활성 ≠
+    삭제 — 이미 그 슬러그로 저장된 이벤트의 재게시를 막으면 안 된다).
     """
-    return value == "" or value in CATEGORY_LABELS
+    if value == "":
+        return True
+    from core.categories import category_exists
+
+    return category_exists(value)
 
 
 def is_valid_region(value: str) -> bool:

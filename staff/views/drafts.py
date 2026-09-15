@@ -11,9 +11,9 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.categories import category_choices_for_editing
 from core.errors import error_response, field_error_response
 from core.vocab import (
-    CATEGORY,
     CATEGORY_LABELS,
     REGION,
     REGION_LABELS,
@@ -191,7 +191,7 @@ def event_draft_detail(request, draft_id):
                 "draft_not_found": True,
                 "draft_id": draft_id,
                 "queue_return_url": queue_return_url,
-                "CATEGORY": CATEGORY,
+                "CATEGORY": category_choices_for_editing(),
                 "REGION": REGION,
             },
         )
@@ -214,7 +214,7 @@ def event_draft_detail(request, draft_id):
             "queue_return_url": queue_return_url,
             "category_label": category_label,
             "region_label": region_label,
-            "CATEGORY": CATEGORY,
+            "CATEGORY": category_choices_for_editing(keep_slugs=[draft.extracted_category]),
             "REGION": REGION,
             "preapproval_checks": _draft_preapproval_checks(draft),
         },

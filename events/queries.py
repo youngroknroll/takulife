@@ -5,6 +5,8 @@ from datetime import timedelta
 from django.db import models
 from django.utils import timezone
 
+from core.models import Category
+
 from .models import Event
 from .serializers import EventQuerySerializer
 
@@ -293,3 +295,25 @@ def count_staff_events_by_category(
     )
     rows = queryset.values("category").annotate(count=models.Count("id"))
     return {row["category"]: row["count"] for row in rows}
+
+
+def consumer_category_choices() -> list[tuple[str, str]]:
+    """소비자 필터에 노출할 카테고리 (slug, label) 목록.
+
+    활성 카테고리 전체 + 비활성이지만 게시 이벤트가 남아있는 카테고리를
+    보여준다 — 비활성화해도 기존 이벤트를 찾던 사용자가 필터를 잃지
+    않게 하려는 결정이다. 카테고리마다 exists()를 따로 묻지 않고
+    게시 건수를 한 번에 집계해(1쿼리) 활성 목록 조회(1쿼리)와 합친다.
+    """
+    published_counts = {
+        row["category"]: row["count"]
+        for row in Event.objects.published()
+        .exclude(category="")
+        .values("category")
+        .annotate(count=models.Count("id"))
+    }
+    return [
+        (category.slug, category.label)
+        for category in Category.objects.all()
+        if category.is_active or published_counts.get(category.slug, 0) > 0
+    ]

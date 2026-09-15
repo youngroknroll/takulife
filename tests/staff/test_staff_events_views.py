@@ -8,6 +8,7 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
+from core.models import Category
 from events.models import Event
 
 pytestmark = pytest.mark.web
@@ -408,6 +409,32 @@ def test_허용되지_않은_카테고리_값을_지정하면_필터_없이_전�
 
 
 @pytest.mark.django_db
+def test_이벤트_수정_화면은_현재_비활성_카테고리도_선택지에_담는다(staff_client, make_event):
+    """활성일 때 이벤트가 그 카테고리를 참조하게 만든 다음 카테고리를
+    비활성화한다 — 그래야 "비활성인데 현재 쓰이는 중"인 상태가 된다.
+    keep_slugs가 무력화되면 이 카테고리가 선택지에서 빠져, 수정 화면에서
+    저장만 눌러도 카테고리가 조용히 다른 값으로 바뀐다."""
+    category = Category.objects.create(slug="retired_in_use_edit", label="폐지 사용중")
+    event = make_event(
+        title="폐지 카테고리 행사",
+        category="retired_in_use_edit",
+        official_url="https://example.com/event-edit-retired-category",
+    )
+    category.is_active = False
+    category.save()
+
+    staff, client = staff_client()
+    resp = client.get(f"/staff/events/{event.pk}/edit/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    match = re.search(r'<select[^>]*id="edit-category"[^>]*>(.*?)</select>', content, re.DOTALL)
+    assert match
+    options = re.findall(r'<option value="([^"]*)"', match.group(1))
+    assert "retired_in_use_edit" in options
+
+
+@pytest.mark.django_db
 def test_기간_필터를_적용하면_context에_선택된_기간이_담기고_목록이_좁혀진다(staff_client, make_event):
     staff, client = staff_client()
     today = date.today()
@@ -517,6 +544,36 @@ def test_목록에서_검색어와_페이지_이동을_함께_하면_검색어�
 
     assert resp.status_code == 200
     assert resp.context["pager_query"].count("q=") == 1
+
+
+@pytest.mark.django_db
+def test_수정_화면_카테고리_선택지는_런타임에_추가한_카테고리를_담고_다른_이벤트가_안_쓰는_비활성_카테고리는_뺀다(
+    staff_client, make_event
+):
+    """수정 화면이 기존 이벤트가 이미 쓰는 비활성 카테고리 값 자체를
+    선택지에서 잃어도 되는지는 별도 PSO 판단이 필요하다(비활성 ≠ 삭제
+    결정과 맞물림) — 여기서는 그 판단이 갈리지 않는 최소 계약만 고정한다:
+    새로 만든 활성 카테고리는 보이고, 이 이벤트도 다른 이벤트도 쓰지 않는
+    새 비활성 카테고리는 안 보인다. 지금은 core.vocab.CATEGORY 정적
+    튜플을 그대로 렌더링해 둘 다 반영하지 않는다 — Red 예상."""
+    Category.objects.create(slug="vintage_market_edit", label="빈티지 마켓")
+    Category.objects.create(slug="retired_market_edit", label="폐지 마켓", is_active=False)
+    staff, client = staff_client()
+    event = make_event(
+        title="수정선택지행사",
+        category="popup_store",
+        official_url="https://example.com/edit-category-choices",
+    )
+
+    resp = client.get(f"/staff/events/{event.id}/edit/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    match = re.search(r'<select[^>]*id="edit-category"[^>]*>(.*?)</select>', content, re.DOTALL)
+    assert match
+    options = re.findall(r'<option value="([^"]*)"', match.group(1))
+    assert "vintage_market_edit" in options
+    assert "retired_market_edit" not in options
 
 
 @pytest.mark.django_db
