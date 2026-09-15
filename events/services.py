@@ -3,6 +3,7 @@ import logging
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from core.categories import reconcile_palette_slot
 from core.vocab import is_valid_category, is_valid_region
 
 from .models import Event
@@ -74,6 +75,19 @@ def _validate_publish_fields(
     return normalized_title, normalized_official_url
 
 
+def reconcile_category_palette_slot(*, category_slug):
+    """category_slug의 현재 게시 이벤트 수를 세어 팔레트 슬롯 반납·재획득을
+    재계산한다. 이 카운트를 core.categories.reconcile_palette_slot에 넘기는
+    이유는 core가 events(Event 모델)를 임포트할 수 없기 때문이다(아키텍처
+    경계 R1) — 카운트는 반드시 events 쪽에서 세어 전달해야 한다."""
+    if not category_slug:
+        return
+    published_count = Event.objects.filter(
+        category=category_slug, publish_status=Event.PublishStatus.PUBLISHED
+    ).count()
+    reconcile_palette_slot(category_slug=category_slug, published_count=published_count)
+
+
 def create_published_event(
     *,
     title,
@@ -99,7 +113,7 @@ def create_published_event(
 
     try:
         with transaction.atomic():
-            return Event.objects.create(
+            created_event = Event.objects.create(
                 title=title,
                 category=category,
                 work_title=work_title,
@@ -112,6 +126,8 @@ def create_published_event(
                 summary=summary,
                 publish_status=Event.PublishStatus.PUBLISHED,
             )
+        reconcile_category_palette_slot(category_slug=category)
+        return created_event
     except IntegrityError as exc:
         raise DuplicateOfficialUrlError from exc
     except Exception as exc:
@@ -191,6 +207,7 @@ def unpublish_event(*, event):
     """
     event.publish_status = Event.PublishStatus.DRAFT
     event.save(update_fields=["publish_status"])
+    reconcile_category_palette_slot(category_slug=event.category)
     return event
 
 
@@ -211,6 +228,7 @@ def republish_event(*, event):
     )
     event.publish_status = Event.PublishStatus.PUBLISHED
     event.save(update_fields=["publish_status"])
+    reconcile_category_palette_slot(category_slug=event.category)
     return event
 
 

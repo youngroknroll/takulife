@@ -51,7 +51,8 @@ def list_staff_action_log(*, action="", search=""):
     StaffActionLog 모델 독스트링이 정한 제한이고, 그 두 필드는 슈퍼유저
     전용(staff/admin.py)이다. 페이지네이션은 호출부가 감싼다.
 
-    search는 화면에 실제로 보이는 세 가지(행위자·대상 드래프트·대상 이벤트)만
+    search는 화면에 실제로 보이는 네 가지(행위자·대상 드래프트·대상 이벤트·
+    대상 카테고리)만
     본다. ip_address·user_agent를 검색 대상에 넣으면 값을 안 보여줘도 존재
     여부를 되물어 알아낼 수 있어 D9 제한이 무의미해진다.
     """
@@ -65,6 +66,7 @@ def list_staff_action_log(*, action="", search=""):
             | Q(target_draft__source_url__icontains=term)
             | Q(target_draft__extracted_title__icontains=term)
             | Q(target_event__title__icontains=term)
+            | Q(target_category__label__icontains=term)
         )
     return qs.order_by("-created_at").values(
         "id",
@@ -76,6 +78,8 @@ def list_staff_action_log(*, action="", search=""):
         "target_draft__source_url",
         "target_event_id",
         "target_event__title",
+        "target_category_id",
+        "target_category__label",
         "target_user_id",
     )
 

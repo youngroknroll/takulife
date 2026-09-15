@@ -1,7 +1,8 @@
 /**
  * data-submit-guard 속성이 붙은 폼에서만 동작하는 이중 제출 방지 가드.
- * 모든 스태프 페이지에 공통 로드되므로(templates/staff/base_staff.html의
- * shell_js), 특정 폼이 항상 있다고 가정하지 않고 속성이 붙은 폼만 다룬다.
+ * 소비자 셸(templates/base.html)과 스태프 셸(templates/staff/base_staff.html)
+ * 양쪽에 공통 로드되므로, 특정 폼이 항상 있다고 가정하지 않고 속성이 붙은
+ * 폼만 다룬다.
  * 전역 `form` 선택자 대신 opt-in 방식을 쓰는 이유: 나중에 다른 폼이 추가돼도
  * 이 파일을 건드리지 않는 한 조용히 가드에 걸리는 일이 없게 하기 위해서다.
  *

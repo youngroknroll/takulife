@@ -500,14 +500,6 @@
     color: var(--pink-ink);
     font-weight: 700;
   }
-  /* 공용 .is-loading 스피너는 앞에 텍스트가 있다고 가정한다. 이 버튼은
-     아이콘만 있어 그대로 두면 나란히 표시돼 30px 원을 벗어난다. */
-  .event-index-interest.is-loading [data-interest-glyph] {
-    display: none;
-  }
-  .event-index-interest.is-loading::after {
-    margin-left: 0;
-  }
 
 /* ── filter disclosure (tablet and below) ─────────────────────── */
 /* 목록·달력 두 페이지가 같은 event_list.js 핸들러로 .filter-toggle/

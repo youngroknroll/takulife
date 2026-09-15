@@ -7,7 +7,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script defer src="{% static 'js/staff/staff_event_edit.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -111,7 +110,7 @@
                 검증 이력 없음
               {% endif %}
             </p>
-            <form method="post" action="/staff/events/{{ event.id }}/verify/{% if list_query %}?{{ list_query }}{% endif %}" id="staff-event-verify-form">
+            <form method="post" action="/staff/events/{{ event.id }}/verify/{% if list_query %}?{{ list_query }}{% endif %}" id="staff-event-verify-form" data-submit-guard>
               {% csrf_token %}
               {% if event.verified_at %}
                 <button class="events-rail-btn events-rail-btn--neutral" type="submit">다시 검증</button>
@@ -173,7 +172,7 @@
                 <p class="events-rail-note">아카이브 참조가 남아 있어 삭제할 수 없습니다.</p>
               {% else %}
                 <p class="events-rail-note">아카이브 참조가 없어 하드 삭제가 가능합니다. 삭제는 되돌릴 수 없습니다.</p>
-                <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}">
+                <form method="post" action="/staff/events/{{ event.id }}/delete/{% if list_query %}?{{ list_query }}{% endif %}" data-submit-guard>
                   {% csrf_token %}
                   <button class="events-rail-btn events-rail-btn--danger" type="submit">삭제</button>
                 </form>

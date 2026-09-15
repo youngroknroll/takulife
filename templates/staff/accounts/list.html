@@ -33,7 +33,7 @@
           <tbody>
             {% for row in account_rows %}
               <tr>
-                <td class="accounts-email-cell">{{ row.email }}</td>
+                <td class="accounts-email-cell" title="{{ row.email }}">{{ row.email }}</td>
                 <td class="mono accounts-date-cell">{{ row.date_joined|date:"y.m.d" }}</td>
                 <td>
                   <span class="accounts-status-badge accounts-status-badge--{{ row.status_key }}">{% if row.status_key == "active" %}활성{% elif row.status_key == "inactive" %}비활성{% else %}탈퇴 유예{% endif %}</span>

@@ -35,9 +35,9 @@
       <div class="collection-detail-main">
         <div class="collection-detail-identity">
           <span class="collection-detail-bar-dot {{ row.series_ink_class }}" aria-hidden="true"></span>
-          <span class="collection-detail-work {{ row.series_ink_class }}">{{ item.work_title }}</span>
+          <span class="collection-detail-work {{ row.series_ink_class }}" title="{{ item.work_title }}">{{ item.work_title }}</span>
           {% if item.character_name %}<span class="collection-detail-dot" aria-hidden="true">·</span>
-          <span class="collection-detail-character">{{ item.character_name }}</span>{% endif %}
+          <span class="collection-detail-character" title="{{ item.character_name }}">{{ item.character_name }}</span>{% endif %}
         </div>
         <h1 class="collection-detail-title">{{ item.name }}</h1>
         {% if item.item_type %}<p class="collection-detail-type">{{ item.item_type }}</p>{% endif %}

@@ -1,0 +1,101 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 카테고리{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/pages/categories.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <div class="cat-topbar">
+      <div class="cat-topbar-main">
+        <span class="mono cat-slot-counter">배정 {{ assigned_slot_count }}/{{ palette_slot_count }}</span>
+      </div>
+      {% if slots_exhausted %}
+        <button class="staff-cta cat-create-cta" type="button" disabled aria-describedby="cat-slots-exhausted-hint">+ 새 카테고리</button>
+      {% else %}
+        <a class="staff-cta cat-create-cta" href="{% url 'staff:category-create' %}">+ 새 카테고리</a>
+      {% endif %}
+    </div>
+    {% if slots_exhausted %}
+      <p id="cat-slots-exhausted-hint" class="cat-slots-exhausted-hint">팔레트 슬롯이 모두 배정돼 새 카테고리를 만들 수 없습니다. 기존 카테고리를 비활성화해 슬롯을 반납하세요.</p>
+    {% endif %}
+
+    <ul class="cat-rule-list">
+      <li>활성 카테고리는 소비자 필터에 노출됩니다.</li>
+      <li>비활성 카테고리도 게시된 이벤트가 있으면 소비자 필터에서 계속 보입니다.</li>
+      <li>비활성 카테고리의 게시 이벤트가 0건이 되면 소비자 필터에서 자동으로 사라집니다.</li>
+    </ul>
+
+    {% if category_rows %}
+      <div class="cat-table-wrap">
+        <div class="staff-table-scroll">
+          <table class="cat-table">
+            <caption class="cat-table-caption">전체 카테고리 목록 — 활성·비활성 상태를 함께 표시합니다</caption>
+            <colgroup>
+              <col>
+              <col style="width:9rem">
+              <col style="width:8rem">
+              <col style="width:5.5rem">
+              <col style="width:6.5rem">
+              <col style="width:5.5rem">
+              <col style="width:7rem">
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">라벨</th>
+                <th scope="col">슬러그</th>
+                <th scope="col">색상</th>
+                <th scope="col">슬롯</th>
+                <th scope="col">게시 이벤트</th>
+                <th scope="col">상태</th>
+                <th scope="col">작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in category_rows %}
+                <tr>
+                  <td class="cat-label-cell">
+                    <a class="cat-label-link" href="{% url 'staff:category-edit' row.id %}" title="{{ row.label }}">{{ row.label }}</a>
+                  </td>
+                  <td class="mono cat-slug-cell">{{ row.slug }}</td>
+                  <td>
+                    <span class="cat-swatch-pair" aria-hidden="true">
+                      <span class="cat-swatch" style="background:{{ row.palette_hex.light_soft }};color:{{ row.palette_hex.light_ink }}">A</span>
+                      <span class="cat-swatch cat-swatch--dark" style="background:{{ row.palette_hex.dark_soft }};color:{{ row.palette_hex.dark_ink }}">A</span>
+                    </span>
+                  </td>
+                  <td class="mono cat-slot-cell">
+                    {% if row.palette_slot is not None %}
+                      {{ row.palette_slot }}
+                    {% else %}
+                      <span class="cat-slot-unassigned">미배정</span>
+                    {% endif %}
+                  </td>
+                  <td class="mono cat-count-cell">{{ row.event_count }}</td>
+                  <td>
+                    <span class="cat-status-badge{% if row.is_active %} cat-status-badge--active{% else %} cat-status-badge--inactive{% endif %}">{% if row.is_active %}활성{% else %}비활성{% endif %}</span>
+                  </td>
+                  <td>
+                    <form method="post" action="{% url 'staff:category-set-active' row.id %}" data-submit-guard>
+                      {% csrf_token %}
+                      <input type="hidden" name="enabled" value="{% if row.is_active %}0{% else %}1{% endif %}">
+                      {% if row.is_active %}
+                        <button class="cat-row-action-btn cat-row-action-btn--danger" type="submit">비활성화</button>
+                      {% else %}
+                        <button class="cat-row-action-btn cat-row-action-btn--accent" type="submit">활성화</button>
+                      {% endif %}
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <p class="cat-empty">등록된 카테고리가 없습니다.</p>
+    {% endif %}
+  </main>
+{% endblock %}

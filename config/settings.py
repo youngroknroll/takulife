@@ -571,6 +571,8 @@ GA_MEASUREMENT_ID = _get_env("GA_MEASUREMENT_ID")
 # 목록에서 여러 행사를 빠르게 연달아 누를 수 있어 분당 60회로 더 넉넉히
 # 잡았다. visit_record_photo_create는 기록당 사진 5장 상한이 이미 있어
 # 30/minute으로도 여러 기록에 걸친 정상 업로드를 막지 않는다.
+# collection_item_update(PATCH/DELETE)는 수정·삭제가 락 아래 이미지
+# 저장을 포함하므로 create와 같은 30/minute으로 폭주만 막는다.
 REST_FRAMEWORK = {
     # 세션 인증만 쓴다 — 이 앱은 브라우저/세션 기반이다. DRF 기본
     # BasicAuthentication을 빼는 이유는 CSRF 우회 구멍을 막기 위해서다:
@@ -584,6 +586,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "promotion": "20/day",
         "collection_item_create": "30/minute",
+        "collection_item_update": "30/minute",
         "visit_record_create": "30/minute",
         "personal_entry_create": "30/minute",
         "event_interest_create": "60/minute",

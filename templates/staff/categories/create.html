@@ -1,0 +1,48 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 카테고리 생성{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/pages/categories.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="cat-page" id="staff-main">
+    <div class="cat-form-topbar">
+      <a class="staff-cta" href="{% url 'staff:category-list' %}">← 목록으로</a>
+      <span class="mono cat-slot-counter">배정 {{ assigned_slot_count }}/{{ palette_slot_count }}</span>
+    </div>
+
+    {% if field_errors.non_field %}
+      <div class="cat-form-error">
+        <span class="mono cat-form-error-tag">오류</span>
+        <span>{{ field_errors.non_field }}</span>
+      </div>
+    {% endif %}
+
+    <form class="cat-form-panel" method="post" action="{% url 'staff:category-create' %}" novalidate data-submit-guard>
+      {% csrf_token %}
+      <div class="cat-form-panel-head">
+        <h2 class="cat-form-panel-title">새 카테고리</h2>
+        <span class="mono cat-form-panel-note">core.Category</span>
+      </div>
+      <div class="cat-field-grid">
+        <div class="cat-field">
+          <label for="cat-create-label">라벨<span class="mono cat-field-name">label</span></label>
+          <input class="cat-input" id="cat-create-label" name="label" type="text" value="{{ form_values.label }}">
+          {% if field_errors.label %}<p class="cat-field-error">{{ field_errors.label }}</p>{% endif %}
+        </div>
+        <div class="cat-field">
+          <label for="cat-create-slug">슬러그<span class="mono cat-field-name">slug</span></label>
+          <input class="cat-input mono" id="cat-create-slug" name="slug" type="text" value="{{ form_values.slug }}">
+          <p class="cat-field-hint">소문자·숫자·밑줄만. 생성 후에는 바꿀 수 없습니다.</p>
+          {% if field_errors.slug %}<p class="cat-field-error">{{ field_errors.slug }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="cat-form-panel-foot">
+        <a class="staff-cta" href="{% url 'staff:category-list' %}">취소</a>
+        <button class="cat-save-cta" type="submit">생성</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

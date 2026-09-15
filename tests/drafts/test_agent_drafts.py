@@ -7,6 +7,7 @@ from datetime import date, timedelta
 import pytest
 from django.utils import timezone
 
+from core.vocab import CATEGORY
 from drafts.agent_drafts import (
     MAX_EVENTS_PER_RUN,
     AgentDraftSchemaError,
@@ -21,6 +22,20 @@ from drafts.url_safety import UnsafeFetchUrlError
 
 
 pytestmark = pytest.mark.unit
+
+
+# parse_agent_draft_payload는 스키마가 유효한 모든 페이로드에서
+# is_valid_category(core.vocab, 트랙 27 5단계에서 DB(Category) 조회로 바뀜)를
+# 항상 부른다. 이 파일이 보는 건 '어휘 밖 값이 빈 값으로 정규화되는가'라는
+# normalize 로직이지 실제 DB 반영 여부가 아니므로(그 증명은
+# tests/core/test_category_queries.py·test_vocab.py가 domain으로 진다),
+# 고정 어휘로 대체해도 이 파일의 각 테스트가 증명하려는 바는 그대로 유지된다.
+@pytest.fixture(autouse=True)
+def _고정_카테고리_어휘(monkeypatch):
+    monkeypatch.setattr(
+        "drafts.agent_drafts.is_valid_category",
+        lambda value: value == "" or value in dict(CATEGORY),
+    )
 
 
 def _valid_payload():
@@ -526,3 +541,33 @@ def test_스키마_위반_페이로드를_제출하면_AgentDraftSchemaError로_
         submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
 
     assert EventDraft.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_경쟁으로_기존_행을_놓친_제출은_예외_대신_기존_드래프트를_반환한다(monkeypatch):
+    run = _make_claimed_run()
+    source_url = "https://www.instagram.com/p/Dck7ZVUoG4i/"
+    existing_draft = EventDraft.objects.create(source_url=source_url, discovery_run=run)
+
+    original_filter = EventDraft.objects.filter
+    call_count = []
+
+    def flaky_filter(*args, **kwargs):
+        call_count.append(1)
+        # 첫 호출(경합으로 기존 행을 놓친 검사)만 빈 결과를 주고, 그 뒤로는
+        # 원래 조회로 돌아가야 재조회 결과가 실제 기존 드래프트를 본다.
+        if len(call_count) == 1:
+            return EventDraft.objects.none()
+        return original_filter(*args, **kwargs)
+
+    monkeypatch.setattr("drafts.agent_drafts.EventDraft.objects.filter", flaky_filter)
+
+    payload = _valid_payload_for_submit(source_url)
+    payload["platform"] = "instagram"
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert draft.pk == existing_draft.pk
+    assert created is False
+    assert EventDraft.objects.filter(source_url=source_url).count() == 1

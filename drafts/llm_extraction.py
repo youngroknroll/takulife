@@ -13,7 +13,7 @@ from django.conf import settings
 
 from core.llm.client import call_tool
 from core.llm.exceptions import LLMError
-from core.vocab import CATEGORY, REGION
+from core.vocab import REGION
 
 from .extraction import DATE_PATTERN, extract_event_fields_heuristic, normalize_whitespace
 
@@ -25,7 +25,9 @@ TITLE_MAX_LENGTH = 255
 SUMMARY_MAX_LENGTH = 500
 GROUNDED_SUBSTRING_MIN_LENGTH = 2
 
-CATEGORY_SLUGS = [slug for slug, _ in CATEGORY]
+# 카테고리는 트랙 27에서 DB(Category)로 옮겨가 호출 시점 조회(core.categories
+# .category_slugs)로 바뀌었지만, 지역(REGION)은 아직 core.vocab 상수다 — 이번
+# 트랙 범위가 카테고리만이라 지역은 그대로 모듈 임포트 시점 스냅샷으로 남는다.
 REGION_SLUGS = [slug for slug, _ in REGION]
 
 FIELD_CONFIDENCE_KEYS = (
@@ -66,13 +68,15 @@ SYSTEM_PROMPT = (
 
 
 def _tool_schema():
+    from core.categories import category_slugs
+
     return {
         "type": "object",
         "properties": {
             "is_event": {"type": "boolean"},
             "title": {"type": "string"},
             "summary": {"type": "string"},
-            "category": {"type": "string", "enum": [*CATEGORY_SLUGS, ""]},
+            "category": {"type": "string", "enum": [*category_slugs(), ""]},
             "region": {"type": "string", "enum": [*REGION_SLUGS, ""]},
             "start_date": {"type": "string"},
             "end_date": {"type": "string"},
@@ -205,6 +209,8 @@ def _grounding_scope(raw_title, raw_text):
 
 
 def _map_response(response, raw_title, raw_text):
+    from core.categories import category_slugs
+
     scoped_text = _grounding_scope(raw_title, raw_text)
     start_date = _ground_date(_parse_date(_coerce_str(response.get("start_date"))), scoped_text)
     end_date = _ground_date(_parse_date(_coerce_str(response.get("end_date"))), scoped_text)
@@ -214,7 +220,7 @@ def _map_response(response, raw_title, raw_text):
         "raw_text": raw_text,
         "extracted_title": _coerce_str(response.get("title"))[:TITLE_MAX_LENGTH],
         "extracted_summary": _coerce_str(response.get("summary"))[:SUMMARY_MAX_LENGTH],
-        "extracted_category": _revalidate_vocab(_coerce_str(response.get("category")), CATEGORY_SLUGS),
+        "extracted_category": _revalidate_vocab(_coerce_str(response.get("category")), category_slugs()),
         "extracted_region": _revalidate_vocab(_coerce_str(response.get("region")), REGION_SLUGS),
         "extracted_start_date": start_date,
         "extracted_end_date": end_date,

@@ -547,6 +547,311 @@ class TestListStaffEvents:
 
         assert result.count() == count_published_missing_region()
 
+    def test_카테고리_필터를_지정하면_해당_카테고리_행사만_반환한다(self, make_event):
+        from events.queries import list_staff_events
+
+        concert = make_event(official_url="https://example.com/d01-concert", category="concert")
+        make_event(official_url="https://example.com/d01-popup", category="popup_store")
+
+        result = list_staff_events(category="concert")
+
+        ids = {e.id for e in result}
+        assert ids == {concert.id}
+
+    def test_기간_필터_예정을_지정하면_시작일이_오늘_이후인_행사만_반환한다(self, make_event):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        upcoming = make_event(
+            official_url="https://example.com/d02-upcoming",
+            start_date=today + timedelta(days=1),
+        )
+        today_start = make_event(
+            official_url="https://example.com/d02-today", start_date=today
+        )
+
+        result = list_staff_events(period="upcoming", today=today)
+
+        ids = {e.id for e in result}
+        assert upcoming.id in ids
+        assert today_start.id not in ids
+
+    def test_기간_필터_진행중을_지정하면_오늘이_기간_안인_행사만_반환한다(self, make_event):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        ongoing = make_event(
+            official_url="https://example.com/d03-ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=1),
+        )
+        upcoming = make_event(
+            official_url="https://example.com/d03-upcoming",
+            start_date=today + timedelta(days=5),
+            end_date=today + timedelta(days=10),
+        )
+
+        result = list_staff_events(period="ongoing", today=today)
+
+        ids = {e.id for e in result}
+        assert ongoing.id in ids
+        assert upcoming.id not in ids
+
+    @pytest.mark.parametrize(
+        "end_offset_days,expected_included",
+        [(4, True), (5, False)],
+        ids=["나흘_이내_포함", "닷새_초과_제외"],
+    )
+    def test_기간_필터_종료_임박_경계는_나흘_이내만_포함한다(
+        self, make_event, end_offset_days, expected_included
+    ):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        event = make_event(
+            official_url=f"https://example.com/d04-{end_offset_days}",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=end_offset_days),
+        )
+
+        result = list_staff_events(period="closing_soon", today=today)
+
+        ids = {e.id for e in result}
+        assert (event.id in ids) == expected_included
+
+    def test_기간_필터_종료를_지정하면_종료일이_지난_행사만_반환한다(self, make_event):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        ended = make_event(
+            official_url="https://example.com/d05-ended", end_date=today - timedelta(days=1)
+        )
+        not_ended = make_event(
+            official_url="https://example.com/d05-not-ended", end_date=today + timedelta(days=1)
+        )
+        no_end_date = make_event(official_url="https://example.com/d05-no-end-date", end_date=None)
+
+        result = list_staff_events(period="ended", today=today)
+
+        ids = {e.id for e in result}
+        assert ids == {ended.id}
+        assert not_ended.id not in ids
+        assert no_end_date.id not in ids
+
+    def test_기간_필터는_today를_생략하면_서버_오늘_날짜로_판정한다(self, make_event):
+        """today를 안 넘기면 None이 with_public_status로 그대로 흘러가 500이
+        나던 결함(D02 회귀) 재현: date.today() 상대 오프셋으로 진행중/예정을
+        나눠, 서버가 자체적으로 오늘 날짜를 채우는지 확인한다."""
+        from events.queries import list_staff_events
+
+        today = date.today()
+        ongoing = make_event(
+            official_url="https://example.com/d02b-ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=1),
+        )
+        upcoming = make_event(
+            official_url="https://example.com/d02b-upcoming",
+            start_date=today + timedelta(days=5),
+            end_date=today + timedelta(days=10),
+        )
+
+        result = list_staff_events(period="ongoing")
+
+        ids = {e.id for e in result}
+        assert ongoing.id in ids
+        assert upcoming.id not in ids
+
+    def test_카테고리_집계는_today를_생략하면_서버_오늘_날짜로_판정한다(self, make_event):
+        """count_staff_events_by_category도 같은 _filtered_staff_events를
+        공유해 같은 결함을 겪는지 확인한다."""
+        from events.queries import count_staff_events_by_category
+
+        today = date.today()
+        make_event(
+            official_url="https://example.com/d02c-ended",
+            category="concert",
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            official_url="https://example.com/d02c-not-ended",
+            category="concert",
+            end_date=today + timedelta(days=1),
+        )
+
+        counts = count_staff_events_by_category(period="ended")
+
+        assert counts.get("concert", 0) == 1
+
+    def test_기간_필터와_카테고리_필터를_함께_지정하면_AND로_결합된다(self, make_event):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        make_event(
+            official_url="https://example.com/d06-period-only",
+            category="exhibition",
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            official_url="https://example.com/d06-category-only",
+            category="concert",
+            end_date=today + timedelta(days=1),
+        )
+        both = make_event(
+            official_url="https://example.com/d06-both",
+            category="concert",
+            end_date=today - timedelta(days=1),
+        )
+
+        result = list_staff_events(period="ended", category="concert", today=today)
+
+        ids = {e.id for e in result}
+        assert ids == {both.id}
+
+    def test_정렬_파라미터_시작일_빠른순을_지정하면_시작일_오름차순으로_정렬한다(self, make_event):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        later = make_event(
+            official_url="https://example.com/d07-later",
+            start_date=today + timedelta(days=10),
+        )
+        earlier = make_event(
+            official_url="https://example.com/d07-earlier",
+            start_date=today + timedelta(days=3),
+        )
+
+        result = list_staff_events(sort="start_asc")
+
+        assert [e.id for e in result] == [earlier.id, later.id]
+
+    def test_시작일이_없는_행사는_시작일_빠른순_정렬에서_뒤로_밀린다(self, make_event):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        with_date = make_event(
+            official_url="https://example.com/d08-with-date",
+            start_date=today + timedelta(days=1),
+        )
+        no_date = make_event(official_url="https://example.com/d08-no-date", start_date=None)
+
+        result = list_staff_events(sort="start_asc")
+
+        assert [e.id for e in result] == [with_date.id, no_date.id]
+
+    def test_정렬_파라미터_종료_임박순을_지정하면_아직_안_끝난_행사가_임박순으로_먼저_온다(
+        self, make_event
+    ):
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        ending_soon = make_event(
+            official_url="https://example.com/d09-ending-soon",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=2),
+        )
+        ending_later = make_event(
+            official_url="https://example.com/d09-ending-later",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=10),
+        )
+        already_ended = make_event(
+            official_url="https://example.com/d09-already-ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=5),
+        )
+
+        result = list_staff_events(sort="closing_soon", today=today)
+
+        assert [e.id for e in result] == [ending_soon.id, ending_later.id, already_ended.id]
+
+    def test_종료_임박순_정렬은_today를_생략하면_서버_오늘_날짜로_판정한다(self, make_event):
+        """today를 안 넘기면 list_staff_events 자신의 today가 None인 채로
+        _ordered_by_closing_soon에 그대로 흘러가 500이 나던 결함 재현:
+        date.today() 상대 오프셋으로 만든 데이터에서 서버가 자체적으로 오늘
+        날짜를 채워 순서를 매기는지 확인한다."""
+        from events.queries import list_staff_events
+
+        today = date.today()
+        ending_soon = make_event(
+            official_url="https://example.com/d09b-ending-soon",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=2),
+        )
+        ending_later = make_event(
+            official_url="https://example.com/d09b-ending-later",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=10),
+        )
+        already_ended = make_event(
+            official_url="https://example.com/d09b-already-ended",
+            start_date=today - timedelta(days=10),
+            end_date=today - timedelta(days=5),
+        )
+
+        result = list_staff_events(sort="closing_soon")
+
+        assert [e.id for e in result] == [ending_soon.id, ending_later.id, already_ended.id]
+
+    def test_정렬_종료임박순과_기간_필터_종료임박은_서로_다른_축으로_동작한다(self, make_event):
+        """진행 중이면서 종료까지 10일 남은 행사는 정렬 축(sort=closing_soon)에는
+        걸리지만, 필터 축(period=closing_soon, 나흘 이내)에는 걸리지 않는다."""
+        from events.queries import list_staff_events
+
+        today = date(2020, 6, 15)
+        ongoing_not_soon = make_event(
+            official_url="https://example.com/d10-ongoing",
+            start_date=today - timedelta(days=1),
+            end_date=today + timedelta(days=10),
+        )
+
+        sorted_ids = [e.id for e in list_staff_events(sort="closing_soon", today=today)]
+        filtered_ids = {e.id for e in list_staff_events(period="closing_soon", today=today)}
+
+        assert ongoing_not_soon.id in sorted_ids
+        assert ongoing_not_soon.id not in filtered_ids
+
+    def test_카테고리_건수는_다른_활성_필터를_반영하고_카테고리만_제외한다(self, make_event):
+        from events.queries import count_staff_events_by_category
+
+        today = date(2020, 6, 15)
+        make_event(
+            official_url="https://example.com/d11-ended-concert-1",
+            category="concert",
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            official_url="https://example.com/d11-ended-concert-2",
+            category="concert",
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            official_url="https://example.com/d11-ended-popup",
+            category="popup_store",
+            end_date=today - timedelta(days=1),
+        )
+        make_event(
+            official_url="https://example.com/d11-not-ended-concert",
+            category="concert",
+            end_date=today + timedelta(days=1),
+        )
+
+        counts = count_staff_events_by_category(period="ended", today=today)
+
+        assert counts["concert"] == 2
+        assert counts["popup_store"] == 1
+
+    def test_카테고리가_빈_행사는_미분류_건수에_집계된다(self, make_event):
+        from events.queries import count_staff_events_by_category
+
+        make_event(official_url="https://example.com/d12-uncategorized-1", category="")
+        make_event(official_url="https://example.com/d12-uncategorized-2", category="")
+        make_event(official_url="https://example.com/d12-categorized", category="concert")
+
+        counts = count_staff_events_by_category()
+
+        assert counts[""] == 2
+
 
 @pytest.mark.domain
 @pytest.mark.django_db

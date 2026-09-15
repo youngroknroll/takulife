@@ -513,6 +513,18 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
   구형 도메인까지 포함) `[코드]`. url_safety와 달리 **이 두 목록은 문자
   일치를 강제하는 가드 테스트가 없다** `[실측: 저장소 전수 검색 결과
   0건]` — 한쪽만 고치면 조용히 갈라진다.
+- **존재 검사와 생성 사이의 경합은 run 락이 막지 못한다** `[실측
+  2026-09-14]`: `submit_agent_draft`가 `existing` 조회로 못 본 `source_url`을
+  스태프가 수동으로 먼저 생성해 커밋하면, 뒤이은 `create_draft_from_fields`가
+  unique 위반으로 `DraftCreationDuplicateError`를 던진다. 이를 잡아
+  기존 행을 재조회해 `(existing, False)`로 정규화한다 — 러너는 500 대신
+  duplicate 응답을 받는다. 회귀:
+  `tests/drafts/test_agent_drafts.py::test_경쟁으로_기존_행을_놓친_제출은_예외_대신_기존_드래프트를_반환한다`.
+- **탐색 요청 생성과 감사 로그는 한 트랜잭션이다** `[실측 2026-09-14]`:
+  스태프 탐색 요청 뷰는 `create_run`과 `SOURCE_DISCOVER` 감사 로그 기록을
+  하나의 `transaction.atomic()`으로 묶는다(`staff/views/_helpers.py`의
+  "로그 실패 시 행동도 롤백" 계약). 회귀:
+  `tests/staff/test_staff_source_discovery_request_view.py::test_탐색_요청_감사로그_삽입이_실패하면_실행_생성도_함께_실패한다`.
 
 ## Evidence
 

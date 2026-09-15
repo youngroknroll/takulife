@@ -135,8 +135,10 @@ def test_행위자와_대상_드래프트가_없는_최근_활동은_빈_값으�
     assert resp.status_code == 200
     content = resp.content.decode()
     # 대상 열(dash-cell-target)과 담당 열(dash-cell-faint) 둘 다 "-"로 표시돼야 한다.
-    assert re.search(r'<td class="dash-cell-target">\s*-\s*</td>', content)
-    assert re.search(r'<td class="mono dash-cell-faint">\s*-\s*</td>', content)
+    # 속성은 허용한다 — 말줄임 셀에 title이 붙어도 이 단언의 의도(빈 값이 "-"로
+    # 보인다)는 그대로다. 마크업을 통째로 고정하면 무관한 속성 추가에 깨진다.
+    assert re.search(r'<td class="dash-cell-target"[^>]*>\s*-\s*</td>', content)
+    assert re.search(r'<td class="mono dash-cell-faint"[^>]*>\s*-\s*</td>', content)
 
 
 @pytest.mark.django_db

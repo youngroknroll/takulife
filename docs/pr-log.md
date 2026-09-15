@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #356부터 #211까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #366부터 #226까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,47 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #356 — feat(seo): Make the Korean brand name searchable (트랙 28)
+### PR #366 — fix(web): 서버 요청 버튼의 클릭 방지·스피너를 사이트 전역으로 통일한다
 
-**무엇을 바꿨나**: 리포 전체에 '타쿠라이프' 0건이던 상태에서 홈 `<title>`/og:title을
-`타쿠라이프 takulife — 굿즈 컬렉션·서브컬처 이벤트 기록`으로, 기본 meta description
-3곳(base.html 2곳·행사 상세 폴백 상수)을 `타쿠라이프(takulife)에서 …`로,
-og:site_name을 `타쿠라이프|takulife`로 바꿨다. `core/presenters.py` 신설
-(`build_website_json_ld`, `core.context_processors`의 `PROJECT_NAME`·
-`BRAND_NAME_KO` 상수 단일 소스)로 홈에만 WebSite JSON-LD(alternateName
-타쿠라이프)를 발행한다. 푸터 태그라인 1행 `타쿠라이프 — …`. 런북 §3-12 curl
-확인 항목, 백로그 C2(소개 페이지 별도 트랙 승인·미착수). 커밋 7개(ebfd39a·
-82dbd06·8a149d5·d6116cb·91e584f·2ca348e·4dcdbc3), merge commit b8e96c1.
+**무엇을 바꿨나**: 사이트 전체 흐름을 전수조사해 "서버 요청 버튼은 누른 즉시
+비활성화되고 스피너를 보인다"를 전역 규칙으로 올렸다(가드레일 정본
+`docs/FE/loading-feedback.md`). 소비자 셸에 가드 스크립트가 없어 POST 폼 34개
+중 12개가 무방비였던 것을 `submit_guard.js`로 양쪽 셸에 올려 34/34로 맞췄고,
+스태프 콘솔에 없던 스피너를 `currentColor` 공용 규칙으로 통일(버튼 폭 불변,
+페이지별 우회 6곳 제거), 홈 카테고리 저장 버튼 스타일 누락과 말줄임 제목 84곳의
+`title` 부재를 고쳤다 `[실측 PR 본문]`. 이 PR은 스택의 마지막이라 #364(트랙 26
+이벤트 목록 정렬·기간·카테고리 필터), #365(카테고리 어휘 DB 이관·슈퍼유저 CRUD),
+#367(트랙 32 DB 락·트랜잭션 결함 7건)의 내용을 함께 main으로 가져왔다. 스택 머지
+2026-09-15: #363 `9590ae6c` → #364 `cda6e127` → #365 `ec8deaca` → #366
+`568a6192`(#367은 09:03Z에 #366 브랜치로 먼저 머지 `4c8ab746`).
 
-**왜**: 구글은 페이지에 적힌 텍스트·title·구조화 데이터로 검색어를 매칭하므로
-한글 브랜드명 신호가 없으면 '타쿠라이프' 검색에 잡힐 근거가 없다. 트랙 16
-(robots·sitemap·canonical·noindex·Event JSON-LD) 위에 브랜드명 신호만
-얹었다. 어순(컬렉션 → 이벤트)은 CLAUDE.md 우선순위(PSO 판정), og:site_name
-파이프 형식과 소개 페이지 별도 트랙은 사용자 결정(2026-09-10).
+**왜**: "요청 중"과 "영구 비활성"이 시각적으로 같고 중복 제출 방지가 스태프 셸에만
+있던 것은 결함이었다. 스피너 색을 열거하는 첫 설계는 조합 클래스에서 곧바로
+틀려(파란 버튼에 검은 스피너) 라벨을 `font-size: 0`으로 접고 `color`를 보존하는
+방식으로 바꿨다. `.is-loading`이 검색 결과 컨테이너에도 붙어 선택자를
+`button`·`a`로 좁혔다.
 
-**검증**: 기준 2541 passed·10 deselected·82.12초 → 2547 passed·10
-deselected·111.67초(신규 T1~T6, T7 리터럴 교체), T6는 base.html:66 뮤테이션으로
-Red 등가 확인; `check` 0 issues, `makemigrations --check` 무변경; 브라우저
-(DevTools MCP+curl) 헤드 순서·JSON.parse 키 5개·`/events/` 0건·콘솔 0건·
-태그라인 320/390/1280px 2행 무오버플로; WED·BIR 사후 Conforms(C3 포함),
-QVL 완료; CI 5개 잡 pass(test·audit·docker·e2e 관측·GitGuardian). 같은 날
-선행 머지 #352(docs 롤링)·#353(트랙 25)·#354(트랙 27 e2e). 머지 후
-main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09-10]`.
+**검증**: PR 자체는 Playwright 소비자 20화면 × 2폭 + 스태프 10화면 순회로 가드
+없는 폼 12→0, `title` 없는 말줄임 84→0, 제출 시 형제 밀림 22px→0px `[실측 PR
+본문]`, 회귀 2816 passed. 스택 머지 후 main `568a6192` 재측정 `[실측 2026-09-15]`:
+`uv run pytest -q` → **2826 passed / 10 deselected / 40.10초**, `check` 0 issues,
+`makemigrations --check` 무변경; main CI run 34951329512 4잡 success(test·e2e
+관측·docker·audit). 스택 병합 충돌은 `docs/backlog.md` 현재 상태 표(3회)와
+`docs/pr-log.md`(1회)뿐이었고 문서만 손댔다.
 
 ## 이전 PR (번호 — 실제 PR 제목)
-
+- #367 — fix: DB 락·트랜잭션 검수 결함 7건 수정 (트랙 32)
+- #365 — feat(staff): 카테고리 어휘를 상수에서 DB로 옮기고 슈퍼유저 CRUD 화면을 붙인다
+- #364 — feat(staff): 이벤트 목록 정렬·기간·카테고리 필터 — H2 3/3 (트랙 26)
+- #363 — docs: PR #336·#355·#357~#361 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #362 — deploy: main → production
+- #361 — feat: 키워드 탐색 → 판별 → 승인 가능한 드래프트·소스 등록 (트랙 30)
+- #360 — deploy: main → production
+- #359 — deploy: main → production
+- #358 — feat(accounts): 회원 닉네임 도입 — 가입 필수 입력·헤더/마이페이지 표시·백필·변경 화면 (트랙 29)
+- #357 — docs: PR #352·#353·#354·#356 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #356 — feat(seo): Make the Korean brand name searchable (트랙 28)
+- #355 — deploy: main → production
 - #354 — test: Reintroduce a journey-based e2e suite (pytest-playwright + live_server)
 - #353 — feat(staff): 이벤트 목록 인라인 비공개·재게시·검증 — H2 분할 2/3 (트랙 25)
 - #352 — docs: PR #349·#350·#351 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -75,6 +87,7 @@ main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09
 - #339 — docs: PR #338 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
 - #337 — docs: PR #332~#335 머지를 로그에 롤링 반영
+- #336 — deploy: main → production
 - #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
 - #334 — deploy: main → production
 - #333 — deploy: main → production
@@ -92,6 +105,7 @@ main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09
 - #321 — docs: PR #319·#320 머지를 로그에 롤링 반영
 - #320 — feat: 소셜 가입 약관 동의(B2) + 헤더 인증 버튼 폰트 정렬
 - #319 — docs: 배포 runbook DB를 Supabase 무료 티어로 전환
+- #318 — deploy: main → production
 - #317 — docs: PR #315·#316 머지를 로그에 롤링 반영
 - #316 — test: 테스트 시크릿 리터럴 제거 + 스캐너 가드 신설
 - #315 — ci: CI 성공 후 main→production deploy PR 자동 생성
@@ -100,10 +114,10 @@ main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09
 - #312 — docs: PR #310·#311 머지를 로그에 롤링 반영
 - #311 — docs: 백로그 재작성 — 2026-08-24 실측 기준 최적화
 - #310 — docs: PR #307~#309 머지를 로그에 롤링 반영
-- #309 — fix: 전수 검토 잔여 프론트 3건 반영 (500 헤더 착시·필수 표시 통일·죽은 캐러셀 제거)
+- #309 — design: 프론트 잔여 정리 스윕 — 500 헤더 중립화·필수표시 통일·죽은 코드 제거
 - #308 — fix: 백엔드 잔여 정리 스윕 — 삭제 잠금·부분승격 라벨·EMAIL_PORT·동시 저장 멱등
 - #307 — docs: PR #303~#306 머지를 로그에 롤링 반영
-- #306 — fix: 전수 검토 확정 결함 2건 반영 (수집처 상한 재검사 + 러너 URL 검증)
+- #306 — fix: 러너 하드닝 — 후보 슬롯 원자 예약 + 비루프백 HTTPS 강제
 - #305 — fix(config): 운영 드리프트 정리 — DRAFT_FETCH_CONTACT 배선 + 운영 문서 정정
 - #304 — fix(archive): 방문 완료 동시성 직렬화
 - #303 — build: 의존성 보안 업그레이드 + CI 취약점 감사 게이트
@@ -183,18 +197,3 @@ main(b8e96c1) 재측정: 2547 passed / 10 deselected / 80.22초 `[실측 2026-09
 - #228 — design(archive): 나의 일정 페이지 에디토리얼 셸 통일
 - #227 — fix(archive): 활동 달력 백로그 2건 근본 해결 (has_any_items·검색 DB 하향)
 - #226 — design(archive): 활동 달력 에디토리얼 리빌드 + 상단·필터 목록 통일
-- #225 — design(queue): 검토 큐 사용자 판정 반영 — 덱 타이밍·메타줄 중복·검색 버튼·토글 정렬·카드 날짜
-- #224 — design(archive): Rebuild the activity page for the editorial mock, and unify the pager
-- #223 — fix(web): 컬렉션 작품별 색 충돌 제거 + 패싯 컨트롤
-- #222 — design(web): 이벤트 달력 아젠다 액션 hover 추가
-- #221 — feat(web): 공용 페이지네이션 재구축 — 창 축약 + 점프 화살표
-- #220 — design(web): 컬렉션 페이지 에디토리얼 리디자인
-- #219 — design(calendar): Align detail actions
-- #218 — design(web): Rebuild the events calendar in the editorial v2 style
-- #217 — design(home): Tune hero deck timing
-- #216 — copy(web): Rename 행사 to 이벤트 across the product
-- #215 — design(web): Rebuild the home collection section, center the hero, divide sections
-- #214 — design(cards): Remove official badges
-- #213 — copy(web): Reword the home hero headline
-- #212 — feat: Guard event category/region against out-of-vocabulary values (B1)
-- #211 — feat(web): Move sorting from the sidebar to a results-head toggle menu

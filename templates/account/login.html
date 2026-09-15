@@ -48,7 +48,7 @@
       <hr class="auth-rule">
       <p class="auth-description">takulife 계정으로 기록과 컬렉션을 이어서 관리하세요.</p>
       <p class="auth-required-legend">＊ 표시는 필수</p>
-      <form method="post" action="{% url 'account_login' %}" class="auth-form">
+      <form method="post" action="{% url 'account_login' %}" class="auth-form" data-submit-guard>
         {% csrf_token %}
         {{ redirect_field }}
         {% include "core/partials/_auth_field.html" with field=form.login label="이메일" %}

@@ -1,0 +1,36 @@
+{% extends "staff/base_staff.html" %}
+{% load static %}
+{% block title %}{{ project_name }} | 카테고리 상태 변경 확인{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/staff/pages/categories.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="page" id="staff-main">
+    <div class="cat-confirm-backdrop" aria-hidden="true"></div>
+
+    <div class="cat-confirm-scrim">
+      <div class="cat-confirm-dialog" role="alertdialog" aria-labelledby="cat-confirm-title">
+        <div class="cat-confirm-dialog-head">
+          <span class="cat-confirm-dialog-title" id="cat-confirm-title">{{ action_label }} 확인</span>
+          <span class="mono cat-confirm-dialog-id">{{ category.slug }}</span>
+        </div>
+        <div class="cat-confirm-dialog-body">
+          <p class="cat-confirm-message"><strong>{{ category.label }}</strong> 카테고리에 「{{ action_label }}」를 적용합니다.</p>
+          <p class="cat-confirm-description">{{ description }}</p>
+
+          <div class="cat-confirm-actions">
+            <a class="staff-cta cat-confirm-cancel" href="{% url 'staff:category-edit' category.id %}">취소</a>
+            <form method="post" action="{{ post_url }}" data-submit-guard>
+              {% csrf_token %}
+              <input type="hidden" name="confirmed" value="yes">
+              <input type="hidden" name="enabled" value="{{ enabled|yesno:'1,0' }}">
+              <button class="cat-confirm-confirm-btn" type="submit">{{ action_label }} 확정</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}

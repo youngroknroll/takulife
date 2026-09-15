@@ -160,10 +160,69 @@ select:focus {
   display: none !important;
 }
 
-/* 요청 대기 중. api.js가 이 클래스를 붙이는데 스태프 화면 대부분에 규칙이
- * 없어, 이미 판정이 끝나 영구히 못 누르는 버튼(:disabled)과 구분되지 않았다.
+/* 요청 대기 중. api.js와 submit_guard.js가 이 클래스를 붙인다.
+ *
+ * 라벨은 font-size: 0으로 접고 스피너를 절대 위치로 겹친다. 버튼 폭은
+ * 변하지 않는다 — 행 액션 버튼은 table-layout:fixed의 고정폭 셀 안이라
+ * 폭이 늘면 셀 경계에서 잘린다.
+ *
+ * color를 건드리지 않는 이유: 스피너 색을 currentColor로 받기 위해서다.
+ * 실측해 보니 정답 색은 언제나 그 버튼의 글자색이었다(파란 배경엔 흰색,
+ * 흰 배경엔 검정, 외곽선 위험 버튼엔 빨강). 라벨을 color: transparent로
+ * 숨기면 currentColor까지 투명해져, 버튼 계열을 일일이 열거해 색을
+ * 지정해야 하고 그 목록은 조합 클래스(.staff-cta + .staff-cta-accent)에서
+ * 곧바로 어긋난다. font-size: 0은 색을 그대로 두므로 열거가 필요 없다.
+ * 그래서 스피너 크기는 em이 아니라 rem으로 잡는다.
  */
 .is-loading {
+  position: relative;
+  font-size: 0;
   opacity: 0.75;
   cursor: progress;
 }
+
+.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin: -0.425rem 0 0 -0.425rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: staff-btn-spin 0.6s linear infinite;
+}
+
+@keyframes staff-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 움직임을 줄여 달라고 한 사용자에게는 회전을 멈춘 정지 링만 남긴다. */
+@media (prefers-reduced-motion: reduce) {
+  .is-loading::after {
+    animation: none;
+  }
+}
+
+/* ── 화면 본문 래퍼 ────────────────────────────────────────────────
+ * 여백을 여기 한 곳에서만 준다. 화면별 CSS에 흩어 두면 새 화면이
+ * 규칙을 빠뜨려도 티가 나지 않는다 — 실제로 drafts 두 화면이 그렇게
+ * 여백 0으로 렌더링되고 있었다. 세로 배치·간격은 화면마다 달라서 남긴다.
+ */
+.page {
+  padding: 0.875rem;
+}
+
+/* hidden 속성의 UA 기본값은 display:none 하나뿐이라 컴포넌트의 display
+ * 선언에 조용히 진다. 실제로 인스펙터 패널 3장이 그렇게 살아남아 문서
+ * 높이를 882px에서 1893px로 늘렸다.
+ */
+[hidden] {
+  display: none !important;
+}
+
+

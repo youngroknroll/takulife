@@ -12,8 +12,9 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from core.categories import category_slugs
 from core.errors import error_response
-from core.vocab import CATEGORY, REGION
+from core.vocab import REGION
 from drafts.agent_drafts import (
     AgentDraftSchemaError,
     EventLimitExceededError,
@@ -99,7 +100,7 @@ class RunnerClaimView(_RunnerAPIView):
                     # 하드코딩하면 서버에 항목이 늘 때(방금 콘서트가 그랬듯) 조용히
                     # 어긋난다. 그래서 서버가 어휘를 매 claim마다 직접 내려준다.
                     "vocab": {
-                        "categories": [slug for slug, _ in CATEGORY],
+                        "categories": category_slugs(),
                         "regions": [slug for slug, _ in REGION],
                     },
                     "max_candidates": MAX_CANDIDATES_PER_RUN,
