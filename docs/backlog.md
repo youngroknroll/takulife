@@ -32,7 +32,7 @@
 | e2e 여정 스위트 | `[코드] [실측 2026-09-09]` 트랙 27로 재도입, `tests/e2e/` 8파일·10건, 명령 `uv run pytest -q -m e2e tests/e2e`. 기본 `uv run pytest -q`는 `addopts`의 `-m "not e2e"`로 e2e 제외. CI `e2e` 잡은 `continue-on-error: true`(관측 기간) |
 | 요청 중 피드백(전역) | `[코드 2026-09-13]` 구현 완료·PR 대기 — POST 폼 34/34에 제출 가드(소비자 셸에 스크립트가 없어 12개가 무방비였다), 스피너를 소비자·스태프 공용 규칙으로 통일, 페이지별 우회 6곳 제거, 말줄임 `title` 84건→0건. 가드레일 정본 `docs/FE/loading-feedback.md` |
 | 카테고리 어휘 스태프 CRUD | `[코드 2026-09-13]` 구현 완료·PR 대기 — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극**: 소비자 화면이 아직 슬러그 기반 색 토큰을 써서 새 카테고리는 소비자 쪽에서 중립색으로 렌더된다(이관 표면 템플릿 9지점·CSS 25지점 `[실측]`) |
-| 회원 닉네임(트랙 29) | `[코드 2026-09-10]` 구현 완료·PR 대기 — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
+| 회원 닉네임(트랙 29) | `[실측 gh]` PR #358 머지 완료(2026-09-10, merge commit `3ca5d184`, 커밋 10개) — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
 | DB 락·트랜잭션 검수(트랙 32) | `[실측 2026-09-14]` PR #367(`fix/db-lock-transaction-audit`, base `fix/site-wide-interaction-audit` = #366 위 스택), 검수로 확정한 결함 7건(H1·H2'·H3·H4·H7·H8·T1) 수정. 회귀 2826 passed / 10 deselected / 85.11초(기준선 2816 +10 = 신규 테스트 10건), `check` 0 issues, 마이그레이션 무변경. 이연: 락 안 이미지 저장 근본 해법(트리거 S3 지연 실측)·타임아웃 설정·교착 관측 지표 |
 | 키워드 탐색(트랙 30) | `[실측 gh]` PR #361 머지 완료(2026-09-12, main `cfd69d3a`) — 검색어 탐색 → 결정론 읽기 → 해석 → 승인 가능한 드래프트·소스 등록 3단 분리. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md`. 이연 항목은 G6 |
 
