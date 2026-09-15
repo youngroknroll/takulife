@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #367부터 #221까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #367부터 #226까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -59,7 +59,8 @@ FOR KEY SHARE는 커밋 시점에 잡힌다 `[실측 pg_constraint]`.
 pass(test·audit·docker·e2e 관측·GitGuardian).
 
 ## 이전 PR (번호 — 실제 PR 제목)
-
+- #364 — feat(staff): 이벤트 목록 정렬·기간·카테고리 필터 — H2 3/3 (트랙 26)
+- #363 — docs: PR #336·#355·#357~#361 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #362 — deploy: main → production
 - #361 — feat: 키워드 탐색 → 판별 → 승인 가능한 드래프트·소스 등록 (트랙 30)
 - #360 — deploy: main → production
@@ -67,6 +68,7 @@ pass(test·audit·docker·e2e 관측·GitGuardian).
 - #358 — feat(accounts): 회원 닉네임 도입 — 가입 필수 입력·헤더/마이페이지 표시·백필·변경 화면 (트랙 29)
 - #357 — docs: PR #352·#353·#354·#356 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #356 — feat(seo): Make the Korean brand name searchable (트랙 28)
+- #355 — deploy: main → production
 - #354 — test: Reintroduce a journey-based e2e suite (pytest-playwright + live_server)
 - #353 — feat(staff): 이벤트 목록 인라인 비공개·재게시·검증 — H2 분할 2/3 (트랙 25)
 - #352 — docs: PR #349·#350·#351 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -85,6 +87,7 @@ pass(test·audit·docker·e2e 관측·GitGuardian).
 - #339 — docs: PR #338 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #338 — docs: 스태프 백오피스 갭 검토 결과 반영과 런북 §5 정정
 - #337 — docs: PR #332~#335 머지를 로그에 롤링 반영
+- #336 — deploy: main → production
 - #335 — harness: 오케스트레이터 계약·어댑터 정비·숫자 태그 훅 (트랙 18)
 - #334 — deploy: main → production
 - #333 — deploy: main → production
@@ -102,6 +105,7 @@ pass(test·audit·docker·e2e 관측·GitGuardian).
 - #321 — docs: PR #319·#320 머지를 로그에 롤링 반영
 - #320 — feat: 소셜 가입 약관 동의(B2) + 헤더 인증 버튼 폰트 정렬
 - #319 — docs: 배포 runbook DB를 Supabase 무료 티어로 전환
+- #318 — deploy: main → production
 - #317 — docs: PR #315·#316 머지를 로그에 롤링 반영
 - #316 — test: 테스트 시크릿 리터럴 제거 + 스캐너 가드 신설
 - #315 — ci: CI 성공 후 main→production deploy PR 자동 생성
@@ -110,10 +114,10 @@ pass(test·audit·docker·e2e 관측·GitGuardian).
 - #312 — docs: PR #310·#311 머지를 로그에 롤링 반영
 - #311 — docs: 백로그 재작성 — 2026-08-24 실측 기준 최적화
 - #310 — docs: PR #307~#309 머지를 로그에 롤링 반영
-- #309 — fix: 전수 검토 잔여 프론트 3건 반영 (500 헤더 착시·필수 표시 통일·죽은 캐러셀 제거)
+- #309 — design: 프론트 잔여 정리 스윕 — 500 헤더 중립화·필수표시 통일·죽은 코드 제거
 - #308 — fix: 백엔드 잔여 정리 스윕 — 삭제 잠금·부분승격 라벨·EMAIL_PORT·동시 저장 멱등
 - #307 — docs: PR #303~#306 머지를 로그에 롤링 반영
-- #306 — fix: 전수 검토 확정 결함 2건 반영 (수집처 상한 재검사 + 러너 URL 검증)
+- #306 — fix: 러너 하드닝 — 후보 슬롯 원자 예약 + 비루프백 HTTPS 강제
 - #305 — fix(config): 운영 드리프트 정리 — DRAFT_FETCH_CONTACT 배선 + 운영 문서 정정
 - #304 — fix(archive): 방문 완료 동시성 직렬화
 - #303 — build: 의존성 보안 업그레이드 + CI 취약점 감사 게이트
@@ -193,8 +197,3 @@ pass(test·audit·docker·e2e 관측·GitGuardian).
 - #228 — design(archive): 나의 일정 페이지 에디토리얼 셸 통일
 - #227 — fix(archive): 활동 달력 백로그 2건 근본 해결 (has_any_items·검색 DB 하향)
 - #226 — design(archive): 활동 달력 에디토리얼 리빌드 + 상단·필터 목록 통일
-- #225 — design(queue): 검토 큐 사용자 판정 반영 — 덱 타이밍·메타줄 중복·검색 버튼·토글 정렬·카드 날짜
-- #224 — design(archive): Rebuild the activity page for the editorial mock, and unify the pager
-- #223 — fix(web): 컬렉션 작품별 색 충돌 제거 + 패싯 컨트롤
-- #222 — design(web): 이벤트 달력 아젠다 액션 hover 추가
-- #221 — feat(web): 공용 페이지네이션 재구축 — 창 축약 + 점프 화살표

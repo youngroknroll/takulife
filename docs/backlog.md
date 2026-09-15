@@ -34,6 +34,7 @@
 | 카테고리 어휘 스태프 CRUD | `[코드 2026-09-13]` 구현 완료·PR 대기 — 어휘가 상수에서 `core.models.Category`로 이동, 팔레트 12슬롯 자동 배정·반납, 슈퍼유저 전용 관리 화면 4개, 감사 로그 액션 4종. 가드레일 정본 `docs/BE/category-vocabulary.md`. **남은 간극**: 소비자 화면이 아직 슬러그 기반 색 토큰을 써서 새 카테고리는 소비자 쪽에서 중립색으로 렌더된다(이관 표면 템플릿 9지점·CSS 25지점 `[실측]`) |
 | 회원 닉네임(트랙 29) | `[코드 2026-09-10]` 구현 완료·PR 대기 — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
 | DB 락·트랜잭션 검수(트랙 32) | `[실측 2026-09-14]` PR #367(`fix/db-lock-transaction-audit`, base `fix/site-wide-interaction-audit` = #366 위 스택), 검수로 확정한 결함 7건(H1·H2'·H3·H4·H7·H8·T1) 수정. 회귀 2826 passed / 10 deselected / 85.11초(기준선 2816 +10 = 신규 테스트 10건), `check` 0 issues, 마이그레이션 무변경. 이연: 락 안 이미지 저장 근본 해법(트리거 S3 지연 실측)·타임아웃 설정·교착 관측 지표 |
+| 키워드 탐색(트랙 30) | `[실측 gh]` PR #361 머지 완료(2026-09-12, main `cfd69d3a`) — 검색어 탐색 → 결정론 읽기 → 해석 → 승인 가능한 드래프트·소스 등록 3단 분리. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md`. 이연 항목은 G6 |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -333,8 +334,9 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 ### G6 트랙 30(키워드 탐색) 이연 항목(2026-09-12)
 
 트랙 30(키워드 탐색 → 판별 → 드래프트·소스 등록) 승인 범위 밖으로 이연한
-항목. 가드레일 정본은 `docs/BE/draft-source-agent-discovery.md` "트랙 30"
-절.
+항목. 트랙 30 본체는 PR #361로 머지 완료됐다(2026-09-12, main `cfd69d3a`)
+`[실측 gh]`. 가드레일 정본은 `docs/BE/draft-source-agent-discovery.md`
+"트랙 30" 절.
 
 - `[코드]` `local_runner/page_fetch.py:129-147`(`_fetch_general_web`) 일반
   웹 응답 크기 상한을 응답을 다 내려받은 뒤 `len(html.encode(...))`로
