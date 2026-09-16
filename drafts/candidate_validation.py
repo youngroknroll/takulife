@@ -18,9 +18,7 @@ from drafts.extraction import EmptyExtractionError, extract_event_fields
 from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft, SourceCandidate
 from drafts.robots import RobotsChecker
-# create_draft_from_url는 이 모듈에서 더는 부르지 않지만, 옛 이름을 그대로
-# monkeypatch 대상으로 쓰는 기존 테스트가 있어 임포트만 남겨 둔다(rg 확인).
-from drafts.services import create_collected_draft_from_url, create_draft_from_url  # noqa: F401
+from drafts.services import create_collected_draft_from_url
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
 logger = logging.getLogger(__name__)

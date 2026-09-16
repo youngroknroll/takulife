@@ -445,7 +445,7 @@ class TestCandidateLevel:
         assert report_substring in output
 
     def test_같은_실행에서_서로_다른_소스가_같은_URL을_후보로_내면_한_건만_생성되고_나머지는_건너뛴다(self, monkeypatch, make_source):
-        """실제 create_draft_from_url을 그대로 쓰고 fetch_html만 스텁한다.
+        """실제 create_collected_draft_from_url을 그대로 쓰고 fetch_html만 스텁한다.
         같은 소스 내 중복 제거만으로는 닿지 않는 실제 IntegrityError →
         DraftCreationDuplicateError 경로를 검증하는 유일한 테스트다."""
         shared_url = "https://target.example.com/event-1"

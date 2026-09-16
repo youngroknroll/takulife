@@ -22,7 +22,7 @@
    (목록 URL의 robots 결과는 개별 후보 경로를 대신하지 않는다), 두 가지 독립된
    상한 안에서 생성한다: DRAFT_DISCOVERY_MAX_PER_RUN(전체 생성 수)과
    DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE(소스별 fetch 시도 수 — robots 확인 +
-   create_draft_from_url 호출 — 빈 결과·중복만 내는 소스가 생성 상한을 노리며
+   create_collected_draft_from_url 호출 — 빈 결과·중복만 내는 소스가 생성 상한을 노리며
    끝없이 재시도하지 못하게 막는다). dedup에서 걸러진 후보는 두 예산 중 어느
    것도 소비하지 않는다.
 
@@ -50,9 +50,7 @@ from drafts.discovery import extract_candidate_urls
 from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft
 from drafts.robots import RobotsChecker
-# create_draft_from_url은 여기서 직접 부르지 않지만 이름 자체를 남겨 둔다(다른
-# 테스트가 이 모듈 경로로 monkeypatch 대상을 잡고 있어서다).
-from drafts.services import create_collected_draft_from_url, create_draft_from_url  # noqa: F401
+from drafts.services import create_collected_draft_from_url
 
 
 # 여러 소스를 연달아 두드리지 않도록 소스별 목록 요청 사이에 짧게 쉰다. 설정값이
