@@ -23,6 +23,12 @@ from drafts.url_safety import UnsafeFetchUrlError
 
 pytestmark = pytest.mark.unit
 
+# S4(종료일이 오늘 이전이면 제외) 도입 이후에도 "진행 예정 행사"로 남도록
+# 절대 날짜 대신 오늘 기준 상대 날짜를 쓴다.
+_TODAY = date.today()
+_START_DATE = _TODAY + timedelta(days=7)
+_END_DATE = _TODAY + timedelta(days=14)
+
 
 # parse_agent_draft_payload는 스키마가 유효한 모든 페이로드에서
 # is_valid_category(core.vocab, 트랙 27 5단계에서 DB(Category) 조회로 바뀜)를
@@ -49,8 +55,8 @@ def _valid_payload():
             "category": "popup_store",
             "region": "seoul",
             "location_name": "코엑스",
-            "start_date": "2026-10-01",
-            "end_date": "2026-10-02",
+            "start_date": _START_DATE.isoformat(),
+            "end_date": _END_DATE.isoformat(),
             "summary": "코믹월드 팝업스토어 공지입니다.",
         },
         "confidence": 0.8,
@@ -182,8 +188,8 @@ def test_bool_신뢰도는_숫자로_취급되지_않고_null로_비워진다(co
 
 def test_시작일이_종료일보다_늦으면_두_날짜가_비워지고_메모에_사유가_남는다():
     payload = _valid_payload()
-    payload["fields"]["start_date"] = "2026-09-20"
-    payload["fields"]["end_date"] = "2026-09-01"
+    payload["fields"]["start_date"] = (_TODAY + timedelta(days=20)).isoformat()
+    payload["fields"]["end_date"] = (_TODAY + timedelta(days=1)).isoformat()
 
     cleaned, stage = parse_agent_draft_payload(payload=payload)
 
@@ -268,8 +274,8 @@ def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM�
             "category": "popup_store",
             "region": "seoul",
             "location_name": "용산 아이파크몰",
-            "start_date": "2026-09-01",
-            "end_date": "2026-09-22",
+            "start_date": _START_DATE.isoformat(),
+            "end_date": _END_DATE.isoformat(),
             "summary": "요약",
         },
         "confidence": 0.9,
@@ -290,8 +296,8 @@ def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM�
     assert draft.extracted_category == "popup_store"
     assert draft.extracted_region == "seoul"
     assert draft.extracted_location_name == "용산 아이파크몰"
-    assert draft.extracted_start_date == date(2026, 9, 1)
-    assert draft.extracted_end_date == date(2026, 9, 22)
+    assert draft.extracted_start_date == _START_DATE
+    assert draft.extracted_end_date == _END_DATE
     assert draft.confidence == 0.9
     assert draft.extraction_method == EventDraft.ExtractionMethod.LLM
     assert draft.intake_note == ""
@@ -313,8 +319,8 @@ def _valid_payload_for_submit(source_url):
             "category": "popup_store",
             "region": "seoul",
             "location_name": "용산 아이파크몰",
-            "start_date": "2026-09-01",
-            "end_date": "2026-09-22",
+            "start_date": _START_DATE.isoformat(),
+            "end_date": _END_DATE.isoformat(),
             "summary": "요약",
         },
         "confidence": 0.9,
