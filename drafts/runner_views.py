@@ -161,6 +161,14 @@ class RunnerCompleteView(_RunnerAPIView):
         if not isinstance(failure_kind, str):
             failure_kind = ""
 
+        events_attempted = data.get("events_attempted", 0)
+        events_failed = data.get("events_failed", 0)
+        # bool은 int의 서브클래스라 isinstance(v, int)만으로는 True/False가
+        # 통과해버려 별도로 걸러낸다.
+        for count in (events_attempted, events_failed):
+            if not isinstance(count, int) or isinstance(count, bool):
+                return error_response("invalid complete payload", status.HTTP_400_BAD_REQUEST)
+
         try:
             run = complete_run(
                 run_id=run_id,
@@ -168,8 +176,8 @@ class RunnerCompleteView(_RunnerAPIView):
                 runner_status=runner_status,
                 failure_kind=failure_kind,
                 # 옛 러너는 이 키들을 보내지 않으므로 기본값 0으로 호환한다.
-                events_attempted=data.get("events_attempted", 0),
-                events_failed=data.get("events_failed", 0),
+                events_attempted=events_attempted,
+                events_failed=events_failed,
             )
         except SourceDiscoveryRun.DoesNotExist:
             return error_response("run not found", status.HTTP_404_NOT_FOUND)

@@ -311,6 +311,28 @@ def test_완료_요청이_보낸_시도_실패_건수가_실행에_그대로_저
     assert run.events_failed == 2
 
 
+@pytest.mark.parametrize("bad_value", ["오", None, True, ["오"]], ids=["문자열", "None", "불리언", "리스트"])
+@pytest.mark.parametrize("field", ["events_attempted", "events_failed"])
+def test_완료_요청의_건수가_정수가_아니면_400으로_거부한다(client, runner_headers, field, bad_value):
+    run = _make_claimed_run()
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            field: bad_value,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 400
+    run.refresh_from_db()
+    assert run.status == SourceDiscoveryRun.Status.CLAIMED
+    assert run.finished_at is None
+
+
 def test_discovery_runner_스로틀_scope가_등록되어_있다(settings):
     rate = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["discovery_runner"]
 
