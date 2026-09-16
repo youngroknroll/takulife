@@ -158,7 +158,14 @@ def _check_date_range(*, fields, note_additions):
         fields["end_date"] = None
 
 
-def _exclusion_reason(*, fields, today):
+def _exclusion_reason(*, fields, venue_country, today):
+    # 개최지 판정을 종료일보다 먼저 본다 — 둘 다 해당해도 "overseas"가 더
+    # 이른 단계의 정보(러너가 애초에 볼 필요 없는 이벤트)라 우선한다.
+    # "not_kr"과 정확히 일치할 때만 제외한다 — strip·lower 등 정규화를 하면
+    # 대소문자·공백이 다른 값까지 해외로 오판한다(테스트가 이 성질을 고정).
+    if venue_country == "not_kr":
+        return "overseas"
+
     # 종료일이 없으면 시작일로 대신 본다. 파싱 불가한 값은 제외 사유가 아니라
     # 그대로 통과시킨다 — 못 읽은 날짜까지 걸러내면 정상 이벤트를 잃는다.
     end_value = fields.get("end_date") or fields.get("start_date")
@@ -237,7 +244,11 @@ def submit_agent_draft(*, run_id, lease_token, payload, today=None):
 
     # 잠금·서버 재확인(네트워크) 전에 판정한다 — 버릴 이벤트 때문에 굳이
     # fetch를 타지 않는다.
-    reason = _exclusion_reason(fields=fields, today=today or timezone.localdate())
+    reason = _exclusion_reason(
+        fields=fields,
+        venue_country=cleaned.get("venue_country"),
+        today=today or timezone.localdate(),
+    )
     if reason is not None:
         raise AgentDraftExcludedError(reason)
 

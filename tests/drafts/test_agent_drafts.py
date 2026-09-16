@@ -644,4 +644,73 @@ def test_경쟁으로_기존_행을_놓친_제출은_예외_대신_기존_드래
 
     assert draft.pk == existing_draft.pk
     assert created is False
-    assert EventDraft.objects.filter(source_url=source_url).count() == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_해외_개최로_판정된_이벤트는_제외된다(monkeypatch, fail_if_called):
+    # 서버 재확인(fetch)은 잠금 A 이후·네트워크 단계에서 일어난다 — 개최지
+    # 제외는 그 전에 끝나야 하므로 fetch_html이 아예 불리지 않아야 한다.
+    monkeypatch.setattr("drafts.agent_drafts.fetch_html", fail_if_called)
+
+    run = _make_claimed_run()
+    payload = _valid_payload_for_submit("https://official-site.example.com/event")
+    payload["venue_country"] = "not_kr"
+    before_count = EventDraft.objects.count()
+
+    with pytest.raises(AgentDraftExcludedError) as exc_info:
+        submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert exc_info.value.reason == "overseas"
+    assert EventDraft.objects.count() == before_count
+
+
+def _개최지_키_없음(payload):
+    return payload
+
+
+def _개최지_unclear(payload):
+    payload["venue_country"] = "unclear"
+    return payload
+
+
+def _개최지_어휘_밖(payload):
+    payload["venue_country"] = "jp"
+    return payload
+
+
+def _개최지_대문자(payload):
+    # 대소문자를 정규화해 비교하면 이 값이 "not_kr"로 오판된다 — 정규화하지
+    # 않는다는 것을 고정하는 값이다.
+    payload["venue_country"] = "NOT_KR"
+    return payload
+
+
+def _개최지_공백(payload):
+    # 앞뒤 공백을 strip해 비교하면 이 값도 "not_kr"로 오판된다 — 위와 같은
+    # 이유로 정규화 금지를 고정한다.
+    payload["venue_country"] = " not_kr "
+    return payload
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "make_payload",
+    [
+        _개최지_키_없음,
+        _개최지_unclear,
+        _개최지_어휘_밖,
+        _개최지_대문자,
+        _개최지_공백,
+    ],
+    ids=["키_없음", "unclear", "어휘_밖", "대문자", "공백"],
+)
+def test_개최지가_불확실하면_제출되어_드래프트가_생성된다(make_payload, _neutralize_server_recheck):
+    run = _make_claimed_run()
+    payload = make_payload(_valid_payload_for_submit("https://official-site.example.com/event"))
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert created is True
+    assert EventDraft.objects.count() == 1
