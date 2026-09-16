@@ -10,6 +10,7 @@ from django.utils import timezone
 from core.vocab import CATEGORY
 from drafts.agent_drafts import (
     MAX_EVENTS_PER_RUN,
+    AgentDraftExcludedError,
     AgentDraftSchemaError,
     EventLimitExceededError,
     parse_agent_draft_payload,
@@ -327,6 +328,73 @@ def _valid_payload_for_submit(source_url):
         "note": "",
     }
     return payload
+
+
+def _제외_종료일_어제(payload):
+    payload["fields"]["start_date"] = (_TODAY - timedelta(days=10)).isoformat()
+    payload["fields"]["end_date"] = (_TODAY - timedelta(days=1)).isoformat()
+    return payload
+
+
+def _제외_시작일만_어제(payload):
+    payload["fields"]["start_date"] = (_TODAY - timedelta(days=1)).isoformat()
+    payload["fields"]["end_date"] = ""
+    return payload
+
+
+def _생성_종료일_오늘(payload):
+    # 경계값: 오늘까지 하는 행사는 아직 진행 중이므로 제외하지 않는다.
+    payload["fields"]["start_date"] = (_TODAY - timedelta(days=5)).isoformat()
+    payload["fields"]["end_date"] = _TODAY.isoformat()
+    return payload
+
+
+def _생성_날짜_없음(payload):
+    payload["fields"]["start_date"] = ""
+    payload["fields"]["end_date"] = ""
+    return payload
+
+
+def _생성_형식_불량(payload):
+    # 파싱 불가한 날짜는 판정 대상에서 빠지므로 제외하지 않고 그대로 제출된다.
+    payload["fields"]["start_date"] = "2026-13-40"
+    payload["fields"]["end_date"] = ""
+    return payload
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "make_payload, expect_excluded",
+    [
+        (_제외_종료일_어제, True),
+        (_제외_시작일만_어제, True),
+        (_생성_종료일_오늘, False),
+        (_생성_날짜_없음, False),
+        (_생성_형식_불량, False),
+    ],
+    ids=["종료일_어제", "시작일만_어제", "종료일_오늘", "날짜_없음", "형식_불량"],
+)
+def test_지난_행사는_제외되고_남은_행사와_날짜를_못_읽은_행사는_생성된다(
+    make_payload, expect_excluded, _neutralize_server_recheck
+):
+    run = _make_claimed_run()
+    payload = make_payload(_valid_payload_for_submit("https://official-site.example.com/event"))
+
+    if expect_excluded:
+        before_count = EventDraft.objects.count()
+
+        with pytest.raises(AgentDraftExcludedError) as exc_info:
+            submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+        assert exc_info.value.reason == "ended"
+        assert EventDraft.objects.count() == before_count
+        return
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert created is True
+    assert EventDraft.objects.count() == 1
 
 
 @pytest.mark.django_db

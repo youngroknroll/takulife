@@ -6,6 +6,7 @@ from datetime import date
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.db import transaction
+from django.utils import timezone
 
 from core.vocab import is_valid_category, is_valid_region
 from drafts.discovery import SNS_HOSTNAMES
@@ -48,6 +49,7 @@ _CATEGORY_MISMATCH_NOTE = "카테고리 값 불일치(원값 {value})"
 _REGION_MISMATCH_NOTE = "지역 값 불일치(원값 {value})"
 _CONFIDENCE_MISMATCH_NOTE = "confidence 값 불일치(원값 {value})"
 _DATE_REVERSED_NOTE = "기간 역전(시작 {start}, 종료 {end})"
+_DATE_UNREADABLE_NOTE = "날짜 값 불일치(원값 {value})"
 
 # 오작동하는 러너가 한 실행에서 이벤트를 무한정 밀어넣는 것을 막는 심층 방어.
 MAX_EVENTS_PER_RUN = 20
@@ -69,6 +71,12 @@ class EventLimitExceededError(Exception):
 
 class AgentDraftSchemaError(Exception):
     pass
+
+
+class AgentDraftExcludedError(Exception):
+    def __init__(self, reason):
+        self.reason = reason
+        super().__init__(reason)
 
 
 def _strip_control_chars(*, value):
@@ -112,6 +120,23 @@ def _check_confidence(*, cleaned, note_additions):
         cleaned["confidence"] = None
 
 
+def _normalize_unreadable_date(*, fields, key, note_additions):
+    # 모델이 못 읽는 날짜 문자열(빈 값·형식 불량)을 그대로 넘기면 저장 시점에
+    # 터진다 — 정정 파서가 여기서 None으로 바꿔 흡수한다. 빈 값은 원래 없는
+    # 값이므로 메모를 남기지 않는다.
+    value = fields.get(key)
+    if not value:
+        fields[key] = None
+        return
+    try:
+        date.fromisoformat(value)
+    except (TypeError, ValueError):
+        note_additions.append(
+            _DATE_UNREADABLE_NOTE.format(value=_quote_original_value(value))
+        )
+        fields[key] = None
+
+
 def _check_date_range(*, fields, note_additions):
     start_value = fields.get("start_date")
     end_value = fields.get("end_date")
@@ -131,6 +156,19 @@ def _check_date_range(*, fields, note_additions):
         )
         fields["start_date"] = None
         fields["end_date"] = None
+
+
+def _exclusion_reason(*, fields, today):
+    # 종료일이 없으면 시작일로 대신 본다. 파싱 불가한 값은 제외 사유가 아니라
+    # 그대로 통과시킨다 — 못 읽은 날짜까지 걸러내면 정상 이벤트를 잃는다.
+    end_value = fields.get("end_date") or fields.get("start_date")
+    try:
+        end_date = date.fromisoformat(end_value)
+    except (TypeError, ValueError):
+        return None
+    if end_date < today:
+        return "ended"
+    return None
 
 
 def _build_intake_note(*, cleaned):
@@ -178,6 +216,8 @@ def parse_agent_draft_payload(*, payload):
         _check_category(fields=fields, note_additions=note_additions)
         _check_region(fields=fields, note_additions=note_additions)
         _check_confidence(cleaned=cleaned, note_additions=note_additions)
+        _normalize_unreadable_date(fields=fields, key="start_date", note_additions=note_additions)
+        _normalize_unreadable_date(fields=fields, key="end_date", note_additions=note_additions)
         _check_date_range(fields=fields, note_additions=note_additions)
         if note_additions:
             cleaned["note"] = " ".join([cleaned["note"], *note_additions]).strip()
@@ -185,7 +225,7 @@ def parse_agent_draft_payload(*, payload):
     return cleaned, (None if valid else "schema")
 
 
-def submit_agent_draft(*, run_id, lease_token, payload):
+def submit_agent_draft(*, run_id, lease_token, payload, today=None):
     """앞으로 judgment 접두·메모 조립을 순서대로 붙여 나갈 자리다. 지금은
     임대 확인(잠금 A) → 잠금 밖에서 서버 재확인(네트워크, SNS 호스트는 건너뜀)
     → 임대 재확인·중복·상한 확인·생성(잠금 B) 순서로 처리한다. 재확인이
@@ -194,6 +234,12 @@ def submit_agent_draft(*, run_id, lease_token, payload):
     if stage == "schema":
         raise AgentDraftSchemaError
     fields = cleaned["fields"]
+
+    # 잠금·서버 재확인(네트워크) 전에 판정한다 — 버릴 이벤트 때문에 굳이
+    # fetch를 타지 않는다.
+    reason = _exclusion_reason(fields=fields, today=today or timezone.localdate())
+    if reason is not None:
+        raise AgentDraftExcludedError(reason)
 
     with transaction.atomic():
         locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
