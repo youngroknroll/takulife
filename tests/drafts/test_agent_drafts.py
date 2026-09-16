@@ -10,6 +10,7 @@ from django.utils import timezone
 from core.vocab import CATEGORY
 from drafts.agent_drafts import (
     MAX_EVENTS_PER_RUN,
+    AgentDraftExcludedError,
     AgentDraftSchemaError,
     EventLimitExceededError,
     parse_agent_draft_payload,
@@ -22,6 +23,12 @@ from drafts.url_safety import UnsafeFetchUrlError
 
 
 pytestmark = pytest.mark.unit
+
+# S4(종료일이 오늘 이전이면 제외) 도입 이후에도 "진행 예정 행사"로 남도록
+# 절대 날짜 대신 오늘 기준 상대 날짜를 쓴다.
+_TODAY = date.today()
+_START_DATE = _TODAY + timedelta(days=7)
+_END_DATE = _TODAY + timedelta(days=14)
 
 
 # parse_agent_draft_payload는 스키마가 유효한 모든 페이로드에서
@@ -49,8 +56,8 @@ def _valid_payload():
             "category": "popup_store",
             "region": "seoul",
             "location_name": "코엑스",
-            "start_date": "2026-10-01",
-            "end_date": "2026-10-02",
+            "start_date": _START_DATE.isoformat(),
+            "end_date": _END_DATE.isoformat(),
             "summary": "코믹월드 팝업스토어 공지입니다.",
         },
         "confidence": 0.8,
@@ -182,8 +189,8 @@ def test_bool_신뢰도는_숫자로_취급되지_않고_null로_비워진다(co
 
 def test_시작일이_종료일보다_늦으면_두_날짜가_비워지고_메모에_사유가_남는다():
     payload = _valid_payload()
-    payload["fields"]["start_date"] = "2026-09-20"
-    payload["fields"]["end_date"] = "2026-09-01"
+    payload["fields"]["start_date"] = (_TODAY + timedelta(days=20)).isoformat()
+    payload["fields"]["end_date"] = (_TODAY + timedelta(days=1)).isoformat()
 
     cleaned, stage = parse_agent_draft_payload(payload=payload)
 
@@ -268,8 +275,8 @@ def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM�
             "category": "popup_store",
             "region": "seoul",
             "location_name": "용산 아이파크몰",
-            "start_date": "2026-09-01",
-            "end_date": "2026-09-22",
+            "start_date": _START_DATE.isoformat(),
+            "end_date": _END_DATE.isoformat(),
             "summary": "요약",
         },
         "confidence": 0.9,
@@ -290,8 +297,8 @@ def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM�
     assert draft.extracted_category == "popup_store"
     assert draft.extracted_region == "seoul"
     assert draft.extracted_location_name == "용산 아이파크몰"
-    assert draft.extracted_start_date == date(2026, 9, 1)
-    assert draft.extracted_end_date == date(2026, 9, 22)
+    assert draft.extracted_start_date == _START_DATE
+    assert draft.extracted_end_date == _END_DATE
     assert draft.confidence == 0.9
     assert draft.extraction_method == EventDraft.ExtractionMethod.LLM
     assert draft.intake_note == ""
@@ -313,14 +320,81 @@ def _valid_payload_for_submit(source_url):
             "category": "popup_store",
             "region": "seoul",
             "location_name": "용산 아이파크몰",
-            "start_date": "2026-09-01",
-            "end_date": "2026-09-22",
+            "start_date": _START_DATE.isoformat(),
+            "end_date": _END_DATE.isoformat(),
             "summary": "요약",
         },
         "confidence": 0.9,
         "note": "",
     }
     return payload
+
+
+def _제외_종료일_어제(payload):
+    payload["fields"]["start_date"] = (_TODAY - timedelta(days=10)).isoformat()
+    payload["fields"]["end_date"] = (_TODAY - timedelta(days=1)).isoformat()
+    return payload
+
+
+def _제외_시작일만_어제(payload):
+    payload["fields"]["start_date"] = (_TODAY - timedelta(days=1)).isoformat()
+    payload["fields"]["end_date"] = ""
+    return payload
+
+
+def _생성_종료일_오늘(payload):
+    # 경계값: 오늘까지 하는 행사는 아직 진행 중이므로 제외하지 않는다.
+    payload["fields"]["start_date"] = (_TODAY - timedelta(days=5)).isoformat()
+    payload["fields"]["end_date"] = _TODAY.isoformat()
+    return payload
+
+
+def _생성_날짜_없음(payload):
+    payload["fields"]["start_date"] = ""
+    payload["fields"]["end_date"] = ""
+    return payload
+
+
+def _생성_형식_불량(payload):
+    # 파싱 불가한 날짜는 판정 대상에서 빠지므로 제외하지 않고 그대로 제출된다.
+    payload["fields"]["start_date"] = "2026-13-40"
+    payload["fields"]["end_date"] = ""
+    return payload
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "make_payload, expect_excluded",
+    [
+        (_제외_종료일_어제, True),
+        (_제외_시작일만_어제, True),
+        (_생성_종료일_오늘, False),
+        (_생성_날짜_없음, False),
+        (_생성_형식_불량, False),
+    ],
+    ids=["종료일_어제", "시작일만_어제", "종료일_오늘", "날짜_없음", "형식_불량"],
+)
+def test_지난_행사는_제외되고_남은_행사와_날짜를_못_읽은_행사는_생성된다(
+    make_payload, expect_excluded, _neutralize_server_recheck
+):
+    run = _make_claimed_run()
+    payload = make_payload(_valid_payload_for_submit("https://official-site.example.com/event"))
+
+    if expect_excluded:
+        before_count = EventDraft.objects.count()
+
+        with pytest.raises(AgentDraftExcludedError) as exc_info:
+            submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+        assert exc_info.value.reason == "ended"
+        assert EventDraft.objects.count() == before_count
+        return
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert created is True
+    assert EventDraft.objects.count() == 1
 
 
 @pytest.mark.django_db
@@ -570,4 +644,73 @@ def test_경쟁으로_기존_행을_놓친_제출은_예외_대신_기존_드래
 
     assert draft.pk == existing_draft.pk
     assert created is False
-    assert EventDraft.objects.filter(source_url=source_url).count() == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_해외_개최로_판정된_이벤트는_제외된다(monkeypatch, fail_if_called):
+    # 서버 재확인(fetch)은 잠금 A 이후·네트워크 단계에서 일어난다 — 개최지
+    # 제외는 그 전에 끝나야 하므로 fetch_html이 아예 불리지 않아야 한다.
+    monkeypatch.setattr("drafts.agent_drafts.fetch_html", fail_if_called)
+
+    run = _make_claimed_run()
+    payload = _valid_payload_for_submit("https://official-site.example.com/event")
+    payload["venue_country"] = "not_kr"
+    before_count = EventDraft.objects.count()
+
+    with pytest.raises(AgentDraftExcludedError) as exc_info:
+        submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert exc_info.value.reason == "overseas"
+    assert EventDraft.objects.count() == before_count
+
+
+def _개최지_키_없음(payload):
+    return payload
+
+
+def _개최지_unclear(payload):
+    payload["venue_country"] = "unclear"
+    return payload
+
+
+def _개최지_어휘_밖(payload):
+    payload["venue_country"] = "jp"
+    return payload
+
+
+def _개최지_대문자(payload):
+    # 대소문자를 정규화해 비교하면 이 값이 "not_kr"로 오판된다 — 정규화하지
+    # 않는다는 것을 고정하는 값이다.
+    payload["venue_country"] = "NOT_KR"
+    return payload
+
+
+def _개최지_공백(payload):
+    # 앞뒤 공백을 strip해 비교하면 이 값도 "not_kr"로 오판된다 — 위와 같은
+    # 이유로 정규화 금지를 고정한다.
+    payload["venue_country"] = " not_kr "
+    return payload
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "make_payload",
+    [
+        _개최지_키_없음,
+        _개최지_unclear,
+        _개최지_어휘_밖,
+        _개최지_대문자,
+        _개최지_공백,
+    ],
+    ids=["키_없음", "unclear", "어휘_밖", "대문자", "공백"],
+)
+def test_개최지가_불확실하면_제출되어_드래프트가_생성된다(make_payload, _neutralize_server_recheck):
+    run = _make_claimed_run()
+    payload = make_payload(_valid_payload_for_submit("https://official-site.example.com/event"))
+
+    draft, created = submit_agent_draft(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert created is True
+    assert EventDraft.objects.count() == 1

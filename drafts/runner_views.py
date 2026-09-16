@@ -16,6 +16,7 @@ from core.categories import category_slugs
 from core.errors import error_response
 from core.vocab import REGION
 from drafts.agent_drafts import (
+    AgentDraftExcludedError,
     AgentDraftSchemaError,
     EventLimitExceededError,
     submit_agent_draft,
@@ -161,12 +162,25 @@ class RunnerCompleteView(_RunnerAPIView):
         if not isinstance(failure_kind, str):
             failure_kind = ""
 
+        events_attempted = data.get("events_attempted", 0)
+        events_failed = data.get("events_failed", 0)
+        events_excluded = data.get("events_excluded", 0)
+        # bool은 int의 서브클래스라 isinstance(v, int)만으로는 True/False가
+        # 통과해버려 별도로 걸러낸다.
+        for count in (events_attempted, events_failed, events_excluded):
+            if not isinstance(count, int) or isinstance(count, bool):
+                return error_response("invalid complete payload", status.HTTP_400_BAD_REQUEST)
+
         try:
             run = complete_run(
                 run_id=run_id,
                 lease_token=lease_token,
                 runner_status=runner_status,
                 failure_kind=failure_kind,
+                # 옛 러너는 이 키들을 보내지 않으므로 기본값 0으로 호환한다.
+                events_attempted=events_attempted,
+                events_failed=events_failed,
+                events_excluded=events_excluded,
             )
         except SourceDiscoveryRun.DoesNotExist:
             return error_response("run not found", status.HTTP_404_NOT_FOUND)
@@ -196,6 +210,10 @@ class RunnerEventDraftSubmitView(_RunnerAPIView):
             return error_response("invalid event submission payload", status.HTTP_400_BAD_REQUEST)
         except (InvalidFetchUrlError, UnsafeFetchUrlError):
             return error_response("unsafe URL is not allowed", status.HTTP_400_BAD_REQUEST)
+        except AgentDraftExcludedError as exc:
+            # 정책상 제외는 오류가 아니라 정상 처리 결과다 — 4xx로 응답하면
+            # 러너가 실패로 세어 실행 상태가 뒤집힌다.
+            return Response({"status": "excluded", "reason": exc.reason})
 
         if created:
             return Response(

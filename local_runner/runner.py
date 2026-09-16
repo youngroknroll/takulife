@@ -97,6 +97,8 @@ def _process_run(client, run, exploration_result):
         runner_status="succeeded",
         events_attempted=summary["events_attempted"],
         events_failed=summary["events_failed"],
+        # 요약에 키가 없는 경로(구 픽스처 등)를 대비해 기본값 0으로 안전하게 읽는다.
+        events_excluded=summary.get("events_excluded", 0),
     )
 
 

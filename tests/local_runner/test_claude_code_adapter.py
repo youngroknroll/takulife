@@ -178,6 +178,21 @@ def test_탐색_프롬프트는_검색어와_판별_기준과_출력_스키마�
     assert "official_basis" not in events_block
 
 
+def test_탐색_프롬프트는_수집처의_개최지_국가_필드를_포함한다():
+    prompt = build_exploration_prompt(query="하츠네 미쿠", max_events=20, max_sources=10)
+
+    sources_block_start = prompt.index('"sources"(수집처)')
+    sources_block = prompt[sources_block_start:]
+
+    assert "source_country" in sources_block
+    for value in ["kr", "not_kr", "unclear"]:
+        assert value in sources_block
+    # 탐색 단계는 페이지를 열 수 없어 검색 결과만 보므로, 확신이 없으면
+    # unclear로 두라는 지시가 있어야 한다.
+    assert "주로 다루는" in sources_block
+    assert "unclear" in sources_block
+
+
 @pytest.mark.contract
 def test_캡션_해석_실행_명령은_도구를_사실상_끄고_MCP를_전부_끈_채_JSON_출력을_요구한다(monkeypatch):
     """--tools는 쉼표로 구분된 유효한 이름이 둘 이상일 때만 실제로 도구를

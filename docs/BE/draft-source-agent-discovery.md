@@ -526,6 +526,86 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
   "로그 실패 시 행동도 롤백" 계약). 회귀:
   `tests/staff/test_staff_source_discovery_request_view.py::test_탐색_요청_감사로그_삽입이_실패하면_실행_생성도_함께_실패한다`.
 
+## 트랙 33: 국내·미종료 필터(2026-09-15~2026-09-16)
+
+키워드 탐색이 만든 드래프트 중 해외 개최·이미 종료된 행사, 해외 수집처가
+섞여 들어오는 문제를 막는다. 서버·러너 양쪽에 적용한다.
+
+### 제외는 오류가 아니다
+
+러너가 제출한 이벤트가 정책상 제외 대상이면 서버는 4xx가 아니라 **200**과
+`{"status": "excluded", "reason": "ended"|"overseas"}`로 답한다 `[코드]`
+`drafts/runner_views.py`(`AgentDraftExcludedError` 처리 분기). 4xx로 내리면
+러너가 이를 실패로 세어, 정책대로 전부 걸러진 실행이 실패로 기록된다.
+
+### 국내 판정은 서버가 재검증할 수 없는 러너 필드다
+
+이벤트는 `venue_country`가 정확히 `"not_kr"`일 때만 제외하고, 없음·
+`"unclear"`·enum 밖 값·대소문자나 공백이 다른 값은 모두 제출한다(불확실하면
+행사를 놓치는 비용이 더 크다는 사용자 결정) `[코드]` `drafts/agent_drafts.py`
+(`_exclusion_reason`). 소스 후보는 반대로 `source_country`가 정확히
+`"kr"`일 때만 등록하고 그 외(없음 포함)는 모두 제외한다 — 소스는 한 번
+잘못 승격되면 실행마다 해외 드래프트를 반복 생성하기 때문이다 `[코드]`
+`drafts/candidate_validation.py`. 양쪽 모두 `.strip()`·`.lower()` 같은
+정규화 없이 문자 그대로 비교한다 `[코드]` — 정규화를 넣으면 대소문자·공백만
+다른 값을 오판하게 되므로 일부러 하지 않는다. 러너 해석 프롬프트는
+`local_runner/caption_interpreter.py`에서 `venue_country`를 같은 세 값
+(`kr`/`not_kr`/`unclear`)으로만 판정하게 지시한다.
+
+### "오늘"은 서버·러너 모두 한국 시간 기준이다
+
+서버는 `timezone.localdate()`(`TIME_ZONE = "Asia/Seoul"` `[코드]`
+`config/settings.py`)를, 러너는
+`datetime.now(ZoneInfo("Asia/Seoul")).date()`(`_KST` `[코드]`
+`local_runner/exploration_flow.py`)를 각각 쓴다. 러너를 돌리는 개인 맥의
+OS 시간대가 UTC 등 다른 값이어도 종료 판정이 서버와 갈리지 않게 하기
+위해서다.
+
+### 실행 상태는 후보 결과와 이벤트 결과의 결합이다
+
+`complete_run`은 후보 결과(없음/전부 승격/전부 실패/혼합)와 이벤트 결과
+(없음/실패 없음/실패 있음·생성 없음/실패 있음·생성 있음)를 각각 판정한 뒤
+결합해 실행 상태를 정한다 `[코드]` `drafts/discovery_runs.py`. 실패가
+없으면 생성이 0건이어도 SUCCEEDED다 — 제외는 실패가 아니기 때문이다.
+실행 기록에는 `SourceDiscoveryRun.events_excluded`가 함께 저장된다.
+
+### 읽을 수 없는 날짜는 거부가 아니라 정정이다
+
+날짜 값이 비었거나 형식이 잘못됐으면 그 값을 비우고 원값을 메모에 남긴다
+(`_normalize_unreadable_date` `[코드]` `drafts/agent_drafts.py`) — 그대로
+두면 저장 시점에 예외가 났다. 종료 판정 자체도 날짜를 못 읽으면 제외하지
+않고 제출한다(`_exclusion_reason`이 파싱 실패 시 `None` 반환).
+
+### 서버 수집 경로는 수집 전용 생성 함수에서만 필터를 적용한다
+
+`create_collected_draft_from_url`(`drafts/services.py`)만 "제목·본문에
+한글이 없으면 제외"(`non_korean`)와 "본문에 나온 가장 늦은 날짜가 오늘
+이전이면 제외"(`ended`)를 적용한다. 날짜 판정은 `drafts/extraction.py`의
+`latest_mentioned_date(text)`가 본문 전체에서 가장 늦은 날짜 하나를
+고르는 방식이다 — 규칙 추출기가 뽑는 시작·종료일에는 게시일이 섞여
+믿을 수 없어 본문 전체를 다시 본다는 실측 근거가 있다(사용자 결정 기록
+D9, `prompt_plan.md` 트랙 33 참고). 스태프가 URL을 직접 골라 추가하는
+경로(`staff/views/draft_api.py`)에는 이 필터를 적용하지 않는다 — 사람이
+이미 골라 확인한 URL이기 때문이다.
+
+### 두 경로의 판정 축은 다르다 — 잔여 오탐·미탐
+
+러너(키워드 탐색) 경로는 **개최지**(`venue_country`)와 **종료일(없으면 시작일)**로,
+서버 수집 경로는 **한글 유무**와 **본문의 가장 늦은 날짜**로 판정한다. 서버
+수집 경로에는 모델 판정이 없고 결정론 지역 추출은 해외를 판정할 수 없어서다
+(`drafts/extraction.py` `_detect_region`은 서울·부산·인천 문자열만 본다
+`[코드]`). 그래서 같은 문서가 경로에 따라 다르게 처리될 수 있다:
+
+- 한국어로 쓴 **해외** 행사 페이지: 러너 경로는 제외, 서버 수집 경로는 한글이
+  있어 **통과**한다 — 검수 큐에서 걸러야 하는 잔여 오탐이다.
+- 영어로만 쓴 **국내** 행사 페이지: 러너 경로는 제출, 서버 수집 경로는
+  `non_korean`으로 **제외**한다 — 잔여 미탐이다. 필요하면 스태프 URL 직접
+  추가로 넣는다(그 경로는 필터를 적용하지 않는다).
+
+이미 만들어진 드래프트와 등록된 소스는 이 필터로 소급 정리되지 않는다.
+해외 소스는 `DraftSource.enabled=False`로 직접 비활성화해야 하며, 운영 DB에
+해외 소스가 남아 있는지는 배포 후 수동으로 확인한다.
+
 ## Evidence
 
 - 사용자 승인(2026-08-20): 기본 수집은 규칙 기반 추출과 관리자 검수를 유지한다.

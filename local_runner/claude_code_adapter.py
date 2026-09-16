@@ -116,13 +116,17 @@ URL)만으로 판단해야 한다. 페이지 본문을 확인했다고 추측하
   duplicate_urls(같은 행사의 다른 공지 URL, 최대 5개, 각 <=200자)
 
 "sources"(수집처) 각 항목은 다음 중 하나의 스키마를 정확히 지켜라(문자열
-길이 상한 준수):
+길이 상한 준수). source_country는 이 수집처가 주로 다루는 행사의 개최지가
+어디인지로 판정하라(도메인 국적이 아니라 다루는 내용 기준). 이 단계는
+페이지를 열 수 없어 검색 결과만 보므로, 확신이 없으면 추측하지 말고
+"unclear"로 두라:
 - 목록형: name(<=100자), url(<=200자, http/https),
   source_type("rss"|"sitemap"|"html"), link_selector(html일 때만, <=255자,
   비워도 됨), sample_url(<=200자, http/https), official_basis(<=500자),
-  note(<=500자)
+  note(<=500자), source_country("kr"|"not_kr"|"unclear")
 - 계정형: name(<=100자), url(<=200자, http/https),
-  source_type("instagram"|"x"), official_basis(<=500자), note(<=500자)
+  source_type("instagram"|"x"), official_basis(<=500자), note(<=500자),
+  source_country("kr"|"not_kr"|"unclear")
 
 이벤트는 최대 {max_events}건, 소스는 최대 {max_sources}건까지만 제안하라.
 출력은 다른 텍스트 없이 다음 형태의 JSON 객체 하나만 출력하라:

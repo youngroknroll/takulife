@@ -1,5 +1,7 @@
 """local_runner.exploration_flow — 탐색 출력의 events·sources 분리 파싱과
 상한 절단을 검증한다."""
+from datetime import datetime, timezone
+
 import httpx
 import pytest
 
@@ -108,7 +110,12 @@ def test_탐색_흐름은_known_필터_후_읽기_해석_제출을_순서대로_
         {"url": "https://example.com/event-2", "platform": "web"},
     ]
     sources = [
-        {"name": "공식 홈페이지", "url": "https://example.com/feed", "source_type": "rss"}
+        {
+            "name": "공식 홈페이지",
+            "url": "https://example.com/feed",
+            "source_type": "rss",
+            "source_country": "kr",
+        }
     ]
 
     fetch_calls = []
@@ -153,8 +160,8 @@ def test_탐색_흐름은_known_필터_후_읽기_해석_제출을_순서대로_
     # 소스는 목록형·계정형 구분 없이 그대로 서버에 넘긴다.
     assert client.submit_candidate_calls == [sources[0]]
 
-    # 반환 요약이 완료 보고에 그대로 실리는 시도·실패 수다.
-    assert summary == {"events_attempted": 2, "events_failed": 1}
+    # 반환 요약이 완료 보고에 그대로 실리는 시도·실패·제외 수다.
+    assert summary == {"events_attempted": 2, "events_failed": 1, "events_excluded": 0}
 
 
 def test_일반_웹_응답이_403이나_429면_그_URL만_건너뛰고_같은_호스트_두_번째부터는_호스트를_건너뛴다():
@@ -242,8 +249,18 @@ def test_임대_상실_409는_남은_항목_처리를_즉시_멈추고_LeaseLost
         {"url": "https://example.com/event-2", "platform": "web"},
     ]
     sources = [
-        {"name": "소스1", "url": "https://example.com/source-1", "source_type": "rss"},
-        {"name": "소스2", "url": "https://example.com/source-2", "source_type": "rss"},
+        {
+            "name": "소스1",
+            "url": "https://example.com/source-1",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
+        {
+            "name": "소스2",
+            "url": "https://example.com/source-2",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
     ]
 
     fetch_calls = []
@@ -325,8 +342,18 @@ def test_제출_중_409가_아닌_HTTP_오류는_그_항목만_건너뛰고_나�
         {"url": "https://example.com/event-2", "platform": "web"},
     ]
     sources = [
-        {"name": "소스1", "url": "https://example.com/source-1", "source_type": "rss"},
-        {"name": "소스2", "url": "https://example.com/source-2", "source_type": "rss"},
+        {
+            "name": "소스1",
+            "url": "https://example.com/source-1",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
+        {
+            "name": "소스2",
+            "url": "https://example.com/source-2",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
     ]
 
     def fake_fetch_text(*, url):
@@ -513,4 +540,197 @@ def test_해석이_JSON을_못_내면_그_항목만_건너뛰고_다음_항목�
     assert interpret_calls == [events[0]["url"], events[1]["url"]]
     assert len(client.submit_event_calls) == 1
     assert client.submit_event_calls[0]["source_url"] == events[1]["url"]
-    assert summary == {"events_attempted": 2, "events_failed": 1}
+    assert summary == {"events_attempted": 2, "events_failed": 1, "events_excluded": 0}
+
+
+# ---------------------------------------------------------------------------
+# DF-16·DF-17·DF-25·DF-18 — 해외·지난 행사는 서버에 제출하지 않고, 서버가
+# 뒤늦게 제외 판정해도 실패가 아니라 제외로 센다. 국내 확정이 아닌 소스도
+# 제출하지 않는다(사용자 결정: 불확실해도 제외).
+# ---------------------------------------------------------------------------
+
+
+class _ServerExcludesFirstEventClient(_FakeClient):
+    """첫 이벤트 제출에 서버가 제외 응답을 돌려주는 가짜 클라이언트."""
+
+    def submit_event(self, *, run_id, lease_token, event):
+        self.submit_event_calls.append(event)
+        return {"status": "excluded", "reason": "ended"}
+
+
+class _StatusVariesClient(_FakeClient):
+    """제출 응답의 status 값을 마음대로 바꿔 넣는 가짜 클라이언트."""
+
+    def __init__(self, *, response):
+        super().__init__()
+        self._response = response
+
+    def submit_event(self, *, run_id, lease_token, event):
+        self.submit_event_calls.append(event)
+        return self._response
+
+
+def test_해외이거나_지난_행사로_판정되면_제출하지_않고_제외_수를_늘린다():
+    events = [{"url": "https://example.com/event-1", "platform": "web"}]
+
+    def fake_fetch_text(*, url):
+        return "원문 텍스트"
+
+    def fake_interpret(*, text, url, platform):
+        result = _interpreted_result()
+        result["venue_country"] = "not_kr"
+        return result
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert client.submit_event_calls == []
+    assert summary["events_excluded"] == 1
+    assert summary["events_failed"] == 0
+
+
+def test_자정_직후에도_러너의_오늘은_UTC가_아니라_KST_날짜로_종료를_판정한다(monkeypatch):
+    """UTC 2026-01-01 15:30은 KST로 2026-01-02 00:30이라 두 시간대의 오늘 날짜가
+    갈린다 — end_date가 2026-01-01이면 KST 기준으로만 지난 행사다."""
+
+    class _FrozenDatetime:
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 1, 1, 15, 30, tzinfo=timezone.utc).astimezone(tz)
+
+    monkeypatch.setattr("local_runner.exploration_flow.datetime", _FrozenDatetime)
+
+    events = [{"url": "https://example.com/event-1", "platform": "web"}]
+
+    def fake_fetch_text(*, url):
+        return "원문 텍스트"
+
+    def fake_interpret(*, text, url, platform):
+        result = _interpreted_result()
+        result["venue_country"] = "kr"
+        result["fields"]["start_date"] = "2026-01-01"
+        result["fields"]["end_date"] = "2026-01-01"
+        return result
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert client.submit_event_calls == []
+    assert summary["events_excluded"] == 1
+    assert summary["events_failed"] == 0
+
+
+def test_서버가_제출_응답에서_제외로_판단하면_제외_수를_늘리고_실패로_세지_않는다():
+    events = [{"url": "https://example.com/event-1", "platform": "web"}]
+
+    def fake_fetch_text(*, url):
+        return "원문 텍스트"
+
+    def fake_interpret(*, text, url, platform):
+        return _interpreted_result()
+
+    client = _ServerExcludesFirstEventClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert len(client.submit_event_calls) == 1
+    assert summary["events_excluded"] == 1
+    assert summary["events_failed"] == 0
+
+
+@pytest.mark.parametrize(
+    "response",
+    [{"status": "created", "draft_id": 1}, {"draft_id": 1}],
+    ids=["status_다른_값", "status_없음"],
+)
+def test_제출_응답의_status가_excluded가_아니면_제외로_세지_않는다(response):
+    events = [{"url": "https://example.com/event-1", "platform": "web"}]
+
+    def fake_fetch_text(*, url):
+        return "원문 텍스트"
+
+    def fake_interpret(*, text, url, platform):
+        return _interpreted_result()
+
+    client = _StatusVariesClient(response=response)
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert summary["events_excluded"] == 0
+
+
+def test_source_country가_kr이_아닌_소스는_제출되지_않고_kr인_소스는_그대로_제출된다():
+    sources = [
+        {
+            "name": "국내 소스",
+            "url": "https://example.com/kr",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
+        {
+            "name": "해외 소스",
+            "url": "https://example.com/jp",
+            "source_type": "rss",
+            "source_country": "jp",
+        },
+        {
+            "name": "불확실 소스",
+            "url": "https://example.com/unclear",
+            "source_type": "rss",
+            "source_country": "unclear",
+        },
+        {
+            # 키 자체가 없는 경우도 kr 확정이 아니므로 제외 대상이다.
+            "name": "국가 미기재 소스",
+            "url": "https://example.com/no-country",
+            "source_type": "rss",
+        },
+    ]
+
+    client = _FakeClient()
+
+    run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=[],
+        sources=sources,
+        fetch_text=lambda *, url: None,
+        interpret=lambda *, text, url, platform: None,
+    )
+
+    assert client.submit_candidate_calls == [sources[0]]
