@@ -281,6 +281,36 @@ def test_complete는_실행_상태를_저장하고_잘못된_값은_거부한다
     assert not_found_response.status_code == 404
 
 
+def test_완료_요청이_보낸_시도_실패_건수가_실행에_그대로_저장된다(client, runner_headers):
+    run = _make_claimed_run()
+    SourceCandidate.objects.create(
+        run=run,
+        name="후보",
+        url="https://example.com/n1",
+        source_type="html",
+        sample_url="https://example.com/n1/sample",
+        status=SourceCandidate.Status.PROMOTED,
+    )
+
+    # 러너가 보낸 시도·실패 건수가 0이 아닌 값으로 그대로 저장되어야 한다.
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "events_attempted": 5,
+            "events_failed": 2,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.events_attempted == 5
+    assert run.events_failed == 2
+
+
 def test_discovery_runner_스로틀_scope가_등록되어_있다(settings):
     rate = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["discovery_runner"]
 

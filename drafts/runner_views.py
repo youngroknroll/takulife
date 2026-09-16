@@ -167,6 +167,9 @@ class RunnerCompleteView(_RunnerAPIView):
                 lease_token=lease_token,
                 runner_status=runner_status,
                 failure_kind=failure_kind,
+                # 옛 러너는 이 키들을 보내지 않으므로 기본값 0으로 호환한다.
+                events_attempted=data.get("events_attempted", 0),
+                events_failed=data.get("events_failed", 0),
             )
         except SourceDiscoveryRun.DoesNotExist:
             return error_response("run not found", status.HTTP_404_NOT_FOUND)
