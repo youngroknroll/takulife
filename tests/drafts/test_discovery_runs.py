@@ -305,6 +305,21 @@ def test_잘못된_lease로는_complete가_거부된다():
     assert run.finished_at is None
 
 
+def test_run_complete는_러너가_보고한_제외_건수를_저장한다():
+    run = _make_claimed_run()
+
+    result = complete_run(
+        run_id=run.pk,
+        lease_token="tok",
+        runner_status="succeeded",
+        events_attempted=4,
+        events_failed=0,
+        events_excluded=3,
+    )
+
+    assert result.events_excluded == 3
+
+
 def _setup_생성_0건(run):
     kwargs = {"events_attempted": 3, "events_failed": 3}
     expected = {

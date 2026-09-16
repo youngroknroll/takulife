@@ -131,13 +131,23 @@ def renew_lease(*, run):
     run.save(update_fields=["lease_expires_at"])
 
 
-def complete_run(*, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0):
+def complete_run(
+    *,
+    run_id,
+    lease_token,
+    runner_status,
+    failure_kind="",
+    events_attempted=0,
+    events_failed=0,
+    events_excluded=0,
+):
     # agent_drafts가 모듈 최상단에서 discovery_runs를 임포트하므로, 여기서
     # 그 반대 방향을 모듈 최상단에 두면 순환 임포트가 된다 — 함수 안에서만 쓴다.
     from drafts.agent_drafts import MAX_EVENTS_PER_RUN
 
     cleaned_attempted = max(0, min(events_attempted, MAX_EVENTS_PER_RUN))
     cleaned_failed = max(0, min(events_failed, cleaned_attempted))
+    cleaned_excluded = max(0, min(events_excluded, MAX_EVENTS_PER_RUN))
 
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
@@ -181,6 +191,7 @@ def complete_run(*, run_id, lease_token, runner_status, failure_kind="", events_
         run.lease_token = ""
         run.events_attempted = cleaned_attempted
         run.events_failed = cleaned_failed
+        run.events_excluded = cleaned_excluded
         run.save(
             update_fields=[
                 "status",
@@ -189,6 +200,7 @@ def complete_run(*, run_id, lease_token, runner_status, failure_kind="", events_
                 "lease_token",
                 "events_attempted",
                 "events_failed",
+                "events_excluded",
             ]
         )
         return run

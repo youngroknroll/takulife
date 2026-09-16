@@ -311,6 +311,28 @@ def test_완료_요청이_보낸_시도_실패_건수가_실행에_그대로_저
     assert run.events_failed == 2
 
 
+def test_완료_요청이_보낸_제외_건수가_실행에_저장된다(client, runner_headers):
+    run = _make_claimed_run()
+
+    # 러너가 정책상 정상 제외한 건수도 실행에 저장되어야 한다.
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "events_attempted": 5,
+            "events_failed": 2,
+            "events_excluded": 3,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.events_excluded == 3
+
+
 @pytest.mark.parametrize("bad_value", ["오", None, True, ["오"]], ids=["문자열", "None", "불리언", "리스트"])
 @pytest.mark.parametrize("field", ["events_attempted", "events_failed"])
 def test_완료_요청의_건수가_정수가_아니면_400으로_거부한다(client, runner_headers, field, bad_value):
