@@ -74,7 +74,9 @@ class _OrderRecordingClient:
         self._calls.append(("client", "submit_candidate"))
         return self._submit_result
 
-    def complete(self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0):
+    def complete(
+        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+    ):
         self._calls.append(("client", "complete", runner_status, failure_kind))
 
 
@@ -175,10 +177,11 @@ def test_에이전트_탐색이_성공하면_후보_제출과_완료_보고가_�
     # 이벤트 없이 소스 하나만 있는 탐색 결과로 둔다 — known_urls·submit_event
     # 배선까지 새로 흉내 내지 않아도 기존 submit_candidate 경로만으로
     # "제출 후 완료 보고" 순서를 그대로 확인할 수 있다.
+    # source_country를 "kr"로 채워야 국내 필터를 통과해 제출이 실제로 일어난다.
     monkeypatch.setattr(
         runner_module,
         "_run_exploration_agent",
-        lambda prompt: {"events": [], "sources": [{"name": "a"}]},
+        lambda prompt: {"events": [], "sources": [{"name": "a", "source_country": "kr"}]},
     )
 
     runner_module._run_once(client)
@@ -192,7 +195,7 @@ class _RecordingCompleteClient:
     def __init__(self):
         self.complete_calls = []
 
-    def complete(self, *, run_id, lease_token, runner_status, events_attempted=0, events_failed=0):
+    def complete(self, *, run_id, lease_token, runner_status, events_attempted=0, events_failed=0, events_excluded=0):
         self.complete_calls.append(
             {
                 "run_id": run_id,
@@ -266,7 +269,9 @@ class _LeaseLostFlowClient:
     def claim(self):
         return self._run
 
-    def complete(self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0):
+    def complete(
+        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+    ):
         self.complete_calls.append((runner_status, failure_kind))
 
 
@@ -314,7 +319,9 @@ class _CompleteRecordingClient:
     def known_urls(self, *, urls):
         return list(urls)
 
-    def complete(self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0):
+    def complete(
+        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+    ):
         self.complete_calls.append(
             {
                 "runner_status": runner_status,
@@ -353,6 +360,64 @@ def test_이벤트도_소스도_없는_탐색_결과는_실패가_아니라_성�
             "failure_kind": "",
             "events_attempted": 0,
             "events_failed": 0,
+        }
+    ]
+
+
+class _ExcludedRecordingCompleteClient:
+    def __init__(self):
+        self.complete_calls = []
+
+    def complete(
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+    ):
+        self.complete_calls.append(
+            {
+                "run_id": run_id,
+                "lease_token": lease_token,
+                "runner_status": runner_status,
+                "events_attempted": events_attempted,
+                "events_failed": events_failed,
+                "events_excluded": events_excluded,
+            }
+        )
+
+
+def test_완료_보고에_흐름이_센_제외_수가_함께_실린다(monkeypatch):
+    """흐름 요약의 events_excluded가 완료 보고 인자까지 그대로 전달돼야 한다."""
+
+    def fake_run_exploration_flow(**kwargs):
+        return {"events_attempted": 3, "events_failed": 1, "events_excluded": 2}
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _ExcludedRecordingCompleteClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    runner_module._process_run(client, run, exploration_result)
+
+    assert client.complete_calls == [
+        {
+            "run_id": run["run_id"],
+            "lease_token": run["lease_token"],
+            "runner_status": "succeeded",
+            "events_attempted": 3,
+            "events_failed": 1,
+            "events_excluded": 2,
         }
     ]
 

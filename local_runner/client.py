@@ -45,7 +45,17 @@ class RunnerClient:
         )
         return response.json()
 
-    def complete(self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0):
+    def complete(
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+    ):
         response = self._post(
             f"/runs/{run_id}/complete/",
             {
@@ -54,6 +64,7 @@ class RunnerClient:
                 "failure_kind": failure_kind,
                 "events_attempted": events_attempted,
                 "events_failed": events_failed,
+                "events_excluded": events_excluded,
             },
         )
         return response.json()
