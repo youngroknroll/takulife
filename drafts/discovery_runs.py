@@ -34,6 +34,43 @@ class LeaseInvalidError(Exception):
     pass
 
 
+def _classify_candidate_outcome(candidate_statuses):
+    """소스 후보 상태 목록을 없음/정상/실패/부분 중 하나로 분류한다."""
+    if not candidate_statuses:
+        return "none"
+    if all(status == SourceCandidate.Status.PROMOTED for status in candidate_statuses):
+        return "succeeded"
+    if all(status == SourceCandidate.Status.FAILED for status in candidate_statuses):
+        return "failed"
+    return "partial"
+
+
+def _classify_event_outcome(*, attempted, failed, created_count):
+    """이벤트 시도 결과를 없음/정상/실패/부분 중 하나로 분류한다.
+
+    생성 0건이어도 실패가 없으면 정상이다(제외는 실패가 아니다).
+    """
+    if attempted == 0:
+        return "none"
+    if failed == 0:
+        return "succeeded"
+    if created_count == 0:
+        return "failed"
+    return "partial"
+
+
+def _combine_outcomes(*, candidate_outcome, event_outcome):
+    """후보 결과와 이벤트 결과를 실행 최종 상태로 결합한다."""
+    existing = [
+        outcome for outcome in (candidate_outcome, event_outcome) if outcome != "none"
+    ]
+    if not existing or all(outcome == "succeeded" for outcome in existing):
+        return SourceDiscoveryRun.Status.SUCCEEDED
+    if all(outcome == "failed" for outcome in existing):
+        return SourceDiscoveryRun.Status.FAILED
+    return SourceDiscoveryRun.Status.PARTIALLY_FAILED
+
+
 def runner_is_online(*, status_row):
     """DiscoveryRunnerStatus 행(없으면 None)을 받아 신선도 판정을 소유한다."""
     if status_row is None:
@@ -165,27 +202,19 @@ def complete_run(
                 run.status = SourceDiscoveryRun.Status.FAILED
             run.error_summary = error_summary
         else:
+            # 후보 결과와 이벤트 결과 각각을 없음/정상/실패/부분으로 분류한
+            # 뒤 결합한다 — 생성 수는 러너 보고가 아니라 실제 저장 수
+            # (run.events)로 센다.
             candidate_statuses = list(run.candidates.values_list("status", flat=True))
-            if not candidate_statuses:
-                # 소스 후보가 전혀 없어도 이벤트만 시도했을 수 있다 — 그때는
-                # 러너 보고가 아니라 실제 생성 수(run.events)로 성패를 가른다.
-                if cleaned_attempted > 0:
-                    if run.events.count() == 0:
-                        run.status = SourceDiscoveryRun.Status.FAILED
-                    else:
-                        run.status = SourceDiscoveryRun.Status.PARTIALLY_FAILED
-                else:
-                    run.status = SourceDiscoveryRun.Status.SUCCEEDED
-            elif all(
-                status == SourceCandidate.Status.PROMOTED for status in candidate_statuses
-            ):
-                run.status = SourceDiscoveryRun.Status.SUCCEEDED
-            elif all(
-                status == SourceCandidate.Status.FAILED for status in candidate_statuses
-            ):
-                run.status = SourceDiscoveryRun.Status.FAILED
-            else:
-                run.status = SourceDiscoveryRun.Status.PARTIALLY_FAILED
+            candidate_outcome = _classify_candidate_outcome(candidate_statuses)
+            event_outcome = _classify_event_outcome(
+                attempted=cleaned_attempted,
+                failed=cleaned_failed,
+                created_count=run.events.count(),
+            )
+            run.status = _combine_outcomes(
+                candidate_outcome=candidate_outcome, event_outcome=event_outcome
+            )
 
         run.finished_at = timezone.now()
         run.lease_token = ""

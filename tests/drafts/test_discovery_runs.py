@@ -371,3 +371,103 @@ def test_소스_후보_없이_이벤트만_시도한_실행은_생성_0건이면
     assert result.events_attempted == expected["events_attempted"]
     assert result.events_failed == expected["events_failed"]
     assert result.events_failed <= result.events_attempted
+
+
+# ---------------------------------------------------------------------------
+# DF-04 — 이벤트만 시도한 실행은 "실패 없음"이면 실제 생성 수와 무관하게
+# 정상으로 완료돼야 한다(전부 제외된 실행도 실패가 아니다).
+# ---------------------------------------------------------------------------
+
+
+def _setup_이벤트_전부_제외(run):
+    return {"events_attempted": 3, "events_failed": 0}
+
+
+def _setup_이벤트_전부_생성(run):
+    EventDraft.objects.bulk_create(
+        [
+            EventDraft(source_url=f"https://example.com/event-new-{i}", discovery_run=run)
+            for i in range(3)
+        ]
+    )
+    return {"events_attempted": 3, "events_failed": 0}
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [_setup_이벤트_전부_제외, _setup_이벤트_전부_생성],
+    ids=["전부_제외", "전부_생성"],
+)
+def test_소스_후보_없이_이벤트만_시도했고_실패가_없으면_생성_여부와_무관하게_정상으로_완료된다(setup):
+    run = _make_claimed_run()
+    kwargs = setup(run)
+
+    result = complete_run(run_id=run.pk, lease_token="tok", runner_status="succeeded", **kwargs)
+
+    assert result.status == SourceDiscoveryRun.Status.SUCCEEDED
+
+
+# ---------------------------------------------------------------------------
+# DF-22 — 후보 결과와 이벤트 결과가 함께 있을 때는 각각을 독립 판정한 뒤
+# 결합해야 한다(현재는 후보만 보고 이벤트 결과를 무시한다).
+# ---------------------------------------------------------------------------
+
+
+def _setup_승격_이벤트_실패_생성없음(run):
+    _make_candidate(run, status=SourceCandidate.Status.PROMOTED, url="https://example.com/n1")
+    _make_candidate(run, status=SourceCandidate.Status.PROMOTED, url="https://example.com/n2")
+    return {"events_attempted": 2, "events_failed": 2}
+
+
+def _setup_전실패_이벤트_정상_생성있음(run):
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n1")
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n2")
+    EventDraft.objects.bulk_create(
+        [
+            EventDraft(source_url=f"https://example.com/event-c-{i}", discovery_run=run)
+            for i in range(2)
+        ]
+    )
+    return {"events_attempted": 2, "events_failed": 0}
+
+
+def _setup_전실패_이벤트_실패_생성없음(run):
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n1")
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n2")
+    return {"events_attempted": 2, "events_failed": 2}
+
+
+def _setup_혼합_이벤트_정상_생성있음(run):
+    _make_candidate(run, status=SourceCandidate.Status.PROMOTED, url="https://example.com/n1")
+    _make_candidate(run, status=SourceCandidate.Status.FAILED, url="https://example.com/n2")
+    EventDraft.objects.bulk_create(
+        [
+            EventDraft(source_url=f"https://example.com/event-d-{i}", discovery_run=run)
+            for i in range(2)
+        ]
+    )
+    return {"events_attempted": 2, "events_failed": 0}
+
+
+@pytest.mark.parametrize(
+    "setup, expected_status",
+    [
+        (_setup_승격_이벤트_실패_생성없음, SourceDiscoveryRun.Status.PARTIALLY_FAILED),
+        (_setup_전실패_이벤트_정상_생성있음, SourceDiscoveryRun.Status.PARTIALLY_FAILED),
+        (_setup_전실패_이벤트_실패_생성없음, SourceDiscoveryRun.Status.FAILED),
+        (_setup_혼합_이벤트_정상_생성있음, SourceDiscoveryRun.Status.PARTIALLY_FAILED),
+    ],
+    ids=[
+        "승격_이벤트실패_생성없음",
+        "전실패_이벤트정상_생성있음",
+        "전실패_이벤트실패_생성없음",
+        "혼합_이벤트정상_생성있음",
+    ],
+)
+def test_후보와_이벤트_결과를_함께_보고_최종_상태를_산출한다(setup, expected_status):
+    run = _make_claimed_run()
+    kwargs = setup(run)
+
+    result = complete_run(run_id=run.pk, lease_token="tok", runner_status="succeeded", **kwargs)
+
+    assert result.status == expected_status
