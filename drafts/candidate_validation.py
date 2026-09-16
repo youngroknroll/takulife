@@ -18,7 +18,9 @@ from drafts.extraction import EmptyExtractionError, extract_event_fields
 from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft, SourceCandidate
 from drafts.robots import RobotsChecker
-from drafts.services import create_draft_from_url
+# create_draft_from_url는 이 모듈에서 더는 부르지 않지만, 옛 이름을 그대로
+# monkeypatch 대상으로 쓰는 기존 테스트가 있어 임포트만 남겨 둔다(rg 확인).
+from drafts.services import create_collected_draft_from_url, create_draft_from_url  # noqa: F401
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
 logger = logging.getLogger(__name__)
@@ -308,7 +310,9 @@ def submit_candidate(*, run_id, lease_token, payload):
             at_creation_cap=created >= INITIAL_DRAFTS_PER_PROMOTED_SOURCE,
             robots_checker=robots_checker,
             stderr=stderr,
-            create_draft=create_draft_from_url,
+            # 승격 직후 만드는 초기 드래프트도 「지금 수집」과 같은 규칙(한글
+            # 없음·지난 문서 제외)을 따라야 하므로 수집 전용 함수를 쓴다.
+            create_draft=create_collected_draft_from_url,
         )
         if outcome.consumed_fetch_budget:
             fetches += 1

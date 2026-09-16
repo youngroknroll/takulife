@@ -16,6 +16,7 @@ from drafts.candidate_validation import (
 from drafts.fetching import FetchError, ResponseTooLargeError, UnsupportedContentTypeError
 from drafts.models import DraftSource, EventDraft, SourceCandidate, SourceDiscoveryRun
 from drafts.robots import ROBOTS_DISALLOWED, RobotsCheckResult
+from drafts.services import DraftCreationExcludedError
 from drafts.url_safety import UnsafeFetchUrlError
 
 
@@ -440,14 +441,15 @@ def test_전_단계를_통과한_후보는_DraftSource로_승격되고_초기_�
 
     calls = []
 
-    def _fake_create_draft_from_url(source_url, source_name=""):
+    def _fake_create_collected_draft_from_url(source_url, source_name="", today=None):
         calls.append((source_url, source_name))
         EventDraft.objects.create(
             source_url=source_url, source_name=source_name, raw_title="스텁"
         )
 
     monkeypatch.setattr(
-        "drafts.candidate_validation.create_draft_from_url", _fake_create_draft_from_url
+        "drafts.candidate_validation.create_collected_draft_from_url",
+        _fake_create_collected_draft_from_url,
     )
 
     candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
@@ -504,14 +506,15 @@ def test_초기_드래프트_생성도_후보_URL별_robots_불허를_건너뛴�
 
     calls = []
 
-    def _fake_create_draft_from_url(source_url, source_name=""):
+    def _fake_create_collected_draft_from_url(source_url, source_name="", today=None):
         calls.append((source_url, source_name))
         EventDraft.objects.create(
             source_url=source_url, source_name=source_name, raw_title="스텁"
         )
 
     monkeypatch.setattr(
-        "drafts.candidate_validation.create_draft_from_url", _fake_create_draft_from_url
+        "drafts.candidate_validation.create_collected_draft_from_url",
+        _fake_create_collected_draft_from_url,
     )
 
     candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
@@ -520,6 +523,50 @@ def test_초기_드래프트_생성도_후보_URL별_robots_불허를_건너뛴�
     assert EventDraft.objects.count() == 1
     assert EventDraft.objects.filter(source_url=listing_url_2).exists()
     assert not any(source_url == listing_url_1 for source_url, _ in calls)
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_승격_시_만드는_초기_드래프트도_수집_규칙을_따른다(monkeypatch):
+    _patch_safe_fetch_url(monkeypatch)
+    _patch_allow_all_robots(monkeypatch)
+    payload = _valid_payload()
+    run = _make_claimed_run()
+
+    listing_url_1 = "https://example.com/notice/1"
+    listing_url_2 = "https://example.com/notice/2"
+    listing_html = (
+        '<html><body>'
+        f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
+        f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
+        "</body></html>"
+    )
+    sample_html = (
+        "<html><head><title>코믹월드 행사</title></head>"
+        "<body><p>2026-09-01 서울 코엑스</p></body></html>"
+    )
+
+    def _fake_fetch_html(url, **kwargs):
+        return sample_html if url == payload["sample_url"] else listing_html
+
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", _fake_fetch_html)
+
+    # 초기 드래프트 생성도 수집 전용 함수를 써야 하므로, 여기서 항상 제외
+    # 예외를 내게 해 승격은 성공하되 드래프트만 안 생기는지 확인한다.
+    def _fake_create_collected_draft_from_url(*, source_url, source_name=""):
+        raise DraftCreationExcludedError("non_korean")
+
+    monkeypatch.setattr(
+        "drafts.candidate_validation.create_collected_draft_from_url",
+        _fake_create_collected_draft_from_url,
+    )
+
+    candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert candidate.status == SourceCandidate.Status.PROMOTED
+    assert candidate.promoted_source is not None
+    assert DraftSource.objects.count() == 1
+    assert EventDraft.objects.count() == 0
 
 
 def _install_promotable_fakes(monkeypatch, payload):
@@ -543,14 +590,15 @@ def _install_promotable_fakes(monkeypatch, payload):
 
     calls = []
 
-    def _fake_create_draft_from_url(source_url, source_name=""):
+    def _fake_create_collected_draft_from_url(source_url, source_name="", today=None):
         calls.append((source_url, source_name))
         EventDraft.objects.create(
             source_url=source_url, source_name=source_name, raw_title="스텁"
         )
 
     monkeypatch.setattr(
-        "drafts.candidate_validation.create_draft_from_url", _fake_create_draft_from_url
+        "drafts.candidate_validation.create_collected_draft_from_url",
+        _fake_create_collected_draft_from_url,
     )
 
     return calls
@@ -845,13 +893,14 @@ def test_승격_저장_트랜잭션이_잠금_아래_재검사로_상한_초과_
 
     monkeypatch.setattr("drafts.candidate_validation.fetch_html", _fake_fetch_html)
 
-    def _fake_create_draft_from_url(source_url, source_name=""):
+    def _fake_create_collected_draft_from_url(source_url, source_name="", today=None):
         EventDraft.objects.create(
             source_url=source_url, source_name=source_name, raw_title="스텁"
         )
 
     monkeypatch.setattr(
-        "drafts.candidate_validation.create_draft_from_url", _fake_create_draft_from_url
+        "drafts.candidate_validation.create_collected_draft_from_url",
+        _fake_create_collected_draft_from_url,
     )
 
     with pytest.raises(CandidateLimitExceededError):
