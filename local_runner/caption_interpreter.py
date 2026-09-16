@@ -86,6 +86,9 @@ official_basis에는 그 판단의 근거가 된, 본문에 실제로 있는 문
 """
 
 
+_ALLOWED_VENUE_COUNTRY = ("kr", "not_kr", "unclear")
+
+
 def _local_precheck(*, interpreted, source_text, vocab):
     """서버가 어차피 같은 어휘·기간 검사를 다시 하므로 이 함수는 서버 재검증을
     대체하지 않는 앞단 필터일 뿐이다. 다만 장소명이 실제로 읽은 원문에 있는지
@@ -113,9 +116,34 @@ def _local_precheck(*, interpreted, source_text, vocab):
     if location_name and location_name not in source_text:
         fields["location_name"] = ""
 
+    # 오타·타입 불일치 등 허용값 밖은 서버가 엉뚱하게 해석하지 않도록 정리한다.
+    if interpreted.get("venue_country") not in _ALLOWED_VENUE_COUNTRY:
+        venue_country = "unclear"
+    else:
+        venue_country = interpreted.get("venue_country")
+
     result = dict(interpreted)
     result["fields"] = fields
+    result["venue_country"] = venue_country
     return result
+
+
+def exclusion_reason(*, interpreted, today):
+    """서버 제출 전 앞단 필터. 해외 개최가 종료 여부보다 우선한다(서버와 같은
+    순서). 날짜를 못 읽으면 판단 근거가 없으므로 제외하지 않는다."""
+    if interpreted.get("venue_country") == "not_kr":
+        return "overseas"
+
+    fields = interpreted.get("fields", {})
+    end_value = fields.get("end_date") or fields.get("start_date")
+    try:
+        end_date = date.fromisoformat(end_value)
+    except (TypeError, ValueError):
+        return None
+
+    if end_date < today:
+        return "ended"
+    return None
 
 
 def should_submit(*, interpreted):
