@@ -50,7 +50,9 @@ from drafts.discovery import extract_candidate_urls
 from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft
 from drafts.robots import RobotsChecker
-from drafts.services import create_draft_from_url
+# create_draft_from_url은 여기서 직접 부르지 않지만 이름 자체를 남겨 둔다(다른
+# 테스트가 이 모듈 경로로 monkeypatch 대상을 잡고 있어서다).
+from drafts.services import create_collected_draft_from_url, create_draft_from_url  # noqa: F401
 
 
 # 여러 소스를 연달아 두드리지 않도록 소스별 목록 요청 사이에 짧게 쉰다. 설정값이
@@ -113,7 +115,8 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             "스킵 - 중복 {duplicate}건, robots 불허 {robots_disallowed}건, "
-            "robots 페치 실패 {robots_fetch_failed}건, 빈 콘텐츠 {empty}건".format(**skipped)
+            "robots 페치 실패 {robots_fetch_failed}건, 빈 콘텐츠 {empty}건, "
+            "한글 없음 {excluded_non_korean}건, 종료됨 {excluded_ended}건".format(**skipped)
         )
         self.stdout.write(f"에러 {stats['errors']}건")
 
@@ -193,7 +196,9 @@ def _process_candidates(candidates_by_source, robots_checker, stderr):
                 at_creation_cap=created_count >= settings.DRAFT_DISCOVERY_MAX_PER_RUN,
                 robots_checker=robots_checker,
                 stderr=stderr,
-                create_draft=create_draft_from_url,
+                # 서버 자동 수집 경로라 한글 유무·종료 여부를 거르는
+                # create_collected_draft_from_url을 쓴다(DF-27).
+                create_draft=create_collected_draft_from_url,
             )
             if outcome.consumed_fetch_budget:
                 fetch_budgets[source.pk] -= 1
@@ -225,5 +230,7 @@ def _summarize(listing_outcomes, candidate_outcomes):
             "robots_disallowed": skip_keys.count("robots_disallowed"),
             "robots_fetch_failed": skip_keys.count("robots_fetch_failed"),
             "empty": skip_keys.count("empty"),
+            "excluded_non_korean": skip_keys.count("excluded_non_korean"),
+            "excluded_ended": skip_keys.count("excluded_ended"),
         },
     }
