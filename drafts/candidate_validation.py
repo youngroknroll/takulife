@@ -48,6 +48,7 @@ FAILURE_MESSAGES = {
     "listing_extraction": "선언된 유형과 선택자로 후보 URL을 추출하지 못했다",
     "sample_canary": "표본 페이지에서 규칙 기반 추출이 빈 결과를 냈다",
     "sample_mismatch": "표본 URL이 목록에서 추출된 후보가 아니다",
+    "not_domestic": "국내 소스로 확정되지 않았다",
 }
 
 
@@ -191,6 +192,11 @@ def submit_candidate(*, run_id, lease_token, payload):
 
     if DraftSource.objects.filter(url=cleaned["url"]).exists():
         return _fail(SourceCandidate.FailureStage.DUPLICATE)
+
+    # 국내가 아니면(불확실 포함) 이후 실행마다 해외 드래프트를 계속 만드니,
+    # 네트워크 검증 전에 미리 막는다 — 이벤트 쪽과 반대 방향의 판정이다.
+    if payload.get("source_country") != "kr":
+        return _fail(SourceCandidate.FailureStage.NOT_DOMESTIC)
 
     try:
         for url in (cleaned["url"], cleaned["sample_url"]):
@@ -354,6 +360,11 @@ def register_account_source(*, run_id, lease_token, payload):
 
     if not cleaned["source_type"]:
         return _fail(SourceCandidate.FailureStage.SCHEMA)
+
+    # 계정형은 원래 비활성으로 등록되므로, 국내가 아니면(불확실 포함)
+    # "비활성으로도" 등록되지 않아야 한다.
+    if payload.get("source_country") != "kr":
+        return _fail(SourceCandidate.FailureStage.NOT_DOMESTIC)
 
     parsed = urlsplit(cleaned["url"])
     hostname = (parsed.hostname or "").lower()

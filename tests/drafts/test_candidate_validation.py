@@ -150,6 +150,46 @@ def test_에이전트_소스_후보의_instagram_유형은_schema_단계에서_�
     assert DraftSource.objects.count() == 0
 
 
+def _payload_국내가_아님(source_country):
+    def _make():
+        payload = _valid_payload()
+        if source_country is None:
+            del payload["source_country"]
+        else:
+            payload["source_country"] = source_country
+        return payload
+
+    return _make
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "make_payload",
+    [
+        _payload_국내가_아님("not_kr"),
+        _payload_국내가_아님("unclear"),
+        _payload_국내가_아님(None),
+        _payload_국내가_아님("jp"),
+    ],
+    ids=["not_kr", "unclear", "키_없음", "어휘_밖"],
+)
+def test_국내가_아닌_목록형_소스_후보는_등록되지_않는다(monkeypatch, fail_if_called, make_payload):
+    # D6: 소스는 국내로 확정된 경우에만 받는다 — 불확실하면 이후 실행마다
+    # 해외 드래프트를 계속 만들 위험이 있어 이벤트와 반대로 제외한다.
+    monkeypatch.setattr("drafts.candidate_validation.validate_fetch_url", fail_if_called)
+    monkeypatch.setattr("drafts.candidate_validation.RobotsChecker", fail_if_called)
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", fail_if_called)
+    run = _make_claimed_run()
+    payload = make_payload()
+
+    candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert candidate.status == SourceCandidate.Status.FAILED
+    assert candidate.failure_stage == "not_domestic"
+    assert DraftSource.objects.count() == 0
+
+
 @pytest.mark.django_db
 @pytest.mark.domain
 def test_기존_DraftSource와_중복된_URL_후보는_duplicate_단계_실패로_격리된다():
@@ -963,6 +1003,48 @@ def _case_정규화_후_중복():
         "expected_source_count": 1,
         "expected_source_url": None,
     }
+
+
+def _account_payload_국내가_아님(source_country):
+    def _make():
+        payload = _account_payload(
+            source_type="instagram",
+            url="https://www.instagram.com/hatsune_miku_official/",
+        )
+        if source_country is None:
+            del payload["source_country"]
+        else:
+            payload["source_country"] = source_country
+        return payload
+
+    return _make
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "make_payload",
+    [
+        _account_payload_국내가_아님("not_kr"),
+        _account_payload_국내가_아님("unclear"),
+        _account_payload_국내가_아님(None),
+        _account_payload_국내가_아님("jp"),
+    ],
+    ids=["not_kr", "unclear", "키_없음", "어휘_밖"],
+)
+def test_국내가_아닌_계정형_소스_후보는_등록되지_않는다(monkeypatch, fail_if_called, make_payload):
+    # 계정형은 원래 비활성으로 등록되므로, 국내가 아니면 "비활성으로도"
+    # 등록되지 않는다는 점이 핵심이다.
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", fail_if_called)
+    monkeypatch.setattr("drafts.candidate_validation.RobotsChecker", fail_if_called)
+    run = _make_claimed_run()
+    payload = make_payload()
+
+    candidate = register_account_source(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert candidate.status == SourceCandidate.Status.FAILED
+    assert candidate.failure_stage == "not_domestic"
+    assert DraftSource.objects.count() == 0
 
 
 @pytest.mark.django_db

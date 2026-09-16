@@ -164,6 +164,7 @@ class SourceCandidate(models.Model):
         LISTING_EXTRACTION = "listing_extraction", "Listing extraction"
         SAMPLE_CANARY = "sample_canary", "Sample canary"
         SAMPLE_MISMATCH = "sample_mismatch", "Sample mismatch"
+        NOT_DOMESTIC = "not_domestic", "Not domestic"
 
     run = models.ForeignKey(
         SourceDiscoveryRun, on_delete=models.CASCADE, related_name="candidates"
