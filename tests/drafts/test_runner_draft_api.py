@@ -178,6 +178,25 @@ def test_이벤트_제출은_생성_중복_스키마_위반_상한_초과_불안
             assert body[key] == value
 
 
+def test_지난_행사_제출은_오류가_아니라_제외로_응답한다(client, runner_headers, monkeypatch):
+    _neutralize_server_recheck(monkeypatch)
+    run = _make_claimed_run()
+    event = _valid_event_payload("https://official-site.example.com/ended-event")
+    ended_date = (_TODAY - timedelta(days=1)).isoformat()
+    event["fields"]["start_date"] = ended_date
+    event["fields"]["end_date"] = ended_date
+
+    response = _post_event(client, runner_headers, run, event)
+
+    # 러너는 4xx를 실패로 세어 실행 상태를 실패로 뒤집으므로, 정책상
+    # 정상 처리인 제외는 200으로 응답해야 한다.
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "excluded"
+    assert body["reason"] == "ended"
+    assert not EventDraft.objects.filter(source_url=event["source_url"]).exists()
+
+
 def test_알려진_URL_필터는_드래프트가_없는_URL만_돌려준다(client, runner_headers, make_draft):
     url_a = "https://a.example.com/event"
     url_b = "https://b.example.com/event"

@@ -16,6 +16,7 @@ from core.categories import category_slugs
 from core.errors import error_response
 from core.vocab import REGION
 from drafts.agent_drafts import (
+    AgentDraftExcludedError,
     AgentDraftSchemaError,
     EventLimitExceededError,
     submit_agent_draft,
@@ -209,6 +210,10 @@ class RunnerEventDraftSubmitView(_RunnerAPIView):
             return error_response("invalid event submission payload", status.HTTP_400_BAD_REQUEST)
         except (InvalidFetchUrlError, UnsafeFetchUrlError):
             return error_response("unsafe URL is not allowed", status.HTTP_400_BAD_REQUEST)
+        except AgentDraftExcludedError as exc:
+            # 정책상 제외는 오류가 아니라 정상 처리 결과다 — 4xx로 응답하면
+            # 러너가 실패로 세어 실행 상태가 뒤집힌다.
+            return Response({"status": "excluded", "reason": exc.reason})
 
         if created:
             return Response(
