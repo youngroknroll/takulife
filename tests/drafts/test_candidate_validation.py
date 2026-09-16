@@ -75,6 +75,8 @@ def _valid_payload():
         "sample_url": "https://example.com/notice/1",
         "official_basis": "공식 도메인",
         "note": "메모",
+        # 국내 수집처가 기본 정상 경로이므로 kr을 기본값으로 둔다
+        "source_country": "kr",
     }
 
 
@@ -884,6 +886,8 @@ def _account_payload(*, source_type, url, name="하츠네 미쿠 공식"):
         "source_type": source_type,
         "official_basis": "공식 계정",
         "note": "",
+        # 국내 수집처가 기본 정상 경로이므로 kr을 기본값으로 둔다
+        "source_country": "kr",
     }
 
 
