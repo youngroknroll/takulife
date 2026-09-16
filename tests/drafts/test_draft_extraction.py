@@ -7,6 +7,7 @@ from drafts.extraction import (
     EmptyExtractionError,
     extract_event_fields,
     extract_event_fields_heuristic,
+    latest_mentioned_date,
     parse_raw_fields,
 )
 
@@ -145,6 +146,13 @@ class TestParseRawFields:
     def test_제목과_본문이_모두_없으면_parse_raw_fields도_EmptyExtractionError를_발생시킨다(self):
         with pytest.raises(EmptyExtractionError):
             parse_raw_fields("<html><head></head><body></body></html>")
+
+
+class TestLatestMentionedDate:
+    def test_본문에_날짜가_여러_개_있으면_가장_늦은_날짜를_반환한다(self):
+        # 이른 날짜를 앞에 두어, 첫 번째 날짜를 그대로 반환하는 구현이면 실패하게 한다.
+        text = "행사 기간 2026-09-10 부터 연장되어 2026-09-20 까지 진행"
+        assert latest_mentioned_date(text) == date(2026, 9, 20)
 
 
 class TestRegionDetection:

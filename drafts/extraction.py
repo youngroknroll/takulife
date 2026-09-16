@@ -32,6 +32,12 @@ def _parse_date_candidates(text):
     return dates
 
 
+def latest_mentioned_date(text):
+    # 시작·종료일에는 게시일 등 잡음이 섞이므로 가장 늦은 날짜만 신뢰한다.
+    dates = _parse_date_candidates(text)
+    return max(dates) if dates else None
+
+
 def _detect_category(text):
     lowered = text.lower()
     if "popup" in lowered or "pop-up" in lowered:
