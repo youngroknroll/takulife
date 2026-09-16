@@ -10,6 +10,8 @@ class EmptyExtractionError(Exception):
 
 
 DATE_PATTERN = re.compile(r"(20\d{2})[./-](\d{1,2})[./-](\d{1,2})")
+# 완성형 음절(가-힣)과 자모(ㄱ-ㅎ, ㅏ-ㅣ)를 모두 한글로 본다.
+HANGUL_PATTERN = re.compile(r"[가-힣ㄱ-ㅎㅏ-ㅣ]")
 
 
 def normalize_whitespace(text):
@@ -36,6 +38,12 @@ def latest_mentioned_date(text):
     # 시작·종료일에는 게시일 등 잡음이 섞이므로 가장 늦은 날짜만 신뢰한다.
     dates = _parse_date_candidates(text)
     return max(dates) if dates else None
+
+
+def contains_hangul(text):
+    if not isinstance(text, str):
+        return False
+    return bool(HANGUL_PATTERN.search(text))
 
 
 def _detect_category(text):

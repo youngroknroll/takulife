@@ -5,6 +5,7 @@ import pytest
 
 from drafts.extraction import (
     EmptyExtractionError,
+    contains_hangul,
     extract_event_fields,
     extract_event_fields_heuristic,
     latest_mentioned_date,
@@ -153,6 +154,24 @@ class TestLatestMentionedDate:
         # 이른 날짜를 앞에 두어, 첫 번째 날짜를 그대로 반환하는 구현이면 실패하게 한다.
         text = "행사 기간 2026-09-10 부터 연장되어 2026-09-20 까지 진행"
         assert latest_mentioned_date(text) == date(2026, 9, 20)
+
+
+class TestContainsHangul:
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("코믹월드 광복전 안내", True),
+            ("初音ミク公式ブログ", False),
+            ("Hatsune Miku Collab Events", False),
+            ("2026 코믹월드 in Seoul!!", True),
+            ("", False),
+            # 자모만 있어도 한글 문자 범위에 속하므로 한국어로 판정한다.
+            ("ㄱㄴㄷ", True),
+        ],
+        ids=["한국어", "일본어", "영어", "섞임", "빈_문자열", "한글_자모"],
+    )
+    def test_제목과_본문에_한글이_있는지_판정한다(self, text, expected):
+        assert contains_hangul(text) == expected
 
 
 class TestRegionDetection:
