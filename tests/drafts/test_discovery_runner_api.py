@@ -334,7 +334,7 @@ def test_완료_요청이_보낸_제외_건수가_실행에_저장된다(client,
 
 
 @pytest.mark.parametrize("bad_value", ["오", None, True, ["오"]], ids=["문자열", "None", "불리언", "리스트"])
-@pytest.mark.parametrize("field", ["events_attempted", "events_failed"])
+@pytest.mark.parametrize("field", ["events_attempted", "events_failed", "events_excluded"])
 def test_완료_요청의_건수가_정수가_아니면_400으로_거부한다(client, runner_headers, field, bad_value):
     run = _make_claimed_run()
 

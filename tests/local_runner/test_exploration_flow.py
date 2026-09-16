@@ -1,5 +1,7 @@
 """local_runner.exploration_flow — 탐색 출력의 events·sources 분리 파싱과
 상한 절단을 검증한다."""
+from datetime import datetime, timezone
+
 import httpx
 import pytest
 
@@ -577,6 +579,46 @@ def test_해외이거나_지난_행사로_판정되면_제출하지_않고_제�
     def fake_interpret(*, text, url, platform):
         result = _interpreted_result()
         result["venue_country"] = "not_kr"
+        return result
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert client.submit_event_calls == []
+    assert summary["events_excluded"] == 1
+    assert summary["events_failed"] == 0
+
+
+def test_자정_직후에도_러너의_오늘은_UTC가_아니라_KST_날짜로_종료를_판정한다(monkeypatch):
+    """UTC 2026-01-01 15:30은 KST로 2026-01-02 00:30이라 두 시간대의 오늘 날짜가
+    갈린다 — end_date가 2026-01-01이면 KST 기준으로만 지난 행사다."""
+
+    class _FrozenDatetime:
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 1, 1, 15, 30, tzinfo=timezone.utc).astimezone(tz)
+
+    monkeypatch.setattr("local_runner.exploration_flow.datetime", _FrozenDatetime)
+
+    events = [{"url": "https://example.com/event-1", "platform": "web"}]
+
+    def fake_fetch_text(*, url):
+        return "원문 텍스트"
+
+    def fake_interpret(*, text, url, platform):
+        result = _interpreted_result()
+        result["venue_country"] = "kr"
+        result["fields"]["start_date"] = "2026-01-01"
+        result["fields"]["end_date"] = "2026-01-01"
         return result
 
     client = _FakeClient()
