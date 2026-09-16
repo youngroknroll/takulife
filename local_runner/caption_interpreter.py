@@ -54,6 +54,14 @@ category·region은 위 목록의 값만 쓸 수 있다. 목록 밖 값을 지�
 official_basis에는 그 판단의 근거가 된, 본문에 실제로 있는 문구를 그대로
 인용하라(추측 금지, <=200자).
 
+개최지 판정 기준(venue_country, 셋 중 하나만 고른다):
+- kr: 행사가 실제로 열리는(열렸던) 장소가 대한민국
+- not_kr: 행사가 실제로 열리는(열렸던) 장소가 대한민국이 아님
+- unclear: 확인 신호 없음
+본문이 어느 언어로 쓰였는지는 판정과 무관하다. 한국어 공지라도 개최지가
+해외면 not_kr이다. 본문에 실제로 있는 도시·국가·지점명 같은 신호로만
+판정하고, 그런 신호가 없으면 추측하지 말고 unclear로 두라.
+
 추측하지 마라. 본문에 없는 값은 비워 두고 그 사유를 note에 남겨라.
 
 출력은 다른 텍스트 없이 다음 형태의 JSON 객체 하나만 출력하라:
@@ -61,6 +69,7 @@ official_basis에는 그 판단의 근거가 된, 본문에 실제로 있는 문
   "is_event": true|false,
   "judgment": "official"|"unofficial"|"unclear",
   "official_basis": "본문 인용 (<=200자)",
+  "venue_country": "kr"|"not_kr"|"unclear",
   "fields": {{
     "title": "<=255자",
     "work_title": "<=255자",

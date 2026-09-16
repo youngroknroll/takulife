@@ -57,6 +57,34 @@ def test_캡션_해석_프롬프트는_어휘_목록_오늘_날짜_최근_드래
     assert "<caption>캡션 원문입니다.</caption>" in prompt
 
 
+def test_해석_프롬프트는_개최지_판정_지시와_출력_필드를_포함한다():
+    """DF-13: 러너 제출 payload 최상위 venue_country를 서버가 이미 소비하므로
+    (kr 아니면 not_kr일 때만 제외), 해석 프롬프트가 그 값을 실제로 만들도록
+    지시와 출력 스키마를 갖춰야 한다."""
+    vocab = {"categories": ["popup_store"], "regions": ["seoul"]}
+    recent_drafts = []
+
+    prompt = build_interpretation_prompt(
+        vocab=vocab,
+        today="2026-09-11",
+        recent_drafts=recent_drafts,
+        text="캡션 원문입니다.",
+        platform="instagram",
+    )
+
+    # (1) 출력 스키마 최상위 필드와 허용값 3종
+    assert "venue_country" in prompt
+    assert "kr" in prompt
+    assert "not_kr" in prompt
+    assert "unclear" in prompt
+
+    # (2) 본문 언어와 무관하게 실제 개최지로 판정하라는 지시
+    assert "언어" in prompt
+
+    # (3) 신호가 없으면 unclear로 두고 추측하지 말라는 지시
+    assert "신호" in prompt
+
+
 def test_해석_JSON의_어휘_밖_값과_역전된_기간과_원문에_없는_텍스트는_로컬_선검사에서_비워진다():
     """서버가 어차피 같은 어휘·기간 검사를 다시 하지만, 러너가 먼저 걸러내면
     검수 화면에 정정 사유가 애초에 덜 남아 큐가 깨끗해진다(서버 재검증을
