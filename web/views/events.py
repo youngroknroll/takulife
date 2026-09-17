@@ -58,9 +58,10 @@ from ._helpers import (
 
 logger = logging.getLogger(__name__)
 
-# 홈 달력 칸의 점·선택일 아젠다 행 최대 개수(디자인 핸드오프 기준).
+# 홈 달력 칸의 점 최대 개수(디자인 핸드오프 기준).
 HOME_CALENDAR_DOT_LIMIT = 4
-HOME_CALENDAR_AGENDA_LIMIT = 5
+# 아젠다 행은 달력 아래 여백을 줄이려 3건으로 둔다.
+HOME_CALENDAR_AGENDA_LIMIT = 3
 
 
 def _dedupe_category_slugs(slugs, *, limit):

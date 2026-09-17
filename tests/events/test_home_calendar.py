@@ -226,10 +226,10 @@ def test_초안_행사는_홈_달력에_나타나지_않는다(make_draft_event)
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ("event_count", "expected_rows"),
-    [(6, 5), (0, 0)],
-    ids=["여섯_건_상한", "행사_없음"],
+    [(4, 3), (0, 0)],
+    ids=["네_건_상한", "행사_없음"],
 )
-def test_선택한_날짜의_행사는_최대_다섯_건까지_담기고_전체_건수는_따로_담긴다(
+def test_선택한_날짜의_행사는_최대_세_건까지_담기고_전체_건수는_따로_담긴다(
     make_event, event_count, expected_rows
 ):
     today = date(2026, 9, 16)
