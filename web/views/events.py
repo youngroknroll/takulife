@@ -29,6 +29,7 @@ from core.models import HomeConfig
 from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
+    CATEGORY,
     CATEGORY_LABELS,
     EVENT_SORT,
     EVENT_SORT_LABELS,
@@ -57,6 +58,22 @@ from ._helpers import (
 
 logger = logging.getLogger(__name__)
 
+# 홈 달력 칸의 점·선택일 아젠다 행 최대 개수(디자인 핸드오프 기준).
+HOME_CALENDAR_DOT_LIMIT = 4
+HOME_CALENDAR_AGENDA_LIMIT = 5
+
+
+def _dedupe_category_slugs(slugs, *, limit):
+    """등장 순서대로 중복·빈 값을 빼고 최대 limit개만 남긴다."""
+    seen = []
+    for slug in slugs:
+        if not slug or slug in seen:
+            continue
+        seen.append(slug)
+        if len(seen) == limit:
+            break
+    return seen
+
 
 def _events_by_date(events):
     """행사별 시작일~종료일(없으면 시작일 하루)을 날짜별 목록으로 펼친다."""
@@ -68,6 +85,27 @@ def _events_by_date(events):
             events_by_date[day].append(event)
             day += timedelta(days=1)
     return events_by_date
+
+
+def _home_calendar_weeks(grid, events_by_date, *, today, selected_date):
+    """달력 그리드 칸에 오늘·선택·건수·카테고리 표시값을 붙인다."""
+    return [
+        [
+            {
+                "date": cell.date,
+                "in_month": cell.in_month,
+                "today": cell.date == today,
+                "selected": cell.date == selected_date,
+                "count": len(events_by_date.get(cell.date, [])),
+                "categories": _dedupe_category_slugs(
+                    [event.category for event in events_by_date.get(cell.date, [])],
+                    limit=HOME_CALENDAR_DOT_LIMIT,
+                ),
+            }
+            for cell in week
+        ]
+        for week in grid
+    ]
 
 
 def _home_calendar_context(raw_month, raw_date, *, today):
@@ -88,24 +126,18 @@ def _home_calendar_context(raw_month, raw_date, *, today):
     events_by_date = _events_by_date(events)
 
     grid = month_grid(year, month)
-    weeks = [
-        [
-            {
-                "date": cell.date,
-                "in_month": cell.in_month,
-                "today": cell.date == today,
-                "selected": cell.date == selected_date,
-                "count": len(events_by_date.get(cell.date, [])),
-                "categories": [
-                    event.category for event in events_by_date.get(cell.date, [])
-                ],
-            }
-            for cell in week
-        ]
-        for week in grid
-    ]
+    weeks = _home_calendar_weeks(
+        grid, events_by_date, today=today, selected_date=selected_date
+    )
     prev_year, prev_month = _adjacent_month(year, month, -1)
     next_year, next_month = _adjacent_month(year, month, 1)
+    selected_events = events_by_date.get(selected_date, [])
+    month_categories = {event.category for event in events if event.category}
+    legend = [
+        {"slug": slug, "label": label}
+        for slug, label in CATEGORY
+        if slug in month_categories
+    ]
     return {
         "year": year,
         "month": month,
@@ -114,6 +146,12 @@ def _home_calendar_context(raw_month, raw_date, *, today):
         "next_month": f"{next_year:04d}-{next_month:02d}",
         "selected_date": selected_date,
         "selected_is_today": selected_date == today,
+        "selected_count": len(selected_events),
+        # 찜·방문 등 사용자별 상태는 쓰지 않아 user를 넘기지 않는다(조회 2건 회피).
+        "selected_rows": _attach_display(
+            selected_events[:HOME_CALENDAR_AGENDA_LIMIT], today=today
+        ),
+        "legend": legend,
         "weeks": weeks,
     }
 
