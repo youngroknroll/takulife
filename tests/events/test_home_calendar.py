@@ -220,6 +220,7 @@ def test_초안_행사는_홈_달력에_나타나지_않는다(make_draft_event)
     cell = cells[date(2026, 9, 16)]
     assert cell["count"] == 0
     assert cell["categories"] == []
+    assert calendar["selected_rows"] == []
 
 
 @pytest.mark.django_db
@@ -336,3 +337,50 @@ def test_홈_응답의_모두_보기_링크는_선택한_날짜를_담는다(mak
         _find_href(body, f"이 날짜의 이벤트 {event_count}개 모두 보기 ›")
         == expected_href
     )
+
+
+@pytest.mark.django_db
+def test_이번_달_밖_채움_칸에는_행사_건수와_카테고리를_담지_않는다(make_event):
+    today = date(2026, 9, 16)
+    make_event(
+        title="월말 걸친 팝업",
+        category="popup_store",
+        start_date=date(2026, 8, 28),
+        end_date=date(2026, 9, 3),
+    )
+    with patch("web.views.events.timezone.localdate", return_value=today):
+        resp = Client().get("/")
+
+    calendar = resp.context["home_calendar"]
+    cells = {day["date"]: day for week in calendar["weeks"] for day in week}
+    assert cells[date(2026, 8, 31)]["in_month"] is False
+    assert cells[date(2026, 8, 31)]["count"] == 0
+    assert cells[date(2026, 8, 31)]["categories"] == []
+    assert cells[date(2026, 9, 1)]["count"] == 1
+
+
+@pytest.mark.django_db
+def test_카테고리가_없는_행사는_건수와_아젠다에는_남고_점과_범례에서는_빠진다(make_event):
+    today = date(2026, 9, 16)
+    make_event(
+        title="미분류 행사",
+        category="",
+        start_date=date(2026, 9, 16),
+        end_date=date(2026, 9, 16),
+    )
+    with patch("web.views.events.timezone.localdate", return_value=today):
+        resp = Client().get("/")
+
+    calendar = resp.context["home_calendar"]
+    cells = {
+        day["date"]: day
+        for week in calendar["weeks"]
+        for day in week
+        if day["in_month"]
+    }
+    cell = cells[date(2026, 9, 16)]
+    assert cell["count"] == 1
+    assert cell["categories"] == []
+    assert calendar["selected_count"] == 1
+    assert [row["event"].title for row in calendar["selected_rows"]] == ["미분류 행사"]
+    assert calendar["legend"] == []

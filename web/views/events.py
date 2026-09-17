@@ -87,21 +87,29 @@ def _events_by_date(events):
     return events_by_date
 
 
+def _home_calendar_cell(cell, events_by_date, *, today, selected_date):
+    """달력 칸 하나에 오늘·선택·건수·카테고리 표시값을 붙인다.
+
+    채움 칸은 표시 달과 겹치는 행사만 알고 있어 표시하지 않는다.
+    """
+    cell_events = events_by_date.get(cell.date, []) if cell.in_month else []
+    return {
+        "date": cell.date,
+        "in_month": cell.in_month,
+        "today": cell.date == today,
+        "selected": cell.date == selected_date,
+        "count": len(cell_events),
+        "categories": _dedupe_category_slugs(
+            [event.category for event in cell_events], limit=HOME_CALENDAR_DOT_LIMIT
+        ),
+    }
+
+
 def _home_calendar_weeks(grid, events_by_date, *, today, selected_date):
     """달력 그리드 칸에 오늘·선택·건수·카테고리 표시값을 붙인다."""
     return [
         [
-            {
-                "date": cell.date,
-                "in_month": cell.in_month,
-                "today": cell.date == today,
-                "selected": cell.date == selected_date,
-                "count": len(events_by_date.get(cell.date, [])),
-                "categories": _dedupe_category_slugs(
-                    [event.category for event in events_by_date.get(cell.date, [])],
-                    limit=HOME_CALENDAR_DOT_LIMIT,
-                ),
-            }
+            _home_calendar_cell(cell, events_by_date, today=today, selected_date=selected_date)
             for cell in week
         ]
         for week in grid
