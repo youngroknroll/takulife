@@ -11,8 +11,9 @@
 
 ## Current fact
 
-- 위치: 홈 히어로 `</section>` 다음, `_home_collection_snapshot.html` include
-  바로 앞 [코드 `templates/core/home.html:110`].
+- 위치: 히어로 다음, 로그인 사용자는 `_home_collection_snapshot.html` 다음
+  (스냅샷이 먼저), 비로그인은 스냅샷이 렌더되지 않아 히어로 바로 다음
+  [코드 `templates/core/home.html:111,113`].
 - 파일: 파셜 1개(`_home_event_calendar.html`), CSS 1개(`home_calendar.css`),
   뷰 헬퍼(`_home_calendar_context`·`_events_by_date`·`_dedupe_category_slugs`,
   `web/views/events.py` 모듈-비공개).
@@ -45,6 +46,8 @@
 - 아젠다 행의 tone·날짜·장소 분기는 새로 만들지 않고 기존 템플릿의 분기를
   문자 그대로 복제한다(`_event_compact_row.html`의 status_slug 5분기,
   `events/calendar.html`의 날짜·장소 4분기).
+- 로그인 사용자는 컬렉션 현황을 먼저 봐야 한다는 사용자 지시(2026-09-17)로
+  스냅샷을 달력 위에 둔다.
 
 ## Guardrail
 
