@@ -210,6 +210,11 @@
   background: var(--cat-fan_meeting-ink);
 }
 
+.day-item-cat[data-category="concert"],
+.day-mobile-dot[data-category="concert"] {
+  background: var(--cat-concert-ink);
+}
+
 /* flex 컨텍스트가 없으면 3px 막대는 인라인 박스라 width가 적용 안 돼
    색은 맞는데 너비가 0으로 사라진다. */
 .day-item {
@@ -252,6 +257,11 @@
 /* ── selected-date agenda (flat rows, no ticket-stub card) ──────── */
 .date-detail-section {
   margin-top: 1.25rem;
+  scroll-margin-top: calc(var(--site-header-h) + 1rem);
+}
+
+.date-detail-section:focus {
+  outline: none; /* 날짜 이동 후 포커스가 오는 지점일 뿐, 직접 탭하는 컨트롤이 아니다. */
 }
 
 .date-detail-head {
@@ -317,6 +327,10 @@
 
 .agenda-row[data-cat="fan_meeting"] {
   --row-cat-ink: var(--cat-fan_meeting-ink);
+}
+
+.agenda-row[data-cat="concert"] {
+  --row-cat-ink: var(--cat-concert-ink);
 }
 
 .agenda-bar {

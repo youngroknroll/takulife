@@ -149,7 +149,7 @@
 
         {% include "core/partials/_calendar_grid.html" with weeks=weeks extra_query=extra_query %}
 
-        <section class="date-detail-section" id="selected-date">
+        <section class="date-detail-section" id="selected-date" tabindex="-1">
           <div class="date-detail-head">
             <h2>{{ selected_date|date:"n월 j일" }} <span class="date-detail-weekday">{{ selected_date|date:"l" }}</span></h2>
             {% if selected_events %}<span class="date-detail-count">이벤트 {{ selected_events|length }}건</span>{% endif %}
