@@ -58,6 +58,58 @@ from ._helpers import (
 logger = logging.getLogger(__name__)
 
 
+def _home_calendar_context(raw_month, raw_date, *, today):
+    """홈 이벤트 달력 섹션 컨텍스트를 만든다."""
+    year, month, calendar_error = _parse_calendar_month(raw_month, today=today)
+    selected_date = None
+    if calendar_error is None:
+        selected_date, calendar_error = _parse_calendar_date(
+            raw_date, year=year, month=month, today=today
+        )
+
+    # 홈은 달력 전용 화면이 아니라 잘못된 값은 알리지 않고 이번 달로 돌아간다.
+    if calendar_error:
+        year, month = today.year, today.month
+        selected_date = today
+
+    events = list(list_published_events_for_month({}, year=year, month=month, today=today))
+    events_by_date = defaultdict(list)
+    for event in events:
+        day = event.start_date
+        end = event.end_date or event.start_date
+        while day <= end:
+            events_by_date[day].append(event)
+            day += timedelta(days=1)
+
+    grid = month_grid(year, month)
+    weeks = [
+        [
+            {
+                "date": cell.date,
+                "in_month": cell.in_month,
+                "today": cell.date == today,
+                "selected": cell.date == selected_date,
+                "count": len(events_by_date[cell.date]),
+                "categories": [event.category for event in events_by_date[cell.date]],
+            }
+            for cell in week
+        ]
+        for week in grid
+    ]
+    prev_year, prev_month = _adjacent_month(year, month, -1)
+    next_year, next_month = _adjacent_month(year, month, 1)
+    return {
+        "year": year,
+        "month": month,
+        "month_param": f"{year:04d}-{month:02d}",
+        "prev_month": f"{prev_year:04d}-{prev_month:02d}",
+        "next_month": f"{next_year:04d}-{next_month:02d}",
+        "selected_date": selected_date,
+        "selected_is_today": selected_date == today,
+        "weeks": weeks,
+    }
+
+
 def home(request):
     today = timezone.localdate()
     ongoing_qs = list_published_events({"status": "ongoing"}, today=today)
@@ -94,6 +146,9 @@ def home(request):
         "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
         "category_tiles": category_tiles,
         "featured_event_rows": featured_event_rows,
+        "home_calendar": _home_calendar_context(
+            request.GET.get("month"), request.GET.get("date"), today=today
+        ),
         "json_ld_script": _json_ld_script(
             build_website_json_ld(request.build_absolute_uri("/"))
         ),
