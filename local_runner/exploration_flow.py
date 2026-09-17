@@ -3,11 +3,22 @@ sources 분리·상한 절단 순수 함수와, 제출 중 임대 상실(409)을
 알리는 run_exploration_flow가 있다."""
 import functools
 import logging
+from datetime import datetime
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+# 해외·지난 행사 판정, 해석 프롬프트의 "오늘" 모두 이 기준으로 통일한다 —
+# 서버·러너가 같은 날짜에서 어긋나지 않게 하려는 것이다.
+_KST = ZoneInfo("Asia/Seoul")
+
+
+def _today_kst():
+    return datetime.now(_KST).date()
+
 
 # 서버의 실행당 이벤트 상한(drafts.agent_drafts.MAX_EVENTS_PER_RUN)과 같은 값이다.
 EXPLORATION_MAX_EVENTS = 20
@@ -47,8 +58,6 @@ def _default_interpret(*, text, url, platform, vocab):
     # recent_drafts는 claim 응답에 실려 오지 않아 빈 목록으로 둔다(보고 대상 —
     # 지어내지 않는다). vocab만은 호출자가 claim 응답에서 꺼내 반드시 넘긴다 —
     # 비워 두면 로컬 선검사가 모든 카테고리·지역을 지워 버린다.
-    from datetime import date
-
     from local_runner.caption_interpreter import (
         _local_precheck,
         build_interpretation_prompt,
@@ -57,7 +66,7 @@ def _default_interpret(*, text, url, platform, vocab):
 
     prompt = build_interpretation_prompt(
         vocab=vocab,
-        today=date.today().isoformat(),
+        today=_today_kst().isoformat(),
         recent_drafts=[],
         text=text,
         platform=platform,
@@ -74,15 +83,19 @@ def run_exploration_flow(
     if interpret is None:
         interpret = functools.partial(_default_interpret, vocab=vocab)
 
-    from local_runner.caption_interpreter import should_submit
+    from local_runner.caption_interpreter import exclusion_reason, should_submit
     from local_runner.claude_code_adapter import AdapterOutputError
     from local_runner.page_fetch import BlockedResponseError
 
     urls = [event["url"] for event in events]
     unknown_urls = set(client.known_urls(urls=urls))
 
+    today = _today_kst()
     events_attempted = 0
     events_failed = 0
+    # 제외는 실패가 아니다 — 제출 자체를 만류하거나(해외·지난 행사) 서버가
+    # 뒤늦게 제외 판정한 정상 흐름이라 별도 칸으로 센다.
+    events_excluded = 0
     # 차단 응답은 명확한 신호다 — 같은 호스트를 계속 두드릴 이유가 없어
     # 첫 차단이 나는 즉시 그 호스트를 실행 내내 건너뛴다.
     blocked_hosts = set()
@@ -140,6 +153,10 @@ def run_exploration_flow(
         if not should_submit(interpreted=interpreted):
             continue
 
+        if exclusion_reason(interpreted=interpreted, today=today) is not None:
+            events_excluded += 1
+            continue
+
         # 탐색이 준 platform이 해석 결과에 없으면 채운다 — judgment·official_basis는
         # 해석이 이미 낸 값을 그대로 둔다.
         payload = dict(interpreted)
@@ -153,7 +170,7 @@ def run_exploration_flow(
         # source_name을 이미 정상 상태로 다룬다).
         payload.setdefault("source_name", "")
         try:
-            client.submit_event(run_id=run_id, lease_token=lease_token, event=payload)
+            response = client.submit_event(run_id=run_id, lease_token=lease_token, event=payload)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 409:
                 raise LeaseLostError("event submit returned 409") from exc
@@ -162,7 +179,15 @@ def run_exploration_flow(
             events_failed += 1
             continue
 
+        if isinstance(response, dict) and response.get("status") == "excluded":
+            # 앞단 필터를 통과했어도 서버가 뒤늦게 제외 판정할 수 있다.
+            events_excluded += 1
+
     for source in sources:
+        # 국가가 확정된 국내(kr)가 아니면 제출하지 않는다 — 키 자체가 없거나
+        # 불확실해도 제외하라는 결정이라 정규화 없이 서버와 같은 규칙을 쓴다.
+        if source.get("source_country") != "kr":
+            continue
         # 목록형·계정형 구분은 서버 몫이다 — 그대로 넘긴다.
         try:
             client.submit_candidate(run_id=run_id, lease_token=lease_token, candidate=source)
@@ -174,4 +199,8 @@ def run_exploration_flow(
             )
             continue
 
-    return {"events_attempted": events_attempted, "events_failed": events_failed}
+    return {
+        "events_attempted": events_attempted,
+        "events_failed": events_failed,
+        "events_excluded": events_excluded,
+    }

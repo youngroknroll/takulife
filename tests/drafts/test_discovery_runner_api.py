@@ -281,6 +281,80 @@ def test_complete는_실행_상태를_저장하고_잘못된_값은_거부한다
     assert not_found_response.status_code == 404
 
 
+def test_완료_요청이_보낸_시도_실패_건수가_실행에_그대로_저장된다(client, runner_headers):
+    run = _make_claimed_run()
+    SourceCandidate.objects.create(
+        run=run,
+        name="후보",
+        url="https://example.com/n1",
+        source_type="html",
+        sample_url="https://example.com/n1/sample",
+        status=SourceCandidate.Status.PROMOTED,
+    )
+
+    # 러너가 보낸 시도·실패 건수가 0이 아닌 값으로 그대로 저장되어야 한다.
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "events_attempted": 5,
+            "events_failed": 2,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.events_attempted == 5
+    assert run.events_failed == 2
+
+
+def test_완료_요청이_보낸_제외_건수가_실행에_저장된다(client, runner_headers):
+    run = _make_claimed_run()
+
+    # 러너가 정책상 정상 제외한 건수도 실행에 저장되어야 한다.
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "events_attempted": 5,
+            "events_failed": 2,
+            "events_excluded": 3,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.events_excluded == 3
+
+
+@pytest.mark.parametrize("bad_value", ["오", None, True, ["오"]], ids=["문자열", "None", "불리언", "리스트"])
+@pytest.mark.parametrize("field", ["events_attempted", "events_failed", "events_excluded"])
+def test_완료_요청의_건수가_정수가_아니면_400으로_거부한다(client, runner_headers, field, bad_value):
+    run = _make_claimed_run()
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            field: bad_value,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 400
+    run.refresh_from_db()
+    assert run.status == SourceDiscoveryRun.Status.CLAIMED
+    assert run.finished_at is None
+
+
 def test_discovery_runner_스로틀_scope가_등록되어_있다(settings):
     rate = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["discovery_runner"]
 

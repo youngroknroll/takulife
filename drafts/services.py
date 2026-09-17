@@ -15,7 +15,13 @@ from events.services import (
     create_published_event,
 )
 
-from .extraction import EmptyExtractionError, extract_event_fields, parse_raw_fields
+from .extraction import (
+    EmptyExtractionError,
+    contains_hangul,
+    extract_event_fields,
+    latest_mentioned_date,
+    parse_raw_fields,
+)
 from .fetching import ResponseTooLargeError, UnsupportedContentTypeError, fetch_html
 from .llm_extraction import extract_event_fields_llm
 from .models import EventDraft
@@ -83,6 +89,15 @@ class DraftCreationEmptyExtractionError(Exception):
 
 class DraftCreationDuplicateError(Exception):
     pass
+
+
+class DraftCreationExcludedError(Exception):
+    """서버 자동 수집 경로에서 한글이 없거나(non_korean) 이미 종료된 문서
+    (ended)라서 드래프트를 만들지 않을 때 발생한다. reason에 사유를 담는다."""
+
+    def __init__(self, reason):
+        self.reason = reason
+        super().__init__(reason)
 
 
 @dataclass(frozen=True)
@@ -201,6 +216,25 @@ def persist_prepared_draft(*, payload, source_name=""):
 
 def create_draft_from_url(*, source_url, source_name=""):
     payload = prepare_draft_from_url(source_url=source_url)
+    return persist_prepared_draft(payload=payload, source_name=source_name)
+
+
+def create_collected_draft_from_url(*, source_url, source_name="", today=None):
+    """서버 자동 수집 전용 경로(DF-27). 스태프 직접 등록(create_draft_from_url)은
+    사람이 이미 골라 넣은 URL이라 판정 없이 그대로 두고, 기계가 무인 수집한 URL만
+    여기서 한글 유무·종료 여부를 걸러 드래프트 생성을 막는다."""
+    payload = prepare_draft_from_url(source_url=source_url)
+
+    if not contains_hangul(payload.raw_title) and not contains_hangul(payload.raw_text):
+        raise DraftCreationExcludedError("non_korean")
+
+    # 추출된 시작·종료일이 아니라 본문 전체에서 읽은 가장 늦은 날짜를 쓴다 —
+    # 시작·종료일에는 게시일 등 잡음이 섞일 수 있기 때문이다.
+    reference_date = today if today is not None else timezone.localdate()
+    latest_date = latest_mentioned_date(payload.raw_text)
+    if latest_date is not None and latest_date < reference_date:
+        raise DraftCreationExcludedError("ended")
+
     return persist_prepared_draft(payload=payload, source_name=source_name)
 
 

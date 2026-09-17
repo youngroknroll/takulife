@@ -511,3 +511,74 @@ def test_재오픈된_드래프트는_approve_draft로_승인할_수_있다(make
     draft.refresh_from_db()
     assert draft.review_status == EventDraft.ReviewStatus.APPROVED
     assert result.event_id is not None
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "build_body, outcome, reason",
+    [
+        (
+            lambda today: "This is an English and 日本語 only announcement with no Korean text at all.",
+            "excluded",
+            "non_korean",
+        ),
+        (
+            lambda today: (
+                "한글 공지, 종료일은 "
+                f"{(today - datetime.timedelta(days=3)).isoformat()}"
+                "이며 이미 지났습니다."
+            ),
+            "excluded",
+            "ended",
+        ),
+        (
+            lambda today: (
+                "한글 공지, 시작일 "
+                f"{(today - datetime.timedelta(days=3)).isoformat()}"
+                ", 종료일 "
+                f"{(today + datetime.timedelta(days=3)).isoformat()}"
+                "."
+            ),
+            "created",
+            None,
+        ),
+        (
+            lambda today: "한글 공지입니다. 별도의 날짜 안내는 없습니다.",
+            "created",
+            None,
+        ),
+        (
+            lambda today: f"한글 공지, 종료일은 오늘 {today.isoformat()}입니다.",
+            "created",
+            None,
+        ),
+    ],
+    ids=["한글_없음", "지난_날짜", "미래_날짜_섞임", "날짜_없음", "오늘"],
+)
+def test_수집_경로는_한글이_없거나_지난_문서를_드래프트로_만들지_않는다(
+    monkeypatch, build_body, outcome, reason
+):
+    """서버 수집 전용 경로(DF-27)는 판정 없이 한글 유무·최신 언급일만으로
+    거른다. 아직 create_collected_draft_from_url·DraftCreationExcludedError가
+    없어 ImportError로 Red가 정상이다."""
+    from drafts.services import (
+        DraftCreationExcludedError,
+        create_collected_draft_from_url,
+    )
+
+    today = datetime.date.today()
+    body = build_body(today)
+    html = f"<html><head><title>Collected</title></head><body>{body}</body></html>"
+    monkeypatch.setattr("drafts.services.fetch_html", lambda url: html)
+    source_url = f"https://collected.example.com/{outcome}-{reason}"
+
+    before_count = EventDraft.objects.count()
+
+    if outcome == "excluded":
+        with pytest.raises(DraftCreationExcludedError) as exc_info:
+            create_collected_draft_from_url(source_url=source_url)
+        assert exc_info.value.reason == reason
+        assert EventDraft.objects.count() == before_count
+    else:
+        create_collected_draft_from_url(source_url=source_url)
+        assert EventDraft.objects.count() == before_count + 1

@@ -18,7 +18,7 @@ from drafts.extraction import EmptyExtractionError, extract_event_fields
 from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft, SourceCandidate
 from drafts.robots import RobotsChecker
-from drafts.services import create_draft_from_url
+from drafts.services import create_collected_draft_from_url
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
 logger = logging.getLogger(__name__)
@@ -48,6 +48,7 @@ FAILURE_MESSAGES = {
     "listing_extraction": "선언된 유형과 선택자로 후보 URL을 추출하지 못했다",
     "sample_canary": "표본 페이지에서 규칙 기반 추출이 빈 결과를 냈다",
     "sample_mismatch": "표본 URL이 목록에서 추출된 후보가 아니다",
+    "not_domestic": "국내 소스로 확정되지 않았다",
 }
 
 
@@ -192,6 +193,11 @@ def submit_candidate(*, run_id, lease_token, payload):
     if DraftSource.objects.filter(url=cleaned["url"]).exists():
         return _fail(SourceCandidate.FailureStage.DUPLICATE)
 
+    # 국내가 아니면(불확실 포함) 이후 실행마다 해외 드래프트를 계속 만드니,
+    # 네트워크 검증 전에 미리 막는다 — 이벤트 쪽과 반대 방향의 판정이다.
+    if payload.get("source_country") != "kr":
+        return _fail(SourceCandidate.FailureStage.NOT_DOMESTIC)
+
     try:
         for url in (cleaned["url"], cleaned["sample_url"]):
             validate_fetch_url(url, resolver=socket.getaddrinfo)
@@ -302,7 +308,9 @@ def submit_candidate(*, run_id, lease_token, payload):
             at_creation_cap=created >= INITIAL_DRAFTS_PER_PROMOTED_SOURCE,
             robots_checker=robots_checker,
             stderr=stderr,
-            create_draft=create_draft_from_url,
+            # 승격 직후 만드는 초기 드래프트도 「지금 수집」과 같은 규칙(한글
+            # 없음·지난 문서 제외)을 따라야 하므로 수집 전용 함수를 쓴다.
+            create_draft=create_collected_draft_from_url,
         )
         if outcome.consumed_fetch_budget:
             fetches += 1
@@ -354,6 +362,11 @@ def register_account_source(*, run_id, lease_token, payload):
 
     if not cleaned["source_type"]:
         return _fail(SourceCandidate.FailureStage.SCHEMA)
+
+    # 계정형은 원래 비활성으로 등록되므로, 국내가 아니면(불확실 포함)
+    # "비활성으로도" 등록되지 않아야 한다.
+    if payload.get("source_country") != "kr":
+        return _fail(SourceCandidate.FailureStage.NOT_DOMESTIC)
 
     parsed = urlsplit(cleaned["url"])
     hostname = (parsed.hostname or "").lower()

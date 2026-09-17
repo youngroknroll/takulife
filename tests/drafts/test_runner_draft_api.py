@@ -1,6 +1,6 @@
 """러너 이벤트 제출 엔드포인트 계약 테스트 — 생성·중복·스키마 위반·상한
 초과·불안전 URL을 각각 다른 상태코드로 옮기는지 본다."""
-from datetime import timedelta
+from datetime import date, timedelta
 
 import pytest
 from django.utils import timezone
@@ -13,6 +13,12 @@ from drafts.url_safety import UnsafeFetchUrlError
 pytestmark = [pytest.mark.django_db, pytest.mark.web]
 
 _RUNNER_TOKEN = "runner-secret"
+
+# S4(종료일이 오늘 이전이면 제외) 도입 이후에도 "진행 예정 행사"로 남도록
+# 절대 날짜 대신 오늘 기준 상대 날짜를 쓴다.
+_TODAY = date.today()
+_START_DATE = (_TODAY + timedelta(days=7)).isoformat()
+_END_DATE = (_TODAY + timedelta(days=14)).isoformat()
 
 
 @pytest.fixture
@@ -68,8 +74,8 @@ def _valid_event_payload(source_url):
             "category": "popup_store",
             "region": "seoul",
             "location_name": "용산 아이파크몰",
-            "start_date": "2026-09-01",
-            "end_date": "2026-09-22",
+            "start_date": _START_DATE,
+            "end_date": _END_DATE,
             "summary": "요약",
         },
         "confidence": 0.9,
@@ -170,6 +176,25 @@ def test_이벤트_제출은_생성_중복_스키마_위반_상한_초과_불안
         body = response.json()
         for key, value in expected_body.items():
             assert body[key] == value
+
+
+def test_지난_행사_제출은_오류가_아니라_제외로_응답한다(client, runner_headers, monkeypatch):
+    _neutralize_server_recheck(monkeypatch)
+    run = _make_claimed_run()
+    event = _valid_event_payload("https://official-site.example.com/ended-event")
+    ended_date = (_TODAY - timedelta(days=1)).isoformat()
+    event["fields"]["start_date"] = ended_date
+    event["fields"]["end_date"] = ended_date
+
+    response = _post_event(client, runner_headers, run, event)
+
+    # 러너는 4xx를 실패로 세어 실행 상태를 실패로 뒤집으므로, 정책상
+    # 정상 처리인 제외는 200으로 응답해야 한다.
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "excluded"
+    assert body["reason"] == "ended"
+    assert not EventDraft.objects.filter(source_url=event["source_url"]).exists()
 
 
 def test_알려진_URL_필터는_드래프트가_없는_URL만_돌려준다(client, runner_headers, make_draft):

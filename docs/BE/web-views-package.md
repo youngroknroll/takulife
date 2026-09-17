@@ -9,7 +9,7 @@
 |---|---|
 | `__init__.py` (51줄 `[실측, wc -l]`) | **순수 재노출만.** 뷰 로직 0줄 |
 | `_helpers.py` (178줄 `[실측]`) | 둘 이상의 그룹이 쓰는 범용 헬퍼 7개 |
-| `events.py` (456줄 `[실측]`) | `home`, `event_list`, `event_calendar`, `event_detail` |
+| `events.py` (627줄 `[실측 2026-09-17, wc -l]`, 2026-08-02 기록 456줄은 트랙 34 전 값) | `home`, `event_list`, `event_calendar`, `event_detail` + 홈 달력 조립 헬퍼(`_home_calendar_*`, `_events_by_date`, `_dedupe_category_slugs`) |
 | `archive.py` (682줄 `[실측]`) | 상태·방문·직접등록·찜 뷰 9개 |
 | `activity.py` (413줄 `[실측]`) | `activity_calendar` + 활동 전용 헬퍼·상수 |
 | `collection.py` (427줄 `[실측]`) | 컬렉션 뷰 4개 + 카드 표시 헬퍼 + `SERIES_INK_*` |

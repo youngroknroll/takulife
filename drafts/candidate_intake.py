@@ -5,11 +5,22 @@ from dataclasses import dataclass
 
 from drafts.models import DraftSource
 from drafts.robots import ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED
-from drafts.services import DraftCreationDuplicateError, DraftCreationEmptyExtractionError
+from drafts.services import (
+    DraftCreationDuplicateError,
+    DraftCreationEmptyExtractionError,
+    DraftCreationExcludedError,
+)
 
 ROBOTS_REASON_TO_SKIP_KEY = {
     ROBOTS_DISALLOWED: "robots_disallowed",
     ROBOTS_FETCH_FAILED: "robots_fetch_failed",
+}
+
+# 제외 사유(non_korean/ended)는 오류가 아니라 수집 정책상 정상 스킵이라 stderr에
+# 남기지 않는다.
+EXCLUDED_REASON_TO_SKIP_KEY = {
+    "non_korean": "excluded_non_korean",
+    "ended": "excluded_ended",
 }
 
 # rss/sitemap 목록은 HTML이 아니라 XML이라 fetch_html 기본 content-type
@@ -64,6 +75,9 @@ def decide_and_create_candidate(
         return CandidateOutcome(consumed_fetch_budget=True, skip_key="duplicate")
     except DraftCreationEmptyExtractionError:
         return CandidateOutcome(consumed_fetch_budget=True, skip_key="empty")
+    except DraftCreationExcludedError as exc:
+        skip_key = EXCLUDED_REASON_TO_SKIP_KEY[exc.reason]
+        return CandidateOutcome(consumed_fetch_budget=True, skip_key=skip_key)
     except Exception as exc:
         # URL과 예외 클래스 이름만 남긴다 — str(exc)는 응답 본문 등 가져온 내용을
         # 그대로 노출할 수 있어 쓰지 않는다.

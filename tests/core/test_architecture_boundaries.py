@@ -382,7 +382,7 @@ def test_드래프트_발견_모듈은_이벤트_모듈을_임포트하지_않�
 
 
 def test_드래프트_수집_명령은_이벤트_모듈을_임포트하지_않는다():
-    """discover_drafts는 create_draft_from_url을 통해서만 DraftSource를
+    """discover_drafts는 create_collected_draft_from_url을 통해서만 DraftSource를
     EventDraft로 이어준다(경계를 넘는 책임은 그 함수가 진다) — 이 명령이
     events를 직접 임포트할 이유는 없다."""
     imported_modules = _imported_modules("drafts/management/commands/discover_drafts.py")
