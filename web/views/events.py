@@ -29,6 +29,7 @@ from core.models import HomeConfig
 from core.presenters import build_website_json_ld
 from core.vocab import (
     ARCHIVE_STATUS_LABELS,
+    CATEGORY,
     CATEGORY_LABELS,
     EVENT_SORT,
     EVENT_SORT_LABELS,
@@ -56,6 +57,112 @@ from ._helpers import (
 )
 
 logger = logging.getLogger(__name__)
+
+# 홈 달력 칸의 점 최대 개수(디자인 핸드오프 기준).
+HOME_CALENDAR_DOT_LIMIT = 4
+# 아젠다 행은 달력 아래 여백을 줄이려 3건으로 둔다.
+HOME_CALENDAR_AGENDA_LIMIT = 3
+
+
+def _dedupe_category_slugs(slugs, *, limit):
+    """등장 순서대로 중복·빈 값을 빼고 최대 limit개만 남긴다."""
+    seen = []
+    for slug in slugs:
+        if not slug or slug in seen:
+            continue
+        seen.append(slug)
+        if len(seen) == limit:
+            break
+    return seen
+
+
+def _events_by_date(events):
+    """행사별 시작일~종료일(없으면 시작일 하루)을 날짜별 목록으로 펼친다."""
+    events_by_date = defaultdict(list)
+    for event in events:
+        day = event.start_date
+        end = event.end_date or event.start_date
+        while day <= end:
+            events_by_date[day].append(event)
+            day += timedelta(days=1)
+    return events_by_date
+
+
+def _home_calendar_cell(cell, events_by_date, *, today, selected_date):
+    """달력 칸 하나에 오늘·선택·건수·카테고리 표시값을 붙인다.
+
+    채움 칸은 표시 달과 겹치는 행사만 알고 있어 표시하지 않는다.
+    """
+    cell_events = events_by_date.get(cell.date, []) if cell.in_month else []
+    return {
+        "date": cell.date,
+        "in_month": cell.in_month,
+        "today": cell.date == today,
+        "selected": cell.date == selected_date,
+        "count": len(cell_events),
+        "categories": _dedupe_category_slugs(
+            [event.category for event in cell_events], limit=HOME_CALENDAR_DOT_LIMIT
+        ),
+    }
+
+
+def _home_calendar_weeks(grid, events_by_date, *, today, selected_date):
+    """달력 그리드 칸에 오늘·선택·건수·카테고리 표시값을 붙인다."""
+    return [
+        [
+            _home_calendar_cell(cell, events_by_date, today=today, selected_date=selected_date)
+            for cell in week
+        ]
+        for week in grid
+    ]
+
+
+def _home_calendar_context(raw_month, raw_date, *, today):
+    """홈 이벤트 달력 섹션 컨텍스트를 만든다."""
+    year, month, calendar_error = _parse_calendar_month(raw_month, today=today)
+    selected_date = None
+    if calendar_error is None:
+        selected_date, calendar_error = _parse_calendar_date(
+            raw_date, year=year, month=month, today=today
+        )
+
+    # 홈은 달력 전용 화면이 아니라 잘못된 값은 알리지 않고 이번 달로 돌아간다.
+    if calendar_error:
+        year, month = today.year, today.month
+        selected_date = today
+
+    events = list(list_published_events_for_month({}, year=year, month=month, today=today))
+    events_by_date = _events_by_date(events)
+
+    grid = month_grid(year, month)
+    weeks = _home_calendar_weeks(
+        grid, events_by_date, today=today, selected_date=selected_date
+    )
+    prev_year, prev_month = _adjacent_month(year, month, -1)
+    next_year, next_month = _adjacent_month(year, month, 1)
+    selected_events = events_by_date.get(selected_date, [])
+    month_categories = {event.category for event in events if event.category}
+    legend = [
+        {"slug": slug, "label": label}
+        for slug, label in CATEGORY
+        if slug in month_categories
+    ]
+    return {
+        "year": year,
+        "month": month,
+        "month_param": f"{year:04d}-{month:02d}",
+        "prev_month": f"{prev_year:04d}-{prev_month:02d}",
+        "next_month": f"{next_year:04d}-{next_month:02d}",
+        "selected_date": selected_date,
+        "selected_is_today": selected_date == today,
+        "selected_count": len(selected_events),
+        # 찜·방문 등 사용자별 상태는 쓰지 않아 user를 넘기지 않는다(조회 2건 회피).
+        "selected_rows": _attach_display(
+            selected_events[:HOME_CALENDAR_AGENDA_LIMIT], today=today
+        ),
+        "legend": legend,
+        "weeks": weeks,
+    }
 
 
 def home(request):
@@ -94,6 +201,9 @@ def home(request):
         "recent_rows": _attach_display(recent_qs, today=today, user=request.user),
         "category_tiles": category_tiles,
         "featured_event_rows": featured_event_rows,
+        "home_calendar": _home_calendar_context(
+            request.GET.get("month"), request.GET.get("date"), today=today
+        ),
         "json_ld_script": _json_ld_script(
             build_website_json_ld(request.build_absolute_uri("/"))
         ),
@@ -329,13 +439,7 @@ def event_calendar(request):
         if calendar_error is None:
             calendar_error = "query_failed"
 
-    events_by_date = defaultdict(list)
-    for event in events:
-        day = event.start_date
-        end = event.end_date or event.start_date
-        while day <= end:
-            events_by_date[day].append(event)
-            day += timedelta(days=1)
+    events_by_date = _events_by_date(events)
 
     try:
         grid = month_grid(year, month)
