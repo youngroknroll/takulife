@@ -58,6 +58,18 @@ from ._helpers import (
 logger = logging.getLogger(__name__)
 
 
+def _events_by_date(events):
+    """행사별 시작일~종료일(없으면 시작일 하루)을 날짜별 목록으로 펼친다."""
+    events_by_date = defaultdict(list)
+    for event in events:
+        day = event.start_date
+        end = event.end_date or event.start_date
+        while day <= end:
+            events_by_date[day].append(event)
+            day += timedelta(days=1)
+    return events_by_date
+
+
 def _home_calendar_context(raw_month, raw_date, *, today):
     """홈 이벤트 달력 섹션 컨텍스트를 만든다."""
     year, month, calendar_error = _parse_calendar_month(raw_month, today=today)
@@ -73,13 +85,7 @@ def _home_calendar_context(raw_month, raw_date, *, today):
         selected_date = today
 
     events = list(list_published_events_for_month({}, year=year, month=month, today=today))
-    events_by_date = defaultdict(list)
-    for event in events:
-        day = event.start_date
-        end = event.end_date or event.start_date
-        while day <= end:
-            events_by_date[day].append(event)
-            day += timedelta(days=1)
+    events_by_date = _events_by_date(events)
 
     grid = month_grid(year, month)
     weeks = [
@@ -89,8 +95,10 @@ def _home_calendar_context(raw_month, raw_date, *, today):
                 "in_month": cell.in_month,
                 "today": cell.date == today,
                 "selected": cell.date == selected_date,
-                "count": len(events_by_date[cell.date]),
-                "categories": [event.category for event in events_by_date[cell.date]],
+                "count": len(events_by_date.get(cell.date, [])),
+                "categories": [
+                    event.category for event in events_by_date.get(cell.date, [])
+                ],
             }
             for cell in week
         ]
@@ -384,13 +392,7 @@ def event_calendar(request):
         if calendar_error is None:
             calendar_error = "query_failed"
 
-    events_by_date = defaultdict(list)
-    for event in events:
-        day = event.start_date
-        end = event.end_date or event.start_date
-        while day <= end:
-            events_by_date[day].append(event)
-            day += timedelta(days=1)
+    events_by_date = _events_by_date(events)
 
     try:
         grid = month_grid(year, month)
