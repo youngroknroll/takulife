@@ -124,6 +124,10 @@
   box-shadow: inset 0 -3px 0 var(--brand);
 }
 
+.home-cal .day-cell[data-in-month="false"] {
+  background: var(--bg-card);
+}
+
 .home-cal .day-num {
   display: inline-flex;
   align-items: center;
@@ -229,8 +233,8 @@
   scroll-margin-top: calc(var(--site-header-h) + 1rem);
 }
 
-.home-cal-agenda:focus:not(:focus-visible) {
-  outline: none;
+.home-cal-agenda:focus {
+  outline: none; /* 날짜 이동 후 포커스가 오는 지점일 뿐, 직접 탭하는 컨트롤이 아니다. */
 }
 
 .home-cal-agenda .date-detail-head {
