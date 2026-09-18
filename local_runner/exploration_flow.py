@@ -3,7 +3,7 @@ sources 분리·상한 절단 순수 함수와, 제출 중 임대 상실(409)을
 알리는 run_exploration_flow가 있다."""
 import functools
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
@@ -27,6 +27,34 @@ EXPLORATION_MAX_SOURCES = 10
 # 서버 제외 응답의 reason(drafts.agent_drafts._exclusion_reason)만 아는 값으로
 # 옮긴다 — 서버가 낼 수 없는 값이 오면 지어내지 않고 빈 사유로 남긴다.
 _SERVER_EXCLUDED_REASONS = {"overseas": "server_overseas", "ended": "server_ended"}
+
+# 탐색의 why_excluded 판정 중 우리가 코드로 재확인할 수 있는 사유만 믿고
+# 건너뛴다(지난 행사는 end_date로, 해외는 소스 호스트 일치로) — 되돌리려면
+# 이 집합에서 빼면 된다.
+SKIPPABLE_AGENT_REASONS = frozenset({"ended", "overseas"})
+
+
+def _agent_marked_ended(event, *, today):
+    """탐색이 이미 지난 행사로 판정했더라도 end_date를 우리가 직접 다시
+    본다 — 판정 문자열만 믿지 않는다."""
+    if event.get("why_excluded") != "ended" or "ended" not in SKIPPABLE_AGENT_REASONS:
+        return False
+    end_date = event.get("end_date")
+    if not isinstance(end_date, str):
+        return False
+    try:
+        parsed_end_date = date.fromisoformat(end_date)
+    except ValueError:
+        return False
+    return parsed_end_date < today
+
+
+def _agent_marked_overseas(event, *, not_kr_hosts):
+    """탐색이 해외로 판정한 URL의 호스트가 같은 출력의 not_kr 소스 호스트와
+    실제로 겹칠 때만 믿는다 — 판정 문자열만으로는 건너뛰지 않는다."""
+    if event.get("why_excluded") != "overseas" or "overseas" not in SKIPPABLE_AGENT_REASONS:
+        return False
+    return urlsplit(event.get("url", "")).hostname in not_kr_hosts
 
 
 def _record_outcome(outcomes, *, url, outcome, reason):
@@ -140,6 +168,15 @@ def run_exploration_flow(
     urls = [event["url"] for event in events]
     unknown_urls = set(client.known_urls(urls=urls))
 
+    # 탐색이 해외로 판정한 이벤트를 재확인할 근거다 — 같은 출력에서
+    # source_country가 not_kr인 소스의 호스트만 모은다.
+    not_kr_hosts = {
+        urlsplit(source["url"]).hostname
+        for source in sources
+        if isinstance(source.get("url"), str) and source.get("source_country") == "not_kr"
+    }
+    not_kr_hosts.discard(None)
+
     today = _today_kst()
     events_attempted = 0
     events_failed = 0
@@ -157,6 +194,19 @@ def run_exploration_flow(
             url = event["url"]
             if url not in unknown_urls:
                 _record_outcome(event_outcomes, url=url, outcome="skipped", reason="known_url")
+                continue
+
+            if _agent_marked_ended(event, today=today):
+                # 차단 호스트 스킵과 대칭이다 — 건너뛴 항목도 시도·제외 수에 든다.
+                events_attempted += 1
+                events_excluded += 1
+                _record_outcome(event_outcomes, url=url, outcome="skipped", reason="agent_ended")
+                continue
+
+            if _agent_marked_overseas(event, not_kr_hosts=not_kr_hosts):
+                events_attempted += 1
+                events_excluded += 1
+                _record_outcome(event_outcomes, url=url, outcome="skipped", reason="agent_overseas")
                 continue
 
             hostname = urlsplit(url).hostname

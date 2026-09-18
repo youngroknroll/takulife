@@ -1233,3 +1233,220 @@ def test_읽기의_예상된_예외는_그_항목만_failed_fetch_error로_기�
     assert summary["event_outcomes"][1]["outcome"] == "created"
     assert summary["events_attempted"] == 2
     assert summary["events_failed"] == 1
+
+
+# ---------------------------------------------------------------------------
+# TR-23 — S3: 탐색이 이미 why_excluded="ended"로 판정하고 준 end_date가 오늘
+# (KST)보다 이전이면 읽기·해석을 부르지 않고 skipped/agent_ended로 건너뛴다.
+# ---------------------------------------------------------------------------
+
+
+def test_탐색이_이미_지난_행사로_판정한_항목은_읽기_없이_skipped_agent_ended로_기록된다(monkeypatch):
+    import datetime as datetime_module
+
+    monkeypatch.setattr(
+        "local_runner.exploration_flow._today_kst",
+        lambda: datetime_module.date(2026, 9, 18),
+    )
+
+    events = [
+        {
+            "url": "https://example.com/event-1",
+            "platform": "web",
+            "why_excluded": "ended",
+            "end_date": "2026-09-01",
+        },
+        {"url": "https://example.com/event-2", "platform": "web"},
+    ]
+
+    fetch_calls = []
+    interpret_calls = []
+
+    def fake_fetch_text(*, url):
+        fetch_calls.append(url)
+        return {"raw_title": "제목", "raw_text": "본문"}
+
+    def fake_interpret(*, text, url, platform):
+        interpret_calls.append(url)
+        return _interpreted_result()
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    # 지난 행사로 이미 판정된 첫 항목은 읽기·해석 자체를 부르지 않는다.
+    assert fetch_calls == [events[1]["url"]]
+    assert interpret_calls == [events[1]["url"]]
+
+    assert summary["event_outcomes"][0] == {
+        "url": events[0]["url"],
+        "outcome": "skipped",
+        "reason": "agent_ended",
+    }
+    # 둘째 항목은 why_excluded가 없어 기존 읽기→해석→제출 경로를 그대로 탄다.
+    assert summary["event_outcomes"][1]["outcome"] == "created"
+
+    # 건너뛴 항목도 시도·제외 수에는 들어간다(차단 호스트 스킵과 대칭).
+    assert summary["events_attempted"] == 2
+    assert summary["events_excluded"] == 1
+    assert summary["events_failed"] == 0
+
+
+# ---------------------------------------------------------------------------
+# TR-24 — S3: 탐색이 why_excluded="overseas"로 판정한 항목이 같은 출력의
+# not_kr 소스 호스트와 일치하면 읽기 없이 skipped/agent_overseas로 건너뛴다.
+# 호스트가 일치하지 않으면(불확실) 기존 경로로 읽는다.
+# ---------------------------------------------------------------------------
+
+
+def test_탐색이_해외로_판정하고_같은_출력의_not_kr_소스_호스트와_일치하면_읽기_없이_skipped_agent_overseas로_기록된다():
+    events = [
+        {"url": "https://jp.example.org/e/1", "platform": "web", "why_excluded": "overseas"},
+        {"url": "https://example.com/event-2", "platform": "web"},
+    ]
+    sources = [
+        {"name": "일본 소스", "url": "https://jp.example.org/list", "source_country": "not_kr"}
+    ]
+
+    fetch_calls = []
+    interpret_calls = []
+
+    def fake_fetch_text(*, url):
+        fetch_calls.append(url)
+        return {"raw_title": "제목", "raw_text": "본문"}
+
+    def fake_interpret(*, text, url, platform):
+        interpret_calls.append(url)
+        return _interpreted_result()
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=sources,
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    # 해외로 이미 판정되고 호스트까지 같은 출력의 not_kr 소스와 일치한 첫
+    # 항목은 읽기·해석 자체를 부르지 않는다.
+    assert fetch_calls == [events[1]["url"]]
+    assert interpret_calls == [events[1]["url"]]
+
+    assert summary["event_outcomes"][0] == {
+        "url": events[0]["url"],
+        "outcome": "skipped",
+        "reason": "agent_overseas",
+    }
+    assert summary["event_outcomes"][1]["outcome"] == "created"
+
+    assert summary["events_attempted"] == 2
+    assert summary["events_excluded"] == 1
+    assert summary["events_failed"] == 0
+
+
+def test_탐색이_해외로_판정해도_일치하는_not_kr_소스_호스트가_없으면_기존_경로로_읽는다():
+    events = [
+        {"url": "https://unclear.example.org/e/1", "platform": "web", "why_excluded": "overseas"},
+    ]
+    # 소스가 아예 없거나 다른 호스트라 이 이벤트 호스트와 일치하지 않는다 —
+    # 불확실하므로 건너뛰지 않고 기존 읽기 경로를 그대로 탄다.
+    sources = [
+        {"name": "다른 소스", "url": "https://other.example.org/list", "source_country": "not_kr"}
+    ]
+
+    fetch_calls = []
+
+    def fake_fetch_text(*, url):
+        fetch_calls.append(url)
+        return {"raw_title": "제목", "raw_text": "본문"}
+
+    def fake_interpret(*, text, url, platform):
+        return _interpreted_result()
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=sources,
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert fetch_calls == [events[0]["url"]]
+    assert summary["event_outcomes"][0]["outcome"] == "created"
+
+
+# ---------------------------------------------------------------------------
+# TR-25 — S3 핀: 건너뛰기 자격을 좁게 유지한다. 지난 행사 판정이라도 오늘·
+# 미래·빈 값·형식 오류·값 없음이면, 사유 자체가 ended·overseas가 아니면
+# 건너뛰지 않고 기존 읽기 경로로 처리한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "why_excluded, end_date",
+    [
+        pytest.param("ended", "2026-09-18", id="ended_오늘과_같음"),
+        pytest.param("ended", "2026-09-30", id="ended_미래"),
+        pytest.param("ended", "", id="ended_빈_값"),
+        pytest.param("ended", "not-a-date", id="ended_형식_오류"),
+        pytest.param("ended", None, id="ended_값_없음"),
+        pytest.param("same_name", "2026-09-01", id="다른_사유_same_name"),
+        pytest.param("fan_made", "", id="다른_사유_fan_made"),
+        pytest.param(None, "2026-09-01", id="why_excluded_없음"),
+    ],
+)
+def test_건너뛰기_자격이_아닌_조합은_건너뛰지_않고_기존_경로로_읽힌다(
+    why_excluded, end_date, monkeypatch
+):
+    import datetime as datetime_module
+
+    monkeypatch.setattr(
+        "local_runner.exploration_flow._today_kst",
+        lambda: datetime_module.date(2026, 9, 18),
+    )
+
+    event = {"url": "https://example.com/event-1", "platform": "web"}
+    if why_excluded is not None:
+        event["why_excluded"] = why_excluded
+    if end_date is not None:
+        event["end_date"] = end_date
+
+    fetch_calls = []
+
+    def fake_fetch_text(*, url):
+        fetch_calls.append(url)
+        return {"raw_title": "제목", "raw_text": "본문"}
+
+    def fake_interpret(*, text, url, platform):
+        return _interpreted_result()
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=[event],
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert fetch_calls == [event["url"]]
+    assert summary["event_outcomes"][0]["outcome"] == "created"
