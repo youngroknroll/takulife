@@ -379,7 +379,7 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
           {% else %}
             <div class="dash-error-summary">
               <p class="mono dash-error-summary-window">24시간 {{ system_errors.window_24h }}종 · 7일 {{ system_errors.window_7d }}종</p>
-              <p class="mono dash-cell-faint dash-error-summary-sources">백엔드 {{ system_errors.by_source.backend }} · 프론트 {{ system_errors.by_source.frontend }}</p>
+              <p class="mono dash-cell-dim dash-error-summary-sources">백엔드 {{ system_errors.by_source.backend }} · 프론트 {{ system_errors.by_source.frontend }}</p>
             </div>
             <ul class="dash-error-list">
               {% for e in system_errors.top %}
@@ -387,10 +387,10 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
                   <div class="dash-error-item-meta">
                     <span class="mono dash-cell-dim">{{ e.source_label }}</span>
                     <span class="mono dash-cell-dim">{{ e.count }}회</span>
-                    <span class="mono dash-cell-faint">{{ e.last_seen|timesince }} 전</span>
+                    <span class="mono dash-cell-dim">{{ e.last_seen|timesince }} 전</span>
                   </div>
                   <p class="dash-error-type">{{ e.error_type }}</p>
-                  <p class="mono dash-cell-wrap">{{ e.location }}</p>
+                  <p class="mono dash-cell-wrap dash-error-location">{{ e.location }}</p>
                 </li>
               {% endfor %}
             </ul>

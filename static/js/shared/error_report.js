@@ -28,8 +28,7 @@
   }
 
   function processEntry(entry) {
-    reportedCount += 1;
-    if (reportedCount > MAX_PER_PAGE) {
+    if (reportedCount >= MAX_PER_PAGE) {
       return;
     }
     var isRejection = "reason" in entry;
@@ -60,6 +59,9 @@
       return;
     }
     seenFingerprints[fingerprint] = true;
+    // 무시한 이벤트(확장·교차 출처·중복)는 상한을 쓰지 않게 여기서 센다 —
+    // 전송 전에 올려 두어 sendReport가 던져도 재시도 루프가 생기지 않는다.
+    reportedCount += 1;
     sendReport({ message: message.slice(0, MAX_MESSAGE_LEN), script: scriptPath, line: line, col: col, name: name || undefined });
   }
 

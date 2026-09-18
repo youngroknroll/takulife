@@ -441,14 +441,21 @@
   margin: 0;
 }
 
-/* dash-cell-faint의 nowrap+ellipsis를 그대로 쓰면 레일 폭에서 두 번째
-   요약 줄(백엔드·프론트 건수)이 잘린다 — 여기서만 줄바꿈을 되돌린다. */
+/* dash-cell-dim의 nowrap을 그대로 쓰면 레일 폭에서 두 번째 요약 줄
+   (백엔드·프론트 건수)이 넘친다 — 여기서만 줄바꿈을 되돌린다. */
+/* 위치 줄은 전역 p 여백(13px)·기본 글자 크기를 물려받으면 오류 유형보다
+   커 보인다 — 메타 줄과 같은 크기로 맞추고 여백을 없앤다. 색은 faint가 4.5:1에
+   못 미쳐(라이트 3.09) dim을 쓴다. */
+.dash-error-location {
+  font-size: 0.6875rem;
+  margin: 0;
+  color: var(--c-dim);
+}
+
 .dash-error-summary-sources {
   font-size: 0.6875rem;
   margin: 0.125rem 0 0;
   white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
 }
 
 .dash-error-list {
