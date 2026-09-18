@@ -50,7 +50,7 @@
       if (!filename || EXTENSION_SCHEMES[scheme] || !isSameOriginUrl(filename)) {
         return;
       }
-      scriptPath = new URL(filename).pathname;
+      scriptPath = new URL(filename, window.location.href).pathname;
       line = toInt(entry.lineno);
       col = toInt(entry.colno);
     }
@@ -76,7 +76,12 @@
     var queued = window.__takuErrorQueue;
     if (Array.isArray(queued)) {
       for (var i = 0; i < queued.length; i++) {
-        processEntry(queued[i]);
+        // 항목 하나가 던져도 나머지 드레인·싱크 교체·리스너 등록이 멈추지 않게 한다.
+        try {
+          processEntry(queued[i]);
+        } catch (err) {
+          // 보고 실패는 조용히 삼킨다.
+        }
       }
     }
     // 부트스트랩 리스너는 계속 살아 있어 이후에도 push를 시도한다. 큐를 push

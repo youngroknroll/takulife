@@ -9,6 +9,7 @@
   <script>
   try {
     window.__takuErrorQueue = [];
+    window.__takuErrorQueue.push = function (x) { if (this.length < 50) Array.prototype.push.call(this, x); };
     window.addEventListener("error", function (e) { window.__takuErrorQueue.push({ message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno, name: e.error && e.error.name }); });
     window.addEventListener("unhandledrejection", function (e) { window.__takuErrorQueue.push({ reason: String(e.reason), name: e.reason && e.reason.name }); });
   } catch (e) {}
