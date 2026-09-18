@@ -593,6 +593,7 @@ REST_FRAMEWORK = {
         "user_event_status_create": "60/minute",
         "visit_record_photo_create": "30/minute",
         "discovery_runner": "60/minute",
+        "client_error_report": "120/hour",
     },
 }
 
@@ -619,6 +620,8 @@ SPECTACULAR_SETTINGS = {
 # 기본 INFO, django.request만 ERROR로 올려서 처리되지 않은 5xx 예외는
 # 스택 트레이스와 함께 출력하되 요청마다 나오는 Django 자체 INFO/WARNING
 # 잡음(404 등)은 찍히지 않게 한다.
+# error_groups 핸들러는 django.request(=처리되지 않은 500 예외)에만 붙여
+# ErrorGroup 테이블에 묶음·발생 횟수만 남긴다(본문·요청 내용은 저장 안 함).
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -633,6 +636,10 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
+        "error_groups": {
+            "class": "core.logging.ErrorGroupHandler",
+            "level": "ERROR",
+        },
     },
     "root": {
         "handlers": ["console"],
@@ -645,7 +652,7 @@ LOGGING = {
             "propagate": False,
         },
         "django.request": {
-            "handlers": ["console"],
+            "handlers": ["console", "error_groups"],
             "level": "ERROR",
             "propagate": False,
         },

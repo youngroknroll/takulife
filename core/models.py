@@ -5,6 +5,7 @@
 """
 from django.db import models
 from django.dispatch import Signal
+from django.utils import timezone
 
 from core.categories import PALETTE
 from core.validators import validate_category_slug
@@ -197,3 +198,27 @@ class AnalyticsEvent(models.Model):
         indexes = [
             models.Index(fields=["event_name", "created_at"]),
         ]
+
+
+class ErrorGroup(models.Model):
+    """같은 오류를 지문으로 묶어 발생 횟수만 세는 요약 행.
+
+    원본 로그 전문이 아니라 정제된 대표 메시지 1건만 남긴다(용량 상한,
+    core.error_groups.record_error 참고).
+    """
+
+    class Source(models.TextChoices):
+        BACKEND = "backend", "Backend"
+        FRONTEND = "frontend", "Frontend"
+
+    source = models.CharField(max_length=10, choices=Source.choices)
+    fingerprint = models.CharField(max_length=64, unique=True)
+    error_type = models.CharField(max_length=100)
+    location = models.CharField(max_length=255)
+    message_sample = models.CharField(max_length=500, blank=True)
+    # auto_now_add를 쓰지 않는다 — record_error가 첫 저장 시 first_seen과
+    # last_seen을 같은 now 값으로 함께 넘겨야, 저장이 조금 늦게 끝나는
+    # 경우에도 last_seen이 first_seen보다 앞서는 일이 없다.
+    first_seen = models.DateTimeField(default=timezone.now)
+    last_seen = models.DateTimeField(db_index=True, default=timezone.now)
+    count = models.PositiveIntegerField(default=1)

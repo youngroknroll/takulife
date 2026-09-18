@@ -13,6 +13,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from core.analytics import distinct_user_key_count_since, event_name_counts_since
+from core.error_groups import system_error_summary
 from drafts.discovery_runs import runner_is_online
 from drafts.queries import (
     draft_review_sla,
@@ -278,6 +279,7 @@ def dashboard(request):
             "activity_today_count": (
                 activity_columns[-1]["count"] if activity_columns else 0
             ),
+            "system_errors": system_error_summary(),
         },
     )
 
