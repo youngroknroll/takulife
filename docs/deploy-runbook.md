@@ -253,8 +253,8 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | R2 실 업로드/다운로드 왕복 | 미검증(로컬 스모크만 완료) | 첫 배포 직후(§3 체크리스트 ⑦) |
 | 선정 PaaS의 실제 프록시 홉 수 | 미확정(T2 플랫폼 미선정) | T2 확정 후, 첫 배포 전(§3 체크리스트 ⑧) |
 | 멀티워커 환경에서 rate limit 공유 실측 | 미검증(구조 논증만 존재) | 첫 배포 직후(§3 체크리스트 ⑨) |
-| 탈퇴 파기(`purge_deleted_accounts`) 정기 실행 등록 | 미확정(§7에서 Render로 확정 — Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함) | 첫 배포 전(§3 체크리스트 ⑪) |
-| 운영 로그 정리(`prune_operational_data`, 트랙 37) 정기 실행 등록 | 미확정(Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함 — `docs/operations-runbook.md` §7.2·`docs/BE/data-retention.md` 참고) | 첫 배포 전 |
+| 탈퇴 파기(`purge_deleted_accounts`) 정기 실행 등록 | 미등록(플랫폼은 §7에서 Render로 확정 — Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함) | 첫 배포 전(§3 체크리스트 ⑪) |
+| 운영 로그 정리(`prune_operational_data`, 트랙 37) 정기 실행 등록 | 미등록(Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함 — `docs/operations-runbook.md` §7.2·`docs/BE/data-retention.md` 참고) | 첫 배포 전 |
 
 ## 7. 배포 브랜치와 deploy PR 흐름
 
