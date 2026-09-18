@@ -214,6 +214,41 @@
   cursor: not-allowed;
 }
 
+.dash-storage-list {
+  margin: 0;
+  padding: 0;
+}
+
+.dash-storage-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.dash-storage-row:last-child {
+  border-bottom: none;
+}
+
+.dash-storage-name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--c-dim);
+  overflow-wrap: anywhere;
+}
+
+.dash-storage-size {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text);
+  min-width: 4.5rem;
+  text-align: right;
+}
+
 /* ── 표 밀도(D8): table-layout:fixed + <col> 폭으로 시맨틱을
    유지한 채 34px 안팎 행 높이를 낸다. ── */
 /* 기본 색은 표 차원에서 상속으로 내려 .dash-cell-dim 등(0,1,0)이

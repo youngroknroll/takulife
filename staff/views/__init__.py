@@ -13,6 +13,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from core.analytics import distinct_user_key_count_since, event_name_counts_since
+from core.db_stats import database_size_summary
 from core.error_groups import system_error_summary
 from drafts.discovery_runs import runner_is_online
 from drafts.queries import (
@@ -280,6 +281,7 @@ def dashboard(request):
                 activity_columns[-1]["count"] if activity_columns else 0
             ),
             "system_errors": system_error_summary(),
+            "storage": database_size_summary(),
         },
     )
 
