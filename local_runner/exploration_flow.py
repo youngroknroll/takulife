@@ -24,11 +24,45 @@ def _today_kst():
 EXPLORATION_MAX_EVENTS = 20
 EXPLORATION_MAX_SOURCES = 10
 
+# 서버 제외 응답의 reason(drafts.agent_drafts._exclusion_reason)만 아는 값으로
+# 옮긴다 — 서버가 낼 수 없는 값이 오면 지어내지 않고 빈 사유로 남긴다.
+_SERVER_EXCLUDED_REASONS = {"overseas": "server_overseas", "ended": "server_ended"}
+
+
+def _record_outcome(outcomes, *, url, outcome, reason):
+    # 본문·제목·전체 URL은 로그에 남기지 않는다 — 결과·사유·호스트만 남긴다.
+    outcomes.append({"url": url, "outcome": outcome, "reason": reason})
+    logger.info(
+        "event outcome: outcome=%s reason=%s host=%s",
+        outcome,
+        reason,
+        urlsplit(url).hostname,
+    )
+
 
 class LeaseLostError(Exception):
     """제출 중 서버가 409를 냈다 — 다른 곳이 이미 이 실행의 임대를 가져갔거나
     만료돼 다시 대기 중이라는 뜻이다. 통신 오류가 아니라 흔한 경합이므로
     호출자는 이 실행 처리를 즉시 멈추고 조용히 다음 폴로 넘어가야 한다."""
+
+
+class ExplorationFlowError(Exception):
+    """흐름 도중 예상 못한 예외가 나도 그때까지의 결과를 완료 보고에 실어야
+    한다 — 원인 예외는 __cause__로 남기고, 이 예외의 summary에 부분 결과를
+    담아 호출자에게 넘긴다."""
+
+    def __init__(self, summary):
+        super().__init__("exploration flow failed before completing all items")
+        self.summary = summary
+
+
+def _build_summary(*, events_attempted, events_failed, events_excluded, event_outcomes):
+    return {
+        "events_attempted": events_attempted,
+        "events_failed": events_failed,
+        "events_excluded": events_excluded,
+        "event_outcomes": event_outcomes,
+    }
 
 
 def parse_exploration_output(*, data):
@@ -99,108 +133,149 @@ def run_exploration_flow(
     # 차단 응답은 명확한 신호다 — 같은 호스트를 계속 두드릴 이유가 없어
     # 첫 차단이 나는 즉시 그 호스트를 실행 내내 건너뛴다.
     blocked_hosts = set()
+    # 완료 보고에 그대로 실릴 행사별 결과 목록이다.
+    event_outcomes = []
 
-    for event in events:
-        url = event["url"]
-        if url not in unknown_urls:
-            continue
+    try:
+        for event in events:
+            url = event["url"]
+            if url not in unknown_urls:
+                _record_outcome(event_outcomes, url=url, outcome="skipped", reason="known_url")
+                continue
 
-        hostname = urlsplit(url).hostname
-        if hostname in blocked_hosts:
-            # 같은 호스트가 이미 실행 내 차단 목록에 있다 — 읽기 자체를
-            # 부르지 않는다.
+            hostname = urlsplit(url).hostname
+            if hostname in blocked_hosts:
+                # 같은 호스트가 이미 실행 내 차단 목록에 있다 — 읽기 자체를
+                # 부르지 않는다.
+                events_attempted += 1
+                events_failed += 1
+                _record_outcome(event_outcomes, url=url, outcome="failed", reason="host_blocked")
+                continue
+
             events_attempted += 1
-            events_failed += 1
-            continue
+            try:
+                fetched = fetch_text(url=url)
+            except BlockedResponseError:
+                blocked_hosts.add(hostname)
+                events_failed += 1
+                _record_outcome(event_outcomes, url=url, outcome="failed", reason="blocked")
+                continue
 
-        events_attempted += 1
-        try:
-            fetched = fetch_text(url=url)
-        except BlockedResponseError:
-            blocked_hosts.add(hostname)
-            events_failed += 1
-            continue
+            if fetched is None:
+                events_failed += 1
+                _record_outcome(event_outcomes, url=url, outcome="failed", reason="fetch_empty")
+                continue
 
-        if fetched is None:
-            events_failed += 1
-            continue
+            # 읽기 반환 모양이 호스트마다 다르다 — 일반 웹은 {"raw_title",
+            # "raw_text"} dict, 인스타 캡션은 문자열 하나다. 여기서 흡수해
+            # raw_title·raw_text로 갈라 둔다.
+            if isinstance(fetched, dict):
+                raw_title = fetched.get("raw_title", "")
+                raw_text = fetched.get("raw_text", "")
+            else:
+                raw_title = ""
+                raw_text = fetched
 
-        # 읽기 반환 모양이 호스트마다 다르다 — 일반 웹은 {"raw_title",
-        # "raw_text"} dict, 인스타 캡션은 문자열 하나다. 여기서 흡수해
-        # raw_title·raw_text로 갈라 둔다.
-        if isinstance(fetched, dict):
-            raw_title = fetched.get("raw_title", "")
-            raw_text = fetched.get("raw_text", "")
-        else:
-            raw_title = ""
-            raw_text = fetched
+            # 해석 모델에는 제목과 본문을 한 텍스트로 합쳐 넘긴다 — 인스타 캡션은
+            # 이미 한 덩어리라 그대로, 일반 웹은 제목이 본문과 분리돼 있어 모델이
+            # 놓치지 않도록 앞에 붙인다.
+            interpretation_text = f"{raw_title}\n{raw_text}" if raw_title else raw_text
 
-        # 해석 모델에는 제목과 본문을 한 텍스트로 합쳐 넘긴다 — 인스타 캡션은
-        # 이미 한 덩어리라 그대로, 일반 웹은 제목이 본문과 분리돼 있어 모델이
-        # 놓치지 않도록 앞에 붙인다.
-        interpretation_text = f"{raw_title}\n{raw_text}" if raw_title else raw_text
+            try:
+                interpreted = interpret(
+                    text=interpretation_text, url=url, platform=event.get("platform")
+                )
+            except AdapterOutputError:
+                # 읽기 실패와 같은 취급이다 — 이 항목만 건너뛰고 실행 전체를
+                # 죽이지 않는다.
+                events_failed += 1
+                _record_outcome(event_outcomes, url=url, outcome="failed", reason="interpret_error")
+                continue
 
-        try:
-            interpreted = interpret(
-                text=interpretation_text, url=url, platform=event.get("platform")
-            )
-        except AdapterOutputError:
-            # 읽기 실패와 같은 취급이다 — 이 항목만 건너뛰고 실행 전체를
-            # 죽이지 않는다.
-            events_failed += 1
-            continue
+            if not should_submit(interpreted=interpreted):
+                if not interpreted.get("is_event"):
+                    # 해석이 행사가 아니라고 본 것은 정상 제외라 실패로 세지 않는다.
+                    events_excluded += 1
+                    _record_outcome(event_outcomes, url=url, outcome="excluded", reason="not_event")
+                else:
+                    events_failed += 1
+                    _record_outcome(event_outcomes, url=url, outcome="failed", reason="no_title")
+                continue
 
-        if not should_submit(interpreted=interpreted):
-            continue
+            reason = exclusion_reason(interpreted=interpreted, today=today)
+            if reason is not None:
+                events_excluded += 1
+                _record_outcome(event_outcomes, url=url, outcome="excluded", reason=reason)
+                continue
 
-        if exclusion_reason(interpreted=interpreted, today=today) is not None:
-            events_excluded += 1
-            continue
+            # 탐색이 준 platform이 해석 결과에 없으면 채운다 — judgment·official_basis는
+            # 해석이 이미 낸 값을 그대로 둔다.
+            payload = dict(interpreted)
+            payload.setdefault("platform", event.get("platform"))
+            # 해석 모델은 주소·원문·출처명을 모른다 — 흐름이 아는 값을 채운다.
+            payload.setdefault("source_url", url)
+            payload.setdefault("raw_title", raw_title)
+            payload.setdefault("raw_text", raw_text)
+            # 공식 채널명을 확인할 근거가 없다 — 검색어를 넣지 말라는 계획
+            # 제약과 같은 이유로 지어내는 대신 비워 둔다(검수 화면은 빈
+            # source_name을 이미 정상 상태로 다룬다).
+            payload.setdefault("source_name", "")
+            try:
+                response = client.submit_event(
+                    run_id=run_id, lease_token=lease_token, event=payload
+                )
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 409:
+                    raise LeaseLostError("event submit returned 409") from exc
+                # 캡션·페이로드 원문은 로그에 남기지 않는다 — 상태 코드와 URL만 남긴다.
+                logger.warning(
+                    "event submit failed: status=%s url=%s", exc.response.status_code, url
+                )
+                events_failed += 1
+                _record_outcome(event_outcomes, url=url, outcome="failed", reason="submit_error")
+                continue
 
-        # 탐색이 준 platform이 해석 결과에 없으면 채운다 — judgment·official_basis는
-        # 해석이 이미 낸 값을 그대로 둔다.
-        payload = dict(interpreted)
-        payload.setdefault("platform", event.get("platform"))
-        # 해석 모델은 주소·원문·출처명을 모른다 — 흐름이 아는 값을 채운다.
-        payload.setdefault("source_url", url)
-        payload.setdefault("raw_title", raw_title)
-        payload.setdefault("raw_text", raw_text)
-        # 공식 채널명을 확인할 근거가 없다 — 검색어를 넣지 말라는 계획
-        # 제약과 같은 이유로 지어내는 대신 비워 둔다(검수 화면은 빈
-        # source_name을 이미 정상 상태로 다룬다).
-        payload.setdefault("source_name", "")
-        try:
-            response = client.submit_event(run_id=run_id, lease_token=lease_token, event=payload)
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 409:
-                raise LeaseLostError("event submit returned 409") from exc
-            # 캡션·페이로드 원문은 로그에 남기지 않는다 — 상태 코드와 URL만 남긴다.
-            logger.warning("event submit failed: status=%s url=%s", exc.response.status_code, url)
-            events_failed += 1
-            continue
+            if isinstance(response, dict) and response.get("status") == "excluded":
+                # 앞단 필터를 통과했어도 서버가 뒤늦게 제외 판정할 수 있다.
+                events_excluded += 1
+                server_reason = _SERVER_EXCLUDED_REASONS.get(response.get("reason"), "")
+                _record_outcome(event_outcomes, url=url, outcome="excluded", reason=server_reason)
+            elif isinstance(response, dict) and response.get("status") in ("created", "duplicate"):
+                _record_outcome(event_outcomes, url=url, outcome=response["status"], reason="")
 
-        if isinstance(response, dict) and response.get("status") == "excluded":
-            # 앞단 필터를 통과했어도 서버가 뒤늦게 제외 판정할 수 있다.
-            events_excluded += 1
+        for source in sources:
+            # 국가가 확정된 국내(kr)가 아니면 제출하지 않는다 — 키 자체가 없거나
+            # 불확실해도 제외하라는 결정이라 정규화 없이 서버와 같은 규칙을 쓴다.
+            if source.get("source_country") != "kr":
+                continue
+            # 목록형·계정형 구분은 서버 몫이다 — 그대로 넘긴다.
+            try:
+                client.submit_candidate(run_id=run_id, lease_token=lease_token, candidate=source)
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 409:
+                    raise LeaseLostError("candidate submit returned 409") from exc
+                logger.warning(
+                    "candidate submit failed: status=%s url=%s",
+                    exc.response.status_code,
+                    source.get("url"),
+                )
+                continue
+    except LeaseLostError:
+        # 다른 곳이 이미 이 실행의 임대를 가져갔다 — 부분 결과를 감싸지 않고
+        # 호출자가 곧바로 조용히 다음 폴로 넘어가게 그대로 전달한다.
+        raise
+    except Exception as exc:
+        summary = _build_summary(
+            events_attempted=events_attempted,
+            events_failed=events_failed,
+            events_excluded=events_excluded,
+            event_outcomes=event_outcomes,
+        )
+        raise ExplorationFlowError(summary) from exc
 
-    for source in sources:
-        # 국가가 확정된 국내(kr)가 아니면 제출하지 않는다 — 키 자체가 없거나
-        # 불확실해도 제외하라는 결정이라 정규화 없이 서버와 같은 규칙을 쓴다.
-        if source.get("source_country") != "kr":
-            continue
-        # 목록형·계정형 구분은 서버 몫이다 — 그대로 넘긴다.
-        try:
-            client.submit_candidate(run_id=run_id, lease_token=lease_token, candidate=source)
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 409:
-                raise LeaseLostError("candidate submit returned 409") from exc
-            logger.warning(
-                "candidate submit failed: status=%s url=%s", exc.response.status_code, source.get("url")
-            )
-            continue
-
-    return {
-        "events_attempted": events_attempted,
-        "events_failed": events_failed,
-        "events_excluded": events_excluded,
-    }
+    return _build_summary(
+        events_attempted=events_attempted,
+        events_failed=events_failed,
+        events_excluded=events_excluded,
+        event_outcomes=event_outcomes,
+    )
