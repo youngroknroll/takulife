@@ -449,6 +449,29 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
           {% endif %}
         </section>
 
+        <section class="dash-panel">
+          <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">저장소</h2>
+            {% if storage %}
+              <span class="mono dash-panel-head-meta dash-panel-head-meta--end">전체 {{ storage.total_label }}</span>
+            {% endif %}
+          </div>
+          {% if not storage %}
+            <p class="dash-empty">Postgres 외 엔진에서는 저장소 크기를 측정할 수 없습니다.</p>
+          {% elif not storage.tables %}
+            <p class="dash-empty">표 크기를 가져오지 못했습니다.</p>
+          {% else %}
+            <dl class="dash-storage-list">
+              {% for t in storage.tables %}
+                <div class="dash-storage-row">
+                  <dt class="dash-storage-name mono">{{ t.name }}</dt>
+                  <dd class="dash-storage-size mono">{{ t.label }}</dd>
+                </div>
+              {% endfor %}
+            </dl>
+          {% endif %}
+        </section>
+
         {% if quality_warnings.needs_reverification > 0 %}
           <div class="dash-callout">
             <p class="dash-callout-title">⚠ 시작 임박 · 미확인 {{ quality_warnings.needs_reverification }}건</p>
