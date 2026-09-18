@@ -6,7 +6,8 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from drafts.models import DraftSource, EventDraft
+from drafts.discovery_runs import EVENT_OUTCOME_REASONS
+from drafts.models import DraftSource, EventDraft, SourceCandidate, SourceDiscoveryRun
 
 pytestmark = pytest.mark.domain
 
@@ -465,3 +466,216 @@ class TestDraftSearch:
         self._make(source_url="https://f.test/2")
 
         assert list_drafts(search="   ").count() == 2
+
+
+@pytest.mark.django_db
+class TestRecentDiscoveryRuns:
+    """S8 대시보드 상세 표시용 계약: 행사 생성/제외/실패 건수와 결과별 표시 행."""
+
+    def test_후보와_행사_드래프트가_함께_있어도_조인_곱으로_건수가_부풀지_않는다(self):
+        """candidates와 events(드래프트)를 한 쿼리에서 Count하면 조인 곱이 생긴다 —
+        distinct 처리가 없으면 이 테스트가 promoted_count·events_created를 실제보다
+        크게 계산해 실패한다."""
+        from drafts.queries import recent_discovery_runs
+
+        run = SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.SUCCEEDED)
+        SourceCandidate.objects.create(
+            run=run,
+            name="후보1",
+            url="https://example.com/c1",
+            source_type="html",
+            sample_url="https://example.com/c1/sample",
+            status=SourceCandidate.Status.PROMOTED,
+        )
+        SourceCandidate.objects.create(
+            run=run,
+            name="후보2",
+            url="https://example.com/c2",
+            source_type="html",
+            sample_url="https://example.com/c2/sample",
+            status=SourceCandidate.Status.FAILED,
+        )
+        EventDraft.objects.create(source_url="https://example.com/e1", discovery_run=run)
+        EventDraft.objects.create(source_url="https://example.com/e2", discovery_run=run)
+
+        rows = recent_discovery_runs()
+
+        row = next(r for r in rows if r["run"].pk == run.pk)
+        assert row["promoted_count"] == 1
+        assert row["failed_count"] == 1
+        assert row["events_created"] == 2
+
+    def test_결과_목록이_비어있는_옛_실행은_제외_실패_건수가_None이다(self):
+        from drafts.queries import recent_discovery_runs
+
+        old_run = SourceDiscoveryRun.objects.create(
+            status=SourceDiscoveryRun.Status.SUCCEEDED,
+            event_outcomes=[],
+            events_excluded=3,
+            events_failed=2,
+        )
+
+        rows = recent_discovery_runs()
+
+        row = next(r for r in rows if r["run"].pk == old_run.pk)
+        assert row["events_excluded"] is None
+        assert row["events_failed"] is None
+
+    def test_결과_목록이_있는_실행은_제외_실패_건수를_필드값_그대로_보여준다(self):
+        from drafts.queries import recent_discovery_runs
+
+        run = SourceDiscoveryRun.objects.create(
+            status=SourceDiscoveryRun.Status.SUCCEEDED,
+            events_excluded=2,
+            events_failed=1,
+            event_outcomes=[
+                {"url": "https://example.com/x1", "outcome": "excluded", "reason": "ended"},
+            ],
+        )
+
+        rows = recent_discovery_runs()
+
+        row = next(r for r in rows if r["run"].pk == run.pk)
+        assert row["events_excluded"] == 2
+        assert row["events_failed"] == 1
+
+    def test_결과_행이_호스트_경로_배지_사유라벨을_계산한다(self):
+        from drafts.queries import recent_discovery_runs
+
+        run = SourceDiscoveryRun.objects.create(
+            status=SourceDiscoveryRun.Status.SUCCEEDED,
+            event_outcomes=[
+                {
+                    "url": "https://example.com/events/1?ref=abc#frag",
+                    "outcome": "created",
+                    "reason": "",
+                },
+                {
+                    "url": "https://example.com/events/2",
+                    "outcome": "duplicate",
+                    "reason": "",
+                },
+                {
+                    "url": "https://example.com/events/3",
+                    "outcome": "excluded",
+                    "reason": "overseas",
+                },
+                {
+                    "url": "https://example.com/events/4",
+                    "outcome": "failed",
+                    "reason": "fetch_error",
+                },
+                {
+                    "url": "https://example.com/events/5",
+                    "outcome": "skipped",
+                    "reason": "known_url",
+                },
+                {
+                    "url": "https://example.com/events/6",
+                    "outcome": "excluded",
+                    "reason": "not_a_real_reason",
+                },
+            ],
+        )
+
+        rows = recent_discovery_runs()
+
+        row = next(r for r in rows if r["run"].pk == run.pk)
+        outcome_rows = row["outcome_rows"]
+        assert len(outcome_rows) == 6
+
+        created_row = outcome_rows[0]
+        assert created_row["display_url"] == "example.com/events/1"
+        assert created_row["outcome"] == "created"
+        assert created_row["outcome_label"] == "생성됨"
+        assert created_row["tone"] == "ok"
+        assert created_row["reason_label"] == ""
+
+        duplicate_row = outcome_rows[1]
+        assert duplicate_row["outcome_label"] == "중복"
+        assert duplicate_row["tone"] == "disabled"
+
+        excluded_row = outcome_rows[2]
+        assert excluded_row["outcome_label"] == "제외"
+        assert excluded_row["tone"] == "disabled"
+        assert excluded_row["reason_label"] == "해외 행사"
+
+        failed_row = outcome_rows[3]
+        assert failed_row["outcome_label"] == "실패"
+        assert failed_row["tone"] == "error"
+        assert failed_row["reason_label"] == "가져오기 오류"
+
+        skipped_row = outcome_rows[4]
+        assert skipped_row["outcome_label"] == "건너뜀"
+        assert skipped_row["tone"] == "disabled"
+        assert skipped_row["reason_label"] == "이미 등록된 URL"
+
+        unknown_reason_row = outcome_rows[5]
+        assert unknown_reason_row["reason_label"] == "알 수 없음"
+
+    def test_url에_계정_정보가_섞여있어도_화면에_노출하지_않는다(self):
+        """urlsplit의 netloc은 user:pass@host 형태를 그대로 담으므로, hostname만
+        써서 계정 정보가 상세 표에 노출되지 않게 고정한다."""
+        from drafts.queries import recent_discovery_runs
+
+        run = SourceDiscoveryRun.objects.create(
+            status=SourceDiscoveryRun.Status.SUCCEEDED,
+            event_outcomes=[
+                {
+                    "url": "https://user:secret@example.com/e/1?x=1",
+                    "outcome": "created",
+                    "reason": "",
+                },
+            ],
+        )
+
+        rows = recent_discovery_runs()
+
+        row = next(r for r in rows if r["run"].pk == run.pk)
+        display_url = row["outcome_rows"][0]["display_url"]
+        assert display_url == "example.com/e/1"
+        assert "secret" not in display_url
+
+    def test_사유_라벨_사전은_허용된_모든_사유값을_덮는다(self):
+        """EVENT_OUTCOME_REASONS 허용 목록에 새 사유가 추가되면 라벨 사전도
+        같이 갱신해야 한다는 것을 강제한다."""
+        from drafts.queries import EVENT_OUTCOME_REASON_LABELS
+
+        all_reasons = {
+            reason
+            for reasons in EVENT_OUTCOME_REASONS.values()
+            for reason in reasons
+            if reason
+        }
+
+        assert all_reasons <= set(EVENT_OUTCOME_REASON_LABELS.keys())
+
+    def test_쿼리_수가_실행_건수와_무관하게_고정된다(self, django_assert_num_queries):
+        """실행 3건 각각 후보·드래프트·결과 목록을 갖고 있어도 N+1 없이 1쿼리로
+        끝나야 한다 — annotate 집계 결과와 event_outcomes JSON은 같은 행에서
+        오므로 추가 쿼리가 필요 없다."""
+        from drafts.queries import recent_discovery_runs
+
+        for i in range(3):
+            run = SourceDiscoveryRun.objects.create(
+                status=SourceDiscoveryRun.Status.SUCCEEDED,
+                event_outcomes=[
+                    {"url": f"https://example.com/r{i}/1", "outcome": "created", "reason": ""},
+                ],
+            )
+            SourceCandidate.objects.create(
+                run=run,
+                name=f"후보{i}",
+                url=f"https://example.com/r{i}/c1",
+                source_type="html",
+                sample_url=f"https://example.com/r{i}/c1/sample",
+                status=SourceCandidate.Status.PROMOTED,
+            )
+            EventDraft.objects.create(source_url=f"https://example.com/r{i}/e1", discovery_run=run)
+
+        with django_assert_num_queries(1):
+            rows = recent_discovery_runs()
+            for row in rows:
+                # outcome_rows 계산이 run.event_outcomes(이미 로딩된 필드)만
+                # 쓰는지 강제로 소비해 확인한다.
+                list(row["outcome_rows"])
