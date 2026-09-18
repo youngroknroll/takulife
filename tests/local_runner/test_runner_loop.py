@@ -6,7 +6,7 @@ import pytest
 
 import local_runner.runner as runner_module
 from local_runner.claude_code_adapter import AdapterOutputError
-from local_runner.exploration_flow import LeaseLostError
+from local_runner.exploration_flow import ExplorationFlowError, LeaseLostError
 from local_runner.runner import _filter_candidates, _process_run, _safe_poll
 
 
@@ -75,7 +75,16 @@ class _OrderRecordingClient:
         return self._submit_result
 
     def complete(
-        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
     ):
         self._calls.append(("client", "complete", runner_status, failure_kind))
 
@@ -195,7 +204,17 @@ class _RecordingCompleteClient:
     def __init__(self):
         self.complete_calls = []
 
-    def complete(self, *, run_id, lease_token, runner_status, events_attempted=0, events_failed=0, events_excluded=0):
+    def complete(
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
+    ):
         self.complete_calls.append(
             {
                 "run_id": run_id,
@@ -270,7 +289,16 @@ class _LeaseLostFlowClient:
         return self._run
 
     def complete(
-        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
     ):
         self.complete_calls.append((runner_status, failure_kind))
 
@@ -320,7 +348,16 @@ class _CompleteRecordingClient:
         return list(urls)
 
     def complete(
-        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
     ):
         self.complete_calls.append(
             {
@@ -378,6 +415,7 @@ class _ExcludedRecordingCompleteClient:
         events_attempted=0,
         events_failed=0,
         events_excluded=0,
+        event_outcomes=None,
     ):
         self.complete_calls.append(
             {
@@ -458,3 +496,99 @@ def test_흐름에서_예상하지_못한_예외가_나면_실패로_완료_보�
             "events_failed": 0,
         }
     ]
+
+
+class _CompleteEventOutcomesClient:
+    """완료 호출 인자를 통째로 기록만 하는 가짜 클라이언트 — event_outcomes
+    배선을 검증하려는 것이라 대역이 배선을 대신 처리하면 안 된다."""
+
+    def __init__(self):
+        self.complete_calls = []
+
+    def complete(
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
+    ):
+        self.complete_calls.append(
+            {
+                "run_id": run_id,
+                "lease_token": lease_token,
+                "runner_status": runner_status,
+                "failure_kind": failure_kind,
+                "events_attempted": events_attempted,
+                "events_failed": events_failed,
+                "events_excluded": events_excluded,
+                "event_outcomes": event_outcomes,
+            }
+        )
+
+
+def test_탐색_흐름이_끝나면_결과_목록을_완료_보고에_싣는다(monkeypatch):
+    event_outcomes = [{"url": "https://example.com/a", "outcome": "failed", "reason": "fetch_empty"}]
+
+    def fake_run_exploration_flow(**kwargs):
+        return {
+            "events_attempted": 1,
+            "events_failed": 1,
+            "events_excluded": 0,
+            "event_outcomes": event_outcomes,
+        }
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _CompleteEventOutcomesClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    runner_module._process_run(client, run, exploration_result)
+
+    assert len(client.complete_calls) == 1
+    call = client.complete_calls[0]
+    assert call["runner_status"] == "succeeded"
+    assert call["event_outcomes"] == event_outcomes
+
+
+def test_탐색_흐름이_도중에_실패해도_그때까지의_결과를_실패_보고에_싣는다(monkeypatch):
+    event_outcomes = [{"url": "https://example.com/a", "outcome": "failed", "reason": "fetch_empty"}]
+    partial_summary = {
+        "events_attempted": 1,
+        "events_failed": 1,
+        "events_excluded": 0,
+        "event_outcomes": event_outcomes,
+    }
+
+    def fake_run_exploration_flow(**kwargs):
+        raise ExplorationFlowError(partial_summary)
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _CompleteEventOutcomesClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    runner_module._process_run(client, run, exploration_result)
+
+    assert len(client.complete_calls) == 1
+    call = client.complete_calls[0]
+    assert call["runner_status"] == "failed"
+    assert call["failure_kind"] == "exploration_error"
+    assert call["event_outcomes"] == event_outcomes
+    assert call["events_attempted"] == partial_summary["events_attempted"]
