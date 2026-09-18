@@ -246,8 +246,11 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   참고) / MAX_LEASES=2 / MAX_CANDIDATES_PER_RUN=10 /
   INITIAL_DRAFTS_PER_PROMOTED_SOURCE=5
 - 실행 상태 enum: pending/claimed/succeeded/partially_failed/failed/expired.
-  후보 실패 단계 8종: schema/duplicate/url_safety/robots/fetch/
-  listing_extraction/sample_canary/sample_mismatch
+  후보 실패 단계 8종(기록 당시): schema/duplicate/url_safety/robots/fetch/
+  listing_extraction/sample_canary/sample_mismatch — **정정(트랙 35,
+  2026-09-18)**: 트랙 33이 `not_domestic`을, 트랙 35가 `robots_fetch_failed`를
+  추가해 현재 10종이다 `[실측 python3 ast, drafts/models.py:160-170]`(원문 8종은
+  기록 당시 값으로 남긴다)
 - 러너 인증: env `DRAFT_DISCOVERY_RUNNER_TOKEN` + 헤더 `X-Runner-Token`,
   **빈 설정은 비교 전 명시 거부**(`constant_time_compare`가 빈 문자열 쌍을
   참으로 보는 함정 — 가드레일), 스로틀 `discovery_runner` 60/minute, 공개
@@ -605,6 +608,151 @@ D9, `prompt_plan.md` 트랙 33 참고). 스태프가 URL을 직접 골라 추가
 이미 만들어진 드래프트와 등록된 소스는 이 필터로 소급 정리되지 않는다.
 해외 소스는 `DraftSource.enabled=False`로 직접 비활성화해야 하며, 운영 DB에
 해외 소스가 남아 있는지는 배포 후 수동으로 확인한다.
+
+## 트랙 35: 드래프트 실행 결과 기록·대시보드 표시(2026-09-18)
+
+행사별 결과를 실행 기록에 남기고 대시보드에 보여준다. 같은 트랙에서
+2026-09-17 실기동 검토가 찾은 결함 5건(러너가 서버 판정을 무시, 탐색
+프롬프트에 오늘·국내 조건 없음, X 게시물 읽기 미구현, 사유 로그 없음,
+실패 소스 무조건 재검증)도 함께 고친다.
+
+### `event_outcomes` 계약은 항목 단위로 버리고 200을 유지한다
+
+outcome 5종(created/duplicate/excluded/failed/skipped)과 outcome별 허용
+reason 집합은 서버 `EVENT_OUTCOME_REASONS`
+`[코드]` `drafts/discovery_runs.py:29-43`가 소유한다. 러너 쪽 어휘(실제로
+낼 수 있는 (outcome, reason) 짝)는 `local_runner/exploration_flow.py`가
+`_record_outcome` 호출로 낸다 `[코드]`(예: 210·219·228행). 두 어휘가
+갈라지지 않게 `tests/local_runner/test_outcome_vocabulary_parity.py`가
+러너 소스를 AST로 읽어 서버 허용목록과 대조한다 `[코드]`.
+
+완료 API는 리스트 타입이 아니면 기존처럼 400이지만, 리스트 안 개별
+항목이 dict가 아니거나 url·outcome·reason 형식·허용목록을 벗어나면 그
+항목만 조용히 버리고 200을 유지한다 `[코드]` `drafts/discovery_runs.py`
+`_clean_event_outcomes`(57~96행). 완료를 400으로 내리면 러너
+`RunnerClient.complete`가 예외를 내 `complete_run`이 실행되지 않아
+실행이 CLAIMED로 남고, 임대 `LEASE_SECONDS=1800`초
+`[코드 drafts/discovery_runs.py:19]` × `MAX_LEASES=2`
+`[코드 drafts/discovery_runs.py:22]` 동안 새 탐색이 막히기 때문이다.
+url은 `sanitize_text` 적용·http(s) 스킴·200자 이하만 통과하고
+(`_clean_event_outcomes` 74~78행), `outcome=="created"`인 항목은 이
+실행이 실제로 만든 드래프트 source_url과 대조해 없으면 버린다(87행,
+러너 문자열을 그대로 믿지 않는다). 최대 20건까지만 남기고 초과분은
+절단한다 — `_MAX_EVENT_OUTCOMES = 20`
+`[코드]` `drafts/discovery_runs.py:46`.
+
+### 건너뛴 항목은 attempted·excluded 둘 다에 들어간다
+
+`events_excluded` 정의(`drafts/models.py:141`)와 일치시키고, 차단
+호스트를 건너뛸 때 이미 attempted+failed로 세는 기존 패턴(`
+local_runner/exploration_flow.py:205-211`)과 대칭을 맞춘다.
+
+### 건너뛰기는 코드가 재확인할 수 있는 두 사유만 믿는다
+
+탐색이 낸 `why_excluded`를 문자열 그대로 믿지 않고, `ended`는 같은
+이벤트의 `end_date`(ISO)가 오늘(KST)보다 이전인지, `overseas`는 URL
+호스트가 같은 출력의 `source_country=="not_kr"` 소스 호스트와 실제로
+겹치는지 코드로 다시 본다 `[코드]` `local_runner/exploration_flow.py`
+`_agent_marked_ended`(29~41행)·`_agent_marked_overseas`(44~49행). 되돌릴
+때는 `SKIPPABLE_AGENT_REASONS = frozenset({"ended", "overseas"})`
+(26행)에서 값을 빼면 된다. `today_kst()`는
+`local_runner/clock.py`(단일 시각원, `_KST = ZoneInfo("Asia/Seoul")`)만
+쓴다 `[코드]`.
+
+### 탐색 프롬프트는 오늘·국내 조건을 명시로 받는다
+
+`local_runner/claude_code_adapter.py` `build_exploration_prompt`(83행)가
+`today` 인자를 받아 "대한민국에서 열리는 행사만 `is_event`를 참으로
+하라"는 조건과 `why_excluded` 허용값(ended·overseas 포함), 이벤트마다
+`end_date`(YYYY-MM-DD, 모르면 빈 문자열)를 요구한다 `[코드]`. `today`는
+`local_runner/runner.py:156`에서 `today_kst().isoformat()`으로 채운다
+`[코드]`.
+
+### 읽기 단계의 예상된 예외는 그 행사만 죽이고 계속한다
+
+기준선 실기동(2026-09-18, 실행 16)에서 행사 하나의 읽기 예외가 실행
+전체를 `exploration_error`로 죽여 결과 4건만 남고 5번째 항목은 예외
+클래스명 로그조차 없었다 `[문서 prompt_plan.md 트랙 35 S1c, 원 실측
+2026-09-18]`. 지금은 읽기 단계에서 예상되는 예외
+(`httpx.HTTPError`·`InvalidFetchUrlError`·`UnsafeFetchUrlError`·
+`ResponseTooLargeError`·`EmptyExtractionError`·`OSError`)를
+`_EXPECTED_FETCH_ERRORS`로 묶어 그 항목만 failed·`fetch_error`로 기록하고
+다음 항목을 계속 처리한다 `[코드]`
+`local_runner/exploration_flow.py:151-158,221-229`(본문 없이
+예외 클래스명·호스트만 WARNING 1줄, 225~227행). 러너 `_process_run`의 두
+실패 경로도 원인 예외 클래스명만 WARNING으로 남긴다(본문 금지)
+`[코드]` `local_runner/runner.py:88,105`. 서버 완료 허용목록
+`_ALLOWED_FAILURE_KINDS`에 러너가 실제 보내는 `exploration_error`가
+있다 `[코드]` `drafts/discovery_runs.py:25`.
+
+### X 게시물은 syndication 엔드포인트로만 읽는다
+
+x.com·twitter.com의 `/<handle>/status/<숫자 id>` 경로만
+`cdn.syndication.twimg.com/tweet-result`(고정 호스트)로 요청해 본문을
+돌려주고, 그 외 경로(프로필·미디어 등)는 요청 자체를 보내지 않는다
+`[코드]` `local_runner/page_fetch.py:59-61,127-184`(정규식
+`_X_STATUS_PATH_RE`, 토큰 계산 `_x_syndication_token` 127~147행, 요청·응답
+처리 `_fetch_x_post` 150~184행). 토큰 없이
+호출하면 빈 본문(2바이트 `{}`)이 온다 `[문서 prompt_plan.md 트랙 35 S5,
+원 실측 2026-09-18 curl]`; 실 게시물 URL 2건은 200으로 응답했다(같은
+출처). 인스타 캡션 경로는 이 트랙에서 바꾸지 않았다.
+
+### 소스 후보 robots 실패는 불허와 분리한다
+
+robots.txt를 가져오지 못하면(네트워크·인증서 오류) 새
+`FailureStage.ROBOTS_FETCH_FAILED`, robots.txt가 실제로 막으면 기존
+`FailureStage.ROBOTS`를 쓴다 `[코드]` `drafts/robots.py:28-29,76-79`,
+매핑은 `drafts/candidate_intake.py:14-16`. 마이그레이션
+`drafts/migrations/0013_alter_sourcecandidate_failure_stage.py`가
+`AlterField`로 반영한다.
+
+### 최근 결정적 실패 재사용은 세 단계로만 좁힌다
+
+같은 URL이 7일 안에 robots·sample_mismatch·listing_extraction으로
+실패했으면 네트워크 없이 같은 단계로 새 실패 행을 만든다 `[코드]`
+`drafts/candidate_validation.py:67-89`(`REUSABLE_FAILURE_STAGES`·
+`REUSE_WINDOW = timedelta(days=7)`). **착수 중 정정**: 초안은
+`url_safety`·`not_domestic`도 포함했으나, `url_safety`는 DNS 조회
+실패(OSError)가 같은 단계에 섞여 일시 오류일 수 있고, `not_domestic`은
+네트워크 없는 payload 필드 검사라 재사용 이득이 없이 다음 제출의
+교정값을 덮으므로 둘 다 뺐다(같은 파일 62~66행 주석에 근거를 남겼다).
+`robots_fetch_failed`·`fetch`·`sample_canary`도 일시 오류일 수 있어
+재사용 대상이 아니다.
+
+### 대시보드는 결과별 건수와 행사 단위 상세를 한 쿼리로 낸다
+
+`drafts/queries.py` `recent_discovery_runs`(183~217행)가 후보
+승격·실패 건수(조인 곱 방지를 위해 `distinct=True`)와 `run.events`
+기준 행사 생성 수를 한 쿼리에서 annotate하고, `event_outcomes`가 비어
+있던 옛 실행은 제외·실패 건수를 `None`으로 내 화면이 "-"로 표시한다.
+행사별 상세 행은 `_outcome_rows`(158~180행)가 이미 로딩된
+`event_outcomes` JSON만 써서(추가 쿼리 없이) 호스트+경로만 노출하는
+`_display_url`(151~155행, `hostname` 사용 — 계정 정보가 섞인
+`netloc`이 아니다)과 한국어 라벨(`EVENT_OUTCOME_LABELS`·
+`EVENT_OUTCOME_REASON_LABELS`, 122·142행)로 만든다. 후보 실패 단계
+라벨에 `not_domestic`·`robots_fetch_failed` 분기가 빠져 빈 칸으로
+보이던 문제(착수 중 발견, 같은 종류)도 같은 트랙에서 채웠다 `[코드]`
+`templates/staff/dashboard.html:310`.
+
+### 실기동 대조
+
+`[문서 prompt_plan.md 트랙 35 검증절, 원 실측 2026-09-18, 검색어
+"치이카와 팝업스토어"]` — 기준선(수정 전, 실행 16): 결과
+`exploration_error`로 실패, 소요 7분 39초, attempted 5건 / failed 1건 /
+excluded 3건, 결과 4건 기록. 수정 후(실행 17): `partially_failed`(후보
+실패만), 소요 1분 7초, attempted 6건 / failed 0건 / excluded 5건(그중
+건너뜀 4건), 드래프트 1건 생성(아이파크몰 용산점), 건너뛴 4건 전수
+확인 결과 오제외 0건. 이 수치는 이 문서 작성 세션에서 재실행해 얻은
+것이 아니라 트랙 35 계획서에 이미 기록된 값을 그대로 옮긴 것이라
+[문서] 태그를 쓴다 — 후속 세션이 이 표를 근거로 새 작업 규모를 정할
+때는 재측정해야 한다.
+
+### 이연
+
+- `event_outcomes` 별도 모델 승격 — 트리거: 실행 간 URL 실패 조회 요구.
+- 주관 사유(`same_name` 등) 건너뛰기 평가셋 — 트리거: 누적 실행 여러
+  번 뒤 에이전트 사유와 서버 판정 일치율 확보(권고 3~5회).
+- 캡션 경로 응답 크기 상한·DNS 리바인딩(TOCTOU) 하드닝.
 
 ## Evidence
 

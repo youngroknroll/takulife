@@ -15,7 +15,7 @@ from drafts.candidate_validation import (
 )
 from drafts.fetching import FetchError, ResponseTooLargeError, UnsupportedContentTypeError
 from drafts.models import DraftSource, EventDraft, SourceCandidate, SourceDiscoveryRun
-from drafts.robots import ROBOTS_DISALLOWED, RobotsCheckResult
+from drafts.robots import ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED, RobotsCheckResult
 from drafts.services import DraftCreationExcludedError
 from drafts.url_safety import UnsafeFetchUrlError
 
@@ -282,6 +282,153 @@ def test_robots_txt가_수집처_또는_표본_경로를_불허하면_robots_단
     assert candidate.status == SourceCandidate.Status.FAILED
     assert candidate.failure_stage == SourceCandidate.FailureStage.ROBOTS
     assert DraftSource.objects.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "reason, expected_stage",
+    [
+        (ROBOTS_DISALLOWED, "ROBOTS"),
+        (ROBOTS_FETCH_FAILED, "ROBOTS_FETCH_FAILED"),
+    ],
+    ids=["불허", "페치_실패"],
+)
+def test_robots_txt_페치_실패는_불허와_다른_단계로_기록된다(monkeypatch, reason, expected_stage):
+    # robots.txt 자체를 가져오지 못한 경우(네트워크·인증서 오류)는 규칙이 실제로
+    # 수집을 막았다는 뜻이 아니므로 disallowed와 다른 단계로 구분해야 한다.
+    _patch_safe_fetch_url(monkeypatch)
+    payload = _valid_payload()
+    run = _make_claimed_run()
+
+    checker = _FakeRobotsChecker(
+        outcomes={payload["url"]: RobotsCheckResult(False, reason)}
+    )
+    monkeypatch.setattr("drafts.candidate_validation.RobotsChecker", lambda: checker)
+
+    candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    expected = getattr(SourceCandidate.FailureStage, expected_stage)
+    assert candidate.status == SourceCandidate.Status.FAILED
+    assert candidate.failure_stage == expected
+    assert candidate.failure_reason == FAILURE_MESSAGES[expected.value]
+    assert DraftSource.objects.count() == 0
+
+
+def _make_recent_failed_candidate(*, url, failure_stage):
+    """다른 실행에서 이미 결정적으로 실패한 후보 — 7일 내 재사용 대상 픽스처.
+    실패 시점의 run은 이번 제출과 다른 run이어야 한다(같은 run 내 중복은
+    :176-179의 조기 반환이 이미 처리하는 별개 경로)."""
+    other_run = _make_claimed_run()
+    return SourceCandidate.objects.create(
+        run=other_run,
+        name="이전 실행 실패",
+        url=url,
+        source_type=DraftSource.SourceType.HTML,
+        sample_url="https://example.com/notice/1",
+        status=SourceCandidate.Status.FAILED,
+        failure_stage=failure_stage,
+        failure_reason=FAILURE_MESSAGES[failure_stage],
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "reused_stage",
+    [SourceCandidate.FailureStage.SAMPLE_MISMATCH, SourceCandidate.FailureStage.ROBOTS],
+    ids=["sample_mismatch", "robots"],
+)
+def test_7일_내_같은_URL의_결정적_실패는_네트워크_없이_같은_단계로_재실패한다(
+    monkeypatch, reused_stage, fail_if_called
+):
+    payload = _valid_payload()
+    _make_recent_failed_candidate(url=payload["url"], failure_stage=reused_stage)
+    run = _make_claimed_run()
+
+    # 재사용 경로라면 아래 세 협력자 중 어느 것도 호출되면 안 된다 — 호출되면
+    # fail_if_called가 즉시 실패시킨다.
+    monkeypatch.setattr("drafts.candidate_validation.validate_fetch_url", fail_if_called)
+    monkeypatch.setattr("drafts.candidate_validation.RobotsChecker", fail_if_called)
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", fail_if_called)
+
+    candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert candidate.status == SourceCandidate.Status.FAILED
+    assert candidate.failure_stage == reused_stage
+    assert DraftSource.objects.count() == 0
+
+
+def _patch_recorded_validate_fetch_url(monkeypatch):
+    """validate_fetch_url 호출 여부·횟수를 세는 대역 — 재사용 없이 네트워크
+    경로로 갔는지 확인할 때 쓴다."""
+    calls = []
+    monkeypatch.setattr(
+        "drafts.candidate_validation.validate_fetch_url",
+        lambda url, **kwargs: calls.append(url) or "1.1.1.1",
+    )
+    return calls
+
+
+def _patch_fetch_html_always_fails(monkeypatch):
+    """listing fetch_html이 항상 실패하게 해, 재사용 여부 확인 이후 나머지
+    단계(fetch·추출)까지 실제로 진행하지 않도록 빠르게 끊는다."""
+
+    def _raise(url, **kwargs):
+        raise FetchError
+
+    monkeypatch.setattr("drafts.candidate_validation.fetch_html", _raise)
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+def test_7일보다_오래된_결정적_실패는_재사용하지_않고_네트워크_경로로_간다(monkeypatch):
+    payload = _valid_payload()
+    old_candidate = _make_recent_failed_candidate(
+        url=payload["url"], failure_stage=SourceCandidate.FailureStage.ROBOTS
+    )
+    SourceCandidate.objects.filter(pk=old_candidate.pk).update(
+        created_at=timezone.now() - timedelta(days=8)
+    )
+    run = _make_claimed_run()
+
+    fetch_url_calls = _patch_recorded_validate_fetch_url(monkeypatch)
+    _patch_allow_all_robots(monkeypatch)
+    _patch_fetch_html_always_fails(monkeypatch)
+
+    submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert len(fetch_url_calls) >= 1
+
+
+@pytest.mark.django_db
+@pytest.mark.domain
+@pytest.mark.parametrize(
+    "excluded_stage",
+    [
+        SourceCandidate.FailureStage.ROBOTS_FETCH_FAILED,
+        SourceCandidate.FailureStage.FETCH,
+        SourceCandidate.FailureStage.SAMPLE_CANARY,
+        SourceCandidate.FailureStage.URL_SAFETY,
+        SourceCandidate.FailureStage.NOT_DOMESTIC,
+    ],
+    ids=["robots_fetch_failed", "fetch", "sample_canary", "url_safety", "not_domestic"],
+)
+def test_재사용_대상에서_제외된_단계는_다시_네트워크_경로로_간다(monkeypatch, excluded_stage):
+    # robots_fetch_failed·fetch·sample_canary는 일시 오류일 수 있고, url_safety는
+    # DNS 조회 실패(OSError)가 섞여 일시적일 수 있고, not_domestic은 네트워크
+    # 없는 payload 필드 검사라 재사용 이득 없이 교정된 다음 제출만 덮는다.
+    payload = _valid_payload()
+    _make_recent_failed_candidate(url=payload["url"], failure_stage=excluded_stage)
+    run = _make_claimed_run()
+
+    fetch_url_calls = _patch_recorded_validate_fetch_url(monkeypatch)
+    _patch_allow_all_robots(monkeypatch)
+    _patch_fetch_html_always_fails(monkeypatch)
+
+    submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
+
+    assert len(fetch_url_calls) >= 1
 
 
 @pytest.mark.django_db

@@ -171,6 +171,11 @@ class RunnerCompleteView(_RunnerAPIView):
             if not isinstance(count, int) or isinstance(count, bool):
                 return error_response("invalid complete payload", status.HTTP_400_BAD_REQUEST)
 
+        # 옛 러너는 이 키를 보내지 않으므로 빈 목록으로 호환한다.
+        event_outcomes = data.get("event_outcomes", [])
+        if not isinstance(event_outcomes, list):
+            return error_response("invalid complete payload", status.HTTP_400_BAD_REQUEST)
+
         try:
             run = complete_run(
                 run_id=run_id,
@@ -181,6 +186,7 @@ class RunnerCompleteView(_RunnerAPIView):
                 events_attempted=events_attempted,
                 events_failed=events_failed,
                 events_excluded=events_excluded,
+                event_outcomes=event_outcomes,
             )
         except SourceDiscoveryRun.DoesNotExist:
             return error_response("run not found", status.HTTP_404_NOT_FOUND)
