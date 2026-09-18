@@ -294,6 +294,16 @@ def test_러너가_실패를_보고해도_승격된_후보가_있으면_run_상�
     assert result.error_summary == "러너가 실행 실패를 보고했다 (agent_error)"
 
 
+def test_러너가_탐색_오류로_실패를_보고하면_실패_요약에_그_종류가_남는다():
+    run = _make_claimed_run()
+
+    result = complete_run(
+        run_id=run.pk, lease_token="tok", runner_status="failed", failure_kind="exploration_error"
+    )
+
+    assert "exploration_error" in result.error_summary
+
+
 def test_잘못된_lease로는_complete가_거부된다():
     run = _make_claimed_run()
 

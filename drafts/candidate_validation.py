@@ -3,10 +3,12 @@ import logging
 import re
 import socket
 import unicodedata
+from datetime import timedelta
 from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from drafts.candidate_intake import (
     LISTING_CONTENT_TYPES_BY_SOURCE_TYPE,
@@ -17,7 +19,7 @@ from drafts.discovery_runs import LeaseInvalidError, locked_run_with_valid_lease
 from drafts.extraction import EmptyExtractionError, extract_event_fields
 from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft, SourceCandidate
-from drafts.robots import RobotsChecker
+from drafts.robots import ROBOTS_FETCH_FAILED, RobotsChecker
 from drafts.services import create_collected_draft_from_url
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
@@ -44,6 +46,7 @@ FAILURE_MESSAGES = {
     "duplicate": "이미 등록된 수집처 URL이다",
     "url_safety": "URL이 안전성 검증을 통과하지 못했다",
     "robots": "robots.txt가 수집을 허용하지 않는다",
+    "robots_fetch_failed": "robots.txt를 가져오지 못했다(네트워크·인증서 오류)",
     "fetch": "목록 페이지를 가져오지 못했다",
     "listing_extraction": "선언된 유형과 선택자로 후보 URL을 추출하지 못했다",
     "sample_canary": "표본 페이지에서 규칙 기반 추출이 빈 결과를 냈다",
@@ -54,6 +57,37 @@ FAILURE_MESSAGES = {
 
 class CandidateLimitExceededError(Exception):
     pass
+
+
+# 같은 URL이 최근에 이미 결정적으로 실패했으면 재검증 없이 그 결과를 재사용한다.
+# robots_fetch_failed·fetch·sample_canary는 네트워크·인증서 오류 등 일시적 원인일
+# 수 있어 제외한다. url_safety도 DNS 조회 실패(OSError)가 같은 단계에 섞여
+# 일시 오류일 수 있고, not_domestic은 네트워크 없는 payload 필드 검사라 재사용
+# 이득이 없이 교정된 다음 제출만 덮으므로 제외한다.
+REUSABLE_FAILURE_STAGES = frozenset(
+    {
+        SourceCandidate.FailureStage.ROBOTS,
+        SourceCandidate.FailureStage.SAMPLE_MISMATCH,
+        SourceCandidate.FailureStage.LISTING_EXTRACTION,
+    }
+)
+REUSE_WINDOW = timedelta(days=7)
+
+
+def _recent_reusable_failure_stage(*, url):
+    """다른 실행 포함, 최근 REUSE_WINDOW 안에 이 URL이 결정적으로 실패한 단계가
+    있으면 그 단계를 돌려준다(없으면 None). 가장 최근 실패를 우선한다."""
+    return (
+        SourceCandidate.objects.filter(
+            url=url,
+            status=SourceCandidate.Status.FAILED,
+            failure_stage__in=REUSABLE_FAILURE_STAGES,
+            created_at__gte=timezone.now() - REUSE_WINDOW,
+        )
+        .order_by("-created_at")
+        .values_list("failure_stage", flat=True)
+        .first()
+    )
 
 
 # 계정형(instagram·x) 소스는 목록형과 달리 가져오기·robots를 타지 않는다 —
@@ -193,6 +227,10 @@ def submit_candidate(*, run_id, lease_token, payload):
     if DraftSource.objects.filter(url=cleaned["url"]).exists():
         return _fail(SourceCandidate.FailureStage.DUPLICATE)
 
+    reused_stage = _recent_reusable_failure_stage(url=cleaned["url"])
+    if reused_stage is not None:
+        return _fail(reused_stage)
+
     # 국내가 아니면(불확실 포함) 이후 실행마다 해외 드래프트를 계속 만드니,
     # 네트워크 검증 전에 미리 막는다 — 이벤트 쪽과 반대 방향의 판정이다.
     if payload.get("source_country") != "kr":
@@ -210,7 +248,12 @@ def submit_candidate(*, run_id, lease_token, payload):
     # 이후 단계(초기 드래프트 생성)에서도 재사용할 수 있도록 인스턴스 하나만 만든다.
     robots_checker = RobotsChecker()
     for url in (cleaned["url"], cleaned["sample_url"]):
-        if not robots_checker.check(url).allowed:
+        result = robots_checker.check(url)
+        if not result.allowed:
+            # robots.txt를 못 가져온 경우(네트워크·인증서 오류)는 규칙이 실제로
+            # 수집을 막았다는 뜻이 아니라 일시 오류이므로 다른 단계로 구분한다.
+            if result.reason == ROBOTS_FETCH_FAILED:
+                return _fail(SourceCandidate.FailureStage.ROBOTS_FETCH_FAILED)
             return _fail(SourceCandidate.FailureStage.ROBOTS)
 
     try:

@@ -6,7 +6,7 @@ import pytest
 
 import local_runner.runner as runner_module
 from local_runner.claude_code_adapter import AdapterOutputError
-from local_runner.exploration_flow import LeaseLostError
+from local_runner.exploration_flow import ExplorationFlowError, LeaseLostError
 from local_runner.runner import _filter_candidates, _process_run, _safe_poll
 
 
@@ -75,7 +75,16 @@ class _OrderRecordingClient:
         return self._submit_result
 
     def complete(
-        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
     ):
         self._calls.append(("client", "complete", runner_status, failure_kind))
 
@@ -195,7 +204,17 @@ class _RecordingCompleteClient:
     def __init__(self):
         self.complete_calls = []
 
-    def complete(self, *, run_id, lease_token, runner_status, events_attempted=0, events_failed=0, events_excluded=0):
+    def complete(
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
+    ):
         self.complete_calls.append(
             {
                 "run_id": run_id,
@@ -270,7 +289,16 @@ class _LeaseLostFlowClient:
         return self._run
 
     def complete(
-        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
     ):
         self.complete_calls.append((runner_status, failure_kind))
 
@@ -320,7 +348,16 @@ class _CompleteRecordingClient:
         return list(urls)
 
     def complete(
-        self, *, run_id, lease_token, runner_status, failure_kind="", events_attempted=0, events_failed=0, events_excluded=0
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
     ):
         self.complete_calls.append(
             {
@@ -378,6 +415,7 @@ class _ExcludedRecordingCompleteClient:
         events_attempted=0,
         events_failed=0,
         events_excluded=0,
+        event_outcomes=None,
     ):
         self.complete_calls.append(
             {
@@ -458,3 +496,198 @@ def test_흐름에서_예상하지_못한_예외가_나면_실패로_완료_보�
             "events_failed": 0,
         }
     ]
+
+
+class _CompleteEventOutcomesClient:
+    """완료 호출 인자를 통째로 기록만 하는 가짜 클라이언트 — event_outcomes
+    배선을 검증하려는 것이라 대역이 배선을 대신 처리하면 안 된다."""
+
+    def __init__(self):
+        self.complete_calls = []
+
+    def complete(
+        self,
+        *,
+        run_id,
+        lease_token,
+        runner_status,
+        failure_kind="",
+        events_attempted=0,
+        events_failed=0,
+        events_excluded=0,
+        event_outcomes=None,
+    ):
+        self.complete_calls.append(
+            {
+                "run_id": run_id,
+                "lease_token": lease_token,
+                "runner_status": runner_status,
+                "failure_kind": failure_kind,
+                "events_attempted": events_attempted,
+                "events_failed": events_failed,
+                "events_excluded": events_excluded,
+                "event_outcomes": event_outcomes,
+            }
+        )
+
+
+def test_탐색_흐름이_끝나면_결과_목록을_완료_보고에_싣는다(monkeypatch):
+    event_outcomes = [{"url": "https://example.com/a", "outcome": "failed", "reason": "fetch_empty"}]
+
+    def fake_run_exploration_flow(**kwargs):
+        return {
+            "events_attempted": 1,
+            "events_failed": 1,
+            "events_excluded": 0,
+            "event_outcomes": event_outcomes,
+        }
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _CompleteEventOutcomesClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    runner_module._process_run(client, run, exploration_result)
+
+    assert len(client.complete_calls) == 1
+    call = client.complete_calls[0]
+    assert call["runner_status"] == "succeeded"
+    assert call["event_outcomes"] == event_outcomes
+
+
+def test_탐색_흐름이_도중에_실패해도_그때까지의_결과를_실패_보고에_싣는다(monkeypatch):
+    event_outcomes = [{"url": "https://example.com/a", "outcome": "failed", "reason": "fetch_empty"}]
+    partial_summary = {
+        "events_attempted": 1,
+        "events_failed": 1,
+        "events_excluded": 0,
+        "event_outcomes": event_outcomes,
+    }
+
+    def fake_run_exploration_flow(**kwargs):
+        raise ExplorationFlowError(partial_summary)
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _CompleteEventOutcomesClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    runner_module._process_run(client, run, exploration_result)
+
+    assert len(client.complete_calls) == 1
+    call = client.complete_calls[0]
+    assert call["runner_status"] == "failed"
+    assert call["failure_kind"] == "exploration_error"
+    assert call["event_outcomes"] == event_outcomes
+    assert call["events_attempted"] == partial_summary["events_attempted"]
+
+
+# ---------------------------------------------------------------------------
+# TR-39 — _process_run이 실패 완료 보고를 보낼 때 원인 예외 종류를 로그로도
+# 남겨야 실기동에서 무엇이 죽었는지 알 수 있다. 다만 예외 메시지 본문은
+# 민감할 수 있어 로그에 남기면 안 된다(클래스명만).
+# ---------------------------------------------------------------------------
+
+
+def test_ExplorationFlowError의_원인_예외_클래스명이_WARNING_로그에_남고_본문은_남지_않는다(
+    monkeypatch, caplog
+):
+    partial_summary = {
+        "events_attempted": 1,
+        "events_failed": 1,
+        "events_excluded": 0,
+        "event_outcomes": [],
+    }
+
+    def fake_run_exploration_flow(**kwargs):
+        try:
+            raise RuntimeError("secret-body")
+        except RuntimeError as cause:
+            raise ExplorationFlowError(partial_summary) from cause
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _CompleteEventOutcomesClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    with caplog.at_level(logging.WARNING, logger="local_runner.runner"):
+        runner_module._process_run(client, run, exploration_result)
+
+    assert "RuntimeError" in caplog.text
+    assert "secret-body" not in caplog.text
+
+
+def test_예상하지_못한_일반_예외의_클래스명이_WARNING_로그에_남고_본문은_남지_않는다(
+    monkeypatch, caplog
+):
+    def fake_run_exploration_flow(**kwargs):
+        raise ValueError("secret-body-2")
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _CompleteEventOutcomesClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    with caplog.at_level(logging.WARNING, logger="local_runner.runner"):
+        runner_module._process_run(client, run, exploration_result)
+
+    assert "ValueError" in caplog.text
+    assert "secret-body-2" not in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# TR-28 — S4: 러너는 탐색 프롬프트를 만들 때 local_runner.clock의 오늘(KST)을
+# 그대로 전달한다.
+# ---------------------------------------------------------------------------
+
+
+def test_러너는_탐색_프롬프트에_clock의_오늘_날짜를_KST로_전달한다(monkeypatch):
+    import datetime as datetime_module
+
+    captured_prompts = []
+
+    def fake_run_exploration_agent(prompt, execute=None):
+        captured_prompts.append(prompt)
+        return {"events": [], "sources": []}
+
+    monkeypatch.setattr(runner_module, "today_kst", lambda: datetime_module.date(2026, 9, 18))
+    monkeypatch.setattr(runner_module, "_run_exploration_agent", fake_run_exploration_agent)
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _make_fake_ticker_class([]))
+
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+    client = _CompleteRecordingClient(run)
+
+    runner_module._run_once(client)
+
+    assert len(captured_prompts) == 1
+    assert "2026-09-18" in captured_prompts[0]
