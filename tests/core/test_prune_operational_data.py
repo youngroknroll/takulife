@@ -159,6 +159,22 @@ def test_dry_run은_아무것도_지우지_않고_대상별_건수만_보고한�
     assert result["sessions"]["count"] == 1
     assert result["access_logs"]["count"] == 1
     assert result["error_groups"]["count"] == 1
+    assert result["access_failure_logs"]["count"] == 0
+
+
+@pytest.mark.django_db
+def test_dry_run은_AccessFailureLog_건수도_보고한다():
+    # RT-07
+    now = timezone.now()
+    access_failure_log = AccessFailureLog.objects.create(username="rt07-access-failure-log")
+    AccessFailureLog.objects.filter(pk=access_failure_log.pk).update(
+        attempt_time=now - timedelta(days=91)
+    )
+
+    result = prune_operational_data(dry_run=True)
+
+    assert AccessFailureLog.objects.filter(username="rt07-access-failure-log").exists()
+    assert result["access_failure_logs"]["count"] == 1
 
 
 @pytest.mark.contract
@@ -177,10 +193,12 @@ def test_한_대상_삭제가_실패해도_다른_대상은_지워지고_Command
 
     monkeypatch.setattr("core.retention.call_command", flaky_clearsessions)
 
+    out = StringIO()
     with pytest.raises(CommandError):
-        call_command("prune_operational_data", stdout=StringIO())
+        call_command("prune_operational_data", stdout=out)
 
     assert not AccessLog.objects.filter(username="rt08-access-log").exists()
+    assert "error=RuntimeError" in out.getvalue()  # RT-20
 
 
 @pytest.mark.django_db
@@ -211,3 +229,68 @@ def test_명령_실행_결과가_대상별_라벨과_건수로_표준출력에_�
     for label in ("sessions", "access_logs", "access_failure_logs", "error_groups"):
         assert label in output
     assert "1" in output
+
+
+@pytest.mark.django_db
+def test_days가_1_미만이면_함수가_ValueError를_낸다():
+    # RT-17
+    with pytest.raises(ValueError):
+        prune_operational_data(days=0)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("days", [0, -1])
+def test_days가_1_미만이면_명령은_아무것도_지우지_않고_CommandError를_낸다(days):
+    # RT-17
+    now = timezone.now()
+    AccessLog.objects.create(username="rt17-access-log")
+    AccessLog.objects.filter(username="rt17-access-log").update(
+        attempt_time=now - timedelta(days=91)
+    )
+    ErrorGroup.objects.create(
+        source=ErrorGroup.Source.BACKEND,
+        fingerprint="e" * 64,
+        error_type="Rt17Error",
+        location="rt17-location",
+        last_seen=now - timedelta(days=91),
+    )
+    Session.objects.create(
+        session_key="rt17-session", session_data="", expire_date=now + timedelta(days=1)
+    )
+
+    with pytest.raises(CommandError):
+        call_command("prune_operational_data", "--days", str(days), stdout=StringIO())
+
+    assert AccessLog.objects.filter(username="rt17-access-log").exists()
+    assert ErrorGroup.objects.filter(fingerprint="e" * 64).exists()
+    assert Session.objects.filter(session_key="rt17-session").exists()
+
+
+@pytest.mark.django_db
+def test_dry_run_옵션이_전달되면_아무것도_지우지_않고_dry_run으로_시작한다():
+    # RT-18
+    now = timezone.now()
+    access_log = AccessLog.objects.create(username="rt18-access-log")
+    AccessLog.objects.filter(pk=access_log.pk).update(attempt_time=now - timedelta(days=91))
+
+    out = StringIO()
+    call_command("prune_operational_data", "--dry-run", stdout=out)
+    output = out.getvalue()
+
+    assert output.splitlines()[0] == "dry-run"
+    assert AccessLog.objects.filter(username="rt18-access-log").exists()
+
+
+@pytest.mark.django_db
+def test_days_옵션이_전달되면_그_기준으로_삭제한다():
+    # RT-18
+    now = timezone.now()
+    old = AccessLog.objects.create(username="rt18-old-access-log")
+    recent = AccessLog.objects.create(username="rt18-recent-access-log")
+    AccessLog.objects.filter(pk=old.pk).update(attempt_time=now - timedelta(days=31))
+    AccessLog.objects.filter(pk=recent.pk).update(attempt_time=now - timedelta(days=29))
+
+    call_command("prune_operational_data", "--days", "30", stdout=StringIO())
+
+    assert not AccessLog.objects.filter(username="rt18-old-access-log").exists()
+    assert AccessLog.objects.filter(username="rt18-recent-access-log").exists()

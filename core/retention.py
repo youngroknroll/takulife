@@ -65,6 +65,10 @@ _TARGETS = (
 
 def prune_operational_data(*, days=90, dry_run=False):
     """대상별로 만료·보존 기간이 지난 운영 로그성 데이터를 정리한다."""
+    if days < 1:
+        # 0·음수면 cutoff가 현재·미래가 되어 로그를 전량 지운다.
+        raise ValueError("days must be >= 1")
+
     results = {}
 
     for key, count_fn, delete_fn in _TARGETS:

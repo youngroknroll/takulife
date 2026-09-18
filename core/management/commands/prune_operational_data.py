@@ -17,7 +17,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
-        results = prune_operational_data(days=options["days"], dry_run=dry_run)
+        try:
+            results = prune_operational_data(days=options["days"], dry_run=dry_run)
+        except ValueError as exc:
+            raise CommandError(str(exc)) from exc
 
         if dry_run:
             self.stdout.write("dry-run")

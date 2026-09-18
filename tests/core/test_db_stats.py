@@ -45,10 +45,10 @@ def test_크기_쿼리가_예외를_내면_저장소_요약은_None이다(monkey
     # RT-12
     monkeypatch.setattr(connection, "vendor", "postgresql")
 
-    def flaky_fetch_sizes():
+    def flaky_cursor():
         raise OperationalError("boom")
 
-    monkeypatch.setattr("core.db_stats._fetch_sizes", flaky_fetch_sizes)
+    monkeypatch.setattr(connection, "cursor", flaky_cursor)
 
     assert database_size_summary() is None
 
@@ -66,6 +66,7 @@ def test_database_size_summary는_쿼리_2회_이하로_끝난다(django_assert_
 @pytest.mark.parametrize(
     "num_bytes, expected",
     [
+        (0, "0.0KB"),
         (1023, "1.0KB"),
         (1_048_575, "1024.0KB"),
         (1_048_576, "1.0MB"),
