@@ -1169,3 +1169,67 @@ def test_source_country가_kr이_아닌_소스는_제출되지_않고_kr인_소�
     )
 
     assert client.submit_candidate_calls == [sources[0]]
+
+
+# ---------------------------------------------------------------------------
+# TR-38 — 실기동에서 행사 하나의 읽기 예상 예외(URL 검증·DNS·연결 오류 추정)가
+# ExplorationFlowError로 전체 실행을 죽였다. 이런 예상된 읽기 예외는 그 항목만
+# failed/fetch_error로 기록하고 다음 항목을 계속 처리해야 한다.
+# ---------------------------------------------------------------------------
+
+
+def _expected_fetch_errors():
+    from local_runner.page_fetch import EmptyExtractionError, ResponseTooLargeError
+    from local_runner.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
+
+    return [
+        pytest.param(httpx.ConnectError("connect failed"), id="ConnectError"),
+        pytest.param(InvalidFetchUrlError("invalid url"), id="InvalidFetchUrlError"),
+        pytest.param(UnsafeFetchUrlError("unsafe url"), id="UnsafeFetchUrlError"),
+        pytest.param(ResponseTooLargeError("too large"), id="ResponseTooLargeError"),
+        pytest.param(EmptyExtractionError("empty extraction"), id="EmptyExtractionError"),
+        pytest.param(OSError("no address associated with hostname"), id="OSError"),
+    ]
+
+
+@pytest.mark.parametrize("fetch_error", _expected_fetch_errors())
+def test_읽기의_예상된_예외는_그_항목만_failed_fetch_error로_기록하고_다음_항목을_계속_처리한다(
+    fetch_error,
+):
+    events = [
+        {"url": "https://example.com/event-1", "platform": "web"},
+        {"url": "https://example.com/event-2", "platform": "web"},
+    ]
+
+    fetch_calls = []
+
+    def fake_fetch_text(*, url):
+        fetch_calls.append(url)
+        if url == events[0]["url"]:
+            raise fetch_error
+        return {"raw_title": "제목", "raw_text": "본문"}
+
+    def fake_interpret(*, text, url, platform):
+        return _interpreted_result()
+
+    client = _FakeClient()
+
+    summary = run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+    )
+
+    assert fetch_calls == [events[0]["url"], events[1]["url"]]
+    assert summary["event_outcomes"][0] == {
+        "url": events[0]["url"],
+        "outcome": "failed",
+        "reason": "fetch_error",
+    }
+    assert summary["event_outcomes"][1]["outcome"] == "created"
+    assert summary["events_attempted"] == 2
+    assert summary["events_failed"] == 1

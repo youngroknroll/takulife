@@ -35,6 +35,7 @@ EVENT_OUTCOME_REASONS = {
         "interpret_error",
         "no_title",
         "submit_error",
+        "fetch_error",
     },
     "excluded": {"not_event", "overseas", "ended", "server_overseas", "server_ended"},
     "created": {""},

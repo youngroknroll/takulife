@@ -119,7 +119,23 @@ def run_exploration_flow(
 
     from local_runner.caption_interpreter import exclusion_reason, should_submit
     from local_runner.claude_code_adapter import AdapterOutputError
-    from local_runner.page_fetch import BlockedResponseError
+    from local_runner.page_fetch import (
+        BlockedResponseError,
+        EmptyExtractionError,
+        ResponseTooLargeError,
+    )
+    from local_runner.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
+
+    # 요청 전 URL 검증·DNS·연결 오류로 추정되는 예상된 읽기 예외다 — 행사
+    # 하나가 이런 예외를 내도 실행 전체를 죽이지 않고 그 항목만 건너뛴다.
+    _EXPECTED_FETCH_ERRORS = (
+        httpx.HTTPError,
+        InvalidFetchUrlError,
+        UnsafeFetchUrlError,
+        ResponseTooLargeError,
+        EmptyExtractionError,
+        OSError,
+    )
 
     urls = [event["url"] for event in events]
     unknown_urls = set(client.known_urls(urls=urls))
@@ -159,6 +175,15 @@ def run_exploration_flow(
                 blocked_hosts.add(hostname)
                 events_failed += 1
                 _record_outcome(event_outcomes, url=url, outcome="failed", reason="blocked")
+                continue
+            except _EXPECTED_FETCH_ERRORS as exc:
+                # URL 검증·DNS·연결 오류 등 요청 전후에 흔히 나는 예외다 —
+                # 이 항목만 실패로 기록하고 다음 행사로 넘어간다.
+                events_failed += 1
+                logger.warning(
+                    "event fetch failed: error=%s host=%s", type(exc).__name__, hostname
+                )
+                _record_outcome(event_outcomes, url=url, outcome="failed", reason="fetch_error")
                 continue
 
             if fetched is None:
