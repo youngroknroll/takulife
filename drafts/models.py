@@ -162,6 +162,7 @@ class SourceCandidate(models.Model):
         DUPLICATE = "duplicate", "Duplicate"
         URL_SAFETY = "url_safety", "URL safety"
         ROBOTS = "robots", "Robots"
+        ROBOTS_FETCH_FAILED = "robots_fetch_failed", "Robots fetch failed"
         FETCH = "fetch", "Fetch"
         LISTING_EXTRACTION = "listing_extraction", "Listing extraction"
         SAMPLE_CANARY = "sample_canary", "Sample canary"
