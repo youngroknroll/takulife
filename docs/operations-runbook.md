@@ -267,6 +267,41 @@ one-off command" 등 이 컨테이너의 기본 ENTRYPOINT를 우회하고 지�
   않으면 그 안내가 지켜지지 않고, 유예 기간이 지난 사용자의 개인정보가 예정일을
   넘겨 DB에 계속 남는다.
 
+### 7.2 운영 로그 정리 — `prune_operational_data`
+
+<!-- uv-run-exempt: 런타임 이미지엔 uv가 없다(Dockerfile:3-4) — PaaS 스케줄러가 컨테이너 안에서 이 명령을 직접 실행한다 -->
+```bash
+python manage.py prune_operational_data
+```
+
+**주의: `uv run` 없이 실행한다.** §7.1과 같은 이유로, 런타임 이미지에는
+`uv`가 없어(`Dockerfile:3-4`) 그대로 컨테이너 안에서 직접 실행한다.
+
+**주의: 스케줄러 등록 시 반드시 ENTRYPOINT를 우회해야 한다.** §7.1과 동일한
+함정이다 — 이미지의 `ENTRYPOINT`(`docker/entrypoint.sh`, `Dockerfile:53`)는
+전달된 인자를 무시하고 항상 `exec gunicorn ...`으로 끝난다. 명령 문자열만
+"실행할 커맨드"로 등록하면 조용히 버려지고 gunicorn이 대신 뜬다. 선정
+PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 수동으로 한 번
+실행**해 표준출력에 대상별 `count=`·`deleted=` 줄이 실제로 찍히는지
+확인한다.
+
+- `core.retention.prune_operational_data`(`core/retention.py:66-79`)를 호출하는
+  얇은 래퍼다. 만료 세션, 보존 기간이 지난 axes 로그(`AccessLog`·
+  `AccessFailureLog`), 보존 기간이 지난 `core.ErrorGroup`(트랙 36)을 대상별로
+  정리한다. 대상 표·제외 이유·설계상 0건인 이유는
+  `docs/BE/data-retention.md` 참고.
+- **첫 실행은 반드시 `--dry-run` 수동 1회.** 등록 직후 대상별 건수만
+  확인하고, 문제가 없으면 이후 정기 실행에서 `--dry-run` 없이 돈다.
+- **실행 주기 권고: 하루 1회.** §7.1과 같은 이유로 더 자주 돌려도 정리
+  대상이 더 빨리 생기지 않는다.
+- **출력 해석**: 대상별로 `{key}: count={N} deleted={M}` 줄이 찍힌다.
+  `--dry-run`이면 첫 줄에 `dry-run`이 찍히고 모든 대상의 `deleted=0`이다.
+  실패한 대상은 같은 줄에 `error={예외 클래스명}`이 붙는다.
+- **실패 시 동작**: 대상 하나가 실패해도 나머지 대상은 계속 처리된다
+  (대상별 `try/except` 격리). 실패 건수가 1건 이상이면 명령이
+  `CommandError`를 던져 0이 아닌 종료 코드로 끝난다 — 스케줄러의 실패
+  알림(0이 아닌 종료 코드 감지)을 §7.1과 동일하게 연결해 둔다.
+
 ## 8. 드래프트 수집 활성화
 
 - **선행 확인**: 배포된 이미지가 F6 SSRF TOCTOU 수정(`drafts/fetching.py`의 IP
@@ -306,3 +341,7 @@ one-off command" 등 이 컨테이너의 기본 ENTRYPOINT를 우회하고 지�
   메시지 500자)만 보여준다. 예외의 전체 스택 트레이스는 여전히 PaaS
   콘솔의 Render 로그(stdout, `django.request` 로거의 `console` 핸들러
   출력)에서 확인한다.
+- **바로 아래 「저장소」 패널(트랙 37)**: 「최근 14일 처리량」 다음에 오는
+  DB 용량 요약이다 — 전체 크기와 상위 5개 테이블 크기를 보여준다.
+  Postgres가 아니거나 조회에 실패하면 헤더는 유지한 채 측정 불가 문구만
+  나온다(대시보드가 죽지 않는다). 상세는 `docs/BE/data-retention.md` 참고.
