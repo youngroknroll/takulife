@@ -1,4 +1,5 @@
 """러너 API 인증 계약 테스트 — X-Runner-Token 헤더와 DRAFT_DISCOVERY_RUNNER_TOKEN."""
+import logging
 from datetime import timedelta
 
 import pytest
@@ -386,27 +387,34 @@ def test_완료_요청의_event_outcomes가_실행에_저장된다(client, runne
         "outcome과_reason_짝_불일치",
     ],
 )
-def test_event_outcomes의_잘못된_항목은_버리고_완료는_정상_처리된다(client, runner_headers, bad_item):
+def test_event_outcomes의_잘못된_항목은_버리고_완료는_정상_처리된다(client, runner_headers, bad_item, caplog):
     run = _make_claimed_run()
 
     valid_item = {"url": "https://example.com/ok", "outcome": "failed", "reason": "fetch_empty"}
 
-    response = client.post(
-        _complete_url(run.pk),
-        data={
-            "lease_token": "tok",
-            "runner_status": "succeeded",
-            "event_outcomes": [valid_item, bad_item],
-        },
-        content_type="application/json",
-        **runner_headers,
-    )
+    with caplog.at_level(logging.WARNING, logger="drafts.discovery_runs"):
+        response = client.post(
+            _complete_url(run.pk),
+            data={
+                "lease_token": "tok",
+                "runner_status": "succeeded",
+                "event_outcomes": [valid_item, bad_item],
+            },
+            content_type="application/json",
+            **runner_headers,
+        )
 
     assert response.status_code == 200
     run.refresh_from_db()
     assert run.event_outcomes == [valid_item]
     # 후보·이벤트 모두 없음(none)이면 정상으로 합쳐진다(기존 규칙, DAR 확인).
     assert run.status == SourceDiscoveryRun.Status.SUCCEEDED
+    # 버린 항목 1건(bad_item)에 대한 경고 로그가 개수와 함께 남는다.
+    warning_records = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert any(
+        "dropped invalid event outcomes" in r.getMessage() and "count=1" in r.getMessage()
+        for r in warning_records
+    )
 
 
 def test_event_outcomes를_보내지_않는_옛_러너_완료도_빈_목록으로_성공한다(client, runner_headers):
@@ -512,6 +520,29 @@ def test_완료_요청의_건수가_정수가_아니면_400으로_거부한다(c
             "lease_token": "tok",
             "runner_status": "succeeded",
             field: bad_value,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 400
+    run.refresh_from_db()
+    assert run.status == SourceDiscoveryRun.Status.CLAIMED
+    assert run.finished_at is None
+
+
+@pytest.mark.parametrize(
+    "bad_value", ["오", {"a": 1}], ids=["문자열", "dict"]
+)
+def test_event_outcomes가_리스트가_아니면_400으로_거부한다(client, runner_headers, bad_value):
+    run = _make_claimed_run()
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "event_outcomes": bad_value,
         },
         content_type="application/json",
         **runner_headers,
