@@ -3,6 +3,7 @@
 """
 import logging
 import sys
+import uuid
 from datetime import timedelta
 from types import SimpleNamespace
 
@@ -76,18 +77,23 @@ def test_지문은_error_type과_location의_제어문자_차이를_무시한다
     )
 
 
+def _fixture_secret(name):
+    # 비밀 스캐너(GitGuardian)가 고정 리터럴을 실제 시크릿으로 오인하지 않게 실행 시 만든다.
+    return f"fixture-{name}-{uuid.uuid4().hex[:8]}"
+
+
 def _설정된_시크릿_키(settings, monkeypatch):
-    settings.SECRET_KEY = "s3cr3t-value-xyz"
+    settings.SECRET_KEY = _fixture_secret("secret-key")
     return settings.SECRET_KEY
 
 
 def _설정된_앤트로픽_키(settings, monkeypatch):
-    settings.ANTHROPIC_API_KEY = "anthropic-secret-value"
+    settings.ANTHROPIC_API_KEY = _fixture_secret("anthropic")
     return settings.ANTHROPIC_API_KEY
 
 
 def _설정된_러너_토큰(settings, monkeypatch):
-    settings.DRAFT_DISCOVERY_RUNNER_TOKEN = "runner-secret-value"
+    settings.DRAFT_DISCOVERY_RUNNER_TOKEN = _fixture_secret("runner")
     return settings.DRAFT_DISCOVERY_RUNNER_TOKEN
 
 
@@ -95,8 +101,9 @@ def _설정된_DB_비밀번호(settings, monkeypatch):
     # settings.DATABASES 전체를 덮어쓰면 Django가
     # "Overriding setting DATABASES can lead to unexpected behavior" 경고를
     # 낸다 — 딕셔너리 항목 하나만 몽키패치한다.
-    monkeypatch.setitem(settings.DATABASES["default"], "PASSWORD", "db-secret-value")
-    return "db-secret-value"
+    db_password = _fixture_secret("db")
+    monkeypatch.setitem(settings.DATABASES["default"], "PASSWORD", db_password)
+    return db_password
 
 
 @pytest.mark.unit
