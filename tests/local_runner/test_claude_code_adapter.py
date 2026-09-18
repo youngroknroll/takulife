@@ -155,7 +155,9 @@ def test_확인_절차를_끄는_모드를_쓰면_MCP_차단_플래그도_함께
 
 
 def test_탐색_프롬프트는_검색어와_판별_기준과_출력_스키마를_포함하고_judgment는_해석_단계로_이관되었다():
-    prompt = build_exploration_prompt(query="하츠네 미쿠", max_events=20, max_sources=10)
+    prompt = build_exploration_prompt(
+        query="하츠네 미쿠", today="2026-09-18", max_events=20, max_sources=10
+    )
 
     assert "<query>하츠네 미쿠</query>" in prompt
 
@@ -179,7 +181,9 @@ def test_탐색_프롬프트는_검색어와_판별_기준과_출력_스키마�
 
 
 def test_탐색_프롬프트는_수집처의_개최지_국가_필드를_포함한다():
-    prompt = build_exploration_prompt(query="하츠네 미쿠", max_events=20, max_sources=10)
+    prompt = build_exploration_prompt(
+        query="하츠네 미쿠", today="2026-09-18", max_events=20, max_sources=10
+    )
 
     sources_block_start = prompt.index('"sources"(수집처)')
     sources_block = prompt[sources_block_start:]
@@ -191,6 +195,37 @@ def test_탐색_프롬프트는_수집처의_개최지_국가_필드를_포함�
     # unclear로 두라는 지시가 있어야 한다.
     assert "주로 다루는" in sources_block
     assert "unclear" in sources_block
+
+
+# ---------------------------------------------------------------------------
+# TR-27 — S4: 탐색 프롬프트는 러너가 넘긴 오늘 날짜(KST)를 싣고, 국내(대한민국)
+# 개최만 is_event=true로 판정하라는 규칙을 담으며, why_excluded에 overseas를
+# 추가하고, 이벤트 스키마에 end_date(YYYY-MM-DD, 모르면 빈 값)를 포함한다.
+# ---------------------------------------------------------------------------
+
+
+def test_탐색_프롬프트는_오늘_날짜와_국내_전용_규칙과_해외_제외_사유와_종료일_필드를_포함한다():
+    prompt = build_exploration_prompt(
+        query="하츠네 미쿠", today="2026-09-18", max_events=20, max_sources=10
+    )
+
+    # (a) 러너가 넘긴 오늘 날짜(KST)가 그대로 프롬프트에 실린다.
+    assert "2026-09-18" in prompt
+
+    # (b) 국내(대한민국) 개최만 is_event=true로 판정하라는 규칙이 있어야 한다.
+    assert "대한민국" in prompt
+
+    events_block_start = prompt.index('"events"')
+    sources_block_start = prompt.index('"sources"')
+    events_block = prompt[events_block_start:sources_block_start]
+
+    # (c) why_excluded 사유 목록(이벤트 스키마 앞)에 overseas가 있어야 한다.
+    reasons_block = prompt[prompt.index("why_excluded") : events_block_start]
+    assert "overseas" in reasons_block
+
+    # (d) 이벤트 스키마 블록에 end_date 필드가 있어야 한다.
+    assert "end_date" in events_block
+    assert "YYYY-MM-DD" in events_block
 
 
 @pytest.mark.contract
