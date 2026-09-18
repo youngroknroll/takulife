@@ -209,21 +209,29 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
 
           {% if recent_discovery_runs %}
             <div class="staff-table-scroll">
-            <table class="dash-table">
+            <table class="dash-table dash-table--runs">
               <colgroup>
                 <col style="width: 8.5rem;">
                 <col style="width: 9rem;">
                 <col style="width: 6.5rem;">
-                <col style="width: 4rem;">
-                <col style="width: 4rem;">
+                <col style="width: 3.75rem;">
+                <col style="width: 3.75rem;">
+                <col style="width: 3.75rem;">
+                <col style="width: 3.75rem;">
+                <col style="width: 3.75rem;">
+                <col style="width: 3.5rem;">
               </colgroup>
               <thead>
                 <tr>
                   <th scope="col">시각</th>
                   <th scope="col">검색어</th>
                   <th scope="col">상태</th>
-                  <th scope="col">승격</th>
-                  <th scope="col">실패</th>
+                  <th scope="col">후보 승격</th>
+                  <th scope="col">후보 실패</th>
+                  <th scope="col">행사 생성</th>
+                  <th scope="col">행사 제외</th>
+                  <th scope="col">행사 실패</th>
+                  <th scope="col">상세</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,7 +242,32 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
                     <td>{% if row.run.status == "pending" %}<span class="dash-status-badge dash-status-badge--disabled">대기</span>{% elif row.run.status == "claimed" %}<span class="dash-status-badge dash-status-badge--stale">러너 진행 중</span>{% elif row.run.status == "succeeded" %}<span class="dash-status-badge dash-status-badge--ok">성공</span>{% elif row.run.status == "partially_failed" %}<span class="dash-status-badge dash-status-badge--stale">부분 실패</span>{% elif row.run.status == "failed" %}<span class="dash-status-badge dash-status-badge--error">실패</span>{% elif row.run.status == "expired" %}<span class="dash-status-badge dash-status-badge--error">임대 만료</span>{% endif %}{% if row.run.error_summary %}<div class="mono dash-source-error">{{ row.run.error_summary|truncatechars:60 }}</div>{% endif %}</td>
                     <td class="mono">{{ row.promoted_count }}</td>
                     <td class="mono">{{ row.failed_count }}</td>
+                    <td class="mono">{{ row.events_created }}</td>
+                    <td class="mono">{% if row.events_excluded is None %}-{% else %}{{ row.events_excluded }}{% endif %}</td>
+                    <td class="mono">{% if row.events_failed is None %}-{% else %}{{ row.events_failed }}{% endif %}</td>
+                    <td>
+                      {% if row.outcome_rows %}
+                        <button type="button" class="dash-outcome-toggle" data-expanded="false" aria-expanded="false" aria-controls="dash-outcome-{{ row.run.pk }}" aria-label="{{ row.run.created_at|date:"y.m.d H:i" }}{% if row.run.query %} {{ row.run.query }}{% endif %} 실행 결과 상세">상세</button>
+                      {% else %}
+                        <span class="dash-cell-dim">-</span>
+                      {% endif %}
+                    </td>
                   </tr>
+                  {% if row.outcome_rows %}
+                    <tr id="dash-outcome-{{ row.run.pk }}" class="dash-outcome-row" hidden>
+                      <td colspan="9">
+                        <ul class="dash-outcome-list">
+                          {% for outcome in row.outcome_rows %}
+                            <li class="dash-outcome-item">
+                              <span class="mono dash-outcome-url">{{ outcome.display_url }}</span>
+                              <span class="dash-status-badge dash-status-badge--{{ outcome.tone }}">{{ outcome.outcome_label }}</span>
+                              {% if outcome.reason_label %}<span class="dash-outcome-reason">{{ outcome.reason_label }}</span>{% endif %}
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      </td>
+                    </tr>
+                  {% endif %}
                 {% endfor %}
               </tbody>
             </table>
@@ -274,7 +307,7 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
                       <div class="dash-source-name" title="{{ c.name }}">{{ c.name }}</div>
                       <div class="mono dash-source-sub">{{ c.url }}</div>
                     </td>
-                    <td class="mono dash-cell-dim">{% if c.failure_stage == "schema" %}형식 위반{% elif c.failure_stage == "duplicate" %}중복 소스{% elif c.failure_stage == "url_safety" %}URL 안전성{% elif c.failure_stage == "robots" %}robots 불허{% elif c.failure_stage == "fetch" %}가져오기 실패{% elif c.failure_stage == "listing_extraction" %}목록 추출 실패{% elif c.failure_stage == "sample_canary" %}표본 추출 실패{% elif c.failure_stage == "sample_mismatch" %}표본 불일치{% endif %}</td>
+                    <td class="mono dash-cell-dim">{% if c.failure_stage == "schema" %}형식 위반{% elif c.failure_stage == "duplicate" %}중복 소스{% elif c.failure_stage == "url_safety" %}URL 안전성{% elif c.failure_stage == "robots" %}robots 불허{% elif c.failure_stage == "robots_fetch_failed" %}robots 가져오기 실패{% elif c.failure_stage == "not_domestic" %}국내 아님{% elif c.failure_stage == "fetch" %}가져오기 실패{% elif c.failure_stage == "listing_extraction" %}목록 추출 실패{% elif c.failure_stage == "sample_canary" %}표본 추출 실패{% elif c.failure_stage == "sample_mismatch" %}표본 불일치{% endif %}</td>
                     <td class="mono dash-cell-wrap">{{ c.failure_reason|default:"-" }}</td>
                     <td class="mono dash-cell-dim">{{ c.created_at|timesince }} 전</td>
                   </tr>
@@ -397,4 +430,8 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
       </div>
     </div>
   </main>
+{% endblock %}
+
+{% block extra_js %}
+  <script defer src="{% static 'js/staff/dashboard.js' %}"></script>
 {% endblock %}
