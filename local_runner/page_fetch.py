@@ -1,21 +1,26 @@
 """이벤트 URL을 실제로 읽어오는 결정론적 읽기 단계다. 모델을 쓰지 않는다 —
-호스트만 보고 인스타·X 캡션 경로와 일반 웹 경로 중 하나로 그대로 분기한다."""
+호스트만 보고 인스타 캡션·X 게시물·일반 웹 경로 중 하나로 그대로 분기한다."""
 import html
+import math
 import re
 import socket
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
 
 import httpx
 from bs4 import BeautifulSoup
 
 from local_runner.url_safety import validate_fetch_url
 
-# 계정형(캡션) 호스트 집합. 서버(drafts.discovery.SNS_HOSTNAMES)와 같은 목록이
-# 여기 다시 나온다 — 러너는 Django·서버 도메인 모듈을 임포트할 수 없어 공유가
+# 계정형(캡션) 호스트 집합. 아래 X 호스트와 합치면 서버(drafts.discovery.
+# SNS_HOSTNAMES)와 같은 목록이다 — 러너는 서버 모듈을 임포트할 수 없어 공유가
 # 불가능하다. 서버 쪽 목록이 바뀌면 이쪽도 같이 손봐야 한다.
 _CAPTION_HOSTNAMES = {
     "instagram.com",
     "www.instagram.com",
+}
+
+# X(트위터) 게시물 호스트. 캡션 경로와 달리 고정 syndication 엔드포인트로 읽는다.
+_X_HOSTNAMES = {
     "x.com",
     "www.x.com",
     "twitter.com",
@@ -51,6 +56,11 @@ _CAPTION_SUFFIX_RE = re.compile(r'"\.\s*$')
 CAPTION_MAX_LENGTH = 5000
 _CAPTION_TRUNCATION_MARKER = "…(절단됨)"
 
+# X 게시물 URL 경로: /<핸들>/status/<숫자 id>(핸들 최대 15자, 끝 슬래시 허용).
+_X_STATUS_PATH_RE = re.compile(r"^/[A-Za-z0-9_]{1,15}/status/(\d{1,25})/?$")
+_X_SYNDICATION_URL = "https://cdn.syndication.twimg.com/tweet-result"
+_X_TOKEN_BASE36_FRACTION_DIGITS = 16
+
 
 class ResponseTooLargeError(Exception):
     pass
@@ -64,6 +74,14 @@ class BlockedResponseError(Exception):
     def __init__(self, status_code):
         super().__init__(f"HTTP {status_code}")
         self.status_code = status_code
+
+
+def _truncate_body(body):
+    if len(body) > CAPTION_MAX_LENGTH:
+        # 표시 문구 길이까지 포함해 최종 길이가 상한을 넘지 않게 자른다.
+        cutoff = CAPTION_MAX_LENGTH - len(_CAPTION_TRUNCATION_MARKER)
+        return body[:cutoff] + _CAPTION_TRUNCATION_MARKER
+    return body
 
 
 def _fetch_instagram_caption(url):
@@ -91,13 +109,79 @@ def _fetch_instagram_caption(url):
     if suffix_match is not None:
         body = body[: suffix_match.start()]
 
-    if len(body) > CAPTION_MAX_LENGTH:
-        # 표시 문구 길이까지 포함해 최종 길이가 상한을 넘지 않게 자른다.
-        cutoff = CAPTION_MAX_LENGTH - len(_CAPTION_TRUNCATION_MARKER)
-        body = body[:cutoff] + _CAPTION_TRUNCATION_MARKER
-
     # 개행·공백은 건드리지 않는다 — 해석 단계가 줄 구조를 단서로 쓴다.
-    return body
+    return _truncate_body(body)
+
+
+def _base36(n):
+    digits = "0123456789abcdefghijklmnopqrstuvwxyz"
+    if n == 0:
+        return "0"
+    out = ""
+    while n > 0:
+        n, remainder = divmod(n, 36)
+        out = digits[remainder] + out
+    return out
+
+
+def _x_syndication_token(tweet_id):
+    # syndication.twimg.com이 실제로 요구하는 토큰 계산식(공개된 관행,
+    # JS Number.prototype.toString(36)과 동등한 결과를 내도록 정수부·소수부를
+    # 각각 36진수로 바꾼다). 토큰이 없으면 응답이 빈 JSON({})으로 온다(실측).
+    value = (int(tweet_id) / 1e15) * math.pi
+    int_part = int(value)
+    frac_part = value - int_part
+
+    frac_digits = ""
+    remainder = frac_part
+    for _ in range(_X_TOKEN_BASE36_FRACTION_DIGITS):
+        remainder *= 36
+        digit = int(remainder)
+        frac_digits += "0123456789abcdefghijklmnopqrstuvwxyz"[digit]
+        remainder -= digit
+        if remainder <= 0:
+            break
+
+    token = _base36(int_part) + frac_digits
+    token = token.replace("0", "").replace(".", "")
+    return token or "a"
+
+
+def _fetch_x_post(url):
+    path = urlsplit(url).path
+    match = _X_STATUS_PATH_RE.match(path)
+    if match is None:
+        # 게시물(status) URL이 아니면 요청 자체를 보내지 않는다 — 프로필·미디어
+        # 하위 경로 등은 본문을 얻을 수 없는 형태다.
+        return None
+
+    tweet_id = match.group(1)
+    query = urlencode({"id": tweet_id, "token": _x_syndication_token(tweet_id)})
+    request_url = f"{_X_SYNDICATION_URL}?{query}"
+
+    # 예외는 잡지 않고 그대로 올려보낸다 — 흐름 쪽이 fetch_error로 기록한다.
+    validate_fetch_url(request_url, resolver=socket.getaddrinfo)
+
+    response = httpx.get(
+        request_url,
+        timeout=_GENERAL_WEB_TIMEOUT_SECONDS,
+        headers={"User-Agent": _GENERAL_WEB_USER_AGENT},
+    )
+    if response.status_code != 200:
+        return None
+    if len(response.content) > _GENERAL_WEB_MAX_RESPONSE_BYTES:
+        return None
+
+    try:
+        data = response.json()
+    except ValueError:
+        return None
+
+    text = data.get("text") if isinstance(data, dict) else None
+    if not isinstance(text, str) or not text:
+        return None
+
+    return _truncate_body(text)
 
 
 def _parse_raw_fields(html):
@@ -151,4 +235,6 @@ def fetch_event_text(*, url):
     hostname = urlsplit(url).hostname
     if hostname in _CAPTION_HOSTNAMES:
         return _fetch_instagram_caption(url)
+    if hostname in _X_HOSTNAMES:
+        return _fetch_x_post(url)
     return _fetch_general_web(url)
