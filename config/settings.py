@@ -593,6 +593,7 @@ REST_FRAMEWORK = {
         "user_event_status_create": "60/minute",
         "visit_record_photo_create": "30/minute",
         "discovery_runner": "60/minute",
+        "client_error_report": "120/hour",
     },
 }
 

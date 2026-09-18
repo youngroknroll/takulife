@@ -51,6 +51,12 @@ def _strip_url_queries(text):
     return _URL_RE.sub(lambda match: match.group(1), text)
 
 
+def compute_fingerprint(source, error_type, location):
+    """지문 계산을 공개해 호출자가 record_error 전에 같은 묶음인지 미리
+    확인할 수 있게 한다(예: 새 묶음 상한을 판단하는 API 뷰)."""
+    return hashlib.sha256(f"{source}|{error_type}|{location}".encode("utf-8")).hexdigest()
+
+
 def sanitize_message(text):
     """원본 메시지를 저장 가능한 형태로 정제해 돌려준다."""
     cleaned = _EXTRA_SPACES_RE.sub(" ", _CONTROL_CHARS_RE.sub(" ", text)).strip()
@@ -75,9 +81,7 @@ def record_error(*, source, error_type, location, message):
     error_type_sample = ""
     try:
         error_type_sample = error_type[:100]
-        fingerprint = hashlib.sha256(
-            f"{source}|{error_type}|{location}".encode("utf-8")
-        ).hexdigest()
+        fingerprint = compute_fingerprint(source, error_type, location)
         sample = sanitize_message(message)
         now = timezone.now()
 
