@@ -1,4 +1,5 @@
 """탐색 실행(run)·러너 heartbeat·임대 수명주기를 소유하는 서비스 계층."""
+import logging
 import uuid
 from datetime import timedelta
 
@@ -7,6 +8,8 @@ from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 
 from drafts.models import DiscoveryRunnerStatus, SourceCandidate, SourceDiscoveryRun
+
+logger = logging.getLogger(__name__)
 
 # 러너 폴링 주기에 여유를 둔 신선도 기준(초).
 HEARTBEAT_FRESH_SECONDS = 120
@@ -20,6 +23,76 @@ MAX_LEASES = 2
 
 # 러너가 보낸 원문 사유를 그대로 노출하지 않기 위한 허용 목록(보안 계약).
 _ALLOWED_FAILURE_KINDS = {"agent_error", "agent_timeout", "invalid_output", "exploration_error"}
+
+# 러너가 보내는 행사별 결과 outcome→허용 reason 집합(보안 계약, local_runner와
+# 일치해야 한다 — local_runner.exploration_flow가 실제로 내는 값과 대조).
+EVENT_OUTCOME_REASONS = {
+    "skipped": {"known_url", "agent_ended", "agent_overseas"},
+    "failed": {
+        "host_blocked",
+        "blocked",
+        "fetch_empty",
+        "interpret_error",
+        "no_title",
+        "submit_error",
+    },
+    "excluded": {"not_event", "overseas", "ended", "server_overseas", "server_ended"},
+    "created": {""},
+    "duplicate": {""},
+}
+
+# drafts.agent_drafts.MAX_EVENTS_PER_RUN과 같은 값이다.
+_MAX_EVENT_OUTCOMES = 20
+
+
+def _clean_event_outcomes(raw, *, known_created_urls):
+    """dict가 아니거나 허용목록 밖인 항목은 버리고 {url, outcome, reason}만
+    남긴다 — 러너 원문을 그대로 믿지 않는다."""
+    # candidate_validation·agent_drafts가 이 모듈을 임포트하므로 모듈
+    # 최상단에서 그 반대 방향을 두면 순환 임포트가 된다 — 함수 안에서만 쓴다.
+    from drafts.agent_drafts import _strip_tracking_params
+    from drafts.candidate_validation import sanitize_text
+
+    if not isinstance(raw, list):
+        return []
+
+    cleaned = []
+    dropped = 0
+    for item in raw:
+        if not isinstance(item, dict):
+            dropped += 1
+            continue
+
+        url = item.get("url")
+        outcome = item.get("outcome")
+        reason = item.get("reason")
+        if not isinstance(url, str) or not isinstance(reason, str):
+            dropped += 1
+            continue
+
+        url = sanitize_text(value=url)
+        scheme = url.split("://", 1)[0] if "://" in url else ""
+        if scheme not in ("http", "https") or len(url) > 200:
+            dropped += 1
+            continue
+
+        allowed_reasons = EVENT_OUTCOME_REASONS.get(outcome)
+        if allowed_reasons is None or reason not in allowed_reasons:
+            dropped += 1
+            continue
+
+        # created는 실행이 실제로 만든 드래프트와 대조한다 — duplicate는
+        # 다른 실행에서 먼저 만들어졌을 수 있어 대조하지 않는다.
+        if outcome == "created" and _strip_tracking_params(url) not in known_created_urls:
+            dropped += 1
+            continue
+
+        cleaned.append({"url": url, "outcome": outcome, "reason": reason})
+
+    if dropped:
+        logger.warning("dropped invalid event outcomes: count=%s", dropped)
+
+    return cleaned[:_MAX_EVENT_OUTCOMES]
 
 
 class RunnerOfflineError(Exception):
@@ -177,6 +250,7 @@ def complete_run(
     events_attempted=0,
     events_failed=0,
     events_excluded=0,
+    event_outcomes=None,
 ):
     # agent_drafts가 모듈 최상단에서 discovery_runs를 임포트하므로, 여기서
     # 그 반대 방향을 모듈 최상단에 두면 순환 임포트가 된다 — 함수 안에서만 쓴다.
@@ -221,6 +295,10 @@ def complete_run(
         run.events_attempted = cleaned_attempted
         run.events_failed = cleaned_failed
         run.events_excluded = cleaned_excluded
+        known_created_urls = set(run.events.values_list("source_url", flat=True))
+        run.event_outcomes = _clean_event_outcomes(
+            event_outcomes, known_created_urls=known_created_urls
+        )
         run.save(
             update_fields=[
                 "status",
@@ -230,6 +308,7 @@ def complete_run(
                 "events_attempted",
                 "events_failed",
                 "events_excluded",
+                "event_outcomes",
             ]
         )
         return run

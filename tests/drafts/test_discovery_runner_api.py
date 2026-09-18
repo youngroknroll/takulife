@@ -6,7 +6,13 @@ from django.utils import timezone
 
 from core.models import Category
 from core.vocab import CATEGORY, REGION
-from drafts.models import DiscoveryRunnerStatus, DraftSource, SourceCandidate, SourceDiscoveryRun
+from drafts.models import (
+    DiscoveryRunnerStatus,
+    DraftSource,
+    EventDraft,
+    SourceCandidate,
+    SourceDiscoveryRun,
+)
 from drafts.runner_views import RunnerTokenThrottle
 
 
@@ -331,6 +337,168 @@ def test_완료_요청이_보낸_제외_건수가_실행에_저장된다(client,
     assert response.status_code == 200
     run.refresh_from_db()
     assert run.events_excluded == 3
+
+
+def test_완료_요청의_event_outcomes가_실행에_저장된다(client, runner_headers):
+    run = _make_claimed_run()
+
+    event_outcomes = [
+        {"url": "https://example.com/e1", "outcome": "failed", "reason": "fetch_empty"},
+        {"url": "https://example.com/e2", "outcome": "skipped", "reason": "known_url"},
+    ]
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "event_outcomes": event_outcomes,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.event_outcomes == event_outcomes
+
+
+@pytest.mark.parametrize(
+    "bad_item",
+    [
+        "x",
+        {"url": "ftp://example.com/a", "outcome": "failed", "reason": "fetch_empty"},
+        {
+            "url": "https://example.com/" + "a" * 200,
+            "outcome": "failed",
+            "reason": "fetch_empty",
+        },
+        {"url": "https://example.com/b", "outcome": "weird", "reason": "fetch_empty"},
+        {"url": "https://example.com/c", "outcome": "failed", "reason": "weird"},
+        {"url": "https://example.com/d", "outcome": "created", "reason": "fetch_empty"},
+    ],
+    ids=[
+        "dict_아님",
+        "http_아닌_스킴",
+        "200자_초과_URL",
+        "모르는_outcome",
+        "모르는_reason",
+        "outcome과_reason_짝_불일치",
+    ],
+)
+def test_event_outcomes의_잘못된_항목은_버리고_완료는_정상_처리된다(client, runner_headers, bad_item):
+    run = _make_claimed_run()
+
+    valid_item = {"url": "https://example.com/ok", "outcome": "failed", "reason": "fetch_empty"}
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "event_outcomes": [valid_item, bad_item],
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.event_outcomes == [valid_item]
+    # 후보·이벤트 모두 없음(none)이면 정상으로 합쳐진다(기존 규칙, DAR 확인).
+    assert run.status == SourceDiscoveryRun.Status.SUCCEEDED
+
+
+def test_event_outcomes를_보내지_않는_옛_러너_완료도_빈_목록으로_성공한다(client, runner_headers):
+    run = _make_claimed_run()
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={"lease_token": "tok", "runner_status": "succeeded"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.event_outcomes == []
+
+
+def test_event_outcomes가_상한을_넘으면_20건까지만_저장된다(client, runner_headers):
+    run = _make_claimed_run()
+
+    items = [
+        {"url": f"https://example.com/e{i}", "outcome": "failed", "reason": "fetch_empty"}
+        for i in range(21)
+    ]
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "event_outcomes": items,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert len(run.event_outcomes) == 20
+    assert run.event_outcomes == items[:20]
+
+
+def test_event_outcomes의_URL_제어문자는_제거되어_저장된다(client, runner_headers):
+    run = _make_claimed_run()
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "event_outcomes": [
+                {
+                    "url": "https://example.com/a\x1b[31mb\x07",
+                    "outcome": "failed",
+                    "reason": "fetch_empty",
+                }
+            ],
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.event_outcomes == [
+        {"url": "https://example.com/a[31mb", "outcome": "failed", "reason": "fetch_empty"}
+    ]
+
+
+def test_실행에_없는_드래프트를_생성했다고_보고한_항목은_버려진다(client, runner_headers):
+    run = _make_claimed_run()
+    EventDraft.objects.create(source_url="https://example.com/real", discovery_run=run)
+
+    response = client.post(
+        _complete_url(run.pk),
+        data={
+            "lease_token": "tok",
+            "runner_status": "succeeded",
+            "event_outcomes": [
+                {"url": "https://example.com/real", "outcome": "created", "reason": ""},
+                {"url": "https://example.com/fake", "outcome": "created", "reason": ""},
+            ],
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 200
+    run.refresh_from_db()
+    assert run.event_outcomes == [
+        {"url": "https://example.com/real", "outcome": "created", "reason": ""}
+    ]
 
 
 @pytest.mark.parametrize("bad_value", ["오", None, True, ["오"]], ids=["문자열", "None", "불리언", "리스트"])

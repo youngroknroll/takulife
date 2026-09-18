@@ -140,6 +140,8 @@ class SourceDiscoveryRun(models.Model):
     events_failed = models.PositiveSmallIntegerField(default=0)
     # 러너가 보고한, 정책상 정상 제외(해외·종료 등)한 이벤트 수.
     events_excluded = models.PositiveSmallIntegerField(default=0)
+    # 러너가 보고한 행사별 결과·사유(허용목록 값만 저장, 원문은 담지 않는다).
+    event_outcomes = models.JSONField(default=list, blank=True)
     # 서버가 정의한 안전 문구만 담는다(후보·응답 원문 보간 금지).
     error_summary = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
