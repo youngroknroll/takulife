@@ -5,12 +5,13 @@
 잘라 개인정보·인증값이 저장 행에 남지 않게 한다.
 """
 import hashlib
+from datetime import timedelta
 import logging
 import re
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
-from django.db.models import F
+from django.db.models import Count, F, Q
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,9 @@ MESSAGE_SAMPLE_MAX_LENGTH = 500
 # 출처별 상한 — 이 값이 없으면 익명 프론트 오류 보고가 백엔드 묶음을
 # 무한정 밀어낼 수 있다(합 500행 근사, 동시 생성 시 ±1~2행 허용).
 SOURCE_GROUP_LIMIT = 250
+
+# 대시보드 패널이 그대로 쓰는 표시용 한국어 라벨(system_error_summary 전용).
+_SOURCE_LABELS = {"backend": "백엔드", "frontend": "프론트"}
 
 
 def _configured_secrets():
@@ -155,3 +159,45 @@ def _trim_source(ErrorGroup, *, source):
         .values_list("id", flat=True)[:excess]
     )
     ErrorGroup.objects.filter(id__in=stale_ids).delete()
+
+
+def system_error_summary(*, now=None, limit=5):
+    """대시보드 "시스템 오류" 패널이 그대로 쓰는 요약을 계산한다.
+
+    쿼리 2회 고정(집계 1회 + 상위 목록 1회) — 묶음이 0건이든 다건이든
+    같은 수의 쿼리만 나가도록 aggregate와 슬라이스 조회로 나눈다.
+    """
+    from core.models import ErrorGroup
+
+    now = now or timezone.now()
+
+    totals = ErrorGroup.objects.aggregate(
+        total=Count("id"),
+        window_24h=Count("id", filter=Q(last_seen__gte=now - timedelta(hours=24))),
+        window_7d=Count("id", filter=Q(last_seen__gte=now - timedelta(days=7))),
+        backend=Count("id", filter=Q(source=ErrorGroup.Source.BACKEND)),
+        frontend=Count("id", filter=Q(source=ErrorGroup.Source.FRONTEND)),
+    )
+
+    top_rows = ErrorGroup.objects.order_by("-last_seen", "-id").values(
+        "source", "error_type", "location", "count", "last_seen"
+    )[:limit]
+    top = [
+        {
+            "source": row["source"],
+            "source_label": _SOURCE_LABELS.get(row["source"], row["source"]),
+            "error_type": row["error_type"],
+            "location": row["location"],
+            "count": row["count"],
+            "last_seen": row["last_seen"],
+        }
+        for row in top_rows
+    ]
+
+    return {
+        "total": totals["total"],
+        "window_24h": totals["window_24h"],
+        "window_7d": totals["window_7d"],
+        "by_source": {"backend": totals["backend"], "frontend": totals["frontend"]},
+        "top": top,
+    }

@@ -428,6 +428,59 @@
   margin: 0.5625rem 0.75rem 0.625rem;
 }
 
+/* ── 시스템 오류 패널 ──────────────────────────────────────────── */
+.dash-error-summary {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.dash-error-summary-window {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+/* dash-cell-faint의 nowrap+ellipsis를 그대로 쓰면 레일 폭에서 두 번째
+   요약 줄(백엔드·프론트 건수)이 잘린다 — 여기서만 줄바꿈을 되돌린다. */
+.dash-error-summary-sources {
+  font-size: 0.6875rem;
+  margin: 0.125rem 0 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.dash-error-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dash-error-item {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.dash-error-item:last-child {
+  border-bottom: none;
+}
+
+.dash-error-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+}
+
+.dash-error-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin: 0.1875rem 0 0.125rem;
+  overflow-wrap: anywhere;
+}
+
 /* ── 최근 14일 활동 막대그래프 ─────────────────────────────────── */
 .dash-activity {
   padding: 0.875rem 0.75rem 0.625rem;

@@ -371,6 +371,34 @@ staff-console-redesign.md M5). 검수 SLA 패널은 직전 창 증감을 표시�
 
         <section class="dash-panel">
           <div class="dash-panel-head">
+            <h2 class="dash-panel-head-title">시스템 오류</h2>
+            <span class="mono dash-panel-head-meta dash-panel-head-meta--end">최근 발생 기준</span>
+          </div>
+          {% if system_errors.total == 0 %}
+            <p class="dash-empty">최근 발생한 시스템 오류가 없습니다 ✓</p>
+          {% else %}
+            <div class="dash-error-summary">
+              <p class="mono dash-error-summary-window">24시간 {{ system_errors.window_24h }}종 · 7일 {{ system_errors.window_7d }}종</p>
+              <p class="mono dash-cell-faint dash-error-summary-sources">백엔드 {{ system_errors.by_source.backend }} · 프론트 {{ system_errors.by_source.frontend }}</p>
+            </div>
+            <ul class="dash-error-list">
+              {% for e in system_errors.top %}
+                <li class="dash-error-item">
+                  <div class="dash-error-item-meta">
+                    <span class="mono dash-cell-dim">{{ e.source_label }}</span>
+                    <span class="mono dash-cell-dim">{{ e.count }}회</span>
+                    <span class="mono dash-cell-faint">{{ e.last_seen|timesince }} 전</span>
+                  </div>
+                  <p class="dash-error-type">{{ e.error_type }}</p>
+                  <p class="mono dash-cell-wrap">{{ e.location }}</p>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </section>
+
+        <section class="dash-panel">
+          <div class="dash-panel-head">
             <h2 class="dash-panel-head-title">최근 14일 처리량</h2>
             <span class="mono dash-panel-head-meta dash-panel-head-meta--end">총 {{ activity_total_14d }}건</span>
           </div>
