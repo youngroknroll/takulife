@@ -184,6 +184,47 @@ def test_오류_기록_저장이_실패해도_예외를_전파하지_않고_경�
 
 
 @pytest.mark.django_db
+def test_오류_기록은_error_type과_location의_제어문자를_저장_전에_없앤다():
+    from core.error_groups import record_error
+    from core.models import ErrorGroup
+
+    record_error(
+        source="backend",
+        error_type="Bad\nType\r\x00",
+        location="GET /x/\n",
+        message="boom",
+    )
+
+    group = ErrorGroup.objects.get()
+    assert "\n" not in group.error_type and "\r" not in group.error_type and "\x00" not in group.error_type
+    assert "\n" not in group.location
+
+
+@pytest.mark.django_db
+def test_오류_기록_저장_실패_경고_로그도_error_type의_제어문자를_없앤다(monkeypatch, caplog):
+    from core.error_groups import record_error
+    from core.models import ErrorGroup
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("simulated persistence outage")
+
+    monkeypatch.setattr(ErrorGroup.objects, "filter", _boom)
+
+    with caplog.at_level(logging.WARNING, logger="core.error_groups"):
+        record_error(
+            source="backend",
+            error_type="Bad\nType\r\x00",
+            location="GET /x/\n",
+            message="boom",
+        )
+
+    warning_records = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert len(warning_records) == 1
+    logged_message = warning_records[0].getMessage()
+    assert "\n" not in logged_message
+
+
+@pytest.mark.django_db
 def test_오류_기록은_깨진_트랜잭션_안에서_호출해도_예외를_전파하지_않는다():
     from core.error_groups import record_error
     from core.models import ErrorGroup

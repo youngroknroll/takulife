@@ -312,6 +312,32 @@ def test_새_묶음은_시간당_상한을_넘으면_더_생기지_않지만_기
     assert ErrorGroup.objects.filter(location__startswith="/static/js/a.js").get().count == 2
 
 
+@pytest.mark.django_db
+def test_name에_개행이_있어도_204를_받고_저장된_error_type에_개행이_없다(client):
+    from core.models import ErrorGroup
+
+    resp = _post_valid(client, name="Type\nError")
+
+    assert resp.status_code == 204
+    group = ErrorGroup.objects.get()
+    assert "\n" not in group.error_type
+
+
+@pytest.mark.django_db
+def test_본문이_업로드_상한을_넘으면_204만_주고_기록하지_않는다(client, settings):
+    """DATA_UPLOAD_MAX_MEMORY_SIZE를 페이로드보다 작게 낮추면
+    request.body 접근에서 Django가 RequestDataTooBig을 던진다 —
+    "항상 204" 계약이 이 경로에서도 지켜지는지 확인한다."""
+    from core.models import ErrorGroup
+
+    settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 100
+
+    resp = _post_valid(client)
+
+    assert resp.status_code == 204
+    assert ErrorGroup.objects.count() == 0
+
+
 @pytest.mark.unit
 @pytest.mark.parametrize(
     "raw_path, expected",

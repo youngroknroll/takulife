@@ -61,9 +61,16 @@ def compute_fingerprint(source, error_type, location):
     return hashlib.sha256(f"{source}|{error_type}|{location}".encode("utf-8")).hexdigest()
 
 
+def _strip_control(text):
+    """개행·탭·제어문자를 지우고 중복 공백을 접어 로그·DB에 한 줄만
+    남게 한다(sanitize_message와 같은 정제를 error_type·location에도
+    적용하기 위한 공용 조각)."""
+    return _EXTRA_SPACES_RE.sub(" ", _CONTROL_CHARS_RE.sub(" ", text)).strip()
+
+
 def sanitize_message(text):
     """원본 메시지를 저장 가능한 형태로 정제해 돌려준다."""
-    cleaned = _EXTRA_SPACES_RE.sub(" ", _CONTROL_CHARS_RE.sub(" ", text)).strip()
+    cleaned = _strip_control(text)
 
     if _contains_secret(cleaned):
         return ""
@@ -81,9 +88,13 @@ def record_error(*, source, error_type, location, message):
     자체 중첩 atomic()(세이브포인트) 안에서 실행해, 호출자가 이미 깨진
     트랜잭션 안에 있어도(예: 다른 곳에서 IntegrityError를 세이브포인트
     없이 삼킨 경우) 이 함수의 실패가 그 트랜잭션을 더 오염시키지 않는다.
+    error_type·location은 진입 즉시 제어문자를 없애 지문·저장·경고
+    로그 어디에도 개행이 섞이지 않게 한다.
     """
     error_type_sample = ""
     try:
+        error_type = _strip_control(error_type)
+        location = _strip_control(location)
         error_type_sample = error_type[:100]
         fingerprint = compute_fingerprint(source, error_type, location)
         sample = sanitize_message(message)

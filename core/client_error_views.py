@@ -9,6 +9,7 @@ import re
 from urllib.parse import urlparse, urlsplit
 
 from django.core.cache import cache
+from django.core.exceptions import RequestDataTooBig
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework.exceptions import Throttled
@@ -52,10 +53,16 @@ def _is_same_origin(request):
 
 
 def _parse_json_body(request):
-    if len(request.body) > MAX_BODY_BYTES:
+    try:
+        body = request.body
+    except RequestDataTooBig:
+        # DATA_UPLOAD_MAX_MEMORY_SIZE 초과는 request.body 접근 자체에서
+        # 터진다 — "항상 204" 계약을 지키려면 여기서도 조용히 넘어가야 한다.
+        return None
+    if len(body) > MAX_BODY_BYTES:
         return None
     try:
-        return json.loads(request.body.decode("utf-8"))
+        return json.loads(body.decode("utf-8"))
     except (UnicodeDecodeError, ValueError):
         return None
 
