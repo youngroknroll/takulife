@@ -657,3 +657,37 @@ def test_예상하지_못한_일반_예외의_클래스명이_WARNING_로그에_
 
     assert "ValueError" in caplog.text
     assert "secret-body-2" not in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# TR-28 — S4: 러너는 탐색 프롬프트를 만들 때 local_runner.clock의 오늘(KST)을
+# 그대로 전달한다.
+# ---------------------------------------------------------------------------
+
+
+def test_러너는_탐색_프롬프트에_clock의_오늘_날짜를_KST로_전달한다(monkeypatch):
+    import datetime as datetime_module
+
+    captured_prompts = []
+
+    def fake_run_exploration_agent(prompt, execute=None):
+        captured_prompts.append(prompt)
+        return {"events": [], "sources": []}
+
+    monkeypatch.setattr(runner_module, "today_kst", lambda: datetime_module.date(2026, 9, 18))
+    monkeypatch.setattr(runner_module, "_run_exploration_agent", fake_run_exploration_agent)
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _make_fake_ticker_class([]))
+
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+    client = _CompleteRecordingClient(run)
+
+    runner_module._run_once(client)
+
+    assert len(captured_prompts) == 1
+    assert "2026-09-18" in captured_prompts[0]

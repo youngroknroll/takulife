@@ -17,6 +17,7 @@ from .claude_code_adapter import (
     parse_json_object,
 )
 from .client import RunnerClient
+from .clock import today_kst
 from .config import POLL_INTERVAL_SECONDS, load_config
 from .exploration_flow import (
     EXPLORATION_MAX_EVENTS,
@@ -152,6 +153,7 @@ def _run_once(client):
 
     prompt = build_exploration_prompt(
         query=run["query"],
+        today=today_kst().isoformat(),
         max_events=EXPLORATION_MAX_EVENTS,
         max_sources=EXPLORATION_MAX_SOURCES,
     )

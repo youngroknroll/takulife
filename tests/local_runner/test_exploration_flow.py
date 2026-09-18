@@ -1042,7 +1042,9 @@ def test_자정_직후에도_러너의_오늘은_UTC가_아니라_KST_날짜로_
         def now(cls, tz=None):
             return datetime(2026, 1, 1, 15, 30, tzinfo=timezone.utc).astimezone(tz)
 
-    monkeypatch.setattr("local_runner.exploration_flow.datetime", _FrozenDatetime)
+    # _today_kst는 local_runner.clock.today_kst를 그대로 재노출한다 —
+    # 시각 고정 대상도 그 모듈이다.
+    monkeypatch.setattr("local_runner.clock.datetime", _FrozenDatetime)
 
     events = [{"url": "https://example.com/event-1", "platform": "web"}]
 

@@ -3,22 +3,14 @@ sources 분리·상한 절단 순수 함수와, 제출 중 임대 상실(409)을
 알리는 run_exploration_flow가 있다."""
 import functools
 import logging
-from datetime import date, datetime
+from datetime import date
 from urllib.parse import urlsplit
-from zoneinfo import ZoneInfo
 
 import httpx
 
+from local_runner.clock import today_kst as _today_kst
+
 logger = logging.getLogger(__name__)
-
-# 해외·지난 행사 판정, 해석 프롬프트의 "오늘" 모두 이 기준으로 통일한다 —
-# 서버·러너가 같은 날짜에서 어긋나지 않게 하려는 것이다.
-_KST = ZoneInfo("Asia/Seoul")
-
-
-def _today_kst():
-    return datetime.now(_KST).date()
-
 
 # 서버의 실행당 이벤트 상한(drafts.agent_drafts.MAX_EVENTS_PER_RUN)과 같은 값이다.
 EXPLORATION_MAX_EVENTS = 20
