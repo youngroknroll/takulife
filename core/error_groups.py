@@ -187,6 +187,23 @@ def _trim_source(ErrorGroup, *, source):
     ErrorGroup.objects.filter(id__in=stale_ids).delete()
 
 
+def prune_stale_error_groups(*, days, dry_run=False):
+    """last_seen이 days일보다 오래된 오류 묶음을 지운다(운영 보존 정리 전용).
+
+    dry_run이면 지우지 않고 대상 건수만 센다.
+    """
+    from core.models import ErrorGroup
+
+    cutoff = timezone.now() - timedelta(days=days)
+    queryset = ErrorGroup.objects.filter(last_seen__lt=cutoff)
+
+    if dry_run:
+        return queryset.count()
+
+    deleted, _ = queryset.delete()
+    return deleted
+
+
 def system_error_summary(*, now=None, limit=5):
     """대시보드 "시스템 오류" 패널이 그대로 쓰는 요약을 계산한다.
 
