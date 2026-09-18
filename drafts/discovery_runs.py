@@ -19,7 +19,7 @@ LEASE_SECONDS = 1800
 MAX_LEASES = 2
 
 # 러너가 보낸 원문 사유를 그대로 노출하지 않기 위한 허용 목록(보안 계약).
-_ALLOWED_FAILURE_KINDS = {"agent_error", "agent_timeout", "invalid_output"}
+_ALLOWED_FAILURE_KINDS = {"agent_error", "agent_timeout", "invalid_output", "exploration_error"}
 
 
 class RunnerOfflineError(Exception):
