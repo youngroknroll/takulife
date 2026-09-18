@@ -281,8 +281,13 @@ def test_X_상태_URL은_고정_syndication_호스트에서_트윗_본문을_그
     assert requested.path == "/tweet-result"
     query = parse_qs(requested.query)
     assert query["id"] == ["1234567890123456789"]
-    # token 값 자체는 계산식(구현 단계)의 몫이다 — 여기서는 파라미터 존재만 본다.
+    # token 계산식 자체(외부 서버가 실제로 받아들이는 값인지)는 이 단위
+    # 경계에서 검증하지 않는다 — 형태(빈 값이 아니고 0·점이 섞이지 않은
+    # 36진수 문자)만 확인한다.
     assert "token" in query
+    token = query["token"][0]
+    assert token != ""
+    assert re.fullmatch(r"[1-9a-z]+", token)
 
 
 # ---------------------------------------------------------------------------
@@ -369,10 +374,3 @@ def test_X_syndication_응답이_상한을_넘으면_None이다(monkeypatch):
     )
 
     assert result is None
-
-
-def test_X_토큰은_숫자와_소문자로만_구성되고_0과_점을_포함하지_않는다():
-    token = page_fetch._x_syndication_token("1234567890123456789")
-
-    assert token != ""
-    assert re.fullmatch(r"[1-9a-z]+", token)

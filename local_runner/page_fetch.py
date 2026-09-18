@@ -60,6 +60,7 @@ _CAPTION_TRUNCATION_MARKER = "…(절단됨)"
 _X_STATUS_PATH_RE = re.compile(r"^/[A-Za-z0-9_]{1,15}/status/(\d{1,25})/?$")
 _X_SYNDICATION_URL = "https://cdn.syndication.twimg.com/tweet-result"
 _X_TOKEN_BASE36_FRACTION_DIGITS = 16
+_BASE36_DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 
 class ResponseTooLargeError(Exception):
@@ -114,13 +115,12 @@ def _fetch_instagram_caption(url):
 
 
 def _base36(n):
-    digits = "0123456789abcdefghijklmnopqrstuvwxyz"
     if n == 0:
         return "0"
     out = ""
     while n > 0:
         n, remainder = divmod(n, 36)
-        out = digits[remainder] + out
+        out = _BASE36_DIGITS[remainder] + out
     return out
 
 
@@ -137,7 +137,7 @@ def _x_syndication_token(tweet_id):
     for _ in range(_X_TOKEN_BASE36_FRACTION_DIGITS):
         remainder *= 36
         digit = int(remainder)
-        frac_digits += "0123456789abcdefghijklmnopqrstuvwxyz"[digit]
+        frac_digits += _BASE36_DIGITS[digit]
         remainder -= digit
         if remainder <= 0:
             break
