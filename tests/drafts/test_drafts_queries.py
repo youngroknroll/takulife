@@ -637,6 +637,28 @@ class TestRecentDiscoveryRuns:
         assert display_url == "example.com/e/1"
         assert "secret" not in display_url
 
+    def test_손상된_결과_항목이_있어도_대시보드가_깨지지_않는다(self):
+        """관리자·DB 직접 수정으로 event_outcomes가 저장 시 검증을 우회해도
+        방어 분기가 손상 항목만 걸러내고 나머지 행은 그대로 보여준다."""
+        from drafts.queries import recent_discovery_runs
+
+        run = SourceDiscoveryRun.objects.create(
+            status=SourceDiscoveryRun.Status.SUCCEEDED,
+            event_outcomes=[
+                "문자열 항목",
+                {"url": 123, "outcome": "created", "reason": ""},
+                {"url": "https://example.com/a", "outcome": "mystery", "reason": ""},
+            ],
+        )
+
+        rows = recent_discovery_runs()
+
+        row = next(r for r in rows if r["run"].pk == run.pk)
+        outcome_rows = row["outcome_rows"]
+        assert len(outcome_rows) == 1
+        assert outcome_rows[0]["outcome_label"] == "알 수 없음"
+        assert outcome_rows[0]["tone"] == "disabled"
+
     def test_사유_라벨_사전은_허용된_모든_사유값을_덮는다(self):
         """EVENT_OUTCOME_REASONS 허용 목록에 새 사유가 추가되면 라벨 사전도
         같이 갱신해야 한다는 것을 강제한다."""
