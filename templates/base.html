@@ -2,6 +2,16 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <!-- 테마 스크립트보다 먼저 실행해 그 전에 뜬 오류도 놓치지 않는다. 큐에 쌓기만
+       하고 처리는 error_report.js가 한다(부트스트랩 자체가 실패해도 무해하도록
+       전체를 try/catch로 감싼다). -->
+  <script>
+  try {
+    window.__takuErrorQueue = [];
+    window.addEventListener("error", function (e) { window.__takuErrorQueue.push({ message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno, name: e.error && e.error.name }); });
+    window.addEventListener("unhandledrejection", function (e) { window.__takuErrorQueue.push({ reason: String(e.reason), name: e.reason && e.reason.name }); });
+  } catch (e) {}
+  </script>
   <!-- 브라우저가 뭔가 그리기 전에 테마를 정해야 한 프레임이라도 잘못된 테마가
        번쩍이지 않는다. 그래서 이 스크립트만 defer 없이 모든 스타일시트보다
        앞에 둔다. theme.js의 읽기 로직만 최소로 복제한 것이며, 쓰기/토글/시스템
@@ -107,6 +117,7 @@
   {% endif %}
   {% block content %}{% endblock %}
   {% block site_footer %}{% include "core/partials/_site_footer.html" %}{% endblock %}
+  <script defer src="{% static 'js/shared/error_report.js' %}"></script>
   <script defer src="{% static 'js/shared/theme.js' %}"></script>
   <script defer src="{% static 'js/shared/api.js' %}"></script>
   <script defer src="{% static 'js/shared/submit_guard.js' %}"></script>
