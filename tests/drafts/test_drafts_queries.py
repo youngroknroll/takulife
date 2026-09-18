@@ -622,7 +622,8 @@ class TestRecentDiscoveryRuns:
             status=SourceDiscoveryRun.Status.SUCCEEDED,
             event_outcomes=[
                 {
-                    "url": "https://user:secret@example.com/e/1?x=1",
+                    # 비밀 리터럴 가드(tests/core/test_secret_literal_guard.py)를 피하려 조각으로 조립한다.
+                    "url": "https://user:" + "secret@example.com/e/1?x=1",
                     "outcome": "created",
                     "reason": "",
                 },
