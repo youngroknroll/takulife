@@ -5,6 +5,7 @@
 형태가 아니면 그냥 204로 조용히 넘어간다.
 """
 import json
+import logging
 import re
 from urllib.parse import urlparse, urlsplit
 
@@ -19,6 +20,8 @@ from rest_framework.views import APIView
 
 from core.error_groups import compute_fingerprint, record_error
 from core.models import ErrorGroup
+
+logger = logging.getLogger(__name__)
 
 MAX_BODY_BYTES = 4096
 NEW_GROUP_HOURLY_LIMIT = 20
@@ -82,6 +85,8 @@ def _is_valid_payload(data):
         return False
     if any(key in data and not _is_valid_int(data[key]) for key in _INT_KEYS):
         return False
+    if not data["script"].strip():
+        return False
     return True
 
 
@@ -121,7 +126,10 @@ class ClientErrorReportView(APIView):
         if isinstance(exc, Throttled):
             # 스로틀 초과도 정보 비노출 계약을 지킨다 — 429 대신 조용히 204.
             return Response(status=204)
-        return super().handle_exception(exc)
+        # 이 엔드포인트는 "항상 204"가 계약이다 — 다른 예외도 500 대신
+        # 조용히 204로 넘기고, 원인은 서버 로그에만 남긴다(EHL 정책).
+        logger.exception("client error report failed")
+        return Response(status=204)
 
     def post(self, request):
         if not _is_same_origin(request):

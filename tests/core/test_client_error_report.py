@@ -12,6 +12,7 @@ pytestmark = pytest.mark.web
 
 @pytest.mark.django_db
 def test_정상_페이로드는_204를_받고_프론트_오류_묶음_한_행이_생긴다(client):
+    # EG-16
     from core.models import ErrorGroup
 
     payload = {
@@ -78,6 +79,7 @@ def _origin도_referer도_없음(client):
     ids=["다른_Origin", "Origin없음_Referer다른출처", "둘_다_없음"],
 )
 def test_같은_출처가_아니면_204만_주고_기록하지_않는다(client, make_request):
+    # EG-17
     from core.models import ErrorGroup
 
     resp = make_request(client)
@@ -216,6 +218,17 @@ def _script가_숫자(client):
     )
 
 
+def _script가_빈_문자열(client):
+    # 공백만 있는 값도 같은 취급이다 — strip 후 비어 있으면 무효.
+    payload = {**_VALID_PAYLOAD, "script": "   "}
+    return client.post(
+        "/api/client-errors/",
+        data=json.dumps(payload),
+        content_type="application/json",
+        HTTP_ORIGIN="http://testserver",
+    )
+
+
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "make_request",
@@ -233,6 +246,7 @@ def _script가_숫자(client):
         _message_누락,
         _name이_숫자,
         _script가_숫자,
+        _script가_빈_문자열,
     ],
     ids=[
         "4KB초과",
@@ -248,9 +262,11 @@ def _script가_숫자(client):
         "message_누락",
         "name이_숫자",
         "script가_숫자",
+        "script가_빈_문자열",
     ],
 )
 def test_형식이_어긋난_요청은_204만_주고_기록도_500도_없다(client, make_request):
+    # EG-18
     from core.models import ErrorGroup
 
     resp = make_request(client)
@@ -276,6 +292,7 @@ def test_전역_스로틀을_넘으면_204만_주고_기록은_상한까지만_�
     매번 클래스 딕셔너리를 다시 읽으므로(rest_framework/throttling.py),
     인스턴스 rate 속성이 아니라 클래스 THROTTLE_RATES 딕셔너리 항목을
     monkeypatch.setitem으로 주입하는 편이 실제 결정 경로와 맞는다."""
+    # EG-19
     from core.client_error_views import GlobalClientErrorThrottle
     from core.models import ErrorGroup
 
@@ -295,6 +312,7 @@ def test_새_묶음은_시간당_상한을_넘으면_더_생기지_않지만_기
     """NEW_GROUP_HOURLY_LIMIT(기본 20)를 테스트 규모로 낮춰, 서로 다른
     지문 3개 중 상한을 넘는 세 번째는 새 행을 만들지 않고, 기존 지문
     재보고는 상한과 무관하게 count만 늘어남을 확인한다."""
+    # EG-20
     import core.client_error_views as client_error_views_module
     from core.models import ErrorGroup
 
@@ -314,6 +332,7 @@ def test_새_묶음은_시간당_상한을_넘으면_더_생기지_않지만_기
 
 @pytest.mark.django_db
 def test_name에_개행이_있어도_204를_받고_저장된_error_type에_개행이_없다(client):
+    # EG-30
     from core.models import ErrorGroup
 
     resp = _post_valid(client, name="Type\nError")
@@ -328,11 +347,35 @@ def test_본문이_업로드_상한을_넘으면_204만_주고_기록하지_않�
     """DATA_UPLOAD_MAX_MEMORY_SIZE를 페이로드보다 작게 낮추면
     request.body 접근에서 Django가 RequestDataTooBig을 던진다 —
     "항상 204" 계약이 이 경로에서도 지켜지는지 확인한다."""
+    # EG-31
     from core.models import ErrorGroup
 
     settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 100
 
     resp = _post_valid(client)
+
+    assert resp.status_code == 204
+    assert ErrorGroup.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_처리되지_않은_예외도_204만_주고_기록하지_않는다(client, monkeypatch, caplog):
+    """`handle_exception`은 Throttled만 204로 바꿔주고 있었다 — 다른 예외가
+    나면 DRF 기본 처리로 넘어가 500이 될 수 있다(정보 비노출 계약 위반).
+    `_new_group_allowed`를 터뜨려 실제 처리 경로에서 예외가 나는 상황을
+    흉내낸다."""
+    # EG-32
+    import logging
+
+    from core.models import ErrorGroup
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("simulated view failure")
+
+    monkeypatch.setattr("core.client_error_views._new_group_allowed", _boom)
+
+    with caplog.at_level(logging.ERROR, logger="core.client_error_views"):
+        resp = _post_valid(client)
 
     assert resp.status_code == 204
     assert ErrorGroup.objects.count() == 0
@@ -355,6 +398,7 @@ def test_본문이_업로드_상한을_넘으면_204만_주고_기록하지_않�
 def test_경로_정규화는_숫자와_UUID_세그먼트를_id로_바꾸고_쿼리를_지운다(raw_path, expected):
     """normalize_path는 아직 core.client_error_views에 없다 — 이 임포트
     자체가 Red(ImportError)다."""
+    # EG-21
     from core.client_error_views import normalize_path
 
     assert normalize_path(raw_path) == expected

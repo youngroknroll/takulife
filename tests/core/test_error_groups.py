@@ -17,6 +17,7 @@ pytestmark = pytest.mark.domain
 
 @pytest.mark.django_db
 def test_오류_묶음은_허용되지_않은_출처면_유효성_검증에_실패한다():
+    # EG-01
     from core.models import ErrorGroup
 
     group = ErrorGroup(
@@ -31,8 +32,10 @@ def test_오류_묶음은_허용되지_않은_출처면_유효성_검증에_실�
         group.full_clean()
 
 
+@pytest.mark.contract
 @pytest.mark.django_db
 def test_오류_묶음은_같은_지문으로_두_번_생성하면_무결성_오류가_난다():
+    # EG-02
     from core.models import ErrorGroup
 
     fingerprint = "b" * 64
@@ -51,6 +54,26 @@ def test_오류_묶음은_같은_지문으로_두_번_생성하면_무결성_오
                 error_type="ValueError",
                 location="POST /events/",
             )
+
+
+@pytest.mark.unit
+def test_지문은_구분자_없는_값이_섞여도_서로_다른_조합을_구분한다():
+    # EG-33
+    from core.error_groups import compute_fingerprint
+
+    assert compute_fingerprint("frontend", "a|b", "c") != compute_fingerprint(
+        "frontend", "a", "b|c"
+    )
+
+
+@pytest.mark.unit
+def test_지문은_error_type과_location의_제어문자_차이를_무시한다():
+    # EG-34
+    from core.error_groups import compute_fingerprint
+
+    assert compute_fingerprint("backend", "T\nX", "L") == compute_fingerprint(
+        "backend", "T X", "L"
+    )
 
 
 def _설정된_시크릿_키(settings, monkeypatch):
@@ -78,6 +101,7 @@ def _설정된_DB_비밀번호(settings, monkeypatch):
 
 @pytest.mark.unit
 def test_오류_메시지_정제는_제어문자를_없애고_이메일을_가리고_URL_쿼리를_지우고_500자로_자른다():
+    # EG-03
     from core.error_groups import sanitize_message
 
     raw = (
@@ -97,6 +121,7 @@ def test_오류_메시지_정제는_제어문자를_없애고_이메일을_가�
 
 @pytest.mark.unit
 def test_오류_메시지_정제는_지울_것이_없어도_500자를_넘으면_정확히_500자로_자른다():
+    # EG-03
     from core.error_groups import sanitize_message
 
     result = sanitize_message("x" * 600)
@@ -111,6 +136,7 @@ def test_오류_메시지_정제는_지울_것이_없어도_500자를_넘으면_
     ids=["SECRET_KEY", "ANTHROPIC_API_KEY", "DRAFT_DISCOVERY_RUNNER_TOKEN", "DB_PASSWORD"],
 )
 def test_오류_메시지_정제는_설정된_시크릿_값이_섞이면_메시지_전체를_비운다(settings, monkeypatch, apply_secret):
+    # EG-04
     from core.error_groups import sanitize_message
 
     secret_value = apply_secret(settings, monkeypatch)
@@ -121,6 +147,7 @@ def test_오류_메시지_정제는_설정된_시크릿_값이_섞이면_메시�
 
 @pytest.mark.unit
 def test_오류_메시지_정제는_시크릿_값이_빈_문자열이면_모든_메시지를_비우지_않는다(settings):
+    # EG-26
     from core.error_groups import sanitize_message
 
     settings.DRAFT_DISCOVERY_RUNNER_TOKEN = ""
@@ -130,6 +157,7 @@ def test_오류_메시지_정제는_시크릿_값이_빈_문자열이면_모든_
 
 @pytest.mark.django_db
 def test_오류_기록은_새_지문이면_한_행을_생성하고_count가_1이다():
+    # EG-05
     from core.error_groups import record_error
     from core.models import ErrorGroup
 
@@ -142,6 +170,7 @@ def test_오류_기록은_새_지문이면_한_행을_생성하고_count가_1이
 
 @pytest.mark.django_db
 def test_오류_기록은_같은_지문이면_한_행에서_count를_늘리고_최신_메시지와_last_seen을_갱신한다():
+    # EG-06
     from core.error_groups import record_error
     from core.models import ErrorGroup
 
@@ -158,7 +187,26 @@ def test_오류_기록은_같은_지문이면_한_행에서_count를_늘리고_�
 
 
 @pytest.mark.django_db
+def test_오류_기록은_255자_절단_후_같아지는_location을_한_묶음으로_본다():
+    # EG-35
+    from core.error_groups import record_error
+    from core.models import ErrorGroup
+
+    prefix = "GET /" + "x" * 250 + "/"
+    location_a = prefix + "tail-a"
+    location_b = prefix + "tail-b"
+    assert location_a[:255] == location_b[:255]
+
+    record_error(source="backend", error_type="KeyError", location=location_a, message="boom")
+    record_error(source="backend", error_type="KeyError", location=location_b, message="boom again")
+
+    assert ErrorGroup.objects.count() == 1
+    assert ErrorGroup.objects.get().count == 2
+
+
+@pytest.mark.django_db
 def test_오류_기록_저장이_실패해도_예외를_전파하지_않고_경고_로그를_한_줄_남긴다(monkeypatch, caplog):
+    # EG-07
     from core.error_groups import record_error
     from core.models import ErrorGroup
 
@@ -185,6 +233,7 @@ def test_오류_기록_저장이_실패해도_예외를_전파하지_않고_경�
 
 @pytest.mark.django_db
 def test_오류_기록은_error_type과_location의_제어문자를_저장_전에_없앤다():
+    # EG-27
     from core.error_groups import record_error
     from core.models import ErrorGroup
 
@@ -202,6 +251,7 @@ def test_오류_기록은_error_type과_location의_제어문자를_저장_전�
 
 @pytest.mark.django_db
 def test_오류_기록_저장_실패_경고_로그도_error_type의_제어문자를_없앤다(monkeypatch, caplog):
+    # EG-28
     from core.error_groups import record_error
     from core.models import ErrorGroup
 
@@ -224,8 +274,10 @@ def test_오류_기록_저장_실패_경고_로그도_error_type의_제어문자
     assert "\n" not in logged_message
 
 
+@pytest.mark.contract
 @pytest.mark.django_db
 def test_오류_기록은_깨진_트랜잭션_안에서_호출해도_예외를_전파하지_않는다():
+    # EG-08
     from core.error_groups import record_error
     from core.models import ErrorGroup
 
@@ -259,8 +311,10 @@ def test_오류_기록은_깨진_트랜잭션_안에서_호출해도_예외를_�
         )
 
 
+@pytest.mark.contract
 @pytest.mark.django_db
 def test_오류_기록_내부_DB_오류가_호출자의_같은_트랜잭션을_깨뜨리지_않는다(monkeypatch):
+    # EG-29
     from core.error_groups import record_error
     from core.models import ErrorGroup
 
@@ -283,6 +337,7 @@ def test_오류_기록_내부_DB_오류가_호출자의_같은_트랜잭션을_�
 
 @pytest.mark.django_db
 def test_오류_기록은_생성_직전_동시에_같은_지문이_생겨도_count에_반영된다(monkeypatch, caplog):
+    # EG-09
     from core.error_groups import record_error
     from core.models import ErrorGroup
 
@@ -322,6 +377,7 @@ def test_오류_기록은_생성_직전_동시에_같은_지문이_생겨도_cou
 
 @pytest.mark.django_db
 def test_오류_기록은_출처별_상한을_넘으면_그_출처의_최고령_행만_지운다(monkeypatch):
+    # EG-10
     import core.error_groups as error_groups_module
     from core.error_groups import record_error
     from core.models import ErrorGroup
@@ -378,6 +434,7 @@ def test_오류_기록은_출처별_상한을_넘으면_그_출처의_최고령_
 
 @pytest.mark.django_db
 def test_오류_기록의_출처별_상한은_다른_출처_행에_영향을_주지_않는다(monkeypatch):
+    # EG-11
     import core.error_groups as error_groups_module
     from core.error_groups import record_error
     from core.models import ErrorGroup
@@ -455,6 +512,7 @@ def _record_with_exc_info(exc, *, request=None):
 
 @pytest.mark.django_db
 def test_오류_묶음_핸들러는_exc_info_없는_레코드를_무시한다():
+    # EG-12
     from core.logging import ErrorGroupHandler
     from core.models import ErrorGroup
 
@@ -475,6 +533,7 @@ def test_오류_묶음_핸들러는_exc_info_없는_레코드를_무시한다():
 def test_오류_묶음_핸들러는_예외_레코드에서_error_type과_location을_뽑는다(
     resolver_match, expected_location
 ):
+    # EG-13
     from core.logging import ErrorGroupHandler
     from core.models import ErrorGroup
 
@@ -491,6 +550,7 @@ def test_오류_묶음_핸들러는_예외_레코드에서_error_type과_locatio
 
 @pytest.mark.django_db
 def test_오류_묶음_핸들러는_DB_오류면_record_error를_부르지_않는다(monkeypatch):
+    # EG-14
     from core.logging import ErrorGroupHandler
 
     # fail_if_called를 쓰면 핸들러가 예외를 삼키는 결함(제거됨)에서도 통과해
@@ -510,6 +570,7 @@ def test_뷰가_처리되지_않은_예외를_던지면_500_응답과_함께_오
     """tests/core/test_error_pages.py:25-51과 같은 방식으로 실제 뷰 예외를
     흉내낸다 — settings.LOGGING에 ErrorGroupHandler를 아직 배선하지 않았으므로
     이 테스트는 지금 0 == 1로 실패해야 정상이다(S3 배선 전 예상 Red)."""
+    # EG-15
     from core.models import ErrorGroup
 
     def _boom(*args, **kwargs):

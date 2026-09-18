@@ -55,17 +55,29 @@ def _strip_url_queries(text):
     return _URL_RE.sub(lambda match: match.group(1), text)
 
 
-def compute_fingerprint(source, error_type, location):
-    """지문 계산을 공개해 호출자가 record_error 전에 같은 묶음인지 미리
-    확인할 수 있게 한다(예: 새 묶음 상한을 판단하는 API 뷰)."""
-    return hashlib.sha256(f"{source}|{error_type}|{location}".encode("utf-8")).hexdigest()
-
-
 def _strip_control(text):
     """개행·탭·제어문자를 지우고 중복 공백을 접어 로그·DB에 한 줄만
     남게 한다(sanitize_message와 같은 정제를 error_type·location에도
     적용하기 위한 공용 조각)."""
     return _EXTRA_SPACES_RE.sub(" ", _CONTROL_CHARS_RE.sub(" ", text)).strip()
+
+
+def _normalize_key(error_type, location):
+    """지문 계산과 저장이 항상 같은 값을 보도록 error_type·location을
+    한 곳에서 정규화한다(제어문자 제거 + 길이 절단)."""
+    return _strip_control(error_type)[:100], _strip_control(location)[:255]
+
+
+def compute_fingerprint(source, error_type, location):
+    """지문 계산을 공개해 호출자가 record_error 전에 같은 묶음인지 미리
+    확인할 수 있게 한다(예: 새 묶음 상한을 판단하는 API 뷰). 함수 스스로
+    정규화하므로 호출자가 원본 값을 넘겨도 record_error가 저장하는
+    지문과 항상 같다. 구분자는 "\x1f"(제어문자) — 정규화 후 값에는
+    제어문자가 남지 않으므로 "a|b","c"와 "a","b|c"처럼 필드 경계가
+    문자로 뒤섞이는 일이 없다."""
+    normalized_error_type, normalized_location = _normalize_key(error_type, location)
+    key = f"{source}\x1f{normalized_error_type}\x1f{normalized_location}"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
 
 def sanitize_message(text):
@@ -93,9 +105,8 @@ def record_error(*, source, error_type, location, message):
     """
     error_type_sample = ""
     try:
-        error_type = _strip_control(error_type)
-        location = _strip_control(location)
-        error_type_sample = error_type[:100]
+        error_type, location = _normalize_key(error_type, location)
+        error_type_sample = error_type
         fingerprint = compute_fingerprint(source, error_type, location)
         sample = sanitize_message(message)
         now = timezone.now()
@@ -129,10 +140,7 @@ def _upsert_error_group(ErrorGroup, *, fingerprint, source, error_type_sample, l
     → IntegrityError면 update). create()는 자체 세이브포인트 안에서
     실행해, 실패해도 바깥의 갱신 시도에 영향을 남기지 않는다.
     """
-    updated = ErrorGroup.objects.filter(fingerprint=fingerprint).update(
-        count=F("count") + 1, last_seen=now, message_sample=sample
-    )
-    if updated:
+    if _bump(ErrorGroup, fingerprint=fingerprint, now=now, sample=sample):
         return
 
     try:
@@ -147,12 +155,19 @@ def _upsert_error_group(ErrorGroup, *, fingerprint, source, error_type_sample, l
                 last_seen=now,
             )
     except IntegrityError:
-        ErrorGroup.objects.filter(fingerprint=fingerprint).update(
-            count=F("count") + 1, last_seen=now, message_sample=sample
-        )
+        _bump(ErrorGroup, fingerprint=fingerprint, now=now, sample=sample)
         return
 
     _trim_source(ErrorGroup, source=source)
+
+
+def _bump(ErrorGroup, *, fingerprint, now, sample):
+    """기존 지문 행의 count·last_seen·message_sample만 갱신한다. 갱신된
+    행 수(0 또는 1)를 돌려줘 호출자가 "이미 있던 지문인지"를 판단하게
+    한다."""
+    return ErrorGroup.objects.filter(fingerprint=fingerprint).update(
+        count=F("count") + 1, last_seen=now, message_sample=sample
+    )
 
 
 def _trim_source(ErrorGroup, *, source):
