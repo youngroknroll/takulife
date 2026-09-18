@@ -84,6 +84,7 @@ def _process_run(client, run, exploration_result):
     except ExplorationFlowError as exc:
         # 흐름 도중 예상 못한 예외가 나도 그때까지의 결과가 exc.summary에
         # 남아 있다 — 완료 보고에서 통째로 버리지 않는다.
+        logger.warning("exploration flow failed: error=%s", type(exc.__cause__).__name__)
         partial_summary = exc.summary
         client.complete(
             run_id=run["run_id"],
@@ -96,10 +97,11 @@ def _process_run(client, run, exploration_result):
             event_outcomes=partial_summary.get("event_outcomes", []),
         )
         return
-    except Exception:
+    except Exception as exc:
         # except-ok: 흐름 안에서 예상 못한 예외까지 여기서 잡아 반드시
         # 완료 보고를 보낸다 — 그러지 않으면 실행이 임대를 쥔 채 만료될
         # 때까지 다음 탐색이 막힌다(실기동 결함 3).
+        logger.warning("exploration flow failed: error=%s", type(exc).__name__)
         client.complete(
             run_id=run["run_id"],
             lease_token=run["lease_token"],

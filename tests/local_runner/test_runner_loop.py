@@ -592,3 +592,68 @@ def test_탐색_흐름이_도중에_실패해도_그때까지의_결과를_실�
     assert call["failure_kind"] == "exploration_error"
     assert call["event_outcomes"] == event_outcomes
     assert call["events_attempted"] == partial_summary["events_attempted"]
+
+
+# ---------------------------------------------------------------------------
+# TR-39 — _process_run이 실패 완료 보고를 보낼 때 원인 예외 종류를 로그로도
+# 남겨야 실기동에서 무엇이 죽었는지 알 수 있다. 다만 예외 메시지 본문은
+# 민감할 수 있어 로그에 남기면 안 된다(클래스명만).
+# ---------------------------------------------------------------------------
+
+
+def test_ExplorationFlowError의_원인_예외_클래스명이_WARNING_로그에_남고_본문은_남지_않는다(
+    monkeypatch, caplog
+):
+    partial_summary = {
+        "events_attempted": 1,
+        "events_failed": 1,
+        "events_excluded": 0,
+        "event_outcomes": [],
+    }
+
+    def fake_run_exploration_flow(**kwargs):
+        try:
+            raise RuntimeError("secret-body")
+        except RuntimeError as cause:
+            raise ExplorationFlowError(partial_summary) from cause
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _CompleteEventOutcomesClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    with caplog.at_level(logging.WARNING, logger="local_runner.runner"):
+        runner_module._process_run(client, run, exploration_result)
+
+    assert "RuntimeError" in caplog.text
+    assert "secret-body" not in caplog.text
+
+
+def test_예상하지_못한_일반_예외의_클래스명이_WARNING_로그에_남고_본문은_남지_않는다(
+    monkeypatch, caplog
+):
+    def fake_run_exploration_flow(**kwargs):
+        raise ValueError("secret-body-2")
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    client = _CompleteEventOutcomesClient()
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "vocab": {"categories": [], "regions": []},
+    }
+    exploration_result = {"events": [], "sources": []}
+
+    with caplog.at_level(logging.WARNING, logger="local_runner.runner"):
+        runner_module._process_run(client, run, exploration_result)
+
+    assert "ValueError" in caplog.text
+    assert "secret-body-2" not in caplog.text
