@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #378부터 #246까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #380부터 #246까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,45 +28,38 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #378 — Track 37: Prune operational data and show storage size on the dashboard
+### PR #380 — fix(staff): Show period and title-url checks in draft preapproval (트랙 38 PR 0)
 
-**무엇을 바꿨나**: 사이트 로그 제안의 4단계다. 같은 날 스택으로 순차 머지된
-트랙 35(PR #376, 드래프트 실행 결과 기록)와 트랙 36(PR #377, 백엔드·브라우저
-오류 묶음 기록)에 이어지는 마지막 정리 트랙이다. 트랙 35는 러너가 행사별
-결과(`{url, outcome, reason}`)를 실행 기록에 저장해 대시보드가 결과별 건수와
-행사 단위 상세를 표시하게 했고, 같은 트랙에서 실기동 검토가 찾은 결함 5건도
-고쳤다. 트랙 36은 원본 로그를 DB에 남기지 않고 지문·묶음·횟수만 저장하는
-`core.ErrorGroup`과 무인증 수집 API `POST /api/client-errors/`(항상 204,
-전역 스로틀 120/시간·새 묶음 20/시간)를 추가했다. 트랙 37은 만료 세션·axes
-접근 로그·오래된 `ErrorGroup`을 정리하는 관리 명령 `prune_operational_data`
-(`core/retention.py`, 인자 `--days` 기본 90일·`--dry-run`)를 신설하고,
-스태프 대시보드에 DB 전체 크기와 상위 5개 테이블 크기를 보여주는 "저장소"
-패널(`core/db_stats.py`, PostgreSQL 전용이며 그 외 엔진·쿼리 실패는 None)을
-추가했다. `AnalyticsEvent`(월간 지표가 원본을 직접 스캔)·반려 드래프트
-원문(재검수에 필요)·`StaffActionLog`(추가 전용 감사 로그)·`AccessAttempt`
-(axes가 1시간 창으로 자체 삭제)는 각각 이유가 있어 정리 대상에서 뺐다.
+**무엇을 바꿨나**: 트랙 38(어댑터 얇게, 규칙은 내부 서비스로)의 PR 0이다. 이
+트랙의 원래 계획은 슬라이스 D(ErrorGroup 시간당 쿼터 → `core/error_groups.py`)
+→ A(이벤트 품질 배지 → `events/queries.py`) → B(소스 신선도·초안 경고 배지 →
+`drafts/queries.py`) → C(`discover_drafts` 오케스트레이션 → `drafts/listing_discovery.py`)
+순으로 행동을 바꾸지 않고 어댑터만 얇게 만드는 것이었으나, 그 전에 발견된
+행동 변경 결함을 먼저 별도 PR로 고쳤다(사용자 결정 2026-09-18). 스태프 초안
+인스펙터의 "승인 전 체크"가 승인 경로의 실제 검증기
+(`events/services.py::_validate_publish_fields`)와 어긋나 있었다 — 기간 역전
+(시작일>종료일)과 제목=공식 URL(끝 슬래시 무시)은 승인 시 거부되는데 미리보기에는
+없어 "전부 통과" 뒤 승인 실패가 가능했다. `events/services.py`에 검증기 바로
+옆 dry-run 판정 함수 `publish_field_checks`(같은 순서, 7항목 전부 판정)를 두고,
+`staff/views/drafts.py`의 `_draft_preapproval_checks`는 초안 필드를 넘겨 결과만
+싣는 얇은 어댑터로 바꿨다(판정 분기 0개, `is_valid_*` 임포트 제거).
 
-**왜**: 트랙 36이 `ErrorGroup`에 출처별 250행 상한은 뒀지만 시간 기준 보존
-정책은 남기지 않았다. 트랙 37이 그 공백을 메워 백로그 C3을 해소한다.
+**왜**: 계약 테스트가 실패 사례 7종마다 검증기의 예외와 미리보기의 실패 key를
+짝지어 드리프트 재발을 막는다. 템플릿 변경은 없다(label·passed만 렌더).
 
-**검증** `[실측 2026-09-18]`: `uv run pytest -q` → **3019 passed, 10
-deselected**(트랙 36 기준 2987 → +32 `[계산]`), `check` 0 issues,
-`makemigrations --check` 무변경. 로컬 실DB에서 dry-run은 세션 266건 대상,
-실제 실행은 세션 294 → 28건(활성 세션 유지) `[실측]`, 저장소 패널 전체 크기
-13.8MB `[실측]`. 리뷰 사전 DAR·DOR(보안 겸)·TDD 코치·WED·BIR, 사후 WED
-Conforms with notes / BIR Conforms / TDD 코치 결함 7건 수정 / QVL Complete
-with residual risk. 앞선 트랙 35(PR #376)는 `uv run pytest -q` 3009 passed
-/ 10 deselected(기준선 2927 → +82 `[계산]`), 실기동 비교로 러너 소요
-7분39초 → 1분7초·생성 드래프트 0건 → 1건을 확인했다. 트랙 36(PR #377)은
-2987 passed / 10 deselected(기준선 2927 → +60 `[계산]`), 브라우저·curl
-실측으로 500행 상한(테이블 크기 819,200바이트)과 204 응답을 확인했다.
-머지 순서는 #376 → #377 → #378이며, #377은 main과 `docs/backlog.md` 표 행
-1곳 충돌을 머지 커밋으로 해소했고, #378은 main을 머지(충돌 없음)한 뒤 base를
-`feat/error-groups`에서 main으로 재지정했다 `[실측 git]`. 가드레일 정본 `docs/BE/data-retention.md`,
-`docs/BE/error-groups.md`, `docs/BE/draft-source-agent-discovery.md` "트랙
-35" 절. 머지 후 main 재측정: 3101 passed / 10 deselected / 91.08초, `manage.py check` 0건, `makemigrations --check` 변화 없음 [실측 2026-09-18 main `4f45cd6e`]
+**검증** `[실측 88bd4c3f]`: Red — `publish_field_checks` 임포트 실패(collection
+error) → 최소 구현 → `tests/events/test_publish_field_checks.py` 9 passed.
+뮤테이션 2회 — 기간 검사 비활성화 → TA-01·TA-03[period_reversed]만 Red(2
+failed / 7 passed), 끝 슬래시 정규화 제거 → TA-02만 Red(1 failed / 8 passed),
+모두 원복. 웹 계약 — 옛 뷰 + 새 테스트 = 2 failed(7키 전수·기간 역전), 새 뷰 =
+`tests/staff/test_staff_draft_views.py` 59 passed. 전체 회귀 `uv run pytest -q`
+→ 3111 passed / 10 deselected / 89.78초(main `4f45cd6e` 3101 → +10 `[계산]`),
+`manage.py check` 0건, `makemigrations --check --dry-run` 변화 없음. 머지 후
+main 재측정: 3111 passed / 10 deselected / 97.27초, `manage.py check` 0건, `makemigrations --check` 변화 없음 [실측 2026-09-19 main `e4e0338f`]
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #379 — docs: PR #376~#378 스택 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #378 — Track 37: Prune operational data and show storage size on the dashboard
 - #377 — Track 36: Record backend and browser errors as capped error groups
 - #376 — Track 35: Record per-event draft run outcomes and fix live-run defects
 - #374 — docs: PR #373 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
