@@ -75,6 +75,64 @@ def _validate_publish_fields(
     return normalized_title, normalized_official_url
 
 
+def publish_field_checks(
+    *, title, official_url, start_date, end_date, category, region, existing_queryset
+):
+    """승인 버튼을 누르기 전에 검사 결과를 미리 보여준다. 예외를 던지는 대신
+    항목별 통과 여부를 전부 반환한다 — 순서·규칙은 _validate_publish_fields와 같아야 한다.
+    """
+    normalized_official_url = (official_url or "").strip()
+    normalized_title = (title or "").strip()
+
+    official_url_present = bool(normalized_official_url)
+    title_present = bool(normalized_title)
+    title_not_url = (
+        not normalized_title
+        or not normalized_official_url
+        or normalized_title.rstrip("/") != normalized_official_url.rstrip("/")
+    )
+    official_url_unique = official_url_present and not existing_queryset.filter(
+        official_url=normalized_official_url
+    ).exists()
+    period_ok = not (
+        start_date is not None and end_date is not None and start_date > end_date
+    )
+
+    return [
+        {
+            "key": "official_url",
+            "label": "공식 URL이 있어야 합니다",
+            "passed": official_url_present,
+        },
+        {"key": "title", "label": "제목이 있어야 합니다", "passed": title_present},
+        {
+            "key": "title_not_url",
+            "label": "제목이 공식 URL과 같지 않아야 합니다",
+            "passed": title_not_url,
+        },
+        {
+            "key": "official_url_unique",
+            "label": "공식 URL이 다른 게시 이벤트와 중복되지 않아야 합니다",
+            "passed": official_url_unique,
+        },
+        {
+            "key": "period",
+            "label": "시작일이 종료일보다 늦지 않아야 합니다",
+            "passed": period_ok,
+        },
+        {
+            "key": "category",
+            "label": "카테고리가 목록에 있는 값이어야 합니다",
+            "passed": is_valid_category(category or ""),
+        },
+        {
+            "key": "region",
+            "label": "지역이 목록에 있는 값이어야 합니다",
+            "passed": is_valid_region(region or ""),
+        },
+    ]
+
+
 def reconcile_category_palette_slot(*, category_slug):
     """category_slug의 현재 게시 이벤트 수를 세어 팔레트 슬롯 반납·재획득을
     재계산한다. 이 카운트를 core.categories.reconcile_palette_slot에 넘기는

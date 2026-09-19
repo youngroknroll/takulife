@@ -1,4 +1,5 @@
 """스태프 전용 드래프트 HTML 뷰(목록/상세) 검증."""
+import datetime
 import json
 import re
 
@@ -615,12 +616,29 @@ class TestEventDraftPreapprovalChecks:
 
         checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
         assert checks == {
-            "title": True,
             "official_url": True,
+            "title": True,
+            "title_not_url": True,
             "official_url_unique": True,
+            "period": True,
             "category": True,
             "region": True,
         }
+
+    def test_시작일이_종료일보다_늦은_초안은_기간_체크가_실패로_표시된다(self, staff_client, make_draft):
+        draft = make_draft(
+            "https://example.com/preapproval-period-reversed",
+            extracted_title="기간 역전 드래프트",
+            extracted_start_date=datetime.date(2026, 5, 10),
+            extracted_end_date=datetime.date(2026, 5, 1),
+        )
+
+        _, client = staff_client()
+        resp = client.get(f"/staff/drafts/{draft.id}/")
+
+        checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
+        assert checks["period"] is False
+        assert checks["title"] is True
 
     def test_제목이_없으면_제목_체크가_실패로_표시된다(self, staff_client, make_draft):
         draft = make_draft("https://example.com/preapproval-no-title")
