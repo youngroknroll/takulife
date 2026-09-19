@@ -214,6 +214,41 @@
   cursor: not-allowed;
 }
 
+.dash-storage-list {
+  margin: 0;
+  padding: 0;
+}
+
+.dash-storage-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.dash-storage-row:last-child {
+  border-bottom: none;
+}
+
+.dash-storage-name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--c-dim);
+  overflow-wrap: anywhere;
+}
+
+.dash-storage-size {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text);
+  min-width: 4.5rem;
+  text-align: right;
+}
+
 /* ── 표 밀도(D8): table-layout:fixed + <col> 폭으로 시맨틱을
    유지한 채 34px 안팎 행 높이를 낸다. ── */
 /* 기본 색은 표 차원에서 상속으로 내려 .dash-cell-dim 등(0,1,0)이
@@ -225,6 +260,11 @@
   color: var(--c-text);
   /* 가장 넓은 표(최근 활동)의 고정 열 합 28.5rem + 대상 최소 15rem. */
   min-width: 43.5rem;
+}
+
+/* 탐색 실행 표만 열이 9개라 고정 폭 합이 더 크다(9열 고정 폭 합 46.25rem). */
+.dash-table--runs {
+  min-width: 46.25rem;
 }
 
 .dash-table thead th {
@@ -344,6 +384,71 @@
   font-weight: 600;
 }
 
+/* ── 탐색 실행 결과 상세(S8) ───────────────────────────────────────── */
+.dash-outcome-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  background: none;
+  border: none;
+  padding: 0 0.25rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-accent);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 펼침 상태를 글리프로도 드러낸다 — 대체 텍스트는 빈 문자열로 둬서
+   상태 낭독은 aria-expanded에게만 맡긴다(BIR Low-1). */
+.dash-outcome-toggle::after {
+  content: "▾" / "";
+  margin-left: 0.125rem;
+}
+
+.dash-outcome-toggle[aria-expanded="true"]::after {
+  content: "▴" / "";
+}
+
+.dash-outcome-toggle:hover {
+  text-decoration: underline;
+}
+
+/* colspan 셀이라 tbody td의 기본 padding 대신 목록 자체에 여백을 준다. */
+.dash-outcome-row td {
+  padding: 0.5rem 0.75rem;
+  background: var(--c-head);
+}
+
+.dash-outcome-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.dash-outcome-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.dash-outcome-url {
+  color: var(--c-dim);
+  overflow-wrap: anywhere;
+}
+
+.dash-outcome-reason {
+  color: var(--c-dim);
+}
+
 .dash-action-badge {
   display: inline-flex;
   font-size: 0.6875rem;
@@ -426,6 +531,66 @@
   font-size: 0.6875rem;
   color: var(--c-faint);
   margin: 0.5625rem 0.75rem 0.625rem;
+}
+
+/* ── 시스템 오류 패널 ──────────────────────────────────────────── */
+.dash-error-summary {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.dash-error-summary-window {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+/* dash-cell-dim의 nowrap을 그대로 쓰면 레일 폭에서 두 번째 요약 줄
+   (백엔드·프론트 건수)이 넘친다 — 여기서만 줄바꿈을 되돌린다. */
+/* 위치 줄은 전역 p 여백(13px)·기본 글자 크기를 물려받으면 오류 유형보다
+   커 보인다 — 메타 줄과 같은 크기로 맞추고 여백을 없앤다. 색은 faint가 4.5:1에
+   못 미쳐(라이트 3.09) dim을 쓴다. */
+.dash-error-location {
+  font-size: 0.6875rem;
+  margin: 0;
+  color: var(--c-dim);
+}
+
+.dash-error-summary-sources {
+  font-size: 0.6875rem;
+  margin: 0.125rem 0 0;
+  white-space: normal;
+}
+
+.dash-error-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dash-error-item {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--c-line-soft);
+}
+
+.dash-error-item:last-child {
+  border-bottom: none;
+}
+
+.dash-error-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+}
+
+.dash-error-type {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin: 0.1875rem 0 0.125rem;
+  overflow-wrap: anywhere;
 }
 
 /* ── 최근 14일 활동 막대그래프 ─────────────────────────────────── */

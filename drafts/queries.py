@@ -1,5 +1,6 @@
 """드래프트 도메인의 공개 조회 계층. 집계 로직은 여기 두고 뷰에는 두지 않는다."""
 from datetime import timedelta
+from urllib.parse import urlsplit
 
 from django.db.models import Avg, Case, Count, DurationField, ExpressionWrapper, F, Min, Q, When
 from django.db.models.functions import Coalesce
@@ -116,21 +117,104 @@ def runner_status():
     return DiscoveryRunnerStatus.objects.filter(pk=1).first()
 
 
+# 사유별 한국어 라벨(허용 목록 EVENT_OUTCOME_REASONS 전 값을 덮어야 한다). 빈 값은
+# created·duplicate 전용이라 화면에 그대로 빈 문자열로 낸다.
+EVENT_OUTCOME_REASON_LABELS = {
+    "": "",
+    "known_url": "이미 등록된 URL",
+    "agent_ended": "종료된 행사(탐색 판단)",
+    "agent_overseas": "해외 행사(탐색 판단)",
+    "host_blocked": "차단된 호스트",
+    "blocked": "접근 차단",
+    "fetch_empty": "빈 응답",
+    "interpret_error": "해석 오류",
+    "no_title": "제목 없음",
+    "submit_error": "제출 오류",
+    "fetch_error": "가져오기 오류",
+    "not_event": "행사 아님",
+    "overseas": "해외 행사",
+    "ended": "종료된 행사",
+    "server_overseas": "해외 행사(서버 판단)",
+    "server_ended": "종료된 행사(서버 판단)",
+}
+
+# outcome별 (한국어 라벨, 배지 톤). 모르는 outcome은 아래에서 fallback 처리한다.
+EVENT_OUTCOME_LABELS = {
+    "created": ("생성됨", "ok"),
+    "duplicate": ("중복", "disabled"),
+    "excluded": ("제외", "disabled"),
+    "skipped": ("건너뜀", "disabled"),
+    "failed": ("실패", "error"),
+}
+
+
+def _display_url(url) -> str:
+    """쿼리·프래그먼트를 뗀 호스트+경로만 남긴다(상세 표에 링크가 아닌 텍스트로 노출)."""
+    parts = urlsplit(url)
+    # netloc이 아니라 hostname — URL에 섞인 계정 정보(user:pass@)를 화면에 내지 않는다.
+    return f"{parts.hostname or ''}{parts.path}"
+
+
+def _outcome_rows(event_outcomes):
+    """run.event_outcomes(이미 로딩된 JSON 필드)만 써서 표시용 행을 만든다 — 추가
+    쿼리를 내지 않는다. 저장 전 검증되지만 형태가 틀어진 항목은 방어적으로 건너뛴다."""
+    rows = []
+    for item in event_outcomes:
+        if not isinstance(item, dict):
+            continue
+        url = item.get("url")
+        if not isinstance(url, str):
+            continue
+        outcome = item.get("outcome", "")
+        reason = item.get("reason", "")
+        outcome_label, tone = EVENT_OUTCOME_LABELS.get(outcome, ("알 수 없음", "disabled"))
+        rows.append(
+            {
+                "display_url": _display_url(url),
+                "outcome": outcome,
+                "outcome_label": outcome_label,
+                "tone": tone,
+                "reason_label": EVENT_OUTCOME_REASON_LABELS.get(reason, "알 수 없음"),
+            }
+        )
+    return rows
+
+
 def recent_discovery_runs(*, limit=5):
-    """최근 탐색 실행을 최신순으로, 후보 승격/실패 개수를 함께 annotate해
-    행 dict 리스트로 돌려준다(뷰가 아니라 여기서 집계한다)."""
+    """최근 탐색 실행을 최신순으로, 후보 승격/실패·행사 생성 개수와 표시용 결과
+    행을 함께 계산해 dict 리스트로 돌려준다(뷰가 아니라 여기서 집계한다).
+
+    후보·행사 드래프트를 같은 쿼리에서 Count하면 조인 곱으로 부풀어 distinct가
+    필요하다. events_excluded·events_failed는 event_outcomes가 비어 있던 옛
+    실행에서는 필드값을 믿을 수 없어 None으로 낸다(화면이 "-"로 표시)."""
     runs = SourceDiscoveryRun.objects.order_by("-created_at").annotate(
         promoted_count=Count(
-            "candidates", filter=Q(candidates__status=SourceCandidate.Status.PROMOTED)
+            "candidates",
+            filter=Q(candidates__status=SourceCandidate.Status.PROMOTED),
+            distinct=True,
         ),
         failed_count=Count(
-            "candidates", filter=Q(candidates__status=SourceCandidate.Status.FAILED)
+            "candidates",
+            filter=Q(candidates__status=SourceCandidate.Status.FAILED),
+            distinct=True,
         ),
+        events_created=Count("events", distinct=True),
     )[:limit]
-    return [
-        {"run": run, "promoted_count": run.promoted_count, "failed_count": run.failed_count}
-        for run in runs
-    ]
+    rows = []
+    for run in runs:
+        has_outcomes = bool(run.event_outcomes)
+        rows.append(
+            {
+                "run": run,
+                "promoted_count": run.promoted_count,
+                "failed_count": run.failed_count,
+                "events_created": run.events_created,
+                "events_excluded": run.events_excluded if has_outcomes else None,
+                "events_failed": run.events_failed if has_outcomes else None,
+                "outcome_rows": _outcome_rows(run.event_outcomes),
+            }
+        )
+    return rows
 
 
 def failed_source_candidates(*, limit=10):

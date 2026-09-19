@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #370부터 #230까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #382부터 #246까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,36 +28,48 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #370 — feat(drafts): 키워드 탐색·서버 수집에 국내·미종료 필터를 넣는다 (트랙 33)
+### PR #382 — refactor(core): Move frontend new-group hourly quota into error_groups (트랙 38 PR 1)
 
-**무엇을 바꿨나**: 키워드 탐색(러너)과 서버 수집 양쪽에 "국내·미종료" 필터를
-넣었다. 러너 경로는 해석 결과의 개최지(`venue_country`)가 `not_kr`이면 제외하고
-불확실은 제출, 종료일(없으면 시작일)이 오늘(KST) 이전이면 제외. 소스 후보는
-`source_country`가 `kr`일 때만 등록(불확실 제외, `not_domestic`). 서버 수집
-경로(「지금 수집」·후보 승격 초기 드래프트)는 모델이 없어 규칙으로 거른다:
-제목·본문에 한글이 없거나 본문의 가장 늦은 날짜가 오늘 이전이면 제외. 제외는
-실패가 아니라 200 `excluded`로 응답하고 실행 기록 `events_excluded`에 저장한다.
-함께 고친 결함: 완료 뷰가 이벤트 건수를 저장하지 않던 것, 실행 상태를 후보·
-이벤트 결과의 결합으로 산출, 빈·불량 날짜의 저장 시 예외. 마이그레이션
-`0010`(컬럼 추가)·`0011`(선택지 추가). 커밋 24개 `[실측 gh]`, 머지
-2026-09-16 07:52Z `ed95a91f`. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md`
-"트랙 33" 절.
+**무엇을 바꿨나**: 트랙 38(어댑터 얇게, 규칙은 내부 서비스로) 슬라이스 D. 행동
+불변 이동이다. 익명 프론트 오류 보고의 "새 묶음 시간당 상한" 규칙
+(`NEW_GROUP_HOURLY_LIMIT`, 옛 `_new_group_allowed`)을 HTTP 뷰
+`core/client_error_views.py`에서 `core/error_groups.py::frontend_new_group_allowed`로
+옮겼다. 본문·캐시 키는 동일하고, 뷰에서 `ErrorGroup`·`cache`·`timezone` 임포트가
+사라졌다 — same-origin·본문 파싱·payload 검증·스로틀·항상 204 계약은 한 글자도
+바뀌지 않았다. 옮긴 함수 docstring에 "무인증 쓰기 경로는 반드시 이 함수를 먼저
+통과해야 한다"를 명시했다(보안 검토 조건).
 
-**왜**: 2026-09-15 실기동에서 탐색이 만든 드래프트 4건 중 3건이 승인 불가(도쿄
-개최, 한국어 기사의 미국 팝업, 2023년 종료)였고 일본 집계 사이트가 활성 소스로
-등록돼 실행마다 일본어 드래프트를 만들었다 `[실측 실행 13]`. 행사는 놓치는 비용이
-검수 큐 한 건보다 크니 불확실은 제출, 소스는 한 번 오판하면 매 실행 반복 오염이라
-불확실은 제외로 방향을 갈랐다(사용자 결정 D5·D6).
+**같은 날 별도 PR #383**: CI 의존성 감사(`pip-audit --strict`)가 anyio 4.13.0에
+대해 GHSA-82r6-8w77-94w6·GHSA-5p39-cfhj-2xmp를 새로 보고해 코드 변경이 없는
+#381과 이 PR(#382)까지 게이트에서 막았다. `uv.lock`만 anyio 4.14.2로 올려 해소했고
+(`pyproject.toml` 변경 없음), #381·#382는 main 머지로 감사 게이트를 재통과했다.
 
-**검증**: 머지 전 5역할 재검토(DAR·QVL·SRR·AIA·PSO)에서 차단 결함 없음, 같은 PR에서
-죽은 임포트·docstring·테스트 공백 2건(DF-02 필드, DF-21 KST)·문서 2건을 고쳤다.
-머지 후 main `ed95a91f` 재측정 `[실측 2026-09-16]`: `uv run pytest -q` → **2905
-passed / 10 deselected / 84.29초**(이전 기준선 2826 대비 +79 `[계산]`), `check`
-0 issues, `makemigrations --check` 무변경; main CI run 35070765683 success. 실기동
-재현(실행 14): 드래프트 2건 모두 국내, 제외 1건 저장 `[실측]`. 로컬 DB 한글 포함
-서버 수집 드래프트 33건에 "가장 늦은 날짜" 규칙 대입 → 오제외 0건 `[실측]`.
+**검증** `[실측 2862540a]`: Red — 새 위치 임포트 실패(ImportError) → 이동 후
+`tests/core/test_error_groups.py` + `tests/core/test_client_error_report.py` 57
+passed. 새 도메인 테스트 3건(EG-36 상한 이내 허용 / EG-37 초과 거부 / EG-38
+기존 지문 무관). 기존 웹 테스트는 monkeypatch 대상 경로 2곳(+docstring 이름
+1곳)만 새 위치로 갱신, 나머지 무수정 Green. 뮤테이션 `<=`→`<` — 경계 테스트
+3건만 Red(3 failed / 54 passed), 기존 지문 경로 Green, 원복 후 57 passed. 전체
+회귀 `uv run pytest -q` → 3114 passed / 10 deselected / 96.36초(main `e4e0338f`
+3111 → +3 `[계산]`), `manage.py check` 0건, `makemigrations --check --dry-run`
+변화 없음. DAR·SRR 결함 0건, QVL Complete with residual risk. `docs/BE/error-groups.md`의
+소유 모듈·행번호 인용 18곳도 같은 PR(커밋 e877ff3f)에서 재실측해 갱신했다. 머지 후
+main 재측정: 3114 passed / 10 deselected / 126.66초, `manage.py check` 0건,
+`makemigrations --check` 변화 없음 `[실측 2026-09-19 main 0c7cb3a0]`
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #383 — build: Bump anyio to 4.14.2 for two new GHSA advisories
+- #381 — docs: PR #380·#379 머지를 로그에 롤링 반영 + 트랙 38 백로그 행
+- #380 — fix(staff): Show period and title-url checks in draft preapproval (트랙 38 PR 0)
+- #379 — docs: PR #376~#378 스택 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #378 — Track 37: Prune operational data and show storage size on the dashboard
+- #377 — Track 36: Record backend and browser errors as capped error groups
+- #376 — Track 35: Record per-event draft run outcomes and fix live-run defects
+- #374 — docs: PR #373 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #373 — feat(home): Add event calendar section below the hero
+- #372 — docs: PR #370 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #371 — deploy: main → production
+- #370 — feat(drafts): 키워드 탐색·서버 수집에 국내·미종료 필터를 넣는다 (트랙 33)
 - #369 — docs: PR #363~#367 스택 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #368 — deploy: main → production
 - #367 — fix: DB 락·트랜잭션 검수 결함 7건 수정 (트랙 32)
@@ -181,19 +193,3 @@ passed / 10 deselected / 84.29초**(이전 기준선 2826 대비 +79 `[계산]`)
 - #248 — feat(events): Default the public listing to ongoing and upcoming
 - #247 — feat(events): Flag published events that need re-verification
 - #246 — fix(archive): Give photo uploads and place entries an idempotency key
-- #245 — fix(collection): Make owned, wanted and tradeable independent axes
-- #244 — refactor(css): CSS optimization and accessibility sweep
-- #243 — design(errors): Reskin 404/429/500 as editorial
-- #242 — feat(core): 마이페이지 에디토리얼 + 비밀번호 변경 시각 추적
-- #241 — feat(archive): 찜 목록 에디토리얼 — 내 활동 5탭 이관 완결
-- #240 — design(collection): 굿즈 수정 페이지 에디토리얼 + --rose-border 다크 값
-- #239 — feat(collection): 컬렉션 상세 페이지 신설
-- #238 — 행사 상세 페이지 에디토리얼 리스킨 + 관련 행사
-- #237 — design(ui): 안내 문구 블록효과 제거 → 브랜드-레드 불릿 통일
-- #236 — feat(archive): 방문 상세 페이지 신설 (/archive/visits/<id>/)
-- #235 — design(archive): 다녀온 기록 수정 페이지 에디토리얼 리스킨
-- #234 — design(archive): 다녀온 기록 작성 페이지 에디토리얼 리스킨
-- #233 — feat(archive): 직접 등록 에디토리얼 — 목록 리스킨 + 전용 작성 페이지 신설
-- #232 — feat(archive): 내 활동 shell v2 — visits sort, 목록/달력 toggle, mobile layout
-- #231 — feat(collection): Rebuild 굿즈 직접 등록 form editorial
-- #230 — feat(archive): Unify 다녀온 기록 onto the editorial shell

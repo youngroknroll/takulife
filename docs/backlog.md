@@ -22,7 +22,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `[실측 2026-09-15]` `uv run pytest -q` → **2826 passed**(10 deselected, 40.10초, 스택 #363~#367 머지 후 main `568a6192`); main CI run 34951329512 4잡 success |
+| 백엔드 회귀 | `[실측 2026-09-17]` `uv run pytest -q` → **2927 passed**(10 deselected, 84.81초, PR #373 머지 후 main `716fe90d`); main CI run 35188306747 success |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
@@ -36,8 +36,12 @@
 | 회원 닉네임(트랙 29) | `[실측 gh]` PR #358 머지 완료(2026-09-10, merge commit `3ca5d184`, 커밋 10개) — 가입 필수 입력·헤더/마이페이지 표시·기존 회원 백필(`회원<pk>`)·변경 화면(`/accounts/settings/nickname/`, 5회/3600초 빈도 제한). 가드레일 정본 `docs/BE/account-identity.md` |
 | DB 락·트랜잭션 검수(트랙 32) | `[실측 gh]` PR #367 머지 완료(2026-09-15 `4c8ab746` → #366 `568a6192`로 main 도달) — 결함 7건(팔레트 슬롯 세이브포인트·삭제 뷰 잠금 순서·상태 PATCH 원자성·탐색 감사로그 원자성·러너 중복 정규화·HomeConfig 잠금·컬렉션 PATCH 스로틀) 수정, 신규 테스트 10건. 이연: 락 안 이미지 저장 근본 해법(트리거 S3 지연 실측)·타임아웃 설정·교착 관측 지표 |
 | 키워드 탐색(트랙 30) | `[실측 gh]` PR #361 머지 완료(2026-09-12, main `cfd69d3a`) — 검색어 탐색 → 결정론 읽기 → 해석 → 승인 가능한 드래프트·소스 등록 3단 분리. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md`. 이연 항목은 G6 |
-| 국내·미종료 필터(트랙 33) | `[실측 gh 2026-09-16]` PR #370 오픈(base `main`, 브랜치 `feat/domestic-active-draft-filter`) — 머지는 사용자 승인 대기. 러너·서버 양쪽 종료일·개최지 필터, 소스 후보 개최지 국가 규칙(`not_domestic`), 서버 수집 경로 한글·최신 날짜 필터, 승격 직후 초기 드래프트의 수집 규칙 결합, 실행 기록 `events_excluded` 저장. 마이그레이션 2개(`0010_sourcediscoveryrun_events_excluded`, `0011_alter_sourcecandidate_failure_stage`). 실기동 재현 완료(실행 14: 드래프트 2건 모두 국내, 제외 1건 저장) `[실측 2026-09-16]`. 기존 드래프트·소스 소급 정리는 범위 밖(로컬 해외 소스 2건은 비활성화 완료, 운영 DB는 수동 확인 필요). 회귀 수치는 PR #370 본문 참조. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 33" 절 |
-| 홈 이벤트 달력(트랙 34) | `[실측 gh 2026-09-17]` PR #373 오픈(base `main`, 브랜치 `feat/home-event-calendar`) — 머지는 사용자 승인 대기 — 홈 히어로 바로 아래에 월 격자(카테고리 점, 칸당 최대 4종)와 선택일 아젠다(최대 3건, 2026-09-17 사용자 지시로 5→3)를 서버 렌더로 표시, `?month=`·`?date=`는 행사 달력 파서 재사용·잘못된 값은 이번 달·오늘로 조용히 복귀, 56.25rem 1열·45rem 모바일, 다크는 토큰 상속. 같은 트랙에서 행사 달력 페이지의 선택일 포커스 이동(tabindex·scroll-margin)과 콘서트 색 누락도 수정. 홈 비로그인 GET 쿼리 7→8건 `[실측 CaptureQueriesContext]`. 신규 테스트 22건, 전체 회귀 2927 passed / 10 deselected `[실측 uv run pytest -q]`(HEAD `03a76e3a`). 가드레일 정본 `docs/FE/home-event-calendar.md`. 이연: 날짜 전개 규칙의 events 도메인 이관(트리거: 세 번째 호출부), `web/views/events.py` 분리(트리거: 700줄 초과, 현재 627줄 `[실측 wc -l]`), `.agenda-*` 스킨 공용화(트리거: 세 번째 소비처) |
+| 국내·미종료 필터(트랙 33) | `[실측 gh 2026-09-17]` PR #370 머지 완료(2026-09-16 07:52Z, merge commit `ed95a91f`). 러너·서버 양쪽 종료일·개최지 필터, 소스 후보 개최지 국가 규칙(`not_domestic`), 서버 수집 경로 한글·최신 날짜 필터, 승격 직후 초기 드래프트의 수집 규칙 결합, 실행 기록 `events_excluded` 저장. 마이그레이션 2개(`0010_sourcediscoveryrun_events_excluded`, `0011_alter_sourcecandidate_failure_stage`). 실기동 재현 완료(실행 14: 드래프트 2건 모두 국내, 제외 1건 저장) `[실측 2026-09-16]`. 기존 드래프트·소스 소급 정리는 범위 밖(로컬 해외 소스 2건은 비활성화 완료, 운영 DB는 수동 확인 필요). 회귀 수치는 PR #370 본문 참조. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 33" 절 |
+| 홈 이벤트 달력(트랙 34) | `[실측 gh 2026-09-17]` PR #373 머지 완료(2026-09-17 06:03Z, merge commit `716fe90d`) — 홈 히어로 바로 아래에 월 격자(카테고리 점, 칸당 최대 4종)와 선택일 아젠다(최대 3건, 2026-09-17 사용자 지시로 5→3)를 서버 렌더로 표시, `?month=`·`?date=`는 행사 달력 파서 재사용·잘못된 값은 이번 달·오늘로 조용히 복귀, 56.25rem 1열·45rem 모바일, 다크는 토큰 상속. 로그인 홈은 히어로 → 내 컬렉션 현황 → 이벤트 달력 순서(컬렉션 현황을 먼저 보여달라는 사용자 지시). 같은 트랙에서 행사 달력 페이지의 선택일 포커스 이동(tabindex·scroll-margin)과 콘서트 색 누락도 수정. 홈 비로그인 GET 쿼리 7→8건 `[실측 CaptureQueriesContext]`. 신규 테스트 22건, 전체 회귀 2927 passed / 10 deselected `[실측 uv run pytest -q]`; 머지 후 main 재측정 2927 passed / 10 deselected / 84.81초 `[실측]`. 가드레일 정본 `docs/FE/home-event-calendar.md`. 이연: 날짜 전개 규칙의 events 도메인 이관(트리거: 세 번째 호출부), `web/views/events.py` 분리(트리거: 700줄 초과, 현재 627줄 `[실측 wc -l]`), `.agenda-*` 스킨 공용화(트리거: 세 번째 소비처) |
+| 드래프트 실행 결과 기록·대시보드(트랙 35) | `[실측 gh]` PR #376 머지 완료(2026-09-18 08:34Z, merge commit `8ee32d40`). 전체 회귀 3009 passed / 10 deselected `[실측 2026-09-18]`. 러너가 행사별 결과(`{url, outcome, reason}`)를 완료 보고에 실어 서버가 `SourceDiscoveryRun.event_outcomes`(마이그레이션 `0012_sourcediscoveryrun_event_outcomes`)에 항목 단위 검증 후 저장, 대시보드가 결과별 건수와 행사 단위 상세를 표시. 같은 트랙에서 2026-09-17 실기동 검토가 찾은 결함 5건을 함께 해소했다 — 러너가 서버 판정을 무시하던 것을 `SKIPPABLE_AGENT_REASONS`(ended·overseas만 코드 재확인)로, 탐색 프롬프트에 오늘·국내 조건이 없던 것을 `today`·"대한민국만" 지시로, X 게시물 읽기 미구현을 `cdn.syndication.twimg.com/tweet-result` 고정 호스트 읽기로, 사유 로그 없음을 결과별 INFO 로그로, 실패 소스 무조건 재검증을 robots·sample_mismatch·listing_extraction 3종·7일 재사용으로, robots 라벨 미분리를 `FailureStage.ROBOTS_FETCH_FAILED`(마이그레이션 `0013_alter_sourcecandidate_failure_stage`)로 각각 고쳤다. 가드레일 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 35" 절. 이연: `event_outcomes` 별도 모델 승격, 주관 사유 건너뛰기 평가셋, 캡션 경로 응답 크기 상한·DNS 리바인딩 |
+| 오류 묶음 기록(트랙 36, 사이트 로그 1단계) | `[실측 gh]` PR #377 머지 완료(2026-09-18 08:37Z, merge commit `0d4401b4`, 커밋 9개 [실측 git log]). 전체 회귀 2987 passed / 10 deselected [실측 2026-09-18]. `core.ErrorGroup`(마이그레이션 `core/migrations/0007_errorgroup.py`)이 처리되지 않은 500 예외와 프론트 전역 오류/거부를 지문으로 묶어 출처별 최대 250행(합 500행)만 유지, `record_error`는 무예외·세이브포인트·정제(제어문자→시크릿 포함 시 전체 비움→이메일→URL 쿼리→500자)를 거친다. 수집 API `POST /api/client-errors/`는 첫 무인증 공개 쓰기 엔드포인트로 항상 204, 전역 스로틀 120/시간·새 묶음 20/시간. 대시보드 「시스템 오류」 패널 추가. 가드레일 정본 `docs/BE/error-groups.md`, 운영 확인 절차 `docs/operations-runbook.md` §9. 이연: 러너 실행 결과 보고, IP 보조 스로틀, 시크릿 스캐너 고도화, 폐기 요청 수 지표, 상한·스로틀 env화, 사이트 로그 4단계(보존 정리) |
+| 운영 데이터 보존 정리(트랙 37, 사이트 로그 4단계) | `[실측 gh]` PR #378 머지 완료(2026-09-18 08:39Z, merge commit `4f45cd6e`). 전체 회귀 3019 passed / 10 deselected [실측 2026-09-18]. `core.retention.prune_operational_data`(만료 세션·axes 로그·`ErrorGroup` 대상별 정리, 관리 명령 `prune_operational_data`)와 `core.db_stats.database_size_summary`(Postgres 전용 DB 용량 요약, 그 외 엔진·쿼리 실패는 `None`)를 추가하고 스태프 대시보드에 「저장소」 패널을 더했다. 로컬 실 DB 실측: 세션 294→28건 정리, `database_size_summary` 전체 13.8MB `[실측]`. 가드레일 정본 `docs/BE/data-retention.md`, 운영 확인 절차 `docs/operations-runbook.md` §7.2·§9. 이연: 대량 삭제 배치, `SourceDiscoveryRun`/`SourceCandidate` 정리, `AccessFailureLog` 활성화, 스케줄러 실제 등록(사용자 액션). C3 해소 |
+| 어댑터 얇게·규칙은 내부 서비스로(트랙 38) | `[실측 gh]` PR #380 머지 완료(2026-09-19 08:09Z, merge commit `6ddc7def`) — 트랙 38의 PR 0(승인 전 체크 드리프트 수정). 스태프 초안 인스펙터의 승인 전 체크가 승인 검증기(`events/services.py::_validate_publish_fields`)와 어긋나 기간 역전·제목=공식 URL 검사가 빠져 있던 결함을, 검증기 옆 dry-run 판정 함수 `events/services.py::publish_field_checks`(같은 순서, 7항목 전부 판정)로 고치고 `staff/views/drafts.py`의 뷰를 판정 없이 결과만 싣는 얇은 어댑터로 바꿨다. PR 1 #382 머지 완료(2026-09-19 11:37Z, merge commit `0c7cb3a0`) — 슬라이스 D. 익명 프론트 새 묶음 시간당 상한 규칙을 `core/client_error_views.py`에서 `core/error_groups.py::frontend_new_group_allowed`로 이동(행동 불변, 뷰의 `ErrorGroup`·`cache`·`timezone` 직접 참조 제거). 남은 슬라이스는 A(이벤트 품질 배지 → `events/queries.py`) → B(소스 신선도·초안 경고 배지 → `drafts/queries.py`) → C(`discover_drafts` 오케스트레이션 → `drafts/listing_discovery.py`) 순으로, 각각 별도 PR 1개·행동 불변 이동이며 `local_runner`는 이관 대상에서 제외한다. 계획서 `prompt_plan.md` 트랙 38 절 |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -185,6 +189,14 @@ accounts.User"*) `accounts.User` 속성과의 조인이 불가능하다 — **�
 
 **착수 조건**: 계획서(`prompt_plan.md`) 작성 → 6역할 사전 검토 → 프론트 이중
 리뷰 게이트(WED·BIR) 통과.
+
+### C3 사이트 로그 4단계 — 보존 정리 — **해소(트랙 37, PR #378 머지 완료)**
+
+사이트 로그 제안(2026-09-17)의 4단계. `core.ErrorGroup`(트랙 36)은 출처별
+250행 상한으로 절대량은 막지만 오래된 행을 시간 기준으로 지우는 보존 정책은
+없었다. 트랙 37에서 `prune_operational_data` 명령과 대시보드 저장소 패널로
+해소했다 — 상세는 위 표의 "운영 데이터 보존 정리(트랙 37)" 행과
+`docs/BE/data-retention.md` 참고.
 
 ---
 

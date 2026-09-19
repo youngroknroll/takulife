@@ -55,6 +55,7 @@ class RunnerClient:
         events_attempted=0,
         events_failed=0,
         events_excluded=0,
+        event_outcomes=None,
     ):
         response = self._post(
             f"/runs/{run_id}/complete/",
@@ -65,6 +66,7 @@ class RunnerClient:
                 "events_attempted": events_attempted,
                 "events_failed": events_failed,
                 "events_excluded": events_excluded,
+                "event_outcomes": list(event_outcomes or []),
             },
         )
         return response.json()
