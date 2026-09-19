@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #380부터 #246까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #382부터 #246까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,36 +28,39 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #380 — fix(staff): Show period and title-url checks in draft preapproval (트랙 38 PR 0)
+### PR #382 — refactor(core): Move frontend new-group hourly quota into error_groups (트랙 38 PR 1)
 
-**무엇을 바꿨나**: 트랙 38(어댑터 얇게, 규칙은 내부 서비스로)의 PR 0이다. 이
-트랙의 원래 계획은 슬라이스 D(ErrorGroup 시간당 쿼터 → `core/error_groups.py`)
-→ A(이벤트 품질 배지 → `events/queries.py`) → B(소스 신선도·초안 경고 배지 →
-`drafts/queries.py`) → C(`discover_drafts` 오케스트레이션 → `drafts/listing_discovery.py`)
-순으로 행동을 바꾸지 않고 어댑터만 얇게 만드는 것이었으나, 그 전에 발견된
-행동 변경 결함을 먼저 별도 PR로 고쳤다(사용자 결정 2026-09-18). 스태프 초안
-인스펙터의 "승인 전 체크"가 승인 경로의 실제 검증기
-(`events/services.py::_validate_publish_fields`)와 어긋나 있었다 — 기간 역전
-(시작일>종료일)과 제목=공식 URL(끝 슬래시 무시)은 승인 시 거부되는데 미리보기에는
-없어 "전부 통과" 뒤 승인 실패가 가능했다. `events/services.py`에 검증기 바로
-옆 dry-run 판정 함수 `publish_field_checks`(같은 순서, 7항목 전부 판정)를 두고,
-`staff/views/drafts.py`의 `_draft_preapproval_checks`는 초안 필드를 넘겨 결과만
-싣는 얇은 어댑터로 바꿨다(판정 분기 0개, `is_valid_*` 임포트 제거).
+**무엇을 바꿨나**: 트랙 38(어댑터 얇게, 규칙은 내부 서비스로) 슬라이스 D. 행동
+불변 이동이다. 익명 프론트 오류 보고의 "새 묶음 시간당 상한" 규칙
+(`NEW_GROUP_HOURLY_LIMIT`, 옛 `_new_group_allowed`)을 HTTP 뷰
+`core/client_error_views.py`에서 `core/error_groups.py::frontend_new_group_allowed`로
+옮겼다. 본문·캐시 키는 동일하고, 뷰에서 `ErrorGroup`·`cache`·`timezone` 임포트가
+사라졌다 — same-origin·본문 파싱·payload 검증·스로틀·항상 204 계약은 한 글자도
+바뀌지 않았다. 옮긴 함수 docstring에 "무인증 쓰기 경로는 반드시 이 함수를 먼저
+통과해야 한다"를 명시했다(보안 검토 조건).
 
-**왜**: 계약 테스트가 실패 사례 7종마다 검증기의 예외와 미리보기의 실패 key를
-짝지어 드리프트 재발을 막는다. 템플릿 변경은 없다(label·passed만 렌더).
+**같은 날 별도 PR #383**: CI 의존성 감사(`pip-audit --strict`)가 anyio 4.13.0에
+대해 GHSA-82r6-8w77-94w6·GHSA-5p39-cfhj-2xmp를 새로 보고해 코드 변경이 없는
+#381과 이 PR(#382)까지 게이트에서 막았다. `uv.lock`만 anyio 4.14.2로 올려 해소했고
+(`pyproject.toml` 변경 없음), #381·#382는 main 머지로 감사 게이트를 재통과했다.
 
-**검증** `[실측 88bd4c3f]`: Red — `publish_field_checks` 임포트 실패(collection
-error) → 최소 구현 → `tests/events/test_publish_field_checks.py` 9 passed.
-뮤테이션 2회 — 기간 검사 비활성화 → TA-01·TA-03[period_reversed]만 Red(2
-failed / 7 passed), 끝 슬래시 정규화 제거 → TA-02만 Red(1 failed / 8 passed),
-모두 원복. 웹 계약 — 옛 뷰 + 새 테스트 = 2 failed(7키 전수·기간 역전), 새 뷰 =
-`tests/staff/test_staff_draft_views.py` 59 passed. 전체 회귀 `uv run pytest -q`
-→ 3111 passed / 10 deselected / 89.78초(main `4f45cd6e` 3101 → +10 `[계산]`),
-`manage.py check` 0건, `makemigrations --check --dry-run` 변화 없음. 머지 후
-main 재측정: 3111 passed / 10 deselected / 97.27초, `manage.py check` 0건, `makemigrations --check` 변화 없음 [실측 2026-09-19 main `e4e0338f`]
+**검증** `[실측 2862540a]`: Red — 새 위치 임포트 실패(ImportError) → 이동 후
+`tests/core/test_error_groups.py` + `tests/core/test_client_error_report.py` 57
+passed. 새 도메인 테스트 3건(EG-36 상한 이내 허용 / EG-37 초과 거부 / EG-38
+기존 지문 무관). 기존 웹 테스트는 monkeypatch 대상 경로 2곳(+docstring 이름
+1곳)만 새 위치로 갱신, 나머지 무수정 Green. 뮤테이션 `<=`→`<` — 경계 테스트
+3건만 Red(3 failed / 54 passed), 기존 지문 경로 Green, 원복 후 57 passed. 전체
+회귀 `uv run pytest -q` → 3114 passed / 10 deselected / 96.36초(main `e4e0338f`
+3111 → +3 `[계산]`), `manage.py check` 0건, `makemigrations --check --dry-run`
+변화 없음. DAR·SRR 결함 0건, QVL Complete with residual risk. `docs/BE/error-groups.md`의
+소유 모듈·행번호 인용 18곳도 같은 PR(커밋 e877ff3f)에서 재실측해 갱신했다. 머지 후
+main 재측정: 3114 passed / 10 deselected / 126.66초, `manage.py check` 0건,
+`makemigrations --check` 변화 없음 `[실측 2026-09-19 main 0c7cb3a0]`
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #383 — build: Bump anyio to 4.14.2 for two new GHSA advisories
+- #381 — docs: PR #380·#379 머지를 로그에 롤링 반영 + 트랙 38 백로그 행
+- #380 — fix(staff): Show period and title-url checks in draft preapproval (트랙 38 PR 0)
 - #379 — docs: PR #376~#378 스택 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #378 — Track 37: Prune operational data and show storage size on the dashboard
 - #377 — Track 36: Record backend and browser errors as capped error groups
