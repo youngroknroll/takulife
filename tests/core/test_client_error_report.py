@@ -313,10 +313,10 @@ def test_새_묶음은_시간당_상한을_넘으면_더_생기지_않지만_기
     지문 3개 중 상한을 넘는 세 번째는 새 행을 만들지 않고, 기존 지문
     재보고는 상한과 무관하게 count만 늘어남을 확인한다."""
     # EG-20
-    import core.client_error_views as client_error_views_module
+    import core.error_groups as error_groups_module
     from core.models import ErrorGroup
 
-    monkeypatch.setattr(client_error_views_module, "NEW_GROUP_HOURLY_LIMIT", 2)
+    monkeypatch.setattr(error_groups_module, "NEW_GROUP_HOURLY_LIMIT", 2)
 
     for script in ["/static/js/a.js", "/static/js/b.js", "/static/js/c.js"]:
         resp = _post_valid(client, script=script)
@@ -362,8 +362,8 @@ def test_본문이_업로드_상한을_넘으면_204만_주고_기록하지_않�
 def test_처리되지_않은_예외도_204만_주고_기록하지_않는다(client, monkeypatch, caplog):
     """`handle_exception`은 Throttled만 204로 바꿔주고 있었다 — 다른 예외가
     나면 DRF 기본 처리로 넘어가 500이 될 수 있다(정보 비노출 계약 위반).
-    `_new_group_allowed`를 터뜨려 실제 처리 경로에서 예외가 나는 상황을
-    흉내낸다."""
+    `frontend_new_group_allowed`를 터뜨려 실제 처리 경로에서 예외가 나는
+    상황을 흉내낸다."""
     # EG-32
     import logging
 
@@ -372,7 +372,7 @@ def test_처리되지_않은_예외도_204만_주고_기록하지_않는다(clie
     def _boom(*args, **kwargs):
         raise RuntimeError("simulated view failure")
 
-    monkeypatch.setattr("core.client_error_views._new_group_allowed", _boom)
+    monkeypatch.setattr("core.client_error_views.frontend_new_group_allowed", _boom)
 
     with caplog.at_level(logging.ERROR, logger="core.client_error_views"):
         resp = _post_valid(client)
