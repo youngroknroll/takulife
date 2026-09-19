@@ -10,6 +10,7 @@ import logging
 import re
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Q
 from django.utils import timezone
@@ -25,6 +26,8 @@ MESSAGE_SAMPLE_MAX_LENGTH = 500
 # 출처별 상한 — 이 값이 없으면 익명 프론트 오류 보고가 백엔드 묶음을
 # 무한정 밀어낼 수 있다(합 500행 근사, 동시 생성 시 ±1~2행 허용).
 SOURCE_GROUP_LIMIT = 250
+# 익명 프론트 보고 전용 상한 — 새 묶음 생성만 시간당 이만큼으로 막는다.
+NEW_GROUP_HOURLY_LIMIT = 20
 
 # 대시보드 패널이 그대로 쓰는 표시용 한국어 라벨(system_error_summary 전용).
 _SOURCE_LABELS = {"backend": "백엔드", "frontend": "프론트"}
@@ -90,6 +93,19 @@ def sanitize_message(text):
     cleaned = _mask_emails(cleaned)
     cleaned = _strip_url_queries(cleaned)
     return cleaned[:MESSAGE_SAMPLE_MAX_LENGTH]
+
+
+def frontend_new_group_allowed(fingerprint):
+    """익명 프론트 보고가 새 묶음 생성만으로 시간당 상한을 소진해 다른
+    정상 오류의 새 묶음 생성까지 막지 못하게 한다. 무인증 쓰기 경로는
+    반드시 이 함수를 먼저 통과해야 한다(기존 묶음 갱신은 상한과 무관)."""
+    from core.models import ErrorGroup
+
+    if ErrorGroup.objects.filter(fingerprint=fingerprint).exists():
+        return True
+    key = "client-error-new-groups:" + timezone.now().strftime("%Y%m%d%H")
+    cache.add(key, 0, 3600)
+    return cache.incr(key) <= NEW_GROUP_HOURLY_LIMIT
 
 
 def record_error(*, source, error_type, location, message):

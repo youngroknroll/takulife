@@ -9,22 +9,18 @@ import logging
 import re
 from urllib.parse import urlparse, urlsplit
 
-from django.core.cache import cache
 from django.core.exceptions import RequestDataTooBig
-from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework.exceptions import Throttled
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from core.error_groups import compute_fingerprint, record_error
-from core.models import ErrorGroup
+from core.error_groups import compute_fingerprint, frontend_new_group_allowed, record_error
 
 logger = logging.getLogger(__name__)
 
 MAX_BODY_BYTES = 4096
-NEW_GROUP_HOURLY_LIMIT = 20
 _ALLOWED_KEYS = {"message", "name", "script", "line", "col"}
 _REQUIRED_KEYS = {"message", "script", "line"}
 _STR_KEYS = {"message", "name", "script"}
@@ -90,17 +86,6 @@ def _is_valid_payload(data):
     return True
 
 
-def _new_group_allowed(fingerprint):
-    """익명 프론트 보고가 새 묶음 생성만으로 시간당 상한을 소진해 다른
-    정상 오류의 새 묶음 생성까지 막지 못하게 한다(SRR F1). 기존 묶음
-    갱신(count 증가)은 이 상한과 무관하다."""
-    if ErrorGroup.objects.filter(fingerprint=fingerprint).exists():
-        return True
-    key = "client-error-new-groups:" + timezone.now().strftime("%Y%m%d%H")
-    cache.add(key, 0, 3600)
-    return cache.incr(key) <= NEW_GROUP_HOURLY_LIMIT
-
-
 class GlobalClientErrorThrottle(ScopedRateThrottle):
     """이 API는 미인증이라 기본 스로틀이 요청 IP를 식별자로 쓰는데, 저장소에
     프록시 개수 설정이 없어 X-Forwarded-For를 그대로 믿는다(러너 스로틀과
@@ -144,7 +129,7 @@ class ClientErrorReportView(APIView):
         location = f"{normalize_path(data.get('script') or '')}:{data.get('line')}"
         fingerprint = compute_fingerprint("frontend", error_type, location)
 
-        if _new_group_allowed(fingerprint):
+        if frontend_new_group_allowed(fingerprint):
             record_error(
                 source="frontend",
                 error_type=error_type,

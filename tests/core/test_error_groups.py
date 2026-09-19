@@ -591,3 +591,45 @@ def test_뷰가_처리되지_않은_예외를_던지면_500_응답과_함께_오
     assert resp.status_code == 500
     assert ErrorGroup.objects.count() == 1
     assert ErrorGroup.objects.get().error_type == "RuntimeError"
+
+
+@pytest.mark.django_db
+def test_새_지문은_시간당_상한_이내면_허용된다(clear_cache, monkeypatch):
+    # EG-36
+    import core.error_groups as error_groups_module
+    from core.error_groups import compute_fingerprint, frontend_new_group_allowed
+
+    monkeypatch.setattr(error_groups_module, "NEW_GROUP_HOURLY_LIMIT", 1)
+
+    fingerprint = compute_fingerprint("frontend", "TypeError", "/a.js:1")
+
+    assert frontend_new_group_allowed(fingerprint) is True
+
+
+@pytest.mark.django_db
+def test_새_지문은_시간당_상한을_넘으면_거부된다(clear_cache, monkeypatch):
+    # EG-37
+    import core.error_groups as error_groups_module
+    from core.error_groups import compute_fingerprint, frontend_new_group_allowed
+
+    monkeypatch.setattr(error_groups_module, "NEW_GROUP_HOURLY_LIMIT", 1)
+
+    fingerprint_a = compute_fingerprint("frontend", "TypeError", "/a.js:1")
+    fingerprint_b = compute_fingerprint("frontend", "TypeError", "/b.js:1")
+
+    assert frontend_new_group_allowed(fingerprint_a) is True
+    assert frontend_new_group_allowed(fingerprint_b) is False
+
+
+@pytest.mark.django_db
+def test_기존_지문_갱신은_상한과_무관하게_항상_허용된다(clear_cache, monkeypatch):
+    # EG-38
+    import core.error_groups as error_groups_module
+    from core.error_groups import compute_fingerprint, frontend_new_group_allowed, record_error
+
+    monkeypatch.setattr(error_groups_module, "NEW_GROUP_HOURLY_LIMIT", 0)
+
+    record_error(source="frontend", error_type="TypeError", location="/a.js:1", message="")
+    fingerprint = compute_fingerprint("frontend", "TypeError", "/a.js:1")
+
+    assert frontend_new_group_allowed(fingerprint) is True
