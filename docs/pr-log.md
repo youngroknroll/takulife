@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #373부터 #240까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #378부터 #246까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,44 +28,49 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #373 — feat(home): 홈 히어로 아래 이벤트 달력 섹션 (트랙 34)
+### PR #378 — Track 37: Prune operational data and show storage size on the dashboard
 
-**무엇을 바꿨나**: 홈 히어로 바로 아래에 이벤트 달력 섹션을 추가했다. 왼쪽 월
-격자는 날짜 칸에 그날 진행 중인 행사의 카테고리 점만 표시하고(중복·빈 값 제외,
-칸당 최대 4종), 앞뒤 달 채움 칸에는 점을 그리지 않는다. 범례는 그 달에 실제로
-등장한 카테고리만 어휘 순서로 보여준다. 오른쪽 선택일 아젠다는 기본이 오늘(다른
-달이면 1일)이고 최대 3건과 전체 건수, "이 날짜의 이벤트 N개 모두 보기 ›" 링크를
-담는다(상한은 사용자 지시로 5건에서 3건으로 줄였다 — 2열에서 달력 아래 빈 여백).
-날짜 칸·‹ 오늘 › 이동은 `?month=`·`?date=` 서버 렌더이며 행사 달력과 같은 파서를
-쓰고, 잘못된 값은 오류 표시 없이 이번 달·오늘로 조용히 복귀한다. 이동 후
-아젠다 카드로 스크롤·포커스가 옮겨간다. 반응형은 56.25rem 이하 1열(달력 위,
-아젠다 아래), 45rem 이하 칸형 모바일 격자. 다크 모드는 새 CSS 색 전부 디자인
-토큰(리터럴은 오늘 배지 글자 `#fff` 1곳)이다. 로그인 홈은 히어로 → 내 컬렉션
-현황 → 이벤트 달력 순서(컬렉션 현황을 먼저 보여달라는 사용자 지시), 비로그인은
-히어로 바로 아래가 달력이다. 같은 PR에서 계획 밖 같은 유형 결함 2건도 고쳤다:
-행사 달력 선택일 영역에 `tabindex="-1"`·`scroll-margin-top`·포커스 링 제거를
-더해 날짜 이동 후 포커스가 선택일로 오게 했고, 빠져 있던 콘서트 카테고리
-점·바 색 규칙을 토큰 색으로 채웠다. 커밋 12개 `[실측 gh]`, 머지 2026-09-17
-06:03Z `716fe90d`. 가드레일 정본 `docs/FE/home-event-calendar.md`.
+**무엇을 바꿨나**: 사이트 로그 제안의 4단계다. 같은 날 스택으로 순차 머지된
+트랙 35(PR #376, 드래프트 실행 결과 기록)와 트랙 36(PR #377, 백엔드·브라우저
+오류 묶음 기록)에 이어지는 마지막 정리 트랙이다. 트랙 35는 러너가 행사별
+결과(`{url, outcome, reason}`)를 실행 기록에 저장해 대시보드가 결과별 건수와
+행사 단위 상세를 표시하게 했고, 같은 트랙에서 실기동 검토가 찾은 결함 5건도
+고쳤다. 트랙 36은 원본 로그를 DB에 남기지 않고 지문·묶음·횟수만 저장하는
+`core.ErrorGroup`과 무인증 수집 API `POST /api/client-errors/`(항상 204,
+전역 스로틀 120/시간·새 묶음 20/시간)를 추가했다. 트랙 37은 만료 세션·axes
+접근 로그·오래된 `ErrorGroup`을 정리하는 관리 명령 `prune_operational_data`
+(`core/retention.py`, 인자 `--days` 기본 90일·`--dry-run`)를 신설하고,
+스태프 대시보드에 DB 전체 크기와 상위 5개 테이블 크기를 보여주는 "저장소"
+패널(`core/db_stats.py`, PostgreSQL 전용이며 그 외 엔진·쿼리 실패는 None)을
+추가했다. `AnalyticsEvent`(월간 지표가 원본을 직접 스캔)·반려 드래프트
+원문(재검수에 필요)·`StaffActionLog`(추가 전용 감사 로그)·`AccessAttempt`
+(axes가 1시간 창으로 자체 삭제)는 각각 이유가 있어 정리 대상에서 뺐다.
 
-**왜**: 디자인 핸드오프(claude.ai/design "Takulife index page mockups" 안 1b)를
-서버 렌더로 옮겨 홈에서 바로 이번 달 행사를 훑고 날짜별 아젠다를 볼 수 있게
-한다. 행사 달력·콘서트 색 수정은 이 트랙의 날짜 이동·색 규칙과 같은 유형
-결함이라 별도 이연 없이 같은 PR에서 처리했다(사용자 상시 결정).
+**왜**: 트랙 36이 `ErrorGroup`에 출처별 250행 상한은 뒀지만 시간 기준 보존
+정책은 남기지 않았다. 트랙 37이 그 공백을 메워 백로그 C3을 해소한다.
 
-**검증**: `uv run pytest -q` → **2927 passed, 10 deselected**(이전 기준선 2905
-대비 +22 `[계산]`, 신규 테스트 22건), `check` 0 issues, `makemigrations --check`
-무변경. Test List HC-01~HC-17을 사이클마다 기대 사유 Red → Green으로 밟았고,
-첫 실행이 Green이던 3건은 임시 뮤테이션으로 Red를 확인한 뒤 원복했다. 브라우저
-(Chrome DevTools MCP, 로컬 dev 서버) 확인: 1280·901px 2열, 900px 1열 전환,
-390px 모바일까지 가로 오버플로 0, 라이트·다크 computed 색이 토큰과 일치, 날짜
-클릭 후 포커스가 아젠다 카드로 이동, 콘솔 오류 0건. 홈 비로그인 GET 쿼리
-7건 → 8건(+1) `[실측 CaptureQueriesContext]`. WED·BIR 사후 판정 모두 Conforms.
-머지 후 main `716fe90d` 재측정 `[실측 2026-09-17]`: `uv run pytest -q` → **2927
-passed / 10 deselected / 84.81초**(이전 기준선 2905 대비 +22 `[계산]`), `check`
-0 issues, `makemigrations --check` 무변경; main CI run 35188306747 success.
+**검증** `[실측 2026-09-18]`: `uv run pytest -q` → **3019 passed, 10
+deselected**(트랙 36 기준 2987 → +32 `[계산]`), `check` 0 issues,
+`makemigrations --check` 무변경. 로컬 실DB에서 dry-run은 세션 266건 대상,
+실제 실행은 세션 294 → 28건(활성 세션 유지) `[실측]`, 저장소 패널 전체 크기
+13.8MB `[실측]`. 리뷰 사전 DAR·DOR(보안 겸)·TDD 코치·WED·BIR, 사후 WED
+Conforms with notes / BIR Conforms / TDD 코치 결함 7건 수정 / QVL Complete
+with residual risk. 앞선 트랙 35(PR #376)는 `uv run pytest -q` 3009 passed
+/ 10 deselected(기준선 2927 → +82 `[계산]`), 실기동 비교로 러너 소요
+7분39초 → 1분7초·생성 드래프트 0건 → 1건을 확인했다. 트랙 36(PR #377)은
+2987 passed / 10 deselected(기준선 2927 → +60 `[계산]`), 브라우저·curl
+실측으로 500행 상한(테이블 크기 819,200바이트)과 204 응답을 확인했다.
+머지 순서는 #376 → #377 → #378이며, #377은 main과 `docs/backlog.md` 표 행
+1곳 충돌을 머지 커밋으로 해소했고, #378은 main을 머지(충돌 없음)한 뒤 base를
+`feat/error-groups`에서 main으로 재지정했다 `[실측 git]`. 가드레일 정본 `docs/BE/data-retention.md`,
+`docs/BE/error-groups.md`, `docs/BE/draft-source-agent-discovery.md` "트랙
+35" 절. 머지 후 main 재측정: 3101 passed / 10 deselected / 91.08초, `manage.py check` 0건, `makemigrations --check` 변화 없음 [실측 2026-09-18 main `4f45cd6e`]
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #377 — Track 36: Record backend and browser errors as capped error groups
+- #376 — Track 35: Record per-event draft run outcomes and fix live-run defects
+- #374 — docs: PR #373 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #373 — feat(home): Add event calendar section below the hero
 - #372 — docs: PR #370 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #371 — deploy: main → production
 - #370 — feat(drafts): 키워드 탐색·서버 수집에 국내·미종료 필터를 넣는다 (트랙 33)
@@ -192,9 +197,3 @@ passed / 10 deselected / 84.81초**(이전 기준선 2905 대비 +22 `[계산]`)
 - #248 — feat(events): Default the public listing to ongoing and upcoming
 - #247 — feat(events): Flag published events that need re-verification
 - #246 — fix(archive): Give photo uploads and place entries an idempotency key
-- #245 — fix(collection): Make owned, wanted and tradeable independent axes
-- #244 — refactor(css): CSS optimization and accessibility sweep
-- #243 — design(errors): Reskin 404/429/500 as editorial
-- #242 — feat(core): 마이페이지 에디토리얼 + 비밀번호 변경 시각 추적
-- #241 — feat(archive): 찜 목록 에디토리얼 — 내 활동 5탭 이관 완결
-- #240 — design(collection): 굿즈 수정 페이지 에디토리얼 + --rose-border 다크 값
