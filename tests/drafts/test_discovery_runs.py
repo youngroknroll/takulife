@@ -88,6 +88,14 @@ def test_어휘_밖_phase를_정규화하면_None으로_거절되고_경고_로�
     )
 
 
+def test_어휘_밖_phase로_heartbeat를_보내면_이전_phase가_유지된다():
+    record_heartbeat(provider="claude-code", phase="reading")
+
+    record_heartbeat(provider="claude-code", phase="banana")
+
+    assert DiscoveryRunnerStatus.objects.get().phase == "reading"
+
+
 def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()
