@@ -15,7 +15,6 @@ from drafts.models import (
     SourceCandidate,
     SourceDiscoveryRun,
 )
-from drafts.queries import runner_status
 from drafts.runner_views import RunnerTokenThrottle
 
 
@@ -76,7 +75,7 @@ def test_유효한_토큰으로_오프라인을_보고하면_204와_함께_즉�
     )
 
     assert response.status_code == 204
-    assert runner_is_online(status_row=runner_status()) is False
+    assert runner_is_online(status_row=DiscoveryRunnerStatus.objects.get()) is False
 
 
 def test_heartbeat_API가_phase_detail_run_id를_받으면_러너_상태에_기록된다(client, runner_headers):
