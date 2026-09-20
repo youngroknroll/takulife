@@ -7,6 +7,7 @@ import pytest
 import local_runner.runner as runner_module
 from local_runner.claude_code_adapter import AdapterOutputError
 from local_runner.exploration_flow import ExplorationFlowError, LeaseLostError
+from local_runner.progress import ProgressReporter
 from local_runner.runner import _filter_candidates, _process_run, _safe_poll
 
 
@@ -142,6 +143,41 @@ def test_heartbeat_전송_중_httpx_HTTPError는_기록하고_루프는_계속�
 
     assert client.calls == ["claude-code", "claude-code"]
     assert "ConnectError" in caplog.text
+
+
+class _RecordingHeartbeatClient:
+    def __init__(self):
+        self.calls = []
+        self.on_call = None
+
+    def send_heartbeat(self, provider, *, phase=None, detail=None, run_id=None):
+        self.calls.append(
+            {"provider": provider, "phase": phase, "detail": detail, "run_id": run_id}
+        )
+        if self.on_call is not None:
+            self.on_call()
+
+
+def test_heartbeat_티커가_progress_reporter의_현재_상태를_실어_보낸다():
+    client = _RecordingHeartbeatClient()
+    reporter = ProgressReporter(client, clock=lambda: 0.0)
+    reporter.begin_run(7, "tok")
+    reporter.set("reading", index=2, total=5, host="x.example.com")
+    client.calls.clear()
+
+    ticker = runner_module._HeartbeatTicker(client, interval=0, progress=reporter)
+    client.on_call = ticker.stop
+
+    ticker.run()
+
+    assert client.calls == [
+        {
+            "provider": "claude-code",
+            "phase": "reading",
+            "detail": "행사 확인 중 (2/5)",
+            "run_id": 7,
+        }
+    ]
 
 
 class _BoundedHeartbeatClient:

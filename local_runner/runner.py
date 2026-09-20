@@ -127,16 +127,20 @@ class _HeartbeatTicker(threading.Thread):
     않도록 별도 데몬 스레드에서 계속 heartbeat를 보낸다. 통신 오류(httpx.HTTPError)는
     기록만 하고 다음 tick으로 넘어가며, 그 외 예외는 전파한다."""
 
-    def __init__(self, client, interval):
+    def __init__(self, client, interval, progress=None):
         super().__init__(daemon=True)
         self._client = client
         self._interval = interval
+        self._progress = progress
         self._stop_event = threading.Event()
 
     def run(self):
         while not self._stop_event.wait(self._interval):
             try:
-                self._client.send_heartbeat("claude-code")
+                if self._progress is not None:
+                    self._progress.heartbeat()
+                else:
+                    self._client.send_heartbeat("claude-code")
             except httpx.HTTPError as exc:
                 logger.warning("heartbeat send failed: %s", type(exc).__name__)
 
