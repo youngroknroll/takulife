@@ -15,3 +15,12 @@ def test_관리자가_아니면_수집_실시간_현황을_조회할_수_없다(
     response = client.get(LIVE_URL)
 
     assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_스태프는_수집_실시간_현황을_200으로_받는다(staff_client):
+    _, client = staff_client()
+
+    response = client.get(LIVE_URL)
+
+    assert response.status_code == 200
