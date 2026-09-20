@@ -149,9 +149,12 @@ def runner_is_online(*, status_row):
     """DiscoveryRunnerStatus 행(없으면 None)을 받아 신선도 판정을 소유한다."""
     if status_row is None:
         return False
-    return status_row.last_heartbeat_at >= timezone.now() - timedelta(
+    fresh = status_row.last_heartbeat_at >= timezone.now() - timedelta(
         seconds=HEARTBEAT_FRESH_SECONDS
     )
+    # 오프라인 보고 이후 새 heartbeat가 없으면 신선해도 온라인으로 보지 않는다.
+    recovered = status_row.offline_at is None or status_row.offline_at < status_row.last_heartbeat_at
+    return fresh and recovered
 
 
 def clean_heartbeat_detail(detail):

@@ -18,6 +18,7 @@ from drafts.discovery_runs import (
     normalize_heartbeat_phase,
     record_heartbeat,
     record_offline,
+    runner_is_online,
 )
 from drafts.agent_drafts import MAX_EVENTS_PER_RUN
 from drafts.models import DiscoveryRunnerStatus, EventDraft, SourceCandidate, SourceDiscoveryRun
@@ -100,6 +101,26 @@ def test_heartbeat에_phase가_없으면_이전_phase가_유지된다():
     record_heartbeat(provider="claude-code")
 
     assert DiscoveryRunnerStatus.objects.get().phase == "reading"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "offline_at, last_heartbeat_at, expected",
+    [
+        (None, timezone.now(), True),
+        (timezone.now() - timedelta(seconds=10), timezone.now(), True),
+        (timezone.now(), timezone.now() - timedelta(seconds=10), False),
+    ],
+    ids=["오프라인_기록_없음", "오프라인_이후_새_heartbeat", "오프라인_이후_heartbeat_없음"],
+)
+def test_runner_is_online은_offline_at과_최근_heartbeat_시각을_비교해_판정한다(
+    offline_at, last_heartbeat_at, expected
+):
+    status_row = DiscoveryRunnerStatus(
+        last_heartbeat_at=last_heartbeat_at, offline_at=offline_at
+    )
+
+    assert runner_is_online(status_row=status_row) is expected
 
 
 @pytest.mark.unit
