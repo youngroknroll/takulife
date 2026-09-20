@@ -45,3 +45,16 @@ def test_같은_phase에서_5초가_지나기_전에_detail이_바뀌면_전송�
     message = records[0].getMessage()
     assert "행사 확인 중 (2/3)" in message
     assert "a.example.com" in message
+
+
+def test_같은_phase에서_5초_이상_지나_detail이_바뀌면_즉시_heartbeat_1회가_난다():
+    client = _FakeClient()
+    clock = _fake_clock([0.0, 5.5])
+    reporter = ProgressReporter(client, clock=clock)
+    reporter.begin_run(7, "tok")
+    reporter.set("reading", index=1, total=3, host="a.example.com")
+    client.sent.clear()
+
+    reporter.set("reading", index=2, total=3, host="a.example.com")
+
+    assert client.sent == [{"phase": "reading", "detail": "행사 확인 중 (2/3)", "run_id": 7}]

@@ -5,6 +5,8 @@ import time
 
 logger = logging.getLogger(__name__)
 
+_MIN_SEND_INTERVAL_SECONDS = 5
+
 # drafts.queries.DISCOVERY_PHASE_LABELS와 문자 그대로 같아야 한다(S14 가드).
 PHASE_LABELS = {
     "idle": "대기",
@@ -70,12 +72,13 @@ class ProgressReporter:
         line = detail + (f" — {host}" if host else "")
         logger.info("%s", line)
 
-        # 얕은 규칙: 한 번이라도 보냈으면 더 이상 즉시 전송하지 않는다
-        # (다음 사이클 R03b가 시간 비교를 넣어 대체한다).
+        now = self._clock()
         if self._last_sent_at is not None:
-            return
+            elapsed = now - self._last_sent_at
+            if elapsed < _MIN_SEND_INTERVAL_SECONDS:
+                return
         self.heartbeat()
-        self._last_sent_at = self._clock()
+        self._last_sent_at = now
 
     def heartbeat(self):
         # detail이 빈 문자열이어도 그대로 보낸다 — idle 전이에서 서버
