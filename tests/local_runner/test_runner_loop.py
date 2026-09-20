@@ -993,3 +993,85 @@ def test_탐색_중_종료_신호가_오면_현재_실행_정보를_지우지_�
     assert progress.run_id == run["run_id"]
     assert progress.phase != "idle"
     assert ticker_calls == ["stop"]
+
+
+def _flow_error_scenario(monkeypatch, progress):
+    # complete 호출도 progress.calls에 함께 남겨 completing 전이와의 순서를 본다.
+    run = {"run_id": 1, "lease_token": "tok", "vocab": {"categories": [], "regions": []}}
+
+    class _Client:
+        def complete(self, **kwargs):
+            progress.calls.append(("complete",))
+
+    def _raise(**kwargs):
+        raise ExplorationFlowError(
+            {"events_attempted": 0, "events_failed": 0, "events_excluded": 0, "event_outcomes": []}
+        )
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", _raise)
+    runner_module._process_run(_Client(), run, {"events": [], "sources": []}, progress)
+
+
+def _generic_error_scenario(monkeypatch, progress):
+    run = {"run_id": 1, "lease_token": "tok", "vocab": {"categories": [], "regions": []}}
+
+    class _Client:
+        def complete(self, **kwargs):
+            progress.calls.append(("complete",))
+
+    def _raise(**kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", _raise)
+    runner_module._process_run(_Client(), run, {"events": [], "sources": []}, progress)
+
+
+def _adapter_output_error_scenario(monkeypatch, progress):
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+
+    class _Client:
+        def send_heartbeat(self, provider):
+            pass
+
+        def claim(self):
+            return run
+
+        def complete(self, **kwargs):
+            progress.calls.append(("complete",))
+
+    class _FakeTicker:
+        def __init__(self, client, interval, progress=None):
+            pass
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+    def _raise(prompt):
+        raise AdapterOutputError("could not recover JSON from adapter output")
+
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _FakeTicker)
+    monkeypatch.setattr(runner_module, "_run_exploration_agent", _raise)
+    runner_module._run_once(_Client(), progress)
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    [_flow_error_scenario, _generic_error_scenario, _adapter_output_error_scenario],
+    ids=["흐름_오류", "예상_못한_예외", "어댑터_출력_오류"],
+)
+def test_실패_경로에서도_완료_보고_직전에_완료_보고_정리_중으로_전이한다(scenario, monkeypatch):
+    progress = _ProgressCallRecorder()
+
+    scenario(monkeypatch, progress)
+
+    complete_index = progress.calls.index(("complete",))
+    assert progress.calls[complete_index - 1] == ("set", "completing", {})
