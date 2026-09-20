@@ -17,6 +17,7 @@ from drafts.discovery_runs import (
     create_run,
     normalize_heartbeat_phase,
     record_heartbeat,
+    record_offline,
 )
 from drafts.agent_drafts import MAX_EVENTS_PER_RUN
 from drafts.models import DiscoveryRunnerStatus, EventDraft, SourceCandidate, SourceDiscoveryRun
@@ -67,6 +68,19 @@ def test_heartbeat가_run_id를_보내면_현재_실행으로_연결된다(make_
     record_heartbeat(provider="claude-code", phase="reading", run_id=run.pk)
 
     assert DiscoveryRunnerStatus.objects.get().current_run_id == run.pk
+
+
+def test_record_offline을_호출하면_상태_행에_오프라인_시각이_기록된다():
+    record_heartbeat(provider="claude-code")
+    last_heartbeat_at = DiscoveryRunnerStatus.objects.get().last_heartbeat_at
+    before = timezone.now()
+
+    record_offline()
+
+    status = DiscoveryRunnerStatus.objects.get()
+    assert status.offline_at is not None
+    assert status.offline_at >= before
+    assert status.last_heartbeat_at == last_heartbeat_at
 
 
 def test_존재하지_않는_run_id로_heartbeat를_보내면_현재_실행_연결이_무시된다(make_user):

@@ -162,6 +162,10 @@ def clean_heartbeat_detail(detail):
     return sanitize_text(value=detail)[:200]
 
 
+def record_offline():
+    DiscoveryRunnerStatus.objects.filter(pk=1).update(offline_at=timezone.now())
+
+
 def normalize_heartbeat_phase(phase):
     """어휘 밖 phase는 무시하고 경고만 남긴다 — 러너 원문을 그대로 믿지 않는다."""
     if phase is None:
