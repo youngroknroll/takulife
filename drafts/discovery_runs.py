@@ -181,7 +181,9 @@ def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
         defaults["phase_updated_at"] = timezone.now()
     if detail is not None:
         defaults["phase_detail"] = clean_heartbeat_detail(detail)
-    if run_id is not None:
+    # 존재하지 않는 run_id는 조용히 무시한다 — 옛 실행이 만료된 사이 온
+    # heartbeat가 FK 오류로 상태 갱신 전체를 실패시키면 안 된다.
+    if run_id is not None and SourceDiscoveryRun.objects.filter(pk=run_id).exists():
         defaults["current_run_id"] = run_id
     DiscoveryRunnerStatus.objects.update_or_create(pk=1, defaults=defaults)
 

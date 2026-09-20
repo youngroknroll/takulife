@@ -69,6 +69,17 @@ def test_heartbeat가_run_id를_보내면_현재_실행으로_연결된다(make_
     assert DiscoveryRunnerStatus.objects.get().current_run_id == run.pk
 
 
+def test_존재하지_않는_run_id로_heartbeat를_보내면_현재_실행_연결이_무시된다(make_user):
+    record_heartbeat(provider="claude-code")
+    user = make_user()
+    run = create_run(requested_by=user)
+    record_heartbeat(provider="claude-code", run_id=run.pk)
+
+    record_heartbeat(provider="claude-code", run_id=999999)
+
+    assert DiscoveryRunnerStatus.objects.get().current_run_id == run.pk
+
+
 def test_heartbeat에_phase가_없으면_이전_phase가_유지된다():
     record_heartbeat(provider="claude-code", phase="reading")
 
