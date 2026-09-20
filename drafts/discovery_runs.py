@@ -22,7 +22,13 @@ LEASE_SECONDS = 1800
 MAX_LEASES = 2
 
 # 러너가 보낸 원문 사유를 그대로 노출하지 않기 위한 허용 목록(보안 계약).
-_ALLOWED_FAILURE_KINDS = {"agent_error", "agent_timeout", "invalid_output", "exploration_error"}
+_ALLOWED_FAILURE_KINDS = {
+    "agent_error",
+    "agent_timeout",
+    "invalid_output",
+    "exploration_error",
+    "runner_shutdown",
+}
 
 # 러너가 보내는 행사별 결과 outcome→허용 reason 집합(보안 계약, local_runner와
 # 일치해야 한다 — local_runner.exploration_flow가 실제로 내는 값과 대조).

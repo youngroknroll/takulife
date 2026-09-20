@@ -438,6 +438,17 @@ def test_러너가_탐색_오류로_실패를_보고하면_실패_요약에_그_
     assert "exploration_error" in result.error_summary
 
 
+def test_러너_종료로_인한_실패를_보고하면_실패_요약에_그_종류가_남는다():
+    run = _make_claimed_run()
+
+    result = complete_run(
+        run_id=run.pk, lease_token="tok", runner_status="failed", failure_kind="runner_shutdown"
+    )
+
+    assert result.status == SourceDiscoveryRun.Status.FAILED
+    assert "runner_shutdown" in result.error_summary
+
+
 def test_잘못된_lease로는_complete가_거부된다():
     run = _make_claimed_run()
 
