@@ -30,7 +30,7 @@ from drafts.candidate_validation import (
     submit_candidate,
 )
 from drafts.discovery import SNS_HOSTNAMES
-from drafts.discovery_runs import claim, complete_run, record_heartbeat
+from drafts.discovery_runs import claim, complete_run, record_heartbeat, record_offline
 from drafts.models import DraftSource, EventDraft, SourceDiscoveryRun
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 
@@ -232,6 +232,7 @@ class RunnerOfflineView(_RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request):
+        record_offline()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

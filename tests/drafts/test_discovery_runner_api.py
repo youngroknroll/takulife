@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from core.models import Category
 from core.vocab import CATEGORY, REGION
+from drafts.discovery_runs import record_heartbeat, runner_is_online
 from drafts.models import (
     DiscoveryRunnerStatus,
     DraftSource,
@@ -14,6 +15,7 @@ from drafts.models import (
     SourceCandidate,
     SourceDiscoveryRun,
 )
+from drafts.queries import runner_status
 from drafts.runner_views import RunnerTokenThrottle
 
 
@@ -64,6 +66,17 @@ def test_러너_토큰이_설정되지_않으면_모든_러너_엔드포인트�
     response = client.post(url, data={}, content_type="application/json", **header_kwargs)
 
     assert response.status_code == 403
+
+
+def test_유효한_토큰으로_오프라인을_보고하면_204와_함께_즉시_오프라인으로_기록된다(client, runner_headers):
+    record_heartbeat(provider="claude-code")
+
+    response = client.post(
+        OFFLINE_URL, data={}, content_type="application/json", **runner_headers
+    )
+
+    assert response.status_code == 204
+    assert runner_is_online(status_row=runner_status()) is False
 
 
 def test_잘못된_토큰은_403_올바른_토큰은_통과한다(client, settings):
