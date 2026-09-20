@@ -4,6 +4,7 @@
 격리한다."""
 import functools
 import logging
+import logging.config
 import signal
 import threading
 import time
@@ -220,7 +221,15 @@ def _handle_sigterm(signum, frame):
 def _configure_logging():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     # httpx가 요청 URL·토큰을 INFO로 남기지 않도록 WARNING까지만 올린다.
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    # logging.getLogger(__name__) 외 호출을 금지하는 EHL-06 정책 때문에
+    # dictConfig로 남의 로거(httpx) 레벨만 건드린다.
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "loggers": {"httpx": {"level": "WARNING"}},
+        }
+    )
 
 
 def main():
