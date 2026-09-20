@@ -35,13 +35,14 @@ _SHUTDOWN_TIMEOUT_SECONDS = 3
 
 
 def _report_shutdown(client, progress):
-    client.complete(
-        run_id=progress.run_id,
-        lease_token=progress.lease_token,
-        runner_status="failed",
-        failure_kind="runner_shutdown",
-        events_attempted=progress.last_index,
-    )
+    if progress.run_id is not None:
+        client.complete(
+            run_id=progress.run_id,
+            lease_token=progress.lease_token,
+            runner_status="failed",
+            failure_kind="runner_shutdown",
+            events_attempted=progress.last_index,
+        )
     client.send_offline(timeout=_SHUTDOWN_TIMEOUT_SECONDS)
 
 

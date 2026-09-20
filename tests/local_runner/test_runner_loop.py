@@ -761,3 +761,14 @@ def test_진행_중에_종료하면_runner_shutdown으로_완료_보고한_뒤_�
         ),
         ("send_offline", 3),
     ]
+
+
+def test_대기_중에_종료하면_완료_보고_없이_오프라인만_알린다():
+    from types import SimpleNamespace
+
+    client = _ShutdownRecordingClient()
+    progress = SimpleNamespace(run_id=None, lease_token=None, last_index=None)
+
+    runner_module._report_shutdown(client, progress)
+
+    assert client.calls == [("send_offline", 3)]
