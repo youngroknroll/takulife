@@ -159,6 +159,7 @@ def record_heartbeat(*, provider, phase=None):
     # phase가 없는 옛 러너 heartbeat는 이전 phase 값을 지우면 안 된다.
     if phase is not None:
         defaults["phase"] = phase
+        defaults["phase_updated_at"] = timezone.now()
     DiscoveryRunnerStatus.objects.update_or_create(pk=1, defaults=defaults)
 
 

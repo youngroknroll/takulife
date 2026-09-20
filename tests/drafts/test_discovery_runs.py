@@ -41,6 +41,16 @@ def test_heartbeat가_phase를_보내면_러너_상태에_저장된다():
     assert DiscoveryRunnerStatus.objects.get().phase == "exploring"
 
 
+def test_heartbeat가_phase를_보내면_phase_갱신_시각이_기록된다():
+    before = timezone.now()
+
+    record_heartbeat(provider="claude-code", phase="exploring")
+
+    phase_updated_at = DiscoveryRunnerStatus.objects.get().phase_updated_at
+    assert phase_updated_at is not None
+    assert phase_updated_at >= before
+
+
 def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()
