@@ -67,6 +67,14 @@ def test_heartbeat가_run_id를_보내면_현재_실행으로_연결된다(make_
     assert DiscoveryRunnerStatus.objects.get().current_run_id == run.pk
 
 
+def test_heartbeat에_phase가_없으면_이전_phase가_유지된다():
+    record_heartbeat(provider="claude-code", phase="reading")
+
+    record_heartbeat(provider="claude-code")
+
+    assert DiscoveryRunnerStatus.objects.get().phase == "reading"
+
+
 def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()
