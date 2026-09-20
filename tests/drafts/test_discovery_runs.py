@@ -51,6 +51,12 @@ def test_heartbeat가_phase를_보내면_phase_갱신_시각이_기록된다():
     assert phase_updated_at >= before
 
 
+def test_heartbeat가_detail을_보내면_제어문자가_제거되어_저장된다():
+    record_heartbeat(provider="claude-code", phase="reading", detail="검색\x00중")
+
+    assert DiscoveryRunnerStatus.objects.get().phase_detail == "검색중"
+
+
 def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()

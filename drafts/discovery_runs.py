@@ -154,12 +154,17 @@ def runner_is_online(*, status_row):
     )
 
 
-def record_heartbeat(*, provider, phase=None):
+def record_heartbeat(*, provider, phase=None, detail=None):
+    # candidate_validation이 이 모듈을 임포트하므로 반대 방향은 함수 안에서만 쓴다.
+    from drafts.candidate_validation import sanitize_text
+
     defaults = {"last_heartbeat_at": timezone.now(), "provider": provider}
     # phase가 없는 옛 러너 heartbeat는 이전 phase 값을 지우면 안 된다.
     if phase is not None:
         defaults["phase"] = phase
         defaults["phase_updated_at"] = timezone.now()
+    if detail is not None:
+        defaults["phase_detail"] = sanitize_text(value=detail)
     DiscoveryRunnerStatus.objects.update_or_create(pk=1, defaults=defaults)
 
 
