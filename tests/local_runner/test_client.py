@@ -39,3 +39,27 @@ def test_RunnerClient_complete는_event_outcomes를_요청_본문에_담아_보�
     )
 
     assert calls[0]["event_outcomes"] == event_outcomes
+
+
+def test_send_heartbeat가_phase_detail_run_id를_넘기면_페이로드에_싣고_생략하면_키가_빠진다(monkeypatch):
+    calls = []
+
+    def fake_post(url, *, json, headers, timeout):
+        calls.append(json)
+        return _FakeResponse()
+
+    monkeypatch.setattr("local_runner.client.httpx.post", fake_post)
+
+    config = RunnerConfig(server_url="https://example.com", runner_token="tok")
+    client = RunnerClient(config)
+
+    client.send_heartbeat("claude-code", phase="reading", detail="행사 확인 중 (1/3)", run_id=7)
+    client.send_heartbeat("claude-code")
+
+    assert calls[0] == {
+        "provider": "claude-code",
+        "phase": "reading",
+        "detail": "행사 확인 중 (1/3)",
+        "run_id": 7,
+    }
+    assert calls[1] == {"provider": "claude-code"}

@@ -20,8 +20,16 @@ class RunnerClient:
         response.raise_for_status()
         return response
 
-    def send_heartbeat(self, provider):
-        self._post("/heartbeat/", {"provider": provider})
+    def send_heartbeat(self, provider, *, phase=None, detail=None, run_id=None):
+        body = {"provider": provider}
+        # None인 키는 아예 보내지 않는다 — 옛 러너 동작(전송 안 함)과 값을 구분한다.
+        if phase is not None:
+            body["phase"] = phase
+        if detail is not None:
+            body["detail"] = detail
+        if run_id is not None:
+            body["run_id"] = run_id
+        self._post("/heartbeat/", body)
 
     def claim(self):
         response = self._post("/claim/", {"provider": "claude-code"})
