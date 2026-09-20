@@ -70,7 +70,8 @@ class ProgressReporter:
         if not changed:
             return
 
-        line = detail + (f" — {host}" if host else "")
+        # detail이 비어도(idle) 터미널 줄은 빈 채로 두지 않고 phase 라벨을 쓴다.
+        line = (detail or PHASE_LABELS.get(phase, "")) + (f" — {host}" if host else "")
         logger.info("%s", line)
 
         now = self._clock()

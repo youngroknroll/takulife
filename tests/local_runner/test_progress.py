@@ -71,3 +71,20 @@ def test_phase가_바뀌면_5초가_지나지_않았어도_즉시_heartbeat가_�
     reporter.set("submitting", index=0, total=2)
 
     assert client.sent == [{"phase": "submitting", "detail": "소스 후보 제출 중 (0/2)", "run_id": 7}]
+
+
+def test_대기로_전이하면_터미널에는_대기_라벨이_남고_heartbeat_detail은_비운다(caplog):
+    client = _FakeClient()
+    clock = _fake_clock([0.0, 0.0])
+    reporter = ProgressReporter(client, clock=clock)
+    reporter.set("exploring", query="미쿠")
+    client.sent.clear()
+    caplog.clear()
+
+    with caplog.at_level(logging.INFO, logger="local_runner.progress"):
+        reporter.set("idle")
+
+    records = [record for record in caplog.records if record.levelno == logging.INFO]
+    assert len(records) == 1
+    assert records[0].getMessage() == "대기"
+    assert client.sent == [{"phase": "idle", "detail": "", "run_id": None}]
