@@ -19,6 +19,7 @@
   var timerId = null;
   var currentDelay = LONG_DELAY_MS;
   var inFlight = false;
+  var resumeRequested = false;
   var stopped = false;
   var lastCompareKey = null;
   var lastPhase = null;
@@ -313,37 +314,55 @@
     timerId = setTimeout(poll, delay);
   }
 
+  // BIR-14: 요청 중 재검증 요청이 있었으면 대기 없이 바로 이어서 조회한다.
+  function scheduleOrResume(delay) {
+    if (resumeRequested) {
+      resumeRequested = false;
+      if (!stopped) {
+        poll();
+      }
+      return;
+    }
+    scheduleNext(delay);
+  }
+
   async function poll() {
     if (stopped || document.hidden) {
       return;
     }
     if (inFlight) {
-      // BIR-15: 이미 요청 중이면 새 요청을 내지 않는다.
+      // BIR-14: 이미 요청 중이면 끝난 뒤 이어서 처리하도록 표시만 하고 새 요청은 내지 않는다.
+      resumeRequested = true;
       return;
     }
     inFlight = true;
-    var result = await window.TakuAPI.get(liveUrl);
-    inFlight = false;
+    var result;
+    try {
+      result = await window.TakuAPI.get(liveUrl);
+    } finally {
+      // BIR-15: api.js가 reject하지 않아 현재는 무해하지만, 회귀에 대비해 finally로 해제한다.
+      inFlight = false;
+    }
     if (stopped) {
       return;
     }
 
     if (!result.ok) {
-      if (window.TakuAPI.classify(result) === "auth") {
-        // BIR-4: 세션 만료면 폴링을 완전히 멈춘다.
+      // BIR-4: 인증된 세션의 스태프 권한 박탈도 403이며 classify는 이를 "csrf"로 분류하므로 401/403을 함께 본다.
+      if (result.status === 401 || result.status === 403 || window.TakuAPI.classify(result) === "auth") {
         stopPolling();
         showAuthExpired();
         return;
       }
       // BIR-3: 오류마다 간격을 배증하고 60초에서 멈춘다.
       currentDelay = Math.min(currentDelay * 2, MAX_DELAY_MS);
-      scheduleNext(currentDelay);
+      scheduleOrResume(currentDelay);
       return;
     }
 
     applyPayload(result.data);
     currentDelay = computeInterval(result.data);
-    scheduleNext(currentDelay);
+    scheduleOrResume(currentDelay);
   }
 
   // ── 초기화 ───────────────────────────────────────────────────────
