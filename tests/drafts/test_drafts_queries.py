@@ -6,7 +6,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from drafts.discovery_runs import EVENT_OUTCOME_REASONS
+from drafts.discovery_runs import EVENT_OUTCOME_REASONS, record_heartbeat
 from drafts.models import DraftSource, EventDraft, SourceCandidate, SourceDiscoveryRun
 
 pytestmark = pytest.mark.domain
@@ -702,3 +702,40 @@ class TestRecentDiscoveryRuns:
                 # outcome_rows 계산이 run.event_outcomes(이미 로딩된 필드)만
                 # 쓰는지 강제로 소비해 확인한다.
                 list(row["outcome_rows"])
+
+
+@pytest.mark.django_db
+class TestRunnerLiveSummary:
+    """S10a: 진행 행 노출 여부는 온라인·비대기 phase·상세문구 세 조건을 모두
+    만족해야 한다."""
+
+    @pytest.mark.parametrize(
+        "make_state, expected_visible",
+        [
+            (lambda: None, False),
+            (lambda: record_heartbeat(provider="claude-code"), False),
+            (
+                lambda: record_heartbeat(provider="claude-code", phase="exploring"),
+                False,
+            ),
+            (
+                lambda: record_heartbeat(
+                    provider="claude-code",
+                    phase="exploring",
+                    detail='검색어 "미쿠" 검색 중',
+                ),
+                True,
+            ),
+        ],
+        ids=["오프라인", "온라인_idle", "온라인_exploring_상세없음", "온라인_exploring_상세있음"],
+    )
+    def test_진행_행_노출_여부는_온라인_비대기_phase_상세문구_세_조건을_모두_만족해야_한다(
+        self, make_state, expected_visible
+    ):
+        from drafts.queries import runner_live_summary
+
+        make_state()
+
+        summary = runner_live_summary()
+
+        assert summary["progress_visible"] is expected_visible
