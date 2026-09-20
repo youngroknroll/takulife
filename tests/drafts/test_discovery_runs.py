@@ -84,6 +84,16 @@ def test_record_offline을_호출하면_상태_행에_오프라인_시각이_기
     assert status.last_heartbeat_at == last_heartbeat_at
 
 
+def test_오프라인_이후_새_heartbeat가_오면_온라인_상태로_복귀한다():
+    record_heartbeat(provider="claude-code")
+    record_offline()
+
+    record_heartbeat(provider="claude-code")
+
+    status = DiscoveryRunnerStatus.objects.get()
+    assert runner_is_online(status_row=status) is True
+
+
 def test_존재하지_않는_run_id로_heartbeat를_보내면_현재_실행_연결이_무시된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()
