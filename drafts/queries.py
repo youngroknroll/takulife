@@ -170,6 +170,17 @@ EVENT_OUTCOME_REASON_LABELS = {
     "server_ended": "종료된 행사(서버 판단)",
 }
 
+# 실행 상태별 (한국어 라벨, 배지 톤). 대시보드 상태 배지와 live 시리얼라이저가
+# 같은 정본을 쓴다(S10b, 이전에는 템플릿 인라인 if 체인에만 있었다).
+DISCOVERY_RUN_STATUS_LABELS = {
+    SourceDiscoveryRun.Status.PENDING: ("대기", "disabled"),
+    SourceDiscoveryRun.Status.CLAIMED: ("러너 진행 중", "stale"),
+    SourceDiscoveryRun.Status.SUCCEEDED: ("성공", "ok"),
+    SourceDiscoveryRun.Status.PARTIALLY_FAILED: ("부분 실패", "stale"),
+    SourceDiscoveryRun.Status.FAILED: ("실패", "error"),
+    SourceDiscoveryRun.Status.EXPIRED: ("임대 만료", "error"),
+}
+
 # outcome별 (한국어 라벨, 배지 톤). 모르는 outcome은 아래에서 fallback 처리한다.
 EVENT_OUTCOME_LABELS = {
     "created": ("생성됨", "ok"),
@@ -235,9 +246,12 @@ def recent_discovery_runs(*, limit=5):
     rows = []
     for run in runs:
         has_outcomes = bool(run.event_outcomes)
+        status_label, tone = DISCOVERY_RUN_STATUS_LABELS.get(run.status, (run.status, "disabled"))
         rows.append(
             {
                 "run": run,
+                "status_label": status_label,
+                "tone": tone,
                 "promoted_count": run.promoted_count,
                 "failed_count": run.failed_count,
                 "events_created": run.events_created,

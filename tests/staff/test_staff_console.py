@@ -879,6 +879,44 @@ def test_대시보드는_러너_온라인_여부와_최근_탐색_실행을_노�
 
 
 @pytest.mark.django_db
+def test_대시보드는_실행_상태_배지_문구를_그대로_보여준다(staff_client):
+    # 대시보드는 최근 5건만 보여준다(recent_discovery_runs 기본 limit) — 6가지
+    # 상태를 한 화면에 다 담을 수 없어 두 번에 나눠 확인한다.
+    _, client = staff_client()
+    non_pending_statuses = [
+        SourceDiscoveryRun.Status.CLAIMED,
+        SourceDiscoveryRun.Status.SUCCEEDED,
+        SourceDiscoveryRun.Status.PARTIALLY_FAILED,
+        SourceDiscoveryRun.Status.FAILED,
+        SourceDiscoveryRun.Status.EXPIRED,
+    ]
+    for status in non_pending_statuses:
+        SourceDiscoveryRun.objects.create(status=status)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    expected_badges = [
+        ("stale", "러너 진행 중"),
+        ("ok", "성공"),
+        ("stale", "부분 실패"),
+        ("error", "실패"),
+        ("error", "임대 만료"),
+    ]
+    for tone, label in expected_badges:
+        assert f'dash-status-badge dash-status-badge--{tone}">{label}<' in content
+
+    SourceDiscoveryRun.objects.filter(status=SourceDiscoveryRun.Status.EXPIRED).delete()
+    SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    assert 'dash-status-badge dash-status-badge--disabled">대기<' in resp.content.decode()
+
+
+@pytest.mark.django_db
 def test_대시보드는_실패한_후보만_확인_큐로_노출한다(staff_client):
     _, client = staff_client()
     run = SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.SUCCEEDED)

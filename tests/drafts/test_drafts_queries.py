@@ -739,3 +739,26 @@ class TestRunnerLiveSummary:
         summary = runner_live_summary()
 
         assert summary["progress_visible"] is expected_visible
+
+
+@pytest.mark.django_db
+class TestDiscoveryRunStatusLabels:
+    """S10b(a): 실행 상태 라벨·톤 딕셔너리는 대시보드 배지와 시리얼라이저가
+    함께 쓰는 정본이다."""
+
+    @pytest.mark.parametrize(
+        "status, expected",
+        [
+            (SourceDiscoveryRun.Status.PENDING, ("대기", "disabled")),
+            (SourceDiscoveryRun.Status.CLAIMED, ("러너 진행 중", "stale")),
+            (SourceDiscoveryRun.Status.SUCCEEDED, ("성공", "ok")),
+            (SourceDiscoveryRun.Status.PARTIALLY_FAILED, ("부분 실패", "stale")),
+            (SourceDiscoveryRun.Status.FAILED, ("실패", "error")),
+            (SourceDiscoveryRun.Status.EXPIRED, ("임대 만료", "error")),
+        ],
+        ids=["대기", "러너_진행_중", "성공", "부분_실패", "실패", "임대_만료"],
+    )
+    def test_실행_상태_라벨_딕셔너리는_상태별_라벨과_톤을_담는다(self, status, expected):
+        from drafts.queries import DISCOVERY_RUN_STATUS_LABELS
+
+        assert DISCOVERY_RUN_STATUS_LABELS[status] == expected
