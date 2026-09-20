@@ -163,7 +163,7 @@ def runner_is_online(*, status_row):
     return fresh and recovered
 
 
-def clean_heartbeat_detail(detail):
+def clean_heartbeat_detail(*, detail):
     """제어문자를 지우고 200자로 잘라 저장 가능한 진행 문구로 만든다."""
     # candidate_validation이 이 모듈을 임포트하므로 반대 방향은 함수 안에서만 쓴다.
     from drafts.candidate_validation import sanitize_text
@@ -175,7 +175,7 @@ def record_offline():
     DiscoveryRunnerStatus.objects.filter(pk=1).update(offline_at=timezone.now())
 
 
-def normalize_heartbeat_phase(phase):
+def normalize_heartbeat_phase(*, phase):
     """어휘 밖 phase는 무시하고 경고만 남긴다 — 러너 원문을 그대로 믿지 않는다."""
     if phase is None:
         return None
@@ -186,7 +186,7 @@ def normalize_heartbeat_phase(phase):
 
 
 def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
-    phase = normalize_heartbeat_phase(phase)
+    phase = normalize_heartbeat_phase(phase=phase)
     now = timezone.now()
     defaults = {"last_heartbeat_at": now, "provider": provider}
     # phase가 없는 옛 러너 heartbeat는 이전 phase 값을 지우면 안 된다.
@@ -194,7 +194,7 @@ def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
         defaults["phase"] = phase
         defaults["phase_updated_at"] = now
     if detail is not None:
-        defaults["phase_detail"] = clean_heartbeat_detail(detail)
+        defaults["phase_detail"] = clean_heartbeat_detail(detail=detail)
     # 존재하지 않는 run_id는 조용히 무시한다 — 옛 실행이 만료된 사이 온
     # heartbeat가 FK 오류로 상태 갱신 전체를 실패시키면 안 된다.
     if run_id is not None and SourceDiscoveryRun.objects.filter(pk=run_id).exists():

@@ -146,13 +146,13 @@ def test_runner_is_online은_offline_at과_최근_heartbeat_시각을_비교해_
 
 @pytest.mark.unit
 def test_detail이_200자를_초과하면_저장_전에_잘린다():
-    assert len(clean_heartbeat_detail("가" * 250)) == 200
+    assert len(clean_heartbeat_detail(detail="가" * 250)) == 200
 
 
 @pytest.mark.unit
 def test_어휘_밖_phase를_정규화하면_None으로_거절되고_경고_로그가_남는다(caplog):
     with caplog.at_level("WARNING"):
-        result = normalize_heartbeat_phase("banana")
+        result = normalize_heartbeat_phase(phase="banana")
 
     assert result is None
     assert any(
