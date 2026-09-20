@@ -10,12 +10,12 @@ class RunnerClient:
         self._config = config
         self._headers = {"X-Runner-Token": config.runner_token}
 
-    def _post(self, path, json_body):
+    def _post(self, path, json_body, *, timeout=_TIMEOUT_SECONDS):
         response = httpx.post(
             f"{self._config.server_url}{_RUNNER_URL_PREFIX}{path}",
             json=json_body,
             headers=self._headers,
-            timeout=_TIMEOUT_SECONDS,
+            timeout=timeout,
         )
         response.raise_for_status()
         return response
@@ -30,6 +30,9 @@ class RunnerClient:
         if run_id is not None:
             body["run_id"] = run_id
         self._post("/heartbeat/", body)
+
+    def send_offline(self, *, timeout=_TIMEOUT_SECONDS):
+        self._post("/offline/", {}, timeout=timeout)
 
     def claim(self):
         response = self._post("/claim/", {"provider": "claude-code"})

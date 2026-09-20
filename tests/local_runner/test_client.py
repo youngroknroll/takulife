@@ -63,3 +63,23 @@ def test_send_heartbeat가_phase_detail_run_id를_넘기면_페이로드에_싣�
         "run_id": 7,
     }
     assert calls[1] == {"provider": "claude-code"}
+
+
+def test_send_offline이_짧은_타임아웃으로_오프라인_경로를_호출한다(monkeypatch):
+    calls = []
+
+    def fake_post(url, *, json, headers, timeout):
+        calls.append({"url": url, "json": json, "headers": headers, "timeout": timeout})
+        return _FakeResponse()
+
+    monkeypatch.setattr("local_runner.client.httpx.post", fake_post)
+
+    config = RunnerConfig(server_url="https://example.com", runner_token="tok")
+    client = RunnerClient(config)
+
+    client.send_offline(timeout=3)
+
+    assert len(calls) == 1
+    assert calls[0]["url"].endswith("/api/discovery/runner/offline/")
+    assert calls[0]["headers"] == {"X-Runner-Token": "tok"}
+    assert calls[0]["timeout"] == 3
