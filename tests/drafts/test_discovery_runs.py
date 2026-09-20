@@ -12,6 +12,7 @@ from drafts.discovery_runs import (
     LeaseInvalidError,
     RunnerOfflineError,
     claim,
+    clean_heartbeat_detail,
     complete_run,
     create_run,
     normalize_heartbeat_phase,
@@ -74,6 +75,11 @@ def test_heartbeat에_phase가_없으면_이전_phase가_유지된다():
     record_heartbeat(provider="claude-code")
 
     assert DiscoveryRunnerStatus.objects.get().phase == "reading"
+
+
+@pytest.mark.unit
+def test_detail이_200자를_초과하면_저장_전에_잘린다():
+    assert len(clean_heartbeat_detail("가" * 250)) == 200
 
 
 @pytest.mark.unit

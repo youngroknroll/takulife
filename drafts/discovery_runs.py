@@ -154,6 +154,14 @@ def runner_is_online(*, status_row):
     )
 
 
+def clean_heartbeat_detail(detail):
+    """제어문자를 지우고 200자로 잘라 저장 가능한 진행 문구로 만든다."""
+    # candidate_validation이 이 모듈을 임포트하므로 반대 방향은 함수 안에서만 쓴다.
+    from drafts.candidate_validation import sanitize_text
+
+    return sanitize_text(value=detail)[:200]
+
+
 def normalize_heartbeat_phase(phase):
     """어휘 밖 phase는 무시하고 경고만 남긴다 — 러너 원문을 그대로 믿지 않는다."""
     if phase is None:
@@ -165,9 +173,6 @@ def normalize_heartbeat_phase(phase):
 
 
 def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
-    # candidate_validation이 이 모듈을 임포트하므로 반대 방향은 함수 안에서만 쓴다.
-    from drafts.candidate_validation import sanitize_text
-
     phase = normalize_heartbeat_phase(phase)
     defaults = {"last_heartbeat_at": timezone.now(), "provider": provider}
     # phase가 없는 옛 러너 heartbeat는 이전 phase 값을 지우면 안 된다.
@@ -175,7 +180,7 @@ def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
         defaults["phase"] = phase
         defaults["phase_updated_at"] = timezone.now()
     if detail is not None:
-        defaults["phase_detail"] = sanitize_text(value=detail)
+        defaults["phase_detail"] = clean_heartbeat_detail(detail)
     if run_id is not None:
         defaults["current_run_id"] = run_id
     DiscoveryRunnerStatus.objects.update_or_create(pk=1, defaults=defaults)
