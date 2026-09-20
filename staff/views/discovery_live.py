@@ -17,4 +17,5 @@ class StaffDiscoveryLiveView(APIView):
     def get(self, request):
         runner = DiscoveryRunnerLiveSerializer(runner_live_summary()).data
         runs = DiscoveryRunSummarySerializer(recent_discovery_runs(), many=True).data
-        return Response({"runner": runner, "runs": runs, "server_time": timezone.now()})
+        # 다른 시각 필드와 같은 +09:00 표기를 맞춘다.
+        return Response({"runner": runner, "runs": runs, "server_time": timezone.localtime()})
