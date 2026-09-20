@@ -20,7 +20,7 @@
     </form>
   </div>
 
-  {# 진행 행: discovery_runner_live는 백엔드가 아직 컨텍스트에 넣기 전이라 항상 hidden으로 렌더된다 — 정상. #}
+  {# 진행 행: detail이 없거나 오프라인이면 hidden(progress_visible), 갱신은 discovery_live.js가 textContent로만 한다. #}
   <div
     class="dash-panel-progress-row"
     id="dash-discovery-progress"
