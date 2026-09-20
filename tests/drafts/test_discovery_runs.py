@@ -35,6 +35,12 @@ def test_heartbeat를_두_번_기록해도_상태_행은_하나로_갱신된다(
     assert status.last_heartbeat_at >= first_heartbeat_at
 
 
+def test_heartbeat가_phase를_보내면_러너_상태에_저장된다():
+    record_heartbeat(provider="claude-code", phase="exploring")
+
+    assert DiscoveryRunnerStatus.objects.get().phase == "exploring"
+
+
 def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()

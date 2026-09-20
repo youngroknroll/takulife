@@ -154,10 +154,12 @@ def runner_is_online(*, status_row):
     )
 
 
-def record_heartbeat(*, provider):
-    DiscoveryRunnerStatus.objects.update_or_create(
-        pk=1, defaults={"last_heartbeat_at": timezone.now(), "provider": provider}
-    )
+def record_heartbeat(*, provider, phase=None):
+    defaults = {"last_heartbeat_at": timezone.now(), "provider": provider}
+    # phase가 없는 옛 러너 heartbeat는 이전 phase 값을 지우면 안 된다.
+    if phase is not None:
+        defaults["phase"] = phase
+    DiscoveryRunnerStatus.objects.update_or_create(pk=1, defaults=defaults)
 
 
 def create_run(*, requested_by, query=""):
