@@ -110,6 +110,21 @@ def test_공개_스키마의_모든_경로는_api_프리픽스로_시작한다()
 
 
 @pytest.mark.contract
+def test_공개_스키마에_러너_경계_경로가_노출되지_않는다():
+    """비밀 토큰 기반 러너 경계는 공개 API 문서로 새면 안 된다."""
+    from drf_spectacular.generators import SchemaGenerator
+
+    generator = SchemaGenerator()
+    schema = generator.get_schema(request=None, public=True)
+
+    runner_paths = {
+        path for path in schema["paths"] if path.startswith("/api/discovery/runner/")
+    }
+
+    assert not runner_paths, runner_paths
+
+
+@pytest.mark.contract
 @pytest.mark.django_db
 def test_스키마_생성은_분석_이벤트를_기록하지_않는다():
     """django_db가 꼭 필요하다 — record_event의 best-effort except가 커밋

@@ -229,7 +229,10 @@ class RunnerEventDraftSubmitView(_RunnerAPIView):
 
 
 class RunnerOfflineView(_RunnerAPIView):
-    pass
+    # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
+    @extend_schema(exclude=True)
+    def post(self, request):
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RunnerKnownDraftUrlsView(_RunnerAPIView):
