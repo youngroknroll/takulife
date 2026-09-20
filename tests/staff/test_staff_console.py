@@ -1096,3 +1096,18 @@ def test_검수_SLA_카드_변환은_48시간_기준으로_단위를_바꾸고_�
     assert empty_cards[2]["value"] is None
     assert empty_cards[2]["note"] == "최근 7일 결정 없음"
     assert empty_cards[2]["href"] is None
+
+
+@pytest.mark.django_db
+def test_상세_문구에_스크립트_태그가_있어도_대시보드_초기_렌더는_이스케이프한다(staff_client):
+    _, client = staff_client()
+    record_heartbeat(
+        provider="claude-code", phase="exploring", detail="<script>alert(1)</script>"
+    )
+
+    resp = client.get("/staff/dashboard/")
+
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in content
+    assert "<script>alert(1)</script>" not in content
