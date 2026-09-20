@@ -61,6 +61,7 @@ class ProgressReporter:
         detail = _build_detail(phase, fields)
         host = fields.get("host")
         changed = (phase, detail) != (self._phase, self._detail)
+        phase_changed = phase != self._phase
         self._phase = phase
         self._detail = detail
         if phase == "reading":
@@ -75,7 +76,7 @@ class ProgressReporter:
         now = self._clock()
         if self._last_sent_at is not None:
             elapsed = now - self._last_sent_at
-            if elapsed < _MIN_SEND_INTERVAL_SECONDS:
+            if not phase_changed and elapsed < _MIN_SEND_INTERVAL_SECONDS:
                 return
         self.heartbeat()
         self._last_sent_at = now

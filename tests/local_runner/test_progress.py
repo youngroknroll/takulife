@@ -58,3 +58,16 @@ def test_같은_phase에서_5초_이상_지나_detail이_바뀌면_즉시_heartb
     reporter.set("reading", index=2, total=3, host="a.example.com")
 
     assert client.sent == [{"phase": "reading", "detail": "행사 확인 중 (2/3)", "run_id": 7}]
+
+
+def test_phase가_바뀌면_5초가_지나지_않았어도_즉시_heartbeat가_난다():
+    client = _FakeClient()
+    clock = _fake_clock([0.0, 1.0])
+    reporter = ProgressReporter(client, clock=clock)
+    reporter.begin_run(7, "tok")
+    reporter.set("reading", index=3, total=3)
+    client.sent.clear()
+
+    reporter.set("submitting", index=0, total=2)
+
+    assert client.sent == [{"phase": "submitting", "detail": "소스 후보 제출 중 (0/2)", "run_id": 7}]
