@@ -187,11 +187,12 @@ def normalize_heartbeat_phase(phase):
 
 def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
     phase = normalize_heartbeat_phase(phase)
-    defaults = {"last_heartbeat_at": timezone.now(), "provider": provider}
+    now = timezone.now()
+    defaults = {"last_heartbeat_at": now, "provider": provider}
     # phase가 없는 옛 러너 heartbeat는 이전 phase 값을 지우면 안 된다.
     if phase is not None:
         defaults["phase"] = phase
-        defaults["phase_updated_at"] = timezone.now()
+        defaults["phase_updated_at"] = now
     if detail is not None:
         defaults["phase_detail"] = clean_heartbeat_detail(detail)
     # 존재하지 않는 run_id는 조용히 무시한다 — 옛 실행이 만료된 사이 온
