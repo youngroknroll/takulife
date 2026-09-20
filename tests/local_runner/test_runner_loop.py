@@ -815,3 +815,14 @@ def test_종료_보고_중_httpx_오류는_전파되지_않고_경고_로그만_
     records = [record for record in caplog.records if record.levelno == logging.WARNING]
     assert len(records) == 1
     assert "HTTPStatusError" in records[0].getMessage()
+
+
+def test_러너_로깅을_설정하면_httpx_로거가_WARNING_레벨이_된다():
+    httpx_logger = logging.getLogger("httpx")
+    previous_level = httpx_logger.level
+    httpx_logger.setLevel(logging.NOTSET)
+    try:
+        runner_module._configure_logging()
+        assert httpx_logger.level == logging.WARNING
+    finally:
+        httpx_logger.setLevel(previous_level)

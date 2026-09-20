@@ -211,8 +211,14 @@ def _safe_poll(client):
     return True
 
 
-def main():
+def _configure_logging():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    # httpx가 요청 URL·토큰을 INFO로 남기지 않도록 WARNING까지만 올린다.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
+def main():
+    _configure_logging()
     config = load_config()
     client = RunnerClient(config)
 
