@@ -831,3 +831,84 @@ def test_러너_로깅을_설정하면_httpx_로거가_WARNING_레벨이_된다(
 def test_SIGTERM_신호_처리기가_호출되면_KeyboardInterrupt로_전환된다():
     with pytest.raises(KeyboardInterrupt):
         runner_module._handle_sigterm(15, None)
+
+
+class _ProgressCallRecorder:
+    """진행 상태 호출 순서만 기록하는 가짜 ProgressReporter."""
+
+    def __init__(self):
+        self.calls = []
+
+    def heartbeat(self):
+        self.calls.append(("heartbeat",))
+
+    def begin_run(self, run_id, lease_token):
+        self.calls.append(("begin_run", run_id, lease_token))
+
+    def end_run(self):
+        self.calls.append(("end_run",))
+
+    def set(self, phase, **fields):
+        self.calls.append(("set", phase, fields))
+
+
+def test_러너_한_바퀴는_임대_후_검색중_제출중_완료보고중_대기_순으로_진행_상태를_갱신한다(monkeypatch):
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+
+    class _Client:
+        def send_heartbeat(self, provider):
+            pass
+
+        def claim(self):
+            return run
+
+        def complete(self, **kwargs):
+            pass
+
+    client = _Client()
+    progress = _ProgressCallRecorder()
+
+    ticker_progress_kwargs = []
+
+    class _FakeTickerWithProgress:
+        def __init__(self, client, interval, progress=None):
+            ticker_progress_kwargs.append(progress)
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+    def fake_run_exploration_flow(**kwargs):
+        # 실제 소스 제출 루프는 run_exploration_flow 안에 있다(rg 확인) — 가짜 소스
+        # 1건을 흉내 내 progress 콜백을 실제와 같은 모양으로 호출한다.
+        callback = kwargs.get("progress")
+        if callback is not None:
+            callback("submitting", index=1, total=1)
+        return {"events_attempted": 0, "events_failed": 0}
+
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _FakeTickerWithProgress)
+    monkeypatch.setattr(
+        runner_module, "_run_exploration_agent", lambda prompt: {"events": [], "sources": []}
+    )
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    runner_module._run_once(client, progress)
+
+    assert progress.calls == [
+        ("heartbeat",),
+        ("begin_run", 1, "tok"),
+        ("set", "exploring", {"query": "하츠네 미쿠"}),
+        ("set", "submitting", {"index": 1, "total": 1}),
+        ("set", "completing", {}),
+        ("end_run",),
+        ("set", "idle", {}),
+    ]
+    assert ticker_progress_kwargs == [progress]

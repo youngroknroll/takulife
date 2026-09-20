@@ -29,6 +29,7 @@ from .exploration_flow import (
     parse_exploration_output,
     run_exploration_flow,
 )
+from .progress import ProgressReporter
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ def _run_exploration_agent(prompt, execute=None):
     return parse_json_object(corrected_output)
 
 
-def _process_run(client, run, exploration_result):
+def _process_run(client, run, exploration_result, progress=None):
     # 얇은 배선이다 — 판단 로직은 run_exploration_flow가 갖고 있다.
     try:
         summary = run_exploration_flow(
@@ -96,6 +97,7 @@ def _process_run(client, run, exploration_result):
             events=exploration_result["events"],
             sources=exploration_result["sources"],
             vocab=run["vocab"],
+            progress=progress.set if progress is not None else None,
         )
     except LeaseLostError:
         # 임대 상실은 다른 곳이 이미 이 실행을 가져갔거나 만료돼 다시
@@ -108,6 +110,8 @@ def _process_run(client, run, exploration_result):
         # 남아 있다 — 완료 보고에서 통째로 버리지 않는다.
         logger.warning("exploration flow failed: error=%s", type(exc.__cause__).__name__)
         partial_summary = exc.summary
+        if progress is not None:
+            progress.set("completing")
         client.complete(
             run_id=run["run_id"],
             lease_token=run["lease_token"],
@@ -124,6 +128,8 @@ def _process_run(client, run, exploration_result):
         # 완료 보고를 보낸다 — 그러지 않으면 실행이 임대를 쥔 채 만료될
         # 때까지 다음 탐색이 막힌다(실기동 결함 3).
         logger.warning("exploration flow failed: error=%s", type(exc).__name__)
+        if progress is not None:
+            progress.set("completing")
         client.complete(
             run_id=run["run_id"],
             lease_token=run["lease_token"],
@@ -131,6 +137,8 @@ def _process_run(client, run, exploration_result):
             failure_kind="exploration_error",
         )
         return
+    if progress is not None:
+        progress.set("completing")
     client.complete(
         run_id=run["run_id"],
         lease_token=run["lease_token"],
@@ -169,12 +177,19 @@ class _HeartbeatTicker(threading.Thread):
         self._stop_event.set()
 
 
-def _run_once(client):
-    client.send_heartbeat("claude-code")
+def _run_once(client, progress=None):
+    if progress is not None:
+        progress.heartbeat()
+    else:
+        client.send_heartbeat("claude-code")
 
     run = client.claim()
     if run is None:
         return
+
+    if progress is not None:
+        progress.begin_run(run["run_id"], run["lease_token"])
+        progress.set("exploring", query=run["query"])
 
     prompt = build_exploration_prompt(
         query=run["query"],
@@ -185,12 +200,17 @@ def _run_once(client):
 
     # 이벤트·소스 제출·완료 보고가 끝날 때까지 heartbeat 티커가 살아 있어야
     # 하므로 티커 범위를 tick 종료 시점(finally)까지 넓게 잡는다.
-    ticker = _HeartbeatTicker(client, POLL_INTERVAL_SECONDS)
+    if progress is not None:
+        ticker = _HeartbeatTicker(client, POLL_INTERVAL_SECONDS, progress=progress)
+    else:
+        ticker = _HeartbeatTicker(client, POLL_INTERVAL_SECONDS)
     ticker.start()
     try:
         try:
             raw_output = _run_exploration_agent(prompt)
         except AdapterOutputError as exc:
+            if progress is not None:
+                progress.set("completing")
             client.complete(
                 run_id=run["run_id"],
                 lease_token=run["lease_token"],
@@ -199,14 +219,17 @@ def _run_once(client):
             )
             return
         exploration_result = parse_exploration_output(data=raw_output)
-        _process_run(client, run, exploration_result)
+        _process_run(client, run, exploration_result, progress)
     finally:
         ticker.stop()
+        if progress is not None:
+            progress.end_run()
+            progress.set("idle")
 
 
-def _safe_poll(client):
+def _safe_poll(client, progress=None):
     try:
-        _run_once(client)
+        _run_once(client, progress)
     except httpx.HTTPError as exc:
         logger.warning("poll failed: %s", type(exc).__name__)
         return False
@@ -237,11 +260,12 @@ def main():
     signal.signal(signal.SIGTERM, _handle_sigterm)
     config = load_config()
     client = RunnerClient(config)
+    progress = ProgressReporter(client)
 
     consecutive_failures = 0
     try:
         while True:
-            if _safe_poll(client):
+            if _safe_poll(client, progress):
                 consecutive_failures = 0
                 time.sleep(config.poll_interval_seconds)
             else:
@@ -252,7 +276,8 @@ def main():
                 )
                 time.sleep(backoff)
     except KeyboardInterrupt:
-        pass
+        _report_shutdown(client, progress)
+        logger.info("%s", "러너 종료 — 오프라인 보고 완료")
 
 
 if __name__ == "__main__":
