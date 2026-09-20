@@ -228,6 +228,10 @@ class RunnerEventDraftSubmitView(_RunnerAPIView):
         return Response({"status": "duplicate", "draft_id": draft.pk})
 
 
+class RunnerOfflineView(_RunnerAPIView):
+    pass
+
+
 class RunnerKnownDraftUrlsView(_RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
