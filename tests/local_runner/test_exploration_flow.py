@@ -1488,3 +1488,41 @@ def test_탐색_흐름이_행사를_읽을_때마다_progress_콜백에_순번�
         ("reading", {"index": 1, "total": 2, "host": "a.example.com"}),
         ("reading", {"index": 2, "total": 2, "host": "b.example.com"}),
     ]
+
+
+def test_탐색_흐름이_소스_후보를_제출할_때마다_progress_콜백에_순번과_전체_수를_넘긴다():
+    sources = [
+        {
+            "name": "소스 1",
+            "url": "https://example.com/source-1",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
+        {
+            "name": "소스 2",
+            "url": "https://example.com/source-2",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
+    ]
+
+    client = _FakeClient()
+    progress_calls = []
+
+    def capture(phase, **fields):
+        progress_calls.append((phase, fields))
+
+    run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=[],
+        sources=sources,
+        progress=capture,
+    )
+
+    assert progress_calls == [
+        ("reading", {"index": 0, "total": 0}),
+        ("submitting", {"index": 1, "total": 2}),
+        ("submitting", {"index": 2, "total": 2}),
+    ]

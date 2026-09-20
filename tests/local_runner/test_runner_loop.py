@@ -887,11 +887,9 @@ def test_러너_한_바퀴는_임대_후_검색중_제출중_완료보고중_대
             pass
 
     def fake_run_exploration_flow(**kwargs):
-        # 실제 소스 제출 루프는 run_exploration_flow 안에 있다(rg 확인) — 가짜 소스
-        # 1건을 흉내 내 progress 콜백을 실제와 같은 모양으로 호출한다.
-        callback = kwargs.get("progress")
-        if callback is not None:
-            callback("submitting", index=1, total=1)
+        # 소스 제출 중 progress 호출은 이제 run_exploration_flow(실제 코드,
+        # RP-R13)가 스스로 낸다 — 이 가짜는 그 세부를 흉내 내지 않고
+        # _run_once가 claim~complete 사이에 무엇을 부르는지만 고정한다.
         return {"events_attempted": 0, "events_failed": 0}
 
     monkeypatch.setattr(runner_module, "_HeartbeatTicker", _FakeTickerWithProgress)
@@ -906,7 +904,6 @@ def test_러너_한_바퀴는_임대_후_검색중_제출중_완료보고중_대
         ("heartbeat",),
         ("begin_run", 1, "tok"),
         ("set", "exploring", {"query": "하츠네 미쿠"}),
-        ("set", "submitting", {"index": 1, "total": 1}),
         ("set", "completing", {}),
         ("end_run",),
         ("set", "idle", {}),
