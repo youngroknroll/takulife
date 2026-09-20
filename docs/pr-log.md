@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #382부터 #246까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #385부터 #249까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,37 +28,45 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #382 — refactor(core): Move frontend new-group hourly quota into error_groups (트랙 38 PR 1)
+### PR #385 — feat: 러너 진행 상태 실시간 표시·즉시 오프라인·러너 사람용 로그 (트랙 39)
 
-**무엇을 바꿨나**: 트랙 38(어댑터 얇게, 규칙은 내부 서비스로) 슬라이스 D. 행동
-불변 이동이다. 익명 프론트 오류 보고의 "새 묶음 시간당 상한" 규칙
-(`NEW_GROUP_HOURLY_LIMIT`, 옛 `_new_group_allowed`)을 HTTP 뷰
-`core/client_error_views.py`에서 `core/error_groups.py::frontend_new_group_allowed`로
-옮겼다. 본문·캐시 키는 동일하고, 뷰에서 `ErrorGroup`·`cache`·`timezone` 임포트가
-사라졌다 — same-origin·본문 파싱·payload 검증·스로틀·항상 204 계약은 한 글자도
-바뀌지 않았다. 옮긴 함수 docstring에 "무인증 쓰기 경로는 반드시 이 함수를 먼저
-통과해야 한다"를 명시했다(보안 검토 조건).
+**무엇을 바꿨나**: `DiscoveryRunnerStatus` 5필드(마이그레이션 0014:
+phase/phase_detail/phase_updated_at/current_run/offline_at)를 추가하고,
+heartbeat가 `phase`·`detail`·`run_id`를 선택 키로 받아 옛 러너는 204로 계속
+동작하며 값이 없으면 이전 값을 유지한다. `POST /api/discovery/runner/offline/`을
+신설했고, `runner_is_online`은 `offline_at`을 반영해 `create_run` 단일 판정으로
+합쳤으며 `runner_shutdown` 실패 종류를 구분한다. 스태프 대시보드에는
+`GET /staff/api/discovery/live/`(IsAdminUser, `staff_discovery_live` 40/minute,
+시리얼라이저 `drafts/serializers.py`)를 순수 JSON으로 신설하고, 파셜 2개 +
+`<template>` + `static/js/staff/discovery_live.js`(5초/20초 폴링·백오프·
+401/403 정지·가시성·pageshow·포커스/펼침 복원·textContent만)로 자동 갱신 UI를
+붙였다. 러너 쪽은 `local_runner/progress.py`의 `ProgressReporter`(phase 전이는
+즉시, 같은 phase의 detail 갱신은 5초 간격, 터미널 INFO 로그)를 탐색·제출 루프에
+연결하고, SIGINT/SIGTERM 수신 시 `complete(runner_shutdown)` → offline 순서를
+강제했다(httpx WARNING 억제, 폴링 상태 전이 로그 추가). 문서는
+`docs/BE/draft-source-agent-discovery.md` 트랙 39 절, 운영 런북 §8.x, 배포
+런북 env 표 `DRAFT_DISCOVERY_RUNNER_TOKEN`, 백로그 G2·H8·H12(a)를 갱신했다.
 
-**같은 날 별도 PR #383**: CI 의존성 감사(`pip-audit --strict`)가 anyio 4.13.0에
-대해 GHSA-82r6-8w77-94w6·GHSA-5p39-cfhj-2xmp를 새로 보고해 코드 변경이 없는
-#381과 이 PR(#382)까지 게이트에서 막았다. `uv.lock`만 anyio 4.14.2로 올려 해소했고
-(`pyproject.toml` 변경 없음), #381·#382는 main 머지로 감사 게이트를 재통과했다.
+**왜**: 사용자 요구 3건 — 대시보드 자동 갱신, 터미널·대시보드 진행 단계 문구,
+종료 시 즉시 오프라인 전환. 트랙 진행 중 발견한 같은 유형 결함 10건(BIR 4·코치
+3·실기동 2·가드 1)은 같은 PR에서 수정했다.
 
-**검증** `[실측 2862540a]`: Red — 새 위치 임포트 실패(ImportError) → 이동 후
-`tests/core/test_error_groups.py` + `tests/core/test_client_error_report.py` 57
-passed. 새 도메인 테스트 3건(EG-36 상한 이내 허용 / EG-37 초과 거부 / EG-38
-기존 지문 무관). 기존 웹 테스트는 monkeypatch 대상 경로 2곳(+docstring 이름
-1곳)만 새 위치로 갱신, 나머지 무수정 Green. 뮤테이션 `<=`→`<` — 경계 테스트
-3건만 Red(3 failed / 54 passed), 기존 지문 경로 Green, 원복 후 57 passed. 전체
-회귀 `uv run pytest -q` → 3114 passed / 10 deselected / 96.36초(main `e4e0338f`
-3111 → +3 `[계산]`), `manage.py check` 0건, `makemigrations --check --dry-run`
-변화 없음. DAR·SRR 결함 0건, QVL Complete with residual risk. `docs/BE/error-groups.md`의
-소유 모듈·행번호 인용 18곳도 같은 PR(커밋 e877ff3f)에서 재실측해 갱신했다. 머지 후
-main 재측정: 3114 passed / 10 deselected / 126.66초, `manage.py check` 0건,
-`makemigrations --check` 변화 없음 `[실측 2026-09-19 main 0c7cb3a0]`
+**검증** `[실측 2026-09-20]`: `uv run pytest -q` 3181 passed / 10 deselected /
+91.80초(기준선 3114 `[문서]` PR #382 대비 +67), `manage.py check` 이상 없음,
+`makemigrations --check --dry-run` No changes. e2e `uv run pytest -q -m e2e
+tests/e2e` 10 passed / 12.37초. 브라우저 실측: 대시보드 자동 갱신 AC1
+0.66초·2.00초(실제 러너 기동 상태), 진행 문구 반영 AC3 1.18초. 실기동:
+SIGINT로 탐색 중 종료 → `complete(runner_shutdown)` 324ms 후 offline 363ms.
+CI 5잡 success. 머지 커밋 `2c0e3552`(2026-09-20 22:18 KST `[실측 gh]`), 커밋
+수 56건(`git log --oneline 80ccf80e..2c0e3552^2 | wc -l` `[실측]`). 머지 후
+main 재측정: `uv run pytest -q` → 3181 passed / 10 deselected / 96.62초,
+`manage.py check` 0건, `makemigrations --check --dry-run` 변화 없음
+`[실측 2026-09-20 main 2c0e3552]`
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #384 — docs: PR #382·#383·#381 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #383 — build: Bump anyio to 4.14.2 for two new GHSA advisories
+- #382 — refactor(core): Move frontend new-group hourly quota into error_groups (트랙 38 PR 1)
 - #381 — docs: PR #380·#379 머지를 로그에 롤링 반영 + 트랙 38 백로그 행
 - #380 — fix(staff): Show period and title-url checks in draft preapproval (트랙 38 PR 0)
 - #379 — docs: PR #376~#378 스택 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -190,6 +198,3 @@ main 재측정: 3114 passed / 10 deselected / 126.66초, `manage.py check` 0건,
 - #251 — Repair the governance docs, rebuild the backlog, and act on what it measured
 - #250 — feat(staff): Add the verify button to the event edit page
 - #249 — feat(events): Give readers a way back to ended events
-- #248 — feat(events): Default the public listing to ongoing and upcoming
-- #247 — feat(events): Flag published events that need re-verification
-- #246 — fix(archive): Give photo uploads and place entries an idempotency key
