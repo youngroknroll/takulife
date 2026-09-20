@@ -79,6 +79,28 @@ def test_유효한_토큰으로_오프라인을_보고하면_204와_함께_즉�
     assert runner_is_online(status_row=runner_status()) is False
 
 
+def test_heartbeat_API가_phase_detail_run_id를_받으면_러너_상태에_기록된다(client, runner_headers):
+    run = SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
+
+    response = client.post(
+        HEARTBEAT_URL,
+        data={
+            "provider": "claude-code",
+            "phase": "reading",
+            "detail": "행사 확인 중 (1/3)",
+            "run_id": run.pk,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 204
+    status_row = DiscoveryRunnerStatus.objects.get()
+    assert status_row.phase == "reading"
+    assert status_row.phase_detail == "행사 확인 중 (1/3)"
+    assert status_row.current_run_id == run.pk
+
+
 def test_잘못된_토큰은_403_올바른_토큰은_통과한다(client, settings):
     settings.DRAFT_DISCOVERY_RUNNER_TOKEN = "runner-secret"
 
