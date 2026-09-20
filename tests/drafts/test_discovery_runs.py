@@ -14,6 +14,7 @@ from drafts.discovery_runs import (
     claim,
     complete_run,
     create_run,
+    normalize_heartbeat_phase,
     record_heartbeat,
 )
 from drafts.agent_drafts import MAX_EVENTS_PER_RUN
@@ -73,6 +74,18 @@ def test_heartbeat에_phase가_없으면_이전_phase가_유지된다():
     record_heartbeat(provider="claude-code")
 
     assert DiscoveryRunnerStatus.objects.get().phase == "reading"
+
+
+@pytest.mark.unit
+def test_어휘_밖_phase를_정규화하면_None으로_거절되고_경고_로그가_남는다(caplog):
+    with caplog.at_level("WARNING"):
+        result = normalize_heartbeat_phase("banana")
+
+    assert result is None
+    assert any(
+        record.levelname == "WARNING" and record.message.startswith("invalid heartbeat phase")
+        for record in caplog.records
+    )
 
 
 def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성된다(make_user):

@@ -154,6 +154,16 @@ def runner_is_online(*, status_row):
     )
 
 
+def normalize_heartbeat_phase(phase):
+    """어휘 밖 phase는 무시하고 경고만 남긴다 — 러너 원문을 그대로 믿지 않는다."""
+    if phase is None:
+        return None
+    if phase not in DiscoveryRunnerStatus.Phase.values:
+        logger.warning("invalid heartbeat phase: %s", phase)
+        return None
+    return phase
+
+
 def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
     # candidate_validation이 이 모듈을 임포트하므로 반대 방향은 함수 안에서만 쓴다.
     from drafts.candidate_validation import sanitize_text
