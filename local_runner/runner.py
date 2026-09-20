@@ -205,6 +205,7 @@ def _run_once(client, progress=None):
     else:
         ticker = _HeartbeatTicker(client, POLL_INTERVAL_SECONDS)
     ticker.start()
+    interrupted = False
     try:
         try:
             raw_output = _run_exploration_agent(prompt)
@@ -220,9 +221,13 @@ def _run_once(client, progress=None):
             return
         exploration_result = parse_exploration_output(data=raw_output)
         _process_run(client, run, exploration_result, progress)
+    except KeyboardInterrupt:
+        interrupted = True
+        raise
     finally:
         ticker.stop()
-        if progress is not None:
+        # 종료 처리기가 진행 중 run을 완료 보고할 수 있게 남겨 둔다.
+        if progress is not None and not interrupted:
             progress.end_run()
             progress.set("idle")
 

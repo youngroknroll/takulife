@@ -938,3 +938,48 @@ def test_대기_폴링_로그는_첫_응답_실패_복구_전이에서만_한_�
         assert len(records) == 1
         assert records[0].levelno == expected_level
         assert records[0].getMessage() == expected_text
+
+
+def test_탐색_중_종료_신호가_오면_현재_실행_정보를_지우지_않고_전파한다(monkeypatch):
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+
+    class _Client:
+        def send_heartbeat(self, provider):
+            pass
+
+        def claim(self):
+            return run
+
+    client = _Client()
+    progress = ProgressReporter(_RecordingHeartbeatClient(), clock=lambda: 0.0)
+
+    ticker_calls = []
+
+    class _FakeTicker:
+        def __init__(self, client, interval, progress=None):
+            pass
+
+        def start(self):
+            pass
+
+        def stop(self):
+            ticker_calls.append("stop")
+
+    def _raise(prompt):
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _FakeTicker)
+    monkeypatch.setattr(runner_module, "_run_exploration_agent", _raise)
+
+    with pytest.raises(KeyboardInterrupt):
+        runner_module._run_once(client, progress)
+
+    assert progress.run_id == run["run_id"]
+    assert progress.phase != "idle"
+    assert ticker_calls == ["stop"]
