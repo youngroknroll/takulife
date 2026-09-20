@@ -416,7 +416,16 @@ def _build_event_context(*, client, run_id, lease_token, events, sources, fetch_
 
 
 def run_exploration_flow(
-    *, client, run_id, lease_token, events, sources, vocab=None, fetch_text=None, interpret=None
+    *,
+    client,
+    run_id,
+    lease_token,
+    events,
+    sources,
+    vocab=None,
+    fetch_text=None,
+    interpret=None,
+    progress=None,
 ):
     if fetch_text is None:
         fetch_text = _default_fetch_text
@@ -434,8 +443,18 @@ def run_exploration_flow(
     )
     tally = _FlowTally()
 
+    if progress is not None:
+        progress("reading", index=0, total=len(events))
+
     try:
-        for event in events:
+        for index, event in enumerate(events, start=1):
+            if progress is not None:
+                progress(
+                    "reading",
+                    index=index,
+                    total=len(events),
+                    host=urlsplit(event["url"]).hostname,
+                )
             _process_event(event, tally=tally, ctx=ctx)
         _submit_sources(sources, client=client, run_id=run_id, lease_token=lease_token)
     except LeaseLostError:
