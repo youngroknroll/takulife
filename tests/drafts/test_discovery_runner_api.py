@@ -101,6 +101,25 @@ def test_heartbeat_API가_phase_detail_run_id를_받으면_러너_상태에_기�
     assert status_row.current_run_id == run.pk
 
 
+def test_phase_없는_옛_heartbeat도_204이고_이전_phase가_유지된다(client, runner_headers):
+    client.post(
+        HEARTBEAT_URL,
+        data={"provider": "claude-code", "phase": "reading"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    response = client.post(
+        HEARTBEAT_URL,
+        data={"provider": "claude-code"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 204
+    assert DiscoveryRunnerStatus.objects.get().phase == "reading"
+
+
 def test_잘못된_토큰은_403_올바른_토큰은_통과한다(client, settings):
     settings.DRAFT_DISCOVERY_RUNNER_TOKEN = "runner-secret"
 
