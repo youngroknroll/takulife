@@ -104,3 +104,16 @@ def test_실시간_현황_조회는_분당_40회로_제한된다(staff_client, c
     throttled = client.get(LIVE_URL)
 
     assert throttled.status_code == 429
+
+
+@pytest.mark.django_db
+def test_실시간_현황_JSON의_상세_문구는_원문_그대로_담긴다(staff_client):
+    _, client = staff_client()
+    record_heartbeat(
+        provider="claude-code", phase="exploring", detail="<script>alert(1)</script>"
+    )
+
+    response = client.get(LIVE_URL)
+
+    assert response.status_code == 200
+    assert response.json()["runner"]["detail"] == "<script>alert(1)</script>"
