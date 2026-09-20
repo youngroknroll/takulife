@@ -323,7 +323,9 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 
 `docker/entrypoint.sh`에 `--timeout`이 없다. 러너 후보 제출이 요청 안에서
 동기 네트워크 최대 6회(각 5초) → 최악 ~30초로 기본 타임아웃과 충돌 가능.
-**트리거: 서버에서 `DRAFT_DISCOVERY_ENABLED=true` 전환 전.**
+**트리거 발동: 2026-09-20 프로덕션 `DRAFT_DISCOVERY_ENABLED=true` 전환
+[사용자 보고] — 트랙 39(러너 진행 표시) 종료 직후 별도 트랙으로 착수
+예정(사용자 결정 2026-09-20).**
 
 동일 근본 원인 `[계산 2026-09-05]`: 대시보드 「지금 수집」도 동기 실행(`staff/views/__init__.py:200-245`)이라 활성 소스 3개가 모두 느린 최악 시 `3×(5+5)+2×1 = 32초`(요청 타임아웃 5초 `drafts/fetching.py:10`, 소스 간 대기 1초 `drafts/management/commands/discover_drafts.py:59`)로 기본 30초를 넘길 수 있고, 워커 SIGKILL 시 `finally`의 감사 로그(`staff/views/__init__.py:242-245`)가 남지 않는다. `docker/entrypoint.sh`에 `--timeout` 0건 `[실측 2026-09-05]`. 프로덕션 활성 소스 수는 미실측. 사용자 보류·트리거는 그대로다.
 
@@ -397,11 +399,11 @@ H6도 같은 규칙으로 PSO P2를 따른다(2026-09-06 정정). 2026-09-06 외
 | H5 | P1 | 반려 드래프트 재오픈 | 승인·반려 모두 pending 전용 `drafts/services.py:198-207`, `source_url` unique `drafts/models.py:15` → 반려는 영구 폐기, 복구는 shell | 결함(빈도 낮음). **구현 완료(2026-09-08, 트랙 21, PR #345)** — 정본 `docs/BE/draft-review-lifecycle.md`. 사용자 결정 ★2: H4 기산점 = `reopened_at or created_at` |
 | H6 | P2 | 수집 소스 생성·수정·활성 토글 콘솔 편입 | admin 이탈 안내 `staff/views/__init__.py:237`(트랙 19 import 추가로 225→237, 2026-09-07 재확인), `drafts/admin.py` 빈 ModelAdmin | 제품 권고. PSO P2(admin으로 가능) / WED P1(콘솔 밖 3번째 화면 강제). 2026-09-06 정정: 이전 표기 P1은 WED 의견으로 상향한 것이라 "우선순위는 PSO 판정" 규칙과 충돌해 PSO P2로 되돌림. WED 이견은 기록만. **사용자 결정(2026-09-07): P2 유지** — 운영자가 소스를 주 1회 이상 만진다는 사실이 확인되면 올리고, 착수 시 `superuser_console_required` 재사용(admin은 superuser 전용인데 콘솔 소스 화면은 is_staff 전체가 보므로) |
 | H7 | P1 | 감사 범위 확대(드래프트 생성·필드 수정) | `/api/event-drafts/` `drafts/views.py:147-161`은 `StaffActionLog` 밖. v1 의도된 경계 | **사용자 결정(2026-09-07): 선택지 2 승인** — 액션 2종(`draft_create`·`draft_update`) 사실 기록, 전후 스냅샷은 H12(b) 보존 정책 결정까지 보류. 트랙 20으로 착수(SRR Medium / PSO 이연 이견은 기록). **구현 완료(2026-09-07, 트랙 20, PR #343)** — 정본 `docs/BE/staff-audit-log.md`(admin API 뷰는 `staff/views/draft_api.py`로 이동, 근거의 `drafts/views.py:147-161`은 이동 전 위치) |
-| H8 | P1 | 알림(대기 누적·소스 전부 오류·러너 오프라인) | `send_mail`·`EmailMessage`·`mail_admins` 0건 `[실측 rg staff/ drafts/]` | 이연. DOR: 비용 정책 안 대안 없음(무료 웹훅은 외부 계정 액션 = 인프라 최후순위) |
+| H8 | P1 | 알림(대기 누적·소스 전부 오류·러너 오프라인) | `send_mail`·`EmailMessage`·`mail_admins` 0건 `[실측 rg staff/ drafts/]` | 오프라인 즉시 표시는 트랙 39(offline 엔드포인트·대시보드 폴링)로 해소. 알림 메일은 이연 유지. DOR: 비용 정책 안 대안 없음(무료 웹훅은 외부 계정 액션 = 인프라 최후순위) |
 | H9 | P2 | 소스별 수집 이력·실패율, 실패 후보 재시도/무시 액션 | `DraftSource` 상태 필드 2개뿐 `drafts/models.py:67-68`(정정 전 표기 56-66은 필드 줄을 빗나감, 2026-09-06 재측정) | 제품 권고 |
 | H10 | P2 | 중복 경고(같은 행사 다른 URL), 반려 사유 큐 노출·템플릿 | 중복 판정은 URL 완전일치만 | 제품 권고 |
 | H11 | P2 | 이벤트 검색에 공식 URL·ID, 변경 이력, 수정 화면 소비자 링크·반응 지표, 검증 만료 예고 | 검색 3열 `events/queries.py:213-217`, `Event.updated_at` 0건 `[실측 rg events/models.py]` | 제품 권고 |
-| H12 | P2 | 수집 진행 표시, 감사 로그 보존 정책 | `staff/management/` 없음 `[실측 ls]`. 진행 표시는 현재도 제출 가드가 버튼 비활성+`.is-loading`을 적용(`templates/staff/dashboard.html:95` `data-submit-guard`, `static/js/shared/staff_submit_guard.js:29-30`) | 권고. 2026-09-06 분리: (a) 진행 표시 — 요구가 대기 문구인지 실제 실행 상태 조회인지 설계 시 확정. G2 타임아웃 조정은 원인을 공유할 뿐 진행 표시를 해결하지 않는다. (b) 감사 보존 정책 — 독립 과제. 운영 설정 보류(G2)는 유지 |
+| H12 | P2 | 수집 진행 표시, 감사 로그 보존 정책 | `staff/management/` 없음 `[실측 ls]`. 진행 표시는 현재도 제출 가드가 버튼 비활성+`.is-loading`을 적용(`templates/staff/dashboard.html:95` `data-submit-guard`, `static/js/shared/staff_submit_guard.js:29-30`) | 권고. 2026-09-06 분리: (a) 진행 표시 — **트랙 39로 해소**(heartbeat phase·detail + 대시보드 5초/20초 폴링 + 러너 터미널 INFO 로그, 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 39" 절). G2 타임아웃 조정은 원인을 공유할 뿐 진행 표시와는 별개다. (b) 감사 보존 정책 — 독립 과제, 유지. 운영 설정 보류(G2)는 유지 |
 | H13 | P2 | 대시보드 소스 패널 「전체 보기」 링크, 이벤트 읽기 전용 미리보기 | `templates/staff/dashboard.html:91-103`(감사 패널은 251행에 링크 있음) | 제품 권고 |
 | H14 | — | 계정 정지 UI → **H1에 흡수**(2026-09-06, `is_active` 전환과 같은 범위) | 승격 스로틀 `20/day` `config/settings.py:579`는 분산 계정 남용은 못 막는다 | H1 설계에서 다룬다. 별도 항목 아님. H1과 함께 완료 |
 

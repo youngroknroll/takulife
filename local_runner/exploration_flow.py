@@ -341,10 +341,13 @@ def _process_event(event, *, tally, ctx):
     )
 
 
-def _submit_sources(sources, *, client, run_id, lease_token):
+def _submit_sources(sources, *, client, run_id, lease_token, progress=None):
     """소스 후보를 국내(kr)만 골라 제출한다 — 409는 LeaseLostError로 곧바로
     위로 던진다."""
-    for source in sources:
+    total = len(sources)
+    for index, source in enumerate(sources, start=1):
+        if progress is not None:
+            progress("submitting", index=index, total=total)
         # 국가가 확정된 국내(kr)가 아니면 제출하지 않는다 — 키 자체가 없거나
         # 불확실해도 제외하라는 결정이라 정규화 없이 서버와 같은 규칙을 쓴다.
         if source.get("source_country") != "kr":
@@ -416,7 +419,16 @@ def _build_event_context(*, client, run_id, lease_token, events, sources, fetch_
 
 
 def run_exploration_flow(
-    *, client, run_id, lease_token, events, sources, vocab=None, fetch_text=None, interpret=None
+    *,
+    client,
+    run_id,
+    lease_token,
+    events,
+    sources,
+    vocab=None,
+    fetch_text=None,
+    interpret=None,
+    progress=None,
 ):
     if fetch_text is None:
         fetch_text = _default_fetch_text
@@ -434,10 +446,22 @@ def run_exploration_flow(
     )
     tally = _FlowTally()
 
+    if progress is not None:
+        progress("reading", index=0, total=len(events))
+
     try:
-        for event in events:
+        for index, event in enumerate(events, start=1):
+            if progress is not None:
+                progress(
+                    "reading",
+                    index=index,
+                    total=len(events),
+                    host=urlsplit(event["url"]).hostname,
+                )
             _process_event(event, tally=tally, ctx=ctx)
-        _submit_sources(sources, client=client, run_id=run_id, lease_token=lease_token)
+        _submit_sources(
+            sources, client=client, run_id=run_id, lease_token=lease_token, progress=progress
+        )
     except LeaseLostError:
         # 다른 곳이 이미 이 실행의 임대를 가져갔다 — 부분 결과를 감싸지 않고
         # 호출자가 곧바로 조용히 다음 폴로 넘어가게 그대로 전달한다.

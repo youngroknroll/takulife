@@ -1,0 +1,50 @@
+{# 러너 배지·진행 행·검색어 폼 — discovery_live.js가 상태 토글로 갱신한다. #}
+<div id="dash-discovery-panel" class="dash-discovery-live" data-live-url="{% url 'staff:discovery-live' %}">
+  <div class="dash-panel-head">
+    <h2 class="dash-panel-head-title">새 수집처 탐색</h2>
+    <span id="dash-runner-badge" class="dash-status-badge dash-status-badge--{% if discovery_runner_online %}ok{% else %}disabled{% endif %}">
+      <span class="dash-status-dot" aria-hidden="true"></span>
+      <span id="dash-runner-badge-text">{% if discovery_runner_online %}러너 온라인{% else %}러너 오프라인{% endif %}</span>
+    </span>
+    <span id="dash-runner-meta" class="mono dash-panel-head-meta">
+      {% if discovery_runner_online %}heartbeat {{ discovery_runner_last_heartbeat_at|timesince }} 전{% else %}{% if discovery_runner_last_heartbeat_at %}마지막 heartbeat {{ discovery_runner_last_heartbeat_at|timesince }} 전{% else %}heartbeat 없음{% endif %}{% endif %}
+    </span>
+    <form class="dash-panel-head-action" id="dash-discovery-query-form" method="post" action="{% url 'staff:source-discovery-request' %}" data-submit-guard>
+      {% csrf_token %}
+      <button
+        class="staff-cta{% if discovery_runner_online %} dash-cta-accent{% endif %}"
+        type="submit"
+        id="dash-discovery-submit"
+        {% if not discovery_runner_online %}disabled aria-describedby="dash-discovery-offline-hint"{% endif %}
+      >▶ 새 소스 탐색</button>
+    </form>
+  </div>
+
+  {# 진행 행: detail이 없거나 오프라인이면 hidden(progress_visible), 갱신은 discovery_live.js가 textContent로만 한다. #}
+  <div
+    class="dash-panel-progress-row"
+    id="dash-discovery-progress"
+    aria-live="polite"
+    {% if not discovery_runner_live.progress_visible %}hidden{% endif %}
+  >
+    <span class="dash-panel-progress-text" id="dash-discovery-progress-text" title="{{ discovery_runner_live.detail }}">{{ discovery_runner_live.detail }}</span>
+  </div>
+
+  <div class="dash-panel-query-row">
+    <label class="dash-panel-query-label" for="dash-discovery-query">검색어</label>
+    <input
+      class="dash-query-input"
+      id="dash-discovery-query"
+      name="query"
+      type="text"
+      autocomplete="off"
+      required
+      minlength="2"
+      maxlength="100"
+      placeholder="검색어 예: 하츠네 미쿠"
+      form="dash-discovery-query-form"
+      {% if not discovery_runner_online %}aria-describedby="dash-discovery-offline-hint"{% endif %}
+    >
+    <p id="dash-discovery-offline-hint" class="dash-panel-query-hint"{% if discovery_runner_online %} hidden{% endif %}>로컬 러너 오프라인 — 개인 맥에서 러너 실행 필요</p>
+  </div>
+</div>

@@ -170,6 +170,23 @@
 }
 
 /* ── 탐색 검색어 입력 행: 패널 헤더는 높이 고정이라 별도 행으로 둔다 ── */
+/* ── 탐색 진행 행(트랙 39): query-row 바로 위에 phase 문구 1줄 ── */
+.dash-panel-progress-row {
+  display: flex;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.dash-panel-progress-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78125rem;
+  color: var(--c-text);
+}
+
 .dash-panel-query-row {
   display: flex;
   align-items: center;
@@ -323,6 +340,14 @@
   font-weight: 700;
   padding: 0.125rem 0.4375rem;
   border-radius: 0.1875rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* BIR-14: 모션 최소화 설정이면 러너 배지 전환에 애니메이션을 쓰지 않는다. */
+@media (prefers-reduced-motion: reduce) {
+  .dash-status-badge {
+    transition: none;
+  }
 }
 
 .dash-status-dot {

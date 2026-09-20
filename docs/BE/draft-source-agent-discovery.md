@@ -754,6 +754,193 @@ excluded 3건, 결과 4건 기록. 수정 후(실행 17): `partially_failed`(후
   번 뒤 에이전트 사유와 서버 판정 일치율 확보(권고 3~5회).
 - 캡션 경로 응답 크기 상한·DNS 리바인딩(TOCTOU) 하드닝.
 
+## 트랙 39: 러너 진행 상태 실시간 표시·즉시 오프라인(2026-09-20)
+
+대시보드 새로고침 없이 러너 진행 상태(검색 중·행사 확인 중·소스 후보
+제출 중·완료 보고 정리 중)를 보여주고, 러너 종료 시 120초 신선도 대기
+없이 즉시 오프라인으로 반영한다. 계획 정본은 `prompt_plan.md` 트랙
+39(v1.1, 사용자 결정 1~6 확정)이며, 아래는 이 트랙이 코드에 새로 고정한
+가드레일이다. **갱신(구현 완료, 2026-09-20)**: 착수 절 작성 시점에
+"아직 없다"고 적었던 `runner_live_summary()`·`DISCOVERY_PHASE_LABELS`
+(`drafts/queries.py`)와 `local_runner/progress.py`는 모두 구현·회귀
+Green으로 확정됐다. `DiscoveryRunnerStatus` 5필드·
+`record_heartbeat`/`record_offline`/`runner_is_online`·
+`RunnerOfflineView`(204)는 착수 전부터 코드에 있었다 `[코드]`
+`drafts/models.py`·`drafts/discovery_runs.py`·`drafts/runner_views.py`.
+아래 각 절은 착수 시점의 계획서 계약이 아니라 구현된 실제 코드 위치를
+가리키도록 갱신했다.
+
+### phase 어휘 5종과 옛 러너 하위 호환
+
+`DiscoveryRunnerStatus.Phase`는 idle·exploring·reading·submitting·
+completing 5종만 허용한다 `[코드]` `drafts/models.py`
+`DiscoveryRunnerStatus.Phase`. 어휘 밖 값은 저장하지 않고 `invalid
+heartbeat phase` 경고 접두어로만 남긴다 `[코드]` `drafts/discovery_runs.py`
+`normalize_heartbeat_phase`. phase가 없는 heartbeat(옛 러너)는 이전
+phase 값을 덮지 않는다 — `record_heartbeat`가 `phase is not None`일
+때만 `defaults["phase"]`를 채운다 `[코드]` `drafts/discovery_runs.py`
+`record_heartbeat`. 서버 `drafts/queries.py`의 `DISCOVERY_PHASE_LABELS`와
+러너 `local_runner/progress.py`의 `PHASE_LABELS`는 문자 그대로
+일치해야 하며, 이 일치는 AST 대조 테스트
+`tests/local_runner/test_phase_vocabulary_parity.py`(트랙 35
+`test_outcome_vocabulary_parity.py`와 같은 방식)로 고정한다 `[코드]`.
+
+### detail은 러너가 조립한 완성 문장, 서버는 정제만
+
+`detail`은 서버가 어휘·인덱스로 재조립하지 않고 러너가 이미 완성한
+한국어 문장을 그대로 받는다(오케스트레이터 결정 D1). 서버는
+`clean_heartbeat_detail`로 제어문자 제거 + 200자 절단만 하고 문장
+내용은 판단하지 않는다 `[코드]` `drafts/discovery_runs.py`
+`clean_heartbeat_detail`(`sanitize_text` 위임). 화면 표시 경로는 두
+갈래로 갈라진다: 서버 초기 렌더(Django 템플릿)는 자동 이스케이프를
+쓰고, JS 갱신 경로(`static/js/staff/discovery_live.js`)는
+`textContent`·`dataset` 대입만 쓰고 innerHTML이나 문자열 조립으로 DOM에
+넣지 않는다 `[코드]` — `<script>`가 든 detail이 JSON에는 원문(제어문자만
+제거) 그대로 실려도 화면에 태그로 실행되지 않게 하는 XSS 가드다. 브라우저
+실측으로 detail `<script>alert(1)</script>` 제출 시 progress 텍스트가
+원문 그대로 표시되고 요소 생성 0건임을 확인했다 `[실측 2026-09-20]`.
+
+### `offline_at` 규칙과 `create_run` 단일 판정
+
+online 판정은 "120초 이내 heartbeat" AND "`offline_at`이 없거나
+`offline_at` < `last_heartbeat_at`" 두 조건을 모두 만족해야 한다
+`[코드]` `drafts/discovery_runs.py` `runner_is_online`. `create_run`은
+잠근 `DiscoveryRunnerStatus` 행으로 이 함수 하나만 호출해 온라인
+여부를 판정한다 `[코드]` `drafts/discovery_runs.py` `create_run` —
+신선도 검사를 별도로 인라인하면 오프라인 러너에도 검색어 실행이
+생성될 수 있다는 것이 착수 전 재확인된 결함이었다(계획서 정정 3).
+
+### `runner_shutdown`은 즉시 실패, 자동 재시도 없음
+
+`_ALLOWED_FAILURE_KINDS`에 `runner_shutdown`이 등록돼 있다 `[코드]`
+`drafts/discovery_runs.py`. 러너가 진행 중인 run을 안고 Ctrl+C로
+종료하면(`local_runner/runner.py` `main()`의 `except KeyboardInterrupt`
+분기가 `_report_shutdown`을 호출) 그 run은
+`runner_shutdown` 사유로 즉시 실패 처리되며, 서버·러너 어느 쪽도 자동
+재시도하지 않는다 — 재탐색은 스태프가 다시 요청한다(사용자 결정 2).
+부분 집계는 마지막으로 처리한 항목 인덱스(`last_index`)로 근사하며
+정확한 tally는 이 트랙의 Known gap이다(결정 D4). 실기동에서 탐색 중
+SIGINT 시 이 경로가 실제로 타는 것을 확인했다 `[실측 2026-09-20]`
+(아래 "종료 시퀀스" 절 실기동 로그 참고).
+
+### live 계약은 순수 JSON, HTML 필드 없음
+
+`GET /staff/api/discovery/live/`(url name `staff:discovery-live`,
+`staff/urls.py`, view `staff/views/discovery_live.py`
+`StaffDiscoveryLiveView` — 결정 D11)는 `IsAdminUser` +
+`throttle_scope="staff_discovery_live"`로
+보호되며, `{"runner": {...8키...}, "runs": [...], "server_time":
+...}`만 반환한다(사용자 결정 6으로 초안의 `runs_html`·`runner_html`
+필드는 폐기). `runner` 8키는 online·phase·phase_label·detail·
+progress_visible·current_run_id·last_heartbeat_at·active(pending/claimed
+실행 존재 여부, 결정 D8) `[코드]` `drafts/queries.py`
+`runner_live_summary()`. `runs`는 트랙 35
+`recent_discovery_runs()`가 만든 행을 `drafts/serializers.py`
+`DiscoveryRunSummarySerializer`(id·status·status_label·tone·query·
+created_at·promoted_count·failed_count·events_created·events_excluded·
+events_failed·error_summary·outcomes 13필드, `outcomes`는 행사별 상세
+`DiscoveryRunOutcomeSerializer`의 `display_url`·`outcome`·
+`outcome_label`·`tone`·`reason_label` 5키 목록)로 옮긴다 `[코드]`.
+`staff_discovery_live:
+"40/minute"`은 `DEFAULT_THROTTLE_RATES`(`config/settings.py`)에 등록해야
+하며 미등록이면 `ScopedRateThrottle`이 예외를 낸다. `created_at`·
+`last_heartbeat_at`은 DRF `DateTimeField` 기본 ISO 8601로,
+`server_time`은 `timezone.localtime()`(`staff/views/discovery_live.py`
+`StaffDiscoveryLiveView.get`)으로 실려 셋 다 같은 +09:00 표기를 쓴다
+`[코드]`. JS는 문자열 슬라이스로 `y.m.d H:i` 형태만
+만든다(결정 D12) — 서버 파싱·재변환은 하지 않는다.
+
+### 인증 만료는 대시보드 폴링을 멈춘다
+
+`static/js/staff/discovery_live.js`는 폴링 응답이 401·403이거나
+`window.TakuAPI.classify(result)`가 `"auth"`면 폴링을 멈춘다 `[코드]`.
+이 뷰의 `IsAdminUser`는 스태프 권한이 없는 인증 세션에도 403을 낸다
+(`PermissionDenied`) — DRF에서 인증 실패(401)와 권한 실패(403)를
+`classify`가 둘 다 `"csrf"`로 분류하기 때문에, JS는 상태 코드
+401/403과 `classify` 결과 중 하나만 맞아도 멈추도록 두 조건을 OR로
+묶는다. 브라우저 실측: 403 인증 만료 주입 3.69초 안에 만료 안내 문구
+표시, 이후 9초 동안 호출 0회.
+
+### 러너 전송 간격: phase 전이는 즉시, detail만 바뀌면 5초
+
+phase 값이 바뀌는 전이는 간격과 무관하게 heartbeat 1회를 즉시
+보낸다(AC3 ≤5초 근거). 같은 phase 안에서 detail만 바뀌면 마지막 전송
+후 5초 미만일 때 보류한다(결정 D2). 터미널 INFO 줄은 phase 또는
+detail이 바뀔 때마다 1줄 남기며 보류하지 않는다 — 대시보드 폴링
+간격(온라인 또는 pending/claimed 존재 시 5초, 그 외 20초, WED·BIR
+채택)과는 별개다. 이 간격은 러너 스로틀 `discovery_runner`
+60/minute(heartbeat·claim·candidates·drafts·complete 공유,
+`config/settings.py`)를 넘지 않도록 즉시 전송 최대 12/분 + 티커
+20초당 1회로 계산했다(정정 5).
+
+### 종료 시퀀스: 완료 보고 → 오프라인 보고, 두 번째 Ctrl+C는 즉시
+
+SIGINT·SIGTERM은 `KeyboardInterrupt`로 통일해 받는다 `[코드]`
+`local_runner/runner.py` `_handle_sigterm`(SIGTERM 핸들러가
+`raise KeyboardInterrupt()`, SIGINT는 파이썬 기본 처리로 이미
+`KeyboardInterrupt`). 첫 Ctrl+C에서는 진행 중이던 run이 있으면
+`_report_shutdown`이 `complete(failed, "runner_shutdown",
+events_attempted=progress.last_index or 0)`를 보낸 뒤
+`send_offline(timeout=_SHUTDOWN_TIMEOUT_SECONDS)`을 보낸다(각 호출
+3초 타임아웃, `httpx.HTTPError`는 로그만 남기고 전파하지 않는다) `[코드]`
+`local_runner/runner.py` `_report_shutdown`. 대기 중이면
+`progress.run_id`가 `None`이라 `complete` 호출 없이 `send_offline()`만
+보낸다. 두 번째 Ctrl+C는 오프라인 보고를 생략하고
+즉시 종료한다(`main()`의 `except KeyboardInterrupt` 블록 실행 도중
+다시 `KeyboardInterrupt`가 나면 그 블록 자체가 중단된다) — 이 경우
+대시보드는 120초 신선도 만료로 오프라인을 알게 된다(제외 항목).
+
+**착수 중 발견·수정 3건(같은 트랙, 2026-09-20)**: (1) `_run_once`가
+`KeyboardInterrupt` 시 `progress.end_run()`을 호출해 `run_id`를
+비웠던 결함(RP-R05c) — `finally` 절에 `interrupted` 플래그를 추가해
+인터럽트일 때는 `end_run()`을 건너뛰도록 고쳤다(커밋 `7a96ef31`). (2)
+`_report_shutdown`이 `progress.last_index`(읽기 단계 시작 전엔 `None`)를
+그대로 보내 서버 정수 필드가 400을 내던 결함 — `or 0`으로
+방어했다(커밋 `549af841`). (3) `run_exploration_flow`의
+`_submit_sources`가 progress 콜백을 실제로 호출하지 않아 "소스 후보
+제출 중" 문구가 실기동에서 절대 뜰 수 없었던 결함(가짜 흐름으로 전체를
+대체한 테스트가 이를 가리고 있었다) — 실제 제출 루프에 progress 인자를
+꿰었다(커밋 `c865d4c0`). 실기동으로 SIGINT(탐색 중) 왕복을 수정 전·후
+모두 확인했다(아래 Evidence 절의 2026-09-20 실기동 로그 참고).
+
+### 배포 순서: 서버 먼저, 러너는 그 뒤 재시작
+
+서버를 먼저 배포한다 — 옛 러너(phase·detail 없는 heartbeat)는
+`record_heartbeat`가 `phase=None`을 허용하므로 계속 동작한다. 러너는
+그 뒤 재시작한다 — 옛 서버(이 트랙 배포 전)가 여분 키를 받으면 무시하고,
+`/api/discovery/runner/offline/`가 아직 없던 시절의 서버에 새 러너가
+호출하면 404가 나지만 러너는 로그만 남기고 계속 동작한다(DOR).
+
+### Known gap
+
+- `runner_shutdown`으로 종료된 run의 이벤트 집계는 정확한 tally가 아니라
+  마지막 처리 인덱스 근사다(결정 D4) — 정확한 집계가 필요해지면 별도
+  트랙.
+- G2(gunicorn `--timeout` 미설정)는 이 트랙에서 다루지 않는다.
+  `docs/backlog.md` G2는 2026-09-20 프로덕션 `DRAFT_DISCOVERY_ENABLED=true`
+  전환으로 트리거가 발동한 상태이며, 이 트랙 종료 직후 별도 트랙으로
+  진행하기로 사용자가 결정했다(2026-09-20).
+- `docs/backlog.md` H8(알림 메일)은 이연 유지 — 이 트랙은 대시보드·러너
+  터미널 표시만 다룬다.
+- SSE/WebSocket, 정기 스케줄러/자동 시작은 이 트랙 범위 밖이다(계획서
+  "제외" 절 — gunicorn sync 워커 3개 구성과 Redis 미보유 비용 정책이
+  근거).
+- 실기동에서 소스 후보가 실제로 생성된 실행은 없었다(실행 19·20·21 모두
+  검색 결과 행사 0건). "소스 후보 제출 중" 문구의 화면 표시는
+  `tests/local_runner/test_exploration_flow.py`의
+  `test_탐색_흐름이_소스_후보를_제출할_때마다_progress_콜백에_순번과_전체_수를_넘긴다`(RP-R13
+  수정 커밋 `c865d4c0`)와, "완료 보고 정리 중" 진행 행에 대한 Django
+  shell heartbeat 스크린샷(2026-09-20 브라우저 실측)으로만 확인됐다 — 실제
+  러너가 소스 후보를 제출하는 화면은 아직 촬영하지 못했다.
+- 스태프 콘솔은 1024px 미만에서 "데스크톱에서 열어주세요" 게이트가
+  먼저 뜨므로(기존 설계) 이 트랙의 모바일 뷰포트 검증은 적용 대상이
+  아니다.
+- 측정 함정: 비대화형 zsh의 `&` 백그라운드 자식 프로세스는 SIGINT
+  무시를 물려받고, `uv run` 래퍼 PID에 신호를 보내면 실제 러너
+  python 프로세스에 닿지 않는다 — SIGINT 왕복 실측 시
+  `.venv/bin/python3 -c 'signal.signal(SIGINT, SIG_DFL);
+  os.execv(...)'`로 러너를 재기동해 우회했다(2026-09-20 실기동).
+
 ## Evidence
 
 - 사용자 승인(2026-08-20): 기본 수집은 규칙 기반 추출과 관리자 검수를 유지한다.
@@ -767,3 +954,28 @@ excluded 3건, 결과 4건 기록. 수정 후(실행 17): `partially_failed`(후
   `local_runner/exploration_flow.py`, `local_runner/page_fetch.py`,
   `local_runner/caption_interpreter.py`, `local_runner/url_safety.py`. 전체
   회귀 2680건 통과 `[실측]`(오케스트레이터 실행).
+- 트랙 39 사용자 결정(2026-09-20): decisions.md D1~D12, 계획서 사용자 결정
+  1~6.
+  - 전체 회귀: `uv run pytest -q` 3181 passed / 10 deselected / 91.80초
+    `[실측 2026-09-20, 오케스트레이터 실행]`. `manage.py check` 이상 없음,
+    `makemigrations --check --dry-run` No changes detected. 여정 e2e
+    `uv run pytest -q -m e2e tests/e2e` 10 passed / 12.37초 `[실측
+    2026-09-20, 오케스트레이터 실행]`.
+  - 브라우저 실측(Chrome DevTools MCP, 로컬 `runserver`, 개발 DB, 뷰포트
+    1421x795) `[실측 2026-09-20]`: AC1(온라인→오프라인 반영) 0.66초
+    (Django shell `record_offline` 호출 기준), 실제 러너 SIGTERM
+    종료 기준 2.00초; AC3(phase 전이 반영, submitting) 1.18초;
+    offline→online(20초 폴링 구간, 상한 20초) 17.31초; XSS(detail
+    `<script>alert(1)</script>`) progress 텍스트 원문 그대로 표시·요소
+    생성 0건; 가시성 숨김(document.hidden) 12초 동안 요청 0회·복귀 후
+    53ms 안에 1회; 폴링 백오프 간격 [10, 20, 5, 5, 5]초(500 2회 주입);
+    403(`NotAuthenticated`·`PermissionDenied` 둘 다) 주입 시 폴링 정지;
+    같은 응답 반복 11초·폴 2회 동안 MutationObserver DOM 변경 0건.
+  - 러너 실기동(로컬 `runserver --noreload` + 실제 `local_runner`, 개발
+    DB) `[실측 2026-09-20]`: SIGTERM(대기 중) 신호→offline POST 31ms;
+    SIGINT(대기 중, 기본 처리기 복원 후) 27ms; SIGINT(탐색 중, 수정
+    전) offline POST만 발생·complete 없음·run이 `claimed`로 잔존(결함
+    RP-R05c, 같은 트랙에서 수정); SIGINT(탐색 중, 수정 후) 신호→
+    complete(runner_shutdown) POST 324ms→offline POST 363ms, run
+    `failed`·`error_summary` "러너가 실행 실패를 보고했다
+    (runner_shutdown)"·`events_attempted` 0·`runner_is_online` False.

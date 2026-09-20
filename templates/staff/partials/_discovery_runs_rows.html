@@ -1,0 +1,35 @@
+{# 탐색 실행 표 tbody 내용 — discovery_live.js가 갱신 시 같은 구조를 <template>으로 복제한다. #}
+{% for row in recent_discovery_runs %}
+  <tr data-run-id="{{ row.run.pk }}">
+    <td class="mono dash-cell-dim">{{ row.run.created_at|date:"y.m.d H:i" }}</td>
+    <td class="dash-cell-target" title="{{ row.run.query|default:"-" }}">{{ row.run.query|default:"-" }}</td>
+    <td><span class="dash-status-badge dash-status-badge--{{ row.tone }}">{{ row.status_label }}</span>{% if row.run.error_summary %}<div class="mono dash-source-error">{{ row.run.error_summary|truncatechars:60 }}</div>{% endif %}</td>
+    <td class="mono">{{ row.promoted_count }}</td>
+    <td class="mono">{{ row.failed_count }}</td>
+    <td class="mono">{{ row.events_created }}</td>
+    <td class="mono">{% if row.events_excluded is None %}-{% else %}{{ row.events_excluded }}{% endif %}</td>
+    <td class="mono">{% if row.events_failed is None %}-{% else %}{{ row.events_failed }}{% endif %}</td>
+    <td>
+      {% if row.outcome_rows %}
+        <button type="button" class="dash-outcome-toggle" data-expanded="false" aria-expanded="false" aria-controls="dash-outcome-{{ row.run.pk }}" aria-label="{{ row.run.created_at|date:"y.m.d H:i" }}{% if row.run.query %} {{ row.run.query }}{% endif %} 실행 결과 상세">상세</button>
+      {% else %}
+        <span class="dash-cell-dim">-</span>
+      {% endif %}
+    </td>
+  </tr>
+  {% if row.outcome_rows %}
+    <tr id="dash-outcome-{{ row.run.pk }}" class="dash-outcome-row" hidden>
+      <td colspan="9">
+        <ul class="dash-outcome-list">
+          {% for outcome in row.outcome_rows %}
+            <li class="dash-outcome-item">
+              <span class="mono dash-outcome-url">{{ outcome.display_url }}</span>
+              <span class="dash-status-badge dash-status-badge--{{ outcome.tone }}">{{ outcome.outcome_label }}</span>
+              {% if outcome.reason_label %}<span class="dash-outcome-reason">{{ outcome.reason_label }}</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </td>
+    </tr>
+  {% endif %}
+{% endfor %}

@@ -7,6 +7,7 @@ import pytest
 import local_runner.runner as runner_module
 from local_runner.claude_code_adapter import AdapterOutputError
 from local_runner.exploration_flow import ExplorationFlowError, LeaseLostError
+from local_runner.progress import ProgressReporter
 from local_runner.runner import _filter_candidates, _process_run, _safe_poll
 
 
@@ -142,6 +143,41 @@ def test_heartbeat_전송_중_httpx_HTTPError는_기록하고_루프는_계속�
 
     assert client.calls == ["claude-code", "claude-code"]
     assert "ConnectError" in caplog.text
+
+
+class _RecordingHeartbeatClient:
+    def __init__(self):
+        self.calls = []
+        self.on_call = None
+
+    def send_heartbeat(self, provider, *, phase=None, detail=None, run_id=None):
+        self.calls.append(
+            {"provider": provider, "phase": phase, "detail": detail, "run_id": run_id}
+        )
+        if self.on_call is not None:
+            self.on_call()
+
+
+def test_heartbeat_티커가_progress_reporter의_현재_상태를_실어_보낸다():
+    client = _RecordingHeartbeatClient()
+    reporter = ProgressReporter(client, clock=lambda: 0.0)
+    reporter.begin_run(7, "tok")
+    reporter.set("reading", index=2, total=5, host="x.example.com")
+    client.calls.clear()
+
+    ticker = runner_module._HeartbeatTicker(client, interval=0, progress=reporter)
+    client.on_call = ticker.stop
+
+    ticker.run()
+
+    assert client.calls == [
+        {
+            "provider": "claude-code",
+            "phase": "reading",
+            "detail": "행사 확인 중 (2/5)",
+            "run_id": 7,
+        }
+    ]
 
 
 class _BoundedHeartbeatClient:
@@ -691,3 +727,351 @@ def test_러너는_탐색_프롬프트에_clock의_오늘_날짜를_KST로_전�
 
     assert len(captured_prompts) == 1
     assert "2026-09-18" in captured_prompts[0]
+
+
+class _ShutdownRecordingClient:
+    def __init__(self):
+        self.calls = []
+
+    def complete(self, **kwargs):
+        self.calls.append(("complete", kwargs))
+
+    def send_offline(self, *, timeout):
+        self.calls.append(("send_offline", timeout))
+
+
+def test_진행_중에_종료하면_runner_shutdown으로_완료_보고한_뒤_오프라인을_알린다():
+    from types import SimpleNamespace
+
+    client = _ShutdownRecordingClient()
+    progress = SimpleNamespace(run_id=1, lease_token="tok", last_index=2)
+
+    runner_module._report_shutdown(client, progress)
+
+    assert client.calls == [
+        (
+            "complete",
+            {
+                "run_id": 1,
+                "lease_token": "tok",
+                "runner_status": "failed",
+                "failure_kind": "runner_shutdown",
+                "events_attempted": 2,
+            },
+        ),
+        ("send_offline", 3),
+    ]
+
+
+def test_행사를_읽기_전에_종료하면_시도_건수_0으로_완료_보고한다():
+    from types import SimpleNamespace
+
+    client = _ShutdownRecordingClient()
+    progress = SimpleNamespace(run_id=1, lease_token="tok", last_index=None)
+
+    runner_module._report_shutdown(client, progress)
+
+    complete_call = client.calls[0]
+    assert complete_call[0] == "complete"
+    assert complete_call[1]["events_attempted"] == 0
+
+
+def test_대기_중에_종료하면_완료_보고_없이_오프라인만_알린다():
+    from types import SimpleNamespace
+
+    client = _ShutdownRecordingClient()
+    progress = SimpleNamespace(run_id=None, lease_token=None, last_index=None)
+
+    runner_module._report_shutdown(client, progress)
+
+    assert client.calls == [("send_offline", 3)]
+
+
+def _make_http_error():
+    request = httpx.Request("POST", "https://example.com/x")
+    response = httpx.Response(500, request=request)
+    return httpx.HTTPStatusError("boom", request=request, response=response)
+
+
+class _FailingShutdownClient:
+    def __init__(self, *, fail_complete, fail_offline):
+        self.calls = []
+        self._fail_complete = fail_complete
+        self._fail_offline = fail_offline
+
+    def complete(self, **kwargs):
+        self.calls.append("complete")
+        if self._fail_complete:
+            raise _make_http_error()
+
+    def send_offline(self, *, timeout):
+        self.calls.append("send_offline")
+        if self._fail_offline:
+            raise _make_http_error()
+
+
+@pytest.mark.parametrize(
+    "fail_complete, fail_offline",
+    [(True, False), (False, True)],
+    ids=["complete_실패", "오프라인_실패"],
+)
+def test_종료_보고_중_httpx_오류는_전파되지_않고_경고_로그만_남는다(fail_complete, fail_offline, caplog):
+    from types import SimpleNamespace
+
+    client = _FailingShutdownClient(fail_complete=fail_complete, fail_offline=fail_offline)
+    progress = SimpleNamespace(run_id=1, lease_token="tok", last_index=2)
+
+    with caplog.at_level(logging.WARNING, logger="local_runner.runner"):
+        runner_module._report_shutdown(client, progress)
+
+    assert client.calls == ["complete", "send_offline"]
+    records = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert len(records) == 1
+    assert "HTTPStatusError" in records[0].getMessage()
+
+
+def test_러너_로깅을_설정하면_httpx_로거가_WARNING_레벨이_된다():
+    httpx_logger = logging.getLogger("httpx")
+    previous_level = httpx_logger.level
+    httpx_logger.setLevel(logging.NOTSET)
+    try:
+        runner_module._configure_logging()
+        assert httpx_logger.level == logging.WARNING
+    finally:
+        httpx_logger.setLevel(previous_level)
+
+
+def test_SIGTERM_신호_처리기가_호출되면_KeyboardInterrupt로_전환된다():
+    with pytest.raises(KeyboardInterrupt):
+        runner_module._handle_sigterm(15, None)
+
+
+class _ProgressCallRecorder:
+    """진행 상태 호출 순서만 기록하는 가짜 ProgressReporter."""
+
+    def __init__(self):
+        self.calls = []
+
+    def heartbeat(self):
+        self.calls.append(("heartbeat",))
+
+    def begin_run(self, run_id, lease_token):
+        self.calls.append(("begin_run", run_id, lease_token))
+
+    def end_run(self):
+        self.calls.append(("end_run",))
+
+    def set(self, phase, **fields):
+        self.calls.append(("set", phase, fields))
+
+
+def test_러너_한_바퀴는_임대_후_검색중_제출중_완료보고중_대기_순으로_진행_상태를_갱신한다(monkeypatch):
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+
+    class _Client:
+        def send_heartbeat(self, provider):
+            pass
+
+        def claim(self):
+            return run
+
+        def complete(self, **kwargs):
+            pass
+
+    client = _Client()
+    progress = _ProgressCallRecorder()
+
+    ticker_progress_kwargs = []
+
+    class _FakeTickerWithProgress:
+        def __init__(self, client, interval, progress=None):
+            ticker_progress_kwargs.append(progress)
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+    def fake_run_exploration_flow(**kwargs):
+        # 소스 제출 중 progress 호출은 이제 run_exploration_flow(실제 코드,
+        # RP-R13)가 스스로 낸다 — 이 가짜는 그 세부를 흉내 내지 않고
+        # _run_once가 claim~complete 사이에 무엇을 부르는지만 고정한다.
+        return {"events_attempted": 0, "events_failed": 0}
+
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _FakeTickerWithProgress)
+    monkeypatch.setattr(
+        runner_module, "_run_exploration_agent", lambda prompt: {"events": [], "sources": []}
+    )
+    monkeypatch.setattr(runner_module, "run_exploration_flow", fake_run_exploration_flow)
+
+    runner_module._run_once(client, progress)
+
+    assert progress.calls == [
+        ("heartbeat",),
+        ("begin_run", 1, "tok"),
+        ("set", "exploring", {"query": "하츠네 미쿠"}),
+        ("set", "completing", {}),
+        ("end_run",),
+        ("set", "idle", {}),
+    ]
+    assert ticker_progress_kwargs == [progress]
+
+
+@pytest.mark.parametrize(
+    "previous_ok, ok, backoff_seconds, expected_level, expected_text",
+    [
+        (None, True, None, logging.INFO, "서버 응답 확인 — 러너 온라인"),
+        (True, False, 4, logging.WARNING, "서버 연결 실패 — 4초 후 재시도"),
+        (False, True, None, logging.INFO, "서버 연결 복구"),
+        (True, True, None, None, None),
+        (False, False, 8, None, None),
+    ],
+    ids=["첫_응답", "실패", "복구", "계속_성공", "계속_실패"],
+)
+def test_대기_폴링_로그는_첫_응답_실패_복구_전이에서만_한_줄씩_남는다(
+    previous_ok, ok, backoff_seconds, expected_level, expected_text, caplog
+):
+    with caplog.at_level(logging.INFO, logger="local_runner.runner"):
+        runner_module._log_poll_transition(previous_ok, ok, backoff_seconds=backoff_seconds)
+
+    records = [record for record in caplog.records if record.name == "local_runner.runner"]
+    if expected_text is None:
+        assert records == []
+    else:
+        assert len(records) == 1
+        assert records[0].levelno == expected_level
+        assert records[0].getMessage() == expected_text
+
+
+def test_탐색_중_종료_신호가_오면_현재_실행_정보를_지우지_않고_전파한다(monkeypatch):
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+
+    class _Client:
+        def send_heartbeat(self, provider):
+            pass
+
+        def claim(self):
+            return run
+
+    client = _Client()
+    progress = ProgressReporter(_RecordingHeartbeatClient(), clock=lambda: 0.0)
+
+    ticker_calls = []
+
+    class _FakeTicker:
+        def __init__(self, client, interval, progress=None):
+            pass
+
+        def start(self):
+            pass
+
+        def stop(self):
+            ticker_calls.append("stop")
+
+    def _raise(prompt):
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _FakeTicker)
+    monkeypatch.setattr(runner_module, "_run_exploration_agent", _raise)
+
+    with pytest.raises(KeyboardInterrupt):
+        runner_module._run_once(client, progress)
+
+    assert progress.run_id == run["run_id"]
+    assert progress.phase != "idle"
+    assert ticker_calls == ["stop"]
+
+
+def _flow_error_scenario(monkeypatch, progress):
+    # complete 호출도 progress.calls에 함께 남겨 completing 전이와의 순서를 본다.
+    run = {"run_id": 1, "lease_token": "tok", "vocab": {"categories": [], "regions": []}}
+
+    class _Client:
+        def complete(self, **kwargs):
+            progress.calls.append(("complete",))
+
+    def _raise(**kwargs):
+        raise ExplorationFlowError(
+            {"events_attempted": 0, "events_failed": 0, "events_excluded": 0, "event_outcomes": []}
+        )
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", _raise)
+    runner_module._process_run(_Client(), run, {"events": [], "sources": []}, progress)
+
+
+def _generic_error_scenario(monkeypatch, progress):
+    run = {"run_id": 1, "lease_token": "tok", "vocab": {"categories": [], "regions": []}}
+
+    class _Client:
+        def complete(self, **kwargs):
+            progress.calls.append(("complete",))
+
+    def _raise(**kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(runner_module, "run_exploration_flow", _raise)
+    runner_module._process_run(_Client(), run, {"events": [], "sources": []}, progress)
+
+
+def _adapter_output_error_scenario(monkeypatch, progress):
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+    }
+
+    class _Client:
+        def send_heartbeat(self, provider):
+            pass
+
+        def claim(self):
+            return run
+
+        def complete(self, **kwargs):
+            progress.calls.append(("complete",))
+
+    class _FakeTicker:
+        def __init__(self, client, interval, progress=None):
+            pass
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+    def _raise(prompt):
+        raise AdapterOutputError("could not recover JSON from adapter output")
+
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _FakeTicker)
+    monkeypatch.setattr(runner_module, "_run_exploration_agent", _raise)
+    runner_module._run_once(_Client(), progress)
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    [_flow_error_scenario, _generic_error_scenario, _adapter_output_error_scenario],
+    ids=["흐름_오류", "예상_못한_예외", "어댑터_출력_오류"],
+)
+def test_실패_경로에서도_완료_보고_직전에_완료_보고_정리_중으로_전이한다(scenario, monkeypatch):
+    progress = _ProgressCallRecorder()
+
+    scenario(monkeypatch, progress)
+
+    complete_index = progress.calls.index(("complete",))
+    assert progress.calls[complete_index - 1] == ("set", "completing", {})
