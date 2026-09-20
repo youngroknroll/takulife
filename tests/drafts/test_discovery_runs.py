@@ -57,6 +57,16 @@ def test_heartbeat가_detail을_보내면_제어문자가_제거되어_저장된
     assert DiscoveryRunnerStatus.objects.get().phase_detail == "검색중"
 
 
+def test_heartbeat가_run_id를_보내면_현재_실행으로_연결된다(make_user):
+    record_heartbeat(provider="claude-code")
+    user = make_user()
+    run = create_run(requested_by=user)
+
+    record_heartbeat(provider="claude-code", phase="reading", run_id=run.pk)
+
+    assert DiscoveryRunnerStatus.objects.get().current_run_id == run.pk
+
+
 def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()

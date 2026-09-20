@@ -154,7 +154,7 @@ def runner_is_online(*, status_row):
     )
 
 
-def record_heartbeat(*, provider, phase=None, detail=None):
+def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
     # candidate_validation이 이 모듈을 임포트하므로 반대 방향은 함수 안에서만 쓴다.
     from drafts.candidate_validation import sanitize_text
 
@@ -165,6 +165,8 @@ def record_heartbeat(*, provider, phase=None, detail=None):
         defaults["phase_updated_at"] = timezone.now()
     if detail is not None:
         defaults["phase_detail"] = sanitize_text(value=detail)
+    if run_id is not None:
+        defaults["current_run_id"] = run_id
     DiscoveryRunnerStatus.objects.update_or_create(pk=1, defaults=defaults)
 
 
