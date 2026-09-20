@@ -227,6 +227,16 @@ def _run_once(client, progress=None):
             progress.set("idle")
 
 
+def _log_poll_transition(previous_ok, ok, *, backoff_seconds=None):
+    """대기 폴링은 상태가 바뀔 때만 한 줄 남긴다 — 매 폴 성공을 계속 찍지 않는다."""
+    if previous_ok is None and ok:
+        logger.info("%s", "서버 응답 확인 — 러너 온라인")
+    elif previous_ok and not ok:
+        logger.warning("%s", f"서버 연결 실패 — {backoff_seconds}초 후 재시도")
+    elif previous_ok is False and ok:
+        logger.info("%s", "서버 연결 복구")
+
+
 def _safe_poll(client, progress=None):
     try:
         _run_once(client, progress)
@@ -263,9 +273,13 @@ def main():
     progress = ProgressReporter(client)
 
     consecutive_failures = 0
+    previous_ok = None
     try:
         while True:
-            if _safe_poll(client, progress):
+            ok = _safe_poll(client, progress)
+            if ok:
+                _log_poll_transition(previous_ok, ok)
+                previous_ok = ok
                 consecutive_failures = 0
                 time.sleep(config.poll_interval_seconds)
             else:
@@ -274,6 +288,8 @@ def main():
                     config.poll_interval_seconds * 2**consecutive_failures,
                     _MAX_BACKOFF_SECONDS,
                 )
+                _log_poll_transition(previous_ok, ok, backoff_seconds=backoff)
+                previous_ok = ok
                 time.sleep(backoff)
     except KeyboardInterrupt:
         _report_shutdown(client, progress)

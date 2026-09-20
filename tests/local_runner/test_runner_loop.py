@@ -912,3 +912,29 @@ def test_러너_한_바퀴는_임대_후_검색중_제출중_완료보고중_대
         ("set", "idle", {}),
     ]
     assert ticker_progress_kwargs == [progress]
+
+
+@pytest.mark.parametrize(
+    "previous_ok, ok, backoff_seconds, expected_level, expected_text",
+    [
+        (None, True, None, logging.INFO, "서버 응답 확인 — 러너 온라인"),
+        (True, False, 4, logging.WARNING, "서버 연결 실패 — 4초 후 재시도"),
+        (False, True, None, logging.INFO, "서버 연결 복구"),
+        (True, True, None, None, None),
+        (False, False, 8, None, None),
+    ],
+    ids=["첫_응답", "실패", "복구", "계속_성공", "계속_실패"],
+)
+def test_대기_폴링_로그는_첫_응답_실패_복구_전이에서만_한_줄씩_남는다(
+    previous_ok, ok, backoff_seconds, expected_level, expected_text, caplog
+):
+    with caplog.at_level(logging.INFO, logger="local_runner.runner"):
+        runner_module._log_poll_transition(previous_ok, ok, backoff_seconds=backoff_seconds)
+
+    records = [record for record in caplog.records if record.name == "local_runner.runner"]
+    if expected_text is None:
+        assert records == []
+    else:
+        assert len(records) == 1
+        assert records[0].levelno == expected_level
+        assert records[0].getMessage() == expected_text
