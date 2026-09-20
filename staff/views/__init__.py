@@ -75,6 +75,7 @@ from .draft_api import (
     AdminEventDraftStatsView,
 )
 from .discovery import staff_source_discovery_request
+from .discovery_live import StaffDiscoveryLiveView
 from .home_categories import staff_home_categories
 from .sources import staff_draft_sources
 
@@ -120,6 +121,7 @@ __all__ = [
     "AdminEventDraftDetailView",
     "AdminEventDraftListCreateView",
     "AdminEventDraftStatsView",
+    "StaffDiscoveryLiveView",
 ]
 
 logger = logging.getLogger(__name__)
