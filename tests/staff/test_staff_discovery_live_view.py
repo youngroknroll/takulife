@@ -90,3 +90,17 @@ def test_실시간_현황_응답은_러너와_최근_실행_목록을_순수_JSO
     }
     assert "runs_html" not in body
     assert "runner_html" not in body
+
+
+@pytest.mark.slow
+@pytest.mark.django_db
+def test_실시간_현황_조회는_분당_40회로_제한된다(staff_client, clear_cache):
+    _, client = staff_client()
+
+    for i in range(40):
+        response = client.get(LIVE_URL)
+        assert response.status_code == 200, f"request {i} should succeed"
+
+    throttled = client.get(LIVE_URL)
+
+    assert throttled.status_code == 429
