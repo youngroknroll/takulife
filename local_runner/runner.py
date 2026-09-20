@@ -4,6 +4,7 @@
 격리한다."""
 import functools
 import logging
+import signal
 import threading
 import time
 
@@ -211,6 +212,11 @@ def _safe_poll(client):
     return True
 
 
+def _handle_sigterm(signum, frame):
+    # 배포 재시작(SIGTERM)도 Ctrl+C(SIGINT)와 같은 종료 경로를 타게 한다.
+    raise KeyboardInterrupt()
+
+
 def _configure_logging():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     # httpx가 요청 URL·토큰을 INFO로 남기지 않도록 WARNING까지만 올린다.
@@ -219,6 +225,7 @@ def _configure_logging():
 
 def main():
     _configure_logging()
+    signal.signal(signal.SIGTERM, _handle_sigterm)
     config = load_config()
     client = RunnerClient(config)
 

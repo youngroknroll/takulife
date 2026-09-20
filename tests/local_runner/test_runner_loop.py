@@ -826,3 +826,8 @@ def test_러너_로깅을_설정하면_httpx_로거가_WARNING_레벨이_된다(
         assert httpx_logger.level == logging.WARNING
     finally:
         httpx_logger.setLevel(previous_level)
+
+
+def test_SIGTERM_신호_처리기가_호출되면_KeyboardInterrupt로_전환된다():
+    with pytest.raises(KeyboardInterrupt):
+        runner_module._handle_sigterm(15, None)
