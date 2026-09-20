@@ -772,3 +772,46 @@ def test_대기_중에_종료하면_완료_보고_없이_오프라인만_알린�
     runner_module._report_shutdown(client, progress)
 
     assert client.calls == [("send_offline", 3)]
+
+
+def _make_http_error():
+    request = httpx.Request("POST", "https://example.com/x")
+    response = httpx.Response(500, request=request)
+    return httpx.HTTPStatusError("boom", request=request, response=response)
+
+
+class _FailingShutdownClient:
+    def __init__(self, *, fail_complete, fail_offline):
+        self.calls = []
+        self._fail_complete = fail_complete
+        self._fail_offline = fail_offline
+
+    def complete(self, **kwargs):
+        self.calls.append("complete")
+        if self._fail_complete:
+            raise _make_http_error()
+
+    def send_offline(self, *, timeout):
+        self.calls.append("send_offline")
+        if self._fail_offline:
+            raise _make_http_error()
+
+
+@pytest.mark.parametrize(
+    "fail_complete, fail_offline",
+    [(True, False), (False, True)],
+    ids=["complete_실패", "오프라인_실패"],
+)
+def test_종료_보고_중_httpx_오류는_전파되지_않고_경고_로그만_남는다(fail_complete, fail_offline, caplog):
+    from types import SimpleNamespace
+
+    client = _FailingShutdownClient(fail_complete=fail_complete, fail_offline=fail_offline)
+    progress = SimpleNamespace(run_id=1, lease_token="tok", last_index=2)
+
+    with caplog.at_level(logging.WARNING, logger="local_runner.runner"):
+        runner_module._report_shutdown(client, progress)
+
+    assert client.calls == ["complete", "send_offline"]
+    records = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert len(records) == 1
+    assert "HTTPStatusError" in records[0].getMessage()
