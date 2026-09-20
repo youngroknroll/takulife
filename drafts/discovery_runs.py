@@ -201,9 +201,7 @@ def create_run(*, requested_by, query=""):
     # 지점으로 삼는다.
     with transaction.atomic():
         status = DiscoveryRunnerStatus.objects.select_for_update().filter(pk=1).first()
-        if status is None or status.last_heartbeat_at < timezone.now() - timedelta(
-            seconds=HEARTBEAT_FRESH_SECONDS
-        ):
+        if not runner_is_online(status_row=status):
             raise RunnerOfflineError
 
         active_statuses = [SourceDiscoveryRun.Status.PENDING, SourceDiscoveryRun.Status.CLAIMED]

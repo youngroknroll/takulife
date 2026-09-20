@@ -94,6 +94,17 @@ def test_오프라인_이후_새_heartbeat가_오면_온라인_상태로_복귀�
     assert runner_is_online(status_row=status) is True
 
 
+def test_offline_at가_기록된_상태에서는_heartbeat가_신선해도_실행_생성이_거부된다(make_user):
+    record_heartbeat(provider="claude-code")
+    record_offline()
+    user = make_user()
+
+    with pytest.raises(RunnerOfflineError):
+        create_run(requested_by=user)
+
+    assert SourceDiscoveryRun.objects.count() == 0
+
+
 def test_존재하지_않는_run_id로_heartbeat를_보내면_현재_실행_연결이_무시된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()
