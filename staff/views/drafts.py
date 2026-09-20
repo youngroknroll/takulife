@@ -13,13 +13,7 @@ from rest_framework.views import APIView
 
 from core.categories import category_choices_for_editing
 from core.errors import error_response, field_error_response
-from core.vocab import (
-    CATEGORY_LABELS,
-    REGION,
-    REGION_LABELS,
-    is_valid_category,
-    is_valid_region,
-)
+from core.vocab import CATEGORY_LABELS, REGION, REGION_LABELS
 from drafts.labels import ORIGIN_LABELS, REVIEW_STATUS_LABELS
 from drafts.models import EventDraft
 from drafts.queries import DRAFT_LISTING_PAGE_SIZE, draft_review_stats, list_drafts
@@ -36,6 +30,7 @@ from drafts.services import (
     reopen_draft,
 )
 from events.models import Event
+from events.services import publish_field_checks
 
 from ..models import StaffActionLog
 from ..search import search_term
@@ -62,40 +57,18 @@ def _draft_warning_badges(draft):
 
 
 def _draft_preapproval_checks(draft):
-    """승인 전 체크(B2): approve_draft가 실제로 검사하는 불변식을 미리
-    보여준다 — 승인 버튼을 눌러 보기 전에 실패 사유를 인스펙터에서 알 수
-    있게 한다. key 순서는 approve_draft/create_published_event가 검사하는
-    순서를 따른다.
+    """승인 전 체크(B2): approve_draft가 실제로 검사하는 규칙을 같은 함수로
+    미리 보여준다 — 승인 버튼을 눌러 보기 전에 실패 사유를 인스펙터에서 알 수 있게 한다.
     """
-    title_present = bool(draft.extracted_title or draft.raw_title)
-    official_url_present = bool(draft.source_url)
-    official_url_unique = (
-        official_url_present
-        and not Event.objects.filter(official_url=draft.source_url).exists()
+    return publish_field_checks(
+        title=draft.extracted_title or draft.raw_title,
+        official_url=draft.source_url,
+        start_date=draft.extracted_start_date,
+        end_date=draft.extracted_end_date,
+        category=draft.extracted_category,
+        region=draft.extracted_region,
+        existing_queryset=Event.objects.all(),
     )
-    return [
-        {"key": "title", "label": "제목이 있어야 합니다", "passed": title_present},
-        {
-            "key": "official_url",
-            "label": "공식 URL이 있어야 합니다",
-            "passed": official_url_present,
-        },
-        {
-            "key": "official_url_unique",
-            "label": "공식 URL이 다른 게시 이벤트와 중복되지 않아야 합니다",
-            "passed": official_url_unique,
-        },
-        {
-            "key": "category",
-            "label": "카테고리가 목록에 있는 값이어야 합니다",
-            "passed": is_valid_category(draft.extracted_category or ""),
-        },
-        {
-            "key": "region",
-            "label": "지역이 목록에 있는 값이어야 합니다",
-            "passed": is_valid_region(draft.extracted_region or ""),
-        },
-    ]
 
 
 def _build_draft_rows(drafts):
