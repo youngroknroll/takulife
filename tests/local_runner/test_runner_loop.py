@@ -763,6 +763,19 @@ def test_진행_중에_종료하면_runner_shutdown으로_완료_보고한_뒤_�
     ]
 
 
+def test_행사를_읽기_전에_종료하면_시도_건수_0으로_완료_보고한다():
+    from types import SimpleNamespace
+
+    client = _ShutdownRecordingClient()
+    progress = SimpleNamespace(run_id=1, lease_token="tok", last_index=None)
+
+    runner_module._report_shutdown(client, progress)
+
+    complete_call = client.calls[0]
+    assert complete_call[0] == "complete"
+    assert complete_call[1]["events_attempted"] == 0
+
+
 def test_대기_중에_종료하면_완료_보고_없이_오프라인만_알린다():
     from types import SimpleNamespace
 

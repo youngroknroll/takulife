@@ -45,7 +45,7 @@ def _report_shutdown(client, progress):
                 lease_token=progress.lease_token,
                 runner_status="failed",
                 failure_kind="runner_shutdown",
-                events_attempted=progress.last_index,
+                events_attempted=progress.last_index or 0,
             )
         except httpx.HTTPError as exc:
             logger.warning("shutdown report failed: %s", type(exc).__name__)
