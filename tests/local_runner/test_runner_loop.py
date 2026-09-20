@@ -727,3 +727,37 @@ def test_러너는_탐색_프롬프트에_clock의_오늘_날짜를_KST로_전�
 
     assert len(captured_prompts) == 1
     assert "2026-09-18" in captured_prompts[0]
+
+
+class _ShutdownRecordingClient:
+    def __init__(self):
+        self.calls = []
+
+    def complete(self, **kwargs):
+        self.calls.append(("complete", kwargs))
+
+    def send_offline(self, *, timeout):
+        self.calls.append(("send_offline", timeout))
+
+
+def test_진행_중에_종료하면_runner_shutdown으로_완료_보고한_뒤_오프라인을_알린다():
+    from types import SimpleNamespace
+
+    client = _ShutdownRecordingClient()
+    progress = SimpleNamespace(run_id=1, lease_token="tok", last_index=2)
+
+    runner_module._report_shutdown(client, progress)
+
+    assert client.calls == [
+        (
+            "complete",
+            {
+                "run_id": 1,
+                "lease_token": "tok",
+                "runner_status": "failed",
+                "failure_kind": "runner_shutdown",
+                "events_attempted": 2,
+            },
+        ),
+        ("send_offline", 3),
+    ]

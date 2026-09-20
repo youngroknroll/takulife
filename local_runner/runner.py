@@ -31,6 +31,18 @@ from .exploration_flow import (
 logger = logging.getLogger(__name__)
 
 _MAX_BACKOFF_SECONDS = 300
+_SHUTDOWN_TIMEOUT_SECONDS = 3
+
+
+def _report_shutdown(client, progress):
+    client.complete(
+        run_id=progress.run_id,
+        lease_token=progress.lease_token,
+        runner_status="failed",
+        failure_kind="runner_shutdown",
+        events_attempted=progress.last_index,
+    )
+    client.send_offline(timeout=_SHUTDOWN_TIMEOUT_SECONDS)
 
 
 def _failure_kind_for(exc):
