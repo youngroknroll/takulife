@@ -1452,3 +1452,77 @@ def test_건너뛰기_자격이_아닌_조합은_건너뛰지_않고_기존_경�
 
     assert fetch_calls == [event["url"]]
     assert summary["event_outcomes"][0]["outcome"] == "created"
+
+
+def test_탐색_흐름이_행사를_읽을_때마다_progress_콜백에_순번과_전체_수와_호스트를_구조값으로_넘긴다():
+    events = [
+        {"url": "https://a.example.com/event-1", "platform": "web"},
+        {"url": "https://b.example.com/event-2", "platform": "web"},
+    ]
+
+    def fake_fetch_text(*, url):
+        return None
+
+    def fake_interpret(*, text, url, platform):
+        raise AssertionError("fetch_text가 None이면 interpret은 호출되지 않아야 한다")
+
+    client = _FakeClient()
+    progress_calls = []
+
+    def capture(phase, **fields):
+        progress_calls.append((phase, fields))
+
+    run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=events,
+        sources=[],
+        fetch_text=fake_fetch_text,
+        interpret=fake_interpret,
+        progress=capture,
+    )
+
+    assert progress_calls == [
+        ("reading", {"index": 0, "total": 2}),
+        ("reading", {"index": 1, "total": 2, "host": "a.example.com"}),
+        ("reading", {"index": 2, "total": 2, "host": "b.example.com"}),
+    ]
+
+
+def test_탐색_흐름이_소스_후보를_제출할_때마다_progress_콜백에_순번과_전체_수를_넘긴다():
+    sources = [
+        {
+            "name": "소스 1",
+            "url": "https://example.com/source-1",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
+        {
+            "name": "소스 2",
+            "url": "https://example.com/source-2",
+            "source_type": "rss",
+            "source_country": "kr",
+        },
+    ]
+
+    client = _FakeClient()
+    progress_calls = []
+
+    def capture(phase, **fields):
+        progress_calls.append((phase, fields))
+
+    run_exploration_flow(
+        client=client,
+        run_id=1,
+        lease_token="tok",
+        events=[],
+        sources=sources,
+        progress=capture,
+    )
+
+    assert progress_calls == [
+        ("reading", {"index": 0, "total": 0}),
+        ("submitting", {"index": 1, "total": 2}),
+        ("submitting", {"index": 2, "total": 2}),
+    ]

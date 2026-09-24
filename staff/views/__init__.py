@@ -15,7 +15,6 @@ from django.utils import timezone
 from core.analytics import distinct_user_key_count_since, event_name_counts_since
 from core.db_stats import database_size_summary
 from core.error_groups import system_error_summary
-from drafts.discovery_runs import runner_is_online
 from drafts.queries import (
     draft_review_sla,
     draft_review_stats,
@@ -23,7 +22,7 @@ from drafts.queries import (
     failed_source_candidates,
     list_draft_sources,
     recent_discovery_runs,
-    runner_status,
+    runner_live_summary,
 )
 from events.queries import published_quality_warnings
 
@@ -75,6 +74,7 @@ from .draft_api import (
     AdminEventDraftStatsView,
 )
 from .discovery import staff_source_discovery_request
+from .discovery_live import StaffDiscoveryLiveView
 from .home_categories import staff_home_categories
 from .sources import staff_draft_sources
 
@@ -120,6 +120,7 @@ __all__ = [
     "AdminEventDraftDetailView",
     "AdminEventDraftListCreateView",
     "AdminEventDraftStatsView",
+    "StaffDiscoveryLiveView",
 ]
 
 logger = logging.getLogger(__name__)
@@ -243,17 +244,16 @@ def dashboard(request):
     quality_warnings = published_quality_warnings()
     quality_warning_rows = _build_quality_warning_rows(quality_warnings)
     activity_columns = _build_activity_columns(staff_actions_per_day(days=14))
-    discovery_runner_status = runner_status()
+    discovery_runner_live = runner_live_summary()
     return render(
         request,
         "staff/dashboard.html",
         {
             "pending_count": stats["pending"],
             "review_sla_cards": review_sla_cards,
-            "discovery_runner_online": runner_is_online(status_row=discovery_runner_status),
-            "discovery_runner_last_heartbeat_at": (
-                discovery_runner_status.last_heartbeat_at if discovery_runner_status else None
-            ),
+            "discovery_runner_live": discovery_runner_live,
+            "discovery_runner_online": discovery_runner_live["online"],
+            "discovery_runner_last_heartbeat_at": discovery_runner_live["last_heartbeat_at"],
             "recent_discovery_runs": recent_discovery_runs(),
             "failed_source_candidates": failed_source_candidates(),
             "quality_warnings": quality_warnings,

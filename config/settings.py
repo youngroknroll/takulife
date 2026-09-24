@@ -594,6 +594,7 @@ REST_FRAMEWORK = {
         "visit_record_photo_create": "30/minute",
         "discovery_runner": "60/minute",
         "client_error_report": "120/hour",
+        "staff_discovery_live": "40/minute",
     },
 }
 

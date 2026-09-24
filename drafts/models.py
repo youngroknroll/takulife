@@ -204,6 +204,20 @@ class SourceCandidate(models.Model):
 
 
 class DiscoveryRunnerStatus(models.Model):
+    class Phase(models.TextChoices):
+        IDLE = "idle", "Idle"
+        EXPLORING = "exploring", "Exploring"
+        READING = "reading", "Reading"
+        SUBMITTING = "submitting", "Submitting"
+        COMPLETING = "completing", "Completing"
+
     # 단일 행 계약: 서비스가 pk=1 update_or_create로 관리한다.
     last_heartbeat_at = models.DateTimeField()
     provider = models.CharField(max_length=50, blank=True)
+    phase = models.CharField(max_length=30, choices=Phase.choices, default=Phase.IDLE)
+    phase_detail = models.CharField(max_length=200, blank=True)
+    phase_updated_at = models.DateTimeField(null=True, blank=True)
+    current_run = models.ForeignKey(
+        SourceDiscoveryRun, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    offline_at = models.DateTimeField(null=True, blank=True)

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from core.models import Category
 from core.vocab import CATEGORY, REGION
+from drafts.discovery_runs import record_heartbeat, runner_is_online
 from drafts.models import (
     DiscoveryRunnerStatus,
     DraftSource,
@@ -25,6 +26,7 @@ CANDIDATES_URL = "/api/discovery/runner/runs/1/candidates/"
 COMPLETE_URL = "/api/discovery/runner/runs/1/complete/"
 DRAFTS_URL = "/api/discovery/runner/runs/1/drafts/"
 KNOWN_URL = "/api/discovery/runner/drafts/known/"
+OFFLINE_URL = "/api/discovery/runner/offline/"
 
 _RUNNER_TOKEN = "runner-secret"
 
@@ -43,8 +45,8 @@ def _candidates_url(run_id):
 def _complete_url(run_id):
     return f"/api/discovery/runner/runs/{run_id}/complete/"
 
-_ENDPOINTS = [HEARTBEAT_URL, CLAIM_URL, CANDIDATES_URL, COMPLETE_URL, DRAFTS_URL, KNOWN_URL]
-_ENDPOINT_IDS = ["하트비트", "클레임", "후보제출", "완료", "이벤트제출", "알려진URL필터"]
+_ENDPOINTS = [HEARTBEAT_URL, CLAIM_URL, CANDIDATES_URL, COMPLETE_URL, DRAFTS_URL, KNOWN_URL, OFFLINE_URL]
+_ENDPOINT_IDS = ["하트비트", "클레임", "후보제출", "완료", "이벤트제출", "알려진URL필터", "오프라인"]
 
 
 @pytest.mark.parametrize("url", _ENDPOINTS, ids=_ENDPOINT_IDS)
@@ -63,6 +65,58 @@ def test_러너_토큰이_설정되지_않으면_모든_러너_엔드포인트�
     response = client.post(url, data={}, content_type="application/json", **header_kwargs)
 
     assert response.status_code == 403
+
+
+def test_유효한_토큰으로_오프라인을_보고하면_204와_함께_즉시_오프라인으로_기록된다(client, runner_headers):
+    record_heartbeat(provider="claude-code")
+
+    response = client.post(
+        OFFLINE_URL, data={}, content_type="application/json", **runner_headers
+    )
+
+    assert response.status_code == 204
+    assert runner_is_online(status_row=DiscoveryRunnerStatus.objects.get()) is False
+
+
+def test_heartbeat_API가_phase_detail_run_id를_받으면_러너_상태에_기록된다(client, runner_headers):
+    run = SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
+
+    response = client.post(
+        HEARTBEAT_URL,
+        data={
+            "provider": "claude-code",
+            "phase": "reading",
+            "detail": "행사 확인 중 (1/3)",
+            "run_id": run.pk,
+        },
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 204
+    status_row = DiscoveryRunnerStatus.objects.get()
+    assert status_row.phase == "reading"
+    assert status_row.phase_detail == "행사 확인 중 (1/3)"
+    assert status_row.current_run_id == run.pk
+
+
+def test_phase_없는_옛_heartbeat도_204이고_이전_phase가_유지된다(client, runner_headers):
+    client.post(
+        HEARTBEAT_URL,
+        data={"provider": "claude-code", "phase": "reading"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    response = client.post(
+        HEARTBEAT_URL,
+        data={"provider": "claude-code"},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 204
+    assert DiscoveryRunnerStatus.objects.get().phase == "reading"
 
 
 def test_잘못된_토큰은_403_올바른_토큰은_통과한다(client, settings):

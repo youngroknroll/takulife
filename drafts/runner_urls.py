@@ -7,6 +7,7 @@ from .runner_views import (
     RunnerEventDraftSubmitView,
     RunnerHeartbeatView,
     RunnerKnownDraftUrlsView,
+    RunnerOfflineView,
 )
 
 
@@ -33,4 +34,5 @@ urlpatterns = [
         RunnerKnownDraftUrlsView.as_view(),
         name="discovery-runner-known-drafts",
     ),
+    path("offline/", RunnerOfflineView.as_view(), name="discovery-runner-offline"),
 ]

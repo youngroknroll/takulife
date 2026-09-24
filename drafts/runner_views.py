@@ -30,7 +30,7 @@ from drafts.candidate_validation import (
     submit_candidate,
 )
 from drafts.discovery import SNS_HOSTNAMES
-from drafts.discovery_runs import claim, complete_run, record_heartbeat
+from drafts.discovery_runs import claim, complete_run, record_heartbeat, record_offline
 from drafts.models import DraftSource, EventDraft, SourceDiscoveryRun
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 
@@ -78,7 +78,18 @@ class RunnerHeartbeatView(_RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request):
-        record_heartbeat(provider=_clean_provider(request.data))
+        data = request.data
+        phase = data.get("phase")
+        detail = data.get("detail")
+        run_id = data.get("run_id")
+        record_heartbeat(
+            provider=_clean_provider(data),
+            phase=phase if isinstance(phase, str) else None,
+            detail=detail if isinstance(detail, str) else None,
+            # bool은 int의 서브클래스라 isinstance(v, int)만으로는 True/False가
+            # 통과해버려 별도로 걸러낸다(다른 뷰의 같은 패턴 참고).
+            run_id=run_id if isinstance(run_id, int) and not isinstance(run_id, bool) else None,
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -226,6 +237,14 @@ class RunnerEventDraftSubmitView(_RunnerAPIView):
                 {"status": "created", "draft_id": draft.pk}, status=status.HTTP_201_CREATED
             )
         return Response({"status": "duplicate", "draft_id": draft.pk})
+
+
+class RunnerOfflineView(_RunnerAPIView):
+    # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
+    @extend_schema(exclude=True)
+    def post(self, request):
+        record_offline()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RunnerKnownDraftUrlsView(_RunnerAPIView):

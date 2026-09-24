@@ -4,6 +4,8 @@
 격리한다."""
 import functools
 import logging
+import logging.config
+import signal
 import threading
 import time
 
@@ -27,10 +29,30 @@ from .exploration_flow import (
     parse_exploration_output,
     run_exploration_flow,
 )
+from .progress import ProgressReporter
 
 logger = logging.getLogger(__name__)
 
 _MAX_BACKOFF_SECONDS = 300
+_SHUTDOWN_TIMEOUT_SECONDS = 3
+
+
+def _report_shutdown(client, progress):
+    if progress.run_id is not None:
+        try:
+            client.complete(
+                run_id=progress.run_id,
+                lease_token=progress.lease_token,
+                runner_status="failed",
+                failure_kind="runner_shutdown",
+                events_attempted=progress.last_index or 0,
+            )
+        except httpx.HTTPError as exc:
+            logger.warning("shutdown report failed: %s", type(exc).__name__)
+    try:
+        client.send_offline(timeout=_SHUTDOWN_TIMEOUT_SECONDS)
+    except httpx.HTTPError as exc:
+        logger.warning("shutdown report failed: %s", type(exc).__name__)
 
 
 def _failure_kind_for(exc):
@@ -65,7 +87,7 @@ def _run_exploration_agent(prompt, execute=None):
     return parse_json_object(corrected_output)
 
 
-def _process_run(client, run, exploration_result):
+def _process_run(client, run, exploration_result, progress=None):
     # 얇은 배선이다 — 판단 로직은 run_exploration_flow가 갖고 있다.
     try:
         summary = run_exploration_flow(
@@ -75,6 +97,7 @@ def _process_run(client, run, exploration_result):
             events=exploration_result["events"],
             sources=exploration_result["sources"],
             vocab=run["vocab"],
+            progress=progress.set if progress is not None else None,
         )
     except LeaseLostError:
         # 임대 상실은 다른 곳이 이미 이 실행을 가져갔거나 만료돼 다시
@@ -87,6 +110,8 @@ def _process_run(client, run, exploration_result):
         # 남아 있다 — 완료 보고에서 통째로 버리지 않는다.
         logger.warning("exploration flow failed: error=%s", type(exc.__cause__).__name__)
         partial_summary = exc.summary
+        if progress is not None:
+            progress.set("completing")
         client.complete(
             run_id=run["run_id"],
             lease_token=run["lease_token"],
@@ -103,6 +128,8 @@ def _process_run(client, run, exploration_result):
         # 완료 보고를 보낸다 — 그러지 않으면 실행이 임대를 쥔 채 만료될
         # 때까지 다음 탐색이 막힌다(실기동 결함 3).
         logger.warning("exploration flow failed: error=%s", type(exc).__name__)
+        if progress is not None:
+            progress.set("completing")
         client.complete(
             run_id=run["run_id"],
             lease_token=run["lease_token"],
@@ -110,6 +137,8 @@ def _process_run(client, run, exploration_result):
             failure_kind="exploration_error",
         )
         return
+    if progress is not None:
+        progress.set("completing")
     client.complete(
         run_id=run["run_id"],
         lease_token=run["lease_token"],
@@ -127,16 +156,20 @@ class _HeartbeatTicker(threading.Thread):
     않도록 별도 데몬 스레드에서 계속 heartbeat를 보낸다. 통신 오류(httpx.HTTPError)는
     기록만 하고 다음 tick으로 넘어가며, 그 외 예외는 전파한다."""
 
-    def __init__(self, client, interval):
+    def __init__(self, client, interval, progress=None):
         super().__init__(daemon=True)
         self._client = client
         self._interval = interval
+        self._progress = progress
         self._stop_event = threading.Event()
 
     def run(self):
         while not self._stop_event.wait(self._interval):
             try:
-                self._client.send_heartbeat("claude-code")
+                if self._progress is not None:
+                    self._progress.heartbeat()
+                else:
+                    self._client.send_heartbeat("claude-code")
             except httpx.HTTPError as exc:
                 logger.warning("heartbeat send failed: %s", type(exc).__name__)
 
@@ -144,12 +177,19 @@ class _HeartbeatTicker(threading.Thread):
         self._stop_event.set()
 
 
-def _run_once(client):
-    client.send_heartbeat("claude-code")
+def _run_once(client, progress=None):
+    if progress is not None:
+        progress.heartbeat()
+    else:
+        client.send_heartbeat("claude-code")
 
     run = client.claim()
     if run is None:
         return
+
+    if progress is not None:
+        progress.begin_run(run["run_id"], run["lease_token"])
+        progress.set("exploring", query=run["query"])
 
     prompt = build_exploration_prompt(
         query=run["query"],
@@ -160,12 +200,18 @@ def _run_once(client):
 
     # 이벤트·소스 제출·완료 보고가 끝날 때까지 heartbeat 티커가 살아 있어야
     # 하므로 티커 범위를 tick 종료 시점(finally)까지 넓게 잡는다.
-    ticker = _HeartbeatTicker(client, POLL_INTERVAL_SECONDS)
+    if progress is not None:
+        ticker = _HeartbeatTicker(client, POLL_INTERVAL_SECONDS, progress=progress)
+    else:
+        ticker = _HeartbeatTicker(client, POLL_INTERVAL_SECONDS)
     ticker.start()
+    interrupted = False
     try:
         try:
             raw_output = _run_exploration_agent(prompt)
         except AdapterOutputError as exc:
+            if progress is not None:
+                progress.set("completing")
             client.complete(
                 run_id=run["run_id"],
                 lease_token=run["lease_token"],
@@ -174,29 +220,71 @@ def _run_once(client):
             )
             return
         exploration_result = parse_exploration_output(data=raw_output)
-        _process_run(client, run, exploration_result)
+        _process_run(client, run, exploration_result, progress)
+    except KeyboardInterrupt:
+        interrupted = True
+        raise
     finally:
         ticker.stop()
+        # 종료 처리기가 진행 중 run을 완료 보고할 수 있게 남겨 둔다.
+        if progress is not None and not interrupted:
+            progress.end_run()
+            progress.set("idle")
 
 
-def _safe_poll(client):
+def _log_poll_transition(previous_ok, ok, *, backoff_seconds=None):
+    """대기 폴링은 상태가 바뀔 때만 한 줄 남긴다 — 매 폴 성공을 계속 찍지 않는다."""
+    if previous_ok is None and ok:
+        logger.info("%s", "서버 응답 확인 — 러너 온라인")
+    elif previous_ok and not ok:
+        logger.warning("%s", f"서버 연결 실패 — {backoff_seconds}초 후 재시도")
+    elif previous_ok is False and ok:
+        logger.info("%s", "서버 연결 복구")
+
+
+def _safe_poll(client, progress=None):
     try:
-        _run_once(client)
+        _run_once(client, progress)
     except httpx.HTTPError as exc:
         logger.warning("poll failed: %s", type(exc).__name__)
         return False
     return True
 
 
-def main():
+def _handle_sigterm(signum, frame):
+    # 배포 재시작(SIGTERM)도 Ctrl+C(SIGINT)와 같은 종료 경로를 타게 한다.
+    raise KeyboardInterrupt()
+
+
+def _configure_logging():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    # httpx가 요청 URL·토큰을 INFO로 남기지 않도록 WARNING까지만 올린다.
+    # logging.getLogger(__name__) 외 호출을 금지하는 EHL-06 정책 때문에
+    # dictConfig로 남의 로거(httpx) 레벨만 건드린다.
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "loggers": {"httpx": {"level": "WARNING"}},
+        }
+    )
+
+
+def main():
+    _configure_logging()
+    signal.signal(signal.SIGTERM, _handle_sigterm)
     config = load_config()
     client = RunnerClient(config)
+    progress = ProgressReporter(client)
 
     consecutive_failures = 0
+    previous_ok = None
     try:
         while True:
-            if _safe_poll(client):
+            ok = _safe_poll(client, progress)
+            if ok:
+                _log_poll_transition(previous_ok, ok)
+                previous_ok = ok
                 consecutive_failures = 0
                 time.sleep(config.poll_interval_seconds)
             else:
@@ -205,9 +293,12 @@ def main():
                     config.poll_interval_seconds * 2**consecutive_failures,
                     _MAX_BACKOFF_SECONDS,
                 )
+                _log_poll_transition(previous_ok, ok, backoff_seconds=backoff)
+                previous_ok = ok
                 time.sleep(backoff)
     except KeyboardInterrupt:
-        pass
+        _report_shutdown(client, progress)
+        logger.info("%s", "러너 종료 — 오프라인 보고 완료")
 
 
 if __name__ == "__main__":

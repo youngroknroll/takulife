@@ -6,6 +6,7 @@ from django.db.models import Avg, Case, Count, DurationField, ExpressionWrapper,
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
+from .discovery_runs import runner_is_online
 from .models import (
     DiscoveryRunnerStatus,
     DraftSource,
@@ -117,6 +118,37 @@ def runner_status():
     return DiscoveryRunnerStatus.objects.filter(pk=1).first()
 
 
+# phase별 한국어 라벨 — local_runner.progress의 PHASE_LABELS와 문자 그대로
+# 일치해야 한다(S14 가드, 대시보드와 러너 터미널이 같은 어휘를 쓴다).
+DISCOVERY_PHASE_LABELS = {
+    DiscoveryRunnerStatus.Phase.IDLE: "대기",
+    DiscoveryRunnerStatus.Phase.EXPLORING: "검색 중",
+    DiscoveryRunnerStatus.Phase.READING: "행사 확인 중",
+    DiscoveryRunnerStatus.Phase.SUBMITTING: "소스 후보 제출 중",
+    DiscoveryRunnerStatus.Phase.COMPLETING: "완료 보고 정리 중",
+}
+
+
+def runner_live_summary():
+    """대시보드 폴링이 쓰는 러너 실시간 상태 8키를 계산한다. 진행 행은
+    온라인이고 idle이 아니고 상세 문구가 있을 때만 노출한다(D8)."""
+    status = runner_status()
+    online = runner_is_online(status_row=status)
+    phase = status.phase if status else DiscoveryRunnerStatus.Phase.IDLE
+    detail = status.phase_detail if status else ""
+    active_statuses = [SourceDiscoveryRun.Status.PENDING, SourceDiscoveryRun.Status.CLAIMED]
+    return {
+        "online": online,
+        "phase": phase,
+        "phase_label": DISCOVERY_PHASE_LABELS.get(phase, "대기"),
+        "detail": detail,
+        "progress_visible": online and phase != DiscoveryRunnerStatus.Phase.IDLE and bool(detail),
+        "current_run_id": status.current_run_id if status else None,
+        "last_heartbeat_at": status.last_heartbeat_at if status else None,
+        "active": SourceDiscoveryRun.objects.filter(status__in=active_statuses).exists(),
+    }
+
+
 # 사유별 한국어 라벨(허용 목록 EVENT_OUTCOME_REASONS 전 값을 덮어야 한다). 빈 값은
 # created·duplicate 전용이라 화면에 그대로 빈 문자열로 낸다.
 EVENT_OUTCOME_REASON_LABELS = {
@@ -136,6 +168,17 @@ EVENT_OUTCOME_REASON_LABELS = {
     "ended": "종료된 행사",
     "server_overseas": "해외 행사(서버 판단)",
     "server_ended": "종료된 행사(서버 판단)",
+}
+
+# 실행 상태별 (한국어 라벨, 배지 톤). 대시보드 상태 배지와 live 시리얼라이저가
+# 같은 정본을 쓴다(S10b, 이전에는 템플릿 인라인 if 체인에만 있었다).
+DISCOVERY_RUN_STATUS_LABELS = {
+    SourceDiscoveryRun.Status.PENDING: ("대기", "disabled"),
+    SourceDiscoveryRun.Status.CLAIMED: ("러너 진행 중", "stale"),
+    SourceDiscoveryRun.Status.SUCCEEDED: ("성공", "ok"),
+    SourceDiscoveryRun.Status.PARTIALLY_FAILED: ("부분 실패", "stale"),
+    SourceDiscoveryRun.Status.FAILED: ("실패", "error"),
+    SourceDiscoveryRun.Status.EXPIRED: ("임대 만료", "error"),
 }
 
 # outcome별 (한국어 라벨, 배지 톤). 모르는 outcome은 아래에서 fallback 처리한다.
@@ -203,9 +246,12 @@ def recent_discovery_runs(*, limit=5):
     rows = []
     for run in runs:
         has_outcomes = bool(run.event_outcomes)
+        status_label, tone = DISCOVERY_RUN_STATUS_LABELS.get(run.status, (run.status, "disabled"))
         rows.append(
             {
                 "run": run,
+                "status_label": status_label,
+                "tone": tone,
                 "promoted_count": run.promoted_count,
                 "failed_count": run.failed_count,
                 "events_created": run.events_created,

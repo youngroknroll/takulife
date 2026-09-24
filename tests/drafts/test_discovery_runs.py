@@ -12,9 +12,13 @@ from drafts.discovery_runs import (
     LeaseInvalidError,
     RunnerOfflineError,
     claim,
+    clean_heartbeat_detail,
     complete_run,
     create_run,
+    normalize_heartbeat_phase,
     record_heartbeat,
+    record_offline,
+    runner_is_online,
 )
 from drafts.agent_drafts import MAX_EVENTS_PER_RUN
 from drafts.models import DiscoveryRunnerStatus, EventDraft, SourceCandidate, SourceDiscoveryRun
@@ -33,6 +37,136 @@ def test_heartbeat를_두_번_기록해도_상태_행은_하나로_갱신된다(
     status = DiscoveryRunnerStatus.objects.get()
     assert status.provider == "claude-code"
     assert status.last_heartbeat_at >= first_heartbeat_at
+
+
+def test_heartbeat가_phase를_보내면_러너_상태에_저장된다():
+    record_heartbeat(provider="claude-code", phase="exploring")
+
+    assert DiscoveryRunnerStatus.objects.get().phase == "exploring"
+
+
+def test_heartbeat가_phase를_보내면_phase_갱신_시각이_기록된다():
+    before = timezone.now()
+
+    record_heartbeat(provider="claude-code", phase="exploring")
+
+    phase_updated_at = DiscoveryRunnerStatus.objects.get().phase_updated_at
+    assert phase_updated_at is not None
+    assert phase_updated_at >= before
+
+
+def test_heartbeat가_detail을_보내면_제어문자가_제거되어_저장된다():
+    record_heartbeat(provider="claude-code", phase="reading", detail="검색\x00중")
+
+    assert DiscoveryRunnerStatus.objects.get().phase_detail == "검색중"
+
+
+def test_heartbeat가_run_id를_보내면_현재_실행으로_연결된다(make_user):
+    record_heartbeat(provider="claude-code")
+    user = make_user()
+    run = create_run(requested_by=user)
+
+    record_heartbeat(provider="claude-code", phase="reading", run_id=run.pk)
+
+    assert DiscoveryRunnerStatus.objects.get().current_run_id == run.pk
+
+
+def test_record_offline을_호출하면_상태_행에_오프라인_시각이_기록된다():
+    record_heartbeat(provider="claude-code")
+    last_heartbeat_at = DiscoveryRunnerStatus.objects.get().last_heartbeat_at
+    before = timezone.now()
+
+    record_offline()
+
+    status = DiscoveryRunnerStatus.objects.get()
+    assert status.offline_at is not None
+    assert status.offline_at >= before
+    assert status.last_heartbeat_at == last_heartbeat_at
+
+
+def test_오프라인_이후_새_heartbeat가_오면_온라인_상태로_복귀한다():
+    record_heartbeat(provider="claude-code")
+    record_offline()
+
+    record_heartbeat(provider="claude-code")
+
+    status = DiscoveryRunnerStatus.objects.get()
+    assert runner_is_online(status_row=status) is True
+
+
+def test_offline_at가_기록된_상태에서는_heartbeat가_신선해도_실행_생성이_거부된다(make_user):
+    record_heartbeat(provider="claude-code")
+    record_offline()
+    user = make_user()
+
+    with pytest.raises(RunnerOfflineError):
+        create_run(requested_by=user)
+
+    assert SourceDiscoveryRun.objects.count() == 0
+
+
+def test_존재하지_않는_run_id로_heartbeat를_보내면_현재_실행_연결이_무시된다(make_user):
+    record_heartbeat(provider="claude-code")
+    user = make_user()
+    run = create_run(requested_by=user)
+    record_heartbeat(provider="claude-code", run_id=run.pk)
+
+    record_heartbeat(provider="claude-code", run_id=999999)
+
+    assert DiscoveryRunnerStatus.objects.get().current_run_id == run.pk
+
+
+def test_heartbeat에_phase가_없으면_이전_phase가_유지된다():
+    record_heartbeat(provider="claude-code", phase="reading")
+
+    record_heartbeat(provider="claude-code")
+
+    assert DiscoveryRunnerStatus.objects.get().phase == "reading"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "offline_at, last_heartbeat_at, expected",
+    [
+        (None, timezone.now(), True),
+        (timezone.now() - timedelta(seconds=10), timezone.now(), True),
+        (timezone.now(), timezone.now() - timedelta(seconds=10), False),
+    ],
+    ids=["오프라인_기록_없음", "오프라인_이후_새_heartbeat", "오프라인_이후_heartbeat_없음"],
+)
+def test_runner_is_online은_offline_at과_최근_heartbeat_시각을_비교해_판정한다(
+    offline_at, last_heartbeat_at, expected
+):
+    status_row = DiscoveryRunnerStatus(
+        last_heartbeat_at=last_heartbeat_at, offline_at=offline_at
+    )
+
+    assert runner_is_online(status_row=status_row) is expected
+
+
+@pytest.mark.unit
+def test_detail이_200자를_초과하면_저장_전에_잘린다():
+    assert len(clean_heartbeat_detail(detail="가" * 250)) == 200
+
+
+@pytest.mark.unit
+def test_어휘_밖_phase를_정규화하면_None으로_거절되고_경고_로그가_남는다(caplog):
+    with caplog.at_level("WARNING"):
+        result = normalize_heartbeat_phase(phase="banana")
+
+    assert result is None
+    assert any(
+        record.levelname == "WARNING" and record.message.startswith("invalid heartbeat phase")
+        for record in caplog.records
+    )
+
+
+def test_어휘_밖_phase로_heartbeat를_보내면_이전_phase가_유지된다():
+    record_heartbeat(provider="claude-code", phase="reading")
+
+    record_heartbeat(provider="claude-code", phase="banana")
+
+    assert DiscoveryRunnerStatus.objects.get().phase == "reading"
 
 
 def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성된다(make_user):
@@ -302,6 +436,17 @@ def test_러너가_탐색_오류로_실패를_보고하면_실패_요약에_그_
     )
 
     assert "exploration_error" in result.error_summary
+
+
+def test_러너_종료로_인한_실패를_보고하면_실패_요약에_그_종류가_남는다():
+    run = _make_claimed_run()
+
+    result = complete_run(
+        run_id=run.pk, lease_token="tok", runner_status="failed", failure_kind="runner_shutdown"
+    )
+
+    assert result.status == SourceDiscoveryRun.Status.FAILED
+    assert "runner_shutdown" in result.error_summary
 
 
 def test_잘못된_lease로는_complete가_거부된다():

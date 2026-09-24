@@ -22,7 +22,13 @@ LEASE_SECONDS = 1800
 MAX_LEASES = 2
 
 # 러너가 보낸 원문 사유를 그대로 노출하지 않기 위한 허용 목록(보안 계약).
-_ALLOWED_FAILURE_KINDS = {"agent_error", "agent_timeout", "invalid_output", "exploration_error"}
+_ALLOWED_FAILURE_KINDS = {
+    "agent_error",
+    "agent_timeout",
+    "invalid_output",
+    "exploration_error",
+    "runner_shutdown",
+}
 
 # 러너가 보내는 행사별 결과 outcome→허용 reason 집합(보안 계약, local_runner와
 # 일치해야 한다 — local_runner.exploration_flow가 실제로 내는 값과 대조).
@@ -149,15 +155,51 @@ def runner_is_online(*, status_row):
     """DiscoveryRunnerStatus 행(없으면 None)을 받아 신선도 판정을 소유한다."""
     if status_row is None:
         return False
-    return status_row.last_heartbeat_at >= timezone.now() - timedelta(
+    fresh = status_row.last_heartbeat_at >= timezone.now() - timedelta(
         seconds=HEARTBEAT_FRESH_SECONDS
     )
+    # 오프라인 보고 이후 새 heartbeat가 없으면 신선해도 온라인으로 보지 않는다.
+    recovered = status_row.offline_at is None or status_row.offline_at < status_row.last_heartbeat_at
+    return fresh and recovered
 
 
-def record_heartbeat(*, provider):
-    DiscoveryRunnerStatus.objects.update_or_create(
-        pk=1, defaults={"last_heartbeat_at": timezone.now(), "provider": provider}
-    )
+def clean_heartbeat_detail(*, detail):
+    """제어문자를 지우고 200자로 잘라 저장 가능한 진행 문구로 만든다."""
+    # candidate_validation이 이 모듈을 임포트하므로 반대 방향은 함수 안에서만 쓴다.
+    from drafts.candidate_validation import sanitize_text
+
+    return sanitize_text(value=detail)[:200]
+
+
+def record_offline():
+    DiscoveryRunnerStatus.objects.filter(pk=1).update(offline_at=timezone.now())
+
+
+def normalize_heartbeat_phase(*, phase):
+    """어휘 밖 phase는 무시하고 경고만 남긴다 — 러너 원문을 그대로 믿지 않는다."""
+    if phase is None:
+        return None
+    if phase not in DiscoveryRunnerStatus.Phase.values:
+        logger.warning("invalid heartbeat phase: %s", phase)
+        return None
+    return phase
+
+
+def record_heartbeat(*, provider, phase=None, detail=None, run_id=None):
+    phase = normalize_heartbeat_phase(phase=phase)
+    now = timezone.now()
+    defaults = {"last_heartbeat_at": now, "provider": provider}
+    # phase가 없는 옛 러너 heartbeat는 이전 phase 값을 지우면 안 된다.
+    if phase is not None:
+        defaults["phase"] = phase
+        defaults["phase_updated_at"] = now
+    if detail is not None:
+        defaults["phase_detail"] = clean_heartbeat_detail(detail=detail)
+    # 존재하지 않는 run_id는 조용히 무시한다 — 옛 실행이 만료된 사이 온
+    # heartbeat가 FK 오류로 상태 갱신 전체를 실패시키면 안 된다.
+    if run_id is not None and SourceDiscoveryRun.objects.filter(pk=run_id).exists():
+        defaults["current_run_id"] = run_id
+    DiscoveryRunnerStatus.objects.update_or_create(pk=1, defaults=defaults)
 
 
 def create_run(*, requested_by, query=""):
@@ -166,9 +208,7 @@ def create_run(*, requested_by, query=""):
     # 지점으로 삼는다.
     with transaction.atomic():
         status = DiscoveryRunnerStatus.objects.select_for_update().filter(pk=1).first()
-        if status is None or status.last_heartbeat_at < timezone.now() - timedelta(
-            seconds=HEARTBEAT_FRESH_SECONDS
-        ):
+        if not runner_is_online(status_row=status):
             raise RunnerOfflineError
 
         active_statuses = [SourceDiscoveryRun.Status.PENDING, SourceDiscoveryRun.Status.CLAIMED]

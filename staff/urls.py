@@ -94,6 +94,11 @@ urlpatterns = [
         staff_views.staff_account_set_active,
         name="account-set-active",
     ),
+    path(
+        "api/discovery/live/",
+        staff_views.StaffDiscoveryLiveView.as_view(),
+        name="discovery-live",
+    ),
     path("categories/", staff_views.category_list, name="category-list"),
     path("categories/create/", staff_views.category_create, name="category-create"),
     path("categories/<int:pk>/edit/", staff_views.category_edit, name="category-edit"),
