@@ -122,6 +122,50 @@ def test_수량이_음수인_컬렉션_항목을_생성하면_400으로_거부�
 
 
 # ---------------------------------------------------------------------------
+# SEC-10·10b (보안 검토 2026-09-27 F3a) — memo 길이 상한이 없으면 인증 사용자가
+# 거대한 memo를 저장할 수 있다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_memo가_최대_길이를_넘는_컬렉션_항목_생성은_거부되고_저장되지_않는다(client, make_user):
+    from archive.models import MEMO_MAX_LENGTH
+
+    user = make_user(username="ci-memo-too-long")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "메모 상한 초과", "memo": "가" * (MEMO_MAX_LENGTH + 1)},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "memo" in response.json()
+    assert not CollectionItem.objects.filter(name="메모 상한 초과").exists()
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_memo가_최대_길이와_같으면_컬렉션_항목이_저장된다(client, make_user):
+    from archive.models import MEMO_MAX_LENGTH
+
+    user = make_user(username="ci-memo-max-length")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "메모 상한 일치", "memo": "가" * MEMO_MAX_LENGTH},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 201
+    item = CollectionItem.objects.get(name="메모 상한 일치")
+    assert len(item.memo) == MEMO_MAX_LENGTH
+
+
+# ---------------------------------------------------------------------------
 # CP4~CP6: 목록·상세(GET/PATCH/DELETE) 전반에 걸친 소유자 제한
 # ---------------------------------------------------------------------------
 

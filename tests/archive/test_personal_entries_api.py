@@ -150,6 +150,35 @@ def test_굿즈_종류로_개인_항목을_등록하면_거부된다(client, mak
     assert not PersonalEntry.objects.filter(title="차단되어야 할 굿즈").exists()
 
 
+# ---------------------------------------------------------------------------
+# SEC-10 (보안 검토 2026-09-27 F3a) — memo 길이 상한이 없으면 인증 사용자가
+# 거대한 memo를 저장할 수 있다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_memo가_최대_길이를_넘는_비공식_기록_생성은_거부되고_저장되지_않는다(client, make_user):
+    from archive.models import MEMO_MAX_LENGTH
+
+    user = make_user(username="pe-memo-too-long")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/personal-entries/",
+        {
+            "kind": "place",
+            "title": "메모 상한 초과",
+            "memo": "가" * (MEMO_MAX_LENGTH + 1),
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "memo" in response.json()
+    assert not PersonalEntry.objects.filter(title="메모 상한 초과").exists()
+
+
 @pytest.mark.domain
 @pytest.mark.django_db
 def test_개인_항목_시리얼라이저의_종류_선택지에_굿즈가_없다():
