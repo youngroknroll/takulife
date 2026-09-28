@@ -495,6 +495,32 @@ def test_설정_모듈의_AXES_CLIENT_IP_CALLABLE_속성은_build_axes_client_ip
     )
 
 
+@pytest.mark.parametrize(
+    ("trusted_proxy_count", "expected"),
+    [(None, 0), (0, 0), (1, 1)],
+    ids=["미설정", "영", "한_홉"],
+)
+def test_TRUSTED_PROXY_COUNT를_allauth_신뢰_프록시_홉_수로_옮기면_미설정은_0이_된다(
+    trusted_proxy_count, expected
+):
+    settings_module = importlib.import_module("config.settings")
+
+    assert (
+        settings_module.build_allauth_trusted_proxy_count(trusted_proxy_count)
+        == expected
+    )
+
+
+def test_설정_모듈의_ALLAUTH_TRUSTED_PROXY_COUNT_속성은_build_allauth_trusted_proxy_count_결과와_일치한다():
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.ALLAUTH_TRUSTED_PROXY_COUNT == (
+        settings_module.build_allauth_trusted_proxy_count(
+            settings_module.TRUSTED_PROXY_COUNT
+        )
+    )
+
+
 # ---------------------------------------------------------------------------
 # 공유 캐시 백엔드(G11)
 # (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8)
