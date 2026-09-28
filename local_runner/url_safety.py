@@ -23,6 +23,9 @@ def _is_unsafe_ip(value):
         or value.is_multicast
         or value.is_unspecified
         or value.is_reserved
+        # CGNAT(100.64.0.0/10) 등 공유 특수 대역은 개별 플래그가 없어 전역
+        # 라우팅 가능 여부로 한 번에 걸러낸다.
+        or not value.is_global
     )
 
 

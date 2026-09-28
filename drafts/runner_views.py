@@ -34,6 +34,10 @@ from drafts.discovery_runs import claim, complete_run, record_heartbeat, record_
 from drafts.models import DraftSource, EventDraft, SourceDiscoveryRun
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 
+# 러너가 한 번의 실행 이벤트 상한(local_runner/exploration_flow.py의
+# EXPLORATION_MAX_EVENTS)만큼만 조회하므로 알려진 URL 조회도 같은 값으로 제한한다.
+MAX_KNOWN_URLS_PER_REQUEST = 20
+
 
 class IsDiscoveryRunner(BasePermission):
     def has_permission(self, request, view):
@@ -252,7 +256,11 @@ class RunnerKnownDraftUrlsView(_RunnerAPIView):
     @extend_schema(exclude=True)
     def post(self, request):
         urls = request.data.get("urls")
-        if not isinstance(urls, list):
+        if (
+            not isinstance(urls, list)
+            or len(urls) > MAX_KNOWN_URLS_PER_REQUEST
+            or not all(isinstance(url, str) for url in urls)
+        ):
             return error_response("invalid known urls payload", status.HTTP_400_BAD_REQUEST)
 
         known_urls = set(

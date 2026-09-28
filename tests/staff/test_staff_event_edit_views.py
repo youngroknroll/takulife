@@ -145,6 +145,27 @@ def test_수정_시_공식_URL이_빈_값이면_400과_필드_오류를_응답�
 
 
 @pytest.mark.django_db
+def test_스태프가_공식_URL을_data_스킴으로_수정하면_필드_오류가_되고_기존값이_유지된다(
+    staff_client, make_event, staff_event_payload
+):
+    staff, client = staff_client()
+    event = make_event(title="변경 전", official_url="https://example.com/scheme-edit")
+
+    resp = client.post(
+        _edit_url(event),
+        staff_event_payload(
+            title="수정된 제목",
+            official_url="data:text/html,<script>alert(1)</script>",
+        ),
+    )
+
+    assert resp.status_code == 400
+    assert "공식 URL은 http:// 또는 https://로 시작하는 주소여야 합니다." in resp.content.decode()
+    event.refresh_from_db()
+    assert event.official_url == "https://example.com/scheme-edit"
+
+
+@pytest.mark.django_db
 def test_시작일이_종료일보다_늦으면_400과_필드_오류를_응답한다(
     staff_client, make_event, staff_event_payload
 ):

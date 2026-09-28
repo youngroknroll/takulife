@@ -8,6 +8,7 @@ from events.services import (
     InvalidEventPeriodError,
     MissingOfficialUrlError,
     PublishEventCategoryError,
+    PublishEventOfficialUrlSchemeError,
     PublishEventRegionError,
     PublishEventTitleError,
     _validate_publish_fields,
@@ -40,6 +41,7 @@ def test_시작일이_종료일보다_늦으면_기간_체크만_실패한다():
     checks = {c["key"]: c["passed"] for c in results}
     assert checks == {
         "official_url": True,
+        "official_url_scheme": True,
         "title": True,
         "title_not_url": True,
         "official_url_unique": True,
@@ -49,6 +51,7 @@ def test_시작일이_종료일보다_늦으면_기간_체크만_실패한다():
     }
     assert [c["key"] for c in results] == [
         "official_url",
+        "official_url_scheme",
         "title",
         "title_not_url",
         "official_url_unique",
@@ -74,6 +77,7 @@ def test_제목이_공식_url과_같으면_제목_체크는_통과하고_제목_
     checks = {c["key"]: c["passed"] for c in results}
     assert checks == {
         "official_url": True,
+        "official_url_scheme": True,
         "title": True,
         "title_not_url": False,
         "official_url_unique": True,
@@ -94,7 +98,7 @@ def test_제목이_공식_url과_같으면_제목_체크는_통과하고_제목_
             "official_url_missing",
             {"official_url": ""},
             MissingOfficialUrlError,
-            {"official_url", "official_url_unique"},
+            {"official_url", "official_url_scheme", "official_url_unique"},
         ),
         (
             "title_missing",
@@ -140,6 +144,41 @@ def test_실패_사례별_검증기_예외와_미리보기_실패_key가_짝을_
     failed_keys = {c["key"] for c in results if not c["passed"]}
 
     assert failed_keys == expected_failed_keys
+
+
+@pytest.mark.contract
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "official_url",
+    [
+        "javascript:alert(document.cookie)",
+        "data:text/html,<script>alert(1)</script>",
+        "vbscript:msgbox(1)",
+        "www.example.com/event",
+        "https:javascript:alert(1)",
+        "http://",
+    ],
+    ids=[
+        "javascript_스킴",
+        "data_스킴",
+        "vbscript_스킴",
+        "스킴_없음",
+        "호스트_없는_https_콜론",
+        "호스트_없는_http",
+    ],
+)
+def test_허용되지_않는_공식_URL은_검증기가_스킴_예외를_내고_미리보기는_스킴_항목만_실패한다(
+    official_url,
+):
+    kwargs = {**BASE_KWARGS, "official_url": official_url}
+
+    with pytest.raises(PublishEventOfficialUrlSchemeError):
+        _validate_publish_fields(existing_queryset=Event.objects.none(), **kwargs)
+
+    results = publish_field_checks(existing_queryset=Event.objects.none(), **kwargs)
+    failed_keys = {c["key"] for c in results if not c["passed"]}
+
+    assert failed_keys == {"official_url_scheme"}
 
 
 @pytest.mark.contract

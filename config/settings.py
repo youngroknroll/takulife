@@ -120,6 +120,11 @@ def load_secure_ssl():
     return _get_env("SECURE_SSL", "").lower() in ("1", "true", "yes")
 
 
+def load_secure_cookies():
+    # 보안 쿠키 플래그도 env 또는 .env에서 읽는다.
+    return _get_env("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
+
+
 def load_trusted_proxy_count():
     """이 앱 앞단의 신뢰할 수 있는 리버스 프록시 홉 수. 비어 있으면 None을
     반환해 기존처럼 REMOTE_ADDR을 그대로 신뢰한다(X-Forwarded-For 파싱
@@ -160,6 +165,13 @@ def build_axes_client_ip_callable(trusted_proxy_count):
     REMOTE_ADDR 방식을 유지하려면 None을 반환한다. 신뢰 프록시 홉 수가
     설정된 경우에만 core.ip.get_client_ip를 쓰고, 그 외엔 기존 동작 그대로."""
     return "core.ip.get_client_ip" if trusted_proxy_count else None
+
+
+def build_allauth_trusted_proxy_count(trusted_proxy_count):
+    """allauth 레이트리밋의 ip 범위도 axes와 같은 신뢰 프록시 홉 수로
+    클라이언트 IP를 정하게 한다. 미설정(None)이면 allauth 기본값인 0(=
+    X-Forwarded-For를 무시하고 REMOTE_ADDR을 그대로 쓴다)으로 맞춘다."""
+    return trusted_proxy_count or 0
 
 
 def load_staticfiles_storage(debug):
@@ -516,11 +528,16 @@ AXES_USERNAME_FORM_FIELD = "login"
 # core.ip.get_client_ip로 연결한다. TRUSTED_PROXY_COUNT가 없으면 axes 자체
 # REMOTE_ADDR 기본값을 유지한다(django-axes의 AXES_IPWARE_* 설정을 여기서
 # 쓰지 않는 이유는 core/ip.py 참고 — 이 프로젝트는 django-ipware에 의존하지 않는다).
+# allauth 레이트리밋(ACCOUNT_RATE_LIMITS의 ip 범위)도 같은 값을 쓴다. 값이 실제
+# 홉 수보다 크면 두 쪽이 다르게 실패한다:
+#   - axes·감사 로그: 조용히 REMOTE_ADDR로 물러난다
+#   - allauth: X-Forwarded-For 홉이 모자란 요청에서 500 오류를 낸다
 TRUSTED_PROXY_COUNT = load_trusted_proxy_count()
 AXES_CLIENT_IP_CALLABLE = build_axes_client_ip_callable(TRUSTED_PROXY_COUNT)
+ALLAUTH_TRUSTED_PROXY_COUNT = build_allauth_trusted_proxy_count(TRUSTED_PROXY_COUNT)
 
 # 보안 쿠키: 개발(http)에서는 꺼져 있고, SECURE_COOKIES env를 설정하면 켜진다.
-_secure_cookies = os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
+_secure_cookies = load_secure_cookies()
 SESSION_COOKIE_SECURE = _secure_cookies
 CSRF_COOKIE_SECURE = _secure_cookies
 # JS 레이어가 csrftoken 쿠키를 읽어야 하므로 CSRF_COOKIE_HTTPONLY는 False로 둔다.
