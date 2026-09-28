@@ -519,7 +519,7 @@ def test_설정_모듈의_AXES_CLIENT_IP_CALLABLE_속성은_build_axes_client_ip
     [(None, 0), (0, 0), (1, 1)],
     ids=["미설정", "영", "한_홉"],
 )
-def test_TRUSTED_PROXY_COUNT를_allauth_신뢰_프록시_홉_수로_옮기면_미설정은_0이_된다(
+def test_allauth_신뢰_프록시_홉_수는_TRUSTED_PROXY_COUNT를_따르고_미설정이면_0이_된다(
     trusted_proxy_count, expected
 ):
     settings_module = importlib.import_module("config.settings")
