@@ -18,7 +18,8 @@ Medium 2건은 수정 트랙 하나(PR 1개, 결함별 커밋)로 묶는 것을 
 리뷰 결과와 가드레일의 정본이고, 진행 상태는 `docs/backlog.md` J절이 든다.
 
 **Update (2026-09-28, 트랙 40).** F1·F2·F3a·F4·F5·F7·F9는 반영 완료(브랜치
-`fix/security-review-2026-09-27`, 결함별 커밋은 §8 표, 검증 증거는 §8 Evidence).
+`fix/security-review-2026-09-27`, **PR #388 머지 승인 대기**, 결함별 커밋은 §8 표,
+검증 증거는 §8 Evidence).
 F1은 운영 DB에 이미 저장된 비-http(s) 값이 있으면 코드 배포만으로 닫히지 않으므로
 `docs/deploy-runbook.md` §3 항목 16이 배포 전 차단 항목이다. F3b(DRF 본문 크기
 미들웨어/파서 변경)는 구현 중 실측으로 **반박**돼 코드 변경을 취소하고
@@ -503,7 +504,8 @@ rg -n 'max_length' archive/serializers.py     # memo 항목 없음
 
 Evidence `[실측 2026-09-28, 브랜치 fix/security-review-2026-09-27]`:
 
-- 전체 회귀 `uv run pytest -q` 3,211 passed / 10 deselected / 실패 0 / 99.72초(기준선 3,181 passed, 신규 테스트 30건 `[계산]`). e2e(`-m e2e tests/e2e`)는 명시 요청 시에만 돌리는 규칙이라 실행하지 않았다.
+- 전체 회귀 `uv run pytest -q` 3,211 passed / 10 deselected / 실패 0 / 99.72초(기준선 3,181 passed, 신규 테스트 30건 `[계산]`). e2e(`-m e2e tests/e2e`)는 명시 요청 시에만 돌리는 규칙이라 로컬에서는 실행하지 않았고, PR #388 CI의 e2e 관측 잡이 통과했다.
+- PR #388 CI 5개(테스트 게이트·의존성 취약점 감사·Docker 빌드·GitGuardian·e2e 관측) 모두 통과 `[실측 gh pr checks 2026-09-28]`.
 - `manage.py check` 이상 없음, `makemigrations --check --dry-run` No changes detected, 프로덕션형 env `check --deploy` W021 1건(HSTS preload, 의도된 결정).
 - 시나리오마다 구현 전 Red를 기대한 이유로 확인했고, 이미 Green이던 핀과 구현 되돌리기 뮤테이션 18건(스크립트 명세 4개 합계 `[실측]`)은 전부 Red를 낸 뒤 바이트 단위로 복원했다(임시 변경, 미커밋).
 - 러너 복제본 반영 전 서버만 고친 상태에서 문자 일치 가드 `tests/local_runner/test_url_safety_parity.py`가 Red였다(SEC-12b).
