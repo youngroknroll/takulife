@@ -1067,3 +1067,30 @@ def test_컬렉션_항목_수정_삭제_요청이_설정된_한도를_초과하�
 
     fetched = client.get(f"/api/collection-items/{item.pk}/")
     assert fetched.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# SEC-08b (보안 검토 2026-09-27 F3b, 실측으로 정정) — DRF JSONParser는
+# request.body(BytesIO)를 그대로 넘겨받아 Django의
+# DATA_UPLOAD_MAX_MEMORY_SIZE 상한이 먼저 적용된다. DRF 업그레이드로 이 동작이
+# 바뀌면 이 테스트가 잡는다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_상한을_넘는_JSON_본문으로_컬렉션_항목을_만들면_거부되고_저장되지_않는다(
+    client, make_user, settings
+):
+    settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 1024
+    user = make_user(username="ci-body-too-large")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "본문 상한 초과", "memo": "가" * 600},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not CollectionItem.objects.filter(name="본문 상한 초과").exists()
