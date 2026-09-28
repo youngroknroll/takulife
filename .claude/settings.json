@@ -13,6 +13,16 @@
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/git-destructive-guard.sh",
             "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/plan-bash-write-guard.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/git-stage-all-guard.sh",
+            "timeout": 5000
           }
         ]
       },
