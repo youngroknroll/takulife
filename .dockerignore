@@ -9,6 +9,8 @@ db.sqlite3
 .env
 .env.*
 .docs
+# 하네스 파일(훅·역할 어댑터·settings)은 런타임 이미지에 필요 없다.
+.claude
 tests
 # Test-only fast (MD5) password hasher module — never let the production
 # image load it (defense in depth on top of TS-INF-02b's source-boundary
