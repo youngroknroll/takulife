@@ -85,6 +85,12 @@ ACCOUNT_RATE_LIMITS = {
 - `login_failed`: IP당 분당 10회, **그리고 계정(key)당 5분에 5회**.
 - `reset_password`: IP당 분당 20회, 계정(key)당 분당 5회.
 
+**`ip` 범위의 클라이언트 IP 해석(트랙 40, F2)**: `ip` 범위가 보는 클라이언트
+IP는 `TRUSTED_PROXY_COUNT` env로 정해진다(`config/settings.py`
+`ALLAUTH_TRUSTED_PROXY_COUNT`). 배포 후 signup·login_failed·reset_password·
+manage_email 네 엔드포인트에서 500이 늘면, 먼저 §4의 홉 수 설정을
+재확인한다.
+
 ### 동작 차이 — 429 vs 폼 거부
 
 - 위 한도를 초과하면 allauth가 `templates/429.html`을 렌더링(HTTP 429)한다.
@@ -163,7 +169,16 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
   스테이징에서 검증한 뒤에만 올린다.** 확신 없이 추측값을 프로덕션에
   바로 배포하지 않는다.
 
-- 별개로, `SECURE_COOKIES` 환경변수가 설정되면(`os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")`) `SESSION_COOKIE_SECURE`/`CSRF_COOKIE_SECURE`가 켜져 HTTPS에서만 쿠키가 전송된다. HTTPS 배포 시 이 환경변수를 반드시 설정한다.
+**allauth 실패 양상(트랙 40, F2)**: 같은 과대설정에서 axes·감사 로그는 위처럼
+조용히 `REMOTE_ADDR`로 폴백하지만, allauth(`httpkit.py:200-205`)는
+`X-Forwarded-For`가 있고 설정된 홉 수보다 짧으면 `ImproperlyConfigured`로
+500을 낸다. 권장값 1에서는 `split(",")`가 최소 1개 원소를 돌려줘 이 500이
+도달 불가능하고, 2 이상에서만 발생한다 `[코드]`.
+
+- 별개로, `SECURE_COOKIES` 환경변수가 설정되면(`config/settings.py`의
+  `load_secure_cookies()` — `_get_env`를 통해 OS env를 먼저 보고 없으면
+  `.env` 파일도 읽는다) `SESSION_COOKIE_SECURE`/`CSRF_COOKIE_SECURE`가 켜져
+  HTTPS에서만 쿠키가 전송된다. HTTPS 배포 시 이 환경변수를 반드시 설정한다.
 
 ### 배포 체크리스트 — 위조 X-Forwarded-For 스테이징 검증
 
@@ -319,8 +334,26 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   명령으로 수동 실행한다. 정기(스케줄러) 자동 실행은 아직 도입하지 않았다 —
   §7의 정기 실행 작업 목록에 포함되지 않는다.
 
+### 「지금 수집」 실행 잠금 (트랙 40, F4)
+
+- 「지금 수집」 실행 중에는 두 번째 POST가 캐시 뮤텍스(`cache.add`,
+  키 `staff-draft-discovery-run-lock`)에 막혀 명령을 돌리지 않고 안내
+  메시지만 보여준다(감사 로그도 늘지 않는다).
+- **보장 범위**: 정상 종료·파이썬 예외·gunicorn 기본 타임아웃(30초 `[코드 gunicorn/config.py, docker/entrypoint.sh에 --timeout 없음]`)의
+  SIGABRT 종료에서는 잠금이 풀린다. SIGKILL 뒤에는 TTL(600초 `[코드]`)까지
+  잠금이 남는다.
+- 잠금이 남았다고 의심되면 수동으로 해제한다.
+  ```bash
+  uv run python manage.py shell -c "from django.core.cache import cache; cache.delete('staff-draft-discovery-run-lock')"
+  ```
+- 같은 축의 워커 수준 방어(gunicorn `--timeout`)는 G2로 별도 트랙이다.
+
 ### 8.x 러너 프로덕션 연결·종료·토큰 회전 (트랙 39)
 
+- **배포 순서(트랙 40, F5)**: 서버 URL 안전 판정 변경(`drafts/url_safety.py`)은
+  서버 배포 즉시 적용된다. 러너 복제본(`local_runner/url_safety.py`)은 러너를
+  재시작해야 반영된다 — 서버가 직접 fetch하는 경로는 서버 배포로 즉시
+  보호되고, 러너가 요청하는 경로는 러너 재시작 전까지 이전 판정을 쓴다.
 - **env 파일**: 러너 시크릿(`DRAFT_DISCOVERY_RUNNER_TOKEN`,
   `TAKULIFE_SERVER_URL` 등)은 저장소 밖 `~/.takulife-runner.env`에
   `chmod 600`으로 둔다. 실행 전 `set -a; source

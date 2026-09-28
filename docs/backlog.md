@@ -42,6 +42,7 @@
 | 오류 묶음 기록(트랙 36, 사이트 로그 1단계) | `[실측 gh]` PR #377 머지 완료(2026-09-18 08:37Z, merge commit `0d4401b4`, 커밋 9개 [실측 git log]). 전체 회귀 2987 passed / 10 deselected [실측 2026-09-18]. `core.ErrorGroup`(마이그레이션 `core/migrations/0007_errorgroup.py`)이 처리되지 않은 500 예외와 프론트 전역 오류/거부를 지문으로 묶어 출처별 최대 250행(합 500행)만 유지, `record_error`는 무예외·세이브포인트·정제(제어문자→시크릿 포함 시 전체 비움→이메일→URL 쿼리→500자)를 거친다. 수집 API `POST /api/client-errors/`는 첫 무인증 공개 쓰기 엔드포인트로 항상 204, 전역 스로틀 120/시간·새 묶음 20/시간. 대시보드 「시스템 오류」 패널 추가. 가드레일 정본 `docs/BE/error-groups.md`, 운영 확인 절차 `docs/operations-runbook.md` §9. 이연: 러너 실행 결과 보고, IP 보조 스로틀, 시크릿 스캐너 고도화, 폐기 요청 수 지표, 상한·스로틀 env화, 사이트 로그 4단계(보존 정리) |
 | 운영 데이터 보존 정리(트랙 37, 사이트 로그 4단계) | `[실측 gh]` PR #378 머지 완료(2026-09-18 08:39Z, merge commit `4f45cd6e`). 전체 회귀 3019 passed / 10 deselected [실측 2026-09-18]. `core.retention.prune_operational_data`(만료 세션·axes 로그·`ErrorGroup` 대상별 정리, 관리 명령 `prune_operational_data`)와 `core.db_stats.database_size_summary`(Postgres 전용 DB 용량 요약, 그 외 엔진·쿼리 실패는 `None`)를 추가하고 스태프 대시보드에 「저장소」 패널을 더했다. 로컬 실 DB 실측: 세션 294→28건 정리, `database_size_summary` 전체 13.8MB `[실측]`. 가드레일 정본 `docs/BE/data-retention.md`, 운영 확인 절차 `docs/operations-runbook.md` §7.2·§9. 이연: 대량 삭제 배치, `SourceDiscoveryRun`/`SourceCandidate` 정리, `AccessFailureLog` 활성화, 스케줄러 실제 등록(사용자 액션). C3 해소 |
 | 어댑터 얇게·규칙은 내부 서비스로(트랙 38) | `[실측 gh]` PR #380 머지 완료(2026-09-19 08:09Z, merge commit `6ddc7def`) — 트랙 38의 PR 0(승인 전 체크 드리프트 수정). 스태프 초안 인스펙터의 승인 전 체크가 승인 검증기(`events/services.py::_validate_publish_fields`)와 어긋나 기간 역전·제목=공식 URL 검사가 빠져 있던 결함을, 검증기 옆 dry-run 판정 함수 `events/services.py::publish_field_checks`(같은 순서, 7항목 전부 판정)로 고치고 `staff/views/drafts.py`의 뷰를 판정 없이 결과만 싣는 얇은 어댑터로 바꿨다. PR 1 #382 머지 완료(2026-09-19 11:37Z, merge commit `0c7cb3a0`) — 슬라이스 D. 익명 프론트 새 묶음 시간당 상한 규칙을 `core/client_error_views.py`에서 `core/error_groups.py::frontend_new_group_allowed`로 이동(행동 불변, 뷰의 `ErrorGroup`·`cache`·`timezone` 직접 참조 제거). 남은 슬라이스는 A(이벤트 품질 배지 → `events/queries.py`) → B(소스 신선도·초안 경고 배지 → `drafts/queries.py`) → C(`discover_drafts` 오케스트레이션 → `drafts/listing_discovery.py`) 순으로, 각각 별도 PR 1개·행동 불변 이동이며 `local_runner`는 이관 대상에서 제외한다. 계획서 `prompt_plan.md` 트랙 38 절 |
+| 보안 검토(2026-09-27) | 트랙 40(2026-09-28)이 반영 중: High 2(J1 스킴 허용목록·J2 allauth 프록시 배선)·J3(a) memo 상한·J4 뮤텍스·J5 일부(CGNAT·known-urls·SECURE_COOKIES) 수정 완료, J3(b) 본문 상한 부분은 실측으로 반박(코드 변경 없음), MFA·CSP·러너 IP 핀닝은 보류·이연. `check --deploy` W021만, pip-audit 알려진 취약점 0건(잠금 내보내기 209행, dev 포함) `[실측 2026-09-27]`. 정본 `docs/BE/security-review-2026-09-27.md` §8, 항목은 J절 |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -522,6 +523,28 @@ dash-metric 카드 재사용(집계만 백엔드). 구현됨(트랙 22, 왼쪽 �
 - superuser 계정 화면(`/staff/accounts/`)에 닉네임 열·검색 추가.
 - 욕설·부분 문자열·유사 사칭(예: `adm1n`) 탐지 — 현재 예약어는 완전일치만.
 - 사용 가능 여부 실시간(AJAX) 확인 — 추가 시 빈도 제한이 반드시 함께 필요.
+
+---
+
+## J. 보안 검토 2026-09-27 (트랙 40에서 반영, 2026-09-28)
+
+정본: `docs/BE/security-review-2026-09-27.md`(발견 11건의 현재/변경 후 흐름, 변경
+요소 표, Test List, §8 트랙 40 반영 결과 표). 기준 main `2c0e3552`, 트랙 40이
+브랜치 `fix/security-review-2026-09-27`에서 코드 변경 반영 중(PR 생성 전 —
+오케스트레이터가 회귀·PR 번호 기입 예정). `check --deploy` W021만, pip-audit
+알려진 취약점 0건(잠금 내보내기 209행, dev 포함) `[실측 2026-09-27]`.
+
+| # | 심각도 | 요지 | 근거 | 상태 |
+|---|---|---|---|---|
+| J1 | High | 스태프 이벤트 폼 `official_url` 스킴 미검증 → 공개 상세 `href`에 `javascript:` 저장형 XSS. 검증기가 `javascript:` 값을 그대로 반환 `[실측 shell dry-run]` | `events/services.py:42-75`, `templates/core/events/detail.html:86,186` | 수정(트랙 40, 커밋 `892feec3`) — 스킴 허용목록 + 호스트 필수 검사 |
+| J2 | High | allauth `ip` 레이트리밋이 프로젝트 `TRUSTED_PROXY_COUNT`를 읽지 않아 프록시 뒤에서 전 사용자 공유 버킷(잘못된 로그인 10회/분이면 전체 429, 가입 30건/시간). 저장소 `ALLAUTH_` 설정 0건 `[실측 rg]`, Render 실측 미수행 | `config/settings.py:491-496,519-520`, allauth 65.18 `core/internal/httpkit.py:197-220` | 수정(트랙 40, 커밋 `b49a5fec`) — 운영 확인은 남음: Render env `TRUSTED_PROXY_COUNT`, 스테이징 4경로 확인 |
+| J3 | Medium | DRF JSON 본문이 `DATA_UPLOAD_MAX_MEMORY_SIZE`(2,621,440바이트 `[코드]`)를 거치지 않고 memo `max_length` 없음 `[실측 소스·rg]` | `archive/serializers.py:16-46,212-280`, `archive/models.py:164,303`, DRF 3.17.2 `request.py:297-314` | (a) memo 상한 수정(트랙 40, 커밋 `fa1aa6ef`) / (b) 본문 상한 부분은 실측으로 반박 — DRF가 이미 `HttpRequest.body` 경로로 상한을 강제한다, 정본 §2 F3 정정 참조. 코드 변경 없이 핀 테스트만 추가 |
+| J4 | Medium | 「지금 수집」 동기 실행 뮤텍스 없음, 워커 3개(`docker/entrypoint.sh:15` 기본) 점유. G2와 같은 축 — G2 본문의 `staff/views/__init__.py:200-245`는 현재 `:290-336` `[실측 2026-09-27]` | `staff/views/__init__.py:290-336` | 수정(트랙 40, 커밋 `4eb3742b`) — 캐시 뮤텍스, 보장 범위는 정상·파이썬 예외·SIGABRT 종료. G2(gunicorn `--timeout`)는 별도 트랙으로 유지 |
+| J5 | Low ×7 | CGNAT 대역 미차단 `[실측]`, 러너 읽기 IP 핀닝 없음(트랙 35 이연 포함), 러너 known-urls 무검사, 오류 리포트 전역 버킷, `SECURE_COOKIES` env 읽기 불일치, MFA 부재, CSP 부재 | 정본 문서 §2 F5~F11 | CGNAT 수정(커밋 `2cde14d7`)·known-urls 수정(커밋 `8315ab4c`)·`SECURE_COOKIES` 수정(커밋 `4bbc3ecc`). 러너 IP 핀닝은 트랙 35 이연과 함께 처리 예정, 오류 리포트 버킷은 선택 항목으로 미착수, MFA는 기록된 사용자 보류(2026-07-01), CSP는 별도 트랙(승인 필요) |
+
+기록된 보류(재권고 아님): 슈퍼유저 step-up(2026-09-07), F12, F18, HSTS preload,
+F10 MFA(2026-07-01 `auth-hardening` 결정).
+반박된 가설과 확인된 경계는 정본 문서 §3, 트랙 40 반영 결과는 §8.
 
 ---
 
