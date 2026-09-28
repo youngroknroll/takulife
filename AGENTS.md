@@ -1084,7 +1084,7 @@ Dependency direction:
 | `events -> drafts` | Forbidden | `tests/core/test_architecture_boundaries.py::test_이벤트_모듈은_드래프트_모듈을_임포트하지_않는다` |
 | "discover now" path (`discover_drafts`, `candidate_intake`) -> `drafts.discovery_runs`, `drafts.candidate_validation`, `local_runner` | Forbidden | `tests/core/test_architecture_boundaries.py::test_지금_수집_경로는_탐색_실행_모듈에_의존하지_않는다` |
 | `drafts` discovery modules -> `core.llm` directly | Forbidden | `tests/core/test_architecture_boundaries.py::test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는다` |
-| `archive -> events`, `drafts -> events`, any app -> `core`, `staff -> {accounts, drafts, events}`, `config -> {accounts, core, web}` | Allowed (measured, matches target contract) | none |
+| `archive -> events`, `drafts -> events`, any app -> `core`, `staff -> {accounts, drafts, events}`, `web -> {accounts, archive, drafts, events}`, `config -> {accounts, core, web}` | Allowed (measured, matches target contract) | none |
 | `accounts` imports no local app; `staff -> archive` does not occur | Measured fact, no guard — not a rule to enforce | none |
 
 `web` is leaf presentation assembly. Its one approved cross-domain **write**
