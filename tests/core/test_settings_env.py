@@ -248,6 +248,25 @@ def test_SECURE_SSL이_켜지면_프록시와_HSTS_설정을_구성한다():
     }
 
 
+def test_SECURE_COOKIES가_미설정이면_env_파일에서_값을_읽어온다(monkeypatch, tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("SECURE_COOKIES=true\n", encoding="utf-8")
+
+    monkeypatch.delenv("SECURE_COOKIES", raising=False)
+
+    settings_module = importlib.import_module("config.settings")
+    monkeypatch.setattr(settings_module, "BASE_DIR", tmp_path)
+
+    assert settings_module.load_secure_cookies() is True
+
+
+def test_설정_모듈의_쿠키_보안_플래그는_load_secure_cookies_결과와_일치한다():
+    settings_module = importlib.import_module("config.settings")
+
+    assert settings_module.SESSION_COOKIE_SECURE == settings_module.load_secure_cookies()
+    assert settings_module.CSRF_COOKIE_SECURE == settings_module.load_secure_cookies()
+
+
 def test_설정_모듈은_STATIC_ROOT를_BASE_DIR_하위_staticfiles로_정의한다():
     settings_module = importlib.import_module("config.settings")
 

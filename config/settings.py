@@ -120,6 +120,11 @@ def load_secure_ssl():
     return _get_env("SECURE_SSL", "").lower() in ("1", "true", "yes")
 
 
+def load_secure_cookies():
+    # 보안 쿠키 플래그도 env 또는 .env에서 읽는다.
+    return _get_env("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
+
+
 def load_trusted_proxy_count():
     """이 앱 앞단의 신뢰할 수 있는 리버스 프록시 홉 수. 비어 있으면 None을
     반환해 기존처럼 REMOTE_ADDR을 그대로 신뢰한다(X-Forwarded-For 파싱
@@ -532,7 +537,7 @@ AXES_CLIENT_IP_CALLABLE = build_axes_client_ip_callable(TRUSTED_PROXY_COUNT)
 ALLAUTH_TRUSTED_PROXY_COUNT = build_allauth_trusted_proxy_count(TRUSTED_PROXY_COUNT)
 
 # 보안 쿠키: 개발(http)에서는 꺼져 있고, SECURE_COOKIES env를 설정하면 켜진다.
-_secure_cookies = os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
+_secure_cookies = load_secure_cookies()
 SESSION_COOKIE_SECURE = _secure_cookies
 CSRF_COOKIE_SECURE = _secure_cookies
 # JS 레이어가 csrftoken 쿠키를 읽어야 하므로 CSRF_COOKIE_HTTPONLY는 False로 둔다.
