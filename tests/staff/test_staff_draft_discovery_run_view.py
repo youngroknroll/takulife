@@ -7,6 +7,7 @@ discover_drafts 관리 명령을 동기 호출해 결과를 메시지로 보여�
 tests/test_discover_drafts_command.py에서 다루므로 여기서는 다루지 않는다.
 """
 import pytest
+from django.core.cache import cache
 from django.core.management import CommandError
 
 from staff.models import StaffActionLog
@@ -138,3 +139,53 @@ def test_수집_실행_중_예외가_발생해도_전파되지_않고_오류_메
     assert any("오류" in m for m in messages)
     log = StaffActionLog.objects.get(action=StaffActionLog.Action.DRAFT_DISCOVER)
     assert log.actor_id == staff.id
+
+
+@pytest.mark.django_db
+def test_수집이_실행_중일_때_다시_요청하면_안내만_하고_명령과_감사_로그가_늘지_않는다(staff_client, settings, monkeypatch, make_source, fail_if_called):
+    from staff.views import DISCOVERY_RUN_LOCK_KEY
+
+    settings.DRAFT_DISCOVERY_ENABLED = True
+    staff, client = staff_client()
+    make_source(name="enabled-source", url="https://example.com/enabled-feed/")
+    cache.add(DISCOVERY_RUN_LOCK_KEY, 1, 600)
+
+    monkeypatch.setattr("staff.views.call_command", fail_if_called)
+
+    resp = client.post(RUN_URL, follow=True)
+
+    assert resp.status_code == 200
+    messages = [str(m) for m in resp.context["messages"]]
+    assert any("이미 수집이 실행 중입니다. 끝나면 다시 시도하세요." in m for m in messages)
+    assert not StaffActionLog.objects.filter(action=StaffActionLog.Action.DRAFT_DISCOVER).exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "raised_exception",
+    [
+        pytest.param(None, id="정상_완료"),
+        pytest.param(CommandError("discover_drafts: 1건 에러 발생 — 위 로그 참고"), id="부분_실패"),
+        pytest.param(RuntimeError("boom"), id="예상외_예외"),
+    ],
+)
+def test_수집이_끝나면_잠금이_풀려_다음_요청이_다시_실행된다(staff_client, settings, monkeypatch, make_source, raised_exception):
+    settings.DRAFT_DISCOVERY_ENABLED = True
+    staff, client = staff_client()
+    make_source(name="enabled-source", url="https://example.com/enabled-feed/")
+
+    calls = []
+
+    def _fake_call_command(name, *args, stdout=None, **kwargs):
+        calls.append(name)
+        stdout.write("생성 0건\n")
+        if raised_exception is not None:
+            raise raised_exception
+
+    monkeypatch.setattr("staff.views.call_command", _fake_call_command)
+
+    client.post(RUN_URL, follow=True)
+    client.post(RUN_URL, follow=True)
+
+    assert len(calls) == 2
+    assert StaffActionLog.objects.filter(action=StaffActionLog.Action.DRAFT_DISCOVER).count() == 2

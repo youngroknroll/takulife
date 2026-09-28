@@ -8,6 +8,7 @@ from io import StringIO
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.core.management import CommandError, call_command
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -286,6 +287,13 @@ def dashboard(request):
     )
 
 
+# 동기 실행이 gunicorn 워커를 오래 붙잡는 동안 같은 수집이 중복 실행되는
+# 것을 막는 잠금 키. TTL은 프로세스가 강제 종료돼 잠금이 풀리지 않았을
+# 때를 대비한 안전장치다.
+DISCOVERY_RUN_LOCK_KEY = "staff-draft-discovery-run-lock"
+DISCOVERY_RUN_LOCK_TIMEOUT_SECONDS = 600
+
+
 @staff_console_required
 def staff_draft_discovery_run(request):
     """대시보드 "지금 수집" 버튼에서 `discover_drafts`를 동기로 실행한다.
@@ -296,7 +304,8 @@ def staff_draft_discovery_run(request):
     돌리지 않고 여기서 먼저 걸러내며, 이 경우엔 실제로 아무것도 실행되지
     않았으므로 감사 로그를 남기지 않는다. 반면 명령이 실제로 실행된
     모든 경로(성공/부분 실패/예외)는 결과와 무관하게 감사 로그를 남긴다.
-    소스·후보 개수에 따라 수십 초 걸릴 수 있는 동기 실행이다.
+    소스·후보 개수에 따라 수십 초 걸릴 수 있는 동기 실행이다. 실행
+    중이면 명령을 돌리지 않고 안내만 한다(감사 로그 없음).
     """
     if request.method != "POST":
         return redirect("staff:dashboard")
@@ -315,23 +324,30 @@ def staff_draft_discovery_run(request):
         )
         return redirect("staff:dashboard")
 
-    out = StringIO()
-    action = StaffActionLog.Action.DRAFT_DISCOVER
+    if not cache.add(DISCOVERY_RUN_LOCK_KEY, 1, DISCOVERY_RUN_LOCK_TIMEOUT_SECONDS):
+        messages.info(request, "이미 수집이 실행 중입니다. 끝나면 다시 시도하세요.")
+        return redirect("staff:dashboard")
+
     try:
-        call_command("discover_drafts", stdout=out)
-    except CommandError as exc:
-        summary = _summarize_command_output(out)
-        messages.error(request, f"수집이 부분적으로 실패했습니다: {exc}" + (f" ({summary})" if summary else ""))
-    except Exception:
-        logger.exception("Unexpected error while running discover_drafts")
-        messages.error(request, "수집 실행 중 오류가 발생했습니다.")
-    else:
-        summary = _summarize_command_output(out)
-        messages.success(request, f"수집 완료: {summary}" if summary else "수집이 완료되었습니다.")
+        out = StringIO()
+        action = StaffActionLog.Action.DRAFT_DISCOVER
+        try:
+            call_command("discover_drafts", stdout=out)
+        except CommandError as exc:
+            summary = _summarize_command_output(out)
+            messages.error(request, f"수집이 부분적으로 실패했습니다: {exc}" + (f" ({summary})" if summary else ""))
+        except Exception:
+            logger.exception("Unexpected error while running discover_drafts")
+            messages.error(request, "수집 실행 중 오류가 발생했습니다.")
+        else:
+            summary = _summarize_command_output(out)
+            messages.success(request, f"수집 완료: {summary}" if summary else "수집이 완료되었습니다.")
+        finally:
+            StaffActionLog.objects.create(
+                **_action_log_kwargs(_staff_action_metadata(request), action)
+            )
     finally:
-        StaffActionLog.objects.create(
-            **_action_log_kwargs(_staff_action_metadata(request), action)
-        )
+        cache.delete(DISCOVERY_RUN_LOCK_KEY)
 
     return redirect("staff:dashboard")
 
