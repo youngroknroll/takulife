@@ -43,6 +43,7 @@ from events.services import (
     MissingOfficialUrlError,
     PublishEventCategoryError,
     PublishEventError,
+    PublishEventOfficialUrlSchemeError,
     PublishEventRegionError,
     PublishEventTitleError,
     create_published_event,
@@ -392,6 +393,8 @@ def _publish_event_field_errors(exc, *, generic_message):
     PublishEventError 문구만 호출부(생성/수정)가 각자의 표현으로 정한다."""
     if isinstance(exc, MissingOfficialUrlError):
         return {"official_url": "공식 URL을 입력해야 합니다."}
+    if isinstance(exc, PublishEventOfficialUrlSchemeError):
+        return {"official_url": "공식 URL은 http:// 또는 https://로 시작하는 주소여야 합니다."}
     if isinstance(exc, PublishEventTitleError):
         return {"title": "제목을 입력해야 합니다. (공식 URL과 동일할 수 없습니다.)"}
     if isinstance(exc, DuplicateOfficialUrlError):
@@ -572,6 +575,10 @@ def _reference_block_message(counts):
 # 부모 PublishEventError는 반드시 마지막에 둔다.
 REPUBLISH_ERROR_MESSAGES = (
     (MissingOfficialUrlError, "공식 URL이 없어 다시 게시할 수 없습니다."),
+    (
+        PublishEventOfficialUrlSchemeError,
+        "공식 URL이 http:// 또는 https:// 주소가 아니라 다시 게시할 수 없습니다. 먼저 수정하세요.",
+    ),
     (PublishEventTitleError, "제목이 없어 다시 게시할 수 없습니다."),
     (DuplicateOfficialUrlError, "다른 이벤트가 이미 이 공식 URL을 사용 중입니다."),
     (InvalidEventPeriodError, "종료일이 시작일보다 빨라 다시 게시할 수 없습니다."),

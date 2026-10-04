@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import urlsplit
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -9,6 +10,8 @@ from core.vocab import is_valid_category, is_valid_region
 from .models import Event
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_OFFICIAL_URL_SCHEMES = frozenset({"http", "https"})
 
 
 class DuplicateOfficialUrlError(Exception):
@@ -39,6 +42,17 @@ class PublishEventRegionError(PublishEventError):
     pass
 
 
+class PublishEventOfficialUrlSchemeError(PublishEventError):
+    pass
+
+
+def _is_allowed_official_url(url):
+    # 공식 URL은 공개 상세 페이지의 링크 주소로 그대로 나가므로 http(s) 주소만
+    # 허용해야 javascript: 같은 값이 스크립트로 실행되지 않는다.
+    parsed = urlsplit(url)
+    return parsed.scheme in ALLOWED_OFFICIAL_URL_SCHEMES and bool(parsed.netloc)
+
+
 def _validate_publish_fields(
     *, title, official_url, start_date, end_date, category, region, existing_queryset
 ):
@@ -50,6 +64,9 @@ def _validate_publish_fields(
     normalized_official_url = (official_url or "").strip()
     if not normalized_official_url:
         raise MissingOfficialUrlError
+
+    if not _is_allowed_official_url(normalized_official_url):
+        raise PublishEventOfficialUrlSchemeError
 
     normalized_title = (title or "").strip()
     if not normalized_title:
@@ -103,6 +120,12 @@ def publish_field_checks(
             "key": "official_url",
             "label": "공식 URL이 있어야 합니다",
             "passed": official_url_present,
+        },
+        {
+            "key": "official_url_scheme",
+            "label": "공식 URL은 http:// 또는 https://로 시작하는 주소여야 합니다",
+            "passed": official_url_present
+            and _is_allowed_official_url(normalized_official_url),
         },
         {"key": "title", "label": "제목이 있어야 합니다", "passed": title_present},
         {

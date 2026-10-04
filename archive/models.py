@@ -9,6 +9,10 @@ from events.models import Event
 
 from .querysets import CollectionItemQuerySet, UserEventStatusQuerySet
 
+# 요청 하나로 거대한 memo를 저장해 DB·메모리를 소모하는 것을 막는 상한이다.
+# 실제 입력 검증은 시리얼라이저가 한다.
+MEMO_MAX_LENGTH = 2000
+
 
 def _uuid_image_name(directory, filename):
     # 원본 파일명은 키에 싣지 않는다 — 같은 이름 업로드가 타인 파일을

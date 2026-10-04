@@ -122,6 +122,50 @@ def test_수량이_음수인_컬렉션_항목을_생성하면_400으로_거부�
 
 
 # ---------------------------------------------------------------------------
+# SEC-10·10b (보안 검토 2026-09-27 F3a) — memo 길이 상한이 없으면 인증 사용자가
+# 거대한 memo를 저장할 수 있다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_memo가_최대_길이를_넘는_컬렉션_항목_생성은_거부되고_저장되지_않는다(client, make_user):
+    from archive.models import MEMO_MAX_LENGTH
+
+    user = make_user(username="ci-memo-too-long")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "메모 상한 초과", "memo": "가" * (MEMO_MAX_LENGTH + 1)},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "memo" in response.json()
+    assert not CollectionItem.objects.filter(name="메모 상한 초과").exists()
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_memo가_최대_길이와_같으면_컬렉션_항목이_저장된다(client, make_user):
+    from archive.models import MEMO_MAX_LENGTH
+
+    user = make_user(username="ci-memo-max-length")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "메모 상한 일치", "memo": "가" * MEMO_MAX_LENGTH},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 201
+    item = CollectionItem.objects.get(name="메모 상한 일치")
+    assert len(item.memo) == MEMO_MAX_LENGTH
+
+
+# ---------------------------------------------------------------------------
 # CP4~CP6: 목록·상세(GET/PATCH/DELETE) 전반에 걸친 소유자 제한
 # ---------------------------------------------------------------------------
 
@@ -1023,3 +1067,30 @@ def test_컬렉션_항목_수정_삭제_요청이_설정된_한도를_초과하�
 
     fetched = client.get(f"/api/collection-items/{item.pk}/")
     assert fetched.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# SEC-08b (보안 검토 2026-09-27 F3b, 실측으로 정정) — DRF JSONParser는
+# request.body(BytesIO)를 그대로 넘겨받아 Django의
+# DATA_UPLOAD_MAX_MEMORY_SIZE 상한이 먼저 적용된다. DRF 업그레이드로 이 동작이
+# 바뀌면 이 테스트가 잡는다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_상한을_넘는_JSON_본문으로_컬렉션_항목을_만들면_거부되고_저장되지_않는다(
+    client, make_user, settings
+):
+    settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 1024
+    user = make_user(username="ci-body-too-large")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/collection-items/",
+        {"name": "본문 상한 초과", "memo": "가" * 600},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert not CollectionItem.objects.filter(name="본문 상한 초과").exists()
