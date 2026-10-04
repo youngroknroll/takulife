@@ -15,7 +15,7 @@ allauth의 설계를 따라 서로 다른 두 가지 강제 방식을 검증한�
 - signup / reset_password -> 뷰가 ``429.html``로 렌더되는 429를 던진다.
 """
 import pytest
-from django.test import override_settings
+from django.test import Client, override_settings
 
 pytestmark = pytest.mark.slow
 
@@ -173,3 +173,75 @@ def test_성공한_로그인도_login_한도에_포함되어_초과하면_429로
         {"login": "loginlimit@example.com", "password": valid_password},
     )
     assert throttled.status_code == 429, throttled.status_code
+
+
+@pytest.mark.django_db
+@override_settings(
+    AXES_FAILURE_LIMIT=1000,
+    ALLAUTH_TRUSTED_PROXY_COUNT=1,
+    ACCOUNT_RATE_LIMITS={"login_failed": "2/m/ip"},
+)
+def test_신뢰된_프록시_뒤에서_한_클라이언트의_로그인_실패가_다른_클라이언트_IP의_로그인을_막지_않는다(
+    make_verified_user, valid_password
+):
+    """ALLAUTH_TRUSTED_PROXY_COUNT가 프록시 홉 수를 알면 allauth의 ip
+    한도가 공유 REMOTE_ADDR가 아니라 X-Forwarded-For로 밝혀진 실제
+    클라이언트 IP별로 나뉜다."""
+    make_verified_user("proxyvictim@example.com")
+
+    client_a = Client()
+    for _ in range(2):
+        resp = client_a.post(
+            "/accounts/login/",
+            {"login": "proxyvictim@example.com", "password": "wrong-password"},
+            REMOTE_ADDR="10.0.0.5",
+            HTTP_X_FORWARDED_FOR="203.0.113.9",
+        )
+        assert resp.status_code == 200, resp.status_code
+
+    client_b = Client()
+    other_login = client_b.post(
+        "/accounts/login/",
+        {"login": "proxyvictim@example.com", "password": valid_password},
+        REMOTE_ADDR="10.0.0.5",
+        HTTP_X_FORWARDED_FOR="198.51.100.5",
+    )
+    assert other_login.status_code == 302, other_login.status_code
+    assert _is_authenticated(client_b), "다른 클라이언트 IP는 로그인이 허용돼야 한다"
+
+
+@pytest.mark.django_db
+@override_settings(
+    AXES_FAILURE_LIMIT=1000,
+    ALLAUTH_TRUSTED_PROXY_COUNT=0,
+    ACCOUNT_RATE_LIMITS={"login_failed": "2/m/ip"},
+)
+def test_프록시_설정이_없으면_전달_헤더를_바꿔도_같은_접속_주소의_로그인_실패_한도를_공유한다(
+    make_verified_user, valid_password
+):
+    """ALLAUTH_TRUSTED_PROXY_COUNT가 0이면 X-Forwarded-For는 신뢰되지 않아,
+    같은 REMOTE_ADDR을 쓰는 두 요청은 헤더를 조작해도 같은 ip 한도
+    버킷을 공유한다 — 위조 헤더로 한도를 우회할 수 없다."""
+    make_verified_user("sharedbucket@example.com")
+
+    client_a = Client()
+    for _ in range(2):
+        resp = client_a.post(
+            "/accounts/login/",
+            {"login": "sharedbucket@example.com", "password": "wrong-password"},
+            REMOTE_ADDR="10.0.0.5",
+            HTTP_X_FORWARDED_FOR="203.0.113.9",
+        )
+        assert resp.status_code == 200, resp.status_code
+
+    client_b = Client()
+    blocked = client_b.post(
+        "/accounts/login/",
+        {"login": "sharedbucket@example.com", "password": valid_password},
+        REMOTE_ADDR="10.0.0.5",
+        HTTP_X_FORWARDED_FOR="198.51.100.5",
+    )
+    assert blocked.status_code == 200
+    form = blocked.context["form"]
+    assert form.non_field_errors(), "같은 접속 주소는 헤더가 달라도 한도를 공유해야 한다"
+    assert not _is_authenticated(client_b), "한도 소진 상태에서는 인증되면 안 된다"

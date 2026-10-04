@@ -41,7 +41,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `MEDIA_STORAGE_SECRET_ACCESS_KEY` | 필수(위와 세트) | 〃 | |
 | `MEDIA_STORAGE_ENDPOINT_URL` | 필수(위와 세트) | 〃 | R2: `https://<account-id>.r2.cloudflarestorage.com` |
 | `MEDIA_STORAGE_REGION` | 선택 | 〃 | 미설정 시 기본값 `auto`(R2 관례) |
-| `TRUSTED_PROXY_COUNT` | 필수(PaaS 배포 시) | config/settings.py `load_trusted_proxy_count`, `build_axes_client_ip_callable` | 실제 프록시 홉 수. 상세 위험은 `docs/operations-runbook.md` §4 참조 |
+| `TRUSTED_PROXY_COUNT` | 필수(PaaS 배포 시) | config/settings.py `load_trusted_proxy_count`, `build_axes_client_ip_callable` | 실제 프록시 홉 수. allauth 레이트리밋 `ip` 범위도 이 값을 공유(`ALLAUTH_TRUSTED_PROXY_COUNT`) — 과대설정 시 axes는 조용히 REMOTE_ADDR로 폴백하지만 allauth는 500. 상세 위험은 `docs/operations-runbook.md` §4 참조 |
 | `RUN_DB_MIGRATIONS` | 조건부 | docker/entrypoint.sh:4-9, `.env.example` | 단일 인스턴스=`true`(기본값). 2+ 레플리카/롤링 배포=`false` |
 | `EMAIL_HOST` 등 5종 | **보류(0단계 계획서 §3·§6)** | config/settings.py `EMAIL_HOST` 대입부 | 미설정 유지 → 콘솔 백엔드로 우선 배포. 신규 가입 이메일 인증·비밀번호 재설정이 실제로 동작하지 않음(가입 mandatory 이메일 인증 특성상). SMTP 재결정 전까지 실사용자 유입 금지 |
 | `SUPPORT_EMAIL` | 필수(T5, launch 전) | config/settings.py `SUPPORT_EMAIL` 대입부 | `*.example` placeholder를 실주소로 교체 |
@@ -122,6 +122,9 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    passthrough 프록시를 신뢰 홉으로 오산정)은 스푸핑 우회로 이어지는 반면,
    과소설정은 `REMOTE_ADDR` 폴백으로 안전이 저하될 뿐 새 취약점을 열지 않는다.
    상세 절차·nginx 예시·curl 검증 방법은 `docs/operations-runbook.md` §4 참조.
+   추가로 스테이징에서 allauth 4경로(signup·login_failed·reset_password·
+   manage_email)가 위조 `X-Forwarded-For`로도 500이 나지 않고, IP A에서
+   잘못된 로그인 10회 뒤 IP B의 첫 로그인이 429가 아님을 확인한다.
 9. **멀티워커 rate limit 실측**: gunicorn 멀티워커(`WEB_CONCURRENCY`,
    기본 3 — docker/entrypoint.sh:14) 환경에서 `ACCOUNT_RATE_LIMITS`
    (`docs/operations-runbook.md` §2)가 워커 간 실제로 공유되는지 확인한다.
@@ -204,6 +207,22 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     "SELECT count(*) FROM accounts_user WHERE nickname IS NULL;"` → `0`(0006
     백필+NOT NULL 전환이 전 회원에 적용됐는지, `docs/BE/account-identity.md`
     (d) 참고).
+16. **배포 전 공식 URL 스킴 확인(트랙 40, F1)**: 아래 명령으로 운영 DB에서
+    http(s)가 아니거나 호스트가 없는 `official_url` 행 수를 확인한다.
+    ```bash
+    uv run python manage.py shell -c "from urllib.parse import urlsplit; from events.models import Event; print(sum(1 for u in Event.objects.exclude(official_url__isnull=True).exclude(official_url='').values_list('official_url', flat=True) if urlsplit(u.strip()).scheme not in ('http','https') or not urlsplit(u.strip()).netloc))"
+    ```
+    0이 아니면 스태프 수정 화면에서 고친 뒤 배포한다 — **배포 전 차단 항목**.
+    이유 두 가지: 검증기는 생성·수정·재게시 시점에만 걸려 이미 게시된 값은
+    공개 상세 링크에 그대로 렌더되고(XSS가 코드 배포만으로 닫히지 않는다),
+    배포 후에는 그 값을 그대로 둔 재게시·수정 저장이 스킴·호스트 검사로 거부된다.
+17. **배포 전 memo 최대 길이 확인(트랙 40, F3a)**: 아래 명령으로 기존 행의
+    memo 최대 길이를 확인한다.
+    ```bash
+    uv run python manage.py shell -c "from django.db.models import Max; from django.db.models.functions import Length; from archive.models import PersonalEntry, CollectionItem; print(PersonalEntry.objects.aggregate(m=Max(Length('memo'))), CollectionItem.objects.aggregate(m=Max(Length('memo'))))"
+    ```
+    2,000자 `[코드 archive/models.py MEMO_MAX_LENGTH]`를 넘는 행은 조회·삭제는
+    되지만, memo를 포함한 수정 요청은 배포 후 400이 된다.
 
 ## 4. 백업·복구 (T6)
 
