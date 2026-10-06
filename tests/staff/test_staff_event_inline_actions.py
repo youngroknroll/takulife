@@ -264,6 +264,17 @@ def _setup_invalid_region(make_draft_event, make_event):
     )
 
 
+def _setup_invalid_official_url_format(make_draft_event, make_event):
+    return make_draft_event(
+        title="유효한 제목",
+        official_url="www.example.com/inline-republish-invalid-format",
+        start_date=date.today(),
+        end_date=date.today() + timedelta(days=10),
+        category="popup_store",
+        region="seoul",
+    )
+
+
 # "공식_URL_중복"(DuplicateOfficialUrlError)은 여기서 재현할 수 없다 — official_url이
 # DB 유일 제약이라, 두 번째 draft를 같은 URL로 만드는 Given 자체가 IntegrityError로
 # 죽는다. 재게시 경로에서 이 예외는 문구 표에는 있어도 실제로 도달 불가(오케스트레이터
@@ -281,6 +292,11 @@ _U8_CASES = [
         "지역_무효",
         _setup_invalid_region,
         "지역이 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요.",
+    ),
+    (
+        "공식_URL_형식_무효",
+        _setup_invalid_official_url_format,
+        "공식 URL이 http:// 또는 https:// 주소가 아니라 다시 게시할 수 없습니다. 먼저 수정하세요.",
     ),
 ]
 

@@ -617,6 +617,7 @@ class TestEventDraftPreapprovalChecks:
         checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
         assert checks == {
             "official_url": True,
+            "official_url_scheme": True,
             "title": True,
             "title_not_url": True,
             "official_url_unique": True,

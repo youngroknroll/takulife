@@ -10,6 +10,7 @@ from events.services import (
     MissingOfficialUrlError,
     PublishEventError,
     PublishEventTitleError,
+    _validate_publish_fields,
     create_published_event,
     hard_delete_event,
     mark_event_verified,
@@ -160,6 +161,22 @@ def test_제목이_공식_url과_대소문자만_다르면_행사_게시를_허�
 
     assert event.title == "HTTPS://EXAMPLE.COM/case-title"
     assert event.official_url == "https://example.com/case-title"
+
+
+@pytest.mark.django_db
+def test_대문자_스킴의_공식_URL은_게시_검증을_통과한다():
+    title, official_url = _validate_publish_fields(
+        title="정상 제목",
+        official_url="HTTPS://Example.com/event",
+        start_date=datetime.date(2026, 5, 1),
+        end_date=datetime.date(2026, 5, 10),
+        category="popup_store",
+        region="seoul",
+        existing_queryset=Event.objects.none(),
+    )
+
+    assert title == "정상 제목"
+    assert official_url == "HTTPS://Example.com/event"
 
 
 @pytest.mark.django_db

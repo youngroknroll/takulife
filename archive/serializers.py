@@ -4,6 +4,7 @@ from events.image_validation import validate_uploaded_image
 from events.models import Event
 
 from .models import (
+    MEMO_MAX_LENGTH,
     CollectionItem,
     EventInterest,
     PersonalEntry,
@@ -17,6 +18,7 @@ class PersonalEntrySerializer(serializers.ModelSerializer):
     # 클라이언트가 발급하는 멱등 키. 재생된 생성 요청의 토큰이 응답에
     # 그대로 노출되지 않도록 write_only로 둔다.
     client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    memo = serializers.CharField(required=False, allow_blank=True, max_length=MEMO_MAX_LENGTH)
 
     class Meta:
         model = PersonalEntry
@@ -232,6 +234,7 @@ class CollectionItemSerializer(serializers.ModelSerializer):
     # 클라이언트가 발급하는 멱등 키. 재생된 생성 요청의 토큰이 응답에
     # 그대로 노출되지 않도록 write_only로 둔다.
     client_token = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    memo = serializers.CharField(required=False, allow_blank=True, max_length=MEMO_MAX_LENGTH)
 
     class Meta:
         model = CollectionItem

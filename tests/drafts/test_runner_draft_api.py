@@ -213,3 +213,34 @@ def test_알려진_URL_필터는_드래프트가_없는_URL만_돌려준다(clie
 
     assert response.status_code == 200
     assert response.json()["unknown"] == [url_c]
+
+
+def test_알려진_URL_필터에_상한보다_많은_URL을_보내면_거부된다(client, runner_headers):
+    from drafts.runner_views import MAX_KNOWN_URLS_PER_REQUEST
+
+    urls = [
+        f"https://over-limit.example.com/event-{i}"
+        for i in range(MAX_KNOWN_URLS_PER_REQUEST + 1)
+    ]
+
+    response = client.post(
+        KNOWN_URL,
+        data={"urls": urls},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "invalid known urls payload"
+
+
+def test_알려진_URL_필터에_문자열이_아닌_원소가_있으면_거부된다(client, runner_headers):
+    response = client.post(
+        KNOWN_URL,
+        data={"urls": ["https://a.example.com/event", 123]},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "invalid known urls payload"

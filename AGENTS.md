@@ -116,6 +116,9 @@ future trade -> stable archive public contract
 drafts -> events publication service
 ```
 
+The measured current map, with its guards, is `### Repository Layout And
+Dependency Direction` under Domain And Design Policies.
+
 - `events` owns published official event data and does not calculate personal
   collection or exchange state.
 - `archive` owns user state, visit experience, collection inventory, collection
@@ -211,6 +214,14 @@ sales, payment, shipping, escrow, or marketplace guarantees.
 - `.claude/agents/*.md` files are thin runtime adapters. They own only role
   identity, activation boundaries, role-specific checks, output contracts, and
   handoffs.
+  - Each adapter's frontmatter carries `name`, `description`, `tools`,
+    `model`, `effort`, and `color`.
+  - Decision and review roles get `tools: Read, Grep, Glob` (the Web
+    Experience Designer and AI Automation Architect also get `WebSearch`).
+  - Implementation roles add `Bash, Edit, Write` to that tool set.
+  - Every adapter's body follows the same shape: the "Read these `AGENTS.md`
+    sections" list, then activation conditions and responsibilities, then
+    Standing instructions, then an `Output` code block.
 - When `CLAUDE.md` or a role adapter conflicts with this guide, this guide wins.
 - Runtime model selection belongs only to each adapter's `model` frontmatter.
   Do not duplicate model names or versions here.
@@ -284,11 +295,19 @@ before any of it is written or spoken.
    is not re-raised as a recommendation without the user's re-approval.
 6. A subagent's factual claim (file:line, count, "X is absent") is unverified
    until the orchestrator re-checks it against source; conflicting reviewer
-   claims are settled by measurement, not by picking one.
+   claims are settled by measurement, not by picking one. A worker's "done"
+   claim is checked with `git diff` before it is adopted.
 7. Review before report: a judgment or plan that the routing table says needs
    review roles goes to those roles first, and the user receives only the
    integrated result with corrections already applied. A first-pass judgment
    is not reported to the user on its own.
+8. Agent tool calls start `description` with `<slug>: …`, never pass `name`,
+   and the brief's first line lists the prohibitions that apply to that
+   worker (no pytest, no git state changes, the exact files the worker may
+   edit).
+9. Parallel workers get disjoint file sets. While a worker is editing a module
+   every test imports (`config/settings.py`, `config/urls.py`, models), the
+   orchestrator does not start pytest.
 
 A violation of these rules that a reviewer catches is recorded as a defect
 (a correction record), never treated as "the review caught it, so it was
@@ -801,7 +820,8 @@ ordinary behavior tests:
 - blocking outbound network or LLM calls;
 - exactly-once audit or analytics events;
 - approved query counts or performance budgets;
-- settings, migration, and deployment contracts.
+- settings, migration, and deployment contracts;
+- runner isolation and server/runner parity (literal or allow-list).
 
 ### Korean, Behavior-Centered Naming
 
@@ -918,10 +938,11 @@ wiring are exempt from the backend TDD cycle.
   information, and functional defects such as broken layout, overflow,
   keyboard-unreachable controls, focus traps, and unreadable text remain
   defects.
-- Frontend implementation requires an approved plan and a completed technical
-  record under `.docs/FE/` unless the user explicitly approves a different
-  document location. The former `.docs/frontend-integration-changelog.md` was
-  deleted; do not recreate it.
+- Frontend implementation requires an approved plan and a technical record
+  under `docs/FE/` when it states a guardrail (working notes may stay in
+  `.docs/FE/`), unless the user explicitly approves a different document
+  location. The former `.docs/frontend-integration-changelog.md` was deleted;
+  do not recreate it.
 - The design-review queue and every backlog derived from the superseded mocks
   are abolished (2026-07-29 user decision) together with the mock rework. Do not
   recreate `.docs/design-review-queue.md`, and do not schedule work from a
@@ -1004,8 +1025,87 @@ with `uv`. This section is the current command policy.
   same change.
 - A new test-convenience package requires an approved plan and explicit user
   approval; do not add one to solve a problem existing tooling already solves.
+- The command part of this policy is enforced by
+  `.claude/hooks/uv-only-guard.sh`.
+
+## Harness Enforcement (hooks)
+
+Deterministic rules belong in a hook, not in prose an agent might skip. A hook
+is a mistake-prevention guard, not a security boundary: it matches on static
+text and a determined bypass (string concatenation, `bash -c` nesting,
+variable substitution) is a known, accepted gap.
+
+| File | Matcher | Enforces | Known gaps |
+|---|---|---|---|
+| `.claude/hooks/uv-only-guard.sh` | `Bash` | package/venv/test commands go through `uv` | segment splitting treats `&&`, `;`, `\|` inside quotes or heredoc bodies as separators too, which can false-block a later `pytest`; a program name hidden in a variable or string is not detected |
+| `.claude/hooks/git-destructive-guard.sh` | `Bash` | blocks `git reset --hard`, `git clean -f/-d/-x`, `git checkout -- <path>`, `git checkout .`, and `git restore <path>` only on a dirty tree (by design); blocks `git stash clear` always | does not inspect a nested `bash -c` |
+| `.claude/hooks/plan-overwrite-guard.sh` | `Write` | blocks overwriting `prompt_plan.md` via the Write tool | Bash-tool overwrites are closed by the Bash write guard instead |
+| `.claude/hooks/plan-number-tag-guard.sh` | `Edit\|Write` | a paragraph added to `prompt_plan.md` that carries a count with a unit (value 2 or more) must also carry a source tag (`[실측]`, `[코드]`, `[계산]`, `[문서]`, `[대시보드]`) — the Numbers In Documents rule | only fires on the Edit/Write tools (Bash writes are closed by the Bash write guard); `docs/**` coverage is deferred |
+| `.claude/hooks/plan-bash-write-guard.sh` | `Bash` | blocks Bash-tool writes to `prompt_plan.md` | does not check string concatenation, `bash -c` nesting, variable substitution, or `cp -t`/`--target-directory` argument order |
+| `.claude/hooks/git-stage-all-guard.sh` | `Bash` | blocks `git add -A`/`--all`/`.`, staging `prompt_plan.md`, and `git commit -a`/`-am` | scoped to these command shapes; `git commit --amend` and other paths are out of scope |
+
+- A new hook ships only after it is proven with a crafted payload set (at
+  least 6 blocking cases and 6 allowed cases) and one live violation that the
+  hook actually stops.
+- Hooks run in a clone of this repository (`.claude/settings.json` is tracked)
+  and are not applied in CI.
+- When one command trips two hooks, the harness may surface only one hook's
+  message (`git add -A && echo x > prompt_plan.md` showed only the Bash write
+  guard, 2026-09-28 `[실측]`); the command is still blocked.
+- `prompt_plan.md` is edited only with the Edit tool.
+- Rolling a hook back means removing its entry from `.claude/settings.json`.
 
 ## Domain And Design Policies
+
+### Repository Layout And Dependency Direction
+
+This is the measured map (AST import scan, migrations and tests excluded,
+2026-09-28 `[실측]`). The target diagram under Binding Product Decisions is
+the contract; its `future trade` row has no code yet.
+
+Packages (9): `accounts` (authentication, imports no local app) · `archive`
+(personal state, visits, collection) · `core` (shared kernel; imports no
+domain app) · `drafts` (ingestion and pre-publication review) · `events`
+(published event data) · `staff` (staff console, orchestrates drafts, events,
+accounts) · `web` (leaf presentation assembly) · `config` (Django settings and
+root routing) · `local_runner` (off-server discovery process).
+
+Dependency direction:
+
+| Direction | Status | Guard |
+|---|---|---|
+| `core -> {accounts, archive, drafts, events, staff, web}` | Forbidden | `tests/core/test_architecture_boundaries.py::test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다` (R1) |
+| any local app except `config` -> `web` | Forbidden | `tests/core/test_architecture_boundaries.py::test_web은_리프다_어떤_앱도_web을_임포트하지_않는다` (scans the domain apps and `core`) |
+| `web -> staff` | Forbidden | `tests/core/test_architecture_boundaries.py::test_web_모듈은_스태프_모듈을_임포트하지_않는다` |
+| `{events, drafts, archive} -> staff` | Forbidden | `tests/core/test_architecture_boundaries.py::test_도메인_모듈은_스태프_모듈을_임포트하지_않는다` |
+| `{events, drafts} -> archive` | Forbidden | `tests/core/test_architecture_boundaries.py::test_활성_비아카이브_모듈은_아카이브_모듈을_임포트하지_않는다` |
+| `accounts -> archive` | Forbidden | `tests/core/test_architecture_boundaries.py::test_accounts_모듈은_아카이브_모듈을_임포트하지_않는다` |
+| `archive -> drafts` | Forbidden | `tests/core/test_architecture_boundaries.py::test_아카이브_모듈은_드래프트_모듈을_임포트하지_않는다` |
+| `events -> drafts` | Forbidden | `tests/core/test_architecture_boundaries.py::test_이벤트_모듈은_드래프트_모듈을_임포트하지_않는다` |
+| "discover now" path (`discover_drafts`, `candidate_intake`) -> `drafts.discovery_runs`, `drafts.candidate_validation`, `local_runner` | Forbidden | `tests/core/test_architecture_boundaries.py::test_지금_수집_경로는_탐색_실행_모듈에_의존하지_않는다` |
+| `drafts` discovery modules -> `core.llm` directly | Forbidden | `tests/core/test_architecture_boundaries.py::test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는다` |
+| `archive -> events`, `drafts -> events`, any app -> `core`, `staff -> {accounts, drafts, events}`, `web -> {accounts, archive, drafts, events}`, `config -> {accounts, core, web}` | Allowed (measured, matches target contract) | none |
+| `accounts` imports no local app; `staff -> archive` does not occur | Measured fact, no guard — not a rule to enforce | none |
+
+`web` is leaf presentation assembly. Its one approved cross-domain **write**
+exception is `web/promotion.py` (archive/drafts, `transaction.atomic` with
+`select_for_update`). Adding a cross-domain write in another `web/views/*.py`
+file is a silent expansion of this exception and needs separate approval.
+
+`local_runner` runs off-server and never imports Django or a server module
+(`tests/local_runner/test_local_runner_isolation.py`; its forbidden set now
+includes `accounts` and `web`, added in track 41). Two independent guards keep
+the runner's local copies aligned with the server originals: literal parity
+(`tests/local_runner/test_url_safety_parity.py` for `drafts/url_safety.py` vs
+`local_runner/url_safety.py`, `tests/local_runner/test_phase_vocabulary_parity.py`
+for phase labels) and allow-list containment
+(`tests/local_runner/test_outcome_vocabulary_parity.py`: every runner
+`(outcome, reason)` pair must be a subset of the server's allow-list). When a
+runner copy changes, change the server original in the same commit.
+
+Boundary guards live in `tests/core/test_architecture_boundaries.py` and
+`tests/local_runner/`; see `docs/BE/contract-guards.md` for what they cannot
+catch.
 
 ### Domain Boundary And Dependency Direction
 
@@ -1187,4 +1287,5 @@ Convention source: https://nohack.tistory.com/17
   verification. Merging still requires per-PR user approval unless the user has
   expressly granted and recorded standing automatic-merge approval.
 - `prompt_plan.md` and other pre-existing uncommitted changes not produced by
-  the current task stay unstaged; stage files explicitly, never `git add -A`.
+  the current task stay unstaged; stage files explicitly, never `git add -A`
+  (enforced by `.claude/hooks/git-stage-all-guard.sh`).

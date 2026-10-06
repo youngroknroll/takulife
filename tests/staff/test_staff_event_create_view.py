@@ -90,6 +90,22 @@ def test_공식_URL이_중복되면_400과_필드_오류를_응답하고_이벤�
 
 
 @pytest.mark.django_db
+def test_스태프가_javascript_스킴_공식_URL로_이벤트를_만들면_공식_URL_필드_오류로_거부되고_저장되지_않는다(
+    staff_client, staff_event_payload
+):
+    staff, client = staff_client()
+
+    resp = client.post(
+        CREATE_URL,
+        staff_event_payload(official_url="javascript:alert(document.cookie)"),
+    )
+
+    assert resp.status_code == 400
+    assert "공식 URL은 http:// 또는 https://로 시작하는 주소여야 합니다." in resp.content.decode()
+    assert not Event.objects.filter(official_url="javascript:alert(document.cookie)").exists()
+
+
+@pytest.mark.django_db
 def test_이벤트_목록_페이지는_생성_페이지로_가는_링크를_포함한다(staff_client):
     staff, client = staff_client()
 

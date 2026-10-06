@@ -150,6 +150,35 @@ def test_굿즈_종류로_개인_항목을_등록하면_거부된다(client, mak
     assert not PersonalEntry.objects.filter(title="차단되어야 할 굿즈").exists()
 
 
+# ---------------------------------------------------------------------------
+# SEC-10 (보안 검토 2026-09-27 F3a) — memo 길이 상한이 없으면 인증 사용자가
+# 거대한 memo를 저장할 수 있다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_memo가_최대_길이를_넘는_비공식_기록_생성은_거부되고_저장되지_않는다(client, make_user):
+    from archive.models import MEMO_MAX_LENGTH
+
+    user = make_user(username="pe-memo-too-long")
+
+    client.force_login(user)
+    response = client.post(
+        "/api/personal-entries/",
+        {
+            "kind": "place",
+            "title": "메모 상한 초과",
+            "memo": "가" * (MEMO_MAX_LENGTH + 1),
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "memo" in response.json()
+    assert not PersonalEntry.objects.filter(title="메모 상한 초과").exists()
+
+
 @pytest.mark.domain
 @pytest.mark.django_db
 def test_개인_항목_시리얼라이저의_종류_선택지에_굿즈가_없다():
@@ -317,3 +346,33 @@ def test_개인_항목_생성_요청이_설정된_한도를_초과하면_429로_
 
     listed = client.get("/api/personal-entries/")
     assert listed.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# SEC-08c (보안 검토 2026-09-27 F3b, 실측으로 정정) — DRF FormParser도
+# request.body(BytesIO)를 그대로 넘겨받아 Django의
+# DATA_UPLOAD_MAX_MEMORY_SIZE 상한이 PATCH 폼 본문에도 먼저 적용된다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.web
+@pytest.mark.django_db
+def test_상한을_넘는_폼_인코딩_본문으로_비공식_기록을_수정하면_거부되고_바뀌지_않는다(
+    client, make_user, make_entry, settings
+):
+    from urllib.parse import urlencode
+
+    settings.DATA_UPLOAD_MAX_MEMORY_SIZE = 1024
+    user = make_user(username="pe-form-body-too-large")
+    entry = make_entry(user, kind="place", title="원래 제목", memo="원래 메모")
+
+    client.force_login(user)
+    response = client.patch(
+        f"/api/personal-entries/{entry.id}/",
+        data=urlencode({"memo": "가" * 600}),
+        content_type="application/x-www-form-urlencoded",
+    )
+
+    assert response.status_code == 400
+    entry.refresh_from_db()
+    assert entry.memo == "원래 메모"
