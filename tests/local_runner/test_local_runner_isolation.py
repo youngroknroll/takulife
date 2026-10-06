@@ -12,7 +12,9 @@ pytestmark = pytest.mark.contract
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 # 서버 도메인 모듈과 Django. httpx·표준 라이브러리만 허용한다.
-_FORBIDDEN_MODULES = {"django", "drafts", "events", "archive", "staff", "core", "config"}
+_FORBIDDEN_MODULES = {
+    "django", "drafts", "events", "archive", "staff", "core", "config", "accounts", "web",
+}
 
 
 def _imported_module_names(path):

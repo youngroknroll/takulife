@@ -52,12 +52,17 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
 - `events/`, `drafts/`: published events and pre-publication ingestion/review
 - `archive/`: personal state, visits, and collection groundwork
 - `staff/`: staff console and moderation workflows
-- `core/`: shared web flows, queries, services, and LLM helpers
+- `core/`: shared kernel — settings helpers, errors, logging, analytics, vocab,
+  and the LLM adapter; imports no domain app
+- `web/`: leaf presentation assembly for public pages; `web/promotion.py` is
+  the single approved cross-domain write exception (archive/drafts)
+- `local_runner/`: off-server discovery runner; imports no Django or server
+  module
 - `templates/`, `static/`, `tests/`: web UI, browser assets, and verification
 
 ## Stable Entry Paths
 - Runtime: `manage.py`, `pyproject.toml`, `pytest.ini`, `config/settings.py`,
-  `config/urls.py`
+  `config/urls.py`, `Dockerfile`, `docker/entrypoint.sh`
 - Accounts: `accounts/models.py`, `accounts/forms.py`, `accounts/views.py`
 - Collection and visits: `archive/models.py`, `archive/services.py`,
   `archive/queries.py`, `archive/serializers.py`, `archive/urls.py`
@@ -65,15 +70,20 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
   `events/queries.py`, `events/serializers.py`, `events/urls.py`
 - Ingestion and review: `drafts/models.py`, `drafts/services.py`,
   `drafts/queries.py`, `drafts/runner_urls.py`
+- Public web: `web/views/`, `web/promotion.py`, `web/sitemaps.py`
+- Runner: `local_runner/runner.py`, `local_runner/client.py`,
+  `drafts/runner_views.py`, `drafts/discovery_runs.py`
 - Staff and shared web: `staff/services.py`, `staff/queries.py`, `staff/views/`,
-  `core/urls.py`, `core/views.py`
+  `staff/urls.py`, `staff/api_urls.py`, `core/urls.py`, `core/views.py`
+  (only `api_root`, `robots_txt`, `health`)
 - Frontend: `templates/base.html`, `templates/core/`, `templates/staff/`,
   `static/css/`, `static/js/`
 - Backlog, PR history, runbooks, technical records (version-controlled):
   `docs/backlog.md`, `docs/pr-log.md`, `docs/deploy-runbook.md`,
-  `docs/operations-runbook.md`, `docs/event-operations-criteria.md`, `docs/BE/`
-- Tests and optional local working notes: `tests/<domain>/`, `.docs/BE/`,
-  `.docs/DB/`, `.docs/FE/`
+  `docs/operations-runbook.md`, `docs/event-operations-criteria.md`,
+  `docs/BE/`, `docs/FE/`
+- Tests and optional local working notes: `tests/<domain>/`, `tests/e2e/`,
+  `tests/local_runner/`, `tests/web/`, `.docs/BE/`, `.docs/DB/`, `.docs/FE/`
 
 Start with these stable paths. Use `rg` when the exact location is still unknown
 or the task requires a repository-wide repeated-pattern check.
@@ -144,6 +154,13 @@ test. During Red-Green, run the targeted test before broad regression.
   (`docs/BE/`, and `DB/`/`FE/` when needed)
 - `.docs/BE/`, `.docs/DB/`, `.docs/FE/`: drafts and working measurements.
   **`.docs/` is git-ignored**; a missing file there is housekeeping, not a loss
+- `.claude/hooks/uv-only-guard.sh`, `.claude/hooks/git-destructive-guard.sh`,
+  `.claude/hooks/plan-overwrite-guard.sh`,
+  `.claude/hooks/plan-number-tag-guard.sh`,
+  `.claude/hooks/plan-bash-write-guard.sh`,
+  `.claude/hooks/git-stage-all-guard.sh`: deterministic guards; scope and
+  known gaps are in `AGENTS.md` "Harness Enforcement (hooks)". `prompt_plan.md`
+  is edited only with the Edit tool.
 - Deterministic restrictions belong in settings or hooks, not advisory prose.
 - Repeated procedures become skills or path-scoped rules only after demonstrated
   need.
