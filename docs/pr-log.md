@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #385부터 #249까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #391부터 #249까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,42 +28,39 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #385 — feat: 러너 진행 상태 실시간 표시·즉시 오프라인·러너 사람용 로그 (트랙 39)
+### PR #390 — fix(deps): Bump allauth, oauthlib, pyjwt, urllib3 for audit
 
-**무엇을 바꿨나**: `DiscoveryRunnerStatus` 5필드(마이그레이션 0014:
-phase/phase_detail/phase_updated_at/current_run/offline_at)를 추가하고,
-heartbeat가 `phase`·`detail`·`run_id`를 선택 키로 받아 옛 러너는 204로 계속
-동작하며 값이 없으면 이전 값을 유지한다. `POST /api/discovery/runner/offline/`을
-신설했고, `runner_is_online`은 `offline_at`을 반영해 `create_run` 단일 판정으로
-합쳤으며 `runner_shutdown` 실패 종류를 구분한다. 스태프 대시보드에는
-`GET /staff/api/discovery/live/`(IsAdminUser, `staff_discovery_live` 40/minute,
-시리얼라이저 `drafts/serializers.py`)를 순수 JSON으로 신설하고, 파셜 2개 +
-`<template>` + `static/js/staff/discovery_live.js`(5초/20초 폴링·백오프·
-401/403 정지·가시성·pageshow·포커스/펼침 복원·textContent만)로 자동 갱신 UI를
-붙였다. 러너 쪽은 `local_runner/progress.py`의 `ProgressReporter`(phase 전이는
-즉시, 같은 phase의 detail 갱신은 5초 간격, 터미널 INFO 로그)를 탐색·제출 루프에
-연결하고, SIGINT/SIGTERM 수신 시 `complete(runner_shutdown)` → offline 순서를
-강제했다(httpx WARNING 억제, 폴링 상태 전이 로그 추가). 문서는
-`docs/BE/draft-source-agent-discovery.md` 트랙 39 절, 운영 런북 §8.x, 배포
-런북 env 표 `DRAFT_DISCOVERY_RUNNER_TOKEN`, 백로그 G2·H8·H12(a)를 갱신했다.
+**무엇을 바꿨나**: `uv.lock`만 바꿨다(12줄 추가·12줄 삭제 `[실측 git show --stat
+230c92f2]`) — django-allauth 65.18.0→65.19.7, oauthlib 3.3.1→4.0.0, pyjwt
+2.13.0→2.15.1, urllib3 2.7.0→2.8.0. `pyproject.toml`은 변경 없음(기존
+`django-allauth<66` 범위 안). 코드 변경이 없는 의존성 상향이다.
 
-**왜**: 사용자 요구 3건 — 대시보드 자동 갱신, 터미널·대시보드 진행 단계 문구,
-종료 시 즉시 오프라인 전환. 트랙 진행 중 발견한 같은 유형 결함 10건(BIR 4·코치
-3·실기동 2·가드 1)은 같은 PR에서 수정했다.
+**왜**: CI 의존성 감사 잡(`uvx pip-audit==2.9.0 --strict`)이 PR #388 머지 후 main
+`e02463e5`와 PR #389에서 새 어드바이저리로 실패했다 — pyjwt 13건, urllib3 3건,
+oauthlib 1건(CVE-2026-49265, PKCE 타이밍) `[문서 PR #390 본문]`. oauthlib 4.0.0은
+allauth 65.19.x가 필요해(65.18.0은 `oauthlib<4` 핀) allauth도 함께 올렸다. 같은 날
+트랙 41 #389(`4ea3d78a`, 08:34Z) → 이 PR(`6c19c476`, 08:34Z) → deploy #391
+(`562494b1`, 08:36Z) 순으로 머지돼 origin/production == origin/main이 됐다
+`[실측 gh·git 2026-10-20]`. 그 사이 머지된 #388(트랙 40 보안 검토 반영,
+2026-10-04)·#389(트랙 41 거버넌스 동기화)의 내용은 `docs/backlog.md` J절과 현재
+상태 표의 트랙 40·41 행이 정본이다.
 
-**검증** `[실측 2026-09-20]`: `uv run pytest -q` 3181 passed / 10 deselected /
-91.80초(기준선 3114 `[문서]` PR #382 대비 +67), `manage.py check` 이상 없음,
-`makemigrations --check --dry-run` No changes. e2e `uv run pytest -q -m e2e
-tests/e2e` 10 passed / 12.37초. 브라우저 실측: 대시보드 자동 갱신 AC1
-0.66초·2.00초(실제 러너 기동 상태), 진행 문구 반영 AC3 1.18초. 실기동:
-SIGINT로 탐색 중 종료 → `complete(runner_shutdown)` 324ms 후 offline 363ms.
-CI 5잡 success. 머지 커밋 `2c0e3552`(2026-09-20 22:18 KST `[실측 gh]`), 커밋
-수 56건(`git log --oneline 80ccf80e..2c0e3552^2 | wc -l` `[실측]`). 머지 후
-main 재측정: `uv run pytest -q` → 3181 passed / 10 deselected / 96.62초,
-`manage.py check` 0건, `makemigrations --check --dry-run` 변화 없음
-`[실측 2026-09-20 main 2c0e3552]`
+**검증**: PR 본문 기록 `[문서 PR #390]` — `manage.py check` 0건, `makemigrations
+--check --dry-run` 변화 없음, `showmigrations account socialaccount mfa` 미적용
+없음, `uv run pytest -q` 3211 passed / 10 deselected / 97.68초, e2e 10 passed,
+pip-audit 알려진 취약점 0건. CI: main push 실행 37437011772 4잡 전부 success
+`[실측 gh 2026-10-20]`. 머지 후 main 재측정 `[실측 2026-10-20 main 6c19c476]`:
+`uv run pytest -q` → 3211 passed / 10 deselected / 101.34초(PR #385 기준선 3181
+`[문서]` 대비 +30 `[계산]`), `manage.py check` 0건, `makemigrations --check
+--dry-run` No changes detected.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #391 — deploy: main → production
+- #389 — chore: Sync governance docs, adapters, and hooks with the repo layout (track 41)
+- #388 — fix: Apply security review 2026-09-27 (track 40)
+- #387 — docs: PR #385 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #386 — deploy: main → production
+- #385 — feat: 러너 진행 상태 실시간 표시·즉시 오프라인·러너 사람용 로그 (트랙 39)
 - #384 — docs: PR #382·#383·#381 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #383 — build: Bump anyio to 4.14.2 for two new GHSA advisories
 - #382 — refactor(core): Move frontend new-group hourly quota into error_groups (트랙 38 PR 1)

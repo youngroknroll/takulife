@@ -22,7 +22,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `[실측 2026-09-17]` `uv run pytest -q` → **2927 passed**(10 deselected, 84.81초, PR #373 머지 후 main `716fe90d`); main CI run 35188306747 success |
+| 백엔드 회귀 | `[실측 2026-10-20]` `uv run pytest -q` → **3211 passed**(10 deselected, 101.34초, PR #390 머지 후 main `6c19c476`); main push CI run 37437011772 success(4잡 `[실측 gh]`) |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
@@ -42,7 +42,8 @@
 | 오류 묶음 기록(트랙 36, 사이트 로그 1단계) | `[실측 gh]` PR #377 머지 완료(2026-09-18 08:37Z, merge commit `0d4401b4`, 커밋 9개 [실측 git log]). 전체 회귀 2987 passed / 10 deselected [실측 2026-09-18]. `core.ErrorGroup`(마이그레이션 `core/migrations/0007_errorgroup.py`)이 처리되지 않은 500 예외와 프론트 전역 오류/거부를 지문으로 묶어 출처별 최대 250행(합 500행)만 유지, `record_error`는 무예외·세이브포인트·정제(제어문자→시크릿 포함 시 전체 비움→이메일→URL 쿼리→500자)를 거친다. 수집 API `POST /api/client-errors/`는 첫 무인증 공개 쓰기 엔드포인트로 항상 204, 전역 스로틀 120/시간·새 묶음 20/시간. 대시보드 「시스템 오류」 패널 추가. 가드레일 정본 `docs/BE/error-groups.md`, 운영 확인 절차 `docs/operations-runbook.md` §9. 이연: 러너 실행 결과 보고, IP 보조 스로틀, 시크릿 스캐너 고도화, 폐기 요청 수 지표, 상한·스로틀 env화, 사이트 로그 4단계(보존 정리) |
 | 운영 데이터 보존 정리(트랙 37, 사이트 로그 4단계) | `[실측 gh]` PR #378 머지 완료(2026-09-18 08:39Z, merge commit `4f45cd6e`). 전체 회귀 3019 passed / 10 deselected [실측 2026-09-18]. `core.retention.prune_operational_data`(만료 세션·axes 로그·`ErrorGroup` 대상별 정리, 관리 명령 `prune_operational_data`)와 `core.db_stats.database_size_summary`(Postgres 전용 DB 용량 요약, 그 외 엔진·쿼리 실패는 `None`)를 추가하고 스태프 대시보드에 「저장소」 패널을 더했다. 로컬 실 DB 실측: 세션 294→28건 정리, `database_size_summary` 전체 13.8MB `[실측]`. 가드레일 정본 `docs/BE/data-retention.md`, 운영 확인 절차 `docs/operations-runbook.md` §7.2·§9. 이연: 대량 삭제 배치, `SourceDiscoveryRun`/`SourceCandidate` 정리, `AccessFailureLog` 활성화, 스케줄러 실제 등록(사용자 액션). C3 해소 |
 | 어댑터 얇게·규칙은 내부 서비스로(트랙 38) | `[실측 gh]` PR #380 머지 완료(2026-09-19 08:09Z, merge commit `6ddc7def`) — 트랙 38의 PR 0(승인 전 체크 드리프트 수정). 스태프 초안 인스펙터의 승인 전 체크가 승인 검증기(`events/services.py::_validate_publish_fields`)와 어긋나 기간 역전·제목=공식 URL 검사가 빠져 있던 결함을, 검증기 옆 dry-run 판정 함수 `events/services.py::publish_field_checks`(같은 순서, 7항목 전부 판정)로 고치고 `staff/views/drafts.py`의 뷰를 판정 없이 결과만 싣는 얇은 어댑터로 바꿨다. PR 1 #382 머지 완료(2026-09-19 11:37Z, merge commit `0c7cb3a0`) — 슬라이스 D. 익명 프론트 새 묶음 시간당 상한 규칙을 `core/client_error_views.py`에서 `core/error_groups.py::frontend_new_group_allowed`로 이동(행동 불변, 뷰의 `ErrorGroup`·`cache`·`timezone` 직접 참조 제거). 남은 슬라이스는 A(이벤트 품질 배지 → `events/queries.py`) → B(소스 신선도·초안 경고 배지 → `drafts/queries.py`) → C(`discover_drafts` 오케스트레이션 → `drafts/listing_discovery.py`) 순으로, 각각 별도 PR 1개·행동 불변 이동이며 `local_runner`는 이관 대상에서 제외한다. 계획서 `prompt_plan.md` 트랙 38 절 |
-| 거버넌스 구조 동기화(트랙 41) | 브랜치 `chore/governance-structure-sync`(origin `main` 기준). 범위 ①~⑥ — CLAUDE.md·AGENTS.md·어댑터 11개가 `web`·`local_runner` 패키지와 실측 임포트 방향·가드를 반영하도록 갱신(AGENTS.md 신설 절 `Repository Layout And Dependency Direction`·`Harness Enforcement (hooks)`), 훅 2개 신설(`plan-bash-write-guard.sh`·`git-stage-all-guard.sh`, `.claude/settings.json` 배선), `.dockerignore`에 `.claude`(F16), 러너 격리 가드 금지 집합에 `accounts`·`web` 추가. 상태: **PR #389 오픈(2026-09-28, 머지 승인 대기)**, 회귀 3,181 passed `[실측]`, 훅 케이스 52+20+10 전부 통과 `[실측 hookcheck]` |
+| 보안 검토 반영(트랙 40) | `[실측 gh 2026-10-20]` PR #388 머지 완료(2026-10-04 11:19Z, merge commit `e02463e5`, 커밋 11개) — 2026-09-27 보안 검토의 F1(`official_url` 스킴·호스트)·F2(allauth 프록시 IP)·F3a(memo 상한)·F4(「지금 수집」 뮤텍스)·F5(비-global IP)·F7(known-urls 검증)·F9(`SECURE_COOKIES`) 수정, F3(b)는 실측으로 반박(핀 테스트만), F6·F8·F11 제외, F10 MFA는 기록된 보류. 상세는 J절, 정본 `docs/BE/security-review-2026-09-27.md` §8. 브랜치 회귀 3,211 passed / 10 deselected `[실측 2026-09-28]`. 후속: 새 어드바이저리로 실패한 CI 의존성 감사를 PR #390(`6c19c476`, `uv.lock`만 — allauth 65.19.7·oauthlib 4.0.0·pyjwt 2.15.1·urllib3 2.8.0)으로 해소, deploy PR #391(`562494b1`, 2026-10-06 08:36Z)로 production 반영(origin/production == origin/main). **사후 확인 미확인(사용자)**: `docs/deploy-runbook.md` §3 항목 8·16·17, 맥 러너 재시작(F5 복제본) |
+| 거버넌스 구조 동기화(트랙 41) | 브랜치 `chore/governance-structure-sync`(origin `main` 기준). 범위 ①~⑥ — CLAUDE.md·AGENTS.md·어댑터 11개가 `web`·`local_runner` 패키지와 실측 임포트 방향·가드를 반영하도록 갱신(AGENTS.md 신설 절 `Repository Layout And Dependency Direction`·`Harness Enforcement (hooks)`), 훅 2개 신설(`plan-bash-write-guard.sh`·`git-stage-all-guard.sh`, `.claude/settings.json` 배선), `.dockerignore`에 `.claude`(F16), 러너 격리 가드 금지 집합에 `accounts`·`web` 추가. 상태: `[실측 gh 2026-10-20]` **PR #389 머지 완료(2026-10-06 08:34Z, merge commit `4ea3d78a`, 커밋 9개)**. 브랜치 회귀 3,181 passed `[실측 2026-09-28]`, 훅 케이스 52+20+10 전부 통과 `[실측 hookcheck 2026-09-28]`; 머지 후 main 재측정 3,211 passed는 위 현재 상태 표 참조. F16 해소 |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -288,7 +289,7 @@ M1~M11 전부 Red. 이관 중 발견한 이연 항목 4건(템플릿 `core→web
 | F13 | ~~대시보드 표 저강조 색 위계 미실현~~ (**해결됨 2026-08-25, 브랜치 `fix/media-overwrite-lowrisk-sweep`**) | `.dash-table`로 색 상속 전환(`static/css/staff/pages/dashboard.css`), 라이트·다크 모두 computed 실측으로 `.dash-cell-dim`·`-faint`·`-wrap` 전부 토큰 일치 확인, WED·BIR `Conforms`×2. BIR 전수 확인이 찾은 동일 패턴 2건(`sources.css` `.src-cell-error` 위험색 소실 포함, `audit_log.css` dim/faint)도 같은 트랙에서 같은 방식으로 즉시 해소 — 라이트·다크 computed 실측 일치. `static/css/staff/` 내 이 패턴은 전수 재확인 결과 소멸(무해 판정: drafts·events·home_categories는 td color 미지정) | 해결 |
 | F14 | 폰트 폴백 메트릭 튜닝(size-adjust 계열) | 트랙 13에서 데스크탑 콜드 CLS 0.02(Good) 수용, 0.01 이하로 낮추려면 폴백 서체 메트릭 오버라이드+시각 회귀 필요(2026-08-29) | 이연 |
 | F15 | og:image 브랜드 카드(1200×630 PNG) 제작·발행 | 트랙 16(2026-08-30)이 og:image를 의도적으로 미발행(래스터 자산 부재, favicon.svg 유용 금지, `test_페이지_응답은_og_image_태그를_포함하지_않는다` 핀) | 이연. 자산 제작 시 M4 핀 교체와 함께 발행 |
-| F16 | `.dockerignore`가 `.claude/`를 제외하지 않아 런타임 이미지에 하네스 파일(훅·에이전트 정의·settings)이 들어간다 | `[코드]` `Dockerfile:22` `COPY . .`, `.dockerignore` 제외 목록에 `.claude` 0건(트랙 18 DOR 발견, 2026-09-03) | 트랙 41에서 `.dockerignore`에 `.claude` 추가(별도 커밋) |
+| F16 | `.dockerignore`가 `.claude/`를 제외하지 않아 런타임 이미지에 하네스 파일(훅·에이전트 정의·settings)이 들어간다 | `[코드]` `Dockerfile:22` `COPY . .`, `.dockerignore` 제외 목록에 `.claude` 0건(트랙 18 DOR 발견, 2026-09-03) | 해소 `[실측 gh 2026-10-20]` — 트랙 41 커밋 `92a7cdda`(`.dockerignore`에 `.claude`), PR #389 머지 2026-10-06 |
 | F17 | CI `e2e` 잡의 `continue-on-error: true` 해제 시점 | `[문서]` 트랙 27 DOR 제안 기준 — main 연속 10회 `[문서 DOR 제안]` 비결함 그린 뒤 필수 게이트로 전환 | 미해결 사용자 결정. 롤백은 잡에 `if: false` 한 줄 |
 | F18 | 스태프 셸이 CSRF 쿠키를 새로 발급하지 않는다 | `[실측 2026-09-10 e2e E7]` `templates/staff/base_staff.html`은 `{% csrf_token %}` 0건이라 일반 셸(`templates/core/partials/_topbar.html:37` 로그아웃 폼)과 달리 `csrftoken` 쿠키를 심지 않는다. 로그인 폼을 거친 사용자는 쿠키가 있지만, 쿠키가 지워진 상태로 `/staff/events/`에 바로 들어오면 일괄 비공개·인라인 액션 fetch가 403("세션이 만료되었거나 보안 토큰…") | 후보 수정 = 스태프 목록 뷰에 `ensure_csrf_cookie` 또는 셸에 `{% csrf_token %}`. 트랙 27은 운영 코드 무변경 범위라 테스트 픽스처 `login_as`가 쿠키를 심는 것으로 대응했다 |
 | F19 | 홈 스냅샷이 방문 기록 수를 활성 조건에 넣지 않는다 | `[코드 web/views/events.py:126-131, e2e E4에서 발견]` 방문 기록만 1건인 사용자에게도 홈 `snapshot_active`가 "아직 기록이 없어요"를 보여준다 | 제품 판단 필요(방문 기록 수를 활성 조건에 넣을지). 트랙 27은 E4의 Then을 방문 기록 목록으로 옮겨 대응했다 |
@@ -532,12 +533,14 @@ dash-metric 카드 재사용(집계만 백엔드). 구현됨(트랙 22, 왼쪽 �
 
 정본: `docs/BE/security-review-2026-09-27.md`(발견 11건의 현재/변경 후 흐름, 변경
 요소 표, Test List, §8 트랙 40 반영 결과 표). 기준 main `2c0e3552`. 트랙 40이
-브랜치 `fix/security-review-2026-09-27`에서 반영, **PR #388 오픈(머지 승인 대기)**.
+브랜치 `fix/security-review-2026-09-27`에서 반영, **PR #388 머지 완료(2026-10-04 11:19Z,
+merge commit `e02463e5` `[실측 gh 2026-10-20]`)**, deploy #391(2026-10-06)로 production 반영.
 전체 회귀 3,211 passed / 10 deselected `[실측 2026-09-28]`, PR CI 5개(테스트·의존성
 감사·Docker 빌드·GitGuardian·e2e 관측) 통과 `[실측 gh pr checks]`. `check --deploy`
 W021만, pip-audit 알려진 취약점 0건(잠금 내보내기 209행, dev 포함) `[실측 2026-09-27]`.
-**배포 전 차단**: 운영 DB의 비-http(s)·호스트 없는 `official_url` 행 수 확인
-(`docs/deploy-runbook.md` §3 항목 16 — 검증기는 이미 게시된 행을 소급 정리하지 않는다).
+**배포 후 사후 확인(2026-10-20 기준 수행 여부 미확인, 사용자)**: 운영 DB의 비-http(s)·호스트
+없는 `official_url` 행 수 확인(`docs/deploy-runbook.md` §3 항목 16 — 검증기는 이미 게시된
+행을 소급 정리하지 않는다), 항목 8(`TRUSTED_PROXY_COUNT`)·17(memo 최대 길이), 맥 러너 재시작.
 
 | # | 심각도 | 요지 | 근거 | 상태 |
 |---|---|---|---|---|
