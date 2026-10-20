@@ -293,13 +293,20 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   전환.
 - **자동 생성 실패 시 수동 fallback**: `gh pr create --base production --head
   main`으로 직접 생성한다.
-- **deploy PR에 CI 체크가 없는 것은 정상**이다 — GITHUB_TOKEN으로 생성한 PR은
-  워크플로를 트리거하지 않는다(GitHub의 의도된 무한루프 방지 동작). 검증
-  근거는 이 PR에 포함된 main 커밋들이 이미 CI를 통과했다는 사실이다.
+- **deploy PR에 CI 체크가 없는 것은 정상**이다 — `.github/workflows/ci.yml`의
+  `pull_request` 트리거가 `branches-ignore: [production]`으로 production을
+  향하는 PR을 건너뛰기 때문이다(트랙 42, 2026-10-20). 그 전에는
+  "GITHUB_TOKEN으로 만든 PR은 워크플로가 돌지 않는다"고 적었지만 사실이
+  아니었다: GitHub은 그런 PR에 승인 대기 실행(잡 0개)을 만들었고, 승인 없이
+  머지되면 실패 기록으로 남았다. 또 사람이 main에 머지할 때마다 열린 deploy
+  PR에서 main CI가 한 번 더 돌았다. 검증 근거는 이 PR에 포함된 main 커밋들이
+  main push CI를 이미 통과했다는 사실이다.
 - **`can_approve_pull_request_reviews=true`**는 이 워크플로가 PR을 생성할 수
   있도록 저장소 전역에서 켠 설정이며, deploy-pr.yml 한정이 아니다. 향후
   main/production에 필수 승인 브랜치 보호를 도입하는 시점에 이 설정을
   재검토한다.
 - **production에는 직접 push하지 않는다** — 항상 deploy PR을 경유한다.
   실패 감시는 GitHub Actions 탭의 워크플로 실행 이력과 실패 시 GitHub이
-  보내는 알림 메일로 한다.
+  보내는 알림 메일로 한다. production을 향하는 PR도 자동 생성된 deploy
+  PR(head=main)만 쓴다. 이 PR에는 CI가 돌지 않으므로 긴급 수정도 main에
+  먼저 머지한다.
