@@ -9,13 +9,6 @@
 (function () {
   "use strict";
 
-  // DRF가 "인증되지 않음" 403에 붙이는 detail 문구. 앱은 한국어(ko)로만
-  // 서비스되므로 실제로는 한국어 문자열만 오지만 영어도 함께 대비해둔다.
-  var AUTH_DETAIL_MARKERS = [
-    "Authentication credentials were not provided",
-    "자격 인증 데이터가 제공되지 않았습니다",
-  ];
-
   // ── 쿠키 읽기 ──────────────────────────────────────────────────────────
 
   function getCookie(name) {
@@ -85,15 +78,10 @@
     if (s === 0) { return "network"; }
     if (s === 400) { return "validation"; }
     if (s === 403) {
-      var detail = (result.data && typeof result.data.detail === "string")
-        ? result.data.detail
-        : "";
-      for (var m = 0; m < AUTH_DETAIL_MARKERS.length; m++) {
-        if (detail.indexOf(AUTH_DETAIL_MARKERS[m]) !== -1) {
-          return "auth";
-        }
-      }
-      return "csrf";
+      // 서버가 인증 필요 403 본문에 언어 무관 code를 싣는다({"detail": "...", "code": "not_authenticated"}).
+      // 그 밖의 403은 CSRF 오류로 본다.
+      var code = result.data && result.data.code;
+      return code === "not_authenticated" ? "auth" : "csrf";
     }
     if (s === 404) { return "notfound"; }
     if (s === 409) { return "conflict"; }
@@ -105,25 +93,25 @@
   // 응답을 사람이 읽을 수 있는 한국어 오류 메시지로 바꾼다.
   function formatError(result) {
     if (result.status === 0) {
-      return "네트워크 오류가 발생했습니다. 다시 시도해 주세요.";
+      return gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
     }
     // 429는 JSON 본문이 없을 수 있어 data 존재 여부를 확인하기 전에 먼저 처리한다.
     if (result.status === 429) {
-      return "요청이 많아요. 잠시 후 다시 시도해 주세요.";
+      return gettext("요청이 많아요. 잠시 후 다시 시도해 주세요.");
     }
     var data = result.data;
     if (!data) {
-      return "알 수 없는 오류가 발생했습니다.";
+      return gettext("알 수 없는 오류가 발생했습니다.");
     }
     // 서버가 내려주는 의미별 오류 코드
     if (data.code === "duplicate_user_event_status") {
-      return "이미 추가됨";
+      return gettext("이미 추가됨");
     }
     if (data.code === "duplicate_event_interest") {
-      return "이미 찜한 이벤트입니다.";
+      return gettext("이미 찜한 이벤트입니다.");
     }
     if (data.code === "photo_limit_exceeded") {
-      return "사진은 기록당 최대 5장까지 첨부할 수 있습니다.";
+      return gettext("사진은 기록당 최대 5장까지 첨부할 수 있습니다.");
     }
     // DRF가 필드에 속하지 않는 오류에 기본으로 담는 detail 문자열
     if (typeof data.detail === "string") {
@@ -141,7 +129,7 @@
         return parts.join(" | ");
       }
     }
-    return "알 수 없는 오류가 발생했습니다.";
+    return gettext("알 수 없는 오류가 발생했습니다.");
   }
 
   // 현재 경로를 next로 붙인 로그인 URL로 이동한다. 모든 호출자가 URL을
@@ -184,15 +172,15 @@
     close.type = "button";
     close.className = "auth-modal-close";
     close.textContent = "×";
-    close.setAttribute("aria-label", "닫기");
+    close.setAttribute("aria-label", gettext("닫기"));
 
     var title = document.createElement("h2");
     title.id = "auth-modal-title";
-    title.textContent = "로그인이 필요합니다";
+    title.textContent = gettext("로그인이 필요합니다");
 
     var desc = document.createElement("p");
     desc.id = "auth-modal-desc";
-    desc.textContent = "찜·방문 예정을 저장하려면 로그인해 주세요.";
+    desc.textContent = gettext("찜·방문 예정을 저장하려면 로그인해 주세요.");
 
     var actions = document.createElement("div");
     actions.className = "auth-modal-actions";
@@ -200,12 +188,12 @@
     var loginLink = document.createElement("a");
     loginLink.className = "auth-modal-primary";
     loginLink.href = "/accounts/login/?next=" + next;
-    loginLink.textContent = "로그인";
+    loginLink.textContent = gettext("로그인");
 
     var registerLink = document.createElement("a");
     registerLink.className = "auth-modal-secondary";
     registerLink.href = "/accounts/signup/?next=" + next;
-    registerLink.textContent = "회원가입";
+    registerLink.textContent = gettext("회원가입");
 
     actions.appendChild(loginLink);
     actions.appendChild(registerLink);

@@ -29,7 +29,7 @@
   // 공용 모달이 없으면 기본 confirm으로 대체한다. 메시지는 버튼별
   // data-confirm-message로 바꿀 수 있다.
   function askCancel(message) {
-    var msg = message || "취소하시겠습니까?";
+    var msg = message || gettext("취소하시겠습니까?");
     if (typeof window.TakuConfirm === "function") {
       return window.TakuConfirm(msg);
     }
@@ -37,18 +37,18 @@
   }
 
   var STATUS_LABELS = {
-    interested: "찜",
-    planned: "방문 예정",
-    visited: "방문 완료",
-    missed: "놓침",
+    interested: gettext("찜"),
+    planned: gettext("방문 예정"),
+    visited: gettext("방문 완료"),
+    missed: gettext("놓침"),
   };
 
   // §6.4 성공 피드백 문구 — 정적 테이블, missed는 의도적으로 없음(토스트 없음).
   // 발화는 버튼의 data-toast opt-in이 있을 때만(아래 각 성공 분기 참고).
   var STATUS_TOAST_MESSAGES = {
-    interested: "찜 목록에 저장했어요",
-    planned: "나의 일정에 추가했어요",
-    visited: "방문 완료로 변경했어요. 기록을 남길 수 있어요",
+    interested: gettext("찜 목록에 저장했어요"),
+    planned: gettext("나의 일정에 추가했어요"),
+    visited: gettext("방문 완료로 변경했어요. 기록을 남길 수 있어요"),
   };
 
   function showToast(message) {
@@ -99,7 +99,7 @@
   }
 
   function setButtonAlreadyAdded(button) {
-    button.textContent = "이미 추가됨";
+    button.textContent = gettext("이미 추가됨");
     button.classList.add("active");
     button.disabled = true;
   }
@@ -240,7 +240,7 @@
       }
 
       if (kind === "csrf") {
-        showInlineError(button, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+        showInlineError(button, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
         return;
       }
 
@@ -383,7 +383,7 @@
     }
 
     if (kind === "csrf") {
-      showInlineError(button, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      showInlineError(button, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
       return;
     }
 
