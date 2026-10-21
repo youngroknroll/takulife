@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+    # production으로 가는 배포 PR은 main에서 이미 CI를 통과한 커밋만 담으므로
+    # 여기서 다시 돌리지 않는다(자동 생성 PR에 승인 대기 실행이 남는 것도 막는다).
+    branches-ignore: [production]
 
 # Cancel a superseded run when new commits land on the same ref (e.g. rapid
 # PR pushes), saving free-tier Actions minutes.

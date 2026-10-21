@@ -47,4 +47,4 @@ jobs:
             --base production \
             --head main \
             --title "deploy: main → production" \
-            --body "main이 production보다 ${ahead}개 커밋 앞서 있습니다. 이 PR을 머지하면 Render가 production을 배포합니다. 이 PR에는 CI 체크가 붙지 않는 것이 정상입니다 — GITHUB_TOKEN으로 생성한 PR은 워크플로를 트리거하지 않으며, 포함된 커밋들은 main CI를 이미 통과했습니다."
+            --body "main이 production보다 ${ahead}개 커밋 앞서 있습니다. 이 PR을 머지하면 Render가 production을 배포합니다. 이 PR에는 CI 체크가 붙지 않는 것이 정상입니다 — CI는 production을 향하는 PR을 건너뛰며(ci.yml branches-ignore), 포함된 커밋들은 main CI를 이미 통과했습니다."
