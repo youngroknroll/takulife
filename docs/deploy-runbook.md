@@ -78,7 +78,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 ## 3. 필수 pre-launch 체크리스트 (0단계 계획서 T7 행, PR-0a/0b/0d/0e 게이트 승계)
 
-첫 트래픽을 받기 **전** 반드시 아래 14개 항목을 순서대로 확인한다. 하나라도
+첫 트래픽을 받기 **전** 반드시 아래 18개 항목을 순서대로 확인한다. 하나라도
 미확인 상태로 첫 배포를 진행하지 않는다.
 
 1. **DEBUG 독립 확인**: `DEBUG=false`가 다른 env 설정과 무관하게 실제로
@@ -223,6 +223,25 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     ```
     2,000자 `[코드 archive/models.py MEMO_MAX_LENGTH]`를 넘는 행은 조회·삭제는
     되지만, memo를 포함한 수정 요청은 배포 후 400이 된다.
+18. **다국어(트랙 43-1) 배포 확인**:
+    - `curl -s -H "Accept-Language: en" https://<host>/ | grep -o '<html lang="[^"]*"'`가
+      `lang="en"`이고, 헤더 없이 호출하면 `lang="ko"`인지 확인한다.
+    - `curl -sI -H "Accept-Language: en" https://<host>/ | grep -i '^vary:'`에
+      `Accept-Language`가 포함되는지 확인한다.
+    - `/jsi18n/`이 200이고 본문에 `django.gettext` 정의가 포함되는지
+      `curl -s https://<host>/jsi18n/ | grep -c 'django.gettext ='`가 1 이상인지
+      확인한다.
+    - 언어 쿠키 속성: 먼저 `curl -sc /tmp/jar https://<host>/ -o /dev/null`로
+      csrftoken 쿠키를 받고, `TOKEN=$(awk '/csrftoken/ {print $7}' /tmp/jar)`로
+      값을 꺼낸 뒤 `curl -si -b /tmp/jar -H "X-CSRFToken: $TOKEN" -H "Referer:
+      https://<host>/" -d "language=ja&next=/" https://<host>/i18n/setlang/ |
+      grep -i '^set-cookie: django_language'`에 `HttpOnly`·`SameSite=Lax`
+      (그리고 `SECURE_COOKIES=true` 배포라면 `Secure`)가 있는지 확인한다.
+    - **번역 검수 게이트(2026-10-21 사용자 지시로 변경)**: 번역 검수는 사람이
+      아니라 번역가와 별개인 AI 검수자가 한다. deploy PR을 머지하기 전에
+      `docs/BE/i18n.md`의 "AI 검수 기록"이 현재 카탈로그 기준으로 쓰여 있고
+      카탈로그 가드(`tests/core/test_i18n_catalog_completeness.py`)가 통과하는지
+      확인한다. 원어민 사람이 읽은 적은 없다는 점은 위험으로 남아 있다.
 
 ## 4. 백업·복구 (T6)
 
@@ -265,6 +284,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   서비스를 계속한다(`docker/entrypoint.sh`). **`migrate accounts 0005`로
   역적용하지 않는다** — 백필된 `nickname` 값이 소실된다. 실패 원인을 코드로
   고친 뒤 재배포한다.
+- **다국어(트랙 43-1) 롤백**: `LocaleMiddleware`·`LANGUAGES`·`LOCALE_PATHS`·
+  `i18n` 컨텍스트 프로세서·`LANGUAGE_CODE`·`LANGUAGE_COOKIE_*` 설정 diff를
+  **하나의 커밋**으로 되돌린다. 일부만 되돌리면 `<html lang>`이 `ko`가
+  아닌 값으로 남는 코스메틱 회귀가 생긴다. 마이그레이션 역적용은 없고,
+  `locale/` 아래 `.po` 잔존은 무해하다.
 
 ## 6. 미검증 항목 (첫 배포에서 채울 것)
 

@@ -63,12 +63,12 @@
     noBtn = document.createElement("button");
     noBtn.type = "button";
     noBtn.className = "confirm-no";
-    noBtn.textContent = "아니오";
+    noBtn.textContent = gettext("아니오");
 
     yesBtn = document.createElement("button");
     yesBtn.type = "button";
     yesBtn.className = "confirm-yes";
-    yesBtn.textContent = "예";
+    yesBtn.textContent = gettext("예");
 
     // 아니오가 왼쪽, 예가 오른쪽
     actions.appendChild(noBtn);

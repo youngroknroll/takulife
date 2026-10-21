@@ -1,1 +1,2 @@
-{% autoescape off %}[takulife] 이메일 주소를 인증해주세요{% endautoescape %}
+{% load i18n %}
+{% autoescape off %}[takulife] {% translate "이메일 주소를 인증해주세요" %}{% endautoescape %}

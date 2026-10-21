@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load static %}
+{% load i18n static %}
 
-{% block title %}설정 — takulife{% endblock %}
+{% block title %}{% translate "설정" %} — takulife{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/account_settings.css' %}">
@@ -12,43 +12,46 @@
   <div class="account-settings-shell">
     {% include "core/partials/_account_settings_index.html" with active="hub" %}
     <div class="account-settings-panel">
-      {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="로그인 정보" description="이메일·비밀번호 상태와 가입일을 확인해요." %}
+      {% translate "계정 설정" as kicker_label %}
+      {% translate "로그인 정보" as title_label %}
+      {% translate "이메일·비밀번호 상태와 가입일을 확인해요." as desc_label %}
+      {% include "core/partials/_account_settings_panel_head.html" with kicker=kicker_label title=title_label description=desc_label %}
 
       <dl class="account-settings-overview">
         <div class="account-settings-overview-row">
-          <dt>닉네임</dt>
+          <dt>{% translate "닉네임" %}</dt>
           <dd>
             <span class="account-settings-overview-value" title="{{ request.user.nickname }}">{{ request.user.nickname }}</span>
-            <a class="account-settings-overview-action" href="{% url 'account-nickname-page' %}">변경 &rarr;</a>
+            <a class="account-settings-overview-action" href="{% url 'account-nickname-page' %}">{% translate "변경" %} &rarr;</a>
           </dd>
         </div>
         <div class="account-settings-overview-row">
-          <dt>이메일</dt>
+          <dt>{% translate "이메일" %}</dt>
           <dd>
             <span class="account-settings-overview-value" title="{{ account_email }}">{{ account_email }}</span>
             {% if email_verified %}
-              <span class="account-settings-badge is-mint">인증됨</span>
+              <span class="account-settings-badge is-mint">{% translate "인증됨" %}</span>
             {% else %}
-              <span class="account-settings-badge is-warn">미인증</span>
+              <span class="account-settings-badge is-warn">{% translate "미인증" %}</span>
             {% endif %}
-            <a class="account-settings-overview-action" href="{% url 'account_email' %}">변경 &rarr;</a>
+            <a class="account-settings-overview-action" href="{% url 'account_email' %}">{% translate "변경" %} &rarr;</a>
           </dd>
         </div>
         <div class="account-settings-overview-row">
-          <dt>비밀번호</dt>
+          <dt>{% translate "비밀번호" %}</dt>
           <dd>
             <span class="account-settings-overview-value">{{ password_changed_display }}</span>
-            <a class="account-settings-overview-action" href="{% url 'account_change_password' %}">변경 &rarr;</a>
+            <a class="account-settings-overview-action" href="{% url 'account_change_password' %}">{% translate "변경" %} &rarr;</a>
           </dd>
         </div>
         <div class="account-settings-overview-row">
-          <dt>가입일</dt>
+          <dt>{% translate "가입일" %}</dt>
           <dd>{{ date_joined|date:"Y.m.d" }}</dd>
         </div>
       </dl>
 
       <div class="account-settings-info-box">
-        <p>기록·컬렉션은 모두 비공개입니다. 계정을 삭제하지 않는 한 유지되며, 다른 사용자에게 노출되지 않습니다.</p>
+        <p>{% translate "기록·컬렉션은 모두 비공개입니다. 계정을 삭제하지 않는 한 유지되며, 다른 사용자에게 노출되지 않습니다." %}</p>
       </div>
     </div>
   </div>

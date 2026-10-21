@@ -13,6 +13,8 @@ from django.contrib.sessions.models import Session
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
 
 from .models import User
 
@@ -36,7 +38,7 @@ DELETE_DONE_SESSION_KEY = "account_delete_done"
 # 수 없어서) 잠금 보안 규칙은 계속 accounts가 소유한다.
 MAX_DELETE_PASSWORD_ATTEMPTS = 5
 DELETE_PASSWORD_LOCKOUT_SECONDS = 60 * 15
-DELETE_LOCKOUT_MESSAGE = "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해 주세요."
+DELETE_LOCKOUT_MESSAGE = _("비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해 주세요.")
 
 
 def delete_attempts_cache_key(user):
@@ -89,7 +91,7 @@ def reset_delete_attempts(user):
 # 덮지 않으므로 delete_attempts와 같은 방식으로 직접 센다.
 NICKNAME_CHANGE_LIMIT = 5
 NICKNAME_CHANGE_WINDOW_SECONDS = 3600
-NICKNAME_CHANGE_THROTTLE_MESSAGE = "닉네임 변경이 너무 잦습니다. 잠시 후 다시 시도해 주세요."
+NICKNAME_CHANGE_THROTTLE_MESSAGE = _("닉네임 변경이 너무 잦습니다. 잠시 후 다시 시도해 주세요.")
 
 
 def nickname_change_cache_key(user):
@@ -113,7 +115,7 @@ def register_nickname_change(user):
     cache.set(key, record, timeout=NICKNAME_CHANGE_WINDOW_SECONDS)
 
 
-NICKNAME_DUPLICATE_MESSAGE = "이미 사용 중인 닉네임입니다."
+NICKNAME_DUPLICATE_MESSAGE = _("이미 사용 중인 닉네임입니다.")
 
 
 def is_nickname_conflict(exc):
@@ -129,7 +131,7 @@ def format_password_changed_display(password_changed_at):
     타임존 날짜 문자열로 바꾼다. 마이페이지와 계정 설정 화면이 같은 사실을
     다르게 표기하지 않도록 공유하는 단일 소스."""
     if password_changed_at is None:
-        return "변경 이력 없음"
+        return gettext("변경 이력 없음")
     return timezone.localtime(password_changed_at).strftime("%Y.%m.%d")
 
 

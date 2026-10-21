@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 input을 직접 그린다 — Django 자동 렌더와 다른 id로 오류 요소를 만들기
 때문에, {{ field }}로 되돌리면 화면읽기 프로그램이 못 찾는 끊긴 참조가
@@ -6,9 +7,10 @@ input을 직접 그린다 — Django 자동 렌더와 다른 id로 오류 요소
 
 Usage: {% include "core/partials/_auth_field.html" with field=form.email label="이메일" %}
   hint(선택) — 입력창 아래 보조 문구
+  label·hint는 호출부에서 {% translate %}로 미리 번역해 변수로 넘긴다.
 {% endcomment %}
 <div class="auth-field">
-  <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="auth-required" aria-hidden="true">*</span><span class="sr-only">(필수)</span>{% endif %}</label>
+  <label for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %} <span class="auth-required" aria-hidden="true">*</span><span class="sr-only">({% translate "필수" %})</span>{% endif %}</label>
   <input
     type="{{ field.field.widget.input_type }}"
     name="{{ field.html_name }}"

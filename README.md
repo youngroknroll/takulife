@@ -239,3 +239,4 @@ uv run python manage.py runserver
 - DB: `DATABASE_URL`을 비워두면 SQLite로 폴백합니다. PostgreSQL을 쓰려면 `docker compose up -d db` 후 `.env`에 `DATABASE_URL=postgresql://taku:taku@localhost:5432/taku`를 설정합니다.
 - 이메일: `EMAIL_HOST`를 비워두면 콘솔 백엔드로 동작해 인증 메일 내용을 터미널에서 확인할 수 있습니다.
 - 테스트: `uv run pytest -q`
+- 번역: 번역 카탈로그를 쓰려면 GNU gettext가 필요합니다(macOS는 `brew install gettext` 후 `brew link --force gettext`, Debian/Ubuntu는 `apt-get install gettext`). 번역 문구를 보려면 `uv run django-admin compilemessages --ignore .venv`를 한 번 실행합니다(`.mo`는 git에 올리지 않습니다).

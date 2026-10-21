@@ -1,4 +1,4 @@
-{% comment %}
+{% load i18n %}{% comment %}
 행사 하나를 텍스트 위주 세로 목록 행으로 그리는 공용 축약 파셜이다.
 옛 포스터 레일 파셜(삭제됨)을 대신해 홈 레일 3개와 로그인
 홈의 다가오는 일정 목록이 함께 쓴다. 인터페이스는 정확히 3개
@@ -27,34 +27,35 @@ row · heading_level("h3"|"h4") · show_interest(bool)뿐이다 — variant 같�
     {% if ev.start_date %}
       <time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>
     {% else %}
-      <span>일정 미정</span>
+      <span>{% translate "일정 미정" %}</span>
     {% endif %}
   </div>
   <div class="event-compact-main">
-    {% if ev.work_title %}<p class="event-compact-work">{{ ev.work_title }}</p>{% endif %}
+    {% if ev.work_title %}<p class="event-compact-work" lang="ko">{{ ev.work_title }}</p>{% endif %}
     {% if heading_level == "h4" %}
-      <h4 class="event-compact-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h4>
+      <h4 class="event-compact-title" lang="ko"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h4>
     {% else %}
-      <h3 class="event-compact-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
+      <h3 class="event-compact-title" lang="ko"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h3>
     {% endif %}
-    <p class="event-compact-place">{% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}</p>
+    <p class="event-compact-place"{% if ev.location_name %} lang="ko"{% endif %}>{% if ev.location_name %}{{ ev.location_name }}{% else %}{% translate "장소 미정" %}{% endif %}</p>
   </div>
   <div class="event-compact-actions">
     {% if row.status_slug == "ended" %}
-      <span class="event-compact-status">종료</span>
+      <span class="event-compact-status">{% translate "종료" %}</span>
     {% elif row.status_slug == "closing_soon" %}
-      <span class="event-compact-status">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</span>
+      <span class="event-compact-status">{% if row.dday == 0 %}{% translate "오늘 종료" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}D-{{ dday }}{% endblocktranslate %}{% endif %}</span>
     {% elif row.status_slug == "upcoming" %}
-      <span class="event-compact-status">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</span>
+      <span class="event-compact-status">{% if row.dday == 0 %}{% translate "오늘 오픈" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}오픈 D-{{ dday }}{% endblocktranslate %}{% endif %}</span>
     {% elif row.status_label %}
       <span class="event-compact-status">{{ row.status_label }}</span>
     {% endif %}
     {% if show_interest %}
+      {% translate "찜" context "동작" as interest_label %}
       <button class="interest-btn event-compact-interest{% if row.user_interested %} active{% endif %}" type="button"
         data-interest-toggle
         data-toast
         data-event-id="{{ ev.id }}"
-        aria-label="찜"
+        aria-label="{{ interest_label }}"
         aria-pressed="{% if row.user_interested %}true{% else %}false{% endif %}"
         {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
         <span data-interest-glyph aria-hidden="true">{% if row.user_interested %}♥{% else %}♡{% endif %}</span>

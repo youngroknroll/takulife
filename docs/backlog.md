@@ -44,6 +44,7 @@
 | 어댑터 얇게·규칙은 내부 서비스로(트랙 38) | `[실측 gh]` PR #380 머지 완료(2026-09-19 08:09Z, merge commit `6ddc7def`) — 트랙 38의 PR 0(승인 전 체크 드리프트 수정). 스태프 초안 인스펙터의 승인 전 체크가 승인 검증기(`events/services.py::_validate_publish_fields`)와 어긋나 기간 역전·제목=공식 URL 검사가 빠져 있던 결함을, 검증기 옆 dry-run 판정 함수 `events/services.py::publish_field_checks`(같은 순서, 7항목 전부 판정)로 고치고 `staff/views/drafts.py`의 뷰를 판정 없이 결과만 싣는 얇은 어댑터로 바꿨다. PR 1 #382 머지 완료(2026-09-19 11:37Z, merge commit `0c7cb3a0`) — 슬라이스 D. 익명 프론트 새 묶음 시간당 상한 규칙을 `core/client_error_views.py`에서 `core/error_groups.py::frontend_new_group_allowed`로 이동(행동 불변, 뷰의 `ErrorGroup`·`cache`·`timezone` 직접 참조 제거). 남은 슬라이스는 A(이벤트 품질 배지 → `events/queries.py`) → B(소스 신선도·초안 경고 배지 → `drafts/queries.py`) → C(`discover_drafts` 오케스트레이션 → `drafts/listing_discovery.py`) 순으로, 각각 별도 PR 1개·행동 불변 이동이며 `local_runner`는 이관 대상에서 제외한다. 계획서 `prompt_plan.md` 트랙 38 절 |
 | 보안 검토 반영(트랙 40) | `[실측 gh 2026-10-20]` PR #388 머지 완료(2026-10-04 11:19Z, merge commit `e02463e5`, 커밋 11개) — 2026-09-27 보안 검토의 F1(`official_url` 스킴·호스트)·F2(allauth 프록시 IP)·F3a(memo 상한)·F4(「지금 수집」 뮤텍스)·F5(비-global IP)·F7(known-urls 검증)·F9(`SECURE_COOKIES`) 수정, F3(b)는 실측으로 반박(핀 테스트만), F6·F8·F11 제외, F10 MFA는 기록된 보류. 상세는 J절, 정본 `docs/BE/security-review-2026-09-27.md` §8. 브랜치 회귀 3,211 passed / 10 deselected `[실측 2026-09-28]`. 후속: 새 어드바이저리로 실패한 CI 의존성 감사를 PR #390(`6c19c476`, `uv.lock`만 — allauth 65.19.7·oauthlib 4.0.0·pyjwt 2.15.1·urllib3 2.8.0)으로 해소, deploy PR #391(`562494b1`, 2026-10-06 08:36Z)로 production 반영(origin/production == origin/main). **사후 확인 미확인(사용자)**: `docs/deploy-runbook.md` §3 항목 8·16·17, 맥 러너 재시작(F5 복제본) |
 | 거버넌스 구조 동기화(트랙 41) | 브랜치 `chore/governance-structure-sync`(origin `main` 기준). 범위 ①~⑥ — CLAUDE.md·AGENTS.md·어댑터 11개가 `web`·`local_runner` 패키지와 실측 임포트 방향·가드를 반영하도록 갱신(AGENTS.md 신설 절 `Repository Layout And Dependency Direction`·`Harness Enforcement (hooks)`), 훅 2개 신설(`plan-bash-write-guard.sh`·`git-stage-all-guard.sh`, `.claude/settings.json` 배선), `.dockerignore`에 `.claude`(F16), 러너 격리 가드 금지 집합에 `accounts`·`web` 추가. 상태: `[실측 gh 2026-10-20]` **PR #389 머지 완료(2026-10-06 08:34Z, merge commit `4ea3d78a`, 커밋 9개)**. 브랜치 회귀 3,181 passed `[실측 2026-09-28]`, 훅 케이스 52+20+10 전부 통과 `[실측 hookcheck 2026-09-28]`; 머지 후 main 재측정 3,211 passed는 위 현재 상태 표 참조. F16 해소 |
+| UI 다국어(트랙 43-1) | 브랜치 `feat/i18n-foundation-43-1`(미머지, 상태 정본은 PR 본문과 `docs/pr-log.md`). 공개 셸·홈·계정(allauth)·공용 JS의 UI 문구를 Django gettext로 옮겼다(원문=한국어, en·ja·zh-hans 카탈로그 언어당 338건 `[실측 msgfmt --statistics 2026-10-21, django 311 + djangojs 27]`). 쿠키 기반 언어 전환(URL 접두사 없음), 스태프 화면·스태프 DRF API는 항상 한국어, 인증 403에 언어 무관 `code`. 전체 회귀 3,254 passed / 10 deselected `[실측 uv run pytest -q 2026-10-21, AI 검수 반영 후]`, e2e 10 passed `[실측]`. **번역 검수는 사람이 아니라 독립 AI 검수자가 했다(사용자 지시 2026-10-21). 원어민 사람 검수는 없다. deploy PR 조건은 `docs/BE/i18n.md` "AI 검수 기록"과 카탈로그 가드 통과다(`docs/deploy-runbook.md` §3-18).** 가드레일 정본 `docs/BE/i18n.md`, 계획 `prompt_plan.md` 트랙 43 절. 이연은 K절 |
 
 핵심 루프(발견 → 상태 → 방문 기록 → 굿즈 → 의도)는 URL·뷰·서비스 계층에서
 끊긴 곳 없이 연결되어 있다. 교환(trade) 도메인은 존재하지 않으며, 이는 게이트
@@ -553,6 +554,28 @@ W021만, pip-audit 알려진 취약점 0건(잠금 내보내기 209행, dev 포�
 기록된 보류(재권고 아님): 슈퍼유저 step-up(2026-09-07), F12, F18, HSTS preload,
 F10 MFA(2026-07-01 `auth-hardening` 결정).
 반박된 가설과 확인된 경계는 정본 문서 §3, 트랙 40 반영 결과는 §8.
+
+---
+
+## K. 다국어(트랙 43) 이연 (2026-10-21)
+
+정본은 `docs/BE/i18n.md`와 `prompt_plan.md` 트랙 43 §7이다. 트리거가 없는 항목은 착수하지 않는다.
+
+- **43-2 이벤트 표면, 43-3 컬렉션·활동·마이페이지** — 이미 승인된 트랙 분할(PR 각 1개). 43-3에는 아카이브 날짜 서식(`n월`)과 `archive/views.py`의 영어 리터럴 한 건(`"User event status already exists for this event."`, 같은 함수의 다른 메시지는 한글) 통일이 포함된다.
+- **43-2에서 함께 고칠 하드코딩 한국어** — `templates/core/events/list.html:196`·`calendar.html:206`의 `aria-label="찜"`, `events/detail.html:82`의 가시 텍스트 `찜` `[코드 rg 2026-10-21]`.
+- **원문 제목 "세션 유지"** — `templates/account/delete_account.html:36`. 바로 아래 본문이 "즉시 로그아웃"이라 의미가 충돌한다(AI 검수자 3명 일치). 한국어 제품 문구 결정이라 사용자 확인 후 수정한다.
+- **`record-action-link` 접근 가능한 이름** — 행마다 "기록"으로 같아 링크 목록 탐색에서 구분되지 않는다(기존 한계). 행별 `aria-label`이 후보다.
+- **`static/js/shared/status.js:40` 죽은 `interested` 라벨** — 쓰이는 템플릿이 없다 `[코드 BIR 확인]`. 정리는 트리거 없음.
+- **AI 검수 후 보류한 용어 제안** — 낮은 확신이라 반영하지 않았다. 목록은 `docs/BE/i18n.md` "AI 검수 기록". 트리거: 원어민 검수 도입.
+- **트랙 44: 스태프 게시물(행사) 다국어 자동 등록** — 계획 v0 작성, 사용자 승인 대기(`prompt_plan.md` 트랙 44 절). 서버 LLM API는 비용 정책상 쓰지 않고 로컬 러너로 번역한다.
+- **URL 접두사·hreflang·언어별 sitemap** — 트리거: 외국어 유입 수요 실측 또는 SEO 목표 명시.
+- **`Category.label` 다국어** — 트리거: 외국어 세션의 카테고리 필터 사용률 실측.
+- **JS 카탈로그 응답 캐싱** — 트리거: `/jsi18n/` 응답 시간 실측. 캐시 키에 언어를 포함해야 한다.
+- **`msgfmt --statistics` CI 게이트** — 기준치 합의 후.
+- **닉네임 허용 문자 확장·법률 문서 번역·중국어 번체** — 각각 별도 결정.
+- **파이썬 한국어 리터럴 가드** — AST로 "gettext로 감쌌는가"를 판별하기 어려워 템플릿·JS만 가드한다. 필요가 생기면 별도 설계.
+- **푸터 언어 선택기 시각 다듬기** — 현재 브라우저 기본 select·버튼 모양이다. 사양이 "새 CSS 없음"이어서 그대로 두었다.
+- **전체 페이지 캐시 도입 시** `Vary: Accept-Language`와 언어 쿠키를 캐시 키에 넣는다.
 
 ---
 

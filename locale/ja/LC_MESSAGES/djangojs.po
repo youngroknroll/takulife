@@ -1,0 +1,124 @@
+# takulife ja translation catalog
+# This file is distributed under the same license as the takulife project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: takulife\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-21 18:54+0900\n"
+"PO-Revision-Date: 2026-10-21 18:00+0900\n"
+"Last-Translator: takulife\n"
+"Language-Team: takulife\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: static/js/components/confirm-modal.js
+msgid "아니오"
+msgstr "いいえ"
+
+#: static/js/components/confirm-modal.js
+msgid "예"
+msgstr "はい"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "대표 행사 선택"
+msgstr "注目のイベントを選択"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "%(n)s번째 대표 행사 (현재 표시 중)"
+msgstr "%(n)s番目の注目イベント（現在表示中）"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "%(n)s번째 대표 행사 보기"
+msgstr "%(n)s番目の注目イベントを見る"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "자동 재생 재개"
+msgstr "自動再生を再開"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "자동 재생 정지"
+msgstr "自動再生を停止"
+
+#: static/js/shared/api.js
+msgid "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
+msgstr "ネットワークエラーが発生しました。再度お試しください。"
+
+#: static/js/shared/api.js
+msgid "요청이 많아요. 잠시 후 다시 시도해 주세요."
+msgstr "リクエストが多いです。しばらくしてから再度お試しください。"
+
+#: static/js/shared/api.js
+msgid "알 수 없는 오류가 발생했습니다."
+msgstr "不明なエラーが発生しました。"
+
+#: static/js/shared/api.js static/js/shared/status.js
+msgid "이미 추가됨"
+msgstr "追加済み"
+
+#: static/js/shared/api.js
+msgid "이미 찜한 이벤트입니다."
+msgstr "すでにお気に入りに追加したイベントです。"
+
+#: static/js/shared/api.js
+msgid "사진은 기록당 최대 5장까지 첨부할 수 있습니다."
+msgstr "写真は1件の記録につき最大5枚まで添付できます。"
+
+#: static/js/shared/api.js
+msgid "닫기"
+msgstr "閉じる"
+
+#: static/js/shared/api.js
+msgid "로그인이 필요합니다"
+msgstr "ログインが必要です"
+
+#: static/js/shared/api.js
+msgid "찜·방문 예정을 저장하려면 로그인해 주세요."
+msgstr "お気に入り・訪問予定を保存するにはログインしてください。"
+
+#: static/js/shared/api.js
+msgid "로그인"
+msgstr "ログイン"
+
+#: static/js/shared/api.js
+msgid "회원가입"
+msgstr "新規登録"
+
+#: static/js/shared/status.js
+msgid "취소하시겠습니까?"
+msgstr "取り消しますか？"
+
+#: static/js/shared/status.js
+msgid "찜"
+msgstr "お気に入り"
+
+#: static/js/shared/status.js
+msgid "방문 예정"
+msgstr "訪問予定"
+
+#: static/js/shared/status.js
+msgid "방문 완료"
+msgstr "訪問済み"
+
+#: static/js/shared/status.js
+msgid "놓침"
+msgstr "行きそびれた"
+
+#: static/js/shared/status.js
+msgid "찜 목록에 저장했어요"
+msgstr "お気に入りに保存しました"
+
+#: static/js/shared/status.js
+msgid "나의 일정에 추가했어요"
+msgstr "マイスケジュールに追加しました"
+
+#: static/js/shared/status.js
+msgid "방문 완료로 변경했어요. 기록을 남길 수 있어요"
+msgstr "訪問済みに変更しました。記録を残せます"
+
+#: static/js/shared/status.js
+msgid "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."
+msgstr "セキュリティトークンエラーです。ページを再読み込みしてから再度お試しください。"

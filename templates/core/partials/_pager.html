@@ -1,4 +1,4 @@
-{% load pager_tags %}{% comment %}
+{% load i18n pager_tags %}{% comment %}
 공용 페이지네이션 nav — 페이지가 나뉘는 목록 7곳에서 쓴다(컬렉션 / 다녀온 기록 /
 나의 일정 / 직접 등록 / 전체 보기 / 드래프트 목록 / 스태프 이벤트 목록).
 
@@ -22,10 +22,15 @@
 {% endcomment %}
 {% if page_obj.has_other_pages %}
   {% pager_data page_obj as pg %}
-  <nav class="pager" aria-label="페이지 이동">
+  {% translate "페이지 이동" as pager_nav_label %}
+  {% translate "5페이지 뒤로" as pager_jump_back_label %}
+  {% translate "이전 페이지" as pager_prev_label %}
+  {% translate "다음 페이지" as pager_next_label %}
+  {% translate "5페이지 앞으로" as pager_jump_forward_label %}
+  <nav class="pager" aria-label="{{ pager_nav_label }}">
     {% if pg.show_back %}
-      <a class="pager-arrow" href="?page={{ pg.jump_back }}{{ extra_query }}" aria-label="5페이지 뒤로">«</a>
-      <a class="pager-arrow" href="?page={{ pg.previous }}{{ extra_query }}" aria-label="이전 페이지">‹</a>
+      <a class="pager-arrow" href="?page={{ pg.jump_back }}{{ extra_query }}" aria-label="{{ pager_jump_back_label }}">«</a>
+      <a class="pager-arrow" href="?page={{ pg.previous }}{{ extra_query }}" aria-label="{{ pager_prev_label }}">‹</a>
     {% endif %}
 
     {% for num in pg.pages %}
@@ -39,8 +44,8 @@
     {% endfor %}
 
     {% if pg.show_forward %}
-      <a class="pager-arrow" href="?page={{ pg.next }}{{ extra_query }}" aria-label="다음 페이지">›</a>
-      <a class="pager-arrow" href="?page={{ pg.jump_forward }}{{ extra_query }}" aria-label="5페이지 앞으로">»</a>
+      <a class="pager-arrow" href="?page={{ pg.next }}{{ extra_query }}" aria-label="{{ pager_next_label }}">›</a>
+      <a class="pager-arrow" href="?page={{ pg.jump_forward }}{{ extra_query }}" aria-label="{{ pager_jump_forward_label }}">»</a>
     {% endif %}
   </nav>
 {% endif %}
