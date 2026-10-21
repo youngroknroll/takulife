@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #391부터 #249까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #394부터 #251까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,34 +28,39 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #390 — fix(deps): Bump allauth, oauthlib, pyjwt, urllib3 for audit
+### PR #395 — feat(i18n): UI 다국어 기반(ko/en/ja/zh-hans) — 트랙 43-1
 
-**무엇을 바꿨나**: `uv.lock`만 바꿨다(12줄 추가·12줄 삭제 `[실측 git show --stat
-230c92f2]`) — django-allauth 65.18.0→65.19.7, oauthlib 3.3.1→4.0.0, pyjwt
-2.13.0→2.15.1, urllib3 2.7.0→2.8.0. `pyproject.toml`은 변경 없음(기존
-`django-allauth<66` 범위 안). 코드 변경이 없는 의존성 상향이다.
+**무엇을 바꿨나**: 공개 셸·홈·계정(allauth 오버라이드)·공용 JS의 UI 문구를 Django
+gettext로 옮겼다. 원문은 한국어이고 카탈로그는 `locale/{en,ja,zh_Hans}/LC_MESSAGES/
+{django,djangojs}.po`로 언어당 338건이다(django 311 + djangojs 27 `[실측 msgfmt
+--statistics 2026-10-21]`). 언어는 쿠키(`/i18n/setlang/`) → `Accept-Language` → ko
+순으로 정하고 URL 접두사는 없다. 스태프 화면과 스태프 DRF API는 항상 한국어이고,
+인증 403 본문에 언어와 무관한 `code`를 넣었다. 푸터에 언어 선택기를 추가했다. `.mo`는
+커밋하지 않고(`.gitignore`) Docker builder 단계와 CI가 `compilemessages --ignore .venv`로
+만든다. 마이그레이션은 없다. 변경 규모는 84개 파일, +6,747줄·-631줄(커밋 9개)이다
+`[실측 git diff --shortstat 07b7186e 8b7a9458, gh pr view 395]`.
 
-**왜**: CI 의존성 감사 잡(`uvx pip-audit==2.9.0 --strict`)이 PR #388 머지 후 main
-`e02463e5`와 PR #389에서 새 어드바이저리로 실패했다 — pyjwt 13건, urllib3 3건,
-oauthlib 1건(CVE-2026-49265, PKCE 타이밍) `[문서 PR #390 본문]`. oauthlib 4.0.0은
-allauth 65.19.x가 필요해(65.18.0은 `oauthlib<4` 핀) allauth도 함께 올렸다. 같은 날
-트랙 41 #389(`4ea3d78a`, 08:34Z) → 이 PR(`6c19c476`, 08:34Z) → deploy #391
-(`562494b1`, 08:36Z) 순으로 머지돼 origin/production == origin/main이 됐다
-`[실측 gh·git 2026-10-20]`. 그 사이 머지된 #388(트랙 40 보안 검토 반영,
-2026-10-04)·#389(트랙 41 거버넌스 동기화)의 내용은 `docs/backlog.md` J절과 현재
-상태 표의 트랙 40·41 행이 정본이다.
+**왜**: 한국어를 읽지 못하는 서브컬처 팬이 앱을 조작해 개인 굿즈 컬렉션을 기록하게
+하려는 제품 결정이다(계획 트랙 43). 행사 제목·요약·장소와 사용자 입력은 원문 그대로
+두고 UI 문구만 번역한다. 번역 검수는 사람이 아니라 독립 AI 검수자가 했다(사용자 지시
+2026-10-21): 영어 31건·일본어 19건·중국어 30건을 반영하고 거부는 0건이었다
+`[문서 docs/BE/i18n.md "AI 검수 기록"]`. 원어민 사람 검수는 없다. 번역으로 풀리지
+않는 결함(복수형 단위, 같은 한글의 다른 품사)은 `npgettext`·`msgctxt`로 코드에서 고쳤다.
 
-**검증**: PR 본문 기록 `[문서 PR #390]` — `manage.py check` 0건, `makemigrations
---check --dry-run` 변화 없음, `showmigrations account socialaccount mfa` 미적용
-없음, `uv run pytest -q` 3211 passed / 10 deselected / 97.68초, e2e 10 passed,
-pip-audit 알려진 취약점 0건. CI: main push 실행 37437011772 4잡 전부 success
-`[실측 gh 2026-10-20]`. 머지 후 main 재측정 `[실측 2026-10-20 main 6c19c476]`:
-`uv run pytest -q` → 3211 passed / 10 deselected / 101.34초(PR #385 기준선 3181
-`[문서]` 대비 +30 `[계산]`), `manage.py check` 0건, `makemigrations --check
---dry-run` No changes detected.
+**검증**: 머지 전 `uv run pytest -q` 3254 passed / 10 deselected / 100.30초, e2e 10
+passed, CI 5잡 success `[문서 PR #395 본문]`. 머지 후 main 재측정 `[실측 2026-10-21 main
+8b7a9458]`: `uv run pytest -q` → 3254 passed / 10 deselected / 105.66초(트랙 42 후속
+기준선 3212 `[문서 계획서 트랙 42 후속 절]` 대비 +42 `[계산]`), `manage.py check` 0건,
+`makemigrations --check --dry-run` No changes detected. main push CI 실행
+39604592586은 4잡 전부 success, deploy workflow_run 39604884229 success, #393 head가
+`8b7a9458`로 이동했다 `[실측 gh]`. production 반영은 deploy PR #393 머지와 런북 §3-18
+번역 검수 게이트(`docs/BE/i18n.md` "AI 검수 기록" + 카탈로그 가드 통과)가 조건이다.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #394 — ci: Skip pull_request CI for PRs into production (track 42)
+- #392 — docs: PR #388~#391 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #391 — deploy: main → production
+- #390 — fix(deps): Bump allauth, oauthlib, pyjwt, urllib3 for audit
 - #389 — chore: Sync governance docs, adapters, and hooks with the repo layout (track 41)
 - #388 — fix: Apply security review 2026-09-27 (track 40)
 - #387 — docs: PR #385 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -193,5 +198,3 @@ pip-audit 알려진 취약점 0건. CI: main push 실행 37437011772 4잡 전부
 - #253 — Replace markup assertions that could not fail
 - #252 — Make the 500 test fail for the reason it names, and unbreak the runbook pointer
 - #251 — Repair the governance docs, rebuild the backlog, and act on what it measured
-- #250 — feat(staff): Add the verify button to the event edit page
-- #249 — feat(events): Give readers a way back to ended events
