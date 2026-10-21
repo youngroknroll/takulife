@@ -5,6 +5,9 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
+from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from accounts import services as accounts_services
 from archive.queries import (
@@ -24,31 +27,31 @@ def _build_delete_targets(user):
     오류/락아웃) 모두 이 표를 보여줘야 한다 — 사용자가 탈퇴 여부를 판단하는
     근거라, 오류 한 번에 조용히 사라지면 안 된다(브라우저 실측 H1)."""
     return [
-        {"label": "찜한 행사", "count": user_interest_count(user), "unit": "건"},
+        {"label": _("찜한 행사"), "count": user_interest_count(user), "unit": pgettext_lazy("단위", "건")},
         {
-            "label": "나의 일정",
+            "label": _("나의 일정"),
             "count": sum(user_status_counts(user).values()),
-            "unit": "건",
+            "unit": pgettext_lazy("단위", "건"),
         },
         {
-            "label": "다녀온 기록",
+            "label": _("다녀온 기록"),
             "count": user_visit_record_counts(user)["total_count"],
-            "unit": "건",
+            "unit": pgettext_lazy("단위", "건"),
         },
         {
-            "label": "기록 사진",
+            "label": _("기록 사진"),
             "count": user_visit_record_photo_count(user),
-            "unit": "장",
+            "unit": pgettext_lazy("단위", "장"),
         },
         {
-            "label": "컬렉션 굿즈",
+            "label": _("컬렉션 굿즈"),
             "count": user_collection_item_summary_counts(user)["total_count"],
-            "unit": "건",
+            "unit": pgettext_lazy("단위", "건"),
         },
         {
-            "label": "직접 등록 항목",
+            "label": _("직접 등록 항목"),
             "count": user_personal_entry_counts(user)["total_count"],
-            "unit": "건",
+            "unit": pgettext_lazy("단위", "건"),
         },
     ]
 
@@ -187,7 +190,7 @@ def delete_account(request):
                 request,
                 "account/delete_account.html",
                 {
-                    "field_errors": {"password": "비밀번호가 올바르지 않습니다."},
+                    "field_errors": {"password": gettext("비밀번호가 올바르지 않습니다.")},
                     "delete_targets": _build_delete_targets(request.user),
                 },
             )
