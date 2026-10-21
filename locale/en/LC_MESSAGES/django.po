@@ -1,0 +1,1420 @@
+# takulife en translation catalog
+# This file is distributed under the same license as the takulife project.
+msgid ""
+msgstr ""
+"Project-Id-Version: takulife\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-21 19:16+0900\n"
+"PO-Revision-Date: 2026-10-21 18:00+0900\n"
+"Last-Translator: takulife\n"
+"Language-Team: takulife\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: accounts/forms.py
+#, python-brace-format
+msgid "<a href=\"{terms}\" target=\"_blank\" rel=\"noopener\">이용약관</a> 및 <a href=\"{privacy}\" target=\"_blank\" rel=\"noopener\">개인정보처리방침</a>에 동의합니다."
+msgstr "I agree to the <a href=\"{terms}\" target=\"_blank\" rel=\"noopener\">Terms of Service</a> and <a href=\"{privacy}\" target=\"_blank\" rel=\"noopener\">Privacy Policy</a>."
+
+#: accounts/forms.py templates/account/settings.html
+#: templates/account/signup.html templates/socialaccount/signup.html
+msgid "닉네임"
+msgstr "Nickname"
+
+#: accounts/forms.py
+msgid "닉네임을 입력해 주세요."
+msgstr "Enter a nickname."
+
+#: accounts/forms.py
+msgid "이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다."
+msgstr "You must agree to the Terms of Service and Privacy Policy to sign up."
+
+#: accounts/forms.py templates/account/email_change.html
+#: templates/account/password_change.html
+msgid "현재 비밀번호"
+msgstr "Current password"
+
+#: accounts/forms.py web/views/account.py
+msgid "비밀번호가 올바르지 않습니다."
+msgstr "Incorrect password."
+
+#: accounts/services.py
+msgid "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해 주세요."
+msgstr "You've entered the wrong password too many times. Try again later."
+
+#: accounts/services.py
+msgid "닉네임 변경이 너무 잦습니다. 잠시 후 다시 시도해 주세요."
+msgstr "You're changing your nickname too often. Try again later."
+
+#: accounts/services.py
+msgid "이미 사용 중인 닉네임입니다."
+msgstr "This nickname is already taken."
+
+#: accounts/services.py
+msgid "변경 이력 없음"
+msgstr "No change history"
+
+#: accounts/validators.py
+msgid "닉네임은 2자 이상 20자 이하로 입력해 주세요."
+msgstr "Enter a nickname between 2 and 20 characters."
+
+#: accounts/validators.py
+msgid "닉네임은 한글, 영문, 숫자, _(밑줄)만 사용할 수 있습니다."
+msgstr "Nicknames can only contain Korean, English letters, numbers, and underscores (_)."
+
+#: accounts/validators.py
+msgid "이 닉네임은 사용할 수 없습니다."
+msgstr "This nickname can't be used."
+
+#: core/vocab.py templates/core/home.html
+msgid "서울"
+msgstr "Seoul"
+
+#: core/vocab.py templates/core/home.html
+msgid "경기"
+msgstr "Gyeonggi"
+
+#: core/vocab.py
+msgid "인천"
+msgstr "Incheon"
+
+#: core/vocab.py templates/core/home.html
+msgid "부산"
+msgstr "Busan"
+
+#: core/vocab.py
+msgid "대구"
+msgstr "Daegu"
+
+#: core/vocab.py
+msgid "대전"
+msgstr "Daejeon"
+
+#: core/vocab.py
+msgid "광주"
+msgstr "Gwangju"
+
+#: core/vocab.py
+msgid "온라인"
+msgstr "Online"
+
+#: core/vocab.py
+msgid "방문 예정"
+msgstr "Planned"
+
+#: core/vocab.py
+msgid "방문 완료"
+msgstr "Visited"
+
+#: core/vocab.py
+msgid "놓침"
+msgstr "Missed"
+
+#: core/vocab.py
+msgid "아크릴 스탠드"
+msgstr "Acrylic stand"
+
+#: core/vocab.py
+msgid "키링"
+msgstr "Keychain"
+
+#: core/vocab.py
+msgid "뱃지"
+msgstr "Badge"
+
+#: core/vocab.py
+msgid "포토카드"
+msgstr "Photocard"
+
+#: core/vocab.py
+msgid "인형"
+msgstr "Plush"
+
+#: core/vocab.py
+msgid "문구"
+msgstr "Stationery"
+
+#: core/vocab.py
+msgid "기타"
+msgstr "Other"
+
+#: core/vocab.py
+msgid "최근 수정순"
+msgstr "Recently updated"
+
+#: core/vocab.py
+msgid "등록순"
+msgstr "By date added"
+
+#: core/vocab.py
+msgid "최근 방문순"
+msgstr "Most recently visited"
+
+#: core/vocab.py
+msgid "오래된 방문순"
+msgstr "Oldest visited"
+
+#: core/vocab.py
+msgid "최근 등록순"
+msgstr "Most recently added"
+
+#: core/vocab.py
+msgid "오래된 등록순"
+msgstr "Oldest added"
+
+#: core/vocab.py
+msgid "최근 찜순"
+msgstr "Most recently saved"
+
+#: core/vocab.py
+msgid "오래된 찜순"
+msgstr "Oldest saved"
+
+#: core/vocab.py
+msgid "예정"
+msgstr "Upcoming"
+
+#: core/vocab.py
+msgid "진행 중"
+msgstr "Ongoing"
+
+#: core/vocab.py templates/core/home.html
+#: templates/core/partials/_site_footer.html
+msgid "종료 임박"
+msgstr "Ending soon"
+
+#: core/vocab.py templates/core/home.html
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_collection_snapshot.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "종료"
+msgstr "Ended"
+
+#: core/vocab.py
+msgid "전체"
+msgstr "All"
+
+#: core/vocab.py
+msgid "기본순"
+msgstr "Default order"
+
+#: core/vocab.py
+msgid "종료 임박순"
+msgstr "Ending soon"
+
+#: core/vocab.py
+msgid "시작일 빠른순"
+msgstr "Starting soon"
+
+#: core/vocab.py
+msgid "최신 등록순"
+msgstr "Newest"
+
+#: templates/404.html
+msgid "페이지를 찾을 수 없어요"
+msgstr "Page not found"
+
+#: templates/404.html
+msgid "요청하신 페이지가 삭제되었거나, 주소가 바뀌었거나, 존재하지 않습니다."
+msgstr "The page you requested has been removed, the address has changed, or it doesn't exist."
+
+#: templates/404.html templates/500.html
+msgid "홈으로 돌아가기"
+msgstr "Back to home"
+
+#: templates/404.html
+msgid "이벤트 목록 보러 가기"
+msgstr "Browse events"
+
+#: templates/429.html
+msgid "요청이 너무 많습니다"
+msgstr "Too many requests"
+
+#: templates/429.html
+msgid "짧은 시간에 너무 많은 요청이 접수되었습니다. 잠시 후 다시 시도해 주세요."
+msgstr "Too many requests in a short time. Try again later."
+
+#: templates/429.html templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html
+msgid "로그인으로 돌아가기"
+msgstr "Back to login"
+
+#: templates/500.html
+msgid "서버 오류가 발생했어요"
+msgstr "A server error occurred"
+
+#: templates/500.html templates/core/partials/_site_header.html
+msgid "주 메뉴"
+msgstr "Main menu"
+
+#: templates/500.html templates/core/partials/_site_header.html
+msgid "다크모드 전환"
+msgstr "Toggle dark mode"
+
+#: templates/500.html templates/core/partials/_site_header.html
+msgid "홈"
+msgstr "Home"
+
+#: templates/500.html templates/core/partials/_site_footer.html
+#: templates/core/partials/_site_header.html
+msgid "이벤트"
+msgstr "Events"
+
+#: templates/500.html templates/account/lockout.html
+#: templates/account/login.html templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/core/partials/_site_footer.html
+#: templates/core/partials/_site_header.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "컬렉션"
+msgstr "Collection"
+
+#: templates/500.html templates/account/lockout.html
+#: templates/account/login.html templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/core/partials/_site_footer.html
+#: templates/core/partials/_site_header.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "내 활동"
+msgstr "My activity"
+
+#: templates/500.html
+msgid "일시적인 오류로 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
+msgstr "A temporary error prevented your request. Try again later."
+
+#: templates/account/delete_account.html
+#: templates/core/partials/_account_settings_index.html
+msgid "회원 탈퇴"
+msgstr "Delete account"
+
+#: templates/account/delete_account.html templates/account/delete_done.html
+#: templates/account/email_change.html templates/account/email_confirm.html
+#: templates/account/nickname_change.html
+#: templates/account/password_change.html templates/account/settings.html
+msgid "계정 설정"
+msgstr "Account settings"
+
+#: templates/account/delete_account.html
+msgid "되돌릴 수 없는 작업입니다. 아래 내용을 확인한 뒤 진행하세요."
+msgstr "This action can't be undone. Review the details below before continuing."
+
+#: templates/account/delete_account.html
+msgid "비밀번호로 본인 확인"
+msgstr "Confirm your identity with your password"
+
+#: templates/account/delete_account.html
+msgid "10일 안에 다시 로그인하면 자동 취소"
+msgstr "Log in again within 10 days to cancel automatically"
+
+#: templates/account/delete_account.html
+msgid "10일 경과 시 영구 삭제"
+msgstr "Permanently deleted after 10 days"
+
+#: templates/account/delete_account.html
+msgid "개인정보 처리"
+msgstr "Data handling"
+
+#: templates/account/delete_account.html
+msgid "10일이 지나면 계정과 저장한 이벤트, 다녀온 기록, 컬렉션에 등록한 굿즈, 직접 등록한 항목 및 첨부 이미지가 모두 삭제되며 되돌릴 수 없습니다."
+msgstr "After 10 days, your account, saved events, visit records, collection goods, custom entries, and attached images will all be deleted and can't be recovered."
+
+#: templates/account/delete_account.html
+msgid "세션 유지"
+msgstr "Session retention"
+
+#: templates/account/delete_account.html
+msgid "탈퇴를 신청하면 이 기기를 포함한 모든 기기에서 즉시 로그아웃됩니다."
+msgstr "Requesting account deletion logs you out immediately on this device and all others."
+
+#: templates/account/delete_account.html templates/account/delete_done.html
+msgid "복구 방법"
+msgstr "How to recover"
+
+#: templates/account/delete_account.html
+msgid "10일 안에 같은 이메일로 다시 로그인하면 삭제 예약이 자동으로 취소됩니다."
+msgstr "Log in again with the same email within 10 days to automatically cancel the scheduled deletion."
+
+#: templates/account/delete_account.html
+msgid "삭제될 항목"
+msgstr "What will be deleted"
+
+#: templates/account/delete_account.html templates/account/email_change.html
+#: templates/account/login.html templates/account/nickname_change.html
+#: templates/account/password_change.html templates/account/password_reset.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_set.html templates/account/signup.html
+msgid "표시는 필수"
+msgstr "marks a required field."
+
+#: templates/account/delete_account.html
+msgid "현재 비밀번호로 확인"
+msgstr "Confirm with current password"
+
+#: templates/account/delete_account.html
+#: templates/core/partials/_account_settings_field.html
+#: templates/core/partials/_auth_field.html
+msgid "필수"
+msgstr "Required"
+
+#: templates/account/delete_account.html
+msgid "탈퇴"
+msgstr "Delete account"
+
+#: templates/account/delete_account.html templates/account/email_change.html
+msgid "취소하고 돌아가기"
+msgstr "Cancel and go back"
+
+#: templates/account/delete_done.html
+msgid "탈퇴 신청 완료"
+msgstr "Account deletion requested"
+
+#: templates/account/delete_done.html
+msgid "탈퇴가 접수되었습니다"
+msgstr "Your account deletion request has been received"
+
+#: templates/account/delete_done.html
+msgid "신청 시각"
+msgstr "Requested at"
+
+#: templates/account/delete_done.html
+msgid "삭제 예정일"
+msgstr "Scheduled deletion date"
+
+#: templates/account/delete_done.html
+msgid "삭제 예정일 전에 같은 이메일로 다시 로그인하면 탈퇴 신청이 자동으로 취소됩니다."
+msgstr "If you log in again with the same email before the scheduled deletion date, the request will be canceled automatically."
+
+#: templates/account/delete_done.html
+msgid "다시 로그인"
+msgstr "Log in again"
+
+#: templates/account/delete_done.html
+msgid "홈으로 가기"
+msgstr "Go to home"
+
+#: templates/account/email/email_confirmation_message.txt
+#, python-format
+msgid "%(display)s님, takulife 회원가입을 위해 이메일 인증이 필요합니다."
+msgstr "Hi %(display)s, please verify your email to finish signing up for takulife."
+
+#: templates/account/email/email_confirmation_message.txt
+msgid "아래 링크를 클릭하면 이메일 인증이 완료되고 자동으로 로그인됩니다."
+msgstr "Click the link below to verify your email and log in automatically."
+
+#: templates/account/email/email_confirmation_message.txt
+msgid "본인이 요청하지 않았다면 이 메일을 무시하셔도 됩니다."
+msgstr "If you didn't request this, you can ignore this email."
+
+#: templates/account/email/email_confirmation_subject.txt
+msgid "이메일 주소를 인증해주세요"
+msgstr "Verify your email address"
+
+#: templates/account/email/password_reset_key_message.txt
+msgid "본인 또는 다른 누군가가 takulife 계정의 비밀번호 재설정을 요청했습니다."
+msgstr "You or someone else has requested a password reset for your takulife account."
+
+#: templates/account/email/password_reset_key_message.txt
+msgid "요청하지 않으셨다면 이 메일을 무시하셔도 됩니다. 아래 링크를 클릭해 새 비밀번호를 설정해주세요."
+msgstr "If you didn't request this, you can ignore this email. Click the link below to set a new password."
+
+#: templates/account/email/password_reset_key_subject.txt
+msgid "비밀번호 재설정 안내"
+msgstr "Password reset instructions"
+
+#: templates/account/email_change.html
+#: templates/core/partials/_account_settings_index.html
+msgid "이메일 변경"
+msgstr "Change email"
+
+#: templates/account/email_change.html
+msgid "현재 비밀번호를 확인한 뒤 새 이메일로 변경해요."
+msgstr "Confirm your current password, then change to a new email."
+
+#: templates/account/email_change.html
+msgid "현재 이메일"
+msgstr "Current email"
+
+#: templates/account/email_change.html templates/account/settings.html
+msgid "인증됨"
+msgstr "Verified"
+
+#: templates/account/email_change.html templates/account/settings.html
+msgid "미인증"
+msgstr "Not verified"
+
+#: templates/account/email_change.html
+msgid "인증 메일 보내기"
+msgstr "Send verification email"
+
+#: templates/account/email_change.html
+msgid "이 주소로 로그인하고 알림을 받습니다."
+msgstr "You'll log in and receive notifications at this address."
+
+#: templates/account/email_change.html
+msgid "인증 대기"
+msgstr "Verification pending"
+
+#: templates/account/email_change.html
+msgid "인증 메일 재발송"
+msgstr "Resend verification email"
+
+#: templates/account/email_change.html
+msgid "변경 취소"
+msgstr "Cancel change"
+
+#: templates/account/email_change.html
+msgid "새 이메일"
+msgstr "New email"
+
+#: templates/account/email_change.html
+msgid "이메일 변경하기"
+msgstr "Change email"
+
+#: templates/account/email_confirm.html
+msgid "이메일 인증"
+msgstr "Email verification"
+
+#: templates/account/email_confirm.html
+msgid "이메일 주소 확인"
+msgstr "Confirm email address"
+
+#: templates/account/email_confirm.html
+#, python-format
+msgid "%(email)s이(가) %(display)s님의 이메일 주소가 맞는지 확인해주세요."
+msgstr "Please confirm that %(email)s is %(display)s's email address."
+
+#: templates/account/email_confirm.html
+msgid "확인"
+msgstr "Confirm"
+
+#: templates/account/email_confirm.html
+msgid "이 이메일은 이미 다른 계정에서 확인되었습니다."
+msgstr "This email has already been confirmed by another account."
+
+#: templates/account/email_confirm.html
+msgid "이메일 관리로 돌아가기"
+msgstr "Back to email settings"
+
+#: templates/account/email_confirm.html
+msgid "인증 링크가 만료되었거나 올바르지 않습니다."
+msgstr "This verification link has expired or is invalid."
+
+#: templates/account/email_confirm.html
+msgid "인증 메일을 다시 요청하기"
+msgstr "Request a new verification email"
+
+#: templates/account/lockout.html
+msgid "로그인 일시 차단"
+msgstr "Login temporarily blocked"
+
+#: templates/account/lockout.html templates/account/login.html
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "그대들의"
+msgstr "For your"
+
+#: templates/account/lockout.html templates/account/login.html
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "덕질 라이프를"
+msgstr "fandom"
+
+#: templates/account/lockout.html templates/account/login.html
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "위하여"
+msgstr "life."
+
+#: templates/account/lockout.html templates/account/login.html
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "행사"
+msgstr "Events"
+
+#: templates/account/lockout.html templates/account/login.html
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "공식 URL 기준으로 큐레이션한 팝업·전시"
+msgstr "Pop-ups and exhibitions curated from official URLs"
+
+#: templates/account/lockout.html templates/account/login.html
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "굿즈와 소장품을 내 손안의 목록으로"
+msgstr "Your goods and keepsakes, all in one list"
+
+#: templates/account/lockout.html templates/account/login.html
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/signup.html templates/account/verification_sent.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "다녀온 기록과 앞으로의 일정까지"
+msgstr "From visit records to what's coming up"
+
+#: templates/account/lockout.html templates/account/login.html
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_reset_from_key_done.html
+#: templates/account/password_set.html templates/account/signup.html
+#: templates/account/verification_sent.html
+#: templates/core/partials/_site_footer.html
+#: templates/core/partials/_topbar.html
+#: templates/socialaccount/authentication_error.html
+#: templates/socialaccount/login.html templates/socialaccount/signup.html
+msgid "계정"
+msgstr "Account"
+
+#: templates/account/lockout.html
+msgid "로그인 시도가 너무 많습니다"
+msgstr "Too many login attempts"
+
+#: templates/account/lockout.html
+msgid "잠시 후 다시 시도해 주세요."
+msgstr "Try again later."
+
+#: templates/account/lockout.html
+msgid "로그인 실패가 반복되어 접근이 일시적으로 차단되었습니다."
+msgstr "Access has been temporarily blocked due to repeated failed login attempts."
+
+#: templates/account/lockout.html
+msgid "차단은 일정 시간이 지나면 자동으로 해제됩니다."
+msgstr "The block will be lifted automatically after some time."
+
+#: templates/account/lockout.html templates/account/login.html
+msgid "비밀번호를 잊으셨나요?"
+msgstr "Forgot your password?"
+
+#: templates/account/lockout.html templates/account/login.html
+msgid "메일로 재설정 링크 발송"
+msgstr "Send reset link by email"
+
+#: templates/account/login.html templates/core/partials/_site_footer.html
+#: templates/core/partials/_topbar.html
+msgid "로그인"
+msgstr "Log in"
+
+#: templates/account/login.html
+msgid "이메일 또는 비밀번호가 올바르지 않습니다."
+msgstr "Incorrect email or password."
+
+#: templates/account/login.html
+msgid "takulife 계정으로 기록과 컬렉션을 이어서 관리하세요."
+msgstr "Log in to your takulife account to keep managing your records and collection."
+
+#: templates/account/login.html templates/account/password_reset.html
+#: templates/account/settings.html templates/account/signup.html
+#: templates/socialaccount/signup.html
+msgid "이메일"
+msgstr "Email"
+
+#: templates/account/login.html templates/account/settings.html
+#: templates/account/signup.html
+msgid "비밀번호"
+msgstr "Password"
+
+#: templates/account/login.html templates/account/signup.html
+msgid "또는"
+msgstr "Or"
+
+#: templates/account/login.html templates/account/signup.html
+msgid "Google로 계속하기"
+msgstr "Continue with Google"
+
+#: templates/account/login.html
+msgid "계정이 없으신가요? 회원가입"
+msgstr "Don't have an account? Sign up"
+
+#: templates/account/login.html
+msgid "이메일만 있으면 시작"
+msgstr "Just an email to get started"
+
+#: templates/account/nickname_change.html
+#: templates/core/partials/_account_settings_index.html
+msgid "닉네임 변경"
+msgstr "Change nickname"
+
+#: templates/account/nickname_change.html
+msgid "새 닉네임으로 바꿔요."
+msgstr "Switch to a new nickname."
+
+#: templates/account/nickname_change.html
+msgid "새 닉네임"
+msgstr "New nickname"
+
+#: templates/account/nickname_change.html templates/account/signup.html
+#: templates/socialaccount/signup.html
+msgid "2~20자, 한글·영문·숫자·_ 사용 가능"
+msgstr "2-20 characters, Korean, English, numbers, and _ allowed"
+
+#: templates/account/nickname_change.html
+#: templates/account/password_change.html templates/account/password_set.html
+msgid "설정으로 돌아가기"
+msgstr "Back to settings"
+
+#: templates/account/password_change.html
+#: templates/account/password_reset_from_key.html
+#: templates/core/partials/_account_settings_index.html
+msgid "비밀번호 변경"
+msgstr "Change password"
+
+#: templates/account/password_change.html
+msgid "현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿔요."
+msgstr "Confirm your current password, then switch to a new one."
+
+#: templates/account/password_change.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_set.html
+msgid "새 비밀번호"
+msgstr "New password"
+
+#: templates/account/password_change.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/password_set.html
+msgid "새 비밀번호 확인"
+msgstr "Confirm new password"
+
+#: templates/account/password_change.html
+msgid "비밀번호를 변경해도 지금 로그인된 세션은 유지돼요. 다른 기기에서 로그인이 필요하면 새 비밀번호로 다시 로그인해 주세요."
+msgstr "Your current session stays logged in after you change your password. To log in on other devices, use your new password."
+
+#: templates/account/password_reset.html
+msgid "비밀번호 재설정"
+msgstr "Reset password"
+
+#: templates/account/password_reset.html
+msgid "이미 로그인되어 있습니다."
+msgstr "You're already logged in."
+
+#: templates/account/password_reset.html
+msgid "홈으로 이동"
+msgstr "Go to home"
+
+#: templates/account/password_reset.html
+msgid "가입하신 이메일 주소를 입력하시면 비밀번호 재설정 링크를 보내드립니다."
+msgstr "Enter the email address you signed up with and we'll send you a password reset link."
+
+#: templates/account/password_reset.html
+msgid "재설정 메일 보내기"
+msgstr "Send reset email"
+
+#: templates/account/password_reset.html
+#: templates/account/password_reset_done.html
+#: templates/account/password_reset_from_key.html
+#: templates/account/verification_sent.html
+msgid "로그인 페이지로 돌아가기"
+msgstr "Back to login"
+
+#: templates/account/password_reset_done.html
+msgid "비밀번호 재설정 메일 발송"
+msgstr "Password reset email sent"
+
+#: templates/account/password_reset_done.html
+msgid "메일을 확인해주세요"
+msgstr "Check your email"
+
+#: templates/account/password_reset_done.html
+msgid "비밀번호 재설정 메일을 보냈습니다."
+msgstr "We've sent you a password reset email."
+
+#: templates/account/password_reset_done.html
+#: templates/account/verification_sent.html
+msgid "메일이 보이지 않으면 스팸함을 확인해주세요."
+msgstr "If you don't see the email, check your spam folder."
+
+#: templates/account/password_reset_done.html
+msgid "링크는 일정 시간이 지나면 만료됩니다."
+msgstr "The link will expire after some time."
+
+#: templates/account/password_reset_from_key.html
+msgid "새 비밀번호 설정"
+msgstr "Set a new password"
+
+#: templates/account/password_reset_from_key.html
+msgid "링크가 유효하지 않습니다"
+msgstr "This link isn't valid"
+
+#: templates/account/password_reset_from_key.html
+msgid "비밀번호 재설정 링크가 잘못되었거나 이미 사용되었습니다."
+msgstr "The password reset link is invalid or has already been used."
+
+#: templates/account/password_reset_from_key.html
+msgid "비밀번호 재설정 다시 요청하기"
+msgstr "Request a new reset link"
+
+#: templates/account/password_reset_from_key.html
+msgid "새로 사용할 비밀번호를 입력해주세요."
+msgstr "Enter the new password you'd like to use."
+
+#: templates/account/password_reset_from_key_done.html
+msgid "비밀번호 변경 완료"
+msgstr "Password changed"
+
+#: templates/account/password_reset_from_key_done.html
+msgid "비밀번호가 변경되었습니다"
+msgstr "Your password has been changed"
+
+#: templates/account/password_reset_from_key_done.html
+msgid "새 비밀번호로 다시 로그인해주세요."
+msgstr "Log in again with your new password."
+
+#: templates/account/password_reset_from_key_done.html
+msgid "로그인 페이지로 이동"
+msgstr "Go to login"
+
+#: templates/account/password_set.html
+msgid "비밀번호 설정"
+msgstr "Set password"
+
+#: templates/account/settings.html templates/core/partials/_site_footer.html
+#: templates/core/partials/_topbar.html
+msgid "설정"
+msgstr "Settings"
+
+#: templates/account/settings.html
+#: templates/core/partials/_account_settings_index.html
+msgid "로그인 정보"
+msgstr "Login info"
+
+#: templates/account/settings.html
+msgid "이메일·비밀번호 상태와 가입일을 확인해요."
+msgstr "Check your email and password status and join date."
+
+#: templates/account/settings.html templates/core/partials/_site_footer.html
+msgid "변경"
+msgstr "Change"
+
+#: templates/account/settings.html
+msgid "가입일"
+msgstr "Joined"
+
+#: templates/account/settings.html
+msgid "기록·컬렉션은 모두 비공개입니다. 계정을 삭제하지 않는 한 유지되며, 다른 사용자에게 노출되지 않습니다."
+msgstr "Your records and collection are always private. They're kept unless you delete your account, and other users can't see them."
+
+#: templates/account/signup.html templates/core/partials/_site_footer.html
+#: templates/core/partials/_topbar.html
+msgid "회원가입"
+msgstr "Sign up"
+
+#: templates/account/signup.html
+msgid "이메일 주소 하나로 시작합니다. 가입 후 인증 메일이 발송됩니다."
+msgstr "Get started with just an email address. A verification email will be sent after you sign up."
+
+#: templates/account/signup.html
+msgid "비밀번호 확인"
+msgstr "Confirm password"
+
+#: templates/account/signup.html
+msgid "가입하기"
+msgstr "Sign up"
+
+#: templates/account/signup.html
+msgid "이미 계정이 있으신가요? 로그인"
+msgstr "Already have an account? Log in"
+
+#: templates/account/verification_sent.html
+msgid "이메일 인증 안내"
+msgstr "Email verification notice"
+
+#: templates/account/verification_sent.html
+msgid "이메일을 확인해주세요"
+msgstr "Check your email"
+
+#: templates/account/verification_sent.html
+msgid "가입하신 이메일 주소로 인증 링크를 보냈습니다. 메일의 링크를 클릭하면 로그인됩니다."
+msgstr "We've sent a verification link to the email you signed up with. Click the link to log in."
+
+#: templates/account/verification_sent.html
+msgid "이메일 인증 메일을 보낼 수 없습니다"
+msgstr "We can't send a verification email"
+
+#: templates/account/verification_sent.html
+msgid "takulife는 아직 베타 서비스 준비 중이라 인증 메일이 자동으로 발송되지 않습니다. 가입 정보는 저장되어 있으니, 서비스가 정식으로 열리면 로그인을 다시 시도해주세요."
+msgstr "takulife is still in beta, so verification emails aren't sent automatically. Your sign-up details are saved, so try logging in again once the service officially launches."
+
+#: templates/base.html
+msgid "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
+msgstr "Search pop-up stores, collab cafes, theater bonuses, goods pre-orders, and exhibitions on takulife, and keep track of your visit status and records."
+
+#: templates/base.html
+msgid "본문으로 건너뛰기"
+msgstr "Skip to main content"
+
+#: templates/base.html
+msgid "현재는 베타 서비스 중입니다"
+msgstr "Currently in beta"
+
+#: templates/core/home.html
+msgid "굿즈 컬렉션·서브컬처 이벤트 기록"
+msgstr "Goods collection and subculture event records"
+
+#: templates/core/home.html
+msgid "서브컬처 이벤트 티켓부스"
+msgstr "Subculture event ticket booth"
+
+#: templates/core/home.html
+msgid "내가 원하는 이벤트를"
+msgstr "Find the event"
+
+#: templates/core/home.html
+msgid "찾아봐요!"
+msgstr "you want!"
+
+#: templates/core/home.html
+msgid "작품명, 이벤트명, 장소를 검색"
+msgstr "Search by title, event name, or venue"
+
+#: templates/core/home.html
+msgid "이벤트 검색"
+msgstr "Search events"
+
+#: templates/core/home.html
+msgid "검색"
+msgstr "Search"
+
+#: templates/core/home.html
+msgid "팝업스토어"
+msgstr "Pop-up store"
+
+#: templates/core/home.html
+msgid "콜라보 카페"
+msgstr "Collab cafe"
+
+#: templates/core/home.html
+msgid "굿즈 예약"
+msgstr "Goods pre-order"
+
+#: templates/core/home.html templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "일정 미정"
+msgstr "Date TBD"
+
+#: templates/core/home.html templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "장소 미정"
+msgstr "Venue TBD"
+
+#: templates/core/home.html templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "오늘 종료"
+msgstr "Ends today"
+
+#: templates/core/home.html
+#, python-format
+msgid "종료 D-%(dday)s"
+msgstr "Ends in %(dday)s days"
+
+#: templates/core/home.html templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "오늘 오픈"
+msgstr "Opens today"
+
+#: templates/core/home.html templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+#, python-format
+msgid "오픈 D-%(dday)s"
+msgstr "Opens in %(dday)s days"
+
+#: templates/core/home.html
+msgid "자세히 보기 ›"
+msgstr "See more ›"
+
+#: templates/core/home.html
+msgid "새 행사를 준비하고 있어요"
+msgstr "We're preparing new events"
+
+#: templates/core/home.html
+msgid "이벤트 둘러보기 ›"
+msgstr "Browse events ›"
+
+#: templates/core/home.html
+msgid "카테고리"
+msgstr "Category"
+
+#: templates/core/home.html
+msgid "카테고리로 둘러보기"
+msgstr "Browse by category"
+
+#: templates/core/home.html templates/core/partials/_home_event_calendar.html
+#, python-format
+msgid "%(counter)s개"
+msgid_plural "%(counter)s개"
+msgstr[0] "%(counter)s event"
+msgstr[1] "%(counter)s events"
+
+#: templates/core/home.html
+msgid "이번 주"
+msgstr "This week"
+
+#: templates/core/home.html
+msgid "이번 주 눈여겨 볼 이벤트"
+msgstr "Worth watching this week"
+
+#: templates/core/home.html
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "더보기 ›"
+msgstr "More ›"
+
+#: templates/core/home.html
+msgid "현재 진행 중인 이벤트가 없습니다."
+msgstr "There are no events in progress right now."
+
+#: templates/core/home.html
+msgid "마감 임박"
+msgstr "Closing soon"
+
+#: templates/core/home.html
+msgid "곧 종료돼요"
+msgstr "Ending soon"
+
+#: templates/core/home.html
+msgid "종료 임박 이벤트가 없습니다."
+msgstr "There are no events ending soon."
+
+#: templates/core/home.html
+msgid "방금 올라온"
+msgstr "Just added"
+
+#: templates/core/home.html
+msgid "새 이벤트"
+msgstr "New events"
+
+#: templates/core/home.html
+msgid "등록된 이벤트가 없습니다."
+msgstr "There are no events listed."
+
+#: templates/core/partials/_account_settings_index.html
+#, python-format
+msgid "%(hub_label)s, 현재 위치"
+msgstr "%(hub_label)s, current page"
+
+#: templates/core/partials/_account_settings_index.html
+#, python-format
+msgid "%(nickname_label)s, 현재 위치"
+msgstr "%(nickname_label)s, current page"
+
+#: templates/core/partials/_account_settings_index.html
+#, python-format
+msgid "%(email_label)s, 현재 위치"
+msgstr "%(email_label)s, current page"
+
+#: templates/core/partials/_account_settings_index.html
+#, python-format
+msgid "%(password_label)s, 현재 위치"
+msgstr "%(password_label)s, current page"
+
+#: templates/core/partials/_account_settings_index.html
+#, python-format
+msgid "%(delete_label)s, 현재 위치"
+msgstr "%(delete_label)s, current page"
+
+#: templates/core/partials/_account_settings_index.html
+msgid "계정 설정 메뉴"
+msgstr "Account settings menu"
+
+#: templates/core/partials/_account_settings_index.html
+#, python-format
+msgid "%(joined)s 가입"
+msgstr "Joined %(joined)s"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgctxt "요일"
+msgid "일"
+msgstr "Sun"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgctxt "요일"
+msgid "월"
+msgstr "Mon"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgctxt "요일"
+msgid "화"
+msgstr "Tue"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgctxt "요일"
+msgid "수"
+msgstr "Wed"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgctxt "요일"
+msgid "목"
+msgstr "Thu"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgctxt "요일"
+msgid "금"
+msgstr "Fri"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgctxt "요일"
+msgid "토"
+msgstr "Sat"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+#, python-format
+msgid ", 이벤트 %(counter)s개"
+msgid_plural ", 이벤트 %(counter)s개"
+msgstr[0] ", %(counter)s event"
+msgstr[1] ", %(counter)s events"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgid ", 오늘"
+msgstr ", today"
+
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgid ", 선택한 날짜"
+msgstr ", selected date"
+
+#: templates/core/partials/_calendar_grid.html
+#, python-format
+msgid "외 %(counter)s개"
+msgid_plural "외 %(counter)s개"
+msgstr[0] "+%(counter)s more"
+msgstr[1] "+%(counter)s more"
+
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+#, python-format
+msgid "D-%(dday)s"
+msgstr "Ends in %(dday)s days"
+
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "찜"
+msgstr "Save"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "내 컬렉션 현황"
+msgstr "My collection at a glance"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "전체 컬렉션 보기 ›"
+msgstr "View full collection ›"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "보유"
+msgstr "Owned"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "구함"
+msgstr "Wanted"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "기록"
+msgstr "Records"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "기록 대기"
+msgstr "Pending record"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "시작"
+msgstr "Get started"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "최근 등록한 굿즈"
+msgstr "Recently added goods"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "최근 등록한 굿즈, 이전"
+msgstr "Recently added goods, previous"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "최근 등록한 굿즈, 다음"
+msgstr "Recently added goods, next"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "다가오는 일정"
+msgstr "Upcoming schedule"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "아직 기록이 없어요"
+msgstr "No records yet"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요."
+msgstr "Save an event or add goods, and they'll show up here."
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "이벤트 찾기"
+msgstr "Find events"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "굿즈 등록"
+msgstr "Add goods"
+
+#: templates/core/partials/_home_event_calendar.html
+#: templates/core/partials/_site_footer.html
+msgid "이벤트 달력"
+msgstr "Event calendar"
+
+#: templates/core/partials/_home_event_calendar.html
+#, python-format
+msgid "%(month)s, 놓치기 아까운 일정"
+msgstr "%(month)s: don't miss these"
+
+#: templates/core/partials/_home_event_calendar.html
+msgid "달력 전체 보기 ›"
+msgstr "View full calendar ›"
+
+#: templates/core/partials/_home_event_calendar.html
+msgid "월 이동"
+msgstr "Change month"
+
+#: templates/core/partials/_home_event_calendar.html
+msgid "이전 달"
+msgstr "Previous month"
+
+#: templates/core/partials/_home_event_calendar.html
+msgid "오늘"
+msgstr "Today"
+
+#: templates/core/partials/_home_event_calendar.html
+msgid "다음 달"
+msgstr "Next month"
+
+#: templates/core/partials/_home_event_calendar.html
+#, python-format
+msgid "이 날짜의 이벤트 %(counter)s개 모두 보기 ›"
+msgid_plural "이 날짜의 이벤트 %(counter)s개 모두 보기 ›"
+msgstr[0] "See all %(counter)s event on this date ›"
+msgstr[1] "See all %(counter)s events on this date ›"
+
+#: templates/core/partials/_home_event_calendar.html
+msgid "이 날짜에는 등록된 이벤트가 없습니다."
+msgstr "No events are listed for this date."
+
+#: templates/core/partials/_pager.html
+msgid "페이지 이동"
+msgstr "Page navigation"
+
+#: templates/core/partials/_pager.html
+msgid "5페이지 뒤로"
+msgstr "Back 5 pages"
+
+#: templates/core/partials/_pager.html
+msgid "이전 페이지"
+msgstr "Previous page"
+
+#: templates/core/partials/_pager.html
+msgid "다음 페이지"
+msgstr "Next page"
+
+#: templates/core/partials/_pager.html
+msgid "5페이지 앞으로"
+msgstr "Forward 5 pages"
+
+#: templates/core/partials/_site_footer.html
+msgid "타쿠라이프 — 그대들의 오타쿠 라이프를 위하여."
+msgstr "takulife — for your otaku life."
+
+#: templates/core/partials/_site_footer.html
+msgid "이벤트·컬렉션·활동 기록을 한곳에."
+msgstr "Events, collection, and activity records, all in one place."
+
+#: templates/core/partials/_site_footer.html
+msgid "바닥글 링크"
+msgstr "Footer links"
+
+#: templates/core/partials/_site_footer.html
+msgid "이벤트 목록"
+msgstr "Events"
+
+#: templates/core/partials/_site_footer.html
+msgid "내 컬렉션"
+msgstr "My collection"
+
+#: templates/core/partials/_site_footer.html
+msgid "항목 등록"
+msgstr "Add an entry"
+
+#: templates/core/partials/_site_footer.html
+msgid "전체 보기"
+msgstr "View all"
+
+#: templates/core/partials/_site_footer.html
+msgid "활동 달력"
+msgstr "Activity calendar"
+
+#: templates/core/partials/_site_footer.html
+msgid "찜 목록"
+msgstr "Saved events"
+
+#: templates/core/partials/_site_footer.html
+#: templates/core/partials/_topbar.html
+msgid "마이페이지"
+msgstr "My page"
+
+#: templates/core/partials/_site_footer.html
+msgid "공식 URL 기준으로만 큐레이션합니다."
+msgstr "Curated using official URLs only."
+
+#: templates/core/partials/_site_footer.html
+msgid "관리자 검수를 거친 이벤트만 게시됩니다."
+msgstr "Only events reviewed by staff are published."
+
+#: templates/core/partials/_site_footer.html
+msgid "언어 선택"
+msgstr "Language"
+
+#: templates/core/partials/_site_footer.html
+msgid "법적 고지"
+msgstr "Legal"
+
+#: templates/core/partials/_site_footer.html
+msgid "개인정보처리방침"
+msgstr "Privacy Policy"
+
+#: templates/core/partials/_site_footer.html
+msgid "이용약관"
+msgstr "Terms of Service"
+
+#: templates/core/partials/_site_footer.html
+msgid "문의하기"
+msgstr "Contact us"
+
+#: templates/core/partials/_topbar.html
+msgid "계정 메뉴"
+msgstr "Account menu"
+
+#: templates/core/partials/_topbar.html
+msgid "스태프 콘솔"
+msgstr "Staff console"
+
+#: templates/core/partials/_topbar.html
+msgid "관리자"
+msgstr "Admin"
+
+#: templates/core/partials/_topbar.html
+msgid "로그아웃"
+msgstr "Log out"
+
+#: templates/socialaccount/authentication_error.html
+msgid "소셜 로그인 실패"
+msgstr "Social login failed"
+
+#: templates/socialaccount/authentication_error.html
+msgid "외부 계정으로 로그인하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."
+msgstr "Something went wrong while logging in with an external account. Try again later."
+
+#: templates/socialaccount/login.html
+msgid "소셜 로그인 확인"
+msgstr "Confirm social login"
+
+#: templates/socialaccount/login.html
+#, python-format
+msgid "%(provider_name)s 계정으로 계속할까요?"
+msgstr "Continue with your %(provider_name)s account?"
+
+#: templates/socialaccount/login.html
+#, python-format
+msgid "%(provider_name)s 계정으로 로그인을 진행합니다."
+msgstr "You're logging in with your %(provider_name)s account."
+
+#: templates/socialaccount/login.html
+msgid "계속하기"
+msgstr "Continue"
+
+#: templates/socialaccount/signup.html
+msgid "회원가입 마무리"
+msgstr "Finish signing up"
+
+#: templates/socialaccount/signup.html
+#, python-format
+msgid "%(provider_name)s 계정으로 로그인합니다. 아래 정보를 확인해 가입을 완료해 주세요."
+msgstr "You're logging in with your %(provider_name)s account. Review the details below to finish signing up."
+
+#: templates/socialaccount/signup.html
+msgid "가입 완료"
+msgstr "Complete sign-up"
+
+#: web/views/account.py
+msgid "찜한 행사"
+msgstr "Saved events"
+
+#: web/views/account.py
+msgctxt "단위"
+msgid "건"
+msgstr " items"
+
+#: web/views/account.py
+msgid "나의 일정"
+msgstr "My schedule"
+
+#: web/views/account.py
+msgid "다녀온 기록"
+msgstr "Visit records"
+
+#: web/views/account.py
+msgid "기록 사진"
+msgstr "Record photos"
+
+#: web/views/account.py
+msgctxt "단위"
+msgid "장"
+msgstr " photos"
+
+#: web/views/account.py
+msgid "컬렉션 굿즈"
+msgstr "Collection goods"
+
+#: web/views/account.py
+msgid "직접 등록 항목"
+msgstr "Custom entries"
