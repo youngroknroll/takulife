@@ -237,9 +237,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
       https://<host>/" -d "language=ja&next=/" https://<host>/i18n/setlang/ |
       grep -i '^set-cookie: django_language'`에 `HttpOnly`·`SameSite=Lax`
       (그리고 `SECURE_COOKIES=true` 배포라면 `Secure`)가 있는지 확인한다.
-    - **번역 검수 게이트**: 일본어·중국어(간체) 번역은 사용자가 검수
-      시트(msgid↔ja↔zh 대조표)를 확인하기 전에는 이 PR의 deploy PR을
-      머지하지 않는다(PSO 품질 게이트, 계획서 §8-2).
+    - **번역 검수 게이트(2026-10-21 사용자 지시로 변경)**: 번역 검수는 사람이
+      아니라 번역가와 별개인 AI 검수자가 한다. deploy PR을 머지하기 전에
+      `docs/BE/i18n.md`의 "AI 검수 기록"이 현재 카탈로그 기준으로 쓰여 있고
+      카탈로그 가드(`tests/core/test_i18n_catalog_completeness.py`)가 통과하는지
+      확인한다. 원어민 사람이 읽은 적은 없다는 점은 위험으로 남아 있다.
 
 ## 4. 백업·복구 (T6)
 
