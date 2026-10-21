@@ -35,11 +35,11 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
         <dd>{{ collection_summary.wanted_count }}</dd>
       </div>
       <div class="snapshot-stat" data-tone="visited">
-        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>{% translate "기록" %}</dt>
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>{% translate "기록" context "통계" %}</dt>
         <dd>{{ snapshot_visit_count }}</dd>
       </div>
       <div class="snapshot-stat" data-tone="interest">
-        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>{% translate "찜" %}</dt>
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>{% translate "찜" context "통계" %}</dt>
         <dd>{{ snapshot_interest_count }}</dd>
       </div>
     </dl>
@@ -67,14 +67,14 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
                    종료일을 기준으로 쓰고, 날짜가 없는 직접 등록 항목은 장소로
                    대체한다(둘 다 없으면 줄 자체를 생략). {% endcomment %}
                 {% if row.subject.end_date %}
-                  <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.end_date|date:"m/d" }}</span> {% translate "종료" %}</p>
+                  <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.end_date|date:"m/d" }}</span> {% translate "종료" context "날짜 접미" %}</p>
                 {% elif row.subject.start_date %}
                   <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.start_date|date:"m/d" }}</span> {% translate "시작" %}</p>
                 {% elif row.subject.location %}
                   <p class="snapshot-record-when">{{ row.subject.location }}</p>
                 {% endif %}
               </div>
-              <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">{% translate "기록" %}</a>
+              <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">{% translate "기록" context "동작" %}</a>
             </li>
           {% endfor %}
         </ul>

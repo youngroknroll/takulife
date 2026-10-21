@@ -89,7 +89,7 @@ msgstr "新規登録"
 
 #: static/js/shared/status.js
 msgid "취소하시겠습니까?"
-msgstr "キャンセルしますか？"
+msgstr "取り消しますか？"
 
 #: static/js/shared/status.js
 msgid "찜"
@@ -121,4 +121,4 @@ msgstr "訪問済みに変更しました。記録を残せます"
 
 #: static/js/shared/status.js
 msgid "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."
-msgstr "セキュリティトークンエラーです。更新してから再度お試しください。"
+msgstr "セキュリティトークンエラーです。ページを再読み込みしてから再度お試しください。"

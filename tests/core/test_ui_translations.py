@@ -1,12 +1,50 @@
 """locale/*/LC_MESSAGES/*.mo가 있어야 한다 — `uv run django-admin
 compilemessages --ignore .venv`(CI도 같은 스텝)."""
 import json
+import re
 from html.parser import HTMLParser
 
 import pytest
 from django.test import Client
 
 pytestmark = pytest.mark.web
+
+
+# I18N-43 "찜"·"기록" msgctxt 분기 — 통계 칸(dt)과 동작(버튼/링크)은 영어로
+# 품사가 갈려 한 msgid로 못 맞춘다. msgctxt "통계"/"동작"으로 가른다.
+@pytest.mark.django_db
+def test_영어_홈_스냅샷_통계_라벨은_Saved_Records이고_기록_대기_행_링크는_Add_record다(
+    make_user, make_event
+):
+    from archive.models import UserEventStatus
+
+    user = make_user()
+    event = make_event(title="영어스냅샷테스트행사")
+    UserEventStatus.objects.create(
+        user=user, event=event, status=UserEventStatus.Status.VISITED
+    )
+
+    client = Client()
+    client.force_login(user)
+    resp = client.get("/", HTTP_ACCEPT_LANGUAGE="en")
+
+    body = resp.content.decode()
+    # 다른 문구(찜한 행사 "Saved events" 등)에 "Saved"/"Records"가 부분
+    # 문자열로 섞여 나올 수 있어, 통계 <dt> 요소 단위로 좁혀 단언한다.
+    assert re.search(
+        r'<dt>\s*<span class="snapshot-stat-dot"[^>]*></span>\s*Saved\s*</dt>',
+        body,
+    ), "통계 칸(찜)에 'Saved'가 그대로 나오지 않았다"
+    assert re.search(
+        r'<dt>\s*<span class="snapshot-stat-dot"[^>]*></span>\s*Records\s*</dt>',
+        body,
+    ), "통계 칸(기록)에 'Records'가 그대로 나오지 않았다"
+    assert not re.search(
+        r'<dt>\s*<span class="snapshot-stat-dot"[^>]*></span>\s*Save\s*</dt>', body
+    ), "통계 칸(찜)에 동작 번역 'Save'가 새어 들어왔다"
+    assert re.search(
+        r'<a class="record-action-link"[^>]*>\s*Add record\s*</a>', body
+    ), "기록 대기 행 링크가 'Add record'로 나오지 않았다"
 
 
 class _LangTrackingParser(HTMLParser):

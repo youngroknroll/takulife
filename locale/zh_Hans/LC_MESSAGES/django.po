@@ -64,7 +64,7 @@ msgstr "昵称长度需为2到20个字符。"
 
 #: accounts/validators.py
 msgid "닉네임은 한글, 영문, 숫자, _(밑줄)만 사용할 수 있습니다."
-msgstr "昵称只能使用韩文、英文、数字和下划线(_)。"
+msgstr "昵称只能使用韩文、英文、数字和下划线（_）。"
 
 #: accounts/validators.py
 msgid "이 닉네임은 사용할 수 없습니다."
@@ -208,7 +208,7 @@ msgstr "即将结束优先"
 
 #: core/vocab.py
 msgid "시작일 빠른순"
-msgstr "开始日期最近"
+msgstr "开始日期最早"
 
 #: core/vocab.py
 msgid "최신 등록순"
@@ -220,7 +220,7 @@ msgstr "找不到页面"
 
 #: templates/404.html
 msgid "요청하신 페이지가 삭제되었거나, 주소가 바뀌었거나, 존재하지 않습니다."
-msgstr "您请求的页面已被删除、地址已更改，或该页面不存在。"
+msgstr "该页面已被删除、地址已更改，或不存在。"
 
 #: templates/404.html templates/500.html
 msgid "홈으로 돌아가기"
@@ -328,7 +328,7 @@ msgstr "个人信息处理"
 
 #: templates/account/delete_account.html
 msgid "10일이 지나면 계정과 저장한 이벤트, 다녀온 기록, 컬렉션에 등록한 굿즈, 직접 등록한 항목 및 첨부 이미지가 모두 삭제되며 되돌릴 수 없습니다."
-msgstr "10天后，账号、保存的活动、到访记录、收藏中登记的周边、自行登记的项目及附件图片都将被删除，且无法恢复。"
+msgstr "10天后，账号、关注的活动、到访记录、收藏中登记的周边、自行登记的项目及附件图片都将被删除，且无法恢复。"
 
 #: templates/account/delete_account.html
 msgid "세션 유지"
@@ -336,7 +336,7 @@ msgstr "会话保留"
 
 #: templates/account/delete_account.html
 msgid "탈퇴를 신청하면 이 기기를 포함한 모든 기기에서 즉시 로그아웃됩니다."
-msgstr "申请注销后，将立即从包括此设备的所有设备中退出登录。"
+msgstr "申请注销后，包括当前设备在内的所有设备将立即退出登录。"
 
 #: templates/account/delete_account.html templates/account/delete_done.html
 msgid "복구 방법"
@@ -344,7 +344,7 @@ msgstr "恢复方法"
 
 #: templates/account/delete_account.html
 msgid "10일 안에 같은 이메일로 다시 로그인하면 삭제 예약이 자동으로 취소됩니다."
-msgstr "10天内使用相同邮箱重新登录，删除预约将自动取消。"
+msgstr "10天内使用相同邮箱重新登录，预定的删除将自动取消。"
 
 #: templates/account/delete_account.html
 msgid "삭제될 항목"
@@ -370,7 +370,7 @@ msgstr "必填"
 
 #: templates/account/delete_account.html
 msgid "탈퇴"
-msgstr "注销"
+msgstr "注销账号"
 
 #: templates/account/delete_account.html templates/account/email_change.html
 msgid "취소하고 돌아가기"
@@ -378,11 +378,11 @@ msgstr "取消并返回"
 
 #: templates/account/delete_done.html
 msgid "탈퇴 신청 완료"
-msgstr "注销申请已完成"
+msgstr "注销申请已提交"
 
 #: templates/account/delete_done.html
 msgid "탈퇴가 접수되었습니다"
-msgstr "已收到您的注销申请"
+msgstr "已收到注销申请"
 
 #: templates/account/delete_done.html
 msgid "신청 시각"
@@ -528,7 +528,7 @@ msgstr "登录暂时受限"
 #: templates/socialaccount/authentication_error.html
 #: templates/socialaccount/login.html templates/socialaccount/signup.html
 msgid "그대들의"
-msgstr "致你们的"
+msgstr "为你们的"
 
 #: templates/account/lockout.html templates/account/login.html
 #: templates/account/password_reset.html
@@ -539,7 +539,7 @@ msgstr "致你们的"
 #: templates/socialaccount/authentication_error.html
 #: templates/socialaccount/login.html templates/socialaccount/signup.html
 msgid "덕질 라이프를"
-msgstr "宅文化人生"
+msgstr "宅文化生活"
 
 #: templates/account/lockout.html templates/account/login.html
 #: templates/account/password_reset.html
@@ -550,7 +550,7 @@ msgstr "宅文化人生"
 #: templates/socialaccount/authentication_error.html
 #: templates/socialaccount/login.html templates/socialaccount/signup.html
 msgid "위하여"
-msgstr "全力以赴"
+msgstr "干杯"
 
 #: templates/account/lockout.html templates/account/login.html
 #: templates/account/password_reset.html
@@ -645,7 +645,7 @@ msgstr "邮箱或密码不正确。"
 
 #: templates/account/login.html
 msgid "takulife 계정으로 기록과 컬렉션을 이어서 관리하세요."
-msgstr "使用takulife账号继续管理您的记录和收藏。"
+msgstr "使用takulife账号继续管理记录和收藏。"
 
 #: templates/account/login.html templates/account/password_reset.html
 #: templates/account/settings.html templates/account/signup.html
@@ -664,7 +664,7 @@ msgstr "或"
 
 #: templates/account/login.html templates/account/signup.html
 msgid "Google로 계속하기"
-msgstr "使用Google继续"
+msgstr "使用Google账号继续"
 
 #: templates/account/login.html
 msgid "계정이 없으신가요? 회원가입"
@@ -690,7 +690,7 @@ msgstr "新昵称"
 #: templates/account/nickname_change.html templates/account/signup.html
 #: templates/socialaccount/signup.html
 msgid "2~20자, 한글·영문·숫자·_ 사용 가능"
-msgstr "2~20个字符，可使用韩文、英文、数字和下划线(_)"
+msgstr "2~20个字符，可使用韩文、英文、数字和下划线（_）"
 
 #: templates/account/nickname_change.html
 #: templates/account/password_change.html templates/account/password_set.html
@@ -721,7 +721,7 @@ msgstr "确认新密码"
 
 #: templates/account/password_change.html
 msgid "비밀번호를 변경해도 지금 로그인된 세션은 유지돼요. 다른 기기에서 로그인이 필요하면 새 비밀번호로 다시 로그인해 주세요."
-msgstr "即使修改密码，当前登录的会话仍会保留。如需在其他设备登录，请使用新密码重新登录。"
+msgstr "修改密码后，当前的登录状态会保留。如需在其他设备登录，请使用新密码重新登录。"
 
 #: templates/account/password_reset.html
 msgid "비밀번호 재설정"
@@ -729,7 +729,7 @@ msgstr "重置密码"
 
 #: templates/account/password_reset.html
 msgid "이미 로그인되어 있습니다."
-msgstr "您已登录。"
+msgstr "当前已登录。"
 
 #: templates/account/password_reset.html
 msgid "홈으로 이동"
@@ -737,7 +737,7 @@ msgstr "前往首页"
 
 #: templates/account/password_reset.html
 msgid "가입하신 이메일 주소를 입력하시면 비밀번호 재설정 링크를 보내드립니다."
-msgstr "输入您注册时使用的邮箱地址，我们将发送密码重置链接。"
+msgstr "输入注册时使用的邮箱地址，我们将发送密码重置链接。"
 
 #: templates/account/password_reset.html
 msgid "재설정 메일 보내기"
@@ -756,7 +756,7 @@ msgstr "密码重置邮件已发送"
 
 #: templates/account/password_reset_done.html
 msgid "메일을 확인해주세요"
-msgstr "请查看您的邮箱"
+msgstr "请查收邮件"
 
 #: templates/account/password_reset_done.html
 msgid "비밀번호 재설정 메일을 보냈습니다."
@@ -864,11 +864,11 @@ msgstr "邮箱验证通知"
 
 #: templates/account/verification_sent.html
 msgid "이메일을 확인해주세요"
-msgstr "请查看您的邮箱"
+msgstr "请查收邮件"
 
 #: templates/account/verification_sent.html
 msgid "가입하신 이메일 주소로 인증 링크를 보냈습니다. 메일의 링크를 클릭하면 로그인됩니다."
-msgstr "验证链接已发送至您注册时使用的邮箱地址。点击邮件中的链接即可登录。"
+msgstr "验证链接已发送至注册时使用的邮箱地址。点击邮件中的链接即可登录。"
 
 #: templates/account/verification_sent.html
 msgid "이메일 인증 메일을 보낼 수 없습니다"
@@ -876,11 +876,11 @@ msgstr "无法发送邮箱验证邮件"
 
 #: templates/account/verification_sent.html
 msgid "takulife는 아직 베타 서비스 준비 중이라 인증 메일이 자동으로 발송되지 않습니다. 가입 정보는 저장되어 있으니, 서비스가 정식으로 열리면 로그인을 다시 시도해주세요."
-msgstr "takulife目前仍处于测试版准备阶段，验证邮件不会自动发送。您的注册信息已保存，待服务正式上线后请再次尝试登录。"
+msgstr "takulife目前仍处于测试版准备阶段，验证邮件不会自动发送。注册信息已保存，待服务正式上线后请再次尝试登录。"
 
 #: templates/base.html
 msgid "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
-msgstr "在타쿠라이프(takulife)搜索快闪店·联动咖啡厅·影院特典·周边预订·展览，并保存到访状态和记录。"
+msgstr "在takulife搜索快闪店·联动咖啡厅·影院特典·周边预订·展览，并保存到访状态和记录。"
 
 #: templates/base.html
 msgid "본문으로 건너뛰기"
@@ -888,7 +888,7 @@ msgstr "跳到正文"
 
 #: templates/base.html
 msgid "현재는 베타 서비스 중입니다"
-msgstr "目前为测试版服务。"
+msgstr "目前为测试版服务"
 
 #: templates/core/home.html
 msgid "굿즈 컬렉션·서브컬처 이벤트 기록"
@@ -900,7 +900,7 @@ msgstr "二次元活动售票亭"
 
 #: templates/core/home.html
 msgid "내가 원하는 이벤트를"
-msgstr "寻找你想要的"
+msgstr "找找你想要的"
 
 #: templates/core/home.html
 msgid "찾아봐요!"
@@ -1133,8 +1133,13 @@ msgstr[0] "另有%(counter)s个"
 msgid "D-%(dday)s"
 msgstr "D-%(dday)s"
 
-#: templates/core/partials/_event_compact_row.html
 #: templates/core/partials/_home_collection_snapshot.html
+msgctxt "통계"
+msgid "찜"
+msgstr "已关注"
+
+#: templates/core/partials/_event_compact_row.html
+msgctxt "동작"
 msgid "찜"
 msgstr "关注"
 
@@ -1155,8 +1160,14 @@ msgid "구함"
 msgstr "想要"
 
 #: templates/core/partials/_home_collection_snapshot.html
+msgctxt "통계"
 msgid "기록"
 msgstr "记录"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "동작"
+msgid "기록"
+msgstr "添加记录"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "기록 대기"
@@ -1165,6 +1176,11 @@ msgstr "待记录"
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "시작"
 msgstr "开始"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "날짜 접미"
+msgid "종료"
+msgstr "结束"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "최근 등록한 굿즈"
@@ -1188,7 +1204,7 @@ msgstr "还没有记录"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요."
-msgstr "保存活动或登记周边后，内容会显示在这里。"
+msgstr "关注活动或登记周边后，内容会显示在这里。"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "이벤트 찾기"
@@ -1260,7 +1276,7 @@ msgstr "前进5页"
 
 #: templates/core/partials/_site_footer.html
 msgid "타쿠라이프 — 그대들의 오타쿠 라이프를 위하여."
-msgstr "타쿠라이프 — 为你们的宅文化生活全力以赴。"
+msgstr "takulife —— 为你们的宅文化生活干杯。"
 
 #: templates/core/partials/_site_footer.html
 msgid "이벤트·컬렉션·활동 기록을 한곳에."
@@ -1349,7 +1365,7 @@ msgstr "社交账号登录失败"
 
 #: templates/socialaccount/authentication_error.html
 msgid "외부 계정으로 로그인하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."
-msgstr "使用外部账号登录时发生问题，请稍后再试。"
+msgstr "使用社交账号登录时发生问题，请稍后再试。"
 
 #: templates/socialaccount/login.html
 msgid "소셜 로그인 확인"
@@ -1389,7 +1405,8 @@ msgstr "关注的活动"
 #: web/views/account.py
 msgctxt "단위"
 msgid "건"
-msgstr "项"
+msgid_plural "건"
+msgstr[0] "项"
 
 #: web/views/account.py
 msgid "나의 일정"
@@ -1406,7 +1423,8 @@ msgstr "记录照片"
 #: web/views/account.py
 msgctxt "단위"
 msgid "장"
-msgstr "张"
+msgid_plural "장"
+msgstr[0] "张"
 
 #: web/views/account.py
 msgid "컬렉션 굿즈"

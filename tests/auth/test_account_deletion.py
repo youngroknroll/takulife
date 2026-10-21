@@ -626,6 +626,69 @@ def test_삭제_대상_데이터가_없는_사용자의_삭제_페이지_카운�
 
 
 # ---------------------------------------------------------------------------
+# 삭제 대상 단위의 영어 복수형 회귀 가드 — 영어 독립 검수자가 찾은 결함: 단위가
+# `pgettext_lazy`로 고정돼 개수가 1이어도 "1 items"로 나왔다. 이제 개수에 따라
+# 단수/복수 카탈로그를 고르는 `npgettext`로 바뀌었는지 확인한다.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_영어_화면에서_찜한_행사가_1건이면_단수형_1_item으로_표시된다(
+    client, make_user, valid_password
+):
+    user = make_user(password=valid_password)
+    event = Event.objects.create(title="영어 단수형 확인용 행사")
+    EventInterest.objects.create(user=user, event=event)
+    client.force_login(user)
+
+    response = client.get(DELETE_URL, HTTP_ACCEPT_LANGUAGE="en")
+
+    body = response.content.decode("utf-8", "ignore")
+    assert "1 item" in body
+    assert "1 items" not in body
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_영어_화면에서_찜한_행사가_2건이면_복수형_2_items로_표시된다(
+    client, make_user, valid_password
+):
+    user = make_user(password=valid_password)
+    event1 = Event.objects.create(title="영어 복수형 확인용 행사 1")
+    event2 = Event.objects.create(title="영어 복수형 확인용 행사 2")
+    EventInterest.objects.create(user=user, event=event1)
+    EventInterest.objects.create(user=user, event=event2)
+    client.force_login(user)
+
+    response = client.get(DELETE_URL, HTTP_ACCEPT_LANGUAGE="en")
+
+    body = response.content.decode("utf-8", "ignore")
+    assert "2 items" in body
+
+
+@pytest.mark.django_db
+@pytest.mark.web
+def test_영어_화면에서_기록_사진이_1장이면_단수형_1_photo로_표시된다(
+    client, make_user, png_bytes, valid_password
+):
+    user = make_user(password=valid_password)
+    event = Event.objects.create(title="영어 사진 단수형 확인용 행사")
+    visit = VisitRecord.objects.create(user=user, event=event, visited_on="2026-01-01")
+    VisitRecordPhoto.objects.create(
+        visit_record=visit,
+        image=SimpleUploadedFile("en-photo-singular.png", png_bytes(), content_type="image/png"),
+    )
+    client.force_login(user)
+
+    response = client.get(DELETE_URL, HTTP_ACCEPT_LANGUAGE="en")
+
+    body = response.content.decode("utf-8", "ignore")
+    assert "1 photo" in body
+    assert "1 photos" not in body
+
+
+# ---------------------------------------------------------------------------
 # delete_targets 회귀 가드 (AS-14/AS-15, H1 — 브라우저 실측으로 드러난 결함:
 # POST 실패 경로(비밀번호 오류/락아웃)가 delete_targets 없이 렌더돼 사용자가
 # 탈퇴 판단 근거를 잃었다). GET에서 관찰한 실제 값과 비교한다 — 키 존재만

@@ -31,7 +31,7 @@ msgstr "ニックネームを入力してください。"
 
 #: accounts/forms.py
 msgid "이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다."
-msgstr "利用規約とプライバシーポリシーに同意すると登録できます。"
+msgstr "登録するには、利用規約とプライバシーポリシーへの同意が必要です。"
 
 #: accounts/forms.py templates/account/email_change.html
 #: templates/account/password_change.html
@@ -220,7 +220,7 @@ msgstr "ページが見つかりません"
 
 #: templates/404.html
 msgid "요청하신 페이지가 삭제되었거나, 주소가 바뀌었거나, 존재하지 않습니다."
-msgstr "リクエストされたページは削除された、URLが変更された、または存在しません。"
+msgstr "お探しのページは削除されたか、URLが変更されたか、存在しません。"
 
 #: templates/404.html templates/500.html
 msgid "홈으로 돌아가기"
@@ -423,11 +423,11 @@ msgstr "メールアドレスを認証してください"
 
 #: templates/account/email/password_reset_key_message.txt
 msgid "본인 또는 다른 누군가가 takulife 계정의 비밀번호 재설정을 요청했습니다."
-msgstr "本人、または他の誰かがtakulifeアカウントのパスワード再設定を要求しました。"
+msgstr "あなた、または他の誰かが、takulifeアカウントのパスワード再設定をリクエストしました。"
 
 #: templates/account/email/password_reset_key_message.txt
 msgid "요청하지 않으셨다면 이 메일을 무시하셔도 됩니다. 아래 링크를 클릭해 새 비밀번호를 설정해주세요."
-msgstr "ご自身で要求されていない場合は、このメールは無視していただいて構いません。下記のリンクをクリックして新しいパスワードを設定してください。"
+msgstr "ご自身でリクエストされていない場合は、このメールは無視していただいて構いません。下記のリンクをクリックして新しいパスワードを設定してください。"
 
 #: templates/account/email/password_reset_key_subject.txt
 msgid "비밀번호 재설정 안내"
@@ -505,7 +505,7 @@ msgstr "このメールアドレスはすでに別のアカウントで確認済
 
 #: templates/account/email_confirm.html
 msgid "이메일 관리로 돌아가기"
-msgstr "メール管理に戻る"
+msgstr "メールアドレスの管理に戻る"
 
 #: templates/account/email_confirm.html
 msgid "인증 링크가 만료되었거나 올바르지 않습니다."
@@ -539,7 +539,7 @@ msgstr "君たちの"
 #: templates/socialaccount/authentication_error.html
 #: templates/socialaccount/login.html templates/socialaccount/signup.html
 msgid "덕질 라이프를"
-msgstr "推し活ライフを"
+msgstr "推し活ライフの"
 
 #: templates/account/lockout.html templates/account/login.html
 #: templates/account/password_reset.html
@@ -612,7 +612,7 @@ msgstr "アカウント"
 
 #: templates/account/lockout.html
 msgid "로그인 시도가 너무 많습니다"
-msgstr "ログイン試行が多すぎます"
+msgstr "ログインの試行回数が多すぎます"
 
 #: templates/account/lockout.html
 msgid "잠시 후 다시 시도해 주세요."
@@ -668,7 +668,7 @@ msgstr "Googleで続ける"
 
 #: templates/account/login.html
 msgid "계정이 없으신가요? 회원가입"
-msgstr "アカウントをお持ちでないですか？新規登録"
+msgstr "アカウントをお持ちではありませんか？新規登録"
 
 #: templates/account/login.html
 msgid "이메일만 있으면 시작"
@@ -872,7 +872,7 @@ msgstr "ご登録のメールアドレスに認証リンクを送信しました
 
 #: templates/account/verification_sent.html
 msgid "이메일 인증 메일을 보낼 수 없습니다"
-msgstr "メール認証の送信ができません"
+msgstr "認証メールを送信できません"
 
 #: templates/account/verification_sent.html
 msgid "takulife는 아직 베타 서비스 준비 중이라 인증 메일이 자동으로 발송되지 않습니다. 가입 정보는 저장되어 있으니, 서비스가 정식으로 열리면 로그인을 다시 시도해주세요."
@@ -880,7 +880,7 @@ msgstr "takulifeは現在ベータサービスの準備中のため、認証メ�
 
 #: templates/base.html
 msgid "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
-msgstr "타쿠라이프(takulife)でポップアップストア・コラボカフェ・劇場特典・グッズ予約・展示を検索し、訪問状況と記録を保管しましょう。"
+msgstr "takulifeでポップアップストア・コラボカフェ・劇場特典・グッズ予約・展示を検索し、訪問状況と記録を保管しましょう。"
 
 #: templates/base.html
 msgid "본문으로 건너뛰기"
@@ -1007,7 +1007,7 @@ msgstr "現在開催中のイベントはありません。"
 
 #: templates/core/home.html
 msgid "마감 임박"
-msgstr "締め切り間近"
+msgstr "終了間近"
 
 #: templates/core/home.html
 msgid "곧 종료돼요"
@@ -1136,8 +1136,13 @@ msgstr[1] "他%(counter)s件"
 msgid "D-%(dday)s"
 msgstr "D-%(dday)s"
 
-#: templates/core/partials/_event_compact_row.html
 #: templates/core/partials/_home_collection_snapshot.html
+msgctxt "통계"
+msgid "찜"
+msgstr "お気に入り"
+
+#: templates/core/partials/_event_compact_row.html
+msgctxt "동작"
 msgid "찜"
 msgstr "お気に入り"
 
@@ -1158,8 +1163,14 @@ msgid "구함"
 msgstr "欲しい"
 
 #: templates/core/partials/_home_collection_snapshot.html
+msgctxt "통계"
 msgid "기록"
 msgstr "記録"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "동작"
+msgid "기록"
+msgstr "記録を追加"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "기록 대기"
@@ -1168,6 +1179,11 @@ msgstr "記録待ち"
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "시작"
 msgstr "開始"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "날짜 접미"
+msgid "종료"
+msgstr "終了"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "최근 등록한 굿즈"
@@ -1191,7 +1207,7 @@ msgstr "まだ記録がありません"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요."
-msgstr "イベントを保存したり、グッズを登録するとここに集まります。"
+msgstr "イベントを保存したりグッズを登録したりすると、ここに集まります。"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "이벤트 찾기"
@@ -1264,7 +1280,7 @@ msgstr "5ページ進む"
 
 #: templates/core/partials/_site_footer.html
 msgid "타쿠라이프 — 그대들의 오타쿠 라이프를 위하여."
-msgstr "타쿠라이프 — 君たちのオタクライフのために。"
+msgstr "takulife — 君たちのオタクライフのために。"
 
 #: templates/core/partials/_site_footer.html
 msgid "이벤트·컬렉션·활동 기록을 한곳에."
@@ -1292,7 +1308,7 @@ msgstr "すべて見る"
 
 #: templates/core/partials/_site_footer.html
 msgid "활동 달력"
-msgstr "アクティビティカレンダー"
+msgstr "活動カレンダー"
 
 #: templates/core/partials/_site_footer.html
 msgid "찜 목록"
@@ -1305,7 +1321,7 @@ msgstr "マイページ"
 
 #: templates/core/partials/_site_footer.html
 msgid "공식 URL 기준으로만 큐레이션합니다."
-msgstr "公式URLを基準にのみ厳選しています。"
+msgstr "公式URLだけをもとに厳選しています。"
 
 #: templates/core/partials/_site_footer.html
 msgid "관리자 검수를 거친 이벤트만 게시됩니다."
@@ -1317,7 +1333,7 @@ msgstr "言語選択"
 
 #: templates/core/partials/_site_footer.html
 msgid "법적 고지"
-msgstr "法的表示"
+msgstr "法的情報"
 
 #: templates/core/partials/_site_footer.html
 msgid "개인정보처리방침"
@@ -1375,7 +1391,7 @@ msgstr "続ける"
 
 #: templates/socialaccount/signup.html
 msgid "회원가입 마무리"
-msgstr "登録の仕上げ"
+msgstr "登録の最終ステップ"
 
 #: templates/socialaccount/signup.html
 #, python-format
@@ -1393,7 +1409,8 @@ msgstr "お気に入りのイベント"
 #: web/views/account.py
 msgctxt "단위"
 msgid "건"
-msgstr "件"
+msgid_plural "건"
+msgstr[0] "件"
 
 #: web/views/account.py
 msgid "나의 일정"
@@ -1410,7 +1427,8 @@ msgstr "記録の写真"
 #: web/views/account.py
 msgctxt "단위"
 msgid "장"
-msgstr "枚"
+msgid_plural "장"
+msgstr[0] "枚"
 
 #: web/views/account.py
 msgid "컬렉션 굿즈"

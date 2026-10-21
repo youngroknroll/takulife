@@ -88,7 +88,7 @@ msgstr "Sign up"
 
 #: static/js/shared/status.js
 msgid "취소하시겠습니까?"
-msgstr "Cancel this?"
+msgstr "Remove this?"
 
 #: static/js/shared/status.js
 msgid "찜"

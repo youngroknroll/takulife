@@ -55,7 +55,7 @@ msgstr "This nickname is already taken."
 
 #: accounts/services.py
 msgid "변경 이력 없음"
-msgstr "No change history"
+msgstr "Never changed"
 
 #: accounts/validators.py
 msgid "닉네임은 2자 이상 20자 이하로 입력해 주세요."
@@ -63,7 +63,7 @@ msgstr "Enter a nickname between 2 and 20 characters."
 
 #: accounts/validators.py
 msgid "닉네임은 한글, 영문, 숫자, _(밑줄)만 사용할 수 있습니다."
-msgstr "Nicknames can only contain Korean, English letters, numbers, and underscores (_)."
+msgstr "Nicknames can only contain Korean or English letters, numbers, and underscores (_)."
 
 #: accounts/validators.py
 msgid "이 닉네임은 사용할 수 없습니다."
@@ -147,7 +147,7 @@ msgstr "Recently updated"
 
 #: core/vocab.py
 msgid "등록순"
-msgstr "By date added"
+msgstr "Recently added"
 
 #: core/vocab.py
 msgid "최근 방문순"
@@ -203,15 +203,15 @@ msgstr "Default order"
 
 #: core/vocab.py
 msgid "종료 임박순"
-msgstr "Ending soon"
+msgstr "Ending soonest"
 
 #: core/vocab.py
 msgid "시작일 빠른순"
-msgstr "Starting soon"
+msgstr "Earliest start date"
 
 #: core/vocab.py
 msgid "최신 등록순"
-msgstr "Newest"
+msgstr "Recently added"
 
 #: templates/404.html
 msgid "페이지를 찾을 수 없어요"
@@ -219,7 +219,7 @@ msgstr "Page not found"
 
 #: templates/404.html
 msgid "요청하신 페이지가 삭제되었거나, 주소가 바뀌었거나, 존재하지 않습니다."
-msgstr "The page you requested has been removed, the address has changed, or it doesn't exist."
+msgstr "The page you requested may have been removed, moved, or never existed."
 
 #: templates/404.html templates/500.html
 msgid "홈으로 돌아가기"
@@ -291,7 +291,7 @@ msgstr "My activity"
 
 #: templates/500.html
 msgid "일시적인 오류로 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
-msgstr "A temporary error prevented your request. Try again later."
+msgstr "A temporary error kept us from processing your request. Try again later."
 
 #: templates/account/delete_account.html
 #: templates/core/partials/_account_settings_index.html
@@ -426,7 +426,7 @@ msgstr "You or someone else has requested a password reset for your takulife acc
 
 #: templates/account/email/password_reset_key_message.txt
 msgid "요청하지 않으셨다면 이 메일을 무시하셔도 됩니다. 아래 링크를 클릭해 새 비밀번호를 설정해주세요."
-msgstr "If you didn't request this, you can ignore this email. Click the link below to set a new password."
+msgstr "If you didn't request this, you can ignore this email. Otherwise, click the link below to set a new password."
 
 #: templates/account/email/password_reset_key_subject.txt
 msgid "비밀번호 재설정 안내"
@@ -459,7 +459,7 @@ msgstr "Send verification email"
 
 #: templates/account/email_change.html
 msgid "이 주소로 로그인하고 알림을 받습니다."
-msgstr "You'll log in and receive notifications at this address."
+msgstr "You'll use this address to log in and receive notifications."
 
 #: templates/account/email_change.html
 msgid "인증 대기"
@@ -582,7 +582,7 @@ msgstr "Pop-ups and exhibitions curated from official URLs"
 #: templates/socialaccount/authentication_error.html
 #: templates/socialaccount/login.html templates/socialaccount/signup.html
 msgid "굿즈와 소장품을 내 손안의 목록으로"
-msgstr "Your goods and keepsakes, all in one list"
+msgstr "Your goods and collectibles, all in one list"
 
 #: templates/account/lockout.html templates/account/login.html
 #: templates/account/password_reset.html
@@ -623,7 +623,7 @@ msgstr "Access has been temporarily blocked due to repeated failed login attempt
 
 #: templates/account/lockout.html
 msgid "차단은 일정 시간이 지나면 자동으로 해제됩니다."
-msgstr "The block will be lifted automatically after some time."
+msgstr "The block will be lifted automatically after a set time."
 
 #: templates/account/lockout.html templates/account/login.html
 msgid "비밀번호를 잊으셨나요?"
@@ -689,7 +689,7 @@ msgstr "New nickname"
 #: templates/account/nickname_change.html templates/account/signup.html
 #: templates/socialaccount/signup.html
 msgid "2~20자, 한글·영문·숫자·_ 사용 가능"
-msgstr "2-20 characters, Korean, English, numbers, and _ allowed"
+msgstr "2-20 characters; Korean or English letters, numbers, and _ allowed"
 
 #: templates/account/nickname_change.html
 #: templates/account/password_change.html templates/account/password_set.html
@@ -768,7 +768,7 @@ msgstr "If you don't see the email, check your spam folder."
 
 #: templates/account/password_reset_done.html
 msgid "링크는 일정 시간이 지나면 만료됩니다."
-msgstr "The link will expire after some time."
+msgstr "The link will expire after a set time."
 
 #: templates/account/password_reset_from_key.html
 msgid "새 비밀번호 설정"
@@ -822,7 +822,7 @@ msgstr "Login info"
 
 #: templates/account/settings.html
 msgid "이메일·비밀번호 상태와 가입일을 확인해요."
-msgstr "Check your email and password status and join date."
+msgstr "View your email, password status, and join date."
 
 #: templates/account/settings.html templates/core/partials/_site_footer.html
 msgid "변경"
@@ -834,7 +834,7 @@ msgstr "Joined"
 
 #: templates/account/settings.html
 msgid "기록·컬렉션은 모두 비공개입니다. 계정을 삭제하지 않는 한 유지되며, 다른 사용자에게 노출되지 않습니다."
-msgstr "Your records and collection are always private. They're kept unless you delete your account, and other users can't see them."
+msgstr "Your records and collection are private. They're kept unless you delete your account, and other users can't see them."
 
 #: templates/account/signup.html templates/core/partials/_site_footer.html
 #: templates/core/partials/_topbar.html
@@ -891,11 +891,11 @@ msgstr "Currently in beta"
 
 #: templates/core/home.html
 msgid "굿즈 컬렉션·서브컬처 이벤트 기록"
-msgstr "Goods collection and subculture event records"
+msgstr "Goods collection and fandom event records"
 
 #: templates/core/home.html
 msgid "서브컬처 이벤트 티켓부스"
-msgstr "Subculture event ticket booth"
+msgstr "Fandom event ticket booth"
 
 #: templates/core/home.html
 msgid "내가 원하는 이벤트를"
@@ -907,7 +907,7 @@ msgstr "you want!"
 
 #: templates/core/home.html
 msgid "작품명, 이벤트명, 장소를 검색"
-msgstr "Search by title, event name, or venue"
+msgstr "Search by series, event name, or venue"
 
 #: templates/core/home.html
 msgid "이벤트 검색"
@@ -947,7 +947,7 @@ msgstr "Ends today"
 #: templates/core/home.html
 #, python-format
 msgid "종료 D-%(dday)s"
-msgstr "Ends in %(dday)s days"
+msgstr "Ends D-%(dday)s"
 
 #: templates/core/home.html templates/core/partials/_event_compact_row.html
 #: templates/core/partials/_home_event_calendar.html
@@ -958,11 +958,11 @@ msgstr "Opens today"
 #: templates/core/partials/_home_event_calendar.html
 #, python-format
 msgid "오픈 D-%(dday)s"
-msgstr "Opens in %(dday)s days"
+msgstr "Opens D-%(dday)s"
 
 #: templates/core/home.html
 msgid "자세히 보기 ›"
-msgstr "See more ›"
+msgstr "View details ›"
 
 #: templates/core/home.html
 msgid "새 행사를 준비하고 있어요"
@@ -993,7 +993,7 @@ msgstr "This week"
 
 #: templates/core/home.html
 msgid "이번 주 눈여겨 볼 이벤트"
-msgstr "Worth watching this week"
+msgstr "Events to watch this week"
 
 #: templates/core/home.html
 #: templates/core/partials/_home_collection_snapshot.html
@@ -1133,10 +1133,15 @@ msgstr[1] "+%(counter)s more"
 #: templates/core/partials/_home_event_calendar.html
 #, python-format
 msgid "D-%(dday)s"
-msgstr "Ends in %(dday)s days"
+msgstr "Ends D-%(dday)s"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "통계"
+msgid "찜"
+msgstr "Saved"
 
 #: templates/core/partials/_event_compact_row.html
-#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "동작"
 msgid "찜"
 msgstr "Save"
 
@@ -1157,16 +1162,27 @@ msgid "구함"
 msgstr "Wanted"
 
 #: templates/core/partials/_home_collection_snapshot.html
+msgctxt "통계"
 msgid "기록"
 msgstr "Records"
 
 #: templates/core/partials/_home_collection_snapshot.html
+msgctxt "동작"
+msgid "기록"
+msgstr "Add record"
+
+#: templates/core/partials/_home_collection_snapshot.html
 msgid "기록 대기"
-msgstr "Pending record"
+msgstr "Records to add"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "시작"
-msgstr "Get started"
+msgstr "Starts"
+
+#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "날짜 접미"
+msgid "종료"
+msgstr "Ends"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "최근 등록한 굿즈"
@@ -1208,7 +1224,7 @@ msgstr "Event calendar"
 #: templates/core/partials/_home_event_calendar.html
 #, python-format
 msgid "%(month)s, 놓치기 아까운 일정"
-msgstr "%(month)s: don't miss these"
+msgstr "%(month)s: events you won't want to miss"
 
 #: templates/core/partials/_home_event_calendar.html
 msgid "달력 전체 보기 ›"
@@ -1234,8 +1250,8 @@ msgstr "Next month"
 #, python-format
 msgid "이 날짜의 이벤트 %(counter)s개 모두 보기 ›"
 msgid_plural "이 날짜의 이벤트 %(counter)s개 모두 보기 ›"
-msgstr[0] "See all %(counter)s event on this date ›"
-msgstr[1] "See all %(counter)s events on this date ›"
+msgstr[0] "View %(counter)s event on this date ›"
+msgstr[1] "View all %(counter)s events on this date ›"
 
 #: templates/core/partials/_home_event_calendar.html
 msgid "이 날짜에는 등록된 이벤트가 없습니다."
@@ -1275,7 +1291,7 @@ msgstr "Footer links"
 
 #: templates/core/partials/_site_footer.html
 msgid "이벤트 목록"
-msgstr "Events"
+msgstr "All events"
 
 #: templates/core/partials/_site_footer.html
 msgid "내 컬렉션"
@@ -1392,7 +1408,9 @@ msgstr "Saved events"
 #: web/views/account.py
 msgctxt "단위"
 msgid "건"
-msgstr " items"
+msgid_plural "건"
+msgstr[0] " item"
+msgstr[1] " items"
 
 #: web/views/account.py
 msgid "나의 일정"
@@ -1404,12 +1422,14 @@ msgstr "Visit records"
 
 #: web/views/account.py
 msgid "기록 사진"
-msgstr "Record photos"
+msgstr "Visit record photos"
 
 #: web/views/account.py
 msgctxt "단위"
 msgid "장"
-msgstr " photos"
+msgid_plural "장"
+msgstr[0] " photo"
+msgstr[1] " photos"
 
 #: web/views/account.py
 msgid "컬렉션 굿즈"

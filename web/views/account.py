@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
+from django.utils.translation import npgettext
 
 from accounts import services as accounts_services
 from archive.queries import (
@@ -26,32 +26,44 @@ def _build_delete_targets(user):
     """탈퇴 화면의 "삭제될 항목" 6종 카운트. GET과 POST 두 실패 경로(비밀번호
     오류/락아웃) 모두 이 표를 보여줘야 한다 — 사용자가 탈퇴 여부를 판단하는
     근거라, 오류 한 번에 조용히 사라지면 안 된다(브라우저 실측 H1)."""
+    # 단위는 개수에 따라 영어 복수형("1 item"/"2 items")이 갈려야 해서
+    # 요청마다 즉시 번역한다(지연 번역이면 숫자를 못 받는다).
+    interest_count = user_interest_count(user)
+    status_count = sum(user_status_counts(user).values())
+    visit_count = user_visit_record_counts(user)["total_count"]
+    photo_count = user_visit_record_photo_count(user)
+    collection_count = user_collection_item_summary_counts(user)["total_count"]
+    personal_entry_count = user_personal_entry_counts(user)["total_count"]
     return [
-        {"label": _("찜한 행사"), "count": user_interest_count(user), "unit": pgettext_lazy("단위", "건")},
+        {
+            "label": _("찜한 행사"),
+            "count": interest_count,
+            "unit": npgettext("단위", "건", "건", interest_count),
+        },
         {
             "label": _("나의 일정"),
-            "count": sum(user_status_counts(user).values()),
-            "unit": pgettext_lazy("단위", "건"),
+            "count": status_count,
+            "unit": npgettext("단위", "건", "건", status_count),
         },
         {
             "label": _("다녀온 기록"),
-            "count": user_visit_record_counts(user)["total_count"],
-            "unit": pgettext_lazy("단위", "건"),
+            "count": visit_count,
+            "unit": npgettext("단위", "건", "건", visit_count),
         },
         {
             "label": _("기록 사진"),
-            "count": user_visit_record_photo_count(user),
-            "unit": pgettext_lazy("단위", "장"),
+            "count": photo_count,
+            "unit": npgettext("단위", "장", "장", photo_count),
         },
         {
             "label": _("컬렉션 굿즈"),
-            "count": user_collection_item_summary_counts(user)["total_count"],
-            "unit": pgettext_lazy("단위", "건"),
+            "count": collection_count,
+            "unit": npgettext("단위", "건", "건", collection_count),
         },
         {
             "label": _("직접 등록 항목"),
-            "count": user_personal_entry_counts(user)["total_count"],
-            "unit": pgettext_lazy("단위", "건"),
+            "count": personal_entry_count,
+            "unit": npgettext("단위", "건", "건", personal_entry_count),
         },
     ]
 

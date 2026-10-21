@@ -50,7 +50,7 @@ row · heading_level("h3"|"h4") · show_interest(bool)뿐이다 — variant 같�
       <span class="event-compact-status">{{ row.status_label }}</span>
     {% endif %}
     {% if show_interest %}
-      {% translate "찜" as interest_label %}
+      {% translate "찜" context "동작" as interest_label %}
       <button class="interest-btn event-compact-interest{% if row.user_interested %} active{% endif %}" type="button"
         data-interest-toggle
         data-toast

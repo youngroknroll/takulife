@@ -41,7 +41,7 @@ msgstr "恢复自动播放"
 
 #: static/js/pages/home_hero_rotator.js
 msgid "자동 재생 정지"
-msgstr "停止自动播放"
+msgstr "暂停自动播放"
 
 #: static/js/shared/api.js
 msgid "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
@@ -77,7 +77,7 @@ msgstr "需要登录"
 
 #: static/js/shared/api.js
 msgid "찜·방문 예정을 저장하려면 로그인해 주세요."
-msgstr "请登录后保存关注和计划前往。"
+msgstr "请登录后关注活动或标记计划前往。"
 
 #: static/js/shared/api.js
 msgid "로그인"
@@ -109,7 +109,7 @@ msgstr "错过"
 
 #: static/js/shared/status.js
 msgid "찜 목록에 저장했어요"
-msgstr "已保存到关注列表"
+msgstr "已加入关注列表"
 
 #: static/js/shared/status.js
 msgid "나의 일정에 추가했어요"
