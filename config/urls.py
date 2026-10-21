@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
+from django.views.i18n import JavaScriptCatalog
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from accounts import views as accounts_views
@@ -21,6 +22,9 @@ urlpatterns = [
         {"sitemaps": {"events": EventSitemap, "static": StaticPageSitemap}},
         name="sitemap-xml",
     ),
+    # 프론트 JS가 쓸 번역 사전(gettext catalog)을 내려주는 경로다.
+    path("jsi18n/", JavaScriptCatalog.as_view(), name="javascript-catalog"),
+    path("i18n/", include("django.conf.urls.i18n")),
     path("", web_views.home, name="home"),
     path("events/", web_views.event_list, name="event-list-page"),
     path("events/calendar/", web_views.event_calendar, name="event-calendar-page"),

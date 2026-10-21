@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .permissions import staff_api_korean
 from .views import (
     AdminEventDraftDetailView,
     AdminEventDraftListCreateView,
@@ -8,7 +9,15 @@ from .views import (
 
 
 urlpatterns = [
-    path("", AdminEventDraftListCreateView.as_view(), name="event-drafts"),
-    path("stats/", AdminEventDraftStatsView.as_view(), name="event-draft-stats"),
-    path("<int:pk>/", AdminEventDraftDetailView.as_view(), name="event-draft-detail"),
+    path("", staff_api_korean(AdminEventDraftListCreateView.as_view()), name="event-drafts"),
+    path(
+        "stats/",
+        staff_api_korean(AdminEventDraftStatsView.as_view()),
+        name="event-draft-stats",
+    ),
+    path(
+        "<int:pk>/",
+        staff_api_korean(AdminEventDraftDetailView.as_view()),
+        name="event-draft-detail",
+    ),
 ]

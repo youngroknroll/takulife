@@ -330,6 +330,8 @@ MIDDLEWARE = [
     # SecurityMiddleware 바로 다음(GZipMiddleware 바로 뒤)에 둬야 한다.
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # CommonMiddleware가 리다이렉트를 판단하기 전에 세션/쿠키/헤더로 언어를 결정해야 한다.
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -363,6 +365,7 @@ TEMPLATES = [
                 "core.context_processors.ga_measurement_id",
                 "staff.context_processors.sidebar_badge_counts",
                 "staff.context_processors.staff_search_box",
+                "django.template.context_processors.i18n",
             ],
         },
     },
@@ -397,7 +400,15 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "ko-kr"
+LANGUAGE_CODE = "ko"
+# 언어명은 각 언어의 자기 표기(해당 언어 화자가 읽는 이름)이므로 번역하지 않는다.
+LANGUAGES = [
+    ("ko", "한국어"),
+    ("en", "English"),
+    ("ja", "日本語"),
+    ("zh-hans", "简体中文"),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "Asia/Seoul"
 USE_I18N = True
 USE_TZ = True
@@ -542,6 +553,10 @@ SESSION_COOKIE_SECURE = _secure_cookies
 CSRF_COOKIE_SECURE = _secure_cookies
 # JS 레이어가 csrftoken 쿠키를 읽어야 하므로 CSRF_COOKIE_HTTPONLY는 False로 둔다.
 CSRF_COOKIE_HTTPONLY = False
+# 언어 쿠키는 JS가 읽지 않으므로 HttpOnly로 막고, Secure는 다른 쿠키들과 같은 스위치를 따른다.
+LANGUAGE_COOKIE_SECURE = _secure_cookies
+LANGUAGE_COOKIE_SAMESITE = "Lax"
+LANGUAGE_COOKIE_HTTPONLY = True
 
 # 프록시/HTTPS 보안 헤더: TLS 종료 리버스 프록시 뒤에 배포할 때 SECURE_SSL
 # env로 선택적으로 켠다. 위 SECURE_COOKIES와는 독립적이라 재사용하지 않고
@@ -600,6 +615,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "core.api_exceptions.exception_handler",
     "DEFAULT_THROTTLE_RATES": {
         "promotion": "20/day",
         "collection_item_create": "30/minute",

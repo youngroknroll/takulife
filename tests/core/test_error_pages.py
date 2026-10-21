@@ -51,6 +51,39 @@ def test_핸들러가_예외를_던지면_요청_컨텍스트_없이도_커스�
     assert "ERROR 500" in body
 
 
+# I18N-21
+def test_언어_쿠키가_일본어여도_404_페이지는_일본어_html_lang으로_렌더된다(client, db):
+    """`{% get_current_language %}`는 base.html에서 바로 태그로 읽으므로
+    404는 요청 컨텍스트가 있어도 쿠키 언어를 그대로 반영한다."""
+    client.cookies["django_language"] = "ja"
+
+    resp = client.get("/this-page-does-not-exist/")
+
+    assert resp.status_code == 404
+    body = resp.content.decode("utf-8", "ignore")
+    assert '<html lang="ja">' in body
+
+
+# I18N-21
+def test_언어_쿠키가_일본어여도_500_페이지는_일본어_html_lang으로_렌더된다(client, monkeypatch, db):
+    """500은 컨텍스트 프로세서 없이 렌더되지만 `{% get_current_language %}`
+    태그는 컨텍스트 프로세서가 아니라 활성 언어를 직접 읽으므로 그대로
+    쿠키 언어를 반영한다."""
+    client.cookies["django_language"] = "ja"
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("simulated view failure")
+
+    monkeypatch.setattr("web.views.events.list_published_events", _boom)
+    client.raise_request_exception = False
+
+    resp = client.get("/")
+
+    assert resp.status_code == 500
+    body = resp.content.decode("utf-8", "ignore")
+    assert '<html lang="ja">' in body
+
+
 def test_정상_홈_페이지_렌더링에서는_푸터가_실제_문의_메일_링크를_유지한다(client, settings, db):
     """위 500 페이지 수정에 대한 회귀 가드: core.context_processors.support_email이
     실행되는 정상 페이지 렌더에서는 실제 mailto 문의 링크가 그대로
