@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 전체 사이트 헤더 — base.html에서 모든 페이지에 한 번만 렌더한다. 브랜드 링크,
 주 내비게이션(홈/이벤트/컬렉션/내 활동), 로그인 상태 내비(_topbar.html)를
@@ -6,25 +7,27 @@
 활성 구획은 request.path로 판단한다. 네 구획은 절대 겹치지 않는다 — "/"는
 홈 전용이고 "/events/", "/collection/", "/archive/"는 서로 배타적인 접두사다.
 {% endcomment %}
+{% translate "주 메뉴" as primary_nav_label %}
+{% translate "다크모드 전환" as theme_toggle_label %}
 <header class="site-header">
   <div class="site-header-inner">
     <button type="button" class="nav-menu-toggle" data-nav-menu-toggle
             data-expanded="false" aria-expanded="false" aria-controls="primary-nav"
-            aria-label="주 메뉴">
+            aria-label="{{ primary_nav_label }}">
       <span class="nav-menu-icon" aria-hidden="true">&#9776;</span>
     </button>
     <a class="brand" href="/">takulife</a>
-    <button type="button" class="theme-toggle" data-theme-toggle aria-label="다크모드 전환">
+    <button type="button" class="theme-toggle" data-theme-toggle aria-label="{{ theme_toggle_label }}">
       <span class="theme-toggle-mark">
         <span class="theme-toggle-icon theme-toggle-icon-light">&#9728;&#65038;</span>
         <span class="theme-toggle-icon theme-toggle-icon-dark">&#9790;&#65038;</span>
       </span>
     </button>
-    <nav id="primary-nav" class="site-nav" data-expanded="false" aria-label="주 메뉴">
-      <a href="/"{% if request.path == '/' %} class="active"{% endif %}>홈</a>
-      <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>이벤트</a>
-      <a href="/collection/"{% if '/collection/' in request.path %} class="active"{% endif %}>컬렉션</a>
-      <a href="/archive/"{% if '/archive/' in request.path %} class="active"{% endif %}>내 활동</a>
+    <nav id="primary-nav" class="site-nav" data-expanded="false" aria-label="{{ primary_nav_label }}">
+      <a href="/"{% if request.path == '/' %} class="active"{% endif %}>{% translate "홈" %}</a>
+      <a href="/events/"{% if '/events/' in request.path %} class="active"{% endif %}>{% translate "이벤트" %}</a>
+      <a href="/collection/"{% if '/collection/' in request.path %} class="active"{% endif %}>{% translate "컬렉션" %}</a>
+      <a href="/archive/"{% if '/archive/' in request.path %} class="active"{% endif %}>{% translate "내 활동" %}</a>
     </nav>
     {% include "core/partials/_topbar.html" %}
   </div>

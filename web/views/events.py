@@ -3,10 +3,11 @@
 import json
 import logging
 from collections import defaultdict
-from datetime import timedelta
+from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import truncatechars
@@ -150,6 +151,7 @@ def _home_calendar_context(raw_month, raw_date, *, today):
     return {
         "year": year,
         "month": month,
+        "month_start": date(year, month, 1),
         "month_param": f"{year:04d}-{month:02d}",
         "prev_month": f"{prev_year:04d}-{prev_month:02d}",
         "next_month": f"{next_year:04d}-{next_month:02d}",
@@ -534,7 +536,10 @@ _JSON_LD_ESCAPES = str.maketrans({"<": "\\u003c", ">": "\\u003e", "&": "\\u0026"
 def _json_ld_script(payload):
     if payload is None:
         return None
-    return json.dumps(payload, ensure_ascii=False).translate(_JSON_LD_ESCAPES)
+    # payload에 지연 번역 라벨(Promise)이 섞일 수 있어 활성 언어로 평가하는 Django 인코더를 쓴다.
+    return json.dumps(payload, ensure_ascii=False, cls=DjangoJSONEncoder).translate(
+        _JSON_LD_ESCAPES
+    )
 
 
 def _build_event_meta_title(event):

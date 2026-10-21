@@ -10,6 +10,8 @@
   description  — 제목 아래 선택적 설명
   errors       — 오류 문자열 목록 (예: form.non_field_errors)
   error_text   — 폼이 없는 화면용 단일 오류 문자열, errors보다 우선
+  kicker·title·description·error_text는 호출부에서 {% translate %}로 미리
+  번역해 변수로 넘긴다.
 {% endcomment %}
 <p class="account-settings-kicker">{{ kicker }}</p>
 <h1 class="account-settings-title">{{ title }}</h1>

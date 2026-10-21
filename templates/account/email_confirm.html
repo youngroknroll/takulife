@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load static account %}
+{% load i18n static account %}
 
-{% block title %}이메일 인증 — takulife{% endblock %}
+{% block title %}{% translate "이메일 인증" %} — takulife{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/account_settings.css' %}">
@@ -10,15 +10,17 @@
 {% block content %}
 <main class="page account-settings-page" id="content">
   <div class="account-settings-panel account-settings-panel-standalone">
+    {% translate "계정 설정" as kicker_label %}
+    {% translate "이메일 주소 확인" as title_label %}
     {% if confirmation %}
       {% user_display confirmation.email_address.user as user_display %}
       {% if can_confirm %}
-        {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 주소 확인" %}
-        <p class="account-settings-description">{{ confirmation.email_address.email }}이(가) {{ user_display }}님의 이메일 주소가 맞는지 확인해주세요.</p>
+        {% include "core/partials/_account_settings_panel_head.html" with kicker=kicker_label title=title_label %}
+        <p class="account-settings-description">{% blocktranslate trimmed with email=confirmation.email_address.email display=user_display %}{{ email }}이(가) {{ display }}님의 이메일 주소가 맞는지 확인해주세요.{% endblocktranslate %}</p>
         <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="account-settings-form" data-submit-guard>
           {% csrf_token %}
           {{ redirect_field }}
-          <button type="submit" class="account-settings-submit-btn">확인</button>
+          <button type="submit" class="account-settings-submit-btn">{% translate "확인" %}</button>
         </form>
       {% else %}
         {% comment %}
@@ -26,12 +28,14 @@
         재요청 링크는 도움이 안 된다(이미 다른 계정이 가져간 주소는 재요청으로
         해결되지 않는다) — 대신 이메일 관리 화면으로 돌려보낸다.
         {% endcomment %}
-        {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 주소 확인" error_text="이 이메일은 이미 다른 계정에서 확인되었습니다." %}
-        <p class="account-settings-back"><a href="{% url 'account_email' %}">이메일 관리로 돌아가기</a></p>
+        {% translate "이 이메일은 이미 다른 계정에서 확인되었습니다." as already_confirmed_error %}
+        {% include "core/partials/_account_settings_panel_head.html" with kicker=kicker_label title=title_label error_text=already_confirmed_error %}
+        <p class="account-settings-back"><a href="{% url 'account_email' %}">{% translate "이메일 관리로 돌아가기" %}</a></p>
       {% endif %}
     {% else %}
-      {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="이메일 주소 확인" error_text="인증 링크가 만료되었거나 올바르지 않습니다." %}
-      <p class="account-settings-back"><a href="{% url 'account_email' %}">인증 메일을 다시 요청하기</a></p>
+      {% translate "인증 링크가 만료되었거나 올바르지 않습니다." as invalid_link_error %}
+      {% include "core/partials/_account_settings_panel_head.html" with kicker=kicker_label title=title_label error_text=invalid_link_error %}
+      <p class="account-settings-back"><a href="{% url 'account_email' %}">{% translate "인증 메일을 다시 요청하기" %}</a></p>
     {% endif %}
   </div>
 </main>

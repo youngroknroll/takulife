@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% load static %}
+{% load i18n static %}
 
-{% block title %}닉네임 변경 — takulife{% endblock %}
-{% block og_title %}닉네임 변경 — takulife{% endblock %}
+{% block title %}{% translate "닉네임 변경" %} — takulife{% endblock %}
+{% block og_title %}{% translate "닉네임 변경" %} — takulife{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/account_settings.css' %}">
@@ -13,18 +13,22 @@
   <div class="account-settings-shell">
     {% include "core/partials/_account_settings_index.html" with active="nickname" %}
     <div class="account-settings-panel">
-      {% include "core/partials/_account_settings_panel_head.html" with kicker="계정 설정" title="닉네임 변경" description="새 닉네임으로 바꿔요." errors=form.non_field_errors %}
+      {% translate "계정 설정" as kicker_label %}
+      {% translate "닉네임 변경" as title_label %}
+      {% translate "새 닉네임으로 바꿔요." as desc_label %}
+      {% include "core/partials/_account_settings_panel_head.html" with kicker=kicker_label title=title_label description=desc_label errors=form.non_field_errors %}
 
-      <p class="account-settings-required-legend">＊ 표시는 필수</p>
+      <p class="account-settings-required-legend">＊ {% translate "표시는 필수" %}</p>
       {% url 'account-nickname-page' as action_url %}
+      {% translate "새 닉네임" as new_nickname_label %}
       <form method="post" action="{{ action_url }}" class="account-settings-form" data-submit-guard>
         {% csrf_token %}
-        {% include "core/partials/_account_settings_field.html" with field=form.nickname label="새 닉네임" %}
-        <p class="account-settings-nickname-hint">2~20자, 한글·영문·숫자·_ 사용 가능</p>
-        <button type="submit" class="account-settings-submit-btn">닉네임 변경</button>
+        {% include "core/partials/_account_settings_field.html" with field=form.nickname label=new_nickname_label %}
+        <p class="account-settings-nickname-hint">{% translate "2~20자, 한글·영문·숫자·_ 사용 가능" %}</p>
+        <button type="submit" class="account-settings-submit-btn">{% translate "닉네임 변경" %}</button>
       </form>
 
-      <p class="account-settings-back"><a href="{% url 'account-settings-page' %}">설정으로 돌아가기</a></p>
+      <p class="account-settings-back"><a href="{% url 'account-settings-page' %}">{% translate "설정으로 돌아가기" %}</a></p>
     </div>
   </div>
 </main>

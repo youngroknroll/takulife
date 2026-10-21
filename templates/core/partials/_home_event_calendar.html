@@ -1,6 +1,7 @@
-{% comment %}
+{% load i18n %}{% comment %}
 홈 히어로 아래 이벤트 달력 섹션. 뷰가 context["home_calendar"]로 전달하는
-계약: year, month, month_param("YYYY-MM"), weeks(주 목록, 칸={date,
+계약: year, month, month_start(해당 월 1일의 date, 로케일별 월 이름 서식용),
+month_param("YYYY-MM"), weeks(주 목록, 칸={date,
 in_month, today, selected, count, categories}), selected_date,
 selected_is_today, selected_rows(_attach_display 결과, 최대 5건),
 selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
@@ -11,33 +12,37 @@ selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
 <section class="section" id="home-calendar">
   <div class="section-head">
     <div>
-      <span class="section-eyebrow">이벤트 달력</span>
-      <h2>{{ cal.month }}월, 놓치기 아까운 일정</h2>
+      <span class="section-eyebrow">{% translate "이벤트 달력" %}</span>
+      <h2>{% blocktranslate trimmed with month=cal.month_start|date:"F" %}{{ month }}, 놓치기 아까운 일정{% endblocktranslate %}</h2>
     </div>
-    <a class="section-more" href="/events/calendar/?month={{ cal.month_param }}">달력 전체 보기 ›</a>
+    <a class="section-more" href="/events/calendar/?month={{ cal.month_param }}">{% translate "달력 전체 보기 ›" %}</a>
   </div>
 
   <div class="home-cal">
     <div class="home-cal-grid">
-      <nav class="calendar-month-nav" aria-label="월 이동">
+      {% translate "월 이동" as month_nav_label %}
+      {% translate "이전 달" as prev_month_label %}
+      {% translate "오늘" as today_label %}
+      {% translate "다음 달" as next_month_label %}
+      <nav class="calendar-month-nav" aria-label="{{ month_nav_label }}">
         <h3 class="calendar-month-label">
-          <span class="calendar-month-year">{{ cal.year }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ cal.month }}월</span>
+          <span class="calendar-month-year">{{ cal.year }}</span><span class="calendar-month-sep">·</span><span class="calendar-month-name">{{ cal.month_start|date:"F" }}</span>
         </h3>
         <div class="calendar-month-controls">
-          <a class="calendar-month-glyph" href="?month={{ cal.prev_month }}#home-calendar-agenda" aria-label="이전 달">‹</a>
-          <a class="calendar-month-today" href="/#home-calendar-agenda">오늘</a>
-          <a class="calendar-month-glyph" href="?month={{ cal.next_month }}#home-calendar-agenda" aria-label="다음 달">›</a>
+          <a class="calendar-month-glyph" href="?month={{ cal.prev_month }}#home-calendar-agenda" aria-label="{{ prev_month_label }}">‹</a>
+          <a class="calendar-month-today" href="/#home-calendar-agenda">{{ today_label }}</a>
+          <a class="calendar-month-glyph" href="?month={{ cal.next_month }}#home-calendar-agenda" aria-label="{{ next_month_label }}">›</a>
         </div>
       </nav>
 
       <div class="month-grid month-grid-head">
-        <span class="month-grid-weekday">일</span>
-        <span class="month-grid-weekday">월</span>
-        <span class="month-grid-weekday">화</span>
-        <span class="month-grid-weekday">수</span>
-        <span class="month-grid-weekday">목</span>
-        <span class="month-grid-weekday">금</span>
-        <span class="month-grid-weekday">토</span>
+        <span class="month-grid-weekday">{% translate "일" context "요일" %}</span>
+        <span class="month-grid-weekday">{% translate "월" context "요일" %}</span>
+        <span class="month-grid-weekday">{% translate "화" context "요일" %}</span>
+        <span class="month-grid-weekday">{% translate "수" context "요일" %}</span>
+        <span class="month-grid-weekday">{% translate "목" context "요일" %}</span>
+        <span class="month-grid-weekday">{% translate "금" context "요일" %}</span>
+        <span class="month-grid-weekday">{% translate "토" context "요일" %}</span>
       </div>
       <div class="month-grid month-grid-body">
         {% for week in cal.weeks %}
@@ -49,7 +54,7 @@ selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
                 data-in-month="{{ day.in_month|yesno:"true,false" }}"
                 data-today="{{ day.today|yesno:"true,false" }}"
                 data-selected="{{ day.selected|yesno:"true,false" }}"
-                aria-label="{{ day.date|date:"Y년 n월 j일 l" }}{% if day.count %}, 이벤트 {{ day.count }}개{% endif %}{% if day.today %}, 오늘{% endif %}{% if day.selected %}, 선택한 날짜{% endif %}"
+                aria-label="{{ day.date|date:"DATE_FORMAT" }} {{ day.date|date:"l" }}{% if day.count %}{% blocktranslate trimmed count counter=day.count %}, 이벤트 {{ counter }}개{% plural %}, 이벤트 {{ counter }}개{% endblocktranslate %}{% endif %}{% if day.today %}{% translate ", 오늘" %}{% endif %}{% if day.selected %}{% translate ", 선택한 날짜" %}{% endif %}"
                 {% if day.today %}aria-current="date"{% endif %}
               >
                 <span class="day-num">{{ day.date|date:"j" }}</span>
@@ -71,7 +76,7 @@ selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
           {% for item in cal.legend %}
             <span class="legend-item">
               <span class="home-cal-dot" data-category="{{ item.slug }}" aria-hidden="true"></span>
-              <span class="legend-label">{{ item.label }}</span>
+              <span class="legend-label" lang="ko">{{ item.label }}</span>
             </span>
           {% endfor %}
         </div>
@@ -80,8 +85,8 @@ selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
 
     <div class="home-cal-agenda" id="home-calendar-agenda" tabindex="-1">
       <div class="date-detail-head">
-        <h3>{{ cal.selected_date|date:"n월 j일" }} <span class="date-detail-weekday">{{ cal.selected_date|date:"l" }}{% if cal.selected_is_today %} · 오늘{% endif %}</span></h3>
-        {% if cal.selected_count %}<span class="date-detail-count">{{ cal.selected_count }}개</span>{% endif %}
+        <h3>{{ cal.selected_date|date:"MONTH_DAY_FORMAT" }} <span class="date-detail-weekday">{{ cal.selected_date|date:"l" }}{% if cal.selected_is_today %} · {% translate "오늘" %}{% endif %}</span></h3>
+        {% if cal.selected_count %}<span class="date-detail-count">{% blocktranslate trimmed count counter=cal.selected_count %}{{ counter }}개{% plural %}{{ counter }}개{% endblocktranslate %}</span>{% endif %}
       </div>
       {% if cal.selected_rows %}
         <div class="agenda-rows">
@@ -91,27 +96,27 @@ selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
               <div class="agenda-body">
                 <p class="agenda-meta">
                   {% if row.category_label %}
-                    <span class="agenda-cat">{{ row.category_label }}</span>
+                    <span class="agenda-cat" lang="ko">{{ row.category_label }}</span>
                   {% endif %}
                   {% if row.category_label and row.status_label %}
                     <span class="agenda-dot" aria-hidden="true"></span>
                   {% endif %}
                   {% if row.status_slug == "ended" %}
-                    <span class="agenda-tone">종료</span>
+                    <span class="agenda-tone">{% translate "종료" %}</span>
                   {% elif row.status_slug == "closing_soon" %}
-                    <span class="agenda-tone">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</span>
+                    <span class="agenda-tone">{% if row.dday == 0 %}{% translate "오늘 종료" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}D-{{ dday }}{% endblocktranslate %}{% endif %}</span>
                   {% elif row.status_slug == "upcoming" %}
-                    <span class="agenda-tone">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</span>
+                    <span class="agenda-tone">{% if row.dday == 0 %}{% translate "오늘 오픈" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}오픈 D-{{ dday }}{% endblocktranslate %}{% endif %}</span>
                   {% elif row.status_label %}
                     <span class="agenda-tone">{{ row.status_label }}</span>
                   {% endif %}
                 </p>
                 {% if row.event.work_title %}
-                  <p class="agenda-work">{{ row.event.work_title }}</p>
+                  <p class="agenda-work" lang="ko">{{ row.event.work_title }}</p>
                 {% endif %}
-                <h3 class="agenda-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
+                <h3 class="agenda-title" lang="ko"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h3>
                 {% if not row.event.start_date %}
-                  <p class="agenda-date">일정 미정</p>
+                  <p class="agenda-date">{% translate "일정 미정" %}</p>
                 {% elif row.event.end_date and row.event.end_date != row.event.start_date %}
                   <p class="agenda-date">
                     <time class="mono-num" datetime="{{ row.event.start_date|date:"Y-m-d" }}">{{ row.event.start_date|date:"n.d" }}</time>
@@ -120,21 +125,21 @@ selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
                   </p>
                 {% endif %}
                 {% if row.region_label and row.event.location_name %}
-                  <p class="agenda-place">{{ row.region_label }} · {{ row.event.location_name }}</p>
+                  <p class="agenda-place">{{ row.region_label }} · <span lang="ko">{{ row.event.location_name }}</span></p>
                 {% elif row.region_label %}
                   <p class="agenda-place">{{ row.region_label }}</p>
                 {% elif row.event.location_name %}
-                  <p class="agenda-place">{{ row.event.location_name }}</p>
+                  <p class="agenda-place" lang="ko">{{ row.event.location_name }}</p>
                 {% else %}
-                  <p class="agenda-place">장소 미정</p>
+                  <p class="agenda-place">{% translate "장소 미정" %}</p>
                 {% endif %}
               </div>
             </article>
           {% endfor %}
         </div>
-        <a class="home-cal-agenda-more" href="/events/calendar/?month={{ cal.month_param }}&date={{ cal.selected_date|date:"Y-m-d" }}#selected-date">이 날짜의 이벤트 {{ cal.selected_count }}개 모두 보기 ›</a>
+        <a class="home-cal-agenda-more" href="/events/calendar/?month={{ cal.month_param }}&date={{ cal.selected_date|date:"Y-m-d" }}#selected-date">{% blocktranslate trimmed count counter=cal.selected_count %}이 날짜의 이벤트 {{ counter }}개 모두 보기 ›{% plural %}이 날짜의 이벤트 {{ counter }}개 모두 보기 ›{% endblocktranslate %}</a>
       {% else %}
-        <p class="notice">이 날짜에는 등록된 이벤트가 없습니다.</p>
+        <p class="notice">{% translate "이 날짜에는 등록된 이벤트가 없습니다." %}</p>
       {% endif %}
     </div>
   </div>

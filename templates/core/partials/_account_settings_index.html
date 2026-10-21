@@ -7,39 +7,51 @@
 로그인 정보 영역은 항상 request.user를 직접 읽어, 별도 컨텍스트를 넘기지
 않는 화면에서 include해도 그대로 동작한다.
 {% endcomment %}
-<nav class="account-settings-index" aria-label="계정 설정 메뉴">
+{% load i18n %}
+{% translate "로그인 정보" as hub_label %}
+{% translate "닉네임 변경" as nickname_label %}
+{% translate "이메일 변경" as email_label %}
+{% translate "비밀번호 변경" as password_label %}
+{% translate "회원 탈퇴" as delete_label %}
+{% blocktranslate trimmed asvar hub_current_label %}{{ hub_label }}, 현재 위치{% endblocktranslate %}
+{% blocktranslate trimmed asvar nickname_current_label %}{{ nickname_label }}, 현재 위치{% endblocktranslate %}
+{% blocktranslate trimmed asvar email_current_label %}{{ email_label }}, 현재 위치{% endblocktranslate %}
+{% blocktranslate trimmed asvar password_current_label %}{{ password_label }}, 현재 위치{% endblocktranslate %}
+{% blocktranslate trimmed asvar delete_current_label %}{{ delete_label }}, 현재 위치{% endblocktranslate %}
+{% translate "계정 설정 메뉴" as nav_aria_label %}
+<nav class="account-settings-index" aria-label="{{ nav_aria_label }}">
   <div class="account-settings-index-tabs">
     <a
       href="{% url 'account-settings-page' %}"
       class="account-settings-index-tab{% if active == "hub" %} is-active{% endif %}"
-      {% if active == "hub" %}aria-current="page" aria-label="로그인 정보, 현재 위치"{% endif %}
-    >로그인 정보</a>
+      {% if active == "hub" %}aria-current="page" aria-label="{{ hub_current_label }}"{% endif %}
+    >{{ hub_label }}</a>
     <a
       href="{% url 'account-nickname-page' %}"
       class="account-settings-index-tab{% if active == "nickname" %} is-active{% endif %}"
-      {% if active == "nickname" %}aria-current="page" aria-label="닉네임 변경, 현재 위치"{% endif %}
-    >닉네임 변경</a>
+      {% if active == "nickname" %}aria-current="page" aria-label="{{ nickname_current_label }}"{% endif %}
+    >{{ nickname_label }}</a>
     <a
       href="{% url 'account_email' %}"
       class="account-settings-index-tab{% if active == "email" %} is-active{% endif %}"
-      {% if active == "email" %}aria-current="page" aria-label="이메일 변경, 현재 위치"{% endif %}
-    >이메일 변경</a>
+      {% if active == "email" %}aria-current="page" aria-label="{{ email_current_label }}"{% endif %}
+    >{{ email_label }}</a>
     <a
       href="{% url 'account_change_password' %}"
       class="account-settings-index-tab{% if active == "password" %} is-active{% endif %}"
-      {% if active == "password" %}aria-current="page" aria-label="비밀번호 변경, 현재 위치"{% endif %}
-    >비밀번호 변경</a>
+      {% if active == "password" %}aria-current="page" aria-label="{{ password_current_label }}"{% endif %}
+    >{{ password_label }}</a>
     {% if not request.user.is_staff %}
       <a
         href="{% url 'account-delete-page' %}"
         class="account-settings-index-tab is-danger{% if active == "delete" %} is-active{% endif %}"
-        {% if active == "delete" %}aria-current="page" aria-label="회원 탈퇴, 현재 위치"{% endif %}
-      >회원 탈퇴</a>
+        {% if active == "delete" %}aria-current="page" aria-label="{{ delete_current_label }}"{% endif %}
+      >{{ delete_label }}</a>
     {% endif %}
   </div>
 
   <div class="account-settings-login-info">
     <p class="account-settings-login-info-email" title="{{ request.user.email }}">{{ request.user.email }}</p>
-    <p class="account-settings-login-info-joined">{{ request.user.date_joined|date:"Y.m.d" }} 가입</p>
+    <p class="account-settings-login-info-joined">{% blocktranslate trimmed with joined=request.user.date_joined|date:"Y.m.d" %}{{ joined }} 가입{% endblocktranslate %}</p>
   </div>
 </nav>

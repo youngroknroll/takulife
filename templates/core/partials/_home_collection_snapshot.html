@@ -1,4 +1,4 @@
-{% comment %}
+{% load i18n %}{% comment %}
 로그인 사용자 전용 홈 컬렉션 스냅샷 패널이다. request.user.is_authenticated
 분기 밖에 있어 비로그인 응답에는 이 마크업이 전혀 포함되지 않는다(뷰도 같은
 조건으로 컨텍스트를 이미 한 번 막아 이중 방어다).
@@ -16,9 +16,9 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
   <div class="section-head">
     <div>
       <span class="section-eyebrow">MY</span>
-      <h2>내 컬렉션 현황</h2>
+      <h2>{% translate "내 컬렉션 현황" %}</h2>
     </div>
-    {% if snapshot_active %}<a class="section-more" href="/collection/">전체 컬렉션 보기 ›</a>{% endif %}
+    {% if snapshot_active %}<a class="section-more" href="/collection/">{% translate "전체 컬렉션 보기 ›" %}</a>{% endif %}
   </div>
 
   {% if snapshot_active %}
@@ -27,19 +27,19 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
        구조가 다르다. 다른 페이지의 요약 카드는 손대지 않는다. {% endcomment %}
     <dl class="snapshot-stats">
       <div class="snapshot-stat" data-tone="owned">
-        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>보유</dt>
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>{% translate "보유" %}</dt>
         <dd>{{ collection_summary.owned_count }}</dd>
       </div>
       <div class="snapshot-stat" data-tone="wanted">
-        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>구함</dt>
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>{% translate "구함" %}</dt>
         <dd>{{ collection_summary.wanted_count }}</dd>
       </div>
       <div class="snapshot-stat" data-tone="visited">
-        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>기록</dt>
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>{% translate "기록" %}</dt>
         <dd>{{ snapshot_visit_count }}</dd>
       </div>
       <div class="snapshot-stat" data-tone="interest">
-        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>찜</dt>
+        <dt><span class="snapshot-stat-dot" aria-hidden="true"></span>{% translate "찜" %}</dt>
         <dd>{{ snapshot_interest_count }}</dd>
       </div>
     </dl>
@@ -47,8 +47,8 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
     {% if unrecorded %}
       <div class="snapshot-sublist">
         <div class="snapshot-sublist-head">
-          <h3>기록 대기 <span class="snapshot-count">{{ unrecorded|length }}</span></h3>
-          <a class="snapshot-more" href="/archive/statuses/?status=visited">더보기 ›</a>
+          <h3>{% translate "기록 대기" %} <span class="snapshot-count">{{ unrecorded|length }}</span></h3>
+          <a class="snapshot-more" href="/archive/statuses/?status=visited">{% translate "더보기 ›" %}</a>
         </div>
         {% comment %} 가로 스크롤 레일 → 3열 그리드(모바일 1열). 시안이 이 목록만 평면
            행으로 바꿨다 — 아래 두 서브리스트(굿즈·일정)는 포스터/카드라
@@ -59,7 +59,7 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
               <span class="snapshot-record-bar" aria-hidden="true"></span>
               <div class="snapshot-record-body">
                 {% if row.subject.category_label %}
-                  <p class="snapshot-record-cat">{{ row.subject.category_label }}</p>
+                  <p class="snapshot-record-cat" lang="ko">{{ row.subject.category_label }}</p>
                 {% endif %}
                 <p class="snapshot-record-title">{{ row.subject.title }}</p>
                 {% comment %} 시안의 3번째 줄은 "07/18 방문"이지만 방문 날짜는 여기 없다 —
@@ -67,14 +67,14 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
                    종료일을 기준으로 쓰고, 날짜가 없는 직접 등록 항목은 장소로
                    대체한다(둘 다 없으면 줄 자체를 생략). {% endcomment %}
                 {% if row.subject.end_date %}
-                  <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.end_date|date:"m/d" }}</span> 종료</p>
+                  <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.end_date|date:"m/d" }}</span> {% translate "종료" %}</p>
                 {% elif row.subject.start_date %}
-                  <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.start_date|date:"m/d" }}</span> 시작</p>
+                  <p class="snapshot-record-when"><span class="mono-num">{{ row.subject.start_date|date:"m/d" }}</span> {% translate "시작" %}</p>
                 {% elif row.subject.location %}
                   <p class="snapshot-record-when">{{ row.subject.location }}</p>
                 {% endif %}
               </div>
-              <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">기록</a>
+              <a class="record-action-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">{% translate "기록" %}</a>
             </li>
           {% endfor %}
         </ul>
@@ -84,11 +84,13 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
     {% if recent_goods %}
       <div class="snapshot-sublist">
         <div class="snapshot-sublist-head">
-          <h3>최근 등록한 굿즈</h3>
-          <a class="snapshot-more" href="/collection/">더보기 ›</a>
+          <h3>{% translate "최근 등록한 굿즈" %}</h3>
+          <a class="snapshot-more" href="/collection/">{% translate "더보기 ›" %}</a>
         </div>
+        {% translate "최근 등록한 굿즈, 이전" as goods_prev_label %}
+        {% translate "최근 등록한 굿즈, 다음" as goods_next_label %}
         <div class="hscroll-wrap" data-hscroll>
-          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-goods" aria-label="최근 등록한 굿즈, 이전">&#8249;</button>
+          <button class="hscroll-btn hscroll-prev" type="button" data-hscroll-prev data-controls="hscroll-snap-goods" aria-label="{{ goods_prev_label }}">&#8249;</button>
           <ul class="hscroll-track" data-hscroll-track id="hscroll-snap-goods" tabindex="0">
             {% for item in recent_goods %}
               <li>
@@ -105,7 +107,7 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
               </li>
             {% endfor %}
           </ul>
-          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-snap-goods" aria-label="최근 등록한 굿즈, 다음">&#8250;</button>
+          <button class="hscroll-btn hscroll-next" type="button" data-hscroll-next data-controls="hscroll-snap-goods" aria-label="{{ goods_next_label }}">&#8250;</button>
         </div>
       </div>
     {% endif %}
@@ -113,8 +115,8 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
     {% if upcoming_planned %}
       <div class="snapshot-sublist">
         <div class="snapshot-sublist-head">
-          <h3>다가오는 일정</h3>
-          <a class="snapshot-more" href="/archive/statuses/?status=planned">더보기 ›</a>
+          <h3>{% translate "다가오는 일정" %}</h3>
+          <a class="snapshot-more" href="/archive/statuses/?status=planned">{% translate "더보기 ›" %}</a>
         </div>
         {% comment %} 가로 스크롤 레일(포스터 카드) → 세로 목록. 넘치지 않는
            목록에는 hscroll-wrap과 prev/next 버튼을 두지 않는다 — 남겨두면
@@ -129,11 +131,11 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
   {% else %}
     <div class="empty-state">
       <p class="empty-icon" aria-hidden="true">🗂️</p>
-      <p class="empty-title">아직 기록이 없어요</p>
-      <p class="empty-note">이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요.</p>
+      <p class="empty-title">{% translate "아직 기록이 없어요" %}</p>
+      <p class="empty-note">{% translate "이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요." %}</p>
       <div class="empty-actions">
-        <a class="empty-action" href="/events/">이벤트 찾기</a>
-        <a class="empty-action" href="/collection/new/">굿즈 등록</a>
+        <a class="empty-action" href="/events/">{% translate "이벤트 찾기" %}</a>
+        <a class="empty-action" href="/collection/new/">{% translate "굿즈 등록" %}</a>
       </div>
     </div>
   {% endif %}
