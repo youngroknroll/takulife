@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: takulife\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 19:16+0900\n"
+"POT-Creation-Date: 2026-10-22 13:57+0900\n"
 "PO-Revision-Date: 2026-10-21 18:00+0900\n"
 "Last-Translator: takulife\n"
 "Language-Team: takulife\n"
@@ -69,15 +69,18 @@ msgstr "Nicknames can only contain Korean or English letters, numbers, and under
 msgid "이 닉네임은 사용할 수 없습니다."
 msgstr "This nickname can't be used."
 
-#: core/vocab.py templates/core/home.html
+#: core/vocab.py templates/core/events/calendar.html
+#: templates/core/events/list.html templates/core/home.html
 msgid "서울"
 msgstr "Seoul"
 
-#: core/vocab.py templates/core/home.html
+#: core/vocab.py templates/core/events/calendar.html
+#: templates/core/events/list.html templates/core/home.html
 msgid "경기"
 msgstr "Gyeonggi"
 
-#: core/vocab.py
+#: core/vocab.py templates/core/events/calendar.html
+#: templates/core/events/list.html
 msgid "인천"
 msgstr "Incheon"
 
@@ -101,15 +104,15 @@ msgstr "Gwangju"
 msgid "온라인"
 msgstr "Online"
 
-#: core/vocab.py
+#: core/vocab.py templates/core/events/detail.html
 msgid "방문 예정"
 msgstr "Planned"
 
-#: core/vocab.py
+#: core/vocab.py templates/core/events/detail.html
 msgid "방문 완료"
 msgstr "Visited"
 
-#: core/vocab.py
+#: core/vocab.py templates/core/events/detail.html
 msgid "놓침"
 msgstr "Missed"
 
@@ -181,19 +184,20 @@ msgstr "Upcoming"
 msgid "진행 중"
 msgstr "Ongoing"
 
-#: core/vocab.py templates/core/home.html
+#: core/vocab.py templates/core/events/calendar.html
+#: templates/core/events/list.html templates/core/home.html
 #: templates/core/partials/_site_footer.html
 msgid "종료 임박"
 msgstr "Ending soon"
 
-#: core/vocab.py templates/core/home.html
+#: core/vocab.py templates/core/events/list.html templates/core/home.html
 #: templates/core/partials/_event_compact_row.html
-#: templates/core/partials/_home_collection_snapshot.html
 #: templates/core/partials/_home_event_calendar.html
 msgid "종료"
 msgstr "Ended"
 
-#: core/vocab.py
+#: core/vocab.py templates/core/events/calendar.html
+#: templates/core/events/list.html
 msgid "전체"
 msgstr "All"
 
@@ -613,7 +617,7 @@ msgstr "Account"
 msgid "로그인 시도가 너무 많습니다"
 msgstr "Too many login attempts"
 
-#: templates/account/lockout.html
+#: templates/account/lockout.html templates/core/events/calendar.html
 msgid "잠시 후 다시 시도해 주세요."
 msgstr "Try again later."
 
@@ -877,7 +881,7 @@ msgstr "We can't send a verification email"
 msgid "takulife는 아직 베타 서비스 준비 중이라 인증 메일이 자동으로 발송되지 않습니다. 가입 정보는 저장되어 있으니, 서비스가 정식으로 열리면 로그인을 다시 시도해주세요."
 msgstr "takulife is still in beta, so verification emails aren't sent automatically. Your sign-up details are saved, so try logging in again once the service officially launches."
 
-#: templates/base.html
+#: templates/base.html web/views/events.py
 msgid "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
 msgstr "Search pop-up stores, collab cafes, theater bonuses, goods pre-orders, and exhibitions on takulife, and keep track of your visit status and records."
 
@@ -888,6 +892,324 @@ msgstr "Skip to main content"
 #: templates/base.html
 msgid "현재는 베타 서비스 중입니다"
 msgstr "Currently in beta"
+
+#: templates/core/events/calendar.html
+#: templates/core/partials/_home_event_calendar.html
+#: templates/core/partials/_site_footer.html
+msgid "이벤트 달력"
+msgstr "Event calendar"
+
+#: templates/core/events/calendar.html
+msgid "날짜별로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사 일정을 달력에서 한눈에 확인하세요."
+msgstr "See pop-up store, collab café, exhibition, and other fandom event schedules by date at a glance on the calendar."
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "목록·달력 전환"
+msgstr "Switch between list and calendar"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "목록"
+msgstr "List"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "달력"
+msgstr "Calendar"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+#: templates/core/home.html
+msgid "작품명, 이벤트명, 장소를 검색"
+msgstr "Search by series, event name, or venue"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+#: templates/core/home.html
+msgid "이벤트 검색"
+msgstr "Search events"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+#: templates/core/home.html
+msgid "검색"
+msgstr "Search"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+#, python-format
+msgid "%(label)s, 적용됨"
+msgstr "%(label)s, applied"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "필터 열기 ▾"
+msgstr "Show filters ▾"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "필터 닫기 ▴"
+msgstr "Hide filters ▴"
+
+#: templates/core/events/calendar.html templates/core/events/detail.html
+#: templates/core/events/list.html
+msgid "지역"
+msgstr "Region"
+
+#: templates/core/events/calendar.html templates/core/events/detail.html
+#: templates/core/events/list.html templates/core/home.html
+msgid "카테고리"
+msgstr "Category"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "이벤트 상태"
+msgstr "Event status"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "필터 적용"
+msgstr "Apply filters"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "초기화"
+msgstr "Reset"
+
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "전체 해제"
+msgstr "Clear all"
+
+#: templates/core/events/calendar.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "월 이동"
+msgstr "Change month"
+
+#: templates/core/events/calendar.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "이전 달"
+msgstr "Previous month"
+
+#: templates/core/events/calendar.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "다음 달"
+msgstr "Next month"
+
+#: templates/core/events/calendar.html
+msgid "이번 달"
+msgstr "This month"
+
+#: templates/core/events/calendar.html
+msgid "요청한 날짜를 확인할 수 없어요"
+msgstr "We couldn't read that date"
+
+#: templates/core/events/calendar.html
+msgid "주소의 월 또는 날짜 값이 올바르지 않습니다."
+msgstr "The month or date in the URL isn't valid."
+
+#: templates/core/events/calendar.html
+msgid "이번 달 보기"
+msgstr "View this month"
+
+#: templates/core/events/calendar.html
+msgid "불러오지 못했어요"
+msgstr "Couldn't load events"
+
+#: templates/core/events/calendar.html
+msgid "다시 시도"
+msgstr "Try again"
+
+#: templates/core/events/calendar.html
+#, python-format
+msgid "이벤트 %(counter)s건"
+msgid_plural "이벤트 %(counter)s건"
+msgstr[0] "%(counter)s event"
+msgstr[1] "%(counter)s events"
+
+#: templates/core/events/calendar.html templates/core/events/detail.html
+#: templates/core/events/list.html templates/core/home.html
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "일정 미정"
+msgstr "Date TBD"
+
+#: templates/core/events/calendar.html templates/core/events/detail.html
+#: templates/core/events/list.html templates/core/home.html
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "장소 미정"
+msgstr "Venue TBD"
+
+#: templates/core/events/calendar.html templates/core/events/detail.html
+#: templates/core/events/list.html
+#: templates/core/partials/_event_compact_row.html
+msgctxt "동작"
+msgid "찜"
+msgstr "Save"
+
+#: templates/core/events/calendar.html
+msgid "로그인하고 찜하기"
+msgstr "Log in to save"
+
+#: templates/core/events/calendar.html
+msgid "자세히 ›"
+msgstr "View details ›"
+
+#: templates/core/events/calendar.html
+msgid "이 날짜에는 등록된 공식 이벤트가 없어요"
+msgstr "No official events are listed for this date"
+
+#: templates/core/events/calendar.html
+msgid "전체 이벤트 보기"
+msgstr "View all events"
+
+#: templates/core/events/detail.html
+msgid "이동 경로"
+msgstr "Breadcrumb"
+
+#: templates/core/events/detail.html
+msgid "‹ 행사 목록"
+msgstr "‹ Events"
+
+#: templates/core/events/detail.html
+#, python-format
+msgid "<span lang=\"ko\">%(source)s</span> 제공"
+msgstr "Provided by <span lang=\"ko\">%(source)s</span>"
+
+#: templates/core/events/detail.html
+msgid "공식 확인"
+msgstr "Officially verified"
+
+#: templates/core/events/detail.html
+msgid "기간"
+msgstr "Dates"
+
+#: templates/core/events/detail.html
+msgid "장소"
+msgstr "Venue"
+
+#: templates/core/events/detail.html
+msgid "공식 페이지로 ↗"
+msgstr "Official page ↗"
+
+#: templates/core/events/detail.html
+msgid "참여 상태"
+msgstr "Your status"
+
+#: templates/core/events/detail.html
+msgid "현재 상태:"
+msgstr "Current status:"
+
+#: templates/core/events/detail.html
+msgid "상태 변경"
+msgstr "Change status"
+
+#: templates/core/events/detail.html
+msgid "일정에서 보기"
+msgstr "View in my schedule"
+
+#: templates/core/events/detail.html
+msgid "종료된 이벤트는 방문 예정을 설정할 수 없습니다"
+msgstr "You can't mark an ended event as planned"
+
+#: templates/core/events/detail.html
+msgid "기록 남기기"
+msgstr "Add a record"
+
+#: templates/core/events/detail.html
+msgid "행사 소개"
+msgstr "About this event"
+
+#: templates/core/events/detail.html
+msgid "공식 공지 · 특전"
+msgstr "Official notices · Bonuses"
+
+#: templates/core/events/detail.html
+msgid "공식 공지·특전 정보는 아직 준비 중입니다. 운영 시간·예약 등 최신 내용은 공식 페이지에서 확인해 주세요."
+msgstr "Official notices and bonus details aren't available yet. Check the official page for the latest on hours, reservations, and more."
+
+#: templates/core/events/detail.html
+msgid "위치"
+msgstr "Location"
+
+#: templates/core/events/detail.html
+msgid "지도 앱에서 열기"
+msgstr "Open in maps app"
+
+#: templates/core/events/detail.html
+msgid "이런 행사도 있어요"
+msgstr "More events you might like"
+
+#: templates/core/events/detail.html
+msgid "행사 목록 →"
+msgstr "All events →"
+
+#: templates/core/events/detail.html
+msgid "공식 페이지에서 보기 ↗"
+msgstr "View on official page ↗"
+
+#: templates/core/events/list.html
+msgctxt "페이지 제목"
+msgid "이벤트 목록"
+msgstr "Events"
+
+#: templates/core/events/list.html
+msgid "서울·경기·인천 등 지역과 카테고리로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사를 검색하고 필터링하세요."
+msgstr "Search and filter pop-up stores, collab cafés, exhibitions, and other fandom events by region (Seoul, Gyeonggi, Incheon, and more) and category."
+
+#: templates/core/events/list.html
+msgid "진행·예정"
+msgstr "Ongoing · Upcoming"
+
+#: templates/core/events/list.html
+#, python-format
+msgid "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+msgid_plural "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+msgstr[0] "<span class=\"results-count\">%(counter)s</span> result"
+msgstr[1] "<span class=\"results-count\">%(counter)s</span> results"
+
+#: templates/core/events/list.html
+msgid "정렬"
+msgstr "Sort"
+
+#: templates/core/events/list.html templates/core/home.html
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "오늘 종료"
+msgstr "Ends today"
+
+#: templates/core/events/list.html
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+#, python-format
+msgid "D-%(dday)s"
+msgstr "Ends D-%(dday)s"
+
+#: templates/core/events/list.html templates/core/home.html
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "오늘 오픈"
+msgstr "Opens today"
+
+#: templates/core/events/list.html templates/core/home.html
+#: templates/core/partials/_event_compact_row.html
+#: templates/core/partials/_home_event_calendar.html
+#, python-format
+msgid "오픈 D-%(dday)s"
+msgstr "Opens D-%(dday)s"
+
+#: templates/core/events/list.html
+msgid "조건에 맞는 이벤트가 없어요"
+msgstr "No events match your filters"
+
+#: templates/core/events/list.html
+msgid "필터를 줄이거나 다른 키워드로 다시 찾아보세요."
+msgstr "Try fewer filters or a different keyword."
+
+#: templates/core/events/list.html
+msgid "진행·예정 이벤트가 없어요"
+msgstr "No ongoing or upcoming events"
+
+#: templates/core/events/list.html
+msgid "새로운 이벤트가 등록되면 여기에 표시돼요."
+msgstr "New events will appear here once they're added."
+
+#: templates/core/events/list.html
+msgid "필터 전체 해제"
+msgstr "Clear all filters"
+
+#: templates/core/events/list.html
+msgid "종료 포함 전체 보기"
+msgstr "View all, including ended"
 
 #: templates/core/home.html
 msgid "굿즈 컬렉션·서브컬처 이벤트 기록"
@@ -906,18 +1228,6 @@ msgid "찾아봐요!"
 msgstr "you want!"
 
 #: templates/core/home.html
-msgid "작품명, 이벤트명, 장소를 검색"
-msgstr "Search by series, event name, or venue"
-
-#: templates/core/home.html
-msgid "이벤트 검색"
-msgstr "Search events"
-
-#: templates/core/home.html
-msgid "검색"
-msgstr "Search"
-
-#: templates/core/home.html
 msgid "팝업스토어"
 msgstr "Pop-up store"
 
@@ -929,36 +1239,10 @@ msgstr "Collab cafe"
 msgid "굿즈 예약"
 msgstr "Goods pre-order"
 
-#: templates/core/home.html templates/core/partials/_event_compact_row.html
-#: templates/core/partials/_home_event_calendar.html
-msgid "일정 미정"
-msgstr "Date TBD"
-
-#: templates/core/home.html templates/core/partials/_event_compact_row.html
-#: templates/core/partials/_home_event_calendar.html
-msgid "장소 미정"
-msgstr "Venue TBD"
-
-#: templates/core/home.html templates/core/partials/_event_compact_row.html
-#: templates/core/partials/_home_event_calendar.html
-msgid "오늘 종료"
-msgstr "Ends today"
-
 #: templates/core/home.html
 #, python-format
 msgid "종료 D-%(dday)s"
 msgstr "Ends D-%(dday)s"
-
-#: templates/core/home.html templates/core/partials/_event_compact_row.html
-#: templates/core/partials/_home_event_calendar.html
-msgid "오늘 오픈"
-msgstr "Opens today"
-
-#: templates/core/home.html templates/core/partials/_event_compact_row.html
-#: templates/core/partials/_home_event_calendar.html
-#, python-format
-msgid "오픈 D-%(dday)s"
-msgstr "Opens D-%(dday)s"
 
 #: templates/core/home.html
 msgid "자세히 보기 ›"
@@ -971,10 +1255,6 @@ msgstr "We're preparing new events"
 #: templates/core/home.html
 msgid "이벤트 둘러보기 ›"
 msgstr "Browse events ›"
-
-#: templates/core/home.html
-msgid "카테고리"
-msgstr "Category"
 
 #: templates/core/home.html
 msgid "카테고리로 둘러보기"
@@ -1129,22 +1409,6 @@ msgid_plural "외 %(counter)s개"
 msgstr[0] "+%(counter)s more"
 msgstr[1] "+%(counter)s more"
 
-#: templates/core/partials/_event_compact_row.html
-#: templates/core/partials/_home_event_calendar.html
-#, python-format
-msgid "D-%(dday)s"
-msgstr "Ends D-%(dday)s"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgctxt "통계"
-msgid "찜"
-msgstr "Saved"
-
-#: templates/core/partials/_event_compact_row.html
-msgctxt "동작"
-msgid "찜"
-msgstr "Save"
-
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "내 컬렉션 현황"
 msgstr "My collection at a glance"
@@ -1167,22 +1431,27 @@ msgid "기록"
 msgstr "Records"
 
 #: templates/core/partials/_home_collection_snapshot.html
-msgctxt "동작"
-msgid "기록"
-msgstr "Add record"
+msgctxt "통계"
+msgid "찜"
+msgstr "Saved"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "기록 대기"
 msgstr "Records to add"
 
 #: templates/core/partials/_home_collection_snapshot.html
+msgctxt "날짜 접미"
+msgid "종료"
+msgstr "Ends"
+
+#: templates/core/partials/_home_collection_snapshot.html
 msgid "시작"
 msgstr "Starts"
 
 #: templates/core/partials/_home_collection_snapshot.html
-msgctxt "날짜 접미"
-msgid "종료"
-msgstr "Ends"
+msgctxt "동작"
+msgid "기록"
+msgstr "Add record"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "최근 등록한 굿즈"
@@ -1217,11 +1486,6 @@ msgid "굿즈 등록"
 msgstr "Add goods"
 
 #: templates/core/partials/_home_event_calendar.html
-#: templates/core/partials/_site_footer.html
-msgid "이벤트 달력"
-msgstr "Event calendar"
-
-#: templates/core/partials/_home_event_calendar.html
 #, python-format
 msgid "%(month)s, 놓치기 아까운 일정"
 msgstr "%(month)s: events you won't want to miss"
@@ -1231,20 +1495,8 @@ msgid "달력 전체 보기 ›"
 msgstr "View full calendar ›"
 
 #: templates/core/partials/_home_event_calendar.html
-msgid "월 이동"
-msgstr "Change month"
-
-#: templates/core/partials/_home_event_calendar.html
-msgid "이전 달"
-msgstr "Previous month"
-
-#: templates/core/partials/_home_event_calendar.html
 msgid "오늘"
 msgstr "Today"
-
-#: templates/core/partials/_home_event_calendar.html
-msgid "다음 달"
-msgstr "Next month"
 
 #: templates/core/partials/_home_event_calendar.html
 #, python-format
@@ -1438,3 +1690,8 @@ msgstr "Collection goods"
 #: web/views/account.py
 msgid "직접 등록 항목"
 msgstr "Custom entries"
+
+#: web/views/events.py
+#, python-format
+msgid "검색: %(q)s"
+msgstr "Search: %(q)s"
