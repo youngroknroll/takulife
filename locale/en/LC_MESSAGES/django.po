@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: takulife\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 15:34+0900\n"
+"POT-Creation-Date: 2026-10-22 19:37+0900\n"
 "PO-Revision-Date: 2026-10-21 18:00+0900\n"
 "Last-Translator: takulife\n"
 "Language-Team: takulife\n"
@@ -203,6 +203,19 @@ msgstr "Most recently saved"
 #: core/vocab.py
 msgid "오래된 찜순"
 msgstr "Oldest saved"
+
+#: core/vocab.py
+msgid "카페"
+msgstr "Café"
+
+#: core/vocab.py
+msgid "성지순례"
+msgstr "Pilgrimage site"
+
+#: core/vocab.py
+#| msgid "굿즈 예약"
+msgid "굿즈숍"
+msgstr "Goods shop"
 
 #: core/vocab.py
 msgid "예정"
