@@ -15,7 +15,6 @@ from django.test import Client
 from django.utils import timezone
 
 from archive.models import EventInterest, UserEventStatus
-from core.vocab import CATEGORY_LABELS
 
 pytestmark = pytest.mark.web
 
@@ -303,8 +302,44 @@ def _scan_detail_related(make_event, make_user):
     event = make_event(title="Scan Related Main", work_title="Scan Work", **common)
     make_event(title="Scan Related One", work_title="Scan Work One", **common)
     make_event(title="Scan Related Two", **{**common, "location_name": ""})
-    # 메타 설명 폴백이 카테고리 라벨을 잇는다. meta에는 lang을 못 붙이므로 허용한다.
-    return None, f"/events/{event.id}/", [CATEGORY_LABELS["popup_store"]]
+    return None, f"/events/{event.id}/", []
+
+
+_ALL_CATEGORIES = (
+    "popup_store",
+    "collaboration_cafe",
+    "theater_bonus",
+    "goods_reservation",
+    "exhibition",
+    "fan_meeting",
+    "concert",
+)
+
+
+def _scan_list_all_categories(make_event, make_user):
+    for slug in _ALL_CATEGORIES:
+        make_event(
+            title=f"Scan Cat {slug}",
+            category=slug,
+            region="seoul",
+            location_name="Scan Hall",
+            start_date=_FIXED_START,
+            end_date=_FIXED_END,
+        )
+    return None, "/events/?status=all", []
+
+
+def _scan_calendar_all_categories(make_event, make_user):
+    for slug in _ALL_CATEGORIES:
+        make_event(
+            title=f"Scan Cat {slug}",
+            category=slug,
+            region="seoul",
+            location_name="Scan Hall",
+            start_date=_FIXED_START,
+            end_date=_FIXED_START,
+        )
+    return None, "/events/calendar/?month=2026-03&date=2026-03-05", []
 
 
 _SCANS = {
@@ -320,13 +355,15 @@ _SCANS = {
     "detail_ended": _scan_detail_ended,
     "detail_minimal": _scan_detail_minimal,
     "detail_related": _scan_detail_related,
+    "list_all_categories": _scan_list_all_categories,
+    "calendar_all_categories": _scan_calendar_all_categories,
 }
 
 
 def _without_allowed(text, allowed):
     text = text.replace(_BRAND_NAME, "")
     for allowed_text in allowed:
-        text = text.replace(allowed_text, "")
+        text = text.replace(str(allowed_text), "")
     return text
 
 

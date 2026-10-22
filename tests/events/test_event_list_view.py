@@ -159,7 +159,7 @@ class TestEventListActiveFilterChips:
         resp = Client().get("/events/", {"q": "공연"})
 
         assert resp.status_code == 200
-        assert "검색: 공연" in [chip["label"] for chip in resp.context["active_filter_chips"]]
+        assert "검색: 공연" in resp.context["active_filter_chips"]
 
     def test_상태를_전체로_필터링하면_활성_필터_칩에_전체가_표시된다(self, make_event):
         """status='all'이 그대로 'all' 칩으로 새어나가면 안 된다
@@ -171,8 +171,8 @@ class TestEventListActiveFilterChips:
         resp = Client().get("/events/", {"status": "all"})
 
         assert resp.status_code == 200
-        assert "전체" in [chip["label"] for chip in resp.context["active_filter_chips"]]
-        assert "all" not in [chip["label"] for chip in resp.context["active_filter_chips"]]
+        assert "전체" in resp.context["active_filter_chips"]
+        assert "all" not in resp.context["active_filter_chips"]
 
 
 @pytest.mark.django_db

@@ -13,7 +13,6 @@ import pytest
 from django.test import Client
 
 from archive.models import UserEventStatus
-from core.vocab import CATEGORY_LABELS
 
 pytestmark = pytest.mark.web
 
@@ -253,39 +252,37 @@ _FILTER_QUERY = "q=poster&region=seoul&category=popup_store&status=all"
 # E-01 (칩 구조)
 @pytest.mark.django_db
 @pytest.mark.parametrize("path", ["/events/", "/events/calendar/"])
-def test_적용_칩은_label과_lang을_가진_딕셔너리이고_카테고리만_ko다(path):
+def test_적용_칩은_문자열_리스트이고_카테고리는_번역_라벨이다(path):
     resp = _get(f"{path}?{_FILTER_QUERY}")
 
     chips = resp.context["active_filter_chips"]
 
-    assert all(isinstance(chip, dict) for chip in chips)
-    assert [str(chip["label"]) for chip in chips] == [
+    assert [str(chip) for chip in chips] == [
         "검색: poster",
         "서울",
         "팝업스토어",
         "전체",
     ]
-    assert [chip["lang"] for chip in chips] == ["", "", "ko", ""]
 
 
 # E-09 (lang="ko") 칩
 @pytest.mark.django_db
 @pytest.mark.parametrize("path", ["/events/", "/events/calendar/"])
-def test_카테고리_칩만_lang_ko_범위이고_나머지_칩은_아니다(path):
+def test_영어에서_어떤_적용_칩도_lang_ko_범위가_아니다(path):
     resp = _get(f"{path}?{_FILTER_QUERY}", "en")
 
     chips = _parse(resp).find_all(cls="applied-chip")
 
-    assert [_is_ko_scoped(chip) for chip in chips] == [False, False, True, False]
+    assert [_is_ko_scoped(chip) for chip in chips] == [False] * 4
 
 
 # E-01 (뷰 컨텍스트 category_labels)
 @pytest.mark.django_db
 @pytest.mark.parametrize("path", ["/events/", "/events/calendar/"])
-def test_목록과_달력_컨텍스트의_category_labels는_어휘_라벨_딕셔너리와_같다(path):
-    resp = _get(path)
+def test_목록과_달력_컨텍스트의_category_labels는_요청_언어로_렌더된다(path):
+    resp = _get(path, "en")
 
-    assert resp.context["category_labels"] == CATEGORY_LABELS
+    assert str(resp.context["category_labels"]["popup_store"]) == "Pop-up store"
 
 
 # E-02
@@ -407,11 +404,12 @@ def test_영어_목록에서_콘텐츠_필드만_lang_ko_범위다(make_event):
     for cls, tag in (
         ("event-index-title", "h2"),
         ("event-index-work", "p"),
-        ("event-index-cat", "span"),
     ):
         elements = root.find_all(tag, cls=cls)
         assert elements, f"{tag}.{cls} 없음"
         assert all(_is_ko_scoped(element) for element in elements), cls
+    categories = root.find_all("span", cls="event-index-cat")
+    assert categories and not any(_is_ko_scoped(c) for c in categories)
     for needle in ("한글 제목 행사", "한글 작품명", "한글 장소"):
         langs = _needle_langs(root, needle)
         assert langs and all(langs), needle
@@ -431,11 +429,12 @@ def test_영어_달력_아젠다에서_콘텐츠_필드만_lang_ko_범위다(mak
     for cls, tag in (
         ("agenda-title", "h3"),
         ("agenda-work", "p"),
-        ("agenda-cat", "span"),
     ):
         elements = root.find_all(tag, cls=cls)
         assert elements, f"{tag}.{cls} 없음"
         assert all(_is_ko_scoped(element) for element in elements), cls
+    categories = root.find_all("span", cls="agenda-cat")
+    assert categories and not any(_is_ko_scoped(c) for c in categories)
     for needle in ("한글 제목 행사", "한글 작품명", "한글 장소"):
         langs = _needle_langs(root, needle)
         assert langs and all(langs), needle
@@ -456,11 +455,12 @@ def test_영어_상세에서_콘텐츠_필드만_lang_ko_범위다(make_event):
         ("h1", "event-detail-title"),
         ("p", "event-detail-work"),
         ("p", "event-detail-location-name"),
-        ("span", "event-detail-cat-label"),
     ):
         elements = root.find_all(tag, cls=cls)
         assert len(elements) == 1, f"{tag}.{cls}: {len(elements)}개"
         assert _is_ko_scoped(elements[0]), cls
+    category_label = root.find_all("span", cls="event-detail-cat-label")
+    assert len(category_label) == 1 and not _is_ko_scoped(category_label[0])
     for needle in ("한글 제목 행사", "한글 작품명", "한글 장소", "한글 요약 문장"):
         langs = _needle_langs(root, needle)
         assert langs and all(langs), needle
@@ -473,7 +473,7 @@ def test_영어_상세에서_콘텐츠_필드만_lang_ko_범위다(make_event):
 # E-09 필터 패널·빠른 칩
 @pytest.mark.django_db
 @pytest.mark.parametrize("path", ["/events/", "/events/calendar/"])
-def test_영어_필터_패널과_빠른_칩에서_카테고리만_lang_ko_범위다(path):
+def test_영어_필터_패널과_빠른_칩의_카테고리는_lang_ko_범위가_아니다(path):
     root = _parse(_get(path, "en"))
 
     checks = root.find_all("label", cls="filter-check")
@@ -483,7 +483,7 @@ def test_영어_필터_패널과_빠른_칩에서_카테고리만_lang_ko_범위
     region_checks = [
         check for check in checks if check.find_all("input", attrs={"name": "region"})
     ]
-    assert category_checks and all(_is_ko_scoped(c) for c in category_checks)
+    assert category_checks and not any(_is_ko_scoped(c) for c in category_checks)
     assert region_checks and not any(_is_ko_scoped(c) for c in region_checks)
 
     chips = root.find_all("a", cls="chip")
@@ -493,7 +493,7 @@ def test_영어_필터_패널과_빠른_칩에서_카테고리만_lang_ko_범위
         "popup_store",
         "collaboration_cafe",
     ]
-    assert all(_is_ko_scoped(c) for c in category_chips)
+    assert not any(_is_ko_scoped(c) for c in category_chips)
     assert other_chips and not any(_is_ko_scoped(c) for c in other_chips)
 
 
@@ -722,7 +722,6 @@ def test_영어_상세의_연관_행사_항목은_콘텐츠_값만_lang_ko_범�
 
     rows = root.find_all("a", cls="event-detail-related-row")
     assert len(rows) == 2
-    category_label = CATEGORY_LABELS["popup_store"]
     title_of = lambda row: row.find_all("span", cls="event-detail-related-title")[0]  # noqa: E731
     by_title = {title_of(row).text(): row for row in rows}
     with_place, without_place = by_title["연관 한글 제목"], by_title["연관 장소없음"]
@@ -738,10 +737,9 @@ def test_영어_상세의_연관_행사_항목은_콘텐츠_값만_lang_ko_범�
     def ko_texts(row):
         return [e.text() for e in meta(row).find_all("span", attrs={"lang": "ko"})]
 
-    assert ko_texts(with_place) == [category_label, "연관 장소"]
-    assert ko_texts(without_place) == [category_label]  # 장소 미정은 ko 범위가 아니다
-    rest = meta(without_place).text().replace(category_label, "")
-    assert _KOREAN_RE.findall(rest) == []
+    assert ko_texts(with_place) == ["연관 장소"]  # 카테고리는 번역돼 ko 범위가 아니다
+    assert ko_texts(without_place) == []  # 장소 미정도 ko 범위가 아니다
+    assert _KOREAN_RE.findall(meta(without_place).text()) == []
 
 
 # E-15 (달력 query_failed 오류 패널)
