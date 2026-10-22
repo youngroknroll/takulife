@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #394부터 #251까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #395부터 #252까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,36 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #395 — feat(i18n): UI 다국어 기반(ko/en/ja/zh-hans) — 트랙 43-1
+### PR #396 — feat(i18n): 이벤트 화면(목록·달력·상세) UI 다국어 — 트랙 43-2
 
-**무엇을 바꿨나**: 공개 셸·홈·계정(allauth 오버라이드)·공용 JS의 UI 문구를 Django
-gettext로 옮겼다. 원문은 한국어이고 카탈로그는 `locale/{en,ja,zh_Hans}/LC_MESSAGES/
-{django,djangojs}.po`로 언어당 338건이다(django 311 + djangojs 27 `[실측 msgfmt
---statistics 2026-10-21]`). 언어는 쿠키(`/i18n/setlang/`) → `Accept-Language` → ko
-순으로 정하고 URL 접두사는 없다. 스태프 화면과 스태프 DRF API는 항상 한국어이고,
-인증 403 본문에 언어와 무관한 `code`를 넣었다. 푸터에 언어 선택기를 추가했다. `.mo`는
-커밋하지 않고(`.gitignore`) Docker builder 단계와 CI가 `compilemessages --ignore .venv`로
-만든다. 마이그레이션은 없다. 변경 규모는 84개 파일, +6,747줄·-631줄(커밋 9개)이다
-`[실측 git diff --shortstat 07b7186e 8b7a9458, gh pr view 395]`.
+**무엇을 바꿨나**: 이벤트 목록·달력·상세와 필터·적용 칩·월 이동·연관 행사의 UI 문구를
+gettext로 옮기고 카테고리 이름 7개도 번역했다(사용자 결정 2026-10-22 "카테고리도 번역
+대상임"). 카탈로그는 언어당 django 371건 + djangojs 27건이고 43-1보다 새 항목이 60개다
+`[실측 msgfmt --statistics 2026-10-22]` `[계산 56 + 4]`. 행사 제목·작품명·장소·요약·출처
+이름은 원문 한국어에 `lang="ko"`를 붙이고 번역된 어휘(지역·상태·카테고리)에는 붙이지
+않는다. 아카이브 방문 필터 토큰은 한국어 원문으로 고정하고 표시만 번역해 언어를 바꿔도
+필터가 풀리지 않는다. 영어 월 이름이 360px 월 이동 줄에서 겹쳐 `event_calendar.css`를
+고쳤다. 변경 규모는 26개 파일, +3,584줄·-467줄(커밋 8개, 마이그레이션 없음) `[실측 gh pr view 396]`.
 
-**왜**: 한국어를 읽지 못하는 서브컬처 팬이 앱을 조작해 개인 굿즈 컬렉션을 기록하게
-하려는 제품 결정이다(계획 트랙 43). 행사 제목·요약·장소와 사용자 입력은 원문 그대로
-두고 UI 문구만 번역한다. 번역 검수는 사람이 아니라 독립 AI 검수자가 했다(사용자 지시
-2026-10-21): 영어 31건·일본어 19건·중국어 30건을 반영하고 거부는 0건이었다
-`[문서 docs/BE/i18n.md "AI 검수 기록"]`. 원어민 사람 검수는 없다. 번역으로 풀리지
-않는 결함(복수형 단위, 같은 한글의 다른 품사)은 `npgettext`·`msgctxt`로 코드에서 고쳤다.
+**왜**: 43-1에 이어 한국어를 읽지 못하는 팬이 행사를 찾고 기록하게 하려는 트랙 43의
+둘째 조각이다. 번역 검수는 독립 AI 검수자만 했고(사용자 지시) 원어민 검수는 없다 —
+새 항목 56개에서 영어 3건·일본어 1건(직접 1건 추가)·중국어 2건을 반영했고, 카테고리
+이름 7개는 일본어·중국어 제안 0건에 영어 1건(`Collab café` 통일)이었다
+`[문서 docs/BE/i18n.md "AI 검수 기록"]`. 머지 후 사용자 결정(2026-10-22): 아카이브
+과도기(한국어 UI에 번역된 카테고리 이름)와 브라우저 미확인 4항목은 수용, 개인 항목 제안
+칩은 43-3에서 번역, 새 카테고리 자동 번역은 트랙 44-4.
 
-**검증**: 머지 전 `uv run pytest -q` 3254 passed / 10 deselected / 100.30초, e2e 10
-passed, CI 5잡 success `[문서 PR #395 본문]`. 머지 후 main 재측정 `[실측 2026-10-21 main
-8b7a9458]`: `uv run pytest -q` → 3254 passed / 10 deselected / 105.66초(트랙 42 후속
-기준선 3212 `[문서 계획서 트랙 42 후속 절]` 대비 +42 `[계산]`), `manage.py check` 0건,
-`makemigrations --check --dry-run` No changes detected. main push CI 실행
-39604592586은 4잡 전부 success, deploy workflow_run 39604884229 success, #393 head가
-`8b7a9458`로 이동했다 `[실측 gh]`. production 반영은 deploy PR #393 머지와 런북 §3-18
-번역 검수 게이트(`docs/BE/i18n.md` "AI 검수 기록" + 카탈로그 가드 통과)가 조건이다.
+**검증**: 머지 전 `[실측 2026-10-22 브랜치]` `uv run pytest -q` 3418 passed / 10
+deselected / 104.71초, e2e 10 passed, 한국어 화면은 main과 보이는 텍스트·접근성 속성이
+같다(익명 15·로그인 16 URL), 변이 31개 전부 Red `[문서 docs/BE/i18n.md]`. 머지 시점
+head가 `af083b68`이라 그 뒤 `Collab café` 통일+E-30 가드(`d5d6526b`)와 결정 문서
+(`c45a5a95`)를 main에 직접 얹었다. main 재측정 `[실측 2026-10-22 main d8dee018 + 후속
+2커밋]`: `uv run pytest -q` → 3419 passed / 10 deselected / 47.86초(3254 대비 +165
+`[계산]`), `manage.py check` 0건, `makemigrations --check --dry-run` No changes
+detected. production 반영은 deploy PR #393 머지와 런북 §3-18 번역 검수 게이트가 조건이다.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #395 — feat(i18n): UI 다국어 기반(ko/en/ja/zh-hans) — 트랙 43-1
 - #394 — ci: Skip pull_request CI for PRs into production (track 42)
 - #392 — docs: PR #388~#391 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #391 — deploy: main → production
@@ -197,4 +198,3 @@ passed, CI 5잡 success `[문서 PR #395 본문]`. 머지 후 main 재측정 `[�
 - #254 — Promote the technical records to the tree that survives
 - #253 — Replace markup assertions that could not fail
 - #252 — Make the 500 test fail for the reason it names, and unbreak the runbook pointer
-- #251 — Repair the governance docs, rebuild the backlog, and act on what it measured
