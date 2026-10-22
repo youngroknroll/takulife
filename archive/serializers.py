@@ -1,3 +1,4 @@
+from django.utils.translation import gettext
 from rest_framework import serializers
 
 from core.vocab import normalize_collection_item_type, normalize_personal_category
@@ -87,11 +88,11 @@ class _SubjectScopedPersonalEntryMixin:
         personal_entry = attrs.get("personal_entry")
         if bool(event) == bool(personal_entry):
             raise serializers.ValidationError(
-                "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
+                gettext("event 또는 personal_entry 중 정확히 하나를 지정해야 합니다.")
             )
         if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
             raise serializers.ValidationError(
-                "이 personal_entry는 이 작업의 대상이 될 수 없습니다."
+                gettext("이 personal_entry는 이 작업의 대상이 될 수 없습니다.")
             )
         return attrs
 
@@ -136,7 +137,7 @@ class UserEventStatusUpdateSerializer(serializers.ModelSerializer):
         # status는 read_only가 아니지만 부분 PATCH라 required=True만으로는
         # 누락을 걸러낼 수 없다(부분 업데이트는 필드별 required를 건너뛴다).
         if "status" not in attrs:
-            raise serializers.ValidationError({"status": "상태를 지정해야 합니다."})
+            raise serializers.ValidationError({"status": gettext("상태를 지정해야 합니다.")})
         return attrs
 
 
@@ -184,11 +185,11 @@ class VisitRecordSerializer(serializers.ModelSerializer):
         personal_entry = attrs.get("personal_entry")
         if bool(event) == bool(personal_entry):
             raise serializers.ValidationError(
-                "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
+                gettext("event 또는 personal_entry 중 정확히 하나를 지정해야 합니다.")
             )
         if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
             raise serializers.ValidationError(
-                "이 personal_entry는 이 작업의 대상이 될 수 없습니다."
+                gettext("이 personal_entry는 이 작업의 대상이 될 수 없습니다.")
             )
         return attrs
 
