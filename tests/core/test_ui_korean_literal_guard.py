@@ -1,6 +1,7 @@
 """트랙 43-1 승인 범위 템플릿에는 번역 태그 밖의 한국어 리터럴이 없어야
 한다 — 주석·`{% blocktranslate %}`/`{% translate %}` 태그는 번역 대상이므로
 제외하고, 남은 텍스트에 한글이 있으면 번역이 빠진 자리다."""
+import ast
 import re
 from pathlib import Path
 
@@ -32,11 +33,15 @@ _FIXED_RELPATHS = [
     "core/partials/_account_settings_field.html",
     "core/partials/_account_settings_index.html",
     "core/partials/_account_settings_panel_head.html",
+    "core/events/list.html",
+    "core/events/calendar.html",
+    "core/events/detail.html",
 ]
 
-# 5(셸·오류 페이지·홈) + 14(partials) + 16(account/*.html) + 4(account/email/*.txt)
-# + 3(socialaccount/*.html) = 42개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_FILE_COUNT = 42
+# 5(셸·오류 페이지·홈) + 14(partials) + 3(events/list·calendar·detail)
+# + 16(account/*.html) + 4(account/email/*.txt) + 3(socialaccount/*.html)
+# = 45개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_FILE_COUNT = 45
 
 _COMMENT_TAG_RE = re.compile(r"\{#.*?#\}", re.DOTALL)
 _COMMENT_BLOCK_RE = re.compile(r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}", re.DOTALL)
@@ -100,10 +105,12 @@ _JS_FIXED_RELPATHS = [
     "components/confirm-modal.js",
     "components/hscroll.js",
     "pages/home_hero_rotator.js",
+    "pages/event_list.js",
 ]
 
-# shared(11) + components(2) + home_hero_rotator.js(1) = 14개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_JS_FILE_COUNT = 14
+# shared(11) + components(2) + home_hero_rotator.js(1) + event_list.js(1)
+# = 15개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_JS_FILE_COUNT = 15
 
 _BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 _UNESCAPED_QUOTE_RE = re.compile(r"(?<!\\)['\"]")
@@ -162,5 +169,64 @@ def test_승인_범위_JS에는_gettext_밖의_한국어_리터럴이_없다():
             if _KOREAN_RE.search(line):
                 relpath = path.relative_to(JS_DIR).as_posix()
                 violations.append(f"{relpath}:{lineno}: {line.strip()[:40]!r}")
+
+    assert violations == []
+
+
+# E-04 — 뷰 코드의 한국어 문자열은 번역 함수의 인자이거나 독스트링이어야 한다.
+EVENTS_VIEW_PATH = Path(__file__).resolve().parents[2] / "web" / "views" / "events.py"
+
+_GETTEXT_FUNCTION_NAMES = frozenset(
+    {"gettext", "gettext_lazy", "ngettext", "npgettext", "pgettext", "_"}
+)
+
+
+def _called_function_name(call):
+    if isinstance(call.func, ast.Name):
+        return call.func.id
+    if isinstance(call.func, ast.Attribute):
+        return call.func.attr
+    return None
+
+
+def _exempt_string_nodes(tree):
+    """독스트링과 번역 함수 호출의 문자열 상수 위치 인자(msgid·복수형·
+    msgctxt)는 검사에서 뺀다 — 나머지 한국어 문자열이 번역 누락이다."""
+    exempt = set()
+    for node in ast.walk(tree):
+        if isinstance(
+            node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+        ):
+            body = node.body
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                exempt.add(id(body[0].value))
+        if (
+            isinstance(node, ast.Call)
+            and _called_function_name(node) in _GETTEXT_FUNCTION_NAMES
+        ):
+            for arg in node.args:
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                    exempt.add(id(arg))
+    return exempt
+
+
+# E-04
+def test_이벤트_뷰_코드에는_번역_함수_밖의_한국어_문자열_상수가_없다():
+    tree = ast.parse(EVENTS_VIEW_PATH.read_text(encoding="utf-8"))
+    exempt = _exempt_string_nodes(tree)
+
+    violations = [
+        f"{node.lineno}:{node.value.strip()[:40]!r}"
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and id(node) not in exempt
+        and _KOREAN_RE.search(node.value)
+    ]
 
     assert violations == []

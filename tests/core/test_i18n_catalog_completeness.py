@@ -210,3 +210,75 @@ def test_po_번역문의_HTML_태그는_원문과_같다():
 
     assert checked > 0
     assert violations == []
+
+
+_PO_DOMAINS = ("django.po", "djangojs.po")
+_LANGUAGE_DIRS = ("en", "ja", "zh_Hans")
+_HANGUL_RE = re.compile(r"[가-힣]")
+_UNESCAPED_QUOTE_RE = re.compile(r'(?<!\\)"')
+
+
+def _po_path(language_dir, domain):
+    return LOCALE_DIR / language_dir / "LC_MESSAGES" / domain
+
+
+def _translatable_entries(path):
+    return [entry for entry in _parse_po(path) if entry["msgid"] != ""]
+
+
+# E-27
+@pytest.mark.parametrize("domain", _PO_DOMAINS)
+def test_세_언어_카탈로그의_msgctxt_msgid_집합은_서로_같다(domain):
+    key_sets = {
+        language_dir: {
+            (entry["msgctxt"], entry["msgid"])
+            for entry in _translatable_entries(_po_path(language_dir, domain))
+        }
+        for language_dir in _LANGUAGE_DIRS
+    }
+
+    base = key_sets["en"]
+    assert base
+    assert {
+        language_dir: sorted(keys ^ base, key=str)
+        for language_dir, keys in key_sets.items()
+    } == {language_dir: [] for language_dir in _LANGUAGE_DIRS}
+
+
+# E-28
+def test_세_언어_카탈로그_msgstr에는_한글이_없다():
+    violations = []
+    checked = 0
+    for language_dir in _LANGUAGE_DIRS:
+        for domain in _PO_DOMAINS:
+            path = _po_path(language_dir, domain)
+            for entry in _translatable_entries(path):
+                for msgstr in entry["msgstrs"]:
+                    checked += 1
+                    if _HANGUL_RE.search(msgstr):
+                        violations.append(
+                            f"{_relpath(path)}: {entry['msgid'][:40]!r}"
+                        )
+
+    assert checked > 0
+    assert violations == []
+
+
+# E-29 — _parse_po가 이스케이프를 풀어 두므로 `"` 문자 개수를 그대로 센다.
+def test_msgstr의_이스케이프되지_않은_큰따옴표는_원문보다_많지_않다():
+    violations = []
+    checked = 0
+    for language_dir in _LANGUAGE_DIRS:
+        for domain in _PO_DOMAINS:
+            path = _po_path(language_dir, domain)
+            for entry in _translatable_entries(path):
+                limit = len(_UNESCAPED_QUOTE_RE.findall(entry["msgid"]))
+                for msgstr in entry["msgstrs"]:
+                    checked += 1
+                    if len(_UNESCAPED_QUOTE_RE.findall(msgstr)) > limit:
+                        violations.append(
+                            f"{_relpath(path)}: {entry['msgid'][:40]!r}"
+                        )
+
+    assert checked > 0
+    assert violations == []
