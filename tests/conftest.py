@@ -13,6 +13,7 @@ from allauth.account.models import EmailAddress
 from django.core.cache import cache
 from django.db.utils import Error as DjangoDatabaseError
 from django.test import Client
+from django.utils import translation
 
 from drafts.models import DraftSource, EventDraft
 from events.models import Event
@@ -29,6 +30,18 @@ _SEEDED_CATEGORY = (
     ("fan_meeting", "팬미팅"),
     ("concert", "콘서트"),
 )
+
+
+@pytest.fixture(autouse=True)
+def _restore_korean_language():
+    """각 테스트를 한국어 활성 상태로 시작하고 끝에서 언어를 되돌린다.
+
+    LocaleMiddleware는 요청마다 언어를 activate만 하고 복원하지 않아,
+    영어 요청 테스트 뒤의 한국어 단언이 실행 순서에 따라 깨진다.
+    """
+    translation.activate("ko")
+    yield
+    translation.deactivate()
 
 
 @pytest.fixture(autouse=True)
