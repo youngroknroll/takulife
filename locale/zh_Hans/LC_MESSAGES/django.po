@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: takulife\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 13:57+0900\n"
+"POT-Creation-Date: 2026-10-22 15:34+0900\n"
 "PO-Revision-Date: 2026-10-21 18:00+0900\n"
 "Last-Translator: takulife\n"
 "Language-Team: takulife\n"
@@ -69,6 +69,34 @@ msgstr "昵称只能使用韩文、英文、数字和下划线（_）。"
 #: accounts/validators.py
 msgid "이 닉네임은 사용할 수 없습니다."
 msgstr "该昵称无法使用。"
+
+#: core/vocab.py templates/core/home.html
+msgid "팝업스토어"
+msgstr "快闪店"
+
+#: core/vocab.py templates/core/home.html
+msgid "콜라보 카페"
+msgstr "联动咖啡厅"
+
+#: core/vocab.py
+msgid "극장 특전"
+msgstr "影院特典"
+
+#: core/vocab.py templates/core/home.html
+msgid "굿즈 예약"
+msgstr "周边预订"
+
+#: core/vocab.py
+msgid "전시"
+msgstr "展览"
+
+#: core/vocab.py
+msgid "팬미팅"
+msgstr "粉丝见面会"
+
+#: core/vocab.py
+msgid "콘서트"
+msgstr "演唱会"
 
 #: core/vocab.py templates/core/events/calendar.html
 #: templates/core/events/list.html templates/core/home.html
@@ -1225,18 +1253,6 @@ msgstr "找找你想要的"
 #: templates/core/home.html
 msgid "찾아봐요!"
 msgstr "活动吧！"
-
-#: templates/core/home.html
-msgid "팝업스토어"
-msgstr "快闪店"
-
-#: templates/core/home.html
-msgid "콜라보 카페"
-msgstr "联动咖啡厅"
-
-#: templates/core/home.html
-msgid "굿즈 예약"
-msgstr "周边预订"
 
 #: templates/core/home.html
 #, python-format

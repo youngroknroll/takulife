@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: takulife\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 13:57+0900\n"
+"POT-Creation-Date: 2026-10-22 15:34+0900\n"
 "PO-Revision-Date: 2026-10-21 18:00+0900\n"
 "Last-Translator: takulife\n"
 "Language-Team: takulife\n"
@@ -68,6 +68,34 @@ msgstr "Nicknames can only contain Korean or English letters, numbers, and under
 #: accounts/validators.py
 msgid "이 닉네임은 사용할 수 없습니다."
 msgstr "This nickname can't be used."
+
+#: core/vocab.py templates/core/home.html
+msgid "팝업스토어"
+msgstr "Pop-up store"
+
+#: core/vocab.py templates/core/home.html
+msgid "콜라보 카페"
+msgstr "Collab cafe"
+
+#: core/vocab.py
+msgid "극장 특전"
+msgstr "Theater bonus"
+
+#: core/vocab.py templates/core/home.html
+msgid "굿즈 예약"
+msgstr "Goods pre-order"
+
+#: core/vocab.py
+msgid "전시"
+msgstr "Exhibition"
+
+#: core/vocab.py
+msgid "팬미팅"
+msgstr "Fan meeting"
+
+#: core/vocab.py
+msgid "콘서트"
+msgstr "Concert"
 
 #: core/vocab.py templates/core/events/calendar.html
 #: templates/core/events/list.html templates/core/home.html
@@ -1226,18 +1254,6 @@ msgstr "Find the event"
 #: templates/core/home.html
 msgid "찾아봐요!"
 msgstr "you want!"
-
-#: templates/core/home.html
-msgid "팝업스토어"
-msgstr "Pop-up store"
-
-#: templates/core/home.html
-msgid "콜라보 카페"
-msgstr "Collab cafe"
-
-#: templates/core/home.html
-msgid "굿즈 예약"
-msgstr "Goods pre-order"
 
 #: templates/core/home.html
 #, python-format
