@@ -564,7 +564,7 @@ def test_홈_달력_범례와_아젠다의_카테고리는_번역_라벨이고_k
 # 다시 넣으면 공식 행(en)이 Red, 개인 행에 `lang`을 붙이는 구현이면 개인 행 단언이 Red.
 @pytest.mark.django_db
 @pytest.mark.parametrize("lang", ["ko", "en"])
-def test_홈_컬렉션_스냅샷의_공식_행은_번역되고_개인_입력_카테고리는_원문_그대로다(
+def test_홈_컬렉션_스냅샷의_공식_행은_번역되고_어휘_밖_개인_입력_카테고리는_원문_그대로다(
     make_user, make_event, lang
 ):
     user = make_user()
@@ -572,8 +572,10 @@ def test_홈_컬렉션_스냅샷의_공식_행은_번역되고_개인_입력_카
     UserEventStatus.objects.create(
         user=user, event=event, status=UserEventStatus.Status.VISITED
     )
+    # 43-3부터 제안 칩 어휘와 같은 저장값은 요청 언어로 보이므로, 번역하지 않는
+    # 사용자 자유 입력은 어휘 밖 값으로 고정한다.
     entry = PersonalEntry.objects.create(
-        user=user, kind=PersonalEntry.Kind.PLACE, title="개인 방문 장소", category="팝업스토어"
+        user=user, kind=PersonalEntry.Kind.PLACE, title="개인 방문 장소", category="내 분류"
     )
     UserEventStatus.objects.create(
         user=user, personal_entry=entry, status=UserEventStatus.Status.VISITED
@@ -589,5 +591,26 @@ def test_홈_컬렉션_스냅샷의_공식_행은_번역되고_개인_입력_카
     personal = cats["개인 방문 장소"]
     assert [el.text() for el in official] == [_TRANSLATED[lang]["popup_store"]]
     assert [_not_ko_marked(lang, el) for el in official] == [True]
-    assert [el.text() for el in personal] == ["팝업스토어"]
+    assert [el.text() for el in personal] == ["내 분류"]
     assert [_not_ko_marked("ko", el) for el in personal] == [True]
+
+
+# 43-3 사용자 결정: 저장값이 제안 칩 어휘(한국어 원문)와 같으면 요청 언어로 보인다.
+@pytest.mark.django_db
+@pytest.mark.parametrize("lang, expected", [("ko", "팝업스토어"), ("en", "Pop-up store")])
+def test_홈_컬렉션_스냅샷의_개인_카테고리가_제안_칩_어휘이면_요청_언어로_보인다(
+    make_user, lang, expected
+):
+    user = make_user()
+    entry = PersonalEntry.objects.create(
+        user=user, kind=PersonalEntry.Kind.PLACE, title="개인 방문 장소", category="팝업스토어"
+    )
+    UserEventStatus.objects.create(
+        user=user, personal_entry=entry, status=UserEventStatus.Status.VISITED
+    )
+
+    root = _parse(_get("/", lang, user=user))
+
+    rows = root.find_all("li", "snapshot-record-row")
+    cats = [el.text() for row in rows for el in row.find_all("p", "snapshot-record-cat")]
+    assert cats == [expected]
