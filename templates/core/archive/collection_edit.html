@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}{{ project_name }} | 굿즈 수정{% endblock %}
+{% load i18n %}
+{% load vocab_labels %}
+{% block title %}{{ project_name }} | {% translate "굿즈 수정" %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/archive_collection.css' %}">
@@ -9,17 +11,17 @@
 
 {% block content %}
   <main class="page collection-page collection-edit-page" id="content">
-    <a class="collection-edit-back-link" href="/collection/{{ item.id }}/">← 굿즈 상세로</a>
+    <a class="collection-edit-back-link" href="/collection/{{ item.id }}/">{% translate "← 굿즈 상세로" %}</a>
     <div id="collection-global-error" class="form-error" style="margin-bottom:8px;" aria-live="polite"></div>
 
     <section class="collection-form-head">
-      <h1>굿즈 수정</h1>
+      <h1>{% translate "굿즈 수정" %}</h1>
       <p class="collection-form-subtitle">
         <span class="collection-edit-subtitle-text">
           <span class="collection-edit-subtitle-name" title="{{ item.name }}">{{ item.name }}</span>
-          <span class="collection-edit-subtitle-date"> · {{ item.created_at|date:"Y.m.d" }} 등록</span>
+          <span class="collection-edit-subtitle-date"> · {% blocktranslate trimmed with d=item.created_at|date:"Y.m.d" %}{{ d }} 등록{% endblocktranslate %}</span>
         </span>
-        <span class="collection-form-legend">＊ 표시는 필수</span>
+        <span class="collection-form-legend">{% translate "＊ 표시는 필수" %}</span>
       </p>
     </section>
 
@@ -27,7 +29,7 @@
       <div class="collection-form-grid">
         <div class="collection-form-fields">
           <div class="collection-form-group">
-            <label for="collection-name">이름 <span aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
+            <label for="collection-name">{% translate "이름" %} <span aria-hidden="true">*</span><span class="sr-only">{% translate "(필수)" %}</span></label>
             <input
               id="collection-name"
               type="text"
@@ -40,54 +42,54 @@
           </div>
 
           <div class="collection-form-group">
-            <p class="collection-form-group-label-static">상태</p>
+            <p class="collection-form-group-label-static">{% translate "상태" %}</p>
             <div class="collection-edit-toggle">
               <input type="checkbox" id="collection-is-wanted" name="is_wanted"
-                     class="collection-edit-toggle-input" aria-label="구하는 중"
+                     class="collection-edit-toggle-input" aria-label="{% translate "구하는 중" %}"
                      {% if item.is_wanted %}checked{% endif %}>
               <label class="collection-edit-toggle-option collection-edit-toggle-option--owned"
-                     for="collection-is-wanted">보유 중</label>
+                     for="collection-is-wanted">{% translate "보유 중" %}</label>
               <label class="collection-edit-toggle-option collection-edit-toggle-option--wanted"
-                     for="collection-is-wanted">구하는 중</label>
+                     for="collection-is-wanted">{% translate "구하는 중" %}</label>
             </div>
           </div>
 
           <div class="collection-form-row collection-form-row--even">
             <div class="collection-form-group">
-              <label for="collection-quantity">수량</label>
+              <label for="collection-quantity">{% translate "수량" %}</label>
               <input id="collection-quantity" type="number" name="quantity" min="0" value="{{ item.quantity }}">
             </div>
             <div class="collection-form-group">
-              <label for="collection-tradeable-quantity">교환 가능 수량</label>
+              <label for="collection-tradeable-quantity">{% translate "교환 가능 수량" %}</label>
               <input id="collection-tradeable-quantity" type="number" name="tradeable_quantity" min="0" value="{{ item.tradeable_quantity }}">
             </div>
           </div>
 
           <div class="collection-form-group">
-            <label for="collection-memo">메모 (선택)</label>
+            <label for="collection-memo">{% translate "메모 (선택)" %}</label>
             <input id="collection-memo" type="text" name="memo" value="{{ item.memo }}">
           </div>
 
           <div class="collection-edit-divider">
-            <span class="collection-edit-divider-label">상세 정보</span>
-            <span class="collection-edit-divider-optional">선택</span>
+            <span class="collection-edit-divider-label">{% translate "상세 정보" %}</span>
+            <span class="collection-edit-divider-optional">{% translate "선택" %}</span>
             <span class="collection-edit-divider-line" aria-hidden="true"></span>
           </div>
 
           <div id="collection-detail-fields" class="collection-edit-detail-body">
             <div class="collection-form-row collection-form-row--even">
               <div class="collection-form-group">
-                <label for="collection-work-title">작품명 (선택)</label>
+                <label for="collection-work-title">{% translate "작품명 (선택)" %}</label>
                 <input id="collection-work-title" type="text" name="work_title" maxlength="255" value="{{ item.work_title }}">
               </div>
               <div class="collection-form-group">
-                <label for="collection-character-name">캐릭터명 (선택)</label>
+                <label for="collection-character-name">{% translate "캐릭터명 (선택)" %}</label>
                 <input id="collection-character-name" type="text" name="character_name" maxlength="255" value="{{ item.character_name }}">
               </div>
             </div>
 
             <div class="collection-form-group">
-              <label for="collection-item-type">유형 (선택)</label>
+              <label for="collection-item-type">{% translate "유형 (선택)" %}</label>
               <div class="collection-form-type-chips">
                 {% for slug, label in COLLECTION_ITEM_TYPE %}
                   <button type="button" class="collection-form-type-chip" data-type-label="{{ label }}" aria-pressed="false">{{ label }}</button>
@@ -98,18 +100,18 @@
                 type="text"
                 name="item_type"
                 maxlength="100"
-                value="{{ item.item_type }}"
-                placeholder="직접 입력 — 위 추천 외 유형"
+                value="{{ item.item_type|collection_item_type_label }}"
+                placeholder="{% translate "직접 입력 — 위 추천 외 유형" %}"
               >
             </div>
 
             <div class="collection-form-row collection-form-row--even">
               <div class="collection-form-group">
-                <label for="collection-acquired-on">획득일 (선택)</label>
+                <label for="collection-acquired-on">{% translate "획득일 (선택)" %}</label>
                 <input id="collection-acquired-on" type="date" name="acquired_on" value="{{ item.acquired_on|date:'Y-m-d' }}">
               </div>
               <div class="collection-form-group">
-                <label for="collection-acquisition-source">획득 경로 (선택)</label>
+                <label for="collection-acquisition-source">{% translate "획득 경로 (선택)" %}</label>
                 <input
                   id="collection-acquisition-source"
                   type="text"
@@ -122,14 +124,14 @@
 
             {% if item.visit_record %}
               <div class="collection-form-group">
-                <p class="collection-form-group-label-static">방문 기록 연결</p>
+                <p class="collection-form-group-label-static">{% translate "방문 기록 연결" %}</p>
                 <div class="collection-edit-visit-locked">
                   <span class="collection-edit-visit-lock-icon" aria-hidden="true">🔒</span>
                   <p class="collection-edit-visit-label">
                     {% if item.visit_record.event %}{{ item.visit_record.event.title }}{% else %}{{ item.visit_record.personal_entry.title }}{% endif %}
                     · {{ item.visit_record.visited_on }}
                   </p>
-                  <span class="collection-edit-visit-locked-badge">변경 불가</span>
+                  <span class="collection-edit-visit-locked-badge">{% translate "변경 불가" %}</span>
                 </div>
               </div>
             {% endif %}
@@ -140,28 +142,28 @@
         </div>
 
         <div class="collection-form-image collection-edit-cover-col">
-          <p class="collection-edit-photo-label">기존 이미지</p>
+          <p class="collection-edit-photo-label">{% translate "기존 이미지" %}</p>
           <label class="collection-form-dropzone collection-edit-cover" for="collection-image">
             {% if item.image %}
               <img src="{{ item.image.url }}" alt="{{ item.name }}">
             {% else %}
-              <span class="collection-form-dropzone-placeholder collection-edit-noimg-label">등록된 이미지가 없습니다</span>
+              <span class="collection-form-dropzone-placeholder collection-edit-noimg-label">{% translate "등록된 이미지가 없습니다" %}</span>
             {% endif %}
             <input id="collection-image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
           </label>
           <div class="collection-edit-image-row">
-            <label class="collection-edit-replace-btn" for="collection-image">이미지 교체</label>
-            <span class="collection-edit-image-hint">JPEG · PNG · WebP</span>
+            <label class="collection-edit-replace-btn" for="collection-image">{% translate "이미지 교체" %}</label>
+            <span class="collection-edit-image-hint">{% translate "JPEG · PNG · WebP" %}</span>
           </div>
         </div>
       </div>
 
       <div class="collection-edit-actions-row">
         <div class="collection-edit-actions">
-          <button class="collection-form-submit" type="submit">저장</button>
-          <a class="collection-edit-cancel" href="/collection/{{ item.id }}/">취소</a>
+          <button class="collection-form-submit" type="submit">{% translate "저장" %}</button>
+          <a class="collection-edit-cancel" href="/collection/{{ item.id }}/">{% translate "취소" %}</a>
         </div>
-        <button type="button" class="collection-edit-delete" data-delete-item-id="{{ item.id }}">굿즈 삭제</button>
+        <button type="button" class="collection-edit-delete" data-delete-item-id="{{ item.id }}">{% translate "굿즈 삭제" %}</button>
       </div>
     </form>
   </main>
