@@ -1603,8 +1603,8 @@ msgstr "Activity calendar →"
 #| msgid_plural "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
 msgid "전체 <span class=\"results-count\">%(counter)s</span>건"
 msgid_plural "전체 <span class=\"results-count\">%(counter)s</span>건"
-msgstr[0] "<span class=\"results-count\">%(counter)s</span> in total"
-msgstr[1] "<span class=\"results-count\">%(counter)s</span> in total"
+msgstr[0] "Total <span class=\"results-count\">%(counter)s</span>"
+msgstr[1] "Total <span class=\"results-count\">%(counter)s</span>"
 
 #: templates/core/archive/index.html templates/core/archive/interests.html
 #: templates/core/archive/personal_entries.html
@@ -1637,7 +1637,7 @@ msgstr "Saving an event doesn't affect Planned — you can have both at the same
 
 #: templates/core/archive/interests.html
 msgid "이벤트 카드의 ♡ 버튼으로 언제든 추가·해제할 수 있습니다"
-msgstr "Add or remove one any time with the ♡ button on an event card"
+msgstr "You can add or remove saved events any time with the ♡ button on an event card"
 
 #: templates/core/archive/interests.html templates/core/archive/visits.html
 #| msgid "나의 일정"
@@ -2078,7 +2078,7 @@ msgstr[1] "%(counter)s photos"
 
 #: templates/core/archive/visit_detail.html
 msgid "후기"
-msgstr "Review"
+msgstr "Note"
 
 #: templates/core/archive/visit_detail.html
 #, python-format
@@ -2149,8 +2149,8 @@ msgstr "Category filter and quick navigation"
 #| msgid_plural "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
 msgid "방문 타임라인 <span class=\"results-count\">%(counter)s</span>건"
 msgid_plural "방문 타임라인 <span class=\"results-count\">%(counter)s</span>건"
-msgstr[0] "<span class=\"results-count\">%(counter)s</span> visit"
-msgstr[1] "<span class=\"results-count\">%(counter)s</span> visits"
+msgstr[0] "Visit timeline <span class=\"results-count\">%(counter)s</span>"
+msgstr[1] "Visit timeline <span class=\"results-count\">%(counter)s</span>"
 
 #: templates/core/events/calendar.html
 #: templates/core/partials/_home_event_calendar.html
@@ -2630,12 +2630,12 @@ msgstr "Plan"
 #| msgid "기록"
 msgctxt "탭 약칭"
 msgid "기록"
-msgstr "Log"
+msgstr "Visits"
 
 #: templates/core/partials/_archive_nav.html
 msgctxt "탭 약칭"
 msgid "직접"
-msgstr "Own"
+msgstr "Custom"
 
 #: templates/core/partials/_archive_results_collection.html
 #, python-format
@@ -2709,7 +2709,7 @@ msgstr "No saved events yet"
 
 #: templates/core/partials/_archive_results_interests.html
 msgid "이벤트 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요."
-msgstr "Tap the ♡ button on an event card to add it to your saved events."
+msgstr "Use the ♡ button on an event card to add it to your saved events."
 
 #: templates/core/partials/_archive_results_interests.html
 #: templates/core/partials/_archive_results_record.html
@@ -3061,7 +3061,7 @@ msgstr[1] "items"
 
 #: web/views/account.py
 msgid "저장한 행사를 모아봐요"
-msgstr "Collect the events you've saved"
+msgstr "See all the events you've saved in one place"
 
 #: web/views/account.py
 #| msgctxt "단위"

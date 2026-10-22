@@ -1345,7 +1345,7 @@ msgstr "数量"
 
 #: templates/core/archive/collection_create.html
 msgid "구하는 중이에요"
-msgstr "正在寻找中"
+msgstr "正在寻找"
 
 #: templates/core/archive/collection_create.html
 msgid "체크 시 구함으로 분류"
@@ -1401,12 +1401,12 @@ msgstr "手动输入 — 上述推荐之外的类型"
 #: templates/core/archive/collection_create.html
 #: templates/core/archive/collection_edit.html
 msgid "획득일 (선택)"
-msgstr "获取日期（选填）"
+msgstr "获得日期（选填）"
 
 #: templates/core/archive/collection_create.html
 #: templates/core/archive/collection_edit.html
 msgid "획득 경로 (선택)"
-msgstr "获取途径（选填）"
+msgstr "获得途径（选填）"
 
 #: templates/core/archive/collection_create.html
 msgid "예: 이벤트 현장, 통판, 양도"
@@ -1617,7 +1617,7 @@ msgstr "关注的活动"
 #: templates/core/archive/interests.html
 #| msgid "방문 예정"
 msgid "방문 예정 겹침"
-msgstr "与计划前往重叠"
+msgstr "同时计划前往"
 
 #: templates/core/archive/interests.html
 msgid "찜 안내 및 빠른 이동"
@@ -1964,7 +1964,7 @@ msgstr "请选择对象"
 #: templates/core/archive/visit_create.html
 #| msgid "새 이벤트"
 msgid "공식 예정 이벤트"
-msgstr "官方预定活动"
+msgstr "计划前往的官方活动"
 
 #: templates/core/archive/visit_create.html
 #: templates/core/archive/visit_edit.html
@@ -1990,7 +1990,7 @@ msgstr "到访记录仅本人可查看和管理"
 
 #: templates/core/archive/visit_create.html
 msgid "공식 예정 이벤트 또는 내 비공식 항목에 기록을 남길 수 있습니다"
-msgstr "可以为官方预定活动或我的非官方项目留下记录"
+msgstr "可以为计划前往的官方活动或我的非官方项目留下记录"
 
 #: templates/core/archive/visit_create.html
 msgid "사진은 JPEG, PNG, WebP 형식을 지원합니다"
@@ -2632,7 +2632,7 @@ msgstr[0] "共<span>%(n)s</span>件"
 
 #: templates/core/partials/_archive_results_collection.html
 msgid "획득"
-msgstr "获取"
+msgstr "获得"
 
 #: templates/core/partials/_archive_results_collection.html
 #| msgid "등록순"
@@ -3103,11 +3103,11 @@ msgstr[0] "%(n)d个"
 
 #: web/views/collection.py
 msgid "획득일"
-msgstr "获取日期"
+msgstr "获得日期"
 
 #: web/views/collection.py
 msgid "획득 경로"
-msgstr "获取途径"
+msgstr "获得途径"
 
 #: web/views/collection.py
 msgid "연결된 방문 기록"
