@@ -75,7 +75,7 @@ msgstr "Pop-up store"
 
 #: core/vocab.py templates/core/home.html
 msgid "콜라보 카페"
-msgstr "Collab cafe"
+msgstr "Collab café"
 
 #: core/vocab.py
 msgid "극장 특전"
@@ -911,7 +911,7 @@ msgstr "takulife is still in beta, so verification emails aren't sent automatica
 
 #: templates/base.html web/views/events.py
 msgid "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
-msgstr "Search pop-up stores, collab cafes, theater bonuses, goods pre-orders, and exhibitions on takulife, and keep track of your visit status and records."
+msgstr "Search pop-up stores, collab cafés, theater bonuses, goods pre-orders, and exhibitions on takulife, and keep track of your visit status and records."
 
 #: templates/base.html
 msgid "본문으로 건너뛰기"

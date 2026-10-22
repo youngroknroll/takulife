@@ -44,7 +44,7 @@ _TRANSLATED = {
     "ko": _SOURCE,
     "en": {
         "popup_store": "Pop-up store",
-        "collaboration_cafe": "Collab cafe",
+        "collaboration_cafe": "Collab café",
         "theater_bonus": "Theater bonus",
         "goods_reservation": "Goods pre-order",
         "exhibition": "Exhibition",
@@ -353,7 +353,7 @@ def test_영어_빠른_칩_두_개는_번역_라벨이고_ko_범위가_아니다
         "/events/?category=popup_store",
         "/events/?category=collaboration_cafe",
     ]
-    assert [chip.text() for chip in chips] == ["Pop-up store", "Collab cafe"]
+    assert [chip.text() for chip in chips] == ["Pop-up store", "Collab café"]
     assert [_is_ko_scoped(chip) for chip in chips] == [False, False]
 
 
