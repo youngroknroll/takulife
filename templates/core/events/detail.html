@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load i18n static %}
 {% block title %}{{ meta_title }}{% endblock %}
 {% block og_title %}{{ meta_title }}{% endblock %}
 {% block description %}{{ meta_description }}{% endblock %}
@@ -14,8 +14,9 @@
 
 {% block content %}
   <main class="page event-detail-page" id="content">
-    <nav class="event-detail-breadcrumb" aria-label="이동 경로">
-      <a href="/events/">‹ 행사 목록</a>{% if event.category %}<span aria-hidden="true"> · </span><a href="/events/?category={{ event.category }}">{{ category_label }}</a>{% endif %}
+    {% translate "이동 경로" as breadcrumb_label %}
+    <nav class="event-detail-breadcrumb" aria-label="{{ breadcrumb_label }}">
+      <a href="/events/">{% translate "‹ 행사 목록" %}</a>{% if event.category %}<span aria-hidden="true"> · </span><a lang="ko" href="/events/?category={{ event.category }}">{{ category_label }}</a>{% endif %}
     </nav>
 
     <div class="event-detail-grid">
@@ -23,50 +24,50 @@
         {% if category_label %}
           <div class="event-detail-cat-row">
             <span class="event-detail-cat-bar" aria-hidden="true" style="background: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));"></span>
-            <span class="event-detail-cat-label" style="color: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));">{{ category_label }}</span>
+            <span class="event-detail-cat-label" lang="ko" style="color: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));">{{ category_label }}</span>
           </div>
         {% endif %}
         {% if event.work_title %}
-          <p class="event-detail-work">{{ event.work_title }}</p>
+          <p class="event-detail-work" lang="ko">{{ event.work_title }}</p>
         {% endif %}
-        <h1 class="event-detail-title">{{ event.title }}</h1>
+        <h1 class="event-detail-title" lang="ko">{{ event.title }}</h1>
         {% if event.source_name %}
-          <p class="event-detail-subtitle">{{ event.source_name }} 제공</p>
+          <p class="event-detail-subtitle">{% blocktranslate trimmed with source=event.source_name %}<span lang="ko">{{ source }}</span> 제공{% endblocktranslate %}</p>
         {% endif %}
 
         <p class="event-detail-status-line">
-          <span class="event-detail-status-chip"{% if status_slug %} data-tone="{{ status_slug }}"{% endif %}>{% if status_slug %}{{ status_label }}{% else %}일정 미정{% endif %}</span>
+          <span class="event-detail-status-chip"{% if status_slug %} data-tone="{{ status_slug }}"{% endif %}>{% if status_slug %}{{ status_label }}{% else %}{% translate "일정 미정" %}{% endif %}</span>
           {% if event.official_url %}
-            <span class="applied-chip event-detail-official-chip">공식 확인</span>
+            <span class="applied-chip event-detail-official-chip">{% translate "공식 확인" %}</span>
           {% endif %}
         </p>
 
         <dl class="event-detail-meta">
           <div class="event-detail-meta-row">
-            <dt>기간</dt>
+            <dt>{% translate "기간" %}</dt>
             <dd>
               {% if event.start_date and event.end_date %}
                 <time datetime="{{ event.start_date|date:'Y-m-d' }}">{{ event.start_date }}</time> ~ <time datetime="{{ event.end_date|date:'Y-m-d' }}">{{ event.end_date }}</time>
               {% elif event.start_date %}
                 <time datetime="{{ event.start_date|date:'Y-m-d' }}">{{ event.start_date }}</time> ~
               {% else %}
-                일정 미정
+                {% translate "일정 미정" %}
               {% endif %}
             </dd>
           </div>
           <div class="event-detail-meta-row">
-            <dt>장소</dt>
-            <dd>{% if event.location_name %}{{ event.location_name }}{% else %}장소 미정{% endif %}</dd>
+            <dt>{% translate "장소" %}</dt>
+            <dd{% if event.location_name %} lang="ko"{% endif %}>{% if event.location_name %}{{ event.location_name }}{% else %}{% translate "장소 미정" %}{% endif %}</dd>
           </div>
           {% if region_label %}
             <div class="event-detail-meta-row">
-              <dt>지역</dt>
+              <dt>{% translate "지역" %}</dt>
               <dd>{{ region_label }}</dd>
             </div>
           {% endif %}
           <div class="event-detail-meta-row">
-            <dt>카테고리</dt>
-            <dd>{% if category_label %}{{ category_label }}{% else %}—{% endif %}</dd>
+            <dt>{% translate "카테고리" %}</dt>
+            <dd{% if category_label %} lang="ko"{% endif %}>{% if category_label %}{{ category_label }}{% else %}—{% endif %}</dd>
           </div>
         </dl>
 
@@ -79,23 +80,23 @@
               aria-pressed="{% if user_interested %}true{% else %}false{% endif %}"
               {% if user_interested %}data-interest-id="{{ user_interest_id }}"{% endif %}>
               <span data-interest-glyph aria-hidden="true">{% if user_interested %}♥{% else %}♡{% endif %}</span>
-              찜
+              {% translate "찜" context "동작" %}
             </button>
           </div>
           {% if event.official_url %}
-            <a class="event-detail-pill event-detail-pill-official" href="{{ event.official_url }}" rel="noopener" target="_blank"{% if user_status != 'visited' %} data-cta-watch{% endif %}>공식 페이지로 ↗</a>
+            <a class="event-detail-pill event-detail-pill-official" href="{{ event.official_url }}" rel="noopener" target="_blank"{% if user_status != 'visited' %} data-cta-watch{% endif %}>{% translate "공식 페이지로 ↗" %}</a>
           {% endif %}
         </div>
 
         <section class="event-detail-participation">
-          <h2>참여 상태</h2>
+          <h2>{% translate "참여 상태" %}</h2>
           {% if user_status %}
-            <p class="panel-note" style="margin: 0 0 0.625rem;">현재 상태: <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
+            <p class="panel-note" style="margin: 0 0 0.625rem;">{% translate "현재 상태:" %} <span class="status {{ user_status }}">{{ user_status_label }}</span></p>
             <div class="status-change-row">
               <button class="action-link" type="button" data-status-toggle data-expanded="false" data-controls="status-choices"
-                      aria-expanded="false" aria-controls="status-choices">상태 변경</button>
+                      aria-expanded="false" aria-controls="status-choices">{% translate "상태 변경" %}</button>
               {% if user_status == 'planned' %}
-                <a class="action-link" href="/archive/statuses/?status=planned">일정에서 보기</a>
+                <a class="action-link" href="/archive/statuses/?status=planned">{% translate "일정에서 보기" %}</a>
               {% endif %}
             </div>
           {% endif %}
@@ -107,39 +108,39 @@
               data-status="planned"
               data-reload-on-success
               {% if user_status == 'planned' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}
-              {% if status_slug == 'ended' %}disabled title="종료된 이벤트는 방문 예정을 설정할 수 없습니다"{% endif %}>방문 예정</button>
+              {% if status_slug == 'ended' %}{% translate "종료된 이벤트는 방문 예정을 설정할 수 없습니다" as ended_title %}disabled title="{{ ended_title }}"{% endif %}>{% translate "방문 예정" %}</button>
             <button class="status-btn visited{% if user_status == 'visited' %} active{% endif %}" type="button"
               data-status-action
               data-toast
               data-event-id="{{ event.id }}"
               data-status="visited"
               data-reload-on-success
-              {% if user_status == 'visited' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>방문 완료</button>
+              {% if user_status == 'visited' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>{% translate "방문 완료" %}</button>
             <button class="status-btn missed{% if user_status == 'missed' %} active{% endif %}" type="button"
               data-status-action
               data-toast
               data-event-id="{{ event.id }}"
               data-status="missed"
               data-reload-on-success
-              {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>놓침</button>
+              {% if user_status == 'missed' and user_status_id %}data-status-id="{{ user_status_id }}"{% endif %}>{% translate "놓침" %}</button>
           </div>
           {% if user_status == 'visited' %}
-            <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}" data-cta-watch>기록 남기기</a>
+            <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}" data-cta-watch>{% translate "기록 남기기" %}</a>
           {% endif %}
         </section>
 
         {% if event.summary %}
           <section class="event-detail-section">
-            <h2>행사 소개</h2>
-            <p>{{ event.summary }}</p>
+            <h2>{% translate "행사 소개" %}</h2>
+            <p lang="ko">{{ event.summary }}</p>
           </section>
         {% endif %}
 
         {% if event.official_url %}
           <section class="event-detail-section">
-            <h2>공식 공지 · 특전</h2>
+            <h2>{% translate "공식 공지 · 특전" %}</h2>
             {# TODO(backend): 구조화된 공지·특전(EventNotice) 데이터 연결 지점 #}
-            <p>공식 공지·특전 정보는 아직 준비 중입니다. 운영 시간·예약 등 최신 내용은 공식 페이지에서 확인해 주세요.</p>
+            <p>{% translate "공식 공지·특전 정보는 아직 준비 중입니다. 운영 시간·예약 등 최신 내용은 공식 페이지에서 확인해 주세요." %}</p>
           </section>
         {% endif %}
       </div>
@@ -147,10 +148,10 @@
 
     {% if event.location_name %}
       <section class="event-detail-location">
-        <h2>위치</h2>
-        <p class="event-detail-location-name">{{ event.location_name }}</p>
+        <h2>{% translate "위치" %}</h2>
+        <p class="event-detail-location-name" lang="ko">{{ event.location_name }}</p>
         {% if region_label %}<p class="event-detail-location-region">{{ region_label }}</p>{% endif %}
-        <a class="event-detail-location-link" href="https://map.naver.com/p/search/{{ event.location_name|urlencode }}" target="_blank" rel="noopener">지도 앱에서 열기 <span aria-hidden="true">↗</span></a>
+        <a class="event-detail-location-link" href="https://map.naver.com/p/search/{{ event.location_name|urlencode }}" target="_blank" rel="noopener">{% translate "지도 앱에서 열기" %} <span aria-hidden="true">↗</span></a>
         {# TODO(backend): 좌표/지오코딩/지도 임베드 삽입 지점 #}
         <div class="event-detail-map" data-map-embed-slot></div>
       </section>
@@ -159,16 +160,16 @@
     {% if related_events %}
       <section class="event-detail-related">
         <div class="event-detail-related-head">
-          <h2>이런 행사도 있어요</h2>
-          <a href="/events/">행사 목록 →</a>
+          <h2>{% translate "이런 행사도 있어요" %}</h2>
+          <a href="/events/">{% translate "행사 목록 →" %}</a>
         </div>
         <div class="event-detail-related-rows">
           {% for r in related_events %}
             <a class="event-detail-related-row" href="/events/{{ r.event.id }}/" style="border-left-color: var(--cat-{{ r.category_slug|slugify }}-ink, var(--brand-ink));">
               <span class="event-detail-related-body">
-                {% if r.event.work_title %}<span class="event-detail-related-work">{{ r.event.work_title }}</span>{% endif %}
-                <span class="event-detail-related-title">{{ r.event.title }}</span>
-                <span class="event-detail-related-meta">{{ r.category_label }} · {% if r.event.location_name %}{{ r.event.location_name }}{% else %}장소 미정{% endif %} · {% if r.event.start_date %}<span class="mono-num">{% if r.event.end_date %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> - <time datetime="{{ r.event.end_date|date:'Y-m-d' }}">{% if r.event.start_date|date:"Y" == r.event.end_date|date:"Y" %}{{ r.event.end_date|date:"m/d" }}{% else %}{{ r.event.end_date|date:"Y/m/d" }}{% endif %}</time>{% else %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> -{% endif %}</span>{% else %}일정 미정{% endif %}</span>
+                {% if r.event.work_title %}<span class="event-detail-related-work" lang="ko">{{ r.event.work_title }}</span>{% endif %}
+                <span class="event-detail-related-title" lang="ko">{{ r.event.title }}</span>
+                <span class="event-detail-related-meta"><span lang="ko">{{ r.category_label }}</span> · {% if r.event.location_name %}<span lang="ko">{{ r.event.location_name }}</span>{% else %}{% translate "장소 미정" %}{% endif %} · {% if r.event.start_date %}<span class="mono-num">{% if r.event.end_date %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> - <time datetime="{{ r.event.end_date|date:'Y-m-d' }}">{% if r.event.start_date|date:"Y" == r.event.end_date|date:"Y" %}{{ r.event.end_date|date:"m/d" }}{% else %}{{ r.event.end_date|date:"Y/m/d" }}{% endif %}</time>{% else %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> -{% endif %}</span>{% else %}{% translate "일정 미정" %}{% endif %}</span>
               </span>
               <span class="event-detail-related-tone" data-tone="{{ r.status_slug }}">{{ r.status_label }}</span>
             </a>
@@ -179,11 +180,11 @@
 
     {% if user_status == 'visited' %}
       <div class="mobile-cta" data-cta-fixed hidden>
-        <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}">기록 남기기</a>
+        <a class="action-link primary" href="/archive/visits/new/?subject=event:{{ event.id }}">{% translate "기록 남기기" %}</a>
       </div>
     {% elif event.official_url %}
       <div class="mobile-cta" data-cta-fixed hidden>
-        <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank">공식 페이지에서 보기 ↗</a>
+        <a class="action-link primary" href="{{ event.official_url }}" rel="noopener" target="_blank">{% translate "공식 페이지에서 보기 ↗" %}</a>
       </div>
     {% endif %}
   </main>

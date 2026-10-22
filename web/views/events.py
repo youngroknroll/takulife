@@ -13,6 +13,8 @@ from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import truncatechars
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
+from django.utils.translation import gettext
 from rest_framework.exceptions import ValidationError
 
 from archive.models import UserEventStatus
@@ -258,13 +260,15 @@ def _active_filter_chips(*, q, selected_region, selected_category, selected_stat
     없이 호출자가 이미 파싱한 값에 라벨만 붙인다."""
     chips = []
     if q:
-        chips.append(f"검색: {q}")
+        chips.append({"label": gettext("검색: %(q)s") % {"q": q}, "lang": ""})
     for region in selected_region:
-        chips.append(REGION_LABELS.get(region, region))
+        chips.append({"label": REGION_LABELS.get(region, region), "lang": ""})
     for category in selected_category:
-        chips.append(CATEGORY_LABELS.get(category, category))
+        chips.append({"label": CATEGORY_LABELS.get(category, category), "lang": "ko"})
     if selected_status:
-        chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
+        chips.append(
+            {"label": EVENT_STATUS_LABELS.get(selected_status, selected_status), "lang": ""}
+        )
     return chips
 
 
@@ -328,6 +332,7 @@ def event_list(request):
         "event_rows": event_rows,
         "active_filters": active_filters,
         "active_filter_chips": active_filter_chips,
+        "category_labels": CATEGORY_LABELS,
         # 필터 UI용 어휘 튜플
         "CATEGORY": consumer_category_choices(),
         "REGION": REGION,
@@ -402,7 +407,7 @@ def event_calendar(request):
     기준으로 템플릿을 병행 개발 중이다):
 
     calendar_error(None|"invalid"|"query_failed"), month_label
-    ("YYYY년 M월"), weeks(주당 7칸 리스트, 각 칸은 {date, in_month,
+    (요청 언어의 연월 표기, 예 "2026년 3월"), weeks(주당 7칸 리스트, 각 칸은 {date, in_month,
     today, selected, items[{title,url}](최대 2개), more_count, count}),
     selected_date, selected_events, prev_month/next_month("YYYY-MM"),
     extra_query, 그리고 event_list가 이미 제공하는 것과 같은 필터
@@ -497,7 +502,8 @@ def event_calendar(request):
 
     context = {
         "calendar_error": calendar_error,
-        "month_label": f"{year}년 {month}월",
+        "month_label": date_format(date(year, month, 1), "YEAR_MONTH_FORMAT"),
+        "category_labels": CATEGORY_LABELS,
         "weeks": weeks,
         "selected_date": selected_date,
         "selected_events": selected_events,
@@ -547,12 +553,6 @@ def _build_event_meta_title(event):
     return f"{truncatechars(segment, 20)} — takulife"
 
 
-_DEFAULT_EVENT_META_DESCRIPTION = (
-    "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · "
-    "굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
-)
-
-
 def _build_event_meta_description(event, category_label):
     summary = event.summary.strip()
     if summary:
@@ -569,7 +569,9 @@ def _build_event_meta_description(event, category_label):
     if parts:
         return truncatechars(" · ".join(parts), 100)
 
-    return truncatechars(_DEFAULT_EVENT_META_DESCRIPTION, 100)
+    return gettext(
+        "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
+    )
 
 
 def event_detail(request, event_id):

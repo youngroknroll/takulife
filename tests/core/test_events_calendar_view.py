@@ -396,7 +396,7 @@ def test_필터가_적용된_달력_요청의_컨텍스트에_적용_필터_칩�
     resp = Client().get("/events/calendar/", {"region": "seoul", "q": "포스터"})
 
     assert resp.status_code == 200
-    chips = resp.context["active_filter_chips"]
+    chips = [chip["label"] for chip in resp.context["active_filter_chips"]]
     assert "검색: 포스터" in chips
     assert any("서울" in chip for chip in chips)
 
