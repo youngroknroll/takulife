@@ -282,3 +282,24 @@ def test_msgstr의_이스케이프되지_않은_큰따옴표는_원문보다_많
 
     assert checked > 0
     assert violations == []
+
+
+# E-30 — 영어 표기는 "Collab café"로 통일(café, cafe 아님).
+_KOREAN_CAFE_RE = re.compile(r"카페")
+_CAFE_WORD_RE = re.compile(r"\bcafes?\b", re.IGNORECASE)
+
+
+def test_영어_카탈로그의_카페_번역은_café로_표기한다():
+    violations = []
+    checked = 0
+    path = _po_path("en", "django.po")
+    for entry in _translatable_entries(path):
+        if not _KOREAN_CAFE_RE.search(entry["msgid"]):
+            continue
+        for msgstr in entry["msgstrs"]:
+            checked += 1
+            if "café" not in msgstr.lower() or _CAFE_WORD_RE.search(msgstr):
+                violations.append(f"{_relpath(path)}: {entry['msgid'][:40]!r}")
+
+    assert checked > 0
+    assert violations == []
