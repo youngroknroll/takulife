@@ -73,7 +73,7 @@ class TestArchiveVisitsCategoryFilter:
 
         assert resp.status_code == 200
         # 처음 등장한 순서로 중복 제거(콜라보 카페는 행사와 개인 항목 둘 다에서 나옴)
-        assert resp.context["categories"] == ["콜라보 카페", "팝업스토어"]
+        assert [chip["token"] for chip in resp.context["category_chips"]] == ["콜라보 카페", "팝업스토어"]
         assert resp.context["has_unofficial"] is True
 
     def test_직접_등록_항목이_없으면_다녀온_기록에_비공식_방문이_없다고_표시한다(self, make_user, make_event, make_visit):
@@ -85,5 +85,5 @@ class TestArchiveVisitsCategoryFilter:
         client.force_login(user)
         resp = client.get("/archive/visits/")
 
-        assert resp.context["categories"] == ["팝업스토어"]
+        assert [chip["token"] for chip in resp.context["category_chips"]] == ["팝업스토어"]
         assert resp.context["has_unofficial"] is False

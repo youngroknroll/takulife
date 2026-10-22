@@ -126,7 +126,7 @@
           <a class="cat-dot" href="/events/?category={{ tile.slug }}">
             <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink, var(--brand-ink));" aria-hidden="true"></span>
             <span class="cat-dot-info">
-              <span class="cat-name" lang="ko">{{ tile.label }}</span>
+              <span class="cat-name"{% if tile.lang %} lang="{{ tile.lang }}"{% endif %}>{{ tile.label }}</span>
               <span class="cat-count">{% blocktranslate trimmed count counter=tile.count %}{{ counter }}개{% plural %}{{ counter }}개{% endblocktranslate %}</span>
             </span>
           </a>

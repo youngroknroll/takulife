@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}이벤트 목록 — {{ project_name }}{% endblock %}
-{% block og_title %}이벤트 목록 — {{ project_name }}{% endblock %}
-{% block description %}서울·경기·인천 등 지역과 카테고리로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사를 검색하고 필터링하세요.{% endblock %}
-{% block og_description %}서울·경기·인천 등 지역과 카테고리로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사를 검색하고 필터링하세요.{% endblock %}
+{% load i18n static %}
+{% block title %}{% translate "이벤트 목록" context "페이지 제목" %} — {{ project_name }}{% endblock %}
+{% block og_title %}{% translate "이벤트 목록" context "페이지 제목" %} — {{ project_name }}{% endblock %}
+{% block description %}{% translate "서울·경기·인천 등 지역과 카테고리로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사를 검색하고 필터링하세요." %}{% endblock %}
+{% block og_description %}{% translate "서울·경기·인천 등 지역과 카테고리로 팝업스토어, 콜라보 카페, 전시 등 서브컬처 행사를 검색하고 필터링하세요." %}{% endblock %}
 {% block robots_meta %}{% endblock %}
 
 {% block extra_css %}
@@ -13,35 +13,41 @@
 {% block content %}
   <main class="page events-page" id="content">
     <div class="events-head">
-      <h1>이벤트 목록</h1>
-      <nav class="events-tabs" aria-label="목록·달력 전환">
-        <a class="active" aria-current="page" href="/events/?{{ request.GET.urlencode }}">목록</a>
-        <a href="/events/calendar/?{{ request.GET.urlencode }}">달력</a>
+      <h1>{% translate "이벤트 목록" context "페이지 제목" %}</h1>
+      {% translate "목록·달력 전환" as tabs_label %}
+      <nav class="events-tabs" aria-label="{{ tabs_label }}">
+        <a class="active" aria-current="page" href="/events/?{{ request.GET.urlencode }}">{% translate "목록" %}</a>
+        <a href="/events/calendar/?{{ request.GET.urlencode }}">{% translate "달력" %}</a>
       </nav>
     </div>
 
+    {% translate "작품명, 이벤트명, 장소를 검색" as search_placeholder %}
+    {% translate "이벤트 검색" as search_label %}
     <form class="search events-search" action="/events/" method="get">
       <span class="events-search-field">
         <span class="events-search-icon" aria-hidden="true">⌕</span>
-        <input id="q" name="q" type="text" value="{{ q }}" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
+        <input id="q" name="q" type="text" value="{{ q }}" placeholder="{{ search_placeholder }}" aria-label="{{ search_label }}">
       </span>
-      <button type="submit">검색</button>
+      <button type="submit">{% translate "검색" %}</button>
     </form>
 
     <div class="quick-row">
-      <a class="chip{% if 'seoul' in selected_region %} active{% endif %}" href="/events/?region=seoul"{% if 'seoul' in selected_region %} aria-current="true" aria-label="서울, 적용됨"{% endif %}>서울</a>
-      <a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/?region=gyeonggi"{% if 'gyeonggi' in selected_region %} aria-current="true" aria-label="경기, 적용됨"{% endif %}>경기</a>
-      <a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/?region=incheon"{% if 'incheon' in selected_region %} aria-current="true" aria-label="인천, 적용됨"{% endif %}>인천</a>
-      <a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/?status=closing_soon"{% if selected_status == 'closing_soon' %} aria-current="true" aria-label="종료 임박, 적용됨"{% endif %}>종료 임박</a>
-      <a class="chip{% if selected_status == 'all' %} active{% endif %}" href="/events/?status=all"{% if selected_status == 'all' %} aria-current="true" aria-label="전체, 적용됨"{% endif %}>전체</a>
-      <a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" href="/events/?category=popup_store"{% if 'popup_store' in selected_category %} aria-current="true" aria-label="팝업스토어, 적용됨"{% endif %}>팝업스토어</a>
-      <a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/?category=collaboration_cafe"{% if 'collaboration_cafe' in selected_category %} aria-current="true" aria-label="콜라보 카페, 적용됨"{% endif %}>콜라보 카페</a>
+      {% translate "서울" as chip_label %}{% blocktranslate trimmed asvar chip_aria with label=chip_label %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'seoul' in selected_region %} active{% endif %}" href="/events/?region=seoul"{% if 'seoul' in selected_region %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ chip_label }}</a>
+      {% translate "경기" as chip_label %}{% blocktranslate trimmed asvar chip_aria with label=chip_label %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/?region=gyeonggi"{% if 'gyeonggi' in selected_region %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ chip_label }}</a>
+      {% translate "인천" as chip_label %}{% blocktranslate trimmed asvar chip_aria with label=chip_label %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/?region=incheon"{% if 'incheon' in selected_region %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ chip_label }}</a>
+      {% translate "종료 임박" as chip_label %}{% blocktranslate trimmed asvar chip_aria with label=chip_label %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/?status=closing_soon"{% if selected_status == 'closing_soon' %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ chip_label }}</a>
+      {% translate "전체" as chip_label %}{% blocktranslate trimmed asvar chip_aria with label=chip_label %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if selected_status == 'all' %} active{% endif %}" href="/events/?status=all"{% if selected_status == 'all' %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ chip_label }}</a>
+      {% blocktranslate trimmed asvar chip_aria with label=category_labels.popup_store %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" href="/events/?category=popup_store"{% if 'popup_store' in selected_category %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ category_labels.popup_store }}</a>
+      {% blocktranslate trimmed asvar chip_aria with label=category_labels.collaboration_cafe %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/?category=collaboration_cafe"{% if 'collaboration_cafe' in selected_category %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ category_labels.collaboration_cafe }}</a>
     </div>
 
     <section class="layout">
       <aside class="panel filters">
+        {% translate "필터 열기 ▾" as filter_open_label %}
+        {% translate "필터 닫기 ▴" as filter_close_label %}
         <button class="filter-toggle" type="button" data-expanded="false" data-controls="filter-body"
-                aria-expanded="false" aria-controls="filter-body">필터 열기 ▾</button>
+                aria-expanded="false" aria-controls="filter-body"
+                data-label-open="{{ filter_open_label }}" data-label-close="{{ filter_close_label }}">{{ filter_open_label }}</button>
 
         <div id="filter-body" class="filter-body">
         <form method="get" action="/events/">
@@ -52,7 +58,7 @@
           {% if selected_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
 
           <fieldset class="filter-group">
-            <legend>지역</legend>
+            <legend>{% translate "지역" %}</legend>
             <ul class="filter-list">
               {% for slug, label in REGION %}
                 <li>
@@ -66,11 +72,11 @@
           </fieldset>
 
           <fieldset class="filter-group">
-            <legend>카테고리</legend>
+            <legend>{% translate "카테고리" %}</legend>
             <ul class="filter-list">
-              {% for slug, label in CATEGORY %}
+              {% for slug, label, lang in CATEGORY %}
                 <li>
-                  <label class="filter-check">
+                  <label class="filter-check"{% if lang %} lang="{{ lang }}"{% endif %}>
                     <input type="checkbox" name="category" value="{{ slug }}"{% if slug in selected_category %} checked{% endif %}>
                     {{ label }}
                   </label>
@@ -80,12 +86,12 @@
           </fieldset>
 
           <fieldset class="filter-group">
-            <legend>이벤트 상태</legend>
+            <legend>{% translate "이벤트 상태" %}</legend>
             <ul class="filter-list">
               <li>
                 <label class="filter-check">
                   <input type="radio" name="status" value=""{% if not selected_status %} checked{% endif %}>
-                  진행·예정
+                  {% translate "진행·예정" %}
                 </label>
               </li>
               {% for slug, label in EVENT_STATUS %}
@@ -99,15 +105,15 @@
               <li>
                 <label class="filter-check">
                   <input type="radio" name="status" value="all"{% if selected_status == 'all' %} checked{% endif %}>
-                  전체
+                  {% translate "전체" %}
                 </label>
               </li>
             </ul>
           </fieldset>
 
           <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" type="submit">필터 적용</button>
-            <a class="btn btn-secondary btn-sm" href="/events/">초기화</a>
+            <button class="btn btn-primary btn-sm" type="submit">{% translate "필터 적용" %}</button>
+            <a class="btn btn-secondary btn-sm" href="/events/">{% translate "초기화" %}</a>
           </div>
         </form>
         </div>
@@ -116,12 +122,12 @@
       <article class="panel results">
         {% if page_obj %}
           <header class="results-head">
-            <h2 class="results-title">검색 결과 <span class="results-count">{{ total_count }}</span>개</h2>
+            <h2 class="results-title">{% blocktranslate trimmed count counter=total_count %}검색 결과 <span class="results-count">{{ counter }}</span>개{% plural %}검색 결과 <span class="results-count">{{ counter }}</span>개{% endblocktranslate %}</h2>
             {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
             {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
             {# 생긴다. event_list.js는 바깥 클릭 시 닫는 동작만 더한다. #}
             <details class="results-sort" data-sort-menu>
-              <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
+              <summary class="results-sort-toggle">{% translate "정렬" %} <span>{{ selected_sort_label }}</span></summary>
               <ul class="results-sort-menu">
                 {% for slug, label in EVENT_SORT %}
                   <li>
@@ -137,7 +143,7 @@
               {% for chip in active_filter_chips %}
                 <span class="applied-chip">{{ chip }}</span>
               {% endfor %}
-              <a class="applied-clear" href="/events/">전체 해제</a>
+              <a class="applied-clear" href="/events/">{% translate "전체 해제" %}</a>
             </div>
           {% endif %}
 
@@ -148,52 +154,53 @@
                 <div class="event-index-date">
                   {% if row.event.start_date %}
                     <time class="event-index-date-value mono-num" datetime="{{ row.event.start_date|date:"Y-m-d" }}">
-                      <span class="event-index-month">{{ row.event.start_date|date:"n월" }}</span>
+                      <span class="event-index-month">{{ row.event.start_date|date:"F" }}</span>
                       <span class="event-index-day">{{ row.event.start_date|date:"d" }}</span>
                     </time>
                     {% if row.event.end_date and row.event.end_date != row.event.start_date %}
                       <time class="event-index-date-end mono-num" datetime="{{ row.event.end_date|date:"Y-m-d" }}">– {{ row.event.end_date|date:"n.d" }}</time>
                     {% endif %}
                   {% else %}
-                    <span class="event-index-date-empty">일정 미정</span>
+                    <span class="event-index-date-empty">{% translate "일정 미정" %}</span>
                   {% endif %}
                 </div>
                 <div class="event-index-main">
                   {% if row.event.work_title %}
-                    <p class="event-index-work">{{ row.event.work_title }}</p>
+                    <p class="event-index-work" lang="ko">{{ row.event.work_title }}</p>
                   {% endif %}
-                  <h2 class="event-index-title"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
+                  <h2 class="event-index-title" lang="ko"><a href="/events/{{ row.event.id }}/">{{ row.event.title }}</a></h2>
                   <p class="event-index-meta">
                     {% if row.category_label %}
                       <span class="event-index-cat">{{ row.category_label }}</span>
                       <span class="event-index-dot" aria-hidden="true"></span>
                     {% endif %}
                     {% if row.region_label and row.event.location_name %}
-                      <span class="event-index-place">{{ row.region_label }} · {{ row.event.location_name }}</span>
+                      <span class="event-index-place">{{ row.region_label }} · <span lang="ko">{{ row.event.location_name }}</span></span>
                     {% elif row.region_label %}
                       <span class="event-index-place">{{ row.region_label }}</span>
                     {% elif row.event.location_name %}
-                      <span class="event-index-place">{{ row.event.location_name }}</span>
+                      <span class="event-index-place" lang="ko">{{ row.event.location_name }}</span>
                     {% else %}
-                      <span class="event-index-place">장소 미정</span>
+                      <span class="event-index-place">{% translate "장소 미정" %}</span>
                     {% endif %}
                   </p>
                 </div>
                 <div class="event-index-actions">
                   {% if row.status_slug == 'ended' %}
-                    <span class="event-index-dday">종료</span>
+                    <span class="event-index-dday">{% translate "종료" %}</span>
                   {% elif row.status_slug == 'closing_soon' %}
-                    <span class="event-index-dday">{% if row.dday == 0 %}오늘 종료{% else %}D-{{ row.dday }}{% endif %}</span>
+                    <span class="event-index-dday">{% if row.dday == 0 %}{% translate "오늘 종료" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}D-{{ dday }}{% endblocktranslate %}{% endif %}</span>
                   {% elif row.status_slug == 'upcoming' %}
-                    <span class="event-index-dday">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</span>
+                    <span class="event-index-dday">{% if row.dday == 0 %}{% translate "오늘 오픈" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}오픈 D-{{ dday }}{% endblocktranslate %}{% endif %}</span>
                   {% elif row.status_label %}
                     <span class="event-index-dday">{{ row.status_label }}</span>
                   {% endif %}
+                  {% translate "찜" context "동작" as interest_label %}
                   <button class="interest-btn event-index-interest{% if row.user_interested %} active{% endif %}" type="button"
                     data-interest-toggle
                     data-toast
                     data-event-id="{{ row.event.id }}"
-                    aria-label="찜"
+                    aria-label="{{ interest_label }}"
                     aria-pressed="{% if row.user_interested %}true{% else %}false{% endif %}"
                     {% if row.user_interested %}data-interest-id="{{ row.user_interest_id }}"{% endif %}>
                     <span data-interest-glyph aria-hidden="true">{% if row.user_interested %}♥{% else %}♡{% endif %}</span>
@@ -214,25 +221,25 @@
               {% for chip in active_filter_chips %}
                 <span class="applied-chip">{{ chip }}</span>
               {% endfor %}
-              <a class="applied-clear" href="/events/">전체 해제</a>
+              <a class="applied-clear" href="/events/">{% translate "전체 해제" %}</a>
             </div>
           {% endif %}
           <div class="empty-state">
             <p class="empty-icon" aria-hidden="true">🔍</p>
             {% if active_filters %}
-              <p class="empty-title">조건에 맞는 이벤트가 없어요</p>
-              <p class="empty-note">필터를 줄이거나 다른 키워드로 다시 찾아보세요.</p>
+              <p class="empty-title">{% translate "조건에 맞는 이벤트가 없어요" %}</p>
+              <p class="empty-note">{% translate "필터를 줄이거나 다른 키워드로 다시 찾아보세요." %}</p>
             {% else %}
-              <p class="empty-title">진행·예정 이벤트가 없어요</p>
-              <p class="empty-note">새로운 이벤트가 등록되면 여기에 표시돼요.</p>
+              <p class="empty-title">{% translate "진행·예정 이벤트가 없어요" %}</p>
+              <p class="empty-note">{% translate "새로운 이벤트가 등록되면 여기에 표시돼요." %}</p>
             {% endif %}
             {% if active_filters or not selected_status %}
               <div class="empty-actions">
                 {% if active_filters %}
-                  <a class="empty-action" href="/events/">필터 전체 해제</a>
+                  <a class="empty-action" href="/events/">{% translate "필터 전체 해제" %}</a>
                 {% endif %}
                 {% if not selected_status %}
-                  <a class="empty-action" href="?{{ request.GET.urlencode }}&status=all">종료 포함 전체 보기</a>
+                  <a class="empty-action" href="?{{ request.GET.urlencode }}&status=all">{% translate "종료 포함 전체 보기" %}</a>
                 {% endif %}
               </div>
             {% endif %}

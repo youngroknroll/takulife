@@ -11,6 +11,9 @@
   — 페이지네이션 때문에 필터 칩이 사라지면 안 된다.
 - pager_query 는 페이지 링크에 filter 와 q 를 동시에 유지한다.
 """
+from html.parser import HTMLParser
+from urllib.parse import quote
+
 import pytest
 
 from archive.models import PersonalEntry
@@ -210,9 +213,13 @@ class TestCategoriesFromFullData:
 
         resp = client.get("/archive/visits/")
 
-        categories = resp.context["categories"]
-        assert "팝업스토어" in categories
-        assert "콜라보 카페" in categories  # 이전 페이지별 로직이었다면 누락됐을 항목
+        chips = resp.context["category_chips"]
+        tokens = [chip["token"] for chip in chips]
+        labels = [chip["label"] for chip in chips]
+        assert "팝업스토어" in tokens
+        assert "팝업스토어" in labels
+        assert "콜라보 카페" in tokens  # 이전 페이지별 로직이었다면 누락됐을 항목
+        assert "콜라보 카페" in labels
 
     def test_비공식_기록이_두_번째_페이지에_있어도_비공식_보유_여부는_참으로_표시된다(self, user_client, make_event, make_visit, make_entry):
         user, client = user_client()
@@ -314,3 +321,147 @@ class TestVisitsPagerQuery:
 
         assert resp.status_code == 200
         assert "sort=oldest" in resp.context["search_suffix"]
+
+
+# ---------------------------------------------------------------------------
+# 트랙 43-2 C-12·C-13: 카테고리 칩은 표시만 번역되고 토큰은 한국어 원문이다
+# ---------------------------------------------------------------------------
+
+_POPUP_TOKEN = quote("팝업스토어")
+
+
+class _ChipCollector(HTMLParser):
+    """`.chips` 안의 `<a class="chip">`를 (href, aria-current, 텍스트, lang 범위)로 모은다."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self._depth = 0
+        self._chip = None
+        self.chips = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "div" and "chips" in (attrs.get("class") or "").split():
+            self._depth = 1
+        elif self._depth and tag == "div":
+            self._depth += 1
+        elif self._depth and tag == "a" and "chip" in (attrs.get("class") or "").split():
+            self._chip = {
+                "href": attrs.get("href"),
+                "current": attrs.get("aria-current"),
+                "lang": attrs.get("lang"),
+                "text": "",
+            }
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self._chip is not None:
+            self._chip["text"] = " ".join(self._chip["text"].split())
+            self.chips.append(self._chip)
+            self._chip = None
+        elif tag == "div" and self._depth:
+            self._depth -= 1
+
+    def handle_data(self, data):
+        if self._chip is not None:
+            self._chip["text"] += data
+
+
+def _category_chips(resp):
+    collector = _ChipCollector()
+    collector.feed(resp.content.decode())
+    return [c for c in collector.chips if c["href"].startswith("?filter=cat:")]
+
+
+@pytest.mark.django_db
+class TestCategoryChipTranslation:
+    # C-12 — Red 예측: 영어 칩 텍스트가 지금은 한국어 라벨이라 Red.
+    def test_영어_방문_기록_칩은_번역_라벨이고_링크는_한국어_원문_토큰이다(self, user_client, make_event, make_visit):
+        user, client = user_client()
+        make_visit(user, event=make_event(title="팝업 행사", category="popup_store"), visited_on="2026-05-01")
+        make_visit(user, event=make_event(title="콜라보 행사", category="collaboration_cafe"), visited_on="2026-05-02")
+
+        chips = _category_chips(client.get("/archive/visits/", HTTP_ACCEPT_LANGUAGE="en"))
+
+        popup = [c for c in chips if c["text"] == "Pop-up store"]
+        assert len(popup) == 1
+        assert popup[0]["href"] == f"?filter=cat:{_POPUP_TOKEN}"
+        assert popup[0]["lang"] is None
+
+    # C-12 토큰 왕복 — Red 예측: 칩 텍스트 단언 때문에 Red(필터링 자체는 지금도 동작).
+    def test_영어_칩_링크를_그대로_요청하면_필터가_적용되고_칩이_현재_칩이다(self, user_client, make_event, make_visit):
+        user, client = user_client()
+        make_visit(user, event=make_event(title="팝업 행사", category="popup_store"), visited_on="2026-05-01")
+        make_visit(user, event=make_event(title="콜라보 행사", category="collaboration_cafe"), visited_on="2026-05-02")
+        first = _category_chips(client.get("/archive/visits/", HTTP_ACCEPT_LANGUAGE="en"))
+        href = [c for c in first if c["text"] == "Pop-up store"][0]["href"]
+
+        resp = client.get(f"/archive/visits/{href}", HTTP_ACCEPT_LANGUAGE="en")
+
+        assert resp.status_code == 200
+        assert resp.context["page_obj"].paginator.count == 1
+        current = [c["text"] for c in _category_chips(resp) if c["current"] == "page"]
+        assert current == ["Pop-up store"]
+
+    # C-13 — Red 예측: en은 칩 텍스트가 한국어라 Red, ko는 Green.
+    @pytest.mark.parametrize("headers, label", [({}, "팝업스토어"), ({"HTTP_ACCEPT_LANGUAGE": "en"}, "Pop-up store")])
+    def test_공식과_개인_팝업스토어_기록은_칩_하나로_합쳐져_네_건이_나온다(
+        self, user_client, make_event, make_visit, make_entry, headers, label
+    ):
+        user, client = user_client()
+        _make_official_visits(user, make_event, make_visit, 2, category="popup_store")
+        _make_unofficial_visits(user, make_entry, make_visit, 2, category="팝업스토어")
+
+        chips = _category_chips(client.get("/archive/visits/", **headers))
+        filtered = client.get(f"/archive/visits/?filter=cat:{_POPUP_TOKEN}", **headers)
+
+        assert [(c["text"], c["href"]) for c in chips] == [(label, f"?filter=cat:{_POPUP_TOKEN}")]
+        assert filtered.context["page_obj"].paginator.count == 4
+
+
+class _RecordCatCollector(HTMLParser):
+    """`.record-row-cat` 요소마다 (텍스트, 요소와 조상에 lang 속성이 있는지)를 모은다."""
+
+    _VOID = frozenset("br hr img input link meta source wbr area base col embed param track".split())
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self._stack = []
+        self._open = None
+        self.found = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag in self._VOID:
+            return
+        self._stack.append((tag, attrs.get("lang")))
+        if "record-row-cat" in (attrs.get("class") or "").split():
+            marked = any(lang is not None for t, lang in self._stack if t != "html")
+            self._open = {"depth": len(self._stack), "text": "", "marked": marked}
+
+    def handle_endtag(self, tag):
+        if self._open is not None and len(self._stack) == self._open["depth"]:
+            self._open["text"] = " ".join(self._open["text"].split())
+            self.found.append(self._open)
+            self._open = None
+        if self._stack and self._stack[-1][0] == tag:
+            self._stack.pop()
+
+    def handle_data(self, data):
+        if self._open is not None:
+            self._open["text"] += data
+
+
+@pytest.mark.django_db
+class TestVisitRowCategoryTranslation:
+    # 변이: `_archive_results_visits.html`의 `.record-row-cat`에 `lang="ko"`를 다시 넣으면
+    # 영어 단언이 Red, 한국어 단언은 lang 속성이 새로 붙으면 Red.
+    @pytest.mark.parametrize("headers, label", [({}, "팝업스토어"), ({"HTTP_ACCEPT_LANGUAGE": "en"}, "Pop-up store")])
+    def test_방문_행의_카테고리는_번역_라벨이고_lang_표시가_없다(self, user_client, make_event, make_visit, headers, label):
+        user, client = user_client()
+        make_visit(user, event=make_event(title="팝업 행사", category="popup_store"), visited_on="2026-05-01")
+
+        collector = _RecordCatCollector()
+        collector.feed(client.get("/archive/visits/", **headers).content.decode())
+
+        assert [(c["text"], c["marked"]) for c in collector.found] == [(label, False)]
+

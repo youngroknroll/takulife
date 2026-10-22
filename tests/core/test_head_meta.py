@@ -13,8 +13,6 @@ import pytest
 from django.template.defaultfilters import truncatechars
 from django.utils.html import escape
 
-from core.vocab import CATEGORY_LABELS
-
 pytestmark = pytest.mark.web
 
 
@@ -191,7 +189,7 @@ def test_행사_상세_페이지는_행사명이_들어간_메타_제목을_조�
                 end_date=date(2026, 3, 3),
             ),
             lambda: truncatechars(
-                f"{CATEGORY_LABELS['popup_store']} · 코엑스 · 2026-03-01 ~ 2026-03-03",
+                "팝업스토어 · 코엑스 · 2026-03-01 ~ 2026-03-03",
                 100,
             ),
         ),
