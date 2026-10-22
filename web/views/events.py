@@ -14,7 +14,7 @@ from django.template.defaultfilters import truncatechars
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
-from django.utils.translation import gettext
+from django.utils.translation import get_language, gettext
 from rest_framework.exceptions import ValidationError
 
 from archive.models import UserEventStatus
@@ -185,10 +185,12 @@ def home(request):
         row["category"]: row["count"]
         for row in Event.objects.published().values("category").annotate(count=Count("id"))
     }
-    category_tiles = [
-        {"slug": slug, "label": label, "count": category_counts.get(slug, 0)}
-        for slug, label in HomeConfig.get_solo().featured_category_pairs()
-    ]
+    category_tiles = []
+    for slug, label in HomeConfig.get_solo().featured_category_pairs():
+        text, lang = _translate_category_label(label)
+        category_tiles.append(
+            {"slug": slug, "label": text, "lang": lang, "count": category_counts.get(slug, 0)}
+        )
 
     # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
     # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
@@ -260,16 +262,42 @@ def _active_filter_chips(*, q, selected_region, selected_category, selected_stat
     없이 호출자가 이미 파싱한 값에 라벨만 붙인다."""
     chips = []
     if q:
-        chips.append({"label": gettext("검색: %(q)s") % {"q": q}, "lang": ""})
+        chips.append(gettext("검색: %(q)s") % {"q": q})
     for region in selected_region:
-        chips.append({"label": REGION_LABELS.get(region, region), "lang": ""})
+        chips.append(REGION_LABELS.get(region, region))
     for category in selected_category:
-        chips.append({"label": CATEGORY_LABELS.get(category, category), "lang": "ko"})
+        chips.append(CATEGORY_LABELS.get(category, category))
     if selected_status:
-        chips.append(
-            {"label": EVENT_STATUS_LABELS.get(selected_status, selected_status), "lang": ""}
-        )
+        chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
     return chips
+
+
+def _has_hangul(text):
+    # 가드가 한국어 문자열 상수를 막으므로 코드포인트 범위로 판별한다.
+    return any(0xAC00 <= ord(ch) <= 0xD7A3 for ch in text)
+
+
+def _translate_category_label(label):
+    """카테고리 라벨을 요청 언어로 옮기고 (텍스트, lang)을 돌려준다.
+
+    어휘 msgid와 글자가 같은 라벨만 번역되고 스태프가 새로 만든 라벨은 한국어
+    그대로 남는다(우연히 다른 msgid와 같은 라벨은 그 번역이 붙는다).
+    번역되지 않은 한글 라벨이 비한국어 화면에 섞일 때만 lang="ko"를 돌려준다.
+    """
+    text = gettext(label)
+    language = get_language()
+    is_korean_ui = language is None or language.startswith("ko")
+    if not is_korean_ui and text == label and _has_hangul(label):
+        return text, "ko"
+    return text, ""
+
+
+def _translated_category_choices():
+    """소비자 필터용 (slug, 번역 라벨, lang) 목록."""
+    return [
+        (slug, *_translate_category_label(label))
+        for slug, label in consumer_category_choices()
+    ]
 
 
 def event_list(request):
@@ -334,7 +362,7 @@ def event_list(request):
         "active_filter_chips": active_filter_chips,
         "category_labels": CATEGORY_LABELS,
         # 필터 UI용 어휘 튜플
-        "CATEGORY": consumer_category_choices(),
+        "CATEGORY": _translated_category_choices(),
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
         # 정렬이 사이드바 필터 폼에서 결과 상단 토글 메뉴로 옮겨져,
@@ -411,7 +439,7 @@ def event_calendar(request):
     today, selected, items[{title,url}](최대 2개), more_count, count}),
     selected_date, selected_events, prev_month/next_month("YYYY-MM"),
     extra_query, 그리고 event_list가 이미 제공하는 것과 같은 필터
-    패널 컨텍스트 키(CATEGORY/REGION/EVENT_STATUS,
+    패널 컨텍스트 키(CATEGORY는 (slug, label, lang) 3-튜플, REGION/EVENT_STATUS,
     q/selected_region/selected_category/selected_status/selected_sort/
     selected_sort_label)를 그대로 담아 기존 필터 체크 마크업을 그대로
     재사용할 수 있게 한다.
@@ -518,7 +546,7 @@ def event_calendar(request):
         ),
         # 필터 패널 컨텍스트. event_list와 그대로 맞춰 기존 필터 체크
         # 마크업을 그대로 재사용할 수 있게 한다.
-        "CATEGORY": consumer_category_choices(),
+        "CATEGORY": _translated_category_choices(),
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
         "q": q,
@@ -565,7 +593,9 @@ def _build_event_meta_description(event, category_label):
     else:
         period = ""
 
-    parts = [part for part in (category_label, event.location_name, period) if part]
+    parts = [
+        str(part) for part in (category_label, event.location_name, period) if part
+    ]
     if parts:
         return truncatechars(" · ".join(parts), 100)
 

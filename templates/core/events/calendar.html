@@ -43,8 +43,8 @@
       {% translate "경기" as chip_label %}{% blocktranslate trimmed asvar chip_aria with label=chip_label %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'gyeonggi' in selected_region %} active{% endif %}" href="/events/calendar/?region=gyeonggi"{% if 'gyeonggi' in selected_region %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ chip_label }}</a>
       {% translate "인천" as chip_label %}{% blocktranslate trimmed asvar chip_aria with label=chip_label %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'incheon' in selected_region %} active{% endif %}" href="/events/calendar/?region=incheon"{% if 'incheon' in selected_region %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ chip_label }}</a>
       {% translate "종료 임박" as chip_label %}{% blocktranslate trimmed asvar chip_aria with label=chip_label %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if selected_status == 'closing_soon' %} active{% endif %}" href="/events/calendar/?status=closing_soon"{% if selected_status == 'closing_soon' %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ chip_label }}</a>
-      {% blocktranslate trimmed asvar chip_aria with label=category_labels.popup_store %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" lang="ko" href="/events/calendar/?category=popup_store"{% if 'popup_store' in selected_category %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ category_labels.popup_store }}</a>
-      {% blocktranslate trimmed asvar chip_aria with label=category_labels.collaboration_cafe %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" lang="ko" href="/events/calendar/?category=collaboration_cafe"{% if 'collaboration_cafe' in selected_category %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ category_labels.collaboration_cafe }}</a>
+      {% blocktranslate trimmed asvar chip_aria with label=category_labels.popup_store %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'popup_store' in selected_category %} active{% endif %}" href="/events/calendar/?category=popup_store"{% if 'popup_store' in selected_category %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ category_labels.popup_store }}</a>
+      {% blocktranslate trimmed asvar chip_aria with label=category_labels.collaboration_cafe %}{{ label }}, 적용됨{% endblocktranslate %}<a class="chip{% if 'collaboration_cafe' in selected_category %} active{% endif %}" href="/events/calendar/?category=collaboration_cafe"{% if 'collaboration_cafe' in selected_category %} aria-current="true" aria-label="{{ chip_aria }}"{% endif %}>{{ category_labels.collaboration_cafe }}</a>
     </div>
 
     <section class="layout">
@@ -79,9 +79,9 @@
           <fieldset class="filter-group">
             <legend>{% translate "카테고리" %}</legend>
             <ul class="filter-list">
-              {% for slug, label in CATEGORY %}
+              {% for slug, label, lang in CATEGORY %}
                 <li>
-                  <label class="filter-check" lang="ko">
+                  <label class="filter-check"{% if lang %} lang="{{ lang }}"{% endif %}>
                     <input type="checkbox" name="category" value="{{ slug }}"{% if slug in selected_category %} checked{% endif %}>
                     {{ label }}
                   </label>
@@ -122,7 +122,7 @@
         {% if active_filter_chips %}
           <div class="applied-filters">
             {% for chip in active_filter_chips %}
-              <span class="applied-chip"{% if chip.lang %} lang="{{ chip.lang }}"{% endif %}>{{ chip.label }}</span>
+              <span class="applied-chip">{{ chip }}</span>
             {% endfor %}
             <a class="applied-clear" href="/events/calendar/">{% translate "전체 해제" %}</a>
           </div>
@@ -171,7 +171,7 @@
                   <div class="agenda-body">
                     <p class="agenda-meta">
                       {% if row.category_label %}
-                        <span class="agenda-cat" lang="ko">{{ row.category_label }}</span>
+                        <span class="agenda-cat">{{ row.category_label }}</span>
                       {% endif %}
                       {% if row.category_label and row.status_label %}
                         <span class="agenda-dot" aria-hidden="true"></span>

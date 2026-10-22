@@ -16,7 +16,7 @@
   <main class="page event-detail-page" id="content">
     {% translate "이동 경로" as breadcrumb_label %}
     <nav class="event-detail-breadcrumb" aria-label="{{ breadcrumb_label }}">
-      <a href="/events/">{% translate "‹ 행사 목록" %}</a>{% if event.category %}<span aria-hidden="true"> · </span><a lang="ko" href="/events/?category={{ event.category }}">{{ category_label }}</a>{% endif %}
+      <a href="/events/">{% translate "‹ 행사 목록" %}</a>{% if event.category %}<span aria-hidden="true"> · </span><a href="/events/?category={{ event.category }}">{{ category_label }}</a>{% endif %}
     </nav>
 
     <div class="event-detail-grid">
@@ -24,7 +24,7 @@
         {% if category_label %}
           <div class="event-detail-cat-row">
             <span class="event-detail-cat-bar" aria-hidden="true" style="background: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));"></span>
-            <span class="event-detail-cat-label" lang="ko" style="color: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));">{{ category_label }}</span>
+            <span class="event-detail-cat-label" style="color: var(--cat-{{ event.category|slugify }}-ink, var(--brand-ink));">{{ category_label }}</span>
           </div>
         {% endif %}
         {% if event.work_title %}
@@ -67,7 +67,7 @@
           {% endif %}
           <div class="event-detail-meta-row">
             <dt>{% translate "카테고리" %}</dt>
-            <dd{% if category_label %} lang="ko"{% endif %}>{% if category_label %}{{ category_label }}{% else %}—{% endif %}</dd>
+            <dd>{% if category_label %}{{ category_label }}{% else %}—{% endif %}</dd>
           </div>
         </dl>
 
@@ -169,7 +169,7 @@
               <span class="event-detail-related-body">
                 {% if r.event.work_title %}<span class="event-detail-related-work" lang="ko">{{ r.event.work_title }}</span>{% endif %}
                 <span class="event-detail-related-title" lang="ko">{{ r.event.title }}</span>
-                <span class="event-detail-related-meta"><span lang="ko">{{ r.category_label }}</span> · {% if r.event.location_name %}<span lang="ko">{{ r.event.location_name }}</span>{% else %}{% translate "장소 미정" %}{% endif %} · {% if r.event.start_date %}<span class="mono-num">{% if r.event.end_date %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> - <time datetime="{{ r.event.end_date|date:'Y-m-d' }}">{% if r.event.start_date|date:"Y" == r.event.end_date|date:"Y" %}{{ r.event.end_date|date:"m/d" }}{% else %}{{ r.event.end_date|date:"Y/m/d" }}{% endif %}</time>{% else %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> -{% endif %}</span>{% else %}{% translate "일정 미정" %}{% endif %}</span>
+                <span class="event-detail-related-meta">{{ r.category_label }} · {% if r.event.location_name %}<span lang="ko">{{ r.event.location_name }}</span>{% else %}{% translate "장소 미정" %}{% endif %} · {% if r.event.start_date %}<span class="mono-num">{% if r.event.end_date %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> - <time datetime="{{ r.event.end_date|date:'Y-m-d' }}">{% if r.event.start_date|date:"Y" == r.event.end_date|date:"Y" %}{{ r.event.end_date|date:"m/d" }}{% else %}{{ r.event.end_date|date:"Y/m/d" }}{% endif %}</time>{% else %}<time datetime="{{ r.event.start_date|date:'Y-m-d' }}">{{ r.event.start_date|date:"Y/m/d" }}</time> -{% endif %}</span>{% else %}{% translate "일정 미정" %}{% endif %}</span>
               </span>
               <span class="event-detail-related-tone" data-tone="{{ r.status_slug }}">{{ r.status_label }}</span>
             </a>

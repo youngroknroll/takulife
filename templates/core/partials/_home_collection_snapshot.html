@@ -59,7 +59,7 @@ unrecorded(최대 5), upcoming_planned(최대 4), snapshot_active.
               <span class="snapshot-record-bar" aria-hidden="true"></span>
               <div class="snapshot-record-body">
                 {% if row.subject.category_label %}
-                  <p class="snapshot-record-cat" lang="ko">{{ row.subject.category_label }}</p>
+                  <p class="snapshot-record-cat">{{ row.subject.category_label }}</p>
                 {% endif %}
                 <p class="snapshot-record-title">{{ row.subject.title }}</p>
                 {% comment %} 시안의 3번째 줄은 "07/18 방문"이지만 방문 날짜는 여기 없다 —

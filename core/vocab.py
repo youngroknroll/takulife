@@ -7,31 +7,42 @@ core/vocab.py — takulife 도메인 어휘의 단일 출처.
 
 설계 결정:
 - slug 키(왼쪽)는 API가 저장·필터링에 쓰는 값이다.
-- 한글 라벨(오른쪽)은 UI가 표시하는 값이다.
+- 라벨(오른쪽)은 UI가 표시하는 값이며 요청 언어로 번역된다(원문은 한국어).
 - archive/user-event 상태의 표준 CSS 클래스는 slug 그 자체다
   (interested / planned / visited / missed) — 초기 목업 템플릿의
   wish/plan/done/miss 클래스명을 대체한다.
 - 순수 튜플/딕셔너리로 노출한다(매직 없음, 메타클래스 없음, 불변에 친화적).
-- 일부 라벨은 지연 번역 문자열(gettext_lazy)이라 당장은 문자열이 아니다.
+- 라벨은 지연 번역 문자열(gettext_lazy)이라 str이 아닐 수 있다. 카테고리는
+  한국어 원문 `CATEGORY_SOURCE_LABELS`(저장·필터 토큰용)도 따로 둔다.
 """
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext_noop
 
 # ---------------------------------------------------------------------------
 # 행사 카테고리 어휘
 # slug → 표시 라벨
 # ---------------------------------------------------------------------------
-CATEGORY: tuple[tuple[str, str], ...] = (
-    ("popup_store", "팝업스토어"),
-    ("collaboration_cafe", "콜라보 카페"),
-    ("theater_bonus", "극장 특전"),
-    ("goods_reservation", "굿즈 예약"),
-    ("exhibition", "전시"),
-    ("fan_meeting", "팬미팅"),
-    ("concert", "콘서트"),
+# 한국어 원문은 gettext_noop으로만 표시해 번역 추출 대상으로 삼고, 앱 로딩 중
+# 임포트되는 이 모듈에서 번역을 미리 평가하지 않는다.
+_CATEGORY_SOURCE: tuple[tuple[str, str], ...] = (
+    ("popup_store", gettext_noop("팝업스토어")),
+    ("collaboration_cafe", gettext_noop("콜라보 카페")),
+    ("theater_bonus", gettext_noop("극장 특전")),
+    ("goods_reservation", gettext_noop("굿즈 예약")),
+    ("exhibition", gettext_noop("전시")),
+    ("fan_meeting", gettext_noop("팬미팅")),
+    ("concert", gettext_noop("콘서트")),
+)
+
+# 표시용은 요청 언어에 따라 바뀌는 지연 번역 라벨이다.
+CATEGORY: tuple[tuple[str, str], ...] = tuple(
+    (slug, _(label)) for slug, label in _CATEGORY_SOURCE
 )
 
 # O(1) 라벨 조회용 편의 딕셔너리.
 CATEGORY_LABELS: dict[str, str] = dict(CATEGORY)
+
+# 요청 언어와 무관한 한국어 원문(방문 기록 필터 토큰처럼 저장값과 맞대는 용도).
+CATEGORY_SOURCE_LABELS: dict[str, str] = dict(_CATEGORY_SOURCE)
 
 # ---------------------------------------------------------------------------
 # 지역 어휘

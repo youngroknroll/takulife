@@ -76,7 +76,7 @@ selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
           {% for item in cal.legend %}
             <span class="legend-item">
               <span class="home-cal-dot" data-category="{{ item.slug }}" aria-hidden="true"></span>
-              <span class="legend-label" lang="ko">{{ item.label }}</span>
+              <span class="legend-label">{{ item.label }}</span>
             </span>
           {% endfor %}
         </div>
@@ -96,7 +96,7 @@ selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
               <div class="agenda-body">
                 <p class="agenda-meta">
                   {% if row.category_label %}
-                    <span class="agenda-cat" lang="ko">{{ row.category_label }}</span>
+                    <span class="agenda-cat">{{ row.category_label }}</span>
                   {% endif %}
                   {% if row.category_label and row.status_label %}
                     <span class="agenda-dot" aria-hidden="true"></span>

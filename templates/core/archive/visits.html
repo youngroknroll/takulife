@@ -44,12 +44,12 @@
 
     <section class="layout">
       <aside class="panel" aria-label="카테고리 필터 및 빠른 이동">
-        {% if has_visits and categories or has_visits and has_unofficial %}
+        {% if has_visits and category_chips or has_visits and has_unofficial %}
           <div class="chips">
             <a class="chip{% if not selected_filter %} active{% endif %}"{% if not selected_filter %} aria-current="page"{% endif %} href="?{% if has_query %}q={{ q|urlencode }}{% endif %}">전체</a>
-            {% for label in categories %}
-              {% with cat_token="cat:"|add:label %}
-              <a class="chip{% if selected_filter == cat_token %} active{% endif %}"{% if selected_filter == cat_token %} aria-current="page"{% endif %} href="?filter=cat:{{ label|urlencode }}{{ search_suffix }}">{{ label }}</a>
+            {% for chip in category_chips %}
+              {% with cat_token="cat:"|add:chip.token %}
+              <a class="chip{% if selected_filter == cat_token %} active{% endif %}"{% if selected_filter == cat_token %} aria-current="page"{% endif %} href="?filter=cat:{{ chip.token|urlencode }}{{ search_suffix }}">{{ chip.label }}</a>
               {% endwith %}
             {% endfor %}
             {% if has_unofficial %}
