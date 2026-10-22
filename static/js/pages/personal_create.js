@@ -17,18 +17,18 @@
     if (window.TakuAPI.classify(result) === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
   // 서버의 이미지 검증을 클라이언트에서도 미리 흉내내 빠른 피드백을 준다.
   function validateImageFile(file, errorEl) {
     if (ALLOWED_TYPES.indexOf(file.type) === -1) {
-      setText(errorEl, "JPEG · PNG · WebP 형식만 첨부할 수 있습니다.");
+      setText(errorEl, gettext("JPEG · PNG · WebP 형식만 첨부할 수 있습니다."));
       return false;
     }
     if (file.size > MAX_BYTES) {
-      setText(errorEl, "이미지는 5MB 이하만 첨부할 수 있습니다.");
+      setText(errorEl, gettext("이미지는 5MB 이하만 첨부할 수 있습니다."));
       return false;
     }
     return true;
@@ -95,7 +95,7 @@
       var img = dropzone.querySelector("img");
       if (!img) {
         img = document.createElement("img");
-        img.alt = "미리보기";
+        img.alt = gettext("미리보기");
         dropzone.appendChild(img);
       }
       img.src = currentUrl;
@@ -117,7 +117,7 @@
 
       var title = form.elements["title"].value.trim();
       if (!title) {
-        setText(errorEl, "이름을 입력해 주세요.");
+        setText(errorEl, gettext("이름을 입력해 주세요."));
         form.elements["title"].focus();
         return;
       }
@@ -171,7 +171,7 @@
         return;
       }
       if (result.status === 0) {
-        setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
       setText(errorEl, window.TakuAPI.formatError(result));

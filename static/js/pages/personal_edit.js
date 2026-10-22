@@ -33,18 +33,18 @@
     if (window.TakuAPI.classify(result) === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
   // 서버의 이미지 검증을 클라이언트에서도 미리 흉내내 빠른 피드백을 준다.
   function validateImageFile(file, errorEl) {
     if (ALLOWED_TYPES.indexOf(file.type) === -1) {
-      setText(errorEl, "JPEG · PNG · WebP 형식만 첨부할 수 있습니다.");
+      setText(errorEl, gettext("JPEG · PNG · WebP 형식만 첨부할 수 있습니다."));
       return false;
     }
     if (file.size > MAX_BYTES) {
-      setText(errorEl, "이미지는 5MB 이하만 첨부할 수 있습니다.");
+      setText(errorEl, gettext("이미지는 5MB 이하만 첨부할 수 있습니다."));
       return false;
     }
     return true;
@@ -77,7 +77,7 @@
     link.id = "personal-edit-back-to-list";
     link.className = "record-cta";
     link.href = LIST_URL;
-    link.textContent = "목록으로 돌아가기";
+    link.textContent = gettext("목록으로 돌아가기");
     form.appendChild(link);
     link.focus();
   }
@@ -85,7 +85,7 @@
   function lockPageForGoneEntry(form) {
     if (goneLocked) { return; }
     goneLocked = true;
-    setText(document.getElementById("personal-edit-global-error"), "이미 삭제된 항목입니다.");
+    setText(document.getElementById("personal-edit-global-error"), gettext("이미 삭제된 항목입니다."));
     lockLink(document.querySelector(".personal-form-back-link"));
     lockLink(document.querySelector(".personal-form-cancel"));
     lockForm(form);
@@ -151,7 +151,7 @@
         var img = dropzone.querySelector("img");
         if (!img) {
           img = document.createElement("img");
-          img.alt = "미리보기";
+          img.alt = gettext("미리보기");
           dropzone.appendChild(img);
         }
         img.src = currentUrl;
@@ -163,7 +163,7 @@
     if (!removeBtn) { return; }
 
     removeBtn.addEventListener("click", async function () {
-      if (!(await askConfirm("이 사진을 삭제하시겠습니까? 되돌릴 수 없습니다."))) {
+      if (!(await askConfirm(gettext("이 사진을 삭제하시겠습니까? 되돌릴 수 없습니다.")))) {
         return;
       }
       var globalErrorEl = document.getElementById("personal-edit-global-error");
@@ -182,7 +182,7 @@
         if (dropzone && !placeholder) {
           placeholder = document.createElement("span");
           placeholder.className = "personal-form-dropzone-placeholder";
-          placeholder.textContent = "사진을 선택하세요";
+          placeholder.textContent = gettext("사진을 선택하세요");
           dropzone.appendChild(placeholder);
         } else if (placeholder) {
           placeholder.hidden = false;
@@ -202,10 +202,10 @@
         return;
       }
       if (result.status === 0) {
-        setText(globalErrorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
-      setText(globalErrorEl, "사진 삭제 중 오류가 발생했습니다.");
+      setText(globalErrorEl, gettext("사진 삭제 중 오류가 발생했습니다."));
     });
   }
 
@@ -227,7 +227,7 @@
 
       var title = form.elements["title"].value.trim();
       if (!title) {
-        setText(errorEl, "이름을 입력해 주세요.");
+        setText(errorEl, gettext("이름을 입력해 주세요."));
         form.elements["title"].focus();
         return;
       }
@@ -291,7 +291,7 @@
         return;
       }
       if (result.status === 0) {
-        setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
       setText(errorEl, window.TakuAPI.formatError(result));
@@ -310,7 +310,7 @@
     deleteBtn.addEventListener("click", async function () {
       if (
         !(await askConfirm(
-          "이 항목을 삭제하시겠습니까? 연결된 찜·상태·방문 기록도 함께 삭제됩니다."
+          gettext("이 항목을 삭제하시겠습니까? 연결된 찜·상태·방문 기록도 함께 삭제됩니다.")
         ))
       ) {
         return;
@@ -335,10 +335,10 @@
         return;
       }
       if (result.status === 0) {
-        setText(globalErrorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
-      setText(globalErrorEl, "삭제 중 오류가 발생했습니다.");
+      setText(globalErrorEl, gettext("삭제 중 오류가 발생했습니다."));
     });
   }
 

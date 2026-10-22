@@ -29,7 +29,7 @@
     if (kind === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
@@ -60,7 +60,7 @@
     // hidden 처리하므로 문구도 함께 사라졌었다.
     setText(
       document.getElementById("personal-detail-global-error"),
-      "이미 삭제된 항목입니다."
+      gettext("이미 삭제된 항목입니다.")
     );
     lockButton(document.querySelector("[data-interest-toggle]"));
     lockButton(document.querySelector("[data-status-action]"));
@@ -120,7 +120,7 @@
     deleteBtn.addEventListener("click", async function () {
       if (
         !(await askConfirm(
-          "이 항목을 삭제하시겠습니까? 연결된 찜·상태·방문 기록도 함께 삭제됩니다."
+          gettext("이 항목을 삭제하시겠습니까? 연결된 찜·상태·방문 기록도 함께 삭제됩니다.")
         ))
       ) {
         return;
@@ -148,10 +148,10 @@
         return;
       }
       if (result.status === 0) {
-        setText(globalErrorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
-      setText(globalErrorEl, "삭제 중 오류가 발생했습니다.");
+      setText(globalErrorEl, gettext("삭제 중 오류가 발생했습니다."));
     });
   }
 
@@ -188,7 +188,7 @@
       var urlInput = form.elements["official_url"];
       var officialUrl = urlInput.value.trim();
       if (!officialUrl) {
-        setText(errorEl, "공식 URL을 입력해 주세요.");
+        setText(errorEl, gettext("공식 URL을 입력해 주세요."));
         urlInput.focus();
         return;
       }
@@ -220,11 +220,11 @@
         return;
       }
       if (result.status === 409) {
-        setText(errorEl, "이미 공식 제보된 항목입니다.");
+        setText(errorEl, gettext("이미 공식 제보된 항목입니다."));
         return;
       }
       if (result.status === 0) {
-        setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
       setText(errorEl, window.TakuAPI.formatError(result));
