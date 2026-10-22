@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}{{ brand_name_ko }} {{ project_name }} — 굿즈 컬렉션·서브컬처 이벤트 기록{% endblock %}
-{% block og_title %}{{ brand_name_ko }} {{ project_name }} — 굿즈 컬렉션·서브컬처 이벤트 기록{% endblock %}
+{% load i18n static %}
+{% block title %}{{ brand_name_ko }} {{ project_name }} — {% translate "굿즈 컬렉션·서브컬처 이벤트 기록" %}{% endblock %}
+{% block og_title %}{{ brand_name_ko }} {{ project_name }} — {% translate "굿즈 컬렉션·서브컬처 이벤트 기록" %}{% endblock %}
 {% block robots_meta %}{% endblock %}
 {% block structured_data %}{% if json_ld_script %}<script type="application/ld+json">{{ json_ld_script|safe }}</script>{% endif %}{% endblock %}
 
@@ -18,20 +18,22 @@
     <section class="hero">
       <div class="hero-ticket">
         <div class="hero-ticket-main">
-          <p class="hero-ticket-eyebrow">서브컬처 이벤트 티켓부스</p>
-          <h1>내가 원하는 이벤트를 <span class="hl">찾아봐요!</span></h1>
+          <p class="hero-ticket-eyebrow">{% translate "서브컬처 이벤트 티켓부스" %}</p>
+          <h1>{% translate "내가 원하는 이벤트를" %} <span class="hl">{% translate "찾아봐요!" %}</span></h1>
+          {% translate "작품명, 이벤트명, 장소를 검색" as search_placeholder %}
+          {% translate "이벤트 검색" as search_aria_label %}
           <form class="search" action="/events/" method="get">
-            <input id="q" name="q" type="text" placeholder="작품명, 이벤트명, 장소를 검색" aria-label="이벤트 검색">
-            <button type="submit">검색</button>
+            <input id="q" name="q" type="text" placeholder="{{ search_placeholder }}" aria-label="{{ search_aria_label }}">
+            <button type="submit">{% translate "검색" %}</button>
           </form>
           <div class="quick-filters">
-            <a class="chip" href="/events/?region=seoul">서울</a>
-            <a class="chip" href="/events/?region=gyeonggi">경기</a>
-            <a class="chip" href="/events/?region=busan">부산</a>
-            <a class="chip" href="/events/?status=closing_soon">종료 임박</a>
-            <a class="chip" href="/events/?category=popup_store">팝업스토어</a>
-            <a class="chip" href="/events/?category=collaboration_cafe">콜라보 카페</a>
-            <a class="chip" href="/events/?category=goods_reservation">굿즈 예약</a>
+            <a class="chip" href="/events/?region=seoul">{% translate "서울" %}</a>
+            <a class="chip" href="/events/?region=gyeonggi">{% translate "경기" %}</a>
+            <a class="chip" href="/events/?region=busan">{% translate "부산" %}</a>
+            <a class="chip" href="/events/?status=closing_soon">{% translate "종료 임박" %}</a>
+            <a class="chip" href="/events/?category=popup_store">{% translate "팝업스토어" %}</a>
+            <a class="chip" href="/events/?category=collaboration_cafe">{% translate "콜라보 카페" %}</a>
+            <a class="chip" href="/events/?category=goods_reservation">{% translate "굿즈 예약" %}</a>
           </div>
         </div>
 
@@ -41,25 +43,25 @@
             <span class="hero-ticket-notch hero-ticket-notch--a" aria-hidden="true"></span>
             <span class="hero-ticket-notch hero-ticket-notch--b" aria-hidden="true"></span>
             <p class="hero-ticket-admit"><span lang="en">ADMIT ONE</span>{% if row.status_label %} · {{ row.status_label }}{% endif %}</p>
-            {% if ev.work_title %}<p class="hero-ticket-work">{{ ev.work_title }}</p>{% endif %}
-            <h2 class="hero-ticket-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
+            {% if ev.work_title %}<p class="hero-ticket-work" lang="ko">{{ ev.work_title }}</p>{% endif %}
+            <h2 class="hero-ticket-title" lang="ko"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
             <p class="hero-ticket-meta">
-              {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}일정 미정{% endif %}<br>
-              {% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}
+              {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}{% translate "일정 미정" %}{% endif %}<br>
+              {% if ev.location_name %}<span lang="ko">{{ ev.location_name }}</span>{% else %}{% translate "장소 미정" %}{% endif %}
             </p>
             {% if row.status_slug == "ended" %}
-              <p class="hero-ticket-dday">종료</p>
+              <p class="hero-ticket-dday">{% translate "종료" %}</p>
             {% elif row.status_slug == "closing_soon" or row.status_slug == "ongoing" %}
               {% if row.dday is not None %}
-                <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 종료{% else %}종료 D-{{ row.dday }}{% endif %}</p>
+                <p class="hero-ticket-dday">{% if row.dday == 0 %}{% translate "오늘 종료" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}종료 D-{{ dday }}{% endblocktranslate %}{% endif %}</p>
               {% endif %}
             {% elif row.status_slug == "upcoming" %}
               {% if row.dday is not None %}
-                <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</p>
+                <p class="hero-ticket-dday">{% if row.dday == 0 %}{% translate "오늘 오픈" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}오픈 D-{{ dday }}{% endblocktranslate %}{% endif %}</p>
               {% endif %}
             {% endif %}
             <div class="hero-ticket-code" aria-hidden="true"></div>
-            <a class="hero-ticket-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
+            <a class="hero-ticket-link" href="/events/{{ ev.id }}/">{% translate "자세히 보기 ›" %}</a>
           </div>
           {% endwith %}
         {% elif featured_event_rows %}
@@ -71,25 +73,25 @@
                 {% with ev=row.event %}
                 <div class="hero-rotator-slide{% if forloop.first %} is-active{% endif %}" data-hero-slide>
                   <p class="hero-ticket-admit"><span lang="en">ADMIT ONE</span>{% if row.status_label %} · {{ row.status_label }}{% endif %}</p>
-                  {% if ev.work_title %}<p class="hero-ticket-work">{{ ev.work_title }}</p>{% endif %}
-                  <h2 class="hero-ticket-title"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
+                  {% if ev.work_title %}<p class="hero-ticket-work" lang="ko">{{ ev.work_title }}</p>{% endif %}
+                  <h2 class="hero-ticket-title" lang="ko"><a href="/events/{{ ev.id }}/">{{ ev.title }}</a></h2>
                   <p class="hero-ticket-meta">
-                    {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}일정 미정{% endif %}<br>
-                    {% if ev.location_name %}{{ ev.location_name }}{% else %}장소 미정{% endif %}
+                    {% if ev.start_date %}<time datetime="{{ ev.start_date|date:'Y-m-d' }}">{{ ev.start_date|date:"Y/m/d" }}</time>{% if ev.end_date %} - <time datetime="{{ ev.end_date|date:'Y-m-d' }}">{{ ev.end_date|date:"Y/m/d" }}</time>{% endif %}{% else %}{% translate "일정 미정" %}{% endif %}<br>
+                    {% if ev.location_name %}<span lang="ko">{{ ev.location_name }}</span>{% else %}{% translate "장소 미정" %}{% endif %}
                   </p>
                   {% if row.status_slug == "ended" %}
-                    <p class="hero-ticket-dday">종료</p>
+                    <p class="hero-ticket-dday">{% translate "종료" %}</p>
                   {% elif row.status_slug == "closing_soon" or row.status_slug == "ongoing" %}
                     {% if row.dday is not None %}
-                      <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 종료{% else %}종료 D-{{ row.dday }}{% endif %}</p>
+                      <p class="hero-ticket-dday">{% if row.dday == 0 %}{% translate "오늘 종료" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}종료 D-{{ dday }}{% endblocktranslate %}{% endif %}</p>
                     {% endif %}
                   {% elif row.status_slug == "upcoming" %}
                     {% if row.dday is not None %}
-                      <p class="hero-ticket-dday">{% if row.dday == 0 %}오늘 오픈{% else %}오픈 D-{{ row.dday }}{% endif %}</p>
+                      <p class="hero-ticket-dday">{% if row.dday == 0 %}{% translate "오늘 오픈" %}{% else %}{% blocktranslate trimmed with dday=row.dday %}오픈 D-{{ dday }}{% endblocktranslate %}{% endif %}</p>
                     {% endif %}
                   {% endif %}
                   <div class="hero-ticket-code" aria-hidden="true"></div>
-                  <a class="hero-ticket-link" href="/events/{{ ev.id }}/">자세히 보기 ›</a>
+                  <a class="hero-ticket-link" href="/events/{{ ev.id }}/">{% translate "자세히 보기 ›" %}</a>
                 </div>
                 {% endwith %}
               {% endfor %}
@@ -100,8 +102,8 @@
             <span class="hero-ticket-notch hero-ticket-notch--a" aria-hidden="true"></span>
             <span class="hero-ticket-notch hero-ticket-notch--b" aria-hidden="true"></span>
             <div class="hero-featured-empty">
-              <p>새 행사를 준비하고 있어요</p>
-              <a href="/events/">이벤트 둘러보기 ›</a>
+              <p>{% translate "새 행사를 준비하고 있어요" %}</p>
+              <a href="/events/">{% translate "이벤트 둘러보기 ›" %}</a>
             </div>
           </div>
         {% endif %}
@@ -115,8 +117,8 @@
     <section class="section">
       <div class="section-head">
         <div>
-          <span class="section-eyebrow">카테고리</span>
-          <h2>카테고리로 둘러보기</h2>
+          <span class="section-eyebrow">{% translate "카테고리" %}</span>
+          <h2>{% translate "카테고리로 둘러보기" %}</h2>
         </div>
       </div>
       <div class="cat-browse">
@@ -124,8 +126,8 @@
           <a class="cat-dot" href="/events/?category={{ tile.slug }}">
             <span class="cat-dot-swatch" style="background: var(--cat-{{ tile.slug }}-ink, var(--brand-ink));" aria-hidden="true"></span>
             <span class="cat-dot-info">
-              <span class="cat-name">{{ tile.label }}</span>
-              <span class="cat-count">{{ tile.count }}개</span>
+              <span class="cat-name"{% if tile.lang %} lang="{{ tile.lang }}"{% endif %}>{{ tile.label }}</span>
+              <span class="cat-count">{% blocktranslate trimmed count counter=tile.count %}{{ counter }}개{% plural %}{{ counter }}개{% endblocktranslate %}</span>
             </span>
           </a>
         {% endfor %}
@@ -135,10 +137,10 @@
     <section class="section">
       <div class="section-head">
         <div>
-          <span class="section-eyebrow">이번 주</span>
-          <h2>이번 주 눈여겨 볼 이벤트</h2>
+          <span class="section-eyebrow">{% translate "이번 주" %}</span>
+          <h2>{% translate "이번 주 눈여겨 볼 이벤트" %}</h2>
         </div>
-        <a class="section-more" href="/events/?status=ongoing">더보기 ›</a>
+        <a class="section-more" href="/events/?status=ongoing">{% translate "더보기 ›" %}</a>
       </div>
       {% if ongoing_rows %}
         <ul class="event-compact-list">
@@ -147,17 +149,17 @@
           {% endfor %}
         </ul>
       {% else %}
-        <p class="notice">현재 진행 중인 이벤트가 없습니다.</p>
+        <p class="notice">{% translate "현재 진행 중인 이벤트가 없습니다." %}</p>
       {% endif %}
     </section>
 
     <section class="section">
       <div class="section-head">
         <div>
-          <span class="section-eyebrow section-eyebrow--amber">마감 임박</span>
-          <h2>곧 종료돼요</h2>
+          <span class="section-eyebrow section-eyebrow--amber">{% translate "마감 임박" %}</span>
+          <h2>{% translate "곧 종료돼요" %}</h2>
         </div>
-        <a class="section-more" href="/events/?status=closing_soon">더보기 ›</a>
+        <a class="section-more" href="/events/?status=closing_soon">{% translate "더보기 ›" %}</a>
       </div>
       {% if closing_rows %}
         <ul class="event-compact-list">
@@ -166,17 +168,17 @@
           {% endfor %}
         </ul>
       {% else %}
-        <p class="notice">종료 임박 이벤트가 없습니다.</p>
+        <p class="notice">{% translate "종료 임박 이벤트가 없습니다." %}</p>
       {% endif %}
     </section>
 
     <section class="section">
       <div class="section-head">
         <div>
-          <span class="section-eyebrow">방금 올라온</span>
-          <h2>새 이벤트</h2>
+          <span class="section-eyebrow">{% translate "방금 올라온" %}</span>
+          <h2>{% translate "새 이벤트" %}</h2>
         </div>
-        <a class="section-more" href="/events/?sort=newest">더보기 ›</a>
+        <a class="section-more" href="/events/?sort=newest">{% translate "더보기 ›" %}</a>
       </div>
       {% if recent_rows %}
         <ul class="event-compact-list">
@@ -185,7 +187,7 @@
           {% endfor %}
         </ul>
       {% else %}
-        <p class="notice">등록된 이벤트가 없습니다.</p>
+        <p class="notice">{% translate "등록된 이벤트가 없습니다." %}</p>
       {% endif %}
     </section>
   </main>

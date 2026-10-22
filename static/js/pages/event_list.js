@@ -5,7 +5,7 @@ if (filterToggle && filterPanel) {
     const open = filterPanel.classList.toggle("open");
     filterToggle.setAttribute("data-expanded", String(open));
     filterToggle.setAttribute("aria-expanded", String(open));
-    filterToggle.textContent = open ? "필터 닫기 ▴" : "필터 열기 ▾";
+    filterToggle.textContent = open ? filterToggle.dataset.labelClose : filterToggle.dataset.labelOpen;
   });
 }
 

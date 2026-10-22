@@ -30,3 +30,23 @@ def test_회원가입_후_이메일_인증을_완료하면_처음_요청한_next
     confirm_resp = client.post(match.group(1))
     assert confirm_resp.status_code == 302
     assert confirm_resp["Location"] == "/archive/visits/"
+
+
+# I18N-13
+@pytest.mark.django_db
+def test_가입_요청의_Accept_Language가_영어이면_인증_메일_제목이_영어다(client, mailoutbox, valid_password):
+    """번역이 채워지면 인증 메일 제목도 요청 언어를 따라야 한다."""
+    client.post(
+        "/accounts/signup/?next=/archive/visits/",
+        data={
+            "email": "english-signup@example.com",
+            "nickname": "english닉",
+            "password1": valid_password,
+            "password2": valid_password,
+            "terms_agreed": "on",
+        },
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+
+    assert len(mailoutbox) == 1
+    assert "Verify your email address" in mailoutbox[0].subject

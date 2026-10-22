@@ -8,6 +8,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.text import format_lazy
+from django.utils.translation import gettext_lazy as _
 
 from .services import NICKNAME_DUPLICATE_MESSAGE
 from .validators import LENGTH_ERROR, normalize_nickname, validate_nickname
@@ -21,8 +22,10 @@ from .validators import LENGTH_ERROR, normalize_nickname, validate_nickname
 # 쓴다 — .format()은 lazy 객체를 즉시 평가해 같은 순환 임포트를 일으킨다.
 _TERMS_AGREEMENT_LABEL = mark_safe(
     format_lazy(
-        '<a href="{terms}" target="_blank" rel="noopener">이용약관</a> 및 '
-        '<a href="{privacy}" target="_blank" rel="noopener">개인정보처리방침</a>에 동의합니다.',
+        _(
+            '<a href="{terms}" target="_blank" rel="noopener">이용약관</a> 및 '
+            '<a href="{privacy}" target="_blank" rel="noopener">개인정보처리방침</a>에 동의합니다.'
+        ),
         terms=reverse_lazy("legal-terms-page"),
         privacy=reverse_lazy("legal-privacy-page"),
     )
@@ -35,10 +38,10 @@ def _nickname_field():
     return CharField(
         min_length=2,
         max_length=20,
-        label="닉네임",
-        widget=TextInput(attrs={"autocomplete": "nickname", "placeholder": "닉네임"}),
+        label=_("닉네임"),
+        widget=TextInput(attrs={"autocomplete": "nickname", "placeholder": _("닉네임")}),
         error_messages={
-            "required": "닉네임을 입력해 주세요.",
+            "required": _("닉네임을 입력해 주세요."),
             "min_length": LENGTH_ERROR,
             "max_length": LENGTH_ERROR,
         },
@@ -53,7 +56,7 @@ class TermsAgreementFormMixin(forms.Form):
         required=True,
         label=_TERMS_AGREEMENT_LABEL,
         error_messages={
-            "required": "이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다."
+            "required": _("이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다.")
         },
     )
     nickname = _nickname_field()
@@ -95,12 +98,12 @@ class EmailChangeForm(AddEmailForm):
     AddEmailForm의 기반 클래스(allauth UserForm)가 설정한다.
     """
 
-    current_password = CharField(widget=PasswordInput, label="현재 비밀번호")
+    current_password = CharField(widget=PasswordInput, label=_("현재 비밀번호"))
 
     def clean_current_password(self):
         current_password = self.cleaned_data["current_password"]
         if not self.user.check_password(current_password):
-            raise forms.ValidationError("비밀번호가 올바르지 않습니다.")
+            raise forms.ValidationError(_("비밀번호가 올바르지 않습니다."))
         return current_password
 
 

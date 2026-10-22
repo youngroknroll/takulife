@@ -7,6 +7,7 @@ from django.urls import path
 from django.views.generic import RedirectView
 
 from . import views as staff_views
+from .permissions import staff_api_korean
 
 app_name = "staff"
 
@@ -26,28 +27,28 @@ urlpatterns = [
     path("drafts/", staff_views.event_drafts, name="draft-list"),
     path(
         "drafts/bulk-approve/",
-        staff_views.StaffDraftBulkApproveView.as_view(),
+        staff_api_korean(staff_views.StaffDraftBulkApproveView.as_view()),
         name="draft-bulk-approve",
     ),
     path(
         "drafts/bulk-reject/",
-        staff_views.StaffDraftBulkRejectView.as_view(),
+        staff_api_korean(staff_views.StaffDraftBulkRejectView.as_view()),
         name="draft-bulk-reject",
     ),
     path("drafts/<int:draft_id>/", staff_views.event_draft_detail, name="draft-detail"),
     path(
         "drafts/<int:draft_id>/approve/",
-        staff_views.StaffDraftApproveView.as_view(),
+        staff_api_korean(staff_views.StaffDraftApproveView.as_view()),
         name="draft-approve",
     ),
     path(
         "drafts/<int:draft_id>/reject/",
-        staff_views.StaffDraftRejectView.as_view(),
+        staff_api_korean(staff_views.StaffDraftRejectView.as_view()),
         name="draft-reject",
     ),
     path(
         "drafts/<int:draft_id>/reopen/",
-        staff_views.StaffDraftReopenView.as_view(),
+        staff_api_korean(staff_views.StaffDraftReopenView.as_view()),
         name="draft-reopen",
     ),
     path("home-categories/", staff_views.staff_home_categories, name="home-categories"),
@@ -57,18 +58,18 @@ urlpatterns = [
     path("events/new/", staff_views.staff_event_create, name="event-create"),
     path(
         "events/bulk-unpublish/",
-        staff_views.StaffEventBulkUnpublishView.as_view(),
+        staff_api_korean(staff_views.StaffEventBulkUnpublishView.as_view()),
         name="event-bulk-unpublish",
     ),
     path("events/<int:pk>/edit/", staff_views.staff_event_edit, name="event-edit"),
     path(
         "events/<int:pk>/publish-status/",
-        staff_views.StaffEventPublishStatusView.as_view(),
+        staff_api_korean(staff_views.StaffEventPublishStatusView.as_view()),
         name="event-publish-status",
     ),
     path(
         "events/<int:pk>/verified/",
-        staff_views.StaffEventVerifiedView.as_view(),
+        staff_api_korean(staff_views.StaffEventVerifiedView.as_view()),
         name="event-verified",
     ),
     path(
@@ -96,7 +97,7 @@ urlpatterns = [
     ),
     path(
         "api/discovery/live/",
-        staff_views.StaffDiscoveryLiveView.as_view(),
+        staff_api_korean(staff_views.StaffDiscoveryLiveView.as_view()),
         name="discovery-live",
     ),
     path("categories/", staff_views.category_list, name="category-list"),

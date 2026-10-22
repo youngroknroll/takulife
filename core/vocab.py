@@ -7,46 +7,59 @@ core/vocab.py — takulife 도메인 어휘의 단일 출처.
 
 설계 결정:
 - slug 키(왼쪽)는 API가 저장·필터링에 쓰는 값이다.
-- 한글 라벨(오른쪽)은 UI가 표시하는 값이다.
+- 라벨(오른쪽)은 UI가 표시하는 값이며 요청 언어로 번역된다(원문은 한국어).
 - archive/user-event 상태의 표준 CSS 클래스는 slug 그 자체다
   (interested / planned / visited / missed) — 초기 목업 템플릿의
   wish/plan/done/miss 클래스명을 대체한다.
 - 순수 튜플/딕셔너리로 노출한다(매직 없음, 메타클래스 없음, 불변에 친화적).
+- 라벨은 지연 번역 문자열(gettext_lazy)이라 str이 아닐 수 있다. 카테고리는
+  한국어 원문 `CATEGORY_SOURCE_LABELS`(저장·필터 토큰용)도 따로 둔다.
 """
+from django.utils.translation import gettext_lazy as _, gettext_noop
 
 # ---------------------------------------------------------------------------
 # 행사 카테고리 어휘
 # slug → 표시 라벨
 # ---------------------------------------------------------------------------
-CATEGORY: tuple[tuple[str, str], ...] = (
-    ("popup_store", "팝업스토어"),
-    ("collaboration_cafe", "콜라보 카페"),
-    ("theater_bonus", "극장 특전"),
-    ("goods_reservation", "굿즈 예약"),
-    ("exhibition", "전시"),
-    ("fan_meeting", "팬미팅"),
-    ("concert", "콘서트"),
+# 한국어 원문은 gettext_noop으로만 표시해 번역 추출 대상으로 삼고, 앱 로딩 중
+# 임포트되는 이 모듈에서 번역을 미리 평가하지 않는다.
+_CATEGORY_SOURCE: tuple[tuple[str, str], ...] = (
+    ("popup_store", gettext_noop("팝업스토어")),
+    ("collaboration_cafe", gettext_noop("콜라보 카페")),
+    ("theater_bonus", gettext_noop("극장 특전")),
+    ("goods_reservation", gettext_noop("굿즈 예약")),
+    ("exhibition", gettext_noop("전시")),
+    ("fan_meeting", gettext_noop("팬미팅")),
+    ("concert", gettext_noop("콘서트")),
+)
+
+# 표시용은 요청 언어에 따라 바뀌는 지연 번역 라벨이다.
+CATEGORY: tuple[tuple[str, str], ...] = tuple(
+    (slug, _(label)) for slug, label in _CATEGORY_SOURCE
 )
 
 # O(1) 라벨 조회용 편의 딕셔너리.
 CATEGORY_LABELS: dict[str, str] = dict(CATEGORY)
+
+# 요청 언어와 무관한 한국어 원문(방문 기록 필터 토큰처럼 저장값과 맞대는 용도).
+CATEGORY_SOURCE_LABELS: dict[str, str] = dict(_CATEGORY_SOURCE)
 
 # ---------------------------------------------------------------------------
 # 지역 어휘
 # slug → 표시 라벨
 # ---------------------------------------------------------------------------
 REGION: tuple[tuple[str, str], ...] = (
-    ("seoul", "서울"),
-    ("gyeonggi", "경기"),
-    ("incheon", "인천"),
-    ("busan", "부산"),
+    ("seoul", _("서울")),
+    ("gyeonggi", _("경기")),
+    ("incheon", _("인천")),
+    ("busan", _("부산")),
     # 실데이터가 이미 대구·대전·광주를 쓰고 있었는데 어휘에 없어 지역
     # 필터 어디에도 걸리지 않았다 — 어휘 가드를 걸기 전에 먼저 메워야
     # 했던 구멍이다.
-    ("daegu", "대구"),
-    ("daejeon", "대전"),
-    ("gwangju", "광주"),
-    ("online", "온라인"),
+    ("daegu", _("대구")),
+    ("daejeon", _("대전")),
+    ("gwangju", _("광주")),
+    ("online", _("온라인")),
 )
 
 REGION_LABELS: dict[str, str] = dict(REGION)
@@ -58,9 +71,9 @@ REGION_LABELS: dict[str, str] = dict(REGION)
 # slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_STATUS: tuple[tuple[str, str], ...] = (
-    ("planned", "방문 예정"),
-    ("visited", "방문 완료"),
-    ("missed", "놓침"),
+    ("planned", _("방문 예정")),
+    ("visited", _("방문 완료")),
+    ("missed", _("놓침")),
 )
 
 ARCHIVE_STATUS_LABELS: dict[str, str] = dict(ARCHIVE_STATUS)
@@ -72,13 +85,13 @@ ARCHIVE_STATUS_LABELS: dict[str, str] = dict(ARCHIVE_STATUS)
 # 대한 UI 쪽 안내일 뿐이다. slug → 표시 라벨
 # ---------------------------------------------------------------------------
 COLLECTION_ITEM_TYPE: tuple[tuple[str, str], ...] = (
-    ("acrylic_stand", "아크릴 스탠드"),
-    ("keyring", "키링"),
-    ("badge", "뱃지"),
-    ("photocard", "포토카드"),
-    ("plush", "인형"),
-    ("stationery", "문구"),
-    ("etc", "기타"),
+    ("acrylic_stand", _("아크릴 스탠드")),
+    ("keyring", _("키링")),
+    ("badge", _("뱃지")),
+    ("photocard", _("포토카드")),
+    ("plush", _("인형")),
+    ("stationery", _("문구")),
+    ("etc", _("기타")),
 )
 
 COLLECTION_ITEM_TYPE_LABELS: dict[str, str] = dict(COLLECTION_ITEM_TYPE)
@@ -94,8 +107,8 @@ def archive_status_label(slug: str) -> str:
 # (최근 수정순 / -updated_at). slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_STATUS_SORT: tuple[tuple[str, str], ...] = (
-    ("", "최근 수정순"),
-    ("created_at", "등록순"),
+    ("", _("최근 수정순")),
+    ("created_at", _("등록순")),
 )
 
 ARCHIVE_STATUS_SORT_LABELS: dict[str, str] = dict(ARCHIVE_STATUS_SORT)
@@ -106,8 +119,8 @@ ARCHIVE_STATUS_SORT_LABELS: dict[str, str] = dict(ARCHIVE_STATUS_SORT)
 # (최근 방문순 / -visited_on, -id). slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_VISIT_SORT: tuple[tuple[str, str], ...] = (
-    ("", "최근 방문순"),
-    ("oldest", "오래된 방문순"),
+    ("", _("최근 방문순")),
+    ("oldest", _("오래된 방문순")),
 )
 
 ARCHIVE_VISIT_SORT_LABELS: dict[str, str] = dict(ARCHIVE_VISIT_SORT)
@@ -118,8 +131,8 @@ ARCHIVE_VISIT_SORT_LABELS: dict[str, str] = dict(ARCHIVE_VISIT_SORT)
 # 기본값(최근 등록순 / -created_at, -id). slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_PERSONAL_SORT: tuple[tuple[str, str], ...] = (
-    ("", "최근 등록순"),
-    ("oldest", "오래된 등록순"),
+    ("", _("최근 등록순")),
+    ("oldest", _("오래된 등록순")),
 )
 
 ARCHIVE_PERSONAL_SORT_LABELS: dict[str, str] = dict(ARCHIVE_PERSONAL_SORT)
@@ -129,8 +142,8 @@ ARCHIVE_PERSONAL_SORT_LABELS: dict[str, str] = dict(ARCHIVE_PERSONAL_SORT)
 # 내부 정렬과 일치). 빈 slug ""가 기본값(최근 찜순 / -id). slug → 표시 라벨
 # ---------------------------------------------------------------------------
 ARCHIVE_INTEREST_SORT: tuple[tuple[str, str], ...] = (
-    ("", "최근 찜순"),
-    ("oldest", "오래된 찜순"),
+    ("", _("최근 찜순")),
+    ("oldest", _("오래된 찜순")),
 )
 
 ARCHIVE_INTEREST_SORT_LABELS: dict[str, str] = dict(ARCHIVE_INTEREST_SORT)
@@ -156,10 +169,10 @@ PERSONAL_ENTRY_CATEGORY_SUGGESTIONS: tuple[str, ...] = (
 # slug → 표시 라벨
 # ---------------------------------------------------------------------------
 EVENT_STATUS: tuple[tuple[str, str], ...] = (
-    ("upcoming", "예정"),
-    ("ongoing", "진행 중"),
-    ("closing_soon", "종료 임박"),
-    ("ended", "종료"),
+    ("upcoming", _("예정")),
+    ("ongoing", _("진행 중")),
+    ("closing_soon", _("종료 임박")),
+    ("ended", _("종료")),
 )
 
 EVENT_STATUS_LABELS: dict[str, str] = dict(EVENT_STATUS)
@@ -170,17 +183,17 @@ EVENT_STATUS_LABELS: dict[str, str] = dict(EVENT_STATUS)
 # 중복으로 하나 더 생긴다. 이 라벨 전용 항목은 목록 화면의 status=all이
 # 활성일 때 _active_filter_chips(core/views.py)가 원문 "all" 대신 사람이
 # 읽을 라벨을 보여줄 수 있게 하기 위해서만 존재한다.
-EVENT_STATUS_LABELS["all"] = "전체"
+EVENT_STATUS_LABELS["all"] = _("전체")
 
 # ---------------------------------------------------------------------------
 # 공개 목록 정렬 어휘(event_list 정렬).
 # 빈 slug ""가 기본 정렬. slug → 표시 라벨
 # ---------------------------------------------------------------------------
 EVENT_SORT: tuple[tuple[str, str], ...] = (
-    ("", "기본순"),
-    ("closing_soon", "종료 임박순"),
-    ("start_asc", "시작일 빠른순"),
-    ("newest", "최신 등록순"),
+    ("", _("기본순")),
+    ("closing_soon", _("종료 임박순")),
+    ("start_asc", _("시작일 빠른순")),
+    ("newest", _("최신 등록순")),
 )
 
 EVENT_SORT_LABELS: dict[str, str] = dict(EVENT_SORT)

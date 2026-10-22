@@ -3,15 +3,18 @@
 import json
 import logging
 from collections import defaultdict
-from datetime import timedelta
+from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import truncatechars
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
+from django.utils.translation import get_language, gettext
 from rest_framework.exceptions import ValidationError
 
 from archive.models import UserEventStatus
@@ -150,6 +153,7 @@ def _home_calendar_context(raw_month, raw_date, *, today):
     return {
         "year": year,
         "month": month,
+        "month_start": date(year, month, 1),
         "month_param": f"{year:04d}-{month:02d}",
         "prev_month": f"{prev_year:04d}-{prev_month:02d}",
         "next_month": f"{next_year:04d}-{next_month:02d}",
@@ -181,10 +185,12 @@ def home(request):
         row["category"]: row["count"]
         for row in Event.objects.published().values("category").annotate(count=Count("id"))
     }
-    category_tiles = [
-        {"slug": slug, "label": label, "count": category_counts.get(slug, 0)}
-        for slug, label in HomeConfig.get_solo().featured_category_pairs()
-    ]
+    category_tiles = []
+    for slug, label in HomeConfig.get_solo().featured_category_pairs():
+        text, lang = _translate_category_label(label)
+        category_tiles.append(
+            {"slug": slug, "label": text, "lang": lang, "count": category_counts.get(slug, 0)}
+        )
 
     # 홈 대표 행사: 인기(조회수) 슬라이더 대신 공개 목록 기본 우선순위
     # (진행중 -> 예정 -> 종료, "active"는 종료 행사를 제외)의 최대 5건을
@@ -256,7 +262,7 @@ def _active_filter_chips(*, q, selected_region, selected_category, selected_stat
     없이 호출자가 이미 파싱한 값에 라벨만 붙인다."""
     chips = []
     if q:
-        chips.append(f"검색: {q}")
+        chips.append(gettext("검색: %(q)s") % {"q": q})
     for region in selected_region:
         chips.append(REGION_LABELS.get(region, region))
     for category in selected_category:
@@ -264,6 +270,34 @@ def _active_filter_chips(*, q, selected_region, selected_category, selected_stat
     if selected_status:
         chips.append(EVENT_STATUS_LABELS.get(selected_status, selected_status))
     return chips
+
+
+def _has_hangul(text):
+    # 가드가 한국어 문자열 상수를 막으므로 코드포인트 범위로 판별한다.
+    return any(0xAC00 <= ord(ch) <= 0xD7A3 for ch in text)
+
+
+def _translate_category_label(label):
+    """카테고리 라벨을 요청 언어로 옮기고 (텍스트, lang)을 돌려준다.
+
+    어휘 msgid와 글자가 같은 라벨만 번역되고 스태프가 새로 만든 라벨은 한국어
+    그대로 남는다(우연히 다른 msgid와 같은 라벨은 그 번역이 붙는다).
+    번역되지 않은 한글 라벨이 비한국어 화면에 섞일 때만 lang="ko"를 돌려준다.
+    """
+    text = gettext(label)
+    language = get_language()
+    is_korean_ui = language is None or language.startswith("ko")
+    if not is_korean_ui and text == label and _has_hangul(label):
+        return text, "ko"
+    return text, ""
+
+
+def _translated_category_choices():
+    """소비자 필터용 (slug, 번역 라벨, lang) 목록."""
+    return [
+        (slug, *_translate_category_label(label))
+        for slug, label in consumer_category_choices()
+    ]
 
 
 def event_list(request):
@@ -326,8 +360,9 @@ def event_list(request):
         "event_rows": event_rows,
         "active_filters": active_filters,
         "active_filter_chips": active_filter_chips,
+        "category_labels": CATEGORY_LABELS,
         # 필터 UI용 어휘 튜플
-        "CATEGORY": consumer_category_choices(),
+        "CATEGORY": _translated_category_choices(),
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
         # 정렬이 사이드바 필터 폼에서 결과 상단 토글 메뉴로 옮겨져,
@@ -400,11 +435,11 @@ def event_calendar(request):
     기준으로 템플릿을 병행 개발 중이다):
 
     calendar_error(None|"invalid"|"query_failed"), month_label
-    ("YYYY년 M월"), weeks(주당 7칸 리스트, 각 칸은 {date, in_month,
+    (요청 언어의 연월 표기, 예 "2026년 3월"), weeks(주당 7칸 리스트, 각 칸은 {date, in_month,
     today, selected, items[{title,url}](최대 2개), more_count, count}),
     selected_date, selected_events, prev_month/next_month("YYYY-MM"),
     extra_query, 그리고 event_list가 이미 제공하는 것과 같은 필터
-    패널 컨텍스트 키(CATEGORY/REGION/EVENT_STATUS,
+    패널 컨텍스트 키(CATEGORY는 (slug, label, lang) 3-튜플, REGION/EVENT_STATUS,
     q/selected_region/selected_category/selected_status/selected_sort/
     selected_sort_label)를 그대로 담아 기존 필터 체크 마크업을 그대로
     재사용할 수 있게 한다.
@@ -495,7 +530,8 @@ def event_calendar(request):
 
     context = {
         "calendar_error": calendar_error,
-        "month_label": f"{year}년 {month}월",
+        "month_label": date_format(date(year, month, 1), "YEAR_MONTH_FORMAT"),
+        "category_labels": CATEGORY_LABELS,
         "weeks": weeks,
         "selected_date": selected_date,
         "selected_events": selected_events,
@@ -510,7 +546,7 @@ def event_calendar(request):
         ),
         # 필터 패널 컨텍스트. event_list와 그대로 맞춰 기존 필터 체크
         # 마크업을 그대로 재사용할 수 있게 한다.
-        "CATEGORY": consumer_category_choices(),
+        "CATEGORY": _translated_category_choices(),
         "REGION": REGION,
         "EVENT_STATUS": EVENT_STATUS,
         "q": q,
@@ -534,18 +570,15 @@ _JSON_LD_ESCAPES = str.maketrans({"<": "\\u003c", ">": "\\u003e", "&": "\\u0026"
 def _json_ld_script(payload):
     if payload is None:
         return None
-    return json.dumps(payload, ensure_ascii=False).translate(_JSON_LD_ESCAPES)
+    # payload에 지연 번역 라벨(Promise)이 섞일 수 있어 활성 언어로 평가하는 Django 인코더를 쓴다.
+    return json.dumps(payload, ensure_ascii=False, cls=DjangoJSONEncoder).translate(
+        _JSON_LD_ESCAPES
+    )
 
 
 def _build_event_meta_title(event):
     segment = f"{event.work_title} · {event.title}" if event.work_title else event.title
     return f"{truncatechars(segment, 20)} — takulife"
-
-
-_DEFAULT_EVENT_META_DESCRIPTION = (
-    "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · "
-    "굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
-)
 
 
 def _build_event_meta_description(event, category_label):
@@ -560,11 +593,15 @@ def _build_event_meta_description(event, category_label):
     else:
         period = ""
 
-    parts = [part for part in (category_label, event.location_name, period) if part]
+    parts = [
+        str(part) for part in (category_label, event.location_name, period) if part
+    ]
     if parts:
         return truncatechars(" · ".join(parts), 100)
 
-    return truncatechars(_DEFAULT_EVENT_META_DESCRIPTION, 100)
+    return gettext(
+        "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
+    )
 
 
 def event_detail(request, event_id):

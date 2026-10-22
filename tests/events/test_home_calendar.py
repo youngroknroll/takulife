@@ -79,6 +79,16 @@ def test_month_파라미터로_다른_달을_열면_그_달_1일이_선택된다
     assert date(2026, 11, 30) in in_month_dates
 
 
+# I18N-17
+@pytest.mark.django_db
+def test_홈_달력_컨텍스트는_표시_월의_1일을_month_start로_담는다():
+    """템플릿이 언어별 월 이름을 표시하려면 연·월 정수가 아니라 날짜 객체가 필요하다."""
+    resp = Client().get("/", {"month": "2026-03"})
+
+    calendar = resp.context["home_calendar"]
+    assert calendar["month_start"] == date(2026, 3, 1)
+
+
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "params",

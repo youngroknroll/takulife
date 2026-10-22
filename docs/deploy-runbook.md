@@ -78,7 +78,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 ## 3. 필수 pre-launch 체크리스트 (0단계 계획서 T7 행, PR-0a/0b/0d/0e 게이트 승계)
 
-첫 트래픽을 받기 **전** 반드시 아래 14개 항목을 순서대로 확인한다. 하나라도
+첫 트래픽을 받기 **전** 반드시 아래 18개 항목을 순서대로 확인한다. 하나라도
 미확인 상태로 첫 배포를 진행하지 않는다.
 
 1. **DEBUG 독립 확인**: `DEBUG=false`가 다른 env 설정과 무관하게 실제로
@@ -223,6 +223,25 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     ```
     2,000자 `[코드 archive/models.py MEMO_MAX_LENGTH]`를 넘는 행은 조회·삭제는
     되지만, memo를 포함한 수정 요청은 배포 후 400이 된다.
+18. **다국어(트랙 43-1) 배포 확인**:
+    - `curl -s -H "Accept-Language: en" https://<host>/ | grep -o '<html lang="[^"]*"'`가
+      `lang="en"`이고, 헤더 없이 호출하면 `lang="ko"`인지 확인한다.
+    - `curl -sI -H "Accept-Language: en" https://<host>/ | grep -i '^vary:'`에
+      `Accept-Language`가 포함되는지 확인한다.
+    - `/jsi18n/`이 200이고 본문에 `django.gettext` 정의가 포함되는지
+      `curl -s https://<host>/jsi18n/ | grep -c 'django.gettext ='`가 1 이상인지
+      확인한다.
+    - 언어 쿠키 속성: 먼저 `curl -sc /tmp/jar https://<host>/ -o /dev/null`로
+      csrftoken 쿠키를 받고, `TOKEN=$(awk '/csrftoken/ {print $7}' /tmp/jar)`로
+      값을 꺼낸 뒤 `curl -si -b /tmp/jar -H "X-CSRFToken: $TOKEN" -H "Referer:
+      https://<host>/" -d "language=ja&next=/" https://<host>/i18n/setlang/ |
+      grep -i '^set-cookie: django_language'`에 `HttpOnly`·`SameSite=Lax`
+      (그리고 `SECURE_COOKIES=true` 배포라면 `Secure`)가 있는지 확인한다.
+    - **번역 검수 게이트(2026-10-21 사용자 지시로 변경)**: 번역 검수는 사람이
+      아니라 번역가와 별개인 AI 검수자가 한다. deploy PR을 머지하기 전에
+      `docs/BE/i18n.md`의 "AI 검수 기록"이 현재 카탈로그 기준으로 쓰여 있고
+      카탈로그 가드(`tests/core/test_i18n_catalog_completeness.py`)가 통과하는지
+      확인한다. 원어민 사람이 읽은 적은 없다는 점은 위험으로 남아 있다.
 
 ## 4. 백업·복구 (T6)
 
@@ -265,6 +284,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   서비스를 계속한다(`docker/entrypoint.sh`). **`migrate accounts 0005`로
   역적용하지 않는다** — 백필된 `nickname` 값이 소실된다. 실패 원인을 코드로
   고친 뒤 재배포한다.
+- **다국어(트랙 43-1) 롤백**: `LocaleMiddleware`·`LANGUAGES`·`LOCALE_PATHS`·
+  `i18n` 컨텍스트 프로세서·`LANGUAGE_CODE`·`LANGUAGE_COOKIE_*` 설정 diff를
+  **하나의 커밋**으로 되돌린다. 일부만 되돌리면 `<html lang>`이 `ko`가
+  아닌 값으로 남는 코스메틱 회귀가 생긴다. 마이그레이션 역적용은 없고,
+  `locale/` 아래 `.po` 잔존은 무해하다.
 
 ## 6. 미검증 항목 (첫 배포에서 채울 것)
 
@@ -293,13 +317,20 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   전환.
 - **자동 생성 실패 시 수동 fallback**: `gh pr create --base production --head
   main`으로 직접 생성한다.
-- **deploy PR에 CI 체크가 없는 것은 정상**이다 — GITHUB_TOKEN으로 생성한 PR은
-  워크플로를 트리거하지 않는다(GitHub의 의도된 무한루프 방지 동작). 검증
-  근거는 이 PR에 포함된 main 커밋들이 이미 CI를 통과했다는 사실이다.
+- **deploy PR에 CI 체크가 없는 것은 정상**이다 — `.github/workflows/ci.yml`의
+  `pull_request` 트리거가 `branches-ignore: [production]`으로 production을
+  향하는 PR을 건너뛰기 때문이다(트랙 42, 2026-10-20). 그 전에는
+  "GITHUB_TOKEN으로 만든 PR은 워크플로가 돌지 않는다"고 적었지만 사실이
+  아니었다: GitHub은 그런 PR에 승인 대기 실행(잡 0개)을 만들었고, 승인 없이
+  머지되면 실패 기록으로 남았다. 또 사람이 main에 머지할 때마다 열린 deploy
+  PR에서 main CI가 한 번 더 돌았다. 검증 근거는 이 PR에 포함된 main 커밋들이
+  main push CI를 이미 통과했다는 사실이다.
 - **`can_approve_pull_request_reviews=true`**는 이 워크플로가 PR을 생성할 수
   있도록 저장소 전역에서 켠 설정이며, deploy-pr.yml 한정이 아니다. 향후
   main/production에 필수 승인 브랜치 보호를 도입하는 시점에 이 설정을
   재검토한다.
 - **production에는 직접 push하지 않는다** — 항상 deploy PR을 경유한다.
   실패 감시는 GitHub Actions 탭의 워크플로 실행 이력과 실패 시 GitHub이
-  보내는 알림 메일로 한다.
+  보내는 알림 메일로 한다. production을 향하는 PR도 자동 생성된 deploy
+  PR(head=main)만 쓴다. 이 PR에는 CI가 돌지 않으므로 긴급 수정도 main에
+  먼저 머지한다.

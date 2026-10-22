@@ -11,10 +11,12 @@
  * `.layout`의 접힘, 45rem은 이 페이지 자체 그리드/아젠다 접힘이다.
  */
 
-/* ── month nav: 1fr auto 1fr, "YYYY · M월" left, prev/today/next centered */
+/* ── month nav: minmax(max-content, 1fr) auto 1fr, "YYYY · <month name>" left, prev/today/next centered */
 .calendar-month-nav {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* 영어·일본어·중국어 월 이름은 길어서, 라벨 칸이 내용보다 좁아지면
+     라벨이 가운데 컨트롤과 겹친다. 라벨 칸의 최소 폭을 내용 폭으로 고정한다. */
+  grid-template-columns: minmax(max-content, 1fr) auto 1fr;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.875rem;
@@ -493,8 +495,17 @@
     font-size: 0.625rem;
   }
 
+  /* 좁은 화면에서 긴 월 이름 라벨과 컨트롤이 한 줄에 안 들어가면
+     컨트롤이 다음 줄 오른쪽으로 내려가게 해 겹침을 막는다. */
   .calendar-month-nav {
-    grid-template-columns: 1fr auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .calendar-month-controls {
+    margin-left: auto;
   }
 
   .events-page .calendar-month-label {

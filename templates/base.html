@@ -1,5 +1,5 @@
-{% load static %}<!DOCTYPE html>
-<html lang="ko">
+{% load i18n static %}{% get_current_language as LANGUAGE_CODE %}<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
   <meta charset="utf-8">
   <!-- 테마 스크립트보다 먼저 실행해 그 전에 뜬 오류도 놓치지 않는다. 큐에 쌓기만
@@ -37,11 +37,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}takulife{% endblock %}</title>
   {% block robots_meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
-  <meta name="description" content="{% block description %}타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.{% endblock %}">
+  <meta name="description" content="{% block description %}{% translate "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요." %}{% endblock %}">
   <meta property="og:site_name" content="타쿠라이프|takulife">
   <meta property="og:type" content="website">
   <meta property="og:title" content="{% block og_title %}takulife{% endblock %}">
-  <meta property="og:description" content="{% block og_description %}타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요.{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{% translate "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요." %}{% endblock %}">
   <link rel="canonical" href="{{ canonical_url }}">
   <meta property="og:url" content="{{ canonical_url }}">
   {% if google_site_verification %}<meta name="google-site-verification" content="{{ google_site_verification }}">{% endif %}
@@ -87,7 +87,7 @@
   {% endif %}
 </head>
 <body data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
-  {% block skip_link %}<a class="skip-link" href="#content">본문으로 건너뛰기</a>{% endblock %}
+  {% block skip_link %}<a class="skip-link" href="#content">{% translate "본문으로 건너뛰기" %}</a>{% endblock %}
   {% block site_header %}{% include "core/partials/_site_header.html" %}{% endblock %}
   {% block site_banner %}
     {% comment %}
@@ -100,10 +100,10 @@
       <div class="site-banner-inner">
         <div class="marquee-track">
           <div class="marquee-set">
-            {% for i in "123456" %}<span class="marquee-item"><span aria-hidden="true">✦</span> 현재는 베타 서비스 중입니다</span>{% endfor %}
+            {% for i in "123456" %}<span class="marquee-item"><span aria-hidden="true">✦</span> {% translate "현재는 베타 서비스 중입니다" %}</span>{% endfor %}
           </div>
           <div class="marquee-set" aria-hidden="true">
-            {% for i in "123456" %}<span class="marquee-item"><span aria-hidden="true">✦</span> 현재는 베타 서비스 중입니다</span>{% endfor %}
+            {% for i in "123456" %}<span class="marquee-item"><span aria-hidden="true">✦</span> {% translate "현재는 베타 서비스 중입니다" %}</span>{% endfor %}
           </div>
         </div>
       </div>
@@ -118,6 +118,8 @@
   {% endif %}
   {% block content %}{% endblock %}
   {% block site_footer %}{% include "core/partials/_site_footer.html" %}{% endblock %}
+  <script defer src="{% static 'js/shared/i18n_fallback.js' %}"></script>
+  <script defer src="{% url 'javascript-catalog' %}"></script>
   <script defer src="{% static 'js/shared/error_report.js' %}"></script>
   <script defer src="{% static 'js/shared/theme.js' %}"></script>
   <script defer src="{% static 'js/shared/api.js' %}"></script>

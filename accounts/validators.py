@@ -3,6 +3,7 @@ import re
 import unicodedata
 
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 MIN_LENGTH = 2
 MAX_LENGTH = 20
@@ -32,7 +33,7 @@ RESERVED_NICKNAMES = frozenset(
 )
 # 백필 값(회원<pk>)과 사용자 선택 값이 영원히 겹치지 않도록 이 패턴은 예약한다.
 RESERVED_NICKNAME_PATTERN = re.compile(r"^회원\d+$")
-LENGTH_ERROR = "닉네임은 2자 이상 20자 이하로 입력해 주세요."
+LENGTH_ERROR = _("닉네임은 2자 이상 20자 이하로 입력해 주세요.")
 
 
 def normalize_nickname(raw: str) -> str:
@@ -46,9 +47,9 @@ def validate_nickname(value: str) -> None:
         raise ValidationError(LENGTH_ERROR, code="max_length")
     if not NICKNAME_PATTERN.fullmatch(value):
         raise ValidationError(
-            "닉네임은 한글, 영문, 숫자, _(밑줄)만 사용할 수 있습니다.", code="invalid"
+            _("닉네임은 한글, 영문, 숫자, _(밑줄)만 사용할 수 있습니다."), code="invalid"
         )
     if value.lower() in RESERVED_NICKNAMES or RESERVED_NICKNAME_PATTERN.fullmatch(
         value
     ):
-        raise ValidationError("이 닉네임은 사용할 수 없습니다.", code="reserved")
+        raise ValidationError(_("이 닉네임은 사용할 수 없습니다."), code="reserved")

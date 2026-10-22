@@ -4,6 +4,7 @@ from functools import wraps
 from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
+from django.utils import translation
 
 
 def staff_console_required(view_func):
@@ -20,8 +21,29 @@ def staff_console_required(view_func):
             return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
         if not request.user.is_staff:
             raise PermissionDenied
-        return view_func(request, *args, **kwargs)
+        # 스태프 콘솔은 쿠키로 바뀐 방문자 언어와 무관하게 항상 한국어로 운영한다.
+        with translation.override("ko"):
+            return view_func(request, *args, **kwargs)
 
+    return _wrapped
+
+
+def staff_api_korean(view_func):
+    """스태프 DRF API 뷰 전용 관문. `staff_console_required`는 일반 Django
+    뷰에만 적용되고 DRF 뷰는 거치지 않으며, DRF `Response`는 렌더가 뷰
+    반환 뒤로 미뤄져 활성 언어가 `with` 블록을 벗어난 뒤 결정되므로, 같은
+    블록 안에서 렌더까지 끝내야 지연 번역 값도 한국어로 굳는다."""
+
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        with translation.override("ko"):
+            response = view_func(request, *args, **kwargs)
+            if hasattr(response, "render") and callable(response.render):
+                response.render()
+            return response
+
+    # 스태프 API 전수 가드 테스트가 이 표지를 확인한다.
+    _wrapped.staff_api_korean = True
     return _wrapped
 
 

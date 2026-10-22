@@ -64,7 +64,7 @@
     var dotsGroup = document.createElement("div");
     dotsGroup.className = "hero-rotator-dots";
     dotsGroup.setAttribute("role", "group");
-    dotsGroup.setAttribute("aria-label", "대표 행사 선택");
+    dotsGroup.setAttribute("aria-label", gettext("대표 행사 선택"));
     controls.appendChild(dotsGroup);
 
     var dots = slides.map(function (slide, index) {
@@ -106,10 +106,16 @@
         dot.setAttribute("aria-current", "true");
         // aria-current 단독은 Chromium AX 트리에 노출되지 않아 가시 텍스트
         // 없는 버튼이라도 aria-label에 상태 문구를 함께 넣는다.
-        dot.setAttribute("aria-label", (index + 1) + "번째 대표 행사 (현재 표시 중)");
+        dot.setAttribute(
+          "aria-label",
+          interpolate(gettext("%(n)s번째 대표 행사 (현재 표시 중)"), { n: index + 1 }, true)
+        );
       } else {
         dot.removeAttribute("aria-current");
-        dot.setAttribute("aria-label", (index + 1) + "번째 대표 행사 보기");
+        dot.setAttribute(
+          "aria-label",
+          interpolate(gettext("%(n)s번째 대표 행사 보기"), { n: index + 1 }, true)
+        );
       }
     }
 
@@ -121,7 +127,7 @@
       toggle.setAttribute("aria-pressed", manuallyStopped ? "true" : "false");
       toggle.setAttribute(
         "aria-label",
-        manuallyStopped ? "자동 재생 재개" : "자동 재생 정지"
+        manuallyStopped ? gettext("자동 재생 재개") : gettext("자동 재생 정지")
       );
     }
 

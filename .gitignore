@@ -18,6 +18,8 @@ db.sqlite3
 media/
 staticfiles/
 static/css/dist/
+# 번역 카탈로그 빌드 산출물 — .po만 커밋
+locale/**/*.mo
 
 # screenshot diff scratch (local visual verification)
 .shots/

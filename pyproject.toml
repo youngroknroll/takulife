@@ -19,7 +19,7 @@ dependencies = [
     "drf-spectacular[sidecar]>=0.30.0",
     "gunicorn>=26.0.0",
     "httpx>=0.27,<1.0",
-    "pillow>=12.3.0",
+    "pillow>=13.0.0",
     "psycopg[binary]>=3.2,<4.0",
     "whitenoise>=6.12.0",
 ]

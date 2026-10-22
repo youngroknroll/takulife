@@ -9,6 +9,11 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
+# 번역 카탈로그(.po)를 .mo로 컴파일하려면 gettext가 필요하다 — 런타임
+# 이미지는 builder의 /app만 복사하므로 최종 이미지에는 포함되지 않는다.
+RUN apt-get update && apt-get install -y --no-install-recommends gettext \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
@@ -22,6 +27,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
+# 컴파일된 .mo는 아래 COPY --from=builder로 런타임 이미지에 그대로 전달된다.
+# .venv의 서드파티 카탈로그는 이미 컴파일돼 있어 제외한다.
+RUN uv run --frozen --no-dev django-admin compilemessages --ignore .venv
 
 # Runtime stage: slim image with only the built virtualenv and application
 # code. Host-neutral — no PaaS-specific configuration here (see

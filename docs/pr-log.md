@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #385부터 #249까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #395부터 #252까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,42 +28,45 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #385 — feat: 러너 진행 상태 실시간 표시·즉시 오프라인·러너 사람용 로그 (트랙 39)
+### PR #396 — feat(i18n): 이벤트 화면(목록·달력·상세) UI 다국어 — 트랙 43-2
 
-**무엇을 바꿨나**: `DiscoveryRunnerStatus` 5필드(마이그레이션 0014:
-phase/phase_detail/phase_updated_at/current_run/offline_at)를 추가하고,
-heartbeat가 `phase`·`detail`·`run_id`를 선택 키로 받아 옛 러너는 204로 계속
-동작하며 값이 없으면 이전 값을 유지한다. `POST /api/discovery/runner/offline/`을
-신설했고, `runner_is_online`은 `offline_at`을 반영해 `create_run` 단일 판정으로
-합쳤으며 `runner_shutdown` 실패 종류를 구분한다. 스태프 대시보드에는
-`GET /staff/api/discovery/live/`(IsAdminUser, `staff_discovery_live` 40/minute,
-시리얼라이저 `drafts/serializers.py`)를 순수 JSON으로 신설하고, 파셜 2개 +
-`<template>` + `static/js/staff/discovery_live.js`(5초/20초 폴링·백오프·
-401/403 정지·가시성·pageshow·포커스/펼침 복원·textContent만)로 자동 갱신 UI를
-붙였다. 러너 쪽은 `local_runner/progress.py`의 `ProgressReporter`(phase 전이는
-즉시, 같은 phase의 detail 갱신은 5초 간격, 터미널 INFO 로그)를 탐색·제출 루프에
-연결하고, SIGINT/SIGTERM 수신 시 `complete(runner_shutdown)` → offline 순서를
-강제했다(httpx WARNING 억제, 폴링 상태 전이 로그 추가). 문서는
-`docs/BE/draft-source-agent-discovery.md` 트랙 39 절, 운영 런북 §8.x, 배포
-런북 env 표 `DRAFT_DISCOVERY_RUNNER_TOKEN`, 백로그 G2·H8·H12(a)를 갱신했다.
+**무엇을 바꿨나**: 이벤트 목록·달력·상세와 필터·적용 칩·월 이동·연관 행사의 UI 문구를
+gettext로 옮기고 카테고리 이름 7개도 번역했다(사용자 결정 2026-10-22 "카테고리도 번역
+대상임"). 카탈로그는 언어당 django 371건 + djangojs 27건이고 43-1보다 새 항목이 60개다
+`[실측 msgfmt --statistics 2026-10-22]` `[계산 56 + 4]`. 행사 제목·작품명·장소·요약·출처
+이름은 원문 한국어에 `lang="ko"`를 붙이고 번역된 어휘(지역·상태·카테고리)에는 붙이지
+않는다. 아카이브 방문 필터 토큰은 한국어 원문으로 고정하고 표시만 번역해 언어를 바꿔도
+필터가 풀리지 않는다. 영어 월 이름이 360px 월 이동 줄에서 겹쳐 `event_calendar.css`를
+고쳤다. 변경 규모는 26개 파일, +3,584줄·-467줄(커밋 8개, 마이그레이션 없음) `[실측 gh pr view 396]`.
 
-**왜**: 사용자 요구 3건 — 대시보드 자동 갱신, 터미널·대시보드 진행 단계 문구,
-종료 시 즉시 오프라인 전환. 트랙 진행 중 발견한 같은 유형 결함 10건(BIR 4·코치
-3·실기동 2·가드 1)은 같은 PR에서 수정했다.
+**왜**: 43-1에 이어 한국어를 읽지 못하는 팬이 행사를 찾고 기록하게 하려는 트랙 43의
+둘째 조각이다. 번역 검수는 독립 AI 검수자만 했고(사용자 지시) 원어민 검수는 없다 —
+새 항목 56개에서 영어 3건·일본어 1건(직접 1건 추가)·중국어 2건을 반영했고, 카테고리
+이름 7개는 일본어·중국어 제안 0건에 영어 1건(`Collab café` 통일)이었다
+`[문서 docs/BE/i18n.md "AI 검수 기록"]`. 머지 후 사용자 결정(2026-10-22): 아카이브
+과도기(한국어 UI에 번역된 카테고리 이름)와 브라우저 미확인 4항목은 수용, 개인 항목 제안
+칩은 43-3에서 번역, 새 카테고리 자동 번역은 트랙 44-4.
 
-**검증** `[실측 2026-09-20]`: `uv run pytest -q` 3181 passed / 10 deselected /
-91.80초(기준선 3114 `[문서]` PR #382 대비 +67), `manage.py check` 이상 없음,
-`makemigrations --check --dry-run` No changes. e2e `uv run pytest -q -m e2e
-tests/e2e` 10 passed / 12.37초. 브라우저 실측: 대시보드 자동 갱신 AC1
-0.66초·2.00초(실제 러너 기동 상태), 진행 문구 반영 AC3 1.18초. 실기동:
-SIGINT로 탐색 중 종료 → `complete(runner_shutdown)` 324ms 후 offline 363ms.
-CI 5잡 success. 머지 커밋 `2c0e3552`(2026-09-20 22:18 KST `[실측 gh]`), 커밋
-수 56건(`git log --oneline 80ccf80e..2c0e3552^2 | wc -l` `[실측]`). 머지 후
-main 재측정: `uv run pytest -q` → 3181 passed / 10 deselected / 96.62초,
-`manage.py check` 0건, `makemigrations --check --dry-run` 변화 없음
-`[실측 2026-09-20 main 2c0e3552]`
+**검증**: 머지 전 `[실측 2026-10-22 브랜치]` `uv run pytest -q` 3418 passed / 10
+deselected / 104.71초, e2e 10 passed, 한국어 화면은 main과 보이는 텍스트·접근성 속성이
+같다(익명 15·로그인 16 URL), 변이 31개 전부 Red `[문서 docs/BE/i18n.md]`. 머지 시점
+head가 `af083b68`이라 그 뒤 `Collab café` 통일+E-30 가드(`d5d6526b`)와 결정 문서
+(`c45a5a95`)를 main에 직접 얹었다. main 재측정 `[실측 2026-10-22 main d8dee018 + 후속
+2커밋]`: `uv run pytest -q` → 3419 passed / 10 deselected / 47.86초(3254 대비 +165
+`[계산]`), `manage.py check` 0건, `makemigrations --check --dry-run` No changes
+detected. production 반영은 deploy PR #393 머지와 런북 §3-18 번역 검수 게이트가 조건이다.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #395 — feat(i18n): UI 다국어 기반(ko/en/ja/zh-hans) — 트랙 43-1
+- #394 — ci: Skip pull_request CI for PRs into production (track 42)
+- #392 — docs: PR #388~#391 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #391 — deploy: main → production
+- #390 — fix(deps): Bump allauth, oauthlib, pyjwt, urllib3 for audit
+- #389 — chore: Sync governance docs, adapters, and hooks with the repo layout (track 41)
+- #388 — fix: Apply security review 2026-09-27 (track 40)
+- #387 — docs: PR #385 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
+- #386 — deploy: main → production
+- #385 — feat: 러너 진행 상태 실시간 표시·즉시 오프라인·러너 사람용 로그 (트랙 39)
 - #384 — docs: PR #382·#383·#381 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #383 — build: Bump anyio to 4.14.2 for two new GHSA advisories
 - #382 — refactor(core): Move frontend new-group hourly quota into error_groups (트랙 38 PR 1)
@@ -195,6 +198,3 @@ main 재측정: `uv run pytest -q` → 3181 passed / 10 deselected / 96.62초,
 - #254 — Promote the technical records to the tree that survives
 - #253 — Replace markup assertions that could not fail
 - #252 — Make the 500 test fail for the reason it names, and unbreak the runbook pointer
-- #251 — Repair the governance docs, rebuild the backlog, and act on what it measured
-- #250 — feat(staff): Add the verify button to the event edit page
-- #249 — feat(events): Give readers a way back to ended events

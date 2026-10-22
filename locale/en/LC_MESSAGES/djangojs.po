@@ -1,0 +1,123 @@
+# takulife en translation catalog
+# This file is distributed under the same license as the takulife project.
+msgid ""
+msgstr ""
+"Project-Id-Version: takulife\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-21 18:54+0900\n"
+"PO-Revision-Date: 2026-10-21 18:00+0900\n"
+"Last-Translator: takulife\n"
+"Language-Team: takulife\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: static/js/components/confirm-modal.js
+msgid "아니오"
+msgstr "No"
+
+#: static/js/components/confirm-modal.js
+msgid "예"
+msgstr "Yes"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "대표 행사 선택"
+msgstr "Select featured event"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "%(n)s번째 대표 행사 (현재 표시 중)"
+msgstr "Featured event %(n)s (currently shown)"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "%(n)s번째 대표 행사 보기"
+msgstr "View featured event %(n)s"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "자동 재생 재개"
+msgstr "Resume autoplay"
+
+#: static/js/pages/home_hero_rotator.js
+msgid "자동 재생 정지"
+msgstr "Pause autoplay"
+
+#: static/js/shared/api.js
+msgid "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
+msgstr "A network error occurred. Try again."
+
+#: static/js/shared/api.js
+msgid "요청이 많아요. 잠시 후 다시 시도해 주세요."
+msgstr "Too many requests. Try again later."
+
+#: static/js/shared/api.js
+msgid "알 수 없는 오류가 발생했습니다."
+msgstr "An unknown error occurred."
+
+#: static/js/shared/api.js static/js/shared/status.js
+msgid "이미 추가됨"
+msgstr "Already added"
+
+#: static/js/shared/api.js
+msgid "이미 찜한 이벤트입니다."
+msgstr "You've already saved this event."
+
+#: static/js/shared/api.js
+msgid "사진은 기록당 최대 5장까지 첨부할 수 있습니다."
+msgstr "You can attach up to 5 photos per record."
+
+#: static/js/shared/api.js
+msgid "닫기"
+msgstr "Close"
+
+#: static/js/shared/api.js
+msgid "로그인이 필요합니다"
+msgstr "Log in required"
+
+#: static/js/shared/api.js
+msgid "찜·방문 예정을 저장하려면 로그인해 주세요."
+msgstr "Log in to save events or mark them as planned."
+
+#: static/js/shared/api.js
+msgid "로그인"
+msgstr "Log in"
+
+#: static/js/shared/api.js
+msgid "회원가입"
+msgstr "Sign up"
+
+#: static/js/shared/status.js
+msgid "취소하시겠습니까?"
+msgstr "Remove this?"
+
+#: static/js/shared/status.js
+msgid "찜"
+msgstr "Save"
+
+#: static/js/shared/status.js
+msgid "방문 예정"
+msgstr "Planned"
+
+#: static/js/shared/status.js
+msgid "방문 완료"
+msgstr "Visited"
+
+#: static/js/shared/status.js
+msgid "놓침"
+msgstr "Missed"
+
+#: static/js/shared/status.js
+msgid "찜 목록에 저장했어요"
+msgstr "Saved to your list"
+
+#: static/js/shared/status.js
+msgid "나의 일정에 추가했어요"
+msgstr "Added to your schedule"
+
+#: static/js/shared/status.js
+msgid "방문 완료로 변경했어요. 기록을 남길 수 있어요"
+msgstr "Marked as visited. You can add a record now"
+
+#: static/js/shared/status.js
+msgid "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."
+msgstr "Security token error. Refresh the page and try again."

@@ -162,6 +162,34 @@ def test_비로그인_사용자의_일정_상태_API_생성_요청은_403으로_
     assert response.status_code == 403
 
 
+# I18N-15
+@pytest.mark.django_db
+def test_비로그인_403_응답은_언어와_무관하게_code가_not_authenticated다(make_event):
+    """언어가 바뀌어도 detail 문구는 번역되지만 code는 고정돼야 클라이언트가
+    문구 대신 code로 분기할 수 있다."""
+    event = make_event()
+
+    client_default = Client()
+    response_default = client_default.post(
+        "/api/user-event-statuses/",
+        {"event": event.id, "status": "planned"},
+        content_type="application/json",
+    )
+
+    client_en = Client()
+    response_en = client_en.post(
+        "/api/user-event-statuses/",
+        {"event": event.id, "status": "planned"},
+        content_type="application/json",
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+
+    assert response_default.json()["detail"] != response_en.json()["detail"]
+    assert response_default.json().get("code") == "not_authenticated"
+    assert response_en.json().get("code") == "not_authenticated"
+    assert "detail" in response_default.json() and "detail" in response_en.json()
+
+
 @pytest.mark.django_db
 def test_CSRF_토큰_없이_일정_상태를_생성하면_403으로_거부된다(make_user, make_event):
     """SessionAuthentication은 위험한(unsafe) 메서드에 CSRF를 강제하므로,
@@ -182,6 +210,28 @@ def test_CSRF_토큰_없이_일정_상태를_생성하면_403으로_거부된다
         format="json",
     )
     assert response.status_code == 403
+
+
+# I18N-16
+@pytest.mark.django_db
+def test_CSRF_실패_403에는_code_not_authenticated가_붙지_않는다(make_user, make_event):
+    """CSRF 실패는 PermissionDenied일 뿐 인증 미제공이 아니므로, 인증 code를
+    붙이면 클라이언트가 원인을 잘못 분기한다."""
+    user = make_user(username="csrf-code-test-user")
+    event = make_event()
+
+    api_client = APIClient(enforce_csrf_checks=True)
+    api_client.force_login(user)
+
+    response = api_client.post(
+        "/api/user-event-statuses/",
+        {"event": event.id, "status": "planned"},
+        format="json",
+    )
+
+    assert response.status_code == 403
+    assert "detail" in response.json()
+    assert response.json().get("code") != "not_authenticated"
 
 
 @pytest.mark.django_db
