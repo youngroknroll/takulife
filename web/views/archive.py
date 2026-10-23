@@ -378,13 +378,22 @@ def _parse_visit_preselect(request):
     if kind == "event":
         event = Event.objects.published().filter(pk=pk).first()
         if event is not None:
-            return {"value": f"event:{event.pk}", "label": event.title}
+            # is_official: 템플릿이 공식 행사 제목만 lang="ko"로 표시하게 하는 값.
+            return {
+                "value": f"event:{event.pk}",
+                "label": event.title,
+                "is_official": True,
+            }
     elif kind == "personal":
         entry = PersonalEntry.objects.filter(
             pk=pk, user=request.user, kind=PersonalEntry.Kind.PLACE
         ).first()
         if entry is not None:
-            return {"value": f"personal:{entry.pk}", "label": entry.title}
+            return {
+                "value": f"personal:{entry.pk}",
+                "label": entry.title,
+                "is_official": False,
+            }
     return None
 
 

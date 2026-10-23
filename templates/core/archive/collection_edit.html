@@ -128,7 +128,7 @@
                 <div class="collection-edit-visit-locked">
                   <span class="collection-edit-visit-lock-icon" aria-hidden="true">🔒</span>
                   <p class="collection-edit-visit-label">
-                    {% if item.visit_record.event %}{{ item.visit_record.event.title }}{% else %}{{ item.visit_record.personal_entry.title }}{% endif %}
+                    {% if item.visit_record.event %}<span lang="ko">{{ item.visit_record.event.title }}</span>{% else %}{{ item.visit_record.personal_entry.title }}{% endif %}
                     · {{ item.visit_record.visited_on }}
                   </p>
                   <span class="collection-edit-visit-locked-badge">{% translate "변경 불가" %}</span>

@@ -270,7 +270,15 @@ def _visit_record_option(record):
     작성 폼의 드롭다운/잠긴 표시가 명확히 읽히게 한다.
     """
     subject = _subject_view(record)
-    return {"id": record.pk, "label": f"{subject['title']} · {record.visited_on}"}
+    # title·date_text·is_official: 템플릿이 공식 행사 제목만 따로 lang="ko"로
+    # 감쌀 수 있게 label을 쪼갠 값이다(label과 글자가 같다).
+    return {
+        "id": record.pk,
+        "label": f"{subject['title']} · {record.visited_on}",
+        "title": subject["title"],
+        "date_text": str(record.visited_on),
+        "is_official": subject["is_official"],
+    }
 
 
 def _parse_collection_visit_preselect(request):

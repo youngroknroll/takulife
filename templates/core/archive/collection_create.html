@@ -119,7 +119,7 @@
               <label for="collection-visit-record">{% translate "방문 기록 연결 (선택)" %}</label>
               {% if preselect %}
                 <div class="collection-form-locked">
-                  <p class="collection-form-locked-label">{{ preselect.label }}</p>
+                  <p class="collection-form-locked-label">{% if preselect.is_official %}<span lang="ko">{{ preselect.title }}</span>{% else %}{{ preselect.title }}{% endif %} · {{ preselect.date_text }}</p>
                   <span class="collection-form-locked-badge" aria-hidden="true">{% translate "🔒 변경 불가" %}</span>
                 </div>
                 <input type="hidden" id="collection-visit-record" name="visit_record" value="{{ preselect.id }}">

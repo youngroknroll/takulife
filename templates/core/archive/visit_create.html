@@ -40,7 +40,7 @@
              hidden input 값을 select와 똑같은 방식으로 읽는다.{% endcomment %}
           <div class="visit-create-group">
             <label for="visit-subject">{% translate "대상" %}</label>
-            <p class="locked-subject">{{ preselect.label }}</p>
+            <p class="locked-subject"{% if preselect.is_official %} lang="ko"{% endif %}>{{ preselect.label }}</p>
             <input type="hidden" id="visit-subject" name="subject" value="{{ preselect.value }}">
           </div>
         {% else %}
