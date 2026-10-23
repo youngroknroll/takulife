@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 찜 목록(archive_interests) 결과 영역 — 라이브 검색 swap 대상. 풀 페이지
 (interests.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
@@ -25,7 +26,7 @@
             <span class="record-row-dday-label">D-DAY</span>
             <span class="record-row-dday-value" data-tone="{% if row.status == 'upcoming' %}up{% elif row.status == 'ended' %}end{% else %}mint{% endif %}">D-{{ row.dday }}</span>
           {% elif row.subject.is_official and row.status == 'ended' and row.subject.end_date %}
-            <span class="record-row-dday-label">{{ row.subject.end_date|date:"n월" }}</span>
+            <span class="record-row-dday-label">{{ row.subject.end_date|date:"M" }}</span>
             <span class="record-row-dday-value" data-tone="end">{{ row.subject.end_date|date:"d" }}</span>
           {% else %}
             <span class="record-row-date-empty" aria-hidden="true">–</span>
@@ -35,25 +36,25 @@
         <div class="record-row-body">
           <p class="record-row-badges">
             {% if not row.subject.is_official %}
-              <span class="event-category unofficial">직접 등록</span>
+              <span class="event-category unofficial">{% translate "직접 등록" %}</span>
             {% endif %}
             {% if row.subject.category_label %}
               <span class="record-row-cat"{% if row.subject.category_slug %} style="color: var(--cat-{{ row.subject.category_slug|slugify }}-ink, var(--brand-ink));"{% endif %}>{{ row.subject.category_label }}</span>
             {% endif %}
             {% if row.subject.is_official %}
               {% if row.status == 'upcoming' %}
-                <span class="record-row-status" data-tone="up">예정</span>
+                <span class="record-row-status" data-tone="up">{% translate "예정" %}</span>
               {% elif row.status == 'ended' %}
-                <span class="record-row-status" data-tone="end">종료</span>
+                <span class="record-row-status" data-tone="end">{% translate "종료" %}</span>
               {% else %}
-                <span class="record-row-status" data-tone="mint">진행 중</span>
+                <span class="record-row-status" data-tone="mint">{% translate "진행 중" %}</span>
               {% endif %}
             {% endif %}
           </p>
 
           <h3 class="record-row-title">
             {% if row.subject.detail_url %}
-              <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
+              <a href="{{ row.subject.detail_url }}" lang="ko">{{ row.subject.title }}</a>
             {% else %}
               {{ row.subject.title }}
             {% endif %}
@@ -62,7 +63,7 @@
           {% if row.subject.location or row.subject.start_date %}
             <p class="record-row-meta">
               {% if row.subject.location %}
-                <span class="record-row-place">{{ row.subject.location }}</span>
+                <span class="record-row-place"{% if row.subject.is_official %} lang="ko"{% endif %}>{{ row.subject.location }}</span>
               {% endif %}
               {% if row.subject.location and row.subject.start_date %}
                 <span class="record-row-dot" aria-hidden="true">·</span>
@@ -82,20 +83,21 @@
               data-reload-on-success
               aria-pressed="true">
               <span data-interest-glyph aria-hidden="true">♥</span>
-              찜
+              {% translate "찜" context "동작" %}
             </button>
             {% if row.can_plan %}
+              {% translate "방문 예정 추가" as plan_add_label %}
               <button class="status-btn planned" type="button"
                 data-status-action
                 data-event-id="{{ row.subject.subject_id }}"
                 data-status="planned"
-                data-label="방문 예정 추가"
+                data-label="{{ plan_add_label }}"
                 data-reload-on-success
-              >방문 예정 추가</button>
+              >{{ plan_add_label }}</button>
             {% endif %}
           </div>
           {% if row.subject.detail_url %}
-            <a class="record-row-detail-link" href="{{ row.subject.detail_url }}">상세 보기</a>
+            <a class="record-row-detail-link" href="{{ row.subject.detail_url }}">{% translate "상세 보기" %}</a>
           {% endif %}
         </div>
       </article>
@@ -103,15 +105,15 @@
   </div>
 {% elif has_interests and has_query %}
   <div class="empty-state">
-    <p class="empty-title">검색 결과가 없습니다</p>
-    <p class="empty-note">"{{ q }}"에 해당하는 찜한 이벤트가 없어요. <a href="{{ request.path }}">지우기</a></p>
+    <p class="empty-title">{% translate "검색 결과가 없습니다" %}</p>
+    <p class="empty-note">{% blocktranslate trimmed with q=q path=request.path %}"{{ q }}"에 해당하는 찜한 이벤트가 없어요. <a href="{{ path }}">지우기</a>{% endblocktranslate %}</p>
   </div>
 {% else %}
   <div class="empty-state">
     <p class="empty-icon" aria-hidden="true">♡</p>
-    <p class="empty-title">아직 찜한 이벤트가 없어요</p>
-    <p class="empty-note">이벤트 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요.</p>
-    <a class="empty-action" href="/events/">이벤트 찾아보기</a>
+    <p class="empty-title">{% translate "아직 찜한 이벤트가 없어요" %}</p>
+    <p class="empty-note">{% translate "이벤트 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요." %}</p>
+    <a class="empty-action" href="/events/">{% translate "이벤트 찾아보기" %}</a>
   </div>
 {% endif %}
 

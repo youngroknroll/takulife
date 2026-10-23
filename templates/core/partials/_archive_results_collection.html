@@ -1,4 +1,4 @@
-{% comment %}
+{% load i18n vocab_labels %}{% comment %}
 내 컬렉션(archive_collection_items) 결과 영역 — 라이브 검색 swap 대상.
 풀 페이지(collection.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
 컨텍스트: item_rows, view_mode, has_items, has_query, q, page_obj, pager_query,
@@ -9,7 +9,7 @@ clear_query_suffix, request
   {# 시안의 결과 헤더. 시안의 "최근 등록순 ▾" 정렬 토글은 백엔드가 -id 고정이라 #}
   {# 의도적으로 제외했고(죽은 UI 금지), 건수 표시만 가져왔다.                  #}
   <div class="collection-resulthead collection-resulthead--{{ view_mode }}">
-    <h2>전체 <span>{{ page_obj.paginator.count }}</span>점</h2>
+    <h2>{% blocktranslate trimmed count n=page_obj.paginator.count %}전체 <span>{{ n }}</span>점{% plural %}전체 <span>{{ n }}</span>점{% endblocktranslate %}</h2>
   </div>
   {% if view_mode == "list" %}
     <div class="collection-rows">
@@ -19,12 +19,12 @@ clear_query_suffix, request
             {% if row.item.image %}
               <img src="{{ row.item.image.url }}" alt="{{ row.item.name }}" loading="lazy">
             {% else %}
-              <span class="collection-thumb-placeholder">{{ row.item.item_type }}</span>
+              <span class="collection-thumb-placeholder">{{ row.item.item_type|collection_item_type_label }}</span>
             {% endif %}
           </a>
           <div class="collection-row-text">
             <p class="collection-row-work {{ row.series_ink_class }}">
-              {{ row.item.work_title }}{% if row.item.item_type %} · {{ row.item.item_type }}{% endif %}
+              {{ row.item.work_title }}{% if row.item.item_type %} · {{ row.item.item_type|collection_item_type_label }}{% endif %}
             </p>
             <h3 class="collection-row-name"><a href="/collection/{{ row.item.id }}/">{{ row.item.name }}</a></h3>
             {# 구분자는 앞에 실제 값이 있을 때만 — 캐릭터명이 비면 선행 "·"가 #}
@@ -37,9 +37,9 @@ clear_query_suffix, request
             {% with acquired=row.item.acquired_on %}
               <p class="collection-row-date">
                 {% if acquired %}
-                  획득 <time class="mono-num" datetime="{{ acquired|date:'Y-m-d' }}">{{ acquired|date:'Y/m/d' }}</time>
+                  {% translate "획득" %} <time class="mono-num" datetime="{{ acquired|date:'Y-m-d' }}">{{ acquired|date:'Y/m/d' }}</time>
                 {% else %}
-                  등록 <time class="mono-num" datetime="{{ row.item.created_at|date:'Y-m-d' }}">{{ row.item.created_at|date:'Y/m/d' }}</time>
+                  {% translate "등록" %} <time class="mono-num" datetime="{{ row.item.created_at|date:'Y-m-d' }}">{{ row.item.created_at|date:'Y/m/d' }}</time>
                 {% endif %}
               </p>
             {% endwith %}
@@ -50,8 +50,8 @@ clear_query_suffix, request
           <div class="collection-row-side">
             {% include "core/partials/_collection_badges.html" with badges=row.badges wrapper_class="collection-pill" badge_class="collection-pill-tag" %}
             <div class="collection-row-actions">
-              <a class="collection-edit-link" href="/collection/{{ row.item.id }}/edit/">수정</a>
-              <button class="collection-delete-btn" type="button" data-delete-item-id="{{ row.item.id }}">삭제</button>
+              <a class="collection-edit-link" href="/collection/{{ row.item.id }}/edit/">{% translate "수정" %}</a>
+              <button class="collection-delete-btn" type="button" data-delete-item-id="{{ row.item.id }}">{% translate "삭제" %}</button>
             </div>
           </div>
         </article>
@@ -67,7 +67,7 @@ clear_query_suffix, request
             {% else %}
               <div class="gcard-noimg {{ row.series_ink_class }}">
                 <span class="gcard-bar" aria-hidden="true"></span>
-                <span class="gcard-noimg-label">{{ row.item.item_type }}</span>
+                <span class="gcard-noimg-label">{{ row.item.item_type|collection_item_type_label }}</span>
               </div>
             {% endif %}
             {% include "core/partials/_collection_badges.html" with badges=row.badges wrapper_class="collection-pill collection-pill--cover" badge_class="collection-pill-tag" %}
@@ -83,15 +83,15 @@ clear_query_suffix, request
             {% with acquired=row.item.acquired_on %}
               <p class="gcard-date">
                 {% if acquired %}
-                  획득 <time class="mono-num" datetime="{{ acquired|date:'Y-m-d' }}">{{ acquired|date:'Y/m/d' }}</time>
+                  {% translate "획득" %} <time class="mono-num" datetime="{{ acquired|date:'Y-m-d' }}">{{ acquired|date:'Y/m/d' }}</time>
                 {% else %}
-                  등록 <time class="mono-num" datetime="{{ row.item.created_at|date:'Y-m-d' }}">{{ row.item.created_at|date:'Y/m/d' }}</time>
+                  {% translate "등록" %} <time class="mono-num" datetime="{{ row.item.created_at|date:'Y-m-d' }}">{{ row.item.created_at|date:'Y/m/d' }}</time>
                 {% endif %}
               </p>
             {% endwith %}
             <div class="gcard-actions">
-              <a class="collection-edit-link" href="/collection/{{ row.item.id }}/edit/">수정</a>
-              <button class="collection-delete-btn" type="button" data-delete-item-id="{{ row.item.id }}">삭제</button>
+              <a class="collection-edit-link" href="/collection/{{ row.item.id }}/edit/">{% translate "수정" %}</a>
+              <button class="collection-delete-btn" type="button" data-delete-item-id="{{ row.item.id }}">{% translate "삭제" %}</button>
             </div>
           </div>
         </article>
@@ -101,23 +101,23 @@ clear_query_suffix, request
 {% elif has_items %}
   {% if has_query %}
     <div class="empty-state">
-      <p class="empty-title">검색 결과가 없습니다</p>
-      <p class="empty-note">"{{ q }}"에 해당하는 항목이 없어요. <a href="{{ request.path }}{% if clear_query_suffix %}?{{ clear_query_suffix }}{% endif %}">지우기</a></p>
+      <p class="empty-title">{% translate "검색 결과가 없습니다" %}</p>
+      <p class="empty-note">{% blocktranslate trimmed with q=q %}"{{ q }}"에 해당하는 항목이 없어요.{% endblocktranslate %} <a href="{{ request.path }}{% if clear_query_suffix %}?{{ clear_query_suffix }}{% endif %}">{% translate "지우기" %}</a></p>
     </div>
   {% else %}
     <div class="empty-state">
-      <p class="empty-title">이 필터에 해당하는 항목이 없습니다</p>
-      <p class="empty-note"><a href="/collection/">전체 보기</a>로 돌아가세요.</p>
+      <p class="empty-title">{% translate "이 필터에 해당하는 항목이 없습니다" %}</p>
+      <p class="empty-note">{% blocktranslate trimmed %}<a href="/collection/">전체 보기</a>로 돌아가세요.{% endblocktranslate %}</p>
     </div>
   {% endif %}
 {% else %}
   <div class="empty-state">
     <p class="empty-icon" aria-hidden="true">🗂️</p>
-    <p class="empty-title">아직 등록한 컬렉션이 없어요</p>
-    <p class="empty-note">이벤트 없이도 바로 등록할 수 있어요.</p>
+    <p class="empty-title">{% translate "아직 등록한 컬렉션이 없어요" %}</p>
+    <p class="empty-note">{% translate "이벤트 없이도 바로 등록할 수 있어요." %}</p>
     <div class="empty-actions">
-      <a class="empty-action" href="/events/">이벤트 찾기</a>
-      <a class="empty-action" href="/collection/new/">＋ 항목 추가</a>
+      <a class="empty-action" href="/events/">{% translate "이벤트 찾기" %}</a>
+      <a class="empty-action" href="/collection/new/">{% translate "＋ 항목 추가" %}</a>
     </div>
   </div>
 {% endif %}

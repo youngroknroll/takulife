@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: takulife\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 18:54+0900\n"
+"POT-Creation-Date: 2026-10-22 20:09+0900\n"
 "PO-Revision-Date: 2026-10-21 18:00+0900\n"
 "Last-Translator: takulife\n"
 "Language-Team: takulife\n"
@@ -22,6 +22,92 @@ msgstr "否"
 #: static/js/components/confirm-modal.js
 msgid "예"
 msgstr "是"
+
+#: static/js/pages/archive_search.js
+msgid "%(n)s건 검색됨"
+msgid_plural "%(n)s건 검색됨"
+msgstr[0] "搜索到%(n)s项"
+
+#: static/js/pages/archive_search.js
+msgid "검색 결과가 없습니다"
+msgstr "没有搜索结果"
+
+#: static/js/pages/archive_search.js
+#| msgid "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
+msgid "검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+msgstr "搜索时发生错误，请稍后再试。"
+
+#: static/js/pages/collection.js static/js/pages/collection_detail.js
+#: static/js/pages/personal_create.js static/js/pages/personal_detail.js
+#: static/js/pages/personal_edit.js static/js/pages/personal_entries.js
+#: static/js/pages/visit.js static/js/pages/visit_create.js
+#: static/js/pages/visit_detail.js static/js/pages/visit_edit.js
+#: static/js/shared/status.js
+msgid "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."
+msgstr "安全令牌错误，请刷新后重试。"
+
+#: static/js/pages/collection.js static/js/pages/personal_create.js
+#: static/js/pages/personal_edit.js
+msgid "JPEG · PNG · WebP 형식만 첨부할 수 있습니다."
+msgstr "只能附加 JPEG · PNG · WebP 格式。"
+
+#: static/js/pages/collection.js static/js/pages/personal_create.js
+#: static/js/pages/personal_edit.js
+#| msgid "사진은 기록당 최대 5장까지 첨부할 수 있습니다."
+msgid "이미지는 5MB 이하만 첨부할 수 있습니다."
+msgstr "只能附加5MB以内的图片。"
+
+#: static/js/pages/collection.js static/js/pages/personal_create.js
+#: static/js/pages/personal_edit.js
+msgid "미리보기"
+msgstr "预览"
+
+#: static/js/pages/collection.js static/js/pages/personal_create.js
+#: static/js/pages/personal_edit.js
+msgid "이름을 입력해 주세요."
+msgstr "请输入名称。"
+
+#: static/js/pages/collection.js
+msgid "교환 가능 수량은 보유 수량보다 클 수 없습니다."
+msgstr "可交换数量不能超过持有数量。"
+
+#: static/js/pages/collection.js static/js/pages/collection_detail.js
+#: static/js/pages/personal_create.js static/js/pages/personal_detail.js
+#: static/js/pages/personal_edit.js static/js/pages/personal_entries.js
+#: static/js/pages/visit.js static/js/pages/visit_create.js
+#: static/js/pages/visit_detail.js static/js/pages/visit_edit.js
+#: static/js/shared/api.js
+msgid "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
+msgstr "发生网络错误，请重试。"
+
+#: static/js/pages/collection.js static/js/pages/personal_edit.js
+msgid "목록으로 돌아가기"
+msgstr "返回列表"
+
+#: static/js/pages/collection.js static/js/pages/collection_detail.js
+msgid "이 굿즈를 삭제하시겠습니까? 되돌릴 수 없습니다."
+msgstr "确定要删除这件周边吗？此操作无法撤销。"
+
+#: static/js/pages/collection.js static/js/pages/collection_detail.js
+#: static/js/pages/personal_detail.js static/js/pages/personal_edit.js
+#| msgid "이미 찜한 이벤트입니다."
+msgid "이미 삭제된 항목입니다."
+msgstr "该项目已被删除。"
+
+#: static/js/pages/collection.js static/js/pages/personal_detail.js
+#: static/js/pages/personal_edit.js static/js/pages/personal_entries.js
+#| msgid "알 수 없는 오류가 발생했습니다."
+msgid "삭제 중 오류가 발생했습니다."
+msgstr "删除时发生错误。"
+
+#: static/js/pages/collection.js
+msgid "삭제된 항목입니다."
+msgstr "该项目已删除。"
+
+#: static/js/pages/collection_detail.js
+#| msgid "알 수 없는 오류가 발생했습니다."
+msgid "굿즈 삭제 중 오류가 발생했습니다."
+msgstr "删除周边时发生错误。"
 
 #: static/js/pages/home_hero_rotator.js
 msgid "대표 행사 선택"
@@ -43,9 +129,127 @@ msgstr "恢复自动播放"
 msgid "자동 재생 정지"
 msgstr "暂停自动播放"
 
-#: static/js/shared/api.js
-msgid "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
-msgstr "发生网络错误，请重试。"
+#: static/js/pages/personal_detail.js static/js/pages/personal_edit.js
+#: static/js/pages/personal_entries.js
+msgid "이 항목을 삭제하시겠습니까? 연결된 찜·상태·방문 기록도 함께 삭제됩니다."
+msgstr "确定要删除此项目吗？关联的关注、状态和到访记录也会一并删除。"
+
+#: static/js/pages/personal_detail.js static/js/pages/personal_entries.js
+msgid "공식 URL을 입력해 주세요."
+msgstr "请输入官方网址。"
+
+#: static/js/pages/personal_detail.js static/js/pages/personal_entries.js
+#| msgid "이미 찜한 이벤트입니다."
+msgid "이미 공식 제보된 항목입니다."
+msgstr "该项目已提交为官方。"
+
+#: static/js/pages/personal_edit.js static/js/pages/visit_edit.js
+msgid "이 사진을 삭제하시겠습니까? 되돌릴 수 없습니다."
+msgstr "确定要删除这张照片吗？此操作无法撤销。"
+
+#: static/js/pages/personal_edit.js
+msgid "사진을 선택하세요"
+msgstr "请选择照片"
+
+#: static/js/pages/personal_edit.js static/js/pages/visit_edit.js
+#| msgid "알 수 없는 오류가 발생했습니다."
+msgid "사진 삭제 중 오류가 발생했습니다."
+msgstr "删除照片时发生错误。"
+
+#: static/js/pages/personal_entries.js
+msgid "항목을 찾을 수 없습니다."
+msgstr "找不到该项目。"
+
+#: static/js/pages/visit.js static/js/pages/visit_create.js
+msgid "대상과 방문 날짜를 모두 입력해 주세요."
+msgstr "请填写对象和到访日期。"
+
+#: static/js/pages/visit.js static/js/pages/visit_detail.js
+#: static/js/pages/visit_edit.js
+msgid "이 방문 기록을 삭제하시겠습니까? 메모와 사진도 함께 삭제되며 되돌릴 수 없습니다."
+msgstr "确定要删除这条到访记录吗？备注和照片也会一并删除，且无法恢复。"
+
+#: static/js/pages/visit.js
+msgid "기록을 찾을 수 없습니다."
+msgstr "找不到该记录。"
+
+#: static/js/pages/visit.js static/js/pages/visit_detail.js
+#: static/js/pages/visit_edit.js
+#| msgid "알 수 없는 오류가 발생했습니다."
+msgid "기록 삭제 중 오류가 발생했습니다."
+msgstr "删除记录时发生错误。"
+
+#: static/js/pages/visit_create.js
+msgid "미리보기 %(n)s"
+msgstr "预览 %(n)s"
+
+#: static/js/pages/visit_create.js static/js/pages/visit_edit.js
+msgid "대표"
+msgstr "封面"
+
+#: static/js/pages/visit_create.js
+#| msgid "사진은 기록당 최대 5장까지 첨부할 수 있습니다."
+msgid "사진은 최대 %(max)s장까지 첨부할 수 있습니다."
+msgstr "最多可附加%(max)s张照片。"
+
+#: static/js/pages/visit_create.js static/js/pages/visit_edit.js
+msgid "%(name)s (지원하지 않는 형식)"
+msgstr "%(name)s（不支持的格式）"
+
+#: static/js/pages/visit_create.js static/js/pages/visit_edit.js
+msgid "%(name)s (5MB 초과)"
+msgstr "%(name)s（超过5MB）"
+
+#: static/js/pages/visit_create.js static/js/pages/visit_edit.js
+msgid "일부 사진은 제외됐습니다: %(list)s"
+msgstr "部分照片已被排除：%(list)s"
+
+#: static/js/pages/visit_create.js static/js/pages/visit_edit.js
+msgid "사진 업로드 중 (%(current)s/%(total)s)..."
+msgstr "正在上传照片（%(current)s/%(total)s）..."
+
+#: static/js/pages/visit_create.js
+msgid "기록 저장 중..."
+msgstr "正在保存记录..."
+
+#: static/js/pages/visit_create.js static/js/pages/visit_edit.js
+msgid "저장 완료. 이동 중..."
+msgstr "保存完成，正在跳转..."
+
+#: static/js/pages/visit_create.js
+msgid "기록은 저장됐고 사진 %(done)s/%(total)s장 업로드됐습니다. 나머지는 방문 기록 목록에서 카드별로 추가할 수 있습니다."
+msgid_plural "기록은 저장됐고 사진 %(done)s/%(total)s장 업로드됐습니다. 나머지는 방문 기록 목록에서 카드별로 추가할 수 있습니다."
+msgstr[0] "记录已保存，已上传%(done)s/%(total)s张照片。其余照片可在到访记录列表中按卡片逐个添加。"
+
+#: static/js/pages/visit_create.js
+msgid "방문 기록 목록으로 이동"
+msgstr "前往到访记录列表"
+
+#: static/js/pages/visit_edit.js
+msgid "추가 미리보기 %(n)s"
+msgstr "新增预览 %(n)s"
+
+#: static/js/pages/visit_edit.js
+#| msgid "사진은 기록당 최대 5장까지 첨부할 수 있습니다."
+msgid "사진은 기존 포함 최대 %(max)s장까지입니다."
+msgstr "含现有照片，最多%(max)s张。"
+
+#: static/js/pages/visit_edit.js
+msgid "사진을 찾을 수 없습니다."
+msgstr "找不到该照片。"
+
+#: static/js/pages/visit_edit.js
+msgid "방문 날짜를 입력해 주세요."
+msgstr "请输入到访日期。"
+
+#: static/js/pages/visit_edit.js
+msgid "저장 중..."
+msgstr "正在保存..."
+
+#: static/js/pages/visit_edit.js
+msgid "변경은 저장됐고 새 사진 %(done)s/%(total)s장이 올라갔습니다. 나머지는 다시 시도해 주세요."
+msgid_plural "변경은 저장됐고 새 사진 %(done)s/%(total)s장이 올라갔습니다. 나머지는 다시 시도해 주세요."
+msgstr[0] "更改已保存，已上传%(done)s/%(total)s张新照片。其余请重试。"
 
 #: static/js/shared/api.js
 msgid "요청이 많아요. 잠시 후 다시 시도해 주세요."
@@ -118,7 +322,3 @@ msgstr "已添加到我的日程"
 #: static/js/shared/status.js
 msgid "방문 완료로 변경했어요. 기록을 남길 수 있어요"
 msgstr "已标记为已前往，现在可以添加记录了"
-
-#: static/js/shared/status.js
-msgid "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."
-msgstr "安全令牌错误，请刷新后重试。"

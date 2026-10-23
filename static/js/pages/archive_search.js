@@ -105,7 +105,9 @@
     if (!marker) { return; }
     var count = parseInt(marker.getAttribute("data-result-count"), 10);
     if (isNaN(count)) { return; }
-    var message = count > 0 ? count + "건 검색됨" : "검색 결과가 없습니다";
+    var message = count > 0
+      ? interpolate(ngettext("%(n)s건 검색됨", "%(n)s건 검색됨", count), { n: count }, true)
+      : gettext("검색 결과가 없습니다");
 
     // 같은 메시지를 다시 알릴 때도 스크린리더가 변화를 감지하도록 일단 비운다.
     searchStatus.textContent = "";
@@ -140,7 +142,7 @@
           return null;
         }
         if (!response.ok) {
-          setSearchError("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+          setSearchError(gettext("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
           return null;
         }
         return response.text();
@@ -164,7 +166,7 @@
         if (error && error.name === "AbortError") { return; }
         // 네트워크 실패 시 로딩 상태만 해제하고 기존 결과는 그대로 둔다.
         setLoading(false);
-        setSearchError("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        setSearchError(gettext("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
       });
   }
 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}{{ project_name }} | 마이페이지{% endblock %}
+{% load i18n static %}
+{% block title %}{{ project_name }} | {% translate "마이페이지" %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/mypage.css' %}">
@@ -12,12 +12,11 @@
       <span class="mypage-avatar" aria-hidden="true">{{ request.user.nickname|first|upper }}</span>
       <div class="mypage-header-body">
         <p class="mypage-nickname" title="{{ request.user.nickname }}">{{ request.user.nickname }}</p>
-        <h1>마이페이지</h1>
+        <h1>{% translate "마이페이지" %}</h1>
         <p class="mypage-email" title="{{ request.user.email }}">{{ request.user.email }}</p>
       </div>
       <p class="mypage-tenure">
-        <span class="mypage-tenure-value">{{ joined_year }}</span>
-        <span class="mypage-tenure-label">년 활동 중</span>
+        {% blocktranslate trimmed with year=joined_year %}<span class="mypage-tenure-value">{{ year }}</span> <span class="mypage-tenure-label">년 활동 중</span>{% endblocktranslate %}
       </p>
     </header>
 
@@ -44,39 +43,39 @@
     </div>
 
     <section class="mypage-account">
-      <h2>계정</h2>
+      <h2>{% translate "계정" %}</h2>
 
       <div class="mypage-account-row">
         <span class="mypage-account-field">
-          <span class="mypage-account-key">닉네임</span>
+          <span class="mypage-account-key">{% translate "닉네임" %}</span>
           <span class="mypage-account-value">{{ request.user.nickname }}</span>
         </span>
-        <a class="mypage-account-action is-teal" href="{% url 'account-nickname-page' %}">변경</a>
+        <a class="mypage-account-action is-teal" href="{% url 'account-nickname-page' %}">{% translate "변경" %}</a>
       </div>
 
       <div class="mypage-account-row">
         <span class="mypage-account-field">
-          <span class="mypage-account-key">이메일</span>
+          <span class="mypage-account-key">{% translate "이메일" %}</span>
           <span class="mypage-account-value" title="{{ request.user.email }}">{{ request.user.email }}</span>
         </span>
-        <a class="mypage-account-action is-teal" href="/accounts/settings/">내정보 변경</a>
+        <a class="mypage-account-action is-teal" href="/accounts/settings/">{% translate "내정보 변경" %}</a>
       </div>
 
       <div class="mypage-account-row">
         <span class="mypage-account-field">
-          <span class="mypage-account-key">비밀번호</span>
+          <span class="mypage-account-key">{% translate "비밀번호" %}</span>
           <span class="mypage-account-value">{{ password_changed_display }}</span>
         </span>
-        <a class="mypage-account-action is-teal" href="{% url 'account_change_password' %}">변경</a>
+        <a class="mypage-account-action is-teal" href="{% url 'account_change_password' %}">{% translate "변경" %}</a>
       </div>
 
       {% if not request.user.is_staff %}
         <div class="mypage-account-row mypage-account-row-danger">
           <span class="mypage-account-field">
-            <span class="mypage-account-key">회원 탈퇴</span>
-            <span class="mypage-account-value">모든 기록과 컬렉션이 삭제됩니다</span>
+            <span class="mypage-account-key">{% translate "회원 탈퇴" %}</span>
+            <span class="mypage-account-value">{% translate "모든 기록과 컬렉션이 삭제됩니다" %}</span>
           </span>
-          <a class="mypage-account-action is-rose" href="{% url 'account-delete-page' %}">탈퇴</a>
+          <a class="mypage-account-action is-rose" href="{% url 'account-delete-page' %}">{% translate "탈퇴" %}</a>
         </div>
       {% endif %}
     </section>

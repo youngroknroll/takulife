@@ -77,6 +77,23 @@
   .hero-activity .summary-card:nth-child(3) .summary-value {
     color: var(--end-ink);
   }
+  /* 영어·일본어·중국어 라벨은 한국어보다 길어 좁은 폭에서 카드가 넘치거나
+     라벨이 한 글자씩 쪼개진다 — 한국어는 이 규칙을 받지 않는다. */
+  @media (max-width: 45rem) {
+    .hero-activity:not(:lang(ko)) .summary-grid {
+      flex-wrap: wrap;
+      row-gap: 0.5rem;
+    }
+    .hero-activity:not(:lang(ko)) .summary-card {
+      padding: 0 0.75rem;
+    }
+    .hero-activity:not(:lang(ko)) .summary-card:first-child {
+      padding-left: 0;
+    }
+    .hero-activity:not(:lang(ko)) .summary-label {
+      white-space: nowrap;
+    }
+  }
   /* `.hero-action`은 활동 셸 여러 페이지가 공유하는 클래스라 여기서 값을
      바꾸면 셸 전체 색이 함께 바뀐다. */
   .hero-action {
@@ -806,6 +823,16 @@
   .record-row-pills .status-btn {
     min-height: 1.875rem; /* 시안 실측 30px, 데스크톱 */
     padding: 0 0.75rem;
+  }
+  /* 한국어 외 언어는 pill 라벨이 길어 글자 중간에서 쪼개지므로 pill은 한
+     줄로 두고 줄 단위로 넘긴다. 한국어는 적용하지 않는다. */
+  .record-row-pills:not(:lang(ko)) {
+    flex-wrap: wrap;
+    row-gap: 0.375rem;
+  }
+  .record-row-pills:not(:lang(ko)) .interest-btn,
+  .record-row-pills:not(:lang(ko)) .status-btn {
+    white-space: nowrap;
   }
   .record-row-detail-link {
     font-size: 0.75rem; /* 12px */

@@ -1,3 +1,4 @@
+{% load i18n vocab_labels %}
 {% comment %}
 비공식 아카이브(archive_personal_entries) 결과 영역 — 라이브 검색 swap 대상.
 풀 페이지(personal_entries.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
@@ -25,7 +26,7 @@ status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이
           {% if row.entry.category or row.entry.work_title %}
             <p class="record-row-meta">
               {% if row.entry.category %}
-                <span class="record-row-cat">{{ row.entry.category }}</span>
+                <span class="record-row-cat">{{ row.entry.category|personal_category_label }}</span>
               {% endif %}
               {% if row.entry.category and row.entry.work_title %}
                 <span class="record-row-dot" aria-hidden="true">·</span>
@@ -69,7 +70,7 @@ status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이
               {% if row.interest_id %}data-interest-id="{{ row.interest_id }}"{% endif %}
             >
               <span data-interest-glyph aria-hidden="true">{% if row.interest_id %}♥{% else %}♡{% endif %}</span>
-              찜
+              {% translate "찜" context "동작" %}
             </button>
             <button
               class="status-btn {% if row.status_slug %}{{ row.status_slug }}{% else %}planned{% endif %}{% if row.status_id %} active{% endif %}"
@@ -86,10 +87,11 @@ status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이
           {% endif %}
 
           <div class="record-row-actions">
-            <a class="record-row-add-link" href="/archive/visits/new/?subject=personal:{{ row.entry.id }}"><span aria-hidden="true">＋</span> 기록</a>
+            <a class="record-row-add-link" href="/archive/visits/new/?subject=personal:{{ row.entry.id }}"><span aria-hidden="true">＋</span> {% translate "기록" context "동작" %}</a>
             {% if row.is_place %}
               {% if row.is_submitted %}
-                <span class="promote-badge" title="관리자 검수 후 공개 목록에 게시됩니다">공식 제보됨 · 검수 중</span>
+                {% translate "관리자 검수 후 공개 목록에 게시됩니다" as promote_badge_title %}
+                <span class="promote-badge" title="{{ promote_badge_title }}">{% translate "공식 제보됨 · 검수 중" %}</span>
               {% else %}
                 <button
                   class="promote-btn"
@@ -99,26 +101,26 @@ status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이
                   data-controls="promote-form-{{ row.entry.id }}"
                   aria-controls="promote-form-{{ row.entry.id }}"
                   aria-expanded="false"
-                >공식 제보</button>
+                >{% translate "공식 제보" %}</button>
               {% endif %}
             {% endif %}
             <button
               class="record-row-delete-btn"
               type="button"
               data-delete-entry-id="{{ row.entry.id }}"
-            >삭제</button>
+            >{% translate "삭제" %}</button>
           </div>
         </div>
 
         {% if row.is_place and not row.is_submitted %}
           <form class="promote-form" id="promote-form-{{ row.entry.id }}" data-promote-form="{{ row.entry.id }}" hidden novalidate>
-            <p class="promote-note" id="promote-note-{{ row.entry.id }}">공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다. 제보가 승인되면 이 항목의 메모가 공개 이벤트의 요약으로 함께 공개됩니다.</p>
+            <p class="promote-note" id="promote-note-{{ row.entry.id }}">{% blocktranslate trimmed %}공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다. 제보가 승인되면 이 항목의 메모가 공개 이벤트의 요약으로 함께 공개됩니다.{% endblocktranslate %}</p>
             <div class="form-group">
-              <label for="promote-url-{{ row.entry.id }}">공식 URL</label>
+              <label for="promote-url-{{ row.entry.id }}">{% translate "공식 URL" %}</label>
               <input id="promote-url-{{ row.entry.id }}" type="url" name="official_url" placeholder="https://" required aria-describedby="promote-note-{{ row.entry.id }}">
             </div>
             <p class="form-error" data-promote-error="{{ row.entry.id }}"></p>
-            <button class="form-submit-btn" type="submit">제보하기</button>
+            <button class="form-submit-btn" type="submit">{% translate "제보하기" %}</button>
           </form>
         {% endif %}
       </article>
@@ -126,14 +128,14 @@ status.js/personal_entries.js 바인딩을 그대로 쓰도록 수정 없이 이
   </div>
 {% elif has_entries and has_query %}
   <div class="empty-state">
-    <p class="empty-title">검색 결과가 없습니다</p>
-    <p class="empty-note">"{{ q }}"에 해당하는 항목이 없어요. <a href="{{ request.path }}">지우기</a></p>
+    <p class="empty-title">{% translate "검색 결과가 없습니다" %}</p>
+    <p class="empty-note">{% blocktranslate trimmed with q=q path=request.path %}"{{ q }}"에 해당하는 항목이 없어요. <a href="{{ path }}">지우기</a>{% endblocktranslate %}</p>
   </div>
 {% else %}
   <div class="empty-state">
     <p class="empty-icon" aria-hidden="true">🗂️</p>
-    <p class="empty-title">아직 등록한 항목이 없어요</p>
-    <p class="empty-note"><a href="/archive/personal/new/">항목 추가</a>에서 비공식 장소를 기록해 보세요.</p>
+    <p class="empty-title">{% translate "아직 등록한 항목이 없어요" %}</p>
+    <p class="empty-note">{% blocktranslate trimmed %}<a href="/archive/personal/new/">항목 추가</a>에서 비공식 장소를 기록해 보세요.{% endblocktranslate %}</p>
   </div>
 {% endif %}
 

@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 방문 기록(archive_visits) 결과 영역 — 라이브 검색 swap 대상. 풀 페이지
 (visits.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
@@ -21,7 +22,7 @@ _archive_results_record.html/_archive_results_statuses.html과 같은
       <article class="record-row" data-record-id="{{ row.record_id }}">
         <div class="record-row-date">
           <time datetime="{{ row.visited_on|date:'Y-m-d' }}">
-            <span class="record-row-month">{{ row.visited_on|date:'n월' }}</span>
+            <span class="record-row-month">{{ row.visited_on|date:"M" }}</span>
             <span class="record-row-day">{{ row.visited_on|date:'d' }}</span>
           </time>
         </div>
@@ -31,7 +32,7 @@ _archive_results_record.html/_archive_results_statuses.html과 같은
             {% if row.subject.category_slug %}
               <span class="record-row-cat" style="color: var(--cat-{{ row.subject.category_slug|slugify }}-ink, var(--brand-ink));">{{ row.subject.category_label }}</span>
             {% elif not row.subject.is_official %}
-              <span class="event-category unofficial">직접 등록</span>
+              <span class="event-category unofficial">{% translate "직접 등록" %}</span>
               {% if row.subject.category_label %}
                 <span class="record-row-dot" aria-hidden="true">·</span>
                 <span class="record-row-place">{{ row.subject.category_label }}</span>
@@ -39,11 +40,11 @@ _archive_results_record.html/_archive_results_statuses.html과 같은
             {% endif %}
             {% if row.subject.location %}
               <span class="record-row-dot" aria-hidden="true">·</span>
-              <span class="record-row-place">{{ row.subject.location }}</span>
+              <span class="record-row-place"{% if row.subject.is_official %} lang="ko"{% endif %}>{{ row.subject.location }}</span>
             {% endif %}
           </p>
           <h3 class="record-row-title">
-            <a href="/archive/visits/{{ row.record_id }}/">{{ row.subject.title }}</a>
+            <a href="/archive/visits/{{ row.record_id }}/"{% if row.subject.is_official %} lang="ko"{% endif %}>{{ row.subject.title }}</a>
           </h3>
           {% if row.short_review %}
             <p class="record-row-review">&ldquo;{{ row.short_review }}&rdquo;</p>
@@ -51,8 +52,9 @@ _archive_results_record.html/_archive_results_statuses.html과 같은
           {% if row.photos %}
             <div class="record-row-photos">
               {% for photo in row.photos|slice:":3" %}
+                {% blocktranslate trimmed asvar photo_alt with title=row.subject.title n=forloop.counter %}{{ title }} 사진 {{ n }}{% endblocktranslate %}
                 <a class="record-row-photo" href="/archive/visits/{{ row.record_id }}/">
-                  <img src="{{ photo.image.url }}" alt="{{ row.subject.title }} 사진 {{ forloop.counter }}" loading="lazy">
+                  <img src="{{ photo.image.url }}" alt="{{ photo_alt }}" loading="lazy">
                 </a>
               {% endfor %}
               {% if row.photos|length > 3 %}
@@ -64,9 +66,9 @@ _archive_results_record.html/_archive_results_statuses.html과 같은
 
         <div class="record-row-end">
           <div class="record-row-actions">
-            <a class="record-row-add-link" href="/collection/new/?visit_record={{ row.record_id }}"><span aria-hidden="true">＋</span> 굿즈 등록</a>
-            <a class="record-row-edit-link" href="/archive/visits/{{ row.record_id }}/edit/">수정</a>
-            <button type="button" class="record-row-delete-btn" data-delete-record-id="{{ row.record_id }}">삭제</button>
+            <a class="record-row-add-link" href="/collection/new/?visit_record={{ row.record_id }}"><span aria-hidden="true">＋</span> {% translate "굿즈 등록" %}</a>
+            <a class="record-row-edit-link" href="/archive/visits/{{ row.record_id }}/edit/">{% translate "수정" %}</a>
+            <button type="button" class="record-row-delete-btn" data-delete-record-id="{{ row.record_id }}">{% translate "삭제" %}</button>
           </div>
         </div>
       </article>
@@ -75,20 +77,20 @@ _archive_results_record.html/_archive_results_statuses.html과 같은
 {% elif has_visits %}
   {% if has_query %}
     <div class="empty-state">
-      <p class="empty-title">검색 결과가 없습니다</p>
-      <p class="empty-note">"{{ q }}"에 해당하는 방문 기록이 없어요. <a href="{{ request.path }}">지우기</a></p>
+      <p class="empty-title">{% translate "검색 결과가 없습니다" %}</p>
+      <p class="empty-note">{% blocktranslate trimmed with q=q %}&quot;{{ q }}&quot;에 해당하는 방문 기록이 없어요.{% endblocktranslate %} <a href="{{ request.path }}">{% translate "지우기" %}</a></p>
     </div>
   {% else %}
     <div class="empty-state">
-      <p class="empty-title">이 필터에 해당하는 방문 기록이 없습니다</p>
-      <p class="empty-note"><a href="/archive/visits/">전체 보기</a>로 돌아가세요.</p>
+      <p class="empty-title">{% translate "이 필터에 해당하는 방문 기록이 없습니다" %}</p>
+      <p class="empty-note">{% blocktranslate trimmed %}<a href="/archive/visits/">전체 보기</a>로 돌아가세요.{% endblocktranslate %}</p>
     </div>
   {% endif %}
 {% else %}
   <div class="empty-state">
     <p class="empty-icon" aria-hidden="true">📸</p>
-    <p class="empty-title">아직 방문 기록이 없어요</p>
-    <p class="empty-note">기록 추가 폼에서 방문한 이벤트와 한줄 메모를 남겨보세요.</p>
+    <p class="empty-title">{% translate "아직 방문 기록이 없어요" %}</p>
+    <p class="empty-note">{% translate "기록 추가 폼에서 방문한 이벤트와 한줄 메모를 남겨보세요." %}</p>
   </div>
 {% endif %}
 

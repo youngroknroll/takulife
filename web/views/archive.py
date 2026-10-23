@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
+from django.utils.translation import gettext
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from archive.models import PersonalEntry, VisitRecord
@@ -43,6 +44,7 @@ from core.vocab import (
     ARCHIVE_VISIT_SORT,
     ARCHIVE_VISIT_SORT_LABELS,
     archive_status_label,
+    personal_category_label,
     CATEGORY_LABELS,
     CATEGORY_SOURCE_LABELS,
     PERSONAL_ENTRY_CATEGORY_SUGGESTIONS,
@@ -251,7 +253,10 @@ def archive_visits(request):
         if token not in seen_labels:
             categories.append(token)
             category_chips.append(
-                {"token": token, "label": label_by_token.get(token, token)}
+                {
+                    "token": token,
+                    "label": label_by_token.get(token) or personal_category_label(token),
+                }
             )
             seen_labels.add(token)
     # 쌍에서 어느 FK가 null인지로 축의 존재 여부를 판단한다 — event가
@@ -373,13 +378,22 @@ def _parse_visit_preselect(request):
     if kind == "event":
         event = Event.objects.published().filter(pk=pk).first()
         if event is not None:
-            return {"value": f"event:{event.pk}", "label": event.title}
+            # is_official: 템플릿이 공식 행사 제목만 lang="ko"로 표시하게 하는 값.
+            return {
+                "value": f"event:{event.pk}",
+                "label": event.title,
+                "is_official": True,
+            }
     elif kind == "personal":
         entry = PersonalEntry.objects.filter(
             pk=pk, user=request.user, kind=PersonalEntry.Kind.PLACE
         ).first()
         if entry is not None:
-            return {"value": f"personal:{entry.pk}", "label": entry.title}
+            return {
+                "value": f"personal:{entry.pk}",
+                "label": entry.title,
+                "is_official": False,
+            }
     return None
 
 
@@ -570,8 +584,8 @@ def archive_personal_entry_detail(request, entry_id):
             "is_submitted": entry.promotion_status == PersonalEntry.PromotionStatus.SUBMITTED,
             # 라벨-필드 매핑만 뷰가 소유하고, 지역화된 날짜 표기는 템플릿 |date: 필터가 담당
             "record_info_rows": [
-                {"label": "등록일", "value": entry.created_at},
-                {"label": "마지막 수정", "value": entry.updated_at},
+                {"label": gettext("등록일"), "value": entry.created_at},
+                {"label": gettext("마지막 수정"), "value": entry.updated_at},
             ],
             "visit_records": visit_records,
             "visit_records_count": len(visit_records),

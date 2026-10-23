@@ -74,6 +74,7 @@ class TestArchiveVisitCreatePreselect:
         assert resp.context["preselect"] == {
             "value": f"event:{event.id}",
             "label": "방문 완료한 행사",
+            "is_official": True,
         }
         assert b'name="subject"' in resp.content
         assert f"event:{event.id}".encode() in resp.content
@@ -87,6 +88,7 @@ class TestArchiveVisitCreatePreselect:
         assert resp.context["preselect"] == {
             "value": f"personal:{entry.id}",
             "label": "숨은 카페",
+            "is_official": False,
         }
 
     def test_굿즈_항목을_subject로_지정해_접근하면_사전_선택이_무시된다(self, user_client, make_entry):

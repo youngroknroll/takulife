@@ -79,60 +79,56 @@ def mypage(request):
 
     # index_rows가 mypage.html의 목록을 그린다. 각 행은 전체가 하나의
     # <a>로 렌더링돼 접근성 이름이 제목+배지+설명+개수를 이어붙인 값이
-    # 된다. 제목에 이미 배지 라벨이 들어 있으면 아래에서 domain_label을
-    # 비워, 템플릿의 "{% if row.domain_label %}"가 스크린리더에 제목을
-    # 중복해서 읽어주는 배지를 건너뛰게 한다("내 활동"/"내 활동"처럼
-    # 완전히 같은 경우도 이 규칙의 한 사례다).
+    # 된다. 제목과 겹치는 행 1·2는 배지를 비워 스크린리더가 같은 말을
+    # 두 번 읽지 않게 한다(번역 후에도 겹침 여부는 언어와 무관하다).
+    activity_badge = gettext("내 활동")
     index_rows = [
         {
-            "title": "내 컬렉션",
-            "domain_label": "컬렉션",
+            "title": gettext("내 컬렉션"),
+            "domain_label": "",
             "ink": "brand",
-            "description": "모은 굿즈를 한눈에 확인해요",
+            "description": gettext("모은 굿즈를 한눈에 확인해요"),
             "count": collection_count,
-            "unit": "점",
+            "unit": npgettext("마이페이지 단위", "점", "점", collection_count),
             "url": "/collection/",
         },
         {
-            "title": "내 활동",
-            "domain_label": "내 활동",
+            "title": gettext("내 활동"),
+            "domain_label": "",
             "ink": "teal",
-            "description": "저장한 행사를 모아봐요",
+            "description": gettext("저장한 행사를 모아봐요"),
             "count": saved_count,
-            "unit": "건",
+            "unit": npgettext("마이페이지 단위", "건", "건", saved_count),
             "url": "/archive/",
         },
         {
-            "title": "다녀온 기록",
-            "domain_label": "내 활동",
+            "title": gettext("다녀온 기록"),
+            "domain_label": activity_badge,
             "ink": "teal",
-            "description": "다녀온 행사를 기록해요",
+            "description": gettext("다녀온 행사를 기록해요"),
             "count": visit_count,
-            "unit": "건",
+            "unit": npgettext("마이페이지 단위", "건", "건", visit_count),
             "url": "/archive/visits/",
         },
         {
-            "title": "직접 등록",
-            "domain_label": "내 활동",
+            "title": gettext("직접 등록"),
+            "domain_label": activity_badge,
             "ink": "teal",
-            "description": "비공식 장소·행사를 등록해요",
+            "description": gettext("비공식 장소·행사를 등록해요"),
             "count": personal_entry_count,
-            "unit": "곳",
+            "unit": npgettext("마이페이지 단위", "곳", "곳", personal_entry_count),
             "url": "/archive/personal/",
         },
         {
-            "title": "찜 목록",
-            "domain_label": "내 활동",
+            "title": gettext("찜 목록"),
+            "domain_label": activity_badge,
             "ink": "pink",
-            "description": "관심 있는 행사를 찜해요",
+            "description": gettext("관심 있는 행사를 찜해요"),
             "count": interest_count,
-            "unit": "건",
+            "unit": npgettext("마이페이지 단위", "건", "건", interest_count),
             "url": "/archive/interests/",
         },
     ]
-    for row in index_rows:
-        if row["domain_label"] and row["domain_label"] in row["title"]:
-            row["domain_label"] = ""
 
     password_changed_at = user.password_changed_at
     password_changed_display = accounts_services.format_password_changed_display(

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}{{ project_name }} | 내 활동{% endblock %}
+{% load i18n static %}
+{% block title %}{{ project_name }} | {% translate "내 활동" %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/archive.css' %}">
@@ -10,29 +10,29 @@
   <main class="page activity-page" id="content">
     <section class="hero hero-activity">
       <div class="hero-lead">
-        <h1>내 활동</h1>
+        <h1>{% translate "내 활동" %}</h1>
         <div class="summary-grid" style="--summary-cols: 3">
           <article class="summary-card">
-            <p class="summary-label">방문 예정</p>
+            <p class="summary-label">{% translate "방문 예정" %}</p>
             <p class="summary-value">{{ status_counts.planned }}</p>
           </article>
           <article class="summary-card">
-            <p class="summary-label">방문 완료</p>
+            <p class="summary-label">{% translate "방문 완료" %}</p>
             <p class="summary-value">{{ status_counts.visited }}</p>
           </article>
           <article class="summary-card">
-            <p class="summary-label">놓침</p>
+            <p class="summary-label">{% translate "놓침" %}</p>
             <p class="summary-value">{{ status_counts.missed }}</p>
           </article>
         </div>
       </div>
 
       <div class="activity-view-toggle">
-        <a class="activity-view-btn is-active" href="/archive/" aria-current="page">목록</a>
-        <a class="activity-view-btn" href="/archive/calendar/">달력</a>
+        <a class="activity-view-btn is-active" href="/archive/" aria-current="page">{% translate "목록" %}</a>
+        <a class="activity-view-btn" href="/archive/calendar/">{% translate "달력" %}</a>
       </div>
 
-      <a class="hero-action" href="/archive/visits/new/" data-cta-watch><span aria-hidden="true">＋</span> 기록 추가</a>
+      <a class="hero-action" href="/archive/visits/new/" data-cta-watch><span aria-hidden="true">＋</span> {% translate "기록 추가" %}</a>
     </section>
 
     {# 서브탭과 검색을 한 헤어라인 레일에 형제로 둔다(.archive-search는 페이지 내 #}
@@ -40,38 +40,40 @@
     {# 찜 목록은 _archive_nav.html의 <nav> 안이 아니라 여기 리터럴 앵커로 직접 #}
     {# 렌더한다(hide_interest=True로 파셜의 기본 pill을 끔) — 이 페이지 하나만 #}
     {# 배치가 다르므로 별도 파셜 추출은 하지 않는다. #}
+    {% translate "상태 필터 및 빠른 이동" as archive_aside_label %}
+    {% translate "전체 보기" as nav_active_label %}
     <div class="activity-toolbar">
-      {% include "core/partials/_archive_nav.html" with active="record" active_label="전체 보기" hide_interest=True %}
+      {% include "core/partials/_archive_nav.html" with active="record" active_label=nav_active_label hide_interest=True %}
       {% include "core/partials/_archive_search.html" with q=q has_query=has_query hidden_name="status" hidden_value=selected_status %}
-      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> <span class="nav-interest-full">찜 목록</span><span class="nav-interest-short">찜</span></a>
+      <a class="nav-interest" href="/archive/interests/"><span aria-hidden="true">♥</span> <span class="nav-interest-full">{% translate "찜 목록" %}</span><span class="nav-interest-short">{% translate "찜" context "탭 약칭" %}</span></a>
     </div>
 
     <section class="layout">
-      <aside class="panel" aria-label="상태 필터 및 빠른 이동">
+      <aside class="panel" aria-label="{{ archive_aside_label }}">
         <div class="chips">
-          <a class="chip{% if not selected_status %} active{% endif %}"{% if not selected_status %} aria-current="page"{% endif %} href="/archive/{% if has_query %}?q={{ q|urlencode }}{% endif %}">전체</a>
+          <a class="chip{% if not selected_status %} active{% endif %}"{% if not selected_status %} aria-current="page"{% endif %} href="/archive/{% if has_query %}?q={{ q|urlencode }}{% endif %}">{% translate "전체" %}</a>
           {% for slug, label in ARCHIVE_STATUS %}
             <a class="chip{% if selected_status == slug %} active{% endif %}"{% if selected_status == slug %} aria-current="page"{% endif %} href="/archive/?status={{ slug }}{{ search_suffix }}">{{ label }}</a>
           {% endfor %}
         </div>
 
         <div class="right-section">
-          <h2 class="aside-label">빠른 이동</h2>
+          <h2 class="aside-label">{% translate "빠른 이동" %}</h2>
           <ul class="side-list">
-            <li><a href="/events/">행사 찾기 →</a></li>
-            <li><a class="quick-link-calendar" href="/archive/calendar/">활동 달력 →</a></li>
+            <li><a href="/events/">{% translate "행사 찾기 →" %}</a></li>
+            <li><a class="quick-link-calendar" href="/archive/calendar/">{% translate "활동 달력 →" %}</a></li>
           </ul>
         </div>
       </aside>
 
       <article class="panel">
         <div class="results-head">
-          <h2>전체 <span class="results-count">{{ page_obj.paginator.count }}</span>건</h2>
+          <h2>{% blocktranslate trimmed count counter=page_obj.paginator.count %}전체 <span class="results-count">{{ counter }}</span>건{% plural %}전체 <span class="results-count">{{ counter }}</span>건{% endblocktranslate %}</h2>
           {# 옵션이 평범한 GET 링크라 JS 드롭다운 대신 <details>를 쓴다 — #}
           {# 네이티브 disclosure만으로 키보드 조작과 무JS 대체 수단이 공짜로 #}
           {# 생긴다. event_list.js는 바깥 클릭 시 닫는 동작만 더한다. #}
           <details class="results-sort" data-sort-menu>
-            <summary class="results-sort-toggle">정렬 <span>{{ selected_sort_label }}</span></summary>
+            <summary class="results-sort-toggle">{% translate "정렬" %} <span>{{ selected_sort_label }}</span></summary>
             <ul class="results-sort-menu">
               {% for slug, label in ARCHIVE_STATUS_SORT %}
                 <li><a href="?sort={{ slug|urlencode }}{{ sort_query }}"{% if selected_sort == slug %} aria-current="true"{% endif %}>{{ label }}</a></li>
@@ -87,7 +89,7 @@
     </section>
 
     <div class="mobile-cta" data-cta-fixed hidden>
-      <a href="/archive/visits/new/">기록 추가</a>
+      <a href="/archive/visits/new/">{% translate "기록 추가" %}</a>
     </div>
   </main>
 {% endblock %}

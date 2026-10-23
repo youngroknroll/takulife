@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext
 from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
@@ -321,7 +322,7 @@ class UserEventStatusListCreateView(ListCreateAPIView):
             )
         except VisitRecordExistsError:
             raise ValidationError(
-                {"status": "이미 방문 기록이 있는 항목은 이 상태로 등록할 수 없습니다."}
+                {"status": gettext("이미 방문 기록이 있는 항목은 이 상태로 등록할 수 없습니다.")}
             )
         response_serializer = self.get_serializer(status_object)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -389,7 +390,7 @@ class UserEventStatusDetailView(RetrieveUpdateDestroyAPIView):
             transition(user_event_status=serializer.instance)
         except VisitRecordExistsError:
             raise ValidationError(
-                {"status": "이미 방문 기록이 있는 항목은 이 상태로 되돌릴 수 없습니다."}
+                {"status": gettext("이미 방문 기록이 있는 항목은 이 상태로 되돌릴 수 없습니다.")}
             )
 
     def perform_destroy(self, instance):
