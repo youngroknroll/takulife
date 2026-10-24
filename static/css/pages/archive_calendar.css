@@ -33,6 +33,17 @@
   }
 }
 
+/* 달력 페이지는 검색 폼이 `search` 영역을 쓰지 않고 1열에 자동 배치돼, 폼의 최소
+   폭이 1열을 고정해 찜 링크 열이 눌린다(영어는 화면 밖으로 밀리고 일본어는 글자가
+   세로로 쌓인다). 다른 아카이브 페이지처럼 두 열에 걸치게 한다. */
+@media (max-width: 24rem) {
+  .activity-toolbar .calendar-search {
+    grid-area: search;
+    justify-self: stretch;
+    min-width: 0;
+  }
+}
+
 .calendar-search input[type="text"] {
   width: 15.5rem; /* ~248px */
   max-width: 100%;

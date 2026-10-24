@@ -332,6 +332,13 @@
     font-size: 0.78125rem;
   }
 
+  /* 탈퇴 경고 문구는 잘리면 안 되므로 줄바꿈을 허용한다. */
+  .mypage-account-row-danger .mypage-account-value {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
   .mypage-account-action {
     font-size: 0.71875rem;
     align-self: center;

@@ -8,7 +8,13 @@ from django.utils import timezone
 from archive.models import UserEventStatus
 from archive.queries import user_interest_event_ids
 from core.calendar_grid import default_selected_date
-from core.vocab import ARCHIVE_STATUS_LABELS, CATEGORY_LABELS, EVENT_STATUS_LABELS, REGION_LABELS
+from core.vocab import (
+    ARCHIVE_STATUS_LABELS,
+    CATEGORY_LABELS,
+    EVENT_STATUS_LABELS,
+    REGION_LABELS,
+    personal_category_label,
+)
 from events.presenters import derive_event_display, is_recently_added
 
 
@@ -166,7 +172,7 @@ def _subject_view(obj):
     entry = obj.personal_entry
     return {
         "title": entry.title,
-        "category_label": entry.category,
+        "category_label": personal_category_label(entry.category),
         "location": entry.location_name,
         "start_date": None,
         "end_date": None,

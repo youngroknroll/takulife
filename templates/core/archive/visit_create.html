@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load static %}
-{% block title %}{{ project_name }} | 다녀온 기록 작성{% endblock %}
+{% block title %}{{ project_name }} | {% translate "다녀온 기록 작성" %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components/photo-upload.css' %}">
@@ -9,13 +10,13 @@
 
 {% block content %}
   <main class="page visit-create-page" id="content">
-    <a class="visit-create-back-link" href="/archive/visits/">← 다녀온 기록으로</a>
+    <a class="visit-create-back-link" href="/archive/visits/">{% translate "← 다녀온 기록으로" %}</a>
     <section class="visit-create-head">
       <div class="visit-create-head-row">
-        <h1>다녀온 기록 작성</h1>
-        <span class="visit-create-legend">＊ 표시는 필수</span>
+        <h1>{% translate "다녀온 기록 작성" %}</h1>
+        <span class="visit-create-legend">{% translate "＊ 표시는 필수" %}</span>
       </div>
-      <p class="visit-create-subtitle">대상과 방문 날짜는 필수, 메모와 사진은 선택입니다</p>
+      <p class="visit-create-subtitle">{% translate "대상과 방문 날짜는 필수, 메모와 사진은 선택입니다" %}</p>
     </section>
 
     <div id="visit-global-error" class="visit-create-error"></div>
@@ -24,12 +25,12 @@
       <input type="hidden" name="client_token" value="{{ client_token }}">
 
       <div class="visit-create-photo-col">
-        <label class="visit-create-field-label" for="visit-photos-trigger">사진 (선택)</label>
+        <label class="visit-create-field-label" for="visit-photos-trigger">{% translate "사진 (선택)" %}</label>
         <div class="photo-upload-row visit-create-photo-row">
           <div class="photo-preview-grid" id="photo-preview-grid" hidden></div>
           <button type="button" id="visit-photos-trigger" class="photo-add-tile"><span>+</span></button>
         </div>
-        <p class="field-hint visit-create-photo-hint" id="visit-photos-hint">JPEG · PNG · WebP · 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지</p>
+        <p class="field-hint visit-create-photo-hint" id="visit-photos-hint">{% translate "JPEG · PNG · WebP · 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지" %}</p>
         <input id="visit-photos" class="photo-multi-input photo-upload-native-input" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple tabindex="-1">
       </div>
 
@@ -38,24 +39,26 @@
           {% comment %}특정 항목의 기록 버튼으로 들어와 대상이 고정된 상태다. JS는 이
              hidden input 값을 select와 똑같은 방식으로 읽는다.{% endcomment %}
           <div class="visit-create-group">
-            <label for="visit-subject">대상</label>
-            <p class="locked-subject">{{ preselect.label }}</p>
+            <label for="visit-subject">{% translate "대상" %}</label>
+            <p class="locked-subject"{% if preselect.is_official %} lang="ko"{% endif %}>{{ preselect.label }}</p>
             <input type="hidden" id="visit-subject" name="subject" value="{{ preselect.value }}">
           </div>
         {% else %}
           <div class="visit-create-group">
-            <label for="visit-subject">대상 <span aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
+            <label for="visit-subject">{% translate "대상" %} <span aria-hidden="true">*</span><span class="sr-only">{% translate "(필수)" %}</span></label>
             <select id="visit-subject" name="subject" required>
-              <option value="">대상을 선택하세요</option>
+              <option value="">{% translate "대상을 선택하세요" %}</option>
               {% if selectable_events %}
-                <optgroup label="공식 예정 이벤트">
+                {% translate "공식 예정 이벤트" as official_group_label %}
+                <optgroup label="{{ official_group_label }}">
                   {% for event in selectable_events %}
-                    <option value="event:{{ event.id }}">{{ event.title }}</option>
+                    <option value="event:{{ event.id }}" lang="ko">{{ event.title }}</option>
                   {% endfor %}
                 </optgroup>
               {% endif %}
               {% if selectable_personal_entries %}
-                <optgroup label="직접 등록 아카이브">
+                {% translate "직접 등록 아카이브" as personal_group_label %}
+                <optgroup label="{{ personal_group_label }}">
                   {% for entry in selectable_personal_entries %}
                     <option value="personal:{{ entry.id }}">{{ entry.title }}</option>
                   {% endfor %}
@@ -66,26 +69,27 @@
         {% endif %}
 
         <div class="visit-create-group">
-          <label for="visit-date">방문 날짜 <span aria-hidden="true">*</span><span class="sr-only">(필수)</span></label>
+          <label for="visit-date">{% translate "방문 날짜" %} <span aria-hidden="true">*</span><span class="sr-only">{% translate "(필수)" %}</span></label>
           <input id="visit-date" type="date" name="visited_on" required>
         </div>
 
+        {% translate "짧은 메모를 남겨보세요 (선택)" as memo_placeholder %}
         <div class="visit-create-group">
-          <label for="visit-review">한줄 메모 (선택)</label>
-          <input id="visit-review" type="text" name="short_review" maxlength="255" placeholder="짧은 메모를 남겨보세요 (선택)">
+          <label for="visit-review">{% translate "한줄 메모 (선택)" %}</label>
+          <input id="visit-review" type="text" name="short_review" maxlength="255" placeholder="{{ memo_placeholder }}">
         </div>
 
         <div class="visit-create-rules">
           <div class="visit-create-rules-head">
-            <span class="visit-create-rules-label">기록 안내</span>
+            <span class="visit-create-rules-label">{% translate "기록 안내" %}</span>
             <span class="visit-create-rules-line" aria-hidden="true"></span>
           </div>
           <ul class="rule-list">
-            <li>다녀온 기록은 본인만 보고 관리할 수 있습니다</li>
-            <li>공식 예정 이벤트 또는 내 비공식 항목에 기록을 남길 수 있습니다</li>
-            <li>사진은 JPEG, PNG, WebP 형식을 지원합니다</li>
-            <li>사진은 기록당 최대 5장까지 첨부할 수 있습니다</li>
-            <li>사진 파일 크기는 5MB 이하여야 합니다</li>
+            <li>{% translate "다녀온 기록은 본인만 보고 관리할 수 있습니다" %}</li>
+            <li>{% translate "공식 예정 이벤트 또는 내 비공식 항목에 기록을 남길 수 있습니다" %}</li>
+            <li>{% translate "사진은 JPEG, PNG, WebP 형식을 지원합니다" %}</li>
+            <li>{% translate "사진은 기록당 최대 5장까지 첨부할 수 있습니다" %}</li>
+            <li>{% translate "사진 파일 크기는 5MB 이하여야 합니다" %}</li>
           </ul>
         </div>
 
@@ -93,8 +97,8 @@
         <p class="visit-create-status" id="visit-create-status" role="status"></p>
 
         <div class="visit-create-actions">
-          <button class="visit-create-submit" type="submit">기록 저장</button>
-          <a class="visit-create-cancel" href="/archive/visits/">취소</a>
+          <button class="visit-create-submit" type="submit">{% translate "기록 저장" %}</button>
+          <a class="visit-create-cancel" href="/archive/visits/">{% translate "취소" %}</a>
         </div>
       </div>
     </form>

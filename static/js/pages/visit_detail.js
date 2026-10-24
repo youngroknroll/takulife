@@ -24,7 +24,7 @@
     if (kind === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
@@ -38,7 +38,7 @@
     deleteBtn.addEventListener("click", async function () {
       if (
         !(await askConfirm(
-          "이 방문 기록을 삭제하시겠습니까? 메모와 사진도 함께 삭제되며 되돌릴 수 없습니다."
+          gettext("이 방문 기록을 삭제하시겠습니까? 메모와 사진도 함께 삭제되며 되돌릴 수 없습니다.")
         ))
       ) {
         return;
@@ -56,9 +56,9 @@
       if (result.status === 403) {
         handle403(result, globalErrorEl);
       } else if (result.status === 0) {
-        setText(globalErrorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
       } else {
-        setText(globalErrorEl, "기록 삭제 중 오류가 발생했습니다.");
+        setText(globalErrorEl, gettext("기록 삭제 중 오류가 발생했습니다."));
       }
     });
   }

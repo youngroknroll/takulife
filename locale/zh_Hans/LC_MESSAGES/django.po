@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: takulife\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 15:34+0900\n"
+"POT-Creation-Date: 2026-10-22 20:14+0900\n"
 "PO-Revision-Date: 2026-10-21 18:00+0900\n"
 "Last-Translator: takulife\n"
 "Language-Team: takulife\n"
@@ -21,7 +21,8 @@ msgid "<a href=\"{terms}\" target=\"_blank\" rel=\"noopener\">이용약관</a> �
 msgstr "我同意<a href=\"{terms}\" target=\"_blank\" rel=\"noopener\">服务条款</a>和<a href=\"{privacy}\" target=\"_blank\" rel=\"noopener\">隐私政策</a>。"
 
 #: accounts/forms.py templates/account/settings.html
-#: templates/account/signup.html templates/socialaccount/signup.html
+#: templates/account/signup.html templates/core/mypage.html
+#: templates/socialaccount/signup.html
 msgid "닉네임"
 msgstr "昵称"
 
@@ -69,6 +70,54 @@ msgstr "昵称只能使用韩文、英文、数字和下划线（_）。"
 #: accounts/validators.py
 msgid "이 닉네임은 사용할 수 없습니다."
 msgstr "该昵称无法使用。"
+
+#: archive/serializers.py
+msgid "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
+msgstr "必须且仅能指定 event 或 personal_entry 中的一个。"
+
+#: archive/serializers.py
+msgid "이 personal_entry는 이 작업의 대상이 될 수 없습니다."
+msgstr "此 personal_entry 不能作为该操作的对象。"
+
+#: archive/serializers.py
+msgid "상태를 지정해야 합니다."
+msgstr "必须指定状态。"
+
+#: archive/services.py
+msgid "place 외의 kind로는 PersonalEntry를 생성할 수 없습니다."
+msgstr "除 place 之外的 kind 无法创建 PersonalEntry。"
+
+#: archive/services.py
+msgid "quantity는 0 이상이어야 합니다."
+msgstr "quantity 必须大于或等于 0。"
+
+#: archive/services.py
+msgid "tradeable_quantity는 0 이상이어야 합니다."
+msgstr "tradeable_quantity 必须大于或等于 0。"
+
+#: archive/services.py
+msgid "tradeable_quantity는 quantity 이하여야 합니다."
+msgstr "tradeable_quantity 必须小于或等于 quantity。"
+
+#: archive/services.py
+msgid "visit_record는 요청한 사용자의 소유여야 합니다."
+msgstr "visit_record 必须属于发起请求的用户。"
+
+#: archive/services.py
+msgid "visit_record는 아이템 소유자의 소유여야 합니다."
+msgstr "visit_record 必须属于该项目的所有者。"
+
+#: archive/services.py
+msgid "visit_record가 설정된 경우 event는 visit_record.event와 일치해야 합니다."
+msgstr "设置了 visit_record 时，event 必须与 visit_record.event 一致。"
+
+#: archive/views.py
+msgid "이미 방문 기록이 있는 항목은 이 상태로 등록할 수 없습니다."
+msgstr "已有到访记录的项目无法登记为此状态。"
+
+#: archive/views.py
+msgid "이미 방문 기록이 있는 항목은 이 상태로 되돌릴 수 없습니다."
+msgstr "已有到访记录的项目无法恢复为此状态。"
 
 #: core/vocab.py templates/core/home.html
 msgid "팝업스토어"
@@ -133,15 +182,22 @@ msgstr "光州"
 msgid "온라인"
 msgstr "线上"
 
-#: core/vocab.py templates/core/events/detail.html
+#: core/vocab.py templates/core/archive/calendar.html
+#: templates/core/archive/index.html templates/core/archive/statuses.html
+#: templates/core/events/detail.html
 msgid "방문 예정"
 msgstr "计划前往"
 
-#: core/vocab.py templates/core/events/detail.html
+#: core/vocab.py templates/core/archive/calendar.html
+#: templates/core/archive/index.html templates/core/archive/statuses.html
+#: templates/core/archive/visit_detail.html templates/core/events/detail.html
 msgid "방문 완료"
 msgstr "已前往"
 
-#: core/vocab.py templates/core/events/detail.html
+#: core/vocab.py templates/core/archive/calendar.html
+#: templates/core/archive/index.html templates/core/archive/statuses.html
+#: templates/core/events/detail.html
+#: templates/core/partials/_archive_results_statuses.html
 msgid "놓침"
 msgstr "错过"
 
@@ -206,10 +262,23 @@ msgid "오래된 찜순"
 msgstr "最早关注"
 
 #: core/vocab.py
+msgid "카페"
+msgstr "咖啡馆"
+
+#: core/vocab.py
+msgid "성지순례"
+msgstr "圣地巡礼"
+
+#: core/vocab.py
+msgid "굿즈숍"
+msgstr "周边商店"
+
+#: core/vocab.py templates/core/partials/_archive_results_interests.html
 msgid "예정"
 msgstr "即将开始"
 
-#: core/vocab.py
+#: core/vocab.py templates/core/archive/interests.html
+#: templates/core/partials/_archive_results_interests.html
 msgid "진행 중"
 msgstr "进行中"
 
@@ -220,13 +289,16 @@ msgid "종료 임박"
 msgstr "即将结束"
 
 #: core/vocab.py templates/core/events/list.html templates/core/home.html
+#: templates/core/partials/_archive_results_interests.html
 #: templates/core/partials/_event_compact_row.html
 #: templates/core/partials/_home_event_calendar.html
 msgid "종료"
 msgstr "已结束"
 
-#: core/vocab.py templates/core/events/calendar.html
-#: templates/core/events/list.html
+#: core/vocab.py templates/core/archive/collection.html
+#: templates/core/archive/index.html templates/core/archive/statuses.html
+#: templates/core/archive/visits.html templates/core/events/calendar.html
+#: templates/core/events/list.html templates/core/partials/_archive_nav.html
 msgid "전체"
 msgstr "全部"
 
@@ -302,6 +374,7 @@ msgstr "活动"
 #: templates/account/password_reset_from_key.html
 #: templates/account/password_reset_from_key_done.html
 #: templates/account/signup.html templates/account/verification_sent.html
+#: templates/core/archive/collection_detail.html
 #: templates/core/partials/_site_footer.html
 #: templates/core/partials/_site_header.html
 #: templates/socialaccount/authentication_error.html
@@ -315,10 +388,15 @@ msgstr "收藏"
 #: templates/account/password_reset_from_key.html
 #: templates/account/password_reset_from_key_done.html
 #: templates/account/signup.html templates/account/verification_sent.html
+#: templates/core/archive/calendar.html templates/core/archive/index.html
+#: templates/core/archive/interests.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html templates/core/archive/visits.html
 #: templates/core/partials/_site_footer.html
 #: templates/core/partials/_site_header.html
 #: templates/socialaccount/authentication_error.html
 #: templates/socialaccount/login.html templates/socialaccount/signup.html
+#: web/views/account.py
 msgid "내 활동"
 msgstr "我的动态"
 
@@ -326,7 +404,7 @@ msgstr "我的动态"
 msgid "일시적인 오류로 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
 msgstr "因临时错误未能处理请求，请稍后再试。"
 
-#: templates/account/delete_account.html
+#: templates/account/delete_account.html templates/core/mypage.html
 #: templates/core/partials/_account_settings_index.html
 msgid "회원 탈퇴"
 msgstr "注销账号"
@@ -400,7 +478,7 @@ msgstr "验证当前密码"
 msgid "필수"
 msgstr "必填"
 
-#: templates/account/delete_account.html
+#: templates/account/delete_account.html templates/core/mypage.html
 msgid "탈퇴"
 msgstr "注销账号"
 
@@ -634,7 +712,7 @@ msgstr "从到访记录到未来的日程"
 #: templates/account/password_reset_from_key.html
 #: templates/account/password_reset_from_key_done.html
 #: templates/account/password_set.html templates/account/signup.html
-#: templates/account/verification_sent.html
+#: templates/account/verification_sent.html templates/core/mypage.html
 #: templates/core/partials/_site_footer.html
 #: templates/core/partials/_topbar.html
 #: templates/socialaccount/authentication_error.html
@@ -646,7 +724,8 @@ msgstr "账号"
 msgid "로그인 시도가 너무 많습니다"
 msgstr "登录尝试次数过多"
 
-#: templates/account/lockout.html templates/core/events/calendar.html
+#: templates/account/lockout.html templates/core/archive/calendar.html
+#: templates/core/events/calendar.html
 msgid "잠시 후 다시 시도해 주세요."
 msgstr "请稍后再试。"
 
@@ -681,12 +760,12 @@ msgstr "使用takulife账号继续管理记录和收藏。"
 
 #: templates/account/login.html templates/account/password_reset.html
 #: templates/account/settings.html templates/account/signup.html
-#: templates/socialaccount/signup.html
+#: templates/core/mypage.html templates/socialaccount/signup.html
 msgid "이메일"
 msgstr "电子邮箱"
 
 #: templates/account/login.html templates/account/settings.html
-#: templates/account/signup.html
+#: templates/account/signup.html templates/core/mypage.html
 msgid "비밀번호"
 msgstr "密码"
 
@@ -857,7 +936,8 @@ msgstr "登录信息"
 msgid "이메일·비밀번호 상태와 가입일을 확인해요."
 msgstr "查看邮箱、密码状态和注册日期。"
 
-#: templates/account/settings.html templates/core/partials/_site_footer.html
+#: templates/account/settings.html templates/core/mypage.html
+#: templates/core/partials/_site_footer.html
 msgid "변경"
 msgstr "更改"
 
@@ -922,6 +1002,1147 @@ msgstr "跳到正文"
 msgid "현재는 베타 서비스 중입니다"
 msgstr "目前为测试版服务"
 
+#: templates/core/archive/calendar.html
+#: templates/core/partials/_site_footer.html
+msgid "활동 달력"
+msgstr "动态日历"
+
+#: templates/core/archive/calendar.html templates/core/archive/collection.html
+#: templates/core/archive/index.html templates/core/archive/interests.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html templates/core/archive/visits.html
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "목록"
+msgstr "列表"
+
+#: templates/core/archive/calendar.html templates/core/archive/index.html
+#: templates/core/archive/interests.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html templates/core/archive/visits.html
+#: templates/core/events/calendar.html templates/core/events/list.html
+msgid "달력"
+msgstr "日历"
+
+#: templates/core/archive/calendar.html templates/core/archive/index.html
+#: templates/core/archive/statuses.html templates/core/archive/visits.html
+msgid "기록 추가"
+msgstr "添加记录"
+
+#: templates/core/archive/calendar.html
+msgid "⌕ 활동 검색"
+msgstr "⌕ 搜索动态"
+
+#: templates/core/archive/calendar.html
+msgid "활동 검색"
+msgstr "搜索动态"
+
+#: templates/core/archive/calendar.html templates/core/archive/collection.html
+#: templates/core/events/calendar.html templates/core/events/list.html
+#: templates/core/home.html templates/core/partials/_archive_search.html
+msgid "검색"
+msgstr "搜索"
+
+#: templates/core/archive/calendar.html templates/core/archive/index.html
+#: templates/core/archive/interests.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html templates/core/archive/visits.html
+#: templates/core/partials/_archive_nav.html
+#: templates/core/partials/_site_footer.html web/views/account.py
+msgid "찜 목록"
+msgstr "关注列表"
+
+#: templates/core/archive/calendar.html
+msgid "활동 종류 범례 및 빠른 이동"
+msgstr "动态类型图例与快速跳转"
+
+#: templates/core/archive/calendar.html
+#| msgid "종료"
+msgid "종류"
+msgstr "类型"
+
+#: templates/core/archive/calendar.html templates/core/archive/collection.html
+#: templates/core/archive/index.html templates/core/partials/_archive_nav.html
+#: templates/core/partials/_site_footer.html
+msgid "전체 보기"
+msgstr "查看全部"
+
+#: templates/core/archive/calendar.html
+#| msgid "방문 예정"
+msgid "방문 예정 이벤트 일정"
+msgstr "计划前往的活动日程"
+
+#: templates/core/archive/calendar.html
+#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "통계"
+msgid "찜"
+msgstr "已关注"
+
+#: templates/core/archive/calendar.html
+msgid "굿즈 획득"
+msgstr "获得周边"
+
+#: templates/core/archive/calendar.html
+#, python-format
+msgid "%(kind)s %(counter)s건, 적용됨"
+msgid_plural "%(kind)s %(counter)s건, 적용됨"
+msgstr[0] "%(kind)s %(counter)s项，已应用"
+
+#: templates/core/archive/calendar.html
+#, python-format
+#| msgid "%(counter)s개"
+#| msgid_plural "%(counter)s개"
+msgid "%(counter)s건"
+msgid_plural "%(counter)s건"
+msgstr[0] "%(counter)s项"
+
+#: templates/core/archive/calendar.html templates/core/archive/index.html
+#: templates/core/archive/interests.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html templates/core/archive/visits.html
+msgid "빠른 이동"
+msgstr "快速跳转"
+
+#: templates/core/archive/calendar.html
+msgid "목록으로 →"
+msgstr "前往列表 →"
+
+#: templates/core/archive/calendar.html templates/core/archive/index.html
+msgid "행사 찾기 →"
+msgstr "查找活动 →"
+
+#: templates/core/archive/calendar.html templates/core/events/calendar.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "월 이동"
+msgstr "切换月份"
+
+#: templates/core/archive/calendar.html templates/core/events/calendar.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "이전 달"
+msgstr "上个月"
+
+#: templates/core/archive/calendar.html
+#| msgid "홈으로 이동"
+msgid "오늘로 이동"
+msgstr "前往今天"
+
+#: templates/core/archive/calendar.html templates/core/events/calendar.html
+#: templates/core/partials/_home_event_calendar.html
+msgid "다음 달"
+msgstr "下个月"
+
+#: templates/core/archive/calendar.html
+#| msgid "이번 달"
+msgid "이번달"
+msgstr "本月"
+
+#: templates/core/archive/calendar.html templates/core/events/calendar.html
+msgid "요청한 날짜를 확인할 수 없어요"
+msgstr "无法识别该日期"
+
+#: templates/core/archive/calendar.html templates/core/events/calendar.html
+msgid "주소의 월 또는 날짜 값이 올바르지 않습니다."
+msgstr "网址中的月份或日期无效。"
+
+#: templates/core/archive/calendar.html templates/core/events/calendar.html
+msgid "이번 달 보기"
+msgstr "查看本月"
+
+#: templates/core/archive/calendar.html templates/core/events/calendar.html
+msgid "불러오지 못했어요"
+msgstr "加载失败"
+
+#: templates/core/archive/calendar.html templates/core/events/calendar.html
+msgid "다시 시도"
+msgstr "重试"
+
+#: templates/core/archive/calendar.html
+#, python-format
+msgid "‘%(q)s’에 일치하는 활동을 찾지 못했어요"
+msgstr "没有找到与“%(q)s”匹配的动态"
+
+#: templates/core/archive/calendar.html
+#| msgid "잠시 후 다시 시도해 주세요."
+msgid "다른 검색어로 다시 시도해 주세요."
+msgstr "请换个关键词再试。"
+
+#: templates/core/archive/calendar.html
+#, python-format
+#| msgid "외 %(counter)s개"
+#| msgid_plural "외 %(counter)s개"
+msgid "활동 %(counter)s건"
+msgid_plural "활동 %(counter)s건"
+msgstr[0] "动态 %(counter)s项"
+
+#: templates/core/archive/calendar.html
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "아직 기록이 없어요"
+msgstr "还没有记录"
+
+#: templates/core/archive/calendar.html
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요."
+msgstr "关注活动或登记周边后，内容会显示在这里。"
+
+#: templates/core/archive/calendar.html templates/core/archive/interests.html
+#: templates/core/partials/_archive_results_collection.html
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "이벤트 찾기"
+msgstr "查找活动"
+
+#: templates/core/archive/calendar.html
+#: templates/core/archive/visit_detail.html
+#: templates/core/partials/_archive_results_visits.html
+#: templates/core/partials/_home_collection_snapshot.html
+msgid "굿즈 등록"
+msgstr "登记周边"
+
+#: templates/core/archive/calendar.html
+msgid "수정 ›"
+msgstr "编辑 ›"
+
+#: templates/core/archive/calendar.html
+#| msgid "자세히 보기 ›"
+msgid "상세 보기 ›"
+msgstr "查看详情 ›"
+
+#: templates/core/archive/calendar.html
+#| msgid "이 날짜에는 등록된 공식 이벤트가 없어요"
+msgid "이 날짜에는 기록된 활동이 없어요"
+msgstr "这一天没有已登记的动态"
+
+#: templates/core/archive/collection.html
+#: templates/core/partials/_site_footer.html web/views/account.py
+msgid "내 컬렉션"
+msgstr "我的收藏"
+
+#: templates/core/archive/collection.html
+#: templates/core/partials/_home_collection_snapshot.html
+#: web/views/collection.py
+msgid "보유"
+msgstr "持有"
+
+#: templates/core/archive/collection.html
+#: templates/core/partials/_home_collection_snapshot.html
+#: web/views/collection.py
+msgid "구함"
+msgstr "想要"
+
+#: templates/core/archive/collection.html web/views/collection.py
+msgid "교환"
+msgstr "交换"
+
+#: templates/core/archive/collection.html
+msgid "보기 방식"
+msgstr "显示方式"
+
+#: templates/core/archive/collection.html
+msgid "갤러리"
+msgstr "图库"
+
+#: templates/core/archive/collection.html
+msgid "＋ 굿즈 추가"
+msgstr "＋ 添加周边"
+
+#: templates/core/archive/collection.html
+#| msgid "전체 컬렉션 보기 ›"
+msgid "컬렉션 하위 보기"
+msgstr "收藏子视图"
+
+#: templates/core/archive/collection.html
+msgid "중복"
+msgstr "重复"
+
+#: templates/core/archive/collection.html web/views/collection.py
+msgid "교환 가능"
+msgstr "可交换"
+
+#: templates/core/archive/collection.html
+msgid "굿즈명 검색"
+msgstr "搜索周边名称"
+
+#: templates/core/archive/collection.html
+#| msgid "컬렉션 굿즈"
+msgid "컬렉션 검색"
+msgstr "搜索收藏"
+
+#: templates/core/archive/collection.html
+#: templates/core/partials/_archive_results_collection.html
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_visits.html
+#: templates/core/partials/_archive_search.html
+msgid "지우기"
+msgstr "清除"
+
+#: templates/core/archive/collection.html
+msgid "유형 필터"
+msgstr "类型筛选"
+
+#: templates/core/archive/collection.html
+#| msgid "인형"
+msgid "유형"
+msgstr "类型"
+
+#: templates/core/archive/collection.html
+msgid "작품별 필터"
+msgstr "按作品筛选"
+
+#: templates/core/archive/collection.html
+msgid "작품별"
+msgstr "按作品"
+
+#: templates/core/archive/collection_create.html
+#| msgid "항목 등록"
+msgid "컬렉션 항목 등록"
+msgstr "登记收藏项目"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_detail.html
+#| msgid "내 컬렉션"
+msgid "← 내 컬렉션으로"
+msgstr "← 返回我的收藏"
+
+#: templates/core/archive/collection_create.html
+msgid "내 컬렉션에 새 굿즈를 추가합니다"
+msgstr "向我的收藏添加新的周边"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+#: templates/core/archive/visit_create.html
+#: templates/core/archive/visit_edit.html
+#| msgid "표시는 필수"
+msgid "＊ 표시는 필수"
+msgstr "＊ 为必填项"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "이름"
+msgstr "名称"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+#: templates/core/archive/visit_create.html
+#: templates/core/archive/visit_edit.html
+msgid "(필수)"
+msgstr "（必填）"
+
+#: templates/core/archive/collection_create.html
+#| msgid "아크릴 스탠드"
+msgid "예: 유메 아크릴 스탠드"
+msgstr "例：小梦亚克力立牌"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html web/views/collection.py
+#| msgctxt "요일"
+#| msgid "수"
+msgid "수량"
+msgstr "数量"
+
+#: templates/core/archive/collection_create.html
+msgid "구하는 중이에요"
+msgstr "正在寻找"
+
+#: templates/core/archive/collection_create.html
+msgid "체크 시 구함으로 분류"
+msgstr "勾选后归类为“想要”"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "메모 (선택)"
+msgstr "备注（选填）"
+
+#: templates/core/archive/collection_create.html
+msgid "짧은 메모"
+msgstr "简短备注"
+
+#: templates/core/archive/collection_create.html
+msgid "굿즈 사진을 드롭하세요"
+msgstr "将周边照片拖放到此处"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "JPEG · PNG · WebP · 5MB 이하"
+msgstr "JPEG · PNG · WebP · 5MB 以内"
+
+#: templates/core/archive/collection_create.html
+msgid "상세 정보 (선택)"
+msgstr "详细信息（选填）"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "작품명 (선택)"
+msgstr "作品名（选填）"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+msgid "캐릭터명 (선택)"
+msgstr "角色名（选填）"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+msgid "유형 (선택)"
+msgstr "类型（选填）"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+msgid "직접 입력 — 위 추천 외 유형"
+msgstr "手动输入 — 上述推荐之外的类型"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+msgid "획득일 (선택)"
+msgstr "获得日期（选填）"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+msgid "획득 경로 (선택)"
+msgstr "获得途径（选填）"
+
+#: templates/core/archive/collection_create.html
+msgid "예: 이벤트 현장, 통판, 양도"
+msgstr "例：活动现场、邮购、转让"
+
+#: templates/core/archive/collection_create.html
+msgid "방문 기록 연결 (선택)"
+msgstr "关联到访记录（选填）"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_detail.html
+#: templates/core/archive/visit_edit.html
+msgid "🔒 변경 불가"
+msgstr "🔒 不可更改"
+
+#: templates/core/archive/collection_create.html
+msgid "방문 기록에서 연결됨 — 대상은 변경할 수 없습니다."
+msgstr "已从到访记录关联 — 对象无法更改。"
+
+#: templates/core/archive/collection_create.html
+msgid "연결 안 함"
+msgstr "不关联"
+
+#: templates/core/archive/collection_create.html
+msgid "교환 가능 수량 (선택)"
+msgstr "可交换数量（选填）"
+
+#: templates/core/archive/collection_create.html
+msgid "항목 저장"
+msgstr "保存项目"
+
+#: templates/core/archive/collection_create.html
+#: templates/core/archive/collection_edit.html
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+#: templates/core/archive/visit_create.html
+#: templates/core/archive/visit_edit.html
+#| msgid "장소"
+msgid "취소"
+msgstr "取消"
+
+#: templates/core/archive/collection_create.html
+msgid "저장 후 내 컬렉션으로 이동합니다."
+msgstr "保存后将前往我的收藏。"
+
+#: templates/core/archive/collection_detail.html
+#: templates/core/archive/personal_detail.html
+#: templates/core/partials/_archive_results_collection.html
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+#: templates/core/partials/_archive_results_visits.html
+#| msgid "예정"
+msgid "수정"
+msgstr "编辑"
+
+#: templates/core/archive/collection_detail.html
+#: templates/core/archive/collection_edit.html
+msgid "굿즈 삭제"
+msgstr "删除周边"
+
+#: templates/core/archive/collection_detail.html
+#: templates/core/archive/personal_detail.html
+#: templates/core/archive/personal_edit.html
+#: templates/core/archive/visit_detail.html
+#: templates/core/partials/_archive_results_collection.html
+#: templates/core/partials/_archive_results_personal.html
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+#: templates/core/partials/_archive_results_visits.html
+msgid "삭제"
+msgstr "删除"
+
+#: templates/core/archive/collection_detail.html
+#: templates/core/archive/personal_detail.html
+msgid "메모"
+msgstr "备注"
+
+#: templates/core/archive/collection_detail.html
+#, python-format
+msgid "교환 가능 %(n)s개"
+msgid_plural "교환 가능 %(n)s개"
+msgstr[0] "可交换 %(n)s 个"
+
+#: templates/core/archive/collection_detail.html
+msgid "중복분을 교환 장터에 올릴 수 있어요"
+msgstr "重复的部分可以发布到交换市场"
+
+#: templates/core/archive/collection_detail.html
+msgid "교환 장터에 내놓기"
+msgstr "发布到交换市场"
+
+#: templates/core/archive/collection_detail.html
+msgid "준비 중"
+msgstr "准备中"
+
+#: templates/core/archive/collection_edit.html
+msgid "굿즈 수정"
+msgstr "编辑周边"
+
+#: templates/core/archive/collection_edit.html
+msgid "← 굿즈 상세로"
+msgstr "← 返回周边详情"
+
+#: templates/core/archive/collection_edit.html
+#, python-format
+msgid "%(d)s 등록"
+msgstr "%(d)s 登记"
+
+#: templates/core/archive/collection_edit.html
+#| msgid "참여 상태"
+msgid "상태"
+msgstr "状态"
+
+#: templates/core/archive/collection_edit.html
+msgid "구하는 중"
+msgstr "寻找中"
+
+#: templates/core/archive/collection_edit.html
+msgid "보유 중"
+msgstr "持有中"
+
+#: templates/core/archive/collection_edit.html
+msgid "교환 가능 수량"
+msgstr "可交换数量"
+
+#: templates/core/archive/collection_edit.html
+msgid "상세 정보"
+msgstr "详细信息"
+
+#: templates/core/archive/collection_edit.html
+#| msgid "언어 선택"
+msgid "선택"
+msgstr "选填"
+
+#: templates/core/archive/collection_edit.html
+#: templates/core/archive/personal_entries.html
+msgid "방문 기록 연결"
+msgstr "关联到访记录"
+
+#: templates/core/archive/collection_edit.html
+msgid "변경 불가"
+msgstr "不可更改"
+
+#: templates/core/archive/collection_edit.html
+msgid "기존 이미지"
+msgstr "现有图片"
+
+#: templates/core/archive/collection_edit.html
+#| msgid "등록된 이벤트가 없습니다."
+msgid "등록된 이미지가 없습니다"
+msgstr "没有已登记的图片"
+
+#: templates/core/archive/collection_edit.html
+msgid "이미지 교체"
+msgstr "更换图片"
+
+#: templates/core/archive/collection_edit.html
+msgid "JPEG · PNG · WebP"
+msgstr "JPEG · PNG · WebP"
+
+#: templates/core/archive/collection_edit.html
+#: templates/core/archive/personal_edit.html
+#: templates/core/archive/visit_edit.html
+#| msgctxt "단위"
+#| msgid "장"
+#| msgid_plural "장"
+msgid "저장"
+msgstr "保存"
+
+#: templates/core/archive/index.html templates/core/archive/statuses.html
+msgid "상태 필터 및 빠른 이동"
+msgstr "状态筛选与快速跳转"
+
+#: templates/core/archive/index.html templates/core/archive/interests.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html
+#| msgctxt "동작"
+#| msgid "찜"
+msgctxt "탭 약칭"
+msgid "찜"
+msgstr "关注"
+
+#: templates/core/archive/index.html
+#| msgid "활동 달력"
+msgid "활동 달력 →"
+msgstr "动态日历 →"
+
+#: templates/core/archive/index.html templates/core/archive/statuses.html
+#, python-format
+#| msgid "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+#| msgid_plural "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+msgid "전체 <span class=\"results-count\">%(counter)s</span>건"
+msgid_plural "전체 <span class=\"results-count\">%(counter)s</span>건"
+msgstr[0] "共<span class=\"results-count\">%(counter)s</span>项"
+
+#: templates/core/archive/index.html templates/core/archive/interests.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html templates/core/archive/visits.html
+#: templates/core/events/list.html
+msgid "정렬"
+msgstr "排序"
+
+#: templates/core/archive/interests.html
+#| msgid "새 이벤트"
+msgid "찜한 이벤트"
+msgstr "关注的活动"
+
+#: templates/core/archive/interests.html
+#| msgid "방문 예정"
+msgid "방문 예정 겹침"
+msgstr "同时计划前往"
+
+#: templates/core/archive/interests.html
+msgid "찜 안내 및 빠른 이동"
+msgstr "关注说明与快速跳转"
+
+#: templates/core/archive/interests.html
+msgid "찜 안내"
+msgstr "关注说明"
+
+#: templates/core/archive/interests.html
+msgid "찜은 방문 예정과 독립적으로 동시에 등록할 수 있습니다"
+msgstr "关注与“计划前往”相互独立，可以同时设置"
+
+#: templates/core/archive/interests.html
+msgid "이벤트 카드의 ♡ 버튼으로 언제든 추가·해제할 수 있습니다"
+msgstr "随时可通过活动卡片上的 ♡ 按钮添加或取消"
+
+#: templates/core/archive/interests.html templates/core/archive/visits.html
+#| msgid "나의 일정"
+msgid "나의 일정 →"
+msgstr "我的日程 →"
+
+#: templates/core/archive/interests.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html templates/core/archive/visits.html
+#| msgid "이벤트 찾기"
+msgid "이벤트 찾기 →"
+msgstr "查找活动 →"
+
+#: templates/core/archive/interests.html
+#, python-format
+#| msgid "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+#| msgid_plural "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+msgid "찜한 이벤트 <span class=\"results-count\">%(counter)s</span>건"
+msgid_plural "찜한 이벤트 <span class=\"results-count\">%(counter)s</span>건"
+msgstr[0] "关注的活动<span class=\"results-count\">%(counter)s</span>项"
+
+#: templates/core/archive/personal_create.html
+msgid "비공식 장소 등록"
+msgstr "登记非官方地点"
+
+#: templates/core/archive/personal_create.html
+msgid "예: 숨은 콜라보 카페 / 한정 팝업스토어"
+msgstr "例：隐藏的联动咖啡厅 / 限定快闪店"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "직접 입력 — 위 추천 외 카테고리"
+msgstr "手动输入 — 上述推荐之外的分类"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "예: 서울 성수"
+msgstr "例：首尔圣水"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_detail.html
+#| msgid "직접 등록 항목"
+msgid "← 직접 등록 목록으로"
+msgstr "← 返回自行登记列表"
+
+#: templates/core/archive/personal_create.html
+msgid "공식 목록에 없는 장소를 나만의 기록으로 추가합니다"
+msgstr "把官方列表中没有的地点添加为我自己的记录"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "이 항목은 나만 볼 수 있습니다"
+msgstr "此项目仅自己可见"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "공식 행사 목록이나 다른 사용자에게 노출되지 않습니다"
+msgstr "不会出现在官方活动列表中，也不会展示给其他用户"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "사진을 선택하세요"
+msgstr "请选择照片"
+
+#: templates/core/archive/personal_create.html
+msgid "등록 후 할 수 있는 것"
+msgstr "登记后可以做的事"
+
+#: templates/core/archive/personal_create.html
+#| msgid "찜 목록"
+msgid "찜 목록에 추가"
+msgstr "添加到关注列表"
+
+#: templates/core/archive/personal_create.html
+#| msgid "방문 예정"
+msgid "방문 예정으로 등록"
+msgstr "登记为计划前往"
+
+#: templates/core/archive/personal_create.html
+#| msgid "기록 남기기"
+msgid "방문 기록·사진 남기기"
+msgstr "留下到访记录·照片"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "장소 정보"
+msgstr "地点信息"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+#| msgid "카테고리"
+msgid "카테고리 (선택)"
+msgstr "分类（选填）"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "장소명 (선택)"
+msgstr "地点名称（选填）"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "지역 (선택)"
+msgstr "地区（选填）"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "참고 (선택)"
+msgstr "参考（选填）"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "참고 링크 (선택)"
+msgstr "参考链接（选填）"
+
+#: templates/core/archive/personal_create.html
+#: templates/core/archive/personal_edit.html
+msgid "공식 출처가 아니어도 됩니다 — 내가 다시 찾아볼 용도"
+msgstr "不必是官方来源 — 供自己日后查找使用"
+
+#: templates/core/archive/personal_create.html
+msgid "여러 사람에게 알릴 만한 장소라면, 저장 후 직접 등록 목록에서 &lsquo;공식 제보&rsquo;로 공식 행사 등재를 요청할 수 있어요."
+msgstr "如果这是值得告诉更多人的地点，保存后可在自行登记列表中通过&lsquo;提交为官方&rsquo;申请将其收录为官方活动。"
+
+#: templates/core/archive/personal_create.html
+msgid "장소 저장"
+msgstr "保存地点"
+
+#: templates/core/archive/personal_create.html
+msgid "저장 후 직접 등록 목록으로 이동합니다"
+msgstr "保存后将前往自行登记列表"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/visit_detail.html
+#: templates/core/archive/visit_edit.html templates/core/archive/visits.html
+#: templates/core/partials/_archive_nav.html
+#: templates/core/partials/_archive_results_interests.html
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+#: templates/core/partials/_archive_results_visits.html web/views/account.py
+#| msgid "직접 등록 항목"
+msgid "직접 등록"
+msgstr "自行登记"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/archive/visit_detail.html
+#| msgid "등록된 이벤트가 없습니다."
+msgid "등록된 사진이 없습니다"
+msgstr "没有已登记的照片"
+
+#: templates/core/archive/personal_detail.html
+msgid "나만 보기"
+msgstr "仅自己可见"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/archive/visits.html templates/core/events/calendar.html
+#: templates/core/events/detail.html templates/core/events/list.html
+#: templates/core/partials/_archive_results_interests.html
+#: templates/core/partials/_archive_results_personal.html
+#: templates/core/partials/_event_compact_row.html
+msgctxt "동작"
+msgid "찜"
+msgstr "关注"
+
+#: templates/core/archive/personal_detail.html
+#| msgid "기록 남기기"
+msgid "방문 기록 남기기"
+msgstr "添加到访记录"
+
+#: templates/core/archive/personal_detail.html
+msgid "공개 범위"
+msgstr "公开范围"
+
+#: templates/core/archive/personal_detail.html
+msgid "비공식 장소"
+msgstr "非官方地点"
+
+#: templates/core/archive/personal_detail.html
+msgid "참고 링크"
+msgstr "参考链接"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/partials/_archive_results_personal.html
+#| msgid "관리자 검수를 거친 이벤트만 게시됩니다."
+msgid "관리자 검수 후 공개 목록에 게시됩니다"
+msgstr "经管理员审核后将发布到公开列表"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/partials/_archive_results_personal.html
+msgid "공식 제보됨 · 검수 중"
+msgstr "已提交为官方 · 审核中"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/partials/_archive_results_personal.html
+msgid "공식 제보"
+msgstr "提交为官方"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/partials/_archive_results_personal.html
+msgid "공개 카탈로그 등재를 위해 <strong>공식 URL</strong>(주최/공식 출처)을 입력해 제보하세요. 관리자 검수를 거쳐 게시됩니다. 제보가 승인되면 이 항목의 메모가 공개 이벤트의 요약으로 함께 공개됩니다."
+msgstr "为了收录到公开目录，请填写<strong>官方网址</strong>（主办方/官方来源）后提交。将经管理员审核后发布。提交获批后，该项目的备注会作为公开活动的简介一并公开。"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/partials/_archive_results_personal.html
+msgid "공식 URL"
+msgstr "官方网址"
+
+#: templates/core/archive/personal_detail.html
+#: templates/core/partials/_archive_results_personal.html
+msgid "제보하기"
+msgstr "提交"
+
+#: templates/core/archive/personal_detail.html
+#, python-format
+msgid "이 장소의 방문 기록 <span>%(n)s</span>"
+msgstr "此地点的到访记录 <span>%(n)s</span>"
+
+#: templates/core/archive/personal_detail.html
+#| msgid "아직 기록이 없어요"
+msgid "아직 방문 기록이 없어요."
+msgstr "还没有到访记录。"
+
+#: templates/core/archive/personal_detail.html
+#| msgid "기록 남기기"
+msgid "＋ 방문 기록 남기기"
+msgstr "＋ 添加到访记录"
+
+#: templates/core/archive/personal_edit.html
+msgid "장소 정보 수정"
+msgstr "编辑地点信息"
+
+#: templates/core/archive/personal_edit.html
+msgid "← 장소 상세로"
+msgstr "← 返回地点详情"
+
+#: templates/core/archive/personal_edit.html
+msgid "사진 교체"
+msgstr "更换照片"
+
+#: templates/core/archive/personal_edit.html
+msgid "장소 삭제"
+msgstr "删除地点"
+
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/visit_create.html
+#| msgid "직접 등록 항목"
+msgid "직접 등록 아카이브"
+msgstr "自行登记档案"
+
+#: templates/core/archive/personal_entries.html
+msgid "항목 추가"
+msgstr "添加项目"
+
+#: templates/core/archive/personal_entries.html
+msgid "안내 및 빠른 이동"
+msgstr "说明与快速跳转"
+
+#: templates/core/archive/personal_entries.html
+msgid "안내"
+msgstr "说明"
+
+#: templates/core/archive/personal_entries.html
+msgid "직접 등록 아카이브는 본인만 보고 관리할 수 있습니다"
+msgstr "自行登记档案仅本人可查看和管理"
+
+#: templates/core/archive/personal_entries.html
+msgid "공개 이벤트 목록·검색에는 노출되지 않습니다"
+msgstr "不会出现在公开活动列表和搜索中"
+
+#: templates/core/archive/personal_entries.html
+msgid "비공식 장소를 자유롭게 기록할 수 있습니다"
+msgstr "可以自由记录非官方地点"
+
+#: templates/core/archive/personal_entries.html
+#: templates/core/archive/statuses.html
+#| msgid "다녀온 기록"
+msgid "다녀온 기록 →"
+msgstr "到访记录 →"
+
+#: templates/core/archive/personal_entries.html
+#, python-format
+#| msgid "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+#| msgid_plural "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+msgid "직접 등록 아카이브 <span class=\"results-count\">%(counter)s</span>건"
+msgid_plural "직접 등록 아카이브 <span class=\"results-count\">%(counter)s</span>건"
+msgstr[0] "自行登记档案<span class=\"results-count\">%(counter)s</span>项"
+
+#: templates/core/archive/statuses.html
+#: templates/core/partials/_archive_nav.html web/views/account.py
+msgid "나의 일정"
+msgstr "我的日程"
+
+#: templates/core/archive/visit_create.html
+#| msgid "다녀온 기록"
+msgid "다녀온 기록 작성"
+msgstr "撰写到访记录"
+
+#: templates/core/archive/visit_create.html
+#: templates/core/archive/visit_detail.html
+#: templates/core/archive/visit_edit.html
+#| msgid "다녀온 기록"
+msgid "← 다녀온 기록으로"
+msgstr "← 返回到访记录"
+
+#: templates/core/archive/visit_create.html
+msgid "대상과 방문 날짜는 필수, 메모와 사진은 선택입니다"
+msgstr "对象和到访日期为必填，备注和照片为选填"
+
+#: templates/core/archive/visit_create.html
+msgid "사진 (선택)"
+msgstr "照片（选填）"
+
+#: templates/core/archive/visit_create.html
+msgid "JPEG · PNG · WebP · 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지"
+msgstr "JPEG · PNG · WebP · 最多5张 · 每张5MB以内 · 第一张为封面图片"
+
+#: templates/core/archive/visit_create.html
+#: templates/core/archive/visit_detail.html
+#: templates/core/archive/visit_edit.html
+#| msgid "대전"
+msgid "대상"
+msgstr "对象"
+
+#: templates/core/archive/visit_create.html
+msgid "대상을 선택하세요"
+msgstr "请选择对象"
+
+#: templates/core/archive/visit_create.html
+#| msgid "새 이벤트"
+msgid "공식 예정 이벤트"
+msgstr "计划前往的官方活动"
+
+#: templates/core/archive/visit_create.html
+#: templates/core/archive/visit_edit.html
+msgid "방문 날짜"
+msgstr "到访日期"
+
+#: templates/core/archive/visit_create.html
+msgid "짧은 메모를 남겨보세요 (선택)"
+msgstr "写一句简短备注吧（选填）"
+
+#: templates/core/archive/visit_create.html
+#: templates/core/archive/visit_edit.html
+msgid "한줄 메모 (선택)"
+msgstr "一句话备注（选填）"
+
+#: templates/core/archive/visit_create.html
+msgid "기록 안내"
+msgstr "记录说明"
+
+#: templates/core/archive/visit_create.html
+msgid "다녀온 기록은 본인만 보고 관리할 수 있습니다"
+msgstr "到访记录仅本人可查看和管理"
+
+#: templates/core/archive/visit_create.html
+msgid "공식 예정 이벤트 또는 내 비공식 항목에 기록을 남길 수 있습니다"
+msgstr "可以为计划前往的官方活动或我的非官方项目留下记录"
+
+#: templates/core/archive/visit_create.html
+msgid "사진은 JPEG, PNG, WebP 형식을 지원합니다"
+msgstr "照片支持 JPEG、PNG、WebP 格式"
+
+#: templates/core/archive/visit_create.html
+msgid "사진은 기록당 최대 5장까지 첨부할 수 있습니다"
+msgstr "每条记录最多可附加5张照片"
+
+#: templates/core/archive/visit_create.html
+msgid "사진 파일 크기는 5MB 이하여야 합니다"
+msgstr "照片文件大小需在5MB以内"
+
+#: templates/core/archive/visit_create.html
+msgid "기록 저장"
+msgstr "保存记录"
+
+#: templates/core/archive/visit_detail.html templates/core/archive/visits.html
+#: templates/core/partials/_archive_nav.html web/views/account.py
+msgid "다녀온 기록"
+msgstr "到访记录"
+
+#: templates/core/archive/visit_detail.html
+#: templates/core/partials/_archive_results_visits.html
+#, python-format
+msgid "%(title)s 사진 %(n)s"
+msgstr "%(title)s 照片 %(n)s"
+
+#: templates/core/archive/visit_detail.html
+msgid "사진은 기록당 최대 5장까지 등록할 수 있습니다"
+msgstr "每条记录最多可登记5张照片"
+
+#: templates/core/archive/visit_detail.html
+msgid "기록 수정"
+msgstr "编辑记录"
+
+#: templates/core/archive/visit_detail.html
+#: templates/core/archive/visit_edit.html
+msgid "기록 삭제"
+msgstr "删除记录"
+
+#: templates/core/archive/visit_detail.html
+msgid "공식 행사"
+msgstr "官方活动"
+
+#: templates/core/archive/visit_detail.html
+#, python-format
+msgid "%(weekday)s 방문"
+msgstr "%(weekday)s到访"
+
+#: templates/core/archive/visit_detail.html
+#| msgid "방문 예정"
+msgid "방문일"
+msgstr "到访日"
+
+#: templates/core/archive/visit_detail.html templates/core/events/detail.html
+msgid "장소"
+msgstr "地点"
+
+#: templates/core/archive/visit_detail.html templates/core/events/calendar.html
+#: templates/core/events/detail.html templates/core/events/list.html
+#: templates/core/home.html
+msgid "카테고리"
+msgstr "分类"
+
+#: templates/core/archive/visit_detail.html
+#| msgid "기록 사진"
+msgid "사진"
+msgstr "照片"
+
+#: templates/core/archive/visit_detail.html
+#, python-format
+#| msgid "%(counter)s개"
+#| msgid_plural "%(counter)s개"
+msgid "%(counter)s장"
+msgid_plural "%(counter)s장"
+msgstr[0] "%(counter)s张"
+
+#: templates/core/archive/visit_detail.html
+msgid "후기"
+msgstr "感想"
+
+#: templates/core/archive/visit_detail.html
+#, python-format
+msgid "이 방문에서 얻은 굿즈 <span>%(counter)s</span>점"
+msgid_plural "이 방문에서 얻은 굿즈 <span>%(counter)s</span>점"
+msgstr[0] "本次到访获得的周边<span>%(counter)s</span>件"
+
+#: templates/core/archive/visit_detail.html
+#| msgid "등록된 이벤트가 없습니다."
+msgid "아직 등록된 굿즈가 없습니다"
+msgstr "还没有登记的周边"
+
+#: templates/core/archive/visit_detail.html
+msgid "원본 행사 정보"
+msgstr "原始活动信息"
+
+#: templates/core/archive/visit_detail.html
+msgid "행사 상세 보기"
+msgstr "查看活动详情"
+
+#: templates/core/archive/visit_edit.html
+#| msgid "다녀온 기록"
+msgid "다녀온 기록 수정"
+msgstr "编辑到访记录"
+
+#: templates/core/archive/visit_edit.html
+msgid "방문 날짜·메모·사진을 수정할 수 있습니다"
+msgstr "可以修改到访日期、备注和照片"
+
+#: templates/core/archive/visit_edit.html
+msgid "기존 사진"
+msgstr "现有照片"
+
+#: templates/core/archive/visit_edit.html
+#, python-format
+msgid "사진 %(n)s"
+msgstr "照片 %(n)s"
+
+#: templates/core/archive/visit_edit.html
+msgid "기존 포함 최대 5장 · 각 5MB 이하 · 첫 사진이 대표 이미지"
+msgstr "含现有照片最多5张 · 每张5MB以内 · 第一张为封面图片"
+
+#: templates/core/archive/visit_edit.html
+#| msgid "이 닉네임은 사용할 수 없습니다."
+msgid "대상은 변경할 수 없습니다"
+msgstr "对象无法更改"
+
+#: templates/core/archive/visit_edit.html
+msgid "짧은 메모를 남겨보세요"
+msgstr "写一句简短备注吧"
+
+#: templates/core/archive/visits.html
+msgid "누적 방문"
+msgstr "累计到访"
+
+#: templates/core/archive/visits.html
+msgid "메모 있음"
+msgstr "有备注"
+
+#: templates/core/archive/visits.html
+msgid "카테고리 필터 및 빠른 이동"
+msgstr "分类筛选与快速跳转"
+
+#: templates/core/archive/visits.html
+#, python-format
+#| msgid "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+#| msgid_plural "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
+msgid "방문 타임라인 <span class=\"results-count\">%(counter)s</span>건"
+msgid_plural "방문 타임라인 <span class=\"results-count\">%(counter)s</span>건"
+msgstr[0] "到访时间线<span class=\"results-count\">%(counter)s</span>项"
+
 #: templates/core/events/calendar.html
 #: templates/core/partials/_home_event_calendar.html
 #: templates/core/partials/_site_footer.html
@@ -937,14 +2158,6 @@ msgid "목록·달력 전환"
 msgstr "切换列表/日历"
 
 #: templates/core/events/calendar.html templates/core/events/list.html
-msgid "목록"
-msgstr "列表"
-
-#: templates/core/events/calendar.html templates/core/events/list.html
-msgid "달력"
-msgstr "日历"
-
-#: templates/core/events/calendar.html templates/core/events/list.html
 #: templates/core/home.html
 msgid "작품명, 이벤트명, 장소를 검색"
 msgstr "搜索作品名、活动名或地点"
@@ -953,11 +2166,6 @@ msgstr "搜索作品名、活动名或地点"
 #: templates/core/home.html
 msgid "이벤트 검색"
 msgstr "搜索活动"
-
-#: templates/core/events/calendar.html templates/core/events/list.html
-#: templates/core/home.html
-msgid "검색"
-msgstr "搜索"
 
 #: templates/core/events/calendar.html templates/core/events/list.html
 #, python-format
@@ -977,11 +2185,6 @@ msgstr "收起筛选 ▴"
 msgid "지역"
 msgstr "地区"
 
-#: templates/core/events/calendar.html templates/core/events/detail.html
-#: templates/core/events/list.html templates/core/home.html
-msgid "카테고리"
-msgstr "分类"
-
 #: templates/core/events/calendar.html templates/core/events/list.html
 msgid "이벤트 상태"
 msgstr "活动状态"
@@ -995,47 +2198,13 @@ msgid "초기화"
 msgstr "重置"
 
 #: templates/core/events/calendar.html templates/core/events/list.html
+#: templates/core/partials/_archive_results_record.html
 msgid "전체 해제"
 msgstr "全部取消"
 
 #: templates/core/events/calendar.html
-#: templates/core/partials/_home_event_calendar.html
-msgid "월 이동"
-msgstr "切换月份"
-
-#: templates/core/events/calendar.html
-#: templates/core/partials/_home_event_calendar.html
-msgid "이전 달"
-msgstr "上个月"
-
-#: templates/core/events/calendar.html
-#: templates/core/partials/_home_event_calendar.html
-msgid "다음 달"
-msgstr "下个月"
-
-#: templates/core/events/calendar.html
 msgid "이번 달"
 msgstr "本月"
-
-#: templates/core/events/calendar.html
-msgid "요청한 날짜를 확인할 수 없어요"
-msgstr "无法识别该日期"
-
-#: templates/core/events/calendar.html
-msgid "주소의 월 또는 날짜 값이 올바르지 않습니다."
-msgstr "网址中的月份或日期无效。"
-
-#: templates/core/events/calendar.html
-msgid "이번 달 보기"
-msgstr "查看本月"
-
-#: templates/core/events/calendar.html
-msgid "불러오지 못했어요"
-msgstr "加载失败"
-
-#: templates/core/events/calendar.html
-msgid "다시 시도"
-msgstr "重试"
 
 #: templates/core/events/calendar.html
 #, python-format
@@ -1056,13 +2225,6 @@ msgstr "日程待定"
 #: templates/core/partials/_home_event_calendar.html
 msgid "장소 미정"
 msgstr "地点待定"
-
-#: templates/core/events/calendar.html templates/core/events/detail.html
-#: templates/core/events/list.html
-#: templates/core/partials/_event_compact_row.html
-msgctxt "동작"
-msgid "찜"
-msgstr "关注"
 
 #: templates/core/events/calendar.html
 msgid "로그인하고 찜하기"
@@ -1100,10 +2262,6 @@ msgstr "官方确认"
 #: templates/core/events/detail.html
 msgid "기간"
 msgstr "时间"
-
-#: templates/core/events/detail.html
-msgid "장소"
-msgstr "地点"
 
 #: templates/core/events/detail.html
 msgid "공식 페이지로 ↗"
@@ -1183,10 +2341,6 @@ msgstr "进行中·即将举行"
 msgid "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
 msgid_plural "검색 결과 <span class=\"results-count\">%(counter)s</span>개"
 msgstr[0] "<span class=\"results-count\">%(counter)s</span>项结果"
-
-#: templates/core/events/list.html
-msgid "정렬"
-msgstr "排序"
 
 #: templates/core/events/list.html templates/core/home.html
 #: templates/core/partials/_event_compact_row.html
@@ -1322,6 +2476,24 @@ msgstr "新活动"
 msgid "등록된 이벤트가 없습니다."
 msgstr "目前没有已登记的活动。"
 
+#: templates/core/mypage.html templates/core/partials/_site_footer.html
+#: templates/core/partials/_topbar.html
+msgid "마이페이지"
+msgstr "我的页面"
+
+#: templates/core/mypage.html
+#, python-format
+msgid "<span class=\"mypage-tenure-value\">%(year)s</span> <span class=\"mypage-tenure-label\">년 활동 중</span>"
+msgstr "<span class=\"mypage-tenure-value\">%(year)s</span><span class=\"mypage-tenure-label\">年起活跃</span>"
+
+#: templates/core/mypage.html
+msgid "내정보 변경"
+msgstr "修改个人信息"
+
+#: templates/core/mypage.html
+msgid "모든 기록과 컬렉션이 삭제됩니다"
+msgstr "所有记录和收藏都将被删除"
+
 #: templates/core/partials/_account_settings_index.html
 #, python-format
 msgid "%(hub_label)s, 현재 위치"
@@ -1356,47 +2528,277 @@ msgstr "账号设置菜单"
 msgid "%(joined)s 가입"
 msgstr "%(joined)s 注册"
 
+#: templates/core/partials/_archive_calendar_grid.html
 #: templates/core/partials/_calendar_grid.html
 #: templates/core/partials/_home_event_calendar.html
 msgctxt "요일"
 msgid "일"
 msgstr "日"
 
+#: templates/core/partials/_archive_calendar_grid.html
 #: templates/core/partials/_calendar_grid.html
 #: templates/core/partials/_home_event_calendar.html
 msgctxt "요일"
 msgid "월"
 msgstr "一"
 
+#: templates/core/partials/_archive_calendar_grid.html
 #: templates/core/partials/_calendar_grid.html
 #: templates/core/partials/_home_event_calendar.html
 msgctxt "요일"
 msgid "화"
 msgstr "二"
 
+#: templates/core/partials/_archive_calendar_grid.html
 #: templates/core/partials/_calendar_grid.html
 #: templates/core/partials/_home_event_calendar.html
 msgctxt "요일"
 msgid "수"
 msgstr "三"
 
+#: templates/core/partials/_archive_calendar_grid.html
 #: templates/core/partials/_calendar_grid.html
 #: templates/core/partials/_home_event_calendar.html
 msgctxt "요일"
 msgid "목"
 msgstr "四"
 
+#: templates/core/partials/_archive_calendar_grid.html
 #: templates/core/partials/_calendar_grid.html
 #: templates/core/partials/_home_event_calendar.html
 msgctxt "요일"
 msgid "금"
 msgstr "五"
 
+#: templates/core/partials/_archive_calendar_grid.html
 #: templates/core/partials/_calendar_grid.html
 #: templates/core/partials/_home_event_calendar.html
 msgctxt "요일"
 msgid "토"
 msgstr "六"
+
+#: templates/core/partials/_archive_calendar_grid.html
+#, python-format
+msgid "%(date)s %(weekday)s"
+msgstr "%(date)s %(weekday)s"
+
+#: templates/core/partials/_archive_calendar_grid.html
+#, python-format
+#| msgid "외 %(counter)s개"
+#| msgid_plural "외 %(counter)s개"
+msgid ", 활동 %(counter)s개"
+msgid_plural ", 활동 %(counter)s개"
+msgstr[0] "，动态%(counter)s项"
+
+#: templates/core/partials/_archive_calendar_grid.html
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgid ", 오늘"
+msgstr "，今天"
+
+#: templates/core/partials/_archive_calendar_grid.html
+#: templates/core/partials/_calendar_grid.html
+#: templates/core/partials/_home_event_calendar.html
+msgid ", 선택한 날짜"
+msgstr "，已选择的日期"
+
+#: templates/core/partials/_archive_nav.html
+msgid "내 활동 하위 메뉴"
+msgstr "我的动态子菜单"
+
+#: templates/core/partials/_archive_nav.html
+#| msgid "예정"
+msgctxt "탭 약칭"
+msgid "일정"
+msgstr "日程"
+
+#: templates/core/partials/_archive_nav.html
+#| msgctxt "통계"
+#| msgid "기록"
+msgctxt "탭 약칭"
+msgid "기록"
+msgstr "记录"
+
+#: templates/core/partials/_archive_nav.html
+msgctxt "탭 약칭"
+msgid "직접"
+msgstr "自行"
+
+#: templates/core/partials/_archive_results_collection.html
+#, python-format
+msgid "전체 <span>%(n)s</span>점"
+msgid_plural "전체 <span>%(n)s</span>점"
+msgstr[0] "共<span>%(n)s</span>件"
+
+#: templates/core/partials/_archive_results_collection.html
+msgid "획득"
+msgstr "获得"
+
+#: templates/core/partials/_archive_results_collection.html
+#| msgid "등록순"
+msgid "등록"
+msgstr "登记"
+
+#: templates/core/partials/_archive_results_collection.html
+#: templates/core/partials/_archive_results_interests.html
+#: templates/core/partials/_archive_results_personal.html
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+#: templates/core/partials/_archive_results_visits.html
+msgid "검색 결과가 없습니다"
+msgstr "没有搜索结果"
+
+#: templates/core/partials/_archive_results_collection.html
+#, python-format
+msgid "\"%(q)s\"에 해당하는 항목이 없어요."
+msgstr "没有与“%(q)s”匹配的项目。"
+
+#: templates/core/partials/_archive_results_collection.html
+msgid "이 필터에 해당하는 항목이 없습니다"
+msgstr "没有符合此筛选条件的项目"
+
+#: templates/core/partials/_archive_results_collection.html
+msgid "<a href=\"/collection/\">전체 보기</a>로 돌아가세요."
+msgstr "请返回<a href=\"/collection/\">全部收藏</a>。"
+
+#: templates/core/partials/_archive_results_collection.html
+#| msgid "아직 기록이 없어요"
+msgid "아직 등록한 컬렉션이 없어요"
+msgstr "还没有登记的收藏"
+
+#: templates/core/partials/_archive_results_collection.html
+msgid "이벤트 없이도 바로 등록할 수 있어요."
+msgstr "无需活动也可以直接登记。"
+
+#: templates/core/partials/_archive_results_collection.html
+msgid "＋ 항목 추가"
+msgstr "＋ 添加项目"
+
+#: templates/core/partials/_archive_results_interests.html
+#| msgid "방문 예정"
+msgid "방문 예정 추가"
+msgstr "添加到计划前往"
+
+#: templates/core/partials/_archive_results_interests.html
+msgid "상세 보기"
+msgstr "查看详情"
+
+#: templates/core/partials/_archive_results_interests.html
+#, python-format
+msgid "\"%(q)s\"에 해당하는 찜한 이벤트가 없어요. <a href=\"%(path)s\">지우기</a>"
+msgstr "没有与“%(q)s”匹配的关注活动。<a href=\"%(path)s\">清除</a>"
+
+#: templates/core/partials/_archive_results_interests.html
+#| msgid "진행·예정 이벤트가 없어요"
+msgid "아직 찜한 이벤트가 없어요"
+msgstr "还没有关注的活动"
+
+#: templates/core/partials/_archive_results_interests.html
+msgid "이벤트 카드의 ♡ 찜 버튼을 눌러 찜 목록에 추가해 보세요."
+msgstr "点击活动卡片上的 ♡ 关注按钮，把活动加入关注列表吧。"
+
+#: templates/core/partials/_archive_results_interests.html
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+#| msgid "이벤트 찾기"
+msgid "이벤트 찾아보기"
+msgstr "浏览活动"
+
+#: templates/core/partials/_archive_results_personal.html
+#: templates/core/partials/_home_collection_snapshot.html
+msgctxt "동작"
+msgid "기록"
+msgstr "添加记录"
+
+#: templates/core/partials/_archive_results_personal.html
+#, python-format
+msgid "\"%(q)s\"에 해당하는 항목이 없어요. <a href=\"%(path)s\">지우기</a>"
+msgstr "没有与“%(q)s”匹配的项目。<a href=\"%(path)s\">清除</a>"
+
+#: templates/core/partials/_archive_results_personal.html
+#| msgid "아직 기록이 없어요"
+msgid "아직 등록한 항목이 없어요"
+msgstr "还没有登记的项目"
+
+#: templates/core/partials/_archive_results_personal.html
+msgid "<a href=\"/archive/personal/new/\">항목 추가</a>에서 비공식 장소를 기록해 보세요."
+msgstr "在<a href=\"/archive/personal/new/\">添加项目</a>中记录非官方地点吧。"
+
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+msgid "＋ 기록"
+msgstr "＋ 记录"
+
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+msgid "이 상태 기록만 삭제되며, 작성한 방문 기록과 사진은 그대로 유지됩니다."
+msgstr "只会删除此状态记录，已写的到访记录和照片将保留。"
+
+#: templates/core/partials/_archive_results_record.html
+#, python-format
+msgid "&quot;%(q)s&quot;에 해당하는 기록이 없어요."
+msgstr "没有与&quot;%(q)s&quot;匹配的记录。"
+
+#: templates/core/partials/_archive_results_record.html
+#| msgid "종료 임박 이벤트가 없습니다."
+msgid "이 상태로 저장한 이벤트가 없습니다."
+msgstr "没有保存为此状态的活动。"
+
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+#| msgid "진행·예정 이벤트가 없어요"
+msgid "아직 저장한 이벤트가 없어요"
+msgstr "还没有保存的活动"
+
+#: templates/core/partials/_archive_results_record.html
+#: templates/core/partials/_archive_results_statuses.html
+msgid "방문 예정·방문 완료·놓침 상태를 표시하면 여기에 모여요."
+msgstr "标记“计划前往”“已前往”“错过”状态后，活动会汇集在这里。"
+
+#: templates/core/partials/_archive_results_statuses.html
+#, python-format
+#| msgid "%(label)s, 적용됨"
+msgid "%(label)s으로"
+msgstr "改为%(label)s"
+
+#: templates/core/partials/_archive_results_statuses.html
+#, python-format
+msgid "\"%(q)s\"에 해당하는 기록이 없어요. <a href=\"%(path)s\">지우기</a>"
+msgstr "没有与“%(q)s”匹配的记录。<a href=\"%(path)s\">清除</a>"
+
+#: templates/core/partials/_archive_results_statuses.html
+msgid "이 상태로 저장한 이벤트가 없습니다. <a href=\"/archive/statuses/\">전체 해제</a>"
+msgstr "没有保存为此状态的活动。<a href=\"/archive/statuses/\">全部取消</a>"
+
+#: templates/core/partials/_archive_results_visits.html
+#, python-format
+msgid "&quot;%(q)s&quot;에 해당하는 방문 기록이 없어요."
+msgstr "没有与&quot;%(q)s&quot;匹配的到访记录。"
+
+#: templates/core/partials/_archive_results_visits.html
+msgid "이 필터에 해당하는 방문 기록이 없습니다"
+msgstr "没有符合此筛选条件的到访记录"
+
+#: templates/core/partials/_archive_results_visits.html
+msgid "<a href=\"/archive/visits/\">전체 보기</a>로 돌아가세요."
+msgstr "请返回<a href=\"/archive/visits/\">全部到访记录</a>。"
+
+#: templates/core/partials/_archive_results_visits.html
+#| msgid "아직 기록이 없어요"
+msgid "아직 방문 기록이 없어요"
+msgstr "还没有到访记录"
+
+#: templates/core/partials/_archive_results_visits.html
+msgid "기록 추가 폼에서 방문한 이벤트와 한줄 메모를 남겨보세요."
+msgstr "在添加记录的表单中写下到访的活动和一句话备注吧。"
+
+#: templates/core/partials/_archive_search.html
+msgid "⌕ 행사명·장소 검색"
+msgstr "⌕ 搜索活动名·地点"
+
+#: templates/core/partials/_archive_search.html
+msgid "아카이브 검색"
+msgstr "搜索档案"
 
 #: templates/core/partials/_calendar_grid.html
 #: templates/core/partials/_home_event_calendar.html
@@ -1404,16 +2806,6 @@ msgstr "六"
 msgid ", 이벤트 %(counter)s개"
 msgid_plural ", 이벤트 %(counter)s개"
 msgstr[0] "，共%(counter)s个活动"
-
-#: templates/core/partials/_calendar_grid.html
-#: templates/core/partials/_home_event_calendar.html
-msgid ", 오늘"
-msgstr "，今天"
-
-#: templates/core/partials/_calendar_grid.html
-#: templates/core/partials/_home_event_calendar.html
-msgid ", 선택한 날짜"
-msgstr "，已选择的日期"
 
 #: templates/core/partials/_calendar_grid.html
 #, python-format
@@ -1430,22 +2822,9 @@ msgid "전체 컬렉션 보기 ›"
 msgstr "查看全部收藏 ›"
 
 #: templates/core/partials/_home_collection_snapshot.html
-msgid "보유"
-msgstr "持有"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "구함"
-msgstr "想要"
-
-#: templates/core/partials/_home_collection_snapshot.html
 msgctxt "통계"
 msgid "기록"
 msgstr "记录"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgctxt "통계"
-msgid "찜"
-msgstr "已关注"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "기록 대기"
@@ -1459,11 +2838,6 @@ msgstr "结束"
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "시작"
 msgstr "开始"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgctxt "동작"
-msgid "기록"
-msgstr "添加记录"
 
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "최근 등록한 굿즈"
@@ -1480,22 +2854,6 @@ msgstr "最近登记的周边，下一个"
 #: templates/core/partials/_home_collection_snapshot.html
 msgid "다가오는 일정"
 msgstr "即将到来的日程"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "아직 기록이 없어요"
-msgstr "还没有记录"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "이벤트를 저장하거나 굿즈를 등록하면 여기에 모여요."
-msgstr "关注活动或登记周边后，内容会显示在这里。"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "이벤트 찾기"
-msgstr "查找活动"
-
-#: templates/core/partials/_home_collection_snapshot.html
-msgid "굿즈 등록"
-msgstr "登记周边"
 
 #: templates/core/partials/_home_event_calendar.html
 #, python-format
@@ -1557,29 +2915,8 @@ msgid "이벤트 목록"
 msgstr "活动列表"
 
 #: templates/core/partials/_site_footer.html
-msgid "내 컬렉션"
-msgstr "我的收藏"
-
-#: templates/core/partials/_site_footer.html
 msgid "항목 등록"
 msgstr "登记项目"
-
-#: templates/core/partials/_site_footer.html
-msgid "전체 보기"
-msgstr "查看全部"
-
-#: templates/core/partials/_site_footer.html
-msgid "활동 달력"
-msgstr "动态日历"
-
-#: templates/core/partials/_site_footer.html
-msgid "찜 목록"
-msgstr "关注列表"
-
-#: templates/core/partials/_site_footer.html
-#: templates/core/partials/_topbar.html
-msgid "마이페이지"
-msgstr "我的页面"
 
 #: templates/core/partials/_site_footer.html
 msgid "공식 URL 기준으로만 큐레이션합니다."
@@ -1675,14 +3012,6 @@ msgid_plural "건"
 msgstr[0] "项"
 
 #: web/views/account.py
-msgid "나의 일정"
-msgstr "我的日程"
-
-#: web/views/account.py
-msgid "다녀온 기록"
-msgstr "到访记录"
-
-#: web/views/account.py
 msgid "기록 사진"
 msgstr "记录照片"
 
@@ -1699,6 +3028,90 @@ msgstr "收藏的周边"
 #: web/views/account.py
 msgid "직접 등록 항목"
 msgstr "自行登记的项目"
+
+#: web/views/account.py
+msgid "모은 굿즈를 한눈에 확인해요"
+msgstr "一目了然地查看收集的周边"
+
+#: web/views/account.py
+msgctxt "마이페이지 단위"
+msgid "점"
+msgid_plural "점"
+msgstr[0] "件"
+
+#: web/views/account.py
+msgid "저장한 행사를 모아봐요"
+msgstr "汇总保存的活动"
+
+#: web/views/account.py
+#| msgctxt "단위"
+#| msgid "건"
+#| msgid_plural "건"
+msgctxt "마이페이지 단위"
+msgid "건"
+msgid_plural "건"
+msgstr[0] "项"
+
+#: web/views/account.py
+#| msgid "다녀온 기록"
+msgid "다녀온 행사를 기록해요"
+msgstr "记录到访过的活动"
+
+#: web/views/account.py
+msgid "비공식 장소·행사를 등록해요"
+msgstr "登记非官方地点和活动"
+
+#: web/views/account.py
+msgctxt "마이페이지 단위"
+msgid "곳"
+msgid_plural "곳"
+msgstr[0] "处"
+
+#: web/views/account.py
+msgid "관심 있는 행사를 찜해요"
+msgstr "关注感兴趣的活动"
+
+#: web/views/archive.py
+#| msgid "등록순"
+msgid "등록일"
+msgstr "登记日期"
+
+#: web/views/archive.py
+msgid "마지막 수정"
+msgstr "最后修改"
+
+#: web/views/collection.py
+#| msgid "보유"
+msgid "미보유"
+msgstr "未持有"
+
+#: web/views/collection.py
+#, python-format
+msgid "수량 %(n)d개"
+msgstr "数量：%(n)d"
+
+#: web/views/collection.py
+#, python-format
+msgid "교환 가능 %(n)d개"
+msgstr "可交换：%(n)d"
+
+#: web/views/collection.py
+#, python-format
+msgid "%(n)d개"
+msgid_plural "%(n)d개"
+msgstr[0] "%(n)d个"
+
+#: web/views/collection.py
+msgid "획득일"
+msgstr "获得日期"
+
+#: web/views/collection.py
+msgid "획득 경로"
+msgstr "获得途径"
+
+#: web/views/collection.py
+msgid "연결된 방문 기록"
+msgstr "关联的到访记录"
 
 #: web/views/events.py
 #, python-format

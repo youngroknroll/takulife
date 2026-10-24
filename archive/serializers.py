@@ -1,5 +1,7 @@
+from django.utils.translation import gettext
 from rest_framework import serializers
 
+from core.vocab import normalize_collection_item_type, normalize_personal_category
 from events.image_validation import validate_uploaded_image
 from events.models import Event
 
@@ -38,6 +40,10 @@ class PersonalEntrySerializer(serializers.ModelSerializer):
         ]
         # 소유자는 요청자 정보로 정하며 요청 본문 값은 쓰지 않는다.
         read_only_fields = ["id", "created_at"]
+
+    def validate_category(self, value):
+        # 어느 언어의 칩 문구든 저장값은 한국어 원문으로 통일한다.
+        return normalize_personal_category(value)
 
     def validate_image(self, value):
         # 방문 사진과 같은 공용 검증기로 보낸다(크기·확장자·실제 포맷·
@@ -82,11 +88,11 @@ class _SubjectScopedPersonalEntryMixin:
         personal_entry = attrs.get("personal_entry")
         if bool(event) == bool(personal_entry):
             raise serializers.ValidationError(
-                "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
+                gettext("event 또는 personal_entry 중 정확히 하나를 지정해야 합니다.")
             )
         if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
             raise serializers.ValidationError(
-                "이 personal_entry는 이 작업의 대상이 될 수 없습니다."
+                gettext("이 personal_entry는 이 작업의 대상이 될 수 없습니다.")
             )
         return attrs
 
@@ -131,7 +137,7 @@ class UserEventStatusUpdateSerializer(serializers.ModelSerializer):
         # status는 read_only가 아니지만 부분 PATCH라 required=True만으로는
         # 누락을 걸러낼 수 없다(부분 업데이트는 필드별 required를 건너뛴다).
         if "status" not in attrs:
-            raise serializers.ValidationError({"status": "상태를 지정해야 합니다."})
+            raise serializers.ValidationError({"status": gettext("상태를 지정해야 합니다.")})
         return attrs
 
 
@@ -179,11 +185,11 @@ class VisitRecordSerializer(serializers.ModelSerializer):
         personal_entry = attrs.get("personal_entry")
         if bool(event) == bool(personal_entry):
             raise serializers.ValidationError(
-                "event 또는 personal_entry 중 정확히 하나를 지정해야 합니다."
+                gettext("event 또는 personal_entry 중 정확히 하나를 지정해야 합니다.")
             )
         if personal_entry is not None and personal_entry.kind != PersonalEntry.Kind.PLACE:
             raise serializers.ValidationError(
-                "이 personal_entry는 이 작업의 대상이 될 수 없습니다."
+                gettext("이 personal_entry는 이 작업의 대상이 될 수 없습니다.")
             )
         return attrs
 
@@ -274,6 +280,10 @@ class CollectionItemSerializer(serializers.ModelSerializer):
             self.fields["visit_record"].queryset = VisitRecord.objects.filter(
                 user=request.user
             )
+
+    def validate_item_type(self, value):
+        # 어느 언어의 유형 칩 문구든 저장값은 한국어 원문으로 통일한다.
+        return normalize_collection_item_type(value)
 
     def validate_image(self, value):
         # PersonalEntrySerializer.validate_image와 같은 방식으로 공용

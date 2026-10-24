@@ -25,7 +25,7 @@
     if (kind === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
@@ -50,7 +50,7 @@
     var editLink = document.querySelector(".collection-detail-edit-btn");
 
     deleteBtn.addEventListener("click", async function () {
-      if (!(await askConfirm("이 굿즈를 삭제하시겠습니까? 되돌릴 수 없습니다."))) {
+      if (!(await askConfirm(gettext("이 굿즈를 삭제하시겠습니까? 되돌릴 수 없습니다.")))) {
         return;
       }
       setText(globalErrorEl, "");
@@ -71,17 +71,17 @@
         return;
       }
       if (result.status === 404) {
-        setText(globalErrorEl, "이미 삭제된 항목입니다.");
+        setText(globalErrorEl, gettext("이미 삭제된 항목입니다."));
         deleteBtn.disabled = true;
         deleteBtn.classList.add("is-item-gone-locked");
         lockEditLink(editLink);
         return;
       }
       if (result.status === 0) {
-        setText(globalErrorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
-      setText(globalErrorEl, "굿즈 삭제 중 오류가 발생했습니다.");
+      setText(globalErrorEl, gettext("굿즈 삭제 중 오류가 발생했습니다."));
     });
   }
 

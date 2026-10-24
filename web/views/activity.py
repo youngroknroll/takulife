@@ -1,13 +1,14 @@
 """활동 달력(캘린더) 조회 및 필터 관련 뷰와 헬퍼 모음."""
 import logging
 from collections import defaultdict
-from datetime import timedelta
+from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from archive.activity_calendar_queries import (
     GOODS_ACQUIRED_KIND,
@@ -88,7 +89,7 @@ def _activity_extra_query(selected_types):
 
 
 def _format_month_day(value):
-    return f"{value.month}월 {value.day}일"
+    return date_format(value, "MONTH_DAY_FORMAT")
 
 
 def _activity_filter_url(*, year, month, selected_date, types):
@@ -346,7 +347,7 @@ def activity_calendar(request):
 
     context = {
         "calendar_error": calendar_error,
-        "month_label": f"{year}년 {month}월",
+        "month_label": date_format(date(year, month, 1), "YEAR_MONTH_FORMAT"),
         "weeks": weeks,
         "selected_date": selected_date,
         "selected_items": selected_items,

@@ -33,7 +33,7 @@
     if (kind === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
@@ -61,13 +61,13 @@
 
       var img = document.createElement("img");
       img.src = item.url;
-      img.alt = "미리보기 " + (index + 1);
+      img.alt = interpolate(gettext("미리보기 %(n)s"), { n: index + 1 }, true);
       tile.appendChild(img);
 
       if (index === 0) {
         var badge = document.createElement("span");
         badge.className = "photo-preview-cover-badge";
-        badge.textContent = "대표";
+        badge.textContent = gettext("대표");
         tile.appendChild(badge);
       }
 
@@ -133,15 +133,15 @@
       var file = fileList[i];
 
       if (pendingItems.length >= MAX_PHOTOS) {
-        setText(errorEl, "사진은 최대 " + MAX_PHOTOS + "장까지 첨부할 수 있습니다.");
+        setText(errorEl, interpolate(gettext("사진은 최대 %(max)s장까지 첨부할 수 있습니다."), { max: MAX_PHOTOS }, true));
         break;
       }
       if (ALLOWED_TYPES.indexOf(file.type) === -1) {
-        rejected.push(file.name + " (지원하지 않는 형식)");
+        rejected.push(interpolate(gettext("%(name)s (지원하지 않는 형식)"), { name: file.name }, true));
         continue;
       }
       if (file.size > MAX_BYTES) {
-        rejected.push(file.name + " (5MB 초과)");
+        rejected.push(interpolate(gettext("%(name)s (5MB 초과)"), { name: file.name }, true));
         continue;
       }
       if (isDuplicate(file)) {
@@ -151,7 +151,7 @@
     }
 
     if (rejected.length > 0) {
-      setText(errorEl, "일부 사진은 제외됐습니다: " + rejected.join(", "));
+      setText(errorEl, interpolate(gettext("일부 사진은 제외됐습니다: %(list)s"), { list: rejected.join(", ") }, true));
     }
     renderGrid(grid);
   }
@@ -173,7 +173,7 @@
 
     setUploadLock(true, grid);
     for (var i = 0; i < pendingItems.length; i++) {
-      setText(statusEl, "사진 업로드 중 (" + (i + 1) + "/" + total + ")...");
+      setText(statusEl, interpolate(gettext("사진 업로드 중 (%(current)s/%(total)s)..."), { current: i + 1, total: total }, true));
       var result = await uploadOne(recordId, pendingItems[i].file);
       if (result.status === 201) {
         succeeded += 1;
@@ -223,7 +223,7 @@
       var shortReview = form.elements["short_review"].value;
 
       if (!subjectValue || !visitedOn) {
-        setText(errorEl, "대상과 방문 날짜를 모두 입력해 주세요.");
+        setText(errorEl, gettext("대상과 방문 날짜를 모두 입력해 주세요."));
         return;
       }
 
@@ -247,7 +247,7 @@
       // 실패해도 같은 폼으로 돌아가 재시도하는 경로가 없어 보호할 대상이 없다.
 
       window.TakuAPI.setLoading(submitBtn, true);
-      setText(statusEl, "기록 저장 중...");
+      setText(statusEl, gettext("기록 저장 중..."));
 
       var result = await window.TakuAPI.post("/api/visit-records/", payload);
 
@@ -257,7 +257,7 @@
         if (result.status === 403) {
           handle403(result, errorEl);
         } else if (result.status === 0) {
-          setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+          setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         } else {
           setText(errorEl, window.TakuAPI.formatError(result));
         }
@@ -275,7 +275,7 @@
       var outcome = await uploadAll(recordId, statusEl, grid);
 
       if (outcome.failedAt === -1) {
-        setText(statusEl, "저장 완료. 이동 중...");
+        setText(statusEl, gettext("저장 완료. 이동 중..."));
         window.TakuAPI.commitAndNavigate(submitBtn, VISITS_URL);
         return;
       }
@@ -284,8 +284,15 @@
       // 결과를 보여준 뒤 사용자가 직접 계속하게 한다.
       setText(
         statusEl,
-        "기록은 저장됐고 사진 " + outcome.succeeded + "/" + outcome.total +
-          "장 업로드됐습니다. 나머지는 방문 기록 목록에서 카드별로 추가할 수 있습니다."
+        interpolate(
+          ngettext(
+            "기록은 저장됐고 사진 %(done)s/%(total)s장 업로드됐습니다. 나머지는 방문 기록 목록에서 카드별로 추가할 수 있습니다.",
+            "기록은 저장됐고 사진 %(done)s/%(total)s장 업로드됐습니다. 나머지는 방문 기록 목록에서 카드별로 추가할 수 있습니다.",
+            outcome.total
+          ),
+          { done: outcome.succeeded, total: outcome.total },
+          true
+        )
       );
       setText(errorEl, "");
       revealContinueLink(form);
@@ -298,7 +305,7 @@
     link.id = "visit-continue-link";
     link.className = "record-cta";
     link.href = VISITS_URL;
-    link.textContent = "방문 기록 목록으로 이동";
+    link.textContent = gettext("방문 기록 목록으로 이동");
     form.appendChild(link);
     link.focus();
   }

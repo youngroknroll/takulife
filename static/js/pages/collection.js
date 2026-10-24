@@ -26,7 +26,7 @@
     if (window.TakuAPI.classify(result) === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
@@ -48,11 +48,11 @@
   // 서버가 400으로 걸러낸다.
   function validateImageFile(file, errorEl) {
     if (ALLOWED_TYPES.indexOf(file.type) === -1) {
-      setText(errorEl, "JPEG · PNG · WebP 형식만 첨부할 수 있습니다.");
+      setText(errorEl, gettext("JPEG · PNG · WebP 형식만 첨부할 수 있습니다."));
       return false;
     }
     if (file.size > MAX_BYTES) {
-      setText(errorEl, "이미지는 5MB 이하만 첨부할 수 있습니다.");
+      setText(errorEl, gettext("이미지는 5MB 이하만 첨부할 수 있습니다."));
       return false;
     }
     return true;
@@ -175,7 +175,7 @@
       var img = dropzone.querySelector("img");
       if (!img) {
         img = document.createElement("img");
-        img.alt = "미리보기";
+        img.alt = gettext("미리보기");
         dropzone.appendChild(img);
       }
       img.src = currentUrl;
@@ -198,7 +198,7 @@
       setText(statusEl, "");
 
       if (!form.elements["name"].value.trim()) {
-        setText(errorEl, "이름을 입력해 주세요.");
+        setText(errorEl, gettext("이름을 입력해 주세요."));
         return;
       }
 
@@ -210,7 +210,7 @@
 
       var fields = collectSharedFields(form);
       if (fields.tradeable_quantity > fields.quantity) {
-        setText(errorEl, "교환 가능 수량은 보유 수량보다 클 수 없습니다.");
+        setText(errorEl, gettext("교환 가능 수량은 보유 수량보다 클 수 없습니다."));
         return;
       }
 
@@ -244,7 +244,7 @@
         return;
       }
       if (result.status === 0) {
-        setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
       setText(errorEl, window.TakuAPI.formatError(result));
@@ -285,7 +285,7 @@
     link.id = "collection-back-link";
     link.className = "record-cta";
     link.href = LIST_URL;
-    link.textContent = "목록으로 돌아가기";
+    link.textContent = gettext("목록으로 돌아가기");
     form.appendChild(link);
     link.focus();
   }
@@ -305,7 +305,7 @@
         var onEditPage = !!btn.closest("#collection-edit-form");
 
         btn.addEventListener("click", async function () {
-          if (!(await askConfirm("이 굿즈를 삭제하시겠습니까? 되돌릴 수 없습니다."))) {
+          if (!(await askConfirm(gettext("이 굿즈를 삭제하시겠습니까? 되돌릴 수 없습니다.")))) {
             return;
           }
           var itemId = btn.getAttribute("data-delete-item-id");
@@ -332,14 +332,14 @@
             return;
           }
           if (result.status === 404) {
-            setText(globalErrorEl, "이미 삭제된 항목입니다.");
+            setText(globalErrorEl, gettext("이미 삭제된 항목입니다."));
             return;
           }
           if (result.status === 0) {
-            setText(globalErrorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+            setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
             return;
           }
-          setText(globalErrorEl, "삭제 중 오류가 발생했습니다.");
+          setText(globalErrorEl, gettext("삭제 중 오류가 발생했습니다."));
         });
       })(deleteBtns[i]);
     }
@@ -360,7 +360,7 @@
       setText(statusEl, "");
 
       if (!form.elements["name"].value.trim()) {
-        setText(errorEl, "이름을 입력해 주세요.");
+        setText(errorEl, gettext("이름을 입력해 주세요."));
         return;
       }
 
@@ -372,7 +372,7 @@
 
       var fields = collectSharedFields(form);
       if (fields.tradeable_quantity > fields.quantity) {
-        setText(errorEl, "교환 가능 수량은 보유 수량보다 클 수 없습니다.");
+        setText(errorEl, gettext("교환 가능 수량은 보유 수량보다 클 수 없습니다."));
         return;
       }
 
@@ -402,7 +402,7 @@
       // 어떤 필드를 고쳐도 존재하지 않는 항목은 수정할 수 없으니, 오류
       // 메시지만 보여주고 계속 재시도하게 두는 대신 폼 전체를 잠근다.
       if (result.status === 404) {
-        setText(errorEl, "삭제된 항목입니다.");
+        setText(errorEl, gettext("삭제된 항목입니다."));
         lockForm(form);
         revealBackLink(form);
         return;
@@ -413,7 +413,7 @@
         return;
       }
       if (result.status === 0) {
-        setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
       setText(errorEl, window.TakuAPI.formatError(result));

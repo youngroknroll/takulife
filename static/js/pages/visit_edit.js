@@ -35,7 +35,7 @@
     if (kind === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setText(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setText(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
@@ -68,7 +68,7 @@
     tile.classList.add("is-cover");
     var badge = document.createElement("span");
     badge.className = "photo-preview-cover-badge";
-    badge.textContent = "대표";
+    badge.textContent = gettext("대표");
     tile.appendChild(badge);
   }
 
@@ -103,7 +103,7 @@
 
       var img = document.createElement("img");
       img.src = item.url;
-      img.alt = "추가 미리보기 " + (index + 1);
+      img.alt = interpolate(gettext("추가 미리보기 %(n)s"), { n: index + 1 }, true);
       tile.appendChild(img);
 
       var remove = document.createElement("button");
@@ -170,15 +170,15 @@
     for (var i = 0; i < fileList.length; i++) {
       var file = fileList[i];
       if (existingCount() + pendingItems.length >= MAX_PHOTOS) {
-        setText(errorEl, "사진은 기존 포함 최대 " + MAX_PHOTOS + "장까지입니다.");
+        setText(errorEl, interpolate(gettext("사진은 기존 포함 최대 %(max)s장까지입니다."), { max: MAX_PHOTOS }, true));
         break;
       }
       if (ALLOWED_TYPES.indexOf(file.type) === -1) {
-        rejected.push(file.name + " (지원하지 않는 형식)");
+        rejected.push(interpolate(gettext("%(name)s (지원하지 않는 형식)"), { name: file.name }, true));
         continue;
       }
       if (file.size > MAX_BYTES) {
-        rejected.push(file.name + " (5MB 초과)");
+        rejected.push(interpolate(gettext("%(name)s (5MB 초과)"), { name: file.name }, true));
         continue;
       }
       if (isDuplicate(file)) { continue; }
@@ -194,7 +194,7 @@
     }
 
     if (rejected.length > 0) {
-      setText(errorEl, "일부 사진은 제외됐습니다: " + rejected.join(", "));
+      setText(errorEl, interpolate(gettext("일부 사진은 제외됐습니다: %(list)s"), { list: rejected.join(", ") }, true));
     }
     renderNewGrid(grid);
   }
@@ -211,7 +211,7 @@
       if (!btn) { return; }
 
       var photoId = btn.getAttribute("data-existing-photo-id");
-      if (!(await askConfirm("이 사진을 삭제하시겠습니까? 되돌릴 수 없습니다."))) {
+      if (!(await askConfirm(gettext("이 사진을 삭제하시겠습니까? 되돌릴 수 없습니다.")))) {
         return;
       }
       setText(errorEl, "");
@@ -237,11 +237,11 @@
       if (result.status === 403) {
         handle403(result, errorEl);
       } else if (result.status === 404) {
-        setText(errorEl, "사진을 찾을 수 없습니다.");
+        setText(errorEl, gettext("사진을 찾을 수 없습니다."));
       } else if (result.status === 0) {
-        setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
       } else {
-        setText(errorEl, "사진 삭제 중 오류가 발생했습니다.");
+        setText(errorEl, gettext("사진 삭제 중 오류가 발생했습니다."));
       }
     });
   }
@@ -253,7 +253,7 @@
     var succeeded = 0;
     setUploadLock(true, grid);
     while (pendingItems.length > 0) {
-      setText(statusEl, "사진 업로드 중 (" + (succeeded + 1) + "/" + total + ")...");
+      setText(statusEl, interpolate(gettext("사진 업로드 중 (%(current)s/%(total)s)..."), { current: succeeded + 1, total: total }, true));
       var formData = new FormData();
       formData.append("image", pendingItems[0].file);
       // 값이 없으면 아예 보내지 않는다 — 빈 문자열은 서버 UUIDField
@@ -318,12 +318,12 @@
       var visitedOn = form.elements["visited_on"].value;
       var shortReview = form.elements["short_review"].value;
       if (!visitedOn) {
-        setText(errorEl, "방문 날짜를 입력해 주세요.");
+        setText(errorEl, gettext("방문 날짜를 입력해 주세요."));
         return;
       }
 
       window.TakuAPI.setLoading(submitBtn, true);
-      setText(statusEl, "저장 중...");
+      setText(statusEl, gettext("저장 중..."));
 
       var result = await window.TakuAPI.patch("/api/visit-records/" + recordId + "/", {
         visited_on: visitedOn,
@@ -336,7 +336,7 @@
         if (result.status === 403) {
           handle403(result, errorEl);
         } else if (result.status === 0) {
-          setText(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+          setText(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         } else {
           setText(errorEl, window.TakuAPI.formatError(result));
         }
@@ -350,15 +350,22 @@
 
       var outcome = await uploadNewPhotos(recordId, statusEl, grid);
       if (outcome.succeeded === outcome.total) {
-        setText(statusEl, "저장 완료. 이동 중...");
+        setText(statusEl, gettext("저장 완료. 이동 중..."));
         window.TakuAPI.commitAndNavigate(submitBtn, VISITS_URL);
         return;
       }
 
       setText(
         statusEl,
-        "변경은 저장됐고 새 사진 " + outcome.succeeded + "/" + outcome.total +
-          "장이 올라갔습니다. 나머지는 다시 시도해 주세요."
+        interpolate(
+          ngettext(
+            "변경은 저장됐고 새 사진 %(done)s/%(total)s장이 올라갔습니다. 나머지는 다시 시도해 주세요.",
+            "변경은 저장됐고 새 사진 %(done)s/%(total)s장이 올라갔습니다. 나머지는 다시 시도해 주세요.",
+            outcome.total
+          ),
+          { done: outcome.succeeded, total: outcome.total },
+          true
+        )
       );
       window.TakuAPI.setLoading(submitBtn, false);
     });
@@ -368,7 +375,7 @@
         var globalErrorEl = document.getElementById("visit-global-error");
         if (
           !(await askConfirm(
-            "이 방문 기록을 삭제하시겠습니까? 메모와 사진도 함께 삭제되며 되돌릴 수 없습니다."
+            gettext("이 방문 기록을 삭제하시겠습니까? 메모와 사진도 함께 삭제되며 되돌릴 수 없습니다.")
           ))
         ) {
           return;
@@ -386,9 +393,9 @@
         if (result.status === 403) {
           handle403(result, globalErrorEl);
         } else if (result.status === 0) {
-          setText(globalErrorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+          setText(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         } else {
-          setText(globalErrorEl, "기록 삭제 중 오류가 발생했습니다.");
+          setText(globalErrorEl, gettext("기록 삭제 중 오류가 발생했습니다."));
         }
       });
     }

@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 나의 일정(archive_statuses) 결과 영역 — 라이브 검색 swap 대상. 풀 페이지
 (statuses.html)와 ?partial=1 fragment 뷰가 동일 출처로 렌더한다.
@@ -26,7 +27,7 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
           <div class="record-row-date">
             {% if display_date %}
               <time datetime="{{ display_date|date:'Y-m-d' }}">
-                <span class="record-row-month">{{ display_date|date:'n월' }}</span>
+                <span class="record-row-month">{{ display_date|date:'M' }}</span>
                 <span class="record-row-day">{{ display_date|date:'d' }}</span>
               </time>
             {% else %}
@@ -39,16 +40,16 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
               {% if row.subject.category_slug %}
                 <span class="record-row-cat" style="color: var(--cat-{{ row.subject.category_slug|slugify }}-ink, var(--brand-ink));">{{ row.subject.category_label }}</span>
               {% elif not row.subject.is_official %}
-                <span class="event-category unofficial">직접 등록</span>
+                <span class="event-category unofficial">{% translate "직접 등록" %}</span>
               {% endif %}
               {% if row.subject.location %}
                 <span class="record-row-dot" aria-hidden="true">·</span>
-                <span class="record-row-place">{{ row.subject.location }}</span>
+                <span class="record-row-place"{% if row.subject.is_official %} lang="ko"{% endif %}>{{ row.subject.location }}</span>
               {% endif %}
             </p>
             <h3 class="record-row-title">
               {% if row.subject.detail_url %}
-                <a href="{{ row.subject.detail_url }}">{{ row.subject.title }}</a>
+                <a href="{{ row.subject.detail_url }}" lang="ko">{{ row.subject.title }}</a>
               {% else %}
                 {{ row.subject.title }}
               {% endif %}
@@ -67,26 +68,27 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
                   data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_visited }}</button>
                 <button class="status-btn missed" type="button" data-status-action="change"
                   data-status="missed"
-                  data-status-id="{{ row.status_id }}" data-reload-on-success>놓침</button>
+                  data-status-id="{{ row.status_id }}" data-reload-on-success>{% translate "놓침" %}</button>
               {% elif row.status_slug == 'missed' %}
                 <button class="status-btn visited" type="button" data-status-action="change"
                   data-status="visited"
                   data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_visited }}</button>
                 <button class="status-btn planned" type="button" data-status-action="change"
                   data-status="planned"
-                  data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
+                  data-status-id="{{ row.status_id }}" data-reload-on-success>{% blocktranslate trimmed with label=row.label_planned %}{{ label }}으로{% endblocktranslate %}</button>
               {% elif row.status_slug == 'visited' %}
                 {% if row.review_text %}
                   {% if row.visit_record_id %}
-                    <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">수정</a>
+                    <a class="record-row-edit-link" href="/archive/visits/{{ row.visit_record_id }}/edit/">{% translate "수정" %}</a>
                   {% endif %}
                 {% else %}
-                  <a class="record-row-add-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">＋ 기록</a>
+                  <a class="record-row-add-link" href="/archive/visits/new/?subject={{ row.subject.subject_type }}:{{ row.subject.subject_id }}">{% translate "＋ 기록" %}</a>
                 {% endif %}
                 <button class="status-btn planned" type="button" data-status-action="change"
                   data-status="planned"
-                  data-status-id="{{ row.status_id }}" data-reload-on-success>{{ row.label_planned }}으로</button>
+                  data-status-id="{{ row.status_id }}" data-reload-on-success>{% blocktranslate trimmed with label=row.label_planned %}{{ label }}으로{% endblocktranslate %}</button>
               {% endif %}
+              {% translate "이 상태 기록만 삭제되며, 작성한 방문 기록과 사진은 그대로 유지됩니다." as delete_confirm_message %}
               <button
                 type="button"
                 class="record-row-delete-btn"
@@ -94,8 +96,8 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
                 data-status="{{ row.status_slug }}"
                 data-status-id="{{ row.status_id }}"
                 data-reload-on-success
-                data-confirm-message="이 상태 기록만 삭제되며, 작성한 방문 기록과 사진은 그대로 유지됩니다."
-              >삭제</button>
+                data-confirm-message="{{ delete_confirm_message }}"
+              >{% translate "삭제" %}</button>
             </div>
           </div>
         </article>
@@ -104,17 +106,17 @@ margin-right:auto가 첫 자식에만 걸리기 때문이다.
   </div>
 {% elif has_any and has_query %}
   <div class="empty-state">
-    <p class="empty-title">검색 결과가 없습니다</p>
-    <p class="empty-note">"{{ q }}"에 해당하는 기록이 없어요. <a href="{{ request.path }}">지우기</a></p>
+    <p class="empty-title">{% translate "검색 결과가 없습니다" %}</p>
+    <p class="empty-note">{% blocktranslate trimmed with q=q path=request.path %}"{{ q }}"에 해당하는 기록이 없어요. <a href="{{ path }}">지우기</a>{% endblocktranslate %}</p>
   </div>
 {% elif has_any %}
-  <p class="notice">이 상태로 저장한 이벤트가 없습니다. <a href="/archive/statuses/">전체 해제</a></p>
+  <p class="notice">{% blocktranslate trimmed %}이 상태로 저장한 이벤트가 없습니다. <a href="/archive/statuses/">전체 해제</a>{% endblocktranslate %}</p>
 {% else %}
   <div class="empty-state">
     <p class="empty-icon" aria-hidden="true">🗂️</p>
-    <p class="empty-title">아직 저장한 이벤트가 없어요</p>
-    <p class="empty-note">방문 예정·방문 완료·놓침 상태를 표시하면 여기에 모여요.</p>
-    <a class="empty-action" href="/events/">이벤트 찾아보기</a>
+    <p class="empty-title">{% translate "아직 저장한 이벤트가 없어요" %}</p>
+    <p class="empty-note">{% translate "방문 예정·방문 완료·놓침 상태를 표시하면 여기에 모여요." %}</p>
+    <a class="empty-action" href="/events/">{% translate "이벤트 찾아보기" %}</a>
   </div>
 {% endif %}
 

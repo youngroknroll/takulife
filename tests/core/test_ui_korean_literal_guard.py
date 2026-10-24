@@ -36,12 +36,39 @@ _FIXED_RELPATHS = [
     "core/events/list.html",
     "core/events/calendar.html",
     "core/events/detail.html",
+    # 43-3 범위: 아카이브·컬렉션·활동·마이페이지(소비자 화면). 스태프·드래프트·법률은 제외.
+    "core/archive/calendar.html",
+    "core/archive/collection.html",
+    "core/archive/collection_create.html",
+    "core/archive/collection_detail.html",
+    "core/archive/collection_edit.html",
+    "core/archive/index.html",
+    "core/archive/interests.html",
+    "core/archive/personal_create.html",
+    "core/archive/personal_detail.html",
+    "core/archive/personal_edit.html",
+    "core/archive/personal_entries.html",
+    "core/archive/statuses.html",
+    "core/archive/visit_create.html",
+    "core/archive/visit_detail.html",
+    "core/archive/visit_edit.html",
+    "core/archive/visits.html",
+    "core/partials/_archive_calendar_grid.html",
+    "core/partials/_archive_nav.html",
+    "core/partials/_archive_results_collection.html",
+    "core/partials/_archive_results_interests.html",
+    "core/partials/_archive_results_personal.html",
+    "core/partials/_archive_results_record.html",
+    "core/partials/_archive_results_statuses.html",
+    "core/partials/_archive_results_visits.html",
+    "core/partials/_archive_search.html",
+    "core/mypage.html",
 ]
 
 # 5(셸·오류 페이지·홈) + 14(partials) + 3(events/list·calendar·detail)
 # + 16(account/*.html) + 4(account/email/*.txt) + 3(socialaccount/*.html)
-# = 45개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_FILE_COUNT = 45
+# + 26(43-3: archive 16 + partials 9 + mypage 1) = 71개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_FILE_COUNT = 71
 
 _COMMENT_TAG_RE = re.compile(r"\{#.*?#\}", re.DOTALL)
 _COMMENT_BLOCK_RE = re.compile(r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}", re.DOTALL)
@@ -106,11 +133,22 @@ _JS_FIXED_RELPATHS = [
     "components/hscroll.js",
     "pages/home_hero_rotator.js",
     "pages/event_list.js",
+    "pages/visit_edit.js",
+    "pages/collection.js",
+    "pages/visit_create.js",
+    "pages/personal_edit.js",
+    "pages/personal_entries.js",
+    "pages/personal_detail.js",
+    "pages/visit.js",
+    "pages/personal_create.js",
+    "pages/collection_detail.js",
+    "pages/visit_detail.js",
+    "pages/archive_search.js",
 ]
 
 # shared(11) + components(2) + home_hero_rotator.js(1) + event_list.js(1)
-# = 15개 — 직접 센 기대 개수 [실측 ls].
-_EXPECTED_JS_FILE_COUNT = 15
+# + pages/*.js 11개(43-3) = 26개 — 직접 센 기대 개수 [실측 ls].
+_EXPECTED_JS_FILE_COUNT = 26
 
 _BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 _UNESCAPED_QUOTE_RE = re.compile(r"(?<!\\)['\"]")
@@ -230,3 +268,20 @@ def test_이벤트_뷰_코드에는_번역_함수_밖의_한국어_문자열_상
     ]
 
     assert violations == []
+
+
+# 소비자 화면 템플릿이 가드 목록에서 조용히 빠지지 않도록, 모든 .html이 가드
+# 대상이거나 명시 제외 영역에 속함을 고정한다.
+_EXCLUDED_TEMPLATE_PREFIXES = ("staff/", "core/staff/", "core/drafts/", "core/legal/")
+
+
+def test_소비자_템플릿은_모두_가드_목록이나_명시_제외_목록에_속한다():
+    guarded = {path.resolve() for path in _target_files()}
+    uncovered = []
+    for path in sorted(TEMPLATES_DIR.rglob("*.html")):
+        relpath = path.relative_to(TEMPLATES_DIR).as_posix()
+        if path.resolve() in guarded or relpath.startswith(_EXCLUDED_TEMPLATE_PREFIXES):
+            continue
+        uncovered.append(relpath)
+
+    assert uncovered == []

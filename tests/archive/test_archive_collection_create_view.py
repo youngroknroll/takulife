@@ -67,6 +67,9 @@ class TestArchiveCollectionCreatePreselect:
         assert resp.context["preselect"] == {
             "id": record.id,
             "label": "다녀온 행사 · 2026-05-01",
+            "title": "다녀온 행사",
+            "date_text": "2026-05-01",
+            "is_official": True,
         }
         assert f'value="{record.id}"'.encode() in resp.content
 

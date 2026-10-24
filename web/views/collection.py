@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.translation import gettext, ngettext
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from archive.models import CollectionItem, VisitRecord
@@ -83,19 +84,20 @@ def _collection_item_row(item, series_ink_classes):
     if owned or wanted or tradeable:
         badges = []
         if owned:
-            badges.append({"tone": "owned", "label": "보유"})
+            badges.append({"tone": "owned", "label": gettext("보유")})
         if wanted:
-            badges.append({"tone": "wanted", "label": "구함"})
+            badges.append({"tone": "wanted", "label": gettext("구함")})
         if tradeable:
-            badges.append({"tone": "tradeable", "label": "교환"})
+            badges.append({"tone": "tradeable", "label": gettext("교환")})
     else:
-        badges = [{"tone": "none", "label": "미보유"}]
+        badges = [{"tone": "none", "label": gettext("미보유")}]
 
     return {
         "item": item,
-        "quantity_label": f"수량 {item.quantity}개" if item.is_owned else "",
+        "quantity_label": gettext("수량 %(n)d개") % {"n": item.quantity} if item.is_owned else "",
         "tradeable_label": (
-            f"교환 가능 {item.tradeable_quantity}개" if item.is_tradeable else ""
+            gettext("교환 가능 %(n)d개") % {"n": item.tradeable_quantity}
+            if item.is_tradeable else ""
         ),
         "is_wanted": item.is_wanted,
         "badges": badges,
@@ -268,7 +270,15 @@ def _visit_record_option(record):
     작성 폼의 드롭다운/잠긴 표시가 명확히 읽히게 한다.
     """
     subject = _subject_view(record)
-    return {"id": record.pk, "label": f"{subject['title']} · {record.visited_on}"}
+    # title·date_text·is_official: 템플릿이 공식 행사 제목만 따로 lang="ko"로
+    # 감쌀 수 있게 label을 쪼갠 값이다(label과 글자가 같다).
+    return {
+        "id": record.pk,
+        "label": f"{subject['title']} · {record.visited_on}",
+        "title": subject["title"],
+        "date_text": str(record.visited_on),
+        "is_official": subject["is_official"],
+    }
 
 
 def _parse_collection_visit_preselect(request):
@@ -348,13 +358,19 @@ def _collection_item_meta_rows(item):
     rows = []
     if item.is_owned:
         rows.append(
-            {"label": "수량", "value": f"{item.quantity}개", "url": None, "lock_hint": False}
+            {
+                "label": gettext("수량"),
+                "value": ngettext("%(n)d개", "%(n)d개", item.quantity) % {"n": item.quantity},
+                "url": None,
+                "lock_hint": False,
+            }
         )
     if item.is_tradeable:
         rows.append(
             {
-                "label": "교환 가능",
-                "value": f"{item.tradeable_quantity}개",
+                "label": gettext("교환 가능"),
+                "value": ngettext("%(n)d개", "%(n)d개", item.tradeable_quantity)
+                % {"n": item.tradeable_quantity},
                 "url": None,
                 "lock_hint": False,
             }
@@ -362,7 +378,7 @@ def _collection_item_meta_rows(item):
     if item.acquired_on:
         rows.append(
             {
-                "label": "획득일",
+                "label": gettext("획득일"),
                 "value": item.acquired_on.strftime("%Y.%m.%d"),
                 "url": None,
                 "lock_hint": False,
@@ -371,7 +387,7 @@ def _collection_item_meta_rows(item):
     if item.acquisition_source:
         rows.append(
             {
-                "label": "획득 경로",
+                "label": gettext("획득 경로"),
                 "value": item.acquisition_source,
                 "url": None,
                 "lock_hint": False,
@@ -382,7 +398,7 @@ def _collection_item_meta_rows(item):
         title = visit.event.title if visit.event else visit.personal_entry.title
         rows.append(
             {
-                "label": "연결된 방문 기록",
+                "label": gettext("연결된 방문 기록"),
                 "value": f"{title} · {visit.visited_on:%m-%d}",
                 "url": f"/archive/visits/{visit.pk}/",
                 "lock_hint": True,

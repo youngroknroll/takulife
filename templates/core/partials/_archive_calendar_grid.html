@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 활동 달력(calendar.html) 전용 월 그리드다. 이벤트 달력의 _calendar_grid.html과
 셀 구조가 달라 분기 대신 별도 파셜로 둔다. 요일 머리글과 날짜 본문을 서로 다른
@@ -18,25 +19,26 @@ aria-label은 날짜의 활동 건수를 이미 포함하고 있고, aria-label�
 않는다.
 {% endcomment %}
 <div class="month-grid month-grid-head">
-  <span class="month-grid-weekday">일</span>
-  <span class="month-grid-weekday">월</span>
-  <span class="month-grid-weekday">화</span>
-  <span class="month-grid-weekday">수</span>
-  <span class="month-grid-weekday">목</span>
-  <span class="month-grid-weekday">금</span>
-  <span class="month-grid-weekday">토</span>
+  <span class="month-grid-weekday">{% translate "일" context "요일" %}</span>
+  <span class="month-grid-weekday">{% translate "월" context "요일" %}</span>
+  <span class="month-grid-weekday">{% translate "화" context "요일" %}</span>
+  <span class="month-grid-weekday">{% translate "수" context "요일" %}</span>
+  <span class="month-grid-weekday">{% translate "목" context "요일" %}</span>
+  <span class="month-grid-weekday">{% translate "금" context "요일" %}</span>
+  <span class="month-grid-weekday">{% translate "토" context "요일" %}</span>
 </div>
 <div class="month-grid month-grid-body">
   {% for week in weeks %}
     {% for day in week %}
       {% if day.date %}
+        {% blocktranslate trimmed asvar day_date_label with date=day.date|date:"DATE_FORMAT" weekday=day.date|date:"l" %}{{ date }} {{ weekday }}{% endblocktranslate %}
         <a
           class="day-cell"
           href="?month={{ day.date|date:"Y-m" }}&date={{ day.date|date:"Y-m-d" }}{{ extra_query }}#selected-date"
           data-in-month="{{ day.in_month|yesno:"true,false" }}"
           data-today="{{ day.today|yesno:"true,false" }}"
           data-selected="{{ day.selected|yesno:"true,false" }}"
-          aria-label="{{ day.date|date:"Y년 n월 j일 l" }}{% if day.count %}, 활동 {{ day.count }}개{% endif %}{% if day.today %}, 오늘{% endif %}{% if day.selected %}, 선택한 날짜{% endif %}"
+          aria-label="{{ day_date_label }}{% if day.count %}{% blocktranslate trimmed count counter=day.count %}, 활동 {{ counter }}개{% plural %}, 활동 {{ counter }}개{% endblocktranslate %}{% endif %}{% if day.today %}{% translate ", 오늘" %}{% endif %}{% if day.selected %}{% translate ", 선택한 날짜" %}{% endif %}"
           {% if day.today %}aria-current="date"{% endif %}
         >
           <span class="day-num">{{ day.date|date:"j" }}</span>

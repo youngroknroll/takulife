@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 아카이브 검색 폼 파셜 — 활동 목록 페이지 네 곳에서 공용으로 쓴다.
 
@@ -18,6 +19,7 @@
 읽지 않았지만, placeholder는 일부 보조기술이 소리 내 읽을 수 있다.
 aria-label="아카이브 검색"은 그대로 접근 가능한 이름으로 유지한다.
 {% endcomment %}
+{% translate "⌕ 행사명·장소 검색" as archive_search_placeholder %}{% translate "아카이브 검색" as archive_search_label %}
 <form method="get" class="archive-search">
   {% if hidden_name and hidden_value %}
     <input type="hidden" name="{{ hidden_name }}" value="{{ hidden_value }}">
@@ -27,12 +29,12 @@ aria-label="아카이브 검색"은 그대로 접근 가능한 이름으로 유�
       type="search"
       name="q"
       value="{{ q }}"
-      placeholder="⌕ 행사명·장소 검색"
-      aria-label="아카이브 검색"
+      placeholder="{{ archive_search_placeholder }}"
+      aria-label="{{ archive_search_label }}"
     >
-    <button type="submit">검색</button>
+    <button type="submit">{% translate "검색" %}</button>
   </div>
-  <a class="archive-search-clear" href="{{ request.path }}{% if hidden_name and hidden_value %}?{{ hidden_name }}={{ hidden_value|urlencode }}{% endif %}"{% if not has_query %} hidden{% endif %}>지우기</a>
+  <a class="archive-search-clear" href="{{ request.path }}{% if hidden_name and hidden_value %}?{{ hidden_name }}={{ hidden_value|urlencode }}{% endif %}"{% if not has_query %} hidden{% endif %}>{% translate "지우기" %}</a>
 </form>
 <p id="archive-search-error" class="inline-error" aria-live="polite"></p>
 <p id="archive-search-status" class="archive-search-status" role="status"></p>

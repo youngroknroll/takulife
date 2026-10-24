@@ -15,7 +15,11 @@ core/vocab.py — takulife 도메인 어휘의 단일 출처.
 - 라벨은 지연 번역 문자열(gettext_lazy)이라 str이 아닐 수 있다. 카테고리는
   한국어 원문 `CATEGORY_SOURCE_LABELS`(저장·필터 토큰용)도 따로 둔다.
 """
-from django.utils.translation import gettext_lazy as _, gettext_noop
+import unicodedata
+
+from django.conf import settings
+from django.utils import translation
+from django.utils.translation import gettext, gettext_lazy as _, gettext_noop
 
 # ---------------------------------------------------------------------------
 # 행사 카테고리 어휘
@@ -84,14 +88,23 @@ ARCHIVE_STATUS_LABELS: dict[str, str] = dict(ARCHIVE_STATUS)
 # 모델에는 자유 입력(DB choices 제약 없음)이며, 이건 CollectionItem.item_type에
 # 대한 UI 쪽 안내일 뿐이다. slug → 표시 라벨
 # ---------------------------------------------------------------------------
-COLLECTION_ITEM_TYPE: tuple[tuple[str, str], ...] = (
-    ("acrylic_stand", _("아크릴 스탠드")),
-    ("keyring", _("키링")),
-    ("badge", _("뱃지")),
-    ("photocard", _("포토카드")),
-    ("plush", _("인형")),
-    ("stationery", _("문구")),
-    ("etc", _("기타")),
+_COLLECTION_ITEM_TYPE_SOURCE: tuple[tuple[str, str], ...] = (
+    ("acrylic_stand", gettext_noop("아크릴 스탠드")),
+    ("keyring", gettext_noop("키링")),
+    ("badge", gettext_noop("뱃지")),
+    ("photocard", gettext_noop("포토카드")),
+    ("plush", gettext_noop("인형")),
+    ("stationery", gettext_noop("문구")),
+    ("etc", gettext_noop("기타")),
+)
+
+COLLECTION_ITEM_TYPE: tuple[tuple[str, str], ...] = tuple(
+    (slug, _(label)) for slug, label in _COLLECTION_ITEM_TYPE_SOURCE
+)
+
+# 요청 언어와 무관한 한국어 원문(저장값과 맞대는 용도).
+COLLECTION_ITEM_TYPE_SOURCE_LABELS: tuple[str, ...] = tuple(
+    label for _slug, label in _COLLECTION_ITEM_TYPE_SOURCE
 )
 
 COLLECTION_ITEM_TYPE_LABELS: dict[str, str] = dict(COLLECTION_ITEM_TYPE)
@@ -154,13 +167,17 @@ ARCHIVE_INTEREST_SORT_LABELS: dict[str, str] = dict(ARCHIVE_INTEREST_SORT)
 # CharField라 어떤 자유 텍스트도 받아들여진다(위 COLLECTION_ITEM_TYPE의
 # "UI 쪽 안내일 뿐" 원칙과 같다).
 # ---------------------------------------------------------------------------
-PERSONAL_ENTRY_CATEGORY_SUGGESTIONS: tuple[str, ...] = (
-    "카페",
-    "팝업스토어",
-    "전시",
-    "성지순례",
-    "굿즈숍",
-    "기타",
+_PERSONAL_ENTRY_CATEGORY_SOURCE: tuple[str, ...] = (
+    gettext_noop("카페"),
+    gettext_noop("팝업스토어"),
+    gettext_noop("전시"),
+    gettext_noop("성지순례"),
+    gettext_noop("굿즈숍"),
+    gettext_noop("기타"),
+)
+
+PERSONAL_ENTRY_CATEGORY_SUGGESTIONS: tuple[str, ...] = tuple(
+    _(label) for label in _PERSONAL_ENTRY_CATEGORY_SOURCE
 )
 
 # ---------------------------------------------------------------------------
@@ -259,3 +276,59 @@ def is_valid_region(value: str) -> bool:
     빈 값은 일부러 유효하다 — is_valid_category 참고.
     """
     return value == "" or value in REGION_LABELS
+
+
+# ---------------------------------------------------------------------------
+# 자유 입력 어휘(개인 항목 분류·굿즈 유형) 정규화.
+# 저장값은 언어와 무관한 한국어 원문이다. 사용자가 어느 언어의 칩 문구를
+# 보냈든 한국어 원문으로 되돌리고, 어휘 밖 값은 그대로 둔다.
+# ---------------------------------------------------------------------------
+def _fold(text: str) -> str:
+    """대소문자·공백·라틴 악센트 차이를 지운 비교용 키.
+
+    악센트 제거는 라틴 문자에만 한다 — 일본어 탁점·반탁점이나 한글 자모까지
+    지우면 서로 다른 글자가 같은 키가 된다.
+    """
+    decomposed = unicodedata.normalize("NFKD", text.strip())
+    kept: list[str] = []
+    for ch in decomposed:
+        if unicodedata.combining(ch) and kept and ord(kept[-1]) < 0x250:
+            continue
+        kept.append(ch)
+    return unicodedata.normalize("NFKC", "".join(kept)).casefold()
+
+
+def _normalize_to_source(value: str, sources: tuple[str, ...]) -> str:
+    folded = _fold(value)
+    if not folded:
+        return value
+    other_languages = [code for code, _name in settings.LANGUAGES if code != "ko"]
+    for source in sources:
+        if _fold(source) == folded:
+            return source
+        for code in other_languages:
+            # 지연 번역은 override 밖에서 평가되면 활성 언어로 풀리므로 즉시 번역한다.
+            with translation.override(code):
+                if _fold(gettext(source)) == folded:
+                    return source
+    return value
+
+
+def _label_for_source(value: str, sources: tuple[str, ...]) -> str:
+    return gettext(value) if value in sources else value
+
+
+def normalize_personal_category(value: str) -> str:
+    return _normalize_to_source(value, _PERSONAL_ENTRY_CATEGORY_SOURCE)
+
+
+def personal_category_label(value: str) -> str:
+    return _label_for_source(value, _PERSONAL_ENTRY_CATEGORY_SOURCE)
+
+
+def normalize_collection_item_type(value: str) -> str:
+    return _normalize_to_source(value, COLLECTION_ITEM_TYPE_SOURCE_LABELS)
+
+
+def collection_item_type_label(value: str) -> str:
+    return _label_for_source(value, COLLECTION_ITEM_TYPE_SOURCE_LABELS)

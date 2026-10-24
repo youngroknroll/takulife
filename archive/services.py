@@ -3,6 +3,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.utils.translation import gettext
 
 from core.analytics import record_event
 from core.models import AnalyticsEvent
@@ -102,7 +103,7 @@ def create_personal_entry(*, user, kind, title, client_token=None, **fields):
     롤백되기 전까지 그 이후의 문장을 금지한다.
     """
     if kind != PersonalEntry.Kind.PLACE:
-        raise ValidationError({"kind": "place 외의 kind로는 PersonalEntry를 생성할 수 없습니다."})
+        raise ValidationError({"kind": gettext("place 외의 kind로는 PersonalEntry를 생성할 수 없습니다.")})
     try:
         with transaction.atomic():
             return PersonalEntry.objects.create(
@@ -330,11 +331,11 @@ def _validate_collection_item_quantities(quantity, tradeable_quantity):
     """quantity >= 0, 0 <= tradeable_quantity <= quantity 불변식을 검사한다."""
     errors = {}
     if quantity < 0:
-        errors["quantity"] = "quantity는 0 이상이어야 합니다."
+        errors["quantity"] = gettext("quantity는 0 이상이어야 합니다.")
     if tradeable_quantity < 0:
-        errors["tradeable_quantity"] = "tradeable_quantity는 0 이상이어야 합니다."
+        errors["tradeable_quantity"] = gettext("tradeable_quantity는 0 이상이어야 합니다.")
     elif tradeable_quantity > quantity:
-        errors["tradeable_quantity"] = "tradeable_quantity는 quantity 이하여야 합니다."
+        errors["tradeable_quantity"] = gettext("tradeable_quantity는 quantity 이하여야 합니다.")
     if errors:
         raise ValidationError(errors)
 
@@ -372,7 +373,7 @@ def create_collection_item(*, user, name, visit_record=None, event=None, client_
     if visit_record is not None:
         if visit_record.user_id != user.id:
             raise ValidationError(
-                {"visit_record": "visit_record는 요청한 사용자의 소유여야 합니다."}
+                {"visit_record": gettext("visit_record는 요청한 사용자의 소유여야 합니다.")}
             )
         event = visit_record.event
 
@@ -482,7 +483,7 @@ def update_collection_item(*, item, **fields):
             if visit_record is not None:
                 if visit_record.user_id != item.user_id:
                     raise ValidationError(
-                        {"visit_record": "visit_record는 아이템 소유자의 소유여야 합니다."}
+                        {"visit_record": gettext("visit_record는 아이템 소유자의 소유여야 합니다.")}
                     )
                 fields["event"] = visit_record.event
             # else: visit_record를 명시적으로 비운 경우 — event는 페이로드
@@ -493,7 +494,7 @@ def update_collection_item(*, item, **fields):
             if fields["event"] != item.visit_record.event:
                 raise ValidationError(
                     {
-                        "event": (
+                        "event": gettext(
                             "visit_record가 설정된 경우 event는 "
                             "visit_record.event와 일치해야 합니다."
                         )

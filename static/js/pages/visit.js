@@ -26,7 +26,7 @@
     if (kind === "auth") {
       window.TakuAPI.redirectToLogin();
     } else {
-      setError(errorEl, "보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요.");
+      setError(errorEl, gettext("보안 토큰 오류입니다. 새로고침 후 다시 시도해 주세요."));
     }
   }
 
@@ -56,7 +56,7 @@
       var shortReview = form.elements["short_review"].value;
 
       if (!subjectValue || !visitedOn) {
-        setError(errorEl, "대상과 방문 날짜를 모두 입력해 주세요.");
+        setError(errorEl, gettext("대상과 방문 날짜를 모두 입력해 주세요."));
         return;
       }
 
@@ -89,7 +89,7 @@
       }
 
       if (result.status === 0) {
-        setError(errorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+        setError(errorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
         return;
       }
 
@@ -111,7 +111,7 @@
           var recordId = btn.getAttribute("data-delete-record-id");
           if (
             !(await askConfirm(
-              "이 방문 기록을 삭제하시겠습니까? 메모와 사진도 함께 삭제되며 되돌릴 수 없습니다."
+              gettext("이 방문 기록을 삭제하시겠습니까? 메모와 사진도 함께 삭제되며 되돌릴 수 없습니다.")
             ))
           ) {
             return;
@@ -137,16 +137,16 @@
           }
 
           if (result.status === 404) {
-            setError(globalErrorEl, "기록을 찾을 수 없습니다.");
+            setError(globalErrorEl, gettext("기록을 찾을 수 없습니다."));
             return;
           }
 
           if (result.status === 0) {
-            setError(globalErrorEl, "네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+            setError(globalErrorEl, gettext("네트워크 오류가 발생했습니다. 다시 시도해 주세요."));
             return;
           }
 
-          setError(globalErrorEl, "기록 삭제 중 오류가 발생했습니다.");
+          setError(globalErrorEl, gettext("기록 삭제 중 오류가 발생했습니다."));
         });
       })(deleteBtns[i]);
     }

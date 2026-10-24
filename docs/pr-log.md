@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #395부터 #252까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #396부터 #257까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -28,35 +28,39 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 ## 최신 PR
 
-### PR #396 — feat(i18n): 이벤트 화면(목록·달력·상세) UI 다국어 — 트랙 43-2
+### PR #397 — feat(i18n): 아카이브·컬렉션·활동·마이페이지 UI 다국어 — 트랙 43-3
 
-**무엇을 바꿨나**: 이벤트 목록·달력·상세와 필터·적용 칩·월 이동·연관 행사의 UI 문구를
-gettext로 옮기고 카테고리 이름 7개도 번역했다(사용자 결정 2026-10-22 "카테고리도 번역
-대상임"). 카탈로그는 언어당 django 371건 + djangojs 27건이고 43-1보다 새 항목이 60개다
-`[실측 msgfmt --statistics 2026-10-22]` `[계산 56 + 4]`. 행사 제목·작품명·장소·요약·출처
-이름은 원문 한국어에 `lang="ko"`를 붙이고 번역된 어휘(지역·상태·카테고리)에는 붙이지
-않는다. 아카이브 방문 필터 토큰은 한국어 원문으로 고정하고 표시만 번역해 언어를 바꿔도
-필터가 풀리지 않는다. 영어 월 이름이 360px 월 이동 줄에서 겹쳐 `event_calendar.css`를
-고쳤다. 변경 규모는 26개 파일, +3,584줄·-467줄(커밋 8개, 마이그레이션 없음) `[실측 gh pr view 396]`.
+**무엇을 바꿨나**: 아카이브·컬렉션·활동 달력·마이페이지의 UI 문구와 날짜 서식을 gettext로
+옮겼다(템플릿 26개·JS 11개·파이썬 사용자 노출 메시지). 카탈로그는 언어당 django 643건 +
+djangojs 69건이고 43-2보다 새 항목이 311개다 `[실측 msgfmt --statistics 2026-10-22]`
+`[계산 269 + 42]`. 개인 항목 카테고리·굿즈 유형 칩은 번역하고, 저장은 시리얼라이저가 어느
+언어의 문구든 한국어 원문으로 정규화한다(POST·PATCH; main에 있던 "영어 사용자가 굿즈 유형
+번역 문구를 저장하는" 결함 포함 수정). 날짜·월은 로케일 서식을 쓴다. 번역 때문에 320px에서
+깨진 곳(히어로 요약·찜 pill·마이페이지 위험 행·활동 달력 툴바)은 CSS로 고쳤고, 한국어 화면이
+달라지는 곳은 활동 달력 두 곳(찜 링크 ≤860px `♥ 찜`, 검색 폼 ≤384px 전폭)뿐이다. 변경
+규모는 76개 파일, +10,085줄·-1,212줄(커밋 14개)이다 `[실측 git diff --shortstat 머지 전]`.
+마이그레이션은 없다. 머지 `8ca4c9f5`(2026-10-23T06:41Z, 사용자 직접 승인).
 
-**왜**: 43-1에 이어 한국어를 읽지 못하는 팬이 행사를 찾고 기록하게 하려는 트랙 43의
-둘째 조각이다. 번역 검수는 독립 AI 검수자만 했고(사용자 지시) 원어민 검수는 없다 —
-새 항목 56개에서 영어 3건·일본어 1건(직접 1건 추가)·중국어 2건을 반영했고, 카테고리
-이름 7개는 일본어·중국어 제안 0건에 영어 1건(`Collab café` 통일)이었다
-`[문서 docs/BE/i18n.md "AI 검수 기록"]`. 머지 후 사용자 결정(2026-10-22): 아카이브
-과도기(한국어 UI에 번역된 카테고리 이름)와 브라우저 미확인 4항목은 수용, 개인 항목 제안
-칩은 43-3에서 번역, 새 카테고리 자동 번역은 트랙 44-4.
+**왜**: 43-1·43-2에 이은 트랙 43의 마지막 조각으로, 한국어를 읽지 못하는 팬이 컬렉션·방문
+기록을 남기게 하려는 제품 결정이다. 번역은 AI 검수만 거쳤다(사용자 지시): 독립 검수자 3명이
+영어 8·일본어 16·중국어 9개 제안을 냈고 전부 반영했다 `[문서 docs/BE/i18n.md "AI 검수 기록
+(2026-10-22, 트랙 43-3)"]`. 프런트엔드 게이트는 BIR `Unverified`(Deviates 0)·WED
+`Deviates`(경미: `lang` 누락 3곳 수정, 한국어 화면 변경 2건은 승인)·QVL 조건부 완료로 닫았다.
 
-**검증**: 머지 전 `[실측 2026-10-22 브랜치]` `uv run pytest -q` 3418 passed / 10
-deselected / 104.71초, e2e 10 passed, 한국어 화면은 main과 보이는 텍스트·접근성 속성이
-같다(익명 15·로그인 16 URL), 변이 31개 전부 Red `[문서 docs/BE/i18n.md]`. 머지 시점
-head가 `af083b68`이라 그 뒤 `Collab café` 통일+E-30 가드(`d5d6526b`)와 결정 문서
-(`c45a5a95`)를 main에 직접 얹었다. main 재측정 `[실측 2026-10-22 main d8dee018 + 후속
-2커밋]`: `uv run pytest -q` → 3419 passed / 10 deselected / 47.86초(3254 대비 +165
-`[계산]`), `manage.py check` 0건, `makemigrations --check --dry-run` No changes
-detected. production 반영은 deploy PR #393 머지와 런북 §3-18 번역 검수 게이트가 조건이다.
+**검증**: 머지 전 `uv run pytest -q` 3985 passed / 10 deselected, e2e 10 passed `[실측
+2026-10-23, HEAD d4aa556d]`, 변이 29개 중 28 Red + 동등 1, 한국어 렌더 main 대비 100장면 중
+78 동일·22는 숨은 `찜` 노드 추가. 머지 후 main 재측정 `[실측 2026-10-23 main 8ca4c9f5]`:
+3985 passed / 10 deselected / 63.44초(43-2 기준선 3419 대비 +566 `[계산]`), e2e 10 passed,
+`manage.py check` 0건, `makemigrations --check --dry-run` 변경 없음. PR·main CI는 Test
+suite·Docker build·E2E가 통과했고 의존성 감사만 `djangorestframework 3.17.2`의 새 권고 3건
+(GHSA-33wh-fxxf-88vv·GHSA-3547-9m27-7rxg·GHSA-xw6w-gcfp-cf8m, 수정 3.18.2)으로 실패했다 — 이
+PR은 의존성을 바꾸지 않았다. main CI가 실패해 `Deploy PR` 워크플로는 `skipped`이고 열린 배포 PR이
+없다 `[실측 gh run list 2026-10-23]`. 배포 PR #393은 2026-10-22T10:15Z에 이미 머지돼 production
+`6d0adebb`에는 43-2까지 있고 43-3은 없다 `[실측 git merge-base]`. production 반영은 감사를
+통과시킨 뒤 새 배포 PR과 런북 §3-18 번역 검수 게이트가 조건이다.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #396 — feat(i18n): 이벤트 화면(목록·달력·상세) UI 다국어 — 트랙 43-2
 - #395 — feat(i18n): UI 다국어 기반(ko/en/ja/zh-hans) — 트랙 43-1
 - #394 — ci: Skip pull_request CI for PRs into production (track 42)
 - #392 — docs: PR #388~#391 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -193,8 +197,3 @@ detected. production 반영은 deploy PR #393 머지와 런북 §3-18 번역 검
 - #259 — test(core): Guard every core module by default, not the six we listed
 - #258 — docs: Close A5, and stop entries from going stale the moment they are fixed
 - #257 — docs: Make a number in a document say what it counts
-- #256 — test(core): Make the domain boundary guards find their own targets
-- #255 — feat(archive): Let an unofficial place be opened and corrected
-- #254 — Promote the technical records to the tree that survives
-- #253 — Replace markup assertions that could not fail
-- #252 — Make the 500 test fail for the reason it names, and unbreak the runbook pointer
