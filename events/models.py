@@ -30,6 +30,8 @@ class Event(models.Model):
     view_count = models.PositiveIntegerField(default=0, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     verified_at = models.DateTimeField(null=True, blank=True)
+    # 러너가 채우는 언어별 번역을 원문 해시와 함께 저장한다. 없으면 한국어 폴백.
+    text_translations = models.JSONField(default=dict, blank=True)
     objects = EventQuerySet.as_manager()
 
     def __str__(self):
