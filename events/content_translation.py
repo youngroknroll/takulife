@@ -8,6 +8,9 @@ from dataclasses import dataclass
 TRANSLATED_FIELDS = ("title", "work_title", "location_name", "summary")
 TARGET_LANGUAGES = ("en", "ja", "zh-hans")
 FIELD_MAX_LENGTH = {"title": 400, "work_title": 400, "location_name": 400, "summary": 2000}
+# 공식 표기가 라틴 문자인 작품명·장소명은 그대로 두는 것이 정상 번역이라,
+# 이 두 필드는 언어별 문자 판정에서 라틴 문자 단독 표기를 예외로 둔다.
+_PROPER_NOUN_FIELDS = ("work_title", "location_name")
 
 # 아래 네 정규식은 검사 단계별로 쓰는 토큰 추출용이다.
 _TAG_RE = re.compile(r"<[A-Za-z/!][^>]*>")
@@ -115,16 +118,28 @@ def _field_quarantine_reason(language, field, source_value, translated_value):
     if ks_nospace and ks.strip().isascii() and kt.strip() == ks.strip():
         return None
 
+    # 고유명사 필드(work_title·location_name)이 가나·한자 없이 라틴
+    # 문자만으로 쓰였으면 공식 라틴 표기로 보고 문자 판정을 건너뛴다.
+    is_proper_noun_latin_exception = (
+        field in _PROPER_NOUN_FIELDS
+        and language in ("ja", "zh-hans")
+        and _LATIN_RE.search(kt)
+        and not _KANA_RE.search(kt)
+        and not _HANJA_RE.search(kt)
+    )
+
     if language == "en":
         if not _LATIN_RE.search(kt):
             return "wrong_script"
     elif language == "ja":
-        if not _KANA_RE.search(kt):
+        if not is_proper_noun_latin_exception and not _KANA_RE.search(kt):
             # 가나가 없어도 짧고(10자 이하) 한자만 있으면 통과한다.
             if not (len(kt_nospace) <= 10 and _HANJA_RE.search(kt)):
                 return "wrong_script"
     elif language == "zh-hans":
-        if not _HANJA_RE.search(kt) or _KANA_RE.search(kt):
+        if not is_proper_noun_latin_exception and (
+            not _HANJA_RE.search(kt) or _KANA_RE.search(kt)
+        ):
             return "wrong_script"
     else:
         raise ValueError(f"unknown language: {language}")

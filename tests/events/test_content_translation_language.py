@@ -1,6 +1,7 @@
 """events.content_translation.quarantine_reason의 제어문자·길이·빈 칸·
 한글 잔존·언어별 문자 판정 규칙에 대한 단위 테스트.
 """
+import re
 import unicodedata
 
 import pytest
@@ -103,11 +104,103 @@ def test_원문이_ASCII뿐이고_번역이_같으면_세_언어_모두_통과�
     assert quarantine_reason(language, source, translated) is None
 
 
+@pytest.mark.parametrize("language", TARGET_LANGUAGES)
+@pytest.mark.parametrize(
+    "field_name, value",
+    [("title", "BTS"), ("summary", "LIVE")],
+    ids=["title", "summary"],
+)
+def test_원문이_ASCII뿐인_제목과_요약은_같은_번역이면_세_언어_모두_통과한다(language, field_name, value):
+    # 고유명사 라틴 예외는 work_title·location_name에만 적용돼, title·
+    # summary의 ASCII 동일 번역 우회는 그 예외와 무관하게 따로 지켜야
+    # 한다(work_title 버전은 예외만으로도 통과해 우회 분기를 더는
+    # 구분하지 못한다).
+    source = _source(**{field_name: value})
+    translated = {**_base(language), field_name: value}
+
+    assert quarantine_reason(language, source, translated) is None
+
+
 def test_ASCII_우회는_번역이_원문과_다르면_적용되지_않는다():
-    source = _source(work_title="BTS")
-    translated = _ja(work_title="Bangtan")
+    # work_title은 고유명사 라틴 예외 대상이라, 그 예외가 없는 title로 옮겨
+    # "ASCII 원문 동일 번역 우회는 번역이 원문과 다르면 적용되지 않는다"는
+    # 본래 의도를 계속 지킨다.
+    source = _source(title="BTS")
+    translated = _ja(title="Bangtan")
 
     assert quarantine_reason("ja", source, translated) == "wrong_script"
+
+
+def test_고유명사_필드의_라틴_문자_번역은_일본어에서도_통과한다():
+    # 공식 표기가 라틴 문자인 고유명사(작품명)는 일본어에서도 가나·한자
+    # 없이 라틴 문자만으로 통과해야 한다 — 실기동 오탐(이벤트 8,
+    # "스파이 패밀리" → "SPY×FAMILY") 보정.
+    source = _source(work_title="스파이 패밀리")
+    translated = _ja(work_title="SPY×FAMILY")
+
+    assert quarantine_reason("ja", source, translated) is None
+
+
+def test_고유명사_필드의_라틴_문자_번역은_중국어_간체에서도_통과한다():
+    # 같은 예외를 중국어 간체에서도 확인한다 — 실기동 오탐(이벤트 7,
+    # "스타필드 하남" → "Starfield Hanam") 보정.
+    source = _source(location_name="스타필드 하남")
+    translated = _zh(location_name="Starfield Hanam")
+
+    assert quarantine_reason("zh-hans", source, translated) is None
+
+
+@pytest.mark.parametrize("language", ["ja", "zh-hans"])
+def test_고유명사_필드라도_라틴_문자가_없으면_예외가_적용되지_않는다(language):
+    # 고유명사 라틴 예외는 "라틴 문자를 포함"해야 성립한다 — 기호뿐인
+    # 번역(라틴·가나·한자 모두 없음)은 예외 대상이 아니라 그대로 격리돼야
+    # 한다.
+    source = _source(work_title="스파이 패밀리")
+    translated = {**_base(language), "work_title": "☆☆☆"}
+
+    assert quarantine_reason(language, source, translated) == "wrong_script"
+
+
+def test_고유명사_필드라도_한자가_섞인_긴_일본어_표기는_예외가_적용되지_않는다():
+    # 고유명사 라틴 예외는 "한자가 하나도 없어야" 성립한다 — 라틴과 한자가
+    # 섞이고 가나가 없는 11자 이상(공백 제외) 표기는 일본어 짧은-한자만
+    # 통과 규칙(10자 이하)에도 못 들어 그대로 격리돼야 한다.
+    translated = "Starfield 河南市役所本館事務所"
+    assert len(re.sub(r"\s+", "", translated)) >= 11
+
+    source = _source(location_name="스타필드 하남")
+    translated_fields = _ja(location_name=translated)
+
+    assert quarantine_reason("ja", source, translated_fields) == "wrong_script"
+
+
+@pytest.mark.parametrize("language", ["ja", "zh-hans"])
+@pytest.mark.parametrize(
+    "field_name, source_value, translated_value",
+    [
+        ("title", "2026 도쿄 코믹마켓", "2026 Tokyo Comic Market"),
+        ("summary", "10월 24일 개최", "Held on October 24"),
+    ],
+    ids=["title", "summary"],
+)
+def test_제목과_요약이_라틴_문자만이면_일본어_중국어에서_여전히_격리된다(
+    language, field_name, source_value, translated_value
+):
+    # 고유명사 라틴 예외는 work_title·location_name에만 적용된다 — title·
+    # summary가 통째로 영어로 나온 응답은 계속 잡아야 한다.
+    source = _source(**{field_name: source_value})
+    translated = {**_base(language), field_name: translated_value}
+
+    assert quarantine_reason(language, source, translated) == "wrong_script"
+
+
+def test_고유명사_필드라도_가나가_섞인_중국어는_격리된다():
+    # 번역에 가나가 섞이면 "라틴 문자만"이라는 예외 조건이 깨져, 중국어
+    # 간체의 가나 금지 규칙이 그대로 적용돼야 한다.
+    source = _source(work_title="스파이 패밀리")
+    translated = _zh(work_title="SPY×ファミリー")
+
+    assert quarantine_reason("zh-hans", source, translated) == "wrong_script"
 
 
 def test_한글_음절이_남으면_격리된다():
