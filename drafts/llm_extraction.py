@@ -106,9 +106,11 @@ def _tool_schema():
 
 
 def _strip_delimiter_literals(text):
+    # 한 번만 지우면 제거 후 접합으로 리터럴이 재조립될 수 있어, 더는 안 남을 때까지 반복해서 지운다.
     cleaned = text or ""
-    for literal in DELIMITER_LITERALS:
-        cleaned = cleaned.replace(literal, "")
+    while any(literal in cleaned for literal in DELIMITER_LITERALS):
+        for literal in DELIMITER_LITERALS:
+            cleaned = cleaned.replace(literal, "")
     return cleaned
 
 

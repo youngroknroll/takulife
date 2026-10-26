@@ -77,6 +77,10 @@ def _field_quarantine_reason(language, field, source_value, translated_value):
     if not s_stripped and not t_stripped:
         return None
 
+    # 큰 입력이 이후 전수 순회·정규화로 가기 전에 절대 상한에서 먼저 자른다.
+    if len(t) > FIELD_MAX_LENGTH[field]:
+        return "too_long"
+
     for ch in t:
         if ch in ("\n", "\t"):
             continue
@@ -88,11 +92,15 @@ def _field_quarantine_reason(language, field, source_value, translated_value):
     kt = unicodedata.normalize("NFKC", t)
     ks_nospace = _WHITESPACE_RE.sub("", ks)
     kt_nospace = _WHITESPACE_RE.sub("", kt)
-    if len(t) > FIELD_MAX_LENGTH[field] or len(kt_nospace) > max(40, 6 * len(ks_nospace)):
+    if len(kt_nospace) > max(40, 6 * len(ks_nospace)):
         return "too_long"
 
+    # 전각 문자로 쓴 위장 표기를 잡으려 접힌(NFKC) 문자열에도 같은 검사를 돈다.
     markup_tokens = _TAG_RE.findall(t) + _URL_RE.findall(t) + _EMAIL_RE.findall(t)
-    if any(token not in s for token in markup_tokens):
+    folded_markup_tokens = _TAG_RE.findall(kt) + _URL_RE.findall(kt) + _EMAIL_RE.findall(kt)
+    if any(token not in s for token in markup_tokens) or any(
+        token not in ks for token in folded_markup_tokens
+    ):
         return "unexpected_markup"
 
     if any(match.upper() not in ks.upper() for match in _CURRENCY_RE.findall(kt)):

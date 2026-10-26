@@ -18,6 +18,10 @@ HEARTBEAT_URL = "/api/discovery/runner/heartbeat/"
 
 _RUNNER_TOKEN = "runner-secret"
 
+# 서버가 만드는 sha256 hex 형식(64자 소문자 16진수)과 같은 모양의 자리수 값 —
+# source_hash 형식 검증과 무관한 테스트에서 실제 해시 대신 쓴다.
+_VALID_HASH = "0" * 64
+
 _SOURCE_FIELDS = {
     "title": "2026 도쿄 코믹마켓",
     "work_title": "원피스",
@@ -222,7 +226,7 @@ def test_전체_거부와_언어_격리는_상태_코드로_구분된다(client,
 
 
 def test_없거나_게시되지_않은_이벤트는_404이다_없는_이벤트(client, runner_headers):
-    payload = {"event_id": 999999, "source_hash": "아무해시", "translations": _GOOD_TRANSLATIONS}
+    payload = {"event_id": 999999, "source_hash": _VALID_HASH, "translations": _GOOD_TRANSLATIONS}
 
     response = client.post(SUBMIT_URL, data=payload, content_type="application/json", **runner_headers)
 
@@ -327,8 +331,8 @@ def test_구조가_틀린_번역은_400_schema이고_NUL은_400_nul이다(client
     "payload",
     [
         [1, 2, 3],
-        {"event_id": "1", "source_hash": "아무해시", "translations": _GOOD_TRANSLATIONS},
-        {"event_id": True, "source_hash": "아무해시", "translations": _GOOD_TRANSLATIONS},
+        {"event_id": "1", "source_hash": _VALID_HASH, "translations": _GOOD_TRANSLATIONS},
+        {"event_id": True, "source_hash": _VALID_HASH, "translations": _GOOD_TRANSLATIONS},
         {"event_id": 1, "source_hash": 123, "translations": _GOOD_TRANSLATIONS},
     ],
     ids=["JSON_배열", "event_id가_문자열", "event_id가_Bool", "source_hash가_정수"],
@@ -338,6 +342,56 @@ def test_본문_모양이_틀리면_400_invalid_payload이다(client, runner_hea
 
     assert response.status_code == 400
     assert response.json() == {"detail": "invalid_payload"}
+
+
+@pytest.mark.parametrize(
+    "malformed_hash",
+    [
+        "A\nFAKE log line injected\n",
+        "abc",
+        "0" * 63,
+        "A" * 64,
+        "0" * 63 + chr(0),
+    ],
+    ids=["개행_포함", "너무_짧음", "63자_hex", "대문자_64자", "널_문자_포함"],
+)
+def test_source_hash가_64자_소문자_16진수가_아니면_400_invalid_payload이다(
+    client, runner_headers, make_event, malformed_hash
+):
+    event = _make_source_event(make_event)
+
+    response = client.post(
+        SUBMIT_URL,
+        data={"event_id": event.id, "source_hash": malformed_hash, "translations": _GOOD_TRANSLATIONS},
+        content_type="application/json",
+        **runner_headers,
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "invalid_payload"}
+
+    event.refresh_from_db()
+    assert event.text_translations == {}
+
+
+def test_형식이_틀린_source_hash는_거부_로그를_남기지_않는다(client, runner_headers, make_event, caplog):
+    event = _make_source_event(make_event)
+
+    with caplog.at_level(logging.DEBUG, logger="events.translation_queue"):
+        response = client.post(
+            SUBMIT_URL,
+            data={
+                "event_id": event.id,
+                "source_hash": "A\nFAKE log line injected\n",
+                "translations": _GOOD_TRANSLATIONS,
+            },
+            content_type="application/json",
+            **runner_headers,
+        )
+
+    assert response.status_code == 400
+    records = [r for r in caplog.records if r.name == "events.translation_queue"]
+    assert len(records) == 0
 
 
 def test_제출_로그에_요청_IP가_남는다(client, runner_headers, make_event, caplog):

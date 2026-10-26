@@ -41,6 +41,33 @@ def test_원문에_없는_태그_URL_이메일이_있으면_격리된다(summary
     assert quarantine_reason("en", _source(), _en(summary=summary)) == "unexpected_markup"
 
 
+def _전각(ascii_text):
+    """ASCII 문자열을 같은 글자의 전각(fullwidth) 형태로 바꾼다 — NFKC
+    정규화를 거치면 원래 반각 문자로 접힌다."""
+    return "".join(chr(ord(ch) + 0xFEE0) if ch != " " else ch for ch in ascii_text)
+
+
+@pytest.mark.parametrize(
+    "summary",
+    [
+        "Held on " + chr(0xFF1C) + "script" + chr(0xFF1E) + "alert(1)" + chr(0xFF1C) + "/script" + chr(0xFF1E),
+        "See " + _전각("https://evil.example"),
+        "Contact " + chr(0xFF41) + chr(0xFF20) + chr(0xFF42) + chr(0xFF0E) + chr(0xFF43) + chr(0xFF4F) + chr(0xFF4D),
+    ],
+    ids=["전각_태그", "전각_url", "전각_이메일"],
+)
+def test_전각_문자로_쓴_태그_URL_이메일도_격리된다(summary):
+    assert quarantine_reason("en", _source(), _en(summary=summary)) == "unexpected_markup"
+
+
+def test_원문에_같은_전각_URL이_있으면_통과한다():
+    fullwidth_url = _전각("https://example.com/info")
+    source = _source(summary="자세한 내용 " + fullwidth_url)
+    translated = _en(summary="Details at " + fullwidth_url)
+
+    assert quarantine_reason("en", source, translated) is None
+
+
 def test_원문에_있던_URL이_번역에_그대로_있으면_통과한다():
     source = _source(summary="자세한 내용 https://example.com/info")
     translated = _en(summary="Details at https://example.com/info")

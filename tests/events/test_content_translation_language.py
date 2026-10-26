@@ -261,6 +261,15 @@ def test_절대_길이_상한을_넘으면_격리된다(field_name, filler_len, 
     assert over == "too_long"
 
 
+def test_상한을_넘는_문자열은_제어문자가_섞여도_too_long이다():
+    # 원문을 충분히 길게 둬서(기존 test_절대_길이_상한을_넘으면_격리된다의
+    # title 필러와 같은 길이) 상대 상한(6×원문 길이)에 먼저 걸리지 않게 한다.
+    source = _source(title="가" * 100)
+    translated = _en(title="A" * 401 + chr(7))
+
+    assert quarantine_reason("en", source, translated) == "too_long"
+
+
 def test_원문_대비_상대_상한을_넘으면_격리된다():
     # 원문 title이 2자이면 상한은 max(40, 6*2)=40자다.
     source = _source(title="도쿄")
