@@ -812,6 +812,8 @@ def _imported_module_names_resolving_relative_imports(path, package_name):
                 modules.update(_resolve_relative_import_targets(package_name, node))
             elif node.module is not None:
                 modules.add(node.module)
+                # `from X import Y`의 Y가 모듈일 수 있어 X.Y도 함께 모은다.
+                modules.update(f"{node.module}.{alias.name}" for alias in node.names)
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
         if isinstance(node, ast.Call):
@@ -821,20 +823,19 @@ def _imported_module_names_resolving_relative_imports(path, package_name):
     return modules
 
 
-def _forbidden_translation_imports_in_file(path, root):
-    """path가 _FORBIDDEN_TRANSLATION_MODULES 중 하나(또는 그 하위 모듈)를
-    상대·절대·동적 임포트 중 어떤 형태로든 끌어오면 그 모듈명 집합을
-    돌려준다."""
+def _forbidden_translation_imports_in_file(
+    path, root, forbidden_modules=_FORBIDDEN_TRANSLATION_MODULES
+):
+    """path가 forbidden_modules(기본 _FORBIDDEN_TRANSLATION_MODULES) 중
+    하나(또는 그 하위 모듈)를 상대·절대·동적 임포트 중 어떤 형태로든
+    끌어오면 그 모듈명 집합을 돌려준다."""
     package_name = _package_name_for_file(root, path)
     modules = _imported_module_names_resolving_relative_imports(path, package_name)
     return {
         module
         for module in modules
-        if module in _FORBIDDEN_TRANSLATION_MODULES
-        or any(
-            module.startswith(f"{forbidden}.")
-            for forbidden in _FORBIDDEN_TRANSLATION_MODULES
-        )
+        if module in forbidden_modules
+        or any(module.startswith(f"{forbidden}.") for forbidden in forbidden_modules)
     }
 
 
@@ -846,7 +847,11 @@ def test_이벤트_모듈은_core_llm_모듈을_임포트하지_않는다():
     violations = {
         path.relative_to(PROJECT_ROOT): forbidden
         for path in files
-        if (forbidden := _forbidden_imports_in_file(path, {"core.llm"}))
+        if (
+            forbidden := _forbidden_translation_imports_in_file(
+                path, PROJECT_ROOT, {"core.llm"}
+            )
+        )
     }
 
     assert not violations, violations
@@ -883,6 +888,8 @@ def test_쓰기_경로_모듈은_번역_모듈을_임포트하지_않는다():
         "from .translation_queue import pending_events\n",
         "from . import content_translation\n",
         'import importlib\nimportlib.import_module("events.translation_queue")\n',
+        "from events import translation_queue\n",
+        "from events import translation_queue as queue\n",
     ],
     ids=[
         "절대_from_import",
@@ -890,6 +897,8 @@ def test_쓰기_경로_모듈은_번역_모듈을_임포트하지_않는다():
         "상대_from_import_모듈있음",
         "상대_from_import_모듈없음",
         "동적_import_module",
+        "절대_from_별칭_import",
+        "절대_from_별칭_as",
     ],
 )
 def test_전용_스캐너는_번역_모듈_임포트_형태를_모두_탐지한다(tmp_path, fixture_source):
@@ -901,6 +910,18 @@ def test_전용_스캐너는_번역_모듈_임포트_형태를_모두_탐지한�
     )
 
     assert violations, violations
+
+
+def test_전용_스캐너는_core에서_llm을_별칭으로_가져와도_탐지한다(tmp_path):
+    (tmp_path / "events").mkdir()
+    poison = tmp_path / "events" / "poison.py"
+    poison.write_text("from core import llm\n")
+
+    modules = _imported_module_names_resolving_relative_imports(
+        poison, _package_name_for_file(tmp_path, poison)
+    )
+
+    assert "core.llm" in modules, modules
 
 
 def test_전용_스캐너는_금지_모듈이_없는_파일을_위반으로_보고하지_않는다(tmp_path):
