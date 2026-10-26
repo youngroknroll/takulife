@@ -397,6 +397,14 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   수정 — 지금은 이 자리에 `대기`가 찍힌다, 회귀
   `tests/local_runner/test_progress.py` 확인) → `서버 응답 확인 —
   러너 온라인`.
+- **행사 콘텐츠 번역(트랙 44-1)**: 러너는 같은 토큰·같은 프로세스로 번역도
+  처리한다(탐색 폴링이 성공한 반복마다 최대 3건). 러너가 꺼져 있으면
+  번역이 멈추고 한국어 원문이 그대로 노출된다 — 스태프 화면의 대기 건수
+  표시는 44-3 이후이고, 지금은
+  `uv run python manage.py report_translation_queue`로만 감지한다. 번역
+  단계 실패는 로그에 `translation step failed`로 찍힌다. 격리된 언어는
+  같은 보고 명령의 `quarantined_en`·`quarantined_ja`·`quarantined_zh-hans`로
+  센다.
 
 ## 9. 오류 묶음 확인 (트랙 36, `core.ErrorGroup`)
 
