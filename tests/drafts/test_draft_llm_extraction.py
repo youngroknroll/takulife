@@ -2,6 +2,7 @@
 않고 drafts.llm_extraction.call_tool을 모킹한다 — core.llm은 도메인 비특정
 어댑터이고 drafts가 그 위의 매핑을 소유하기 때문이다."""
 import logging
+import time
 from datetime import date
 
 import pytest
@@ -17,9 +18,13 @@ from core.llm.exceptions import (
 from core.vocab import CATEGORY
 from drafts.extraction import extract_event_fields_heuristic
 from drafts.llm_extraction import (
+    MAX_INPUT_CHARS,
+    RAW_TITLE_PROMPT_MAX_LENGTH,
     SYSTEM_PROMPT,
     UNTRUSTED_TEXT_CLOSE,
     UNTRUSTED_TEXT_OPEN,
+    UNTRUSTED_TITLE_CLOSE,
+    UNTRUSTED_TITLE_OPEN,
     extract_event_fields_llm,
 )
 
@@ -432,6 +437,50 @@ class TestInjectionHardening:
         data_block = user_content[open_index + len(UNTRUSTED_TEXT_OPEN):close_index]
         assert UNTRUSTED_TEXT_OPEN not in data_block
         assert UNTRUSTED_TEXT_CLOSE not in data_block
+
+    @pytest.mark.parametrize("field", ["본문", "제목"])
+    def test_상한을_훨씬_넘는_깊은_중첩_구획_리터럴도_빠르게_처리되고_리터럴은_남지_않는다(
+        self, monkeypatch, field
+    ):
+        deep = 40000
+        shallow_text = "<untrusted_" * 50 + UNTRUSTED_TEXT_OPEN + "page_content>" * 50
+        shallow_title = "<untrusted_" * 5 + UNTRUSTED_TITLE_OPEN + "page_title>" * 5
+        deep_text = "<untrusted_" * deep + UNTRUSTED_TEXT_OPEN + "page_content>" * deep
+        deep_title = "<untrusted_" * deep + UNTRUSTED_TITLE_OPEN + "page_title>" * deep
+        if field == "본문":
+            raw_title, raw_text = shallow_title, deep_text
+        else:
+            raw_title, raw_text = deep_title, shallow_text
+        fake, calls = _fake_call_tool([_response()])
+        monkeypatch.setattr("drafts.llm_extraction.call_tool", fake)
+
+        started = time.perf_counter()
+        result = extract_event_fields_llm(raw_title, raw_text)
+        elapsed = time.perf_counter() - started
+
+        assert elapsed < 2.0
+        assert result["extraction_method"] == "llm"
+        user_content = calls[0]["user_content"]
+        for open_literal, close_literal in (
+            (UNTRUSTED_TITLE_OPEN, UNTRUSTED_TITLE_CLOSE),
+            (UNTRUSTED_TEXT_OPEN, UNTRUSTED_TEXT_CLOSE),
+        ):
+            assert user_content.count(open_literal) == 1
+            assert user_content.count(close_literal) == 1
+        title_start = user_content.index(UNTRUSTED_TITLE_OPEN) + len(UNTRUSTED_TITLE_OPEN)
+        title_block = user_content[title_start:user_content.index(UNTRUSTED_TITLE_CLOSE)]
+        text_start = user_content.index(UNTRUSTED_TEXT_OPEN) + len(UNTRUSTED_TEXT_OPEN)
+        text_block = user_content[text_start:user_content.index(UNTRUSTED_TEXT_CLOSE)]
+        for block in (title_block, text_block):
+            for literal in (
+                UNTRUSTED_TITLE_OPEN,
+                UNTRUSTED_TITLE_CLOSE,
+                UNTRUSTED_TEXT_OPEN,
+                UNTRUSTED_TEXT_CLOSE,
+            ):
+                assert literal not in block
+        assert len(text_block.strip("\n")) <= MAX_INPUT_CHARS
+        assert len(title_block.strip("\n")) <= RAW_TITLE_PROMPT_MAX_LENGTH
 
 
 class TestEscalationFailureFallback:
