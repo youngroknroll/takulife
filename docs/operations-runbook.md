@@ -354,8 +354,11 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   서버 배포 즉시 적용된다. 러너 복제본(`local_runner/url_safety.py`)은 러너를
   재시작해야 반영된다 — 서버가 직접 fetch하는 경로는 서버 배포로 즉시
   보호되고, 러너가 요청하는 경로는 러너 재시작 전까지 이전 판정을 쓴다.
-- **env 파일**: 러너 시크릿(`DRAFT_DISCOVERY_RUNNER_TOKEN`,
-  `TAKULIFE_SERVER_URL` 등)은 저장소 밖 `~/.takulife-runner.env`에
+  러너 재시작 전에 맥 저장소를 머지된 main으로 맞춘 뒤 `uv sync`를
+  실행한다(러너가 옛 코드·옛 의존성으로 뜨는 것을 막는다).
+- **env 파일**: 러너 시크릿(러너가 읽는 이름은 `TAKULIFE_RUNNER_TOKEN`,
+  `TAKULIFE_SERVER_URL` `[코드 local_runner/config.py:53-54]`이고,
+  `DRAFT_DISCOVERY_RUNNER_TOKEN`은 서버 설정 이름이다)은 저장소 밖 `~/.takulife-runner.env`에
   `chmod 600`으로 둔다. 실행 전 `set -a; source
   ~/.takulife-runner.env; set +a`로 셸에 로드한 뒤 `uv run python -m
   local_runner.runner`로 기동한다. 토큰 값은 이 문서를 포함해 어떤
@@ -405,6 +408,19 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   단계 실패는 로그에 `translation step failed`로 찍힌다. 격리된 언어는
   같은 보고 명령의 `quarantined_en`·`quarantined_ja`·`quarantined_zh-hans`로
   센다.
+- **번역 러너 로그(이벤트당 1줄, 로거 `local_runner.translation_flow`)**:
+  성공 INFO `translation event done event_id=… elapsed_seconds=… saved=…
+  quarantined=…`, 실패 WARNING `translation event failed event_id=…
+  error=… status=…`.
+- **실패 처리**: 5xx·429·통신 오류는 배치를 중단하고 시도 횟수를 올리지
+  않아 다음 폴링에서 재시도한다. 4xx(429 제외)·출력 오류
+  (`AdapterOutputError`)·`ValueError`는 시도 횟수에 반영되어 2회 후
+  건너뛴다.
+- **첫 백필 중 수집 지연**: 번역 단계는 폴링 성공마다 순차 실행되어 평시
+  3건×약 10.3초≈31초 `[계산]`, 최악 3건×2회×120초=720초 `[계산]` 동안 새
+  탐색 claim이 늦어진다.
+- **`client_ip` 로그**: `TRUSTED_PROXY_COUNT`가 설정돼야 실제 IP이다
+  `[코드 core/ip.py]`. 미설정이면 프록시 IP가 찍혀 유출 판단에 쓸 수 없다.
 - **번역 선점·유출 의심 시 복구**: 감사 로그의 WARNING 사유 코드가 갑자기
   늘거나 모르는 `client_ip`가 보이면 러너 토큰 유출을 의심한다. ①
   위 토큰 회전 절차로 토큰을 바꾼다. ② 의심 이벤트의 번역 저장소를

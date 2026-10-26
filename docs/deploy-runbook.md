@@ -207,6 +207,9 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     "SELECT count(*) FROM accounts_user WHERE nickname IS NULL;"` → `0`(0006
     백필+NOT NULL 전환이 전 회원에 적용됐는지, `docs/BE/account-identity.md`
     (d) 참고).
+    > 항목 16~19의 `uv run …`은 컨테이너 셸이 아니라 **로컬 맥 저장소에서
+    > 운영 `DATABASE_URL`을 환경에 넣고** 실행한다 — 런타임 이미지에는 `uv`가
+    > 없다 `[코드 Dockerfile:3-4]`.
 16. **배포 전 공식 URL 스킴 확인(트랙 40, F1)**: 아래 명령으로 운영 DB에서
     http(s)가 아니거나 호스트가 없는 `official_url` 행 수를 확인한다.
     ```bash
@@ -245,13 +248,15 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 19. **행사 콘텐츠 번역(트랙 44-1) 배포 확인**:
     - 마이그레이션 `events.0008_event_text_translations`가 적용됐는지 배포
       로그로 확인한다.
+    - 0009 적용 확인: `psql "$DATABASE_URL" -c "\d events_event"`에서
+      `text_translations`의 default가 `'{}'::jsonb`인지 확인한다.
     - `curl -s -o /dev/null -w '%{http_code}' -X POST
       https://<host>/api/translation/runner/pending/`가 토큰 없이 `403`인지
       확인한다.
     - 공개 API가 번역 저장소를 노출하지 않는지
       `curl -s https://<host>/api/events/ | grep -c text_translations`가
       `0`인지 확인한다.
-    - 운영 셸에서 `uv run python manage.py report_translation_queue`를 실행해
+    - 로컬 맥에서 운영 `DATABASE_URL`로 `uv run python manage.py report_translation_queue`를 실행해
       `published` 값이 게시 이벤트 수와 같은지 확인하고, 러너를 새 코드로
       재시작한 뒤 `pending`이 줄어드는지, 러너 로그에 `translation step
       failed` 경고가 반복되지 않는지 확인한다. 번역은 러너가 켜져 있는
@@ -306,11 +311,18 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   **하나의 커밋**으로 되돌린다. 일부만 되돌리면 `<html lang>`이 `ko`가
   아닌 값으로 남는 코스메틱 회귀가 생긴다. 마이그레이션 역적용은 없고,
   `locale/` 아래 `.po` 잔존은 무해하다.
-- **행사 콘텐츠 번역(트랙 44-1) 롤백**: 코드만 이전 이미지로 되돌리는 것은
-  안전하다(`text_translations` 열이 남아도 무해). **마이그레이션
-  `events.0008_event_text_translations`를 역적용(`migrate events 0007`)하면
-  `text_translations` 열이 삭제되어 번역 데이터가 전량 사라진다** — 역적용은
-  번역을 러너로 다시 만드는 비용을 감수할 때만 한다.
+- **행사 콘텐츠 번역(트랙 44-1) 롤백**: 마이그레이션
+  `events.0009_event_text_translations_db_default`가 `text_translations`에 DB
+  기본값 `'{}'::jsonb`를 두므로 코드만 이전 이미지로 되돌려도 구 코드의
+  INSERT(열을 모르는 쿼리)가 NOT NULL 위반으로 깨지지 않는다 — 게시가
+  유지된다. 0009 **이전** 상태(0008만 적용)로 돌아가는 경우에만 기본값이
+  없으니 `psql "$DATABASE_URL" -c "ALTER TABLE events_event ALTER COLUMN
+  text_translations SET DEFAULT '{}'::jsonb;"`를 먼저 실행한다(없으면 구
+  코드의 이벤트 게시가 IntegrityError로 실패하고 "공식 URL 중복"으로
+  오진된다). **마이그레이션 `events.0008_event_text_translations`를
+  역적용(`migrate events 0007`)하면 `text_translations` 열이 삭제되어 번역
+  데이터가 전량 사라진다** — 역적용은 번역을 러너로 다시 만드는 비용을
+  감수할 때만 한다.
 
 ## 6. 미검증 항목 (첫 배포에서 채울 것)
 
