@@ -49,10 +49,14 @@ def _is_documentation_endpoint(path):
 
 
 # 러너 경계는 비밀 토큰 기반 기계 간 API라 공개 문서에서 의도적으로 뺐다
-# (drafts/runner_views.py의 @extend_schema(exclude=True)와 짝을 이루는 결정 —
-# 완전성 가드가 이를 누락으로 오판하지 않도록 여기서도 명시한다).
+# (drafts/runner_views.py·events/runner_views.py의 @extend_schema(exclude=True)와
+# 짝을 이루는 결정 — 완전성 가드가 이를 누락으로 오판하지 않도록 여기서도 명시한다).
 # 프론트 오류 수집(core/client_error_views.py)도 브라우저 내부 텔레메트리라 같은 이유로 뺀다.
-_INTENTIONALLY_UNDOCUMENTED_PREFIXES = ("/api/discovery/runner/", "/api/client-errors/")
+_INTENTIONALLY_UNDOCUMENTED_PREFIXES = (
+    "/api/discovery/runner/",
+    "/api/translation/runner/",
+    "/api/client-errors/",
+)
 
 
 def _is_intentionally_undocumented(path):
@@ -111,14 +115,16 @@ def test_공개_스키마의_모든_경로는_api_프리픽스로_시작한다()
 
 @pytest.mark.contract
 def test_공개_스키마에_러너_경계_경로가_노출되지_않는다():
-    """비밀 토큰 기반 러너 경계는 공개 API 문서로 새면 안 된다."""
+    """비밀 토큰 기반 러너 경계(드래프트 탐색·번역)는 공개 API 문서로 새면 안 된다."""
     from drf_spectacular.generators import SchemaGenerator
 
     generator = SchemaGenerator()
     schema = generator.get_schema(request=None, public=True)
 
     runner_paths = {
-        path for path in schema["paths"] if path.startswith("/api/discovery/runner/")
+        path
+        for path in schema["paths"]
+        if path.startswith(("/api/discovery/runner/", "/api/translation/runner/"))
     }
 
     assert not runner_paths, runner_paths
