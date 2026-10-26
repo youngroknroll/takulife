@@ -76,14 +76,21 @@ def test_공개_이벤트_API는_번역_저장소를_응답에_담지_않는다(
 def test_검색은_번역문을_대상으로_하지_않는다(client, make_event):
     event = make_event(**_translation_fields(), text_translations=_current_hash_translations())
 
-    api_response = client.get("/api/events/", {"q": "Tokyo"})
-    web_response = client.get("/events/", {"q": "Tokyo", "status": "all"})
+    api_hit = client.get("/api/events/", {"q": "도쿄"})
+    web_hit = client.get("/events/", {"q": "도쿄", "status": "all"})
+    api_translated = client.get("/api/events/", {"q": "Tokyo"})
+    web_translated = client.get("/events/", {"q": "Tokyo", "status": "all"})
 
-    assert api_response.status_code == 200
-    assert [item["id"] for item in api_response.json()["results"]] == []
+    # 양성 대조: 원문(한국어)으로는 검색되어, 번역문 미검색 단언이 빈 결과 때문이 아님을 보인다.
+    assert api_hit.status_code == 200
+    assert [item["id"] for item in api_hit.json()["results"]] == [event.id]
+    assert web_hit.status_code == 200
+    assert event in list(web_hit.context["page_obj"].object_list)
 
-    assert web_response.status_code == 200
-    assert event not in list(web_response.context["page_obj"].object_list)
+    assert api_translated.status_code == 200
+    assert api_translated.json()["results"] == []
+    assert web_translated.status_code == 200
+    assert event not in list(web_translated.context["page_obj"].object_list)
 
 
 def test_사이트맵은_번역_저장_여부와_무관하다(client, make_event):
@@ -127,6 +134,8 @@ def test_공개_면을_만드는_모듈_소스는_번역_저장소를_참조하�
     target_paths = [
         project_root / "events" / "serializers.py",
         project_root / "events" / "queries.py",
+        project_root / "events" / "presenters.py",
+        project_root / "core" / "presenters.py",
         project_root / "web" / "sitemaps.py",
     ]
 

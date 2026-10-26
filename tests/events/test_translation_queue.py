@@ -1,11 +1,9 @@
-"""번역 대기 큐 pending_events의 선정·배제·정렬 규칙 — DB가 필요한 도메인 테스트.
-
-events/translation_queue.py 없음(트랙 44-1 묶음 ④ 구현 전) → 전부 ImportError로 Red.
-"""
+"""번역 대기 큐 pending_events의 선정·배제·정렬 규칙 — DB가 필요한 도메인 테스트."""
 import pytest
 
 from events.content_translation import TRANSLATED_FIELDS, source_hash
 from events.models import Event
+from events.translation_queue import PENDING_LIMIT, pending_events
 
 pytestmark = pytest.mark.domain
 
@@ -18,8 +16,6 @@ def _event_fields(event):
 def test_게시되지_않은_이벤트는_대기_목록에_없다(make_event, make_draft_event):
     published = make_event(title="게시된 행사")
     make_draft_event(title="초안 행사")
-
-    from events.translation_queue import pending_events
 
     result = pending_events()
 
@@ -34,8 +30,6 @@ def test_번역이_없는_게시_이벤트는_대기_목록에_원문_필드와_
         location_name="도쿄 빅사이트",
         summary="10월 24일 개최",
     )
-
-    from events.translation_queue import pending_events
 
     result = pending_events()
 
@@ -54,8 +48,6 @@ def test_대기_목록은_20건을_넘지_않는다(make_event):
     for index in range(25):
         make_event(title=f"행사 {index}")
 
-    from events.translation_queue import pending_events, PENDING_LIMIT
-
     assert PENDING_LIMIT == 20
     assert len(pending_events()) == 20
     assert len(pending_events(limit=5)) == 5
@@ -65,24 +57,21 @@ def test_대기_목록은_20건을_넘지_않는다(make_event):
 def test_한도가_0이면_빈_목록이다(make_event):
     make_event(title="번역 없는 게시 행사")
 
-    from events.translation_queue import pending_events
-
     assert pending_events(limit=0) == []
 
 
 @pytest.mark.django_db
-def test_오래_기다린_이벤트가_먼저_나온다(make_event):
+def test_대기_목록은_이벤트_id_오름차순이다(make_event):
     first = make_event(title="A")
     second = make_event(title="B")
     third = make_event(title="C")
+    # 갱신 순서를 id 순서와 다르게 섞어, 정렬이 id 기준임을 구분한다.
+    third.view_count = 1
+    third.save()
     first.view_count = 5
     first.save()
     second.view_count = 50
     second.save()
-    third.view_count = 1
-    third.save()
-
-    from events.translation_queue import pending_events
 
     result = pending_events()
 
@@ -94,8 +83,6 @@ def test_manual_이벤트는_대기_목록에서_빠진다(make_event):
     event = make_event(title="수동 번역 확정")
     event.text_translations = {"manual": True, "source_hash": "낡은-해시"}
     event.save()
-
-    from events.translation_queue import pending_events
 
     result = pending_events()
 
@@ -115,8 +102,6 @@ def test_번역이_현재_해시로_저장된_이벤트는_대기_목록에서_�
     }
     event.save()
 
-    from events.translation_queue import pending_events
-
     result = pending_events()
 
     assert [item["event_id"] for item in result] == []
@@ -134,8 +119,6 @@ def test_격리된_언어가_있어도_해시가_같으면_대기_목록에_다�
         "zh-hans": None,
     }
     event.save()
-
-    from events.translation_queue import pending_events
 
     result = pending_events()
 
@@ -159,8 +142,6 @@ def test_원문이_바뀌면_번역된_이벤트가_다시_대기_목록에_나�
     event.save()
     new_hash = source_hash(_event_fields(event))
 
-    from events.translation_queue import pending_events
-
     result = pending_events()
 
     assert [item["event_id"] for item in result] == [event.id]
@@ -180,8 +161,6 @@ def test_엔트리의_해시가_낡은_이벤트는_번역이_있어도_대기_�
     }
     event.save()
 
-    from events.translation_queue import pending_events
-
     result = pending_events()
 
     assert [item["event_id"] for item in result] == [event.id]
@@ -191,8 +170,6 @@ def test_엔트리의_해시가_낡은_이벤트는_번역이_있어도_대기_�
 def test_저장값이_dict가_아니어도_대기_목록이_깨지지_않는다(make_event):
     event = make_event(title="손상된 저장값")
     Event.objects.filter(pk=event.pk).update(text_translations=[])
-
-    from events.translation_queue import pending_events
 
     result = pending_events()
 

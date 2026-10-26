@@ -1,8 +1,4 @@
-"""번역 러너 API 인증·계약 테스트 — X-Runner-Token 헤더와 응답/상태 코드 계약.
-
-api/translation/runner/pending/·submit/ 경로가 아직 config/urls.py에 없다
-(트랙 44-1 묶음 ⑤ 구현 전) → 전부 경로 부재 404로 Red가 될 것으로 예상한다.
-"""
+"""번역 러너 API 인증·계약 테스트 — X-Runner-Token 헤더와 응답/상태 코드 계약."""
 import logging
 
 import pytest
@@ -447,6 +443,29 @@ def test_번역_러너는_자기_scope_한도를_넘으면_429이다(client, run
 
     assert first_response.status_code == 200
     assert second_response.status_code == 200
+    assert third_response.status_code == 429
+
+
+def test_번역_러너_스로틀은_X_Forwarded_For를_바꿔도_한_버킷으로_센다(client, runner_headers, monkeypatch, clear_cache):
+    monkeypatch.setattr(
+        RunnerTokenThrottle, "THROTTLE_RATES", {"translation_runner": "2/minute"}
+    )
+
+    first_response = client.post(
+        PENDING_URL, data={}, content_type="application/json",
+        HTTP_X_FORWARDED_FOR="1.1.1.1", **runner_headers,
+    )
+    second_response = client.post(
+        PENDING_URL, data={}, content_type="application/json",
+        HTTP_X_FORWARDED_FOR="2.2.2.2", **runner_headers,
+    )
+    third_response = client.post(
+        PENDING_URL, data={}, content_type="application/json", **runner_headers,
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    # 주소가 달라도 세 번째가 막히면 토큰 하나로 한 버킷을 세는 것이다.
     assert third_response.status_code == 429
 
 
