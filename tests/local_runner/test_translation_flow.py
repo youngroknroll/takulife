@@ -3,6 +3,7 @@ TR-38·TR-45) — 번역 프롬프트 구성, 출력 파싱, 보정 재시도 1�
 2건만 CLI 호출 인자(argv)·시간 상한을 직접 잡아 확인한다. DB·실제 HTTP·실제
 claude 없음."""
 import json
+import time
 
 import pytest
 
@@ -154,10 +155,41 @@ def test_프롬프트는_간체_지시_통화_환산_금지_출력_스키마를_
 
     assert "Simplified Chinese" in prompt
     for lang in TRANSLATION_LANGUAGES:
-        assert lang in prompt
+        assert f'"{lang}"' in prompt
     for field in TRANSLATION_FIELDS:
-        assert field in prompt
+        assert f'"{field}"' in prompt
+    assert "환산하지 말" in prompt
     assert "KRW" in prompt
+
+
+def test_상한을_넘는_깊은_중첩_구획_리터럴_입력도_빠르게_처리되고_리터럴은_남지_않는다():
+    def nested(depth):
+        return "<untrusted_" * depth + UNTRUSTED_OPEN + "event_text>" * depth
+
+    fields = _원문_필드(summary=nested(50) + nested(40000))
+
+    started = time.perf_counter()
+    prompt = build_translation_prompt(fields)
+    elapsed = time.perf_counter() - started
+
+    assert elapsed < 2.0
+    assert prompt.count(UNTRUSTED_OPEN) == 1
+    assert prompt.count(UNTRUSTED_CLOSE) == 1
+    data_block = prompt.split(UNTRUSTED_OPEN, 1)[1].split(UNTRUSTED_CLOSE, 1)[0]
+    assert UNTRUSTED_OPEN not in data_block
+    assert UNTRUSTED_CLOSE not in data_block
+    summary_value = data_block.split("summary: ", 1)[1].strip()
+    assert len(summary_value) <= 4000
+
+
+def test_프롬프트는_출력에_꺾쇠_대신_겹낫표나_따옴표를_쓰라고_지시한다():
+    prompt = build_translation_prompt(_원문_필드())
+
+    before, rest = prompt.split(UNTRUSTED_OPEN, 1)
+    instructions = before + rest.split(UNTRUSTED_CLOSE, 1)[1]
+
+    assert "꺾쇠" in instructions
+    assert "《》" in instructions
 
 
 # ---------------------------------------------------------------------------

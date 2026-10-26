@@ -141,6 +141,24 @@ URL)만으로 판단해야 한다. 페이지 본문을 확인했다고 추측하
 """
 
 
+def _parse_envelope(stdout):
+    try:
+        envelope = json.loads(stdout)
+    except json.JSONDecodeError as exc:
+        raise AdapterOutputError("claude CLI produced non-JSON envelope") from exc
+
+    if not isinstance(envelope, dict):
+        raise AdapterOutputError("claude CLI envelope is not an object")
+
+    if envelope.get("is_error"):
+        raise AdapterOutputError("claude CLI reported is_error=true")
+
+    result = envelope.get("result", "")
+    if not isinstance(result, str):
+        raise AdapterOutputError("claude CLI result is not a string")
+    return result
+
+
 def _execute_claude(prompt, *, tools, strict_mcp, timeout=AGENT_TIMEOUT_SECONDS):
     # --tools로 도구 집합을 호출자가 정한 목록으로 제한하고, 대화형 프롬프트
     # 대기가 없도록 권한 모드를 바꾼다. 이 CLI 버전엔 --max-turns가 없다.
@@ -178,15 +196,7 @@ def _execute_claude(prompt, *, tools, strict_mcp, timeout=AGENT_TIMEOUT_SECONDS)
     if completed.returncode != 0:
         raise AdapterOutputError(f"claude CLI exited with {completed.returncode}")
 
-    try:
-        envelope = json.loads(completed.stdout)
-    except json.JSONDecodeError as exc:
-        raise AdapterOutputError("claude CLI produced non-JSON envelope") from exc
-
-    if envelope.get("is_error"):
-        raise AdapterOutputError("claude CLI reported is_error=true")
-
-    return envelope.get("result", "")
+    return _parse_envelope(completed.stdout)
 
 
 def run_agent_exploration(prompt, execute=None):

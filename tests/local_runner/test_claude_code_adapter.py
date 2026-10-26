@@ -261,3 +261,28 @@ def test_대역_없이_탐색을_돌리면_탐색용_도구_인자가_실제로_
     tools_index = argv.index("--tools")
     assert argv[tools_index + 1] == "WebSearch,WebFetch"
     assert "--strict-mcp-config" in argv
+
+
+class _스텁_완료_프로세스:
+    returncode = 0
+    stderr = ""
+
+    def __init__(self, stdout):
+        self.stdout = stdout
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    ["[]", '"text"', '{"result": 5, "is_error": false}', '{"result": null, "is_error": false}'],
+    ids=["봉투가_리스트", "봉투가_문자열", "result가_숫자", "result가_null"],
+)
+def test_claude가_예상_밖_모양의_봉투를_돌려주면_탐색이_어댑터_출력_오류로_실패한다(
+    stdout, monkeypatch
+):
+    monkeypatch.setattr(
+        "local_runner.claude_code_adapter.subprocess.run",
+        lambda argv, **kwargs: _스텁_완료_프로세스(stdout),
+    )
+
+    with pytest.raises(AdapterOutputError):
+        run_agent_exploration("탐색해줘")

@@ -252,8 +252,7 @@ def _safe_poll(client, progress=None):
     return True
 
 
-def _safe_translate(translation_client, attempts, progress=None):
-    # 실제 heartbeat는 progress로 나가므로 main()은 항상 progress를 넘긴다.
+def _safe_translate(translation_client, attempts, progress):
     ticker = _HeartbeatTicker(translation_client, POLL_INTERVAL_SECONDS, progress=progress)
     ticker.start()
     try:

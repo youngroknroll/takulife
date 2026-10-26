@@ -8,6 +8,7 @@ import pytest
 
 from local_runner.client import TranslationRunnerClient
 from local_runner.config import RunnerConfig
+from local_runner.translation_flow import translate_pending_batch
 
 
 pytestmark = pytest.mark.unit
@@ -90,16 +91,39 @@ def test_서버가_4xx를_돌려주면_HTTPStatusError가_난다(monkeypatch):
         client.submit(event_id=1, source_hash="h", translations={})
 
 
-def test_토큰이_로그에_남지_않는다(monkeypatch, caplog):
+@pytest.mark.parametrize("path", ["대기_조회_성공", "제출_거부_실패"])
+def test_성공과_실패_어느_경로에서도_러너_토큰이_로그에_남지_않는다(path, monkeypatch, caplog):
+    token = "super-secret-token"
+    pending_event = {
+        "event_id": 1,
+        "source_hash": "h",
+        "fields": {"title": "제목", "work_title": "", "location_name": "", "summary": ""},
+    }
+
+    class _SubmitRejected:
+        def raise_for_status(self):
+            request = httpx.Request("POST", "https://example.com/x", headers={"X-Runner-Token": token})
+            response = httpx.Response(409, request=request)
+            raise httpx.HTTPStatusError("conflict", request=request, response=response)
+
     def fake_post(url, *, json, headers, timeout):
-        return _FakeResponse({"events": []})
+        if url.endswith("/pending/"):
+            return _FakeResponse({"events": [pending_event]})
+        return _SubmitRejected()
 
     monkeypatch.setattr("local_runner.client.httpx.post", fake_post)
 
-    config = RunnerConfig(server_url="https://example.com", runner_token="super-secret-token")
+    config = RunnerConfig(server_url="https://example.com", runner_token=token)
     client = TranslationRunnerClient(config)
 
-    with caplog.at_level(logging.DEBUG):
-        client.pending()
+    def _translate(fields):
+        empty = {"title": "t", "work_title": "", "location_name": "", "summary": ""}
+        return {"en": empty, "ja": empty, "zh-hans": empty}
 
-    assert "super-secret-token" not in caplog.text
+    with caplog.at_level(logging.DEBUG):
+        if path == "대기_조회_성공":
+            client.pending()
+        else:
+            translate_pending_batch(client, attempts={}, translate=_translate)
+
+    assert token not in caplog.text

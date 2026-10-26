@@ -11,6 +11,8 @@ from local_runner.claude_code_adapter import AdapterOutputError
 
 pytestmark = pytest.mark.unit
 
+_원본_safe_translate = runner_module._safe_translate
+
 
 def _성공_번역(translation_client, attempts, progress=None):
     return 1
@@ -38,7 +40,7 @@ def test_번역_단계_실패가_폴링_루프를_멈추지_않는다(exception,
 
     monkeypatch.setattr(runner_module, "translate_pending_batch", _raise)
 
-    result = runner_module._safe_translate(object(), {})
+    result = runner_module._safe_translate(object(), {}, _FakeProgress())
 
     assert result is False
 
@@ -46,7 +48,7 @@ def test_번역_단계_실패가_폴링_루프를_멈추지_않는다(exception,
 def test_번역_단계_성공은_True를_돌려준다(monkeypatch):
     monkeypatch.setattr(runner_module, "translate_pending_batch", _성공_번역)
 
-    result = runner_module._safe_translate(object(), {})
+    result = runner_module._safe_translate(object(), {}, _FakeProgress())
 
     assert result is True
 
@@ -58,7 +60,7 @@ def test_KeyboardInterrupt는_삼키지_않는다(monkeypatch):
     monkeypatch.setattr(runner_module, "translate_pending_batch", _raise)
 
     with pytest.raises(KeyboardInterrupt):
-        runner_module._safe_translate(object(), {})
+        runner_module._safe_translate(object(), {}, _FakeProgress())
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +92,7 @@ def test_번역_단계는_하트비트_티커_안에서_돌고_성공하면_순�
     monkeypatch.setattr(runner_module, "_HeartbeatTicker", _기록하는_가짜_티커_클래스(calls))
     monkeypatch.setattr(runner_module, "translate_pending_batch", _translate)
 
-    result = runner_module._safe_translate(object(), {})
+    result = runner_module._safe_translate(object(), {}, _FakeProgress())
 
     assert result is True
     assert calls == [("ticker", "start"), ("translate",), ("ticker", "stop")]
@@ -106,7 +108,7 @@ def test_번역_단계는_실패해도_하트비트_티커를_멈춘다(monkeypa
     monkeypatch.setattr(runner_module, "_HeartbeatTicker", _기록하는_가짜_티커_클래스(calls))
     monkeypatch.setattr(runner_module, "translate_pending_batch", _translate)
 
-    result = runner_module._safe_translate(object(), {})
+    result = runner_module._safe_translate(object(), {}, _FakeProgress())
 
     assert result is False
     assert calls == [("ticker", "start"), ("translate",), ("ticker", "stop")]
@@ -174,3 +176,49 @@ def test_main_배선_폴링이_실패하면_번역_단계를_건너뛴다(monkey
     runner_module.main()
 
     assert calls == ["poll"]
+
+
+def test_main은_번역_단계에_자기가_만든_진행_보고기를_넘긴다(monkeypatch):
+    sentinel = object()
+    seen = []
+
+    def fake_safe_translate(translation_client, attempts, progress):
+        seen.append(progress)
+        return True
+
+    _main_배선_공통_패치(monkeypatch, safe_poll_result=True, calls=[])
+    monkeypatch.setattr(runner_module, "ProgressReporter", lambda client: sentinel)
+    monkeypatch.setattr(runner_module, "_safe_translate", fake_safe_translate)
+
+    runner_module.main()
+
+    assert len(seen) == 1
+    assert seen[0] is sentinel
+
+
+def test_번역_단계가_예외를_던져도_다음_회전에서_폴링을_다시_한다(monkeypatch):
+    # 실제 _safe_translate·_HeartbeatTicker를 쓴다 — 번역 예외를 삼키는 지점이 대상이다.
+    calls = []
+    sleeps = []
+
+    def fake_safe_poll(client, progress=None):
+        calls.append("poll")
+        return True
+
+    def fake_translate(translation_client, attempts, progress=None):
+        raise httpx.ConnectError("boom")
+
+    def fake_sleep(seconds):
+        sleeps.append(seconds)
+        if len(sleeps) >= 2:
+            raise KeyboardInterrupt()
+
+    _main_배선_공통_패치(monkeypatch, safe_poll_result=True, calls=[])
+    monkeypatch.setattr(runner_module, "_safe_poll", fake_safe_poll)
+    monkeypatch.setattr(runner_module, "_safe_translate", _원본_safe_translate)
+    monkeypatch.setattr(runner_module, "translate_pending_batch", fake_translate)
+    monkeypatch.setattr(runner_module.time, "sleep", fake_sleep)
+
+    runner_module.main()
+
+    assert calls == ["poll", "poll"]
