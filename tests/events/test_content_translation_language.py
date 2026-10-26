@@ -6,7 +6,7 @@ import unicodedata
 
 import pytest
 
-from events.content_translation import TARGET_LANGUAGES, quarantine_reason
+from events.content_translation import FIELD_MAX_LENGTH, TARGET_LANGUAGES, quarantine_reason
 
 pytestmark = pytest.mark.unit
 
@@ -73,15 +73,16 @@ def test_일본어_번역이_열_자_이하이고_한자만_있으면_통과한�
     assert quarantine_reason("ja", _source(), translated) is None
 
 
-@pytest.mark.parametrize(
-    "summary, expected",
-    [("東京国際展示場開催期", None), ("東京国際展示場開催期間", "wrong_script")],
-    ids=["열_자_한자만_통과", "열한_자_한자만_격리"],
-)
-def test_일본어_번역이_열한_자_이상이면_한자만으로는_격리된다(summary, expected):
-    translated = _ja(summary=summary)
+def test_일본어_번역이_정확히_열_자이고_한자만이면_통과한다():
+    translated = _ja(summary="東京国際展示場開催期")
 
-    assert quarantine_reason("ja", _source(), translated) == expected
+    assert quarantine_reason("ja", _source(), translated) is None
+
+
+def test_일본어_번역이_열한_자이고_한자만이면_격리된다():
+    translated = _ja(summary="東京国際展示場開催期間")
+
+    assert quarantine_reason("ja", _source(), translated) == "wrong_script"
 
 
 def test_중국어_간체_번역에_가나가_섞이면_격리된다():
@@ -311,8 +312,49 @@ def test_반각_한글이_남아도_격리된다():
     ],
     ids=["둘_다_빈_문자열", "원문만_빈_문자열", "번역이_빈_문자열", "번역이_공백뿐"],
 )
-def test_빈_칸_규칙(source_work_title, translated_work_title, expected):
+def test_원문과_번역의_빈_칸_조합에_따라_사유가_정해진다(source_work_title, translated_work_title, expected):
     source = _source(work_title=source_work_title)
     translated = _en(work_title=translated_work_title)
 
     assert quarantine_reason("en", source, translated) == expected
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("\x0b" * (FIELD_MAX_LENGTH["work_title"] + 1), "too_long"),
+        ("\x0b", "control_char"),
+        (" \n", None),
+    ],
+    ids=["수직탭_상한초과", "수직탭_하나", "공백_줄바꿈뿐"],
+)
+def test_원문이_비었고_번역이_공백_문자뿐이어도_길이와_제어문자_검사가_먼저_돈다(value, expected):
+    source = _source(work_title="")
+    translated = _en(work_title=value)
+
+    assert quarantine_reason("en", source, translated) == expected
+
+
+@pytest.mark.parametrize(
+    "field, value, expected",
+    [
+        ("title", "2026 Tokyo" + chr(0xD800) + " Comic Market", "control_char"),
+        ("summary", "Held on October 24 " + chr(0x1F600), None),
+    ],
+    ids=["외톨이_서로게이트", "이모지_정상"],
+)
+def test_외톨이_서로게이트가_있으면_격리된다(field, value, expected):
+    translated = _en(**{field: value})
+
+    assert quarantine_reason("en", _source(), translated) == expected
+
+
+@pytest.mark.parametrize(
+    "value",
+    [chr(0xD7) * 2, chr(0xF7) * 2],
+    ids=["곱셈_기호", "나눗셈_기호"],
+)
+def test_영어_번역이_곱셈_나눗셈_기호뿐이면_격리된다(value):
+    translated = _en(work_title=value)
+
+    assert quarantine_reason("en", _source(), translated) == "wrong_script"

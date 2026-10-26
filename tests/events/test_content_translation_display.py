@@ -107,3 +107,21 @@ def test_원문_반환_시_번역_대상_네_필드만_담긴다():
 
     assert result.fields == _source()
     assert set(result.fields.keys()) == {"title", "work_title", "location_name", "summary"}
+
+
+@pytest.mark.parametrize(
+    "broken_en",
+    [
+        {"title": "x"},
+        {**_en(), "title": 123},
+        {**_en(), "summary": None},
+    ],
+    ids=["필드_누락", "값이_정수", "값이_None"],
+)
+def test_해당_언어_엔트리의_네_필드가_전부_문자열이_아니면_원문을_반환한다(broken_en):
+    source = _source()
+    text_translations = {**_text_translations(source), "en": broken_en}
+
+    result = select_display(source, text_translations, "en")
+
+    assert result == DisplayText(fields=source, is_translated=False)

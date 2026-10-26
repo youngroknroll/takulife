@@ -176,3 +176,95 @@ def test_통화_코드와_기호_종류별로_격리된다(summary):
     source = _source(summary="입장료 50000원")
 
     assert quarantine_reason("en", source, _en(summary=summary)) == "currency_changed"
+
+
+def test_시각_표기의_분_00은_지어낸_숫자로_보지_않는다():
+    source = _source(summary="오후 2시 시작")
+    translated = _en(summary="Starts at 2:00 PM")
+
+    assert quarantine_reason("en", source, translated) is None
+
+
+@pytest.mark.parametrize(
+    "source_summary, translated_summary, expected",
+    [
+        ("03.15 개최", "Held on 3/15", None),
+        ("0315", "Code 315", "number_missing"),
+    ],
+    ids=["03.15가_3/15로", "0315가_315로"],
+)
+def test_선행_0은_지어낸_숫자_비교에서만_무시하고_네_자리_보존은_원형으로_본다(
+    source_summary, translated_summary, expected
+):
+    source = _source(summary=source_summary)
+    translated = _en(summary=translated_summary)
+
+    assert quarantine_reason("en", source, translated) == expected
+
+
+@pytest.mark.parametrize(
+    "translated_summary",
+    ["Admission KRW 50,000", "Admission 5 man won"],
+    ids=["5만원이_50000으로", "확장_숫자_없는_번역"],
+)
+def test_원문의_만_천_억_표기는_번역의_확장_숫자를_허용하되_보존_의무는_만들지_않는다(translated_summary):
+    source = _source(summary="입장료 5만원")
+
+    assert quarantine_reason("en", source, _en(summary=translated_summary)) is None
+
+
+@pytest.mark.parametrize(
+    "source_summary, translated_summary",
+    [
+        ("500원", "Admission 0 KRW"),
+        ("500원", "Admission 00 KRW"),
+        ("1.5만원", "KRW 50,000"),
+        ("5만5천원", "KRW 50,000"),
+    ],
+    ids=["영_단독", "영영_단독", "소수_뒤_만", "만_뒤_천"],
+)
+def test_영_단독_토큰이나_확장이_안_되는_표기의_숫자는_지어낸_것으로_격리된다(
+    source_summary, translated_summary
+):
+    source = _source(summary=source_summary)
+    translated = _en(summary=translated_summary)
+
+    assert quarantine_reason("en", source, translated) == "number_invented"
+
+
+@pytest.mark.parametrize(
+    "translated_summary",
+    [
+        "See details at www.example.com.",
+        "See details at www.example.com,",
+        "Details (www.example.com)",
+        "See details at " + _전각("www.example.com."),
+    ],
+    ids=["마침표", "쉼표", "닫는_괄호", "전각_접힌_경로"],
+)
+def test_번역이_원문에_있던_URL_뒤에_문장_부호를_붙여도_통과한다(translated_summary):
+    source = _source(summary="자세히 www.example.com 참고")
+
+    assert quarantine_reason("en", source, _en(summary=translated_summary)) is None
+
+
+@pytest.mark.parametrize(
+    "source_summary, translated_summary",
+    [
+        ("자세히 www.example.com 참고", "See details at www.example.com. Also www.evil.com."),
+        ("자세히 https://example.com 참고", "See https://."),
+        ("자세히 www.example.com 참고", "See www.."),
+    ],
+    ids=["원문에_없는_도메인", "스킴만_남음", "www_점_둘"],
+)
+def test_구두점을_자른_뒤에도_원문에_없거나_스킴만_남는_URL은_격리된다(source_summary, translated_summary):
+    source = _source(summary=source_summary)
+
+    assert quarantine_reason("en", source, _en(summary=translated_summary)) == "unexpected_markup"
+
+
+def test_원문에는_전각_꺾쇠_태그만_있고_번역에는_반각_태그가_있으면_격리된다():
+    source = _source(summary="공지 " + chr(0xFF1C) + "b" + chr(0xFF1E))
+    translated = _en(summary="Notice <b>")
+
+    assert quarantine_reason("en", source, translated) == "unexpected_markup"
