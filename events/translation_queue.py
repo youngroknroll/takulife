@@ -50,6 +50,45 @@ def pending_events(*, limit=PENDING_LIMIT):
     return results
 
 
+def queue_report():
+    """게시 이벤트를 훑어 대기·최신·수동·언어별 격리 건수를 센다. 쓰기는
+    하지 않는다 — 집계만 하는 읽기 전용 보고다."""
+    counts = {
+        "published": 0,
+        "pending": 0,
+        "up_to_date": 0,
+        "manual": 0,
+        "quarantined_en": 0,
+        "quarantined_ja": 0,
+        "quarantined_zh-hans": 0,
+    }
+
+    columns = ("id", "text_translations", *rules.TRANSLATED_FIELDS)
+    queryset = Event.objects.published().only(*columns).iterator()
+    for event in queryset:
+        counts["published"] += 1
+
+        stored = event.text_translations
+        if not isinstance(stored, dict):
+            stored = {}
+
+        if stored.get("manual"):
+            counts["manual"] += 1
+            continue
+
+        current_hash = rules.source_hash(_event_fields(event))
+        if stored.get("source_hash") != current_hash:
+            counts["pending"] += 1
+            continue
+
+        counts["up_to_date"] += 1
+        for language in rules.TARGET_LANGUAGES:
+            if stored.get(language) is None:
+                counts[f"quarantined_{language}"] += 1
+
+    return counts
+
+
 def _submit_translation_locked(*, event_id, source_hash, translations):
     with transaction.atomic():
         try:

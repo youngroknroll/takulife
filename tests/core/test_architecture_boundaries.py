@@ -755,3 +755,162 @@ def test_api_view_계층_테스트_파일은_서비스_쿼리_계층을_임포�
                 )
 
     assert not violations, "\n".join(violations)
+
+
+# ---------------------------------------------------------------------------
+# 트랙 44-1 묶음 ⑦ — 쓰기 경로가 번역 모듈을 끌어오지 않는지 지키는 가드다.
+# 기존 _parse_imported_module_names는 상대 임포트(level>0)를 건너뛰는데,
+# events/ 안의 번역 모듈들(content_translation.py, translation_queue.py,
+# runner_views.py, runner_urls.py)은 서로를 `from .translation_queue import
+# ...`·`from . import content_translation` 같은 상대 임포트로 부른다. 그래서
+# 이 절은 기존 파서를 건드리지 않고, 상대 임포트를 해석하는 전용 스캐너를
+# 새로 둔다.
+# ---------------------------------------------------------------------------
+
+_FORBIDDEN_TRANSLATION_MODULES = frozenset(
+    {
+        "events.content_translation",
+        "events.translation_queue",
+        "events.runner_views",
+        "events.runner_urls",
+    }
+)
+
+
+def _package_name_for_file(root, path):
+    """path가 속한 최상위 로컬 패키지 이름(root의 직계 자식 디렉터리 이름)을
+    돌려준다. 상대 임포트를 해석하려면 "이 파일이 어느 패키지 소속인가"가
+    먼저 필요하다 — 이 저장소의 앱은 전부 최상위 패키지라 parts[0]이 곧
+    패키지 이름이다."""
+    return path.relative_to(root).parts[0]
+
+
+def _resolve_relative_import_targets(package_name, node):
+    """ImportFrom 노드가 상대 임포트(level>0)일 때만 해석한 모듈명 집합을
+    돌려준다. `from .translation_queue import x`는 module이 있으니
+    `<package>.<module>`로, `from . import content_translation`은 module이
+    없으니 각 별칭 이름을 `<package>.<alias>`로 해석한다. 절대 임포트
+    (level==0)면 빈 집합을 돌려준다 — 호출부가 절대 임포트는 따로 처리한다."""
+    if node.level == 0:
+        return set()
+    if node.module:
+        return {f"{package_name}.{node.module}"}
+    return {f"{package_name}.{alias.name}" for alias in node.names}
+
+
+def _imported_module_names_resolving_relative_imports(path, package_name):
+    """정적 Import/ImportFrom과 동적 importlib.import_module/__import__ 호출에서
+    임포트된 모듈명을 모은다. 기존 _parse_imported_module_names와 유일한
+    차이는 상대 임포트(level>0)를 건너뛰지 않고 package_name 기준으로
+    해석해 포함시키는 것이다 — 그 기존 파서는 다른 가드들이 의존하므로
+    그대로 두고, 이 함수를 TR-23 전용으로 새로 둔다."""
+    tree = ast.parse(path.read_text())
+    modules = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            if node.level:
+                modules.update(_resolve_relative_import_targets(package_name, node))
+            elif node.module is not None:
+                modules.add(node.module)
+        if isinstance(node, ast.Import):
+            modules.update(alias.name for alias in node.names)
+        if isinstance(node, ast.Call):
+            target = _dynamic_import_target(node)
+            if target is not None:
+                modules.add(target)
+    return modules
+
+
+def _forbidden_translation_imports_in_file(path, root):
+    """path가 _FORBIDDEN_TRANSLATION_MODULES 중 하나(또는 그 하위 모듈)를
+    상대·절대·동적 임포트 중 어떤 형태로든 끌어오면 그 모듈명 집합을
+    돌려준다."""
+    package_name = _package_name_for_file(root, path)
+    modules = _imported_module_names_resolving_relative_imports(path, package_name)
+    return {
+        module
+        for module in modules
+        if module in _FORBIDDEN_TRANSLATION_MODULES
+        or any(
+            module.startswith(f"{forbidden}.")
+            for forbidden in _FORBIDDEN_TRANSLATION_MODULES
+        )
+    }
+
+
+def test_이벤트_모듈은_core_llm_모듈을_임포트하지_않는다():
+    """서버에 동기 LLM 호출이 조용히 들어오는 것을 막는다 — 번역은 로컬
+    러너를 거쳐서만 들어온다."""
+    files = _domain_source_files(PROJECT_ROOT, ["events"])
+
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in files
+        if (forbidden := _forbidden_imports_in_file(path, {"core.llm"}))
+    }
+
+    assert not violations, violations
+
+
+def test_쓰기_경로_모듈은_번역_모듈을_임포트하지_않는다():
+    """AC1 — Event 생명주기 쓰기 경로가 번역 저장소·큐·러너 API 모듈을
+    끌어오면 쓰기가 번역 호출과 조용히 묶인다. 대상에 events/signals.py·
+    events/apps.py·events/models.py를 포함한 것은 Event 모델 생명주기
+    신호(`post_save` 등)로 번역 호출이 숨어드는 길도 이 계약 대상이라는
+    경고다(44-3 착수자를 위한 주의)."""
+    target_paths = [
+        PROJECT_ROOT / "events" / "services.py",
+        PROJECT_ROOT / "drafts" / "services.py",
+        PROJECT_ROOT / "events" / "signals.py",
+        PROJECT_ROOT / "events" / "apps.py",
+        PROJECT_ROOT / "events" / "models.py",
+    ]
+
+    violations = {
+        path.relative_to(PROJECT_ROOT): forbidden
+        for path in target_paths
+        if (forbidden := _forbidden_translation_imports_in_file(path, PROJECT_ROOT))
+    }
+
+    assert not violations, violations
+
+
+@pytest.mark.parametrize(
+    "fixture_source",
+    [
+        "from events.translation_queue import pending_events\n",
+        "import events.content_translation\n",
+        "from .translation_queue import pending_events\n",
+        "from . import content_translation\n",
+        'import importlib\nimportlib.import_module("events.translation_queue")\n',
+    ],
+    ids=[
+        "절대_from_import",
+        "절대_import",
+        "상대_from_import_모듈있음",
+        "상대_from_import_모듈없음",
+        "동적_import_module",
+    ],
+)
+def test_전용_스캐너는_번역_모듈_임포트_형태를_모두_탐지한다(tmp_path, fixture_source):
+    (tmp_path / "events").mkdir()
+    (tmp_path / "events" / "poison.py").write_text(fixture_source)
+
+    violations = _forbidden_translation_imports_in_file(
+        tmp_path / "events" / "poison.py", tmp_path
+    )
+
+    assert violations, violations
+
+
+def test_전용_스캐너는_금지_모듈이_없는_파일을_위반으로_보고하지_않는다(tmp_path):
+    (tmp_path / "events").mkdir()
+    (tmp_path / "events" / "clean.py").write_text(
+        "from .models import Event\nimport os\n"
+    )
+
+    violations = _forbidden_translation_imports_in_file(
+        tmp_path / "events" / "clean.py", tmp_path
+    )
+
+    assert not violations, violations
