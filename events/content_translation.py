@@ -29,7 +29,12 @@ _HANJA_RE = re.compile(r"[\u4e00-\u9fff]")
 
 
 class SubmissionRejected(Exception):
-    """제출 전체를 거부할 때 쓴다. 사유는 "schema" 또는 "nul"뿐이다."""
+    """제출 전체를 거부할 때 쓴다. 저장은 하지 않는다.
+
+    사유 코드는 두 갈래다: "schema"·"nul"은 이 모듈의 구조 검증이 올리고,
+    "not_found"·"manual_locked"·"stale_source"는 events.translation_queue가
+    이벤트 상태(존재·게시 여부·수동 확정·원문 변경)를 확인하다 올린다.
+    """
 
     def __init__(self, code):
         super().__init__(code)
