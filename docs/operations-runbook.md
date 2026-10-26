@@ -405,6 +405,15 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   단계 실패는 로그에 `translation step failed`로 찍힌다. 격리된 언어는
   같은 보고 명령의 `quarantined_en`·`quarantined_ja`·`quarantined_zh-hans`로
   센다.
+- **번역 선점·유출 의심 시 복구**: 감사 로그의 WARNING 사유 코드가 갑자기
+  늘거나 모르는 `client_ip`가 보이면 러너 토큰 유출을 의심한다. ①
+  위 토큰 회전 절차로 토큰을 바꾼다. ② 의심 이벤트의 번역 저장소를
+  비운다 — 운영 셸에서 `uv run python manage.py shell`을 열어
+  `Event.objects.filter(pk=<이벤트 id>).update(text_translations={})`를
+  실행한다(다음 러너 폴링에서 다시 대기로 올라 새로 번역된다; 같은 해시의
+  번역이 이미 저장돼 있으면 `already_current`로 덮어쓰기가 거부되므로 이
+  초기화가 필요하다). ③ `uv run python manage.py report_translation_queue`로
+  `pending` 증가를 확인한다.
 
 ## 9. 오류 묶음 확인 (트랙 36, `core.ErrorGroup`)
 
