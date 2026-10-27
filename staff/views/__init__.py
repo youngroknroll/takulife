@@ -49,9 +49,7 @@ from .drafts import (
 from .events import (
     EVENT_CREATE_BLANK_FORM_VALUES,
     EVENT_EDIT_TEXT_FIELDS,
-    MAX_BULK_EVENT_IDS,
     QUALITY_WARNING_LABELS,
-    StaffEventBulkUnpublishView,
     staff_event_create,
     staff_event_delete,
     staff_event_edit,
@@ -59,7 +57,12 @@ from .events import (
     staff_event_verify,
     staff_events,
 )
-from .events_actions import StaffEventPublishStatusView, StaffEventVerifiedView
+from .events_actions import (
+    MAX_BULK_EVENT_IDS,
+    StaffEventBulkUnpublishView,
+    StaffEventPublishStatusView,
+    StaffEventVerifiedView,
+)
 from .accounts import (
     STAFF_ACCOUNT_LISTING_PAGE_SIZE,
     staff_account_detail,

@@ -20,7 +20,7 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 
 - `POST /staff/events/bulk-unpublish/`(`staff:event-bulk-unpublish`,
   `staff/urls.py:58-62` [실측 grep]), `StaffEventBulkUnpublishView(APIView)`
-  (`staff/views/events.py:745`), `permission_classes = [IsAdminUser]`.
+  (`staff/views/events_actions.py:121`), `permission_classes = [IsAdminUser]`.
 - 요청 본문 `{"event_ids": [int, ...]}`. 구조 오류(비객체·빈 목록·비정수·bool
   포함·상한 초과)는 `field_error_response("event_ids", ...)`로 400 —
   드래프트 일괄 뷰와 같은 패턴(`core/errors.py`).
@@ -32,7 +32,7 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 
 ## (a) 목표 상태 설정이다 — 토글이 아니다
 
-`_unpublish_one`(`staff/views/events.py:779`)은 대상이 게시 중이면
+`_unpublish_one`(`staff/views/events_actions.py:155`)은 대상이 게시 중이면
 `unpublish_event(event=event)`를 호출하고, 그 외(이미 비공개)에는 아무것도
 바꾸지 않는다. "현재 상태를 뒤집는" 연산이 아니라 "draft로 만든다"는
 목표만 있어, 같은 id로 몇 번을 다시 보내도 결과가 같다(멱등, 아래 (b)).
@@ -46,7 +46,7 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 
 ## (c) 상한 20건과 구조 검증 공용화
 
-`MAX_BULK_EVENT_IDS = 20`(`staff/views/events.py:742` [코드]) — 드래프트
+`MAX_BULK_EVENT_IDS = 20`(`staff/views/events_actions.py:118` [코드]) — 드래프트
 일괄 승인 상한 `MAX_BULK_APPROVE_DRAFT_IDS`(`staff/views/drafts.py:239`)와
 값은 같지만 우연이며 상수는 분리 유지한다. 구조 검사는
 `staff/views/_helpers.py:45` `_validate_bulk_ids(ids, *, field_name,
@@ -58,10 +58,10 @@ max_items)`로 일반화했고, `staff/views/drafts.py:242`의
 
 ## (d) 항목별 트랜잭션·락, `get_object_or_404` 금지
 
-각 id는 `with transaction.atomic():`(`staff/views/events.py:788` 부근) 안에서
+각 id는 `with transaction.atomic():`(`staff/views/events_actions.py:164` 부근) 안에서
 `Event.objects.select_for_update().get(pk=event_id)` → `except
-Event.DoesNotExist`(`:799`) → catch-all `except Exception:`(`:801`
-`logger.exception`) 순으로 처리한다. `get_object_or_404`는 쓰지 않는다 —
+Event.DoesNotExist`(`:175`) → catch-all `except Exception:`(`:177`
+`logger.exception`은 `:181`) 순으로 처리한다. `get_object_or_404`는 쓰지 않는다 —
 그걸 쓰면 내부에서 던지는 `Http404`가 바깥 catch-all에 걸려
 `"Not found."` 대신 `"Unexpected error."`로 뭉개진다(구현 중 뮤테이션
 M4로 실측 확인 — B7이 실패). 트랜잭션이 항목 단위라 한 항목이 실패해도
@@ -385,14 +385,12 @@ picture만으로는 (p) 결함을 잡지 못했다 — 웹 계층 요청으로�
 
 수정 화면 PRG 토글의 목표 상태화(**같은 재시도-반전 결함이 수정 화면에
 그대로 남아 있다** — 이번 트랙은 목록 인라인만 목표 상태로 바꿨다),
-`StaffEventBulkUnpublishView`(트랙 24)를 `staff/views/events_actions.py`로
-옮기는 순수 이동(다음 트랙에서 함께 검토), 일괄 재게시, 페이지·필터 간
+일괄 재게시, 페이지·필터 간
 선택 유지, 단축키, `event_bulk.js`/`event_row_actions.js` 선택·판정
 로직과 `draft_bulk.js` 공용 모듈화(두 번째 사용처가 더 생긴 시점에 추출
 검토), succeeded의 "실제 전환/이미 그 상태" 구분, `staff/views/
-events.py` 인터페이스별 분리(809줄 `[실측 wc -l 2026-10-27]`(작성 당시
-793줄), 800줄 상한 초과 — 분리 후보: `StaffEventBulkUnpublishView`를
-`events_actions.py`로),
+events.py` 인터페이스별 분리 완료(2026-10-27, `StaffEventBulkUnpublishView`를
+`events_actions.py`로 이동, `staff/views/events.py` 731줄 `[실측 wc -l 2026-10-27]`),
 **재검증("검증 완료") 운영 절차 정의 — `docs/event-operations-criteria.md`에
 아직 없음, 사용자 결정 필요**(백로그에도 기록), (r)의 `{% querystring %}`
 무효 값 잔존(BIR 사후 판정 Deviates, Low·비차단 — canonical 리다이렉트

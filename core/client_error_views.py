@@ -87,9 +87,9 @@ def _is_valid_payload(data):
 
 
 class GlobalClientErrorThrottle(ScopedRateThrottle):
-    """이 API는 미인증이라 기본 스로틀이 요청 IP를 식별자로 쓰는데, 저장소에
-    프록시 개수 설정이 없어 X-Forwarded-For를 그대로 믿는다(러너 스로틀과
-    같은 문제). 헤더 우회를 막기 위해 IP 대신 고정 식별자 하나로 묶는다."""
+    """이 스로틀은 아직 IP를 쓰지 않는다 — `"global"` 고정 식별자로 모든
+    요청을 한 버킷에 묶는다(`TRUSTED_PROXY_COUNT`·`core.ip.get_client_ip`는
+    IP 식별이 필요하면 그때 끌어다 쓸 몫이고, 도입은 별도 결정이다)."""
 
     def get_cache_key(self, request, view):
         return self.cache_format % {"scope": self.scope, "ident": "global"}
