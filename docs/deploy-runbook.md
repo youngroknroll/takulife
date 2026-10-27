@@ -1,15 +1,15 @@
 # Deploy Runbook
 
 takulife 프로덕션 배포 절차. 2026-07-14 0단계 배포 기반 계획서(이하
-"0단계 계획서" — 원문서는 2026-08-29 문서 정리로 삭제, 요약은
-`.docs/archive-2026-08-29.md`) §3~§8 결정과 PR-0a~0e를 코드로 확인하며 작성. 운영 중 장애
+"0단계 계획서" — 원문서는 2026-08-29 문서 정리로 삭제, 저장소에 남아 있지 않다)
+§3~§8 결정과 PR-0a~0e를 코드로 확인하며 작성. 운영 중 장애
 대응·잠금 해제 등 일상 운영 절차는 중복 기술하지 않고
 `docs/operations-runbook.md`를 참조한다.
 
 호스팅은 PaaS로 확정됐지만(0단계 계획서 §4) 세부 플랫폼(Fly/Railway/Render 등,
 T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이미지 + env 계약
 기준으로 호스팅 중립적으로 작성했고, 플랫폼별 조작(release-phase 명령 등록
-방법 등)은 실제 선정 후 이 문서에 이어서 채운다.
+방법 등)은 실제 선정 후 이 문서에 이어서 채운다(이후 Render로 확정됨 — §7).
 
 ## 1. 사전 조건
 
@@ -33,7 +33,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `DEBUG` | 필수(`false`로 명시) | config/settings.py `load_debug` | 미설정 시 기본값 `true` — 프로덕션에서 반드시 명시적으로 `false` |
 | `ALLOWED_HOSTS` | 필수 | config/settings.py `load_allowed_hosts`, `guard_debug_allowed_hosts` | 쉼표 구분 호스트명. `*` 금지(Host 헤더 검사 무력화) |
 | `CSRF_TRUSTED_ORIGINS` | 필수 | config/settings.py `load_csrf_trusted_origins` | `https://` 스킴 포함 필수, 맨 호스트명은 매치되지 않음 |
-| `SECURE_SSL` | 필수(`true`) — ③④와 함께 | config/settings.py `load_secure_ssl`, `build_secure_ssl_settings` | X-Forwarded-Proto 신뢰 전제(§2·아래 체크리스트 ③) |
+| `SECURE_SSL` | 필수(`true`) — ③④와 함께 | config/settings.py `load_secure_ssl`, `build_secure_ssl_settings` | X-Forwarded-Proto 신뢰 전제(§3 체크리스트 ③) |
 | `SECURE_COOKIES` | 필수(`true`) — `SECURE_SSL`과 동시 | config/settings.py `_secure_cookies` 대입부 | `SECURE_SSL`과 독립 변수지만 프로덕션에선 항상 동시 설정 |
 | `DATABASE_URL` | 필수 | config/settings.py `load_database_config` | `postgresql://` 스킴만 허용(비-Postgres 스킴 거부), 관리형 PG는 `?sslmode=require` 권장. Supabase는 Session pooler 주소 + `?sslmode=require`(§1 DB 항목) |
 | `MEDIA_STORAGE_BUCKET` | 필수(PaaS 배포 시) | config/settings.py `load_media_storage_config` | 5종 all-or-nothing(아래) — PaaS 파일시스템은 휘발성이라 미설정 시 미디어 유실 |
@@ -46,10 +46,14 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `EMAIL_HOST` 등 5종 | **보류(0단계 계획서 §3·§6)** | config/settings.py `EMAIL_HOST` 대입부 | 미설정 유지 → 콘솔 백엔드로 우선 배포. 신규 가입 이메일 인증·비밀번호 재설정이 실제로 동작하지 않음(가입 mandatory 이메일 인증 특성상). SMTP 재결정 전까지 실사용자 유입 금지 |
 | `SUPPORT_EMAIL` | 필수(T5, launch 전) | config/settings.py `SUPPORT_EMAIL` 대입부 | `*.example` placeholder를 실주소로 교체 |
 | `DEFAULT_FROM_EMAIL` | 필수(T5, launch 전) | config/settings.py `DEFAULT_FROM_EMAIL` 대입부 | 〃 |
-| `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` | 선택 | `.env.example` | 빈 값이면 "Google로 계속하기" 버튼이 숨김 처리(비활성 아님). **`docs/backlog.md` B2(소셜 가입 경로에 약관 동의 필드 없음)가 해결되기 전까지 이 값을 설정하지 않는다** — 채우는 순간 약관 동의 없는 가입 경로가 열린다 |
+| `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` | 선택 | `.env.example` | 빈 값이면 "Google로 계속하기" 버튼이 숨김 처리(비활성 아님). 소셜 가입은 `SocialSignupForm`의 약관 동의 필드를 거친다(`config/settings.py` `SOCIALACCOUNT_FORMS`·`SOCIALACCOUNT_AUTO_SIGNUP=False`, backlog B2 해결=트랙 11) |
 | `ANTHROPIC_API_KEY` | 사용 안 함 | config/settings.py `DRAFT_LLM_EXTRACTION_ENABLED` 대입부 | LLM 초안 자동화는 비용 정책상 OFF 유지. 설정하지 않는다 |
 | `DRAFT_DISCOVERY_ENABLED` | 선택(기본값 유지) | config/settings.py `load_draft_discovery_enabled` 대입부 | 기본값 `false`(수집 꺼짐) 유지, 수집을 켤 때만 `true`로 설정. env 변경은 모듈 임포트 시점에 1회만 평가되므로 **프로세스 재시작 후에만 반영**된다 |
-| `DRAFT_DISCOVERY_RUNNER_TOKEN` | 수집을 켤 때 필수 | config/settings.py `DRAFT_DISCOVERY_RUNNER_TOKEN = _get_env(...)` 대입부 `[실측 rg config/settings.py]` | 러너 요청 헤더 `X-Runner-Token`과 상수 시간 비교(`drafts/runner_views.py` `IsDiscoveryRunner`). 미설정(빈 값)이면 러너 API 전부 403. 회전 절차는 `docs/operations-runbook.md` §8.x 참조 |
+| `DRAFT_DISCOVERY_RUNNER_TOKEN` | 수집을 켤 때 필수 | config/settings.py `DRAFT_DISCOVERY_RUNNER_TOKEN = _get_env(...)` 대입부 `[실측 rg config/settings.py]` | 러너 요청 헤더 `X-Runner-Token`과 상수 시간 비교(`core/runner_auth.py` `IsDiscoveryRunner`). 미설정(빈 값)이면 러너 API 전부 403. 회전 절차는 `docs/operations-runbook.md` §8.x 참조 |
+| `GOOGLE_SITE_VERIFICATION` | 선택 | config/settings.py `GOOGLE_SITE_VERIFICATION = _get_env(...)` | 서치콘솔 HTML 태그 토큰 |
+| `GA_MEASUREMENT_ID` | 선택 | config/settings.py `GA_MEASUREMENT_ID = _get_env(...)` | `G-…` 형식의 GA4 측정 ID |
+| `DRAFT_FETCH_CONTACT` | 선택 | config/settings.py `load_draft_fetch_contact` | 크롤러 UA 연락처(`docs/operations-runbook.md` §8 참조) |
+| `PORT` | 선택 | `docker/entrypoint.sh` `--bind` | 기본값 `8000` |
 
 ## 2. 첫 배포 절차
 
@@ -126,9 +130,9 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    manage_email)가 위조 `X-Forwarded-For`로도 500이 나지 않고, IP A에서
    잘못된 로그인 10회 뒤 IP B의 첫 로그인이 429가 아님을 확인한다.
 9. **멀티워커 rate limit 실측**: gunicorn 멀티워커(`WEB_CONCURRENCY`,
-   기본 3 — docker/entrypoint.sh:14) 환경에서 `ACCOUNT_RATE_LIMITS`
+   기본 3 — docker/entrypoint.sh:15) 환경에서 `ACCOUNT_RATE_LIMITS`
    (`docs/operations-runbook.md` §2)가 워커 간 실제로 공유되는지 확인한다.
-   `CACHES`가 `DatabaseCache`(config/settings.py:336-344)로 배선돼 구조적으로는
+   `CACHES`가 `DatabaseCache`(config/settings.py `CACHES`)로 배선돼 구조적으로는
    공유되지만, 통합 환경에서의 실측은 아직 없다(0단계 계획서 §9-b).
    **컬링으로 인한 카운터 조기 소멸도 별도로 확인한다**: `DatabaseCache`는
    `MAX_ENTRIES`(현재 10000 — config/settings.py `CACHES`)를 넘으면 만료 전
@@ -138,7 +142,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    않는지 함께 확인하고, 근접한다면 카운터가 TTL 만료 전에 조기 삭제돼
    레이트리밋·계정 삭제 잠금이 의도보다 일찍 풀릴 수 있음을 인지한다.
 10. **DB 백업에 django_cache 포함 인지**: `DatabaseCache`는 `django_cache`
-    테이블(config/settings.py:344, core 마이그레이션으로 생성)에 rate limit
+    테이블(config/settings.py `CACHES` `MAX_ENTRIES`, core 마이그레이션으로 생성)에 rate limit
     카운터를 저장한다. DB 백업/복구 시 이 테이블도 함께 복원되므로, 복구
     직후 rate limit·락아웃 카운터가 백업 시점 상태로 되돌아간다는 점을
     인지한다(예: 복구 직전 잠긴 IP가 복구 후에도 잠긴 채로 복원될 수 있음).
@@ -150,11 +154,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     실행으로 파기 요약 출력을 확인한다.** 두 가지를 반드시 지킨다:
     (a) **`uv run`을 붙이지 않는다** — 런타임 이미지에는 `uv`가 없어
     (`Dockerfile:3-4`, builder 스테이지 전용) `uv run`으로 등록하면 컨테이너
-    안에서 `uv: not found`로 조용히 실패한다. `docker/entrypoint.sh:5,9`도 같은
+    안에서 `uv: not found`로 조용히 실패한다. `docker/entrypoint.sh:5,11`도 같은
     이유로 `uv run` 없이 실행한다. (b) **스케줄러 등록 시 이미지의
     ENTRYPOINT를 반드시 우회한다** — `docker/entrypoint.sh`는 전달된 인자를
-    읽지 않고 항상 `exec gunicorn ...`으로 끝나므로(`Dockerfile:53`,
-    entrypoint.sh:11), 명령 문자열만 "실행할 커맨드"로 등록하면 그 문자열이
+    읽지 않고 항상 `exec gunicorn ...`으로 끝나므로(`Dockerfile`의 `ENTRYPOINT`,
+    `docker/entrypoint.sh`의 `exec gunicorn`), 명령 문자열만 "실행할 커맨드"로 등록하면 그 문자열이
     ENTRYPOINT 인자로 조용히 버려지고 **파기는 한 건도 안 되는데 gunicorn
     웹서버가 대신 뜬 채 계속 살아 있는다** — 종료도 안 하므로 아래 실패
     알림에도 걸리지 않는다. 선정 PaaS가 제공하는 ENTRYPOINT 우회 방식(명칭은
@@ -165,7 +169,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     예약하지 않는다** — 명령 docstring도 "정기 스케줄링은 배포/런북의
     책임"이라고 명시한다. `/accounts/delete/done/` 화면은 사용자에게 유예
     기간이 지나면 계정이 파기된다고 명시적으로 안내하므로(유예 기간 값의
-    진실 원천은 `accounts/services.py:25`의 `DELETION_GRACE_PERIOD = timedelta(days=10)`),
+    진실 원천은 `accounts/services.py:24`의 `DELETION_GRACE_PERIOD = timedelta(days=10)`),
     이 등록이 누락되면 그 안내가 지켜지지 않고 유예 기간이 지난 개인정보가
     무기한 잔존한다. 명령은 실패 시(개별 후보 삭제 중 에러 발생) 0이 아닌
     종료 코드로 끝나므로(`CommandError`, 실패 건수와 함께), 스케줄러에
@@ -181,7 +185,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     배포 후 확인 항목: `curl https://<host>/robots.txt`로 `Disallow` 4경로와
     `Sitemap:` 라인을 확인하고, `curl https://<host>/sitemap.xml`이 200을
     반환하는지 확인한다(도메인은 요청 Host를 따르므로 별도 설정 불필요 —
-    `RequestSite`). **한글 브랜드명 확인(트랙 28, 배포 후 실측 기입 예정)**:
+    `RequestSite`). **한글 브랜드명 확인(트랙 28, 라이브 `<title>`은 `타쿠라이프 takulife — 굿즈 컬렉션·서브컬처 이벤트 기록` `[실측 curl -s https://takulife.kr/ 2026-10-27]`)**:
     홈은 SSR이라 curl로 충분 —
     `curl -s https://<host>/ | grep -o '<title>[^<]*</title>'`가 `타쿠라이프`로
     시작하고, `curl -s https://<host>/ | grep -c '"@type": "WebSite"'`가 1인지
@@ -207,7 +211,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     "SELECT count(*) FROM accounts_user WHERE nickname IS NULL;"` → `0`(0006
     백필+NOT NULL 전환이 전 회원에 적용됐는지, `docs/BE/account-identity.md`
     (d) 참고).
-    > 항목 16~19의 `uv run …`은 컨테이너 셸이 아니라 **로컬 맥 저장소에서
+    > 항목 16·17·19의 `uv run …`은 컨테이너 셸이 아니라 **로컬 맥 저장소에서
     > 운영 `DATABASE_URL`을 환경에 넣고** 실행한다 — 런타임 이미지에는 `uv`가
     > 없다 `[코드 Dockerfile:3-4]`.
 16. **배포 전 공식 URL 스킴 확인(트랙 40, F1)**: 아래 명령으로 운영 DB에서
@@ -329,7 +333,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | 항목 | 상태 | 채울 시점 |
 |---|---|---|
 | R2 실 업로드/다운로드 왕복 | 미검증(로컬 스모크만 완료) | 첫 배포 직후(§3 체크리스트 ⑦) |
-| 선정 PaaS의 실제 프록시 홉 수 | 미확정(T2 플랫폼 미선정) | T2 확정 후, 첫 배포 전(§3 체크리스트 ⑧) |
+| 선정 PaaS의 실제 프록시 홉 수 | Render 확정(§7). 홉 수 실측 완료 여부는 §3 ⑧ 기준 | T2 확정 후, 첫 배포 전(§3 체크리스트 ⑧) |
 | 멀티워커 환경에서 rate limit 공유 실측 | 미검증(구조 논증만 존재) | 첫 배포 직후(§3 체크리스트 ⑨) |
 | 탈퇴 파기(`purge_deleted_accounts`) 정기 실행 등록 | 미등록(플랫폼은 §7에서 Render로 확정 — Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함) | 첫 배포 전(§3 체크리스트 ⑪) |
 | 운영 로그 정리(`prune_operational_data`, 트랙 37) 정기 실행 등록 | 미등록(Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함 — `docs/operations-runbook.md` §7.2·`docs/BE/data-retention.md` 참고) | 첫 배포 전 |
@@ -362,7 +366,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 - **`can_approve_pull_request_reviews=true`**는 이 워크플로가 PR을 생성할 수
   있도록 저장소 전역에서 켠 설정이며, deploy-pr.yml 한정이 아니다. 향후
   main/production에 필수 승인 브랜치 보호를 도입하는 시점에 이 설정을
-  재검토한다.
+  재검토한다. `[실측 gh api repos/youngroknroll/takulife/actions/permissions/workflow 2026-10-27: true]`
 - **production에는 직접 push하지 않는다** — 항상 deploy PR을 경유한다.
   실패 감시는 GitHub Actions 탭의 워크플로 실행 이력과 실패 시 GitHub이
   보내는 알림 메일로 한다. production을 향하는 PR도 자동 생성된 deploy
