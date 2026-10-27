@@ -3,7 +3,7 @@
 ## 범위와 결정
 
 - **500 페이지**: Django 표준 `server_error()`가 request 없이 렌더해 `_topbar.html`의 인증 분기가 항상 비로그인으로 떨어지는 착시 → `templates/500.html`이 `{% block site_header %}`를 오버라이드해 **인증 영역 없는 중립 헤더**를 직접 렌더(후보 ② 채택 — 커스텀 handler500은 오류 상황에서 미들웨어 정상 동작을 전제해 기각). `_site_header.html`·`_topbar.html`·`base.html` 무수정.
-- **필수(＊) 통일**: `_auth_field.html`·`_account_settings_field.html`·`delete_account.html` 라벨에 sr-only "(필수)" + 8개 템플릿에 범례 1회씩. **저장소에 전역 `.sr-only`가 없어** `auth.css`·`account_settings.css`에 페이지 스코프 clip 규칙을 함께 신설(누락 시 텍스트 노출 회귀 — BIR 사전 기준이 예고).
+- **필수(＊) 통일**: `_auth_field.html`·`_account_settings_field.html`·`delete_account.html` 라벨에 sr-only "(필수)" + 15개 템플릿에 범례 1회씩(작성 당시 8개; 이후 트랙 29 `nickname_change.html`과 archive 작성·수정 화면 6개가 추가돼 계정 9 + archive 6 `[실측 rg -l '표시는 필수' templates | wc -l, 2026-10-27]`). **저장소에 전역 `.sr-only`가 없어** `auth.css`·`account_settings.css`에 페이지 스코프 clip 규칙을 함께 신설(누락 시 텍스트 노출 회귀 — BIR 사전 기준이 예고).
 - **visit.js**: 죽은 캐러셀 핸들러(함수+호출부 2곳 동시) 제거. 호출부만 남기면 `bindRecordDeletes` 미도달로 삭제 버튼 전면 마비였다.
 
 ## 가드레일 (나중 작업자용)
@@ -21,4 +21,5 @@
 
 ## 이연
 
-- `visit_edit.html` 범례 누락(archive 기존 불일치) — 범위 밖, 다음 archive 정리 시 후보.
+- `visit_edit.html` 범례 — 해소(`templates/core/archive/visit_edit.html`
+  `visit-edit-legend` `[코드]`).

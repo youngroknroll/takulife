@@ -13,7 +13,7 @@
 
 - 위치: 히어로 다음, 로그인 사용자는 `_home_collection_snapshot.html` 다음
   (스냅샷이 먼저), 비로그인은 스냅샷이 렌더되지 않아 히어로 바로 다음
-  [코드 `templates/core/home.html:111,113`].
+  [코드 `templates/core/home.html:113,115`].
 - 파일: 파셜 1개(`_home_event_calendar.html`), CSS 1개(`home_calendar.css`),
   뷰 헬퍼(`_home_calendar_context`·`_events_by_date`·`_dedupe_category_slugs`,
   `web/views/events.py` 모듈-비공개).
@@ -22,9 +22,10 @@
   categories}`), `selected_date`, `selected_is_today`, `selected_rows`
   (`_attach_display` 결과, 최대 3건), `selected_count`, `prev_month`/
   `next_month`("YYYY-MM"), `legend`(`[{slug, label}]`).
-- 앵커 규칙: 월내비·날짜 칸·"모두 보기" 링크는 모두 `#home-calendar-agenda`로
-  돌아온다. 섹션 루트 `id="home-calendar"`는 랜드마크일 뿐 앵커 대상이
-  아니다.
+- 앵커 규칙: 월내비·날짜 칸은 `#home-calendar-agenda`로 돌아오고, "이 날짜의
+  이벤트 N개 모두 보기" 링크는 `/events/calendar/?month=…&date=…#selected-date`
+  (행사 달력)로 이동한다 [코드 `templates/core/partials/_home_event_calendar.html:140`].
+  섹션 루트 `id="home-calendar"`는 랜드마크일 뿐 앵커 대상이 아니다.
 
 ## Decision
 
@@ -59,20 +60,22 @@
 확인해야 한다.
 
 **G2** 새 CSS의 색은 전부 `var(--…)` 토큰이다. 리터럴은 오늘 배지 글자
-`#fff` 1곳뿐(선례 `event_calendar.css:140`). 새 리터럴 hex를 추가하면
+`#fff` 1곳뿐(선례 `event_calendar.css:142`). 새 리터럴 hex를 추가하면
 다크모드가 깨진다.
 
 **G3** 날짜 이동으로 도착하는 앵커 대상은 세 규칙이 항상 짝으로 붙는다:
 `tabindex="-1"`(키보드 포커스 이동) + `scroll-margin-top: calc(var(--site-header-h)
 + 1rem)`(sticky 헤더에 가리지 않게) + `:focus{outline:none}`(직접 탭하는
-컨트롤이 아니므로 파란 기본 링을 끈다). 홈 `#home-calendar-agenda`
-[코드 `home_calendar.css` `.home-cal-agenda`], 행사 달력 `#selected-date`
-[코드 `event_calendar.css` `.date-detail-section`, `calendar.html:152`],
-활동 달력 `#selected-date` [코드 `archive_calendar.css:407-410`,
-`templates/core/archive/calendar.html:146`]이 모두 이 세 짝을 쓴다. 새
-앵커 대상을 만들 때 하나라도 빠뜨리면 리뷰에서 재발한다(트랙 34에서
-행사 달력 쪽 `tabindex`·`scroll-margin-top`·`:focus` 3종이 모두 빠져 있던
-것을 이번에 채웠다).
+컨트롤이 아니므로 파란 기본 링을 끈다). 홈·행사 달력은 세 짝을 모두 쓰고,
+활동 달력(`static/css/pages/archive_calendar.css` `.date-detail-section` 약
+414-421, `templates/core/archive/calendar.html` 약 151)은 `scroll-margin-top`이
+빠져 있다 `[실측 2026-10-27 rg scroll-margin static/css]` — 코드 보완 후보
+(백로그 L절). 홈 `#home-calendar-agenda` [코드 `home_calendar.css`
+`.home-cal-agenda`], 행사 달력 `#selected-date` [코드 `event_calendar.css`
+`.date-detail-section`, `calendar.html:161`]. 새 앵커 대상을 만들 때 세 짝 중
+하나라도 빠뜨리면 리뷰에서 재발한다(트랙 34에서 행사 달력 쪽
+`tabindex`·`scroll-margin-top`·`:focus` 3종이 모두 빠져 있던 것을 이번에
+채웠다).
 
 **G4** 카테고리 색 규칙은 어휘 7종 전부(popup_store, collaboration_cafe,
 theater_bonus, goods_reservation, exhibition, fan_meeting, concert)를
@@ -120,7 +123,9 @@ theater_bonus, goods_reservation, exhibition, fan_meeting, concert)를
   rgb(251,251,252)/다크 rgb(46,50,62) = 둘 다 `--bg-card`.
 - 쿼리: 비로그인 홈 GET 전후 비교로 달력 컨텍스트 추가분 +1건 [계산].
 - 새 CSS 리터럴 hex: `#fff` 1곳(오늘 배지)만 [실측 `rg`].
-- 테스트: 신규 테스트 22건 [실측 `--collect-only`]. 전체 회귀
+- 테스트: 신규 테스트 22건 `[실측 --collect-only 2026-09-17]`(2026-10-27
+  현재 파일 수집 23건 `[실측 uv run pytest --collect-only -q tests/events/test_home_calendar.py]`).
+  전체 회귀
   **2927 passed / 10 deselected** [실측 `uv run pytest -q`, HEAD
   `03a76e3a`], 기준선 main **2905 passed** [실측].
 - 레이아웃: 아젠다 3건 상한 적용 후 1280px 기준 아젠다 카드 517px·달력

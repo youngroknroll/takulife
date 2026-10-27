@@ -71,7 +71,7 @@ help_text 행을 렌더하지 않는다 → 또 하나의 끊긴 참조.
 | password1 | 비밀번호 / 새 비밀번호 | new-password | — |
 | password2 | 비밀번호 (확인) / 새 비밀번호 (확인) | new-password | — |
 
-`_account_settings_field.html:25`의 attrs 루프를 그대로 쓴다. 비밀번호 필드는
+`_account_settings_field.html:20`의 attrs 루프를 그대로 쓴다. 비밀번호 필드는
 `value`를 되돌려 쓰지 않는다(Django `PasswordInput`의 `render_value=False`와 같은 이유).
 
 ⚠️ 착수 전 조사가 "플레이스홀더가 존재하지 않는다"고 잘못 판단했다. **위젯을 실제로
@@ -132,8 +132,10 @@ tick)는 `--mint-ink`로 간다.
 rg -n '\{%\s*include\s*"core/partials/_auth_field\.html"' templates/
 ```
 
-`[실측]` login 2 · signup 3 · password_reset 1 · password_reset_from_key 2 ·
-password_set 2 = **10 사이트 / 5 템플릿**.
+`[실측 2026-10-27]` login 2 · signup 4 · password_reset 1 ·
+password_reset_from_key 2 · password_set 2 · socialaccount/signup 2 =
+**13 사이트 / 6 템플릿**(작성 당시 10/5; signup 닉네임은 트랙 29, 소셜 가입은
+현재 파셜 사용).
 
 ⚠️ 직전 트랙 문서 2곳이 **「12개」**라고 적었다. 12는 `auth.css`를 로드하는 템플릿
 수이며 **단위가 뒤바뀐 것**이다. 이번 트랙에서 두 곳을 정정했다
@@ -200,20 +202,9 @@ standalone 2화면과 `socialaccount/{login,authentication_error}`은 이미 실
 선택자(`.auth-panel-form`, `.auth-field input`)를 상속하고 화면 고유 규칙이
 `.auth-shell.is-standalone` 하나뿐이라 위험이 낮다.
 
-⚠️ **`socialaccount/signup.html`은 예외다 — 위 문장을 이 화면에 적용하지 마라.**
-`[실측]` 이 화면만 `{{ form.as_p }}`를 쓴다(`:44`). `_auth_field.html`을 거치지 않으므로
-`.auth-field input`을 **상속하지 않고**, `auth.css`의 별도 폴백 블록
-(`.auth-panel-form form p`)으로 스타일된다. 그 결과 나머지 11화면과 다음이 다르다:
-
-| | 나머지 11화면 | `socialaccount/signup.html` |
-|---|---|---|
-| 필드 스타일 | `.auth-field input` | `.auth-panel-form form p` 폴백 |
-| 오류 마크업 | 커스텀 `.field-error` + `id_x-error` | Django 기본 `errorlist` |
-| aria 연결 | 파셜이 직접 부여 | Django 자동(`id_x_error`) |
-| 필수 표시 `*` | 있음 | 없음 |
-
-필드 집합이 어댑터 설정에 달려 정적으로 알 수 없어 개별 include로 재작성하지 않았다.
-**OAuth를 켤 때 이 화면은 별도로 육안 검수하라.**
+`[코드 2026-10-27]` `socialaccount/signup.html`도 `_auth_field.html`을 쓴다
+(약 49-50행, `form.email`·`form.nickname`). 약관 동의 체크박스
+(`id_terms_agreed`)만 수동 마크업이라 OAuth 켤 때 이 부분만 육안 확인한다.
 
 ## A12 잠금 화면은 **임계를 넘는 그 요청에만** 나온다
 
@@ -330,8 +321,9 @@ h2가 `그대들의 / 덕질 / 라이프를 / 위하여` 4줄로 깨지고(A1이
 `max-width: 1120px`와 가로 `--page-pad-x`를 담당한다 — 빼면 풀블리드 결함이 되살아난다.
 
 ⚠️ **`static/css/base.css`의 `.page`나 `site-chrome.css`의 `.site-footer{margin-top}`을
-직접 고쳐 이 문제를 풀지 마라.** `[코드]` `.page`는 19개 템플릿(인증 12 + 스태프 3 +
-드래프트 2 + 법적 2)이, `.site-footer`는 전 페이지가 공유한다.
+직접 고쳐 이 문제를 풀지 마라.** `.page`는 55개 템플릿이 공유한다
+`[실측 2026-10-27 rg -l 'class="page[ "]' templates | wc -l]`(작성 당시 19개) —
+직접 고치면 영향 범위가 그만큼 크다. `.site-footer`는 전 페이지가 공유한다.
 
 인접 형제(`+`)가 성립하는 근거: `base.html`에서 `{% block content %}` 바로 다음이
 `{% block site_footer %}`이고, `{% if messages %}`는 content **앞**에 오며,

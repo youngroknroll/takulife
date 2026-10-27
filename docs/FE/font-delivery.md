@@ -71,6 +71,12 @@ whitenoise 매니페스트가 해시를 붙여 재작성한다. 경로를 절대
 한다. 브라우저 콘솔에 "The resource ... was preloaded but not used"
 경고가 뜨면 목록이 낡았다는 신호다.
 
+상태 미확인(2026-10-27): 트랙 43(en·ja·zh-hans, 2026-10-21~23) 뒤 교집합
+재측정이 없다. `FONT_PRELOAD_CHUNKS`(`core/context_processors.py`)는
+2026-08-29 신설 이후 13개 그대로 `[실측 git log --follow -p -- core/context_processors.py]`. 확인 수단: 공개 페이지 3개를
+각 언어로 열어 콘솔 "preloaded but not used" 경고와 네트워크 청크 목록
+대조.
+
 ## 이월
 
 - 데스크탑 콜드 로드 CLS 0.02(`[실측]`)는 `font-display: swap`의 리플로
@@ -80,7 +86,7 @@ whitenoise 매니페스트가 해시를 붙여 재작성한다. 경로를 절대
 
 ## 검증 근거
 
-전체 회귀 2311 passed. 스태프 콘솔에서 폰트 청크 13/13 요청이 200으로
+전체 회귀 2311 passed(작성 당시 `[실측 2026-08-29]`). 스태프 콘솔에서 폰트 청크 13/13 요청이 200으로
 응답함을 네트워크 패널로 확인(`[실측]`).
 
 트랙 14(셸 CSS 번들 + F5 preload 목록 확정) 이후 재측정: 모바일(Slow 4G ·

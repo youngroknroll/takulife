@@ -21,9 +21,11 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 스태프 JS는 전부 `el.hidden` 프로퍼티로만 토글하고 `style.display`를 쓰지 않아
 (`[실측]` `rg "style\.display" static/js/staff/` → 0건) `!important`가 안전하다.
 새 JS를 넣을 때 `style.display`를 쓰면 이 가드와 충돌한다.
+(2026-10-27 현재 같은 `.page`·`[hidden]` 블록이 `static/css/staff/base.css`에
+두 번 있다 `[실측 rg]` — 정리 후보, 백로그 L절.)
 
 **자동 테스트로는 못 잡는다.** Django 테스트는 계산된 스타일을 보지 않는다. 이 결함이
-살아 있는 동안 전체 2111건이 초록이었다.
+살아 있는 동안 전체 2111건이 초록이었다(작성 당시 `[실측 2026-08-01]`).
 
 ## S2 ⚠️ 정적 파일을 옮기면 화면은 200이고 스크립트만 404가 난다
 
@@ -69,7 +71,8 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 한다. `[실측]` 값을 `"-"`로 만드는 뮤테이션에서 옛 단언은 **3건 모두 통과**했다.
 검수 SLA 카드도 같은 함정이 있다 — 값 없음을 `-`와 노트 문구로 구분해 렌더하고,
 테스트는 라벨 `<p>`부터 카드 닫는 태그까지 범위를 좁혀 단언한다
-(`tests/staff/test_staff_console.py:942`·`:971` [실측 `grep -n`]).
+(`tests/staff/test_staff_console.py` 약 989-1030(`최장 대기`·`평균 처리`·
+`반려율` 범위 단언) `[실측 rg -n 'dash-metric-label' 2026-10-27]`).
 
 ## S6 스태프 콘솔은 소비자 CSS·JS를 로드하지 않는다
 
@@ -82,6 +85,8 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
   (후자는 `templates/base.html`도 쓴다)
 - `.page` 여백은 `static/css/staff/base.css` 한 곳에만 둔다. 화면별 CSS에 흩어 두었더니
   drafts 두 화면이 규칙을 빠뜨려 여백 0으로 렌더링되고 있었다
+  (2026-10-27 현재 같은 `.page`·`[hidden]` 블록이 `static/css/staff/base.css`에
+  두 번 있다 `[실측 rg]` — 정리 후보, 백로그 L절.)
 
 `django.contrib.messages`는 셸마다 클래스가 다르다 — 소비자는 `site-message-*`,
 스태프는 `staff-message-*`. 한쪽만 검사하면 다른 쪽이 메시지를 잃어도 통과한다
@@ -142,7 +147,7 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 감사 로그 검색은 `ip_address`·`user_agent`를 **대상에 넣지 않는다**. 값을 화면에
 보여주지 않아도 검색이 걸리면 「203.0.113.99로 검색해 결과가 나오는가」를 되물어
 존재 여부를 알아낼 수 있다 — D9 제한이 무의미해진다.
-`tests/staff/test_staff_queries.py::test_ip_주소로는_검색되지_않는다`가 지킨다.
+`tests/staff/test_staff_queries.py::TestStaffActionLogSearch::test_ip_주소로는_검색되지_않는다`가 지킨다.
 
 ## S9 검색 폼은 보고 있던 상태를 숨은 입력으로 이어받아야 한다
 
