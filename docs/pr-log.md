@@ -20,7 +20,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
 `[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #398부터 #264까지다.
+"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #398부터 #266까지다.
 그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
 언제든 다시 조회할 수 있다.
 
@@ -198,5 +198,3 @@ CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → productio
 - #268 — docs: Refresh the status table against the merged tree
 - #267 — docs: Fix three claims the post-merge auth review measured wrong
 - #266 — design(accounts): Rebuild 12 auth screens as an editorial two-panel layout
-- #265 — docs: 탈퇴 계정 파기 정기 실행을 런북 요구사항으로 등록
-- #264 — 계정 설정 영역 에디토리얼 리디자인 + 이메일 단일 변경 흐름
