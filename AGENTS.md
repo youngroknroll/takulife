@@ -31,14 +31,13 @@ cleanup. Anything that must not be lost belongs here.
 - Event operations criteria: `docs/event-operations-criteria.md`
 - Backend technical records: `docs/BE/` (and `docs/DB/`, `docs/FE/` as they are
   needed) — a record that states a guardrail belongs here, not in `.docs/`
+- Product direction: the Binding Product Decisions section in `CLAUDE.md`
 
 Working notes (`.docs/`). **This tree is git-ignored.** Treat every file in it as
 disposable: a file that is missing is routine housekeeping, not a lost artifact,
 and must never be reported as an accident or recreated on a guess. Never leave a
 rule, an approved decision, or a live backlog here alone — promote it to `docs/`.
 
-- Current backlog and next-action index: `docs/backlog.md`
-- Product direction: the Binding Product Decisions section in `CLAUDE.md`
 - Backend plans and technical records: `.docs/BE/`
 - Database, schema, and migration records: `.docs/DB/`
 - Frontend plans and technical records: `.docs/FE/`
@@ -94,6 +93,10 @@ Events do not happen daily. Optimize for repeated collection contribution and
 record quality, not forced daily sessions.
 
 ### Collection Domain Target
+
+Status 2026-10-27 `[코드]`: `CollectionItem` (`archive/models.py`) and the
+four-link primary nav (`templates/core/partials/_site_header.html`) exist; the
+bullets below remain the binding contract.
 
 - Introduce a dedicated `CollectionItem` owned by `archive` for goods-specific
   rules. Do not continue expanding `PersonalEntry` into the collection model.
@@ -160,7 +163,10 @@ Home / Events / Collection / Activity
 - Empty collection states provide both `Find events` and `Add goods` recovery
   paths.
 - Do not ship the target navigation or collection-first home before the
-  collection data contract and usable destination exist.
+  collection data contract and usable destination exist. (Status 2026-10-27
+  `[코드]`: the four-destination nav is shipped in
+  `templates/core/partials/_site_header.html`; the contract still governs
+  further changes.)
 
 ### Product Metrics
 
@@ -711,7 +717,8 @@ bound by six admission criteria; nothing else is a test target.
      still needs mutation evidence — one temporary production-code change
      that proves Red, then a restore back to Green — and the mutation is
      never committed.
-  6. The suite started with 8 journeys; a new journey is admitted only when
+  6. The suite started with 8 journey files (10 tests as of 2026-10-27
+     `[실측 rg -c '^def test_' tests/e2e/*.py]`); a new journey is admitted only when
      a real defect that satisfies criteria 1-2 needs it.
 - Do not test templates, CSS, browser JavaScript, layout, spacing, sizing,
   visual state, transition, animation, or touch-target geometry as a browser
@@ -1037,7 +1044,7 @@ variable substitution) is a known, accepted gap.
 
 | File | Matcher | Enforces | Known gaps |
 |---|---|---|---|
-| `.claude/hooks/uv-only-guard.sh` | `Bash` | package/venv/test commands go through `uv` | segment splitting treats `&&`, `;`, `\|` inside quotes or heredoc bodies as separators too, which can false-block a later `pytest`; a program name hidden in a variable or string is not detected |
+| `.claude/hooks/uv-only-guard.sh` | `Bash` | bare `pytest`, `pip`/`pip3`, `python -m pip`, `python(3) manage.py`, `python -m pytest` go through `uv` | segment splitting treats `&&`, `;`, `\|` inside quotes or heredoc bodies as separators too, which can false-block a later `pytest`, `pip`, or `python manage.py` word (e.g. inside a quoted `rg` pattern); a program name hidden in a variable or string is not detected |
 | `.claude/hooks/git-destructive-guard.sh` | `Bash` | blocks `git reset --hard`, `git clean -f/-d/-x`, `git checkout -- <path>`, `git checkout .`, and `git restore <path>` only on a dirty tree (by design); blocks `git stash clear` always | does not inspect a nested `bash -c` |
 | `.claude/hooks/plan-overwrite-guard.sh` | `Write` | blocks overwriting `prompt_plan.md` via the Write tool | Bash-tool overwrites are closed by the Bash write guard instead |
 | `.claude/hooks/plan-number-tag-guard.sh` | `Edit\|Write` | a paragraph added to `prompt_plan.md` that carries a count with a unit (value 2 or more) must also carry a source tag (`[실측]`, `[코드]`, `[계산]`, `[문서]`, `[대시보드]`) — the Numbers In Documents rule | only fires on the Edit/Write tools (Bash writes are closed by the Bash write guard); `docs/**` coverage is deferred |
@@ -1060,7 +1067,8 @@ variable substitution) is a known, accepted gap.
 ### Repository Layout And Dependency Direction
 
 This is the measured map (AST import scan, migrations and tests excluded,
-2026-09-28 `[실측]`). The target diagram under Binding Product Decisions is
+2026-09-28 `[실측]`; re-measured 2026-10-27 with `rg`, no contradictions
+`[실측]`). The target diagram under Binding Product Decisions is
 the contract; its `future trade` row has no code yet.
 
 Packages (9): `accounts` (authentication, imports no local app) · `archive`
@@ -1083,8 +1091,11 @@ Dependency direction:
 | `archive -> drafts` | Forbidden | `tests/core/test_architecture_boundaries.py::test_아카이브_모듈은_드래프트_모듈을_임포트하지_않는다` |
 | `events -> drafts` | Forbidden | `tests/core/test_architecture_boundaries.py::test_이벤트_모듈은_드래프트_모듈을_임포트하지_않는다` |
 | "discover now" path (`discover_drafts`, `candidate_intake`) -> `drafts.discovery_runs`, `drafts.candidate_validation`, `local_runner` | Forbidden | `tests/core/test_architecture_boundaries.py::test_지금_수집_경로는_탐색_실행_모듈에_의존하지_않는다` |
+| `events -> core.llm` | Forbidden | `tests/core/test_architecture_boundaries.py::test_이벤트_모듈은_core_llm_모듈을_임포트하지_않는다` |
+| write paths (`events.services`, `drafts.services`, `events.signals`, `events.apps`, `events.models`) -> `events.content_translation`, `events.translation_queue` | Forbidden | `tests/core/test_architecture_boundaries.py::test_쓰기_경로_모듈은_번역_모듈을_임포트하지_않는다` |
 | `drafts` discovery modules -> `core.llm` directly | Forbidden | `tests/core/test_architecture_boundaries.py::test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는다` |
-| `archive -> events`, `drafts -> events`, any app -> `core`, `staff -> {accounts, drafts, events}`, `web -> {accounts, archive, drafts, events}`, `config -> {accounts, core, web}` | Allowed (measured, matches target contract) | none |
+| `drafts/discovery.py`, `drafts/management/commands/discover_drafts.py`, `drafts/{discovery_runs,candidate_validation,candidate_intake}.py` -> `events` | Forbidden | `tests/core/test_architecture_boundaries.py::test_드래프트_발견_모듈은_이벤트_모듈을_임포트하지_않는다`, `…::test_드래프트_수집_명령은_이벤트_모듈을_임포트하지_않는다`, `…::test_드래프트_탐색_신규_모듈은_이벤트와_LLM_모듈을_직접_임포트하지_않는다` |
+| `archive -> events`, `drafts -> events` (only `drafts/services.py` `[실측 rg 2026-10-27]`), any app -> `core`, `staff -> {accounts, drafts, events}`, `web -> {accounts, archive, drafts, events}`, `config -> {accounts, core, web}` | Allowed (measured, matches target contract) | none |
 | `accounts` imports no local app; `staff -> archive` does not occur | Measured fact, no guard — not a rule to enforce | none |
 
 `web` is leaf presentation assembly. Its one approved cross-domain **write**
@@ -1098,10 +1109,17 @@ includes `accounts` and `web`, added in track 41). Two independent guards keep
 the runner's local copies aligned with the server originals: literal parity
 (`tests/local_runner/test_url_safety_parity.py` for `drafts/url_safety.py` vs
 `local_runner/url_safety.py`, `tests/local_runner/test_phase_vocabulary_parity.py`
-for phase labels) and allow-list containment
+for phase labels, `tests/local_runner/test_translation_parity.py` for the
+translation languages, fields and URL prefixes, plus the runner input limit
+being twice the server field maximum) and allow-list containment
 (`tests/local_runner/test_outcome_vocabulary_parity.py`: every runner
 `(outcome, reason)` pair must be a subset of the server's allow-list). When a
-runner copy changes, change the server original in the same commit.
+runner copy changes, change the server original in the same commit. Runner
+token auth (`IsDiscoveryRunner` and the runner throttle in
+`core/runner_auth.py`) is shared by `drafts/runner_views.py` and
+`events/runner_views.py`; the translation step lives in
+`local_runner/translation_flow.py` and reaches the server only through
+`events/runner_views.py`.
 
 Boundary guards live in `tests/core/test_architecture_boundaries.py` and
 `tests/local_runner/`; see `docs/BE/contract-guards.md` for what they cannot
@@ -1219,7 +1237,10 @@ elsewhere is not protection.
 - **Name the unit.** `34` meant registrations, not files. A bare count that
   does not say what it counts is not evidence and must not size work.
 - **Mark how it was obtained.** `[실측]` for a number produced by running a
-  command; `[코드]` for one read from source. A `[코드]` number is an estimate.
+  command; `[코드]` for one read from source; `[계산]` for one derived with a
+  tool; `[문서]` for one read from a document. The plan hook
+  (`plan-number-tag-guard.sh`) also accepts `[대시보드]`. A `[코드]` number is
+  an estimate.
 - **Record the reproducing command** whenever it is short enough to inline.
 - **Re-measure before acting on any number an earlier session wrote**,
   including your own from earlier in the same session. Documents go stale

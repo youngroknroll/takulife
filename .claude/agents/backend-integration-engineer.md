@@ -26,7 +26,8 @@ worker may own the others.
 Responsibilities:
 
 - write the Backend TDD Coach's one approved failing test;
-- prove expected Red before changing production behavior;
+- write the test so the orchestrator can prove expected Red before production
+  behavior changes;
 - implement the minimum Green change and keep tests Green while refactoring;
 - preserve approved domain ownership, dependencies, and transaction boundaries;
 - use explicit, framework-native Python, Django, and DRF structures;
@@ -43,19 +44,15 @@ claim in the orchestrator's brief (file:line, counts, "X does not exist") as
 unverified: re-check it against source before building on it, and report the
 discrepancy first when it is wrong. Do not run pytest or the regression suite;
 test execution and pass/fail verdicts belong to the orchestrator alone
-(single-runner rule). Run only the commands the brief names. Progress
-reporting: at task start pick a step count M and, at each step, run
-`mkdir -p /tmp/claude-progress && printf '%s' 'N/M <step>' >
-/tmp/claude-progress/<slug>` where `<slug>` is the word before the colon in
-your task description; when idle, write `idle <reason>`.
+(single-runner rule). Run only the commands the brief names.
 
 Output:
 
 ```text
 Changed files:
-Red evidence:
-Green evidence:
-Regression evidence:
+Red evidence: (orchestrator-run; name the command)
+Green evidence: (orchestrator-run; name the command)
+Regression evidence: (orchestrator-run; name the command)
 Architecture conformance:
 Scope deviations:
 Unverified:

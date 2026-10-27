@@ -1,7 +1,8 @@
 # 로컬 에이전트 기반 수집처 탐색
 
-상태: **서버 경계·로컬 러너 구현됨(2026-08-20), 트랙 30 키워드 탐색 본체
-구현됨(2026-09-12)** — 정기 실행·자동 시작은 미구현
+상태: 서버 경계·로컬 러너 구현됨(2026-08-20), 트랙 30(2026-09-12)·33·35·39(2026-09-20)
+반영. 러너의 번역 단계(트랙 44-1, 2026-10-27)는 아래 '번역 단계' 문단과
+`docs/BE/i18n.md` 참조. 정기 실행·자동 시작은 미구현.
 사용자 결정: 2026-08-20, 2026-09-11(트랙 30 재편)
 
 ## Current fact
@@ -350,7 +351,8 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   "구현 확정 사항" 절, 2026-08-20).
 - 최초 러너 공급자와 구체적인 비대화형 실행 방식 → **해소**: Claude Code
   어댑터로 확정됐다(`claude -p --output-format json --tools
-  "WebSearch,WebFetch" --permission-mode bypassPermissions`). 서버 후보
+  "WebSearch,WebFetch" --permission-mode bypassPermissions --strict-mcp-config`).
+  서버 후보
   계약은 계속 공급자 중립으로 유지한다.
 - 공식성의 완전 자동 판정은 불가능하다. 현재 안전 근거는 게시 전 관리자 검수다.
 - 로컬 러너 설치·업데이트·자동 시작(launchd)·토큰 회전 절차·정기 실행 스케줄러는
@@ -397,16 +399,17 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
    여는 도구가 막혀 있다"고 명시하고 검색 결과 목록(제목·요약·URL)만으로
    판단하게 지시한다.
 2. **읽기(read)** — 결정론이다. 모델을 부르지 않고 호스트만 보고 분기한다
-   `[코드]` `local_runner/page_fetch.py:150-154`
+   `[코드]` `local_runner/page_fetch.py:234`
    (`fetch_event_text(*, url)`): 인스타·X 캡션 경로(og:description 메타
    태그 파싱)와 일반 웹 경로(og:title/title·meta description) 중 하나로만
    간다.
 3. **해석(interpret)** — 도구 없는 모델 호출이다. 읽기 단계가 낸 텍스트를
    데이터로만 받아 공식 여부와 행사 필드를 구조화 JSON으로 낸다 `[코드]`
    `local_runner/caption_interpreter.py:1-3, 15-77`
-   (`build_interpretation_prompt`). 실행 시 `--tools TodoWrite,TodoWrite`로
-   호출해 실질적으로 쓸 수 있는 도구가 없다 `[코드]`
-   `local_runner/exploration_flow.py:120-127`(`_default_interpret`).
+   (`build_interpretation_prompt`). `--tools TodoWrite,TodoWrite`는
+   `local_runner/caption_interpreter.py`(`run_agent_interpretation`, 약 163행)와
+   `local_runner/translation_flow.py`(`run_agent_translation`, 약 90행)에서 고정한다
+   `[코드]`.
 
 ### 공식 여부 판단은 해석 단계에 있다
 
@@ -420,27 +423,29 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
 `local_runner/caption_interpreter.py:50-55`. 서버는 이 판단값을 그대로
 믿지 않고, `unofficial`·`unclear`일 때만 검토 메모 앞머리에 판단과 근거를
 붙여 운영자가 보게 한다(그 외에는 접두를 붙이지 않는다) `[코드]`
-`drafts/agent_drafts.py:55-60, 136-145`.
+`_JUDGMENT_NOTE_PREFIXES`(약 60행)·`_build_intake_note`(약 181-190행)
+`drafts/agent_drafts.py`.
 
 ### 서버는 인스타·X를 절대 가져오지 않는다
 
 계정형 후보 URL이 제출돼도 서버는 목록형 8단계 검증(가져오기 포함)을
 타지 않고, `SNS_HOSTNAMES`에 속한 호스트는 존재 재확인 자체를 건너뛴다
-`[코드]` `drafts/agent_drafts.py:200-205`(`submit_agent_draft`) — 일반 웹
+`[코드]` `drafts/agent_drafts.py`(`submit_agent_draft`, 약 235행 이하, SNS 분기
+약 259행) — 일반 웹
 호스트만 `validate_fetch_url`·`RobotsChecker`·`fetch_html`을 탄다. 이
 계약은 호출 여부를 직접 단언하는 테스트로 고정돼 있다 `[코드]`
-`tests/drafts/test_agent_drafts.py:423`
+`tests/drafts/test_agent_drafts.py:512`
 (`test_일반_웹_URL_제출은_서버가_존재를_재확인하고_인스타_URL_제출은_fetch를_호출하지_않으며_안전하지_않은_URL은_거부된다`).
 
 ### 계정형 소스는 비활성으로 등록된다
 
 인스타·X 계정을 새 수집처로 제안하면 호스트 allowlist·핸들 경로 형식·
 중복만 검사하고, 가져오기·robots.txt 확인 없이 `DraftSource(enabled=False)`
-로 만든다 `[코드]` `drafts/candidate_validation.py:344-386`
-(`register_account_source`). 스태프가 대시보드에서 직접 활성화해야 실제
+로 만든다 `[코드]` `drafts/candidate_validation.py`(`register_account_source`,
+약 395행, 호스트 검사 약 416행). 스태프가 대시보드에서 직접 활성화해야 실제
 수집이 시작된다. 목록형·계정형 분기는 러너가 아니라 서버가 결정한다
-`[코드]` `drafts/runner_views.py:125-131`
-(`RunnerCandidateSubmitView.post` — `source_type`이
+`[코드]` `drafts/runner_views.py`(`RunnerCandidateSubmitView.post`, 약 94-127행,
+분기 약 106-110행 — `source_type`이
 `DraftSource.ACCOUNT_SOURCE_TYPES`면 `register_account_source`, 아니면
 기존 `submit_candidate`).
 
@@ -488,6 +493,15 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
 목록형/계정형으로 분기해 처리한다. 제출 도중 서버가 409(임대 상실)를
 내면 `LeaseLostError`로 그 실행 처리를 즉시 멈추고 완료 보고를 생략한다.
 
+**번역 단계(트랙 44-1)**: `main()` 루프는 탐색 폴링이 성공할 때마다 이어서
+`_safe_translate`(`local_runner/runner.py`)를 한 번 돈다. `TranslationRunnerClient`
+(`/api/translation/runner/pending/`·`submit/`, 스로틀 scope `translation_runner`
+분당 60회)로 받은 행사 최대 `TRANSLATION_BATCH_LIMIT=3`건을 `translate_pending_batch`가
+도구 없는 모델 호출(`--tools TodoWrite,TodoWrite`, 호출당 120초)로 번역해 제출한다.
+실패는 `translation step failed` 경고만 남기고 다음 폴링을 막지 않는다. 번역 중에는
+새 탐색 claim이 최악 약 720초(3건 × 최대 2회 호출 × 120초 `[계산]`) 늦어질 수 있다.
+상세는 `docs/BE/i18n.md` '행사 콘텐츠 번역(트랙 44-1)'.
+
 ### 함정과 실측
 
 - **도구 제한 인자의 함정** `[실측 2026-09-11]`: `claude` CLI의 `--tools`는
@@ -495,11 +509,13 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
   문자열이나 단일 값은 조용히 무시돼 셸·파일 쓰기까지 기본 도구 전체가
   열린다. 그래서 해석 호출은 무해한 도구 이름을 일부러 두 번 적어
   `"TodoWrite,TodoWrite"`로 넘긴다 `[코드]`
-  `local_runner/exploration_flow.py:122-127`. 이 중복은 실수가 아니다.
+  `local_runner/caption_interpreter.py`(`run_agent_interpretation`, 약 163행)와
+  `local_runner/translation_flow.py`(`run_agent_translation`, 약 90행). 이 중복은
+  실수가 아니다.
 - **호스트마다 사용자 에이전트가 다르다** `[실측 2026-09-11]`: 인스타는
   브라우저 UA를 쓰면 `og:description` 메타 태그 자체가 안 나와 러너
   자체 식별 UA(`TakuLifeRunner/1.0`)를 쓰고, 일반 웹은 반대로 브라우저 UA를
-  써야 응답이 온다 `[코드]` `local_runner/page_fetch.py:28-38`.
+  써야 응답이 온다 `[코드]` `local_runner/page_fetch.py:33-43`.
 - **페이지 열기 도구가 전역 거부 목록에 있다** `[실측]`: `WebFetch`는
   `--tools`에 남겨 둬도 이 실행 환경의 전역 설정 거부 목록에 걸려 하위
   설정으로 못 뒤집는다 — 위쪽 "격리 권고" 정정 절 참고. 인자에 남은
@@ -509,13 +525,10 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
   두 파일의 실행 로직 줄이 문자 그대로 일치하는지 지키는 가드 테스트가
   있다 `[코드]` `tests/local_runner/test_url_safety_parity.py`
   (`test_서버와_러너의_URL_안전_판정_로직이_문자_그대로_일치한다`).
-- **계정형 호스트 목록도 두 곳에 있다.** 같은 이유다 — 서버
-  `drafts/candidate_validation.py:60-65`(`_ACCOUNT_SOURCE_ALLOWED_HOSTS`,
-  instagram·x만)와 러너
-  `local_runner/page_fetch.py:16-23`(`_CAPTION_HOSTNAMES`, twitter.com
-  구형 도메인까지 포함) `[코드]`. url_safety와 달리 **이 두 목록은 문자
-  일치를 강제하는 가드 테스트가 없다** `[실측: 저장소 전수 검색 결과
-  0건]` — 한쪽만 고치면 조용히 갈라진다.
+- **계정형 호스트 목록도 두 곳에 있다.** 러너는 `local_runner/page_fetch.py`의
+  `_CAPTION_HOSTNAMES`(instagram)와 `_X_HOSTNAMES`(x.com·twitter.com)로 나뉘고,
+  서버는 `drafts/candidate_validation.py`의 `_ACCOUNT_SOURCE_ALLOWED_HOSTS`(약
+  95-100행)다. 문자 일치를 강제하는 가드 테스트는 여전히 없다.
 - **존재 검사와 생성 사이의 경합은 run 락이 막지 못한다** `[실측
   2026-09-14]`: `submit_agent_draft`가 `existing` 조회로 못 본 `source_url`을
   스태프가 수동으로 먼저 생성해 커밋하면, 뒤이은 `create_draft_from_fields`가
@@ -559,8 +572,8 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
 
 서버는 `timezone.localdate()`(`TIME_ZONE = "Asia/Seoul"` `[코드]`
 `config/settings.py`)를, 러너는
-`datetime.now(ZoneInfo("Asia/Seoul")).date()`(`_KST` `[코드]`
-`local_runner/exploration_flow.py`)를 각각 쓴다. 러너를 돌리는 개인 맥의
+`local_runner/clock.py`의 `today_kst()`(`_KST = ZoneInfo("Asia/Seoul")`)를
+각각 쓴다. 러너를 돌리는 개인 맥의
 OS 시간대가 UTC 등 다른 값이어도 종료 판정이 서버와 갈리지 않게 하기
 위해서다.
 
@@ -620,7 +633,7 @@ D9, `prompt_plan.md` 트랙 33 참고). 스태프가 URL을 직접 골라 추가
 
 outcome 5종(created/duplicate/excluded/failed/skipped)과 outcome별 허용
 reason 집합은 서버 `EVENT_OUTCOME_REASONS`
-`[코드]` `drafts/discovery_runs.py:29-43`가 소유한다. 러너 쪽 어휘(실제로
+`[코드]` `drafts/discovery_runs.py`(약 35행)가 소유한다. 러너 쪽 어휘(실제로
 낼 수 있는 (outcome, reason) 짝)는 `local_runner/exploration_flow.py`가
 `_record_outcome` 호출로 낸다 `[코드]`(예: 210·219·228행). 두 어휘가
 갈라지지 않게 `tests/local_runner/test_outcome_vocabulary_parity.py`가
@@ -629,7 +642,7 @@ reason 집합은 서버 `EVENT_OUTCOME_REASONS`
 완료 API는 리스트 타입이 아니면 기존처럼 400이지만, 리스트 안 개별
 항목이 dict가 아니거나 url·outcome·reason 형식·허용목록을 벗어나면 그
 항목만 조용히 버리고 200을 유지한다 `[코드]` `drafts/discovery_runs.py`
-`_clean_event_outcomes`(57~96행). 완료를 400으로 내리면 러너
+`_clean_event_outcomes`(약 55행~). 완료를 400으로 내리면 러너
 `RunnerClient.complete`가 예외를 내 `complete_run`이 실행되지 않아
 실행이 CLAIMED로 남고, 임대 `LEASE_SECONDS=1800`초
 `[코드 drafts/discovery_runs.py:19]` × `MAX_LEASES=2`
@@ -639,7 +652,7 @@ url은 `sanitize_text` 적용·http(s) 스킴·200자 이하만 통과하고
 실행이 실제로 만든 드래프트 source_url과 대조해 없으면 버린다(87행,
 러너 문자열을 그대로 믿지 않는다). 최대 20건까지만 남기고 초과분은
 절단한다 — `_MAX_EVENT_OUTCOMES = 20`
-`[코드]` `drafts/discovery_runs.py:46`.
+`[코드]` `drafts/discovery_runs.py`(약 52행).
 
 ### 건너뛴 항목은 attempted·excluded 둘 다에 들어간다
 
@@ -665,7 +678,7 @@ local_runner/exploration_flow.py:205-211`)과 대칭을 맞춘다.
 `today` 인자를 받아 "대한민국에서 열리는 행사만 `is_event`를 참으로
 하라"는 조건과 `why_excluded` 허용값(ended·overseas 포함), 이벤트마다
 `end_date`(YYYY-MM-DD, 모르면 빈 문자열)를 요구한다 `[코드]`. `today`는
-`local_runner/runner.py:156`에서 `today_kst().isoformat()`으로 채운다
+`local_runner/runner.py`(약 197행)에서 `today_kst().isoformat()`으로 채운다
 `[코드]`.
 
 ### 읽기 단계의 예상된 예외는 그 행사만 죽이고 계속한다
@@ -676,12 +689,13 @@ local_runner/exploration_flow.py:205-211`)과 대칭을 맞춘다.
 2026-09-18]`. 지금은 읽기 단계에서 예상되는 예외
 (`httpx.HTTPError`·`InvalidFetchUrlError`·`UnsafeFetchUrlError`·
 `ResponseTooLargeError`·`EmptyExtractionError`·`OSError`)를
-`_EXPECTED_FETCH_ERRORS`로 묶어 그 항목만 failed·`fetch_error`로 기록하고
+`_EventContext.expected_fetch_errors`(`local_runner/exploration_flow.py`, 튜플은
+`_build_event_context`에서 조립)로 묶어 그 항목만 failed·`fetch_error`로 기록하고
 다음 항목을 계속 처리한다 `[코드]`
-`local_runner/exploration_flow.py:151-158,221-229`(본문 없이
-예외 클래스명·호스트만 WARNING 1줄, 225~227행). 러너 `_process_run`의 두
+`_fetch_event`(약 209-230행, 본문 없이 예외 클래스명·호스트만 WARNING 1줄,
+223행). 러너 `_process_run`의 두
 실패 경로도 원인 예외 클래스명만 WARNING으로 남긴다(본문 금지)
-`[코드]` `local_runner/runner.py:88,105`. 서버 완료 허용목록
+`[코드]` `local_runner/runner.py`(약 112·131행). 서버 완료 허용목록
 `_ALLOWED_FAILURE_KINDS`에 러너가 실제 보내는 `exploration_error`가
 있다 `[코드]` `drafts/discovery_runs.py:25`.
 
@@ -721,18 +735,18 @@ robots.txt를 가져오지 못하면(네트워크·인증서 오류) 새
 
 ### 대시보드는 결과별 건수와 행사 단위 상세를 한 쿼리로 낸다
 
-`drafts/queries.py` `recent_discovery_runs`(183~217행)가 후보
+`drafts/queries.py` `recent_discovery_runs`(약 226행)가 후보
 승격·실패 건수(조인 곱 방지를 위해 `distinct=True`)와 `run.events`
 기준 행사 생성 수를 한 쿼리에서 annotate하고, `event_outcomes`가 비어
 있던 옛 실행은 제외·실패 건수를 `None`으로 내 화면이 "-"로 표시한다.
-행사별 상세 행은 `_outcome_rows`(158~180행)가 이미 로딩된
+행사별 상세 행은 `_outcome_rows`(약 201행)가 이미 로딩된
 `event_outcomes` JSON만 써서(추가 쿼리 없이) 호스트+경로만 노출하는
-`_display_url`(151~155행, `hostname` 사용 — 계정 정보가 섞인
-`netloc`이 아니다)과 한국어 라벨(`EVENT_OUTCOME_LABELS`·
-`EVENT_OUTCOME_REASON_LABELS`, 122·142행)로 만든다. 후보 실패 단계
+`_display_url`(약 194행, `hostname` 사용 — 계정 정보가 섞인
+`netloc`이 아니다)과 한국어 라벨(`EVENT_OUTCOME_LABELS`(약 185행)·
+`EVENT_OUTCOME_REASON_LABELS`(약 154행))로 만든다. 후보 실패 단계
 라벨에 `not_domestic`·`robots_fetch_failed` 분기가 빠져 빈 칸으로
 보이던 문제(착수 중 발견, 같은 종류)도 같은 트랙에서 채웠다 `[코드]`
-`templates/staff/dashboard.html:310`.
+`templates/staff/dashboard.html`(약 259행).
 
 ### 실기동 대조
 
@@ -869,7 +883,8 @@ phase 값이 바뀌는 전이는 간격과 무관하게 heartbeat 1회를 즉시
 detail이 바뀔 때마다 1줄 남기며 보류하지 않는다 — 대시보드 폴링
 간격(온라인 또는 pending/claimed 존재 시 5초, 그 외 20초, WED·BIR
 채택)과는 별개다. 이 간격은 러너 스로틀 `discovery_runner`
-60/minute(heartbeat·claim·candidates·drafts·complete 공유,
+60/minute(heartbeat·claim·candidates·drafts·drafts/known·complete·offline 공유;
+번역 러너 API는 별도 scope `translation_runner`,
 `config/settings.py`)를 넘지 않도록 즉시 전송 최대 12/분 + 티커
 20초당 1회로 계산했다(정정 5).
 
@@ -881,8 +896,10 @@ SIGINT·SIGTERM은 `KeyboardInterrupt`로 통일해 받는다 `[코드]`
 `KeyboardInterrupt`). 첫 Ctrl+C에서는 진행 중이던 run이 있으면
 `_report_shutdown`이 `complete(failed, "runner_shutdown",
 events_attempted=progress.last_index or 0)`를 보낸 뒤
-`send_offline(timeout=_SHUTDOWN_TIMEOUT_SECONDS)`을 보낸다(각 호출
-3초 타임아웃, `httpx.HTTPError`는 로그만 남기고 전파하지 않는다) `[코드]`
+`send_offline(timeout=_SHUTDOWN_TIMEOUT_SECONDS)`을 보낸다. `complete`는
+기본 30초(`_TIMEOUT_SECONDS`), `send_offline`만 `_SHUTDOWN_TIMEOUT_SECONDS=3`초
+타임아웃이다. 첫 Ctrl+C의 최악 대기는 약 33초다 `[계산]`(`httpx.HTTPError`는
+로그만 남기고 전파하지 않는다) `[코드]`
 `local_runner/runner.py` `_report_shutdown`. 대기 중이면
 `progress.run_id`가 `None`이라 `complete` 호출 없이 `send_offline()`만
 보낸다. 두 번째 Ctrl+C는 오프라인 보고를 생략하고
@@ -954,8 +971,8 @@ events_attempted=progress.last_index or 0)`를 보낸 뒤
   `local_runner/exploration_flow.py`, `local_runner/page_fetch.py`,
   `local_runner/caption_interpreter.py`, `local_runner/url_safety.py`. 전체
   회귀 2680건 통과 `[실측]`(오케스트레이터 실행).
-- 트랙 39 사용자 결정(2026-09-20): decisions.md D1~D12, 계획서 사용자 결정
-  1~6.
+- 트랙 39 사용자 결정(2026-09-20): 계획서 `prompt_plan.md` 트랙 39 절의 결정
+  D1~D12, 계획서 사용자 결정 1~6.
   - 전체 회귀: `uv run pytest -q` 3181 passed / 10 deselected / 91.80초
     `[실측 2026-09-20, 오케스트레이터 실행]`. `manage.py check` 이상 없음,
     `makemigrations --check --dry-run` No changes detected. 여정 e2e

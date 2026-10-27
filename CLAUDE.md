@@ -25,8 +25,9 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
 - Collection and visit data are private by default. Exchange visibility requires
   explicit opt-in and must be independently revocable.
 - Tradeable quantity cannot exceed owned quantity. Goods cannot be visit/status targets or official-promotion candidates.
-- Target IA is `Home / Events / Collection / Activity`, but navigation changes
-  must wait for the approved collection data contract.
+- Target IA `Home / Events / Collection / Activity` is shipped
+  (`templates/core/partials/_site_header.html`, four links `[코드]`); further
+  navigation changes still need the approved collection data contract.
 - Initial north star: monthly collection-contributing users, supported by first
   and second registration, four-week return, and matching-density measures.
 - Execution order: deployment foundation, collection domain and migration,
@@ -53,7 +54,7 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
 - `archive/`: personal state, visits, and collection groundwork
 - `staff/`: staff console and moderation workflows
 - `core/`: shared kernel — settings helpers, errors, logging, analytics, vocab,
-  and the LLM adapter; imports no domain app
+  the LLM adapter, and runner token auth; imports no domain app
 - `web/`: leaf presentation assembly for public pages; `web/promotion.py` is
   the single approved cross-domain write exception (archive/drafts)
 - `local_runner/`: off-server discovery runner; imports no Django or server
@@ -72,7 +73,9 @@ goods, maintain intent, then find exchange candidates. Collection drives return.
   `drafts/queries.py`, `drafts/runner_urls.py`
 - Public web: `web/views/`, `web/promotion.py`, `web/sitemaps.py`
 - Runner: `local_runner/runner.py`, `local_runner/client.py`,
-  `drafts/runner_views.py`, `drafts/discovery_runs.py`
+  `drafts/runner_views.py`, `drafts/discovery_runs.py`, `core/runner_auth.py`,
+  `events/runner_views.py`, `events/translation_queue.py`,
+  `local_runner/translation_flow.py`
 - Staff and shared web: `staff/services.py`, `staff/queries.py`, `staff/views/`,
   `staff/urls.py`, `staff/api_urls.py`, `core/urls.py`, `core/views.py`
   (only `api_root`, `robots_txt`, `health`)
@@ -128,7 +131,7 @@ test. During Red-Green, run the targeted test before broad regression.
 - Write code comments and docstrings only for non-obvious intent or constraints;
   use one or two short lines of plain Korean a non-developer can follow, never
   a translation of the code. The detailed standard is in `AGENTS.md`.
-- Use `rg` for search and `apply_patch` for manual edits.
+- Use `rg` for search and the Edit tool for manual edits.
 - Never revert unrelated changes or overwrite `prompt_plan.md` unless assigned.
 - After planned verification, commit, push, and PR creation are automatic.
   Merge needs per-PR user approval unless an expressly recorded standing

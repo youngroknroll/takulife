@@ -2,7 +2,8 @@
 
 기준일: 2026-07-31 · 브랜치 `feat/account-settings-editorial`
 대상: `/accounts/settings/`, `/accounts/email/`, `/accounts/password/change/`,
-`/accounts/delete/`, `/accounts/confirm-email/<key>/`, `/accounts/delete/done/`
+`/accounts/delete/`, `/accounts/confirm-email/<key>/`, `/accounts/delete/done/`,
+`/accounts/settings/nickname/`(트랙 29)
 
 이 문서는 **가드레일만** 담는다. 계획 문서는 `.docs/FE/`에 있었고 git-ignored라
 소실된다. 여기 적힌 것은 다음 작업자가 모르면 같은 실수를 반복할 것들이다.
@@ -14,7 +15,8 @@
 안 떴다. 자동 테스트 2042건은 전부 통과했다.
 
 **원인 사슬**:
-1. `static/js/shared/staff_submit_guard.js`는 `submit` 핸들러 안에서 **동기적으로**
+1. `static/js/shared/submit_guard.js`(옛 이름 `staff_submit_guard.js`, 현재
+   소비자·스태프 양쪽 셸이 로드)는 `submit` 핸들러 안에서 **동기적으로**
    `button.disabled = true`를 한다.
 2. Chrome은 **disabled 컨트롤을 폼 전송 데이터에서 제외**한다.
 3. allauth `EmailView.post`는 **버튼 `name`으로만 분기**한다
@@ -35,10 +37,10 @@
 `templates/account/email_change.html`이 그렇게 고쳐져 있고, 되돌리지 말라는
 주석이 각 폼 위에 있다.
 
-**왜 공유 가드를 안 고쳤나**: 스태프 콘솔 전체가 그 파일을 공유한다.
-`[실측]` 현재 `data-submit-guard` 폼 중 제출 버튼에 `name`이 있는 템플릿은
-**계정 이메일 화면 하나뿐**이었으므로(스태프 폼은 전부 무명 버튼) 범위를
-좁힌 수정이 옳았다.
+**왜 공유 가드를 안 고쳤나**: 공유 가드는 소비자·스태프 양쪽 셸이 쓴다
+(`docs/FE/loading-feedback.md`). 제출 버튼에 `name`을 단 `data-submit-guard`
+폼은 현재 0건이다 `[실측 2026-10-27 rg -n 'data-submit-guard' -A20 templates | rg 'button[^>]*name=']`.
+새 폼에도 버튼 `name` 분기를 만들지 마라.
 
 **교훈**: Django 테스트 클라이언트는 JS를 실행하지 않는다. 이 결함은 브라우저
 실측으로만 드러났다. **폼 제출 경로가 JS 가드를 거치면 자동 테스트 초록은
@@ -116,14 +118,16 @@
 
 ## G7 운영상 미해결 (이번 범위 밖, 실사용자 도입 전 필수)
 
-- ⚠️ **`purge_deleted_accounts`에 스케줄러가 없다.** `[실측]` CI·entrypoint·
-  runbook 전부 무참조. 완료 안내 화면이 "삭제 예정일"을 사용자에게 약속하므로,
-  실사용자 도입 전 `docs/deploy-runbook.md` 사전 점검 항목에 추가해야 한다.
+- ⚠️ **런북에는 등록 항목이 있다**(`docs/deploy-runbook.md` §3-⑪,
+  `docs/operations-runbook.md` §7.1). CI·entrypoint는 무참조
+  `[실측 2026-10-27 rg]`. 스케줄러의 실제 등록 여부는 미확인(Render 대시보드).
 - **SMTP 미설정은 선재 갭**이다. 이메일 변경 흐름도 같은 갭을 상속한다(콘솔
   백엔드로 출력될 뿐 실제 발송 안 됨). 신규 항목을 열지 말고 기존 SMTP
   백로그에 붙인다.
-- `ACCOUNT_CHANGE_EMAIL` **최초 프로덕션 전환 전** `EmailAddress` 중복 행 감사
-  2건을 실행하라. 한 사용자가 검증된 주소를 2개 이상 갖고 있으면 단일 UI에
+- `ACCOUNT_CHANGE_EMAIL`: 운영 전환은 2026-08-31에 끝났다. 감사 2건의 실행
+  결과 기록이 없으므로 운영 DB에서 1회 실행 후 `docs/operations-runbook.md`에
+  결과를 남긴다. 절차는 `docs/operations-runbook.md` §10에 있고 로컬 DB는 중복 0건 `[실측 2026-10-27]`, 운영 DB 실행은 사용자 대기. 한 사용자가 검증된 주소를 2개 이상
+  갖고 있으면 단일 UI에
   안 보이면서도 로그인·비밀번호 재설정에는 계속 쓰인다.
   ```python
   EmailAddress.objects.values("user_id").annotate(n=Count("id")).filter(n__gt=1)
@@ -138,17 +142,19 @@
 `docs/FE/auth-editorial.md` A2. 아래는 정정 전 원문이다.
 
 ~~`templates/core/partials/_auth_field.html`은 오류 필드에 `aria-describedby`/
-`aria-invalid`를 걸지 않는다.~~ `[실측]` 이 파셜을 쓰는 템플릿은 범위 밖
-**5개 템플릿 / 10개 include 사이트**(login/signup/password_reset* 등. 정정
-2026-07-31: 당초 「12개」는 `auth.css`를 로드하는 템플릿 수였고 단위가
-뒤바뀐 것이었다 — `.docs/FE/auth-editorial.md` M4)라 이번에 건드리지
-않았다. 인증 화면 리스킨 트랙에서 파셜 자체를 고치는 것이 옳다.
+`aria-invalid`를 걸지 않는다.~~ `[실측 2026-10-27]` login 2 · signup 4 ·
+password_reset 1 · password_reset_from_key 2 · password_set 2 ·
+socialaccount/signup 2 = **13 사이트 / 6 템플릿**(작성 당시 10/5; signup
+닉네임은 트랙 29, 소셜 가입은 현재 파셜 사용)이 범위 밖(정정 2026-07-31:
+당초 「12개」는 `auth.css`를 로드하는 템플릿 수였고 단위가 뒤바뀐 것이었다
+— `.docs/FE/auth-editorial.md` M4)이라 이번에 건드리지 않았다. 인증 화면
+리스킨 트랙에서 파셜 자체를 고치는 것이 옳다.
 
 ## 검증 증거 (2026-07-31)
 
 | 항목 | 결과 |
 |---|---|
-| 백엔드 회귀 | `[실측]` **2044 passed** (착수 시점 2028 → 신규 16건) |
+| 백엔드 회귀 | `[실측 2026-07-31]`(작성 당시) **2044 passed** (착수 시점 2028 → 신규 16건) |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 (모델 변경 0건) |
 | 뮤테이션 검증 | 경계 가드 2회, `delete_targets` 가드 2회 — 전부 Red 후 복원 Green |

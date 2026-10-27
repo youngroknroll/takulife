@@ -55,11 +55,23 @@ drf-spectacular가 내성 검사용 뷰 인스턴스에만 세팅한다. 부작�
 새고 있었다(실측).
 
 이 훅은 경로 문자열만 보므로 **새 비-`/api/` DRF 뷰는 자동으로 제외되고, 새
-`/api/` 뷰는 자동으로 포함된다** — 훅을 다시 손댈 필요가 없다. 경로 완전성
+`/api/` 뷰는 기본적으로 포함된다.** 단 비밀 토큰 기반 러너 API(`/api/discovery/runner/`,
+`/api/translation/runner/`)와 `/api/client-errors/`는 뷰에 `@extend_schema(exclude=True)`를
+붙여 뺀다. 새 비공개 `/api/` 뷰를 추가하면 같은 방식으로 빼고
+`tests/core/test_openapi_schema.py`의 `_INTENTIONALLY_UNDOCUMENTED_PREFIXES`에도
+접두사를 더한다 — 안 그러면 완전성 계약이 실패한다. 경로 완전성
 계약(`test_스키마_생성시_등록된_API_경로가_모두_포함된다`)이 urlconf에서 직접
 경로를 파생해 새 `/api/` 라우트 누락을 잡고, 프리픽스 계약
 (`test_공개_스키마의_모든_경로는_api_프리픽스로_시작한다`)이 반대 방향(비공개
 경로 유입)을 잡는다.
+
+## 가드레일 4 — 러너 경계는 `exclude=True`로 뺀다
+
+`/api/discovery/runner/`(`drafts/runner_views.py`)와
+`/api/translation/runner/`(`events/runner_views.py`, 트랙 44-1)는 비밀 토큰
+(`X-Runner-Token`) 기반 기계 간 API라 각 뷰의 `post`에
+`@extend_schema(exclude=True)`를 붙였다. 가드는
+`tests/core/test_openapi_schema.py::test_공개_스키마에_러너_경계_경로가_노출되지_않는다`.
 
 ## 정적 자산 — Swagger UI는 sidecar 자체 서빙
 
@@ -81,9 +93,13 @@ manifest 경로는 CI의 컨테이너 부팅 스모크(F3, `docker` 잡)가 이�
 
 ## Evidence
 
-- 계약 테스트 6건: `tests/core/test_openapi_schema.py`.
+- 계약 테스트 7건(러너 경계 비노출 테스트 포함
+  `[실측 rg '^def test_' tests/core/test_openapi_schema.py 2026-10-27]`):
+  `tests/core/test_openapi_schema.py`.
 - 전체 회귀: `uv run pytest -q` → **2155 passed** `[실측 2026-08-16]`.
 - `uv run python manage.py spectacular --validate --fail-on-warn` → 통과(경고 0).
-- 브라우저 실측: 37개 operation 전부 선언된 5개 태그(`core`/`events`/`drafts`/
-  `archive`/`collection`) 소속, 한국어 `summary` 표시, Swagger UI 콘솔 오류 0건,
-  외부 네트워크 요청 0건(sidecar 자체 서빙 확인).
+- (기록 당시 값 — 회귀 2155 passed `[실측 2026-08-16]`, operation 37개; 현재 회귀
+  4284 `[실측 2026-10-27]`, operation 수는 재측정 전) 브라우저 실측: 37개 operation
+  전부 선언된 5개 태그(`core`/`events`/`drafts`/`archive`/`collection`) 소속,
+  한국어 `summary` 표시, Swagger UI 콘솔 오류 0건, 외부 네트워크 요청 0건(sidecar
+  자체 서빙 확인).

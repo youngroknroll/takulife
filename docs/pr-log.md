@@ -14,55 +14,65 @@
 항목을 한 줄로 줄이고, 새 PR을 상세 항목으로 올린다(`AGENTS.md` "Document post-work
 state" 절 참고).
 
-한 줄 요약은 손으로 다시 쓰지 않는다. `gh pr list --state merged --limit 300 --json
+한 줄 요약은 손으로 다시 쓰지 않는다. `gh pr list --state merged --limit 500 --json
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
-`[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #396부터 #257까지다.
-그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
-언제든 다시 조회할 수 있다.
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 394건(`gh pr list --state merged --limit 500`,
+2026-10-27 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
+목록은 PR #400부터 #268까지다(#399는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+--state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #397 — feat(i18n): 아카이브·컬렉션·활동·마이페이지 UI 다국어 — 트랙 43-3
+### PR #399 — feat(i18n): 행사 텍스트 자동 번역 서버 저장·검증과 러너 번역 단계 — 트랙 44-1
 
-**무엇을 바꿨나**: 아카이브·컬렉션·활동 달력·마이페이지의 UI 문구와 날짜 서식을 gettext로
-옮겼다(템플릿 26개·JS 11개·파이썬 사용자 노출 메시지). 카탈로그는 언어당 django 643건 +
-djangojs 69건이고 43-2보다 새 항목이 311개다 `[실측 msgfmt --statistics 2026-10-22]`
-`[계산 269 + 42]`. 개인 항목 카테고리·굿즈 유형 칩은 번역하고, 저장은 시리얼라이저가 어느
-언어의 문구든 한국어 원문으로 정규화한다(POST·PATCH; main에 있던 "영어 사용자가 굿즈 유형
-번역 문구를 저장하는" 결함 포함 수정). 날짜·월은 로케일 서식을 쓴다. 번역 때문에 320px에서
-깨진 곳(히어로 요약·찜 pill·마이페이지 위험 행·활동 달력 툴바)은 CSS로 고쳤고, 한국어 화면이
-달라지는 곳은 활동 달력 두 곳(찜 링크 ≤860px `♥ 찜`, 검색 폼 ≤384px 전폭)뿐이다. 변경
-규모는 76개 파일, +10,085줄·-1,212줄(커밋 14개)이다 `[실측 git diff --shortstat 머지 전]`.
-마이그레이션은 없다. 머지 `8ca4c9f5`(2026-10-23T06:41Z, 사용자 직접 승인).
+**무엇을 바꿨나**: 승인된 행사의 제목·작품명·장소·요약 4필드를 en·ja·zh-hans로 자동 번역해
+`Event.text_translations`(JSON `{"source_hash","manual","en","ja","zh-hans"}`, 규칙에 걸린
+언어 칸은 `null`)에 저장하는 서버 저장·검증과, 사용자 맥의 로컬 러너가 `claude` CLI로 번역하는
+단계다. 서버는 LLM을 부르지 않는다(2026-07-04 사용자 결정). 쓰기 훅 없이 큐는 읽는 시점에
+계산한다(게시 행사 중 번역 없음·해시 불일치, `manual` 제외, id 오름차순, 응답당 최대 20건).
+러너 API `POST /api/translation/runner/pending/`·`submit/`은 기존 러너 토큰을 쓰되 스로틀
+scope `translation_runner`(분당 60회 `[코드]`)로 분리했고 공개 OpenAPI에서 제외한다. 검증은
+순수 함수(`events/content_translation.py`)로 구조 오류·NUL은 400, 낡은 해시·수동 확정·없는
+이벤트는 409/409/404, 그 외는 언어 단위 격리(절대 길이 → 제어문자 → 상대 길이 → 마크업·URL·
+이메일 → 통화 → 숫자 → 빈 칸 → 한글 잔존 → 문자 판정). 마이그레이션은 `0008`(AddField)과
+`0009`(RunSQL로 DB 기본값 `'{}'::jsonb` 복구) 둘이다. 관리 명령 `report_translation_queue`
+추가. **공개 화면은 바뀌지 않는다**(노출은 44-2). 2026-10-26 전수검사(7역할 병렬 검토)의
+결함 35건(운영 코드 15·가드/테스트 12·문서 8)을 같은 PR에서 고쳤다. 변경 규모는 43개 파일,
++4,999줄·-75줄(커밋 18개 + main 반영 머지 1개) `[실측 git diff --shortstat adffc819..95172291]`.
+머지 `e38a0db9`(2026-10-27T08:32Z, 사용자 승인).
 
-**왜**: 43-1·43-2에 이은 트랙 43의 마지막 조각으로, 한국어를 읽지 못하는 팬이 컬렉션·방문
-기록을 남기게 하려는 제품 결정이다. 번역은 AI 검수만 거쳤다(사용자 지시): 독립 검수자 3명이
-영어 8·일본어 16·중국어 9개 제안을 냈고 전부 반영했다 `[문서 docs/BE/i18n.md "AI 검수 기록
-(2026-10-22, 트랙 43-3)"]`. 프런트엔드 게이트는 BIR `Unverified`(Deviates 0)·WED
-`Deviates`(경미: `lang` 누락 3곳 수정, 한국어 화면 변경 2건은 승인)·QVL 조건부 완료로 닫았다.
+**왜**: 트랙 43으로 UI는 번역됐지만 행사 콘텐츠는 한국어 원문뿐이라 외국어 사용자가 행사
+내용을 읽지 못한다. 서버 LLM API는 비용 정책상 쓰지 않으므로 로컬 러너가 번역하고, 건별 사람
+검수가 없으니(사용자 결정) 저장 단계 규칙이 허위 숫자·마크업을 막는 방어선이다. 전수검사가
+찾은 배포 안전 결함(0008 `AddField`가 DB 기본값을 지워 구 코드 INSERT가 NOT NULL 위반)은
+0009로 막았다.
 
-**검증**: 머지 전 `uv run pytest -q` 3985 passed / 10 deselected, e2e 10 passed `[실측
-2026-10-23, HEAD d4aa556d]`, 변이 29개 중 28 Red + 동등 1, 한국어 렌더 main 대비 100장면 중
-78 동일·22는 숨은 `찜` 노드 추가. 머지 후 main 재측정 `[실측 2026-10-23 main 8ca4c9f5]`:
-3985 passed / 10 deselected / 63.44초(43-2 기준선 3419 대비 +566 `[계산]`), e2e 10 passed,
-`manage.py check` 0건, `makemigrations --check --dry-run` 변경 없음. PR·main CI는 Test
-suite·Docker build·E2E가 통과했고 의존성 감사만 `djangorestframework 3.17.2`의 새 권고 3건
-(GHSA-33wh-fxxf-88vv·GHSA-3547-9m27-7rxg·GHSA-xw6w-gcfp-cf8m, 수정 3.18.2)으로 실패했다 — 이
-PR은 의존성을 바꾸지 않았다. main CI가 실패해 `Deploy PR` 워크플로는 `skipped`이고 열린 배포 PR이
-없다 `[실측 gh run list 2026-10-23]`. 배포 PR #393은 2026-10-22T10:15Z에 이미 머지돼 production
-`6d0adebb`에는 43-2까지 있고 43-3은 없다 `[실측 git merge-base]`. production 반영은 감사를
-통과시킨 뒤 새 배포 PR과 런북 §3-18 번역 검수 게이트가 조건이다.
+**검증**: 머지 전 브랜치(#400 반영 후 `e00e0ca9`) `uv run pytest -q` 4284 passed / 10
+deselected / 144.44초 `[실측 2026-10-27]`, `manage.py check` 0건, `makemigrations --check
+--dry-run` 변경 없음. 전수검사 수정분은 묶음별 Red 산출물 보존(서버 규칙 16·러너 14·드래프트
+2·마이그레이션/가드 4 failed), 처음부터 Green인 핀 23건은 변이로 전부 Red 확인 `[실측
+2026-10-26]`. 러너 실기동은 로컬 DB 15건(45개 언어 칸 중 43칸 저장, 전수검사 수정 전 코드).
+PR CI 5잡 pass — 감사 잡은 PR #400(brotli 1.2.1, `5af4827a`)을 먼저 머지하고 main을 반영한
+뒤 통과했다 `[실측 gh 2026-10-27]`. 머지 후 main 재측정 `[실측 2026-10-27 main e38a0db9]`:
+4284 passed / 10 deselected / 152.46초(43-3 기준선 3985
+대비 +299 `[계산]`), `manage.py check` 0건, `makemigrations --check --dry-run` 변경 없음, main
+CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → production)이 자동 생성됐고 머지는 사용자
+결정이다. 배포 뒤 러너 재시작(맥 저장소 main·`uv sync`)과 런북 §3 항목 19(0009 기본값
+확인)가 남는다.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #400 — fix: Raise brotli to 1.2.1 to clear the new advisories
+- #398 — deploy: main → production
+- #397 — feat(i18n): 아카이브·컬렉션·활동·마이페이지 UI 다국어 — 트랙 43-3
 - #396 — feat(i18n): 이벤트 화면(목록·달력·상세) UI 다국어 — 트랙 43-2
 - #395 — feat(i18n): UI 다국어 기반(ko/en/ja/zh-hans) — 트랙 43-1
 - #394 — ci: Skip pull_request CI for PRs into production (track 42)
+- #393 — deploy: main → production
 - #392 — docs: PR #388~#391 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #391 — deploy: main → production
 - #390 — fix(deps): Bump allauth, oauthlib, pyjwt, urllib3 for audit
@@ -80,6 +90,7 @@ PR은 의존성을 바꾸지 않았다. main CI가 실패해 `Deploy PR` 워크�
 - #378 — Track 37: Prune operational data and show storage size on the dashboard
 - #377 — Track 36: Record backend and browser errors as capped error groups
 - #376 — Track 35: Record per-event draft run outcomes and fix live-run defects
+- #375 — deploy: main → production
 - #374 — docs: PR #373 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #373 — feat(home): Add event calendar section below the hero
 - #372 — docs: PR #370 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -187,13 +198,3 @@ PR은 의존성을 바꾸지 않았다. main CI가 실패해 `Deploy PR` 워크�
 - #270 — style: Sweep every comment under the rewritten policy
 - #269 — style: Bring auth-track comments under the comment policy, and register E4
 - #268 — docs: Refresh the status table against the merged tree
-- #267 — docs: Fix three claims the post-merge auth review measured wrong
-- #266 — design(accounts): Rebuild 12 auth screens as an editorial two-panel layout
-- #265 — docs: 탈퇴 계정 파기 정기 실행을 런북 요구사항으로 등록
-- #264 — 계정 설정 영역 에디토리얼 리디자인 + 이메일 단일 변경 흐름
-- #263 — fix: 활동 달력의 방문·굿즈 중복 표시와 삭제 잔존 제거
-- #261 — feat: Close the D group's user-flow gaps (staff console deferred)
-- #260 — docs: Defer C1 until there are real users, but settle its definitions
-- #259 — test(core): Guard every core module by default, not the six we listed
-- #258 — docs: Close A5, and stop entries from going stale the moment they are fixed
-- #257 — docs: Make a number in a document say what it counts

@@ -126,17 +126,24 @@ def test_heartbeat에_phase가_없으면_이전_phase가_유지된다():
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
-    "offline_at, last_heartbeat_at, expected",
+    "offline_at_offset_seconds, last_heartbeat_at_offset_seconds, expected",
     [
-        (None, timezone.now(), True),
-        (timezone.now() - timedelta(seconds=10), timezone.now(), True),
-        (timezone.now(), timezone.now() - timedelta(seconds=10), False),
+        (None, 0, True),
+        (-10, 0, True),
+        (0, -10, False),
     ],
     ids=["오프라인_기록_없음", "오프라인_이후_새_heartbeat", "오프라인_이후_heartbeat_없음"],
 )
 def test_runner_is_online은_offline_at과_최근_heartbeat_시각을_비교해_판정한다(
-    offline_at, last_heartbeat_at, expected
+    offline_at_offset_seconds, last_heartbeat_at_offset_seconds, expected
 ):
+    now = timezone.now()
+    offline_at = (
+        None
+        if offline_at_offset_seconds is None
+        else now + timedelta(seconds=offline_at_offset_seconds)
+    )
+    last_heartbeat_at = now + timedelta(seconds=last_heartbeat_at_offset_seconds)
     status_row = DiscoveryRunnerStatus(
         last_heartbeat_at=last_heartbeat_at, offline_at=offline_at
     )

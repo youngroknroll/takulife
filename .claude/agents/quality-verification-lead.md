@@ -56,6 +56,7 @@ Risk matrix:
 Acceptance-to-evidence matrix:
 Frontend dual-review evidence:
 Required commands/checks:
+Backend completion checklist (Test Authoring Policy):
 Passed:
 Failed:
 Unverified:

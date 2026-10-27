@@ -37,6 +37,9 @@
 
 ## 스피너는 버튼 폭을 바꾸면 안 된다
 
+소비자: `static/css/objects/interaction.css`(약 64-105, `border-right-color`),
+스태프: `static/css/staff/base.css`(약 177-196, `border-top-color`).
+
 ```css
 button.is-loading, a.is-loading { font-size: 0; }
 button.is-loading::after {

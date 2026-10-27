@@ -18,7 +18,7 @@ AXES_USERNAME_FORM_FIELD = "login"
 
 - **5회 실패**하면 잠금(`AXES_FAILURE_LIMIT`).
 - 잠금은 **1시간(`AXES_COOLOFF_TIME`) 후 자동 해제**(no-action recovery).
-- 로그인 성공 시 해당 계정의 실패 카운트 리셋(`AXES_RESET_ON_SUCCESS`).
+- 로그인 성공 시 해당 IP(잠금 파라미터 `AXES_LOCKOUT_PARAMETERS = ["ip_address"]` 기준)의 실패 기록이 리셋된다(`AXES_RESET_ON_SUCCESS`).
 - 잠금 응답 코드는 `429`, 템플릿은 `templates/account/lockout.html`.
 - `AXES_USERNAME_FORM_FIELD = "login"` — allauth 로그인 폼이 식별자를 `login` 필드로 전송하므로, axes도 동일 필드를 읽어 시도를 기록한다.
 
@@ -203,7 +203,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 - **익명 사용자** → `settings.LOGIN_URL`(`/accounts/login/`)로 리다이렉트(`next` 파라미터 보존).
 - **로그인했지만 스태프가 아닌 사용자** → `403 PermissionDenied`(로그인 페이지로 되돌리지 않는다 — 이미 로그인된 상태에서 LOGIN_URL로 보내면 allauth의 인증됨 리다이렉트와 충돌해 무한 루프가 될 수 있기 때문).
 - Django 기본 관리자 페이지(`/admin/`)는 슈퍼유저용 백업 경로로 계속 유지되지만, `accounts.User`는 여전히 admin에 등록돼 있지 않다(`accounts/admin.py` 없음). 계정 운영(`is_staff` 부여/해제, `is_active` 전환)은 이제 admin이나 shell이 아니라 `/staff/accounts/`(트랙 19, H1)에서 한다: `superuser_console_required`(`staff/permissions.py`)로 조작 주체를 superuser로 한정하고, 목표 상태 지정(`enabled="1"`/`"0"`, 토글 아님) + `confirmed=yes` 2단계 확인을 거쳐 `accounts/services.py`의 `set_staff_flag`·`set_active_flag`를 호출한다. 상세 가드레일(멱등, 보호 계정, 감사 기록 형태)은 `docs/BE/staff-account-operations.md`가 정본이다.
-- **예외 — superuser 계정 자체(자기 계정 포함)는 콘솔 대상에서 제외**된다(사용자 확정 2026-09-07: superuser는 `createsuperuser`·shell로만 만들고 바꾼다): `set_staff_flag`·`set_active_flag`가 `user.is_superuser`면 `ProtectedAccountError`를 던져 뷰가 무변경으로 되돌린다(`accounts/services.py:144-150`, `:156-162`). superuser 계정을 다뤄야 하면 지금도 아래처럼 shell로 직접 조작한다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 비상용 명령이라 `uv run`을 쓴다):
+- **예외 — superuser 계정 자체(자기 계정 포함)는 콘솔 대상에서 제외**된다(사용자 확정 2026-09-07: superuser는 `createsuperuser`·shell로만 만들고 바꾼다): `set_staff_flag`·`set_active_flag`가 `user.is_superuser`면 `ProtectedAccountError`를 던져 뷰가 무변경으로 되돌린다(`accounts/services.py:179-190`, `:194-203`). superuser 계정을 다뤄야 하면 지금도 아래처럼 shell로 직접 조작한다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 비상용 명령이라 `uv run`을 쓴다):
 
   ```bash
   uv run python manage.py shell -c "from accounts.models import User; u = User.objects.get(email='<email>'); u.is_staff = False; u.save(update_fields=['is_staff'])"
@@ -212,7 +212,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 
   `is_active=False`로 바꾸면 다음 요청부터 그 계정의 세션이 무효화된다(`[실측 2026-09-05]` Django `ModelBackend.get_user`가 `user_can_authenticate` 실패 시 None을 반환하고, allauth 인증 백엔드는 `get_user`를 오버라이드하지 않는다).
   `createsuperuser`는 트랙 29부터 닉네임 프롬프트가 추가됐다(`accounts.models.User.REQUIRED_FIELDS`에 `nickname` 포함).
-- 계정 상태 변경은 `StaffActionLog.target_user`로 기록된다(`staff/models.py:46-51`). 운영자(is_staff) 화면에는 대상 회원 이메일을 노출하지 않고 `계정 #<id>`로만 표시한다(`staff/views/audit_log.py:29-30`).
+- 계정 상태 변경은 `StaffActionLog.target_user`로 기록된다(`staff/models.py:53-58`). 운영자(is_staff) 화면에는 대상 회원 이메일을 노출하지 않고 `계정 #<id>`로만 표시한다(`staff/views/audit_log.py:32-34`).
 - 정정 전 기록(2026-09-05 이전 문안): "Staff Console 접근에 문제가 생기면 슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다" — 실측으로 사실과 다름이 확인돼 위와 같이 바꿨다.
 - 정정 전 기록(2026-09-07 이전 문안): "accounts.User는 admin 미등록이라 스태프 권한 부여/해제(`is_staff`)와 계정 비활성화(`is_active`)는 `/admin/`에서 할 수 없고, shell로 직접 다룬다" — 트랙 19로 `/staff/accounts/` 화면이 생겨 superuser 대상이 아닌 계정은 더 이상 shell이 유일한 경로가 아니다.
 - **만료 행사 일괄 비공개 처리(트랙 24, H2)**: `/staff/events/`에서 경고 필터 "종료됐지만 게시 중"을 걸고 체크박스로 대상을 선택한 뒤 "선택 항목 비공개로 설정"을 누르면 한 번에 최대 20건[코드]까지 처리된다(`POST /staff/events/bulk-unpublish/`, 상세 가드레일은 `docs/BE/staff-event-publish-actions.md`가 정본). 부분 실패 시 처리되지 않은 행에는 사유가 표시되며, 서버가 멱등이라 같은 선택으로 재시도해도 이미 처리된 항목이 다시 바뀌지 않는다.
@@ -224,6 +224,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 - **코드만 롤백하는 경우는 안전하다** — 이전 이미지를 재배포해도 배포 entrypoint의 `migrate`는 코드에 없는(더 앞선) 마이그레이션을 자동으로 역적용하지 않는다. 즉 "코드는 이전 버전, 스키마는 0022 유지" 상태로 안전하게 되돌아간다.
 - 위험한 것은 오직 **운영자가 직접 `migrate archive <0022 이전>`을 실행하는 경우**뿐이다.
 - 스키마(테이블) 자체를 제거해야 하는 경우는 별도 승인과 보존 정책이 먼저 필요하다(2026-07-19 이중 달력 서비스 설계서 §14 결정 — 원문서는 2026-08-29 문서 정리로 삭제).
+- 같은 원리로 `CreateModel` 마이그레이션의 역적용은 테이블과 데이터를 전량 삭제한다 — `archive` 0010(`CollectionItem`), `core` 0003(`AnalyticsEvent`)·0007(`ErrorGroup`), `events` 0008(`text_translations` 열, deploy-runbook §5 참조). `migrate <app> <이전 번호>`는 백업 재확인 전에는 실행하지 않는다.
 
 ## 7. 정기 실행 작업
 
@@ -237,15 +238,15 @@ python manage.py purge_deleted_accounts
 **주의: `uv run` 없이 실행한다.** 위 명령은 로컬 체크아웃이 아니라 **컨테이너 안에서
 PaaS 스케줄러가 실행**하는 명령이다. 런타임 이미지에는 `uv`가 없다(`Dockerfile:3-4`
 — builder 스테이지에서만 `uv`로 의존성을 설치하고, 최종 런타임 이미지는 `uv`를
-가져가지 않는다). `docker/entrypoint.sh:5,9`의 `migrate`/`collectstatic`도 같은
+가져가지 않는다). `docker/entrypoint.sh:5,11`의 `migrate`/`collectstatic`도 같은
 이유로 `uv run` 없이 <!-- uv-run-exempt: entrypoint.sh도 런타임 이미지 안에서 실행돼 uv가 없다(Dockerfile:3-4) --> `python manage.py ...` 형식을 쓴다. (이 절 §1의
 `axes_reset_ip` 등은 운영자가 로컬 체크아웃에서 손으로 치는 명령이라 맥락이
 다르며 `uv run`을 그대로 쓴다 — 혼동하지 않는다.)
 
 **주의: 스케줄러 등록 시 반드시 ENTRYPOINT를 우회해야 한다.** 이미지의
-`ENTRYPOINT`는 `docker/entrypoint.sh`로 고정돼 있고(`Dockerfile:53`), 그
+`ENTRYPOINT`는 `docker/entrypoint.sh`로 고정돼 있고(`Dockerfile`의 `ENTRYPOINT`), 그
 스크립트는 자신에게 전달된 인자(`"$@"`)를 전혀 읽지 않은 채 항상
-`exec gunicorn ...`(entrypoint.sh:11)으로 끝난다. 즉 스케줄러에 위 명령
+`exec gunicorn ...`(`docker/entrypoint.sh`의 `exec gunicorn`)으로 끝난다. 즉 스케줄러에 위 명령
 문자열만 "실행할 커맨드"로 등록하면, Docker 규약상 그 문자열은
 ENTRYPOINT의 인자로 전달되는데 스크립트가 인자를 무시하므로 **조용히
 버려지고 gunicorn 웹서버가 대신 뜬 채 계속 살아 있는다.** 이 경우 파기는
@@ -259,9 +260,9 @@ one-off command" 등 이 컨테이너의 기본 ENTRYPOINT를 우회하고 지�
 `삭제 N건 / 실패 M건`이 실제로 찍히는지 확인한다 — 이 확인이 없으면
 "스케줄러에 등록했다"와 "실제로 파기가 실행된다"를 구분할 방법이 없다.
 
-- `accounts.services.execute_pending_deletions`(`accounts/services.py:146`)를
+- `accounts.services.execute_pending_deletions`(`accounts/services.py:206`)를
   호출하는 얇은 래퍼다. 유예 기간(`DELETION_GRACE_PERIOD = timedelta(days=10)`,
-  `accounts/services.py:25`)이 지난 탈퇴 후보를 조회해, **후보마다 개별
+  `accounts/services.py:24`)이 지난 탈퇴 후보를 조회해, **후보마다 개별
   트랜잭션**으로 취소 여부를 재확인한 뒤 하드 삭제한다.
 - **실행 주기 권고: 하루 1회.** 유예 기간이 10일 단위이므로, 파기 시점이
   하루 정도 늦어져도 사용자에게 약속한 기한을 벗어나는 정도가 작다. 반대로
@@ -293,7 +294,7 @@ python manage.py prune_operational_data
 `uv`가 없어(`Dockerfile:3-4`) 그대로 컨테이너 안에서 직접 실행한다.
 
 **주의: 스케줄러 등록 시 반드시 ENTRYPOINT를 우회해야 한다.** §7.1과 동일한
-함정이다 — 이미지의 `ENTRYPOINT`(`docker/entrypoint.sh`, `Dockerfile:53`)는
+함정이다 — 이미지의 `ENTRYPOINT`(`docker/entrypoint.sh`, `Dockerfile`의 `ENTRYPOINT`)는
 전달된 인자를 무시하고 항상 `exec gunicorn ...`으로 끝난다. 명령 문자열만
 "실행할 커맨드"로 등록하면 조용히 버려지고 gunicorn이 대신 뜬다. 선정
 PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 수동으로 한 번
@@ -303,7 +304,9 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
 - `core.retention.prune_operational_data`(`core/retention.py:66-79`)를 호출하는
   얇은 래퍼다. 만료 세션, 보존 기간이 지난 axes 로그(`AccessLog`·
   `AccessFailureLog`), 보존 기간이 지난 `core.ErrorGroup`(트랙 36)을 대상별로
-  정리한다. 대상 표·제외 이유·설계상 0건인 이유는
+  정리한다. `--days`(기본 90 `[코드 core/retention.py:66]`)는
+  `access_logs`·`access_failure_logs`·`error_groups`에 적용되고, `sessions`는
+  만료분만 지운다. 대상 표·제외 이유·설계상 0건인 이유는
   `docs/BE/data-retention.md` 참고.
 - **첫 실행은 반드시 `--dry-run` 수동 1회.** 등록 직후 대상별 건수만
   확인하고, 문제가 없으면 이후 정기 실행에서 `--dry-run` 없이 돈다.
@@ -354,8 +357,11 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   서버 배포 즉시 적용된다. 러너 복제본(`local_runner/url_safety.py`)은 러너를
   재시작해야 반영된다 — 서버가 직접 fetch하는 경로는 서버 배포로 즉시
   보호되고, 러너가 요청하는 경로는 러너 재시작 전까지 이전 판정을 쓴다.
-- **env 파일**: 러너 시크릿(`DRAFT_DISCOVERY_RUNNER_TOKEN`,
-  `TAKULIFE_SERVER_URL` 등)은 저장소 밖 `~/.takulife-runner.env`에
+  러너 재시작 전에 맥 저장소를 머지된 main으로 맞춘 뒤 `uv sync`를
+  실행한다(러너가 옛 코드·옛 의존성으로 뜨는 것을 막는다).
+- **env 파일**: 러너 시크릿(러너가 읽는 이름은 `TAKULIFE_RUNNER_TOKEN`,
+  `TAKULIFE_SERVER_URL` `[코드 local_runner/config.py:53-54]`이고,
+  `DRAFT_DISCOVERY_RUNNER_TOKEN`은 서버 설정 이름이다)은 저장소 밖 `~/.takulife-runner.env`에
   `chmod 600`으로 둔다. 실행 전 `set -a; source
   ~/.takulife-runner.env; set +a`로 셸에 로드한 뒤 `uv run python -m
   local_runner.runner`로 기동한다. 토큰 값은 이 문서를 포함해 어떤
@@ -397,11 +403,43 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   수정 — 지금은 이 자리에 `대기`가 찍힌다, 회귀
   `tests/local_runner/test_progress.py` 확인) → `서버 응답 확인 —
   러너 온라인`.
+- **행사 콘텐츠 번역(트랙 44-1)**: 러너는 같은 토큰·같은 프로세스로 번역도
+  처리한다(탐색 폴링이 성공한 반복마다 최대 3건). 러너가 꺼져 있으면
+  번역이 멈추고 한국어 원문이 그대로 노출된다 — 스태프 화면의 대기 건수
+  표시는 44-3 이후이고, 지금은
+  `uv run python manage.py report_translation_queue`로만 감지한다. 번역
+  단계 실패는 로그에 `translation step failed`로 찍힌다. 격리된 언어는
+  같은 보고 명령의 `quarantined_en`·`quarantined_ja`·`quarantined_zh-hans`로
+  센다.
+- **번역 러너 로그(이벤트당 1줄, 로거 `local_runner.translation_flow`)**:
+  성공 INFO `translation event done event_id=… elapsed_seconds=… saved=…
+  quarantined=…`, 실패 WARNING `translation event failed event_id=…
+  error=… status=…`.
+- **실패 처리**: 5xx·429·통신 오류는 배치를 중단하고 시도 횟수를 올리지
+  않아 다음 폴링에서 재시도한다. 4xx(429 제외)·출력 오류
+  (`AdapterOutputError`)·`ValueError`는 시도 횟수에 반영되어 2회 후
+  건너뛴다(시도 횟수는 러너 프로세스 메모리에만 있어, 러너를 재시작하면
+  건너뛴 이벤트도 다시 시도한다 `[코드 local_runner/runner.py
+  translation_attempts]`).
+- **첫 백필 중 수집 지연**: 번역 단계는 폴링 성공마다 순차 실행되어 평시
+  3건×약 10.3초≈31초 `[계산]`, 최악 3건×2회×120초=720초 `[계산]` 동안 새
+  탐색 claim이 늦어진다.
+- **`client_ip` 로그**: `TRUSTED_PROXY_COUNT`가 설정돼야 실제 IP이다
+  `[코드 core/ip.py]`. 미설정이면 프록시 IP가 찍혀 유출 판단에 쓸 수 없다.
+- **번역 선점·유출 의심 시 복구**: 감사 로그의 WARNING 사유 코드가 갑자기
+  늘거나 모르는 `client_ip`가 보이면 러너 토큰 유출을 의심한다. ①
+  위 토큰 회전 절차로 토큰을 바꾼다. ② 의심 이벤트의 번역 저장소를
+  비운다 — 운영 셸에서 `uv run python manage.py shell`을 열어
+  `Event.objects.filter(pk=<이벤트 id>).update(text_translations={})`를
+  실행한다(다음 러너 폴링에서 다시 대기로 올라 새로 번역된다; 같은 해시의
+  번역이 이미 저장돼 있으면 `already_current`로 덮어쓰기가 거부되므로 이
+  초기화가 필요하다). ③ `uv run python manage.py report_translation_queue`로
+  `pending` 증가를 확인한다.
 
 ## 9. 오류 묶음 확인 (트랙 36, `core.ErrorGroup`)
 
 - **위치**: 스태프 대시보드(`/staff/`) 오른쪽 레일, 「품질 경고」 다음
-  「시스템 오류」 패널(`templates/staff/dashboard.html:372-398`). 요약
+  「시스템 오류」 패널(`templates/staff/dashboard.html:354-380`). 요약
   2줄("24시간 N종 · 7일 N종", "백엔드 N · 프론트 N")과 최근 5건
   (출처·발생 횟수·경과 시간·오류 종류·위치)을 보여준다. "종"은 서로 다른
   오류 묶음 수이지 발생 횟수 합이 아니다.
@@ -424,3 +462,20 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   DB 용량 요약이다 — 전체 크기와 상위 5개 테이블 크기를 보여준다.
   Postgres가 아니거나 조회에 실패하면 헤더는 유지한 채 측정 불가 문구만
   나온다(대시보드가 죽지 않는다). 상세는 `docs/BE/data-retention.md` 참고.
+
+## 10. 계정 이메일 중복 감사 (`allauth` `EmailAddress`)
+
+`docs/FE/account-settings-editorial.md` G7이 요구하는 1회성 감사다. 한 사용자가 `EmailAddress` 행을 2개 이상(특히 검증된 주소 2개 이상) 가지면 이메일 변경 화면이 단일 주소만 보여 주면서도 로그인·비밀번호 재설정에는 숨은 주소가 계속 쓰인다. 읽기 전용이며 운영 DB에서는 로컬 체크아웃에서 운영 `DATABASE_URL`을 환경에 넣고 실행한다(§1의 `axes_reset_ip`와 같은 방식).
+
+```bash
+uv run python manage.py shell -c "
+from django.db.models import Count
+from allauth.account.models import EmailAddress
+dup_all = list(EmailAddress.objects.values('user_id').annotate(n=Count('id')).filter(n__gt=1))
+dup_verified = list(EmailAddress.objects.filter(verified=True).values('user_id').annotate(n=Count('id')).filter(n__gt=1))
+print('rows', EmailAddress.objects.count(), 'dup_all', dup_all, 'dup_verified', dup_verified)
+"
+```
+
+- 기대: `dup_all`·`dup_verified` 모두 빈 목록. 비어 있지 않으면 해당 `user_id`의 행을 Django admin(`allauth` EmailAddress)에서 확인해 검증되지 않은 중복 행을 정리하고, 검증된 주소가 둘이면 사용자에게 확인한 뒤 하나만 남긴다.
+- 실행 기록: 로컬 DB `rows 12 / dup_all 0 / dup_verified 0` `[실측 2026-10-27]`. **운영 DB 실행은 미완(사용자 실행 대기)** — 실행 후 이 줄에 날짜와 결과를 적는다.

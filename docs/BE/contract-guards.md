@@ -11,7 +11,9 @@
 **잡는다**: `events/`·`drafts/`·`archive/` 아래 **모든** `.py`의 정적 import,
 `importlib.import_module("문자열")`, `__import__("문자열")`.
 성문화된 금지 방향 4개 — (events·drafts ↛ archive), (archive ↛ drafts),
-(events ↛ drafts), (도메인 3앱 ↛ staff).
+(events ↛ drafts), (도메인 3앱 ↛ staff). 이 4개 외에 web 리프·web↛staff·
+accounts↛archive·드래프트 발견 모듈↛events/`core.llm` 가드가 같은 파일에
+있다(`rg -n '^def test_' tests/core/test_architecture_boundaries.py`).
 
 **못 잡는다**: 비-리터럴 인자(변수·f-string),
 `from importlib import import_module` 후 이름 직접 호출,
@@ -104,21 +106,42 @@ R1(`test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다
 동적 임포트 **0건**. 위에 적은 "비-리터럴 인자는 못 잡는다"는 한계가 현재
 실제로 걸리는 코드는 없다는 뜻이다 — 이론상 한계이고 실제 노출은 아니다.
 
+### 번역 경계 가드(트랙 44-1)
+
+**잡는 것**: `events`가 `core.llm`을 가져오는 것
+(`test_이벤트_모듈은_core_llm_모듈을_임포트하지_않는다`), 쓰기 경로 5개
+(`events/services.py`·`drafts/services.py`·`events/signals.py`·
+`events/apps.py`·`events/models.py`)가 `_FORBIDDEN_TRANSLATION_MODULES`
+(`events.content_translation`·`events.translation_queue`·
+`events.runner_views`·`events.runner_urls`)를 절대·상대·동적·
+`from pkg import mod [as x]` 어느 형태로든 가져오는 것
+(`test_쓰기_경로_모듈은_번역_모듈을_임포트하지_않는다`, 스캐너 자체 검증
+`test_전용_스캐너는_번역_모듈_임포트_형태를_모두_탐지한다`·
+`test_전용_스캐너는_core에서_llm을_별칭으로_가져와도_탐지한다`).
+
+**못 잡는 것**: 시그널로 숨는 간접 호출, 위 5개 파일 밖의 쓰기 경로.
+
+### 러너 격리·parity 가드
+
+`tests/local_runner/test_local_runner_isolation.py`는 `local_runner/` 아래
+모든 파일이 `django`·`drafts`·`events`·`archive`·`staff`·`core`·`config`·
+`accounts`·`web`을 임포트하지 않는지 스캔한다. parity 가드 4종이
+`tests/local_runner/`에 따로 있다: `test_url_safety_parity.py`·
+`test_phase_vocabulary_parity.py`·`test_translation_parity.py`·
+`test_outcome_vocabulary_parity.py`.
+
 ## `tests/core/test_service_signature_conventions.py` — 키워드 전용 인자
 
-**지키는 것**: *다른 앱이 가로질러 호출하는* 서비스 경계 5개
-(`events`·`archive`·`drafts`·`staff`·`web.promotion`).
+**지키는 것**: *다른 앱이 가로질러 호출하는* 서비스 경계 8개
+(`events.services`·`archive.services`·`drafts.services`·
+`drafts.discovery_runs`·`drafts.candidate_validation`·`staff.services`·
+`web.promotion`·`core.analytics`
+`[코드 tests/core/test_service_signature_conventions.py SERVICE_MODULES]`).
 
 ⚠️ **`accounts.services`를 목록에 추가하지 마라.** 추가하면 4개 함수가 즉시
 빨개지지만 **위반이 아니다** — 호출처가 전부 `accounts` 앱 내부다
 (`views.py`, `signals.py` 2곳, purge 커맨드). 이 가드가 방어하는 경계가 아니다.
 넣고 고치면 호출처 약 20곳을 바꾸는 헛일이 된다. 제외 근거는 그 파일 독스트링에도 있다.
-
-**실제 누락은 `core.analytics`다.** `events/views.py`·`staff/views/__init__.py`·
-`archive/services.py`가 임포트하는 진짜 교차 도메인 서비스인데 목록에 없고,
-공개 함수 4개가 위치 인자를 받는다. **미착수** — `record_event` 호출처만
-프로덕션 15곳 이상이라 별도 승인이 필요하다. 위치 인자가 의도된 설계라는 근거는
-코드·문서 어디에도 없어 드리프트로 판단하지만 원 설계 의사는 **미확인**이다.
 
 ## `tests/core/test_error_logging_policy.py` — 예외·로깅
 

@@ -74,8 +74,12 @@ else 분기와 테스트 상수 `_SHELL_CSS_RELATIVE_PATHS`를 **함께** 갱신
 효율을 높여 전송량도 준다. 셸 CSS는 어차피 모든 페이지가 항상 같은 세트를
 함께 로드하므로 세분화 손실은 수용 가능하다고 판단했다(WED 판정).
 
+트랙 43(다국어) 이후 재측정: 소스는 여전히 16개, 번들 원본 70,786B·
+`gzip -9` 19,833B`[실측 2026-10-27 uv run python manage.py bundle_shell_css
+--output <tmp> 후 wc -c·gzip -9 -c <tmp> | wc -c]`(작성 당시 67,401B·18,908B).
+
 ## 검증 근거
 
-전체 회귀 2323 passed. 계약 테스트(`tests/core/test_shell_css_bundle.py`)로
+전체 회귀 2323 passed(작성 당시 `[실측 2026-08-29]`). 계약 테스트(`tests/core/test_shell_css_bundle.py`)로
 Red→Green 확인, 정적 참조 가드(`tests/core/test_static_reference_guard.py`)
 회귀 통과 확인.

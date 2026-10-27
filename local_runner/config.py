@@ -8,6 +8,12 @@ from urllib.parse import urlparse
 POLL_INTERVAL_SECONDS = 20
 # 에이전트 웹 탐색 1회에 허용하는 최대 시간(초).
 AGENT_TIMEOUT_SECONDS = 600
+# 폴링 한 번에 번역을 처리하는 이벤트 수 상한.
+TRANSLATION_BATCH_LIMIT = 3
+# 번역 호출 1회에 허용하는 최대 시간(초).
+TRANSLATION_TIMEOUT_SECONDS = 120
+# 같은 (이벤트, 해시)를 프로세스 생존 중 다시 시도하는 횟수 상한.
+TRANSLATION_MAX_ATTEMPTS = 2
 
 
 @dataclass(frozen=True)
