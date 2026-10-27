@@ -21,7 +21,7 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 394건(`gh pr list --state merged --limit 500`,
 2026-10-27 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #400부터 #268까지다(#399는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #401부터 #269까지다(#399는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
@@ -66,6 +66,7 @@ CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → productio
 확인)가 남는다.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #401 — deploy: main → production
 - #400 — fix: Raise brotli to 1.2.1 to clear the new advisories
 - #398 — deploy: main → production
 - #397 — feat(i18n): 아카이브·컬렉션·활동·마이페이지 UI 다국어 — 트랙 43-3
@@ -197,4 +198,3 @@ CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → productio
 - #271 — style: Close the comment-policy track — missed files and a guard
 - #270 — style: Sweep every comment under the rewritten policy
 - #269 — style: Bring auth-track comments under the comment policy, and register E4
-- #268 — docs: Refresh the status table against the merged tree
