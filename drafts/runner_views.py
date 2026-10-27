@@ -1,19 +1,13 @@
 """로컬 에이전트 러너용 API — 얇은 어댑터. 인증·직렬화·상태코드만 다루고
 상태 산출·검증은 drafts.discovery_runs·drafts.candidate_validation에 위임한다.
 """
-import hashlib
-
-from django.conf import settings
-from django.utils.crypto import constant_time_compare
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
-from rest_framework.views import APIView
 
 from core.categories import category_slugs
 from core.errors import error_response
+from core.runner_auth import RunnerAPIView, RunnerTokenThrottle  # noqa: F401 — RunnerTokenThrottle은 tests/drafts/test_discovery_runner_api.py가 이 경로로 가져와 monkeypatch한다
 from core.vocab import REGION
 from drafts.agent_drafts import (
     AgentDraftExcludedError,
@@ -39,38 +33,6 @@ from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 MAX_KNOWN_URLS_PER_REQUEST = 20
 
 
-class IsDiscoveryRunner(BasePermission):
-    def has_permission(self, request, view):
-        token = settings.DRAFT_DISCOVERY_RUNNER_TOKEN
-        if not token:
-            # constant_time_compare("", "") == True인 함정을 막기 위해
-            # 빈 설정에서는 비교 전에 명시적으로 거부한다.
-            return False
-        return constant_time_compare(request.headers.get("X-Runner-Token", ""), token)
-
-
-class RunnerTokenThrottle(ScopedRateThrottle):
-    """이 API는 미인증 뷰라 DRF 기본 스로틀이 요청 IP를 식별자로 쓰는데,
-    저장소에 프록시 개수 설정이 없어 X-Forwarded-For 헤더를 그대로 믿는다.
-    헤더만 바꿔 보내면 분당 상한을 무한히 우회할 수 있어, IP 대신 러너
-    토큰 하나로 정하는 단일 버킷으로 센다."""
-
-    def get_cache_key(self, request, view):
-        # 토큰 원문을 캐시 키에 그대로 넣지 않는다 — 비밀이 캐시에 평문으로
-        # 남는 것을 막기 위해 해시로 바꾼다.
-        token = settings.DRAFT_DISCOVERY_RUNNER_TOKEN
-        ident = hashlib.sha256(token.encode()).hexdigest()
-
-        return self.cache_format % {"scope": self.scope, "ident": ident}
-
-
-class _RunnerAPIView(APIView):
-    authentication_classes = []
-    permission_classes = [IsDiscoveryRunner]
-    throttle_classes = [RunnerTokenThrottle]
-    throttle_scope = "discovery_runner"
-
-
 def _clean_provider(data):
     provider = data.get("provider")
     if not isinstance(provider, str):
@@ -78,7 +40,7 @@ def _clean_provider(data):
     return sanitize_text(value=provider)[:50]
 
 
-class RunnerHeartbeatView(_RunnerAPIView):
+class RunnerHeartbeatView(RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request):
@@ -97,7 +59,7 @@ class RunnerHeartbeatView(_RunnerAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class RunnerClaimView(_RunnerAPIView):
+class RunnerClaimView(RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request):
@@ -129,7 +91,7 @@ class RunnerClaimView(_RunnerAPIView):
         )
 
 
-class RunnerCandidateSubmitView(_RunnerAPIView):
+class RunnerCandidateSubmitView(RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request, run_id):
@@ -164,7 +126,7 @@ class RunnerCandidateSubmitView(_RunnerAPIView):
         )
 
 
-class RunnerCompleteView(_RunnerAPIView):
+class RunnerCompleteView(RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request, run_id):
@@ -211,7 +173,7 @@ class RunnerCompleteView(_RunnerAPIView):
         return Response({"status": run.status})
 
 
-class RunnerEventDraftSubmitView(_RunnerAPIView):
+class RunnerEventDraftSubmitView(RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request, run_id):
@@ -243,7 +205,7 @@ class RunnerEventDraftSubmitView(_RunnerAPIView):
         return Response({"status": "duplicate", "draft_id": draft.pk})
 
 
-class RunnerOfflineView(_RunnerAPIView):
+class RunnerOfflineView(RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request):
@@ -251,7 +213,7 @@ class RunnerOfflineView(_RunnerAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class RunnerKnownDraftUrlsView(_RunnerAPIView):
+class RunnerKnownDraftUrlsView(RunnerAPIView):
     # 비밀 토큰 기반 기계 간 러너 경계라 공개 API 문서에서 제외한다.
     @extend_schema(exclude=True)
     def post(self, request):

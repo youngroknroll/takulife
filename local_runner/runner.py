@@ -18,7 +18,7 @@ from .claude_code_adapter import (
     build_exploration_prompt,
     parse_json_object,
 )
-from .client import RunnerClient
+from .client import RunnerClient, TranslationRunnerClient
 from .clock import today_kst
 from .config import POLL_INTERVAL_SECONDS, load_config
 from .exploration_flow import (
@@ -30,6 +30,7 @@ from .exploration_flow import (
     run_exploration_flow,
 )
 from .progress import ProgressReporter
+from .translation_flow import translate_pending_batch
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +252,22 @@ def _safe_poll(client, progress=None):
     return True
 
 
+def _safe_translate(translation_client, attempts, progress):
+    ticker = _HeartbeatTicker(translation_client, POLL_INTERVAL_SECONDS, progress=progress)
+    ticker.start()
+    try:
+        translate_pending_batch(translation_client, attempts=attempts)
+    except Exception as exc:
+        # except-ok: 번역 단계 하나의 실패(통신·출력·응답 모양 전부 포함)가
+        # 러너 전체를 죽이면 안 된다 — KeyboardInterrupt는 Exception이 아니라
+        # 그대로 전파된다.
+        logger.warning("translation step failed: %s", type(exc).__name__)
+        return False
+    finally:
+        ticker.stop()
+    return True
+
+
 def _handle_sigterm(signum, frame):
     # 배포 재시작(SIGTERM)도 Ctrl+C(SIGINT)와 같은 종료 경로를 타게 한다.
     raise KeyboardInterrupt()
@@ -275,7 +292,9 @@ def main():
     signal.signal(signal.SIGTERM, _handle_sigterm)
     config = load_config()
     client = RunnerClient(config)
+    translation_client = TranslationRunnerClient(config)
     progress = ProgressReporter(client)
+    translation_attempts = {}
 
     consecutive_failures = 0
     previous_ok = None
@@ -286,6 +305,7 @@ def main():
                 _log_poll_transition(previous_ok, ok)
                 previous_ok = ok
                 consecutive_failures = 0
+                _safe_translate(translation_client, translation_attempts, progress)
                 time.sleep(config.poll_interval_seconds)
             else:
                 consecutive_failures += 1

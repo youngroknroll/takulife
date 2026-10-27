@@ -3,6 +3,7 @@ import httpx
 
 _TIMEOUT_SECONDS = 30
 _RUNNER_URL_PREFIX = "/api/discovery/runner"
+_TRANSLATION_URL_PREFIX = "/api/translation/runner"
 
 
 class RunnerClient:
@@ -79,5 +80,35 @@ class RunnerClient:
                 "events_excluded": events_excluded,
                 "event_outcomes": list(event_outcomes or []),
             },
+        )
+        return response.json()
+
+
+class TranslationRunnerClient:
+    """번역 러너 전용 클라이언트. RunnerClient와 기반 클래스를 공유하지
+    않는다 — 이름·경로가 다른 독립 API라 억지로 묶으면 오히려 결합이 커진다."""
+
+    def __init__(self, config):
+        self._config = config
+        self._headers = {"X-Runner-Token": config.runner_token}
+
+    def _post(self, path, json_body, *, timeout=_TIMEOUT_SECONDS):
+        response = httpx.post(
+            f"{self._config.server_url}{_TRANSLATION_URL_PREFIX}{path}",
+            json=json_body,
+            headers=self._headers,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        return response
+
+    def pending(self):
+        response = self._post("/pending/", {})
+        return response.json()["events"]
+
+    def submit(self, *, event_id, source_hash, translations):
+        response = self._post(
+            "/submit/",
+            {"event_id": event_id, "source_hash": source_hash, "translations": translations},
         )
         return response.json()

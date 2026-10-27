@@ -1083,6 +1083,8 @@ Dependency direction:
 | `archive -> drafts` | Forbidden | `tests/core/test_architecture_boundaries.py::test_아카이브_모듈은_드래프트_모듈을_임포트하지_않는다` |
 | `events -> drafts` | Forbidden | `tests/core/test_architecture_boundaries.py::test_이벤트_모듈은_드래프트_모듈을_임포트하지_않는다` |
 | "discover now" path (`discover_drafts`, `candidate_intake`) -> `drafts.discovery_runs`, `drafts.candidate_validation`, `local_runner` | Forbidden | `tests/core/test_architecture_boundaries.py::test_지금_수집_경로는_탐색_실행_모듈에_의존하지_않는다` |
+| `events -> core.llm` | Forbidden | `tests/core/test_architecture_boundaries.py::test_이벤트_모듈은_core_llm_모듈을_임포트하지_않는다` |
+| write paths (`events.services`, `drafts.services`, `events.signals`, `events.apps`, `events.models`) -> `events.content_translation`, `events.translation_queue` | Forbidden | `tests/core/test_architecture_boundaries.py::test_쓰기_경로_모듈은_번역_모듈을_임포트하지_않는다` |
 | `drafts` discovery modules -> `core.llm` directly | Forbidden | `tests/core/test_architecture_boundaries.py::test_드래프트_발견_모듈은_core_llm_모듈을_임포트하지_않는다` |
 | `archive -> events`, `drafts -> events`, any app -> `core`, `staff -> {accounts, drafts, events}`, `web -> {accounts, archive, drafts, events}`, `config -> {accounts, core, web}` | Allowed (measured, matches target contract) | none |
 | `accounts` imports no local app; `staff -> archive` does not occur | Measured fact, no guard — not a rule to enforce | none |
@@ -1098,7 +1100,8 @@ includes `accounts` and `web`, added in track 41). Two independent guards keep
 the runner's local copies aligned with the server originals: literal parity
 (`tests/local_runner/test_url_safety_parity.py` for `drafts/url_safety.py` vs
 `local_runner/url_safety.py`, `tests/local_runner/test_phase_vocabulary_parity.py`
-for phase labels) and allow-list containment
+for phase labels, `tests/local_runner/test_translation_parity.py` for the
+translation languages, fields, URL prefixes and input limit) and allow-list containment
 (`tests/local_runner/test_outcome_vocabulary_parity.py`: every runner
 `(outcome, reason)` pair must be a subset of the server's allow-list). When a
 runner copy changes, change the server original in the same commit.
