@@ -67,14 +67,14 @@ flowchart TD
 | 앱·모듈 | 담당 책임 |
 |---|---|
 | `accounts` | 인증, 계정 변경, 탈퇴 생명주기(10일 유예) |
-| `events` | 공개 행사 데이터와 공개 상태, 행사 조회 API |
+| `events` | 공개 행사 데이터와 공개 상태, 행사 조회 API, 행사 텍스트 번역 큐·검증(러너 전용 API, LLM 호출 없음) |
 | `drafts` | 초안, 수집처, 검수 흐름, 탐색 작업·후보 검증, LLM 추출 파이프라인 |
 | `archive` | 찜, 방문 상태·기록, 개인 항목, 컬렉션, 활동 이력 |
 | `staff` | 운영자 콘솔(대시보드, 검수 큐, 이벤트·수집처·계정 운영, 감사 로그) |
 | `web` | 소비자 SSR 화면, 사이트맵, 개인 항목의 공식 제보 조정 |
-| `core` | 오류 응답·IP 판별·페이지네이션·분석 이벤트 등 공유 처리, 외부 LLM 어댑터, 헬스 체크 |
+| `core` | 오류 응답·IP 판별·페이지네이션·분석 이벤트 등 공유 처리, 외부 LLM 어댑터, 헬스 체크, 카테고리 어휘·오류 묶음 기록·보존 정리·UI 번역 지원 |
 | `config` | 설정, 루트 URL, 애플리케이션 진입점 |
-| `local_runner` | 개인 Mac에서 수집처 탐색 작업을 임대·실행하고 후보를 제출 |
+| `local_runner` | 개인 Mac에서 수집처 탐색 작업을 임대·실행하고 후보를 제출, 행사 텍스트를 `claude` CLI로 번역해 제출 |
 
 앱 내부에서도 책임이 나뉩니다.
 
@@ -95,7 +95,7 @@ flowchart TD
 
 | 모델 | 저장하는 정보 | 주요 관계·조건 |
 |---|---|---|
-| `Event` | 행사명, 일정, 장소, 공식 URL, 공개 상태 | 공식 URL 유일성 |
+| `Event` | 행사명, 일정, 장소, 공식 URL, 공개 상태, 다국어 번역 저장(`text_translations`) | 공식 URL 유일성 |
 | `EventDraft` | 수집 원문, 추출 후보값, 검수 상태, 출처 구분(수집·사용자 제보) | 출처 URL 유일성, 승인·반려·재오픈 이력 |
 | `DraftSource` | RSS·Sitemap·HTML 수집처 | URL 유일성, 활성 여부, 최근 수집 상태 |
 | `PersonalEntry` | 개인이 등록한 비공식 장소·메모 | 소유자에게만 비공개, 제보 시 초안으로 승격 |
@@ -141,6 +141,7 @@ flowchart TD
 | 새 수집처 에이전트 탐색 | DB에 작업 저장 → 로컬 러너가 폴링·임대 후 실행 |
 | 정기 수집·러너 자동 시작 | 미구현 |
 | 서버의 LLM 행사 필드 추출 | 구현되어 있지만 기능 플래그 OFF |
+| 행사 텍스트 번역 | 로컬 러너가 큐 조회 → 번역 → 제출, 서버는 규칙 검증·저장만(`source_hash` 불일치는 409) |
 
 로컬 러너에는 별도 스레드의 heartbeat, 임대 토큰과 만료, 재임대 상한(2회), 통신 오류 백오프가 있습니다. 서버는 후보의 네트워크 검증을 트랜잭션 밖에서 수행하고, 저장 직전에 행을 다시 잠가 임대 유효성을 재검사합니다. 따라서 이 프로젝트에는 Celery·Redis 브로커 대신 **DB 작업 상태와 로컬 러너를 사용하는 탐색 경로**가 있으며, 기본 수집과 후보 검증 일부는 웹 요청 시간을 사용합니다. [러너 설계와 구현 범위](docs/BE/draft-source-agent-discovery.md)
 
@@ -160,7 +161,7 @@ LLM 추출 파이프라인은 구현이 끝났지만 비용 정책에 따라 `DR
 | 보안 헤더 | 배포 프로파일에서 HSTS·SSL 리다이렉트·secure 쿠키를 env로 전환, `TRUSTED_PROXY_COUNT`로 프록시 뒤 실제 클라이언트 IP 판별 |
 | 상태 확인 | `/api/health/`, DB 연결 실패 시 503 |
 | 로그 | stdout 콘솔 핸들러(PaaS 로그 수집 전제) |
-| CI | `test`(PostgreSQL 서비스 + `check --deploy`), `audit`(의존성 취약점), `docker`(이미지 실기동 후 `/api/health/` 폴링 스모크) |
+| CI | `test`(PostgreSQL 서비스 + `check --deploy`), `e2e`(여정 스위트, 관측 잡), `audit`(의존성 취약점), `docker`(이미지 실기동 후 `/api/health/` 폴링 스모크) |
 | 마이그레이션 | 단일 인스턴스는 기동 시 실행, 복수 인스턴스는 `RUN_DB_MIGRATIONS=false`로 끄고 release phase에서 1회 실행 |
 | 탐색 실행 환경 | 개인 Mac의 로컬 러너 |
 
@@ -185,7 +186,7 @@ LLM 추출 파이프라인은 구현이 끝났지만 비용 정책에 따라 `DR
 | 인증 | django-allauth, django-axes | 이메일 인증 필수, 소셜 로그인, 5회 실패 시 1시간 IP 잠금 같은 인증·브루트포스 방어를 직접 구현하지 않고 검증된 경로를 썼습니다 |
 | API 문서 | drf-spectacular | API 계약을 코드에서 생성해(`/api/docs/`) 프론트엔드 분리 가능성에 대비했습니다 |
 | 프런트엔드 | 순수 CSS(OOCSS/BEM), 바닐라 JS | SSR 중심 서비스라 빌드 체인 없이 유지비를 최소화하고 접근성을 마크업 수준에서 직접 제어합니다 |
-| 테스트·검증 | pytest, Playwright·Chrome DevTools | pytest는 unit/domain/web/contract/slow 다섯 marker로 계층을 나누고, 브라우저 도구는 실측용일 뿐 테스트 프레임워크로 쓰지 않습니다 |
+| 테스트·검증 | pytest, Playwright·Chrome DevTools | pytest는 unit/domain/web/contract/slow/e2e 여섯 marker로 계층을 나눕니다. 여정 e2e(`tests/e2e`, pytest-playwright)는 기본 실행에서 제외하고 `-m e2e`로 돌리며, 브라우저 도구는 그 밖의 실측용입니다 |
 | 인프라 | Docker, GitHub Actions, Render | 로컬과 배포 환경의 차이를 줄이고, CI에서 빌드한 이미지를 실제로 기동해 검증합니다 |
 
 ## 8. 트러블슈팅
@@ -223,9 +224,9 @@ LLM 추출 파이프라인은 구현이 끝났지만 비용 정책에 따라 `DR
 | 테스트 파일 | 193개 |
 | 코드 규모(마이그레이션·빌드 산출물 제외) | Python 57,237줄 · CSS 17,660줄 · HTML 8,338줄 · JS 6,150줄 |
 | Django 앱 | 7개(accounts, archive, core, drafts, events, staff, web) + `config` + `local_runner` |
-| CI | GitHub Actions 3-job(`test`·`audit`·`docker`) + `main → production` PR 자동 생성 워크플로 |
+| CI | GitHub Actions 4-job(`test`·`e2e`(관측)·`audit`·`docker`) + `main → production` PR 자동 생성 워크플로 |
 
-검증 문화도 함께 운영했습니다. 테스트를 작성한 뒤 코드를 일부러 깨서(뮤테이션) 실제로 실패하는지 상시 확인해 "통과하지만 아무것도 검증하지 않는" 테스트를 여러 차례 적발하고 교체했으며, 프론트엔드는 자동 테스트 대신 Chrome DevTools 프로토콜로 접근성 트리·탭 순서·반응형 폭·다크모드를 직접 실측합니다.
+검증 문화도 함께 운영했습니다. 테스트를 작성한 뒤 코드를 일부러 깨서(뮤테이션) 실제로 실패하는지 상시 확인해 "통과하지만 아무것도 검증하지 않는" 테스트를 여러 차례 적발하고 교체했으며, 프론트엔드는 사용자 여정만 e2e로 고정하고, 접근성 트리·탭 순서·반응형 폭·다크모드는 Chrome DevTools 프로토콜로 직접 실측합니다.
 
 ## 10. 로컬 실행
 

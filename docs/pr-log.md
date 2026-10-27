@@ -14,15 +14,15 @@
 항목을 한 줄로 줄이고, 새 PR을 상세 항목으로 올린다(`AGENTS.md` "Document post-work
 state" 절 참고).
 
-한 줄 요약은 손으로 다시 쓰지 않는다. `gh pr list --state merged --limit 300 --json
+한 줄 요약은 손으로 다시 쓰지 않는다. `gh pr list --state merged --limit 500 --json
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 289건(`gh pr list --state merged`, 2026-08-17
-`[실측]`)이 전부 들어가지 않으므로 최신부터 채우고 줄 수 예산에서 끊는다 — 컷오프는
-"재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래 목록은 PR #398부터 #266까지다.
-그보다 오래된 PR은 `gh pr list --state merged --limit 300 --json number,title` 으로
-언제든 다시 조회할 수 있다.
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 394건(`gh pr list --state merged --limit 500`,
+2026-10-27 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
+목록은 PR #400부터 #268까지다(#399는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+--state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
@@ -72,6 +72,7 @@ CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → productio
 - #396 — feat(i18n): 이벤트 화면(목록·달력·상세) UI 다국어 — 트랙 43-2
 - #395 — feat(i18n): UI 다국어 기반(ko/en/ja/zh-hans) — 트랙 43-1
 - #394 — ci: Skip pull_request CI for PRs into production (track 42)
+- #393 — deploy: main → production
 - #392 — docs: PR #388~#391 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #391 — deploy: main → production
 - #390 — fix(deps): Bump allauth, oauthlib, pyjwt, urllib3 for audit
@@ -89,6 +90,7 @@ CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → productio
 - #378 — Track 37: Prune operational data and show storage size on the dashboard
 - #377 — Track 36: Record backend and browser errors as capped error groups
 - #376 — Track 35: Record per-event draft run outcomes and fix live-run defects
+- #375 — deploy: main → production
 - #374 — docs: PR #373 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
 - #373 — feat(home): Add event calendar section below the hero
 - #372 — docs: PR #370 머지를 로그에 롤링 반영 + 회귀 기준선 재측정
@@ -196,5 +198,3 @@ CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → productio
 - #270 — style: Sweep every comment under the rewritten policy
 - #269 — style: Bring auth-track comments under the comment policy, and register E4
 - #268 — docs: Refresh the status table against the merged tree
-- #267 — docs: Fix three claims the post-merge auth review measured wrong
-- #266 — design(accounts): Rebuild 12 auth screens as an editorial two-panel layout
