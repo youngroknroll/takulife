@@ -66,11 +66,10 @@
 **G3** 날짜 이동으로 도착하는 앵커 대상은 세 규칙이 항상 짝으로 붙는다:
 `tabindex="-1"`(키보드 포커스 이동) + `scroll-margin-top: calc(var(--site-header-h)
 + 1rem)`(sticky 헤더에 가리지 않게) + `:focus{outline:none}`(직접 탭하는
-컨트롤이 아니므로 파란 기본 링을 끈다). 홈·행사 달력은 세 짝을 모두 쓰고,
-활동 달력(`static/css/pages/archive_calendar.css` `.date-detail-section` 약
-414-421, `templates/core/archive/calendar.html` 약 151)은 `scroll-margin-top`이
-빠져 있다 `[실측 2026-10-27 rg scroll-margin static/css]` — 코드 보완 후보
-(백로그 L절). 홈 `#home-calendar-agenda` [코드 `home_calendar.css`
+컨트롤이 아니므로 파란 기본 링을 끈다). 세 달력(홈·행사·활동) 모두 세
+짝을 쓴다 — 활동 달력(`static/css/pages/archive_calendar.css`
+`.date-detail-section`)에는 2026-10-27에 `scroll-margin-top`을 보완했다.
+홈 `#home-calendar-agenda` [코드 `home_calendar.css`
 `.home-cal-agenda`], 행사 달력 `#selected-date` [코드 `event_calendar.css`
 `.date-detail-section`, `calendar.html:161`]. 새 앵커 대상을 만들 때 세 짝 중
 하나라도 빠뜨리면 리뷰에서 재발한다(트랙 34에서 행사 달력 쪽

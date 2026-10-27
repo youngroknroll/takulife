@@ -413,6 +413,7 @@
 /* ── selected-date detail ────────────────────────────────────────────── */
 .date-detail-section {
   margin-top: 1.25rem;
+  scroll-margin-top: calc(var(--site-header-h) + 1rem);
 }
 
 .date-detail-section:focus {

@@ -269,9 +269,7 @@
 }
 
 /* 필드 아래 보조 문구(닉네임 형식 안내 등) — .auth-form의 gap이 있어
-   위 여백은 최소로만 얹는다. 선택자를 .auth-panel-form form .auth-field-hint로
-   올린 이유: 아래 socialaccount 폴백용 `.auth-panel-form form p`(특이도 0,1,2)가
-   `.auth-field-hint`(0,1,0)보다 강해 margin을 덮어썼기 때문이다. */
+   위 여백은 최소로만 얹는다. */
 .auth-panel-form form .auth-field-hint {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;
@@ -447,33 +445,6 @@
   flex: none;
   margin-left: auto;
   color: var(--muted);
-}
-
-/* ── socialaccount/signup.html의 {{ form.as_p }} 폴백 — 필드 구성이
-   외부 로그인 설정에 따라 달라져 개별 include로 바꾸지 않았다. ───────── */
-.auth-panel-form form p {
-  margin: 0 0 1rem;
-}
-
-.auth-panel-form form p label {
-  display: block;
-  margin-bottom: 0.375rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.auth-panel-form form p input,
-.auth-panel-form form p select,
-.auth-panel-form form p textarea {
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0 0.875rem;
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.9rem;
 }
 
 /* 힌트는 라벨을 보조하는 문구다. 폭이 좁아지면 「이메일 / 만 있으 / 면 시작」처럼

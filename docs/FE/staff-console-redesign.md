@@ -21,8 +21,8 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
 스태프 JS는 전부 `el.hidden` 프로퍼티로만 토글하고 `style.display`를 쓰지 않아
 (`[실측]` `rg "style\.display" static/js/staff/` → 0건) `!important`가 안전하다.
 새 JS를 넣을 때 `style.display`를 쓰면 이 가드와 충돌한다.
-(2026-10-27 현재 같은 `.page`·`[hidden]` 블록이 `static/css/staff/base.css`에
-두 번 있다 `[실측 rg]` — 정리 후보, 백로그 L절.)
+(`static/css/staff/base.css`에 같은 `.page`·`[hidden]` 블록이 두 번
+있던 중복은 2026-10-27 정리됐다.)
 
 **자동 테스트로는 못 잡는다.** Django 테스트는 계산된 스타일을 보지 않는다. 이 결함이
 살아 있는 동안 전체 2111건이 초록이었다(작성 당시 `[실측 2026-08-01]`).
@@ -85,8 +85,8 @@ git-ignored라 소실된다. 여기 적힌 것은 다음 작업자가 모르면 
   (후자는 `templates/base.html`도 쓴다)
 - `.page` 여백은 `static/css/staff/base.css` 한 곳에만 둔다. 화면별 CSS에 흩어 두었더니
   drafts 두 화면이 규칙을 빠뜨려 여백 0으로 렌더링되고 있었다
-  (2026-10-27 현재 같은 `.page`·`[hidden]` 블록이 `static/css/staff/base.css`에
-  두 번 있다 `[실측 rg]` — 정리 후보, 백로그 L절.)
+  (`static/css/staff/base.css`에 같은 블록이 두 번 있던 중복은
+  2026-10-27 정리됐다.)
 
 `django.contrib.messages`는 셸마다 클래스가 다르다 — 소비자는 `site-message-*`,
 스태프는 `staff-message-*`. 한쪽만 검사하면 다른 쪽이 메시지를 잃어도 통과한다

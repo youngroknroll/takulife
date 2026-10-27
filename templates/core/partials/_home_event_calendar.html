@@ -3,10 +3,12 @@
 계약: year, month, month_start(해당 월 1일의 date, 로케일별 월 이름 서식용),
 month_param("YYYY-MM"), weeks(주 목록, 칸={date,
 in_month, today, selected, count, categories}), selected_date,
-selected_is_today, selected_rows(_attach_display 결과, 최대 5건),
+selected_is_today, selected_rows(_attach_display 결과, 최대 3건),
 selected_count, prev_month/next_month("YYYY-MM"), legend([{slug,label}]).
-날짜 칸·모두 보기 링크는 전부 "#home-calendar-agenda"로 돌아온다 — 그
-대상은 tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다.
+월 이동 링크·날짜 칸은 "#home-calendar-agenda"로 돌아온다 — 그 대상은
+tabindex="-1" + CSS scroll-margin-top으로 sticky 헤더에 안 가린다. "이
+날짜의 이벤트 N개 모두 보기" 링크만 행사 달력(/events/calendar/)의
+"#selected-date"로 나간다 — 이 화면 아젠다는 최대 3건(HOME_CALENDAR_AGENDA_LIMIT)만 보여주기 때문.
 {% endcomment %}
 {% with cal=home_calendar %}
 <section class="section" id="home-calendar">

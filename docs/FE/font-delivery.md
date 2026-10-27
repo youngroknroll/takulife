@@ -71,11 +71,16 @@ whitenoise 매니페스트가 해시를 붙여 재작성한다. 경로를 절대
 한다. 브라우저 콘솔에 "The resource ... was preloaded but not used"
 경고가 뜨면 목록이 낡았다는 신호다.
 
-상태 미확인(2026-10-27): 트랙 43(en·ja·zh-hans, 2026-10-21~23) 뒤 교집합
-재측정이 없다. `FONT_PRELOAD_CHUNKS`(`core/context_processors.py`)는
-2026-08-29 신설 이후 13개 그대로 `[실측 git log --follow -p -- core/context_processors.py]`. 확인 수단: 공개 페이지 3개를
-각 언어로 열어 콘솔 "preloaded but not used" 경고와 네트워크 청크 목록
-대조.
+재측정(2026-10-27, 트랙 43 언어 추가 뒤): 로컬 서버에서 공개 3페이지(홈·`/events/`·행사 상세
+`/events/54/`)를 ko·en·ja·zh-hans 네 언어로 열어(언어 전환 폼 POST, 로드 후 4.5초 대기)
+`performance.getEntriesByType('resource')`의 woff2 항목과 콘솔 경고를 봤다 `[실측 Chrome DevTools
+MCP 2026-10-27]`. 12개 조합 전부에서 preload 13개(subset.78·79·81~91)가 쓰였고 "preloaded but
+not used" 경고는 0건이다. 추가로 CSS 경로로 내려받는 청크는 언어·콘텐츠에 따라 다르다:
+ko·en은 subset.70만(행사 제목 문자에 따라 홈·목록에서도 뜬다, 상세는 항상), ja는 10개
+(subset.65·67·70·72·73·74·75·76·77·80), zh-hans는 11개(ja 집합 + subset.64). 그 청크들은
+ko·en 사용자에게는 쓰이지 않으므로 preload에 넣지 않는다 — **13개 목록은 유지**하고
+`FONT_PRELOAD_CHUNKS`는 바꾸지 않았다. 다음 재측정 트리거: 행사 콘텐츠 번역 노출(44-2)로
+ja·zh-hans 페이지의 본문 문자가 바뀔 때.
 
 ## 이월
 
