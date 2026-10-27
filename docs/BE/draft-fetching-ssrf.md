@@ -32,7 +32,9 @@ URL의 호스트로 직접 치환하는 방식을 택했다.
 
 **Known gap.**
 
-- NAT64(`64:ff9b::/96`) 미차단 — 배포망에 NAT64가 있는지 확인 필요.
+- NAT64(`64:ff9b::/96`)는 `is_reserved`로 차단된다 `[실측 python3 ipaddress
+  2026-10-27: ip_address('64:ff9b::808:808').is_reserved == True]` —
+  security-review-2026-09-27.md F5 행과 일치.
 - 리졸버가 빈 리스트를 반환하면 `IndexError`가 난다 — fail-closed로
   정합시키는 작업 미완.
 - IPv6(AAAA) 핀닝 경로의 계약 테스트 부재.

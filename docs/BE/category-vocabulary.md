@@ -98,9 +98,11 @@ atomic의 마지막 문장)는 예외 없이 이벤트만 되돌아가고 EVENT_
 정상이고 강조색만 폴백이다.
 
 남은 이관 표면 `[실측 2026-09-13]`: 소비자 템플릿 9지점 / 7파일, 소비자 CSS
-25지점 / 3파일(`home.css`·`event_list.css`·`event_calendar.css`, 슬러그 6종
-하드코딩). 이 이관은 소비자 렌더를 바꾸므로 FE 리뷰 2역할의 사전 산출이
-선행돼야 한다.
+41지점 / 4파일(`home.css`·`event_list.css`·`event_calendar.css`·
+`home_calendar.css`, 슬러그 6종 하드코딩) `[실측 2026-10-27:
+rg -o '--cat-[a-z_]+-(soft|ink)' static/css/pages | sort | uniq -c]`
+(2026-09-13에는 25지점/3파일). 이 이관은 소비자 렌더를 바꾸므로 FE 리뷰
+2역할의 사전 산출이 선행돼야 한다.
 
 ## 색 계약 가드
 

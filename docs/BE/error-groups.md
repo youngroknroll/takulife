@@ -6,7 +6,7 @@
 
 ## Current fact
 
-- `core.ErrorGroup`(`core/models.py:203-225`, 마이그레이션
+- `core.ErrorGroup`(`core/models.py:203-224`, 마이그레이션
   `core/migrations/0007_errorgroup.py`)는 다음 필드를 갖는다: `source`
   (choices `backend`/`frontend`, `max_length=10`), `fingerprint`
   (`max_length=64`, `unique=True`), `error_type`(`max_length=100`),
@@ -74,8 +74,9 @@
 ## 핸들러(`core/logging.py`)
 
 - `ErrorGroupHandler`(`core/logging.py:9-42`)는 `django.request` 로거에만
-  붙는다(`config/settings.py:648-658`, `"django.request"` 항목의
-  `handlers: ["console", "error_groups"]`, `level: "ERROR"`) — root에는
+  붙는다(`LOGGING`, `config/settings.py:660-696`, `"django.request"` 항목은
+  `:689-693`의 `handlers: ["console", "error_groups"]`, `level: "ERROR"`) —
+  root에는
   붙이지 않는다. 다른 경로의 의도된 WARNING이 오류 묶음으로 새는 것을
   막기 위해서다.
 - 모듈 최상단에 Django 모델·앱 임포트를 두지 않고 `emit()` 안에서만
@@ -87,7 +88,7 @@
   않고 건너뛴다(`core/logging.py:20-25`) — DB 장애 중에 오류 묶음을
   남기려고 DB에 또 접근하면 지연이 늘어나 `docker/entrypoint.sh`의
   gunicorn 기본 타임아웃(설정 없음 → 기본 30초,
-  `docs/operations-runbook.md:271`)을 넘길 수 있어서다.
+  `docs/operations-runbook.md:328, 345`)을 넘길 수 있어서다.
 - `location`은 `f"{method} {route}".strip()`이고 `route`가 없으면
   `"unresolved"`(`core/logging.py:27-31`). 요청 본문·쿼리스트링·쿠키·
   사용자 정보는 저장하지 않는다.
@@ -112,9 +113,10 @@
   (`_is_valid_payload`, `:75-86`).
 - 전역 단일 버킷 스로틀 120회/시간
   (`GlobalClientErrorThrottle`, `:89-95`) — 이 API는 미인증이라 기본
-  스로틀이 요청 IP를 식별자로 쓰는데, 저장소에 프록시 개수 설정이 없어
-  `X-Forwarded-For`를 그대로 믿는 문제가 있어(러너 스로틀과 동일 문제)
-  IP 대신 고정 문자열 `"global"`로 묶는다. 초과 시에도 204, 그리고
+  스로틀이 요청 IP를 식별자로 쓰는데, 작성 당시 프록시 개수 설정이 없었고,
+  지금은 `TRUSTED_PROXY_COUNT`(`config/settings.py`, `core/ip.py`, 트랙 40)가
+  있지만 이 뷰의 스로틀은 아직 IP를 쓰지 않고 IP 대신 고정 문자열
+  `"global"`로 묶는다. 초과 시에도 204, 그리고
   스로틀 외 다른 예외가 나도 500 대신 204로 넘기고 원인은
   `core.client_error_views` 로거에만 남긴다(`handle_exception`, `:110-117`).
 - 위 상한과 별도로 **프론트 새 묶음 생성만** 시간당 20건
@@ -145,16 +147,16 @@
 
 ## 프론트 캡처
 
-- `templates/base.html:9-12`, `templates/staff/base_staff.html:11-13`의
+- `templates/base.html:8-15`, `templates/staff/base_staff.html:9-16`의
   head 최상단(테마 스크립트보다 앞) 인라인 부트스트랩이
   `window.__takuErrorQueue = []`를 만들고 `error`·`unhandledrejection`
   리스너를 즉시 건다 — 이 시점에는 아직 다른 스크립트가 실행되지 않아
   이후 로드되는 어떤 스크립트의 동기 오류도 큐에 놓치지 않는다.
 - `static/js/shared/error_report.js`(두 셸 모두 defer 목록 첫 번째,
-  `templates/base.html:120`, `templates/staff/base_staff.html:80`)가 큐를
+  `templates/base.html:123`, `templates/staff/base_staff.html:82`)가 큐를
   드레인한 뒤(`drainBootstrapQueue`, `:75-86`) 큐의 `push`를 무시
   함수로 바꿔치고, 이후 오류는 자신의 리스너로 직접 처리한다
-  (`bindListeners`, `:88-103`) — 같은 이벤트가 두 번 보고되지 않는다.
+  (`bindListeners`, `:93-107`) — 같은 이벤트가 두 번 보고되지 않는다.
 - 페이지당 최대 5건(`MAX_PER_PAGE`, `:11`)이고, **카운터는 필터를 통과해
   실제로 전송을 시도하는 항목만 늘린다**(`:64`, 2026-09-18 수정
   `14fa37c3`) — 이전 버전은 무시 대상(확장·교차 출처·중복)도 카운터를
@@ -178,17 +180,17 @@
 
 ## 대시보드 패널
 
-- `core.error_groups.system_error_summary`(`:190-229`)가 **쿼리 2회
+- `core.error_groups.system_error_summary`(`:223-262`)가 **쿼리 2회
   고정**(`aggregate` 1회 + 상위 목록 `values()` 슬라이스 1회)으로
   전체 건수, 24시간·7일 창 안 `last_seen` 묶음 수, 출처별 건수, 상위
   5개(`last_seen` 내림차순)를 계산한다. "종" 표기(`templates/staff/
-  dashboard.html:381`)는 **묶음 수**이지 발생 횟수 합이 아니다.
-- `staff/views/__init__.py:282`가 이 결과를 `system_errors` 컨텍스트로
-  대시보드에 넘긴다. 템플릿(`templates/staff/dashboard.html:372-398`)은
+  dashboard.html:363`)는 **묶음 수**이지 발생 횟수 합이 아니다.
+- `staff/views/__init__.py:284`가 이 결과를 `system_errors` 컨텍스트로
+  대시보드에 넘긴다. 템플릿(`templates/staff/dashboard.html:354-380`)은
   Django 기본 자동 이스케이프만 쓴다 — `|safe`·`innerHTML` 없음(SRR F6),
   `error_type`에 `<script>`가 들어와도 텍스트로 렌더된다.
 - 빈 상태 문구: `"최근 발생한 시스템 오류가 없습니다 ✓"`
-  (`templates/staff/dashboard.html:378`).
+  (`templates/staff/dashboard.html:360`).
 
 ## 롤백 시 유의
 
@@ -201,13 +203,11 @@
 
 - 로컬 러너 실행 결과 보고(트리거: 대시보드 `error_summary` 단건 노출로
   부족하다는 운영 신호).
-- IP 보조 스로틀(트리거: 신뢰 프록시 헤더(`X-Forwarded-For` 개수)
-  확보).
+- IP 보조 스로틀(트리거 충족 — `TRUSTED_PROXY_COUNT` 존재, 착수 여부 미결).
 - 시크릿 스캐너 고도화(부분 일치 대조 이상의 패턴 탐지).
 - 폐기(무시)된 요청 수 지표 — 현재는 204만 보고 왜 버려졌는지 알 수 없다.
 - 출처별 상한·스로틀 수치의 env화(현재는 상수 하드코딩).
-- 사이트 로그 4단계(보존 정리 — 오래된 `ErrorGroup` 행 삭제 정책) —
-  범위 밖(미착수).
+- 보존 정리는 트랙 37에서 구현됨 — `docs/BE/data-retention.md`.
 
 ## Evidence
 

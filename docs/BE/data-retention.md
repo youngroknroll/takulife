@@ -10,13 +10,15 @@
 |---|---|---|
 | 세션(`django.contrib.sessions.Session`) | `expire_date < now`(만료분만, `--days` 무관) | `core/retention.py:21-28` `_count_sessions`·`_delete_sessions`, 삭제는 `call_command("clearsessions")`에 위임(건수는 직접 count — clearsessions는 건수를 반환하지 않는다 `[코드]`) |
 | axes `AccessLog` | `attempt_time <= now - days일`(기본 90일) | `core/retention.py:31-37`, 삭제는 `AxesProxyHandler.reset_logs(age_days=)` 재사용(모델 직접 delete 금지 — `AXES_HANDLER` 교체 대비) |
-| axes `AccessFailureLog` | `AccessLog`와 같은 기준(90일) | `core/retention.py:40-46`, `AxesProxyHandler.reset_failure_logs(age_days=)`. **이 프로젝트에서는 대상에 두되 설계상 항상 0건** — `AXES_ENABLE_ACCESS_FAILURE_LOG`가 설정되지 않아 기본값 `False`이고(`axes/conf.py:93-95`), 이 값이 `False`면 실패 시도를 애초에 `AccessFailureLog`에 적재하지 않는다(`axes/handlers/database.py:267`의 `if settings.AXES_ENABLE_ACCESS_FAILURE_LOG:` 분기). 대상에서 뺀 것이 아니라 지울 행이 원천적으로 생기지 않는다는 뜻이다 |
-| `core.ErrorGroup`(트랙 36) | `last_seen`이 `days`일보다 오래된 행(기본 90일), 소유 함수는 출처별 250행 상한(`core/error_groups.py:27` `SOURCE_GROUP_LIMIT`)과 별개로 시간 기준 정리를 더한다 | `core/error_groups.py:190-204` `prune_stale_error_groups(*, days, dry_run=False)`, `core/retention.py:49-54`에서 호출 |
+| axes `AccessFailureLog` | `AccessLog`와 같은 기준(90일) | `core/retention.py:40-46`, `AxesProxyHandler.reset_failure_logs(age_days=)`. **이 프로젝트에서는 대상에 두되 설계상 항상 0건** — `AXES_ENABLE_ACCESS_FAILURE_LOG`가 설정되지 않아 기본값 `False`이고(`axes/conf.py:93-94`,
+django-axes 8.3.1 기준 `[실측 uv.lock]`), 이 값이 `False`면 실패 시도를 애초에 `AccessFailureLog`에 적재하지 않는다(`axes/handlers/database.py:267`의 `if settings.AXES_ENABLE_ACCESS_FAILURE_LOG:` 분기). 대상에서 뺀 것이 아니라 지울 행이 원천적으로 생기지 않는다는 뜻이다 |
+| `core.ErrorGroup`(트랙 36) | `last_seen`이 `days`일보다 오래된 행(기본 90일), 소유 함수는 출처별 250행 상한(`core/error_groups.py:28` `SOURCE_GROUP_LIMIT`)과 별개로 시간 기준 정리를 더한다 | `core/error_groups.py:206-220` `prune_stale_error_groups(*, days, dry_run=False)`, `core/retention.py:49-54`에서 호출 |
 
 `AccessAttempt`(axes)는 이 정리 대상이 아니다 — axes가 `AXES_COOLOFF_TIME`
 (1시간) 창을 넘긴 시도를 로그인 시도 처리 경로 안에서 스스로 삭제한다
-(`axes/handlers/database.py:395-430` `clean_expired_user_attempts`). 별도
-관리 명령이 개입할 필요가 없다.
+(`axes/handlers/database.py:395-426` `clean_expired_user_attempts`,
+django-axes 8.3.1 기준 `[실측 uv.lock]`). 별도 관리 명령이 개입할 필요가
+없다.
 
 ## 제외 대상과 이유
 
@@ -25,13 +27,13 @@
 | `AnalyticsEvent`(집계 원본) | 월간 지표가 이 원본 테이블을 다시 스캔해 계산한다 — 오래된 행을 지우면 과거 월 지표를 다시 낼 수 없다 |
 | 반려된 드래프트 원문(`EventDraft`, `status=rejected` 등) | 재오픈 후 재검수 흐름이 원문 텍스트를 다시 읽는다 — 보존 기간으로 지우면 그 흐름이 끊긴다 |
 | `StaffActionLog` | 추가 전용(append-only) 감사 로그 — 보존 정리 대상이 아니라 감사 목적 자체가 "지우지 않는다"는 전제다 |
-| `SourceDiscoveryRun`/`SourceCandidate` | 이번 트랙에서는 범위를 축소해 이연한다. FK 위험 때문이 아니다 — `EventDraft.discovery_run`은 `on_delete=models.SET_NULL`(`drafts/models.py:66-72`), `SourceCandidate.run`은 `on_delete=models.CASCADE`(`drafts/models.py:169-171`)라 실행 레코드를 지워도 참조 무결성이 깨지지 않는다. 착수 트리거는 저장소 패널에서 이 두 테이블이 상위 용량을 차지하는 것이 실측될 때다 |
+| `SourceDiscoveryRun`/`SourceCandidate` | 이번 트랙에서는 범위를 축소해 이연한다. FK 위험 때문이 아니다 — `EventDraft.discovery_run`은 `on_delete=models.SET_NULL`(`drafts/models.py:66-72`), `SourceCandidate.run`은 `on_delete=models.CASCADE`(`drafts/models.py:172-174`)라 실행 레코드를 지워도 참조 무결성이 깨지지 않는다. 착수 트리거는 저장소 패널에서 이 두 테이블이 상위 용량을 차지하는 것이 실측될 때다 |
 
 ## 구조
 
 - 대상마다 `(건수 조회 함수, 삭제 함수)` 쌍을 `_TARGETS` 표(`core/retention.py:58-63`)에
   올려두고 `prune_operational_data(*, days=90, dry_run=False)`가 순서대로
-  돈다(`core/retention.py:66-79`). 한 대상이 예외를 던져도 `try/except`로
+  돈다(`core/retention.py:66-84`). 한 대상이 예외를 던져도 `try/except`로
   격리해 나머지 대상은 계속 처리한다 — DB 트랜잭션 격리가 아니라 대상 간
   오케스트레이션 격리다(대상마다 자기 완결적인 단일 delete 문 하나).
 - 관리 명령 `core/management/commands/prune_operational_data.py`는

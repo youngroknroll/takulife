@@ -9,7 +9,8 @@
 전수 판독, ③ Security & Resilience Reviewer 어댑터의 독립 검토와 대조(오케스트레이터가
 모든 file:line을 재확인), ④ 실측 명령(§6). 라이브러리 인용 줄 번호는 설치본
 기준이다: Django 5.2.17, DRF 3.17.2, django-allauth 65.18.0, django-axes 8.3.1
-`[실측 uv run python -c]`.
+`[실측 uv run python -c]`(검토 시점 설치본; 현재 lock은 DRF 3.18.3·
+allauth 65.19.7 `[실측 uv.lock 2026-10-27]`).
 
 **Decision.** 결함은 High 2·Medium 2·Low 7이며 Critical은 없다. High 2건과
 Medium 2건은 수정 트랙 하나(PR 1개, 결함별 커밋)로 묶는 것을 권고하고, Low는 같은
@@ -18,7 +19,8 @@ Medium 2건은 수정 트랙 하나(PR 1개, 결함별 커밋)로 묶는 것을 
 리뷰 결과와 가드레일의 정본이고, 진행 상태는 `docs/backlog.md` J절이 든다.
 
 **Update (2026-09-28, 트랙 40).** F1·F2·F3a·F4·F5·F7·F9는 반영 완료(브랜치
-`fix/security-review-2026-09-27`, **PR #388 머지 승인 대기**, 결함별 커밋은 §8 표,
+`fix/security-review-2026-09-27`, PR #388 머지(2026-10-04, merge `e02463e5`);
+deploy PR #391로 production 반영, 결함별 커밋은 §8 표,
 검증 증거는 §8 Evidence).
 F1은 운영 DB에 이미 저장된 비-http(s) 값이 있으면 코드 배포만으로 닫히지 않으므로
 `docs/deploy-runbook.md` §3 항목 16이 배포 전 차단 항목이다. F3b(DRF 본문 크기
@@ -40,12 +42,14 @@ F1은 운영 DB에 이미 저장된 비-http(s) 값이 있으면 코드 배포�
 | F7 | Low | 20·770 | D | 러너 known-urls 목록 길이·타입 무검사 | drafts/runner_views.py:250-265 | 높음 |
 | F8 | Low | 770 | D | 오류 리포트 전역 단일 버킷 소진 시 관측 공백 | core/client_error_views.py:89-96 | 높음 |
 | F9 | Low | 16 | T | `SECURE_COOKIES`만 `os.environ` 직접 읽기 | config/settings.py:523 | 높음 |
-| F10 | Low | 308 | S | 스태프·슈퍼유저 MFA 부재, `/admin/` 노출 | config/urls.py:181, config/settings.py:287-311 | 높음 |
+| F10 | Low | 308 | S | 스태프·슈퍼유저 MFA 부재, `/admin/` 노출 | config/urls.py:185, config/settings.py:299-323 | 높음 |
 | F11 | Low | 693 | T | CSP 헤더 없음 | config/settings.py 전체, templates/base.html:8-15, :20-36, :81-86 | 높음 |
 
 STRIDE 약어: S 위장, T 변조, R 부인, I 정보 노출, D 서비스 거부, E 권한 상승.
 
 ## 2. 발견 상세와 변경 요소
+
+(아래 "현재 흐름" 다이어그램의 줄 번호는 수정 전 스냅샷의 줄 번호다.)
 
 ### F1 [High] 스태프 `official_url` 스킴 미검증, 공개 상세 저장형 XSS
 
@@ -279,7 +283,7 @@ multipart(사진)                            -> 미들웨어 통과, 기존 5MB 
 **정정 (2026-09-28 실측, 트랙 40 구현 중).** 위 서술은 측정 전 기록이다.
 (b) "DRF JSON 본문이 Django 상한을 거치지 않는다"는 **반박됐다**: DRF 3.17.2
 `Request._parse`는 `JSONParser`·`FormParser`에 `io.BytesIO(self.body)`를
-넘기고 `[코드 rest_framework/request.py:358-360]`, 이 `HttpRequest.body`
+넘기고 `[코드 rest_framework/request.py:363-364]`, 이 `HttpRequest.body`
 접근이 `_check_data_too_big`을 거쳐 `DATA_UPLOAD_MAX_MEMORY_SIZE`를 이미
 강제한다. 위 서술은 `_load_stream`(:297-314)만 읽고 이 분기를 놓친 것이다.
 실측: 기본 상한에서 2,700,000바이트 JSON POST·폼 PATCH·JSON PATCH 모두
@@ -349,7 +353,7 @@ POST #2 (실행 중)  -> cache.add 실패 -> info 메시지 + 리다이렉트, �
 | F7 러너 known-urls | drafts/runner_views.py:253-259가 `urls`의 list 여부만 검사 | 길이 상한(예 500)과 원소 `str` 검사, 위반 시 400 | 토큰 보유자 한정이지만 거대한 `IN` 절과 비문자열 500을 막는 방어 심도. **정정(2026-09-28 구현 반영)**: 상한 500 대신 전용 상수 `MAX_KNOWN_URLS_PER_REQUEST = 20`(러너 전송 상한 `EXPLORATION_MAX_EVENTS`와 같은 값)을 신설 — `MAX_EVENTS_PER_RUN`(실행당 영속 드래프트 상한)과 의미가 달라 재사용하지 않았다 |
 | F8 오류 리포트 버킷 | `GlobalClientErrorThrottle`(core/client_error_views.py:89-96)가 `ident="global"` 단일 버킷 120건/시간 | 지문별 분당 상한을 추가(예 같은 fingerprint 10건/분). 전역 상한은 유지 | 위조 Origin 1곳이 예산을 독점해 1시간 관측 공백을 만드는 것을 줄인다. 기록된 F7(Origin 위조 가능)과 인접 |
 | F9 SECURE_COOKIES | config/settings.py:523만 `os.environ.get` 직접 사용, 다른 플래그는 `_get_env`(:12-24) | `_get_env("SECURE_COOKIES", "")`로 통일 | `.env` 파일 값이 조용히 무시되는 운영 함정 제거. Render는 OS env를 쓰므로 현 배포 영향 없음 |
-| F10 MFA | `allauth.mfa` 미설치(INSTALLED_APPS config/settings.py:287-311), `/admin/` 노출(config/urls.py:181). extras `django-allauth[mfa]`는 pyproject에 이미 있음 | 별도 트랙: `allauth.mfa` 앱·URL 등록, 스태프·슈퍼유저 필수화 여부는 제품 결정 | F1 같은 스태프 전제 결함의 전제(계정 탈취)를 어렵게 한다. 기록된 보류(슈퍼유저 step-up)와는 별개 |
+| F10 MFA | `allauth.mfa` 미설치(INSTALLED_APPS config/settings.py:299-323), `/admin/` 노출(config/urls.py:185). extras `django-allauth[mfa]`는 pyproject에 이미 있음 | 별도 트랙: `allauth.mfa` 앱·URL 등록, 스태프·슈퍼유저 필수화 여부는 제품 결정 | F1 같은 스태프 전제 결함의 전제(계정 탈취)를 어렵게 한다. 기록된 보류(슈퍼유저 step-up)와는 별개 |
 | F11 CSP | CSP 설정 0건 `[실측 rg]`, base.html 인라인 스크립트 3개(:8-15, :20-36, :81-86) | 별도 트랙: nonce 기반 `Content-Security-Policy` 미들웨어(새 의존성 도입은 승인 필요) | XSS 피해 반경 축소. 인라인 스크립트가 있어 nonce 없이는 도입 불가 |
 
 ### Test List 초안 (수정 트랙 착수 시 prompt_plan.md로 이관)
@@ -374,7 +378,7 @@ POST #2 (실행 중)  -> cache.add 실패 -> info 메시지 + 리다이렉트, �
 재검토 없이 신뢰할 수 있는 경계와 그 근거다. 새 경로를 추가할 때 이 목록의 규칙을
 그대로 따른다.
 
-- JSON-LD: web/views/events.py:530-537 `_json_ld_script`가 `<`·`>`·`&`를 `<`
+- JSON-LD: web/views/events.py:570-574 `_json_ld_script`가 `<`·`>`·`&`를 `<`
   등으로 바꿔 `</script>` 탈출을 막는다. 홈·상세 `|safe` 2곳이 이 함수만 거친다.
 - archive IDOR: 뷰 `get_queryset`이 `user=request.user`로 한정하고
   (archive/views.py:155, :198, :246, :297, :375, :435, :500, :693), FK 입력
@@ -387,10 +391,11 @@ POST #2 (실행 중)  -> cache.add 실패 -> info 메시지 + 리다이렉트, �
   직접 연결(IP 핀닝) + Host 헤더 + sni_hostname. 정본 `docs/BE/draft-fetching-ssrf.md`.
 - 업로드: events/image_validation.py 5MB 상한, 확장자와 Pillow 실디코딩 포맷
   allowlist, 축당 10,000px, 총 40,000,000픽셀, EXIF 제거 재인코딩,
-  archive/models.py:13-16 UUID 파일명. 저장소 `default_acl=None`·
-  `querystring_auth=True`(config/settings.py:211-230).
+  archive/models.py:23 `personal_entry_image_upload_to`(UUID 파일명; `:14`는
+  `MEMO_MAX_LENGTH`로 별개). 저장소 `default_acl=None`·
+  `querystring_auth=True`(config/settings.py:239-241).
 - CSRF: `csrf_exempt` 운영 코드 0건 `[실측 rg]`, DRF는 `SessionAuthentication`만
-  (config/settings.py:582-584), 폼은 전부 `csrf_token` 또는 JS `X-CSRFToken`
+  (config/settings.py:613-615), 폼은 전부 `csrf_token` 또는 JS `X-CSRFToken`
   (static/js/shared/api.js:34-46).
 - 러너 API: 토큰 `constant_time_compare`, 빈 토큰 fail-closed, 스로틀 키 해시
   (drafts/runner_views.py:38-60). 임대 토큰도 상수 시간 비교
@@ -407,7 +412,7 @@ POST #2 (실행 중)  -> cache.add 실패 -> info 메시지 + 리다이렉트, �
   의도된 결정) 1건만 `[실측 2026-09-27]`.
 - 반박된 가설: JSON-LD XSS, archive FK IDOR, 제보 URL 스킴, 대시보드 텍스트 주입은
   소스로 반박됐다. 독립 검토 주장 중 "axes가 IP만 잠가 분산 크리덴셜 스터핑에
-  무력"은 부분 오류다. `login_failed 5/300s/key`(config/settings.py:493)가 계정 단위
+  무력"은 부분 오류다. `login_failed 5/300s/key`(config/settings.py:516)가 계정 단위
   제한을 이미 건다.
 
 ## 4. 기록된 보류·이연 (재권고 아님)
@@ -492,7 +497,7 @@ rg -n 'max_length' archive/serializers.py     # memo 항목 없음
 | F1 | 수정 | `events/services.py`(스킴 허용목록 + 호스트 필수), `staff/views/events.py`(필드 오류 매핑), 커밋 `892feec3` | SEC-01, SEC-02, SEC-03b, SEC-04, SEC-04a, SEC-04b, SEC-04c |
 | F2 | 수정 | `config/settings.py` `build_allauth_trusted_proxy_count` + `ALLAUTH_TRUSTED_PROXY_COUNT` 배선, 커밋 `b49a5fec` | SEC-05a, SEC-05b, SEC-06, SEC-07 |
 | F3a(memo 상한) | 수정 | `archive/models.py` `MEMO_MAX_LENGTH = 2000`, `archive/serializers.py`, 커밋 `fa1aa6ef` | SEC-10, SEC-10b |
-| F3b(본문 크기) | 반박 — 코드 변경 취소, 핀 테스트만 추가 | §2 F3 정정 참조. DRF 3.17.2 `Request._parse`가 `HttpRequest.body`를 태워 이미 상한이 걸린다 `[코드 rest_framework/request.py:358-360]`, 핀 커밋 `15b0ef6e` | SEC-08b, SEC-08c(기대값 413→400으로 정정, 기존 보호 고정 핀) |
+| F3b(본문 크기) | 반박 — 코드 변경 취소, 핀 테스트만 추가 | §2 F3 정정 참조. DRF 3.17.2 `Request._parse`가 `HttpRequest.body`를 태워 이미 상한이 걸린다 `[코드 rest_framework/request.py:363-364]`, 핀 커밋 `15b0ef6e` | SEC-08b, SEC-08c(기대값 413→400으로 정정, 기존 보호 고정 핀) |
 | F4 | 수정 | `staff/views/__init__.py` 캐시 뮤텍스, 커밋 `4eb3742b`. 보장 범위는 정상·파이썬 예외·SIGABRT 종료(§2 F4 정정) | SEC-11, SEC-11b |
 | F5 | 수정 | `drafts/url_safety.py`·`local_runner/url_safety.py` `or not value.is_global`, 커밋 `2cde14d7` | SEC-12, SEC-12b |
 | F6 | 제외(이연) | 트랙 35 이연 항목과 함께 처리 예정(§7) | — |

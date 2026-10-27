@@ -32,16 +32,16 @@ PATCH를 여는 순간 **멱등 키가 함께 열렸다.** `client_token`은 모
 생성(POST)은 영향이 없다 — `PersonalEntryListCreateView`가 여전히
 `PersonalEntrySerializer`를 직접 쓴다.
 
-## Known gap — 사용자는 아직 이 API에 도달할 수 없다
+## Current fact — 수정 화면 도달 가능
 
-**수정 화면이 없다.** 라우트 자체가 없고, 목록 행의 액션은 찜·일정·`＋ 기록`·
-공식 제보·삭제 다섯 개뿐이다. 작성(`/archive/personal/new/`)과 목록만 존재한다.
+수정 화면 `/archive/personal/<id>/edit/`(`web/views/archive.py`
+`archive_personal_entry_edit`, `static/js/pages/personal_edit.js`)가 PATCH를
+호출한다. 상세 `/archive/personal/<id>/`도 있다(`config/urls.py`). 장소명
+오타는 삭제 없이 고칠 수 있다.
 
-따라서 이 항목이 존재하는 이유인 **데이터 소실 경로는 실질적으로 아직 열려 있다** —
-장소명 오타를 고치려면 삭제뿐이고, `personal_entry` FK가 `EventInterest`·
-`UserEventStatus`·`VisitRecord` 세 곳에서 `CASCADE`라 그 장소에 딸린 방문 기록과
-사진이 함께 사라진다. (삭제 경고 문구는 정확히 있다 —
-`static/js/pages/personal_entries.js`.)
+삭제 시에는 여전히 `personal_entry` FK가 `EventInterest`·`UserEventStatus`·
+`VisitRecord` 세 곳에서 `CASCADE`라 그 장소에 딸린 방문 기록과 사진이 함께
+사라진다. (삭제 경고 문구는 정확히 있다 — `static/js/pages/personal_entries.js`.)
 
 화면은 신규 페이지라 프론트 이중 게이트 대상이고, **시안 재작업 중이라
 새 시안 이후로 미뤘다**(2026-07-30 사용자 결정). 지금 지으면 두 번 짓는다.

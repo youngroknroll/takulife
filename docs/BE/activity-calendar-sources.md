@@ -18,12 +18,12 @@
 
 ## Guardrail — 계층 경계
 
-이 규칙은 웹 계층(`web/views/activity.py`)에 있다. `archive/queries.py`의
+이 규칙은 웹 계층(`web/views/activity.py`)에 있다. `archive/activity_calendar_queries.py`의
 `list_user_activity_for_month`는 손대지 않았고, 계약대로 5개 출처 원자료를
 그대로 반환한다("달력 표시 가능한 원자료 전체"). 어떤 kind를 실제로 그릴지는
 웹 계층 책임이다.
 
-이 규칙을 질의 계층으로 내리지 않는 이유: `archive/queries.py`의
+이 규칙을 질의 계층으로 내리지 않는 이유: `archive/activity_calendar_queries.py`의
 `_interest_added_fallback_items`는 **행 단위 교차 대조**(이 event에 로그 행이
 있는지)라서 질의 계층 밖에서는 만들 수 없다. 반면 이번 규칙은 **kind 단위
 무조건 규칙**(대응 상태 행 존재 여부와 무관하게 항상 숨김)이라, 이미 웹 계층에
@@ -54,7 +54,7 @@
 `test_행동성_활동은_occurred_at의_로컬_날짜에_표시된다`는 `방문기록작성`/
 `굿즈등록`/`굿즈정리` 파라미터 케이스를 포함한다. 이 3케이스가 이번 수정 후에도
 통과하는 것은 "수정이 질의 계층까지 내려가지 않고 웹 계층에 머물렀다"는 증거다.
-이 케이스가 깨지면 `archive/queries.py`가 잘못 바뀐 것이다.
+이 케이스가 깨지면 `archive/activity_calendar_queries.py`가 잘못 바뀐 것이다.
 
 ## Known gap — 의도된 동작 변화 (버그로 오인 금지)
 

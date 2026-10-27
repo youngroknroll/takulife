@@ -8,9 +8,9 @@
 
 `EventDraft.ReviewStatus`는 `pending`/`approved`/`rejected` 3상태 그대로다
 [코드]. 재오픈은 `rejected → pending` 전이일 뿐 새 상태값을 만들지 않는다.
-전이 함수는 `drafts/services.py`의 `approve_draft`(`:303`)·`reject_draft`
-(`:336`)·`reopen_draft`(`:355`) 셋뿐이고 [실측 `grep -n`], 셋 다 공통
-상태 가드 `_get_draft_for_update(draft_id, *, expected_status)`(`:242`,
+전이 함수는 `drafts/services.py`의 `approve_draft`(`:358`)·`reject_draft`
+(`:391`)·`reopen_draft`(`:410`) 셋뿐이고 [실측 `grep -n`], 셋 다 공통
+상태 가드 `_get_draft_for_update(draft_id, *, expected_status)`(`:297`,
 기본값 없음, `select_for_update` 사용)를 거친다.
 
 ## (b) 재오픈은 반려 기록을 지우지 않는다
@@ -32,7 +32,7 @@ PSO 기본값 수용): `reopened_at`이 있으면 그 값, 없으면 `created_at
 ## (d) 감사: `draft_reopen`은 승인·반려와 같은 트랜잭션·로그 규칙을 따른다
 
 `StaffActionLog.Action.DRAFT_REOPEN`("반려 재오픈")은
-`staff/views/drafts.py`의 `StaffDraftReopenView.post`(`:390`) 안
+`staff/views/drafts.py`의 `StaffDraftReopenView`(`:351`)의 `post`(`:357`) 안
 `transaction.atomic()`에서 `reopen_draft` 호출과 함께 기록된다. 로그 기록
 자체가 실패하면 재오픈도 함께 롤백된다(승인·반려 선례, `docs/BE/staff-audit-log.md`
 (c)와 동일한 무로그 규칙). 400(`DraftStateError`)·403(권한 없음)·404
@@ -79,7 +79,7 @@ COLUMN) 역방향을 코드 롤백과 함께 실행한다(DOR).
 
 ## (i) 검수 SLA 지표는 드래프트 필드로만 집계한다 — 반려율·평균 처리 정의
 
-`drafts/queries.py`의 `draft_review_sla(*, days=7, now=None)`(`:34`)
+`drafts/queries.py`의 `draft_review_sla(*, days=7, now=None)`(`:36`)
 [실측 `grep -n`]: 최장 대기 = 검토 대기 중 기산점(`reopened_at` or
 `created_at`) 최솟값 기준 `now − 기산점`. 평균 처리·반려율 = 창
 `[now − 7일, now)`에 결정된 드래프트(현재 상태가 approved면 `approved_at`,
@@ -102,8 +102,8 @@ rejected면 `rejected_at`)의 `결정 시각 − 기산점` 평균과 반려 비
 
 ## (k) 표시 규칙 — 값 없음은 하이픈, 단위는 48시간 기준
 
-`staff/views/__init__.py`의 `_build_review_sla_cards`(`:170`)와
-`_format_duration`(`:162`) [실측 `grep -n`]: `value`는 표시용 문자열이거나
+`staff/views/__init__.py`의 `_build_review_sla_cards`(`:186`)와
+`_format_duration`(`:178`) [실측 `grep -n`]: `value`는 표시용 문자열이거나
 None이다 — 정수 0을 그대로 넘기면 템플릿의 `is not None` 분기가 아니라
 진위값 분기로 오판할 위험이 있어 문자열로만 넘긴다. 시간 단위는
 `total_seconds()/3600`이 48 미만이면 "시간", 이상이면 "일"로 바꾸고,
@@ -118,8 +118,9 @@ None이다 — 정수 0을 그대로 넘기면 템플릿의 `is not None` 분기
 `EventDraft.Origin`(`drafts/models.py`, `collected`/`user_report`, 기본값
 `collected`)은 드래프트가 어떻게 만들어졌는지만 구분한다. 값을 정하는 곳은
 `create_draft_from_fields(origin=...)` 호출자뿐이며, 제보 경로
-`web/promotion.py`의 `promote_personal_entry`(`:83`)만 `origin=user_report`를
-넘기고 [실측 `grep -n`], 자동 수집(`create_draft_from_url`)과 스태프의 URL
+`web/promotion.py`의 `promote_personal_entry`(정의 `:50`)만 함수 안
+`origin=` 인자(`:83`)로 `origin=user_report`를 넘기고 [실측 `grep -n`],
+자동 수집(`create_draft_from_url`)과 스태프의 URL
 직접 생성(admin API)은 인자를 생략해 기본값 `collected`를 그대로 쓴다.
 `source_name`은 승인 시 이벤트로 복사돼 소비자에게 "N 제공"으로 노출되는
 출처 이름이라 `origin`과는 다른 축이고, 유입 경로 구분 표시에 쓰지 않는다.

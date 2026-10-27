@@ -10,7 +10,7 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 행사를 주 1회 스태프 콘솔에서 정리하라고만 정하고 수단은 정하지 않았다.
 재측정 [실측 2026-09-09 shell]: 이벤트 171건 전부 게시 상태, 그중 종료
 (`end_date < today`) 148건. 트랙 24 이전에는 단건 토글 뷰
-`staff_event_toggle_publish`(`staff/views/events.py:411`)만 있어 148건을
+`staff_event_toggle_publish`(`staff/views/events.py:601`)만 있어 148건을
 목록 → 수정 → 토글 3화면으로 하나씩 내려야 했다. 이 토글은 **읽은 상태를
 반전**하므로, 비공개 처리가 성공한 뒤 응답만 유실되면 재시도가 그 행사를
 다시 게시해 버린다. 이번 엔드포인트는 반전이 아니라 "비공개로 설정"이라는
@@ -20,7 +20,7 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 
 - `POST /staff/events/bulk-unpublish/`(`staff:event-bulk-unpublish`,
   `staff/urls.py:58-62` [실측 grep]), `StaffEventBulkUnpublishView(APIView)`
-  (`staff/views/events.py:561`), `permission_classes = [IsAdminUser]`.
+  (`staff/views/events.py:745`), `permission_classes = [IsAdminUser]`.
 - 요청 본문 `{"event_ids": [int, ...]}`. 구조 오류(비객체·빈 목록·비정수·bool
   포함·상한 초과)는 `field_error_response("event_ids", ...)`로 400 —
   드래프트 일괄 뷰와 같은 패턴(`core/errors.py`).
@@ -32,7 +32,7 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 
 ## (a) 목표 상태 설정이다 — 토글이 아니다
 
-`_unpublish_one`(`staff/views/events.py:595`)은 대상이 게시 중이면
+`_unpublish_one`(`staff/views/events.py:779`)은 대상이 게시 중이면
 `unpublish_event(event=event)`를 호출하고, 그 외(이미 비공개)에는 아무것도
 바꾸지 않는다. "현재 상태를 뒤집는" 연산이 아니라 "draft로 만든다"는
 목표만 있어, 같은 id로 몇 번을 다시 보내도 결과가 같다(멱등, 아래 (b)).
@@ -46,11 +46,11 @@ H2를 세 트랙으로 나눈 것 중 일괄(트랙 24)·단건(트랙 25) 목�
 
 ## (c) 상한 20건과 구조 검증 공용화
 
-`MAX_BULK_EVENT_IDS = 20`(`staff/views/events.py:558` [코드]) — 드래프트
-일괄 승인 상한 `MAX_BULK_APPROVE_DRAFT_IDS`(`staff/views/drafts.py:266`)와
+`MAX_BULK_EVENT_IDS = 20`(`staff/views/events.py:742` [코드]) — 드래프트
+일괄 승인 상한 `MAX_BULK_APPROVE_DRAFT_IDS`(`staff/views/drafts.py:239`)와
 값은 같지만 우연이며 상수는 분리 유지한다. 구조 검사는
-`staff/views/_helpers.py:40` `_validate_bulk_ids(ids, *, field_name,
-max_items)`로 일반화했고, `staff/views/drafts.py:269`의
+`staff/views/_helpers.py:45` `_validate_bulk_ids(ids, *, field_name,
+max_items)`로 일반화했고, `staff/views/drafts.py:242`의
 `_validate_bulk_draft_ids`는 이 함수에 위임한다(호출부 2곳·시그니처·오류
 메시지 문자열 불변 — 기존 드래프트 일괄 승인·반려 테스트가 회귀를
 보증한다). 400은 이 구조 검사에서만 나온다 — 상한 초과도 항목을 하나도
@@ -58,9 +58,9 @@ max_items)`로 일반화했고, `staff/views/drafts.py:269`의
 
 ## (d) 항목별 트랜잭션·락, `get_object_or_404` 금지
 
-각 id는 `with transaction.atomic():`(`staff/views/events.py:605` 부근) 안에서
+각 id는 `with transaction.atomic():`(`staff/views/events.py:788` 부근) 안에서
 `Event.objects.select_for_update().get(pk=event_id)` → `except
-Event.DoesNotExist`(`:615`) → catch-all `except Exception:`(`:621`
+Event.DoesNotExist`(`:799`) → catch-all `except Exception:`(`:801`
 `logger.exception`) 순으로 처리한다. `get_object_or_404`는 쓰지 않는다 —
 그걸 쓰면 내부에서 던지는 `Http404`가 바깥 catch-all에 걸려
 `"Not found."` 대신 `"Unexpected error."`로 뭉개진다(구현 중 뮤테이션
@@ -110,7 +110,7 @@ DOM에 없어 체크박스를 넣을 곳이 없었다(트랙 25 BIR 지적). 이
 체크박스 셀을 비운다. 행이 제거되는 경로에서는 결과 문단에 "이 페이지
 새로고침" 링크(`location.href`)를 붙인다 — 목록은 정적 페이저
 (`?page=N`)라 서버가 페이지당 15건(`STAFF_EVENT_LISTING_PAGE_SIZE`,
-`events/queries.py:184` [코드])을 오프셋으로 자르므로, DOM에서만 행을
+`events/queries.py:186` [코드])을 오프셋으로 자르므로, DOM에서만 행을
 지운 채 "다음" 버튼을 누르면 서버 계산 오프셋이 그대로 적용돼 방금
 지워진 만큼의 항목을 건너뛴다. 링크로 같은 URL을 다시 불러오면 서버가
 새로 페이지를 계산해 건너뜀이 사라진다.
@@ -127,14 +127,14 @@ DOM에 없어 체크박스를 넣을 곳이 없었다(트랙 25 BIR 지적). 이
 
 ## (i) CSS: `.events-bulkbar`는 `min-height`
 
-`.events-bulkbar`(`static/css/staff/pages/events.css:274` 부근)는
+`.events-bulkbar`(`static/css/staff/pages/events.css:300` 부근)는
 고정 `height`가 아니라 `min-height: 2.25rem`을 쓴다 — 고정 높이였다면
 403 실패처럼 바 전체 폭을 차지하는 오류 문단이 바 밖으로 넘쳐 아래 표
 헤더에 가려지는 결함이 브라우저 실측으로 발견됐다. 같은 값을 쓰는
 드래프트 큐의 `.queue-bulkbar`는 오류 문단이 전체 폭이 아니라 이
 증상이 나타나지 않아 그쪽은 고치지 않았다(보고만). 같은 수정에서 결과
 문단의 "이 페이지 새로고침" 링크에 밑줄(`.events-bulk-result a`,
-`:297-298`)을 더했다 — 색만으로는 구분이 어려웠다.
+`:325`)을 더했다 — 색만으로는 구분이 어려웠다.
 
 ## (j) 단건 목표 상태 엔드포인트
 
@@ -240,7 +240,7 @@ grep])도 그 행의 검증·비공개 버튼을 `hidden`으로, 다시 게시 �
 ## (n) `category`는 3상태다 — `is not None`으로만 판정한다
 
 `?category=`는 필터 없음(`None`)·미분류(`""`)·유효 슬러그 세 값을 가진다
-(`_selected_event_filters`, `staff/views/events.py:129`). `""`는 falsy라
+(`_selected_event_filters`, `staff/views/events.py:135`). `""`는 falsy라
 `if category:`로 쓰면 **미분류 선택이 조용히 "전체"가 된다**.
 `list_staff_events`(`events/queries.py`)의 카테고리 필터 분기와
 `_event_filter_query_pairs`의 querystring 왕복 분기 모두
@@ -250,9 +250,9 @@ grep])도 그 행의 검증·비공개 버튼을 `hidden`으로, 다시 게시 �
 ## (o) 기간 값 검증은 `EVENT_STATUS`로 하고 `EVENT_STATUS_LABELS`를 쓰지 않는다
 
 `core/vocab.py`의 `EVENT_STATUS_LABELS`는 소비자 목록 표시용으로 `"all"`
-키가 나중에 추가돼 있다(`core/vocab.py:173`). 이 dict로 `?period=`
-멤버십을 검사하면 `"all"`이 유효 값으로 통과한다. `staff/views/events.py:115`
-`_STAFF_EVENT_PERIOD_VALUES = {slug for slug, _ in EVENT_STATUS}`처럼
+키가 나중에 추가돼 있다(`core/vocab.py:203`). 이 dict로 `?period=`
+멤버십을 검사하면 `"all"`이 유효 값으로 통과한다.
+`_STAFF_EVENT_PERIOD_VALUES = {slug for slug, _ in EVENT_STATUS}`(`staff/views/events.py:121`)처럼
 튜플 자체에서 만든 집합으로 검사해야 한다.
 
 ## (p) `today` 기본값은 `_resolve_staff_today` 한 곳에서만 해석한다
@@ -267,7 +267,7 @@ as a query value`로 500이 났다(구현 중 두 번 재발).
 
 ## (q) 카테고리 칩 합계와 표 하단 건수는 기준이 다른 숫자다
 
-카테고리 "전체" 칩의 `category_chip_total`(`staff/views/events.py:297`)은
+카테고리 "전체" 칩의 `category_chip_total`(`staff/views/events.py:303`)은
 **category를 뺀** 나머지 필터 기준 합계(`count_staff_events_by_category`가
 `_filtered_staff_events`를 category 없이 공유해서 만든 값)다. 표 하단
 "N–M / total"은 `page_obj.paginator.count`로 **category를 포함한** 현재
@@ -390,7 +390,9 @@ picture만으로는 (p) 결함을 잡지 못했다 — 웹 계층 요청으로�
 선택 유지, 단축키, `event_bulk.js`/`event_row_actions.js` 선택·판정
 로직과 `draft_bulk.js` 공용 모듈화(두 번째 사용처가 더 생긴 시점에 추출
 검토), succeeded의 "실제 전환/이미 그 상태" 구분, `staff/views/
-events.py` 인터페이스별 분리(793줄 [실측 `wc -l`], 800줄 상한에 근접 [문서 DAR]),
+events.py` 인터페이스별 분리(809줄 `[실측 wc -l 2026-10-27]`(작성 당시
+793줄), 800줄 상한 초과 — 분리 후보: `StaffEventBulkUnpublishView`를
+`events_actions.py`로),
 **재검증("검증 완료") 운영 절차 정의 — `docs/event-operations-criteria.md`에
 아직 없음, 사용자 결정 필요**(백로그에도 기록), (r)의 `{% querystring %}`
 무효 값 잔존(BIR 사후 판정 Deviates, Low·비차단 — canonical 리다이렉트

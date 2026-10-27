@@ -15,7 +15,7 @@
 ## (b) 네트워크 fetch는 DB 트랜잭션 밖 — 그래서 서비스를 나눴다
 
 `drafts/services.py`의 `create_draft_from_url`을 `prepare_draft_from_url`
-(`:111`, 네트워크·추출, DB 접근 0)과 `persist_prepared_draft`(`:176`, DB 저장 +
+(`:126`, 네트워크·추출, DB 접근 0)과 `persist_prepared_draft`(`:191`, DB 저장 +
 `IntegrityError`→`DraftCreationDuplicateError`, 내부 `transaction.atomic()`)로
 나눴다. `staff/views/draft_api.py`의 `create()`(`:85`)는 `prepare_draft_from_url`을
 트랜잭션 밖에서 먼저 호출하고, 성공하면 `with transaction.atomic():` 블록
@@ -35,20 +35,24 @@ transaction.atomic():`(`:169`) 안에서 `update_draft` + 로그 기록을 묶�
 자체가 실패하면(예: DB 오류) `with transaction.atomic()` 블록 전체가 롤백돼
 드래프트 생성·수정도 함께 사라진다 — 감사 기록 실패를 조용히 무시하지 않는다.
 
-## (d) 비감사 경로 3곳 — 러너·비스태프 호출은 이 로그를 남기지 않는다
+## (d) 비감사 경로 4곳 — 러너·비스태프 호출은 이 로그를 남기지 않는다
 
-`create_draft_from_url`(합성 함수, `:202`)·`create_draft_from_fields`를 admin
+`create_draft_from_url`(합성 함수, `:217`)·`create_draft_from_fields`를 admin
 API가 아닌 다른 곳에서 부르면 `StaffActionLog`가 남지 않는다. 이 로그는
 "스태프가 admin API를 통해 조작했다"는 사실만 기록하지, 드래프트 생성 자체를
 추적하지 않는다.
 
-- `drafts/candidate_validation.py:287` — 후보 URL 자동 검증 러너가 제출.
-- `drafts/management/commands/discover_drafts.py:191` — 관리 명령이 소스를 크롤링해
-  자동 생성(actor 없음).
-- `web/promotion.py:74` — 일반 사용자가 개인 기록을 공식 제보로 승격. 스태프
+- `drafts/candidate_validation.py:346`(`decide_and_create_candidate` 호출) —
+  실제 생성 호출은 `drafts/candidate_intake.py:70` — 후보 URL 자동 검증
+  러너가 제출.
+- `drafts/management/commands/discover_drafts.py:189` — 관리 명령이 소스를
+  크롤링해 자동 생성(actor 없음).
+- `web/promotion.py:75` — 일반 사용자가 개인 기록을 공식 제보로 승격. 스태프
   행동이 아니다.
+- `drafts/agent_drafts.py:276`(`create_draft_from_fields` 호출,
+  `submit_agent_draft`) — 로컬 러너 에이전트 제출.
 
-셋 다 별도 시스템 감사 항목으로 이연됐고(트랙 20 계획서 "배제"), 이번
+네 곳 다 별도 시스템 감사 항목으로 이연됐고(트랙 20 계획서 "배제"), 이번
 변경으로 로그가 추가되지 않는다.
 
 ## (e) 전후 값 없음·대상 소실 시 추적 한계

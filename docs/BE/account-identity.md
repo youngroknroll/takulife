@@ -14,7 +14,7 @@
 
 ## (b) 검증 파이프라인 순서 — 폼·매니저 두 경로가 `accounts/validators.py` 하나를 공유
 
-`validate_nickname`(`accounts/validators.py:42-54`)은 항상 이 순서로
+`validate_nickname`(`accounts/validators.py:43-55`)은 항상 이 순서로
 거부한다: ① 길이(`MIN_LENGTH=2`·`MAX_LENGTH=20` [코드], `code="min_length"`/
 `"max_length"`) → ② `NICKNAME_PATTERN`(`^[0-9A-Za-z_가-힣]{2,20}$`)
 `fullmatch` 실패(`code="invalid"`, 자모·전각·제로폭·공백 전부 거부, silent-strip
@@ -27,7 +27,7 @@
 `TermsAgreementFormMixin.clean_nickname`·`NicknameChangeForm.clean_nickname`)의
 `filter(nickname__iexact=value)` 사전 검사 + DB
 `UniqueConstraint(Lower("nickname"), name="accounts_user_nickname_ci_unique")`
-(`accounts/models.py:40-44`) 최종 방어. 매니저(`accounts/managers.py`
+(`accounts/models.py:40-45`) 최종 방어. 매니저(`accounts/managers.py`
 `_create_user`)도 같은 `normalize_nickname`→`validate_nickname`을 거치므로
 `create_user(nickname="admin")` 직접 호출도 거부된다(폼을 우회하는 경로 대비).
 
@@ -110,6 +110,9 @@ allauth `SignupView`)는 `config/urls.py`에서 `include("allauth.urls")`보다
 원래 값으로 되돌린 뒤 재렌더한다 — 그러지 않으면 헤더·메뉴 패널이 실패한
 닉네임을 잠깐 보여준다.
 
-Evidence: `tests/auth/test_nickname_signup.py`의 NICK-21, `tests/auth/test_account_nickname_change.py`의
-NICK-20 — 둘 다 폼의 `clean_nickname`을 `monkeypatch`로 우회해 사전 검사를
+Evidence: `tests/auth/test_nickname_signup.py`의 NICK-21
+(`test_가입_사전_중복_검사를_통과한_뒤_DB_제약에_걸리면_중복_오류로_안내된다`,
+`:96`), `tests/auth/test_account_nickname_change.py`의 NICK-20
+(`test_사전_중복_검사를_통과한_뒤_DB_제약에_걸리면_중복_오류로_안내된다`,
+`:90`) — 둘 다 폼의 `clean_nickname`을 `monkeypatch`로 우회해 사전 검사를
 건너뛴 경쟁 창을 재현한다.
