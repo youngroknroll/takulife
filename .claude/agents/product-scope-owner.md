@@ -48,6 +48,3 @@ Acceptance criteria:
 Open product decisions:
 Handoff:
 ```
-
-Hand approved behavior to the Domain Architecture Reviewer when structure may
-change and to the appropriate implementation role after user approval.

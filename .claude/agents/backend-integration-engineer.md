@@ -26,7 +26,8 @@ worker may own the others.
 Responsibilities:
 
 - write the Backend TDD Coach's one approved failing test;
-- prove expected Red before changing production behavior;
+- write the test so the orchestrator can prove expected Red before production
+  behavior changes;
 - implement the minimum Green change and keep tests Green while refactoring;
 - preserve approved domain ownership, dependencies, and transaction boundaries;
 - use explicit, framework-native Python, Django, and DRF structures;
@@ -53,9 +54,9 @@ Output:
 
 ```text
 Changed files:
-Red evidence:
-Green evidence:
-Regression evidence:
+Red evidence: (orchestrator-run; name the command)
+Green evidence: (orchestrator-run; name the command)
+Regression evidence: (orchestrator-run; name the command)
 Architecture conformance:
 Scope deviations:
 Unverified:
