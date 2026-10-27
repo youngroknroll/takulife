@@ -462,3 +462,20 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   DB 용량 요약이다 — 전체 크기와 상위 5개 테이블 크기를 보여준다.
   Postgres가 아니거나 조회에 실패하면 헤더는 유지한 채 측정 불가 문구만
   나온다(대시보드가 죽지 않는다). 상세는 `docs/BE/data-retention.md` 참고.
+
+## 10. 계정 이메일 중복 감사 (`allauth` `EmailAddress`)
+
+`docs/FE/account-settings-editorial.md` G7이 요구하는 1회성 감사다. 한 사용자가 `EmailAddress` 행을 2개 이상(특히 검증된 주소 2개 이상) 가지면 이메일 변경 화면이 단일 주소만 보여 주면서도 로그인·비밀번호 재설정에는 숨은 주소가 계속 쓰인다. 읽기 전용이며 운영 DB에서는 로컬 체크아웃에서 운영 `DATABASE_URL`을 환경에 넣고 실행한다(§1의 `axes_reset_ip`와 같은 방식).
+
+```bash
+uv run python manage.py shell -c "
+from django.db.models import Count
+from allauth.account.models import EmailAddress
+dup_all = list(EmailAddress.objects.values('user_id').annotate(n=Count('id')).filter(n__gt=1))
+dup_verified = list(EmailAddress.objects.filter(verified=True).values('user_id').annotate(n=Count('id')).filter(n__gt=1))
+print('rows', EmailAddress.objects.count(), 'dup_all', dup_all, 'dup_verified', dup_verified)
+"
+```
+
+- 기대: `dup_all`·`dup_verified` 모두 빈 목록. 비어 있지 않으면 해당 `user_id`의 행을 Django admin(`allauth` EmailAddress)에서 확인해 검증되지 않은 중복 행을 정리하고, 검증된 주소가 둘이면 사용자에게 확인한 뒤 하나만 남긴다.
+- 실행 기록: 로컬 DB `rows 12 / dup_all 0 / dup_verified 0` `[실측 2026-10-27]`. **운영 DB 실행은 미완(사용자 실행 대기)** — 실행 후 이 줄에 날짜와 결과를 적는다.

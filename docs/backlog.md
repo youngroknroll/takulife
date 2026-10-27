@@ -22,7 +22,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 백엔드 회귀 | `[실측 2026-10-27]` `uv run pytest -q` → **4284 passed**(10 deselected, 152.46초, PR #399 머지 후 main `e38a0db9`); main push CI run 40474167951 success(4잡 `[실측 gh]`) |
+| 백엔드 회귀 | `[실측 2026-10-27]` `uv run pytest -q` → **4284 passed**(10 deselected, 145.07초, 트랙 45 코드 수정 반영 작업 트리; PR #399 머지 직후 main `e38a0db9`는 152.46초), e2e 10 passed `[실측]`; main push CI run 40474167951 success(4잡 `[실측 gh]`, `e38a0db9`) |
 | Django check | 0 issues |
 | 마이그레이션 드리프트 | 없음 |
 | 배포 차단 | **0건**(G1 해결 — 배포 시점 버킷 확인은 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관) |
@@ -435,7 +435,7 @@ grep — 정렬·기간·카테고리 필터가 이 필드를 인덱스 없이 �
 장차 필터를 fetch 기반으로 바꾸면 필요). `staff/views/events.py`
 필터 헬퍼(`_selected_event_filters`·`_event_filter_query_pairs`·
 `_active_filter_summary`) 분리 모듈화 — 파일이 809줄 `[실측 wc -l 2026-10-27]`(작성 당시 793줄)로
-800줄 상한 초과 — 분리 트리거 충족. `{% querystring %}` 무효 값 잔존(BIR 사후 판정
+800줄 상한 초과였고 **2026-10-27 트랙 45에서 분리 완료**(`StaffEventBulkUnpublishView`·`MAX_BULK_EVENT_IDS` → `staff/views/events_actions.py`, events.py 731줄 `[실측 wc -l]`). `{% querystring %}` 무효 값 잔존(BIR 사후 판정
 Deviates, Low·비차단 — `docs/BE/staff-event-publish-actions.md` (r) 참고).
 
 **기각(과설계)**: 담당자 배정·검수 락(`select_for_update`로 이미 안전), 전역
@@ -585,7 +585,7 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - **번역 큐 영구 실패 20건 초과** — 서버 큐는 가장 오래된 20건만 돌려주므로(`events/translation_queue.py::PENDING_LIMIT`), 시도 한도(`TRANSLATION_MAX_ATTEMPTS = 2`)에 도달한 이벤트가 20건을 넘으면 그보다 새 이벤트가 처리되지 않을 수 있다. 트리거: 실제 발생 또는 44-3 착수.
 - **단위 풀어쓰기 숫자 격리** — "5만원"→"KRW 50,000" 같은 단위 풀어쓰기는 지어낸 숫자로 격리된다(`number_invented`). 알려진 한계, 트리거 없음.
 - **`manual` 플래그는 이벤트 단위 하나** — 언어별로 쪼갤지는 44-3 착수 때 사용자 재확인한다.
-- **시각 의존 테스트 불안정** — `tests/drafts/test_discovery_runs.py::test_runner_is_online…` 3케이스가 파라미터 `timezone.now()`를 수집 시점에 한 번 계산해 하트비트 신선도 기준 120초(`[코드 drafts/discovery_runs.py:15]` `HEARTBEAT_FRESH_SECONDS`)를 넘겨 실행되면 실패하고, `tests/drafts/test_agent_drafts.py`의 모듈 상수 `_TODAY`는 자정을 넘기면 어긋난다. 전체 회귀가 152.46초 `[실측 2026-10-27 main e38a0db9]`(2026-10-26에는 128.91초)로 120초 기준을 넘었다 — 트리거 충족. 트리거: 다음에 이 테스트를 손댈 때 또는 CI 시간이 120초를 넘을 때(충족, 다음 백엔드 트랙에서 먼저 처리).
+- **시각 의존 테스트 불안정** — `tests/drafts/test_discovery_runs.py::test_runner_is_online…` 3케이스가 파라미터 `timezone.now()`를 수집 시점에 한 번 계산해 하트비트 신선도 기준 120초(`[코드 drafts/discovery_runs.py:15]` `HEARTBEAT_FRESH_SECONDS`)를 넘겨 실행되면 실패하고, `tests/drafts/test_agent_drafts.py`의 모듈 상수 `_TODAY`는 자정을 넘기면 어긋난다. 전체 회귀가 152.46초 `[실측 2026-10-27 main e38a0db9]`(2026-10-26에는 128.91초)로 120초 기준을 넘었다 — 트리거 충족. 트리거: 다음에 이 테스트를 손댈 때 또는 CI 시간이 120초를 넘을 때(충족, 다음 백엔드 트랙에서 먼저 처리). → **해소(2026-10-27, 트랙 45)**: 파라미터를 초 단위 오프셋으로 바꿔 실행 시점에 `timezone.now()`를 계산하고, `test_agent_drafts.py`의 `_TODAY` 상수는 호출 시점 함수로 교체. 수집 후 121초 대기 플러그인으로 수정 전 2 failed → 수정 후 3 passed `[실측 2026-10-27]`.
 - **번역 의미 품질 사람 검수·표본 평가 없음** — 사용자 결정(AI 검증만). 트리거: 원어민 검수 도입.
 - **장식 유니코드가 판정은 통과하고 원형 그대로 저장될 수 있음** — 문자 판정·ASCII 우회·한글 잔존 검사는 NFKC로 접은 문자열에서 돌고 저장은 NFC라서, 수학 알파뉴메릭 기호(예: U+1D400 대역) 같은 장식 유니코드가 통과할 수 있다(XSS 아님, 표시 품질·눈속임 문제). 트리거: 44-2 착수 전.
 - **러너 배치가 통신·기타 예외에서 매번 같은 자리에서 멈출 수 있음** — `translate_pending_batch`는 4xx(429 제외)·`AdapterOutputError`·`ValueError`만 이벤트별 시도 횟수에 반영한다(전수검사 2026-10-26로 HTTP 상태 오류 분류는 해소). 5xx·429·`OSError` 등 통신·기타 예외는 의도적으로 전파되어 배치가 중단되고 횟수가 오르지 않으므로, 개별 이벤트 탓인 `OSError`가 나면 같은 자리에서 반복 중단될 수 있다. 트리거: 실제 발생 시.
@@ -611,21 +611,20 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 
 ---
 
-## L. 문서 전수검사(2026-10-27) 발견 — 코드·운영 잔여
+## L. 문서 전수검사(2026-10-27) 발견 — 코드·운영 잔여 → 트랙 45로 처리(2026-10-27)
 
-문서를 코드와 대조하다 나온 코드·운영 쪽 항목이다. 문서는 같은 날 정정했고, 아래는 코드 변경 또는 운영 확인이 필요해 남긴다.
+문서를 코드와 대조하다 나온 코드·운영 쪽 항목이다. 사용자 지시("모든 백로그 수정")로 같은 날 트랙 45(`prompt_plan.md` 맨 위)에서 처리했다. 남은 것은 아래 "사용자 몫" 2건뿐이다.
 
-- 활동 달력 `#selected-date`에 `scroll-margin-top` 없음 — `static/css/pages/archive_calendar.css` `.date-detail-section`에는 `tabindex`·`:focus{outline:none}`만 있고, 홈·행사 달력(`home_calendar.css`·`event_calendar.css`)에는 있다 `[실측 rg scroll-margin static/css 2026-10-27]`. FE 1줄 수정 후보(`docs/FE/home-event-calendar.md` G3).
-- `static/css/staff/base.css`에 `.page`·`[hidden]` 블록이 두 번 있다(`:151`/`:216`, `:159`/`:224` `[실측 rg 2026-10-27]`). 한 곳으로 정리 후보.
-- `templates/core/partials/_home_event_calendar.html:8` 주석이 "모두 보기 링크도 `#home-calendar-agenda`"라고 적었으나 실제 링크는 `/events/calendar/?…#selected-date`다 `[코드 :140]`. 주석 정정 후보.
-- `core/client_error_views.py:90-92` 주석 "프록시 개수 설정이 없어"가 낡음 — `TRUSTED_PROXY_COUNT`(`config/settings.py:546`, 트랙 40)가 있다. 주석 정정과 IP 보조 스로틀 착수 여부는 미결(`docs/BE/error-groups.md`).
-- `static/css/pages/auth.css:452-468` `.auth-panel-form form p` 폴백 블록 — `socialaccount/signup.html`이 `_auth_field.html`로 바뀌어 죽은 코드일 수 있음. 미확인(`rg "form p" templates`로 확인).
-- 폰트 preload 교집합(`FONT_PRELOAD_CHUNKS` 13개, 2026-09-10 기준) — 트랙 43 언어 추가 뒤 재측정 미실시(`docs/FE/font-delivery.md` F5). 미확인.
-- `EmailAddress` 중복 행 감사 2건(`docs/FE/account-settings-editorial.md` G7) — 운영 DB 실행 기록 없음. 미확인(사용자 액션).
-- 트리거 충족 2건: `staff/views/events.py` 809줄(800줄 상한 초과, 트랙 26 이연)·전체 회귀 152.46초(120초 기준 초과, K절 시각 의존 테스트). 각 행 참조.
-- `prompt_plan.md` 트랙 44 머리말 "44-1 구현 중"은 머지 후 상태와 어긋난다 — 사용자 편집 파일이라 손대지 않았다.
-
----
+- 활동 달력 `#selected-date` `scroll-margin-top` — **해소**: `static/css/pages/archive_calendar.css` `.date-detail-section`에 추가. 날짜 선택(클릭·키보드) 후 top 85px / 헤더 하단 65px / 포커스 이동 true `[실측 Chrome DevTools 500×800 2026-10-27]`. WED·BIR 사후 verdict는 `prompt_plan.md` 트랙 45 §Evidence.
+- `static/css/staff/base.css` 중복 블록 — **해소**: 두 번째 복사본 18줄 삭제, `.page`·`[hidden]` 각 1건 잔존 `[실측 rg]`, 대시보드 `.page` 14px·`[hidden]` 17개 display none `[실측]`.
+- `_home_event_calendar.html` 주석 — **해소**: '모두 보기' 링크 목적지 구분 + 아젠다 상한 "5건"을 코드 상수 3건(`HOME_CALENDAR_AGENDA_LIMIT`)으로 정정.
+- `core/client_error_views.py` 주석 — **해소**: 스로틀이 아직 IP를 쓰지 않는다는 사실로 교체. **IP 보조 스로틀 착수는 사용자 결정(미결)**.
+- `static/css/pages/auth.css` 폴백 블록 — **해소**: 27줄 삭제. 유일한 매치였던 닉네임 힌트(`.auth-field-hint`)는 전용 규칙이 덮어써 margin-top 4px 전후 동일 `[실측]`.
+- 폰트 preload 교집합 — **재측정 완료**: 3페이지 × ko/en/ja/zh-hans 12조합 전부 13개 사용·경고 0건, ja/zh-hans는 CSS 경로로 10~11개 추가 로드(언어 전용이라 preload 제외) → `FONT_PRELOAD_CHUNKS` 유지 `[실측 2026-10-27]`. 상세 `docs/FE/font-delivery.md` F5.
+- `EmailAddress` 중복 감사 — 절차를 `docs/operations-runbook.md` §10에 기록, 로컬 DB 12행·중복 0건 `[실측]`. **운영 DB 실행은 사용자 몫(미완)**.
+- 트리거 충족 2건 — **해소**: `staff/views/events.py` 809→731줄(`StaffEventBulkUnpublishView`·`MAX_BULK_EVENT_IDS`를 `events_actions.py`로 이동 `[실측 wc -l]`); 시각 의존 테스트 2곳 수정(K절 참조, 121초 대기 플러그인 Red 2 failed → Green 3 passed `[실측]`).
+- `prompt_plan.md` 트랙 44 머리말 — **해소**: "44-1 PR #399 머지 완료(2026-10-27)"로 갱신(사용자 지시).
+- 어댑터 2개의 `/tmp/claude-progress` 진행 파일 규약 — **삭제**(사용자 지시, 소비자 없음).
 
 ## 착수하지 않는 것
 
