@@ -286,3 +286,18 @@ def test_claude가_예상_밖_모양의_봉투를_돌려주면_탐색이_어댑�
 
     with pytest.raises(AdapterOutputError):
         run_agent_exploration("탐색해줘")
+
+
+def test_claude_실행_파일이_없으면_어댑터_출력_오류로_변환된다(monkeypatch):
+    """claude가 PATH에 없을 때 FileNotFoundError가 러너까지 번지지 않고,
+    운영자가 로그에서 원인을 알 수 있게 메시지에 claude가 담긴다."""
+
+    def _실행_파일_없음(argv, **kwargs):
+        raise FileNotFoundError(2, "No such file or directory", "claude")
+
+    monkeypatch.setattr(
+        "local_runner.claude_code_adapter.subprocess.run", _실행_파일_없음
+    )
+
+    with pytest.raises(AdapterOutputError, match="claude"):
+        _execute_claude("prompt", tools="WebSearch", strict_mcp=True, timeout=1)

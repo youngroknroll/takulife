@@ -118,6 +118,37 @@ def test_에이전트_탐색이_AdapterOutputError면_완료_실패_보고_이�
     ]
 
 
+def test_탐색_에이전트_실행이_어댑터_출력_오류로_실패하면_경고_로그를_남기고_실패_보고를_보낸다(
+    monkeypatch, caplog
+):
+    """claude CLI 부재 같은 어댑터 오류가 조용히 사라지지 않고 로그에 남는지 확인한다."""
+    calls = []
+    run = {
+        "run_id": 1,
+        "lease_token": "tok",
+        "max_candidates": 5,
+        "query": "하츠네 미쿠",
+        "vocab": {"categories": [], "regions": []},
+        "existing_source_urls": [],
+        "excluded_hostnames": set(),
+    }
+    client = _OrderRecordingClient(run, calls)
+
+    def _raise(prompt):
+        raise AdapterOutputError("claude CLI not found on PATH")
+
+    monkeypatch.setattr(runner_module, "_HeartbeatTicker", _make_fake_ticker_class(calls))
+    monkeypatch.setattr(runner_module, "_run_exploration_agent", _raise)
+
+    with caplog.at_level(logging.WARNING, logger="local_runner.runner"):
+        runner_module._run_once(client)
+
+    assert ("client", "complete", "failed", "agent_error") in calls
+    records = [r for r in caplog.records if r.name == "local_runner.runner"]
+    assert len(records) == 1
+    assert "claude CLI not found on PATH" in records[0].getMessage()
+
+
 class _CountingHeartbeatClient:
     def __init__(self, side_effects):
         self._side_effects = list(side_effects)
