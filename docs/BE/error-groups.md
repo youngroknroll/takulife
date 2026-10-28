@@ -87,8 +87,8 @@
 - 원 예외가 `django.db.Error` 계열이면 `record_error`를 아예 호출하지
   않고 건너뛴다(`core/logging.py:20-25`) — DB 장애 중에 오류 묶음을
   남기려고 DB에 또 접근하면 지연이 늘어나 `docker/entrypoint.sh`의
-  gunicorn 기본 타임아웃(설정 없음 → 기본 30초,
-  `docs/operations-runbook.md:328, 345`)을 넘길 수 있어서다.
+  gunicorn 워커 타임아웃(기본 120초, `GUNICORN_TIMEOUT`
+  `[코드 docker/entrypoint.sh]`, `docs/operations-runbook.md:328, 345`)을 넘길 수 있어서다.
 - `location`은 `f"{method} {route}".strip()`이고 `route`가 없으면
   `"unresolved"`(`core/logging.py:27-31`). 요청 본문·쿼리스트링·쿠키·
   사용자 정보는 저장하지 않는다.
