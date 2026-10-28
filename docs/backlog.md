@@ -329,7 +329,11 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 스로틀 가드 제거) 전부 표적 Red. 배포 시점 버킷 퍼블릭 액세스 확인은
 `docs/deploy-runbook.md` §3 체크리스트 ⑦-2로 이관됐다.
 
-### G2 [코드] gunicorn 워커 타임아웃 미설정
+### G2 [코드] gunicorn 워커 타임아웃 미설정 — **해결(트랙 46, 2026-10-28)**
+
+**해결**: `docker/entrypoint.sh`가 `--timeout "${GUNICORN_TIMEOUT:-120}"`로 워커 타임아웃을 정한다(기본 120초 `[코드]`, env로 조정, 0 금지, 롤백은 `GUNICORN_TIMEOUT=30`). 계약 테스트 `tests/core/test_entrypoint_contract.py`가 플래그 유지와 기본값 120초를 고정한다.
+
+아래는 측정 전 기록이다.
 
 `docker/entrypoint.sh`에 `--timeout`이 없다. 러너 후보 제출이 요청 안에서
 동기 네트워크 최대 6회(각 5초) → 최악 ~30초로 기본 타임아웃과 충돌 가능.
@@ -340,6 +344,10 @@ UUID 콜러블 3필드(`personal_entry_image_upload_to`·
 동일 근본 원인 `[계산 2026-09-05]`: 대시보드 「지금 수집」도 동기 실행(`staff/views/__init__.py:200-245`)이라 활성 소스 3개가 모두 느린 최악 시 `3×(5+5)+2×1 = 32초`(요청 타임아웃 5초 `drafts/fetching.py:10`, 소스 간 대기 1초 `drafts/management/commands/discover_drafts.py:59`)로 기본 30초를 넘길 수 있고, 워커 SIGKILL 시 `finally`의 감사 로그(`staff/views/__init__.py:242-245`)가 남지 않는다. `docker/entrypoint.sh`에 `--timeout` 0건 `[실측 2026-09-05]`. 프로덕션 활성 소스 수는 미실측. 사용자 보류·트리거는 그대로다.
 
 **정정 (2026-09-28, 트랙 40 PR #388)**: 위 문단은 측정 전 기록이다. (1) 「지금 수집」 중복 실행은 트랙 40의 캐시 뮤텍스로 막혔다(보안 검토 F4, `staff/views/__init__.py` `DISCOVERY_RUN_LOCK_KEY`). 워커 타임아웃 자체(30초 초과 실행이 끊기는 것)는 여전히 이 G2 범위다. (2) "SIGKILL 시 `finally` 미실행"은 부분 오류: 타임아웃 시 아비터는 먼저 SIGABRT를 보내고(`gunicorn/arbiter.py:590-593` `[코드]`) 워커는 `sys.exit(1)`(`gunicorn/workers/base.py:195-198` `[코드]`)이라 `finally`(감사 로그·잠금 해제)가 실행된다. SIGKILL은 다음 아비터 점검 때까지 살아 있을 때만 간다(`arbiter.py:594-595`). (3) 위 줄 번호 `:200-245`·`:242-245`는 현재 `staff_draft_discovery_run` 기준 `:298-350`이다(`def` 298행, 잠금 해제 350행 `[실측 rg 2026-09-28]`).
+
+**정정 (2026-10-28, 트랙 46)**: 후보 제출의 네트워크 호출은 robots·목록·표본에 승격 초기 드래프트 최대 20회(`DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE` `[코드 config/settings.py]`)가 더해진다. `fetch_html` 1회 상한은 40초(리다이렉트 4홉 × (connect 5초 + read 5초) `[계산 2026-10-28]`). 「지금 수집」 정상 응답 시 소스 3개 약 128초, 소스 1개 약 42초 `[계산 2026-10-28: 소스 1개 = 1단계 2초 + 후보 시도 20회 × (fetch 1초 + 대기 1초) = 42초; 소스 3개 = 3 × 42초 + 소스 간 대기 2초 = 128초]`. 3소스 풀 예산 경로(128초)는 기본 120초를 넘어 `WORKER TIMEOUT`으로 끊길 수 있다. 이 경우 SIGABRT 뒤 `finally`가 뮤텍스를 해제하므로(같은 절 위 정정 참고) 다음 실행이 막히지 않는다. 기본값을 올리면 느린 외부 호스트의 워커 점유 노출(SRR 2026-10-28 Medium)이 같이 늘어 120초를 유지했고, 소스 수가 늘면 운영자가 env로 올린다. 병적 경로(동일 호스트 24회 × 40초 = 960초 `[계산 2026-10-28]`)는 120초로도 닫히지 않는다. 총 소요 데드라인·Crawl-delay 상한은 이연한다(트리거: 프로덕션 `WORKER TIMEOUT` 로그 관측).
+
+**이연 (SRR 2026-10-28 Medium)**: fetch 전체 데드라인(`drafts/fetching.py`, 홉·청크마다 `time.monotonic()` 검사)과 `Crawl-delay` 상한(`discover_drafts.py` 206행 부근 `min(crawl_delay, 상한)` `[코드 drafts/management/commands/discover_drafts.py:206]`). 수용 기준 = 1바이트/4.9초 흘림 호스트 스텁과 `Crawl-delay: 99999` 스텁으로 fetch는 데드라인 안에 `FetchError`, 대기는 상한 이하. 트리거: 프로덕션 `WORKER TIMEOUT (pid:` 로그 관측 또는 러너 토큰 유출 의심.
 
 ### G3 [코드] LLM 아웃바운드 네트워크 수준 계약 테스트 부재
 
@@ -417,7 +425,7 @@ H6도 같은 규칙으로 PSO P2를 따른다(2026-09-06 정정). 2026-09-06 외
 | H9 | P2 | 소스별 수집 이력·실패율, 실패 후보 재시도/무시 액션 | `DraftSource` 상태 필드 2개뿐 `drafts/models.py:102-103` `[실측 rg 2026-10-27]`(정정 전 표기 56-66은 필드 줄을 빗나감, 2026-09-06 재측정) | 제품 권고 |
 | H10 | P2 | 중복 경고(같은 행사 다른 URL), 반려 사유 큐 노출·템플릿 | 중복 판정은 URL 완전일치만 | 제품 권고 |
 | H11 | P2 | 이벤트 검색에 공식 URL·ID, 변경 이력, 수정 화면 소비자 링크·반응 지표, 검증 만료 예고 | 검색 3열 `events/queries.py:242-244` `[실측 rg 2026-10-27]`, `Event.updated_at` 0건 `[실측 rg events/models.py]` | 제품 권고 |
-| H12 | P2 | 수집 진행 표시, 감사 로그 보존 정책 | `staff/management/` 없음 `[실측 ls]`. 진행 표시는 현재도 제출 가드가 버튼 비활성+`.is-loading`을 적용(`templates/staff/dashboard.html:115` `data-submit-guard`, `static/js/shared/submit_guard.js`(옛 이름 `staff_submit_guard.js`) `[실측 rg 2026-10-27]`) | 권고. 2026-09-06 분리: (a) 진행 표시 — **트랙 39로 해소**(heartbeat phase·detail + 대시보드 5초/20초 폴링 + 러너 터미널 INFO 로그, 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 39" 절). G2 타임아웃 조정은 원인을 공유할 뿐 진행 표시와는 별개다. (b) 감사 보존 정책 — 독립 과제, 유지. 운영 설정 보류(G2)는 유지 |
+| H12 | P2 | 수집 진행 표시, 감사 로그 보존 정책 | `staff/management/` 없음 `[실측 ls]`. 진행 표시는 현재도 제출 가드가 버튼 비활성+`.is-loading`을 적용(`templates/staff/dashboard.html:115` `data-submit-guard`, `static/js/shared/submit_guard.js`(옛 이름 `staff_submit_guard.js`) `[실측 rg 2026-10-27]`) | 권고. 2026-09-06 분리: (a) 진행 표시 — **트랙 39로 해소**(heartbeat phase·detail + 대시보드 5초/20초 폴링 + 러너 터미널 INFO 로그, 정본 `docs/BE/draft-source-agent-discovery.md` "트랙 39" 절). G2 타임아웃 조정은 원인을 공유할 뿐 진행 표시와는 별개다. (b) 감사 보존 정책 — 독립 과제, 유지. G2 해결(트랙 46) |
 | H13 | P2 | 대시보드 소스 패널 「전체 보기」 링크, 이벤트 읽기 전용 미리보기 | `templates/staff/dashboard.html:91-103`(감사 패널은 `:276`에 링크 있음 `[실측 rg 2026-10-27]`) | 제품 권고 |
 | H14 | — | 계정 정지 UI → **H1에 흡수**(2026-09-06, `is_active` 전환과 같은 범위) | 승격 스로틀 `20/day` `config/settings.py:620` `[실측 rg 2026-10-27]`는 분산 계정 남용은 못 막는다 | H1 설계에서 다룬다. 별도 항목 아님. H1과 함께 완료 |
 
@@ -557,7 +565,7 @@ W021만, pip-audit 알려진 취약점 0건(잠금 내보내기 209행, dev 포�
 | J1 | High | 스태프 이벤트 폼 `official_url` 스킴 미검증 → 공개 상세 `href`에 `javascript:` 저장형 XSS. 검증기가 `javascript:` 값을 그대로 반환 `[실측 shell dry-run]` | `events/services.py:42-75`, `templates/core/events/detail.html:86,186` | 수정(트랙 40, 커밋 `892feec3`) — 스킴 허용목록 + 호스트 필수 검사 |
 | J2 | High | allauth `ip` 레이트리밋이 프로젝트 `TRUSTED_PROXY_COUNT`를 읽지 않아 프록시 뒤에서 전 사용자 공유 버킷(잘못된 로그인 10회/분이면 전체 429, 가입 30건/시간). 저장소 `ALLAUTH_` 설정 0건 `[실측 rg]`, Render 실측 미수행 | `config/settings.py:491-496,519-520`, allauth 65.18 `core/internal/httpkit.py:197-220` | 수정(트랙 40, 커밋 `b49a5fec`) — 운영 확인은 남음: Render env `TRUSTED_PROXY_COUNT`, 스테이징 4경로 확인 |
 | J3 | Medium | DRF JSON 본문이 `DATA_UPLOAD_MAX_MEMORY_SIZE`(2,621,440바이트 `[코드]`)를 거치지 않고 memo `max_length` 없음 `[실측 소스·rg]` | `archive/serializers.py:16-46,212-280`, `archive/models.py:164,303`, DRF 3.17.2 `request.py:297-314` | (a) memo 상한 수정(트랙 40, 커밋 `fa1aa6ef`) / (b) 본문 상한 부분은 실측으로 반박 — DRF가 이미 `HttpRequest.body` 경로로 상한을 강제한다, 정본 §2 F3 정정 참조. 코드 변경 없이 핀 테스트만 추가 |
-| J4 | Medium | 「지금 수집」 동기 실행 뮤텍스 없음, 워커 3개(`docker/entrypoint.sh:15` 기본) 점유. G2와 같은 축 — G2 본문의 `staff/views/__init__.py:200-245`는 현재 `:290-336` `[실측 2026-09-27]` | `staff/views/__init__.py:290-336` | 수정(트랙 40, 커밋 `4eb3742b`) — 캐시 뮤텍스, 보장 범위는 정상·파이썬 예외·SIGABRT 종료. G2(gunicorn `--timeout`)는 별도 트랙으로 유지 |
+| J4 | Medium | 「지금 수집」 동기 실행 뮤텍스 없음, 워커 3개(`docker/entrypoint.sh:15` 기본) 점유. G2와 같은 축 — G2 본문의 `staff/views/__init__.py:200-245`는 현재 `:290-336` `[실측 2026-09-27]` | `staff/views/__init__.py:290-336` | 수정(트랙 40, 커밋 `4eb3742b`) — 캐시 뮤텍스, 보장 범위는 정상·파이썬 예외·SIGABRT 종료. G2 해결(트랙 46) |
 | J5 | Low ×7 | CGNAT 대역 미차단 `[실측]`, 러너 읽기 IP 핀닝 없음(트랙 35 이연 포함), 러너 known-urls 무검사, 오류 리포트 전역 버킷, `SECURE_COOKIES` env 읽기 불일치, MFA 부재, CSP 부재 | 정본 문서 §2 F5~F11 | CGNAT 수정(커밋 `2cde14d7`)·known-urls 수정(커밋 `8315ab4c`)·`SECURE_COOKIES` 수정(커밋 `4bbc3ecc`). 러너 IP 핀닝은 트랙 35 이연과 함께 처리 예정, 오류 리포트 버킷은 선택 항목으로 미착수, MFA는 기록된 사용자 보류(2026-07-01), CSP는 별도 트랙(승인 필요) |
 
 기록된 보류(재권고 아님): 슈퍼유저 step-up(2026-09-07), F12, F18, HSTS preload,

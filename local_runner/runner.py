@@ -211,6 +211,8 @@ def _run_once(client, progress=None):
         try:
             raw_output = _run_exploration_agent(prompt)
         except AdapterOutputError as exc:
+            # launchd 로그에서 원인을 볼 수 있게 서버 보고와 별도로 남긴다.
+            logger.warning("exploration agent failed: %s", exc)
             if progress is not None:
                 progress.set("completing")
             client.complete(

@@ -325,7 +325,7 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
 - **선행 확인**: 배포된 이미지가 F6 SSRF TOCTOU 수정(`drafts/fetching.py`의 IP
   핀닝 — `validate_fetch_url`이 반환한 검증 IP로 직접 연결)을 포함한 버전인지
   확인한다. 포함하지 않은 버전에서 켜면 DNS 리바인딩에 의한 SSRF 위험이 남는다.
-- **선행 확인(타임아웃)**: 대시보드 「지금 수집」은 요청 안에서 동기 실행되며(`staff/views/__init__.py`의 `staff_draft_discovery_run`), `docker/entrypoint.sh`의 gunicorn에 `--timeout`이 없어 기본 30초가 적용된다. 활성 소스가 많거나 응답이 느리면 워커가 강제 종료돼 수집이 부분 실행되고 감사 로그가 남지 않을 수 있다. 수치와 보류 상태는 `docs/backlog.md` G2 참조.
+- **선행 확인(타임아웃)**: 대시보드 「지금 수집」은 요청 안에서 동기 실행되며(`staff/views/__init__.py`의 `staff_draft_discovery_run`), `docker/entrypoint.sh`의 gunicorn 워커 타임아웃은 `GUNICORN_TIMEOUT` 환경변수(기본 120초 `[코드 docker/entrypoint.sh]`)다(트랙 46, 2026-10-28). `--graceful-timeout`은 기본 30초 `[코드 gunicorn/config.py]`라 배포·SIGTERM 시 진행 중 요청은 30초 뒤 강제 종료된다. 타임아웃 발생은 Render 로그의 `WORKER TIMEOUT (pid:` 문자열로만 보이며 대시보드 오류 묶음에는 잡히지 않는다 `[코드 gunicorn/arbiter.py:591]`. 수치와 이연 항목은 `docs/backlog.md` G2 참조.
 - **활성화**: PaaS 시크릿에 `DRAFT_DISCOVERY_ENABLED=true`를 등록하고
   **컨테이너를 재기동**한다. `config/settings.py`의 `DRAFT_DISCOVERY_ENABLED =
   load_draft_discovery_enabled()`는 모듈 임포트 시점(프로세스 기동 시) 1회만
@@ -342,14 +342,14 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
 - 「지금 수집」 실행 중에는 두 번째 POST가 캐시 뮤텍스(`cache.add`,
   키 `staff-draft-discovery-run-lock`)에 막혀 명령을 돌리지 않고 안내
   메시지만 보여준다(감사 로그도 늘지 않는다).
-- **보장 범위**: 정상 종료·파이썬 예외·gunicorn 기본 타임아웃(30초 `[코드 gunicorn/config.py, docker/entrypoint.sh에 --timeout 없음]`)의
+- **보장 범위**: 정상 종료·파이썬 예외·gunicorn 워커 타임아웃(기본 120초, `GUNICORN_TIMEOUT` `[코드 docker/entrypoint.sh]`)의
   SIGABRT 종료에서는 잠금이 풀린다. SIGKILL 뒤에는 TTL(600초 `[코드]`)까지
   잠금이 남는다.
 - 잠금이 남았다고 의심되면 수동으로 해제한다.
   ```bash
   uv run python manage.py shell -c "from django.core.cache import cache; cache.delete('staff-draft-discovery-run-lock')"
   ```
-- 같은 축의 워커 수준 방어(gunicorn `--timeout`)는 G2로 별도 트랙이다.
+- 같은 축의 워커 수준 방어(gunicorn `--timeout`)는 G2로 해결됐다(트랙 46, 기본 120초 `GUNICORN_TIMEOUT`).
 
 ### 8.x 러너 프로덕션 연결·종료·토큰 회전 (트랙 39)
 
@@ -435,6 +435,51 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   번역이 이미 저장돼 있으면 `already_current`로 덮어쓰기가 거부되므로 이
   초기화가 필요하다). ③ `uv run python manage.py report_translation_queue`로
   `pending` 증가를 확인한다.
+
+### 8.y 러너 launchd 자동 시작(트랙 46)
+
+- **목적**: 로그인 시 러너를 자동 기동하고, 비정상 종료(종료 코드 0이 아님) 시
+  60초 간격으로 재기동한다 `[코드 kr.takulife.runner.plist]`. 설치는 사용자 액션이다. 템플릿·래퍼는
+  `local_runner/launchd/kr.takulife.runner.plist`·`run-runner.sh`.
+- **선행 조건 3개**:
+  1. `~/.takulife-runner.env`가 존재하고 권한이 600이다. 아니면 래퍼가 메시지
+     1줄을 남기고 종료 코드 0으로 끝나며 재기동하지 않는다.
+  2. `claude`·`uv`가 래퍼 PATH(`~/.local/bin`, `/opt/homebrew/bin`,
+     `/usr/local/bin`, `/usr/bin`, `/bin`)에 있다.
+  3. 저장소가 `~/Desktop` 같은 보호 폴더면 "Operation not permitted"가 날 수
+     있다. 저장소를 옮기거나 `/bin/sh`에 전체 디스크 접근을 허용한다(미검증,
+     설치 직후 로그를 확인한다).
+- **설치**:
+  ```bash
+  mkdir -p ~/Library/LaunchAgents ~/Library/Logs
+  sed -e "s|__REPO_DIR__|$PWD|g" -e "s|__HOME__|$HOME|g" local_runner/launchd/kr.takulife.runner.plist > ~/Library/LaunchAgents/kr.takulife.runner.plist
+  launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/kr.takulife.runner.plist
+  ```
+- **확인·운영**:
+  - 상태: `launchctl print gui/$(id -u)/kr.takulife.runner`. 로그:
+    `~/Library/Logs/takulife-runner.log`.
+  - **미검증**: 래퍼가 `exec uv run --frozen python -m local_runner.runner`로 기동하므로 `uv`가 SIGTERM을 파이썬 자식에 전달하는지 확인되지 않았다. 설치 후 `launchctl kill TERM …` 뒤 로그에 `러너 종료 — 오프라인 보고 완료`가 없고 `launchctl print`의 `last exit code`가 0이 아니면 래퍼의 마지막 줄을 `exec .venv/bin/python -m local_runner.runner`로 바꾼다(그 경우 `uv sync --frozen`은 설치 때 1회).
+  - 종료 확인: `launchctl kill TERM gui/$(id -u)/kr.takulife.runner` 후 로그에
+    `러너 종료 — 오프라인 보고 완료`가 남는다. 러너는 SIGTERM에서 종료 코드 0으로
+    끝나므로 `SuccessfulExit=false` 설정상 **재기동되지 않는다**. 다시 띄우려면
+    `launchctl kickstart gui/$(id -u)/kr.takulife.runner`.
+  - 해제: `launchctl bootout gui/$(id -u)/kr.takulife.runner`. 수동 기동 전에는
+    먼저 bootout한다(중복 폴링 방지).
+  - 토큰 회전 후: `launchctl kickstart -k gui/$(id -u)/kr.takulife.runner`.
+  - 절전 시 러너가 멈추고, 120초 신선도 만료(`[코드 drafts/discovery_runs.py HEARTBEAT_FRESH_SECONDS]`)로 오프라인 표시되며, 복귀 후 폴링이
+    재개된다.
+  - 구독 사용량: 번역 대기분이 있으면 폴링마다 최대 3건 `[코드 local_runner/runner.py]` `claude`를 호출한다.
+  - `bypassPermissions` 격리 권고는 미결이다
+    (`docs/BE/draft-source-agent-discovery.md` "격리 권고" 참조). 상시 운영으로
+    전환하기 전에 별도 실행 계정 또는 격리 환경을 검토한다.
+- **알려진 한계**:
+  - env 파일 문법 오류나 `load_config` 실패(토큰 빈 값)는 비정상 종료라 60초마다 재기동하며 로그만 쌓인다.
+  - 로그 파일 회전이 없다.
+  - `claude` 자식 프로세스가 `TAKULIFE_RUNNER_TOKEN`을 환경으로 상속한다(도구가 WebSearch·WebFetch뿐이라 직접 유출 경로는 없음, 비상속은 이연).
+  - 토큰은 URL-safe 문자만 쓴다(`. "$ENV_FILE"`이 셸로 읽는다).
+- **이 Mac 현재 상태**: `~/.takulife-runner.env` 없음, `~/Library/LaunchAgents`에
+  taku 항목 없음 `[실측 ls 2026-10-28]`. launchd 설치·실동작은 미검증이다
+  (`plutil -lint` OK, `sh -n` OK만 확인).
 
 ## 9. 오류 묶음 확인 (트랙 36, `core.ErrorGroup`)
 

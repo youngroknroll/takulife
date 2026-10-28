@@ -192,6 +192,9 @@ def _execute_claude(prompt, *, tools, strict_mcp, timeout=AGENT_TIMEOUT_SECONDS)
         )
     except subprocess.TimeoutExpired as exc:
         raise AdapterOutputError("claude CLI timed out") from exc
+    except FileNotFoundError as exc:
+        # launchd 상시 기동에서 PATH에 claude가 없으면 러너가 죽어 크래시 루프가 되는 것을 막는다.
+        raise AdapterOutputError("claude CLI not found on PATH") from exc
 
     if completed.returncode != 0:
         raise AdapterOutputError(f"claude CLI exited with {completed.returncode}")

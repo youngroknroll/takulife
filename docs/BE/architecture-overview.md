@@ -164,7 +164,7 @@ flowchart TD
 서버는 후보의 네트워크 검증을 트랜잭션 밖에서 수행하고, 저장 직전에 행을
 다시 잠가 임대 유효성을 재검사한다. Celery·Redis 브로커 대신 DB 작업 상태와
 로컬 러너를 쓰는 구성이며, 기본 수집과 후보 검증 일부는 웹 요청 시간을 쓴다.
-gunicorn 워커 타임아웃은 아직 명시하지 않았다(`docs/backlog.md` G2).
+gunicorn 워커 타임아웃은 트랙 46에서 `GUNICORN_TIMEOUT`(기본 120초 `[코드 docker/entrypoint.sh]`)으로 설정했다(2026-10-28).
 
 LLM 추출 파이프라인은 구현이 끝났지만 비용 정책으로 동결돼 있고 휴리스틱
 추출이 기본 경로다. anthropic SDK를 얇은 어댑터(`core/llm/`)로 감싸 tool 강제
