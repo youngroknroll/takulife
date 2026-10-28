@@ -12,6 +12,7 @@
 | 2026-07-17 (개선 전) | 테스트 함수 1,481개(정적 카운트, parametrize 전개 전) `[실측 git grep 2026-10-28, 커밋 37260451^]` | 313.81초(non-e2e) | 커밋 `37260451` 본문 `[코드]` |
 | 2026-07-18 (개선 후, 같은 스위트) | 테스트 함수 1,485개 `[실측 git grep 2026-10-28]` | 약 30초(non-e2e), e2e 129.17초 → 약 76초 | 커밋 `37260451` 본문 `[코드]` |
 | 2026-10-27 (현재) | 4,284 passed / 10 deselected | 152.46초(main `e38a0db9`), 145.07초(트랙 45 작업 트리) | `docs/backlog.md` "현재 상태" `[실측 2026-10-27]` |
+| 2026-10-28 (직렬, main `8901c96d`) | 4,284 passed / 10 deselected | 149.07초 | `uv run pytest -q --durations=40` `[실측 2026-10-28]` |
 
 개선 전후 비교는 2026-07-17과 2026-07-18의 같은 스위트만 유효하다. 현재
 152초는 테스트가 약 2.9배로 늘어난 뒤의 값이며 개선 효과의 역산 근거로
@@ -67,7 +68,39 @@
 ## 6. 한계
 
 - 2026-10-27 기준 152초는 다시 120초를 넘었다. 시각 의존 테스트 2곳은 트랙
-  45에서 고쳤지만(`docs/backlog.md` K절), 실행시간 자체의 2차 개선(병렬화,
-  느린 테스트 재분류)은 착수하지 않았다.
+  45에서 고쳤지만(`docs/backlog.md` K절), 실행시간 자체의 2차 개선은
+  2026-10-28에 측정만 했다(§7). 단일 병목은 없고 병렬화만 남았으며 도입은
+  사용자 결정 대기다.
 - marker 분류는 선언 기준이며 자동 검증이 없다. 잘못 분류된 테스트가 있어도
   기계가 잡지 못한다.
+
+## 7. 2차 측정(2026-10-28) — 단일 병목 없음, 병렬화만 남음
+
+측정 환경: main `8901c96d`, 로컬 Mac 8코어, 로컬 PostgreSQL 14.19
+`[실측 2026-10-28]`.
+
+- 직렬 `uv run pytest -q --durations=40`: 4,284 passed / 10 deselected /
+  149.07초 `[실측 2026-10-28]`. 가장 느린 단일 항목은 2.07초(setup,
+  `tests/archive/test_activity_calendar_queries.py::test_활동_월_조회_결과에는_본인_활동만_포함된다`),
+  다음이 0.94초·0.92초(`test_comment_language_guard`·`test_secret_literal_guard`
+  전수 스캔)다. 상위 40건 합계는 약 15초 미만이다 `[계산 상위 40건 합산 추정]`.
+- 모듈 단위 분해(`tests/archive/test_visit_records_api.py`, 37건, 4.30초):
+  setup 1.72초 · call 2.87초 · teardown 0.05초 `[실측 2026-10-28]`.
+- 픽스처 셋업 합계(스크래치 플러그인 `pytest_fixture_setup` 훅 타이밍,
+  `tests/archive tests/auth` 1,129건 48.93초): `django_db_setup` 1.60초(1회),
+  `_django_db_marker` 0.16초(1,129회), `_reseed_category_vocabulary` 0.03초,
+  `_restore_korean_language` 0.01초 `[실측 2026-10-28]`.
+- 결론: 시간은 테스트 본문의 요청 처리에 고르게 분산되어 있고, 픽스처·DB 셋업
+  최적화 여지는 없다.
+- 병렬 측정: `uv run --with pytest-xdist pytest -q -n 4`(의존성 변경 없이 측정)
+  4,284 passed / 53.87초, 직렬 149.07초 대비 단축 `[실측 2026-10-28, 4워커·8코어]`.
+  전 테스트가 병렬에서도 통과해 테스트 간 격리는 성립한다.
+- 도입하려면 필요한 변경:
+  - `uv add --group dev pytest-xdist`
+  - `pytest.ini` `addopts`에 `-n auto`, 또는 CI 잡에만 `-n 4`
+  - 워커별 테스트 DB(`test_taku_gw0`…)가 생기므로 로컬 Postgres의 DB 생성
+    권한 확인
+  - `tests/e2e`는 `live_server` 포트 충돌 가능성 때문에 직렬 유지 권고
+- 미도입 사유: `AGENTS.md` "Package And Command Policy"가 새 test-convenience
+  패키지에 승인된 계획과 사용자 명시 승인을 요구한다. **도입 여부는 사용자 결정
+  대기**이며 이 트랙에서는 도입하지 않았다(`docs/backlog.md` K절 끝 항목).

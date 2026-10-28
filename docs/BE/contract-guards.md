@@ -130,6 +130,41 @@ R1(`test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다
 `test_phase_vocabulary_parity.py`·`test_translation_parity.py`·
 `test_outcome_vocabulary_parity.py`.
 
+## `tests/core/test_web_views_package_boundaries.py` — `web/views` 형제 방향(2026-10-29)
+
+**잡는 것**: `web/views/*.py`의 정적 임포트 6형태(상대 `from .x import`,
+`from . import x`, `from ..views import x`, 절대 `from web.views.x import`,
+`import web.views.x`, `from web.views import x`)를 `web.views.<형제>`로
+해석해 두 규칙을 강제한다. `collection`은 `archive`를 임포트하지 않고
+(`test_컬렉션_뷰_모듈은_아카이브_뷰_모듈을_임포트하지_않는다`), `_helpers`는
+어떤 형제도 임포트하지 않는 리프다
+(`test_뷰_공용_헬퍼_모듈은_형제_뷰_모듈을_임포트하지_않는다`). 스캐너 형태
+6케이스 parametrize, 같은 이름의 도메인 앱(`archive`) 오탐 방지, 실제
+`archive` 뷰 모듈의 단방향 임포트가 스캐너에 보이는지(WVG-4 생존)도 테스트한다.
+
+**못 잡는 것**: 동적 임포트(`importlib` 등), 비-리터럴 인자, 패키지 퍼사드를
+통한 `from web.views import <뷰 함수 이름>`(WVG-6 이연, 허용 목록 방식 미적용).
+
+**왜 기존 해석기를 안 썼나**: `_package_name_for_file`은 최상위 패키지명만
+돌려줘 중첩 패키지 파일의 상대 임포트를 `web.archive`로 오해석한다
+`[코드 tests/core/test_architecture_boundaries.py:780-785]`. 현재 호출처는
+최상위 모듈뿐이라 영향이 없고, 잠재 한계로만 기록한다. 기존 가드는 `web/views`
+안의 상대 임포트 주입을 건너뛰어 못 잡는다(위 뮤테이션 참조).
+
+**뮤테이션 결과** `[실측 2026-10-29]`(종료 코드 판정, 10 passed 기준선):
+- `collection.py`에 `if False:` 블록으로 `from .archive import …` 주입 →
+  WVG-2 Red. 같은 주입에서 기존 `test_architecture_boundaries.py`는 Green
+  유지(상대 임포트를 건너뜀).
+- `import web.views.archive` 주입 → Red.
+- `_helpers.py`에 `from .collection import …` 주입 → WVG-1 Red.
+- 해석기 변형 — 첫 세그먼트가 `archive`면 형제로 판정 → WVG-5 Red;
+  해석기가 `return set()` → WVG-3·WVG-4 Red.
+- 원복 후 `git diff -- web/` 0줄.
+
+**공허 통과 방지**: 대상 파일을 명시 경로로 읽어 파일이 없으면
+`FileNotFoundError`로 드러나게 했고(빈 glob으로 조용히 통과하지 않음),
+WVG-4 생존 테스트가 스캐너 자체의 무력화를 잡는다.
+
 ## `tests/core/test_service_signature_conventions.py` — 키워드 전용 인자
 
 **지키는 것**: *다른 앱이 가로질러 호출하는* 서비스 경계 8개
