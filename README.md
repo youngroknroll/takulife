@@ -1,32 +1,50 @@
 # takulife
 
-서브컬처 팬을 위한 컬렉션 중심 웹 서비스입니다. 공식 이벤트를 찾고, 다녀온 경험을 기록하고, 보유·구함·교환 의사가 있는 굿즈를 아카이빙하는 흐름을 하나로 연결합니다. 기획·도메인 설계·백엔드·프론트엔드·CI·배포를 혼자 수행한 1인 프로젝트이며, 2026년 8월 31일부터 `takulife.kr`에서 운영 중입니다.
+서브컬처 팬이 공식 행사를 찾고, 다녀온 경험을 기록하고, 보유·구함·교환 의사가 있는 굿즈를 아카이빙하는 컬렉션 중심 웹 서비스다.
 
-작성 기준: 2026-09-09 `main`(6e4ccce) 코드와 `docs/` 운영 문서를 대조했습니다. 수치는 단위와 함께 측정 시점을 적었고, 실제 운영 환경의 처리량은 별도로 확인하지 않았습니다.
+| 항목 | 내용 |
+|---|---|
+| 개발 기간 | 2026-05-20 첫 커밋 ~ 진행 중(2026-10-27 기준 160일, 커밋 1,807개 `[실측 git 2026-10-28]`) |
+| 참여 형태 | 1인 프로젝트. 기획·도메인 설계·백엔드·프론트엔드·CI·배포를 혼자 수행했다 |
+| 배포 상태 | 2026-08-31부터 운영 중. `https://takulife.kr/api/health/` 200 응답 `[실측 curl 2026-10-28]` |
+| 서비스 URL | https://takulife.kr |
+| 기술 스택 | Python 3.13, Django 5.2, Django REST Framework, PostgreSQL, Docker, Gunicorn, GitHub Actions, Render, Supabase, Cloudflare R2 |
+| 저장소 | https://github.com/youngroknroll/takulife |
 
-## 1. 요구사항 — 무엇을 해결하는 서비스인가
+실제 사용자 수·요청량은 측정하지 않았다. 이 문서의 수치는 전부 단위와 측정 시점을 함께 적었고, `[코드]`는 저장소에서 읽은 값, `[실측 날짜]`는 그 날짜에 실행해 얻은 값이다. 작성 기준은 2026-10-28 `main`(`b175ce69`)이다.
 
-핵심 문제는 **여러 채널에 흩어진 공식 행사 정보를 찾고, 방문 경험과 소장품을 계속 연결해서 관리하기 어렵다**는 점입니다. 정보가 없는 것이 아니라 흩어져 있고, 찾은 뒤에도 그것이 공식 정보인지 사용자가 다시 검증해야 한다는 점이 출발점이었습니다.
+## 1. 핵심 성과
 
-| 사용자 | 필요한 기능 | 설계에 반영되는 조건 |
+| 문제 | 해결 방법 | 검증 결과 |
 |---|---|---|
-| 비회원 | 공식 이벤트 목록·달력·상세 탐색 | 공개 상태인 행사만 조회 |
-| 회원 | 찜, 방문 예정·완료 관리 | 사용자별 상태를 독립적으로 보관 |
-| 회원 | 방문 기록과 사진 저장 | 소유자 접근 제한, 기록당 사진 5장 |
-| 회원 | 보유·구함·교환 의사 관리 | 세 가지를 독립적으로 표현 |
-| 회원 | 개인 항목 등록과 공식 제보 | 개인 데이터와 공개 정보를 분리 |
-| 운영자 | 수집처 관리, 초안 검수·게시, 계정 운영 | 검수 전 정보가 공개되지 않도록 통제, 모든 조작을 감사 로그로 남김 |
+| 응답 유실 뒤 재시도가 같은 사진을 두 번 저장 | `(visit_record, client_token)` 유일 제약 + 부모 행 `select_for_update` + 재전송 조회를 상한 검사보다 먼저 실행 | 락 스파이·상한·"5번째 사진 재전송" 테스트, 브라우저에서 응답을 버리고 재시도해 4장→5장(6장 아님) 확인 `[코드 커밋 bff9c353]` |
+| 방문 완료 처리에서 상태 행이 동시에 생성되면 500 | 자기 소유 `UserEventStatus` 행 잠금, 중복 시 1회 재조회, 뷰는 409 | 별도 스레드·별도 DB 커넥션으로 실제 경쟁 삽입을 재현한 테스트(RACE-02) `[코드]` |
+| 화면 조립 때문에 앱끼리 순환 의존 | 잎(leaf) 앱 `web` 분리, 교차 도메인 쓰기는 `web/promotion.py` 한 곳으로 제한, AST 스캔 경계 테스트 | `core` 팬아웃 21→0, 순환 3쌍→0 `[실측 2026-08-02]`, 경계 테스트 39건·뮤테이션 왕복 26회 전부 Red `[코드]` |
+| 테스트 스위트 313.81초로 Red-Green 루프 불가 | 테스트 전용 해셔 설정, autouse 픽스처 제거, 6계층 marker | 같은 스위트 313.81초→약 30초 `[코드 커밋 37260451, 2026-07-18]`. 개선 중 allauth가 성공 로그인도 rate limit에 세는 숨은 결함 발견·회귀 테스트 추가 |
 
-제품 결정 두 가지가 구조 전체를 결정합니다.
+## 2. 해결하려는 문제와 핵심 흐름
 
-- **행사 정보의 공개에는 관리자 검수가 필요합니다.** 링크 큐레이션은 검증 책임이 사용자에게 남고, 커뮤니티 제보는 공식성 기준이 흐려지기 쉬워, 공식 URL을 기준으로 초안을 만들고 추출 결과를 확정값이 아닌 후보값으로 취급한 뒤 관리자가 승인한 것만 게시하는 방식을 택했습니다. 사용자가 보는 것은 언제나 추출 결과가 아니라 검수 결과입니다.
-- **컬렉션은 행사 방문 없이도 등록할 수 있습니다.** 행사와 방문 기록은 굿즈를 어디서 얻었는지 설명하는 선택적 연결일 뿐이라, 입수 경로가 사라져도 소장품은 남아야 합니다.
+공식 행사 정보는 여러 채널에 흩어져 있고, 찾은 뒤에도 그것이 공식 정보인지 사용자가 다시 확인해야 한다. 방문 경험과 소장품은 행사와 연결되지 않은 채 흩어진다. takulife는 이 세 가지를 하나의 흐름으로 묶는다.
 
-실제 교환 매칭, 결제·배송·에스크로, 커뮤니티 피드·댓글·메시지, 추천 시스템은 현재 범위에 포함되지 않습니다. 교환 매칭은 컬렉션의 "교환 의사" 축까지만 구현했고, 밀도·신원 품질·프라이버시·신고·차단·모더레이션 게이트가 승인되기 전에는 착수하지 않습니다. 사용자 제보 역시 관리자 검수를 거치지 않고 공개되는 경로가 없습니다. [제품 결정과 실행 순서](CLAUDE.md)
+1. 비회원도 검수를 통과한 공식 행사만 목록·달력·상세에서 본다.
+2. 회원은 찜·방문 예정·방문 완료를 관리하고, 방문 기록과 사진(기록당 5장)을 남긴다.
+3. 회원은 굿즈를 보유·구함·교환 가능 수량으로 등록한다. 행사·방문 기록 연결은 선택이며, 행사가 사라져도 소장품은 남는다.
+4. 운영자는 수집처 관리, 초안 검수·게시, 계정 운영을 하고 모든 조작이 감사 로그에 남는다.
 
-## 2. 전체 요청 흐름 — 요청이 어디를 거치는가
+구조를 결정한 제품 판단 두 가지가 있다. 행사 정보 공개에는 반드시 관리자 검수가 필요하고(추출 결과는 후보값일 뿐), 컬렉션은 행사 방문 없이도 등록할 수 있다. 교환 매칭·결제·배송·커뮤니티 피드는 범위 밖이다. [제품 결정과 실행 순서](CLAUDE.md)
 
-사용자 기능은 Django 서버 하나가 처리합니다. 화면은 서버 렌더링(SSR)으로, JSON API는 Django REST Framework로 제공하며, 화면과 API가 모두 서버 내부의 서비스·조회 함수를 직접 부르기 때문에 SSR 화면을 만들 때 서버가 자기 자신의 HTTP API를 다시 호출하는 흐름은 없습니다.
+## 3. 기술 구성과 요청 흐름
+
+| 영역 | 선택 | 이유 |
+|---|---|---|
+| 백엔드 | Python 3.13, Django 5.2, DRF | 인증·ORM·마이그레이션·어드민이 내장돼 1인 개발에서 도메인 설계에 집중할 수 있고, 관리자 검수 파이프라인이 핵심이라 SSR과 세션 인증 조합이 맞았다 |
+| DB | PostgreSQL(로컬은 SQLite 폴백) | 조건부 `UniqueConstraint`·`CheckConstraint`·`select_for_update`로 정합성을 DB에서 강제하는 것이 설계의 축이다 |
+| 인증 | django-allauth, django-axes | 이메일 인증, Google 로그인, 5회 실패 시 1시간 IP 잠금을 직접 구현하지 않았다 |
+| 공유 캐시 | PostgreSQL `DatabaseCache` | 요청 제한·로그인 잠금 카운터를 Gunicorn 워커 간에 공유하기 위해 Redis 없이 DB를 썼다 |
+| 프런트엔드 | 순수 CSS(OOCSS/BEM), 바닐라 JS | SSR 중심이라 빌드 체인 없이 유지비를 낮췄다 |
+| 테스트 | pytest, pytest-playwright | 백엔드 테스트가 기본이고 여정 e2e 10건은 `-m e2e`로만 실행한다 |
+| 인프라 | Docker, GitHub Actions, Render, Supabase, Cloudflare R2 | CI에서 빌드한 이미지를 실제로 기동해 `/api/health/`를 폴링하는 스모크를 돌린다 |
+| 패키징 | uv | lockfile 기반 재현 환경, 빠른 CI 설치 |
 
 ```mermaid
 flowchart TD
@@ -38,206 +56,100 @@ flowchart TD
     ST --> S
     A --> S
     S --> D[("PostgreSQL")]
-    S --> M["미디어 저장소(S3 호환)"]
+    S --> M["미디어 저장소(Cloudflare R2)"]
+    R["로컬 러너(개인 Mac)"] -- "작업 임대 · 후보 제출 · 번역 제출" --> A
 ```
 
-대표 유스케이스인 방문 기록 사진 업로드(`POST /api/visit-records/<record_id>/photos/`)는 다음 순서로 처리합니다.
+화면과 API가 모두 서버 내부의 서비스·조회 함수를 직접 부르므로 서버가 자기 HTTP API를 다시 호출하는 흐름은 없다. 수집처 탐색과 행사 텍스트 번역은 서버가 DB에 작업을 두고 로컬 러너가 임대·실행·제출하는 방식이며, 서버는 LLM을 직접 호출하지 않는다. Django 앱은 `accounts`·`events`·`drafts`·`archive`·`staff`·`web`·`core` 7개이고, 앱별 책임·데이터 모델·동시성 처리 전체는 [시스템 구성 개요](docs/BE/architecture-overview.md)에 있다.
 
-1. 브라우저가 파일 선택 시점에 발급한 멱등 키 `client_token`을 실어 업로드 API를 호출합니다.
-2. DRF 뷰가 세션 인증, 소유자, 요청 제한(분당 30회)을 확인합니다.
-3. `archive/services.py`의 `create_visit_record_photo()`가 트랜잭션을 열고 부모 방문 기록 행을 `select_for_update`로 잠급니다.
-4. 같은 `(visit_record, client_token)`으로 저장된 사진이 있으면 새로 만들지 않고 기존 행을 돌려줍니다.
-5. 새로운 요청이면 사진 5장 상한을 확인한 뒤 저장하고, 락 밖에서 발생한 `IntegrityError`는 2차 방어로 같은 토큰의 행을 재조회해 돌려줍니다.
-6. 처리 결과를 응답합니다.
+## 4. 핵심 문제 해결 사례
 
-공식 행사 공급에는 세 갈래의 별도 흐름이 있습니다.
+### 4-1. 사진 업로드 재시도가 중복을 만들지 않게
 
-| 경로 | 처리 흐름 |
+**문제.** 방문 기록 수정 화면은 실패한 업로드를 큐에 남겨 재전송한다. 서버가 커밋한 뒤 응답만 유실되면 같은 사진이 두 행으로 저장됐다.
+
+**원인.** 외부 코드 검토는 작성 화면을 지목했지만, 코드를 따라가니 작성 화면에는 재전송 채널이 없었고 실제 경로는 수정 화면의 큐였다. 또 형제 함수의 패턴을 그대로 옮기면 상한 검사(기록당 5장)가 재전송 조회보다 먼저 실행돼, 5번째 사진을 저장한 요청의 재전송이 기존 행 대신 "상한 초과"로 거부되는 결함이 생긴다는 것을 서비스 코드를 읽다가 발견했다.
+
+**해결.** `(visit_record, client_token)` `UniqueConstraint`를 DB에 두고, 서비스는 부모 방문 기록 행을 `select_for_update`로 잠근 뒤 재전송 조회 → 상한 검사 → 저장 순으로 실행한다. 어차피 상한 검사가 모든 호출을 같은 락 안으로 모으므로 락 안 조회는 추가 비용이 없다. `IntegrityError`는 atomic 블록 밖에서 잡아 재조회한다(PostgreSQL은 세이브포인트 롤백 전까지 같은 트랜잭션의 추가 문장을 거부한다). 토큰은 업로드 직전이 아니라 파일 선택 시점에 발급해야 재시도가 같은 토큰을 싣는다.
+
+**검증.** 락 스파이, 상한, 5번째 사진 재전송, 범위 경계 테스트가 `tests/archive/test_archive_services.py`에 있다. 브라우저에서 fetch를 가로채 커밋 후 응답을 버리고 재시도해 사진이 4장에서 5장이 되는 것을 확인했다(커밋 `bff9c353`, 2026-07-28).
+
+**한계.** 작성 화면에는 재시도 채널이 없어 토큰을 적용하지 않았다. 락 테스트는 호출 여부를 스파이로 확인하며, 두 커넥션 경쟁 재현은 방문 완료 처리에만 있다. 이미지 저장이 락 안에서 일어나 저장소 지연이 같은 기록의 다른 업로드를 대기시킨다. [상세](docs/BE/visit-photo-idempotency.md), [방문 완료 동시성](docs/BE/visit-completion-concurrency.md)
+
+### 4-2. 앱 간 순환 의존을 잎 앱 분리와 AST 가드로 제거
+
+**문제.** 홈·아카이브처럼 여러 도메인을 조합하는 화면 뷰가 `core`에 있어 `core`가 도메인 앱 21곳을 임포트했고, 앱 간 순환 임포트가 3쌍 있었다. 새 화면을 만들 때마다 의존이 늘었다.
+
+**원인.** 공유 커널(`core`)과 프레젠테이션 조립이 같은 앱에 있었다. 조립 코드는 모든 도메인을 알아야 하고, 커널은 어떤 도메인도 몰라야 하므로 한 앱에 둘 수 없다.
+
+**해결.** 프레젠테이션 조립을 새 앱 `web`으로 옮겨 어떤 앱도 임포트하지 않는 잎으로 만들고, `core`는 도메인 앱을 임포트하지 않게 했다. `archive`와 `drafts`는 서로를 임포트할 수 없으므로 개인 항목을 공식 제보로 잇는 교차 도메인 쓰기는 `web/promotion.py` 한 곳으로 제한했다. 경계는 문서가 아니라 `tests/core/test_architecture_boundaries.py`가 지킨다. 손유지 목록 대신 파일시스템을 직접 순회해 정적 import와 `importlib.import_module`·`__import__`까지 스캔하고, 스캔 대상이 0개면 공허하게 통과하지 않고 실패한다.
+
+**검증.** `core` 팬아웃 21→0, 순환 3쌍→0, 이동한 뷰 7파일 바이트 동일, 라우트 175건 순회 순서 무변경 `[실측 2026-08-02]`. 손유지 목록을 버린 이유는 목록에 없는 모듈 22건에 금지 임포트를 주입했을 때 전부 통과했기 때문이며, 전환 후 뮤테이션 왕복 26회가 전부 Red였다. 경계 테스트는 39건이다 `[실측 rg 2026-10-28]`.
+
+**한계.** 비-리터럴 인자 동적 임포트, 시그널 같은 import 없는 결합은 잡지 못한다. `web/views` 내부의 서브모듈 단방향 규칙 일부는 테스트 없이 문서로만 지킨다. [web/views 계약](docs/BE/web-views-package.md), [계약 가드 범위](docs/BE/contract-guards.md)
+
+### 4-3. 테스트 스위트 313.81초를 같은 날 약 30초로
+
+**문제.** 2026-07-17 기준 백엔드 스위트(테스트 함수 1,481개 정적 카운트)가 313.81초 걸려 한 테스트씩 Red-Green을 도는 작업 방식이 성립하지 않았다.
+
+**원인.** 사용자 픽스처가 테스트마다 운영 강도 PBKDF2 해시(1회 약 0.38초)를 수행했고, `tests/conftest.py`의 캐시 초기화 픽스처가 autouse라 모든 테스트에 걸려 있었으며, 빠른 단위 테스트와 느린 통합 테스트가 한 덩어리였다.
+
+**해결.** `config/settings_test.py`가 운영 설정을 그대로 불러온 뒤 `PASSWORD_HASHERS`만 MD5로 덮어쓴다. `CACHES`는 일부러 덮어쓰지 않아 `DatabaseCache` 계약을 운영과 동일하게 유지하고, 운영 진입점이 테스트 설정을 참조하지 못하게 계약 테스트와 `.dockerignore`로 막았다. autouse를 해제하고 `unit`·`domain`·`web`·`contract`·`slow`·`e2e` marker를 `--strict-markers`로 등록했다. 병렬화(pytest-xdist)는 원인이 작업량이라 뒤로 미뤘다.
+
+**검증.** 같은 스위트에서 313.81초→약 30초, e2e 129.17초→약 76초(커밋 `37260451` 본문, 2026-07-18). 더 중요한 발견은 autouse 제거로 드러난 결함이다. django-allauth 기본 로그인 rate limit이 성공한 로그인까지 세어 연속 로그인이 429로 실패했고, 전역 픽스처가 이를 가리고 있었다. 운영 설정은 두고 e2e 캐시 격리 픽스처와 회귀 테스트(`tests/auth/test_auth_rate_limit.py`)로 고정했다.
+
+**한계.** 현재 스위트는 4,284개로 늘어 152.46초다 `[실측 2026-10-27]`. 개선 효과는 2026-07-18의 같은 스위트 비교만 유효하고, 2차 개선은 착수하지 않았다. [상세](docs/BE/test-suite-speed.md)
+
+## 5. 배포·운영 및 검증
+
+| 항목 | 내용 |
 |---|---|
-| 등록된 수집처 | 활성 `DraftSource`(RSS·Sitemap·HTML) → URL 수집·검증 → 규칙 기반 필드 추출 → 검수 대기 초안 |
-| 새 수집처 탐색 | 운영자 탐색 요청 → 로컬 러너가 작업을 임대 → 에이전트가 후보 제출 → 서버 검증 → 수집처 등록·초안 생성 |
-| 공개 | 검수 대기 초안 → 운영자 검수·승인(반려 뒤 재오픈 가능) → 공개 이벤트 |
+| 배포 경로 | `main` 푸시 CI 성공 → 워크플로가 `main → production` PR 자동 생성 → 사람이 머지 → Render가 `production` 브랜치를 배포 |
+| 실행 | Docker 멀티스테이지(uv) + Gunicorn 워커 3(`WEB_CONCURRENCY`), 기동 시 migrate → CSS 번들 → collectstatic |
+| DB·저장소 | Supabase PostgreSQL(Session pooler 경유), Cloudflare R2에 서명 URL로 미디어 제공 |
+| CI | `test`(PostgreSQL 서비스 + `check --deploy`), `e2e`(관측, non-blocking), `audit`(pip-audit), `docker`(이미지 실기동 후 `/api/health/` 폴링) |
+| 보안 | HSTS·secure 쿠키를 env로 전환, `TRUSTED_PROXY_COUNT`로 프록시 뒤 실제 IP 판별, 스로틀 12스코프, 공개 쓰기 API는 `/api/client-errors/` 하나 |
+| 상태 확인 | `/api/health/`가 DB 연결 실패 시 503, 처리되지 않은 500과 프론트 오류를 지문으로 묶어 대시보드에 표시 |
+| 테스트 | 백엔드 4,284 passed / 152.46초, e2e 10 passed `[실측 2026-10-27]`. 테스트 작성 뒤 코드를 깨서 Red를 확인하는 뮤테이션 절차를 상시 적용한다 |
 
-에이전트가 제안한 수집처의 기술 검증과 행사 내용의 공개 승인은 서로 다른 단계라, 수집처가 검증을 통과해도 행사 초안은 관리자 승인 전까지 공개되지 않습니다. [업로드 구현](archive/services.py), [수집·탐색 설계](docs/BE/draft-source-agent-discovery.md), [검수 생명주기](docs/BE/draft-review-lifecycle.md)
+운영 환경에서 확인된 문제와 조치:
 
-## 3. 책임 분리 — 각 부분은 무엇을 담당하는가
+- **2026-09-27 보안 검토**에서 스태프가 입력한 `official_url`에 `javascript:` 스킴이 저장돼 공개 상세에서 실행될 수 있는 저장형 XSS(F1)와, allauth의 IP 기준 rate limit이 프록시 뒤에서 모든 사용자가 한 버킷을 공유하는 문제(F2)를 찾았다. http(s)만 허용하는 스킴 검증과 `ALLAUTH_TRUSTED_PROXY_COUNT` 배선으로 수정했다(PR #388, 2026-10-04). [검토 기록](docs/BE/security-review-2026-09-27.md)
+- **2026-09-14 DB 락·트랜잭션 검수**에서 세이브포인트 누락, 삭제 뷰 잠금 순서, PATCH 원자성 등 결함 7건을 찾아 고쳤다(트랙 32).
+- **Supabase 무료 티어 DB 활동 7일 부재 시 일시정지**, Render 무료 Postgres의 30일 만료를 피하기 위한 Supabase 선택 등 비용 제약 아래의 판단은 [배포 런북](docs/deploy-runbook.md)에 있다.
 
-기본 형태는 **기능별 앱을 둔 Django 모놀리스**이며, 앱별로 서버를 따로 운영하지는 않습니다. Django 앱은 7개이고, 설정 패키지 `config`와 서버 밖에서 도는 `local_runner` 패키지가 여기에 더해집니다.
+알려진 한계:
 
-| 앱·모듈 | 담당 책임 |
-|---|---|
-| `accounts` | 인증, 계정 변경, 탈퇴 생명주기(10일 유예) |
-| `events` | 공개 행사 데이터와 공개 상태, 행사 조회 API, 행사 텍스트 번역 큐·검증(러너 전용 API, LLM 호출 없음) |
-| `drafts` | 초안, 수집처, 검수 흐름, 탐색 작업·후보 검증, LLM 추출 파이프라인 |
-| `archive` | 찜, 방문 상태·기록, 개인 항목, 컬렉션, 활동 이력 |
-| `staff` | 운영자 콘솔(대시보드, 검수 큐, 이벤트·수집처·계정 운영, 감사 로그) |
-| `web` | 소비자 SSR 화면, 사이트맵, 개인 항목의 공식 제보 조정 |
-| `core` | 오류 응답·IP 판별·페이지네이션·분석 이벤트 등 공유 처리, 외부 LLM 어댑터, 헬스 체크, 카테고리 어휘·오류 묶음 기록·보존 정리·UI 번역 지원 |
-| `config` | 설정, 루트 URL, 애플리케이션 진입점 |
-| `local_runner` | 개인 Mac에서 수집처 탐색 작업을 임대·실행하고 후보를 제출, 행사 텍스트를 `claude` CLI로 번역해 제출 |
+- SMTP 미설정으로 콘솔 이메일 백엔드가 동작한다. 신규 가입 인증 메일이 실제 발송되지 않아 실사용자 유입 전 단계다.
+- Supabase 무료 티어에는 자동 백업이 없다. `pg_dump` 반출 절차는 런북에 있지만 실행·복구 리허설 기록은 없다.
+- 멀티워커 환경에서 rate limit 공유는 구조 논증만 있고 실측하지 않았다. gunicorn 워커 타임아웃도 미설정이다.
+- 로컬 러너 자동 시작·정기 수집은 미구현이라 운영자가 러너를 직접 띄울 때만 수집·번역이 돈다.
+- 다국어 UI(ko/en/ja/zh-hans) 번역은 사람 검수 없이 AI 검수만 거쳤다.
 
-앱 내부에서도 책임이 나뉩니다.
-
-| 위치 | 처리할 일 |
-|---|---|
-| View·Serializer | 요청 형식, 인증·권한, 입력과 응답 변환 |
-| Service | 업무 규칙, 상태 변경, 트랜잭션 범위 |
-| Query·QuerySet | 조회 조건, 필터링, 조회 최적화 |
-| Model·DB 제약 | 데이터 관계와 저장 시 지켜야 할 조건 |
-
-`web`을 분리한 이유는 **여러 기능을 조합하는 화면 때문에 기능 앱끼리 서로 의존하는 문제를 줄이기 위해서**입니다. 이 작업으로 앱 간 순환 의존 3쌍을 0으로 만들었고, 그 경계는 문서가 아니라 계약 테스트가 지킵니다. `tests/core/test_architecture_boundaries.py`가 소스를 AST로 스캔해 `core`가 도메인 앱을 임포트하지 않는지, 도메인 앱과 `core`가 잎 노드인 `web`을 임포트하지 않는지 확인하며, 스캔 대상이 비어서 공허하게 통과하는 경우까지 별도 테스트로 막습니다.
-
-다만 `web`에 템플릿 렌더링만 있는 것은 아닙니다. 개인 항목을 공식 제보로 연결하는 `web/promotion.py`처럼 여러 앱의 서비스를 한 트랜잭션에서 조정하는 코드도 여기에 둡니다. [경계 가드 테스트](tests/core/test_architecture_boundaries.py), [제보 조정 코드](web/promotion.py)
-
-## 4. 데이터 설계 — 어떤 정보를 나누어 저장하는가
-
-핵심은 **공개 행사, 검수 후보, 개인 기록의 생명주기를 분리하는 것**입니다.
-
-| 모델 | 저장하는 정보 | 주요 관계·조건 |
-|---|---|---|
-| `Event` | 행사명, 일정, 장소, 공식 URL, 공개 상태, 다국어 번역 저장(`text_translations`) | 공식 URL 유일성 |
-| `EventDraft` | 수집 원문, 추출 후보값, 검수 상태, 출처 구분(수집·사용자 제보) | 출처 URL 유일성, 승인·반려·재오픈 이력 |
-| `DraftSource` | RSS·Sitemap·HTML 수집처 | URL 유일성, 활성 여부, 최근 수집 상태 |
-| `PersonalEntry` | 개인이 등록한 비공식 장소·메모 | 소유자에게만 비공개, 제보 시 초안으로 승격 |
-| `EventInterest` | 찜 | 사용자와 대상 조합의 중복 방지 |
-| `UserEventStatus` | 예정·방문·놓침 상태 | 사용자별 대상 상태 관리 |
-| `VisitRecord` | 방문일과 짧은 후기 | 공식 행사 또는 개인 항목에 연결 |
-| `VisitRecordPhoto` | 방문 사진 | 방문 기록에 종속, 기록당 멱등 키 유일 |
-| `CollectionItem` | 굿즈와 보유·구함·교환 가능 수량 | 행사·방문 기록 연결은 선택 |
-| `ActivityLogEntry` | 사용자 활동 이력 | 달력용 기록, 원본 삭제 후에도 이력 유지 |
-| `SourceDiscoveryRun`·`SourceCandidate` | 탐색 작업과 제출 후보 | 작업 상태, 임대 토큰·만료·횟수, 후보별 검증 결과 |
-| `StaffActionLog` | 운영자 조작 이력 | 행위자·대상(초안·이벤트·계정)·IP·UA, 실패한 조작은 남기지 않음 |
-
-세 가지 설계 선택이 특히 중요합니다.
-
-**① 공식 행사와 개인 항목 중 정확히 하나를 참조합니다.** 찜·방문 상태·방문 기록은 `event`와 `personal_entry`를 동시에 가지거나 둘 다 비워둘 수 없으며, 이를 `eventinterest_exactly_one_subject` 같은 DB `CheckConstraint`로 강제하고 조건부 `UniqueConstraint`로 사용자별 중복을 막습니다.
-
-**② 보유·구함·교환 의사를 하나의 상태값으로 합치지 않습니다.** 이미 보유한 굿즈를 추가로 구할 수도 있기 때문에 보유는 `quantity > 0`, 구함은 `is_wanted`, 교환 의사는 `tradeable_quantity > 0`으로 따로 표현하고, `0 ≤ tradeable_quantity ≤ quantity`를 `collectionitem_tradeable_lte_quantity` 제약으로 DB까지 내립니다.
-
-**③ 행사나 방문 기록을 삭제해도 컬렉션은 남깁니다.** `CollectionItem`의 행사·방문 기록 FK는 `SET_NULL`이라 입수 경로가 사라져도 사용자의 소장품까지 삭제되지 않습니다.
-
-다른 테이블의 소유자나 연결 관계까지 비교해야 해서 `CheckConstraint`로 내릴 수 없는 규칙은 서비스 계층이 검증하고 그 사유를 모델 주석에 남깁니다. 컬렉션에는 `(user, work_title)`, `(user, character_name)`, `(user, item_type)` 인덱스가 있어 사용자별 작품·캐릭터·종류 필터에 대응합니다. `models.py`의 `CheckConstraint`·`UniqueConstraint`·`Index` 선언은 21건이며 그중 19건이 `archive`에 있습니다(2026-09-09 rg 정적 카운트). [개인 기록·컬렉션 모델](archive/models.py), [초안·탐색 모델](drafts/models.py)
-
-## 5. 정합성·비동기 처리 — 중복과 동시 요청을 어떻게 다루는가
-
-| 문제 | 적용한 처리 | 필요한 이유 |
-|---|---|---|
-| 응답 유실 후 사진 재전송 | `client_token`과 `(visit_record, client_token)` 유일 제약 | 같은 요청이 사진을 중복 생성하지 않게 함 |
-| 사진이 4장일 때 동시 업로드 | 부모 방문 기록에 `select_for_update` | 두 요청이 모두 4장을 보고 저장하는 경합 방지 |
-| 5번째 사진 업로드 재시도 | 멱등 조회를 상한 검사보다 먼저 실행 | 이미 성공한 요청을 상한 초과로 거부하지 않음 |
-| 컬렉션 동시 수정 | 잠금 후 최신 값을 읽고 입력과 병합·검증 | 오래된 값으로 부분 수정의 유효성을 판단하지 않음 |
-| 방문 완료와 기록 생성 | 같은 트랜잭션에서 처리 | 상태만 바뀌거나 기록만 생성되는 부분 성공 방지 |
-| 활동 이력·감사 로그 생성 | 업무 데이터와 같은 트랜잭션에서 저장 | 실제 작업과 이력의 불일치 방지 |
-| 초안 일괄 승인·반려 | 항목별 트랜잭션·행 잠금, 응답에 성공·실패 목록 분리 | 한 항목의 실패가 나머지를 롤백하지 않게 함 |
-
-서비스 검증과 DB 제약은 역할이 다릅니다. 서비스는 사용자에게 설명 가능한 오류를 제공하고 업무 흐름을 제어하며, DB는 제약으로 표현 가능한 잘못된 저장을 최종 차단합니다. 도메인 예외(예: `PhotoLimitExceededError`)는 서비스가 던지고 뷰가 HTTP 상태 코드로 매핑합니다. `transaction.atomic`은 마이그레이션·테스트를 제외하고 62곳에서(2026-09-14 `with transaction.atomic(` 정적 카운트; 51곳(2026-09-09)은 재측정 전 기록), `select_for_update`는 11개 파일에서 사용합니다(2026-09-14 `rg -l 'select_for_update\(' --glob '!tests/**' --glob '*.py'` 정적 카운트, 주석 전용 언급 파일 제외; 9개(2026-09-09)는 재측정 전 기록). [트랜잭션·멱등성 구현](archive/services.py)
-
-비동기 처리는 **일반 웹 요청, 동기 수집, 로컬 탐색 작업**을 구분해야 합니다.
-
-| 처리 | 현재 방식 |
-|---|---|
-| 일반 사용자 요청 | Gunicorn 웹 워커에서 처리 |
-| 운영자의 "지금 수집" | 서버에서 `discover_drafts` 명령을 동기 실행 |
-| 새 수집처 에이전트 탐색 | DB에 작업 저장 → 로컬 러너가 폴링·임대 후 실행 |
-| 정기 수집·러너 자동 시작 | 미구현 |
-| 서버의 LLM 행사 필드 추출 | 구현되어 있지만 기능 플래그 OFF |
-| 행사 텍스트 번역 | 로컬 러너가 큐 조회 → 번역 → 제출, 서버는 규칙 검증·저장만(`source_hash` 불일치는 409) |
-
-로컬 러너에는 별도 스레드의 heartbeat, 임대 토큰과 만료, 재임대 상한(2회), 통신 오류 백오프가 있습니다. 서버는 후보의 네트워크 검증을 트랜잭션 밖에서 수행하고, 저장 직전에 행을 다시 잠가 임대 유효성을 재검사합니다. 따라서 이 프로젝트에는 Celery·Redis 브로커 대신 **DB 작업 상태와 로컬 러너를 사용하는 탐색 경로**가 있으며, 기본 수집과 후보 검증 일부는 웹 요청 시간을 사용합니다. [러너 설계와 구현 범위](docs/BE/draft-source-agent-discovery.md)
-
-LLM 추출 파이프라인은 구현이 끝났지만 비용 정책에 따라 `DRAFT_LLM_EXTRACTION_ENABLED = False`로 동결되어 있고, 휴리스틱 추출이 기본 경로입니다. anthropic SDK를 얇은 어댑터(`core/llm/`)로 감싸 tool 강제 호출로 구조화 출력만 받고, `max_tokens`에 잘린 응답은 겉보기에 유효해도 거부하며, 추출값이 원문에 실제로 존재하는지 부분 문자열 대조로 재검증(grounding)하고, 필드별 신뢰도의 최솟값이 0.6 미만이면 상위 모델로 1회 재시도합니다. 승인된 초안을 골든셋 삼아 필드별 정확도를 재는 `eval_extraction` 관리 명령도 있어 향후 자동 승인 임계값을 데이터로 정할 수 있습니다. [추출 파이프라인](drafts/llm_extraction.py)
-
-## 6. 배포·운영 — 어떻게 실행하고 장애를 확인하는가
-
-| 항목 | 코드·운영 문서에서 확인한 내용 |
-|---|---|
-| 웹 실행 | Docker + Gunicorn, 웹 워커 기본값 3(`WEB_CONCURRENCY`) |
-| 호스팅 | Render, `production` 브랜치 추종 |
-| 배포 경로 | `main` 머지 시 워크플로가 `main → production` PR을 자동 생성하고, 사람이 그 PR을 머지하면 배포가 시작 |
-| DB | Supabase PostgreSQL, Session pooler 경유(Direct는 IPv6 전용, Transaction pooler는 prepared statement와 비호환) |
-| 정적 파일 | WhiteNoise 압축·해시 파일명, 기동 시 셸 CSS 번들 생성 후 `collectstatic` |
-| 사용자 이미지 | S3 호환 저장소(Cloudflare R2), 퍼블릭 ACL 없이 서명 URL로 제공 |
-| 공유 캐시 | PostgreSQL `DatabaseCache` — 요청 제한·로그인 잠금 카운터를 워커 간 공유 |
-| 보안 헤더 | 배포 프로파일에서 HSTS·SSL 리다이렉트·secure 쿠키를 env로 전환, `TRUSTED_PROXY_COUNT`로 프록시 뒤 실제 클라이언트 IP 판별 |
-| 상태 확인 | `/api/health/`, DB 연결 실패 시 503 |
-| 로그 | stdout 콘솔 핸들러(PaaS 로그 수집 전제) |
-| CI | `test`(PostgreSQL 서비스 + `check --deploy`), `e2e`(여정 스위트, 관측 잡), `audit`(의존성 취약점), `docker`(이미지 실기동 후 `/api/health/` 폴링 스모크) |
-| 마이그레이션 | 단일 인스턴스는 기동 시 실행, 복수 인스턴스는 `RUN_DB_MIGRATIONS=false`로 끄고 release phase에서 1회 실행 |
-| 탐색 실행 환경 | 개인 Mac의 로컬 러너 |
-
-공유 캐시는 멀티워커에서 요청 제한 카운터를 공유하기 위한 선택입니다. 다만 캐시를 공유한다는 사실만으로 동시 요청에 대한 정확한 제한까지 보장된다고 말할 수는 없으며, 런북에도 멀티워커 실측 항목이 남아 있습니다. django-axes 잠금은 신뢰 프록시 홉 수 기반으로 클라이언트 IP를 판별하므로, 프록시 뒤에서 공격자 대신 프록시 IP가 잠겨 전원이 막히는 오설정을 예방합니다.
-
-운영 상태는 다음과 같습니다.
-
-- **배포됨**: 2026-08-31에 `takulife.kr`의 정적 파일·robots.txt·sitemap.xml 응답과 브로틀리 전달을 확인했습니다.
-- **Google OAuth 활성**: 2026-08-26에 OAuth 클라이언트 등록과 실제 로그인 왕복을 확인했습니다.
-- **SMTP 미설정**: 콘솔 이메일 백엔드로 운영 중이라 신규 가입의 인증 메일과 비밀번호 재설정 메일이 실제로 발송되지 않습니다. 이는 수용된 상태이며 SMTP 활성화가 해소 조건입니다.
-- **백업**: Supabase 무료 티어에는 자동 백업이 없어 주기적 `pg_dump` 반출이 유일한 수단인데, 런북에 절차만 있고 실행 기록은 없습니다. 복구 리허설도 미완료입니다.
-- **로컬 러너 자동 시작·정기 실행**: 미구현이라 탐색은 운영자가 러너를 직접 띄울 때만 동작합니다.
-
-설명할 때는 **"배포 기록이 있는 서비스이며, 운영 준비 항목의 완료 여부는 별도로 관리한다"**고 표현하는 것이 근거에 맞습니다. [배포 런북](docs/deploy-runbook.md), [운영 런북](docs/operations-runbook.md), [서버 설정](config/settings.py)
-
-## 7. 기술 스택과 선택 이유
-
-| 영역 | 스택 | 선택 이유 |
-|---|---|---|
-| 백엔드 | Python 3.13, Django 5.2, Django REST Framework | 인증·ORM·마이그레이션·어드민이 내장되어 1인 개발에서 도메인 설계에 집중할 수 있고, 관리자 검수 파이프라인이 핵심이라 서버 렌더링과 세션 인증 조합이 자연스러웠습니다 |
-| DB / 패키징 | PostgreSQL(로컬은 SQLite 폴백), uv | 조건부 `UniqueConstraint`·`CheckConstraint`로 정합성을 DB에서 강제하는 것이 설계의 축이라 PostgreSQL을 택했고, uv는 lockfile 기반 재현 환경과 빠른 CI 설치를 제공합니다 |
-| 인증 | django-allauth, django-axes | 이메일 인증 필수, 소셜 로그인, 5회 실패 시 1시간 IP 잠금 같은 인증·브루트포스 방어를 직접 구현하지 않고 검증된 경로를 썼습니다 |
-| API 문서 | drf-spectacular | API 계약을 코드에서 생성해(`/api/docs/`) 프론트엔드 분리 가능성에 대비했습니다 |
-| 프런트엔드 | 순수 CSS(OOCSS/BEM), 바닐라 JS | SSR 중심 서비스라 빌드 체인 없이 유지비를 최소화하고 접근성을 마크업 수준에서 직접 제어합니다 |
-| 테스트·검증 | pytest, Playwright·Chrome DevTools | pytest는 unit/domain/web/contract/slow/e2e 여섯 marker로 계층을 나눕니다. 여정 e2e(`tests/e2e`, pytest-playwright)는 기본 실행에서 제외하고 `-m e2e`로 돌리며, 브라우저 도구는 그 밖의 실측용입니다 |
-| 인프라 | Docker, GitHub Actions, Render | 로컬과 배포 환경의 차이를 줄이고, CI에서 빌드한 이미지를 실제로 기동해 검증합니다 |
-
-## 8. 트러블슈팅
-
-### 8-1. 사진 업로드 멱등성: 재시도가 중복을 만들지 않게
-
-**문제 상황**: 업로드 요청이 서버에 커밋된 뒤 응답만 유실되면 클라이언트 재시도가 같은 사진을 중복 저장할 수 있었고, 외부 코드 검토는 작성 페이지의 실패 경로를 위험 지점으로 지목했습니다.
-
-**원인 분석**: 코드를 추적해 보니 작성 페이지는 실패 시 재전송 채널 자체가 없었고, 실제 위험은 실패 항목을 큐에 남겨 같은 File 객체를 다시 전송하는 수정 페이지였습니다. 검토 결과를 그대로 믿지 않고 재확인해서 찾은 것입니다. 또 하나, 기존 유사 패턴을 그대로 이식하면 상한 검사가 replay 조회보다 먼저 실행되어 "5장 상한을 채운 마지막 장의 재시도"가 멱등 응답 대신 상한 초과 오류로 거부되는 결함이 생긴다는 것을 서비스 코드를 읽다가 발견했습니다.
-
-**해결 방법과 이유**: `(visit_record, client_token)` `UniqueConstraint`와 서비스의 replay 조회를 상한 검사와 같은 행 잠금 안에 배치해 DB 제약과 서비스 로직의 이중 방어를 만들었습니다. 멱등 토큰은 업로드 직전이 아니라 파일 선택 시점에 발급하는데, 직전 발급이면 재시도마다 새 토큰이 생겨 코드는 멀쩡해 보여도 아무것도 막지 못하기 때문입니다.
-
-**결과와 한계**: 제약 제거·replay 제거·검사 순서 역전이라는 세 가지 뮤테이션에서 각각 테스트가 실패하는 것을 확인했고, 브라우저에서 업로드가 커밋된 뒤 fetch 응답만 인위적으로 유실시키고 재시도해 사진이 5장으로 유지되고 두 요청이 같은 토큰을 싣는 것을 실측했습니다. 한계는 작성 페이지에 재시도 채널이 없어 토큰을 적용하지 않았고 그 사유를 코드에 남겨두었다는 점입니다.
-
-### 8-2. 테스트 스위트 313초에서 27초로, 그 과정에서 드러난 실결함
-
-**문제 상황**: 백엔드 테스트 스위트가 313.81초 걸려 TDD의 Red-Green 루프를 사실상 막고 있었습니다.
-
-**원인 분석**: 실행 시간을 뜯어 보니 테스트마다 프로덕션 강도의 비밀번호 해싱이 수행되고, 전역 autouse 캐시 초기화 픽스처가 모든 테스트에 걸려 있었으며, 빠른 단위 테스트와 느린 통합 테스트가 한 덩어리로 섞여 있었습니다.
-
-**해결 방법과 이유**: 테스트 전용 설정(MD5 해셔)으로 해싱 비용을 제거하고, 테스트를 계층 marker로 분리했으며, 전역 autouse 픽스처를 제거했습니다.
-
-**결과와 한계**: 2026-08-18 실측으로 2,155개 테스트가 25.66초에 끝나 약 9.4배 단축됐고, 이후 테스트가 2,488개로 늘어난 2026-09-09 시점에도 전체 실행은 88.79초입니다. 더 중요한 발견은 전역 캐시 초기화를 제거하자 숨어 있던 실결함이 드러났다는 것입니다. django-allauth의 기본 로그인 rate limit이 성공한 로그인까지 카운트해 연속 로그인 시나리오가 429로 실패했고, 전역 픽스처가 이 결함을 계속 가리고 있었던 셈입니다. 캐시 격리 픽스처로 해소하고 이 계약을 고정하는 회귀 테스트를 추가했습니다.
-
-## 9. 규모와 검증
-
-모든 수치는 2026-09-09 `main`(6e4ccce) 기준 실측입니다.
-
-| 항목 | 값 |
-|---|---|
-| 개발 기간 | 2026-05-20 첫 커밋 ~ 진행 중(112일) |
-| 커밋 수 | 1,380개(main) |
-| 머지된 PR | 341개 |
-| 자동 테스트 | 2,488개 통과, 88.79초(`uv run pytest -q`, 백엔드 전용) |
-| 테스트 파일 | 193개 |
-| 코드 규모(마이그레이션·빌드 산출물 제외) | Python 57,237줄 · CSS 17,660줄 · HTML 8,338줄 · JS 6,150줄 |
-| Django 앱 | 7개(accounts, archive, core, drafts, events, staff, web) + `config` + `local_runner` |
-| CI | GitHub Actions 4-job(`test`·`e2e`(관측)·`audit`·`docker`) + `main → production` PR 자동 생성 워크플로 |
-
-검증 문화도 함께 운영했습니다. 테스트를 작성한 뒤 코드를 일부러 깨서(뮤테이션) 실제로 실패하는지 상시 확인해 "통과하지만 아무것도 검증하지 않는" 테스트를 여러 차례 적발하고 교체했으며, 프론트엔드는 사용자 여정만 e2e로 고정하고, 접근성 트리·탭 순서·반응형 폭·다크모드는 Chrome DevTools 프로토콜로 직접 실측합니다.
-
-## 10. 로컬 실행
+## 6. 실행 방법
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # 실제 비밀값은 .env에만 두고 커밋하지 않는다
 uv sync
 uv run python manage.py migrate
 uv run python manage.py runserver
+uv run pytest -q              # 백엔드 테스트(e2e 제외)
+uv run pytest -q -m e2e tests/e2e   # 여정 e2e(Playwright, 별도 실행)
 ```
 
-- DB: `DATABASE_URL`을 비워두면 SQLite로 폴백합니다. PostgreSQL을 쓰려면 `docker compose up -d db` 후 `.env`에 `DATABASE_URL=postgresql://taku:taku@localhost:5432/taku`를 설정합니다.
-- 이메일: `EMAIL_HOST`를 비워두면 콘솔 백엔드로 동작해 인증 메일 내용을 터미널에서 확인할 수 있습니다.
-- 테스트: `uv run pytest -q`
-- 번역: 번역 카탈로그를 쓰려면 GNU gettext가 필요합니다(macOS는 `brew install gettext` 후 `brew link --force gettext`, Debian/Ubuntu는 `apt-get install gettext`). 번역 문구를 보려면 `uv run django-admin compilemessages --ignore .venv`를 한 번 실행합니다(`.mo`는 git에 올리지 않습니다).
+`DATABASE_URL`을 비우면 SQLite로 폴백한다. PostgreSQL은 `docker compose up -d db` 후 `.env`에 `DATABASE_URL=postgresql://taku:taku@localhost:5432/taku`를 설정한다(로컬 개발용 자격 증명). `EMAIL_HOST`를 비우면 인증 메일이 터미널에 출력된다. 번역 카탈로그를 쓰려면 GNU gettext 설치 후 `uv run django-admin compilemessages --ignore .venv`를 한 번 실행한다.
+
+## 7. 상세 문서
+
+| 주제 | 문서 |
+|---|---|
+| 시스템 구성·데이터 모델·동시성·비동기 처리 | [docs/BE/architecture-overview.md](docs/BE/architecture-overview.md) |
+| 사진 업로드 멱등성·동시성 | [docs/BE/visit-photo-idempotency.md](docs/BE/visit-photo-idempotency.md) |
+| 방문 완료 동시성 계약(두 커넥션 경쟁 재현) | [docs/BE/visit-completion-concurrency.md](docs/BE/visit-completion-concurrency.md) |
+| 앱 의존 방향·계약 가드 범위 | [docs/BE/web-views-package.md](docs/BE/web-views-package.md), [docs/BE/contract-guards.md](docs/BE/contract-guards.md) |
+| 테스트 실행시간 개선 | [docs/BE/test-suite-speed.md](docs/BE/test-suite-speed.md) |
+| 배포·운영 | [docs/deploy-runbook.md](docs/deploy-runbook.md), [docs/operations-runbook.md](docs/operations-runbook.md) |
+| 보안 검토 | [docs/BE/security-review-2026-09-27.md](docs/BE/security-review-2026-09-27.md), [docs/BE/draft-fetching-ssrf.md](docs/BE/draft-fetching-ssrf.md) |
+| 수집처 탐색·검수 생명주기 | [docs/BE/draft-source-agent-discovery.md](docs/BE/draft-source-agent-discovery.md), [docs/BE/draft-review-lifecycle.md](docs/BE/draft-review-lifecycle.md) |
+| 다국어·OpenAPI·오류 묶음·보존 정리 | [docs/BE/i18n.md](docs/BE/i18n.md), [docs/BE/openapi-schema.md](docs/BE/openapi-schema.md), [docs/BE/error-groups.md](docs/BE/error-groups.md), [docs/BE/data-retention.md](docs/BE/data-retention.md) |
+| 백로그·머지 이력 | [docs/backlog.md](docs/backlog.md), [docs/pr-log.md](docs/pr-log.md) |
