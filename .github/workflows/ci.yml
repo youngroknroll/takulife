@@ -167,6 +167,35 @@ jobs:
 
       # Rollback: add `if: false` to this job to pause it while keeping the suite in the repo.
 
+  lint:
+    name: Lint and format (PR gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      # ruff는 dev 그룹이라 uv.lock에 고정된 버전을 그대로 쓴다.
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # 규칙과 줄 길이는 pyproject.toml [tool.ruff]가 정한다(AGENTS.md "Python Style Guide").
+      - name: Lint (ruff check)
+        run: uv run ruff check .
+
+      - name: Format check (ruff format)
+        run: uv run ruff format --check .
+
+      # Rollback: add `if: false` to this job. Revert [tool.ruff] only together with that
+      # (docs/BE/python-style.md "롤백 순서").
+
   audit:
     name: Dependency vulnerability audit (PR gate)
     runs-on: ubuntu-latest
