@@ -33,7 +33,8 @@ TRANSLATION_INPUT_MAX_CHARS = 4000
 
 
 def _strip_untrusted_literals(text):
-    # 한 번만 지우면 제거 후 접합으로 리터럴이 재조립될 수 있어, 더는 안 남을 때까지 반복해서 지운다.
+    # 한 번만 지우면 제거 후 접합으로 리터럴이 재조립될 수 있어,
+    # 더는 안 남을 때까지 반복해서 지운다.
     cleaned = (text or "")[:TRANSLATION_INPUT_MAX_CHARS]
     while any(literal in cleaned for literal in (UNTRUSTED_OPEN, UNTRUSTED_CLOSE)):
         for literal in (UNTRUSTED_OPEN, UNTRUSTED_CLOSE):

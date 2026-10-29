@@ -99,7 +99,10 @@ def _missing_dates_qs():
 
 
 def _missing_region_qs():
-    """region이 정확히 빈 문자열인 게시 이벤트. 공백만 있는 값(" ")은 일부러 정규화하지 않아 여기 안 걸린다."""
+    """region이 정확히 빈 문자열인 게시 이벤트.
+
+    공백만 있는 값(" ")은 일부러 정규화하지 않아 여기 안 걸린다.
+    """
     return Event.objects.published().filter(region="")
 
 

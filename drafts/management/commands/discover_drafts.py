@@ -110,7 +110,8 @@ class Command(BaseCommand):
     def _report(self, stats):
         skipped = stats["skipped"]
         self.stdout.write(
-            f"발견 {stats['found']}건 (상한 도달로 {stats['held_back']}건 보류) / 생성 {stats['created']}건"
+            f"발견 {stats['found']}건 (상한 도달로 {stats['held_back']}건 보류) "
+            f"/ 생성 {stats['created']}건"
         )
         self.stdout.write(
             "스킵 - 중복 {duplicate}건, robots 불허 {robots_disallowed}건, "

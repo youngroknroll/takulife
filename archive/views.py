@@ -554,7 +554,9 @@ class VisitRecordPhotoCreateView(APIView):
                 },
             ),
             400: OpenApiResponse(
-                description=f"입력값 검증 실패, 또는 기록당 사진이 {MAX_PHOTOS_PER_RECORD}장을 초과함."
+                description=(
+                    f"입력값 검증 실패, 또는 기록당 사진이 {MAX_PHOTOS_PER_RECORD}장을 초과함."
+                )
             ),
             403: OpenApiResponse(description="인증되지 않은 요청."),
             404: OpenApiResponse(description="존재하지 않거나 소유하지 않은 다녀온 기록."),

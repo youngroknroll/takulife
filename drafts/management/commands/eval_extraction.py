@@ -57,7 +57,10 @@ class Command(BaseCommand):
             "--limit",
             type=int,
             default=DEFAULT_LIMIT,
-            help=f"Max golden-set rows to evaluate, most recent first (default {DEFAULT_LIMIT}; 0 = unlimited).",
+            help=(
+                "Max golden-set rows to evaluate, most recent first "
+                f"(default {DEFAULT_LIMIT}; 0 = unlimited)."
+            ),
         )
 
     def handle(self, *args, **options):
@@ -73,7 +76,8 @@ class Command(BaseCommand):
         report = build_field_accuracy_report(golden_rows, extract_fn=extract_fn)
 
         self.stdout.write(
-            f"골든셋 {len(golden_rows)}/전체 {total}건 평가 ({'heuristic' if options['heuristic'] else 'llm'})"
+            f"골든셋 {len(golden_rows)}/전체 {total}건 평가 "
+            f"({'heuristic' if options['heuristic'] else 'llm'})"
         )
         for row in report["fields"]:
             self.stdout.write(
