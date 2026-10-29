@@ -8,7 +8,6 @@ import pytest
 
 from local_runner.config import load_config
 
-
 pytestmark = pytest.mark.unit
 
 

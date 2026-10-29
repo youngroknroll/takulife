@@ -7,8 +7,8 @@
 
 from datetime import date, datetime, timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from events.queries import (
     _needs_reverification_qs,

@@ -11,9 +11,8 @@ from rest_framework.response import Response
 from core.errors import error_response
 from core.ip import get_client_ip
 from core.runner_auth import RunnerAPIView
-
-from .content_translation import SubmissionRejected
-from .translation_queue import pending_events, submit_translation
+from events.content_translation import SubmissionRejected
+from events.translation_queue import pending_events, submit_translation
 
 _REJECTION_STATUS = {
     "schema": status.HTTP_400_BAD_REQUEST,

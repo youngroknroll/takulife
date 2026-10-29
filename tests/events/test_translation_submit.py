@@ -3,9 +3,9 @@
 import logging
 import unicodedata
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from events.content_translation import TRANSLATED_FIELDS, SubmissionRejected, source_hash
 from events.models import Event

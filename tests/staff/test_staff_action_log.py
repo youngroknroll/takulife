@@ -4,9 +4,9 @@
 슈퍼유저만 가능하며 일반 스태프는 열람·관리할 수 없다.
 """
 
-import pytest
 from django.contrib import admin
 from django.test import RequestFactory
+import pytest
 
 from core.models import Category
 from events.models import Event

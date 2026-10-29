@@ -82,10 +82,10 @@ git 호출이 실패하거나 대상이 0개면 `subprocess.run(..., check=True)
 
 import ast
 import io
+from pathlib import Path
 import re
 import subprocess
 import tokenize
-from pathlib import Path
 
 import pytest
 

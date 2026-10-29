@@ -4,8 +4,8 @@
 본인 직접 등록 항목)를 보여주며 로그인이 필요하다.
 """
 
-import pytest
 from django.test import Client
+import pytest
 
 from archive.models import UserEventStatus
 

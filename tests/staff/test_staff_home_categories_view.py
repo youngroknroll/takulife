@@ -2,10 +2,10 @@
 
 import re
 
-import pytest
 from django.db import IntegrityError, connection
 from django.test import Client, override_settings
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from core.models import Category, HomeConfig
 from staff.models import StaffActionLog

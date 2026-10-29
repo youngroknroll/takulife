@@ -18,9 +18,9 @@ GitGuardian은 AST가 아니라 원시 텍스트를 스캔하므로, 이 파일 
 """
 
 import ast
+from pathlib import Path
 import re
 import subprocess
-from pathlib import Path
 
 import pytest
 

@@ -1,11 +1,11 @@
 """bundle_shell_css 커맨드가 셸 CSS를 템플릿 로드 순서 그대로 이어붙이는지 계약으로 고정한다."""
 
-import re
 from pathlib import Path
+import re
 
-import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
+import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 

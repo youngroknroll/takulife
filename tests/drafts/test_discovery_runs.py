@@ -2,11 +2,12 @@
 
 from datetime import timedelta
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
+import pytest
 
+from drafts.agent_drafts import MAX_EVENTS_PER_RUN
 from drafts.discovery_runs import (
     LEASE_SECONDS,
     DiscoveryRunActiveError,
@@ -21,9 +22,7 @@ from drafts.discovery_runs import (
     record_offline,
     runner_is_online,
 )
-from drafts.agent_drafts import MAX_EVENTS_PER_RUN
 from drafts.models import DiscoveryRunnerStatus, EventDraft, SourceCandidate, SourceDiscoveryRun
-
 
 pytestmark = [pytest.mark.django_db, pytest.mark.domain]
 

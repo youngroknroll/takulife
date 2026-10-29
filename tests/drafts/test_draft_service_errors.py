@@ -6,8 +6,8 @@ import logging
 
 import pytest
 
-import drafts.services as services
 from drafts.fetching import ResponseTooLargeError, UnsupportedContentTypeError
+import drafts.services as services
 from drafts.services import (
     DraftCreationEmptyExtractionError,
     DraftCreationResponseTooLargeError,

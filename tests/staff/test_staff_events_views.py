@@ -1,13 +1,13 @@
 """스태프 행사 목록(/staff/events/) 인증 게이트와 경고/게시상태 필터링, 페이지네이션 검증."""
 
+from datetime import date, timedelta
 import html
 import re
-from datetime import date, timedelta
 from urllib.parse import parse_qs, quote
 
-import pytest
 from django.urls import reverse
 from django.utils import timezone
+import pytest
 
 from core.models import Category
 from events.models import Event

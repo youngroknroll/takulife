@@ -9,7 +9,7 @@ from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
-from .models import StaffActionLog
+from staff.models import StaffActionLog
 
 
 def recent_staff_actions(limit=10):

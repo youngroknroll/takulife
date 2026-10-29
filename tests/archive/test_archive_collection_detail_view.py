@@ -7,9 +7,9 @@ URL 이름 "collection-detail-page", 라우트 `/collection/<int:item_id>/`) 테
 각 행은 값이 비어 있으면 조건부로 생략된다.
 """
 
-import pytest
 from django.test import Client
 from django.urls import reverse
+import pytest
 
 pytestmark = pytest.mark.web
 

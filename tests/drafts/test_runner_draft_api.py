@@ -3,13 +3,12 @@
 
 from datetime import date, timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from drafts.models import EventDraft, SourceDiscoveryRun
 from drafts.robots import RobotsCheckResult
 from drafts.url_safety import UnsafeFetchUrlError
-
 
 pytestmark = [pytest.mark.django_db, pytest.mark.web]
 

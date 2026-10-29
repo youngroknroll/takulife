@@ -2,7 +2,6 @@
 게이트·초기값 채움만 다룬다(선례 tests/auth/test_account_settings.py)."""
 
 from django.core.cache import cache
-
 import pytest
 
 from accounts.forms import NicknameChangeForm

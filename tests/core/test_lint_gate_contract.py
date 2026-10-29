@@ -4,11 +4,10 @@
 린트 기준이 조용히 느슨해지는 변경을 막는다.
 """
 
-import tomllib
 from pathlib import Path
+import tomllib
 
 import pytest
-
 
 pytestmark = pytest.mark.contract
 

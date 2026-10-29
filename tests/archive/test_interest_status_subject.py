@@ -6,11 +6,10 @@ PersonalEntry(비공식) 중 정확히 하나만을 가리킬 수 있다.
 test_visit_record_subject.py(Phase 2)와 대응된다.
 """
 
-import pytest
 from django.db import IntegrityError, transaction
+import pytest
 
 from archive.models import EventInterest, PersonalEntry, UserEventStatus
-
 
 # ---------------------------------------------------------------------------
 # EventInterest — 모델 제약

@@ -7,9 +7,7 @@
 from django.db.models import Count, Exists, Min, OuterRef, Q, Subquery
 from django.utils import timezone
 
-from events.models import Event
-
-from .models import (
+from archive.models import (
     CollectionItem,
     EventInterest,
     PersonalEntry,
@@ -17,6 +15,7 @@ from .models import (
     VisitRecord,
     VisitRecordPhoto,
 )
+from events.models import Event
 
 # archive 상태 슬러그의 정본. 모델 자신의 choices에서 가져와 단일 출처를
 # 유지한다. "interested"는 이제 EventInterest로 분리되어 제외된다.

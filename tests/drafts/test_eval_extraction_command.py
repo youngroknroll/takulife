@@ -3,8 +3,8 @@
 재추출할 원문이 없어 제외). 실제 LLM/anthropic 호출 없이 추출기 함수를
 명령어의 import 지점에서 모킹한다."""
 
-import pytest
 from django.core.management import call_command
+import pytest
 
 from drafts.models import EventDraft
 

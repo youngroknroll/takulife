@@ -3,7 +3,6 @@
 """
 
 from django.db import connection
-
 import pytest
 
 pytestmark = pytest.mark.web

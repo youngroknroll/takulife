@@ -5,8 +5,8 @@ schema 검증 unit 테스트. 페이로드는 §E 계약(계획서 290~292행의
 
 from datetime import date, timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from core.vocab import CATEGORY
 from drafts.agent_drafts import (
@@ -21,7 +21,6 @@ from drafts.discovery_runs import LeaseInvalidError, renew_lease
 from drafts.models import EventDraft, SourceDiscoveryRun
 from drafts.robots import RobotsCheckResult
 from drafts.url_safety import UnsafeFetchUrlError
-
 
 pytestmark = pytest.mark.unit
 

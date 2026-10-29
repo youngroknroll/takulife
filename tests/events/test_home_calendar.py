@@ -3,14 +3,13 @@
 다루는 범위: 파라미터 없는 기본 진입 시 이번 달·오늘 선택.
 """
 
+from datetime import date
 import html
 import re
-
-import pytest
-from datetime import date
 from unittest.mock import patch
 
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 

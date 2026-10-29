@@ -11,8 +11,8 @@ TestFeaturedCategoryPairs의 모든 테스트는 core.vocab.CATEGORY와 같은 �
 이 시딩된 슬러그와 겹치지 않게 고른다(tests/core/test_category_model.py 모듈 독스트링과 동일한 전제).
 """
 
-import pytest
 from django.test import Client
+import pytest
 
 from core.models import Category, HomeConfig
 from core.vocab import CATEGORY

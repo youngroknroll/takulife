@@ -6,13 +6,12 @@
 의도된 무동작 관행과 동일).
 """
 
-import pytest
 from django.urls import reverse
+import pytest
 
 from drafts.discovery_runs import record_heartbeat
 from drafts.models import SourceDiscoveryRun
 from staff.models import StaffActionLog
-
 
 pytestmark = pytest.mark.web
 

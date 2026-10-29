@@ -20,7 +20,6 @@ import inspect
 
 import pytest
 
-
 SERVICE_MODULES = [
     "events.services",
     "archive.services",

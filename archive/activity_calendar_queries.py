@@ -18,7 +18,13 @@ from django.db.models import Max, Q
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import ActivityLogEntry, CollectionItem, EventInterest, UserEventStatus, VisitRecord
+from archive.models import (
+    ActivityLogEntry,
+    CollectionItem,
+    EventInterest,
+    UserEventStatus,
+    VisitRecord,
+)
 
 # ---------------------------------------------------------------------------
 # 개인 활동 달력 월별 조회. 5개의 읽기 소스를 하나의 평평한 달력 항목

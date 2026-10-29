@@ -8,8 +8,8 @@
 
 import unicodedata
 
-import pytest
 from django.utils import translation
+import pytest
 
 from core.vocab import (
     collection_item_type_label,

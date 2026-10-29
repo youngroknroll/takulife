@@ -1,6 +1,7 @@
-import pytest
 from datetime import timedelta
+
 from django.utils import timezone
+import pytest
 
 from events.models import Event
 

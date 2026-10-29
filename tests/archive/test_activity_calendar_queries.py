@@ -30,8 +30,8 @@ ImportError로 실패하는 것이 정상이다 (test_activity_log_entry.py와 �
 from datetime import date, datetime, timedelta
 from datetime import timezone as _dt_timezone
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from archive.activity_calendar_queries import list_user_activity_for_month
 from archive.models import ActivityLogEntry, CollectionItem, EventInterest

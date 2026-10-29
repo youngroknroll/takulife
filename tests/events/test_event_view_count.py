@@ -6,8 +6,8 @@
 - GET /events/<draft_id>/는 404를 반환하고 view_count를 늘리지 않는다.
 """
 
-import pytest
 from django.test import Client
+import pytest
 
 from events.models import Event
 

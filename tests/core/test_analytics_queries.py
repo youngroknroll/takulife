@@ -4,8 +4,8 @@
 
 import datetime
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from core.analytics import distinct_user_key_count_since, event_name_counts_since
 from core.models import AnalyticsEvent

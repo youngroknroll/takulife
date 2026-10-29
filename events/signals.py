@@ -12,8 +12,7 @@ events 쪽인 여기서 한다 — 이벤트를 한 번도 만들지 않은 채 
 from django.dispatch import receiver
 
 from core.models import category_deactivated
-
-from .services import reconcile_category_palette_slot
+from events.services import reconcile_category_palette_slot
 
 
 @receiver(category_deactivated)

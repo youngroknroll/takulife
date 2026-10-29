@@ -4,10 +4,10 @@
 import re
 import types
 
-import pytest
 from django.http import HttpResponse
 from django.test import RequestFactory
 from django.utils import translation
+import pytest
 
 from staff.permissions import staff_console_required
 

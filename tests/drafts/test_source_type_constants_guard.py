@@ -7,7 +7,6 @@ import pytest
 from drafts.candidate_intake import LISTING_CONTENT_TYPES_BY_SOURCE_TYPE
 from drafts.models import DraftSource
 
-
 pytestmark = pytest.mark.contract
 
 

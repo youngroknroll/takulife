@@ -7,7 +7,6 @@ import pytest
 
 from local_runner.progress import ProgressReporter
 
-
 pytestmark = pytest.mark.unit
 
 

@@ -1,9 +1,9 @@
 """drafts.models.DraftSource(발견 소스 레지스트리 모델) 테스트."""
 
-import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+import pytest
 
 from drafts.models import DraftSource
 

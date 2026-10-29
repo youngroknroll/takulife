@@ -1,9 +1,9 @@
 """홈, 행사 목록/캘린더/상세 — 공개 행사 열람 뷰 그룹."""
 
-import json
-import logging
 from collections import defaultdict
 from datetime import date, timedelta
+import json
+import logging
 from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
@@ -50,8 +50,7 @@ from events.queries import (
     list_published_events_for_month,
     parse_public_listing_params,
 )
-
-from ._helpers import (
+from web.views._helpers import (
     _adjacent_month,
     _attach_display,
     _parse_calendar_date,

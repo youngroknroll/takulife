@@ -6,8 +6,7 @@
 """
 
 from drafts.queries import draft_review_stats
-
-from .search import SEARCHABLE_URL_NAMES, search_form_hidden_params, search_term
+from staff.search import SEARCHABLE_URL_NAMES, search_form_hidden_params, search_term
 
 
 def staff_search_box(request):

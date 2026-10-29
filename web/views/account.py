@@ -6,9 +6,8 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
-from django.utils.translation import gettext
+from django.utils.translation import gettext, npgettext
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import npgettext
 
 from accounts import services as accounts_services
 from archive.queries import (

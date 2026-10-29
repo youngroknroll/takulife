@@ -1,12 +1,12 @@
 """locale/*/LC_MESSAGES/*.mo가 있어야 한다 — `uv run django-admin
 compilemessages --ignore .venv`(CI도 같은 스텝)."""
 
+from html.parser import HTMLParser
 import json
 import re
-from html.parser import HTMLParser
 
-import pytest
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 

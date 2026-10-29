@@ -6,8 +6,8 @@
 완료 뷰는 그 세션 키를 pop하고, 키가 없으면(직접 URL 접근) 홈으로 보낸다.
 """
 
-import pytest
 from django.urls import reverse
+import pytest
 
 DELETE_URL = "/accounts/delete/"
 DELETE_DONE_URL = "/accounts/delete/done/"

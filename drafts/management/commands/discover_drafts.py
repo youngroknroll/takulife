@@ -34,17 +34,17 @@ robots.txt 결과(불허·fetch 실패, 목록/후보 어느 단계든)는 항�
 절대 치명적이지 않다.
 """
 
-import time
 from dataclasses import dataclass
+import time
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from drafts.candidate_intake import (
-    CandidateOutcome,
     LISTING_CONTENT_TYPES_BY_SOURCE_TYPE,
     ROBOTS_REASON_TO_SKIP_KEY,
+    CandidateOutcome,
     decide_and_create_candidate,
 )
 from drafts.discovery import extract_candidate_urls
@@ -52,7 +52,6 @@ from drafts.fetching import fetch_html
 from drafts.models import DraftSource, EventDraft
 from drafts.robots import RobotsChecker
 from drafts.services import create_collected_draft_from_url
-
 
 # 여러 소스를 연달아 두드리지 않도록 소스별 목록 요청 사이에 짧게 쉰다. 설정값이
 # 아니라 모듈 상수로 둬야 테스트가 override_settings 없이 time.sleep만 몽키패치해

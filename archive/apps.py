@@ -6,4 +6,4 @@ class ArchiveConfig(AppConfig):
     name = "archive"
 
     def ready(self):
-        from . import signals  # noqa: F401
+        from archive import signals  # noqa: F401

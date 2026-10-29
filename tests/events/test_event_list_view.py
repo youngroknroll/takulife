@@ -6,14 +6,14 @@
 목록 화면만 우아하게 대응한다.
 """
 
-import re
 from datetime import timedelta
 from html import unescape
+import re
 from urllib.parse import parse_qs, quote, urlparse
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from core.vocab import EVENT_SORT, EVENT_SORT_LABELS
 

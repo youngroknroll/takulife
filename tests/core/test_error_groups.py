@@ -2,16 +2,15 @@
 (트랙 36 오류 묶음 기록, prompt_plan.md 트랙 36 S1·S2 참고).
 """
 
+from datetime import timedelta
 import logging
 import sys
-import uuid
-from datetime import timedelta
 from types import SimpleNamespace
+import uuid
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, OperationalError, connection, transaction
 from django.utils import timezone
-
 import pytest
 
 pytestmark = pytest.mark.domain

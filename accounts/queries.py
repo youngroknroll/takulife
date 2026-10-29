@@ -4,7 +4,7 @@
 자기 조회를 소유하는 구조). HTTP 관문·페이지네이션은 staff 뷰가 감싼다.
 """
 
-from .models import User
+from accounts.models import User
 
 
 def list_accounts_for_staff(search=""):

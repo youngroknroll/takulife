@@ -6,9 +6,8 @@
 import httpx
 import pytest
 
-import local_runner.runner as runner_module
 from local_runner.claude_code_adapter import AdapterOutputError
-
+import local_runner.runner as runner_module
 
 pytestmark = pytest.mark.unit
 

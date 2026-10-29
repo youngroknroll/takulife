@@ -13,6 +13,7 @@ import pytest
 from archive.models import PersonalEntry
 from drafts.models import EventDraft
 from drafts.services import approve_draft
+from events.models import Event
 from web.promotion import (
     PromotionAlreadySubmittedError,
     PromotionDuplicateError,
@@ -21,7 +22,6 @@ from web.promotion import (
     PromotionUnsafeUrlError,
     promote_personal_entry,
 )
-from events.models import Event
 
 
 @pytest.mark.django_db

@@ -8,10 +8,10 @@
 
 from datetime import datetime
 
-import pytest
 from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
+import pytest
 
 from archive.models import PersonalEntry, UserEventStatus
 from core.vocab import archive_status_label

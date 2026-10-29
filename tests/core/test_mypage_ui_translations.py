@@ -6,12 +6,12 @@
 한국어 요청은 현재 출력과 글자 단위로 같다(불변 핀).
 """
 
-import re
 from datetime import date
 from html.parser import HTMLParser
+import re
 
-import pytest
 from django.test import Client
+import pytest
 
 from archive.models import (
     CollectionItem,

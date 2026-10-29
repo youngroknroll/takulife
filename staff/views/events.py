@@ -47,16 +47,15 @@ from events.services import (
     unpublish_event,
     update_published_event,
 )
-
-from ..models import StaffActionLog
-from ..search import search_term
-from ..permissions import staff_console_required
-from ..services import (
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.search import search_term
+from staff.services import (
     EventHasArchiveReferencesError,
     delete_event,
     event_archive_reference_counts,
 )
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata
 
 # staff/dashboard.html의 경고 표에 쓰는 문구와 같은 내용이다. 자동 동기화가
 # 아니라 손으로 맞춰야 하니, 라벨을 바꾸면 그쪽도 같이 고쳐야 한다.

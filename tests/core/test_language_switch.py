@@ -3,9 +3,9 @@
 
 import re
 
-import pytest
 from django.conf import settings
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 

@@ -12,7 +12,6 @@ import pytest
 
 from drafts.discovery_runs import EVENT_OUTCOME_REASONS
 
-
 pytestmark = pytest.mark.contract
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]

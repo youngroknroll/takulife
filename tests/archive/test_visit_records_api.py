@@ -9,9 +9,9 @@ archive 앱의 방문 기록 API 테스트 모음.
 import io
 import uuid
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 import PIL.Image
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 from archive.models import UserEventStatus, VisitRecord, VisitRecordPhoto
 from archive.services import MAX_PHOTOS_PER_RECORD

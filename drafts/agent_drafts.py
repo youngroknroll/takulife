@@ -2,8 +2,8 @@
 서버는 여기서 인스타·X를 절대 가져오지 않는다 — 이 계약은 KW-07이 나중에
 테스트로 고정한다."""
 
-import unicodedata
 from datetime import date
+import unicodedata
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.db import transaction

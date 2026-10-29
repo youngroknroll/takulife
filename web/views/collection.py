@@ -1,6 +1,6 @@
 # 컬렉션(보유 굿즈) 목록·생성·수정·상세 뷰 모음.
-import uuid
 from urllib.parse import urlencode
+import uuid
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -19,8 +19,7 @@ from archive.queries import (
 )
 from core.query_params import is_safe_pk_string
 from core.vocab import COLLECTION_ITEM_TYPE
-
-from ._helpers import _archive_query, _render_archive_list, _subject_view
+from web.views._helpers import _archive_query, _render_archive_list, _subject_view
 
 SERIES_INK_COUNT = 12
 # SERIES_INK_COUNT와 서로소여야 한다 — 공약수가 있으면 팔레트 일부만

@@ -4,11 +4,10 @@
 워커 타임아웃 플래그가 조용히 사라지는 회귀를 막는다.
 """
 
-import re
 from pathlib import Path
+import re
 
 import pytest
-
 
 pytestmark = pytest.mark.contract
 

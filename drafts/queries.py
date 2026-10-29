@@ -7,8 +7,8 @@ from django.db.models import Avg, Case, Count, DurationField, ExpressionWrapper,
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from .discovery_runs import runner_is_online
-from .models import (
+from drafts.discovery_runs import runner_is_online
+from drafts.models import (
     DiscoveryRunnerStatus,
     DraftSource,
     EventDraft,

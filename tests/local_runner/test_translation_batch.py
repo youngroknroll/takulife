@@ -13,7 +13,6 @@ from local_runner.claude_code_adapter import AdapterOutputError
 from local_runner.config import TRANSLATION_BATCH_LIMIT, TRANSLATION_MAX_ATTEMPTS
 from local_runner.translation_flow import translate_pending_batch
 
-
 pytestmark = pytest.mark.unit
 
 

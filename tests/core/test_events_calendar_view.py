@@ -53,13 +53,13 @@ CAL-5-01(Activity 전용, 다음 회차)을 뺀 CAL-5-02~5-11.
   고정해 둔다.
 """
 
+from datetime import date
 import html
 import re
-from datetime import date
 from unittest.mock import patch
 
-import pytest
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 

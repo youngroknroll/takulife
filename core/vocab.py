@@ -20,7 +20,8 @@ import unicodedata
 
 from django.conf import settings
 from django.utils import translation
-from django.utils.translation import gettext, gettext_lazy as _, gettext_noop
+from django.utils.translation import gettext, gettext_noop
+from django.utils.translation import gettext_lazy as _
 
 # ---------------------------------------------------------------------------
 # 행사 카테고리 어휘

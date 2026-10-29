@@ -6,8 +6,8 @@ test_archive_personal_entry_detail_view.py에 합치지 않고 별도 파일로 
 따른 것이다.
 """
 
-import pytest
 from django.test import Client
+import pytest
 
 from core.vocab import PERSONAL_ENTRY_CATEGORY_SUGGESTIONS
 

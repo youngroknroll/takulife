@@ -17,8 +17,8 @@ DB의 `Category.is_active`나 게시 이벤트 수를 전혀 반영하지 않는
 
 import re
 
-import pytest
 from django.urls import reverse
+import pytest
 
 from core.models import Category
 from events.models import Event

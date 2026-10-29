@@ -1,5 +1,5 @@
-import logging
 from dataclasses import dataclass
+import logging
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -7,6 +7,17 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from core.vocab import is_valid_category, is_valid_region
+from drafts.extraction import (
+    EmptyExtractionError,
+    contains_hangul,
+    extract_event_fields,
+    latest_mentioned_date,
+    parse_raw_fields,
+)
+from drafts.fetching import ResponseTooLargeError, UnsupportedContentTypeError, fetch_html
+from drafts.llm_extraction import extract_event_fields_llm
+from drafts.models import EventDraft
+from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 from events.services import (
     DuplicateOfficialUrlError,
     MissingOfficialUrlError,
@@ -14,18 +25,6 @@ from events.services import (
     PublishEventTitleError,
     create_published_event,
 )
-
-from .extraction import (
-    EmptyExtractionError,
-    contains_hangul,
-    extract_event_fields,
-    latest_mentioned_date,
-    parse_raw_fields,
-)
-from .fetching import ResponseTooLargeError, UnsupportedContentTypeError, fetch_html
-from .llm_extraction import extract_event_fields_llm
-from .models import EventDraft
-from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError, validate_fetch_url
 
 logger = logging.getLogger(__name__)
 

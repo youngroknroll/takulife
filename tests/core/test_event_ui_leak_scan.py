@@ -7,13 +7,13 @@
 (`uv run django-admin compilemessages --ignore .venv`).
 """
 
-import re
 from datetime import date, timedelta
 from html.parser import HTMLParser
+import re
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from archive.models import EventInterest, UserEventStatus
 

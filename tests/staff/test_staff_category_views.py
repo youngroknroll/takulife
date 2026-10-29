@@ -17,7 +17,6 @@ import re
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
-
 import pytest
 
 from core.categories import UNASSIGNED_PALETTE, palette_hex_for

@@ -13,12 +13,12 @@ AnalyticsEvent를 기록하는 모든 실제 코드 경로(archive 서비스 + e
 보장이 종단으로 성립함을 증명할 수 있어서 일부러 그렇게 한다.
 """
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
+import pytest
 
-import archive.services as archive_services
 from archive.models import UserEventStatus
+import archive.services as archive_services
 from core.analytics import FORBIDDEN_CONTEXT_KEYS, pseudonymous_user_key
 from core.models import AnalyticsEvent
 from events.models import Event

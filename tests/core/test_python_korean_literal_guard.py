@@ -4,8 +4,8 @@
 `web/views/events.py`는 `test_ui_korean_literal_guard.py`의 기존 가드가 맡는다."""
 
 import ast
-import re
 from pathlib import Path
+import re
 
 import pytest
 

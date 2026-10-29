@@ -6,8 +6,8 @@ tests/staff/test_staff_account_views.py가 다루고, 여기는 조회 함수
 
 import datetime
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from accounts.models import User
 from accounts.queries import list_accounts_for_staff

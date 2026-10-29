@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .runner_views import (
+from drafts.runner_views import (
     RunnerCandidateSubmitView,
     RunnerClaimView,
     RunnerCompleteView,
@@ -9,7 +9,6 @@ from .runner_views import (
     RunnerKnownDraftUrlsView,
     RunnerOfflineView,
 )
-
 
 urlpatterns = [
     path("heartbeat/", RunnerHeartbeatView.as_view(), name="discovery-runner-heartbeat"),

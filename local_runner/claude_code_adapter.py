@@ -5,7 +5,7 @@ import json
 import re
 import subprocess
 
-from .config import AGENT_TIMEOUT_SECONDS
+from local_runner.config import AGENT_TIMEOUT_SECONDS
 
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 

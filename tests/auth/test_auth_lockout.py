@@ -11,9 +11,9 @@ axes는 시도 기록을 DB에 저장하며, 각 테스트의 ``@pytest.mark.dja
 ``axes_reset``은 axes 자체 카운터를 깨끗한 상태로 보장한다.
 """
 
-import pytest
 from axes.utils import reset
 from django.test import override_settings
+import pytest
 
 pytestmark = pytest.mark.slow
 

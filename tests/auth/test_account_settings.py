@@ -7,8 +7,8 @@ accounts.views.delete_account 자체의 서버 쪽 403 가드와 일치한다
 
 import datetime as dt
 
-import pytest
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.web
 

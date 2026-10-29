@@ -10,7 +10,6 @@ import pytest
 
 from core.vocab import is_valid_category
 
-
 pytestmark = [pytest.mark.django_db, pytest.mark.domain]
 
 

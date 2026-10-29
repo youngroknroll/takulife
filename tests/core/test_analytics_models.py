@@ -2,8 +2,8 @@
 (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
 
-import pytest
 from django.core.exceptions import ValidationError
+import pytest
 
 from core.models import AnalyticsEvent
 

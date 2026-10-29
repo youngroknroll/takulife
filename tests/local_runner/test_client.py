@@ -6,7 +6,6 @@ import pytest
 from local_runner.client import RunnerClient
 from local_runner.config import RunnerConfig
 
-
 pytestmark = pytest.mark.unit
 
 

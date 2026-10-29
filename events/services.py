@@ -6,8 +6,7 @@ from django.utils import timezone
 
 from core.categories import reconcile_palette_slot
 from core.vocab import is_valid_category, is_valid_region
-
-from .models import Event
+from events.models import Event
 
 logger = logging.getLogger(__name__)
 

@@ -1,13 +1,12 @@
-import uuid
 from pathlib import Path
+import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from archive.querysets import CollectionItemQuerySet, UserEventStatusQuerySet
 from events.models import Event
-
-from .querysets import CollectionItemQuerySet, UserEventStatusQuerySet
 
 # 요청 하나로 거대한 memo를 저장해 DB·메모리를 소모하는 것을 막는 상한이다.
 # 실제 입력 검증은 시리얼라이저가 한다.

@@ -7,8 +7,8 @@
 아니다 — `code`가 언어와 무관하게 같고 `detail`은 영어 그대로임을 고정한다.
 """
 
-import re
 from datetime import date
+import re
 
 import pytest
 

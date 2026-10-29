@@ -14,7 +14,6 @@ from django.test import Client
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
-
 import pytest
 
 from accounts.services import DELETION_GRACE_PERIOD

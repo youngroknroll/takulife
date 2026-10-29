@@ -7,14 +7,14 @@
 하고 부분 문자열 비교는 쓰지 않는다.
 """
 
+from datetime import date
+from html.parser import HTMLParser
 import json
 import re
-from datetime import date
 from unittest.mock import patch
-from html.parser import HTMLParser
 
-import pytest
 from django.test import Client
+import pytest
 
 from archive.models import PersonalEntry, UserEventStatus
 from core.models import Category, HomeConfig

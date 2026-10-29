@@ -10,7 +10,6 @@ import drafts.fetching as fetching
 from drafts.fetching import fetch_html
 from drafts.url_safety import UnsafeFetchUrlError, validate_fetch_url
 
-
 pytestmark = pytest.mark.contract
 
 

@@ -7,12 +7,11 @@ discover_drafts 관리 명령을 동기 호출해 결과를 메시지로 보여�
 tests/test_discover_drafts_command.py에서 다루므로 여기서는 다루지 않는다.
 """
 
-import pytest
 from django.core.cache import cache
 from django.core.management import CommandError
+import pytest
 
 from staff.models import StaffActionLog
-
 
 RUN_URL = "/staff/draft-discovery/run/"
 

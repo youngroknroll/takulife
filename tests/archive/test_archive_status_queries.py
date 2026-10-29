@@ -6,8 +6,8 @@ ARCHIVE_STATUS_SLUGS를 검증한다.
 
 from datetime import datetime
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from archive.models import UserEventStatus
 from archive.queries import (

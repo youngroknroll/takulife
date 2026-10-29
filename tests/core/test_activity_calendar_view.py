@@ -30,14 +30,14 @@
   §A-13) — "요청한 날짜를 확인할 수 없어요" 제목, "이번 달 보기" 복구 링크.
 """
 
+from datetime import date
 import html
 import re
-from datetime import date
 from urllib.parse import parse_qs, urlparse
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from archive.models import ActivityLogEntry, CollectionItem, UserEventStatus, VisitRecord
 

@@ -15,8 +15,8 @@ allauth의 설계를 따라 서로 다른 두 가지 강제 방식을 검증한�
 - signup / reset_password -> 뷰가 ``429.html``로 렌더되는 429를 던진다.
 """
 
-import pytest
 from django.test import Client, override_settings
+import pytest
 
 pytestmark = pytest.mark.slow
 

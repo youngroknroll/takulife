@@ -11,8 +11,8 @@ archive.services.remove_event_interest는 아직 없어 CAL-2-02는 수집/호�
 
 import uuid
 
-import pytest
 from django.db import IntegrityError
+import pytest
 
 from archive.models import ActivityLogEntry, EventInterest, UserEventStatus, VisitRecord
 from archive.services import (
@@ -28,7 +28,6 @@ from archive.services import (
     revert_to_planned,
     update_collection_item,
 )
-
 
 # ---------------------------------------------------------------------------
 # CAL-2-01 — create_event_interest는 interest_added를 기록한다

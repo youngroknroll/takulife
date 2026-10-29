@@ -3,8 +3,8 @@
 제외하고, 남은 텍스트에 한글이 있으면 번역이 빠진 자리다."""
 
 import ast
-import re
 from pathlib import Path
+import re
 
 import pytest
 

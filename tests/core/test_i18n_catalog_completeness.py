@@ -1,9 +1,9 @@
 """locale/*/LC_MESSAGES/*.po 번역 완결성 검사. 새 의존성(polib 등) 없이
 이 모듈 안에 작은 .po 파서를 직접 둔다."""
 
-import re
 from collections import Counter
 from pathlib import Path
+import re
 
 import pytest
 

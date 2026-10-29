@@ -7,9 +7,9 @@
 
 import uuid
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from archive.models import ActivityLogEntry, PersonalEntry, UserEventStatus, VisitRecord
 from archive.services import complete_visit_with_record

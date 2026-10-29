@@ -6,12 +6,12 @@
 거짓 통과한 적이 있다.
 """
 
-import re
 from datetime import date
 from html.parser import HTMLParser
+import re
 
-import pytest
 from django.test import Client
+import pytest
 
 from archive.models import UserEventStatus
 

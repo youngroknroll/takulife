@@ -4,12 +4,12 @@
 검증되지 않았다: 비로그인 사용자만 빈 기본값을 확인해왔다.
 """
 
+from datetime import date
 import json
 import re
-from datetime import date
 
-import pytest
 from django.test import Client
+import pytest
 
 from archive.models import EventInterest, UserEventStatus
 

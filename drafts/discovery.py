@@ -13,8 +13,8 @@ import re
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
-from defusedxml.ElementTree import ParseError, fromstring
 from defusedxml.common import DefusedXmlException
+from defusedxml.ElementTree import ParseError, fromstring
 from soupsieve.util import SelectorSyntaxError
 
 

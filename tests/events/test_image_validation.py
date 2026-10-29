@@ -7,10 +7,10 @@
 
 import io
 
-import PIL.Image
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import ExifTags
+import PIL.Image
+import pytest
 from rest_framework import serializers
 
 from events.image_validation import (

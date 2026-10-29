@@ -1,10 +1,10 @@
 """서버 소유 결정론 후보 검증 — 에이전트 보고를 신뢰하지 않고 전 단계를 재검사한다."""
 
+from datetime import timedelta
 import logging
 import re
 import socket
 import unicodedata
-from datetime import timedelta
 from urllib.parse import urlsplit
 
 from django.conf import settings

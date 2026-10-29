@@ -4,14 +4,14 @@
   무결성 오류(TOCTOU)를 DuplicateOfficialUrlError로 변환한다.
 """
 
-import pytest
 from django.db import IntegrityError
+import pytest
 
+from events.models import Event
 from events.services import (
     DuplicateOfficialUrlError,
     create_published_event,
 )
-from events.models import Event
 
 pytestmark = pytest.mark.domain
 

@@ -5,9 +5,9 @@
 CollectionItem 목록(CollectionItem.visit_record == 해당 기록)을 보여준다.
 """
 
-import pytest
 from django.test import Client
 from django.urls import reverse
+import pytest
 
 pytestmark = pytest.mark.web
 

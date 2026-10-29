@@ -32,11 +32,10 @@ from drafts.services import (
 )
 from events.models import Event
 from events.services import publish_field_checks
-
-from ..models import StaffActionLog
-from ..search import search_term
-from ..permissions import staff_console_required
-from ._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.search import search_term
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
 
 logger = logging.getLogger(__name__)
 

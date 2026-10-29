@@ -27,7 +27,6 @@
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-
 import pytest
 
 from core.models import Category

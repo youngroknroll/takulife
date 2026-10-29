@@ -7,16 +7,15 @@ core.llm을 감싸는 anti-corruption 계층으로, 도구 스키마·시스템 
 추출로 대체하고, extraction_method로 출처를 구분한다.
 """
 
-import logging
 from datetime import date
+import logging
 
 from django.conf import settings
 
 from core.llm.client import call_tool
 from core.llm.exceptions import LLMError
 from core.vocab import REGION
-
-from .extraction import DATE_PATTERN, extract_event_fields_heuristic, normalize_whitespace
+from drafts.extraction import DATE_PATTERN, extract_event_fields_heuristic, normalize_whitespace
 
 logger = logging.getLogger(__name__)
 

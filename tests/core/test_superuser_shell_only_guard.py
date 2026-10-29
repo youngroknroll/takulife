@@ -5,7 +5,6 @@ import pytest
 
 from tests.core.test_architecture_boundaries import PROJECT_ROOT, _domain_source_files
 
-
 pytestmark = pytest.mark.contract
 
 # superuser 승격/해제는 shell(createsuperuser, 커스텀 관리 명령)로만 한다는

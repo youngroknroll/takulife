@@ -1,7 +1,7 @@
 """내 활동(아카이브) — 상태·방문 기록·직접 등록·찜 목록 뷰 모음."""
 
-import uuid
 from urllib.parse import urlencode
+import uuid
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -43,16 +43,15 @@ from core.vocab import (
     ARCHIVE_STATUS_SORT_LABELS,
     ARCHIVE_VISIT_SORT,
     ARCHIVE_VISIT_SORT_LABELS,
-    archive_status_label,
-    personal_category_label,
     CATEGORY_LABELS,
     CATEGORY_SOURCE_LABELS,
     PERSONAL_ENTRY_CATEGORY_SUGGESTIONS,
+    archive_status_label,
+    personal_category_label,
 )
 from events.models import Event
-
-from ._helpers import _archive_query, _attach_display, _render_archive_list, _subject_view
-from .collection import _collection_item_row, _series_ink_classes
+from web.views._helpers import _archive_query, _attach_display, _render_archive_list, _subject_view
+from web.views.collection import _collection_item_row, _series_ink_classes
 
 
 def _build_archive_status_rows(user_statuses):

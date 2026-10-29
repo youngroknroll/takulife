@@ -1,9 +1,8 @@
-import pytest
 from django.db import IntegrityError
 from django.test import override_settings
 from django.urls import resolve, reverse
+import pytest
 
-import staff.views.draft_api as draft_views
 from drafts.models import EventDraft, SourceDiscoveryRun
 from drafts.services import (
     DraftCreationEmptyExtractionError,
@@ -12,6 +11,7 @@ from drafts.services import (
 )
 from events.models import Event
 from staff.models import StaffActionLog
+import staff.views.draft_api as draft_views
 
 pytestmark = pytest.mark.web
 

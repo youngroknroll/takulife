@@ -16,9 +16,9 @@ from datetime import timedelta
 from html import unescape
 from urllib.parse import parse_qs, unquote, urlparse
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.web
 

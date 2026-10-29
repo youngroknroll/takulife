@@ -9,8 +9,8 @@ _subject_view / _build_archive_status_rows는 여러 아카이브 페이지가 �
 
 from datetime import datetime
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from archive.models import UserEventStatus
 

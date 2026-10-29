@@ -4,8 +4,8 @@
 등록한 행사만 보여준다.
 """
 
-import pytest
 from django.test import Client
+import pytest
 
 from archive.models import PersonalEntry, UserEventStatus
 

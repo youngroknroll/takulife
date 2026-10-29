@@ -4,7 +4,6 @@
 from allauth.socialaccount.models import SocialLogin
 from django.test import RequestFactory
 from django.utils import timezone
-
 import pytest
 
 from accounts.forms import SocialSignupForm

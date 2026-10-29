@@ -5,13 +5,13 @@ en `March 2026`), 선택일 항목의 `date_text`("7월 19일 14:32" 형태)는 
 현재 출력과 글자 단위로 같고 그 밖의 언어에서는 한글이 없다.
 """
 
-import re
 from datetime import date, datetime
 from html.parser import HTMLParser
+import re
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from archive.models import ActivityLogEntry, CollectionItem, UserEventStatus
 

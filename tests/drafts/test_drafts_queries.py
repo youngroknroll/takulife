@@ -4,8 +4,8 @@ DraftSource를 직접 조회하지 않고 이 헬퍼를 거쳐야 한다."""
 
 from datetime import timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from drafts.discovery_runs import EVENT_OUTCOME_REASONS, record_heartbeat
 from drafts.models import DraftSource, EventDraft, SourceCandidate, SourceDiscoveryRun

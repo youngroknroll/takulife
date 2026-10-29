@@ -8,11 +8,11 @@
 - 가드: closing_rows의 D+5 행사도 status_slug == "ongoing"이어야 한다.
 """
 
-import pytest
 from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.test import Client
+import pytest
 
 from core.vocab import CATEGORY
 from events.models import Event

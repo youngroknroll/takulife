@@ -4,8 +4,8 @@
 
 import uuid
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+import pytest
 
 from archive.models import UserEventStatus
 from archive.services import (

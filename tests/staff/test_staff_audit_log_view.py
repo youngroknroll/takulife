@@ -5,8 +5,8 @@ user_agent는 볼 수 없다(슈퍼유저 전용, staff/admin.py). 이 화면의
 자체에 그 두 필드가 실려서는 안 된다.
 """
 
-import pytest
 from django.urls import reverse
+import pytest
 
 from core.models import Category
 from staff.models import StaffActionLog

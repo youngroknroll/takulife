@@ -1,7 +1,7 @@
 """templates/base.html이 로드하는 셸 CSS를 등장 순서 그대로 이어붙여 파일로 쓴다."""
 
-import re
 from pathlib import Path
+import re
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError

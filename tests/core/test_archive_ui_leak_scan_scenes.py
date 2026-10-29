@@ -12,13 +12,13 @@ ASCII 픽스처로만 검사한다.
 `.mo`가 로컬에 컴파일돼 있어야 한다(`uv run django-admin compilemessages --ignore .venv`).
 """
 
-import re
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
+import re
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from archive.models import (
     ActivityLogEntry,

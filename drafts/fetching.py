@@ -1,11 +1,10 @@
-import httpx
 import socket
 from urllib.parse import urljoin
 
 from django.conf import settings
+import httpx
 
-from .url_safety import validate_fetch_url
-
+from drafts.url_safety import validate_fetch_url
 
 REQUEST_TIMEOUT_SECONDS = 5.0
 MAX_REDIRECTS = 3

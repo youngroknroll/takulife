@@ -12,17 +12,17 @@ import time
 
 import httpx
 
-from .claude_code_adapter import (
-    AdapterOutputError,
+from local_runner.claude_code_adapter import (
     _CORRECTION_SUFFIX,
+    AdapterOutputError,
     _execute_claude,
     build_exploration_prompt,
     parse_json_object,
 )
-from .client import RunnerClient, TranslationRunnerClient
-from .clock import today_kst
-from .config import POLL_INTERVAL_SECONDS, load_config
-from .exploration_flow import (
+from local_runner.client import RunnerClient, TranslationRunnerClient
+from local_runner.clock import today_kst
+from local_runner.config import POLL_INTERVAL_SECONDS, load_config
+from local_runner.exploration_flow import (
     EXPLORATION_MAX_EVENTS,
     EXPLORATION_MAX_SOURCES,
     ExplorationFlowError,
@@ -30,8 +30,8 @@ from .exploration_flow import (
     parse_exploration_output,
     run_exploration_flow,
 )
-from .progress import ProgressReporter
-from .translation_flow import translate_pending_batch
+from local_runner.progress import ProgressReporter
+from local_runner.translation_flow import translate_pending_batch
 
 logger = logging.getLogger(__name__)
 

@@ -7,9 +7,10 @@
 - list_staff_events: 스태프 품질경고 드릴다운 목록
 """
 
-import json
-import pytest
 from datetime import date, datetime, timedelta
+import json
+
+import pytest
 
 from events.models import Event
 
@@ -392,8 +393,8 @@ class TestListStaffEvents:
     def test_게시_상태_필터를_지정하면_해당_상태의_행사만_반환한다(
         self, make_event, make_draft_event
     ):
-        from events.queries import list_staff_events
         from events.models import Event
+        from events.queries import list_staff_events
 
         published = make_event(official_url="https://example.com/a")
         make_draft_event(official_url="https://example.com/b")

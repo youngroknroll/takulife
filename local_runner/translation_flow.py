@@ -8,13 +8,17 @@ import time
 
 import httpx
 
-from .claude_code_adapter import (
-    AdapterOutputError,
+from local_runner.claude_code_adapter import (
     _CORRECTION_SUFFIX,
+    AdapterOutputError,
     _execute_claude,
     parse_json_object,
 )
-from .config import TRANSLATION_BATCH_LIMIT, TRANSLATION_MAX_ATTEMPTS, TRANSLATION_TIMEOUT_SECONDS
+from local_runner.config import (
+    TRANSLATION_BATCH_LIMIT,
+    TRANSLATION_MAX_ATTEMPTS,
+    TRANSLATION_TIMEOUT_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
 

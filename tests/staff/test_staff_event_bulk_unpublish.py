@@ -5,10 +5,10 @@
 
 import logging
 
-import pytest
 from django.db import IntegrityError, connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+import pytest
 
 from events.models import Event
 from staff.models import StaffActionLog

@@ -2,15 +2,15 @@
 
 import uuid
 
-import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
+import pytest
 
 from archive.models import CollectionItem, PersonalEntry, VisitRecord
 from archive.services import (
-    DuplicateUserEventStatusError,
     MAX_PHOTOS_PER_RECORD,
+    DuplicateUserEventStatusError,
     PhotoLimitExceededError,
     create_collection_item,
     create_personal_entry,

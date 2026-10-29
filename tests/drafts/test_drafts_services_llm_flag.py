@@ -3,8 +3,8 @@
 모킹한다 — services는 플래그 분기만 책임지고, LLM 호출 자체는
 tests/test_draft_llm_extraction.py가 검증한다."""
 
-import pytest
 from django.test import override_settings
+import pytest
 
 from drafts.extraction import EmptyExtractionError
 from drafts.models import EventDraft

@@ -7,8 +7,8 @@
 
 import inspect
 
-import pytest
 from django.urls import URLPattern, URLResolver, reverse
+import pytest
 from rest_framework.views import APIView
 
 import staff.api_urls as staff_api_urls

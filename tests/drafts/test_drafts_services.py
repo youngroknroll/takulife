@@ -1,16 +1,16 @@
 import datetime
 
-import pytest
-import httpx
 from django.db import IntegrityError, connection, transaction
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
+import httpx
+import pytest
 
 from drafts.fetching import MAX_RESPONSE_BYTES, ResponseTooLargeError, fetch_html
 from drafts.models import EventDraft
 from drafts.services import (
-    DraftCreationEmptyExtractionError,
     DraftCreationDuplicateError,
+    DraftCreationEmptyExtractionError,
     DraftCreationUnsafeUrlError,
     DraftImmutableFieldError,
     DraftPublicationError,

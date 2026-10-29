@@ -18,7 +18,6 @@ from drafts.extraction import extract_event_fields_heuristic
 from drafts.llm_extraction import extract_event_fields_llm
 from drafts.models import EventDraft
 
-
 DEFAULT_LIMIT = 100
 
 

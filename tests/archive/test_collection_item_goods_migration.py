@@ -13,8 +13,8 @@ orchestration.py)를 따른다: 마이그레이션 모듈을 임포트해 그 �
 
 import importlib
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+import pytest
 
 from archive.models import (
     CollectionItem,

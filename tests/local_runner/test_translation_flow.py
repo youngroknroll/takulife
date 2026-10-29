@@ -9,8 +9,8 @@ import time
 import pytest
 
 from local_runner.claude_code_adapter import (
-    AdapterOutputError,
     _CORRECTION_SUFFIX,
+    AdapterOutputError,
     _execute_claude,
 )
 from local_runner.config import AGENT_TIMEOUT_SECONDS, TRANSLATION_TIMEOUT_SECONDS
@@ -23,7 +23,6 @@ from local_runner.translation_flow import (
     parse_translations_output,
     run_agent_translation,
 )
-
 
 pytestmark = pytest.mark.unit
 

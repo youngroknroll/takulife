@@ -4,7 +4,7 @@
 단방향 의존 유지).
 """
 
-from .context_processors import BRAND_NAME_KO, PROJECT_NAME
+from core.context_processors import BRAND_NAME_KO, PROJECT_NAME
 
 
 def build_website_json_ld(site_url):

@@ -4,8 +4,8 @@ import datetime
 import json
 import re
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from core.models import Category
 from drafts.labels import REVIEW_STATUS_LABELS

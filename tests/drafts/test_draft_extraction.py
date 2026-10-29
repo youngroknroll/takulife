@@ -13,7 +13,6 @@ from drafts.extraction import (
     parse_raw_fields,
 )
 
-
 pytestmark = pytest.mark.unit
 
 

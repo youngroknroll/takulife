@@ -36,7 +36,7 @@ class UserEventStatusQuerySet(models.QuerySet):
         ``today``를 밖에서 받는 것은 판정을 호출 시점에 고정해 테스트 가능하게
         하려는 것이다.
         """
-        from .models import VisitRecord
+        from archive.models import VisitRecord
 
         no_visit = ~Exists(
             VisitRecord.objects.filter(

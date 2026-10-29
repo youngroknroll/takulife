@@ -5,10 +5,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext
 
-from core.analytics import record_event
-from core.models import AnalyticsEvent
-
-from .models import (
+from archive.models import (
     ActivityLogEntry,
     CollectionItem,
     EventInterest,
@@ -17,8 +14,9 @@ from .models import (
     VisitRecord,
     VisitRecordPhoto,
 )
-from .signals import _delete_file_best_effort
-
+from archive.signals import _delete_file_best_effort
+from core.analytics import record_event
+from core.models import AnalyticsEvent
 
 MAX_PHOTOS_PER_RECORD = 5
 

@@ -1,9 +1,8 @@
 import ast
 from pathlib import Path
 
-import pytest
 from django.urls import Resolver404, resolve
-
+import pytest
 
 pytestmark = pytest.mark.contract
 

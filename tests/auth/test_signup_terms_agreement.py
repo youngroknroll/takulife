@@ -3,7 +3,6 @@
 
 from django.urls import reverse
 from django.utils import timezone
-
 import pytest
 
 pytestmark = pytest.mark.web

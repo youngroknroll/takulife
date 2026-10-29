@@ -1,6 +1,6 @@
+from datetime import date
 import re
 import unicodedata
-from datetime import date
 
 from bs4 import BeautifulSoup
 

@@ -2,13 +2,13 @@
 해시·검증 같은 순수 규칙은 전부 content_translation 모듈이 갖고 있다.
 """
 
-import logging
 from dataclasses import dataclass
+import logging
 
 from django.db import transaction
 
-from . import content_translation as rules
-from .models import Event
+from events import content_translation as rules
+from events.models import Event
 
 logger = logging.getLogger(__name__)
 

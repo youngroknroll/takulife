@@ -5,8 +5,8 @@
 잘라 개인정보·인증값이 저장 행에 남지 않게 한다.
 """
 
-import hashlib
 from datetime import timedelta
+import hashlib
 import logging
 import re
 

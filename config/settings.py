@@ -1,10 +1,9 @@
+import os
 from pathlib import Path
 from urllib.parse import urlsplit
-import os
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

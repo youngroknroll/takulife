@@ -30,8 +30,8 @@ republish_event)를 거쳐 상태를 만든다 — "이벤트를 비공개로 �
 묻지 않는다.
 """
 
-import pytest
 from django.db import transaction
+import pytest
 
 from core.categories import category_exists, category_label
 from core.models import Category

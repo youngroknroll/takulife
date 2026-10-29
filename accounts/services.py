@@ -6,9 +6,9 @@ accounts.management.commands.purge_deleted_accounts 외의 어떤 코드 경로�
 `deletion_requested_at`을 읽거나 쓴다.
 """
 
+from datetime import timedelta
 import logging
 import time
-from datetime import timedelta
 
 from django.contrib.sessions.models import Session
 from django.core.cache import cache
@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
-from .models import User
+from accounts.models import User
 
 logger = logging.getLogger(__name__)
 

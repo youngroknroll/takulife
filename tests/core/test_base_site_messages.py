@@ -6,9 +6,8 @@
 메시지를 잃어도 통과한다.
 """
 
-import pytest
 from django.utils import timezone
-
+import pytest
 
 from accounts.services import DELETION_GRACE_PERIOD
 

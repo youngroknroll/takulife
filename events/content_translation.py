@@ -1,9 +1,9 @@
 """번역 대상 필드·해시·제출 검증·노출 선택 등 순수 규칙 모듈. DB·모델을 모른다."""
 
+from dataclasses import dataclass
 import hashlib
 import re
 import unicodedata
-from dataclasses import dataclass
 
 TRANSLATED_FIELDS = ("title", "work_title", "location_name", "summary")
 TARGET_LANGUAGES = ("en", "ja", "zh-hans")

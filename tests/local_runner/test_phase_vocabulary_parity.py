@@ -10,7 +10,6 @@ import pytest
 
 from drafts.queries import DISCOVERY_PHASE_LABELS
 
-
 pytestmark = pytest.mark.contract
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]

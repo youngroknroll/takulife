@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 
-from . import services
+from accounts import services
 
 
 @receiver(user_logged_in)

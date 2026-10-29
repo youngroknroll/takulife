@@ -11,7 +11,6 @@ from local_runner.client import TranslationRunnerClient
 from local_runner.config import RunnerConfig
 from local_runner.translation_flow import translate_pending_batch
 
-
 pytestmark = pytest.mark.unit
 
 

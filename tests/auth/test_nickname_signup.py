@@ -2,7 +2,6 @@
 
 from allauth.socialaccount.models import SocialLogin
 from django.test import RequestFactory
-
 import pytest
 
 from accounts.adapters import AccountAdapter

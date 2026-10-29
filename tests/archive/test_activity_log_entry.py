@@ -8,11 +8,11 @@ archive.models.ActivityLogEntry는 아직 없어 이 파일 전체가 모델이 
 
 import uuid
 
-import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.urls import Resolver404, resolve
 from django.utils import timezone
+import pytest
 
 from archive.models import ActivityLogEntry
 

@@ -1,10 +1,10 @@
 """러너 API 인증 계약 테스트 — X-Runner-Token 헤더와 DRAFT_DISCOVERY_RUNNER_TOKEN."""
 
-import logging
 from datetime import timedelta
+import logging
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from core.models import Category
 from core.vocab import CATEGORY, REGION
@@ -17,7 +17,6 @@ from drafts.models import (
     SourceDiscoveryRun,
 )
 from drafts.runner_views import RunnerTokenThrottle
-
 
 pytestmark = [pytest.mark.django_db, pytest.mark.web]
 

@@ -9,7 +9,7 @@ from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 
-from .querysets import CLOSING_SOON_DAYS
+from events.querysets import CLOSING_SOON_DAYS
 
 # 등록(created_at) 후 이 일수 미만이면 "새 등록"으로 표시한다. 0~9일차=NEW, 10일차부터 해제.
 NEW_WINDOW_DAYS = 10

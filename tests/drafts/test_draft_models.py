@@ -1,7 +1,7 @@
 """EventDraft의 extraction_method/confidence 필드 동작 테스트(LLM 사전입력용)."""
 
-import pytest
 from django.core.exceptions import ValidationError
+import pytest
 
 from drafts.models import EventDraft
 

@@ -7,9 +7,8 @@ from django.db import models
 from django.utils import timezone
 
 from core.models import Category
-
-from .models import Event
-from .serializers import EventQuerySerializer
+from events.models import Event
+from events.serializers import EventQuerySerializer
 
 PUBLIC_LISTING_PAGE_SIZE = 10
 

@@ -1,9 +1,9 @@
 """닉네임 필수 입력 계약(트랙 29 NICK-10). createsuperuser가 nickname을
 물어보도록 REQUIRED_FIELDS에 포함돼야 한다."""
 
-from accounts.models import User
-
 import pytest
+
+from accounts.models import User
 
 pytestmark = pytest.mark.contract
 

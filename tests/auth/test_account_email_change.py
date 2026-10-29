@@ -7,8 +7,8 @@ AS-3은 폼 자체의 유효성 판정(domain)만 보고, AS-4/AS-5는 실제
 막는지/allauth의 CHANGE_EMAIL 치환 규약이 살아있는지 본다(web).
 """
 
-import pytest
 from allauth.account.models import EmailAddress
+import pytest
 
 from accounts.forms import EmailChangeForm
 

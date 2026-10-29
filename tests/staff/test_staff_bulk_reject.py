@@ -5,8 +5,8 @@
 REJECT 로그)만 다룬다.
 """
 
-import pytest
 from django.urls import reverse
+import pytest
 
 from drafts.models import EventDraft
 from staff.models import StaffActionLog

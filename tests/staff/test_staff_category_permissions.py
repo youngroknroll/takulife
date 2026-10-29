@@ -9,7 +9,6 @@ import ast
 from pathlib import Path
 
 from django.urls import reverse
-
 import pytest
 
 from core.models import Category

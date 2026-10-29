@@ -18,11 +18,10 @@ from django.views.decorators.http import require_POST
 from accounts import services as accounts_services
 from accounts.models import User
 from accounts.queries import list_accounts_for_staff
-
-from ..models import StaffActionLog
-from ..permissions import superuser_console_required
-from ..search import search_term
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from staff.models import StaffActionLog
+from staff.permissions import superuser_console_required
+from staff.search import search_term
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata
 
 STAFF_ACCOUNT_LISTING_PAGE_SIZE = 20
 

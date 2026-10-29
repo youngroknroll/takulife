@@ -2,8 +2,8 @@
 공식 여부 판별과 행사 필드 추출을 모델에 맡긴다. Django·서버 도메인 모듈은
 임포트하지 않는다."""
 
-import functools
 from datetime import date
+import functools
 
 from local_runner.claude_code_adapter import (
     _CORRECTION_SUFFIX,

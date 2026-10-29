@@ -6,9 +6,9 @@
 
 import logging
 
-import pytest
 from django.db import IntegrityError
 from django.urls import reverse
+import pytest
 
 from drafts.models import EventDraft
 from events.models import Event

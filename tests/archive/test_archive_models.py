@@ -1,8 +1,8 @@
 """아카이브 모델 테스트 — HTTP 없이 필드 기본값과 제약 조건만 검증한다."""
 
-import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+import pytest
 
 from archive.models import CollectionItem, PersonalEntry
 

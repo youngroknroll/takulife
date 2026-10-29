@@ -15,7 +15,6 @@ from local_runner.claude_code_adapter import (
     run_agent_exploration,
 )
 
-
 pytestmark = pytest.mark.unit
 
 

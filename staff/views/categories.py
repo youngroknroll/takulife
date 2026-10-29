@@ -20,10 +20,9 @@ from core.categories import palette_hex_for
 from core.models import Category
 from core.validators import validate_category_slug
 from events.models import Event
-
-from ..models import StaffActionLog
-from ..permissions import superuser_console_required
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from staff.models import StaffActionLog
+from staff.permissions import superuser_console_required
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata
 
 _ENABLED_VALUES = {"1": True, "0": False}
 

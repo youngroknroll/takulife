@@ -12,8 +12,8 @@ VisitRecord가 event/personal_entry 둘 중 하나이므로 `*` 뒤 키워드 �
 선택할 대상이 없는 자체 설정값이라 가독성을 위해 키워드 전용으로 뒀다.
 """
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+import pytest
 
 from archive.models import (
     CollectionItem,

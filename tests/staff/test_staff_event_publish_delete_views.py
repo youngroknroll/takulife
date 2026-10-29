@@ -8,9 +8,9 @@
 import datetime
 import re
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from archive.models import CollectionItem, EventInterest
 from events.models import Event

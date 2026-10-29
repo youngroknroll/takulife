@@ -5,8 +5,8 @@
 (트랙 37 S1). 실패는 예외를 삼키지 않고 로그로 남긴다.
 """
 
-import logging
 from datetime import timedelta
+import logging
 
 from axes.handlers.proxy import AxesProxyHandler
 from axes.models import AccessFailureLog, AccessLog

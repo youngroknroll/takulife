@@ -12,12 +12,11 @@
 import re
 import uuid
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
+import pytest
 
 from archive.models import CollectionItem
-
 
 # ---------------------------------------------------------------------------
 # CP1: 인증 필수

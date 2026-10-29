@@ -3,8 +3,8 @@
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from events.models import Event
 from staff.models import StaffActionLog

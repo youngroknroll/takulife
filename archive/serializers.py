@@ -1,11 +1,7 @@
 from django.utils.translation import gettext
 from rest_framework import serializers
 
-from core.vocab import normalize_collection_item_type, normalize_personal_category
-from events.image_validation import validate_uploaded_image
-from events.models import Event
-
-from .models import (
+from archive.models import (
     MEMO_MAX_LENGTH,
     CollectionItem,
     EventInterest,
@@ -14,6 +10,9 @@ from .models import (
     VisitRecord,
     VisitRecordPhoto,
 )
+from core.vocab import normalize_collection_item_type, normalize_personal_category
+from events.image_validation import validate_uploaded_image
+from events.models import Event
 
 
 class PersonalEntrySerializer(serializers.ModelSerializer):

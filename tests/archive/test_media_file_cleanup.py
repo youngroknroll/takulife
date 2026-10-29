@@ -8,7 +8,6 @@ best-effort), 롤백된 삭제가 아직 남아 있어야 할 파일을 지우�
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
-
 import pytest
 
 from archive.models import CollectionItem, PersonalEntry, VisitRecordPhoto

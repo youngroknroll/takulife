@@ -12,12 +12,11 @@ validate_fetch_url, socket.getaddrinfo)만 패치한다 — SSRF 방어가 실�
 
 import socket
 
+from django.test import override_settings
 import httpx
 import pytest
-from django.test import override_settings
 
 import drafts.fetching as fetching
-import drafts.robots as robots
 from drafts.fetching import (
     MAX_RESPONSE_BYTES,
     FetchError,
@@ -25,6 +24,7 @@ from drafts.fetching import (
     ResponseTooLargeError,
     UnsupportedContentTypeError,
 )
+import drafts.robots as robots
 from drafts.robots import (
     ROBOTS_DISALLOWED,
     ROBOTS_FETCH_FAILED,

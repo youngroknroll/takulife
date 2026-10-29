@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import (
+from archive.views import (
     VisitRecordDetailView,
     VisitRecordListCreateView,
     VisitRecordPhotoCreateView,

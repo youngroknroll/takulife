@@ -1,7 +1,7 @@
 import datetime
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from events.models import Event
 from events.services import (

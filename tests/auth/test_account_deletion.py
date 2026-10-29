@@ -13,18 +13,19 @@ archive/signals.py 참고)는 accounts.services.execute_pending_deletions에서
 검증한다.
 """
 
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 import logging
 import time as real_time
-from datetime import datetime, timedelta, timezone as dt_timezone
 
-import django.core.cache.backends.base as cache_base
-import django.core.cache.backends.db as cache_db
-import pytest
 from django.conf import settings
 from django.core.cache import cache
+import django.core.cache.backends.base as cache_base
+import django.core.cache.backends.db as cache_db
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from accounts import services
 from accounts.models import User

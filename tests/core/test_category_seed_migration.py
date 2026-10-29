@@ -13,10 +13,10 @@ core.vocab.CATEGORY를 라이브로 읽지 않고, 마이그레이션이 심어�
 패턴을 그대로 따른다.
 """
 
-import pytest
 from django.core.management import call_command
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
+import pytest
 
 from core.categories import PALETTE
 

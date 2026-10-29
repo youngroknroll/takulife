@@ -12,7 +12,6 @@ import local_runner.page_fetch as page_fetch
 from local_runner.page_fetch import CAPTION_MAX_LENGTH, fetch_event_text
 from local_runner.url_safety import UnsafeFetchUrlError
 
-
 pytestmark = pytest.mark.unit
 
 

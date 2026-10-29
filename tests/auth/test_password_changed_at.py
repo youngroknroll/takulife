@@ -11,10 +11,10 @@ test_account_deletion.py의 HTTP 수준 DEL 테스트와 같은 방식이다. A3
 
 import secrets
 
-import pytest
 from allauth.account.signals import password_reset
 from django.test import RequestFactory
 from django.utils import timezone
+import pytest
 
 PASSWORD_CHANGE_URL = "/accounts/password/change/"
 PASSWORD_SET_URL = "/accounts/password/set/"

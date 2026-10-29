@@ -5,12 +5,11 @@
 
 import io
 
-import pytest
 from django.core.management import call_command
+import pytest
 
-from events.models import Event
 from events.content_translation import source_hash
-
+from events.models import Event
 
 pytestmark = [pytest.mark.django_db, pytest.mark.domain]
 

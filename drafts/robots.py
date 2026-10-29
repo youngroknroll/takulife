@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit, urlunsplit
 from urllib.robotparser import RobotFileParser
 
-from .fetching import (
+from drafts.fetching import (
     USER_AGENT,
     FetchError,
     FetchHttpStatusError,
@@ -23,8 +23,7 @@ from .fetching import (
     UnsupportedContentTypeError,
     fetch_html,
 )
-from .url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
-
+from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 
 ROBOTS_DISALLOWED = "robots_disallowed"
 ROBOTS_FETCH_FAILED = "robots_fetch_failed"

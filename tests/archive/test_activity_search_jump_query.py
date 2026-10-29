@@ -14,9 +14,9 @@ tests/core/test_activity_calendar_view.py에 있다.
 
 from datetime import date
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from archive.activity_calendar_queries import (
     GOODS_ACQUIRED_KIND,

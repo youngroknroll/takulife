@@ -11,9 +11,8 @@
 
 from pathlib import Path
 
-import pytest
 from django.conf import Settings
-
+import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 

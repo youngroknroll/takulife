@@ -5,10 +5,10 @@ MigrationExecutor로 실제 0005→0006 이주를 돌려 검증한다."""
 
 import importlib
 
-import pytest
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.contract
 

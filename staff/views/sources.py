@@ -7,9 +7,8 @@
 from django.shortcuts import render
 
 from drafts.queries import list_draft_sources
-
-from ..permissions import staff_console_required
-from ._helpers import _build_source_rows
+from staff.permissions import staff_console_required
+from staff.views._helpers import _build_source_rows
 
 
 @staff_console_required

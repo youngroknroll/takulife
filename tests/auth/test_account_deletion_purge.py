@@ -5,11 +5,11 @@ purge 경계(HTTP 없음 — .docs/plans/2026-07-20-deletion-grace-period-plan.m
 
 from datetime import timedelta
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.utils import timezone
+import pytest
 
 from accounts import services
 from accounts.models import User

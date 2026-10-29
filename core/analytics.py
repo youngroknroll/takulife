@@ -11,10 +11,10 @@
 바로 실패한다 — FORBIDDEN_CONTEXT_KEYS 참고.
 """
 
+from datetime import timedelta
 import hashlib
 import hmac
 import logging
-from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -22,7 +22,6 @@ from django.db.models import Count
 from django.utils import timezone
 
 from core.models import AnalyticsEvent
-
 
 logger = logging.getLogger(__name__)
 

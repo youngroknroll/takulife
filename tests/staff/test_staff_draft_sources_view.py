@@ -5,8 +5,8 @@ DraftSource 조회(list_draft_sources)와 행 가공(_build_source_rows)은
 배선만 확인한다.
 """
 
-import pytest
 from django.urls import reverse
+import pytest
 
 from drafts.models import DraftSource
 

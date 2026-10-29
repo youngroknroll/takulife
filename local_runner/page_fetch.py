@@ -7,8 +7,8 @@ import re
 import socket
 from urllib.parse import urlencode, urlsplit
 
-import httpx
 from bs4 import BeautifulSoup
+import httpx
 
 from local_runner.url_safety import validate_fetch_url
 

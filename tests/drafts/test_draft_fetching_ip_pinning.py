@@ -8,7 +8,6 @@ import pytest
 import drafts.fetching as fetching
 from drafts.fetching import fetch_html
 
-
 pytestmark = pytest.mark.unit
 
 

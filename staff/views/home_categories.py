@@ -9,10 +9,9 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from core.categories import category_choices_for_editing
 from core.models import HomeConfig
 from events.models import Event
-
-from ..models import StaffActionLog
-from ..permissions import staff_console_required
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata
 
 
 @staff_console_required

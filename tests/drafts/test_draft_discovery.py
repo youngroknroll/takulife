@@ -13,7 +13,6 @@ from drafts.discovery import (
     extract_links_sitemap,
 )
 
-
 # billion-laughs류 엔티티 확장 공격 페이로드를 축소한 것. defusedxml은 크기와
 # 무관하게 이 형태 자체를 거부해야 한다.
 ENTITY_EXPANSION_XML = """<?xml version="1.0"?>

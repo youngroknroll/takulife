@@ -8,8 +8,8 @@
 
 import re
 
-import pytest
 from django.test import Client
+import pytest
 from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.web

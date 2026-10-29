@@ -5,8 +5,8 @@
 있는 판단이었다.
 """
 
-import pytest
 from django.core.paginator import Paginator
+import pytest
 
 from core.pagination import ELLIPSIS, page_window, pager_context
 

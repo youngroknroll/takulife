@@ -6,12 +6,12 @@
 단언은 HTML을 파싱해 요소 단위로 한다.
 """
 
-import re
 from datetime import date
 from html.parser import HTMLParser
+import re
 
-import pytest
 from django.test import Client
+import pytest
 
 pytestmark = [pytest.mark.web, pytest.mark.django_db]
 

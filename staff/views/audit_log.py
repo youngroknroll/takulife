@@ -11,11 +11,11 @@ from urllib.parse import urlencode
 from django.core.paginator import Paginator
 from django.shortcuts import render
 
-from ..action_labels import ACTION_LABELS
-from ..models import StaffActionLog
-from ..permissions import staff_console_required
-from ..search import search_term
-from ..queries import STAFF_ACTION_LOG_PAGE_SIZE, list_staff_action_log
+from staff.action_labels import ACTION_LABELS
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.queries import STAFF_ACTION_LOG_PAGE_SIZE, list_staff_action_log
+from staff.search import search_term
 
 
 def _build_audit_log_rows(rows):

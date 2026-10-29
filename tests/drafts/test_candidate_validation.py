@@ -1,10 +1,10 @@
 """drafts.candidate_validation 순수 함수·domain 테스트."""
 
-import socket
 from datetime import timedelta
+import socket
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from drafts.candidate_validation import (
     FAILURE_MESSAGES,
@@ -19,7 +19,6 @@ from drafts.models import DraftSource, EventDraft, SourceCandidate, SourceDiscov
 from drafts.robots import ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED, RobotsCheckResult
 from drafts.services import DraftCreationExcludedError
 from drafts.url_safety import UnsafeFetchUrlError
-
 
 pytestmark = pytest.mark.unit
 

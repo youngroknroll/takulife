@@ -7,13 +7,13 @@
 저장 정규화 자체는 tests/archive/test_personal_entry_category_i18n_api.py 소관이다.
 """
 
-import re
 from datetime import date
 from html.parser import HTMLParser
+import re
 from urllib.parse import unquote
 
-import pytest
 from django.test import Client
+import pytest
 
 pytestmark = [pytest.mark.web, pytest.mark.django_db]
 

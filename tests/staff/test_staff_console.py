@@ -6,8 +6,8 @@ import re
 import secrets
 import string
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from drafts.discovery_runs import record_heartbeat
 from drafts.models import (

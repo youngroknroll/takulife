@@ -1,8 +1,8 @@
 import importlib
 import secrets
 
-import pytest
 from django.core.exceptions import ImproperlyConfigured
+import pytest
 
 pytestmark = pytest.mark.contract
 

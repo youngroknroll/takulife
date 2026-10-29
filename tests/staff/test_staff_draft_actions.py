@@ -4,10 +4,10 @@
 로그 기록이 실패하면 승인/반려 자체도 함께 롤백된다.
 """
 
-import pytest
 from django.db import IntegrityError
 from django.urls import reverse
 from django.utils import timezone
+import pytest
 
 from drafts.models import EventDraft
 from events.models import Event

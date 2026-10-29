@@ -3,11 +3,10 @@
 범위 포함)을 다룬다.
 """
 
-import pytest
 from django.db import IntegrityError, transaction
+import pytest
 
 from archive.models import PersonalEntry, VisitRecord
-
 
 # ---------------------------------------------------------------------------
 # 모델 제약 — 대상은 정확히 하나여야 한다

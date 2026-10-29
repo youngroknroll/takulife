@@ -7,8 +7,8 @@
 
 from datetime import timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.domain
 

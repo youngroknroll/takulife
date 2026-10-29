@@ -10,7 +10,6 @@ from django.contrib.sessions.models import Session
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.utils import timezone
-
 import pytest
 
 from core.models import AnalyticsEvent, ErrorGroup

@@ -6,13 +6,13 @@
 페이지 응답으로 스모크 테스트한다.
 """
 
+from datetime import date
 import json
 import re
-from datetime import date
 
-import pytest
 from django.template.defaultfilters import truncatechars
 from django.utils.html import escape
+import pytest
 
 pytestmark = pytest.mark.web
 

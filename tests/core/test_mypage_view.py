@@ -9,8 +9,8 @@ archive_* 뷰와 같은 패턴) — 이 파일은 archive.models 원본 행만 �
 
 import datetime as dt
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from archive.models import (
     CollectionItem,

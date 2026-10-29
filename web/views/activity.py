@@ -1,8 +1,8 @@
 """활동 달력(캘린더) 조회 및 필터 관련 뷰와 헬퍼 모음."""
 
-import logging
 from collections import defaultdict
 from datetime import date, timedelta
+import logging
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
@@ -21,8 +21,7 @@ from archive.activity_calendar_queries import (
 from archive.models import ActivityLogEntry
 from archive.queries import user_status_counts
 from core.calendar_grid import month_grid
-
-from ._helpers import _adjacent_month, _parse_calendar_date, _parse_calendar_month
+from web.views._helpers import _adjacent_month, _parse_calendar_date, _parse_calendar_month
 
 logger = logging.getLogger(__name__)
 

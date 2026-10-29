@@ -9,8 +9,8 @@ partial 분기는 전체 페이지와 같은 q 필터를 적용하며, "1"이 �
 값은 전체 페이지로 대체 응답한다.
 """
 
-import pytest
 from django.test import Client
+import pytest
 
 from archive.models import PersonalEntry
 

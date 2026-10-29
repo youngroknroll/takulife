@@ -10,10 +10,9 @@
 리터럴 금지 — 시크릿 스캐너 가드).
 """
 
-import secrets
 from importlib import import_module
+import secrets
 
-import pytest
 from allauth.account.models import EmailAddress
 from django.conf import settings
 from django.contrib.auth import login
@@ -21,6 +20,7 @@ from django.core.cache import cache
 from django.db.utils import Error as DjangoDatabaseError
 from django.middleware.csrf import get_token
 from django.test import RequestFactory
+import pytest
 
 from drafts.models import EventDraft
 from events.models import Event

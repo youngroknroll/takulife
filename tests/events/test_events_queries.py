@@ -6,8 +6,9 @@
 - PUBLIC_LISTING_PAGE_SIZE: 페이지 크기 상수
 """
 
-import pytest
 from datetime import date, timedelta
+
+import pytest
 
 from events.models import Event
 
@@ -38,6 +39,7 @@ class TestParsePublicListingParams:
 
     def test_지역과_카테고리는_여러_값을_리스트로_모은다(self):
         from django.http import QueryDict
+
         from events.queries import parse_public_listing_params
 
         raw = QueryDict("region=seoul&region=gyeonggi&category=popup_store&category=exhibition")
@@ -62,8 +64,9 @@ class TestParsePublicListingParams:
         assert "page" not in result
 
     def test_잘못된_상태_값은_거부한다(self):
-        from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
+
+        from events.queries import parse_public_listing_params
 
         with pytest.raises(ValidationError) as exc_info:
             parse_public_listing_params({"status": "invalid_status"})
@@ -86,24 +89,27 @@ class TestParsePublicListingParams:
         "active"를 추가하면 이 테스트가 깨진다 — 공개 목록 API가 뷰 전용 값을
         그대로 받아들이게 되는 계약 확장을 여기서 막는다.
         """
-        from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
+
+        from events.queries import parse_public_listing_params
 
         with pytest.raises(ValidationError) as exc_info:
             parse_public_listing_params({"status": "active"})
         assert "status" in str(exc_info.value.detail)
 
     def test_잘못된_형식의_시작일_이후_값을_거부한다(self):
-        from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
+
+        from events.queries import parse_public_listing_params
 
         with pytest.raises(ValidationError) as exc_info:
             parse_public_listing_params({"start_date_from": "2026/06/01"})
         assert "start_date_from" in str(exc_info.value.detail)
 
     def test_잘못된_형식의_시작일_이전_값을_거부한다(self):
-        from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
+
+        from events.queries import parse_public_listing_params
 
         with pytest.raises(ValidationError) as exc_info:
             parse_public_listing_params({"start_date_to": "06-01-2026"})
@@ -157,8 +163,9 @@ class TestParsePublicListingParams:
         assert result["sort"] == "closing_soon"
 
     def test_잘못된_정렬_값은_거부한다(self):
-        from events.queries import parse_public_listing_params
         from rest_framework.exceptions import ValidationError
+
+        from events.queries import parse_public_listing_params
 
         with pytest.raises(ValidationError) as exc_info:
             parse_public_listing_params({"sort": "not_a_real_sort"})

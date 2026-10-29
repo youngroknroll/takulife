@@ -9,19 +9,19 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveDestroyAPIView,
     RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from .models import (
+from archive.models import (
     CollectionItem,
     EventInterest,
     PersonalEntry,
@@ -29,8 +29,8 @@ from .models import (
     VisitRecord,
     VisitRecordPhoto,
 )
-from .queries import list_user_collection_items, list_user_personal_entries
-from .serializers import (
+from archive.queries import list_user_collection_items, list_user_personal_entries
+from archive.serializers import (
     CollectionItemQuerySerializer,
     CollectionItemSerializer,
     CollectionItemUpdateSerializer,
@@ -44,7 +44,7 @@ from .serializers import (
     VisitRecordSerializer,
     VisitRecordUpdateSerializer,
 )
-from .services import (
+from archive.services import (
     MAX_PHOTOS_PER_RECORD,
     DuplicateEventInterestError,
     DuplicateUserEventStatusError,

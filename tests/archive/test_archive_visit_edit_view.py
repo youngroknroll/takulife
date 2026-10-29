@@ -5,8 +5,8 @@
 이뤄진다.
 """
 
-import pytest
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 

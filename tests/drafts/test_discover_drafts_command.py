@@ -3,8 +3,8 @@
 해당 테스트 안에 이유를 적어 둔다. DRAFT_DISCOVERY_ENABLED는 아래 autouse fixture로
 기본 True다."""
 
-import pytest
 from django.core.management import CommandError, call_command
+import pytest
 
 from drafts.candidate_intake import decide_and_create_candidate
 from drafts.discovery import DiscoveryParseError
@@ -17,7 +17,6 @@ from drafts.services import (
     DraftCreationExcludedError,
     DraftCreationFetchError,
 )
-
 
 pytestmark = [pytest.mark.django_db, pytest.mark.domain]
 

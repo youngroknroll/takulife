@@ -5,7 +5,7 @@ LLM과 휴리스틱 추출을 검증한다. DB 접근은 하지 않으며,
 drafts/management/commands/eval_extraction.py가 DB를 다루는 얇은 호출부다.
 """
 
-from .extraction import normalize_whitespace
+from drafts.extraction import normalize_whitespace
 
 # category/region/start_date/end_date는 어휘 슬러그·ISO 날짜라 정규화 없이 정확히
 # 비교한다 — 느슨하게 봐주면 실제 추출 오류를 놓친다. work_title/location_name은

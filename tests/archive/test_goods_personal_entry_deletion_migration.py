@@ -12,8 +12,8 @@ PR-C4 단계 E, 게이트 후속 M2).
 
 import importlib
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+import pytest
 
 from archive.models import CollectionItem, PersonalEntry
 

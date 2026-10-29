@@ -2,9 +2,9 @@
 content-type 거부, 응답 크기 상한, 정상 디코딩을 다루며, validate_fetch_url은
 전용 테스트가 따로 있어 여기서는 스텁 처리한다."""
 
+from django.test import override_settings
 import httpx
 import pytest
-from django.test import override_settings
 
 from drafts.fetching import (
     MAX_RESPONSE_BYTES,
@@ -15,7 +15,6 @@ from drafts.fetching import (
     UnsupportedContentTypeError,
     fetch_html,
 )
-
 
 pytestmark = pytest.mark.unit
 

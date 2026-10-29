@@ -26,10 +26,9 @@ from events.services import (
     republish_event,
     unpublish_event,
 )
-
-from ..models import StaffActionLog
-from ._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
-from .events import _event_quality_badges, _republish_error_message
+from staff.models import StaffActionLog
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
+from staff.views.events import _event_quality_badges, _republish_error_message
 
 logger = logging.getLogger(__name__)
 

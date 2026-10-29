@@ -13,7 +13,6 @@ from web.promotion_views import PromotePersonalEntryView
 from web.sitemaps import EventSitemap, StaticPageSitemap
 from web.sitemaps import sitemap as sitemap_view
 
-
 urlpatterns = [
     path("robots.txt", core_views.robots_txt, name="robots-txt"),
     path(

@@ -4,8 +4,8 @@
 에서 빠지고 이 프롬프트로 옮겨왔다 — 탐색은 페이지를 못 열지만 해석은
 읽기 단계가 가져온 본문을 보기 때문이다."""
 
-import json
 from datetime import date
+import json
 
 import pytest
 
@@ -16,7 +16,6 @@ from local_runner.caption_interpreter import (
     run_agent_interpretation,
     should_submit,
 )
-
 
 pytestmark = pytest.mark.unit
 

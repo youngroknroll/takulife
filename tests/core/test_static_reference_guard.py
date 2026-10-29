@@ -5,12 +5,12 @@ Django 테스트는 정적 파일을 받아오지 않아 전체 통과 상태에
 — 실제로 스태프 JS를 js/staff/로 옮겼을 때 2111건이 초록인 채 404가 났다.
 """
 
-import re
 from pathlib import Path
+import re
 
-import pytest
 from django.conf import settings
 from django.contrib.staticfiles import finders
+import pytest
 
 from core.context_processors import FONT_PRELOAD_CHUNKS
 from core.management.commands.bundle_shell_css import BUNDLE_RELATIVE_PATH

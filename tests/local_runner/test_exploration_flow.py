@@ -1,8 +1,8 @@
 """local_runner.exploration_flow — 탐색 출력의 events·sources 분리 파싱과
 상한 절단을 검증한다."""
 
-import logging
 from datetime import datetime, timezone
+import logging
 from urllib.parse import urlsplit
 
 import httpx
@@ -17,7 +17,6 @@ from local_runner.exploration_flow import (
     run_exploration_flow,
 )
 from local_runner.page_fetch import BlockedResponseError
-
 
 pytestmark = pytest.mark.unit
 

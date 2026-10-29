@@ -1,7 +1,6 @@
 """core.db_stats 검증 (트랙 37 S2 대시보드 저장소 패널, prompt_plan.md 트랙 37 S2 참고)."""
 
 from django.db import OperationalError, connection
-
 import pytest
 
 from core.db_stats import database_size_summary, format_bytes

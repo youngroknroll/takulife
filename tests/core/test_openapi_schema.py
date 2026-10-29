@@ -2,10 +2,9 @@
 
 import re
 
-import pytest
 from django.conf import settings
 from django.urls import URLResolver, get_resolver
-
+import pytest
 
 _HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options", "trace"}
 

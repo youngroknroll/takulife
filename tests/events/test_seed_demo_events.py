@@ -6,10 +6,10 @@
 - 시드 후: 진행중 >= 7, 마감임박(<=D+5) >= 4, fan_meeting 행사 존재.
 """
 
-import pytest
 from datetime import date, timedelta
 
 from django.core.management import call_command
+import pytest
 
 from events.models import Event
 

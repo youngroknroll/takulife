@@ -8,17 +8,16 @@ import io
 import secrets
 import string
 
-import PIL.Image
-import pytest
 from allauth.account.models import EmailAddress
 from django.core.cache import cache
 from django.db.utils import Error as DjangoDatabaseError
 from django.test import Client
 from django.utils import translation
+import PIL.Image
+import pytest
 
 from drafts.models import DraftSource, EventDraft
 from events.models import Event
-
 
 # core/migrations/0006_seed_categories.py의 _CATEGORY와 같은 값이다.
 # 마이그레이션은 동결 스냅샷을 심으므로 여기서 그 파일을 import하지 않는다.

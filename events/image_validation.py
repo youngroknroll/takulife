@@ -6,11 +6,10 @@
 
 import io
 
-import PIL.Image
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from PIL import ImageOps, UnidentifiedImageError
+import PIL.Image
 from rest_framework import serializers
-
 
 MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 # 압축폭탄 방어: 한 축의 최대 픽셀 길이

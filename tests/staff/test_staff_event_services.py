@@ -7,9 +7,9 @@ staff/services.py에 둔다.
 
 import datetime
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from archive.models import CollectionItem, EventInterest, UserEventStatus, VisitRecord
 from events.models import Event

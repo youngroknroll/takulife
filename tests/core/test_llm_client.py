@@ -7,9 +7,9 @@ tests/test_draft_fetching.py와 같은 방식을 따른다: 실제 네트워크 
 from types import SimpleNamespace
 
 import anthropic
+from django.test import override_settings
 import httpx
 import pytest
-from django.test import override_settings
 
 from core.llm.exceptions import (
     LLMConfigurationError,
@@ -17,7 +17,6 @@ from core.llm.exceptions import (
     LLMResponseError,
     LLMTimeoutError,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -112,8 +111,9 @@ def test_call_tool은_model_인자가_주어지면_설정값_대신_해당_모�
 
 @override_settings(LLM_MODEL="claude-haiku-4-5-20251001")
 def test_call_tool은_model_인자가_없으면_설정된_LLM_MODEL로_폴백한다():
-    from core.llm.client import call_tool
     from django.conf import settings
+
+    from core.llm.client import call_tool
 
     fake_client, calls = _fake_client(_tool_use_response({"is_event": True}))
 
@@ -129,8 +129,9 @@ def test_call_tool은_model_인자가_없으면_설정된_LLM_MODEL로_폴백한
 
 
 def test_call_tool은_설정된_LLM_MAX_TOKENS를_요청에_사용한다():
-    from core.llm.client import call_tool
     from django.conf import settings
+
+    from core.llm.client import call_tool
 
     fake_client, calls = _fake_client(_tool_use_response({"is_event": True}))
 
@@ -208,8 +209,9 @@ def test_call_tool은_여러_tool_use_블록_중_이름이_일치하는_블록�
 
 
 def test_get_client는_설정된_타임아웃과_api_키로_anthropic_클라이언트를_생성한다(monkeypatch):
-    from core.llm import client as client_module
     from django.conf import settings
+
+    from core.llm import client as client_module
 
     captured = {}
 
