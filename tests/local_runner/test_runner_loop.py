@@ -9,7 +9,7 @@ from local_runner.claude_code_adapter import AdapterOutputError
 from local_runner.exploration_flow import ExplorationFlowError, LeaseLostError
 from local_runner.progress import ProgressReporter
 import local_runner.runner as runner_module
-from local_runner.runner import _filter_candidates, _process_run, _safe_poll
+from local_runner.runner import _filter_candidates, _safe_poll
 
 pytestmark = pytest.mark.unit
 

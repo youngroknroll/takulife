@@ -10,7 +10,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 import pytest
 
-from archive.models import CollectionItem, PersonalEntry, VisitRecordPhoto
+from archive.models import PersonalEntry, VisitRecordPhoto
 
 pytestmark = pytest.mark.slow
 

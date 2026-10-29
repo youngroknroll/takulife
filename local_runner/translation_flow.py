@@ -143,7 +143,10 @@ def _translate_one(client, event, translate):
 
 def translate_pending_batch(client, *, attempts, translate=None, limit=TRANSLATION_BATCH_LIMIT):
     if translate is None:
-        translate = lambda fields: run_agent_translation(build_translation_prompt(fields))
+
+        def translate(fields):
+            """번역 에이전트 호출 기본값. 호출 시점에 전역 함수를 조회한다."""
+            return run_agent_translation(build_translation_prompt(fields))
 
     events = client.pending()
     attempted_count = 0

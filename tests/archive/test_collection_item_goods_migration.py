@@ -44,7 +44,7 @@ def _make_goods(user, **kwargs):
 @pytest.mark.django_db
 def test_GOODS_항목을_이관하면_기본_필드와_분류_라벨이_컬렉션_아이템에_반영된다(make_user):
     user = make_user()
-    entry = _make_goods(
+    _make_goods(
         user,
         title="최애 키링",
         work_title="최애의 아이2",

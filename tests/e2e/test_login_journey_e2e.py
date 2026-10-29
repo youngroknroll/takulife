@@ -1,8 +1,6 @@
 """로그인 → 로그아웃 여정 — 보호 페이지 게이트가 실제 브라우저 세션에서
 그대로 지켜지는지 확인한다(폼 로그인 성공 뒤 로그아웃, 재방문 시 재로그인 요구)."""
 
-import re
-
 from playwright.sync_api import expect
 
 

@@ -10,7 +10,6 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 import pytest
 
-from events.models import Event
 from staff.models import StaffActionLog
 
 

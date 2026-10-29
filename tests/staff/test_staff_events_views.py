@@ -10,7 +10,6 @@ from django.utils import timezone
 import pytest
 
 from core.models import Category
-from events.models import Event
 
 pytestmark = pytest.mark.web
 

@@ -8,7 +8,6 @@ from archive.models import (
     PersonalEntry,
     UserEventStatus,
     VisitRecord,
-    VisitRecordPhoto,
 )
 from core.vocab import normalize_collection_item_type, normalize_personal_category
 from events.image_validation import validate_uploaded_image

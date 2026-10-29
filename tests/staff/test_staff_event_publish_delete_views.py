@@ -5,7 +5,6 @@
 폼에서만 오는 POST 전용 SSR 액션이며 JSON API가 아니다.
 """
 
-import datetime
 import re
 
 from django.db import connection

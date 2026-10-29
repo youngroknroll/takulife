@@ -7,7 +7,6 @@ import logging
 import time
 
 from django.conf import settings
-from django.test import override_settings
 import pytest
 
 from core.llm.exceptions import (

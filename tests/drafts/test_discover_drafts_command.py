@@ -202,7 +202,7 @@ class TestListingLevel:
         self, monkeypatch, failure_mode, make_draft, make_source
     ):
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
         def fake_fetch(url, **kwargs):
@@ -240,7 +240,7 @@ class TestListingLevel:
         실제 운영 데이터에서 있을 수 있는 상태다. 그 소스만 실패해야 하고 B 소스
         처리 전에 전체가 죽으면 안 된다."""
         source_a = make_source(name="A", url="https://a.example.com/feed.xml", source_type="atom")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html",
@@ -296,7 +296,7 @@ class TestCandidateLevel:
     def test_이미_존재하는_URL은_후보_robots_점검_전에_중복_제거된다(
         self, monkeypatch, make_draft, make_source, fail_if_called
     ):
-        source = make_source()
+        make_source()
         candidate_url = "https://target.example.com/event-1"
         make_draft(candidate_url, review_status=EventDraft.ReviewStatus.REJECTED)
         _install_listing(monkeypatch, [candidate_url])
@@ -324,7 +324,7 @@ class TestCandidateLevel:
     def test_후보_URL이_robots에_의해_차단되면_실행_실패_없이_사유별로_건너뛴다(
         self, monkeypatch, reason, report_substring, capsys, make_source, fail_if_called
     ):
-        source = make_source()
+        make_source()
         candidate_url = "https://target.example.com/event-1"
         _install_listing(monkeypatch, [candidate_url])
         checker = _FakeRobotsChecker(outcomes={candidate_url: RobotsCheckResult(False, reason)})
@@ -341,7 +341,7 @@ class TestCandidateLevel:
         assert report_substring in output
 
     def test_중복_생성_오류는_실행_실패로_이어지지_않고_건너뛴다(self, monkeypatch, make_source):
-        source = make_source()
+        make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -356,7 +356,7 @@ class TestCandidateLevel:
         call_command("discover_drafts")
 
     def test_빈_추출_오류도_실행_실패로_이어지지_않고_건너뛴다(self, monkeypatch, make_source):
-        source = make_source()
+        make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -444,7 +444,7 @@ class TestCandidateLevel:
     def test_수집_명령_보고에_사유별_제외_건수가_나온다(
         self, monkeypatch, reason, report_substring, capsys, make_source
     ):
-        source = make_source()
+        make_source()
         _install_listing(monkeypatch, ["https://target.example.com/event-1"])
         _patch_robots_checker(monkeypatch, _FakeRobotsChecker())
 
@@ -469,8 +469,8 @@ class TestCandidateLevel:
         같은 소스 내 중복 제거만으로는 닿지 않는 실제 IntegrityError →
         DraftCreationDuplicateError 경로를 검증하는 유일한 테스트다."""
         shared_url = "https://target.example.com/event-1"
-        source_a = make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="A", url="https://a.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
 
         monkeypatch.setattr(
             "drafts.management.commands.discover_drafts.fetch_html",
@@ -551,7 +551,7 @@ class TestCaps:
         생성돼 버린다."""
         settings.DRAFT_DISCOVERY_MAX_PER_RUN = 1
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
         url_a = "https://target.example.com/event-a"
         url_b = "https://target.example.com/event-b"
 
@@ -583,7 +583,7 @@ class TestCaps:
         후보도 덩달아 보류된다. 이 테스트는 소스별 독립성을 고정한다."""
         settings.DRAFT_DISCOVERY_MAX_FETCHES_PER_SOURCE = 1
         source_a = make_source(name="A", url="https://a.example.com/feed.xml")
-        source_b = make_source(name="B", url="https://b.example.com/feed.xml")
+        make_source(name="B", url="https://b.example.com/feed.xml")
         url_a1 = "https://a-target.example.com/event-1"
         url_a2 = "https://a-target.example.com/event-2"
         url_b1 = "https://b-target.example.com/event-1"

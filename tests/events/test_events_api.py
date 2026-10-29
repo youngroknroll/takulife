@@ -259,8 +259,8 @@ def test_공개_행사_목록은_마감임박_상태_필터로_5일_이내_종�
 
 @pytest.mark.django_db
 def test_공개_행사_목록은_잘못된_상태_필터값을_거부한다(client, make_event):
-    first = make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
-    second = make_event(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
+    make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
+    make_event(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/", {"status": "invalid"})
 

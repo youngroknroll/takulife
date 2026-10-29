@@ -53,8 +53,8 @@ class TestEventListInvalidFilters:
         assert "Popup match" in body
 
     def test_지역_값을_여러_개_전달하면_OR_조건으로_일치하는_행사를_모두_보여준다(self, make_event):
-        seoul = make_event(title="Seoul one", region="seoul")
-        gyeonggi = make_event(title="Gyeonggi one", region="gyeonggi")
+        make_event(title="Seoul one", region="seoul")
+        make_event(title="Gyeonggi one", region="gyeonggi")
         make_event(title="Busan one", region="busan")
 
         resp = Client().get("/events/?region=seoul&region=gyeonggi")

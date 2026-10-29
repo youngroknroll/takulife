@@ -44,7 +44,6 @@ from django.utils import timezone
 from drafts.candidate_intake import (
     LISTING_CONTENT_TYPES_BY_SOURCE_TYPE,
     ROBOTS_REASON_TO_SKIP_KEY,
-    CandidateOutcome,
     decide_and_create_candidate,
 )
 from drafts.discovery import extract_candidate_urls

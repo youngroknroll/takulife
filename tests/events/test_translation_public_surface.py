@@ -9,7 +9,6 @@ import re
 import pytest
 
 from events.content_translation import TRANSLATED_FIELDS, source_hash
-from events.models import Event
 
 pytestmark = [pytest.mark.django_db, pytest.mark.web]
 

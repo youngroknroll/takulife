@@ -164,7 +164,7 @@ def _upsert_error_group(
 
     try:
         with transaction.atomic():
-            created = ErrorGroup.objects.create(
+            ErrorGroup.objects.create(
                 source=source,
                 fingerprint=fingerprint,
                 error_type=error_type_sample,
