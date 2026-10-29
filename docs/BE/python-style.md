@@ -19,7 +19,7 @@
 | 도구 | 줄 길이 100칸, `ruff format` 서식 | `pyproject.toml` `[tool.ruff]`, CI |
 | 도구 | 임포트 전체 모듈 경로 사전순(대소문자 무시, import/from 혼합) | ruff `I`, `force-sort-within-sections`, `case-sensitive = false` |
 | 도구 | 절대 임포트만 | ruff `TID252`, `ban-relative-imports = "all"` |
-| 도구 | 미사용 임포트·변수, 와일드카드 임포트 | ruff `F` (예외: `config/settings_test.py` 한 곳, `# noqa` + 계약 테스트) |
+| 도구 | 미사용 임포트·변수, 와일드카드 임포트 | ruff `F`. 와일드카드 예외는 `config/settings_test.py` 한 곳(`# noqa: F401,F403`)이고, 계약 테스트 `test_test_settings_boundary.py`는 그 임포트 뒤의 덮어쓰기 순서를 고정한다. 부수효과·재노출 때문에 남기는 임포트(`apps.py` 3곳, `drafts/runner_views.py`, `drafts/candidate_validation.py`)는 `# noqa: F401`과 한국어 사유를 단다 |
 | 도구 | 가변 기본 인자 금지 | ruff `B006` |
 | 도구 | `migrations/` 제외, `tests/**` 줄 길이(E501) 제외 | `[tool.ruff]` 제외 설정 |
 | 리뷰 | 이름 규칙, 예외 클래스 `Error` 접미, bare except 금지, `TODO(<scope>)` | 사람 |
@@ -58,7 +58,7 @@ ruff는 한글을 2칸으로 센다. Google의 80칸은 채택하지 않았다.
 | 위반 | 건수 | 처리 | 출처 |
 |---|---|---|---|
 | 상대 임포트 | 임포트 문장 142개(이름 단위 338건), 69개 파일, 레벨 1이 114문장·레벨 2가 28문장(전부 `staff/views`) | 모두 절대 임포트로 변환(커밋 9debe14c) | [실측 2026-10-29] |
-| 임포트 정렬 위반 | 272건 | `--select I --fix`로 정리(커밋 9debe14c) | [실측 2026-10-29, 커밋 9debe14c] |
+| 임포트 정렬 위반 | 272건(상대 임포트를 절대화한 직후 측정. 설정 직후에는 256건이었고 포맷 전 시험에서는 253건으로 시점마다 다르다) | `--select I --fix`로 정리(커밋 9debe14c) | [실측 2026-10-29, 커밋 9debe14c] |
 | 포맷 | 377개 파일 | `ruff format` 적용(커밋 b6dd5035) | [실측 2026-10-29 ruff 0.15.22] |
 | 미사용 임포트·변수(F401·F841), E731 | 29건(F401 11·F841 17·E731 1) | 수동 정리(커밋 a33f00c4). F401은 10건 제거, 1건(`drafts/candidate_validation.py`의 `LeaseInvalidError`)은 `runner_views`와 테스트가 이 경로로 가져와 `# noqa: F401`과 한국어 사유로 유지. 첫 시도에서 한 줄 검색이 여러 줄 임포트를 놓쳐 수집 오류(ImportError)가 났고 구문 트리 전수 검사로 나머지 10건을 다시 확인했다. F841은 대입만 지우고 호출은 보존 | [실측 2026-10-29] |
 | 테스트 외 코드 긴 줄 | 16건(주석 8·docstring 2·문자열 6) | 줄바꿈(커밋 69b49271). 문자열은 인접 리터럴로 나눠 값 불변 | [실측 2026-10-29] |

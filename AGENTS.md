@@ -709,8 +709,10 @@ Configuration is `[tool.ruff]` in `pyproject.toml`; CI job
   `from` statements mixed.
 - Absolute imports only; relative imports are forbidden.
 - No unused imports or variables, no wildcard imports (the single exception is
-  `config/settings_test.py`, pinned by `# noqa` and a contract test), and no
-  mutable default arguments.
+  `config/settings_test.py`, which carries `# noqa` and whose override order a
+  contract test pins), and no mutable default arguments. An import kept only
+  for a side effect or as a re-export carries `# noqa: F401` and a Korean
+  reason.
 - Excluded from checks: `migrations/` (generated code) and the line-length rule
   (E501) under `tests/**`, because behavior-first Korean test names cannot be
   shortened (Test Authoring Policy).
@@ -720,7 +722,8 @@ Configuration is `[tool.ruff]` in `pyproject.toml`; CI job
 - Names: functions and variables `snake_case`, classes `CapWords`, constants
   `UPPER_SNAKE_CASE`. Django idioms such as `User = get_user_model()` are
   allowed.
-- Exception class names end with `Error`.
+- Exception class names end with `Error`. Classes that predate this rule, such
+  as `SubmissionRejected`, are not renamed.
 - No bare `except` (same rule as Error Handling And Logging).
 - TODO markers follow the existing `TODO(<scope>)` rule.
 

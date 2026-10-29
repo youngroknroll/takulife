@@ -31,6 +31,7 @@ def _parse_imported_module_names(source_path):
     전부 최상위 패키지라 상대 임포트로는 앱 경계를 넘을 수 없으므로, 건너뛰어도
     탐지력 손실은 0이고 core/views·staff/views의 `from .archive import ...`
     같은 오탐만 사라진다(.docs/BE/boundary-guard-glob-plan.md 승인 범위 3).
+    2026-10-29부터 저장소의 상대 임포트는 0건이고 ruff TID252가 재도입을 막는다.
     `_imported_modules`와 `_forbidden_imports_in_file`이 공유하는 단일 파서다."""
     tree = ast.parse(source_path.read_text())
     modules = set()

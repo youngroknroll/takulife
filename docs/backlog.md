@@ -641,6 +641,16 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - `prompt_plan.md` 트랙 44 머리말 — **해소**: "44-1 PR #399 머지 완료(2026-10-27)"로 갱신(사용자 지시).
 - 어댑터 2개의 `/tmp/claude-progress` 진행 파일 규약 — **삭제**(사용자 지시, 소비자 없음).
 
+## M. Python 스타일(트랙 48) 이연 (2026-10-29)
+
+Google Python 스타일 가이드를 ruff로 도입했다(PR #405, `docs/BE/python-style.md`). 규칙 자체는 `AGENTS.md` "Python Style Guide"가 정본이고, 아래는 같은 PR에서 하지 않은 것이다.
+
+- **문서 `파일:줄` 참조 재측정** — 문서 15개에 `.py:NNN` 참조가 244줄 있다 `[실측 rg 2026-10-29]`. 포맷·정렬로 일부가 낡았다. 운영·배포 런북 9곳만 정정했다. 트리거: 해당 문서를 고칠 때 그 문서의 참조를 재측정한다.
+- **린트 계약 테스트의 판별력 한계** — `tests/core/test_lint_gate_contract.py`는 `lint.ignore`·`per-file-ignores` 확대, `|| true`, 잡 수준 `if: false`를 막지 못한다(QVL 지적). 트리거: 이런 약화가 한 번이라도 리뷰에서 발견될 때.
+- **`LeaseInvalidError` 재노출** — `drafts/candidate_validation.py`가 `# noqa: F401`로 다시 내보낸다. `drafts/runner_views.py`와 `tests/drafts/test_candidate_validation.py`가 `drafts.discovery_runs`에서 직접 가져오게 바꾸면 noqa가 사라진다. 정확성 결함은 아니다.
+- **`Error` 접미사 없는 기존 예외 클래스** — `SubmissionRejected`(`events/content_translation.py`)처럼 규칙보다 먼저 있던 클래스는 개명하지 않았다. 개명은 임포트·테스트를 넓게 건드린다.
+- **ruff 버전 상향** — 설치 버전은 0.15.22였고 시험은 0.15.12였다. 상향 때는 `uv run ruff format --check .`를 다시 재고 같은 PR에서 포맷 커밋을 만든다(`docs/BE/python-style.md` "ruff 상향 절차").
+
 ## 착수하지 않는 것
 
 - **인프라 계정 액션** — 도메인 등록, PaaS 계약, SMTP 설정(T1~T8). 사용자가
