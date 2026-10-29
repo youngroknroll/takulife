@@ -98,6 +98,8 @@ or the task requires a repository-wide repeated-pattern check.
 - Migration drift: `uv run python manage.py makemigrations --check --dry-run`
 - Targeted test: `uv run pytest -q <test-path>`
 - Backend regression: `uv run pytest -q`
+- Lint: `uv run ruff check .`
+- Format check: `uv run ruff format --check .`
 - E2E journeys: `uv run pytest -q -m e2e tests/e2e`
 - Local server: `uv run python manage.py runserver`
 
@@ -128,6 +130,9 @@ test. During Red-Green, run the targeted test before broad regression.
 - Keep business rules in owning models, domain functions, or application services.
 - Avoid speculative abstractions, adjacent cleanup, silent mutation, and broad
   refactors.
+- Python style follows the Google Python Style Guide as amended by `AGENTS.md`
+  "Python Style Guide" (100 columns, absolute imports, import order enforced by
+  ruff in CI); this repository's rules win on conflict.
 - Write code comments and docstrings only for non-obvious intent or constraints;
   use one or two short lines of plain Korean a non-developer can follow, never
   a translation of the code. The detailed standard is in `AGENTS.md`.

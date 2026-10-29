@@ -191,7 +191,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     예약하지 않는다** — 명령 docstring도 "정기 스케줄링은 배포/런북의
     책임"이라고 명시한다. `/accounts/delete/done/` 화면은 사용자에게 유예
     기간이 지나면 계정이 파기된다고 명시적으로 안내하므로(유예 기간 값의
-    진실 원천은 `accounts/services.py:24`의 `DELETION_GRACE_PERIOD = timedelta(days=10)`),
+    진실 원천은 `accounts/services.py:25`의 `DELETION_GRACE_PERIOD = timedelta(days=10)`),
     이 등록이 누락되면 그 안내가 지켜지지 않고 유예 기간이 지난 개인정보가
     무기한 잔존한다. 명령은 실패 시(개별 후보 삭제 중 에러 발생) 0이 아닌
     종료 코드로 끝나므로(`CommandError`, 실패 건수와 함께), 스케줄러에

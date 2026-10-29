@@ -203,7 +203,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 - **익명 사용자** → `settings.LOGIN_URL`(`/accounts/login/`)로 리다이렉트(`next` 파라미터 보존).
 - **로그인했지만 스태프가 아닌 사용자** → `403 PermissionDenied`(로그인 페이지로 되돌리지 않는다 — 이미 로그인된 상태에서 LOGIN_URL로 보내면 allauth의 인증됨 리다이렉트와 충돌해 무한 루프가 될 수 있기 때문).
 - Django 기본 관리자 페이지(`/admin/`)는 슈퍼유저용 백업 경로로 계속 유지되지만, `accounts.User`는 여전히 admin에 등록돼 있지 않다(`accounts/admin.py` 없음). 계정 운영(`is_staff` 부여/해제, `is_active` 전환)은 이제 admin이나 shell이 아니라 `/staff/accounts/`(트랙 19, H1)에서 한다: `superuser_console_required`(`staff/permissions.py`)로 조작 주체를 superuser로 한정하고, 목표 상태 지정(`enabled="1"`/`"0"`, 토글 아님) + `confirmed=yes` 2단계 확인을 거쳐 `accounts/services.py`의 `set_staff_flag`·`set_active_flag`를 호출한다. 상세 가드레일(멱등, 보호 계정, 감사 기록 형태)은 `docs/BE/staff-account-operations.md`가 정본이다.
-- **예외 — superuser 계정 자체(자기 계정 포함)는 콘솔 대상에서 제외**된다(사용자 확정 2026-09-07: superuser는 `createsuperuser`·shell로만 만들고 바꾼다): `set_staff_flag`·`set_active_flag`가 `user.is_superuser`면 `ProtectedAccountError`를 던져 뷰가 무변경으로 되돌린다(`accounts/services.py:179-190`, `:194-203`). superuser 계정을 다뤄야 하면 지금도 아래처럼 shell로 직접 조작한다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 비상용 명령이라 `uv run`을 쓴다):
+- **예외 — superuser 계정 자체(자기 계정 포함)는 콘솔 대상에서 제외**된다(사용자 확정 2026-09-07: superuser는 `createsuperuser`·shell로만 만들고 바꾼다): `set_staff_flag`·`set_active_flag`가 `user.is_superuser`면 `ProtectedAccountError`를 던져 뷰가 무변경으로 되돌린다(`accounts/services.py:180-191`, `:195-204`). superuser 계정을 다뤄야 하면 지금도 아래처럼 shell로 직접 조작한다(§1의 `axes_reset_ip`처럼 운영자가 로컬 체크아웃에서 치는 비상용 명령이라 `uv run`을 쓴다):
 
   ```bash
   uv run python manage.py shell -c "from accounts.models import User; u = User.objects.get(email='<email>'); u.is_staff = False; u.save(update_fields=['is_staff'])"
@@ -212,7 +212,7 @@ PaaS(managed load balancer 등)를 쓰는 경우 이 설정은 보통 플랫폼�
 
   `is_active=False`로 바꾸면 다음 요청부터 그 계정의 세션이 무효화된다(`[실측 2026-09-05]` Django `ModelBackend.get_user`가 `user_can_authenticate` 실패 시 None을 반환하고, allauth 인증 백엔드는 `get_user`를 오버라이드하지 않는다).
   `createsuperuser`는 트랙 29부터 닉네임 프롬프트가 추가됐다(`accounts.models.User.REQUIRED_FIELDS`에 `nickname` 포함).
-- 계정 상태 변경은 `StaffActionLog.target_user`로 기록된다(`staff/models.py:53-58`). 운영자(is_staff) 화면에는 대상 회원 이메일을 노출하지 않고 `계정 #<id>`로만 표시한다(`staff/views/audit_log.py:32-34`).
+- 계정 상태 변경은 `StaffActionLog.target_user`로 기록된다(`staff/models.py:53-58`). 운영자(is_staff) 화면에는 대상 회원 이메일을 노출하지 않고 `계정 #<id>`로만 표시한다(`staff/views/audit_log.py:31-33`).
 - 정정 전 기록(2026-09-05 이전 문안): "Staff Console 접근에 문제가 생기면 슈퍼유저는 `/admin/`으로 계정/권한을 직접 조작할 수 있다" — 실측으로 사실과 다름이 확인돼 위와 같이 바꿨다.
 - 정정 전 기록(2026-09-07 이전 문안): "accounts.User는 admin 미등록이라 스태프 권한 부여/해제(`is_staff`)와 계정 비활성화(`is_active`)는 `/admin/`에서 할 수 없고, shell로 직접 다룬다" — 트랙 19로 `/staff/accounts/` 화면이 생겨 superuser 대상이 아닌 계정은 더 이상 shell이 유일한 경로가 아니다.
 - **만료 행사 일괄 비공개 처리(트랙 24, H2)**: `/staff/events/`에서 경고 필터 "종료됐지만 게시 중"을 걸고 체크박스로 대상을 선택한 뒤 "선택 항목 비공개로 설정"을 누르면 한 번에 최대 20건[코드]까지 처리된다(`POST /staff/events/bulk-unpublish/`, 상세 가드레일은 `docs/BE/staff-event-publish-actions.md`가 정본). 부분 실패 시 처리되지 않은 행에는 사유가 표시되며, 서버가 멱등이라 같은 선택으로 재시도해도 이미 처리된 항목이 다시 바뀌지 않는다.
@@ -260,9 +260,9 @@ one-off command" 등 이 컨테이너의 기본 ENTRYPOINT를 우회하고 지�
 `삭제 N건 / 실패 M건`이 실제로 찍히는지 확인한다 — 이 확인이 없으면
 "스케줄러에 등록했다"와 "실제로 파기가 실행된다"를 구분할 방법이 없다.
 
-- `accounts.services.execute_pending_deletions`(`accounts/services.py:206`)를
+- `accounts.services.execute_pending_deletions`(`accounts/services.py:207`)를
   호출하는 얇은 래퍼다. 유예 기간(`DELETION_GRACE_PERIOD = timedelta(days=10)`,
-  `accounts/services.py:24`)이 지난 탈퇴 후보를 조회해, **후보마다 개별
+  `accounts/services.py:25`)이 지난 탈퇴 후보를 조회해, **후보마다 개별
   트랜잭션**으로 취소 여부를 재확인한 뒤 하드 삭제한다.
 - **실행 주기 권고: 하루 1회.** 유예 기간이 10일 단위이므로, 파기 시점이
   하루 정도 늦어져도 사용자에게 약속한 기한을 벗어나는 정도가 작다. 반대로
@@ -301,10 +301,10 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
 실행**해 표준출력에 대상별 `count=`·`deleted=` 줄이 실제로 찍히는지
 확인한다.
 
-- `core.retention.prune_operational_data`(`core/retention.py:66-79`)를 호출하는
+- `core.retention.prune_operational_data`(`core/retention.py:67-80`)를 호출하는
   얇은 래퍼다. 만료 세션, 보존 기간이 지난 axes 로그(`AccessLog`·
   `AccessFailureLog`), 보존 기간이 지난 `core.ErrorGroup`(트랙 36)을 대상별로
-  정리한다. `--days`(기본 90 `[코드 core/retention.py:66]`)는
+  정리한다. `--days`(기본 90 `[코드 core/retention.py:67]`)는
   `access_logs`·`access_failure_logs`·`error_groups`에 적용되고, `sessions`는
   만료분만 지운다. 대상 표·제외 이유·설계상 0건인 이유는
   `docs/BE/data-retention.md` 참고.
@@ -360,7 +360,7 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   러너 재시작 전에 맥 저장소를 머지된 main으로 맞춘 뒤 `uv sync`를
   실행한다(러너가 옛 코드·옛 의존성으로 뜨는 것을 막는다).
 - **env 파일**: 러너 시크릿(러너가 읽는 이름은 `TAKULIFE_RUNNER_TOKEN`,
-  `TAKULIFE_SERVER_URL` `[코드 local_runner/config.py:53-54]`이고,
+  `TAKULIFE_SERVER_URL` `[코드 local_runner/config.py:54-55]`이고,
   `DRAFT_DISCOVERY_RUNNER_TOKEN`은 서버 설정 이름이다)은 저장소 밖 `~/.takulife-runner.env`에
   `chmod 600`으로 둔다. 실행 전 `set -a; source
   ~/.takulife-runner.env; set +a`로 셸에 로드한 뒤 `uv run python -m
@@ -493,7 +493,7 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   record_error`는 DB 장애 시 자체 저장 실패를 삼키고(무예외 보장) WARNING
   1줄만 남기며, 백엔드 핸들러(`core.logging.ErrorGroupHandler`)는 원 예외가
   `django.db.Error` 계열이면 애초에 저장을 시도하지 않는다
-  (`core/logging.py:20-25`) — DB 장애 자체가 오류 묶음으로 기록되지 않는
+  (`core/logging.py:21-26`) — DB 장애 자체가 오류 묶음으로 기록되지 않는
   설계다. 가드레일 상세는 `docs/BE/error-groups.md` 참고.
 - **기록 자체가 실패했는지 확인하는 법**: PaaS 콘솔 로그(stdout)에서
   `error-group record failed`를 검색한다 — 이 고정 접두어가 나오면

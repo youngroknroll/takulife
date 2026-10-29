@@ -1,0 +1,7 @@
+# 서식만 바꾼 커밋 목록. `git config blame.ignoreRevsFile .git-blame-ignore-revs`로 켠다.
+# GitHub 웹 blame은 이 파일을 자동으로 적용한다. 새 포맷 전용 커밋은 여기에 추가한다.
+
+# style: Apply ruff format at 100 columns
+b6dd5035b7e68f5dbf4e5ff4710e5f9b22248270
+# style: Use absolute imports and Google import order
+9debe14c7e66cd3d37d45101be27d99036e2311a

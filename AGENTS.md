@@ -686,6 +686,60 @@ Prefer a brief explanation of the user-facing reason:
 if item.owner_id == request.user.id:
 ```
 
+## Python Style Guide
+
+The baseline is the
+[Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
+with the amendments below. Where the two conflict, this repository's rules win.
+Measurements and rationale live in `docs/BE/python-style.md`; this section
+holds the rules only.
+
+### Enforced by tooling
+
+Configuration is `[tool.ruff]` in `pyproject.toml`; CI job
+"Lint and format (PR gate)" runs both commands.
+
+- Commands: `uv run ruff check .` and `uv run ruff format .` (check only:
+  `uv run ruff format --check .`).
+- Line length is 100 columns (ruff counts a Hangul character as 2 columns),
+  not Google's 80. The rationale and the change-size measurement are in
+  `docs/BE/python-style.md`.
+- Formatting is `ruff format` output.
+- Imports are sorted by full module path, case-insensitive, with `import` and
+  `from` statements mixed.
+- Absolute imports only; relative imports are forbidden.
+- No unused imports or variables, no wildcard imports (the single exception is
+  `config/settings_test.py`, pinned by `# noqa` and a contract test), and no
+  mutable default arguments.
+- Excluded from checks: `migrations/` (generated code) and the line-length rule
+  (E501) under `tests/**`, because behavior-first Korean test names cannot be
+  shortened (Test Authoring Policy).
+
+### Enforced by review
+
+- Names: functions and variables `snake_case`, classes `CapWords`, constants
+  `UPPER_SNAKE_CASE`. Django idioms such as `User = get_user_model()` are
+  allowed.
+- Exception class names end with `Error`.
+- No bare `except` (same rule as Error Handling And Logging).
+- TODO markers follow the existing `TODO(<scope>)` rule.
+
+### Google rules not adopted (project rules win)
+
+- Docstring `Args:`/`Returns:`/`Raises:` sections and English docstrings: Code
+  Comment Policy requires one or two short Korean lines.
+- "Import packages and modules only": importing Django/DRF names is the
+  idiom, and monkeypatch targets and AST boundary tests depend on name imports.
+- Mandatory type hints: not required.
+- Pylint-only checks: not run.
+
+### Format-only commits
+
+- Record every format-only commit in `.git-blame-ignore-revs`, including any new
+  format-only commit.
+- When bumping ruff, re-run `uv run ruff format --check .` and, if it reports
+  changes, make the format commit in the same PR.
+
 ## Test Authoring Policy
 
 This policy binds every backend test. Historical test-policy records may explain
@@ -1023,6 +1077,8 @@ with `uv`. This section is the current command policy.
 - Remove a dependency with `uv remove <package>`.
 - Sync the environment with `uv sync`.
 - Run tests, Django commands, and management commands with `uv run ...`.
+- Lint and format with `uv run ruff check .` and `uv run ruff format .`; ruff
+  is a dev dependency in `pyproject.toml`.
 - CI and deployment one-off Python expressions also use `uv run python ...`.
 - CI and deployment use `uv sync --frozen` (add `--no-dev` for a production
   image where appropriate).
