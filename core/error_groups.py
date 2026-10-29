@@ -4,6 +4,7 @@
 시크릿 값이 섞였으면 메시지 전체를 비우고, 이메일을 가리고, URL 쿼리를
 잘라 개인정보·인증값이 저장 행에 남지 않게 한다.
 """
+
 import hashlib
 from datetime import timedelta
 import logging
@@ -147,7 +148,9 @@ def record_error(*, source, error_type, location, message):
         )
 
 
-def _upsert_error_group(ErrorGroup, *, fingerprint, source, error_type_sample, location, sample, now):
+def _upsert_error_group(
+    ErrorGroup, *, fingerprint, source, error_type_sample, location, sample, now
+):
     """기존 지문이면 count만 늘리고, 새 지문이면 만든다.
 
     동시에 다른 트랜잭션이 같은 지문을 먼저 만들었으면(경합) create()가

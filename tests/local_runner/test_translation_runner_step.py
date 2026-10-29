@@ -2,6 +2,7 @@
 번역 단계 실패가 폴링 루프를 멈추지 않는지, 폴링 성공 후에만 번역 단계가
 도는지 확인한다. _make_fake_ticker_class 등 기존 test_runner_loop.py의
 가짜 객체 관례를 따른다. DB·실제 HTTP·실제 claude 없음."""
+
 import httpx
 import pytest
 

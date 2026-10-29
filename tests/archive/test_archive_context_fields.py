@@ -6,6 +6,7 @@ _subject_view / _build_archive_status_rows는 여러 아카이브 페이지가 �
 - subject.category_slug — 공식 이벤트의 원본 category 값(라벨이 아닌 slug)
 - status row.updated_at — UserEventStatus.updated_at
 """
+
 from datetime import datetime
 
 import pytest
@@ -114,9 +115,7 @@ def test_상태_행_컨텍스트에_최신_방문기록의_리뷰와_id가_담�
     user, client = user_client()
     event = make_event(title="방문 행사")
     make_status(user, event=event, status="visited")
-    visit = make_visit(
-        user, event=event, visited_on="2026-06-01", short_review="좋았어요"
-    )
+    visit = make_visit(user, event=event, visited_on="2026-06-01", short_review="좋았어요")
 
     resp = client.get("/archive/statuses/")
 

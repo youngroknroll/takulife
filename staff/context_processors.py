@@ -4,6 +4,7 @@
 아닌 요청에서는 즉시 빈 dict를 반환해 소비자 페이지 요청마다 쿼리가 늘어나지
 않게 한다.
 """
+
 from drafts.queries import draft_review_stats
 
 from .search import SEARCHABLE_URL_NAMES, search_form_hidden_params, search_term

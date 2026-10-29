@@ -1,5 +1,6 @@
 """소셜 가입도 이용약관/개인정보처리방침 명시적 동의를 요구한다
 (accounts.forms.SocialSignupForm 참고)."""
+
 from allauth.socialaccount.models import SocialLogin
 from django.test import RequestFactory
 from django.utils import timezone
@@ -12,7 +13,9 @@ pytestmark = pytest.mark.domain
 
 
 @pytest.mark.django_db
-def test_소셜_가입_폼에_약관_동의_없이_제출하면_폼이_거부되고_지정된_오류_메시지를_담는다(django_user_model):
+def test_소셜_가입_폼에_약관_동의_없이_제출하면_폼이_거부되고_지정된_오류_메시지를_담는다(
+    django_user_model,
+):
     user = django_user_model(email="social-reject@example.com")
     sociallogin = SocialLogin(user=user)
 
@@ -22,7 +25,9 @@ def test_소셜_가입_폼에_약관_동의_없이_제출하면_폼이_거부되
     )
 
     assert form.is_valid() is False
-    assert "이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다." in form.errors["terms_agreed"]
+    assert (
+        "이용약관 및 개인정보처리방침에 동의해야 가입할 수 있습니다." in form.errors["terms_agreed"]
+    )
 
 
 @pytest.mark.django_db

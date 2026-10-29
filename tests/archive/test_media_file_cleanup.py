@@ -17,7 +17,16 @@ pytestmark = pytest.mark.slow
 
 
 @pytest.mark.django_db
-def test_방문_사진을_삭제하면_스토리지에서_실제_파일도_제거된다(client, make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
+def test_방문_사진을_삭제하면_스토리지에서_실제_파일도_제거된다(
+    client,
+    make_user,
+    make_event,
+    settings,
+    tmp_path,
+    django_capture_on_commit_callbacks,
+    make_visit,
+    make_visit_photo,
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -36,7 +45,15 @@ def test_방문_사진을_삭제하면_스토리지에서_실제_파일도_제�
 
 
 @pytest.mark.django_db
-def test_방문_기록을_삭제하면_연쇄로_사진_파일도_제거된다(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
+def test_방문_기록을_삭제하면_연쇄로_사진_파일도_제거된다(
+    make_user,
+    make_event,
+    settings,
+    tmp_path,
+    django_capture_on_commit_callbacks,
+    make_visit,
+    make_visit_photo,
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -53,7 +70,15 @@ def test_방문_기록을_삭제하면_연쇄로_사진_파일도_제거된다(m
 
 
 @pytest.mark.django_db
-def test_사진_삭제_트랜잭션이_롤백되면_파일이_보존된다(make_user, make_event, settings, tmp_path, django_capture_on_commit_callbacks, make_visit, make_visit_photo):
+def test_사진_삭제_트랜잭션이_롤백되면_파일이_보존된다(
+    make_user,
+    make_event,
+    settings,
+    tmp_path,
+    django_capture_on_commit_callbacks,
+    make_visit,
+    make_visit_photo,
+):
     """삭제 트랜잭션이 롤백되면 on_commit 훅이 절대 실행되지 않아야 하므로
     파일이 스토리지에 그대로 남아 있어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
@@ -80,10 +105,17 @@ def test_사진_삭제_트랜잭션이_롤백되면_파일이_보존된다(make_
 
 
 @pytest.mark.django_db
-def test_개인_항목을_삭제하면_이미지_파일도_제거된다(make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_entry):
+def test_개인_항목을_삭제하면_이미지_파일도_제거된다(
+    make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_entry
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
-    entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="unofficial cafe", image=SimpleUploadedFile("cover.png", png_bytes(), content_type="image/png"))
+    entry = make_entry(
+        user,
+        kind=PersonalEntry.Kind.PLACE,
+        title="unofficial cafe",
+        image=SimpleUploadedFile("cover.png", png_bytes(), content_type="image/png"),
+    )
     storage = entry.image.storage
     file_name = entry.image.name
     assert storage.exists(file_name)
@@ -96,7 +128,12 @@ def test_개인_항목을_삭제하면_이미지_파일도_제거된다(make_use
 
 @pytest.mark.django_db
 def test_컬렉션_아이템을_삭제하면_이미지_파일도_제거된다(
-    make_user, png_bytes, settings, tmp_path, django_capture_on_commit_callbacks, make_collection_item
+    make_user,
+    png_bytes,
+    settings,
+    tmp_path,
+    django_capture_on_commit_callbacks,
+    make_collection_item,
 ):
     """§6-b 유예 사항(C4 게이트 M4): CollectionItem에는 post_delete 이미지 정리
     리시버가 없었다 — C5가 CollectionItem 삭제 API/애플리케이션 경로를 추가하면서

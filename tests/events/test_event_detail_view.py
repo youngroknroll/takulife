@@ -3,6 +3,7 @@
 로그인 경로(공개 행사 페이지에 본인 상태/찜 여부가 반영되는지)는 그동안
 검증되지 않았다: 비로그인 사용자만 빈 기본값을 확인해왔다.
 """
+
 import json
 import re
 from datetime import date
@@ -95,14 +96,14 @@ class TestEventDetailView:
             "시작일이_없으면_JSON_LD_스크립트를_생략한다",
         ],
     )
-    def test_행사_상세_페이지는_유효한_JSON_LD를_응답에_포함한다(self, make_event, kwargs, expect_script):
+    def test_행사_상세_페이지는_유효한_JSON_LD를_응답에_포함한다(
+        self, make_event, kwargs, expect_script
+    ):
         event = make_event(**kwargs)
         resp = Client().get(f"/events/{event.id}/")
 
         body = resp.content.decode("utf-8")
-        match = re.search(
-            r'<script type="application/ld\+json">(.*?)</script>', body, re.DOTALL
-        )
+        match = re.search(r'<script type="application/ld\+json">(.*?)</script>', body, re.DOTALL)
 
         if not expect_script:
             assert match is None
@@ -127,9 +128,7 @@ class TestEventDetailView:
         resp = Client().get(f"/events/{event.id}/")
 
         body = resp.content.decode("utf-8")
-        match = re.search(
-            r'<script type="application/ld\+json">(.*?)</script>', body, re.DOTALL
-        )
+        match = re.search(r'<script type="application/ld\+json">(.*?)</script>', body, re.DOTALL)
         assert match is not None
         payload = json.loads(match.group(1))
         assert payload["name"] == "타쿠 </script> 전시"

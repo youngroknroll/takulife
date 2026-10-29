@@ -1,6 +1,7 @@
 """스태프 대시보드 "저장소" 패널 검증
 (트랙 37 S3, prompt_plan.md 트랙 37 S2·S3 참고).
 """
+
 from django.db import connection
 
 import pytest
@@ -40,7 +41,9 @@ def test_대시보드는_저장소_크기를_측정할_수_없으면_안내_문�
 
 
 @pytest.mark.django_db
-def test_대시보드는_전체_용량은_있지만_표_목록이_비면_표_안내_문구를_보여준다(staff_client, monkeypatch):
+def test_대시보드는_전체_용량은_있지만_표_목록이_비면_표_안내_문구를_보여준다(
+    staff_client, monkeypatch
+):
     # RT-19
     monkeypatch.setattr(
         "staff.views.database_size_summary",

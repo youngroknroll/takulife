@@ -29,9 +29,17 @@ pytestmark = pytest.mark.domain
 
 
 @pytest.mark.django_db
-def test_드래프트를_승인하면_게시된_행사가_생성되고_드래프트가_승인_상태가_된다(make_user, make_draft):
+def test_드래프트를_승인하면_게시된_행사가_생성되고_드래프트가_승인_상태가_된다(
+    make_user, make_draft
+):
     actor = make_user()
-    draft = make_draft("https://example.com/event", source_name="Official", extracted_title="Popup event", extracted_category="popup_store", extracted_region="seoul")
+    draft = make_draft(
+        "https://example.com/event",
+        source_name="Official",
+        extracted_title="Popup event",
+        extracted_category="popup_store",
+        extracted_region="seoul",
+    )
 
     before = timezone.now()
     result = approve_draft(draft_id=draft.id, actor=actor)
@@ -86,7 +94,9 @@ def test_드래프트_승인_후_게시까지_승인자_귀속_정보가_유지�
     result = approve_draft(draft_id=draft.id, actor=actor)
 
     draft.refresh_from_db()
-    assert Event.objects.filter(id=result.event_id, publish_status=Event.PublishStatus.PUBLISHED).exists()
+    assert Event.objects.filter(
+        id=result.event_id, publish_status=Event.PublishStatus.PUBLISHED
+    ).exists()
     assert draft.reviewed_by_id == actor.id
     assert draft.approved_at is not None
 
@@ -94,7 +104,12 @@ def test_드래프트_승인_후_게시까지_승인자_귀속_정보가_유지�
 @pytest.mark.django_db
 def test_시작일이_종료일보다_늦으면_승인이_거부되고_대기_상태를_유지한다(make_user, make_draft):
     actor = make_user()
-    draft = make_draft("https://example.com/inverted-period", extracted_title="Inverted period event", extracted_start_date=datetime.date(2026, 8, 10), extracted_end_date=datetime.date(2026, 8, 1))
+    draft = make_draft(
+        "https://example.com/inverted-period",
+        extracted_title="Inverted period event",
+        extracted_start_date=datetime.date(2026, 8, 10),
+        extracted_end_date=datetime.date(2026, 8, 1),
+    )
 
     with pytest.raises(DraftPublicationError):
         approve_draft(draft_id=draft.id, actor=actor)
@@ -122,7 +137,10 @@ def test_제목이_비어있으면_승인이_거부되고_대기_상태를_유�
 @pytest.mark.django_db
 def test_제목이_원본_URL과_같으면_승인이_거부되고_대기_상태를_유지한다(make_user, make_draft):
     actor = make_user()
-    draft = make_draft("https://example.com/self-titled-draft", extracted_title="https://example.com/self-titled-draft")
+    draft = make_draft(
+        "https://example.com/self-titled-draft",
+        extracted_title="https://example.com/self-titled-draft",
+    )
 
     with pytest.raises(DraftPublicationTitleError):
         approve_draft(draft_id=draft.id, actor=actor)
@@ -138,7 +156,9 @@ def test_제목이_원본_URL과_같으면_승인이_거부되고_대기_상태�
 def test_대기_상태_드래프트는_필드_수정이_반영된다(make_draft):
     draft = make_draft("https://example.com/event")
 
-    updated = update_draft(draft_id=draft.id, updates={"extracted_title": "Updated title", "extracted_region": "seoul"})
+    updated = update_draft(
+        draft_id=draft.id, updates={"extracted_title": "Updated title", "extracted_region": "seoul"}
+    )
 
     draft.refresh_from_db()
     assert updated.id == draft.id
@@ -156,7 +176,9 @@ def test_대기_상태가_아닌_드래프트는_수정할_수_없다(make_draft
 
 @pytest.mark.django_db
 def test_URL로_드래프트를_생성하면_페이지를_가져와_필드를_추출한다(monkeypatch):
-    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Sample Event</title></html>")
+    monkeypatch.setattr(
+        "drafts.services.fetch_html", lambda url: "<html><title>Sample Event</title></html>"
+    )
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
         lambda html: {
@@ -180,7 +202,9 @@ def test_URL로_드래프트를_생성하면_페이지를_가져와_필드를_�
 @pytest.mark.django_db
 def test_추출_결과가_비어있으면_드래프트_생성이_실패한다(monkeypatch):
     monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html></html>")
-    monkeypatch.setattr("drafts.services.extract_event_fields", lambda html: {"raw_title": "", "raw_text": ""})
+    monkeypatch.setattr(
+        "drafts.services.extract_event_fields", lambda html: {"raw_title": "", "raw_text": ""}
+    )
 
     with pytest.raises(DraftCreationEmptyExtractionError):
         create_draft_from_url(source_url="https://example.com/event")
@@ -335,8 +359,12 @@ def test_같은_URL로_직접_등록을_두_번_하면_중복_오류가_발생�
     [({}, "collected"), ({"origin": "user_report"}, "user_report")],
     ids=["인자_생략", "user_report_전달"],
 )
-def test_create_draft_from_fields는_origin_인자를_받아_그대로_저장하고_생략하면_collected다(origin_kwargs, expected):
-    draft = create_draft_from_fields(source_url="https://example.com/origin-arg", title="t", **origin_kwargs)
+def test_create_draft_from_fields는_origin_인자를_받아_그대로_저장하고_생략하면_collected다(
+    origin_kwargs, expected
+):
+    draft = create_draft_from_fields(
+        source_url="https://example.com/origin-arg", title="t", **origin_kwargs
+    )
 
     assert draft.origin == expected
 
@@ -382,7 +410,9 @@ def test_create_draft_from_url은_분할_전과_같은_드래프트를_만든다
     """분할 후 create_draft_from_url(합성 함수)의 겉보기 동작이 그대로인지 지키는
     회귀 핀이라 지금은 Green이 정상이다(기존 test_URL로_드래프트를_생성하면...과 같은
     함수를 다른 각도로 고정)."""
-    monkeypatch.setattr("drafts.services.fetch_html", lambda url: "<html><title>Split check</title></html>")
+    monkeypatch.setattr(
+        "drafts.services.fetch_html", lambda url: "<html><title>Split check</title></html>"
+    )
     monkeypatch.setattr(
         "drafts.services.extract_event_fields",
         lambda html: {
@@ -402,7 +432,9 @@ def test_create_draft_from_url은_분할_전과_같은_드래프트를_만든다
 
 
 @pytest.mark.django_db
-def test_반려된_드래프트를_재오픈하면_대기_상태로_바뀌고_이전_반려_기록은_유지된다(make_user, make_draft):
+def test_반려된_드래프트를_재오픈하면_대기_상태로_바뀌고_이전_반려_기록은_유지된다(
+    make_user, make_draft
+):
     from drafts.services import reopen_draft
 
     # Given: 반려된 드래프트
@@ -500,7 +532,13 @@ def test_재오픈된_드래프트는_approve_draft로_승인할_수_있다(make
 
     # Given: 승인 가능한 필드로 만든 뒤 반려하고 재오픈한 드래프트
     actor = make_user()
-    draft = make_draft("https://example.com/reopen-then-approve", source_name="Official", extracted_title="Reopened event", extracted_category="popup_store", extracted_region="seoul")
+    draft = make_draft(
+        "https://example.com/reopen-then-approve",
+        source_name="Official",
+        extracted_title="Reopened event",
+        extracted_category="popup_store",
+        extracted_region="seoul",
+    )
     reject_draft(draft_id=draft.id, actor=actor)
     reopen_draft(draft_id=draft.id)
 
@@ -518,7 +556,9 @@ def test_재오픈된_드래프트는_approve_draft로_승인할_수_있다(make
     "build_body, outcome, reason",
     [
         (
-            lambda today: "This is an English and 日本語 only announcement with no Korean text at all.",
+            lambda today: (
+                "This is an English and 日本語 only announcement with no Korean text at all."
+            ),
             "excluded",
             "non_korean",
         ),

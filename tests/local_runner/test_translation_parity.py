@@ -4,6 +4,7 @@ local_runner/client.py)가 번역 대상 언어·필드·URL 접두사를 문자
 임포트할 수 없으므로(tests/local_runner/test_local_runner_isolation.py)
 러너 쪽은 AST로 리터럴만 읽는다(tests/local_runner/test_phase_vocabulary_parity.py
 ·test_outcome_vocabulary_parity.py와 같은 방식). DB는 필요 없다."""
+
 import ast
 from pathlib import Path
 

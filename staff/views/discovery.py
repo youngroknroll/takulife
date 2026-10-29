@@ -6,6 +6,7 @@
 동일 — 실행이 실제로 만들어진 성공 경로만 감사 로그를 남긴다). 사용자당
 60초 고정 창에 10회로 요청 빈도를 제한한다.
 """
+
 import time
 
 from django.contrib import messages

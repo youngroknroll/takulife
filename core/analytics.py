@@ -10,6 +10,7 @@
 담을 수 있는 컨텍스트 키(자유 텍스트, 연락처, 미디어 URL)가 들어오면
 바로 실패한다 — FORBIDDEN_CONTEXT_KEYS 참고.
 """
+
 import hashlib
 import hmac
 import logging
@@ -86,9 +87,7 @@ def record_event(*, event_name, user, target_type="", target_id=None, context=No
     context = context or {}
     forbidden = FORBIDDEN_CONTEXT_KEYS & context.keys()
     if forbidden:
-        raise ValueError(
-            f"context contains forbidden key(s): {', '.join(sorted(forbidden))}"
-        )
+        raise ValueError(f"context contains forbidden key(s): {', '.join(sorted(forbidden))}")
 
     try:
         with transaction.atomic():

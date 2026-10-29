@@ -2,6 +2,7 @@
 돌려 이벤트·소스를 서버에 제출한 뒤 실행을 완료 처리한다. 통신 오류·잘못된
 모델 출력·임대 상실이 러너 프로세스 전체를 죽이지 않도록 각 경계에서
 격리한다."""
+
 import functools
 import logging
 import logging.config
@@ -276,7 +277,9 @@ def _handle_sigterm(signum, frame):
 
 
 def _configure_logging():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
     # httpx가 요청 URL·토큰을 INFO로 남기지 않도록 WARNING까지만 올린다.
     # logging.getLogger(__name__) 외 호출을 금지하는 EHL-06 정책 때문에
     # dictConfig로 남의 로거(httpx) 레벨만 건드린다.

@@ -38,7 +38,5 @@ class User(AbstractUser):
 
     class Meta(AbstractUser.Meta):
         constraints = [
-            models.UniqueConstraint(
-                Lower("nickname"), name="accounts_user_nickname_ci_unique"
-            )
+            models.UniqueConstraint(Lower("nickname"), name="accounts_user_nickname_ci_unique")
         ]

@@ -31,7 +31,9 @@ def test_상태_기록이_없는_사용자의_상태별_집계는_모든_슬러�
 
 
 @pytest.mark.django_db
-def test_상태별_집계는_본인의_상태만_세고_다른_사용자의_기록은_제외한다(make_user, make_event, make_status):
+def test_상태별_집계는_본인의_상태만_세고_다른_사용자의_기록은_제외한다(
+    make_user, make_event, make_status
+):
     user = make_user(username="counts-user")
     other = make_user(username="counts-other")
     e1 = make_event(title="E1")
@@ -49,7 +51,9 @@ def test_상태별_집계는_본인의_상태만_세고_다른_사용자의_기�
 
 
 @pytest.mark.django_db
-def test_상태_목록_조회는_사용자로_범위를_좁히고_상태값으로_추가_필터링한다(make_user, make_event, make_status):
+def test_상태_목록_조회는_사용자로_범위를_좁히고_상태값으로_추가_필터링한다(
+    make_user, make_event, make_status
+):
     user = make_user(username="list-status-user")
     other = make_user(username="list-status-other")
     e1 = make_event(title="E1")
@@ -98,9 +102,7 @@ def test_정렬_파라미터가_등록순이면_결과가_등록일_내림차순
 
 
 @pytest.mark.django_db
-def test_정렬_파라미터가_알수없는_값이면_기본_정렬로_폴백한다(
-    make_user, make_event, make_status
-):
+def test_정렬_파라미터가_알수없는_값이면_기본_정렬로_폴백한다(make_user, make_event, make_status):
     user = make_user(username="sort-fallback-user")
     event_a = make_event(title="먼저 등록, 나중 수정")
     event_b = make_event(title="나중 등록, 이후 수정 없음")
@@ -185,12 +187,8 @@ def test_같은_주체에_방문기록이_여러_건이면_최신_1건의_리뷰
 
     if not tie_break:
         # 방문일이 다른 경우: 더 나중 방문일(2026-06-20)의 리뷰가 선택되어야 한다.
-        first_visit = make_visit(
-            user, event=event, visited_on="2026-06-01", short_review="1차"
-        )
-        second_visit = make_visit(
-            user, event=event, visited_on="2026-06-20", short_review="2차"
-        )
+        first_visit = make_visit(user, event=event, visited_on="2026-06-01", short_review="1차")
+        second_visit = make_visit(user, event=event, visited_on="2026-06-20", short_review="2차")
         expected_review = "2차"
         expected_visit = second_visit
     else:

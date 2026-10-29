@@ -1,5 +1,6 @@
 """러너 진행 상태를 문장으로 조립해 터미널에 찍고 서버 heartbeat에 실어
 보낸다. django·drafts를 임포트하지 않는다(격리 계약)."""
+
 import logging
 import time
 

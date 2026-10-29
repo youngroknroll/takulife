@@ -1,5 +1,6 @@
 """러너 이벤트 제출 엔드포인트 계약 테스트 — 생성·중복·스키마 위반·상한
 초과·불안전 URL을 각각 다른 상태코드로 옮기는지 본다."""
+
 from datetime import date, timedelta
 
 import pytest
@@ -50,13 +51,9 @@ class _AllowAllRobots:
 
 def _neutralize_server_recheck(monkeypatch):
     # 네트워크가 관심사가 아닌 케이스는 서버 재확인(KW-07)을 타지 않는다.
-    monkeypatch.setattr(
-        "drafts.agent_drafts.validate_fetch_url", lambda url, **kwargs: "1.1.1.1"
-    )
+    monkeypatch.setattr("drafts.agent_drafts.validate_fetch_url", lambda url, **kwargs: "1.1.1.1")
     monkeypatch.setattr("drafts.agent_drafts.RobotsChecker", _AllowAllRobots)
-    monkeypatch.setattr(
-        "drafts.agent_drafts.fetch_html", lambda url, **kwargs: "<html></html>"
-    )
+    monkeypatch.setattr("drafts.agent_drafts.fetch_html", lambda url, **kwargs: "<html></html>")
 
 
 def _valid_event_payload(source_url):
@@ -219,8 +216,7 @@ def test_알려진_URL_필터에_상한보다_많은_URL을_보내면_거부된�
     from drafts.runner_views import MAX_KNOWN_URLS_PER_REQUEST
 
     urls = [
-        f"https://over-limit.example.com/event-{i}"
-        for i in range(MAX_KNOWN_URLS_PER_REQUEST + 1)
+        f"https://over-limit.example.com/event-{i}" for i in range(MAX_KNOWN_URLS_PER_REQUEST + 1)
     ]
 
     response = client.post(

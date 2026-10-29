@@ -1,6 +1,7 @@
 """번역 대기 큐 조회와 제출 저장을 맡는 DB 계층이다.
 해시·검증 같은 순수 규칙은 전부 content_translation 모듈이 갖고 있다.
 """
+
 import logging
 from dataclasses import dataclass
 
@@ -114,7 +115,9 @@ def _submit_translation_locked(*, event_id, source_hash, translations):
             return SubmissionOutcome(status="already_current", saved=[], quarantined={})
 
         result = rules.validate_translations(fields, translations)
-        saved = [language for language in rules.TARGET_LANGUAGES if language not in result.quarantined]
+        saved = [
+            language for language in rules.TARGET_LANGUAGES if language not in result.quarantined
+        ]
 
         event.text_translations = {
             "source_hash": current_hash,
@@ -156,8 +159,12 @@ def submit_translation(*, event_id, source_hash, translations, client_ip=""):
             event_id=event_id, source_hash=source_hash, translations=translations
         )
     except rules.SubmissionRejected as exc:
-        _log_rejection(event_id=event_id, code=exc.code, submitted_hash=source_hash, client_ip=client_ip)
+        _log_rejection(
+            event_id=event_id, code=exc.code, submitted_hash=source_hash, client_ip=client_ip
+        )
         raise
 
-    _log_outcome(event_id=event_id, outcome=outcome, submitted_hash=source_hash, client_ip=client_ip)
+    _log_outcome(
+        event_id=event_id, outcome=outcome, submitted_hash=source_hash, client_ip=client_ip
+    )
     return outcome

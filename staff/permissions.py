@@ -1,4 +1,5 @@
 """스태프 콘솔(/staff/) 접근 관문."""
+
 from functools import wraps
 
 from django.conf import settings

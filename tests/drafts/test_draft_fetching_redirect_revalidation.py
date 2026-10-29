@@ -2,6 +2,7 @@
 다시 수행해야 한다. httpx는 DNS를 직접 고정할 훅이 없어 IP 고정 대신 매 홉마다
 validate_fetch_url의 실제 로직을 태우는 것이 지금의 SSRF 방어선이다. 다른 fetching
 테스트와 달리 여기서는 validate_fetch_url을 스텁하지 않는다."""
+
 import httpx
 import pytest
 

@@ -4,6 +4,7 @@
 en `March 2026`), 선택일 항목의 `date_text`("7월 19일 14:32" 형태)는 한국어에서
 현재 출력과 글자 단위로 같고 그 밖의 언어에서는 한글이 없다.
 """
+
 import re
 from datetime import date, datetime
 from html.parser import HTMLParser
@@ -159,9 +160,7 @@ def test_한국어_시각이_있는_항목의_날짜_문구는_월_일_시각_�
 
 def test_한국어_날짜만_있는_항목의_날짜_문구는_월_일_형태_그대로다(user_client):
     user, _ = user_client()
-    CollectionItem.objects.create(
-        user=user, name="Goods acquired", acquired_on=date(2026, 7, 12)
-    )
+    CollectionItem.objects.create(user=user, name="Goods acquired", acquired_on=date(2026, 7, 12))
 
     resp = _get(user, {"month": "2026-07", "date": "2026-07-12"}, "ko")
 
@@ -169,16 +168,12 @@ def test_한국어_날짜만_있는_항목의_날짜_문구는_월_일_형태_�
     assert _rendered_date_texts(resp) == ["7월 12일"]
 
 
-def test_한국어_기간_항목의_날짜_문구는_물결표로_이은_월_일_형태_그대로다(
-    user_client, make_event
-):
+def test_한국어_기간_항목의_날짜_문구는_물결표로_이은_월_일_형태_그대로다(user_client, make_event):
     user, _ = user_client()
     event = make_event(
         title="Schedule event", start_date=date(2026, 7, 10), end_date=date(2026, 7, 12)
     )
-    UserEventStatus.objects.create(
-        user=user, event=event, status=UserEventStatus.Status.PLANNED
-    )
+    UserEventStatus.objects.create(user=user, event=event, status=UserEventStatus.Status.PLANNED)
 
     resp = _get(user, {"month": "2026-07", "date": "2026-07-11"}, "ko")
 
@@ -208,9 +203,7 @@ def test_외국어_시각이_있는_항목의_날짜_문구에는_한글이_없�
 @pytest.mark.parametrize("lang", _FOREIGN_LANGS)
 def test_외국어_날짜만_있는_항목의_날짜_문구에는_한글이_없다(user_client, lang):
     user, _ = user_client()
-    CollectionItem.objects.create(
-        user=user, name="Goods acquired", acquired_on=date(2026, 7, 12)
-    )
+    CollectionItem.objects.create(user=user, name="Goods acquired", acquired_on=date(2026, 7, 12))
 
     resp = _get(user, {"month": "2026-07", "date": "2026-07-12"}, lang)
 
@@ -227,9 +220,7 @@ def test_외국어_기간_항목의_날짜_문구에는_한글이_없고_물결�
     event = make_event(
         title="Schedule event", start_date=date(2026, 7, 10), end_date=date(2026, 7, 12)
     )
-    UserEventStatus.objects.create(
-        user=user, event=event, status=UserEventStatus.Status.PLANNED
-    )
+    UserEventStatus.objects.create(user=user, event=event, status=UserEventStatus.Status.PLANNED)
 
     resp = _get(user, {"month": "2026-07", "date": "2026-07-11"}, lang)
 

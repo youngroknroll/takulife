@@ -1,4 +1,5 @@
 """번역 제출 서비스 submit_translation의 저장·거부·격리·로그 규칙 — 도메인 테스트."""
+
 import logging
 import unicodedata
 
@@ -99,7 +100,9 @@ def test_격리된_언어는_null로_저장되고_나머지는_저장된다(make
     translations["ja"]["title"] = "2026 도쿄 コミックマーケット"
     submitted_hash = source_hash(_event_fields(event))
 
-    outcome = submit_translation(event_id=event.id, source_hash=submitted_hash, translations=translations)
+    outcome = submit_translation(
+        event_id=event.id, source_hash=submitted_hash, translations=translations
+    )
 
     assert outcome.saved == ["en", "zh-hans"]
     assert outcome.quarantined == {"ja": "hangul_residue"}
@@ -118,7 +121,9 @@ def test_세_언어가_모두_격리돼도_엔트리는_저장된다(make_event)
         translations[language]["title"] = _SOURCE_FIELDS["title"]
     submitted_hash = source_hash(_event_fields(event))
 
-    outcome = submit_translation(event_id=event.id, source_hash=submitted_hash, translations=translations)
+    outcome = submit_translation(
+        event_id=event.id, source_hash=submitted_hash, translations=translations
+    )
 
     assert outcome.status == "saved"
     assert outcome.saved == []
@@ -164,7 +169,9 @@ def test_manual_이벤트에_제출하면_거부되고_덮어쓰지_않는다(ma
     submitted_hash = source_hash(_event_fields(event))
 
     with pytest.raises(SubmissionRejected) as exc_info:
-        submit_translation(event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS)
+        submit_translation(
+            event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
+        )
 
     assert exc_info.value.code == "manual_locked"
 
@@ -186,7 +193,9 @@ def test_게시되지_않은_이벤트에_제출하면_거부된다(make_draft_e
     submitted_hash = source_hash(_event_fields(event))
 
     with pytest.raises(SubmissionRejected) as exc_info:
-        submit_translation(event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS)
+        submit_translation(
+            event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
+        )
 
     assert exc_info.value.code == "not_found"
 
@@ -199,7 +208,9 @@ def test_해시가_낡았으면_거부되고_아무것도_저장하지_않는다
     event.save()
 
     with pytest.raises(SubmissionRejected) as exc_info:
-        submit_translation(event_id=event.id, source_hash=stale_hash, translations=_GOOD_TRANSLATIONS)
+        submit_translation(
+            event_id=event.id, source_hash=stale_hash, translations=_GOOD_TRANSLATIONS
+        )
 
     assert exc_info.value.code == "stale_source"
 
@@ -215,7 +226,9 @@ def test_구조가_틀린_제출은_스키마_사유로_거부된다(make_event)
     del broken_translations["ja"]
 
     with pytest.raises(SubmissionRejected) as exc_info:
-        submit_translation(event_id=event.id, source_hash=submitted_hash, translations=broken_translations)
+        submit_translation(
+            event_id=event.id, source_hash=submitted_hash, translations=broken_translations
+        )
 
     assert exc_info.value.code == "schema"
     event.refresh_from_db()
@@ -238,7 +251,9 @@ def test_NUL_문자가_포함된_제출은_거부된다(make_event):
 
 
 @pytest.mark.django_db
-def test_이미_현재_해시로_저장된_이벤트에_다시_제출하면_already_current이고_덮어쓰지_않는다(make_event):
+def test_이미_현재_해시로_저장된_이벤트에_다시_제출하면_already_current이고_덮어쓰지_않는다(
+    make_event,
+):
     event = _make_source_event(make_event)
     submitted_hash = source_hash(_event_fields(event))
 
@@ -266,7 +281,9 @@ def test_제출이_성공한_이벤트는_다음_대기_목록에서_빠진다(m
     event = _make_source_event(make_event)
     submitted_hash = source_hash(_event_fields(event))
 
-    submit_translation(event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS)
+    submit_translation(
+        event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
+    )
 
     assert [item["event_id"] for item in pending_events()] == []
 
@@ -326,18 +343,28 @@ def test_격리가_있는_제출과_거부된_제출은_WARNING_로그를_남긴
         submitted_hash = source_hash(_event_fields(event))
 
         with caplog.at_level(logging.INFO, logger="events.translation_queue"):
-            submit_translation(event_id=event.id, source_hash=submitted_hash, translations=translations)
+            submit_translation(
+                event_id=event.id, source_hash=submitted_hash, translations=translations
+            )
 
         expected_fragment = "hangul_residue"
         expected_language = "ja"
     else:
-        event.text_translations = {"manual": True, "source_hash": "임의-해시", "en": None, "ja": None, "zh-hans": None}
+        event.text_translations = {
+            "manual": True,
+            "source_hash": "임의-해시",
+            "en": None,
+            "ja": None,
+            "zh-hans": None,
+        }
         event.save()
         submitted_hash = source_hash(_event_fields(event))
 
         with caplog.at_level(logging.INFO, logger="events.translation_queue"):
             with pytest.raises(SubmissionRejected):
-                submit_translation(event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS)
+                submit_translation(
+                    event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
+                )
 
         expected_fragment = "manual_locked"
         expected_language = None
@@ -360,11 +387,15 @@ def test_already_current_제출은_INFO_로그를_남긴다(make_event, caplog):
     event = _make_source_event(make_event)
     submitted_hash = source_hash(_event_fields(event))
 
-    submit_translation(event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS)
+    submit_translation(
+        event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
+    )
 
     with caplog.at_level(logging.INFO, logger="events.translation_queue"):
         caplog.clear()
-        submit_translation(event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS)
+        submit_translation(
+            event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
+        )
 
     records = [r for r in caplog.records if r.name == "events.translation_queue"]
     assert len(records) == 1
@@ -378,7 +409,9 @@ def test_제출은_행_잠금으로_이벤트를_읽는다(make_event):
     submitted_hash = source_hash(_event_fields(event))
 
     with CaptureQueriesContext(connection) as ctx:
-        submit_translation(event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS)
+        submit_translation(
+            event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
+        )
 
     assert any("FOR UPDATE" in query["sql"].upper() for query in ctx.captured_queries)
 
@@ -422,13 +455,21 @@ def test_트랜잭션_밖에서_호출해도_제출이_성공하고_저장된다
 def test_수동_확정이면서_해시도_낡았으면_manual_locked가_보고된다(make_event):
     event = _make_source_event(make_event)
     stale_hash = source_hash(_event_fields(event))
-    locked_state = {"manual": True, "source_hash": "임의-해시", "en": None, "ja": None, "zh-hans": None}
+    locked_state = {
+        "manual": True,
+        "source_hash": "임의-해시",
+        "en": None,
+        "ja": None,
+        "zh-hans": None,
+    }
     event.text_translations = locked_state
     event.title = "원문이 바뀐 뒤"
     event.save()
 
     with pytest.raises(SubmissionRejected) as exc_info:
-        submit_translation(event_id=event.id, source_hash=stale_hash, translations=_GOOD_TRANSLATIONS)
+        submit_translation(
+            event_id=event.id, source_hash=stale_hash, translations=_GOOD_TRANSLATIONS
+        )
 
     assert exc_info.value.code == "manual_locked"
     event.refresh_from_db()
@@ -445,7 +486,9 @@ def test_스키마_오류이면서_해시가_낡았으면_stale_source가_보고
     del broken_translations["ja"]
 
     with pytest.raises(SubmissionRejected) as exc_info:
-        submit_translation(event_id=event.id, source_hash=stale_hash, translations=broken_translations)
+        submit_translation(
+            event_id=event.id, source_hash=stale_hash, translations=broken_translations
+        )
 
     assert exc_info.value.code == "stale_source"
     event.refresh_from_db()

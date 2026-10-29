@@ -8,6 +8,7 @@
 .docs/plans/2026-07-17-test-suite-improvement-plan.md §4(TS-INF-01..03)와
 .docs/plans/2026-07-17-test-code-execution-policy-design.md §5, §7 참고.
 """
+
 from pathlib import Path
 
 import pytest
@@ -57,9 +58,7 @@ def test_운영_설정은_기본_강한_password_hasher_계약을_유지한다()
     운영_설정 = Settings(_PRODUCTION_SETTINGS_MODULE)
 
     # When/Then: 첫 hasher가 PBKDF2이고 MD5 계열이 포함되지 않는다.
-    assert 운영_설정.PASSWORD_HASHERS[0] == (
-        "django.contrib.auth.hashers.PBKDF2PasswordHasher"
-    )
+    assert 운영_설정.PASSWORD_HASHERS[0] == ("django.contrib.auth.hashers.PBKDF2PasswordHasher")
     assert not any("MD5" in hasher for hasher in 운영_설정.PASSWORD_HASHERS)
 
 

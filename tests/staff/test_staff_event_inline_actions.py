@@ -3,6 +3,7 @@
 두 엔드포인트는 트랙 24 일괄 비공개와 달리 항목이 하나뿐이라 항상 200(값
 오류만 400) 또는 404이고, 목표 상태를 그대로 설정한다(토글이 아니다).
 """
+
 from datetime import date, timedelta
 
 import pytest
@@ -99,9 +100,7 @@ def test_publish_status_값이_유효하지_않으면_이벤트_게시_상태_�
     staff, client = staff_client()
     event = make_event()
 
-    response = client.post(
-        publish_status_url(event.id), data=body, content_type="application/json"
-    )
+    response = client.post(publish_status_url(event.id), data=body, content_type="application/json")
 
     assert response.status_code == 400
     assert "publish_status" in response.json()

@@ -2,6 +2,7 @@
 없이 문자열 fixture만 쓴다. XML fixture에 encoding 선언을 넣는 이유는 fetch_html이
 이미 디코딩한 str을 그대로 흉내 내기 위해서다 — 이 경우 xml.etree의 단순
 fromstring(str) 호출이 깨진다."""
+
 import pytest
 
 from drafts.discovery import (
@@ -182,7 +183,7 @@ class TestExtractLinksRss:
 
         result = extract_links_rss(content, self.BASE_URL)
 
-        assert result == ['https://official-site.com/event?token=encoding%3D%22x%22']
+        assert result == ["https://official-site.com/event?token=encoding%3D%22x%22"]
 
     def test_RSS는_선행_BOM이_있어도_파싱한다(self, rss_xml):
         """aniplus의 실제 items.xml RSS 피드는 <?xml ...?> 선언 앞에 BOM 문자가
@@ -207,7 +208,9 @@ class TestExtractLinksRss:
 
         assert result == ["https://official-site.com/event"]
 
-    def test_RSS는_content_encoded_앵커도_추출하고_자기_도메인_필터를_동일하게_적용한다(self, rss_xml):
+    def test_RSS는_content_encoded_앵커도_추출하고_자기_도메인_필터를_동일하게_적용한다(
+        self, rss_xml
+    ):
         """atzip.kr/feed/의 실제 구조: <description>은 발췌만 담고, 외부 공식
         링크가 있는 실제 본문 HTML은 <content:encoded>에 있다. 두 필드 모두
         앵커를 스캔하고 기존 필터(자기 도메인, SNS)를 동일하게 적용해야 한다."""
@@ -229,9 +232,7 @@ class TestExtractLinksRss:
         """프로토콜 상대 href("//host/path")는 base_url의 스킴으로 해석된다.
         공식 사이트 링크는 남고, atzip 자기 도메인으로 가는 링크는 여전히
         제거돼야 한다."""
-        content = rss_xml(
-            description_anchors=["//official-site.com/event", "//atzip.kr/x"]
-        )
+        content = rss_xml(description_anchors=["//official-site.com/event", "//atzip.kr/x"])
 
         result = extract_links_rss(content, self.BASE_URL)
 
@@ -242,9 +243,7 @@ class TestExtractLinksSitemap:
     BASE_URL = "https://aniplustv.com/sitemap.xml"
 
     def test_사이트맵_loc_요소를_추출한다(self, sitemap_xml):
-        content = sitemap_xml(
-            "https://aniplustv.com/events/1", "https://aniplustv.com/events/2"
-        )
+        content = sitemap_xml("https://aniplustv.com/events/1", "https://aniplustv.com/events/2")
 
         result = extract_links_sitemap(content, self.BASE_URL)
 
@@ -399,7 +398,9 @@ class TestExtractLinksHtml:
         assert result == ["https://www.animate.co.jp/goods/1"]
 
     def test_HTML은_같은_도메인_링크를_유지한다(self):
-        content = '<html><body><a href="https://www.animate.co.jp/goods/1">공식 상품 1</a></body></html>'
+        content = (
+            '<html><body><a href="https://www.animate.co.jp/goods/1">공식 상품 1</a></body></html>'
+        )
 
         result = extract_links_html(content, self.BASE_URL, selector="")
 

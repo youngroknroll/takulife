@@ -25,7 +25,9 @@ pytestmark = pytest.mark.web
 
 
 @pytest.mark.django_db
-def test_로그인한_사용자가_방문_기록을_생성하면_저장된_방문_기록이_응답에_반영된다(client, make_user, make_event):
+def test_로그인한_사용자가_방문_기록을_생성하면_저장된_방문_기록이_응답에_반영된다(
+    client, make_user, make_event
+):
     user = make_user()
     event = make_event()
 
@@ -62,7 +64,9 @@ def test_방문_기록을_생성하면_요청한_사용자_소유로만_저장�
 
 
 @pytest.mark.django_db
-def test_미게시_행사를_대상으로_방문_기록을_생성하면_요청이_거부된다(client, make_user, make_draft_event):
+def test_미게시_행사를_대상으로_방문_기록을_생성하면_요청이_거부된다(
+    client, make_user, make_draft_event
+):
     user = make_user()
     draft_event = make_draft_event()
 
@@ -185,9 +189,7 @@ def test_같은_클라이언트_토큰으로_방문_기록_생성_POST를_두_�
     assert first_response.json()["id"] == second_response.json()["id"]
     assert "client_token" not in first_response.json()
     assert "client_token" not in second_response.json()
-    assert (
-        VisitRecord.objects.filter(user=user, client_token=client_token).count() == 1
-    )
+    assert VisitRecord.objects.filter(user=user, client_token=client_token).count() == 1
     record = VisitRecord.objects.get(user=user, client_token=client_token)
     assert record.short_review == "first"
 
@@ -255,7 +257,9 @@ def test_방문_기록_목록을_조회하면_본인_기록만_반환된다(clie
 
 
 @pytest.mark.django_db
-def test_방문_기록이_페이지_크기를_초과하면_목록이_페이지네이션된다(client, make_user, make_event, make_visit):
+def test_방문_기록이_페이지_크기를_초과하면_목록이_페이지네이션된다(
+    client, make_user, make_event, make_visit
+):
     user = make_user()
     event = make_event()
     for i in range(21):
@@ -277,7 +281,9 @@ def test_방문_기록이_페이지_크기를_초과하면_목록이_페이지�
 
 
 @pytest.mark.django_db
-def test_본인_방문_기록을_상세_조회하면_해당_기록이_반환된다(client, make_user, make_event, make_visit):
+def test_본인_방문_기록을_상세_조회하면_해당_기록이_반환된다(
+    client, make_user, make_event, make_visit
+):
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
@@ -321,7 +327,9 @@ def test_본인_방문_기록을_삭제하면_기록이_제거된다(client, mak
 
 
 @pytest.mark.django_db
-def test_타인의_방문_기록_삭제를_시도하면_404가_반환되고_기록이_유지된다(client, make_user, make_event, make_visit):
+def test_타인의_방문_기록_삭제를_시도하면_404가_반환되고_기록이_유지된다(
+    client, make_user, make_event, make_visit
+):
     owner = make_user()
     attacker = make_user()
     event = make_event()
@@ -340,7 +348,9 @@ def test_타인의_방문_기록_삭제를_시도하면_404가_반환되고_기�
 
 
 @pytest.mark.django_db
-def test_본인_방문_기록을_수정하면_변경한_필드가_저장된다(client, make_user, make_event, make_visit):
+def test_본인_방문_기록을_수정하면_변경한_필드가_저장된다(
+    client, make_user, make_event, make_visit
+):
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26", short_review="old")
@@ -359,7 +369,9 @@ def test_본인_방문_기록을_수정하면_변경한_필드가_저장된다(c
 
 
 @pytest.mark.django_db
-def test_방문_기록_수정_요청에_대상_변경을_포함해도_대상은_그대로_유지된다(client, make_user, make_event, make_visit):
+def test_방문_기록_수정_요청에_대상_변경을_포함해도_대상은_그대로_유지된다(
+    client, make_user, make_event, make_visit
+):
     user = make_user()
     event = make_event()
     other_event = make_event()
@@ -380,7 +392,9 @@ def test_방문_기록_수정_요청에_대상_변경을_포함해도_대상은_
 
 
 @pytest.mark.django_db
-def test_타인의_방문_기록_수정을_시도하면_404가_반환되고_내용이_유지된다(client, make_user, make_event, make_visit):
+def test_타인의_방문_기록_수정을_시도하면_404가_반환되고_내용이_유지된다(
+    client, make_user, make_event, make_visit
+):
     owner = make_user()
     attacker = make_user()
     event = make_event()
@@ -399,7 +413,9 @@ def test_타인의_방문_기록_수정을_시도하면_404가_반환되고_내�
 
 
 @pytest.mark.django_db
-def test_비로그인_사용자가_방문_기록_수정을_요청하면_거부된다(client, make_user, make_event, make_visit):
+def test_비로그인_사용자가_방문_기록_수정을_요청하면_거부된다(
+    client, make_user, make_event, make_visit
+):
     user = make_user()
     event = make_event()
     record = make_visit(user, event=event, visited_on="2026-05-26")
@@ -419,7 +435,9 @@ def test_비로그인_사용자가_방문_기록_수정을_요청하면_거부�
 
 
 @pytest.mark.django_db
-def test_본인_방문_기록에_사진을_업로드하면_사진이_저장된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
+def test_본인_방문_기록에_사진을_업로드하면_사진이_저장된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, make_visit
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -436,7 +454,9 @@ def test_본인_방문_기록에_사진을_업로드하면_사진이_저장된�
 
 
 @pytest.mark.django_db
-def test_타인의_방문_기록에_사진_업로드를_시도하면_404가_반환된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
+def test_타인의_방문_기록에_사진_업로드를_시도하면_404가_반환된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, make_visit
+):
     settings.MEDIA_ROOT = str(tmp_path)
     owner = make_user()
     attacker = make_user()
@@ -454,7 +474,9 @@ def test_타인의_방문_기록에_사진_업로드를_시도하면_404가_반�
 
 
 @pytest.mark.django_db
-def test_이미지_없이_사진_업로드를_요청하면_400이_반환된다(client, make_user, make_event, settings, tmp_path, make_visit):
+def test_이미지_없이_사진_업로드를_요청하면_400이_반환된다(
+    client, make_user, make_event, settings, tmp_path, make_visit
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -471,7 +493,9 @@ def test_이미지_없이_사진_업로드를_요청하면_400이_반환된다(c
 
 
 @pytest.mark.django_db
-def test_이미지가_아닌_바이트를_사진으로_업로드하면_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
+def test_이미지가_아닌_바이트를_사진으로_업로드하면_거부된다(
+    client, make_user, make_event, settings, tmp_path, make_visit
+):
     """.jpg로 위장한 가짜 바이트는 Pillow 내용 검사로 거부되어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
@@ -489,7 +513,9 @@ def test_이미지가_아닌_바이트를_사진으로_업로드하면_거부된
 
 
 @pytest.mark.django_db
-def test_5MB를_초과하는_사진을_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit):
+def test_5MB를_초과하는_사진을_업로드하면_거부된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, make_visit
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -509,7 +535,9 @@ def test_5MB를_초과하는_사진을_업로드하면_거부된다(client, make
 
 
 @pytest.mark.django_db
-def test_허용되지_않는_확장자인_SVG_파일을_업로드하면_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
+def test_허용되지_않는_확장자인_SVG_파일을_업로드하면_거부된다(
+    client, make_user, make_event, settings, tmp_path, make_visit
+):
     """SVG는 Pillow가 허용할 수 있더라도 거부되어야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
@@ -528,7 +556,9 @@ def test_허용되지_않는_확장자인_SVG_파일을_업로드하면_거부�
 
 
 @pytest.mark.django_db
-def test_PNG로_위장한_BMP_파일을_업로드하면_실제_포맷_기준으로_거부된다(client, make_user, make_event, settings, tmp_path, make_visit):
+def test_PNG로_위장한_BMP_파일을_업로드하면_실제_포맷_기준으로_거부된다(
+    client, make_user, make_event, settings, tmp_path, make_visit
+):
     """.png로 확장자만 바꾼 정상 BMP 파일은 거부되어야 한다.
 
     확장자 허용목록만으로는 공격자가 조작할 수 있으므로, Pillow가 실제로
@@ -555,7 +585,9 @@ def test_PNG로_위장한_BMP_파일을_업로드하면_실제_포맷_기준으�
 
 
 @pytest.mark.django_db
-def test_픽셀_면적_상한을_초과하는_이미지를_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
+def test_픽셀_면적_상한을_초과하는_이미지를_업로드하면_거부된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit
+):
     """축별 상한 안에 있어도 전체 픽셀 면적 상한을 넘으면 거부되어야 한다.
 
     면적 가드가 5MB 바이트 상한, 축별 크기 상한과 독립적임을 증명한다
@@ -583,7 +615,9 @@ def test_픽셀_면적_상한을_초과하는_이미지를_업로드하면_거�
 
 
 @pytest.mark.django_db
-def test_방문_기록에_사진이_5장_있을_때_추가_업로드하면_거부된다(client, make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo):
+def test_방문_기록에_사진이_5장_있을_때_추가_업로드하면_거부된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -605,7 +639,9 @@ def test_방문_기록에_사진이_5장_있을_때_추가_업로드하면_거�
 
 
 @pytest.mark.django_db
-def test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반환된다(client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
+def test_사진_업로드_중_방문_기록이_동시에_삭제되면_404가_반환된다(
+    client, make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit
+):
     """존재 확인과 서비스 호출 사이에 VisitRecord가 삭제되면(TOCTOU 경쟁),
     뷰는 500이 아니라 404를 반환해야 한다.
 
@@ -763,7 +799,9 @@ def test_사진_업로드_요청이_설정된_한도를_초과하면_429로_제�
         )
         assert response.status_code == 201, f"upload {i} should succeed"
 
-    over_limit_record = make_visit(user, event=make_event(title="사진 한도 초과 행사"), visited_on="2026-05-26")
+    over_limit_record = make_visit(
+        user, event=make_event(title="사진 한도 초과 행사"), visited_on="2026-05-26"
+    )
     throttled = client.post(
         f"/api/visit-records/{over_limit_record.id}/photos/",
         {"image": SimpleUploadedFile("over-limit.png", png_bytes(), content_type="image/png")},
@@ -779,7 +817,9 @@ def test_사진_업로드_요청이_설정된_한도를_초과하면_429로_제�
 
 
 @pytest.mark.django_db
-def test_본인_방문_기록의_사진을_삭제하면_사진이_제거된다(client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo):
+def test_본인_방문_기록의_사진을_삭제하면_사진이_제거된다(
+    client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -794,7 +834,9 @@ def test_본인_방문_기록의_사진을_삭제하면_사진이_제거된다(c
 
 
 @pytest.mark.django_db
-def test_타인의_방문_기록_사진_삭제를_시도하면_404가_반환되고_사진이_유지된다(client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo):
+def test_타인의_방문_기록_사진_삭제를_시도하면_404가_반환되고_사진이_유지된다(
+    client, make_user, make_event, settings, tmp_path, make_visit, make_visit_photo
+):
     settings.MEDIA_ROOT = str(tmp_path)
     owner = make_user()
     attacker = make_user()

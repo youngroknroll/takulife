@@ -11,6 +11,7 @@ tests/core/test_activity_calendar_view.py에 있다.
 이 시나리오들은 archive.services를 거치지 않고 모델에 직접 상태를 만든다
 — test_activity_calendar_queries.py가 이미 문서화한 이 읽기 계층의 관례와 같다.
 """
+
 from datetime import date
 
 import pytest
@@ -114,9 +115,7 @@ def test_다른_사용자의_활동은_검색되지_않는다(make_user):
 @pytest.mark.parametrize("blank_q", ["", "   "], ids=["빈_문자열", "공백만"])
 def test_빈_검색어는_None을_반환한다(make_user, blank_q):
     user = make_user()
-    CollectionItem.objects.create(
-        user=user, name="빈검색어굿즈", acquired_on=date(2026, 7, 10)
-    )
+    CollectionItem.objects.create(user=user, name="빈검색어굿즈", acquired_on=date(2026, 7, 10))
 
     result = find_latest_activity_date_for_query(user, blank_q)
 
@@ -139,9 +138,7 @@ def test_검색어가_DB_쿼리의_WHERE절로_내려가_전체_이력을_파이
     make_user,
 ):
     user = make_user()
-    CollectionItem.objects.create(
-        user=user, name="쿼리하향검색굿즈", acquired_on=date(2026, 7, 10)
-    )
+    CollectionItem.objects.create(user=user, name="쿼리하향검색굿즈", acquired_on=date(2026, 7, 10))
     for i in range(30):
         CollectionItem.objects.create(
             user=user, name=f"쿼리하향무관굿즈{i}", acquired_on=date(2020, 1, 1)
@@ -151,6 +148,6 @@ def test_검색어가_DB_쿼리의_WHERE절로_내려가_전체_이력을_파이
         result = find_latest_activity_date_for_query(user, "쿼리하향검색")
 
     assert result == date(2026, 7, 10)
-    assert any(
-        "쿼리하향검색" in query["sql"] for query in ctx.captured_queries
-    ), "검색어가 DB 쿼리 WHERE절로 내려가지 않음 — 파이썬 레벨 전체 스캔 의심"
+    assert any("쿼리하향검색" in query["sql"] for query in ctx.captured_queries), (
+        "검색어가 DB 쿼리 WHERE절로 내려가지 않음 — 파이썬 레벨 전체 스캔 의심"
+    )

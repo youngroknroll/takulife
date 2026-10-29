@@ -6,6 +6,7 @@
 - ending_within_days: EventQuerySet 정렬·필터 메서드
 - list_staff_events: 스태프 품질경고 드릴다운 목록
 """
+
 import json
 import pytest
 from datetime import date, datetime, timedelta
@@ -222,9 +223,7 @@ class TestBuildEventJsonLd:
         from events.presenters import build_event_json_ld
 
         event = Event(**kwargs)
-        result = build_event_json_ld(
-            event, region_label=region_label, description=description
-        )
+        result = build_event_json_ld(event, region_label=region_label, description=description)
 
         if expected_location is None:
             assert result is None
@@ -447,9 +446,7 @@ class TestListStaffEvents:
         assert matching.id in ids
         assert clean.id not in ids
 
-    def test_폐기된_포스터_경고는_행사_목록을_좁히지_않는다(
-        self, make_event, make_draft_event
-    ):
+    def test_폐기된_포스터_경고는_행사_목록을_좁히지_않는다(self, make_event, make_draft_event):
         # 포스터 필드와 경고가 서비스 전체에서 폐기됐으므로, "missing_poster"는
         # 더 이상 알려진 경고 키가 아니다. 알 수 없는 경고 키를 넘기면
         # list_staff_events가 필터 없이 게시·초안 행사를 모두 반환하는
@@ -483,9 +480,7 @@ class TestListStaffEvents:
         assert ended.id in ids
         assert not_ended.id not in ids
 
-    def test_재확인_대상_경고_필터는_기준일_인자_기준으로_해당_행사만_포함한다(
-        self, make_event
-    ):
+    def test_재확인_대상_경고_필터는_기준일_인자_기준으로_해당_행사만_포함한다(self, make_event):
         from events.queries import list_staff_events
 
         today = date(2020, 6, 15)
@@ -512,9 +507,7 @@ class TestListStaffEvents:
         assert needs_reverification.id in ids
         assert outside_window.id not in ids
 
-    def test_경고_조건에_맞아도_초안_행사는_경고_필터_결과에서_제외된다(
-        self, make_draft_event
-    ):
+    def test_경고_조건에_맞아도_초안_행사는_경고_필터_결과에서_제외된다(self, make_draft_event):
         """경고 드릴다운은 count_published_*와 마찬가지로 게시된 행사만 대상으로 한다."""
         from events.queries import list_staff_events
 
@@ -535,7 +528,9 @@ class TestListStaffEvents:
         ids = {e.id for e in result}
         assert ids == {published.id, draft.id}
 
-    def test_경고_필터_결과_건수는_대시보드_집계_함수의_값과_일치한다(self, make_event, make_draft_event):
+    def test_경고_필터_결과_건수는_대시보드_집계_함수의_값과_일치한다(
+        self, make_event, make_draft_event
+    ):
         """드릴다운 결과 건수는 대시보드의 count_published_* 값과 같아야 한다."""
         from events.queries import count_published_missing_region, list_staff_events
 
@@ -566,9 +561,7 @@ class TestListStaffEvents:
             official_url="https://example.com/d02-upcoming",
             start_date=today + timedelta(days=1),
         )
-        today_start = make_event(
-            official_url="https://example.com/d02-today", start_date=today
-        )
+        today_start = make_event(official_url="https://example.com/d02-today", start_date=today)
 
         result = list_staff_events(period="upcoming", today=today)
 

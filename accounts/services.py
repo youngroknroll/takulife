@@ -5,6 +5,7 @@ accounts.management.commands.purge_deleted_accounts 외의 어떤 코드 경로�
 진입점(delete_account 뷰, 로그인 시 취소 신호)은 아래 함수들을 통해서만
 `deletion_requested_at`을 읽거나 쓴다.
 """
+
 import logging
 import time
 from datetime import timedelta

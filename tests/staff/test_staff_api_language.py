@@ -4,6 +4,7 @@
 위험이 있다. 스태프 API는 항상 한국어 문구를 돌려줘야 한다. (존재하지
 않는 pk의 404는 Django `get_object_or_404`의 영어 고정 문구라 언어 무관
 검증에는 405 MethodNotAllowed를 쓴다.)"""
+
 import inspect
 
 import pytest

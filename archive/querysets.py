@@ -10,6 +10,7 @@
         방문 기록 없음                                  -> missed (자동)
     그 밖                                               -> planned
 """
+
 from django.db import models
 from django.db.models import Case, CharField, Exists, F, OuterRef, Value, When
 

@@ -5,6 +5,7 @@
 같은 입력을 여전히 400으로 거부한다(test_events_api.py에서 다룬다) —
 목록 화면만 우아하게 대응한다.
 """
+
 import re
 from datetime import timedelta
 from html import unescape
@@ -21,7 +22,9 @@ pytestmark = pytest.mark.web
 
 @pytest.mark.django_db
 class TestEventListInvalidFilters:
-    def test_존재하지_않는_상태_값으로_필터링하면_오류_없이_빈_상태_문구를_보여준다(self, make_event):
+    def test_존재하지_않는_상태_값으로_필터링하면_오류_없이_빈_상태_문구를_보여준다(
+        self, make_event
+    ):
         make_event(title="Live event")
 
         resp = Client().get("/events/", {"status": "zzz"})
@@ -73,9 +76,7 @@ class TestEventListInvalidFilters:
         이 테스트는 "빈 값이 오류를 내지 않는다"는 부분만 지킨다."""
         make_event(title="Seoul match", region="seoul")
 
-        resp = Client().get(
-            "/events/", {"region": "seoul", "status": "", "sort": ""}
-        )
+        resp = Client().get("/events/", {"region": "seoul", "status": "", "sort": ""})
 
         assert resp.status_code == 200
         body = resp.content.decode()
@@ -96,9 +97,7 @@ class TestEventListInvalidFilters:
             end_date=today - timedelta(days=1),
         )
 
-        resp = Client().get(
-            "/events/", {"region": "seoul", "status": "", "sort": ""}
-        )
+        resp = Client().get("/events/", {"region": "seoul", "status": "", "sort": ""})
 
         assert resp.status_code == 200
         assert "Seoul closed" not in resp.content.decode()
@@ -190,7 +189,9 @@ class TestEventListPagerQEncoding:
     URL 프래그먼트 회피가 핵심인 '#' 케이스만 구체적인 이스케이프 리터럴을
     단언한다."""
 
-    def test_검색어에_해시_기호가_있으면_페이저_링크의_q_값이_URL_인코딩되어_잘리지_않는다(self, make_event):
+    def test_검색어에_해시_기호가_있으면_페이저_링크의_q_값이_URL_인코딩되어_잘리지_않는다(
+        self, make_event
+    ):
         for i in range(11):
             make_event(title=f"#콜라보 행사 {i}")
 
@@ -201,7 +202,9 @@ class TestEventListPagerQEncoding:
         assert f"q={quote('#콜라보')}" in body
         assert "&q=#" not in body
 
-    def test_검색어에_더하기와_공백이_있으면_페이저_링크의_q_값이_원래_검색어로_보존된다(self, make_event):
+    def test_검색어에_더하기와_공백이_있으면_페이저_링크의_q_값이_원래_검색어로_보존된다(
+        self, make_event
+    ):
         """'+'/공백이 href에 이스케이프되지 않은 채 남으면 안 되고(쿼리 값 안의
         원문 폼인코딩 문자는 의미가 모호하다), 인코더가 %2B/%20을 쓰든 %2B/+를
         쓰든 페이저 링크는 디코드하면 원래 검색어 'a+b c'로 정확히 돌아와야
@@ -216,14 +219,14 @@ class TestEventListPagerQEncoding:
         assert "q=a+b c" not in body
 
         href = next(
-            href
-            for href in re.findall(r'href="([^"]*[?&]page=[^"]*)"', body)
-            if "q=" in href
+            href for href in re.findall(r'href="([^"]*[?&]page=[^"]*)"', body) if "q=" in href
         )
         query = parse_qs(urlparse(unescape(href)).query, keep_blank_values=True)
         assert query.get("q") == ["a+b c"]
 
-    def test_지역_값에_특수문자가_있으면_페이저_링크에_추가_쿼리_파라미터로_주입되지_않도록_URL_인코딩된다(self, make_event):
+    def test_지역_값에_특수문자가_있으면_페이저_링크에_추가_쿼리_파라미터로_주입되지_않도록_URL_인코딩된다(
+        self, make_event
+    ):
         """selected_region은 검증되지 않은 request.GET.getlist('region')에서
         그대로 페이저에 반영된다 — 원문 '&'/'='가 담긴 값이 href에 추가
         쿼리 파라미터로 재주입되면 안 된다."""
@@ -252,17 +255,13 @@ class TestEventListSortMenu:
 
         assert resp.status_code == 200
         body = resp.content.decode()
-        menu = re.search(
-            r'<ul[^>]*class="results-sort-menu"[^>]*>(.*?)</ul>', body, re.DOTALL
-        )
+        menu = re.search(r'<ul[^>]*class="results-sort-menu"[^>]*>(.*?)</ul>', body, re.DOTALL)
         assert menu, "결과 헤더에 정렬 메뉴가 렌더링되지 않음"
 
         hrefs = re.findall(r'href="([^"]+)"', menu.group(1))
         sort_values = []
         for href in hrefs:
-            params = parse_qs(
-                urlparse(unescape(href)).query, keep_blank_values=True
-            )
+            params = parse_qs(urlparse(unescape(href)).query, keep_blank_values=True)
             assert params.get("region") == ["seoul"], f"{href}: 지역 필터 유실"
             assert params.get("q") == ["정렬메뉴"], f"{href}: 검색어 유실"
             sort_values.append(params.get("sort", [""])[0])
@@ -276,13 +275,9 @@ class TestEventListSortMenu:
 
         assert resp.status_code == 200
         body = resp.content.decode()
-        menu = re.search(
-            r'<ul[^>]*class="results-sort-menu"[^>]*>(.*?)</ul>', body, re.DOTALL
-        )
+        menu = re.search(r'<ul[^>]*class="results-sort-menu"[^>]*>(.*?)</ul>', body, re.DOTALL)
         assert menu
-        current = re.findall(
-            r'<a[^>]*aria-current="true"[^>]*>([^<]+)</a>', menu.group(1)
-        )
+        current = re.findall(r'<a[^>]*aria-current="true"[^>]*>([^<]+)</a>', menu.group(1))
         assert current == [EVENT_SORT_LABELS["closing_soon"]]
 
     def test_사이드바_필터_폼에는_정렬_선택_상자가_남아있지_않다(self, make_event):

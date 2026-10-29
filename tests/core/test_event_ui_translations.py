@@ -5,6 +5,7 @@
 `in body` 비교는 쓰지 않는다 — 43-1에서 `"Save" in body`가 `Saved`에 걸려
 거짓 통과한 적이 있다.
 """
+
 import re
 from datetime import date
 from html.parser import HTMLParser
@@ -159,9 +160,7 @@ def _is_ko_scoped(element):
     노드가 전부 lang="ko" 범위(안쪽 `<a lang="ko">` 같은 배치)면 참."""
     if _has_ko_ancestor(element):
         return True
-    owners = [
-        owner for text, owner in element.iter_text_nodes() if text.strip()
-    ]
+    owners = [owner for text, owner in element.iter_text_nodes() if text.strip()]
     return bool(owners) and all(_has_ko_ancestor(owner) for owner in owners)
 
 
@@ -287,9 +286,7 @@ def test_목록과_달력_컨텍스트의_category_labels는_요청_언어로_�
 
 # E-02
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    "lang, expected", [("ko", "2026년 3월"), ("en", "March 2026")]
-)
+@pytest.mark.parametrize("lang, expected", [("ko", "2026년 3월"), ("en", "March 2026")])
 def test_달력_month_label은_요청_언어의_연월이다(lang, expected):
     resp = _get("/events/calendar/?month=2026-03", lang)
 
@@ -352,9 +349,7 @@ def test_목록_행의_월_표기는_요청_언어의_월_이름이다(make_even
 
 # E-07
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    "lang, expected", [("ko", "서울, 적용됨"), ("en", "Seoul, applied")]
-)
+@pytest.mark.parametrize("lang, expected", [("ko", "서울, 적용됨"), ("en", "Seoul, applied")])
 def test_적용된_지역_빠른_칩의_aria_label은_요청_언어의_번역문이다(lang, expected):
     root = _parse(_get("/events/?region=seoul", lang))
 
@@ -480,9 +475,7 @@ def test_영어_필터_패널과_빠른_칩의_카테고리는_lang_ko_범위가
     category_checks = [
         check for check in checks if check.find_all("input", attrs={"name": "category"})
     ]
-    region_checks = [
-        check for check in checks if check.find_all("input", attrs={"name": "region"})
-    ]
+    region_checks = [check for check in checks if check.find_all("input", attrs={"name": "region"})]
     assert category_checks and not any(_is_ko_scoped(c) for c in category_checks)
     assert region_checks and not any(_is_ko_scoped(c) for c in region_checks)
 
@@ -521,9 +514,7 @@ def test_찜_토글_버튼의_aria_label은_요청_언어의_동작_번역이다
 # E-10 상세
 @pytest.mark.django_db
 @pytest.mark.parametrize("lang, expected", [("ko", "찜"), ("en", "Save")])
-def test_상세_찜_버튼의_가시_텍스트는_요청_언어의_동작_번역이다(
-    make_event, lang, expected
-):
+def test_상세_찜_버튼의_가시_텍스트는_요청_언어의_동작_번역이다(make_event, lang, expected):
     event = make_event(title="Detail Save Event")
 
     root = _parse(_get(f"/events/{event.id}/", lang))
@@ -546,9 +537,7 @@ _FILTER_TOGGLE = {
 @pytest.mark.django_db
 @pytest.mark.parametrize("path", ["/events/", "/events/calendar/"])
 @pytest.mark.parametrize("lang", ["ko", "en", "ja", "zh-hans"])
-def test_필터_토글_버튼은_열기_닫기_문구를_data_속성에_싣고_초기_텍스트는_열기_문구다(
-    path, lang
-):
+def test_필터_토글_버튼은_열기_닫기_문구를_data_속성에_싣고_초기_텍스트는_열기_문구다(path, lang):
     root = _parse(_get(path, lang))
 
     toggles = root.find_all("button", cls="filter-toggle")
@@ -566,9 +555,7 @@ def test_필터_토글_버튼은_열기_닫기_문구를_data_속성에_싣고_�
 
 # E-05 (C 달력 h1·title)
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    "lang, expected", [("ko", "이벤트 달력"), ("en", "Event calendar")]
-)
+@pytest.mark.parametrize("lang, expected", [("ko", "이벤트 달력"), ("en", "Event calendar")])
 def test_달력_h1과_title은_요청_언어의_페이지_제목이다(lang, expected):
     root = _parse(_get("/events/calendar/?month=2026-03", lang))
 
@@ -660,9 +647,7 @@ def test_영어_달력_날짜_오류_패널에는_한글이_없다():
         ("zh-hans", "提供方：공식 홈페이지"),
     ],
 )
-def test_상세_부제는_출처_이름을_요청_언어_문형에_넣고_출처는_ko_범위다(
-    make_event, lang, expected
-):
+def test_상세_부제는_출처_이름을_요청_언어_문형에_넣고_출처는_ko_범위다(make_event, lang, expected):
     event = make_event(title="Source Event", source_name="공식 홈페이지")
 
     root = _parse(_get(f"/events/{event.id}/", lang))
@@ -677,9 +662,7 @@ def test_상세_부제는_출처_이름을_요청_언어_문형에_넣고_출처
 @pytest.mark.django_db
 @pytest.mark.parametrize("lang", ["ko", "en"])
 def test_종료된_행사_상세의_비활성_방문_예정_버튼_title은_요청_언어다(make_event, lang):
-    event = make_event(
-        title="Ended Event", start_date=_FIXED_START, end_date=_FIXED_END
-    )
+    event = make_event(title="Ended Event", start_date=_FIXED_START, end_date=_FIXED_END)
 
     root = _parse(_get(f"/events/{event.id}/", lang))
 
@@ -715,7 +698,9 @@ def test_상세_현재_상태_줄은_요청_언어_문형이다(make_event, make
 def test_영어_상세의_연관_행사_항목은_콘텐츠_값만_lang_ko_범위다(make_event):
     common = {"category": "popup_store", "start_date": _FIXED_START, "end_date": _FIXED_END}
     main = make_event(title="Related Main", **common)
-    make_event(title="연관 한글 제목", work_title="연관 작품명", location_name="연관 장소", **common)
+    make_event(
+        title="연관 한글 제목", work_title="연관 작품명", location_name="연관 장소", **common
+    )
     make_event(title="연관 장소없음", **common)
 
     root = _parse(_get(f"/events/{main.id}/", "en"))

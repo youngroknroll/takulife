@@ -1,6 +1,7 @@
 """로컬 에이전트 러너용 API — 얇은 어댑터. 인증·직렬화·상태코드만 다루고
 상태 산출·검증은 drafts.discovery_runs·drafts.candidate_validation에 위임한다.
 """
+
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
@@ -82,9 +83,7 @@ class RunnerClaimView(RunnerAPIView):
                         "regions": [slug for slug, _ in REGION],
                     },
                     "max_candidates": MAX_CANDIDATES_PER_RUN,
-                    "existing_source_urls": list(
-                        DraftSource.objects.values_list("url", flat=True)
-                    ),
+                    "existing_source_urls": list(DraftSource.objects.values_list("url", flat=True)),
                     "excluded_hostnames": sorted(SNS_HOSTNAMES),
                 }
             }
@@ -99,7 +98,9 @@ class RunnerCandidateSubmitView(RunnerAPIView):
         lease_token = data.get("lease_token")
         candidate = data.get("candidate")
         if not isinstance(lease_token, str) or not isinstance(candidate, dict):
-            return error_response("invalid candidate submission payload", status.HTTP_400_BAD_REQUEST)
+            return error_response(
+                "invalid candidate submission payload", status.HTTP_400_BAD_REQUEST
+            )
 
         # 계정형(instagram·x)은 가져오기 없이 검증하는 별도 경로다 — 목록형
         # 8단계 검증에 섞지 않는다.
@@ -113,7 +114,9 @@ class RunnerCandidateSubmitView(RunnerAPIView):
         except LeaseInvalidError:
             return error_response("lease is invalid or expired", status.HTTP_409_CONFLICT)
         except CandidateLimitExceededError:
-            return error_response("candidate limit exceeded for this run", status.HTTP_400_BAD_REQUEST)
+            return error_response(
+                "candidate limit exceeded for this run", status.HTTP_400_BAD_REQUEST
+            )
 
         return Response(
             {
@@ -184,7 +187,9 @@ class RunnerEventDraftSubmitView(RunnerAPIView):
             return error_response("invalid event submission payload", status.HTTP_400_BAD_REQUEST)
 
         try:
-            draft, created = submit_agent_draft(run_id=run_id, lease_token=lease_token, payload=event)
+            draft, created = submit_agent_draft(
+                run_id=run_id, lease_token=lease_token, payload=event
+            )
         except LeaseInvalidError:
             return error_response("lease is invalid or expired", status.HTTP_409_CONFLICT)
         except EventLimitExceededError:
@@ -226,9 +231,7 @@ class RunnerKnownDraftUrlsView(RunnerAPIView):
             return error_response("invalid known urls payload", status.HTTP_400_BAD_REQUEST)
 
         known_urls = set(
-            EventDraft.objects.filter(source_url__in=urls).values_list(
-                "source_url", flat=True
-            )
+            EventDraft.objects.filter(source_url__in=urls).values_list("source_url", flat=True)
         )
         unknown = [url for url in urls if url not in known_urls]
 

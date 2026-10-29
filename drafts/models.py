@@ -169,22 +169,16 @@ class SourceCandidate(models.Model):
         SAMPLE_MISMATCH = "sample_mismatch", "Sample mismatch"
         NOT_DOMESTIC = "not_domestic", "Not domestic"
 
-    run = models.ForeignKey(
-        SourceDiscoveryRun, on_delete=models.CASCADE, related_name="candidates"
-    )
+    run = models.ForeignKey(SourceDiscoveryRun, on_delete=models.CASCADE, related_name="candidates")
     name = models.CharField(max_length=100)
     url = models.URLField()
-    source_type = models.CharField(
-        max_length=20, choices=DraftSource.SourceType.choices
-    )
+    source_type = models.CharField(max_length=20, choices=DraftSource.SourceType.choices)
     link_selector = models.CharField(max_length=255, blank=True)
     sample_url = models.URLField()
     official_basis = models.CharField(max_length=500, blank=True)
     note = models.CharField(max_length=500, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, blank=True)
-    failure_stage = models.CharField(
-        max_length=20, choices=FailureStage.choices, blank=True
-    )
+    failure_stage = models.CharField(max_length=20, choices=FailureStage.choices, blank=True)
     # 단계별 서버 정의 메시지 + 예외 클래스명만(후보/응답 원문 보간 금지).
     failure_reason = models.CharField(max_length=255, blank=True)
     promoted_source = models.ForeignKey(
@@ -194,9 +188,7 @@ class SourceCandidate(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["run", "url"], name="uniq_source_candidate_run_url"
-            )
+            models.UniqueConstraint(fields=["run", "url"], name="uniq_source_candidate_run_url")
         ]
 
     def __str__(self):

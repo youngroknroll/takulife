@@ -79,6 +79,7 @@ git 호출이 실패하거나 대상이 0개면 `subprocess.run(..., check=True)
 템플릿 리터럴 안의 `//`는 오탐/누락 여지가 있다 — 이번 스윕 대상 저장소
 코드에서는 그런 사례가 실측되지 않았다.
 """
+
 import ast
 import io
 import re
@@ -261,7 +262,11 @@ def _js_comment_lines(path):
         for slash_match in re.finditer(r"//", line):
             before = line[: slash_match.start()]
             # 홀수 개의 따옴표가 앞서면 그 //는 문자열 리터럴 안이라고 본다.
-            if before.count('"') % 2 == 1 or before.count("'") % 2 == 1 or before.count("`") % 2 == 1:
+            if (
+                before.count('"') % 2 == 1
+                or before.count("'") % 2 == 1
+                or before.count("`") % 2 == 1
+            ):
                 continue
             results.append((lineno, line[slash_match.start() :]))
             break

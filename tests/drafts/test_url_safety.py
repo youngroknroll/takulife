@@ -1,5 +1,6 @@
 """drafts.url_safety(드래프트 fetch URL의 SSRF 방어) 단위 테스트. 스킴·호스트명
 거부, 리터럴 IP 사설망 차단, DNS 리졸버 경로를 다룬다."""
+
 import pytest
 
 from drafts.url_safety import (

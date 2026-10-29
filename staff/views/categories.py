@@ -6,6 +6,7 @@ events/signals.py → core.categories.reconcile_palette_slot)가 이미
 처리하므로, 조회(GET) 경로는 물론 이 안에서도 절대 재계산을 호출하지
 않는다.
 """
+
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction

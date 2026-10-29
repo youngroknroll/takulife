@@ -1,4 +1,5 @@
 """서버 소유 결정론 후보 검증 — 에이전트 보고를 신뢰하지 않고 전 단계를 재검사한다."""
+
 import logging
 import re
 import socket
@@ -204,7 +205,9 @@ def _save_failed_candidate(*, run_id, lease_token, cleaned, stage, exc=None):
 
 def submit_candidate(*, run_id, lease_token, payload):
     url_value = payload.get("url")
-    candidate_url = sanitize_text(value=url_value)[: _MAX_LENGTHS["url"]] if isinstance(url_value, str) else ""
+    candidate_url = (
+        sanitize_text(value=url_value)[: _MAX_LENGTHS["url"]] if isinstance(url_value, str) else ""
+    )
 
     with transaction.atomic():
         run = locked_run_with_valid_lease(run_id=run_id, lease_token=lease_token)
@@ -371,9 +374,7 @@ def _clean_account_payload(*, payload):
         return sanitize_text(value=value)[: _MAX_LENGTHS.get(key, len(value))]
 
     raw_source_type = payload.get("source_type")
-    source_type = (
-        raw_source_type if raw_source_type in DraftSource.ACCOUNT_SOURCE_TYPES else ""
-    )
+    source_type = raw_source_type if raw_source_type in DraftSource.ACCOUNT_SOURCE_TYPES else ""
 
     return {
         "name": _string_field("name"),

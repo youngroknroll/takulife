@@ -3,6 +3,7 @@
 사용자 상태·관심·방문 기록을 위한 재사용 가능한 조회 로직. 조회·집계
 로직은 뷰 계층이 아니라 여기 둔다(drafts/queries.py와 같은 방식).
 """
+
 from django.db.models import Count, Exists, Min, OuterRef, Q, Subquery
 from django.utils import timezone
 
@@ -180,9 +181,7 @@ def list_user_interests(user, *, q: str = "", sort: str = ""):
     queryset = (
         EventInterest.objects.filter(user=user)
         .select_related("event", "personal_entry")
-        .order_by(
-            ARCHIVE_INTEREST_SORT_ORDERING.get(sort, ARCHIVE_INTEREST_SORT_ORDERING[""])
-        )
+        .order_by(ARCHIVE_INTEREST_SORT_ORDERING.get(sort, ARCHIVE_INTEREST_SORT_ORDERING[""]))
     )
     if q:
         queryset = queryset.filter(
@@ -345,9 +344,7 @@ def user_personal_entry_counts(user) -> dict:
     queryset = PersonalEntry.objects.filter(user=user)
     return {
         "total_count": queryset.count(),
-        "visit_linked_count": queryset.filter(
-            archive_user_visit_records__isnull=False
-        )
+        "visit_linked_count": queryset.filter(archive_user_visit_records__isnull=False)
         .distinct()
         .count(),
     }
@@ -453,8 +450,7 @@ def list_user_visit_records(
         queryset = queryset.filter(event__isnull=True)
     if category_label:
         queryset = queryset.filter(
-            Q(event__category__in=category_codes)
-            | Q(personal_entry__category=category_label)
+            Q(event__category__in=category_codes) | Q(personal_entry__category=category_label)
         )
     if q:
         queryset = queryset.filter(

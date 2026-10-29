@@ -6,6 +6,7 @@
 `test_archive_service_messages_i18n_services.py`에 있다. 영어 `detail` 세 곳은 번역 대상이
 아니다 — `code`가 언어와 무관하게 같고 `detail`은 영어 그대로임을 고정한다.
 """
+
 import re
 from datetime import date
 
@@ -47,15 +48,11 @@ def _assert_message(lang, messages, korean_message):
 
 
 def _post(client, lang, path, payload):
-    return client.post(
-        path, payload, content_type="application/json", **_ACCEPT_LANGUAGE[lang]
-    )
+    return client.post(path, payload, content_type="application/json", **_ACCEPT_LANGUAGE[lang])
 
 
 def _patch(client, lang, path, payload):
-    return client.patch(
-        path, payload, content_type="application/json", **_ACCEPT_LANGUAGE[lang]
-    )
+    return client.patch(path, payload, content_type="application/json", **_ACCEPT_LANGUAGE[lang])
 
 
 # ---------------------------------------------------------------------------

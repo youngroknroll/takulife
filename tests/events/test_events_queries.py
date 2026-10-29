@@ -5,6 +5,7 @@
 - list_published_events: 고정 today 기준 정렬과 상태 필터링
 - PUBLIC_LISTING_PAGE_SIZE: 페이지 크기 상수
 """
+
 import pytest
 from datetime import date, timedelta
 
@@ -39,9 +40,7 @@ class TestParsePublicListingParams:
         from django.http import QueryDict
         from events.queries import parse_public_listing_params
 
-        raw = QueryDict(
-            "region=seoul&region=gyeonggi&category=popup_store&category=exhibition"
-        )
+        raw = QueryDict("region=seoul&region=gyeonggi&category=popup_store&category=exhibition")
         result = parse_public_listing_params(raw)
         assert result["region"] == ["seoul", "gyeonggi"]
         assert result["category"] == ["popup_store", "exhibition"]
@@ -77,7 +76,7 @@ class TestParsePublicListingParams:
         assert result["status"] == "all"
 
     def test_뷰_전용_active_상태값도_잘못된_값으로_거부한다(self):
-        """"active"는 공개 API 계약이 아니다.
+        """ "active"는 공개 API 계약이 아니다.
 
         "active"는 `core/views.py::event_list`가 파싱 이후 주입하는
         뷰 내부 전용 값이다. `events/querysets.py::with_public_status`의
@@ -253,7 +252,9 @@ class TestListPublishedEvents:
         qs = list_published_events({})
         assert qs.count() == 1
 
-    def test_마감임박_정렬은_종료되지_않은_행사를_종료일_오름차순으로_먼저_배치하고_날짜_없는_행사는_그_뒤에_둔다(self, make_event):
+    def test_마감임박_정렬은_종료되지_않은_행사를_종료일_오름차순으로_먼저_배치하고_날짜_없는_행사는_그_뒤에_둔다(
+        self, make_event
+    ):
         """마감임박 정렬은 아직 종료되지 않은 행사(end_date가 null이거나 오늘 이후)를
         종료 빠른 순으로 먼저 두고 null은 맨 뒤에 둔다. 이미 종료된 행사는 그
         뒤로 밀린다 — 이 회귀를 막는 테스트는
@@ -282,7 +283,9 @@ class TestListPublishedEvents:
         ids = list(qs.values_list("id", flat=True))
         assert ids == [ongoing.id, upcoming.id, no_end.id, ended.id]
 
-    def test_마감임박_정렬에서_이미_종료된_행사는_진행중_행사보다_앞에_오지_않는다(self, make_event):
+    def test_마감임박_정렬에서_이미_종료된_행사는_진행중_행사보다_앞에_오지_않는다(
+        self, make_event
+    ):
         """회귀 가드: 오래전 종료된 행사(end_date가 가장 작음)가 closing_soon
         정렬에서 현재 진행중인 행사보다 앞서면 안 된다."""
         from events.queries import list_published_events
@@ -368,8 +371,12 @@ class TestListPublishedEvents:
 
         today = date(2026, 6, 24)
         start_date = today + timedelta(days=1)
-        first = make_event(title="First", start_date=start_date, end_date=today + timedelta(days=10))
-        second = make_event(title="Second", start_date=start_date, end_date=today + timedelta(days=10))
+        first = make_event(
+            title="First", start_date=start_date, end_date=today + timedelta(days=10)
+        )
+        second = make_event(
+            title="Second", start_date=start_date, end_date=today + timedelta(days=10)
+        )
 
         qs = list_published_events({"sort": "start_asc"}, today=today)
         ids = list(qs.values_list("id", flat=True))
@@ -529,6 +536,7 @@ class TestWithPublicStatus:
 
         # 인식하지 못하는 상태값은 모든 분기를 거쳐 `return self`로 빠진다.
         assert list(qs.with_public_status("nonsense", today=today)) == list(qs)
+
 
 @pytest.mark.django_db
 class TestStaffEventSearch:

@@ -5,6 +5,7 @@
 어휘일 때만 요청 언어로 번역한다. 번역 기대값은 리터럴이며 호출 전에 지연
 번역을 평가하지 않는다(docs/BE/i18n.md 가드레일 21).
 """
+
 import unicodedata
 
 import pytest
@@ -29,7 +30,15 @@ _PERSONAL = {
 _GOODS = {
     "ko": ["아크릴 스탠드", "키링", "뱃지", "포토카드", "인형", "문구", "기타"],
     "en": ["Acrylic stand", "Keychain", "Badge", "Photocard", "Plush", "Stationery", "Other"],
-    "ja": ["アクリルスタンド", "キーホルダー", "バッジ", "フォトカード", "ぬいぐるみ", "文房具", "その他"],
+    "ja": [
+        "アクリルスタンド",
+        "キーホルダー",
+        "バッジ",
+        "フォトカード",
+        "ぬいぐるみ",
+        "文房具",
+        "その他",
+    ],
     "zh-hans": ["亚克力立牌", "钥匙扣", "徽章", "小卡", "玩偶", "文具", "其他"],
 }
 
@@ -135,7 +144,12 @@ def test_굿즈_유형_어휘는_접은_키가_서로_다른_원문끼리_겹치
 
 @pytest.mark.parametrize(
     "lang, value, expected",
-    [("ko", "키링", "키링"), ("en", "키링", "Keychain"), ("ja", "인형", "ぬいぐるみ"), ("zh-hans", "문구", "文具")],
+    [
+        ("ko", "키링", "키링"),
+        ("en", "키링", "Keychain"),
+        ("ja", "인형", "ぬいぐるみ"),
+        ("zh-hans", "문구", "文具"),
+    ],
 )
 def test_저장된_굿즈_유형_원문이_어휘이면_요청_언어로_번역해_보여준다(lang, value, expected):
     with translation.override(lang):

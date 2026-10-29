@@ -240,10 +240,14 @@ def test_공식_url을_공백으로_수정하면_거부하고_기존_값을_유�
 
 @pytest.mark.django_db
 def test_제목을_공백으로_수정하면_거부하고_기존_값을_유지한다():
-    event = create_published_event(title="Event", official_url="https://example.com/blank-title-target")
+    event = create_published_event(
+        title="Event", official_url="https://example.com/blank-title-target"
+    )
 
     with pytest.raises(PublishEventTitleError):
-        update_published_event(event=event, title="   ", official_url="https://example.com/blank-title-target")
+        update_published_event(
+            event=event, title="   ", official_url="https://example.com/blank-title-target"
+        )
 
     event.refresh_from_db()
     assert event.title == "Event"
@@ -289,7 +293,9 @@ def test_수정_중_예상치_못한_오류는_PublishEventError로_변환된다
     monkeypatch.setattr(Event, "save", raise_runtime_error)
 
     with pytest.raises(PublishEventError):
-        update_published_event(event=event, title="Event renamed", official_url="https://example.com/unexpected")
+        update_published_event(
+            event=event, title="Event renamed", official_url="https://example.com/unexpected"
+        )
 
 
 @pytest.mark.django_db
@@ -316,7 +322,9 @@ def test_재게시를_요청하면_초안_행사가_다시_게시_상태로_전�
 
 @pytest.mark.django_db
 def test_제목이_공백인_초안_행사는_재게시를_거부하고_초안_상태를_유지한다():
-    event = create_published_event(title="Event", official_url="https://example.com/broken-republish")
+    event = create_published_event(
+        title="Event", official_url="https://example.com/broken-republish"
+    )
     unpublish_event(event=event)
     event.title = "   "
     event.save(update_fields=["title"])
@@ -330,7 +338,9 @@ def test_제목이_공백인_초안_행사는_재게시를_거부하고_초안_�
 
 @pytest.mark.django_db
 def test_공식_url이_없는_초안_행사는_재게시를_거부하고_초안_상태를_유지한다():
-    event = create_published_event(title="Event", official_url="https://example.com/broken-republish-url")
+    event = create_published_event(
+        title="Event", official_url="https://example.com/broken-republish-url"
+    )
     unpublish_event(event=event)
     event.official_url = ""
     event.save(update_fields=["official_url"])

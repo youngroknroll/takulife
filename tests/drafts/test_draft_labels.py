@@ -1,4 +1,5 @@
 """EventDraft.origin의 한국어 라벨 상수(drafts/labels.py ORIGIN_LABELS) 계약 테스트."""
+
 import pytest
 
 from drafts.models import EventDraft

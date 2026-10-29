@@ -6,6 +6,7 @@ tests/test_architecture_boundaries.py 참고). 그런데 "이 행사를 완전�
 staff는 events와 archive 양쪽에 의존해도 되는 계층이라 이 판단 로직이
 events/services.py가 아닌 여기 있다.
 """
+
 import logging
 
 from django.db import transaction

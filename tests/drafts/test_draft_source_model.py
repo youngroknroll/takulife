@@ -1,4 +1,5 @@
 """drafts.models.DraftSource(발견 소스 레지스트리 모델) 테스트."""
+
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -57,9 +58,7 @@ class TestSourceTypeField:
         assert source.source_type == source_type
 
     def test_source_type에_허용되지_않은_값을_지정하면_full_clean에서_검증_오류가_난다(self):
-        source = DraftSource(
-            name="source", url="https://example.com/", source_type="atom"
-        )
+        source = DraftSource(name="source", url="https://example.com/", source_type="atom")
 
         with pytest.raises(ValidationError):
             source.full_clean()

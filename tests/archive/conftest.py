@@ -11,6 +11,7 @@ VisitRecord가 event/personal_entry 둘 중 하나이므로 `*` 뒤 키워드 �
 받아 호출자가 어느 쪽인지 명시하게 강제한다. make_entry의 `kind`/`title`는
 선택할 대상이 없는 자체 설정값이라 가독성을 위해 키워드 전용으로 뒀다.
 """
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -77,7 +78,8 @@ def make_visit_photo(db, png_bytes):
 
 @pytest.fixture
 def make_entries(make_entry):
-    """"<title_prefix> 00", "<title_prefix> 01", ... 형태 제목의 PersonalEntry N개."""
+    """ "<title_prefix> 00", "<title_prefix> 01", ... 형태 제목의 PersonalEntry N개."""
+
     def _make(user, count, *, title_prefix="항목", **kwargs):
         return [make_entry(user, title=f"{title_prefix} {i:02d}", **kwargs) for i in range(count)]
 
@@ -86,7 +88,8 @@ def make_entries(make_entry):
 
 @pytest.fixture
 def make_statuses(make_status, make_event):
-    """"<title_prefix> 00", ... 제목으로 새로 만든 Event마다 하나씩, UserEventStatus N개."""
+    """ "<title_prefix> 00", ... 제목으로 새로 만든 Event마다 하나씩, UserEventStatus N개."""
+
     def _make(user, count, *, title_prefix="Event", **kwargs):
         return [
             make_status(user, make_event(title=f"{title_prefix} {i:02d}"), **kwargs)
@@ -98,7 +101,8 @@ def make_statuses(make_status, make_event):
 
 @pytest.fixture
 def make_visits(make_visit, make_event):
-    """"<title_prefix> 00", ... 제목으로 새로 만든 Event마다 하나씩, VisitRecord N개."""
+    """ "<title_prefix> 00", ... 제목으로 새로 만든 Event마다 하나씩, VisitRecord N개."""
+
     def _make(user, count, *, title_prefix="Visit", **kwargs):
         kwargs.setdefault("visited_on", "2026-01-01")
         return [

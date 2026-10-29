@@ -3,6 +3,7 @@
 staff가 core를 임포트하는 것(라벨 맵/어휘 등 표시용)은 허용되지만,
 core가 staff를 거꾸로 임포트해서는 안 된다(tests/test_architecture_boundaries.py).
 """
+
 import logging
 from io import StringIO
 
@@ -166,9 +167,7 @@ def _build_activity_columns(per_day):
         {
             "date": row["date"],
             "count": row["count"],
-            "height_pct": (
-                round(row["count"] / max_count * 100) if max_count else 0
-            ),
+            "height_pct": (round(row["count"] / max_count * 100) if max_count else 0),
             "is_today": row["date"] == today,
         }
         for row in per_day
@@ -193,20 +192,26 @@ def _build_review_sla_cards(sla):
     handling = sla["avg_handling"]
     rate = sla["rejection_rate"]
     longest_value, longest_unit = _format_duration(longest) if longest is not None else (None, None)
-    handling_value, handling_unit = _format_duration(handling) if handling is not None else (None, None)
+    handling_value, handling_unit = (
+        _format_duration(handling) if handling is not None else (None, None)
+    )
     return [
         {
             "label": "최장 대기",
             "value": longest_value,
             "unit": longest_unit,
-            "note": f"대기 {sla['pending_count']}건" if longest_value is not None else "검토 대기 없음",
+            "note": f"대기 {sla['pending_count']}건"
+            if longest_value is not None
+            else "검토 대기 없음",
             "href": REVIEW_SLA_PENDING_URL,
         },
         {
             "label": "평균 처리",
             "value": handling_value,
             "unit": handling_unit,
-            "note": f"결정 {sla['decided_count']}건 기준" if handling_value is not None else "최근 7일 결정 없음",
+            "note": f"결정 {sla['decided_count']}건 기준"
+            if handling_value is not None
+            else "최근 7일 결정 없음",
             "href": None,
         },
         {
@@ -262,9 +267,7 @@ def dashboard(request):
             "failed_source_candidates": failed_source_candidates(),
             "quality_warnings": quality_warnings,
             "quality_warning_rows": quality_warning_rows,
-            "quality_warning_max": max(
-                (row["count"] for row in quality_warning_rows), default=0
-            ),
+            "quality_warning_max": max((row["count"] for row in quality_warning_rows), default=0),
             "recent_actions": recent_actions,
             "recent_action_rows": _build_action_rows(recent_actions),
             "draft_sources": draft_sources,
@@ -281,9 +284,7 @@ def dashboard(request):
             "activity_total_14d": sum(col["count"] for col in activity_columns),
             # 템플릿에서 `|last.count` 같은 필터+속성 체이닝은 문법상
             # 안 되므로 별도 키로 미리 계산해 넘긴다.
-            "activity_today_count": (
-                activity_columns[-1]["count"] if activity_columns else 0
-            ),
+            "activity_today_count": (activity_columns[-1]["count"] if activity_columns else 0),
             "system_errors": system_error_summary(),
             "storage": database_size_summary(),
         },
@@ -338,13 +339,18 @@ def staff_draft_discovery_run(request):
             call_command("discover_drafts", stdout=out)
         except CommandError as exc:
             summary = _summarize_command_output(out)
-            messages.error(request, f"수집이 부분적으로 실패했습니다: {exc}" + (f" ({summary})" if summary else ""))
+            messages.error(
+                request,
+                f"수집이 부분적으로 실패했습니다: {exc}" + (f" ({summary})" if summary else ""),
+            )
         except Exception:
             logger.exception("Unexpected error while running discover_drafts")
             messages.error(request, "수집 실행 중 오류가 발생했습니다.")
         else:
             summary = _summarize_command_output(out)
-            messages.success(request, f"수집 완료: {summary}" if summary else "수집이 완료되었습니다.")
+            messages.success(
+                request, f"수집 완료: {summary}" if summary else "수집이 완료되었습니다."
+            )
         finally:
             StaffActionLog.objects.create(
                 **_action_log_kwargs(_staff_action_metadata(request), action)

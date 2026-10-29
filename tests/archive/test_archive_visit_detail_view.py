@@ -4,6 +4,7 @@
 본인 소유 기록만 접근 가능하며, 대상·날짜·메모·사진과 해당 방문에서 획득한
 CollectionItem 목록(CollectionItem.visit_record == 해당 기록)을 보여준다.
 """
+
 import pytest
 from django.test import Client
 from django.urls import reverse
@@ -33,7 +34,9 @@ class TestArchiveVisitDetailView:
         assert resp.context["short_review"] == "즐거웠다"
         assert "현장 구매 굿즈".encode() in resp.content
 
-    def test_타인의_방문_기록_상세에_접근하면_404가_반환된다(self, make_user, make_event, make_visit):
+    def test_타인의_방문_기록_상세에_접근하면_404가_반환된다(
+        self, make_user, make_event, make_visit
+    ):
         # VD-2
         owner = make_user()
         attacker = make_user()

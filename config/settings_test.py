@@ -14,6 +14,7 @@ manage.py, config/wsgi.py, config/asgi.py, CI/배포 설정은 계속
 `config.settings`만 참조해야 하며 이 모듈을 참조하면 안 된다 —
 tests/core/test_test_settings_boundary.py(TS-INF-01, TS-INF-02)가 강제한다.
 """
+
 from config.settings import *  # noqa: F401,F403
 
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

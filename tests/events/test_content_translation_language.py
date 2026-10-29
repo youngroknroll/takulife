@@ -1,6 +1,7 @@
 """events.content_translation.quarantine_reason의 제어문자·길이·빈 칸·
 한글 잔존·언어별 문자 판정 규칙에 대한 단위 테스트.
 """
+
 import re
 import unicodedata
 
@@ -111,7 +112,9 @@ def test_원문이_ASCII뿐이고_번역이_같으면_세_언어_모두_통과�
     [("title", "BTS"), ("summary", "LIVE")],
     ids=["title", "summary"],
 )
-def test_원문이_ASCII뿐인_제목과_요약은_같은_번역이면_세_언어_모두_통과한다(language, field_name, value):
+def test_원문이_ASCII뿐인_제목과_요약은_같은_번역이면_세_언어_모두_통과한다(
+    language, field_name, value
+):
     # 고유명사 라틴 예외는 work_title·location_name에만 적용돼, title·
     # summary의 ASCII 동일 번역 우회는 그 예외와 무관하게 따로 지켜야
     # 한다(work_title 버전은 예외만으로도 통과해 우회 분기를 더는
@@ -312,7 +315,9 @@ def test_반각_한글이_남아도_격리된다():
     ],
     ids=["둘_다_빈_문자열", "원문만_빈_문자열", "번역이_빈_문자열", "번역이_공백뿐"],
 )
-def test_원문과_번역의_빈_칸_조합에_따라_사유가_정해진다(source_work_title, translated_work_title, expected):
+def test_원문과_번역의_빈_칸_조합에_따라_사유가_정해진다(
+    source_work_title, translated_work_title, expected
+):
     source = _source(work_title=source_work_title)
     translated = _en(work_title=translated_work_title)
 

@@ -5,6 +5,7 @@ test_archive_personal_entry_detail_view.py에 합치지 않고 별도 파일로 
 (test_archive_collection_detail_view.py / test_archive_collection_edit_view.py)를
 따른 것이다.
 """
+
 import pytest
 from django.test import Client
 

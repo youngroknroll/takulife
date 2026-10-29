@@ -1,5 +1,5 @@
-"""번역 대상 필드·해시·제출 검증·노출 선택 등 순수 규칙 모듈. DB·모델을 모른다.
-"""
+"""번역 대상 필드·해시·제출 검증·노출 선택 등 순수 규칙 모듈. DB·모델을 모른다."""
+
 import hashlib
 import re
 import unicodedata
@@ -150,9 +150,7 @@ def _script_reason(language, field, kt, kt_nospace):
             if not (len(kt_nospace) <= 10 and _HANJA_RE.search(kt)):
                 return "wrong_script"
     elif language == "zh-hans":
-        if not is_proper_noun_latin_exception and (
-            not _HANJA_RE.search(kt) or _KANA_RE.search(kt)
-        ):
+        if not is_proper_noun_latin_exception and (not _HANJA_RE.search(kt) or _KANA_RE.search(kt)):
             return "wrong_script"
     else:
         raise ValueError(f"unknown language: {language}")
@@ -224,7 +222,9 @@ def validate_translations(source_fields, translations):
     if not isinstance(translations, dict) or set(translations.keys()) != set(TARGET_LANGUAGES):
         raise SubmissionRejected("schema")
     for language_value in translations.values():
-        if not isinstance(language_value, dict) or set(language_value.keys()) != set(TRANSLATED_FIELDS):
+        if not isinstance(language_value, dict) or set(language_value.keys()) != set(
+            TRANSLATED_FIELDS
+        ):
             raise SubmissionRejected("schema")
         for value in language_value.values():
             if not isinstance(value, str):

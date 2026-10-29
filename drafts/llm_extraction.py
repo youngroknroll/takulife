@@ -6,6 +6,7 @@ core.llm을 감싸는 anti-corruption 계층으로, 도구 스키마·시스템 
 근거(grounding)했는지도 확인해 환각을 걸러낸다. LLM 실패나 형식 오류는 휴리스틱
 추출로 대체하고, extraction_method로 출처를 구분한다.
 """
+
 import logging
 from datetime import date
 
@@ -84,9 +85,7 @@ def _tool_schema():
             "location_name": {"type": "string"},
             "field_confidence": {
                 "type": "object",
-                "properties": {
-                    key: {"type": "number"} for key in FIELD_CONFIDENCE_KEYS
-                },
+                "properties": {key: {"type": "number"} for key in FIELD_CONFIDENCE_KEYS},
                 "required": list(FIELD_CONFIDENCE_KEYS),
             },
         },
@@ -118,13 +117,13 @@ def _scoped_text(raw_text):
     """모델에게 실제로 보여준(정리+절단된) 텍스트다. 근거 확인은 반드시 이 값을 써야
     한다 — 원본 raw_text를 쓰면 절단된 부분 이후에 우연히 등장하는 값도 통과해버린다."""
     # 중첩 리터럴 제거 비용이 입력 길이에 비례해 커지므로(1,000,025자에서 43.57초 [실측]) 먼저 잘라 막는다.
-    return _strip_delimiter_literals((raw_text or "")[:MAX_INPUT_CHARS * 2])[:MAX_INPUT_CHARS]
+    return _strip_delimiter_literals((raw_text or "")[: MAX_INPUT_CHARS * 2])[:MAX_INPUT_CHARS]
 
 
 def _scoped_title(raw_title):
-    return _strip_delimiter_literals(
-        (raw_title or "")[:RAW_TITLE_PROMPT_MAX_LENGTH * 2]
-    )[:RAW_TITLE_PROMPT_MAX_LENGTH]
+    return _strip_delimiter_literals((raw_title or "")[: RAW_TITLE_PROMPT_MAX_LENGTH * 2])[
+        :RAW_TITLE_PROMPT_MAX_LENGTH
+    ]
 
 
 def _build_user_content(raw_title, raw_text):
@@ -225,12 +224,18 @@ def _map_response(response, raw_title, raw_text):
         "raw_text": raw_text,
         "extracted_title": _coerce_str(response.get("title"))[:TITLE_MAX_LENGTH],
         "extracted_summary": _coerce_str(response.get("summary"))[:SUMMARY_MAX_LENGTH],
-        "extracted_category": _revalidate_vocab(_coerce_str(response.get("category")), category_slugs()),
+        "extracted_category": _revalidate_vocab(
+            _coerce_str(response.get("category")), category_slugs()
+        ),
         "extracted_region": _revalidate_vocab(_coerce_str(response.get("region")), REGION_SLUGS),
         "extracted_start_date": start_date,
         "extracted_end_date": end_date,
-        "extracted_work_title": _ground_substring(_coerce_str(response.get("work_title")), scoped_text),
-        "extracted_location_name": _ground_substring(_coerce_str(response.get("location_name")), scoped_text),
+        "extracted_work_title": _ground_substring(
+            _coerce_str(response.get("work_title")), scoped_text
+        ),
+        "extracted_location_name": _ground_substring(
+            _coerce_str(response.get("location_name")), scoped_text
+        ),
         "confidence": _min_confidence(response.get("field_confidence")),
         "is_event": bool(response.get("is_event", False)),
         "extraction_method": "llm",

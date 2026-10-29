@@ -1,4 +1,5 @@
 """러너 API 인증 계약 테스트 — X-Runner-Token 헤더와 DRAFT_DISCOVERY_RUNNER_TOKEN."""
+
 import logging
 from datetime import timedelta
 
@@ -45,8 +46,25 @@ def _candidates_url(run_id):
 def _complete_url(run_id):
     return f"/api/discovery/runner/runs/{run_id}/complete/"
 
-_ENDPOINTS = [HEARTBEAT_URL, CLAIM_URL, CANDIDATES_URL, COMPLETE_URL, DRAFTS_URL, KNOWN_URL, OFFLINE_URL]
-_ENDPOINT_IDS = ["하트비트", "클레임", "후보제출", "완료", "이벤트제출", "알려진URL필터", "오프라인"]
+
+_ENDPOINTS = [
+    HEARTBEAT_URL,
+    CLAIM_URL,
+    CANDIDATES_URL,
+    COMPLETE_URL,
+    DRAFTS_URL,
+    KNOWN_URL,
+    OFFLINE_URL,
+]
+_ENDPOINT_IDS = [
+    "하트비트",
+    "클레임",
+    "후보제출",
+    "완료",
+    "이벤트제출",
+    "알려진URL필터",
+    "오프라인",
+]
 
 
 @pytest.mark.parametrize("url", _ENDPOINTS, ids=_ENDPOINT_IDS)
@@ -67,12 +85,12 @@ def test_러너_토큰이_설정되지_않으면_모든_러너_엔드포인트�
     assert response.status_code == 403
 
 
-def test_유효한_토큰으로_오프라인을_보고하면_204와_함께_즉시_오프라인으로_기록된다(client, runner_headers):
+def test_유효한_토큰으로_오프라인을_보고하면_204와_함께_즉시_오프라인으로_기록된다(
+    client, runner_headers
+):
     record_heartbeat(provider="claude-code")
 
-    response = client.post(
-        OFFLINE_URL, data={}, content_type="application/json", **runner_headers
-    )
+    response = client.post(OFFLINE_URL, data={}, content_type="application/json", **runner_headers)
 
     assert response.status_code == 204
     assert runner_is_online(status_row=DiscoveryRunnerStatus.objects.get()) is False
@@ -144,9 +162,7 @@ def test_잘못된_토큰은_403_올바른_토큰은_통과한다(client, settin
 
 def test_claim_응답은_임대_정보와_기존_소스와_제외_호스트를_포함한다(client, runner_headers):
     SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
-    DraftSource.objects.create(
-        name="기존", url="https://old.example.com/feed", source_type="rss"
-    )
+    DraftSource.objects.create(name="기존", url="https://old.example.com/feed", source_type="rss")
 
     response = client.post(
         CLAIM_URL,
@@ -224,9 +240,7 @@ def test_claim은_대기_실행이_없으면_run_None을_반환한다(client, ru
 
 
 def test_claim_응답에_실행에_저장된_검색어가_실린다(client, runner_headers):
-    SourceDiscoveryRun.objects.create(
-        status=SourceDiscoveryRun.Status.PENDING, query="하츠네 미쿠"
-    )
+    SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING, query="하츠네 미쿠")
 
     response = client.post(
         CLAIM_URL,
@@ -441,7 +455,9 @@ def test_완료_요청의_event_outcomes가_실행에_저장된다(client, runne
         "outcome과_reason_짝_불일치",
     ],
 )
-def test_event_outcomes의_잘못된_항목은_버리고_완료는_정상_처리된다(client, runner_headers, bad_item, caplog):
+def test_event_outcomes의_잘못된_항목은_버리고_완료는_정상_처리된다(
+    client, runner_headers, bad_item, caplog
+):
     run = _make_claimed_run()
 
     valid_item = {"url": "https://example.com/ok", "outcome": "failed", "reason": "fetch_empty"}
@@ -563,9 +579,13 @@ def test_실행에_없는_드래프트를_생성했다고_보고한_항목은_�
     ]
 
 
-@pytest.mark.parametrize("bad_value", ["오", None, True, ["오"]], ids=["문자열", "None", "불리언", "리스트"])
+@pytest.mark.parametrize(
+    "bad_value", ["오", None, True, ["오"]], ids=["문자열", "None", "불리언", "리스트"]
+)
 @pytest.mark.parametrize("field", ["events_attempted", "events_failed", "events_excluded"])
-def test_완료_요청의_건수가_정수가_아니면_400으로_거부한다(client, runner_headers, field, bad_value):
+def test_완료_요청의_건수가_정수가_아니면_400으로_거부한다(
+    client, runner_headers, field, bad_value
+):
     run = _make_claimed_run()
 
     response = client.post(
@@ -585,9 +605,7 @@ def test_완료_요청의_건수가_정수가_아니면_400으로_거부한다(c
     assert run.finished_at is None
 
 
-@pytest.mark.parametrize(
-    "bad_value", ["오", {"a": 1}], ids=["문자열", "dict"]
-)
+@pytest.mark.parametrize("bad_value", ["오", {"a": 1}], ids=["문자열", "dict"])
 def test_event_outcomes가_리스트가_아니면_400으로_거부한다(client, runner_headers, bad_value):
     run = _make_claimed_run()
 
@@ -614,12 +632,12 @@ def test_discovery_runner_스로틀_scope가_등록되어_있다(settings):
     assert rate.endswith("/minute")
 
 
-def test_러너_스로틀은_X_Forwarded_For_값과_무관하게_한_버킷으로_센다(client, runner_headers, monkeypatch, clear_cache):
+def test_러너_스로틀은_X_Forwarded_For_값과_무관하게_한_버킷으로_센다(
+    client, runner_headers, monkeypatch, clear_cache
+):
     # THROTTLE_RATES는 임포트 시점에 고정되는 클래스 속성이라 설정만 바꿔서는
     # 반영되지 않는다 — 클래스 속성 자체를 직접 덮어쓴다.
-    monkeypatch.setattr(
-        RunnerTokenThrottle, "THROTTLE_RATES", {"discovery_runner": "2/minute"}
-    )
+    monkeypatch.setattr(RunnerTokenThrottle, "THROTTLE_RATES", {"discovery_runner": "2/minute"})
 
     first_response = client.post(
         HEARTBEAT_URL,

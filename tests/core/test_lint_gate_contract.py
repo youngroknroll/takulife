@@ -3,6 +3,7 @@
 `pyproject.toml`의 `[tool.ruff]`는 텍스트 설정이라 실행으로는 확인할 수 없다.
 린트 기준이 조용히 느슨해지는 변경을 막는다.
 """
+
 import tomllib
 from pathlib import Path
 

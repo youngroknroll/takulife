@@ -1,4 +1,5 @@
 """bundle_shell_css 커맨드가 셸 CSS를 템플릿 로드 순서 그대로 이어붙이는지 계약으로 고정한다."""
+
 import re
 from pathlib import Path
 
@@ -66,9 +67,7 @@ def test_번들_커맨드는_자신의_산출_경로를_소스로_포함하지_�
     (정적_루트 / "css" / "dist").mkdir(parents=True)
     (정적_루트 / "css" / "a.css").write_text(".a{color:red}")
     템플릿_경로 = tmp_path / "base.html"
-    템플릿_경로.write_text(
-        "{% static 'css/a.css' %}{% static 'css/dist/shell.css' %}"
-    )
+    템플릿_경로.write_text("{% static 'css/a.css' %}{% static 'css/dist/shell.css' %}")
     출력_경로 = 정적_루트 / "css" / "dist" / "shell.css"
 
     call_command(
@@ -109,7 +108,6 @@ def test_디버그가_꺼지면_셸_스타일은_번들_하나로_렌더된다(c
 
     assert hrefs.count("/static/css/dist/shell.css") == 1
     assert not any(
-        href in [f"/static/{rel_path}" for rel_path in _SHELL_CSS_RELATIVE_PATHS]
-        for href in hrefs
+        href in [f"/static/{rel_path}" for rel_path in _SHELL_CSS_RELATIVE_PATHS] for href in hrefs
     )
     assert "/static/fonts/pretendard/pretendardvariable-dynamic-subset.css" in hrefs

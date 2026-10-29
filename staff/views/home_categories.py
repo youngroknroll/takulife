@@ -1,4 +1,5 @@
 """스태프 콘솔 화면: 홈 카테고리 타일을 고르고 순서를 정한다."""
+
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count

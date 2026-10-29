@@ -1,5 +1,6 @@
 """이벤트 조회 공용 레이어. JSON API(events/views.py)와 SSR 화면(core/views.py)이
 필터·정렬 로직을 중복 구현하지 않고 함께 쓴다."""
+
 from datetime import timedelta
 
 from django.db import models
@@ -81,7 +82,9 @@ def list_published_events_for_month(params, *, year, month, today=None):
 
 
 def _missing_official_url_qs():
-    return Event.objects.published().filter(models.Q(official_url__isnull=True) | models.Q(official_url=""))
+    return Event.objects.published().filter(
+        models.Q(official_url__isnull=True) | models.Q(official_url="")
+    )
 
 
 def _ended_still_published_qs(*, today=None):
@@ -91,7 +94,9 @@ def _ended_still_published_qs(*, today=None):
 
 
 def _missing_dates_qs():
-    return Event.objects.published().filter(models.Q(start_date__isnull=True) | models.Q(end_date__isnull=True))
+    return Event.objects.published().filter(
+        models.Q(start_date__isnull=True) | models.Q(end_date__isnull=True)
+    )
 
 
 def _missing_region_qs():
@@ -166,12 +171,7 @@ def published_quality_warnings(*, today=None) -> dict:
         "missing_dates": missing_dates,
         "missing_region": missing_region,
         "needs_reverification": needs_reverification,
-        "total": (
-            missing_official_url
-            + ended_still_published
-            + missing_dates
-            + missing_region
-        ),
+        "total": (missing_official_url + ended_still_published + missing_dates + missing_region),
     }
 
 

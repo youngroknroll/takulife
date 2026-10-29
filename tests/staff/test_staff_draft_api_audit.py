@@ -6,6 +6,7 @@
 S6·S7은 Red가 정상이고, S11만 이미 Green이다(외부 atomic이 아직 없다는
 사실 자체가 SEC-AC1을 만족시키는 가드).
 """
+
 import pytest
 from django.db import IntegrityError, connection
 from django.test import override_settings

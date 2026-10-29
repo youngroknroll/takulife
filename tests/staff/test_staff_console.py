@@ -1,4 +1,5 @@
 """스태프 콘솔(/staff/) 인증·게이트·대시보드·리다이렉트 검증."""
+
 import base64
 import datetime
 import re
@@ -70,7 +71,9 @@ def test_일반_사용자가_대시보드에_접근하면_403이_된다(client, 
 
 
 @pytest.mark.django_db
-def test_로그인한_일반_사용자의_대시보드_요청은_리다이렉트를_따라가도_최종_403으로_끝난다(client, make_user):
+def test_로그인한_일반_사용자의_대시보드_요청은_리다이렉트를_따라가도_최종_403으로_끝난다(
+    client, make_user
+):
     user = make_user()
     client.force_login(user)
 
@@ -81,10 +84,20 @@ def test_로그인한_일반_사용자의_대시보드_요청은_리다이렉트
 
 
 @pytest.mark.django_db
-def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5종을_컨텍스트로_제공한다(staff_client, make_draft):
+def test_대시보드는_대기중_드래프트_건수와_품질_경고_항목_5종을_컨텍스트로_제공한다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
-    make_draft("https://example.com/a", extracted_title="드래프트 A", review_status=EventDraft.ReviewStatus.PENDING)
-    make_draft("https://example.com/b", extracted_title="드래프트 B", review_status=EventDraft.ReviewStatus.APPROVED)
+    make_draft(
+        "https://example.com/a",
+        extracted_title="드래프트 A",
+        review_status=EventDraft.ReviewStatus.PENDING,
+    )
+    make_draft(
+        "https://example.com/b",
+        extracted_title="드래프트 B",
+        review_status=EventDraft.ReviewStatus.APPROVED,
+    )
 
     resp = client.get("/staff/dashboard/")
 
@@ -151,16 +164,16 @@ def test_홈_카테고리_변경_액션은_대시보드에_전용_한글_라벨�
     resp = client.get("/staff/dashboard/")
 
     assert resp.status_code == 200
-    assert [row["action_label"] for row in resp.context["recent_action_rows"]] == ["홈 카테고리 변경"]
+    assert [row["action_label"] for row in resp.context["recent_action_rows"]] == [
+        "홈 카테고리 변경"
+    ]
     assert "홈 카테고리 변경" in resp.content.decode()
 
 
 @pytest.mark.django_db
 def test_드래프트_수집_실행_액션은_대시보드에_전용_한글_라벨로_표시된다(staff_client):
     staff, client = staff_client()
-    StaffActionLog.objects.create(
-        actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER
-    )
+    StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER)
 
     resp = client.get("/staff/dashboard/")
 
@@ -172,9 +185,7 @@ def test_드래프트_수집_실행_액션은_대시보드에_전용_한글_라�
 @pytest.mark.django_db
 def test_이벤트_수정_액션은_전용_라벨과_대상_이벤트_수정_페이지_링크를_함께_표시한다(staff_client):
     staff, client = staff_client()
-    event = Event.objects.create(
-        title="이벤트 A", publish_status=Event.PublishStatus.PUBLISHED
-    )
+    event = Event.objects.create(title="이벤트 A", publish_status=Event.PublishStatus.PUBLISHED)
     StaffActionLog.objects.create(
         actor=staff, action=StaffActionLog.Action.EVENT_UPDATE, target_event=event
     )
@@ -248,7 +259,9 @@ def test_한번도_수집되지_않은_활성_소스는_대시보드에_지연_�
 
 
 @pytest.mark.django_db
-def test_지연_임계_시간을_넘겨_수집된_활성_소스는_대시보드에_지연_배지를_보여준다(staff_client, settings):
+def test_지연_임계_시간을_넘겨_수집된_활성_소스는_대시보드에_지연_배지를_보여준다(
+    staff_client, settings
+):
     settings.DRAFT_SOURCE_STALE_HOURS = 48
     staff, client = staff_client()
     DraftSource.objects.create(
@@ -266,7 +279,9 @@ def test_지연_임계_시간을_넘겨_수집된_활성_소스는_대시보드�
 
 
 @pytest.mark.django_db
-def test_지연_임계_시간_이내에_수집된_활성_소스는_지연_배지를_보여주지_않는다(staff_client, settings):
+def test_지연_임계_시간_이내에_수집된_활성_소스는_지연_배지를_보여주지_않는다(
+    staff_client, settings
+):
     settings.DRAFT_SOURCE_STALE_HOURS = 48
     staff, client = staff_client()
     DraftSource.objects.create(
@@ -326,9 +341,7 @@ def test_수집_실행이_아닌_액션_로그만_있으면_대시보드는_실�
 @pytest.mark.django_db
 def test_대시보드는_가장_최근_드래프트_수집_실행_시각을_보여준다(staff_client):
     staff, client = staff_client()
-    log = StaffActionLog.objects.create(
-        actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER
-    )
+    log = StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.DRAFT_DISCOVER)
 
     resp = client.get("/staff/dashboard/")
 
@@ -440,7 +453,9 @@ def test_일반_사용자는_새_스태프_경로_전부에서_403으로_차단�
 
 
 @pytest.mark.django_db
-def test_최근_7일_처리_건수는_최근_활동_목록_표시_제한과_무관하게_실제_건수를_반영한다(staff_client):
+def test_최근_7일_처리_건수는_최근_활동_목록_표시_제한과_무관하게_실제_건수를_반영한다(
+    staff_client,
+):
     staff, client = staff_client()
     for _ in range(12):
         StaffActionLog.objects.create(actor=staff, action=StaffActionLog.Action.APPROVE)
@@ -478,7 +493,9 @@ def test_대기중_건수_요약_카드는_대기중_드래프트_목록으로_�
 
     assert resp.status_code == 200
     content = resp.content.decode()
-    assert '<a class="dash-metric dash-metric-link" href="/staff/drafts/?status=pending">' in content
+    assert (
+        '<a class="dash-metric dash-metric-link" href="/staff/drafts/?status=pending">' in content
+    )
 
 
 def _clean_quality_event_kwargs(index):
@@ -602,9 +619,7 @@ def test_재확인_대상만_있어도_대시보드는_경고_없음_안내를_�
 
 
 @pytest.mark.django_db
-def test_건수가_동률인_품질_경고는_라벨_정의_순서대로_렌더링된다(
-    staff_client, make_event
-):
+def test_건수가_동률인_품질_경고는_라벨_정의_순서대로_렌더링된다(staff_client, make_event):
     """건수가 같으면 sort() 결과 순서가 아니라 QUALITY_WARNING_LABELS 정의 순서로 렌더링돼야 한다."""
     staff, client = staff_client()
     kwargs0 = _clean_quality_event_kwargs(0)
@@ -800,7 +815,7 @@ def test_지금_수집_폼은_연타_가드를_옵트인한다(staff_client):
     form = re.search(
         r'<form[^>]*action="[^"]*draft-discovery[^"]*"[^>]*>',
         resp.content.decode(),
-    ) or re.search(r'<form[^>]*dash-panel-head-action[^>]*>', resp.content.decode())
+    ) or re.search(r"<form[^>]*dash-panel-head-action[^>]*>", resp.content.decode())
     assert form, "지금 수집 폼을 찾지 못했다"
     assert "data-submit-guard" in form.group()
 
@@ -831,9 +846,7 @@ def test_대시보드는_러너_온라인_여부와_최근_탐색_실행을_노�
     _, client = staff_client()
     record_heartbeat(provider="claude-code")
 
-    succeeded_run = SourceDiscoveryRun.objects.create(
-        status=SourceDiscoveryRun.Status.SUCCEEDED
-    )
+    succeeded_run = SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.SUCCEEDED)
     SourceCandidate.objects.create(
         run=succeeded_run,
         name="후보1",
@@ -850,9 +863,7 @@ def test_대시보드는_러너_온라인_여부와_최근_탐색_실행을_노�
         sample_url="https://example.com/n2/sample",
         status=SourceCandidate.Status.FAILED,
     )
-    pending_run = SourceDiscoveryRun.objects.create(
-        status=SourceDiscoveryRun.Status.PENDING
-    )
+    pending_run = SourceDiscoveryRun.objects.create(status=SourceDiscoveryRun.Status.PENDING)
 
     resp = client.get("/staff/dashboard/")
 
@@ -967,7 +978,9 @@ def test_대시보드_컨텍스트에_검수_SLA_카드_3장이_문자열_값으
 
     # Given: 3일 전에 생성된 대기 드래프트가 있으면
     draft = make_draft(review_status=EventDraft.ReviewStatus.PENDING)
-    EventDraft.objects.filter(pk=draft.pk).update(created_at=timezone.now() - datetime.timedelta(days=3))
+    EventDraft.objects.filter(pk=draft.pk).update(
+        created_at=timezone.now() - datetime.timedelta(days=3)
+    )
 
     resp = client.get("/staff/dashboard/")
 
@@ -1011,7 +1024,9 @@ def test_검수_SLA_데이터가_없으면_카드는_하이픈과_안내_문구�
 def test_검수_SLA_데이터가_있으면_카드는_값과_단위와_건수를_함께_보여준다(staff_client, make_draft):
     _, client = staff_client()
     draft = make_draft(review_status=EventDraft.ReviewStatus.PENDING)
-    EventDraft.objects.filter(pk=draft.pk).update(created_at=timezone.now() - datetime.timedelta(days=3))
+    EventDraft.objects.filter(pk=draft.pk).update(
+        created_at=timezone.now() - datetime.timedelta(days=3)
+    )
 
     resp = client.get("/staff/dashboard/")
     body = resp.content.decode()
@@ -1101,9 +1116,7 @@ def test_검수_SLA_카드_변환은_48시간_기준으로_단위를_바꾸고_�
 @pytest.mark.django_db
 def test_상세_문구에_스크립트_태그가_있어도_대시보드_초기_렌더는_이스케이프한다(staff_client):
     _, client = staff_client()
-    record_heartbeat(
-        provider="claude-code", phase="exploring", detail="<script>alert(1)</script>"
-    )
+    record_heartbeat(provider="claude-code", phase="exploring", detail="<script>alert(1)</script>")
 
     resp = client.get("/staff/dashboard/")
 

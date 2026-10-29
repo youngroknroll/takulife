@@ -4,6 +4,7 @@
 _record_outcome 호출의 리터럴 인자를 추출한다 — drafts는 임포트하지 않는
 local_runner 패키지의 계약을 지키려는 것이라, 러너 쪽은 텍스트/AST로만
 다룬다."""
+
 import ast
 import pathlib
 

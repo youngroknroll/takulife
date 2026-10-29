@@ -1,4 +1,5 @@
 """drafts.discovery_runs 서비스 테스트."""
+
 from datetime import timedelta
 
 import pytest
@@ -144,9 +145,7 @@ def test_runner_is_online은_offline_at과_최근_heartbeat_시각을_비교해_
         else now + timedelta(seconds=offline_at_offset_seconds)
     )
     last_heartbeat_at = now + timedelta(seconds=last_heartbeat_at_offset_seconds)
-    status_row = DiscoveryRunnerStatus(
-        last_heartbeat_at=last_heartbeat_at, offline_at=offline_at
-    )
+    status_row = DiscoveryRunnerStatus(last_heartbeat_at=last_heartbeat_at, offline_at=offline_at)
 
     assert runner_is_online(status_row=status_row) is expected
 
@@ -190,9 +189,7 @@ def test_러너_heartbeat가_신선하면_탐색_실행이_pending으로_생성�
 
 def test_heartbeat가_120초를_초과하면_실행_생성이_러너_오프라인_사유로_거부된다(make_user):
     record_heartbeat(provider="claude-code")
-    DiscoveryRunnerStatus.objects.update(
-        last_heartbeat_at=timezone.now() - timedelta(seconds=121)
-    )
+    DiscoveryRunnerStatus.objects.update(last_heartbeat_at=timezone.now() - timedelta(seconds=121))
     user = make_user()
 
     with pytest.raises(RunnerOfflineError):
@@ -229,9 +226,7 @@ def test_대기중이거나_임대된_실행이_있으면_새_실행_생성이_�
 def test_종결된_실행만_있으면_새_실행이_생성된다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()
-    SourceDiscoveryRun.objects.create(
-        requested_by=user, status=SourceDiscoveryRun.Status.SUCCEEDED
-    )
+    SourceDiscoveryRun.objects.create(requested_by=user, status=SourceDiscoveryRun.Status.SUCCEEDED)
 
     run = create_run(requested_by=user)
 
@@ -244,9 +239,7 @@ def test_claim은_가장_오래된_대기_실행을_임대하고_토큰과_만�
     older_run = SourceDiscoveryRun.objects.create(
         requested_by=user, status=SourceDiscoveryRun.Status.PENDING
     )
-    SourceDiscoveryRun.objects.create(
-        requested_by=user, status=SourceDiscoveryRun.Status.PENDING
-    )
+    SourceDiscoveryRun.objects.create(requested_by=user, status=SourceDiscoveryRun.Status.PENDING)
 
     claimed = claim(provider="claude-code")
 
@@ -303,9 +296,7 @@ def test_임대_상한을_소진한_만료_실행은_expired로_닫힌다(make_u
 def test_claim의_임대는_FOR_UPDATE_잠금_아래에서_일어난다(make_user):
     record_heartbeat(provider="claude-code")
     user = make_user()
-    SourceDiscoveryRun.objects.create(
-        requested_by=user, status=SourceDiscoveryRun.Status.PENDING
-    )
+    SourceDiscoveryRun.objects.create(requested_by=user, status=SourceDiscoveryRun.Status.PENDING)
 
     with CaptureQueriesContext(connection) as ctx:
         claim(provider="claude-code")
@@ -523,7 +514,9 @@ def _setup_상한_초과_보고(run):
     [_setup_생성_0건, _setup_일부_생성, _setup_상한_초과_보고],
     ids=["생성_0건", "일부_생성", "상한_초과_보고"],
 )
-def test_소스_후보_없이_이벤트만_시도한_실행은_생성_0건이면_실패로_일부_생성이면_부분_실패로_완료된다(setup):
+def test_소스_후보_없이_이벤트만_시도한_실행은_생성_0건이면_실패로_일부_생성이면_부분_실패로_완료된다(
+    setup,
+):
     run = _make_claimed_run()
     kwargs, expected = setup(run)
 
@@ -560,7 +553,9 @@ def _setup_이벤트_전부_생성(run):
     [_setup_이벤트_전부_제외, _setup_이벤트_전부_생성],
     ids=["전부_제외", "전부_생성"],
 )
-def test_소스_후보_없이_이벤트만_시도했고_실패가_없으면_생성_여부와_무관하게_정상으로_완료된다(setup):
+def test_소스_후보_없이_이벤트만_시도했고_실패가_없으면_생성_여부와_무관하게_정상으로_완료된다(
+    setup,
+):
     run = _make_claimed_run()
     kwargs = setup(run)
 

@@ -1,4 +1,5 @@
 """EventDraft의 extraction_method/confidence 필드 동작 테스트(LLM 사전입력용)."""
+
 import pytest
 from django.core.exceptions import ValidationError
 
@@ -15,7 +16,9 @@ class TestExtractionMethodField:
         assert draft.extraction_method == EventDraft.ExtractionMethod.HEURISTIC
 
     def test_extraction_method에_llm_값을_저장하면_그대로_유지된다(self, make_draft):
-        draft = make_draft("https://example.com/event", extraction_method=EventDraft.ExtractionMethod.LLM)
+        draft = make_draft(
+            "https://example.com/event", extraction_method=EventDraft.ExtractionMethod.LLM
+        )
         draft.refresh_from_db()
 
         assert draft.extraction_method == EventDraft.ExtractionMethod.LLM
@@ -42,7 +45,6 @@ class TestConfidenceField:
         draft.refresh_from_db()
 
         assert draft.confidence == pytest.approx(0.87)
-
 
 
 @pytest.mark.django_db

@@ -24,6 +24,7 @@
   하드코딩하지 말고 DB에서 읽어라(예:
   `Category.objects.exclude(palette_slot=None).values_list("palette_slot", flat=True)`).
 """
+
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 
@@ -71,9 +72,7 @@ def test_카테고리를_생성하면_팔레트_슬롯이_자동_배정된다():
     # unique=True 충돌이 나므로, 기존에 쓰인 슬롯을 DB에서 읽어 새
     # 카테고리 하나가 그 슬롯들과 겹치지 않는 슬롯을 받는지만 본다.
     used_slots = set(
-        Category.objects.exclude(palette_slot=None).values_list(
-            "palette_slot", flat=True
-        )
+        Category.objects.exclude(palette_slot=None).values_list("palette_slot", flat=True)
     )
 
     new_category = Category.objects.create(slug="new_category", label="새카테고리")

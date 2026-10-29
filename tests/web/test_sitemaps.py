@@ -1,4 +1,5 @@
 """사이트맵이 검색엔진에 노출하는 대상 검증."""
+
 import pytest
 from django.urls import reverse
 

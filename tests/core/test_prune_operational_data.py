@@ -1,6 +1,7 @@
 """core.management.commands.prune_operational_data 검증
 (트랙 37 운영 데이터 보존 정리, prompt_plan.md 트랙 37 S1 참고).
 """
+
 from datetime import timedelta
 from io import StringIO
 
@@ -121,7 +122,9 @@ def test_91일_지난_ErrorGroup은_삭제되고_89일_지난_ErrorGroup은_남�
     ],
     ids=["AnalyticsEvent", "StaffActionLog", "EventDraft", "SourceDiscoveryRun"],
 )
-def test_분석_이벤트_스태프_로그_드래프트_탐색실행은_90일_넘어도_보존_정리로_지워지지_않는다(create_row):
+def test_분석_이벤트_스태프_로그_드래프트_탐색실행은_90일_넘어도_보존_정리로_지워지지_않는다(
+    create_row,
+):
     # RT-06
     row = create_row()
     type(row).objects.filter(pk=row.pk).update(created_at=timezone.now() - timedelta(days=200))

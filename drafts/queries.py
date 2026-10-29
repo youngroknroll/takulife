@@ -1,4 +1,5 @@
 """드래프트 도메인의 공개 조회 계층. 집계 로직은 여기 두고 뷰에는 두지 않는다."""
+
 from datetime import timedelta
 from urllib.parse import urlsplit
 
@@ -25,10 +26,7 @@ _ALL_STATUSES = (
 def draft_review_stats() -> dict:
     """리뷰 상태별 개수를 pending/approved/rejected 키로 반환한다. 레코드가 0건이어도
     세 키 모두 채워진다."""
-    rows = (
-        EventDraft.objects.values("review_status")
-        .annotate(count=Count("id"))
-    )
+    rows = EventDraft.objects.values("review_status").annotate(count=Count("id"))
     counts = {row["review_status"]: row["count"] for row in rows}
     return {status: counts.get(status, 0) for status in _ALL_STATUSES}
 
@@ -40,7 +38,8 @@ def draft_review_sla(*, days=7, now=None) -> dict:
     window_start = now - timedelta(days=days)
     started_at = Coalesce("reopened_at", "created_at")
     pending = EventDraft.objects.filter(review_status=EventDraft.ReviewStatus.PENDING).aggregate(
-        oldest=Min(started_at), count=Count("id"))
+        oldest=Min(started_at), count=Count("id")
+    )
     decided = (
         EventDraft.objects.annotate(
             started_at=started_at,
@@ -51,7 +50,9 @@ def draft_review_sla(*, days=7, now=None) -> dict:
         )
         .filter(decided_at__gte=window_start, decided_at__lt=now)
         .aggregate(
-            avg_handling=Avg(ExpressionWrapper(F("decided_at") - F("started_at"), output_field=DurationField())),
+            avg_handling=Avg(
+                ExpressionWrapper(F("decided_at") - F("started_at"), output_field=DurationField())
+            ),
             count=Count("id"),
             rejected=Count("id", filter=Q(review_status=EventDraft.ReviewStatus.REJECTED)),
         )
@@ -265,6 +266,6 @@ def recent_discovery_runs(*, limit=5):
 
 def failed_source_candidates(*, limit=10):
     """최근 실패한 후보를 최신순으로 돌려준다(스태프 확인 큐)."""
-    return SourceCandidate.objects.filter(
-        status=SourceCandidate.Status.FAILED
-    ).order_by("-created_at")[:limit]
+    return SourceCandidate.objects.filter(status=SourceCandidate.Status.FAILED).order_by(
+        "-created_at"
+    )[:limit]

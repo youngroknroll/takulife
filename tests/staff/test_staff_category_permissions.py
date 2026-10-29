@@ -4,6 +4,7 @@ Red 기대: `staff/urls.py`에 `category-*` 이름이 아직 없어 reverse()가
 NoReverseMatch로 실패한다(G-01~G-03). G-04는 `staff/views/categories.py`
 파일 자체가 없어 `Path.read_text()`가 FileNotFoundError로 실패한다.
 """
+
 import ast
 from pathlib import Path
 

@@ -4,6 +4,7 @@ DraftSource 조회(list_draft_sources)와 행 가공(_build_source_rows)은
 이미 대시보드에서 검증됐다 — 여기서는 접근 제어와 새 라우트의 컨텍스트
 배선만 확인한다.
 """
+
 import pytest
 from django.urls import reverse
 

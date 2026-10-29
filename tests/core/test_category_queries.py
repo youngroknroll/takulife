@@ -7,6 +7,7 @@
 (tests/core/test_category_model.py 모듈 독스트링 참고). 이 파일의
 새 슬러그는 core.vocab.CATEGORY 시딩분과 겹치지 않게 고른다.
 """
+
 import pytest
 
 from core.models import Category

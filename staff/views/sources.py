@@ -3,6 +3,7 @@
 대시보드의 「수집 소스 상태」 패널과 같은 조회(list_draft_sources)와 같은
 행 가공(_build_source_rows)을 그대로 전체 페이지로 확장한다.
 """
+
 from django.shortcuts import render
 
 from drafts.queries import list_draft_sources

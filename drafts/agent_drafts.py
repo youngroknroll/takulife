@@ -1,6 +1,7 @@
 """러너가 제출한 키워드 탐색 이벤트 페이로드를 서버가 재검사하는 자리다.
 서버는 여기서 인스타·X를 절대 가져오지 않는다 — 이 계약은 KW-07이 나중에
 테스트로 고정한다."""
+
 import unicodedata
 from datetime import date
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -36,10 +37,20 @@ _MAX_SOURCE_URL_LENGTH = 200
 # utm_* 전체를 제거). fbclid·gclid는 광고 클릭 식별자, igshid는 인스타 공유
 # 식별자, ref·ref_src는 X 공유 리퍼러 — 이 트랙이 두 플랫폼을 직접 다루기
 # 때문에 추가한다.
-_TRACKING_QUERY_PARAMS = frozenset({
-    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-    "fbclid", "gclid", "igshid", "ref", "ref_src",
-})
+_TRACKING_QUERY_PARAMS = frozenset(
+    {
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_term",
+        "utm_content",
+        "fbclid",
+        "gclid",
+        "igshid",
+        "ref",
+        "ref_src",
+    }
+)
 
 # note에 인용하는 원값이 메모를 부풀리지 않도록 자르는 상한. 계획서가 캡션
 # 인용 상한으로 쓴 80자를 그대로 따른다(§D evidence≤80자 원문 인용).
@@ -90,18 +101,14 @@ def _quote_original_value(value):
 def _check_category(*, fields, note_additions):
     category = fields.get("category", "")
     if not is_valid_category(category):
-        note_additions.append(
-            _CATEGORY_MISMATCH_NOTE.format(value=_quote_original_value(category))
-        )
+        note_additions.append(_CATEGORY_MISMATCH_NOTE.format(value=_quote_original_value(category)))
         fields["category"] = ""
 
 
 def _check_region(*, fields, note_additions):
     region = fields.get("region", "")
     if not is_valid_region(region):
-        note_additions.append(
-            _REGION_MISMATCH_NOTE.format(value=_quote_original_value(region))
-        )
+        note_additions.append(_REGION_MISMATCH_NOTE.format(value=_quote_original_value(region)))
         fields["region"] = ""
 
 
@@ -131,9 +138,7 @@ def _normalize_unreadable_date(*, fields, key, note_additions):
     try:
         date.fromisoformat(value)
     except (TypeError, ValueError):
-        note_additions.append(
-            _DATE_UNREADABLE_NOTE.format(value=_quote_original_value(value))
-        )
+        note_additions.append(_DATE_UNREADABLE_NOTE.format(value=_quote_original_value(value)))
         fields[key] = None
 
 

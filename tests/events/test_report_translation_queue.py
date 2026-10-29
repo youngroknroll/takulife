@@ -2,6 +2,7 @@
 "--dry-run" 옵션이 있는 명령을 가정했지만(prompt_plan.md §10-5), 이 트랙의
 실제 브리프는 인자 없는 읽기 전용 보고 명령으로 확정했다 — 이 파일은 그
 확정 형태만 검증한다."""
+
 import io
 
 import pytest
@@ -32,9 +33,19 @@ def _make_four_published_events(make_event):
         text_translations={
             "source_hash": source_hash(up_to_date_fields),
             "manual": False,
-            "en": {"title": "Latest translated event", "work_title": "Work", "location_name": "Coex", "summary": "Summary"},
+            "en": {
+                "title": "Latest translated event",
+                "work_title": "Work",
+                "location_name": "Coex",
+                "summary": "Summary",
+            },
             "ja": None,
-            "zh-hans": {"title": "最新翻译活动", "work_title": "作品", "location_name": "Coex", "summary": "摘要"},
+            "zh-hans": {
+                "title": "最新翻译活动",
+                "work_title": "作品",
+                "location_name": "Coex",
+                "summary": "摘要",
+            },
         },
     )
 
@@ -44,9 +55,24 @@ def _make_four_published_events(make_event):
         text_translations={
             "source_hash": "0" * 64,
             "manual": False,
-            "en": {"title": "stale", "work_title": "stale", "location_name": "stale", "summary": "stale"},
-            "ja": {"title": "stale", "work_title": "stale", "location_name": "stale", "summary": "stale"},
-            "zh-hans": {"title": "stale", "work_title": "stale", "location_name": "stale", "summary": "stale"},
+            "en": {
+                "title": "stale",
+                "work_title": "stale",
+                "location_name": "stale",
+                "summary": "stale",
+            },
+            "ja": {
+                "title": "stale",
+                "work_title": "stale",
+                "location_name": "stale",
+                "summary": "stale",
+            },
+            "zh-hans": {
+                "title": "stale",
+                "work_title": "stale",
+                "location_name": "stale",
+                "summary": "stale",
+            },
         },
     )
 
@@ -65,7 +91,9 @@ def _run_command():
     return dict(line.split("=", 1) for line in lines if line)
 
 
-def test_구성된_게시_이벤트_4건에서_대기_최신_수동_격리_수치가_정확하다(make_event, make_draft_event):
+def test_구성된_게시_이벤트_4건에서_대기_최신_수동_격리_수치가_정확하다(
+    make_event, make_draft_event
+):
     _make_four_published_events(make_event)
     make_draft_event(**_fields("초안 행사"))
 
@@ -84,10 +112,7 @@ def test_구성된_게시_이벤트_4건에서_대기_최신_수동_격리_수�
 
 def test_명령은_아무것도_저장하지_않는다(make_event):
     pending, up_to_date, stale, manual = _make_four_published_events(make_event)
-    before = {
-        event.id: event.text_translations
-        for event in [pending, up_to_date, stale, manual]
-    }
+    before = {event.id: event.text_translations for event in [pending, up_to_date, stale, manual]}
 
     _run_command()
 

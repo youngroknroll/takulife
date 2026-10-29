@@ -1,9 +1,9 @@
 """EventInterest API 엔드포인트 동작 테스트.
 
-  POST   /api/event-interests/         → 201 또는 409
-  GET    /api/event-interests/         → 페이지네이션 목록(사용자 범위 한정)
-  GET    /api/event-interests/<id>/    → 200 또는 404
-  DELETE /api/event-interests/<id>/    → 204 또는 404
+POST   /api/event-interests/         → 201 또는 409
+GET    /api/event-interests/         → 페이지네이션 목록(사용자 범위 한정)
+GET    /api/event-interests/<id>/    → 200 또는 404
+DELETE /api/event-interests/<id>/    → 204 또는 404
 """
 
 import pytest
@@ -168,7 +168,9 @@ def test_찜을_삭제하면_204이고_이후_조회는_404가_된다(client, ma
 
 
 @pytest.mark.django_db
-def test_찜_해제_API를_호출하면_interest_removed_활동_이력이_기록된다(client, make_user, make_event):
+def test_찜_해제_API를_호출하면_interest_removed_활동_이력이_기록된다(
+    client, make_user, make_event
+):
     user = make_user(username="interest-removed-activity-user")
     event = make_event(title="Popup Activity Removed")
 
@@ -197,7 +199,9 @@ def test_찜_해제_API를_호출하면_interest_removed_활동_이력이_기록
 
 
 @pytest.mark.django_db
-def test_다른_사용자의_찜을_삭제하면_404이고_행이_보존된다(client, make_user, make_event, make_interest):
+def test_다른_사용자의_찜을_삭제하면_404이고_행이_보존된다(
+    client, make_user, make_event, make_interest
+):
     owner = make_user(username="interest-owner")
     attacker = make_user(username="interest-attacker")
     event = make_event(title="Popup IDOR")
@@ -217,7 +221,9 @@ def test_다른_사용자의_찜을_삭제하면_404이고_행이_보존된다(c
 
 
 @pytest.mark.django_db
-def test_같은_행사에_찜과_참석예정_상태가_동시에_존재할_수_있다(client, make_user, make_event, make_interest):
+def test_같은_행사에_찜과_참석예정_상태가_동시에_존재할_수_있다(
+    client, make_user, make_event, make_interest
+):
     from archive.models import UserEventStatus
 
     user = make_user(username="interest-coexist-user")

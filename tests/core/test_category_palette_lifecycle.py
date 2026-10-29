@@ -29,6 +29,7 @@ republish_event)를 거쳐 상태를 만든다 — "이벤트를 비공개로 �
 결과적으로 슬롯이 반납된다"까지만 단언하고 어느 함수가 그렇게 했는지는
 묻지 않는다.
 """
+
 import pytest
 from django.db import transaction
 
@@ -95,9 +96,7 @@ def test_비활성이어도_게시_이벤트가_남아_있으면_슬롯을_유�
     event_a = _create_published_event(
         category_slug=category.slug, official_url="https://example.com/p03-a"
     )
-    _create_published_event(
-        category_slug=category.slug, official_url="https://example.com/p03-b"
-    )
+    _create_published_event(category_slug=category.slug, official_url="https://example.com/p03-b")
 
     category.is_active = False
     category.save()
@@ -178,10 +177,7 @@ def test_빈_슬롯이_없으면_재획득에_실패해도_게시를_막지_않�
     for index in range(free_count):
         _create_category(slug=f"lifecycle_p07_fill_{index}", label=f"P07채움{index}")
 
-    assert (
-        Category.objects.exclude(palette_slot=None).count()
-        == Category.PALETTE_SLOT_COUNT
-    )
+    assert Category.objects.exclude(palette_slot=None).count() == Category.PALETTE_SLOT_COUNT
 
     republished_event = republish_event(event=event)  # 재획득 시도 — 빈 슬롯 없음
 
@@ -269,10 +265,7 @@ def test_삭제_경로에서_슬롯_재획득이_충돌해도_이벤트_삭제�
         delete_event(event=event)
 
     assert not Event.objects.filter(pk=event.pk).exists()
-    assert (
-        StaffActionLog.objects.filter(action=StaffActionLog.Action.EVENT_DELETE).count()
-        == 1
-    )
+    assert StaffActionLog.objects.filter(action=StaffActionLog.Action.EVENT_DELETE).count() == 1
     category.refresh_from_db()
     assert category.palette_slot is None
 

@@ -4,6 +4,7 @@
 (test_staff_bulk_approve.py 참고) — 여기서는 반려 고유 동작(사유 저장,
 REJECT 로그)만 다룬다.
 """
+
 import pytest
 from django.urls import reverse
 
@@ -53,7 +54,9 @@ def test_draft_ids가_비어있으면_일괄_반려_요청을_거부한다(staff
 
 
 @pytest.mark.django_db
-def test_draft_ids_개수가_상한을_초과하면_일괄_반려_요청을_거부하고_아무것도_변경하지_않는다(staff_client, make_draft):
+def test_draft_ids_개수가_상한을_초과하면_일괄_반려_요청을_거부하고_아무것도_변경하지_않는다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     drafts = [
         make_draft(f"https://example.com/reject-over-cap-{i}")
@@ -74,7 +77,9 @@ def test_draft_ids_개수가_상한을_초과하면_일괄_반려_요청을_거�
 
 
 @pytest.mark.django_db
-def test_대기중_드래프트_여러_건을_일괄_반려하면_모두_반려되고_건별로_감사_로그가_남는다(staff_client, make_draft):
+def test_대기중_드래프트_여러_건을_일괄_반려하면_모두_반려되고_건별로_감사_로그가_남는다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     draft_a = make_draft("https://example.com/bulk-reject-a")
     draft_b = make_draft("https://example.com/bulk-reject-b")
@@ -145,7 +150,9 @@ def test_존재하지_않는_draft_id는_전체_요청_실패가_아니라_건�
 
 
 @pytest.mark.django_db
-def test_이미_승인된_드래프트가_섞여도_나머지는_반려되고_해당_건만_실패로_보고된다(staff_client, make_draft):
+def test_이미_승인된_드래프트가_섞여도_나머지는_반려되고_해당_건만_실패로_보고된다(
+    staff_client, make_draft
+):
     staff, client = staff_client()
     already_approved = make_draft(
         "https://example.com/bulk-reject-already-approved",

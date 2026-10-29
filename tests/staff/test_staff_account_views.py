@@ -6,6 +6,7 @@
 (`confirmed=yes`) 뒤에야 실제로 바뀐다(2단계 확인 패턴은
 tests/staff/test_staff_event_publish_delete_views.py의 삭제 흐름과 같다).
 """
+
 from urllib.parse import urlencode
 
 from django.db import IntegrityError, connection
@@ -188,7 +189,9 @@ def test_탈퇴_신청이_없는_대상의_상세_컨텍스트에는_유예_예�
 
 
 @pytest.mark.django_db
-def test_탈퇴_유예_중인_대상의_상세_컨텍스트_유예_예정일은_신청_시각에_10일을_더한_값이다(staff_client, make_user):
+def test_탈퇴_유예_중인_대상의_상세_컨텍스트_유예_예정일은_신청_시각에_10일을_더한_값이다(
+    staff_client, make_user
+):
     target = make_user()
     target.deletion_requested_at = timezone.now()
     target.save(update_fields=["deletion_requested_at"])
@@ -235,7 +238,9 @@ def test_존재하지_않는_계정_상세를_요청하면_404를_응답한다(s
         pytest.param(_set_active_url, id="active"),
     ],
 )
-def test_익명_사용자가_상태_변경을_요청하면_로그인_페이지로_리다이렉트된다(client, make_user, url_fn):
+def test_익명_사용자가_상태_변경을_요청하면_로그인_페이지로_리다이렉트된다(
+    client, make_user, url_fn
+):
     target = make_user()
 
     resp = client.post(url_fn(target))
@@ -343,8 +348,20 @@ def test_confirmed_없이_상태_변경_POST하면_확인_화면을_보여주고
 @pytest.mark.parametrize(
     "url_fn, field, action_label, description",
     [
-        pytest.param(_set_staff_url, "staff", "검수 권한 부여", "이 계정에 검수 권한을 부여해 스태프 콘솔에 접근할 수 있게 합니다.", id="staff"),
-        pytest.param(_set_active_url, "active", "계정 재활성화", "이 계정을 다시 활성화해 로그인할 수 있게 합니다.", id="active"),
+        pytest.param(
+            _set_staff_url,
+            "staff",
+            "검수 권한 부여",
+            "이 계정에 검수 권한을 부여해 스태프 콘솔에 접근할 수 있게 합니다.",
+            id="staff",
+        ),
+        pytest.param(
+            _set_active_url,
+            "active",
+            "계정 재활성화",
+            "이 계정을 다시 활성화해 로그인할 수 있게 합니다.",
+            id="active",
+        ),
     ],
 )
 def test_confirmed_없는_상태_변경_POST의_확인_화면_컨텍스트는_계약대로_채워진다(
@@ -430,7 +447,14 @@ def test_enabled가_1_또는_0이_아니면_400을_응답하고_대상을_바꾸
     ],
 )
 def test_confirmed_yes로_상태_변경_POST하면_대상이_바뀌고_감사_로그가_남고_성공_메시지와_함께_상세로_리다이렉트된다(
-    staff_client, make_user, url_fn, target_kwargs, enabled, expected_action, flag_attr, expected_after
+    staff_client,
+    make_user,
+    url_fn,
+    target_kwargs,
+    enabled,
+    expected_action,
+    flag_attr,
+    expected_after,
 ):
     target = make_user(**target_kwargs)
     staff, client = staff_client(is_superuser=True)
@@ -505,7 +529,9 @@ def test_타인_슈퍼유저_대상에_확인_상태_변경_POST를_보내면_�
 
 
 @pytest.mark.django_db
-def test_본인_계정에_확인_상태_변경_POST를_보내면_변경없이_오류_메시지를_보여주고_로그를_남기지_않는다(staff_client):
+def test_본인_계정에_확인_상태_변경_POST를_보내면_변경없이_오류_메시지를_보여주고_로그를_남기지_않는다(
+    staff_client,
+):
     staff, client = staff_client(is_superuser=True)
 
     resp = client.post(_set_staff_url(staff), {"enabled": "0", "confirmed": "yes"}, follow=True)

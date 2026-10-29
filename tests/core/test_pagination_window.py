@@ -111,8 +111,7 @@ class TestPagerRendering:
         # 컬렉션은 10개/페이지 — 3블록 이상(>10페이지)을 만들어야 첫/마지막 블록의
         # 화살표 부재를 각각 확인할 수 있다.
         CollectionItem.objects.bulk_create(
-            CollectionItem(user=user, name=f"굿즈 {i}", work_title="작품 A")
-            for i in range(115)
+            CollectionItem(user=user, name=f"굿즈 {i}", work_title="작품 A") for i in range(115)
         )
         return client
 

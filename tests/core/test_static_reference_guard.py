@@ -4,6 +4,7 @@
 Django 테스트는 정적 파일을 받아오지 않아 전체 통과 상태에서도 그대로 살아남는다
 — 실제로 스태프 JS를 js/staff/로 옮겼을 때 2111건이 초록인 채 404가 났다.
 """
+
 import re
 from pathlib import Path
 

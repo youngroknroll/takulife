@@ -1,4 +1,5 @@
 """계정 허브 뷰. 아카이브·컬렉션 집계를 모아 개인 요약을 보여준다."""
+
 import logging
 
 from django.contrib.auth import logout

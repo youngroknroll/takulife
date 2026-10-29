@@ -1,5 +1,6 @@
 """트랙 43-1 UI 다국어 기반 — jsi18n 경로, Accept-Language에 따른 html lang,
 /i18n/setlang/ POST로 언어 전환."""
+
 import re
 
 import pytest

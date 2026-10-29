@@ -5,6 +5,7 @@
 셸이 둘이 됐고 각자 자기 클래스를 쓴다 — 한쪽만 검사하면 다른 쪽이 조용히
 메시지를 잃어도 통과한다.
 """
+
 import pytest
 from django.utils import timezone
 
@@ -39,9 +40,7 @@ def test_소비자_셸의_성공_메시지는_site_message_success_클래스로_
 
 
 @pytest.mark.django_db
-def test_스태프_셸의_성공_메시지는_staff_message_success_클래스로_렌더링된다(
-    client, make_user
-):
+def test_스태프_셸의_성공_메시지는_staff_message_success_클래스로_렌더링된다(client, make_user):
     staff = make_user(is_staff=True)
     client.force_login(staff)
 

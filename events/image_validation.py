@@ -87,9 +87,7 @@ def validate_uploaded_image(value):
 
     # 허용 확장자로 위장한 다른 포맷 파일을 걸러낸다.
     if image_format not in ALLOWED_IMAGE_FORMATS:
-        raise serializers.ValidationError(
-            "Unsupported image format. Allowed: JPEG, PNG, WEBP."
-        )
+        raise serializers.ValidationError("Unsupported image format. Allowed: JPEG, PNG, WEBP.")
 
     if width > MAX_IMAGE_DIMENSION_PX or height > MAX_IMAGE_DIMENSION_PX:
         raise serializers.ValidationError(

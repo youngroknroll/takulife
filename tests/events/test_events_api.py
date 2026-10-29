@@ -279,15 +279,11 @@ def test_공개_행사_목록은_빈_상태_필터값을_무시하고_전체를_
 
 @pytest.mark.django_db
 def test_공개_행사_목록은_여러_지역_값을_동시에_필터링한다(client, make_event):
-    seoul = make_event(
-        title="Seoul", region="seoul", publish_status=Event.PublishStatus.PUBLISHED
-    )
+    seoul = make_event(title="Seoul", region="seoul", publish_status=Event.PublishStatus.PUBLISHED)
     gyeonggi = make_event(
         title="Gyeonggi", region="gyeonggi", publish_status=Event.PublishStatus.PUBLISHED
     )
-    make_event(
-        title="Busan", region="busan", publish_status=Event.PublishStatus.PUBLISHED
-    )
+    make_event(title="Busan", region="busan", publish_status=Event.PublishStatus.PUBLISHED)
 
     response = client.get("/api/events/?region=seoul&region=gyeonggi")
 
@@ -384,7 +380,9 @@ def test_공개_행사_목록은_잘못된_형식의_시작일_이전_조건을_
     ids=["검색어", "지역", "카테고리", "원작"],
 )
 @pytest.mark.django_db
-def test_공개_행사_목록은_빈_문자열_필터값을_무시하고_전체를_반환한다(client, query_param, make_event):
+def test_공개_행사_목록은_빈_문자열_필터값을_무시하고_전체를_반환한다(
+    client, query_param, make_event
+):
     first = make_event(title="First", publish_status=Event.PublishStatus.PUBLISHED)
     second = make_event(title="Second", publish_status=Event.PublishStatus.PUBLISHED)
 

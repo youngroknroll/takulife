@@ -15,6 +15,7 @@ core/vocab.py — takulife 도메인 어휘의 단일 출처.
 - 라벨은 지연 번역 문자열(gettext_lazy)이라 str이 아닐 수 있다. 카테고리는
   한국어 원문 `CATEGORY_SOURCE_LABELS`(저장·필터 토큰용)도 따로 둔다.
 """
+
 import unicodedata
 
 from django.conf import settings
@@ -38,9 +39,7 @@ _CATEGORY_SOURCE: tuple[tuple[str, str], ...] = (
 )
 
 # 표시용은 요청 언어에 따라 바뀌는 지연 번역 라벨이다.
-CATEGORY: tuple[tuple[str, str], ...] = tuple(
-    (slug, _(label)) for slug, label in _CATEGORY_SOURCE
-)
+CATEGORY: tuple[tuple[str, str], ...] = tuple((slug, _(label)) for slug, label in _CATEGORY_SOURCE)
 
 # O(1) 라벨 조회용 편의 딕셔너리.
 CATEGORY_LABELS: dict[str, str] = dict(CATEGORY)

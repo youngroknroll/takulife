@@ -1,6 +1,7 @@
 """번역 러너용 API의 얇은 어댑터다. 인증·직렬화·상태코드만 다루고
 판정·저장은 events.translation_queue에 위임한다.
 """
+
 import re
 
 from drf_spectacular.utils import extend_schema
@@ -63,7 +64,9 @@ class TranslationSubmitView(_TranslationRunnerView):
                 client_ip=get_client_ip(request),
             )
         except SubmissionRejected as exc:
-            return error_response(exc.code, _REJECTION_STATUS.get(exc.code, status.HTTP_400_BAD_REQUEST))
+            return error_response(
+                exc.code, _REJECTION_STATUS.get(exc.code, status.HTTP_400_BAD_REQUEST)
+            )
 
         return Response(
             {"status": outcome.status, "saved": outcome.saved, "quarantined": outcome.quarantined}

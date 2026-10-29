@@ -7,6 +7,7 @@ update_draft는 *어떤 필드를 고칠 수 있나*(mutable_fields)만 검사�
 승인 시점이 아니라 입력 시점에 막는다 — 스태프가 저장하는 순간 알 수 있어야
 하고, 승인까지 미루면 잘못된 값이 검토 큐에 머문다.
 """
+
 import pytest
 
 from drafts.services import DraftVocabError, update_draft
@@ -72,4 +73,3 @@ class TestUpdateDraftVocabGuard:
         draft.refresh_from_db()
         assert draft.extracted_title == "원래제목"
         assert draft.extracted_category == "popup_store"
-

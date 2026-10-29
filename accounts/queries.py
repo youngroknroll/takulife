@@ -3,6 +3,7 @@
 계정 도메인이 자기 조회 로직을 소유한다(events/queries.py처럼 도메인이
 자기 조회를 소유하는 구조). HTTP 관문·페이지네이션은 staff 뷰가 감싼다.
 """
+
 from .models import User
 
 

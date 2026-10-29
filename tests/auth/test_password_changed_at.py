@@ -8,6 +8,7 @@ A1/A2는 실제 HTTP 뷰를 구동해 Django 앱 레지스트리(accounts/apps.p
 test_account_deletion.py의 HTTP 수준 DEL 테스트와 같은 방식이다. A3은
 그렇게 하지 않는다 — 이유는 그 독스트링 참고.
 """
+
 import secrets
 
 import pytest

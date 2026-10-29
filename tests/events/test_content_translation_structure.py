@@ -1,6 +1,7 @@
 """events.content_translation의 번역 제출 검증(validate_translations)에 대한
 단위 테스트 — 구조 검사·전체 거부·언어별 격리 조합·NFC 정규화·필드 순서를 다룬다.
 """
+
 import pytest
 
 from events.content_translation import (
@@ -66,7 +67,10 @@ def test_언어_하나만_제출하면_전체_거부된다():
 
 
 _schema_violation_cases = [
-    ("언어_안_필드_누락", lambda: {**_translations(), "ja": {k: v for k, v in _ja().items() if k != "summary"}}),
+    (
+        "언어_안_필드_누락",
+        lambda: {**_translations(), "ja": {k: v for k, v in _ja().items() if k != "summary"}},
+    ),
     ("필드_값이_비문자열", lambda: {**_translations(), "en": {**_en(), "title": 123}}),
     ("정의되지_않은_여분_언어", lambda: {**_translations(), "fr": _en()}),
     ("언어_안_여분_필드", lambda: {**_translations(), "en": {**_en(), "extra": "x"}}),
@@ -76,7 +80,9 @@ _schema_violation_cases = [
 
 
 @pytest.mark.parametrize(
-    "build_translations", [case[1] for case in _schema_violation_cases], ids=[case[0] for case in _schema_violation_cases]
+    "build_translations",
+    [case[1] for case in _schema_violation_cases],
+    ids=[case[0] for case in _schema_violation_cases],
 )
 def test_키_집합이나_타입이_어긋나면_전체_거부된다(build_translations):
     with pytest.raises(SubmissionRejected) as exc_info:

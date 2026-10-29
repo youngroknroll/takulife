@@ -14,6 +14,7 @@
 - ?partial=1 은 결과 프래그먼트만 렌더하며 전체 페이지와 동일한 로그인
   요구를 따른다.
 """
+
 import pytest
 
 from archive.models import CollectionItem
@@ -25,7 +26,9 @@ pytestmark = pytest.mark.web
 
 @pytest.mark.django_db
 class TestArchiveCollectionViewAuth:
-    def test_인증된_사용자가_컬렉션_페이지에_접근하면_200과_함께_컬렉션_템플릿이_렌더링된다(self, user_client):
+    def test_인증된_사용자가_컬렉션_페이지에_접근하면_200과_함께_컬렉션_템플릿이_렌더링된다(
+        self, user_client
+    ):
         _, client = user_client()
 
         resp = client.get("/collection/")
@@ -33,7 +36,9 @@ class TestArchiveCollectionViewAuth:
         assert resp.status_code == 200
         assert "core/archive/collection.html" in [t.name for t in resp.templates]
 
-    def test_비로그인_사용자가_컬렉션_페이지에_접근하면_로그인_페이지로_리다이렉트된다(self, client):
+    def test_비로그인_사용자가_컬렉션_페이지에_접근하면_로그인_페이지로_리다이렉트된다(
+        self, client
+    ):
         resp = client.get("/collection/")
 
         assert resp.status_code == 302
@@ -42,7 +47,9 @@ class TestArchiveCollectionViewAuth:
 
 @pytest.mark.django_db
 class TestArchiveCollectionSummary:
-    def test_컬렉션_요약_카운트는_본인_소유_항목만_집계한다(self, user_client, make_user, make_collection_item):
+    def test_컬렉션_요약_카운트는_본인_소유_항목만_집계한다(
+        self, user_client, make_user, make_collection_item
+    ):
         user, client = user_client()
         other = make_user()
         make_collection_item(user, name="내 보유품", is_wanted=False)
@@ -57,7 +64,9 @@ class TestArchiveCollectionSummary:
 
 @pytest.mark.django_db
 class TestArchiveCollectionListOwnerScope:
-    def test_컬렉션_목록에는_본인_소유_항목만_표시된다(self, user_client, make_user, make_collection_item):
+    def test_컬렉션_목록에는_본인_소유_항목만_표시된다(
+        self, user_client, make_user, make_collection_item
+    ):
         user, client = user_client()
         other = make_user()
         make_collection_item(user, name="내 아이템")
@@ -90,7 +99,9 @@ class TestArchiveCollectionPagination:
 
 @pytest.mark.django_db
 class TestArchiveCollectionSearch:
-    def test_검색어로_컬렉션_목록을_필터링하면_이름이_일치하는_항목만_표시된다(self, user_client, make_collection_item):
+    def test_검색어로_컬렉션_목록을_필터링하면_이름이_일치하는_항목만_표시된다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(user, name="유메 아크릴")
         make_collection_item(user, name="다른 굿즈")
@@ -103,7 +114,9 @@ class TestArchiveCollectionSearch:
 
 @pytest.mark.django_db
 class TestArchiveCollectionIsWantedFilter:
-    def test_구함_필터를_true로_지정하면_구하는_항목만_표시된다(self, user_client, make_collection_item):
+    def test_구함_필터를_true로_지정하면_구하는_항목만_표시된다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
@@ -140,7 +153,9 @@ class TestArchiveCollectionIsWantedFilter:
         names = {row["item"].name for row in resp.context["item_rows"]}
         assert names == {"보유템", "구함템"}
 
-    def test_구함_필터_파라미터가_없으면_필터가_적용되지_않는다(self, user_client, make_collection_item):
+    def test_구함_필터_파라미터가_없으면_필터가_적용되지_않는다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(user, name="보유템", is_wanted=False)
         make_collection_item(user, name="구함템", is_wanted=True)
@@ -153,7 +168,9 @@ class TestArchiveCollectionIsWantedFilter:
 
 @pytest.mark.django_db
 class TestArchiveCollectionOwnedFilter:
-    def test_보유_필터를_true로_지정하면_보유한_항목만_표시된다(self, user_client, make_collection_item):
+    def test_보유_필터를_true로_지정하면_보유한_항목만_표시된다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(user, name="가진 것", quantity=3)
         make_collection_item(user, name="안 가진 것", quantity=0)
@@ -163,7 +180,9 @@ class TestArchiveCollectionOwnedFilter:
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["가진 것"]
 
-    def test_보유_필터를_false로_지정하면_미보유_항목만_표시된다(self, user_client, make_collection_item):
+    def test_보유_필터를_false로_지정하면_미보유_항목만_표시된다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(user, name="가진 것", quantity=3)
         make_collection_item(user, name="안 가진 것", quantity=0)
@@ -190,7 +209,9 @@ class TestArchiveCollectionOwnedFilter:
         names = {row["item"].name for row in resp.context["item_rows"]}
         assert names == {"가진 것", "안 가진 것"}
 
-    def test_보유_필터_파라미터가_없으면_필터가_적용되지_않는다(self, user_client, make_collection_item):
+    def test_보유_필터_파라미터가_없으면_필터가_적용되지_않는다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(user, name="가진 것", quantity=3)
         make_collection_item(user, name="안 가진 것", quantity=0)
@@ -258,10 +279,16 @@ class TestArchiveCollectionOwnedRedirect:
 
 @pytest.mark.django_db
 class TestArchiveCollectionFilterOptions:
-    def test_필터_선택지는_쿼리_계층에서_계산된_값으로_채워진다(self, user_client, make_collection_item):
+    def test_필터_선택지는_쿼리_계층에서_계산된_값으로_채워진다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
-        make_collection_item(user, name="A", work_title="WorkA", character_name="CharA", item_type="keyring")
-        make_collection_item(user, name="B", work_title="WorkB", character_name="CharB", item_type="badge")
+        make_collection_item(
+            user, name="A", work_title="WorkA", character_name="CharA", item_type="keyring"
+        )
+        make_collection_item(
+            user, name="B", work_title="WorkB", character_name="CharB", item_type="badge"
+        )
 
         resp = client.get("/collection/")
 
@@ -273,7 +300,9 @@ class TestArchiveCollectionFilterOptions:
 
 @pytest.mark.django_db
 class TestArchiveCollectionExactMatchFilters:
-    def test_작품명_캐릭터명_굿즈유형을_동시에_지정하면_모두_일치하는_항목만_표시된다(self, user_client, make_collection_item):
+    def test_작품명_캐릭터명_굿즈유형을_동시에_지정하면_모두_일치하는_항목만_표시된다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(
             user, name="일치", work_title="WorkA", character_name="CharB", item_type="keyring"
@@ -289,9 +318,7 @@ class TestArchiveCollectionExactMatchFilters:
             user, name="다른유형", work_title="WorkA", character_name="CharB", item_type="badge"
         )
 
-        resp = client.get(
-            "/collection/?work_title=WorkA&character_name=CharB&item_type=keyring"
-        )
+        resp = client.get("/collection/?work_title=WorkA&character_name=CharB&item_type=keyring")
 
         names = [row["item"].name for row in resp.context["item_rows"]]
         assert names == ["일치"]
@@ -380,7 +407,9 @@ class TestArchiveCollectionQueryStringHelpers:
         assert "item_type=keyring" in pager_query
         assert "is_wanted=true" in pager_query
 
-    def test_필터와_검색어가_없으면_페이저_쿼리_문자열은_비어있다(self, user_client, make_collection_item):
+    def test_필터와_검색어가_없으면_페이저_쿼리_문자열은_비어있다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         for i in range(11):  # 페이저가 생기도록 한 쪽 분량을 넘긴다
             make_collection_item(user, name=f"아이템{i:02d}")
@@ -421,9 +450,11 @@ class TestArchiveCollectionEmptyStates:
 
         # 검색 입력의 접근 이름은 리네임과 무관하게 고정된다.
         assert b'name="work_title"' not in content
-        assert "aria-label=\"컬렉션 검색\"".encode() not in content
+        assert 'aria-label="컬렉션 검색"'.encode() not in content
 
-    def test_필터_결과가_0건이어도_검색_필터_컨트롤은_유지된다(self, user_client, make_collection_item):
+    def test_필터_결과가_0건이어도_검색_필터_컨트롤은_유지된다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(user, name="보유템", is_wanted=False, work_title="WorkA")
 
@@ -434,7 +465,9 @@ class TestArchiveCollectionEmptyStates:
         assert b'class="archive-search"' in content
         assert b'name="work_title"' in content
 
-    def test_검색_결과가_0건이어도_검색_필터_컨트롤은_유지된다(self, user_client, make_collection_item):
+    def test_검색_결과가_0건이어도_검색_필터_컨트롤은_유지된다(
+        self, user_client, make_collection_item
+    ):
         user, client = user_client()
         make_collection_item(user, name="보유템")
 
@@ -489,9 +522,7 @@ class TestArchiveCollectionCardBadges:
         self, user_client, make_collection_item
     ):
         user, client = user_client()
-        make_collection_item(
-            user, name="A아이템", quantity=3, tradeable_quantity=2, is_wanted=True
-        )
+        make_collection_item(user, name="A아이템", quantity=3, tradeable_quantity=2, is_wanted=True)
 
         resp = client.get("/collection/?partial=1")
         row = resp.context["item_rows"][0]
@@ -562,7 +593,7 @@ class TestArchiveCollectionNav:
         resp = client.get("/collection/")
         content = resp.content
 
-        assert '내 활동 하위 메뉴'.encode() not in content
+        assert "내 활동 하위 메뉴".encode() not in content
         assert b'class="archive-nav-wrap"' not in content
         assert b'class="archive-nav-tabs"' not in content
         assert b'class="sub-nav"' not in content
@@ -779,9 +810,7 @@ class TestCollectionItemRowSeriesInkClass:
 
         assert first_row["series_ink_class"] == second_row["series_ink_class"]
 
-    def test_작품명이_비어있으면_series_ink_class는_gi_0이다(
-        self, make_user, make_collection_item
-    ):
+    def test_작품명이_비어있으면_series_ink_class는_gi_0이다(self, make_user, make_collection_item):
         user = make_user(username="row-series-ink-blank")
         item = make_collection_item(user, name="A1", work_title="")
         series_ink_classes = _series_ink_classes([])
@@ -849,7 +878,9 @@ class TestSeriesInkClassesRegistrationOrder:
 
         resp = client.get("/collection/")
 
-        facets = {facet["title"]: facet["series_ink_class"] for facet in resp.context["work_title_counts"]}
+        facets = {
+            facet["title"]: facet["series_ink_class"] for facet in resp.context["work_title_counts"]
+        }
         assert facets["작품 00"] == "gi-1"
         assert facets["작품 12"] == "gi-1"
 
@@ -916,9 +947,7 @@ class TestSeriesInkClassesWholeCollectionPalette:
             item = row["item"]
             assert row["series_ink_class"] == baseline[item.work_title]
 
-    def test_2페이지에만_있는_작품도_전체_기준_색을_받는다(
-        self, user_client, make_collection_item
-    ):
+    def test_2페이지에만_있는_작품도_전체_기준_색을_받는다(self, user_client, make_collection_item):
         user, client = user_client()
         assert ARCHIVE_COLLECTION_PAGE_SIZE == 10
         # 서로 다른 작품 11개. 목록은 -id(최신 등록 순)로 정렬되므로 가장
@@ -937,13 +966,14 @@ class TestSeriesInkClassesWholeCollectionPalette:
         assert "작품 00" in baseline
 
         page2_resp = client.get("/collection/?page=2")
-        page2_titles = {row["item"].work_title: row["series_ink_class"] for row in page2_resp.context["item_rows"]}
+        page2_titles = {
+            row["item"].work_title: row["series_ink_class"]
+            for row in page2_resp.context["item_rows"]
+        }
         assert "작품 00" in page2_titles
         assert page2_titles["작품 00"] == baseline["작품 00"]
 
-    def test_partial_프래그먼트도_전체_기준_색을_쓴다(
-        self, user_client, make_collection_item
-    ):
+    def test_partial_프래그먼트도_전체_기준_색을_쓴다(self, user_client, make_collection_item):
         # 작품 5개: 2개짜리 픽스처로는 "현재 페이지 기준으로 팔레트를 만드는"
         # 실수를 넣어도 두 경로가 우연히 같은 버킷에 떨어져 통과해버린다.
         # 검색 대상(작품 D)을 등록 순번 한가운데 두어 전체 기준과 결과 기준의
@@ -1037,9 +1067,7 @@ class TestArchiveCollectionSeriesInkFacetQueryCount:
     1회만 실행되고, 아이템 수가 늘어도 쿼리 수가 늘지 않는지(행별 쿼리 없음)
     고정한다 — 팔레트를 item_rows 순회 중 매번 다시 조회하는 회귀를 막는다."""
 
-    def test_작품_집계_쿼리는_요청당_한_번만_실행된다(
-        self, user_client, make_collection_item
-    ):
+    def test_작품_집계_쿼리는_요청당_한_번만_실행된다(self, user_client, make_collection_item):
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
 

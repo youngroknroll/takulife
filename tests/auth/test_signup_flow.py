@@ -1,4 +1,5 @@
 """회원가입 → 이메일 인증 → 리다이렉트로 이어지는 SSR 흐름, JSON API 아님."""
+
 import re
 
 import pytest
@@ -7,7 +8,9 @@ pytestmark = pytest.mark.web
 
 
 @pytest.mark.django_db
-def test_회원가입_후_이메일_인증을_완료하면_처음_요청한_next_경로로_리다이렉트된다(client, mailoutbox, valid_password):
+def test_회원가입_후_이메일_인증을_완료하면_처음_요청한_next_경로로_리다이렉트된다(
+    client, mailoutbox, valid_password
+):
     resp = client.post(
         "/accounts/signup/?next=/archive/visits/",
         data={
@@ -34,7 +37,9 @@ def test_회원가입_후_이메일_인증을_완료하면_처음_요청한_next
 
 # I18N-13
 @pytest.mark.django_db
-def test_가입_요청의_Accept_Language가_영어이면_인증_메일_제목이_영어다(client, mailoutbox, valid_password):
+def test_가입_요청의_Accept_Language가_영어이면_인증_메일_제목이_영어다(
+    client, mailoutbox, valid_password
+):
     """번역이 채워지면 인증 메일 제목도 요청 언어를 따라야 한다."""
     client.post(
         "/accounts/signup/?next=/archive/visits/",

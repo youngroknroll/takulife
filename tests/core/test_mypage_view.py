@@ -6,6 +6,7 @@ archive_* 뷰와 같은 패턴) — 이 파일은 archive.models 원본 행만 �
 렌더된 컨텍스트/응답만 검증하며, 쿼리 계층 자체는 절대 건드리지 않는다
 (테스트 계층 순수성 가드, tests/core/test_architecture_boundaries.py 참고).
 """
+
 import datetime as dt
 
 import pytest
@@ -43,19 +44,17 @@ def test_로그인_사용자가_마이페이지에_접근하면_200을_응답한
 
 
 @pytest.mark.django_db
-def test_마이페이지_카운트는_사용자_소유_아카이브_데이터만_집계하고_다른_사용자_데이터는_제외한다(client, make_user, make_event):
+def test_마이페이지_카운트는_사용자_소유_아카이브_데이터만_집계하고_다른_사용자_데이터는_제외한다(
+    client, make_user, make_event
+):
     user = make_user()
     other_user = make_user()
     event1 = make_event(title="Event 1")
     event2 = make_event(title="Event 2")
 
     # 저장한 행사 = UserEventStatus 행 수(모든 상태 포함)
-    UserEventStatus.objects.create(
-        user=user, event=event1, status=UserEventStatus.Status.PLANNED
-    )
-    UserEventStatus.objects.create(
-        user=user, event=event2, status=UserEventStatus.Status.VISITED
-    )
+    UserEventStatus.objects.create(user=user, event=event1, status=UserEventStatus.Status.PLANNED)
+    UserEventStatus.objects.create(user=user, event=event2, status=UserEventStatus.Status.VISITED)
     # 다녀온 기록
     VisitRecord.objects.create(user=user, event=event1, visited_on="2026-06-01")
     # 직접 등록
@@ -178,21 +177,13 @@ def test_인덱스_행_수치가_각_도메인_카운트와_순서대로_일치�
     for i in range(5):
         CollectionItem.objects.create(user=user, name=f"보유{i}", is_wanted=False)
     # 내 활동(저장한 행사) = 4
-    UserEventStatus.objects.create(
-        user=user, event=event1, status=UserEventStatus.Status.PLANNED
-    )
-    UserEventStatus.objects.create(
-        user=user, event=event2, status=UserEventStatus.Status.PLANNED
-    )
-    UserEventStatus.objects.create(
-        user=user, event=event3, status=UserEventStatus.Status.VISITED
-    )
+    UserEventStatus.objects.create(user=user, event=event1, status=UserEventStatus.Status.PLANNED)
+    UserEventStatus.objects.create(user=user, event=event2, status=UserEventStatus.Status.PLANNED)
+    UserEventStatus.objects.create(user=user, event=event3, status=UserEventStatus.Status.VISITED)
     entry = PersonalEntry.objects.create(
         user=user, kind=PersonalEntry.Kind.PLACE, title="개인 항목 1"
     )
-    PersonalEntry.objects.create(
-        user=user, kind=PersonalEntry.Kind.PLACE, title="개인 항목 2"
-    )
+    PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="개인 항목 2")
     UserEventStatus.objects.create(
         user=user, personal_entry=entry, status=UserEventStatus.Status.PLANNED
     )
@@ -225,8 +216,10 @@ def test_비밀번호_변경_이력_표시가_UTC가_아닌_로컬_시간대_날
     다음 날 08:00이 되므로, 두 시간대의 날짜가 반드시 어긋나는 시각을 골라
     (절대 날짜를 하드코딩하지 않고 timezone.now() 기준으로 구성해) 검증한다."""
     user = make_user()
-    utc_changed_at = timezone.now().astimezone(dt.timezone.utc).replace(
-        hour=23, minute=0, second=0, microsecond=0
+    utc_changed_at = (
+        timezone.now()
+        .astimezone(dt.timezone.utc)
+        .replace(hour=23, minute=0, second=0, microsecond=0)
     )
     user.password_changed_at = utc_changed_at
     user.save(update_fields=["password_changed_at"])
@@ -237,9 +230,7 @@ def test_비밀번호_변경_이력_표시가_UTC가_아닌_로컬_시간대_날
     client.force_login(user)
     response = client.get(MYPAGE_URL)
 
-    assert response.context["password_changed_display"] == expected_local_date.strftime(
-        "%Y.%m.%d"
-    )
+    assert response.context["password_changed_display"] == expected_local_date.strftime("%Y.%m.%d")
 
 
 @pytest.mark.django_db

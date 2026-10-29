@@ -6,6 +6,7 @@
 언어를 바꿔도 `?filter=cat:` 값이 한국어 원문으로 같다.
 저장 정규화 자체는 tests/archive/test_personal_entry_category_i18n_api.py 소관이다.
 """
+
 import re
 from datetime import date
 from html.parser import HTMLParser
@@ -208,9 +209,7 @@ def test_수정_입력창의_어휘_밖_값은_어느_언어에서도_그대로�
 
 
 @pytest.mark.parametrize("lang", _KO_EN)
-def test_저장된_카페는_개인_항목_목록_행에서_요청_언어_라벨로_보인다(
-    make_user, make_entry, lang
-):
+def test_저장된_카페는_개인_항목_목록_행에서_요청_언어_라벨로_보인다(make_user, make_entry, lang):
     user = make_user()
     make_entry(user, category="카페")
 
@@ -256,7 +255,7 @@ def _category_filter_chips(root):
     for anchor in root.find_all("a"):
         href = anchor.attrs.get("href", "")
         if href.startswith("?filter=cat:"):
-            token = unquote(href[len("?filter=cat:"):].split("&")[0])
+            token = unquote(href[len("?filter=cat:") :].split("&")[0])
             found.append((anchor.text(), token))
     return found
 
@@ -326,9 +325,7 @@ def test_굿즈_등록_화면의_유형_칩은_요청_언어의_라벨이다(mak
 
 
 @pytest.mark.parametrize("lang", _ALL_LANGS)
-def test_굿즈_수정_화면의_유형_칩은_요청_언어의_라벨이다(
-    make_user, make_collection_item, lang
-):
+def test_굿즈_수정_화면의_유형_칩은_요청_언어의_라벨이다(make_user, make_collection_item, lang):
     user = make_user()
     item = make_collection_item(user, item_type="키링")
 

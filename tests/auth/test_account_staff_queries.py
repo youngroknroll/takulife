@@ -3,6 +3,7 @@
 tests/staff/test_staff_account_views.py가 다루고, 여기는 조회 함수
 자체의 필드·정렬·검색 계약만 본다.
 """
+
 import datetime
 
 import pytest
@@ -20,9 +21,7 @@ def test_list_accounts_for_staff는_필요한_필드만_최신_가입순으로_�
     newer = make_user(email="newer-account@example.com")
     # 생성 순서만으로는 date_joined 차이가 미미해 정렬을 못 미덥게 만들 수
     # 있어, older 쪽을 명시적으로 과거로 되돌린다.
-    User.objects.filter(pk=older.pk).update(
-        date_joined=timezone.now() - datetime.timedelta(days=1)
-    )
+    User.objects.filter(pk=older.pk).update(date_joined=timezone.now() - datetime.timedelta(days=1))
 
     rows = list(list_accounts_for_staff())
 

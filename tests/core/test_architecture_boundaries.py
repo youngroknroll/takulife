@@ -119,7 +119,9 @@ def _local_domain_apps(root):
         if Path(config.path).resolve().parent == root
     }
     forbidden = local_app_names - {"core"}
-    assert forbidden, f"파생된 금지 앱 집합이 비어 있다 (root={root}) — 앱 레지스트리 스캔이 잘못됐다"
+    assert forbidden, (
+        f"파생된 금지 앱 집합이 비어 있다 (root={root}) — 앱 레지스트리 스캔이 잘못됐다"
+    )
     return forbidden
 
 
@@ -196,9 +198,7 @@ def test_손유지_목록에_없는_새_파일의_금지_임포트도_탐지한�
 
     files = _domain_source_files(tmp_path, ["events", "archive"])
     violations = {
-        path: mods
-        for path in files
-        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+        path: mods for path in files if (mods := _forbidden_imports_in_file(path, {"archive"}))
     }
 
     assert any(path.name == "poison.py" for path in violations), violations
@@ -212,18 +212,14 @@ def test_같은_이름의_로컬_서브모듈을_상대_임포트하면_위반�
     같아도 다른 대상이므로 전자는 오탐이다. 이 방어선은 core 가드를 손유지
     목록에서 글롭으로 전환하는 후속 작업의 선행 조건이다."""
     (tmp_path / "core" / "views").mkdir(parents=True)
-    (tmp_path / "core" / "views" / "__init__.py").write_text(
-        "from .archive import archive\n"
-    )
+    (tmp_path / "core" / "views" / "__init__.py").write_text("from .archive import archive\n")
     (tmp_path / "core" / "views" / "archive.py").write_text("")
     (tmp_path / "archive").mkdir()
     (tmp_path / "archive" / "models.py").write_text("")
 
     files = _domain_source_files(tmp_path, ["core", "archive"])
     violations = {
-        path: mods
-        for path in files
-        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+        path: mods for path in files if (mods := _forbidden_imports_in_file(path, {"archive"}))
     }
 
     assert not violations, violations
@@ -235,17 +231,13 @@ def test_같은_이름의_절대_임포트는_상대_임포트_스킵과_무관�
     이름이라도 level=0인 절대 임포트는 실제로 archive 앱 경계를 넘으므로
     여전히 위반으로 탐지되어야 한다."""
     (tmp_path / "core" / "views").mkdir(parents=True)
-    (tmp_path / "core" / "views" / "__init__.py").write_text(
-        "from archive import archive\n"
-    )
+    (tmp_path / "core" / "views" / "__init__.py").write_text("from archive import archive\n")
     (tmp_path / "archive").mkdir()
     (tmp_path / "archive" / "models.py").write_text("")
 
     files = _domain_source_files(tmp_path, ["core", "archive"])
     violations = {
-        path: mods
-        for path in files
-        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+        path: mods for path in files if (mods := _forbidden_imports_in_file(path, {"archive"}))
     }
 
     assert any(path.name == "__init__.py" for path in violations), violations
@@ -259,9 +251,7 @@ def test_금지_임포트가_없는_새_파일은_위반으로_보고되지_않�
 
     files = _domain_source_files(tmp_path, ["events", "archive"])
     violations = {
-        path: mods
-        for path in files
-        if (mods := _forbidden_imports_in_file(path, {"archive"}))
+        path: mods for path in files if (mods := _forbidden_imports_in_file(path, {"archive"}))
     }
 
     assert not violations, violations
@@ -277,10 +267,7 @@ def test_실제_저장소_스캔_대상에_이벤트_모델이_포함된다():
 
 def test_동적_임포트로_다른_도메인을_불러오면_경계_스캐너가_탐지한다(tmp_path):
     fixture = tmp_path / "dynamic_import_fixture.py"
-    fixture.write_text(
-        "import importlib\n"
-        'importlib.import_module("archive.models")\n'
-    )
+    fixture.write_text('import importlib\nimportlib.import_module("archive.models")\n')
 
     # _imported_modules는 PROJECT_ROOT / module_path를 계산하는데, pathlib은
     # 우변이 절대 경로면 좌변을 버리므로 절대 경로 문자열을 그대로 넘기면 된다.
@@ -375,9 +362,7 @@ def test_드래프트_발견_모듈은_이벤트_모듈을_임포트하지_않�
     imported_modules = _imported_modules("drafts/discovery.py")
 
     assert not {
-        module
-        for module in imported_modules
-        if module == "events" or module.startswith("events.")
+        module for module in imported_modules if module == "events" or module.startswith("events.")
     }
 
 
@@ -388,9 +373,7 @@ def test_드래프트_수집_명령은_이벤트_모듈을_임포트하지_않�
     imported_modules = _imported_modules("drafts/management/commands/discover_drafts.py")
 
     assert not {
-        module
-        for module in imported_modules
-        if module == "events" or module.startswith("events.")
+        module for module in imported_modules if module == "events" or module.startswith("events.")
     }
 
 
@@ -598,9 +581,7 @@ def test_web_디렉터리_아래_모듈은_import_별표를_쓰지_않는다():
     for path in files:
         tree = ast.parse(path.read_text())
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and any(
-                alias.name == "*" for alias in node.names
-            ):
+            if isinstance(node, ast.ImportFrom) and any(alias.name == "*" for alias in node.names):
                 violations.append(path.relative_to(PROJECT_ROOT))
 
     assert not violations, violations
@@ -847,11 +828,7 @@ def test_이벤트_모듈은_core_llm_모듈을_임포트하지_않는다():
     violations = {
         path.relative_to(PROJECT_ROOT): forbidden
         for path in files
-        if (
-            forbidden := _forbidden_translation_imports_in_file(
-                path, PROJECT_ROOT, {"core.llm"}
-            )
-        )
+        if (forbidden := _forbidden_translation_imports_in_file(path, PROJECT_ROOT, {"core.llm"}))
     }
 
     assert not violations, violations
@@ -905,9 +882,7 @@ def test_전용_스캐너는_번역_모듈_임포트_형태를_모두_탐지한�
     (tmp_path / "events").mkdir()
     (tmp_path / "events" / "poison.py").write_text(fixture_source)
 
-    violations = _forbidden_translation_imports_in_file(
-        tmp_path / "events" / "poison.py", tmp_path
-    )
+    violations = _forbidden_translation_imports_in_file(tmp_path / "events" / "poison.py", tmp_path)
 
     assert violations, violations
 
@@ -926,12 +901,8 @@ def test_전용_스캐너는_core에서_llm을_별칭으로_가져와도_탐지�
 
 def test_전용_스캐너는_금지_모듈이_없는_파일을_위반으로_보고하지_않는다(tmp_path):
     (tmp_path / "events").mkdir()
-    (tmp_path / "events" / "clean.py").write_text(
-        "from .models import Event\nimport os\n"
-    )
+    (tmp_path / "events" / "clean.py").write_text("from .models import Event\nimport os\n")
 
-    violations = _forbidden_translation_imports_in_file(
-        tmp_path / "events" / "clean.py", tmp_path
-    )
+    violations = _forbidden_translation_imports_in_file(tmp_path / "events" / "clean.py", tmp_path)
 
     assert not violations, violations

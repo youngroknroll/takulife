@@ -1,6 +1,7 @@
 """탐색 결과를 받아 읽기·해석·제출로 이어주는 흐름이 여기 붙는다. events·
 sources 분리·상한 절단 순수 함수와, 제출 중 임대 상실(409)을 즉시 위로
 알리는 run_exploration_flow가 있다."""
+
 import functools
 import logging
 from dataclasses import dataclass, field
@@ -250,7 +251,9 @@ def _interpret_event(event, *, url, raw_title, raw_text, tally, ctx):
     interpretation_text = f"{raw_title}\n{raw_text}" if raw_title else raw_text
 
     try:
-        interpreted = ctx.interpret(text=interpretation_text, url=url, platform=event.get("platform"))
+        interpreted = ctx.interpret(
+            text=interpretation_text, url=url, platform=event.get("platform")
+        )
     except ctx.adapter_output_error:
         # 읽기 실패와 같은 취급이다 — 이 항목만 건너뛰고 실행 전체를 죽이지 않는다.
         tally.events_failed += 1
@@ -292,7 +295,9 @@ def _submit_interpreted_event(event, *, url, raw_title, raw_text, interpreted, t
     # source_name을 이미 정상 상태로 다룬다).
     payload.setdefault("source_name", "")
     try:
-        response = ctx.client.submit_event(run_id=ctx.run_id, lease_token=ctx.lease_token, event=payload)
+        response = ctx.client.submit_event(
+            run_id=ctx.run_id, lease_token=ctx.lease_token, event=payload
+        )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 409:
             raise LeaseLostError("event submit returned 409") from exc

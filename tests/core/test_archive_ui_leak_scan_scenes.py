@@ -11,6 +11,7 @@
 ASCII 픽스처로만 검사한다.
 `.mo`가 로컬에 컴파일돼 있어야 한다(`uv run django-admin compilemessages --ignore .venv`).
 """
+
 import re
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
@@ -227,8 +228,6 @@ def _korean_chrome_under_explicit_lang(root, scene, allowed=()):
     return found
 
 
-
-
 # ---------------------------------------------------------------------------
 # 픽스처 헬퍼
 # ---------------------------------------------------------------------------
@@ -262,21 +261,26 @@ def _march_month(make_event, make_user):
     그날 보이는 항목이 4개라 셀에 `+2`가 나오고, 5개 활동 그룹이 모두 있다."""
     user = make_user()
     kinds = ActivityLogEntry.Kind
-    sched = _ev(make_event, "Scan Sched", start_date=datetime(2026, 3, 4).date(),
-                end_date=datetime(2026, 3, 6).date())
+    sched = _ev(
+        make_event,
+        "Scan Sched",
+        start_date=datetime(2026, 3, 4).date(),
+        end_date=datetime(2026, 3, 6).date(),
+    )
     UserEventStatus.objects.create(user=user, event=sched, status="planned")
     heart = _ev(make_event, "Scan Heart Ev")
     _log(user, kinds.INTEREST_ADDED, _at(2026, 3, 5), "Scan Heart Ev", event=heart)
     _log(user, kinds.INTEREST_REMOVED, _at(2026, 3, 9, 8, 5), "Scan Removed Ev")
     visit_event = _ev(make_event, "Scan Visit Ev")
     VisitRecord.objects.create(user=user, event=visit_event, visited_on=datetime(2026, 3, 5).date())
-    _log(user, kinds.STATUS_CHANGED, _at(2026, 3, 5, 11), "Scan Status Ev",
-         event=visit_event)
+    _log(user, kinds.STATUS_CHANGED, _at(2026, 3, 5, 11), "Scan Status Ev", event=visit_event)
     CollectionItem.objects.create(
         user=user, name="Scan Goods Acq", quantity=1, acquired_on=datetime(2026, 3, 5).date()
     )
     entry = PersonalEntry.objects.create(user=user, kind="place", title="Scan Cal Entry")
-    VisitRecord.objects.create(user=user, personal_entry=entry, visited_on=datetime(2026, 3, 12).date())
+    VisitRecord.objects.create(
+        user=user, personal_entry=entry, visited_on=datetime(2026, 3, 12).date()
+    )
     return user
 
 
@@ -298,7 +302,9 @@ def _scan_today_cluster(make_event, make_user):
     """오늘 칸에 방문·굿즈·찜(로그 없는 옛 찜)·로그 항목이 모여 `+N`·오늘 셀·시각 표기가 나온다."""
     user = make_user()
     today = _d(0)
-    VisitRecord.objects.create(user=user, event=_ev(make_event, "Scan Today Visit"), visited_on=today)
+    VisitRecord.objects.create(
+        user=user, event=_ev(make_event, "Scan Today Visit"), visited_on=today
+    )
     CollectionItem.objects.create(user=user, name="Scan Today Goods", quantity=1)
     EventInterest.objects.create(user=user, event=_ev(make_event, "Scan Today Heart"))
     ongoing = _ev(make_event, "Scan Today Sched", start_date=_d(-1), end_date=_d(2))
@@ -310,7 +316,9 @@ def _scan_today_cluster(make_event, make_user):
 def _scan_korean_user_labels(make_event, make_user):
     user = make_user()
     entry = PersonalEntry.objects.create(user=user, kind="place", title="한글 달력 장소")
-    VisitRecord.objects.create(user=user, personal_entry=entry, visited_on=datetime(2026, 3, 5).date())
+    VisitRecord.objects.create(
+        user=user, personal_entry=entry, visited_on=datetime(2026, 3, 5).date()
+    )
     CollectionItem.objects.create(
         user=user, name="한글 달력 굿즈", quantity=1, acquired_on=datetime(2026, 3, 5).date()
     )

@@ -1,4 +1,5 @@
 """Event.text_translations 필드의 기본값 계약 — DB가 필요한 모델 테스트."""
+
 import pytest
 from django.db import connection
 

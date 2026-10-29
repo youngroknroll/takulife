@@ -33,6 +33,7 @@ CommandError 하나로 올려, 실행자(또는 스케줄러)가 부분 실패�
 robots.txt 결과(불허·fetch 실패, 목록/후보 어느 단계든)는 항상 평범한 스킵이며
 절대 치명적이지 않다.
 """
+
 import time
 from dataclasses import dataclass
 
@@ -68,7 +69,9 @@ class _ListingOutcome:
 
 
 class Command(BaseCommand):
-    help = "Discover new candidate event URLs from enabled DraftSource rows and create PENDING drafts."
+    help = (
+        "Discover new candidate event URLs from enabled DraftSource rows and create PENDING drafts."
+    )
 
     def handle(self, *args, **options):
         if not settings.DRAFT_DISCOVERY_ENABLED:

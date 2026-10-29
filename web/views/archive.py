@@ -237,8 +237,7 @@ def archive_visits(request):
     pairs = user_visit_category_values(user)
     # 토큰은 한국어 원문(저장값과 맞대는 값)이고 표시 라벨만 요청 언어로 옮긴다.
     label_by_token = {
-        CATEGORY_SOURCE_LABELS[slug]: CATEGORY_LABELS[slug]
-        for slug in CATEGORY_SOURCE_LABELS
+        CATEGORY_SOURCE_LABELS[slug]: CATEGORY_LABELS[slug] for slug in CATEGORY_SOURCE_LABELS
     }
     categories = []
     category_chips = []
@@ -636,12 +635,9 @@ def archive_interests(request):
 
     # 공식(행사 연결) 행들은 행마다 부르지 않고(N+1이 된다)한 번에
     # _attach_display로 묶어 처리한 뒤 event id로 다시 매핑한다.
-    official_events = [
-        interest.event for interest in page_interests if interest.event_id
-    ]
+    official_events = [interest.event for interest in page_interests if interest.event_id]
     display_by_event_id = {
-        display["event"].id: display
-        for display in _attach_display(official_events, user=user)
+        display["event"].id: display for display in _attach_display(official_events, user=user)
     }
 
     interest_rows = []

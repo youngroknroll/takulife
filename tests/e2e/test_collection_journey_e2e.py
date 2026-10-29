@@ -1,5 +1,6 @@
 """컬렉션 항목 생성·수정·삭제 여정 — 각각 다른 JS fetch(POST/PATCH/DELETE)라
 테스트를 셋으로 나눈다."""
+
 import re
 
 from playwright.sync_api import expect

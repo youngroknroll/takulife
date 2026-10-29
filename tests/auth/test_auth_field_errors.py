@@ -1,5 +1,6 @@
 """필드 오류가 실제 요소 옆에 뜨는지 검증한다. 정적 마크업이 아니라
 실제 가입 거부 요청으로 오류를 발생시켜 확인한다."""
+
 import pytest
 
 pytestmark = pytest.mark.web
@@ -59,7 +60,9 @@ def test_로그인_필드를_비워둔_채_제출하면_일반_오류_대신_필
 
 
 @pytest.mark.django_db
-def test_로그인_자격_증명이_틀리면_필드별_오류_없이_일반_오류_문구만_표시된다(client, make_verified_user):
+def test_로그인_자격_증명이_틀리면_필드별_오류_없이_일반_오류_문구만_표시된다(
+    client, make_verified_user
+):
     make_verified_user(email="known@example.com")
 
     response = client.post(

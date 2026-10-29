@@ -3,6 +3,7 @@
 Postgres 전용 쿼리라 다른 엔진이거나 쿼리가 실패하면 대시보드가 죽지
 않도록 None을 돌려준다(core.retention과 별개, 트랙 37 S2).
 """
+
 import logging
 
 from django.db import DatabaseError, connection
@@ -56,7 +57,6 @@ def database_size_summary():
         "total_bytes": total,
         "total_label": format_bytes(total),
         "tables": [
-            {"name": name, "bytes": size, "label": format_bytes(size)}
-            for name, size in rows
+            {"name": name, "bytes": size, "label": format_bytes(size)} for name, size in rows
         ],
     }

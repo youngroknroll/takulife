@@ -5,6 +5,7 @@
 스크린리더가 제목을 두 번 읽지 않게). 단위는 개수에 따라 단수·복수가 갈린다.
 한국어 요청은 현재 출력과 글자 단위로 같다(불변 핀).
 """
+
 import re
 from datetime import date
 from html.parser import HTMLParser
@@ -12,7 +13,13 @@ from html.parser import HTMLParser
 import pytest
 from django.test import Client
 
-from archive.models import CollectionItem, EventInterest, PersonalEntry, UserEventStatus, VisitRecord
+from archive.models import (
+    CollectionItem,
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+)
 
 pytestmark = [pytest.mark.web, pytest.mark.django_db]
 
@@ -146,9 +153,7 @@ _UNITS = {
 # Red 예측: en은 한국어 단위라 Red, ko는 Green 핀, ja·zh는 한글 부재만 단언.
 @pytest.mark.parametrize("count", [1, 2])
 @pytest.mark.parametrize("lang", _ALL_LANGS)
-def test_색인_행의_단위는_요청_언어와_개수에_맞는_단수_복수다(
-    make_user, make_event, lang, count
-):
+def test_색인_행의_단위는_요청_언어와_개수에_맞는_단수_복수다(make_user, make_event, lang, count):
     user = make_user()
     _seed(user, make_event, count)
 

@@ -4,6 +4,7 @@
 SOCIALACCOUNT_PROVIDERS 참고) — client_id가 비어 있으면 인증 페이지에서
 동작하지 않는 구글 버튼을 보여주는 대신 아예 숨겨야 한다.
 """
+
 import pytest
 
 from core.context_processors import (

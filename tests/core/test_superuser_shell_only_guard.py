@@ -18,7 +18,16 @@ SHELL_ONLY_EXCLUSIONS = {Path("accounts/managers.py")}
 SHELL_ONLY_EXCLUDED_DIR_PARTS = ("accounts", "management")
 
 # 읽기 필터 호출은 is_superuser= 키워드를 써도 위반이 아니다.
-ALLOWED_READ_CALL_NAMES = {"filter", "exclude", "get", "Q", "only", "values", "values_list", "annotate"}
+ALLOWED_READ_CALL_NAMES = {
+    "filter",
+    "exclude",
+    "get",
+    "Q",
+    "only",
+    "values",
+    "values_list",
+    "annotate",
+}
 
 
 def _is_shell_only_path(rel_path):

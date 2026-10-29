@@ -1,4 +1,5 @@
 """drafts.extraction(HTML → 행사 필드 추출) 단위 테스트. DB 없는 순수 로직."""
+
 from datetime import date
 
 import pytest
@@ -97,10 +98,17 @@ class TestCategoryDetection:
             ("굿즈 예약 안내", "goods_reservation"),
             ("아무 관련 없는 내용", ""),
         ],
-        ids=["팝업스토어_영문", "팝업스토어_하이픈", "콜라보_카페", "극장_특전", "굿즈_예약", "매칭없음"],
+        ids=[
+            "팝업스토어_영문",
+            "팝업스토어_하이픈",
+            "콜라보_카페",
+            "극장_특전",
+            "굿즈_예약",
+            "매칭없음",
+        ],
     )
     def test_제목_텍스트로_카테고리를_감지한다(self, text, expected):
-        html = f'<html><head><title>{text}</title></head><body></body></html>'
+        html = f"<html><head><title>{text}</title></head><body></body></html>"
         assert extract_event_fields(html)["extracted_category"] == expected
 
 
@@ -187,5 +195,5 @@ class TestRegionDetection:
         ids=["서울_한글", "서울_영문", "부산", "인천", "매칭없음"],
     )
     def test_제목_텍스트로_지역을_감지한다(self, text, expected):
-        html = f'<html><head><title>{text}</title></head><body></body></html>'
+        html = f"<html><head><title>{text}</title></head><body></body></html>"
         assert extract_event_fields(html)["extracted_region"] == expected

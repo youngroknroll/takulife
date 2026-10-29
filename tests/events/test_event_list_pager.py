@@ -11,6 +11,7 @@ core/templatetags/pager_tags.py 참고). web.views.event_list의 개별 구현�
   - 페이지 링크는 다른 페이지네이션 목록과 마찬가지로 활성 q/region/category/status
     필터와 활성 정렬을 보존한다.
 """
+
 from datetime import timedelta
 from html import unescape
 from urllib.parse import parse_qs, unquote, urlparse
@@ -62,10 +63,7 @@ class TestEventListPagerPreservesFilters:
         assert resp.status_code == 200
         body = resp.content.decode()
 
-        hrefs = [
-            href
-            for href in _pager_page_hrefs(body)
-        ]
+        hrefs = [href for href in _pager_page_hrefs(body)]
         assert hrefs, "페이저 페이지 링크가 렌더링되지 않음"
         for href in hrefs:
             params = _parse_pager_href_query(href)

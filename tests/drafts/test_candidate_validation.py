@@ -1,4 +1,5 @@
 """drafts.candidate_validation 순수 함수·domain 테스트."""
+
 import socket
 from datetime import timedelta
 
@@ -47,9 +48,7 @@ class _FakeRobotsChecker:
 
 def _patch_allow_all_robots(monkeypatch):
     """robots 단계를 항상 통과시키는 대역(V4부터 재사용)."""
-    monkeypatch.setattr(
-        "drafts.candidate_validation.RobotsChecker", lambda: _FakeRobotsChecker()
-    )
+    monkeypatch.setattr("drafts.candidate_validation.RobotsChecker", lambda: _FakeRobotsChecker())
 
 
 def test_note와_name의_제어문자는_저장_전에_제거된다():
@@ -225,9 +224,7 @@ def test_수집처_또는_표본_URL이_사설_IP로_해석되면_url_safety_단
             raise UnsafeFetchUrlError
         return "1.1.1.1"
 
-    monkeypatch.setattr(
-        "drafts.candidate_validation.validate_fetch_url", _fake_validate_fetch_url
-    )
+    monkeypatch.setattr("drafts.candidate_validation.validate_fetch_url", _fake_validate_fetch_url)
 
     candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
 
@@ -247,9 +244,7 @@ def test_호스트명을_해석할_수_없는_URL은_url_safety_단계_실패다
             raise socket.gaierror("Name or service not known")
         return "1.1.1.1"
 
-    monkeypatch.setattr(
-        "drafts.candidate_validation.validate_fetch_url", _fake_validate_fetch_url
-    )
+    monkeypatch.setattr("drafts.candidate_validation.validate_fetch_url", _fake_validate_fetch_url)
 
     candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
 
@@ -266,7 +261,9 @@ def test_호스트명을_해석할_수_없는_URL은_url_safety_단계_실패다
     ["url", "sample_url"],
     ids=["수집처_불허", "표본_불허"],
 )
-def test_robots_txt가_수집처_또는_표본_경로를_불허하면_robots_단계_실패다(monkeypatch, disallowed_key):
+def test_robots_txt가_수집처_또는_표본_경로를_불허하면_robots_단계_실패다(
+    monkeypatch, disallowed_key
+):
     _patch_safe_fetch_url(monkeypatch)
     payload = _valid_payload()
     run = _make_claimed_run()
@@ -301,9 +298,7 @@ def test_robots_txt_페치_실패는_불허와_다른_단계로_기록된다(mon
     payload = _valid_payload()
     run = _make_claimed_run()
 
-    checker = _FakeRobotsChecker(
-        outcomes={payload["url"]: RobotsCheckResult(False, reason)}
-    )
+    checker = _FakeRobotsChecker(outcomes={payload["url"]: RobotsCheckResult(False, reason)})
     monkeypatch.setattr("drafts.candidate_validation.RobotsChecker", lambda: checker)
 
     candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
@@ -537,7 +532,7 @@ def test_표본_URL이_목록에서_추출된_후보가_아니면_sample_mismatc
     listing_url_1 = "https://example.com/notice/1"
     listing_url_2 = "https://example.com/notice/2"
     listing_html = (
-        '<html><body>'
+        "<html><body>"
         f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
         f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
         "</body></html>"
@@ -571,7 +566,7 @@ def test_전_단계를_통과한_후보는_DraftSource로_승격되고_초기_�
     listing_url_1 = "https://example.com/notice/1"
     listing_url_2 = "https://example.com/notice/2"
     listing_html = (
-        '<html><body>'
+        "<html><body>"
         f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
         f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
         "</body></html>"
@@ -590,9 +585,7 @@ def test_전_단계를_통과한_후보는_DraftSource로_승격되고_초기_�
 
     def _fake_create_collected_draft_from_url(source_url, source_name="", today=None):
         calls.append((source_url, source_name))
-        EventDraft.objects.create(
-            source_url=source_url, source_name=source_name, raw_title="스텁"
-        )
+        EventDraft.objects.create(source_url=source_url, source_name=source_name, raw_title="스텁")
 
     monkeypatch.setattr(
         "drafts.candidate_validation.create_collected_draft_from_url",
@@ -631,7 +624,7 @@ def test_초기_드래프트_생성도_후보_URL별_robots_불허를_건너뛴�
     # — /notice/1은 아래에서 robots 불허로 두므로 그와 겹치지 않는 /notice/2를 쓴다.
     payload["sample_url"] = listing_url_2
     listing_html = (
-        '<html><body>'
+        "<html><body>"
         f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
         f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
         "</body></html>"
@@ -655,9 +648,7 @@ def test_초기_드래프트_생성도_후보_URL별_robots_불허를_건너뛴�
 
     def _fake_create_collected_draft_from_url(source_url, source_name="", today=None):
         calls.append((source_url, source_name))
-        EventDraft.objects.create(
-            source_url=source_url, source_name=source_name, raw_title="스텁"
-        )
+        EventDraft.objects.create(source_url=source_url, source_name=source_name, raw_title="스텁")
 
     monkeypatch.setattr(
         "drafts.candidate_validation.create_collected_draft_from_url",
@@ -683,7 +674,7 @@ def test_승격_시_만드는_초기_드래프트도_수집_규칙을_따른다(
     listing_url_1 = "https://example.com/notice/1"
     listing_url_2 = "https://example.com/notice/2"
     listing_html = (
-        '<html><body>'
+        "<html><body>"
         f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
         f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
         "</body></html>"
@@ -720,7 +711,7 @@ def _install_promotable_fakes(monkeypatch, payload):
     listing_url_1 = "https://example.com/notice/1"
     listing_url_2 = "https://example.com/notice/2"
     listing_html = (
-        '<html><body>'
+        "<html><body>"
         f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
         f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
         "</body></html>"
@@ -739,9 +730,7 @@ def _install_promotable_fakes(monkeypatch, payload):
 
     def _fake_create_collected_draft_from_url(source_url, source_name="", today=None):
         calls.append((source_url, source_name))
-        EventDraft.objects.create(
-            source_url=source_url, source_name=source_name, raw_title="스텁"
-        )
+        EventDraft.objects.create(source_url=source_url, source_name=source_name, raw_title="스텁")
 
     monkeypatch.setattr(
         "drafts.candidate_validation.create_collected_draft_from_url",
@@ -850,7 +839,9 @@ def test_임대가_만료된_뒤_도착한_제출은_저장_결정을_만들지_
 
 @pytest.mark.django_db
 @pytest.mark.domain
-def test_failure_reason은_서버_정의_문구와_예외_클래스명만_담고_후보_원문을_보간하지_않는다(monkeypatch):
+def test_failure_reason은_서버_정의_문구와_예외_클래스명만_담고_후보_원문을_보간하지_않는다(
+    monkeypatch,
+):
     _patch_safe_fetch_url(monkeypatch)
     _patch_allow_all_robots(monkeypatch)
 
@@ -884,7 +875,7 @@ def test_failure_reason은_서버_정의_문구와_예외_클래스명만_담고
         run_id=fetch_run.pk, lease_token="tok", payload=fetch_payload
     )
 
-    assert fetch_candidate.failure_reason == f'{FAILURE_MESSAGES["fetch"]} (FetchError)'
+    assert fetch_candidate.failure_reason == f"{FAILURE_MESSAGES['fetch']} (FetchError)"
     assert malicious_name not in fetch_candidate.failure_reason
     assert malicious_note not in fetch_candidate.failure_reason
 
@@ -897,9 +888,7 @@ def test_부분_실패_실행에서_통과_후보는_승격되고_실패_후보�
     run = _make_claimed_run()
 
     duplicate_payload = _valid_payload()
-    DraftSource.objects.create(
-        name="기존", url=duplicate_payload["url"], source_type="html"
-    )
+    DraftSource.objects.create(name="기존", url=duplicate_payload["url"], source_type="html")
 
     promotable_payload = _valid_payload()
     promotable_payload["url"] = "https://another.example.com/notice"
@@ -909,9 +898,7 @@ def test_부분_실패_실행에서_통과_후보는_승격되고_실패_후보�
     promotable_payload["sample_url"] = "https://example.com/notice/1"
     _install_promotable_fakes(monkeypatch, promotable_payload)
 
-    failed_candidate = submit_candidate(
-        run_id=run.pk, lease_token="tok", payload=duplicate_payload
-    )
+    failed_candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=duplicate_payload)
     promoted_candidate = submit_candidate(
         run_id=run.pk, lease_token="tok", payload=promotable_payload
     )
@@ -1010,7 +997,7 @@ def test_승격_저장_트랜잭션이_잠금_아래_재검사로_상한_초과_
     listing_url_1 = "https://example.com/notice/1"
     listing_url_2 = "https://example.com/notice/2"
     listing_html = (
-        '<html><body>'
+        "<html><body>"
         f'<div class="bo_tit"><a href="{listing_url_1}">행사1</a></div>'
         f'<div class="bo_tit"><a href="{listing_url_2}">행사2</a></div>'
         "</body></html>"
@@ -1041,9 +1028,7 @@ def test_승격_저장_트랜잭션이_잠금_아래_재검사로_상한_초과_
     monkeypatch.setattr("drafts.candidate_validation.fetch_html", _fake_fetch_html)
 
     def _fake_create_collected_draft_from_url(source_url, source_name="", today=None):
-        EventDraft.objects.create(
-            source_url=source_url, source_name=source_name, raw_title="스텁"
-        )
+        EventDraft.objects.create(source_url=source_url, source_name=source_name, raw_title="스텁")
 
     monkeypatch.setattr(
         "drafts.candidate_validation.create_collected_draft_from_url",
@@ -1055,10 +1040,7 @@ def test_승격_저장_트랜잭션이_잠금_아래_재검사로_상한_초과_
 
     assert DraftSource.objects.count() == 0
     assert (
-        SourceCandidate.objects.filter(
-            run=run, status=SourceCandidate.Status.PROMOTED
-        ).count()
-        == 0
+        SourceCandidate.objects.filter(run=run, status=SourceCandidate.Status.PROMOTED).count() == 0
     )
 
 
@@ -1077,7 +1059,9 @@ def test_승격_저장_트랜잭션이_잠금_아래_재검사로_상한_초과_
 
 @pytest.mark.django_db
 @pytest.mark.domain
-def test_실패_후보_저장_직전_동일_URL_경쟁_삽입은_IntegrityError_대신_기존_행을_반환한다(monkeypatch):
+def test_실패_후보_저장_직전_동일_URL_경쟁_삽입은_IntegrityError_대신_기존_행을_반환한다(
+    monkeypatch,
+):
     payload = _valid_payload()
     run = _make_claimed_run()
     competing = {"row": None}
@@ -1098,9 +1082,7 @@ def test_실패_후보_저장_직전_동일_URL_경쟁_삽입은_IntegrityError_
             )
         raise UnsafeFetchUrlError
 
-    monkeypatch.setattr(
-        "drafts.candidate_validation.validate_fetch_url", _fake_validate_fetch_url
-    )
+    monkeypatch.setattr("drafts.candidate_validation.validate_fetch_url", _fake_validate_fetch_url)
 
     candidate = submit_candidate(run_id=run.pk, lease_token="tok", payload=payload)
 
@@ -1279,9 +1261,7 @@ def test_계정형_소스_후보는_fetch_없이_비활성_소스로_등록되�
             source_type=case["payload"]["source_type"],
         )
 
-    candidate = register_account_source(
-        run_id=run.pk, lease_token="tok", payload=case["payload"]
-    )
+    candidate = register_account_source(run_id=run.pk, lease_token="tok", payload=case["payload"])
 
     assert candidate.status == case["expected_status"]
     assert candidate.failure_stage == case["expected_failure_stage"]

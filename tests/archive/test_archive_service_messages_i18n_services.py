@@ -5,6 +5,7 @@
 영어·일본어·중국어는 한글이 없는 메시지를 받는다. HTTP 경계 테스트는
 `test_archive_error_messages_i18n.py`에 있다(계층 분리 규약).
 """
+
 import re
 from datetime import date
 
@@ -74,9 +75,7 @@ def test_수량이_음수인_굿즈를_만들면_요청_언어의_메시지가_�
 
     messages = _service_messages(
         lang,
-        lambda: create_collection_item(
-            user=user, name="굿즈", quantity=-1, tradeable_quantity=0
-        ),
+        lambda: create_collection_item(user=user, name="굿즈", quantity=-1, tradeable_quantity=0),
     )
 
     _assert_message(lang, messages, "quantity는 0 이상이어야 합니다.")
@@ -88,9 +87,7 @@ def test_교환_가능_수량이_음수인_굿즈를_만들면_요청_언어의_
 
     messages = _service_messages(
         lang,
-        lambda: create_collection_item(
-            user=user, name="굿즈", quantity=1, tradeable_quantity=-1
-        ),
+        lambda: create_collection_item(user=user, name="굿즈", quantity=1, tradeable_quantity=-1),
     )
 
     _assert_message(lang, messages, "tradeable_quantity는 0 이상이어야 합니다.")
@@ -104,9 +101,7 @@ def test_교환_가능_수량이_보유_수량을_넘는_굿즈를_만들면_요
 
     messages = _service_messages(
         lang,
-        lambda: create_collection_item(
-            user=user, name="굿즈", quantity=1, tradeable_quantity=2
-        ),
+        lambda: create_collection_item(user=user, name="굿즈", quantity=1, tradeable_quantity=2),
     )
 
     _assert_message(lang, messages, "tradeable_quantity는 quantity 이하여야 합니다.")
@@ -151,9 +146,7 @@ def test_방문_기록과_다른_행사로_굿즈를_수정하면_요청_언어�
     item = make_collection_item(user, visit_record=visit, event=visit.event)
     other_event = make_event(title="행사 B")
 
-    messages = _service_messages(
-        lang, lambda: update_collection_item(item=item, event=other_event)
-    )
+    messages = _service_messages(lang, lambda: update_collection_item(item=item, event=other_event))
 
     _assert_message(
         lang,

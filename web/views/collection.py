@@ -97,7 +97,8 @@ def _collection_item_row(item, series_ink_classes):
         "quantity_label": gettext("수량 %(n)d개") % {"n": item.quantity} if item.is_owned else "",
         "tradeable_label": (
             gettext("교환 가능 %(n)d개") % {"n": item.tradeable_quantity}
-            if item.is_tradeable else ""
+            if item.is_tradeable
+            else ""
         ),
         "is_wanted": item.is_wanted,
         "badges": badges,

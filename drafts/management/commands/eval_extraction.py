@@ -10,6 +10,7 @@ raw_title/raw_text로 추출을 다시 돌려 비교한 뒤 필드별 정확도�
 Phase 2 자동 승인 게이트의 신뢰도 임계값을 정하는 데 쓰인다 — 이 명령은 보고만
 하고 어떤 드래프트도 바꾸거나 게이트하지 않는다.
 """
+
 from django.core.management.base import BaseCommand
 
 from drafts.eval import EVAL_FIELDS, build_field_accuracy_report
@@ -25,9 +26,11 @@ def _golden_rows(limit):
     """limit: 평가할 최대 행 수(최신순), 0이면 무제한. 행마다 LLM 호출 비용이
     들어가므로 승인 드래프트 테이블이 커도 실수로 무제한 평가가 돌아가지 않게
     막는다."""
-    qs = EventDraft.objects.filter(review_status=EventDraft.ReviewStatus.APPROVED).exclude(
-        raw_text=""
-    ).order_by("-id")
+    qs = (
+        EventDraft.objects.filter(review_status=EventDraft.ReviewStatus.APPROVED)
+        .exclude(raw_text="")
+        .order_by("-id")
+    )
     total = qs.count()
     if limit:
         qs = qs[:limit]
@@ -65,7 +68,9 @@ class Command(BaseCommand):
             self.stdout.write("골든셋 없음 (approved drafts with raw_text: 0건)")
             return
 
-        extract_fn = extract_event_fields_heuristic if options["heuristic"] else extract_event_fields_llm
+        extract_fn = (
+            extract_event_fields_heuristic if options["heuristic"] else extract_event_fields_llm
+        )
         report = build_field_accuracy_report(golden_rows, extract_fn=extract_fn)
 
         self.stdout.write(

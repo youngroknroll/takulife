@@ -4,6 +4,7 @@
 임포트하지 않고 파일 텍스트만 읽는다 — local_runner 패키지의 서버 도메인
 임포트 금지 계약이 테스트 자체에는 걸리지 않지만, 읽기로 처리하는 편이
 의도가 분명하다."""
+
 import pathlib
 
 import pytest
@@ -48,8 +49,7 @@ def test_서버와_러너의_URL_안전_판정_로직이_문자_그대로_일치
 
     for index, (server_line, runner_line) in enumerate(zip(server_lines, runner_lines)):
         assert server_line == runner_line, (
-            f"{index}번째 실행 로직 줄이 다르다: "
-            f"서버={server_line!r} / 러너={runner_line!r}"
+            f"{index}번째 실행 로직 줄이 다르다: 서버={server_line!r} / 러너={runner_line!r}"
         )
 
     assert len(server_lines) == len(runner_lines), (

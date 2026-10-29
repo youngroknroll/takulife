@@ -5,6 +5,7 @@
 페이지가 templates/base.html을 상속해 이 태그들을 자동으로 얻으므로, 홈
 페이지 응답으로 스모크 테스트한다.
 """
+
 import json
 import re
 from datetime import date
@@ -81,9 +82,7 @@ def test_홈_페이지는_WebSite_구조화_데이터를_요청_호스트_URL로
     resp = client.get("/")
 
     body = resp.content.decode("utf-8")
-    match = re.search(
-        r'<script type="application/ld\+json">(.*?)</script>', body, re.DOTALL
-    )
+    match = re.search(r'<script type="application/ld\+json">(.*?)</script>', body, re.DOTALL)
 
     assert match is not None
     payload = json.loads(match.group(1))

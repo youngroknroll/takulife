@@ -14,6 +14,7 @@ DB의 `Category.is_active`나 게시 이벤트 수를 전혀 반영하지 않는
 `test_category_visibility_services.py`로 분리했다(아키텍처 경계 가드
 — 파일명 = 검증 계층 규약).
 """
+
 import re
 
 import pytest
@@ -27,9 +28,7 @@ pytestmark = pytest.mark.django_db
 
 def _select_options(content, select_id):
     """content에서 id=select_id인 <select> 안의 option value 전체를 반환한다."""
-    match = re.search(
-        rf'<select[^>]*id="{select_id}"[^>]*>(.*?)</select>', content, re.DOTALL
-    )
+    match = re.search(rf'<select[^>]*id="{select_id}"[^>]*>(.*?)</select>', content, re.DOTALL)
     assert match, content
     return re.findall(r'<option value="([^"]*)"', match.group(1))
 

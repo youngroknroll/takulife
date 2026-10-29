@@ -1,6 +1,7 @@
 """core.models.ErrorGroup / core.error_groups.sanitize_message 검증
 (트랙 36 오류 묶음 기록, prompt_plan.md 트랙 36 S1·S2 참고).
 """
+
 import logging
 import sys
 import uuid
@@ -72,9 +73,7 @@ def test_지문은_error_type과_location의_제어문자_차이를_무시한다
     # EG-34
     from core.error_groups import compute_fingerprint
 
-    assert compute_fingerprint("backend", "T\nX", "L") == compute_fingerprint(
-        "backend", "T X", "L"
-    )
+    assert compute_fingerprint("backend", "T\nX", "L") == compute_fingerprint("backend", "T X", "L")
 
 
 def _fixture_secret(name):
@@ -142,7 +141,9 @@ def test_오류_메시지_정제는_지울_것이_없어도_500자를_넘으면_
     [_설정된_시크릿_키, _설정된_앤트로픽_키, _설정된_러너_토큰, _설정된_DB_비밀번호],
     ids=["SECRET_KEY", "ANTHROPIC_API_KEY", "DRAFT_DISCOVERY_RUNNER_TOKEN", "DB_PASSWORD"],
 )
-def test_오류_메시지_정제는_설정된_시크릿_값이_섞이면_메시지_전체를_비운다(settings, monkeypatch, apply_secret):
+def test_오류_메시지_정제는_설정된_시크릿_값이_섞이면_메시지_전체를_비운다(
+    settings, monkeypatch, apply_secret
+):
     # EG-04
     from core.error_groups import sanitize_message
 
@@ -212,7 +213,9 @@ def test_오류_기록은_255자_절단_후_같아지는_location을_한_묶음�
 
 
 @pytest.mark.django_db
-def test_오류_기록_저장이_실패해도_예외를_전파하지_않고_경고_로그를_한_줄_남긴다(monkeypatch, caplog):
+def test_오류_기록_저장이_실패해도_예외를_전파하지_않고_경고_로그를_한_줄_남긴다(
+    monkeypatch, caplog
+):
     # EG-07
     from core.error_groups import record_error
     from core.models import ErrorGroup
@@ -252,7 +255,11 @@ def test_오류_기록은_error_type과_location의_제어문자를_저장_전�
     )
 
     group = ErrorGroup.objects.get()
-    assert "\n" not in group.error_type and "\r" not in group.error_type and "\x00" not in group.error_type
+    assert (
+        "\n" not in group.error_type
+        and "\r" not in group.error_type
+        and "\x00" not in group.error_type
+    )
     assert "\n" not in group.location
 
 
@@ -393,7 +400,9 @@ def test_오류_기록은_출처별_상한을_넘으면_그_출처의_최고령_
     monkeypatch.setattr(error_groups_module, "SOURCE_GROUP_LIMIT", 3)
 
     now = timezone.now()
-    record_error(source="backend", error_type="Existing", location="GET /existing/", message="기존 오류")
+    record_error(
+        source="backend", error_type="Existing", location="GET /existing/", message="기존 오류"
+    )
     anchor = ErrorGroup.objects.get(location="GET /existing/")
 
     oldest, newer = ErrorGroup.objects.bulk_create(
@@ -434,7 +443,9 @@ def test_오류_기록은_출처별_상한을_넘으면_그_출처의_최고령_
 
     # 기존 지문 갱신(count 증가)은 새 행을 만들지 않으므로 상한 삭제를
     # 일으키지 않는다.
-    record_error(source="backend", error_type="Existing", location="GET /existing/", message="기존 오류 다시")
+    record_error(
+        source="backend", error_type="Existing", location="GET /existing/", message="기존 오류 다시"
+    )
 
     assert ErrorGroup.objects.filter(source=ErrorGroup.Source.BACKEND).count() == 3
 
@@ -483,7 +494,9 @@ def test_오류_기록의_출처별_상한은_다른_출처_행에_영향을_주
         ]
     )
 
-    record_error(source="frontend", error_type="New", location="GET /frontend-new/", message="새 오류")
+    record_error(
+        source="frontend", error_type="New", location="GET /frontend-new/", message="새 오류"
+    )
 
     backend_groups = ErrorGroup.objects.filter(source=ErrorGroup.Source.BACKEND)
     frontend_groups = ErrorGroup.objects.filter(source=ErrorGroup.Source.FRONTEND)
@@ -498,8 +511,13 @@ def test_오류_기록의_출처별_상한은_다른_출처_행에_영향을_주
 
 def _record_without_exc_info():
     return logging.LogRecord(
-        "django.request", logging.ERROR, __file__, 1,
-        "Internal Server Error: %s", ("/x/",), None,
+        "django.request",
+        logging.ERROR,
+        __file__,
+        1,
+        "Internal Server Error: %s",
+        ("/x/",),
+        None,
     )
 
 
@@ -509,8 +527,13 @@ def _record_with_exc_info(exc, *, request=None):
     except type(exc):
         exc_info = sys.exc_info()
     record = logging.LogRecord(
-        "django.request", logging.ERROR, __file__, 1,
-        "Internal Server Error: %s", ("/x/",), exc_info,
+        "django.request",
+        logging.ERROR,
+        __file__,
+        1,
+        "Internal Server Error: %s",
+        ("/x/",),
+        exc_info,
     )
     if request is not None:
         record.request = request
@@ -573,7 +596,9 @@ def test_오류_묶음_핸들러는_DB_오류면_record_error를_부르지_않�
 
 
 @pytest.mark.contract
-def test_뷰가_처리되지_않은_예외를_던지면_500_응답과_함께_오류_묶음이_한_행_생긴다(client, monkeypatch, db):
+def test_뷰가_처리되지_않은_예외를_던지면_500_응답과_함께_오류_묶음이_한_행_생긴다(
+    client, monkeypatch, db
+):
     """tests/core/test_error_pages.py:25-51과 같은 방식으로 실제 뷰 예외를
     흉내낸다 — settings.LOGGING에 ErrorGroupHandler를 아직 배선하지 않았으므로
     이 테스트는 지금 0 == 1로 실패해야 정상이다(S3 배선 전 예상 Red)."""

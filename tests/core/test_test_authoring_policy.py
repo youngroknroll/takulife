@@ -10,6 +10,7 @@
 이 파일의 AST 순회는 일부러 독립적이라 두 가드는 각자 따로 되돌릴 수
 있다. `.docs/plans/2026-07-18-test-suite-stage4-5-plan.md` §4/§8-1 참고.
 """
+
 import ast
 import re
 from pathlib import Path

@@ -4,6 +4,7 @@
 불가 내용, 위장 형식, 초과 치수)와, 통과 시의 EXIF 제거 재인코딩 단계를
 다룬다.
 """
+
 import io
 
 import PIL.Image
@@ -58,9 +59,7 @@ class TestValidImage:
 
 class TestExifStripping:
     def test_업로드한_JPEG의_GPS_EXIF_정보는_제거된다(self):
-        value = _upload(
-            _jpeg_bytes_with_gps_exif(), name="photo.jpg", content_type="image/jpeg"
-        )
+        value = _upload(_jpeg_bytes_with_gps_exif(), name="photo.jpg", content_type="image/jpeg")
 
         result = validate_uploaded_image(value)
         result.seek(0)

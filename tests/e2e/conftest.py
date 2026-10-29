@@ -9,6 +9,7 @@
 비밀번호는 루트 conftest의 `valid_password` 픽스처를 쓴다(소스에 비밀번호
 리터럴 금지 — 시크릿 스캐너 가드).
 """
+
 import secrets
 from importlib import import_module
 
@@ -86,6 +87,7 @@ def login_as(live_server, context):
     로그인 폼을 거친 브라우저처럼 csrftoken 쿠키도 같이 심는다(스태프
     셸은 폼이 없어 쿠키를 새로 주지 않는다).
     """
+
     def _login(user):
         request = RequestFactory().get("/")
         request.session = import_module(settings.SESSION_ENGINE).SessionStore()

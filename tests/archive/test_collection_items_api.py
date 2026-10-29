@@ -8,6 +8,7 @@
   PATCH  /api/collection-items/<id>/   → 200 또는 404 (가드가 걸린 수정)
   DELETE /api/collection-items/<id>/   → 204 또는 404
 """
+
 import re
 import uuid
 
@@ -188,9 +189,7 @@ def test_컬렉션_목록을_조회하면_본인_소유_항목만_반환된다(c
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_타인_소유_컬렉션_항목을_조회하면_404가_된다(
-    client, make_user, make_collection_item
-):
+def test_타인_소유_컬렉션_항목을_조회하면_404가_된다(client, make_user, make_collection_item):
     owner = make_user(username="ci-detail-get-owner")
     other = make_user(username="ci-detail-get-other")
     item = make_collection_item(owner, name="타인 소유")
@@ -240,7 +239,9 @@ def test_타인_소유_컬렉션_항목을_삭제하면_404가_되고_삭제되�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_소유자가_컬렉션_항목을_삭제하면_204와_함께_삭제된다(client, make_user, make_collection_item):
+def test_소유자가_컬렉션_항목을_삭제하면_204와_함께_삭제된다(
+    client, make_user, make_collection_item
+):
     user = make_user(username="ci-delete-owner")
     item = make_collection_item(user, name="삭제할 항목")
 
@@ -259,7 +260,9 @@ def test_소유자가_컬렉션_항목을_삭제하면_204와_함께_삭제된�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_소유자가_컬렉션_항목_필드를_수정하면_변경사항이_저장된다(client, make_user, make_collection_item):
+def test_소유자가_컬렉션_항목_필드를_수정하면_변경사항이_저장된다(
+    client, make_user, make_collection_item
+):
     user = make_user(username="ci-patch-owner")
     item = make_collection_item(user, name="원래 이름")
 
@@ -279,7 +282,9 @@ def test_소유자가_컬렉션_항목_필드를_수정하면_변경사항이_�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_미공개_이벤트를_연결해_컬렉션_항목을_생성하면_400으로_거부된다(client, make_user, make_event):
+def test_미공개_이벤트를_연결해_컬렉션_항목을_생성하면_400으로_거부된다(
+    client, make_user, make_event
+):
     """`event`는 시리얼라이저에서 Event.objects.published()로 제한된다 —
     VisitRecordSerializer/UserEventStatusSerializer가 이미 쓰는 것과 같은 가드
     (컬렉션 도메인 설계 계획 §4 PR-C5 CP14)."""
@@ -302,7 +307,9 @@ def test_미공개_이벤트를_연결해_컬렉션_항목을_생성하면_400�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_컬렉션_항목을_미공개_이벤트로_수정하면_400으로_거부되고_기존값이_유지된다(client, make_user, make_event, make_collection_item):
+def test_컬렉션_항목을_미공개_이벤트로_수정하면_400으로_거부되고_기존값이_유지된다(
+    client, make_user, make_event, make_collection_item
+):
     """CP14는 POST만 다뤘다 — 시리얼라이저의 `event` 필드는 생성·수정이 공유하지만
     PATCH에도 같은 게시 전용 가드가 적용되는지 증명하는 테스트가 없었다."""
     from events.models import Event
@@ -465,9 +472,7 @@ def test_방문_기록과_충돌하는_이벤트로_수정하면_500이_아닌_4
 
 @pytest.mark.contract
 @pytest.mark.django_db
-def test_수정_중_동시에_삭제되면_404가_된다(
-    client, make_user, make_collection_item, monkeypatch
-):
+def test_수정_중_동시에_삭제되면_404가_된다(client, make_user, make_collection_item, monkeypatch):
     """뷰의 get_object()와 update_collection_item의
     select_for_update().get() 재조회 사이에 CollectionItem이 삭제되면, 뷰는
     500이 아니라 404를 반환해야 한다.
@@ -495,9 +500,7 @@ def test_수정_중_동시에_삭제되면_404가_된다(
         CollectionItem.objects.filter(pk=item.pk).delete()
         return original_update_collection_item(item=item, **fields)
 
-    monkeypatch.setattr(
-        archive_views, "update_collection_item", racing_update_collection_item
-    )
+    monkeypatch.setattr(archive_views, "update_collection_item", racing_update_collection_item)
 
     client.force_login(user)
     response = client.patch(
@@ -555,7 +558,9 @@ def test_삭제_중_동시_삭제_경합이_발생해도_204로_성공한다(
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_작품명으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(client, make_user, make_collection_item):
+def test_작품명으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(
+    client, make_user, make_collection_item
+):
     user = make_user(username="ci-filter-work-title")
     make_collection_item(user, name="일치", work_title="작품 A")
     make_collection_item(user, name="불일치", work_title="작품 B")
@@ -570,7 +575,9 @@ def test_작품명으로_컬렉션_목록을_필터링하면_일치하는_항목
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_캐릭터명으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(client, make_user, make_collection_item):
+def test_캐릭터명으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(
+    client, make_user, make_collection_item
+):
     user = make_user(username="ci-filter-character")
     make_collection_item(user, name="일치", character_name="캐릭터 A")
     make_collection_item(user, name="불일치", character_name="캐릭터 B")
@@ -585,7 +592,9 @@ def test_캐릭터명으로_컬렉션_목록을_필터링하면_일치하는_항
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_굿즈_유형으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(client, make_user, make_collection_item):
+def test_굿즈_유형으로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(
+    client, make_user, make_collection_item
+):
     user = make_user(username="ci-filter-item-type")
     make_collection_item(user, name="일치", item_type="keyring")
     make_collection_item(user, name="불일치", item_type="badge")
@@ -600,7 +609,9 @@ def test_굿즈_유형으로_컬렉션_목록을_필터링하면_일치하는_�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_구함_여부로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(client, make_user, make_collection_item):
+def test_구함_여부로_컬렉션_목록을_필터링하면_일치하는_항목만_반환된다(
+    client, make_user, make_collection_item
+):
     user = make_user(username="ci-filter-wanted")
     make_collection_item(user, name="구함", is_wanted=True)
     make_collection_item(user, name="보유", is_wanted=False)
@@ -740,9 +751,7 @@ def test_작품명_필터가_최대_길이를_초과하면_400으로_거부된�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_캐릭터명_필터가_최대_길이를_초과하면_400으로_거부된다(
-    client, make_user
-):
+def test_캐릭터명_필터가_최대_길이를_초과하면_400으로_거부된다(client, make_user):
     user = make_user(username="ci-filter-character-name-too-long")
 
     client.force_login(user)
@@ -790,6 +799,8 @@ def test_빈_필터값을_보내면_필터가_적용되지_않은_것과_동일�
 
     assert response.status_code == 200
     assert response.json()["count"] == 2
+
+
 # CP23~24c: 이미지 업로드 — 방문 사진/직접 등록 항목과 동일한 검증 파이프라인
 # (events.image_validation.validate_uploaded_image)을 공유한다.
 # ---------------------------------------------------------------------------
@@ -797,7 +808,9 @@ def test_빈_필터값을_보내면_필터가_적용되지_않은_것과_동일�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_이미지가_아닌_바이트를_jpg로_위장해_업로드하면_400으로_거부된다(client, make_user, settings, tmp_path):
+def test_이미지가_아닌_바이트를_jpg로_위장해_업로드하면_400으로_거부된다(
+    client, make_user, settings, tmp_path
+):
     """.jpg로 위장한 가짜 바이트는 Pillow의 내용 검사로 거부돼야 한다."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(username="ci-img-fake")

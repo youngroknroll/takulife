@@ -66,7 +66,9 @@ def fetch_html(url, *, allowed_content_types=None):
     대체한다 — robots.txt의 text/plain처럼 다른 타입을 허용하려면 명시적으로 튜플을
     넘겨라. 빈 튜플을 넘기면 어떤 접두어와도 매치되지 않아 모든 응답이 거부된다.
     """
-    content_types = allowed_content_types if allowed_content_types is not None else HTML_CONTENT_TYPES
+    content_types = (
+        allowed_content_types if allowed_content_types is not None else HTML_CONTENT_TYPES
+    )
     # 클라이언트를 만들기 전에 최초 URL부터 검증한다 — 사설 IP나 지원하지 않는
     # 스킴처럼 이미 위험한 주소는 httpx.Client에 닿아서도 안 된다. 아래 루프의 매 홉
     # 재검증이 리다이렉트 대상에 대한 실질적 SSRF 방어선이므로 지우면 안 된다

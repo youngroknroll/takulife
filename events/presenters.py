@@ -3,6 +3,7 @@
 상태 판정 기준은 EventQuerySet.with_public_status()와 반드시 동일하게 맞춘다.
 이 모듈은 core를 임포트하면 안 된다(core -> events 단방향 의존 유지).
 """
+
 from datetime import timedelta
 
 from django.urls import reverse

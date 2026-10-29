@@ -4,6 +4,7 @@
 LLM과 휴리스틱 추출을 검증한다. DB 접근은 하지 않으며,
 drafts/management/commands/eval_extraction.py가 DB를 다루는 얇은 호출부다.
 """
+
 from .extraction import normalize_whitespace
 
 # category/region/start_date/end_date는 어휘 슬러그·ISO 날짜라 정규화 없이 정확히
@@ -81,7 +82,9 @@ def build_field_accuracy_report(golden_rows, extract_fn):
                 "field": field,
                 "correct": correct_counts[field],
                 "total": total_counts[field],
-                "accuracy": (correct_counts[field] / total_counts[field]) if total_counts[field] else 0,
+                "accuracy": (correct_counts[field] / total_counts[field])
+                if total_counts[field]
+                else 0,
                 "both_empty": both_empty_counts[field],
             }
             for field in EVAL_FIELDS

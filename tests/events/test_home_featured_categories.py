@@ -10,6 +10,7 @@ TestFeaturedCategoryPairs의 모든 테스트는 core.vocab.CATEGORY와 같은 �
 가진 Category 행이 이미 DB에 존재하는 상태에서 시작한다. 새로 만드는 슬러그는
 이 시딩된 슬러그와 겹치지 않게 고른다(tests/core/test_category_model.py 모듈 독스트링과 동일한 전제).
 """
+
 import pytest
 from django.test import Client
 
@@ -42,9 +43,7 @@ class TestFeaturedCategoryPairs:
         sort_order 순으로 읽는지 검증한다. 비활성화한 concert는 빠지고,
         시딩 이후 새로 만든 활성 카테고리는 sort_order 순서상 제자리에
         끼어 들어와야 한다."""
-        Category.objects.create(
-            slug="zz_new_active", label="새로운활성카테고리", sort_order=3
-        )
+        Category.objects.create(slug="zz_new_active", label="새로운활성카테고리", sort_order=3)
         concert = Category.objects.get(slug="concert")
         concert.is_active = False
         concert.save()
@@ -65,7 +64,9 @@ class TestFeaturedCategoryPairs:
             ("fan_meeting", "팬미팅"),
         ]
 
-    def test_강조_카테고리가_비어있을_때_런타임에_추가한_카테고리가_같은_프로세스에서_바로_반영된다(self):
+    def test_강조_카테고리가_비어있을_때_런타임에_추가한_카테고리가_같은_프로세스에서_바로_반영된다(
+        self,
+    ):
         """I-03: 이 테스트가 증명하려는 것 — featured_category_pairs가
         core.vocab.CATEGORY(모듈 임포트 시점에 고정된 상수)가 아니라 DB를
         실시간으로 조회한다는 것. core.vocab.CATEGORY에는 없는 슬러그를
@@ -73,9 +74,7 @@ class TestFeaturedCategoryPairs:
         봤다는 증거가 된다 — 매번 쿼리하는 구현이면 자명하게 통과하니,
         어휘에 없는 슬러그로 검증해 그 우연한 통과를 배제한다."""
         assert "zz_runtime_only" not in dict(CATEGORY)
-        Category.objects.create(
-            slug="zz_runtime_only", label="런타임전용카테고리", sort_order=999
-        )
+        Category.objects.create(slug="zz_runtime_only", label="런타임전용카테고리", sort_order=999)
 
         config = HomeConfig.get_solo()
         config.featured_categories = []
@@ -146,7 +145,9 @@ class TestHomeViewCategoryTilesIntegration:
         for slug, _ in CATEGORY:
             assert tiles[slug]["count"] == 0
 
-    def test_HomeConfig에_강조_카테고리를_설정하면_홈_화면에_선택한_카테고리_타일만_순서대로_노출된다(self):
+    def test_HomeConfig에_강조_카테고리를_설정하면_홈_화면에_선택한_카테고리_타일만_순서대로_노출된다(
+        self,
+    ):
         config = HomeConfig.get_solo()
         config.featured_categories = ["exhibition", "popup_store"]
         config.save()
@@ -156,7 +157,9 @@ class TestHomeViewCategoryTilesIntegration:
         slugs = [t["slug"] for t in resp.context["category_tiles"]]
         assert slugs == ["exhibition", "popup_store"]
 
-    def test_강조_카테고리_설정_시_각_타일에_해당_카테고리_행사_건수가_정확히_반영된다(self, make_event):
+    def test_강조_카테고리_설정_시_각_타일에_해당_카테고리_행사_건수가_정확히_반영된다(
+        self, make_event
+    ):
         make_event(category="exhibition")
         config = HomeConfig.get_solo()
         config.featured_categories = ["exhibition", "popup_store"]

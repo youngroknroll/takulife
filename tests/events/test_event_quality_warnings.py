@@ -4,6 +4,7 @@
 컬럼별 독립 검사라(한 행사가 여러 경고에 걸릴 수 있다) 여기에도
 구현에도 if/elif 식 분류는 없다.
 """
+
 from datetime import date, datetime, timedelta
 
 import pytest
@@ -130,9 +131,7 @@ class TestCountPublishedMissingDates:
         assert count_published_missing_dates() == 1
 
     def test_시작일과_종료일이_모두_있으면_날짜_누락_건수에서_제외된다(self, make_event):
-        make_event(
-            official_url=None, start_date=date(2020, 1, 1), end_date=date(2020, 1, 2)
-        )
+        make_event(official_url=None, start_date=date(2020, 1, 1), end_date=date(2020, 1, 2))
 
         assert count_published_missing_dates() == 0
 
@@ -150,9 +149,7 @@ class TestCountPublishedMissingDates:
         # count() 대신 exists()로 되돌리는 뮤테이션은 0/1 케이스는 통과하지만
         # 2건부터는 걸러내지 못해, 이 테스트로 잡는다.
         make_event(official_url=None, start_date=None, end_date=date(2020, 1, 1))
-        make_event(
-            official_url="https://example.com/other", start_date=None, end_date=None
-        )
+        make_event(official_url="https://example.com/other", start_date=None, end_date=None)
 
         assert count_published_missing_dates() == 2
 

@@ -1,6 +1,7 @@
 """local_runner 패키지 격리 계약(CT2) — tests/core/test_architecture_boundaries.py의
 _imported_modules와 같은 AST 파싱 방식을 여기서도 그대로 쓴다(패키지가 이 세션 시점에
 아직 없어 공유 임포트는 하지 않는다)."""
+
 import ast
 from pathlib import Path
 
@@ -13,7 +14,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 # 서버 도메인 모듈과 Django. httpx·표준 라이브러리만 허용한다.
 _FORBIDDEN_MODULES = {
-    "django", "drafts", "events", "archive", "staff", "core", "config", "accounts", "web",
+    "django",
+    "drafts",
+    "events",
+    "archive",
+    "staff",
+    "core",
+    "config",
+    "accounts",
+    "web",
 }
 
 

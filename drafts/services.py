@@ -182,9 +182,7 @@ def prepare_draft_from_url(*, source_url):
         extracted_end_date=extracted.get("extracted_end_date"),
         extracted_summary=extracted.get("extracted_summary", ""),
         confidence=extracted.get("confidence"),
-        extraction_method=extracted.get(
-            "extraction_method", EventDraft.ExtractionMethod.HEURISTIC
-        ),
+        extraction_method=extracted.get("extraction_method", EventDraft.ExtractionMethod.HEURISTIC),
     )
 
 
@@ -315,9 +313,7 @@ def _category_update_invalid(updates) -> bool:
 
 def _region_update_invalid(updates) -> bool:
     """updates에 extracted_region이 있는데 유효하지 않은 값이면 True."""
-    return "extracted_region" in updates and not is_valid_region(
-        updates["extracted_region"] or ""
-    )
+    return "extracted_region" in updates and not is_valid_region(updates["extracted_region"] or "")
 
 
 def update_draft(*, draft_id, updates):

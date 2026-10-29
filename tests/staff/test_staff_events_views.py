@@ -1,4 +1,5 @@
 """스태프 행사 목록(/staff/events/) 인증 게이트와 경고/게시상태 필터링, 페이지네이션 검증."""
+
 import html
 import re
 from datetime import date, timedelta
@@ -88,7 +89,9 @@ def test_알_수_없는_경고_값을_지정하면_필터_없이_전체_행사�
 
 
 @pytest.mark.django_db
-def test_게시_상태_필터를_적용하면_해당_상태의_행사만_노출된다(staff_client, make_event, make_draft_event):
+def test_게시_상태_필터를_적용하면_해당_상태의_행사만_노출된다(
+    staff_client, make_event, make_draft_event
+):
     staff, client = staff_client()
     make_event(title="게시된 행사")
     make_draft_event(title="초안 행사", official_url=None)
@@ -118,7 +121,9 @@ def test_두번째_페이지를_요청하면_남은_건수만큼_행사가_노�
 
 
 @pytest.mark.django_db
-def test_종료됐지만_게시중인_경고_필터는_서버의_오늘_날짜를_기준으로_판정한다(staff_client, make_event):
+def test_종료됐지만_게시중인_경고_필터는_서버의_오늘_날짜를_기준으로_판정한다(
+    staff_client, make_event
+):
     staff, client = staff_client()
     make_event(
         title="종료된 행사",
@@ -139,7 +144,9 @@ def test_종료됐지만_게시중인_경고_필터는_서버의_오늘_날짜�
 
 
 @pytest.mark.django_db
-def test_재확인_필요_경고_필터를_적용하면_해당_경고에_해당하는_행사만_노출된다(staff_client, make_event):
+def test_재확인_필요_경고_필터를_적용하면_해당_경고에_해당하는_행사만_노출된다(
+    staff_client, make_event
+):
     staff, client = staff_client()
     make_event(
         title="시작임박미확인행사",
@@ -173,9 +180,7 @@ def _row_slice(content, event_id):
 def _button_tag(row, action):
     # 여는 태그부터 닫는 태그까지 통째로 뽑는다 — hidden 속성뿐 아니라
     # 버튼 텍스트(라벨)까지 이 반환값 하나로 판정하려면 내용까지 있어야 한다.
-    match = re.search(
-        rf'<button[^>]*data-row-action="{action}"[^>]*>.*?</button>', row, re.DOTALL
-    )
+    match = re.search(rf'<button[^>]*data-row-action="{action}"[^>]*>.*?</button>', row, re.DOTALL)
     assert match, row
     return match.group(0)
 
@@ -279,7 +284,9 @@ def test_이벤트_목록에_행_인라인_액션_스크립트와_live_region이
 
 
 @pytest.mark.django_db
-def test_게시_행에만_일괄_선택_체크박스가_있고_비공개_행에는_없다(staff_client, make_event, make_draft_event):
+def test_게시_행에만_일괄_선택_체크박스가_있고_비공개_행에는_없다(
+    staff_client, make_event, make_draft_event
+):
     staff, client = staff_client()
     published = make_event(official_url="https://example.com/bulk-select-published")
     draft = make_draft_event(official_url="https://example.com/bulk-select-draft")
@@ -315,7 +322,9 @@ def test_게시_행이_있으면_일괄_선택_바와_실패_사유_표시_영�
 
 
 @pytest.mark.django_db
-def test_게시_행이_없는_페이지에도_일괄_선택_바가_숨김_상태로_렌더된다(staff_client, make_draft_event):
+def test_게시_행이_없는_페이지에도_일괄_선택_바가_숨김_상태로_렌더된다(
+    staff_client, make_draft_event
+):
     staff, client = staff_client()
     make_draft_event(official_url="https://example.com/bulk-toolbar-absent")
 
@@ -378,9 +387,15 @@ def test_카테고리_필터를_적용하면_context에_선택된_카테고리�
     staff_client, make_event
 ):
     staff, client = staff_client()
-    make_event(title="콘서트 행사", category="concert", official_url="https://example.com/category-filter-concert")
     make_event(
-        title="전시 행사", category="exhibition", official_url="https://example.com/category-filter-exhibition"
+        title="콘서트 행사",
+        category="concert",
+        official_url="https://example.com/category-filter-concert",
+    )
+    make_event(
+        title="전시 행사",
+        category="exhibition",
+        official_url="https://example.com/category-filter-exhibition",
     )
 
     resp = client.get("/staff/events/?category=concert")
@@ -393,7 +408,9 @@ def test_카테고리_필터를_적용하면_context에_선택된_카테고리�
 
 
 @pytest.mark.django_db
-def test_허용되지_않은_카테고리_값을_지정하면_필터_없이_전체_행사가_노출된다(staff_client, make_event):
+def test_허용되지_않은_카테고리_값을_지정하면_필터_없이_전체_행사가_노출된다(
+    staff_client, make_event
+):
     staff, client = staff_client()
     make_event(
         title="자유카테고리행사",
@@ -435,7 +452,9 @@ def test_이벤트_수정_화면은_현재_비활성_카테고리도_선택지�
 
 
 @pytest.mark.django_db
-def test_기간_필터를_적용하면_context에_선택된_기간이_담기고_목록이_좁혀진다(staff_client, make_event):
+def test_기간_필터를_적용하면_context에_선택된_기간이_담기고_목록이_좁혀진다(
+    staff_client, make_event
+):
     staff, client = staff_client()
     today = date.today()
     make_event(
@@ -533,7 +552,9 @@ def test_검색_중_수정_화면으로_이동해도_검색어가_목록_복귀_
 
 
 @pytest.mark.django_db
-def test_목록에서_검색어와_페이지_이동을_함께_하면_검색어가_한_번만_담긴다(staff_client, make_event):
+def test_목록에서_검색어와_페이지_이동을_함께_하면_검색어가_한_번만_담긴다(
+    staff_client, make_event
+):
     from events.queries import STAFF_EVENT_LISTING_PAGE_SIZE
 
     staff, client = staff_client()
@@ -587,7 +608,9 @@ def test_정렬_기간_카테고리를_지정한_채_수정_화면으로_이동�
         official_url="https://example.com/edit-list-query-all-axes",
     )
 
-    resp = client.get(f"/staff/events/{event.id}/edit/?sort=start_asc&period=ongoing&category=concert")
+    resp = client.get(
+        f"/staff/events/{event.id}/edit/?sort=start_asc&period=ongoing&category=concert"
+    )
 
     assert resp.status_code == 200
     parsed = parse_qs(resp.context["list_query"])
@@ -714,11 +737,19 @@ def _category_chip_counts(content, group_label="카테고리 필터"):
 )
 def test_카테고리_칩_건수의_합은_전체_칩_건수와_같다(staff_client, make_event, query):
     staff, client = staff_client()
-    make_event(title="합계칩콘서트행사", category="concert", official_url="https://example.com/chip-sum-concert")
     make_event(
-        title="합계칩전시행사", category="exhibition", official_url="https://example.com/chip-sum-exhibition"
+        title="합계칩콘서트행사",
+        category="concert",
+        official_url="https://example.com/chip-sum-concert",
     )
-    make_event(title="합계칩미분류행사", category="", official_url="https://example.com/chip-sum-blank")
+    make_event(
+        title="합계칩전시행사",
+        category="exhibition",
+        official_url="https://example.com/chip-sum-exhibition",
+    )
+    make_event(
+        title="합계칩미분류행사", category="", official_url="https://example.com/chip-sum-blank"
+    )
 
     resp = client.get(f"/staff/events/{query}")
 
@@ -744,7 +775,9 @@ def test_매치가_0건인_카테고리_칩도_숨기지_않고_0을_표시한�
     assert chips["concert"]["count"] == 0
 
     content = resp.content.decode()
-    match = re.search(r'<a[^>]*href="[^"]*category=concert[^"]*"[^>]*>(.*?)</a>', content, re.DOTALL)
+    match = re.search(
+        r'<a[^>]*href="[^"]*category=concert[^"]*"[^>]*>(.*?)</a>', content, re.DOTALL
+    )
     assert match, content
     chip_html = match.group(0)
     assert "hidden" not in chip_html
@@ -755,9 +788,15 @@ def test_매치가_0건인_카테고리_칩도_숨기지_않고_0을_표시한�
 @pytest.mark.django_db
 def test_미분류_칩을_선택하면_카테고리가_빈_행사만_노출된다(staff_client, make_event):
     staff, client = staff_client()
-    make_event(title="미분류칩행사", category="", official_url="https://example.com/uncategorized-chip-selected")
     make_event(
-        title="미분류칩콘서트행사", category="concert", official_url="https://example.com/uncategorized-chip-concert"
+        title="미분류칩행사",
+        category="",
+        official_url="https://example.com/uncategorized-chip-selected",
+    )
+    make_event(
+        title="미분류칩콘서트행사",
+        category="concert",
+        official_url="https://example.com/uncategorized-chip-concert",
     )
 
     resp = client.get("/staff/events/?category=")

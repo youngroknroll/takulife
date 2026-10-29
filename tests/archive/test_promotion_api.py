@@ -5,6 +5,7 @@
 test_promotion_service.py에서 직접 테스트됨). 관리자가 시드된 드래프트를 승인해
 공개 Event로 만들기 전까지 항목은 비공개로 유지된다.
 """
+
 import pytest
 
 from archive.models import PersonalEntry
@@ -13,7 +14,9 @@ from drafts.models import EventDraft
 
 @pytest.mark.django_db
 @pytest.mark.web
-def test_비공식_항목을_공식_URL과_함께_승격_요청하면_201로_생성되고_제출됨_상태가_된다(client, make_user, make_entry):
+def test_비공식_항목을_공식_URL과_함께_승격_요청하면_201로_생성되고_제출됨_상태가_된다(
+    client, make_user, make_entry
+):
     user = make_user(username="api-promo")
     entry = make_entry(user, kind="place", title="비공식")
 
@@ -102,7 +105,9 @@ def test_사설_IP_공식_URL로_승격을_요청하면_400으로_거부된다(c
 
 @pytest.mark.django_db
 @pytest.mark.web
-def test_굿즈_항목을_승격_요청하면_400으로_거부되고_제출됨으로_바뀌지_않는다(client, make_user, make_entry):
+def test_굿즈_항목을_승격_요청하면_400으로_거부되고_제출됨으로_바뀌지_않는다(
+    client, make_user, make_entry
+):
     """goods 항목은 승격할 수 없다(컬렉션 도메인 설계안 §3-3) — 뷰는
     PromotionKindNotAllowedError를 처리되지 않은 500이 아니라 제어된 400으로
     변환해야 한다."""
@@ -162,7 +167,9 @@ def test_이미_제출된_항목을_다시_승격_요청하면_409_중복_오류
 
 @pytest.mark.django_db
 @pytest.mark.web
-def test_이미_존재하는_드래프트와_동일한_공식_URL로_승격_요청하면_필드_오류로_거부된다(client, make_user, make_entry, make_draft):
+def test_이미_존재하는_드래프트와_동일한_공식_URL로_승격_요청하면_필드_오류로_거부된다(
+    client, make_user, make_entry, make_draft
+):
     user = make_user()
     entry = make_entry(user, kind="place", title="제보 대상")
     # 이미 이 공식 URL을 가진 드래프트가 있다 → 승격은 중복으로 처리된다
@@ -181,7 +188,9 @@ def test_이미_존재하는_드래프트와_동일한_공식_URL로_승격_요�
 
 @pytest.mark.django_db
 @pytest.mark.web
-def test_인증되지_않은_요청으로_승격을_시도하면_401_또는_403으로_거부된다(client, make_user, make_entry):
+def test_인증되지_않은_요청으로_승격을_시도하면_401_또는_403으로_거부된다(
+    client, make_user, make_entry
+):
     user = make_user(username="api-promo-anon")
     entry = make_entry(user, kind="place", title="비공식")
 

@@ -8,6 +8,7 @@ archive.services.remove_event_interest는 아직 없어 CAL-2-02는 수집/호�
 각 서비스에 쓰기 오케스트레이션이 추가되기 전까지 AssertionError(0건이어야
 할 자리에 1건 없음)로 실패하는 것이 정상이다.
 """
+
 import uuid
 
 import pytest
@@ -42,9 +43,7 @@ def test_찜을_추가하면_interest_added_활동_이력이_기록된다(make_u
 
     create_event_interest(user=user, event=event)
 
-    entries = ActivityLogEntry.objects.filter(
-        user=user, kind=ActivityLogEntry.Kind.INTEREST_ADDED
-    )
+    entries = ActivityLogEntry.objects.filter(user=user, kind=ActivityLogEntry.Kind.INTEREST_ADDED)
     assert entries.count() == 1
     entry = entries.get()
     assert entry.event_id == event.id
@@ -92,9 +91,7 @@ def test_상태를_처음_생성하면_status_changed_활동_이력이_기록된
 
     create_user_event_status(user=user, event=event, status=UserEventStatus.Status.PLANNED)
 
-    entries = ActivityLogEntry.objects.filter(
-        user=user, kind=ActivityLogEntry.Kind.STATUS_CHANGED
-    )
+    entries = ActivityLogEntry.objects.filter(user=user, kind=ActivityLogEntry.Kind.STATUS_CHANGED)
     assert entries.count() == 1
     entry = entries.get()
     assert entry.event_id == event.id
@@ -146,9 +143,7 @@ def test_상태_전환_함수를_호출하면_status_changed_활동_이력이_�
 
     _TRANSITION_FUNCTIONS[transition_name](user_event_status=status_row)
 
-    entries = ActivityLogEntry.objects.filter(
-        user=user, kind=ActivityLogEntry.Kind.STATUS_CHANGED
-    )
+    entries = ActivityLogEntry.objects.filter(user=user, kind=ActivityLogEntry.Kind.STATUS_CHANGED)
     assert entries.count() == 1
     assert entries.get().change_summary == expected_change_summary
 

@@ -10,20 +10,25 @@ orchestration.py)를 따른다: 마이그레이션 모듈을 임포트해 그 �
 만든다 — 이 enum 멤버는 같은 트랙의 이후 커밋(§3-5 M2)에서 제거되므로, 그때
 이 파일을 고칠 필요가 없게 하기 위함이다.
 """
+
 import importlib
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from archive.models import CollectionItem, EventInterest, PersonalEntry, UserEventStatus, VisitRecord
+from archive.models import (
+    CollectionItem,
+    EventInterest,
+    PersonalEntry,
+    UserEventStatus,
+    VisitRecord,
+)
 
 pytestmark = pytest.mark.contract
 
 
 def _migration_module():
-    return importlib.import_module(
-        "archive.migrations.0017_migrate_goods_to_collection_items"
-    )
+    return importlib.import_module("archive.migrations.0017_migrate_goods_to_collection_items")
 
 
 def _make_goods(user, **kwargs):

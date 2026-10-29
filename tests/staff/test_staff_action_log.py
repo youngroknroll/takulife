@@ -3,6 +3,7 @@
 승인·거부 등 행위 기록은 추가만 되고 지워지지 않는다. 어드민 조회는
 슈퍼유저만 가능하며 일반 스태프는 열람·관리할 수 없다.
 """
+
 import pytest
 from django.contrib import admin
 from django.test import RequestFactory
@@ -16,7 +17,9 @@ pytestmark = pytest.mark.domain
 
 
 @pytest.mark.django_db
-def test_스태프_액션_로그를_생성하면_행위자_행위_대상_드래프트와_메타데이터가_저장된다(make_user, make_draft):
+def test_스태프_액션_로그를_생성하면_행위자_행위_대상_드래프트와_메타데이터가_저장된다(
+    make_user, make_draft
+):
     actor = make_user(is_staff=True)
     draft = make_draft("https://example.com/logged-event")
 
@@ -101,8 +104,12 @@ def test_액션_로그에_대상_이벤트를_지정하면_대상_이벤트가_�
 
 @pytest.mark.django_db
 def test_대상_이벤트를_삭제해도_액션_로그는_남고_대상_참조만_비워진다():
-    event = Event.objects.create(title="Deleted event", publish_status=Event.PublishStatus.PUBLISHED)
-    entry = StaffActionLog.objects.create(action=StaffActionLog.Action.EVENT_UPDATE, target_event=event)
+    event = Event.objects.create(
+        title="Deleted event", publish_status=Event.PublishStatus.PUBLISHED
+    )
+    entry = StaffActionLog.objects.create(
+        action=StaffActionLog.Action.EVENT_UPDATE, target_event=event
+    )
 
     event.delete()
     entry.refresh_from_db()

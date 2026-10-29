@@ -1,4 +1,5 @@
 """스태프 전용 드래프트 HTML 뷰(목록/상세) 검증."""
+
 import datetime
 import json
 import re
@@ -16,7 +17,9 @@ pytestmark = pytest.mark.web
 @pytest.mark.django_db
 class TestEventDraftsListView:
     def test_드래프트_목록_페이지는_등록된_드래프트_행을_렌더링한다(self, staff_client, make_draft):
-        make_draft("https://example.com/a", extracted_title="드래프트 A", extracted_category="popup_store")
+        make_draft(
+            "https://example.com/a", extracted_title="드래프트 A", extracted_category="popup_store"
+        )
         make_draft("https://example.com/b", extracted_title="드래프트 B")
 
         _, client = staff_client()
@@ -40,9 +43,7 @@ class TestEventDraftsListView:
             body,
         )
 
-    def test_드래프트_목록_행_링크는_상태_검색어_쪽을_그대로_넘긴다(
-        self, staff_client, make_draft
-    ):
+    def test_드래프트_목록_행_링크는_상태_검색어_쪽을_그대로_넘긴다(self, staff_client, make_draft):
         # 이 쿼리가 빠지면 상세의 「← 큐로」가 1쪽 무필터로 튕긴다.
         draft = make_draft(
             "https://example.com/a",
@@ -62,9 +63,7 @@ class TestEventDraftsListView:
             body,
         )
 
-    def test_드래프트_목록_행_링크는_잘못된_쪽_번호를_버린다(
-        self, staff_client, make_draft
-    ):
+    def test_드래프트_목록_행_링크는_잘못된_쪽_번호를_버린다(self, staff_client, make_draft):
         draft = make_draft("https://example.com/a", extracted_title="드래프트 A")
 
         _, client = staff_client()
@@ -75,7 +74,9 @@ class TestEventDraftsListView:
             body,
         )
 
-    def test_드래프트_목록_페이지는_상태_라벨_맵을_JSON으로_내려보낸다(self, staff_client, make_draft):
+    def test_드래프트_목록_페이지는_상태_라벨_맵을_JSON으로_내려보낸다(
+        self, staff_client, make_draft
+    ):
         # JS(draft_bulk.js)가 낙관적 갱신에 쓰는 라벨이 서버 렌더와 갈라지지
         # 않도록, 실제로 내려간 JSON이 REVIEW_STATUS_LABELS 상수와 같은지 본다.
         make_draft("https://example.com/a")
@@ -94,34 +95,63 @@ class TestEventDraftsListView:
 
     @pytest.mark.parametrize("query", ["", "?status=pending"], ids=["전체_보기", "대기_필터"])
     def test_사용자_제보_드래프트만_목록_행에_배지가_붙는다(self, staff_client, make_draft, query):
-        reported = make_draft("https://example.com/reported", extracted_title="제보 드래프트", origin=EventDraft.Origin.USER_REPORT)
-        collected = make_draft("https://example.com/collected", extracted_title="수집 드래프트", origin=EventDraft.Origin.COLLECTED)
+        reported = make_draft(
+            "https://example.com/reported",
+            extracted_title="제보 드래프트",
+            origin=EventDraft.Origin.USER_REPORT,
+        )
+        collected = make_draft(
+            "https://example.com/collected",
+            extracted_title="수집 드래프트",
+            origin=EventDraft.Origin.COLLECTED,
+        )
 
         _, client = staff_client()
         body = client.get("/staff/drafts/" + query).content.decode()
 
         reported_row = re.search(r'data-draft-id="%d"[\s\S]*?</tr>' % reported.id, body)
         collected_row = re.search(r'data-draft-id="%d"[\s\S]*?</tr>' % collected.id, body)
-        assert reported_row and '<span class="queue-origin-badge">제보</span>' in reported_row.group()
-        assert collected_row and '<span class="queue-origin-badge">제보</span>' not in collected_row.group()
+        assert (
+            reported_row and '<span class="queue-origin-badge">제보</span>' in reported_row.group()
+        )
+        assert (
+            collected_row
+            and '<span class="queue-origin-badge">제보</span>' not in collected_row.group()
+        )
 
     def test_사용자_제보_드래프트만_인스펙터_헤드에_배지가_붙는다(self, staff_client, make_draft):
-        reported = make_draft("https://example.com/reported-panel", extracted_title="제보 드래프트", origin=EventDraft.Origin.USER_REPORT)
-        collected = make_draft("https://example.com/collected-panel", extracted_title="수집 드래프트", origin=EventDraft.Origin.COLLECTED)
+        reported = make_draft(
+            "https://example.com/reported-panel",
+            extracted_title="제보 드래프트",
+            origin=EventDraft.Origin.USER_REPORT,
+        )
+        collected = make_draft(
+            "https://example.com/collected-panel",
+            extracted_title="수집 드래프트",
+            origin=EventDraft.Origin.COLLECTED,
+        )
 
         _, client = staff_client()
         body = client.get("/staff/drafts/").content.decode()
 
         reported_panel = re.search(
-            r'data-inspector-panel data-draft-id="%d"[\s\S]*?(?=data-inspector-panel data-draft-id=|</main>)' % reported.id,
+            r'data-inspector-panel data-draft-id="%d"[\s\S]*?(?=data-inspector-panel data-draft-id=|</main>)'
+            % reported.id,
             body,
         )
         collected_panel = re.search(
-            r'data-inspector-panel data-draft-id="%d"[\s\S]*?(?=data-inspector-panel data-draft-id=|</main>)' % collected.id,
+            r'data-inspector-panel data-draft-id="%d"[\s\S]*?(?=data-inspector-panel data-draft-id=|</main>)'
+            % collected.id,
             body,
         )
-        assert reported_panel and '<span class="queue-origin-badge">제보</span>' in reported_panel.group()
-        assert collected_panel and '<span class="queue-origin-badge">제보</span>' not in collected_panel.group()
+        assert (
+            reported_panel
+            and '<span class="queue-origin-badge">제보</span>' in reported_panel.group()
+        )
+        assert (
+            collected_panel
+            and '<span class="queue-origin-badge">제보</span>' not in collected_panel.group()
+        )
 
 
 def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, start=0):
@@ -133,7 +163,9 @@ def _seed_drafts(make_draft, count, status=EventDraft.ReviewStatus.PENDING, star
 class TestEventDraftsListFilterPagination:
     """/staff/drafts/ 상태 필터 + 페이지네이션."""
 
-    def test_드래프트_목록_첫_페이지는_페이지_크기만큼만_보여주고_페이저를_포함한다(self, staff_client, make_draft):
+    def test_드래프트_목록_첫_페이지는_페이지_크기만큼만_보여주고_페이저를_포함한다(
+        self, staff_client, make_draft
+    ):
         from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
         _seed_drafts(make_draft, DRAFT_LISTING_PAGE_SIZE + 1)
@@ -157,7 +189,9 @@ class TestEventDraftsListFilterPagination:
 
         assert resp.context["page_obj"].has_other_pages() is False
 
-    def test_드래프트_목록_두번째_페이지는_남은_건수를_보여주고_첫_페이지와_겹치지_않는다(self, staff_client, make_draft):
+    def test_드래프트_목록_두번째_페이지는_남은_건수를_보여주고_첫_페이지와_겹치지_않는다(
+        self, staff_client, make_draft
+    ):
         from drafts.queries import DRAFT_LISTING_PAGE_SIZE
 
         _seed_drafts(make_draft, DRAFT_LISTING_PAGE_SIZE + 1)
@@ -188,7 +222,9 @@ class TestEventDraftsListFilterPagination:
         assert resp.status_code == 200
 
     def test_상태_필터를_적용하면_일치하는_드래프트만_보여준다(self, staff_client, make_draft):
-        pending = make_draft("https://example.com/pending-1", review_status=EventDraft.ReviewStatus.PENDING)
+        pending = make_draft(
+            "https://example.com/pending-1", review_status=EventDraft.ReviewStatus.PENDING
+        )
         make_draft("https://example.com/approved-1", review_status=EventDraft.ReviewStatus.APPROVED)
         make_draft("https://example.com/rejected-1", review_status=EventDraft.ReviewStatus.REJECTED)
 
@@ -199,7 +235,9 @@ class TestEventDraftsListFilterPagination:
         rows = resp.context["draft_rows"]
         assert [row["draft"].id for row in rows] == [pending.id]
 
-    def test_상태_필터가_없으면_전체_드래프트를_id_내림차순으로_보여준다(self, staff_client, make_draft):
+    def test_상태_필터가_없으면_전체_드래프트를_id_내림차순으로_보여준다(
+        self, staff_client, make_draft
+    ):
         first = make_draft("https://example.com/x-1")
         second = make_draft("https://example.com/x-2")
 
@@ -228,7 +266,9 @@ class TestEventDraftsListFilterPagination:
         assert resp.context["pager_query"] == "&status=pending"
         assert b"?page=2&amp;status=pending" in resp.content
 
-    def test_드래프트_통계_카드는_필터링된_부분집합이_아닌_전체_건수를_보여준다(self, staff_client, make_draft):
+    def test_드래프트_통계_카드는_필터링된_부분집합이_아닌_전체_건수를_보여준다(
+        self, staff_client, make_draft
+    ):
         _seed_drafts(make_draft, 2, status=EventDraft.ReviewStatus.PENDING)
         _seed_drafts(make_draft, 3, status=EventDraft.ReviewStatus.APPROVED)
         _seed_drafts(make_draft, 1, status=EventDraft.ReviewStatus.REJECTED)
@@ -242,7 +282,9 @@ class TestEventDraftsListFilterPagination:
         assert stats["approved"] == 3
         assert stats["rejected"] == 1
 
-    def test_상태_필터가_적용된_상태에서도_페이지_경계를_넘어_정렬_순서가_유지된다(self, staff_client, make_draft):
+    def test_상태_필터가_적용된_상태에서도_페이지_경계를_넘어_정렬_순서가_유지된다(
+        self, staff_client, make_draft
+    ):
         _seed_drafts(make_draft, 21, status=EventDraft.ReviewStatus.PENDING)
 
         _, client = staff_client()
@@ -260,8 +302,12 @@ class TestEventDraftsListFilterPagination:
         assert resp.status_code == 200
         assert "등록된 드래프트가 없습니다" in resp.content.decode()
 
-    def test_선택한_상태에_해당하는_드래프트가_없으면_해당_상태_빈_상태_문구를_보여준다(self, staff_client, make_draft):
-        make_draft("https://example.com/only-pending", review_status=EventDraft.ReviewStatus.PENDING)
+    def test_선택한_상태에_해당하는_드래프트가_없으면_해당_상태_빈_상태_문구를_보여준다(
+        self, staff_client, make_draft
+    ):
+        make_draft(
+            "https://example.com/only-pending", review_status=EventDraft.ReviewStatus.PENDING
+        )
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=rejected")
@@ -272,7 +318,9 @@ class TestEventDraftsListFilterPagination:
         assert "전체 보기" in body
         assert "등록된 드래프트가 없습니다" not in body
 
-    def test_상태_필터가_있어도_DB가_완전히_비어있으면_등록_안내_빈_상태를_보여준다(self, staff_client):
+    def test_상태_필터가_있어도_DB가_완전히_비어있으면_등록_안내_빈_상태를_보여준다(
+        self, staff_client
+    ):
         _, client = staff_client()
         resp = client.get("/staff/drafts/?status=pending")
 
@@ -305,12 +353,18 @@ class TestEventDraftsListStatusChipLabel:
         # 칩 자리에 enum 문자열이 그대로 노출되면 안 된다.
         assert ">approved<" not in body
 
-    def test_목록_행_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(self, staff_client, make_draft):
+    def test_목록_행_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(
+        self, staff_client, make_draft
+    ):
         # 탭 라벨("검토 대기", "승인됨")도 같은 문구를 쓰므로, body 전체 포함
         # 검사는 칩이 깨져도 우연히 통과한다 — data-draft-status-chip이 붙은
         # 요소로만 앵커를 좁힌다.
-        make_draft("https://example.com/chip-row-pending", review_status=EventDraft.ReviewStatus.PENDING)
-        make_draft("https://example.com/chip-row-approved", review_status=EventDraft.ReviewStatus.APPROVED)
+        make_draft(
+            "https://example.com/chip-row-pending", review_status=EventDraft.ReviewStatus.PENDING
+        )
+        make_draft(
+            "https://example.com/chip-row-approved", review_status=EventDraft.ReviewStatus.APPROVED
+        )
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
@@ -319,15 +373,24 @@ class TestEventDraftsListStatusChipLabel:
         body = resp.content.decode()
         for status in ("pending", "approved"):
             match = re.search(
-                r'class="queue-status-chip review-status-' + status + r'" data-draft-status-chip>([^<]*)<',
+                r'class="queue-status-chip review-status-'
+                + status
+                + r'" data-draft-status-chip>([^<]*)<',
                 body,
             )
             assert match, f"{status} 행 칩을 찾을 수 없다"
             assert match.group(1) == REVIEW_STATUS_LABELS[status]
 
-    def test_인스펙터_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(self, staff_client, make_draft):
-        make_draft("https://example.com/chip-panel-pending", review_status=EventDraft.ReviewStatus.PENDING)
-        make_draft("https://example.com/chip-panel-approved", review_status=EventDraft.ReviewStatus.APPROVED)
+    def test_인스펙터_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(
+        self, staff_client, make_draft
+    ):
+        make_draft(
+            "https://example.com/chip-panel-pending", review_status=EventDraft.ReviewStatus.PENDING
+        )
+        make_draft(
+            "https://example.com/chip-panel-approved",
+            review_status=EventDraft.ReviewStatus.APPROVED,
+        )
 
         _, client = staff_client()
         resp = client.get("/staff/drafts/")
@@ -407,8 +470,15 @@ class TestEventDraftListWarningBadges:
 
 @pytest.mark.django_db
 class TestEventDraftDetailView:
-    def test_존재하는_드래프트_상세는_카테고리_지역_라벨을_사람이_읽을_수_있게_보여준다(self, staff_client, make_draft):
-        draft = make_draft("https://example.com/c", extracted_title="상세 드래프트", extracted_category="popup_store", extracted_region="seoul")
+    def test_존재하는_드래프트_상세는_카테고리_지역_라벨을_사람이_읽을_수_있게_보여준다(
+        self, staff_client, make_draft
+    ):
+        draft = make_draft(
+            "https://example.com/c",
+            extracted_title="상세 드래프트",
+            extracted_category="popup_store",
+            extracted_region="seoul",
+        )
 
         _, client = staff_client()
         resp = client.get(f"/staff/drafts/{draft.id}/")
@@ -419,7 +489,9 @@ class TestEventDraftDetailView:
         assert resp.context["category_label"] == "팝업스토어"
         assert resp.context["region_label"] == "서울"
 
-    def test_카테고리_선택지는_런타임에_추가한_카테고리를_담고_비활성_카테고리는_뺀다(self, staff_client, make_draft):
+    def test_카테고리_선택지는_런타임에_추가한_카테고리를_담고_비활성_카테고리는_뺀다(
+        self, staff_client, make_draft
+    ):
         """드래프트 승인은 새 게시 이벤트를 만드는 경로라, 신규 등록 폼
         (`core.categories.active_category_choices`)과 같은 기준(활성만)을
         잠정 채택해 작성한다 — PSO 확인이 필요한 판단이다. 지금은
@@ -439,12 +511,16 @@ class TestEventDraftDetailView:
         assert "vintage_market_draft" in options
         assert "retired_market_draft" not in options
 
-    def test_드래프트가_참조하는_카테고리가_비활성화돼도_선택지에_남는다(self, staff_client, make_draft):
+    def test_드래프트가_참조하는_카테고리가_비활성화돼도_선택지에_남는다(
+        self, staff_client, make_draft
+    ):
         """드래프트를 먼저 활성 카테고리로 만든 다음 그 카테고리를
         비활성화한다 — "비활성인데 현재 쓰는 중" 상태를 만드는 순서다.
         keep_slugs가 무력화되면 선택지에서 빠져, 검수자가 저장만 눌러도
         카테고리가 조용히 빈 값으로 바뀐다."""
-        category = Category.objects.create(slug="retired_in_use_draft", label="폐지 사용중 드래프트")
+        category = Category.objects.create(
+            slug="retired_in_use_draft", label="폐지 사용중 드래프트"
+        )
         draft = make_draft(
             "https://example.com/cat-retired-in-use",
             extracted_title="폐지 카테고리 드래프트",
@@ -477,9 +553,7 @@ class TestEventDraftDetailView:
 
         assert ("공식 제보 · " in body) is expects_prefix
 
-    def test_상세의_큐로_링크는_상태_검색어_쪽을_그대로_되돌려준다(
-        self, staff_client, make_draft
-    ):
+    def test_상세의_큐로_링크는_상태_검색어_쪽을_그대로_되돌려준다(self, staff_client, make_draft):
         draft = make_draft("https://example.com/c", extracted_title="상세 드래프트")
 
         _, client = staff_client()
@@ -488,8 +562,7 @@ class TestEventDraftDetailView:
         ).content.decode()
 
         assert (
-            'href="/staff/drafts/?status=pending&amp;q=%s&amp;page=2"'
-            % "%EC%83%81%EC%84%B8"
+            'href="/staff/drafts/?status=pending&amp;q=%s&amp;page=2"' % "%EC%83%81%EC%84%B8"
             in body
         )
 
@@ -511,7 +584,9 @@ class TestEventDraftDetailView:
         assert resp.status_code == 200
         assert resp.context["draft_not_found"] is True
 
-    def test_상세_상단바_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(self, staff_client, make_draft):
+    def test_상세_상단바_상태_칩은_REVIEW_STATUS_LABELS_라벨을_렌더링한다(
+        self, staff_client, make_draft
+    ):
         for status in ("pending", "approved"):
             draft = make_draft(f"https://example.com/detail-chip-{status}", review_status=status)
 
@@ -626,7 +701,9 @@ class TestEventDraftPreapprovalChecks:
             "region": True,
         }
 
-    def test_시작일이_종료일보다_늦은_초안은_기간_체크가_실패로_표시된다(self, staff_client, make_draft):
+    def test_시작일이_종료일보다_늦은_초안은_기간_체크가_실패로_표시된다(
+        self, staff_client, make_draft
+    ):
         draft = make_draft(
             "https://example.com/preapproval-period-reversed",
             extracted_title="기간 역전 드래프트",
@@ -650,11 +727,11 @@ class TestEventDraftPreapprovalChecks:
         checks = {c["key"]: c["passed"] for c in resp.context["preapproval_checks"]}
         assert checks["title"] is False
 
-    def test_공식_url이_이미_게시된_이벤트와_중복되면_중복_체크가_실패로_표시된다(self, staff_client, make_draft, make_event):
+    def test_공식_url이_이미_게시된_이벤트와_중복되면_중복_체크가_실패로_표시된다(
+        self, staff_client, make_draft, make_event
+    ):
         make_event(official_url="https://example.com/preapproval-dup")
-        draft = make_draft(
-            "https://example.com/preapproval-dup", extracted_title="중복 드래프트"
-        )
+        draft = make_draft("https://example.com/preapproval-dup", extracted_title="중복 드래프트")
 
         _, client = staff_client()
         resp = client.get(f"/staff/drafts/{draft.id}/")
@@ -739,7 +816,9 @@ class TestDraftQueueSearchBox:
         assert "여름 팝업스토어" in body
         assert "겨울 전시" not in body
 
-    def test_검색_폼이_보고_있던_상태_필터를_숨은_입력으로_이어받는다(self, staff_client, make_draft):
+    def test_검색_폼이_보고_있던_상태_필터를_숨은_입력으로_이어받는다(
+        self, staff_client, make_draft
+    ):
         """폼이 q만 보내면 검색 한 번에 status가 풀린다."""
         make_draft("https://example.com/s3", extracted_title="유지 확인")
 

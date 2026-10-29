@@ -1,6 +1,7 @@
 """서버가 건넨 행사 원문 네 필드를 데이터로만 넘기고, 영어·일본어·중국어
 간체 번역을 모델에 맡기는 단계다. Django·서버 도메인 모듈은 임포트하지
 않는다."""
+
 import functools
 import logging
 import time
@@ -37,7 +38,9 @@ def _strip_untrusted_literals(text):
 
 
 def build_translation_prompt(fields):
-    scoped = {field: _strip_untrusted_literals(fields.get(field, "")) for field in TRANSLATION_FIELDS}
+    scoped = {
+        field: _strip_untrusted_literals(fields.get(field, "")) for field in TRANSLATION_FIELDS
+    }
     fields_block = "\n".join(f"{field}: {scoped[field]}" for field in TRANSLATION_FIELDS)
 
     return f"""당신은 서브컬처 행사 공지 원문을 영어(en)·일본어(ja)·중국어 간체(zh-hans,

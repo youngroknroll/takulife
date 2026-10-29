@@ -6,6 +6,7 @@ discover_drafts 관리 명령을 동기 호출해 결과를 메시지로 보여�
 전부 감사 로그로 남긴다. discover_drafts 자체 동작은
 tests/test_discover_drafts_command.py에서 다루므로 여기서는 다루지 않는다.
 """
+
 import pytest
 from django.core.cache import cache
 from django.core.management import CommandError
@@ -47,7 +48,9 @@ def test_수집_실행_경로에_GET으로_접근하면_405_대신_대시보드�
 
 
 @pytest.mark.django_db
-def test_수집_기능_플래그가_꺼져_있으면_안내_메시지만_보여주고_명령을_실행하지_않는다(staff_client, settings, monkeypatch, fail_if_called):
+def test_수집_기능_플래그가_꺼져_있으면_안내_메시지만_보여주고_명령을_실행하지_않는다(
+    staff_client, settings, monkeypatch, fail_if_called
+):
     settings.DRAFT_DISCOVERY_ENABLED = False
     staff, client = staff_client()
 
@@ -62,7 +65,9 @@ def test_수집_기능_플래그가_꺼져_있으면_안내_메시지만_보여�
 
 
 @pytest.mark.django_db
-def test_활성_수집_소스가_없으면_안내_메시지만_보여주고_명령을_실행하지_않는다(staff_client, settings, monkeypatch, make_source, fail_if_called):
+def test_활성_수집_소스가_없으면_안내_메시지만_보여주고_명령을_실행하지_않는다(
+    staff_client, settings, monkeypatch, make_source, fail_if_called
+):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="disabled-source", url="https://example.com/disabled-feed/", enabled=False)
@@ -78,7 +83,9 @@ def test_활성_수집_소스가_없으면_안내_메시지만_보여주고_명�
 
 
 @pytest.mark.django_db
-def test_수집_실행이_성공하면_요약_메시지를_보여주고_감사_로그를_남긴다(staff_client, settings, monkeypatch, make_source):
+def test_수집_실행이_성공하면_요약_메시지를_보여주고_감사_로그를_남긴다(
+    staff_client, settings, monkeypatch, make_source
+):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="enabled-source", url="https://example.com/enabled-feed/")
@@ -101,7 +108,9 @@ def test_수집_실행이_성공하면_요약_메시지를_보여주고_감사_�
 
 
 @pytest.mark.django_db
-def test_수집_실행이_부분_실패하면_오류_메시지를_보여주고_감사_로그를_남긴다(staff_client, settings, monkeypatch, make_source):
+def test_수집_실행이_부분_실패하면_오류_메시지를_보여주고_감사_로그를_남긴다(
+    staff_client, settings, monkeypatch, make_source
+):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="enabled-source", url="https://example.com/enabled-feed/")
@@ -122,7 +131,9 @@ def test_수집_실행이_부분_실패하면_오류_메시지를_보여주고_�
 
 
 @pytest.mark.django_db
-def test_수집_실행_중_예외가_발생해도_전파되지_않고_오류_메시지와_감사_로그를_남긴다(staff_client, settings, monkeypatch, make_source):
+def test_수집_실행_중_예외가_발생해도_전파되지_않고_오류_메시지와_감사_로그를_남긴다(
+    staff_client, settings, monkeypatch, make_source
+):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="enabled-source", url="https://example.com/enabled-feed/")
@@ -142,7 +153,9 @@ def test_수집_실행_중_예외가_발생해도_전파되지_않고_오류_메
 
 
 @pytest.mark.django_db
-def test_수집이_실행_중일_때_다시_요청하면_안내만_하고_명령과_감사_로그가_늘지_않는다(staff_client, settings, monkeypatch, make_source, fail_if_called):
+def test_수집이_실행_중일_때_다시_요청하면_안내만_하고_명령과_감사_로그가_늘지_않는다(
+    staff_client, settings, monkeypatch, make_source, fail_if_called
+):
     from staff.views import DISCOVERY_RUN_LOCK_KEY
 
     settings.DRAFT_DISCOVERY_ENABLED = True
@@ -169,7 +182,9 @@ def test_수집이_실행_중일_때_다시_요청하면_안내만_하고_명령
         pytest.param(RuntimeError("boom"), id="예상외_예외"),
     ],
 )
-def test_수집이_끝나면_잠금이_풀려_다음_요청이_다시_실행된다(staff_client, settings, monkeypatch, make_source, raised_exception):
+def test_수집이_끝나면_잠금이_풀려_다음_요청이_다시_실행된다(
+    staff_client, settings, monkeypatch, make_source, raised_exception
+):
     settings.DRAFT_DISCOVERY_ENABLED = True
     staff, client = staff_client()
     make_source(name="enabled-source", url="https://example.com/enabled-feed/")

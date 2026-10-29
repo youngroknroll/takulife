@@ -5,6 +5,7 @@
 현재 공식 제보 상태를 보여준다. 소유자 범위로 제한되어 타인의 요청은 404, 비로그인
 요청은 로그인 페이지로 리다이렉트된다.
 """
+
 from datetime import datetime
 
 import pytest
@@ -167,9 +168,7 @@ class TestArchivePersonalEntryDetailInterestAndStatus:
         # PD-7 (있는 케이스)
         user, client = user_client()
         entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="찜과 상태 확인용 장소")
-        decoy_entry = make_entry(
-            user, kind=PersonalEntry.Kind.PLACE, title="미끼 비공식 장소"
-        )
+        decoy_entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="미끼 비공식 장소")
         # 미끼: 다른 항목에 다른 찜·다른 상태를 먼저 걸어, 뷰가 딕셔너리의 아무 값이나
         # 집어도 통과하지 않도록 만든다.
         make_interest(user, personal_entry=decoy_entry)
@@ -249,9 +248,7 @@ class TestArchivePersonalEntryDetailVisitRecords:
         assert resp.context["visit_records_count"] == 2
         assert {record.pk for record in visit_records} == {visit_1.pk, visit_2.pk}
 
-    def test_연결된_방문_기록이_없으면_목록은_빈_상태로_표시된다(
-        self, user_client, make_entry
-    ):
+    def test_연결된_방문_기록이_없으면_목록은_빈_상태로_표시된다(self, user_client, make_entry):
         # PD-10
         user, client = user_client()
         entry = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="방문 기록 없는 장소")
