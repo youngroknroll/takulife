@@ -6,4 +6,5 @@ class ArchiveConfig(AppConfig):
     name = "archive"
 
     def ready(self):
+        # 시그널 수신기를 등록하는 부수효과 임포트
         from archive import signals  # noqa: F401

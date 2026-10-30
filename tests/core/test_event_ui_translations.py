@@ -521,7 +521,10 @@ def test_상세_찜_버튼의_가시_텍스트는_요청_언어의_동작_번역
 
     buttons = root.find_all("button", attrs={"data-interest-toggle": _PRESENT})
     assert len(buttons) == 1
-    glyph = lambda element: "data-interest-glyph" in element.attrs  # noqa: E731
+
+    def glyph(element):
+        return "data-interest-glyph" in element.attrs
+
     assert buttons[0].text(skip=glyph) == expected
 
 
@@ -583,7 +586,10 @@ def test_달력_선택일_제목은_요일을_뺀_월_일이_요청_언어로_�
     assert len(heads) == 1
     headings = heads[0].find_all("h2")
     assert len(headings) == 1
-    weekday = lambda element: "date-detail-weekday" in element.classes  # noqa: E731
+
+    def weekday(element):
+        return "date-detail-weekday" in element.classes
+
     assert headings[0].text(skip=weekday) == expected
 
 
@@ -707,7 +713,10 @@ def test_영어_상세의_연관_행사_항목은_콘텐츠_값만_lang_ko_범�
 
     rows = root.find_all("a", cls="event-detail-related-row")
     assert len(rows) == 2
-    title_of = lambda row: row.find_all("span", cls="event-detail-related-title")[0]  # noqa: E731
+
+    def title_of(row):
+        return row.find_all("span", cls="event-detail-related-title")[0]
+
     by_title = {title_of(row).text(): row for row in rows}
     with_place, without_place = by_title["연관 한글 제목"], by_title["연관 장소없음"]
     work = with_place.find_all("span", cls="event-detail-related-work")
