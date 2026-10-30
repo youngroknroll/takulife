@@ -598,7 +598,7 @@ def test_오류_묶음_핸들러는_DB_오류면_record_error를_부르지_않�
 def test_뷰가_처리되지_않은_예외를_던지면_500_응답과_함께_오류_묶음이_한_행_생긴다(
     client, monkeypatch, db
 ):
-    """tests/core/test_error_pages.py:25-51과 같은 방식으로 실제 뷰 예외를
+    """tests/core/test_error_pages.py:26-54과 같은 방식으로 실제 뷰 예외를
     흉내낸다 — settings.LOGGING에 ErrorGroupHandler를 아직 배선하지 않았으므로
     이 테스트는 지금 0 == 1로 실패해야 정상이다(S3 배선 전 예상 Red)."""
     # EG-15

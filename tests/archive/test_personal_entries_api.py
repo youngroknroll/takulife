@@ -195,7 +195,7 @@ def test_개인_항목_시리얼라이저의_종류_선택지에_굿즈가_없�
 
 # ---------------------------------------------------------------------------
 # INTG-BE-01-PE-WEB (bfcache 중복 생성 방지 계획 §6) — PersonalEntry 생성 시
-# client_token 멱등성의 HTTP 경계 계약. tests/archive/test_visit_records_api.py:153-192의
+# client_token 멱등성의 HTTP 경계 계약. tests/archive/test_visit_records_api.py:157-194의
 # INTG-BE-01-VR-WEB과 대응된다.
 # ---------------------------------------------------------------------------
 

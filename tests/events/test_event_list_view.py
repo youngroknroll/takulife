@@ -181,7 +181,7 @@ class TestEventListPagerQEncoding:
 
     /events/의 페이지네이션은 공용 페이저 파셜(templates/core/partials/_pager.html)이
     렌더링하며, 그 extra_query는 urllib.parse.urlencode(quote_plus 방식)로
-    만들어진다 — 다른 7개 페이지네이션 목록과 같은 인코딩이다(web/views/events.py:248).
+    만들어진다 — 다른 7개 페이지네이션 목록과 같은 인코딩이다(web/views/events.py:237).
     이전에 대체된 인라인 페이저는 Django `|urlencode` 템플릿 필터(quote 방식)를
     썼는데, '+'/공백을 +가 아니라 %2B/%20으로 이스케이프했다. 두 방식 모두
     원본 문자열로 손실 없이 왕복되므로, 아래 '+'/공백 케이스는 특정 인코딩

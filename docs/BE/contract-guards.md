@@ -153,7 +153,7 @@ R1(`test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다
 
 **왜 기존 해석기를 안 썼나**: `_package_name_for_file`은 최상위 패키지명만
 돌려줘 중첩 패키지 파일의 상대 임포트를 `web.archive`로 오해석한다
-`[코드 tests/core/test_architecture_boundaries.py:780-785]`. 현재 호출처는
+`[코드 tests/core/test_architecture_boundaries.py:761-766]`. 현재 호출처는
 최상위 모듈뿐이라 영향이 없고, 잠재 한계로만 기록한다. 기존 가드는 `web/views`
 안의 상대 임포트 주입을 건너뛰어 못 잡는다(위 뮤테이션 참조).
 

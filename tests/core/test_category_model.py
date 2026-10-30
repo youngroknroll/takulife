@@ -4,7 +4,7 @@
 
 - 슬러그·라벨 유일성 위반은 DB 레벨(models.Field(unique=True))로 강제한다고
   가정하고 IntegrityError로 잡는다. 이 저장소의 선례
-  tests/auth/test_nickname_model_contracts.py:11-21이 커스텀 매니저 없는
+  tests/auth/test_nickname_model_contracts.py:11-19이 커스텀 매니저 없는
   .objects.create() 경로에서 UniqueConstraint 위반을 IntegrityError로
   잡는 방식을 그대로 따른다 — Category에는 커스텀 매니저를 두지 않을
   예정이므로 같은 경로가 적용된다.

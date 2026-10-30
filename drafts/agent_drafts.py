@@ -33,7 +33,7 @@ _REQUIRED_KEYS = (
 
 _MAX_SOURCE_URL_LENGTH = 200
 
-# utm_* 5종은 분석 표준(선례 drafts/discovery.py:79-88 _strip_tracking_params가
+# utm_* 5종은 분석 표준(선례 drafts/discovery.py:81-92 _strip_tracking_params가
 # utm_* 전체를 제거). fbclid·gclid는 광고 클릭 식별자, igshid는 인스타 공유
 # 식별자, ref·ref_src는 X 공유 리퍼러 — 이 트랙이 두 플랫폼을 직접 다루기
 # 때문에 추가한다.

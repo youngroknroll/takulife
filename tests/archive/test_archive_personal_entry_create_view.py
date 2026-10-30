@@ -39,7 +39,7 @@ class TestArchivePersonalEntryCreateViewAuth:
     ):
         """bfcache 중복 생성 트랙(INTG-BE-05-PE-SSR): archive_visit_create /
         archive_collection_item_create의 렌더마다 client_token 발급 패턴
-        (web/views/archive.py:387, :531)을 그대로 따라, 폼이 bfcache DOM
+        (web/views/archive.py:385, :529)을 그대로 따라, 폼이 bfcache DOM
         스냅샷에서도 살아남고 재전송된 제출을 중복 제거할 수 있게 한다(plan §4-1)."""
         _, client = user_client()
 

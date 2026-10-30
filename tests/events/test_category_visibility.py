@@ -7,7 +7,7 @@
 - 스태프 필터 멤버십 → 전체(비활성 포함)
 
 2026-09-13 기준 세 화면 모두 core.vocab.CATEGORY 정적 튜플을 그대로 쓰고
-있어([코드] `staff/views/events.py:20-21`·`web/views/events.py:32-33`),
+있어([코드] `staff/views/events.py:21-22`·`web/views/events.py:32-33`),
 DB의 `Category.is_active`나 게시 이벤트 수를 전혀 반영하지 않는다. 그래서
 아래 F-01·F-03·F-06은 지금 Red이고, F-02는 이미 Green이다(이유는 각
 테스트 docstring에 적었다). 서비스 계층만 검증하는 F-04·F-05는

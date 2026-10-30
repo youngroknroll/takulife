@@ -263,7 +263,7 @@ class TestArchivePersonalEntryDetailVisitRecords:
 class TestArchivePersonalEntryDetailStatusLabel:
     """PD-12: 목록 뷰(archive_personal_entries)는 이미 어휘 정본
     archive_status_label()로 status_label/planned_label을 계산해 넘긴다
-    (web/views/archive.py:487-488). 상세 뷰가 같은 문구를 템플릿 안에
+    (web/views/archive.py:485-486). 상세 뷰가 같은 문구를 템플릿 안에
     if/elif로 하드코딩하면, vocab을 고칠 때 목록은 따라가고 상세는
     안 따라가는 드리프트가 생긴다. 두 케이스의 Given 차이는 상태 유무뿐이므로
     파라미터화한다.
