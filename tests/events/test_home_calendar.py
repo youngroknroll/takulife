@@ -2,22 +2,20 @@
 
 다루는 범위: 파라미터 없는 기본 진입 시 이번 달·오늘 선택.
 """
+
+from datetime import date
 import html
 import re
-
-import pytest
-from datetime import date
 from unittest.mock import patch
 
 from django.test import Client
+import pytest
 
 pytestmark = pytest.mark.web
 
 
 def _find_href(body, link_text):
-    match = re.search(
-        rf'<a[^>]*href="([^"]*)"[^>]*>\s*{re.escape(link_text)}\s*</a>', body
-    )
+    match = re.search(rf'<a[^>]*href="([^"]*)"[^>]*>\s*{re.escape(link_text)}\s*</a>', body)
     if not match:
         return None
     return html.unescape(match.group(1))
@@ -47,10 +45,7 @@ def test_파라미터_없이_홈을_열면_오늘_칸에_오늘과_선택_플래
     assert calendar["selected_is_today"] is True
 
     today_cells = [
-        day
-        for week in calendar["weeks"]
-        for day in week
-        if day["date"] == date(2026, 9, 16)
+        day for week in calendar["weeks"] for day in week if day["date"] == date(2026, 9, 16)
     ]
     assert len(today_cells) == 1
     assert today_cells[0]["today"] is True
@@ -69,12 +64,7 @@ def test_month_파라미터로_다른_달을_열면_그_달_1일이_선택된다
     assert calendar["selected_date"] == date(2026, 11, 1)
     assert calendar["selected_is_today"] is False
 
-    in_month_dates = {
-        day["date"]
-        for week in calendar["weeks"]
-        for day in week
-        if day["in_month"]
-    }
+    in_month_dates = {day["date"] for week in calendar["weeks"] for day in week if day["in_month"]}
     assert date(2026, 11, 1) in in_month_dates
     assert date(2026, 11, 30) in in_month_dates
 
@@ -104,19 +94,13 @@ def test_date_파라미터로_날짜를_지정하면_그_날짜가_선택된다(
     assert calendar["selected_date"] == date(2026, 9, 20)
 
     selected_cells = [
-        day
-        for week in calendar["weeks"]
-        for day in week
-        if day["date"] == date(2026, 9, 20)
+        day for week in calendar["weeks"] for day in week if day["date"] == date(2026, 9, 20)
     ]
     assert len(selected_cells) == 1
     assert selected_cells[0]["selected"] is True
 
     today_cells = [
-        day
-        for week in calendar["weeks"]
-        for day in week
-        if day["date"] == date(2026, 9, 16)
+        day for week in calendar["weeks"] for day in week if day["date"] == date(2026, 9, 16)
     ]
     assert len(today_cells) == 1
     assert today_cells[0]["selected"] is False
@@ -175,12 +159,7 @@ def test_기간_행사는_시작일부터_종료일까지_날짜_칸에_반영�
         resp = Client().get("/")
 
     calendar = resp.context["home_calendar"]
-    cells = {
-        day["date"]: day
-        for week in calendar["weeks"]
-        for day in week
-        if day["in_month"]
-    }
+    cells = {day["date"]: day for week in calendar["weeks"] for day in week if day["in_month"]}
     for day, expected_count in expected_counts.items():
         cell = cells[date(2026, 9, day)]
         assert cell["count"] == expected_count
@@ -201,10 +180,21 @@ def test_같은_카테고리가_중복이면_하나로_합쳐진다():
 def test_카테고리가_다섯_종_이상이면_최대_네_종만_남고_빈_슬러그는_제외된다():
     from web.views.events import _dedupe_category_slugs
 
-    slugs = ["", "exhibition", "popup_store", "exhibition", "concert", "fan_meeting", "theater_bonus"]
+    slugs = [
+        "",
+        "exhibition",
+        "popup_store",
+        "exhibition",
+        "concert",
+        "fan_meeting",
+        "theater_bonus",
+    ]
 
     assert _dedupe_category_slugs(slugs, limit=4) == [
-        "exhibition", "popup_store", "concert", "fan_meeting",
+        "exhibition",
+        "popup_store",
+        "concert",
+        "fan_meeting",
     ]
 
 
@@ -221,12 +211,7 @@ def test_초안_행사는_홈_달력에_나타나지_않는다(make_draft_event)
         resp = Client().get("/")
 
     calendar = resp.context["home_calendar"]
-    cells = {
-        day["date"]: day
-        for week in calendar["weeks"]
-        for day in week
-        if day["in_month"]
-    }
+    cells = {day["date"]: day for week in calendar["weeks"] for day in week if day["in_month"]}
     cell = cells[date(2026, 9, 16)]
     assert cell["count"] == 0
     assert cell["categories"] == []
@@ -317,8 +302,7 @@ def test_홈_응답의_달력_전체_보기_링크는_표시_달로_이동한다
         resp = Client().get("/", {"month": "2026-11"})
 
     assert (
-        _find_href(resp.content.decode(), "달력 전체 보기 ›")
-        == "/events/calendar/?month=2026-11"
+        _find_href(resp.content.decode(), "달력 전체 보기 ›") == "/events/calendar/?month=2026-11"
     )
 
 
@@ -343,10 +327,7 @@ def test_홈_응답의_모두_보기_링크는_선택한_날짜를_담는다(mak
         resp = Client().get("/", {"date": "2026-09-20"})
 
     body = resp.content.decode()
-    assert (
-        _find_href(body, f"이 날짜의 이벤트 {event_count}개 모두 보기 ›")
-        == expected_href
-    )
+    assert _find_href(body, f"이 날짜의 이벤트 {event_count}개 모두 보기 ›") == expected_href
 
 
 @pytest.mark.django_db
@@ -382,12 +363,7 @@ def test_카테고리가_없는_행사는_건수와_아젠다에는_남고_점�
         resp = Client().get("/")
 
     calendar = resp.context["home_calendar"]
-    cells = {
-        day["date"]: day
-        for week in calendar["weeks"]
-        for day in week
-        if day["in_month"]
-    }
+    cells = {day["date"]: day for week in calendar["weeks"] for day in week if day["in_month"]}
     cell = cells[date(2026, 9, 16)]
     assert cell["count"] == 1
     assert cell["categories"] == []

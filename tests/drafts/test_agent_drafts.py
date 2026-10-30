@@ -2,10 +2,11 @@
 schema 검증 unit 테스트. 페이로드는 §E 계약(계획서 290~292행의 v2 계약 +
 트랙 30 추가 4필드 platform·judgment·official_basis·source_name)을 따른다.
 이 파일은 IG-01부터 순차로 계약을 쌓는다."""
+
 from datetime import date, timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from core.vocab import CATEGORY
 from drafts.agent_drafts import (
@@ -21,8 +22,8 @@ from drafts.models import EventDraft, SourceDiscoveryRun
 from drafts.robots import RobotsCheckResult
 from drafts.url_safety import UnsafeFetchUrlError
 
-
 pytestmark = pytest.mark.unit
+
 
 # S4(종료일이 오늘 이전이면 제외) 도입 이후에도 "진행 예정 행사"로 남도록
 # 절대 날짜 대신 오늘 기준 상대 날짜를 쓴다. 모듈 import 시점에 고정하면
@@ -217,13 +218,9 @@ class _AllowAllRobots:
 def _neutralize_server_recheck(monkeypatch):
     """이 파일의 도메인 테스트(IG-04·IG-05·IG-18)는 서버 재확인(KW-07)을 타지
     않는다 — 네트워크가 관심사가 아니므로 항상 통과하도록 무력화한다."""
-    monkeypatch.setattr(
-        "drafts.agent_drafts.validate_fetch_url", lambda url, **kwargs: "1.1.1.1"
-    )
+    monkeypatch.setattr("drafts.agent_drafts.validate_fetch_url", lambda url, **kwargs: "1.1.1.1")
     monkeypatch.setattr("drafts.agent_drafts.RobotsChecker", _AllowAllRobots)
-    monkeypatch.setattr(
-        "drafts.agent_drafts.fetch_html", lambda url, **kwargs: "<html></html>"
-    )
+    monkeypatch.setattr("drafts.agent_drafts.fetch_html", lambda url, **kwargs: "<html></html>")
 
 
 def _make_claimed_run():
@@ -267,7 +264,9 @@ def test_임대가_없거나_만료된_실행으로의_제출은_거부된다(ma
 
 @pytest.mark.django_db
 @pytest.mark.domain
-def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM추출_표시를_가진_검토대기_드래프트가_생성된다(_neutralize_server_recheck):
+def test_유효_페이로드를_제출하면_출처명_캡션_메모_기간_LLM추출_표시를_가진_검토대기_드래프트가_생성된다(
+    _neutralize_server_recheck,
+):
     run = _make_claimed_run()
     payload = {
         "source_url": "https://official-site.example.com/event",
@@ -408,7 +407,9 @@ def test_지난_행사는_제외되고_남은_행사와_날짜를_못_읽은_행
 @pytest.mark.django_db
 @pytest.mark.domain
 @pytest.mark.parametrize("same_run", [True, False], ids=["같은_실행", "다른_실행"])
-def test_같은_이벤트_URL을_다시_제출하면_새_드래프트_없이_기존_id를_돌려준다(same_run, _neutralize_server_recheck):
+def test_같은_이벤트_URL을_다시_제출하면_새_드래프트_없이_기존_id를_돌려준다(
+    same_run, _neutralize_server_recheck
+):
     run_a = _make_claimed_run()
     source_url = "https://official-site.example.com/event"
     existing_draft, _ = submit_agent_draft(
@@ -443,7 +444,9 @@ def _keep_initial_lease(run):
     [_keep_initial_lease, _renew_lease_before_submit],
     ids=["최초_임대", "재임대_후"],
 )
-def test_실행당_이벤트_상한을_넘는_제출은_거부되고_드래프트가_생성되지_않는다(before_submit, _neutralize_server_recheck):
+def test_실행당_이벤트_상한을_넘는_제출은_거부되고_드래프트가_생성되지_않는다(
+    before_submit, _neutralize_server_recheck
+):
     run = _make_claimed_run()
     EventDraft.objects.bulk_create(
         [
@@ -475,9 +478,7 @@ def _patch_일반_웹_재확인(monkeypatch, fail_if_called):
         return "<html></html>"
 
     monkeypatch.setattr("drafts.agent_drafts.fetch_html", fake_fetch_html)
-    monkeypatch.setattr(
-        "drafts.agent_drafts.validate_fetch_url", lambda url, **kwargs: "1.1.1.1"
-    )
+    monkeypatch.setattr("drafts.agent_drafts.validate_fetch_url", lambda url, **kwargs: "1.1.1.1")
     monkeypatch.setattr("drafts.agent_drafts.RobotsChecker", _AllowAllRobots)
     return {
         "source_url": "https://official-site.example.com/event",
@@ -566,7 +567,9 @@ def test_비공식_판단_이벤트는_메모_앞머리에_판단과_근거가_�
 
 @pytest.mark.django_db
 @pytest.mark.domain
-def test_비공식_판단_이벤트에_원본_메모가_있으면_판단_접두_뒤에_원본이_남는다(_neutralize_server_recheck):
+def test_비공식_판단_이벤트에_원본_메모가_있으면_판단_접두_뒤에_원본이_남는다(
+    _neutralize_server_recheck,
+):
     run = _make_claimed_run()
     payload = _valid_payload_for_submit("https://official-site.example.com/event")
     payload["judgment"] = "unofficial"

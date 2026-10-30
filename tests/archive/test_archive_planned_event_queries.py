@@ -20,7 +20,9 @@ pytestmark = pytest.mark.domain
 
 
 @pytest.mark.django_db
-def test_방문예정_행사_목록은_본인이_예정_등록한_게시된_행사만_반환한다(make_user, make_event, make_draft_event, make_status):
+def test_방문예정_행사_목록은_본인이_예정_등록한_게시된_행사만_반환한다(
+    make_user, make_event, make_draft_event, make_status
+):
     user = make_user(username="planner")
     other = make_user(username="planner-other")
     planned = make_event(title="Planned")

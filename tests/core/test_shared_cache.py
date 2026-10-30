@@ -8,8 +8,9 @@ Django 테스트 러너는 *테스트* 데이터베이스용 DatabaseCache 테�
 createcachetable)이 할 일이다. 그래도 이 테스트는 실제 ORM/DB 연결을 거친
 캐시 왕복을 지켜서, 나중에 백엔드가 바뀌어 이게 깨지면 잡아낸다.
 """
-import pytest
+
 from django.core.cache import cache
+import pytest
 
 pytestmark = pytest.mark.contract
 

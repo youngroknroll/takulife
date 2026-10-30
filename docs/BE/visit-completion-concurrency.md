@@ -14,8 +14,8 @@
 계속한다. 재조회에도 행이 없으면(예측 밖 상태) 두 번째 생성 시도의 예외를
 그대로 전파한다 — 재시도는 정확히 1회로 제한된다.
 
-`VisitRecordListCreateView.create`(`archive/views.py:440-452`)와
-`UserEventStatusListCreateView.create`(`archive/views.py:305-315`)가
+`VisitRecordListCreateView.create`(`archive/views.py:460-472`)와
+`UserEventStatusListCreateView.create`(`archive/views.py:323-333`)가
 이 `DuplicateUserEventStatusError`를 잡아 500이 아니라
 `409`(`code: duplicate_user_event_status`)로 응답한다.
 

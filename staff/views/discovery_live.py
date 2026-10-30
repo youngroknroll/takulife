@@ -1,4 +1,5 @@
 """대시보드가 폴링으로 갱신하는 수집 실시간 현황 API."""
+
 from django.utils import timezone
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response

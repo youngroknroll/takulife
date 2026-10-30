@@ -1,15 +1,15 @@
 """local_runner.runner 단위 테스트(U3·U4·U5) — 통신 오류 격리와 임대 상실 처리."""
+
 import logging
 
 import httpx
 import pytest
 
-import local_runner.runner as runner_module
 from local_runner.claude_code_adapter import AdapterOutputError
 from local_runner.exploration_flow import ExplorationFlowError, LeaseLostError
 from local_runner.progress import ProgressReporter
-from local_runner.runner import _filter_candidates, _process_run, _safe_poll
-
+import local_runner.runner as runner_module
+from local_runner.runner import _filter_candidates, _safe_poll
 
 pytestmark = pytest.mark.unit
 
@@ -90,7 +90,9 @@ class _OrderRecordingClient:
         self._calls.append(("client", "complete", runner_status, failure_kind))
 
 
-def test_에이전트_탐색이_AdapterOutputError면_완료_실패_보고_이후에_heartbeat_티커가_멈춘다(monkeypatch):
+def test_에이전트_탐색이_AdapterOutputError면_완료_실패_보고_이후에_heartbeat_티커가_멈춘다(
+    monkeypatch,
+):
     calls = []
     run = {
         "run_id": 1,
@@ -228,7 +230,9 @@ class _BoundedHeartbeatClient:
 def test_heartbeat_전송_중_httpx_HTTPError가_아닌_예외는_삼키지_않고_전파한다():
     client = _BoundedHeartbeatClient(RuntimeError("bug"), max_calls=3)
     ticker = runner_module._HeartbeatTicker(client, interval=0)
-    client.on_max_calls = ticker.stop  # 구코드가 계속 삼키더라도 3회에서 강제 정지 — 무한 스핀 방지 안전장치
+    client.on_max_calls = (
+        ticker.stop
+    )  # 구코드가 계속 삼키더라도 3회에서 강제 정지 — 무한 스핀 방지 안전장치
 
     with pytest.raises(RuntimeError):
         ticker.run()
@@ -236,7 +240,9 @@ def test_heartbeat_전송_중_httpx_HTTPError가_아닌_예외는_삼키지_않�
     assert client.calls == ["claude-code"]
 
 
-def test_에이전트_탐색이_성공하면_후보_제출과_완료_보고가_끝난_뒤에야_heartbeat_티커가_멈춘다(monkeypatch):
+def test_에이전트_탐색이_성공하면_후보_제출과_완료_보고가_끝난_뒤에야_heartbeat_티커가_멈춘다(
+    monkeypatch,
+):
     calls = []
     run = {
         "run_id": 1,
@@ -247,7 +253,9 @@ def test_에이전트_탐색이_성공하면_후보_제출과_완료_보고가_�
         "existing_source_urls": [],
         "excluded_hostnames": set(),
     }
-    client = _OrderRecordingClient(run, calls, submit_result={"status": "ok", "failure_stage": None})
+    client = _OrderRecordingClient(
+        run, calls, submit_result={"status": "ok", "failure_stage": None}
+    )
 
     monkeypatch.setattr(runner_module, "_HeartbeatTicker", _make_fake_ticker_class(calls))
     # 이벤트 없이 소스 하나만 있는 탐색 결과로 둔다 — known_urls·submit_event
@@ -370,7 +378,9 @@ class _LeaseLostFlowClient:
         self.complete_calls.append((runner_status, failure_kind))
 
 
-def test_흐름이_임대_상실을_신호하면_완료_보고_없이_조용히_끝나고_다음_폴은_실패로_집계되지_않는다(monkeypatch):
+def test_흐름이_임대_상실을_신호하면_완료_보고_없이_조용히_끝나고_다음_폴은_실패로_집계되지_않는다(
+    monkeypatch,
+):
     """지금은 임대 상실이 통신 장애와 구분되지 않아 지수 백오프를 탄다.
     임대 상실은 흔한 경합이지 장애가 아니므로, 다음 폴은 정상 주기로 바로
     와야 한다."""
@@ -527,7 +537,9 @@ def test_완료_보고에_흐름이_센_제외_수가_함께_실린다(monkeypat
     ]
 
 
-def test_흐름에서_예상하지_못한_예외가_나면_실패로_완료_보고를_보내고_임대를_붙들지_않는다(monkeypatch):
+def test_흐름에서_예상하지_못한_예외가_나면_실패로_완료_보고를_보내고_임대를_붙들지_않는다(
+    monkeypatch,
+):
     """실기동 결함 3 — 탐색 흐름이 임대 상실이 아닌 다른 예외로 죽으면
     완료 보고를 못 보내 실행이 claimed 상태로 남고 임대가 만료될 때까지
     다음 탐색이 막혔다. 임대 상실(LeaseLostError)만 예외로 조용히 끝내고,
@@ -599,7 +611,9 @@ class _CompleteEventOutcomesClient:
 
 
 def test_탐색_흐름이_끝나면_결과_목록을_완료_보고에_싣는다(monkeypatch):
-    event_outcomes = [{"url": "https://example.com/a", "outcome": "failed", "reason": "fetch_empty"}]
+    event_outcomes = [
+        {"url": "https://example.com/a", "outcome": "failed", "reason": "fetch_empty"}
+    ]
 
     def fake_run_exploration_flow(**kwargs):
         return {
@@ -629,7 +643,9 @@ def test_탐색_흐름이_끝나면_결과_목록을_완료_보고에_싣는다(
 
 
 def test_탐색_흐름이_도중에_실패해도_그때까지의_결과를_실패_보고에_싣는다(monkeypatch):
-    event_outcomes = [{"url": "https://example.com/a", "outcome": "failed", "reason": "fetch_empty"}]
+    event_outcomes = [
+        {"url": "https://example.com/a", "outcome": "failed", "reason": "fetch_empty"}
+    ]
     partial_summary = {
         "events_attempted": 1,
         "events_failed": 1,
@@ -846,7 +862,9 @@ class _FailingShutdownClient:
     [(True, False), (False, True)],
     ids=["complete_실패", "오프라인_실패"],
 )
-def test_종료_보고_중_httpx_오류는_전파되지_않고_경고_로그만_남는다(fail_complete, fail_offline, caplog):
+def test_종료_보고_중_httpx_오류는_전파되지_않고_경고_로그만_남는다(
+    fail_complete, fail_offline, caplog
+):
     from types import SimpleNamespace
 
     client = _FailingShutdownClient(fail_complete=fail_complete, fail_offline=fail_offline)
@@ -896,7 +914,9 @@ class _ProgressCallRecorder:
         self.calls.append(("set", phase, fields))
 
 
-def test_러너_한_바퀴는_임대_후_검색중_제출중_완료보고중_대기_순으로_진행_상태를_갱신한다(monkeypatch):
+def test_러너_한_바퀴는_임대_후_검색중_제출중_완료보고중_대기_순으로_진행_상태를_갱신한다(
+    monkeypatch,
+):
     run = {
         "run_id": 1,
         "lease_token": "tok",

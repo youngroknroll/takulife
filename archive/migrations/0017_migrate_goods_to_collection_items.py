@@ -69,7 +69,7 @@ _ITEM_TYPE_SLUGS = {slug for slug, _ in _COLLECTION_ITEM_TYPE}
 _ITEM_TYPE_LABEL_TO_SLUG = {label: slug for slug, label in _COLLECTION_ITEM_TYPE}
 
 
-class GoodsMigrationBlocked(Exception):
+class GoodsMigrationBlockedError(Exception):
     """A GOODS PersonalEntry row can't be safely auto-migrated and needs a
     manual decision (collection domain design plan §3-5)."""
 
@@ -155,7 +155,7 @@ def migrate_goods_to_collection_items(apps, schema_editor):
             )
 
     if errors:
-        raise GoodsMigrationBlocked("; ".join(errors))
+        raise GoodsMigrationBlockedError("; ".join(errors))
 
     with transaction.atomic():
         for entry in goods_entries:

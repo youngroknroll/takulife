@@ -6,24 +6,26 @@
 
 import io
 
-import PIL.Image
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from PIL import ImageOps, UnidentifiedImageError
+import PIL.Image
 from rest_framework import serializers
-
 
 MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 # 압축폭탄 방어: 한 축의 최대 픽셀 길이
 MAX_IMAGE_DIMENSION_PX = 10_000
-# 압축폭탄 방어: 축 길이 제한만으로는 디코딩 후 메모리 사용량을 못 막아 전체 픽셀 수도 따로 제한한다.
+# 압축폭탄 방어: 축 길이 제한만으로는 디코딩 후 메모리 사용량을 못 막아
+# 전체 픽셀 수도 따로 제한한다.
 MAX_IMAGE_PIXELS_LIMIT = 40_000_000
 # 허용 확장자 (소문자, 점 없이)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
-# 확장자는 사용자가 임의로 붙일 수 있으므로, 실제로 신뢰하는 허용 목록은 Pillow가 디코딩한 포맷 쪽이다.
+# 확장자는 사용자가 임의로 붙일 수 있으므로,
+# 실제로 신뢰하는 허용 목록은 Pillow가 디코딩한 포맷 쪽이다.
 ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 # 여기 나열된 것만 "이미지 아님"으로 처리하고, 그 외 예외는 실제 오류로 그대로 전파한다.
 _PIL_DECODE_ERRORS = (OSError, UnidentifiedImageError, PIL.Image.DecompressionBombError)
-# 손실 포맷(JPEG/WEBP) 재인코딩 화질 — 육안으로 티 나지 않는 수준. PNG는 무손실이라 화질 옵션이 없다.
+# 손실 포맷(JPEG/WEBP) 재인코딩 화질 — 육안으로 티 나지 않는 수준.
+# PNG는 무손실이라 화질 옵션이 없다.
 _REENCODE_QUALITY = 95
 _FORMAT_CONTENT_TYPES = {
     "JPEG": "image/jpeg",
@@ -58,7 +60,8 @@ def validate_uploaded_image(value):
     """
     if value.size > MAX_IMAGE_SIZE_BYTES:
         raise serializers.ValidationError(
-            f"Image file is too large. Maximum allowed size is {MAX_IMAGE_SIZE_BYTES // (1024 * 1024)} MB."
+            "Image file is too large. Maximum allowed size is "
+            f"{MAX_IMAGE_SIZE_BYTES // (1024 * 1024)} MB."
         )
 
     name = getattr(value, "name", "") or ""
@@ -87,9 +90,7 @@ def validate_uploaded_image(value):
 
     # 허용 확장자로 위장한 다른 포맷 파일을 걸러낸다.
     if image_format not in ALLOWED_IMAGE_FORMATS:
-        raise serializers.ValidationError(
-            "Unsupported image format. Allowed: JPEG, PNG, WEBP."
-        )
+        raise serializers.ValidationError("Unsupported image format. Allowed: JPEG, PNG, WEBP.")
 
     if width > MAX_IMAGE_DIMENSION_PX or height > MAX_IMAGE_DIMENSION_PX:
         raise serializers.ValidationError(

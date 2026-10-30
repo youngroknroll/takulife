@@ -1,4 +1,5 @@
 """스태프 콘솔 뷰: 게시/초안 이벤트 CRUD와 품질 문제 드릴다운."""
+
 import datetime
 from urllib.parse import urlencode
 
@@ -46,16 +47,15 @@ from events.services import (
     unpublish_event,
     update_published_event,
 )
-
-from ..models import StaffActionLog
-from ..search import search_term
-from ..permissions import staff_console_required
-from ..services import (
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.search import search_term
+from staff.services import (
     EventHasArchiveReferencesError,
     delete_event,
     event_archive_reference_counts,
 )
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata
 
 # staff/dashboard.html의 경고 표에 쓰는 문구와 같은 내용이다. 자동 동기화가
 # 아니라 손으로 맞춰야 하니, 라벨을 바꾸면 그쪽도 같이 고쳐야 한다.
@@ -99,9 +99,7 @@ def _build_event_rows(events):
                 "event": event,
                 "category_label": CATEGORY_LABELS.get(event.category, event.category),
                 "region_label": REGION_LABELS.get(event.region, event.region),
-                "quality_badges": _event_quality_badges(event, today=today)
-                if is_published
-                else [],
+                "quality_badges": _event_quality_badges(event, today=today) if is_published else [],
             }
         )
     return rows
@@ -224,7 +222,9 @@ def _active_filter_summary(
         summary.append({"label": "기간", "value": _EVENT_STATUS_LABEL_BY_SLUG[selected_period]})
     if selected_category is not None:
         category_value = (
-            "미분류" if selected_category == "" else CATEGORY_LABELS.get(selected_category, selected_category)
+            "미분류"
+            if selected_category == ""
+            else CATEGORY_LABELS.get(selected_category, selected_category)
         )
         summary.append({"label": "카테고리", "value": category_value})
     if selected_sort:
@@ -574,8 +574,14 @@ REPUBLISH_ERROR_MESSAGES = (
     (PublishEventTitleError, "제목이 없어 다시 게시할 수 없습니다."),
     (DuplicateOfficialUrlError, "다른 이벤트가 이미 이 공식 URL을 사용 중입니다."),
     (InvalidEventPeriodError, "종료일이 시작일보다 빨라 다시 게시할 수 없습니다."),
-    (PublishEventCategoryError, "카테고리가 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요."),
-    (PublishEventRegionError, "지역이 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요."),
+    (
+        PublishEventCategoryError,
+        "카테고리가 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요.",
+    ),
+    (
+        PublishEventRegionError,
+        "지역이 목록에 없는 값이라 다시 게시할 수 없습니다. 먼저 수정하세요.",
+    ),
     (PublishEventError, "게시 상태를 변경하는 중 오류가 발생했습니다."),
 )
 
@@ -616,9 +622,7 @@ def staff_event_toggle_publish(request, pk):
                 action = StaffActionLog.Action.EVENT_REPUBLISH
                 success_message = "다시 게시되었습니다."
             StaffActionLog.objects.create(
-                **_action_log_kwargs(
-                    _staff_action_metadata(request), action, target_event=event
-                )
+                **_action_log_kwargs(_staff_action_metadata(request), action, target_event=event)
             )
     except (MissingOfficialUrlError, DuplicateOfficialUrlError, PublishEventError) as exc:
         # MissingOfficialUrlError·DuplicateOfficialUrlError는 PublishEventError의

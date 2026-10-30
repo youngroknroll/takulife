@@ -3,11 +3,11 @@
 `docker/entrypoint.sh`의 gunicorn 기동 명령은 텍스트로만 확인할 수 있다.
 워커 타임아웃 플래그가 조용히 사라지는 회귀를 막는다.
 """
-import re
+
 from pathlib import Path
+import re
 
 import pytest
-
 
 pytestmark = pytest.mark.contract
 
@@ -41,13 +41,9 @@ def test_컨테이너_기동_명령은_GUNICORN_TIMEOUT_환경변수와_문서�
     """
     text = (PROJECT_ROOT / "docker" / "entrypoint.sh").read_text(encoding="utf-8")
 
-    gunicorn_lines = [
-        line for line in _logical_lines(text) if line.startswith("exec gunicorn")
-    ]
+    gunicorn_lines = [line for line in _logical_lines(text) if line.startswith("exec gunicorn")]
     assert len(gunicorn_lines) == 1
 
-    match = re.search(
-        r'--timeout\s+"?\$\{GUNICORN_TIMEOUT:-(\d+)\}"?', gunicorn_lines[0]
-    )
+    match = re.search(r'--timeout\s+"?\$\{GUNICORN_TIMEOUT:-(\d+)\}"?', gunicorn_lines[0])
     assert match is not None
     assert int(match.group(1)) == DOCUMENTED_GUNICORN_TIMEOUT_SECONDS

@@ -9,10 +9,11 @@ PR-C4 단계 E, 게이트 후속 M2).
 마이그레이션 모듈을 임포트해 ``django.apps.apps``(고정된 과거 레지스트리가 아님)로
 직접 호출한다.
 """
+
 import importlib
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+import pytest
 
 from archive.models import CollectionItem, PersonalEntry
 

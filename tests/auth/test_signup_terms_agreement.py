@@ -1,8 +1,8 @@
 """회원가입은 이용약관/개인정보처리방침 명시적 동의를 요구한다
 (accounts.forms.SignupForm, ACCOUNT_FORMS 참고)."""
+
 from django.urls import reverse
 from django.utils import timezone
-
 import pytest
 
 pytestmark = pytest.mark.web
@@ -11,7 +11,9 @@ SIGNUP_URL = "/accounts/signup/"
 
 
 @pytest.mark.django_db
-def test_약관_동의_없이_회원가입하면_가입이_거부되고_사용자가_생성되지_않는다(client, django_user_model, valid_password):
+def test_약관_동의_없이_회원가입하면_가입이_거부되고_사용자가_생성되지_않는다(
+    client, django_user_model, valid_password
+):
     response = client.post(
         SIGNUP_URL,
         {

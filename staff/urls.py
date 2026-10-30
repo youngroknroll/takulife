@@ -3,11 +3,12 @@
 config/urls.py의 `include("staff.urls")`가 `/staff/` 전체를 이 파일에
 넘긴다. 여기 없는 `/staff/...` 경로는 404가 된다.
 """
+
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import views as staff_views
-from .permissions import staff_api_korean
+from staff import views as staff_views
+from staff.permissions import staff_api_korean
 
 app_name = "staff"
 

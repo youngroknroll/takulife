@@ -12,6 +12,7 @@
 - 공백만 있는 q는 필터가 없는 것과 같이 동작한다.
 - 특수문자(%, &)가 섞인 q는 500을 일으키지 않는다.
 """
+
 import html
 import re
 from urllib.parse import quote
@@ -32,7 +33,9 @@ pytestmark = pytest.mark.web
 class TestStatusPagesQFilter:
     """q는 /archive/와 /archive/statuses/의 status_rows를 서버에서 함께 필터링한다."""
 
-    def test_전체_보기에서_검색어가_행사_제목과_일치하면_해당_행사만_노출된다(self, user_client, make_event, make_status):
+    def test_전체_보기에서_검색어가_행사_제목과_일치하면_해당_행사만_노출된다(
+        self, user_client, make_event, make_status
+    ):
         user, client = user_client()
         match_event = make_event(title="매칭 이벤트", location_name="서울")
         no_match = make_event(title="다른 이벤트", location_name="부산")
@@ -46,7 +49,9 @@ class TestStatusPagesQFilter:
         assert "매칭 이벤트" in titles
         assert "다른 이벤트" not in titles
 
-    def test_나의_일정에서_검색어가_행사_장소와_일치하면_해당_행사만_노출된다(self, user_client, make_event, make_status):
+    def test_나의_일정에서_검색어가_행사_장소와_일치하면_해당_행사만_노출된다(
+        self, user_client, make_event, make_status
+    ):
         user, client = user_client()
         match_event = make_event(title="이벤트A", location_name="홍대 카페")
         no_match = make_event(title="이벤트B", location_name="강남")
@@ -60,7 +65,9 @@ class TestStatusPagesQFilter:
         assert "이벤트A" in titles
         assert "이벤트B" not in titles
 
-    def test_나의_일정에서_검색어가_직접_등록_항목_제목과_일치하면_해당_항목만_노출된다(self, user_client, make_status, make_entry):
+    def test_나의_일정에서_검색어가_직접_등록_항목_제목과_일치하면_해당_항목만_노출된다(
+        self, user_client, make_status, make_entry
+    ):
         user, client = user_client()
         entry_match = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 카페")
         entry_no = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="다른 항목")
@@ -74,10 +81,16 @@ class TestStatusPagesQFilter:
         assert "매칭 카페" in titles
         assert "다른 항목" not in titles
 
-    def test_나의_일정에서_검색어가_직접_등록_항목_장소와_일치하면_해당_항목만_노출된다(self, user_client, make_status, make_entry):
+    def test_나의_일정에서_검색어가_직접_등록_항목_장소와_일치하면_해당_항목만_노출된다(
+        self, user_client, make_status, make_entry
+    ):
         user, client = user_client()
-        entry_match = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="A항목", location_name="신촌 골목")
-        entry_no = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="B항목", location_name="이태원")
+        entry_match = make_entry(
+            user, kind=PersonalEntry.Kind.PLACE, title="A항목", location_name="신촌 골목"
+        )
+        entry_no = make_entry(
+            user, kind=PersonalEntry.Kind.PLACE, title="B항목", location_name="이태원"
+        )
         make_status(user, personal_entry=entry_match, status="planned")
         make_status(user, personal_entry=entry_no, status="planned")
 
@@ -87,7 +100,9 @@ class TestStatusPagesQFilter:
         assert "A항목" in titles
         assert "B항목" not in titles
 
-    def test_나의_일정에서_상태_필터와_검색어를_함께_적용하면_둘_다_일치하는_행사만_남는다(self, user_client, make_event, make_status):
+    def test_나의_일정에서_상태_필터와_검색어를_함께_적용하면_둘_다_일치하는_행사만_남는다(
+        self, user_client, make_event, make_status
+    ):
         """q + status=planned → 두 필터를 모두 만족하는 행만 남는다."""
         user, client = user_client()
         # 예정 상태이고 제목도 q와 일치
@@ -124,7 +139,9 @@ class TestStatusPagesQFilter:
         assert resp.context["q"] == "test"
         assert resp.context["has_query"] is True
 
-    def test_나의_일정_페이저는_상태_필터와_검색어를_모두_유지한다(self, user_client, make_event, make_status):
+    def test_나의_일정_페이저는_상태_필터와_검색어를_모두_유지한다(
+        self, user_client, make_event, make_status
+    ):
         user, client = user_client()
         # 2페이지가 생기도록 충분한 행을 만든다
         for i in range(7):
@@ -172,7 +189,9 @@ class TestStatusPagesQFilter:
 class TestVisitsPageQFilter:
     """q는 short_review를 포함해 /archive/visits/의 visit_rows를 필터링한다."""
 
-    def test_다녀온_기록에서_검색어가_행사_제목과_일치하면_해당_방문만_노출된다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록에서_검색어가_행사_제목과_일치하면_해당_방문만_노출된다(
+        self, user_client, make_event, make_visit
+    ):
         user, client = user_client()
         match_ev = make_event(title="매칭 팝업")
         no_match_ev = make_event(title="다른 팝업")
@@ -186,7 +205,9 @@ class TestVisitsPageQFilter:
         assert "매칭 팝업" in titles
         assert "다른 팝업" not in titles
 
-    def test_다녀온_기록에서_검색어가_행사_장소와_일치하면_해당_방문만_노출된다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록에서_검색어가_행사_장소와_일치하면_해당_방문만_노출된다(
+        self, user_client, make_event, make_visit
+    ):
         user, client = user_client()
         match_ev = make_event(title="팝업A", location_name="성수 거리")
         no_match_ev = make_event(title="팝업B", location_name="강남역")
@@ -199,11 +220,15 @@ class TestVisitsPageQFilter:
         assert "팝업A" in titles
         assert "팝업B" not in titles
 
-    def test_다녀온_기록에서_검색어가_한줄_후기와_일치하면_해당_방문만_노출된다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록에서_검색어가_한줄_후기와_일치하면_해당_방문만_노출된다(
+        self, user_client, make_event, make_visit
+    ):
         user, client = user_client()
         ev_with_review = make_event(title="행사A")
         ev_no_match = make_event(title="행사B")
-        make_visit(user, event=ev_with_review, visited_on="2026-06-01", short_review="굉장히 재미있었다")
+        make_visit(
+            user, event=ev_with_review, visited_on="2026-06-01", short_review="굉장히 재미있었다"
+        )
         make_visit(user, event=ev_no_match, visited_on="2026-06-02", short_review="별로")
 
         resp = client.get("/archive/visits/?q=굉장히")
@@ -212,7 +237,9 @@ class TestVisitsPageQFilter:
         assert "행사A" in titles
         assert "행사B" not in titles
 
-    def test_다녀온_기록에서_검색어가_직접_등록_항목_제목과_일치하면_해당_방문만_노출된다(self, user_client, make_visit, make_entry):
+    def test_다녀온_기록에서_검색어가_직접_등록_항목_제목과_일치하면_해당_방문만_노출된다(
+        self, user_client, make_visit, make_entry
+    ):
         user, client = user_client()
         entry_match = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="비공식 매칭")
         entry_no = make_entry(user, kind=PersonalEntry.Kind.PLACE, title="비공식 아님")
@@ -225,7 +252,9 @@ class TestVisitsPageQFilter:
         assert "비공식 매칭" in titles
         assert "비공식 아님" not in titles
 
-    def test_다녀온_기록에서_비공식_필터와_검색어를_함께_적용하면_둘_다_일치하는_방문만_남는다(self, user_client, make_event, make_visit, make_entry):
+    def test_다녀온_기록에서_비공식_필터와_검색어를_함께_적용하면_둘_다_일치하는_방문만_남는다(
+        self, user_client, make_event, make_visit, make_entry
+    ):
         """filter=unofficial AND q → q와 일치하는 비공식 행만 남는다."""
         user, client = user_client()
         # 비공식이고 q와 일치
@@ -264,7 +293,9 @@ class TestVisitsPageQFilter:
 class TestItemsPageQFilter:
     """q는 /archive/personal/의 entry_rows를 필터링한다."""
 
-    def test_직접_등록에서_검색어가_항목_제목과_일치하면_해당_항목만_노출된다(self, user_client, make_entry):
+    def test_직접_등록에서_검색어가_항목_제목과_일치하면_해당_항목만_노출된다(
+        self, user_client, make_entry
+    ):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="매칭 항목")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="다른 항목")
@@ -276,7 +307,9 @@ class TestItemsPageQFilter:
         assert "매칭 항목" in titles
         assert "다른 항목" not in titles
 
-    def test_직접_등록에서_검색어가_메모와_일치하면_해당_항목만_노출된다(self, user_client, make_entry):
+    def test_직접_등록에서_검색어가_메모와_일치하면_해당_항목만_노출된다(
+        self, user_client, make_entry
+    ):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="A", memo="특별한 내용")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="B", memo="보통 내용")
@@ -287,7 +320,9 @@ class TestItemsPageQFilter:
         assert "A" in titles
         assert "B" not in titles
 
-    def test_직접_등록에서_검색어가_장소와_일치하면_해당_항목만_노출된다(self, user_client, make_entry):
+    def test_직접_등록에서_검색어가_장소와_일치하면_해당_항목만_노출된다(
+        self, user_client, make_entry
+    ):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="A", location_name="신촌")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="B", location_name="강남")
@@ -298,7 +333,9 @@ class TestItemsPageQFilter:
         assert "A" in titles
         assert "B" not in titles
 
-    def test_직접_등록에서_검색어가_원작_제목과_일치하면_해당_항목만_노출된다(self, user_client, make_entry):
+    def test_직접_등록에서_검색어가_원작_제목과_일치하면_해당_항목만_노출된다(
+        self, user_client, make_entry
+    ):
         user, client = user_client()
         make_entry(user, kind="goods", title="A", work_title="원피스 콜라보")
         make_entry(user, kind="goods", title="B", work_title="블리치")
@@ -309,7 +346,9 @@ class TestItemsPageQFilter:
         assert "A" in titles
         assert "B" not in titles
 
-    def test_직접_등록에서_검색어가_카테고리와_일치하면_해당_항목만_노출된다(self, user_client, make_entry):
+    def test_직접_등록에서_검색어가_카테고리와_일치하면_해당_항목만_노출된다(
+        self, user_client, make_entry
+    ):
         user, client = user_client()
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="A", category="팝업스토어")
         make_entry(user, kind=PersonalEntry.Kind.PLACE, title="B", category="카페")
@@ -330,7 +369,9 @@ class TestItemsPageQFilter:
 class TestArchiveSearchIsolation:
     """같은 Event를 공유하는 다른 사용자의 기록은 q 결과에 나타나면 안 된다."""
 
-    def test_나의_일정_검색은_다른_사용자의_기록을_노출하지_않는다(self, user_client, make_event, make_status):
+    def test_나의_일정_검색은_다른_사용자의_기록을_노출하지_않는다(
+        self, user_client, make_event, make_status
+    ):
         user_a, client_a = user_client(username="userA")
         user_b, _ = user_client(username="userB")
 
@@ -344,7 +385,9 @@ class TestArchiveSearchIsolation:
         # 정확히 1행만 보여야 한다 — user B가 아닌 user A 자신의 상태.
         assert resp.context["page_obj"].paginator.count == 1
 
-    def test_다녀온_기록_검색은_다른_사용자의_기록을_노출하지_않는다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_검색은_다른_사용자의_기록을_노출하지_않는다(
+        self, user_client, make_event, make_visit
+    ):
         user_a, client_a = user_client(username="visitorA")
         user_b, _ = user_client(username="visitorB")
 
@@ -365,14 +408,18 @@ class TestArchiveSearchErrorElementSharedStyle:
     스타일(#b91c1c/0.82rem/4px)을 쓰던 문제 — 렌더된 마크업이 인라인 스타일
     없이 공용 클래스로 옮겨졌는지 검증한다."""
 
-    def test_전체_보기_검색_오류_문구는_공용_inline_error_스타일_클래스를_사용한다(self, user_client):
+    def test_전체_보기_검색_오류_문구는_공용_inline_error_스타일_클래스를_사용한다(
+        self, user_client
+    ):
         _, client = user_client()
 
         resp = client.get("/archive/")
 
         assert resp.status_code == 200
         content = resp.content.decode()
-        assert '<p id="archive-search-error" class="inline-error" aria-live="polite"></p>' in content
+        assert (
+            '<p id="archive-search-error" class="inline-error" aria-live="polite"></p>' in content
+        )
 
 
 @pytest.mark.django_db
@@ -411,7 +458,9 @@ class TestArchiveSearchClearLink:
         assert resp.status_code == 200
         assert self._clear_href(resp.content.decode()) == "/archive/statuses/"
 
-    def test_숨은_필터_이름을_넘기지_않는_페이지의_검색_지우기_링크는_기본_경로만_가리킨다(self, user_client):
+    def test_숨은_필터_이름을_넘기지_않는_페이지의_검색_지우기_링크는_기본_경로만_가리킨다(
+        self, user_client
+    ):
         """특성화 테스트: hidden_name/hidden_value를 전혀 넘기지 않는 페이지
         (personal_entries.html)는 경로만 있는 지우기 링크를 렌더한다."""
         _, client = user_client()
@@ -421,7 +470,9 @@ class TestArchiveSearchClearLink:
         assert resp.status_code == 200
         assert self._clear_href(resp.content.decode()) == "/archive/personal/"
 
-    def test_다녀온_기록의_검색_지우기_링크는_한글_필터_값을_URL_인코딩해_유지한다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록의_검색_지우기_링크는_한글_필터_값을_URL_인코딩해_유지한다(
+        self, user_client, make_event, make_visit
+    ):
         """visits.html의 hidden_name="filter"는 한글 라벨 값(cat:<라벨>)을
         갖는다 — 지우기 링크는 이를 URL 인코딩해야 하며, 원본 비ASCII 값을
         href에 그대로 넣으면 안 된다."""

@@ -7,6 +7,7 @@
 강제한다, tests/auth/test_account_deletion.py 참고) — 를 일반 회원뿐 아니라
 아래 세 역할 모두에 대해 검증한다.
 """
+
 import pytest
 
 pytestmark = pytest.mark.web

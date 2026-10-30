@@ -10,7 +10,7 @@
 `staff_account_set_staff`, `staff_account_set_active`)는 모두
 `superuser_console_required`로 게이트한다(`staff/views/accounts.py:56`,
 `:84`, `:150-151`, `:166-167`). 이 데코레이터는 `staff_console_required`
-위에 `is_superuser` 검사만 더한 합성이다(`staff/permissions.py:50-61`).
+위에 `is_superuser` 검사만 더한 합성이다(`staff/permissions.py:51-62`).
 `templates/staff/_console_shell.html`의 사이드바 "계정" 그룹을
 `request.user.is_superuser`일 때만 렌더하는 것은 화면 안내일 뿐이고, 실제
 경계는 이 데코레이터다 — 링크를 숨기지 않아도 비-superuser 스태프는 URL을
@@ -18,7 +18,7 @@
 
 ## (b) 보호 계정 — `is_superuser` 대상은 `ProtectedAccountError`(★2 사용자 확정 2026-09-07: superuser는 shell로만 만들고 바꾼다)
 
-`set_staff_flag`·`set_active_flag`(`accounts/services.py:179-191`,
+`set_staff_flag`·`set_active_flag`(`accounts/services.py:180-192`,
 `:194-204`)는 대상 `user.is_superuser`가 참이면 저장 없이
 `ProtectedAccountError`를 던진다. 조작 주체가 superuser 한정이라 이 규칙은
 자기 자신을 포함해 **superuser 계정 전체**를 이 화면의 변경 대상에서
@@ -56,20 +56,20 @@ superuser 세션이 탈취되면 HTTP 요청만으로 비-superuser 계정을 �
 피하려는 의도적 설계다.
 
 이미 목표 상태와 같으면 `set_staff_flag`/`set_active_flag`가 저장 없이
-`False`를 반환하고(`accounts/services.py:146-147`, `:158-159`), 뷰는 이를
+`False`를 반환하고(`accounts/services.py:147-148`, `:158-159`), 뷰는 이를
 `messages.info`로만 안내하고 감사 로그를 남기지 않는다
-(`staff/views/accounts.py:143-146`). 멱등 재시도(같은 요청이 중복
+(`staff/views/accounts.py:145-148`). 멱등 재시도(같은 요청이 중복
 도착해도 상태·로그가 늘지 않음)가 이 계약의 목적이다.
 
 ## (d) 확인은 `confirmed=yes` 2단계, 변경은 원자적 트랜잭션
 
 `request.POST.get("confirmed") != "yes"`이면 뷰는 DB를 건드리지 않고
-`confirm.html`만 렌더한다(`staff/views/accounts.py:110-123`). 확인 후에는
+`confirm.html`만 렌더한다(`staff/views/accounts.py:112-125`). 확인 후에는
 `transaction.atomic()` 블록 안에서 `User.objects.select_for_update()`로
 대상 행을 잠그고, 서비스 호출과 `StaffActionLog.objects.create(...)`가 같은
-트랜잭션에서 실행된다(`staff/views/accounts.py:126-138`). 감사 로그 저장이
+트랜잭션에서 실행된다(`staff/views/accounts.py:128-140`). 감사 로그 저장이
 실패하면 플래그 변경도 함께 롤백된다 — 삭제 확인 패턴
-(`staff/views/events.py:699` `confirmed` 검사, `:711-712` atomic +
+(`staff/views/events.py:703` `confirmed` 검사, `:711-712` atomic +
 select_for_update)과 같은 흐름이다.
 
 ## (e) 감사 대상은 `target_user`, 운영자 화면에는 이메일을 노출하지 않는다
@@ -82,41 +82,41 @@ FK다(`staff/models.py:53-58`, `related_name="+"`). `Action`에 `staff_grant`·
 감사 로그 화면(`staff/views/audit_log.py`)과 대시보드는 `staff_console_required`
 (is_staff 전체)로 게이트되고, 계정 운영 화면(superuser 한정)보다 넓은
 대상이 본다. 그래서 대상 라벨은 이메일이 아니라 `계정 #<id>`로만 렌더한다
-(`staff/views/audit_log.py:33`: "이 화면은 is_staff 전체가 보므로 대상
+(`staff/views/audit_log.py:32`: "이 화면은 is_staff 전체가 보므로 대상
 이메일 대신 번호만 노출한다"). 이유는 이메일을 넣으면 계정 화면 자체의
 superuser 경계를 감사 로그 화면이 우회해 노출하기 때문이다. `?q=` 검색도
 `target_user__email`을 대상에 넣지 않는다 —
-`list_staff_action_log`(`staff/queries.py:47-84`)가 검색하는 필드는
+`list_staff_action_log`(`staff/queries.py:48-85`)가 검색하는 필드는
 네 가지(행위자 이메일·대상 드래프트·대상 이벤트·대상 카테고리
 `[코드 staff/queries.py]`)이고 대상 계정은
 포함하지 않는다(존재 여부를 검색으로 되물어 알아내는 우회를 막기 위해서,
-`staff/queries.py:54-57` 독스트링). superuser는 `staff/admin.py`로 전체
+`staff/queries.py:55-58` 독스트링). superuser는 `staff/admin.py`로 전체
 `StaffActionLog`(ip·user-agent 포함)를 계속 볼 수 있다.
 
 ## (f) 탈퇴 유예 계정은 변경을 허용한다 — 버튼 비활성화 없음, 안내만
 
 `staff_account_detail`은 `deletion_scheduled_for`를
 `account.deletion_requested_at + accounts_services.DELETION_GRACE_PERIOD`로
-계산해 컨텍스트에 넣는다(`staff/views/accounts.py:87-89`, 유예 10일은
-`accounts/services.py:24`). 서버는 유예 중인 계정의 상태 변경을 그대로
+계산해 컨텍스트에 넣는다(`staff/views/accounts.py:87-91`, 유예 10일은
+`accounts/services.py:25`). 서버는 유예 중인 계정의 상태 변경을 그대로
 허용한다 — `set_staff_flag`/`set_active_flag`는 `deletion_requested_at`을
 전혀 검사하지 않는다. 화면은 버튼을 비활성화하지 않고 안내 문단만 붙인다
 (`templates/staff/accounts/detail.html:42-43`, `:74-75`: "탈퇴 유예 중인
 계정입니다. 변경은 가능하지만 재로그인 시 유예가 취소됩니다"). 유예
 대상 필드는 `accounts/models.py:24` `deletion_requested_at`이고, 취소는
 재로그인 시 별도 신호로만 일어나고(`accounts/signals.py:16`이
-`cancel_deletion`(`accounts/services.py:152`)을 호출),
+`cancel_deletion`(`accounts/services.py:153`)을 호출),
 이 화면의 상태 변경 자체는 유예 취소와 무관하다.
 
 ## (g) `is_active=False`는 다음 요청부터 세션 무효 — 세션을 직접 삭제하지 않는다
 
 `set_active_flag`는 `user.is_active`만 저장하고 세션 테이블을 건드리지
-않는다(`accounts/services.py:194-204`). 로그인 유지는
+않는다(`accounts/services.py:195-205`). 로그인 유지는
 `SessionAuthentication` 단일 경로이고, `ModelBackend.get_user`가
 `user_can_authenticate` 실패 시 `None`을 반환해 다음 요청부터 대상이
 익명으로 처리된다(`docs/operations-runbook.md` §5, allauth 65.19.7(`uv.lock`)은
 `get_user`를 오버라이드하지 않는다). 이는 `request_deletion`이 탈퇴 신청
-시 세션을 즉시 삭제하는 것(`accounts/services.py:138-149`)과는 다른 별개
+시 세션을 즉시 삭제하는 것(`accounts/services.py:139-150`)과는 다른 별개
 경로다 — 유예 신청 중에는 `is_active`가 그대로라 세션 삭제가 따로 필요했던
 반면, 이 화면의 비활성화는 `is_active` 변경 자체가 다음 요청을 막아 세션을
 직접 지울 필요가 없다.
@@ -144,9 +144,9 @@ superuser 경계를 감사 로그 화면이 우회해 노출하기 때문이다.
 
 이 재전송이 무해한 이유는 페이지 안전장치가 아니라 서버 쪽 멱등이다.
 `set_staff_flag`/`set_active_flag`는 대상이 이미 목표 상태면 저장 없이
-`False`를 반환하고(`accounts/services.py:146-147`, `:158-159`), 뷰는
+`False`를 반환하고(`accounts/services.py:147-148`, `:158-159`), 뷰는
 이 경우 `messages.info`만 내고 감사 로그를 남기지 않는다
-(`staff/views/accounts.py:143-146`).
+(`staff/views/accounts.py:145-148`).
 
 실측 [2026-09-07, Chrome DevTools MCP]: 검수 권한 해제 확정 → 상세
 리다이렉트 → 뒤로가기(`back_forward`, 버튼 `disabled=false`로 복원) →

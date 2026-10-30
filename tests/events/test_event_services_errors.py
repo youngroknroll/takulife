@@ -3,14 +3,15 @@
 - create_published_event: 사전 검사를 통과한 뒤에도 경합으로 발생하는
   무결성 오류(TOCTOU)를 DuplicateOfficialUrlError로 변환한다.
 """
-import pytest
-from django.db import IntegrityError
 
+from django.db import IntegrityError
+import pytest
+
+from events.models import Event
 from events.services import (
     DuplicateOfficialUrlError,
     create_published_event,
 )
-from events.models import Event
 
 pytestmark = pytest.mark.domain
 
@@ -26,6 +27,4 @@ class TestCreatePublishedEventRace:
         monkeypatch.setattr(Event.objects, "create", boom)
 
         with pytest.raises(DuplicateOfficialUrlError):
-            create_published_event(
-                title="경합 행사", official_url="https://race.example.com/"
-            )
+            create_published_event(title="경합 행사", official_url="https://race.example.com/")

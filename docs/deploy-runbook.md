@@ -191,7 +191,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     예약하지 않는다** — 명령 docstring도 "정기 스케줄링은 배포/런북의
     책임"이라고 명시한다. `/accounts/delete/done/` 화면은 사용자에게 유예
     기간이 지나면 계정이 파기된다고 명시적으로 안내하므로(유예 기간 값의
-    진실 원천은 `accounts/services.py:24`의 `DELETION_GRACE_PERIOD = timedelta(days=10)`),
+    진실 원천은 `accounts/services.py:25`의 `DELETION_GRACE_PERIOD = timedelta(days=10)`),
     이 등록이 누락되면 그 안내가 지켜지지 않고 유예 기간이 지난 개인정보가
     무기한 잔존한다. 명령은 실패 시(개별 후보 삭제 중 에러 발생) 0이 아닌
     종료 코드로 끝나므로(`CommandError`, 실패 건수와 함께), 스케줄러에
@@ -395,6 +395,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   전환.
 - **자동 생성 실패 시 수동 fallback**: `gh pr create --base production --head
   main`으로 직접 생성한다.
+- **main 직접 커밋의 lint 통과**: main 직접 커밋도 `uv run ruff check . && uv run ruff format --check .`를
+  통과해야 한다(`.claude/hooks/git-commit-style-guard.sh`가 로컬에서 막는다). main CI가 lint로
+  실패하면 `.github/workflows/deploy-pr.yml`의 `workflow_run.conclusion == 'success'` 조건 때문에
+  deploy PR이 자동 생성되지 않는다. 수정 커밋으로 main CI를 다시 초록으로 만든 뒤 자동 생성을
+  기다리거나 위 수동 절차를 쓴다.
 - **deploy PR에 CI 체크가 없는 것은 정상**이다 — `.github/workflows/ci.yml`의
   `pull_request` 트리거가 `branches-ignore: [production]`으로 production을
   향하는 PR을 건너뛰기 때문이다(트랙 42, 2026-10-20). 그 전에는

@@ -4,6 +4,7 @@ drafts.robots(외부 사이트 robots.txt 판정, tests/drafts/test_robots.py)�
 전혀 다른 대상이다 — 이 테스트는 taku 서버가 자신의 /robots.txt에서 무엇을
 내려주는지만 본다.
 """
+
 import pytest
 
 pytestmark = pytest.mark.web

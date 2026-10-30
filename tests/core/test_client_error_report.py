@@ -3,6 +3,7 @@
 계획 승인 범위: 인증 없음, 정상 페이로드는 항상 204(정보 비노출), 허용된
 키만 사용, ErrorGroup에 source="frontend"로 한 행을 남긴다.
 """
+
 import json
 
 import pytest
@@ -287,7 +288,9 @@ def _post_valid(client, **overrides):
 
 @pytest.mark.contract
 @pytest.mark.django_db
-def test_전역_스로틀을_넘으면_204만_주고_기록은_상한까지만_늘어난다(client, clear_cache, monkeypatch):
+def test_전역_스로틀을_넘으면_204만_주고_기록은_상한까지만_늘어난다(
+    client, clear_cache, monkeypatch
+):
     """ScopedRateThrottle은 요청마다 `self.rate = self.THROTTLE_RATES[self.scope]`로
     매번 클래스 딕셔너리를 다시 읽으므로(rest_framework/throttling.py),
     인스턴스 rate 속성이 아니라 클래스 THROTTLE_RATES 딕셔너리 항목을

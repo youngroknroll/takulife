@@ -119,7 +119,7 @@ flowchart TD
 | 배포 경로 | `main` 푸시 CI 성공 → 워크플로가 `main → production` PR 자동 생성 → 사람이 머지 → Render가 `production` 브랜치를 배포 |
 | 실행 | Docker 멀티스테이지(uv) + Gunicorn 워커 3(`WEB_CONCURRENCY`), 워커 타임아웃 120초(`GUNICORN_TIMEOUT`, 2026-10-29 추가), 기동 시 migrate → CSS 번들 → collectstatic |
 | DB·저장소 | Supabase PostgreSQL(Session pooler 경유), Cloudflare R2에 서명 URL로 미디어 제공 |
-| CI | `test`(PostgreSQL 서비스 + `check --deploy`), `e2e`(관측, non-blocking), `audit`(pip-audit), `docker`(이미지 실기동 후 `/api/health/` 폴링) |
+| CI | `test`(PostgreSQL 서비스 + `check --deploy`), `lint`(ruff 검사·서식, Google 스타일 기준 + 프로젝트 예외), `e2e`(관측, non-blocking), `audit`(pip-audit), `docker`(이미지 실기동 후 `/api/health/` 폴링) |
 | 보안 | HSTS·secure 쿠키를 env로 전환, `TRUSTED_PROXY_COUNT`로 프록시 뒤 실제 IP 판별, 스로틀 12스코프, 공개 쓰기 API는 `/api/client-errors/` 하나 |
 | 상태 확인 | `/api/health/`가 DB 연결 실패 시 503, 처리되지 않은 500과 프론트 오류를 지문으로 묶어 대시보드에 표시 |
 | 테스트 | 백엔드 4,297 passed / 152.02초 `[실측 2026-10-29, main ce27ac2c]`, e2e 10 passed `[실측 2026-10-27]`. 테스트 작성 뒤 코드를 깨서 Red를 확인하는 뮤테이션 절차를 상시 적용한다 |

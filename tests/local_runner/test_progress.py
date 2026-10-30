@@ -1,11 +1,11 @@
 """local_runner.progress.ProgressReporter 단위 테스트 — 5초 스로틀·phase
 전이 규칙(D2)을 고정한다."""
+
 import logging
 
 import pytest
 
 from local_runner.progress import ProgressReporter
-
 
 pytestmark = pytest.mark.unit
 
@@ -70,7 +70,9 @@ def test_phase가_바뀌면_5초가_지나지_않았어도_즉시_heartbeat가_�
 
     reporter.set("submitting", index=0, total=2)
 
-    assert client.sent == [{"phase": "submitting", "detail": "소스 후보 제출 중 (0/2)", "run_id": 7}]
+    assert client.sent == [
+        {"phase": "submitting", "detail": "소스 후보 제출 중 (0/2)", "run_id": 7}
+    ]
 
 
 def test_대기로_전이하면_터미널에는_대기_라벨이_남고_heartbeat_detail은_비운다(caplog):

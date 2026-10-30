@@ -3,6 +3,7 @@
 빠지면 화면에 영어 코드(`event_verify` 등)가 그대로 새어 나간다 —
 실제로 event_verify가 그렇게 빠져 있었다.
 """
+
 import pytest
 
 from staff.action_labels import ACTION_LABELS

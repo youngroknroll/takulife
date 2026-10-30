@@ -1,7 +1,8 @@
 """web 뷰 패키지. 도메인별 서브모듈을 순수 재노출만 한다."""
-from .account import delete_account, mypage
-from .activity import activity_calendar
-from .archive import (
+
+from web.views.account import delete_account, mypage
+from web.views.activity import activity_calendar
+from web.views.archive import (
     archive,
     archive_interests,
     archive_personal_entries,
@@ -14,14 +15,14 @@ from .archive import (
     archive_visit_edit,
     archive_visits,
 )
-from .collection import (
+from web.views.collection import (
     archive_collection_item_create,
     archive_collection_item_detail,
     archive_collection_item_edit,
     archive_collection_items,
 )
-from .events import event_calendar, event_detail, event_list, home
-from .legal import legal_privacy, legal_terms
+from web.views.events import event_calendar, event_detail, event_list, home
+from web.views.legal import legal_privacy, legal_terms
 
 __all__ = [
     "home",

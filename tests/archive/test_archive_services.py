@@ -1,15 +1,16 @@
 """아카이브 서비스 계층 테스트 — HTTP 없이 서비스를 직접 호출한다."""
+
 import uuid
 
-import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
+import pytest
 
 from archive.models import CollectionItem, PersonalEntry, VisitRecord
 from archive.services import (
-    DuplicateUserEventStatusError,
     MAX_PHOTOS_PER_RECORD,
+    DuplicateUserEventStatusError,
     PhotoLimitExceededError,
     create_collection_item,
     create_personal_entry,
@@ -23,7 +24,9 @@ from events.models import Event
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_이벤트를_대상으로_상태를_생성하면_사용자와_이벤트와_상태값이_그대로_저장된다(make_user, make_event):
+def test_이벤트를_대상으로_상태를_생성하면_사용자와_이벤트와_상태값이_그대로_저장된다(
+    make_user, make_event
+):
     user = make_user(email="service-user@example.com", username="service-user")
     event = make_event(
         title="Published event",
@@ -39,7 +42,9 @@ def test_이벤트를_대상으로_상태를_생성하면_사용자와_이벤트
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_DB_무결성_오류가_발생하면_상태_생성은_중복_예외로_변환된다(monkeypatch, make_user, make_event):
+def test_DB_무결성_오류가_발생하면_상태_생성은_중복_예외로_변환된다(
+    monkeypatch, make_user, make_event
+):
     user = make_user(email="status-user@example.com", username="status-user")
     event = make_event(title="Published event", publish_status=Event.PublishStatus.PUBLISHED)
 
@@ -54,7 +59,9 @@ def test_DB_무결성_오류가_발생하면_상태_생성은_중복_예외로_�
 
 @pytest.mark.contract
 @pytest.mark.django_db
-def test_방문기록_사진을_추가하면_동시_업로드_방지를_위해_부모_방문기록_행을_잠근다(make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit):
+def test_방문기록_사진을_추가하면_동시_업로드_방지를_위해_부모_방문기록_행을_잠근다(
+    make_user, make_event, png_bytes, settings, tmp_path, monkeypatch, make_visit
+):
     """count-then-create는 원자적이어야 하며 부모 VisitRecord 행을 잠가야
     한다(select_for_update) — 그래야 동시 업로드 두 건이 모두 개수 검사를 통과해
     MAX_PHOTOS_PER_RECORD를 넘기는 일이 없다."""
@@ -83,7 +90,9 @@ def test_방문기록_사진을_추가하면_동시_업로드_방지를_위해_�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_방문기록_사진이_상한에_도달하면_추가_업로드는_예외로_거부된다(make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo):
+def test_방문기록_사진이_상한에_도달하면_추가_업로드는_예외로_거부된다(
+    make_user, make_event, png_bytes, settings, tmp_path, make_visit, make_visit_photo
+):
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user()
     event = make_event()
@@ -254,7 +263,9 @@ def test_굿즈_kind로_비공식_항목_생성을_시도하면_거부된다(mak
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_같은_사용자가_같은_클라이언트_토큰으로_비공식_항목_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(make_user):
+def test_같은_사용자가_같은_클라이언트_토큰으로_비공식_항목_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(
+    make_user,
+):
     """bfcache 중복 생성 트랙(INTG-BE-01-PE): 같은 client_token으로 생성 요청을
     재전송해도(예: bfcache 복원 페이지의 재제출) 두 번째 행이 생성돼선 안
     된다 — 두 번째 호출은 원본 행을 그대로 반환하는 멱등 재전송이어야 하며,
@@ -268,12 +279,8 @@ def test_같은_사용자가_같은_클라이언트_토큰으로_비공식_항�
 
     # When: 같은 사용자가 같은 client_token으로 두 번 요청하고, 두 번째
     # (재전송) 호출은 다른 제목을 보낸다.
-    first = create_personal_entry(
-        user=user, kind="place", title="원래 제목", client_token=token
-    )
-    second = create_personal_entry(
-        user=user, kind="place", title="다른 제목", client_token=token
-    )
+    first = create_personal_entry(user=user, kind="place", title="원래 제목", client_token=token)
+    second = create_personal_entry(user=user, kind="place", title="다른 제목", client_token=token)
 
     # Then: 행은 정확히 하나이고 두 호출 모두 같은 행을 반환하며, 재전송의
     # 페이로드가 원본 제목을 덮어쓰지 않았다.
@@ -285,7 +292,9 @@ def test_같은_사용자가_같은_클라이언트_토큰으로_비공식_항�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_서로_다른_사용자가_같은_클라이언트_토큰으로_비공식_항목을_생성하면_각각_독립적으로_생성된다(make_user):
+def test_서로_다른_사용자가_같은_클라이언트_토큰으로_비공식_항목을_생성하면_각각_독립적으로_생성된다(
+    make_user,
+):
     """bfcache 중복 생성 트랙(INTG-BE-03-PE): 멱등성 키는 client_token 단독이
     아니라 (user, client_token) 범위다 — 서로 다른 두 사용자가 같은 클라이언트
     생성 uuid4를 재전송하면(버그나 공유 클라이언트 라이브러리 인스턴스 등)
@@ -311,7 +320,9 @@ def test_서로_다른_사용자가_같은_클라이언트_토큰으로_비공�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_클라이언트_토큰_없이_동일한_내용으로_비공식_항목_생성을_두_번_요청하면_행이_각각_생성된다(make_user):
+def test_클라이언트_토큰_없이_동일한_내용으로_비공식_항목_생성을_두_번_요청하면_행이_각각_생성된다(
+    make_user,
+):
     """bfcache 중복 생성 트랙(INTG-BE-02-PE): 멱등성 가드는 (user, client_token)
     범위다 — client_token을 전혀 넘기지 않는 호출자(예: 제목이 같은 진짜
     별개의 정당한 항목 두 개)는 한 행으로 합쳐지면 안 된다. INTG-BE-01-PE에서
@@ -334,14 +345,14 @@ def test_클라이언트_토큰_없이_동일한_내용으로_비공식_항목_�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_방문기록을_연결해_컬렉션_아이템을_생성하면_이벤트가_방문기록의_이벤트로_자동_동기화된다(make_user, make_event, make_visit):
+def test_방문기록을_연결해_컬렉션_아이템을_생성하면_이벤트가_방문기록의_이벤트로_자동_동기화된다(
+    make_user, make_event, make_visit
+):
     user = make_user(username="ci-service-sync")
     event = make_event(title="싱크할 이벤트")
     visit_record = make_visit(user, event=event, visited_on="2026-01-01")
 
-    item = create_collection_item(
-        user=user, name="이벤트 한정 굿즈", visit_record=visit_record
-    )
+    item = create_collection_item(user=user, name="이벤트 한정 굿즈", visit_record=visit_record)
 
     assert item.visit_record_id == visit_record.id
     assert item.event_id == event.id
@@ -387,9 +398,7 @@ def test_교환가능_수량이_음수인_컬렉션_아이템_생성은_DB_저�
     user = make_user(username="ci-service-neg-tradeable")
 
     with pytest.raises(ValidationError) as exc_info:
-        create_collection_item(
-            user=user, name="음수 교환 수량", quantity=5, tradeable_quantity=-1
-        )
+        create_collection_item(user=user, name="음수 교환 수량", quantity=5, tradeable_quantity=-1)
 
     assert exc_info.value.message_dict == {
         "tradeable_quantity": ["tradeable_quantity는 0 이상이어야 합니다."]
@@ -402,9 +411,7 @@ def test_교환가능_수량이_보유_수량을_초과하는_생성은_거부�
     user = make_user(username="ci-service-tradeable-exceeds")
 
     with pytest.raises(ValidationError) as exc_info:
-        create_collection_item(
-            user=user, name="초과 교환 수량", quantity=1, tradeable_quantity=2
-        )
+        create_collection_item(user=user, name="초과 교환 수량", quantity=1, tradeable_quantity=2)
 
     assert exc_info.value.message_dict == {
         "tradeable_quantity": ["tradeable_quantity는 quantity 이하여야 합니다."]
@@ -413,9 +420,7 @@ def test_교환가능_수량이_보유_수량을_초과하는_생성은_거부�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_타인_소유의_방문기록을_연결해_생성을_시도하면_거부된다(
-    make_user, make_event, make_visit
-):
+def test_타인_소유의_방문기록을_연결해_생성을_시도하면_거부된다(make_user, make_event, make_visit):
     owner = make_user(username="ci-service-visit-owner")
     other = make_user(username="ci-service-other-user")
     event = make_event(title="타인 방문 이벤트")
@@ -461,7 +466,9 @@ def test_공개범위를_지정하지_않고_생성하면_기본값은_비공개
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_같은_사용자가_같은_클라이언트_토큰으로_컬렉션_항목_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(make_user):
+def test_같은_사용자가_같은_클라이언트_토큰으로_컬렉션_항목_생성을_두_번_요청하면_행은_하나만_생성되고_동일한_id가_반환된다(
+    make_user,
+):
     """bfcache 중복 생성 트랙(INTG-BE-01-CI): 같은 client_token으로 생성 요청을
     재전송해도(예: bfcache 복원 페이지의 재제출) 두 번째 행이 생성돼선 안
     된다 — 두 번째 호출은 원본 행을 그대로 반환하는 멱등 재전송이어야 하며,
@@ -487,7 +494,9 @@ def test_같은_사용자가_같은_클라이언트_토큰으로_컬렉션_항�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_클라이언트_토큰_없이_동일한_내용으로_컬렉션_항목_생성을_두_번_요청하면_행이_각각_생성된다(make_user):
+def test_클라이언트_토큰_없이_동일한_내용으로_컬렉션_항목_생성을_두_번_요청하면_행이_각각_생성된다(
+    make_user,
+):
     """bfcache 중복 생성 트랙(INTG-BE-02-CI): 멱등성 가드는 (user, client_token)
     범위다 — client_token을 전혀 넘기지 않는 호출자(예: 같은 굿즈의 진짜
     별개인 정당한 구매 두 건)는 한 행으로 합쳐지면 안 된다. INTG-BE-01-CI에서
@@ -504,7 +513,9 @@ def test_클라이언트_토큰_없이_동일한_내용으로_컬렉션_항목_�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_서로_다른_사용자가_같은_클라이언트_토큰으로_컬렉션_항목을_생성하면_각각_독립적으로_생성된다(make_user):
+def test_서로_다른_사용자가_같은_클라이언트_토큰으로_컬렉션_항목을_생성하면_각각_독립적으로_생성된다(
+    make_user,
+):
     """bfcache 중복 생성 트랙(INTG-BE-03-CI): 멱등성 키는 client_token 단독이
     아니라 (user, client_token) 범위다 — 서로 다른 두 사용자가 같은 클라이언트
     생성 uuid4를 재전송하면(버그나 공유 클라이언트 라이브러리 인스턴스 등)
@@ -646,9 +657,7 @@ def test_수량만_수정해도_기존_교환가능_수량과_병합해_역전�
     검사해야 한다 — payload에 tradeable을 빼는 것으로 불변식을 우회할 수
     없다(컬렉션 도메인 설계 계획 §5 인수 기준 3)."""
     user = make_user(username="ci-update-merge-guard")
-    item = create_collection_item(
-        user=user, name="병합 가드", quantity=5, tradeable_quantity=3
-    )
+    item = create_collection_item(user=user, name="병합 가드", quantity=5, tradeable_quantity=3)
 
     with pytest.raises(ValidationError):
         update_collection_item(item=item, quantity=1)
@@ -712,9 +721,7 @@ def test_교환가능_수량을_보유_수량보다_크게_수정하면_거부�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_타인_소유의_방문기록으로_수정을_시도하면_거부된다(
-    make_user, make_event, make_visit
-):
+def test_타인_소유의_방문기록으로_수정을_시도하면_거부된다(make_user, make_event, make_visit):
     owner = make_user(username="ci-update-visit-owner")
     other = make_user(username="ci-update-other-user")
     item = create_collection_item(user=other, name="타인 소유 수정 시도")
@@ -742,9 +749,7 @@ def test_방문기록과_충돌하는_이벤트를_함께_수정해도_방문기
     visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
     item = create_collection_item(user=user, name="충돌 수정")
 
-    updated = update_collection_item(
-        item=item, visit_record=visit_record, event=conflicting_event
-    )
+    updated = update_collection_item(item=item, visit_record=visit_record, event=conflicting_event)
 
     assert updated.event_id == visit_event.id
 
@@ -763,9 +768,7 @@ def test_방문기록이_이미_연결된_아이템의_이벤트만_불일치하
     visit_event = make_event(title="고정된 방문 이벤트")
     other_event = make_event(title="불일치 이벤트")
     visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
-    item = create_collection_item(
-        user=user, name="FK 쌍 확인", visit_record=visit_record
-    )
+    item = create_collection_item(user=user, name="FK 쌍 확인", visit_record=visit_record)
 
     with pytest.raises(ValidationError) as exc_info:
         update_collection_item(item=item, event=other_event)
@@ -791,9 +794,7 @@ def test_방문기록이_연결된_아이템의_이벤트를_null로_수정해�
     user = make_user(username="ci-update-fk-pair-null-event")
     visit_event = make_event(title="고정된 방문 이벤트 2")
     visit_record = make_visit(user, event=visit_event, visited_on="2026-01-01")
-    item = create_collection_item(
-        user=user, name="FK 쌍 null 확인", visit_record=visit_record
-    )
+    item = create_collection_item(user=user, name="FK 쌍 null 확인", visit_record=visit_record)
 
     with pytest.raises(ValidationError):
         update_collection_item(item=item, event=None)
@@ -804,9 +805,7 @@ def test_방문기록이_연결된_아이템의_이벤트를_null로_수정해�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_방문기록이_없는_아이템은_이벤트를_자유롭게_수정할_수_있다(
-    make_user, make_event
-):
+def test_방문기록이_없는_아이템은_이벤트를_자유롭게_수정할_수_있다(make_user, make_event):
     """FK 쌍 가드는 visit_record가 연결된 뒤에만 적용된다 — visit_record가
     없는 행은 event 연결을 자유롭게 바꿀 수 있다."""
     user = make_user(username="ci-update-fk-pair-free")
@@ -820,7 +819,9 @@ def test_방문기록이_없는_아이템은_이벤트를_자유롭게_수정할
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_다른_요청이_먼저_커밋한_뒤에_수정하면_오래된_객체가_아니라_최신_DB_상태_기준으로_거부된다(make_user):
+def test_다른_요청이_먼저_커밋한_뒤에_수정하면_오래된_객체가_아니라_최신_DB_상태_기준으로_거부된다(
+    make_user,
+):
     """보안 게이트 M2(2026-07-16): 실제 스레드 없이 두 PATCH 간 경합을
     재현한다. 호출자 B는 호출자 A의 쓰기가 tradeable_quantity=5를 커밋하기
     전에 `item` 객체를 조회했다 — B의 병합 검사는 B의 오래된 파이썬 객체가

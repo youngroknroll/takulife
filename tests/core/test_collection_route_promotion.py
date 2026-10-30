@@ -5,6 +5,7 @@ archive_collection_item_edit 뷰를 그대로 제공하고(같은 뷰 객체, �
 이동), 옛 /archive/collection/* 경로는 쿼리스트링을 보존한 채 새 경로로
 302 리다이렉트된다.
 """
+
 import pytest
 
 from archive.models import CollectionItem

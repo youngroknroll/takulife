@@ -14,8 +14,9 @@ allauth의 설계를 따라 서로 다른 두 가지 강제 방식을 검증한�
   아니다).
 - signup / reset_password -> 뷰가 ``429.html``로 렌더되는 429를 던진다.
 """
-import pytest
+
 from django.test import Client, override_settings
+import pytest
 
 pytestmark = pytest.mark.slow
 
@@ -102,7 +103,9 @@ def test_소셜_가입_요청이_동일_ip에서_한도를_초과하면_429로_�
 
 @pytest.mark.django_db
 @override_settings(ACCOUNT_RATE_LIMITS={"reset_password": "2/m/ip"})
-def test_비밀번호_재설정_요청이_동일_ip에서_한도를_초과하면_429로_차단된다(client, make_verified_user):
+def test_비밀번호_재설정_요청이_동일_ip에서_한도를_초과하면_429로_차단된다(
+    client, make_verified_user
+):
     """같은 IP에서 반복되는 비밀번호 재설정 요청은 429로 스로틀된다."""
     make_verified_user("reset@example.com")
 
@@ -110,9 +113,7 @@ def test_비밀번호_재설정_요청이_동일_ip에서_한도를_초과하면
         resp = client.post("/accounts/password/reset/", {"email": "reset@example.com"})
         assert resp.status_code in (200, 302), resp.status_code
 
-    throttled = client.post(
-        "/accounts/password/reset/", {"email": "reset@example.com"}
-    )
+    throttled = client.post("/accounts/password/reset/", {"email": "reset@example.com"})
     assert throttled.status_code == 429, throttled.status_code
 
 

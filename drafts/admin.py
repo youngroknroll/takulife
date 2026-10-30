@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import DraftSource
+from drafts.models import DraftSource
 
 
 @admin.register(DraftSource)

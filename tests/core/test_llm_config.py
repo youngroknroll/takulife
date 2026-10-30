@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.test import override_settings
-
 import pytest
 
 from core.llm.exceptions import (
@@ -10,7 +9,6 @@ from core.llm.exceptions import (
     LLMResponseError,
     LLMTimeoutError,
 )
-
 
 pytestmark = pytest.mark.unit
 

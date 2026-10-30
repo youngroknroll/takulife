@@ -2,6 +2,7 @@
 TR-42b·TR-44) — 대기 이벤트를 번역·제출하고, 거부·번역 실패·통신 오류마다
 시도 횟수(attempts)를 어떻게 다루는지 검증한다. 가짜 클라이언트만 쓰고
 DB·실제 HTTP·실제 claude 없음."""
+
 import logging
 import re
 
@@ -11,7 +12,6 @@ import pytest
 from local_runner.claude_code_adapter import AdapterOutputError
 from local_runner.config import TRANSLATION_BATCH_LIMIT, TRANSLATION_MAX_ATTEMPTS
 from local_runner.translation_flow import translate_pending_batch
-
 
 pytestmark = pytest.mark.unit
 
@@ -252,7 +252,10 @@ class _성공_응답_클라이언트(_FakeClient):
 
 
 def test_이벤트를_제출하면_성공_로그_한_줄이_event_id와_건수만_담고_본문은_남기지_않는다(caplog):
-    events = [_대기_이벤트(1, "h1", title="비밀제목XYZ"), _대기_이벤트(2, "h2", title="비밀제목XYZ")]
+    events = [
+        _대기_이벤트(1, "h1", title="비밀제목XYZ"),
+        _대기_이벤트(2, "h2", title="비밀제목XYZ"),
+    ]
     client = _성공_응답_클라이언트(events)
     caplog.set_level(logging.INFO, logger="local_runner.translation_flow")
 

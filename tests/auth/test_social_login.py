@@ -10,6 +10,7 @@
 
 실제 구글 왕복은 localhost에서 수동으로 검증한다.
 """
+
 import pytest
 
 GOOGLE_LOGIN_PATH = "/accounts/google/login/"
@@ -94,7 +95,9 @@ def test_구글_이메일_인증_계정연결_정책_설정이_활성화되어_�
 
 
 @pytest.mark.contract
-def test_SOCIALACCOUNT_FORMS는_SocialSignupForm을_가리키고_AUTO_SIGNUP은_비활성화되어_있다(settings):
+def test_SOCIALACCOUNT_FORMS는_SocialSignupForm을_가리키고_AUTO_SIGNUP은_비활성화되어_있다(
+    settings,
+):
     """둘 중 하나만 풀려도 약관 동의 없는 소셜 가입 경로가 다시 열린다(B2) —
     조용히 꺼지지 않도록 여기서 가드한다."""
     assert settings.SOCIALACCOUNT_FORMS["signup"] == "accounts.forms.SocialSignupForm"

@@ -6,6 +6,7 @@
 - 방문 기록 (/archive/visits/)에는 더 이상 기록 안내 패널이 없다 — 그 안내는
   이제 작성 페이지(/archive/visits/new/)에 있다.
 """
+
 import pytest
 
 from archive.models import UserEventStatus
@@ -22,7 +23,9 @@ class TestArchiveRecordPageActions:
 
         assert "정리 체크리스트" not in resp.content.decode()
 
-    def test_기록장_페이지에서_기록_추가_버튼은_준비중이_아니라_실제_링크로_동작한다(self, user_client):
+    def test_기록장_페이지에서_기록_추가_버튼은_준비중이_아니라_실제_링크로_동작한다(
+        self, user_client
+    ):
         _, client = user_client()
 
         resp = client.get("/archive/")
@@ -32,7 +35,9 @@ class TestArchiveRecordPageActions:
         assert "준비 중" not in body
         assert 'href="/archive/visits/new/"' in body
 
-    def test_방문_완료_행은_기록_바로가기_링크를_보여준다(self, user_client, make_event, make_status):
+    def test_방문_완료_행은_기록_바로가기_링크를_보여준다(
+        self, user_client, make_event, make_status
+    ):
         user, client = user_client()
         event = make_event(title="다녀온 행사")
         make_status(user, event=event, status=UserEventStatus.Status.VISITED)
@@ -41,7 +46,9 @@ class TestArchiveRecordPageActions:
 
         assert f"/archive/visits/new/?subject=event:{event.id}".encode() in resp.content
 
-    def test_방문_예정_행은_기록_바로가기_링크를_보여주지_않는다(self, user_client, make_event, make_status):
+    def test_방문_예정_행은_기록_바로가기_링크를_보여주지_않는다(
+        self, user_client, make_event, make_status
+    ):
         user, client = user_client()
         event = make_event(title="갈 예정 행사")
         make_status(user, event=event, status=UserEventStatus.Status.PLANNED)
@@ -59,7 +66,9 @@ class TestVisitRecordCollectionShortcut:
     액션 옆에 ?visit_record=<id>로 컬렉션 등록 폼을 프리셀렉트하는 링크가
     붙는다 — test_방문_완료_행은_기록_바로가기_링크를_보여준다의 미러."""
 
-    def test_다녀온_기록_카드는_컬렉션_등록_바로가기_링크를_보여준다(self, user_client, make_event, make_visit):
+    def test_다녀온_기록_카드는_컬렉션_등록_바로가기_링크를_보여준다(
+        self, user_client, make_event, make_visit
+    ):
         user, client = user_client()
         event = make_event(title="다녀온 행사")
         record = make_visit(user, event=event, visited_on="2026-05-01")

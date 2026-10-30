@@ -17,15 +17,16 @@
 `value=`·`data-*`(아래 `_EXTRA_ATTRS` 몇 개 제외)를 보지 않는다.
 `.mo`가 로컬에 컴파일돼 있어야 한다(`uv run django-admin compilemessages --ignore .venv`).
 """
-import re
+
 from datetime import timedelta
 from html.parser import HTMLParser
+import re
 from types import SimpleNamespace
 from urllib.parse import quote
 
-import pytest
 from django.test import Client
 from django.utils import timezone
+import pytest
 
 from archive.models import (
     CollectionItem,
@@ -296,12 +297,22 @@ def _events(make_event):
 def _entries(user):
     """저장된 한국어 어휘 카테고리·자유 입력 카테고리·카테고리 없음·공식 제보됨."""
     return [
-        _entry(user, "Scan Entry One", category="카페", location_name="Scan Spot",
-               memo="scan memo", url="https://example.com/one"),
+        _entry(
+            user,
+            "Scan Entry One",
+            category="카페",
+            location_name="Scan Spot",
+            memo="scan memo",
+            url="https://example.com/one",
+        ),
         _entry(user, "Scan Entry Two", category="Scan Free Cat"),
         _entry(user, "Scan Entry Three"),
-        _entry(user, "Scan Entry Four", category="팝업스토어",
-               promotion_status=PersonalEntry.PromotionStatus.SUBMITTED),
+        _entry(
+            user,
+            "Scan Entry Four",
+            category="팝업스토어",
+            promotion_status=PersonalEntry.PromotionStatus.SUBMITTED,
+        ),
     ]
 
 
@@ -341,16 +352,33 @@ def _visits(user, events, entries):
 def _items(user, events, visits):
     """보유·구함·교환·미보유 배지와 수량 0·1·2가 모두 나오는 굿즈."""
     return [
-        _item(user, "Scan Both", quantity=2, tradeable_quantity=1, is_wanted=True,
-              work_title="Scan Work", item_type="키링"),
+        _item(
+            user,
+            "Scan Both",
+            quantity=2,
+            tradeable_quantity=1,
+            is_wanted=True,
+            work_title="Scan Work",
+            item_type="키링",
+        ),
         _item(user, "Scan One", quantity=1, work_title="Scan Work"),
         _item(user, "Scan Wanted Only", quantity=0, is_wanted=True, work_title="Scan Work Two"),
         _item(user, "Scan None", quantity=0, work_title="Scan Work Two"),
         _item(user, "Scan Trade", quantity=2, tradeable_quantity=2, work_title="Scan Work Three"),
-        _item(user, "Scan Linked", quantity=1, work_title="Scan Work", item_type="Scan Free Type",
-              character_name="Scan Char", acquired_on=_d(-9), acquisition_source="Scan Source",
-              event=events.past, visit_record=visits.reviewed, memo="scan item memo",
-              image="collection/scan_linked.png"),
+        _item(
+            user,
+            "Scan Linked",
+            quantity=1,
+            work_title="Scan Work",
+            item_type="Scan Free Type",
+            character_name="Scan Char",
+            acquired_on=_d(-9),
+            acquisition_source="Scan Source",
+            event=events.past,
+            visit_record=visits.reviewed,
+            memo="scan item memo",
+            image="collection/scan_linked.png",
+        ),
         _item(user, "Scan Personal Link", quantity=1, visit_record=visits.personal_free),
     ]
 
@@ -365,9 +393,7 @@ def _world(make_event, make_user):
     for event in (events.ongoing, events.upcoming, events.past, events.undated):
         EventInterest.objects.create(user=user, event=event)
     EventInterest.objects.create(user=user, personal_entry=entries[2])
-    return SimpleNamespace(
-        user=user, events=events, entries=entries, visits=visits, items=items
-    )
+    return SimpleNamespace(user=user, events=events, entries=entries, visits=visits, items=items)
 
 
 def _many_statuses(user, make_event, count):
@@ -673,9 +699,7 @@ def test_한국어_화면은_문구를_lang_속성으로_감싸지_않는다(mak
 
 # AC3 거짓 통과 방지(스캔 사각지대): 한글 메모는 영어 수정 화면 textarea에 글자 그대로 남는다
 @pytest.mark.django_db
-def test_영어_수정_화면의_한글_메모는_번역되지_않고_textarea에_그대로_남는다(
-    make_event, make_user
-):
+def test_영어_수정_화면의_한글_메모는_번역되지_않고_textarea에_그대로_남는다(make_event, make_user):
     user, path, _ = _scan_korean_memo_personal_edit(make_event, make_user)
 
     root = _parse(_get(path, "en", user=user))
@@ -713,12 +737,19 @@ _OFFICIAL_KO_PLANNED = "스캔 예정 행사"
 def _ko_world(make_event, make_user):
     user = make_user()
     event = _ev(
-        make_event, _OFFICIAL_KO_TITLE, location_name=_OFFICIAL_KO_PLACE,
-        work_title="Scan Work", start_date=_d(-10), end_date=_d(-8),
+        make_event,
+        _OFFICIAL_KO_TITLE,
+        location_name=_OFFICIAL_KO_PLACE,
+        work_title="Scan Work",
+        start_date=_d(-10),
+        end_date=_d(-8),
     )
     planned = _ev(
-        make_event, _OFFICIAL_KO_PLANNED, location_name=_OFFICIAL_KO_PLACE,
-        start_date=_d(3), end_date=_d(4),
+        make_event,
+        _OFFICIAL_KO_PLANNED,
+        location_name=_OFFICIAL_KO_PLACE,
+        start_date=_d(3),
+        end_date=_d(4),
     )
     UserEventStatus.objects.create(user=user, event=event, status="visited")
     UserEventStatus.objects.create(user=user, event=planned, status="planned")

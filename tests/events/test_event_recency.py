@@ -4,6 +4,7 @@ created_at으로부터 NEW_WINDOW_DAYS(10)일 미만이면 "신규"다(0~9일차
 10일차부터는 아니다). 이 헬퍼는 event.created_at만 읽으므로 DB 없이 단순
 스텁 객체로 경계값을 검증한다.
 """
+
 from datetime import date, datetime
 from types import SimpleNamespace
 

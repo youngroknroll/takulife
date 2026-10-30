@@ -3,6 +3,7 @@
 `/staff/*`가 아닌 요청에서는 draft_review_stats()를 호출하지 않는다 — 소비자
 페이지 요청마다 쿼리가 늘어나면 안 된다(계획서 B4 경고).
 """
+
 from types import SimpleNamespace
 
 import pytest

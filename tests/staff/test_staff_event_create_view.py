@@ -3,6 +3,7 @@
 생성은 반드시 create_published_event를 거치는 유일한 경로이며, 규칙 위반은
 필드 오류로 매핑되고 성공 시 StaffActionLog(event_create)를 남긴다.
 """
+
 import pytest
 
 from events.models import Event
@@ -42,7 +43,9 @@ def test_이벤트_생성_페이지_GET은_빈_폼을_렌더링한다(staff_clie
 
 
 @pytest.mark.django_db
-def test_이벤트_생성_폼_제출은_게시된_이벤트를_생성하고_감사_로그를_남긴다(staff_client, staff_event_payload):
+def test_이벤트_생성_폼_제출은_게시된_이벤트를_생성하고_감사_로그를_남긴다(
+    staff_client, staff_event_payload
+):
     staff, client = staff_client()
 
     resp = client.post(CREATE_URL, staff_event_payload())
@@ -59,7 +62,9 @@ def test_이벤트_생성_폼_제출은_게시된_이벤트를_생성하고_감�
 
 
 @pytest.mark.django_db
-def test_제목이_빈_값이면_400과_필드_오류를_응답하고_이벤트를_생성하지_않는다(staff_client, staff_event_payload):
+def test_제목이_빈_값이면_400과_필드_오류를_응답하고_이벤트를_생성하지_않는다(
+    staff_client, staff_event_payload
+):
     staff, client = staff_client()
 
     resp = client.post(

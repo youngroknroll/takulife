@@ -1,6 +1,7 @@
 """local_runner.claude_code_adapter 단위 테스트(U1·U2) — 방어적 JSON 파싱과
 보정 재시도 1회 상한. 아래 계약 테스트 2건만 CLI 호출 인자(argv) 자체를 잡아
 확인한다 — 기존 5건은 모두 execute= 스텁으로 _execute_claude를 우회한다."""
+
 import json
 
 import pytest
@@ -13,7 +14,6 @@ from local_runner.claude_code_adapter import (
     parse_json_object,
     run_agent_exploration,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -229,7 +229,9 @@ def test_탐색_프롬프트는_오늘_날짜와_국내_전용_규칙과_해외_
 
 
 @pytest.mark.contract
-def test_캡션_해석_실행_명령은_도구를_사실상_끄고_MCP를_전부_끈_채_JSON_출력을_요구한다(monkeypatch):
+def test_캡션_해석_실행_명령은_도구를_사실상_끄고_MCP를_전부_끈_채_JSON_출력을_요구한다(
+    monkeypatch,
+):
     """--tools는 쉼표로 구분된 유효한 이름이 둘 이상일 때만 실제로 도구를
     제한한다(실측) — 빈 문자열이나 단일 값은 조용히 무시되어 셸·파일 쓰기를
     포함한 기본 도구 전체가 열린다. 그래서 해석 단계는 무해한 도구 이름
@@ -295,9 +297,7 @@ def test_claude_실행_파일이_없으면_어댑터_출력_오류로_변환된�
     def _실행_파일_없음(argv, **kwargs):
         raise FileNotFoundError(2, "No such file or directory", "claude")
 
-    monkeypatch.setattr(
-        "local_runner.claude_code_adapter.subprocess.run", _실행_파일_없음
-    )
+    monkeypatch.setattr("local_runner.claude_code_adapter.subprocess.run", _실행_파일_없음)
 
     with pytest.raises(AdapterOutputError, match="claude"):
         _execute_claude("prompt", tools="WebSearch", strict_mcp=True, timeout=1)

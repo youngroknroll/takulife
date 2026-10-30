@@ -5,7 +5,6 @@ import pytest
 
 from tests.core.test_architecture_boundaries import PROJECT_ROOT
 
-
 pytestmark = pytest.mark.contract
 
 

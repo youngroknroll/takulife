@@ -98,6 +98,8 @@ or the task requires a repository-wide repeated-pattern check.
 - Migration drift: `uv run python manage.py makemigrations --check --dry-run`
 - Targeted test: `uv run pytest -q <test-path>`
 - Backend regression: `uv run pytest -q`
+- Lint: `uv run ruff check .`
+- Format check: `uv run ruff format --check .`
 - E2E journeys: `uv run pytest -q -m e2e tests/e2e`
 - Local server: `uv run python manage.py runserver`
 
@@ -128,6 +130,9 @@ test. During Red-Green, run the targeted test before broad regression.
 - Keep business rules in owning models, domain functions, or application services.
 - Avoid speculative abstractions, adjacent cleanup, silent mutation, and broad
   refactors.
+- Python style: `docs/BE/python-conventions.md` is the rulebook (Google Python
+  Style Guide as amended; this repository's rules win). ruff enforces it in CI
+  and two hooks enforce it locally.
 - Write code comments and docstrings only for non-obvious intent or constraints;
   use one or two short lines of plain Korean a non-developer can follow, never
   a translation of the code. The detailed standard is in `AGENTS.md`.
@@ -161,7 +166,9 @@ test. During Red-Green, run the targeted test before broad regression.
   `.claude/hooks/plan-overwrite-guard.sh`,
   `.claude/hooks/plan-number-tag-guard.sh`,
   `.claude/hooks/plan-bash-write-guard.sh`,
-  `.claude/hooks/git-stage-all-guard.sh`: deterministic guards; scope and
+  `.claude/hooks/git-stage-all-guard.sh`,
+  `.claude/hooks/python-style-guard.sh`,
+  `.claude/hooks/git-commit-style-guard.sh`: deterministic guards; scope and
   known gaps are in `AGENTS.md` "Harness Enforcement (hooks)". `prompt_plan.md`
   is edited only with the Edit tool.
 - Deterministic restrictions belong in settings or hooks, not advisory prose.

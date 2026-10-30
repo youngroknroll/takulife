@@ -5,8 +5,9 @@
 - GET /events/<id>/를 두 번 호출하면 DB의 view_count가 2로 늘어난다.
 - GET /events/<draft_id>/는 404를 반환하고 view_count를 늘리지 않는다.
 """
-import pytest
+
 from django.test import Client
+import pytest
 
 from events.models import Event
 

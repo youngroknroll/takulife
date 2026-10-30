@@ -31,6 +31,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-django>=4.8,<5.0",
     "pytest-playwright>=0.9.0",
+    "ruff>=0.15,<0.16",
 ]
 
 [tool.coverage.run]
@@ -42,3 +43,24 @@ omit = ["*/migrations/*"]
 [tool.coverage.report]
 show_missing = true
 exclude_lines = ["pragma: no cover"]
+
+# Python 스타일은 Google 가이드를 기준으로 하되 AGENTS.md "Python Style Guide"의
+# 예외(줄 길이 100칸, 테스트 E501 제외)를 따른다. 규칙을 바꾸면 그 절도 함께 고친다.
+[tool.ruff]
+line-length = 100
+# migrations는 생성 코드라 검사·포맷 대상이 아니다.
+extend-exclude = ["**/migrations/**"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "E501", "W", "F", "I", "B006", "TID252"]
+
+[tool.ruff.lint.per-file-ignores]
+# 테스트 이름은 한국어 행동 중심 규칙과 개명 제한 때문에 줄일 수 없다.
+"tests/**" = ["E501"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+case-sensitive = false
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"

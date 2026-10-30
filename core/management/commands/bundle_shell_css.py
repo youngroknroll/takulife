@@ -1,6 +1,7 @@
 """templates/base.html이 로드하는 셸 CSS를 등장 순서 그대로 이어붙여 파일로 쓴다."""
-import re
+
 from pathlib import Path
+import re
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -23,8 +24,14 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         base_dir = Path(settings.BASE_DIR)
-        template_path = Path(options["template"]) if options["template"] else base_dir / "templates" / "base.html"
-        static_root = Path(options["static_root"]) if options["static_root"] else base_dir / "static"
+        template_path = (
+            Path(options["template"])
+            if options["template"]
+            else base_dir / "templates" / "base.html"
+        )
+        static_root = (
+            Path(options["static_root"]) if options["static_root"] else base_dir / "static"
+        )
         if not template_path.exists():
             raise CommandError(f"템플릿을 찾을 수 없다: {template_path}")
 

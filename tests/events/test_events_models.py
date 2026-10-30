@@ -1,4 +1,5 @@
 """Event 모델 테스트 — 필드 기본값과 던더 동작, HTTP는 다루지 않는다."""
+
 import pytest
 
 from events.models import Event

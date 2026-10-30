@@ -1,7 +1,7 @@
 """내 활동(아카이브) — 상태·방문 기록·직접 등록·찜 목록 뷰 모음."""
 
-import uuid
 from urllib.parse import urlencode
+import uuid
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -43,16 +43,15 @@ from core.vocab import (
     ARCHIVE_STATUS_SORT_LABELS,
     ARCHIVE_VISIT_SORT,
     ARCHIVE_VISIT_SORT_LABELS,
-    archive_status_label,
-    personal_category_label,
     CATEGORY_LABELS,
     CATEGORY_SOURCE_LABELS,
     PERSONAL_ENTRY_CATEGORY_SUGGESTIONS,
+    archive_status_label,
+    personal_category_label,
 )
 from events.models import Event
-
-from ._helpers import _archive_query, _attach_display, _render_archive_list, _subject_view
-from .collection import _collection_item_row, _series_ink_classes
+from web.views._helpers import _archive_query, _attach_display, _render_archive_list, _subject_view
+from web.views.collection import _collection_item_row, _series_ink_classes
 
 
 def _build_archive_status_rows(user_statuses):
@@ -237,8 +236,7 @@ def archive_visits(request):
     pairs = user_visit_category_values(user)
     # 토큰은 한국어 원문(저장값과 맞대는 값)이고 표시 라벨만 요청 언어로 옮긴다.
     label_by_token = {
-        CATEGORY_SOURCE_LABELS[slug]: CATEGORY_LABELS[slug]
-        for slug in CATEGORY_SOURCE_LABELS
+        CATEGORY_SOURCE_LABELS[slug]: CATEGORY_LABELS[slug] for slug in CATEGORY_SOURCE_LABELS
     }
     categories = []
     category_chips = []
@@ -636,12 +634,9 @@ def archive_interests(request):
 
     # 공식(행사 연결) 행들은 행마다 부르지 않고(N+1이 된다)한 번에
     # _attach_display로 묶어 처리한 뒤 event id로 다시 매핑한다.
-    official_events = [
-        interest.event for interest in page_interests if interest.event_id
-    ]
+    official_events = [interest.event for interest in page_interests if interest.event_id]
     display_by_event_id = {
-        display["event"].id: display
-        for display in _attach_display(official_events, user=user)
+        display["event"].id: display for display in _attach_display(official_events, user=user)
     }
 
     interest_rows = []

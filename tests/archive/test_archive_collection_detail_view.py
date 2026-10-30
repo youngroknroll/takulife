@@ -6,9 +6,10 @@ URL 이름 "collection-detail-page", 라우트 `/collection/<int:item_id>/`) 테
 블록(수량/교환 가능 수량/획득일/획득 경로/연결된 방문 기록)을 보여주며,
 각 행은 값이 비어 있으면 조건부로 생략된다.
 """
-import pytest
+
 from django.test import Client
 from django.urls import reverse
+import pytest
 
 pytestmark = pytest.mark.web
 
@@ -79,9 +80,7 @@ class TestArchiveCollectionDetailTradeableRow:
     ):
         # CD-6
         user, client = user_client()
-        item = make_collection_item(
-            user, name="교환가능굿즈", quantity=2, tradeable_quantity=1
-        )
+        item = make_collection_item(user, name="교환가능굿즈", quantity=2, tradeable_quantity=1)
 
         resp = client.get(reverse("collection-detail-page", args=[item.pk]))
         content = resp.content
@@ -94,9 +93,7 @@ class TestArchiveCollectionDetailTradeableRow:
     ):
         # CD-7
         user, client = user_client()
-        item = make_collection_item(
-            user, name="코발트 배지 세트", quantity=2, tradeable_quantity=0
-        )
+        item = make_collection_item(user, name="코발트 배지 세트", quantity=2, tradeable_quantity=0)
 
         resp = client.get(reverse("collection-detail-page", args=[item.pk]))
 
@@ -108,9 +105,7 @@ class TestArchiveCollectionDetailAcquiredOnRow:
     def test_획득일이_있으면_획득일_행에_날짜가_표시된다(self, user_client, make_collection_item):
         # CD-8
         user, client = user_client()
-        item = make_collection_item(
-            user, name="획득일있음굿즈", acquired_on="2026-03-01"
-        )
+        item = make_collection_item(user, name="획득일있음굿즈", acquired_on="2026-03-01")
 
         resp = client.get(reverse("collection-detail-page", args=[item.pk]))
 
@@ -133,9 +128,7 @@ class TestArchiveCollectionDetailAcquisitionSourceRow:
     ):
         # CD-10
         user, client = user_client()
-        item = make_collection_item(
-            user, name="획득경로있음굿즈", acquisition_source="트위터 나눔"
-        )
+        item = make_collection_item(user, name="획득경로있음굿즈", acquisition_source="트위터 나눔")
 
         resp = client.get(reverse("collection-detail-page", args=[item.pk]))
 

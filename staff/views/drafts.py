@@ -1,4 +1,5 @@
 """스태프 콘솔 뷰: 초안 목록/상세 화면과 승인/반려/재오픈(단건+일괄) 엔드포인트."""
+
 import logging
 from urllib.parse import urlencode
 
@@ -31,11 +32,10 @@ from drafts.services import (
 )
 from events.models import Event
 from events.services import publish_field_checks
-
-from ..models import StaffActionLog
-from ..search import search_term
-from ..permissions import staff_console_required
-from ._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.search import search_term
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +81,7 @@ def _build_draft_rows(drafts):
                 "category_label": CATEGORY_LABELS.get(
                     draft.extracted_category, draft.extracted_category
                 ),
-                "region_label": REGION_LABELS.get(
-                    draft.extracted_region, draft.extracted_region
-                ),
+                "region_label": REGION_LABELS.get(draft.extracted_region, draft.extracted_region),
                 "warning_badges": _draft_warning_badges(draft),
             }
         )
@@ -171,9 +169,7 @@ def event_draft_detail(request, draft_id):
     is_pending = draft.review_status == EventDraft.ReviewStatus.PENDING
     # 재오픈된 드래프트는 검수 판정 칼럼에 이전 반려 기록을 보여준다.
     was_reopened = draft.reopened_at is not None
-    category_label = CATEGORY_LABELS.get(
-        draft.extracted_category, draft.extracted_category
-    )
+    category_label = CATEGORY_LABELS.get(draft.extracted_category, draft.extracted_category)
     region_label = REGION_LABELS.get(draft.extracted_region, draft.extracted_region)
     return render(
         request,
@@ -224,9 +220,7 @@ class StaffDraftApproveView(APIView):
                 "official_url", "Event with this official URL already exists."
             )
         except DraftPublicationMissingOfficialUrlError:
-            return field_error_response(
-                "official_url", "Official URL is required for publication."
-            )
+            return field_error_response("official_url", "Official URL is required for publication.")
         except DraftPublicationTitleError:
             return field_error_response("title", "제목을 입력해야 게시할 수 있습니다.")
         except DraftPublicationError:
@@ -309,9 +303,7 @@ class StaffDraftBulkApproveView(APIView):
             # 분류되지 않은 실패라도 배치 나머지를 막지 않는다. 이 시점엔
             # 이 항목의 변경분은 이미 롤백된 상태다. 실제 예외는 로그로
             # 남기고, 클라이언트에는 고정된 문구만 돌려준다.
-            logger.exception(
-                "bulk approve: unexpected error for draft_id=%s", draft_id
-            )
+            logger.exception("bulk approve: unexpected error for draft_id=%s", draft_id)
             return "Unexpected error."
         return None
 
@@ -336,9 +328,7 @@ class StaffDraftRejectView(APIView):
                     rejection_reason=rejection_reason,
                 )
                 StaffActionLog.objects.create(
-                    **_action_log_kwargs(
-                        metadata, StaffActionLog.Action.REJECT, target_draft=draft
-                    )
+                    **_action_log_kwargs(metadata, StaffActionLog.Action.REJECT, target_draft=draft)
                 )
         except DraftNotFoundError:
             return error_response("Not found.", 404)
@@ -420,17 +410,13 @@ class StaffDraftBulkRejectView(APIView):
                     rejection_reason=rejection_reason,
                 )
                 StaffActionLog.objects.create(
-                    **_action_log_kwargs(
-                        metadata, StaffActionLog.Action.REJECT, target_draft=draft
-                    )
+                    **_action_log_kwargs(metadata, StaffActionLog.Action.REJECT, target_draft=draft)
                 )
         except DraftNotFoundError:
             return "Not found."
         except DraftStateError:
             return "Only pending drafts can be rejected."
         except Exception:
-            logger.exception(
-                "bulk reject: unexpected error for draft_id=%s", draft_id
-            )
+            logger.exception("bulk reject: unexpected error for draft_id=%s", draft_id)
             return "Unexpected error."
         return None

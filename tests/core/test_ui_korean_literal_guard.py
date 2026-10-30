@@ -1,9 +1,10 @@
 """트랙 43-1 승인 범위 템플릿에는 번역 태그 밖의 한국어 리터럴이 없어야
 한다 — 주석·`{% blocktranslate %}`/`{% translate %}` 태그는 번역 대상이므로
 제외하고, 남은 텍스트에 한글이 있으면 번역이 빠진 자리다."""
+
 import ast
-import re
 from pathlib import Path
+import re
 
 import pytest
 
@@ -232,9 +233,7 @@ def _exempt_string_nodes(tree):
     msgctxt)는 검사에서 뺀다 — 나머지 한국어 문자열이 번역 누락이다."""
     exempt = set()
     for node in ast.walk(tree):
-        if isinstance(
-            node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
-        ):
+        if isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             body = node.body
             if (
                 body
@@ -243,10 +242,7 @@ def _exempt_string_nodes(tree):
                 and isinstance(body[0].value.value, str)
             ):
                 exempt.add(id(body[0].value))
-        if (
-            isinstance(node, ast.Call)
-            and _called_function_name(node) in _GETTEXT_FUNCTION_NAMES
-        ):
+        if isinstance(node, ast.Call) and _called_function_name(node) in _GETTEXT_FUNCTION_NAMES:
             for arg in node.args:
                 if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
                     exempt.add(id(arg))

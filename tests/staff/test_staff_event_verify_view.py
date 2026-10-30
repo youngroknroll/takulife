@@ -3,6 +3,7 @@
 게시된 행사에 verified_at을 기록하고 StaffActionLog를 남기는 서버 렌더 액션이며,
 수정 페이지 폼에서만 오는 것으로 JSON API가 아니다.
 """
+
 import pytest
 
 from staff.models import StaffActionLog
@@ -15,7 +16,9 @@ def _verify_url(event):
 
 
 @pytest.mark.django_db
-def test_비로그인_사용자가_행사_검증_완료를_요청하면_로그인_페이지로_리다이렉트된다(client, make_event):
+def test_비로그인_사용자가_행사_검증_완료를_요청하면_로그인_페이지로_리다이렉트된다(
+    client, make_event
+):
     event = make_event(official_url="https://example.com/verify-anon")
 
     resp = client.post(_verify_url(event))
@@ -52,7 +55,9 @@ def test_행사_검증_완료_경로에_GET으로_접근하면_허용되지_않�
 
 
 @pytest.mark.django_db
-def test_스태프가_행사_검증_완료를_요청하면_검증_시각이_기록되고_활동_로그가_남는다(staff_client, make_event):
+def test_스태프가_행사_검증_완료를_요청하면_검증_시각이_기록되고_활동_로그가_남는다(
+    staff_client, make_event
+):
     staff, client = staff_client()
     event = make_event(official_url="https://example.com/verify-success")
 
