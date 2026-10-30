@@ -17,8 +17,13 @@ if [ "$(stat -f %Lp "$ENV_FILE")" != "600" ]; then
   exit 0
 fi
 
+set -a
+. "$ENV_FILE"
+set +a
+
 # launchd는 셸 프로필을 읽지 않으므로 claude·uv가 있는 경로를 직접 지정한다.
-PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+# env 파일의 TAKULIFE_RUNNER_PATH_PREPEND(예: nvm으로 설치한 claude의 bin 경로)를 맨 앞에 붙인다.
+PATH="${TAKULIFE_RUNNER_PATH_PREPEND:+${TAKULIFE_RUNNER_PATH_PREPEND}:}$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 export PATH
 
 if ! command -v claude >/dev/null 2>&1; then
@@ -31,7 +36,4 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 
 cd "$REPO_DIR"
-set -a
-. "$ENV_FILE"
-set +a
 exec uv run --frozen python -m local_runner.runner
