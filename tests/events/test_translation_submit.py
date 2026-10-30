@@ -7,7 +7,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 import pytest
 
-from events.content_translation import TRANSLATED_FIELDS, SubmissionRejected, source_hash
+from events.content_translation import TRANSLATED_FIELDS, SubmissionRejectedError, source_hash
 from events.models import Event
 from events.translation_queue import pending_events, submit_translation
 
@@ -168,7 +168,7 @@ def test_manual_이벤트에_제출하면_거부되고_덮어쓰지_않는다(ma
     event.save()
     submitted_hash = source_hash(_event_fields(event))
 
-    with pytest.raises(SubmissionRejected) as exc_info:
+    with pytest.raises(SubmissionRejectedError) as exc_info:
         submit_translation(
             event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
         )
@@ -181,7 +181,7 @@ def test_manual_이벤트에_제출하면_거부되고_덮어쓰지_않는다(ma
 
 @pytest.mark.django_db
 def test_없는_이벤트에_제출하면_거부된다():
-    with pytest.raises(SubmissionRejected) as exc_info:
+    with pytest.raises(SubmissionRejectedError) as exc_info:
         submit_translation(event_id=999999, source_hash="아무해시", translations=_GOOD_TRANSLATIONS)
 
     assert exc_info.value.code == "not_found"
@@ -192,7 +192,7 @@ def test_게시되지_않은_이벤트에_제출하면_거부된다(make_draft_e
     event = make_draft_event(**_SOURCE_FIELDS)
     submitted_hash = source_hash(_event_fields(event))
 
-    with pytest.raises(SubmissionRejected) as exc_info:
+    with pytest.raises(SubmissionRejectedError) as exc_info:
         submit_translation(
             event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
         )
@@ -207,7 +207,7 @@ def test_해시가_낡았으면_거부되고_아무것도_저장하지_않는다
     event.title = "원문이 바뀐 뒤"
     event.save()
 
-    with pytest.raises(SubmissionRejected) as exc_info:
+    with pytest.raises(SubmissionRejectedError) as exc_info:
         submit_translation(
             event_id=event.id, source_hash=stale_hash, translations=_GOOD_TRANSLATIONS
         )
@@ -225,7 +225,7 @@ def test_구조가_틀린_제출은_스키마_사유로_거부된다(make_event)
     broken_translations = _deep_copy_translations(_GOOD_TRANSLATIONS)
     del broken_translations["ja"]
 
-    with pytest.raises(SubmissionRejected) as exc_info:
+    with pytest.raises(SubmissionRejectedError) as exc_info:
         submit_translation(
             event_id=event.id, source_hash=submitted_hash, translations=broken_translations
         )
@@ -242,7 +242,7 @@ def test_NUL_문자가_포함된_제출은_거부된다(make_event):
     translations = _deep_copy_translations(_GOOD_TRANSLATIONS)
     translations["en"]["title"] = translations["en"]["title"] + chr(0)
 
-    with pytest.raises(SubmissionRejected) as exc_info:
+    with pytest.raises(SubmissionRejectedError) as exc_info:
         submit_translation(event_id=event.id, source_hash=submitted_hash, translations=translations)
 
     assert exc_info.value.code == "nul"
@@ -361,7 +361,7 @@ def test_격리가_있는_제출과_거부된_제출은_WARNING_로그를_남긴
         submitted_hash = source_hash(_event_fields(event))
 
         with caplog.at_level(logging.INFO, logger="events.translation_queue"):
-            with pytest.raises(SubmissionRejected):
+            with pytest.raises(SubmissionRejectedError):
                 submit_translation(
                     event_id=event.id, source_hash=submitted_hash, translations=_GOOD_TRANSLATIONS
                 )
@@ -466,7 +466,7 @@ def test_수동_확정이면서_해시도_낡았으면_manual_locked가_보고�
     event.title = "원문이 바뀐 뒤"
     event.save()
 
-    with pytest.raises(SubmissionRejected) as exc_info:
+    with pytest.raises(SubmissionRejectedError) as exc_info:
         submit_translation(
             event_id=event.id, source_hash=stale_hash, translations=_GOOD_TRANSLATIONS
         )
@@ -485,7 +485,7 @@ def test_스키마_오류이면서_해시가_낡았으면_stale_source가_보고
     broken_translations = _deep_copy_translations(_GOOD_TRANSLATIONS)
     del broken_translations["ja"]
 
-    with pytest.raises(SubmissionRejected) as exc_info:
+    with pytest.raises(SubmissionRejectedError) as exc_info:
         submit_translation(
             event_id=event.id, source_hash=stale_hash, translations=broken_translations
         )

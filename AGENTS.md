@@ -722,8 +722,7 @@ Configuration is `[tool.ruff]` in `pyproject.toml`; CI job
 - Names: functions and variables `snake_case`, classes `CapWords`, constants
   `UPPER_SNAKE_CASE`. Django idioms such as `User = get_user_model()` are
   allowed.
-- Exception class names end with `Error`. Classes that predate this rule, such
-  as `SubmissionRejected`, are not renamed.
+- Exception class names end with `Error`.
 - No bare `except` (same rule as Error Handling And Logging).
 - TODO markers follow the existing `TODO(<scope>)` rule.
 

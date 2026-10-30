@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from core.errors import error_response
 from core.ip import get_client_ip
 from core.runner_auth import RunnerAPIView
-from events.content_translation import SubmissionRejected
+from events.content_translation import SubmissionRejectedError
 from events.translation_queue import pending_events, submit_translation
 
 _REJECTION_STATUS = {
@@ -62,7 +62,7 @@ class TranslationSubmitView(_TranslationRunnerView):
                 translations=data.get("translations"),
                 client_ip=get_client_ip(request),
             )
-        except SubmissionRejected as exc:
+        except SubmissionRejectedError as exc:
             return error_response(
                 exc.code, _REJECTION_STATUS.get(exc.code, status.HTTP_400_BAD_REQUEST)
             )

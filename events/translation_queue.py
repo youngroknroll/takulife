@@ -97,19 +97,19 @@ def _submit_translation_locked(*, event_id, source_hash, translations):
                 pk=event_id, publish_status=Event.PublishStatus.PUBLISHED
             )
         except Event.DoesNotExist:
-            raise rules.SubmissionRejected("not_found")
+            raise rules.SubmissionRejectedError("not_found")
 
         stored = event.text_translations
         if not isinstance(stored, dict):
             stored = {}
 
         if stored.get("manual"):
-            raise rules.SubmissionRejected("manual_locked")
+            raise rules.SubmissionRejectedError("manual_locked")
 
         fields = _event_fields(event)
         current_hash = rules.source_hash(fields)
         if source_hash != current_hash:
-            raise rules.SubmissionRejected("stale_source")
+            raise rules.SubmissionRejectedError("stale_source")
 
         if stored.get("source_hash") == current_hash:
             return SubmissionOutcome(status="already_current", saved=[], quarantined={})
@@ -158,7 +158,7 @@ def submit_translation(*, event_id, source_hash, translations, client_ip=""):
         outcome = _submit_translation_locked(
             event_id=event_id, source_hash=source_hash, translations=translations
         )
-    except rules.SubmissionRejected as exc:
+    except rules.SubmissionRejectedError as exc:
         _log_rejection(
             event_id=event_id, code=exc.code, submitted_hash=source_hash, client_ip=client_ip
         )
