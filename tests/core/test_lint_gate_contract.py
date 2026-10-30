@@ -18,6 +18,28 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 REQUIRED_LINE_LENGTH = 100
 # 이 규칙들은 반드시 켜져 있어야 하며, 다른 규칙이 더 있어도 된다.
 REQUIRED_RULES = {"E4", "E7", "E9", "E501", "W", "F", "I", "B006", "TID252"}
+# 설정 키 집합을 고정한다. 새 키(예: lint.ignore)가 조용히 들어오는 것을 막는다.
+ALLOWED_RUFF_KEYS = {"line-length", "extend-exclude", "lint"}
+ALLOWED_RUFF_LINT_KEYS = {"select", "per-file-ignores", "isort", "flake8-tidy-imports"}
+KEY_CHANGE_HINT = "의도한 변경이면 이 테스트의 허용 키를 함께 고친다"
+# 하위 설정 파일 탐색에서 건너뛰는 폴더
+SKIPPED_PARTS = {".venv", "venv", ".git", "node_modules", ".ruff_cache", ".pytest_cache"}
+
+
+def _find_nested_ruff_configs() -> list[str]:
+    """루트 설정을 덮어쓸 수 있는 하위 ruff 설정 파일을 찾는다."""
+    found = []
+    for path in PROJECT_ROOT.rglob("*"):
+        relative = path.relative_to(PROJECT_ROOT)
+        if SKIPPED_PARTS & set(relative.parts) or not path.is_file():
+            continue
+        if path.name in {"ruff.toml", ".ruff.toml"}:
+            found.append(str(relative))
+        elif path.name == "pyproject.toml" and relative.parent != Path("."):
+            with path.open("rb") as f:
+                if "ruff" in tomllib.load(f).get("tool", {}):
+                    found.append(str(relative))
+    return found
 
 
 def test_린트_설정은_줄_길이_100칸과_필수_규칙_집합을_유지한다():
@@ -38,6 +60,22 @@ def test_린트_설정은_줄_길이_100칸과_필수_규칙_집합을_유지한
 
     ban = ruff.get("lint", {}).get("flake8-tidy-imports", {}).get("ban-relative-imports")
     assert ban == "all", "flake8-tidy-imports ban-relative-imports가 'all'이 아니다"
+
+    assert set(ruff) == ALLOWED_RUFF_KEYS, (
+        f"[tool.ruff] 키가 허용 집합과 다르다: {sorted(ruff)}. {KEY_CHANGE_HINT}"
+    )
+    assert set(ruff["lint"]) == ALLOWED_RUFF_LINT_KEYS, (
+        f"[tool.ruff.lint] 키가 허용 집합과 다르다: {sorted(ruff['lint'])}. {KEY_CHANGE_HINT}"
+    )
+    assert ruff["extend-exclude"] == ["**/migrations/**"], (
+        "[tool.ruff] extend-exclude가 마이그레이션 제외 하나가 아니다"
+    )
+    assert ruff["lint"]["per-file-ignores"] == {"tests/**": ["E501"]}, (
+        "per-file-ignores가 tests의 E501 면제 하나가 아니다"
+    )
+
+    nested = _find_nested_ruff_configs()
+    assert not nested, f"루트 설정을 덮어쓸 수 있는 하위 ruff 설정이 있다: {nested}"
 
 
 LINT_JOB_NAME = "Lint and format (PR gate)"
@@ -65,9 +103,20 @@ def test_CI_워크플로는_린트_잡에서_ruff_check와_ruff_format_check를_
     block = _find_job_block(workflow_text, LINT_JOB_NAME)
     assert block is not None, f"ci.yml에 '{LINT_JOB_NAME}' 잡이 없다"
 
-    assert "uv run ruff check ." in block, "린트 잡에 'uv run ruff check .' 단계가 없다"
-    assert "uv run ruff format --check ." in block, (
-        "린트 잡에 'uv run ruff format --check .' 단계가 없다"
+    assert re.search(r"^\s+run:\s*uv run ruff check \.\s*$", block, re.MULTILINE), (
+        "린트 잡에 'run: uv run ruff check .' 줄이 정확히 일치하는 단계가 없다"
+    )
+    assert re.search(r"^\s+run:\s*uv run ruff format --check \.\s*$", block, re.MULTILINE), (
+        "린트 잡에 'run: uv run ruff format --check .' 줄이 정확히 일치하는 단계가 없다"
+    )
+    for bypass in ("|| true", "|| exit 0", "--exit-zero"):
+        assert bypass not in block, f"린트 잡에 실패를 무시하는 '{bypass}'가 있다"
+    assert re.search(r"^\s*(?:-\s+)?if:", block, re.MULTILINE) is None, (
+        "린트 잡 또는 단계에 if: 조건이 있다 (조건부로 건너뛰면 PR 게이트가 아니다)"
+    )
+    triggers = workflow_text.partition("\njobs:\n")[0]
+    assert re.search(r"^\s+pull_request:", triggers, re.MULTILINE), (
+        "ci.yml 트리거에 pull_request가 없다 (PR 게이트가 아니게 된다)"
     )
     assert "continue-on-error" not in block, (
         "린트 잡에 continue-on-error가 있다 (관측 모드로 약해지면 PR 게이트가 아니다)"
