@@ -689,51 +689,22 @@ if item.owner_id == request.user.id:
 ## Python Style Guide
 
 The baseline is the
-[Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
-with the amendments below. Where the two conflict, this repository's rules win.
-Measurements and rationale live in `docs/BE/python-style.md`; this section
-holds the rules only.
+[Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+Where it conflicts with this repository's rules, this repository wins. The
+canonical rulebook is `docs/BE/python-conventions.md`; this section points to
+it. Measurements and rationale live in `docs/BE/python-style.md`.
 
-### Enforced by tooling
+Enforcement points:
 
-Configuration is `[tool.ruff]` in `pyproject.toml`; CI job
-"Lint and format (PR gate)" runs both commands.
+- `[tool.ruff]` in `pyproject.toml` (rules, 100-column line length, imports).
+- CI job "Lint and format (PR gate)" runs `ruff check` and `ruff format --check`;
+  `tests/core/test_lint_gate_contract.py` blocks silent weakening.
+- Hooks `.claude/hooks/python-style-guard.sh` (feedback after an edit) and
+  `.claude/hooks/git-commit-style-guard.sh` (blocks a violating `git commit`).
 
-- Commands: `uv run ruff check .` and `uv run ruff format .` (check only:
-  `uv run ruff format --check .`).
-- Line length is 100 columns (ruff counts a Hangul character as 2 columns),
-  not Google's 80. The rationale and the change-size measurement are in
-  `docs/BE/python-style.md`.
-- Formatting is `ruff format` output.
-- Imports are sorted by full module path, case-insensitive, with `import` and
-  `from` statements mixed.
-- Absolute imports only; relative imports are forbidden.
-- No unused imports or variables, no wildcard imports (the single exception is
-  `config/settings_test.py`, which carries `# noqa` and whose override order a
-  contract test pins), and no mutable default arguments. An import kept only
-  for a side effect or as a re-export carries `# noqa: F401` and a Korean
-  reason.
-- Excluded from checks: `migrations/` (generated code) and the line-length rule
-  (E501) under `tests/**`, because behavior-first Korean test names cannot be
-  shortened (Test Authoring Policy).
-
-### Enforced by review
-
-- Names: functions and variables `snake_case`, classes `CapWords`, constants
-  `UPPER_SNAKE_CASE`. Django idioms such as `User = get_user_model()` are
-  allowed.
-- Exception class names end with `Error`.
-- No bare `except` (same rule as Error Handling And Logging).
-- TODO markers follow the existing `TODO(<scope>)` rule.
-
-### Google rules not adopted (project rules win)
-
-- Docstring `Args:`/`Returns:`/`Raises:` sections and English docstrings: Code
-  Comment Policy requires one or two short Korean lines.
-- "Import packages and modules only": importing Django/DRF names is the
-  idiom, and monkeypatch targets and AST boundary tests depend on name imports.
-- Mandatory type hints: not required.
-- Pylint-only checks: not run.
+Enforced by tooling: see "도구가 강제하는 규칙" in the rulebook.
+Enforced by review: see "이름" and "예외·오류 처리" in the rulebook.
+Google rules not adopted: see "Google 가이드에서 채택하지 않은 것" in the rulebook.
 
 ### Format-only commits
 
@@ -1108,7 +1079,10 @@ variable substitution) is a known, accepted gap.
 | `.claude/hooks/plan-number-tag-guard.sh` | `Edit\|Write` | a paragraph added to `prompt_plan.md` that carries a count with a unit (value 2 or more) must also carry a source tag (`[실측]`, `[코드]`, `[계산]`, `[문서]`, `[대시보드]`) — the Numbers In Documents rule | only fires on the Edit/Write tools (Bash writes are closed by the Bash write guard); `docs/**` coverage is deferred |
 | `.claude/hooks/plan-bash-write-guard.sh` | `Bash` | blocks Bash-tool writes to `prompt_plan.md` | does not check string concatenation, `bash -c` nesting, variable substitution, or `cp -t`/`--target-directory` argument order |
 | `.claude/hooks/git-stage-all-guard.sh` | `Bash` | blocks `git add -A`/`--all`/`.`, staging `prompt_plan.md`, and `git commit -a`/`-am` | scoped to these command shapes; `git commit --amend` and other paths are out of scope |
+| `.claude/hooks/python-style-guard.sh` | `Edit\|Write` (PostToolUse) | right after a `.py` file inside the repository is edited, runs `ruff check` and `ruff format --check` on that file and feeds violations back to the model (exit 2 = feedback, the file is not modified) | passes when ruff is missing; git-ignored, `migrations/`, and out-of-repository files are not checked |
+| `.claude/hooks/git-commit-style-guard.sh` | `Bash` | blocks a `git commit` segment when a staged `.py` file, or a `.py` named by a `git add`/`git commit <path>` in the same command, has ruff violations | checks the working-tree file (may differ from the staged content); a `.py` created and committed in the same command does not exist yet at PreToolUse time and is not checked; `bash -c` nesting and variable substitution are not detected; passes when ruff is missing |
 
+- PostToolUse hooks give feedback after the tool ran; only PreToolUse hooks block.
 - A new hook ships only after it is proven with a crafted payload set (at
   least 6 blocking cases and 6 allowed cases) and one live violation that the
   hook actually stops.

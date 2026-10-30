@@ -193,8 +193,8 @@ jobs:
       - name: Format check (ruff format)
         run: uv run ruff format --check .
 
-      # Rollback: add `if: false` to this job. Revert [tool.ruff] only together with that
-      # (docs/BE/python-style.md "롤백 순서").
+      # Rollback: remove this job and the CI assertions in tests/core/test_lint_gate_contract.py
+      # in one commit (docs/BE/python-style.md "롤백 순서").
 
   audit:
     name: Dependency vulnerability audit (PR gate)

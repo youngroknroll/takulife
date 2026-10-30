@@ -395,6 +395,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   전환.
 - **자동 생성 실패 시 수동 fallback**: `gh pr create --base production --head
   main`으로 직접 생성한다.
+- **main 직접 커밋의 lint 통과**: main 직접 커밋도 `uv run ruff check . && uv run ruff format --check .`를
+  통과해야 한다(`.claude/hooks/git-commit-style-guard.sh`가 로컬에서 막는다). main CI가 lint로
+  실패하면 `.github/workflows/deploy-pr.yml`의 `workflow_run.conclusion == 'success'` 조건 때문에
+  deploy PR이 자동 생성되지 않는다. 수정 커밋으로 main CI를 다시 초록으로 만든 뒤 자동 생성을
+  기다리거나 위 수동 절차를 쓴다.
 - **deploy PR에 CI 체크가 없는 것은 정상**이다 — `.github/workflows/ci.yml`의
   `pull_request` 트리거가 `branches-ignore: [production]`으로 production을
   향하는 PR을 건너뛰기 때문이다(트랙 42, 2026-10-20). 그 전에는

@@ -19,7 +19,7 @@
 | 도구 | 줄 길이 100칸, `ruff format` 서식 | `pyproject.toml` `[tool.ruff]`, CI |
 | 도구 | 임포트 전체 모듈 경로 사전순(대소문자 무시, import/from 혼합) | ruff `I`, `force-sort-within-sections`, `case-sensitive = false` |
 | 도구 | 절대 임포트만 | ruff `TID252`, `ban-relative-imports = "all"` |
-| 도구 | 미사용 임포트·변수, 와일드카드 임포트 | ruff `F`. 와일드카드 예외는 `config/settings_test.py` 한 곳(`# noqa: F401,F403`)이고, 계약 테스트 `test_test_settings_boundary.py`는 그 임포트 뒤의 덮어쓰기 순서를 고정한다. 부수효과·재노출 때문에 남기는 임포트(`apps.py` 3곳, `drafts/runner_views.py`)는 `# noqa: F401`과 한국어 사유를 단다 |
+| 도구 | 미사용 임포트·변수, 와일드카드 임포트 | ruff `F`. 와일드카드 예외는 `config/settings_test.py` 한 곳(`# noqa: F401,F403`)이고, 계약 테스트 `test_test_settings_boundary.py`는 그 임포트 뒤의 덮어쓰기 순서를 고정한다. 부수효과 때문에 남기는 임포트(`apps.py` 3곳)는 `# noqa: F401`과 한국어 사유를 단다. 재노출은 두지 않는다 |
 | 도구 | 가변 기본 인자 금지 | ruff `B006` |
 | 도구 | `migrations/` 제외, `tests/**` 줄 길이(E501) 제외 | `[tool.ruff]` 제외 설정 |
 | 리뷰 | 이름 규칙, 예외 클래스 `Error` 접미, bare except 금지, `TODO(<scope>)` | 사람 |
@@ -60,7 +60,7 @@ ruff는 한글을 2칸으로 센다. Google의 80칸은 채택하지 않았다.
 | 상대 임포트 | 임포트 문장 142개(이름 단위 338건), 69개 파일, 레벨 1이 114문장·레벨 2가 28문장(전부 `staff/views`) | 모두 절대 임포트로 변환(커밋 9debe14c) | [실측 2026-10-29] |
 | 임포트 정렬 위반 | 272건(상대 임포트를 절대화한 직후 측정. 설정 직후에는 256건이었고 포맷 전 시험에서는 253건으로 시점마다 다르다) | `--select I --fix`로 정리(커밋 9debe14c) | [실측 2026-10-29, 커밋 9debe14c] |
 | 포맷 | 377개 파일 | `ruff format` 적용(커밋 b6dd5035) | [실측 2026-10-29 ruff 0.15.22] |
-| 미사용 임포트·변수(F401·F841), E731 | 29건(F401 11·F841 17·E731 1) | 수동 정리(커밋 a33f00c4). F401은 10건 제거, 1건(`drafts/candidate_validation.py`의 `LeaseInvalidError`)은 이 커밋에서는 `# noqa: F401`로 유지했다가 같은 PR의 후속 커밋에서 재노출을 없애고 `drafts/runner_views.py`와 테스트가 `drafts.discovery_runs`에서 직접 가져오게 바꿔, F401 11건이 모두 코드에서 제거·해소됐다. 첫 시도에서 한 줄 검색이 여러 줄 임포트를 놓쳐 수집 오류(ImportError)가 났고 구문 트리 전수 검사로 나머지 10건을 다시 확인했다. F841은 대입만 지우고 호출은 보존 | [실측 2026-10-29] |
+| 미사용 임포트·변수(F401·F841), E731 | 29건(F401 11·F841 17·E731 1) | 수동 정리(커밋 a33f00c4). F401은 10건 제거, 1건(`drafts/candidate_validation.py`의 `LeaseInvalidError`)은 이 커밋에서는 `# noqa: F401`로 유지했다가 같은 PR의 후속 커밋에서 재노출을 없애고 `drafts/runner_views.py`와 테스트가 `drafts.discovery_runs`에서 직접 가져오게 바꿔, F401 11건이 모두 코드에서 제거·해소됐다. `drafts/runner_views.py`의 `RunnerTokenThrottle` `# noqa: F401` 재노출도 같은 PR에서 제거하고 테스트가 `core.runner_auth`에서 직접 가져오게 했다. 첫 시도에서 한 줄 검색이 여러 줄 임포트를 놓쳐 수집 오류(ImportError)가 났고 구문 트리 전수 검사로 나머지 10건을 다시 확인했다. F841은 대입만 지우고 호출은 보존 | [실측 2026-10-29] |
 | 테스트 외 코드 긴 줄 | 16건(주석 8·docstring 2·문자열 6) | 줄바꿈(커밋 69b49271). 문자열은 인접 리터럴로 나눠 값 불변 | [실측 2026-10-29] |
 | 문서·코드 주석의 `파일:줄` 참조 | 포맷·임포트 변경으로 이동한 참조 213개: 문서 12개 파일 202개(머리 번호 184개, 쉼표로 이어 쓴 꼬리 18개), 코드 주석 10개 파일 11개 | 변경 전 줄 번호를 `git diff -U0` 구간으로 새 줄 번호에 옮기고 대상 줄 내용이 같은지 확인한 뒤 정정. 줄이 합쳐지거나 나뉜 5개와, 옛 번호부터 틀렸던 `staff/views/__init__.py:284`(실제 `system_errors` 줄은 288)는 직접 정했다. 옛 번호와 새 번호의 쌍 563개가 가리키는 줄 내용을 독립 스크립트로 다시 대조해 설명되지 않은 불일치 0개. 날짜가 박힌 검토 문서가 검토 당시 코드를 인용한 `drafts/runner_views.py:250-265`·`:253-259`는 역사 기록이라 그대로 둠 | [실측 2026-10-30] |
 | CI 잡 | — | `ci.yml`에 "Lint and format (PR gate)" 잡 추가, 계약 테스트 `test_CI_워크플로는_린트_잡에서_...`가 Red→Green | [코드 .github/workflows/ci.yml] |
@@ -84,14 +84,21 @@ ruff는 한글을 2칸으로 센다. Google의 80칸은 채택하지 않았다.
 
 - 로컬: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 - GitHub 웹 blame은 이 파일을 자동으로 적용한다.
+- 두 SHA는 PR을 merge commit으로 머지할 때만 main 이력에 남는다. squash·rebase 머지는 하지 않는다. 머지 뒤 `git merge-base --is-ancestor b6dd5035 origin/main && git merge-base --is-ancestor 9debe14c origin/main; echo $?`가 0이어야 한다.
 
 ## 롤백 순서
 
-1. lint 잡만 끄기: 잡에 `if: false`를 넣는다. 먼저 한다.
-2. `[tool.ruff]` 설정을 되돌리면 `format --check`가 기본 88칸으로 수백 개 파일에서
-   실패하므로 반드시 1과 함께 한다.
-3. 코드 되돌리기: 커밋별 `git revert`. 임포트 절대화 커밋을 되돌리면 이후 커밋과
-   충돌할 수 있고, `.git-blame-ignore-revs`의 해당 커밋 줄도 같이 정리한다.
+계약 테스트가 잡 `if:`를 금지하므로 `if: false`로 잡만 끄면 Test suite 잡이 빨개진다. 아래 순서를 따른다.
+
+1. lint 잡 제거(또는 `if: false`)와 `tests/core/test_lint_gate_contract.py`의 CI 단언 함수 삭제를 한
+   커밋으로 한다.
+2. `[tool.ruff]`를 되돌릴 때는 설정 단언 함수도 같은 커밋에서 삭제한다(결국 계약 테스트 파일 전체
+   삭제와 `[tool.ruff]` 제거를 한 커밋으로 한다). 설정을 지우면 기본값 88칸으로 `format --check`가
+   실패하므로 잡 제거와 반드시 같이 한다.
+3. 머지 뒤 전체 롤백은 `git revert -m 1 <머지 SHA>`이다. 코드·설정·테스트·문서가 함께 돌아가
+   모순이 없다. 개별 revert는 역순(69b49271 → a33f00c4 → 9debe14c → b6dd5035)으로 하며, 포맷
+   revert는 문서 `파일:줄` 정정 커밋 bca5e55e와 함께 되돌린다. 임포트 절대화 커밋을 되돌리면 이후
+   커밋과 충돌할 수 있고, `.git-blame-ignore-revs`의 해당 커밋 줄도 같이 정리한다.
 
 마이그레이션이 없어 데이터 롤백은 없다.
 
