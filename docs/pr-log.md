@@ -18,51 +18,43 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 398건(`gh pr list --state merged --limit 500`,
-2026-10-30 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 399건(`gh pr list --state merged --limit 500`,
+2026-10-31 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #404부터 #269까지다(#405는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #405부터 #269까지다(#407은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #405 — style: Adopt the Google Python style guide with ruff in CI
+### PR #407 — test: Adopt pytest-xdist for the regression run and fix the launchd runner wrapper PATH (track 49)
 
-**무엇을 바꿨나**: Google Python Style Guide를 기준선으로 삼고 충돌하면 저장소 규칙이 이기는
-Python 컨벤션을 도입했다(트랙 48·48-2). 규칙 정본은 `docs/BE/python-conventions.md`(신설,
-한국어, 좋은/나쁜 예), `AGENTS.md` "Python Style Guide"는 포인터, 측정·이력은
-`docs/BE/python-style.md`. 도구는 ruff(`ruff>=0.15,<0.16`, `[tool.ruff]` 줄 길이 100칸·한글
-2칸, 규칙 `E4,E7,E9,E501,W,F,I,B006,TID252`, `migrations/` 제외, `tests/**`는 E501만 제외).
-기존 코드 전체를 같은 PR에서 맞췄다: `ruff format` 377개 파일, 상대 임포트 142문장 절대화와
-정렬, 미사용 임포트·변수·람다 29건 수동 정리, 긴 줄 16건, 재노출 임포트 4건을 정의 모듈
-직접 임포트로, 예외 이름 `Error` 접미 통일(`SubmissionRejectedError` 등 2건). 강제 지점은
-CI 잡 "Lint and format (PR gate)", 계약 테스트 `tests/core/test_lint_gate_contract.py`(설정
-키·값 고정, 하위 설정 파일, `run:` 줄 전체 일치, `if:`·`needs:`·`|| true`·`--exit-zero`,
-`pull_request` 트리거 형태), 훅 2개(`python-style-guard.sh` 편집 직후 ruff 피드백,
-`git-commit-style-guard.sh` 위반 `.py` 커밋 차단). 경계 스캐너가 `from pkg import
-submodule` 형태도 보게 했다. 포맷·정렬 커밋 2개는 `.git-blame-ignore-revs`에 있다. 문서·코드
-주석의 `파일:줄` 참조 213개를 새 줄 번호로 옮겼다. 변경 규모는 440개 파일, +5,708줄·-3,201줄
-(커밋 17개) `[실측 git diff --shortstat 02d3b2ab..ef31e650]`. 머지 `ef31e650`
-(2026-10-30T12:21Z, merge commit, 사용자 승인).
+**무엇을 바꿨나**: 백로그 K1대로 `pytest-xdist>=3.8,<4.0`을 dev 그룹에 넣고 CI test 잡과
+`CLAUDE.md`의 전체 회귀 명령만 `uv run pytest -q -n auto`로 바꿨다. `pytest.ini` `addopts`·표적
+실행·e2e 잡은 직렬 그대로다(표적 37건이 병렬에서 4.46초 → 6.41초로 느려짐 `[실측 2026-10-30]`).
+launchd 러너 래퍼 `local_runner/launchd/run-runner.sh`는 env 파일을 PATH 설정 전에 읽고
+`TAKULIFE_RUNNER_PATH_PREPEND`를 PATH 앞에 붙이며, `stat`은 GNU(`-c %a`) 먼저·BSD(`-f %Lp`)
+폴백으로 바꿨다. 새 계약 테스트 `tests/core/test_run_runner_wrapper_contract.py`(subprocess
+실행, Linux CI에서도 돈다). 문서: 런북 §8.y(보호 폴더 실측·전용 클론 설치·갱신·해제·SIGTERM
+실측), `docs/BE/test-suite-speed.md` §8, 백로그 K1 해소. 커밋 6개, 머지 `45afc5fe`
+(2026-10-31, merge commit, 사용자 승인).
 
-**왜**: 린터·포매터·pre-commit이 없어 서식과 임포트 형태가 파일마다 달랐고(상대·절대 혼재,
-정렬 위반 256건 `[실측 2026-10-29]`), 규칙이 AGENTS.md 산문에만 있어 에이전트가 건너뛸 수
-있었다. 사용자 결정: Google 가이드 채택·문서+코드 일괄 수정·충돌 시 프로젝트 규칙 우선
-(2026-10-29), 컨벤션 별도 문서화와 훅 강제·자동 수정 없음(2026-10-30). Google의 docstring
-절·영어·"모듈만 임포트"·타입 힌트 의무화·pylint·80칸은 채택하지 않았다.
+**왜**: 전체 회귀가 직렬 134.77초였고 단일 병목이 없어 병렬화만 남아 있었다(사용자 지시
+"2번 진행" = K1 승인). 래퍼는 nvm으로 설치한 `claude`가 고정 PATH에 없어 종료 코드 0으로
+조용히 끝나 러너가 영구히 뜨지 않는 결함이 있었고, `~/Desktop` 저장소를 launchd로 기동하면
+`Operation not permitted`(종료 126, 재기동 루프)가 실제로 났다 — 그래서 이 Mac에는 보호 폴더
+밖 전용 클론 `~/takulife-runner`로 설치했다.
 
-**검증**: 포맷·절대화 커밋은 구문 트리·주석 토큰·임포트 다중집합 전후 동일, 168개 모듈 새
-인터프리터 임포트 통과, 테스트 ID 차이 0 `[실측 2026-10-29]`. 게이트 약화 주입 17종 전부
-실패, 훅 페이로드 32건과 라이브 위반 2건 확인(라이브가 커밋 가드 결함 1건을 잡아 고침)
-`[실측 2026-10-30]`. 깊은 검토(QVL·DAR·DOR) High 결함 0, Low·Medium 전부 같은 PR에서 수정.
-머지 전 HEAD `cc5d8036`: `uv run pytest -q` 4300 passed / 10 deselected / 136.58초, `ruff
-check`·`ruff format --check` 0, `manage.py check` 0, PR CI 6잡 pass `[실측 2026-10-30]`.
-머지 후 `b6dd5035`·`9debe14c`가 main 조상임을 확인 `[실측 git merge-base]`. main CI와
-deploy PR 갱신은 아래 롤링 기록 시점에 진행 중이었다.
+**검증**: `-n auto` 전체 회귀 3회 연속 4301 passed(41.72·43.57·44.14초), 변경 후 직렬
+4301 passed / 131.17초, e2e 10 passed 직렬 유지, 래퍼 테스트 Red(기대한 이유) → Green,
+가짜 HOME 가드 프로브 5종 일치, launchd 1회 기동 종료 0·65초 뒤 재기동 없음
+`[실측 2026-10-30]`. CI "Run test suite" 단계 82초 → 59초, 최종 CI(run 41072565204) 5잡
+success·skipped 0 `[실측 gh]`. 사전 DOR·TDD 코치, 사후 QVL "Complete with gaps, Failed 없음"
+— gaps는 같은 PR에서 해소(그중 BSD 먼저 둔 stat 폴백이 Linux CI에서 Red로 드러나 순서 교정).
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #405 — style: Adopt the Google Python style guide with ruff in CI
 - #404 — test: Track 47 — web/views sibling-import guard and second test-speed measurement
 - #403 — ops: Track 46 — gunicorn timeout, multi-worker rate-limit measurement, backup rehearsal, runner launchd
 - #401 — deploy: main → production
