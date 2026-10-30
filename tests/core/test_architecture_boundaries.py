@@ -40,6 +40,8 @@ def _parse_imported_module_names(source_path):
             if node.level:
                 continue
             modules.add(node.module)
+            # `from X import Y`의 Y가 모듈일 수 있어 X.Y도 함께 모은다.
+            modules.update(f"{node.module}.{alias.name}" for alias in node.names)
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
         # 동적 import도 정적 import처럼 다른 도메인을 불러올 수 있어 함께 본다.
@@ -48,6 +50,17 @@ def _parse_imported_module_names(source_path):
             if target is not None:
                 modules.add(target)
     return modules
+
+
+def test_기본_스캐너는_모듈만_임포트하는_형태의_하위_모듈도_탐지한다(tmp_path):
+    """`from drafts import discovery_runs`처럼 모듈만 가져오는 형태로
+    하위 모듈 금지 집합을 우회하지 못하게 한다."""
+    source_path = tmp_path / "poison.py"
+    source_path.write_text("from drafts import discovery_runs\n")
+
+    modules = _parse_imported_module_names(source_path)
+
+    assert "drafts.discovery_runs" in modules
 
 
 def _imported_modules(module_path):

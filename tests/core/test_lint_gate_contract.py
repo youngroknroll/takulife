@@ -96,6 +96,24 @@ def _find_job_block(workflow_text: str, job_name: str) -> str | None:
     return None
 
 
+def _pull_request_trigger_keys(triggers: str) -> dict[str, str]:
+    """트리거 영역에서 `pull_request:` 아래 더 깊이 들여쓴 줄의 키와 값을 모은다(주석 제외)."""
+    header = re.search(r"^(\s*)pull_request:[ \t]*$", triggers, re.MULTILINE)
+    if header is None:
+        return {}
+    base_indent = len(header.group(1))
+    keys = {}
+    for line in triggers[header.end() :].splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if len(line) - len(line.lstrip()) <= base_indent:
+            break
+        match = re.match(r"^\s+([a-z-]+):\s*(.*)$", line)
+        if match:
+            keys[match.group(1)] = match.group(2).strip()
+    return keys
+
+
 def test_CI_워크플로는_린트_잡에서_ruff_check와_ruff_format_check를_uv_run으로_실행한다():
     """린트 잡이 존재하고, ruff 두 명령을 uv run으로 실행하며, 관측 모드로 약해지지 않는다."""
     workflow_text = (PROJECT_ROOT / ".github/workflows/ci.yml").read_text()
@@ -114,7 +132,14 @@ def test_CI_워크플로는_린트_잡에서_ruff_check와_ruff_format_check를_
     assert re.search(r"^\s*(?:-\s+)?if:", block, re.MULTILINE) is None, (
         "린트 잡 또는 단계에 if: 조건이 있다 (조건부로 건너뛰면 PR 게이트가 아니다)"
     )
+    assert re.search(r"^\s*needs:", block, re.MULTILINE) is None, (
+        "린트 잡에 needs:가 있다 (다른 잡이 건너뛰면 린트도 skipped가 된다)"
+    )
     triggers = workflow_text.partition("\njobs:\n")[0]
+    assert _pull_request_trigger_keys(triggers) == {"branches-ignore": "[production]"}, (
+        "ci.yml pull_request 트리거가 branches-ignore: [production] 하나가 아니다 "
+        "(paths-ignore 등으로 PR 실행 자체가 빠질 수 있다)"
+    )
     assert re.search(r"^\s+pull_request:", triggers, re.MULTILINE), (
         "ci.yml 트리거에 pull_request가 없다 (PR 게이트가 아니게 된다)"
     )
