@@ -8,10 +8,7 @@ from rest_framework.response import Response
 
 from core.categories import category_slugs
 from core.errors import error_response
-from core.runner_auth import (  # noqa: F401 — RunnerTokenThrottle은 tests/drafts/test_discovery_runner_api.py가 이 경로로 가져와 monkeypatch한다
-    RunnerAPIView,
-    RunnerTokenThrottle,
-)
+from core.runner_auth import RunnerAPIView
 from core.vocab import REGION
 from drafts.agent_drafts import (
     AgentDraftExcludedError,

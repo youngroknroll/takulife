@@ -7,6 +7,7 @@ from django.utils import timezone
 import pytest
 
 from core.models import Category
+from core.runner_auth import RunnerTokenThrottle
 from core.vocab import CATEGORY, REGION
 from drafts.discovery_runs import record_heartbeat, runner_is_online
 from drafts.models import (
@@ -16,7 +17,6 @@ from drafts.models import (
     SourceCandidate,
     SourceDiscoveryRun,
 )
-from drafts.runner_views import RunnerTokenThrottle
 
 pytestmark = [pytest.mark.django_db, pytest.mark.web]
 

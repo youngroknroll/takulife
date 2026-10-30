@@ -30,7 +30,12 @@ from events.queries import published_quality_warnings
 from staff.action_labels import ACTION_LABELS
 from staff.models import StaffActionLog
 from staff.permissions import staff_console_required
-from staff.queries import recent_staff_actions, staff_actions_count_since, staff_actions_per_day
+from staff.queries import (
+    STAFF_ACTION_LOG_PAGE_SIZE,
+    recent_staff_actions,
+    staff_actions_count_since,
+    staff_actions_per_day,
+)
 from staff.views._helpers import _action_log_kwargs, _build_source_rows, _staff_action_metadata
 from staff.views.accounts import (
     STAFF_ACCOUNT_LISTING_PAGE_SIZE,
@@ -39,7 +44,7 @@ from staff.views.accounts import (
     staff_account_set_staff,
     staff_accounts,
 )
-from staff.views.audit_log import STAFF_ACTION_LOG_PAGE_SIZE, staff_audit_log
+from staff.views.audit_log import staff_audit_log
 from staff.views.categories import (
     category_create,
     category_edit,
