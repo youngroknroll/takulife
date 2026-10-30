@@ -1,9 +1,9 @@
-"""번역 대상 필드·해시·제출 검증·노출 선택 등 순수 규칙 모듈. DB·모델을 모른다.
-"""
+"""번역 대상 필드·해시·제출 검증·노출 선택 등 순수 규칙 모듈. DB·모델을 모른다."""
+
+from dataclasses import dataclass
 import hashlib
 import re
 import unicodedata
-from dataclasses import dataclass
 
 TRANSLATED_FIELDS = ("title", "work_title", "location_name", "summary")
 TARGET_LANGUAGES = ("en", "ja", "zh-hans")
@@ -33,7 +33,7 @@ _KANA_RE = re.compile(r"[\u3040-\u30ff]")
 _HANJA_RE = re.compile(r"[\u4e00-\u9fff]")
 
 
-class SubmissionRejected(Exception):
+class SubmissionRejectedError(Exception):
     """제출 전체를 거부할 때 쓴다. 저장은 하지 않는다.
 
     사유 코드는 두 갈래다: "schema"·"nul"은 이 모듈의 구조 검증이 올리고,
@@ -150,9 +150,7 @@ def _script_reason(language, field, kt, kt_nospace):
             if not (len(kt_nospace) <= 10 and _HANJA_RE.search(kt)):
                 return "wrong_script"
     elif language == "zh-hans":
-        if not is_proper_noun_latin_exception and (
-            not _HANJA_RE.search(kt) or _KANA_RE.search(kt)
-        ):
+        if not is_proper_noun_latin_exception and (not _HANJA_RE.search(kt) or _KANA_RE.search(kt)):
             return "wrong_script"
     else:
         raise ValueError(f"unknown language: {language}")
@@ -222,18 +220,20 @@ def quarantine_reason(language, source_fields, translated_fields):
 
 def validate_translations(source_fields, translations):
     if not isinstance(translations, dict) or set(translations.keys()) != set(TARGET_LANGUAGES):
-        raise SubmissionRejected("schema")
+        raise SubmissionRejectedError("schema")
     for language_value in translations.values():
-        if not isinstance(language_value, dict) or set(language_value.keys()) != set(TRANSLATED_FIELDS):
-            raise SubmissionRejected("schema")
+        if not isinstance(language_value, dict) or set(language_value.keys()) != set(
+            TRANSLATED_FIELDS
+        ):
+            raise SubmissionRejectedError("schema")
         for value in language_value.values():
             if not isinstance(value, str):
-                raise SubmissionRejected("schema")
+                raise SubmissionRejectedError("schema")
 
     for language_value in translations.values():
         for value in language_value.values():
             if "\x00" in value:
-                raise SubmissionRejected("nul")
+                raise SubmissionRejectedError("nul")
 
     languages = {}
     quarantined = {}

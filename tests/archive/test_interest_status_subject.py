@@ -5,11 +5,11 @@ PersonalEntry(비공식) 중 정확히 하나만을 가리킬 수 있다.
 다루며, personal_entry의 소유자 범위 한정과 event 하위호환도 포함한다.
 test_visit_record_subject.py(Phase 2)와 대응된다.
 """
-import pytest
+
 from django.db import IntegrityError, transaction
+import pytest
 
 from archive.models import EventInterest, PersonalEntry, UserEventStatus
-
 
 # ---------------------------------------------------------------------------
 # EventInterest — 모델 제약
@@ -30,7 +30,9 @@ def test_개인항목을_주체로_찜을_생성하면_이벤트는_없음으로
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_이벤트와_개인항목을_동시에_지정해_찜을_생성하면_무결성_오류가_발생한다(make_user, make_event):
+def test_이벤트와_개인항목을_동시에_지정해_찜을_생성하면_무결성_오류가_발생한다(
+    make_user, make_event
+):
     user = make_user(username="ei-both")
     event = make_event(title="Official")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
@@ -85,9 +87,7 @@ def test_개인항목을_주체로_상태를_생성하면_이벤트는_없음으
     user = make_user(username="ues-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
-    status = UserEventStatus.objects.create(
-        user=user, personal_entry=entry, status="planned"
-    )
+    status = UserEventStatus.objects.create(user=user, personal_entry=entry, status="planned")
 
     assert status.event is None
     assert status.personal_entry == entry
@@ -95,7 +95,9 @@ def test_개인항목을_주체로_상태를_생성하면_이벤트는_없음으
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_이벤트와_개인항목을_동시에_지정해_상태를_생성하면_무결성_오류가_발생한다(make_user, make_event):
+def test_이벤트와_개인항목을_동시에_지정해_상태를_생성하면_무결성_오류가_발생한다(
+    make_user, make_event
+):
     user = make_user(username="ues-both")
     event = make_event(title="Official")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
@@ -138,9 +140,7 @@ def test_같은_개인항목에_대한_상태를_중복_생성하면_무결성_�
     UserEventStatus.objects.create(user=user, personal_entry=entry, status="planned")
     with pytest.raises(IntegrityError):
         with transaction.atomic():
-            UserEventStatus.objects.create(
-                user=user, personal_entry=entry, status="visited"
-            )
+            UserEventStatus.objects.create(user=user, personal_entry=entry, status="visited")
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +169,9 @@ def test_개인항목_id로_찜_생성을_요청하면_201과_함께_이벤트�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_이벤트_id로_찜_생성을_요청하면_기존과_동일하게_201로_응답된다(client, make_user, make_event):
+def test_이벤트_id로_찜_생성을_요청하면_기존과_동일하게_201로_응답된다(
+    client, make_user, make_event
+):
     user = make_user(username="ei-api-ev")
     event = make_event(title="Official event")
 
@@ -201,7 +203,9 @@ def test_주체를_지정하지_않고_찜_생성을_요청하면_400으로_거�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_타인_소유_개인항목으로_찜_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
+def test_타인_소유_개인항목으로_찜_생성을_요청하면_400으로_거부되고_저장되지_않는다(
+    client, make_user
+):
     user = make_user(username="ei-api-scope")
     other = make_user(username="ei-api-scope-other")
     theirs = PersonalEntry.objects.create(user=other, kind="place", title="Theirs")
@@ -245,7 +249,9 @@ def test_이미_찜한_개인항목에_다시_찜_생성을_요청하면_409로_
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_개인항목_id로_상태_생성을_요청하면_201과_함께_이벤트는_없음으로_응답된다(client, make_user):
+def test_개인항목_id로_상태_생성을_요청하면_201과_함께_이벤트는_없음으로_응답된다(
+    client, make_user
+):
     user = make_user(username="ues-api-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
@@ -265,7 +271,9 @@ def test_개인항목_id로_상태_생성을_요청하면_201과_함께_이벤�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_이벤트_id로_상태_생성을_요청하면_기존과_동일하게_201로_응답된다(client, make_user, make_event):
+def test_이벤트_id로_상태_생성을_요청하면_기존과_동일하게_201로_응답된다(
+    client, make_user, make_event
+):
     user = make_user(username="ues-api-ev")
     event = make_event(title="Official event")
 
@@ -297,7 +305,9 @@ def test_주체를_지정하지_않고_상태_생성을_요청하면_400으로_�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_타인_소유_개인항목으로_상태_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
+def test_타인_소유_개인항목으로_상태_생성을_요청하면_400으로_거부되고_저장되지_않는다(
+    client, make_user
+):
     user = make_user(username="ues-api-scope")
     other = make_user(username="ues-api-scope-other")
     theirs = PersonalEntry.objects.create(user=other, kind="place", title="Theirs")
@@ -315,7 +325,9 @@ def test_타인_소유_개인항목으로_상태_생성을_요청하면_400으�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_굿즈_kind_개인항목으로_찜_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
+def test_굿즈_kind_개인항목으로_찜_생성을_요청하면_400으로_거부되고_저장되지_않는다(
+    client, make_user
+):
     """GOODS는 더 이상 아카이브 행동의 대상이 아니다(컬렉션 도메인 설계안 §3-3) —
     PLACE 개인항목만 찜할 수 있다."""
     user = make_user(username="ei-api-goods")
@@ -355,7 +367,9 @@ def test_이미_상태가_있는_개인항목에_다시_상태_생성을_요청�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_굿즈_kind_개인항목으로_상태_생성을_요청하면_400으로_거부되고_저장되지_않는다(client, make_user):
+def test_굿즈_kind_개인항목으로_상태_생성을_요청하면_400으로_거부되고_저장되지_않는다(
+    client, make_user
+):
     """GOODS는 더 이상 아카이브 행동의 대상이 아니다(컬렉션 도메인 설계안 §3-3) —
     PLACE 개인항목만 상태를 가질 수 있다."""
     user = make_user(username="ues-api-goods")

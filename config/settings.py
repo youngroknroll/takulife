@@ -1,10 +1,9 @@
+import os
 from pathlib import Path
 from urllib.parse import urlsplit
-import os
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -35,9 +34,7 @@ def load_secret_key(debug):
         return secret_key
     if debug:
         return "django-insecure-local-dev-key-change-me"
-    raise ImproperlyConfigured(
-        "SECRET_KEY environment variable is required when DEBUG=false."
-    )
+    raise ImproperlyConfigured("SECRET_KEY environment variable is required when DEBUG=false.")
 
 
 def load_anthropic_api_key():
@@ -139,13 +136,10 @@ def load_trusted_proxy_count():
     try:
         value = int(raw)
     except ValueError:
-        raise ImproperlyConfigured(
-            f"TRUSTED_PROXY_COUNT must be an integer, got {raw!r}."
-        )
+        raise ImproperlyConfigured(f"TRUSTED_PROXY_COUNT must be an integer, got {raw!r}.")
     if value < 0:
         raise ImproperlyConfigured(
-            "TRUSTED_PROXY_COUNT must be an integer 0 or greater, got "
-            f"{value!r}."
+            f"TRUSTED_PROXY_COUNT must be an integer 0 or greater, got {value!r}."
         )
     return value
 
@@ -479,9 +473,9 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {
-                        "access_type": "online",
-                        "prompt": "select_account",
-                        },
+            "access_type": "online",
+            "prompt": "select_account",
+        },
     }
 }
 # 구글은 이메일 소유권을 검증하므로 신뢰할 수 있다: 검증된 구글 이메일이

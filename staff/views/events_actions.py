@@ -5,6 +5,7 @@ events.py가 이미 커서(파일 크기 분리 트리거) 근처라 새 엔드�
 둔다. 문구 표·배지 계산은 events.py 소유를 그대로 따르고 이 파일은 그것을
 가져다 쓰기만 한다(events_actions → events 단방향).
 """
+
 import logging
 
 from django.db import transaction
@@ -25,10 +26,9 @@ from events.services import (
     republish_event,
     unpublish_event,
 )
-
-from ..models import StaffActionLog
-from ._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
-from .events import _event_quality_badges, _republish_error_message
+from staff.models import StaffActionLog
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata, _validate_bulk_ids
+from staff.views.events import _event_quality_badges, _republish_error_message
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,9 @@ class StaffEventPublishStatusView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request, pk):
-        publish_status = request.data.get("publish_status") if isinstance(request.data, dict) else None
+        publish_status = (
+            request.data.get("publish_status") if isinstance(request.data, dict) else None
+        )
         if publish_status not in Event.PublishStatus.values:
             return field_error_response(
                 "publish_status",
@@ -76,9 +78,7 @@ class StaffEventPublishStatusView(APIView):
                 "publish_status": event.publish_status,
                 "changed": changed,
                 "quality_badges": (
-                    _event_quality_badges(event, today=timezone.localdate())
-                    if is_published
-                    else []
+                    _event_quality_badges(event, today=timezone.localdate()) if is_published else []
                 ),
             }
         )
@@ -107,9 +107,7 @@ class StaffEventVerifiedView(APIView):
                 "id": event.id,
                 "verified_at": event.verified_at.isoformat(),
                 "quality_badges": (
-                    _event_quality_badges(event, today=timezone.localdate())
-                    if is_published
-                    else []
+                    _event_quality_badges(event, today=timezone.localdate()) if is_published else []
                 ),
             }
         )
@@ -178,8 +176,6 @@ class StaffEventBulkUnpublishView(APIView):
             # 분류되지 않은 실패라도 배치 나머지를 막지 않는다. 이 시점엔
             # 이 항목의 변경분은 이미 롤백된 상태다. 실제 예외는 로그로
             # 남기고, 클라이언트에는 고정된 문구만 돌려준다.
-            logger.exception(
-                "bulk unpublish: unexpected error for event_id=%s", event_id
-            )
+            logger.exception("bulk unpublish: unexpected error for event_id=%s", event_id)
             return "Unexpected error."
         return None

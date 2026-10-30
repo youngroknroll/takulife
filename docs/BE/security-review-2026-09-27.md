@@ -33,16 +33,16 @@ F1은 운영 DB에 이미 저장된 비-http(s) 값이 있으면 코드 배포�
 
 | # | 심각도 | CWE | STRIDE | 발견 | 위치 | 확신 |
 |---|---|---|---|---|---|---|
-| F1 | High | 79 | T·E | 스태프 이벤트 폼 `official_url` 스킴 미검증, 공개 상세 `href`에 `javascript:` 저장형 XSS | events/services.py:42-75 | 높음 `[실측]` |
-| F2 | High | 799·400 | D | allauth `ip` 레이트리밋이 프로젝트 `TRUSTED_PROXY_COUNT`와 무관, 프록시 뒤에서 전 사용자 공유 버킷 | config/settings.py:491-496 | 코드 높음, 운영 미실측 |
-| F3 | Medium | 770 | D | DRF JSON 본문이 Django 2.5MB 상한을 거치지 않고 memo에 길이 상한 없음 | archive/serializers.py:16-46, :212-280 | 높음 `[실측 소스]` — (b) 본문 상한 부분은 반박, (a) memo 상한만 유효. §2 F3 정정 참조 |
-| F4 | Medium | 400 | D | 「지금 수집」 동기 실행에 뮤텍스 없음, gunicorn 워커 3개 점유 | staff/views/__init__.py:290-336 | 높음 |
-| F5 | Low | 918 | I | SSRF 판정이 100.64.0.0/10(CGNAT) 통과 | drafts/url_safety.py:14-22, local_runner/url_safety.py:18-26 | 높음 `[실측]` |
-| F6 | Low | 367·400 | I·D | 러너 일반 웹 읽기에 IP 핀닝 없음, 본문 전량 수신 뒤 크기 검사 | local_runner/page_fetch.py:213-231 | 높음 |
+| F1 | High | 79 | T·E | 스태프 이벤트 폼 `official_url` 스킴 미검증, 공개 상세 `href`에 `javascript:` 저장형 XSS | events/services.py:41-74 | 높음 `[실측]` |
+| F2 | High | 799·400 | D | allauth `ip` 레이트리밋이 프로젝트 `TRUSTED_PROXY_COUNT`와 무관, 프록시 뒤에서 전 사용자 공유 버킷 | config/settings.py:485-490 | 코드 높음, 운영 미실측 |
+| F3 | Medium | 770 | D | DRF JSON 본문이 Django 2.5MB 상한을 거치지 않고 memo에 길이 상한 없음 | archive/serializers.py:11-44, :206-274 | 높음 `[실측 소스]` — (b) 본문 상한 부분은 반박, (a) memo 상한만 유효. §2 F3 정정 참조 |
+| F4 | Medium | 400 | D | 「지금 수집」 동기 실행에 뮤텍스 없음, gunicorn 워커 3개 점유 | staff/views/__init__.py:291-337 | 높음 |
+| F5 | Low | 918 | I | SSRF 판정이 100.64.0.0/10(CGNAT) 통과 | drafts/url_safety.py:14-22, local_runner/url_safety.py:19-27 | 높음 `[실측]` |
+| F6 | Low | 367·400 | I·D | 러너 일반 웹 읽기에 IP 핀닝 없음, 본문 전량 수신 뒤 크기 검사 | local_runner/page_fetch.py:214-232 | 높음 |
 | F7 | Low | 20·770 | D | 러너 known-urls 목록 길이·타입 무검사 | drafts/runner_views.py:250-265 | 높음 |
-| F8 | Low | 770 | D | 오류 리포트 전역 단일 버킷 소진 시 관측 공백 | core/client_error_views.py:89-96 | 높음 |
-| F9 | Low | 16 | T | `SECURE_COOKIES`만 `os.environ` 직접 읽기 | config/settings.py:523 | 높음 |
-| F10 | Low | 308 | S | 스태프·슈퍼유저 MFA 부재, `/admin/` 노출 | config/urls.py:185, config/settings.py:299-323 | 높음 |
+| F8 | Low | 770 | D | 오류 리포트 전역 단일 버킷 소진 시 관측 공백 | core/client_error_views.py:90-97 | 높음 |
+| F9 | Low | 16 | T | `SECURE_COOKIES`만 `os.environ` 직접 읽기 | config/settings.py:517 | 높음 |
+| F10 | Low | 308 | S | 스태프·슈퍼유저 MFA 부재, `/admin/` 노출 | config/urls.py:180, config/settings.py:293-317 | 높음 |
 | F11 | Low | 693 | T | CSP 헤더 없음 | config/settings.py 전체, templates/base.html:8-15, :20-36, :81-86 | 높음 |
 
 STRIDE 약어: S 위장, T 변조, R 부인, I 정보 노출, D 서비스 거부, E 권한 상승.
@@ -56,12 +56,12 @@ STRIDE 약어: S 위장, T 변조, R 부인, I 정보 노출, D 서비스 거부
 **현재 흐름**
 
 ```text
-스태프 이벤트 생성/수정 폼 POST  (is_staff 계정이면 충분, staff/permissions.py:9-25)
+스태프 이벤트 생성/수정 폼 POST  (is_staff 계정이면 충분, staff/permissions.py:10-26)
   -> staff/views/events.py:383-387  _event_edit_form_values_from_post: POST 원문을 그대로 dict로
   -> staff/views/events.py:429 / :505  create_published_event / update_published_event(official_url=원문)
-  -> events/services.py:42-75  _validate_publish_fields
+  -> events/services.py:41-74  _validate_publish_fields
         검사: 공백 제거, 비어 있음, 제목=URL, 중복, 기간, 카테고리, 지역   <- 스킴 검사 없음
-  -> events/services.py:174 Event.objects.create(...)  /  :237 event.save(update_fields=...)
+  -> events/services.py:171 Event.objects.create(...)  /  :237 event.save(update_fields=...)
         URLField의 URLValidator는 full_clean()이 없으면 실행되지 않는다
   -> DB에 "javascript:alert(document.cookie)" 저장
   -> templates/core/events/detail.html:86, :186  <a href="{{ event.official_url }}" target="_blank" rel="noopener">
@@ -69,11 +69,11 @@ STRIDE 약어: S 위장, T 변조, R 부인, I 정보 노출, D 서비스 거부
   -> 공개 방문자가 "공식 페이지로" 클릭 -> takulife 오리진에서 스크립트 실행
 ```
 
-같은 검증기를 `republish_event`(events/services.py:278-286), 스태프 인라인
-재게시(staff/views/events_actions.py:56), 초안 승인 `approve_draft`
-(drafts/services.py:363-372)도 쓴다. 초안의 `source_url`은 생성 경로 3곳이 이미
-`http(s)`로 제한한다(drafts/serializers.py:95-98, drafts/agent_drafts.py:208-213,
-web/promotion.py:69-72). 스태프 수동 생성·수정 경로만 제한이 없다.
+같은 검증기를 `republish_event`(events/services.py:275-283), 스태프 인라인
+재게시(staff/views/events_actions.py:58), 초안 승인 `approve_draft`
+(drafts/services.py:358-367)도 쓴다. 초안의 `source_url`은 생성 경로 3곳이 이미
+`http(s)`로 제한한다(drafts/serializers.py:95-98, drafts/agent_drafts.py:213-218,
+web/promotion.py:68-71). 스태프 수동 생성·수정 경로만 제한이 없다.
 
 **재현** `[실측 2026-09-27, DB 쓰기 없음]`
 
@@ -87,7 +87,7 @@ uv run python manage.py shell -c "from events.services import _validate_publish_
 `javascript:`·`data:` 스킴은 정상 문자열이라 통과한다. 검증기가 "값이 있는가"만
 묻고 "어떤 종류의 값인가"를 묻지 않아 생긴 결함이다. 전제는 `is_staff` 계정
 1개이고 슈퍼유저가 아니어도 된다. `CSRF_COOKIE_HTTPONLY = False`
-(config/settings.py:527, JS가 읽어야 해서 의도된 값)라 스크립트가 `csrftoken`을
+(config/settings.py:521, JS가 읽어야 해서 의도된 값)라 스크립트가 `csrftoken`을
 읽어 피해자 권한으로 `/api/*`·`/staff/*` 쓰기를 대행할 수 있고, 슈퍼유저가
 클릭하면 계정 권한 부여(`/staff/accounts/<pk>/staff/`)까지 이어지는 권한 상승
 경로다.
@@ -140,7 +140,7 @@ POST official_url="javascript:..." -> _validate_publish_fields -> PublishEventOf
 프로덕션: 클라이언트 -> PaaS 리버스 프록시(X-Forwarded-For 추가) -> gunicorn -> Django
   REMOTE_ADDR = 프록시 IP  (모든 사용자 동일)
 
-allauth 레이트리밋 (config/settings.py:491-496)
+allauth 레이트리밋 (config/settings.py:485-490)
   signup "5/m/ip,30/h/ip" · login_failed "10/m/ip,5/300s/key" · reset_password "20/m/ip,5/m/key"
   -> allauth/core/internal/ratelimit.py:121-122  rate.per == "ip" -> get_ip(request)
   -> :113  get_adapter().get_client_ip(request)
@@ -150,14 +150,14 @@ allauth 레이트리밋 (config/settings.py:491-496)
         -> REMOTE_ADDR = 프록시 IP
   -> 버킷 키 ("ip", 프록시 IP): 사이트 전체가 버킷 하나
 
-프로젝트 TRUSTED_PROXY_COUNT (config/settings.py:519-520, core/ip.py:18-47)
+프로젝트 TRUSTED_PROXY_COUNT (config/settings.py:513-514, core/ip.py:18-47)
   -> axes(AXES_CLIENT_IP_CALLABLE)와 StaffActionLog.ip_address에만 배선
   -> allauth는 이 값을 읽지 않는다 (설정 접두어 ALLAUTH_, allauth/app_settings.py:59-66, :97)
 ```
 
 저장소에 `ALLAUTH_TRUSTED_PROXY_COUNT`·`TRUSTED_CLIENT_IP_HEADER` 참조 0건
 `[실측 rg -n 'ALLAUTH_TRUSTED_PROXY_COUNT|TRUSTED_CLIENT_IP_HEADER|ALLAUTH_' config/ .env.example docs/ tests/]`.
-기존 잠금 테스트 tests/auth/test_auth_lockout.py:70-106은
+기존 잠금 테스트 tests/auth/test_auth_lockout.py:73-109은
 `ACCOUNT_RATE_LIMITS={"login_failed": "1000/m/key"}`로 `ip` 범위를 꺼 둔 채 axes만
 검증하므로, 이 공유 버킷은 테스트 스위트가 한 번도 보지 않았다.
 
@@ -170,7 +170,7 @@ IP로 묶여 다음이 된다.
   429(`templates/429.html`)다. 비용은 분당 요청 10건이다.
 - 가입은 사이트 전체 30건/시간, 비밀번호 재설정 메일 요청은 20건/분으로 묶인다.
   정상 사용자끼리 서로의 한도를 소진한다.
-- `TRUSTED_PROXY_COUNT`가 Render env에 없다면 axes(config/settings.py:504-506,
+- `TRUSTED_PROXY_COUNT`가 Render env에 없다면 axes(config/settings.py:498-500,
   실패 5회·쿨다운 1시간)도 프록시 IP를 잠가 1시간 전체 로그인 차단이 된다. 이
   env 값은 저장소 밖이라 미검증이다(§5).
 
@@ -230,7 +230,7 @@ env를 따른다. 특정 소비자만 별도 설정을 두지 않는다.
         DATA_UPLOAD_MAX_MEMORY_SIZE 검사 없음. 그 검사는 HttpRequest.body(:398-425)와 multipart 파서에만 있다
   -> 본문 전체가 워커 메모리에 올라가고 json.loads
   -> PersonalEntrySerializer.memo / CollectionItemSerializer.memo: TextField 자동 매핑, max_length 없음
-        (archive/models.py:164, :303 · archive/serializers.py에 memo max_length 0건 [실측 rg])
+        (archive/models.py:163, :300 · archive/serializers.py에 memo max_length 0건 [실측 rg])
   -> DB 저장
 ```
 
@@ -299,10 +299,10 @@ multipart(사진)                            -> 미들웨어 통과, 기존 5MB 
 **현재 흐름**
 
 ```text
-스태프 POST /staff/draft-discovery/run/  (staff/views/__init__.py:290-336)
+스태프 POST /staff/draft-discovery/run/  (staff/views/__init__.py:291-337)
   -> DRAFT_DISCOVERY_ENABLED · 활성 소스 확인
   -> :321 call_command("discover_drafts", stdout=out)   <- 요청 스레드에서 동기 실행, 락 없음
-        소스마다 robots 확인·fetch·1초 대기(discover_drafts.py:59, :91-94) + 후보마다 Crawl-delay 대기(:206)
+        소스마다 robots 확인·fetch·1초 대기(discover_drafts.py:58, :92-95) + 후보마다 Crawl-delay 대기(:206)
   -> 수십 초 ~ 분 단위로 gunicorn 워커 1개 점유  (기본 3개, docker/entrypoint.sh:15)
 동시에 POST 3회 -> 워커 3개 전부 점유 -> 공개 방문자 요청 대기
 ```
@@ -311,7 +311,7 @@ multipart(사진)                            -> 미들웨어 통과, 기존 5MB 
 (프로덕션 개통 2026-09-20)다. 사고 시나리오는 두 가지다. 스태프 본인이 응답을
 기다리다 다시 클릭하는 것과, 탈취된 스태프 세션이 반복 POST하는 것. 어느 쪽이든
 결과는 사이트 전체 응답 지연이다. 같은 축의 워커 수준 방어(gunicorn `--timeout`)는
-백로그 G2로 예약돼 있고, 이 항목은 애플리케이션 수준에서 중복 실행을 막는 것이다.
+백로그 G2(트랙 46에서 기본 120초로 설정, 2026-10-28)로 예약돼 있었고, 이 항목은 애플리케이션 수준에서 중복 실행을 막는 것이다.
 
 **변경 요소**
 
@@ -321,7 +321,7 @@ multipart(사진)                            -> 미들웨어 통과, 기존 5MB 
 | staff/views/discovery.py:26-50 (참고, 변경 없음) | 같은 캐시 기반 제한 패턴의 선례 | 새 패턴을 만들지 않는다 |
 
 **정정 (2026-09-28, 구현 반영)**: 잠금 해제 보장 범위는 정상 종료·파이썬
-예외·gunicorn SIGABRT 종료다. 기본 30초 타임아웃 초과 시 아비터는 먼저
+예외·gunicorn SIGABRT 종료다. 워커 타임아웃(트랙 46 이전 기본 30초, 현재 기본 120초 `[코드 docker/entrypoint.sh]`) 초과 시 아비터는 먼저
 SIGABRT를 보내고(`gunicorn/arbiter.py:590-593`) 워커는 `sys.exit(1)`로
 반응해(`gunicorn/workers/base.py:195-198`) `SystemExit`가 `finally`를
 통과하므로 잠금이 보통 풀린다. SIGKILL(다음 아비터 점검까지 워커가 남을
@@ -337,7 +337,7 @@ POST #2 (실행 중)  -> cache.add 실패 -> info 메시지 + 리다이렉트, �
 ```
 
 **목적·가드레일.** 요청 스레드에서 돌리는 장시간 동기 작업은 캐시 뮤텍스로 단일
-실행을 보장한다. G2(gunicorn `--timeout`)는 이 뮤텍스의 대체가 아니라 워커 수준
+실행을 보장한다. G2(gunicorn `--timeout`, 트랙 46에서 기본 120초로 설정, 2026-10-28)는 이 뮤텍스의 대체가 아니라 워커 수준
 보강이다.
 
 **수용 기준.** 잠금이 잡힌 상태의 두 번째 POST는 `StaffActionLog`에
@@ -348,12 +348,12 @@ POST #2 (실행 중)  -> cache.add 실패 -> info 메시지 + 리다이렉트, �
 
 | # | 현재 | 변경 요소 | 이유·목적 |
 |---|---|---|---|
-| F5 CGNAT | `_is_unsafe_ip`가 `is_private`·`is_loopback`·`is_link_local`·`is_multicast`·`is_unspecified`·`is_reserved` 열거. `100.64.0.1`은 `is_private=False`·`is_global=False`인데 안전 판정 `[실측 Python 3.13.5]` | drafts/url_safety.py:14-22와 local_runner/url_safety.py:18-26 둘 다 `or not value.is_global` 추가. tests/drafts/test_url_safety.py와 러너 테스트에 `100.64.0.1` 거부 케이스 | 열거 대신 "전역 라우팅 가능한 주소만 허용"으로 기준을 뒤집어 누락 대역을 없앤다. `64:ff9b::7f00:1`은 이미 `is_reserved`로 차단됨 `[실측]` |
-| F6 러너 읽기 | `_fetch_general_web`(local_runner/page_fetch.py:213-231)은 검증 뒤 `httpx.get(url)`로 DNS를 다시 풀고, `response.text` 전량 수신 뒤 크기 검사. 인스타 경로(:88-94)는 상한 없음 | 서버 `drafts/fetching.py:83-101`과 같은 IP 핀닝(연결 URL 호스트 치환 + Host 헤더 + sni_hostname), `httpx.stream`으로 1,000,000바이트 초과 시 중단. 인스타 경로에도 같은 상한 | 서버와 러너의 fetch 안전 규칙 비대칭 제거. 트랙 35 이연 항목(캡션 경로 응답 크기 상한·DNS 리바인딩)과 같은 축이라 그 이연을 닫는 작업으로 처리 |
+| F5 CGNAT | `_is_unsafe_ip`가 `is_private`·`is_loopback`·`is_link_local`·`is_multicast`·`is_unspecified`·`is_reserved` 열거. `100.64.0.1`은 `is_private=False`·`is_global=False`인데 안전 판정 `[실측 Python 3.13.5]` | drafts/url_safety.py:14-22와 local_runner/url_safety.py:19-27 둘 다 `or not value.is_global` 추가. tests/drafts/test_url_safety.py와 러너 테스트에 `100.64.0.1` 거부 케이스 | 열거 대신 "전역 라우팅 가능한 주소만 허용"으로 기준을 뒤집어 누락 대역을 없앤다. `64:ff9b::7f00:1`은 이미 `is_reserved`로 차단됨 `[실측]` |
+| F6 러너 읽기 | `_fetch_general_web`(local_runner/page_fetch.py:214-232)은 검증 뒤 `httpx.get(url)`로 DNS를 다시 풀고, `response.text` 전량 수신 뒤 크기 검사. 인스타 경로(:88-94)는 상한 없음 | 서버 `drafts/fetching.py:84-102`과 같은 IP 핀닝(연결 URL 호스트 치환 + Host 헤더 + sni_hostname), `httpx.stream`으로 1,000,000바이트 초과 시 중단. 인스타 경로에도 같은 상한 | 서버와 러너의 fetch 안전 규칙 비대칭 제거. 트랙 35 이연 항목(캡션 경로 응답 크기 상한·DNS 리바인딩)과 같은 축이라 그 이연을 닫는 작업으로 처리 |
 | F7 러너 known-urls | drafts/runner_views.py:253-259가 `urls`의 list 여부만 검사 | 길이 상한(예 500)과 원소 `str` 검사, 위반 시 400 | 토큰 보유자 한정이지만 거대한 `IN` 절과 비문자열 500을 막는 방어 심도. **정정(2026-09-28 구현 반영)**: 상한 500 대신 전용 상수 `MAX_KNOWN_URLS_PER_REQUEST = 20`(러너 전송 상한 `EXPLORATION_MAX_EVENTS`와 같은 값)을 신설 — `MAX_EVENTS_PER_RUN`(실행당 영속 드래프트 상한)과 의미가 달라 재사용하지 않았다 |
-| F8 오류 리포트 버킷 | `GlobalClientErrorThrottle`(core/client_error_views.py:89-96)가 `ident="global"` 단일 버킷 120건/시간 | 지문별 분당 상한을 추가(예 같은 fingerprint 10건/분). 전역 상한은 유지 | 위조 Origin 1곳이 예산을 독점해 1시간 관측 공백을 만드는 것을 줄인다. 기록된 F7(Origin 위조 가능)과 인접 |
-| F9 SECURE_COOKIES | config/settings.py:523만 `os.environ.get` 직접 사용, 다른 플래그는 `_get_env`(:12-24) | `_get_env("SECURE_COOKIES", "")`로 통일 | `.env` 파일 값이 조용히 무시되는 운영 함정 제거. Render는 OS env를 쓰므로 현 배포 영향 없음 |
-| F10 MFA | `allauth.mfa` 미설치(INSTALLED_APPS config/settings.py:299-323), `/admin/` 노출(config/urls.py:185). extras `django-allauth[mfa]`는 pyproject에 이미 있음 | 별도 트랙: `allauth.mfa` 앱·URL 등록, 스태프·슈퍼유저 필수화 여부는 제품 결정 | F1 같은 스태프 전제 결함의 전제(계정 탈취)를 어렵게 한다. 기록된 보류(슈퍼유저 step-up)와는 별개 |
+| F8 오류 리포트 버킷 | `GlobalClientErrorThrottle`(core/client_error_views.py:90-97)가 `ident="global"` 단일 버킷 120건/시간 | 지문별 분당 상한을 추가(예 같은 fingerprint 10건/분). 전역 상한은 유지 | 위조 Origin 1곳이 예산을 독점해 1시간 관측 공백을 만드는 것을 줄인다. 기록된 F7(Origin 위조 가능)과 인접 |
+| F9 SECURE_COOKIES | config/settings.py:517만 `os.environ.get` 직접 사용, 다른 플래그는 `_get_env`(:12-24) | `_get_env("SECURE_COOKIES", "")`로 통일 | `.env` 파일 값이 조용히 무시되는 운영 함정 제거. Render는 OS env를 쓰므로 현 배포 영향 없음 |
+| F10 MFA | `allauth.mfa` 미설치(INSTALLED_APPS config/settings.py:293-317), `/admin/` 노출(config/urls.py:180). extras `django-allauth[mfa]`는 pyproject에 이미 있음 | 별도 트랙: `allauth.mfa` 앱·URL 등록, 스태프·슈퍼유저 필수화 여부는 제품 결정 | F1 같은 스태프 전제 결함의 전제(계정 탈취)를 어렵게 한다. 기록된 보류(슈퍼유저 step-up)와는 별개 |
 | F11 CSP | CSP 설정 0건 `[실측 rg]`, base.html 인라인 스크립트 3개(:8-15, :20-36, :81-86) | 별도 트랙: nonce 기반 `Content-Security-Policy` 미들웨어(새 의존성 도입은 승인 필요) | XSS 피해 반경 축소. 인라인 스크립트가 있어 nonce 없이는 도입 불가 |
 
 ### Test List 초안 (수정 트랙 착수 시 prompt_plan.md로 이관)
@@ -378,29 +378,29 @@ POST #2 (실행 중)  -> cache.add 실패 -> info 메시지 + 리다이렉트, �
 재검토 없이 신뢰할 수 있는 경계와 그 근거다. 새 경로를 추가할 때 이 목록의 규칙을
 그대로 따른다.
 
-- JSON-LD: web/views/events.py:570-574 `_json_ld_script`가 `<`·`>`·`&`를 `<`
+- JSON-LD: web/views/events.py:552-556 `_json_ld_script`가 `<`·`>`·`&`를 `<`
   등으로 바꿔 `</script>` 탈출을 막는다. 홈·상세 `|safe` 2곳이 이 함수만 거친다.
 - archive IDOR: 뷰 `get_queryset`이 `user=request.user`로 한정하고
-  (archive/views.py:155, :198, :246, :297, :375, :435, :500, :693), FK 입력
+  (archive/views.py:168, :214, :262, :315, :395, :458, :520, :715), FK 입력
   `personal_entry`·`visit_record`는 시리얼라이저 `__init__`에서 요청자 소유로
-  스코프(archive/serializers.py:70-76, :165-173, :259-273), `event`는 게시된 것만
+  스코프(archive/serializers.py:68-74, :161-169, :253-267), `event`는 게시된 것만
   (`Event.objects.published()`).
-- 공식 제보: web/promotion.py:69-72가 `validate_fetch_url`로 `http(s)`·localhost·
+- 공식 제보: web/promotion.py:68-71가 `validate_fetch_url`로 `http(s)`·localhost·
   사설 IP 리터럴을 거른다.
-- SSRF: drafts/fetching.py:74-117 최초 검증, 매 리다이렉트 홉 재검증, 검증 IP로
+- SSRF: drafts/fetching.py:75-118 최초 검증, 매 리다이렉트 홉 재검증, 검증 IP로
   직접 연결(IP 핀닝) + Host 헤더 + sni_hostname. 정본 `docs/BE/draft-fetching-ssrf.md`.
 - 업로드: events/image_validation.py 5MB 상한, 확장자와 Pillow 실디코딩 포맷
   allowlist, 축당 10,000px, 총 40,000,000픽셀, EXIF 제거 재인코딩,
-  archive/models.py:23 `personal_entry_image_upload_to`(UUID 파일명; `:14`는
+  archive/models.py:22 `personal_entry_image_upload_to`(UUID 파일명; `:14`는
   `MEMO_MAX_LENGTH`로 별개). 저장소 `default_acl=None`·
-  `querystring_auth=True`(config/settings.py:239-241).
+  `querystring_auth=True`(config/settings.py:233-235).
 - CSRF: `csrf_exempt` 운영 코드 0건 `[실측 rg]`, DRF는 `SessionAuthentication`만
-  (config/settings.py:613-615), 폼은 전부 `csrf_token` 또는 JS `X-CSRFToken`
+  (config/settings.py:607-609), 폼은 전부 `csrf_token` 또는 JS `X-CSRFToken`
   (static/js/shared/api.js:34-46).
 - 러너 API: 토큰 `constant_time_compare`, 빈 토큰 fail-closed, 스로틀 키 해시
-  (drafts/runner_views.py:38-60). 임대 토큰도 상수 시간 비교
-  (drafts/discovery_runs.py:268-276).
-- 오류 리포트: 정제(제어문자·시크릿·이메일·URL 쿼리, core/error_groups.py:86-95),
+  (drafts/runner_views.py:47-69). 임대 토큰도 상수 시간 비교
+  (drafts/discovery_runs.py:269-277).
+- 오류 리포트: 정제(제어문자·시크릿·이메일·URL 쿼리, core/error_groups.py:87-96),
   대시보드는 `message_sample`을 렌더하지 않고 나머지는 autoescape
   (templates/staff/dashboard.html:359-375).
 - 설정 가드: `DEBUG=false`에서 `SECRET_KEY` 필수, `ALLOWED_HOSTS` 설정 시
@@ -412,7 +412,7 @@ POST #2 (실행 중)  -> cache.add 실패 -> info 메시지 + 리다이렉트, �
   의도된 결정) 1건만 `[실측 2026-09-27]`.
 - 반박된 가설: JSON-LD XSS, archive FK IDOR, 제보 URL 스킴, 대시보드 텍스트 주입은
   소스로 반박됐다. 독립 검토 주장 중 "axes가 IP만 잠가 분산 크리덴셜 스터핑에
-  무력"은 부분 오류다. `login_failed 5/300s/key`(config/settings.py:516)가 계정 단위
+  무력"은 부분 오류다. `login_failed 5/300s/key`(config/settings.py:510)가 계정 단위
   제한을 이미 건다.
 
 ## 4. 기록된 보류·이연 (재권고 아님)

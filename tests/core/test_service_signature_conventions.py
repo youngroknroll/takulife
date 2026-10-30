@@ -14,11 +14,11 @@ accounts.services는 SERVICE_MODULES에서 일부러 뺐다 — 공개 함수의
 호출자가 accounts 앱 내부에 있어 이 가드가 지키는 도메인 간 경계를 형성하지
 않으므로, 위치 인자를 써도 이 관례 위반이 아니다.
 """
+
 import importlib
 import inspect
 
 import pytest
-
 
 SERVICE_MODULES = [
     "events.services",
@@ -37,9 +37,7 @@ def _public_module_level_functions(module_name):
     return [
         (name, obj)
         for name, obj in vars(module).items()
-        if inspect.isfunction(obj)
-        and not name.startswith("_")
-        and obj.__module__ == module_name
+        if inspect.isfunction(obj) and not name.startswith("_") and obj.__module__ == module_name
     ]
 
 

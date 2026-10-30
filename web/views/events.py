@@ -1,9 +1,9 @@
 """홈, 행사 목록/캘린더/상세 — 공개 행사 열람 뷰 그룹."""
 
-import json
-import logging
 from collections import defaultdict
 from datetime import date, timedelta
+import json
+import logging
 from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
@@ -50,8 +50,7 @@ from events.queries import (
     list_published_events_for_month,
     parse_public_listing_params,
 )
-
-from ._helpers import (
+from web.views._helpers import (
     _adjacent_month,
     _attach_display,
     _parse_calendar_date,
@@ -138,17 +137,13 @@ def _home_calendar_context(raw_month, raw_date, *, today):
     events_by_date = _events_by_date(events)
 
     grid = month_grid(year, month)
-    weeks = _home_calendar_weeks(
-        grid, events_by_date, today=today, selected_date=selected_date
-    )
+    weeks = _home_calendar_weeks(grid, events_by_date, today=today, selected_date=selected_date)
     prev_year, prev_month = _adjacent_month(year, month, -1)
     next_year, next_month = _adjacent_month(year, month, 1)
     selected_events = events_by_date.get(selected_date, [])
     month_categories = {event.category for event in events if event.category}
     legend = [
-        {"slug": slug, "label": label}
-        for slug, label in CATEGORY
-        if slug in month_categories
+        {"slug": slug, "label": label} for slug, label in CATEGORY if slug in month_categories
     ]
     return {
         "year": year,
@@ -161,9 +156,7 @@ def _home_calendar_context(raw_month, raw_date, *, today):
         "selected_is_today": selected_date == today,
         "selected_count": len(selected_events),
         # 찜·방문 등 사용자별 상태는 쓰지 않아 user를 넘기지 않는다(조회 2건 회피).
-        "selected_rows": _attach_display(
-            selected_events[:HOME_CALENDAR_AGENDA_LIMIT], today=today
-        ),
+        "selected_rows": _attach_display(selected_events[:HOME_CALENDAR_AGENDA_LIMIT], today=today),
         "legend": legend,
         "weeks": weeks,
     }
@@ -175,9 +168,7 @@ def home(request):
     closing_qs = Event.objects.published().ending_within_days(5, today=today)
     # 슬라이더는 기간이 이미 끝난 행사(end_date < today)를 제외한다.
     # end_date가 없는 행사는 "종료"가 될 수 없으므로 그대로 남긴다.
-    recent_qs = (
-        Event.objects.published().exclude(end_date__lt=today).order_by("-id")[:15]
-    )
+    recent_qs = Event.objects.published().exclude(end_date__lt=today).order_by("-id")[:15]
 
     # "카테고리로 둘러보기" 타일: HomeConfig로 스태프가 순서/선택을 큐레이션한다.
     # 저장된 선택이 없으면 어휘의 전체 카테고리로 대체한다.
@@ -210,9 +201,7 @@ def home(request):
         "home_calendar": _home_calendar_context(
             request.GET.get("month"), request.GET.get("date"), today=today
         ),
-        "json_ld_script": _json_ld_script(
-            build_website_json_ld(request.build_absolute_uri("/"))
-        ),
+        "json_ld_script": _json_ld_script(build_website_json_ld(request.build_absolute_uri("/"))),
     }
 
     if request.user.is_authenticated:
@@ -295,8 +284,7 @@ def _translate_category_label(label):
 def _translated_category_choices():
     """소비자 필터용 (slug, 번역 라벨, lang) 목록."""
     return [
-        (slug, *_translate_category_label(label))
-        for slug, label in consumer_category_choices()
+        (slug, *_translate_category_label(label)) for slug, label in consumer_category_choices()
     ]
 
 
@@ -342,9 +330,7 @@ def event_list(request):
     if not selected_category and request.GET.get("category"):  # pragma: no cover
         selected_category = [request.GET.get("category")]
 
-    active_filters = bool(
-        q or selected_region or selected_category or selected_status
-    )
+    active_filters = bool(q or selected_region or selected_category or selected_status)
 
     # 활성 필터를 사람이 읽을 수 있는 칩으로 요약한다(Eventbrite 스타일).
     active_filter_chips = _active_filter_chips(
@@ -467,9 +453,7 @@ def event_calendar(request):
     try:
         events = list(list_published_events_for_month(params, year=year, month=month))
     except Exception:
-        logger.exception(
-            "Failed to query events calendar for year=%s month=%s", year, month
-        )
+        logger.exception("Failed to query events calendar for year=%s month=%s", year, month)
         events = []
         if calendar_error is None:
             calendar_error = "query_failed"
@@ -485,9 +469,7 @@ def event_calendar(request):
         # 병합된 그리드 모듈의 알려진 한계다(자체 단위 테스트는 2026년만
         # 다뤘다). 근본 수정은 이번 변경 권한 범위 밖이라 여기서는
         # 완화만 하고 core/calendar_grid.py 후속 수정으로 남겨둔다.
-        logger.exception(
-            "Failed to build calendar grid for year=%s month=%s", year, month
-        )
+        logger.exception("Failed to build calendar grid for year=%s month=%s", year, month)
         grid = []
         if calendar_error is None:
             calendar_error = "query_failed"
@@ -593,14 +575,13 @@ def _build_event_meta_description(event, category_label):
     else:
         period = ""
 
-    parts = [
-        str(part) for part in (category_label, event.location_name, period) if part
-    ]
+    parts = [str(part) for part in (category_label, event.location_name, period) if part]
     if parts:
         return truncatechars(" · ".join(parts), 100)
 
     return gettext(
-        "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 검색하고, 방문 상태와 기록을 보관하세요."
+        "타쿠라이프(takulife)에서 팝업스토어 · 콜라보 카페 · 극장 특전 · 굿즈 예약 · 전시를 "
+        "검색하고, 방문 상태와 기록을 보관하세요."
     )
 
 

@@ -2,9 +2,10 @@
 시리얼라이저·API 뷰, 공용 어휘 코드의 한국어 문자열은 번역 함수의 인자이거나
 독스트링·로그·스키마 문서 인자여야 한다. 나머지 한국어 문자열은 번역 누락이다.
 `web/views/events.py`는 `test_ui_korean_literal_guard.py`의 기존 가드가 맡는다."""
+
 import ast
-import re
 from pathlib import Path
+import re
 
 import pytest
 
@@ -88,9 +89,7 @@ def _exempt_string_nodes(tree, relpath):
     exempt = set()
     staff_names = _STAFF_ONLY_CONSTANTS.get(relpath, frozenset())
     for node in ast.walk(tree):
-        if isinstance(
-            node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
-        ):
+        if isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             body = node.body
             if (
                 body

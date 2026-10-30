@@ -18,55 +18,48 @@ state" 절 참고).
 number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴다 — 제목 앞의
 `feat:`/`fix:`/`docs:` 같은 접두어도 변경 성격을 알려주는 정보이므로 유지한다.
 
-이 문서는 200줄을 넘기지 않는다. 머지된 PR 394건(`gh pr list --state merged --limit 500`,
-2026-10-27 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
+이 문서는 200줄을 넘기지 않는다. 머지된 PR 399건(`gh pr list --state merged --limit 500`,
+2026-10-31 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #400부터 #268까지다(#399는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #405부터 #269까지다(#407은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #399 — feat(i18n): 행사 텍스트 자동 번역 서버 저장·검증과 러너 번역 단계 — 트랙 44-1
+### PR #407 — test: Adopt pytest-xdist for the regression run and fix the launchd runner wrapper PATH (track 49)
 
-**무엇을 바꿨나**: 승인된 행사의 제목·작품명·장소·요약 4필드를 en·ja·zh-hans로 자동 번역해
-`Event.text_translations`(JSON `{"source_hash","manual","en","ja","zh-hans"}`, 규칙에 걸린
-언어 칸은 `null`)에 저장하는 서버 저장·검증과, 사용자 맥의 로컬 러너가 `claude` CLI로 번역하는
-단계다. 서버는 LLM을 부르지 않는다(2026-07-04 사용자 결정). 쓰기 훅 없이 큐는 읽는 시점에
-계산한다(게시 행사 중 번역 없음·해시 불일치, `manual` 제외, id 오름차순, 응답당 최대 20건).
-러너 API `POST /api/translation/runner/pending/`·`submit/`은 기존 러너 토큰을 쓰되 스로틀
-scope `translation_runner`(분당 60회 `[코드]`)로 분리했고 공개 OpenAPI에서 제외한다. 검증은
-순수 함수(`events/content_translation.py`)로 구조 오류·NUL은 400, 낡은 해시·수동 확정·없는
-이벤트는 409/409/404, 그 외는 언어 단위 격리(절대 길이 → 제어문자 → 상대 길이 → 마크업·URL·
-이메일 → 통화 → 숫자 → 빈 칸 → 한글 잔존 → 문자 판정). 마이그레이션은 `0008`(AddField)과
-`0009`(RunSQL로 DB 기본값 `'{}'::jsonb` 복구) 둘이다. 관리 명령 `report_translation_queue`
-추가. **공개 화면은 바뀌지 않는다**(노출은 44-2). 2026-10-26 전수검사(7역할 병렬 검토)의
-결함 35건(운영 코드 15·가드/테스트 12·문서 8)을 같은 PR에서 고쳤다. 변경 규모는 43개 파일,
-+4,999줄·-75줄(커밋 18개 + main 반영 머지 1개) `[실측 git diff --shortstat adffc819..95172291]`.
-머지 `e38a0db9`(2026-10-27T08:32Z, 사용자 승인).
+**무엇을 바꿨나**: 백로그 K1대로 `pytest-xdist>=3.8,<4.0`을 dev 그룹에 넣고 CI test 잡과
+`CLAUDE.md`의 전체 회귀 명령만 `uv run pytest -q -n auto`로 바꿨다. `pytest.ini` `addopts`·표적
+실행·e2e 잡은 직렬 그대로다(표적 37건이 병렬에서 4.46초 → 6.41초로 느려짐 `[실측 2026-10-30]`).
+launchd 러너 래퍼 `local_runner/launchd/run-runner.sh`는 env 파일을 PATH 설정 전에 읽고
+`TAKULIFE_RUNNER_PATH_PREPEND`를 PATH 앞에 붙이며, `stat`은 GNU(`-c %a`) 먼저·BSD(`-f %Lp`)
+폴백으로 바꿨다. 새 계약 테스트 `tests/core/test_run_runner_wrapper_contract.py`(subprocess
+실행, Linux CI에서도 돈다). 문서: 런북 §8.y(보호 폴더 실측·전용 클론 설치·갱신·해제·SIGTERM
+실측), `docs/BE/test-suite-speed.md` §8, 백로그 K1 해소. 커밋 6개, 머지 `45afc5fe`
+(2026-10-31, merge commit, 사용자 승인).
 
-**왜**: 트랙 43으로 UI는 번역됐지만 행사 콘텐츠는 한국어 원문뿐이라 외국어 사용자가 행사
-내용을 읽지 못한다. 서버 LLM API는 비용 정책상 쓰지 않으므로 로컬 러너가 번역하고, 건별 사람
-검수가 없으니(사용자 결정) 저장 단계 규칙이 허위 숫자·마크업을 막는 방어선이다. 전수검사가
-찾은 배포 안전 결함(0008 `AddField`가 DB 기본값을 지워 구 코드 INSERT가 NOT NULL 위반)은
-0009로 막았다.
+**왜**: 전체 회귀가 직렬 134.77초였고 단일 병목이 없어 병렬화만 남아 있었다(사용자 지시
+"2번 진행" = K1 승인). 래퍼는 nvm으로 설치한 `claude`가 고정 PATH에 없어 종료 코드 0으로
+조용히 끝나 러너가 영구히 뜨지 않는 결함이 있었고, `~/Desktop` 저장소를 launchd로 기동하면
+`Operation not permitted`(종료 126, 재기동 루프)가 실제로 났다 — 그래서 이 Mac에는 보호 폴더
+밖 전용 클론 `~/takulife-runner`로 설치했다.
 
-**검증**: 머지 전 브랜치(#400 반영 후 `e00e0ca9`) `uv run pytest -q` 4284 passed / 10
-deselected / 144.44초 `[실측 2026-10-27]`, `manage.py check` 0건, `makemigrations --check
---dry-run` 변경 없음. 전수검사 수정분은 묶음별 Red 산출물 보존(서버 규칙 16·러너 14·드래프트
-2·마이그레이션/가드 4 failed), 처음부터 Green인 핀 23건은 변이로 전부 Red 확인 `[실측
-2026-10-26]`. 러너 실기동은 로컬 DB 15건(45개 언어 칸 중 43칸 저장, 전수검사 수정 전 코드).
-PR CI 5잡 pass — 감사 잡은 PR #400(brotli 1.2.1, `5af4827a`)을 먼저 머지하고 main을 반영한
-뒤 통과했다 `[실측 gh 2026-10-27]`. 머지 후 main 재측정 `[실측 2026-10-27 main e38a0db9]`:
-4284 passed / 10 deselected / 152.46초(43-3 기준선 3985
-대비 +299 `[계산]`), `manage.py check` 0건, `makemigrations --check --dry-run` 변경 없음, main
-CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → production)이 자동 생성됐고 머지는 사용자
-결정이다. 배포 뒤 러너 재시작(맥 저장소 main·`uv sync`)과 런북 §3 항목 19(0009 기본값
-확인)가 남는다.
+**검증**: `-n auto` 전체 회귀 3회 연속 4301 passed(41.72·43.57·44.14초), 변경 후 직렬
+4301 passed / 131.17초, e2e 10 passed 직렬 유지, 래퍼 테스트 Red(기대한 이유) → Green,
+가짜 HOME 가드 프로브 5종 일치, launchd 1회 기동 종료 0·65초 뒤 재기동 없음
+`[실측 2026-10-30]`. CI "Run test suite" 단계 82초 → 59초, 최종 CI(run 41072565204) 5잡
+success·skipped 0 `[실측 gh]`. 사전 DOR·TDD 코치, 사후 QVL "Complete with gaps, Failed 없음"
+— gaps는 같은 PR에서 해소(그중 BSD 먼저 둔 stat 폴백이 Linux CI에서 Red로 드러나 순서 교정).
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #405 — style: Adopt the Google Python style guide with ruff in CI
+- #404 — test: Track 47 — web/views sibling-import guard and second test-speed measurement
+- #403 — ops: Track 46 — gunicorn timeout, multi-worker rate-limit measurement, backup rehearsal, runner launchd
+- #401 — deploy: main → production
 - #400 — fix: Raise brotli to 1.2.1 to clear the new advisories
+- #399 — feat(i18n): 행사 텍스트 자동 번역 서버 저장·검증과 러너 번역 단계 — 트랙 44-1
 - #398 — deploy: main → production
 - #397 — feat(i18n): 아카이브·컬렉션·활동·마이페이지 UI 다국어 — 트랙 43-3
 - #396 — feat(i18n): 이벤트 화면(목록·달력·상세) UI 다국어 — 트랙 43-2
@@ -197,4 +190,3 @@ CI run 40474167951 4잡 success `[실측 gh]`. 배포 PR #401(main → productio
 - #271 — style: Close the comment-policy track — missed files and a guard
 - #270 — style: Sweep every comment under the rewritten policy
 - #269 — style: Bring auth-track comments under the comment policy, and register E4
-- #268 — docs: Refresh the status table against the merged tree

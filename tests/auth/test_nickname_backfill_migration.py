@@ -2,12 +2,13 @@
 테스트. 0006이 컬럼을 곧 대소문자 무시 UNIQUE로 만들기 때문에 CP10 방식(현재
 스키마에 NULL 행을 만들어 함수만 호출)이 성립하지 않는 경우는
 MigrationExecutor로 실제 0005→0006 이주를 돌려 검증한다."""
+
 import importlib
 
-import pytest
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.contract
 

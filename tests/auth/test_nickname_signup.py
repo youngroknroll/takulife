@@ -1,7 +1,7 @@
 """가입은 닉네임 입력을 필수로 요구한다(트랙 29 NICK-05)."""
+
 from allauth.socialaccount.models import SocialLogin
 from django.test import RequestFactory
-
 import pytest
 
 from accounts.adapters import AccountAdapter

@@ -5,6 +5,7 @@ accounts.services.execute_pending_deletions를 감싸는 얇은 껍데기 —
 쪽에 있고 여기엔 비즈니스 로직이 없다. 정기 실행(cron 등)은 이 명령이
 아니라 배포/운영 문서가 다룰 몫이다.
 """
+
 from django.core.management.base import BaseCommand, CommandError
 
 from accounts.services import execute_pending_deletions

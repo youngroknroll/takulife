@@ -5,13 +5,13 @@
 메시지만 보여주고 아무것도 만들지 않는다(tests/staff/test_staff_draft_discovery_run_view.py의
 의도된 무동작 관행과 동일).
 """
-import pytest
+
 from django.urls import reverse
+import pytest
 
 from drafts.discovery_runs import record_heartbeat
 from drafts.models import SourceDiscoveryRun
 from staff.models import StaffActionLog
-
 
 pytestmark = pytest.mark.web
 
@@ -24,7 +24,9 @@ def _request_url():
 
 
 @pytest.mark.django_db
-def test_탐색_요청은_스태프_권한과_POST가_필요하고_GET은_대시보드로_리다이렉트된다(client, make_user, staff_client):
+def test_탐색_요청은_스태프_권한과_POST가_필요하고_GET은_대시보드로_리다이렉트된다(
+    client, make_user, staff_client
+):
     non_staff = make_user()
     client.force_login(non_staff)
 
@@ -100,9 +102,7 @@ def test_탐색_요청_감사로그_삽입이_실패하면_실행_생성도_함�
     def _raise_on_create(*args, **kwargs):
         raise RuntimeError("audit log insert failed")
 
-    monkeypatch.setattr(
-        "staff.views.discovery.StaffActionLog.objects.create", _raise_on_create
-    )
+    monkeypatch.setattr("staff.views.discovery.StaffActionLog.objects.create", _raise_on_create)
 
     with pytest.raises(RuntimeError):
         client.post(_request_url(), _VALID_QUERY)
@@ -142,7 +142,9 @@ def test_사용자당_분당_10회를_초과한_탐색_요청은_거부되고_�
     [{}, {"query": "   "}],
     ids=["키_없음", "공백만"],
 )
-def test_검색어_없이_탐색을_요청하면_실행이_만들어지지_않고_안내_메시지가_뜬다(staff_client, post_body):
+def test_검색어_없이_탐색을_요청하면_실행이_만들어지지_않고_안내_메시지가_뜬다(
+    staff_client, post_body
+):
     record_heartbeat(provider="claude-code")
     staff, client = staff_client()
 
@@ -162,7 +164,9 @@ def test_검색어_없이_탐색을_요청하면_실행이_만들어지지_않�
     ["가", "가" * 101],
     ids=["1자_미만", "101자_초과"],
 )
-def test_검색어_길이가_2자_미만이거나_100자를_넘으면_실행이_만들어지지_않는다(staff_client, query_value):
+def test_검색어_길이가_2자_미만이거나_100자를_넘으면_실행이_만들어지지_않는다(
+    staff_client, query_value
+):
     record_heartbeat(provider="claude-code")
     staff, client = staff_client()
 
@@ -176,7 +180,9 @@ def test_검색어_길이가_2자_미만이거나_100자를_넘으면_실행이_
 
 
 @pytest.mark.django_db
-def test_검색어를_넣어_요청하면_실행에_검색어가_저장되고_성공_메시지에_이스케이프되어_반영된다(staff_client):
+def test_검색어를_넣어_요청하면_실행에_검색어가_저장되고_성공_메시지에_이스케이프되어_반영된다(
+    staff_client,
+):
     record_heartbeat(provider="claude-code")
     staff, client = staff_client()
     raw_query = "하츠네 <미쿠>"

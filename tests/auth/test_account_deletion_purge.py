@@ -2,13 +2,14 @@
 purge 경계(HTTP 없음 — .docs/plans/2026-07-20-deletion-grace-period-plan.md
 참고).
 """
+
 from datetime import timedelta
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.utils import timezone
+import pytest
 
 from accounts import services
 from accounts.models import User
@@ -133,7 +134,9 @@ def test_purge_실행으로_계정이_삭제되면_방문_기록의_사진도_2�
 
 
 @pytest.mark.django_db
-def test_purge_실행_중_한_계정이_실패해도_나머지_계정은_삭제되고_실패_건수가_요약된다(make_user, monkeypatch):
+def test_purge_실행_중_한_계정이_실패해도_나머지_계정은_삭제되고_실패_건수가_요약된다(
+    make_user, monkeypatch
+):
     """DEL-09: 한 행의 삭제 실패가 전체 소거를 멈추면 안 된다 — 살아남은
     후보는 그대로 purge되고, 실패는 조용히 삼켜지지 않고
     execute_pending_deletions의 반환값(`{"deleted": [...], "failed":

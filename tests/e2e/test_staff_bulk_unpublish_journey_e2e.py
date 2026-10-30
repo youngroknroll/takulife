@@ -1,4 +1,5 @@
 """스태프가 이벤트를 골라 비공개로 설정하면 공개 목록에서 사라지는 여정."""
+
 from playwright.sync_api import expect
 
 from events.models import Event

@@ -1,6 +1,7 @@
 """카테고리 슬러그 형식 검증(트랙 27). accounts/validators.py의
 validate_nickname과 같은 전제 — 필드 validators로 등록해 매니저를
 거치지 않는 직접 생성 경로에서도 호출자가 full_clean()을 부르면 잡힌다."""
+
 import re
 
 from django.core.exceptions import ValidationError

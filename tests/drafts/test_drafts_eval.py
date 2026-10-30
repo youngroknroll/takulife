@@ -9,6 +9,7 @@
 - 성공적으로 평가된 행의 extraction_method가 "heuristic"이면 "fallback"이
   증가한다(LLM 모드에서 조용히 대체됐음을 드러낸다).
 """
+
 import pytest
 
 from drafts.eval import EVAL_FIELDS, build_field_accuracy_report
@@ -49,8 +50,14 @@ class TestExactFieldComparison:
             ("Title B", "Text B", {"category": "collaboration_cafe", "region": "seoul"}),
         ]
         mapping = {
-            ("Title A", "Text A"): {"extracted_category": "popup_store", "extracted_region": "seoul"},
-            ("Title B", "Text B"): {"extracted_category": "popup_store", "extracted_region": "seoul"},
+            ("Title A", "Text A"): {
+                "extracted_category": "popup_store",
+                "extracted_region": "seoul",
+            },
+            ("Title B", "Text B"): {
+                "extracted_category": "popup_store",
+                "extracted_region": "seoul",
+            },
         }
 
         report = build_field_accuracy_report(golden_rows, extract_fn=_extract_fn(mapping))

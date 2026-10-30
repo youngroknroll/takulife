@@ -13,26 +13,24 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.errors import error_response, field_error_response
-
 from drafts.models import EventDraft
 from drafts.queries import draft_review_stats
 from drafts.serializers import EventDraftSerializer, EventDraftUpdateSerializer
 from drafts.services import (
-    DraftCreationEmptyExtractionError,
     DraftCreationDuplicateError,
+    DraftCreationEmptyExtractionError,
     DraftCreationFetchError,
     DraftCreationResponseTooLargeError,
-    DraftCreationUnsupportedContentError,
     DraftCreationUnsafeUrlError,
+    DraftCreationUnsupportedContentError,
     DraftStateError,
     DraftVocabError,
     persist_prepared_draft,
     prepare_draft_from_url,
     update_draft,
 )
-
-from ..models import StaffActionLog
-from ._helpers import _action_log_kwargs, _staff_action_metadata
+from staff.models import StaffActionLog
+from staff.views._helpers import _action_log_kwargs, _staff_action_metadata
 
 
 class AdminEventDraftStatsView(APIView):
@@ -61,7 +59,10 @@ class AdminEventDraftStatsView(APIView):
     get=extend_schema(
         tags=["drafts"],
         summary="검토 대기 행사 드래프트 목록을 조회한다",
-        responses={200: EventDraftSerializer, 403: OpenApiResponse(description="관리자 권한이 없다.")},
+        responses={
+            200: EventDraftSerializer,
+            403: OpenApiResponse(description="관리자 권한이 없다."),
+        },
     ),
     post=extend_schema(
         tags=["drafts"],
@@ -72,7 +73,9 @@ class AdminEventDraftStatsView(APIView):
                 description="중복 URL, 안전하지 않은 URL, 지원하지 않는 콘텐츠, "
                 "응답 초과, 또는 의미 있는 내용 추출 실패."
             ),
-            403: OpenApiResponse(description="관리자 권한이 없거나 드래프트 생성 기능이 꺼져 있다."),
+            403: OpenApiResponse(
+                description="관리자 권한이 없거나 드래프트 생성 기능이 꺼져 있다."
+            ),
             503: OpenApiResponse(description="원본 URL을 가져오지 못했다."),
         },
     ),
@@ -143,7 +146,9 @@ class AdminEventDraftListCreateView(ListCreateAPIView):
         summary="대기 중인 행사 드래프트를 수정한다",
         responses={
             200: EventDraftSerializer,
-            400: OpenApiResponse(description="대기 상태가 아니거나 category/region이 알 수 없는 어휘값이다."),
+            400: OpenApiResponse(
+                description="대기 상태가 아니거나 category/region이 알 수 없는 어휘값이다."
+            ),
             403: OpenApiResponse(description="관리자 권한이 없다."),
             404: OpenApiResponse(description="존재하지 않는 드래프트."),
         },
@@ -178,8 +183,6 @@ class AdminEventDraftDetailView(RetrieveUpdateAPIView):
         except DraftStateError:
             return error_response("Only pending drafts can be updated.", 400)
         except DraftVocabError:
-            return error_response(
-                "category/region must be a known vocabulary slug.", 400
-            )
+            return error_response("category/region must be a known vocabulary slug.", 400)
 
         return Response(EventDraftSerializer(updated_draft).data, status=status.HTTP_200_OK)

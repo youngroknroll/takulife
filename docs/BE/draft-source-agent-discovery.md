@@ -355,8 +355,9 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
   서버 후보
   계약은 계속 공급자 중립으로 유지한다.
 - 공식성의 완전 자동 판정은 불가능하다. 현재 안전 근거는 게시 전 관리자 검수다.
-- 로컬 러너 설치·업데이트·자동 시작(launchd)·토큰 회전 절차·정기 실행 스케줄러는
-  아직 없다.
+- 로컬 러너 설치·업데이트·토큰 회전 절차·정기 실행 스케줄러는 아직 없다. 자동
+  시작(launchd)은 템플릿·래퍼 `local_runner/launchd/`(트랙 46, 2026-10-28)가
+  있고 설치는 사용자 액션이며, 절차는 `docs/operations-runbook.md` §8.y다.
 - `--permission-mode bypassPermissions` 격리 권고 미이행: 현재 `--tools`로
   웹 탐색 2종만 허용해 파일·셸 도구는 없지만, 장기 상시 운영 전에는 별도
   실행 계정 또는 격리 환경 구성이 필요하다(아래 격리 권고 참고).
@@ -394,18 +395,18 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 1. **탐색(exploration)** — 검색만 한다. 입력은 스태프가 낸 검색어
    하나(`run["query"]`)뿐이고, 출력은 URL과 얕은 판단(`is_event`,
    `why_excluded`, `platform`, 후보 수집처)뿐이다. 행사 본문을 읽지 않는다
-   `[코드]` `local_runner/claude_code_adapter.py:83-130`
+   `[코드]` `local_runner/claude_code_adapter.py:82-129`
    (`build_exploration_prompt`) — 프롬프트 자체가 "이 환경에서는 페이지를
    여는 도구가 막혀 있다"고 명시하고 검색 결과 목록(제목·요약·URL)만으로
    판단하게 지시한다.
 2. **읽기(read)** — 결정론이다. 모델을 부르지 않고 호스트만 보고 분기한다
-   `[코드]` `local_runner/page_fetch.py:234`
+   `[코드]` `local_runner/page_fetch.py:235`
    (`fetch_event_text(*, url)`): 인스타·X 캡션 경로(og:description 메타
    태그 파싱)와 일반 웹 경로(og:title/title·meta description) 중 하나로만
    간다.
 3. **해석(interpret)** — 도구 없는 모델 호출이다. 읽기 단계가 낸 텍스트를
    데이터로만 받아 공식 여부와 행사 필드를 구조화 JSON으로 낸다 `[코드]`
-   `local_runner/caption_interpreter.py:1-3, 15-77`
+   `local_runner/caption_interpreter.py:1-3, 16-77`
    (`build_interpretation_prompt`). `--tools TodoWrite,TodoWrite`는
    `local_runner/caption_interpreter.py`(`run_agent_interpretation`, 약 163행)와
    `local_runner/translation_flow.py`(`run_agent_translation`, 약 90행)에서 고정한다
@@ -417,7 +418,7 @@ LLM 응답을 `EventDraft` 필드에 직접 복사하지 않는다.
 낼 수 없다. 그래서 탐색 프롬프트는 "공식 여부는 이 단계에서 판단하지
 않는다. … 행사가 공식인지 비공식인지, 그 근거가 무엇인지는 본문을 직접
 읽는 다음 해석 단계가 정한다"고 명시적으로 금지한다 `[코드]`
-`local_runner/claude_code_adapter.py:107-110`. 판단(`judgment`:
+`local_runner/claude_code_adapter.py:106-109`. 판단(`judgment`:
 official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자)는
 해석 단계 프롬프트에서만 요구한다 `[코드]`
 `local_runner/caption_interpreter.py:50-55`. 서버는 이 판단값을 그대로
@@ -434,7 +435,7 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
 약 259행) — 일반 웹
 호스트만 `validate_fetch_url`·`RobotsChecker`·`fetch_html`을 탄다. 이
 계약은 호출 여부를 직접 단언하는 테스트로 고정돼 있다 `[코드]`
-`tests/drafts/test_agent_drafts.py:512`
+`tests/drafts/test_agent_drafts.py:513`
 (`test_일반_웹_URL_제출은_서버가_존재를_재확인하고_인스타_URL_제출은_fetch를_호출하지_않으며_안전하지_않은_URL은_거부된다`).
 
 ### 계정형 소스는 비활성으로 등록된다
@@ -515,7 +516,7 @@ official/unofficial/unclear)과 본문 인용 근거(`official_basis`, ≤200자
 - **호스트마다 사용자 에이전트가 다르다** `[실측 2026-09-11]`: 인스타는
   브라우저 UA를 쓰면 `og:description` 메타 태그 자체가 안 나와 러너
   자체 식별 UA(`TakuLifeRunner/1.0`)를 쓰고, 일반 웹은 반대로 브라우저 UA를
-  써야 응답이 온다 `[코드]` `local_runner/page_fetch.py:33-43`.
+  써야 응답이 온다 `[코드]` `local_runner/page_fetch.py:34-44`.
 - **페이지 열기 도구가 전역 거부 목록에 있다** `[실측]`: `WebFetch`는
   `--tools`에 남겨 둬도 이 실행 환경의 전역 설정 거부 목록에 걸려 하위
   설정으로 못 뒤집는다 — 위쪽 "격리 권고" 정정 절 참고. 인자에 남은
@@ -645,8 +646,8 @@ reason 집합은 서버 `EVENT_OUTCOME_REASONS`
 `_clean_event_outcomes`(약 55행~). 완료를 400으로 내리면 러너
 `RunnerClient.complete`가 예외를 내 `complete_run`이 실행되지 않아
 실행이 CLAIMED로 남고, 임대 `LEASE_SECONDS=1800`초
-`[코드 drafts/discovery_runs.py:19]` × `MAX_LEASES=2`
-`[코드 drafts/discovery_runs.py:22]` 동안 새 탐색이 막히기 때문이다.
+`[코드 drafts/discovery_runs.py:20]` × `MAX_LEASES=2`
+`[코드 drafts/discovery_runs.py:23]` 동안 새 탐색이 막히기 때문이다.
 url은 `sanitize_text` 적용·http(s) 스킴·200자 이하만 통과하고
 (`_clean_event_outcomes` 74~78행), `outcome=="created"`인 항목은 이
 실행이 실제로 만든 드래프트 source_url과 대조해 없으면 버린다(87행,
@@ -658,7 +659,7 @@ url은 `sanitize_text` 적용·http(s) 스킴·200자 이하만 통과하고
 
 `events_excluded` 정의(`drafts/models.py:141`)와 일치시키고, 차단
 호스트를 건너뛸 때 이미 attempted+failed로 세는 기존 패턴(`
-local_runner/exploration_flow.py:205-211`)과 대칭을 맞춘다.
+local_runner/exploration_flow.py:206-212`)과 대칭을 맞춘다.
 
 ### 건너뛰기는 코드가 재확인할 수 있는 두 사유만 믿는다
 
@@ -697,14 +698,14 @@ local_runner/exploration_flow.py:205-211`)과 대칭을 맞춘다.
 실패 경로도 원인 예외 클래스명만 WARNING으로 남긴다(본문 금지)
 `[코드]` `local_runner/runner.py`(약 112·131행). 서버 완료 허용목록
 `_ALLOWED_FAILURE_KINDS`에 러너가 실제 보내는 `exploration_error`가
-있다 `[코드]` `drafts/discovery_runs.py:25`.
+있다 `[코드]` `drafts/discovery_runs.py:26`.
 
 ### X 게시물은 syndication 엔드포인트로만 읽는다
 
 x.com·twitter.com의 `/<handle>/status/<숫자 id>` 경로만
 `cdn.syndication.twimg.com/tweet-result`(고정 호스트)로 요청해 본문을
 돌려주고, 그 외 경로(프로필·미디어 등)는 요청 자체를 보내지 않는다
-`[코드]` `local_runner/page_fetch.py:59-61,127-184`(정규식
+`[코드]` `local_runner/page_fetch.py:60-62,128-185`(정규식
 `_X_STATUS_PATH_RE`, 토큰 계산 `_x_syndication_token` 127~147행, 요청·응답
 처리 `_fetch_x_post` 150~184행). 토큰 없이
 호출하면 빈 본문(2바이트 `{}`)이 온다 `[문서 prompt_plan.md 트랙 35 S5,
@@ -724,7 +725,7 @@ robots.txt를 가져오지 못하면(네트워크·인증서 오류) 새
 
 같은 URL이 7일 안에 robots·sample_mismatch·listing_extraction으로
 실패했으면 네트워크 없이 같은 단계로 새 실패 행을 만든다 `[코드]`
-`drafts/candidate_validation.py:67-89`(`REUSABLE_FAILURE_STAGES`·
+`drafts/candidate_validation.py:71-93`(`REUSABLE_FAILURE_STAGES`·
 `REUSE_WINDOW = timedelta(days=7)`). **착수 중 정정**: 초안은
 `url_safety`·`not_domestic`도 포함했으나, `url_safety`는 DNS 조회
 실패(OSError)가 같은 단계에 섞여 일시 오류일 수 있고, `not_domestic`은

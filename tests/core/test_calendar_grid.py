@@ -16,6 +16,7 @@ CAL-4-07: year=1/month=1, year=9999/month=12에서는 앞뒤 채움 주가 "0년
 datetime이 표현 가능한 범위(MINYEAR=1/MAXYEAR=9999)를 벗어난다 — 그래서
 그런 채움 셀만 date=None으로 표현한다.
 """
+
 import ast
 import calendar
 from datetime import date
@@ -62,9 +63,7 @@ def test_이전_달_날짜가_포함되면_다른_월로_표시된다():
 
     assert leading_other_month
     assert all(cell.in_month is False for cell in leading_other_month)
-    assert all(
-        cell.in_month is True for cell in first_week if cell.date >= date(2026, 7, 1)
-    )
+    assert all(cell.in_month is True for cell in first_week if cell.date >= date(2026, 7, 1))
 
 
 # ---------------------------------------------------------------------------
@@ -82,9 +81,7 @@ def test_다음_달_날짜가_포함되면_다른_월로_표시된다():
 
     assert trailing_other_month
     assert all(cell.in_month is False for cell in trailing_other_month)
-    assert all(
-        cell.in_month is True for cell in last_week if cell.date <= date(2026, 7, 31)
-    )
+    assert all(cell.in_month is True for cell in last_week if cell.date <= date(2026, 7, 31))
 
 
 # ---------------------------------------------------------------------------

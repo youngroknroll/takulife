@@ -2,6 +2,7 @@
 모듈을 임포트할 수 없어 공유가 불가능하지만, 원본이 표준 라이브러리만 써서
 로직을 그대로 옮길 수 있다. 원본 경로: drafts/url_safety.py — 판정을 바꿀
 때는 두 파일을 함께 고쳐야 한다."""
+
 from ipaddress import ip_address
 import socket
 from urllib.parse import urlparse

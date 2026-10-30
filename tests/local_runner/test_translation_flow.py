@@ -2,14 +2,15 @@
 TR-38·TR-45) — 번역 프롬프트 구성, 출력 파싱, 보정 재시도 1회 상한. 계약 테스트
 2건만 CLI 호출 인자(argv)·시간 상한을 직접 잡아 확인한다. DB·실제 HTTP·실제
 claude 없음."""
+
 import json
 import time
 
 import pytest
 
 from local_runner.claude_code_adapter import (
-    AdapterOutputError,
     _CORRECTION_SUFFIX,
+    AdapterOutputError,
     _execute_claude,
 )
 from local_runner.config import AGENT_TIMEOUT_SECONDS, TRANSLATION_TIMEOUT_SECONDS
@@ -22,7 +23,6 @@ from local_runner.translation_flow import (
     parse_translations_output,
     run_agent_translation,
 )
-
 
 pytestmark = pytest.mark.unit
 
@@ -131,7 +131,7 @@ def test_중첩_재조립된_구획_리터럴도_모두_지워_구획은_하나�
     assert prompt.count(UNTRUSTED_CLOSE) == 1
     open_index = prompt.index(UNTRUSTED_OPEN)
     close_index = prompt.index(UNTRUSTED_CLOSE)
-    data_block = prompt[open_index + len(UNTRUSTED_OPEN):close_index]
+    data_block = prompt[open_index + len(UNTRUSTED_OPEN) : close_index]
     assert UNTRUSTED_OPEN not in data_block
     assert UNTRUSTED_CLOSE not in data_block
 

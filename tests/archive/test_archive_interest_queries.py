@@ -26,7 +26,9 @@ pytestmark = pytest.mark.domain
 
 
 @pytest.mark.django_db
-def test_찜_목록_조회는_사용자로_범위를_좁히고_최신_등록_순으로_정렬한다(make_user, make_event, make_interest):
+def test_찜_목록_조회는_사용자로_범위를_좁히고_최신_등록_순으로_정렬한다(
+    make_user, make_event, make_interest
+):
     user = make_user(username="interest-query-user")
     other = make_user(username="interest-query-other")
     e1 = make_event(title="Interest E1")
@@ -51,7 +53,9 @@ def test_찜_목록_조회는_사용자로_범위를_좁히고_최신_등록_순
 
 
 @pytest.mark.django_db
-def test_찜_검색어가_공식_행사_제목에_일치하면_결과에_포함된다(make_user, make_event, make_interest):
+def test_찜_검색어가_공식_행사_제목에_일치하면_결과에_포함된다(
+    make_user, make_event, make_interest
+):
     """Q1: 공식 행사 제목에 일치."""
     user = make_user(username="interest-q-title-user")
     matched = make_event(title="벚꽃 축제 특전 판매")
@@ -65,7 +69,9 @@ def test_찜_검색어가_공식_행사_제목에_일치하면_결과에_포함�
 
 
 @pytest.mark.django_db
-def test_찜_검색어가_공식_행사_장소에_일치하면_결과에_포함된다(make_user, make_event, make_interest):
+def test_찜_검색어가_공식_행사_장소에_일치하면_결과에_포함된다(
+    make_user, make_event, make_interest
+):
     """Q2: 공식 행사 장소명(location_name)에 일치."""
     user = make_user(username="interest-q-location-user")
     matched = make_event(title="행사 A", location_name="코엑스 전시홀")
@@ -79,7 +85,9 @@ def test_찜_검색어가_공식_행사_장소에_일치하면_결과에_포함�
 
 
 @pytest.mark.django_db
-def test_찜_검색어가_비공식_항목_제목에_일치하면_결과에_포함된다(make_user, make_entry, make_interest):
+def test_찜_검색어가_비공식_항목_제목에_일치하면_결과에_포함된다(
+    make_user, make_entry, make_interest
+):
     """Q3: 비공식 항목(PersonalEntry) 제목에 일치."""
     user = make_user(username="interest-q-personal-title-user")
     matched = make_entry(user, title="한정판 굿즈 판매점")
@@ -93,7 +101,9 @@ def test_찜_검색어가_비공식_항목_제목에_일치하면_결과에_포�
 
 
 @pytest.mark.django_db
-def test_찜_검색어가_비공식_항목_장소에_일치하면_결과에_포함된다(make_user, make_entry, make_interest):
+def test_찜_검색어가_비공식_항목_장소에_일치하면_결과에_포함된다(
+    make_user, make_entry, make_interest
+):
     """Q4: 비공식 항목(PersonalEntry) 장소명(location_name)에 일치."""
     user = make_user(username="interest-q-personal-location-user")
     matched = make_entry(user, title="장소 A", location_name="홍대 골목상점")
@@ -107,7 +117,9 @@ def test_찜_검색어가_비공식_항목_장소에_일치하면_결과에_포�
 
 
 @pytest.mark.django_db
-def test_찜_정렬_파라미터가_알수없는_값이면_최신_찜순으로_폴백한다(make_user, make_event, make_interest):
+def test_찜_정렬_파라미터가_알수없는_값이면_최신_찜순으로_폴백한다(
+    make_user, make_event, make_interest
+):
     """Q5: 알 수 없는 정렬값은 기본값(-id, 최신순)으로 폴백한다."""
     user = make_user(username="interest-q-sort-fallback-user")
     e1 = make_event(title="정렬 폴백 E1")
@@ -121,7 +133,9 @@ def test_찜_정렬_파라미터가_알수없는_값이면_최신_찜순으로_�
 
 
 @pytest.mark.django_db
-def test_찜_정렬_파라미터가_오래된순이면_오래된_찜부터_정렬된다(make_user, make_event, make_interest):
+def test_찜_정렬_파라미터가_오래된순이면_오래된_찜부터_정렬된다(
+    make_user, make_event, make_interest
+):
     """Q6: sort="oldest"는 id 오름차순(오래된 찜부터)으로 정렬한다."""
     user = make_user(username="interest-q-sort-oldest-user")
     e1 = make_event(title="오래된순 E1")
@@ -206,7 +220,9 @@ def test_방문예정_겹침_찜_통계는_파생_상태가_예정인_것만_센
     planned인 찜만 센다."""
     user = make_user(username="interest-q10-user")
     event = make_event(
-        title="방문예정 겹침", start_date=TODAY + timedelta(days=5), end_date=TODAY + timedelta(days=6)
+        title="방문예정 겹침",
+        start_date=TODAY + timedelta(days=5),
+        end_date=TODAY + timedelta(days=6),
     )
     make_interest(user, event=event)
     make_status(user, event=event, status="planned")
@@ -271,7 +287,9 @@ def test_찜_요약_통계_3종은_모두_타인의_찜과_상태를_제외한�
         title="타인_진행중", start_date=TODAY, end_date=TODAY + timedelta(days=10)
     )
     other_planned = make_event(
-        title="타인_방문예정", start_date=TODAY + timedelta(days=5), end_date=TODAY + timedelta(days=6)
+        title="타인_방문예정",
+        start_date=TODAY + timedelta(days=5),
+        end_date=TODAY + timedelta(days=6),
     )
     make_interest(other, event=other_ongoing)
     make_interest(other, event=other_planned)
@@ -289,7 +307,9 @@ def test_찜_요약_통계_3종은_모두_타인의_찜과_상태를_제외한�
 
 
 @pytest.mark.django_db
-def test_이벤트_id_목록으로_범위를_좁히면_해당_행사의_찜_id만_반환한다(make_user, make_event, make_interest):
+def test_이벤트_id_목록으로_범위를_좁히면_해당_행사의_찜_id만_반환한다(
+    make_user, make_event, make_interest
+):
     user = make_user(username="interest-ids-user")
     other = make_user(username="interest-ids-other")
     e1 = make_event(title="Interest IDs E1")
@@ -306,7 +326,9 @@ def test_이벤트_id_목록으로_범위를_좁히면_해당_행사의_찜_id�
 
 
 @pytest.mark.django_db
-def test_이벤트_id_범위를_지정하지_않으면_사용자의_모든_찜_id를_반환한다(make_user, make_event, make_interest):
+def test_이벤트_id_범위를_지정하지_않으면_사용자의_모든_찜_id를_반환한다(
+    make_user, make_event, make_interest
+):
     user = make_user(username="interest-ids-unbound-user")
     e1 = make_event(title="Interest Unbound E1")
     e2 = make_event(title="Interest Unbound E2")
@@ -325,7 +347,9 @@ def test_이벤트_id_범위를_지정하지_않으면_사용자의_모든_찜_i
 
 
 @pytest.mark.django_db
-def test_찜_총_개수는_본인의_찜만_세고_다른_사용자의_찜은_제외한다(make_user, make_event, make_interest):
+def test_찜_총_개수는_본인의_찜만_세고_다른_사용자의_찜은_제외한다(
+    make_user, make_event, make_interest
+):
     user = make_user(username="interest-count-user")
     other = make_user(username="interest-count-other")
     e1 = make_event(title="Interest Count E1")

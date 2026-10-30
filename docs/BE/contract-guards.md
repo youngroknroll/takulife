@@ -45,6 +45,12 @@ import 없는 행위적 결합(시그널 등), `migrations/`(의도적 제외).
 (`core/views/__init__.py`, `staff/views/__init__.py`). 이 4개 가드에는 무해했지만
 **core 가드를 글롭으로 바꾸는 순간 오탐이 났을 것**이다 — 그 후속 작업의 선행 조건이었다.
 
+**2026-10-29 이후**: 저장소의 상대 임포트는 0건이다(트랙 48에서 전부 절대 임포트로
+변환, 커밋 `9debe14c`). 위 서술은 변환 전 상태의 기록이며, 상대 임포트의 재도입은
+CI의 ruff `TID252`(`ban-relative-imports = "all"`)가 막는다. 그래서 스캐너가
+상대 임포트를 건너뛰어도 놓치는 지점이 새로 생기지 않는다. 설정 근거는
+`docs/BE/python-style.md`.
+
 ⚠️ **공허 통과 방지가 스캔 함수 안에 있다.** 대상 파일이 0개면(앱 이름 오탈자
 포함) 조용히 통과하지 않고 실패한다. 이 단언을 지우면 2건이 Red가 되는 것을 확인했다.
 글롭을 `*.py`에서 좁히면 캐너리 테스트가 시끄럽게 깨진다.
@@ -129,6 +135,46 @@ R1(`test_core_공용_모듈은_도메인_앱_모듈을_임포트하지_않는다
 `tests/local_runner/`에 따로 있다: `test_url_safety_parity.py`·
 `test_phase_vocabulary_parity.py`·`test_translation_parity.py`·
 `test_outcome_vocabulary_parity.py`.
+
+## `tests/core/test_web_views_package_boundaries.py` — `web/views` 형제 방향(2026-10-29)
+
+**잡는 것**: `web/views/*.py`의 정적 임포트 6형태(상대 `from .x import`,
+`from . import x`, `from ..views import x`, 절대 `from web.views.x import`,
+`import web.views.x`, `from web.views import x`)를 `web.views.<형제>`로
+해석해 두 규칙을 강제한다. `collection`은 `archive`를 임포트하지 않고
+(`test_컬렉션_뷰_모듈은_아카이브_뷰_모듈을_임포트하지_않는다`), `_helpers`는
+어떤 형제도 임포트하지 않는 리프다
+(`test_뷰_공용_헬퍼_모듈은_형제_뷰_모듈을_임포트하지_않는다`). 스캐너 형태
+6케이스 parametrize, 같은 이름의 도메인 앱(`archive`) 오탐 방지, 실제
+`archive` 뷰 모듈의 단방향 임포트가 스캐너에 보이는지(WVG-4 생존)도 테스트한다.
+
+**못 잡는 것**: 동적 임포트(`importlib` 등), 비-리터럴 인자, 패키지 퍼사드를
+통한 `from web.views import <뷰 함수 이름>`(WVG-6 이연, 허용 목록 방식 미적용).
+
+**왜 기존 해석기를 안 썼나**: `_package_name_for_file`은 최상위 패키지명만
+돌려줘 중첩 패키지 파일의 상대 임포트를 `web.archive`로 오해석한다
+`[코드 tests/core/test_architecture_boundaries.py:761-766]`. 현재 호출처는
+최상위 모듈뿐이라 영향이 없고, 잠재 한계로만 기록한다. 기존 가드는 `web/views`
+안의 상대 임포트 주입을 건너뛰어 못 잡는다(위 뮤테이션 참조).
+
+**뮤테이션 결과** `[실측 2026-10-29]`(종료 코드 판정, 10 passed 기준선):
+- `collection.py`에 `if False:` 블록으로 `from .archive import …` 주입 →
+  WVG-2 Red. 같은 주입에서 기존 `test_architecture_boundaries.py`는 Green
+  유지(상대 임포트를 건너뜀).
+- `import web.views.archive` 주입 → Red.
+- `_helpers.py`에 `from .collection import …` 주입 → WVG-1 Red.
+- 해석기 변형 — 첫 세그먼트가 `archive`면 형제로 판정 → WVG-5 Red;
+  해석기가 `return set()` → WVG-3·WVG-4 Red.
+- 원복 후 `git diff -- web/` 0줄.
+
+**2026-10-29 이후**: 위 "상대 임포트 주입을 건너뛴다"는 뮤테이션 당시의 실측이다.
+같은 날 트랙 48에서 저장소의 상대 임포트가 0건이 되었고 CI의 ruff `TID252`가
+재도입을 막으므로, 기존 가드의 이 사각지대는 지금 실제로 열려 있지 않다. 이 파일의
+상대 임포트 형태 탐지는 린트가 꺼질 때를 대비한 이중 방어로 남는다.
+
+**공허 통과 방지**: 대상 파일을 명시 경로로 읽어 파일이 없으면
+`FileNotFoundError`로 드러나게 했고(빈 glob으로 조용히 통과하지 않음),
+WVG-4 생존 테스트가 스캐너 자체의 무력화를 잡는다.
 
 ## `tests/core/test_service_signature_conventions.py` — 키워드 전용 인자
 

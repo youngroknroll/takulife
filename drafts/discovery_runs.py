@@ -1,7 +1,8 @@
 """탐색 실행(run)·러너 heartbeat·임대 수명주기를 소유하는 서비스 계층."""
+
+from datetime import timedelta
 import logging
 import uuid
-from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
@@ -141,9 +142,7 @@ def _classify_event_outcome(*, attempted, failed, created_count):
 
 def _combine_outcomes(*, candidate_outcome, event_outcome):
     """후보 결과와 이벤트 결과를 실행 최종 상태로 결합한다."""
-    existing = [
-        outcome for outcome in (candidate_outcome, event_outcome) if outcome != "none"
-    ]
+    existing = [outcome for outcome in (candidate_outcome, event_outcome) if outcome != "none"]
     if not existing or all(outcome == "succeeded" for outcome in existing):
         return SourceDiscoveryRun.Status.SUCCEEDED
     if all(outcome == "failed" for outcome in existing):
@@ -159,7 +158,9 @@ def runner_is_online(*, status_row):
         seconds=HEARTBEAT_FRESH_SECONDS
     )
     # 오프라인 보고 이후 새 heartbeat가 없으면 신선해도 온라인으로 보지 않는다.
-    recovered = status_row.offline_at is None or status_row.offline_at < status_row.last_heartbeat_at
+    recovered = (
+        status_row.offline_at is None or status_row.offline_at < status_row.last_heartbeat_at
+    )
     return fresh and recovered
 
 

@@ -12,12 +12,13 @@ AnalyticsEvent를 기록하는 모든 실제 코드 경로(archive 서비스 + e
 한 계층만이 아니라 서비스와 HTTP/API 경계를 모두 가로질러야 프라이버시
 보장이 종단으로 성립함을 증명할 수 있어서 일부러 그렇게 한다.
 """
-import pytest
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
+import pytest
 
-import archive.services as archive_services
 from archive.models import UserEventStatus
+import archive.services as archive_services
 from core.analytics import FORBIDDEN_CONTEXT_KEYS, pseudonymous_user_key
 from core.models import AnalyticsEvent
 from events.models import Event
@@ -58,7 +59,10 @@ def _walk_all_analytics_paths(make_user, make_event, png_bytes):
     )
 
     item = archive_services.create_collection_item(
-        user=user, name=LEAK_PROBE_NAME, memo=LEAK_PROBE_MEMO, visit_record=record,
+        user=user,
+        name=LEAK_PROBE_NAME,
+        memo=LEAK_PROBE_MEMO,
+        visit_record=record,
     )
     archive_services.update_collection_item(item=item, is_wanted=True)
     archive_services.update_collection_item(item=item, tradeable_quantity=1)
@@ -72,7 +76,9 @@ def _walk_all_analytics_paths(make_user, make_event, png_bytes):
 
 
 @pytest.mark.django_db
-def test_전_분석_이벤트_기록_경로를_실행해도_개인정보가_전혀_유출되지_않는다(make_user, make_event, png_bytes):
+def test_전_분석_이벤트_기록_경로를_실행해도_개인정보가_전혀_유출되지_않는다(
+    make_user, make_event, png_bytes
+):
     user = _walk_all_analytics_paths(make_user, make_event, png_bytes)
 
     events = list(AnalyticsEvent.objects.all())

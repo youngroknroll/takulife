@@ -125,16 +125,12 @@ def test_통합검색어는_이름_작품명_캐릭터명_메모에서_일치하
     user = make_user(username="ci-query-q")
     other = make_user(username="ci-query-q-other")
     by_name = CollectionItem.objects.create(user=user, name="레어 스탬프")
-    by_work_title = CollectionItem.objects.create(
-        user=user, name="굿즈 1", work_title="레어 작품"
-    )
+    by_work_title = CollectionItem.objects.create(user=user, name="굿즈 1", work_title="레어 작품")
     by_character_name = CollectionItem.objects.create(
         user=user, name="굿즈 2", character_name="레어 캐릭터"
     )
     by_memo = CollectionItem.objects.create(user=user, name="굿즈 3", memo="레어 메모")
-    item_type_decoy = CollectionItem.objects.create(
-        user=user, name="굿즈 4", item_type="레어 타입"
-    )
+    item_type_decoy = CollectionItem.objects.create(user=user, name="굿즈 4", item_type="레어 타입")
     other_user_same_name = CollectionItem.objects.create(user=other, name="레어 스탬프")
 
     items = set(list_user_collection_items(user, q="레어"))
@@ -200,7 +196,11 @@ def test_필터_선택지_조회는_소유자로_범위를_좁히고_중복값�
     CollectionItem.objects.create(user=user, name="굿즈 5", item_type="스탬프")
     CollectionItem.objects.create(user=user, name="굿즈 6", item_type="스탬프")
     CollectionItem.objects.create(
-        user=other, name="남의 굿즈", work_title="작품 A", character_name="캐릭터 A", item_type="스탬프"
+        user=other,
+        name="남의 굿즈",
+        work_title="작품 A",
+        character_name="캐릭터 A",
+        item_type="스탬프",
     )
 
     values = user_collection_item_filter_values(user)
@@ -381,15 +381,9 @@ def test_전체_집계는_보유_구함_카운트의_단순_합과_다르다(mak
 @pytest.mark.django_db
 def test_요약_집계는_교환가능_수량이_1개_이상인_항목_개수를_tradeable_count로_반환한다(make_user):
     user = make_user(username="ci-summary-tradeable")
-    CollectionItem.objects.create(
-        user=user, name="교환 가능 1", quantity=2, tradeable_quantity=1
-    )
-    CollectionItem.objects.create(
-        user=user, name="교환 가능 2", quantity=3, tradeable_quantity=2
-    )
-    CollectionItem.objects.create(
-        user=user, name="교환 불가", quantity=3, tradeable_quantity=0
-    )
+    CollectionItem.objects.create(user=user, name="교환 가능 1", quantity=2, tradeable_quantity=1)
+    CollectionItem.objects.create(user=user, name="교환 가능 2", quantity=3, tradeable_quantity=2)
+    CollectionItem.objects.create(user=user, name="교환 불가", quantity=3, tradeable_quantity=0)
 
     counts = user_collection_item_summary_counts(user)
 
@@ -397,7 +391,9 @@ def test_요약_집계는_교환가능_수량이_1개_이상인_항목_개수를
 
 
 @pytest.mark.django_db
-def test_교환가능_집계는_보유_구함_분할과_겹치는_축이라_보유_항목이_교환가능이면_양쪽_모두_집계된다(make_user):
+def test_교환가능_집계는_보유_구함_분할과_겹치는_축이라_보유_항목이_교환가능이면_양쪽_모두_집계된다(
+    make_user,
+):
     """tradeable_count는 상호 배타 분할이 아니다 — is_wanted=False인 보유
     아이템도 tradeable_quantity>0이면 owned_count와 tradeable_count 양쪽에
     동시에 집계된다(owned/wanted처럼 배타적으로 나뉘지 않고 의도적으로
@@ -517,6 +513,4 @@ def test_보유_교환_쿼리셋_메서드는_프로퍼티와_같은_집합을_�
     assert set(queryset.owned()) == {item for item in items if item.is_owned}
     assert set(queryset.not_owned()) == {item for item in items if not item.is_owned}
     assert set(queryset.tradeable()) == {item for item in items if item.is_tradeable}
-    assert set(queryset.not_tradeable()) == {
-        item for item in items if not item.is_tradeable
-    }
+    assert set(queryset.not_tradeable()) == {item for item in items if not item.is_tradeable}

@@ -4,10 +4,11 @@
 대시보드 "시스템 오류" 패널이 그대로 쓸 dict 계약을 고정한다 — 프론트
 템플릿은 이 함수가 반환하는 키만 보고 렌더링을 짠다.
 """
+
 from datetime import timedelta
 
-import pytest
 from django.utils import timezone
+import pytest
 
 pytestmark = pytest.mark.domain
 

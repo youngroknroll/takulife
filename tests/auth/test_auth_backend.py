@@ -5,10 +5,11 @@
   인증 필수화)
 - HTML archive 뷰의 @login_required 리다이렉트
 """
+
 import re
 
-import pytest
 from django.test import Client
+import pytest
 from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.web
@@ -17,6 +18,7 @@ pytestmark = pytest.mark.web
 # ---------------------------------------------------------------------------
 # 헬퍼
 # ---------------------------------------------------------------------------
+
 
 def _create_status(client, event, status_value="planned"):
     """현재 로그인된 클라이언트로 UserEventStatus를 만들고 id를 돌려준다."""
@@ -32,6 +34,7 @@ def _create_status(client, event, status_value="planned"):
 # ---------------------------------------------------------------------------
 # 권한 / IDOR
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 def test_다른_사용자의_일정_상태를_PATCH하면_404로_숨겨진다(client, make_user, make_event):
@@ -88,7 +91,9 @@ def test_일정_상태_목록_조회는_다른_사용자의_기록을_포함하�
 
 
 @pytest.mark.django_db
-def test_일정_상태_생성_시_user_필드를_지정해도_소유자는_요청자로_고정된다(client, make_user, make_event):
+def test_일정_상태_생성_시_user_필드를_지정해도_소유자는_요청자로_고정된다(
+    client, make_user, make_event
+):
     """POST 본문으로 user 필드를 보내도 소유자를 덮어쓸 수 없다 — 소유자는
     항상 인증된 요청자다."""
     user_a = make_user(username="post-user-a")
@@ -140,6 +145,7 @@ def test_일정_상태_수정_시_event_필드_변경_요청은_무시된다(cli
 # ---------------------------------------------------------------------------
 # 인증 경계
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 def test_비로그인_사용자의_일정_상태_API_조회는_403으로_거부된다():
@@ -259,6 +265,7 @@ def test_CSRF_토큰과_함께_일정_상태를_생성하면_201로_성공한다
 # 회원가입(django-allauth: 이메일을 식별자로, 인증 필수)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 def test_회원가입_페이지에_접근하면_가입_폼이_렌더링된다(client):
     response = client.get("/accounts/signup/")
@@ -266,7 +273,9 @@ def test_회원가입_페이지에_접근하면_가입_폼이_렌더링된다(cl
 
 
 @pytest.mark.django_db
-def test_회원가입_직후에는_이메일_인증_전이라_로그인_상태가_되지_않는다(client, django_user_model, valid_password):
+def test_회원가입_직후에는_이메일_인증_전이라_로그인_상태가_되지_않는다(
+    client, django_user_model, valid_password
+):
     response = client.post(
         "/accounts/signup/",
         {
@@ -288,7 +297,9 @@ def test_회원가입_직후에는_이메일_인증_전이라_로그인_상태�
 
 
 @pytest.mark.django_db
-def test_이메일_인증_링크를_클릭하면_로그인_상태가_된다(client, django_user_model, mailoutbox, valid_password):
+def test_이메일_인증_링크를_클릭하면_로그인_상태가_된다(
+    client, django_user_model, mailoutbox, valid_password
+):
     client.post(
         "/accounts/signup/",
         {
@@ -329,7 +340,9 @@ def test_취약한_비밀번호로_가입하면_거부되고_계정이_생성되
 
 
 @pytest.mark.django_db
-def test_이미_가입된_이메일로_다시_가입해도_중복_계정이_생성되지_않는다(client, django_user_model, mailoutbox, valid_password):
+def test_이미_가입된_이메일로_다시_가입해도_중복_계정이_생성되지_않는다(
+    client, django_user_model, mailoutbox, valid_password
+):
     """django-allauth 기본값 ACCOUNT_PREVENT_ENUMERATION=True는 신규 가입과
     똑같은 리다이렉트로 응답한다(응답만 보고 어느 이메일이 가입돼 있는지
     알아낼 수 없도록) — 대신 새 계정을 만들지 않고 기존 계정에 메일로
@@ -359,8 +372,11 @@ def test_이미_가입된_이메일로_다시_가입해도_중복_계정이_생�
 # @login_required 리다이렉트
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
-def test_비로그인_사용자가_아카이브에_접근하면_next_파라미터와_함께_로그인_페이지로_리다이렉트된다(client):
+def test_비로그인_사용자가_아카이브에_접근하면_next_파라미터와_함께_로그인_페이지로_리다이렉트된다(
+    client,
+):
     response = client.get("/archive/")
     assert response.status_code == 302
     assert response["Location"] == "/accounts/login/?next=/archive/"
@@ -391,6 +407,7 @@ def test_로그인_사용자는_아카이브_페이지에_접근할_수_있다(c
 # ---------------------------------------------------------------------------
 # 로그인 <-> 가입 링크 사이의 next 보존
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 def test_next_파라미터가_있는_로그인_페이지의_가입_링크는_next를_유지한다(client):

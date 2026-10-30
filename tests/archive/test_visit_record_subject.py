@@ -2,11 +2,11 @@
 하나만 가리킬 수 있다. 모델 제약과 API either/or 검증(personal_entry 소유자
 범위 포함)을 다룬다.
 """
-import pytest
+
 from django.db import IntegrityError, transaction
+import pytest
 
 from archive.models import PersonalEntry, VisitRecord
-
 
 # ---------------------------------------------------------------------------
 # 모델 제약 — 대상은 정확히 하나여야 한다
@@ -19,9 +19,7 @@ def test_비공식_장소를_대상으로_방문_기록을_생성하면_개인_�
     user = make_user(username="vr-pe")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="비공식 장소")
 
-    record = VisitRecord.objects.create(
-        user=user, personal_entry=entry, visited_on="2026-06-20"
-    )
+    record = VisitRecord.objects.create(user=user, personal_entry=entry, visited_on="2026-06-20")
 
     assert record.event is None
     assert record.personal_entry == entry
@@ -29,7 +27,9 @@ def test_비공식_장소를_대상으로_방문_기록을_생성하면_개인_�
 
 @pytest.mark.domain
 @pytest.mark.django_db
-def test_방문_기록에_공식_행사와_비공식_장소를_동시에_지정하면_생성이_거부된다(make_user, make_event):
+def test_방문_기록에_공식_행사와_비공식_장소를_동시에_지정하면_생성이_거부된다(
+    make_user, make_event
+):
     user = make_user(username="vr-both")
     event = make_event(title="Official")
     entry = PersonalEntry.objects.create(user=user, kind="place", title="P")
@@ -77,7 +77,9 @@ def test_API로_비공식_장소를_대상으로_방문_기록을_생성하면_�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_API로_공식_행사를_대상으로_방문_기록을_생성하면_행사가_저장된다(client, make_user, make_event):
+def test_API로_공식_행사를_대상으로_방문_기록을_생성하면_행사가_저장된다(
+    client, make_user, make_event
+):
     user = make_user(username="vr-api-ev")
     event = make_event(title="Official event")
 

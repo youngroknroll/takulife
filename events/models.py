@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.db import models
 from django.utils import timezone
 
-from .querysets import EventQuerySet
+from events.querysets import EventQuerySet
 
 
 class Event(models.Model):

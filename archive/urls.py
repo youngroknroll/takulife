@@ -1,7 +1,6 @@
 from django.urls import path
 
-from .views import UserEventStatusDetailView, UserEventStatusListCreateView
-
+from archive.views import UserEventStatusDetailView, UserEventStatusListCreateView
 
 urlpatterns = [
     path("", UserEventStatusListCreateView.as_view(), name="user-event-status-list-create"),

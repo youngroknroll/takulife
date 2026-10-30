@@ -9,6 +9,7 @@
 항목 자체는 여기서 공개되지 않는다 — 기존 검토 큐에 들어갈 뿐이다.
 공개는 여전히 관리자가 드래프트를 승인해야만 일어난다.
 """
+
 from dataclasses import dataclass
 
 from django.db import transaction
@@ -50,9 +51,7 @@ class PromotionResult:
 def promote_personal_entry(*, user, personal_entry_id, official_url):
     with transaction.atomic():
         try:
-            entry = PersonalEntry.objects.select_for_update().get(
-                pk=personal_entry_id, user=user
-            )
+            entry = PersonalEntry.objects.select_for_update().get(pk=personal_entry_id, user=user)
         except PersonalEntry.DoesNotExist as exc:
             raise PromotionNotFoundError from exc
 

@@ -1,6 +1,7 @@
 """events.content_translation.quarantine_reason의 마크업·통화·숫자 규칙에
 대한 단위 테스트. 언어는 en 고정 — 이 규칙들은 언어별 문자 판정과 무관하다.
 """
+
 import pytest
 
 from events.content_translation import quarantine_reason
@@ -50,9 +51,23 @@ def _전각(ascii_text):
 @pytest.mark.parametrize(
     "summary",
     [
-        "Held on " + chr(0xFF1C) + "script" + chr(0xFF1E) + "alert(1)" + chr(0xFF1C) + "/script" + chr(0xFF1E),
+        "Held on "
+        + chr(0xFF1C)
+        + "script"
+        + chr(0xFF1E)
+        + "alert(1)"
+        + chr(0xFF1C)
+        + "/script"
+        + chr(0xFF1E),
         "See " + _전각("https://evil.example"),
-        "Contact " + chr(0xFF41) + chr(0xFF20) + chr(0xFF42) + chr(0xFF0E) + chr(0xFF43) + chr(0xFF4F) + chr(0xFF4D),
+        "Contact "
+        + chr(0xFF41)
+        + chr(0xFF20)
+        + chr(0xFF42)
+        + chr(0xFF0E)
+        + chr(0xFF43)
+        + chr(0xFF4F)
+        + chr(0xFF4D),
     ],
     ids=["전각_태그", "전각_url", "전각_이메일"],
 )
@@ -207,7 +222,9 @@ def test_선행_0은_지어낸_숫자_비교에서만_무시하고_네_자리_�
     ["Admission KRW 50,000", "Admission 5 man won"],
     ids=["5만원이_50000으로", "확장_숫자_없는_번역"],
 )
-def test_원문의_만_천_억_표기는_번역의_확장_숫자를_허용하되_보존_의무는_만들지_않는다(translated_summary):
+def test_원문의_만_천_억_표기는_번역의_확장_숫자를_허용하되_보존_의무는_만들지_않는다(
+    translated_summary,
+):
     source = _source(summary="입장료 5만원")
 
     assert quarantine_reason("en", source, _en(summary=translated_summary)) is None
@@ -257,7 +274,9 @@ def test_번역이_원문에_있던_URL_뒤에_문장_부호를_붙여도_통과
     ],
     ids=["원문에_없는_도메인", "스킴만_남음", "www_점_둘"],
 )
-def test_구두점을_자른_뒤에도_원문에_없거나_스킴만_남는_URL은_격리된다(source_summary, translated_summary):
+def test_구두점을_자른_뒤에도_원문에_없거나_스킴만_남는_URL은_격리된다(
+    source_summary, translated_summary
+):
     source = _source(summary=source_summary)
 
     assert quarantine_reason("en", source, _en(summary=translated_summary)) == "unexpected_markup"

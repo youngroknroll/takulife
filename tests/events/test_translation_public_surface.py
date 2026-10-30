@@ -2,14 +2,13 @@
 공개 API·검색·사이트맵·JSON-LD 응답은 44-1 전과 바이트/키 단위로 같아야
 한다. 44-1은 공개 면을 전혀 건드리지 않으므로, 이 파일의 테스트는 구현
 변경 없이 바로 Green이어야 한다."""
+
 import json
 import re
 
 import pytest
 
 from events.content_translation import TRANSLATED_FIELDS, source_hash
-from events.models import Event
-
 
 pytestmark = [pytest.mark.django_db, pytest.mark.web]
 

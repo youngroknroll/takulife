@@ -1,6 +1,7 @@
 """local_runner.page_fetch — 이벤트 URL 호스트별 읽기 경로 분기.
 인스타는 캡션 경로, X는 게시물(syndication) 경로, 그 외(알 수 없는 호스트
 포함)는 일반 웹 경로로 간다."""
+
 import re
 import socket
 from urllib.parse import parse_qs, urlsplit
@@ -10,7 +11,6 @@ import pytest
 import local_runner.page_fetch as page_fetch
 from local_runner.page_fetch import CAPTION_MAX_LENGTH, fetch_event_text
 from local_runner.url_safety import UnsafeFetchUrlError
-
 
 pytestmark = pytest.mark.unit
 
@@ -71,9 +71,7 @@ def test_사설_루프백_링크로컬_IP로_해석되는_이벤트_URL은_러�
     get_calls = []
 
     monkeypatch.setattr("socket.getaddrinfo", fake_getaddrinfo)
-    monkeypatch.setattr(
-        "httpx.get", lambda *args, **kwargs: get_calls.append((args, kwargs))
-    )
+    monkeypatch.setattr("httpx.get", lambda *args, **kwargs: get_calls.append((args, kwargs)))
 
     with pytest.raises(UnsafeFetchUrlError):
         fetch_event_text(url="https://official-site.example.com/event")
@@ -198,9 +196,7 @@ def test_og_description에서_좋아요_댓글_계정_날짜_접두와_닫는_�
 
     monkeypatch.setattr("local_runner.page_fetch.httpx.get", fake_get)
 
-    result = page_fetch._fetch_instagram_caption(
-        "https://www.instagram.com/p/Dck7ZVUoG4i/"
-    )
+    result = page_fetch._fetch_instagram_caption("https://www.instagram.com/p/Dck7ZVUoG4i/")
 
     assert result == expected
 
@@ -228,9 +224,7 @@ def test_상한을_넘는_캡션은_절단되고_절단_표시가_남는다(monk
 
     monkeypatch.setattr("local_runner.page_fetch.httpx.get", fake_get)
 
-    result = page_fetch._fetch_instagram_caption(
-        "https://www.instagram.com/p/Dck7ZVUoG4i/"
-    )
+    result = page_fetch._fetch_instagram_caption("https://www.instagram.com/p/Dck7ZVUoG4i/")
 
     assert len(result) <= CAPTION_MAX_LENGTH
     assert result.endswith("…(절단됨)")
@@ -265,14 +259,10 @@ def test_X_상태_URL은_고정_syndication_호스트에서_트윗_본문을_그
         captured["kwargs"] = kwargs
         return _FakeSyndicationResponse({"text": "치이카와 팝업스토어 서울 10월 1일~10월 14일"})
 
-    monkeypatch.setattr(
-        "local_runner.page_fetch.socket.getaddrinfo", _safe_getaddrinfo
-    )
+    monkeypatch.setattr("local_runner.page_fetch.socket.getaddrinfo", _safe_getaddrinfo)
     monkeypatch.setattr("local_runner.page_fetch.httpx.get", fake_get)
 
-    result = fetch_event_text(
-        url="https://x.com/somehandle/status/1234567890123456789"
-    )
+    result = fetch_event_text(url="https://x.com/somehandle/status/1234567890123456789")
 
     assert result == "치이카와 팝업스토어 서울 10월 1일~10월 14일"
 
@@ -299,9 +289,7 @@ def test_X_상태_URL은_고정_syndication_호스트에서_트윗_본문을_그
 @pytest.mark.parametrize(
     "make_response",
     [
-        lambda: _FakeSyndicationResponse(
-            status_code=404, payload={"text": "정상처럼 보이는 본문"}
-        ),
+        lambda: _FakeSyndicationResponse(status_code=404, payload={"text": "정상처럼 보이는 본문"}),
         lambda: _FakeSyndicationResponse(payload={}),
         lambda: _FakeSyndicationResponse(json_error=True),
         lambda: _FakeSyndicationResponse(payload={"text": ""}),
@@ -309,16 +297,10 @@ def test_X_상태_URL은_고정_syndication_호스트에서_트윗_본문을_그
     ids=["상태코드_404", "본문_text_없음", "JSON_파싱_오류", "text_빈_문자열"],
 )
 def test_X_syndication_응답이_실패_형태면_None을_반환한다(make_response, monkeypatch):
-    monkeypatch.setattr(
-        "local_runner.page_fetch.socket.getaddrinfo", _safe_getaddrinfo
-    )
-    monkeypatch.setattr(
-        "local_runner.page_fetch.httpx.get", lambda url, **kwargs: make_response()
-    )
+    monkeypatch.setattr("local_runner.page_fetch.socket.getaddrinfo", _safe_getaddrinfo)
+    monkeypatch.setattr("local_runner.page_fetch.httpx.get", lambda url, **kwargs: make_response())
 
-    result = fetch_event_text(
-        url="https://x.com/somehandle/status/1234567890123456789"
-    )
+    result = fetch_event_text(url="https://x.com/somehandle/status/1234567890123456789")
 
     assert result is None
 
@@ -359,9 +341,7 @@ def test_게시물_형태가_아닌_X_URL은_요청_없이_None이다(url, monke
 def test_X_syndication_응답이_상한을_넘으면_None이다(monkeypatch):
     oversized_content = b"x" * 1_000_001
 
-    monkeypatch.setattr(
-        "local_runner.page_fetch.socket.getaddrinfo", _safe_getaddrinfo
-    )
+    monkeypatch.setattr("local_runner.page_fetch.socket.getaddrinfo", _safe_getaddrinfo)
     monkeypatch.setattr(
         "local_runner.page_fetch.httpx.get",
         lambda url, **kwargs: _FakeSyndicationResponse(
@@ -369,8 +349,6 @@ def test_X_syndication_응답이_상한을_넘으면_None이다(monkeypatch):
         ),
     )
 
-    result = fetch_event_text(
-        url="https://x.com/somehandle/status/1234567890123456789"
-    )
+    result = fetch_event_text(url="https://x.com/somehandle/status/1234567890123456789")
 
     assert result is None

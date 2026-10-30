@@ -14,6 +14,7 @@ events.queries.list_published_events_for_month는 아직 존재하지 않아, �
 start_date가 없으면 항상 달력에서 제외된다(기존 단순 목록에서는 여전히
 조회 가능하다, 서비스 설계서 §6). 비게시 행사는 항상 제외된다.
 """
+
 from datetime import date
 
 import pytest

@@ -6,4 +6,5 @@ class AccountsConfig(AppConfig):
     name = "accounts"
 
     def ready(self):
-        from . import signals  # noqa: F401
+        # 시그널 수신기를 등록하는 부수효과 임포트
+        from accounts import signals  # noqa: F401

@@ -6,10 +6,11 @@
   GET    /api/personal-entries/<id>/   → 200 또는 404
   DELETE /api/personal-entries/<id>/   → 204 또는 404
 """
+
 import uuid
 
-import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+import pytest
 
 from archive.models import PersonalEntry
 
@@ -88,7 +89,9 @@ def test_다른_사용자의_개인_항목을_삭제하면_404이고_삭제되�
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_본인_개인_항목의_장소명을_PATCH로_수정하면_200이고_DB에도_반영된다(client, make_user, make_entry):
+def test_본인_개인_항목의_장소명을_PATCH로_수정하면_200이고_DB에도_반영된다(
+    client, make_user, make_entry
+):
     user = make_user(username="pe-patch-owner")
     entry = make_entry(user, kind="place", title="원래 제목", location_name="오타난 이름")
 
@@ -192,7 +195,7 @@ def test_개인_항목_시리얼라이저의_종류_선택지에_굿즈가_없�
 
 # ---------------------------------------------------------------------------
 # INTG-BE-01-PE-WEB (bfcache 중복 생성 방지 계획 §6) — PersonalEntry 생성 시
-# client_token 멱등성의 HTTP 경계 계약. tests/archive/test_visit_records_api.py:153-192의
+# client_token 멱등성의 HTTP 경계 계약. tests/archive/test_visit_records_api.py:157-194의
 # INTG-BE-01-VR-WEB과 대응된다.
 # ---------------------------------------------------------------------------
 
@@ -230,9 +233,7 @@ def test_같은_클라이언트_토큰으로_개인_항목_생성_POST를_두_�
     assert first_response.json()["id"] == second_response.json()["id"]
     assert "client_token" not in first_response.json()
     assert "client_token" not in second_response.json()
-    assert (
-        PersonalEntry.objects.filter(user=user, client_token=client_token).count() == 1
-    )
+    assert PersonalEntry.objects.filter(user=user, client_token=client_token).count() == 1
     entry = PersonalEntry.objects.get(user=user, client_token=client_token)
     assert entry.title == "첫 번째 제목"
 
@@ -268,7 +269,9 @@ def test_이미지가_아닌_바이트를_이미지로_업로드하면_거부된
 
 @pytest.mark.web
 @pytest.mark.django_db
-def test_5MB를_초과하는_이미지를_업로드하면_거부된다(client, make_user, png_bytes, settings, tmp_path):
+def test_5MB를_초과하는_이미지를_업로드하면_거부된다(
+    client, make_user, png_bytes, settings, tmp_path
+):
     """5MB를 초과하는 이미지는 400으로 거부되어야 한다(압축 폭탄 방지 가드)."""
     settings.MEDIA_ROOT = str(tmp_path)
     user = make_user(username="pe-img-big")

@@ -54,6 +54,8 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 | `GA_MEASUREMENT_ID` | 선택 | config/settings.py `GA_MEASUREMENT_ID = _get_env(...)` | `G-…` 형식의 GA4 측정 ID |
 | `DRAFT_FETCH_CONTACT` | 선택 | config/settings.py `load_draft_fetch_contact` | 크롤러 UA 연락처(`docs/operations-runbook.md` §8 참조) |
 | `PORT` | 선택 | `docker/entrypoint.sh` `--bind` | 기본값 `8000` |
+| `GUNICORN_TIMEOUT` | 선택 | `docker/entrypoint.sh` `--timeout`, `.env.example` | 워커 타임아웃(초). 기본값 `120` `[코드 docker/entrypoint.sh]`. `0`은 타임아웃 해제라 금지 |
+| `WEB_CONCURRENCY` | 선택 | `docker/entrypoint.sh` `--workers` | 워커 수. 기본값 `3` `[코드 docker/entrypoint.sh]` |
 
 ## 2. 첫 배포 절차
 
@@ -134,6 +136,26 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
    (`docs/operations-runbook.md` §2)가 워커 간 실제로 공유되는지 확인한다.
    `CACHES`가 `DatabaseCache`(config/settings.py `CACHES`)로 배선돼 구조적으로는
    공유되지만, 통합 환경에서의 실측은 아직 없다(0단계 계획서 §9-b).
+
+   **로컬 실측(2026-10-28)**: 조건 = gunicorn 26.0.0 `--workers 3`, 로컬
+   PostgreSQL 14.19, 스크래치 DB `taku_ratelimit_smoke`(`DatabaseCache` 그대로),
+   순차 curl `[실측 2026-10-28]`.
+
+   | 시험 | 결과 | 판정 |
+   |---|---|---|
+   | DRF `discovery_runner` 60/minute (`POST /api/discovery/runner/heartbeat/`) | 62회 순차(22:03:28~22:03:32 KST, 4초) → 1~60번 204, 61·62번 429. 1~60번 워커 PID별 처리 15/22/23건. 첫 429를 낸 워커는 1~60번 중 22건만 처리 `[실측 2026-10-28]` | 카운터가 워커 간 합산됨 — **공유 확인** |
+   | 대조군: 저장소 밖 스크래치 설정으로 `CACHES`를 `LocMemCache`로 바꿔 같은 시험 | 62회 전부 204, PID별 12/25/25건 → 워커별 개별 카운트라 어느 워커도 60에 못 미쳐 429 없음 `[실측 2026-10-28]` | 이 시험이 공유 여부를 구별한다는 증거 |
+   | allauth `signup` (`5/m/ip,30/h/ip`) | CSRF 쿠키·토큰 포함 빈 폼 POST 7회 → 1~3번 200(폼 오류), 4~7번 429. 통과 3건은 한 워커(PID 28162)가 처리했고 429 4건 중 3건은 다른 두 워커가 냈다 `[실측 2026-10-28]` | **공유 확인**. 한도 5 대비 4번째부터 제한된 이유는 미확인(allauth 소비 방식 차이로 추정, 별도 확인 항목) |
+
+   재현 명령 요지(토큰 값 제외): 스크래치 DB 생성 → env 명시 기동
+   `uv run gunicorn config.wsgi:application --bind 127.0.0.1:8001 --workers 3
+   --access-logformat '%(p)s %(s)s %({x-seq}i)s %(U)s'` →
+   `for i in $(seq 1 62); do curl -X POST -H "X-Runner-Token: …" -H "X-Seq: $i"
+   …/api/discovery/runner/heartbeat/; done` → 액세스 로그 PID 집계. 끝나면
+   스크래치 DB 삭제.
+   **한계**: 프로덕션(Render 컨테이너 + Supabase Session pooler) 통합 환경은
+   미검증. 컬링(`MAX_ENTRIES=10000`, 운영 `django_cache` 행 수) 확인은 아래에
+   그대로 남는다.
    **컬링으로 인한 카운터 조기 소멸도 별도로 확인한다**: `DatabaseCache`는
    `MAX_ENTRIES`(현재 10000 — config/settings.py `CACHES`)를 넘으면 만료 전
    항목까지 `cache_key` 알파벳 순으로 최대 1/3을 강제 삭제한다(LRU·FIFO가
@@ -169,7 +191,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
     예약하지 않는다** — 명령 docstring도 "정기 스케줄링은 배포/런북의
     책임"이라고 명시한다. `/accounts/delete/done/` 화면은 사용자에게 유예
     기간이 지나면 계정이 파기된다고 명시적으로 안내하므로(유예 기간 값의
-    진실 원천은 `accounts/services.py:24`의 `DELETION_GRACE_PERIOD = timedelta(days=10)`),
+    진실 원천은 `accounts/services.py:25`의 `DELETION_GRACE_PERIOD = timedelta(days=10)`),
     이 등록이 누락되면 그 안내가 지켜지지 않고 유예 기간이 지난 개인정보가
     무기한 잔존한다. 명령은 실패 시(개별 후보 삭제 중 에러 발생) 0이 아닌
     종료 코드로 끝나므로(`CommandError`, 실패 건수와 함께), 스케줄러에
@@ -291,7 +313,24 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 
 | 리허설 회차 | 일시 | 결과 | 비고 |
 |---|---|---|---|
-| — | 미실시 | — | 첫 배포 이후 기록 예정 |
+| 로컬 사전 리허설 | 2026-10-28 | 통과(아래 수치) | 게이트 2 미충족 — 운영 Supabase·R2·가입·업로드 스모크 아님 |
+| 운영 리허설 | 미실시 | — | 자격 증명 필요(사용자) |
+
+**로컬 사전 리허설(2026-10-28)**: 명령 순서는 다음과 같다.
+
+1. `pg_dump -h localhost -d taku -Fc --no-owner --no-privileges -f taku.dump`
+2. `CREATE DATABASE taku_restore_rehearsal`
+3. `pg_restore --no-owner --no-privileges --exit-on-error` (복원 DB 대상)
+4. 테이블별 `count(*)` 쿼리를 `\gexec`로 원본·복원 양쪽에서 실행해 diff
+5. 복원 DB로 `manage.py check`·`migrate --check`
+6. 복원 DB·덤프 삭제
+
+결과 `[실측 2026-10-28]`: pg_dump/psql 14.19, 서버 14.19 로컬, 덤프 243,865바이트,
+테이블 40개·행 1,452건(public 스키마 BASE TABLE 합) diff 0건, `check` 0 issues,
+`migrate --check` 종료 코드 0, `django_cache` 54행이 덤프에 포함됨(§3-10 인지
+사항 확인).
+
+클라이언트 `pg_dump` 14.19와 운영 Supabase 서버 버전이 다르면 덤프가 거부될 수 있으므로 운영 리허설 전에 서버 버전(`SELECT version()`)에 맞는 클라이언트를 쓴다.
 
 ## 5. 롤백
 
@@ -302,6 +341,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   확인 후 `manage.py migrate <app> <이전 마이그레이션 이름>`으로 역방향
   마이그레이션을 실행할지 판단한다. 데이터 손실 가능성이 있는 역방향
   마이그레이션(컬럼 삭제 등)은 실행 전 반드시 백업을 재확인한다.
+- **gunicorn 타임아웃(트랙 46) 롤백**: `GUNICORN_TIMEOUT=30`으로 env를 바꾸고 재기동하면 이전 동작(gunicorn 기본 30초 `[코드 gunicorn/config.py]`)이다.
 - **장애 시 점검 순서**: 헬스(`/api/health/` 응답 상태) → 애플리케이션 로그
   (`LOGGING`, config/settings.py 콘솔 구조화 로그) → DB(연결·쿼리 지연) →
   스토리지(R2 접근 가능 여부).
@@ -334,7 +374,7 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
 |---|---|---|
 | R2 실 업로드/다운로드 왕복 | 미검증(로컬 스모크만 완료) | 첫 배포 직후(§3 체크리스트 ⑦) |
 | 선정 PaaS의 실제 프록시 홉 수 | Render 확정(§7). 홉 수 실측 완료 여부는 §3 ⑧ 기준 | T2 확정 후, 첫 배포 전(§3 체크리스트 ⑧) |
-| 멀티워커 환경에서 rate limit 공유 실측 | 미검증(구조 논증만 존재) | 첫 배포 직후(§3 체크리스트 ⑨) |
+| 멀티워커 환경에서 rate limit 공유 실측 | 로컬 PG에서 워커 3개 실측 완료(2026-10-28, §3-9). 프로덕션(Render) 통합 환경은 미검증 | 첫 배포 직후(§3 체크리스트 ⑨) |
 | 탈퇴 파기(`purge_deleted_accounts`) 정기 실행 등록 | 미등록(플랫폼은 §7에서 Render로 확정 — Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함) | 첫 배포 전(§3 체크리스트 ⑪) |
 | 운영 로그 정리(`prune_operational_data`, 트랙 37) 정기 실행 등록 | 미등록(Render 스케줄러에 ENTRYPOINT 우회로 등록 필요, 비용 확인 포함 — `docs/operations-runbook.md` §7.2·`docs/BE/data-retention.md` 참고) | 첫 배포 전 |
 
@@ -355,6 +395,11 @@ T2)은 이 문서 작성 시점에 미확정이다. 아래 절차는 Docker 이�
   전환.
 - **자동 생성 실패 시 수동 fallback**: `gh pr create --base production --head
   main`으로 직접 생성한다.
+- **main 직접 커밋의 lint 통과**: main 직접 커밋도 `uv run ruff check . && uv run ruff format --check .`를
+  통과해야 한다(`.claude/hooks/git-commit-style-guard.sh`가 로컬에서 막는다). main CI가 lint로
+  실패하면 `.github/workflows/deploy-pr.yml`의 `workflow_run.conclusion == 'success'` 조건 때문에
+  deploy PR이 자동 생성되지 않는다. 수정 커밋으로 main CI를 다시 초록으로 만든 뒤 자동 생성을
+  기다리거나 위 수동 절차를 쓴다.
 - **deploy PR에 CI 체크가 없는 것은 정상**이다 — `.github/workflows/ci.yml`의
   `pull_request` 트리거가 `branches-ignore: [production]`으로 production을
   향하는 PR을 건너뛰기 때문이다(트랙 42, 2026-10-20). 그 전에는

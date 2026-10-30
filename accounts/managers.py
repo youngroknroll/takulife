@@ -1,6 +1,6 @@
 from django.contrib.auth.base_user import BaseUserManager
 
-from .validators import normalize_nickname, validate_nickname
+from accounts.validators import normalize_nickname, validate_nickname
 
 
 class UserManager(BaseUserManager):

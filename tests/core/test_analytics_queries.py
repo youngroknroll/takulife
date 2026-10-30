@@ -1,10 +1,11 @@
 """core.analytics 집계 조회 쿼리 검증
 (.docs/plans/2026-07-14-stage0-deployment-foundation-plan.md §8).
 """
+
 import datetime
 
-import pytest
 from django.utils import timezone
+import pytest
 
 from core.analytics import distinct_user_key_count_since, event_name_counts_since
 from core.models import AnalyticsEvent

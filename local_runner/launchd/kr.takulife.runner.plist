@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 템플릿: 설치 전에 __REPO_DIR__·__HOME__을 실제 경로로 치환한다. 예)
+     sed -e "s|__REPO_DIR__|$PWD|g" -e "s|__HOME__|$HOME|g" local_runner/launchd/kr.takulife.runner.plist > ~/Library/LaunchAgents/kr.takulife.runner.plist -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>kr.takulife.runner</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>__REPO_DIR__/local_runner/launchd/run-runner.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO_DIR__</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+  <key>ExitTimeOut</key>
+  <integer>40</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/takulife-runner.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/takulife-runner.log</string>
+</dict>
+</plist>

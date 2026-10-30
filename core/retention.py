@@ -4,8 +4,9 @@
 이유는, 하나가 실패해도 나머지 대상은 계속 처리되게 격리하기 위해서다
 (트랙 37 S1). 실패는 예외를 삼키지 않고 로그로 남긴다.
 """
-import logging
+
 from datetime import timedelta
+import logging
 
 from axes.handlers.proxy import AxesProxyHandler
 from axes.models import AccessFailureLog, AccessLog

@@ -17,6 +17,8 @@ Frontend Dual Review Gate when the task is frontend. Also read approved
 acceptance criteria, the plan, affected code, and available test suites. You
 are a review role and must not edit files.
 
+Python code follows `docs/BE/python-conventions.md`; read it before writing or judging Python.
+
 Activate when a change needs regression analysis, verification design, or a
 completion assessment.
 

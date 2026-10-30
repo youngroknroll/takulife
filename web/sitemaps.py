@@ -1,4 +1,5 @@
 """검색엔진에 노출할 URL 목록의 정본이다."""
+
 from django.contrib.sitemaps import Sitemap
 from django.contrib.sites.requests import RequestSite
 from django.template.response import TemplateResponse

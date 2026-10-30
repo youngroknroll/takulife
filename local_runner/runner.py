@@ -2,6 +2,7 @@
 돌려 이벤트·소스를 서버에 제출한 뒤 실행을 완료 처리한다. 통신 오류·잘못된
 모델 출력·임대 상실이 러너 프로세스 전체를 죽이지 않도록 각 경계에서
 격리한다."""
+
 import functools
 import logging
 import logging.config
@@ -11,17 +12,17 @@ import time
 
 import httpx
 
-from .claude_code_adapter import (
-    AdapterOutputError,
+from local_runner.claude_code_adapter import (
     _CORRECTION_SUFFIX,
+    AdapterOutputError,
     _execute_claude,
     build_exploration_prompt,
     parse_json_object,
 )
-from .client import RunnerClient, TranslationRunnerClient
-from .clock import today_kst
-from .config import POLL_INTERVAL_SECONDS, load_config
-from .exploration_flow import (
+from local_runner.client import RunnerClient, TranslationRunnerClient
+from local_runner.clock import today_kst
+from local_runner.config import POLL_INTERVAL_SECONDS, load_config
+from local_runner.exploration_flow import (
     EXPLORATION_MAX_EVENTS,
     EXPLORATION_MAX_SOURCES,
     ExplorationFlowError,
@@ -29,8 +30,8 @@ from .exploration_flow import (
     parse_exploration_output,
     run_exploration_flow,
 )
-from .progress import ProgressReporter
-from .translation_flow import translate_pending_batch
+from local_runner.progress import ProgressReporter
+from local_runner.translation_flow import translate_pending_batch
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +212,8 @@ def _run_once(client, progress=None):
         try:
             raw_output = _run_exploration_agent(prompt)
         except AdapterOutputError as exc:
+            # launchd 로그에서 원인을 볼 수 있게 서버 보고와 별도로 남긴다.
+            logger.warning("exploration agent failed: %s", exc)
             if progress is not None:
                 progress.set("completing")
             client.complete(
@@ -274,7 +277,9 @@ def _handle_sigterm(signum, frame):
 
 
 def _configure_logging():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
     # httpx가 요청 URL·토큰을 INFO로 남기지 않도록 WARNING까지만 올린다.
     # logging.getLogger(__name__) 외 호출을 금지하는 EHL-06 정책 때문에
     # dictConfig로 남의 로거(httpx) 레벨만 건드린다.

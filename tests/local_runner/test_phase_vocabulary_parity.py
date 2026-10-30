@@ -2,13 +2,13 @@
 PHASE_LABELS가 문자 그대로 같은지 지키는 회귀 가드다. local_runner는 drafts를
 임포트할 수 없으므로(격리 계약) 러너 쪽은 AST로 딕셔너리 리터럴만 읽는다
 (tests/local_runner/test_outcome_vocabulary_parity.py와 같은 방식)."""
+
 import ast
 import pathlib
 
 import pytest
 
 from drafts.queries import DISCOVERY_PHASE_LABELS
-
 
 pytestmark = pytest.mark.contract
 

@@ -1,7 +1,8 @@
 """local_runner.exploration_flow — 탐색 출력의 events·sources 분리 파싱과
 상한 절단을 검증한다."""
-import logging
+
 from datetime import datetime, timezone
+import logging
 from urllib.parse import urlsplit
 
 import httpx
@@ -16,7 +17,6 @@ from local_runner.exploration_flow import (
     run_exploration_flow,
 )
 from local_runner.page_fetch import BlockedResponseError
-
 
 pytestmark = pytest.mark.unit
 
@@ -1243,7 +1243,9 @@ def test_읽기의_예상된_예외는_그_항목만_failed_fetch_error로_기�
 # ---------------------------------------------------------------------------
 
 
-def test_탐색이_이미_지난_행사로_판정한_항목은_읽기_없이_skipped_agent_ended로_기록된다(monkeypatch):
+def test_탐색이_이미_지난_행사로_판정한_항목은_읽기_없이_skipped_agent_ended로_기록된다(
+    monkeypatch,
+):
     import datetime as datetime_module
 
     monkeypatch.setattr(

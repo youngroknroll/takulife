@@ -4,6 +4,7 @@
 class="active"를 갖고 나머지 3개는 없어야 한다(네 섹션은 파셜 자체에서
 서로 겹치지 않는 경로 접두어로 문서화돼 있다).
 """
+
 import pytest
 
 pytestmark = pytest.mark.web

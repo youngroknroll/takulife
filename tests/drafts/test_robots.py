@@ -9,14 +9,14 @@ TestGuardInheritance는 fetch_html을 실제로 두고 그 아래 계층(httpx.C
 validate_fetch_url, socket.getaddrinfo)만 패치한다 — SSRF 방어가 실제로
 상속되는지(RobotFileParser/urllib을 썼다면 이 패치들이 안 먹혀 테스트가
 실패했을 것) 증명하기 위해서다."""
+
 import socket
 
+from django.test import override_settings
 import httpx
 import pytest
-from django.test import override_settings
 
 import drafts.fetching as fetching
-import drafts.robots as robots
 from drafts.fetching import (
     MAX_RESPONSE_BYTES,
     FetchError,
@@ -24,6 +24,7 @@ from drafts.fetching import (
     ResponseTooLargeError,
     UnsupportedContentTypeError,
 )
+import drafts.robots as robots
 from drafts.robots import (
     ROBOTS_DISALLOWED,
     ROBOTS_FETCH_FAILED,
@@ -44,7 +45,8 @@ class TestDecisionLogic:
 
     def test_disallow_규칙에_일치하면_차단으로_판단한다(self, monkeypatch):
         monkeypatch.setattr(
-            robots, "fetch_html",
+            robots,
+            "fetch_html",
             lambda url, **kwargs: "User-agent: *\nDisallow: /private/\n",
         )
 
@@ -53,7 +55,8 @@ class TestDecisionLogic:
 
     def test_disallow_규칙에_일치하면_차단_사유가_robots_disallowed로_기록된다(self, monkeypatch):
         monkeypatch.setattr(
-            robots, "fetch_html",
+            robots,
+            "fetch_html",
             lambda url, **kwargs: "User-agent: *\nDisallow: /private/\n",
         )
 
@@ -90,7 +93,9 @@ class TestDecisionLogic:
             "유효하지_않은_URL",
         ],
     )
-    def test_robots_txt_가져오기가_실패하면_사유를_fetch_failed로_기록하고_차단한다(self, monkeypatch, exc):
+    def test_robots_txt_가져오기가_실패하면_사유를_fetch_failed로_기록하고_차단한다(
+        self, monkeypatch, exc
+    ):
         def _raise(url, **kwargs):
             raise exc
 
@@ -146,7 +151,9 @@ class TestGuardInheritance:
         result = checker.check("ftp://example.com/x")
         assert result == RobotsCheckResult(False, ROBOTS_FETCH_FAILED)
 
-    def test_robots_txt_응답이_크기_상한을_넘으면_차단한다(self, monkeypatch, install_mock_transport):
+    def test_robots_txt_응답이_크기_상한을_넘으면_차단한다(
+        self, monkeypatch, install_mock_transport
+    ):
         def handler(request):
             body = b"x" * (MAX_RESPONSE_BYTES + 1)
             return httpx.Response(200, headers={"content-type": "text/plain"}, content=body)
@@ -175,7 +182,8 @@ def test_연락처_설정이_있어도_순수_제품_토큰만으로_disallow_�
     monkeypatch,
 ):
     monkeypatch.setattr(
-        robots, "fetch_html",
+        robots,
+        "fetch_html",
         lambda url, **kwargs: "User-agent: TakuLifeBot\nDisallow: /private/\n",
     )
 
@@ -250,7 +258,8 @@ class TestCrawlDelay:
 
     def test_robots_txt에_crawl_delay가_설정되어_있으면_그_값을_반환한다(self, monkeypatch):
         monkeypatch.setattr(
-            robots, "fetch_html",
+            robots,
+            "fetch_html",
             lambda url, **kwargs: "User-agent: *\nCrawl-delay: 5\nAllow: /\n",
         )
 
@@ -259,9 +268,7 @@ class TestCrawlDelay:
         assert checker.crawl_delay("https://example.com/page") == 5
 
     def test_robots_txt에_crawl_delay가_없으면_None을_반환한다(self, monkeypatch):
-        monkeypatch.setattr(
-            robots, "fetch_html", lambda url, **kwargs: "User-agent: *\nAllow: /\n"
-        )
+        monkeypatch.setattr(robots, "fetch_html", lambda url, **kwargs: "User-agent: *\nAllow: /\n")
 
         checker = RobotsChecker()
         checker.check("https://example.com/page")

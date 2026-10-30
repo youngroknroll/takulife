@@ -5,6 +5,7 @@
 has_entries는 검색 결과가 0건이어도 보유 기록이 있으면 True이며,
 pager_query는 활성 검색어를 페이지 링크에 그대로 실어 나른다.
 """
+
 import pytest
 
 from archive.models import PersonalEntry
@@ -33,7 +34,9 @@ class TestArchiveItemsPagination:
         assert page_obj.paginator.num_pages == 2
         assert len(page_obj.object_list) == 5
 
-    def test_개인_기록_7건_중_두번째_페이지를_조회하면_나머지_2건이_표시된다(self, user_client, make_entries):
+    def test_개인_기록_7건_중_두번째_페이지를_조회하면_나머지_2건이_표시된다(
+        self, user_client, make_entries
+    ):
         user, client = user_client()
         make_entries(user, 7)
 
@@ -113,7 +116,9 @@ class TestArchiveItemsSearch:
         assert "매칭 항목" in titles
         assert "다른 항목" not in titles
 
-    def test_검색어로_필터링하면_페이지네이터_건수도_검색_결과_기준으로_줄어든다(self, user_client, make_entry):
+    def test_검색어로_필터링하면_페이지네이터_건수도_검색_결과_기준으로_줄어든다(
+        self, user_client, make_entry
+    ):
         """page_obj.paginator.count는 q로 좁혀진 필터링 결과 건수를 따른다."""
         user, client = user_client()
         for i in range(3):
@@ -152,7 +157,9 @@ class TestArchiveItemsContextKeys:
         assert resp.context["q"] == "검색어"
         assert resp.context["has_query"] is True
 
-    def test_검색어_파라미터가_없으면_컨텍스트의_검색어는_비어있고_검색_여부는_false다(self, user_client):
+    def test_검색어_파라미터가_없으면_컨텍스트의_검색어는_비어있고_검색_여부는_false다(
+        self, user_client
+    ):
         _, client = user_client()
 
         resp = client.get("/archive/personal/")

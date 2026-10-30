@@ -5,10 +5,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext
 
-from core.analytics import record_event
-from core.models import AnalyticsEvent
-
-from .models import (
+from archive.models import (
     ActivityLogEntry,
     CollectionItem,
     EventInterest,
@@ -17,8 +14,9 @@ from .models import (
     VisitRecord,
     VisitRecordPhoto,
 )
-from .signals import _delete_file_best_effort
-
+from archive.signals import _delete_file_best_effort
+from core.analytics import record_event
+from core.models import AnalyticsEvent
 
 MAX_PHOTOS_PER_RECORD = 5
 
@@ -103,7 +101,9 @@ def create_personal_entry(*, user, kind, title, client_token=None, **fields):
     롤백되기 전까지 그 이후의 문장을 금지한다.
     """
     if kind != PersonalEntry.Kind.PLACE:
-        raise ValidationError({"kind": gettext("place 외의 kind로는 PersonalEntry를 생성할 수 없습니다.")})
+        raise ValidationError(
+            {"kind": gettext("place 외의 kind로는 PersonalEntry를 생성할 수 없습니다.")}
+        )
     try:
         with transaction.atomic():
             return PersonalEntry.objects.create(
@@ -340,7 +340,9 @@ def _validate_collection_item_quantities(quantity, tradeable_quantity):
         raise ValidationError(errors)
 
 
-def create_collection_item(*, user, name, visit_record=None, event=None, client_token=None, **fields):
+def create_collection_item(
+    *, user, name, visit_record=None, event=None, client_token=None, **fields
+):
     """사용자 소유의 굿즈 컬렉션 항목을 생성한다.
 
     `visit_record`가 주어지면 `event`는 항상 `visit_record.event`로
@@ -470,8 +472,7 @@ def update_collection_item(*, item, **fields):
         previous_is_wanted = item.is_wanted
         previous_tradeable_quantity = item.tradeable_quantity
         previous_organize_values = {
-            field_name: getattr(item, field_name)
-            for field_name in _COLLECTION_ITEM_ORGANIZE_FIELDS
+            field_name: getattr(item, field_name) for field_name in _COLLECTION_ITEM_ORGANIZE_FIELDS
         }
 
         quantity = fields.get("quantity", item.quantity)

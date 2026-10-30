@@ -5,16 +5,17 @@ D9(⚠️): StaffActionLog 전체 조회는 슈퍼유저 전용(staff/admin.py)�
 한다. list_staff_action_log(staff/queries.py)가 ip_address/user_agent를
 애초에 select하지 않으므로 이 뷰는 그 필드를 구조적으로 볼 수 없다.
 """
+
 from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
 from django.shortcuts import render
 
-from ..action_labels import ACTION_LABELS
-from ..models import StaffActionLog
-from ..permissions import staff_console_required
-from ..search import search_term
-from ..queries import STAFF_ACTION_LOG_PAGE_SIZE, list_staff_action_log
+from staff.action_labels import ACTION_LABELS
+from staff.models import StaffActionLog
+from staff.permissions import staff_console_required
+from staff.queries import STAFF_ACTION_LOG_PAGE_SIZE, list_staff_action_log
+from staff.search import search_term
 
 
 def _build_audit_log_rows(rows):
@@ -26,9 +27,7 @@ def _build_audit_log_rows(rows):
         elif row["target_event_id"] is not None:
             target_label = row["target_event__title"] or f"이벤트 #{row['target_event_id']}"
         elif row["target_category_id"] is not None:
-            target_label = (
-                row["target_category__label"] or f"카테고리 #{row['target_category_id']}"
-            )
+            target_label = row["target_category__label"] or f"카테고리 #{row['target_category_id']}"
         elif row["target_user_id"] is not None:
             # 이 화면은 is_staff 전체가 보므로 대상 이메일 대신 번호만 노출한다(D9 확장).
             target_label = f"계정 #{row['target_user_id']}"

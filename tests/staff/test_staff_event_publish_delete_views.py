@@ -4,12 +4,12 @@
 /staff/events/<pk>/delete/(서버 렌더 2단계 확인)를 다룬다. 둘 다 수정 페이지
 폼에서만 오는 POST 전용 SSR 액션이며 JSON API가 아니다.
 """
-import datetime
+
 import re
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from archive.models import CollectionItem, EventInterest
 from events.models import Event
@@ -49,7 +49,9 @@ def test_스태프가_아닌_사용자가_게시_토글을_요청하면_403을_�
 
 
 @pytest.mark.django_db
-def test_게시_토글_경로에_GET으로_접근하면_405를_응답하고_상태를_바꾸지_않는다(staff_client, make_event):
+def test_게시_토글_경로에_GET으로_접근하면_405를_응답하고_상태를_바꾸지_않는다(
+    staff_client, make_event
+):
     staff, client = staff_client()
     event = make_event(official_url="https://example.com/toggle-get")
 
@@ -78,9 +80,7 @@ def test_게시된_이벤트를_토글하면_게시_취소되고_감사_로그�
 @pytest.mark.django_db
 def test_초안_이벤트를_토글하면_재게시되고_감사_로그를_남긴다(staff_client, make_draft_event):
     staff, client = staff_client()
-    event = make_draft_event(
-        title="초안", official_url="https://example.com/toggle-republish"
-    )
+    event = make_draft_event(title="초안", official_url="https://example.com/toggle-republish")
 
     resp = client.post(_toggle_url(event))
 
@@ -92,7 +92,9 @@ def test_초안_이벤트를_토글하면_재게시되고_감사_로그를_남�
 
 
 @pytest.mark.django_db
-def test_제목이_없는_초안_이벤트는_재게시_토글이_거부되고_감사_로그를_남기지_않는다(staff_client, make_draft_event):
+def test_제목이_없는_초안_이벤트는_재게시_토글이_거부되고_감사_로그를_남기지_않는다(
+    staff_client, make_draft_event
+):
     staff, client = staff_client()
     event = make_draft_event(title="", official_url="https://example.com/toggle-broken")
 
@@ -189,7 +191,9 @@ def test_삭제_확인_화면은_이미_계산한_참조_건수를_컨텍스트�
 
 
 @pytest.mark.django_db
-def test_삭제_확인_POST는_이벤트를_삭제하고_감사_로그를_남긴_뒤_목록으로_리다이렉트된다(staff_client, make_event):
+def test_삭제_확인_POST는_이벤트를_삭제하고_감사_로그를_남긴_뒤_목록으로_리다이렉트된다(
+    staff_client, make_event
+):
     staff, client = staff_client()
     event = make_event(title="삭제 대상", official_url="https://example.com/delete-confirmed")
 
@@ -208,9 +212,7 @@ def test_삭제_후_리다이렉트는_목록_필터_쿼리를_유지한다(staf
     staff, client = staff_client()
     event = make_event(title="삭제 대상", official_url="https://example.com/delete-filter-prg")
 
-    resp = client.post(
-        f"{_delete_url(event)}?warning=missing_region", {"confirmed": "yes"}
-    )
+    resp = client.post(f"{_delete_url(event)}?warning=missing_region", {"confirmed": "yes"})
 
     assert resp.status_code == 302
     assert resp.url == "/staff/events/?warning=missing_region"
@@ -234,9 +236,7 @@ def test_삭제_확인_POST_직전에_이벤트가_사라지면_500_대신_404�
         Event.objects.filter(pk=event.pk).delete()
         return original_event_archive_reference_counts(event=event)
 
-    monkeypatch.setattr(
-        staff_events_view, "event_archive_reference_counts", _delete_then_count
-    )
+    monkeypatch.setattr(staff_events_view, "event_archive_reference_counts", _delete_then_count)
 
     resp = client.post(_delete_url(event), {"confirmed": "yes"})
 
@@ -244,7 +244,9 @@ def test_삭제_확인_POST_직전에_이벤트가_사라지면_500_대신_404�
 
 
 @pytest.mark.django_db
-def test_아카이브_참조가_있는_이벤트는_삭제가_차단되고_감사_로그를_남기지_않는다(staff_client, make_user, make_event):
+def test_아카이브_참조가_있는_이벤트는_삭제가_차단되고_감사_로그를_남기지_않는다(
+    staff_client, make_user, make_event
+):
     staff, client = staff_client()
     event = make_event(title="찜된 행사", official_url="https://example.com/delete-blocked")
     interested_user = make_user()
@@ -258,7 +260,9 @@ def test_아카이브_참조가_있는_이벤트는_삭제가_차단되고_감�
 
 
 @pytest.mark.django_db
-def test_참조가_있는_이벤트의_수정_페이지는_삭제_버튼_대신_참조_건수를_보여준다(staff_client, make_user, make_event):
+def test_참조가_있는_이벤트의_수정_페이지는_삭제_버튼_대신_참조_건수를_보여준다(
+    staff_client, make_user, make_event
+):
     staff, client = staff_client()
     event = make_event(title="찜된 행사", official_url="https://example.com/edit-blocked-delete")
     interested_user = make_user()

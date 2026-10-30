@@ -1,7 +1,6 @@
-"""core.db_stats 검증 (트랙 37 S2 대시보드 저장소 패널, prompt_plan.md 트랙 37 S2 참고).
-"""
-from django.db import OperationalError, connection
+"""core.db_stats 검증 (트랙 37 S2 대시보드 저장소 패널, prompt_plan.md 트랙 37 S2 참고)."""
 
+from django.db import OperationalError, connection
 import pytest
 
 from core.db_stats import database_size_summary, format_bytes
@@ -29,7 +28,9 @@ def test_postgres에서_database_size_summary는_전체_바이트와_상위_5개
 
 @pytest.mark.unit
 @pytest.mark.django_db
-def test_postgres가_아니면_저장소_요약은_None이고_쿼리가_없다(monkeypatch, django_assert_num_queries):
+def test_postgres가_아니면_저장소_요약은_None이고_쿼리가_없다(
+    monkeypatch, django_assert_num_queries
+):
     # RT-11
     monkeypatch.setattr(connection, "vendor", "sqlite")
 

@@ -1,19 +1,24 @@
 """서버가 건넨 행사 원문 네 필드를 데이터로만 넘기고, 영어·일본어·중국어
 간체 번역을 모델에 맡기는 단계다. Django·서버 도메인 모듈은 임포트하지
 않는다."""
+
 import functools
 import logging
 import time
 
 import httpx
 
-from .claude_code_adapter import (
-    AdapterOutputError,
+from local_runner.claude_code_adapter import (
     _CORRECTION_SUFFIX,
+    AdapterOutputError,
     _execute_claude,
     parse_json_object,
 )
-from .config import TRANSLATION_BATCH_LIMIT, TRANSLATION_MAX_ATTEMPTS, TRANSLATION_TIMEOUT_SECONDS
+from local_runner.config import (
+    TRANSLATION_BATCH_LIMIT,
+    TRANSLATION_MAX_ATTEMPTS,
+    TRANSLATION_TIMEOUT_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +33,8 @@ TRANSLATION_INPUT_MAX_CHARS = 4000
 
 
 def _strip_untrusted_literals(text):
-    # 한 번만 지우면 제거 후 접합으로 리터럴이 재조립될 수 있어, 더는 안 남을 때까지 반복해서 지운다.
+    # 한 번만 지우면 제거 후 접합으로 리터럴이 재조립될 수 있어,
+    # 더는 안 남을 때까지 반복해서 지운다.
     cleaned = (text or "")[:TRANSLATION_INPUT_MAX_CHARS]
     while any(literal in cleaned for literal in (UNTRUSTED_OPEN, UNTRUSTED_CLOSE)):
         for literal in (UNTRUSTED_OPEN, UNTRUSTED_CLOSE):
@@ -37,7 +43,9 @@ def _strip_untrusted_literals(text):
 
 
 def build_translation_prompt(fields):
-    scoped = {field: _strip_untrusted_literals(fields.get(field, "")) for field in TRANSLATION_FIELDS}
+    scoped = {
+        field: _strip_untrusted_literals(fields.get(field, "")) for field in TRANSLATION_FIELDS
+    }
     fields_block = "\n".join(f"{field}: {scoped[field]}" for field in TRANSLATION_FIELDS)
 
     return f"""당신은 서브컬처 행사 공지 원문을 영어(en)·일본어(ja)·중국어 간체(zh-hans,
@@ -136,7 +144,10 @@ def _translate_one(client, event, translate):
 
 def translate_pending_batch(client, *, attempts, translate=None, limit=TRANSLATION_BATCH_LIMIT):
     if translate is None:
-        translate = lambda fields: run_agent_translation(build_translation_prompt(fields))
+
+        def translate(fields):
+            """번역 에이전트 호출 기본값. 호출 시점에 전역 함수를 조회한다."""
+            return run_agent_translation(build_translation_prompt(fields))
 
     events = client.pending()
     attempted_count = 0

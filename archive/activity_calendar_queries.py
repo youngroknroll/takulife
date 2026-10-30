@@ -3,8 +3,10 @@
 archive/queries.py(일반 아카이브 읽기 계층)에서 분리했다 — 이 모듈은 월별
 달력 조회와 날짜 이동 검색만 다룬다(docs/backlog.md E2).
 """
+
 import calendar
 from dataclasses import dataclass
+
 # 별칭을 쓰는 이유(`from datetime import date`가 아님): 아래 dataclass
 # 필드 중 하나도 이름이 `date`라서, `field: T = default` 형태는 클래스
 # 본문 스코프에서 어노테이션 `T`를 평가하기 *전에* 기본값을 필드 이름에
@@ -16,7 +18,13 @@ from django.db.models import Max, Q
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import ActivityLogEntry, CollectionItem, EventInterest, UserEventStatus, VisitRecord
+from archive.models import (
+    ActivityLogEntry,
+    CollectionItem,
+    EventInterest,
+    UserEventStatus,
+    VisitRecord,
+)
 
 # ---------------------------------------------------------------------------
 # 개인 활동 달력 월별 조회. 5개의 읽기 소스를 하나의 평평한 달력 항목
@@ -197,9 +205,11 @@ def _interest_added_fallback_items(user, month_start, month_end):
             event__isnull=False,
         ).values_list("event_id", flat=True)
     )
-    interests = EventInterest.objects.filter(user=user, event__isnull=False).exclude(
-        event_id__in=logged_event_ids
-    ).select_related("event")
+    interests = (
+        EventInterest.objects.filter(user=user, event__isnull=False)
+        .exclude(event_id__in=logged_event_ids)
+        .select_related("event")
+    )
     items = []
     for interest in interests:
         display_date = timezone.localdate(interest.created_at)

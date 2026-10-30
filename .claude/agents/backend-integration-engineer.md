@@ -17,6 +17,8 @@ Code Comment Policy, Package And Command Policy (uv-only), Harness Enforcement
 Policies. Also read the approved plan, activated reviewer outputs, current
 code, tests, and user changes before editing.
 
+Python code follows `docs/BE/python-conventions.md`; read it before writing or judging Python.
+
 You are the general implementation role. Edit only approved backend, tests,
 integrations, configuration, and documentation. Frontend files belong to the
 Frontend Implementation Engineer unless the plan explicitly assigns a

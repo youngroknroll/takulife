@@ -18,7 +18,9 @@ pytestmark = pytest.mark.domain
 
 
 @pytest.mark.django_db
-def test_방문기록_목록_조회는_사용자로_범위를_좁히고_최신_방문일_순으로_정렬한다(make_user, make_event, make_visit):
+def test_방문기록_목록_조회는_사용자로_범위를_좁히고_최신_방문일_순으로_정렬한다(
+    make_user, make_event, make_visit
+):
     user = make_user(username="list-visit-user")
     other = make_user(username="list-visit-other")
     e1 = make_event(title="E1")
@@ -108,9 +110,7 @@ def test_해당_방문에_연결된_굿즈만_등록순으로_반환한다(
 ):
     user = make_user()
     record = make_visit(user, event=make_event(), visited_on="2026-05-26")
-    other_record = make_visit(
-        user, event=make_event(title="다른 방문"), visited_on="2026-05-27"
-    )
+    other_record = make_visit(user, event=make_event(title="다른 방문"), visited_on="2026-05-27")
 
     first_item = make_collection_item(user, name="첫 번째 굿즈", visit_record=record)
     second_item = make_collection_item(user, name="두 번째 굿즈", visit_record=record)

@@ -4,11 +4,12 @@
 계획에서 승인된 (a)~(e) 계약을 다룬다: VisitRecord는 상태 대상이 "visited"와
 불일치한 채로는 존재할 수 없다.
 """
+
 import uuid
 
-import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+import pytest
 
 from archive.models import ActivityLogEntry, PersonalEntry, UserEventStatus, VisitRecord
 from archive.services import complete_visit_with_record
@@ -23,7 +24,9 @@ pytestmark = pytest.mark.domain
 
 
 @pytest.mark.django_db
-def test_상태_기록이_없는_행사를_방문_완료_처리하면_방문_완료_상태와_기록이_함께_생성된다(make_user, make_event):
+def test_상태_기록이_없는_행사를_방문_완료_처리하면_방문_완료_상태와_기록이_함께_생성된다(
+    make_user, make_event
+):
     user = make_user()
     event = make_event()
 
@@ -104,13 +107,9 @@ def test_상태_행_생성이_동시_삽입과_충돌하면_기존_행을_재조
     # 0회가 맞는 기대값이다(승자 쪽 이벤트는 이 테스트 밖의 다른 요청
     # 프로세스에서 이미 기록됐을 상황을 모사한 것일 뿐, 이 테스트
     # 안에서는 재현하지 않는다).
+    assert ActivityLogEntry.objects.filter(kind=ActivityLogEntry.Kind.STATUS_CHANGED).count() == 0
     assert (
-        ActivityLogEntry.objects.filter(kind=ActivityLogEntry.Kind.STATUS_CHANGED).count() == 0
-    )
-    assert (
-        ActivityLogEntry.objects.filter(
-            kind=ActivityLogEntry.Kind.VISIT_RECORD_CREATED
-        ).count()
+        ActivityLogEntry.objects.filter(kind=ActivityLogEntry.Kind.VISIT_RECORD_CREATED).count()
         == 1
     )
     assert (
@@ -171,7 +170,9 @@ def test_방문_완료_처리_시_상태_행_조회는_FOR_UPDATE_잠금_아래�
 
 
 @pytest.mark.django_db
-def test_참석_예정_상태에서_방문_완료_처리하면_같은_상태_행이_방문_완료로_전환된다(make_user, make_event, make_status):
+def test_참석_예정_상태에서_방문_완료_처리하면_같은_상태_행이_방문_완료로_전환된다(
+    make_user, make_event, make_status
+):
     user = make_user()
     event = make_event()
     status_row = make_status(user, event, status=UserEventStatus.Status.PLANNED)
@@ -189,7 +190,9 @@ def test_참석_예정_상태에서_방문_완료_처리하면_같은_상태_행
 
 
 @pytest.mark.django_db
-def test_불참_상태에서_방문_완료_처리하면_상태가_방문_완료로_전환된다(make_user, make_event, make_status):
+def test_불참_상태에서_방문_완료_처리하면_상태가_방문_완료로_전환된다(
+    make_user, make_event, make_status
+):
     user = make_user()
     event = make_event()
     status_row = make_status(user, event, status=UserEventStatus.Status.MISSED)
@@ -287,9 +290,7 @@ def test_같은_클라이언트_토큰으로_방문_완료_처리를_두_번_요
     # Given: 이 (user, event) 쌍에 대한 상태 행이 아직 없다.
     assert not UserEventStatus.objects.filter(user=user, event=event).exists()
 
-    complete_visit_with_record(
-        user=user, event=event, visited_on="2026-07-15", client_token=token
-    )
+    complete_visit_with_record(user=user, event=event, visited_on="2026-07-15", client_token=token)
 
     status_row = UserEventStatus.objects.get(user=user, event=event)
     assert status_row.status == UserEventStatus.Status.VISITED
@@ -297,9 +298,7 @@ def test_같은_클라이언트_토큰으로_방문_완료_처리를_두_번_요
 
     # When: 같은 client_token이 재전송된다(예: bfcache로 복원된 페이지가
     # 같은 "완료 처리" 폼을 다시 제출).
-    complete_visit_with_record(
-        user=user, event=event, visited_on="2026-07-16", client_token=token
-    )
+    complete_visit_with_record(user=user, event=event, visited_on="2026-07-16", client_token=token)
 
     # Then: 상태 행은 그대로다(mark_visited가 두 번째로 실행되지 않았음을
     # 증명) — 두 번째 VisitRecord나 분석 이벤트도 생기지 않았다.
@@ -330,7 +329,9 @@ def test_같은_클라이언트_토큰으로_방문_완료_처리를_두_번_요
 @pytest.mark.django_db
 def test_비공식_장소를_방문_완료_처리하면_해당_장소_기준으로_상태와_기록이_생성된다(make_user):
     user = make_user()
-    entry = PersonalEntry.objects.create(user=user, kind=PersonalEntry.Kind.PLACE, title="비공식 장소")
+    entry = PersonalEntry.objects.create(
+        user=user, kind=PersonalEntry.Kind.PLACE, title="비공식 장소"
+    )
 
     complete_visit_with_record(user=user, personal_entry=entry, visited_on="2026-07-15")
 
@@ -461,9 +462,7 @@ def test_분석_이벤트_기록이_실패해도_방문_완료_상태_전환과_
             event_name="x" * 100, user_key="", target_type="", target_id=None, context={}
         ).save()
 
-    monkeypatch.setattr(
-        "core.analytics.AnalyticsEvent.objects.create", raise_real_database_error
-    )
+    monkeypatch.setattr("core.analytics.AnalyticsEvent.objects.create", raise_real_database_error)
 
     # 예외가 나면 안 된다 — 분석 이벤트 저장 실패가 붙어 있는 도메인 동작을
     # 깨서는 안 된다.

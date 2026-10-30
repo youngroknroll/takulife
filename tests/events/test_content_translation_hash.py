@@ -3,6 +3,7 @@
 번역 대상 네 필드(title·work_title·location_name·summary)만 해시에 반영되고,
 다른 필드 변경·정규화 형태 차이에는 반응하지 않아야 한다는 계약을 다룬다.
 """
+
 import unicodedata
 
 import pytest

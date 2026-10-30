@@ -10,10 +10,11 @@
 담을 수 있는 컨텍스트 키(자유 텍스트, 연락처, 미디어 URL)가 들어오면
 바로 실패한다 — FORBIDDEN_CONTEXT_KEYS 참고.
 """
+
+from datetime import timedelta
 import hashlib
 import hmac
 import logging
-from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -21,7 +22,6 @@ from django.db.models import Count
 from django.utils import timezone
 
 from core.models import AnalyticsEvent
-
 
 logger = logging.getLogger(__name__)
 
@@ -86,9 +86,7 @@ def record_event(*, event_name, user, target_type="", target_id=None, context=No
     context = context or {}
     forbidden = FORBIDDEN_CONTEXT_KEYS & context.keys()
     if forbidden:
-        raise ValueError(
-            f"context contains forbidden key(s): {', '.join(sorted(forbidden))}"
-        )
+        raise ValueError(f"context contains forbidden key(s): {', '.join(sorted(forbidden))}")
 
     try:
         with transaction.atomic():

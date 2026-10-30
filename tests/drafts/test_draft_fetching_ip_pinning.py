@@ -1,12 +1,12 @@
 """drafts.fetching.fetch_html이 DNS로 검증한 IP에 실제로 연결하는지 검증한다.
 validate_fetch_url은 스텁하지 않고 fake_resolver로 실제 DNS 조회만 대체해, 검증에
 쓰인 IP와 연결에 쓰이는 IP가 같은지(TOCTOU 방지)를 확인한다."""
+
 import httpx
 import pytest
 
 import drafts.fetching as fetching
 from drafts.fetching import fetch_html
-
 
 pytestmark = pytest.mark.unit
 

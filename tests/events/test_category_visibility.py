@@ -7,17 +7,18 @@
 - 스태프 필터 멤버십 → 전체(비활성 포함)
 
 2026-09-13 기준 세 화면 모두 core.vocab.CATEGORY 정적 튜플을 그대로 쓰고
-있어([코드] `staff/views/events.py:20-21`·`web/views/events.py:32-33`),
+있어([코드] `staff/views/events.py:21-22`·`web/views/events.py:32-33`),
 DB의 `Category.is_active`나 게시 이벤트 수를 전혀 반영하지 않는다. 그래서
 아래 F-01·F-03·F-06은 지금 Red이고, F-02는 이미 Green이다(이유는 각
 테스트 docstring에 적었다). 서비스 계층만 검증하는 F-04·F-05는
 `test_category_visibility_services.py`로 분리했다(아키텍처 경계 가드
 — 파일명 = 검증 계층 규약).
 """
+
 import re
 
-import pytest
 from django.urls import reverse
+import pytest
 
 from core.models import Category
 from events.models import Event
@@ -27,9 +28,7 @@ pytestmark = pytest.mark.django_db
 
 def _select_options(content, select_id):
     """content에서 id=select_id인 <select> 안의 option value 전체를 반환한다."""
-    match = re.search(
-        rf'<select[^>]*id="{select_id}"[^>]*>(.*?)</select>', content, re.DOTALL
-    )
+    match = re.search(rf'<select[^>]*id="{select_id}"[^>]*>(.*?)</select>', content, re.DOTALL)
     assert match, content
     return re.findall(r'<option value="([^"]*)"', match.group(1))
 
