@@ -445,27 +445,69 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   1. `~/.takulife-runner.env`가 존재하고 권한이 600이다. 아니면 래퍼가 메시지
      1줄을 남기고 종료 코드 0으로 끝나며 재기동하지 않는다.
   2. `claude`·`uv`가 래퍼 PATH(`~/.local/bin`, `/opt/homebrew/bin`,
-     `/usr/local/bin`, `/usr/bin`, `/bin`)에 있다.
-  3. 저장소가 `~/Desktop` 같은 보호 폴더면 "Operation not permitted"가 날 수
+     `/usr/local/bin`, `/usr/bin`, `/bin`)에 있다. 이 고정 목록은 그대로이고,
+     그 밖에 설치된 `claude`(예: nvm — 이 Mac은
+     `~/.nvm/versions/node/v22.14.0/bin/claude`, 네이티브 arm64 실행 파일
+     `[실측 2026-10-30 which/file]`)는 env 파일에
+     `TAKULIFE_RUNNER_PATH_PREPEND=<그 bin 디렉터리>`로 알려 준다(래퍼가 env
+     파일을 PATH 설정 전에 읽어 맨 앞에 붙인다 `[코드 run-runner.sh]`). 없으면
+     "claude 실행 파일을 PATH에서 찾지 못해 시작하지 않는다" 1줄·종료 코드
+     0으로 영구히 뜨지 않는다 `[실측 2026-10-30]`.
+  3. ~~저장소가 `~/Desktop` 같은 보호 폴더면 "Operation not permitted"가 날 수
      있다. 저장소를 옮기거나 `/bin/sh`에 전체 디스크 접근을 허용한다(미검증,
-     설치 직후 로그를 확인한다).
-- **설치**:
+     설치 직후 로그를 확인한다).~~(2026-10-30 이전 기록) 실측: `~/Desktop`
+     아래 저장소를 plist로 기동하면 로그에
+     `shell-init: error retrieving current directory: getcwd: cannot access
+     parent directories: Operation not permitted`와
+     `/bin/sh: …/run-runner.sh: Operation not permitted`, `last exit code =
+     126`, `state = spawn scheduled`(종료 코드가 0이 아니라 60초마다
+     재기동 루프에 들어간다 — 즉시 `launchctl bootout`으로 멈췄다)
+     `[실측 2026-10-30]`. **채택한 해법 = 보호 폴더 밖 전용 클론
+     `~/takulife-runner`**(`/bin/sh`에 전체 디스크 접근을 주는 방법은
+     채택하지 않았고, 개발 작업 트리를 옮기는 것은 사용자 결정으로 남긴다).
+     전용 클론은 개발 트리의 브랜치 전환이 돌고 있는 러너에 영향을 주지
+     않는다.
+- **설치**(전용 클론 기준):
   ```bash
+  git clone https://github.com/youngroknroll/takulife.git ~/takulife-runner
+  cd ~/takulife-runner && uv sync --frozen        # 336MB [실측 du 2026-10-30]
   mkdir -p ~/Library/LaunchAgents ~/Library/Logs
-  sed -e "s|__REPO_DIR__|$PWD|g" -e "s|__HOME__|$HOME|g" local_runner/launchd/kr.takulife.runner.plist > ~/Library/LaunchAgents/kr.takulife.runner.plist
+  sed -e "s|__REPO_DIR__|$HOME/takulife-runner|g" -e "s|__HOME__|$HOME|g" local_runner/launchd/kr.takulife.runner.plist > ~/Library/LaunchAgents/kr.takulife.runner.plist
   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/kr.takulife.runner.plist
   ```
+  env 파일 예(값은 적지 않는다): `TAKULIFE_SERVER_URL=https://takulife.kr`,
+  `TAKULIFE_RUNNER_TOKEN=…`,
+  `TAKULIFE_RUNNER_PATH_PREPEND=$HOME/.nvm/versions/node/<버전>/bin`(`$HOME`은
+  셸이 확장하므로 실제 경로를 적는다), `chmod 600`.
 - **확인·운영**:
   - 상태: `launchctl print gui/$(id -u)/kr.takulife.runner`. 로그:
     `~/Library/Logs/takulife-runner.log`.
-  - **미검증**: 래퍼가 `exec uv run --frozen python -m local_runner.runner`로 기동하므로 `uv`가 SIGTERM을 파이썬 자식에 전달하는지 확인되지 않았다. 설치 후 `launchctl kill TERM …` 뒤 로그에 `러너 종료 — 오프라인 보고 완료`가 없고 `launchctl print`의 `last exit code`가 0이 아니면 래퍼의 마지막 줄을 `exec .venv/bin/python -m local_runner.runner`로 바꾼다(그 경우 `uv sync --frozen`은 설치 때 1회).
+  - ~~**미검증**: 래퍼가 `exec uv run --frozen python -m local_runner.runner`로 기동하므로 `uv`가 SIGTERM을 파이썬 자식에 전달하는지 확인되지 않았다. 설치 후 `launchctl kill TERM …` 뒤 로그에 `러너 종료 — 오프라인 보고 완료`가 없고 `launchctl print`의 `last exit code`가 0이 아니면 래퍼의 마지막 줄을 `exec .venv/bin/python -m local_runner.runner`로 바꾼다(그 경우 `uv sync --frozen`은 설치 때 1회).~~(2026-10-30 이전 기록) 실측: `uv run --frozen python <스크립트>`에 `kill -TERM <uv pid>`를 보내면 자식 파이썬의 SIGTERM 핸들러가 신호 15를 받고 종료하며, 남는 프로세스 0개·uv 종료 코드 0이다 `[실측 2026-10-30]`. 재현:
+    ```bash
+    uv run python -c 'import signal, sys, time; signal.signal(signal.SIGTERM, lambda *_: sys.exit(print("child got SIGTERM"))); print("ready", flush=True); [time.sleep(0.2) for _ in iter(int, 1)]' & sleep 3; kill -TERM $!; wait $!; echo "uv exit=$?"
+    ```
+    기대 출력: `ready`, `child got SIGTERM`, `uv exit=0`. 래퍼의
+    `exec uv run …` 그대로 유지하고 `.venv/bin/python` 대안은 불필요하다.
   - 종료 확인: `launchctl kill TERM gui/$(id -u)/kr.takulife.runner` 후 로그에
     `러너 종료 — 오프라인 보고 완료`가 남는다. 러너는 SIGTERM에서 종료 코드 0으로
     끝나므로 `SuccessfulExit=false` 설정상 **재기동되지 않는다**. 다시 띄우려면
     `launchctl kickstart gui/$(id -u)/kr.takulife.runner`.
   - 해제: `launchctl bootout gui/$(id -u)/kr.takulife.runner`. 수동 기동 전에는
-    먼저 bootout한다(중복 폴링 방지).
+    먼저 bootout한다(중복 폴링 방지). 설치 자체를 되돌리려면 bootout 뒤
+    `rm ~/Library/LaunchAgents/kr.takulife.runner.plist`와 전용 클론
+    `rm -rf ~/takulife-runner`(336MB `[실측 du 2026-10-30]`)를 지운다.
   - 토큰 회전 후: `launchctl kickstart -k gui/$(id -u)/kr.takulife.runner`.
+  - 갱신 절차: 배포 뒤 러너 갱신은
+    `cd ~/takulife-runner && git pull && uv sync --frozen && launchctl kickstart -k gui/$(id -u)/kr.takulife.runner`로
+    한다. §8.x의 "맥 저장소 main·uv sync" 재시작 절차도 이 전용 클론
+    기준이다. 머지 전까지 이 Mac의 클론은 브랜치
+    `test/track-49-xdist-launchd`를 체크아웃한 상태이며, PR #407 머지 뒤
+    `git checkout main && git pull`로 돌린다(사용자 잔여).
+  - `ThrottleInterval 60`은 종료 코드가 0이 아닌 경우(토큰 빈 값
+    `RuntimeError` 등)의 재기동 간격이고, env 파일 부재·권한 불일치·실행
+    파일 부재는 종료 코드 0이라 재기동하지 않는다. 래퍼가 실제 러너까지
+    가서 `TAKULIFE_RUNNER_TOKEN`이 빈 값이면 `RuntimeError`·종료 코드 1이다
+    `[실측 2026-10-30]`.
   - 절전 시 러너가 멈추고, 120초 신선도 만료(`[코드 drafts/discovery_runs.py HEARTBEAT_FRESH_SECONDS]`)로 오프라인 표시되며, 복귀 후 폴링이
     재개된다.
   - 구독 사용량: 번역 대기분이 있으면 폴링마다 최대 3건 `[코드 local_runner/runner.py]` `claude`를 호출한다.
@@ -477,9 +519,16 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
   - 로그 파일 회전이 없다.
   - `claude` 자식 프로세스가 `TAKULIFE_RUNNER_TOKEN`을 환경으로 상속한다(도구가 WebSearch·WebFetch뿐이라 직접 유출 경로는 없음, 비상속은 이연).
   - 토큰은 URL-safe 문자만 쓴다(`. "$ENV_FILE"`이 셸로 읽는다).
-- **이 Mac 현재 상태**: `~/.takulife-runner.env` 없음, `~/Library/LaunchAgents`에
+- **이 Mac 현재 상태**: ~~`~/.takulife-runner.env` 없음, `~/Library/LaunchAgents`에
   taku 항목 없음 `[실측 ls 2026-10-28]`. launchd 설치·실동작은 미검증이다
-  (`plutil -lint` OK, `sh -n` OK만 확인).
+  (`plutil -lint` OK, `sh -n` OK만 확인).~~(2026-10-28 기록) 2026-10-30 실측:
+  plist 설치 완료(`~/Library/LaunchAgents/kr.takulife.runner.plist` →
+  `~/takulife-runner`), `launchctl print`의 `runs = 1`·`last exit code =
+  0`·`state = not running`, 로그 1줄 "러너 환경 파일이 없어 시작하지
+  않는다", 65초 뒤에도 `runs = 1`(재기동 없음) `[실측 2026-10-30]`.
+  `~/.takulife-runner.env`는 여전히 없음 → **사용자 잔여 2건**: env 파일
+  작성(위 3변수, 권한 600) + `launchctl kickstart gui/$(id -u)/kr.takulife.runner`,
+  그 뒤 로그에 "서버 응답 확인 — 러너 온라인"이 뜨는지 확인한다.
 
 ## 9. 오류 묶음 확인 (트랙 36, `core.ErrorGroup`)
 

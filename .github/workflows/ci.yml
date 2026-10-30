@@ -69,8 +69,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends gettext
           uv run django-admin compilemessages --ignore .venv
 
+      # -n auto: pytest-xdist (dev group). Targeted and e2e runs stay serial; see docs/BE/test-suite-speed.md.
       - name: Run test suite
-        run: uv run pytest -q
+        run: uv run pytest -q -n auto
 
       # Production-like env for `check --deploy`. SECRET_KEY is a throwaway
       # value for structural validation only, never a real secret — it is

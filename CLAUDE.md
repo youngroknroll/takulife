@@ -97,7 +97,7 @@ or the task requires a repository-wide repeated-pattern check.
 - Django check: `uv run python manage.py check`
 - Migration drift: `uv run python manage.py makemigrations --check --dry-run`
 - Targeted test: `uv run pytest -q <test-path>`
-- Backend regression: `uv run pytest -q`
+- Backend regression: `uv run pytest -q -n auto` (pytest-xdist; targeted and e2e runs stay serial)
 - Lint: `uv run ruff check .`
 - Format check: `uv run ruff format --check .`
 - E2E journeys: `uv run pytest -q -m e2e tests/e2e`
