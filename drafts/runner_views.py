@@ -22,13 +22,18 @@ from drafts.agent_drafts import (
 from drafts.candidate_validation import (
     MAX_CANDIDATES_PER_RUN,
     CandidateLimitExceededError,
-    LeaseInvalidError,
     register_account_source,
     sanitize_text,
     submit_candidate,
 )
 from drafts.discovery import SNS_HOSTNAMES
-from drafts.discovery_runs import claim, complete_run, record_heartbeat, record_offline
+from drafts.discovery_runs import (
+    LeaseInvalidError,
+    claim,
+    complete_run,
+    record_heartbeat,
+    record_offline,
+)
 from drafts.models import DraftSource, EventDraft, SourceDiscoveryRun
 from drafts.url_safety import InvalidFetchUrlError, UnsafeFetchUrlError
 

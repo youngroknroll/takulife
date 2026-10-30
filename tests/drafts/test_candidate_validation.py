@@ -9,11 +9,11 @@ import pytest
 from drafts.candidate_validation import (
     FAILURE_MESSAGES,
     CandidateLimitExceededError,
-    LeaseInvalidError,
     register_account_source,
     sanitize_text,
     submit_candidate,
 )
+from drafts.discovery_runs import LeaseInvalidError
 from drafts.fetching import FetchError, ResponseTooLargeError, UnsupportedContentTypeError
 from drafts.models import DraftSource, EventDraft, SourceCandidate, SourceDiscoveryRun
 from drafts.robots import ROBOTS_DISALLOWED, ROBOTS_FETCH_FAILED, RobotsCheckResult

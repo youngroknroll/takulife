@@ -16,8 +16,7 @@ from drafts.candidate_intake import (
     decide_and_create_candidate,
 )
 from drafts.discovery import DiscoveryParseError, extract_candidate_urls
-from drafts.discovery_runs import (  # noqa: F401 — LeaseInvalidError는 runner_views와 테스트가 이 경로로 가져온다
-    LeaseInvalidError,
+from drafts.discovery_runs import (
     locked_run_with_valid_lease,
     renew_lease,
 )
