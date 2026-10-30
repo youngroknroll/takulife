@@ -617,12 +617,18 @@ F10 MFA(2026-07-01 `auth-hardening` 결정).
 - **푸터 언어 선택기 시각 다듬기** — 현재 브라우저 기본 select·버튼 모양이다. 사양이 "새 CSS 없음"이어서 그대로 두었다.
 - **전체 페이지 캐시 도입 시** `Vary: Accept-Language`와 언어 쿠키를 캐시 키에 넣는다.
 
-### K1 테스트 병렬 실행(pytest-xdist) 도입 — 사용자 결정 대기(2026-10-28)
+### K1 테스트 병렬 실행(pytest-xdist) 도입 — 해소(트랙 49, PR #407, 2026-10-30)
 
 - 근거: 직렬 149.07초 → `-n 4` 53.87초, 4,284 passed 동일 `[실측 2026-10-28, 8코어]`. 단일 병목은 없다(`docs/BE/test-suite-speed.md` §7).
 - 정책: `AGENTS.md` "Package And Command Policy" — 새 test-convenience 패키지는 승인된 계획과 사용자 명시 승인이 필요하다.
 - 도입 시 변경: `uv add --group dev pytest-xdist`; `pytest.ini` `addopts`에 `-n auto` 또는 CI 잡만 `-n 4`; 워커별 테스트 DB 생성 권한 확인; `tests/e2e`는 직렬 유지.
-- 트리거: 사용자 승인.
+- 트리거: 사용자 승인 — 2026-10-30 사용자 지시 "2번 진행"으로 충족.
+- 결과: dev 그룹 `pytest-xdist>=3.8,<4.0` 추가, CI `test` 잡과 전체 회귀
+  명령(`CLAUDE.md`)만 `-n auto`(`pytest.ini` `addopts`·표적 실행·e2e는
+  직렬 유지). 직렬 134.77초 → `-n auto` 41.72~44.14초(연속 3회)
+  `[실측 2026-10-30]`. CI 호스트 러너 "Run test suite" 단계 82초 → 55초,
+  `test` 잡 전체 116초 → 102초(run 41070183412) `[실측 gh 2026-10-30]`.
+  정본은 `docs/BE/test-suite-speed.md` §8.
 
 ---
 
