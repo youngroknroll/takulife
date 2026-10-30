@@ -1,6 +1,6 @@
 # takulife 백로그
 
-기준일: 2026-10-27 · 기준 브랜치: `main`(`e72f74a7`). 2026-08-25 기준으로 적힌 항목의 브랜치(`fix/media-overwrite-lowrisk-sweep`, main `e3d3448` 분기)는 머지됐다.
+기준일: 2026-10-30 · 기준 브랜치: `main`(`e274bd61`, PR #405 머지 포함; 회귀 4300 passed / 10 deselected `[실측 2026-10-30 cc5d8036 = 머지 내용과 동일]`). 2026-08-25 기준으로 적힌 항목의 브랜치(`fix/media-overwrite-lowrisk-sweep`, main `e3d3448` 분기)는 머지됐다.
 
 ## 이 문서에 대하여
 
