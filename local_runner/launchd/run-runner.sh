@@ -12,7 +12,8 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 0
 fi
 # 토큰이 들어 있으므로 소유자만 읽고 쓰는 600이 아니면 시작하지 않는다.
-if [ "$(stat -f %Lp "$ENV_FILE")" != "600" ]; then
+# BSD(macOS) stat이 실패하면 GNU stat으로 — 계약 테스트가 Linux CI에서도 돌게 한다.
+if [ "$(stat -f %Lp "$ENV_FILE" 2>/dev/null || stat -c %a "$ENV_FILE")" != "600" ]; then
   echo "러너 환경 파일 권한이 600이 아니어서 시작하지 않는다: $ENV_FILE"
   exit 0
 fi

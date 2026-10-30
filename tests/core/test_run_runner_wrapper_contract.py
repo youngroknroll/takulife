@@ -2,11 +2,11 @@
 
 래퍼가 claude 가드를 env 파일 소싱보다 먼저 평가하면 `TAKULIFE_RUNNER_PATH_PREPEND`가
 적용되기 전에 "찾지 못해" 메시지로 조용히 종료 코드 0이 되어 러너가 영구히 뜨지 않는다.
+래퍼는 BSD·GNU stat 둘 다 지원해 이 테스트가 Linux CI에서도 실행된다.
 """
 
 from pathlib import Path
 import subprocess
-import sys
 
 import pytest
 
@@ -17,7 +17,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RUNNER_WRAPPER_PATH = PROJECT_ROOT / "local_runner/launchd/run-runner.sh"
 
 
-@pytest.mark.skipif(sys.platform != "darwin", reason="launchd 래퍼는 macOS 전용(BSD stat)")
 def test_환경파일의_PATH_PREPEND_디렉터리에_있는_claude_스텁을_래퍼가_찾는다(tmp_path):
     # Given: 가짜 HOME, env 파일(600), PREPEND 디렉터리의 claude·uv 스텁.
     fake_home = tmp_path / "home"

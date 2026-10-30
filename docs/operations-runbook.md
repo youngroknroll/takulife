@@ -493,7 +493,9 @@ PaaS의 ENTRYPOINT 우회 기능으로 등록하고, **등록 직후 반드시 �
     끝나므로 `SuccessfulExit=false` 설정상 **재기동되지 않는다**. 다시 띄우려면
     `launchctl kickstart gui/$(id -u)/kr.takulife.runner`.
   - 해제: `launchctl bootout gui/$(id -u)/kr.takulife.runner`. 수동 기동 전에는
-    먼저 bootout한다(중복 폴링 방지).
+    먼저 bootout한다(중복 폴링 방지). 설치 자체를 되돌리려면 bootout 뒤
+    `rm ~/Library/LaunchAgents/kr.takulife.runner.plist`와 전용 클론
+    `rm -rf ~/takulife-runner`(336MB `[실측 du 2026-10-30]`)를 지운다.
   - 토큰 회전 후: `launchctl kickstart -k gui/$(id -u)/kr.takulife.runner`.
   - 갱신 절차: 배포 뒤 러너 갱신은
     `cd ~/takulife-runner && git pull && uv sync --frozen && launchctl kickstart -k gui/$(id -u)/kr.takulife.runner`로
