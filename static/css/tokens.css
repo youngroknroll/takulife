@@ -14,11 +14,10 @@
   /* --brand를 흰 배경 위 글자색으로 쓰면 대비 4.42:1로 AA 4.5:1에 살짝
      못 미친다. 이 잉크색(5.39:1)은 작은 글자에 쓸 때만 쓴다. */
   --brand-ink: #c13a22;
-  --hl: #d8ff3d;
-  /* --hl 위에 놓일 글자색은 고정값으로 둔다 — --text를 그대로 쓰면
-     다크모드에서 --text 색이 반전될 때 밝은 배경에 밝은 글자가 겹쳐
-     안 보이게 된다. */
-  --hl-ink: #1c222e;
+  /* 강조 문구 블록. 글자색을 뒤집은 짙은 배경이라 테마마다 bg/ink를
+     한 쌍으로 같이 정의한다(한쪽만 바꾸면 다크에서 묻힌다). */
+  --emphasis-bg: var(--text);
+  --emphasis-ink: var(--surface);
   --focus: #8a94a6;
 
   /* 상태 색상 쌍(배경/잉크): mint=진행중, amber=종료임박, pink=찜·관심,
@@ -187,7 +186,8 @@
      페어링도 함께 개선됨). */
   --brand-ink: #da8474;
   --brand-soft: #422824;
-  --hl: #c1e52e;
+  --emphasis-bg: var(--text);
+  --emphasis-ink: var(--bg);
 
   --cat-popup_store-soft: #342442;
   --cat-popup_store-ink: #b17edc;
