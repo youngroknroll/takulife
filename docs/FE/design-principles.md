@@ -2,7 +2,7 @@
 
 기준일: 2026-11-03 · 트랙 50
 대상: `static/css/tokens.css`, `static/css/base.css`, `static/css/components/`, `static/css/pages/`, `templates/`. 스태프 콘솔(`static/css/staff/`, `templates/staff/`)은 제외한다.
-시안 정본: `.docs/FE/design-samples/a4.css`, `a4-home.html`, `a4-events.html` (`.docs/`는 git 무시 영역이라 새 clone에는 없다. 저장소 보존 여부는 ⑬-13 미결. 이 문서의 `a4.css`·`a4-events.html` 줄 번호는 286줄·388줄 판 기준이고 시안이 바뀌면 어긋난다).
+시안 정본: `.docs/FE/design-samples/a4.css`, `a4-home.html`, `a4-events.html` (`.docs/`는 git 무시 영역이라 새 clone에는 없다. 저장소 보존 여부는 ⑬-13 미결. 이 문서의 `a4.css`·`a4-events.html` 줄 번호는 286줄·388줄 판 `[실측 wc -l 2026-11-03]` 기준이고 시안이 바뀌면 어긋난다).
 파일:줄 기준: `static/`·`templates/` 줄 번호는 PR #408 브랜치(`design/emphasis-block`, 커밋 `624102bc`) 기준이다. main(`73cb7d80`)과는 `tokens.css` 22~189행 구간이 1줄(main이 +1), `text.css`·`home.css`·`home.html`의 `.emphasis` 관련 줄이 다르다 `[실측 git diff 2026-11-03]`. PR #408 머지 뒤 재대조한다.
 
 이 문서는 방향과 가드레일만 담는다. 값의 정본은 `static/css/tokens.css`이고 바꿀 값은 ⑩에만 적는다.
