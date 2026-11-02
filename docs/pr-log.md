@@ -21,39 +21,43 @@ number,title -q '.[] | "\(.number) — \(.title)"'` 출력을 그대로 옮긴�
 이 문서는 200줄을 넘기지 않는다. 머지된 PR 399건(`gh pr list --state merged --limit 500`,
 2026-10-31 `[실측]`; 2026-08-17에는 289건)이 전부 들어가지 않으므로 최신부터 채우고 줄 수
 예산에서 끊는다 — 컷오프는 "재구성 불가"가 아니라 순수히 **줄 수 예산** 문제다. 아래
-목록은 PR #405부터 #269까지다(#407은 위 상세 항목). 그보다 오래된 PR은 `gh pr list
+목록은 PR #408부터 #269까지다(#409는 위 상세 항목). 그보다 오래된 PR은 `gh pr list
 --state merged --limit 500 --json number,title` 으로 언제든 다시 조회할 수 있다.
 
 ---
 
 ## 최신 PR
 
-### PR #407 — test: Adopt pytest-xdist for the regression run and fix the launchd runner wrapper PATH (track 49)
+### PR #409 — docs: Track 50 design principles — A4 black-and-grey direction and the Track B token input
 
-**무엇을 바꿨나**: 백로그 K1대로 `pytest-xdist>=3.8,<4.0`을 dev 그룹에 넣고 CI test 잡과
-`CLAUDE.md`의 전체 회귀 명령만 `uv run pytest -q -n auto`로 바꿨다. `pytest.ini` `addopts`·표적
-실행·e2e 잡은 직렬 그대로다(표적 37건이 병렬에서 4.46초 → 6.41초로 느려짐 `[실측 2026-10-30]`).
-launchd 러너 래퍼 `local_runner/launchd/run-runner.sh`는 env 파일을 PATH 설정 전에 읽고
-`TAKULIFE_RUNNER_PATH_PREPEND`를 PATH 앞에 붙이며, `stat`은 GNU(`-c %a`) 먼저·BSD(`-f %Lp`)
-폴백으로 바꿨다. 새 계약 테스트 `tests/core/test_run_runner_wrapper_contract.py`(subprocess
-실행, Linux CI에서도 돈다). 문서: 런북 §8.y(보호 폴더 실측·전용 클론 설치·갱신·해제·SIGTERM
-실측), `docs/BE/test-suite-speed.md` §8, 백로그 K1 해소. 커밋 6개, 머지 `45afc5fe`
-(2026-10-31, merge commit, 사용자 승인).
+**무엇을 바꿨나**: `docs/FE/design-principles.md`(신규 379줄)를 추가했다. 트랙 50(디자인
+시스템 A단계) 계획의 13절 그대로 — 브랜드 성격, 원칙 3개, 시그니처 요소 판정표(티켓 은유·
+바코드·배경 그라디언트 폐기), 쓰지 않는 것 19항목(현 코드 위치 포함), 색 역할과 라이트·다크
+쌍 규칙, 타이포, 형태·모션 방향, 레퍼런스, 선택 시안 A4(사용자 확정 2026-11-03), 토큰 부채
+표(시안 토큰 39개 + 구→신 대응 = 트랙 B 입력), 화면 우선순위(트랙 D 입력), 결정 이력, 미결
+21건. `docs/backlog.md` 현재 상태 표에 트랙 50 행과 트랙 B~E 예약을 넣었다. 운영 코드 0파일.
+시안 `.docs/FE/design-samples/a4-*`는 git-ignored라 저장소에 없다(보존 여부는 문서 ⑬-13).
+커밋 4개, 머지 `ddda6586`(2026-11-03, merge commit, 사용자 "순차 머지 승인"; 직전에 #408
+`a8a7fc3f` 머지).
 
-**왜**: 전체 회귀가 직렬 134.77초였고 단일 병목이 없어 병렬화만 남아 있었다(사용자 지시
-"2번 진행" = K1 승인). 래퍼는 nvm으로 설치한 `claude`가 고정 PATH에 없어 종료 코드 0으로
-조용히 끝나 러너가 영구히 뜨지 않는 결함이 있었고, `~/Desktop` 저장소를 launchd로 기동하면
-`Operation not permitted`(종료 126, 재기동 루프)가 실제로 났다 — 그래서 이 Mac에는 보호 폴더
-밖 전용 클론 `~/takulife-runner`로 설치했다.
+**왜**: 사용자 지시 "디자인 토큰과 디자인 시스템을 문서로 정립하고 나만의 브랜드 사이트를
+운영. 지금은 그저그런 AI 사이트"(2026-11-02). 시안 A·B·A2·A3는 기존 템플릿 위의 재도색이라
+화면 문법이 AI 기본값 그대로였고, A4는 자체 토큰·자체 CSS로 처음부터 짜서 블랙앤그레이
+바탕 + 액션 파랑·링크 틸·카테고리 점·오류 빨강만 색으로 두고 괘선과 32px 행으로 위계를
+만들었다. 이 문서가 트랙 B(토큰 재정립)~E의 입력이다.
 
-**검증**: `-n auto` 전체 회귀 3회 연속 4301 passed(41.72·43.57·44.14초), 변경 후 직렬
-4301 passed / 131.17초, e2e 10 passed 직렬 유지, 래퍼 테스트 Red(기대한 이유) → Green,
-가짜 HOME 가드 프로브 5종 일치, launchd 1회 기동 종료 0·65초 뒤 재기동 없음
-`[실측 2026-10-30]`. CI "Run test suite" 단계 82초 → 59초, 최종 CI(run 41072565204) 5잡
-success·skipped 0 `[실측 gh]`. 사전 DOR·TDD 코치, 사후 QVL "Complete with gaps, Failed 없음"
-— gaps는 같은 PR에서 해소(그중 BSD 먼저 둔 stat 폴백이 Linux CI에서 Red로 드러나 순서 교정).
+**검증**: 시안 A4를 Chrome 156에서 320·375(터치)·768·1024·1440 × 라이트·다크로 실측 —
+가로 오버플로 0, 1440×800 첫 화면 목록 20행 가시, 포커스 링 12지점, 링크 hover·포커스
+반전이 줄마다, 터치 44px, `<details>` 키보드, 테마 토글 1클릭 1전환, 콘솔 오류 0
+`[실측 2026-11-03]`. 사전 WED(Standard)·BIR(Light), 사후 WED Deviates → 14건 수정 → 재판정
+Conforms, BIR 사후 Conforms + 델타 Conforms, WED 문서 검토 Deviates(26건) → 반영 → 잔여
+8건 → Conforms, QVL 2차 종결 가능. 문서 게이트: 절 13개(`rg -n '^## [①-⑬]'`), 태그 없는
+숫자 0줄, 파일:줄 인용 전수 대조(`static/` 줄 번호는 #408 브랜치 기준이라 머리에 명시).
+CI 6잡 pass `[실측 gh]`.
 
 ## 이전 PR (번호 — 실제 PR 제목)
+- #408 — style(home): Replace the neon highlighter with a dark emphasis block
+- #407 — test: Adopt pytest-xdist for the regression run and fix the launchd runner wrapper PATH (track 49)
 - #405 — style: Adopt the Google Python style guide with ruff in CI
 - #404 — test: Track 47 — web/views sibling-import guard and second test-speed measurement
 - #403 — ops: Track 46 — gunicorn timeout, multi-worker rate-limit measurement, backup rehearsal, runner launchd
