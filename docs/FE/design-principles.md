@@ -65,7 +65,7 @@
 | `.emphasis` 블록 | 유지(이름·토큰 쌍) + **재정의, 경고·제약 문구 전용** | 짙은 배경 반전은 색 없이 강조하는 유일한 면이다. 현 규칙은 인라인·`padding 0 0.25em`·반경 0.2em이고 소비처는 홈 히어로 h1 안 `<span>` 하나뿐이라 경고도 요약도 아니다 → 시안처럼 블록·반경 0으로 재정의하고 현 소비처는 제거한다. 홈 요약에는 쓰지 않는다 `[문서 사용자 결정 2026-11-03]`. 경고 문구의 실제 사용처는 트랙 C가 정한다 | `static/css/components/text.css:21-31`, `templates/core/home.html:22`, `static/css/pages/home.css` `.hero .emphasis`, `static/css/tokens.css:17-20,189-190` (PR #408 브랜치) |
 | 브랜드 레드 | 폐기 | 라이트 `#d8432a`, 다크 `#c63d24`, 글자용 `--brand-ink` 다크 `#da8474`. 액션 파랑으로 대체한다 | `static/css/tokens.css:183-187` |
 | 캡슐 칩(알약 반경) | 폐기 | 반경은 0이다. 칩은 사각형이다 | `static/css/tokens.css:73`, `static/css/pages/event_list.css:119,464-465` [코드 2026-11-03] |
-| 텍스트 전용 헤어라인 행 `.event-compact-row` | 유지 | 면 없이 괘선과 밀도로 만든 이 사이트 고유의 행이다. 시안의 32px 한 줄 행(≥70rem)·3줄 행(<70rem)으로 발전시킨다 | `templates/core/partials/_event_compact_row.html`, `static/css/components/cards.css:248-366`(주석 248행부터 `.event-compact-actions` 366행까지) [코드 2026-11-03] |
+| 텍스트 전용 헤어라인 행 `.event-compact-row` | 유지 | 면 없이 괘선과 밀도로 만든 이 사이트 고유의 행이다. 시안의 32px 한 줄 행(≥70rem)·3줄 행(<70rem)으로 발전시킨다 | `templates/core/partials/_event_compact_row.html`, `static/css/components/cards.css:248-370`(주석 248행부터 모바일 미디어 블록 끝 370행까지) [코드 2026-11-03] |
 | 점선 빈 상태·안내 박스 | 폐기 | 텍스트 + 액션 링크로 대체한다. 이모지 아이콘도 함께 폐기한다 | `templates/events/list.html:228`, `static/css/components/cards.css:151` |
 | 카테고리 컬러 점 | 유지 | 색을 쓰는 유일한 표지다. 점에만 쓴다 | `static/css/tokens.css:97-110` |
 | `mono-num` | 유지 | 숫자 정렬이 열 읽기의 핵심이다. `tabular-nums`를 전역으로 올린다 | 현 `static/css/components/text.css:15`, 시안 `a4.css` body 규칙 |
